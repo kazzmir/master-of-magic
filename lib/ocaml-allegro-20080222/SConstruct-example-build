@@ -1,0 +1,24 @@
+import os
+
+env = Environment(ENV = os.environ)
+
+ocaml_builder = Builder(action = 'ocamlopt -ccopt -L./ unix.cmxa allegro.cmxa $SOURCE -o $TARGET',
+                        suffix = '',
+                        src_suffix = '.ml')
+
+env.Append(BUILDERS = {'OcamlProgram': ocaml_builder})
+
+files = Split("""
+allegro.cma
+allegro.cmxa
+allegro.cmi
+allegro.mli
+dll_alleg_stubs.so
+allegro.a
+lib_alleg_stubs.a
+""")
+
+for i in files:
+    env.Execute('ln -fs ocaml-allegro-20080222/%s .' % i)
+
+env.OcamlProgram('star')
