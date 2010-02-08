@@ -40,8 +40,38 @@
  * File 9: 0x1e983
  * *)
 
+#load "extLib.cma"
+open ExtLib
+
+let read_bytes bytes input =
+  let read byte = input_byte input in
+  let bytes = List.rev (List.of_enum (Enum.map read (List.enum (List.make
+  bytes 0)))) in
+  (* List.iter (fun byte -> Printf.printf "Got byte %d\n" byte) bytes; *)
+  List.fold_left (fun total now -> total * 256 + now) 0 bytes
+;;
+
+(* curried functions *)
+let read_bytes_2 : in_channel -> int = read_bytes 2;;
+let read_bytes_4 : in_channel -> int = read_bytes 4;;
+
+let read_header input =
+  let f : int = read_bytes_2 input in
+  Printf.printf "Number of files: %d\n" f;
+  Printf.printf "Signature: %d\n" (read_bytes_4 input);
+  Printf.printf "Version: %d\n" (read_bytes_2 input);
+  for i = 0 to f do
+    Printf.printf "Next file is: %x\n" (read_bytes_4 input);
+  done;
+  0
+;;
+
 let read_lbx file =
   Printf.printf "Reading file %s\n" file;
+  let input = open_in_bin file in
+  Printf.printf "Opened file\n";
+  let header = read_header input in
+  close_in input;
 ;;
 
 Printf.printf "Lbx reader\n";;
