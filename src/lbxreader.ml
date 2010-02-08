@@ -40,7 +40,6 @@
  * File 9: 0x1e983
  * *)
 
-#load "extLib.cma"
 open ExtLib
 
 (* Reads bytes in little-endian format *)
