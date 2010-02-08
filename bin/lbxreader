@@ -1,3 +1,0 @@
-#!/bin/sh
-
-ocaml -I lib/extlib-1.5 src/lbxreader.ml $*
