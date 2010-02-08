@@ -40,4 +40,9 @@
  * File 9: 0x1e983
  * *)
 
+let read_lbx file =
+  Printf.printf "Reading file %s\n" file;
+;;
+
 Printf.printf "Lbx reader\n";;
+read_lbx Sys.argv.(1);
