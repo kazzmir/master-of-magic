@@ -10,5 +10,5 @@ env.Append(OCAMLPATH = ['lib/extlib-1.5'])
 env.Append(OCAMLLIBS = ['extLib.cmxa'])
 env.Append(BUILDERS = {'OcamlProgram' : ocaml_builder})
 
-env.BuildDir('bin', 'src')
-env.OcamlProgram('bin/lbxreader')
+env.BuildDir('build', 'src')
+env.Install('.', env.OcamlProgram('build/lbxreader'))
