@@ -43,11 +43,16 @@
 #load "extLib.cma"
 open ExtLib
 
+(* Reads bytes in little-endian format *)
 let read_bytes bytes input =
   let read byte = input_byte input in
+  (* little endian, so reverse the numbers *)
   let bytes = List.rev (List.of_enum (Enum.map read (List.enum (List.make
   bytes 0)))) in
   (* List.iter (fun byte -> Printf.printf "Got byte %d\n" byte) bytes; *)
+  (* Add all the numbers up. For a 4 byte number it would be:
+   *   n4 * 256^3 + n3 * 256^2 + n2 * 256^1 + n1 * 256^0
+   *)
   List.fold_left (fun total now -> total * 256 + now) 0 bytes
 ;;
 
@@ -55,6 +60,7 @@ let read_bytes bytes input =
 let read_bytes_2 : in_channel -> int = read_bytes 2;;
 let read_bytes_4 : in_channel -> int = read_bytes 4;;
 
+(* Read the LBX header. See above *)
 let read_header input =
   let f : int = read_bytes_2 input in
   Printf.printf "Number of files: %d\n" f;
@@ -66,6 +72,7 @@ let read_header input =
   0
 ;;
 
+(* Read an LBX archive. `file' is the filename *)
 let read_lbx file =
   Printf.printf "Reading file %s\n" file;
   let input = open_in_bin file in
