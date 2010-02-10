@@ -1,0 +1,29 @@
+Import('env')
+
+source = Split("""
+enum.ml
+base64.ml
+bitSet.ml
+dllist.ml
+dynArray.ml
+extArray.ml
+extHashtbl.ml
+extLib.ml
+extList.ml
+extString.ml
+global.ml
+install.ml
+IO.ml
+option.ml
+optParse.ml
+pMap.ml
+refList.ml
+std.ml
+uChar.ml
+unzip.ml
+uTF8.ml
+""")
+
+lib = env.OcamlLibrary('extlib', source)
+
+Return('lib')

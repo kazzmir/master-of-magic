@@ -1,0 +1,3 @@
+Import('env')
+
+env.Install('.', env.SConscript('extlib-1.5/SConstruct', exports = 'env'))
