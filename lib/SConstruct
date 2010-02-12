@@ -1,3 +1,5 @@
 Import('env')
 
-env.Install('.', env.SConscript('extlib-1.5/SConstruct', exports = 'env'))
+libs = env.Install('.', env.SConscript('extlib-1.5/SConstruct', exports = 'env'))
+
+Return('libs')

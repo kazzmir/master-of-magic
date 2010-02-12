@@ -40,13 +40,16 @@
  * File 9: 0x1e983
  * *)
 
+(*
 open ExtLib
+*)
 
 (* Reads bytes in little-endian format *)
 let read_bytes bytes input =
   let read byte = input_byte input in
   (* little endian, so reverse the numbers *)
-  let bytes = List.rev (List.of_enum (Enum.map read (List.enum (List.make
+  let bytes = List.rev (ExtList.List.of_enum (Enum.map read (ExtList.List.enum
+  (ExtList.List.make
   bytes 0)))) in
   (* List.iter (fun byte -> Printf.printf "Got byte %d\n" byte) bytes; *)
   (* Add all the numbers up. For a 4 byte number it would be:
