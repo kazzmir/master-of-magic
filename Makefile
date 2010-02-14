@@ -3,3 +3,6 @@ lbxreader.native:
 
 clean:
 	ocamlbuild -clean
+
+count:
+	wc -l src/*.ml
