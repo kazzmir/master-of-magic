@@ -1,0 +1,356 @@
+Originally got this from a post on Murlock's forum a number of years ago. 
+
+Builddat.lbx file info 
+George McGinn (georgemcginn@yahoo.com) 12/15/99 
+
+This file handles building info, pretty much everything but the descriptions (which are in Builddesc.lbx). 
+Records start at hex 224(the NONE building), and continue until 940 (the city wall). 
+Each are 52 bytes long. 
+
+Start Byte,End Byte -> Field Description 
+(LO in the description means it's saved with the low order byte first) 
+1,19 -> Building name 
+20 -> 00 byte 
+21,22 -> first building which is required for this one to be built LO 
+(match the building to the Building index below) 
+23,24 -> same as above LO 
+25,26 -> building (if any) this replaces LO 
+27,28 -> does building confer Regular XP to units 
+29,30 -> does building confer Veteran XP to units 
+31,32 -> does building confer magic weapons to units 
+33,34 -> the Upkeep cost LO 
+35,36 -> the food and pop bonus 
+37,38 -> 00 00 
+39,40 -> Unknown 
+41,42 -> Mana produced 
+43,44 -> Unknown 
+45,46 -> build cost LO 
+47,48 -> 00 00 
+49,50 -> Unknown 
+51,52 -> Unknown 
+
+---------------------- 
+Buildings in order: 
+---------------------- 
+001-None 
+002-Trade Goods 
+003-Housing 
+004-Barracks 
+005-Armory 
+006-Fighters Guild 
+007-Armorers Guild 
+008-War College 
+009-Smithy 
+010-Stables 
+011-Animists Guild 
+012-Fantastic Stable 
+013-Ship Wrights Guild 
+014-Ship Yard 
+015-Maritime Guild 
+016-Sawmill 
+017-Library 
+018-Sages Guild 
+019-Oracle 
+020-Alchemists Guild 
+021-University 
+022-Wizards Guild 
+023-Shrine 
+024-Temple 
+025-Parthenon 
+026-Cathedral 
+027-Marketplace 
+028-Bank 
+029-Merchants Guild 
+030-Granary 
+031-Farmers Market 
+032-Foresters Guild 
+033-Builders Hall 
+034-Mechanicians Guild 
+035-Miners Guild 
+036-City Walls 
+
+---------------------- 
+Building Index 
+(mainly ripped from Ken M Dale's works...) 
+---------------------- 
+Dec_Value Description 
+-1 None 
+0 None 
+3 Barracks 
+4 Armory 
+5 Fighters Guild 
+6 Armorers Guild 
+7 War College 
+8 Smithy 
+9 Stables 
+10 Animists Guild 
+11 Fantastic Stable 
+12 Shipwrights Guild 
+13 Ship Yard 
+14 Maritime Guild 
+15 Sawmill 
+16 Library 
+17 Sages Guild 
+18 Oracle 
+19 Alchemists Guild 
+20 University 
+21 Wizards Guild 
+22 Shrine 
+23 Temple 
+24 Parthenon 
+25 Cathedral 
+26 Marketplace 
+27 Bank 
+28 Merchants Guild 
+29 Granary 
+30 Farmers Market 
+31 Foresters Guild 
+32 Builders Hall 
+33 Mechanicians Guild 
+34 Miners Guild 
+35 City Walls 
+101 Forest Terrain 
+110 Water Terrain 
+200 Mineral Terrain Specials 
+
+
+Buildesc.lbx info 
+George McGinn (georgemcginn@yahoo.com) 12/15/99 
+
+This file contains all the descriptions for the buildings as displayed in the city window when building them. 
+Each record consists of a 200 byte long string, padded with 00 bytes until achieving the proper length. 
+They are in the same order as the Builddat.lbx file. Records start at 224, and end at 1D7C. 
+
+Start Byte,End Byte -> Field Description 
+1,199 -> Building Description 
+200 -> 00 (to terminate string) 
+
+
+
+Eventsmsg.lbx file info 
+George McGinn (georgemcginn@yahoo.com) 12/15/99 
+
+This file contains the descriptions for the random events that happen in the game. 
+Records start at hex 224, and consist of a single 600 byte string, though only the first ~200 are used. 
+The string contains certain hex values to represent variables in the message such as town name, relic name, amount of gold stolen, etc. 
+
+
+Start Byte,End Byte -> Field Description 
+1,599 -> Event Description 
+600 -> 00 to terminate string 
+
+
+---------------------------- 
+Hex values and their meaning: 
+---------------------------- 
+80 - city name 
+81 - neutral city 
+83 - gold amount 
+89 - mine type 
+8A - relic name 
+8B - town size (hamlet,village,capital) 
+8C - enemy wizard event happened to 
+8F - # of units killed 
+90 - # of people killed 
+91 - # of buildings wrecked 
+93 - an 's' if units killed > 1 
+94 - an 's' if buildings destroyed > 1 
+
+
+
+
+Names.lbx info 
+George McGinn (georgemcginn@yahoo.com) 1999/12/15 
+
+This value controls the possible first names a hero can be assigned. 
+The last names are in the wizards.exe file. 
+(ie "Brax" is a possible first name, and "Dwarf" is always the last name for the mountaineering munchkin). 
+Each record consists of a 13 byte string, and the first record starts at 224. 
+
+Start Byte,End Byte -> Field Description 
+1,12 -> Hero name 
+13 -> 00 byte to terminate string 
+
+
+
+itempow.lbx file info 
+George McGinn (georgemcginn@yahoo.com) 1999/12/15 
+
+This file specifies what artifact specials powers are, costs are, 
+creation requirements and which items it can be enchanted on. 
+You can now restore the Merging special, which was taken out of the game by requiring 22 spell book in Nature! 
+Each record is 30 bytes long, data starts at hex 224, and there are 66 specials. 
+
+
+Start Byte(Bit),End Byte(Bit) -> Field Description 
+(LO in the description means it's saved with the low order byte first) 
+1,17 -> Artifact special name 
+18 -> 00 
+19(1) -> Can be enchanted on a shield 
+19(2) -> Can be enchanted on Misc items 
+19(3) -> Can be enchanted on a Wand 
+19(4) -> Can be enchanted on a Staff 
+19(5) -> Can be enchanted on a Bow 
+19(6) -> Can be enchanted on a Axe 
+19(7) -> Can be enchanted on a Mace 
+19( -> Can be enchanted on a Sword 
+20(1),20(6) - > Unused 
+20(7) -> Can be enchanted on Plate armor 
+20( -> Can be enchanted on Chain armor 
+21,22 -> Mana cost to enchant LO 
+23,24 -> Power Type LO (uses power Type table below) 
+25,26 -> Required Spell Books LO (if a Stat special, it's the Stat bonus) 
+The rest give the special named if the bit is on: 
+27(1) -> Path Finding 
+27(2) -> Regeneration 
+27(3) -> Wraithform 
+27(4) -> Destruction 
+27(5) -> Cloak_of_Fear 
+27(6) -> Lightning 
+27(7) -> Guardian_Wind 
+27( -> Vampiric 
+28(1) -> Invisibility 
+28(2) -> Haste 
+28(3) -> Edurance_1 
+28(4) -> Stoning 
+28(5) -> Chaos 
+28(6) -> Elemental_Armor 
+28(7) -> Resist_Elements 
+28( -> Water_Walking 
+29(1) -> Phantasmal 
+29(2) -> True_Sight 
+29(3) -> Holy_Avenger 
+29(4) -> Flaming 
+29(5) -> Magic_Immunity 
+29(6) -> Resist_Magic 
+29(7) -> Flight 
+29( -> Death 
+30(1) -> Invulnerability 
+30(2) -> Righteousness 
+30(3) -> Merging 
+30(4) -> Planar_Travel 
+30(5) -> Giant_Strength 
+30(6) -> Lion_Heart 
+30(7) -> Bless 
+30( -> Power_Drain 
+
+----------- 
+Power Type: 
+These values describe what type of special it is. 
+----------- 
+Value Description 
+0 + to Attack Stat Bonus 
+1 + to Hit Stat Bonus 
+2 + to Defend Stat Bonus 
+3 + to Spell Skill Stat Bonus 
+4 - to Spell Save Stat Bonus 
+5 + to Movement Stat Bonus 
+6 + to Resistance Stat Bonus 
+7 Nature Specials 
+9 Nature Specials 
+264 Sorcery Specials 
+265 Sorcery Specials 
+521 Chaos Specials 
+777 Life Specials 
+1033 Death Specials 
+
+
+
+
+
+Message.lbx file info 
+George McGinn (georgemcginn@yahoo.com) 1999/12/15 
+
+This file contains a bunch of the misc messages you get in MoM. 
+Probably no real reason to edit these, but if you think of one, email me! 
+Record consists of a 150 byte string, and they start at hex 224. 
+
+Start Byte,End Byte -> Field Description 
+1,149 -> Message text 
+150 -> 00 
+
+
+Desc.lbx file info 
+George McGinn (georgemcginn@yahoo.com) 1999/12/15 
+
+This file allows changing the spell descriptions in the spell book. 
+Each record consists of a 110 byte string, and starts at hex 292. 
+Note that Help.lbx stores the values you see when right clicking on a spell. 
+
+Start Byte,End Byte -> Field Description 
+1,109 -> Spell Description 
+110 -> 00 
+
+
+
+
+
+
+MOM 1.31 data in SPELLDAT.LBX 
+Kenneth M. Dale 2/9/99 
+
+
+The spell definitions begin at byte 248h, and each is 24h bytes long. 
+
+Spell definition byte descriptions 
+
+0-12 Name of the spell, terminated by a 00 byte 
+13 ??? 
+14 00 
+15 ??? 
+16 Section in spell book (table 1) 
+17 Magic realm (table 2) 
+18 Casting eligibility (table 3) 
+19 00 
+1A,1B Casting cost (combat cost if less than overland) 
+1C,1D Research cost 
+1E Sound effect when casting spell 
+1F 00 
+20 Summoning spells: unit summoned (note 1) Others: flags? 
+21 Flags? 
+22 Flags? 
+23 Flags? 
+
+Table 1: Section in spell book 
+
+00 Special Spells 03 City Spells 
+01 Summoning 04 Unit Spells 
+02 Enchantment 05 Combat Spells 
+
+Table 2: Magic realm 
+
+00 Nature 03 Life 
+01 Sorcery 04 Death 
+02 Chaos 05 Arcane 
+
+Table 3: Casting eligibility 
+
+FE Combat only 
+FF Combat only 
+00 Combat or overland, overland cost 5x combat cost 
+01 Overland only 
+02 Combat or overland, overland cost 5x combat cost 
+03 Combat or overland, overland cost 5x combat cost, friendly city only 
+04 Combat or overland, overland cost same as combat cost 
+05 Overland only, only while banished 
+
+Note 1: The unit codes start at 9A for a Magic Spirit, and are in the same 
+order as the units appear in the unit tables in WIZARDS.EXE. The 
+units not listed in SPELLDAT.LBX are Demon (A9) and Zombies (AE). 
+
+----
+
+terrstat.lbx file info
+offs +244 (length11da): terrain moves info (6bytes) 
+used as (terrtype)*6 . terrtype is same as in the savegame offset+021D0
+if it more than 2f9 (for myrran)then it uses (terrtype-2fa).
++0 unused
++1 "footwalk" -normal mode
++2 forester
++3 mountainwalk
++4 swimming
++5 sailing 
+costs to cross this terrain type in 1/2mp. ff - for "cannot move into it"
+0ffs: +1454 length c6: 
+unrest level per race for the wizard race ,length 0Dh
+used as (Wizard race* 0Bh)+ City race =unrest lvl.
