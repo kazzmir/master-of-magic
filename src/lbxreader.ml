@@ -66,9 +66,25 @@ let read_bytes bytes input =
 let read_bytes_2 : in_channel -> int = read_bytes 2;;
 let read_bytes_4 : in_channel -> int = read_bytes 4;;
 
-let do_n func times =
+let inject func times =
   ExtList.List.of_enum (Enum.map func (ExtList.List.enum
   (ExtList.List.make times 0)))
+;;
+
+let read_lbx_file input start_offset end_offset =
+  Printf.printf "Read lbx file from %x to %x\n" start_offset end_offset;
+  0
+;;
+
+(* this seems to process the list backwards, but im not sure why exactly *)
+let rec do_successive_pairs (things : int list) (doer : int -> int -> 'a) : 'a list =
+  match things with
+  (* base case *)
+  | a :: b :: [] -> [(doer a b)]
+  (* recursive cases *)
+  | a :: b :: rest -> (doer a b) :: (do_successive_pairs (b :: rest) doer)
+  (* failure case *)
+  | _ :: [] | [] -> raise (Failure "Need more than 1 pair")
 ;;
 
 (* Read the LBX header. See above *)
@@ -77,13 +93,14 @@ let read_header input =
   Printf.printf "Number of files: %d\n" f;
   Printf.printf "Signature: %d\n" (read_bytes_4 input);
   Printf.printf "Version: %d\n" (read_bytes_2 input);
-  let offsets = do_n (fun _ -> (read_bytes_4 input)) f in
+  let offsets = inject (fun _ -> (read_bytes_4 input)) f in
   (*
   for i = 0 to f do
     Printf.printf "Next file is: %x\n" (read_bytes_4 input);
   done;
-  *)
   List.iter (fun offset -> Printf.printf "Next file is %x\n" offset) offsets;
+  *)
+  let lbxfiles = do_successive_pairs offsets (fun from xto -> read_lbx_file input from xto) in
   0
 ;;
 
