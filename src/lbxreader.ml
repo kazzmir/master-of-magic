@@ -44,6 +44,10 @@
 open ExtLib
 *)
 
+type lbxfile = {
+  data : int list;
+};;
+
 (* Reads bytes in little-endian format *)
 let read_bytes bytes input =
   let read byte = input_byte input in
