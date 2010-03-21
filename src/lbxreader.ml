@@ -66,15 +66,24 @@ let read_bytes bytes input =
 let read_bytes_2 : in_channel -> int = read_bytes 2;;
 let read_bytes_4 : in_channel -> int = read_bytes 4;;
 
+let do_n func times =
+  ExtList.List.of_enum (Enum.map func (ExtList.List.enum
+  (ExtList.List.make times 0)))
+;;
+
 (* Read the LBX header. See above *)
 let read_header input =
   let f : int = read_bytes_2 input in
   Printf.printf "Number of files: %d\n" f;
   Printf.printf "Signature: %d\n" (read_bytes_4 input);
   Printf.printf "Version: %d\n" (read_bytes_2 input);
+  let offsets = do_n (fun _ -> (read_bytes_4 input)) f in
+  (*
   for i = 0 to f do
     Printf.printf "Next file is: %x\n" (read_bytes_4 input);
   done;
+  *)
+  List.iter (fun offset -> Printf.printf "Next file is %x\n" offset) offsets;
   0
 ;;
 
