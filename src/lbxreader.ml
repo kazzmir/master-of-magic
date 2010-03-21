@@ -44,6 +44,12 @@
 open ExtLib
 *)
 
+type offsets = Offset of int * int;; 
+
+type lbxheader = {
+  offsets : offsets list;
+};;
+
 type lbxfile = {
   data : int list;
 };;
@@ -71,12 +77,15 @@ let inject func times =
   (ExtList.List.make times 0)))
 ;;
 
-let read_lbx_file input start_offset end_offset : lbxfile =
-  Printf.printf "Read lbx file from %x to %x\n" start_offset end_offset;
-  seek_in input start_offset;
-  let bytes = inject (fun _ -> input_byte input) (end_offset - start_offset) in
-  Printf.printf " Read %d bytes\n" (List.length bytes);
-  {data = bytes}
+let read_lbx_file input offset : lbxfile =
+  match offset with
+  | Offset (start_offset, end_offset) -> begin
+    Printf.printf "Read lbx file from %x to %x\n" start_offset end_offset;
+    seek_in input start_offset;
+    let bytes = inject (fun _ -> input_byte input) (end_offset - start_offset) in
+    Printf.printf " Read %d bytes\n" (List.length bytes);
+    {data = bytes}
+  end
 ;;
 
 (* this seems to process the list backwards, but im not sure why exactly *)
@@ -103,8 +112,10 @@ let read_header input =
   done;
   List.iter (fun offset -> Printf.printf "Next file is %x\n" offset) offsets;
   *)
+  (*
   let lbxfiles = do_successive_pairs offsets (fun from xto -> read_lbx_file input from xto) in
-  0
+  *)
+  {offsets = (do_successive_pairs offsets (fun from xto -> Offset (from, xto)))}
 ;;
 
 (* Read an LBX archive. `file' is the filename *)
@@ -113,6 +124,7 @@ let read_lbx file =
   let input = open_in_bin file in
   Printf.printf "Opened file\n";
   let header = read_header input in
+  let lbxfiles = List.map (fun offset -> read_lbx_file input offset) header.offsets in
   close_in input;
 ;;
 
