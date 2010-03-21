@@ -71,9 +71,12 @@ let inject func times =
   (ExtList.List.make times 0)))
 ;;
 
-let read_lbx_file input start_offset end_offset =
+let read_lbx_file input start_offset end_offset : lbxfile =
   Printf.printf "Read lbx file from %x to %x\n" start_offset end_offset;
-  0
+  seek_in input start_offset;
+  let bytes = inject (fun _ -> input_byte input) (end_offset - start_offset) in
+  Printf.printf " Read %d bytes\n" (List.length bytes);
+  {data = bytes}
 ;;
 
 (* this seems to process the list backwards, but im not sure why exactly *)
