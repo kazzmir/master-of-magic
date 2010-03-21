@@ -50,6 +50,7 @@ type lbxheader = {
   offsets : offsets list;
 };;
 
+(* just a list of bytes *)
 type lbxfile = {
   data : int list;
 };;
@@ -119,13 +120,14 @@ let read_header input =
 ;;
 
 (* Read an LBX archive. `file' is the filename *)
-let read_lbx file =
+let read_lbx file : lbxfile list =
   Printf.printf "Reading file %s\n" file;
   let input = open_in_bin file in
   Printf.printf "Opened file\n";
   let header = read_header input in
   let lbxfiles = List.map (fun offset -> read_lbx_file input offset) header.offsets in
   close_in input;
+  lbxfiles
 ;;
 
 Printf.printf "Lbx reader\n";;
