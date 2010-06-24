@@ -287,16 +287,54 @@ let default_palette : palette =
  (make 0x0 0x0 0x0);
  (make 0x0 0x0 0x0)];;
 
+let combine_bytes bytes =
+  List.fold_left (fun total now -> total * 256 + now) 0 bytes
+;;
 
 let lbxToSprite (lbx : Lbxreader.lbxfile) =
-  let counter = ref 0 in
+  let data = ref lbx.Lbxreader.data in
   let read n = begin
-    let t = (List.nth lbx.Lbxreader.data n) in
-    counter := !counter + 1;
-    t
+    let rec all n = 
+      match n with
+      | 0 -> []
+      | z -> let element = List.hd !data in
+               data := List.tl !data;
+               element :: (all (z-1))
+    in
+     combine_bytes (List.rev (all n))
   end in
-  0
+  let read_word () = read 2 in
+  (* Printf.printf "Real width is %d\n" (read_word ()); *)
+  let read_header () =
+    let width = read_word () in
+    let height = read_word () in
+    let unknown1 = read_word () in
+    let bitmap_count = read_word () in
+    let unknown2 = read_word () in
+    let unknown3 = read_word () in
+    let unknown4 = read_word () in
+    let palette_info_offset = read_word () in
+    let unknown5 = read_word () in
+    {width = width;
+    height = height;
+    unknown1 = unknown1;
+    bitmap_count = bitmap_count;
+    unknown2 = unknown2;
+    unknown3 = unknown3;
+    unknown4 = unknown4;
+    palette_info_offset = palette_info_offset;
+    unknown5 = unknown5} in
+  let header = read_header () in
+  Printf.printf "Width is %d\n" header.width;
+  Printf.printf "Height is %d\n" header.height;
+  Printf.printf "Bitmaps %d\n" header.bitmap_count
 ;;
+
+let convert file =
+  List.map lbxToSprite (Lbxreader.read_lbx file)
+;;
+
+convert Sys.argv.(1);
 
 (*
 

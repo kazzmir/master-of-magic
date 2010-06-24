@@ -130,5 +130,7 @@ let read_lbx file : lbxfile list =
   lbxfiles
 ;;
 
+(*
 Printf.printf "Lbx reader\n";;
 read_lbx Sys.argv.(1);
+*)
