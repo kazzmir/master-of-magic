@@ -13,7 +13,7 @@ type graphics_header = {
 type graphics_palette = {
   palette_offset : int;
   first_palette_color_index : int;
-  palette_color_count : int;
+  count : int;
   unknown : int
 }
 
@@ -291,18 +291,43 @@ let combine_bytes bytes =
   List.fold_left (fun total now -> total * 256 + now) 0 bytes
 ;;
 
+type offsets = Offset of int * int;; 
+
+(* this seems to process the list backwards, but im not sure why exactly *)
+let rec do_successive_pairs (things : int list) (doer : int -> int -> 'a) : 'a list =
+  match things with
+  (* base case *)
+  | a :: b :: [] -> [(doer a b)]
+  (* recursive cases *)
+  | a :: b :: rest -> (doer a b) :: (do_successive_pairs (b :: rest) doer)
+  (* failure case *)
+  | _ :: [] | [] -> raise (Failure "Need more than 1 pair")
+;;
+
 let lbxToSprite (lbx : Lbxreader.lbxfile) =
-  let data = ref lbx.Lbxreader.data in
-  let read n = begin
-    let rec all n = 
-      match n with
-      | 0 -> []
-      | z -> let element = List.hd !data in
-               data := List.tl !data;
-               element :: (all (z-1))
+  (* returns a function that produces integers of length n
+   * skips the first `offset' bytes.
+   *)
+  let reader offset =
+    let data = ref lbx.Lbxreader.data in
+    let get_bytes n = 
+      let rec all n = 
+        match n with
+        | 0 -> []
+        | z -> let element = List.hd !data in
+        data := List.tl !data;
+        element :: (all (z-1))
+        in
+        List.rev (all n)
     in
-     combine_bytes (List.rev (all n))
-  end in
+    let read n =
+      combine_bytes (get_bytes n)
+    in
+    (* avoid creating the number, just skip `offset' positions *)
+    ignore (get_bytes offset);
+    read
+  in
+  let read = reader 0 in
   let read_word () = read 2 in
   (* Printf.printf "Real width is %d\n" (read_word ()); *)
   let read_header () =
@@ -324,10 +349,38 @@ let lbxToSprite (lbx : Lbxreader.lbxfile) =
     unknown4 = unknown4;
     palette_info_offset = palette_info_offset;
     unknown5 = unknown5} in
+  let read_palette_info offset =
+    let read = reader offset in
+    let read_word () = read 2 in
+    let palette_offset = read_word () in
+    let first_palette_color_index = read_word () in
+    let count = read_word () in
+    let unknown = read_word () in
+    {palette_offset = palette_offset;
+    first_palette_color_index = first_palette_color_index;
+    count = count;
+    unknown = unknown}
+  in
+  let read_palette offset =
+    if offset > 0 then
+      let info = read_palette_info offset in
+      Printf.printf "Colors %d\n" info.count;
+      []
+    else
+      default_palette
+  in
   let header = read_header () in
   Printf.printf "Width is %d\n" header.width;
   Printf.printf "Height is %d\n" header.height;
-  Printf.printf "Bitmaps %d\n" header.bitmap_count
+  Printf.printf "Bitmaps %d\n" header.bitmap_count;
+  let offsets =
+    let pairs = Utils.inject (fun _ -> (read 4)) (header.bitmap_count + 1) in
+    do_successive_pairs pairs (fun from xto -> Offset (from, xto))
+  in
+  let palette = read_palette header.palette_info_offset in
+  List.iter (fun a -> match a with
+                      | Offset (start, xto) -> Printf.printf "Offset %d - %d\n"
+                      start xto) offsets;
 ;;
 
 let convert file =

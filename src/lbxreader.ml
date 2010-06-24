@@ -73,17 +73,19 @@ let read_bytes bytes input =
 let read_bytes_2 : in_channel -> int = read_bytes 2;;
 let read_bytes_4 : in_channel -> int = read_bytes 4;;
 
+(*
 let inject func times =
   ExtList.List.of_enum (Enum.map func (ExtList.List.enum
   (ExtList.List.make times 0)))
 ;;
+*)
 
 let read_lbx_file input offset : lbxfile =
   match offset with
   | Offset (start_offset, end_offset) -> begin
     Printf.printf "Read lbx file from %x to %x\n" start_offset end_offset;
     seek_in input start_offset;
-    let bytes = inject (fun _ -> input_byte input) (end_offset - start_offset) in
+    let bytes = Utils.inject (fun _ -> input_byte input) (end_offset - start_offset) in
     Printf.printf " Read %d bytes\n" (List.length bytes);
     {data = bytes}
   end
@@ -106,7 +108,7 @@ let read_header input =
   Printf.printf "Number of files: %d\n" f;
   Printf.printf "Signature: %d\n" (read_bytes_4 input);
   Printf.printf "Version: %d\n" (read_bytes_2 input);
-  let offsets = inject (fun _ -> (read_bytes_4 input)) f in
+  let offsets = Utils.inject (fun _ -> (read_bytes_4 input)) f in
   (*
   for i = 0 to f do
     Printf.printf "Next file is: %x\n" (read_bytes_4 input);
