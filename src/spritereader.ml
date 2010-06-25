@@ -370,22 +370,33 @@ let lbxToSprite (lbx : Lbxreader.lbxfile) =
       default_palette
   in
   let header = read_header () in
-  Printf.printf "Width is %d\n" header.width;
-  Printf.printf "Height is %d\n" header.height;
-  Printf.printf "Bitmaps %d\n" header.bitmap_count;
   let offsets =
     let pairs = Utils.inject (fun _ -> (read 4)) (header.bitmap_count + 1) in
     do_successive_pairs pairs (fun from xto -> Offset (from, xto))
   in
   let palette = read_palette header.palette_info_offset in
-  List.iter (fun a -> match a with
-                      | Offset (start, xto) -> Printf.printf "Offset %d - %d\n"
-                      start xto) offsets;
+  let print_stuff () =
+    Printf.printf "Width is %d\n" header.width;
+    Printf.printf "Height is %d\n" header.height;
+    Printf.printf "Bitmaps %d\n" header.bitmap_count;
+    List.iter (fun a -> match a with
+    | Offset (start, xto) -> Printf.printf "Bitmap Offset %d - %d\n"
+    start xto) offsets;
+  in
+  let bitmap = Allegro.create_bitmap header.width header. height in
+  print_stuff ()
 ;;
 
 let convert file =
   List.map lbxToSprite (Lbxreader.read_lbx file)
 ;;
+
+let init () =
+  Allegro.allegro_init ();
+  Allegro.set_color_depth 16;
+;;
+
+init ();
 
 convert Sys.argv.(1);
 
