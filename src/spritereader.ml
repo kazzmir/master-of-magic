@@ -340,7 +340,8 @@ let render bitmap palette start_rle_value offset make_read =
               | x -> Allegro.makecol x.red x.green x.blue
             in
             for run = 0 to length do
-              Allegro.putpixel bitmap x !y color
+              Allegro.putpixel bitmap x !y color;
+              y := !y + 1
             done
           in
           let do_pixel () = ignore () in
