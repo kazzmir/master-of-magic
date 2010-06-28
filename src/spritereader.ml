@@ -304,6 +304,66 @@ let rec do_successive_pairs (things : int list) (doer : int -> int -> 'a) : 'a l
   | _ :: [] | [] -> raise (Failure "Need more than 1 pair")
 ;;
 
+let render bitmap palette start_rle_value offset make_read =
+  let reader start xend =
+    let read = make_read start in
+    let index = ref 0 in
+    let do_read bytes =
+      if !index < xend then begin
+        index := !index + bytes;
+        Utils.inject (fun _ -> (read 1)) bytes
+      end else
+        []
+    in
+    do_read
+  in
+  let size, read =
+    match offset with
+    | Offset (start, xend) -> xend - start, reader start xend
+  in
+  let x = 0 in
+  let y = Allegro.get_bitmap_height bitmap in
+  let rec loop rle_value =
+    match (read 1) with
+    | [] -> ignore();
+    | [0xff] -> loop start_rle_value
+    | rle -> begin
+      match (read 3) with
+      | [next; data; y] -> begin
+        let y = ref y in
+        let rec loop data =
+          let do_rle length palette_index =
+            Printf.printf "Palette index %d\n" palette_index;
+            let color = 
+              match (List.nth palette palette_index) with
+              | {red = 0xa0; green = 0xa0; blue = 0xb4} -> Allegro.makecol 00 0xff 00
+              | x -> Allegro.makecol x.red x.green x.blue
+            in
+            for run = 0 to length do
+              Allegro.putpixel bitmap x !y color
+            done
+          in
+          let do_pixel () = ignore () in
+          match (read 1) with
+          | [value] -> if value > rle_value then begin
+                       do_rle (value - rle_value + 1) (List.hd (read 1));
+                       loop (data - 2)
+                     end else begin
+                       do_pixel ();
+                       loop (data - 1)
+                     end
+        in
+        loop data
+      end;
+      loop (match rle with
+            | [0] -> start_rle_value
+            | [0x80] -> 0xe0)
+    end
+  in
+  loop start_rle_value;
+  bitmap
+;;
+
 let lbxToSprite (lbx : Lbxreader.lbxfile) =
   (* returns a function that produces integers of length n
    * skips the first `offset' bytes.
@@ -365,11 +425,13 @@ let lbxToSprite (lbx : Lbxreader.lbxfile) =
     if offset > 0 then
       let info = read_palette_info offset in
       Printf.printf "Colors %d\n" info.count;
-      []
+      (* [] *)
+      default_palette
     else
       default_palette
   in
   let header = read_header () in
+  let palette_info = read_palette_info header.palette_info_offset in
   let offsets =
     let pairs = Utils.inject (fun _ -> (read 4)) (header.bitmap_count + 1) in
     do_successive_pairs pairs (fun from xto -> Offset (from, xto))
@@ -383,7 +445,14 @@ let lbxToSprite (lbx : Lbxreader.lbxfile) =
     | Offset (start, xto) -> Printf.printf "Bitmap Offset %d - %d\n"
     start xto) offsets;
   in
-  let bitmap = Allegro.create_bitmap header.width header. height in
+  let rle_value = palette_info.first_palette_color_index + palette_info.count in
+  let bitmap =
+    let bitmap = Allegro.create_bitmap header.width header.height in
+    Allegro.clear_to_color bitmap (Allegro.makecol 0xff 0 0xff);
+    bitmap
+  in
+  let bitmaps = List.map (function offset -> render bitmap palette rle_value
+  offset reader) offsets in
   print_stuff ()
 ;;
 
