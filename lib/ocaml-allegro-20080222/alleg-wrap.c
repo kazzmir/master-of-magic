@@ -795,6 +795,15 @@ CAMLprim value ml_is_sub_bitmap( value bmp )
     if (is_sub_bitmap(Bitmap_val(bmp))) return Val_true; else return Val_false;
 }
 
+CAMLprim value ml_save_bitmap(value filename, value img){
+    BITMAP * b;
+    b = Bitmap_val(img);
+    if (save_bitmap(String_val(filename), b, NULL) != 0){
+        return Val_true;
+    } else {
+        return Val_false;
+    }
+}
 
 CAMLprim value ml_load_bitmap( value img, value pal )
 {

@@ -405,6 +405,7 @@ virtual_w : Global define to obtain the virtual size of the screen.
     Allegro API documentation for this module} *)
 
 external load_bitmap: string -> palette -> bitmap = "ml_load_bitmap"
+external save_bitmap: string -> bitmap -> bool = "ml_save_bitmap"
 external load_bmp: string -> palette -> bitmap = "ml_load_bmp"
 external load_lbm: string -> palette -> bitmap = "ml_load_lbm"
 external load_pcx: string -> palette -> bitmap = "ml_load_pcx"

@@ -52,6 +52,7 @@ type lbxheader = {
 
 (* just a list of bytes *)
 type lbxfile = {
+  id : int;
   data : int list;
 };;
 
@@ -80,14 +81,14 @@ let inject func times =
 ;;
 *)
 
-let read_lbx_file input offset : lbxfile =
+let read_lbx_file input id offset : lbxfile =
   match offset with
   | Offset (start_offset, end_offset) -> begin
     Printf.printf "Read lbx file from %x to %x\n" start_offset end_offset;
     seek_in input start_offset;
     let bytes = Utils.inject (fun _ -> input_byte input) (end_offset - start_offset) in
     Printf.printf " Read %d bytes\n" (List.length bytes);
-    {data = bytes}
+    {id = id; data = bytes}
   end
 ;;
 
@@ -127,7 +128,8 @@ let read_lbx file : lbxfile list =
   let input = open_in_bin file in
   Printf.printf "Opened file\n";
   let header = read_header input in
-  let lbxfiles = List.map (fun offset -> read_lbx_file input offset) header.offsets in
+  let id = ref 0 in
+  let lbxfiles = List.map (fun offset -> id := !id + 1; read_lbx_file input !id offset) header.offsets in
   close_in input;
   lbxfiles
 ;;

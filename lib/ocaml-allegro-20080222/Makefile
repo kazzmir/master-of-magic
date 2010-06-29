@@ -1,7 +1,11 @@
 #ALL_DEBUG=debug
 ALL_DEBUG=
 
-all: allegro.cmxa allegro.cma
+all: allegro.cmxa allegro.cma copy
+
+copy:
+	cp allegro.cmxa allegro.a dll_alleg_stubs.so lib_alleg_stubs.a ../../save
+	$(MAKE) clean
 
 alleg-wrap.o: alleg-wrap.c
 	ocamlc -c $<

@@ -497,8 +497,20 @@ let lbxToSprite (lbx : Lbxreader.lbxfile) =
   in
   print_stuff();
   Printf.printf "RLE value %d\n" rle_value;
-  let bitmaps = List.map (function offset -> render bitmap palette rle_value
-  offset reader) offsets in
+  let bitmaps = List.map (function offset ->
+    try
+      let bitmap = render bitmap palette rle_value offset reader
+      in
+      let start = match offset with
+                  | Offset (s, e) -> e
+      in
+      Allegro.save_bitmap (Printf.sprintf "image_%d_%d.bmp" lbx.Lbxreader.id
+      start) bitmap;
+      bitmap
+    with Failure (what) -> 
+      Printf.printf "Failed to render: %s\n" what;
+      bitmap)
+  offsets in
   ignore ();
 ;;
 
