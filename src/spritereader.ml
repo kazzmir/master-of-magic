@@ -1,3 +1,5 @@
+(* See docs/lbx-format for the original delphi code *)
+
 type graphics_header = {
   width : int;
   height : int;
@@ -327,7 +329,7 @@ let render bitmap palette start_rle_value offset make_read =
   let rec loop rle_value =
     match (read 1) with
     | [] -> ignore();
-    | [0xff] -> loop start_rle_value
+    | [0xff] -> Printf.printf "  Reset rle\n"; loop start_rle_value
     | rle -> begin
       let rle_value =
         (match rle with
@@ -377,14 +379,18 @@ let render bitmap palette start_rle_value offset make_read =
             y := !y + 1
           in
           if data > 0 then
-          match (read 1) with
-          | [value] -> if value >= rle_value then begin
-                       do_rle (value - rle_value + 1) (List.hd (read 1));
-                       loop (data - 2)
-                     end else begin
-                       do_pixel value;
-                       loop (data - 1)
-                     end
+            match (read 1) with
+            | [value] ->
+                if value >= rle_value then begin
+                  Printf.printf "  Value for rle is %d\n" value;
+                  let rle_length = value - rle_value + 1 in
+                  let index = List.hd (read 1) in
+                  do_rle rle_length index;
+                  loop (data - 2)
+                end else begin
+                  do_pixel value;
+                  loop (data - 1)
+                end
         in
         loop data;
         Printf.printf "  Total read is %d\n" !total_read;
@@ -468,23 +474,35 @@ let lbxToSprite (lbx : Lbxreader.lbxfile) =
   let read_palette offset =
     if offset > 0 then
       let info = read_palette_info offset in
-      Printf.printf "Colors %d\n" info.count;
+      (* Printf.printf "Colors %d\n" info.count; *)
       (* [] *)
       default_palette
     else
       default_palette
   in
   let header = read_header () in
-  let palette_info = read_palette_info header.palette_info_offset in
   let offsets =
     let pairs = Utils.inject (fun _ -> (read 4)) (header.bitmap_count + 1) in
     do_successive_pairs pairs (fun from xto -> Offset (from, xto))
   in
+  let palette_info = if header.palette_info_offset > 0 then
+    read_palette_info header.palette_info_offset
+  else
+    {palette_offset = 0;
+    first_palette_color_index = 0;
+    count = 255;
+    unknown = 0}
+  in
   let palette = read_palette header.palette_info_offset in
   let print_stuff () =
+    Printf.printf "Lbx %d\n" lbx.Lbxreader.id;
     Printf.printf "Width is %d\n" header.width;
     Printf.printf "Height is %d\n" header.height;
     Printf.printf "Bitmaps %d\n" header.bitmap_count;
+    Printf.printf "Palette info offset %d\n" header.palette_info_offset;
+    Printf.printf "Palette offset %d\n" palette_info.palette_offset;
+    Printf.printf "Palette color index %d count %d\n"
+    palette_info.first_palette_color_index palette_info.count;
     List.iter (fun a -> match a with
     | Offset (start, xto) -> Printf.printf "Bitmap Offset %d - %d\n"
     start xto) offsets;
@@ -526,249 +544,3 @@ let init () =
 init ();
 
 convert Sys.argv.(1);
-
-(*
-
-{===============================================================================
-|
-| Method      : SaveGfxAsBmps
-| Description : Converts this graphics file inside the LBX file to multiple
-|               BMPs
-|
-==============================================================================}
-procedure TLBXFileContents.SaveGfxAsBmps (FileName: String);
-var
-   fin: TFileStream;
-   BitmapNo, BitmapOffset, RLE_val, ColourNo, BitmapStart, BitmapEnd, x, y,
-      BitmapSize, BitmapIndex, next_ctl, long_data, n_r, last_pos, RleLength,
-      RleCounter: Integer;
-   BitmapNumberString: String;
-   GfxHeader: TGfxHeader;
-   GfxPaletteInfo: TGfxPaletteInfo;
-   GfxPaletteEntry: TGfxPaletteEntry;
-   BitmapOffsets: TList;
-   Palette: TGfxPalette;
-   b: TBitmap;
-   ImageBuffer: Array [0..65499] of Byte;
-   ColourValue: TColor;
-begin
-     { Open LBX file }
-     fin := TFileStream.Create (LBXFile.FileName, fmOpenRead or fmShareDenyWrite);
-     try
-        { Find start of graphics file }
-        fin.Seek (FileOffset, soFromBeginning);
-
-        { Read graphics header }
-        fin.ReadBuffer (GfxHeader, SizeOf (TGfxHeader));
-
-        { Read file offsets of each bitmap }
-        BitmapOffsets := TList.Create;
-        try
-           { Not -1 since there is an extra offset specifying the end of the
-             last image }
-           for BitmapNo := 0 to GfxHeader.BitmapCount do
-           begin
-                fin.ReadBuffer (BitmapOffset, 4);
-                BitmapOffsets.Add (Pointer (BitmapOffset));
-           end;
-
-           { Default palette }
-           for ColourNo := 0 to 255 do
-           begin
-                GfxPaletteEntry := MOM_PALETTE [ColourNo];
-
-                Palette [ColourNo] :=
-                   (GfxPaletteEntry.b shl 16) +
-                   (GfxPaletteEntry.g shl 8) +
-                    GfxPaletteEntry.r;
-           end;
-
-           { Read palette info if present }
-           if GfxHeader.PaletteInfoOffset > 0 then
-           begin
-                fin.Seek (FileOffset + GfxHeader.PaletteInfoOffset, soFromBeginning);
-                fin.ReadBuffer (GfxPaletteInfo, SizeOf (TGfxPaletteInfo));
-
-                { Read palette }
-                fin.Seek (FileOffset + GfxPaletteInfo.PaletteOffset, soFromBeginning);
-                for ColourNo := 0 to GfxPaletteInfo.PaletteColourCount - 1 do
-                begin
-                     fin.ReadBuffer (GfxPaletteEntry, SizeOf (TGfxPaletteEntry));
-
-                     { Multiply colour values up by 4 }
-                     Palette [GfxPaletteInfo.FirstPaletteColourIndex + ColourNo] :=
-                        (GfxPaletteEntry.b shl 18) +
-                        (GfxPaletteEntry.g shl 10) +
-                        (GfxPaletteEntry.r shl 2);
-                end;
-           end else
-           begin
-                { No palette info, use defaults }
-                GfxPaletteInfo.FirstPaletteColourIndex := 0;
-                GfxPaletteInfo.PaletteColourCount      := 255;
-           end;
-
-           { Reuse the same bitmap for each image }
-           b := TBitmap.Create;
-           try
-              b.Width  := GfxHeader.Width;
-              b.Height := GfxHeader.Height;
-
-              { Set background colour }
-              for x := 0 to GfxHeader.Width - 1 do
-                  for y := 0 to GfxHeader.Height - 1 do
-                      b.Canvas.Pixels [x, y] := $FF00FF;
-
-              { Values of at least this indicate run length values }
-              RLE_val := GfxPaletteInfo.FirstPaletteColourIndex +
-                         GfxPaletteInfo.PaletteColourCount;
-
-              { Convert each bitmap }
-              for BitmapNo := 0 to GfxHeader.BitmapCount - 1 do
-              begin
-                   BitmapStart := Integer (BitmapOffsets.Items [BitmapNo]);
-                   BitmapEnd   := Integer (BitmapOffsets.Items [BitmapNo + 1]);
-                   BitmapSize  := BitmapEnd - BitmapStart;
-
-                   if BitmapSize > 65500 then
-                      raise ELBXException.Create
-                            ('Does not support encoded images larger than 65500 bytes, found image of size ' +
-                             IntToStr (BitmapSize));
-
-                   { Read in entire bitmap }
-                   fin.Seek (FileOffset + BitmapStart, soFromBeginning);
-                   fin.ReadBuffer (ImageBuffer, BitmapSize);
-
-                   { Byte 0 tells us whether to reset the image half way
-                     through an animation }
-                   if (ImageBuffer [0] = 1) and (BitmapNo > 0) then
-                      for x := 0 to GfxHeader.Width - 1 do
-                          for y := 0 to GfxHeader.Height - 1 do
-                              b.Canvas.Pixels [x, y] := $FF00FF;
-
-                   { Decode bitmap }
-                   BitmapIndex := 1; { Current index into the image buffer }
-                   x := 0;
-                   y := GfxHeader.Height;
-                   next_ctl  := 0;
-                   long_data := 0;
-                   n_r       := 0;
-                   last_pos  := 0;
-
-                   while (x < GfxHeader.Width) and (BitmapIndex < BitmapSize) do
-                   begin
-                        y := 0;
-                        if (ImageBuffer [BitmapIndex] = $FF) then
-                        begin
-                             inc (BitmapIndex);
-                             RLE_val := GfxPaletteInfo.FirstPaletteColourIndex +
-                                        GfxPaletteInfo.PaletteColourCount;
-                        end else
-                        begin
-                             long_data := ImageBuffer [BitmapIndex + 2];
-                             next_ctl  := BitmapIndex + ImageBuffer [BitmapIndex + 1] + 2;
-
-                             case ImageBuffer [BitmapIndex] of
-                                  $00: RLE_val := GfxPaletteInfo.FirstPaletteColourIndex +
-                                                  GfxPaletteInfo.PaletteColourCount;
-                                  $80: RLE_val := $E0;
-                             else
-                                 raise ELBXException.Create ('Unrecognized RLE value');
-                             end;
-
-                             y := ImageBuffer [BitmapIndex + 3];
-                             inc (BitmapIndex, 4);
-
-                             n_r := BitmapIndex;
-                             while n_r < next_ctl do
-                             begin
-                                  while (n_r < BitmapIndex + long_data) and (x < GfxHeader.Width) do
-                                  begin
-                                       if (ImageBuffer [n_r] >= RLE_val) then
-                                       begin
-                                            { This value is an run length, the
-                                              next value is the value to repeat }
-                                            last_pos := n_r + 1;
-                                            RleLength := ImageBuffer [n_r] - RLE_val + 1;
-{                                               if (RleLength + y > GfxHeader.Height) then
-                                               raise ELBXException.Create ('RLE length overrun on y');}
-
-                                            RleCounter := 0;
-                                            while (RleCounter < RleLength) and (y < GfxHeader.Height) do
-                                            begin
-                                                 if (x < GfxHeader.Width) and (y < GfxHeader.Height) and
-                                                    (x >= 0) and (y >= 0) then
-                                                 begin
-                                                      ColourValue := Palette [ImageBuffer [last_pos]];
-                                                      if ColourValue = $B4A0A0 then
-                                                          b.Canvas.Pixels [x, y] := $00FF00
-                                                      else
-                                                          b.Canvas.Pixels [x, y] := ColourValue;
-                                                 end else
-                                                      raise ELBXException.Create ('RLE length overrun on output');
-
-                                                 inc (y);
-                                                 inc (RleCounter);
-                                            end;
-                                            inc (n_r, 2);
-                                       end else
-                                       begin
-                                            { Regular single pixel }
-                                            if (x < GfxHeader.Width) and (y < GfxHeader.Height) and
-                                               (x >= 0) and (y >= 0) then
-                                            begin
-                                                 ColourValue := Palette [ImageBuffer [n_r]];
-                                                 if ColourValue = $B4A0A0 then
-                                                     b.Canvas.Pixels [x, y] := $00FF00
-                                                 else
-                                                     b.Canvas.Pixels [x, y] := ColourValue;
-                                            end;
-{                                               else
-                                                raise ELBXException.Create ('Buffer overrun');}
-
-                                            inc (n_r);
-                                            inc (y);
-                                       end;
-                                  end;
-
-                                  if n_r < next_ctl then
-                                  begin
-                                       { On se trouve sur un autre RLE sur la ligne
-                                         Some others data are here }
-                                       inc (y, ImageBuffer [n_r + 1]); { next pos Y to write pixels }
-                                       BitmapIndex := n_r + 2;
-                                       long_data := ImageBuffer [n_r]; { number of data to put }
-                                       inc (n_r, 2);
-
-{                                          if n_r >= next_ctl then
-                                          raise ELBXException.Create ('More RLE but lines too short');}
-                                  end;
-                             end;
-
-                             BitmapIndex := next_ctl; { jump to next line }
-                        end;
-
-                        inc (x);
-                   end;
-
-                   { Save bitmap }
-                   BitmapNumberString := IntToStr (BitmapNo);
-                   while Length (BitmapNumberString) < 3 do
-                         BitmapNumberString := '0' + BitmapNumberString;
-
-                   b.SaveToFile (ChangeFileExt (FileName, '') + '_' + BitmapNumberString + '.bmp');
-              end;
-
-           finally
-              b.Free;
-           end;
-
-        finally
-           BitmapOffsets.Free;
-        end;
-
-     finally
-        fin.Free;
-     end;
-end;
-*)
