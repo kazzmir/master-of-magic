@@ -329,25 +329,45 @@ let render bitmap palette start_rle_value offset make_read =
     | [] -> ignore();
     | [0xff] -> loop start_rle_value
     | rle -> begin
+      let rle_value =
+        (match rle with
+        | [0] -> start_rle_value
+        | [0x80] -> 0xe0
+        | [what] -> raise (Failure (Printf.sprintf "unexpected rle data %d"
+        what))
+        | [] -> raise (Failure "unexpected end of data"))
+      in
+      Printf.printf "  RLE value is %d\n" rle_value;
       match (read 3) with
       | [next; data; y] -> begin
-        Printf.printf "Read data next: %d data: %d y: %d\n" next data y;
+        if next = 0 then
+          raise (Failure "Next bitmap location cannot be 0");
+        let total_read = ref 0 in
+        let read n =
+          total_read := !total_read + 1;
+          read n
+        in
+        Printf.printf "  Read data next: %d data: %d y: %d\n" next data y;
         let y = ref y in
         let rec loop data =
           let do_rle length palette_index =
-            Printf.printf "RLE length %d Palette index %d\n" length palette_index;
+            if length + !y > Allegro.get_bitmap_height bitmap then
+              raise (Failure (Printf.sprintf "RLE length overrun %d at %d"
+              length !y));
+            Printf.printf "  RLE length %d at %d, %d Palette index %d\n" length
+            !x !y palette_index;
             let color = 
               match (List.nth palette palette_index) with
               | {red = 0xa0; green = 0xa0; blue = 0xb4} -> Allegro.makecol 00 0xff 00
               | x -> Allegro.makecol x.red x.green x.blue
             in
-            for run = 0 to length do
+            for run = 0 to length - 1 do
               Allegro.putpixel bitmap !x !y color;
               y := !y + 1
             done
           in
           let do_pixel index =
-            Printf.printf "Put pixel %d\n" index;
+            Printf.printf "  Put pixel %d at %d, %d\n" index !x !y;
             let color = 
               match (List.nth palette index) with
               | {red = 0xa0; green = 0xa0; blue = 0xb4} -> Allegro.makecol 00 0xff 00
@@ -358,7 +378,7 @@ let render bitmap palette start_rle_value offset make_read =
           in
           if data > 0 then
           match (read 1) with
-          | [value] -> if value > rle_value then begin
+          | [value] -> if value >= rle_value then begin
                        do_rle (value - rle_value + 1) (List.hd (read 1));
                        loop (data - 2)
                      end else begin
@@ -366,15 +386,17 @@ let render bitmap palette start_rle_value offset make_read =
                        loop (data - 1)
                      end
         in
-        loop data
+        loop data;
+        Printf.printf "  Total read is %d\n" !total_read;
+        if !total_read < next - 2 then
+          match (read 2) with
+          | [new_data; new_y] ->
+              Printf.printf "  Read more %d at %d\n" new_data new_y;
+              y := !y + new_y;
+              loop new_data 
       end;
       x := !x + 1;
-      loop (match rle with
-            | [0] -> start_rle_value
-            | [0x80] -> 0xe0
-            | [what] -> raise (Failure (Printf.sprintf "unexpected rle data %d"
-            what))
-            | [] -> raise (Failure "unexpected end of data"))
+      loop rle_value
     end
   in
   begin
@@ -477,7 +499,7 @@ let lbxToSprite (lbx : Lbxreader.lbxfile) =
   Printf.printf "RLE value %d\n" rle_value;
   let bitmaps = List.map (function offset -> render bitmap palette rle_value
   offset reader) offsets in
-  print_stuff ()
+  ignore ();
 ;;
 
 let convert file =
