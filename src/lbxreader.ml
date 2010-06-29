@@ -84,10 +84,14 @@ let inject func times =
 let read_lbx_file input id offset : lbxfile =
   match offset with
   | Offset (start_offset, end_offset) -> begin
+    (*
     Printf.printf "Read lbx file from %x to %x\n" start_offset end_offset;
+    *)
     seek_in input start_offset;
     let bytes = Utils.inject (fun _ -> input_byte input) (end_offset - start_offset) in
+    (*
     Printf.printf " Read %d bytes\n" (List.length bytes);
+    *)
     {id = id; data = bytes}
   end
 ;;
@@ -106,9 +110,13 @@ let rec do_successive_pairs (things : int list) (doer : int -> int -> 'a) : 'a l
 (* Read the LBX header. See above *)
 let read_header input =
   let f : int = read_bytes_2 input in
+  (*
   Printf.printf "Number of files: %d\n" f;
   Printf.printf "Signature: %d\n" (read_bytes_4 input);
   Printf.printf "Version: %d\n" (read_bytes_2 input);
+  *)
+  let signature = read_bytes_4 input in
+  let version = read_bytes_2 input in
   let offsets = Utils.inject (fun _ -> (read_bytes_4 input)) f in
   (*
   for i = 0 to f do
@@ -124,9 +132,13 @@ let read_header input =
 
 (* Read an LBX archive. `file' is the filename *)
 let read_lbx file : lbxfile list =
+  (*
   Printf.printf "Reading file %s\n" file;
+  *)
   let input = open_in_bin file in
+  (*
   Printf.printf "Opened file\n";
+  *)
   let header = read_header input in
   let id = ref 0 in
   let lbxfiles = List.map (fun offset -> id := !id + 1; read_lbx_file input !id offset) header.offsets in

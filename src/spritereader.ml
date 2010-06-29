@@ -308,7 +308,9 @@ let rec do_successive_pairs (things : int list) (doer : int -> int -> 'a) : 'a l
 
 let render bitmap palette start_rle_value offset make_read =
   let reader start xend =
+    (*
     Printf.printf "Make reader at %d for %d bytes\n" start xend;
+    *)
     let read = make_read start in
     let index = ref 0 in
     let do_read bytes =
@@ -329,7 +331,7 @@ let render bitmap palette start_rle_value offset make_read =
   let rec loop rle_value =
     match (read 1) with
     | [] -> ignore();
-    | [0xff] -> Printf.printf "  Reset rle\n"; loop start_rle_value
+    | [0xff] -> (* Printf.printf "  Reset rle\n"; *) loop start_rle_value
     | rle -> begin
       let rle_value =
         (match rle with
@@ -339,7 +341,9 @@ let render bitmap palette start_rle_value offset make_read =
         what))
         | [] -> raise (Failure "unexpected end of data"))
       in
+      (*
       Printf.printf "  RLE value is %d\n" rle_value;
+      *)
       match (read 3) with
       | [next; data; y] -> begin
         if next = 0 then
@@ -349,15 +353,19 @@ let render bitmap palette start_rle_value offset make_read =
           total_read := !total_read + 1;
           read n
         in
+        (*
         Printf.printf "  Read data next: %d data: %d y: %d\n" next data y;
+        *)
         let y = ref y in
         let rec loop data =
           let do_rle length palette_index =
             if length + !y > Allegro.get_bitmap_height bitmap then
               raise (Failure (Printf.sprintf "RLE length overrun %d at %d"
               length !y));
+              (*
             Printf.printf "  RLE length %d at %d, %d Palette index %d\n" length
             !x !y palette_index;
+            *)
             let color = 
               match (List.nth palette palette_index) with
               | {red = 0xa0; green = 0xa0; blue = 0xb4} -> Allegro.makecol 00 0xff 00
@@ -369,7 +377,9 @@ let render bitmap palette start_rle_value offset make_read =
             done
           in
           let do_pixel index =
+            (*
             Printf.printf "  Put pixel %d at %d, %d\n" index !x !y;
+            *)
             let color = 
               match (List.nth palette index) with
               | {red = 0xa0; green = 0xa0; blue = 0xb4} -> Allegro.makecol 00 0xff 00
@@ -382,7 +392,9 @@ let render bitmap palette start_rle_value offset make_read =
             match (read 1) with
             | [value] ->
                 if value >= rle_value then begin
+                  (*
                   Printf.printf "  Value for rle is %d\n" value;
+                  *)
                   let rle_length = value - rle_value + 1 in
                   let index = List.hd (read 1) in
                   do_rle rle_length index;
@@ -393,11 +405,15 @@ let render bitmap palette start_rle_value offset make_read =
                 end
         in
         loop data;
+        (*
         Printf.printf "  Total read is %d\n" !total_read;
+        *)
         if !total_read < next - 2 then
           match (read 2) with
           | [new_data; new_y] ->
+              (*
               Printf.printf "  Read more %d at %d\n" new_data new_y;
+              *)
               y := !y + new_y;
               loop new_data 
       end;
@@ -414,7 +430,7 @@ let render bitmap palette start_rle_value offset make_read =
   bitmap
 ;;
 
-let lbxToSprite (lbx : Lbxreader.lbxfile) =
+let lbxToSprite (lbx : Lbxreader.lbxfile) output_directory =
   (* returns a function that produces integers of length n
    * skips the first `offset' bytes.
    *)
@@ -475,7 +491,7 @@ let lbxToSprite (lbx : Lbxreader.lbxfile) =
     if offset > 0 then
       let info = read_palette_info offset in
       (* Printf.printf "Colors %d\n" info.count; *)
-      (* [] *)
+      (* FIXME: read the palette *)
       default_palette
     else
       default_palette
@@ -494,6 +510,12 @@ let lbxToSprite (lbx : Lbxreader.lbxfile) =
     unknown = 0}
   in
   let palette = read_palette header.palette_info_offset in
+  let rle_value = palette_info.first_palette_color_index + palette_info.count in
+  let bitmap =
+    let bitmap = Allegro.create_bitmap header.width header.height in
+    Allegro.clear_to_color bitmap (Allegro.makecol 0xff 0 0xff);
+    bitmap
+  in
   let print_stuff () =
     Printf.printf "Lbx %d\n" lbx.Lbxreader.id;
     Printf.printf "Width is %d\n" header.width;
@@ -501,20 +523,16 @@ let lbxToSprite (lbx : Lbxreader.lbxfile) =
     Printf.printf "Bitmaps %d\n" header.bitmap_count;
     Printf.printf "Palette info offset %d\n" header.palette_info_offset;
     Printf.printf "Palette offset %d\n" palette_info.palette_offset;
+    Printf.printf "RLE value %d\n" rle_value;
     Printf.printf "Palette color index %d count %d\n"
     palette_info.first_palette_color_index palette_info.count;
     List.iter (fun a -> match a with
     | Offset (start, xto) -> Printf.printf "Bitmap Offset %d - %d\n"
     start xto) offsets;
   in
-  let rle_value = palette_info.first_palette_color_index + palette_info.count in
-  let bitmap =
-    let bitmap = Allegro.create_bitmap header.width header.height in
-    Allegro.clear_to_color bitmap (Allegro.makecol 0xff 0 0xff);
-    bitmap
-  in
+  (*
   print_stuff();
-  Printf.printf "RLE value %d\n" rle_value;
+  *)
   let bitmaps = List.map (function offset ->
     try
       let bitmap = render bitmap palette rle_value offset reader
@@ -522,7 +540,7 @@ let lbxToSprite (lbx : Lbxreader.lbxfile) =
       let start = match offset with
                   | Offset (s, e) -> e
       in
-      Allegro.save_bitmap (Printf.sprintf "image_%d_%d.bmp" lbx.Lbxreader.id
+      Allegro.save_bitmap (Printf.sprintf "%s/image_%d_%d.bmp" output_directory lbx.Lbxreader.id
       start) bitmap;
       bitmap
     with Failure (what) -> 
@@ -533,7 +551,19 @@ let lbxToSprite (lbx : Lbxreader.lbxfile) =
 ;;
 
 let convert file =
-  List.map lbxToSprite (Lbxreader.read_lbx file)
+  Printf.printf "Converting %s\n" file;
+  let dir = Printf.sprintf "%s-out" (Filename.basename file) in
+  begin
+  try
+    Unix.mkdir dir 0o770
+  with _ ->
+    ignore ()
+  end;
+  try
+    List.map (fun lbx -> lbxToSprite lbx dir) (Lbxreader.read_lbx file)
+  with Failure (what) ->
+    Printf.printf " failure.. %s\n" what;
+    []
 ;;
 
 let init () =
@@ -543,4 +573,4 @@ let init () =
 
 init ();
 
-convert Sys.argv.(1);
+List.map convert (List.tl (Array.to_list Sys.argv))
