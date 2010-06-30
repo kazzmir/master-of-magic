@@ -498,8 +498,11 @@ let lbxToSprite (lbx : Lbxreader.lbxfile) output_directory =
   in
   let header = read_header () in
   let offsets =
-    let pairs = Utils.inject (fun _ -> (read 4)) (header.bitmap_count + 1) in
-    do_successive_pairs pairs (fun from xto -> Offset (from, xto))
+    if header.bitmap_count = 0 then
+      raise (Failure "Bitmap count is 0")
+    else
+      let pairs = Utils.inject (fun _ -> (read 4)) (header.bitmap_count + 1) in
+      do_successive_pairs pairs (fun from xto -> Offset (from, xto))
   in
   let palette_info = if header.palette_info_offset > 0 then
     read_palette_info header.palette_info_offset
@@ -560,7 +563,14 @@ let convert file =
     ignore ()
   end;
   try
-    List.map (fun lbx -> lbxToSprite lbx dir) (Lbxreader.read_lbx file)
+    List.map (fun lbx ->
+      try
+        Some (lbxToSprite lbx dir)
+      with Failure (what) ->
+        Printf.printf "Could not extract sprites from lbx %d because %s\n"
+        lbx.Lbxreader.id what;
+        None
+      ) (Lbxreader.read_lbx file)
   with Failure (what) ->
     Printf.printf " failure.. %s\n" what;
     []
