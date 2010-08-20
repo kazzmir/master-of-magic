@@ -1,4 +1,6 @@
-all: lbxreader.native spritereader.native
+all: deps lbxreader.native spritereader.native
+
+.PHONY: deps
 
 lbxreader.native: src/*.ml
 	ocamlbuild -j 2 -Is src,lib/extlib-1.5 lbxreader.native
@@ -16,3 +18,6 @@ clean:
 
 count:
 	wc -l src/*.ml
+
+deps:
+	mkdir -p _build/; cp save/* _build/

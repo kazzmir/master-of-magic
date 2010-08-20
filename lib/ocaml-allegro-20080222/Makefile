@@ -4,6 +4,7 @@ ALL_DEBUG=
 all: allegro.cmxa allegro.cma copy
 
 copy:
+	mkdir ../../save
 	cp allegro.cmxa allegro.a dll_alleg_stubs.so lib_alleg_stubs.a ../../save
 	$(MAKE) clean
 
