@@ -4,11 +4,15 @@ let init graphics =
 
 class handler = object(self)
   inherit Graphics.eventHandler
-  method mouse_down = Printf.printf "Mouse down\n"
-  method mouse_up = Printf.printf "Mouse up\n"
+  method mouse_down time button =
+    let name = (Graphics.mouse_button_name button) in
+    Printf.printf "Mouse down %f %s\n%!" time name
+  method mouse_up = Printf.printf "Mouse up\n%!"
   method key_down = ignore()
   method key_up = ignore()
-  method mouse_click = Printf.printf "Mouse click\n%!"
+  method mouse_click time button = 
+    let name = (Graphics.mouse_button_name button) in
+    Printf.printf "Mouse click %f %s\n%!" time name
   method mouse_hover = ignore()
   method mouse_move = ignore()
   method keypress = ignore()
