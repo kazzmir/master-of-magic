@@ -2,10 +2,10 @@ all: deps lbxreader.native spritereader.native main.native
 
 .PHONY: deps
 
-lbxreader.native: src/*.ml
+lbxreader.native: src/lbxreader.ml src/utils.ml
 	ocamlbuild -j 2 -Is src,lib/extlib-1.5 lbxreader.native
 
-main.native: src/*.ml
+main.native: src/main.ml src/graphics.ml
 	ocamlbuild -j 2 -lflag -ccopt -lflag -L. -Is src,lib/extlib-1.5,lib/ocaml-allegro-20080222 -libs unix,allegro main.native
 
 # You have to build allegro and copy the following files to _build
@@ -13,7 +13,7 @@ main.native: src/*.ml
 # lib_alleg_stubs.a
 # allegro.a
 # allegro.cmxa
-spritereader.native: src/*.ml
+spritereader.native: src/lbxreader.ml src/utils.ml src/spritereader.ml
 	ocamlbuild -j 2 -lflag -ccopt -lflag -L. -Is src,lib/extlib-1.5,lib/ocaml-allegro-20080222 -libs unix,allegro spritereader.native
 
 clean:
