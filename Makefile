@@ -1,9 +1,12 @@
-all: deps lbxreader.native spritereader.native
+all: deps lbxreader.native spritereader.native main.native
 
 .PHONY: deps
 
 lbxreader.native: src/*.ml
 	ocamlbuild -j 2 -Is src,lib/extlib-1.5 lbxreader.native
+
+main.native: src/*.ml
+	ocamlbuild -j 2 -Is src,lib/extlib-1.5 main.native
 
 # You have to build allegro and copy the following files to _build
 # dll_alleg_stubs.so
