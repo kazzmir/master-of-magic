@@ -512,6 +512,9 @@ external key_right: unit -> bool = "ml_key_key_right"
 external key_up: unit -> bool = "ml_key_key_up"
 external key_down: unit -> bool = "ml_key_key_down"
 
+external key_is_down: int -> bool = "ml_key_is_down"
+external key_is_up: int -> bool = "ml_key_is_up"
+
 type kb_flag =
   | KB_SHIFT_FLAG
   | KB_CTRL_FLAG

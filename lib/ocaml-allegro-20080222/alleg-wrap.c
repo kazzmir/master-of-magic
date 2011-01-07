@@ -1218,6 +1218,8 @@ CAMLprim value ml_key_key_right( value unit ) { return ( key[KEY_RIGHT] ? Val_tr
 CAMLprim value ml_key_key_up( value unit ) { return ( key[KEY_UP] ? Val_true : Val_false ); }
 CAMLprim value ml_key_key_down( value unit ) { return ( key[KEY_DOWN] ? Val_true : Val_false ); }
 
+CAMLprim value ml_key_is_down( value ml_key ) { /* printf("xdown %d %d\n", Int_val(ml_key), key[Int_val(ml_key)]); */ return ( key[Int_val(ml_key)] ? Val_true : Val_false ); }
+CAMLprim value ml_key_is_up( value ml_key ) { return ( key[Int_val(ml_key)] ? Val_false : Val_true ); }
 
 CAMLprim value get_kb_flag( value ml_flag )
 {
