@@ -28,13 +28,10 @@ let create_event_handler graphics =
 
 let main () : unit = 
   let graphics = (new Graphics.AllegroGraphics.graphics) in
+  graphics#addTimer 100.0 (fun time -> Printf.printf "Timer called %f\n%!" time);
   let event = create_event_handler () in
-  Printf.printf "before graphics\n";
   init graphics;
-  Printf.printf "before\n";
   graphics#event_loop event;
-  Printf.printf "after\n";
 ;;
 
-Printf.printf "before main\n";
 main ();
