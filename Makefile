@@ -22,5 +22,8 @@ clean:
 count:
 	wc -l src/*.ml
 
-deps:
+deps: save/allegro.cxma
 	mkdir -p _build/; cp save/* _build/
+
+save/allegro.cxma: 
+	cd lib/ocaml-allegro-20080222; $(MAKE)
