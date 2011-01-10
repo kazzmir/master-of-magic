@@ -28,7 +28,9 @@ let create_event_handler graphics =
 
 let main () : unit = 
   let graphics = (new Graphics.AllegroGraphics.graphics) in
+  (*
   graphics#addTimer 100.0 (fun time -> Printf.printf "Timer called %f\n%!" time);
+  *)
   let event = create_event_handler () in
   init graphics;
   graphics#event_loop event;

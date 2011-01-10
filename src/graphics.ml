@@ -330,3 +330,40 @@ module AllegroGraphics: GraphicsSignature = struct
              keyboard = {keys = Array.make 128 false}});
   end
 end;;
+
+(*
+module WindowSystem = struct
+  class virtual widget parent x y z width height = object
+    (*
+    method virtual draw: (graphics: GraphicsSignature.graphics) -> unit
+    method virtual send: unit
+    *)
+
+    val parent = parent
+    val x = x
+    val y = y
+    val z = z
+    val width = width
+    val height = height
+  end;;
+
+  class manager = object(self)
+    inherit eventHandler
+    method mouse_down time button x y = ()
+    method mouse_up time button x y = ()
+    method key_down key = ()
+    method key_up key = ()
+    method mouse_click time button x y = ()
+    method mouse_hover time x y = ()
+    method mouse_move time x y = ()
+    method keypress = ()
+
+    method draw (graphics: GraphicsSignature.graphics) = ()
+
+    val mutable widgets: widget list = []
+  end;;
+
+  (* type Event = Show | Clicked | ... *)
+end;;
+  *)
+
