@@ -193,6 +193,7 @@ module type GraphicsSignature = sig
     method event_loop: eventHandler -> unit
     method addTimer: float -> (float -> unit) -> timer
     method removeTimer: timer -> bool
+		method fillBox: int -> int -> int -> int -> int -> unit
   end
 end;;
 
@@ -220,6 +221,9 @@ module AllegroGraphics: GraphicsSignature = struct
       Printf.printf "initialize! %d %d\n"
       width height
       *)
+
+		method fillBox (x:int) (y:int) (w:int) (h:int) (rgb:int) =
+			();
 
     method private mouse_left_down () =
       (Allegro.left_button_pressed ())
