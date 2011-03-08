@@ -63,16 +63,27 @@ module WindowManager = struct
 		inherit Graphics.eventHandler
 		val graphics = _graphics
 		val mutable windows:window list = [];
-		val mutable currentWindow:window = ();
+        val mutable currentWindow:(window option) = None;
+
+        method mouse_down a b c d = ()
+        method mouse_up a b c d = ()
+        method key_down a = ()
+        method key_up a = ()
+        method mouse_click a b c d = ()
+        method mouse_hover a b c = ()
+        method mouse_move a b c = ()
+        method keypress = ()
 
 		(* implements event handler functions, pass to "current window" *)
 		(* hash of string names to windows *)
 		method addWindow (w:window) =
 			windows <- w :: windows;
-			currentWindow <- w;
+			currentWindow <- Some w;
 		(* current window *)
 
 		method paint =
-			currentWindow#paint graphics;
+          match currentWindow with
+          | None -> raise (Failure "No window set")
+          | Some where -> where#paint graphics;
 	end;;
 end;;
