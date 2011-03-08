@@ -31,9 +31,11 @@ let main () : unit =
   (*
   graphics#addTimer 100.0 (fun time -> Printf.printf "Timer called %f\n%!" time);
   *)
-  let event = create_event_handler () in
+  (*let event = create_event_handler () in *)
+	let windowManager = (new Windows.WindowManager.manager) in
   init graphics;
-  graphics#event_loop event;
+  (*graphics#event_loop event;*)
+  graphics#event_loop windowManager;
 ;;
 
 main ();
