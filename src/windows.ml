@@ -76,6 +76,7 @@ module WindowManager = struct
 		method receiveEvent (m:manager) (e:whichEvent) =
 			();
 	end 
+    (* using `and' here makes the types mutually recursive *)
     and window = object(self)
 		inherit widget
 		(*val mutable widgets : widget list = []
