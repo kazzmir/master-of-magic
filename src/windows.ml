@@ -1,8 +1,3 @@
-(*module WindowManager = sig
-	class manager: object
-		method paint:unit;
-	end;*)
-
 module WindowManager = struct
 
 	class point (_x:int) (_y:int) = object(self)
@@ -31,11 +26,43 @@ module WindowManager = struct
 		method getRgb = (red lsl 16) + (green lsl 8) + (blue);
 	end;;
 
-	class virtual windowEventHandler = object
-		method virtual initialize_system: unit
-		method virtual window_show: (window option) -> unit
-		method virtual window_hide: (window option) -> unit;
-	end;;
+	type whichWindow = 
+		INTROTITLE | 
+		INTROCREDITS |
+		MAINMENU;;
+
+	type whichEvent =
+		PAINT_EVENT 
+
+		(* time, button, x, y *)
+		| TIMER_EVENT of float * Graphics.mouseButton * float * float 
+
+		(* time, button, x, y *)
+		| MOUSE_UP_EVENT of float * Graphics.mouseButton * float * float
+
+		(* time, button, x, y *)
+		| MOUSE_DOWN_EVENT of float * Graphics.mouseButton * float * float
+
+		(* key code *)
+		| KEY_UP_EVENT of Graphics.key 
+
+		(* key code *)
+		| KEY_DOWN_EVENT of Graphics.key 
+	
+		(* time, button, x, y *)
+		| MOUSE_CLICK_EVENT of float * Graphics.mouseButton * float * float 
+
+		(* time, x, y *)
+		| MOUSE_HOVER_EVENT of float * float * float 
+
+		(* time, x, y *)
+		| MOUSE_MOVE_EVENT of float * float * float 
+
+		(* key code *)
+		| KEYPRESS_EVENT of int 
+		;;
+
+
 
 	class widget = object(self)
 		val mutable position = (new point 0 0)
@@ -46,37 +73,18 @@ module WindowManager = struct
 		(* view *)
 		method paint (graphics:Graphics.AllegroGraphics.graphics) =
 			graphics#fillBox position#getX position#getY size#getWidth size#getHeight backgroundColor#getRgb;
+
 		(* controller *)
+		method receiveEvent (m:manager) (e:whichEvent) =
+			();
 	end;;
 
 	class window = object(self)
 		inherit widget
-		inherit Graphics.eventHandler
 		(*val mutable widgets : widget list = []
 		val mutable currentlyFocusedWidget : widget;*)
 
 		(* implements event handler functions, may pass some to "focused widget" *)
-
-		method mouse_down time button x y =
-			(*match currentWindow with 
-				| Some window -> currentWindow#mouse_down time button x y
-				| None -> *) ();
-
-		method mouse_up time button x y = 
-			(* match currentWindow with 
-				| Some window -> currentWindow#mouse_up time button x y
-				| None -> *) ();
-
-		method key_down a = ()
-		method key_up a = ()
-		method mouse_click time button x y = 
-			(* match currentWindow with 
-				| Some window -> currentWindow#mouse_click time button x y
-				| None -> *)();
-
-		method mouse_hover a b c = ()
-		method mouse_move a b c = ()
-		method keypress = ()
 
 		(* list of widgets *)
 		(* widget with focus *)
@@ -90,47 +98,53 @@ module WindowManager = struct
 
 	class manager (_graphics : Graphics.AllegroGraphics.graphics) = object(self)
 		inherit Graphics.eventHandler
-		inherit windowEventHandler;
 
 		val graphics = _graphics
-		val mutable windows:window list = [];
-		val mutable currentWindow:(window option) = None;
+		val mutable windows = Hashtbl.create 10
+		val mutable currentWindow:(window option) = None
+
+		method sendEvent (e:whichEvent) = 
+			match currentWindow with
+			| None -> raise (Failure "No window set")
+			| Some w -> w#receiveEvent self e;
 
 		method mouse_down time button x y =
-			match currentWindow with 
-				| Some window -> window#mouse_down time button x y
-				| None -> ();
+			self#sendEvent MOUSE_DOWN_EVENT time button x y;
 
 		method mouse_up time button x y = 
-			match currentWindow with 
-				| Some window -> window#mouse_up time button x y
-				| None -> ();
+			self#sendEvent MOUSE_UP_EVENT time button x y;
 
-		method key_down a = ()
-		method key_up a = ()
+		method key_down a = 
+			self#sendEvent KEY_DOWN_EVENT a;
+
+		method key_up a = 
+			self#sendEvent KEY_UP_EVENT a;
+
 		method mouse_click time button x y = 
-			match currentWindow with 
-				| Some window -> window#mouse_click time button x y
-				| None -> ();
+			self#sendEvent MOUSE_CLICK_EVENT time button x y;
 
-		method mouse_hover a b c = ()
-		method mouse_move a b c = ()
-		method keypress = ()
+		method mouse_hover time x y = 
+			self#sendEvent MOUSE_HOVER_EVENT time x y;
+
+		method mouse_move time x y = 
+			self#sendEvent MOUSE_MOVE_EVENT time x y;
+
+		method keypress = 
+			self#sendEvent KEYPRESSEVENT 0;
 
 		(* implements event handler functions, pass to "current window" *)
 		(* hash of string names to windows *)
-		method addWindow (w:window) =
-			windows <- w :: windows;
+		method addWindow (wh:whichWindow) (w:window) =
+			Hashtbl.add windows wh w;
 			currentWindow <- Some w;
-		(* current window *)
 
 		method paint =
-          match currentWindow with
-          | None -> raise (Failure "No window set")
-          | Some where -> where#paint graphics;
+			match currentWindow with
+			| None -> raise (Failure "No window set")
+			| Some w -> self#sendEvent self PAINT_EVENT;
 
-		method initilize =
-			this#addWindow (new window);
-			this#paint;;
+		method initialize =
+			self#addWindow INITROTITLE (new window);
+			self#paint;
 	end;;
 end;;
