@@ -62,8 +62,6 @@ module WindowManager = struct
 		| KEYPRESS_EVENT of int 
 		;;
 
-
-
 	class widget = object(self)
 		val mutable position = (new point 0 0)
 		val mutable size = (new dimension 0 0)
@@ -77,9 +75,8 @@ module WindowManager = struct
 		(* controller *)
 		method receiveEvent (m:manager) (e:whichEvent) =
 			();
-	end;;
-
-	class window = object(self)
+	end 
+    and window = object(self)
 		inherit widget
 		(*val mutable widgets : widget list = []
 		val mutable currentlyFocusedWidget : widget;*)
@@ -94,43 +91,42 @@ module WindowManager = struct
 		(* transition in *)
 		(* transition out *)
 		(* mouse cursor stuff *)
-	end;;
-
-	class manager (_graphics : Graphics.AllegroGraphics.graphics) = object(self)
+	end 
+    and manager (_graphics : Graphics.AllegroGraphics.graphics) = object(self)
 		inherit Graphics.eventHandler
 
 		val graphics = _graphics
 		val mutable windows = Hashtbl.create 10
 		val mutable currentWindow:(window option) = None
 
-		method sendEvent (e:whichEvent) = 
+		method sendEvent (event:whichEvent) = 
 			match currentWindow with
 			| None -> raise (Failure "No window set")
-			| Some w -> w#receiveEvent self e;
+			| Some window -> window#receiveEvent (self :> manager) event
 
 		method mouse_down time button x y =
-			self#sendEvent MOUSE_DOWN_EVENT time button x y;
+			self#sendEvent (MOUSE_DOWN_EVENT (time, button, x, y))
 
 		method mouse_up time button x y = 
-			self#sendEvent MOUSE_UP_EVENT time button x y;
+			self#sendEvent (MOUSE_UP_EVENT (time, button, x, y))
 
 		method key_down a = 
-			self#sendEvent KEY_DOWN_EVENT a;
+			self#sendEvent (KEY_DOWN_EVENT a)
 
 		method key_up a = 
-			self#sendEvent KEY_UP_EVENT a;
+			self#sendEvent (KEY_UP_EVENT a)
 
 		method mouse_click time button x y = 
-			self#sendEvent MOUSE_CLICK_EVENT time button x y;
+			self#sendEvent (MOUSE_CLICK_EVENT (time, button, x, y))
 
 		method mouse_hover time x y = 
-			self#sendEvent MOUSE_HOVER_EVENT time x y;
+			self#sendEvent (MOUSE_HOVER_EVENT (time, x, y))
 
 		method mouse_move time x y = 
-			self#sendEvent MOUSE_MOVE_EVENT time x y;
+			self#sendEvent (MOUSE_MOVE_EVENT (time, x, y))
 
 		method keypress = 
-			self#sendEvent KEYPRESSEVENT 0;
+			self#sendEvent (KEYPRESS_EVENT 0)
 
 		(* implements event handler functions, pass to "current window" *)
 		(* hash of string names to windows *)
@@ -139,12 +135,13 @@ module WindowManager = struct
 			currentWindow <- Some w;
 
 		method paint =
+          (* shouldn't this just be self#sendEvent PAINT_EVENT *)
 			match currentWindow with
 			| None -> raise (Failure "No window set")
-			| Some w -> self#sendEvent self PAINT_EVENT;
+			| Some window -> self#sendEvent PAINT_EVENT
 
 		method initialize =
-			self#addWindow INITROTITLE (new window);
+			self#addWindow INTROTITLE (new window);
 			self#paint;
 	end;;
 end;;
