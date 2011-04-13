@@ -65,7 +65,7 @@ module WindowManager = struct
 	class widget = object(self)
 		val mutable position = (new point 0 0)
 		val mutable size = (new dimension 0 0)
-		val mutable backgroundColor = (new color 0 0 0)
+		val mutable backgroundColor = (new color 255 255 0)
 		(* implements event handler functions *)
 		(* model *)
 		(* view *)
@@ -74,7 +74,9 @@ module WindowManager = struct
 
 		(* controller *)
 		method receiveEvent (m:manager) (e:whichEvent) =
-			();
+			match e with
+			| PAINT_EVENT -> self#paint m#getGraphics;
+			| _ -> Printf.printf "What was that?\n";
 	end 
     (* using `and' here makes the types mutually recursive *)
     and window = object(self)
@@ -99,6 +101,11 @@ module WindowManager = struct
 		val graphics = _graphics
 		val mutable windows = Hashtbl.create 10
 		val mutable currentWindow:(window option) = None
+
+		initializer 
+			Printf.printf "yoarwet\n";
+			self#addWindow INTROTITLE (new window);
+			self#paint;
 
 		method sendEvent (event:whichEvent) = 
 			match currentWindow with
@@ -136,13 +143,10 @@ module WindowManager = struct
 			currentWindow <- Some w;
 
 		method paint =
-          (* shouldn't this just be self#sendEvent PAINT_EVENT *)
-			match currentWindow with
-			| None -> raise (Failure "No window set")
-			| Some window -> self#sendEvent PAINT_EVENT
+			self#sendEvent PAINT_EVENT;
 
-		method initialize =
-			self#addWindow INTROTITLE (new window);
-			self#paint;
-	end;;
+		method getGraphics =
+			graphics;
+
+		end;;
 end;;

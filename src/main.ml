@@ -35,7 +35,7 @@ let main () : unit =
   let windowManager = (new Windows.WindowManager.manager graphics) in
   init graphics;
   (*graphics#event_loop event;*)
-  graphics#event_loop (windowManager :> Graphics.eventHandler)
+  graphics#event_loop (windowManager :> Graphics.eventHandler) 
 ;;
 
 main ();
