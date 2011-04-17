@@ -103,7 +103,6 @@ module WindowManager = struct
 		val mutable currentWindow:(window option) = None
 
 		initializer 
-			Printf.printf "yoarwet\n";
 			self#addWindow INTROTITLE (new window);
 			self#paint;
 
