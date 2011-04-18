@@ -27,39 +27,39 @@ module WindowManager = struct
 	end;;
 
 	type whichWindow = 
-		INTROTITLE | 
-		INTROCREDITS |
-		MAINMENU;;
+		IntroTitle | 
+		IntroCredits |
+		MainMenu;;
 
 	type whichEvent =
-		PAINT_EVENT 
+		PaintEvent 
 
 		(* time, button, x, y *)
-		| TIMER_EVENT of float * Graphics.mouseButton * float * float 
+		| TimerEvent of float * Graphics.mouseButton * float * float 
 
 		(* time, button, x, y *)
-		| MOUSE_UP_EVENT of float * Graphics.mouseButton * float * float
+		| MouseUpEvent of float * Graphics.mouseButton * float * float
 
 		(* time, button, x, y *)
-		| MOUSE_DOWN_EVENT of float * Graphics.mouseButton * float * float
+		| MouseDownEvent of float * Graphics.mouseButton * float * float
 
 		(* key code *)
-		| KEY_UP_EVENT of Graphics.key 
+		| KeyUpEvent of Graphics.key 
 
 		(* key code *)
-		| KEY_DOWN_EVENT of Graphics.key 
+		| KeyDownEvent of Graphics.key 
 	
 		(* time, button, x, y *)
-		| MOUSE_CLICK_EVENT of float * Graphics.mouseButton * float * float 
+		| MouseClickEvent of float * Graphics.mouseButton * float * float 
 
 		(* time, x, y *)
-		| MOUSE_HOVER_EVENT of float * float * float 
+		| MouseHoverEvent of float * float * float 
 
 		(* time, x, y *)
-		| MOUSE_MOVE_EVENT of float * float * float 
+		| MouseMoveEvent of float * float * float 
 
 		(* key code *)
-		| KEYPRESS_EVENT of int 
+		| KeypressEvent of int 
 		;;
 
 	class widget = object(self)
@@ -75,7 +75,7 @@ module WindowManager = struct
 		(* controller *)
 		method receiveEvent (m:manager) (e:whichEvent) =
 			match e with
-			| PAINT_EVENT -> self#paint m#getGraphics;
+			| PaintEvent -> self#paint m#getGraphics;
 			| _ -> Printf.printf "What was that?\n";
 	end 
     (* using `and' here makes the types mutually recursive *)
@@ -103,7 +103,7 @@ module WindowManager = struct
 		val mutable currentWindow:(window option) = None
 
 		initializer 
-			self#addWindow INTROTITLE (new window);
+			self#addWindow IntroTitle (new window);
 			self#paint;
 
 		method sendEvent (event:whichEvent) = 
@@ -112,28 +112,28 @@ module WindowManager = struct
 			| Some window -> window#receiveEvent (self :> manager) event
 
 		method mouse_down time button x y =
-			self#sendEvent (MOUSE_DOWN_EVENT (time, button, x, y))
+			self#sendEvent (MouseDownEvent (time, button, x, y))
 
 		method mouse_up time button x y = 
-			self#sendEvent (MOUSE_UP_EVENT (time, button, x, y))
+			self#sendEvent (MouseUpEvent (time, button, x, y))
 
 		method key_down a = 
-			self#sendEvent (KEY_DOWN_EVENT a)
+			self#sendEvent (KeyDownEvent a)
 
 		method key_up a = 
-			self#sendEvent (KEY_UP_EVENT a)
+			self#sendEvent (KeyUpEvent a)
 
 		method mouse_click time button x y = 
-			self#sendEvent (MOUSE_CLICK_EVENT (time, button, x, y))
+			self#sendEvent (MouseClickEvent (time, button, x, y))
 
 		method mouse_hover time x y = 
-			self#sendEvent (MOUSE_HOVER_EVENT (time, x, y))
+			self#sendEvent (MouseHoverEvent (time, x, y))
 
 		method mouse_move time x y = 
-			self#sendEvent (MOUSE_MOVE_EVENT (time, x, y))
+			self#sendEvent (MouseMoveEvent (time, x, y))
 
 		method keypress = 
-			self#sendEvent (KEYPRESS_EVENT 0)
+			self#sendEvent (KeypressEvent 0)
 
 		(* implements event handler functions, pass to "current window" *)
 		(* hash of string names to windows *)
@@ -142,7 +142,7 @@ module WindowManager = struct
 			currentWindow <- Some w;
 
 		method paint =
-			self#sendEvent PAINT_EVENT;
+			self#sendEvent PaintEvent;
 
 		method getGraphics =
 			graphics;
