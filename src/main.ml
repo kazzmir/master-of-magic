@@ -75,7 +75,7 @@ let main2 () : unit =
 	Allegro.install_timer ();
 	Allegro.install_keyboard();
 	ignore(Allegro.install_mouse());
-	Allegro.set_gfx_mode Allegro.GFX_AUTODETECT_FULLSCREEN 320 240 0 0;
+	Allegro.set_gfx_mode Allegro.GFX_AUTODETECT_WINDOWED 320 240 0 0;
 	let gamestate1 = new Gamedata.gameState in
 	let pal1 = Allegro.get_desktop_palette() in
 	let scr = Allegro.get_screen() in 
