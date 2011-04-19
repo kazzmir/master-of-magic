@@ -1,4 +1,4 @@
-all: deps lbxreader.native spritereader.native main.native
+all: deps lbxreader.native spritereader.native main.native terrain.native
 
 ocamlallegro = lib/ocaml-allegro-20080222
 
@@ -6,6 +6,9 @@ ocamlallegro = lib/ocaml-allegro-20080222
 
 lbxreader.native: src/lbxreader.ml src/utils.ml
 	ocamlbuild -j 2 -Is src,lib/extlib-1.5 lbxreader.native
+
+terrain.native: src/terrain.ml
+	ocamlbuild -j 2 -Is src,lib/extlib-1.5 terrain.native
 
 main.native: src/graphics.ml src/windows.ml src/main.ml src/gamedata.ml
 	ocamlbuild -j 2 -lflag -ccopt -lflag -L. -Is src,lib/extlib-1.5,${ocamlallegro} -libs unix,allegro main.native
