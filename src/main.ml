@@ -84,7 +84,7 @@ let main2 () : unit =
 	let librarian1 = (new imageLibrarian) in
 	let mapWidget1 = (new mapWidget gamestate1 librarian1) in
 	(gamestate1#terraform);
-	mapWidget1#draw scr Gamedata.LIGHT 0 0 0;
+	mapWidget1#draw scr Gamedata.Light 0 0 0;
 	ignore(Allegro.readkey());;
 
 main2 ();

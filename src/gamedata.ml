@@ -1,32 +1,32 @@
 type terrainClassification =
-	WATER |
-	PLAINS |
-	DESERT |
-	SWAMP |
-	HILL |
-	MOUNTAIN |
-	FOREST |
-	ICE;;
+	Water |
+	Plains |
+	Desert |
+	Swamp |
+	Hill |
+	Mountain |
+	Forest |
+	Ice;;
 
 type terrainBonus =
-	COAL |
-	GOLD |
-	SILVER |
-	GEM |
-	GAME |
-	FISH;;
+	Coal |
+	Gold |
+	Silver |
+	Gem |
+	Game |
+	Fish;;
 
 type terrainStructure =
-	CITY |
-	CAVE |
-	TEMPLE |
-	REDNODE |
-	GREENNODE |
-	BLUENODE;;
+	City |
+	Cave |
+	Temple |
+	RedNode |
+	GreenNode |
+	BlueNode;;
 
 type planeType =
-	LIGHT |
-	DARK;;
+	Light |
+	Dark;;
 
 class place = object(self)
 end;;
@@ -67,14 +67,14 @@ class map (_width:int) (_height:int) (_plane:planeType) = object(self)
 	val mutable width: int = _width;
 	val mutable height: int = _height;
 	val mutable plane: planeType = _plane;
-	val mutable data: mapTile array = Array.make (_width*_height) (new mapTile WATER None);
+	val mutable data: mapTile array = Array.make (_width*_height) (new mapTile Water None);
 
 	method get x y =
 		data.(x + (y*width));
 
 	method getNormalized x y =
 		if (y < 0 || y >= height) then begin
-			(new mapTile ICE None);
+			(new mapTile Ice None);
 		end else begin
 			self#get ((x+width) mod width) y;
 		end
@@ -90,19 +90,19 @@ let rec loop start stop what =
 	end;
 
 class gameState = object(self)
-	val mutable lightMap : map = (new map 200 100 LIGHT);
-	val mutable darkMap : map = (new map 200 100 DARK);
+	val mutable lightMap : map = (new map 200 100 Light);
+	val mutable darkMap : map = (new map 200 100 Dark);
 
 	method terraform =
 		loop 0 100 (fun y -> 
 			loop 0 200 (fun x ->
-				lightMap#put x y (new mapTile WATER None);
-				darkMap#put x y (new mapTile WATER None);
+				lightMap#put x y (new mapTile Water None);
+				darkMap#put x y (new mapTile Water None);
 				)
 		);
 
 	method getMap plane =
 		match plane with
-			| LIGHT -> lightMap;
-			| DARK -> darkMap;
+			| Light -> lightMap;
+			| Dark -> darkMap;
 end;;
