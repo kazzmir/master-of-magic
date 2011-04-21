@@ -7,4 +7,8 @@
  *
  * 3. coral reef algorithm: pick some random cells and set them as land, then repeatedly
  * select new cells and if they are next to land then set that cell as land.
+ *
+ * 4. amoeba: start at a random cell and some starting life (100), move in one of the
+ * cardinal directions and put down a land cell, decrease life by some random amount.
+ * stop when life reaches 0.
  *)
