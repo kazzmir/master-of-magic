@@ -1,0 +1,7 @@
+c:\apps\scala-2.9.0.final\lib\jline.jar;c:\apps\scala-2.9.0.final\lib\scala-compiler.jar;c:\apps\scala-2.9.0.final\lib\scala-dbc.jar;c:\apps\scala-2.9.0.final\lib\scala-library.jar;c:\apps\scala-2.9.0.final\lib\scala-swing.jar;c:\apps\scala-2.9.0.final\lib\scalap.jar;C:\src\mom\masterofmagic\src\MasterOfMagic\build\classes
+-------
+-------
+..\src\com\rafkind\masterofmagic\ui\TitleScreen.scala -> classes\com\rafkind\masterofmagic\ui\TitleScreen.class
+..\src\com\rafkind\masterofmagic\Main.scala -> classes\com\rafkind\masterofmagic\Main$.class
+..\src\com\rafkind\masterofmagic\Main.scala -> classes\com\rafkind\masterofmagic\Main.class
+..\src\com\rafkind\masterofmagic\state\State.scala -> classes\com\rafkind\masterofmagic\state\State.class
