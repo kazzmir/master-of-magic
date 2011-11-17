@@ -17,8 +17,7 @@
     <target name="compile" depends="init">
         <mkdir dir="classes" />
         <scalac srcdir="src"
-                destdir="classes"
-                debug="true">
+                destdir="classes">
             <classpath>
                 <pathelement path="classes" />
                 <pathelement location="${scala-library.jar}" />
