@@ -1,10 +1,11 @@
 <project name="Master of Magic Clone" default="build">
     <target name="build" depends="compile">
     </target>
+    
+    <property name="scala-library.jar"
+              value="lib/scala/scala-library.jar" />
 
     <target name="init">
-        <property name="scala-library.jar"
-                  value="lib/scala/scala-library.jar" />
         <taskdef resource="scala/tools/ant/antlib.xml">
             <classpath>
                 <pathelement location="lib/scala/scala-compiler.jar" />
@@ -16,15 +17,32 @@
     <target name="compile" depends="init">
         <mkdir dir="classes" />
         <scalac srcdir="src"
-                destdir="classes">
+                destdir="classes"
+                debug="true">
             <classpath>
                 <pathelement path="classes" />
                 <pathelement location="${scala-library.jar}" />
+                <pathelement location="lib/slick.jar" />
+                <pathelement location="lib/lwjgl.jar" />
             </classpath>
         </scalac>
 
         <!-- For any java files -->
         <javac srcdir="src"
                destdir="classes" />
+    </target>
+
+    <target name="run">
+        <java classname="com.rafkind.masterofmagic.Main"
+              fork="true">
+            <classpath>
+                <pathelement path="classes" />
+                <pathelement location="lib/scala/scala-compiler.jar" />
+                <pathelement location="${scala-library.jar}" />
+                <pathelement location="lib/slick.jar" />
+                <pathelement location="lib/lwjgl.jar" />
+            </classpath>
+            <sysproperty key="java.library.path" value="lib/native/linux" />
+        </java>
     </target>
 </project>
