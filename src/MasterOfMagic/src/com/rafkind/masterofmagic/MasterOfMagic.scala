@@ -14,17 +14,17 @@ import com.rafkind.masterofmagic.ui.TerrainTilePainter;
 
 class MasterOfMagic(title:String) extends BasicGame(title) {
 
-  var terrainTilePainter = new TerrainTilePainter(
-    TerrainTilePainter.createDummySpriteSheetImage());
+  var terrainTilePainter:TerrainTilePainter = null;
 
   override def init(gc:GameContainer):Unit = {
-
+    terrainTilePainter = new TerrainTilePainter(
+      TerrainTilePainter.createDummySpriteSheetImage());
   }
 
   override def update(gc:GameContainer, delta:Int):Unit = {
   }
 
   override def render(gc:GameContainer, graphics:Graphics):Unit = {
-    
+    terrainTilePainter.render(gc, graphics, 0, 0);
   }
 }
