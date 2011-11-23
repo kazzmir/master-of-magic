@@ -23,7 +23,7 @@ object Main {
    * @param args the command line arguments
    */
   def main(args: Array[String]): Unit = {
-    var app = new AppGameContainer(new MasterOfMagic("hams"));
+    var app = new AppGameContainer(new MasterOfMagic("Master of Magic"));
     app.setDisplayMode(640, 480, false);
     app.setSmoothDeltas(true);
     app.setTargetFrameRate(40);

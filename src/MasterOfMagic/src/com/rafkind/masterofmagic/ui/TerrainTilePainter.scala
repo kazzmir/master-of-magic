@@ -8,6 +8,8 @@ package com.rafkind.masterofmagic.ui
 import java.awt.Color;
 import org.newdawn.slick._;
 
+import com.rafkind.masterofmagic.state._;
+
 object TerrainTilePainter {
 
   // double sized
@@ -62,17 +64,27 @@ class TerrainTilePainter(baseTileImage:Image) {
     gc:GameContainer,
     graphics:Graphics,
     startX:Int,
-    startY:Int):Unit = {
+    startY:Int,
+    startTileX:Int,
+    startTileY:Int,
+    overworld:Overworld):Unit = {
 
     baseTileSpriteSheet.startUse();
 
     for (tileY <- 0 until TerrainTilePainter.VIEW_HEIGHT) {
       for (tileX <- 0 until TerrainTilePainter.VIEW_WIDTH) {
+
+        var terrainSquare = overworld.get(
+          tileX + startTileX,
+          tileY + startTileY);
+
+        var whichTile = terrainSquare.terrainTile;
+
         baseTileSpriteSheet.renderInUse(
           startX + tileX * TerrainTilePainter.TILE_WIDTH,
           startY + tileY * TerrainTilePainter.TILE_HEIGHT,
-          tileX % 3,
-          tileY % 3
+          whichTile % 3,
+          whichTile / 3
         );
       }
     }

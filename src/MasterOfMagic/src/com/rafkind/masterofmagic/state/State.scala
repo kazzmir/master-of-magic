@@ -20,7 +20,11 @@ class TerrainType {
   // base mana generation
 }
 
-class TerrainSquare {
+object TerrainSquare {
+  val EMPTY:TerrainSquare = new TerrainSquare(0);
+}
+
+class TerrainSquare(val terrainTile:Int) {
   // what type of terrain
   // what terrain tile to use
   // bitset for fog of war
@@ -31,8 +35,41 @@ class TerrainSquare {
   // what unit stack is here?
 }
 
-class Overworld {
-  // terrain array
+
+object Overworld {
+  val WIDTH = 100;
+  val HEIGHT = 50;
+
+  def createExampleWorld:Overworld = {
+    var overworld = new Overworld(WIDTH, HEIGHT);
+
+    for (y <- 0 until HEIGHT) {
+      for (x <- 0 until WIDTH) {
+        overworld.put(x, y, new TerrainSquare(1));
+      }
+    }
+
+    return overworld;
+  }
+}
+
+class Overworld(width:Int, height:Int) {
+  var terrain:Array[TerrainSquare] = 
+    new Array[TerrainSquare](width * height);
+
+  def get(x:Int, y:Int):TerrainSquare = {
+    var xx = x % Overworld.WIDTH;
+
+    if (y >= 0 && y <= Overworld.HEIGHT) {
+      return terrain(y * Overworld.WIDTH + x);
+    } else {
+      return TerrainSquare.EMPTY;
+    }
+  }
+
+  def put(x:Int, y:Int, terrainSquare:TerrainSquare):Unit = {
+    terrain(y * Overworld.WIDTH + x) = terrainSquare;
+  }
 }
 
 class State {
