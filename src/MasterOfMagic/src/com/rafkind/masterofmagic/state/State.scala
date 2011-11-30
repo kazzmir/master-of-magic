@@ -24,7 +24,7 @@ object TerrainSquare {
   val EMPTY:TerrainSquare = new TerrainSquare(0);
 }
 
-class TerrainSquare(val terrainTile:Int) {
+class TerrainSquare(val terrain:Int) {
   // what type of terrain
   // what terrain tile to use
   // bitset for fog of war
@@ -45,7 +45,10 @@ object Overworld {
 
     for (y <- 0 until HEIGHT) {
       for (x <- 0 until WIDTH) {
-        overworld.put(x, y, new TerrainSquare(1));
+        var distx = (WIDTH/2) - x;
+        var disty = (HEIGHT/2) - y;
+        var dist = distx*distx + disty*disty;
+        overworld.put(x, y, new TerrainSquare(dist / 350));
       }
     }
 

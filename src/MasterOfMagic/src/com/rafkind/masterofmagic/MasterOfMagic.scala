@@ -10,16 +10,17 @@ import org.newdawn.slick.GameContainer;
 import org.newdawn.slick.Graphics;
 import org.newdawn.slick.SlickException;
 
-import com.rafkind.masterofmagic.ui.TerrainTilePainter;
+import com.rafkind.masterofmagic.ui.TerrainPainter;
 import com.rafkind.masterofmagic.state._;
 
 class MasterOfMagic(title:String) extends BasicGame(title) {
 
-  var terrainTilePainter:TerrainTilePainter = null;
+  var terrainPainter:TerrainPainter = null;
   var overworld:Overworld = null;
+
   override def init(gc:GameContainer):Unit = {
-    terrainTilePainter = new TerrainTilePainter(
-      TerrainTilePainter.createDummySpriteSheetImage());
+    terrainPainter = new TerrainPainter(
+      TerrainPainter.createDummySpriteSheetImage());
 
     overworld = Overworld.createExampleWorld;
   }
@@ -29,6 +30,6 @@ class MasterOfMagic(title:String) extends BasicGame(title) {
 
   override def render(gc:GameContainer, graphics:Graphics):Unit = {
 
-    terrainTilePainter.render(gc, graphics, 0, 0, 0, 0, overworld);
+    terrainPainter.render(gc, graphics, 0, 0, 0, 0, overworld);
   }
 }

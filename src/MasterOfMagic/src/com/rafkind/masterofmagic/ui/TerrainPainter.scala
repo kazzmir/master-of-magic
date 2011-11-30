@@ -10,7 +10,7 @@ import org.newdawn.slick._;
 
 import com.rafkind.masterofmagic.state._;
 
-object TerrainTilePainter {
+object TerrainPainter {
 
   // double sized
   val TILE_WIDTH = 40;
@@ -54,11 +54,11 @@ object TerrainTilePainter {
   }
 }
 
-class TerrainTilePainter(baseTileImage:Image) {
+class TerrainPainter(baseTileImage:Image) {
   var baseTileSpriteSheet = new SpriteSheet(
     baseTileImage,
-    TerrainTilePainter.TILE_WIDTH,
-    TerrainTilePainter.TILE_HEIGHT);
+    TerrainPainter.TILE_WIDTH,
+    TerrainPainter.TILE_HEIGHT);
 
   def render(
     gc:GameContainer,
@@ -71,18 +71,18 @@ class TerrainTilePainter(baseTileImage:Image) {
 
     baseTileSpriteSheet.startUse();
 
-    for (tileY <- 0 until TerrainTilePainter.VIEW_HEIGHT) {
-      for (tileX <- 0 until TerrainTilePainter.VIEW_WIDTH) {
+    for (tileY <- 0 until TerrainPainter.VIEW_HEIGHT) {
+      for (tileX <- 0 until TerrainPainter.VIEW_WIDTH) {
 
         var terrainSquare = overworld.get(
           tileX + startTileX,
           tileY + startTileY);
 
-        var whichTile = terrainSquare.terrainTile;
+        var whichTile = terrainSquare.terrain;
 
         baseTileSpriteSheet.renderInUse(
-          startX + tileX * TerrainTilePainter.TILE_WIDTH,
-          startY + tileY * TerrainTilePainter.TILE_HEIGHT,
+          startX + tileX * TerrainPainter.TILE_WIDTH,
+          startY + tileY * TerrainPainter.TILE_HEIGHT,
           whichTile % 3,
           whichTile / 3
         );
