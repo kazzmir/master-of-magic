@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nifty>
+  <screen id="start" controller="com.rafkind.masterofmagic.ui.OverworldMapScreenController">
+    <layer id="layer" backgroundColor="#003f" childLayout="center">
+       <panel height="25%" width="35%" align="center" valign="center" backgroundColor="#f60f"
+             childLayout="center" visibleToMouse="true">
+        <text font="console.fnt" text="Hello World!"
+              align="center" valign="center" />
+      </panel>
+    </layer>
+  </screen>
+</nifty>
