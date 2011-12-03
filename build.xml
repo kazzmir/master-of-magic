@@ -23,6 +23,10 @@
                 <pathelement location="${scala-library.jar}" />
                 <pathelement location="lib/slick.jar" />
                 <pathelement location="lib/lwjgl.jar" />
+                <pathelement location="lib/nifty-1.3.jar" />
+                <pathelement location="lib/nifty-default-controls-1.3.jar" />
+                <pathelement location="lib/nifty-lwjgl-slick-renderer-1.3.jar" />
+                <pathelement location="lib/eventbus-1.4.jar" />
             </classpath>
         </scalac>
 
