@@ -36,6 +36,6 @@ class MasterOfMagic(title:String) extends StateBasedGame(title) {
   }*/
 
   override def initStatesList(container:GameContainer):Unit = {
-    addState(new OverworldMapState());
+    addState(new OverworldMapState(0));
   }
 }
