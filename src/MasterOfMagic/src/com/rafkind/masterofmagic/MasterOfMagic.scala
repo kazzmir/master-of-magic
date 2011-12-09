@@ -13,29 +13,12 @@ import com.rafkind.masterofmagic.state._;
 
 
 class MasterOfMagic(title:String) extends StateBasedGame(title) {
-
-  /*var terrainPainter:TerrainPainter = null;
-  var overworld:Overworld = null;
-*/
-
-  
-
-  /*override def init(gc:GameContainer):Unit = {
-    terrainPainter = new TerrainPainter(
-      TerrainPainter.createDummySpriteSheetImage());
-
-    overworld = Overworld.createExampleWorld;
-  }
-
-  override def update(gc:GameContainer, delta:Int):Unit = {
-  }
-
-  override def render(gc:GameContainer, graphics:Graphics):Unit = {
-
-    terrainPainter.render(gc, graphics, 0, 0, 0, 0, overworld);
-  }*/
+  var overworld:Overworld = null;  
 
   override def initStatesList(container:GameContainer):Unit = {
-    addState(new OverworldMapState(0));
+
+    overworld = Overworld.createExampleWorld;
+
+    addState(new OverworldMapState(0, overworld));
   }
 }

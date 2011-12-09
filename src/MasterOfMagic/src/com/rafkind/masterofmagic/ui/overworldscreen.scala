@@ -5,6 +5,8 @@
 
 package com.rafkind.masterofmagic.ui
 
+import com.rafkind.masterofmagic.state._;
+
 import org.newdawn.slick._;
 import org.newdawn.slick.state._;
 
@@ -19,12 +21,17 @@ class OverworldMapScreenController extends ScreenController {
   override def bind(nifty:Nifty, screen:Screen):Unit = {}
 }
 
-class OverworldMapState(id:Int) extends NiftyOverlayGameState {
+class OverworldMapState(id:Int, overworld:Overworld) extends NiftyOverlayGameState {
+  var terrainPainter:TerrainPainter = null;
+  
   override def getID() = id;
 
   override def init(container:GameContainer, game:StateBasedGame):Unit = {
     //super.init(container, game);
-
+    
+    terrainPainter = new TerrainPainter(
+      TerrainPainter.createDummySpriteSheetImage());
+    
     this.initNifty();
     this.loadXml("com/rafkind/masterofmagic/ui/overworld-screen.xml");
   }
@@ -40,5 +47,11 @@ class OverworldMapState(id:Int) extends NiftyOverlayGameState {
     button:Int,
     buttonDown:Boolean):Boolean = {
     return true;
+  }
+
+  override def render(container:GameContainer, game:StateBasedGame, graphics:Graphics):Unit = {
+    super.render(container, game, graphics);
+
+    terrainPainter.render(container, graphics, 0, 0, 0, 0, overworld);
   }
 }
