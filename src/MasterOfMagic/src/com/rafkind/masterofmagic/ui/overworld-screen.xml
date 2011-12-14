@@ -1,20 +1,39 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <nifty>
   <screen id="start" controller="com.rafkind.masterofmagic.ui.OverworldMapScreenController">
-    <layer id="layer" backgroundColor="#000F" childLayout="center">
-      <panel height="100%" width="100%" align="center" valign="center" backgroundColor="#F00F"
-        childLayout="vertical" visibleToMouse="true">
-        <panel height="10%" width="100%" align="center" valign="center" backgroundColor="#0F0F"
-          childLayout="horizontal" visibleToMouse="true">
+    <layer id="layer" backgroundColor="#0000" childLayout="absolute">
+      <panel x="14" y="8" height="24px" width="612px" align="center" valign="center" backgroundColor="#0000"
+        childLayout="horizontal" visibleToMouse="false">
+          <panel height="24px" width="80px" align="center" valign="center" backgroundColor="#0F04"
+            childLayout="horizontal" visibleToMouse="true">
             <text font="console.fnt" text="GAME" align="center" valign="center" />
+          </panel>
+          <panel height="24px" width="84px" align="center" valign="center" backgroundColor="#00F4"
+            childLayout="horizontal" visibleToMouse="true">
             <text font="console.fnt" text="SPELLS" align="center" valign="center" />
+          </panel>
+          <panel height="24px" width="102px" align="center" valign="center" backgroundColor="#F004"
+            childLayout="horizontal" visibleToMouse="true">
             <text font="console.fnt" text="ARMIES" align="center" valign="center" />
+          </panel>
+          <panel height="24px" width="88px" align="center" valign="center" backgroundColor="#FF04"
+            childLayout="horizontal" visibleToMouse="true">
             <text font="console.fnt" text="CITIES" align="center" valign="center" />
+          </panel>
+          <panel height="24px" width="84px" align="center" valign="center" backgroundColor="#0FF4"
+            childLayout="horizontal" visibleToMouse="true">
             <text font="console.fnt" text="MAGIC" align="center" valign="center" />
+          </panel>
+          <panel height="24px" width="88px" align="center" valign="center" backgroundColor="#F0F4"
+            childLayout="horizontal" visibleToMouse="true">
             <text font="console.fnt" text="INFO" align="center" valign="center" />
+          </panel>
+          <panel height="24px" width="86px" align="center" valign="center" backgroundColor="#FFF4"
+            childLayout="horizontal" visibleToMouse="true">
             <text font="console.fnt" text="PLANE" align="center" valign="center" />
-        </panel>
-        <panel height="90%" width="100%" align="center" valign="center" backgroundColor="#00FF"
+          </panel>
+      </panel>
+        <!-- <panel height="90%" width="100%" align="center" valign="center" backgroundColor="#00FF"
           childLayout="horizontal" visibleToMouse="true">
             <panel height="100%" width="75%" align="center" valign="center" backgroundColor="#333F"
               childLayout="vertical" visibleToMouse="true">
@@ -34,10 +53,9 @@
                   childLayout="center" visibleToMouse="true">
                 </panel>
             </panel>
-        </panel>
+        </panel> -->
         <!-- <text font="console.fnt" text="Hello World!"
         align="center" valign="center" /> -->
-      </panel>
     </layer>
   </screen>
 </nifty>

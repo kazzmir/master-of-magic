@@ -25,10 +25,10 @@ object Main {
    */
   def main(args: Array[String]): Unit = {
     var app = new AppGameContainer(new MasterOfMagic("Master of Magic"));
-    app.setDisplayMode(640, 480, false);
+    app.setDisplayMode(640, 400, false);
     app.setSmoothDeltas(true);
     app.setTargetFrameRate(40);
-    app.setShowFPS(true);
+    app.setShowFPS(false);
     app.start();
   }
 

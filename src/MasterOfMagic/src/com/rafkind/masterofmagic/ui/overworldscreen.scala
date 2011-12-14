@@ -20,6 +20,9 @@ class OverworldMapScreenController extends ScreenController {
 }
 
 class OverworldMapState(id:Int) extends NiftyOverlayGameState {
+
+  var backgroundImage:Image = null;
+  
   override def getID() = id;
 
   override def init(container:GameContainer, game:StateBasedGame):Unit = {
@@ -27,6 +30,8 @@ class OverworldMapState(id:Int) extends NiftyOverlayGameState {
 
     this.initNifty();
     this.loadXml("com/rafkind/masterofmagic/ui/overworld-screen.xml");
+
+    backgroundImage = new Image("../../data/img/overworld-example-double.png");
   }
 
   override def processKeyboardEvent(e:KeyboardInputEvent):Boolean = {
@@ -40,5 +45,15 @@ class OverworldMapState(id:Int) extends NiftyOverlayGameState {
     button:Int,
     buttonDown:Boolean):Boolean = {
     return true;
+  }
+
+  override def render(
+    container:GameContainer,
+    game:StateBasedGame,
+    graphics:Graphics):Unit = {
+
+    backgroundImage.draw(0, 0);
+
+    super.render(container, game, graphics);
   }
 }
