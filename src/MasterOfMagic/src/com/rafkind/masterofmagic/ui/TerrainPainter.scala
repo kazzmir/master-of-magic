@@ -16,8 +16,8 @@ object TerrainPainter {
   val TILE_WIDTH = 40;
   val TILE_HEIGHT = 36;
 
-  val VIEW_WIDTH = 10;
-  val VIEW_HEIGHT = 10;
+  val VIEW_WIDTH = 11;
+  val VIEW_HEIGHT = 11;
 
   def createDummySpriteSheetImage():Image = {
     var imageBuffer = new ImageBuffer(TILE_WIDTH * 3, TILE_HEIGHT * 3);
