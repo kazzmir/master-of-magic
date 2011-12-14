@@ -61,6 +61,12 @@ class OverworldMapState(id:Int, overworld:Overworld) extends NiftyOverlayGameSta
 
     super.render(container, game, graphics);
 
-    terrainPainter.render(container, graphics, 0, 40, 0, 0, overworld);
+    terrainPainter.render(
+      container,
+      graphics,
+      0,
+      40,
+      0,
+      0, overworld);
   }
 }
