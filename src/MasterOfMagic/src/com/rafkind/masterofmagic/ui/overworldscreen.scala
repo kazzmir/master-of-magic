@@ -5,15 +5,16 @@
 
 package com.rafkind.masterofmagic.ui
 
-import com.rafkind.masterofmagic.state._;
+import com.rafkind.masterofmagic.state._
+import com.rafkind.masterofmagic.system._
 
-import org.newdawn.slick._;
-import org.newdawn.slick.state._;
+import org.newdawn.slick._
+import org.newdawn.slick.state._
 
-import de.lessvoid.nifty._;
-import de.lessvoid.nifty.slick._;
-import de.lessvoid.nifty.screen._;
-import de.lessvoid.nifty.input.keyboard.KeyboardInputEvent;
+import de.lessvoid.nifty._
+import de.lessvoid.nifty.slick._
+import de.lessvoid.nifty.screen._
+import de.lessvoid.nifty.input.keyboard.KeyboardInputEvent
 
 class OverworldMapScreenController extends ScreenController {
   override def onEndScreen():Unit = {}
@@ -38,7 +39,7 @@ class OverworldMapState(id:Int, overworld:Overworld) extends NiftyOverlayGameSta
     this.initNifty();
     this.loadXml("com/rafkind/masterofmagic/ui/overworld-screen.xml");
 
-    backgroundImage = new Image("../../data/img/overworld-example-double.png");
+    backgroundImage = new Image(Data.path("img/overworld-example-double.png"));
   }
 
   override def processKeyboardEvent(e:KeyboardInputEvent):Boolean = {
