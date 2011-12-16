@@ -24,15 +24,16 @@ class OverworldMapScreenController extends ScreenController {
 class OverworldMapState(id:Int, overworld:Overworld) extends NiftyOverlayGameState {
   var terrainPainter:TerrainPainter = null;
   var backgroundImage:Image = null;
+  var minimap:Minimap = null;
   
   override def getID() = id;
 
   override def init(container:GameContainer, game:StateBasedGame):Unit = {
-    //super.init(container, game);
-    
     terrainPainter = new TerrainPainter(
       TerrainPainter.createDummySpriteSheetImage());
-    terrainPainter.generateMinimapImage(overworld);
+
+    minimap = new Minimap(overworld);
+    minimap.generateMinimapImage(overworld);
     
     this.initNifty();
     this.loadXml("com/rafkind/masterofmagic/ui/overworld-screen.xml");
@@ -70,6 +71,6 @@ class OverworldMapState(id:Int, overworld:Overworld) extends NiftyOverlayGameSta
       0,
       0, overworld);
 
-    terrainPainter.renderMiniMap(500, 40, 0, 0, 120, 64);
+    minimap.renderMiniMap(500, 40, 0, 0, 120, 64);
   }
 }

@@ -54,14 +54,10 @@ object TerrainPainter {
   }
 }
 
-class TerrainPainter(baseTileImage:Image) {
+class Minimap(overworld:Overworld) {
+
   var minimapImage:Image = null;
   var minimapImageData:ImageBuffer = null;
-  
-  var baseTileSpriteSheet = new SpriteSheet(
-    baseTileImage,
-    TerrainPainter.TILE_WIDTH,
-    TerrainPainter.TILE_HEIGHT);
 
   def miniPutpix(x:Int, y:Int, c:Color):Unit = {
     for (j <- 0 until 2) {
@@ -70,6 +66,7 @@ class TerrainPainter(baseTileImage:Image) {
       }
     }
   }
+
   def generateMinimapImage(overworld:Overworld):Unit = {
     minimapImageData = new ImageBuffer(Overworld.WIDTH * 2,
                                        Overworld.HEIGHT * 2);
@@ -80,6 +77,19 @@ class TerrainPainter(baseTileImage:Image) {
     }
     minimapImage = new Image(minimapImageData);
   }
+
+
+  def renderMiniMap(startX:Int, startY:Int, offx:Int, offy:Int, width:Int, height:Int):Unit = {
+    minimapImage.draw(startX, startY, startX+width, startY+height, offx, offy, offx+width, offy+height);
+  }
+}
+
+class TerrainPainter(baseTileImage:Image) {
+  
+  var baseTileSpriteSheet = new SpriteSheet(
+    baseTileImage,
+    TerrainPainter.TILE_WIDTH,
+    TerrainPainter.TILE_HEIGHT);
 
   def render(
     gc:GameContainer,
@@ -111,9 +121,5 @@ class TerrainPainter(baseTileImage:Image) {
     }
 
     baseTileSpriteSheet.endUse();
-  }
-
-  def renderMiniMap(startX:Int, startY:Int, offx:Int, offy:Int, width:Int, height:Int):Unit = {
-    minimapImage.draw(startX, startY, startX+width, startY+height, offx, offy, offx+width, offy+height);
   }
 }
