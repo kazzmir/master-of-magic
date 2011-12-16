@@ -55,10 +55,31 @@ object TerrainPainter {
 }
 
 class TerrainPainter(baseTileImage:Image) {
+  var minimapImage:Image = null;
+  var minimapImageData:ImageBuffer = null;
+  
   var baseTileSpriteSheet = new SpriteSheet(
     baseTileImage,
     TerrainPainter.TILE_WIDTH,
     TerrainPainter.TILE_HEIGHT);
+
+  def miniPutpix(x:Int, y:Int, c:Color):Unit = {
+    for (j <- 0 until 2) {
+      for (i <- 0 until 2) {
+        minimapImageData.setRGBA(x+i, y+j, c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha());
+      }
+    }
+  }
+  def generateMinimapImage(overworld:Overworld):Unit = {
+    minimapImageData = new ImageBuffer(Overworld.WIDTH * 2,
+                                       Overworld.HEIGHT * 2);
+    for (j <- 0 until Overworld.HEIGHT) {
+      for (i <- 0 until Overworld.WIDTH) {
+        miniPutpix(i, j, Color.GREEN);
+      }
+    }
+    minimapImage = new Image(minimapImageData);
+  }
 
   def render(
     gc:GameContainer,
@@ -90,5 +111,9 @@ class TerrainPainter(baseTileImage:Image) {
     }
 
     baseTileSpriteSheet.endUse();
+  }
+
+  def renderMiniMap(startX:Int, startY:Int, offx:Int, offy:Int, width:Int, height:Int):Unit = {
+    minimapImage.draw(startX, startY, startX+width, startY+height, offx, offy, offx+width, offy+height);
   }
 }

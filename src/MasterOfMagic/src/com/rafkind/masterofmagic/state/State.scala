@@ -37,8 +37,8 @@ class TerrainSquare(val terrain:Int) {
 
 
 object Overworld {
-  val WIDTH = 100;
-  val HEIGHT = 50;
+  val WIDTH = 200;
+  val HEIGHT = 100;
 
   def createExampleWorld:Overworld = {
     var overworld = new Overworld(WIDTH, HEIGHT);
@@ -48,7 +48,7 @@ object Overworld {
         var distx = (WIDTH/2) - x;
         var disty = (HEIGHT/2) - y;
         var dist = distx*distx + disty*disty;
-        overworld.put(x, y, new TerrainSquare(dist / 350));
+        overworld.put(x, y, new TerrainSquare(/* dist / 1000 */ x % 9));
       }
     }
 

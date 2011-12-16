@@ -32,6 +32,7 @@ class OverworldMapState(id:Int, overworld:Overworld) extends NiftyOverlayGameSta
     
     terrainPainter = new TerrainPainter(
       TerrainPainter.createDummySpriteSheetImage());
+    terrainPainter.generateMinimapImage(overworld);
     
     this.initNifty();
     this.loadXml("com/rafkind/masterofmagic/ui/overworld-screen.xml");
@@ -68,5 +69,7 @@ class OverworldMapState(id:Int, overworld:Overworld) extends NiftyOverlayGameSta
       40,
       0,
       0, overworld);
+
+    terrainPainter.renderMiniMap(500, 40, 0, 0, 120, 64);
   }
 }
