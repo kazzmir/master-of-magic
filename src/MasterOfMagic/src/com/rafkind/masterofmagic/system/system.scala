@@ -9,7 +9,7 @@ import java.io._
 
 /* maybe try to hide this class? */
 class Data{
-  val properties:Properties = Data.loadProperties("game.properties")
+  val properties:Properties = Data.loadProperties("../../game.properties")
 
   /* Get the 'data' property. Defaults to the 'data' directory */
   def getDataPath() = properties.getProperty("data", "data")

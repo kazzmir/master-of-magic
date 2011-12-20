@@ -16,6 +16,7 @@ object TerrainPainter {
   val TILE_WIDTH = 40;
   val TILE_HEIGHT = 36;
 
+  // size of the big viewport, in tiles
   val VIEW_WIDTH = 12;
   val VIEW_HEIGHT = 11;
 

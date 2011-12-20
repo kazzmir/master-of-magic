@@ -17,6 +17,7 @@ import java.util.logging.Logger;
 import org.newdawn.slick.AppGameContainer;
 import org.newdawn.slick.ScalableGame;
 
+import com.rafkind.masterofmagic.util._;
 
 object Main {
 
@@ -24,6 +25,9 @@ object Main {
    * @param args the command line arguments
    */
   def main(args: Array[String]): Unit = {
+
+    LbxReader.read("/apps/Master of Magic/TERRAIN.LBX");
+
     var app = new AppGameContainer(new MasterOfMagic("Master of Magic"));
     app.setDisplayMode(640, 400, false);
     app.setSmoothDeltas(true);
