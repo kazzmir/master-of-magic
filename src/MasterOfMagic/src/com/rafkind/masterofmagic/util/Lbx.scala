@@ -56,3 +56,9 @@ object LbxReader {
     return lbx;
   }
 }
+
+object TerrainLbxReader {
+  def read(fileName:String):Unit = {
+    var lbx = LbxReader.read(fileName);
+  }
+}

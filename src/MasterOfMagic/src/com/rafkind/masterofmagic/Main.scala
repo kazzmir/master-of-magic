@@ -26,7 +26,7 @@ object Main {
    */
   def main(args: Array[String]): Unit = {
 
-    LbxReader.read("/apps/Master of Magic/TERRAIN.LBX");
+    TerrainLbxReader.read("/apps/Master of Magic/TERRAIN.LBX");
 
     var app = new AppGameContainer(new MasterOfMagic("Master of Magic"));
     app.setDisplayMode(640, 400, false);
