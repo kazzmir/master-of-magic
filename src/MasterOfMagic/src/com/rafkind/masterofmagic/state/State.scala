@@ -22,25 +22,36 @@ class Player {
 }
 
 // http://www.dragonsword.com/magic/eljay/SaveGam.html
-class TerrainType(val id:Int) {
-}
 
-object TerrainType {
-  val OCEAN = new TerrainType(0);
-  val SHORE = new TerrainType(1);
-  val RIVER = new TerrainType(2);
-  val SWAMP = new TerrainType(3);
-  val TUNDRA = new TerrainType(4);
-  val DEEP_TUNDRA = new TerrainType(5);
-  val MOUNTAIN = new TerrainType(6);
-  val VOLCANO = new TerrainType(7);
-  val CHAOS_NODE = new TerrainType(8);
-  val HILLS = new TerrainType(9);
-  val GRASSLAND = new TerrainType(10);
-  val SORCERY_NODE = new TerrainType(11);
-  val DESERT = new TerrainType(12);
-  val FOREST = new TerrainType(13);
-  val NATURE_NODE = new TerrainType(14);
+// Enumerations in scala are confusing!
+// the following copied from here:
+// http://downgra.de/2010/02/11/playing-with-scala-enumeration/
+object TerrainType extends Enumeration {
+
+  case class TerrainTypeVal(number:Int) extends Val(number) {
+    // put definitions in here
+  }
+
+  val OCEAN = TerrainTypeVal(0);
+  val SHORE = TerrainTypeVal(1);
+  val RIVER = TerrainTypeVal(2);
+  val SWAMP = TerrainTypeVal(3);
+  val TUNDRA = TerrainTypeVal(4);
+  val DEEP_TUNDRA = TerrainTypeVal(5);
+  val MOUNTAIN = TerrainTypeVal(6);
+  val VOLCANO = TerrainTypeVal(7);
+  val CHAOS_NODE = TerrainTypeVal(8);
+  val HILLS = TerrainTypeVal(9);
+  val GRASSLAND = TerrainTypeVal(10);
+  val SORCERY_NODE = TerrainTypeVal(11);
+  val DESERT = TerrainTypeVal(12);
+  val FOREST = TerrainTypeVal(13);
+  val NATURE_NODE = TerrainTypeVal(14);
+
+  // needed I think because Enumeration.elements is final and return the invariant
+  // type Enumeration.Value :|
+  implicit def valueToPlanet(v: Value): TerrainTypeVal =
+    v.asInstanceOf[TerrainTypeVal]
 }
 
 
@@ -51,7 +62,7 @@ object TerrainSquare {
 
 class TerrainSquare(
   var spriteNumber:Int,
-  var terrainType:TerrainType,
+  var terrainType:TerrainType.TerrainTypeVal,
   var fogOfWarBitset:Int,
   var pollutionFlag:Boolean,
   var roadBitset:Int,
