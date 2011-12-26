@@ -7,6 +7,7 @@ package com.rafkind.masterofmagic.ui
 
 import com.rafkind.masterofmagic.state._
 import com.rafkind.masterofmagic.system._
+import com.rafkind.masterofmagic.util._
 
 import org.newdawn.slick._
 import org.newdawn.slick.state._
@@ -39,7 +40,9 @@ class OverworldMapState(id:Int, overworld:Overworld) extends NiftyOverlayGameSta
     this.initNifty();
     this.loadXml("com/rafkind/masterofmagic/ui/overworld-screen.xml");
 
-    backgroundImage = new Image(Data.path("img/overworld-example-double.png"));
+    //backgroundImage = new Image(Data.path("img/overworld-example-double.png"));
+    backgroundImage = TerrainLbxReader.read("/apps/games/Master of Magic/TERRAIN.LBX");
+
   }
 
   override def processKeyboardEvent(e:KeyboardInputEvent):Boolean = {
@@ -62,7 +65,7 @@ class OverworldMapState(id:Int, overworld:Overworld) extends NiftyOverlayGameSta
 
     backgroundImage.draw(0, 0);
 
-    super.render(container, game, graphics);
+    /*super.render(container, game, graphics);
 
     terrainPainter.render(
       container,
@@ -72,6 +75,6 @@ class OverworldMapState(id:Int, overworld:Overworld) extends NiftyOverlayGameSta
       0,
       0, overworld);
 
-    minimap.renderMiniMap(500, 40, 0, 0, 120, 64);
+    minimap.renderMiniMap(500, 40, 0, 0, 120, 64);*/
   }
 }
