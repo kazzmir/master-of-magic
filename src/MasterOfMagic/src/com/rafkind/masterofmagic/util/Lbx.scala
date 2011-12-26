@@ -3,7 +3,6 @@ package com.rafkind.masterofmagic.util
 import java.io._;
 import scala.collection.mutable._;
 import org.newdawn.slick._;
-import com.rafkind.masterofmagic.ui._;
 
 // format from here:
 // http://www.roughseas.ca/momime/phpBB3/viewtopic.php?f=1&t=3
@@ -69,10 +68,17 @@ object TerrainLbxReader {
   val SPRITE_SHEET_WIDTH = 40;
   val SPRITE_SHEET_HEIGHT = 45;
 
+  val TILE_WIDTH = 20;
+  val TILE_HEIGHT = 18;
+
+  val TILE_COUNT = 1761;
+
   def fatpixel(imageBuffer:ImageBuffer,
                x:Int,
                y:Int,
-               color:java.awt.Color):Unit = {
+               colorIndex:Int):Unit = {
+
+    val color = Colors.colors(colorIndex);
     val r = color.getRed();
     val g = color.getGreen();
     val b = color.getBlue();
@@ -88,35 +94,28 @@ object TerrainLbxReader {
     var lbx = LbxReader.read(fileName);
 
     var imageBuffer = new ImageBuffer(
-      TerrainPainter.TILE_WIDTH * SPRITE_SHEET_WIDTH,
-      TerrainPainter.TILE_HEIGHT * SPRITE_SHEET_HEIGHT);
+      TILE_WIDTH * 2 * SPRITE_SHEET_WIDTH,
+      TILE_HEIGHT * 2 * SPRITE_SHEET_HEIGHT);
 
     var row:Int = 0;
     var col:Int = 0;
 
     var lbxFile = new RandomAccessFile(new File(fileName), "r");
-    println("file 0 start at " + lbx.subfileStart(0));
 
     var position:Int = lbx.subfileStart(0) + 192; // 192 byte header
-    for (index <- 0 until 1761) {
-      lbxFile.seek(position); // skip 8 byte header
-      var w = LbxReader.read2(lbxFile);
-      var h = LbxReader.read2(lbxFile);
-      println("width is " + w + " and height is " + h);
-      for (dummy <- 0 until 6) {
-        println("  " + LbxReader.read2(lbxFile));
-      }
-      for (y <- 0 until 18) {
-        for (x <- 0 until 20) {
+    for (index <- 0 until TILE_COUNT) {
+      lbxFile.seek(position + 16); // skip 8 word header
+
+      // wierd x/y flippage!
+      for (y <- 0 until TILE_WIDTH) {
+        for (x <- 0 until TILE_HEIGHT) {
           val c = lbxFile.read();
-          val color = Colors.colors(c);
-          val px = col * TerrainPainter.TILE_WIDTH + x * 2;
-          val py = row * TerrainPainter.TILE_HEIGHT + y * 2;
-          fatpixel(imageBuffer, px, py, color);
+          val px = (col * TILE_WIDTH * 2) + (y * 2);
+          val py = (row * TILE_HEIGHT * 2) + (x * 2);
+          fatpixel(imageBuffer, px, py, c);
         }
       }
-
-      // skip 4 byte footer
+      // skip 4 word footer
 
       // next image
       position = position + 384;
