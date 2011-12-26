@@ -5,6 +5,14 @@
 
 package com.rafkind.masterofmagic.state
 
+class Place {
+
+}
+
+class UnitStack {
+
+}
+
 class Player {
   // id
   // name
@@ -13,18 +21,43 @@ class Player {
   // music scheme
 }
 
-class TerrainType {
-  // passability cost
-  // base food
-  // base money
-  // base mana generation
+// http://www.dragonsword.com/magic/eljay/SaveGam.html
+class TerrainType(val id:Int) {
 }
+
+object TerrainType {
+  val OCEAN = new TerrainType(0);
+  val SHORE = new TerrainType(1);
+  val RIVER = new TerrainType(2);
+  val SWAMP = new TerrainType(3);
+  val TUNDRA = new TerrainType(4);
+  val DEEP_TUNDRA = new TerrainType(5);
+  val MOUNTAIN = new TerrainType(6);
+  val VOLCANO = new TerrainType(7);
+  val CHAOS_NODE = new TerrainType(8);
+  val HILLS = new TerrainType(9);
+  val GRASSLAND = new TerrainType(10);
+  val SORCERY_NODE = new TerrainType(11);
+  val DESERT = new TerrainType(12);
+  val FOREST = new TerrainType(13);
+  val NATURE_NODE = new TerrainType(14);
+}
+
+
 
 object TerrainSquare {
-  val EMPTY:TerrainSquare = new TerrainSquare(0);
+  
 }
 
-class TerrainSquare(val terrain:Int) {
+class TerrainSquare(
+  var spriteNumber:Int,
+  var terrainType:TerrainType,
+  var fogOfWarBitset:Int,
+  var pollutionFlag:Boolean,
+  var roadBitset:Int,
+  var building:Option[Place],
+  var unitStack:Option[UnitStack]) {
+    
   // what type of terrain
   // what terrain tile to use
   // bitset for fog of war
@@ -37,8 +70,8 @@ class TerrainSquare(val terrain:Int) {
 
 
 object Overworld {
-  val WIDTH = 200;
-  val HEIGHT = 100;
+  val WIDTH = 60;
+  val HEIGHT = 40;
 
   def createExampleWorld:Overworld = {
     var overworld = new Overworld(WIDTH, HEIGHT);
@@ -48,7 +81,14 @@ object Overworld {
         var distx = (WIDTH/2) - x;
         var disty = (HEIGHT/2) - y;
         var dist = distx*distx + disty*disty;
-        overworld.put(x, y, new TerrainSquare(/* dist / 1000 */ x % 9));
+        overworld.put(x, y, 
+                      new TerrainSquare(/* dist / 1000 */ x % 9,
+                        TerrainType.OCEAN,
+                        0,
+                        false,
+                        0,
+                        None,
+                        None));
       }
     }
 
@@ -66,7 +106,7 @@ class Overworld(width:Int, height:Int) {
     if (y >= 0 && y <= Overworld.HEIGHT) {
       return terrain(y * Overworld.WIDTH + x);
     } else {
-      return TerrainSquare.EMPTY;
+      throw new IllegalArgumentException("Bad coordinates");
     }
   }
 

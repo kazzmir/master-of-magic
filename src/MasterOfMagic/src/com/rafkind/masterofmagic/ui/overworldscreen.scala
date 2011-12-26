@@ -27,6 +27,9 @@ class OverworldMapState(id:Int, overworld:Overworld) extends NiftyOverlayGameSta
   var terrainPainter:TerrainPainter = null;
   var backgroundImage:Image = null;
   var minimap:Minimap = null;
+
+  var x:Int = 0;
+  var y:Int = 0;
   
   override def getID() = id;
 
@@ -46,6 +49,14 @@ class OverworldMapState(id:Int, overworld:Overworld) extends NiftyOverlayGameSta
   }
 
   override def processKeyboardEvent(e:KeyboardInputEvent):Boolean = {
+    if (e.isKeyDown()) {
+      e.getKey() match {
+        case KeyboardInputEvent.KEY_UP => y-= 18;
+        case KeyboardInputEvent.KEY_DOWN => y += 18;
+        case KeyboardInputEvent.KEY_LEFT => x -= 20;
+        case KeyboardInputEvent.KEY_RIGHT => x += 20;
+      }
+    }
     return true;
   }
 
@@ -63,7 +74,10 @@ class OverworldMapState(id:Int, overworld:Overworld) extends NiftyOverlayGameSta
     game:StateBasedGame,
     graphics:Graphics):Unit = {
 
-    backgroundImage.draw(0, 0);
+    backgroundImage.draw(0, 0,
+                         640, 480,
+                         x+0, y+0,
+                         x+640, y+400);
 
     /*super.render(container, game, graphics);
 

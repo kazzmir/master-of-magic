@@ -110,7 +110,7 @@ class TerrainPainter(baseTileImage:Image) {
           tileX + startTileX,
           tileY + startTileY);
 
-        var whichTile = terrainSquare.terrain;
+        var whichTile = terrainSquare.spriteNumber;
 
         baseTileSpriteSheet.renderInUse(
           startX + tileX * TerrainPainter.TILE_WIDTH,
