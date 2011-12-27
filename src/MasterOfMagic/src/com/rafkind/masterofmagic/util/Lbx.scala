@@ -7,11 +7,11 @@ import org.newdawn.slick._;
 // format from here:
 // http://www.roughseas.ca/momime/phpBB3/viewtopic.php?f=1&t=3
 
-class Lbx(val subfileCount:Int, val magicNumber:Int, val version:Int) {
-  var size:Int = 0
+// Contains start and end offsets for an lbx data structure
+case class LbxData(val start:Int, var end:Int)
 
-  // Contains start and end offsets for an lbx data structure
-  case class LbxData(val start:Int, var end:Int)
+class Lbx{
+  var size:Int = 0
 
   var subfiles:Map[Int, LbxData] = new HashMap[Int, LbxData]
 
@@ -26,21 +26,29 @@ class Lbx(val subfileCount:Int, val magicNumber:Int, val version:Int) {
     this
   }
 
+  def subfile(index:Int):LbxData = subfiles(index)
   def subfileStart(index:Int):Int = subfiles(index).start
   def subfileEnd(index:Int):Int = subfiles(index).end
 
-  def subFiles():Int = subfiles.size
+  def subfileCount():Int = subfiles.size
 }
 
-object LbxReader{
-  def read2(file:RandomAccessFile):Int = {
+class LbxReader(val path:String){
+  val file = new RandomAccessFile(new File(path), "r")
+
+  /* Read one byte */
+  def read():Int = file.read()
+
+  /* Read a word (2 bytes) */
+  def read2():Int = {
     var a = file.read()
     var b = file.read()
 
     a | (b << 8)
   }
 
-  def read4(file:RandomAccessFile):Int = {
+  /* Read a dword (4 bytes) */
+  def read4():Int = {
     var a = file.read()
     var b = file.read()
     var c = file.read()
@@ -49,25 +57,37 @@ object LbxReader{
     a | (b << 8) | (c << 16) | (d << 24)
   }
 
-  def read(fileName:String):Lbx = {
-    val lbxFile = new RandomAccessFile(new File(fileName), "r");
-    lbxFile.seek(0)
+  def seek(position:Int){
+    file.seek(position)
+  }
 
-    val subfileCount = read2(lbxFile)
-    val magicNumber = read4(lbxFile)
-    val version = read2(lbxFile)
+  def close(){
+    file.close()
+  }
 
-    val lbx = new Lbx(subfileCount, magicNumber, version)
+  def read(offset:LbxData) = {
+    file.seek(offset.start)
+    for (index <- 0 to offset.end) yield {
+      file.read()
+    }
+  }
+
+  def readLbx():Lbx = {
+    file.seek(0)
+
+    val subfileCount = read2()
+    val magicNumber = read4()
+    val version = read2()
+
+    val lbx = new Lbx()
     
-    val offsets = (for (s <- 0 until subfileCount) yield read4(lbxFile)) ++ List(lbxFile.length.intValue)
+    val offsets = (for (s <- 0 until subfileCount) yield read4()) ++ List(file.length.intValue)
 
     for (index <- 0 until subfileCount){
-      lbx.addSubfile(index, lbx.LbxData(offsets(index), offsets(index+1)))
+      lbx.addSubfile(index, LbxData(offsets(index), offsets(index+1)))
     }
 
-    lbx.setSize(read4(lbxFile))
-    
-    lbxFile.close()
+    lbx.setSize(read4())
     lbx
   }
 }
@@ -103,16 +123,16 @@ object TerrainLbxReader {
   }
 
   def read(fileName:String):Image = {
-    var lbx = LbxReader.read(fileName);
+    val lbxFile = new LbxReader(fileName)
 
-    var imageBuffer = new ImageBuffer(
+    val imageBuffer = new ImageBuffer(
       TILE_WIDTH * 2 * SPRITE_SHEET_WIDTH,
       TILE_HEIGHT * 2 * SPRITE_SHEET_HEIGHT);
 
     var row:Int = 0;
     var col:Int = 0;
 
-    var lbxFile = new RandomAccessFile(new File(fileName), "r");
+    val lbx = lbxFile.readLbx()
 
     var position:Int = lbx.subfileStart(0) + 192; // 192 byte header
     for (index <- 0 until TILE_COUNT) {
@@ -121,10 +141,10 @@ object TerrainLbxReader {
       // wierd x/y flippage!
       for (y <- 0 until TILE_WIDTH) {
         for (x <- 0 until TILE_HEIGHT) {
-          val c = lbxFile.read();
-          val px = (col * TILE_WIDTH * 2) + (y * 2);
-          val py = (row * TILE_HEIGHT * 2) + (x * 2);
-          fatpixel(imageBuffer, px, py, c);
+          val c = lbxFile.read()
+          val px = (col * TILE_WIDTH * 2) + (y * 2)
+          val py = (row * TILE_HEIGHT * 2) + (x * 2)
+          fatpixel(imageBuffer, px, py, c)
         }
       }
       // skip 4 word footer
