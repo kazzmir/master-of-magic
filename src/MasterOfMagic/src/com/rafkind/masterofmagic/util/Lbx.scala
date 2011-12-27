@@ -8,55 +8,67 @@ import org.newdawn.slick._;
 // http://www.roughseas.ca/momime/phpBB3/viewtopic.php?f=1&t=3
 
 class Lbx(val subfileCount:Int, val magicNumber:Int, val version:Int) {
-  var size:Int = 0;
-  var subfiles:Map[Int, Int] = new HashMap[Int, Int];
+  var size:Int = 0
 
-  def addSubfile(index:Int, offset:Int):Map[Int, Int] = {
-    subfiles += index -> offset;
+  // Contains start and end offsets for an lbx data structure
+  case class LbxData(val start:Int, var end:Int)
 
-    subfiles;
+  var subfiles:Map[Int, LbxData] = new HashMap[Int, LbxData]
+
+  def addSubfile(index:Int, offset:LbxData):Map[Int, LbxData] = {
+    subfiles += index -> offset
+
+    subfiles
   }
 
   def setSize(offset:Int):Lbx = {
-    size = offset;
-    this;
+    size = offset
+    this
   }
 
-  def subfileStart(index:Int):Int = subfiles(index);
+  def subfileStart(index:Int):Int = subfiles(index).start
+  def subfileEnd(index:Int):Int = subfiles(index).end
+
+  def subFiles():Int = subfiles.size
 }
 
-object LbxReader {
-  def read2(f:RandomAccessFile):Int = {
-    var a = f.read();
-    var b = f.read();
-    return a | (b << 8);
+object LbxReader{
+  def read2(file:RandomAccessFile):Int = {
+    var a = file.read()
+    var b = file.read()
+
+    a | (b << 8)
   }
 
-  def read4(f:RandomAccessFile):Int = {
-    var a = f.read();
-    var b = f.read();
-    var c = f.read();
-    var d = f.read();
-    return a | (b << 8) | (c << 16) | (d << 24);
+  def read4(file:RandomAccessFile):Int = {
+    var a = file.read()
+    var b = file.read()
+    var c = file.read()
+    var d = file.read()
+
+    a | (b << 8) | (c << 16) | (d << 24)
   }
 
   def read(fileName:String):Lbx = {
-    var lbxFile = new RandomAccessFile(new File(fileName), "r");
-    lbxFile.seek(0);
+    val lbxFile = new RandomAccessFile(new File(fileName), "r");
+    lbxFile.seek(0)
 
-    var subfileCount = read2(lbxFile);
-    var magicNumber = read4(lbxFile);
-    var version = read2(lbxFile);
+    val subfileCount = read2(lbxFile)
+    val magicNumber = read4(lbxFile)
+    val version = read2(lbxFile)
 
-    var lbx = new Lbx(subfileCount, magicNumber, version);
+    val lbx = new Lbx(subfileCount, magicNumber, version)
     
-    for (s <- 0 until subfileCount) {
-      lbx.addSubfile(s, read4(lbxFile));
+    val offsets = (for (s <- 0 until subfileCount) yield read4(lbxFile)) ++ List(lbxFile.length.intValue)
+
+    for (index <- 0 until subfileCount){
+      lbx.addSubfile(index, lbx.LbxData(offsets(index), offsets(index+1)))
     }
-    lbx.setSize(read4(lbxFile));
+
+    lbx.setSize(read4(lbxFile))
     
-    lbxFile.close();
-    return lbx;
+    lbxFile.close()
+    lbx
   }
 }
 
