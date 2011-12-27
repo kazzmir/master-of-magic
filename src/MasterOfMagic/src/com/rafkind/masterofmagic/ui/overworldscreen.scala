@@ -44,7 +44,7 @@ class OverworldMapState(id:Int, overworld:Overworld) extends NiftyOverlayGameSta
     this.loadXml("com/rafkind/masterofmagic/ui/overworld-screen.xml");
 
     //backgroundImage = new Image(Data.path("img/overworld-example-double.png"));
-    backgroundImage = TerrainLbxReader.read("/apps/games/Master of Magic/TERRAIN.LBX");
+    backgroundImage = TerrainLbxReader.read(Data.path("TERRAIN.LBX"));
 
   }
 
@@ -55,6 +55,7 @@ class OverworldMapState(id:Int, overworld:Overworld) extends NiftyOverlayGameSta
         case KeyboardInputEvent.KEY_DOWN => y += 18;
         case KeyboardInputEvent.KEY_LEFT => x -= 20;
         case KeyboardInputEvent.KEY_RIGHT => x += 20;
+        case _ => {}
       }
     }
     return true;
