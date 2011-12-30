@@ -14,8 +14,14 @@ class Data{
   /* Get the 'data' property. Defaults to the 'data' directory */
   def getDataPath() = properties.getProperty("data", "data")
 
+  /* Get the 'originaldata' property. Defaults to the 'data' directory */
+  def getOriginalDataPath() = properties.getProperty("originaldata", "data")
+
   /* FIXME: probably use some Path class to join paths together */
-  def getPath(user:String) = getDataPath() + "/" + user
+  def getPath(user:String) = getDataPath() + java.io.File.separator + user
+
+  /* FIXME: probably use some Path class to join paths together */
+  def getOriginalPath(user:String) = getOriginalDataPath() + java.io.File.separator + user
 }
 
 object Data{
@@ -34,6 +40,8 @@ object Data{
    * that is currently configured.
    */
   def path(local:String) = getData().getPath(local)
+
+  def originalDataPath(local:String) = getData().getOriginalPath(local);
 
   /* Load a Properties object from a file given as a path on the filesystem
    * FIXME: this is just a utility method. move it elsewhere?

@@ -61,13 +61,13 @@ object TerrainSquare {
 }
 
 class TerrainSquare(
-  var spriteNumber:Int,
+  var spriteNumber:Int /*,
   var terrainType:TerrainType.TerrainTypeVal,
   var fogOfWarBitset:Int,
   var pollutionFlag:Boolean,
   var roadBitset:Int,
   var building:Option[Place],
-  var unitStack:Option[UnitStack]) {
+  var unitStack:Option[UnitStack]*/ ) {
     
   // what type of terrain
   // what terrain tile to use
@@ -93,13 +93,13 @@ object Overworld {
         var disty = (HEIGHT/2) - y;
         var dist = distx*distx + disty*disty;
         overworld.put(x, y, 
-                      new TerrainSquare(/* dist / 1000 */ x % 9,
+                      new TerrainSquare(/* dist / 1000 */ x % 9 /*,
                         TerrainType.OCEAN,
                         0,
                         false,
                         0,
                         None,
-                        None));
+                        None */));
       }
     }
 

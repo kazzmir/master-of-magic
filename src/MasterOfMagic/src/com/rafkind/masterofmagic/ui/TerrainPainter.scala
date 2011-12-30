@@ -12,16 +12,17 @@ import com.rafkind.masterofmagic.state._;
 
 object TerrainPainter {
 
-  // double sized
-  val TILE_WIDTH = 40;
-  val TILE_HEIGHT = 36;
+  import com.rafkind.masterofmagic.util.TerrainLbxReader._;
 
   // size of the big viewport, in tiles
   val VIEW_WIDTH = 12;
   val VIEW_HEIGHT = 11;
 
   def createDummySpriteSheetImage():Image = {
-    var imageBuffer = new ImageBuffer(TILE_WIDTH * 3, TILE_HEIGHT * 3);
+    
+    var imageBuffer = new ImageBuffer(
+      TILE_WIDTH * 3,
+      TILE_HEIGHT * 3);
 
     List(
       Color.BLACK,
@@ -85,13 +86,9 @@ class Minimap(overworld:Overworld) {
   }
 }
 
-class TerrainPainter(baseTileImage:Image) {
+class TerrainPainter(baseTileImage:Image) {  
+  import com.rafkind.masterofmagic.util.TerrainLbxReader._;
   
-  var baseTileSpriteSheet = new SpriteSheet(
-    baseTileImage,
-    TerrainPainter.TILE_WIDTH,
-    TerrainPainter.TILE_HEIGHT);
-
   def render(
     gc:GameContainer,
     graphics:Graphics,
@@ -100,27 +97,34 @@ class TerrainPainter(baseTileImage:Image) {
     startTileX:Int,
     startTileY:Int,
     overworld:Overworld):Unit = {
+    
+    val DOUBLE_WIDTH = TILE_WIDTH * 2;
+    val DOUBLE_HEIGHT = TILE_HEIGHT * 2;
 
-    baseTileSpriteSheet.startUse();
+    baseTileImage.startUse();
 
     for (tileY <- 0 until TerrainPainter.VIEW_HEIGHT) {
       for (tileX <- 0 until TerrainPainter.VIEW_WIDTH) {
 
-        var terrainSquare = overworld.get(
+        var terrainSquare:TerrainSquare = overworld.get(
           tileX + startTileX,
           tileY + startTileY);
 
-        var whichTile = terrainSquare.spriteNumber;
+        var whichTile:Int = terrainSquare.spriteNumber;
 
-        baseTileSpriteSheet.renderInUse(
-          startX + tileX * TerrainPainter.TILE_WIDTH,
-          startY + tileY * TerrainPainter.TILE_HEIGHT,
-          whichTile % 3,
-          whichTile / 3
+        var tileX = (whichTile % 3) * TILE_WIDTH;
+        var tileY = (whichTile / 3) * TILE_HEIGHT;
+        var destX = startX + tileX * DOUBLE_WIDTH;
+        var destY = startY + tileY * DOUBLE_HEIGHT;
+
+        baseTileImage.drawEmbedded(
+          destX, destY, destX + DOUBLE_WIDTH, destY + DOUBLE_HEIGHT,
+          tileX, tileY, tileX + TILE_WIDTH, tileY + TILE_HEIGHT
+
         );
       }
     }
 
-    baseTileSpriteSheet.endUse();
+    baseTileImage.endUse();
   }
 }
