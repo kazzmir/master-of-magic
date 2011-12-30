@@ -106,20 +106,20 @@ class TerrainPainter(baseTileImage:Image) {
     for (tileY <- 0 until TerrainPainter.VIEW_HEIGHT) {
       for (tileX <- 0 until TerrainPainter.VIEW_WIDTH) {
 
-        var terrainSquare:TerrainSquare = overworld.get(
+        val terrainSquare:TerrainSquare = overworld.get(
           tileX + startTileX,
           tileY + startTileY);
 
-        var whichTile:Int = terrainSquare.spriteNumber;
+        val whichTile:Int = terrainSquare.spriteNumber;
 
-        var tileX = (whichTile % 3) * TILE_WIDTH;
-        var tileY = (whichTile / 3) * TILE_HEIGHT;
-        var destX = startX + tileX * DOUBLE_WIDTH;
-        var destY = startY + tileY * DOUBLE_HEIGHT;
+        val tX = (whichTile % 3) * TILE_WIDTH;
+        val tY = (whichTile / 3) * TILE_HEIGHT;
+        val dX = startX + tileX * DOUBLE_WIDTH;
+        val dY = startY + tileY * DOUBLE_HEIGHT;
 
         baseTileImage.drawEmbedded(
-          destX, destY, destX + DOUBLE_WIDTH, destY + DOUBLE_HEIGHT,
-          tileX, tileY, tileX + TILE_WIDTH, tileY + TILE_HEIGHT
+          dX, dY, dX + DOUBLE_WIDTH, dY + DOUBLE_HEIGHT,
+          tX, tY, tX + TILE_WIDTH, tY + TILE_HEIGHT
 
         );
       }
