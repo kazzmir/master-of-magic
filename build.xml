@@ -12,6 +12,7 @@
 
     <path id="all">
         <pathelement path="classes" />
+        <pathelement path="target/scala-2.9.1/classes" />
         <pathelement location="${scala-library.jar}" />
         <pathelement location="lib/slick.jar" />
         <pathelement location="lib/lwjgl.jar" />
