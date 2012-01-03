@@ -85,17 +85,23 @@ object TerrainType {
     NATURE_NODE);
 }
 
-
-class TerrainTileMetadata(
+case class TerrainTileMetadata(
   val id:Int,
   val terrainType:TerrainType,
   val borderingTerrainTypes:Array[Option[TerrainType]],
   val plane:Plane,
-  val parentId:Option[TerrainTileMetadata]) {
+  val parentId:Option[TerrainTileMetadata])
 
+object TerrainTileMetadata {
+  import com.rafkind.masterofmagic.util.TerrainLbxReader._;
+  
+  var data:Array[TerrainTileMetadata] = 
+    new Array[TerrainTileMetadata](TILE_COUNT);
+
+  def read(fn:String):Unit = {
+    
+  }
 }
-
-
 
 object TerrainSquare {
   
