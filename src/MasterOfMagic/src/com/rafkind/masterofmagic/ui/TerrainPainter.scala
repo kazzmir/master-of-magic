@@ -118,7 +118,7 @@ class TerrainPainter(baseTileImage:Image) {
         val dY = startY + tileY * DOUBLE_HEIGHT;
 
         baseTileImage.drawEmbedded(
-          dX, dY, dX + 200, dY + 180,
+          dX, dY, dX + DOUBLE_WIDTH, dY + DOUBLE_HEIGHT,
           tX, tY, tX + TILE_WIDTH, tY + TILE_HEIGHT
 
         );

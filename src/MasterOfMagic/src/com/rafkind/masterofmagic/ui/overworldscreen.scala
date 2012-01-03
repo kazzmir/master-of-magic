@@ -80,7 +80,7 @@ class OverworldMapState(id:Int, overworld:Overworld) extends NiftyOverlayGameSta
                          x+0, y+0,
                          x+640, y+400);
 
-    /*super.render(container, game, graphics);
+    super.render(container, game, graphics);
 
     terrainPainter.render(
       container,
@@ -90,6 +90,6 @@ class OverworldMapState(id:Int, overworld:Overworld) extends NiftyOverlayGameSta
       0,
       0, overworld);
 
-    minimap.renderMiniMap(500, 40, 0, 0, 120, 64); */
+    minimap.renderMiniMap(500, 40, 0, 0, 120, 64);
   }
 }

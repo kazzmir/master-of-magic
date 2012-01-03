@@ -5,6 +5,32 @@
 
 package com.rafkind.masterofmagic.state
 
+case class CardinalDirection(val id:Int, val dx:Int, val dy:Int)
+object CardinalDirection{
+
+  val NORTH       = CardinalDirection(0, 0, -1);
+  val NORTH_EAST  = CardinalDirection(1, 1, -1);
+  val EAST        = CardinalDirection(2, 1, 0);
+  val SOUTH_EAST  = CardinalDirection(3, 1, 1);
+  val SOUTH       = CardinalDirection(4, 0, 1);
+  val SOUTH_WEST  = CardinalDirection(5, -1, 1);
+  val WEST        = CardinalDirection(6, -1, 0);
+  val NORTH_WEST  = CardinalDirection(7, -1, -1);
+  val CENTER      = CardinalDirection(8, 0, 0);
+
+  val values = Array(NORTH, NORTH_EAST, EAST, SOUTH_EAST, SOUTH, SOUTH_WEST, WEST, NORTH_WEST);
+  val valuesStraight = Array(NORTH, EAST, SOUTH, WEST);
+  val valuesAll = Array(CENTER, NORTH, NORTH_EAST, EAST, SOUTH_EAST, SOUTH, SOUTH_WEST, WEST, NORTH_WEST);
+}
+
+case class Plane(val id:Int)
+object Plane {
+  val ARCANUS = Plane(0)
+  val MYRROR = Plane(1)
+
+  val values = Array(ARCANUS, MYRROR)
+}
+
 class Place {
 
 }
@@ -23,35 +49,50 @@ class Player {
 
 // http://www.dragonsword.com/magic/eljay/SaveGam.html
 
-// Enumerations in scala are confusing!
-// the following copied from here:
-// http://downgra.de/2010/02/11/playing-with-scala-enumeration/
-object TerrainType extends Enumeration {
+case class TerrainType(val id:Int)
+object TerrainType {
+  val OCEAN = TerrainType(0);
+  val SHORE = TerrainType(1);
+  val RIVER = TerrainType(2);
+  val SWAMP = TerrainType(3);
+  val TUNDRA = TerrainType(4);
+  val DEEP_TUNDRA = TerrainType(5);
+  val MOUNTAIN = TerrainType(6);
+  val VOLCANO = TerrainType(7);
+  val CHAOS_NODE = TerrainType(8);
+  val HILLS = TerrainType(9);
+  val GRASSLAND = TerrainType(10);
+  val SORCERY_NODE = TerrainType(11);
+  val DESERT = TerrainType(12);
+  val FOREST = TerrainType(13);
+  val NATURE_NODE = TerrainType(14);
 
-  case class TerrainTypeVal(number:Int) extends Val(number) {
-    // put definitions in here
-  }
+  val values = Array(
+    OCEAN,
+    SHORE,
+    RIVER,
+    SWAMP,
+    TUNDRA,
+    DEEP_TUNDRA,
+    MOUNTAIN,
+    VOLCANO,
+    CHAOS_NODE,
+    HILLS,
+    GRASSLAND,
+    SORCERY_NODE,
+    DESERT,
+    FOREST,
+    NATURE_NODE);
+}
 
-  val OCEAN = TerrainTypeVal(0);
-  val SHORE = TerrainTypeVal(1);
-  val RIVER = TerrainTypeVal(2);
-  val SWAMP = TerrainTypeVal(3);
-  val TUNDRA = TerrainTypeVal(4);
-  val DEEP_TUNDRA = TerrainTypeVal(5);
-  val MOUNTAIN = TerrainTypeVal(6);
-  val VOLCANO = TerrainTypeVal(7);
-  val CHAOS_NODE = TerrainTypeVal(8);
-  val HILLS = TerrainTypeVal(9);
-  val GRASSLAND = TerrainTypeVal(10);
-  val SORCERY_NODE = TerrainTypeVal(11);
-  val DESERT = TerrainTypeVal(12);
-  val FOREST = TerrainTypeVal(13);
-  val NATURE_NODE = TerrainTypeVal(14);
 
-  // needed I think because Enumeration.elements is final and return the invariant
-  // type Enumeration.Value :|
-  implicit def valueToPlanet(v: Value): TerrainTypeVal =
-    v.asInstanceOf[TerrainTypeVal]
+class TerrainTileMetadata(
+  val id:Int,
+  val terrainType:TerrainType,
+  val borderingTerrainTypes:Array[Option[TerrainType]],
+  val plane:Plane,
+  val parentId:Option[TerrainTileMetadata]) {
+
 }
 
 
@@ -61,13 +102,13 @@ object TerrainSquare {
 }
 
 class TerrainSquare(
-  var spriteNumber:Int /*,
-  var terrainType:TerrainType.TerrainTypeVal,
+  var spriteNumber:Int,
+  var terrainType:TerrainType,
   var fogOfWarBitset:Int,
   var pollutionFlag:Boolean,
   var roadBitset:Int,
   var building:Option[Place],
-  var unitStack:Option[UnitStack]*/ ) {
+  var unitStack:Option[UnitStack]) {
     
   // what type of terrain
   // what terrain tile to use
@@ -93,13 +134,13 @@ object Overworld {
         var disty = (HEIGHT/2) - y;
         var dist = distx*distx + disty*disty;
         overworld.put(x, y, 
-                      new TerrainSquare(/* dist / 1000 */ x % 9 /*,
+                      new TerrainSquare(/* dist / 1000 */ x % 9,
                         TerrainType.OCEAN,
                         0,
                         false,
                         0,
                         None,
-                        None */));
+                        None));
       }
     }
 
