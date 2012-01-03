@@ -105,7 +105,7 @@ object TerrainLbxReader {
 
   val TILE_COUNT = 1761;
 
-  def fatpixel(imageBuffer:ImageBuffer,
+  def putpixel(imageBuffer:ImageBuffer,
                x:Int,
                y:Int,
                colorIndex:Int):Unit = {
@@ -117,17 +117,14 @@ object TerrainLbxReader {
     val a = color.getAlpha();
     
     imageBuffer.setRGBA(x, y, r, g, b, a);
-    imageBuffer.setRGBA(x+1, y, r, g, b, a);
-    imageBuffer.setRGBA(x, y+1, r, g, b, a);
-    imageBuffer.setRGBA(x+1, y+1, r, g, b, a);
   }
 
   def read(fileName:String):Image = {
     val lbxFile = new LbxReader(fileName)
 
     val imageBuffer = new ImageBuffer(
-      TILE_WIDTH * 2 * SPRITE_SHEET_WIDTH,
-      TILE_HEIGHT * 2 * SPRITE_SHEET_HEIGHT);
+      TILE_WIDTH * SPRITE_SHEET_WIDTH,
+      TILE_HEIGHT * SPRITE_SHEET_HEIGHT);
 
     var row:Int = 0;
     var col:Int = 0;
@@ -142,9 +139,9 @@ object TerrainLbxReader {
       for (y <- 0 until TILE_WIDTH) {
         for (x <- 0 until TILE_HEIGHT) {
           val c = lbxFile.read()
-          val px = (col * TILE_WIDTH * 2) + (y * 2)
-          val py = (row * TILE_HEIGHT * 2) + (x * 2)
-          fatpixel(imageBuffer, px, py, c)
+          val px = (col * TILE_WIDTH) + y;
+          val py = (row * TILE_HEIGHT) + x;
+          putpixel(imageBuffer, px, py, c)
         }
       }
       // skip 4 word footer
@@ -160,6 +157,6 @@ object TerrainLbxReader {
 
     lbxFile.close();
     
-    return imageBuffer.getImage();
+    return imageBuffer.getImage(Image.FILTER_NEAREST);
   }
 }

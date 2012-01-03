@@ -52,7 +52,7 @@ object TerrainPainter {
       }
       };
 
-    return imageBuffer.getImage();
+    return imageBuffer.getImage(Image.FILTER_NEAREST);
   }
 }
 
@@ -88,7 +88,7 @@ class Minimap(overworld:Overworld) {
 
 class TerrainPainter(baseTileImage:Image) {  
   import com.rafkind.masterofmagic.util.TerrainLbxReader._;
-  
+
   def render(
     gc:GameContainer,
     graphics:Graphics,
@@ -118,7 +118,7 @@ class TerrainPainter(baseTileImage:Image) {
         val dY = startY + tileY * DOUBLE_HEIGHT;
 
         baseTileImage.drawEmbedded(
-          dX, dY, dX + DOUBLE_WIDTH, dY + DOUBLE_HEIGHT,
+          dX, dY, dX + 200, dY + 180,
           tX, tY, tX + TILE_WIDTH, tY + TILE_HEIGHT
 
         );
