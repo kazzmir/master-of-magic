@@ -26,10 +26,44 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
 
   override def init(container:GameContainer):Unit = {
     terrainTileSheet = TerrainLbxReader.read(Data.originalDataPath("TERRAIN.LBX"));
+    org.lwjgl.input.Keyboard.enableRepeatEvents(false);
   }
 
   override def update(container:GameContainer, delta:Int):Unit = {
+    var input = container.getInput();
 
+    var keys = Array(
+      Input.KEY_NUMPAD5,
+      Input.KEY_NUMPAD8,
+      Input.KEY_NUMPAD9,
+      Input.KEY_NUMPAD6,
+      Input.KEY_NUMPAD3,
+      Input.KEY_NUMPAD2,
+      Input.KEY_NUMPAD1,
+      Input.KEY_NUMPAD4,
+      Input.KEY_NUMPAD7);
+    
+    (keys zip CardinalDirection.valuesAll) map {
+      case (k, d) =>
+        if (input.isKeyPressed(k)) {
+          currentDirection = d;
+          input.clearKeyPressedRecord();
+        }
+    }
+
+    if (input.isKeyPressed(Input.KEY_NUMPAD0)) {
+      if (currentTile < TILE_COUNT) {
+        currentTile += 1;
+      }
+      input.clearKeyPressedRecord();
+    }
+
+    if (input.isKeyPressed(Input.KEY_PERIOD)) {
+      if (currentTile > 0) {
+        currentTile -= 1;
+      }
+      input.clearKeyPressedRecord();
+    }
   }
 
   override def render(container:GameContainer, graphics:Graphics):Unit = {
