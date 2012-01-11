@@ -10,6 +10,16 @@ import org.newdawn.slick._;
 import com.rafkind.masterofmagic.system._;
 import com.rafkind.masterofmagic.state._;
 
+// mirrors TerrainTileMetadata in State.scala
+class EditableTerrainTileMetadata(
+  var id:Int,
+  var terrainType:TerrainType,
+  var borderingTerrainTypes:Array[Option[TerrainType]],
+  var plane:Plane,
+  var parentId:Option[TerrainTileMetadata]) {
+
+}
+
 class TerrainMetadataEditor(title:String) extends BasicGame(title) {
   import com.rafkind.masterofmagic.util.TerrainLbxReader._;
   
@@ -24,15 +34,28 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
 
   val uiColor = Color.white;
 
+  var metadata = new Array[EditableTerrainTileMetadata](TILE_COUNT);
+  for (i <- 0 until metadata.length) {
+
+    var borders = new Array[Option[TerrainType]](CardinalDirection.values.length);
+    for (j <- 0 until borders.length) {
+      borders(j) = None;
+    }
+    metadata(i) = new EditableTerrainTileMetadata(i,
+                                          TerrainType.OCEAN,
+                                          borders,
+                                          Plane.ARCANUS, None);
+  }
+
   override def init(container:GameContainer):Unit = {
     terrainTileSheet = TerrainLbxReader.read(Data.originalDataPath("TERRAIN.LBX"));
     org.lwjgl.input.Keyboard.enableRepeatEvents(false);
   }
 
   override def update(container:GameContainer, delta:Int):Unit = {
-    var input = container.getInput();
+    val input = container.getInput();
 
-    var keys = Array(
+    val keys = Array(
       Input.KEY_NUMPAD5,
       Input.KEY_NUMPAD8,
       Input.KEY_NUMPAD9,
@@ -51,18 +74,48 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
         }
     }
 
-    if (input.isKeyPressed(Input.KEY_NUMPAD0)) {
+    if (input.isKeyPressed(Input.KEY_RBRACKET)) {
       if (currentTile < TILE_COUNT) {
         currentTile += 1;
       }
       input.clearKeyPressedRecord();
     }
 
-    if (input.isKeyPressed(Input.KEY_PERIOD)) {
+    if (input.isKeyPressed(Input.KEY_LBRACKET)) {
       if (currentTile > 0) {
         currentTile -= 1;
       }
       input.clearKeyPressedRecord();
+    }
+
+    val terrainKeys = Array(
+      Input.KEY_Q,
+      Input.KEY_W,
+      Input.KEY_E,
+      Input.KEY_R,
+      Input.KEY_T,
+      Input.KEY_A,
+      Input.KEY_S,
+      Input.KEY_D,
+      Input.KEY_F,
+      Input.KEY_G,
+      Input.KEY_Z,
+      Input.KEY_X,
+      Input.KEY_C,
+      Input.KEY_V,
+      Input.KEY_B
+    );
+
+    (terrainKeys zip TerrainType.values) map {
+      case (k, t) =>
+        if (input.isKeyPressed(k)) {
+          if (currentDirection == CardinalDirection.CENTER) {
+            metadata(currentTile).terrainType = t
+          } else {
+            metadata(currentTile).borderingTerrainTypes(currentDirection.id) = Some(t);
+          }
+          input.clearKeyPressedRecord();
+        }
     }
   }
 
@@ -92,6 +145,32 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
     graphics.setColor(uiColor);
     graphics.drawRect(x1, y1, x2-x1, y2-y1);
 
+    graphics.drawString(
+      metadata(currentTile).plane,
+      dX,
+      dY);
+
+    graphics.drawString(
+      metadata(currentTile).terrainType,
+      dX,
+      dY + 16
+      );
+
+    graphics.drawString(
+      "Tile #" + currentTile,
+      dX,
+      dY + 32
+      );
+
+    (metadata(currentTile).borderingTerrainTypes zip CardinalDirection.values) map {
+      case (optionalTerrain, direction) =>
+        graphics.drawString(optionalTerrain match {
+            case Some(terrain) => terrain
+            case None => ""
+          },
+                            cX + BIG_WIDTH * direction.dx - BIG_WIDTH/2,
+                            cY + BIG_HEIGHT * direction.dy - BIG_HEIGHT / 2)
+    }    
   }
 }
 

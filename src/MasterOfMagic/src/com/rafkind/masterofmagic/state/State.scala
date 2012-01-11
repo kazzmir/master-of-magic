@@ -23,12 +23,15 @@ object CardinalDirection{
   val valuesAll = Array(CENTER, NORTH, NORTH_EAST, EAST, SOUTH_EAST, SOUTH, SOUTH_WEST, WEST, NORTH_WEST);
 }
 
-case class Plane(val id:Int)
+case class Plane(val id:Int, val name:String)
 object Plane {
-  val ARCANUS = Plane(0)
-  val MYRROR = Plane(1)
+  val ARCANUS = Plane(0, "Arcanus")
+  val MYRROR = Plane(1, "Myrror")
 
   val values = Array(ARCANUS, MYRROR)
+
+  implicit def plane2string(p:Plane) = p.name
+    
 }
 
 class Place {
@@ -49,23 +52,23 @@ class Player {
 
 // http://www.dragonsword.com/magic/eljay/SaveGam.html
 
-case class TerrainType(val id:Int)
+case class TerrainType(val id:Int, val name:String)
 object TerrainType {
-  val OCEAN = TerrainType(0);
-  val SHORE = TerrainType(1);
-  val RIVER = TerrainType(2);
-  val SWAMP = TerrainType(3);
-  val TUNDRA = TerrainType(4);
-  val DEEP_TUNDRA = TerrainType(5);
-  val MOUNTAIN = TerrainType(6);
-  val VOLCANO = TerrainType(7);
-  val CHAOS_NODE = TerrainType(8);
-  val HILLS = TerrainType(9);
-  val GRASSLAND = TerrainType(10);
-  val SORCERY_NODE = TerrainType(11);
-  val DESERT = TerrainType(12);
-  val FOREST = TerrainType(13);
-  val NATURE_NODE = TerrainType(14);
+  val OCEAN = TerrainType(0, "Ocean");
+  val SHORE = TerrainType(1, "Shore");
+  val RIVER = TerrainType(2, "River");
+  val SWAMP = TerrainType(3, "Swamp");
+  val TUNDRA = TerrainType(4, "Tundra");
+  val DEEP_TUNDRA = TerrainType(5, "Deep Tundra");
+  val MOUNTAIN = TerrainType(6, "Mountain");
+  val VOLCANO = TerrainType(7, "Volcano");
+  val CHAOS_NODE = TerrainType(8, "Chaos Node");
+  val HILLS = TerrainType(9, "Hills");
+  val GRASSLAND = TerrainType(10, "Grassland");
+  val SORCERY_NODE = TerrainType(11, "Sorcery Node");
+  val DESERT = TerrainType(12, "Desert");
+  val FOREST = TerrainType(13, "Forest");
+  val NATURE_NODE = TerrainType(14, "Nature Node");
 
   val values = Array(
     OCEAN,
@@ -83,6 +86,8 @@ object TerrainType {
     DESERT,
     FOREST,
     NATURE_NODE);
+
+  implicit def terrainType2string(t:TerrainType) = t.name
 }
 
 case class TerrainTileMetadata(
