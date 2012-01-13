@@ -51,6 +51,25 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
   val uiColor = Color.white;
 
   var metadata = new Array[EditableTerrainTileMetadata](TILE_COUNT);
+
+  load(Data.path("terrainMetaData.xml")) \ "metadata" foreach { (m) =>
+    var borders = new Array[Option[TerrainType]](CardinalDirection.values.length);
+    /*m \ "borders" foreach { (b) =>
+      (b.attribute("direction"), b.attribute("terrain")) match {
+        case (Some(dir), Some(terr)) => borders(dir) = Some(terr)
+        case _ =>
+      }      
+    }*/
+    /*(m.attribute("id"), m.attribute("terrainType"), m.attribute("plane")) match {
+      case (Some(id), Some(terrainType), Some(plane)) =>
+        metadata(id) = new EditableTerrainTileMetadata(id,
+                                            TerrainType.values(terrainType),
+                                            borders,
+                                            Plane.values(plane), None);
+      case _ =>
+    }*/
+  }
+
   for (i <- 0 until metadata.length) {
 
     var borders = new Array[Option[TerrainType]](CardinalDirection.values.length);
@@ -62,6 +81,7 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
                                           borders,
                                           Plane.ARCANUS, None);
   }
+
 
   override def init(container:GameContainer):Unit = {
     terrainTileSheet = TerrainLbxReader.read(Data.originalDataPath("TERRAIN.LBX"));
