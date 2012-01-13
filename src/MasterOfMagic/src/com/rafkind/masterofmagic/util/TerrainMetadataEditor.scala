@@ -9,6 +9,8 @@ import org.newdawn.slick._;
 
 import com.rafkind.masterofmagic.system._;
 import com.rafkind.masterofmagic.state._;
+import scala.xml.XML._;
+import scala.xml._;
 
 // mirrors TerrainTileMetadata in State.scala
 class EditableTerrainTileMetadata(
@@ -18,6 +20,20 @@ class EditableTerrainTileMetadata(
   var plane:Plane,
   var parentId:Option[TerrainTileMetadata]) {
 
+  def toNode() =
+    <metadata 
+      id={id.toString}
+      terrainType={terrainType.id.toString}
+      plane={plane.id.toString}>
+      {(borderingTerrainTypes zip CardinalDirection.values) map {
+        case (b, d) =>
+          b match {
+            case Some(x) => <borders direction={d.id.toString} terrain={x.id.toString} />
+            case None =>
+          }
+      }
+    }
+    </metadata>
 }
 
 class TerrainMetadataEditor(title:String) extends BasicGame(title) {
@@ -117,6 +133,21 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
           input.clearKeyPressedRecord();
         }
     }
+
+    if (input.isKeyPressed(Input.KEY_ESCAPE)) {
+      writeOut();
+      System.exit(0);
+    }
+  }
+
+  def writeOut() {
+    
+    val doc =
+      <terrain>
+        {metadata.map(m =>{m.toNode()})}
+      </terrain>;
+
+    save(Data.path("terrainMetaData.xml"), doc, "utf-8", true);
   }
 
   override def render(container:GameContainer, graphics:Graphics):Unit = {
