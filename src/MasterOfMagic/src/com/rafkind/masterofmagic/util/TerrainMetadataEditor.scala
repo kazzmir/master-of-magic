@@ -29,7 +29,7 @@ class EditableTerrainTileMetadata(
         case (b, d) =>
           b match {
             case Some(x) => <borders direction={d.id.toString} terrain={x.id.toString} />
-            case None =>
+            case _ =>
           }
       }
     }
@@ -54,23 +54,21 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
 
   load(Data.path("terrainMetaData.xml")) \ "metadata" foreach { (m) =>
     var borders = new Array[Option[TerrainType]](CardinalDirection.values.length);
-    /*m \ "borders" foreach { (b) =>
-      (b.attribute("direction"), b.attribute("terrain")) match {
-        case (Some(dir), Some(terr)) => borders(dir) = Some(terr)
-        case _ =>
-      }      
-    }*/
-    /*(m.attribute("id"), m.attribute("terrainType"), m.attribute("plane")) match {
-      case (Some(id), Some(terrainType), Some(plane)) =>
-        metadata(id) = new EditableTerrainTileMetadata(id,
+    m \ "borders" foreach { (b) =>
+      borders(Integer.parseInt((b \ "@direction").text)) =
+        Some(TerrainType.values(Integer.parseInt((b \ "@terrain").text)));
+    }
+
+    val id = Integer.parseInt((m \ "@id").text)
+    val terrainType = Integer.parseInt((m \ "@terrainType").text);
+    val plane = Integer.parseInt((m \ "@plane").text);
+    metadata(id) = new EditableTerrainTileMetadata(id,
                                             TerrainType.values(terrainType),
                                             borders,
                                             Plane.values(plane), None);
-      case _ =>
-    }*/
   }
 
-  for (i <- 0 until metadata.length) {
+  /*for (i <- 0 until metadata.length) {
 
     var borders = new Array[Option[TerrainType]](CardinalDirection.values.length);
     for (j <- 0 until borders.length) {
@@ -80,7 +78,7 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
                                           TerrainType.OCEAN,
                                           borders,
                                           Plane.ARCANUS, None);
-  }
+  }*/
 
 
   override def init(container:GameContainer):Unit = {
@@ -92,15 +90,15 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
     val input = container.getInput();
 
     val keys = Array(
-      Input.KEY_NUMPAD5,
-      Input.KEY_NUMPAD8,
-      Input.KEY_NUMPAD9,
-      Input.KEY_NUMPAD6,
-      Input.KEY_NUMPAD3,
-      Input.KEY_NUMPAD2,
-      Input.KEY_NUMPAD1,
-      Input.KEY_NUMPAD4,
-      Input.KEY_NUMPAD7);
+      Input.KEY_K,
+      Input.KEY_I,
+      Input.KEY_O,
+      Input.KEY_L,
+      Input.KEY_PERIOD,
+      Input.KEY_COMMA,
+      Input.KEY_M,
+      Input.KEY_J,
+      Input.KEY_U);
     
     (keys zip CardinalDirection.valuesAll) map {
       case (k, d) =>
@@ -217,7 +215,7 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
       case (optionalTerrain, direction) =>
         graphics.drawString(optionalTerrain match {
             case Some(terrain) => terrain
-            case None => ""
+            case _ => ""
           },
                             cX + BIG_WIDTH * direction.dx - BIG_WIDTH/2,
                             cY + BIG_HEIGHT * direction.dy - BIG_HEIGHT / 2)
