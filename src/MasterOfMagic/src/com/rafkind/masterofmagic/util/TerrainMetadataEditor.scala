@@ -152,6 +152,15 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
         }
     }
 
+    if (input.isKeyPressed(Input.KEY_P)) {
+          metadata(currentTile).plane match {
+            case Plane.ARCANUS => metadata(currentTile).plane = Plane.MYRROR;
+            case Plane.MYRROR => metadata(currentTile).plane = Plane.ARCANUS;
+          }
+
+          input.clearKeyPressedRecord();
+        }
+
     if (input.isKeyPressed(Input.KEY_ESCAPE)) {
       writeOut();
       System.exit(0);

@@ -16,64 +16,64 @@
       <borders terrain="0" direction="0"></borders><borders terrain="0" direction="1"></borders><borders terrain="0" direction="2"></borders><borders terrain="0" direction="3"></borders><borders terrain="1" direction="4"></borders><borders terrain="10" direction="5"></borders><borders terrain="1" direction="6"></borders><borders terrain="0" direction="7"></borders>
     </metadata><metadata plane="0" terrainType="1" id="7">
       <borders terrain="0" direction="0"></borders><borders terrain="0" direction="1"></borders><borders terrain="1" direction="2"></borders><borders terrain="10" direction="3"></borders><borders terrain="1" direction="4"></borders><borders terrain="10" direction="5"></borders><borders terrain="1" direction="6"></borders><borders terrain="0" direction="7"></borders>
-    </metadata><metadata plane="0" terrainType="0" id="8">
-      
-    </metadata><metadata plane="0" terrainType="0" id="9">
-      
-    </metadata><metadata plane="0" terrainType="0" id="10">
-      
-    </metadata><metadata plane="0" terrainType="0" id="11">
-      
-    </metadata><metadata plane="0" terrainType="0" id="12">
-      
-    </metadata><metadata plane="0" terrainType="0" id="13">
-      
-    </metadata><metadata plane="0" terrainType="0" id="14">
-      
-    </metadata><metadata plane="0" terrainType="0" id="15">
-      
-    </metadata><metadata plane="0" terrainType="0" id="16">
-      
-    </metadata><metadata plane="0" terrainType="0" id="17">
-      
-    </metadata><metadata plane="0" terrainType="0" id="18">
-      
-    </metadata><metadata plane="0" terrainType="0" id="19">
-      
-    </metadata><metadata plane="0" terrainType="0" id="20">
-      
-    </metadata><metadata plane="0" terrainType="0" id="21">
-      
-    </metadata><metadata plane="0" terrainType="0" id="22">
-      
-    </metadata><metadata plane="0" terrainType="0" id="23">
-      
-    </metadata><metadata plane="0" terrainType="0" id="24">
-      
-    </metadata><metadata plane="0" terrainType="0" id="25">
-      
-    </metadata><metadata plane="0" terrainType="0" id="26">
-      
-    </metadata><metadata plane="0" terrainType="0" id="27">
-      
-    </metadata><metadata plane="0" terrainType="0" id="28">
-      
-    </metadata><metadata plane="0" terrainType="0" id="29">
-      
-    </metadata><metadata plane="0" terrainType="0" id="30">
-      
-    </metadata><metadata plane="0" terrainType="0" id="31">
-      
-    </metadata><metadata plane="0" terrainType="0" id="32">
-      
-    </metadata><metadata plane="0" terrainType="0" id="33">
-      
-    </metadata><metadata plane="0" terrainType="0" id="34">
-      
-    </metadata><metadata plane="0" terrainType="0" id="35">
-      
-    </metadata><metadata plane="0" terrainType="0" id="36">
-      
+    </metadata><metadata plane="0" terrainType="1" id="8">
+      <borders terrain="1" direction="0"></borders><borders terrain="10" direction="1"></borders><borders terrain="1" direction="2"></borders><borders terrain="0" direction="3"></borders><borders terrain="1" direction="4"></borders><borders terrain="10" direction="5"></borders><borders terrain="1" direction="6"></borders><borders terrain="0" direction="7"></borders>
+    </metadata><metadata plane="0" terrainType="1" id="9">
+      <borders terrain="1" direction="0"></borders><borders terrain="0" direction="1"></borders><borders terrain="0" direction="2"></borders><borders terrain="0" direction="3"></borders><borders terrain="1" direction="4"></borders><borders terrain="10" direction="5"></borders><borders terrain="1" direction="6"></borders><borders terrain="10" direction="7"></borders>
+    </metadata><metadata plane="0" terrainType="1" id="10">
+      <borders terrain="1" direction="0"></borders><borders terrain="10" direction="1"></borders><borders terrain="10" direction="2"></borders><borders terrain="10" direction="3"></borders><borders terrain="1" direction="4"></borders><borders terrain="0" direction="5"></borders><borders terrain="0" direction="6"></borders><borders terrain="0" direction="7"></borders>
+    </metadata><metadata plane="0" terrainType="1" id="11">
+      <borders terrain="0" direction="0"></borders><borders terrain="0" direction="1"></borders><borders terrain="1" direction="2"></borders><borders terrain="10" direction="3"></borders><borders terrain="10" direction="4"></borders><borders terrain="10" direction="5"></borders><borders terrain="1" direction="6"></borders><borders terrain="0" direction="7"></borders>
+    </metadata><metadata plane="0" terrainType="1" id="12">
+      <borders terrain="1" direction="0"></borders><borders terrain="0" direction="1"></borders><borders terrain="0" direction="2"></borders><borders terrain="0" direction="3"></borders><borders terrain="1" direction="4"></borders><borders terrain="10" direction="5"></borders><borders terrain="10" direction="6"></borders><borders terrain="10" direction="7"></borders>
+    </metadata><metadata plane="0" terrainType="1" id="13">
+      <borders terrain="1" direction="0"></borders><borders terrain="10" direction="1"></borders><borders terrain="1" direction="2"></borders><borders terrain="0" direction="3"></borders><borders terrain="0" direction="4"></borders><borders terrain="0" direction="5"></borders><borders terrain="1" direction="6"></borders><borders terrain="10" direction="7"></borders>
+    </metadata><metadata plane="0" terrainType="1" id="14">
+      <borders terrain="1" direction="0"></borders><borders terrain="0" direction="1"></borders><borders terrain="1" direction="2"></borders><borders terrain="10" direction="3"></borders><borders terrain="1" direction="4"></borders><borders terrain="0" direction="5"></borders><borders terrain="1" direction="6"></borders><borders terrain="10" direction="7"></borders>
+    </metadata><metadata plane="0" terrainType="1" id="15">
+      <borders terrain="1" direction="0"></borders><borders terrain="10" direction="1"></borders><borders terrain="1" direction="2"></borders><borders terrain="10" direction="3"></borders><borders terrain="1" direction="4"></borders><borders terrain="0" direction="5"></borders><borders terrain="0" direction="6"></borders><borders terrain="0" direction="7"></borders>
+    </metadata><metadata plane="0" terrainType="1" id="16">
+      <borders terrain="1" direction="0"></borders><borders terrain="10" direction="1"></borders><borders terrain="10" direction="2"></borders><borders terrain="10" direction="3"></borders><borders terrain="1" direction="4"></borders><borders terrain="0" direction="5"></borders><borders terrain="0" direction="6"></borders><borders terrain="0" direction="7"></borders>
+    </metadata><metadata plane="0" terrainType="1" id="17">
+      <borders terrain="1" direction="0"></borders><borders terrain="10" direction="1"></borders><borders terrain="10" direction="2"></borders><borders terrain="10" direction="3"></borders><borders terrain="1" direction="4"></borders><borders terrain="0" direction="5"></borders><borders terrain="0" direction="6"></borders><borders terrain="0" direction="7"></borders>
+    </metadata><metadata plane="0" terrainType="1" id="18">
+      <borders terrain="10" direction="0"></borders><borders terrain="10" direction="1"></borders><borders terrain="10" direction="2"></borders><borders terrain="10" direction="3"></borders><borders terrain="10" direction="4"></borders><borders terrain="10" direction="5"></borders><borders terrain="10" direction="6"></borders><borders terrain="10" direction="7"></borders>
+    </metadata><metadata plane="0" terrainType="1" id="19">
+      <borders terrain="10" direction="0"></borders><borders terrain="10" direction="1"></borders><borders terrain="10" direction="2"></borders><borders terrain="10" direction="3"></borders><borders terrain="10" direction="4"></borders><borders terrain="10" direction="5"></borders><borders terrain="10" direction="6"></borders><borders terrain="10" direction="7"></borders>
+    </metadata><metadata plane="0" terrainType="1" id="20">
+      <borders terrain="10" direction="0"></borders><borders terrain="10" direction="1"></borders><borders terrain="10" direction="2"></borders><borders terrain="10" direction="3"></borders><borders terrain="10" direction="4"></borders><borders terrain="10" direction="5"></borders><borders terrain="10" direction="6"></borders><borders terrain="10" direction="7"></borders>
+    </metadata><metadata plane="0" terrainType="1" id="21">
+      <borders terrain="10" direction="0"></borders><borders terrain="10" direction="1"></borders><borders terrain="10" direction="2"></borders><borders terrain="10" direction="3"></borders><borders terrain="10" direction="4"></borders><borders terrain="10" direction="5"></borders><borders terrain="10" direction="6"></borders><borders terrain="10" direction="7"></borders>
+    </metadata><metadata plane="0" terrainType="1" id="22">
+      <borders terrain="1" direction="0"></borders><borders terrain="0" direction="1"></borders><borders terrain="0" direction="2"></borders><borders terrain="0" direction="3"></borders><borders terrain="1" direction="4"></borders><borders terrain="10" direction="5"></borders><borders terrain="10" direction="6"></borders><borders terrain="10" direction="7"></borders>
+    </metadata><metadata plane="0" terrainType="1" id="23">
+      <borders terrain="1" direction="0"></borders><borders terrain="0" direction="1"></borders><borders terrain="0" direction="2"></borders><borders terrain="0" direction="3"></borders><borders terrain="1" direction="4"></borders><borders terrain="10" direction="5"></borders><borders terrain="10" direction="6"></borders><borders terrain="10" direction="7"></borders>
+    </metadata><metadata plane="0" terrainType="1" id="24">
+      <borders terrain="1" direction="0"></borders><borders terrain="10" direction="1"></borders><borders terrain="10" direction="2"></borders><borders terrain="10" direction="3"></borders><borders terrain="1" direction="4"></borders><borders terrain="0" direction="5"></borders><borders terrain="0" direction="6"></borders><borders terrain="0" direction="7"></borders>
+    </metadata><metadata plane="0" terrainType="1" id="25">
+      <borders terrain="10" direction="0"></borders><borders terrain="10" direction="1"></borders><borders terrain="1" direction="2"></borders><borders terrain="0" direction="3"></borders><borders terrain="0" direction="4"></borders><borders terrain="0" direction="5"></borders><borders terrain="1" direction="6"></borders><borders terrain="10" direction="7"></borders>
+    </metadata><metadata plane="0" terrainType="1" id="26">
+      <borders terrain="1" direction="0"></borders><borders terrain="0" direction="1"></borders><borders terrain="0" direction="2"></borders><borders terrain="0" direction="3"></borders><borders terrain="1" direction="4"></borders><borders terrain="10" direction="5"></borders><borders terrain="10" direction="6"></borders><borders terrain="10" direction="7"></borders>
+    </metadata><metadata plane="0" terrainType="1" id="27">
+      <borders terrain="1" direction="0"></borders><borders terrain="10" direction="1"></borders><borders terrain="1" direction="2"></borders><borders terrain="10" direction="3"></borders><borders terrain="1" direction="4"></borders><borders terrain="0" direction="5"></borders><borders terrain="1" direction="6"></borders><borders terrain="10" direction="7"></borders>
+    </metadata><metadata plane="0" terrainType="1" id="28">
+      <borders terrain="1" direction="0"></borders><borders terrain="10" direction="1"></borders><borders terrain="1" direction="2"></borders><borders terrain="10" direction="3"></borders><borders terrain="1" direction="4"></borders><borders terrain="10" direction="5"></borders><borders terrain="1" direction="6"></borders><borders terrain="0" direction="7"></borders>
+    </metadata><metadata plane="0" terrainType="1" id="29">
+      <borders terrain="1" direction="0"></borders><borders terrain="0" direction="1"></borders><borders terrain="1" direction="2"></borders><borders terrain="10" direction="3"></borders><borders terrain="1" direction="4"></borders><borders terrain="10" direction="5"></borders><borders terrain="1" direction="6"></borders><borders terrain="10" direction="7"></borders>
+    </metadata><metadata plane="0" terrainType="1" id="30">
+      <borders terrain="1" direction="0"></borders><borders terrain="10" direction="1"></borders><borders terrain="1" direction="2"></borders><borders terrain="0" direction="3"></borders><borders terrain="0" direction="4"></borders><borders terrain="0" direction="5"></borders><borders terrain="0" direction="6"></borders><borders terrain="0" direction="7"></borders>
+    </metadata><metadata plane="1" terrainType="1" id="31">
+      <borders terrain="10" direction="0"></borders><borders terrain="10" direction="1"></borders><borders terrain="1" direction="2"></borders><borders terrain="0" direction="3"></borders><borders terrain="0" direction="4"></borders><borders terrain="0" direction="5"></borders><borders terrain="1" direction="6"></borders><borders terrain="10" direction="7"></borders>
+    </metadata><metadata plane="0" terrainType="1" id="32">
+      <borders terrain="10" direction="0"></borders><borders terrain="10" direction="1"></borders><borders terrain="1" direction="2"></borders><borders terrain="0" direction="3"></borders><borders terrain="0" direction="4"></borders><borders terrain="0" direction="5"></borders><borders terrain="1" direction="6"></borders><borders terrain="10" direction="7"></borders>
+    </metadata><metadata plane="0" terrainType="1" id="33">
+      <borders terrain="10" direction="0"></borders><borders terrain="10" direction="1"></borders><borders terrain="1" direction="2"></borders><borders terrain="0" direction="3"></borders><borders terrain="0" direction="4"></borders><borders terrain="0" direction="5"></borders><borders terrain="1" direction="6"></borders><borders terrain="10" direction="7"></borders>
+    </metadata><metadata plane="0" terrainType="1" id="34">
+      <borders terrain="1" direction="0"></borders><borders terrain="0" direction="1"></borders><borders terrain="0" direction="2"></borders><borders terrain="0" direction="3"></borders><borders terrain="0" direction="4"></borders><borders terrain="0" direction="5"></borders><borders terrain="1" direction="6"></borders><borders terrain="10" direction="7"></borders>
+    </metadata><metadata plane="0" terrainType="1" id="35">
+      <borders terrain="1" direction="0"></borders><borders terrain="0" direction="1"></borders><borders terrain="0" direction="2"></borders><borders terrain="0" direction="3"></borders><borders terrain="0" direction="4"></borders><borders terrain="0" direction="5"></borders><borders terrain="1" direction="6"></borders><borders terrain="10" direction="7"></borders>
+    </metadata><metadata plane="0" terrainType="1" id="36">
+      <borders terrain="1" direction="0"></borders><borders terrain="0" direction="1"></borders><borders terrain="0" direction="2"></borders><borders terrain="0" direction="3"></borders><borders terrain="0" direction="4"></borders><borders terrain="0" direction="5"></borders><borders terrain="1" direction="6"></borders><borders terrain="10" direction="7"></borders>
     </metadata><metadata plane="0" terrainType="0" id="37">
       
     </metadata><metadata plane="0" terrainType="0" id="38">
