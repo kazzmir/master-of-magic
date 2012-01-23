@@ -68,22 +68,39 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
                                             Plane.values(plane), None);
   }
 
-  /*for (i <- 0 until metadata.length) {
+  for (i <- 0 until metadata.length) {
 
     var borders = new Array[Option[TerrainType]](CardinalDirection.values.length);
     for (j <- 0 until borders.length) {
       borders(j) = None;
     }
+    var plane = if (i < 888) {
+        Plane.ARCANUS
+      } else {
+        Plane.MYRROR
+      };
     metadata(i) = new EditableTerrainTileMetadata(i,
                                           TerrainType.OCEAN,
                                           borders,
-                                          Plane.ARCANUS, None);
-  }*/
+                                          plane, None);
+  }
 
+  def getColorSwatchFromTile(whichTile:Int, from:CardinalDirection):List[Color] = {
+    val tX = (whichTile % SPRITE_SHEET_WIDTH) * TILE_WIDTH;
+    val tY = (whichTile / SPRITE_SHEET_WIDTH) * TILE_HEIGHT;
+
+    var sX = TILE_WIDTH / 2;
+    var sY = TILE_HEIGHT / 2;
+
+    List(terrainTileSheet.getColor(tX + sX, tY + sY),
+         terrainTileSheet.getColor(tX + sX+1, tY + sY),
+         terrainTileSheet.getColor(tX + sX, tY + sY+1),
+         terrainTileSheet.getColor(tX + sX+1, tY + sY+1));
+  }
 
   override def init(container:GameContainer):Unit = {
     terrainTileSheet = TerrainLbxReader.read(Data.originalDataPath("TERRAIN.LBX"));
-    org.lwjgl.input.Keyboard.enableRepeatEvents(false);
+    //org.lwjgl.input.Keyboard.enableRepeatEvents(false);
   }
 
   override def update(container:GameContainer, delta:Int):Unit = {
@@ -109,8 +126,13 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
     }
 
     if (input.isKeyPressed(Input.KEY_RBRACKET)) {
-      if (currentTile < TILE_COUNT) {
+      if (currentTile < TILE_COUNT-1) {
         currentTile += 1;
+        println(
+          getColorSwatchFromTile(currentTile, CardinalDirection.CENTER) map {
+            (c) =>
+              "(" + c.getRed() + " " + c.getGreen() + " " + c.getBlue() + ")"
+          });
       }
       input.clearKeyPressedRecord();
     }
