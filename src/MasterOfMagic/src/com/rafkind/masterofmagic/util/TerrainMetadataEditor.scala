@@ -80,17 +80,17 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
         (c.getRed(), c.getGreen(), c.getBlue()) match {
           case (0, 0, 88) => List(TerrainType.OCEAN, TerrainType.RIVER);
           case (16, 16, 92) => List(TerrainType.OCEAN, TerrainType.SWAMP, TerrainType.RIVER);
-          case (76, 116, 36) => List(TerrainType.GRASSLAND, TerrainType.NATURE_NODE, TerrainType.SWAMP, TerrainType.RIVER);
-          case (60, 92, 60) => List(TerrainType.GRASSLAND, TerrainType.NATURE_NODE, TerrainType.FOREST, TerrainType.RIVER, TerrainType.MOUNTAIN);
-          case (56, 92, 16) => List(TerrainType.GRASSLAND, TerrainType.NATURE_NODE, TerrainType.SWAMP);
+          case (76, 116, 36) => List(TerrainType.GRASSLAND, TerrainType.NATURE_NODE, TerrainType.SWAMP, TerrainType.RIVER, TerrainType.HILLS);
+          case (60, 92, 60) => List(TerrainType.GRASSLAND, TerrainType.NATURE_NODE, TerrainType.FOREST, TerrainType.RIVER, TerrainType.MOUNTAIN, TerrainType.HILLS);
+          case (56, 92, 16) => List(TerrainType.GRASSLAND, TerrainType.FOREST, TerrainType.NATURE_NODE, TerrainType.SWAMP, TerrainType.HILLS);
           case (140, 132, 128) => List(TerrainType.GRASSLAND, TerrainType.TUNDRA, TerrainType.MOUNTAIN);
-          case (36, 116, 36) => List(TerrainType.FOREST);
-          case (4, 68, 4) => List(TerrainType.FOREST, TerrainType.NATURE_NODE);
+          case (36, 116, 36) => List(TerrainType.FOREST, TerrainType.GRASSLAND, TerrainType.HILLS);
+          case (4, 68, 4) => List(TerrainType.FOREST, TerrainType.NATURE_NODE, TerrainType.RIVER);
           case (16, 92, 16) => List(TerrainType.FOREST);
-          case (172, 164, 160) => List(TerrainType.MOUNTAIN, TerrainType.VOLCANO);
+          case (172, 164, 160) => List(TerrainType.MOUNTAIN, TerrainType.VOLCANO, TerrainType.TUNDRA);
           case (240, 232, 228) => List(TerrainType.MOUNTAIN);
           case (156, 148, 144) => List(TerrainType.MOUNTAIN, TerrainType.GRASSLAND, TerrainType.TUNDRA);
-          case (124, 11, 112) => List(TerrainType.MOUNTAIN);
+          case (124, 116, 112) => List(TerrainType.MOUNTAIN, TerrainType.TUNDRA);
           case (88, 80, 76) => List(TerrainType.MOUNTAIN);
           case (192, 184, 180) => List(TerrainType.MOUNTAIN);
           case (72, 64, 60) => List(TerrainType.MOUNTAIN);
@@ -106,16 +106,21 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
           case (76, 104, 76) => List(TerrainType.TUNDRA);
           case (0, 0, 188) => List(TerrainType.SORCERY_NODE);
           case (0, 0, 252) => List(TerrainType.SORCERY_NODE);
-          case (152, 0, 0) => List(TerrainType.CHAOS_NODE);
+          case (152, 0, 0) => List(TerrainType.CHAOS_NODE, TerrainType.VOLCANO);
           case (172, 0, 0) => List(TerrainType.CHAOS_NODE);
           case (92, 52, 16) => List(TerrainType.CHAOS_NODE);
-          case (36, 68, 4) => List(TerrainType.GRASSLAND, TerrainType.RIVER, TerrainType.MOUNTAIN);
-          case (96, 140, 56) => List(TerrainType.GRASSLAND);
+          case (36, 68, 4) => List(TerrainType.GRASSLAND, TerrainType.RIVER, TerrainType.MOUNTAIN, TerrainType.FOREST, TerrainType.HILLS);
+          case (96, 140, 56) => List(TerrainType.HILLS);
           case (44, 72, 44) => List(TerrainType.GRASSLAND, TerrainType.RIVER);
-          case (4, 68, 38) => List(TerrainType.RIVER);
+          case (4, 68, 36) => List(TerrainType.RIVER);
           case (140, 116, 116) => List(TerrainType.VOLCANO);
           case (208, 200, 196) => List(TerrainType.VOLCANO);
-          case (104, 9, 92) => List(TerrainType.TUNDRA);
+          case (104, 96, 92) => List(TerrainType.TUNDRA);
+          case (56, 140, 56) => List(TerrainType.HILLS);
+          case (140, 112, 88) => List(TerrainType.VOLCANO);
+          case (116, 36, 36) => List(TerrainType.VOLCANO);
+          case (92, 16, 16) => List(TerrainType.VOLCANO);
+          case (144, 164, 144) => List(TerrainType.TUNDRA);
           case (68, 68, 4) => List(TerrainType.RIVER);
           case _ => List(TerrainType.OCEAN);
         }
@@ -154,10 +159,18 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
     var sX = TILE_WIDTH / 2;
     var sY = TILE_HEIGHT / 2;
 
-    List(terrainTileSheet.getColor(tX + sX, tY + sY),
+    /*List(terrainTileSheet.getColor(tX + sX, tY + sY),
          terrainTileSheet.getColor(tX + sX+1, tY + sY),
          terrainTileSheet.getColor(tX + sX, tY + sY+1),
-         terrainTileSheet.getColor(tX + sX+1, tY + sY+1));
+         terrainTileSheet.getColor(tX + sX+1, tY + sY+1));*/
+
+    var answer = List[Color]();
+    CardinalDirection.valuesAll map {
+      (d) =>
+        answer ::= terrainTileSheet.getColor(tX + sY + d.dx, tY + sY + d.dy);
+    }
+
+    answer;
   }
 
   override def init(container:GameContainer):Unit = {
