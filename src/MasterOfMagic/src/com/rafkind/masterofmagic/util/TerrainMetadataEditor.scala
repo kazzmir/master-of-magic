@@ -69,9 +69,15 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
                                             Plane.values(plane), None);
   }
 
+  class TerrainGuess(val terrainGuess:TerrainType, val borders: Array[Option[TerrainType]]);
   
 
-  def guessTerrain(whichTile:Int, plane:Plane):TerrainType = {
+  def guessTerrain(whichTile:Int, plane:Plane):TerrainGuess = {
+    var terrainGuess = TerrainType.OCEAN;
+    var borders = new Array[Option[TerrainType]](CardinalDirection.values.length);
+    for (j <- 0 until borders.length) {
+      borders(j) = None;
+    }
     val votes = new HashMap[TerrainType, Int];
 
     getColorSwatchFromTile(whichTile,
@@ -124,32 +130,20 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
           case (68, 68, 4) => List(TerrainType.RIVER);
           case _ => List(TerrainType.OCEAN);
         }
-        if (whichTile < 3) println(whichTile + " " + voting);
       voting map {(t) =>
         votes.put(t, votes.getOrElse(t, 0)+1);
       }
     }
 
-    return votes.foldLeft(TerrainType.OCEAN)( (best, mapEntry) =>
+    terrainGuess = votes.foldLeft(TerrainType.OCEAN)( (best, mapEntry) =>
       if (mapEntry._2 > votes.getOrElse(best, 0)) {
         mapEntry._1
       } else {
         best
       }
     );
-  }
 
-  def guessTerrainBorders(whichTile:Int,
-                          plane:Plane,
-                          terrain:TerrainType)
-                            :Array[Option[TerrainType]] = {
-
-    var borders = new Array[Option[TerrainType]](CardinalDirection.values.length);
-    for (j <- 0 until borders.length) {
-      borders(j) = None;
-    }
-
-    borders
+    return new TerrainGuess(terrainGuess, borders);
   }
 
   def getColorSwatchFromTile(whichTile:Int, from:CardinalDirection):List[Color] = {
@@ -165,10 +159,22 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
          terrainTileSheet.getColor(tX + sX+1, tY + sY+1));*/
 
     var answer = List[Color]();
-    CardinalDirection.valuesAll map {
-      (d) =>
-        answer ::= terrainTileSheet.getColor(tX + sY + d.dx, tY + sY + d.dy);
+    from match {
+      case CardinalDirection.CENTER =>
+            CardinalDirection.valuesAll map {
+          (d) =>
+            answer ::= terrainTileSheet.getColor(tX + sY + d.dx, tY + sY + d.dy);
+        }
+      case CardinalDirection.NORTH_WEST =>
+        answer ::= terrainTileSheet.getColor(tX, tY);
+      case CardinalDirection.NORTH_EAST =>
+        answer ::= terrainTileSheet.getColor(tX + TILE_WIDTH - 1, tY);
+      case CardinalDirection.SOUTH_WEST =>
+        answer ::= terrainTileSheet.getColor(tX, tY + TILE_HEIGHT - 1);
+      case CardinalDirection.SOUTH_EAST =>
+        answer ::= terrainTileSheet.getColor(tX + TILE_WIDTH -1, tY + TILE_HEIGHT - 1);
     }
+    
 
     answer;
   }
@@ -190,10 +196,9 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
           Plane.MYRROR
         };
       var terrainGuess = guessTerrain(i, plane);
-      var borders = guessTerrainBorders(i, plane, terrainGuess);
       metadata(i) = new EditableTerrainTileMetadata(i,
-                                            terrainGuess,
-                                            borders,
+                                            terrainGuess.terrainGuess,
+                                            terrainGuess.borders,
                                             plane, None);
     }
   }

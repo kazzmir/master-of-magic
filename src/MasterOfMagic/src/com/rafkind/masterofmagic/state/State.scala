@@ -20,6 +20,7 @@ object CardinalDirection{
 
   val values = Array(NORTH, NORTH_EAST, EAST, SOUTH_EAST, SOUTH, SOUTH_WEST, WEST, NORTH_WEST);
   val valuesStraight = Array(NORTH, EAST, SOUTH, WEST);
+  val valuesDiagonal = Array(NORTH_EAST, SOUTH_EAST, SOUTH_WEST, NORTH_WEST);
   val valuesAll = Array(CENTER, NORTH, NORTH_EAST, EAST, SOUTH_EAST, SOUTH, SOUTH_WEST, WEST, NORTH_WEST);
 }
 
