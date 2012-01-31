@@ -170,7 +170,7 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
   def guessTerrain() {
     val directionalModels = new HashMap[CardinalDirection,
                                         HashMap[Tuple3[Int, Int, Int], HashSet[TerrainType]]]();
-    for (c <- CardinalDirection.valuesAll) {
+    for (c <- List(CardinalDirection.CENTER, CardinalDirection.NORTH, CardinalDirection.NORTH_EAST)) {
       val d = representativeDirection(c);
       directionalModels += d -> new HashMap[Tuple3[Int, Int, Int], HashSet[TerrainType]]();
     }
@@ -183,7 +183,13 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
         for (color <- colors) {
           val colorTuple = (color.getRed(), color.getGreen(), color.getBlue());
           var terrains = model.getOrElseUpdate(colorTuple, new HashSet[TerrainType]());
-          terrains += tile.terrainType;
+          c match {
+            case CardinalDirection.CENTER => terrains += tile.terrainType;
+            case dir:CardinalDirection => tile.borderingTerrainTypes(dir.id) match {
+                case Some(terrainType) => terrains += terrainType;
+                case _ =>
+            }
+          }
         }
       }
     }
@@ -259,20 +265,20 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
           answer ::= terrainTileSheet.getColor(tX + TILE_WIDTH - 2, tY + TILE_HEIGHT - 2);
         }
       case CardinalDirection.NORTH =>
-        for (d <- 0 until TILE_WIDTH) {
-          answer ::= terrainTileSheet.getColor(tX + d, tY);
+        for (d <- 0 until sX) {
+          answer ::= terrainTileSheet.getColor(tX + d + sX / 2, tY);
         }
       case CardinalDirection.SOUTH =>
-        for (d <- 0 until TILE_WIDTH) {
-          answer ::= terrainTileSheet.getColor(tX + d, tY + TILE_HEIGHT - 1);
+        for (d <- 0 until sX) {
+          answer ::= terrainTileSheet.getColor(tX + d + sX / 2, tY + TILE_HEIGHT - 1);
         }
       case CardinalDirection.WEST =>
-        for (d <- 0 until TILE_HEIGHT) {
-          answer ::= terrainTileSheet.getColor(tX, tY + d);
+        for (d <- 0 until sY) {
+          answer ::= terrainTileSheet.getColor(tX, tY + d + sY / 2);
         }
       case CardinalDirection.EAST =>
-        for (d <- 0 until TILE_HEIGHT) {
-          answer ::= terrainTileSheet.getColor(tX + TILE_WIDTH - 1, tY + d);
+        for (d <- 0 until sY) {
+          answer ::= terrainTileSheet.getColor(tX + TILE_WIDTH - 1, tY + d + sY/2);
         }
       case _ =>
         
