@@ -12,6 +12,7 @@ import com.rafkind.masterofmagic.state._;
 import scala.xml.XML._;
 import scala.xml._;
 import scala.collection.mutable.HashMap;
+import scala.collection.mutable.HashSet;
 
 // mirrors TerrainTileMetadata in State.scala
 class EditableTerrainTileMetadata(
@@ -50,28 +51,34 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
   val BIG_HEIGHT = BIG_WIDTH * TILE_HEIGHT / TILE_WIDTH;
 
   val uiColor = Color.white;
+  val guessColor = Color.yellow;
 
-  var metadata = new Array[EditableTerrainTileMetadata](TILE_COUNT);
+  var metadataGuess = new Array[EditableTerrainTileMetadata](TILE_COUNT);
+  var metadata = new HashMap[Int, EditableTerrainTileMetadata]();
 
-  load(Data.path("terrainMetaData.xml")) \ "metadata" foreach { (m) =>
-    var borders = new Array[Option[TerrainType]](CardinalDirection.values.length);
-    m \ "borders" foreach { (b) =>
-      borders(Integer.parseInt((b \ "@direction").text)) =
-        Some(TerrainType.values(Integer.parseInt((b \ "@terrain").text)));
+  try {
+    load(Data.path("terrainMetaData.xml")) \ "metadata" foreach { (m) =>
+      var borders = new Array[Option[TerrainType]](CardinalDirection.values.length);
+      m \ "borders" foreach { (b) =>
+        borders(Integer.parseInt((b \ "@direction").text)) =
+          Some(TerrainType.values(Integer.parseInt((b \ "@terrain").text)));
+      }
+
+      val id = Integer.parseInt((m \ "@id").text)
+      val terrainType = Integer.parseInt((m \ "@terrainType").text);
+      val plane = Integer.parseInt((m \ "@plane").text);
+      metadata += id -> new EditableTerrainTileMetadata(id,
+                                              TerrainType.values(terrainType),
+                                              borders,
+                                              Plane.values(plane), None);
     }
-
-    val id = Integer.parseInt((m \ "@id").text)
-    val terrainType = Integer.parseInt((m \ "@terrainType").text);
-    val plane = Integer.parseInt((m \ "@plane").text);
-    metadata(id) = new EditableTerrainTileMetadata(id,
-                                            TerrainType.values(terrainType),
-                                            borders,
-                                            Plane.values(plane), None);
+  } catch {
+    case x => println(x);
   }
 
   class TerrainGuess(val terrainGuess:TerrainType, val borders: Array[Option[TerrainType]]);
   
-
+  /*
   def guessTerrain(whichTile:Int, plane:Plane):TerrainGuess = {
     var terrainGuess = TerrainType.OCEAN;
     var borders = new Array[Option[TerrainType]](CardinalDirection.values.length);
@@ -144,6 +151,77 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
     );
 
     return new TerrainGuess(terrainGuess, borders);
+  }*/
+
+  def representativeDirection(d:CardinalDirection):CardinalDirection = {
+    d match {
+      case CardinalDirection.CENTER => CardinalDirection.CENTER;
+      case CardinalDirection.NORTH => CardinalDirection.NORTH;
+      case CardinalDirection.SOUTH => CardinalDirection.NORTH;
+      case CardinalDirection.EAST => CardinalDirection.NORTH;
+      case CardinalDirection.WEST => CardinalDirection.NORTH;
+      case CardinalDirection.NORTH_EAST => CardinalDirection.NORTH_EAST;
+      case CardinalDirection.NORTH_WEST => CardinalDirection.NORTH_EAST;
+      case CardinalDirection.SOUTH_EAST => CardinalDirection.NORTH_EAST;
+      case CardinalDirection.SOUTH_WEST => CardinalDirection.NORTH_EAST;
+    }
+  }
+
+  def guessTerrain() {
+    val directionalModels = new HashMap[CardinalDirection,
+                                        HashMap[Tuple3[Int, Int, Int], HashSet[TerrainType]]]();
+    for (c <- CardinalDirection.valuesAll) {
+      val d = representativeDirection(c);
+      directionalModels += d -> new HashMap[Tuple3[Int, Int, Int], HashSet[TerrainType]]();
+    }
+    
+    for (k <- metadata.keys) {
+      val tile = metadata(k);
+      for (c <- CardinalDirection.valuesAll) {
+        val colors = getColorSwatchFromTile(k, c);
+        val model = directionalModels(representativeDirection(c));
+        for (color <- colors) {
+          val colorTuple = (color.getRed(), color.getGreen(), color.getBlue());
+          var terrains = model.getOrElseUpdate(colorTuple, new HashSet[TerrainType]());
+          terrains += tile.terrainType;
+        }
+      }
+    }
+
+    for (index <- 0 until TILE_COUNT) {
+      
+      if (metadata.contains(index)) {
+        metadataGuess(index) = metadata(index);
+      } else {
+
+        var newTerrain = newBlankTerrain(index);
+        for (direction <- CardinalDirection.valuesAll) {
+          val votes = new HashMap[TerrainType, Int];
+          val model = directionalModels(representativeDirection(direction));
+          for (color <- getColorSwatchFromTile(index, direction)) {
+            val colorTuple = (color.getRed(), color.getGreen(), color.getBlue());
+            val terrains = model.getOrElse(colorTuple, new HashSet());
+            for (terrain <- terrains) {
+              votes.put(terrain, votes.getOrElse(terrain, 0) + 1);
+            }
+          }
+
+          val terrainGuess = votes.foldLeft(TerrainType.OCEAN)( (best, mapEntry) =>
+            if (mapEntry._2 > votes.getOrElse(best, 0)) {
+              mapEntry._1
+            } else {
+              best
+            }
+          );
+
+          direction match {
+            case CardinalDirection.CENTER => newTerrain.terrainType = terrainGuess;
+            case d:CardinalDirection => newTerrain.borderingTerrainTypes(d.id) = Some(terrainGuess);
+          }
+        }
+        metadataGuess(index) = newTerrain;
+      }
+    }
   }
 
   def getColorSwatchFromTile(whichTile:Int, from:CardinalDirection):List[Color] = {
@@ -161,18 +239,43 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
     var answer = List[Color]();
     from match {
       case CardinalDirection.CENTER =>
-            CardinalDirection.valuesAll map {
-          (d) =>
-            answer ::= terrainTileSheet.getColor(tX + sY + d.dx, tY + sY + d.dy);
+        for (d <- CardinalDirection.valuesAll) {
+          answer ::= terrainTileSheet.getColor(tX + sY + d.dx, tY + sY + d.dy);
         }
       case CardinalDirection.NORTH_WEST =>
-        answer ::= terrainTileSheet.getColor(tX, tY);
+        for (d <- CardinalDirection.valuesAll) {
+          answer ::= terrainTileSheet.getColor(tX + 1, tY + 1);
+        }
       case CardinalDirection.NORTH_EAST =>
-        answer ::= terrainTileSheet.getColor(tX + TILE_WIDTH - 1, tY);
+        for (d <- CardinalDirection.valuesAll) {
+          answer ::= terrainTileSheet.getColor(tX + TILE_WIDTH - 2, tY + 1);
+        }
       case CardinalDirection.SOUTH_WEST =>
-        answer ::= terrainTileSheet.getColor(tX, tY + TILE_HEIGHT - 1);
+        for (d <- CardinalDirection.valuesAll) {
+          answer ::= terrainTileSheet.getColor(tX + 1, tY + TILE_HEIGHT - 2);
+        }
       case CardinalDirection.SOUTH_EAST =>
-        answer ::= terrainTileSheet.getColor(tX + TILE_WIDTH -1, tY + TILE_HEIGHT - 1);
+        for (d <- CardinalDirection.valuesAll) {
+          answer ::= terrainTileSheet.getColor(tX + TILE_WIDTH - 2, tY + TILE_HEIGHT - 2);
+        }
+      case CardinalDirection.NORTH =>
+        for (d <- 0 until TILE_WIDTH) {
+          answer ::= terrainTileSheet.getColor(tX + d, tY);
+        }
+      case CardinalDirection.SOUTH =>
+        for (d <- 0 until TILE_WIDTH) {
+          answer ::= terrainTileSheet.getColor(tX + d, tY + TILE_HEIGHT - 1);
+        }
+      case CardinalDirection.WEST =>
+        for (d <- 0 until TILE_HEIGHT) {
+          answer ::= terrainTileSheet.getColor(tX, tY + d);
+        }
+      case CardinalDirection.EAST =>
+        for (d <- 0 until TILE_HEIGHT) {
+          answer ::= terrainTileSheet.getColor(tX + TILE_WIDTH - 1, tY + d);
+        }
+      case _ =>
+        
     }
     
 
@@ -183,7 +286,7 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
     terrainTileSheet = TerrainLbxReader.read(Data.originalDataPath("TERRAIN.LBX"));
     //org.lwjgl.input.Keyboard.enableRepeatEvents(false);
 
-    for (i <- 0 until metadata.length) {
+    /*for (i <- 0 until metadata.length) {
 
       /*var borders = new Array[Option[TerrainType]](CardinalDirection.values.length);
       for (j <- 0 until borders.length) {
@@ -200,7 +303,20 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
                                             terrainGuess.terrainGuess,
                                             terrainGuess.borders,
                                             plane, None);
+    }*/
+  }
+
+  def newBlankTerrain(id:Int):EditableTerrainTileMetadata = {
+    var borders = new Array[Option[TerrainType]](CardinalDirection.values.length);
+    for (j <- 0 until borders.length) {
+      borders(j) = None;
     }
+
+    return new EditableTerrainTileMetadata(id,
+                                           TerrainType.OCEAN,
+                                           borders,
+                                           if (id < 888) Plane.ARCANUS else Plane.MYRROR,
+                                           None);
   }
 
   override def update(container:GameContainer, delta:Int):Unit = {
@@ -228,11 +344,11 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
     if (input.isKeyPressed(Input.KEY_RBRACKET)) {
       if (currentTile < TILE_COUNT-1) {
         currentTile += 1;
-        println(
+        /*println(
           getColorSwatchFromTile(currentTile, CardinalDirection.CENTER) map {
             (c) =>
               "(" + c.getRed() + " " + c.getGreen() + " " + c.getBlue() + ")"
-          });
+          });*/
       }
       input.clearKeyPressedRecord();
     }
@@ -262,30 +378,37 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
       Input.KEY_B
     );
 
-    (terrainKeys zip TerrainType.values) map {
+    (terrainKeys zip TerrainType.values) map {      
       case (k, t) =>
         if (input.isKeyPressed(k)) {
+          val tile = metadata.getOrElseUpdate(currentTile, newBlankTerrain(currentTile));
           if (currentDirection == CardinalDirection.CENTER) {
-            metadata(currentTile).terrainType = t
+            tile.terrainType = t
           } else {
-            metadata(currentTile).borderingTerrainTypes(currentDirection.id) = Some(t);
+            tile.borderingTerrainTypes(currentDirection.id) = Some(t);
           }
           input.clearKeyPressedRecord();
         }
     }
 
     if (input.isKeyPressed(Input.KEY_P)) {
-          metadata(currentTile).plane match {
-            case Plane.ARCANUS => metadata(currentTile).plane = Plane.MYRROR;
-            case Plane.MYRROR => metadata(currentTile).plane = Plane.ARCANUS;
-          }
+      var tile = metadata.getOrElseUpdate(currentTile, newBlankTerrain(currentTile));
+      tile.plane match {
+        case Plane.ARCANUS => tile.plane = Plane.MYRROR;
+        case Plane.MYRROR => tile.plane = Plane.ARCANUS;
+      }
 
-          input.clearKeyPressedRecord();
-        }
+      input.clearKeyPressedRecord();
+    }
 
     if (input.isKeyPressed(Input.KEY_ESCAPE)) {
       writeOut();
       System.exit(0);
+    }
+
+    if (input.isKeyPressed(Input.KEY_SPACE)) {
+      guessTerrain();
+      input.clearKeyPressedRecord();
     }
   }
 
@@ -293,7 +416,7 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
     
     val doc =
       <terrain>
-        {metadata.map(m =>{m.toNode()})}
+        {metadata.map((kv) =>{kv._2.toNode()})}
       </terrain>;
 
     save(Data.path("terrainMetaData.xml"), doc, "utf-8", true);
@@ -326,31 +449,60 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
     graphics.drawRect(x1, y1, x2-x1, y2-y1);
 
     graphics.drawString(
-      metadata(currentTile).plane,
-      dX,
-      dY);
+            "Tile #" + currentTile,
+            dX,
+            dY + 32
+            );
 
-    graphics.drawString(
-      metadata(currentTile).terrainType,
-      dX,
-      dY + 16
-      );
+    metadata.get(currentTile) match {
+      case Some(tile) => {
+          graphics.drawString(
+            tile.plane,
+            dX,
+            dY);
 
-    graphics.drawString(
-      "Tile #" + currentTile,
-      dX,
-      dY + 32
-      );
+          graphics.drawString(
+            tile.terrainType,
+            dX,
+            dY + 16
+            );
 
-    (metadata(currentTile).borderingTerrainTypes zip CardinalDirection.values) map {
-      case (optionalTerrain, direction) =>
-        graphics.drawString(optionalTerrain match {
-            case Some(terrain) => terrain
-            case _ => ""
-          },
-                            cX + BIG_WIDTH * direction.dx - BIG_WIDTH/2,
-                            cY + BIG_HEIGHT * direction.dy - BIG_HEIGHT / 2)
-    }    
+          (tile.borderingTerrainTypes zip CardinalDirection.values) map {
+            case (optionalTerrain, direction) =>
+              graphics.drawString(optionalTerrain match {
+                  case Some(terrain) => terrain
+                  case _ => ""
+                },
+                cX + BIG_WIDTH * direction.dx - BIG_WIDTH/2,
+                cY + BIG_HEIGHT * direction.dy - BIG_HEIGHT / 2)
+          }
+      }
+      case _ =>
+    }
+
+    graphics.setColor(guessColor);
+
+    metadataGuess(currentTile) match {
+      case tile:EditableTerrainTileMetadata => {
+
+          graphics.drawString(
+            tile.terrainType,
+            dX,
+            dY + 48
+            );
+
+          (tile.borderingTerrainTypes zip CardinalDirection.values) map {
+            case (optionalTerrain, direction) =>
+              graphics.drawString(optionalTerrain match {
+                  case Some(terrain) => terrain
+                  case _ => ""
+                },
+                cX + BIG_WIDTH * direction.dx - BIG_WIDTH/2,
+                cY + BIG_HEIGHT * direction.dy - BIG_HEIGHT / 2 + 48)
+          }
+      }
+      case null =>
+    }
   }
 }
 
