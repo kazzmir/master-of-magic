@@ -22,6 +22,13 @@ class EditableTerrainTileMetadata(
   var plane:Plane,
   var parentId:Option[TerrainTileMetadata]) {
 
+  def getTerrain(dir:CardinalDirection):Option[TerrainType] = {
+    dir match {
+      case CardinalDirection.CENTER => Some(terrainType)
+      case _ => borderingTerrainTypes(dir)
+    }
+  }
+
   def toNode() =
     <metadata 
       id={id.toString}
@@ -36,6 +43,35 @@ class EditableTerrainTileMetadata(
       }
     }
     </metadata>
+
+  def shorelineAdjust():Unit = {
+    var grid = new Array[Option[TerrainType]](9);
+
+    grid(5) = Some(terrainType);
+    for (c <- CardinalDirection.values) {
+      val x = c.dx + 1;
+      val y = c.dy + 1;
+      val i = x + (y*3);
+      grid(i) = borderingTerrainTypes(c.id);
+    }
+
+    for (y <- 0 until 3) {
+      for (x <- 0 until 3) {
+        for (c <- CardinalDirection.values) {
+          val newX = x + c.dx;
+          val newY = y + c.dy;
+
+          if (newX >= 0 && newX <= 2 && newY >= 0 && newY <= 2) {
+            val oldId = x + (y*3);
+            val newId = newX + (newY*3);
+            //if (grid(oldId) == TerrainType.OCEAN && !(grid(newId) == TerrainType.OCEAN || grid(newId) == TerrainType.SHORE)) {
+            //  grid(oldId) == TerrainType.SHORE;
+            //}
+          }
+        }
+      }
+    }
+  }
 }
 
 class TerrainMetadataEditor(title:String) extends BasicGame(title) {
@@ -53,12 +89,12 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
   val uiColor = Color.white;
   val guessColor = Color.yellow;
 
-  var metadataGuess = new Array[EditableTerrainTileMetadata](TILE_COUNT);
-  var metadata = new HashMap[Int, EditableTerrainTileMetadata]();
+  val metadataGuess = new Array[EditableTerrainTileMetadata](TILE_COUNT);
+  val metadata = new HashMap[Int, EditableTerrainTileMetadata]();
 
   try {
     load(Data.path("terrainMetaData.xml")) \ "metadata" foreach { (m) =>
-      var borders = new Array[Option[TerrainType]](CardinalDirection.values.length);
+      val borders = new Array[Option[TerrainType]](CardinalDirection.values.length);
       m \ "borders" foreach { (b) =>
         borders(Integer.parseInt((b \ "@direction").text)) =
           Some(TerrainType.values(Integer.parseInt((b \ "@terrain").text)));
@@ -75,83 +111,6 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
   } catch {
     case x => println(x);
   }
-
-  class TerrainGuess(val terrainGuess:TerrainType, val borders: Array[Option[TerrainType]]);
-  
-  /*
-  def guessTerrain(whichTile:Int, plane:Plane):TerrainGuess = {
-    var terrainGuess = TerrainType.OCEAN;
-    var borders = new Array[Option[TerrainType]](CardinalDirection.values.length);
-    for (j <- 0 until borders.length) {
-      borders(j) = None;
-    }
-    val votes = new HashMap[TerrainType, Int];
-
-    getColorSwatchFromTile(whichTile,
-                           CardinalDirection.CENTER) map {(c) =>
-      val voting =
-        (c.getRed(), c.getGreen(), c.getBlue()) match {
-          case (0, 0, 88) => List(TerrainType.OCEAN, TerrainType.RIVER);
-          case (16, 16, 92) => List(TerrainType.OCEAN, TerrainType.SWAMP, TerrainType.RIVER);
-          case (76, 116, 36) => List(TerrainType.GRASSLAND, TerrainType.NATURE_NODE, TerrainType.SWAMP, TerrainType.RIVER, TerrainType.HILLS);
-          case (60, 92, 60) => List(TerrainType.GRASSLAND, TerrainType.NATURE_NODE, TerrainType.FOREST, TerrainType.RIVER, TerrainType.MOUNTAIN, TerrainType.HILLS);
-          case (56, 92, 16) => List(TerrainType.GRASSLAND, TerrainType.FOREST, TerrainType.NATURE_NODE, TerrainType.SWAMP, TerrainType.HILLS);
-          case (140, 132, 128) => List(TerrainType.GRASSLAND, TerrainType.TUNDRA, TerrainType.MOUNTAIN);
-          case (36, 116, 36) => List(TerrainType.FOREST, TerrainType.GRASSLAND, TerrainType.HILLS);
-          case (4, 68, 4) => List(TerrainType.FOREST, TerrainType.NATURE_NODE, TerrainType.RIVER);
-          case (16, 92, 16) => List(TerrainType.FOREST);
-          case (172, 164, 160) => List(TerrainType.MOUNTAIN, TerrainType.VOLCANO, TerrainType.TUNDRA);
-          case (240, 232, 228) => List(TerrainType.MOUNTAIN);
-          case (156, 148, 144) => List(TerrainType.MOUNTAIN, TerrainType.GRASSLAND, TerrainType.TUNDRA);
-          case (124, 116, 112) => List(TerrainType.MOUNTAIN, TerrainType.TUNDRA);
-          case (88, 80, 76) => List(TerrainType.MOUNTAIN);
-          case (192, 184, 180) => List(TerrainType.MOUNTAIN);
-          case (72, 64, 60) => List(TerrainType.MOUNTAIN);
-          case (56, 48, 44) => List(TerrainType.MOUNTAIN);
-          case (52, 92, 16) => List(TerrainType.MOUNTAIN);
-          case (224, 216, 212) => List(TerrainType.MOUNTAIN);
-          case (188, 152, 116) => List(TerrainType.DESERT);
-          case (212, 180, 152) => List(TerrainType.DESERT);
-          case (16, 56, 92) => List(TerrainType.SWAMP);
-          case (4, 36, 68) => List(TerrainType.SWAMP);
-          case (92, 60, 60) => List(TerrainType.SWAMP);
-          case (92, 120, 92) => List(TerrainType.TUNDRA);
-          case (76, 104, 76) => List(TerrainType.TUNDRA);
-          case (0, 0, 188) => List(TerrainType.SORCERY_NODE);
-          case (0, 0, 252) => List(TerrainType.SORCERY_NODE);
-          case (152, 0, 0) => List(TerrainType.CHAOS_NODE, TerrainType.VOLCANO);
-          case (172, 0, 0) => List(TerrainType.CHAOS_NODE);
-          case (92, 52, 16) => List(TerrainType.CHAOS_NODE);
-          case (36, 68, 4) => List(TerrainType.GRASSLAND, TerrainType.RIVER, TerrainType.MOUNTAIN, TerrainType.FOREST, TerrainType.HILLS);
-          case (96, 140, 56) => List(TerrainType.HILLS);
-          case (44, 72, 44) => List(TerrainType.GRASSLAND, TerrainType.RIVER);
-          case (4, 68, 36) => List(TerrainType.RIVER);
-          case (140, 116, 116) => List(TerrainType.VOLCANO);
-          case (208, 200, 196) => List(TerrainType.VOLCANO);
-          case (104, 96, 92) => List(TerrainType.TUNDRA);
-          case (56, 140, 56) => List(TerrainType.HILLS);
-          case (140, 112, 88) => List(TerrainType.VOLCANO);
-          case (116, 36, 36) => List(TerrainType.VOLCANO);
-          case (92, 16, 16) => List(TerrainType.VOLCANO);
-          case (144, 164, 144) => List(TerrainType.TUNDRA);
-          case (68, 68, 4) => List(TerrainType.RIVER);
-          case _ => List(TerrainType.OCEAN);
-        }
-      voting map {(t) =>
-        votes.put(t, votes.getOrElse(t, 0)+1);
-      }
-    }
-
-    terrainGuess = votes.foldLeft(TerrainType.OCEAN)( (best, mapEntry) =>
-      if (mapEntry._2 > votes.getOrElse(best, 0)) {
-        mapEntry._1
-      } else {
-        best
-      }
-    );
-
-    return new TerrainGuess(terrainGuess, borders);
-  }*/
 
   def representativeDirection(d:CardinalDirection):CardinalDirection = {
     d match {
@@ -195,38 +154,33 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
     }
 
     for (index <- 0 until TILE_COUNT) {
-      
-      if (metadata.contains(index)) {
-        metadataGuess(index) = metadata(index);
-      } else {
-
-        var newTerrain = newBlankTerrain(index);
-        for (direction <- CardinalDirection.valuesAll) {
-          val votes = new HashMap[TerrainType, Int];
-          val model = directionalModels(representativeDirection(direction));
-          for (color <- getColorSwatchFromTile(index, direction)) {
-            val colorTuple = (color.getRed(), color.getGreen(), color.getBlue());
-            val terrains = model.getOrElse(colorTuple, new HashSet());
-            for (terrain <- terrains) {
-              votes.put(terrain, votes.getOrElse(terrain, 0) + 1);
-            }
-          }
-
-          val terrainGuess = votes.foldLeft(TerrainType.OCEAN)( (best, mapEntry) =>
-            if (mapEntry._2 > votes.getOrElse(best, 0)) {
-              mapEntry._1
-            } else {
-              best
-            }
-          );
-
-          direction match {
-            case CardinalDirection.CENTER => newTerrain.terrainType = terrainGuess;
-            case d:CardinalDirection => newTerrain.borderingTerrainTypes(d.id) = Some(terrainGuess);
+      var newTerrain = newBlankTerrain(index);
+      for (direction <- CardinalDirection.valuesAll) {
+        val votes = new HashMap[TerrainType, Int];
+        val model = directionalModels(representativeDirection(direction));
+        for (color <- getColorSwatchFromTile(index, direction)) {
+          val colorTuple = (color.getRed(), color.getGreen(), color.getBlue());
+          val terrains = model.getOrElse(colorTuple, new HashSet());
+          for (terrain <- terrains) {
+            votes.put(terrain, votes.getOrElse(terrain, 0) + 1);
           }
         }
-        metadataGuess(index) = newTerrain;
+
+        val terrainGuess = votes.foldLeft(TerrainType.OCEAN)( (best, mapEntry) =>
+          if (mapEntry._2 > votes.getOrElse(best, 0)) {
+            mapEntry._1
+          } else {
+            best
+          }
+        );
+
+        direction match {
+          case CardinalDirection.CENTER => newTerrain.terrainType = terrainGuess;
+          case d:CardinalDirection => newTerrain.borderingTerrainTypes(d.id) = Some(terrainGuess);
+        }
       }
+      newTerrain.shorelineAdjust();
+      metadataGuess(index) = newTerrain;
     }
   }
 
@@ -234,13 +188,8 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
     val tX = (whichTile % SPRITE_SHEET_WIDTH) * TILE_WIDTH;
     val tY = (whichTile / SPRITE_SHEET_WIDTH) * TILE_HEIGHT;
 
-    var sX = TILE_WIDTH / 2;
-    var sY = TILE_HEIGHT / 2;
-
-    /*List(terrainTileSheet.getColor(tX + sX, tY + sY),
-         terrainTileSheet.getColor(tX + sX+1, tY + sY),
-         terrainTileSheet.getColor(tX + sX, tY + sY+1),
-         terrainTileSheet.getColor(tX + sX+1, tY + sY+1));*/
+    val sX = TILE_WIDTH / 2;
+    val sY = TILE_HEIGHT / 2;
 
     var answer = List[Color]();
     from match {
@@ -313,7 +262,7 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
   }
 
   def newBlankTerrain(id:Int):EditableTerrainTileMetadata = {
-    var borders = new Array[Option[TerrainType]](CardinalDirection.values.length);
+    val borders = new Array[Option[TerrainType]](CardinalDirection.values.length);
     for (j <- 0 until borders.length) {
       borders(j) = None;
     }
@@ -398,7 +347,7 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
     }
 
     if (input.isKeyPressed(Input.KEY_P)) {
-      var tile = metadata.getOrElseUpdate(currentTile, newBlankTerrain(currentTile));
+      val tile = metadata.getOrElseUpdate(currentTile, newBlankTerrain(currentTile));
       tile.plane match {
         case Plane.ARCANUS => tile.plane = Plane.MYRROR;
         case Plane.MYRROR => tile.plane = Plane.ARCANUS;
@@ -514,7 +463,7 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
 
 object TerrainMetadataEditor {
   def main(args: Array[String]): Unit = {
-    var app = new AppGameContainer(new TerrainMetadataEditor("Master of Magic: Terrain Metadata Editor"));
+    val app = new AppGameContainer(new TerrainMetadataEditor("Master of Magic: Terrain Metadata Editor"));
     org.lwjgl.input.Keyboard.enableRepeatEvents(true);
     app.setDisplayMode(640, 400, false);
     app.setSmoothDeltas(true);
