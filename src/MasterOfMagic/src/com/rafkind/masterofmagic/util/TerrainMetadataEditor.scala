@@ -25,7 +25,7 @@ class EditableTerrainTileMetadata(
   def getTerrain(dir:CardinalDirection):Option[TerrainType] = {
     dir match {
       case CardinalDirection.CENTER => Some(terrainType)
-      case _ => borderingTerrainTypes(dir)
+      case _ => borderingTerrainTypes(dir.id)
     }
   }
 
@@ -47,7 +47,7 @@ class EditableTerrainTileMetadata(
   def shorelineAdjust():Unit = {
     var grid = new Array[Option[TerrainType]](9);
 
-    grid(5) = Some(terrainType);
+    grid(4) = Some(terrainType);
     for (c <- CardinalDirection.values) {
       val x = c.dx + 1;
       val y = c.dy + 1;
@@ -64,12 +64,31 @@ class EditableTerrainTileMetadata(
           if (newX >= 0 && newX <= 2 && newY >= 0 && newY <= 2) {
             val oldId = x + (y*3);
             val newId = newX + (newY*3);
-            //if (grid(oldId) == TerrainType.OCEAN && !(grid(newId) == TerrainType.OCEAN || grid(newId) == TerrainType.SHORE)) {
-            //  grid(oldId) == TerrainType.SHORE;
-            //}
+            //println(oldId + ": " + grid(oldId) + " - " + newId + ": " + grid(newId));
+            (grid(oldId), grid(newId)) match {
+              case (Some(t1), Some(t2)) if (t1 == TerrainType.OCEAN && !(t2 == TerrainType.OCEAN || t2 == TerrainType.SHORE)) => {
+                  grid(oldId) = Some(TerrainType.SHORE);
+              }
+              case _ =>
+            }
+
+            /*if (grid(oldId) == TerrainType.OCEAN && !(grid(newId) == TerrainType.OCEAN || grid(newId) == TerrainType.SHORE)) {
+              grid(oldId) == TerrainType.SHORE;
+            }*/
           }
         }
       }
+    }
+
+    grid(4) match {
+      case Some(t) => terrainType = t;
+      case _ =>
+    }
+    for (c <- CardinalDirection.values) {
+      val x = c.dx + 1;
+      val y = c.dy + 1;
+      val i = x + (y*3);
+      borderingTerrainTypes(c.id) = grid(i);
     }
   }
 }
