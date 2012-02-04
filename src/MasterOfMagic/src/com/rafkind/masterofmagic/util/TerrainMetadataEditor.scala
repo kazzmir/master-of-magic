@@ -214,7 +214,7 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
     from match {
       case CardinalDirection.CENTER =>
         for (d <- CardinalDirection.valuesAll) {
-          answer ::= terrainTileSheet.getColor(tX + sY + d.dx, tY + sY + d.dy);
+          answer ::= terrainTileSheet.getColor(tX + sY + d.dx*2, tY + sY + d.dy*2);
         }
       case CardinalDirection.NORTH_WEST =>
         for (d <- CardinalDirection.valuesAll) {

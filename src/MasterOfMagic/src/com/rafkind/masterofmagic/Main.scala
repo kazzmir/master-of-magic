@@ -25,14 +25,14 @@ object Main {
    * @param args the command line arguments
    */
   def main(args: Array[String]): Unit = {
-    /*var app = new AppGameContainer(new MasterOfMagic("Master of Magic"));
+    var app = new AppGameContainer(new MasterOfMagic("Master of Magic"));
     org.lwjgl.input.Keyboard.enableRepeatEvents(true);
     app.setDisplayMode(640, 400, false);
     app.setSmoothDeltas(true);
     app.setTargetFrameRate(40);
     app.setShowFPS(false);
-    app.start();*/
-   TerrainMetadataEditor.main(args);
+    app.start();
+   //TerrainMetadataEditor.main(args);
   }
 
 }

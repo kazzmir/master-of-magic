@@ -9,7 +9,7 @@ import java.awt.Color;
 import org.newdawn.slick._;
 
 import com.rafkind.masterofmagic.state._;
-
+import com.rafkind.masterofmagic.util._;
 object TerrainPainter {
 
   import com.rafkind.masterofmagic.util.TerrainLbxReader._;
@@ -107,13 +107,14 @@ class TerrainPainter(baseTileImage:Image) {
       for (tileX <- 0 until TerrainPainter.VIEW_WIDTH) {
 
         val terrainSquare:TerrainSquare = overworld.get(
+          Plane.ARCANUS,
           tileX + startTileX,
           tileY + startTileY);
 
         val whichTile:Int = terrainSquare.spriteNumber;
 
-        val tX = (whichTile % 3) * TILE_WIDTH;
-        val tY = (whichTile / 3) * TILE_HEIGHT;
+        val tX = (whichTile % TerrainLbxReader.SPRITE_SHEET_WIDTH) * TILE_WIDTH;
+        val tY = (whichTile / TerrainLbxReader.SPRITE_SHEET_WIDTH) * TILE_HEIGHT;
         val dX = startX + tileX * DOUBLE_WIDTH;
         val dY = startY + tileY * DOUBLE_HEIGHT;
 
