@@ -339,20 +339,71 @@ class Overworld(val width:Int, val height:Int) {
     }
   }
 
+  def growRiver(random:Random, plane:Plane) {
+    findWhereTrue(random, plane, (x,y) => {
+        var t = get(plane, x, y);
+        (t.terrainType != TerrainType.OCEAN)
+      }) match {
+      case (x,y) => {
+        findWhereTrue(random, plane, (x2, y2) => {
+          get(plane, x2, y2).terrainType == TerrainType.OCEAN;
+        }) match {
+          case (ox, oy) => {
+            var rx = x;
+            var ry = y;
+            while (get(plane, rx, ry).terrainType != TerrainType.OCEAN) {
+              get(plane, rx, ry).terrainType = TerrainType.RIVER;
+
+              if (random.nextInt(2) == 1) {
+                if (ry < oy) {
+                  ry += 1;
+                } else if (ry > oy) {
+                  ry -= 1;
+                }
+
+              } else {
+                if ((rx-ox+width) % width > (ox-rx+width) % width) {
+                  rx += 1;
+                }
+                if ((rx-ox+width) % width < (ox-rx+width) % width) {
+                  rx = (rx - 1 + width) % width;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
   def buildPlane(plane:Plane, numSeeds:Int, groundCount:Int):Unit = {
     var random = new Random();
 
+    println("Land");
     grow(random, plane, numSeeds, groundCount, TerrainType.OCEAN, TerrainType.GRASSLAND);
-    grow(random, plane, numSeeds * 2, groundCount / 10, TerrainType.GRASSLAND, TerrainType.FOREST);
-    grow(random, plane, numSeeds * 2, groundCount / 10, TerrainType.GRASSLAND, TerrainType.HILLS);
-    grow(random, plane, numSeeds * 2, groundCount / 10, TerrainType.GRASSLAND, TerrainType.MOUNTAIN);
-    grow(random, plane, numSeeds * 2, groundCount / 10, TerrainType.GRASSLAND, TerrainType.DESERT);
-    grow(random, plane, numSeeds * 2, groundCount / 10, TerrainType.GRASSLAND, TerrainType.SWAMP);
+    println("Forest");
+    grow(random, plane, numSeeds * 3, groundCount / 13, TerrainType.GRASSLAND, TerrainType.FOREST);
+    println("Hills");
+    grow(random, plane, numSeeds * 3, groundCount / 18, TerrainType.GRASSLAND, TerrainType.HILLS);
+    println("Mountain");
+    grow(random, plane, numSeeds * 4, groundCount / 24, TerrainType.GRASSLAND, TerrainType.MOUNTAIN);
+    println("Desert");
+    grow(random, plane, numSeeds * 3, groundCount / 15, TerrainType.GRASSLAND, TerrainType.DESERT);
+    println("Swamp");
+    grow(random, plane, numSeeds * 3, groundCount / 15, TerrainType.GRASSLAND, TerrainType.SWAMP);
 
+    println("River");
+    for (n <- 0 until numSeeds * 2 / 3) {
+      growRiver(random, plane);
+    }
+
+    println("Nodes");
     grow(random, plane, numSeeds, 0, TerrainType.GRASSLAND, TerrainType.SORCERY_NODE);
     grow(random, plane, numSeeds, 0, TerrainType.MOUNTAIN, TerrainType.CHAOS_NODE);
     grow(random, plane, numSeeds, 0, TerrainType.FOREST, TerrainType.NATURE_NODE);
+
     
+    println("Tundra");
     // north and south poles, and tundra
     for (x <- 0 until width) {
       get(plane, x, 0).terrainType = TerrainType.TUNDRA;
