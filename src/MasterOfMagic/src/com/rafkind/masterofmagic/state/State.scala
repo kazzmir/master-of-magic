@@ -5,6 +5,9 @@
 
 package com.rafkind.masterofmagic.state
 
+import scala.xml._;
+import com.rafkind.masterofmagic.system._;
+
 case class CardinalDirection(val id:Int, val dx:Int, val dy:Int)
 object CardinalDirection{
 
@@ -104,8 +107,24 @@ object TerrainTileMetadata {
   var data:Array[TerrainTileMetadata] = 
     new Array[TerrainTileMetadata](TILE_COUNT);
 
+  read(Data.path("terrainMetaData.xml"));
+
   def read(fn:String):Unit = {
-    
+    XML.load(fn) \ "metadata" foreach { (m) =>
+      val borders = new Array[Option[TerrainType]](CardinalDirection.values.length);
+      m \ "borders" foreach { (b) =>
+        borders(Integer.parseInt((b \ "@direction").text)) =
+          Some(TerrainType.values(Integer.parseInt((b \ "@terrain").text)));
+      }
+
+      val id = Integer.parseInt((m \ "@id").text)
+      val terrainType = Integer.parseInt((m \ "@terrainType").text);
+      val plane = Integer.parseInt((m \ "@plane").text);
+      data(id) = new TerrainTileMetadata(id,
+                                          TerrainType.values(terrainType),
+                                          borders,
+                                          Plane.values(plane), None);
+    }
   }
 }
 
