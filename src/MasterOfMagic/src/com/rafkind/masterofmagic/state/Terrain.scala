@@ -51,15 +51,21 @@ case class TerrainTileMetadata(
   val parentId:Option[TerrainTileMetadata]) {
 
   def matches(plane:Plane, terrains:Array[TerrainType]):Boolean = {
-    /*terrainType match {
+    terrainType match {
       case TerrainType.OCEAN | TerrainType.SHORE => {
-        val soFar = true;
-        return (borderingTerrainTypes zip terrains) foldLeft(soFar)((accum, pair) => {
-            println (accum, pair);
-          })
+        return (borderingTerrainTypes zip terrains foldLeft true){
+          (accum, pair) =>
+            pair match {
+              case (Some(t1), t2) 
+                if ((t1 == TerrainType.OCEAN || t1 == TerrainType.SHORE)
+                    && (t2 == TerrainType.OCEAN || t2 == TerrainType.SHORE)) => accum && true;
+              case _ => accum && false;
+            }
+        };
       }
+      case _ => return false;
     }
-    System.exit(-1);*/
+    //System.exit(-1);
     return false;
   }
 }
@@ -129,6 +135,7 @@ object TerrainTileMetadata {
               }
           })._1;
       }
+      case _ => return 0;
     }
 
     return 0;
