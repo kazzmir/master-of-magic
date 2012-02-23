@@ -71,9 +71,15 @@ object Overworld {
       for (x <- 0 until WIDTH) {
         var t = overworld.get(Plane.ARCANUS, x, y);
         if (y > 0 && y < HEIGHT-1) {
-          t.spriteNumber =
-            TerrainTileMetadata.recommendedTerrainSprite(Plane.ARCANUS,
+          val recommendation =
+            TerrainTileMetadata.recommendedTerrainChange(Plane.ARCANUS,
               CardinalDirection.valuesAll map {(d) => overworld.get(Plane.ARCANUS, x + d.dx + WIDTH, y + d.dy).terrainType});
+          recommendation match {
+            case (terrain, sprite) => {
+              t.terrainType = terrain;
+              t.spriteNumber = sprite;
+            }
+          }
         } else {
           t.spriteNumber = arcanus(t.terrainType);
         }

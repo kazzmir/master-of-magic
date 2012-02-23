@@ -321,8 +321,7 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
   override def update(container:GameContainer, delta:Int):Unit = {
     val input = container.getInput();
 
-    val keys = Array(
-      Input.KEY_K,
+    val keys = Array(     
       Input.KEY_I,
       Input.KEY_O,
       Input.KEY_L,
@@ -330,7 +329,8 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
       Input.KEY_COMMA,
       Input.KEY_M,
       Input.KEY_J,
-      Input.KEY_U);
+      Input.KEY_U,
+      Input.KEY_K);
     
     (keys zip CardinalDirection.valuesAll) map {
       case (k, d) =>

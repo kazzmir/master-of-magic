@@ -53,19 +53,22 @@ case class TerrainTileMetadata(
   def matches(plane:Plane, terrains:Array[TerrainType]):Boolean = {
     terrainType match {
       case TerrainType.OCEAN | TerrainType.SHORE => {
+          println("---");
         return (borderingTerrainTypes zip terrains foldLeft true){
           (accum, pair) =>
-            pair match {
+            val answer = pair match {
               case (Some(t1), t2) 
                 if ((t1 == TerrainType.OCEAN || t1 == TerrainType.SHORE)
                     && (t2 == TerrainType.OCEAN || t2 == TerrainType.SHORE)) => accum && true;
               case _ => accum && false;
+
             }
+            if (answer) println(accum, pair, answer);
+            answer;
         };
       }
       case _ => return false;
     }
-    //System.exit(-1);
     return false;
   }
 }
@@ -117,28 +120,28 @@ object TerrainTileMetadata {
     }
   }
 
-  def recommendedTerrainSprite(plane:Plane, terrain:Array[TerrainType]):Int = {
+  def recommendedTerrainChange(plane:Plane, terrain:Array[TerrainType]):Tuple2[TerrainType, Int] = {
     terrain(CardinalDirection.CENTER.id) match {
       case TerrainType.OCEAN => {
         val oceans = setCombine(data.get(TerrainType.OCEAN.id),
                                 data.get(TerrainType.SHORE.id));
 
-        val soFar = (0, false);
+        val soFar = ((TerrainType.OCEAN, 0), false);
         return oceans.foldLeft(soFar)((acc, metadata) =>
           (acc) match {
-            case(id, true) => (id, true)
-            case(id, false) =>
+            case((terr, id), true) => ((terr, id), true)
+            case((terr, id), false) =>
               if (metadata.matches(plane, terrain)) {
-                (metadata.id, true)
+                ((metadata.terrainType, metadata.id), true)
               } else {
-                (id, false)
+                ((terr, id), false)
               }
           })._1;
       }
-      case _ => return 0;
+      case x => return (x, 0);
     }
 
-    return 0;
+    return (TerrainType.OCEAN, 0);
   }
 }
 
