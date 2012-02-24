@@ -52,18 +52,22 @@ case class TerrainTileMetadata(
 
   def matches(plane:Plane, terrains:Array[TerrainType]):Boolean = {
     terrainType match {
-      case TerrainType.OCEAN | TerrainType.SHORE => {
-          println("---");
+      case TerrainType.OCEAN | TerrainType.SHORE => {          
         return (borderingTerrainTypes zip terrains foldLeft true){
-          (accum, pair) =>
+          (accum, pair) =>            
             val answer = pair match {
-              case (Some(t1), t2) 
-                if ((t1 == TerrainType.OCEAN || t1 == TerrainType.SHORE)
-                    && (t2 == TerrainType.OCEAN || t2 == TerrainType.SHORE)) => accum && true;
+              case (Some(TerrainType.OCEAN), TerrainType.OCEAN) => accum && true;
+              case (Some(TerrainType.SHORE), TerrainType.OCEAN) => accum && true;
+              case (Some(TerrainType.OCEAN), TerrainType.SHORE) => accum && true;
+              case (Some(TerrainType.SHORE), TerrainType.SHORE) => accum && true;
+              case (Some(s1), s2) if (s1 != TerrainType.OCEAN
+                                      && s1 != TerrainType.SHORE
+                                      && s2 != TerrainType.OCEAN
+                                      && s2 != TerrainType.SHORE) => accum && true;
+
               case _ => accum && false;
 
-            }
-            if (answer) println(accum, pair, answer);
+            }            
             answer;
         };
       }
@@ -120,18 +124,19 @@ object TerrainTileMetadata {
     }
   }
 
-  def recommendedTerrainChange(plane:Plane, terrain:Array[TerrainType]):Tuple2[TerrainType, Int] = {
+  def recommendedTerrainChange(plane:Plane, terrain:Array[TerrainType]):Tuple2[TerrainType, Int] = {    
     terrain(CardinalDirection.CENTER.id) match {
       case TerrainType.OCEAN => {
         val oceans = setCombine(data.get(TerrainType.OCEAN.id),
                                 data.get(TerrainType.SHORE.id));
-
+        
         val soFar = ((TerrainType.OCEAN, 0), false);
         return oceans.foldLeft(soFar)((acc, metadata) =>
           (acc) match {
-            case((terr, id), true) => ((terr, id), true)
+            case((terr, id), true) =>
+              ((terr, id), true)
             case((terr, id), false) =>
-              if (metadata.matches(plane, terrain)) {
+              if (metadata.matches(plane, terrain)) {                
                 ((metadata.terrainType, metadata.id), true)
               } else {
                 ((terr, id), false)
