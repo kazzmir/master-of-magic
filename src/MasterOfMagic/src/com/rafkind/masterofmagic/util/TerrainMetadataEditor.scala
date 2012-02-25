@@ -14,6 +14,18 @@ import scala.xml._;
 import scala.collection.mutable.HashMap;
 import scala.collection.mutable.HashSet;
 
+object EditableTerrainTileMetadata {
+
+  private def copyBorderingArray(other:Array[Option[TerrainType]]):Array[Option[TerrainType]] =
+    other map ((x) => x match {
+        case Some(y) => Some(y);
+        case None => None
+      });
+
+  def copy(other:EditableTerrainTileMetadata) =
+    new EditableTerrainTileMetadata(other.id, other.terrainType, copyBorderingArray(other.borderingTerrainTypes), other.plane, other.parentId);
+}
+
 // mirrors TerrainTileMetadata in State.scala
 class EditableTerrainTileMetadata(
   var id:Int,
@@ -293,11 +305,23 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
                                            None);
   }
 
+  def copyGuess():Unit = {
+    for (guess <- metadataGuess) {
+      metadata.get(guess.id) match {
+        case Some(m) =>
+          for (i <- 0 until m.borderingTerrainTypes.length) {
+            m.borderingTerrainTypes(i) = guess.borderingTerrainTypes(i);
+          }
+        case None =>
+          metadata += guess.id -> EditableTerrainTileMetadata.copy(guess);
+      }
+    }
+  }
+
   override def update(container:GameContainer, delta:Int):Unit = {
     val input = container.getInput();
 
-    val keys = Array(
-      Input.KEY_K,
+    val keys = Array(     
       Input.KEY_I,
       Input.KEY_O,
       Input.KEY_L,
@@ -305,7 +329,8 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
       Input.KEY_COMMA,
       Input.KEY_M,
       Input.KEY_J,
-      Input.KEY_U);
+      Input.KEY_U,
+      Input.KEY_K);
     
     (keys zip CardinalDirection.valuesAll) map {
       case (k, d) =>
@@ -382,6 +407,11 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
 
     if (input.isKeyPressed(Input.KEY_SPACE)) {
       guessTerrain();
+      input.clearKeyPressedRecord();
+    }
+
+    if (input.isKeyPressed(Input.KEY_ENTER)) {
+      copyGuess();
       input.clearKeyPressedRecord();
     }
   }
