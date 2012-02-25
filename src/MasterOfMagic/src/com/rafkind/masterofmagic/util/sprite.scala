@@ -1,5 +1,7 @@
 package com.rafkind.masterofmagic.util
 
+// http://www.roughseas.ca/momime/phpBB3/viewtopic.php?f=1&t=5
+
 import org.newdawn.slick.ImageBuffer
 
 object SpriteReader{
