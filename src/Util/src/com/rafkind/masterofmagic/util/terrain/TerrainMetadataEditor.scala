@@ -3,12 +3,13 @@
  * and open the template in the editor.
  */
 
-package com.rafkind.masterofmagic.util
+package com.rafkind.masterofmagic.util.terrain
 
 import org.newdawn.slick._;
 
 import com.rafkind.masterofmagic.system._;
 import com.rafkind.masterofmagic.state._;
+import com.rafkind.masterofmagic.util._;
 import scala.xml.XML._;
 import scala.xml._;
 import scala.collection.mutable.HashMap;
@@ -157,7 +158,7 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
     }
   }
 
-  def guessTerrain() {
+  def guessTerrain():Unit = {
     val directionalModels = new HashMap[CardinalDirection,
                                         HashMap[Tuple3[Int, Int, Int], HashSet[TerrainType]]]();
     for (c <- List(CardinalDirection.CENTER, CardinalDirection.NORTH, CardinalDirection.NORTH_EAST)) {
@@ -406,7 +407,8 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
     }
 
     if (input.isKeyPressed(Input.KEY_SPACE)) {
-      guessTerrain();
+      //guessTerrain();
+      NeuralNetworkGuesser.guessTerrain(metadataGuess);
       input.clearKeyPressedRecord();
     }
 

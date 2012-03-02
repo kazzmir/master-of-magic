@@ -1,9 +1,6 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
+package com.rafkind.masterofmagic.util;
 
-package com.rafkind.masterofmagic.util
+import com.rafkind.masterofmagic.util.terrain.TerrainMetadataEditor;
 
 object Main {
 

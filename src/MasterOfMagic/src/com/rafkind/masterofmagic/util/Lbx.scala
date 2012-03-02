@@ -119,15 +119,10 @@ object TerrainLbxReader {
     imageBuffer.setRGBA(x, y, r, g, b, a);
   }
 
-  def read(fileName:String):Image = {
+  def readAnd(fileName:String, 
+              withPixelDo:(Int, Int, Int, Int) => Unit
+              ):Unit = {
     val lbxFile = new LbxReader(fileName)
-
-    val imageBuffer = new ImageBuffer(
-      TILE_WIDTH * SPRITE_SHEET_WIDTH,
-      TILE_HEIGHT * SPRITE_SHEET_HEIGHT);
-
-    var row:Int = 0;
-    var col:Int = 0;
 
     val lbx = lbxFile.readLbx()
 
@@ -136,27 +131,33 @@ object TerrainLbxReader {
       lbxFile.seek(position + 16); // skip 8 word header
 
       // wierd x/y flippage!
-      for (y <- 0 until TILE_WIDTH) {
-        for (x <- 0 until TILE_HEIGHT) {
-          val c = lbxFile.read()
-          val px = (col * TILE_WIDTH) + y;
-          val py = (row * TILE_HEIGHT) + x;
-          putpixel(imageBuffer, px, py, c)
+      for (x <- 0 until TILE_WIDTH) {
+        for (y <- 0 until TILE_HEIGHT) {
+          withPixelDo(index, x, y, lbxFile.read())
         }
       }
       // skip 4 word footer
 
       // next image
       position = position + 384;
-      col = col+1;
-      if (col >= SPRITE_SHEET_WIDTH) {
-        col = 0;
-        row = row + 1;
-      }
     }
 
     lbxFile.close();
-    
+  }
+
+  def read(fileName:String):Image = {
+    val imageBuffer = new ImageBuffer(
+      TILE_WIDTH * SPRITE_SHEET_WIDTH,
+      TILE_HEIGHT * SPRITE_SHEET_HEIGHT);
+
+    readAnd(fileName, (tile, x, y, color) => {
+        val row = tile / SPRITE_SHEET_WIDTH;
+        val col = tile % SPRITE_SHEET_WIDTH;
+        val px = (col * TILE_WIDTH) + x;
+        val py = (row * TILE_HEIGHT) + y;
+        putpixel(imageBuffer, px, py, color)
+    });
+
     return imageBuffer.getImage(Image.FILTER_NEAREST);
   }
 }
