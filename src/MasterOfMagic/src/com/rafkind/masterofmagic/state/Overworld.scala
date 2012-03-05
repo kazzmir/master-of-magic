@@ -73,7 +73,8 @@ object Overworld {
         if (y > 0 && y < HEIGHT-1) {
           val recommendation =
             TerrainTileMetadata.recommendedTerrainChange(Plane.ARCANUS,
-              CardinalDirection.valuesAll map {(d) => overworld.get(Plane.ARCANUS, x + d.dx + WIDTH, y + d.dy).terrainType});
+              CardinalDirection.valuesAll map {(d) => overworld.get(Plane.ARCANUS, x + d.dx + WIDTH, y + d.dy).terrainType},
+              arcanus(t.terrainType));
           recommendation match {
             case (terrain, sprite) => {
               t.terrainType = terrain;

@@ -55,23 +55,70 @@ case class TerrainTileMetadata(
       case TerrainType.OCEAN | TerrainType.SHORE => {          
         return (borderingTerrainTypes zip terrains foldLeft true){
           (accum, pair) =>            
-            val answer = pair match {
+            pair match {
               case (Some(TerrainType.OCEAN), TerrainType.OCEAN) => accum && true;
               case (Some(TerrainType.SHORE), TerrainType.OCEAN) => accum && true;
               case (Some(TerrainType.OCEAN), TerrainType.SHORE) => accum && true;
               case (Some(TerrainType.SHORE), TerrainType.SHORE) => accum && true;
+              case (Some(TerrainType.RIVER), TerrainType.RIVER) => accum && true;
               case (Some(s1), s2) if (s1 != TerrainType.OCEAN
                                       && s1 != TerrainType.SHORE
+                                      && s1 != TerrainType.RIVER
                                       && s2 != TerrainType.OCEAN
-                                      && s2 != TerrainType.SHORE) => accum && true;
+                                      && s2 != TerrainType.SHORE
+                                      && s2 != TerrainType.RIVER) => accum && true;
 
               case _ => accum && false;
 
-            }            
-            answer;
+            }       
         };
       }
-      case _ => return false;
+      case TerrainType.RIVER => {
+          return ((CardinalDirection.values, borderingTerrainTypes, terrains).zipped foldLeft true) {
+            (accum, triplet) =>
+              triplet match {
+                case (dir, x, y) if (dir == CardinalDirection.NORTH_EAST
+                                    || dir == CardinalDirection.NORTH_WEST
+                                    || dir == CardinalDirection.SOUTH_EAST
+                                    || dir == CardinalDirection.SOUTH_WEST) => accum && true;
+                case (dir, Some(TerrainType.RIVER), TerrainType.RIVER)  => accum && true;
+                case (dir, Some(TerrainType.RIVER), TerrainType.SHORE)  => accum && true;
+                case (dir, Some(TerrainType.RIVER), TerrainType.OCEAN)  => accum && true;
+                case (dir, Some(s1), s2) if (s1 != TerrainType.RIVER
+                                        && s2 != TerrainType.RIVER) => accum && true;
+                case _ => accum && false;
+              }
+          }
+      }
+      case r if (r == TerrainType.HILLS
+                 || r == TerrainType.MOUNTAIN) => {
+
+          return ((CardinalDirection.values, borderingTerrainTypes, terrains).zipped foldLeft true) {
+            (accum, triplet) =>
+              triplet match {
+                case (dir, x, y) if (dir == CardinalDirection.NORTH_EAST
+                                    || dir == CardinalDirection.NORTH_WEST
+                                    || dir == CardinalDirection.SOUTH_EAST
+                                    || dir == CardinalDirection.SOUTH_WEST) => accum && true;
+                case (dir, Some(t1), t2) if (t1 == r && t2 == r) => accum && true;
+                case (dir, Some(s1), s2) if (s1 != r
+                                        && s2 != r) => accum && true;
+                case _ => accum && false;
+              }
+          }
+      }
+        
+      case target =>
+        return (borderingTerrainTypes zip terrains foldLeft true){
+          (accum, pair) =>
+            pair match {
+              case (Some(t1), t2) if (t1 == target && t2 == target) => accum && true;
+              case (Some(s1), s2) if (s1 != target
+                                      && s2 != target) => accum && true;
+              case _ => accum && false;
+
+            }
+        };
     }
     return false;
   }
@@ -124,29 +171,46 @@ object TerrainTileMetadata {
     }
   }
 
-  def recommendedTerrainChange(plane:Plane, terrain:Array[TerrainType]):Tuple2[TerrainType, Int] = {    
+  def recommend(plane:Plane,
+          terrain:Array[TerrainType],
+          meta:Set[TerrainTileMetadata],
+          target:TerrainType,
+          default:Int):Tuple2[TerrainType, Int] = {
+
+    val soFar = ((target, default), false);
+    return meta.foldLeft(soFar)((acc, metadata) =>
+      (acc) match {
+        case((terr, id), true) =>
+          ((terr, id), true)
+        case((terr, id), false) =>
+          if (metadata.matches(plane, terrain)) {
+            ((metadata.terrainType, metadata.id), true)
+          } else {
+            ((terr, id), false)
+          }
+      })._1;
+  }
+
+  def recommendedTerrainChange(plane:Plane, terrain:Array[TerrainType], default:Int):Tuple2[TerrainType, Int] = {
     terrain(CardinalDirection.CENTER.id) match {
       case TerrainType.OCEAN => {
         val oceans = setCombine(data.get(TerrainType.OCEAN.id),
                                 data.get(TerrainType.SHORE.id));
-        
-        val soFar = ((TerrainType.OCEAN, 0), false);
-        return oceans.foldLeft(soFar)((acc, metadata) =>
-          (acc) match {
-            case((terr, id), true) =>
-              ((terr, id), true)
-            case((terr, id), false) =>
-              if (metadata.matches(plane, terrain)) {                
-                ((metadata.terrainType, metadata.id), true)
-              } else {
-                ((terr, id), false)
-              }
-          })._1;
+         return recommend(plane, terrain, oceans, TerrainType.OCEAN, default);
       }
-      case x => return (x, 0);
+      case t if (t == TerrainType.TUNDRA 
+                 || t == TerrainType.HILLS
+                 || t == TerrainType.MOUNTAIN
+                 || t == TerrainType.RIVER
+                 || t == TerrainType.DESERT)  => {
+          return recommend(plane, 
+                           terrain,
+                           setCombine(data.get(t.id), None),
+                           t,
+                           default);
+      }
+      case x => return (x, default);
     }
-
-    return (TerrainType.OCEAN, 0);
   }
 }
 

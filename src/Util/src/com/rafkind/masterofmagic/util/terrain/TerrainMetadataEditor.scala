@@ -412,10 +412,10 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
       input.clearKeyPressedRecord();
     }
 
-    if (input.isKeyPressed(Input.KEY_ENTER)) {
+    /*if (input.isKeyPressed(Input.KEY_ENTER)) {
       copyGuess();
       input.clearKeyPressedRecord();
-    }
+    }*/
   }
 
   def writeOut() {
