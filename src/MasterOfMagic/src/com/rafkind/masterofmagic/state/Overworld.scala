@@ -58,7 +58,19 @@ object Overworld {
       TerrainType.HILLS -> 291,
       TerrainType.VOLCANO -> 299,
       TerrainType.RIVER -> 591);
-    val myrror = Map(TerrainType.OCEAN -> 888);
+    val myrror = Map(TerrainType.OCEAN -> 888,
+      TerrainType.GRASSLAND -> 889,
+      TerrainType.FOREST -> 1147,
+      TerrainType.MOUNTAIN -> 1148,
+      TerrainType.DESERT -> 1149,
+      TerrainType.SWAMP -> 1150,
+      TerrainType.SORCERY_NODE -> 1152,
+      TerrainType.NATURE_NODE -> 1186,
+      TerrainType.CHAOS_NODE -> 1160,
+      TerrainType.HILLS -> 1164,
+      TerrainType.VOLCANO -> 1172,
+      TerrainType.RIVER -> 1464,
+      TerrainType.TUNDRA -> 1605);
 
     var overworld = new Overworld(WIDTH, HEIGHT);
 
@@ -66,23 +78,26 @@ object Overworld {
     overworld.fillPlane(Plane.MYRROR, myrror(TerrainType.OCEAN), TerrainType.OCEAN);
 
     overworld.buildPlane(Plane.ARCANUS, 5, 800);
+    overworld.buildPlane(Plane.MYRROR, 5, 800);
 
-    for (y <- 0 until HEIGHT) {
-      for (x <- 0 until WIDTH) {
-        var t = overworld.get(Plane.ARCANUS, x, y);
-        if (y > 0 && y < HEIGHT-1) {
-          val recommendation =
-            TerrainTileMetadata.recommendedTerrainChange(Plane.ARCANUS,
-              CardinalDirection.valuesAll map {(d) => overworld.get(Plane.ARCANUS, x + d.dx + WIDTH, y + d.dy).terrainType},
-              arcanus(t.terrainType));
-          recommendation match {
-            case (terrain, sprite) => {
-              t.terrainType = terrain;
-              t.spriteNumber = sprite;
+    for ((plane, mapping) <- List((Plane.ARCANUS, arcanus), (Plane.MYRROR, myrror))) {
+      for (y <- 0 until HEIGHT) {
+        for (x <- 0 until WIDTH) {
+          var t = overworld.get(plane, x, y);
+            if (y > 0 && y < HEIGHT-1) {
+              val recommendation =
+                TerrainTileMetadata.recommendedTerrainChange(plane,
+                  CardinalDirection.valuesAll map {(d) => overworld.get(plane, x + d.dx + WIDTH, y + d.dy).terrainType},
+                  mapping(t.terrainType));
+              recommendation match {
+                case (terrain, sprite) => {
+                  t.terrainType = terrain;
+                  t.spriteNumber = sprite;
+                }
+              }
+            } else {
+              t.spriteNumber = mapping(t.terrainType);
             }
-          }
-        } else {
-          t.spriteNumber = arcanus(t.terrainType);
         }
       }
     }
@@ -200,8 +215,8 @@ class Overworld(val width:Int, val height:Int) {
     }
 
     // fill in the gaps
-    for (y <- 0 to height) {
-      for (x <- 0 to width) {
+    for (y <- 0 until height) {
+      for (x <- 0 until width) {
         if (get(plane, x, y).terrainType == base) {
           var count = 0;
           for (dir <- CardinalDirection.valuesStraight) {

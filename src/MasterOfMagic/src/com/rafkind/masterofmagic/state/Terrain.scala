@@ -136,6 +136,7 @@ object TerrainTileMetadata {
   */
   var data = new CustomMultiMap[Int, TerrainTileMetadata];
 
+
   read(Data.path("terrainMetaData.xml"));
 
   def read(fn:String):Unit = {

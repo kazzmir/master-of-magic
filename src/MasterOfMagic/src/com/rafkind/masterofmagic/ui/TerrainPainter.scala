@@ -107,7 +107,7 @@ class TerrainPainter(baseTileImage:Image) {
       for (tileX <- 0 until TerrainPainter.VIEW_WIDTH) {
 
         val terrainSquare:TerrainSquare = overworld.get(
-          Plane.ARCANUS,
+          Plane.MYRROR,
           tileX + startTileX,
           tileY + startTileY);
 
