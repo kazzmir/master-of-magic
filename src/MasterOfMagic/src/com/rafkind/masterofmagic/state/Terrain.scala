@@ -134,7 +134,7 @@ object TerrainTileMetadata {
   /*var data:Array[TerrainTileMetadata] =
     new Array[TerrainTileMetadata](TILE_COUNT);
   */
-  var data = new CustomMultiMap[Int, TerrainTileMetadata];
+  var data = new CustomMultiMap[Tuple2[Plane, Int], TerrainTileMetadata];
 
 
   read(Data.path("terrainMetaData.xml"));
@@ -155,7 +155,11 @@ object TerrainTileMetadata {
                                           borders,
                                           Plane.values(plane), None);
 
-      data.put(terrainType, metadata);
+      plane match {
+        case Plane.ARCANUS.id => data.put((Plane.ARCANUS, terrainType), metadata);
+        case Plane.MYRROR.id => data.put((Plane.MYRROR, terrainType), metadata);
+        case _ => 
+      }      
     }
   }
 
@@ -195,8 +199,8 @@ object TerrainTileMetadata {
   def recommendedTerrainChange(plane:Plane, terrain:Array[TerrainType], default:Int):Tuple2[TerrainType, Int] = {
     terrain(CardinalDirection.CENTER.id) match {
       case TerrainType.OCEAN => {
-        val oceans = setCombine(data.get(TerrainType.OCEAN.id),
-                                data.get(TerrainType.SHORE.id));
+        val oceans = setCombine(data.get((plane, TerrainType.OCEAN.id)),
+                                data.get((plane, TerrainType.SHORE.id)));
          return recommend(plane, terrain, oceans, TerrainType.OCEAN, default);
       }
       case t if (t == TerrainType.TUNDRA 
@@ -206,7 +210,7 @@ object TerrainTileMetadata {
                  || t == TerrainType.DESERT)  => {
           return recommend(plane, 
                            terrain,
-                           setCombine(data.get(t.id), None),
+                           setCombine(data.get((plane, t.id)), None),
                            t,
                            default);
       }

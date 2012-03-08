@@ -31,8 +31,7 @@ object Plane {
 
   val values = Array(ARCANUS, MYRROR)
 
-  implicit def plane2string(p:Plane) = p.name
-    
+  implicit def plane2string(p:Plane) = p.name  
 }
 
 class Place {

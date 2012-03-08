@@ -16,7 +16,7 @@ object TerrainPainter {
 
   // size of the big viewport, in tiles
   val VIEW_WIDTH = 12;
-  val VIEW_HEIGHT = 11;
+  val VIEW_HEIGHT = 10;
 
   def createDummySpriteSheetImage():Image = {
     
@@ -105,7 +105,6 @@ class TerrainPainter(baseTileImage:Image) {
 
     for (tileY <- 0 until TerrainPainter.VIEW_HEIGHT) {
       for (tileX <- 0 until TerrainPainter.VIEW_WIDTH) {
-
         val terrainSquare:TerrainSquare = overworld.get(
           Plane.MYRROR,
           tileX + startTileX,
@@ -125,7 +124,6 @@ class TerrainPainter(baseTileImage:Image) {
         );
       }
     }
-
     baseTileImage.endUse();
   }
 }

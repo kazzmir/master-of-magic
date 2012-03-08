@@ -51,7 +51,7 @@ class OverworldMapState(id:Int, overworld:Overworld) extends NiftyOverlayGameSta
     if (e.isKeyDown()) {
       e.getKey() match {
         case KeyboardInputEvent.KEY_UP => y = if (y > 0) y-1 else 0;
-        case KeyboardInputEvent.KEY_DOWN => y = if (y < overworld.height-(TerrainPainter.VIEW_HEIGHT-1)) { y+1 } else {overworld.height-(TerrainPainter.VIEW_HEIGHT-1)};
+        case KeyboardInputEvent.KEY_DOWN => y = if (y < overworld.height-TerrainPainter.VIEW_HEIGHT) { y+1 } else {overworld.height-TerrainPainter.VIEW_HEIGHT};
         case KeyboardInputEvent.KEY_LEFT => x = if (x > 0) {x-1} else {overworld.width-1};
         case KeyboardInputEvent.KEY_RIGHT => x += 1;
         case _ => {}

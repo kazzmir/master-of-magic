@@ -320,8 +320,5 @@ class Overworld(val width:Int, val height:Int) {
         }
       }
     }
-
-
   }
-
 }
