@@ -341,11 +341,12 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
         }
     }
 
+    val step = input.isKeyDown(Input.KEY_LSHIFT) match {
+       case true => 10
+       case false => 1
+    }
+
     if (input.isKeyPressed(Input.KEY_RBRACKET)) {
-      val step = input.isKeyDown(Input.KEY_LSHIFT) match {
-                   case true => 10
-                   case false => 1
-                 }
       if (currentTile < TILE_COUNT - step) {
         currentTile += step;
         /*println(
@@ -358,8 +359,8 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
     }
 
     if (input.isKeyPressed(Input.KEY_LBRACKET)) {
-      if (currentTile > 0) {
-        currentTile -= 1;
+      if (currentTile > step) {
+        currentTile -= step;
       }
       input.clearKeyPressedRecord();
     }
