@@ -35,14 +35,22 @@
 
     <target name="compile" depends="init">
         <mkdir dir="classes" />
-        <scalac srcdir="src"
+        <scalac srcdir="src/MasterOfMagic"
                 destdir="classes">
             <classpath refid="all" />
         </scalac>
 
+        <scalac srcdir="src/Util"
+                destdir="classes">
+            <classpath refid="all" />
+        </scalac>
+
+
         <!-- For any java files -->
+        <!--
         <javac srcdir="src"
                destdir="classes" />
+               -->
     </target>
 
     <target name="run">
@@ -52,4 +60,13 @@
             <sysproperty key="java.library.path" value="lib/native/linux" />
         </java>
     </target>
+
+    <target name="terrain">
+        <java classname="com.rafkind.masterofmagic.util.Main"
+              fork="true">
+              <classpath refid="all" />
+            <sysproperty key="java.library.path" value="lib/native/linux" />
+        </java>
+    </target>
+
 </project>

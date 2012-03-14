@@ -342,8 +342,12 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
     }
 
     if (input.isKeyPressed(Input.KEY_RBRACKET)) {
-      if (currentTile < TILE_COUNT-1) {
-        currentTile += 1;
+      val step = input.isKeyDown(Input.KEY_LSHIFT) match {
+                   case true => 10
+                   case false => 1
+                 }
+      if (currentTile < TILE_COUNT - step) {
+        currentTile += step;
         /*println(
           getColorSwatchFromTile(currentTile, CardinalDirection.CENTER) map {
             (c) =>
