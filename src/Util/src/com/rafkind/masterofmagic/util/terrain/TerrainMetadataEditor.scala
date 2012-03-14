@@ -347,21 +347,18 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
     }
 
     if (input.isKeyPressed(Input.KEY_RBRACKET)) {
-      if (currentTile < TILE_COUNT - step) {
-        currentTile += step;
+      currentTile = (currentTile + step) % TILE_COUNT;
         /*println(
           getColorSwatchFromTile(currentTile, CardinalDirection.CENTER) map {
             (c) =>
               "(" + c.getRed() + " " + c.getGreen() + " " + c.getBlue() + ")"
           });*/
-      }
+      
       input.clearKeyPressedRecord();
     }
 
     if (input.isKeyPressed(Input.KEY_LBRACKET)) {
-      if (currentTile > step) {
-        currentTile -= step;
-      }
+      currentTile = (currentTile + TILE_COUNT - step) % TILE_COUNT;
       input.clearKeyPressedRecord();
     }
 
