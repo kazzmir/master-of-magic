@@ -336,9 +336,56 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
     (keys zip CardinalDirection.valuesAll) map {
       case (k, d) =>
         if (input.isKeyPressed(k)) {
-          currentDirection = d;
-          input.clearKeyPressedRecord();
+          currentDirection = d
+          input.clearKeyPressedRecord()
         }
+    }
+
+    def directionToCoordinate(direction:CardinalDirection) = direction match {
+      case CardinalDirection.CENTER => (0, 0)
+      case CardinalDirection.NORTH => (0, -1)
+      case CardinalDirection.SOUTH => (0, 1)
+      case CardinalDirection.EAST => (1, 0)
+      case CardinalDirection.WEST => (-1, 0)
+      case CardinalDirection.NORTH_EAST => (1, -1)
+      case CardinalDirection.NORTH_WEST => (-1, -1)
+      case CardinalDirection.SOUTH_EAST => (1, 1)
+      case CardinalDirection.SOUTH_WEST => (-1, 1)
+    }
+
+    def coordinateToDirection(x:Int, y:Int) = (x, y) match {
+      case (0, 0) => CardinalDirection.CENTER
+      case (0, -1) => CardinalDirection.NORTH
+      case (0, 1) => CardinalDirection.SOUTH
+      case (1, 0) => CardinalDirection.EAST
+      case (-1, 0) => CardinalDirection.WEST
+      case (1, -1) => CardinalDirection.NORTH_EAST
+      case (-1, -1) => CardinalDirection.NORTH_WEST
+      case (1, 1) => CardinalDirection.SOUTH_EAST
+      case (-1, 1) => CardinalDirection.SOUTH_WEST
+    }
+
+    def between(low:Int, here:Int, high:Int) = Math.max(Math.min(here, high), low)
+
+    var coordinate = directionToCoordinate(currentDirection)
+    val directionKeys = Map(Input.KEY_DOWN -> (0, 1),
+                            Input.KEY_LEFT -> (-1, 0),
+                            Input.KEY_RIGHT -> (1, 0),
+                            Input.KEY_UP -> (0, -1))
+
+    for ((key, move) <- directionKeys){
+      if (input.isKeyPressed(key)){
+        coordinate = (coordinate, move) match {
+          case ((coordinateX, coordinateY),
+                (moveX, moveY)) => (between(-1, coordinateX + moveX, 1),
+                                    between(-1, coordinateY + moveY, 1))
+        }
+        // input.clearKeyPressedRecord();
+      }
+    }
+
+    currentDirection = coordinate match {
+      case (x, y) => coordinateToDirection(x, y)
     }
 
     val step = input.isKeyDown(Input.KEY_LSHIFT) match {
@@ -404,7 +451,9 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
     }
 
     if (input.isKeyPressed(Input.KEY_ESCAPE)) {
+      println("Saving..")
       writeOut();
+      println("Done")
       System.exit(0);
     }
 
