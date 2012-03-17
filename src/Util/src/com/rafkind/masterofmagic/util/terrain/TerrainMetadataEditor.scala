@@ -269,6 +269,9 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
     answer;
   }
 
+  /* Arcanus or Myrror depending on the tile */
+  def whichPlane(tile:Int):Plane = if (tile < 888) Plane.ARCANUS else Plane.MYRROR
+
   override def init(container:GameContainer):Unit = {
     terrainTileSheet = TerrainLbxReader.read(Data.originalDataPath("TERRAIN.LBX"));
     //org.lwjgl.input.Keyboard.enableRepeatEvents(false);
@@ -280,11 +283,7 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
         borders(j) = None;
       }*/
 
-      var plane = if (i < 888) {
-          Plane.ARCANUS
-        } else {
-          Plane.MYRROR
-        };
+      var plane = whichPlane(i)
       var terrainGuess = guessTerrain(i, plane);
       metadata(i) = new EditableTerrainTileMetadata(i,
                                             terrainGuess.terrainGuess,
@@ -302,7 +301,7 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
     return new EditableTerrainTileMetadata(id,
                                            TerrainType.OCEAN,
                                            borders,
-                                           if (id < 888) Plane.ARCANUS else Plane.MYRROR,
+                                           whichPlane(id),
                                            None);
   }
 
@@ -318,6 +317,25 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
       }
     }
   }
+
+  /* The order maps to Terraintypes */
+  val terrainKeys = Array(
+      Input.KEY_Q,
+      Input.KEY_W,
+      Input.KEY_E,
+      Input.KEY_R,
+      Input.KEY_T,
+      Input.KEY_A,
+      Input.KEY_S,
+      Input.KEY_D,
+      Input.KEY_F,
+      Input.KEY_G,
+      Input.KEY_Z,
+      Input.KEY_X,
+      Input.KEY_C,
+      Input.KEY_V,
+      Input.KEY_B
+  );
 
   override def update(container:GameContainer, delta:Int):Unit = {
     val input = container.getInput();
@@ -409,24 +427,6 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
       input.clearKeyPressedRecord();
     }
 
-    val terrainKeys = Array(
-      Input.KEY_Q,
-      Input.KEY_W,
-      Input.KEY_E,
-      Input.KEY_R,
-      Input.KEY_T,
-      Input.KEY_A,
-      Input.KEY_S,
-      Input.KEY_D,
-      Input.KEY_F,
-      Input.KEY_G,
-      Input.KEY_Z,
-      Input.KEY_X,
-      Input.KEY_C,
-      Input.KEY_V,
-      Input.KEY_B
-    );
-
     (terrainKeys zip TerrainType.values) map {      
       case (k, t) =>
         if (input.isKeyPressed(k)) {
@@ -477,6 +477,44 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
       </terrain>;
 
     save(Data.path("terrainMetaData.xml"), doc, "utf-8", true);
+  }
+
+  def canonicalKey(key:Int):String = key match {
+    case Input.KEY_Q => "Q"
+    case Input.KEY_W => "W"
+    case Input.KEY_E => "E"
+    case Input.KEY_R => "R"
+    case Input.KEY_T => "T"
+    case Input.KEY_A => "A"
+    case Input.KEY_S => "S"
+    case Input.KEY_D => "D"
+    case Input.KEY_F => "F"
+    case Input.KEY_G => "G"
+    case Input.KEY_Z => "Z"
+    case Input.KEY_X => "X"
+    case Input.KEY_C => "C"
+    case Input.KEY_V => "V"
+    case Input.KEY_B => "B"
+  }
+
+  def canonicalTerrain(terrain:TerrainType):String = terrain.name
+
+  def showHelp(container:GameContainer, graphics:Graphics):Unit = {
+    graphics.setColor(uiColor);
+    var x = 10
+    val stepY = 15
+    val startY = container.getHeight() - (stepY * 5)
+    var y = startY
+    (terrainKeys zip TerrainType.values) map {
+      case (key, terrain) => {
+        graphics.drawString(canonicalKey(key) + ": " + canonicalTerrain(terrain), x, y)
+        y += stepY
+        if (y > container.getHeight() - stepY){
+          y = startY
+          x += 150
+        }
+      }
+    }
   }
 
   override def render(container:GameContainer, graphics:Graphics):Unit = {
@@ -560,6 +598,8 @@ class TerrainMetadataEditor(title:String) extends BasicGame(title) {
       }
       case null =>
     }
+
+    showHelp(container, graphics)
   }
 }
 
