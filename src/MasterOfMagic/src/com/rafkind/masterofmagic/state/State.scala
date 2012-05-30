@@ -5,6 +5,16 @@
 
 package com.rafkind.masterofmagic.state
 
+case class MagicColor(val id:Int, val name:String)
+object MagicColor {
+  val ARCANE  = MagicColor(0, "Arcane");
+  val WHITE = MagicColor(1, "White");
+  val GREEN = MagicColor(2, "Green");
+  val RED = MagicColor(3, "Red");
+  val BLUE = MagicColor(4, "Blue");
+  val BLACK = MagicColor(5, "Black");
+}
+
 case class CardinalDirection(val id:Int, val dx:Int, val dy:Int)
 object CardinalDirection{
 
@@ -34,35 +44,104 @@ object Plane {
   implicit def plane2string(p:Plane) = p.name  
 }
 
-class Place {
+class Spell {
 
 }
 
-class UnitStack {
+class Item {
 
 }
 
-class Player {
+class Retort {
+  
+}
+
+case class LairType(val id:Int, val name:String)
+object LairType {
+  val CAVE = LairType(0, "Cave");
+  val TEMPLE = LairType(1, "Temple");
+  val KEEP = LairType(2, "Keep");
+  val TOWER = LairType(3, "Tower");
+}
+
+class Place(val x:Int, val y:Int) {
+
+}
+
+class City(x:Int, y:Int, val name:String) extends Place(x, y) {
+}
+
+class LairReward(
+  val gold:Int,
+  val mana:Int,
+  val spells:List[Spell],
+  val spellBooks:List[MagicColor],
+  val prisonerHeroLevel:Int,
+  val items:List[Item],
+  val retorts:List[Retort]
+  ) {
+
+}
+
+class Lair(val lairType:LairType,
+           val nativeUnits:ArmyUnitStack,
+           val reward:LairReward,
+           x:Int,
+           y:Int) extends Place(x, y) {
+
+}
+
+class Node(val lairType:LairType,
+           val nativeUnits:ArmyUnitStack,
+           val reward:LairReward,
+           x:Int,
+           y:Int) extends Place(x, y) {
+  
+}
+
+class ArmyUnit {
+
+}
+
+class Hero extends ArmyUnit {
+
+}
+
+class ArmyUnitStack {
+
+}
+
+class Player(val name:String) {
   // id
   // name
   // picture
   // color scheme
   // music scheme
+
+  var armyUnits:List[ArmyUnit] = List();
+
+  var armyUnitStacks:List[ArmyUnitStack] = List();
+  
+  var cities:List[City] = List();
 }
 
 // http://www.dragonsword.com/magic/eljay/SaveGam.html
 
+object State {
+  def createGameState(numberOfPlayers:Int):State = {
+    val state = new State(numberOfPlayers, Overworld.create());
 
+    state;
+  }
+}
 
-
-
-
-class State {
+class State(numberOfPlayers:Int, val overworld:Overworld) {
   // players
-  // normal world, mirror world
-  // cities
-  // lairs
+  val players = new Array[Player](numberOfPlayers);
+
+  // lairs and towers
+  var lairs:List[Lair] = List();
+
   // magic nodes
-  // unit stacks
-  // units
+  var nodes:List[Node] = List();
 }

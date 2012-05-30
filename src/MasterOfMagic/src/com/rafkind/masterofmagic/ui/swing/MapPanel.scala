@@ -34,9 +34,41 @@ class MapPanel(overworld:Overworld, imageLibrarian:ImageLibrarian) extends JPane
       }
   });
 
+  addMouseListener(new MouseAdapter {
+      override def mouseClicked(e:MouseEvent):Unit = {
+        val whereClicked = componentToMapCoordinates(e.getPoint());
+
+        windowStartX = whereClicked.x - VIEW_WIDTH / 2;
+        if (windowStartX < 0) {
+          windowStartX += overworld.width;
+        }
+        if (windowStartX > overworld.width) {
+          windowStartX -= overworld.width;
+        }
+        
+        windowStartY = whereClicked.y - VIEW_HEIGHT / 2;
+        if (windowStartY < 0) {
+          windowStartY = 0;
+        }
+        if (windowStartY + VIEW_HEIGHT >= overworld.height) {
+          windowStartY = overworld.height - VIEW_HEIGHT;
+        }
+        repaint();
+      }
+  });
+
   var windowStartX = 0;
   var windowStartY = 0;
   var currentPlane = Plane.ARCANUS;
+
+  def componentToMapCoordinates(p:Point2D):Point = {
+    val q = new Point;
+    transform.inverseTransform(p, q);
+    val x = q.x / TerrainLbxReader.TILE_WIDTH;
+    val y = q.y / TerrainLbxReader.TILE_HEIGHT;
+    val answer = new Point(x + windowStartX,y + windowStartY);    
+    answer;
+  }
   
   override def paintComponent(g:Graphics):Unit = {
     val g2d = g.asInstanceOf[Graphics2D];
