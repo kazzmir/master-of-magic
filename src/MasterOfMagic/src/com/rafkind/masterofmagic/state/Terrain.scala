@@ -229,8 +229,8 @@ class TerrainSquare(
   var fogOfWarBitset:Int,
   var pollutionFlag:Boolean,
   var roadBitset:Int,
-  var building:Option[Place],
-  var unitStack:Option[ArmyUnitStack]) {
+  var place:Option[Place],
+  var armyUnitStack:Option[ArmyUnitStack]) {
 
   // what type of terrain
   // what terrain tile to use

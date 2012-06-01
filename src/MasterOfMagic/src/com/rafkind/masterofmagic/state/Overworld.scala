@@ -121,6 +121,10 @@ class Overworld(val width:Int, val height:Int) {
   var terrain:Array[TerrainSquare] =
     new Array[TerrainSquare](2 * width * height);
 
+  var nodes = Array(List[Node](), List[Node]());
+  var lairs = Array(List[Lair](), List[Lair]());
+  var towers = Array(List[Lair](), List[Lair]());
+
   def get(plane:Plane, x:Int, y:Int):TerrainSquare = {
     val xx = x % width;
 
@@ -175,7 +179,15 @@ class Overworld(val width:Int, val height:Int) {
            numSeeds:Int,
            groundCount:Int,
            base:TerrainType,
-           topping:TerrainType):Unit = {
+           topping:TerrainType):Unit = grow(random, plane, numSeeds, groundCount, base, topping, (x,y) => ());
+
+  def grow(random:Random,
+           plane:Plane,
+           numSeeds:Int,
+           groundCount:Int,
+           base:TerrainType,
+           topping:TerrainType,
+           callback:(Int,Int) => Unit):Unit = {
     for(n <- 0 until numSeeds) {
       findWhereTrue(random,
                      plane,
@@ -185,6 +197,7 @@ class Overworld(val width:Int, val height:Int) {
         case (x,y) => {
           var t = get(plane, x, y);
           t.terrainType = topping;
+          callback(x, y);
         }
       }
     }
@@ -296,10 +309,18 @@ class Overworld(val width:Int, val height:Int) {
     }
 
     println("Nodes");
-    grow(random, plane, numSeeds, 0, TerrainType.GRASSLAND, TerrainType.SORCERY_NODE);
-    grow(random, plane, numSeeds, 0, TerrainType.MOUNTAIN, TerrainType.CHAOS_NODE);
-    grow(random, plane, numSeeds, 0, TerrainType.FOREST, TerrainType.NATURE_NODE);
+    val createNode = (random:Random, plane:Plane, x:Int, y:Int, n:TerrainType) => {
+      var node = Node.createNode(random, x, y, n, 1);
+      nodes(plane.id) ::= node;
+      get(plane, x, y).place = Option(node);
+    };
 
+    grow(random, plane, numSeeds, 0, TerrainType.GRASSLAND, TerrainType.SORCERY_NODE,
+      (x, y) => createNode(random, plane, x, y, TerrainType.SORCERY_NODE));
+    grow(random, plane, numSeeds, 0, TerrainType.MOUNTAIN, TerrainType.CHAOS_NODE,
+      (x, y) => createNode(random, plane, x, y, TerrainType.CHAOS_NODE));
+    grow(random, plane, numSeeds, 0, TerrainType.FOREST, TerrainType.NATURE_NODE,
+      (x, y) => createNode(random, plane, x, y, TerrainType.NATURE_NODE));
 
     println("Tundra");
     // north and south poles, and tundra

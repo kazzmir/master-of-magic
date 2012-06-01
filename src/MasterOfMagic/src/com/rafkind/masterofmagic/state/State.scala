@@ -5,6 +5,9 @@
 
 package com.rafkind.masterofmagic.state
 
+
+import scala.util.Random;
+
 case class MagicColor(val id:Int, val name:String)
 object MagicColor {
   val ARCANE  = MagicColor(0, "Arcane");
@@ -62,6 +65,7 @@ object LairType {
   val TEMPLE = LairType(1, "Temple");
   val KEEP = LairType(2, "Keep");
   val TOWER = LairType(3, "Tower");
+  val NODE = LairType(4, "Node");
 }
 
 class Place(val x:Int, val y:Int) {
@@ -71,14 +75,22 @@ class Place(val x:Int, val y:Int) {
 class City(x:Int, y:Int, val name:String) extends Place(x, y) {
 }
 
+object LairReward {
+  
+  // powerlevel from 0 to 10
+  def createReward(random:Random, powerLevel:Int):LairReward = {
+    return new LairReward(10, 0, 0, 0, 0, 0, 0, 0);
+  }
+}
 class LairReward(
   val gold:Int,
   val mana:Int,
-  val spells:List[Spell],
-  val spellBooks:List[MagicColor],
+  val spellLevel:Int,
+  val spellBooksCount:Int,
   val prisonerHeroLevel:Int,
-  val items:List[Item],
-  val retorts:List[Retort]
+  val itemLevel:Int,
+  val itemCount:Int,
+  val retortCount:Int
   ) {
 
 }
@@ -91,11 +103,18 @@ class Lair(val lairType:LairType,
 
 }
 
-class Node(val lairType:LairType,
-           val nativeUnits:ArmyUnitStack,
-           val reward:LairReward,
+object Node {
+  def createNode(random:Random, x:Int, y:Int, nodeType:TerrainType, powerLevel:Int):Node = {
+    val nativeUnits = new ArmyUnitStack;
+    val reward = LairReward.createReward(random, powerLevel);
+    return new Node(nodeType, nativeUnits, reward, x, y);
+  }
+}
+class Node(val nodeType:TerrainType,
+           nativeUnits:ArmyUnitStack,
+           reward:LairReward,
            x:Int,
-           y:Int) extends Place(x, y) {
+           y:Int) extends Lair(LairType.NODE, nativeUnits, reward, x, y) {
   
 }
 
@@ -138,10 +157,4 @@ object State {
 class State(numberOfPlayers:Int, val overworld:Overworld) {
   // players
   val players = new Array[Player](numberOfPlayers);
-
-  // lairs and towers
-  var lairs:List[Lair] = List();
-
-  // magic nodes
-  var nodes:List[Node] = List();
 }
