@@ -174,12 +174,32 @@ class Overworld(val width:Int, val height:Int) {
     return (x,y);
   }
 
+  def scatter(random:Random,
+              plane:Plane,
+              count:Int,
+              groundCheck:(Plane,Int,Int) => Boolean,
+              placement:(Plane,Int,Int) => Unit):Unit = {
+    for (n <- 0 until count) {
+      findWhereTrue(random,
+                    plane,
+                    (x,y) => groundCheck(plane, x, y)) match {
+        case (x,y) => placement(plane, x, y);
+      }
+    }
+  }
+
   def grow(random:Random,
            plane:Plane,
            numSeeds:Int,
            groundCount:Int,
            base:TerrainType,
-           topping:TerrainType):Unit = grow(random, plane, numSeeds, groundCount, base, topping, (x,y) => ());
+           topping:TerrainType):Unit = 
+             grow(random,
+                  plane,
+                  numSeeds,
+                  groundCount,
+                  base,
+                  topping, (x,y) => ());
 
   def grow(random:Random,
            plane:Plane,
@@ -310,7 +330,7 @@ class Overworld(val width:Int, val height:Int) {
 
     println("Nodes");
     val createNode = (random:Random, plane:Plane, x:Int, y:Int, n:TerrainType) => {
-      var node = Node.createNode(random, x, y, n, 1);
+      val node = Node.createNode(random, x, y, n, 1);
       nodes(plane.id) ::= node;
       get(plane, x, y).place = Option(node);
     };
@@ -341,5 +361,14 @@ class Overworld(val width:Int, val height:Int) {
         }
       }
     }
+
+    println("Lairs");
+    scatter(random, plane, numSeeds,
+      (plane, x, y) => {
+        val t = get(plane, x, y);
+        if (t.)
+      },
+      (plane, x, y) => {
+      });
   }
 }
