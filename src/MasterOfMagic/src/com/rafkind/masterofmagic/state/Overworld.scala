@@ -366,9 +366,42 @@ class Overworld(val width:Int, val height:Int) {
     scatter(random, plane, numSeeds,
       (plane, x, y) => {
         val t = get(plane, x, y);
-        if (t.)
+        (y > 1
+          && y < height-1
+          && t.terrainType != TerrainType.OCEAN
+          && t.terrainType != TerrainType.SHORE
+          && t.place == None);
       },
       (plane, x, y) => {
+        val lair = Lair.createLair(
+              random,
+              x,
+              y, 
+              LairType.getRandom(random),
+              1);
+        lairs(plane.id) ::= lair;
+        get(plane, x, y).place = Some(lair);
+      });
+
+    println("Towers");
+    scatter(random, plane, numSeeds,
+      (plane, x, y) => {
+        val t = get(plane, x, y);
+        (y > 1
+          && y < height-1
+          && t.terrainType != TerrainType.OCEAN
+          && t.terrainType != TerrainType.SHORE
+          && t.place == None);
+      },
+      (plane, x, y) => {
+        val lair = Lair.createLair(
+              random,
+              x,
+              y,
+              LairType.TOWER,
+              1);
+        lairs(plane.id) ::= lair;
+        get(plane, x, y).place = Some(lair);
       });
   }
 }

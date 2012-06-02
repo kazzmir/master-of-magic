@@ -66,6 +66,11 @@ object LairType {
   val KEEP = LairType(2, "Keep");
   val TOWER = LairType(3, "Tower");
   val NODE = LairType(4, "Node");
+  
+  val values = Array(CAVE, TEMPLE, KEEP);
+
+  def getRandom(random:Random):LairType =
+    values(random.nextInt(values.length));
 }
 
 class Place(val x:Int, val y:Int) {
@@ -95,6 +100,17 @@ class LairReward(
 
 }
 
+object Lair {
+  def createLair(random:Random, 
+                 x:Int,
+                 y:Int,
+                 lairType:LairType,
+                 powerLevel:Int):Lair = {
+    val nativeUnits = new ArmyUnitStack;
+    val reward = LairReward.createReward(random, powerLevel);
+    return new Lair(lairType, nativeUnits, reward, x, y);
+  }
+}
 class Lair(val lairType:LairType,
            val nativeUnits:ArmyUnitStack,
            val reward:LairReward,
