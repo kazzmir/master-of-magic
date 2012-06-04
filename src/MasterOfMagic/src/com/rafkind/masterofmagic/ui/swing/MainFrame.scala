@@ -12,9 +12,9 @@ import com.rafkind.masterofmagic.state._;
 class MainFrame extends JFrame("abc") {
   setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-  val overworld = Overworld.create();
+  val gameState = State.createGameState(4);
   
-  val mapPanel = new MapPanel(overworld, new ImageLibrarian());
+  val mapPanel = new MapPanel(gameState.overworld, new ImageLibrarian());
   getContentPane().add(mapPanel);
 
 }

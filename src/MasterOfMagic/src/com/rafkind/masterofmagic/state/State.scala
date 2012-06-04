@@ -47,6 +47,57 @@ object Plane {
   implicit def plane2string(p:Plane) = p.name  
 }
 
+case class Race(val id:Int, val name:String)
+object Race {
+  val BARBARIAN = Race(0, "Barbarian");
+  val GNOLL = Race(1, "Gnoll");
+  val HALFLING = Race(2, "Halfling");
+  val HIGH_ELF = Race(3, "High Elf");
+  val HIGH_MEN = Race(4, "High Man");
+  val KLACKON = Race(5, "Klackon");
+  val LIZARDMAN = Race(6, "Lizardman");
+  val NOMAD = Race(7, "Nomad");
+  val ORC = Race(8, "Orc");
+  val BEASTMAN = Race(9, "Beastman");
+  val DARK_ELF = Race(10, "Dark Elf");
+  val DRACONIAN = Race(11, "Draconian");
+  val DWARVEN = Race(12, "Dwarven");
+  val TROLL = Race(13, "Troll");
+
+  val values = Array(BARBARIAN,
+                     GNOLL,
+                     HALFLING,
+                     HIGH_ELF,
+                     HIGH_MEN,
+                     KLACKON,
+                     LIZARDMAN,
+                     NOMAD,
+                     ORC,
+                     BEASTMAN,
+                     DARK_ELF,
+                     DRACONIAN,
+                     DWARVEN,
+                     TROLL);
+
+  val valuesByPlane = Array(
+    Array(BARBARIAN,
+         GNOLL,
+         HALFLING,
+         HIGH_ELF,
+         HIGH_MEN,
+         KLACKON,
+         LIZARDMAN,
+         NOMAD,
+         ORC),
+    Array(BEASTMAN,
+         DARK_ELF,
+         DRACONIAN,
+         DWARVEN,
+         TROLL));
+
+  implicit def race2string(r:Race) = r.name;
+}
+
 class Spell {
 
 }
@@ -77,7 +128,17 @@ class Place(val x:Int, val y:Int) {
 
 }
 
-class City(x:Int, y:Int, val name:String) extends Place(x, y) {
+object City {
+  def createNeutralCity(
+                 owner:Player,
+                 x:Int,
+                 y:Int,
+                 name:String,
+                 race:Race):City = {
+    return new City(x, y, owner, name, race);
+  }
+}
+class City(x:Int, y:Int, val owner:Player, val name:String, val race:Race) extends Place(x, y) {
 }
 
 object LairReward {
@@ -164,13 +225,18 @@ class Player(val name:String) {
 
 object State {
   def createGameState(numberOfPlayers:Int):State = {
-    val state = new State(numberOfPlayers, Overworld.create());
+    val state = new State(numberOfPlayers);
 
     state;
   }
 }
 
-class State(numberOfPlayers:Int, val overworld:Overworld) {
+class State(numberOfPlayers:Int) {
   // players
-  val players = new Array[Player](numberOfPlayers);
+  val players = new Array[Player](numberOfPlayers+1);
+  players(0) = new Player("Raiders");
+
+  val _overworld = Overworld.create(players(0));
+
+  def overworld = _overworld;
 }

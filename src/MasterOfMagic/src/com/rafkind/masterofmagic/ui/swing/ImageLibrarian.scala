@@ -39,6 +39,7 @@ class ImageLibrarian {
     LairType.TOWER -> createLairTile(Color.BLACK),
     LairType.NODE -> createLairTile(TRANSPARENT));
 
+  val cityTile = createCityTile(Color.ORANGE);
 
   def getTerrainTileImage(terrainSquare:TerrainSquare):Image = {
     terrainTiles(terrainSquare.terrainType);
@@ -46,6 +47,10 @@ class ImageLibrarian {
 
   def getLairTileImage(lairType:LairType):Image = {
     lairTiles(lairType);
+  }
+
+  def getCityTileImage(city:City):Image = {
+    cityTile;
   }
 
   def createTerrainTile(c:Color):Image = {
@@ -98,6 +103,40 @@ class ImageLibrarian {
     graphics.setColor(Color.BLACK);
     graphics.draw(path);
     
+    bi;
+  }
+
+  def createCityTile(c:Color):Image = {
+    val bi = new BufferedImage(TerrainLbxReader.TILE_WIDTH,
+                               TerrainLbxReader.TILE_HEIGHT,
+                               BufferedImage.TYPE_INT_ARGB);
+
+    val graphics = bi.createGraphics();
+
+    graphics.setColor(TRANSPARENT);
+    graphics.fill(
+      new Rectangle(
+        0,
+        0,
+        TerrainLbxReader.TILE_WIDTH,
+        TerrainLbxReader.TILE_HEIGHT));
+
+
+    val path = new Path2D.Float();
+    val w = TerrainLbxReader.TILE_WIDTH;
+    val h = TerrainLbxReader.TILE_HEIGHT;
+
+    path.moveTo(3, 3);
+    path.lineTo(w-3, 3);
+    path.lineTo(w-3, h-3);
+    path.lineTo(3, h-3);
+    path.lineTo(3, 3);
+    graphics.setColor(c);
+    graphics.fill(path);
+
+    graphics.setColor(Color.BLACK);
+    graphics.draw(path);
+
     bi;
   }
 }

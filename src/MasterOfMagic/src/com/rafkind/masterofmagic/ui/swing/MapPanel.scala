@@ -78,11 +78,14 @@ class MapPanel(overworld:Overworld, imageLibrarian:ImageLibrarian) extends JPane
     
     for (j <- 0 until VIEW_HEIGHT) {
       for (i <- 0 until VIEW_WIDTH) {
+        val ix = i * TerrainLbxReader.TILE_WIDTH;
+        val iy = j * TerrainLbxReader.TILE_HEIGHT;
+
         val t = overworld.get(currentPlane, i + windowStartX, j + windowStartY);
         g.drawImage(
           imageLibrarian.getTerrainTileImage(t),
-          i * TerrainLbxReader.TILE_WIDTH,
-          j * TerrainLbxReader.TILE_HEIGHT,
+          ix,
+          iy,
           null);
 
         t.place match {
@@ -91,8 +94,14 @@ class MapPanel(overworld:Overworld, imageLibrarian:ImageLibrarian) extends JPane
               case lair:Lair =>
                 g.drawImage(
                   imageLibrarian.getLairTileImage(lair.lairType),
-                  i * TerrainLbxReader.TILE_WIDTH,
-                  j * TerrainLbxReader.TILE_HEIGHT,
+                  ix,
+                  iy,
+                  null);
+              case city:City =>
+                g.drawImage(
+                  imageLibrarian.getCityTileImage(city),
+                  ix,
+                  iy,
                   null);
               case _ =>
             }

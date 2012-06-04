@@ -43,7 +43,7 @@ object Overworld {
    * TUNDRA = 1605
    */
 
-  def create():Overworld = {
+  def create(neutralPlayer:Player):Overworld = {
 
     val arcanus = Map(TerrainType.OCEAN -> 0,
       TerrainType.GRASSLAND -> 1,
@@ -77,8 +77,8 @@ object Overworld {
     overworld.fillPlane(Plane.ARCANUS, arcanus(TerrainType.OCEAN), TerrainType.OCEAN);
     overworld.fillPlane(Plane.MYRROR, myrror(TerrainType.OCEAN), TerrainType.OCEAN);
 
-    overworld.buildPlane(Plane.ARCANUS, 5, 800);
-    overworld.buildPlane(Plane.MYRROR, 5, 800);
+    overworld.buildPlane(Plane.ARCANUS, 5, 800, neutralPlayer);
+    overworld.buildPlane(Plane.MYRROR, 5, 800, neutralPlayer);
 
     for ((plane, mapping) <- List((Plane.ARCANUS, arcanus), (Plane.MYRROR, myrror))) {
       for (y <- 0 until HEIGHT) {
@@ -307,7 +307,7 @@ class Overworld(val width:Int, val height:Int) {
     }
   }
 
-  def buildPlane(plane:Plane, numSeeds:Int, groundCount:Int):Unit = {
+  def buildPlane(plane:Plane, numSeeds:Int, groundCount:Int, neutralPlayer:Player):Unit = {
     var random = new Random();
 
     println("Land");
@@ -402,6 +402,33 @@ class Overworld(val width:Int, val height:Int) {
               1);
         lairs(plane.id) ::= lair;
         get(plane, x, y).place = Some(lair);
+      });
+
+    println("Neutral Cities");
+    scatter(random, plane, numSeeds,
+      (plane, x, y) => {
+        val t = get(plane, x, y);
+        (y > 1
+          && y < height-1
+          && (t.terrainType == TerrainType.RIVER
+          || t.terrainType == TerrainType.SWAMP
+          || t.terrainType == TerrainType.TUNDRA
+          || t.terrainType == TerrainType.MOUNTAIN
+          || t.terrainType == TerrainType.HILLS
+          || t.terrainType == TerrainType.GRASSLAND
+          || t.terrainType == TerrainType.DESERT
+          || t.terrainType == TerrainType.FOREST)
+          && t.place == None);
+      },
+      (plane, x, y) => {
+        val city = City.createNeutralCity(neutralPlayer, 
+                                          x,
+                                          y,
+                                          "My City",
+                                          Race.HIGH_MEN);
+        neutralPlayer.cities ::= city;
+
+        get(plane, x, y).place = Some(city);
       });
   }
 }

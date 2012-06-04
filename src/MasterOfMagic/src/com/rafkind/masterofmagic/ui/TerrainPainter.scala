@@ -120,7 +120,6 @@ class TerrainPainter(baseTileImage:Image) {
         baseTileImage.drawEmbedded(
           dX, dY, dX + DOUBLE_WIDTH, dY + DOUBLE_HEIGHT,
           tX, tY, tX + TILE_WIDTH, tY + TILE_HEIGHT
-
         );
       }
     }

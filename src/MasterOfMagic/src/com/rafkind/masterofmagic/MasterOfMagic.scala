@@ -17,7 +17,7 @@ class MasterOfMagic(title:String) extends StateBasedGame(title) {
 
   override def initStatesList(container:GameContainer):Unit = {
 
-    overworld = Overworld.create;
+    overworld = Overworld.create(new Player("Raiders"));
 
     addState(new OverworldMapState(0, overworld));
   }
