@@ -330,7 +330,7 @@ class Overworld(val width:Int, val height:Int) {
 
     println("Nodes");
     val createNode = (random:Random, plane:Plane, x:Int, y:Int, n:TerrainType) => {
-      val node = Node.createNode(random, x, y, n, 1);
+      val node = Node.createNode(random, neutralPlayer, x, y, n, 1);
       nodes(plane.id) ::= node;
       get(plane, x, y).place = Option(node);
     };
@@ -375,6 +375,7 @@ class Overworld(val width:Int, val height:Int) {
       (plane, x, y) => {
         val lair = Lair.createLair(
               random,
+              neutralPlayer,
               x,
               y, 
               LairType.getRandom(random),
@@ -396,6 +397,7 @@ class Overworld(val width:Int, val height:Int) {
       (plane, x, y) => {
         val lair = Lair.createLair(
               random,
+              neutralPlayer,
               x,
               y,
               LairType.TOWER,

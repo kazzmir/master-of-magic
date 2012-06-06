@@ -8,6 +8,19 @@ package com.rafkind.masterofmagic.state
 
 import scala.util.Random;
 
+case class FlagColor(val id:Int, val name:String)
+object FlagColor {
+  val RED = FlagColor(0, "Red");
+  val BLUE = FlagColor(1, "Blue");
+  val GREEN = FlagColor(2, "Green");
+  val YELLOW = FlagColor(3, "Yellow");
+  val PURPLE = FlagColor(4, "Purple");
+  val WHITE = FlagColor(5, "White");
+  val BLACK = FlagColor(6, "Black");
+  val ORANGE = FlagColor(7, "Orange");
+  val BROWN = FlagColor(8, "Brown");
+}
+
 case class MagicColor(val id:Int, val name:String)
 object MagicColor {
   val ARCANE  = MagicColor(0, "Arcane");
@@ -162,12 +175,13 @@ class LairReward(
 }
 
 object Lair {
-  def createLair(random:Random, 
+  def createLair(random:Random,
+                 owner:Player,
                  x:Int,
                  y:Int,
                  lairType:LairType,
                  powerLevel:Int):Lair = {
-    val nativeUnits = new ArmyUnitStack;
+    val nativeUnits = new ArmyUnitStack(List(new ArmyUnit(x, y, owner, 0)));
     val reward = LairReward.createReward(random, powerLevel);
     return new Lair(lairType, nativeUnits, reward, x, y);
   }
@@ -181,8 +195,8 @@ class Lair(val lairType:LairType,
 }
 
 object Node {
-  def createNode(random:Random, x:Int, y:Int, nodeType:TerrainType, powerLevel:Int):Node = {
-    val nativeUnits = new ArmyUnitStack;
+  def createNode(random:Random, owner:Player, x:Int, y:Int, nodeType:TerrainType, powerLevel:Int):Node = {
+    val nativeUnits = new ArmyUnitStack(List(new ArmyUnit(x, y, owner, 0)));
     val reward = LairReward.createReward(random, powerLevel);
     return new Node(nodeType, nativeUnits, reward, x, y);
   }
@@ -195,16 +209,28 @@ class Node(val nodeType:TerrainType,
   
 }
 
-class ArmyUnit {
+class ArmyUnit(var _x:Int, var _y:Int, var _owner:Player, var _overworldSpriteId:Int) {
+
+  def x = _x;
+  def x_=(v:Int):Unit = _x = v;
+
+  def y = _y;
+  def y_=(v:Int):Unit = _y = v;
+
+  def owner = _owner;
+  def owner_=(v:Player):Unit = _owner = v;
+
+  def overworldSpriteId = _overworldSpriteId;
+  def overworldSpriteId_=(v:Int):Unit = _overworldSpriteId = v;
+}
+
+class Hero(_x:Int, _y:Int, _owner:Player, _overworldSpriteId:Int) extends
+  ArmyUnit(_x, _y, _owner, _overworldSpriteId) {
 
 }
 
-class Hero extends ArmyUnit {
-
-}
-
-class ArmyUnitStack {
-
+class ArmyUnitStack(var _units:List[ArmyUnit]) {
+  def units = _units;
 }
 
 class Player(val name:String) {
