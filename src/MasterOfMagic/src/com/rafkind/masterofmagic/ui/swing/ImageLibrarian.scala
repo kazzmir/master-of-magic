@@ -41,6 +41,8 @@ class ImageLibrarian {
 
   val cityTile = createCityTile(Color.ORANGE);
 
+  val armyTile = createArmyUnitTile;
+
   def getTerrainTileImage(terrainSquare:TerrainSquare):Image = {
     terrainTiles(terrainSquare.terrainType);
   }
@@ -51,6 +53,36 @@ class ImageLibrarian {
 
   def getCityTileImage(city:City):Image = {
     cityTile;
+  }
+
+  def getArmyUnitTileImage(armyUnit:ArmyUnit):Image = {
+    armyTile;
+  }
+
+  def createArmyUnitTile:Image = {
+    val bi = GraphicsEnvironment
+      .getLocalGraphicsEnvironment()
+      .getDefaultScreenDevice()
+      .getDefaultConfiguration()
+      .createCompatibleImage(TerrainLbxReader.TILE_WIDTH,
+                             TerrainLbxReader.TILE_HEIGHT);
+
+    val graphics = bi.createGraphics();
+
+    val paint = new GradientPaint(
+      0, 0,
+      Color.BLUE,
+      TerrainLbxReader.TILE_WIDTH, TerrainLbxReader.TILE_HEIGHT,
+      Color.LIGHT_GRAY,
+      true);
+    graphics.setPaint(paint);
+    graphics.fill(
+      new Rectangle(
+        0,
+        0,
+        TerrainLbxReader.TILE_WIDTH,
+        TerrainLbxReader.TILE_HEIGHT));
+    bi;
   }
 
   def createTerrainTile(c:Color):Image = {

@@ -181,7 +181,7 @@ object Lair {
                  y:Int,
                  lairType:LairType,
                  powerLevel:Int):Lair = {
-    val nativeUnits = new ArmyUnitStack(List(new ArmyUnit(x, y, owner, 0)));
+    val nativeUnits = new ArmyUnitStack(x, y, owner, List(new ArmyUnit(0)));
     val reward = LairReward.createReward(random, powerLevel);
     return new Lair(lairType, nativeUnits, reward, x, y);
   }
@@ -196,7 +196,7 @@ class Lair(val lairType:LairType,
 
 object Node {
   def createNode(random:Random, owner:Player, x:Int, y:Int, nodeType:TerrainType, powerLevel:Int):Node = {
-    val nativeUnits = new ArmyUnitStack(List(new ArmyUnit(x, y, owner, 0)));
+    val nativeUnits = new ArmyUnitStack(x, y, owner, List(new ArmyUnit(0)));
     val reward = LairReward.createReward(random, powerLevel);
     return new Node(nodeType, nativeUnits, reward, x, y);
   }
@@ -209,8 +209,18 @@ class Node(val nodeType:TerrainType,
   
 }
 
-class ArmyUnit(var _x:Int, var _y:Int, var _owner:Player, var _overworldSpriteId:Int) {
+class ArmyUnit(var _overworldSpriteId:Int) {
+  
+  def overworldSpriteId = _overworldSpriteId;
+  def overworldSpriteId_=(v:Int):Unit = _overworldSpriteId = v;
+}
 
+class Hero(_overworldSpriteId:Int) extends
+  ArmyUnit(_overworldSpriteId) {
+
+}
+
+class ArmyUnitStack(var _x:Int, var _y:Int, var _owner:Player, var _units:List[ArmyUnit]) {
   def x = _x;
   def x_=(v:Int):Unit = _x = v;
 
@@ -219,17 +229,7 @@ class ArmyUnit(var _x:Int, var _y:Int, var _owner:Player, var _overworldSpriteId
 
   def owner = _owner;
   def owner_=(v:Player):Unit = _owner = v;
-
-  def overworldSpriteId = _overworldSpriteId;
-  def overworldSpriteId_=(v:Int):Unit = _overworldSpriteId = v;
-}
-
-class Hero(_x:Int, _y:Int, _owner:Player, _overworldSpriteId:Int) extends
-  ArmyUnit(_x, _y, _owner, _overworldSpriteId) {
-
-}
-
-class ArmyUnitStack(var _units:List[ArmyUnit]) {
+  
   def units = _units;
 }
 
@@ -263,6 +263,7 @@ class State(numberOfPlayers:Int) {
   players(0) = new Player("Raiders");
 
   val _overworld = Overworld.create(players(0));
-
+  _overworld.get(Plane.ARCANUS, 3, 3).armyUnitStack =
+    Some(new ArmyUnitStack(3, 3, players(0), List(new ArmyUnit(0))));
   def overworld = _overworld;
 }

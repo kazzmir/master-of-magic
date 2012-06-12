@@ -107,6 +107,15 @@ class MapPanel(overworld:Overworld, imageLibrarian:ImageLibrarian) extends JPane
             }
           case _ =>
         }
+
+        t.armyUnitStack match {
+          case Some(armyUnitStack) =>
+            g.drawImage(
+              imageLibrarian.getArmyUnitTileImage(armyUnitStack.units(0)),
+              ix, iy, null
+            );
+          case _ =>
+        }
       }
     }
 
