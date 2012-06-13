@@ -11,11 +11,11 @@ import java.awt.image._;
 import com.rafkind.masterofmagic.state._;
 import com.rafkind.masterofmagic.util._;
 
-class ImageLibrarian {
+class ImageLibrarian(terrainFileName:String) {
 
   val TRANSPARENT = new Color(255, 255, 255, 0);
 
-  val terrainTiles = Map(
+  /*val terrainTiles = Map(
     TerrainType.OCEAN -> createTerrainTile(Color.BLUE),
     TerrainType.SHORE -> createTerrainTile(Color.MAGENTA),
     TerrainType.RIVER -> createTerrainTile(Color.BLUE),
@@ -30,7 +30,8 @@ class ImageLibrarian {
     TerrainType.SORCERY_NODE -> createTerrainTile(Color.CYAN),
     TerrainType.DESERT -> createTerrainTile(Color.YELLOW),
     TerrainType.FOREST -> createTerrainTile(Color.GREEN),
-    TerrainType.NATURE_NODE -> createTerrainTile(Color.GREEN));
+    TerrainType.NATURE_NODE -> createTerrainTile(Color.GREEN));*/
+  val terrainTiles = loadTerrainTiles(terrainFileName);
 
   val lairTiles = Map(
     LairType.CAVE -> createLairTile(Color.YELLOW),
@@ -44,7 +45,8 @@ class ImageLibrarian {
   val armyTile = createArmyUnitTile;
 
   def getTerrainTileImage(terrainSquare:TerrainSquare):Image = {
-    terrainTiles(terrainSquare.terrainType);
+    //terrainTiles(terrainSquare.terrainType);
+    terrainTiles(terrainSquare.spriteNumber);
   }
 
   def getLairTileImage(lairType:LairType):Image = {
@@ -103,6 +105,25 @@ class ImageLibrarian {
         TerrainLbxReader.TILE_WIDTH,
         TerrainLbxReader.TILE_HEIGHT));
     bi;
+  }
+
+  def loadTerrainTiles(terrainFileName:String):Array[BufferedImage] = {
+    println("Loading terrain tiles..");
+    val ims = new Array[BufferedImage](TerrainLbxReader.TILE_COUNT);
+    TerrainLbxReader.readAnd(terrainFileName, (tile:Int, x:Int, y:Int, color:Int) => {
+        if (ims(tile) == null) {
+          ims(tile) = GraphicsEnvironment
+            .getLocalGraphicsEnvironment()
+            .getDefaultScreenDevice()
+            .getDefaultConfiguration()
+            .createCompatibleImage(TerrainLbxReader.TILE_WIDTH,
+                                   TerrainLbxReader.TILE_HEIGHT);
+        }
+        
+        ims(tile).setRGB(x, y, Colors.colors(color).getRGB());
+    });
+    println("  Done");
+    ims;
   }
 
   def createLairTile(c:Color):Image = {
