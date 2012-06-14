@@ -245,6 +245,12 @@ class Player(val name:String) {
   var armyUnitStacks:List[ArmyUnitStack] = List();
   
   var cities:List[City] = List();
+
+  var gold:Int = 0;
+  var mana:Int = 0;
+
+  var deltaGold:Int = 0;
+  var deltaMana:Int = 0;
 }
 
 // http://www.dragonsword.com/magic/eljay/SaveGam.html

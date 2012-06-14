@@ -11,16 +11,12 @@ import java.awt._;
 import com.rafkind.masterofmagic.state._;
 import com.rafkind.masterofmagic.system._;
 
-class MainFrame extends JFrame("abc") {
-  setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
-  val gameState = State.createGameState(4);
-  
+class OverworldPanel(gameState:State) extends JPanel {
   val mapPanel = new MapPanel(
     gameState.overworld,
     new ImageLibrarian(Data.originalDataPath("TERRAIN.LBX")));
-  getContentPane().setLayout(new BorderLayout());
-  getContentPane().add(mapPanel, BorderLayout.CENTER);
+  setLayout(new BorderLayout());
+  add(mapPanel, BorderLayout.CENTER);
 
   val menuPanel = new JPanel();
   menuPanel.setLayout(new GridLayout(1, 7))
@@ -36,7 +32,18 @@ class MainFrame extends JFrame("abc") {
   sidePanel.add(new JButton("Mana/Money"));
   sidePanel.add(new JButton("etc"));
 
-  getContentPane().add(menuPanel, BorderLayout.NORTH);
-  getContentPane().add(sidePanel, BorderLayout.EAST);
+  add(menuPanel, BorderLayout.NORTH);
+  add(sidePanel, BorderLayout.EAST);
+}
 
+class MainFrame extends JFrame("abc") {
+  setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+  val gameState = State.createGameState(4);
+
+  val OVERWORLD_PANEL = "OVERWORLD";  
+  val overworldPanel = new OverworldPanel(gameState);
+  
+  getContentPane().setLayout(new CardLayout());
+  getContentPane().add(overworldPanel, OVERWORLD_PANEL);
 }
