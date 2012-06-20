@@ -37,7 +37,7 @@ object Main {
     app.start();   
   }*/
 
-  def main(args: Array[String]):Unit = {
+  def mainX(args: Array[String]):Unit = {
     SwingUtilities.invokeLater(new Runnable {
       override def run():Unit = {
         val mainFrame = new MainFrame();
@@ -50,5 +50,31 @@ object Main {
         mainFrame.setVisible(true);
       }
     });
+  }
+
+  def main(args:Array[String]):Unit = {
+    import java.io._;
+    
+    val folder = new File("/games/mom");
+
+    for (x <- folder.listFiles(new FilenameFilter {
+        override def accept(dir:File, path:String):Boolean = {
+          return path.toUpperCase().endsWith(".LBX");
+        }
+      })) {
+      val reader = new LbxReader(x.getCanonicalPath());
+      val lbx = reader.readLbx();
+
+      println(x + " has " + lbx.subfileCount() + " subs:");
+      try {
+        for (y <- 0 until lbx.subfileCount()) {
+          println("  " + y + ": " + SpriteReader.read(reader, y).size);
+        }
+      } catch {
+        case e:IOException =>
+          println("  " + e);
+      } finally {
+      }
+    }
   }
 }

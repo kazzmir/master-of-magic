@@ -30,7 +30,24 @@ class OverworldPanel(gameState:State) extends JPanel {
   val sidePanel = new Box(BoxLayout.Y_AXIS);
   sidePanel.add(new JButton("Minimap"));
   sidePanel.add(new JButton("Mana/Money"));
-  sidePanel.add(new JButton("etc"));
+
+  val resourcesUnitsOrSurveyPanel = new JPanel();
+  resourcesUnitsOrSurveyPanel.setLayout(new CardLayout());
+
+  val resourcesPanel = new JPanel();
+  resourcesPanel.add(new JLabel("Resources"));
+
+  val unitsPanel = new JPanel();
+  unitsPanel.add(new JLabel("Units"));
+
+  val surveyPanel = new JPanel();
+  surveyPanel.add(new JLabel("Survey"));
+
+  resourcesUnitsOrSurveyPanel.add(resourcesPanel, "RESOURCES");
+  resourcesUnitsOrSurveyPanel.add(unitsPanel, "UNITS");
+  resourcesUnitsOrSurveyPanel.add(surveyPanel, "SURVEY");
+
+  sidePanel.add(resourcesUnitsOrSurveyPanel);
 
   add(menuPanel, BorderLayout.NORTH);
   add(sidePanel, BorderLayout.EAST);

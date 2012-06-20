@@ -4,7 +4,7 @@ package com.rafkind.masterofmagic.util
 
 import org.newdawn.slick.ImageBuffer
 
-object SpriteReader{
+object SpriteReader {
 
   case class Header(width:Int, height:Int, unknown1:Int, bitmapCount:Int, unknown2:Int, unknown3:Int, unknown4:Int, paletteInfoOffset:Int,
   unknown5:Int)
@@ -57,7 +57,7 @@ object SpriteReader{
     /* TODO */
   }
 
-  def read(lbxReader:LbxReader, index:Int){
+  def read(lbxReader:LbxReader, index:Int):IndexedSeq[ImageBuffer] = {
     val lbx = lbxReader.readLbx()
     val header = readHeader(lbxReader, lbx, index)
     val offsets = readOffsets(lbxReader, header.bitmapCount)
@@ -75,5 +75,7 @@ object SpriteReader{
     val sprites = for (offset <- offsets) yield {
       readSprite(offset)
     }
+
+    sprites
   }
 }
