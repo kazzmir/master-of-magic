@@ -265,11 +265,18 @@ object State {
 
 class State(numberOfPlayers:Int) {
   // players
-  val players = new Array[Player](numberOfPlayers+1);
-  players(0) = new Player("Raiders");
+  val allPlayers = new Array[Player](numberOfPlayers+1);
+  allPlayers(0) = new Player("Raiders");
 
-  val _overworld = Overworld.create(players(0));
-  _overworld.get(Plane.ARCANUS, 3, 3).armyUnitStack =
-    Some(new ArmyUnitStack(3, 3, players(0), List(new ArmyUnit(0))));
+  
+  for (p <- 1 to numberOfPlayers) {
+    val player = new Player("Player" + p);
+
+    // create a city for the player
+    
+    allPlayers(p) = player;    
+  }
+
+  val _overworld = Overworld.create(allPlayers(0));
   def overworld = _overworld;
 }
