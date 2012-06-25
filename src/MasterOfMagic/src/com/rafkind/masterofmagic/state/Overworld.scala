@@ -433,4 +433,85 @@ class Overworld(val width:Int, val height:Int) {
         get(plane, x, y).place = Some(city);
       });
   }
+
+  def isValidCityLocation(plane:Plane, x:Int, y:Int):Boolean = {
+    val terrainSquare = get(plane, x, y);
+    if (!terrainSquare.terrainType.canBuildCityOn) {
+      return false;
+    }
+
+    for (j <- -2 to 2) {
+      for (i <- -2 to 2) {
+        val cx = (x + i + width) % width;
+        val cy = y + j;
+        if (cy >= 0 && cy < height) {
+          (get(plane, cx, cy).place) match {
+            case Some(city:City) => {
+                return false;
+            }
+            case _ =>
+          }
+        }
+      }
+    }
+
+    return true;
+  }
+
+  def getMaxCityPop(plane:Plane, x:Int, y:Int):Int = {
+    var answer = 1;
+    
+    for (j <- -2 to 2) {
+      for (i <- -2 to 2) {
+        val cx = (x + i + width) % width;
+        val cy = y + j;
+        if (cy >= 0 && cy < height) {
+          (get(plane, cx, cy).terrainType) match {
+            case TerrainType.SHORE => answer += 1;
+            case TerrainType.RIVER => answer += 3;
+            case TerrainType.SWAMP => answer += 1;
+            case TerrainType.HILLS => answer += 1;
+            case TerrainType.GRASSLAND => answer += 2;
+            case TerrainType.FOREST => answer += 1;
+            case _ =>
+          }
+        }
+      }
+    }
+
+    answer;
+  }
+
+  def findGoodCityLocation(random:Random, plane:Plane):Tuple2[Int, Int] = {
+    var bestx:Int = 0;
+    var besty:Int = 0;
+    var bestpop:Int = 0;
+
+    for (i <- 0 to 5) {
+      findWhereTrue(random, plane, (x,y) => isValidCityLocation(plane, x, y)) match {
+        case (x,y) =>
+          val pop = getMaxCityPop(plane, x, y);
+          if (pop > bestpop) {
+            bestx = x;
+            besty = y;
+            bestpop = pop;
+          }
+      }
+    }
+
+    (bestx,besty);
+  }
+
+  def createCityAt(
+    plane:Plane,
+    x:Int,
+    y:Int,
+    player:Player,
+    race:Race,
+    startingPopulation:Int):Unit = {
+
+    val city = new City(x, y, player, "New City", race);
+
+    get(plane, x, y).place = Some(city);
+  }
 }

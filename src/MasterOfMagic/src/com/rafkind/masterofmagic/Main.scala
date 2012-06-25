@@ -37,7 +37,7 @@ object Main {
     app.start();   
   }*/
 
-  def mainX(args: Array[String]):Unit = {
+  def main(args: Array[String]):Unit = {
     SwingUtilities.invokeLater(new Runnable {
       override def run():Unit = {
         val mainFrame = new MainFrame();
@@ -52,7 +52,7 @@ object Main {
     });
   }
 
-  def main(args:Array[String]):Unit = {
+  /*def mainX(args:Array[String]):Unit = {
     import java.io._;
     
     val folder = new File("/games/mom");
@@ -76,5 +76,5 @@ object Main {
       } finally {
       }
     }
-  }
+  }*/
 }

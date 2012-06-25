@@ -40,8 +40,6 @@ class ImageLibrarian(terrainFileName:String) {
     LairType.TOWER -> createLairTile(Color.BLACK),
     LairType.NODE -> createLairTile(TRANSPARENT));
 
-  val cityTile = createCityTile(Color.ORANGE);
-
   val armyTile = createArmyUnitTile;
 
   def getTerrainTileImage(terrainSquare:TerrainSquare):Image = {
@@ -54,7 +52,7 @@ class ImageLibrarian(terrainFileName:String) {
   }
 
   def getCityTileImage(city:City):Image = {
-    cityTile;
+    createCityTile(city.owner.flag.color);
   }
 
   def getArmyUnitTileImage(armyUnit:ArmyUnit):Image = {

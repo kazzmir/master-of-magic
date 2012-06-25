@@ -5,20 +5,22 @@
 
 package com.rafkind.masterofmagic.state
 
-
+import java.awt.Color;
 import scala.util.Random;
 
-case class FlagColor(val id:Int, val name:String)
+case class FlagColor(val id:Int, val name:String, val color:Color)
 object FlagColor {
-  val RED = FlagColor(0, "Red");
-  val BLUE = FlagColor(1, "Blue");
-  val GREEN = FlagColor(2, "Green");
-  val YELLOW = FlagColor(3, "Yellow");
-  val PURPLE = FlagColor(4, "Purple");
-  val WHITE = FlagColor(5, "White");
-  val BLACK = FlagColor(6, "Black");
-  val ORANGE = FlagColor(7, "Orange");
-  val BROWN = FlagColor(8, "Brown");
+  val RED = FlagColor(0, "Red", Color.RED);
+  val BLUE = FlagColor(1, "Blue", Color.BLUE);
+  val GREEN = FlagColor(2, "Green", Color.GREEN);
+  val YELLOW = FlagColor(3, "Yellow", Color.YELLOW);
+  val PURPLE = FlagColor(4, "Purple", Color.MAGENTA);
+  val WHITE = FlagColor(5, "White", Color.WHITE);
+  val BLACK = FlagColor(6, "Black", Color.BLACK);
+  val ORANGE = FlagColor(7, "Orange", Color.ORANGE);
+  val BROWN = FlagColor(8, "Brown", new Color(139, 69, 19));
+
+  var values = Array(BROWN, RED, GREEN, BLUE, YELLOW, PURPLE, WHITE, BLACK, ORANGE);
 }
 
 case class MagicColor(val id:Int, val name:String)
@@ -233,7 +235,7 @@ class ArmyUnitStack(var _x:Int, var _y:Int, var _owner:Player, var _units:List[A
   def units = _units;
 }
 
-class Player(val name:String) {
+class Player(val name:String, val flag:FlagColor, val race:Race) {
   // id
   // name
   // picture
@@ -266,17 +268,20 @@ object State {
 class State(numberOfPlayers:Int) {
   // players
   val allPlayers = new Array[Player](numberOfPlayers+1);
-  allPlayers(0) = new Player("Raiders");
-
-  
-  for (p <- 1 to numberOfPlayers) {
-    val player = new Player("Player" + p);
-
-    // create a city for the player
-    
-    allPlayers(p) = player;    
-  }
+  allPlayers(0) = new Player("Raiders", FlagColor.BROWN, Race.HIGH_MEN);
 
   val _overworld = Overworld.create(allPlayers(0));
   def overworld = _overworld;
+  
+  var random = new Random();
+  for (p <- 1 to numberOfPlayers) {
+    val player = new Player("Player" + p, FlagColor.values(p), Race.HIGH_MEN);
+
+    // create a city for the player
+    overworld.findGoodCityLocation(random, Plane.ARCANUS) match {
+      case (x,y) =>
+        overworld.createCityAt(Plane.ARCANUS, x, y, player, player.race, 3000);
+    }
+    allPlayers(p) = player;    
+  }
 }
