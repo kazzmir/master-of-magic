@@ -53,6 +53,33 @@ class OverworldPanel(gameState:State) extends JPanel {
   add(sidePanel, BorderLayout.EAST);
 }
 
+class CityPanel extends JPanel {
+  setLayout(new GridLayout(2, 2));
+
+  val upperLeft = new Box(BoxLayout.Y_AXIS);
+  upperLeft.add(new JLabel("Town of Ass"));
+  val ulTextLine1 = new JPanel();
+  ulTextLine1.setLayout(new BorderLayout());
+  ulTextLine1.add(new JLabel("High Elf"), BorderLayout.WEST);
+  ulTextLine1.add(new JLabel("Population 5,000 (+100)"), BorderLayout.EAST);
+  upperLeft.add(ulTextLine1);
+
+
+  val upperRight = new JPanel();
+  upperRight.setBackground(Color.RED);
+
+  val lowerLeft = new JPanel();
+  lowerLeft.setBackground(Color.GREEN);
+
+  val lowerRight = new JPanel();
+  lowerRight.setBackground(Color.WHITE);
+
+  add(upperLeft);
+  add(upperRight);
+  add(lowerLeft);
+  add(lowerRight);
+}
+
 class MainFrame extends JFrame("abc") {
   setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
@@ -60,7 +87,11 @@ class MainFrame extends JFrame("abc") {
 
   val OVERWORLD_PANEL = "OVERWORLD";  
   val overworldPanel = new OverworldPanel(gameState);
+
+  val CITY_PANEL = "CITY";
+  val cityPanel = new CityPanel();
   
   getContentPane().setLayout(new CardLayout());
-  getContentPane().add(overworldPanel, OVERWORLD_PANEL);
+  //getContentPane().add(overworldPanel, OVERWORLD_PANEL);
+  getContentPane().add(cityPanel, CITY_PANEL);
 }
