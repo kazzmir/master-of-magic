@@ -56,9 +56,24 @@ object SpriteReader {
     }
   }
 
-  def readPalette(lbxReader:LbxReader, index:Int, paletteOffset:Int):Array[java.awt.Color] = {
-    /* TODO */
-    Colors.colors
+  def readPalette(lbxReader:LbxReader, index:Int, header:Header, paletteInfo:PaletteInfo):Array[java.awt.Color] = {
+    if (header.paletteInfoOffset > 0) {
+      var pal = new Array[java.awt.Color](Colors.colors.length);
+      for (i <- 0 until pal.length) {
+        pal(i) = Colors.colors(i);
+      }
+
+      lbxReader.seek(lbxReader.metaData.subfileStart(index) + paletteInfo.paletteOffset);
+      for (c <- 0 until paletteInfo.count) {
+        val r:Int = lbxReader.read() & 0xFF;
+        val g:Int = lbxReader.read() & 0xFF;
+        val b:Int = lbxReader.read() & 0xFF;
+        pal(c + paletteInfo.firstPaletteColorIndex) = new java.awt.Color(r*4, g*4, b*4);
+      }
+      pal;
+    } else {
+      Colors.colors
+    }
   }
 
   def readOffsets(lbxReader:LbxReader, bitmaps:Int) = {
@@ -150,17 +165,12 @@ object SpriteReader {
 
   def read[T](lbxReader:LbxReader, index:Int, creator:(Int, Int) => T, resetter:(T) => Unit, copier:(T) => T, withPixelDo:(T, Int, Int, java.awt.Color) => Unit) = {
     val lbxMetaData = lbxReader.metaData
-    println(index + ": from " + lbxMetaData.subfile(index).start + " to " + lbxMetaData.subfile(index).end);
     
     val header = readHeader(lbxReader, index)
-    header.debug();
     
     val offsets = readOffsets(lbxReader, header.bitmapCount)
-    for (o <- offsets) {
-      println("    bitmap from " + o.start + " to " + o.end)
-    }
     val paletteInfo = readPaletteInfo(lbxReader, index, header.paletteInfoOffset)
-    val palette = readPalette(lbxReader, index, paletteInfo.paletteOffset)
+    val palette = readPalette(lbxReader, index, header, paletteInfo)
 
     var canvas = creator(header.width, header.height);
     resetter(canvas);

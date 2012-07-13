@@ -65,7 +65,7 @@ object Main {
           return path.toUpperCase().endsWith(".LBX");
         }
       })) {*/
-      val reader = new LbxReader("C:/apps/Master of Magic/MAIN.LBX");
+      val reader = new LbxReader("C:/apps/Master of Magic/DIPLOMAC.LBX");
       val lbx = reader.metaData;
 
       //println(x + " has " + lbx.subfileCount() + " subs:");
@@ -81,7 +81,7 @@ object Main {
                                       i;
                                      }, (i:BufferedImage) => {
                                       val g = i.createGraphics();
-                                      g.setColor(new Color(255, 0, 255));
+                                      g.setColor(new Color(255, 255, 255, 0));
                                       g.fill(new Rectangle(0, 0, i.getWidth(), i.getHeight()));
                                      },
                                      (i:BufferedImage) => {
