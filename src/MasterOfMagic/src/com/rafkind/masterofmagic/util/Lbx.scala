@@ -36,8 +36,14 @@ class Lbx{
 class LbxReader(val path:String){
   val file = new RandomAccessFile(new File(path), "r")
 
+  val _metaData = readLbx();
+
+  def metaData = _metaData;
+
   /* Read one byte */
   def read():Int = file.read()
+
+  def read(byteArray:Array[Byte]) = file.readFully(byteArray);
 
   /* Read a word (2 bytes) */
   def read2():Int = {
@@ -72,7 +78,7 @@ class LbxReader(val path:String){
     }
   }
 
-  def readLbx():Lbx = {
+  private def readLbx():Lbx = {
     file.seek(0)
 
     val subfileCount = read2()
@@ -124,7 +130,7 @@ object TerrainLbxReader {
               ):Unit = {
     val lbxFile = new LbxReader(fileName)
 
-    val lbx = lbxFile.readLbx()
+    val lbx = lbxFile.metaData
 
     var position:Int = lbx.subfileStart(0) + 192; // 192 byte header
     for (index <- 0 until TILE_COUNT) {
