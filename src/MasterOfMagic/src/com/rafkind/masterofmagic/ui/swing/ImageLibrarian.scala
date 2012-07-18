@@ -47,6 +47,10 @@ class ImageLibrarian(terrainFileName:String) {
     terrainTiles(terrainSquare.spriteNumber);
   }
 
+  def getTerrainTileImage(index:Int) = 
+    terrainTiles(index);
+  
+
   def getLairTileImage(lairType:LairType):Image = {
     lairTiles(lairType);
   }
