@@ -14,9 +14,9 @@ package com.rafkind.masterofmagic
 
 import javax.swing.SwingUtilities;
 import java.awt.Toolkit;
-/*import org.newdawn.slick.AppGameContainer;
+import org.newdawn.slick.AppGameContainer;
 import org.newdawn.slick.ScalableGame;
-*/
+
 import com.rafkind.masterofmagic.util._;
 
 
@@ -27,7 +27,7 @@ object Main {
   /**
    * @param args the command line arguments
    */
-  /*def mainX(args: Array[String]): Unit = {
+  def mainX(args: Array[String]): Unit = {
     var app = new AppGameContainer(new MasterOfMagic("Master of Magic"));
     org.lwjgl.input.Keyboard.enableRepeatEvents(true);
     app.setDisplayMode(640, 400, false);
@@ -35,8 +35,8 @@ object Main {
     app.setTargetFrameRate(40);
     app.setShowFPS(false);
     app.start();   
-  }*/
-
+  }
+/*
   def main(args: Array[String]):Unit = {
     SwingUtilities.invokeLater(new Runnable {
       override def run():Unit = {
@@ -50,7 +50,7 @@ object Main {
         mainFrame.setVisible(true);
       }
     });
-  }
+  }*/
 
   /*def mainX(args:Array[String]):Unit = {
     import java.io._;

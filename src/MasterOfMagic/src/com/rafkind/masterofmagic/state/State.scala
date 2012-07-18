@@ -15,12 +15,9 @@ object FlagColor {
   val GREEN = FlagColor(2, "Green", Color.GREEN);
   val YELLOW = FlagColor(3, "Yellow", Color.YELLOW);
   val PURPLE = FlagColor(4, "Purple", Color.MAGENTA);
-  val WHITE = FlagColor(5, "White", Color.WHITE);
-  val BLACK = FlagColor(6, "Black", Color.BLACK);
-  val ORANGE = FlagColor(7, "Orange", Color.ORANGE);
-  val BROWN = FlagColor(8, "Brown", new Color(139, 69, 19));
+  val BROWN = FlagColor(5, "Brown", new Color(139, 69, 19));
 
-  var values = Array(BROWN, RED, GREEN, BLUE, YELLOW, PURPLE, WHITE, BLACK, ORANGE);
+  var values = Array(BROWN, RED, GREEN, BLUE, YELLOW, PURPLE);
 }
 
 case class MagicColor(val id:Int, val name:String)
