@@ -10,14 +10,21 @@ import java.awt.event._;
 import javax.swing._;
 import javax.swing.event._;
 
+import scala.xml.XML._;
+import scala.xml._;
+import scala.collection.mutable.HashMap;
+import scala.collection.mutable.HashSet;
+
 import com.rafkind.masterofmagic.util._;
 import com.rafkind.masterofmagic.ui.swing._;
 import com.rafkind.masterofmagic.system._;
+import com.rafkind.masterofmagic.state._;
 
-class Palette(imageLibrarian:ImageLibrarian) extends JPanel with Scrollable {
+class Palette(metadataManager:MetadataManager, imageLibrarian:ImageLibrarian) extends JPanel with Scrollable {
   val COLUMNS = 4;
   val ROWS = TerrainLbxReader.TILE_COUNT / COLUMNS;
 
+  val tileFont = new Font("Arial", Font.PLAIN, 9);
   var selectedTile:Int = 0;
 
   def getSelectedTile = selectedTile;
@@ -62,6 +69,9 @@ class Palette(imageLibrarian:ImageLibrarian) extends JPanel with Scrollable {
   
   override def paintComponent(graphics:Graphics):Unit = {
     super.paintComponent(graphics);
+    graphics.setFont(tileFont);
+    val metrics = graphics.getFontMetrics();
+    val height1 = metrics.getHeight();
 
     val clip = graphics.getClipBounds();
     val tw = TerrainLbxReader.TILE_WIDTH*2 + 2;
@@ -72,6 +82,7 @@ class Palette(imageLibrarian:ImageLibrarian) extends JPanel with Scrollable {
 
     
     var y = y1;
+
     while (y < clip.y + clip.height) {
       var x = x1;
       while (x < clip.x + clip.width) {
@@ -86,7 +97,12 @@ class Palette(imageLibrarian:ImageLibrarian) extends JPanel with Scrollable {
                              TerrainLbxReader.TILE_HEIGHT * 2,
                              null);
           graphics.setColor(Color.WHITE);
-          graphics.drawString(t.toString(), x, y+TerrainLbxReader.TILE_WIDTH);
+          graphics.drawString(t.toString(), x+1, y+height1);
+          metadataManager.metadata.get(t) match {
+            case Some(tm:EditableTerrainTileMetadata) =>
+              graphics.drawString(tm.terrainType, x+1, y+height1*2);
+            case _ =>
+          }
           if (t == selectedTile) {
             graphics.setColor(Color.RED);
             graphics.drawRect(x, y, tw-1, th-1);
@@ -100,7 +116,31 @@ class Palette(imageLibrarian:ImageLibrarian) extends JPanel with Scrollable {
   }
 }
 
-class SandboxMap(imageLibrarian:ImageLibrarian, palette:Palette) extends JPanel {
+class MetadataManager(path:String) {
+  val metadata = new HashMap[Int, EditableTerrainTileMetadata]();
+
+  try {
+    load(path) \ "metadata" foreach { (m) =>
+      val borders = new Array[Option[TerrainType]](CardinalDirection.values.length);
+      m \ "borders" foreach { (b) =>
+        borders(Integer.parseInt((b \ "@direction").text)) =
+          Some(TerrainType.values(Integer.parseInt((b \ "@terrain").text)));
+      }
+
+      val id = Integer.parseInt((m \ "@id").text)
+      val terrainType = Integer.parseInt((m \ "@terrainType").text);
+      val plane = Integer.parseInt((m \ "@plane").text);
+      metadata += id -> new EditableTerrainTileMetadata(id,
+                                              TerrainType.values(terrainType),
+                                              borders,
+                                              Plane.values(plane), None);
+    }
+  } catch {
+    case x => println(x);
+  }  
+}
+
+class SandboxMap(metadataManager:MetadataManager, imageLibrarian:ImageLibrarian, palette:Palette) extends JPanel {
   val TILES_ACROSS = 11;
   val TILES_DOWN = 10;
 
@@ -145,6 +185,22 @@ class SandboxMap(imageLibrarian:ImageLibrarian, palette:Palette) extends JPanel 
         place(e);
       }
   });
+
+  def okMatch(sourceTile:Int, destTile:Int):Boolean = {
+    return false;
+  }
+
+  def drawArrow(graphics:Graphics, cornerX:Int, cornerY:Int, direction:CardinalDirection):Unit = {
+    val halfX = TerrainLbxReader.TILE_WIDTH / 2;
+    val halfY = TerrainLbxReader.TILE_HEIGHT / 2;
+    val length = halfY;
+    val dLength = scala.math.sqrt(direction.dx * direction.dx + direction.dy * direction.dy);
+
+    val endX = scala.math.round(halfX + direction.dx * length / dLength).toInt;
+    val endY = scala.math.round(halfY + direction.dy * length / dLength).toInt;
+
+    graphics.drawLine(cornerX + halfX, cornerY + halfY, cornerX + endX, cornerY + endY);
+  }
   
   override def paintComponent(graphics:Graphics):Unit = {
     val g2d = graphics.asInstanceOf[Graphics2D];
@@ -152,10 +208,28 @@ class SandboxMap(imageLibrarian:ImageLibrarian, palette:Palette) extends JPanel 
 
     g2d.transform(zoomTransform);
 
+    graphics.setColor(Color.MAGENTA);
+
     for (y <- 0 until TILES_DOWN) {
       for (x <- 0 until TILES_ACROSS) {
-        val image = imageLibrarian.getTerrainTileImage(terrain(x+y*TILES_ACROSS));
+        val sourceTileIndex = x+y*TILES_ACROSS;
+        val sourceTile = terrain(sourceTileIndex);
+        val image = imageLibrarian.getTerrainTileImage(sourceTile);
+
         graphics.drawImage(image, x * TerrainLbxReader.TILE_WIDTH, y * TerrainLbxReader.TILE_HEIGHT, null);
+
+        for (dir <- CardinalDirection.values) {
+          val newX = x + dir.dx;
+          val newY = y + dir.dy;
+          if ((newX >= 0) && (newY >= 0) && (newX < TILES_ACROSS) && (newY < TILES_DOWN)) {
+            val newTileIndex = newX+newY*TILES_ACROSS;
+            val newTile = terrain(newTileIndex);
+
+            if (!okMatch(sourceTile, newTile)) {
+              drawArrow(graphics, x * TerrainLbxReader.TILE_WIDTH, y * TerrainLbxReader.TILE_HEIGHT, dir);
+            }
+          }
+        }
       }
     }
 
@@ -169,9 +243,10 @@ object FancyMetadataEditor {
     var graphicsDevice = graphicsEnvironment.getDefaultScreenDevice();
     var displayMode = graphicsDevice.getDisplayMode();
 
+    var mm = new MetadataManager(Data.path("terrainMetaData.xml"));
     val library = new ImageLibrarian(Data.originalDataPath("TERRAIN.LBX"));    
-    val pal = new Palette(library);
-    val map = new SandboxMap(library, pal);
+    val pal = new Palette(mm, library);
+    val map = new SandboxMap(mm, library, pal);
     val scrollPal = new JScrollPane(pal);
 
 
