@@ -32,6 +32,10 @@ class Palette(metadataManager:MetadataManager, imageLibrarian:ImageLibrarian) ex
     selectedTile = x;
   }
 
+  var seen = new HashSet[Int];
+  def haveSeen(i:Int) =
+    seen += i;
+
   addMouseListener(new MouseAdapter() {
       override def mouseClicked(e:MouseEvent):Unit = {
         val tw = TerrainLbxReader.TILE_WIDTH*2 + 2;
@@ -103,6 +107,10 @@ class Palette(metadataManager:MetadataManager, imageLibrarian:ImageLibrarian) ex
               graphics.drawString(tm.terrainType, x+1, y+height1*2);
             case _ =>
           }
+          if (seen.contains(t)) {
+            graphics.setColor(Color.YELLOW);
+            graphics.fillRect(x + tw-12, y+1, 10, 10);
+          }
           if (t == selectedTile) {
             graphics.setColor(Color.RED);
             graphics.drawRect(x, y, tw-1, th-1);
@@ -158,6 +166,15 @@ class SandboxMap(metadataManager:MetadataManager, imageLibrarian:ImageLibrarian,
       }
   });
 
+  def rememberSeen():Unit = {
+    for (y <- 0 until TILES_DOWN) {
+      for (x <- 0 until TILES_ACROSS) {
+        palette.haveSeen(terrain(x+(y*TILES_ACROSS)));
+      }
+    }
+    palette.repaint();
+  }
+
   def place(e:MouseEvent):Unit = {
     val point = unzoomTransform.transform(e.getPoint(), null);
     val x = scala.math.floor(point.getX() / TerrainLbxReader.TILE_WIDTH).toInt;
@@ -198,11 +215,25 @@ class SandboxMap(metadataManager:MetadataManager, imageLibrarian:ImageLibrarian,
           case (TerrainType.SHORE, Some(TerrainType.OCEAN), TerrainType.OCEAN, _) => true
           case (TerrainType.SHORE, Some(TerrainType.OCEAN), TerrainType.SHORE, _) => true
           case (TerrainType.SHORE, Some(TerrainType.SHORE), TerrainType.SHORE, Some(TerrainType.SHORE)) => true
+          // land adjacent to shore must be non-river, unless there is a river outlet
           case (TerrainType.SHORE, Some(TerrainType.RIVER), TerrainType.RIVER, Some(TerrainType.RIVER)) => true
           case (TerrainType.SHORE, Some(TerrainType.GRASSLAND), x:TerrainType, _)
             if ((x != TerrainType.RIVER) && x.isLand) => true
+
           case (TerrainType.RIVER, Some(TerrainType.RIVER), TerrainType.RIVER, Some(TerrainType.RIVER)) => true
           case (TerrainType.RIVER, Some(TerrainType.RIVER), TerrainType.SHORE, Some(TerrainType.RIVER)) => true
+          case (TerrainType.TUNDRA, Some(TerrainType.TUNDRA), TerrainType.TUNDRA, Some(TerrainType.TUNDRA)) => true
+          case (TerrainType.MOUNTAIN, Some(TerrainType.MOUNTAIN), TerrainType.MOUNTAIN, Some(TerrainType.MOUNTAIN)) => true
+          case (TerrainType.HILLS, Some(TerrainType.HILLS), TerrainType.HILLS, Some(TerrainType.HILLS)) => true
+
+          // any land can be adjacent to any other land
+          case (y:TerrainType, Some(TerrainType.GRASSLAND), x:TerrainType, _)
+            if (x.isLand) => true
+          // shore can be adjacent to any land, on the land side
+          case (TerrainType.SHORE, Some(y:TerrainType), TerrainType.SHORE, Some(z:TerrainType))
+            if (y.isLand && z.isLand) => true
+          case (y:TerrainType, _, TerrainType.SHORE, Some(z:TerrainType))
+            if (y.isLand && z.isLand) => true
           case _ =>
             false
         }
@@ -275,6 +306,13 @@ object FancyMetadataEditor {
     frame.setLayout(new BorderLayout());
     frame.getContentPane().add(map, BorderLayout.CENTER);
     frame.getContentPane().add(scrollPal, BorderLayout.EAST);
+    frame.addKeyListener(new KeyAdapter(){
+        override def keyPressed(e:KeyEvent):Unit = {
+          if (e.getKeyCode() == KeyEvent.VK_SPACE) {
+            map.rememberSeen();
+          }
+        }
+    });
     frame.pack();
     frame.setBounds((displayMode.getWidth() - 800)/2,
                     (displayMode.getHeight() - 600) / 2,
