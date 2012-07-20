@@ -186,10 +186,30 @@ class SandboxMap(metadataManager:MetadataManager, imageLibrarian:ImageLibrarian,
       }
   });
 
-  def okMatch(sourceTile:Int, destTile:Int):Boolean = {
-    return false;
+  def okMatch(sourceTile:Int, destTile:Int, direction:CardinalDirection) = {    
+    (metadataManager.metadata.get(sourceTile), metadataManager.metadata.get(destTile)) match {
+      case (Some(source:EditableTerrainTileMetadata), Some(dest:EditableTerrainTileMetadata)) =>
+        (source.terrainType,
+         source.borderingTerrainTypes(direction.id),
+         dest.terrainType,
+         dest.borderingTerrainTypes(CardinalDirection.opposite(direction).id)) match {
+          case (TerrainType.OCEAN, Some(TerrainType.OCEAN), TerrainType.OCEAN, _) => true
+          case (TerrainType.OCEAN, Some(TerrainType.OCEAN), TerrainType.SHORE, _) => true
+          case (TerrainType.SHORE, Some(TerrainType.OCEAN), TerrainType.OCEAN, _) => true
+          case (TerrainType.SHORE, Some(TerrainType.OCEAN), TerrainType.SHORE, _) => true
+          case (TerrainType.SHORE, Some(TerrainType.SHORE), TerrainType.SHORE, Some(TerrainType.SHORE)) => true
+          case (TerrainType.SHORE, Some(TerrainType.RIVER), TerrainType.RIVER, Some(TerrainType.RIVER)) => true
+          case (TerrainType.SHORE, Some(TerrainType.GRASSLAND), x:TerrainType, _)
+            if ((x != TerrainType.RIVER) && x.isLand) => true
+          case (TerrainType.RIVER, Some(TerrainType.RIVER), TerrainType.RIVER, Some(TerrainType.RIVER)) => true
+          case (TerrainType.RIVER, Some(TerrainType.RIVER), TerrainType.SHORE, Some(TerrainType.RIVER)) => true
+          case _ =>
+            false
+        }
+      case _ =>
+        false
+    }
   }
-
   def drawArrow(graphics:Graphics, cornerX:Int, cornerY:Int, direction:CardinalDirection):Unit = {
     val halfX = TerrainLbxReader.TILE_WIDTH / 2;
     val halfY = TerrainLbxReader.TILE_HEIGHT / 2;
@@ -212,7 +232,7 @@ class SandboxMap(metadataManager:MetadataManager, imageLibrarian:ImageLibrarian,
 
     for (y <- 0 until TILES_DOWN) {
       for (x <- 0 until TILES_ACROSS) {
-        val sourceTileIndex = x+y*TILES_ACROSS;
+        val sourceTileIndex = x+(y*TILES_ACROSS);
         val sourceTile = terrain(sourceTileIndex);
         val image = imageLibrarian.getTerrainTileImage(sourceTile);
 
@@ -222,10 +242,10 @@ class SandboxMap(metadataManager:MetadataManager, imageLibrarian:ImageLibrarian,
           val newX = x + dir.dx;
           val newY = y + dir.dy;
           if ((newX >= 0) && (newY >= 0) && (newX < TILES_ACROSS) && (newY < TILES_DOWN)) {
-            val newTileIndex = newX+newY*TILES_ACROSS;
+            val newTileIndex = newX+(newY*TILES_ACROSS);
             val newTile = terrain(newTileIndex);
 
-            if (!okMatch(sourceTile, newTile)) {
+            if (!okMatch(sourceTile, newTile, dir)) {
               drawArrow(graphics, x * TerrainLbxReader.TILE_WIDTH, y * TerrainLbxReader.TILE_HEIGHT, dir);
             }
           }

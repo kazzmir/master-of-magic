@@ -30,7 +30,7 @@ object MagicColor {
   val BLACK = MagicColor(5, "Black");
 }
 
-case class CardinalDirection(val id:Int, val dx:Int, val dy:Int)
+case class CardinalDirection(val id:Int, val dx:Int, val dy:Int) 
 object CardinalDirection{
 
   val NORTH       = CardinalDirection(0, 0, -1);
@@ -47,6 +47,19 @@ object CardinalDirection{
   val valuesStraight = Array(NORTH, EAST, SOUTH, WEST);
   val valuesDiagonal = Array(NORTH_EAST, SOUTH_EAST, SOUTH_WEST, NORTH_WEST);
   val valuesAll = Array(NORTH, NORTH_EAST, EAST, SOUTH_EAST, SOUTH, SOUTH_WEST, WEST, NORTH_WEST, CENTER);
+
+  def opposite(dir:CardinalDirection) =
+    dir match {
+      case NORTH => SOUTH;
+      case NORTH_EAST => SOUTH_WEST;
+      case EAST => WEST;
+      case SOUTH_EAST => NORTH_WEST;
+      case SOUTH => NORTH;
+      case SOUTH_WEST => NORTH_EAST;
+      case WEST => EAST;
+      case NORTH_WEST => SOUTH_EAST;
+      case _ => CENTER;
+    }
 }
 
 case class Plane(val id:Int, val name:String)

@@ -1,6 +1,7 @@
 package com.rafkind.masterofmagic.util;
 
 import com.rafkind.masterofmagic.util.terrain.FancyMetadataEditor;
+import com.rafkind.masterofmagic.util.terrain.TerrainMetadataEditor;
 
 object Main {
 
