@@ -4,7 +4,7 @@
  */
 
 package com.rafkind.masterofmagic.ui
-
+/*
 import com.rafkind.masterofmagic.state._
 import com.rafkind.masterofmagic.system._
 import com.rafkind.masterofmagic.util._
@@ -89,3 +89,4 @@ class OverworldMapState(id:Int, overworld:Overworld) extends NiftyOverlayGameSta
     minimap.renderMiniMap(500, 40, 0, 0, 120, 64);
   }
 }
+*/
