@@ -15,18 +15,6 @@ import scala.xml._;
 import scala.collection.mutable.HashMap;
 import scala.collection.mutable.HashSet;
 
-object EditableTerrainTileMetadata {
-
-  private def copyBorderingArray(other:Array[Option[TerrainType]]):Array[Option[TerrainType]] =
-    other map ((x) => x match {
-        case Some(y) => Some(y);
-        case None => None
-      });
-
-  def copy(other:EditableTerrainTileMetadata) =
-    new EditableTerrainTileMetadata(other.id, other.terrainType, copyBorderingArray(other.borderingTerrainTypes), other.plane, other.parentId);
-}
-
 // mirrors TerrainTileMetadata in State.scala
 class EditableTerrainTileMetadata(
   var id:Int,
@@ -43,7 +31,7 @@ class EditableTerrainTileMetadata(
   }
 
   def toNode() =
-    <metadata 
+    <metadata
       id={id.toString}
       terrainType={terrainType.id.toString}
       plane={plane.id.toString}>
@@ -105,6 +93,21 @@ class EditableTerrainTileMetadata(
     }
   }
 }
+
+
+object EditableTerrainTileMetadata {
+
+  private def copyBorderingArray(other:Array[Option[TerrainType]]):Array[Option[TerrainType]] =
+    other map ((x) => x match {
+        case Some(y) => Some(y);
+        case None => None
+      });
+
+  def copy(other:EditableTerrainTileMetadata) =
+    new EditableTerrainTileMetadata(other.id, other.terrainType, copyBorderingArray(other.borderingTerrainTypes), other.plane, other.parentId);
+}
+
+
 
 class TerrainMetadataEditor(title:String) extends BasicGame(title) {
   import com.rafkind.masterofmagic.util.TerrainLbxReader._;
