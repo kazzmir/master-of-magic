@@ -11,8 +11,9 @@ import org.newdawn.slick.state._;
 import com.rafkind.masterofmagic.ui._;
 import com.rafkind.masterofmagic.state._;
 
+import com.google.inject._;
 
-class MasterOfMagic(title:String) extends StateBasedGame(title) {
+class MasterOfMagic @Inject() (playingGameState:PlayingGameState) extends StateBasedGame("Master of Magic") {
   var overworld:Overworld = null;  
 
   override def initStatesList(container:GameContainer):Unit = {
@@ -20,5 +21,7 @@ class MasterOfMagic(title:String) extends StateBasedGame(title) {
     //overworld = Overworld.create(new Player("Raiders", FlagColor.BROWN, Race.HIGH_MEN));
 
     //addState(new OverworldMapState(0, overworld));
+
+    addState(playingGameState);
   }
 }

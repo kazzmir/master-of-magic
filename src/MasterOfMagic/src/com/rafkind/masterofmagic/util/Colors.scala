@@ -5,7 +5,7 @@
 
 package com.rafkind.masterofmagic.util;
 
-import java.awt.Color;
+import org.newdawn.slick.Color;
 
 // from here: http://www.roughseas.ca/momime/phpBB3/viewtopic.php?f=1&t=5
 

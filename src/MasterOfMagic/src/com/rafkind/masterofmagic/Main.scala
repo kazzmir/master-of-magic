@@ -7,10 +7,30 @@ package com.rafkind.masterofmagic
 //import java.awt.geom._;
 import org.newdawn.slick.AppGameContainer;
 import org.newdawn.slick.ScalableGame;
+import org.newdawn.slick.Game;
 //import com.rafkind.masterofmagic.util._;
 
 
 //import com.rafkind.masterofmagic.ui.swing.MainFrame;
+
+import com.google.inject._;
+
+class MainModule extends AbstractModule {
+  override def configure():Unit = {
+    bind(classOf[Game]).to(classOf[MasterOfMagic]);
+  }
+
+  @Provides def provideAppGameContainer(game:Game) = {
+    val app = new AppGameContainer(
+      new ScalableGame(game, 320, 200));
+    org.lwjgl.input.Keyboard.enableRepeatEvents(true);
+    app.setDisplayMode(960, 600, false);
+    app.setSmoothDeltas(true);
+    app.setTargetFrameRate(40);
+    app.setShowFPS(false);
+    app;
+  }
+}
 
 object Main {
 
@@ -18,14 +38,8 @@ object Main {
    * @param args the command line arguments
    */
   def main(args: Array[String]): Unit = {
-    val app = new AppGameContainer(
-      new ScalableGame(
-        new MasterOfMagic("Master of Magic"), 320, 200));
-    org.lwjgl.input.Keyboard.enableRepeatEvents(true);
-    app.setDisplayMode(960, 600, false);
-    app.setSmoothDeltas(true);
-    app.setTargetFrameRate(40);
-    app.setShowFPS(false);
+    val injector = Guice.createInjector(new MainModule());
+    val app = injector.getInstance(classOf[AppGameContainer]);
     app.start();   
   }
 

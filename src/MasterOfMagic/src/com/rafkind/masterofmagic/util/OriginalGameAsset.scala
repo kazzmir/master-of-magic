@@ -5,7 +5,7 @@
 
 package com.rafkind.masterofmagic.util
 
-case class OriginalGameAsset(val id:Int, val name:String)
+case class OriginalGameAsset(val id:Int, val fileName:String)
 object OriginalGameAsset {
   val ARMYLIST = OriginalGameAsset(1, "ARMYLIST.LBX");
   val BACKGRND = OriginalGameAsset(2, "BACKGRND.LBX");

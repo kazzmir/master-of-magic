@@ -1,6 +1,53 @@
 package com.rafkind.masterofmagic.util
 
+import org.newdawn.slick._;
+
 // http://www.roughseas.ca/momime/phpBB3/viewtopic.php?f=1&t=5
+
+object SpriteReaderHelper {
+  def create(width:Int, height:Int) =
+    new ImageBuffer(width, height);
+
+  def reset(image:ImageBuffer) = {
+    for (y <- 0 until image.getHeight()) {
+      for (x <- 0 until image.getWidth()) {
+        image.setRGBA(x, y, 0, 0, 0, 0);
+      }
+    }
+  }
+
+  def copy(source:ImageBuffer) = {
+    import java.nio.ByteOrder;
+    
+    val sourceRgba = source.getRGBA();
+    var dest = new ImageBuffer(source.getWidth(), source.getHeight());
+
+    if (ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN) {
+      for (y <- 0 until source.getHeight()) {
+        for (x <- 0 until source.getWidth()) {
+          val offset = (x + (y * source.getTexWidth())) * 4;
+          dest.setRGBA(x, y, sourceRgba(offset+2), sourceRgba(offset+1), sourceRgba(offset), sourceRgba(offset+3));
+        }
+      }
+    } else {
+      for (y <- 0 until source.getHeight()) {
+        for (x <- 0 until source.getWidth()) {
+          val offset = (x + (y * source.getTexWidth())) * 4;
+          dest.setRGBA(x, y, sourceRgba(offset), sourceRgba(offset+1), sourceRgba(offset+2), sourceRgba(offset+3));
+        }
+      }
+    }
+
+    dest;
+  }
+
+  def withPixelDo(image:ImageBuffer, x:Int, y:Int, color:Color) =
+    image.setRGBA(x, y, color.getRed(), color.getGreen(), color.getBlue(), color.getAlpha());
+  
+
+  def finish(image:ImageBuffer) =
+    image.getImage();
+}
 
 object SpriteReader {
 
@@ -56,9 +103,9 @@ object SpriteReader {
     }
   }
 
-  def readPalette(lbxReader:LbxReader, index:Int, header:Header, paletteInfo:PaletteInfo):Array[java.awt.Color] = {
+  def readPalette(lbxReader:LbxReader, index:Int, header:Header, paletteInfo:PaletteInfo):Array[Color] = {
     if (header.paletteInfoOffset > 0) {
-      var pal = new Array[java.awt.Color](Colors.colors.length);
+      var pal = new Array[Color](Colors.colors.length);
       for (i <- 0 until pal.length) {
         pal(i) = Colors.colors(i);
       }
@@ -68,7 +115,7 @@ object SpriteReader {
         val r:Int = lbxReader.read() & 0xFF;
         val g:Int = lbxReader.read() & 0xFF;
         val b:Int = lbxReader.read() & 0xFF;
-        pal(c + paletteInfo.firstPaletteColorIndex) = new java.awt.Color(r*4, g*4, b*4);
+        pal(c + paletteInfo.firstPaletteColorIndex) = new Color(r*4, g*4, b*4);
       }
       pal;
     } else {
@@ -85,18 +132,16 @@ object SpriteReader {
     }
   }
 
-  def render[T](bitmapNumber:Int, 
+  def render(bitmapNumber:Int,
                 data:Array[Int],
                 header:Header,
                 paletteInfo:PaletteInfo,
-                palette:Array[java.awt.Color],
-                target:T,
-                resetter:(T) => Unit,
-                withPixelDo:(T, Int, Int, java.awt.Color) => Unit):Unit = {
+                palette:Array[Color],
+                target:ImageBuffer):Unit = {
 
     var index = 0;
     if (data(index) == 1 && bitmapNumber > 0) {
-      resetter(target);
+      SpriteReaderHelper.reset(target);
     }
     index = 1;
 
@@ -130,8 +175,7 @@ object SpriteReader {
               var rle_counter = 0;
               while ((rle_counter < rle_length) && (y < header.height)) {
                 if ((x < header.width) && (y < header.height) && (x >= 0) && (y >= 0)) {
-                  var color = palette(data(last_pos));
-                  withPixelDo(target, x, y, color);
+                  SpriteReaderHelper.withPixelDo(target, x, y, palette(data(last_pos)));
                 } else {
                   throw new Exception("Overrun");
 
@@ -142,8 +186,7 @@ object SpriteReader {
               n_r += 2;
             } else {
               if ((x < header.width) && (y < header.height) && (x >= 0) && (y >= 0)) {
-                var color = palette(data(n_r));
-                withPixelDo(target, x, y, color);
+                SpriteReaderHelper.withPixelDo(target, x, y, palette(data(n_r)));
               }
               n_r += 1;
               y += 1;
@@ -163,19 +206,20 @@ object SpriteReader {
     }
   }
 
-  def read[T](lbxReader:LbxReader, index:Int, creator:(Int, Int) => T, resetter:(T) => Unit, copier:(T) => T, withPixelDo:(T, Int, Int, java.awt.Color) => Unit) = {
+  def read(lbxReader:LbxReader, groupIndex:Int) = {
+
     val lbxMetaData = lbxReader.metaData
     
-    val header = readHeader(lbxReader, index)
+    val header = readHeader(lbxReader, groupIndex)
     
     val offsets = readOffsets(lbxReader, header.bitmapCount)
-    val paletteInfo = readPaletteInfo(lbxReader, index, header.paletteInfoOffset)
-    val palette = readPalette(lbxReader, index, header, paletteInfo)
+    val paletteInfo = readPaletteInfo(lbxReader, groupIndex, header.paletteInfoOffset)
+    val palette = readPalette(lbxReader, groupIndex, header, paletteInfo)
 
-    var canvas = creator(header.width, header.height);
-    resetter(canvas);
+    var canvas = SpriteReaderHelper.create(header.width, header.height);
+    SpriteReaderHelper.reset(canvas);
     def readSprite(bitmapNumber:Int, offset:Offset) = {
-      lbxReader.seek(lbxMetaData.subfileStart(index) + offset.start);
+      lbxReader.seek(lbxMetaData.subfileStart(groupIndex) + offset.start);
       var data = new Array[Byte](offset.end - offset.start);
       lbxReader.read(data);
       // make it unsigned
@@ -183,15 +227,16 @@ object SpriteReader {
       for (i <- 0 until data.length) {
         data2(i) = data(i) & 0xFF;
       }
-      render(bitmapNumber, data2, header, paletteInfo, palette, canvas, resetter, withPixelDo);
-      copier(canvas);
+      render(bitmapNumber, data2, header, paletteInfo, palette, canvas);
+      SpriteReaderHelper.copy(canvas);
     }
 
-    var c:Int = 0;
-    for (offset <- offsets) yield {
-      val s = readSprite(c, offset)
-      c += 1;
-      s;
+    val answer = new Array[Image](offsets.size);
+    for (index <- 0 until offsets.size) {
+      answer(index) = SpriteReaderHelper.finish(
+        readSprite(index, offsets(index)));
     }
+
+    answer;
   }
 }
