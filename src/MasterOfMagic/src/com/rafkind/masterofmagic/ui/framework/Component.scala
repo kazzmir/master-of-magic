@@ -7,11 +7,12 @@ package com.rafkind.masterofmagic.ui.framework
 
 import org.newdawn.slick._;
 
-class Screen(backgroundImage:Image) extends Container {
+trait Component {
   
-  override def render(graphics:Graphics):Unit = {
-    backgroundImage.draw(0, 0);
-
-    super.render(graphics);
-  }
+  var left:Int = 0;
+  var top:Int = 0;
+  var width:Int = 0;
+  var height:Int = 0;
+  
+  def render(graphics:Graphics):Unit
 }

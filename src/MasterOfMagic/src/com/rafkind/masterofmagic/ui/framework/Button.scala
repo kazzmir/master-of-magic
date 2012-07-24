@@ -7,11 +7,14 @@ package com.rafkind.masterofmagic.ui.framework
 
 import org.newdawn.slick._;
 
-class Screen(backgroundImage:Image) extends Container {
+class Button(upImage:Image, downImage:Image) extends Component {
+  var state:Boolean = false;
   
   override def render(graphics:Graphics):Unit = {
-    backgroundImage.draw(0, 0);
-
-    super.render(graphics);
+    if (state) {
+      downImage.draw(left, top);
+    } else {
+      upImage.draw(left, top);
+    }
   }
 }
