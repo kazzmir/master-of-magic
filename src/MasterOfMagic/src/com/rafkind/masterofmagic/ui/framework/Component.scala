@@ -21,27 +21,26 @@ object Component {
   val PROPERTY_CHANGED = ComponentEventDescriptor("property_changed");
 }
 
-/*
-class ComponentEvent(component:Component[_]) {
-  var x = new CustomMultiMap[Int, Int];
-}*/
+case class ComponentEvent(val component:Component[_])
+
+case class PropertyChangedEvent(override val component:Component[_],
+                           val whatChanged:Tuple2[ComponentProperty, Any]) extends ComponentEvent(component:Component[_])
 
 trait Component[T] {
   var properties = new scala.collection.mutable.HashMap[ComponentProperty, Any]();
 
-  var wtf:Int = 1;
-
   def set(settings:Tuple2[ComponentProperty, Any]*):T = {
     settings.foreach( (x:Tuple2[ComponentProperty, Any]) => {
         properties += x;
-        /*listeners
+        
+        listeners
           .get(Component.PROPERTY_CHANGED)
           .map(y =>
               y.foreach( 
                 z =>
-                  z(new ComponentEvent(this))
+                  z(new PropertyChangedEvent(this, x))
                 )
-              );        */
+              );        
       }
     );
     this.asInstanceOf[T]
@@ -53,12 +52,13 @@ trait Component[T] {
   def getImage(key:ComponentProperty) =
     properties.getOrElse(key, key.default).asInstanceOf[Image];
 
+  var listeners = new CustomMultiMap[ComponentEventDescriptor, ComponentEvent => Unit];
   
-/*
-  def listen(toWhat:ComponentEventDescriptor, andThen:ComponentEvent => Unit):T = {
+
+  def listen(toWhat:ComponentEventDescriptor, andThen:(ComponentEvent => Unit)):T = {
     listeners.put(toWhat, andThen);
     this.asInstanceOf[T]
-  }  */
+  }  
   
   def render(graphics:Graphics):T;
 }

@@ -21,7 +21,6 @@ class PlayingGameState @Inject() (imageLibrarian:ImageLibrarian, mainScreen:Scre
   
   def init(container:GameContainer, game:StateBasedGame):Unit = {
 
-    //mainScreen = new Screen(imageLibrarian.getRawSprite(OriginalGameAsset.MAIN, 0, 0));
     mainScreen.set(
       Component.BACKGROUND_IMAGE ->
         imageLibrarian.getRawSprite(OriginalGameAsset.MAIN, 0, 0)
@@ -29,7 +28,8 @@ class PlayingGameState @Inject() (imageLibrarian:ImageLibrarian, mainScreen:Scre
       new PackingContainer()
         .set(
           Component.LEFT -> 7,
-          Component.TOP -> 4
+          Component.TOP -> 4,
+          PackingContainer.SPACING -> 1
         )
         .add(
           new Button().set(        
@@ -47,7 +47,7 @@ class PlayingGameState @Inject() (imageLibrarian:ImageLibrarian, mainScreen:Scre
               imageLibrarian.getRawSprite(OriginalGameAsset.MAIN, 2, 1)
           ), Alignment.HORIZONTAL
         )
-        /*.add(
+        .add(
           new Button().set(
             Button.UP_IMAGE ->
               imageLibrarian.getRawSprite(OriginalGameAsset.MAIN, 3, 0),
@@ -86,7 +86,7 @@ class PlayingGameState @Inject() (imageLibrarian:ImageLibrarian, mainScreen:Scre
             Button.DOWN_IMAGE ->
               imageLibrarian.getRawSprite(OriginalGameAsset.MAIN, 7, 1)
           ), Alignment.HORIZONTAL
-        )*/
+        )
       );
 
     

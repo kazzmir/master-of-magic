@@ -12,6 +12,18 @@ object Button {
 }
 
 class Button extends Component[Button] {
+
+  listen(Component.PROPERTY_CHANGED, (event:ComponentEvent) => {
+    event.asInstanceOf[PropertyChangedEvent].whatChanged match {
+      case (Button.UP_IMAGE, image:Image) =>
+        set(Component.WIDTH -> scala.math.max(getInt(Component.WIDTH), image.getWidth()));
+        set(Component.HEIGHT -> scala.math.max(getInt(Component.HEIGHT), image.getHeight()));
+      case (Button.DOWN_IMAGE, image:Image) =>
+        set(Component.WIDTH -> scala.math.max(getInt(Component.WIDTH), image.getWidth()));
+        set(Component.HEIGHT -> scala.math.max(getInt(Component.HEIGHT), image.getHeight()));
+      case _ =>
+    }
+  });
   
   var state:Boolean = false;
   
