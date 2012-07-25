@@ -5,19 +5,26 @@
 
 package com.rafkind.masterofmagic.state
 
-import java.awt.Color;
 import scala.util.Random;
 
-case class FlagColor(val id:Int, val name:String, val color:Color)
-object FlagColor {
-  val RED = FlagColor(0, "Red", Color.RED);
-  val BLUE = FlagColor(1, "Blue", Color.BLUE);
-  val GREEN = FlagColor(2, "Green", Color.GREEN);
-  val YELLOW = FlagColor(3, "Yellow", Color.YELLOW);
-  val PURPLE = FlagColor(4, "Purple", Color.MAGENTA);
-  val BROWN = FlagColor(5, "Brown", new Color(139, 69, 19));
+case class Alignment(val id:Int, val name:String)
+object Alignment {
+  val HORIZONTAL = Alignment(0, "HORIZONTAL");
+  val VERTICAL = Alignment(1, "VERTICAL");
 
-  var values = Array(BROWN, RED, GREEN, BLUE, YELLOW, PURPLE);
+  val values = Array(HORIZONTAL, VERTICAL);
+}
+
+case class FlagColor(val id:Int, val name:String /*, val color:Color */)
+object FlagColor {
+  val RED = FlagColor(0, "Red" /*, Color.RED */);
+  val BLUE = FlagColor(1, "Blue" /*, Color.BLUE */);
+  val GREEN = FlagColor(2, "Green" /*, Color.GREEN */);
+  val YELLOW = FlagColor(3, "Yellow" /*, Color.YELLOW */);
+  val PURPLE = FlagColor(4, "Purple" /*, Color.MAGENTA */);
+  val BROWN = FlagColor(5, "Brown" /*, new Color(139, 69, 19) */);
+
+  val values = Array(BROWN, RED, GREEN, BLUE, YELLOW, PURPLE);
 }
 
 case class MagicColor(val id:Int, val name:String)
