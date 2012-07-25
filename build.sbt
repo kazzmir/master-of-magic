@@ -12,4 +12,4 @@ scalaVersion := "2.9.1"
 
 unmanagedSourceDirectories in Compile <+= baseDirectory(_/"src/MasterOfMagic/src")
 
-unmanagedSourceDirectories in Compile <+= baseDirectory(_/"src/Util/src")
+// unmanagedSourceDirectories in Compile <+= baseDirectory(_/"src/Util/src")
