@@ -47,15 +47,17 @@ object Main {
 
     reader.seek(metadata.subfileStart(0) + 0x16a);
 
-    for (i <- 0 until 24) {
+    var fontHeights =
+    for (i <- 0 until 24) yield {
       val x = reader.read2();
-      println("%02d: %04X".format(i, x));
+      x;
     }
 
-    for (f <- 0 until 8) {
-      for (c <- 32 until 128) {
+    var fontWidths =
+    for (f <- 0 until 8) yield {
+      for (c <- 32 until 128) yield {
         val x = reader.read();
-        println("Font %d: char %d '%c': %d".format(f, c, c, x));
+        x
       }
     }
 
@@ -103,17 +105,22 @@ object Main {
       }
       println();
     }*/
+
+    var whichfont = 5;
+   for (ch <- 65 until (65+26)) {
    var x = 0;
    var y = 0;
-   val w = 12;
-   val h = 16;
-   val start = fontOffsets(5)(65-32);
-   val end = fontOffsets(5)(66-32);
+   var w = fontWidths(whichfont)(ch-32);
+   val h = fontHeights(whichfont);
+
+     println("%d is %c: %d x %d".format(ch, ch, w, h));
+   val start = fontOffsets(whichfont)(ch-32);
+   val end = fontOffsets(whichfont)(ch-32 + 1);
    reader.seek(metadata.subfileStart(0) + start);
    for (j <- 0 until (end-start)) {
         val data = reader.read();
         if (data == 0x80) {
-          println(" - " + (x,y));
+          println();
           x = 0;
           y += 1;
         } else if (data > 0x80) {
@@ -123,24 +130,26 @@ object Main {
           x += count;
         } else {
           val high = (data >> 4);
-          val low = (data & 4);
+          val low = (data & 0xF);
           //print("%02X".format(data));
           //x += 1;
           for (q <- 0 until high) {
             print("%X%X".format(low, low));
             x += 1;
-            if (x >= w) {
-              println(" - " + (x,y));
+            if (x > w) {
+              println();
               y += 1;
               x = 0;
             }
           }
         }
-        if (x >= w) {
-          println(" - " + (x,y));
+        if (x > w) {
+          println();
           y += 1;
           x = 0;
         }
+       //print("%02X ".format(data))
+   }
    }
   
 
