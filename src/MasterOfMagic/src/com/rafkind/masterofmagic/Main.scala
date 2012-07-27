@@ -1,17 +1,10 @@
 package com.rafkind.masterofmagic
 
-//import javax.swing.SwingUtilities;
-//import java.awt._
-//import java.awt.image._;
-//import javax.swing._;
-//import java.awt.geom._;
 import org.newdawn.slick.AppGameContainer;
 import org.newdawn.slick.ScalableGame;
 import org.newdawn.slick.Game;
-//import com.rafkind.masterofmagic.util._;
 
 
-//import com.rafkind.masterofmagic.ui.swing.MainFrame;
 
 import com.google.inject._;
 
@@ -37,82 +30,63 @@ object Main {
   /**
    * @param args the command line arguments
    */
-  def main(args: Array[String]): Unit = {
+  def mainX(args: Array[String]): Unit = {
     val injector = Guice.createInjector(new MainModule());
     val app = injector.getInstance(classOf[AppGameContainer]);
     app.start();   
   }
 
-  /*
-  def main(args: Array[String]):Unit = {
-    SwingUtilities.invokeLater(new Runnable {
-      override def run():Unit = {
-        val mainFrame = new MainFrame();
-        val screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-        val WIDTH = 1024;
-        val HEIGHT = 768;
+  import com.rafkind.masterofmagic.util._;
+  import com.rafkind.masterofmagic.system._;
+  // http://www.spheriumnorth.com/orion-forum/nfphpbb/viewtopic.php?t=91
+  def main(args:Array[String]):Unit = {
+    val reader = new LbxReader(Data.originalDataPath("FONTS.LBX"));
+    val metadata = reader.metaData;
 
-        mainFrame.setBounds((screenSize.width - WIDTH)/2, (screenSize.height - HEIGHT)/2, WIDTH, HEIGHT);
+    val data = reader.read(metadata.subfile(0));
 
-        mainFrame.setVisible(true);
+    reader.seek(metadata.subfileStart(0) + 0x16a);
+    for (i <- 0 until 24) {
+      val x = reader.read2();
+      println("%02d: %04X".format(i, x));
+    }
+
+    for (f <- 0 until 8) {
+      for (c <- 32 until 128) {
+        val x = reader.read();
+        println("Font %d: char %d '%c': %d".format(f, c, c, x));
       }
-    });
+    }
+
+    for (c <- 32 until 128) {
+      val x = reader.read();
+      println("Char %d: '%c' - offset %d".format(c, c, x));
+    }
+
+    /*for (i <- 0 until data.length) {
+      if ((i % 32 == 0)) {
+        println();
+        print("%04X | ".format(i));
+      }
+
+      print("%02X ".format(data(i)));
+    }
+
+    for (i <- 0 until data.length) {
+      if ((i % 32 == 0)) {
+        println();
+        print("%04X | ".format(i));
+      }
+
+      if ((i % 2 == 0)) {
+        val value = (data(i)) + (data(i+1) << 8);
+        //if ((value >= 0) && (value <= data.length))
+        if (scala.math.abs(0x19a-value) < 50)
+          print("%05X ".format(value));
+        else {
+          print("      ");
+        }
+      }
+    }*/
   }
-  */
- 
-  /*def main(args:Array[String]):Unit = {
-    import java.io._;
-    
-    val folder = new File("C:/apps/Master of Magic");
-
-    /*for (x <- folder.listFiles(new FilenameFilter {
-        override def accept(dir:File, path:String):Boolean = {
-          return path.toUpperCase().endsWith(".LBX");
-        }
-      })) {*/
-      val reader = new LbxReader("C:/apps/Master of Magic/DIPLOMAC.LBX");
-      val lbx = reader.metaData;
-
-      //println(x + " has " + lbx.subfileCount() + " subs:");
-      try {
-        for (count <- 0 until lbx.subfileCount() ) {
-          val sprites = SpriteReader.read(reader, count,
-                                     (w:Int, h:Int) => {
-                                      val i = GraphicsEnvironment
-                                      .getLocalGraphicsEnvironment()
-                                      .getDefaultScreenDevice()
-                                      .getDefaultConfiguration()
-                                      .createCompatibleImage(w, h);
-                                      i;
-                                     }, (i:BufferedImage) => {
-                                      val g = i.createGraphics();
-                                      g.setColor(new Color(255, 255, 255, 0));
-                                      g.fill(new Rectangle(0, 0, i.getWidth(), i.getHeight()));
-                                     },
-                                     (i:BufferedImage) => {
-                                      val i2 = GraphicsEnvironment
-                                      .getLocalGraphicsEnvironment()
-                                      .getDefaultScreenDevice()
-                                      .getDefaultConfiguration()
-                                      .createCompatibleImage(i.getWidth(), i.getHeight());
-
-                                      i2.createGraphics().drawImage(i, 0, 0, null);
-                                      i2
-                                     },
-                                     (image:BufferedImage, x:Int, y:Int, c:Color) =>
-                                       image.setRGB(x, y, c.getRGB()));
-          
-        for (sprite <- sprites) {
-          JOptionPane.showMessageDialog(null, "Hello", "Title", JOptionPane.INFORMATION_MESSAGE, new ImageIcon(sprite));
-        }
-        
-          //println("  " + y + ": " + SpriteReader.read(reader, y).size);
-        }
-      } catch {
-        case e:IOException =>
-          println("  " + e);
-      } finally {
-      }
-    //}
-  }*/
 }
