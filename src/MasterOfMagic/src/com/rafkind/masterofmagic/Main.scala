@@ -48,8 +48,11 @@ object Main {
               y += 1;
             } else if (value > 0x80) {
               val count = value - 0x80;
-              for (i <- 0 until count)
-                // print("  ");
+              /*
+              for (i <- 0 until count){
+                print("  ");
+              }
+              */
                 x += count;
               } else {
                 val high = (value >> 4);
