@@ -106,12 +106,12 @@ object Main {
       println();
     }*/
 
-    var whichfont = 5;
+    var whichfont = 0;
    for (ch <- 65 until (65+26)) {
    var x = 0;
    var y = 0;
-   var w = fontWidths(whichfont)(ch-32);
-   val h = fontHeights(whichfont);
+   var h = fontWidths(whichfont)(ch-32);
+   val w = fontHeights(whichfont);
 
      println("%d is %c: %d x %d".format(ch, ch, w, h));
    val start = fontOffsets(whichfont)(ch-32);
@@ -136,14 +136,14 @@ object Main {
           for (q <- 0 until high) {
             print("%X%X".format(low, low));
             x += 1;
-            if (x > w) {
+            if (x >= w) {
               println();
               y += 1;
               x = 0;
             }
           }
         }
-        if (x > w) {
+        if (x >= w) {
           println();
           y += 1;
           x = 0;
