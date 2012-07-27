@@ -46,6 +46,7 @@ object Main {
     val data = reader.read(metadata.subfile(0));
 
     reader.seek(metadata.subfileStart(0) + 0x16a);
+
     for (i <- 0 until 24) {
       val x = reader.read2();
       println("%02d: %04X".format(i, x));
@@ -58,10 +59,34 @@ object Main {
       }
     }
 
-    for (c <- 32 until 128) {
-      val x = reader.read();
-      println("Char %d: '%c' - offset %d".format(c, c, x));
+   /*
+   for (f <- 0 until 4) {
+      for (c <- 32 until 128) {
+        val offset = reader.read2()
+        println("Font %d: char %d '%c': %d".format(f, c, c, offset));
+      }
     }
+    */
+    /*
+   for (color <- 0 until 256){
+     val r = reader.read()
+     val g = reader.read()
+     val b = reader.read()
+     println("Color %d red %d green %d blue %d".format(color, r, g, b))
+   }
+   */
+
+  for (f <- 0 to 7){
+    for (c <- 32 until 128) {
+      /*
+      val rle = reader.read()
+      val color = reader.read();
+      println("Font %d Rle %d color %d".format(f, rle, color));
+      */
+      val offset = reader.read2()
+      println("Font %d Glyph %d Offset %x".format(f, c, offset))
+    }
+  }
 
     /*for (i <- 0 until data.length) {
       if ((i % 32 == 0)) {

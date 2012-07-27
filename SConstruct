@@ -21,7 +21,7 @@ if False:
 env.Tool('scons/ocaml', '.')
 env['OCAML_CODE'] = 'native'
 env['OCAML_PATH'] = ['build-lib/extlib-1.5']
-env.BuildDir('build', 'src')
+env.BuildDir('build', 'ocaml')
 libs = env.SConscript('lib/SConstruct', exports = 'env', build_dir = 'build-lib')
 env.Install('build/build-lib/', libs)
 # lbxreader = env.OcamlProgram('lbxreader', 'build/lbxreader.ml', OCAML_LIBS = libs, OCAML_PATH = ['lib/extlib-1.5'])
