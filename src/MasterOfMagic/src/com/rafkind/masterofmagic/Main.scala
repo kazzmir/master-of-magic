@@ -34,7 +34,7 @@ object Main {
     import com.rafkind.masterofmagic.system._;
     class FontGame extends org.newdawn.slick.BasicGame("Fonts") {
 
-      class Glyph(val character:Int, width:Int, height:Int, data:Seq[Int]){
+      class Glyph(val character:Int, val width:Int, val height:Int, data:Seq[Int]){
         def render(startX:Int, startY:Int, graphics:Graphics){
           var x = 0;
           var y = 0;
@@ -154,9 +154,24 @@ object Main {
       def init(container:GameContainer){
       }
 
-      def render(container:GameContainer, graphics:Graphics){
+      def drawString(startX:Int, startY:Int, graphics:Graphics, what:String){
+        var x = startX
         graphics.scale(3, 3)
-        fonts(currentFont)(currentGlyph).render(10, 10, graphics)
+        for (char <- what){
+          val glyph = fonts(currentFont)(char.toInt - 32)
+          glyph.render(x, startY, graphics)
+          x += glyph.height
+        }
+      }
+
+      def render(container:GameContainer, graphics:Graphics){
+        val glyph = fonts(currentFont)(currentGlyph)
+        graphics.drawString("Font %d Glyph %d %c".format(currentFont, glyph.character, glyph.character), 1, 1)
+        graphics.scale(3, 3)
+        glyph.render(10, 10, graphics)
+        graphics.resetTransform()
+
+        drawString(10, 30, graphics, "Select Race")
       }
     }
 
