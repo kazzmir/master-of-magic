@@ -60,7 +60,7 @@ object Main {
                 //print("%02X".format(data));
                 //x += 1;
                 for (q <- 0 until high) {
-                  graphics.fillOval(startX + x, startY + y, 1, 1)
+                  graphics.fillOval(startX + y, startY + x, 1, 1)
                   // print("%X%X".format(low, low));
                   x += 1;
                   if (x >= width) {
