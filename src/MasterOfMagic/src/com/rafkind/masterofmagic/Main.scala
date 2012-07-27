@@ -106,7 +106,7 @@ object Main {
           /* Read N bytes where N = end - start */
           var h = fontWidths(font)(ch);
           val w = fontHeights(font);
-          new Glyph(ch, w, h, for (byte <- start to end) yield reader.read())
+          new Glyph(ch + 32, w, h, for (byte <- start to end) yield reader.read())
         }
 
         glyphs
@@ -135,10 +135,10 @@ object Main {
           currentGlyph += 1
         }
         if (key == up){
-          currentFont -= 1
+          currentFont += 1
         }
         if (key == down){
-          currentFont += 1
+          currentFont -= 1
         }
 
         currentFont = (currentFont + fonts.length) % fonts.length
