@@ -76,17 +76,73 @@ object Main {
    }
    */
 
-  for (f <- 0 to 7){
-    for (c <- 32 until 128) {
+    var fontOffsets =
+  for (f <- 0 to 7) yield {
+    for (c <- 32 until 128) yield {
       /*
       val rle = reader.read()
       val color = reader.read();
       println("Font %d Rle %d color %d".format(f, rle, color));
       */
-      val offset = reader.read2()
-      println("Font %d Glyph %d Offset %x".format(f, c, offset))
+      val off = reader.read2()
+      println("Font %d Glyph %d Offset %x".format(f, c, off))
+      off
     }
   }
+
+
+    /**for (i <- 0 until (fontOffsets(5).length-1)) {
+      val char = i + 32;
+      val start = fontOffsets(5)(i);
+      val end = fontOffsets(5)(i+1);
+      println("Font %d char %d '%c' from %d to %d".format(5, char, char, start, end));
+      reader.seek(metadata.subfileStart(0) + start);
+      for (j <- 0 until (end-start)) {
+        val data = reader.read();
+        print("%02X ".format(data));
+      }
+      println();
+    }*/
+   var x = 0;
+   var y = 0;
+   val w = 12;
+   val h = 16;
+   val start = fontOffsets(5)(65-32);
+   val end = fontOffsets(5)(66-32);
+   reader.seek(metadata.subfileStart(0) + start);
+   for (j <- 0 until (end-start)) {
+        val data = reader.read();
+        if (data == 0x80) {
+          println(" - " + (x,y));
+          x = 0;
+          y += 1;
+        } else if (data > 0x80) {
+          val count = data - 0x80;
+          for (i <- 0 until count)
+            print("  ");
+          x += count;
+        } else {
+          val high = (data >> 4);
+          val low = (data & 4);
+          //print("%02X".format(data));
+          //x += 1;
+          for (q <- 0 until high) {
+            print("%X%X".format(low, low));
+            x += 1;
+            if (x >= w) {
+              println(" - " + (x,y));
+              y += 1;
+              x = 0;
+            }
+          }
+        }
+        if (x >= w) {
+          println(" - " + (x,y));
+          y += 1;
+          x = 0;
+        }
+   }
+  
 
     /*for (i <- 0 until data.length) {
       if ((i % 32 == 0)) {
