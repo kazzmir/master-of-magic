@@ -5,7 +5,6 @@ import org.newdawn.slick.ScalableGame;
 import org.newdawn.slick.Game;
 
 
-
 import com.google.inject._;
 
 class MainModule extends AbstractModule {
@@ -27,6 +26,146 @@ class MainModule extends AbstractModule {
 
 object Main {
 
+  def fontViewer(){
+    import org.newdawn.slick.GameContainer;
+    import org.newdawn.slick.Graphics
+    import org.newdawn.slick.Color
+    import com.rafkind.masterofmagic.util._;
+    import com.rafkind.masterofmagic.system._;
+    class FontGame extends org.newdawn.slick.BasicGame("Fonts") {
+
+      class Glyph(val character:Int, width:Int, height:Int, data:Seq[Int]){
+        def render(startX:Int, startY:Int, graphics:Graphics){
+          var x = 0;
+          var y = 0;
+          // println("Render %d %c".format(character, character + 32))
+          graphics.setColor(Color.white)
+
+          for (value <- data){
+            if (value == 0x80) {
+              // println();
+              x = 0;
+              y += 1;
+            } else if (value > 0x80) {
+              val count = value - 0x80;
+              for (i <- 0 until count)
+                // print("  ");
+                x += count;
+              } else {
+                val high = (value >> 4);
+                val low = (value & 0xF);
+                //print("%02X".format(data));
+                //x += 1;
+                for (q <- 0 until high) {
+                  graphics.fillOval(startX + x, startY + y, 1, 1)
+                  // print("%X%X".format(low, low));
+                  x += 1;
+                  if (x >= width) {
+                    // println();
+                    y += 1;
+                    x = 0;
+                  }
+                }
+            }
+            if (x >= width) {
+              // println();
+              y += 1;
+              x = 0;
+            }
+           //print("%02X ".format(data))
+          }
+        }
+      }
+
+      def loadFont(font:Int):Seq[Glyph] = {
+        val reader = new LbxReader(Data.originalDataPath("FONTS.LBX"));
+        val metadata = reader.metaData;
+        val data = reader.read(metadata.subfile(0));
+        reader.seek(metadata.subfileStart(0) + 0x16a);
+        var fontHeights = for (i <- 0 until 24) yield reader.read2()
+        var fontWidths =
+          for (f <- 0 until 8) yield {
+            for (c <- 32 until 128) yield {
+              val x = reader.read();
+              x
+            }
+        }
+
+        var fontOffsets =
+          for (f <- 0 to 7) yield {
+            for (c <- 32 until 128) yield reader.read2()
+          }
+
+        val glyphs = for (ch <- 0 until 90) yield {
+          val start = fontOffsets(font)(ch);
+          val end = fontOffsets(font)(ch + 1);
+          reader.seek(metadata.subfileStart(0) + start);
+          /* Read N bytes where N = end - start */
+          var h = fontWidths(font)(ch);
+          val w = fontHeights(font);
+          new Glyph(ch, w, h, for (byte <- start to end) yield reader.read())
+        }
+
+        glyphs
+      }
+
+      val fonts = for (font <- 0 until 8) yield loadFont(font)
+      var currentGlyph = 65
+      var currentFont = 0
+
+      override def keyPressed(key:Int, char:Char){
+        val left = 203
+        val right = 205
+        val up = 200
+        val down = 208
+
+        /*
+        key match {
+          case left => currentGlyph = currentGlyph - 1
+          case right => currentGlyph = currentGlyph + 1
+        }
+        */
+        if (key == left){
+          currentGlyph -= 1
+        }
+        if (key == right){
+          currentGlyph += 1
+        }
+        if (key == up){
+          currentFont -= 1
+        }
+        if (key == down){
+          currentFont += 1
+        }
+
+        currentFont = (currentFont + fonts.length) % fonts.length
+        currentGlyph = (currentGlyph + fonts(currentFont).length) % fonts(currentFont).length
+
+        val glyph = fonts(currentFont)(currentGlyph)
+        println("Font %d render %d %c".format(currentFont, glyph.character, glyph.character))
+      }
+
+      def update(container:GameContainer, delta:Int){
+      }
+
+      def init(container:GameContainer){
+      }
+
+      def render(container:GameContainer, graphics:Graphics){
+        graphics.scale(3, 3)
+        fonts(currentFont)(currentGlyph).render(10, 10, graphics)
+      }
+    }
+
+    val app = new AppGameContainer(new ScalableGame(new FontGame(), 320, 200));
+    org.lwjgl.input.Keyboard.enableRepeatEvents(true)
+    app.setDisplayMode(960, 600, false)
+    app.setSmoothDeltas(true)
+    app.setTargetFrameRate(40)
+    app.setShowFPS(false)
+    app.start()
+  }
+
   /**
    * @param args the command line arguments
    */
@@ -40,6 +179,8 @@ object Main {
   import com.rafkind.masterofmagic.system._;
   // http://www.spheriumnorth.com/orion-forum/nfphpbb/viewtopic.php?t=91
   def main(args:Array[String]):Unit = {
+    fontViewer()
+
     val reader = new LbxReader(Data.originalDataPath("FONTS.LBX"));
     val metadata = reader.metaData;
 
@@ -106,8 +247,8 @@ object Main {
       println();
     }*/
 
-    var whichfont = 0;
-   for (ch <- 65 until (65+26)) {
+    var whichfont = 5;
+   for (ch <- 65 until (65+65)) {
    var x = 0;
    var y = 0;
    var h = fontWidths(whichfont)(ch-32);
