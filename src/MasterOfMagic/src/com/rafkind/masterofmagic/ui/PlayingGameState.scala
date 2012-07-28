@@ -18,8 +18,18 @@ class PlayingGameState @Inject() (imageLibrarian:ImageLibrarian, mainScreen:Scre
   var currentScreen:Screen = null;
   
   def getID() = 1;
-  
+
+  var text:Image = null;
+
   def init(container:GameContainer, game:StateBasedGame):Unit = {
+
+    val font = imageLibrarian.getFont(FontIdentifier.FANCY);
+    val textib = new ImageBuffer(320, 16);
+    val c = new Color(255, 255, 255, 255);
+    val colors = Array(c, c, c, c, c, c, c, c, c, c, c, c, c, c, c, c, c, c, c, c);
+
+    font.render(textib, 0, 0, colors, "The quick brown fox");
+    text = textib.getImage();
 
     mainScreen.set(
       Component.BACKGROUND_IMAGE ->
@@ -95,6 +105,7 @@ class PlayingGameState @Inject() (imageLibrarian:ImageLibrarian, mainScreen:Scre
 
   def render(container:GameContainer, game:StateBasedGame, graphics:Graphics):Unit = {
     currentScreen.render(graphics);
+    text.draw(0, 0);
   }
 
   def update(container:GameContainer, game:StateBasedGame, delta:Int):Unit = { }

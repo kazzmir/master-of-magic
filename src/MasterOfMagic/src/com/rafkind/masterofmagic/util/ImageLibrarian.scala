@@ -7,13 +7,15 @@ package com.rafkind.masterofmagic.util
 import org.newdawn.slick._;
 import com.google.common.cache._;
 import com.rafkind.masterofmagic.system._;
+import com.rafkind.masterofmagic.ui.framework._;
 
 import com.google.inject._;
 
 case class SpriteGroupKey(originalGameAsset:OriginalGameAsset, group:Int);
 
 @Singleton
-class ImageLibrarian {
+class ImageLibrarian @Inject() (fontManager:FontManager) {
+  
   val spriteGroupCache = CacheBuilder
     .newBuilder()
     .maximumSize(256)
@@ -37,4 +39,7 @@ class ImageLibrarian {
     val images = spriteGroupCache.get(new SpriteGroupKey(originalGameAsset, group));
     images(index);
   }
+
+  def getFont(fi:FontIdentifier) =
+    fontManager.fonts(fi.id);
 }

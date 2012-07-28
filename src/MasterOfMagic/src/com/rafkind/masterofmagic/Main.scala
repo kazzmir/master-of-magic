@@ -22,6 +22,19 @@ class MainModule extends AbstractModule {
     app.setShowFPS(false);
     app;
   }
+
+  @Provides def provideFontManager() = {
+    import com.rafkind.masterofmagic.ui.framework.FontManager;
+    import com.rafkind.masterofmagic.system.Data;
+    import com.rafkind.masterofmagic.util.OriginalGameAsset;
+
+    val fontManager =
+      new FontManager(
+        Data.originalDataPath(
+          OriginalGameAsset.FONTS.fileName));
+
+    fontManager;
+  }
 }
 
 object Main {
@@ -187,7 +200,7 @@ object Main {
   /**
    * @param args the command line arguments
    */
-  def mainX(args: Array[String]): Unit = {
+  def main(args: Array[String]): Unit = {
     val injector = Guice.createInjector(new MainModule());
     val app = injector.getInstance(classOf[AppGameContainer]);
     app.start();   
@@ -196,8 +209,8 @@ object Main {
   import com.rafkind.masterofmagic.util._;
   import com.rafkind.masterofmagic.system._;
   // http://www.spheriumnorth.com/orion-forum/nfphpbb/viewtopic.php?t=91
-  def main(args:Array[String]):Unit = {
-    fontViewer()
+  def mainX(args:Array[String]):Unit = {
+    //fontViewer()
 
     val reader = new LbxReader(Data.originalDataPath("FONTS.LBX"));
     val metadata = reader.metaData;
