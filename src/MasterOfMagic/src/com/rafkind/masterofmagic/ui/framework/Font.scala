@@ -38,8 +38,10 @@ object GlyphTemplate {
         x = 0;
         y += 1;
       } else if (value > 0x80) {
-        var count = value - 0x80;
+        val count = value - 0x80;
         x += count;
+        for (i <- 0 until count)
+          print("  ");
       } else {
         val high = (value >> 4);
         val low = (value & 0xF);
@@ -50,8 +52,7 @@ object GlyphTemplate {
           // need this guard due to bad data
           if ((px < width) && (py < height))
             data((py * width) + px) = low; 
-          
-          x + 1;
+          x += 1;
           if (x >= height) { // flippage
             y += 1;
             x = 0;
