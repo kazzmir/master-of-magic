@@ -23,12 +23,12 @@ class PlayingGameState @Inject() (imageLibrarian:ImageLibrarian, mainScreen:Scre
 
   def init(container:GameContainer, game:StateBasedGame):Unit = {
 
-    val font = imageLibrarian.getFont(FontIdentifier.FANCY);
-    val textib = new ImageBuffer(320, 16);
+    val font = imageLibrarian.getFont(FontIdentifier.HUGE);
+    val textib = new ImageBuffer(320, 50);
     val c = new Color(255, 255, 255, 255);
     val colors = Array(c, c, c, c, c, c, c, c, c, c, c, c, c, c, c, c, c, c, c, c);
 
-    font.render(textib, 0, 0, colors, "The quick brown fox");
+    font.render(textib, 0, 0, colors, "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG. PACK MY BOX WITH FIVE DOZEN LIQUOR JUGS.");
     text = textib.getImage();
 
     mainScreen.set(

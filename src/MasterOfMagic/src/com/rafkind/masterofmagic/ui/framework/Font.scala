@@ -114,15 +114,51 @@ case class Font(fontIdentifier:FontIdentifier, height:Int, glyphTemplates:Array[
     running;
   }
 
-  def walkLayout(width:Int,
-                 height:Int,
+  def breakUpString(text:String):List[String] = {
+    import com.google.common.base.CharMatcher;
+
+    var isWhitespace = false;
+    var accumulator = new StringBuilder();
+    var first = true;
+    var answer = List[String]();
+    for (ch <- text) {
+      if (first) {
+        accumulator.append(ch);
+        isWhitespace = CharMatcher.BREAKING_WHITESPACE.matches(ch);
+        first = false;
+      } else {
+        val nowIsWhitespace = CharMatcher.BREAKING_WHITESPACE.matches(ch);
+        if (nowIsWhitespace != isWhitespace) {
+          isWhitespace = nowIsWhitespace;
+          answer ::= (accumulator.toString());
+          accumulator = new StringBuilder();
+        }
+        accumulator.append(ch);
+      }
+    }
+    answer ::= (accumulator.toString());
+
+    return answer.reverse;
+  }
+
+  def walkLayout(areaWidth:Int,
+                 areaHeight:Int,
                  text:String,
                  callback:(Int, Int, GlyphTemplate) => Unit):Unit = {
-    var running = 0;
-    for (c <- text) {
-      val glyph = glyphTemplates(c - 32);
-      callback(running, 0, glyph);
-      running += glyph.width + 1;
+    var x = 0;
+    var y = 0;
+    val splitted = breakUpString(text);
+    for (word <- splitted) {
+      val wordWidth = getWidthOf(word);
+      if (wordWidth+x > areaWidth) {
+        x = 0;
+        y += height;
+      }
+      for (c <- word) {
+        val glyph = glyphTemplates(c - 32);
+        callback(x, y, glyph);
+        x += glyph.width + 1;
+      }
     }
   }
 
@@ -132,8 +168,8 @@ case class Font(fontIdentifier:FontIdentifier, height:Int, glyphTemplates:Array[
              palette:Array[Color],
              text:String):Unit = {
     walkLayout(
-      imageBuffer.getWidth(),
-      imageBuffer.getHeight(),
+      imageBuffer.getWidth() - offsetX,
+      imageBuffer.getHeight() - offsetY,
       text,
       (x:Int, y:Int, glyph:GlyphTemplate) => {
         glyph.render(imageBuffer, offsetX + x, offsetY + y, palette);
