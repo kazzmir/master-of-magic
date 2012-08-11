@@ -3,13 +3,15 @@
  * and open the template in the editor.
  */
 
-package com.rafkind.masterofmagic.ui
+package com.rafkind.masterofmagic.ui.main
 
 import java.awt.Color;
 import org.newdawn.slick._;
 
 import com.rafkind.masterofmagic.state._;
 import com.rafkind.masterofmagic.util._;
+import com.google.inject._;
+
 object TerrainPainter {
 
   import com.rafkind.masterofmagic.util.TerrainLbxReader._;
@@ -86,27 +88,26 @@ class Minimap(overworld:Overworld) {
   }
 }
 
-class TerrainPainter(baseTileImage:Image) {  
+class TerrainPainter(baseTileImage:Image) {
   import com.rafkind.masterofmagic.util.TerrainLbxReader._;
 
   def render(
-    gc:GameContainer,
     graphics:Graphics,
     startX:Int,
     startY:Int,
     startTileX:Int,
     startTileY:Int,
+    tilesAcross:Int,
+    tilesDown:Int,
+    plane:Plane,
     overworld:Overworld):Unit = {
-    
-    val DOUBLE_WIDTH = TILE_WIDTH * 2;
-    val DOUBLE_HEIGHT = TILE_HEIGHT * 2;
 
     baseTileImage.startUse();
 
-    for (tileY <- 0 until TerrainPainter.VIEW_HEIGHT) {
-      for (tileX <- 0 until TerrainPainter.VIEW_WIDTH) {
+    for (tileY <- 0 until tilesDown) {
+      for (tileX <- 0 until tilesAcross) {
         val terrainSquare:TerrainSquare = overworld.get(
-          Plane.MYRROR,
+          plane,
           tileX + startTileX,
           tileY + startTileY);
 
@@ -114,11 +115,11 @@ class TerrainPainter(baseTileImage:Image) {
 
         val tX = (whichTile % TerrainLbxReader.SPRITE_SHEET_WIDTH) * TILE_WIDTH;
         val tY = (whichTile / TerrainLbxReader.SPRITE_SHEET_WIDTH) * TILE_HEIGHT;
-        val dX = startX + tileX * DOUBLE_WIDTH;
-        val dY = startY + tileY * DOUBLE_HEIGHT;
+        val dX = startX + tileX * TILE_WIDTH;
+        val dY = startY + tileY * TILE_HEIGHT;
 
         baseTileImage.drawEmbedded(
-          dX, dY, dX + DOUBLE_WIDTH, dY + DOUBLE_HEIGHT,
+          dX, dY, dX + TILE_WIDTH, dY + TILE_HEIGHT,
           tX, tY, tX + TILE_WIDTH, tY + TILE_HEIGHT
         );
       }

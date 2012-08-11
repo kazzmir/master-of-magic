@@ -6,15 +6,7 @@
 package com.rafkind.masterofmagic.ui.framework
 
 import org.newdawn.slick._;
-
-/*class Screen(backgroundImage:Image) extends Container {
-  
-  override def render(graphics:Graphics):Unit = {
-    backgroundImage.draw(0, 0);
-
-    super.render(graphics);
-  }
-}*/
+import org.newdawn.slick.state._;
 
 class Screen extends Container[Screen] {
 

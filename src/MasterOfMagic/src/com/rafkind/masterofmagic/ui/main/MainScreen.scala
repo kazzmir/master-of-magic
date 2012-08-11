@@ -3,35 +3,19 @@
  * and open the template in the editor.
  */
 
-package com.rafkind.masterofmagic.ui
+package com.rafkind.masterofmagic.ui.main
+
 import org.newdawn.slick.state._;
 import org.newdawn.slick._;
-
+import com.rafkind.masterofmagic.ui.framework._;
 import com.rafkind.masterofmagic.util._;
 import com.rafkind.masterofmagic.state._;
-import com.rafkind.masterofmagic.ui.framework._;
-
 import com.google.inject._;
 
-class PlayingGameState @Inject() (imageLibrarian:ImageLibrarian, mainScreen:Screen) extends BasicGameState {
+class MainScreen extends Screen {
 
-  var currentScreen:Screen = null;
-  
-  def getID() = 1;
-
-  //var text:Image = null;
-
-  def init(container:GameContainer, game:StateBasedGame):Unit = {
-
-    /*val font = imageLibrarian.getFont(FontIdentifier.HUGE);
-    val textib = new ImageBuffer(320, 50);
-    val c = new Color(255, 255, 255, 255);
-    val colors = Array(c, c, c, c, c, c, c, c, c, c, c, c, c, c, c, c, c, c, c, c);
-
-    font.render(textib, 0, 0, colors, "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG. PACK MY BOX WITH FIVE DOZEN LIQUOR JUGS.");
-    text = textib.getImage();*/
-
-    mainScreen.set(
+  def init(imageLibrarian:ImageLibrarian, terrainPainter:TerrainPainter, overworld:Overworld):Unit = {
+    set(
       Component.BACKGROUND_IMAGE ->
         imageLibrarian.getRawSprite(OriginalGameAsset.MAIN, 0, 0)
     ).add(
@@ -42,7 +26,7 @@ class PlayingGameState @Inject() (imageLibrarian:ImageLibrarian, mainScreen:Scre
           PackingContainer.SPACING -> 1
         )
         .add(
-          new Button().set(        
+          new Button().set(
             Button.UP_IMAGE ->
               imageLibrarian.getRawSprite(OriginalGameAsset.MAIN, 1, 0),
             Button.DOWN_IMAGE ->
@@ -97,19 +81,13 @@ class PlayingGameState @Inject() (imageLibrarian:ImageLibrarian, mainScreen:Scre
               imageLibrarian.getRawSprite(OriginalGameAsset.MAIN, 7, 1)
           ), Alignment.HORIZONTAL
         )
+      )
+      .add(
+        new MainMap(terrainPainter)
+          .set(
+            Component.LEFT -> 0,
+            Component.TOP -> 20)
+          .setOverworld(overworld)
       );
-    
-    currentScreen = mainScreen;
-  }
-
-  def render(container:GameContainer, game:StateBasedGame, graphics:Graphics):Unit = {
-    currentScreen.render(graphics);
-    //text.draw(0, 0);
-  }
-
-  def update(container:GameContainer, game:StateBasedGame, delta:Int):Unit = { }
-
-  override def mouseMoved(oldX:Int, oldY:Int, newX:Int, newY:Int):Unit = {
-    println(oldX + ", " + oldY + " -> " + newX + ", " + newY);
   }
 }

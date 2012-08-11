@@ -46,7 +46,7 @@ object SpriteReaderHelper {
   
 
   def finish(image:ImageBuffer) =
-    image.getImage();
+    image.getImage(Image.FILTER_NEAREST);
 }
 
 object SpriteReader {
