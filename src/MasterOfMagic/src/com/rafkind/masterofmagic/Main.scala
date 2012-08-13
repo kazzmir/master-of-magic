@@ -5,6 +5,7 @@ import org.newdawn.slick.ScalableGame;
 import org.newdawn.slick.Game;
 import com.rafkind.masterofmagic.util.OriginalGameAsset;
 import com.rafkind.masterofmagic.system.Data;
+import com.rafkind.masterofmagic.util.ImageLibrarian
 
 import com.google.inject._;
 
@@ -43,8 +44,8 @@ class MainModule extends AbstractModule {
     new TerrainPainter(
       TerrainLbxReader.read(
         Data.originalDataPath(
-          OriginalGameAsset.TERRAIN.fileName)));
-
+          OriginalGameAsset.TERRAIN.fileName)),
+        Main.appInjector.getInstance(classOf[ImageLibrarian]))
   }
 }
 

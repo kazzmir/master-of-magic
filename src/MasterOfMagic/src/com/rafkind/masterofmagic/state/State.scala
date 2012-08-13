@@ -169,8 +169,43 @@ object City {
                  race:Race):City = {
     return new City(x, y, owner, name, race);
   }
+
+  val city1Group = 20
+  val city1Item = 0
+
+  val city2Group = 20
+  val city2Item = 1
+
+  val city3Group = 20
+  val city3Item = 2
+
+  val city4Group = 20
+  val city4Item = 3
+  
+  val city5Group = 20
+  val city5Item = 5
+
+  val village1Group = 21
+  val village1Item = 0
+  
+  val village2Group = 21
+  val village2Item = 1
+  
+  val village3Group = 21
+  val village3Item = 2
+  
+  val village4Group = 21
+  val village4Item = 3
+  
+  val village5Group = 21
+  val village5Item = 4
 }
+
 class City(x:Int, y:Int, val owner:Player, val name:String, val race:Race) extends Place(x, y) {
+  import com.rafkind.masterofmagic.util._
+  def getSprite(librarian:ImageLibrarian) = {
+    librarian.getRawSprite(OriginalGameAsset.MAPBACK, City.city3Group, City.city3Item)
+  }
 }
 
 object LairReward {

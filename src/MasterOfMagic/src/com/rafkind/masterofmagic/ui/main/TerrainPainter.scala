@@ -89,7 +89,7 @@ class Minimap(overworld:Overworld) {
 }
 
 @Singleton
-class TerrainPainter(baseTileImage:Image) {
+class TerrainPainter(baseTileImage:Image, librarian:ImageLibrarian) {
   import com.rafkind.masterofmagic.util.TerrainLbxReader._;
 
   def render(
@@ -126,5 +126,30 @@ class TerrainPainter(baseTileImage:Image) {
       }
     }
     baseTileImage.endUse();
+
+    for (tileY <- 0 until tilesDown) {
+      for (tileX <- 0 until tilesAcross) {
+        val terrainSquare:TerrainSquare = overworld.get(
+          plane,
+          tileX + startTileX,
+          tileY + startTileY);
+
+        val dX = startX + tileX * TILE_WIDTH;
+        val dY = startY + tileY * TILE_HEIGHT;
+
+        terrainSquare.place match {
+          case Some(city:City) => {
+            // println("Draw city from %d, %d at %d, %d".format(city.x, city.y, dX, dY))
+            city.getSprite(librarian).draw(dX, dY)
+          }
+          case Some(node:Node) => {
+          }
+          case Some(lair:Lair) => {
+          }
+          case None => {
+          }
+        }
+      }
+    }
   }
 }

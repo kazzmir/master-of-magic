@@ -430,6 +430,8 @@ class Overworld(val width:Int, val height:Int) {
                                           Race.HIGH_MEN);
         neutralPlayer.cities ::= city;
 
+        println("Create city at %d, %d".format(x, y))
+
         get(plane, x, y).place = Some(city);
       });
   }
