@@ -145,6 +145,7 @@ class TerrainPainter(baseTileImage:Image, librarian:ImageLibrarian) {
           case Some(node:Node) => {
           }
           case Some(lair:Lair) => {
+            lair.getSprite(librarian).draw(dX, dY)
           }
           case None => {
           }

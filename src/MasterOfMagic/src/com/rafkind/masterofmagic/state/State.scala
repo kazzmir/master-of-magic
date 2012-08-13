@@ -6,6 +6,7 @@
 package com.rafkind.masterofmagic.state
 
 import scala.util.Random;
+import com.rafkind.masterofmagic.util._
 
 case class Alignment(val id:Int, val name:String)
 object Alignment {
@@ -143,6 +144,7 @@ class Retort {
 }
 
 case class LairType(val id:Int, val name:String)
+
 object LairType {
   val CAVE = LairType(0, "Cave");
   val TEMPLE = LairType(1, "Temple");
@@ -154,6 +156,19 @@ object LairType {
 
   def getRandom(random:Random):LairType =
     values(random.nextInt(values.length));
+
+  def spriteGroup(id:Int) = id match {
+    case CAVE.id => 71
+    case TEMPLE.id => 72
+    case KEEP.id => 73
+    // closed tower is 69, open is 70
+    case TOWER.id => 69
+    // nodes are drawn by the tile so this shouldn't really be here
+    case NODE.id => 64
+  }
+
+  // all lair types use sprite 0
+  def spriteItem(id:Int) = 0
 }
 
 class Place(val x:Int, val y:Int) {
@@ -202,7 +217,6 @@ object City {
 }
 
 class City(x:Int, y:Int, val owner:Player, val name:String, val race:Race) extends Place(x, y) {
-  import com.rafkind.masterofmagic.util._
   def getSprite(librarian:ImageLibrarian) = {
     librarian.getRawSprite(OriginalGameAsset.MAPBACK, City.city3Group, City.city3Item)
   }
@@ -246,6 +260,10 @@ class Lair(val lairType:LairType,
            x:Int,
            y:Int) extends Place(x, y) {
 
+  def getSprite(librarian:ImageLibrarian) =
+    librarian.getRawSprite(OriginalGameAsset.MAPBACK,
+                           LairType.spriteGroup(lairType.id),
+                           LairType.spriteItem(lairType.id))
 }
 
 object Node {
