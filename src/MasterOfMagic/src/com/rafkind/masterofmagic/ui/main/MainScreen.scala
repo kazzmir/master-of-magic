@@ -10,11 +10,15 @@ import org.newdawn.slick._;
 import com.rafkind.masterofmagic.ui.framework._;
 import com.rafkind.masterofmagic.util._;
 import com.rafkind.masterofmagic.state._;
+import com.rafkind.masterofmagic.Main;
 import com.google.inject._;
 
 class MainScreen extends Screen {
 
-  def init(imageLibrarian:ImageLibrarian, terrainPainter:TerrainPainter, overworld:Overworld):Unit = {
+  def init(overworld:Overworld):Unit = {
+    val mainMap = Main.appInjector.getInstance(classOf[MainMap]);
+    val imageLibrarian = Main.appInjector.getInstance(classOf[ImageLibrarian]);
+    
     set(
       Component.BACKGROUND_IMAGE ->
         imageLibrarian.getRawSprite(OriginalGameAsset.MAIN, 0, 0)
@@ -83,7 +87,7 @@ class MainScreen extends Screen {
         )
       )
       .add(
-        new MainMap(terrainPainter)
+        mainMap
           .set(
             Component.LEFT -> 0,
             Component.TOP -> 20)

@@ -88,6 +88,7 @@ class Minimap(overworld:Overworld) {
   }
 }
 
+@Singleton
 class TerrainPainter(baseTileImage:Image) {
   import com.rafkind.masterofmagic.util.TerrainLbxReader._;
 

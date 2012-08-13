@@ -24,6 +24,11 @@ class Button extends Component[Button] {
       case _ =>
     }
   });
+
+  listen(Component.MOUSE_CLICKED, (event:ComponentEvent) => {
+      val mouseEvent = event.asInstanceOf[MouseClickedEvent];
+      println("clicked " + mouseEvent);
+  });
   
   var state:Boolean = false;
   

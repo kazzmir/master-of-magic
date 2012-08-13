@@ -36,12 +36,12 @@ class PlayingGameState @Inject() (imageLibrarian:ImageLibrarian, mainScreen:Main
     text = textib.getImage();*/
 
 
-    terrainPainter = new TerrainPainter(
+    /*terrainPainter = new TerrainPainter(
       TerrainLbxReader.read(
         Data.originalDataPath(
-          OriginalGameAsset.TERRAIN.fileName)));
+          OriginalGameAsset.TERRAIN.fileName)));*/
 
-    mainScreen.init(imageLibrarian, terrainPainter, game.asInstanceOf[MasterOfMagic].getOverworld);
+    mainScreen.init(game.asInstanceOf[MasterOfMagic].getOverworld);
     
     currentScreen = mainScreen;
   }
@@ -53,7 +53,7 @@ class PlayingGameState @Inject() (imageLibrarian:ImageLibrarian, mainScreen:Main
 
   def update(container:GameContainer, game:StateBasedGame, delta:Int):Unit = { }
 
-  override def mouseMoved(oldX:Int, oldY:Int, newX:Int, newY:Int):Unit = {
-    println(oldX + ", " + oldY + " -> " + newX + ", " + newY);
-  }
+  override def keyPressed(key:Int, c:Char):Unit = {
+    currentScreen.notifyOf(Component.KEY_PRESSED, 0, 0, KeyPressedEvent(null, key, c));
+  }  
 }

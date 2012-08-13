@@ -35,16 +35,28 @@ class MainModule extends AbstractModule {
 
     fontManager;
   }
+
+  @Provides def provideTerrainPainter() = {
+    import com.rafkind.masterofmagic.ui.main.TerrainPainter;
+    import com.rafkind.masterofmagic.util.TerrainLbxReader;
+    
+    new TerrainPainter(
+      TerrainLbxReader.read(
+        Data.originalDataPath(
+          OriginalGameAsset.TERRAIN.fileName)));
+
+  }
 }
 
 object Main {
-
+  val appInjector = Guice.createInjector(new MainModule());
+  
   /**
    * @param args the command line arguments
    */
   def main(args: Array[String]): Unit = {
-    val injector = Guice.createInjector(new MainModule());
-    val app = injector.getInstance(classOf[AppGameContainer]);
+    
+    val app = appInjector.getInstance(classOf[AppGameContainer]);
     app.start();   
   }
 }

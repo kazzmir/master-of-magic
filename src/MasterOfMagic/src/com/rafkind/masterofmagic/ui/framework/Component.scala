@@ -19,12 +19,31 @@ object Component {
   val BACKGROUND_IMAGE = ComponentProperty("background_image", null);
 
   val PROPERTY_CHANGED = ComponentEventDescriptor("property_changed");
+  val MOUSE_CLICKED = ComponentEventDescriptor("mouse_clicked");
+  val KEY_PRESSED = ComponentEventDescriptor("key_pressed");
 }
 
-case class ComponentEvent(val component:Component[_])
+case class ComponentEvent(val component:Component[_], var consumed:Boolean)
 
-case class PropertyChangedEvent(override val component:Component[_],
-                           val whatChanged:Tuple2[ComponentProperty, Any]) extends ComponentEvent(component:Component[_])
+case class PropertyChangedEvent(
+  override val component:Component[_],
+  val whatChanged:Tuple2[ComponentProperty, Any])
+    extends ComponentEvent(component, false)
+
+case class MouseClickedEvent(
+  override val component:Component[_],
+  val button:Int,
+  val x:Int,
+  val y:Int,
+  val clickCount:Int)
+    extends ComponentEvent(component, false)
+
+case class KeyPressedEvent(
+  override val component:Component[_],
+  val key:Int,
+  val ch:Char)
+    extends ComponentEvent(component, false)
+
 
 trait Component[T] {
   var properties = new scala.collection.mutable.HashMap[ComponentProperty, Any]();
@@ -33,14 +52,7 @@ trait Component[T] {
     settings.foreach( (x:Tuple2[ComponentProperty, Any]) => {
         properties += x;
         
-        listeners
-          .get(Component.PROPERTY_CHANGED)
-          .map(y =>
-              y.foreach( 
-                z =>
-                  z(new PropertyChangedEvent(this, x))
-                )
-              );        
+        notifyOf(Component.PROPERTY_CHANGED, new PropertyChangedEvent(this, x));
       }
     );
     this.asInstanceOf[T]
@@ -54,11 +66,30 @@ trait Component[T] {
 
   var listeners = new CustomMultiMap[ComponentEventDescriptor, ComponentEvent => Unit];
   
-
   def listen(toWhat:ComponentEventDescriptor, andThen:(ComponentEvent => Unit)):T = {
     listeners.put(toWhat, andThen);
     this.asInstanceOf[T]
-  }  
+  }
+
+  def notifyOf(whatHappened:ComponentEventDescriptor, eventObject:ComponentEvent) {
+    listeners.get(whatHappened)
+      .map(y =>
+        y.foreach(
+          z => if (!eventObject.consumed) {
+            z(eventObject);
+          }
+        )
+      );
+  }
   
   def render(graphics:Graphics):T;
+
+  def containsScreenPoint(x:Int, y:Int) = {
+    val left = getInt(Component.LEFT);
+    val width = getInt(Component.WIDTH);
+    val top = getInt(Component.TOP);
+    val height = getInt(Component.HEIGHT);
+
+    ((x >= left) && (x < left + width) && (y >= top) && (y < top + height));
+  }
 }
