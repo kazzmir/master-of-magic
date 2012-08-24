@@ -140,7 +140,9 @@ class TerrainPainter(baseTileImage:Image, librarian:ImageLibrarian) {
         terrainSquare.place match {
           case Some(city:City) => {
             // println("Draw city from %d, %d at %d, %d".format(city.x, city.y, dX, dY))
-            city.getSprite(librarian).draw(dX, dY)
+            val citySprite = city.getSprite(librarian);
+            
+            citySprite.draw(dX + (TILE_WIDTH-citySprite.getWidth())/2, dY + (TILE_HEIGHT-citySprite.getHeight())/2)
           }
           case Some(node:Node) => {
           }

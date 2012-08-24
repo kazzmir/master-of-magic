@@ -218,7 +218,7 @@ object City {
 
 class City(x:Int, y:Int, val owner:Player, val name:String, val race:Race) extends Place(x, y) {
   def getSprite(librarian:ImageLibrarian) = {
-    librarian.getRawSprite(OriginalGameAsset.MAPBACK, City.city3Group, City.city3Item)
+    librarian.getRawSprite(OriginalGameAsset.MAPBACK, City.city1Group, City.city1Item)
   }
 }
 
