@@ -41,8 +41,20 @@ object SpriteReaderHelper {
     dest;
   }
 
-  def withPixelDo(image:ImageBuffer, x:Int, y:Int, color:Color) =
+  var shouldLog = false;
+  def turnLoggingOn:Unit = {
+    shouldLog = true;
+  }
+  def turnLoggingOff:Unit = {
+    shouldLog = false;
+  }
+  
+  def withPixelDo(image:ImageBuffer, x:Int, y:Int, color:Color):Unit = {
+    if (shouldLog) {
+      println("[" + x + ", " + y + "] = " + (color.getRed(), color.getGreen(), color.getBlue()));
+    }
     image.setRGBA(x, y, color.getRed(), color.getGreen(), color.getBlue(), color.getAlpha());
+  }
   
 
   def finish(image:ImageBuffer) =
