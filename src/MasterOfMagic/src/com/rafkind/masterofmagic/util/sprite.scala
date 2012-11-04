@@ -1,6 +1,7 @@
 package com.rafkind.masterofmagic.util
 
 import org.newdawn.slick._;
+import com.rafkind.masterofmagic.state._;
 
 // http://www.roughseas.ca/momime/phpBB3/viewtopic.php?f=1&t=5
 
@@ -41,18 +42,27 @@ object SpriteReaderHelper {
     dest;
   }
 
-  var shouldLog = false;
+  /*var shouldLog = false;
   def turnLoggingOn:Unit = {
     shouldLog = true;
   }
   def turnLoggingOff:Unit = {
     shouldLog = false;
   }
+
+  var colorMap = new scala.collection.mutable.HashMap[Color, Int];
+  def numberColors(x:Array[Color]):Unit = {
+    for (index <- 0 until 256) {
+      colorMap += x(index) -> index;
+    }
+  }*/
   
   def withPixelDo(image:ImageBuffer, x:Int, y:Int, color:Color):Unit = {
-    if (shouldLog) {
-      println("[" + x + ", " + y + "] = " + (color.getRed(), color.getGreen(), color.getBlue()));
-    }
+    /*if (shouldLog) {
+      //println("[" + x + ", " + y + "] = " + (color.getRed(), color.getGreen(), color.getBlue()));
+      println("[" + x + ", " + y + "] = " + "%02X".format(color.getRed()) + "%02X".format(color.getGreen()) + "%02X".format(color.getBlue()) + ".." + colorMap(color));
+      //println("[" + x + ", " + y + "] = " + color);
+    }*/
     image.setRGBA(x, y, color.getRed(), color.getGreen(), color.getBlue(), color.getAlpha());
   }
   
@@ -102,6 +112,7 @@ object SpriteReader {
   }
 
   def readPaletteInfo(lbxReader: LbxReader, index:Int, paletteInfoOffset:Int):PaletteInfo = {
+
     if (paletteInfoOffset > 0){
       lbxReader.seek(lbxReader.metaData.subfileStart(index) + paletteInfoOffset)
       val paletteOffset = lbxReader.read2()
@@ -149,7 +160,8 @@ object SpriteReader {
                 header:Header,
                 paletteInfo:PaletteInfo,
                 palette:Array[Color],
-                target:ImageBuffer):Unit = {
+                target:ImageBuffer,
+                colorFilter:(Int)=>Int):Unit = {
 
     var index = 0;
     if (data(index) == 1 && bitmapNumber > 0) {
@@ -179,6 +191,8 @@ object SpriteReader {
         index += 4;
 
         var n_r = index;
+        //SpriteReaderHelper.numberColors(palette);
+        
         while (n_r < next_ctl) {
           while ((n_r < (index + long_data)) && (x < header.width)) {
             if (data(n_r) >= rle_value) {
@@ -187,7 +201,7 @@ object SpriteReader {
               var rle_counter = 0;
               while ((rle_counter < rle_length) && (y < header.height)) {
                 if ((x < header.width) && (y < header.height) && (x >= 0) && (y >= 0)) {
-                  SpriteReaderHelper.withPixelDo(target, x, y, palette(data(last_pos)));
+                  SpriteReaderHelper.withPixelDo(target, x, y, palette(colorFilter(data(last_pos))));
                 } else {
                   throw new Exception("Overrun");
 
@@ -198,7 +212,7 @@ object SpriteReader {
               n_r += 2;
             } else {
               if ((x < header.width) && (y < header.height) && (x >= 0) && (y >= 0)) {
-                SpriteReaderHelper.withPixelDo(target, x, y, palette(data(n_r)));
+                SpriteReaderHelper.withPixelDo(target, x, y, palette(colorFilter(data(n_r))));
               }
               n_r += 1;
               y += 1;
@@ -218,7 +232,22 @@ object SpriteReader {
     }
   }
 
-  def read(lbxReader:LbxReader, groupIndex:Int) = {
+  def buildColorFilter(flag:Option[FlagColor]) = {
+    flag match {
+      case Some(flagColor) => {
+          (x:Int) => if (x >= 214 && x <= 218) {
+            x + flagColor.paletteIndexOffset;
+          } else {
+            x
+          }
+      }
+      case None => {
+          (x:Int) => x;
+      }
+    }
+  }
+
+  def read(lbxReader:LbxReader, groupIndex:Int, flag:Option[FlagColor]) = {
 
     val lbxMetaData = lbxReader.metaData
     
@@ -239,7 +268,9 @@ object SpriteReader {
       for (i <- 0 until data.length) {
         data2(i) = data(i) & 0xFF;
       }
-      render(bitmapNumber, data2, header, paletteInfo, palette, canvas);
+
+      
+      render(bitmapNumber, data2, header, paletteInfo, palette, canvas, buildColorFilter(flag));
       SpriteReaderHelper.copy(canvas);
     }
 

@@ -16,14 +16,14 @@ object Alignment {
   val values = Array(HORIZONTAL, VERTICAL);
 }
 
-case class FlagColor(val id:Int, val name:String /*, val color:Color */)
+case class FlagColor(val id:Int, val name:String, val paletteIndexOffset:Int)
 object FlagColor {
-  val RED = FlagColor(0, "Red" /*, Color.RED */);
-  val BLUE = FlagColor(1, "Blue" /*, Color.BLUE */);
-  val GREEN = FlagColor(2, "Green" /*, Color.GREEN */);
-  val YELLOW = FlagColor(3, "Yellow" /*, Color.YELLOW */);
-  val PURPLE = FlagColor(4, "Purple" /*, Color.MAGENTA */);
-  val BROWN = FlagColor(5, "Brown" /*, new Color(139, 69, 19) */);
+  val RED = FlagColor(0, "Red", -15);
+  val BLUE = FlagColor(1, "Blue", 5);
+  val GREEN = FlagColor(2, "Green", 0);
+  val YELLOW = FlagColor(3, "Yellow", -5);
+  val PURPLE = FlagColor(4, "Purple", -10);
+  val BROWN = FlagColor(5, "Brown", -33);
 
   val values = Array(BROWN, RED, GREEN, BLUE, YELLOW, PURPLE);
 }
@@ -218,9 +218,9 @@ object City {
 
 class City(x:Int, y:Int, val owner:Player, val name:String, val race:Race) extends Place(x, y) {
   def getSprite(librarian:ImageLibrarian) = {
-    SpriteReaderHelper.turnLoggingOn;
-    val s = librarian.getRawSprite(OriginalGameAsset.MAPBACK, City.city1Group, City.city1Item)
-    SpriteReaderHelper.turnLoggingOff;
+    //SpriteReaderHelper.turnLoggingOn;
+    val s = librarian.getFlaggedSprite(OriginalGameAsset.MAPBACK, City.city1Group, City.city1Item, owner.flag)
+    //SpriteReaderHelper.turnLoggingOff;
     s
   }
 }

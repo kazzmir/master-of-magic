@@ -6,12 +6,13 @@
 package com.rafkind.masterofmagic.util
 import org.newdawn.slick._;
 import com.google.common.cache._;
+import com.rafkind.masterofmagic.state._;
 import com.rafkind.masterofmagic.system._;
 import com.rafkind.masterofmagic.ui.framework._;
 
 import com.google.inject._;
 
-case class SpriteGroupKey(originalGameAsset:OriginalGameAsset, group:Int);
+case class SpriteGroupKey(originalGameAsset:OriginalGameAsset, group:Int, flag:Option[FlagColor]);
 
 @Singleton
 class ImageLibrarian @Inject() (fontManager:FontManager) {
@@ -29,14 +30,19 @@ class ImageLibrarian @Inject() (fontManager:FontManager) {
     .build(new CacheLoader[SpriteGroupKey, Array[Image]](){
       def load(key:SpriteGroupKey):Array[Image] = {
         val reader = new LbxReader(Data.originalDataPath(key.originalGameAsset.fileName));
-        val sprites = SpriteReader.read(reader, key.group);
+        val sprites = SpriteReader.read(reader, key.group, key.flag);
         reader.close();
         return sprites;
       }
     });
 
   def getRawSprite(originalGameAsset:OriginalGameAsset, group:Int, index:Int) = {
-    val images = spriteGroupCache.get(new SpriteGroupKey(originalGameAsset, group));
+    val images = spriteGroupCache.get(new SpriteGroupKey(originalGameAsset, group, None));
+    images(index);
+  }
+
+  def getFlaggedSprite(originalGameAsset:OriginalGameAsset, group:Int, index:Int, flag:FlagColor) = {
+    val images = spriteGroupCache.get(new SpriteGroupKey(originalGameAsset, group, Some(flag)));
     images(index);
   }
 

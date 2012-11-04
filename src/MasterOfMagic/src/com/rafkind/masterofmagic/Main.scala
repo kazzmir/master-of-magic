@@ -56,7 +56,14 @@ object Main {
    * @param args the command line arguments
    */
   def main(args: Array[String]): Unit = {
-    
+
+    /*for (i <- 0 until 256) {
+      val color = com.rafkind.masterofmagic.util.Colors.colors(i);
+      val code = "%02X".format(color.getRed()) + "%02X".format(color.getGreen()) + "%02X".format(color.getBlue())
+
+      println("<tr><td>" + i + "</td><td style='background-color: #" + code + "'>" + i + "</td></tr>");
+    }*/
+
     val app = appInjector.getInstance(classOf[AppGameContainer]);
     app.start();   
   }
