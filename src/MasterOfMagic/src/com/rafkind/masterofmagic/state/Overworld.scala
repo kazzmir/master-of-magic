@@ -434,6 +434,12 @@ class Overworld(val width:Int, val height:Int) {
 
         get(plane, x, y).place = Some(city);
       });
+    
+    get(plane, 0, 0).armyUnitStack = 
+      Some(new ArmyUnitStack(
+        0, 0, 
+        neutralPlayer, 
+        List(new ArmyUnit(0))));
   }
 
   def isValidCityLocation(plane:Plane, x:Int, y:Int):Boolean = {
