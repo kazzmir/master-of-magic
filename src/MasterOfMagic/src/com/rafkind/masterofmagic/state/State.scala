@@ -16,14 +16,17 @@ object Alignment {
   val values = Array(HORIZONTAL, VERTICAL);
 }
 
-case class FlagColor(val id:Int, val name:String, val paletteIndexOffset:Int)
+case class FlagColor(val id:Int, 
+                     val name:String, 
+                     val paletteIndexOffset:Int, 
+                     val armyStackBackgroundSpriteIndex:Int)
 object FlagColor {
-  val RED = FlagColor(0, "Red", -15);
-  val BLUE = FlagColor(1, "Blue", 5);
-  val GREEN = FlagColor(2, "Green", 0);
-  val YELLOW = FlagColor(3, "Yellow", -5);
-  val PURPLE = FlagColor(4, "Purple", -10);
-  val BROWN = FlagColor(5, "Brown", -33);
+  val RED = FlagColor(0, "Red", -15, 17);
+  val BLUE = FlagColor(1, "Blue", 5, 14);
+  val GREEN = FlagColor(2, "Green", 0, 15);
+  val YELLOW = FlagColor(3, "Yellow", -5, 18);
+  val PURPLE = FlagColor(4, "Purple", -10, 16);
+  val BROWN = FlagColor(5, "Brown", -33, 19);
 
   val values = Array(BROWN, RED, GREEN, BLUE, YELLOW, PURPLE);
 }
@@ -306,6 +309,13 @@ class ArmyUnitStack(var _x:Int, var _y:Int, var _owner:Player, var _units:List[A
   def owner_=(v:Player):Unit = _owner = v;
   
   def units = _units;
+  
+  def getBackgroundSprite(librarian:ImageLibrarian) = {    
+    librarian.getRawSprite(
+      OriginalGameAsset.MAPBACK, 
+      owner.flag.armyStackBackgroundSpriteIndex, 
+      0);
+  }
 }
 
 class Player(val name:String, val flag:FlagColor, val race:Race) {
