@@ -16,7 +16,6 @@ import scala.collection.mutable.HashMap;
 import scala.collection.mutable.HashSet;
 
 import com.rafkind.masterofmagic.util._;
-import com.rafkind.masterofmagic.ui.swing._;
 import com.rafkind.masterofmagic.system._;
 import com.rafkind.masterofmagic.state._;
 
@@ -94,12 +93,12 @@ class Palette(metadataManager:MetadataManager, imageLibrarian:ImageLibrarian) ex
         val ty = y / th;
         val t = tx + (ty * COLUMNS);
         if ((t >= 0) && (t < TerrainLbxReader.TILE_COUNT)) {
-          graphics.drawImage(imageLibrarian.getTerrainTileImage(t),
+          /*graphics.drawImage(imageLibrarian.getTerrainTileImage(t),
                              x+1,
                              y+1,
                              TerrainLbxReader.TILE_WIDTH * 2,
                              TerrainLbxReader.TILE_HEIGHT * 2,
-                             null);
+                             null);*/
           graphics.setColor(Color.WHITE);
           graphics.drawString(t.toString(), x+1, y+height1);
           metadataManager.metadata.get(t) match {
@@ -265,7 +264,7 @@ class SandboxMap(metadataManager:MetadataManager, imageLibrarian:ImageLibrarian,
       for (x <- 0 until TILES_ACROSS) {
         val sourceTileIndex = x+(y*TILES_ACROSS);
         val sourceTile = terrain(sourceTileIndex);
-        val image = imageLibrarian.getTerrainTileImage(sourceTile);
+        val image:Image = null; // imageLibrarian.getTerrainTileImage(sourceTile);
 
         graphics.drawImage(image, x * TerrainLbxReader.TILE_WIDTH, y * TerrainLbxReader.TILE_HEIGHT, null);
 
@@ -290,7 +289,7 @@ class SandboxMap(metadataManager:MetadataManager, imageLibrarian:ImageLibrarian,
 
 object FancyMetadataEditor {
   def main(args: Array[String]): Unit = {
-    var graphicsEnvironment = GraphicsEnvironment.getLocalGraphicsEnvironment();
+    /*var graphicsEnvironment = GraphicsEnvironment.getLocalGraphicsEnvironment();
     var graphicsDevice = graphicsEnvironment.getDefaultScreenDevice();
     var displayMode = graphicsDevice.getDisplayMode();
 
@@ -320,6 +319,6 @@ object FancyMetadataEditor {
                     600);
 
 
-    frame.setVisible(true);
+    frame.setVisible(true);*/
   }
 }

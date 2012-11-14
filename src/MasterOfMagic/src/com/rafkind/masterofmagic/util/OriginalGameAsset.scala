@@ -127,7 +127,7 @@ object OriginalGameAsset {
   val WIZARDS = OriginalGameAsset(118, "WIZARDS.LBX");
   val WIZLAB = OriginalGameAsset(119, "WIZLAB.LBX");
 
-  val values = List(ARMYLIST,
+  val values = Array(ARMYLIST,
     BACKGRND,
     BOOK,
     BUILDDAT,
