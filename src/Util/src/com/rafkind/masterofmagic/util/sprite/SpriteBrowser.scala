@@ -12,11 +12,14 @@ import com.rafkind.masterofmagic.util.SpriteReader
 import java.awt.GraphicsEnvironment
 import javax.swing.AbstractListModel
 import javax.swing.Box
+import javax.swing.ImageIcon
 import javax.swing.JFrame
 import javax.swing.JList
 import javax.swing.JScrollPane
+import javax.swing.JLabel
 import javax.swing.event.ListSelectionEvent
 import javax.swing.event.ListSelectionListener
+import java.awt.Image;
 
 class SpriteBrowser {
 
@@ -65,7 +68,7 @@ object SpriteBrowser {
                 fireIntervalRemoved(self, newSize, currentSize);
               }
               currentSize = newSize;
-            }
+            }            
           }
         }
       });      
@@ -76,12 +79,13 @@ object SpriteBrowser {
     mainBox.add(Box.createHorizontalStrut(5));
     mainBox.add(new JScrollPane(subfiles));
     
+    
     val groupIndexModel = new AbstractListModel[Int](){
       var currentSize:Int = 0;
       
       val self = this;
       
-      subfiles.addListSelectionListener(new ListSelectionListener(){
+      subfiles.addListSelectionListener(new ListSelectionListener() {
         override def valueChanged(event:ListSelectionEvent):Unit = {
           var newSize:Int = currentSize;
           
@@ -117,9 +121,40 @@ object SpriteBrowser {
     val groupIndexes = new JList(groupIndexModel);
     mainBox.add(Box.createHorizontalStrut(5));
     mainBox.add(new JScrollPane(groupIndexes));
-    val sprites = new JList(Array("A", "B", "C"));
+    
+    val spriteLabel = new JLabel();
+    val librarian = new AwtImageLibrarian();
+    groupIndexes.addListSelectionListener(new ListSelectionListener() {
+        override def valueChanged(event:ListSelectionEvent):Unit = {
+          if (lbxes.getSelectedIndex() >= 0 
+              && subfiles.getSelectedIndex() >= 0
+              && groupIndexes.getSelectedIndex() >= 0) {
+            val image = librarian.getRawSprite(
+              lbxes.getSelectedValue(), 
+              subfiles.getSelectedValue(), 
+              groupIndexes.getSelectedValue());
+            spriteLabel.setIcon(new ImageIcon(image));
+          }    
+        }
+    });
+    
     mainBox.add(Box.createHorizontalStrut(5));
-    mainBox.add(sprites);
+    mainBox.add(new JScrollPane(spriteLabel));
+    
+    lbxes.addListSelectionListener(new ListSelectionListener(){
+        override def valueChanged(event:ListSelectionEvent):Unit = {
+          subfiles.clearSelection();
+          groupIndexes.clearSelection();
+          spriteLabel.setIcon(null);
+        }
+    });
+  
+    subfiles.addListSelectionListener(new ListSelectionListener(){
+        override def valueChanged(event:ListSelectionEvent):Unit = {
+          groupIndexes.clearSelection();
+          spriteLabel.setIcon(null);
+        }
+    });
     
     frame.getContentPane().add(mainBox);
     frame.pack();
