@@ -19,6 +19,7 @@ import javax.swing.JScrollPane
 import javax.swing.JLabel
 import javax.swing.event.ListSelectionEvent
 import javax.swing.event.ListSelectionListener
+import javax.swing.ListCellRenderer;
 import java.awt.Image;
 
 class SpriteBrowser {
@@ -34,7 +35,7 @@ object SpriteBrowser {
     var frame = new JFrame("Sprite Browser");
     frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     val mainBox = Box.createHorizontalBox();
-    val lbxModel = new AbstractListModel[OriginalGameAsset]() {
+    val lbxModel = new AbstractListModel() {
       override def getElementAt(index:Int) =
         OriginalGameAsset.values(index);
       override def getSize() =
@@ -43,7 +44,7 @@ object SpriteBrowser {
     val lbxes = new JList(lbxModel);      
     mainBox.add(new JScrollPane(lbxes));
     val subFileModel = 
-      new AbstractListModel[Int]() {
+      new AbstractListModel() {
       var currentSize:Int = 0;
       
       val self = this;
@@ -53,7 +54,7 @@ object SpriteBrowser {
           var newSize:Int = currentSize;
           
           if (!event.getValueIsAdjusting()) {
-            val selected = lbxes.getSelectedValue();
+            val selected = lbxes.getSelectedValue().asInstanceOf[OriginalGameAsset];
             if (selected.fileName.endsWith(".LBX")) {
               val reader = new LbxReader(Data.originalDataPath(selected.fileName));
               val metaData = reader.metaData;
@@ -68,11 +69,13 @@ object SpriteBrowser {
                 fireIntervalRemoved(self, newSize, currentSize);
               }
               currentSize = newSize;
-            }            
+            } else {
+              fireContentsChanged(self, 0, newSize);
+            }
           }
         }
       });      
-      override def getElementAt(index:Int) = index;
+      override def getElementAt(index:Int) = new Integer(index);
       override def getSize() = currentSize;
     }
     val subfiles = new JList(subFileModel);    
@@ -80,7 +83,7 @@ object SpriteBrowser {
     mainBox.add(new JScrollPane(subfiles));
     
     
-    val groupIndexModel = new AbstractListModel[Int](){
+    val groupIndexModel = new AbstractListModel(){
       var currentSize:Int = 0;
       
       val self = this;
@@ -90,7 +93,7 @@ object SpriteBrowser {
           var newSize:Int = currentSize;
           
           if (!event.getValueIsAdjusting()) {
-            val selected = lbxes.getSelectedValue();            
+            val selected = lbxes.getSelectedValue().asInstanceOf[OriginalGameAsset];
             if (selected.fileName.endsWith(".LBX")) {              
               var subSelected = subfiles.getSelectedIndex();
               if (subSelected >= 0) {
@@ -110,29 +113,47 @@ object SpriteBrowser {
                 fireIntervalRemoved(self, newSize, currentSize);
               }
               currentSize = newSize;
-            }
+            } else {
+              fireContentsChanged(self, 0, newSize);
+            } 
           }
         }
       });      
-      override def getElementAt(index:Int) = index;
+      override def getElementAt(index:Int) = new Integer(index);
       override def getSize() = currentSize;
     };
     
     val groupIndexes = new JList(groupIndexModel);
+
+    val spriteLabel = new JLabel();
+    val librarian = new AwtImageLibrarian();
+    
+    val renderer = new JLabel() with ListCellRenderer {      
+      override def getListCellRendererComponent(list:JList, value:Any, index:Int, isSelected:Boolean, cellHasFocus:Boolean):java.awt.Component = {
+        //println(list, value, index, isSelected, cellHasFocus);
+        val image = librarian.getRawSprite(
+        lbxes.getSelectedValue().asInstanceOf[OriginalGameAsset],
+        subfiles.getSelectedValue().asInstanceOf[Integer],
+        index);
+        this.setIcon(new ImageIcon(image));
+
+        return this;
+      }
+    };
+    groupIndexes.setCellRenderer(renderer);
+    
     mainBox.add(Box.createHorizontalStrut(5));
     mainBox.add(new JScrollPane(groupIndexes));
     
-    val spriteLabel = new JLabel();
-    val librarian = new AwtImageLibrarian();
     groupIndexes.addListSelectionListener(new ListSelectionListener() {
         override def valueChanged(event:ListSelectionEvent):Unit = {
           if (lbxes.getSelectedIndex() >= 0 
               && subfiles.getSelectedIndex() >= 0
               && groupIndexes.getSelectedIndex() >= 0) {
             val image = librarian.getRawSprite(
-              lbxes.getSelectedValue(), 
-              subfiles.getSelectedValue(), 
-              groupIndexes.getSelectedValue());
+              lbxes.getSelectedValue().asInstanceOf[OriginalGameAsset],
+              subfiles.getSelectedValue().asInstanceOf[Integer],
+              groupIndexes.getSelectedValue().asInstanceOf[Integer]);
             spriteLabel.setIcon(new ImageIcon(image));
           }    
         }

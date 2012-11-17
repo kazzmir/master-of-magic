@@ -5,10 +5,10 @@
 
 package com.rafkind.masterofmagic.util.sprite
 
-import com.google.common.cache.CacheBuilder
-import com.google.common.cache.CacheLoader
-import com.google.common.cache.RemovalListener
-import com.google.common.cache.RemovalNotification
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.RemovalListener;
+import com.google.common.cache.RemovalNotification;
 import com.rafkind.masterofmagic.state._;
 import com.rafkind.masterofmagic.system.Data
 import com.rafkind.masterofmagic.util._;
