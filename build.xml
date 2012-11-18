@@ -74,4 +74,13 @@
         </java>
     </target>
 
+    <target name="sprite">
+        <java classname="com.rafkind.masterofmagic.util.sprite.SpriteBrowser"
+              fork="true">
+              <classpath refid="all" />
+            <sysproperty key="java.library.path" value="lib/native/linux" />
+        </java>
+    </target>
+
+
 </project>
