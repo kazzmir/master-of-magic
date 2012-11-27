@@ -28,7 +28,19 @@ class Data{
     var answer = getOriginalDataPath() + java.io.File.separator + newPath;
 
     if (originalPathIsZip()) {
-      val targetFile = new File(System.getProperty("java.io.tmpdir") + java.io.File.separator + newPath);
+      val tmpDirectory = new File(System.getProperty("java.io.tmpdir"), "master-of-magic")
+      if (tmpDirectory.exists()){
+        /* Possibly dangerous, maybe that was a file the user wanted? */
+        if (!tmpDirectory.isDirectory()){
+          tmpDirectory.delete()
+          tmpDirectory.mkdirs()
+        } else {
+          /* all good */
+        }
+      } else {
+        tmpDirectory.mkdirs()
+      }
+      val targetFile = new File(tmpDirectory, newPath);
 
       if (!targetFile.exists()) {
         val zfile = new ZipFile(getOriginalDataPath());
