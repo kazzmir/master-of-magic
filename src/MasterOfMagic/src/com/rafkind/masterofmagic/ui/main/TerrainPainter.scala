@@ -155,14 +155,14 @@ class TerrainPainter(baseTileImage:Image, librarian:ImageLibrarian) {
         
         terrainSquare.armyUnitStack match {
           case Some(unitStack:ArmyUnitStack) => {
-              val backgroundSprite = unitStack.getBackgroundSprite(librarian);
-              //val foregroundSprite = unitStack.getForegroundSprite(librarian);
+              val backgroundSprite = unitStack.getBackgroundSprite(librarian);              
+              val foregroundSprite = unitStack.getForegroundSprite(librarian);
               backgroundSprite.draw(
                 dX + (TILE_WIDTH-backgroundSprite.getWidth())/2, 
                 dY + (TILE_HEIGHT-backgroundSprite.getHeight())/2);
-              /*foregroundSprite.draw(
+              foregroundSprite.draw(
                 dX + (TILE_WIDTH-foregroundSprite.getWidth())/2, 
-                dY + (TILE_HEIGHT-foregroundSprite.getHeight())/2));*/
+                dY + (TILE_HEIGHT-foregroundSprite.getHeight())/2);
           }
           case None => {              
           }

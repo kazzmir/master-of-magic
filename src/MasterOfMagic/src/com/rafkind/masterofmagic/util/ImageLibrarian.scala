@@ -13,6 +13,7 @@ import com.rafkind.masterofmagic.ui.framework._;
 import com.google.inject._;
 
 case class SpriteGroupKey(originalGameAsset:OriginalGameAsset, group:Int, flag:Option[FlagColor]);
+case class SpriteKey(originalGameAsset:OriginalGameAsset, group:Int, index:Int);
 
 @Singleton
 class ImageLibrarian @Inject() (fontManager:FontManager) {
@@ -40,11 +41,14 @@ class ImageLibrarian @Inject() (fontManager:FontManager) {
     val images = spriteGroupCache.get(new SpriteGroupKey(originalGameAsset, group, None));
     images(index);
   }
-
+    
   def getFlaggedSprite(originalGameAsset:OriginalGameAsset, group:Int, index:Int, flag:FlagColor) = {
     val images = spriteGroupCache.get(new SpriteGroupKey(originalGameAsset, group, Some(flag)));
     images(index);
   }
+  
+  def getFlaggedSprite(key:SpriteKey, flag:FlagColor):Image =
+    getFlaggedSprite(key.originalGameAsset, key.group, key.index, flag);
 
   def getFont(fi:FontIdentifier) =
     fontManager.fonts(fi.id);

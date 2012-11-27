@@ -255,7 +255,13 @@ object Lair {
                  y:Int,
                  lairType:LairType,
                  powerLevel:Int):Lair = {
-    val nativeUnits = new ArmyUnitStack(x, y, owner, List(new ArmyUnit(0)));
+    val nativeUnits = 
+      new ArmyUnitStack(
+        x, 
+        y, 
+        owner, 
+        List(
+          new ArmyUnit(new SpriteKey(OriginalGameAsset.UNITS1, 0, 0))));
     val reward = LairReward.createReward(random, powerLevel);
     return new Lair(lairType, nativeUnits, reward, x, y);
   }
@@ -274,7 +280,13 @@ class Lair(val lairType:LairType,
 
 object Node {
   def createNode(random:Random, owner:Player, x:Int, y:Int, nodeType:TerrainType, powerLevel:Int):Node = {
-    val nativeUnits = new ArmyUnitStack(x, y, owner, List(new ArmyUnit(0)));
+    val nativeUnits = 
+      new ArmyUnitStack(
+        x, 
+        y, 
+        owner, 
+        List(
+          new ArmyUnit(new SpriteKey(OriginalGameAsset.UNITS1, 0, 0))));
     val reward = LairReward.createReward(random, powerLevel);
     return new Node(nodeType, nativeUnits, reward, x, y);
   }
@@ -287,13 +299,13 @@ class Node(val nodeType:TerrainType,
   
 }
 
-class ArmyUnit(var _overworldSpriteId:Int) {
+class ArmyUnit(var _overworldSprite:SpriteKey) {
   
-  def overworldSpriteId = _overworldSpriteId;
-  def overworldSpriteId_=(v:Int):Unit = _overworldSpriteId = v;
+  def overworldSprite = _overworldSprite;
+  def overworldSprite_=(v:SpriteKey):Unit = _overworldSprite = v;
 }
 
-class Hero(_overworldSpriteId:Int) extends
+class Hero(_overworldSpriteId:SpriteKey) extends
   ArmyUnit(_overworldSpriteId) {
 
 }
@@ -315,6 +327,12 @@ class ArmyUnitStack(var _x:Int, var _y:Int, var _owner:Player, var _units:List[A
       OriginalGameAsset.MAPBACK, 
       owner.flag.armyStackBackgroundSpriteIndex, 
       0);
+  }
+  
+  def getForegroundSprite(librarian:ImageLibrarian) = {
+    val first = _units(0);
+    
+    librarian.getFlaggedSprite(first.overworldSprite, owner.flag);
   }
 }
 

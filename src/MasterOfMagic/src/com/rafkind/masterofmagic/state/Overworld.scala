@@ -5,6 +5,8 @@
 
 package com.rafkind.masterofmagic.state
 
+import com.rafkind.masterofmagic.util._;
+
 object Overworld {
   val WIDTH = 60;
   val HEIGHT = 40;
@@ -439,7 +441,8 @@ class Overworld(val width:Int, val height:Int) {
       Some(new ArmyUnitStack(
         0, 0, 
         neutralPlayer, 
-        List(new ArmyUnit(0))));
+        List(
+          new ArmyUnit(new SpriteKey(OriginalGameAsset.UNITS2, 16, 0)))));
   }
 
   def isValidCityLocation(plane:Plane, x:Int, y:Int):Boolean = {
