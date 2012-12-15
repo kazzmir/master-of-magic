@@ -13,8 +13,8 @@ object Button {
 
 class Button extends Component[Button] {
 
-  listen(Component.PROPERTY_CHANGED, (event:ComponentEvent) => {
-    event.asInstanceOf[PropertyChangedEvent].whatChanged match {
+  listen(Event.PROPERTY_CHANGED, (event:Event) => {
+      event.payload.asInstanceOf[PropertyEventPayload].whatChanged match {
       case (Button.UP_IMAGE, image:Image) =>
         set(Component.WIDTH -> scala.math.max(getInt(Component.WIDTH), image.getWidth()));
         set(Component.HEIGHT -> scala.math.max(getInt(Component.HEIGHT), image.getHeight()));
@@ -25,9 +25,28 @@ class Button extends Component[Button] {
     }
   });
 
-  listen(Component.MOUSE_CLICKED, (event:ComponentEvent) => {
-      val mouseEvent = event.asInstanceOf[MouseClickedEvent];
+  listen(Event.MOUSE_CLICKED, (event:Event) => {
+    val mouseEvent = event.payload.asInstanceOf[MouseClickedEventPayload];
+    if (containsScreenPoint(mouseEvent.x, mouseEvent.y)) {
       println("clicked " + mouseEvent);
+      event.consume();
+    }  
+  });
+
+  listen(Event.MOUSE_PRESSED, (event:Event) => {
+    val mouseEvent = event.payload.asInstanceOf[MouseEventPayload];
+    if (containsScreenPoint(mouseEvent.x, mouseEvent.y)) {
+      state = true;
+      event.consume();
+    }  
+  });
+
+  listen(Event.MOUSE_RELEASED, (event:Event) => {
+    val mouseEvent = event.payload.asInstanceOf[MouseEventPayload];
+    if (containsScreenPoint(mouseEvent.x, mouseEvent.y)) {
+      state = false;
+      event.consume();
+    }  
   });
   
   var state:Boolean = false;

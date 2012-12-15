@@ -53,7 +53,37 @@ class PlayingGameState @Inject() (imageLibrarian:ImageLibrarian, mainScreen:Main
 
   def update(container:GameContainer, game:StateBasedGame, delta:Int):Unit = { }
 
-  override def keyPressed(key:Int, c:Char):Unit = {
-    currentScreen.notifyOf(Component.KEY_PRESSED, 0, 0, KeyPressedEvent(null, key, c));
+  override def keyPressed(key:Int, c:Char):Unit = {    
+    currentScreen.notifyOf(
+      Event.KEY_PRESSED.spawn(
+        currentScreen, 
+        new KeyPressedEventPayload(key, c)));
+  }  
+  
+  override def mouseClicked(button:Int, x:Int, y:Int, count:Int):Unit = {    
+    currentScreen.notifyOf(
+      Event.MOUSE_CLICKED.spawn(
+        currentScreen, 
+        new MouseClickedEventPayload(button, x, y, count)));
+  }
+  
+  override def mouseDragged(oldX:Int, oldY:Int, newX:Int, newY:Int):Unit = {    
+  }
+  
+  override def mouseMoved(oldX:Int, oldY:Int, newX:Int, newY:Int):Unit = {    
+  }
+  
+  override def mousePressed(button:Int, x:Int, y:Int):Unit = {
+    currentScreen.notifyOf(
+      Event.MOUSE_PRESSED.spawn(
+        currentScreen, 
+        new MouseEventPayload(button, x, y)));     
+  }
+  
+  override def mouseReleased(button:Int, x:Int, y:Int):Unit = {    
+    currentScreen.notifyOf(
+      Event.MOUSE_RELEASED.spawn(
+        currentScreen, 
+        new MouseEventPayload(button, x, y)));
   }  
 }

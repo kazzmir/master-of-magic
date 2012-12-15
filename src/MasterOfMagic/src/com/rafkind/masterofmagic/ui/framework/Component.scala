@@ -9,7 +9,6 @@ import org.newdawn.slick._;
 import com.rafkind.masterofmagic.util._;
 
 case class ComponentProperty(val name:String, val default:Any)
-case class ComponentEventDescriptor(val name:String)
 
 object Component {
   val LEFT = ComponentProperty("left", 0);
@@ -17,33 +16,7 @@ object Component {
   val WIDTH = ComponentProperty("width", 0);
   val HEIGHT = ComponentProperty("height", 0);
   val BACKGROUND_IMAGE = ComponentProperty("background_image", null);
-
-  val PROPERTY_CHANGED = ComponentEventDescriptor("property_changed");
-  val MOUSE_CLICKED = ComponentEventDescriptor("mouse_clicked");
-  val KEY_PRESSED = ComponentEventDescriptor("key_pressed");
 }
-
-case class ComponentEvent(val component:Component[_], var consumed:Boolean)
-
-case class PropertyChangedEvent(
-  override val component:Component[_],
-  val whatChanged:Tuple2[ComponentProperty, Any])
-    extends ComponentEvent(component, false)
-
-case class MouseClickedEvent(
-  override val component:Component[_],
-  val button:Int,
-  val x:Int,
-  val y:Int,
-  val clickCount:Int)
-    extends ComponentEvent(component, false)
-
-case class KeyPressedEvent(
-  override val component:Component[_],
-  val key:Int,
-  val ch:Char)
-    extends ComponentEvent(component, false)
-
 
 trait Component[T] {
   var properties = new scala.collection.mutable.HashMap[ComponentProperty, Any]();
@@ -52,7 +25,10 @@ trait Component[T] {
     settings.foreach( (x:Tuple2[ComponentProperty, Any]) => {
         properties += x;
         
-        notifyOf(Component.PROPERTY_CHANGED, new PropertyChangedEvent(this, x));
+        notifyOf(
+          Event.PROPERTY_CHANGED.spawn(
+            this, 
+            new PropertyEventPayload(x)));          
       }
     );
     this.asInstanceOf[T]
@@ -64,19 +40,19 @@ trait Component[T] {
   def getImage(key:ComponentProperty) =
     properties.getOrElse(key, key.default).asInstanceOf[Image];
 
-  var listeners = new CustomMultiMap[ComponentEventDescriptor, ComponentEvent => Unit];
+  var listeners = new CustomMultiMap[EventDescriptor, (Event => Unit)];
   
-  def listen(toWhat:ComponentEventDescriptor, andThen:(ComponentEvent => Unit)):T = {
+  def listen(toWhat:EventDescriptor, andThen:(Event => Unit)):T = {
     listeners.put(toWhat, andThen);
     this.asInstanceOf[T]
   }
 
-  def notifyOf(whatHappened:ComponentEventDescriptor, eventObject:ComponentEvent) {
-    listeners.get(whatHappened)
+  def notifyOf(event:Event) {
+    listeners.get(event.descriptor)
       .map(y =>
         y.foreach(
-          z => if (!eventObject.consumed) {
-            z(eventObject);
+          z => if (!event.consumed) {
+            z(event);
           }
         )
       );

@@ -20,20 +20,32 @@ class MainMap @Inject() (terrainPainter:TerrainPainter) extends Component[MainMa
   set(Component.WIDTH -> MainMap.TILESIZE_ACROSS * TILE_WIDTH);
   set(Component.HEIGHT -> MainMap.TILESIZE_DOWN * TILE_HEIGHT);
 
-  listen(Component.KEY_PRESSED, (event:ComponentEvent) => {
-      event.asInstanceOf[KeyPressedEvent].key match {
-        case Input.KEY_UP => moveMap(CardinalDirection.NORTH, 1);
-        case Input.KEY_DOWN => moveMap(CardinalDirection.SOUTH, 1);
-        case Input.KEY_LEFT => moveMap(CardinalDirection.WEST, 1);
-        case Input.KEY_RIGHT => moveMap(CardinalDirection.EAST, 1);
-        case x => println(x);
-      }
-  });
-
   var overworld:Overworld = null;
   var plane = Plane.ARCANUS;
   var cx = 0;
   var cy = 0;
+  
+  listen(Event.KEY_PRESSED, (event:Event) => {
+    event.payload.asInstanceOf[KeyPressedEventPayload].key match {
+      case Input.KEY_UP => {
+        moveMap(CardinalDirection.NORTH, 1);
+        event.consume();
+      }    
+      case Input.KEY_DOWN => {
+        moveMap(CardinalDirection.SOUTH, 1);
+        event.consume();
+      }    
+      case Input.KEY_LEFT => {
+        moveMap(CardinalDirection.WEST, 1);
+        event.consume();
+      }
+      case Input.KEY_RIGHT => {
+        moveMap(CardinalDirection.EAST, 1);
+        event.consume();
+      }
+      case _ => 
+    }
+  });
 
   def setOverworld(overworld:Overworld):MainMap = {
     this.overworld = overworld;
