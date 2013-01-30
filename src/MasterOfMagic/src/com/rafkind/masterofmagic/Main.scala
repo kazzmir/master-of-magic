@@ -28,7 +28,6 @@ class MainModule extends AbstractModule {
   @Provides def provideFontManager() = {
     import com.rafkind.masterofmagic.ui.framework.FontManager;
     
-
     val fontManager =
       new FontManager(
         Data.originalDataPath(

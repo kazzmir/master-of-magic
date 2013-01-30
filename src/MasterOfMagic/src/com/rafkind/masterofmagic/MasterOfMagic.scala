@@ -16,13 +16,25 @@ import com.google.inject._;
 
 class MasterOfMagic @Inject() (playingGameState:PlayingGameState) extends StateBasedGame("Master of Magic") {
   var overworld:Overworld = null;
-
+  
+  var players:Array[Player] = null;
+  
   def getOverworld = overworld;
 
   override def initStatesList(container:GameContainer):Unit = {
+    
+    players = Array(
+      new Player("Raiders", FlagColor.BROWN, Race.HIGH_MEN),
+      new Player("Abe", FlagColor.RED, Race.HIGH_MEN),
+      new Player("Bob", FlagColor.BLUE, Race.HIGH_MEN),
+      new Player("Cam", FlagColor.GREEN, Race.HIGH_MEN),
+      new Player("Don", FlagColor.YELLOW, Race.HIGH_MEN),
+      new Player("Erl", FlagColor.PURPLE, Race.HIGH_MEN)
+    );
+      
+    overworld = Overworld.create(players);
 
-    overworld = Overworld.create(new Player("Raiders", FlagColor.BROWN, Race.HIGH_MEN));
-
+  
     //addState(new OverworldMapState(0, overworld));
 
     addState(playingGameState);

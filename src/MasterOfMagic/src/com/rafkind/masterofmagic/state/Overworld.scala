@@ -45,7 +45,7 @@ object Overworld {
    * TUNDRA = 1605
    */
 
-  def create(neutralPlayer:Player):Overworld = {
+  def create(players:Array[Player]):Overworld = {
 
     val arcanus = Map(TerrainType.OCEAN -> 0,
       TerrainType.GRASSLAND -> 1,
@@ -78,6 +78,8 @@ object Overworld {
 
     overworld.fillPlane(Plane.ARCANUS, arcanus(TerrainType.OCEAN), TerrainType.OCEAN);
     overworld.fillPlane(Plane.MYRROR, myrror(TerrainType.OCEAN), TerrainType.OCEAN);
+    
+    val neutralPlayer = players.find (x => x.flag == FlagColor.BROWN).get;
 
     overworld.buildPlane(Plane.ARCANUS, 5, 800, neutralPlayer);
     overworld.buildPlane(Plane.MYRROR, 5, 800, neutralPlayer);
@@ -437,12 +439,12 @@ class Overworld(val width:Int, val height:Int) {
         get(plane, x, y).place = Some(city);
       });
     
-    get(plane, 0, 0).armyUnitStack = 
+    /*get(plane, 0, 0).armyUnitStack = 
       Some(new ArmyUnitStack(
         0, 0, 
         neutralPlayer, 
         List(
-          new ArmyUnit(new SpriteKey(OriginalGameAsset.UNITS2, 16, 0)))));
+          new ArmyUnit(new SpriteKey(OriginalGameAsset.UNITS2, 16, 0)))));*/
   }
 
   def isValidCityLocation(plane:Plane, x:Int, y:Int):Boolean = {
@@ -519,10 +521,11 @@ class Overworld(val width:Int, val height:Int) {
     y:Int,
     player:Player,
     race:Race,
-    startingPopulation:Int):Unit = {
+    startingPopulation:Int):City = {
 
     val city = new City(x, y, player, "New City", race);
 
     get(plane, x, y).place = Some(city);
+    city;    
   }
 }
