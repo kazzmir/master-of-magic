@@ -9,6 +9,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.RemovalListener;
 import com.google.common.cache.RemovalNotification;
+import com.google.inject._;
 import com.rafkind.masterofmagic.state._;
 import com.rafkind.masterofmagic.system.Data
 import com.rafkind.masterofmagic.util._;
@@ -293,14 +294,14 @@ class AwtImageLibrarian {
   
   val spriteGroupCache = CacheBuilder
     .newBuilder()
-    .maximumSize(256)
-    .removalListener(new RemovalListener[SpriteGroupKey, Array[Image]]() {
+    .maximumSize(256)    
+    /* .removalListener(new RemovalListener[SpriteGroupKey, Array[Image]]() {
       def onRemoval(removal:RemovalNotification[SpriteGroupKey, Array[Image]]):Unit = {
-        /*val images = removal.getValue();
+        *val images = removal.getValue();
         for (image <- images) 
-          image.destroy();      */
+          image.destroy();      *
       }
-    })
+    })*/
     .build(new CacheLoader[SpriteGroupKey, Array[Image]](){
       def load(key:SpriteGroupKey):Array[Image] = {
         val reader = new LbxReader(Data.originalDataPath(key.originalGameAsset.fileName));
