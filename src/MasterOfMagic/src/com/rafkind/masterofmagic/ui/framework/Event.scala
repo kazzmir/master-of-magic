@@ -21,17 +21,22 @@ class Event(val descriptor:EventDescriptor,
 
 case class PropertyEventPayload(  
   val whatChanged:Tuple2[ComponentProperty, Any])
+
+abstract class LocatedPayload {
+  def x:Int;
+  def y:Int;
+}
     
 case class MouseClickedEventPayload(
   val button:Int,
   val x:Int,
   val y:Int,
-  val clickCount:Int)
+  val clickCount:Int) extends LocatedPayload
 
 case class MouseEventPayload(
   val button:Int,
   val x:Int,
-  val y:Int)
+  val y:Int) extends LocatedPayload
 
 case class KeyPressedEventPayload(
   val key:Int,
@@ -42,5 +47,7 @@ object Event {
   val MOUSE_CLICKED = EventDescriptor("mouse_clicked");
   val MOUSE_PRESSED = EventDescriptor("mouse_pressed");
   val MOUSE_RELEASED = EventDescriptor("mouse_released");
+  val MOUSE_MOVED = EventDescriptor("mouse_moved");
+  val MOUSE_DRAGGED = EventDescriptor("mouse_dragged");
   val KEY_PRESSED = EventDescriptor("key_pressed");
 }

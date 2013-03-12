@@ -1,11 +1,10 @@
 package com.rafkind.masterofmagic.util.terrain
 
-import org.newdawn.slick.AppGameContainer
-import org.newdawn.slick.state.StateBasedGame
-import org.newdawn.slick.state.BasicGameState
-import org.newdawn.slick.GameContainer
-import org.newdawn.slick.Graphics
-import org.newdawn.slick.ScalableGame
+import org.newdawn.slick.AppGameContainer;
+import org.newdawn.slick.state.StateBasedGame;
+import org.newdawn.slick.GameContainer;
+import org.newdawn.slick.Graphics;
+import org.newdawn.slick.ScalableGame;
 
 import com.rafkind.masterofmagic.ui.framework._;
 import com.rafkind.masterofmagic.util._;
@@ -35,8 +34,10 @@ class TileTable extends Component[TileTable] {
 
 class PlaneSelectionState(val imageLibrarian:ImageLibrarian,
                           val metadata:TerrainMetadata)
-  extends BasicGameState
+  extends InputManagerGameState
      with Container[PlaneSelectionState] {
+    
+  topLevelContainer = self;
 
   override def getID() = 1;
   
@@ -77,27 +78,13 @@ class PlaneSelectionState(val imageLibrarian:ImageLibrarian,
   override def render(container:GameContainer, game:StateBasedGame, graphics:Graphics):Unit = {
     this.render(graphics);
   }
-  override def mouseClicked(button:Int, x:Int, y:Int, clicks:Int):Unit = {
-    currentScreen.notifyOf(
-      Event.MOUSE_CLICKED.spawn(
-        currentScreen,
-        new MouseClickedEventPayload(button, x, y, count)));
-  }
-  override def mousePressed(button:Int, x:Int, y:Int):Unit = {
-    //println("B: " + button + " x: " + x + " y: " + y);
-  }
-  override def mouseReleased(button:Int, x:Int, y:Int):Unit = {
-    //println("B: " + button + " x: " + x + " y: " + y);
-  }
-  override def mouseMoved(oldx:Int, oldy:Int, newx:Int, newy:Int):Unit = {
-    //println("B: " + button + " x: " + x + " y: " + y);
-  }
-  override def mouseDragged(oldx:Int, oldy:Int, newx:Int, newy:Int):Unit = {
-    //println("B: " + button + " x: " + x + " y: " + y);
-  }
 }
 
-class TerrainBorderState(val metadata:TerrainMetadata) extends BasicGameState {
+class TerrainBorderState(val metadata:TerrainMetadata) 
+  extends InputManagerGameState
+     with Container[PlaneSelectionState] {
+    
+  topLevelContainer = self;
 
   override def getID() = 2;
 

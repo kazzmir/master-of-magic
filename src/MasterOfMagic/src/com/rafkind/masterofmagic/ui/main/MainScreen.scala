@@ -94,6 +94,6 @@ class MainScreen extends Screen {
           .setOverworld(overworld)
       );
       
-    keyFocusedComponent = Some(mainMap);
+    //keyFocusedComponent = Some(mainMap);
   }
 }
