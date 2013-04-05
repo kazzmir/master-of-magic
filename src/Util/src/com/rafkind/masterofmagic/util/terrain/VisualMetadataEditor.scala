@@ -19,8 +19,8 @@ object TileTable {
   val BACKGROUND_COLOR = ComponentProperty("background_color", 0);
 }
 
-class TileTable extends Component[TileTable] {  
-  override def render(graphics:Graphics):TileTable = {
+class TileTable extends Component {  
+  override def render(graphics:Graphics) = {
     graphics.setColor(
       Colors.colors(getInt(TileTable.BACKGROUND_COLOR)));
     graphics.fillRect(
@@ -35,9 +35,9 @@ class TileTable extends Component[TileTable] {
 class PlaneSelectionState(val imageLibrarian:ImageLibrarian,
                           val metadata:TerrainMetadata)
   extends InputManagerGameState
-     with Container[PlaneSelectionState] {
+     with Container {
     
-  topLevelContainer = self;
+  topLevelContainer = this;
 
   override def getID() = 1;
   
@@ -82,9 +82,9 @@ class PlaneSelectionState(val imageLibrarian:ImageLibrarian,
 
 class TerrainBorderState(val metadata:TerrainMetadata) 
   extends InputManagerGameState
-     with Container[PlaneSelectionState] {
+     with Container {
     
-  topLevelContainer = self;
+  topLevelContainer = this;
 
   override def getID() = 2;
 

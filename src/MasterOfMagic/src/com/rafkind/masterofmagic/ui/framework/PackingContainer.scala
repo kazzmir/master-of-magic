@@ -10,9 +10,9 @@ import com.rafkind.masterofmagic.state._;
 object PackingContainer {
   val SPACING = new ComponentProperty("spacing", 0);
 }
-class PackingContainer extends Container[PackingContainer] {
+class PackingContainer extends Container {
 
- def add(component:Component[_], alignment:Alignment):PackingContainer = {
+ def add(component:Component, alignment:Alignment) = {
    super.add(component);
    alignment match {
      case Alignment.HORIZONTAL =>

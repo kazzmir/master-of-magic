@@ -6,6 +6,7 @@
 package com.rafkind.masterofmagic.ui.framework
 
 import org.newdawn.slick._;
+import com.google.common.base.Objects
 import com.rafkind.masterofmagic.util._;
 
 case class ComponentProperty(val name:String, val default:Any)
@@ -18,10 +19,10 @@ object Component {
   val BACKGROUND_IMAGE = ComponentProperty("background_image", null);
 }
 
-trait Component[T] {
+trait Component {
   var properties = new scala.collection.mutable.HashMap[ComponentProperty, Any]();
 
-  def set(settings:Tuple2[ComponentProperty, Any]*):T = {
+  def set(settings:Tuple2[ComponentProperty, Any]*):this.type = {
     settings.foreach( (x:Tuple2[ComponentProperty, Any]) => {
         properties += x;
         
@@ -31,7 +32,7 @@ trait Component[T] {
             new PropertyEventPayload(x)));          
       }
     );
-    this.asInstanceOf[T]
+    this
   }
 
   def getInt(key:ComponentProperty) = 
@@ -40,11 +41,11 @@ trait Component[T] {
   def getImage(key:ComponentProperty) =
     properties.getOrElse(key, key.default).asInstanceOf[Image];
 
-  var listeners = new CustomMultiMap[EventDescriptor, (Event => Unit)];
+  var listeners = new CustomMultiMap[EventDescriptor, (Event => Option[Component])];
   
-  def listen(toWhat:EventDescriptor, andThen:(Event => Unit)):T = {
+  def listen(toWhat:EventDescriptor, andThen:(Event => Option[Component])):this.type = {
     listeners.put(toWhat, andThen);
-    this.asInstanceOf[T]
+    this;
   }
 
   def notifyOf(event:Event) {
@@ -52,13 +53,13 @@ trait Component[T] {
       .map(y =>
         y.foreach(
           z => if (!event.consumed) {
-            z(event);
+            event.consumedBy(z(event));              
           }
         )
       );
   }
   
-  def render(graphics:Graphics):T;
+  def render(graphics:Graphics):this.type;
 
   def containsScreenPoint(x:Int, y:Int) = {
     val left = getInt(Component.LEFT);
@@ -68,4 +69,7 @@ trait Component[T] {
 
     ((x >= left) && (x < left + width) && (y >= top) && (y < top + height));
   }
+  
+  override def toString() =
+    Objects.toStringHelper(this).add("properties", properties).toString();
 }

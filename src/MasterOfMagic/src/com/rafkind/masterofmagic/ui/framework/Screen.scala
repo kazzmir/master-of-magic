@@ -8,9 +8,9 @@ package com.rafkind.masterofmagic.ui.framework
 import org.newdawn.slick._;
 import org.newdawn.slick.state._;
 
-class Screen extends Container[Screen] {
+class Screen extends Container {
 
-  override def render(graphics:Graphics):Screen = {
+  override def render(graphics:Graphics) = {
     getImage(Component.BACKGROUND_IMAGE).draw(0, 0);
 
     super.render(graphics);

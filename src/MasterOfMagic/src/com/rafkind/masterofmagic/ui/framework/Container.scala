@@ -8,26 +8,26 @@ import scala.collection.mutable.HashSet;
 
 import org.newdawn.slick._;
 
-trait Container[T] extends Component[T] {
-  var components = new HashSet[Component[_]]();
+trait Container extends Component {
+  var components = new HashSet[Component]();
   
   //var keyFocusedComponent:Option[Component[_]] = None;
 
-  def add(component:Component[_]):T = {
+  def add(component:Component) = {
     components += component;
-    this.asInstanceOf[T]
+    this
   }
 
-  def remove(component:Component[_]):T = {
+  def remove(component:Component) = {
     components -= component;
-    this.asInstanceOf[T]
+    this
   }
 
-  def render(graphics:Graphics):T = {
+  def render(graphics:Graphics) = {
     for (component <- components) {
       component.render(graphics);
     }
-    this.asInstanceOf[T];
+    this;
   }  
     
   override def notifyOf(event:Event) {

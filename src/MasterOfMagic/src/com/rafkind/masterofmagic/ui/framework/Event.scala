@@ -5,18 +5,33 @@
 
 package com.rafkind.masterofmagic.ui.framework
 
+import com.google.common.base.Objects
+
 case class EventDescriptor(val name:String) {
-  def spawn(component:Component[_], payload:Any) = 
+  def spawn(component:Component, payload:Any) = 
     new Event(this, component, false, payload);
 }
 
 class Event(val descriptor:EventDescriptor, 
-            val component:Component[_], 
+            var component:Component, 
             var consumed:Boolean,
             val payload:Any) {
 
-  def consume() = 
-    consumed = true;
+  def consumedBy(who:Option[Component]) = 
+    who match {
+      case Some(x:Component) => 
+        consumed = true;
+        component = x;
+      case _ =>
+        consumed = false;
+    }
+  
+  override def toString() =
+    Objects.toStringHelper(this)
+      .add("descriptor", descriptor)
+      .add("component", component)
+      .add("consumed", consumed)
+      .add("payload", payload).toString();
 }
 
 case class PropertyEventPayload(  
@@ -35,6 +50,13 @@ case class MouseClickedEventPayload(
 
 case class MouseEventPayload(
   val button:Int,
+  val x:Int,
+  val y:Int) extends LocatedPayload
+
+case class MouseMotionEventPayload(
+  val button:Int,
+  val oldX:Int,
+  val oldY:Int,
   val x:Int,
   val y:Int) extends LocatedPayload
 

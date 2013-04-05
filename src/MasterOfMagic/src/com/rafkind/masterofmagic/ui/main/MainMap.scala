@@ -16,7 +16,7 @@ object MainMap {
   val TILESIZE_DOWN = 10;
 }
 
-class MainMap @Inject() (terrainPainter:TerrainPainter) extends Component[MainMap] {
+class MainMap @Inject() (terrainPainter:TerrainPainter) extends Component {
   set(Component.WIDTH -> MainMap.TILESIZE_ACROSS * TILE_WIDTH);
   set(Component.HEIGHT -> MainMap.TILESIZE_DOWN * TILE_HEIGHT);
 
@@ -29,21 +29,22 @@ class MainMap @Inject() (terrainPainter:TerrainPainter) extends Component[MainMa
     event.payload.asInstanceOf[KeyPressedEventPayload].key match {
       case Input.KEY_UP => {
         moveMap(CardinalDirection.NORTH, 1);
-        event.consume();
+        Some(this);
       }    
       case Input.KEY_DOWN => {
         moveMap(CardinalDirection.SOUTH, 1);
-        event.consume();
+        Some(this);
       }    
       case Input.KEY_LEFT => {
         moveMap(CardinalDirection.WEST, 1);
-        event.consume();
+        Some(this);
       }
       case Input.KEY_RIGHT => {
         moveMap(CardinalDirection.EAST, 1);
-        event.consume();
+        Some(this);
       }
       case _ => 
+        None;
     }
   });
 
@@ -70,7 +71,7 @@ class MainMap @Inject() (terrainPainter:TerrainPainter) extends Component[MainMa
     }
   }
 
-  override def render(graphics:Graphics):MainMap = {
+  override def render(graphics:Graphics) = {
     val top = getInt(Component.TOP);
     val left = getInt(Component.LEFT);
     
