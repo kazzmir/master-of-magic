@@ -67,7 +67,9 @@ trait Component {
     val top = getInt(Component.TOP);
     val height = getInt(Component.HEIGHT);
 
-    ((x >= left) && (x < left + width) && (y >= top) && (y < top + height));
+    val answer = ((x >= left) && (x < left + width) && (y >= top) && (y < top + height));
+    //println("Checking " + x + ", " + y + " in " + "[" + left + ", " + top + "|" + width + ", " + height + "] " + this + " " + answer);
+    answer;
   }
   
   override def toString() =

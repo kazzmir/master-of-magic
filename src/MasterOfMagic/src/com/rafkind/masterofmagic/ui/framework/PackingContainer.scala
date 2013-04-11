@@ -20,11 +20,13 @@ class PackingContainer extends Container {
        component.set(Component.LEFT -> (getInt(Component.LEFT) + getInt(Component.WIDTH)));
        set(Component.WIDTH ->
            (component.getInt(Component.WIDTH) + getInt(Component.WIDTH) + getInt(PackingContainer.SPACING)));
+       set(Component.HEIGHT -> scala.math.max(getInt(Component.HEIGHT), component.getInt(Component.HEIGHT)));
      case Alignment.VERTICAL =>
        component.set(Component.LEFT -> getInt(Component.LEFT));
        component.set(Component.TOP -> (getInt(Component.TOP) + getInt(Component.HEIGHT)));
        set(Component.HEIGHT ->
            (component.getInt(Component.HEIGHT) + getInt(Component.HEIGHT) + getInt(PackingContainer.SPACING)));
+       set(Component.WIDTH -> scala.math.max(getInt(Component.WIDTH), component.getInt(Component.WIDTH)));
      case _ =>
    }
 

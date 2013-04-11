@@ -10,8 +10,6 @@ import org.newdawn.slick._;
 
 trait Container extends Component {
   var components = new HashSet[Component]();
-  
-  //var keyFocusedComponent:Option[Component[_]] = None;
 
   def add(component:Component) = {
     components += component;
@@ -30,21 +28,17 @@ trait Container extends Component {
     this;
   }  
     
-  override def notifyOf(event:Event) {
-    /*// send key events to the focused component if applicable
-    (event.descriptor, keyFocusedComponent) match {
-      case (Event.KEY_PRESSED, Some(x)) => 
-        x.notifyOf(event);        
-      case _ =>
-    }*/
-    
+  override def notifyOf(event:Event) {    
     // if we still haven't done anything yet, send to other 
     // listeners too
+    //println(this, event);
     if (!event.consumed) {
+      //println("  not consumed yet, checking listeners");
       listeners.get(event.descriptor)
         .map(y =>
           y.foreach(
             z => if (!event.consumed) {
+              //println("    not consumed yet, sending to ", z);
               z(event);
             }
           )
@@ -53,6 +47,7 @@ trait Container extends Component {
     
     // if we still haven't done anything yet, send to child components
     if (!event.consumed) {
+      //println("  not consumed yet, checking children");
       var cmps = event.payload match {
         case p:LocatedPayload => 
             components.filter( c => c.containsScreenPoint(p.x, p.y))
@@ -62,6 +57,7 @@ trait Container extends Component {
       cmps foreach { 
         c => 
           if (!event.consumed) { 
+            //println("      not consumed yet, sending to ", c);
             c.notifyOf(event) 
           } 
         };              
