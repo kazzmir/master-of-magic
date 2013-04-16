@@ -74,4 +74,11 @@ abstract class InputManagerGameState extends BasicGameState {
         topLevelContainer, 
         new MouseMotionEventPayload(mButtonHeld, oldx, oldy, newx, newy)));
   }
+  
+  override def keyPressed(key:Int, character:Char):Unit = {
+    doEvent(
+      Event.KEY_PRESSED.spawn(
+        topLevelContainer,
+        new KeyPressedEventPayload(key, character)));
+  }
 }

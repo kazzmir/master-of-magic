@@ -137,12 +137,15 @@ class TileTable(baseTileImage:Image, initialTileCount:Int) extends Component {
           endX = mouseEvent.x;
           endY = mouseEvent.y;
           
-          var x1 = scala.math.min(startX, endX) + offsetX;
-          var x2 = scala.math.max(startX, endX) + offsetX;
-          var y1 = scala.math.min(startY, endY) + offsetY;
-          var y2 = scala.math.max(startY, endY) + offsetY;
+          val left = getInt(Component.LEFT);
+          val top = getInt(Component.TOP);    
+    
+          val x1 = scala.math.min(startX, endX) + offsetX - left;
+          val x2 = scala.math.max(startX, endX) + offsetX - left;
+          val y1 = scala.math.min(startY, endY) + offsetY - top;
+          val y2 = scala.math.max(startY, endY) + offsetY - top;
           
-          var fakeBin = new Bin(x1, y1, x2-x1, y2-y1);
+          val fakeBin = new Bin(x1, y1, x2-x1, y2-y1);
           for (tile <- tiles) {
             if (fakeBin.contains(tile)) {
               tile.highlighted = true;
@@ -170,7 +173,7 @@ class TileTable(baseTileImage:Image, initialTileCount:Int) extends Component {
     var row = 0;
     var column = 0;
     
-    for (tile <- tiles) {            
+    for (tile <- tiles) {   
       tile.x = TileTable.MARGIN + (column * (TerrainLbxReader.TILE_WIDTH + TileTable.MARGIN));
       tile.y = TileTable.MARGIN + (row * (TerrainLbxReader.TILE_HEIGHT + TileTable.MARGIN));
   
@@ -189,8 +192,17 @@ class TileTable(baseTileImage:Image, initialTileCount:Int) extends Component {
     
     var screenWidth = maxX - minX;
     var screenHeight = maxY - minY;
-    var horizBinCount = screenWidth / TileTable.BIN_WIDTH;
-    var vertBinCount = screenHeight / TileTable.BIN_HEIGHT;
+    
+    def sign(x:Int) = 
+      x match {
+        case y if y < 0 => -1;
+        case z if z > 0 => 1;
+        case _ => 0;
+      }
+    
+    var horizBinCount = (screenWidth / TileTable.BIN_WIDTH) + sign(screenWidth % TileTable.BIN_WIDTH);
+    var vertBinCount = (screenHeight / TileTable.BIN_HEIGHT) + sign(screenHeight % TileTable.BIN_HEIGHT);
+    bins = List[Bin]();
     for (j <- 0 until vertBinCount) {
       for (i <- 0 until horizBinCount) {
         
@@ -253,8 +265,8 @@ class TileTable(baseTileImage:Image, initialTileCount:Int) extends Component {
 
           val tX = (whichTile % TerrainLbxReader.SPRITE_SHEET_WIDTH) * TerrainLbxReader.TILE_WIDTH;
           val tY = (whichTile / TerrainLbxReader.SPRITE_SHEET_WIDTH) * TerrainLbxReader.TILE_HEIGHT;
-          val dX = t.x - (offsetX + dragx);
-          val dY = t.y - (offsetY + dragy);
+          val dX = left + t.x - (offsetX + dragx);
+          val dY = top + t.y - (offsetY + dragy);
 
           baseTileImage.drawEmbedded(
             dX, dY, dX + TerrainLbxReader.TILE_WIDTH, dY + TerrainLbxReader.TILE_HEIGHT,
@@ -286,6 +298,24 @@ class TileTable(baseTileImage:Image, initialTileCount:Int) extends Component {
     
     this;
   }
+  
+  def moveSelectedTilesTo(other:TileTable):Unit = {
+    for (t <- tiles) {
+      if (t.highlighted) {
+        other.addTile(t.index);        
+      }
+    }
+    
+    tiles = tiles.filterNot(t => t.highlighted);
+    
+    layout();
+    other.layout();
+  }
+  
+  def addTile(tileIndex:Int) = {
+    val tile = new Tile(0, 0, tileIndex, false, 0, 0);
+    tiles = tiles + tile;
+  }  
 }
 
 class PlaneSelectionState(val imageLibrarian:ImageLibrarian,
@@ -309,13 +339,13 @@ class PlaneSelectionState(val imageLibrarian:ImageLibrarian,
       Component.LEFT -> 0,
       Component.TOP -> 0);
 
-    val arcanusTerrainTiles = new TileTable(baseTileImage, TerrainLbxReader.TILE_COUNT);
+    val arcanusTerrainTiles = new TileTable(baseTileImage, 0 /*TerrainLbxReader.TILE_COUNT*/);
     arcanusTerrainTiles.set(
       TileTable.LINE_COLOR -> 206,
       Component.WIDTH -> VisualMetadataEditor.WIDTH,
       Component.HEIGHT -> VisualMetadataEditor.HEIGHT/2);
 
-    val myrrorTerrainTiles = new TileTable(baseTileImage, 0);
+    val myrrorTerrainTiles = new TileTable(baseTileImage, TerrainLbxReader.TILE_COUNT /*0*/);
     myrrorTerrainTiles.set(
       TileTable.BACKGROUND_COLOR -> 133,
       TileTable.LINE_COLOR -> 206,
@@ -329,6 +359,18 @@ class PlaneSelectionState(val imageLibrarian:ImageLibrarian,
     
     add(container);
     add(gameButton);
+    
+    listen(Event.KEY_PRESSED, (event:Event) => {
+      val keyEvent = event.payload.asInstanceOf[KeyPressedEventPayload];  
+      println(keyEvent.key);
+      if (keyEvent.key == 200) {        
+        myrrorTerrainTiles.moveSelectedTilesTo(arcanusTerrainTiles);
+      } else if (keyEvent.key == 208) {
+        
+        arcanusTerrainTiles.moveSelectedTilesTo(myrrorTerrainTiles);
+      }
+      Some(this);      
+    });
   }
 
   override def update(container:GameContainer, game:StateBasedGame, delta:Int):Unit = {
