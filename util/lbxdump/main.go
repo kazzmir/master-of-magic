@@ -24,6 +24,16 @@ func dumpLbx(reader io.ReadSeeker) error {
         fmt.Printf("File %v: 0x%x (%v) bytes\n", i, len(data), len(data))
     }
 
+    images, err := file.ReadImages(0)
+    if err != nil {
+        return err
+    }
+
+    fmt.Printf("Loaded %v images\n", len(images))
+    for _, image := range images {
+        _ = image
+    }
+
     return nil
 }
 
