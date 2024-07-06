@@ -4,10 +4,15 @@ import (
     "os"
     "io"
     "fmt"
+    "bytes"
     "encoding/binary"
     "strings"
     "archive/zip"
 )
+
+type LbxFile struct {
+    Data [][]byte
+}
 
 const LbxSignature = 0x0000fead
 
@@ -28,41 +33,67 @@ func readInt32(reader io.Reader) (int32, error) {
     return int32(v), err
 }
 
-func dumpLbx(reader io.Reader) error {
+func dumpLbx(reader io.ReadSeeker) (LbxFile, error) {
     numFiles, err := readUint16(reader)
     if err != nil {
-        return err
+        return LbxFile{}, err
     }
 
     signature, err := readUint32(reader)
     if err != nil {
-        return err
+        return LbxFile{}, err
     }
 
     fmt.Printf("Number of files: %v\n", numFiles)
     fmt.Printf("Signature: 0x%x\n", signature)
 
     if signature != LbxSignature {
-        return fmt.Errorf("Invalid lbx signature, was 0x%x but expected 0x%x\n", signature, LbxSignature)
+        return LbxFile{}, fmt.Errorf("Invalid lbx signature, was 0x%x but expected 0x%x\n", signature, LbxSignature)
     }
 
     version, err := readUint16(reader)
     if err != nil {
-        return err
+        return LbxFile{}, err
     }
 
     fmt.Printf("Version: %v\n", version)
 
+    var offsets []uint32
+
     for i := 0; i < int(numFiles); i++ {
         offset, err := readUint32(reader)
         if err != nil {
-            return err
+            return LbxFile{}, err
         }
 
         fmt.Printf("Offset %v: 0x%x\n", i, offset)
+
+        offsets = append(offsets, offset)
     }
 
-    return nil
+    reader.Seek(0, io.SeekEnd)
+    lastByte, _ := reader.Seek(0, io.SeekCurrent)
+
+    var lbx LbxFile
+
+    for i, offset := range offsets {
+        reader.Seek(int64(offset), io.SeekStart)
+        end := uint32(0)
+        if i < len(offsets) - 1 {
+            end = offsets[i+1]
+        } else {
+            end = uint32(lastByte)
+        }
+
+        limitedReader := io.LimitReader(reader, int64(end - offset))
+        var buffer bytes.Buffer
+        io.Copy(&buffer, limitedReader)
+
+        fmt.Printf("File %v: %v bytes\n", i, buffer.Len())
+        lbx.Data = append(lbx.Data, buffer.Bytes())
+    }
+
+    return lbx, nil
 }
 
 func main(){
@@ -116,7 +147,11 @@ func main(){
                     fmt.Printf("Unable to open entry %v: %v\n", file.Name, err)
                 } else {
                     fmt.Printf("Dumping %v\n", file.Name)
-                    err := dumpLbx(opened)
+
+                    var memory bytes.Buffer
+                    io.Copy(&memory, opened)
+
+                    _, err := dumpLbx(bytes.NewReader(memory.Bytes()))
                     if err != nil {
                         fmt.Printf("Error dumping lbx file: %v\n", err)
                     }
