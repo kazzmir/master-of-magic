@@ -392,16 +392,37 @@ func (lbx *LbxFile) ReadImages(entry int) ([]image.Image, error) {
     }
     _ = unknown5
 
+    var offsets []uint32
+    for i := 0; i < int(bitmapCount) + 1; i++ {
+        offset, err := readUint32(reader)
+        if err != nil {
+            return nil, err
+        }
+
+        offsets = append(offsets, offset)
+    }
+
     fmt.Printf("Width: %v\n", width)
     fmt.Printf("Height: %v\n", height)
     fmt.Printf("Bitmap count: %v\n", bitmapCount)
     fmt.Printf("Palette offset: %v\n", paletteOffset)
+
+    paletteInfo, err := readPaletteInfo(reader, int(paletteOffset))
+    if err != nil {
+        return nil, err
+    }
+    _ = paletteInfo
 
     palette, err := readPalette(reader, int(paletteOffset))
     if err != nil {
         return nil, err
     }
     _ = palette
+
+    for i := 0; i < int(bitmapCount); i++ {
+        end := offsets[i+1]
+        fmt.Printf("Read image %v at offset %v size %v\n", i, offsets[i], end - offsets[i])
+    }
 
     return nil, nil
 }
