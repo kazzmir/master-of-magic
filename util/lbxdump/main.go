@@ -6,6 +6,7 @@ import (
     "fmt"
     "image/png"
     "path/filepath"
+    "strconv"
     "bytes"
     "strings"
     "archive/zip"
@@ -13,7 +14,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/lbx"
 )
 
-func dumpLbx(reader io.ReadSeeker, lbxName string) error {
+func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int) error {
     file, err := lbx.ReadLbx(reader)
     if err != nil {
         return err
@@ -27,6 +28,11 @@ func dumpLbx(reader io.ReadSeeker, lbxName string) error {
     os.Mkdir(dir, 0755)
 
     for index, data := range file.Data {
+
+        if onlyIndex != -1 && index != onlyIndex {
+            continue
+        }
+
         fmt.Printf("File %v: 0x%x (%v) bytes\n", index, len(data), len(data))
 
         if len(data) > 1000 {
@@ -77,7 +83,7 @@ func main(){
 
     if len(os.Args) == 2 {
         fmt.Printf("Opening %v as an lbx file\n", os.Args[1])
-    } else if len(os.Args) == 3 {
+    } else if len(os.Args) >= 3 {
         zipFile, err := zip.OpenReader(os.Args[1])
         if err != nil {
             fmt.Printf("Error opening zip file: %s\n", err)
@@ -112,6 +118,15 @@ func main(){
             return
         }
 
+        onlyIndex := -1
+        if len(os.Args) >= 4 {
+            onlyIndex, err = strconv.Atoi(os.Args[3])
+            if err != nil {
+                fmt.Printf("Expected index to be an integer: %v\n", os.Args[3])
+                onlyIndex = -1
+            }
+        }
+
         match := matches[0]
         for _, file := range zipFile.File {
             if file.Name == match {
@@ -124,7 +139,7 @@ func main(){
                     var memory bytes.Buffer
                     io.Copy(&memory, opened)
 
-                    err := dumpLbx(bytes.NewReader(memory.Bytes()), strings.ToLower(file.Name))
+                    err := dumpLbx(bytes.NewReader(memory.Bytes()), strings.ToLower(file.Name), onlyIndex)
                     if err != nil {
                         fmt.Printf("Error dumping lbx file: %v\n", err)
                     }
