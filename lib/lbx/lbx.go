@@ -333,6 +333,7 @@ func readPaletteInfo(reader io.ReadSeeker, index int) (PaletteInfo, error) {
 }
 
 func readPalette(reader io.ReadSeeker, index int) (color.Palette, error) {
+    // FIXME: seek to index and read r,g,b bytes, then fill in the palette colors
     return defaultPalette, nil
 }
 
