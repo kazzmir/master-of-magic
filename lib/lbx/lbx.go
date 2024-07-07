@@ -3,6 +3,7 @@ package lbx
 import (
     "fmt"
     "io"
+    "bufio"
     "bytes"
     "encoding/binary"
     "image"
@@ -38,7 +39,7 @@ type PaletteInfo struct {
     FirstColorIndex uint16
 }
 
-var defaultPalette = []color.Color{
+var defaultPalette = color.Palette {
     color.RGBA{R: 0x0,  G: 0x0,  B: 0x0, A: 0xff},
     color.RGBA{R: 0x8,  G: 0x4,  B: 0x4, A: 0xff},
     color.RGBA{R: 0x24, G: 0x1c, B: 0x18, A: 0xff},
@@ -330,8 +331,110 @@ func readPaletteInfo(reader io.ReadSeeker, index int) (PaletteInfo, error) {
     return info, nil
 }
 
-func readPalette(reader io.ReadSeeker, index int) ([]color.Color, error) {
+func readPalette(reader io.ReadSeeker, index int) (color.Palette, error) {
     return defaultPalette, nil
+}
+
+
+func readImage(reader io.Reader, img *image.Paletted, palette color.Palette, startRleValue int) error {
+    byteReader, ok := reader.(io.ByteReader)
+    if !ok {
+        byteReader = bufio.NewReader(reader)
+    }
+
+    x := 0
+
+    for {
+        v, err := byteReader.ReadByte()
+        if err != nil {
+            return nil
+        }
+
+        if v == 0xff {
+            continue
+        }
+
+        rle := startRleValue
+
+        if v == 0 {
+            rle = startRleValue
+        } else if v == 0x80 {
+            rle = 0xe0
+        } else {
+            return fmt.Errorf("unexpected rle value 0x%x", v)
+        }
+
+        next, err := byteReader.ReadByte()
+        if err != nil {
+            return err
+        }
+
+        if next == 0 {
+            return fmt.Errorf("next bitmap location cannot be 0")
+        }
+
+        data, err := byteReader.ReadByte()
+        if err != nil {
+            return err
+        }
+
+        y, err := byteReader.ReadByte()
+        if err != nil {
+            return err
+        }
+
+        total := 0
+
+        for total < int(next) - 2 {
+            for data > 0 {
+                v2, err := byteReader.ReadByte()
+                if err != nil {
+                    return err
+                }
+
+                total += 1
+
+                if int(v2) > rle {
+                    length := int(v2) - int(rle) + 1
+                    index, err := byteReader.ReadByte()
+                    if err != nil {
+                        return err
+                    }
+                    total += 1
+
+                    for i := 0; i < length; i++ {
+                        img.SetColorIndex(x, int(y), uint8(index))
+                        y += 1
+                    }
+
+                    data -= 2
+
+                } else {
+                    img.SetColorIndex(x, int(y), uint8(v2))
+                    y += 1
+                    data -= 1
+                }
+            }
+
+            newData, err := byteReader.ReadByte()
+            if err != nil {
+                return err
+            }
+            newY, err := byteReader.ReadByte()
+            if err != nil {
+                return err
+            }
+
+            total += 2
+
+            y += newY
+            data = newData
+        }
+
+        x += 1
+    }
+
+    return nil
 }
 
 func (lbx *LbxFile) ReadImages(entry int) ([]image.Image, error) {
@@ -419,12 +522,26 @@ func (lbx *LbxFile) ReadImages(entry int) ([]image.Image, error) {
     }
     _ = palette
 
+    var images []image.Image
+
     for i := 0; i < int(bitmapCount); i++ {
         end := offsets[i+1]
         fmt.Printf("Read image %v at offset %v size %v\n", i, offsets[i], end - offsets[i])
+
+        reader.Seek(int64(offsets[i]), io.SeekStart)
+
+        imageReader := io.LimitReader(reader, int64(end - offsets[i]))
+
+        img := image.NewPaletted(image.Rect(0, 0, int(width), int(height)), palette)
+
+        err = readImage(imageReader, img, palette, int(paletteInfo.FirstColorIndex + paletteInfo.Count))
+        if err != nil {
+            return nil, err
+        }
+        images = append(images, img)
     }
 
-    return nil, nil
+    return images, nil
 }
 
 const LbxSignature = 0x0000fead
