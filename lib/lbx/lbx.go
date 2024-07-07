@@ -335,6 +335,7 @@ func readPalette(reader io.ReadSeeker, index int) (color.Palette, error) {
     return defaultPalette, nil
 }
 
+const debug = false
 
 func readImage(reader io.Reader, img *image.Paletted, palette color.Palette, startRleValue int) error {
     byteReader, ok := reader.(io.ByteReader)
@@ -359,7 +360,9 @@ func readImage(reader io.Reader, img *image.Paletted, palette color.Palette, sta
             return nil
         }
 
-        fmt.Printf("Read byte 0x%x\n", v)
+        if debug {
+            fmt.Printf("Read byte 0x%x\n", v)
+        }
 
         if v == 0xff {
             continue
@@ -394,7 +397,9 @@ func readImage(reader io.Reader, img *image.Paletted, palette color.Palette, sta
             return err
         }
 
-        fmt.Printf("RLE: 0x%x, Next: %v, Data: %v, Y: %v\n", rle, next, data, y)
+        if debug {
+            fmt.Printf("RLE: 0x%x, Next: %v, Data: %v, Y: %v\n", rle, next, data, y)
+        }
 
         total := 0
 
@@ -415,7 +420,9 @@ func readImage(reader io.Reader, img *image.Paletted, palette color.Palette, sta
                     }
                     total += 1
 
-                    fmt.Printf("rle length=%v index=%v x=%v y=%v\n", length, index, x, y)
+                    if debug {
+                        fmt.Printf("rle length=%v index=%v x=%v y=%v\n", length, index, x, y)
+                    }
 
                     for i := 0; i < length; i++ {
                         img.SetColorIndex(x, int(y), uint8(index))
@@ -425,7 +432,9 @@ func readImage(reader io.Reader, img *image.Paletted, palette color.Palette, sta
                     data -= 2
 
                 } else {
-                    fmt.Printf("normal pixel x=%v y=%v v=%v\n", x, y, v2)
+                    if debug {
+                        fmt.Printf("normal pixel x=%v y=%v v=%v\n", x, y, v2)
+                    }
                     img.SetColorIndex(x, int(y), uint8(v2))
                     y += 1
                     data -= 1

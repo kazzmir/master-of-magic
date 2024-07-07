@@ -4,6 +4,8 @@ import (
     "os"
     "io"
     "fmt"
+    "image/png"
+    "path/filepath"
     "bytes"
     "strings"
     "archive/zip"
@@ -11,7 +13,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/lbx"
 )
 
-func dumpLbx(reader io.ReadSeeker) error {
+func dumpLbx(reader io.ReadSeeker, lbxName string) error {
     file, err := lbx.ReadLbx(reader)
     if err != nil {
         return err
@@ -20,18 +22,48 @@ func dumpLbx(reader io.ReadSeeker) error {
     fmt.Printf("Number of files: %v\n", len(file.Data))
     // fmt.Printf("Signature: 0x%x\n", signature)
 
-    for i, data := range file.Data {
-        fmt.Printf("File %v: 0x%x (%v) bytes\n", i, len(data), len(data))
-    }
+    dir := fmt.Sprintf("%v_output", lbxName)
 
-    images, err := file.ReadImages(0)
-    if err != nil {
-        return err
-    }
+    os.Mkdir(dir, 0755)
 
-    fmt.Printf("Loaded %v images\n", len(images))
-    for _, image := range images {
-        _ = image
+    for index, data := range file.Data {
+        fmt.Printf("File %v: 0x%x (%v) bytes\n", index, len(data), len(data))
+
+        if len(data) > 1000 {
+            images, err := file.ReadImages(index)
+            if err != nil {
+                return err
+            }
+
+            fmt.Printf("Loaded %v images\n", len(images))
+            for i, image := range images {
+                func (){
+                    name := filepath.Join(dir, fmt.Sprintf("image_%v_%v.png", index, i))
+                    out, err := os.Create(name)
+                    if err != nil {
+                        fmt.Printf("Error creating image file: %v\n", err)
+                        return
+                    }
+                    defer out.Close()
+
+                    png.Encode(out, image)
+                    fmt.Printf("Saved image %v to %v\n", i, name)
+                }()
+            }
+        } else {
+            func(){
+                name := filepath.Join(dir, fmt.Sprintf("file_%v.bin", index))
+                out, err := os.Create(name)
+                if err != nil {
+                    fmt.Printf("Error creating file: %v\n", err)
+                    return
+                }
+                defer out.Close()
+
+                out.Write(data)
+                fmt.Printf("Saved file %v to %v\n", index, name)
+            }()
+        }
     }
 
     return nil
@@ -92,7 +124,7 @@ func main(){
                     var memory bytes.Buffer
                     io.Copy(&memory, opened)
 
-                    err := dumpLbx(bytes.NewReader(memory.Bytes()))
+                    err := dumpLbx(bytes.NewReader(memory.Bytes()), strings.ToLower(file.Name))
                     if err != nil {
                         fmt.Printf("Error dumping lbx file: %v\n", err)
                     }
