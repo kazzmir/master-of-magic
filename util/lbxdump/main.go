@@ -4,6 +4,7 @@ import (
     "os"
     "io"
     "fmt"
+    "log"
     "image/png"
     "path/filepath"
     "strconv"
@@ -76,6 +77,8 @@ func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int) error {
 }
 
 func main(){
+    log.SetFlags(log.Ldate | log.Lshortfile | log.Lmicroseconds)
+
     if len(os.Args) < 2 {
         fmt.Println("Give an lbx file, or a zip file and the name of an lbx file inside it")
         return

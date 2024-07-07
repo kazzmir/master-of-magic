@@ -2,6 +2,7 @@ package lbx
 
 import (
     "fmt"
+    "log"
     "io"
     "bufio"
     "bytes"
@@ -335,7 +336,7 @@ func readPalette(reader io.ReadSeeker, index int) (color.Palette, error) {
     return defaultPalette, nil
 }
 
-const debug = false
+const debug = true
 
 func readImage(reader io.Reader, img *image.Paletted, palette color.Palette, startRleValue int) error {
     byteReader, ok := reader.(io.ByteReader)
@@ -361,7 +362,7 @@ func readImage(reader io.Reader, img *image.Paletted, palette color.Palette, sta
         }
 
         if debug {
-            fmt.Printf("Read byte 0x%x\n", v)
+            log.Printf("Read byte 0x%x\n", v)
         }
 
         if v == 0xff {
@@ -378,10 +379,11 @@ func readImage(reader io.Reader, img *image.Paletted, palette color.Palette, sta
             return fmt.Errorf("unexpected rle value 0x%x", v)
         }
 
-        next, err := byteReader.ReadByte()
+        next_, err := byteReader.ReadByte()
         if err != nil {
             return err
         }
+        next := int(next_) - 2
 
         if next == 0 {
             return fmt.Errorf("next bitmap location cannot be 0")
@@ -398,12 +400,12 @@ func readImage(reader io.Reader, img *image.Paletted, palette color.Palette, sta
         }
 
         if debug {
-            fmt.Printf("RLE: 0x%x, Next: %v, Data: %v, Y: %v\n", rle, next, data, y)
+            log.Printf("RLE: 0x%x, Next: %v, Data: %v, Y: %v\n", rle, next, data, y)
         }
 
         total := 0
 
-        for total < int(next) - 2 {
+        for total < next {
             for data > 0 {
                 v2, err := byteReader.ReadByte()
                 if err != nil {
@@ -420,8 +422,12 @@ func readImage(reader io.Reader, img *image.Paletted, palette color.Palette, sta
                     }
                     total += 1
 
+                    if length > img.Bounds().Dy() {
+                        return fmt.Errorf("rle length %v is greater than image height %v", length, img.Bounds().Dy())
+                    }
+
                     if debug {
-                        fmt.Printf("rle length=%v index=%v x=%v y=%v\n", length, index, x, y)
+                        log.Printf("rle length=%v index=%v x=%v y=%v\n", length, index, x, y)
                     }
 
                     for i := 0; i < length; i++ {
@@ -433,7 +439,7 @@ func readImage(reader io.Reader, img *image.Paletted, palette color.Palette, sta
 
                 } else {
                     if debug {
-                        fmt.Printf("normal pixel x=%v y=%v v=%v\n", x, y, v2)
+                        log.Printf("normal pixel x=%v y=%v v=%v\n", x, y, v2)
                     }
                     img.SetColorIndex(x, int(y), uint8(v2))
                     y += 1
@@ -441,7 +447,10 @@ func readImage(reader io.Reader, img *image.Paletted, palette color.Palette, sta
                 }
             }
 
-            if total < int(next) - 2 {
+            if total < next {
+                if debug {
+                    log.Printf("Have to read two more bytes total=%v next=%v\n", total, next)
+                }
                 newData, err := byteReader.ReadByte()
                 if err != nil {
                     return err
@@ -532,16 +541,22 @@ func (lbx *LbxFile) ReadImages(entry int) ([]image.Image, error) {
         offsets = append(offsets, offset)
     }
 
-    fmt.Printf("Width: %v\n", width)
-    fmt.Printf("Height: %v\n", height)
-    fmt.Printf("Bitmap count: %v\n", bitmapCount)
-    fmt.Printf("Palette offset: %v\n", paletteOffset)
+    if debug {
+        fmt.Printf("Width: %v\n", width)
+        fmt.Printf("Height: %v\n", height)
+        fmt.Printf("Bitmap count: %v\n", bitmapCount)
+        fmt.Printf("Palette offset: %v\n", paletteOffset)
+    }
 
     paletteInfo, err := readPaletteInfo(reader, int(paletteOffset))
     if err != nil {
         return nil, err
     }
     _ = paletteInfo
+
+    if debug {
+        fmt.Printf("Palette info: %+v\n", paletteInfo)
+    }
 
     palette, err := readPalette(reader, int(paletteOffset))
     if err != nil {
@@ -553,7 +568,9 @@ func (lbx *LbxFile) ReadImages(entry int) ([]image.Image, error) {
 
     for i := 0; i < int(bitmapCount); i++ {
         end := offsets[i+1]
-        fmt.Printf("Read image %v at offset %v size %v\n", i, offsets[i], end - offsets[i])
+        if debug {
+            fmt.Printf("Read image %v at offset %v size %v\n", i, offsets[i], end - offsets[i])
+        }
 
         reader.Seek(int64(offsets[i]), io.SeekStart)
 
