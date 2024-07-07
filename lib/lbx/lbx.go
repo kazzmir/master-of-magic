@@ -336,8 +336,10 @@ func readPalette(reader io.ReadSeeker, index int) (color.Palette, error) {
     return defaultPalette, nil
 }
 
-const debug = true
+const debug = false
 
+/* read an RLE encoded image using the given palette, storing pixels into 'img'
+ */
 func readImage(reader io.Reader, img *image.Paletted, palette color.Palette, startRleValue int) error {
     byteReader, ok := reader.(io.ByteReader)
     if !ok {
@@ -548,11 +550,20 @@ func (lbx *LbxFile) ReadImages(entry int) ([]image.Image, error) {
         fmt.Printf("Palette offset: %v\n", paletteOffset)
     }
 
-    paletteInfo, err := readPaletteInfo(reader, int(paletteOffset))
-    if err != nil {
-        return nil, err
+    var paletteInfo PaletteInfo
+
+    if paletteOffset > 0 {
+        paletteInfo, err = readPaletteInfo(reader, int(paletteOffset))
+        if err != nil {
+            return nil, err
+        }
     }
-    _ = paletteInfo
+
+    /* if the palette is empty then just use the default palette */
+    if paletteInfo.Count == 0 {
+        paletteInfo.FirstColorIndex = 0
+        paletteInfo.Count = 255
+    }
 
     if debug {
         fmt.Printf("Palette info: %+v\n", paletteInfo)
