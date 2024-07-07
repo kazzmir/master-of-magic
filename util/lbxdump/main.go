@@ -36,7 +36,7 @@ func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int) error {
 
         fmt.Printf("File %v: 0x%x (%v) bytes\n", index, len(data), len(data))
 
-        if len(data) > 1000 {
+        if len(data) > 0 {
             images, err := file.ReadImages(index)
             if err != nil {
                 return err
