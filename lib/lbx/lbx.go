@@ -342,6 +342,15 @@ func readImage(reader io.Reader, img *image.Paletted, palette color.Palette, sta
         byteReader = bufio.NewReader(reader)
     }
 
+    reset, err := byteReader.ReadByte()
+    if err != nil {
+        return err
+    }
+
+    if reset == 1 {
+        // TODO: reset image to blank, which is magic pink 0xff00ff in the original code
+    }
+
     x := 0
 
     for {
@@ -349,6 +358,8 @@ func readImage(reader io.Reader, img *image.Paletted, palette color.Palette, sta
         if err != nil {
             return nil
         }
+
+        fmt.Printf("Read byte 0x%x\n", v)
 
         if v == 0xff {
             continue
@@ -383,6 +394,8 @@ func readImage(reader io.Reader, img *image.Paletted, palette color.Palette, sta
             return err
         }
 
+        fmt.Printf("RLE: 0x%x, Next: %v, Data: %v, Y: %v\n", rle, next, data, y)
+
         total := 0
 
         for total < int(next) - 2 {
@@ -394,13 +407,15 @@ func readImage(reader io.Reader, img *image.Paletted, palette color.Palette, sta
 
                 total += 1
 
-                if int(v2) > rle {
+                if int(v2) >= rle {
                     length := int(v2) - int(rle) + 1
                     index, err := byteReader.ReadByte()
                     if err != nil {
                         return err
                     }
                     total += 1
+
+                    fmt.Printf("rle length=%v index=%v x=%v y=%v\n", length, index, x, y)
 
                     for i := 0; i < length; i++ {
                         img.SetColorIndex(x, int(y), uint8(index))
@@ -410,25 +425,28 @@ func readImage(reader io.Reader, img *image.Paletted, palette color.Palette, sta
                     data -= 2
 
                 } else {
+                    fmt.Printf("normal pixel x=%v y=%v v=%v\n", x, y, v2)
                     img.SetColorIndex(x, int(y), uint8(v2))
                     y += 1
                     data -= 1
                 }
             }
 
-            newData, err := byteReader.ReadByte()
-            if err != nil {
-                return err
-            }
-            newY, err := byteReader.ReadByte()
-            if err != nil {
-                return err
-            }
+            if total < int(next) - 2 {
+                newData, err := byteReader.ReadByte()
+                if err != nil {
+                    return err
+                }
+                newY, err := byteReader.ReadByte()
+                if err != nil {
+                    return err
+                }
 
-            total += 2
+                total += 2
 
-            y += newY
-            data = newData
+                y += newY
+                data = newData
+            }
         }
 
         x += 1
