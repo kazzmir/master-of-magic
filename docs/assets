@@ -97,7 +97,7 @@ SPECIAL2.LBX - graphics, spell book ui and icons
 SPELLS.LBX - graphics, more spell book sprites
 SPECIAL.LBX - graphics, unit enchantments/upgrade icons
 SPELLDAT.LBX - unknown
-TERRAIN.LBX - unknown
+TERRAIN.LBX - graphics, terrain tiles (in a special graphics format)
 TERRSTAT.LBX - unknown
 TERRTYPE.LBX - unknown
 TUNDRA.LBX - graphics, tundra tiles
