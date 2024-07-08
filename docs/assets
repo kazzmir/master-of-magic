@@ -14,27 +14,27 @@ WIZARDS.EXE - unknown
 INSTALL.GIF - unknown
 ARMYLIST.LBX - graphics, contains backgrounds for item alchemy and hero screen
 BACKGRND.LBX - graphics, some city backgrounds
-BOOK.LBX - unknown
+BOOK.LBX - graphics, spell book animation
 BUILDESC.LBX - unknown
 BUILDDAT.LBX - unknown
-CHRIVER.LBX - unknown
-CITYSCAP.LBX - unknown
-CITYWALL.LBX - unknown
+CHRIVER.LBX - graphics, overland tiles I think for myrror
+CITYSCAP.LBX - graphics, sprites to show in the city view
+CITYWALL.LBX - graphics, sprites of the city wall to show in a battle
 CITYNAME.LBX - unknown
-CMBTWALL.LBX - unknown
-CMBTFX.LBX - unknown
-CMBTCITY.LBX - unknown
+CMBTWALL.LBX - graphics, sprites to show of the city wall in battle
+CMBTFX.LBX - graphics, various animations to show during combat, such as spells
+CMBTCITY.LBX - graphics, sprites of city objects in a battle, such as a house or the main wizard tower
 CMBTSND.LBX - unknown
-CMBMAGIC.LBX - unknown
-CMBGRASC.LBX - unknown
-CMBGRASS.LBX - unknown
-CMBMOUNC.LBX - unknown
-CMBTUNDC.LBX - unknown
-CMBTUNDR.LBX - unknown
-CMBDESRC.LBX - unknown
-CMBMOUNT.LBX - unknown
-CMBDESRT.LBX - unknown
-CONQUEST.LBX - unknown
+CMBMAGIC.LBX - graphics, animations of spells in battle
+CMBGRASC.LBX - graphics, combat tiles
+CMBGRASS.LBX - graphics, combat tiles, similar to cmbgrasc but with a different palette
+CMBMOUNC.LBX - graphics, combat tiles
+CMBTUNDC.LBX - graphics, combat tiles
+CMBTUNDR.LBX - graphics, combat tiles
+CMBDESRC.LBX - graphics, combat tiles
+CMBMOUNT.LBX - graphics, combat tiles
+CMBDESRT.LBX - graphics, combat tiles
+CONQUEST.LBX - graphics, animations of wizards being defeated
 COMPIX.LBX - unknown
 COMBAT.LBX - unknown
 DESERT.LBX - unknown
