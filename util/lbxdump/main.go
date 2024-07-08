@@ -80,19 +80,6 @@ func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int) error {
                         fmt.Printf("Saved image %v to %v\n", i, name)
                     }()
                 }
-            } else {
-                func(){
-                    name := filepath.Join(dir, fmt.Sprintf("file_%v.bin", index))
-                    out, err := os.Create(name)
-                    if err != nil {
-                        fmt.Printf("Error creating file: %v\n", err)
-                        return
-                    }
-                    defer out.Close()
-
-                    out.Write(data)
-                    fmt.Printf("Saved file %v to %v\n", index, name)
-                }()
             }
         }
 
