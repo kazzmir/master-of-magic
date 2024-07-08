@@ -359,7 +359,7 @@ func readPalette(reader io.ReadSeeker, index int, firstColor int, count int) (co
             return nil, err
         }
 
-        palette[i] = color.RGBA{R: uint8(r), G: uint8(g), B: uint8(b), A: 0xff}
+        palette[i + firstColor] = color.RGBA{R: uint8(r), G: uint8(g), B: uint8(b), A: 0xff}
     }
 
     return palette, nil
