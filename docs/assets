@@ -37,11 +37,11 @@ CMBDESRT.LBX - graphics, combat tiles
 CONQUEST.LBX - graphics, animations of wizards being defeated
 COMPIX.LBX - graphics, various little icons
 COMBAT.LBX - graphics, combat tiles
-DESERT.LBX - unknown
+DESERT.LBX - graphics, combat tiles
 DESC.LBX - unknown
-DIPLOMAC.LBX - unknown
+DIPLOMAC.LBX - graphics, sprites used in diplomancy window, pictures of other wizards
 DIPLOMSG.LBX - unknown
-EVENTS.LBX - unknown
+EVENTS.LBX - graphics, icons for special events
 EVENTMSG.LBX - unknown
 FIGURE11.LBX - unknown
 FIGURE13.LBX - unknown

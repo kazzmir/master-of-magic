@@ -299,6 +299,12 @@ var defaultPalette = color.Palette {
     color.RGBA{R: 0x0,  G: 0x0,  B: 0x0, A: 0xff},
 }
 
+func clonePalette(p color.Palette) color.Palette {
+    newPalette := make(color.Palette, len(p))
+    copy(newPalette, p)
+    return newPalette
+}
+
 func readPaletteInfo(reader io.ReadSeeker, index int) (PaletteInfo, error) {
     reader.Seek(int64(index), io.SeekStart)
 
@@ -332,10 +338,10 @@ func readPaletteInfo(reader io.ReadSeeker, index int) (PaletteInfo, error) {
     return info, nil
 }
 
-func readPalette(reader io.ReadSeeker, index int, count int) (color.Palette, error) {
+func readPalette(reader io.ReadSeeker, index int, firstColor int, count int) (color.Palette, error) {
     reader.Seek(int64(index), io.SeekStart)
 
-    var palette color.Palette
+    palette := clonePalette(defaultPalette)
 
     byteReader := bufio.NewReader(reader)
 
@@ -353,10 +359,11 @@ func readPalette(reader io.ReadSeeker, index int, count int) (color.Palette, err
             return nil, err
         }
 
-        palette = append(palette, color.RGBA{R: r, G: g, B: b, A: 0xff})
+        palette[i] = color.RGBA{R: uint8(r), G: uint8(g), B: uint8(b), A: 0xff}
     }
 
     return palette, nil
+    // return palette, nil
 }
 
 const debug = false
@@ -635,7 +642,7 @@ func (lbx *LbxFile) ReadImages(entry int) ([]image.Image, error) {
             return nil, err
         }
 
-        palette, err = readPalette(reader, int(paletteInfo.Offset), int(paletteInfo.Count))
+        palette, err = readPalette(reader, int(paletteInfo.Offset), int(paletteInfo.FirstColorIndex), int(paletteInfo.Count))
         if err != nil {
             return nil, err
         }
