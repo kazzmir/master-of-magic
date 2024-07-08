@@ -44,70 +44,70 @@ DIPLOMSG.LBX - unknown
 EVENTS.LBX - graphics, icons for special events
 EVENTMSG.LBX - unknown
 FIGURE11.LBX - graphics, sprites of units in combat
-FIGURE13.LBX - unknown
-FIGURES2.LBX - unknown
-FIGURE15.LBX - unknown
-FIGURES1.LBX - unknown
-FIGURES3.LBX - unknown
-FIGURES5.LBX - unknown
-FIGURE12.LBX - unknown
-FIGURES6.LBX - unknown
-FIGURES9.LBX - unknown
-FIGURE10.LBX - unknown
-FIGURES7.LBX - unknown
-FIGURES8.LBX - unknown
-FIGURES4.LBX - unknown
-FIGURE16.LBX - unknown
-FIGURE14.LBX - unknown
+FIGURE13.LBX - graphics, sprites of units in combat
+FIGURES2.LBX - graphics, sprites of units in combat
+FIGURE15.LBX - graphics, sprites of units in combat
+FIGURES1.LBX - graphics, sprites of units in combat
+FIGURES3.LBX - graphics, sprites of units in combat
+FIGURES5.LBX - graphics, sprites of units in combat
+FIGURE12.LBX - graphics, sprites of units in combat
+FIGURES6.LBX - graphics, sprites of units in combat
+FIGURES9.LBX - graphics, sprites of units in combat
+FIGURE10.LBX - graphics, sprites of units in combat
+FIGURES7.LBX - graphics, sprites of units in combat
+FIGURES8.LBX - graphics, sprites of units in combat
+FIGURES4.LBX - graphics, sprites of units in combat
+FIGURE16.LBX - graphics, sprites of units in combat
+FIGURE14.LBX - graphics, sprites of units in combat
 FONTS.LBX - unknown
 HELP.LBX - unknown
 HERODATA.LBX - unknown
-HIRE.LBX - unknown
+HIRE.LBX - graphics, used for hiring a hero screen
 HLPENTRY.LBX - unknown
-INTRO.LBX - unknown
+INTRO.LBX - graphics, introduction animation
 INTROSFX.LBX - unknown
 INTROSND.LBX - unknown
-ITEMISC.LBX - unknown
-ITEMS.LBX - unknown
+ITEMISC.LBX - graphics, various icons for items and upgrades
+ITEMS.LBX - graphics, various icons for items and weapons
 ITEMDATA.LBX - unknown
 ITEMPOW.LBX - unknown
-LILWIZ.LBX - unknown
-LOSE.LBX - unknown
-LOAD.LBX - unknown
-MAINSCRN.LBX - unknown
-MAGIC.LBX - unknown
-MAIN.LBX - unknown
-MAPBACK.LBX - unknown
-MOODWIZ.LBX - unknown
-MONSTER.LBX - unknown
+LILWIZ.LBX - graphics, portraits of the other wizards
+LOSE.LBX - graphics, animations of the wizard being destroyed/losing
+LOAD.LBX - graphics, ui for load/save
+MAINSCRN.LBX - graphics, ui for main screen
+MAGIC.LBX - graphics, mana/research/skill screen and wizard portraits
+MAIN.LBX - graphics, hud ui in game
+MAPBACK.LBX - graphics, map tiles such as cities
+MOODWIZ.LBX - graphics, wizard animations during diplomacy talks
+MONSTER.LBX - graphics, images of big monsters that appear in caves/dungeons
 MUSIC.LBX - unknown
 NAMES.LBX - unknown
-NEWGAME.LBX - unknown
-PORTRAIT.LBX - unknown
-RELOAD.LBX - unknown
-RESOURCE.LBX - unknown
-SCROLL.LBX - unknown
+NEWGAME.LBX - graphics, ui for creating a new game
+PORTRAIT.LBX - graphics, icon portraits for heros
+RELOAD.LBX - graphics, some ui's for item enchantments, other icons
+RESOURCE.LBX - graphics, ui for yes/no
+SCROLL.LBX - graphics, scroll image for spells
 SNDDRV.LBX - unknown
 SOUNDFX.LBX - unknown
-SPLMASTR.LBX - unknown
-SPELLSCR.LBX - unknown
-SPECFX.LBX - unknown
-SPELLOSE.LBX - unknown
-SPECIAL2.LBX - unknown
-SPELLS.LBX - unknown
-SPECIAL.LBX - unknown
+SPLMASTR.LBX - graphics, I think the animation used in the intro when the wizard dies?
+SPELLSCR.LBX - graphics, ui for casting spells, such as summoning
+SPECFX.LBX - graphics, various spell animations, overworld enchatments
+SPELLOSE.LBX - graphics, animations when a wizard is destroyed
+SPECIAL2.LBX - graphics, spell book ui and icons
+SPELLS.LBX - graphics, more spell book sprites
+SPECIAL.LBX - graphics, unit enchantments/upgrade icons
 SPELLDAT.LBX - unknown
 TERRAIN.LBX - unknown
 TERRSTAT.LBX - unknown
 TERRTYPE.LBX - unknown
-TUNDRA.LBX - unknown
-UNITVIEW.LBX - unknown
-UNITS1.LBX - unknown
-UNITS2.LBX - unknown
-WALLRISE.LBX - unknown
-WIN.LBX - unknown
-WIZLAB.LBX - unknown
-WIZARDS.LBX - unknown
+TUNDRA.LBX - graphics, tundra tiles
+UNITVIEW.LBX - graphics, ui for managing units
+UNITS1.LBX - graphics, sprites for units
+UNITS2.LBX - graphics, sprites for units
+WALLRISE.LBX - graphics, special effects on the walls of a castle in a battle
+WIN.LBX - graphics, animations when the user wins
+WIZLAB.LBX - graphics, animations when summoning creatures
+WIZARDS.LBX - graphics, other wizard portraits
 CONFIG.MOM - unknown
 FAT.MT - unknown
 FAT.OPL - unknown
@@ -115,7 +115,7 @@ INSTALL.PIF - unknown
 MAGIC.SET - unknown
 README.TXT - unknown
 NEWSOUND.LBX - unknown
-VORTEX.LBX - unknown
+VORTEX.LBX - graphics, vortex animation (lose screen?)
 LISTDAT.LBX - unknown
 MESSAGE.LBX - unknown
-HALOFAM.LBX - unknown
+HALOFAM.LBX - graphics, hall of fame ui/sprites
