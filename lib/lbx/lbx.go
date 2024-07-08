@@ -476,6 +476,59 @@ func readImage(reader io.Reader, img *image.Paletted, palette color.Palette, sta
     return nil
 }
 
+/* terrain.lbx has a special format that is different from regular graphics */
+func (lbx *LbxFile) ReadTerrainImages(entry int) ([]image.Image, error) {
+    /* skip first 192 bytes */
+
+    if entry < 0 || entry >= len(lbx.Data) {
+        return nil, fmt.Errorf("invalid lbx index %v, must be between 0 and %v", entry, len(lbx.Data) - 1)
+    }
+
+    reader := bytes.NewReader(lbx.Data[entry])
+    if reader.Size() < 192 {
+        return nil, fmt.Errorf("invalid format for terrain, size is %v but must be at least 192", reader.Size())
+    }
+
+    reader.Seek(192, io.SeekStart)
+
+    var images []image.Image
+    for reader.Len() > 0 {
+        width, err := readUint16(reader)
+        if err != nil {
+            break
+        }
+
+        height, err := readUint16(reader)
+        if err != nil {
+            return nil, err
+        }
+
+        for i := 0; i < 6; i++ {
+            readUint16(reader)
+        }
+
+        img := image.NewPaletted(image.Rect(0, 0, int(width), int(height)), defaultPalette)
+        for x := 0; x < int(width); x++ {
+            for y := 0; y < int(height); y++ {
+                index, err := reader.ReadByte()
+                if err != nil {
+                    return nil, err
+                }
+
+                img.SetColorIndex(x, y, index)
+            }
+        }
+
+        for i := 0; i < 4; i++ {
+            readUint16(reader)
+        }
+
+        images = append(images, img)
+    }
+
+    return images, nil
+}
+
 func (lbx *LbxFile) ReadImages(entry int) ([]image.Image, error) {
 
     if entry < 0 || entry >= len(lbx.Data) {

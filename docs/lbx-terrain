@@ -2,11 +2,13 @@ The terrain graphics in TERRAIN.LBX aren't in the same graphics format as the re
 
 TERRAIN.LBX subfile 0 has a 192 byte header on it - I've no idea what this is for so skip it. 
 
+word = 2 bytes
+
 Each terrain tile is then made up of 
-An 8 byte header 
+An 8 word header
 The image data 
-A 4 byte footer 
+A 4 word footer
 
-The first byte of the header is the width - this is always 20. The second byte is the height - this is always 18. I've no idea what the remaining 6 bytes in the header or the 4 bytes in the footer are for. 
+The first word of the header is the width - this is always 20. The second word is the height - this is always 18. I've no idea what the remaining 6 bytes in the header or the 4 words in the footer are for.
 
-The image data is therefore always 20 * 18 = 360 bytes long, so each image including the header and footer takes up 372 bytes. Each byte of image data is an index into the standard MoM palette (see code in post about standard graphics format for this palette). There are 1,761 images. 
+The image data is therefore always 20 * 18 = 360 bytes long, so each image including the header and footer takes up 372 bytes. Each byte of image data is an index into the standard MoM palette (see code in post about standard graphics format for this palette). There are 1,761 images. The pixels are in row major order, so the first 20 pixels are in row 0, the second 20 pixels are row 1, etc.

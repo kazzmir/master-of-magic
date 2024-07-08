@@ -28,49 +28,74 @@ func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int) error {
 
     os.Mkdir(dir, 0755)
 
-    for index, data := range file.Data {
-
-        if onlyIndex != -1 && index != onlyIndex {
-            continue
+    if lbxName == "terrain.lbx" {
+        index := 0
+        images, err := file.ReadTerrainImages(index)
+        if err != nil {
+            return err
         }
 
-        fmt.Printf("File %v: 0x%x (%v) bytes\n", index, len(data), len(data))
-
-        if len(data) > 0 {
-            images, err := file.ReadImages(index)
-            if err != nil {
-                return err
-            }
-
-            fmt.Printf("Loaded %v images\n", len(images))
-            for i, image := range images {
-                func (){
-                    name := filepath.Join(dir, fmt.Sprintf("image_%v_%v.png", index, i))
-                    out, err := os.Create(name)
-                    if err != nil {
-                        fmt.Printf("Error creating image file: %v\n", err)
-                        return
-                    }
-                    defer out.Close()
-
-                    png.Encode(out, image)
-                    fmt.Printf("Saved image %v to %v\n", i, name)
-                }()
-            }
-        } else {
-            func(){
-                name := filepath.Join(dir, fmt.Sprintf("file_%v.bin", index))
+        fmt.Printf("Loaded %v images\n", len(images))
+        for i, image := range images {
+            func (){
+                name := filepath.Join(dir, fmt.Sprintf("image_%v_%v.png", index, i))
                 out, err := os.Create(name)
                 if err != nil {
-                    fmt.Printf("Error creating file: %v\n", err)
+                    fmt.Printf("Error creating image file: %v\n", err)
                     return
                 }
                 defer out.Close()
 
-                out.Write(data)
-                fmt.Printf("Saved file %v to %v\n", index, name)
+                png.Encode(out, image)
+                fmt.Printf("Saved image %v to %v\n", i, name)
             }()
         }
+    } else {
+        for index, data := range file.Data {
+
+            if onlyIndex != -1 && index != onlyIndex {
+                continue
+            }
+
+            fmt.Printf("File %v: 0x%x (%v) bytes\n", index, len(data), len(data))
+
+            if len(data) > 0 {
+                images, err := file.ReadImages(index)
+                if err != nil {
+                    return err
+                }
+
+                fmt.Printf("Loaded %v images\n", len(images))
+                for i, image := range images {
+                    func (){
+                        name := filepath.Join(dir, fmt.Sprintf("image_%v_%v.png", index, i))
+                        out, err := os.Create(name)
+                        if err != nil {
+                            fmt.Printf("Error creating image file: %v\n", err)
+                            return
+                        }
+                        defer out.Close()
+
+                        png.Encode(out, image)
+                        fmt.Printf("Saved image %v to %v\n", i, name)
+                    }()
+                }
+            } else {
+                func(){
+                    name := filepath.Join(dir, fmt.Sprintf("file_%v.bin", index))
+                    out, err := os.Create(name)
+                    if err != nil {
+                        fmt.Printf("Error creating file: %v\n", err)
+                        return
+                    }
+                    defer out.Close()
+
+                    out.Write(data)
+                    fmt.Printf("Saved file %v to %v\n", index, name)
+                }()
+            }
+        }
+
     }
 
     return nil
