@@ -332,9 +332,31 @@ func readPaletteInfo(reader io.ReadSeeker, index int) (PaletteInfo, error) {
     return info, nil
 }
 
-func readPalette(reader io.ReadSeeker, index int) (color.Palette, error) {
-    // FIXME: seek to index and read r,g,b bytes, then fill in the palette colors
-    return defaultPalette, nil
+func readPalette(reader io.ReadSeeker, index int, count int) (color.Palette, error) {
+    reader.Seek(int64(index), io.SeekStart)
+
+    var palette color.Palette
+
+    byteReader := bufio.NewReader(reader)
+
+    for i := 0; i < count; i++ {
+        r, err := byteReader.ReadByte()
+        if err != nil {
+            return nil, err
+        }
+        g, err := byteReader.ReadByte()
+        if err != nil {
+            return nil, err
+        }
+        b, err := byteReader.ReadByte()
+        if err != nil {
+            return nil, err
+        }
+
+        palette = append(palette, color.RGBA{R: r, G: g, B: b, A: 0xff})
+    }
+
+    return palette, nil
 }
 
 const debug = false
@@ -605,12 +627,20 @@ func (lbx *LbxFile) ReadImages(entry int) ([]image.Image, error) {
     }
 
     var paletteInfo PaletteInfo
+    palette := defaultPalette
 
     if paletteOffset > 0 {
         paletteInfo, err = readPaletteInfo(reader, int(paletteOffset))
         if err != nil {
             return nil, err
         }
+
+        palette, err = readPalette(reader, int(paletteInfo.Offset), int(paletteInfo.Count))
+        if err != nil {
+            return nil, err
+        }
+
+        fmt.Printf("Read palette with %v colors\n", len(palette))
     }
 
     /* if the palette is empty then just use the default palette */
@@ -622,12 +652,6 @@ func (lbx *LbxFile) ReadImages(entry int) ([]image.Image, error) {
     if debug {
         fmt.Printf("Palette info: %+v\n", paletteInfo)
     }
-
-    palette, err := readPalette(reader, int(paletteOffset))
-    if err != nil {
-        return nil, err
-    }
-    _ = palette
 
     var images []image.Image
 

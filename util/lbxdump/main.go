@@ -115,6 +115,12 @@ func main(){
             lower := strings.ToLower(file.Name)
             check := strings.ToLower(searchName)
 
+            // exact match
+            if lower == check {
+                matches = []string{file.Name}
+                break
+            }
+
             if strings.Contains(lower, check) {
                 matches = append(matches, file.Name)
             }
