@@ -15,7 +15,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/lbx"
 )
 
-func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int) error {
+func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int, rawDump bool) error {
     file, err := lbx.ReadLbx(reader)
     if err != nil {
         return err
@@ -59,7 +59,20 @@ func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int) error {
 
             fmt.Printf("File %v: 0x%x (%v) bytes\n", index, len(data), len(data))
 
-            if len(data) > 0 {
+            if rawDump {
+                func (){
+                    name := filepath.Join(dir, fmt.Sprintf("file_%v.bin", index))
+                    out, err := os.Create(name)
+                    if err != nil {
+                        fmt.Printf("Error creating file: %v\n", err)
+                        return
+                    }
+                    defer out.Close()
+
+                    out.Write(data)
+                    fmt.Printf("Saved raw data to %v\n", name)
+                }()
+            } else if len(data) > 0 {
                 images, err := file.ReadImages(index)
                 if err != nil {
                     return err
@@ -139,12 +152,19 @@ func main(){
             return
         }
 
+        rawDump := false
         onlyIndex := -1
         if len(os.Args) >= 4 {
-            onlyIndex, err = strconv.Atoi(os.Args[3])
-            if err != nil {
-                fmt.Printf("Expected index to be an integer: %v\n", os.Args[3])
-                onlyIndex = -1
+            arg := os.Args[3]
+            switch arg {
+                case "raw", "--raw", "-raw":
+                    rawDump = true
+                default:
+                    onlyIndex, err = strconv.Atoi(arg)
+                    if err != nil {
+                        fmt.Printf("Expected index to be an integer: %v\n", arg)
+                        onlyIndex = -1
+                    }
             }
         }
 
@@ -160,7 +180,7 @@ func main(){
                     var memory bytes.Buffer
                     io.Copy(&memory, opened)
 
-                    err := dumpLbx(bytes.NewReader(memory.Bytes()), strings.ToLower(file.Name), onlyIndex)
+                    err := dumpLbx(bytes.NewReader(memory.Bytes()), strings.ToLower(file.Name), onlyIndex, rawDump)
                     if err != nil {
                         fmt.Printf("Error dumping lbx file: %v\n", err)
                     }
