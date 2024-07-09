@@ -194,7 +194,7 @@ func (event *MidiEvent) ConvertToSMF() *smf.SMF {
                 currentDelay = 0
             case *MidiMessagePitchWheelChange:
                 pitch := message.(*MidiMessagePitchWheelChange)
-                track.Add(currentDelay, midi.Pitchbend(pitch.Channel, int16(pitch.Value)).Bytes())
+                track.Add(currentDelay, midi.Pitchbend(pitch.Channel, pitch.Value).Bytes())
                 currentDelay = 0
             case *MidiMessageKeySignature:
                 key := message.(*MidiMessageKeySignature)
@@ -289,7 +289,7 @@ type MidiMessageChannelPressure struct {
 
 type MidiMessagePitchWheelChange struct {
     Channel uint8
-    Value int
+    Value int16
 }
 
 type MidiMessageDelay struct {
@@ -501,11 +501,13 @@ func (chunk *IFFChunk) ReadEvent() (MidiEvent, error) {
                                 return MidiEvent{}, err
                             }
 
-                            total := int(high) << 7 | int(low)
+                            total := int16(high) << 7 | int16(low)
+                            /* 8192 is in the middle, move it to 0 (neutral) */
+                            total -= 8192
 
                             messages = append(messages, &MidiMessagePitchWheelChange{
                                 Channel: channel,
-                                Value: total,
+                                Value: int16(total),
                             })
                         default:
                             return MidiEvent{}, fmt.Errorf("Unknown midi event type: 0x%x", value)
