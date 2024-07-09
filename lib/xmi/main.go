@@ -168,19 +168,55 @@ func (event *MidiEvent) ConvertToSMF() *smf.SMF {
             case *MidiMessageSMPTEOffset:
                 offset := message.(*MidiMessageSMPTEOffset)
                 // FIXME: what to do with fps?
-                track.Add(0, smf.MetaSMPTE(offset.Hour, offset.Minute, offset.Second, offset.Frame, offset.SubFrame).Bytes())
+                track.Add(currentDelay, smf.MetaSMPTE(offset.Hour, offset.Minute, offset.Second, offset.Frame, offset.SubFrame).Bytes())
+                currentDelay = 0
+            case *MidiMessageTimeSignature:
+                signature := message.(*MidiMessageTimeSignature)
+                track.Add(currentDelay, smf.MetaTimeSig(signature.Numerator, signature.Denominator, signature.Metronome, signature.DemiSemiQuaverPerQuarter).Bytes())
+                currentDelay = 0
+            case *MidiMessageChannelPrefix:
+                prefix := message.(*MidiMessageChannelPrefix)
+                track.Add(currentDelay, smf.MetaChannel(prefix.Channel).Bytes())
+                currentDelay = 0
+            case *MidiMessageTempoSetting:
+                // tempo := message.(*MidiMessageTempoSetting)
+                // track.Add(currentDelay, smf.MetaTempo(tempo.Tempo).Bytes())
+                currentDelay = 0
+            case *MidiMessageProgramChange:
+                program := message.(*MidiMessageProgramChange)
+                track.Add(currentDelay, midi.ProgramChange(program.Channel, program.Program).Bytes())
+                currentDelay = 0
+            case *MidiMessagePitchWheelChange:
+                pitch := message.(*MidiMessagePitchWheelChange)
+                track.Add(currentDelay, midi.Pitchbend(pitch.Channel, int16(pitch.Value)).Bytes())
+                currentDelay = 0
+            case *MidiMessageKeySignature:
+                key := message.(*MidiMessageKeySignature)
+                flats := key.Flats
+                if flats < 0 {
+                    flats = -flats
+                }
+                track.Add(currentDelay, smf.MetaKey(key.Major, key.Major == 0, uint8(flats), key.Flats < 0).Bytes())
+                currentDelay = 0
             case *MidiMessageNoteOn:
                 note := message.(*MidiMessageNoteOn)
                 track.Add(currentDelay, midi.NoteOn(note.Channel, note.Note, note.Velocity).Bytes())
                 track.Add(uint32(note.Duration), midi.NoteOff(note.Channel, note.Note).Bytes())
                 currentDelay = 0
+            case *MidiMessageControlChange:
+                control := message.(*MidiMessageControlChange)
+                track.Add(currentDelay, midi.ControlChange(control.Channel, control.Controller, control.Value).Bytes())
+                currentDelay = 0
             case *MidiMessageDelay:
                 delay := message.(*MidiMessageDelay)
                 currentDelay = uint32(delay.Delay)
+            case *MidiMessageEndOfTrack:
+                track.Close(currentDelay)
+            default:
+                fmt.Printf("Unhandled midi message in conversion: %T\n", message)
         }
     }
 
-    track.Close(currentDelay)
     object.Add(track)
 
     return object
@@ -633,9 +669,11 @@ func main(){
                         fmt.Printf("Tracks: %v\n", smfObject.NumTracks())
 
                         smfObject.WriteTo(out)
+                        fmt.Printf("Wrote to output.mid\n")
                     }
+                } else {
+                    fmt.Printf("  unknown subchunk\n")
                 }
-
             }
 
             /*
