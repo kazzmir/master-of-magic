@@ -168,11 +168,14 @@ func (event *MidiEvent) ConvertToSMF() *smf.SMF {
             case *MidiMessageSMPTEOffset:
                 offset := message.(*MidiMessageSMPTEOffset)
                 // FIXME: what to do with fps?
+                fmt.Printf(" emit smpte hour: %v\n", offset.Hour)
                 track.Add(currentDelay, smf.MetaSMPTE(offset.Hour, offset.Minute, offset.Second, offset.Frame, offset.SubFrame).Bytes())
                 currentDelay = 0
             case *MidiMessageTimeSignature:
                 signature := message.(*MidiMessageTimeSignature)
-                track.Add(currentDelay, smf.MetaTimeSig(signature.Numerator, signature.Denominator, signature.Metronome, signature.DemiSemiQuaverPerQuarter).Bytes())
+                fmt.Printf("Set time signature to %+v\n", signature)
+                // track.Add(currentDelay, smf.MetaTimeSig(signature.Numerator, signature.Denominator, signature.Metronome, signature.DemiSemiQuaverPerQuarter).Bytes())
+                track.Add(currentDelay, smf.MetaTimeSig(4, 4, signature.Metronome, signature.DemiSemiQuaverPerQuarter).Bytes())
                 currentDelay = 0
             case *MidiMessageChannelPrefix:
                 prefix := message.(*MidiMessageChannelPrefix)
@@ -181,6 +184,9 @@ func (event *MidiEvent) ConvertToSMF() *smf.SMF {
             case *MidiMessageTempoSetting:
                 // tempo := message.(*MidiMessageTempoSetting)
                 // track.Add(currentDelay, smf.MetaTempo(tempo.Tempo).Bytes())
+
+                track.Add(currentDelay, smf.MetaTempo(131).Bytes())
+
                 currentDelay = 0
             case *MidiMessageProgramChange:
                 program := message.(*MidiMessageProgramChange)
@@ -200,6 +206,7 @@ func (event *MidiEvent) ConvertToSMF() *smf.SMF {
                 currentDelay = 0
             case *MidiMessageNoteOn:
                 note := message.(*MidiMessageNoteOn)
+                // fmt.Printf("Note on: %v %v %v %v\n", note.Channel, note.Note, note.Velocity, note.Duration)
                 track.Add(currentDelay, midi.NoteOn(note.Channel, note.Note, note.Velocity).Bytes())
                 track.Add(uint32(note.Duration), midi.NoteOff(note.Channel, note.Note).Bytes())
                 currentDelay = 0
@@ -338,8 +345,8 @@ func (chunk *IFFChunk) ReadEvent() (MidiEvent, error) {
                             return MidiEvent{}, fmt.Errorf("SMPTE event type has invalid length: %v", len(data))
                         }
                         hours := uint8(data[0])
-                        rate := hours >> 5
-                        hours = hours & 0x1f
+                        rate := hours >> 6
+                        hours = hours & 0x3f
 
                         fps := float32(24.0)
 
@@ -399,6 +406,7 @@ func (chunk *IFFChunk) ReadEvent() (MidiEvent, error) {
                             return MidiEvent{}, fmt.Errorf("Tempo setting event type has invalid length: %v", len(data))
                         }
 
+                        // tempo events are ignored
                         messages = append(messages, &MidiMessageTempoSetting{
                             Tempo: float64(binary.BigEndian.Uint32(append([]byte{0}, data...))),
                         })
