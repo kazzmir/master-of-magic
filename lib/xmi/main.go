@@ -12,6 +12,7 @@ import (
     "encoding/binary"
 
     "gitlab.com/gomidi/midi/v2/smf"
+    "gitlab.com/gomidi/midi/v2"
 )
 
 func readUint16LE(reader io.Reader) (uint16, error) {
@@ -160,6 +161,24 @@ func (event *MidiEvent) ConvertToSMF() *smf.SMF {
     object := smf.New()
 
     var track smf.Track
+
+    currentDelay := uint32(0)
+    for _, message := range event.Messages {
+        switch message.(type) {
+            case *MidiMessageSMPTEOffset:
+                offset := message.(*MidiMessageSMPTEOffset)
+                // FIXME: what to do with fps?
+                track.Add(0, smf.MetaSMPTE(offset.Hour, offset.Minute, offset.Second, offset.Frame, offset.SubFrame).Bytes())
+            case *MidiMessageNoteOn:
+                note := message.(*MidiMessageNoteOn)
+                track.Add(currentDelay, midi.NoteOn(note.Channel, note.Note, note.Velocity).Bytes())
+                currentDelay = 0
+            case *MidiMessageDelay:
+                delay := message.(*MidiMessageDelay)
+                currentDelay = uint32(delay.Delay)
+        }
+    }
+
     track.Close(0)
     object.Add(track)
 
