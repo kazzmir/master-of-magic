@@ -141,7 +141,7 @@ const (
     MidiMetaEvent uint8 = 0xff
 )
 
-type MidiMessage uint8
+type MidiMessageValue uint8
 const (
     MidiMessageNoteOn = 0b1001
     MidiMessageControlChange = 0b1011
@@ -150,10 +150,48 @@ const (
     MidiMessagePitchWheelChange = 0b1110
 )
 
-func (chunk *IFFChunk) ReadEvent() (IFFEvent, error) {
-    fmt.Printf("Data: %v\n", chunk.Data[0:20])
+type MidiEvent struct {
+    Messages []MidiMessage
+}
+
+type MidiMessage interface {
+}
+
+type MidiMessageSMPTEOffset struct {
+    Fps float32
+    Hour uint8
+    Minute uint8
+    Second uint8
+    Frame uint8
+    SubFrame uint8
+}
+
+type MidiMessageKeySignature struct {
+    Flats int8
+    Major uint8
+}
+
+type MidiMessageTimeSignature struct {
+    Numerator uint8
+    Denominator uint8
+    Metronome uint8
+    DemiSemiQuaverPerQuarter uint8
+}
+
+type MidiMessageTempoSetting struct {
+    Tempo float64
+}
+
+type MidiMessageChannelPrefix struct {
+    Channel uint8
+}
+
+func (chunk *IFFChunk) ReadEvent() (MidiEvent, error) {
+    // fmt.Printf("Data: %v\n", chunk.Data[0:20])
 
     reader := bufio.NewReader(bytes.NewReader(chunk.Data))
+
+    var messages []MidiMessage
 
     for {
         value, err := reader.ReadByte()
@@ -172,21 +210,21 @@ func (chunk *IFFChunk) ReadEvent() (IFFEvent, error) {
                 case MidiMetaEvent:
                     kind, err := reader.ReadByte()
                     if err != nil {
-                        return IFFEvent{}, err
+                        return MidiEvent{}, err
                     }
 
                     length, err := readMidiLength(reader)
                     if err != nil {
-                        return IFFEvent{}, err
+                        return MidiEvent{}, err
                     }
 
                     data := make([]byte, length)
                     n, err := reader.Read(data)
                     if n != len(data) {
-                        return IFFEvent{}, fmt.Errorf("Expected %v bytes, got %v", len(data), n)
+                        return MidiEvent{}, fmt.Errorf("Expected %v bytes, got %v", len(data), n)
                     }
                     if err != nil {
-                        return IFFEvent{}, err
+                        return MidiEvent{}, err
                     }
 
                     fmt.Printf("  Meta event: 0x%x length=%v data=%v\n", kind, length, data)
@@ -194,20 +232,19 @@ func (chunk *IFFChunk) ReadEvent() (IFFEvent, error) {
                     switch MidiMetaEventKind(kind) {
                     case MidiEventSMPTEOffset:
                         if len(data) != 5 {
-                            return IFFEvent{}, fmt.Errorf("SMPTE event type has invalid length: %v", len(data))
+                            return MidiEvent{}, fmt.Errorf("SMPTE event type has invalid length: %v", len(data))
                         }
                         hours := uint8(data[0])
                         rate := hours >> 5
+                        hours = hours & 0x1f
+
+                        fps := float32(24.0)
 
                         switch rate {
-                        case 0:
-                            // 24 frames per second
-                        case 1:
-                            // 25 frames per second
-                        case 2:
-                            // 29.97 frames per second
-                        case 3:
-                            // 30 frames per second
+                            case 0: fps = 24.0
+                            case 1: fps = 25.0
+                            case 2: fps = 29.97
+                            case 3: fps = 30.0
                         }
 
                         // data[0] & 0x1f is hours
@@ -215,9 +252,18 @@ func (chunk *IFFChunk) ReadEvent() (IFFEvent, error) {
                         // data[2] is seconds
                         // data[3] is frames
                         // data[4] is sub-frames
+
+                        messages = append(messages, &MidiMessageSMPTEOffset{
+                            Hour: hours,
+                            Minute: data[1],
+                            Second: data[2],
+                            Frame: data[3],
+                            SubFrame: data[4],
+                            Fps: fps,
+                        })
                     case MidiEventKeySignature:
                         if len(data) != 2 {
-                            return IFFEvent{}, fmt.Errorf("Key signature event type has invalid length: %v", len(data))
+                            return MidiEvent{}, fmt.Errorf("Key signature event type has invalid length: %v", len(data))
                         }
 
                         flats := int8(data[0])
@@ -227,12 +273,40 @@ func (chunk *IFFChunk) ReadEvent() (IFFEvent, error) {
                         // major: 0 for major key, 1 for minor key
                         _ = flats
                         _ = major
+
+                        messages = append(messages, &MidiMessageKeySignature{
+                            Flats: flats,
+                            Major: major,
+                        })
+
                     case MidiEventTimeSignature:
-                        // TODO
+
+                        if len(data) != 4 {
+                            return MidiEvent{}, fmt.Errorf("Time signature event type has invalid length: %v", len(data))
+                        }
+
+                        messages = append(messages, &MidiMessageTimeSignature{
+                            Numerator: data[0],
+                            Denominator: data[1],
+                            Metronome: data[2],
+                            DemiSemiQuaverPerQuarter: data[3],
+                        })
                     case MidiEventTempoSetting:
-                        // TODO
+                        if len(data) != 3 {
+                            return MidiEvent{}, fmt.Errorf("Tempo setting event type has invalid length: %v", len(data))
+                        }
+
+                        messages = append(messages, &MidiMessageTempoSetting{
+                            Tempo: float64(binary.BigEndian.Uint32(append([]byte{0}, data...))),
+                        })
                     case MidiEventChannelPrefix:
-                        // TODO
+                        if len(data) != 1 {
+                            return MidiEvent{}, fmt.Errorf("Channel prefix event type has invalid length: %v", len(data))
+                        }
+
+                        messages = append(messages, &MidiMessageChannelPrefix{
+                            Channel: data[0],
+                        })
                     case MidiEventEndOfTrack:
                         // TODO
                     default:
@@ -244,22 +318,22 @@ func (chunk *IFFChunk) ReadEvent() (IFFEvent, error) {
 
                     _ = channel
 
-                    switch MidiMessage(message) {
+                    switch MidiMessageValue(message) {
                         case MidiMessageNoteOn:
                             // The first difference is "Note On" event contains 3 parameters - the note number, velocity level (same as standard MIDI), and also duration in ticks. Duration is stored as variable-length value in concatenated bits format. Since note events store information about its duration, there are no "Note Off" events.
 
                             note, err := reader.ReadByte()
                             if err != nil {
-                                return IFFEvent{}, err
+                                return MidiEvent{}, err
                             }
                             velocity, err := reader.ReadByte()
                             if err != nil {
-                                return IFFEvent{}, err
+                                return MidiEvent{}, err
                             }
 
                             duration, err := readMidiLength(reader)
                             if err != nil {
-                                return IFFEvent{}, err
+                                return MidiEvent{}, err
                             }
 
                             fmt.Printf("  note on note=%v velocity=%v duration=%v\n", note, velocity, duration)
@@ -267,11 +341,11 @@ func (chunk *IFFChunk) ReadEvent() (IFFEvent, error) {
                         case MidiMessageControlChange:
                             controller, err := reader.ReadByte()
                             if err != nil {
-                                return IFFEvent{}, err
+                                return MidiEvent{}, err
                             }
                             newValue, err := reader.ReadByte()
                             if err != nil {
-                                return IFFEvent{}, err
+                                return MidiEvent{}, err
                             }
 
                             _ = controller
@@ -280,7 +354,7 @@ func (chunk *IFFChunk) ReadEvent() (IFFEvent, error) {
                         case MidiMessageProgramChange:
                             program, err := reader.ReadByte()
                             if err != nil {
-                                return IFFEvent{}, err
+                                return MidiEvent{}, err
                             }
                             _ = program
                             // TODO: handle program
@@ -288,7 +362,7 @@ func (chunk *IFFChunk) ReadEvent() (IFFEvent, error) {
                         case MidiMessageChannelPressure:
                             pressure, err := reader.ReadByte()
                             if err != nil {
-                                return IFFEvent{}, err
+                                return MidiEvent{}, err
                             }
                             _ = pressure
                             // TODO: handle pressure
@@ -296,11 +370,11 @@ func (chunk *IFFChunk) ReadEvent() (IFFEvent, error) {
                         case MidiMessagePitchWheelChange:
                             low, err := reader.ReadByte()
                             if err != nil {
-                                return IFFEvent{}, err
+                                return MidiEvent{}, err
                             }
                             high, err := reader.ReadByte()
                             if err != nil {
-                                return IFFEvent{}, err
+                                return MidiEvent{}, err
                             }
 
                             total := int(high) << 7 | int(low)
@@ -309,7 +383,7 @@ func (chunk *IFFChunk) ReadEvent() (IFFEvent, error) {
 
                         default:
                             fmt.Printf("  unknown midi event type: 0x%x\n", value)
-                            return IFFEvent{}, fmt.Errorf("Unknown midi event type: 0x%x", value)
+                            return MidiEvent{}, fmt.Errorf("Unknown midi event type: 0x%x", value)
                     }
             }
         } else {
@@ -317,14 +391,14 @@ func (chunk *IFFChunk) ReadEvent() (IFFEvent, error) {
             for value == 0x7f {
                 value, err = reader.ReadByte()
                 if err != nil {
-                    return IFFEvent{}, err
+                    return MidiEvent{}, err
                 }
                 delay += int64(value)
             }
         }
     }
 
-    return IFFEvent{}, nil
+    return MidiEvent{Messages: messages}, nil
 }
 
 func (chunk *IFFChunk) SubChunkReader() *IFFReader {
