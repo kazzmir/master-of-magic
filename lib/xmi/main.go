@@ -207,6 +207,16 @@ type MidiMessageProgramChange struct {
     Program uint8
 }
 
+type MidiMessageChannelPressure struct {
+    Channel uint8
+    Pressure uint8
+}
+
+type MidiMessagePitchWheelChange struct {
+    Channel uint8
+    Value int
+}
+
 func (chunk *IFFChunk) ReadEvent() (MidiEvent, error) {
     // fmt.Printf("Data: %v\n", chunk.Data[0:20])
 
@@ -396,9 +406,11 @@ func (chunk *IFFChunk) ReadEvent() (MidiEvent, error) {
                             if err != nil {
                                 return MidiEvent{}, err
                             }
-                            _ = pressure
-                            // TODO: handle pressure
 
+                            messages = append(messages, &MidiMessageChannelPressure{
+                                Channel: channel,
+                                Pressure: pressure,
+                            })
                         case MidiMessagePitchWheelChangeValue:
                             low, err := reader.ReadByte()
                             if err != nil {
@@ -410,9 +422,11 @@ func (chunk *IFFChunk) ReadEvent() (MidiEvent, error) {
                             }
 
                             total := int(high) << 7 | int(low)
-                            _ = total
-                            // TODO: handle pitch wheel change
 
+                            messages = append(messages, &MidiMessagePitchWheelChange{
+                                Channel: channel,
+                                Value: total,
+                            })
                         default:
                             return MidiEvent{}, fmt.Errorf("Unknown midi event type: 0x%x", value)
                     }
