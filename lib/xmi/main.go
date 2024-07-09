@@ -1,5 +1,8 @@
 package main
 
+// https://moddingwiki.shikadi.net/wiki/XMI_Format
+// https://www.vgmpf.com/Wiki/index.php?title=XMI
+
 import (
     "os"
     "io"
@@ -32,35 +35,13 @@ func readInt32LE(reader io.Reader) (int32, error) {
     return int32(v), err
 }
 
-type IFFSubChunkReader struct {
-    reader *bytes.Reader
+type IFFTimbreEntry struct {
+    Patch uint8
+    Bank uint8
 }
 
-func (reader *IFFSubChunkReader) HasMore() bool {
-    return reader.reader.Len() > 0
-}
-
-func (reader *IFFSubChunkReader) ReadTimbreChunk() (IFFChunk, error) {
-    return IFFChunk{}, fmt.Errorf("error handle TIMB")
-}
-
-func (reader *IFFSubChunkReader) ReadEventChunk() (IFFChunk, error) {
-    return IFFChunk{}, fmt.Errorf("error handle EVNT")
-}
-
-func (reader *IFFSubChunkReader) NextChunk() (IFFChunk, error) {
-    id := make([]byte, 4)
-    reader.reader.Read(id)
-
-    if string(id) == "TIMB" {
-        return reader.ReadTimbreChunk()
-    }
-
-    if string(id) == "EVNT" {
-        return reader.ReadEventChunk()
-    }
-
-    return IFFChunk{}, fmt.Errorf("unknown iff chunk id: %v", string(id))
+type IFFTimbre struct {
+    Entries []IFFTimbreEntry
 }
 
 type IFFChunk struct {
@@ -72,6 +53,14 @@ func (chunk *IFFChunk) IsForm() bool {
     return string(chunk.ID) == "FORM"
 }
 
+func (chunk *IFFChunk) IsEvent() bool {
+    return string(chunk.ID) == "EVNT"
+}
+
+func (chunk *IFFChunk) IsCat() bool {
+    return string(chunk.ID) == "CAT "
+}
+
 func (chunk *IFFChunk) GetFormType() string {
     return string(chunk.Data[:4])
 }
@@ -80,14 +69,45 @@ func (chunk *IFFChunk) IsInfo() bool {
     return string(chunk.ID) == "INFO"
 }
 
+func (chunk *IFFChunk) IsTimbre() bool {
+    return string(chunk.ID) == "TIMB"
+}
+
 func (chunk *IFFChunk) GetInfoSequence() int {
     b1 := int(chunk.Data[0])
     b2 := int(chunk.Data[1])
     return b1 + b2 * 256
 }
 
-func (chunk *IFFChunk) SubChunkReader() *IFFSubChunkReader {
-    return &IFFSubChunkReader{reader: bytes.NewReader(chunk.Data)}
+func (chunk *IFFChunk) ReadTimbre() (IFFTimbre, error) {
+    reader := bufio.NewReader(bytes.NewReader(chunk.Data))
+
+    count, err := readUint16LE(reader)
+    if err != nil {
+        return IFFTimbre{}, err
+    }
+
+    var entries []IFFTimbreEntry
+
+    for i := 0; i < int(count); i++ {
+        patch, err := reader.ReadByte()
+        if err != nil {
+            return IFFTimbre{}, err
+        }
+
+        bank, err := reader.ReadByte()
+        if err != nil {
+            return IFFTimbre{}, err
+        }
+
+        entries = append(entries, IFFTimbreEntry{Patch: patch, Bank: bank})
+    }
+
+    return IFFTimbre{Entries: entries}, nil
+}
+
+func (chunk *IFFChunk) SubChunkReader() *IFFReader {
+    return &IFFReader{reader: bufio.NewReader(bytes.NewReader(chunk.Data))}
 }
 
 func (chunk *IFFChunk) SubChunk() IFFChunk {
@@ -96,18 +116,6 @@ func (chunk *IFFChunk) SubChunk() IFFChunk {
     }
 
     return IFFChunk{ID: chunk.Data[0:4], Data: chunk.Data[4:]}
-}
-
-func (chunk *IFFChunk) IsTimbre() bool {
-    return string(chunk.ID) == "TIMB"
-}
-
-func (chunk *IFFChunk) IsEvent() bool {
-    return string(chunk.ID) == "EVNT"
-}
-
-func (chunk *IFFChunk) IsCat() bool {
-    return string(chunk.ID) == "CAT "
 }
 
 func (chunk *IFFChunk) Name() string {
@@ -206,13 +214,31 @@ func main(){
             subChunkReader := sub2.SubChunkReader()
 
             for subChunkReader.HasMore() {
-                next, err := subChunkReader.NextChunk()
+                next, err := subChunkReader.ReadChunk()
                 if err != nil {
                     fmt.Printf("Error reading subchunk: %v\n", err)
                     break
                 }
 
+                /*
+                timbre, ok := next.(*IFFTimbre)
+                if ok {
+                    fmt.Printf("  timbre entries: %v\n", len(timbre.Entries))
+                }
+                */
+
                 fmt.Printf("  next subchunk name=%v size=%v\n", next.Name(), next.Size())
+
+                if next.IsTimbre() {
+                    timbre, err := next.ReadTimbre()
+                    if err != nil {
+                        fmt.Printf("Error reading timbre: %v\n", err)
+                        break
+                    }
+
+                    fmt.Printf("  timbre entries: %v\n", len(timbre.Entries))
+                }
+
             }
 
             /*
