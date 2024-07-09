@@ -217,6 +217,10 @@ type MidiMessagePitchWheelChange struct {
     Value int
 }
 
+type MidiMessageDelay struct {
+    Delay int64
+}
+
 func (chunk *IFFChunk) ReadEvent() (MidiEvent, error) {
     // fmt.Printf("Data: %v\n", chunk.Data[0:20])
 
@@ -440,6 +444,10 @@ func (chunk *IFFChunk) ReadEvent() (MidiEvent, error) {
                 }
                 delay += int64(value)
             }
+
+            messages = append(messages, &MidiMessageDelay{
+                Delay: delay,
+            })
         }
     }
 
