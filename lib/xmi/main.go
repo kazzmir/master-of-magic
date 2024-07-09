@@ -172,6 +172,7 @@ func (event *MidiEvent) ConvertToSMF() *smf.SMF {
             case *MidiMessageNoteOn:
                 note := message.(*MidiMessageNoteOn)
                 track.Add(currentDelay, midi.NoteOn(note.Channel, note.Note, note.Velocity).Bytes())
+                track.Add(uint32(note.Duration), midi.NoteOff(note.Channel, note.Note).Bytes())
                 currentDelay = 0
             case *MidiMessageDelay:
                 delay := message.(*MidiMessageDelay)
@@ -179,7 +180,7 @@ func (event *MidiEvent) ConvertToSMF() *smf.SMF {
         }
     }
 
-    track.Close(0)
+    track.Close(currentDelay)
     object.Add(track)
 
     return object
