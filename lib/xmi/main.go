@@ -10,6 +10,8 @@ import (
     "bytes"
     "bufio"
     "encoding/binary"
+
+    "gitlab.com/gomidi/midi/v2/smf"
 )
 
 func readUint16LE(reader io.Reader) (uint16, error) {
@@ -152,6 +154,16 @@ const (
 
 type MidiEvent struct {
     Messages []MidiMessage
+}
+
+func (event *MidiEvent) ConvertToSMF() *smf.SMF {
+    object := smf.New()
+
+    var track smf.Track
+    track.Close(0)
+    object.Add(track)
+
+    return object
 }
 
 type MidiMessage interface {
@@ -588,8 +600,19 @@ func main(){
                     event, err := next.ReadEvent()
                     if err != nil {
                         fmt.Printf("Error reading event: %v\n", err)
+                        continue
+                    }
+
+                    smfObject := event.ConvertToSMF()
+                    out, err := os.Create("output.mid")
+                    if err != nil {
+                        fmt.Printf("Error creating output file: %v\n", err)
                     } else {
-                        fmt.Printf("  event: %v\n", event)
+                        defer out.Close()
+
+                        fmt.Printf("Tracks: %v\n", smfObject.NumTracks())
+
+                        smfObject.WriteTo(out)
                     }
                 }
 
