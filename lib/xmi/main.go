@@ -109,15 +109,15 @@ func (chunk *IFFChunk) ReadTimbre() (IFFTimbre, error) {
     return IFFTimbre{Entries: entries}, nil
 }
 
-func readMidiLength(reader *bufio.Reader) (int, error) {
-    length := 0
+func readMidiLength(reader *bufio.Reader) (int64, error) {
+    length := int64(0)
     for {
         b, err := reader.ReadByte()
         if err != nil {
             return 0, err
         }
 
-        length = (length << 7) | (int(b) & 0x7f)
+        length = (length << 7) | (int64(b) & 0x7f)
         if b & 0x80 == 0 {
             break
         }
@@ -143,11 +143,11 @@ const (
 
 type MidiMessageValue uint8
 const (
-    MidiMessageNoteOn = 0b1001
-    MidiMessageControlChange = 0b1011
-    MidiMessageProgramChange = 0b1100
-    MidiMessageChannelPressure = 0b1101 // after touch
-    MidiMessagePitchWheelChange = 0b1110
+    MidiMessageNoteOnValue = 0b1001
+    MidiMessageControlChangeValue = 0b1011
+    MidiMessageProgramChangeValue = 0b1100
+    MidiMessageChannelPressureValue = 0b1101 // after touch
+    MidiMessagePitchWheelChangeValue = 0b1110
 )
 
 type MidiEvent struct {
@@ -186,6 +186,27 @@ type MidiMessageChannelPrefix struct {
     Channel uint8
 }
 
+type MidiMessageEndOfTrack struct {
+}
+
+type MidiMessageNoteOn struct {
+    Channel uint8
+    Note uint8
+    Velocity uint8
+    Duration int64
+}
+
+type MidiMessageControlChange struct {
+    Channel uint8
+    Controller uint8
+    Value uint8
+}
+
+type MidiMessageProgramChange struct {
+    Channel uint8
+    Program uint8
+}
+
 func (chunk *IFFChunk) ReadEvent() (MidiEvent, error) {
     // fmt.Printf("Data: %v\n", chunk.Data[0:20])
 
@@ -199,7 +220,7 @@ func (chunk *IFFChunk) ReadEvent() (MidiEvent, error) {
             break
         }
 
-        fmt.Printf("Event 0x%x\n", value)
+        // fmt.Printf("Event 0x%x\n", value)
 
         // check high bit to see if its a delay
         isDelay := value & 0x80 == 0
@@ -227,7 +248,7 @@ func (chunk *IFFChunk) ReadEvent() (MidiEvent, error) {
                         return MidiEvent{}, err
                     }
 
-                    fmt.Printf("  Meta event: 0x%x length=%v data=%v\n", kind, length, data)
+                    // fmt.Printf("  Meta event: 0x%x length=%v data=%v\n", kind, length, data)
 
                     switch MidiMetaEventKind(kind) {
                     case MidiEventSMPTEOffset:
@@ -308,18 +329,17 @@ func (chunk *IFFChunk) ReadEvent() (MidiEvent, error) {
                             Channel: data[0],
                         })
                     case MidiEventEndOfTrack:
-                        // TODO
+                        messages = append(messages, &MidiMessageEndOfTrack{
+                        })
                     default:
-                        fmt.Printf("unknown midi meta event type: 0x%x\n", kind)
+                        return MidiEvent{}, fmt.Errorf("Unknown midi meta event type: 0x%x", kind)
                     }
                 default:
                     message := value >> 4
                     channel := value & 0x0f
 
-                    _ = channel
-
                     switch MidiMessageValue(message) {
-                        case MidiMessageNoteOn:
+                        case MidiMessageNoteOnValue:
                             // The first difference is "Note On" event contains 3 parameters - the note number, velocity level (same as standard MIDI), and also duration in ticks. Duration is stored as variable-length value in concatenated bits format. Since note events store information about its duration, there are no "Note Off" events.
 
                             note, err := reader.ReadByte()
@@ -336,9 +356,16 @@ func (chunk *IFFChunk) ReadEvent() (MidiEvent, error) {
                                 return MidiEvent{}, err
                             }
 
-                            fmt.Printf("  note on note=%v velocity=%v duration=%v\n", note, velocity, duration)
+                            // fmt.Printf("  note on note=%v velocity=%v duration=%v\n", note, velocity, duration)
 
-                        case MidiMessageControlChange:
+                            messages = append(messages, &MidiMessageNoteOn{
+                                Channel: channel,
+                                Note: note,
+                                Velocity: velocity,
+                                Duration: duration,
+                            })
+
+                        case MidiMessageControlChangeValue:
                             controller, err := reader.ReadByte()
                             if err != nil {
                                 return MidiEvent{}, err
@@ -348,18 +375,23 @@ func (chunk *IFFChunk) ReadEvent() (MidiEvent, error) {
                                 return MidiEvent{}, err
                             }
 
-                            _ = controller
-                            _ = newValue
-                            // TODO: handle values
-                        case MidiMessageProgramChange:
+                            messages = append(messages, &MidiMessageControlChange{
+                                Channel: channel,
+                                Controller: controller,
+                                Value: newValue,
+                            })
+                        case MidiMessageProgramChangeValue:
                             program, err := reader.ReadByte()
                             if err != nil {
                                 return MidiEvent{}, err
                             }
-                            _ = program
-                            // TODO: handle program
 
-                        case MidiMessageChannelPressure:
+                            messages = append(messages, &MidiMessageProgramChange{
+                                Channel: channel,
+                                Program: program,
+                            })
+
+                        case MidiMessageChannelPressureValue:
                             pressure, err := reader.ReadByte()
                             if err != nil {
                                 return MidiEvent{}, err
@@ -367,7 +399,7 @@ func (chunk *IFFChunk) ReadEvent() (MidiEvent, error) {
                             _ = pressure
                             // TODO: handle pressure
 
-                        case MidiMessagePitchWheelChange:
+                        case MidiMessagePitchWheelChangeValue:
                             low, err := reader.ReadByte()
                             if err != nil {
                                 return MidiEvent{}, err
@@ -382,7 +414,6 @@ func (chunk *IFFChunk) ReadEvent() (MidiEvent, error) {
                             // TODO: handle pitch wheel change
 
                         default:
-                            fmt.Printf("  unknown midi event type: 0x%x\n", value)
                             return MidiEvent{}, fmt.Errorf("Unknown midi event type: 0x%x", value)
                     }
             }
