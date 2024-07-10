@@ -172,6 +172,8 @@ func (a ByDuration) Less(i, j int) bool { return a[i].Duration < a[j].Duration }
 func (event *MidiEvent) ConvertToSMF() *smf.SMF {
     object := smf.New()
 
+    object.TimeFormat = smf.MetricTicks(97)
+
     var track smf.Track
 
     var future []NoteOffDuration
