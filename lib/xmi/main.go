@@ -10,6 +10,7 @@ import (
     "bytes"
     "bufio"
     "encoding/binary"
+    "sort"
 
     "gitlab.com/gomidi/midi/v2/smf"
     "gitlab.com/gomidi/midi/v2"
@@ -157,10 +158,29 @@ type MidiEvent struct {
     Messages []MidiMessage
 }
 
+type NoteOffDuration struct {
+    Channel uint8
+    Note uint8
+    Duration int64
+}
+
+type ByDuration []NoteOffDuration
+func (a ByDuration) Len() int           { return len(a) }
+func (a ByDuration) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a ByDuration) Less(i, j int) bool { return a[i].Duration < a[j].Duration }
+
 func (event *MidiEvent) ConvertToSMF() *smf.SMF {
     object := smf.New()
 
     var track smf.Track
+
+    var future []NoteOffDuration
+
+    trueTempo := 80.0
+
+    adjustDelay := func(delay int64) int64 {
+        return int64(float64(delay) * (float64(trueTempo) / 80.0))
+    }
 
     currentDelay := uint32(0)
     for _, message := range event.Messages {
@@ -174,18 +194,20 @@ func (event *MidiEvent) ConvertToSMF() *smf.SMF {
             case *MidiMessageTimeSignature:
                 signature := message.(*MidiMessageTimeSignature)
                 fmt.Printf("Set time signature to %+v\n", signature)
-                // track.Add(currentDelay, smf.MetaTimeSig(signature.Numerator, signature.Denominator, signature.Metronome, signature.DemiSemiQuaverPerQuarter).Bytes())
-                track.Add(currentDelay, smf.MetaTimeSig(4, 4, signature.Metronome, signature.DemiSemiQuaverPerQuarter).Bytes())
+                track.Add(currentDelay, smf.MetaTimeSig(signature.Numerator, 1<<signature.Denominator, signature.Metronome, signature.DemiSemiQuaverPerQuarter).Bytes())
+                // track.Add(currentDelay, smf.MetaTimeSig(4, 4, signature.Metronome, signature.DemiSemiQuaverPerQuarter).Bytes())
                 currentDelay = 0
             case *MidiMessageChannelPrefix:
                 prefix := message.(*MidiMessageChannelPrefix)
                 track.Add(currentDelay, smf.MetaChannel(prefix.Channel).Bytes())
                 currentDelay = 0
             case *MidiMessageTempoSetting:
-                // tempo := message.(*MidiMessageTempoSetting)
-                // track.Add(currentDelay, smf.MetaTempo(tempo.Tempo).Bytes())
+                tempo := message.(*MidiMessageTempoSetting)
+                // TODO: figure out where this constant comes from
+                trueTempo = 60000000.0 / tempo.Tempo
+                track.Add(currentDelay, smf.MetaTempo(trueTempo).Bytes())
 
-                track.Add(currentDelay, smf.MetaTempo(131).Bytes())
+                // track.Add(currentDelay, smf.MetaTempo(131).Bytes())
 
                 currentDelay = 0
             case *MidiMessageProgramChange:
@@ -208,7 +230,12 @@ func (event *MidiEvent) ConvertToSMF() *smf.SMF {
                 note := message.(*MidiMessageNoteOn)
                 // fmt.Printf("Note on: %v %v %v %v\n", note.Channel, note.Note, note.Velocity, note.Duration)
                 track.Add(currentDelay, midi.NoteOn(note.Channel, note.Note, note.Velocity).Bytes())
-                track.Add(uint32(note.Duration), midi.NoteOff(note.Channel, note.Note).Bytes())
+                future = append(future, NoteOffDuration{Channel: note.Channel, Note: note.Note, Duration: adjustDelay(note.Duration)})
+                // track.Add(uint32(note.Duration), midi.NoteOffVelocity(note.Channel, note.Note, 127).Bytes())
+                currentDelay = 0
+            case *MidiMessageChannelPressure:
+                pressure := message.(*MidiMessageChannelPressure)
+                track.Add(currentDelay, midi.AfterTouch(pressure.Channel, pressure.Pressure).Bytes())
                 currentDelay = 0
             case *MidiMessageControlChange:
                 control := message.(*MidiMessageControlChange)
@@ -216,7 +243,33 @@ func (event *MidiEvent) ConvertToSMF() *smf.SMF {
                 currentDelay = 0
             case *MidiMessageDelay:
                 delay := message.(*MidiMessageDelay)
-                currentDelay = uint32(delay.Delay)
+                currentDelay = uint32(adjustDelay(delay.Delay))
+
+                sort.Sort(ByDuration(future))
+
+                /* compute which notes to turn off */
+                sofar := int64(0)
+                var more []NoteOffDuration
+                for _, note := range future {
+                    note.Duration -= sofar
+                    if note.Duration < 0 {
+                        note.Duration = 0
+                    }
+                    if note.Duration - int64(currentDelay) <= 0 {
+                        track.Add(uint32(note.Duration), midi.NoteOffVelocity(note.Channel, note.Note, 127).Bytes())
+                        fmt.Printf("emit note off: delta=%v channel=%v note=%v\n", note.Duration, note.Channel, note.Note)
+                        sofar += note.Duration
+                        currentDelay -= uint32(note.Duration)
+                    } else {
+                        note.Duration -= int64(currentDelay)
+                        more = append(more, note)
+                    }
+                }
+                future = more
+                if len(future) > 0 {
+                    fmt.Printf("future notes: %+v\n", future)
+                }
+
             case *MidiMessageEndOfTrack:
                 track.Close(currentDelay)
             default:
@@ -455,6 +508,8 @@ func (chunk *IFFChunk) ReadEvent() (MidiEvent, error) {
                                 Duration: duration,
                             })
 
+                            fmt.Printf("Note on: channel=%v note=%v velocity=%v duration=%v\n", channel, note, velocity, duration)
+
                         case MidiMessageControlChangeValue:
                             controller, err := reader.ReadByte()
                             if err != nil {
@@ -522,6 +577,8 @@ func (chunk *IFFChunk) ReadEvent() (MidiEvent, error) {
                 }
                 delay += int64(value)
             }
+
+            fmt.Printf("Delay of %v\n", delay)
 
             messages = append(messages, &MidiMessageDelay{
                 Delay: delay,
@@ -614,7 +671,8 @@ func main(){
     defer data.Close()
 
     reader := bufio.NewReader(data)
-    reader.Discard(16)
+    // if reading from an lbx file
+    // reader.Discard(16)
 
     iffReader := NewIFFReader(reader)
 
