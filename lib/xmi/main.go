@@ -7,12 +7,16 @@ import (
     "os"
     "io"
     "fmt"
+    "time"
+    "strings"
     "bytes"
     "bufio"
     "encoding/binary"
     "sort"
 
     "gitlab.com/gomidi/midi/v2/smf"
+    midiDrivers "gitlab.com/gomidi/midi/v2/drivers"
+    _ "gitlab.com/gomidi/midi/v2/drivers/portmididrv"
     "gitlab.com/gomidi/midi/v2"
 )
 
@@ -172,6 +176,7 @@ func (a ByDuration) Less(i, j int) bool { return a[i].Duration < a[j].Duration }
 func (event *MidiEvent) ConvertToSMF() *smf.SMF {
     object := smf.New()
 
+    // FIXME: where does 97 come from? all the master of magic files seem to use it
     object.TimeFormat = smf.MetricTicks(97)
 
     var track smf.Track
@@ -180,6 +185,20 @@ func (event *MidiEvent) ConvertToSMF() *smf.SMF {
 
     trueTempo := 80.0
 
+    /* tempo setting hex value: 19 f3 8d
+      at bpm: 35.28
+      delay 34 -> delta 15
+      delay 50 -> delta 22
+      delay 66 -> delta 29
+
+      tempo setting hex value: 09 f3 8d
+      at bpm: 92
+      delay 34 -> delta 39
+      delay 50 -> delta 58
+      delay 66 -> delta 76
+
+      it looks like the formula is delay * (temp/80)
+    */
     adjustDelay := func(delay int64) int64 {
         return int64(float64(delay) * (float64(trueTempo) / 80.0))
     }
@@ -659,6 +678,54 @@ func NewIFFReader(reader io.Reader) *IFFReader {
     }
 }
 
+/* first run in a terminal
+ * $ fluidsynth --audio-driver=pulseaudio /usr/share/sounds/sf2/FluidR3_GM.sf2
+ */
+func playMidi(smfObject *smf.SMF){
+    driver := midiDrivers.Get()
+    fmt.Printf("Got driver: %v\n", driver)
+    outs, err := driver.Outs()
+    if err != nil {
+        fmt.Printf("Could not get midi output ports: %v\n", err)
+    } else {
+        fmt.Printf("Got midi output ports: %v\n", outs)
+        if len(outs) > 0 {
+            for _, out := range outs {
+
+                if strings.Contains(out.String(), "Through"){
+                    continue
+                }
+
+                send, err := midi.SendTo(out)
+                if err != nil {
+                    fmt.Printf("Could not send to midi output port: %v\n", err)
+                    return
+                }
+
+                defer out.Close()
+
+                for _, event := range smfObject.Tracks[0] {
+                    fmt.Printf("Sending event: %v\n", event)
+                    err := send(event.Message.Bytes())
+                    if err != nil {
+                        fmt.Printf("Error: %v\n", err)
+                    }
+
+                    // FIXME: use proper delay
+                    time.Sleep(time.Millisecond * time.Duration(event.Delta) * 10)
+                }
+
+                return
+            }
+
+            fmt.Printf("No playabale output ports available!\n")
+
+        } else {
+            fmt.Printf("No midi output ports available!\n")
+        }
+    }
+}
+
 func main(){
     if len(os.Args) < 2 {
         return
@@ -740,6 +807,9 @@ func main(){
 
                         smfObject.WriteTo(out)
                         fmt.Printf("Wrote to output.mid\n")
+
+                        playMidi(smfObject)
+
                     }
                 } else {
                     fmt.Printf("  unknown subchunk\n")
