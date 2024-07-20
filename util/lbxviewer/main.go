@@ -4,7 +4,7 @@ import (
     "log"
     "os"
     "fmt"
-    "sync"
+    // "sync"
     "math"
     "bytes"
     _ "embed"
@@ -31,10 +31,24 @@ func LoadFont() (*text.GoTextFaceSource, error) {
 type Viewer struct {
     Lbx *lbx.LbxFile
     Images []*ebiten.Image
-    LoadImages sync.Once
     Scale float64
     CurrentImage int
+    LbxEntry int
     Font *text.GoTextFaceSource
+}
+
+func (viewer *Viewer) LoadImages() {
+    rawImages, err := viewer.Lbx.ReadImages(viewer.LbxEntry)
+    if err != nil {
+        log.Printf("Unable to load images: %v", err)
+        return
+    }
+    var images []*ebiten.Image
+    for _, rawImage := range rawImages {
+        images = append(images, ebiten.NewImageFromImage(rawImage))
+    }
+    viewer.Images = images
+    viewer.CurrentImage = 0
 }
 
 func (viewer *Viewer) Update() error {
@@ -76,24 +90,25 @@ func (viewer *Viewer) Update() error {
                 if viewer.CurrentImage >= len(viewer.Images) {
                     viewer.CurrentImage = 0
                 }
+            case ebiten.KeyPageUp:
+                viewer.LbxEntry -= 1
+                if viewer.LbxEntry < 0 {
+                    viewer.LbxEntry = viewer.Lbx.TotalEntries() - 1
+                }
+
+                if viewer.LbxEntry >= 0 {
+                    viewer.LoadImages()
+                }
+            case ebiten.KeyPageDown:
+                viewer.LbxEntry += 1
+                if viewer.LbxEntry >= viewer.Lbx.TotalEntries() {
+                    viewer.LbxEntry = 0
+                }
+                viewer.LoadImages()
             case ebiten.KeyEscape, ebiten.KeyCapsLock:
                 return ebiten.Termination
         }
     }
-
-    viewer.LoadImages.Do(func(){
-        rawImages, err := viewer.Lbx.ReadImages(0)
-        if err != nil {
-            log.Printf("Unable to load images: %v", err)
-            return
-        }
-        var images []*ebiten.Image
-        for _, rawImage := range rawImages {
-            images = append(images, ebiten.NewImageFromImage(rawImage))
-        }
-
-        viewer.Images = images
-    })
 
     return nil
 }
@@ -110,6 +125,8 @@ func (viewer *Viewer) Draw(screen *ebiten.Image) {
     op := &text.DrawOptions{}
     op.GeoM.Translate(1, 1)
     op.ColorScale.ScaleWithColor(color.White)
+    text.Draw(screen, fmt.Sprintf("Lbx entry: %v/%v", viewer.LbxEntry+1, viewer.Lbx.TotalEntries()), face, op)
+    op.GeoM.Translate(1, 20)
     text.Draw(screen, fmt.Sprintf("Image: %v/%v", viewer.CurrentImage+1, len(viewer.Images)), face, op)
     op.GeoM.Translate(0, 20)
     text.Draw(screen, fmt.Sprintf("Scale: %.2f", viewer.Scale), face, op)
@@ -133,11 +150,16 @@ func MakeViewer(lbxFile *lbx.LbxFile) (*Viewer, error) {
         return nil, err
     }
 
-    return &Viewer{
+    viewer := &Viewer{
         Lbx: lbxFile,
         Scale: 5,
         Font: font,
-    }, nil
+        CurrentImage: 0,
+        LbxEntry: 0,
+    }
+
+    viewer.LoadImages()
+    return viewer, nil
 }
 
 func main() {

@@ -558,6 +558,10 @@ func (lbx *LbxFile) ReadTerrainImages(entry int) ([]image.Image, error) {
     return images, nil
 }
 
+func (lbx *LbxFile) TotalEntries() int {
+    return len(lbx.Data)
+}
+
 func (lbx *LbxFile) ReadImages(entry int) ([]image.Image, error) {
 
     if entry < 0 || entry >= len(lbx.Data) {
