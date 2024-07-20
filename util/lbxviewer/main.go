@@ -3,8 +3,10 @@ package main
 import (
     "log"
     "os"
+    "fmt"
     "sync"
     "math"
+    "bytes"
     _ "embed"
 
     "image/color"
@@ -13,6 +15,7 @@ import (
 
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
+    "github.com/hajimehoshi/ebiten/v2/text/v2"
 )
 
 //go:embed futura.ttf
@@ -21,24 +24,31 @@ var FuturaTTF []byte
 const ScreenWidth = 1024
 const ScreenHeight = 768
 
+func LoadFont() (*text.GoTextFaceSource, error) {
+    return text.NewGoTextFaceSource(bytes.NewReader(FuturaTTF))
+}
+
 type Viewer struct {
     Lbx *lbx.LbxFile
     Images []*ebiten.Image
     LoadImages sync.Once
     Scale float64
     CurrentImage int
+    Font *text.GoTextFaceSource
 }
 
 func (viewer *Viewer) Update() error {
     keys := make([]ebiten.Key, 0)
     keys = inpututil.AppendPressedKeys(keys)
 
+    scaleAmount := 0.06
+
     for _, key := range keys {
         switch key {
             case ebiten.KeyUp:
-                viewer.Scale *= 1.1
+                viewer.Scale *= 1 + scaleAmount
             case ebiten.KeyDown:
-                viewer.Scale *= 0.9
+                viewer.Scale *= 1 - scaleAmount
                 if viewer.Scale < 1 {
                     viewer.Scale = 1
                 }
@@ -95,6 +105,15 @@ func (viewer *Viewer) Layout(outsideWidth int, outsideHeight int) (int, int) {
 func (viewer *Viewer) Draw(screen *ebiten.Image) {
     screen.Fill(color.RGBA{0x80, 0xa0, 0xc0, 0xff})
 
+    face := &text.GoTextFace{Source: viewer.Font, Size: 15}
+
+    op := &text.DrawOptions{}
+    op.GeoM.Translate(1, 1)
+    op.ColorScale.ScaleWithColor(color.White)
+    text.Draw(screen, fmt.Sprintf("Image: %v/%v", viewer.CurrentImage+1, len(viewer.Images)), face, op)
+    op.GeoM.Translate(0, 20)
+    text.Draw(screen, fmt.Sprintf("Scale: %.2f", viewer.Scale), face, op)
+
     middleX := ScreenWidth / 2
     middleY := ScreenHeight / 2
 
@@ -108,11 +127,17 @@ func (viewer *Viewer) Draw(screen *ebiten.Image) {
     }
 }
 
-func MakeViewer(lbxFile *lbx.LbxFile) Viewer {
-    return Viewer{
+func MakeViewer(lbxFile *lbx.LbxFile) (*Viewer, error) {
+    font, err := LoadFont()
+    if err != nil {
+        return nil, err
+    }
+
+    return &Viewer{
         Lbx: lbxFile,
         Scale: 5,
-    }
+        Font: font,
+    }, nil
 }
 
 func main() {
@@ -146,9 +171,13 @@ func main() {
         log.Printf("Loaded lbx file: %v\n", file)
     }()
 
-    viewer := MakeViewer(&lbxFile)
+    viewer, err := MakeViewer(&lbxFile)
+    if err != nil {
+        log.Printf("Error: %v", err)
+        return
+    }
 
-    err := ebiten.RunGame(&viewer)
+    err = ebiten.RunGame(viewer)
     if err != nil {
         log.Printf("Error: %v", err)
     }
