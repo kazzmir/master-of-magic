@@ -16,6 +16,7 @@ import (
 
     "gitlab.com/gomidi/midi/v2/smf"
     midiDrivers "gitlab.com/gomidi/midi/v2/drivers"
+    // sudo apt install libportmidi-dev
     _ "gitlab.com/gomidi/midi/v2/drivers/portmididrv"
     "gitlab.com/gomidi/midi/v2"
 )
