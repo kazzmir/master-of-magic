@@ -4,6 +4,7 @@ import (
     "log"
     "os"
     "sync"
+    "math"
 
     "image/color"
 
@@ -20,15 +21,38 @@ type Viewer struct {
     Lbx *lbx.LbxFile
     Images []*ebiten.Image
     LoadImages sync.Once
+    Scale float64
 }
 
 func (viewer *Viewer) Update() error {
     keys := make([]ebiten.Key, 0)
+    keys = inpututil.AppendPressedKeys(keys)
+
+    for _, key := range keys {
+        switch key {
+            case ebiten.KeyUp:
+                viewer.Scale *= 1.1
+            case ebiten.KeyDown:
+                viewer.Scale *= 0.9
+                if viewer.Scale < 1 {
+                    viewer.Scale = 1
+                }
+            case ebiten.KeySpace:
+                if len(viewer.Images) > 0 {
+                    bounds := viewer.Images[0].Bounds()
+                    viewer.Scale = 100.0 / math.Max(float64(bounds.Dx()), float64(bounds.Dy()))
+                }
+        }
+
+    }
+
+    keys = make([]ebiten.Key, 0)
     keys = inpututil.AppendJustPressedKeys(keys)
 
     for _, key := range keys {
-        if key == ebiten.KeyEscape || key == ebiten.KeyCapsLock {
-            return ebiten.Termination
+        switch key {
+            case ebiten.KeyEscape, ebiten.KeyCapsLock:
+                return ebiten.Termination
         }
     }
 
@@ -56,14 +80,21 @@ func (viewer *Viewer) Layout(outsideWidth int, outsideHeight int) (int, int) {
 func (viewer *Viewer) Draw(screen *ebiten.Image) {
     screen.Fill(color.RGBA{0x80, 0xa0, 0xc0, 0xff})
 
+    middleX := ScreenWidth / 2
+    middleY := ScreenHeight / 2
 
     var options ebiten.DrawImageOptions
+    bounds := viewer.Images[0].Bounds()
+    options.GeoM.Translate(float64(-bounds.Dx()) / 2.0, float64(-bounds.Dy()) / 2.0)
+    options.GeoM.Scale(viewer.Scale, viewer.Scale)
+    options.GeoM.Translate(float64(middleX), float64(middleY))
     screen.DrawImage(viewer.Images[0], &options)
 }
 
 func MakeViewer(lbxFile *lbx.LbxFile) Viewer {
     return Viewer{
         Lbx: lbxFile,
+        Scale: 5,
     }
 }
 
