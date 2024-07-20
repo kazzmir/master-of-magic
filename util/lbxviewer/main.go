@@ -22,6 +22,7 @@ type Viewer struct {
     Images []*ebiten.Image
     LoadImages sync.Once
     Scale float64
+    CurrentImage int
 }
 
 func (viewer *Viewer) Update() error {
@@ -39,7 +40,7 @@ func (viewer *Viewer) Update() error {
                 }
             case ebiten.KeySpace:
                 if len(viewer.Images) > 0 {
-                    bounds := viewer.Images[0].Bounds()
+                    bounds := viewer.Images[viewer.CurrentImage].Bounds()
                     viewer.Scale = 100.0 / math.Max(float64(bounds.Dx()), float64(bounds.Dy()))
                 }
         }
@@ -51,6 +52,16 @@ func (viewer *Viewer) Update() error {
 
     for _, key := range keys {
         switch key {
+            case ebiten.KeyLeft:
+                viewer.CurrentImage -= 1
+                if viewer.CurrentImage < 0 {
+                    viewer.CurrentImage = len(viewer.Images) - 1
+                }
+            case ebiten.KeyRight:
+                viewer.CurrentImage += 1
+                if viewer.CurrentImage >= len(viewer.Images) {
+                    viewer.CurrentImage = 0
+                }
             case ebiten.KeyEscape, ebiten.KeyCapsLock:
                 return ebiten.Termination
         }
@@ -83,12 +94,14 @@ func (viewer *Viewer) Draw(screen *ebiten.Image) {
     middleX := ScreenWidth / 2
     middleY := ScreenHeight / 2
 
-    var options ebiten.DrawImageOptions
-    bounds := viewer.Images[0].Bounds()
-    options.GeoM.Translate(float64(-bounds.Dx()) / 2.0, float64(-bounds.Dy()) / 2.0)
-    options.GeoM.Scale(viewer.Scale, viewer.Scale)
-    options.GeoM.Translate(float64(middleX), float64(middleY))
-    screen.DrawImage(viewer.Images[0], &options)
+    if len(viewer.Images) > 0 {
+        var options ebiten.DrawImageOptions
+        bounds := viewer.Images[viewer.CurrentImage].Bounds()
+        options.GeoM.Translate(float64(-bounds.Dx()) / 2.0, float64(-bounds.Dy()) / 2.0)
+        options.GeoM.Scale(viewer.Scale, viewer.Scale)
+        options.GeoM.Translate(float64(middleX), float64(middleY))
+        screen.DrawImage(viewer.Images[viewer.CurrentImage], &options)
+    }
 }
 
 func MakeViewer(lbxFile *lbx.LbxFile) Viewer {
