@@ -5,6 +5,7 @@ import (
     "os"
     "sync"
     "math"
+    _ "embed"
 
     "image/color"
 
@@ -13,6 +14,9 @@ import (
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
 )
+
+//go:embed futura.ttf
+var FuturaTTF []byte
 
 const ScreenWidth = 1024
 const ScreenHeight = 768
