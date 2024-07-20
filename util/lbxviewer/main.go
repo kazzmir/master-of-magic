@@ -3,6 +3,7 @@ package main
 import (
     "log"
     "os"
+    "sync"
 
     "image/color"
 
@@ -17,6 +18,8 @@ const ScreenHeight = 768
 
 type Viewer struct {
     Lbx *lbx.LbxFile
+    Images []*ebiten.Image
+    LoadImages sync.Once
 }
 
 func (viewer *Viewer) Update() error {
@@ -29,6 +32,20 @@ func (viewer *Viewer) Update() error {
         }
     }
 
+    viewer.LoadImages.Do(func(){
+        rawImages, err := viewer.Lbx.ReadImages(0)
+        if err != nil {
+            log.Printf("Unable to load images: %v", err)
+            return
+        }
+        var images []*ebiten.Image
+        for _, rawImage := range rawImages {
+            images = append(images, ebiten.NewImageFromImage(rawImage))
+        }
+
+        viewer.Images = images
+    })
+
     return nil
 }
 
@@ -38,6 +55,10 @@ func (viewer *Viewer) Layout(outsideWidth int, outsideHeight int) (int, int) {
 
 func (viewer *Viewer) Draw(screen *ebiten.Image) {
     screen.Fill(color.RGBA{0x80, 0xa0, 0xc0, 0xff})
+
+
+    var options ebiten.DrawImageOptions
+    screen.DrawImage(viewer.Images[0], &options)
 }
 
 func MakeViewer(lbxFile *lbx.LbxFile) Viewer {
