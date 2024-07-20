@@ -6,6 +6,7 @@ import (
     "image/color"
 
     "github.com/hajimehoshi/ebiten/v2"
+    "github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
 const ScreenWidth = 1024
@@ -15,6 +16,15 @@ type MagicGame struct {
 }
 
 func (game *MagicGame) Update() error {
+    keys := make([]ebiten.Key, 0)
+    keys = inpututil.AppendJustPressedKeys(keys)
+
+    for _, key := range keys {
+        if key == ebiten.KeyEscape || key == ebiten.KeyCapsLock {
+            return ebiten.Termination
+        }
+    }
+
     return nil
 }
 
