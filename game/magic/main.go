@@ -26,6 +26,7 @@ type NewGameScreen struct {
     Background *ebiten.Image
     Options *ebiten.Image
     OkButtons []*ebiten.Image
+    CancelButtons []*ebiten.Image
     loaded sync.Once
 }
 
@@ -64,6 +65,10 @@ func (newGameScreen *NewGameScreen) Load(cache *lbx.LbxCache) error {
         newGameScreen.OkButtons = make([]*ebiten.Image, 2)
         newGameScreen.OkButtons[0] = loadImage(2, 0)
         newGameScreen.OkButtons[1] = loadImage(2, 1)
+
+        newGameScreen.CancelButtons = make([]*ebiten.Image, 2)
+        newGameScreen.CancelButtons[0] = loadImage(3, 0)
+        newGameScreen.CancelButtons[1] = loadImage(3, 1)
     })
 
     return outError
@@ -85,6 +90,12 @@ func (newGameScreen *NewGameScreen) Draw(screen *ebiten.Image) {
         var options ebiten.DrawImageOptions
         options.GeoM.Translate(160 + 91, 179)
         screen.DrawImage(newGameScreen.OkButtons[0], &options)
+    }
+
+    if newGameScreen.CancelButtons[0] != nil {
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(160 + 10, 179)
+        screen.DrawImage(newGameScreen.CancelButtons[0], &options)
     }
 }
 

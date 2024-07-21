@@ -75,7 +75,8 @@ func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int, rawDump bool) 
             } else if len(data) > 0 {
                 images, err := file.ReadImages(index)
                 if err != nil {
-                    return err
+                    log.Printf("Unable to load entry %v as images: %v\n", index, err)
+                    continue
                 }
 
                 fmt.Printf("Loaded %v images\n", len(images))
@@ -110,7 +111,20 @@ func main(){
     }
 
     if len(os.Args) == 2 {
-        fmt.Printf("Opening %v as an lbx file\n", os.Args[1])
+        path := os.Args[1]
+        fmt.Printf("Opening %v as an lbx file\n", path)
+
+        file, err := os.Open(path)
+        if err != nil {
+            log.Printf("Error opening %v: %v\n", path, err)
+            return
+        }
+        onlyIndex := -1
+        rawDump := true
+        err = dumpLbx(file, strings.ToLower(path), onlyIndex, rawDump)
+        if err != nil {
+            log.Printf("Error dumping lbx file: %v\n", err)
+        }
     } else if len(os.Args) >= 3 {
         zipFile, err := zip.OpenReader(os.Args[1])
         if err != nil {

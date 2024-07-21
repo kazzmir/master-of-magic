@@ -360,6 +360,10 @@ func readPalette(reader io.ReadSeeker, index int, firstColor int, count int) (co
             return nil, err
         }
 
+        if i + firstColor >= len(palette) {
+            return nil, fmt.Errorf("invalid color index %v, palette only has %v colors", i + firstColor, len(palette))
+        }
+
         palette[i + firstColor] = color.RGBA{R: uint8(r), G: uint8(g), B: uint8(b), A: 0xff}
     }
 
