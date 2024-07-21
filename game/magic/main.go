@@ -27,6 +27,10 @@ type NewGameScreen struct {
     Options *ebiten.Image
     OkButtons []*ebiten.Image
     CancelButtons []*ebiten.Image
+    DifficultyBlock *ebiten.Image
+    OpponentsBlock *ebiten.Image
+    LandSizeBlock *ebiten.Image
+    MagicBlock *ebiten.Image
     loaded sync.Once
 }
 
@@ -69,6 +73,11 @@ func (newGameScreen *NewGameScreen) Load(cache *lbx.LbxCache) error {
         newGameScreen.CancelButtons = make([]*ebiten.Image, 2)
         newGameScreen.CancelButtons[0] = loadImage(3, 0)
         newGameScreen.CancelButtons[1] = loadImage(3, 1)
+
+        newGameScreen.DifficultyBlock = loadImage(4, 0)
+        newGameScreen.OpponentsBlock = loadImage(5, 0)
+        newGameScreen.LandSizeBlock = loadImage(6, 0)
+        newGameScreen.MagicBlock = loadImage(7, 0)
     })
 
     return outError
@@ -96,6 +105,30 @@ func (newGameScreen *NewGameScreen) Draw(screen *ebiten.Image) {
         var options ebiten.DrawImageOptions
         options.GeoM.Translate(160 + 10, 179)
         screen.DrawImage(newGameScreen.CancelButtons[0], &options)
+    }
+
+    if newGameScreen.DifficultyBlock != nil {
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(160 + 91, 39)
+        screen.DrawImage(newGameScreen.DifficultyBlock, &options)
+    }
+
+    if newGameScreen.OpponentsBlock != nil {
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(160 + 91, 66)
+        screen.DrawImage(newGameScreen.OpponentsBlock, &options)
+    }
+
+    if newGameScreen.LandSizeBlock != nil {
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(160 + 91, 93)
+        screen.DrawImage(newGameScreen.LandSizeBlock, &options)
+    }
+
+    if newGameScreen.MagicBlock != nil {
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(160 + 91, 120)
+        screen.DrawImage(newGameScreen.MagicBlock, &options)
     }
 }
 
