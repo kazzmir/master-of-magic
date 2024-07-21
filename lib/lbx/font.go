@@ -71,6 +71,9 @@ type Glyph struct {
 }
 
 func (glyph *Glyph) MakeImage() image.Image {
+    if glyph.Width == 0 {
+        return nil
+    }
     // FIXME: what palette to use?
     out := image.NewPaletted(image.Rect(0, 0, glyph.Width, glyph.Height), defaultPalette)
 
@@ -101,6 +104,7 @@ func (glyph *Glyph) MakeImage() image.Image {
                 }
 
                 for i := 0; i < int(length); i++ {
+                    // log.Printf("Pixel %v, %v color %v", column, row, color)
                     out.SetColorIndex(column, row, color)
                     row += 1
                 }
@@ -124,11 +128,11 @@ type Font struct {
     Height int
     HorizontalSpacing int
     VerticalSpacing int
-    Glyph []Glyph
+    Glyphs []Glyph
 }
 
 func (font *Font) GlyphCount() int {
-    return len(font.Glyph)
+    return len(font.Glyphs)
 }
 
 func readFonts(reader *bytes.Reader) ([]*Font, error) {
@@ -222,7 +226,7 @@ func readFonts(reader *bytes.Reader) ([]*Font, error) {
 
             if fontInfo[fontIndex].Widths[glyphIndex] == 0 {
                 // log.Printf("Empty glyph at font=%v glyph=%v", fontIndex, glyphIndex)
-                font.Glyph = append(font.Glyph, Glyph{Width: 0})
+                font.Glyphs = append(font.Glyphs, Glyph{Width: 0})
             } else {
                 glyphData := make([]byte, fontInfo[fontIndex].Widths[glyphIndex] * fontInfo[fontIndex].Height)
                 n, err := reader.Read(glyphData)
@@ -246,7 +250,7 @@ func readFonts(reader *bytes.Reader) ([]*Font, error) {
                     Height: fontInfo[fontIndex].Height,
                 }
 
-                font.Glyph = append(font.Glyph, glyph)
+                font.Glyphs = append(font.Glyphs, glyph)
             }
         }
 
