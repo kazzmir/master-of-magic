@@ -56,7 +56,10 @@ func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int, rawDump bool) 
             return fmt.Errorf("Unable to read fonts: %v", err)
         }
 
-        _ = fonts
+        fmt.Printf("Fonts: %v\n", len(fonts))
+        for i, font := range fonts {
+            fmt.Printf("  font %v glyphs %v\n", i, font.GlyphCount())
+        }
 
     } else {
         for index, data := range file.Data {

@@ -3,7 +3,7 @@ package lbx
 import (
     "bytes"
     "fmt"
-    "log"
+    _ "log"
     "io"
 )
 
@@ -64,7 +64,8 @@ func internalFontHeaderSize() int64 {
 }
 
 type Glyph struct {
-    Data []int
+    Data []byte
+    Width int
 }
 
 type internalFontInfo struct {
@@ -77,6 +78,14 @@ type internalFontInfo struct {
 }
 
 type Font struct {
+    Height int
+    HorizontalSpacing int
+    VerticalSpacing int
+    Glyph []Glyph
+}
+
+func (font *Font) GlyphCount() int {
+    return len(font.Glyph)
 }
 
 func readFonts(reader *bytes.Reader) ([]*Font, error) {
@@ -136,8 +145,69 @@ func readFonts(reader *bytes.Reader) ([]*Font, error) {
         }
     }
 
+    /*
     log.Printf("Seek to font 0 glyph 0 offset 0x%x", fontInfo[0].GlyphOffsets[0])
     reader.Seek(fontInfo[0].GlyphOffsets[0], io.SeekStart)
 
-    return nil, fmt.Errorf("fail")
+    glyphData := make([]byte, fontInfo[0].Widths[0] * fontInfo[0].Height)
+    n, err := reader.Read(glyphData)
+    if err != nil {
+        return nil, err
+    }
+    if n != len(glyphData) {
+        return nil, fmt.Errorf("unable to read entire glyph size %v", len(glyphData))
+    }
+
+    log.Printf("Read glyph")
+    for _, b := range glyphData {
+        fmt.Printf("0x%x ", b)
+    }
+    fmt.Println()
+    */
+
+    var fonts []*Font
+
+    for fontIndex := 0; fontIndex < 8; fontIndex++ {
+        font := Font{
+            Height: fontInfo[fontIndex].Height,
+            HorizontalSpacing: fontInfo[fontIndex].HorizontalSpacing,
+            VerticalSpacing: fontInfo[fontIndex].VerticalSpacing,
+        }
+
+        for glyphIndex, glyphOffset := range fontInfo[fontIndex].GlyphOffsets {
+            reader.Seek(glyphOffset, io.SeekStart)
+
+            if fontInfo[fontIndex].Widths[glyphIndex] == 0 {
+                // log.Printf("Empty glyph at font=%v glyph=%v", fontIndex, glyphIndex)
+                font.Glyph = append(font.Glyph, Glyph{Width: 0})
+            } else {
+                glyphData := make([]byte, fontInfo[fontIndex].Widths[glyphIndex] * fontInfo[fontIndex].Height)
+                n, err := reader.Read(glyphData)
+                if err != nil {
+                    return nil, err
+                }
+
+                if n == 0 {
+                    return nil, fmt.Errorf("unable to read glyph at font %v glyph %v offset 0x%x", fontIndex, glyphIndex, glyphOffset)
+                }
+
+                /*
+                if n != len(glyphData) {
+                    return nil, fmt.Errorf("unable to read entire glyph size %v font=%v glyph=%v offset=0x%x, read %v", len(glyphData), fontIndex, glyphIndex, glyphOffset, n)
+                }
+                */
+
+                glyph := Glyph{
+                    Data: glyphData[0:n],
+                    Width: fontInfo[fontIndex].Widths[glyphIndex],
+                }
+
+                font.Glyph = append(font.Glyph, glyph)
+            }
+        }
+
+        fonts = append(fonts, &font)
+    }
+
+    return fonts, nil
 }
