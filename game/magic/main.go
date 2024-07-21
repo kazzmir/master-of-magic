@@ -113,7 +113,7 @@ func (game *MagicGame) Draw(screen *ebiten.Image) {
 func main() {
     log.SetFlags(log.Ldate | log.Lshortfile | log.Lmicroseconds)
 
-    ebiten.SetWindowSize(ScreenWidth, ScreenHeight)
+    ebiten.SetWindowSize(ScreenWidth * 5, ScreenHeight * 5)
     ebiten.SetWindowTitle("magic")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 
