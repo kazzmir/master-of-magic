@@ -11,8 +11,8 @@ import (
     "github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
-const ScreenWidth = 1024
-const ScreenHeight = 768
+const ScreenWidth = 320
+const ScreenHeight = 200
 
 func stretchImage(screen *ebiten.Image, sprite *ebiten.Image){
     var options ebiten.DrawImageOptions
@@ -23,6 +23,7 @@ func stretchImage(screen *ebiten.Image, sprite *ebiten.Image){
 type NewGameScreen struct {
     LbxFile *lbx.LbxFile
     Background *ebiten.Image
+    Options *ebiten.Image
     loaded sync.Once
 }
 
@@ -45,6 +46,15 @@ func (newGameScreen *NewGameScreen) Load(cache *lbx.LbxCache) error {
         }
 
         newGameScreen.Background = ebiten.NewImageFromImage(background[0])
+
+        options, err := newGameLbx.ReadImages(1)
+        if err != nil {
+            log.Printf("Unable to read options image from NEWGAME.LBX: %v", err)
+            outError = err
+            return
+        }
+
+        newGameScreen.Options = ebiten.NewImageFromImage(options[0])
     })
 
     return outError
@@ -52,7 +62,14 @@ func (newGameScreen *NewGameScreen) Load(cache *lbx.LbxCache) error {
 
 func (newGameScreen *NewGameScreen) Draw(screen *ebiten.Image) {
     if newGameScreen.Background != nil {
-        stretchImage(screen, newGameScreen.Background)
+        var options ebiten.DrawImageOptions
+        screen.DrawImage(newGameScreen.Background, &options)
+    }
+
+    if newGameScreen.Options != nil {
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(160 + 5, 0)
+        screen.DrawImage(newGameScreen.Options, &options)
     }
 }
 
