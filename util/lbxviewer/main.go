@@ -35,6 +35,8 @@ type Viewer struct {
     CurrentImage int
     LbxEntry int
     Font *text.GoTextFaceSource
+    AnimationFrame int
+    AnimationCount int
 }
 
 func (viewer *Viewer) LoadImages() {
@@ -54,6 +56,8 @@ func (viewer *Viewer) LoadImages() {
 func (viewer *Viewer) Update() error {
     keys := make([]ebiten.Key, 0)
     keys = inpututil.AppendPressedKeys(keys)
+
+    const AnimationSpeed = 30
 
     control_pressed := false
 
@@ -94,7 +98,15 @@ func (viewer *Viewer) Update() error {
                 if viewer.CurrentImage >= len(viewer.Images) {
                     viewer.CurrentImage = 0
                 }
+            case ebiten.KeyA:
+                if viewer.AnimationFrame == -1 {
+                    viewer.AnimationFrame = 0
+                    viewer.AnimationCount = AnimationSpeed
+                } else {
+                    viewer.AnimationFrame = -1
+                }
             case ebiten.KeyPageUp:
+                viewer.AnimationFrame = 0
                 amount := 1
                 if control_pressed {
                     amount = 10
@@ -108,6 +120,7 @@ func (viewer *Viewer) Update() error {
                     viewer.LoadImages()
                 }
             case ebiten.KeyPageDown:
+                viewer.AnimationFrame = 0
                 amount := 1
                 if control_pressed {
                     amount = 10
@@ -119,6 +132,18 @@ func (viewer *Viewer) Update() error {
                 viewer.LoadImages()
             case ebiten.KeyEscape, ebiten.KeyCapsLock:
                 return ebiten.Termination
+        }
+    }
+
+    if viewer.AnimationFrame != -1 {
+        if viewer.AnimationCount > 0 {
+            viewer.AnimationCount -= 1
+        } else {
+            viewer.AnimationFrame += 1
+            if viewer.AnimationFrame >= len(viewer.Images) {
+                viewer.AnimationFrame = 0
+            }
+            viewer.AnimationCount = AnimationSpeed
         }
     }
 
@@ -139,7 +164,11 @@ func (viewer *Viewer) Draw(screen *ebiten.Image) {
     op.ColorScale.ScaleWithColor(color.White)
     text.Draw(screen, fmt.Sprintf("Lbx entry: %v/%v", viewer.LbxEntry+1, viewer.Lbx.TotalEntries()), face, op)
     op.GeoM.Translate(1, 20)
-    text.Draw(screen, fmt.Sprintf("Image: %v/%v", viewer.CurrentImage+1, len(viewer.Images)), face, op)
+    if viewer.AnimationFrame != -1 {
+        text.Draw(screen, fmt.Sprintf("Animation : %v/%v", viewer.AnimationFrame+1, len(viewer.Images)), face, op)
+    } else {
+        text.Draw(screen, fmt.Sprintf("Image: %v/%v", viewer.CurrentImage+1, len(viewer.Images)), face, op)
+    }
     op.GeoM.Translate(0, 20)
     text.Draw(screen, fmt.Sprintf("Scale: %.2f", viewer.Scale), face, op)
 
@@ -148,11 +177,15 @@ func (viewer *Viewer) Draw(screen *ebiten.Image) {
 
     if len(viewer.Images) > 0 {
         var options ebiten.DrawImageOptions
-        bounds := viewer.Images[viewer.CurrentImage].Bounds()
+        useImage := viewer.Images[viewer.CurrentImage]
+        if viewer.AnimationFrame != -1 {
+            useImage = viewer.Images[viewer.AnimationFrame]
+        }
+        bounds := useImage.Bounds()
         options.GeoM.Translate(float64(-bounds.Dx()) / 2.0, float64(-bounds.Dy()) / 2.0)
         options.GeoM.Scale(viewer.Scale, viewer.Scale)
         options.GeoM.Translate(float64(middleX), float64(middleY))
-        screen.DrawImage(viewer.Images[viewer.CurrentImage], &options)
+        screen.DrawImage(useImage, &options)
     }
 }
 
@@ -168,6 +201,8 @@ func MakeViewer(lbxFile *lbx.LbxFile) (*Viewer, error) {
         Font: font,
         CurrentImage: 0,
         LbxEntry: 0,
+        AnimationFrame: -1,
+        AnimationCount: 0,
     }
 
     viewer.LoadImages()
