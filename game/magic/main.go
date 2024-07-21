@@ -2,6 +2,7 @@ package main
 
 import (
     "log"
+    "fmt"
     "image/color"
     "sync"
 
@@ -24,6 +25,7 @@ type NewGameScreen struct {
     LbxFile *lbx.LbxFile
     Background *ebiten.Image
     Options *ebiten.Image
+    OkButtons []*ebiten.Image
     loaded sync.Once
 }
 
@@ -33,28 +35,35 @@ func (newGameScreen *NewGameScreen) Load(cache *lbx.LbxCache) error {
     newGameScreen.loaded.Do(func() {
         newGameLbx, err := cache.GetLbxFile("magic-data/NEWGAME.LBX")
         if err != nil {
-            log.Printf("Unable to load NEWGAME.LBX: %v", err)
-            outError = err
+            outError = fmt.Errorf("Unable to load NEWGAME.LBX: %v", err)
             return
         }
 
-        background, err := newGameLbx.ReadImages(0)
-        if err != nil {
-            log.Printf("Unable to read background image from NEWGAME.LBX: %v", err)
-            outError = err
-            return
+        loadImage := func(index int, subIndex int) *ebiten.Image {
+            if outError != nil {
+                return nil
+            }
+
+            sprites, err := newGameLbx.ReadImages(index)
+            if err != nil {
+                outError = fmt.Errorf("Unable to read background image from NEWGAME.LBX: %v", err)
+                return nil
+            }
+
+            if len(sprites) <= subIndex {
+                outError = fmt.Errorf("Unable to read background image from NEWGAME.LBX: index %d out of range", subIndex)
+                return nil
+            }
+
+            return ebiten.NewImageFromImage(sprites[subIndex])
         }
 
-        newGameScreen.Background = ebiten.NewImageFromImage(background[0])
+        newGameScreen.Background = loadImage(0, 0)
+        newGameScreen.Options = loadImage(1, 0)
 
-        options, err := newGameLbx.ReadImages(1)
-        if err != nil {
-            log.Printf("Unable to read options image from NEWGAME.LBX: %v", err)
-            outError = err
-            return
-        }
-
-        newGameScreen.Options = ebiten.NewImageFromImage(options[0])
+        newGameScreen.OkButtons = make([]*ebiten.Image, 2)
+        newGameScreen.OkButtons[0] = loadImage(2, 0)
+        newGameScreen.OkButtons[1] = loadImage(2, 1)
     })
 
     return outError
@@ -70,6 +79,12 @@ func (newGameScreen *NewGameScreen) Draw(screen *ebiten.Image) {
         var options ebiten.DrawImageOptions
         options.GeoM.Translate(160 + 5, 0)
         screen.DrawImage(newGameScreen.Options, &options)
+    }
+
+    if newGameScreen.OkButtons[0] != nil {
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(160 + 91, 179)
+        screen.DrawImage(newGameScreen.OkButtons[0], &options)
     }
 }
 
@@ -95,7 +110,10 @@ func (game *MagicGame) Update() error {
         }
     }
 
-    game.NewGameScreen.Load(game.LbxCache)
+    err := game.NewGameScreen.Load(game.LbxCache)
+    if err != nil {
+        return err
+    }
 
     return nil
 }
