@@ -5,6 +5,8 @@ import (
 
     "image/color"
 
+    "github.com/kazzmir/master-of-magic/lib/lbx"
+
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
 )
@@ -13,6 +15,13 @@ const ScreenWidth = 1024
 const ScreenHeight = 768
 
 type MagicGame struct {
+    LbxCache *lbx.LbxCache
+}
+
+func NewMagicGame() *MagicGame {
+    return &MagicGame{
+        LbxCache: lbx.MakeLbxCache(),
+    }
 }
 
 func (game *MagicGame) Update() error {
@@ -43,9 +52,9 @@ func main() {
     ebiten.SetWindowTitle("magic")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 
-    var game MagicGame
+    game := NewMagicGame()
 
-    err := ebiten.RunGame(&game)
+    err := ebiten.RunGame(game)
     if err != nil {
         log.Printf("Error: %v", err)
     }
