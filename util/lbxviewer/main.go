@@ -55,6 +55,8 @@ func (viewer *Viewer) Update() error {
     keys := make([]ebiten.Key, 0)
     keys = inpututil.AppendPressedKeys(keys)
 
+    control_pressed := false
+
     scaleAmount := 0.06
 
     for _, key := range keys {
@@ -66,6 +68,8 @@ func (viewer *Viewer) Update() error {
                 if viewer.Scale < 1 {
                     viewer.Scale = 1
                 }
+            case ebiten.KeyControlLeft:
+                control_pressed = true
             case ebiten.KeySpace:
                 if len(viewer.Images) > 0 {
                     bounds := viewer.Images[viewer.CurrentImage].Bounds()
@@ -91,7 +95,11 @@ func (viewer *Viewer) Update() error {
                     viewer.CurrentImage = 0
                 }
             case ebiten.KeyPageUp:
-                viewer.LbxEntry -= 1
+                amount := 1
+                if control_pressed {
+                    amount = 10
+                }
+                viewer.LbxEntry -= amount
                 if viewer.LbxEntry < 0 {
                     viewer.LbxEntry = viewer.Lbx.TotalEntries() - 1
                 }
@@ -100,7 +108,11 @@ func (viewer *Viewer) Update() error {
                     viewer.LoadImages()
                 }
             case ebiten.KeyPageDown:
-                viewer.LbxEntry += 1
+                amount := 1
+                if control_pressed {
+                    amount = 10
+                }
+                viewer.LbxEntry += amount
                 if viewer.LbxEntry >= viewer.Lbx.TotalEntries() {
                     viewer.LbxEntry = 0
                 }
