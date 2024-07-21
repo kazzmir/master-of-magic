@@ -51,6 +51,11 @@ func (viewer *Viewer) LoadImages() {
     }
     viewer.Images = images
     viewer.CurrentImage = 0
+
+    if len(images) > 0 {
+        bounds := viewer.Images[viewer.CurrentImage].Bounds()
+        viewer.Scale = 200.0 / math.Max(float64(bounds.Dx()), float64(bounds.Dy()))
+    }
 }
 
 func (viewer *Viewer) Update() error {
@@ -77,7 +82,7 @@ func (viewer *Viewer) Update() error {
             case ebiten.KeySpace:
                 if len(viewer.Images) > 0 {
                     bounds := viewer.Images[viewer.CurrentImage].Bounds()
-                    viewer.Scale = 100.0 / math.Max(float64(bounds.Dx()), float64(bounds.Dy()))
+                    viewer.Scale = 200.0 / math.Max(float64(bounds.Dx()), float64(bounds.Dy()))
                 }
         }
 
@@ -201,7 +206,7 @@ func MakeViewer(lbxFile *lbx.LbxFile) (*Viewer, error) {
 
     viewer := &Viewer{
         Lbx: lbxFile,
-        Scale: 5,
+        Scale: 1,
         Font: font,
         CurrentImage: 0,
         LbxEntry: 0,
