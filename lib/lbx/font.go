@@ -3,7 +3,7 @@ package lbx
 import (
     "bytes"
     "fmt"
-    _ "log"
+    "log"
     "image"
     "io"
 )
@@ -94,6 +94,11 @@ func (glyph *Glyph) MakeImage() image.Image {
             } else {
                 length := value >> 4
                 color := value & 0x0f
+
+                if length == 0 {
+                    log.Printf("Error: glyph had 0-streak length")
+                    return out
+                }
 
                 for i := 0; i < int(length); i++ {
                     out.SetColorIndex(column, row, color)
