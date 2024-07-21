@@ -12,6 +12,7 @@ import (
     "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/font"
 
     "github.com/hajimehoshi/ebiten/v2"
     // "github.com/hajimehoshi/ebiten/v2/vector"
@@ -32,6 +33,9 @@ func MakeViewer(lbxFile *lbx.LbxFile) (*Viewer, error) {
     if err != nil {
         return nil, err
     }
+
+    optimized := font.MakeOptimizedFont(fonts[0])
+    _ = optimized
 
     return &Viewer{
         Lbx: lbxFile,

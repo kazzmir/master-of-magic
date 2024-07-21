@@ -131,6 +131,14 @@ type Font struct {
     Glyphs []Glyph
 }
 
+func (font *Font) GlyphForRune(r rune) *Glyph {
+    if r < 32 || r >= 128 {
+        return nil
+    }
+
+    return &font.Glyphs[r - 32]
+}
+
 func (font *Font) GlyphCount() int {
     return len(font.Glyphs)
 }
