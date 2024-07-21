@@ -50,6 +50,14 @@ func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int, rawDump bool) 
                 fmt.Printf("Saved image %v to %v\n", i, name)
             }()
         }
+    } else if lbxName == "fonts.lbx" {
+        fonts, err := file.ReadFonts(0)
+        if err != nil {
+            return fmt.Errorf("Unable to read fonts: %v", err)
+        }
+
+        _ = fonts
+
     } else {
         for index, data := range file.Data {
 
