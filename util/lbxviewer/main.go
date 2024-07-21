@@ -106,7 +106,9 @@ func (viewer *Viewer) Update() error {
                     viewer.AnimationFrame = -1
                 }
             case ebiten.KeyPageUp:
-                viewer.AnimationFrame = 0
+                if viewer.AnimationFrame != -1 {
+                    viewer.AnimationFrame = 0
+                }
                 amount := 1
                 if control_pressed {
                     amount = 10
@@ -120,7 +122,9 @@ func (viewer *Viewer) Update() error {
                     viewer.LoadImages()
                 }
             case ebiten.KeyPageDown:
-                viewer.AnimationFrame = 0
+                if viewer.AnimationFrame != -1 {
+                    viewer.AnimationFrame = 0
+                }
                 amount := 1
                 if control_pressed {
                     amount = 10
