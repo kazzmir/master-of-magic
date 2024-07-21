@@ -1,5 +1,10 @@
 package lbx
 
+import (
+    "bytes"
+    "fmt"
+)
+
 /*
 https://steamcommunity.com/app/1146370/discussions/0/5879990700799122827/
 
@@ -35,3 +40,10 @@ typedef struct
 	unsigned	Glyph_Offsets[96];
 } FONT_HEADER;
  */
+
+type Font struct {
+}
+
+func readFonts(reader *bytes.Reader) ([]*Font, error) {
+    return nil, fmt.Errorf("fail")
+}

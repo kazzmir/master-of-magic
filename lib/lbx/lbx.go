@@ -510,6 +510,16 @@ func readImage(reader io.Reader, img *image.Paletted, palette color.Palette, sta
     return nil
 }
 
+/* use this to read a font entry, usually from fonts.lbx */
+func (lbx *LbxFile) ReadFonts(entry int) ([]*Font, error) {
+    if entry < 0 || entry >= len(lbx.Data) {
+        return nil, fmt.Errorf("invalid lbx index %v, must be between 0 and %v", entry, len(lbx.Data) - 1)
+    }
+
+    reader := bytes.NewReader(lbx.Data[entry])
+    return readFonts(reader)
+}
+
 /* terrain.lbx has a special format that is different from regular graphics */
 func (lbx *LbxFile) ReadTerrainImages(entry int) ([]image.Image, error) {
     /* skip first 192 bytes */
