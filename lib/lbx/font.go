@@ -4,6 +4,7 @@ import (
     "bytes"
     "fmt"
     _ "log"
+    "image"
     "io"
 )
 
@@ -66,6 +67,43 @@ func internalFontHeaderSize() int64 {
 type Glyph struct {
     Data []byte
     Width int
+    Height int
+}
+
+func (glyph *Glyph) MakeImage() image.Image {
+    // FIXME: what palette to use?
+    out := image.NewPaletted(image.Rect(0, 0, glyph.Width, glyph.Height), defaultPalette)
+
+    dataIndex := 0
+    for column := 0; column < glyph.Width; column++ {
+        row := 0
+        for row < glyph.Height {
+            value := glyph.Data[dataIndex]
+            dataIndex += 1
+
+            if value >> 7 == 1 {
+                remaining := value & 0x7f
+
+                // done with this column
+                if remaining == 0 {
+                    break
+                }
+
+                // skip down remaining rows
+                row += int(remaining)
+            } else {
+                length := value >> 4
+                color := value & 0x0f
+
+                for i := 0; i < int(length); i++ {
+                    out.SetColorIndex(column, row, color)
+                    row += 1
+                }
+            }
+        }
+    }
+
+    return out
 }
 
 type internalFontInfo struct {
@@ -200,6 +238,7 @@ func readFonts(reader *bytes.Reader) ([]*Font, error) {
                 glyph := Glyph{
                     Data: glyphData[0:n],
                     Width: fontInfo[fontIndex].Widths[glyphIndex],
+                    Height: fontInfo[fontIndex].Height,
                 }
 
                 font.Glyph = append(font.Glyph, glyph)
