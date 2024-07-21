@@ -41,7 +41,8 @@ type PaletteInfo struct {
 }
 
 var defaultPalette = color.Palette {
-    color.RGBA{R: 0x0,  G: 0x0,  B: 0x0, A: 0xff},
+    // FIXME: set color 0 to transparent, double check that this is correct
+    color.RGBA{R: 0x0,  G: 0x0,  B: 0x0, A: 0x0},
     color.RGBA{R: 0x8,  G: 0x4,  B: 0x4, A: 0xff},
     color.RGBA{R: 0x24, G: 0x1c, B: 0x18, A: 0xff},
     color.RGBA{R: 0x38, G: 0x30, B: 0x2c, A: 0xff},
