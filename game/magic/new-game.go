@@ -184,6 +184,16 @@ func (newGameScreen *NewGameScreen) GetUIRect(component NewGameUI) image.Rectang
             x := 160 + 91
             y := 120
             return image.Rect(x, y, x + bounds.Dx(), y + bounds.Dy())
+        case NewGameOk:
+            bounds := newGameScreen.OkButtons[0].Bounds()
+            x := 160 + 91
+            y := 179
+            return image.Rect(x, y, x + bounds.Dx(), y + bounds.Dy())
+        case NewGameCancel:
+            bounds := newGameScreen.CancelButtons[0].Bounds()
+            x := 160 + 10
+            y := 179
+            return image.Rect(x, y, x + bounds.Dx(), y + bounds.Dy())
     }
 
     return image.Rectangle{}
@@ -224,13 +234,15 @@ func (newGameScreen *NewGameScreen) Draw(screen *ebiten.Image) {
 
     if newGameScreen.OkButtons[0] != nil {
         var options ebiten.DrawImageOptions
-        options.GeoM.Translate(160 + 91, 179)
+        rect := newGameScreen.GetUIRect(NewGameOk)
+        options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
         screen.DrawImage(newGameScreen.OkButtons[0], &options)
     }
 
     if newGameScreen.CancelButtons[0] != nil {
         var options ebiten.DrawImageOptions
-        options.GeoM.Translate(160 + 10, 179)
+        rect := newGameScreen.GetUIRect(NewGameCancel)
+        options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
         screen.DrawImage(newGameScreen.CancelButtons[0], &options)
     }
 
