@@ -22,6 +22,33 @@ func stretchImage(screen *ebiten.Image, sprite *ebiten.Image){
     screen.DrawImage(sprite, &options)
 }
 
+type NewGameSettings struct {
+    Difficulty int
+    Opponents int
+    LandSize int
+    Magic int
+}
+
+func (settings *NewGameSettings) DifficultyString() string {
+    kinds := []string{"Intro", "Easy", "Normal", "Hard", "Impossible"}
+    return kinds[settings.Difficulty]
+}
+
+func (settings *NewGameSettings) OpponentsString() string {
+    kinds := []string{"One", "Two", "Three", "Four"}
+    return kinds[settings.Opponents - 1]
+}
+
+func (settings *NewGameSettings) LandSizeString() string {
+    kinds := []string{"Small", "Medium", "Large"}
+    return kinds[settings.LandSize]
+}
+
+func (settings *NewGameSettings) MagicString() string {
+    kinds := []string{"Weak", "Normal", "Powerful"}
+    return kinds[settings.Magic]
+}
+
 type NewGameScreen struct {
     LbxFile *lbx.LbxFile
     Background *ebiten.Image
@@ -34,6 +61,8 @@ type NewGameScreen struct {
     MagicBlock *ebiten.Image
     loaded sync.Once
     Font *font.Font
+
+    Settings NewGameSettings
 }
 
 func (newGameScreen *NewGameScreen) Load(cache *lbx.LbxCache) error {
@@ -148,10 +177,10 @@ func (newGameScreen *NewGameScreen) Draw(screen *ebiten.Image) {
     }
 
     if newGameScreen.Font != nil {
-        newGameScreen.Font.PrintCenter(screen, 160 + 91 + float64(newGameScreen.DifficultyBlock.Bounds().Dx()) / 2, 39 + 3, 1, "Intro")
-        newGameScreen.Font.PrintCenter(screen, 160 + 91 + float64(newGameScreen.OpponentsBlock.Bounds().Dx()) / 2, 66 + 4, 1, "Four")
-        newGameScreen.Font.PrintCenter(screen, 160 + 91 + float64(newGameScreen.LandSizeBlock.Bounds().Dx()) / 2, 93 + 4, 1, "Medium")
-        newGameScreen.Font.PrintCenter(screen, 160 + 91 + float64(newGameScreen.LandSizeBlock.Bounds().Dx()) / 2, 120 + 4, 1, "Normal")
+        newGameScreen.Font.PrintCenter(screen, 160 + 91 + float64(newGameScreen.DifficultyBlock.Bounds().Dx()) / 2, 39 + 3, 1, newGameScreen.Settings.DifficultyString())
+        newGameScreen.Font.PrintCenter(screen, 160 + 91 + float64(newGameScreen.OpponentsBlock.Bounds().Dx()) / 2, 66 + 4, 1, newGameScreen.Settings.OpponentsString())
+        newGameScreen.Font.PrintCenter(screen, 160 + 91 + float64(newGameScreen.LandSizeBlock.Bounds().Dx()) / 2, 93 + 4, 1, newGameScreen.Settings.LandSizeString())
+        newGameScreen.Font.PrintCenter(screen, 160 + 91 + float64(newGameScreen.LandSizeBlock.Bounds().Dx()) / 2, 120 + 4, 1, newGameScreen.Settings.MagicString())
     }
 }
 
@@ -164,6 +193,14 @@ type MagicGame struct {
 func NewMagicGame() *MagicGame {
     return &MagicGame{
         LbxCache: lbx.MakeLbxCache(),
+        NewGameScreen: NewGameScreen{
+            Settings: NewGameSettings{
+                Difficulty: 0,
+                Opponents: 3,
+                LandSize: 1,
+                Magic: 1,
+            },
+        },
     }
 }
 
