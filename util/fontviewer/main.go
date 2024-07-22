@@ -25,7 +25,10 @@ const ScreenHeight = 768
 
 type Viewer struct {
     Lbx *lbx.LbxFile
+    FontIndex int
     Fonts []*lbx.Font
+    Optimized *font.Font
+    Scale float64
 }
 
 func MakeViewer(lbxFile *lbx.LbxFile) (*Viewer, error) {
@@ -35,11 +38,13 @@ func MakeViewer(lbxFile *lbx.LbxFile) (*Viewer, error) {
     }
 
     optimized := font.MakeOptimizedFont(fonts[0])
-    _ = optimized
 
     return &Viewer{
         Lbx: lbxFile,
+        Optimized: optimized,
+        FontIndex: 0,
         Fonts: fonts,
+        Scale: 4,
     }, nil
 }
 
@@ -51,6 +56,16 @@ func (viewer *Viewer) Update() error {
         switch key {
             case ebiten.KeyEscape, ebiten.KeyCapsLock:
                 return ebiten.Termination
+            case ebiten.KeyLeft:
+                viewer.FontIndex -= 1
+                if viewer.FontIndex < 0 {
+                    viewer.FontIndex = len(viewer.Fonts) - 1
+                }
+
+                viewer.Optimized = font.MakeOptimizedFont(viewer.Fonts[viewer.FontIndex])
+            case ebiten.KeyRight:
+                viewer.FontIndex = (viewer.FontIndex + 1) % len(viewer.Fonts)
+                viewer.Optimized = font.MakeOptimizedFont(viewer.Fonts[viewer.FontIndex])
         }
     }
 
@@ -67,9 +82,12 @@ func (viewer *Viewer) Draw(screen *ebiten.Image) {
     // vector.DrawFilledRect(screen, 90, 90, 100, 100, &color.RGBA{R: 0xff, A: 0xff}, true)
 
     var options ebiten.DrawImageOptions
-    options.GeoM.Scale(4, 4)
-    options.GeoM.Translate(1, 1)
+    options.GeoM.Scale(viewer.Scale, viewer.Scale)
+    options.GeoM.Translate(50, 50)
 
+    screen.DrawImage(viewer.Optimized.Image, &options)
+
+    /*
     yPos := 1
 
     for _, font := range viewer.Fonts {
@@ -89,6 +107,7 @@ func (viewer *Viewer) Draw(screen *ebiten.Image) {
         options.GeoM.Scale(4, 4)
         options.GeoM.Translate(1, float64(yPos))
     }
+    */
 }
 
 func main() {
