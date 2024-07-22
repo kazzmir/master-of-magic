@@ -49,7 +49,7 @@ var defaultPalette = color.Palette {
     color.RGBA{R: 0x48, G: 0x40, B: 0x3c, A: 0xff},
     color.RGBA{R: 0x58, G: 0x50, B: 0x4c, A: 0xff},
     color.RGBA{R: 0x68, G: 0x60, B: 0x5c, A: 0xff},
-    color.RGBA{R: 0x7c, G: 0x74, B: 70, A: 0xff},
+    color.RGBA{R: 0x7c, G: 0x74, B: 0x70, A: 0xff},
     color.RGBA{R: 0x8c, G: 0x84, B: 0x80, A: 0xff},
     color.RGBA{R: 0x9c, G: 0x94, B: 0x90, A: 0xff},
     color.RGBA{R: 0xac, G: 0xa4, B: 0xa0, A: 0xff},
@@ -508,6 +508,16 @@ func readImage(reader io.Reader, img *image.Paletted, palette color.Palette, sta
     }
 
     return nil
+}
+
+/* use this to read a font entry, usually from fonts.lbx */
+func (lbx *LbxFile) ReadFonts(entry int) ([]*Font, error) {
+    if entry < 0 || entry >= len(lbx.Data) {
+        return nil, fmt.Errorf("invalid lbx index %v, must be between 0 and %v", entry, len(lbx.Data) - 1)
+    }
+
+    reader := bytes.NewReader(lbx.Data[entry])
+    return readFonts(reader)
 }
 
 /* terrain.lbx has a special format that is different from regular graphics */
