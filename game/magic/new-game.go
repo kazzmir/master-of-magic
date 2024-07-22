@@ -12,6 +12,11 @@ import (
     "github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
+const DifficultyMax = 4
+const OpponentsMax = 4
+const LandSizeMax = 2
+const MagicMax = 2
+
 type NewGameSettings struct {
     Difficulty int
     Opponents int
@@ -21,28 +26,28 @@ type NewGameSettings struct {
 
 func (settings *NewGameSettings) DifficultyNext() {
     settings.Difficulty += 1
-    if settings.Difficulty > 4 {
+    if settings.Difficulty > DifficultyMax {
         settings.Difficulty = 0
     }
 }
 
 func (settings *NewGameSettings) OpponentsNext() {
     settings.Opponents += 1
-    if settings.Opponents > 4 {
+    if settings.Opponents > OpponentsMax {
         settings.Opponents = 1
     }
 }
 
 func (settings *NewGameSettings) LandSizeNext() {
     settings.LandSize += 1
-    if settings.LandSize > 2 {
+    if settings.LandSize > LandSizeMax {
         settings.LandSize = 0
     }
 }
 
 func (settings *NewGameSettings) MagicNext() {
     settings.Magic += 1
-    if settings.Magic > 2 {
+    if settings.Magic > MagicMax {
         settings.Magic = 0
     }
 }
