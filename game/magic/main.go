@@ -28,14 +28,24 @@ func pointInRect(x int, y int, rect image.Rectangle) bool {
 type MagicGame struct {
     LbxCache *lbx.LbxCache
 
-    NewGameScreen NewGameScreen
+    NewGameScreen *NewGameScreen
+    NewWizardScreen *NewWizardScreen
 }
 
-func NewMagicGame() *MagicGame {
-    return &MagicGame{
+func NewMagicGame() (*MagicGame, error) {
+    game := &MagicGame{
         LbxCache: lbx.MakeLbxCache(),
         NewGameScreen: MakeNewGameScreen(),
+        NewWizardScreen: MakeNewWizardScreen(),
     }
+
+    err := game.NewGameScreen.Load(game.LbxCache)
+    if err != nil {
+        return nil, err
+    }
+    game.NewGameScreen.Activate()
+
+    return game, err
 }
 
 func (game *MagicGame) Update() error {
@@ -48,12 +58,21 @@ func (game *MagicGame) Update() error {
         }
     }
 
-    err := game.NewGameScreen.Load(game.LbxCache)
-    if err != nil {
-        return err
+    if game.NewGameScreen.IsActive() {
+        switch game.NewGameScreen.Update() {
+            case NewGameStateRunning:
+            case NewGameStateOk:
+                game.NewGameScreen.Deactivate()
+                game.NewWizardScreen.Load(game.LbxCache)
+                game.NewWizardScreen.Activate()
+            case NewGameStateCancel:
+                return ebiten.Termination
+        }
     }
 
-    game.NewGameScreen.Update()
+    if game.NewWizardScreen.IsActive() {
+        game.NewWizardScreen.Update()
+    }
 
     return nil
 }
@@ -65,7 +84,13 @@ func (game *MagicGame) Layout(outsideWidth int, outsideHeight int) (int, int) {
 func (game *MagicGame) Draw(screen *ebiten.Image) {
     screen.Fill(color.RGBA{0x80, 0xa0, 0xc0, 0xff})
 
-    game.NewGameScreen.Draw(screen)
+    if game.NewGameScreen.IsActive() {
+        game.NewGameScreen.Draw(screen)
+    }
+
+    if game.NewWizardScreen.IsActive() {
+        game.NewWizardScreen.Draw(screen)
+    }
 }
 
 func main() {
@@ -75,9 +100,14 @@ func main() {
     ebiten.SetWindowTitle("magic")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 
-    game := NewMagicGame()
+    game, err := NewMagicGame()
+    
+    if err != nil {
+        log.Printf("Error: unable to load game: %v", err)
+        return
+    }
 
-    err := ebiten.RunGame(game)
+    err = ebiten.RunGame(game)
     if err != nil {
         log.Printf("Error: %v", err)
     }

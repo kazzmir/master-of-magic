@@ -2,6 +2,7 @@ package main
 
 import (
     "fmt"
+    _ "log"
     "image"
     "sync"
 
@@ -83,6 +84,13 @@ const (
     NewGameCancel
 )
 
+type NewGameState int
+const (
+    NewGameStateRunning NewGameState = iota
+    NewGameStateOk
+    NewGameStateCancel
+)
+
 type NewGameScreen struct {
     LbxFile *lbx.LbxFile
     Background *ebiten.Image
@@ -97,6 +105,19 @@ type NewGameScreen struct {
     Font *font.Font
 
     Settings NewGameSettings
+    Active bool
+}
+
+func (newGameScreen *NewGameScreen) Activate() {
+    newGameScreen.Active = true
+}
+
+func (newGameScreen *NewGameScreen) Deactivate() {
+    newGameScreen.Active = false
+}
+
+func (newGameScreen *NewGameScreen) IsActive() bool {
+    return newGameScreen.Active
 }
 
 func (newGameScreen *NewGameScreen) Load(cache *lbx.LbxCache) error {
@@ -199,7 +220,7 @@ func (newGameScreen *NewGameScreen) GetUIRect(component NewGameUI) image.Rectang
     return image.Rectangle{}
 }
 
-func (newGameScreen *NewGameScreen) Update() {
+func (newGameScreen *NewGameScreen) Update() NewGameState {
     if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
         x, y := ebiten.CursorPosition()
         if pointInRect(x, y, newGameScreen.GetUIRect(NewGameDifficulty)) {
@@ -217,7 +238,17 @@ func (newGameScreen *NewGameScreen) Update() {
         if pointInRect(x, y, newGameScreen.GetUIRect(NewGameMagic)) {
             newGameScreen.Settings.MagicNext()
         }
+
+        if pointInRect(x, y, newGameScreen.GetUIRect(NewGameOk)) {
+            return NewGameStateOk
+        }
+
+        if pointInRect(x, y, newGameScreen.GetUIRect(NewGameCancel)) {
+            return NewGameStateCancel
+        }
     }
+
+    return NewGameStateRunning
 }
 
 func (newGameScreen *NewGameScreen) Draw(screen *ebiten.Image) {
@@ -282,8 +313,9 @@ func (newGameScreen *NewGameScreen) Draw(screen *ebiten.Image) {
     }
 }
 
-func MakeNewGameScreen() NewGameScreen {
-    return NewGameScreen{
+func MakeNewGameScreen() *NewGameScreen {
+    return &NewGameScreen{
+        Active: false,
         Settings: NewGameSettings{
             Difficulty: 0,
             Opponents: 3,
