@@ -15,7 +15,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/font"
 
     "github.com/hajimehoshi/ebiten/v2"
-    // "github.com/hajimehoshi/ebiten/v2/vector"
+    "github.com/hajimehoshi/ebiten/v2/vector"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
     // "github.com/hajimehoshi/ebiten/v2/text/v2"
 )
@@ -50,6 +50,21 @@ func MakeViewer(lbxFile *lbx.LbxFile) (*Viewer, error) {
 
 func (viewer *Viewer) Update() error {
     keys := make([]ebiten.Key, 0)
+    keys = inpututil.AppendPressedKeys(keys)
+
+    for _, key := range keys {
+        switch key {
+            case ebiten.KeyUp:
+                viewer.Scale *= 1.05
+            case ebiten.KeyDown:
+                viewer.Scale *= 0.95
+                if viewer.Scale < 1 {
+                    viewer.Scale = 1
+                }
+        }
+    }
+
+    keys = make([]ebiten.Key, 0)
     keys = inpututil.AppendJustPressedKeys(keys)
 
     for _, key := range keys {
@@ -86,6 +101,9 @@ func (viewer *Viewer) Draw(screen *ebiten.Image) {
     options.GeoM.Translate(50, 50)
 
     screen.DrawImage(viewer.Optimized.Image, &options)
+
+    vector.StrokeRect(screen, 50, 500, float32(float64(viewer.Optimized.GlyphWidth) * 20 * viewer.Scale), float32(float64(viewer.Optimized.GlyphHeight) * viewer.Scale), 1, &color.RGBA{R: 0xff, A: 0xff}, true)
+    viewer.Optimized.Print(screen, 50, 500, viewer.Scale, "Hello World!")
 
     /*
     yPos := 1

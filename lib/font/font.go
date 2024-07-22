@@ -2,6 +2,8 @@ package font
 
 import (
     "math"
+    _ "fmt"
+    "image"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/hajimehoshi/ebiten/v2"
@@ -14,6 +16,7 @@ type Font struct {
     Rows int
     Columns int
     Glyphs []lbx.Glyph
+    internalFont *lbx.Font
 }
 
 func MakeGPUSpriteMap(font *lbx.Font) (*ebiten.Image, int, int, int, int) {
@@ -68,5 +71,44 @@ func MakeOptimizedFont(font *lbx.Font) *Font {
         Rows: rows,
         Columns: columns,
         Glyphs: font.Glyphs,
+        internalFont: font,
+    }
+}
+
+func (font *Font) getGlyphImage(index int) *ebiten.Image {
+    x := index % font.Columns
+    y := index / font.Columns
+
+    x1 := x * font.GlyphWidth
+    y1 := y * font.GlyphHeight
+    x2 := (x+1) * font.GlyphWidth
+    y2 := (y+1) * font.GlyphHeight
+
+    return font.Image.SubImage(image.Rect(x1, y1, x2, y2)).(*ebiten.Image)
+}
+
+func (font *Font) Print(image *ebiten.Image, x float64, y float64, scale float64, text string) {
+    useX := x
+    for _, c := range text {
+        if c == '\n' {
+            y += float64(font.GlyphHeight + font.internalFont.VerticalSpacing)
+            useX = 0
+            continue
+        }
+
+        glyphIndex := int(c) - 32
+        if glyphIndex >= len(font.Glyphs) || glyphIndex < 0 {
+            continue
+        }
+
+        glyph := font.Glyphs[glyphIndex]
+
+        var options ebiten.DrawImageOptions
+        options.GeoM.Scale(scale, scale)
+        options.GeoM.Translate(useX, y)
+        glyphImage := font.getGlyphImage(glyphIndex)
+        image.DrawImage(glyphImage, &options)
+
+        useX += float64(glyph.Width + font.internalFont.HorizontalSpacing) * scale
     }
 }
