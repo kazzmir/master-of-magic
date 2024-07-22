@@ -3,7 +3,7 @@ package main
 import (
     "log"
     "os"
-    // "fmt"
+    _ "fmt"
     // "sync"
     // "math"
     // "bytes"
@@ -38,6 +38,17 @@ func MakeViewer(lbxFile *lbx.LbxFile) (*Viewer, error) {
     }
 
     optimized := font.MakeOptimizedFont(fonts[0])
+
+    /*
+    pGlyph := fonts[0].GlyphForRune('p')
+    data := pGlyph.Data
+    log.Printf("Glyph data for 'p' width=%v height=%v", pGlyph.Width, pGlyph.Height)
+    for _, v := range data {
+        fmt.Printf("0x%x ", v)
+    }
+    fmt.Println()
+    pGlyph.MakeImage()
+    */
 
     return &Viewer{
         Lbx: lbxFile,
@@ -103,7 +114,7 @@ func (viewer *Viewer) Draw(screen *ebiten.Image) {
     screen.DrawImage(viewer.Optimized.Image, &options)
 
     vector.StrokeRect(screen, 50, 500, float32(float64(viewer.Optimized.GlyphWidth) * 20 * viewer.Scale), float32(float64(viewer.Optimized.GlyphHeight) * viewer.Scale), 1, &color.RGBA{R: 0xff, A: 0xff}, true)
-    viewer.Optimized.Print(screen, 50, 500, viewer.Scale, "Hello World!")
+    viewer.Optimized.Print(screen, 50, 500, viewer.Scale, "Hello, potato!")
 
     /*
     yPos := 1

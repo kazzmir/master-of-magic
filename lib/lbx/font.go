@@ -6,6 +6,7 @@ import (
     "log"
     "image"
     "io"
+    "image/color"
 )
 
 /*
@@ -70,6 +71,30 @@ type Glyph struct {
     Height int
 }
 
+var fontPalette = color.Palette {
+    color.RGBA{R: 0x0,  G: 0x0,  B: 0x0, A: 0xff},
+    color.RGBA{R: 0x8,  G: 0x4,  B: 0x4, A: 0xff},
+    color.RGBA{R: 0x24, G: 0x1c, B: 0x18, A: 0xff},
+    color.RGBA{R: 0x38, G: 0x30, B: 0x2c, A: 0xff},
+    color.RGBA{R: 0x48, G: 0x40, B: 0x3c, A: 0xff},
+    color.RGBA{R: 0x58, G: 0x50, B: 0x4c, A: 0xff},
+    color.RGBA{R: 0x68, G: 0x60, B: 0x5c, A: 0xff},
+    color.RGBA{R: 0x7c, G: 0x74, B: 0x70, A: 0xff},
+    color.RGBA{R: 0x8c, G: 0x84, B: 0x80, A: 0xff},
+    color.RGBA{R: 0x9c, G: 0x94, B: 0x90, A: 0xff},
+    color.RGBA{R: 0xac, G: 0xa4, B: 0xa0, A: 0xff},
+    color.RGBA{R: 0xc0, G: 0xb8, B: 0xb4, A: 0xff},
+    color.RGBA{R: 0xd0, G: 0xc8, B: 0xc4, A: 0xff},
+    color.RGBA{R: 0xe0, G: 0xd8, B: 0xd4, A: 0xff},
+    color.RGBA{R: 0xf0, G: 0xe8, B: 0xe4, A: 0xff},
+    color.RGBA{R: 0xfc, G: 0xfc, B: 0xfc, A: 0xff},
+    color.RGBA{R: 0x38, G: 0x20, B: 0x1c, A: 0xff},
+    color.RGBA{R: 0x40, G: 0x2c, B: 0x24, A: 0xff},
+    color.RGBA{R: 0x48, G: 0x34, B: 0x2c, A: 0xff},
+    color.RGBA{R: 0x50, G: 0x3c, B: 0x30, A: 0xff},
+
+}
+
 func (glyph *Glyph) MakeImage() image.Image {
     if glyph.Width == 0 {
         return nil
@@ -80,7 +105,8 @@ func (glyph *Glyph) MakeImage() image.Image {
     dataIndex := 0
     for column := 0; column < glyph.Width; column++ {
         row := 0
-        for row < glyph.Height {
+
+        for row <= glyph.Height && dataIndex < len(glyph.Data) {
             value := glyph.Data[dataIndex]
             dataIndex += 1
 
@@ -95,6 +121,11 @@ func (glyph *Glyph) MakeImage() image.Image {
                 // skip down remaining rows
                 row += int(remaining)
             } else {
+                if row == glyph.Height {
+                    log.Printf("Error: glyph had data after last row")
+                    return out
+                }
+
                 length := value >> 4
                 color := value & 0x0f
 
@@ -105,7 +136,7 @@ func (glyph *Glyph) MakeImage() image.Image {
 
                 for i := 0; i < int(length); i++ {
                     // log.Printf("Pixel %v, %v color %v", column, row, color)
-                    out.SetColorIndex(column, row, color)
+                    out.SetColorIndex(column, row, color + 1)
                     row += 1
                 }
             }
