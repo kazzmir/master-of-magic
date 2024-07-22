@@ -104,10 +104,88 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                 Y: 10,
             },
             wizardSlot{
+                Name: "Raven",
+                Background: loadImage(10, 0),
+                X: 170,
+                Y: 32,
+            },
+            wizardSlot{
+                Name: "Sharee",
+                Background: loadImage(11, 0),
+                X: 170,
+                Y: 54,
+            },
+            wizardSlot{
+                Name: "Lo Pan",
+                Background: loadImage(12, 0),
+                X: 170,
+                Y: 76,
+            },
+            wizardSlot{
+                Name: "Jafar",
+                Background: loadImage(13, 0),
+                X: 170,
+                Y: 98,
+            },
+            wizardSlot{
+                Name: "Oberic",
+                Background: loadImage(14, 0),
+                X: 170,
+                Y: 120,
+            },
+            wizardSlot{
+                Name: "Rjak",
+                Background: loadImage(15, 0),
+                X: 170,
+                Y: 142,
+            },
+            wizardSlot{
                 Name: "Ssr'ra",
                 Background: loadImage(16, 0),
                 X: 246,
                 Y: 10,
+            },
+            wizardSlot{
+                Name: "Tauron",
+                Background: loadImage(17, 0),
+                X: 246,
+                Y: 32,
+            },
+            wizardSlot{
+                Name: "Freya",
+                Background: loadImage(18, 0),
+                X: 246,
+                Y: 54,
+            },
+            wizardSlot{
+                Name: "Horus",
+                Background: loadImage(19, 0),
+                X: 246,
+                Y: 76,
+            },
+            wizardSlot{
+                Name: "Ariel",
+                Background: loadImage(20, 0),
+                X: 246,
+                Y: 98,
+            },
+            wizardSlot{
+                Name: "Tlaloc",
+                Background: loadImage(21, 0),
+                X: 246,
+                Y: 120,
+            },
+            wizardSlot{
+                Name: "Kali",
+                Background: loadImage(22, 0),
+                X: 246,
+                Y: 142,
+            },
+            wizardSlot{
+                Name: "Custom",
+                Background: loadImage(23, 0),
+                X: 246,
+                Y: 164,
             },
 
         }
