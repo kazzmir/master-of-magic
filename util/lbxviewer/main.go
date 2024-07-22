@@ -171,7 +171,7 @@ func (viewer *Viewer) Draw(screen *ebiten.Image) {
     op := &text.DrawOptions{}
     op.GeoM.Translate(1, 1)
     op.ColorScale.ScaleWithColor(color.White)
-    text.Draw(screen, fmt.Sprintf("Lbx entry: %v/%v", viewer.LbxEntry+1, viewer.Lbx.TotalEntries()), face, op)
+    text.Draw(screen, fmt.Sprintf("Lbx entry: %v/%v", viewer.LbxEntry, viewer.Lbx.TotalEntries() - 1), face, op)
     op.GeoM.Translate(1, 20)
     if viewer.AnimationFrame != -1 {
         text.Draw(screen, fmt.Sprintf("Animation : %v/%v", viewer.AnimationFrame+1, len(viewer.Images)), face, op)
