@@ -76,9 +76,11 @@ type NewGameUI int
 
 const (
     NewGameDifficulty NewGameUI = iota
-    NewGameOppoonents NewGameUI = iota
-    NewGameLandSize NewGameUI = iota
-    NewGameMagic NewGameUI = iota
+    NewGameOppoonents
+    NewGameLandSize
+    NewGameMagic
+    NewGameOk
+    NewGameCancel
 )
 
 type NewGameScreen struct {
