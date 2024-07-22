@@ -3,6 +3,7 @@ package main
 import (
     "log"
     "fmt"
+    "image"
     "image/color"
     "sync"
 
@@ -29,6 +30,34 @@ type NewGameSettings struct {
     Magic int
 }
 
+func (settings *NewGameSettings) DifficultyNext() {
+    settings.Difficulty += 1
+    if settings.Difficulty > 4 {
+        settings.Difficulty = 0
+    }
+}
+
+func (settings *NewGameSettings) OpponentsNext() {
+    settings.Opponents += 1
+    if settings.Opponents > 4 {
+        settings.Opponents = 1
+    }
+}
+
+func (settings *NewGameSettings) LandSizeNext() {
+    settings.LandSize += 1
+    if settings.LandSize > 2 {
+        settings.LandSize = 0
+    }
+}
+
+func (settings *NewGameSettings) MagicNext() {
+    settings.Magic += 1
+    if settings.Magic > 2 {
+        settings.Magic = 0
+    }
+}
+
 func (settings *NewGameSettings) DifficultyString() string {
     kinds := []string{"Intro", "Easy", "Normal", "Hard", "Impossible"}
     return kinds[settings.Difficulty]
@@ -48,6 +77,15 @@ func (settings *NewGameSettings) MagicString() string {
     kinds := []string{"Weak", "Normal", "Powerful"}
     return kinds[settings.Magic]
 }
+
+type NewGameUI int
+
+const (
+    NewGameDifficulty NewGameUI = iota
+    NewGameOppoonents NewGameUI = iota
+    NewGameLandSize NewGameUI = iota
+    NewGameMagic NewGameUI = iota
+)
 
 type NewGameScreen struct {
     LbxFile *lbx.LbxFile
@@ -128,6 +166,58 @@ func (newGameScreen *NewGameScreen) Load(cache *lbx.LbxCache) error {
     return outError
 }
 
+func pointInRect(x int, y int, rect image.Rectangle) bool {
+    return x >= rect.Min.X && x < rect.Max.X && y >= rect.Min.Y && y < rect.Max.Y
+}
+
+func (newGameScreen *NewGameScreen) GetUIRect(component NewGameUI) image.Rectangle {
+    switch component {
+        case NewGameDifficulty:
+            bounds := newGameScreen.DifficultyBlock.Bounds()
+            x := 160 + 91
+            y := 39
+            return image.Rect(x, y, x + bounds.Dx(), y + bounds.Dy())
+        case NewGameOppoonents:
+            bounds := newGameScreen.OpponentsBlock.Bounds()
+            x := 160 + 91
+            y := 66
+            return image.Rect(x, y, x + bounds.Dx(), y + bounds.Dy())
+        case NewGameLandSize:
+            bounds := newGameScreen.LandSizeBlock.Bounds()
+            x := 160 + 91
+            y := 93
+            return image.Rect(x, y, x + bounds.Dx(), y + bounds.Dy())
+        case NewGameMagic:
+            bounds := newGameScreen.MagicBlock.Bounds()
+            x := 160 + 91
+            y := 120
+            return image.Rect(x, y, x + bounds.Dx(), y + bounds.Dy())
+    }
+
+    return image.Rectangle{}
+}
+
+func (newGameScreen *NewGameScreen) Update() {
+    if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
+        x, y := ebiten.CursorPosition()
+        if pointInRect(x, y, newGameScreen.GetUIRect(NewGameDifficulty)) {
+            newGameScreen.Settings.DifficultyNext()
+        }
+
+        if pointInRect(x, y, newGameScreen.GetUIRect(NewGameOppoonents)) {
+            newGameScreen.Settings.OpponentsNext()
+        }
+
+        if pointInRect(x, y, newGameScreen.GetUIRect(NewGameLandSize)) {
+            newGameScreen.Settings.LandSizeNext()
+        }
+
+        if pointInRect(x, y, newGameScreen.GetUIRect(NewGameMagic)) {
+            newGameScreen.Settings.MagicNext()
+        }
+    }
+}
+
 func (newGameScreen *NewGameScreen) Draw(screen *ebiten.Image) {
     if newGameScreen.Background != nil {
         var options ebiten.DrawImageOptions
@@ -154,25 +244,29 @@ func (newGameScreen *NewGameScreen) Draw(screen *ebiten.Image) {
 
     if newGameScreen.DifficultyBlock != nil {
         var options ebiten.DrawImageOptions
-        options.GeoM.Translate(160 + 91, 39)
+        rect := newGameScreen.GetUIRect(NewGameDifficulty)
+        options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
         screen.DrawImage(newGameScreen.DifficultyBlock, &options)
     }
 
     if newGameScreen.OpponentsBlock != nil {
         var options ebiten.DrawImageOptions
-        options.GeoM.Translate(160 + 91, 66)
+        rect := newGameScreen.GetUIRect(NewGameOppoonents)
+        options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
         screen.DrawImage(newGameScreen.OpponentsBlock, &options)
     }
 
     if newGameScreen.LandSizeBlock != nil {
         var options ebiten.DrawImageOptions
-        options.GeoM.Translate(160 + 91, 93)
+        rect := newGameScreen.GetUIRect(NewGameLandSize)
+        options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
         screen.DrawImage(newGameScreen.LandSizeBlock, &options)
     }
 
     if newGameScreen.MagicBlock != nil {
         var options ebiten.DrawImageOptions
-        options.GeoM.Translate(160 + 91, 120)
+        rect := newGameScreen.GetUIRect(NewGameMagic)
+        options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
         screen.DrawImage(newGameScreen.MagicBlock, &options)
     }
 
@@ -218,6 +312,8 @@ func (game *MagicGame) Update() error {
     if err != nil {
         return err
     }
+
+    game.NewGameScreen.Update()
 
     return nil
 }
