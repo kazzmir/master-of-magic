@@ -39,11 +39,19 @@ func NewMagicGame() (*MagicGame, error) {
         NewWizardScreen: MakeNewWizardScreen(),
     }
 
+    /*
     err := game.NewGameScreen.Load(game.LbxCache)
     if err != nil {
         return nil, err
     }
     game.NewGameScreen.Activate()
+    */
+
+    err := game.NewWizardScreen.Load(game.LbxCache)
+    if err != nil {
+        return nil, err
+    }
+    game.NewWizardScreen.Activate()
 
     return game, err
 }
@@ -63,7 +71,10 @@ func (game *MagicGame) Update() error {
             case NewGameStateRunning:
             case NewGameStateOk:
                 game.NewGameScreen.Deactivate()
-                game.NewWizardScreen.Load(game.LbxCache)
+                err := game.NewWizardScreen.Load(game.LbxCache)
+                if err != nil {
+                    return err
+                }
                 game.NewWizardScreen.Activate()
             case NewGameStateCancel:
                 return ebiten.Termination
