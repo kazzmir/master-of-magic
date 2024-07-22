@@ -112,3 +112,27 @@ func (font *Font) Print(image *ebiten.Image, x float64, y float64, scale float64
         useX += float64(glyph.Width + font.internalFont.HorizontalSpacing) * scale
     }
 }
+
+func (font *Font) MeasureTextWidth(text string, scale float64) float64 {
+    width := 0
+    for _, c := range text {
+        if c == '\n' {
+            continue
+        }
+
+        glyphIndex := int(c) - 32
+        if glyphIndex >= len(font.Glyphs) || glyphIndex < 0 {
+            continue
+        }
+
+        glyph := font.Glyphs[glyphIndex]
+        width += glyph.Width + font.internalFont.HorizontalSpacing
+    }
+
+    return float64(width) * scale
+}
+
+func (font *Font) PrintCenter(image *ebiten.Image, x float64, y float64, scale float64, text string) {
+    width := font.MeasureTextWidth(text, scale)
+    font.Print(image, x - width / 2, y, scale, text)
+}
