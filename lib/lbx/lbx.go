@@ -364,7 +364,10 @@ func readPalette(reader io.ReadSeeker, index int, firstColor int, count int) (co
             return nil, fmt.Errorf("invalid color index %v, palette only has %v colors", i + firstColor, len(palette))
         }
 
-        palette[i + firstColor] = color.RGBA{R: uint8(r), G: uint8(g), B: uint8(b), A: 0xff}
+        // log.Printf("Palette[%v] = %v %v %v\n", i + firstColor, r, g, b)
+
+        // color values are multiplied by 4, but i'm not entirely sure why (other than the pascal source does the same thing)
+        palette[i + firstColor] = color.RGBA{R: uint8(r << 2), G: uint8(g << 2), B: uint8(b << 2), A: 0xff}
     }
 
     return palette, nil
@@ -666,8 +669,12 @@ func (lbx *LbxFile) ReadImages(entry int) ([]image.Image, error) {
             return nil, err
         }
 
-        fmt.Printf("Read palette with %v colors\n", len(palette))
+        if debug {
+            fmt.Printf("Read palette with %v colors first color %v count %v\n", len(palette), paletteInfo.FirstColorIndex, paletteInfo.Count)
+        }
     }
+
+    // palette[241] = color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff}
 
     /* if the palette is empty then just use the default palette */
     if paletteInfo.Count == 0 {
@@ -697,6 +704,22 @@ func (lbx *LbxFile) ReadImages(entry int) ([]image.Image, error) {
         if err != nil {
             return nil, err
         }
+
+        if debug {
+            x := 39
+            y := 20
+            index := img.ColorIndexAt(x, y)
+            fmt.Printf("(%v,%v)=%v\n", x, y, index)
+            /*
+            for x := 0; x < img.Bounds().Dx(); x++ {
+                for y := 0; y < img.Bounds().Dy(); y++ {
+                    index := img.ColorIndexAt(x, y)
+                    fmt.Printf("(%v,%v)=%v\n", x, y, index)
+                }
+            }
+            */
+        }
+
         images = append(images, img)
     }
 
