@@ -34,6 +34,7 @@ type wizardSlot struct {
     // the portrait of the wizard shown when the user's cursor is on top of their name
     Portrait *ebiten.Image
     Books []wizardBook
+    ExtraAbility string
     X int
     Y int
 }
@@ -42,6 +43,7 @@ type NewWizardScreen struct {
     Background *ebiten.Image
     Slots *ebiten.Image
     Font *font.Font
+    AbilityFont *font.Font
     loaded sync.Once
     WizardSlots []wizardSlot
 
@@ -107,6 +109,9 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
         }
 
         screen.Font = font.MakeOptimizedFont(fonts[3])
+
+        // FIXME: load with a yellowish palette
+        screen.AbilityFont = font.MakeOptimizedFont(fonts[0])
 
         newGameLbx, err := cache.GetLbxFile("magic-data/NEWGAME.LBX")
         if err != nil {
@@ -193,6 +198,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                     wizardBook{Magic: LifeMagic, Count: 5},
                     wizardBook{Magic: NatureMagic, Count: 5},
                 },
+                ExtraAbility: "Sage Master",
                 X: 170,
                 Y: top,
             },
@@ -215,6 +221,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                     wizardBook{Magic: DeathMagic, Count: 5},
                     wizardBook{Magic: ChaosMagic, Count: 5},
                 },
+                ExtraAbility: "Conjurer",
                 X: 170,
                 Y: top + 2 * space,
             },
@@ -226,6 +233,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                     wizardBook{Magic: SorceryMagic, Count: 5},
                     wizardBook{Magic: ChaosMagic, Count: 5},
                 },
+                ExtraAbility: "Channeler",
                 X: 170,
                 Y: top + 3 * space,
             },
@@ -236,6 +244,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                 Books: []wizardBook{
                     wizardBook{Magic: SorceryMagic, Count: 10},
                 },
+                ExtraAbility: "Alchemy",
                 X: 170,
                 Y: top + 4 * space,
             },
@@ -247,6 +256,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                     wizardBook{Magic: NatureMagic, Count: 5},
                     wizardBook{Magic: ChaosMagic, Count: 5},
                 },
+                ExtraAbility: "Mana Focusing",
                 X: 170,
                 Y: top + 5 * space,
             },
@@ -257,6 +267,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                 Books: []wizardBook{
                     wizardBook{Magic: DeathMagic, Count: 9},
                 },
+                ExtraAbility: "Infernal Power",
                 X: 170,
                 Y: top + 6 * space,
             },
@@ -268,6 +279,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                     wizardBook{Magic: LifeMagic, Count: 4},
                     wizardBook{Magic: ChaosMagic, Count: 4},
                 },
+                ExtraAbility: "Myrran",
                 X: 246,
                 Y: top + 0 * space,
             },
@@ -278,6 +290,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                 Books: []wizardBook{
                     wizardBook{Magic: ChaosMagic, Count: 10},
                 },
+                ExtraAbility: "Chaos Mastery",
                 X: 246,
                 Y: top + 1 * space,
             },
@@ -288,6 +301,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                 Books: []wizardBook{
                     wizardBook{Magic: NatureMagic, Count: 10},
                 },
+                ExtraAbility: "Nature Mastery",
                 X: 246,
                 Y: top + 2 * space,
             },
@@ -299,6 +313,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                     wizardBook{Magic: LifeMagic, Count: 5},
                     wizardBook{Magic: SorceryMagic, Count: 5},
                 },
+                ExtraAbility: "Archmage",
                 X: 246,
                 Y: top + 3 * space,
             },
@@ -309,6 +324,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                 Books: []wizardBook{
                     wizardBook{Magic: LifeMagic, Count: 10},
                 },
+                ExtraAbility: "Charismatic",
                 X: 246,
                 Y: top + 4 * space,
             },
@@ -320,6 +336,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                     wizardBook{Magic: NatureMagic, Count: 4},
                     wizardBook{Magic: DeathMagic, Count: 5},
                 },
+                ExtraAbility: "Warlord",
                 X: 246,
                 Y: top + 5 * space,
             },
@@ -331,6 +348,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                     wizardBook{Magic: SorceryMagic, Count: 5},
                     wizardBook{Magic: DeathMagic, Count: 5},
                 },
+                ExtraAbility: "Artificer",
                 X: 246,
                 Y: top + 6 * space,
             },
@@ -392,6 +410,9 @@ func (screen *NewWizardScreen) Draw(window *ebiten.Image) {
                 }
             }
 
+            if screen.WizardSlots[screen.CurrentWizard].ExtraAbility != "" {
+                screen.AbilityFont.Print(window, 12, 180, 1, screen.WizardSlots[screen.CurrentWizard].ExtraAbility)
+            }
         }
     }
 }
