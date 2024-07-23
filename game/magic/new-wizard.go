@@ -44,7 +44,14 @@ type NewWizardScreenState int
 const (
     NewWizardScreenStateSelectWizard NewWizardScreenState = iota
     NewWizardScreenStateCustomPicture
+    NewWizardScreenStateCustomName
+    NewWizardScreenStateCustomAbility
 )
+
+type wizardCustom struct {
+    Name string
+    Portrait *ebiten.Image
+}
 
 type NewWizardScreen struct {
     Background *ebiten.Image
@@ -65,6 +72,8 @@ type NewWizardScreen struct {
     BooksOrder []int
 
     State NewWizardScreenState
+
+    CustomWizard wizardCustom
 
     CurrentWizard int
     Active bool
@@ -376,8 +385,11 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                 X: 246,
                 Y: top + 7 * space,
             },
-
         }
+
+        // set custom wizard to merlin for now
+        screen.CustomWizard.Portrait = screen.WizardSlots[0].Portrait
+        screen.CustomWizard.Name = screen.WizardSlots[0].Name
     })
 
     return outError
@@ -386,6 +398,21 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
 func (screen *NewWizardScreen) Draw(window *ebiten.Image) {
     var options ebiten.DrawImageOptions
     window.DrawImage(screen.Background, &options)
+
+    const portraitX = 24
+    const portraitY = 10
+
+    const nameX = 75
+    const nameY = 120
+
+    if screen.State == NewWizardScreenStateCustomName {
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(portraitX, portraitY)
+        window.DrawImage(screen.CustomWizard.Portrait, &options)
+        screen.Font.PrintCenter(window, nameX, nameY, 1, screen.CustomWizard.Name)
+        screen.SelectFont.PrintCenter(window, 245, 2, 1, "Wizard's Name")
+        return
+    }
 
     options.GeoM.Reset()
     options.GeoM.Translate(166, 18)
@@ -412,9 +439,9 @@ func (screen *NewWizardScreen) Draw(window *ebiten.Image) {
         portrait := screen.WizardSlots[screen.CurrentWizard].Portrait
         if portrait != nil {
             var options ebiten.DrawImageOptions
-            options.GeoM.Translate(24, 10)
+            options.GeoM.Translate(portraitX, portraitY)
             window.DrawImage(portrait, &options)
-            screen.Font.PrintCenter(window, 75, 120, 1, screen.WizardSlots[screen.CurrentWizard].Name)
+            screen.Font.PrintCenter(window, nameX, nameY, 1, screen.WizardSlots[screen.CurrentWizard].Name)
 
             if screen.State == NewWizardScreenStateSelectWizard {
                 x := 0
@@ -459,6 +486,6 @@ func MakeNewWizardScreen() *NewWizardScreen {
     return &NewWizardScreen{
         CurrentWizard: 0,
         BooksOrder: randomizeBookOrder(12),
-        State: NewWizardScreenStateCustomPicture,
+        State: NewWizardScreenStateCustomName,
     }
 }
