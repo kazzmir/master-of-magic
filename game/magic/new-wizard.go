@@ -12,7 +12,10 @@ import (
 
 type wizardSlot struct {
     Name string
+    // the block that the wizard's name is printed on in the ui
     Background *ebiten.Image
+    // the portrait of the wizard shown when the user's cursor is on top of their name
+    Portrait *ebiten.Image
     X int
     Y int
 }
@@ -23,6 +26,7 @@ type NewWizardScreen struct {
     Font *font.Font
     loaded sync.Once
     WizardSlots []wizardSlot
+    CurrentWizard int
     Active bool
 }
 
@@ -93,99 +97,142 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
             return ebiten.NewImageFromImage(sprites[subIndex])
         }
 
+        wizardsLbx, err := cache.GetLbxFile("magic-data/WIZARDS.LBX")
+        if err != nil {
+            outError = err
+            return
+        }
+
+        loadWizardPortrait := func(index int) *ebiten.Image {
+            if outError != nil {
+                return nil
+            }
+
+            sprites, err := wizardsLbx.ReadImages(index)
+            if err != nil {
+                outError = fmt.Errorf("Unable to read wizard portrait from WIZARDS.LBX: %v", err)
+                return nil
+            }
+
+            if len(sprites) == 0 {
+                outError = fmt.Errorf("Unable to read wizard portrait from WIZARDS.LBX: no images found")
+                return nil
+            }
+
+            return ebiten.NewImageFromImage(sprites[0])
+        }
+
         screen.Background = loadImage(0, 0)
         screen.Slots = loadImage(8, 0)
+
+        top := 28
+        space := 22
 
         screen.WizardSlots = []wizardSlot{
             wizardSlot{
                 Name: "Merlin",
                 Background: loadImage(9, 0),
+                Portrait: loadWizardPortrait(0),
                 X: 170,
-                Y: 10,
+                Y: top,
             },
             wizardSlot{
                 Name: "Raven",
                 Background: loadImage(10, 0),
+                Portrait: loadWizardPortrait(1),
                 X: 170,
-                Y: 32,
+                Y: top + 1 * space,
             },
             wizardSlot{
                 Name: "Sharee",
                 Background: loadImage(11, 0),
+                Portrait: loadWizardPortrait(2),
                 X: 170,
-                Y: 54,
+                Y: top + 2 * space,
             },
             wizardSlot{
                 Name: "Lo Pan",
                 Background: loadImage(12, 0),
+                Portrait: loadWizardPortrait(3),
                 X: 170,
-                Y: 76,
+                Y: top + 3 * space,
             },
             wizardSlot{
                 Name: "Jafar",
                 Background: loadImage(13, 0),
+                Portrait: loadWizardPortrait(4),
                 X: 170,
-                Y: 98,
+                Y: top + 4 * space,
             },
             wizardSlot{
                 Name: "Oberic",
                 Background: loadImage(14, 0),
+                Portrait: loadWizardPortrait(5),
                 X: 170,
-                Y: 120,
+                Y: top + 5 * space,
             },
             wizardSlot{
                 Name: "Rjak",
                 Background: loadImage(15, 0),
+                Portrait: loadWizardPortrait(6),
                 X: 170,
-                Y: 142,
+                Y: top + 6 * space,
             },
             wizardSlot{
                 Name: "Ssr'ra",
                 Background: loadImage(16, 0),
+                Portrait: loadWizardPortrait(7),
                 X: 246,
-                Y: 10,
+                Y: top + 0 * space,
             },
             wizardSlot{
                 Name: "Tauron",
                 Background: loadImage(17, 0),
+                Portrait: loadWizardPortrait(8),
                 X: 246,
-                Y: 32,
+                Y: top + 1 * space,
             },
             wizardSlot{
                 Name: "Freya",
                 Background: loadImage(18, 0),
+                Portrait: loadWizardPortrait(9),
                 X: 246,
-                Y: 54,
+                Y: top + 2 * space,
             },
             wizardSlot{
                 Name: "Horus",
                 Background: loadImage(19, 0),
+                Portrait: loadWizardPortrait(10),
                 X: 246,
-                Y: 76,
+                Y: top + 3 * space,
             },
             wizardSlot{
                 Name: "Ariel",
                 Background: loadImage(20, 0),
+                Portrait: loadWizardPortrait(11),
                 X: 246,
-                Y: 98,
+                Y: top + 4 * space,
             },
             wizardSlot{
                 Name: "Tlaloc",
                 Background: loadImage(21, 0),
+                Portrait: loadWizardPortrait(12),
                 X: 246,
-                Y: 120,
+                Y: top + 5 * space,
             },
             wizardSlot{
                 Name: "Kali",
                 Background: loadImage(22, 0),
+                Portrait: loadWizardPortrait(13),
                 X: 246,
-                Y: 142,
+                Y: top + 6 * space,
             },
             wizardSlot{
                 Name: "Custom",
                 Background: loadImage(23, 0),
+                Portrait: nil,
                 X: 246,
-                Y: 164,
+                Y: top + 7 * space,
             },
 
         }
@@ -199,7 +246,7 @@ func (screen *NewWizardScreen) Draw(window *ebiten.Image) {
     window.DrawImage(screen.Background, &options)
 
     options.GeoM.Reset()
-    options.GeoM.Translate(166, 0)
+    options.GeoM.Translate(166, 18)
     window.DrawImage(screen.Slots, &options)
 
     for _, wizard := range screen.WizardSlots {
@@ -208,8 +255,20 @@ func (screen *NewWizardScreen) Draw(window *ebiten.Image) {
         window.DrawImage(wizard.Background, &options)
         screen.Font.PrintCenter(window, float64(wizard.X) + float64(wizard.Background.Bounds().Dx()) / 2, float64(wizard.Y) + 3, 1, wizard.Name)
     }
+
+    if screen.CurrentWizard >= 0 && screen.CurrentWizard < len(screen.WizardSlots) {
+        portrait := screen.WizardSlots[screen.CurrentWizard].Portrait
+        if portrait != nil {
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(24, 10)
+            window.DrawImage(portrait, &options)
+            screen.Font.PrintCenter(window, 75, 120, 1, screen.WizardSlots[screen.CurrentWizard].Name)
+        }
+    }
 }
 
 func MakeNewWizardScreen() *NewWizardScreen {
-    return &NewWizardScreen{}
+    return &NewWizardScreen{
+        CurrentWizard: 0,
+    }
 }
