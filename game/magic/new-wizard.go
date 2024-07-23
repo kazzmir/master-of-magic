@@ -39,8 +39,16 @@ type wizardSlot struct {
     Y int
 }
 
+type NewWizardScreenState int
+
+const (
+    NewWizardScreenStateSelectWizard NewWizardScreenState = iota
+    NewWizardScreenStateCustomPicture
+)
+
 type NewWizardScreen struct {
     Background *ebiten.Image
+    CustomPictureBackground *ebiten.Image
     Slots *ebiten.Image
     Font *font.Font
     AbilityFont *font.Font
@@ -55,6 +63,8 @@ type NewWizardScreen struct {
     ChaosBooks [3]*ebiten.Image
 
     BooksOrder []int
+
+    State NewWizardScreenState
 
     CurrentWizard int
     Active bool
@@ -169,6 +179,8 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
 
         screen.Background = loadImage(0, 0)
         screen.Slots = loadImage(8, 0)
+
+        screen.CustomPictureBackground = loadImage(39, 0)
 
         for i := 0; i < 3; i++ {
             screen.LifeBooks[i] = loadImage(24 + i, 0)
@@ -377,15 +389,23 @@ func (screen *NewWizardScreen) Draw(window *ebiten.Image) {
 
     options.GeoM.Reset()
     options.GeoM.Translate(166, 18)
-    window.DrawImage(screen.Slots, &options)
+
+    switch screen.State {
+        case NewWizardScreenStateSelectWizard: 
+            window.DrawImage(screen.Slots, &options)
+        case NewWizardScreenStateCustomPicture:
+            window.DrawImage(screen.CustomPictureBackground, &options)
+    }
 
     screen.SelectFont.PrintCenter(window, 245, 2, 1, "Select Wizard")
 
     for _, wizard := range screen.WizardSlots {
-        var options ebiten.DrawImageOptions
-        options.GeoM.Translate(float64(wizard.X), float64(wizard.Y))
-        window.DrawImage(wizard.Background, &options)
-        screen.Font.PrintCenter(window, float64(wizard.X) + float64(wizard.Background.Bounds().Dx()) / 2, float64(wizard.Y) + 3, 1, wizard.Name)
+        if screen.State != NewWizardScreenStateCustomPicture || wizard.Name != "Custom" {
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(wizard.X), float64(wizard.Y))
+            window.DrawImage(wizard.Background, &options)
+            screen.Font.PrintCenter(window, float64(wizard.X) + float64(wizard.Background.Bounds().Dx()) / 2, float64(wizard.Y) + 3, 1, wizard.Name)
+        }
     }
 
     if screen.CurrentWizard >= 0 && screen.CurrentWizard < len(screen.WizardSlots) {
@@ -396,28 +416,30 @@ func (screen *NewWizardScreen) Draw(window *ebiten.Image) {
             window.DrawImage(portrait, &options)
             screen.Font.PrintCenter(window, 75, 120, 1, screen.WizardSlots[screen.CurrentWizard].Name)
 
-            x := 0
-            offsetX := 0
-            for _, book := range screen.WizardSlots[screen.CurrentWizard].Books {
-                for i := 0; i < book.Count; i++ {
-                    var options ebiten.DrawImageOptions
-                    options.GeoM.Translate(36 + float64(offsetX), 135)
-                    var img *ebiten.Image
-                    switch book.Magic {
-                        case LifeMagic: img = screen.LifeBooks[screen.BooksOrder[x]]
-                        case SorceryMagic: img = screen.SorceryBooks[screen.BooksOrder[x]]
-                        case NatureMagic: img = screen.NatureBooks[screen.BooksOrder[x]]
-                        case DeathMagic: img = screen.DeathBooks[screen.BooksOrder[x]]
-                        case ChaosMagic: img = screen.ChaosBooks[screen.BooksOrder[x]]
+            if screen.State == NewWizardScreenStateSelectWizard {
+                x := 0
+                offsetX := 0
+                for _, book := range screen.WizardSlots[screen.CurrentWizard].Books {
+                    for i := 0; i < book.Count; i++ {
+                        var options ebiten.DrawImageOptions
+                        options.GeoM.Translate(36 + float64(offsetX), 135)
+                        var img *ebiten.Image
+                        switch book.Magic {
+                            case LifeMagic: img = screen.LifeBooks[screen.BooksOrder[x]]
+                            case SorceryMagic: img = screen.SorceryBooks[screen.BooksOrder[x]]
+                            case NatureMagic: img = screen.NatureBooks[screen.BooksOrder[x]]
+                            case DeathMagic: img = screen.DeathBooks[screen.BooksOrder[x]]
+                            case ChaosMagic: img = screen.ChaosBooks[screen.BooksOrder[x]]
+                        }
+                        window.DrawImage(img, &options)
+                        offsetX += img.Bounds().Dx() - 1
+                        x += 1
                     }
-                    window.DrawImage(img, &options)
-                    offsetX += img.Bounds().Dx() - 1
-                    x += 1
                 }
-            }
 
-            if screen.WizardSlots[screen.CurrentWizard].ExtraAbility != "" {
-                screen.AbilityFont.Print(window, 12, 180, 1, screen.WizardSlots[screen.CurrentWizard].ExtraAbility)
+                if screen.WizardSlots[screen.CurrentWizard].ExtraAbility != "" {
+                    screen.AbilityFont.Print(window, 12, 180, 1, screen.WizardSlots[screen.CurrentWizard].ExtraAbility)
+                }
             }
         }
     }
@@ -437,5 +459,6 @@ func MakeNewWizardScreen() *NewWizardScreen {
     return &NewWizardScreen{
         CurrentWizard: 0,
         BooksOrder: randomizeBookOrder(12),
+        State: NewWizardScreenStateCustomPicture,
     }
 }
