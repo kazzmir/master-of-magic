@@ -43,6 +43,15 @@ func (screen *NewWizardScreen) Deactivate() {
 }
 
 func (screen *NewWizardScreen) Update() {
+    mouseX, mouseY := ebiten.CursorPosition()
+
+    for i, wizard := range screen.WizardSlots {
+        if mouseX >= wizard.X && mouseX < wizard.X + wizard.Background.Bounds().Dx() &&
+            mouseY >= wizard.Y && mouseY < wizard.Y + wizard.Background.Bounds().Dy() {
+            screen.CurrentWizard = i
+            return
+        }
+    }
 }
 
 func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
