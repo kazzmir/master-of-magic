@@ -44,6 +44,7 @@ type NewWizardScreen struct {
     Slots *ebiten.Image
     Font *font.Font
     AbilityFont *font.Font
+    SelectFont *font.Font
     loaded sync.Once
     WizardSlots []wizardSlot
 
@@ -109,6 +110,9 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
         }
 
         screen.Font = font.MakeOptimizedFont(fonts[3])
+
+        // FIXME: load with a yellowish palette
+        screen.SelectFont = font.MakeOptimizedFont(fonts[5])
 
         // FIXME: load with a yellowish palette
         screen.AbilityFont = font.MakeOptimizedFont(fonts[0])
@@ -374,6 +378,8 @@ func (screen *NewWizardScreen) Draw(window *ebiten.Image) {
     options.GeoM.Reset()
     options.GeoM.Translate(166, 18)
     window.DrawImage(screen.Slots, &options)
+
+    screen.SelectFont.PrintCenter(window, 245, 2, 1, "Select Wizard")
 
     for _, wizard := range screen.WizardSlots {
         var options ebiten.DrawImageOptions
