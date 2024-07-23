@@ -3,6 +3,7 @@ package main
 import (
     "fmt"
     "sync"
+    "math/rand"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
@@ -10,12 +11,29 @@ import (
     "github.com/hajimehoshi/ebiten/v2"
 )
 
+type MagicType int
+
+const (
+    LifeMagic MagicType = iota
+    SorceryMagic
+    NatureMagic
+    DeathMagic
+    ChaosMagic
+)
+
+/* the number of books a wizard has of a specific magic type */
+type wizardBook struct {
+    Magic MagicType
+    Count int
+}
+
 type wizardSlot struct {
     Name string
     // the block that the wizard's name is printed on in the ui
     Background *ebiten.Image
     // the portrait of the wizard shown when the user's cursor is on top of their name
     Portrait *ebiten.Image
+    Books []wizardBook
     X int
     Y int
 }
@@ -26,6 +44,15 @@ type NewWizardScreen struct {
     Font *font.Font
     loaded sync.Once
     WizardSlots []wizardSlot
+
+    LifeBooks [3]*ebiten.Image
+    SorceryBooks [3]*ebiten.Image
+    NatureBooks [3]*ebiten.Image
+    DeathBooks [3]*ebiten.Image
+    ChaosBooks [3]*ebiten.Image
+
+    BooksOrder []int
+
     CurrentWizard int
     Active bool
 }
@@ -134,6 +161,26 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
         screen.Background = loadImage(0, 0)
         screen.Slots = loadImage(8, 0)
 
+        for i := 0; i < 3; i++ {
+            screen.LifeBooks[i] = loadImage(24 + i, 0)
+        }
+
+        for i := 0; i < 3; i++ {
+            screen.SorceryBooks[i] = loadImage(27 + i, 0)
+        }
+
+        for i := 0; i < 3; i++ {
+            screen.NatureBooks[i] = loadImage(30 + i, 0)
+        }
+
+        for i := 0; i < 3; i++ {
+            screen.DeathBooks[i] = loadImage(33 + i, 0)
+        }
+
+        for i := 0; i < 3; i++ {
+            screen.ChaosBooks[i] = loadImage(36 + i, 0)
+        }
+
         top := 28
         space := 22
 
@@ -142,6 +189,10 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                 Name: "Merlin",
                 Background: loadImage(9, 0),
                 Portrait: loadWizardPortrait(0),
+                Books: []wizardBook{
+                    wizardBook{Magic: LifeMagic, Count: 5},
+                    wizardBook{Magic: NatureMagic, Count: 5},
+                },
                 X: 170,
                 Y: top,
             },
@@ -149,6 +200,10 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                 Name: "Raven",
                 Background: loadImage(10, 0),
                 Portrait: loadWizardPortrait(1),
+                Books: []wizardBook{
+                    wizardBook{Magic: SorceryMagic, Count: 6},
+                    wizardBook{Magic: NatureMagic, Count: 5},
+                },
                 X: 170,
                 Y: top + 1 * space,
             },
@@ -156,6 +211,10 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                 Name: "Sharee",
                 Background: loadImage(11, 0),
                 Portrait: loadWizardPortrait(2),
+                Books: []wizardBook{
+                    wizardBook{Magic: DeathMagic, Count: 5},
+                    wizardBook{Magic: ChaosMagic, Count: 5},
+                },
                 X: 170,
                 Y: top + 2 * space,
             },
@@ -163,6 +222,10 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                 Name: "Lo Pan",
                 Background: loadImage(12, 0),
                 Portrait: loadWizardPortrait(3),
+                Books: []wizardBook{
+                    wizardBook{Magic: SorceryMagic, Count: 5},
+                    wizardBook{Magic: ChaosMagic, Count: 5},
+                },
                 X: 170,
                 Y: top + 3 * space,
             },
@@ -170,6 +233,9 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                 Name: "Jafar",
                 Background: loadImage(13, 0),
                 Portrait: loadWizardPortrait(4),
+                Books: []wizardBook{
+                    wizardBook{Magic: SorceryMagic, Count: 10},
+                },
                 X: 170,
                 Y: top + 4 * space,
             },
@@ -177,6 +243,10 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                 Name: "Oberic",
                 Background: loadImage(14, 0),
                 Portrait: loadWizardPortrait(5),
+                Books: []wizardBook{
+                    wizardBook{Magic: NatureMagic, Count: 5},
+                    wizardBook{Magic: ChaosMagic, Count: 5},
+                },
                 X: 170,
                 Y: top + 5 * space,
             },
@@ -184,6 +254,9 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                 Name: "Rjak",
                 Background: loadImage(15, 0),
                 Portrait: loadWizardPortrait(6),
+                Books: []wizardBook{
+                    wizardBook{Magic: DeathMagic, Count: 9},
+                },
                 X: 170,
                 Y: top + 6 * space,
             },
@@ -191,6 +264,10 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                 Name: "Ssr'ra",
                 Background: loadImage(16, 0),
                 Portrait: loadWizardPortrait(7),
+                Books: []wizardBook{
+                    wizardBook{Magic: LifeMagic, Count: 4},
+                    wizardBook{Magic: ChaosMagic, Count: 4},
+                },
                 X: 246,
                 Y: top + 0 * space,
             },
@@ -198,6 +275,9 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                 Name: "Tauron",
                 Background: loadImage(17, 0),
                 Portrait: loadWizardPortrait(8),
+                Books: []wizardBook{
+                    wizardBook{Magic: ChaosMagic, Count: 10},
+                },
                 X: 246,
                 Y: top + 1 * space,
             },
@@ -205,6 +285,9 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                 Name: "Freya",
                 Background: loadImage(18, 0),
                 Portrait: loadWizardPortrait(9),
+                Books: []wizardBook{
+                    wizardBook{Magic: NatureMagic, Count: 10},
+                },
                 X: 246,
                 Y: top + 2 * space,
             },
@@ -212,6 +295,10 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                 Name: "Horus",
                 Background: loadImage(19, 0),
                 Portrait: loadWizardPortrait(10),
+                Books: []wizardBook{
+                    wizardBook{Magic: LifeMagic, Count: 5},
+                    wizardBook{Magic: SorceryMagic, Count: 5},
+                },
                 X: 246,
                 Y: top + 3 * space,
             },
@@ -219,6 +306,9 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                 Name: "Ariel",
                 Background: loadImage(20, 0),
                 Portrait: loadWizardPortrait(11),
+                Books: []wizardBook{
+                    wizardBook{Magic: LifeMagic, Count: 10},
+                },
                 X: 246,
                 Y: top + 4 * space,
             },
@@ -226,6 +316,10 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                 Name: "Tlaloc",
                 Background: loadImage(21, 0),
                 Portrait: loadWizardPortrait(12),
+                Books: []wizardBook{
+                    wizardBook{Magic: NatureMagic, Count: 4},
+                    wizardBook{Magic: DeathMagic, Count: 5},
+                },
                 X: 246,
                 Y: top + 5 * space,
             },
@@ -233,12 +327,17 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                 Name: "Kali",
                 Background: loadImage(22, 0),
                 Portrait: loadWizardPortrait(13),
+                Books: []wizardBook{
+                    wizardBook{Magic: SorceryMagic, Count: 5},
+                    wizardBook{Magic: DeathMagic, Count: 5},
+                },
                 X: 246,
                 Y: top + 6 * space,
             },
             wizardSlot{
                 Name: "Custom",
                 Background: loadImage(23, 0),
+                Books: nil,
                 Portrait: nil,
                 X: 246,
                 Y: top + 7 * space,
@@ -272,12 +371,44 @@ func (screen *NewWizardScreen) Draw(window *ebiten.Image) {
             options.GeoM.Translate(24, 10)
             window.DrawImage(portrait, &options)
             screen.Font.PrintCenter(window, 75, 120, 1, screen.WizardSlots[screen.CurrentWizard].Name)
+
+            x := 0
+            offsetX := 0
+            for _, book := range screen.WizardSlots[screen.CurrentWizard].Books {
+                for i := 0; i < book.Count; i++ {
+                    var options ebiten.DrawImageOptions
+                    options.GeoM.Translate(36 + float64(offsetX), 135)
+                    var img *ebiten.Image
+                    switch book.Magic {
+                        case LifeMagic: img = screen.LifeBooks[screen.BooksOrder[x]]
+                        case SorceryMagic: img = screen.SorceryBooks[screen.BooksOrder[x]]
+                        case NatureMagic: img = screen.NatureBooks[screen.BooksOrder[x]]
+                        case DeathMagic: img = screen.DeathBooks[screen.BooksOrder[x]]
+                        case ChaosMagic: img = screen.ChaosBooks[screen.BooksOrder[x]]
+                    }
+                    window.DrawImage(img, &options)
+                    offsetX += img.Bounds().Dx() - 1
+                    x += 1
+                }
+            }
+
         }
     }
+}
+
+// create an array of N integers where each integer is some value between 0 and 2
+// these values correlate to the index of the book image to draw under the wizard portrait
+func randomizeBookOrder(books int) []int {
+    order := make([]int, books)
+    for i := 0; i < books; i++ {
+        order[i] = rand.Intn(3)
+    }
+    return order
 }
 
 func MakeNewWizardScreen() *NewWizardScreen {
     return &NewWizardScreen{
         CurrentWizard: 0,
+        BooksOrder: randomizeBookOrder(12),
     }
 }
