@@ -484,6 +484,25 @@ func (screen *NewWizardScreen) Draw(window *ebiten.Image) {
             "Node Mastery",
         }
 
+        const topY = 5
+        const veriticalGap = 7
+        const maxY = 45
+
+        tab := 0
+        y := topY
+
+        // FIXME: compute this based on the largest string in a single column
+        tabs := []float64{172, 210, 260}
+
+        for _, ability := range abilities {
+            screen.AbilityFont.Print(window, tabs[tab], float64(y), 1, ability)
+            y += veriticalGap
+            if y >= maxY {
+                tab += 1
+                y = topY
+            }
+        }
+
         return
     }
 
