@@ -63,6 +63,8 @@ type NewWizardScreen struct {
     loaded sync.Once
     WizardSlots []wizardSlot
 
+    NameBox *ebiten.Image
+
     LifeBooks [3]*ebiten.Image
     SorceryBooks [3]*ebiten.Image
     NatureBooks [3]*ebiten.Image
@@ -188,6 +190,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
 
         screen.Background = loadImage(0, 0)
         screen.Slots = loadImage(8, 0)
+        screen.NameBox = loadImage(40, 0)
 
         screen.CustomPictureBackground = loadImage(39, 0)
 
@@ -411,6 +414,10 @@ func (screen *NewWizardScreen) Draw(window *ebiten.Image) {
         window.DrawImage(screen.CustomWizard.Portrait, &options)
         screen.Font.PrintCenter(window, nameX, nameY, 1, screen.CustomWizard.Name)
         screen.SelectFont.PrintCenter(window, 245, 2, 1, "Wizard's Name")
+
+        options.GeoM.Reset()
+        options.GeoM.Translate(184, 20)
+        window.DrawImage(screen.NameBox, &options)
         return
     }
 
