@@ -110,6 +110,7 @@ type wizardCustom struct {
     Name string
     Portrait *ebiten.Image
     Abilities []WizardAbility
+    Books []wizardBook
 }
 
 type NewWizardScreen struct {
@@ -501,6 +502,20 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
         screen.CustomWizard.Portrait = screen.WizardSlots[0].Portrait
         screen.CustomWizard.Name = screen.WizardSlots[0].Name
         screen.CustomWizard.Abilities = []WizardAbility{AbilityAlchemy, AbilityConjurer, AbilityFamous}
+        screen.CustomWizard.Books = []wizardBook{
+            wizardBook{
+                Magic: NatureMagic,
+                Count: 2,
+            },
+            wizardBook{
+                Magic: DeathMagic,
+                Count: 3,
+            },
+            wizardBook{
+                Magic: SorceryMagic,
+                Count: 2,
+            },
+        }
     })
 
     return outError
@@ -533,6 +548,29 @@ func joinAbilities(abilities []WizardAbility) string {
     return out
 }
 
+func (screen *NewWizardScreen) DrawBooks(window *ebiten.Image, x float64, y float64, books []wizardBook){
+    index := 0
+    offsetX := 0
+    for _, book := range books {
+        for i := 0; i < book.Count; i++ {
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(x + float64(offsetX), y)
+            var img *ebiten.Image
+            switch book.Magic {
+                case LifeMagic: img = screen.LifeBooks[screen.BooksOrder[index]]
+                case SorceryMagic: img = screen.SorceryBooks[screen.BooksOrder[index]]
+                case NatureMagic: img = screen.NatureBooks[screen.BooksOrder[index]]
+                case DeathMagic: img = screen.DeathBooks[screen.BooksOrder[index]]
+                case ChaosMagic: img = screen.ChaosBooks[screen.BooksOrder[index]]
+            }
+
+            window.DrawImage(img, &options)
+            offsetX += img.Bounds().Dx() - 1
+            index += 1
+        }
+    }
+}
+
 func (screen *NewWizardScreen) Draw(window *ebiten.Image) {
     const portraitX = 24
     const portraitY = 10
@@ -547,6 +585,8 @@ func (screen *NewWizardScreen) Draw(window *ebiten.Image) {
         options.GeoM.Translate(portraitX, portraitY)
         window.DrawImage(screen.CustomWizard.Portrait, &options)
         screen.Font.PrintCenter(window, nameX, nameY, 1, screen.CustomWizard.Name)
+
+        screen.DrawBooks(window, 37, 135, screen.CustomWizard.Books)
 
         screen.AbilityFont.Print(window, 12, 180, 1, joinAbilities(screen.CustomWizard.Abilities))
 
@@ -649,25 +689,8 @@ func (screen *NewWizardScreen) Draw(window *ebiten.Image) {
             screen.Font.PrintCenter(window, nameX, nameY, 1, screen.WizardSlots[screen.CurrentWizard].Name)
 
             if screen.State == NewWizardScreenStateSelectWizard {
-                x := 0
-                offsetX := 0
-                for _, book := range screen.WizardSlots[screen.CurrentWizard].Books {
-                    for i := 0; i < book.Count; i++ {
-                        var options ebiten.DrawImageOptions
-                        options.GeoM.Translate(36 + float64(offsetX), 135)
-                        var img *ebiten.Image
-                        switch book.Magic {
-                            case LifeMagic: img = screen.LifeBooks[screen.BooksOrder[x]]
-                            case SorceryMagic: img = screen.SorceryBooks[screen.BooksOrder[x]]
-                            case NatureMagic: img = screen.NatureBooks[screen.BooksOrder[x]]
-                            case DeathMagic: img = screen.DeathBooks[screen.BooksOrder[x]]
-                            case ChaosMagic: img = screen.ChaosBooks[screen.BooksOrder[x]]
-                        }
-                        window.DrawImage(img, &options)
-                        offsetX += img.Bounds().Dx() - 1
-                        x += 1
-                    }
-                }
+
+                screen.DrawBooks(window, 36, 135, screen.WizardSlots[screen.CurrentWizard].Books)
 
                 if screen.WizardSlots[screen.CurrentWizard].ExtraAbility != AbilityNone {
                     screen.AbilityFont.Print(window, 12, 180, 1, screen.WizardSlots[screen.CurrentWizard].ExtraAbility.String())
@@ -691,6 +714,6 @@ func MakeNewWizardScreen() *NewWizardScreen {
     return &NewWizardScreen{
         CurrentWizard: 0,
         BooksOrder: randomizeBookOrder(12),
-        State: NewWizardScreenStateCustomBooks,
+        State: NewWizardScreenStateSelectWizard,
     }
 }
