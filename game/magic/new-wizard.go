@@ -109,6 +109,7 @@ const (
 type wizardCustom struct {
     Name string
     Portrait *ebiten.Image
+    Abilities []WizardAbility
 }
 
 type NewWizardScreen struct {
@@ -499,9 +500,37 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
         // set custom wizard to merlin for now
         screen.CustomWizard.Portrait = screen.WizardSlots[0].Portrait
         screen.CustomWizard.Name = screen.WizardSlots[0].Name
+        screen.CustomWizard.Abilities = []WizardAbility{AbilityAlchemy, AbilityConjurer, AbilityFamous}
     })
 
     return outError
+}
+
+func joinAbilities(abilities []WizardAbility) string {
+    // this could be simplified by iterating backwards through the array and
+    // preprending 'and' or ', ' for each element, depending on its index
+
+    if len(abilities) == 0 {
+        return ""
+    }
+
+    // x
+    if len(abilities) == 1 {
+        return abilities[0].String()
+    }
+
+    // x and y
+    if len(abilities) == 2 {
+        return fmt.Sprintf("%v and %v", abilities[0], abilities[1])
+    }
+
+    // x, y, and z
+    out := ""
+    for i := 0; i < len(abilities) - 2; i++ {
+        out += fmt.Sprintf("%v, ", abilities[i])
+    }
+    out += fmt.Sprintf("%v and %v", abilities[len(abilities) - 2], abilities[len(abilities) - 1])
+    return out
 }
 
 func (screen *NewWizardScreen) Draw(window *ebiten.Image) {
@@ -518,6 +547,8 @@ func (screen *NewWizardScreen) Draw(window *ebiten.Image) {
         options.GeoM.Translate(portraitX, portraitY)
         window.DrawImage(screen.CustomWizard.Portrait, &options)
         screen.Font.PrintCenter(window, nameX, nameY, 1, screen.CustomWizard.Name)
+
+        screen.AbilityFont.Print(window, 12, 180, 1, joinAbilities(screen.CustomWizard.Abilities))
 
         abilities := []WizardAbility{
             AbilityAlchemy,
