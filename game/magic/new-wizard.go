@@ -48,6 +48,7 @@ const (
     NewWizardScreenStateCustomPicture
     NewWizardScreenStateCustomName
     NewWizardScreenStateCustomAbility
+    NewWizardScreenStateCustomBooks
 )
 
 type wizardCustom struct {
@@ -58,6 +59,7 @@ type wizardCustom struct {
 type NewWizardScreen struct {
     Background *ebiten.Image
     CustomPictureBackground *ebiten.Image
+    CustomWizardBooks *ebiten.Image
     Slots *ebiten.Image
     Font *font.Font
     AbilityFont *font.Font
@@ -120,6 +122,8 @@ func (screen *NewWizardScreen) Update() {
                         length -= 1
                     }
                     screen.CustomWizard.Name = screen.CustomWizard.Name[0:length]
+                case ebiten.KeyEnter:
+                    screen.State = NewWizardScreenStateCustomBooks
                 case ebiten.KeySpace:
                     screen.CustomWizard.Name += " "
                 default:
@@ -238,6 +242,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
         screen.NameBox = loadImage(40, 0)
 
         screen.CustomPictureBackground = loadImage(39, 0)
+        screen.CustomWizardBooks = loadImage(41, 0)
 
         for i := 0; i < 3; i++ {
             screen.LifeBooks[i] = loadImage(24 + i, 0)
@@ -444,14 +449,46 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
 }
 
 func (screen *NewWizardScreen) Draw(window *ebiten.Image) {
-    var options ebiten.DrawImageOptions
-    window.DrawImage(screen.Background, &options)
-
     const portraitX = 24
     const portraitY = 10
 
     const nameX = 75
     const nameY = 120
+
+    if screen.State == NewWizardScreenStateCustomBooks {
+        var options ebiten.DrawImageOptions
+        window.DrawImage(screen.CustomWizardBooks, &options)
+
+        options.GeoM.Translate(portraitX, portraitY)
+        window.DrawImage(screen.CustomWizard.Portrait, &options)
+        screen.Font.PrintCenter(window, nameX, nameY, 1, screen.CustomWizard.Name)
+
+        abilities := []string{
+            "Alchemy",
+            "Warlord",
+            "Channeler",
+            "Archmage",
+            "Artificer",
+            "Conjurer",
+            "Sage Master",
+            "Myrran",
+            "Divine Power",
+            "Famous",
+            "Runemaster",
+            "Charismatic",
+            "Chaos Mastery",
+            "Nature Mastery",
+            "Sorcery Mastery",
+            "Infernal Power",
+            "Mana focusing",
+            "Node Mastery",
+        }
+
+        return
+    }
+
+    var options ebiten.DrawImageOptions
+    window.DrawImage(screen.Background, &options)
 
     if screen.State == NewWizardScreenStateCustomName {
         var options ebiten.DrawImageOptions
@@ -548,6 +585,6 @@ func MakeNewWizardScreen() *NewWizardScreen {
     return &NewWizardScreen{
         CurrentWizard: 0,
         BooksOrder: randomizeBookOrder(12),
-        State: NewWizardScreenStateCustomName,
+        State: NewWizardScreenStateCustomBooks,
     }
 }
