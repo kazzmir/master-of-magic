@@ -36,7 +36,7 @@ type wizardSlot struct {
     // the portrait of the wizard shown when the user's cursor is on top of their name
     Portrait *ebiten.Image
     Books []wizardBook
-    ExtraAbility string
+    ExtraAbility WizardAbility
     X int
     Y int
 }
@@ -61,6 +61,7 @@ const (
         AbilityInfernalPower
         AbilityManaFocusing
         AbilityNodeMastery
+        AbilityNone
 )
 
 func (ability WizardAbility) String() string {
@@ -83,6 +84,7 @@ func (ability WizardAbility) String() string {
         case AbilityInfernalPower: return "Infernal Power"
         case AbilityManaFocusing: return "Mana Focusing"
         case AbilityNodeMastery: return "Node Mastery"
+        case AbilityNone: return "invalid"
     }
 
     return "?"
@@ -329,7 +331,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                     wizardBook{Magic: LifeMagic, Count: 5},
                     wizardBook{Magic: NatureMagic, Count: 5},
                 },
-                ExtraAbility: "Sage Master",
+                ExtraAbility: AbilitySageMaster,
                 X: 170,
                 Y: top,
             },
@@ -341,6 +343,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                     wizardBook{Magic: SorceryMagic, Count: 6},
                     wizardBook{Magic: NatureMagic, Count: 5},
                 },
+                ExtraAbility: AbilityNone,
                 X: 170,
                 Y: top + 1 * space,
             },
@@ -352,7 +355,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                     wizardBook{Magic: DeathMagic, Count: 5},
                     wizardBook{Magic: ChaosMagic, Count: 5},
                 },
-                ExtraAbility: "Conjurer",
+                ExtraAbility: AbilityConjurer,
                 X: 170,
                 Y: top + 2 * space,
             },
@@ -364,7 +367,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                     wizardBook{Magic: SorceryMagic, Count: 5},
                     wizardBook{Magic: ChaosMagic, Count: 5},
                 },
-                ExtraAbility: "Channeler",
+                ExtraAbility: AbilityChanneler,
                 X: 170,
                 Y: top + 3 * space,
             },
@@ -375,7 +378,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                 Books: []wizardBook{
                     wizardBook{Magic: SorceryMagic, Count: 10},
                 },
-                ExtraAbility: "Alchemy",
+                ExtraAbility: AbilityAlchemy,
                 X: 170,
                 Y: top + 4 * space,
             },
@@ -387,7 +390,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                     wizardBook{Magic: NatureMagic, Count: 5},
                     wizardBook{Magic: ChaosMagic, Count: 5},
                 },
-                ExtraAbility: "Mana Focusing",
+                ExtraAbility: AbilityManaFocusing,
                 X: 170,
                 Y: top + 5 * space,
             },
@@ -398,7 +401,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                 Books: []wizardBook{
                     wizardBook{Magic: DeathMagic, Count: 9},
                 },
-                ExtraAbility: "Infernal Power",
+                ExtraAbility: AbilityInfernalPower,
                 X: 170,
                 Y: top + 6 * space,
             },
@@ -410,7 +413,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                     wizardBook{Magic: LifeMagic, Count: 4},
                     wizardBook{Magic: ChaosMagic, Count: 4},
                 },
-                ExtraAbility: "Myrran",
+                ExtraAbility: AbilityMyrran,
                 X: 246,
                 Y: top + 0 * space,
             },
@@ -421,7 +424,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                 Books: []wizardBook{
                     wizardBook{Magic: ChaosMagic, Count: 10},
                 },
-                ExtraAbility: "Chaos Mastery",
+                ExtraAbility: AbilityChaosMastery,
                 X: 246,
                 Y: top + 1 * space,
             },
@@ -432,7 +435,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                 Books: []wizardBook{
                     wizardBook{Magic: NatureMagic, Count: 10},
                 },
-                ExtraAbility: "Nature Mastery",
+                ExtraAbility: AbilityNatureMastery,
                 X: 246,
                 Y: top + 2 * space,
             },
@@ -444,7 +447,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                     wizardBook{Magic: LifeMagic, Count: 5},
                     wizardBook{Magic: SorceryMagic, Count: 5},
                 },
-                ExtraAbility: "Archmage",
+                ExtraAbility: AbilityArchmage,
                 X: 246,
                 Y: top + 3 * space,
             },
@@ -455,7 +458,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                 Books: []wizardBook{
                     wizardBook{Magic: LifeMagic, Count: 10},
                 },
-                ExtraAbility: "Charismatic",
+                ExtraAbility: AbilityCharismatic,
                 X: 246,
                 Y: top + 4 * space,
             },
@@ -467,7 +470,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                     wizardBook{Magic: NatureMagic, Count: 4},
                     wizardBook{Magic: DeathMagic, Count: 5},
                 },
-                ExtraAbility: "Warlord",
+                ExtraAbility: AbilityWarlord,
                 X: 246,
                 Y: top + 5 * space,
             },
@@ -479,7 +482,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                     wizardBook{Magic: SorceryMagic, Count: 5},
                     wizardBook{Magic: DeathMagic, Count: 5},
                 },
-                ExtraAbility: "Artificer",
+                ExtraAbility: AbilityArtificer,
                 X: 246,
                 Y: top + 6 * space,
             },
@@ -635,8 +638,8 @@ func (screen *NewWizardScreen) Draw(window *ebiten.Image) {
                     }
                 }
 
-                if screen.WizardSlots[screen.CurrentWizard].ExtraAbility != "" {
-                    screen.AbilityFont.Print(window, 12, 180, 1, screen.WizardSlots[screen.CurrentWizard].ExtraAbility)
+                if screen.WizardSlots[screen.CurrentWizard].ExtraAbility != AbilityNone {
+                    screen.AbilityFont.Print(window, 12, 180, 1, screen.WizardSlots[screen.CurrentWizard].ExtraAbility.String())
                 }
             }
         }
