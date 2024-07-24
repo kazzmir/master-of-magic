@@ -4,9 +4,11 @@ import (
     "fmt"
     "sync"
     "math/rand"
+    "strings"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
+    "github.com/hajimehoshi/ebiten/v2/inpututil"
 
     "github.com/hajimehoshi/ebiten/v2"
 )
@@ -96,16 +98,51 @@ func (screen *NewWizardScreen) Deactivate() {
     screen.Active = false
 }
 
+func validNameString(text string) bool {
+    // FIXME: only allow a-zA-Z0-9 and maybe a few extra chars lke ' and ,
+    return true
+}
+
+const MaxNameLength = 18
+
 func (screen *NewWizardScreen) Update() {
     screen.counter += 1
 
-    mouseX, mouseY := ebiten.CursorPosition()
+    if screen.State == NewWizardScreenStateCustomName {
+        keys := make([]ebiten.Key, 0)
+        keys = inpututil.AppendJustPressedKeys(keys)
 
-    for i, wizard := range screen.WizardSlots {
-        if mouseX >= wizard.X && mouseX < wizard.X + wizard.Background.Bounds().Dx() &&
-            mouseY >= wizard.Y && mouseY < wizard.Y + wizard.Background.Bounds().Dy() {
-            screen.CurrentWizard = i
-            return
+        for _, key := range keys {
+            switch key {
+                case ebiten.KeyBackspace:
+                    length := len(screen.CustomWizard.Name)
+                    if length > 0 {
+                        length -= 1
+                    }
+                    screen.CustomWizard.Name = screen.CustomWizard.Name[0:length]
+                case ebiten.KeySpace:
+                    screen.CustomWizard.Name += " "
+                default:
+                    str := strings.ToLower(key.String())
+                    if str != "" && validNameString(str) {
+                        screen.CustomWizard.Name += str
+                    }
+            }
+        }
+
+        if len(screen.CustomWizard.Name) > MaxNameLength {
+            screen.CustomWizard.Name = screen.CustomWizard.Name[0:MaxNameLength]
+        }
+
+    } else if screen.State == NewWizardScreenStateSelectWizard {
+        mouseX, mouseY := ebiten.CursorPosition()
+
+        for i, wizard := range screen.WizardSlots {
+            if mouseX >= wizard.X && mouseX < wizard.X + wizard.Background.Bounds().Dx() &&
+                mouseY >= wizard.Y && mouseY < wizard.Y + wizard.Background.Bounds().Dy() {
+                screen.CurrentWizard = i
+                return
+            }
         }
     }
 }
