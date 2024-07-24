@@ -41,6 +41,59 @@ type wizardSlot struct {
     Y int
 }
 
+type WizardAbility int
+const (
+        AbilityAlchemy WizardAbility = iota
+        AbilityWarlord
+        AbilityChanneler
+        AbilityArchmage
+        AbilityArtificer
+        AbilityConjurer
+        AbilitySageMaster
+        AbilityMyrran
+        AbilityDivinePower
+        AbilityFamous
+        AbilityRunemaster
+        AbilityCharismatic
+        AbilityChaosMastery
+        AbilityNatureMastery
+        AbilitySorceryMastery
+        AbilityInfernalPower
+        AbilityManaFocusing
+        AbilityNodeMastery
+)
+
+func (ability WizardAbility) String() string {
+    switch ability {
+        case AbilityAlchemy: return "Alchemy"
+        case AbilityWarlord: return "Warlord"
+        case AbilityChanneler: return "Channeler"
+        case AbilityArchmage: return "Archmage"
+        case AbilityArtificer: return "Artificer"
+        case AbilityConjurer: return "Conjurer"
+        case AbilitySageMaster: return "Sage Master"
+        case AbilityMyrran: return "Myrran"
+        case AbilityDivinePower: return "Divine Power"
+        case AbilityFamous: return "Famous"
+        case AbilityRunemaster: return "Runemaster"
+        case AbilityCharismatic: return "Charismatic"
+        case AbilityChaosMastery: return "Chaos Mastery"
+        case AbilityNatureMastery: return "Nature Mastery"
+        case AbilitySorceryMastery: return "Sorcery Mastery"
+        case AbilityInfernalPower: return "Infernal Power"
+        case AbilityManaFocusing: return "Mana Focusing"
+        case AbilityNodeMastery: return "Node Mastery"
+    }
+
+    return "?"
+}
+
+// number of picks this ability costs when choosing a custom wizard
+func (ability WizardAbility) PickCost() int {
+    // TODO
+    return 1
+}
+
 type NewWizardScreenState int
 
 const (
@@ -463,25 +516,25 @@ func (screen *NewWizardScreen) Draw(window *ebiten.Image) {
         window.DrawImage(screen.CustomWizard.Portrait, &options)
         screen.Font.PrintCenter(window, nameX, nameY, 1, screen.CustomWizard.Name)
 
-        abilities := []string{
-            "Alchemy",
-            "Warlord",
-            "Channeler",
-            "Archmage",
-            "Artificer",
-            "Conjurer",
-            "Sage Master",
-            "Myrran",
-            "Divine Power",
-            "Famous",
-            "Runemaster",
-            "Charismatic",
-            "Chaos Mastery",
-            "Nature Mastery",
-            "Sorcery Mastery",
-            "Infernal Power",
-            "Mana focusing",
-            "Node Mastery",
+        abilities := []WizardAbility{
+            AbilityAlchemy,
+            AbilityWarlord,
+            AbilityChanneler,
+            AbilityArchmage,
+            AbilityArtificer,
+            AbilityConjurer,
+            AbilitySageMaster,
+            AbilityMyrran,
+            AbilityDivinePower,
+            AbilityFamous,
+            AbilityRunemaster,
+            AbilityCharismatic,
+            AbilityChaosMastery,
+            AbilityNatureMastery,
+            AbilitySorceryMastery,
+            AbilityInfernalPower,
+            AbilityManaFocusing,
+            AbilityNodeMastery,
         }
 
         const topY = 5
@@ -495,7 +548,7 @@ func (screen *NewWizardScreen) Draw(window *ebiten.Image) {
         tabs := []float64{172, 210, 260}
 
         for _, ability := range abilities {
-            screen.AbilityFont.Print(window, tabs[tab], float64(y), 1, ability)
+            screen.AbilityFont.Print(window, tabs[tab], float64(y), 1, ability.String())
             y += veriticalGap
             if y >= maxY {
                 tab += 1
