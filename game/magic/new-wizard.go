@@ -59,6 +59,7 @@ type NewWizardScreen struct {
     Slots *ebiten.Image
     Font *font.Font
     AbilityFont *font.Font
+    NameFont *font.Font
     SelectFont *font.Font
     loaded sync.Once
     WizardSlots []wizardSlot
@@ -79,6 +80,8 @@ type NewWizardScreen struct {
 
     CurrentWizard int
     Active bool
+
+    counter uint64
 }
 
 func (screen *NewWizardScreen) IsActive() bool {
@@ -94,6 +97,8 @@ func (screen *NewWizardScreen) Deactivate() {
 }
 
 func (screen *NewWizardScreen) Update() {
+    screen.counter += 1
+
     mouseX, mouseY := ebiten.CursorPosition()
 
     for i, wizard := range screen.WizardSlots {
@@ -130,13 +135,16 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
             return
         }
 
-        screen.Font = font.MakeOptimizedFont(fonts[3])
+        screen.Font = font.MakeOptimizedFont(fonts[4])
 
         // FIXME: load with a yellowish palette
         screen.SelectFont = font.MakeOptimizedFont(fonts[5])
 
         // FIXME: load with a yellowish palette
         screen.AbilityFont = font.MakeOptimizedFont(fonts[0])
+
+        // FIXME: use a monochrome color scheme, light-brownish
+        screen.NameFont = font.MakeOptimizedFont(fonts[3])
 
         newGameLbx, err := cache.GetLbxFile("magic-data/NEWGAME.LBX")
         if err != nil {
@@ -418,6 +426,16 @@ func (screen *NewWizardScreen) Draw(window *ebiten.Image) {
         options.GeoM.Reset()
         options.GeoM.Translate(184, 20)
         window.DrawImage(screen.NameBox, &options)
+
+        name := screen.CustomWizard.Name
+
+        // add blinking _ to show cursor position
+        if (screen.counter / 30) % 2 == 0 {
+            name += "_"
+        }
+
+        screen.NameFont.Print(window, 195, 39, 1, name)
+
         return
     }
 
