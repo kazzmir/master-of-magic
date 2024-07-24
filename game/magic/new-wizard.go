@@ -196,14 +196,37 @@ func (screen *NewWizardScreen) Update() {
         }
 
     } else if screen.State == NewWizardScreenStateSelectWizard {
+        leftClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)
+
         mouseX, mouseY := ebiten.CursorPosition()
 
         for i, wizard := range screen.WizardSlots {
             if mouseX >= wizard.X && mouseX < wizard.X + wizard.Background.Bounds().Dx() &&
                 mouseY >= wizard.Y && mouseY < wizard.Y + wizard.Background.Bounds().Dy() {
                 screen.CurrentWizard = i
+
+                if leftClick && wizard.Name == "Custom" {
+                    screen.State = NewWizardScreenStateCustomPicture
+                }
+
                 return
             }
+        }
+    } else if screen.State == NewWizardScreenStateCustomPicture {
+        leftClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)
+
+        mouseX, mouseY := ebiten.CursorPosition()
+
+        for _, wizard := range screen.WizardSlots {
+            if mouseX >= wizard.X && mouseX < wizard.X + wizard.Background.Bounds().Dx() &&
+                mouseY >= wizard.Y && mouseY < wizard.Y + wizard.Background.Bounds().Dy() {
+                screen.CustomWizard.Portrait = wizard.Portrait
+                screen.CustomWizard.Name = wizard.Name
+            }
+        }
+
+        if leftClick {
+            screen.State = NewWizardScreenStateCustomName
         }
     }
 }
@@ -670,6 +693,14 @@ func (screen *NewWizardScreen) Draw(window *ebiten.Image) {
     }
 
     screen.SelectFont.PrintCenter(window, 245, 2, 1, "Select Wizard")
+
+    if screen.State == NewWizardScreenStateCustomPicture {
+        if screen.CustomWizard.Portrait != nil {
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(portraitX, portraitY)
+            window.DrawImage(screen.CustomWizard.Portrait, &options)
+        }
+    }
 
     for _, wizard := range screen.WizardSlots {
         if screen.State != NewWizardScreenStateCustomPicture || wizard.Name != "Custom" {
