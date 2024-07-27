@@ -116,15 +116,18 @@ type wizardCustom struct {
 
 type UIInsideElementFunc func(element *UIElement)
 type UIClickElementFunc func(element *UIElement)
+type UIDrawFunc func(element *UIElement, window *ebiten.Image)
 
 type UIElement struct {
     Rect image.Rectangle
     Inside UIInsideElementFunc
     Click UIClickElementFunc
+    Draw UIDrawFunc
 }
 
 type UI struct {
     Elements []*UIElement
+    Draw func(*ebiten.Image)
 }
 
 type NewWizardScreen struct {
@@ -161,6 +164,28 @@ type NewWizardScreen struct {
     counter uint64
 }
 
+func (screen *NewWizardScreen) MakeCustomPictureUI() *UI {
+    ui := &UI{
+        Draw: func(window *ebiten.Image){
+            const portraitX = 24
+            const portraitY = 10
+
+            var options ebiten.DrawImageOptions
+            options.GeoM.Reset()
+            options.GeoM.Translate(166, 18)
+            window.DrawImage(screen.CustomPictureBackground, &options)
+
+            if screen.CustomWizard.Portrait != nil {
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(portraitX, portraitY)
+                window.DrawImage(screen.CustomWizard.Portrait, &options)
+            }
+        },
+    }
+
+    return ui
+}
+
 func (screen *NewWizardScreen) MakeSelectWizardUI() *UI {
     var elements []*UIElement
 
@@ -170,33 +195,64 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *UI {
 
     left := 170
 
-    background := screen.WizardSlots[0].Background
-
     counter := 0
     for column := 0; column < 2; column += 1 {
         for row := 0; row < 7; row++ {
             wizard := counter
+            background := screen.WizardSlots[counter].Background
+            name := screen.WizardSlots[counter].Name
             counter += 1
+
+            x1 := left + column * columnSpace
+            y1 := top + row * space
+            x2 := x1 + background.Bounds().Dx()
+            y2 := y1 + background.Bounds().Dy()
+
             elements = append(elements, &UIElement{
-                Rect: image.Rect(left + column * columnSpace, top + row * space, left + column * columnSpace + background.Bounds().Dx(), top + row * space + background.Bounds().Dy()),
+                Rect: image.Rect(x1, y1, x2, y2),
                 Click: func(this *UIElement){
+                    // TODO: set the selected wizard to this one and continue to the next screen
                 },
                 Inside: func(this *UIElement){
                     screen.CurrentWizard = wizard
+                },
+                Draw: func(this *UIElement, window *ebiten.Image){
+                    var options ebiten.DrawImageOptions
+                    options.GeoM.Translate(float64(x1), float64(y1))
+                    window.DrawImage(background, &options)
+                    screen.Font.PrintCenter(window, float64(x1) + float64(background.Bounds().Dx()) / 2, float64(y1) + 3, 1, name)
                 },
             })
         }
     }
 
-    elements = append(elements, &UIElement{
-        Rect: image.Rect(left + columnSpace, top + 7 * space, left + columnSpace + background.Bounds().Dx(), top + 7 * space + background.Bounds().Dy()),
-        Click: func(this *UIElement){
-            screen.State = NewWizardScreenStateCustomPicture
-        },
-        Inside: func(this *UIElement){
-            screen.CurrentWizard = -1
-        },
-    })
+    // custom element
+    elements = append(elements, (func () *UIElement {
+        background := screen.WizardSlots[14].Background
+        x1 := left + columnSpace
+        y1 := top + 7 * space
+        x2 := x1 + background.Bounds().Dx()
+        y2 := y1 + background.Bounds().Dy()
+
+        return &UIElement{
+            Rect: image.Rect(x1, y1, x2, y2),
+            Click: func(this *UIElement){
+                screen.State = NewWizardScreenStateCustomPicture
+
+                screen.UI = screen.MakeCustomPictureUI()
+
+            },
+            Inside: func(this *UIElement){
+                screen.CurrentWizard = -1
+            },
+            Draw: func(this *UIElement, window *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(x1), float64(y1))
+                window.DrawImage(background, &options)
+                screen.Font.PrintCenter(window, float64(x1) + float64(background.Bounds().Dx()) / 2, float64(y1) + 3, 1, "Custom")
+            },
+        }
+    })())
 
     /*
         screen.WizardSlots = []wizardSlot{
@@ -374,9 +430,39 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *UI {
         }
         */
 
-    return &UI{
+    ui := &UI{
         Elements: elements,
+        Draw: func(window *ebiten.Image){
+            screen.SelectFont.PrintCenter(window, 245, 2, 1, "Select Wizard")
+
+            for _, element := range elements {
+                element.Draw(element, window)
+            }
+
+            if screen.CurrentWizard >= 0 && screen.CurrentWizard < len(screen.WizardSlots) {
+                const portraitX = 24
+                const portraitY = 10
+
+                const nameX = 75
+                const nameY = 120
+
+                portrait := screen.WizardSlots[screen.CurrentWizard].Portrait
+                if portrait != nil {
+                    var options ebiten.DrawImageOptions
+                    options.GeoM.Translate(portraitX, portraitY)
+                    window.DrawImage(portrait, &options)
+                    screen.Font.PrintCenter(window, nameX, nameY, 1, screen.WizardSlots[screen.CurrentWizard].Name)
+
+                    screen.DrawBooks(window, 36, 135, screen.WizardSlots[screen.CurrentWizard].Books)
+                    if screen.WizardSlots[screen.CurrentWizard].ExtraAbility != AbilityNone {
+                        screen.AbilityFont.Print(window, 12, 180, 1, screen.WizardSlots[screen.CurrentWizard].ExtraAbility.String())
+                    }
+                }
+            }
+        },
     }
+
+    return ui
 }
 
 func (screen *NewWizardScreen) IsActive() bool {
@@ -929,8 +1015,6 @@ func (screen *NewWizardScreen) Draw(window *ebiten.Image) {
             window.DrawImage(screen.CustomPictureBackground, &options)
     }
 
-    screen.SelectFont.PrintCenter(window, 245, 2, 1, "Select Wizard")
-
     if screen.State == NewWizardScreenStateCustomPicture {
         if screen.CustomWizard.Portrait != nil {
             var options ebiten.DrawImageOptions
@@ -939,6 +1023,7 @@ func (screen *NewWizardScreen) Draw(window *ebiten.Image) {
         }
     }
 
+    /*
     for _, wizard := range screen.WizardSlots {
         if screen.State != NewWizardScreenStateCustomPicture || wizard.Name != "Custom" {
             var options ebiten.DrawImageOptions
@@ -947,7 +1032,13 @@ func (screen *NewWizardScreen) Draw(window *ebiten.Image) {
             screen.Font.PrintCenter(window, float64(wizard.X) + float64(wizard.Background.Bounds().Dx()) / 2, float64(wizard.Y) + 3, 1, wizard.Name)
         }
     }
+    */
 
+    if screen.UI != nil {
+        screen.UI.Draw(window)
+    }
+
+    /*
     if screen.CurrentWizard >= 0 && screen.CurrentWizard < len(screen.WizardSlots) {
         portrait := screen.WizardSlots[screen.CurrentWizard].Portrait
         if portrait != nil {
@@ -966,6 +1057,7 @@ func (screen *NewWizardScreen) Draw(window *ebiten.Image) {
             }
         }
     }
+    */
 }
 
 // create an array of N integers where each integer is some value between 0 and 2
