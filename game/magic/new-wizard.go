@@ -188,6 +188,16 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *UI {
         }
     }
 
+    elements = append(elements, &UIElement{
+        Rect: image.Rect(left + columnSpace, top + 7 * space, left + columnSpace + background.Bounds().Dx(), top + 7 * space + background.Bounds().Dy()),
+        Click: func(this *UIElement){
+            screen.State = NewWizardScreenStateCustomPicture
+        },
+        Inside: func(this *UIElement){
+            screen.CurrentWizard = -1
+        },
+    })
+
     /*
         screen.WizardSlots = []wizardSlot{
             wizardSlot{
