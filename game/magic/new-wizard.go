@@ -165,8 +165,13 @@ type NewWizardScreen struct {
 }
 
 func (screen *NewWizardScreen) MakeCustomPictureUI() *UI {
+    elements := screen.MakeWizardUIElements()
+
     ui := &UI{
+        Elements: elements,
         Draw: func(window *ebiten.Image){
+            screen.SelectFont.PrintCenter(window, 245, 2, 1, "Select Wizard")
+
             const portraitX = 24
             const portraitY = 10
 
@@ -174,6 +179,10 @@ func (screen *NewWizardScreen) MakeCustomPictureUI() *UI {
             options.GeoM.Reset()
             options.GeoM.Translate(166, 18)
             window.DrawImage(screen.CustomPictureBackground, &options)
+
+            for _, element := range elements {
+                element.Draw(element, window)
+            }
 
             if screen.CustomWizard.Portrait != nil {
                 var options ebiten.DrawImageOptions
@@ -186,7 +195,7 @@ func (screen *NewWizardScreen) MakeCustomPictureUI() *UI {
     return ui
 }
 
-func (screen *NewWizardScreen) MakeSelectWizardUI() *UI {
+func (screen *NewWizardScreen) MakeWizardUIElements() []*UIElement {
     var elements []*UIElement
 
     top := 28
@@ -226,9 +235,54 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *UI {
         }
     }
 
+    return elements
+}
+
+func (screen *NewWizardScreen) MakeSelectWizardUI() *UI {
+    top := 28
+    space := 22
+    columnSpace := 76
+
+    left := 170
+
+    elements := screen.MakeWizardUIElements()
+
+    /*
+    counter := 0
+    for column := 0; column < 2; column += 1 {
+        for row := 0; row < 7; row++ {
+            wizard := counter
+            background := screen.WizardSlots[counter].Background
+            name := screen.WizardSlots[counter].Name
+            counter += 1
+
+            x1 := left + column * columnSpace
+            y1 := top + row * space
+            x2 := x1 + background.Bounds().Dx()
+            y2 := y1 + background.Bounds().Dy()
+
+            elements = append(elements, &UIElement{
+                Rect: image.Rect(x1, y1, x2, y2),
+                Click: func(this *UIElement){
+                    // TODO: set the selected wizard to this one and continue to the next screen
+                },
+                Inside: func(this *UIElement){
+                    screen.CurrentWizard = wizard
+                },
+                Draw: func(this *UIElement, window *ebiten.Image){
+                    var options ebiten.DrawImageOptions
+                    options.GeoM.Translate(float64(x1), float64(y1))
+                    window.DrawImage(background, &options)
+                    screen.Font.PrintCenter(window, float64(x1) + float64(background.Bounds().Dx()) / 2, float64(y1) + 3, 1, name)
+                },
+            })
+        }
+    }
+    */
+
     // custom element
     elements = append(elements, (func () *UIElement {
-        background := screen.WizardSlots[14].Background
+        background := screen.WizardSlots[len(elements)].Background
         x1 := left + columnSpace
         y1 := top + 7 * space
         x2 := x1 + background.Bounds().Dx()
