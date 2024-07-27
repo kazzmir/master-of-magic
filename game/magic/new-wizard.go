@@ -445,20 +445,6 @@ func (screen *NewWizardScreen) Update() {
             }
         }
 
-        /*
-        for i, wizard := range screen.WizardSlots {
-            if mouseX >= wizard.X && mouseX < wizard.X + wizard.Background.Bounds().Dx() &&
-                mouseY >= wizard.Y && mouseY < wizard.Y + wizard.Background.Bounds().Dy() {
-                screen.CurrentWizard = i
-
-                if leftClick && wizard.Name == "Custom" {
-                    screen.State = NewWizardScreenStateCustomPicture
-                }
-
-                return
-            }
-        }
-        */
     } else if screen.State == NewWizardScreenStateCustomPicture {
         leftClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)
 
