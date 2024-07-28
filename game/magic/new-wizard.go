@@ -117,6 +117,7 @@ type wizardCustom struct {
 type UIInsideElementFunc func(element *UIElement)
 type UIClickElementFunc func(element *UIElement)
 type UIDrawFunc func(element *UIElement, window *ebiten.Image)
+type UIKeyFunc func(key ebiten.Key)
 
 type UIElement struct {
     Rect image.Rectangle
@@ -128,6 +129,7 @@ type UIElement struct {
 type UI struct {
     Elements []*UIElement
     Draw func(*ebiten.Image)
+    HandleKey UIKeyFunc
 }
 
 type NewWizardScreen struct {
@@ -164,10 +166,72 @@ type NewWizardScreen struct {
     counter uint64
 }
 
+func (screen *NewWizardScreen) MakeCustomNameUI() *UI {
+    const portraitX = 24
+    const portraitY = 10
+
+    const nameX = 75
+    const nameY = 120
+
+    ui := &UI{
+        HandleKey: func(key ebiten.Key){
+            switch key {
+                case ebiten.KeyBackspace:
+                    length := len(screen.CustomWizard.Name)
+                    if length > 0 {
+                        length -= 1
+                    }
+                    screen.CustomWizard.Name = screen.CustomWizard.Name[0:length]
+                case ebiten.KeyEnter:
+                    screen.State = NewWizardScreenStateCustomBooks
+                case ebiten.KeySpace:
+                    screen.CustomWizard.Name += " "
+                default:
+                    str := strings.ToLower(key.String())
+                    if str != "" && validNameString(str) {
+                        screen.CustomWizard.Name += str
+                    }
+            }
+
+            if len(screen.CustomWizard.Name) > MaxNameLength {
+                screen.CustomWizard.Name = screen.CustomWizard.Name[0:MaxNameLength]
+            }
+        },
+        Draw: func(window *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            window.DrawImage(screen.Background, &options)
+
+            options.GeoM.Translate(portraitX, portraitY)
+            window.DrawImage(screen.CustomWizard.Portrait, &options)
+            screen.Font.PrintCenter(window, nameX, nameY, 1, screen.CustomWizard.Name)
+            screen.SelectFont.PrintCenter(window, 245, 2, 1, "Wizard's Name")
+
+            options.GeoM.Reset()
+            options.GeoM.Translate(184, 20)
+            window.DrawImage(screen.NameBox, &options)
+
+            name := screen.CustomWizard.Name
+
+            // add blinking _ to show cursor position
+            if (screen.counter / 30) % 2 == 0 {
+                name += "_"
+            }
+
+            screen.NameFont.Print(window, 195, 39, 1, name)
+
+            return
+        },
+    }
+
+    return ui
+}
+
 func (screen *NewWizardScreen) MakeCustomPictureUI() *UI {
 
     clickFunc := func(wizard int){
         screen.State = NewWizardScreenStateCustomName
+
+        screen.UI = screen.MakeCustomNameUI()
     }
 
     insideFunc := func(wizard int){
@@ -180,12 +244,14 @@ func (screen *NewWizardScreen) MakeCustomPictureUI() *UI {
     ui := &UI{
         Elements: elements,
         Draw: func(window *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            window.DrawImage(screen.Background, &options)
+
             screen.SelectFont.PrintCenter(window, 245, 2, 1, "Select Wizard")
 
             const portraitX = 24
             const portraitY = 10
 
-            var options ebiten.DrawImageOptions
             options.GeoM.Reset()
             options.GeoM.Translate(166, 18)
             window.DrawImage(screen.CustomPictureBackground, &options)
@@ -330,6 +396,8 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *UI {
     ui := &UI{
         Elements: elements,
         Draw: func(window *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            window.DrawImage(screen.Background, &options)
             screen.SelectFont.PrintCenter(window, 245, 2, 1, "Select Wizard")
 
             for _, element := range elements {
@@ -384,71 +452,30 @@ const MaxNameLength = 18
 func (screen *NewWizardScreen) Update() {
     screen.counter += 1
 
-    if screen.State == NewWizardScreenStateCustomName {
+    if screen.UI.HandleKey != nil {
         keys := make([]ebiten.Key, 0)
         keys = inpututil.AppendJustPressedKeys(keys)
 
         for _, key := range keys {
-            switch key {
-                case ebiten.KeyBackspace:
-                    length := len(screen.CustomWizard.Name)
-                    if length > 0 {
-                        length -= 1
-                    }
-                    screen.CustomWizard.Name = screen.CustomWizard.Name[0:length]
-                case ebiten.KeyEnter:
-                    screen.State = NewWizardScreenStateCustomBooks
-                case ebiten.KeySpace:
-                    screen.CustomWizard.Name += " "
-                default:
-                    str := strings.ToLower(key.String())
-                    if str != "" && validNameString(str) {
-                        screen.CustomWizard.Name += str
-                    }
-            }
+            screen.UI.HandleKey(key)
         }
+    }
 
-        if len(screen.CustomWizard.Name) > MaxNameLength {
-            screen.CustomWizard.Name = screen.CustomWizard.Name[0:MaxNameLength]
-        }
 
-    } else if screen.State == NewWizardScreenStateSelectWizard || screen.State == NewWizardScreenStateCustomPicture {
-        leftClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)
+    leftClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)
 
-        mouseX, mouseY := ebiten.CursorPosition()
+    mouseX, mouseY := ebiten.CursorPosition()
 
-        if screen.UI != nil {
-            for _, element := range screen.UI.Elements {
-                if mouseX >= element.Rect.Min.X && mouseY >= element.Rect.Min.Y && mouseX < element.Rect.Max.X && mouseY <= element.Rect.Max.Y {
-                    element.Inside(element)
-                    if leftClick {
-                        element.Click(element)
-                    }
+    if screen.UI != nil {
+        for _, element := range screen.UI.Elements {
+            if mouseX >= element.Rect.Min.X && mouseY >= element.Rect.Min.Y && mouseX < element.Rect.Max.X && mouseY <= element.Rect.Max.Y {
+                element.Inside(element)
+                if leftClick {
+                    element.Click(element)
                 }
             }
         }
-
     }
-
-    /*
-    else if screen.State == NewWizardScreenStateCustomPicture {
-        leftClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)
-
-        mouseX, mouseY := ebiten.CursorPosition()
-
-        for _, wizard := range screen.WizardSlots {
-            if mouseX >= wizard.X && mouseX < wizard.X + wizard.Background.Bounds().Dx() &&
-                mouseY >= wizard.Y && mouseY < wizard.Y + wizard.Background.Bounds().Dy() {
-                screen.CustomWizard.Portrait = wizard.Portrait
-                screen.CustomWizard.Name = wizard.Name
-            }
-        }
-
-        if leftClick {
-            screen.State = NewWizardScreenStateCustomName
-        }
-    }
-    */
 }
 
 func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
@@ -880,85 +907,14 @@ func (screen *NewWizardScreen) Draw(window *ebiten.Image) {
         return
     }
 
+    /*
     var options ebiten.DrawImageOptions
     window.DrawImage(screen.Background, &options)
-
-    if screen.State == NewWizardScreenStateCustomName {
-        var options ebiten.DrawImageOptions
-        options.GeoM.Translate(portraitX, portraitY)
-        window.DrawImage(screen.CustomWizard.Portrait, &options)
-        screen.Font.PrintCenter(window, nameX, nameY, 1, screen.CustomWizard.Name)
-        screen.SelectFont.PrintCenter(window, 245, 2, 1, "Wizard's Name")
-
-        options.GeoM.Reset()
-        options.GeoM.Translate(184, 20)
-        window.DrawImage(screen.NameBox, &options)
-
-        name := screen.CustomWizard.Name
-
-        // add blinking _ to show cursor position
-        if (screen.counter / 30) % 2 == 0 {
-            name += "_"
-        }
-
-        screen.NameFont.Print(window, 195, 39, 1, name)
-
-        return
-    }
-
-    options.GeoM.Reset()
-    options.GeoM.Translate(166, 18)
-
-    switch screen.State {
-        case NewWizardScreenStateSelectWizard: 
-            window.DrawImage(screen.Slots, &options)
-        case NewWizardScreenStateCustomPicture:
-            window.DrawImage(screen.CustomPictureBackground, &options)
-    }
-
-    if screen.State == NewWizardScreenStateCustomPicture {
-        if screen.CustomWizard.Portrait != nil {
-            var options ebiten.DrawImageOptions
-            options.GeoM.Translate(portraitX, portraitY)
-            window.DrawImage(screen.CustomWizard.Portrait, &options)
-        }
-    }
-
-    /*
-    for _, wizard := range screen.WizardSlots {
-        if screen.State != NewWizardScreenStateCustomPicture || wizard.Name != "Custom" {
-            var options ebiten.DrawImageOptions
-            options.GeoM.Translate(float64(wizard.X), float64(wizard.Y))
-            window.DrawImage(wizard.Background, &options)
-            screen.Font.PrintCenter(window, float64(wizard.X) + float64(wizard.Background.Bounds().Dx()) / 2, float64(wizard.Y) + 3, 1, wizard.Name)
-        }
-    }
     */
 
     if screen.UI != nil {
         screen.UI.Draw(window)
     }
-
-    /*
-    if screen.CurrentWizard >= 0 && screen.CurrentWizard < len(screen.WizardSlots) {
-        portrait := screen.WizardSlots[screen.CurrentWizard].Portrait
-        if portrait != nil {
-            var options ebiten.DrawImageOptions
-            options.GeoM.Translate(portraitX, portraitY)
-            window.DrawImage(portrait, &options)
-            screen.Font.PrintCenter(window, nameX, nameY, 1, screen.WizardSlots[screen.CurrentWizard].Name)
-
-            if screen.State == NewWizardScreenStateSelectWizard {
-
-                screen.DrawBooks(window, 36, 135, screen.WizardSlots[screen.CurrentWizard].Books)
-
-                if screen.WizardSlots[screen.CurrentWizard].ExtraAbility != AbilityNone {
-                    screen.AbilityFont.Print(window, 12, 180, 1, screen.WizardSlots[screen.CurrentWizard].ExtraAbility.String())
-                }
-            }
-        }
-    }
-    */
 }
 
 // create an array of N integers where each integer is some value between 0 and 2
