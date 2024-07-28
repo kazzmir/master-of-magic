@@ -866,7 +866,8 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
     var elements []*UIElement
 
     bookWidth := 8
-    bookHeight := 50
+    bookHeight := 20
+    bookX := 197
 
     // for each magic book, create a UI element that contains the book dimensions and can draw the book
 
@@ -878,7 +879,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
         // Click UIClickElementFunc
         // Draw UIDrawFunc
 
-        x1 := 197 + bookWidth * i
+        x1 := bookX + bookWidth * i
         y1 := natureY
         x2 := x1 + bookWidth
         y2 := y1 + bookHeight
