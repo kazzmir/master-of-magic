@@ -184,6 +184,7 @@ func (screen *NewWizardScreen) MakeCustomNameUI() *UI {
                     screen.CustomWizard.Name = screen.CustomWizard.Name[0:length]
                 case ebiten.KeyEnter:
                     screen.State = NewWizardScreenStateCustomBooks
+                    screen.UI = screen.MakeCustomWizardBooksUI()
                 case ebiten.KeySpace:
                     screen.CustomWizard.Name += " "
                 default:
@@ -332,39 +333,6 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *UI {
 
     elements := screen.MakeWizardUIElements(clickFunc, insideFunc)
 
-    /*
-    counter := 0
-    for column := 0; column < 2; column += 1 {
-        for row := 0; row < 7; row++ {
-            wizard := counter
-            background := screen.WizardSlots[counter].Background
-            name := screen.WizardSlots[counter].Name
-            counter += 1
-
-            x1 := left + column * columnSpace
-            y1 := top + row * space
-            x2 := x1 + background.Bounds().Dx()
-            y2 := y1 + background.Bounds().Dy()
-
-            elements = append(elements, &UIElement{
-                Rect: image.Rect(x1, y1, x2, y2),
-                Click: func(this *UIElement){
-                    // TODO: set the selected wizard to this one and continue to the next screen
-                },
-                Inside: func(this *UIElement){
-                    screen.CurrentWizard = wizard
-                },
-                Draw: func(this *UIElement, window *ebiten.Image){
-                    var options ebiten.DrawImageOptions
-                    options.GeoM.Translate(float64(x1), float64(y1))
-                    window.DrawImage(background, &options)
-                    screen.Font.PrintCenter(window, float64(x1) + float64(background.Bounds().Dx()) / 2, float64(y1) + 3, 1, name)
-                },
-            })
-        }
-    }
-    */
-
     // custom element
     elements = append(elements, (func () *UIElement {
         background := screen.WizardSlots[len(elements)].Background
@@ -460,7 +428,6 @@ func (screen *NewWizardScreen) Update() {
             screen.UI.HandleKey(key)
         }
     }
-
 
     leftClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)
 
@@ -789,6 +756,8 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
 
         if screen.State == NewWizardScreenStateSelectWizard {
             screen.UI = screen.MakeSelectWizardUI()
+        } else if screen.State == NewWizardScreenStateCustomBooks {
+            screen.UI = screen.MakeCustomWizardBooksUI()
         }
     })
 
@@ -845,73 +814,74 @@ func (screen *NewWizardScreen) DrawBooks(window *ebiten.Image, x float64, y floa
     }
 }
 
-func (screen *NewWizardScreen) Draw(window *ebiten.Image) {
-    const portraitX = 24
-    const portraitY = 10
+func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
 
-    const nameX = 75
-    const nameY = 120
+    ui := &UI{
+        Draw: func(window *ebiten.Image){
+            const portraitX = 24
+            const portraitY = 10
 
-    if screen.State == NewWizardScreenStateCustomBooks {
-        var options ebiten.DrawImageOptions
-        window.DrawImage(screen.CustomWizardBooks, &options)
+            const nameX = 75
+            const nameY = 120
 
-        options.GeoM.Translate(portraitX, portraitY)
-        window.DrawImage(screen.CustomWizard.Portrait, &options)
-        screen.Font.PrintCenter(window, nameX, nameY, 1, screen.CustomWizard.Name)
+            var options ebiten.DrawImageOptions
+            window.DrawImage(screen.CustomWizardBooks, &options)
 
-        screen.DrawBooks(window, 37, 135, screen.CustomWizard.Books)
+            options.GeoM.Translate(portraitX, portraitY)
+            window.DrawImage(screen.CustomWizard.Portrait, &options)
+            screen.Font.PrintCenter(window, nameX, nameY, 1, screen.CustomWizard.Name)
 
-        screen.AbilityFont.Print(window, 12, 180, 1, joinAbilities(screen.CustomWizard.Abilities))
+            screen.DrawBooks(window, 37, 135, screen.CustomWizard.Books)
 
-        abilities := []WizardAbility{
-            AbilityAlchemy,
-            AbilityWarlord,
-            AbilityChanneler,
-            AbilityArchmage,
-            AbilityArtificer,
-            AbilityConjurer,
-            AbilitySageMaster,
-            AbilityMyrran,
-            AbilityDivinePower,
-            AbilityFamous,
-            AbilityRunemaster,
-            AbilityCharismatic,
-            AbilityChaosMastery,
-            AbilityNatureMastery,
-            AbilitySorceryMastery,
-            AbilityInfernalPower,
-            AbilityManaFocusing,
-            AbilityNodeMastery,
-        }
+            screen.AbilityFont.Print(window, 12, 180, 1, joinAbilities(screen.CustomWizard.Abilities))
 
-        const topY = 5
-        const veriticalGap = 7
-        const maxY = 45
-
-        tab := 0
-        y := topY
-
-        // FIXME: compute this based on the largest string in a single column
-        tabs := []float64{172, 210, 260}
-
-        for _, ability := range abilities {
-            screen.AbilityFont.Print(window, tabs[tab], float64(y), 1, ability.String())
-            y += veriticalGap
-            if y >= maxY {
-                tab += 1
-                y = topY
+            abilities := []WizardAbility{
+                AbilityAlchemy,
+                AbilityWarlord,
+                AbilityChanneler,
+                AbilityArchmage,
+                AbilityArtificer,
+                AbilityConjurer,
+                AbilitySageMaster,
+                AbilityMyrran,
+                AbilityDivinePower,
+                AbilityFamous,
+                AbilityRunemaster,
+                AbilityCharismatic,
+                AbilityChaosMastery,
+                AbilityNatureMastery,
+                AbilitySorceryMastery,
+                AbilityInfernalPower,
+                AbilityManaFocusing,
+                AbilityNodeMastery,
             }
-        }
 
-        return
+            const topY = 5
+            const veriticalGap = 7
+            const maxY = 45
+
+            tab := 0
+            y := topY
+
+            // FIXME: compute this based on the largest string in a single column
+            tabs := []float64{172, 210, 260}
+
+            for _, ability := range abilities {
+                screen.AbilityFont.Print(window, tabs[tab], float64(y), 1, ability.String())
+                y += veriticalGap
+                if y >= maxY {
+                    tab += 1
+                    y = topY
+                }
+            }
+        },
     }
 
-    /*
-    var options ebiten.DrawImageOptions
-    window.DrawImage(screen.Background, &options)
-    */
+    return ui
 
+}
+
+func (screen *NewWizardScreen) Draw(window *ebiten.Image) {
     if screen.UI != nil {
         screen.UI.Draw(window)
     }
@@ -931,6 +901,6 @@ func MakeNewWizardScreen() *NewWizardScreen {
     return &NewWizardScreen{
         CurrentWizard: 0,
         BooksOrder: randomizeBookOrder(12),
-        State: NewWizardScreenStateSelectWizard,
+        State: NewWizardScreenStateCustomBooks,
     }
 }
