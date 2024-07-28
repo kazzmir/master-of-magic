@@ -165,7 +165,17 @@ type NewWizardScreen struct {
 }
 
 func (screen *NewWizardScreen) MakeCustomPictureUI() *UI {
-    elements := screen.MakeWizardUIElements()
+
+    clickFunc := func(wizard int){
+        screen.State = NewWizardScreenStateCustomName
+    }
+
+    insideFunc := func(wizard int){
+        screen.CustomWizard.Portrait = screen.WizardSlots[wizard].Portrait
+        screen.CustomWizard.Name = screen.WizardSlots[wizard].Name
+    }
+
+    elements := screen.MakeWizardUIElements(clickFunc, insideFunc)
 
     ui := &UI{
         Elements: elements,
@@ -195,7 +205,7 @@ func (screen *NewWizardScreen) MakeCustomPictureUI() *UI {
     return ui
 }
 
-func (screen *NewWizardScreen) MakeWizardUIElements() []*UIElement {
+func (screen *NewWizardScreen) MakeWizardUIElements(clickFunc func(wizard int), insideFunc func(wizard int)) []*UIElement {
     var elements []*UIElement
 
     top := 28
@@ -220,10 +230,11 @@ func (screen *NewWizardScreen) MakeWizardUIElements() []*UIElement {
             elements = append(elements, &UIElement{
                 Rect: image.Rect(x1, y1, x2, y2),
                 Click: func(this *UIElement){
-                    // TODO: set the selected wizard to this one and continue to the next screen
+                    clickFunc(wizard)
                 },
                 Inside: func(this *UIElement){
-                    screen.CurrentWizard = wizard
+                    insideFunc(wizard)
+                    // screen.CurrentWizard = wizard
                 },
                 Draw: func(this *UIElement, window *ebiten.Image){
                     var options ebiten.DrawImageOptions
@@ -245,7 +256,15 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *UI {
 
     left := 170
 
-    elements := screen.MakeWizardUIElements()
+    clickFunc := func(wizard int){
+        // TODO: make this the selected wizard
+    }
+
+    insideFunc := func(wizard int){
+        screen.CurrentWizard = wizard
+    }
+
+    elements := screen.MakeWizardUIElements(clickFunc, insideFunc)
 
     /*
     counter := 0
@@ -307,182 +326,6 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *UI {
             },
         }
     })())
-
-    /*
-        screen.WizardSlots = []wizardSlot{
-            wizardSlot{
-                Name: "Merlin",
-                Background: loadImage(9, 0),
-                Portrait: loadWizardPortrait(0),
-                Books: []wizardBook{
-                    wizardBook{Magic: LifeMagic, Count: 5},
-                    wizardBook{Magic: NatureMagic, Count: 5},
-                },
-                ExtraAbility: AbilitySageMaster,
-                X: 170,
-                Y: top,
-            },
-            wizardSlot{
-                Name: "Raven",
-                Background: loadImage(10, 0),
-                Portrait: loadWizardPortrait(1),
-                Books: []wizardBook{
-                    wizardBook{Magic: SorceryMagic, Count: 6},
-                    wizardBook{Magic: NatureMagic, Count: 5},
-                },
-                ExtraAbility: AbilityNone,
-                X: 170,
-                Y: top + 1 * space,
-            },
-            wizardSlot{
-                Name: "Sharee",
-                Background: loadImage(11, 0),
-                Portrait: loadWizardPortrait(2),
-                Books: []wizardBook{
-                    wizardBook{Magic: DeathMagic, Count: 5},
-                    wizardBook{Magic: ChaosMagic, Count: 5},
-                },
-                ExtraAbility: AbilityConjurer,
-                X: 170,
-                Y: top + 2 * space,
-            },
-            wizardSlot{
-                Name: "Lo Pan",
-                Background: loadImage(12, 0),
-                Portrait: loadWizardPortrait(3),
-                Books: []wizardBook{
-                    wizardBook{Magic: SorceryMagic, Count: 5},
-                    wizardBook{Magic: ChaosMagic, Count: 5},
-                },
-                ExtraAbility: AbilityChanneler,
-                X: 170,
-                Y: top + 3 * space,
-            },
-            wizardSlot{
-                Name: "Jafar",
-                Background: loadImage(13, 0),
-                Portrait: loadWizardPortrait(4),
-                Books: []wizardBook{
-                    wizardBook{Magic: SorceryMagic, Count: 10},
-                },
-                ExtraAbility: AbilityAlchemy,
-                X: 170,
-                Y: top + 4 * space,
-            },
-            wizardSlot{
-                Name: "Oberic",
-                Background: loadImage(14, 0),
-                Portrait: loadWizardPortrait(5),
-                Books: []wizardBook{
-                    wizardBook{Magic: NatureMagic, Count: 5},
-                    wizardBook{Magic: ChaosMagic, Count: 5},
-                },
-                ExtraAbility: AbilityManaFocusing,
-                X: 170,
-                Y: top + 5 * space,
-            },
-            wizardSlot{
-                Name: "Rjak",
-                Background: loadImage(15, 0),
-                Portrait: loadWizardPortrait(6),
-                Books: []wizardBook{
-                    wizardBook{Magic: DeathMagic, Count: 9},
-                },
-                ExtraAbility: AbilityInfernalPower,
-                X: 170,
-                Y: top + 6 * space,
-            },
-            wizardSlot{
-                Name: "Ssr'ra",
-                Background: loadImage(16, 0),
-                Portrait: loadWizardPortrait(7),
-                Books: []wizardBook{
-                    wizardBook{Magic: LifeMagic, Count: 4},
-                    wizardBook{Magic: ChaosMagic, Count: 4},
-                },
-                ExtraAbility: AbilityMyrran,
-                X: 246,
-                Y: top + 0 * space,
-            },
-            wizardSlot{
-                Name: "Tauron",
-                Background: loadImage(17, 0),
-                Portrait: loadWizardPortrait(8),
-                Books: []wizardBook{
-                    wizardBook{Magic: ChaosMagic, Count: 10},
-                },
-                ExtraAbility: AbilityChaosMastery,
-                X: 246,
-                Y: top + 1 * space,
-            },
-            wizardSlot{
-                Name: "Freya",
-                Background: loadImage(18, 0),
-                Portrait: loadWizardPortrait(9),
-                Books: []wizardBook{
-                    wizardBook{Magic: NatureMagic, Count: 10},
-                },
-                ExtraAbility: AbilityNatureMastery,
-                X: 246,
-                Y: top + 2 * space,
-            },
-            wizardSlot{
-                Name: "Horus",
-                Background: loadImage(19, 0),
-                Portrait: loadWizardPortrait(10),
-                Books: []wizardBook{
-                    wizardBook{Magic: LifeMagic, Count: 5},
-                    wizardBook{Magic: SorceryMagic, Count: 5},
-                },
-                ExtraAbility: AbilityArchmage,
-                X: 246,
-                Y: top + 3 * space,
-            },
-            wizardSlot{
-                Name: "Ariel",
-                Background: loadImage(20, 0),
-                Portrait: loadWizardPortrait(11),
-                Books: []wizardBook{
-                    wizardBook{Magic: LifeMagic, Count: 10},
-                },
-                ExtraAbility: AbilityCharismatic,
-                X: 246,
-                Y: top + 4 * space,
-            },
-            wizardSlot{
-                Name: "Tlaloc",
-                Background: loadImage(21, 0),
-                Portrait: loadWizardPortrait(12),
-                Books: []wizardBook{
-                    wizardBook{Magic: NatureMagic, Count: 4},
-                    wizardBook{Magic: DeathMagic, Count: 5},
-                },
-                ExtraAbility: AbilityWarlord,
-                X: 246,
-                Y: top + 5 * space,
-            },
-            wizardSlot{
-                Name: "Kali",
-                Background: loadImage(22, 0),
-                Portrait: loadWizardPortrait(13),
-                Books: []wizardBook{
-                    wizardBook{Magic: SorceryMagic, Count: 5},
-                    wizardBook{Magic: DeathMagic, Count: 5},
-                },
-                ExtraAbility: AbilityArtificer,
-                X: 246,
-                Y: top + 6 * space,
-            },
-            wizardSlot{
-                Name: "Custom",
-                Background: loadImage(23, 0),
-                Books: nil,
-                Portrait: nil,
-                X: 246,
-                Y: top + 7 * space,
-            },
-        }
-        */
 
     ui := &UI{
         Elements: elements,
@@ -569,7 +412,7 @@ func (screen *NewWizardScreen) Update() {
             screen.CustomWizard.Name = screen.CustomWizard.Name[0:MaxNameLength]
         }
 
-    } else if screen.State == NewWizardScreenStateSelectWizard {
+    } else if screen.State == NewWizardScreenStateSelectWizard || screen.State == NewWizardScreenStateCustomPicture {
         leftClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)
 
         mouseX, mouseY := ebiten.CursorPosition()
@@ -585,7 +428,10 @@ func (screen *NewWizardScreen) Update() {
             }
         }
 
-    } else if screen.State == NewWizardScreenStateCustomPicture {
+    }
+
+    /*
+    else if screen.State == NewWizardScreenStateCustomPicture {
         leftClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)
 
         mouseX, mouseY := ebiten.CursorPosition()
@@ -602,6 +448,7 @@ func (screen *NewWizardScreen) Update() {
             screen.State = NewWizardScreenStateCustomName
         }
     }
+    */
 }
 
 func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
