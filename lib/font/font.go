@@ -75,6 +75,10 @@ func MakeOptimizedFont(font *lbx.Font) *Font {
     }
 }
 
+func (font *Font) Height() int {
+    return font.internalFont.Height
+}
+
 func (font *Font) getGlyphImage(index int) *ebiten.Image {
     x := index % font.Columns
     y := index / font.Columns

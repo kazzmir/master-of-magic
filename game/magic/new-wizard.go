@@ -977,10 +977,11 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
     }
 
     // FIXME: compute this based on the largest string in a single column
-    tabs := []float64{172, 210, 260}
+    tabs := []float64{172, 210, 260, 320}
 
     type abilityUI struct {
         Ability WizardAbility
+        Length int
         X float64
         Y float64
     }
@@ -1001,6 +1002,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
             for _, ability := range abilities {
                 out <- abilityUI{
                     Ability: ability,
+                    Length: int(tabs[tab+1] - tabs[tab]),
                     X: tabs[tab],
                     Y: float64(y),
                 }
@@ -1018,6 +1020,10 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
 
     for ability := range produceAbilityPositions() {
         elements = append(elements, &UIElement{
+            Rect: image.Rect(int(ability.X), int(ability.Y), int(ability.X) + ability.Length, int(ability.Y) + screen.AbilityFont.Height()),
+            Click: func(this *UIElement){
+                fmt.Printf("%v\n", ability.Ability.String())
+            },
             Draw: func(this *UIElement, window *ebiten.Image){
                 screen.AbilityFont.Print(window, ability.X, ability.Y, 1, ability.Ability.String())
             },
