@@ -24,6 +24,8 @@ const (
     ChaosMagic
 )
 
+const MaxPicks = 11
+
 /* the number of books a wizard has of a specific magic type */
 type wizardBook struct {
     Magic MagicType
@@ -93,7 +95,28 @@ func (ability WizardAbility) String() string {
 
 // number of picks this ability costs when choosing a custom wizard
 func (ability WizardAbility) PickCost() int {
-    // TODO
+    switch ability {
+        case AbilityAlchemy: return 1
+        case AbilityWarlord: return 2
+        case AbilityChanneler: return 2
+        case AbilityArchmage: return 1
+        case AbilityArtificer: return 1
+        case AbilityConjurer: return 1
+        case AbilitySageMaster: return 1
+        case AbilityMyrran: return 3
+        case AbilityDivinePower: return 2
+        case AbilityFamous: return 2
+        case AbilityRunemaster: return 1
+        case AbilityCharismatic: return 1
+        case AbilityChaosMastery: return 1
+        case AbilityNatureMastery: return 1
+        case AbilitySorceryMastery: return 1
+        case AbilityInfernalPower: return 2
+        case AbilityManaFocusing: return 1
+        case AbilityNodeMastery: return 1
+        case AbilityNone: return 0
+    }
+
     return 1
 }
 
@@ -114,7 +137,7 @@ type wizardCustom struct {
     Books []wizardBook
 }
 
-func (wizard *wizardCustom) ToggleAbility(ability WizardAbility){
+func (wizard *wizardCustom) ToggleAbility(ability WizardAbility, picksLeft int){
     var out []WizardAbility
 
     found := false
@@ -127,7 +150,7 @@ func (wizard *wizardCustom) ToggleAbility(ability WizardAbility){
         }
     }
 
-    if !found {
+    if !found && ability.PickCost() <= picksLeft {
         out = append(out, ability)
     }
 
@@ -884,6 +907,20 @@ func (screen *NewWizardScreen) DrawBooks(window *ebiten.Image, x float64, y floa
 
 func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
 
+    picksLeft := func() int {
+        picks := MaxPicks
+
+        for _, ability := range screen.CustomWizard.Abilities {
+            picks -= ability.PickCost()
+        }
+
+        for _, book := range screen.CustomWizard.Books {
+            picks -= book.Count
+        }
+
+        return picks
+    }
+
     var elements []*UIElement
 
     const bookWidth = 8
@@ -962,7 +999,11 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
             elements = append(elements, &UIElement{
                 Rect: image.Rect(x1, y1, x2, y2),
                 Click: func(this *UIElement){
+                    // current := screen.CustomWizard.MagicLevel(bookMagic)
                     screen.CustomWizard.SetMagicLevel(bookMagic, level+1)
+                    if picksLeft() < 0 {
+                        screen.CustomWizard.SetMagicLevel(bookMagic, screen.CustomWizard.MagicLevel(bookMagic) + picksLeft())
+                    }
                 },
                 Draw: func(this *UIElement, window *ebiten.Image){
                     if screen.CustomWizard.MagicLevel(bookMagic) > level {
@@ -1042,7 +1083,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
         elements = append(elements, &UIElement{
             Rect: image.Rect(int(ability.X), int(ability.Y), int(ability.X) + ability.Length, int(ability.Y) + screen.AbilityFont.Height()),
             Click: func(this *UIElement){
-                screen.CustomWizard.ToggleAbility(ability.Ability)
+                screen.CustomWizard.ToggleAbility(ability.Ability, picksLeft())
             },
             Draw: func(this *UIElement, window *ebiten.Image){
                 screen.AbilityFont.Print(window, ability.X, ability.Y, 1, ability.Ability.String())
@@ -1073,6 +1114,8 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
             }
 
             screen.AbilityFont.Print(window, 12, 180, 1, joinAbilities(screen.CustomWizard.Abilities))
+
+            screen.NameFont.PrintCenter(window, 223, 185, 1, fmt.Sprintf("%v picks", picksLeft()))
         },
     }
 
