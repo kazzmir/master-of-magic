@@ -955,6 +955,75 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
         }
     }
 
+    abilities := []WizardAbility{
+        AbilityAlchemy,
+        AbilityWarlord,
+        AbilityChanneler,
+        AbilityArchmage,
+        AbilityArtificer,
+        AbilityConjurer,
+        AbilitySageMaster,
+        AbilityMyrran,
+        AbilityDivinePower,
+        AbilityFamous,
+        AbilityRunemaster,
+        AbilityCharismatic,
+        AbilityChaosMastery,
+        AbilityNatureMastery,
+        AbilitySorceryMastery,
+        AbilityInfernalPower,
+        AbilityManaFocusing,
+        AbilityNodeMastery,
+    }
+
+    // FIXME: compute this based on the largest string in a single column
+    tabs := []float64{172, 210, 260}
+
+    type abilityUI struct {
+        Ability WizardAbility
+        X float64
+        Y float64
+    }
+
+    // iterator to produce all ability ui element positions
+    produceAbilityPositions := func() chan abilityUI {
+        out := make(chan abilityUI)
+
+        go func(){
+            defer close(out)
+            const topY = 5
+            const veriticalGap = 7
+            const maxY = 45
+
+            tab := 0
+            y := topY
+
+            for _, ability := range abilities {
+                out <- abilityUI{
+                    Ability: ability,
+                    X: tabs[tab],
+                    Y: float64(y),
+                }
+
+                y += veriticalGap
+                if y >= maxY {
+                    tab += 1
+                    y = topY
+                }
+            }
+        }()
+
+        return out
+    }
+
+    for ability := range produceAbilityPositions() {
+        elements = append(elements, &UIElement{
+            Draw: func(this *UIElement, window *ebiten.Image){
+                screen.AbilityFont.Print(window, ability.X, ability.Y, 1, ability.Ability.String())
+            },
+        })
+    }
+
     ui := &UI{
         Elements: elements,
         Draw: func(window *ebiten.Image){
@@ -978,46 +1047,6 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
             }
 
             screen.AbilityFont.Print(window, 12, 180, 1, joinAbilities(screen.CustomWizard.Abilities))
-
-            abilities := []WizardAbility{
-                AbilityAlchemy,
-                AbilityWarlord,
-                AbilityChanneler,
-                AbilityArchmage,
-                AbilityArtificer,
-                AbilityConjurer,
-                AbilitySageMaster,
-                AbilityMyrran,
-                AbilityDivinePower,
-                AbilityFamous,
-                AbilityRunemaster,
-                AbilityCharismatic,
-                AbilityChaosMastery,
-                AbilityNatureMastery,
-                AbilitySorceryMastery,
-                AbilityInfernalPower,
-                AbilityManaFocusing,
-                AbilityNodeMastery,
-            }
-
-            const topY = 5
-            const veriticalGap = 7
-            const maxY = 45
-
-            tab := 0
-            y := topY
-
-            // FIXME: compute this based on the largest string in a single column
-            tabs := []float64{172, 210, 260}
-
-            for _, ability := range abilities {
-                screen.AbilityFont.Print(window, tabs[tab], float64(y), 1, ability.String())
-                y += veriticalGap
-                if y >= maxY {
-                    tab += 1
-                    y = topY
-                }
-            }
         },
     }
 
