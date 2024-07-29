@@ -865,40 +865,78 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
 
     var elements []*UIElement
 
-    bookWidth := 8
-    bookHeight := 20
-    bookX := 197
+    const bookWidth = 8
+    const bookHeight = 20
+    const bookX = 197
+
+    type bookData struct {
+        Kind MagicType
+        Image *ebiten.Image
+        Y int
+    }
+
+    books := []bookData{
+        bookData{
+            Kind: LifeMagic,
+            Image: screen.LifeBooks[0],
+            Y: 49,
+        },
+        bookData{
+            Kind: DeathMagic,
+            Image: screen.DeathBooks[0],
+            Y: 75,
+        },
+        bookData{
+            Kind: ChaosMagic,
+            Image: screen.ChaosBooks[0],
+            Y: 101,
+        },
+        bookData{
+            Kind: NatureMagic,
+            Image: screen.NatureBooks[0],
+            Y: 127,
+        },
+        bookData{
+            Kind: SorceryMagic,
+            Image: screen.SorceryBooks[0],
+            Y: 153,
+        },
+    }
 
     // for each magic book, create a UI element that contains the book dimensions and can draw the book
 
-    natureY := 127
+    for _, book := range books {
+        bookY := book.Y
+        bookMagic := book.Kind
+        bookImage := book.Image
 
-    for i := 0; i < 11; i++ {
-        // Rect image.Rectangle
-        // Inside UIInsideElementFunc
-        // Click UIClickElementFunc
-        // Draw UIDrawFunc
+        for i := 0; i < 11; i++ {
+            // Rect image.Rectangle
+            // Inside UIInsideElementFunc
+            // Click UIClickElementFunc
+            // Draw UIDrawFunc
 
-        x1 := bookX + bookWidth * i
-        y1 := natureY
-        x2 := x1 + bookWidth
-        y2 := y1 + bookHeight
+            x1 := bookX + bookWidth * i
+            y1 := bookY
+            x2 := x1 + bookWidth
+            y2 := y1 + bookHeight
 
-        level := i
+            level := i
 
-        elements = append(elements, &UIElement{
-            Rect: image.Rect(x1, y1, x2, y2),
-            Click: func(this *UIElement){
-                screen.CustomWizard.SetMagicLevel(NatureMagic, level+1)
-            },
-            Draw: func(this *UIElement, window *ebiten.Image){
-                if screen.CustomWizard.MagicLevel(NatureMagic) > level {
-                    var options ebiten.DrawImageOptions
-                    options.GeoM.Translate(float64(x1), float64(y1))
-                    window.DrawImage(screen.NatureBooks[0], &options)
-                }
-            },
-        })
+            elements = append(elements, &UIElement{
+                Rect: image.Rect(x1, y1, x2, y2),
+                Click: func(this *UIElement){
+                    screen.CustomWizard.SetMagicLevel(bookMagic, level+1)
+                },
+                Draw: func(this *UIElement, window *ebiten.Image){
+                    if screen.CustomWizard.MagicLevel(bookMagic) > level {
+                        var options ebiten.DrawImageOptions
+                        options.GeoM.Translate(float64(x1), float64(y1))
+                        window.DrawImage(bookImage, &options)
+                    }
+                },
+            })
+        }
     }
 
     ui := &UI{
