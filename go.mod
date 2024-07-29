@@ -3,7 +3,7 @@ module github.com/kazzmir/master-of-magic
 go 1.22.2
 
 require (
-	github.com/hajimehoshi/ebiten/v2 v2.7.7
+	github.com/hajimehoshi/ebiten/v2 v2.7.8
 	gitlab.com/gomidi/midi/v2 v2.1.7
 )
 
