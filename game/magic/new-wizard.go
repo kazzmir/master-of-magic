@@ -833,25 +833,26 @@ func joinAbilities(abilities []WizardAbility) string {
 }
 
 func (screen *NewWizardScreen) DrawBooks(window *ebiten.Image, x float64, y float64, books []wizardBook){
-    index := 0
     offsetX := 0
+    index := 0
+
     for _, book := range books {
 
-        // can't draw more books than we have
-        if index >= len(screen.LifeBooks) {
-            return
-        }
-
-        var img *ebiten.Image
-        switch book.Magic {
-            case LifeMagic: img = screen.LifeBooks[screen.BooksOrder[index]]
-            case SorceryMagic: img = screen.SorceryBooks[screen.BooksOrder[index]]
-            case NatureMagic: img = screen.NatureBooks[screen.BooksOrder[index]]
-            case DeathMagic: img = screen.DeathBooks[screen.BooksOrder[index]]
-            case ChaosMagic: img = screen.ChaosBooks[screen.BooksOrder[index]]
-        }
-
         for i := 0; i < book.Count; i++ {
+            // can't draw more books than we have
+            if index >= len(screen.BooksOrder) {
+                return
+            }
+
+            var img *ebiten.Image
+            switch book.Magic {
+                case LifeMagic: img = screen.LifeBooks[screen.BooksOrder[index]]
+                case SorceryMagic: img = screen.SorceryBooks[screen.BooksOrder[index]]
+                case NatureMagic: img = screen.NatureBooks[screen.BooksOrder[index]]
+                case DeathMagic: img = screen.DeathBooks[screen.BooksOrder[index]]
+                case ChaosMagic: img = screen.ChaosBooks[screen.BooksOrder[index]]
+            }
+
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(x + float64(offsetX), y)
             window.DrawImage(img, &options)
@@ -909,6 +910,21 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
         bookY := book.Y
         bookMagic := book.Kind
         bookImage := book.Image
+
+        x1 := bookX - bookWidth
+        y1 := bookY
+        x2 := x1 + bookWidth
+        y2 := y1 + bookHeight
+
+        // element to remove all books
+        elements = append(elements, &UIElement{
+            Rect: image.Rect(x1, y1, x2, y2),
+            Click: func(this *UIElement){
+                screen.CustomWizard.SetMagicLevel(bookMagic, 0)
+            },
+            Draw: func(this *UIElement, window *ebiten.Image){
+            },
+        })
 
         for i := 0; i < 11; i++ {
             // Rect image.Rectangle
