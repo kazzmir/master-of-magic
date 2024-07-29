@@ -114,6 +114,26 @@ type wizardCustom struct {
     Books []wizardBook
 }
 
+func (wizard *wizardCustom) ToggleAbility(ability WizardAbility){
+    var out []WizardAbility
+
+    found := false
+
+    for _, check := range wizard.Abilities {
+        if check == ability {
+            found = true
+        } else {
+            out = append(out, check)
+        }
+    }
+
+    if !found {
+        out = append(out, ability)
+    }
+
+    wizard.Abilities = out
+}
+
 func (wizard *wizardCustom) SetMagicLevel(kind MagicType, count int){
     var out []wizardBook
 
@@ -1022,7 +1042,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
         elements = append(elements, &UIElement{
             Rect: image.Rect(int(ability.X), int(ability.Y), int(ability.X) + ability.Length, int(ability.Y) + screen.AbilityFont.Height()),
             Click: func(this *UIElement){
-                fmt.Printf("%v\n", ability.Ability.String())
+                screen.CustomWizard.ToggleAbility(ability.Ability)
             },
             Draw: func(this *UIElement, window *ebiten.Image){
                 screen.AbilityFont.Print(window, ability.X, ability.Y, 1, ability.Ability.String())
