@@ -1050,7 +1050,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
                         // draw a transparent book that shows what the user would have if they selected this
                         // TODO: use a fragment shader to draw the book in a different color
                         var options ebiten.DrawImageOptions
-                        options.ColorScale.Scale(1 * 0.5, 1 * 0.5, 1 * 0.5, 0.5)
+                        options.ColorScale.Scale(1.4 * 0.5, 1 * 0.5, 1 * 0.5, 0.5)
                         options.GeoM.Translate(float64(x1), float64(y1))
                         window.DrawImage(bookImage, &options)
                     }
