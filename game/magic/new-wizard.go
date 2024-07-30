@@ -1037,9 +1037,6 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
                         screen.CustomWizard.SetMagicLevel(bookMagic, screen.CustomWizard.MagicLevel(bookMagic) + picksLeft())
                     }
                 },
-                NotInside: func(this *UIElement){
-                    // ghostBooks = -1
-                },
                 Inside: func(this *UIElement){
                     // if the user hovers over this element, then draw partially transparent books
                     ghostBooks = level
