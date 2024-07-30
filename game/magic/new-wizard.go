@@ -137,6 +137,16 @@ type wizardCustom struct {
     Books []wizardBook
 }
 
+func (wizard *wizardCustom) AbilityEnabled(ability WizardAbility) bool {
+    for _, check := range wizard.Abilities {
+        if check == ability {
+            return true
+        }
+    }
+
+    return false
+}
+
 func (wizard *wizardCustom) ToggleAbility(ability WizardAbility, picksLeft int){
     var out []WizardAbility
 
@@ -221,6 +231,7 @@ type NewWizardScreen struct {
     Slots *ebiten.Image
     Font *font.Font
     AbilityFont *font.Font
+    CheckMark *ebiten.Image
     NameFont *font.Font
     SelectFont *font.Font
     loaded sync.Once
@@ -641,6 +652,8 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
         for i := 0; i < 3; i++ {
             screen.ChaosBooks[i] = loadImage(36 + i, 0)
         }
+
+        screen.CheckMark = loadImage(52, 0)
 
         top := 28
         space := 22
@@ -1086,6 +1099,11 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
                 screen.CustomWizard.ToggleAbility(ability.Ability, picksLeft())
             },
             Draw: func(this *UIElement, window *ebiten.Image){
+                if screen.CustomWizard.AbilityEnabled(ability.Ability) {
+                    var options ebiten.DrawImageOptions
+                    options.GeoM.Translate(ability.X - float64(screen.CheckMark.Bounds().Dx()) - 1, ability.Y + 1)
+                    window.DrawImage(screen.CheckMark, &options)
+                }
                 screen.AbilityFont.Print(window, ability.X, ability.Y, 1, ability.Ability.String())
             },
         })
