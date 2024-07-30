@@ -207,12 +207,14 @@ func (wizard *wizardCustom) MagicLevel(kind MagicType) int {
 }
 
 type UIInsideElementFunc func(element *UIElement)
+type UINotInsideElementFunc func(element *UIElement)
 type UIClickElementFunc func(element *UIElement)
 type UIDrawFunc func(element *UIElement, window *ebiten.Image)
 type UIKeyFunc func(key ebiten.Key)
 
 type UIElement struct {
     Rect image.Rectangle
+    NotInside UINotInsideElementFunc
     Inside UIInsideElementFunc
     Click UIClickElementFunc
     Draw UIDrawFunc
@@ -534,6 +536,10 @@ func (screen *NewWizardScreen) Update() {
                 }
                 if leftClick && element.Click != nil {
                     element.Click(element)
+                }
+            } else {
+                if element.NotInside != nil {
+                    element.NotInside(element)
                 }
             }
         }
@@ -996,6 +1002,11 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
             },
         })
 
+        ghostBooks := -1
+
+        minX := bookX
+        maxX := bookX
+
         for i := 0; i < 11; i++ {
             // Rect image.Rectangle
             // Inside UIInsideElementFunc
@@ -1007,9 +1018,17 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
             x2 := x1 + bookWidth
             y2 := y1 + bookHeight
 
+            if x1 < minX {
+                minX = x1
+            }
+
+            if x2 > maxX {
+                maxX = x2
+            }
+
             level := i
 
-            elements = append(elements, &UIElement{
+            element := &UIElement{
                 Rect: image.Rect(x1, y1, x2, y2),
                 Click: func(this *UIElement){
                     // current := screen.CustomWizard.MagicLevel(bookMagic)
@@ -1018,15 +1037,39 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
                         screen.CustomWizard.SetMagicLevel(bookMagic, screen.CustomWizard.MagicLevel(bookMagic) + picksLeft())
                     }
                 },
+                NotInside: func(this *UIElement){
+                    // ghostBooks = -1
+                },
+                Inside: func(this *UIElement){
+                    // if the user hovers over this element, then draw partially transparent books
+                    ghostBooks = level
+                },
                 Draw: func(this *UIElement, window *ebiten.Image){
                     if screen.CustomWizard.MagicLevel(bookMagic) > level {
                         var options ebiten.DrawImageOptions
                         options.GeoM.Translate(float64(x1), float64(y1))
                         window.DrawImage(bookImage, &options)
+                    } else if ghostBooks >= level {
+                        // draw a transparent book that shows what the user would have if they selected this
+                        // TODO: use a fragment shader to draw the book in a different color
+                        var options ebiten.DrawImageOptions
+                        options.ColorScale.Scale(1 * 0.5, 1 * 0.5, 1 * 0.5, 0.5)
+                        options.GeoM.Translate(float64(x1), float64(y1))
+                        window.DrawImage(bookImage, &options)
                     }
                 },
-            })
+            }
+
+            elements = append(elements, element)
         }
+
+        // add a non-drawing UI element that is used to detect if the user is pointing at any of the books
+        elements = append(elements, &UIElement{
+            Rect: image.Rect(minX, bookY, maxX, bookY + bookHeight),
+            NotInside: func(this *UIElement){
+                ghostBooks = -1
+            },
+        })
     }
 
     abilities := []WizardAbility{
@@ -1128,7 +1171,9 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
             screen.DrawBooks(window, 37, 135, screen.CustomWizard.Books)
 
             for _, element := range elements {
-                element.Draw(element, window)
+                if element.Draw != nil {
+                    element.Draw(element, window)
+                }
             }
 
             screen.AbilityFont.Print(window, 12, 180, 1, joinAbilities(screen.CustomWizard.Abilities))
