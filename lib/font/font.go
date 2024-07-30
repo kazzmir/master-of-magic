@@ -67,7 +67,11 @@ func MakeGPUSpriteMapWithPalette(font *lbx.Font, palette color.Palette) (*ebiten
 }
 
 func MakeOptimizedFont(font *lbx.Font) *Font {
-    sheet, width, height, rows, columns := MakeGPUSpriteMap(font)
+    return MakeOptimizedFontWithPalette(font, lbx.GetDefaultPalette())
+}
+
+func MakeOptimizedFontWithPalette(font *lbx.Font, palette color.Palette) *Font {
+    sheet, width, height, rows, columns := MakeGPUSpriteMapWithPalette(font, palette)
 
     return &Font{
         Image: sheet,

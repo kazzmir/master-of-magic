@@ -6,6 +6,7 @@ import (
     "math/rand"
     "strings"
     "image"
+    "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
@@ -233,6 +234,7 @@ type NewWizardScreen struct {
     Slots *ebiten.Image
     Font *font.Font
     AbilityFont *font.Font
+    AbilityFontSelected *font.Font
     CheckMark *ebiten.Image
     NameFont *font.Font
     SelectFont *font.Font
@@ -571,6 +573,19 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
             return
         }
 
+        brightYellowPalette := color.Palette{
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            // orangish
+            color.RGBA{R: 0xff, G: 0xaa, B: 0x00, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        }
+
         screen.Font = font.MakeOptimizedFont(fonts[4])
 
         // FIXME: load with a yellowish palette
@@ -578,6 +593,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
 
         // FIXME: load with a yellowish palette
         screen.AbilityFont = font.MakeOptimizedFont(fonts[0])
+        screen.AbilityFontSelected = font.MakeOptimizedFontWithPalette(fonts[0], brightYellowPalette)
 
         // FIXME: use a monochrome color scheme, light-brownish
         screen.NameFont = font.MakeOptimizedFont(fonts[3])
@@ -1139,12 +1155,16 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
                 screen.CustomWizard.ToggleAbility(ability.Ability, picksLeft())
             },
             Draw: func(this *UIElement, window *ebiten.Image){
+                font := screen.AbilityFont
+
                 if screen.CustomWizard.AbilityEnabled(ability.Ability) {
                     var options ebiten.DrawImageOptions
                     options.GeoM.Translate(ability.X - float64(screen.CheckMark.Bounds().Dx()) - 1, ability.Y + 1)
                     window.DrawImage(screen.CheckMark, &options)
+                    font = screen.AbilityFontSelected
                 }
-                screen.AbilityFont.Print(window, ability.X, ability.Y, 1, ability.Ability.String())
+
+                font.Print(window, ability.X, ability.Y, 1, ability.Ability.String())
             },
         })
     }
