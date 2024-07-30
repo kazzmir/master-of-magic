@@ -300,6 +300,10 @@ var defaultPalette = color.Palette {
     color.RGBA{R: 0x0,  G: 0x0,  B: 0x0, A: 0xff},
 }
 
+func GetDefaultPalette() color.Palette {
+    return clonePalette(defaultPalette)
+}
+
 func clonePalette(p color.Palette) color.Palette {
     newPalette := make(color.Palette, len(p))
     copy(newPalette, p)

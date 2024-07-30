@@ -4,6 +4,7 @@ import (
     "math"
     _ "fmt"
     "image"
+    "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/hajimehoshi/ebiten/v2"
@@ -20,6 +21,10 @@ type Font struct {
 }
 
 func MakeGPUSpriteMap(font *lbx.Font) (*ebiten.Image, int, int, int, int) {
+    return MakeGPUSpriteMapWithPalette(font, lbx.GetDefaultPalette())
+}
+
+func MakeGPUSpriteMapWithPalette(font *lbx.Font, palette color.Palette) (*ebiten.Image, int, int, int, int) {
     // make one huge ebiten.Image and draw all glyphs onto it, keeping track of the location of each glyph
 
     totalGlyphs := font.GlyphCount()
@@ -41,7 +46,7 @@ func MakeGPUSpriteMap(font *lbx.Font) (*ebiten.Image, int, int, int, int) {
     y := 0
 
     for _, glyph := range font.Glyphs {
-        raw := glyph.MakeImage()
+        raw := glyph.MakeImageWithPalette(palette)
         if raw != nil {
             posX := x * maxWidth
             posY := y * font.Height

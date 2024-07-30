@@ -92,15 +92,18 @@ var fontPalette = color.Palette {
     color.RGBA{R: 0x40, G: 0x2c, B: 0x24, A: 0xff},
     color.RGBA{R: 0x48, G: 0x34, B: 0x2c, A: 0xff},
     color.RGBA{R: 0x50, G: 0x3c, B: 0x30, A: 0xff},
-
 }
 
 func (glyph *Glyph) MakeImage() image.Image {
+    return glyph.MakeImageWithPalette(defaultPalette)
+}
+
+func (glyph *Glyph) MakeImageWithPalette(palette color.Palette) image.Image {
     if glyph.Width == 0 {
         return nil
     }
     // FIXME: what palette to use?
-    out := image.NewPaletted(image.Rect(0, 0, glyph.Width, glyph.Height), defaultPalette)
+    out := image.NewPaletted(image.Rect(0, 0, glyph.Width, glyph.Height), palette)
 
     dataIndex := 0
     for column := 0; column < glyph.Width; column++ {
