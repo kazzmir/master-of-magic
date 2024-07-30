@@ -1193,7 +1193,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
                 }
             }
 
-            screen.AbilityFont.Print(window, 12, 180, 1, joinAbilities(screen.CustomWizard.Abilities))
+            screen.AbilityFontSelected.Print(window, 12, 180, 1, joinAbilities(screen.CustomWizard.Abilities))
 
             screen.NameFont.PrintCenter(window, 223, 185, 1, fmt.Sprintf("%v picks", picksLeft()))
         },
