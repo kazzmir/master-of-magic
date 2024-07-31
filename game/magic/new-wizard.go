@@ -279,7 +279,8 @@ type UIElement struct {
     Rect image.Rectangle
     NotInside UINotInsideElementFunc
     Inside UIInsideElementFunc
-    Click UIClickElementFunc
+    LeftClick UIClickElementFunc
+    RightClick UIClickElementFunc
     Draw UIDrawFunc
     Layer UILayer
 }
@@ -493,7 +494,7 @@ func (screen *NewWizardScreen) MakeWizardUIElements(clickFunc func(wizard int), 
 
             elements = append(elements, &UIElement{
                 Rect: image.Rect(x1, y1, x2, y2),
-                Click: func(this *UIElement){
+                LeftClick: func(this *UIElement){
                     clickFunc(wizard)
                 },
                 Inside: func(this *UIElement){
@@ -540,7 +541,7 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *UI {
 
         return &UIElement{
             Rect: image.Rect(x1, y1, x2, y2),
-            Click: func(this *UIElement){
+            LeftClick: func(this *UIElement){
                 screen.State = NewWizardScreenStateCustomPicture
 
                 screen.UI = screen.MakeCustomPictureUI()
@@ -637,8 +638,8 @@ func (screen *NewWizardScreen) Update() {
                 if element.Inside != nil {
                     element.Inside(element)
                 }
-                if leftClick && element.Click != nil {
-                    element.Click(element)
+                if leftClick && element.LeftClick != nil {
+                    element.LeftClick(element)
                 }
             } else {
                 if element.NotInside != nil {
@@ -1139,7 +1140,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
         // element to remove all books
         elements = append(elements, &UIElement{
             Rect: image.Rect(x1, y1, x2, y2),
-            Click: func(this *UIElement){
+            LeftClick: func(this *UIElement){
                 screen.CustomWizard.SetMagicLevel(bookMagic, 0)
             },
             Draw: func(this *UIElement, window *ebiten.Image){
@@ -1174,7 +1175,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
 
             element := &UIElement{
                 Rect: image.Rect(x1, y1, x2, y2),
-                Click: func(this *UIElement){
+                LeftClick: func(this *UIElement){
 
                     // user cannot hold both life and death magic
                     if bookMagic == LifeMagic && screen.CustomWizard.MagicLevel(DeathMagic) > 0 {
@@ -1297,7 +1298,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
     for ability := range produceAbilityPositions() {
         elements = append(elements, &UIElement{
             Rect: image.Rect(int(ability.X), int(ability.Y), int(ability.X) + ability.Length, int(ability.Y) + screen.AbilityFont.Height()),
-            Click: func(this *UIElement){
+            LeftClick: func(this *UIElement){
                 screen.CustomWizard.ToggleAbility(ability.Ability, picksLeft())
             },
             Draw: func(this *UIElement, window *ebiten.Image){
