@@ -69,6 +69,65 @@ const (
         AbilityNone
 )
 
+// some abilities can only be selected if other properties of the wizard are set
+func (ability WizardAbility) SatisifiedDependencies(wizard *wizardCustom) bool {
+    switch ability {
+        case AbilityAlchemy: return true
+        case AbilityWarlord: return true
+        case AbilityChanneler: return true
+        case AbilityArchmage:
+            // need at least 4 books of some magic type
+            for _, book := range wizard.Books {
+                if book.Count >= 4 {
+                    return true
+                }
+            }
+            return false
+        case AbilityArtificer: return true
+        case AbilityConjurer: return true
+        case AbilitySageMaster:
+            // need at least 2 books of different magic types
+            count := 0
+            for _, book := range wizard.Books {
+                if book.Count > 0 {
+                    count += 1
+                }
+            }
+            return count >= 2
+        case AbilityMyrran: return true
+        case AbilityDivinePower: return wizard.MagicLevel(LifeMagic) >= 4
+        case AbilityFamous: return true
+        case AbilityRunemaster:
+            // need at least 3 books of different magic types
+            count := 0
+            for _, book := range wizard.Books {
+                if book.Count > 0 {
+                    count += 1
+                }
+            }
+            return count >= 3
+        case AbilityCharismatic: return true
+        case AbilityChaosMastery: return wizard.MagicLevel(ChaosMagic) >= 4
+        case AbilityNatureMastery: return wizard.MagicLevel(NatureMagic) >= 4
+        case AbilitySorceryMastery: return wizard.MagicLevel(SorceryMagic) >= 4
+        case AbilityInfernalPower: return wizard.MagicLevel(DeathMagic) >= 4
+        case AbilityManaFocusing:
+            // need at least 4 books of some magic type
+            for _, book := range wizard.Books {
+                if book.Count >= 4 {
+                    return true
+                }
+            }
+            return false
+        case AbilityNodeMastery:
+            // one pick in chaos, nature, and sorcery
+            return wizard.MagicLevel(ChaosMagic) >= 1 && wizard.MagicLevel(NatureMagic) >= 1 && wizard.MagicLevel(SorceryMagic) >= 1
+        case AbilityNone: return true
+    }
+
+    return true
+}
+
 func (ability WizardAbility) String() string {
     switch ability {
         case AbilityAlchemy: return "Alchemy"
@@ -1177,6 +1236,14 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
         return out
     }
 
+    isAbilityAvailable := func(ability WizardAbility) bool {
+        if picksLeft() < ability.PickCost() {
+            return false
+        }
+
+        return ability.SatisifiedDependencies(&screen.CustomWizard)
+    }
+
     for ability := range produceAbilityPositions() {
         elements = append(elements, &UIElement{
             Rect: image.Rect(int(ability.X), int(ability.Y), int(ability.X) + ability.Length, int(ability.Y) + screen.AbilityFont.Height()),
@@ -1191,7 +1258,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
                     options.GeoM.Translate(ability.X - float64(screen.CheckMark.Bounds().Dx()) - 1, ability.Y + 1)
                     window.DrawImage(screen.CheckMark, &options)
                     font = screen.AbilityFontSelected
-                } else if picksLeft() >= ability.Ability.PickCost() {
+                } else if isAbilityAvailable(ability.Ability) {
                     font = screen.AbilityFontAvailable
                 }
 
