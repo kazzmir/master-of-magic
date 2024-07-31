@@ -12,6 +12,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
+    "github.com/hajimehoshi/ebiten/v2/vector"
 
     "github.com/hajimehoshi/ebiten/v2"
 )
@@ -295,6 +296,47 @@ type UI struct {
     HandleKey UIKeyFunc
 }
 
+func (ui *UI) AddElement(element *UIElement){
+    if element.Layer < ui.minLayer {
+        ui.minLayer = element.Layer
+    }
+    if element.Layer > ui.maxLayer {
+        ui.maxLayer = element.Layer
+    }
+
+    ui.Elements[element.Layer] = append(ui.Elements[element.Layer], element)
+}
+
+func (ui *UI) RemoveElement(toRemove *UIElement){
+    elements := ui.Elements[toRemove.Layer]
+    var out []*UIElement
+    for _, element := range elements {
+        if element != toRemove {
+            out = append(out, element)
+        }
+    }
+
+    ui.Elements[toRemove.Layer] = out
+
+    /*
+    // recompute min/max layers
+    // this is a minor optimization really, so implement it later
+    if len(out) == 0 {
+        min := 0
+        max := 0
+
+        for layer, elements := range ui.Elements {
+            if layer < min {
+                min = layer
+            }
+            if layer > max {
+                max = layer
+            }
+        }
+    }
+    */
+}
+
 func (ui *UI) IterateElementsByLayer(f func(*UIElement)){
     for i := ui.minLayer; i <= ui.maxLayer; i++ {
         for _, element := range ui.Elements[i] {
@@ -304,7 +346,14 @@ func (ui *UI) IterateElementsByLayer(f func(*UIElement)){
 }
 
 func (ui *UI) GetHighestLayer() []*UIElement {
-    return ui.Elements[ui.maxLayer]
+    for i := ui.maxLayer; i >= ui.minLayer; i-- {
+        elements := ui.Elements[i]
+        if len(elements) > 0 {
+            return elements
+        }
+    }
+
+    return nil
 }
 
 func (ui *UI) SetElementsFromArray(elements []*UIElement){
@@ -629,6 +678,7 @@ func (screen *NewWizardScreen) Update() {
     }
 
     leftClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)
+    rightClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight)
 
     mouseX, mouseY := ebiten.CursorPosition()
 
@@ -640,6 +690,9 @@ func (screen *NewWizardScreen) Update() {
                 }
                 if leftClick && element.LeftClick != nil {
                     element.LeftClick(element)
+                }
+                if rightClick && element.RightClick != nil {
+                    element.RightClick(element)
                 }
             } else {
                 if element.NotInside != nil {
@@ -1295,11 +1348,34 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
         return ability.SatisifiedDependencies(&screen.CustomWizard)
     }
 
+    makeInfoElement := func(message string) *UIElement {
+        infoX := 50
+        infoY := 50
+        infoWidth := 100
+        infoHeight := 100
+        infoElement := &UIElement{
+            Rect: image.Rect(infoX, infoY, infoX + infoWidth, infoY + infoHeight),
+            Draw: func (infoThis *UIElement, window *ebiten.Image){
+                vector.DrawFilledRect(window, float32(infoX), float32(infoY), float32(infoWidth), float32(infoHeight), color.RGBA{R: 32, G: 32, B: 32, A: 0xff}, true)
+                screen.AbilityFont.Print(window, float64(infoX + 10), float64(infoY + 10), 1, message)
+            },
+            LeftClick: func(infoThis *UIElement){
+                screen.UI.RemoveElement(infoThis)
+            },
+            Layer: 1,
+        }
+
+        return infoElement
+    }
+
     for ability := range produceAbilityPositions() {
         elements = append(elements, &UIElement{
             Rect: image.Rect(int(ability.X), int(ability.Y), int(ability.X) + ability.Length, int(ability.Y) + screen.AbilityFont.Height()),
             LeftClick: func(this *UIElement){
                 screen.CustomWizard.ToggleAbility(ability.Ability, picksLeft())
+            },
+            RightClick: func(this *UIElement){
+                screen.UI.AddElement(makeInfoElement(ability.Ability.String()))
             },
             Draw: func(this *UIElement, window *ebiten.Image){
                 font := screen.AbilityFont
