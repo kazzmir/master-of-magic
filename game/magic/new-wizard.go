@@ -70,6 +70,32 @@ const (
         AbilityNone
 )
 
+// help description
+func (ability WizardAbility) Description() string {
+    switch ability {
+        case AbilityAlchemy: return "todo"
+        case AbilityWarlord: return "todo"
+        case AbilityChanneler: return "todo"
+        case AbilityArchmage: return "todo"
+        case AbilityArtificer: return "todo"
+        case AbilityConjurer: return "todo"
+        case AbilitySageMaster: return "todo"
+        case AbilityMyrran: return "todo"
+        case AbilityDivinePower: return "todo"
+        case AbilityFamous: return "todo"
+        case AbilityRunemaster: return "todo"
+        case AbilityCharismatic: return "Possesses an unnatural presence that dramatically improves his dealings with others. The charismatic wizard pays half for hiring heroes, mercenaries, and purchasing magical items. In addition, all diplomatic penalties from negative actions are halved and good diplomatic effects are doubled."
+        case AbilityChaosMastery: return "todo"
+        case AbilityNatureMastery: return "todo"
+        case AbilitySorceryMastery: return "todo"
+        case AbilityInfernalPower: return "todo"
+        case AbilityManaFocusing: return "todo"
+        case AbilityNodeMastery: return "todo"
+        case AbilityNone: return "todo"
+        default: return ""
+    }
+}
+
 // some abilities can only be selected if other properties of the wizard are set
 func (ability WizardAbility) SatisifiedDependencies(wizard *wizardCustom) bool {
     switch ability {
@@ -1357,7 +1383,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
             Rect: image.Rect(infoX, infoY, infoX + infoWidth, infoY + infoHeight),
             Draw: func (infoThis *UIElement, window *ebiten.Image){
                 vector.DrawFilledRect(window, float32(infoX), float32(infoY), float32(infoWidth), float32(infoHeight), color.RGBA{R: 32, G: 32, B: 32, A: 0xff}, true)
-                screen.AbilityFont.Print(window, float64(infoX + 10), float64(infoY + 10), 1, message)
+                screen.AbilityFontAvailable.Print(window, float64(infoX + 10), float64(infoY + 10), 1, message)
             },
             LeftClick: func(infoThis *UIElement){
                 screen.UI.RemoveElement(infoThis)
@@ -1375,7 +1401,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
                 screen.CustomWizard.ToggleAbility(ability.Ability, picksLeft())
             },
             RightClick: func(this *UIElement){
-                screen.UI.AddElement(makeInfoElement(ability.Ability.String()))
+                screen.UI.AddElement(makeInfoElement(ability.Ability.Description()))
             },
             Draw: func(this *UIElement, window *ebiten.Image){
                 font := screen.AbilityFont
