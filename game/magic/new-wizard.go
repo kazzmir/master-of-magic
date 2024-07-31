@@ -273,18 +273,55 @@ type UIClickElementFunc func(element *UIElement)
 type UIDrawFunc func(element *UIElement, window *ebiten.Image)
 type UIKeyFunc func(key ebiten.Key)
 
+type UILayer int
+
 type UIElement struct {
     Rect image.Rectangle
     NotInside UINotInsideElementFunc
     Inside UIInsideElementFunc
     Click UIClickElementFunc
     Draw UIDrawFunc
+    Layer UILayer
 }
 
 type UI struct {
-    Elements []*UIElement
-    Draw func(*ebiten.Image)
+    // track the layer number of the elements
+    Elements map[UILayer][]*UIElement
+    // keep track of the minimum and maximum keys so we don't have to sort
+    minLayer UILayer
+    maxLayer UILayer
+    Draw func(*UI, *ebiten.Image)
     HandleKey UIKeyFunc
+}
+
+func (ui *UI) IterateElementsByLayer(f func(*UIElement)){
+    for i := ui.minLayer; i <= ui.maxLayer; i++ {
+        for _, element := range ui.Elements[i] {
+            f(element)
+        }
+    }
+}
+
+func (ui *UI) GetHighestLayer() []*UIElement {
+    return ui.Elements[ui.maxLayer]
+}
+
+func (ui *UI) SetElementsFromArray(elements []*UIElement){
+    out := make(map[UILayer][]*UIElement)
+
+    for _, element := range elements {
+        if element.Layer < ui.minLayer {
+            ui.minLayer = element.Layer
+        }
+
+        if element.Layer > ui.maxLayer {
+            ui.maxLayer = element.Layer
+        }
+
+        out[element.Layer] = append(out[element.Layer], element)
+    }
+
+    ui.Elements = out
 }
 
 type NewWizardScreen struct {
@@ -332,6 +369,7 @@ func (screen *NewWizardScreen) MakeCustomNameUI() *UI {
     const nameY = 120
 
     ui := &UI{
+        Elements: make(map[UILayer][]*UIElement),
         HandleKey: func(key ebiten.Key){
             switch key {
                 case ebiten.KeyBackspace:
@@ -356,7 +394,7 @@ func (screen *NewWizardScreen) MakeCustomNameUI() *UI {
                 screen.CustomWizard.Name = screen.CustomWizard.Name[0:MaxNameLength]
             }
         },
-        Draw: func(window *ebiten.Image){
+        Draw: func(this *UI, window *ebiten.Image){
             var options ebiten.DrawImageOptions
             window.DrawImage(screen.Background, &options)
 
@@ -401,8 +439,7 @@ func (screen *NewWizardScreen) MakeCustomPictureUI() *UI {
     elements := screen.MakeWizardUIElements(clickFunc, insideFunc)
 
     ui := &UI{
-        Elements: elements,
-        Draw: func(window *ebiten.Image){
+        Draw: func(this *UI, window *ebiten.Image){
             var options ebiten.DrawImageOptions
             window.DrawImage(screen.Background, &options)
 
@@ -415,9 +452,9 @@ func (screen *NewWizardScreen) MakeCustomPictureUI() *UI {
             options.GeoM.Translate(166, 18)
             window.DrawImage(screen.CustomPictureBackground, &options)
 
-            for _, element := range elements {
+            this.IterateElementsByLayer(func (element *UIElement){
                 element.Draw(element, window)
-            }
+            })
 
             if screen.CustomWizard.Portrait != nil {
                 var options ebiten.DrawImageOptions
@@ -426,6 +463,8 @@ func (screen *NewWizardScreen) MakeCustomPictureUI() *UI {
             }
         },
     }
+
+    ui.SetElementsFromArray(elements)
 
     return ui
 }
@@ -520,15 +559,14 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *UI {
     })())
 
     ui := &UI{
-        Elements: elements,
-        Draw: func(window *ebiten.Image){
+        Draw: func(this *UI, window *ebiten.Image){
             var options ebiten.DrawImageOptions
             window.DrawImage(screen.Background, &options)
             screen.SelectFont.PrintCenter(window, 245, 2, 1, "Select Wizard")
 
-            for _, element := range elements {
+            this.IterateElementsByLayer(func (element *UIElement){
                 element.Draw(element, window)
-            }
+            })
 
             if screen.CurrentWizard >= 0 && screen.CurrentWizard < len(screen.WizardSlots) {
                 const portraitX = 24
@@ -552,6 +590,8 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *UI {
             }
         },
     }
+
+    ui.SetElementsFromArray(elements)
 
     return ui
 }
@@ -592,7 +632,7 @@ func (screen *NewWizardScreen) Update() {
     mouseX, mouseY := ebiten.CursorPosition()
 
     if screen.UI != nil {
-        for _, element := range screen.UI.Elements {
+        for _, element := range screen.UI.GetHighestLayer() {
             if mouseX >= element.Rect.Min.X && mouseY >= element.Rect.Min.Y && mouseX < element.Rect.Max.X && mouseY <= element.Rect.Max.Y {
                 if element.Inside != nil {
                     element.Inside(element)
@@ -1278,8 +1318,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
     }
 
     ui := &UI{
-        Elements: elements,
-        Draw: func(window *ebiten.Image){
+        Draw: func(ui *UI, window *ebiten.Image){
             const portraitX = 24
             const portraitY = 10
 
@@ -1295,11 +1334,11 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
 
             screen.DrawBooks(window, 37, 135, screen.CustomWizard.Books)
 
-            for _, element := range elements {
+            ui.IterateElementsByLayer(func (element *UIElement){
                 if element.Draw != nil {
                     element.Draw(element, window)
                 }
-            }
+            })
 
             screen.AbilityFontSelected.Print(window, 12, 180, 1, joinAbilities(screen.CustomWizard.Abilities))
 
@@ -1307,13 +1346,15 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
         },
     }
 
+    ui.SetElementsFromArray(elements)
+
     return ui
 
 }
 
 func (screen *NewWizardScreen) Draw(window *ebiten.Image) {
     if screen.UI != nil {
-        screen.UI.Draw(window)
+        screen.UI.Draw(screen.UI, window)
     }
 }
 
