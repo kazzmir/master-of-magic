@@ -3,6 +3,7 @@ package main
 import (
     "fmt"
     "sync"
+    "math"
     "math/rand"
     "strings"
     "image"
@@ -235,6 +236,7 @@ type NewWizardScreen struct {
     Font *font.Font
     AbilityFont *font.Font
     AbilityFontSelected *font.Font
+    AbilityFontAvailable *font.Font
     CheckMark *ebiten.Image
     NameFont *font.Font
     SelectFont *font.Font
@@ -573,11 +575,37 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
             return
         }
 
+        // FIXME: this is a fudged palette to look like the original, but its probably slightly wrong
         brightYellowPalette := color.Palette{
             color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
             color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
             // orangish
             color.RGBA{R: 0xff, G: 0xaa, B: 0x00, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        }
+
+        // FIXME: also a fudged palette
+        whitishPalette := color.Palette{
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            color.RGBA{R: 0xc6, G: 0x9d, B: 0x65, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        }
+
+        transparentPalette := color.Palette{
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            color.RGBA{R: uint8(math.Round(0xc6 * 0.3)), G: uint8(math.Round(0x9d * 0.3)), B: uint8(math.Round(0x65 * 0.3)), A: uint8(math.Round(0xff * 0.3))},
             color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
             color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
             color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
@@ -592,8 +620,9 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
         screen.SelectFont = font.MakeOptimizedFont(fonts[5])
 
         // FIXME: load with a yellowish palette
-        screen.AbilityFont = font.MakeOptimizedFont(fonts[0])
+        screen.AbilityFont = font.MakeOptimizedFontWithPalette(fonts[0], transparentPalette)
         screen.AbilityFontSelected = font.MakeOptimizedFontWithPalette(fonts[0], brightYellowPalette)
+        screen.AbilityFontAvailable = font.MakeOptimizedFontWithPalette(fonts[0], whitishPalette)
 
         // FIXME: use a monochrome color scheme, light-brownish
         screen.NameFont = font.MakeOptimizedFont(fonts[3])
@@ -857,7 +886,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
         // set custom wizard to merlin for now
         screen.CustomWizard.Portrait = screen.WizardSlots[0].Portrait
         screen.CustomWizard.Name = screen.WizardSlots[0].Name
-        screen.CustomWizard.Abilities = []WizardAbility{AbilityAlchemy, AbilityConjurer, AbilityFamous}
+        // screen.CustomWizard.Abilities = []WizardAbility{AbilityAlchemy, AbilityConjurer, AbilityFamous}
         screen.CustomWizard.Books = []wizardBook{
             wizardBook{
                 Magic: NatureMagic,
@@ -1162,6 +1191,8 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
                     options.GeoM.Translate(ability.X - float64(screen.CheckMark.Bounds().Dx()) - 1, ability.Y + 1)
                     window.DrawImage(screen.CheckMark, &options)
                     font = screen.AbilityFontSelected
+                } else if picksLeft() >= ability.Ability.PickCost() {
+                    font = screen.AbilityFontAvailable
                 }
 
                 font.Print(window, ability.X, ability.Y, 1, ability.Ability.String())
