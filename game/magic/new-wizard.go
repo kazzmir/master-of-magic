@@ -1135,6 +1135,16 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
             element := &UIElement{
                 Rect: image.Rect(x1, y1, x2, y2),
                 Click: func(this *UIElement){
+
+                    // user cannot hold both life and death magic
+                    if bookMagic == LifeMagic && screen.CustomWizard.MagicLevel(DeathMagic) > 0 {
+                        return
+                    }
+
+                    if bookMagic == DeathMagic && screen.CustomWizard.MagicLevel(LifeMagic) > 0 {
+                        return
+                    }
+
                     // current := screen.CustomWizard.MagicLevel(bookMagic)
                     screen.CustomWizard.SetMagicLevel(bookMagic, level+1)
                     if picksLeft() < 0 {
