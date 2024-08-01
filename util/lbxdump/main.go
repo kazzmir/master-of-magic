@@ -63,13 +63,29 @@ func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int, rawDump bool) 
     } else if lbxName == "help.lbx" {
         // uint16 number of entries
         // uint16 size of each entry
-        entries, err := file.ReadHelpEntries(2)
+        help, err := file.ReadHelp(2)
 
         if err != nil {
             return err
         }
 
-        fmt.Printf("Help entries: %v\n", entries)
+        // fmt.Printf("Help entries: %v\n", entries)
+        /*
+        for i, entry := range entries {
+            if entry.AppendHelpIndex != -1 {
+                fmt.Printf("Entry %v: %+v\n", i, entry)
+            }
+        }
+        */
+
+        /*
+        fmt.Printf("Raw entry 365: %+v\n", help.GetRawEntry(365))
+        fmt.Printf("Raw entry 366: %+v\n", help.GetRawEntry(366))
+        fmt.Printf("Raw entry 367: %+v\n", help.GetRawEntry(367))
+
+        fmt.Printf("Entry 365: %+v\n", help.GetEntries(365))
+        */
+        fmt.Printf("Entry 'charismatic': %+v\n", help.GetEntriesByName("charismatic"))
 
     } else {
         for index, data := range file.Data {
