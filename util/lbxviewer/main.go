@@ -327,7 +327,6 @@ func MakeViewer(lbxFile *lbx.LbxFile) (*Viewer, error) {
         }()
     }
 
-    // viewer.LoadImages()
     return viewer, nil
 }
 
