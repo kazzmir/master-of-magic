@@ -237,6 +237,7 @@ func (viewer *Viewer) Draw(screen *ebiten.Image) {
     x := startX
     y := startY
 
+    // FIXME: handle the case when there are more images than can fit on the screen
     for i, image := range viewer.Images {
         if image.IsLoaded() && len(image.Images) > 0 {
             var options ebiten.DrawImageOptions
