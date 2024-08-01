@@ -159,6 +159,7 @@ func (font *Font) splitText(text string, maxWidth float64, scale float64) (strin
     }
 
     parts := strings.Split(text, " ")
+    // FIXME: use binary search for this
     for i := len(parts) - 1; i >= 0; i-- {
         sofar := strings.Join(parts[0:i], " ")
         if font.MeasureTextWidth(sofar, scale) < maxWidth {
@@ -170,7 +171,30 @@ func (font *Font) splitText(text string, maxWidth float64, scale float64) (strin
 }
 
 func (font *Font) PrintWrap(image *ebiten.Image, x float64, y float64, maxWidth float64, scale float64, text string) {
+    wrapped := font.CreateWrappedText(maxWidth, scale, text)
+    font.RenderWrapped(image, x, y, wrapped)
+}
+
+type WrappedText struct {
+    Lines []string
+    TotalHeight float64
+    MaxWidth float64
+    Scale float64
+}
+
+func (font *Font) RenderWrapped(image *ebiten.Image, x float64, y float64, wrapped WrappedText) {
     yPos := y
+    for _, line := range wrapped.Lines {
+        font.Print(image, x, yPos, wrapped.Scale, line)
+        yPos += float64(font.Height()) * wrapped.Scale + 1
+    }
+}
+
+// precompute an object that can be used to render a wrapped string
+func (font *Font) CreateWrappedText(maxWidth float64, scale float64, text string) WrappedText {
+    var lines []string
+    var yPos float64 = 0
+
     for text != "" {
         show, rest := font.splitText(text, maxWidth, scale)
 
@@ -178,10 +202,18 @@ func (font *Font) PrintWrap(image *ebiten.Image, x float64, y float64, maxWidth 
         if show == "" {
             break
         }
-        font.Print(image, x, yPos, scale, show)
+
+        lines = append(lines, show)
 
         yPos += float64(font.Height()) * scale + 1
 
         text = rest
+    }
+
+    return WrappedText{
+        Lines: lines,
+        TotalHeight: yPos,
+        MaxWidth: maxWidth,
+        Scale: scale,
     }
 }

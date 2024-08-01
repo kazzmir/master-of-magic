@@ -1429,23 +1429,35 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
         infoY := 30
         infoWidth := screen.HelpTop.Bounds().Dx()
         infoHeight := screen.HelpTop.Bounds().Dy()
-        infoLeftMargin := 20
+        infoLeftMargin := 18
         infoTopMargin := 26
         infoBodyMargin := 3
-        maxInfoWidth := infoWidth - infoLeftMargin - infoBodyMargin - 14
+        maxInfoWidth := infoWidth - infoLeftMargin - infoBodyMargin - 15
+
+        wrapped := screen.HelpFont.CreateWrappedText(float64(maxInfoWidth), 1, message)
+
+        bottom := float64(infoY) + float64(infoTopMargin) + float64(screen.HelpTitleFont.Height()) + 1 + wrapped.TotalHeight
+
+        // only draw as much of the top scroll as there are lines of text
+        topImage := screen.HelpTop.SubImage(image.Rect(0, 0, screen.HelpTop.Bounds().Dx(), int(bottom) - infoY)).(*ebiten.Image)
+
         infoElement := &UIElement{
             Rect: image.Rect(infoX, infoY, infoX + infoWidth, infoY + infoHeight),
             Draw: func (infoThis *UIElement, window *ebiten.Image){
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(float64(infoX), float64(infoY))
-                window.DrawImage(screen.HelpTop, &options)
+                window.DrawImage(topImage, &options)
+
+                options.GeoM.Reset()
+                options.GeoM.Translate(float64(infoX), float64(bottom))
+                window.DrawImage(screen.HelpBottom, &options)
 
                 // for debugging
                 // vector.StrokeRect(window, float32(infoX), float32(infoY), float32(infoWidth), float32(infoHeight), 1, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, true)
                 // vector.StrokeRect(window, float32(infoX + infoLeftMargin), float32(infoY + infoTopMargin), float32(maxInfoWidth), float32(screen.HelpTitleFont.Height() + 20 + 1), 1, color.RGBA{R: 0, G: 0xff, B: 0, A: 0xff}, false)
 
                 screen.HelpTitleFont.Print(window, float64(infoX + infoLeftMargin), float64(infoY + infoTopMargin), 1, title)
-                screen.HelpFont.PrintWrap(window, float64(infoX + infoLeftMargin + infoBodyMargin), float64(infoY + infoTopMargin + screen.HelpTitleFont.Height() + 1), float64(maxInfoWidth), 1, message)
+                screen.HelpFont.RenderWrapped(window, float64(infoX + infoLeftMargin + infoBodyMargin), float64(infoY + infoTopMargin + screen.HelpTitleFont.Height() + 1), wrapped)
             },
             LeftClick: func(infoThis *UIElement){
                 screen.UI.RemoveElement(infoThis)
