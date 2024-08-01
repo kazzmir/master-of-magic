@@ -182,7 +182,7 @@ func (viewer *Viewer) Update() error {
             viewer.AnimationCount -= 1
         } else {
             viewer.AnimationFrame += 1
-            if viewer.AnimationFrame >= len(viewer.Images) {
+            if viewer.AnimationFrame >= len(viewer.Images[viewer.CurrentTile].Images) {
                 viewer.AnimationFrame = 0
             }
             viewer.AnimationCount = AnimationSpeed
@@ -274,7 +274,7 @@ func (viewer *Viewer) Draw(screen *ebiten.Image) {
 
             var options ebiten.DrawImageOptions
             useImage := viewer.Images[viewer.CurrentTile].Images[viewer.CurrentImage]
-            if viewer.AnimationFrame != -1 {
+            if viewer.AnimationFrame != -1 && viewer.AnimationFrame < len(viewer.Images[viewer.CurrentTile].Images) {
                 useImage = viewer.Images[viewer.CurrentTile].Images[viewer.AnimationFrame]
             }
             bounds := useImage.Bounds()
