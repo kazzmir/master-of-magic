@@ -12,7 +12,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
-    "github.com/hajimehoshi/ebiten/v2/vector"
+    _ "github.com/hajimehoshi/ebiten/v2/vector"
 
     "github.com/hajimehoshi/ebiten/v2"
 )
@@ -383,6 +383,8 @@ type NewWizardScreen struct {
     AbilityFont *font.Font
     AbilityFontSelected *font.Font
     AbilityFontAvailable *font.Font
+    HelpFont *font.Font
+    HelpTitleFont *font.Font
     CheckMark *ebiten.Image
     NameFont *font.Font
     SelectFont *font.Font
@@ -390,6 +392,8 @@ type NewWizardScreen struct {
     WizardSlots []wizardSlot
 
     Help lbx.Help
+    HelpTop *ebiten.Image
+    HelpBottom *ebiten.Image
 
     UI *UI
 
@@ -705,6 +709,42 @@ func (screen *NewWizardScreen) Update() {
     }
 }
 
+func (screen *NewWizardScreen) LoadHelp(cache *lbx.LbxCache) error {
+    helpLbx, err := cache.GetLbxFile("magic-data/HELP.LBX")
+    if err != nil {
+        return err
+    }
+
+    screen.Help, err = helpLbx.ReadHelp(2)
+    if err != nil {
+        return err
+    }
+
+    scrollTopImages, err := helpLbx.ReadImages(0)
+    if err != nil {
+        return err
+    }
+
+    if len(scrollTopImages) == 0 {
+        return fmt.Errorf("no images found in HELP.LBX entry 0")
+    }
+
+    screen.HelpTop = ebiten.NewImageFromImage(scrollTopImages[0])
+
+    scrollBottomImages, err := helpLbx.ReadImages(1)
+    if err != nil {
+        return err
+    }
+
+    if len(scrollBottomImages) == 0 {
+        return fmt.Errorf("no images found in HELP.LBX entry 1")
+    }
+
+    screen.HelpBottom = ebiten.NewImageFromImage(scrollBottomImages[0])
+
+    return nil
+}
+
 func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
     // NEWGAME.LBX entry 8 contains boxes for wizard names
     // 9-23 are backgrounds for names
@@ -730,15 +770,9 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
             return
         }
 
-        helpLbx, err := cache.GetLbxFile("magic-data/HELP.LBX")
+        err = screen.LoadHelp(cache)
         if err != nil {
-            outError = fmt.Errorf("Unable to read HELP.LBX: %v", err)
-            return
-        }
-
-        screen.Help, err = helpLbx.ReadHelp(2)
-        if err != nil {
-            outError = fmt.Errorf("Unable to read help lbx entries: %v", err)
+            outError = fmt.Errorf("Error reading help.lbx: %v", err)
             return
         }
 
@@ -786,10 +820,38 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
         // FIXME: load with a yellowish palette
         screen.SelectFont = font.MakeOptimizedFont(fonts[5])
 
-        // FIXME: load with a yellowish palette
         screen.AbilityFont = font.MakeOptimizedFontWithPalette(fonts[0], transparentPalette)
         screen.AbilityFontSelected = font.MakeOptimizedFontWithPalette(fonts[0], brightYellowPalette)
         screen.AbilityFontAvailable = font.MakeOptimizedFontWithPalette(fonts[0], whitishPalette)
+
+        helpPalette := color.Palette{
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            color.RGBA{R: 0x5e, G: 0x0, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        }
+
+        screen.HelpFont = font.MakeOptimizedFontWithPalette(fonts[1], helpPalette)
+
+        titleRed := color.RGBA{R: 0x50, G: 0x00, B: 0x0e, A: 0xff}
+        titlePalette := color.Palette{
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            titleRed,
+            titleRed,
+            titleRed,
+            titleRed,
+            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        }
+
+        screen.HelpTitleFont = font.MakeOptimizedFontWithPalette(fonts[4], titlePalette)
 
         // FIXME: use a monochrome color scheme, light-brownish
         screen.NameFont = font.MakeOptimizedFont(fonts[3])
@@ -1362,16 +1424,28 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
         return ability.SatisifiedDependencies(&screen.CustomWizard)
     }
 
-    makeInfoElement := func(message string) *UIElement {
-        infoX := 50
-        infoY := 50
-        infoWidth := 100
-        infoHeight := 100
+    makeInfoElement := func(title string, message string) *UIElement {
+        infoX := 55
+        infoY := 30
+        infoWidth := screen.HelpTop.Bounds().Dx()
+        infoHeight := screen.HelpTop.Bounds().Dy()
+        infoLeftMargin := 20
+        infoTopMargin := 26
+        infoBodyMargin := 3
+        maxInfoWidth := infoWidth - infoLeftMargin - infoBodyMargin - 14
         infoElement := &UIElement{
             Rect: image.Rect(infoX, infoY, infoX + infoWidth, infoY + infoHeight),
             Draw: func (infoThis *UIElement, window *ebiten.Image){
-                vector.DrawFilledRect(window, float32(infoX), float32(infoY), float32(infoWidth), float32(infoHeight), color.RGBA{R: 32, G: 32, B: 32, A: 0xff}, true)
-                screen.AbilityFontAvailable.Print(window, float64(infoX + 10), float64(infoY + 10), 1, message)
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(infoX), float64(infoY))
+                window.DrawImage(screen.HelpTop, &options)
+
+                // for debugging
+                // vector.StrokeRect(window, float32(infoX), float32(infoY), float32(infoWidth), float32(infoHeight), 1, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, true)
+                // vector.StrokeRect(window, float32(infoX + infoLeftMargin), float32(infoY + infoTopMargin), float32(maxInfoWidth), float32(screen.HelpTitleFont.Height() + 20 + 1), 1, color.RGBA{R: 0, G: 0xff, B: 0, A: 0xff}, false)
+
+                screen.HelpTitleFont.Print(window, float64(infoX + infoLeftMargin), float64(infoY + infoTopMargin), 1, title)
+                screen.HelpFont.PrintWrap(window, float64(infoX + infoLeftMargin + infoBodyMargin), float64(infoY + infoTopMargin + screen.HelpTitleFont.Height() + 1), float64(maxInfoWidth), 1, message)
             },
             LeftClick: func(infoThis *UIElement){
                 screen.UI.RemoveElement(infoThis)
@@ -1395,7 +1469,12 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
                     return
                 }
 
-                screen.UI.AddElement(makeInfoElement(helpEntries[0].Text))
+                // Hack! There are two FAMOUS entries in help.lbx, one for the ability and one for the spell
+                if ability.Ability == AbilityFamous {
+                    helpEntries = []lbx.HelpEntry{screen.Help.GetRawEntry(702)}
+                }
+
+                screen.UI.AddElement(makeInfoElement(helpEntries[0].Headline, helpEntries[0].Text))
             },
             Draw: func(this *UIElement, window *ebiten.Image){
                 font := screen.AbilityFont

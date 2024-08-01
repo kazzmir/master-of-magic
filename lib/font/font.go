@@ -5,6 +5,7 @@ import (
     _ "fmt"
     "image"
     "image/color"
+    "strings"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/hajimehoshi/ebiten/v2"
@@ -148,4 +149,39 @@ func (font *Font) MeasureTextWidth(text string, scale float64) float64 {
 func (font *Font) PrintCenter(image *ebiten.Image, x float64, y float64, scale float64, text string) {
     width := font.MeasureTextWidth(text, scale)
     font.Print(image, x - width / 2, y, scale, text)
+}
+
+/* split the input text ABCD into two substrings AB and CD such that the pixel width of AB is less than maxWidth */
+func (font *Font) splitText(text string, maxWidth float64, scale float64) (string, string) {
+    size := font.MeasureTextWidth(text, scale)
+    if size < maxWidth {
+        return text, ""
+    }
+
+    parts := strings.Split(text, " ")
+    for i := len(parts) - 1; i >= 0; i-- {
+        sofar := strings.Join(parts[0:i], " ")
+        if font.MeasureTextWidth(sofar, scale) < maxWidth {
+            return sofar, strings.Join(parts[i:len(parts)], " ")
+        }
+    }
+
+    return "", text
+}
+
+func (font *Font) PrintWrap(image *ebiten.Image, x float64, y float64, maxWidth float64, scale float64, text string) {
+    yPos := y
+    for text != "" {
+        show, rest := font.splitText(text, maxWidth, scale)
+
+        // we were unable to split the text, just bail
+        if show == "" {
+            break
+        }
+        font.Print(image, x, yPos, scale, show)
+
+        yPos += float64(font.Height()) * scale + 1
+
+        text = rest
+    }
 }
