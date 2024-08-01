@@ -70,32 +70,6 @@ const (
         AbilityNone
 )
 
-// help description
-func (ability WizardAbility) Description() string {
-    switch ability {
-        case AbilityAlchemy: return "todo"
-        case AbilityWarlord: return "todo"
-        case AbilityChanneler: return "todo"
-        case AbilityArchmage: return "todo"
-        case AbilityArtificer: return "todo"
-        case AbilityConjurer: return "todo"
-        case AbilitySageMaster: return "todo"
-        case AbilityMyrran: return "todo"
-        case AbilityDivinePower: return "todo"
-        case AbilityFamous: return "todo"
-        case AbilityRunemaster: return "todo"
-        case AbilityCharismatic: return "Possesses an unnatural presence that dramatically improves his dealings with others. The charismatic wizard pays half for hiring heroes, mercenaries, and purchasing magical items. In addition, all diplomatic penalties from negative actions are halved and good diplomatic effects are doubled."
-        case AbilityChaosMastery: return "todo"
-        case AbilityNatureMastery: return "todo"
-        case AbilitySorceryMastery: return "todo"
-        case AbilityInfernalPower: return "todo"
-        case AbilityManaFocusing: return "todo"
-        case AbilityNodeMastery: return "todo"
-        case AbilityNone: return "todo"
-        default: return ""
-    }
-}
-
 // some abilities can only be selected if other properties of the wizard are set
 func (ability WizardAbility) SatisifiedDependencies(wizard *wizardCustom) bool {
     switch ability {
@@ -414,6 +388,8 @@ type NewWizardScreen struct {
     SelectFont *font.Font
     loaded sync.Once
     WizardSlots []wizardSlot
+
+    Help lbx.Help
 
     UI *UI
 
@@ -751,6 +727,18 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
         fonts, err := fontLbx.ReadFonts(0)
         if err != nil {
             outError = fmt.Errorf("Unable to read fonts from FONTS.LBX: %v", err)
+            return
+        }
+
+        helpLbx, err := cache.GetLbxFile("magic-data/HELP.LBX")
+        if err != nil {
+            outError = fmt.Errorf("Unable to read HELP.LBX: %v", err)
+            return
+        }
+
+        screen.Help, err = helpLbx.ReadHelp(2)
+        if err != nil {
+            outError = fmt.Errorf("Unable to read help lbx entries: %v", err)
             return
         }
 
@@ -1401,7 +1389,13 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
                 screen.CustomWizard.ToggleAbility(ability.Ability, picksLeft())
             },
             RightClick: func(this *UIElement){
-                screen.UI.AddElement(makeInfoElement(ability.Ability.Description()))
+
+                helpEntries := screen.Help.GetEntriesByName(ability.Ability.String())
+                if helpEntries == nil {
+                    return
+                }
+
+                screen.UI.AddElement(makeInfoElement(helpEntries[0].Text))
             },
             Draw: func(this *UIElement, window *ebiten.Image){
                 font := screen.AbilityFont
