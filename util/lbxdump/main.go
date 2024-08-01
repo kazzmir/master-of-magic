@@ -60,6 +60,16 @@ func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int, rawDump bool) 
         for i, font := range fonts {
             fmt.Printf("  font %v glyphs %v\n", i, font.GlyphCount())
         }
+    } else if lbxName == "help.lbx" {
+        // uint16 number of entries
+        // uint16 size of each entry
+        entries, err := file.ReadHelpEntries(2)
+
+        if err != nil {
+            return err
+        }
+
+        fmt.Printf("Help entries: %v\n", entries)
 
     } else {
         for index, data := range file.Data {

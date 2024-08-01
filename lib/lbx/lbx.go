@@ -17,6 +17,12 @@ func readUint16(reader io.Reader) (uint16, error) {
     return value, err
 }
 
+func readUint16Big(reader io.Reader) (uint16, error) {
+    var value uint16
+    err := binary.Read(reader, binary.BigEndian, &value)
+    return value, err
+}
+
 func readUint32(reader io.Reader) (uint32, error) {
     var value uint32
     err := binary.Read(reader, binary.LittleEndian, &value)
@@ -32,6 +38,20 @@ type LbxFile struct {
     Signature uint32
     Version uint16
     Data [][]byte
+}
+
+// stuff from help.lbx
+type HelpEntry struct {
+    // shows up on top of scroll
+    Headline string
+    // lbx file to pull an icon out, shown at top left of scroll
+    Lbx string
+    // index of sprite in the lbx file
+    LbxIndex int
+    // extra text to append
+    AppendHelpIndex int
+    // text displayed in scroll
+    Text string
 }
 
 type PaletteInfo struct {
@@ -582,6 +602,102 @@ func (lbx *LbxFile) ReadTerrainImages(entry int) ([]image.Image, error) {
 
 func (lbx *LbxFile) TotalEntries() int {
     return len(lbx.Data)
+}
+
+func (lbx *LbxFile) ReadHelpEntries(entry int) ([]HelpEntry, error) {
+    if entry < 0 || entry >= len(lbx.Data) {
+        return nil, fmt.Errorf("invalid lbx index %v, must be between 0 and %v", entry, len(lbx.Data) - 1)
+    }
+
+    reader := bytes.NewReader(lbx.Data[entry])
+
+    numEntries, err := readUint16(reader)
+    if err != nil {
+        return nil, err
+    }
+
+    entrySize, err := readUint16(reader)
+    if err != nil {
+        return nil, err
+    }
+
+    if entrySize == 0 {
+        return nil, fmt.Errorf("entry size was 0 in help")
+    }
+
+    if numEntries * entrySize > uint16(reader.Len()) {
+        return nil, fmt.Errorf("too many entries in the help file entries=%v size=%v len=%v", numEntries, entrySize, reader.Len())
+    }
+
+    var help []HelpEntry
+
+    // fmt.Printf("num entries: %v\n", numEntries)
+
+    for i := 0; i < int(numEntries); i++ {
+        data := make([]byte, entrySize)
+        n, err := reader.Read(data)
+        if err != nil {
+            return nil, fmt.Errorf("Error reading help index %v: %v", i, err)
+        }
+
+        buffer := bytes.NewBuffer(data[0:n])
+
+        headlineData := buffer.Next(30)
+
+        b2 := bytes.NewBuffer(headlineData)
+        headline, err := b2.ReadString(0)
+        if err != nil {
+            headline = string(headlineData)
+        } else {
+            headline = headline[0:len(headline)-1]
+        }
+
+        // fmt.Printf("  headline: %v\n", string(headline))
+
+        // fmt.Printf("  at position 0x%x\n", n - buffer.Len())
+
+        pictureLbxData := buffer.Next(14)
+        b2 = bytes.NewBuffer(pictureLbxData)
+        pictureLbx, err := b2.ReadString(0)
+        // fmt.Printf("  lbx: %v\n", string(pictureLbx))
+
+        pictureLbx = pictureLbx[0:len(pictureLbx)-1]
+
+        // fmt.Printf("  at position 0x%x\n", n - buffer.Len())
+
+        pictureIndex, err := readUint16(buffer)
+        if err != nil {
+            return nil, fmt.Errorf("Error reading help index %v: %v", i, err)
+        }
+
+        // fmt.Printf("  lbx index: %v\n", pictureIndex)
+
+        appendHelpText, err := readUint16(buffer)
+        if err != nil {
+            return nil, err
+        }
+
+        // fmt.Printf("  appended help text: 0x%x\n", appendHelpText)
+
+        info, err := buffer.ReadString(0)
+        if err != nil {
+            return nil, err
+        }
+
+        info = info[0:len(info)-1]
+
+        // fmt.Printf("  text: '%v'\n", info)
+
+        help = append(help, HelpEntry{
+            Headline: headline,
+            Lbx: pictureLbx,
+            LbxIndex: int(pictureIndex),
+            AppendHelpIndex: int(appendHelpText),
+            Text: info,
+        })
+    }
+
+    return help, nil
 }
 
 func (lbx *LbxFile) ReadImages(entry int) ([]image.Image, error) {
