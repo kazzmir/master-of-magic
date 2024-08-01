@@ -85,7 +85,10 @@ func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int, rawDump bool) 
 
         fmt.Printf("Entry 365: %+v\n", help.GetEntries(365))
         */
-        fmt.Printf("Entry 'charismatic': %+v\n", help.GetEntriesByName("charismatic"))
+        // fmt.Printf("Entry 'charismatic': %+v\n", help.GetEntriesByName("charismatic"))
+        for i, entry := range help.Entries {
+            fmt.Printf("Entry %v: %+v\n", i, entry)
+        }
 
     } else {
         for index, data := range file.Data {
