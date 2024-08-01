@@ -1428,7 +1428,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
         infoX := 55
         infoY := 30
         infoWidth := screen.HelpTop.Bounds().Dx()
-        infoHeight := screen.HelpTop.Bounds().Dy()
+        // infoHeight := screen.HelpTop.Bounds().Dy()
         infoLeftMargin := 18
         infoTopMargin := 26
         infoBodyMargin := 3
@@ -1442,7 +1442,8 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
         topImage := screen.HelpTop.SubImage(image.Rect(0, 0, screen.HelpTop.Bounds().Dx(), int(bottom) - infoY)).(*ebiten.Image)
 
         infoElement := &UIElement{
-            Rect: image.Rect(infoX, infoY, infoX + infoWidth, infoY + infoHeight),
+            // Rect: image.Rect(infoX, infoY, infoX + infoWidth, infoY + infoHeight),
+            Rect: image.Rect(0, 0, 320, 200),
             Draw: func (infoThis *UIElement, window *ebiten.Image){
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(float64(infoX), float64(infoY))
