@@ -1,0 +1,28 @@
+From plight: https://forums.civfanatics.com/threads/plight-expanded-corrected-help-texts-for-master-of-magic.391983/
+
+Structure of the HELP.LBX file (most of this info has also been added in an 808th entry at the end of the file, so that it can be preserved even if this documentation gets lost):
+
+Bytes 0x0000 to 0x90D0 contain header information (irrelevant for the scope of the project). Then follow 807 entries, each 1048 bytes long, all with the following structure:
+
+:: 0x00 - 0x1D (zero-terminated string):
+Headline of the help scroll.
+:: 0x1E - 0x2B (zero-terminated string):
+DOS Filename to load a picture from (picture will be displayed left of the scroll's headline, see any buildings for examples).
+:: 0x2C - 0x2D (little-endian word):
+Index of the picture to load from the file specified above.
+:: 0x2E - 0x2F (little-endian word):
+Index of a help text to be appended to the current help text, see "Research Ratio" for an example. A value of "FF FF" means: append the next entry after the current one. Chaining multiple entries is supported, see "Ranged Attack".
+:: 0x30 - 0x417 (zero-terminated string):
+The help text to be displayed.
+
+Help texts can be 18 lines long, 19-21 lines cause graphical glitches (the background image of the scroll isn't large enough, and the highlights stop working properly), more than 21 lines cause the text to not be displayed at all. The height of the header graphics (if specified) may reduce the number of available lines.
+
+Lines can contain about 40 characters (depending on the characters' widths) and are automatically word-wrapped on space characters. If a single line in the text is longer than the scroll's width and contains no spaces, then no help text will be displayed at all.
+
+The following special characters can be used in help texts:
+0x0A, 0x0D, 0x14: Carriage Return and Line Feed. The original help final only uses 0x14, so I stuck with that.
+0x02: Toggles highlight. Text between two 0x02 codes will be highlighted.
+0x03, 0x04: Work the same way as 0x02, perhaps originally thought for different types of highlighting(?)
+0x19: Makes the cursor jump around during printing. The following byte value seems to influence the position it jumps to. No practical use found.
+
+
