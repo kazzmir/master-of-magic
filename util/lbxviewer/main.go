@@ -14,6 +14,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/lbx"
 
     "github.com/hajimehoshi/ebiten/v2"
+    "github.com/hajimehoshi/ebiten/v2/vector"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
     "github.com/hajimehoshi/ebiten/v2/text/v2"
 )
@@ -46,6 +47,7 @@ type Viewer struct {
     Images []*LbxImages
     Scale float64
     CurrentImage int
+    CurrentTile int
     LbxEntry int
     Font *text.GoTextFaceSource
     AnimationFrame int
@@ -115,11 +117,21 @@ func (viewer *Viewer) Update() error {
                 if viewer.CurrentImage < 0 {
                     viewer.CurrentImage = len(viewer.Images) - 1
                 }
+
+                if viewer.CurrentTile > 0 {
+                    viewer.CurrentTile -= 1
+                }
+
             case ebiten.KeyRight:
                 viewer.CurrentImage += 1
                 if viewer.CurrentImage >= len(viewer.Images) {
                     viewer.CurrentImage = 0
                 }
+
+                if viewer.CurrentTile < len(viewer.Images) - 1 {
+                    viewer.CurrentTile += 1
+                }
+
             case ebiten.KeyA:
                 if viewer.AnimationFrame == -1 {
                     viewer.AnimationFrame = 0
@@ -207,14 +219,13 @@ func (viewer *Viewer) Draw(screen *ebiten.Image) {
     op.GeoM.Translate(0, 20)
     text.Draw(screen, fmt.Sprintf("Scale: %.2f", viewer.Scale), face, op)
 
-
     tileWidth := 50
     tileHeight := 50
 
-    x := 0
+    x := 1
     y := 100
 
-    for _, image := range viewer.Images {
+    for i, image := range viewer.Images {
         if image.IsLoaded() && len(image.Images) > 0 {
             var options ebiten.DrawImageOptions
 
@@ -232,9 +243,13 @@ func (viewer *Viewer) Draw(screen *ebiten.Image) {
             */
         }
 
+        if i == viewer.CurrentTile {
+            vector.StrokeRect(screen, float32(x), float32(y), float32(tileWidth), float32(tileHeight), 1.5, color.White, true)
+        }
+
         x += tileWidth
-        if x >= ScreenWidth {
-            x = 0
+        if x + tileWidth >= ScreenWidth {
+            x = 1
             y += tileHeight
         }
     }
