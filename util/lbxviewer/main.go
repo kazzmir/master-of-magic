@@ -55,33 +55,11 @@ type Viewer struct {
     Scale float64
     CurrentImage int
     CurrentTile int
-    LbxEntry int
     State ViewerState
     Font *text.GoTextFaceSource
     AnimationFrame int
     AnimationCount int
 }
-
-    /*
-func (viewer *Viewer) LoadImages() {
-    rawImages, err := viewer.Lbx.ReadImages(viewer.LbxEntry)
-    if err != nil {
-        log.Printf("Unable to load images: %v", err)
-        return
-    }
-    var images []*ebiten.Image
-    for _, rawImage := range rawImages {
-        images = append(images, ebiten.NewImageFromImage(rawImage))
-    }
-    viewer.Images = images
-    viewer.CurrentImage = 0
-
-    if len(images) > 0 {
-        bounds := viewer.Images[viewer.CurrentImage].Bounds()
-        viewer.Scale = 200.0 / math.Max(float64(bounds.Dx()), float64(bounds.Dy()))
-    }
-}
-*/
 
 func tilesPerRow() int {
     width := ScreenWidth - 1
@@ -193,37 +171,7 @@ func (viewer *Viewer) Update() error {
                 } else {
                     viewer.AnimationFrame = -1
                 }
-            /*
-            case ebiten.KeyPageUp:
-                if viewer.AnimationFrame != -1 {
-                    viewer.AnimationFrame = 0
-                }
-                amount := 1
-                if control_pressed {
-                    amount = 10
-                }
-                viewer.LbxEntry -= amount
-                if viewer.LbxEntry < 0 {
-                    viewer.LbxEntry = viewer.Lbx.TotalEntries() - 1
-                }
 
-                if viewer.LbxEntry >= 0 {
-                    // viewer.LoadImages()
-                }
-            case ebiten.KeyPageDown:
-                if viewer.AnimationFrame != -1 {
-                    viewer.AnimationFrame = 0
-                }
-                amount := 1
-                if control_pressed {
-                    amount = 10
-                }
-                viewer.LbxEntry += amount
-                if viewer.LbxEntry >= viewer.Lbx.TotalEntries() {
-                    viewer.LbxEntry = 0
-                }
-                // viewer.LoadImages()
-            */
             case ebiten.KeyEscape, ebiten.KeyCapsLock:
                 return ebiten.Termination
         }
@@ -274,6 +222,11 @@ func (viewer *Viewer) Draw(screen *ebiten.Image) {
     }
     op.GeoM.Translate(0, 20)
     text.Draw(screen, fmt.Sprintf("Scale: %.2f", viewer.Scale), face, op)
+    op.GeoM.Translate(0, 20)
+    if len(viewer.Images[viewer.CurrentTile].Images) > 0 {
+        img := viewer.Images[viewer.CurrentTile].Images[viewer.CurrentImage]
+        text.Draw(screen, fmt.Sprintf("Dimensions: %v x %v", img.Bounds().Dx(), img.Bounds().Dy()), face, op)
+    }
 
     tileWidth := 50
     tileHeight := 50
@@ -344,7 +297,6 @@ func MakeViewer(lbxFile *lbx.LbxFile) (*Viewer, error) {
         Scale: 1,
         Font: font,
         CurrentImage: 0,
-        LbxEntry: 0,
         AnimationFrame: -1,
         AnimationCount: 0,
         State: ViewStateTiles,
