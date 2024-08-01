@@ -61,9 +61,12 @@ type Viewer struct {
     AnimationCount int
 }
 
+const TileWidth = 50
+const TileHeight = 50
+
 func tilesPerRow() int {
     width := ScreenWidth - 1
-    return width / 50
+    return width / TileWidth
 }
 
 func (viewer *Viewer) Update() error {
@@ -228,9 +231,6 @@ func (viewer *Viewer) Draw(screen *ebiten.Image) {
         text.Draw(screen, fmt.Sprintf("Dimensions: %v x %v", img.Bounds().Dx(), img.Bounds().Dy()), face, op)
     }
 
-    tileWidth := 50
-    tileHeight := 50
-
     startX := 1
     startY := 100
 
@@ -243,7 +243,7 @@ func (viewer *Viewer) Draw(screen *ebiten.Image) {
 
             draw := image.Images[0]
 
-            scaleX, scaleY := aspectScale(draw.Bounds().Dx(), draw.Bounds().Dy(), tileWidth, tileHeight)
+            scaleX, scaleY := aspectScale(draw.Bounds().Dx(), draw.Bounds().Dy(), TileWidth, TileHeight)
 
             options.GeoM.Scale(scaleX, scaleY)
             options.GeoM.Translate(float64(x), float64(y))
@@ -256,13 +256,13 @@ func (viewer *Viewer) Draw(screen *ebiten.Image) {
         }
 
         if i == viewer.CurrentTile {
-            vector.StrokeRect(screen, float32(x), float32(y), float32(tileWidth), float32(tileHeight), 1.5, color.White, true)
+            vector.StrokeRect(screen, float32(x), float32(y), float32(TileWidth), float32(TileHeight), 1.5, color.White, true)
         }
 
-        x += tileWidth
-        if x + tileWidth >= ScreenWidth {
+        x += TileWidth
+        if x + TileWidth >= ScreenWidth {
             x = 1
-            y += tileHeight
+            y += TileHeight
         }
     }
 
