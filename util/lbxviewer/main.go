@@ -4,8 +4,8 @@ import (
     "log"
     "os"
     "fmt"
-    // "sync"
-    "math"
+    "sync"
+    _ "math"
     "bytes"
     _ "embed"
 
@@ -28,9 +28,22 @@ func LoadFont() (*text.GoTextFaceSource, error) {
     return text.NewGoTextFaceSource(bytes.NewReader(FuturaTTF))
 }
 
+type LbxImages struct {
+    Images []*ebiten.Image
+    Load sync.Once
+    Loaded bool
+    Lock sync.Mutex
+}
+
+func (loader *LbxImages) IsLoaded() bool {
+    loader.Lock.Lock()
+    defer loader.Lock.Unlock()
+    return loader.Loaded
+}
+
 type Viewer struct {
     Lbx *lbx.LbxFile
-    Images []*ebiten.Image
+    Images []*LbxImages
     Scale float64
     CurrentImage int
     LbxEntry int
@@ -39,6 +52,7 @@ type Viewer struct {
     AnimationCount int
 }
 
+    /*
 func (viewer *Viewer) LoadImages() {
     rawImages, err := viewer.Lbx.ReadImages(viewer.LbxEntry)
     if err != nil {
@@ -57,6 +71,7 @@ func (viewer *Viewer) LoadImages() {
         viewer.Scale = 200.0 / math.Max(float64(bounds.Dx()), float64(bounds.Dy()))
     }
 }
+*/
 
 func (viewer *Viewer) Update() error {
     keys := make([]ebiten.Key, 0)
@@ -80,10 +95,12 @@ func (viewer *Viewer) Update() error {
             case ebiten.KeyControlLeft:
                 control_pressed = true
             case ebiten.KeySpace:
+                /*
                 if len(viewer.Images) > 0 {
                     bounds := viewer.Images[viewer.CurrentImage].Bounds()
                     viewer.Scale = 200.0 / math.Max(float64(bounds.Dx()), float64(bounds.Dy()))
                 }
+                */
         }
 
     }
@@ -124,7 +141,7 @@ func (viewer *Viewer) Update() error {
                 }
 
                 if viewer.LbxEntry >= 0 {
-                    viewer.LoadImages()
+                    // viewer.LoadImages()
                 }
             case ebiten.KeyPageDown:
                 if viewer.AnimationFrame != -1 {
@@ -138,7 +155,7 @@ func (viewer *Viewer) Update() error {
                 if viewer.LbxEntry >= viewer.Lbx.TotalEntries() {
                     viewer.LbxEntry = 0
                 }
-                viewer.LoadImages()
+                // viewer.LoadImages()
             case ebiten.KeyEscape, ebiten.KeyCapsLock:
                 return ebiten.Termination
         }
@@ -163,6 +180,15 @@ func (viewer *Viewer) Layout(outsideWidth int, outsideHeight int) (int, int) {
     return ScreenWidth, ScreenHeight
 }
 
+func aspectScale(width, height, maxWidth, maxHeight int) (float64, float64) {
+    scaleX := float64(maxWidth) / float64(width)
+    scaleY := float64(maxHeight) / float64(height)
+    if scaleX < scaleY {
+        return scaleX, scaleX
+    }
+    return scaleY, scaleY
+}
+
 func (viewer *Viewer) Draw(screen *ebiten.Image) {
     screen.Fill(color.RGBA{0x80, 0xa0, 0xc0, 0xff})
 
@@ -181,10 +207,43 @@ func (viewer *Viewer) Draw(screen *ebiten.Image) {
     op.GeoM.Translate(0, 20)
     text.Draw(screen, fmt.Sprintf("Scale: %.2f", viewer.Scale), face, op)
 
-    middleX := ScreenWidth / 2
-    middleY := ScreenHeight / 2
 
+    tileWidth := 50
+    tileHeight := 50
+
+    x := 0
+    y := 100
+
+    for _, image := range viewer.Images {
+        if image.IsLoaded() && len(image.Images) > 0 {
+            var options ebiten.DrawImageOptions
+
+            draw := image.Images[0]
+
+            scaleX, scaleY := aspectScale(draw.Bounds().Dx(), draw.Bounds().Dy(), tileWidth, tileHeight)
+
+            options.GeoM.Scale(scaleX, scaleY)
+            options.GeoM.Translate(float64(x), float64(y))
+            screen.DrawImage(draw, &options)
+            /*
+            text.Draw(screen, fmt.Sprintf("%v", i), face, &text.DrawOptions{
+                GeoM: ebiten.GeoM.Translate(float64(x), float64(y)),
+            })
+            */
+        }
+
+        x += tileWidth
+        if x >= ScreenWidth {
+            x = 0
+            y += tileHeight
+        }
+    }
+
+    /*
     if len(viewer.Images) > 0 {
+        middleX := ScreenWidth / 2
+        middleY := ScreenHeight / 2
+
         var options ebiten.DrawImageOptions
         useImage := viewer.Images[viewer.CurrentImage]
         if viewer.AnimationFrame != -1 {
@@ -196,6 +255,7 @@ func (viewer *Viewer) Draw(screen *ebiten.Image) {
         options.GeoM.Translate(float64(middleX), float64(middleY))
         screen.DrawImage(useImage, &options)
     }
+    */
 }
 
 func MakeViewer(lbxFile *lbx.LbxFile) (*Viewer, error) {
@@ -214,7 +274,31 @@ func MakeViewer(lbxFile *lbx.LbxFile) (*Viewer, error) {
         AnimationCount: 0,
     }
 
-    viewer.LoadImages()
+    for i := 0; i < lbxFile.TotalEntries(); i++ {
+        loader := &LbxImages{}
+        viewer.Images = append(viewer.Images, loader)
+
+        go func(){
+            loader.Load.Do(func(){
+                rawImages, err := lbxFile.ReadImages(i)
+                if err != nil {
+                    log.Printf("Unable to load images: %v", err)
+                    return
+                }
+                var images []*ebiten.Image
+                for _, rawImage := range rawImages {
+                    images = append(images, ebiten.NewImageFromImage(rawImage))
+                }
+                loader.Images = images
+
+                loader.Lock.Lock()
+                loader.Loaded = true
+                loader.Lock.Unlock()
+            })
+        }()
+    }
+
+    // viewer.LoadImages()
     return viewer, nil
 }
 
