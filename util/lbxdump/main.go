@@ -60,6 +60,11 @@ func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int, rawDump bool) 
         for i, font := range fonts {
             fmt.Printf("  font %v glyphs %v\n", i, font.GlyphCount())
         }
+        /*
+    } else if lbxName == "spelldat.lbx" {
+        // file.ReadSpells(0)
+        */
+
     } else if lbxName == "help.lbx" {
         // uint16 number of entries
         // uint16 size of each entry
