@@ -436,6 +436,10 @@ type NewWizardScreen struct {
     loaded sync.Once
     WizardSlots []wizardSlot
 
+    SpellBackground1 *ebiten.Image
+    SpellBackground2 *ebiten.Image
+    SpellBackground3 *ebiten.Image
+
     OkReady *ebiten.Image
     OkNotReady *ebiten.Image
 
@@ -1014,6 +1018,10 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
 
         screen.PickOkSlot = loadImage(51, 0)
 
+        screen.SpellBackground1 = loadImage(48, 0)
+        screen.SpellBackground2 = loadImage(49, 0)
+        screen.SpellBackground3 = loadImage(50, 0)
+
         screen.WindyBorder = loadImage(47, 0)
 
         screen.CustomPictureBackground = loadImage(39, 0)
@@ -1224,16 +1232,8 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
         // screen.CustomWizard.Abilities = []WizardAbility{AbilityAlchemy, AbilityConjurer, AbilityFamous}
         screen.CustomWizard.Books = []wizardBook{
             wizardBook{
-                Magic: LifeMagic,
-                Count: 2,
-            },
-            wizardBook{
-                Magic: DeathMagic,
-                Count: 3,
-            },
-            wizardBook{
                 Magic: SorceryMagic,
-                Count: 5,
+                Count: 11,
             },
         }
 
@@ -1800,6 +1800,34 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *UI {
 
     magicOrder := []MagicType{LifeMagic, DeathMagic, ChaosMagic, NatureMagic, SorceryMagic}
 
+    computeCommon := func(books int) int {
+        if books == 0 {
+            return 0
+        }
+
+        if books < 11 {
+            return books - 1
+        }
+
+        return 0
+    }
+
+    computeUncommon := func(books int) int {
+        if books == 11 {
+            return 2
+        }
+
+        return 0
+    }
+
+    computeRare := func(books int) int {
+        if books == 11 {
+            return 1
+        }
+
+        return 0
+    }
+
     black := color.RGBA{R: 0, G: 0, B: 0, A: 0xff}
     blackPalette := color.Palette{
         color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
@@ -1810,10 +1838,10 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *UI {
         var use color.RGBA
         switch magic {
             case LifeMagic: use = color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}
-            case DeathMagic:
-            case ChaosMagic:
-            case NatureMagic:
-            case SorceryMagic:
+            case DeathMagic: use = color.RGBA{R: 0x80, G: 0x25, B: 0xca, A: 0xff}
+            case ChaosMagic: use = color.RGBA{R: 0xcc, G: 0x16, B: 0x27, A: 0xff}
+            case NatureMagic: use = color.RGBA{R: 0x15, G: 0xa5, B: 0x1b, A: 0xff}
+            case SorceryMagic: use = color.RGBA{R: 0x00, G: 0x60, B: 0xd6, A: 0xff}
         }
 
         return color.Palette{
@@ -1823,13 +1851,12 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *UI {
     }
 
     blackFont := font.MakeOptimizedFontWithPalette(screen.LbxFonts[4], blackPalette)
+    shadowDescriptionFont := font.MakeOptimizedFontWithPalette(screen.LbxFonts[3], blackPalette)
 
     makeUIForMagic := func (magic MagicType) *UI {
-        /*
-        commonMax := 0
-        uncommonMax := 0
-        rareMax := 0
-        */
+        commonMax := computeCommon(screen.CustomWizard.MagicLevel(magic))
+        uncommonMax := computeUncommon(screen.CustomWizard.MagicLevel(magic))
+        rareMax := computeRare(screen.CustomWizard.MagicLevel(magic))
 
         picksLeft := func() int {
             return 2
@@ -1838,6 +1865,7 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *UI {
         var elements []*UIElement
 
         titleFont := font.MakeOptimizedFontWithPalette(screen.LbxFonts[4], getPalette(magic))
+        descriptionFont := font.MakeOptimizedFontWithPalette(screen.LbxFonts[3], getPalette(magic))
 
         // ok button
         elements = append(elements, &UIElement{
@@ -1912,6 +1940,43 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *UI {
 
                 screen.AbilityFontSelected.Print(window, 12, 180, 1, joinAbilities(screen.CustomWizard.Abilities))
                 screen.NameFontBright.PrintCenter(window, 223, 185, 1, fmt.Sprintf("%v picks", picksLeft()))
+
+                descriptionX := float64(167)
+
+                if commonMax > 0 {
+                    y := float64(28)
+
+                    value := fmt.Sprintf("Common: %v", commonMax)
+                    shadowDescriptionFont.Print(window, descriptionX+1, y + 1, 1, value)
+                    descriptionFont.Print(window, descriptionX, y, 1, value)
+
+                    options.GeoM.Reset()
+                    options.GeoM.Translate(descriptionX, y + float64(descriptionFont.Height()) + 1)
+                    window.DrawImage(screen.SpellBackground1, &options)
+                }
+
+                if uncommonMax > 0 {
+                    y := float64(28)
+
+                    value := fmt.Sprintf("Uncommon: %v", uncommonMax)
+                    shadowDescriptionFont.Print(window, descriptionX+1, y+1, 1, value)
+                    descriptionFont.Print(window, descriptionX, y, 1, value)
+
+                    options.GeoM.Reset()
+                    options.GeoM.Translate(descriptionX, y + float64(descriptionFont.Height()) + 1)
+                    window.DrawImage(screen.SpellBackground1, &options)
+                }
+
+                if rareMax > 0 {
+                    y := float64(78)
+                    value := fmt.Sprintf("Rare: %v", rareMax)
+                    shadowDescriptionFont.Print(window, descriptionX+1, y+1, 1, value)
+                    descriptionFont.Print(window, descriptionX, y, 1, value)
+
+                    options.GeoM.Reset()
+                    options.GeoM.Translate(descriptionX, y + float64(descriptionFont.Height()) + 1)
+                    window.DrawImage(screen.SpellBackground1, &options)
+                }
             },
         }
 
