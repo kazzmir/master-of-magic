@@ -34,7 +34,7 @@ type MagicGame struct {
 
 func NewMagicGame() (*MagicGame, error) {
     game := &MagicGame{
-        LbxCache: lbx.MakeLbxCache(),
+        LbxCache: lbx.MakeLbxCache("magic-data"),
         NewGameScreen: MakeNewGameScreen(),
         NewWizardScreen: MakeNewWizardScreen(),
     }

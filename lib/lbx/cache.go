@@ -2,24 +2,33 @@ package lbx
 
 import (
     "os"
+    "strings"
+    "path/filepath"
 )
 
 type LbxCache struct {
     lbxFiles map[string]*LbxFile
+    Base string
 }
 
-func MakeLbxCache() *LbxCache {
+func MakeLbxCache(basedir string) *LbxCache {
     return &LbxCache{
+        Base: basedir,
         lbxFiles: make(map[string]*LbxFile),
     }
 }
 
 func (cache *LbxCache) GetLbxFile(filename string) (*LbxFile, error) {
+    filename = strings.ToUpper(filename)
+
     if lbxFile, ok := cache.lbxFiles[filename]; ok {
         return lbxFile, nil
     }
 
-    file, err := os.Open(filename)
+    full := filepath.Join(cache.Base, filename)
+
+    // FIXME: do this case-insensitive
+    file, err := os.Open(full)
     if err != nil {
         return nil, err
     }

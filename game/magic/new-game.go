@@ -124,7 +124,7 @@ func (newGameScreen *NewGameScreen) Load(cache *lbx.LbxCache) error {
     var outError error = nil
 
     newGameScreen.loaded.Do(func() {
-        fontLbx, err := cache.GetLbxFile("magic-data/FONTS.LBX")
+        fontLbx, err := cache.GetLbxFile("FONTS.LBX")
         if err != nil {
             outError = fmt.Errorf("Unable to read FONTS.LBX: %v", err)
             return
@@ -138,7 +138,7 @@ func (newGameScreen *NewGameScreen) Load(cache *lbx.LbxCache) error {
 
         newGameScreen.Font = font.MakeOptimizedFont(fonts[3])
 
-        newGameLbx, err := cache.GetLbxFile("magic-data/NEWGAME.LBX")
+        newGameLbx, err := cache.GetLbxFile("NEWGAME.LBX")
         if err != nil {
             outError = fmt.Errorf("Unable to load NEWGAME.LBX: %v", err)
             return

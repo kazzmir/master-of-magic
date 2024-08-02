@@ -396,6 +396,7 @@ type NewWizardScreen struct {
     OkNotReady *ebiten.Image
 
     Help lbx.Help
+    HelpImageLoader func(string, int) (*ebiten.Image, error)
     HelpTop *ebiten.Image
     HelpBottom *ebiten.Image
 
@@ -714,7 +715,7 @@ func (screen *NewWizardScreen) Update() {
 }
 
 func (screen *NewWizardScreen) LoadHelp(cache *lbx.LbxCache) error {
-    helpLbx, err := cache.GetLbxFile("magic-data/HELP.LBX")
+    helpLbx, err := cache.GetLbxFile("HELP.LBX")
     if err != nil {
         return err
     }
@@ -722,6 +723,24 @@ func (screen *NewWizardScreen) LoadHelp(cache *lbx.LbxCache) error {
     screen.Help, err = helpLbx.ReadHelp(2)
     if err != nil {
         return err
+    }
+
+    screen.HelpImageLoader = func(lbxName string, index int) (*ebiten.Image, error) {
+        lbxFile, err := cache.GetLbxFile(lbxName)
+        if err != nil {
+            return nil, err
+        }
+
+        images, err := lbxFile.ReadImages(index)
+        if err != nil {
+            return nil, err
+        }
+
+        if len(images) == 0 {
+            return nil, fmt.Errorf("no images found in %s entry %d", lbxName, index)
+        }
+
+        return ebiten.NewImageFromImage(images[0]), nil
     }
 
     scrollTopImages, err := helpLbx.ReadImages(0)
@@ -762,7 +781,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
     var outError error
 
     screen.loaded.Do(func() {
-        fontLbx, err := cache.GetLbxFile("magic-data/FONTS.LBX")
+        fontLbx, err := cache.GetLbxFile("FONTS.LBX")
         if err != nil {
             outError = fmt.Errorf("Unable to read FONTS.LBX: %v", err)
             return
@@ -873,7 +892,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
         screen.NameFont = font.MakeOptimizedFont(fonts[3])
         screen.NameFontBright = font.MakeOptimizedFontWithPalette(fonts[3], pickPalette)
 
-        newGameLbx, err := cache.GetLbxFile("magic-data/NEWGAME.LBX")
+        newGameLbx, err := cache.GetLbxFile("NEWGAME.LBX")
         if err != nil {
             outError = fmt.Errorf("Unable to load NEWGAME.LBX: %v", err)
             return
@@ -898,7 +917,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
             return ebiten.NewImageFromImage(sprites[subIndex])
         }
 
-        wizardsLbx, err := cache.GetLbxFile("magic-data/WIZARDS.LBX")
+        wizardsLbx, err := cache.GetLbxFile("WIZARDS.LBX")
         if err != nil {
             outError = err
             return
@@ -1218,7 +1237,7 @@ func (screen *NewWizardScreen) DrawBooks(window *ebiten.Image, x float64, y floa
     }
 }
 
-func (screen *NewWizardScreen) makeHelpElement(title string, message string) *UIElement {
+func (screen *NewWizardScreen) makeHelpElement(help lbx.HelpEntry) *UIElement {
     infoX := 55
     infoY := 30
     infoWidth := screen.HelpTop.Bounds().Dx()
@@ -1228,16 +1247,39 @@ func (screen *NewWizardScreen) makeHelpElement(title string, message string) *UI
     infoBodyMargin := 3
     maxInfoWidth := infoWidth - infoLeftMargin - infoBodyMargin - 15
 
-    wrapped := screen.HelpFont.CreateWrappedText(float64(maxInfoWidth), 1, message)
+    wrapped := screen.HelpFont.CreateWrappedText(float64(maxInfoWidth), 1, help.Text)
 
-    bottom := float64(infoY) + float64(infoTopMargin) + float64(screen.HelpTitleFont.Height()) + 1 + wrapped.TotalHeight
+    helpTextY := infoY + infoTopMargin
+    titleYAdjust := 0
+
+    var extraImage *ebiten.Image
+    if help.Lbx != "" {
+        use, err := screen.HelpImageLoader(help.Lbx, help.LbxIndex)
+        if err == nil && use != nil {
+            extraImage = use
+        }
+    }
+
+    if extraImage != nil {
+        titleYAdjust = extraImage.Bounds().Dy() / 2 - screen.HelpTitleFont.Height() / 2
+
+        if extraImage.Bounds().Dy() > screen.HelpTitleFont.Height() {
+            helpTextY += extraImage.Bounds().Dy() + 1
+        } else {
+            helpTextY += screen.HelpTitleFont.Height() + 1
+        }
+    } else {
+        helpTextY += screen.HelpTitleFont.Height() + 1
+    }
+
+    bottom := float64(helpTextY) + wrapped.TotalHeight
 
     // only draw as much of the top scroll as there are lines of text
     topImage := screen.HelpTop.SubImage(image.Rect(0, 0, screen.HelpTop.Bounds().Dx(), int(bottom) - infoY)).(*ebiten.Image)
 
     infoElement := &UIElement{
         // Rect: image.Rect(infoX, infoY, infoX + infoWidth, infoY + infoHeight),
-        Rect: image.Rect(0, 0, 320, 200),
+        Rect: image.Rect(0, 0, ScreenWidth, ScreenHeight),
         Draw: func (infoThis *UIElement, window *ebiten.Image){
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(infoX), float64(infoY))
@@ -1251,8 +1293,17 @@ func (screen *NewWizardScreen) makeHelpElement(title string, message string) *UI
             // vector.StrokeRect(window, float32(infoX), float32(infoY), float32(infoWidth), float32(infoHeight), 1, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, true)
             // vector.StrokeRect(window, float32(infoX + infoLeftMargin), float32(infoY + infoTopMargin), float32(maxInfoWidth), float32(screen.HelpTitleFont.Height() + 20 + 1), 1, color.RGBA{R: 0, G: 0xff, B: 0, A: 0xff}, false)
 
-            screen.HelpTitleFont.Print(window, float64(infoX + infoLeftMargin), float64(infoY + infoTopMargin), 1, title)
-            screen.HelpFont.RenderWrapped(window, float64(infoX + infoLeftMargin + infoBodyMargin), float64(infoY + infoTopMargin + screen.HelpTitleFont.Height() + 1), wrapped)
+            titleX := infoX + infoLeftMargin
+
+            if extraImage != nil {
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(titleX), float64(infoY + infoTopMargin))
+                window.DrawImage(extraImage, &options)
+                titleX += extraImage.Bounds().Dx() + 5
+            }
+
+            screen.HelpTitleFont.Print(window, float64(titleX), float64(infoY + infoTopMargin + titleYAdjust), 1, help.Headline)
+            screen.HelpFont.RenderWrapped(window, float64(infoX + infoLeftMargin + infoBodyMargin), float64(helpTextY), wrapped)
         },
         LeftClick: func(infoThis *UIElement){
             screen.UI.RemoveElement(infoThis)
@@ -1398,7 +1449,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
                         return
                     }
 
-                    screen.UI.AddElement(screen.makeHelpElement(helpEntries[0].Headline, helpEntries[0].Text))
+                    screen.UI.AddElement(screen.makeHelpElement(helpEntries[0]))
                 },
                 Inside: func(this *UIElement){
                     // if the user hovers over this element, then draw partially transparent books
@@ -1521,7 +1572,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
                     helpEntries = []lbx.HelpEntry{screen.Help.GetRawEntry(702)}
                 }
 
-                screen.UI.AddElement(screen.makeHelpElement(helpEntries[0].Headline, helpEntries[0].Text))
+                screen.UI.AddElement(screen.makeHelpElement(helpEntries[0]))
             },
             Draw: func(this *UIElement, window *ebiten.Image){
                 font := screen.AbilityFont
@@ -1540,8 +1591,17 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
         })
     }
 
+    // ok button
     elements = append(elements, &UIElement{
         Rect: image.Rect(252, 182, 252 + screen.OkReady.Bounds().Dx(), 182 + screen.OkReady.Bounds().Dy()),
+        RightClick: func(this *UIElement){
+            helpEntries := screen.Help.GetEntriesByName("ok button")
+            if helpEntries == nil {
+                return
+            }
+
+            screen.UI.AddElement(screen.makeHelpElement(helpEntries[0]))
+        },
         Draw: func(this *UIElement, window *ebiten.Image){
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(252, 182)
