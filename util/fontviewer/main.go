@@ -3,7 +3,7 @@ package main
 import (
     "log"
     "os"
-    _ "fmt"
+    "fmt"
     // "sync"
     // "math"
     // "bytes"
@@ -89,9 +89,12 @@ func (viewer *Viewer) Update() error {
                 }
 
                 viewer.Optimized = font.MakeOptimizedFont(viewer.Fonts[viewer.FontIndex])
+
+                fmt.Printf("Font: %v\n", viewer.FontIndex)
             case ebiten.KeyRight:
                 viewer.FontIndex = (viewer.FontIndex + 1) % len(viewer.Fonts)
                 viewer.Optimized = font.MakeOptimizedFont(viewer.Fonts[viewer.FontIndex])
+                fmt.Printf("Font: %v\n", viewer.FontIndex)
         }
     }
 

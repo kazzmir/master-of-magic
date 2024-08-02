@@ -27,6 +27,18 @@ const (
     ChaosMagic
 )
 
+func (magic MagicType) String() string {
+    switch magic {
+        case LifeMagic: return "Life"
+        case SorceryMagic: return "Sorcery"
+        case NatureMagic: return "Nature"
+        case DeathMagic: return "Death"
+        case ChaosMagic: return "Chaos"
+    }
+
+    return ""
+}
+
 const MaxPicks = 11
 
 /* the number of books a wizard has of a specific magic type */
@@ -215,6 +227,7 @@ const (
     NewWizardScreenStateCustomName
     NewWizardScreenStateCustomAbility
     NewWizardScreenStateCustomBooks
+    NewWizardScreenStateSelectSpells
 )
 
 type wizardCustom struct {
@@ -404,6 +417,7 @@ type NewWizardScreen struct {
     CustomPictureBackground *ebiten.Image
     CustomWizardBooks *ebiten.Image
     Slots *ebiten.Image
+    LbxFonts []*lbx.Font
     Font *font.Font
     AbilityFont *font.Font
     AbilityFontSelected *font.Font
@@ -412,10 +426,12 @@ type NewWizardScreen struct {
     HelpTitleFont *font.Font
     ErrorFont *font.Font
     CheckMark *ebiten.Image
+    WindyBorder *ebiten.Image
     ErrorTop *ebiten.Image
     ErrorBottom *ebiten.Image
     NameFont *font.Font
     NameFontBright *font.Font
+    PickOkSlot *ebiten.Image
     SelectFont *font.Font
     loaded sync.Once
     WizardSlots []wizardSlot
@@ -878,6 +894,8 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
             color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
         }
 
+        screen.LbxFonts = fonts
+
         screen.Font = font.MakeOptimizedFont(fonts[4])
 
         // FIXME: load with a yellowish palette
@@ -993,6 +1011,10 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
 
         screen.OkReady = loadImage(42, 0)
         screen.OkNotReady = loadImage(43, 0)
+
+        screen.PickOkSlot = loadImage(51, 0)
+
+        screen.WindyBorder = loadImage(47, 0)
 
         screen.CustomPictureBackground = loadImage(39, 0)
         screen.CustomWizardBooks = loadImage(41, 0)
@@ -1202,7 +1224,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
         // screen.CustomWizard.Abilities = []WizardAbility{AbilityAlchemy, AbilityConjurer, AbilityFamous}
         screen.CustomWizard.Books = []wizardBook{
             wizardBook{
-                Magic: NatureMagic,
+                Magic: LifeMagic,
                 Count: 2,
             },
             wizardBook{
@@ -1211,7 +1233,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
             },
             wizardBook{
                 Magic: SorceryMagic,
-                Count: 2,
+                Count: 5,
             },
         }
 
@@ -1219,6 +1241,8 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
             screen.UI = screen.MakeSelectWizardUI()
         } else if screen.State == NewWizardScreenStateCustomBooks {
             screen.UI = screen.MakeCustomWizardBooksUI()
+        } else if screen.State == NewWizardScreenStateSelectSpells {
+            screen.UI = screen.MakeSelectSpellsUI()
         }
     })
 
@@ -1698,7 +1722,8 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
         Rect: image.Rect(252, 182, 252 + screen.OkReady.Bounds().Dx(), 182 + screen.OkReady.Bounds().Dy()),
         LeftClick: func(this *UIElement){
             if picksLeft() == 0 {
-                // set state to pick spells
+                screen.State = NewWizardScreenStateSelectSpells
+                screen.UI = screen.MakeSelectSpellsUI()
             } else {
                 screen.UI.AddElement(screen.makeErrorElement("You need to make all your picks before you can continue"))
             }
@@ -1746,7 +1771,6 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
             })
 
             screen.AbilityFontSelected.Print(window, 12, 180, 1, joinAbilities(screen.CustomWizard.Abilities))
-
             screen.NameFontBright.PrintCenter(window, 223, 185, 1, fmt.Sprintf("%v picks", picksLeft()))
         },
     }
@@ -1755,6 +1779,160 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
 
     return ui
 
+}
+
+func (screen *NewWizardScreen) MakeSelectSpellsUI() *UI {
+
+    // for each book of magic the user has create a spell ui that allows the user to select
+    // some set of spells, so if the user has 4 nature and 4 chaos, then the user would see
+    // 2 separate UI's, one for nature and one for chaos
+
+    // 2 picks = 1 common
+    // 3 picks = 2 common
+    // 4 picks = 3 common
+    // 5 picks = 4 common
+    // 6 picks = 5 common
+    // 7 picks = 6 common
+    // 8 picks = 7 common
+    // 9 picks = 8 common
+    // 10 picks = 9 common
+    // 11 picks = 2 uncommon, 1 rare
+
+    magicOrder := []MagicType{LifeMagic, DeathMagic, ChaosMagic, NatureMagic, SorceryMagic}
+
+    black := color.RGBA{R: 0, G: 0, B: 0, A: 0xff}
+    blackPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        black, black, black, black, black,
+    }
+
+    getPalette := func(magic MagicType) color.Palette {
+        var use color.RGBA
+        switch magic {
+            case LifeMagic: use = color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}
+            case DeathMagic:
+            case ChaosMagic:
+            case NatureMagic:
+            case SorceryMagic:
+        }
+
+        return color.Palette{
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            use, use, use, use, use,
+        }
+    }
+
+    blackFont := font.MakeOptimizedFontWithPalette(screen.LbxFonts[4], blackPalette)
+
+    makeUIForMagic := func (magic MagicType) *UI {
+        /*
+        commonMax := 0
+        uncommonMax := 0
+        rareMax := 0
+        */
+
+        picksLeft := func() int {
+            return 2
+        }
+
+        var elements []*UIElement
+
+        titleFont := font.MakeOptimizedFontWithPalette(screen.LbxFonts[4], getPalette(magic))
+
+        // ok button
+        elements = append(elements, &UIElement{
+            Rect: image.Rect(252, 182, 252 + screen.OkReady.Bounds().Dx(), 182 + screen.OkReady.Bounds().Dy()),
+            LeftClick: func(this *UIElement){
+                /*
+                if picksLeft() == 0 {
+                    screen.State = NewWizardScreenStateSelectSpells
+                    screen.UI = screen.MakeSelectSpellsUI()
+                } else {
+                    screen.UI.AddElement(screen.makeErrorElement("You need to make all your picks before you can continue"))
+                }
+                */
+            },
+            RightClick: func(this *UIElement){
+                /*
+                helpEntries := screen.Help.GetEntriesByName("ok button")
+                if helpEntries == nil {
+                    return
+                }
+
+                screen.UI.AddElement(screen.makeHelpElement(helpEntries[0]))
+                */
+            },
+            Draw: func(this *UIElement, window *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(252, 182)
+                if picksLeft() == 0 {
+                    window.DrawImage(screen.OkReady, &options)
+                } else {
+                    window.DrawImage(screen.OkNotReady, &options)
+                }
+            },
+        })
+
+        ui := &UI{
+            Draw: func(ui *UI, window *ebiten.Image){
+                const portraitX = 24
+                const portraitY = 10
+
+                const nameX = 75
+                const nameY = 120
+
+                var options ebiten.DrawImageOptions
+                window.DrawImage(screen.Background, &options)
+
+                options.GeoM.Translate(portraitX, portraitY)
+                window.DrawImage(screen.CustomWizard.Portrait, &options)
+                screen.Font.PrintCenter(window, nameX, nameY, 1, screen.CustomWizard.Name)
+
+                screen.DrawBooks(window, 37, 135, screen.CustomWizard.Books)
+
+                options.GeoM.Reset()
+                options.GeoM.Translate(196, 180)
+                window.DrawImage(screen.PickOkSlot, &options)
+
+                ui.IterateElementsByLayer(func (element *UIElement){
+                    if element.Draw != nil {
+                        element.Draw(element, window)
+                    }
+                })
+
+                titleX := 240
+                titleY := 5
+
+                blackFont.PrintCenter(window, float64(titleX + 1), float64(titleY + 1), 1, fmt.Sprintf("Select %v Spells", magic.String()))
+                titleFont.PrintCenter(window, float64(titleX), float64(titleY), 1, fmt.Sprintf("Select %v Spells", magic.String()))
+
+                options.GeoM.Reset()
+                options.GeoM.Translate(180, 18)
+                window.DrawImage(screen.WindyBorder, &options)
+
+                screen.AbilityFontSelected.Print(window, 12, 180, 1, joinAbilities(screen.CustomWizard.Abilities))
+                screen.NameFontBright.PrintCenter(window, 223, 185, 1, fmt.Sprintf("%v picks", picksLeft()))
+            },
+        }
+
+        ui.SetElementsFromArray(elements)
+
+        return ui
+    }
+
+    for _, magic := range magicOrder {
+        if screen.CustomWizard.MagicLevel(magic) > 0 {
+            return makeUIForMagic(magic)
+        }
+    }
+
+    // player doesn't have any magic, just go directly to race ui
+    return screen.MakeSelectRaceUI()
+}
+
+func (screen *NewWizardScreen) MakeSelectRaceUI() *UI {
+    // TODO
+    return nil
 }
 
 func (screen *NewWizardScreen) Draw(window *ebiten.Image) {
@@ -1777,6 +1955,6 @@ func MakeNewWizardScreen() *NewWizardScreen {
     return &NewWizardScreen{
         CurrentWizard: 0,
         BooksOrder: randomizeBookOrder(12),
-        State: NewWizardScreenStateCustomBooks,
+        State: NewWizardScreenStateSelectSpells,
     }
 }
