@@ -387,9 +387,13 @@ type NewWizardScreen struct {
     HelpTitleFont *font.Font
     CheckMark *ebiten.Image
     NameFont *font.Font
+    NameFontBright *font.Font
     SelectFont *font.Font
     loaded sync.Once
     WizardSlots []wizardSlot
+
+    OkReady *ebiten.Image
+    OkNotReady *ebiten.Image
 
     Help lbx.Help
     HelpTop *ebiten.Image
@@ -803,6 +807,18 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
             color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
         }
 
+        pickPalette := color.Palette{
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            color.RGBA{R: 0xc6, G: 0x9d, B: 0x65, A: 0xff},
+            color.RGBA{R: 0xc6, G: 0x9d, B: 0x65, A: 0xff},
+            color.RGBA{R: 0xc6, G: 0x9d, B: 0x65, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        }
+
         transparentPalette := color.Palette{
             color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
             color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
@@ -855,6 +871,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
 
         // FIXME: use a monochrome color scheme, light-brownish
         screen.NameFont = font.MakeOptimizedFont(fonts[3])
+        screen.NameFontBright = font.MakeOptimizedFontWithPalette(fonts[3], pickPalette)
 
         newGameLbx, err := cache.GetLbxFile("magic-data/NEWGAME.LBX")
         if err != nil {
@@ -909,6 +926,9 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
         screen.Background = loadImage(0, 0)
         screen.Slots = loadImage(8, 0)
         screen.NameBox = loadImage(40, 0)
+
+        screen.OkReady = loadImage(42, 0)
+        screen.OkNotReady = loadImage(43, 0)
 
         screen.CustomPictureBackground = loadImage(39, 0)
         screen.CustomWizardBooks = loadImage(41, 0)
@@ -1198,6 +1218,51 @@ func (screen *NewWizardScreen) DrawBooks(window *ebiten.Image, x float64, y floa
     }
 }
 
+func (screen *NewWizardScreen) makeHelpElement(title string, message string) *UIElement {
+    infoX := 55
+    infoY := 30
+    infoWidth := screen.HelpTop.Bounds().Dx()
+    // infoHeight := screen.HelpTop.Bounds().Dy()
+    infoLeftMargin := 18
+    infoTopMargin := 26
+    infoBodyMargin := 3
+    maxInfoWidth := infoWidth - infoLeftMargin - infoBodyMargin - 15
+
+    wrapped := screen.HelpFont.CreateWrappedText(float64(maxInfoWidth), 1, message)
+
+    bottom := float64(infoY) + float64(infoTopMargin) + float64(screen.HelpTitleFont.Height()) + 1 + wrapped.TotalHeight
+
+    // only draw as much of the top scroll as there are lines of text
+    topImage := screen.HelpTop.SubImage(image.Rect(0, 0, screen.HelpTop.Bounds().Dx(), int(bottom) - infoY)).(*ebiten.Image)
+
+    infoElement := &UIElement{
+        // Rect: image.Rect(infoX, infoY, infoX + infoWidth, infoY + infoHeight),
+        Rect: image.Rect(0, 0, 320, 200),
+        Draw: func (infoThis *UIElement, window *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(infoX), float64(infoY))
+            window.DrawImage(topImage, &options)
+
+            options.GeoM.Reset()
+            options.GeoM.Translate(float64(infoX), float64(bottom))
+            window.DrawImage(screen.HelpBottom, &options)
+
+            // for debugging
+            // vector.StrokeRect(window, float32(infoX), float32(infoY), float32(infoWidth), float32(infoHeight), 1, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, true)
+            // vector.StrokeRect(window, float32(infoX + infoLeftMargin), float32(infoY + infoTopMargin), float32(maxInfoWidth), float32(screen.HelpTitleFont.Height() + 20 + 1), 1, color.RGBA{R: 0, G: 0xff, B: 0, A: 0xff}, false)
+
+            screen.HelpTitleFont.Print(window, float64(infoX + infoLeftMargin), float64(infoY + infoTopMargin), 1, title)
+            screen.HelpFont.RenderWrapped(window, float64(infoX + infoLeftMargin + infoBodyMargin), float64(infoY + infoTopMargin + screen.HelpTitleFont.Height() + 1), wrapped)
+        },
+        LeftClick: func(infoThis *UIElement){
+            screen.UI.RemoveElement(infoThis)
+        },
+        Layer: 1,
+    }
+
+    return infoElement
+}
+
 func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
 
     picksLeft := func() int {
@@ -1424,51 +1489,6 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
         return ability.SatisifiedDependencies(&screen.CustomWizard)
     }
 
-    makeInfoElement := func(title string, message string) *UIElement {
-        infoX := 55
-        infoY := 30
-        infoWidth := screen.HelpTop.Bounds().Dx()
-        // infoHeight := screen.HelpTop.Bounds().Dy()
-        infoLeftMargin := 18
-        infoTopMargin := 26
-        infoBodyMargin := 3
-        maxInfoWidth := infoWidth - infoLeftMargin - infoBodyMargin - 15
-
-        wrapped := screen.HelpFont.CreateWrappedText(float64(maxInfoWidth), 1, message)
-
-        bottom := float64(infoY) + float64(infoTopMargin) + float64(screen.HelpTitleFont.Height()) + 1 + wrapped.TotalHeight
-
-        // only draw as much of the top scroll as there are lines of text
-        topImage := screen.HelpTop.SubImage(image.Rect(0, 0, screen.HelpTop.Bounds().Dx(), int(bottom) - infoY)).(*ebiten.Image)
-
-        infoElement := &UIElement{
-            // Rect: image.Rect(infoX, infoY, infoX + infoWidth, infoY + infoHeight),
-            Rect: image.Rect(0, 0, 320, 200),
-            Draw: func (infoThis *UIElement, window *ebiten.Image){
-                var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(infoX), float64(infoY))
-                window.DrawImage(topImage, &options)
-
-                options.GeoM.Reset()
-                options.GeoM.Translate(float64(infoX), float64(bottom))
-                window.DrawImage(screen.HelpBottom, &options)
-
-                // for debugging
-                // vector.StrokeRect(window, float32(infoX), float32(infoY), float32(infoWidth), float32(infoHeight), 1, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, true)
-                // vector.StrokeRect(window, float32(infoX + infoLeftMargin), float32(infoY + infoTopMargin), float32(maxInfoWidth), float32(screen.HelpTitleFont.Height() + 20 + 1), 1, color.RGBA{R: 0, G: 0xff, B: 0, A: 0xff}, false)
-
-                screen.HelpTitleFont.Print(window, float64(infoX + infoLeftMargin), float64(infoY + infoTopMargin), 1, title)
-                screen.HelpFont.RenderWrapped(window, float64(infoX + infoLeftMargin + infoBodyMargin), float64(infoY + infoTopMargin + screen.HelpTitleFont.Height() + 1), wrapped)
-            },
-            LeftClick: func(infoThis *UIElement){
-                screen.UI.RemoveElement(infoThis)
-            },
-            Layer: 1,
-        }
-
-        return infoElement
-    }
-
     for ability := range produceAbilityPositions() {
         elements = append(elements, &UIElement{
             Rect: image.Rect(int(ability.X), int(ability.Y), int(ability.X) + ability.Length, int(ability.Y) + screen.AbilityFont.Height()),
@@ -1487,7 +1507,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
                     helpEntries = []lbx.HelpEntry{screen.Help.GetRawEntry(702)}
                 }
 
-                screen.UI.AddElement(makeInfoElement(helpEntries[0].Headline, helpEntries[0].Text))
+                screen.UI.AddElement(screen.makeHelpElement(helpEntries[0].Headline, helpEntries[0].Text))
             },
             Draw: func(this *UIElement, window *ebiten.Image){
                 font := screen.AbilityFont
@@ -1505,6 +1525,19 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
             },
         })
     }
+
+    elements = append(elements, &UIElement{
+        Rect: image.Rect(252, 182, 252 + screen.OkReady.Bounds().Dx(), 182 + screen.OkReady.Bounds().Dy()),
+        Draw: func(this *UIElement, window *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(252, 182)
+            if picksLeft() == 0 {
+                window.DrawImage(screen.OkReady, &options)
+            } else {
+                window.DrawImage(screen.OkNotReady, &options)
+            }
+        },
+    })
 
     ui := &UI{
         Draw: func(ui *UI, window *ebiten.Image){
@@ -1531,7 +1564,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
 
             screen.AbilityFontSelected.Print(window, 12, 180, 1, joinAbilities(screen.CustomWizard.Abilities))
 
-            screen.NameFont.PrintCenter(window, 223, 185, 1, fmt.Sprintf("%v picks", picksLeft()))
+            screen.NameFontBright.PrintCenter(window, 223, 185, 1, fmt.Sprintf("%v picks", picksLeft()))
         },
     }
 
