@@ -1287,6 +1287,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
 
     type bookData struct {
         Kind MagicType
+        Help string
         Image *ebiten.Image
         Y int
     }
@@ -1294,26 +1295,31 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
     books := []bookData{
         bookData{
             Kind: LifeMagic,
+            Help: "Life Spells",
             Image: screen.LifeBooks[0],
             Y: 49,
         },
         bookData{
             Kind: DeathMagic,
+            Help: "Death Spells",
             Image: screen.DeathBooks[0],
             Y: 75,
         },
         bookData{
             Kind: ChaosMagic,
+            Help: "Chaos Spells",
             Image: screen.ChaosBooks[0],
             Y: 101,
         },
         bookData{
             Kind: NatureMagic,
+            Help: "Nature Spells",
             Image: screen.NatureBooks[0],
             Y: 127,
         },
         bookData{
             Kind: SorceryMagic,
+            Help: "Sorcery Spells",
             Image: screen.SorceryBooks[0],
             Y: 153,
         },
@@ -1385,6 +1391,14 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
                     if picksLeft() < 0 {
                         screen.CustomWizard.SetMagicLevel(bookMagic, screen.CustomWizard.MagicLevel(bookMagic) + picksLeft())
                     }
+                },
+                RightClick: func(this *UIElement){
+                    helpEntries := screen.Help.GetEntriesByName(book.Help)
+                    if helpEntries == nil {
+                        return
+                    }
+
+                    screen.UI.AddElement(screen.makeHelpElement(helpEntries[0].Headline, helpEntries[0].Text))
                 },
                 Inside: func(this *UIElement){
                     // if the user hovers over this element, then draw partially transparent books
