@@ -140,6 +140,7 @@ func (font *Font) MeasureTextWidth(text string, scale float64) float64 {
         }
 
         glyph := font.Glyphs[glyphIndex]
+        // FIXME: technically we don't need to add the horizontal spacing for the last character
         width += glyph.Width + font.internalFont.HorizontalSpacing
     }
 

@@ -70,6 +70,31 @@ const (
         AbilityNone
 )
 
+func (ability WizardAbility) DependencyExplanation() string {
+    switch ability {
+        case AbilityAlchemy: return ""
+        case AbilityWarlord: return ""
+        case AbilityChanneler: return ""
+        case AbilityArchmage: return "To select Archmage you need: 4 picks in any Realm of Magic"
+        case AbilityArtificer: return ""
+        case AbilityConjurer: return ""
+        case AbilitySageMaster: return "To select Sage Master you need: 1 pick in any 2 Realms of Magic"
+        case AbilityMyrran: return ""
+        case AbilityDivinePower: return "To select Divine Power you need: 4 picks in Life Magic"
+        case AbilityFamous: return ""
+        case AbilityRunemaster: return "To select Runemaster you need: 2 picks in any 3 Realms of Magic"
+        case AbilityCharismatic: return ""
+        case AbilityChaosMastery: return "To select Chaos Mastery you need: 4 picks in Chaos Magic"
+        case AbilityNatureMastery: return "To select Nature Mastery you need: 4 picks in Nature Magic"
+        case AbilitySorceryMastery: return "To select Sorcery Mastery you need: 4 picks in Sorcery Magic"
+        case AbilityInfernalPower: return "To select Infernal Power you need: 4 picks in Death Magic"
+        case AbilityManaFocusing: return "To select Mana Focusing you need: 4 picks in any Realm of Magic"
+        case AbilityNodeMastery: return "To select Node Mastery you need: 1 pick in Chaos Magic, 1 pick in Nature Magic, 1 pick in Sorcery Magic"
+        case AbilityNone: return ""
+        default: return ""
+    }
+}
+
 // some abilities can only be selected if other properties of the wizard are set
 func (ability WizardAbility) SatisifiedDependencies(wizard *wizardCustom) bool {
     switch ability {
@@ -99,10 +124,10 @@ func (ability WizardAbility) SatisifiedDependencies(wizard *wizardCustom) bool {
         case AbilityDivinePower: return wizard.MagicLevel(LifeMagic) >= 4
         case AbilityFamous: return true
         case AbilityRunemaster:
-            // need at least 3 books of different magic types
+            // need at least 3 books of different magic types with 2 picks per type
             count := 0
             for _, book := range wizard.Books {
-                if book.Count > 0 {
+                if book.Count >= 2 {
                     count += 1
                 }
             }
@@ -385,7 +410,10 @@ type NewWizardScreen struct {
     AbilityFontAvailable *font.Font
     HelpFont *font.Font
     HelpTitleFont *font.Font
+    ErrorFont *font.Font
     CheckMark *ebiten.Image
+    ErrorTop *ebiten.Image
+    ErrorBottom *ebiten.Image
     NameFont *font.Font
     NameFontBright *font.Font
     SelectFont *font.Font
@@ -892,6 +920,20 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
         screen.NameFont = font.MakeOptimizedFont(fonts[3])
         screen.NameFontBright = font.MakeOptimizedFontWithPalette(fonts[3], pickPalette)
 
+        // FIXME: this should be a fade from bright yellow to dark yellow/orange
+        yellowFade := color.Palette{
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            color.RGBA{R: 0xb2, G: 0x8c, B: 0x05, A: 0xff},
+            color.RGBA{R: 0xc9, G: 0xa1, B: 0x26, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xd3, B: 0x5b, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xe8, B: 0x6f, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        }
+
+        screen.ErrorFont = font.MakeOptimizedFontWithPalette(fonts[4], yellowFade)
+
         newGameLbx, err := cache.GetLbxFile("NEWGAME.LBX")
         if err != nil {
             outError = fmt.Errorf("Unable to load NEWGAME.LBX: %v", err)
@@ -941,6 +983,9 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
 
             return ebiten.NewImageFromImage(sprites[0])
         }
+
+        screen.ErrorTop = loadImage(44, 0)
+        screen.ErrorBottom = loadImage(45, 0)
 
         screen.Background = loadImage(0, 0)
         screen.Slots = loadImage(8, 0)
@@ -1237,6 +1282,44 @@ func (screen *NewWizardScreen) DrawBooks(window *ebiten.Image, x float64, y floa
     }
 }
 
+func (screen *NewWizardScreen) makeErrorElement(message string) *UIElement {
+    errorX := 67
+    errorY := 73
+
+    errorMargin := 15
+    errorTopMargin := 10
+
+    maxWidth := screen.ErrorTop.Bounds().Dx() - errorMargin * 2
+
+    // FIXME: each line of text should be centered. maybe just RenderWrapped needs an extra parameter
+    wrapped := screen.ErrorFont.CreateWrappedText(float64(maxWidth), 1, message)
+
+    bottom := float64(errorY + errorTopMargin) + wrapped.TotalHeight
+
+    topDraw := screen.ErrorTop.SubImage(image.Rect(0, 0, screen.ErrorTop.Bounds().Dx(), int(bottom) - errorY)).(*ebiten.Image)
+
+    element := &UIElement{
+        Rect: image.Rect(0, 0, ScreenWidth, ScreenHeight),
+        Layer: 1,
+        LeftClick: func(this *UIElement){
+            screen.UI.RemoveElement(this)
+        },
+        Draw: func(this *UIElement, window *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(errorX), float64(errorY))
+            window.DrawImage(topDraw, &options)
+
+            screen.ErrorFont.RenderWrapped(window, float64(errorX + errorMargin), float64(errorY + errorTopMargin), wrapped)
+
+            options.GeoM.Reset()
+            options.GeoM.Translate(float64(errorX), float64(bottom))
+            window.DrawImage(screen.ErrorBottom, &options)
+        },
+    }
+
+    return element
+}
+
 func (screen *NewWizardScreen) makeHelpElement(help lbx.HelpEntry) *UIElement {
     infoX := 55
     infoY := 30
@@ -1430,17 +1513,24 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
 
                     // user cannot hold both life and death magic
                     if bookMagic == LifeMagic && screen.CustomWizard.MagicLevel(DeathMagic) > 0 {
+                        screen.UI.AddElement(screen.makeErrorElement("You can not select both Life and Death magic"))
                         return
                     }
 
                     if bookMagic == DeathMagic && screen.CustomWizard.MagicLevel(LifeMagic) > 0 {
+                        screen.UI.AddElement(screen.makeErrorElement("You can not select both Life and Death magic"))
                         return
                     }
 
-                    // current := screen.CustomWizard.MagicLevel(bookMagic)
-                    screen.CustomWizard.SetMagicLevel(bookMagic, level+1)
-                    if picksLeft() < 0 {
-                        screen.CustomWizard.SetMagicLevel(bookMagic, screen.CustomWizard.MagicLevel(bookMagic) + picksLeft())
+                    if level + 1 <= screen.CustomWizard.MagicLevel(bookMagic) {
+                        screen.CustomWizard.SetMagicLevel(bookMagic, level+1)
+                    } else if picksLeft() == 0 {
+                        screen.UI.AddElement(screen.makeErrorElement("You have already made all your picks"))
+                    } else {
+                        screen.CustomWizard.SetMagicLevel(bookMagic, level+1)
+                        if picksLeft() < 0 {
+                            screen.CustomWizard.SetMagicLevel(bookMagic, screen.CustomWizard.MagicLevel(bookMagic) + picksLeft())
+                        }
                     }
                 },
                 RightClick: func(this *UIElement){
@@ -1558,7 +1648,19 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
         elements = append(elements, &UIElement{
             Rect: image.Rect(int(ability.X), int(ability.Y), int(ability.X) + ability.Length, int(ability.Y) + screen.AbilityFont.Height()),
             LeftClick: func(this *UIElement){
-                screen.CustomWizard.ToggleAbility(ability.Ability, picksLeft())
+                if screen.CustomWizard.AbilityEnabled(ability.Ability) {
+                    screen.CustomWizard.ToggleAbility(ability.Ability, picksLeft())
+                } else if isAbilityAvailable(ability.Ability) {
+                    screen.CustomWizard.ToggleAbility(ability.Ability, picksLeft())
+                } else if picksLeft() == 0 {
+                    screen.UI.AddElement(screen.makeErrorElement("You have already made all your picks"))
+                } else {
+                    if ability.Ability.SatisifiedDependencies(&screen.CustomWizard) {
+                        screen.UI.AddElement(screen.makeErrorElement(fmt.Sprintf("You don't have enough picks left to make this selection. You need %v picks", 3 - picksLeft())))
+                    } else {
+                        screen.UI.AddElement(screen.makeErrorElement(ability.Ability.DependencyExplanation()))
+                    }
+                }
             },
             RightClick: func(this *UIElement){
 
@@ -1594,6 +1696,13 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
     // ok button
     elements = append(elements, &UIElement{
         Rect: image.Rect(252, 182, 252 + screen.OkReady.Bounds().Dx(), 182 + screen.OkReady.Bounds().Dy()),
+        LeftClick: func(this *UIElement){
+            if picksLeft() == 0 {
+                // set state to pick spells
+            } else {
+                screen.UI.AddElement(screen.makeErrorElement("You need to make all your picks before you can continue"))
+            }
+        },
         RightClick: func(this *UIElement){
             helpEntries := screen.Help.GetEntriesByName("ok button")
             if helpEntries == nil {
