@@ -1,5 +1,9 @@
 package lbx
 
+import (
+    "math/rand"
+)
+
 type Spell struct {
     Name string
     AiGroup int
@@ -71,4 +75,40 @@ type Spells struct {
 
 func (spells *Spells) AddSpell(spell Spell) {
     spells.Spells = append(spells.Spells, spell)
+}
+
+func (spells Spells) GetSpellsByMagic(magic SpellMagic) Spells {
+    var out []Spell
+
+    for _, spell := range spells.Spells {
+        if spell.Magic == magic {
+            out = append(out, spell)
+        }
+    }
+
+    return SpellsFromArray(out)
+}
+
+func (spells Spells) GetSpellsByRarity(rarity SpellRarity) Spells {
+    var out []Spell
+
+    for _, spell := range spells.Spells {
+        if spell.Rarity == rarity {
+            out = append(out, spell)
+        }
+    }
+
+    return SpellsFromArray(out)
+}
+
+func (spells *Spells) ShuffleSpells(){
+    rand.Shuffle(len(spells.Spells), func(i, j int) {
+        spells.Spells[i], spells.Spells[j] = spells.Spells[j], spells.Spells[i]
+    })
+}
+
+func SpellsFromArray(spells []Spell) Spells {
+    return Spells{
+        Spells: spells,
+    }
 }

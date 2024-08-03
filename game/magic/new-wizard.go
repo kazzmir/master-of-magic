@@ -440,6 +440,8 @@ type NewWizardScreen struct {
     SpellBackground2 *ebiten.Image
     SpellBackground3 *ebiten.Image
 
+    Spells lbx.Spells
+
     OkReady *ebiten.Image
     OkNotReady *ebiten.Image
 
@@ -847,6 +849,18 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
             return
         }
 
+        spellsLbx, err := cache.GetLbxFile("SPELLDAT.LBX")
+        if err != nil {
+            outError = fmt.Errorf("Unable to read SPELLDAT.LBX: %v", err)
+            return
+        }
+
+        screen.Spells, err = spellsLbx.ReadSpells(0)
+        if err != nil {
+            outError = fmt.Errorf("Unable to read spells from SPELLDAT.LBX: %v", err)
+            return
+        }
+
         // FIXME: this is a fudged palette to look like the original, but its probably slightly wrong
         brightYellowPalette := color.Palette{
             color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
@@ -1232,8 +1246,8 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
         // screen.CustomWizard.Abilities = []WizardAbility{AbilityAlchemy, AbilityConjurer, AbilityFamous}
         screen.CustomWizard.Books = []wizardBook{
             wizardBook{
-                Magic: SorceryMagic,
-                Count: 11,
+                Magic: ChaosMagic,
+                Count: 10,
             },
         }
 
@@ -1853,10 +1867,28 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *UI {
     blackFont := font.MakeOptimizedFontWithPalette(screen.LbxFonts[4], blackPalette)
     shadowDescriptionFont := font.MakeOptimizedFontWithPalette(screen.LbxFonts[3], blackPalette)
 
+    toSpellMagic := func(magic MagicType) lbx.SpellMagic {
+        switch magic {
+            case LifeMagic: return lbx.SpellMagicLife
+            case DeathMagic: return lbx.SpellMagicDeath
+            case ChaosMagic: return lbx.SpellMagicChaos
+            case NatureMagic: return lbx.SpellMagicNature
+            case SorceryMagic: return lbx.SpellMagicSorcery
+        }
+
+        return lbx.SpellMagicNone
+    }
+
+    chooseSpells := func(magic MagicType, rarity lbx.SpellRarity) lbx.Spells {
+        return screen.Spells.GetSpellsByMagic(toSpellMagic(magic)).GetSpellsByRarity(rarity)
+    }
+
     makeUIForMagic := func (magic MagicType) *UI {
         commonMax := computeCommon(screen.CustomWizard.MagicLevel(magic))
         uncommonMax := computeUncommon(screen.CustomWizard.MagicLevel(magic))
         rareMax := computeRare(screen.CustomWizard.MagicLevel(magic))
+
+        commonSpells := chooseSpells(magic, lbx.SpellRarityCommon)
 
         picksLeft := func() int {
             return 2
@@ -1950,9 +1982,18 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *UI {
                     shadowDescriptionFont.Print(window, descriptionX+1, y + 1, 1, value)
                     descriptionFont.Print(window, descriptionX, y, 1, value)
 
+                    boxY := y + float64(descriptionFont.Height()) + 1
+
                     options.GeoM.Reset()
-                    options.GeoM.Translate(descriptionX, y + float64(descriptionFont.Height()) + 1)
+                    options.GeoM.Translate(descriptionX, boxY)
                     window.DrawImage(screen.SpellBackground1, &options)
+
+                    for i, spell := range commonSpells.Spells {
+                        strX := descriptionX + 10 + float64((i/5) * 75)
+                        strY := boxY + 1 + float64((i%5) * (screen.AbilityFontAvailable.Height() + 1))
+                        screen.AbilityFontAvailable.Print(window, strX, strY, 1, spell.Name)
+                    }
+
                 }
 
                 if uncommonMax > 0 {
