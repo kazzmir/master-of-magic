@@ -1247,7 +1247,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
         screen.CustomWizard.Books = []wizardBook{
             wizardBook{
                 Magic: ChaosMagic,
-                Count: 10,
+                Count: 11,
             },
         }
 
@@ -1889,6 +1889,8 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *UI {
         rareMax := computeRare(screen.CustomWizard.MagicLevel(magic))
 
         commonSpells := chooseSpells(magic, lbx.SpellRarityCommon)
+        uncommonSpells := chooseSpells(magic, lbx.SpellRarityUncommon)
+        rareSpells := chooseSpells(magic, lbx.SpellRarityRare)
 
         picksLeft := func() int {
             return 2
@@ -2003,9 +2005,17 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *UI {
                     shadowDescriptionFont.Print(window, descriptionX+1, y+1, 1, value)
                     descriptionFont.Print(window, descriptionX, y, 1, value)
 
+                    boxY := y + float64(descriptionFont.Height()) + 1
+
                     options.GeoM.Reset()
                     options.GeoM.Translate(descriptionX, y + float64(descriptionFont.Height()) + 1)
                     window.DrawImage(screen.SpellBackground1, &options)
+
+                    for i, spell := range uncommonSpells.Spells {
+                        strX := descriptionX + 10 + float64((i/5) * 75)
+                        strY := boxY + 1 + float64((i%5) * (screen.AbilityFontAvailable.Height() + 1))
+                        screen.AbilityFontAvailable.Print(window, strX, strY, 1, spell.Name)
+                    }
                 }
 
                 if rareMax > 0 {
@@ -2014,9 +2024,18 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *UI {
                     shadowDescriptionFont.Print(window, descriptionX+1, y+1, 1, value)
                     descriptionFont.Print(window, descriptionX, y, 1, value)
 
+                    boxY := y + float64(descriptionFont.Height()) + 1
+
                     options.GeoM.Reset()
                     options.GeoM.Translate(descriptionX, y + float64(descriptionFont.Height()) + 1)
                     window.DrawImage(screen.SpellBackground1, &options)
+
+                    for i, spell := range rareSpells.Spells {
+                        strX := descriptionX + 10 + float64((i/5) * 75)
+                        strY := boxY + 1 + float64((i%5) * (screen.AbilityFontAvailable.Height() + 1))
+                        screen.AbilityFontAvailable.Print(window, strX, strY, 1, spell.Name)
+                    }
+
                 }
             },
         }
