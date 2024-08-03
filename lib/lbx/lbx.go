@@ -590,6 +590,180 @@ func (lbx *LbxFile) TotalEntries() int {
     return len(lbx.Data)
 }
 
+type Spell struct {
+    Name string
+    AiGroup int
+    AiValue int
+    SpellType int
+    Section int
+    Realm int
+    Eligibility int
+    CastCost int
+    ResearchCost int
+    Sound int
+    Summoned int
+    Flag1 int
+    Flag2 int
+    Flag3 int
+}
+
+type Spells struct {
+    Spells []Spell
+}
+
+func (spells *Spells) AddSpell(spell Spell) {
+    spells.Spells = append(spells.Spells, spell)
+}
+
+func (lbx *LbxFile) ReadSpells(entry int) (Spells, error) {
+    if entry < 0 || entry >= len(lbx.Data) {
+        return Spells{}, fmt.Errorf("invalid lbx index %v, must be between 0 and %v", entry, len(lbx.Data) - 1)
+    }
+
+    reader := bytes.NewReader(lbx.Data[entry])
+
+    numEntries, err := readUint16(reader)
+    if err != nil {
+        return Spells{}, err
+    }
+
+    entrySize, err := readUint16(reader)
+    if err != nil {
+        return Spells{}, err
+    }
+
+    var spells Spells
+
+    for i := 0; i < int(numEntries); i++ {
+        data := make([]byte, entrySize)
+        n, err := reader.Read(data)
+        if err != nil {
+            return Spells{}, fmt.Errorf("Error reading help index %v: %v", i, err)
+        }
+
+        buffer := bytes.NewBuffer(data[0:n])
+
+        nameData := buffer.Next(18)
+        fmt.Printf("Spell %v\n", i)
+
+        name, err := bytes.NewBuffer(nameData).ReadString(0)
+        if err != nil {
+            name = string(nameData)
+        } else {
+            name = name[0:len(name)-1]
+        }
+        fmt.Printf("  Name: %v\n", string(name))
+
+        aiGroup, err := buffer.ReadByte()
+        if err != nil {
+            return Spells{}, err
+        }
+        fmt.Printf("  AI Group: %v\n", aiGroup)
+
+        aiValue, err := buffer.ReadByte()
+        if err != nil {
+            return Spells{}, err
+        }
+        fmt.Printf("  AI Value: %v\n", aiValue)
+
+        spellType, err := buffer.ReadByte()
+        if err != nil {
+            return Spells{}, err
+        }
+
+        fmt.Printf("  Spell Type: %v\n", spellType)
+
+        section, err := buffer.ReadByte()
+        if err != nil {
+            return Spells{}, err
+        }
+
+        fmt.Printf("  Section: %v\n", section)
+
+        realm, err := buffer.ReadByte()
+        if err != nil {
+            return Spells{}, err
+        }
+
+        fmt.Printf("  Magic Realm: %v\n", realm)
+
+        eligibility, err := buffer.ReadByte()
+        if err != nil {
+            return Spells{}, err
+        }
+
+        fmt.Printf("  Caster Eligibility: %v\n", eligibility)
+
+        buffer.Next(1) // ignore extra unused byte from 2-byte alignment
+
+        castCost, err := readUint16Big(buffer)
+        if err != nil {
+            return Spells{}, err
+        }
+
+        fmt.Printf("  Casting Cost: %v\n", castCost)
+
+        researchCost, err := readUint16Big(buffer)
+        if err != nil {
+            return Spells{}, err
+        }
+
+        fmt.Printf("  Research Cost: %v\n", researchCost)
+
+        sound, err := buffer.ReadByte()
+        if err != nil {
+            return Spells{}, err
+        }
+
+        fmt.Printf("  Sound effect: %v\n", sound)
+
+        buffer.ReadByte()
+
+        summoned, err := buffer.ReadByte()
+        if err != nil {
+            return Spells{}, err
+        }
+
+        fmt.Printf("  Summoned: %v\n", summoned)
+
+        flag1, err := buffer.ReadByte()
+        if err != nil {
+            return Spells{}, err
+        }
+
+        flag2, err := buffer.ReadByte()
+        if err != nil {
+            return Spells{}, err
+        }
+
+        flag3, err := buffer.ReadByte()
+        if err != nil {
+            return Spells{}, err
+        }
+
+        fmt.Printf("  Flag1=%v Flag2=%v Flag3=%v\n", flag1, flag2, flag3)
+
+        spells.AddSpell(Spell{
+            Name: name,
+            AiGroup: int(aiGroup),
+            AiValue: int(aiValue),
+            SpellType: int(spellType),
+            Section: int(section),
+            Realm: int(realm),
+            Eligibility: int(eligibility),
+            CastCost: int(castCost),
+            ResearchCost: int(researchCost),
+            Sound: int(sound),
+            Summoned: int(summoned),
+            Flag1: int(flag1),
+            Flag2: int(flag2),
+            Flag3: int(flag3),
+        })
+    }
+
+    return spells, nil
+}
+
 func (lbx *LbxFile) ReadHelp(entry int) (Help, error) {
     if entry < 0 || entry >= len(lbx.Data) {
         return Help{}, fmt.Errorf("invalid lbx index %v, must be between 0 and %v", entry, len(lbx.Data) - 1)
