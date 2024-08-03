@@ -605,6 +605,54 @@ type Spell struct {
     Flag1 int
     Flag2 int
     Flag3 int
+
+    // which book of magic this spell is a part of
+    Magic SpellMagic
+    Rarity SpellRarity
+}
+
+type SpellRarity int
+
+const (
+    SpellRarityCommon SpellRarity = iota
+    SpellRarityUncommon
+    SpellRarityRare
+    SpellRarityVeryRare
+)
+
+func (rarity SpellRarity) String() string {
+    switch rarity {
+        case SpellRarityCommon: return "Common"
+        case SpellRarityUncommon: return "Uncommon"
+        case SpellRarityRare: return "Rare"
+        case SpellRarityVeryRare: return "Very Rare"
+        default: return "Unknown"
+    }
+}
+
+type SpellMagic int
+
+const (
+    SpellMagicNone SpellMagic = iota
+    SpellMagicNature
+    SpellMagicChaos
+    SpellMagicDeath
+    SpellMagicLife
+    SpellMagicSorcery
+    SpellMagicArcane
+)
+
+func (magic SpellMagic) String() string {
+    switch magic {
+        case SpellMagicNone: return "None"
+        case SpellMagicNature: return "Nature"
+        case SpellMagicChaos: return "Chaos"
+        case SpellMagicDeath: return "Death"
+        case SpellMagicLife: return "Life"
+        case SpellMagicSorcery: return "Sorcery"
+        case SpellMagicArcane: return "Arcane"
+        default: return "Unknown"
+    }
 }
 
 type Spells struct {
@@ -633,6 +681,54 @@ func (lbx *LbxFile) ReadSpells(entry int) (Spells, error) {
     }
 
     var spells Spells
+
+    type MagicData struct {
+        Magic SpellMagic
+        Rarity SpellRarity
+    }
+
+    spellMagicIterator := (func() chan MagicData {
+        out := make(chan MagicData)
+
+        go func() {
+            defer close(out)
+
+            out <- MagicData{Magic: SpellMagicNone}
+            order := []SpellMagic{SpellMagicNature, SpellMagicSorcery, SpellMagicChaos, SpellMagicLife, SpellMagicDeath}
+            rarities := []SpellRarity{SpellRarityCommon, SpellRarityUncommon, SpellRarityRare, SpellRarityVeryRare}
+
+            for _, magic := range order {
+                // 10 types of common, uncommon, rare, very rare for each book of magic
+                for _, rarity := range rarities {
+                    for i := 0; i < 10; i++ {
+                        out <- MagicData{Magic: magic, Rarity: rarity}
+                    }
+                }
+            }
+
+            // for arcane the spells are
+            // common: magic spirit, dispel magic, spell of return, summoning circle
+            // uncommon: detect magic, recall hero, disenchant area, enchant item, summon hero
+            // rare: awareness, disjunction, create artifact, summon champion
+            // very rare: spell of mastery
+
+            for i := 0; i < 4; i++ {
+                out <- MagicData{Magic: SpellMagicArcane, Rarity: SpellRarityCommon}
+            }
+
+            for i := 0; i < 5; i++ {
+                out <- MagicData{Magic: SpellMagicArcane, Rarity: SpellRarityUncommon}
+            }
+
+            for i := 0; i < 4; i++ {
+                out <- MagicData{Magic: SpellMagicArcane, Rarity: SpellRarityRare}
+            }
+
+            out <- MagicData{Magic: SpellMagicArcane, Rarity: SpellRarityVeryRare}
+        }()
+
+        return out
+    })()
 
     for i := 0; i < int(numEntries); i++ {
         data := make([]byte, entrySize)
@@ -743,6 +839,8 @@ func (lbx *LbxFile) ReadSpells(entry int) (Spells, error) {
 
         fmt.Printf("  Flag1=%v Flag2=%v Flag3=%v\n", flag1, flag2, flag3)
 
+        magicData := <-spellMagicIterator
+
         spells.AddSpell(Spell{
             Name: name,
             AiGroup: int(aiGroup),
@@ -758,6 +856,9 @@ func (lbx *LbxFile) ReadSpells(entry int) (Spells, error) {
             Flag1: int(flag1),
             Flag2: int(flag2),
             Flag3: int(flag3),
+
+            Magic: magicData.Magic,
+            Rarity: magicData.Rarity,
         })
     }
 
