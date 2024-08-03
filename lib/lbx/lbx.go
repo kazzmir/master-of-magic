@@ -667,7 +667,7 @@ func (lbx *LbxFile) ReadSpells(entry int) (Spells, error) {
         buffer := bytes.NewBuffer(data[0:n])
 
         nameData := buffer.Next(18)
-        fmt.Printf("Spell %v\n", i)
+        // fmt.Printf("Spell %v\n", i)
 
         name, err := bytes.NewBuffer(nameData).ReadString(0)
         if err != nil {
@@ -675,47 +675,47 @@ func (lbx *LbxFile) ReadSpells(entry int) (Spells, error) {
         } else {
             name = name[0:len(name)-1]
         }
-        fmt.Printf("  Name: %v\n", string(name))
+        // fmt.Printf("  Name: %v\n", string(name))
 
         aiGroup, err := buffer.ReadByte()
         if err != nil {
             return Spells{}, err
         }
-        fmt.Printf("  AI Group: %v\n", aiGroup)
+        // fmt.Printf("  AI Group: %v\n", aiGroup)
 
         aiValue, err := buffer.ReadByte()
         if err != nil {
             return Spells{}, err
         }
-        fmt.Printf("  AI Value: %v\n", aiValue)
+        // fmt.Printf("  AI Value: %v\n", aiValue)
 
         spellType, err := buffer.ReadByte()
         if err != nil {
             return Spells{}, err
         }
 
-        fmt.Printf("  Spell Type: %v\n", spellType)
+        // fmt.Printf("  Spell Type: %v\n", spellType)
 
         section, err := buffer.ReadByte()
         if err != nil {
             return Spells{}, err
         }
 
-        fmt.Printf("  Section: %v\n", section)
+        // fmt.Printf("  Section: %v\n", section)
 
         realm, err := buffer.ReadByte()
         if err != nil {
             return Spells{}, err
         }
 
-        fmt.Printf("  Magic Realm: %v\n", realm)
+        // fmt.Printf("  Magic Realm: %v\n", realm)
 
         eligibility, err := buffer.ReadByte()
         if err != nil {
             return Spells{}, err
         }
 
-        fmt.Printf("  Caster Eligibility: %v\n", eligibility)
+        // fmt.Printf("  Caster Eligibility: %v\n", eligibility)
 
         buffer.Next(1) // ignore extra unused byte from 2-byte alignment
 
@@ -724,21 +724,21 @@ func (lbx *LbxFile) ReadSpells(entry int) (Spells, error) {
             return Spells{}, err
         }
 
-        fmt.Printf("  Casting Cost: %v\n", castCost)
+        // fmt.Printf("  Casting Cost: %v\n", castCost)
 
         researchCost, err := readUint16Big(buffer)
         if err != nil {
             return Spells{}, err
         }
 
-        fmt.Printf("  Research Cost: %v\n", researchCost)
+        // fmt.Printf("  Research Cost: %v\n", researchCost)
 
         sound, err := buffer.ReadByte()
         if err != nil {
             return Spells{}, err
         }
 
-        fmt.Printf("  Sound effect: %v\n", sound)
+        // fmt.Printf("  Sound effect: %v\n", sound)
 
         // skip extra byte due to 2-byte alignment
         buffer.ReadByte()
@@ -748,7 +748,7 @@ func (lbx *LbxFile) ReadSpells(entry int) (Spells, error) {
             return Spells{}, err
         }
 
-        fmt.Printf("  Summoned: %v\n", summoned)
+        // fmt.Printf("  Summoned: %v\n", summoned)
 
         flag1, err := buffer.ReadByte()
         if err != nil {
@@ -766,7 +766,7 @@ func (lbx *LbxFile) ReadSpells(entry int) (Spells, error) {
             return Spells{}, err
         }
 
-        fmt.Printf("  Flag1=%v Flag2=%v Flag3=%v\n", flag1, flag2, flag3)
+        // fmt.Printf("  Flag1=%v Flag2=%v Flag3=%v\n", flag1, flag2, flag3)
 
         magicData := <-spellMagicIterator
 
