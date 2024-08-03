@@ -740,6 +740,7 @@ func (lbx *LbxFile) ReadSpells(entry int) (Spells, error) {
 
         fmt.Printf("  Sound effect: %v\n", sound)
 
+        // skip extra byte due to 2-byte alignment
         buffer.ReadByte()
 
         summoned, err := buffer.ReadByte()
@@ -759,6 +760,7 @@ func (lbx *LbxFile) ReadSpells(entry int) (Spells, error) {
             return Spells{}, err
         }
 
+        // FIXME: should this be a uint16?
         flag3, err := buffer.ReadByte()
         if err != nil {
             return Spells{}, err
