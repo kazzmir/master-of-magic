@@ -2,6 +2,7 @@ package lbx
 
 import (
     "math/rand"
+    "strings"
 )
 
 type Spell struct {
@@ -75,6 +76,30 @@ type Spells struct {
 
 func (spells *Spells) AddSpell(spell Spell) {
     spells.Spells = append(spells.Spells, spell)
+}
+
+func (spells *Spells) RemoveSpell(toRemove Spell){
+    var out []Spell
+    for _, spell := range spells.Spells {
+        if spell.Name != toRemove.Name {
+            out = append(out, spell)
+        }
+    }
+    spells.Spells = out
+}
+
+func (spells *Spells) FindByName(name string) Spell {
+    for _, spell := range spells.Spells {
+        if strings.ToLower(spell.Name) == strings.ToLower(name) {
+            return spell
+        }
+    }
+
+    return Spell{}
+}
+
+func (spells *Spells) HasSpell(spell Spell) bool {
+    return spells.FindByName(spell.Name).Name == spell.Name
 }
 
 func (spells Spells) GetSpellsByMagic(magic SpellMagic) Spells {

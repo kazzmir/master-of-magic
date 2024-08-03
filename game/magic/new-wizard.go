@@ -235,6 +235,7 @@ type wizardCustom struct {
     Portrait *ebiten.Image
     Abilities []WizardAbility
     Books []wizardBook
+    Spells lbx.Spells
 }
 
 func (wizard *wizardCustom) AbilityEnabled(ability WizardAbility) bool {
@@ -1244,10 +1245,11 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
         screen.CustomWizard.Portrait = screen.WizardSlots[0].Portrait
         screen.CustomWizard.Name = screen.WizardSlots[0].Name
         // screen.CustomWizard.Abilities = []WizardAbility{AbilityAlchemy, AbilityConjurer, AbilityFamous}
+        // screen.CustomWizard.Spells.AddSpell(screen.Spells.FindByName("Disrupt"))
         screen.CustomWizard.Books = []wizardBook{
             wizardBook{
                 Magic: ChaosMagic,
-                Count: 11,
+                Count: 10,
             },
         }
 
@@ -1815,7 +1817,7 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *UI {
     magicOrder := []MagicType{LifeMagic, DeathMagic, ChaosMagic, NatureMagic, SorceryMagic}
 
     computeCommon := func(books int) int {
-        if books == 0 {
+        if books == 0 || books == 11 {
             return 0
         }
 
@@ -1842,12 +1844,14 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *UI {
         return 0
     }
 
+    // an all black palette
     black := color.RGBA{R: 0, G: 0, B: 0, A: 0xff}
     blackPalette := color.Palette{
         color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
         black, black, black, black, black,
     }
 
+    // create a mono-color palette where the color depends on the magic type
     getPalette := func(magic MagicType) color.Palette {
         var use color.RGBA
         switch magic {
@@ -1888,18 +1892,65 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *UI {
         uncommonMax := computeUncommon(screen.CustomWizard.MagicLevel(magic))
         rareMax := computeRare(screen.CustomWizard.MagicLevel(magic))
 
+        // number of remaining picks in each rarity category
+        commonPicks := commonMax
+        uncommonPicks := uncommonMax
+        rarePicks := rareMax
+
         commonSpells := chooseSpells(magic, lbx.SpellRarityCommon)
         uncommonSpells := chooseSpells(magic, lbx.SpellRarityUncommon)
         rareSpells := chooseSpells(magic, lbx.SpellRarityRare)
 
         picksLeft := func() int {
-            return 2
+            return commonPicks + uncommonPicks + rarePicks
         }
 
         var elements []*UIElement
 
+        // make fonts in the color of the magic book (blue for sorcery, etc)
         titleFont := font.MakeOptimizedFontWithPalette(screen.LbxFonts[4], getPalette(magic))
         descriptionFont := font.MakeOptimizedFontWithPalette(screen.LbxFonts[3], getPalette(magic))
+
+        if commonPicks > 0 {
+            x := 169
+            top := 28 + descriptionFont.Height() + 3
+            y := top
+            margin := screen.CheckMark.Bounds().Dx() + 1
+            width := (screen.SpellBackground1.Bounds().Dx() - 2) / 2
+            for i, spell := range commonSpells.Spells {
+                useX := x
+                useY := y
+
+                elements = append(elements, &UIElement{
+                    Rect: image.Rect(int(x), int(y), int(x) + width, int(y) + screen.AbilityFontAvailable.Height()),
+                    LeftClick: func(this *UIElement){
+                        if screen.CustomWizard.Spells.HasSpell(spell) {
+                            screen.CustomWizard.Spells.RemoveSpell(spell)
+                            commonPicks += 1
+                        } else if commonPicks > 0 {
+                            screen.CustomWizard.Spells.AddSpell(spell)
+                            commonPicks -= 1
+                        }
+                    },
+                    Draw: func(this *UIElement, window *ebiten.Image){
+                        if screen.CustomWizard.Spells.HasSpell(spell) {
+                            var options ebiten.DrawImageOptions
+                            options.GeoM.Translate(float64(useX), float64(useY))
+                            window.DrawImage(screen.CheckMark, &options)
+                            screen.AbilityFontSelected.Print(window, float64(useX + margin), float64(useY), 1, spell.Name)
+                        } else {
+                            screen.AbilityFontAvailable.Print(window, float64(useX + margin), float64(useY), 1, spell.Name)
+                        }
+                    },
+                })
+
+                y += screen.AbilityFontAvailable.Height() + 1
+                if i == 4 {
+                    y = top
+                    x += width
+                }
+            }
+        }
 
         // ok button
         elements = append(elements, &UIElement{
@@ -1956,12 +2007,6 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *UI {
                 options.GeoM.Translate(196, 180)
                 window.DrawImage(screen.PickOkSlot, &options)
 
-                ui.IterateElementsByLayer(func (element *UIElement){
-                    if element.Draw != nil {
-                        element.Draw(element, window)
-                    }
-                })
-
                 titleX := 240
                 titleY := 5
 
@@ -1989,13 +2034,6 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *UI {
                     options.GeoM.Reset()
                     options.GeoM.Translate(descriptionX, boxY)
                     window.DrawImage(screen.SpellBackground1, &options)
-
-                    for i, spell := range commonSpells.Spells {
-                        strX := descriptionX + 10 + float64((i/5) * 75)
-                        strY := boxY + 1 + float64((i%5) * (screen.AbilityFontAvailable.Height() + 1))
-                        screen.AbilityFontAvailable.Print(window, strX, strY, 1, spell.Name)
-                    }
-
                 }
 
                 if uncommonMax > 0 {
@@ -2037,6 +2075,12 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *UI {
                     }
 
                 }
+
+                ui.IterateElementsByLayer(func (element *UIElement){
+                    if element.Draw != nil {
+                        element.Draw(element, window)
+                    }
+                })
             },
         }
 
