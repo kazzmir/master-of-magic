@@ -1286,7 +1286,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
         screen.CustomWizard.Books = []wizardBook{
             wizardBook{
                 Magic: ChaosMagic,
-                Count: 5,
+                Count: 11,
             },
         }
 
@@ -1941,9 +1941,22 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *UI {
         uncommonSpells := chooseSpells(magic, lbx.SpellRarityUncommon)
         rareSpells := chooseSpells(magic, lbx.SpellRarityRare)
 
+        // assign common spells
         for _, index := range rand.Perm(len(commonSpells.Spells))[0:commonMax] {
             screen.CustomWizard.Spells.AddSpell(commonSpells.Spells[index])
             commonPicks -= 1
+        }
+
+        // assign uncommon spells
+        for _, index := range rand.Perm(len(uncommonSpells.Spells))[0:uncommonMax] {
+            screen.CustomWizard.Spells.AddSpell(uncommonSpells.Spells[index])
+            uncommonPicks -= 1
+        }
+
+        // assign rare spells
+        for _, index := range rand.Perm(len(rareSpells.Spells))[0:rareMax] {
+            screen.CustomWizard.Spells.AddSpell(rareSpells.Spells[index])
+            rarePicks -= 1
         }
 
         picksLeft := func() int {
@@ -1956,13 +1969,11 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *UI {
         titleFont := font.MakeOptimizedFontWithPalette(screen.LbxFonts[4], getPalette(magic))
         descriptionFont := font.MakeOptimizedFontWithPalette(screen.LbxFonts[3], getPalette(magic))
 
-        if commonMax > 0 {
-            x := 169
-            top := 28 + descriptionFont.Height() + 3
-            y := top
+        createSpellElements := func(spells lbx.Spells, x int, yTop int, picks *int){
+            y := yTop
             margin := screen.CheckMark.Bounds().Dx() + 1
             width := (screen.SpellBackground1.Bounds().Dx() - 2) / 2
-            for i, spell := range commonSpells.Spells {
+            for i, spell := range spells.Spells {
                 useX := x
                 useY := y
 
@@ -1971,10 +1982,10 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *UI {
                     LeftClick: func(this *UIElement){
                         if screen.CustomWizard.Spells.HasSpell(spell) {
                             screen.CustomWizard.Spells.RemoveSpell(spell)
-                            commonPicks += 1
-                        } else if commonPicks > 0 {
+                            *picks += 1
+                        } else if *picks > 0 {
                             screen.CustomWizard.Spells.AddSpell(spell)
-                            commonPicks -= 1
+                            *picks -= 1
                         }
                     },
                     RightClick: func(this *UIElement){
@@ -1999,10 +2010,28 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *UI {
 
                 y += screen.AbilityFontAvailable.Height() + 1
                 if i == 4 {
-                    y = top
+                    y = yTop
                     x += width
                 }
             }
+        }
+
+        if commonMax > 0 {
+            x := 169
+            top := 28 + descriptionFont.Height() + 3
+            createSpellElements(commonSpells, x, top, &commonPicks)
+        }
+
+        if uncommonMax > 0 {
+            x := 169
+            top := 28 + descriptionFont.Height() + 3
+            createSpellElements(uncommonSpells, x, top, &uncommonPicks)
+        }
+
+        if rareMax > 0 {
+            x := 169
+            top := 78 + descriptionFont.Height() + 3
+            createSpellElements(rareSpells, x, top, &rarePicks)
         }
 
         // ok button
@@ -2096,17 +2125,11 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *UI {
                     shadowDescriptionFont.Print(window, descriptionX+1, y+1, 1, value)
                     descriptionFont.Print(window, descriptionX, y, 1, value)
 
-                    boxY := y + float64(descriptionFont.Height()) + 1
+                    // boxY := y + float64(descriptionFont.Height()) + 1
 
                     options.GeoM.Reset()
                     options.GeoM.Translate(descriptionX, y + float64(descriptionFont.Height()) + 1)
                     window.DrawImage(screen.SpellBackground1, &options)
-
-                    for i, spell := range uncommonSpells.Spells {
-                        strX := descriptionX + 10 + float64((i/5) * 75)
-                        strY := boxY + 1 + float64((i%5) * (screen.AbilityFontAvailable.Height() + 1))
-                        screen.AbilityFontAvailable.Print(window, strX, strY, 1, spell.Name)
-                    }
                 }
 
                 if rareMax > 0 {
@@ -2115,18 +2138,11 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *UI {
                     shadowDescriptionFont.Print(window, descriptionX+1, y+1, 1, value)
                     descriptionFont.Print(window, descriptionX, y, 1, value)
 
-                    boxY := y + float64(descriptionFont.Height()) + 1
+                    // boxY := y + float64(descriptionFont.Height()) + 1
 
                     options.GeoM.Reset()
                     options.GeoM.Translate(descriptionX, y + float64(descriptionFont.Height()) + 1)
-                    window.DrawImage(screen.SpellBackground1, &options)
-
-                    for i, spell := range rareSpells.Spells {
-                        strX := descriptionX + 10 + float64((i/5) * 75)
-                        strY := boxY + 1 + float64((i%5) * (screen.AbilityFontAvailable.Height() + 1))
-                        screen.AbilityFontAvailable.Print(window, strX, strY, 1, spell.Name)
-                    }
-
+                    window.DrawImage(screen.SpellBackground2, &options)
                 }
 
                 ui.IterateElementsByLayer(func (element *UIElement){
