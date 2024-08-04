@@ -2104,47 +2104,29 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *UI {
                 screen.AbilityFontSelected.Print(window, 12, 180, 1, joinAbilities(screen.CustomWizard.Abilities))
                 screen.NameFontBright.PrintCenter(window, 223, 185, 1, fmt.Sprintf("%v picks", picksLeft()))
 
-                descriptionX := float64(167)
+                showDescription := func(y float64, text string, background *ebiten.Image){
+                    descriptionX := float64(167)
 
-                if commonMax > 0 {
-                    y := float64(28)
-
-                    value := fmt.Sprintf("Common: %v", commonMax)
-                    shadowDescriptionFont.Print(window, descriptionX+1, y + 1, 1, value)
-                    descriptionFont.Print(window, descriptionX, y, 1, value)
+                    shadowDescriptionFont.Print(window, descriptionX+1, y + 1, 1, text)
+                    descriptionFont.Print(window, descriptionX, y, 1, text)
 
                     boxY := y + float64(descriptionFont.Height()) + 1
 
                     options.GeoM.Reset()
                     options.GeoM.Translate(descriptionX, boxY)
-                    window.DrawImage(screen.SpellBackground1, &options)
+                    window.DrawImage(background, &options)
+                }
+
+                if commonMax > 0 {
+                    showDescription(28, fmt.Sprintf("Common: %v", commonMax), screen.SpellBackground1)
                 }
 
                 if uncommonMax > 0 {
-                    y := float64(28)
-
-                    value := fmt.Sprintf("Uncommon: %v", uncommonMax)
-                    shadowDescriptionFont.Print(window, descriptionX+1, y+1, 1, value)
-                    descriptionFont.Print(window, descriptionX, y, 1, value)
-
-                    // boxY := y + float64(descriptionFont.Height()) + 1
-
-                    options.GeoM.Reset()
-                    options.GeoM.Translate(descriptionX, y + float64(descriptionFont.Height()) + 1)
-                    window.DrawImage(screen.SpellBackground1, &options)
+                    showDescription(28, fmt.Sprintf("Uncommon: %v", uncommonMax), screen.SpellBackground1)
                 }
 
                 if rareMax > 0 {
-                    y := float64(78)
-                    value := fmt.Sprintf("Rare: %v", rareMax)
-                    shadowDescriptionFont.Print(window, descriptionX+1, y+1, 1, value)
-                    descriptionFont.Print(window, descriptionX, y, 1, value)
-
-                    // boxY := y + float64(descriptionFont.Height()) + 1
-
-                    options.GeoM.Reset()
-                    options.GeoM.Translate(descriptionX, y + float64(descriptionFont.Height()) + 1)
-                    window.DrawImage(screen.SpellBackground2, &options)
+                    showDescription(78, fmt.Sprintf("Rare: %v", rareMax), screen.SpellBackground2)
                 }
 
                 ui.IterateElementsByLayer(func (element *UIElement){
