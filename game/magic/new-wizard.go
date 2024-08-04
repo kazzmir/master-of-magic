@@ -1986,6 +1986,8 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *UI {
                         } else if *picks > 0 {
                             screen.CustomWizard.Spells.AddSpell(spell)
                             *picks -= 1
+                        } else {
+                            screen.UI.AddElement(screen.makeErrorElement("You have no picks left in this area, to deselect click on a selected item"))
                         }
                     },
                     RightClick: func(this *UIElement){
