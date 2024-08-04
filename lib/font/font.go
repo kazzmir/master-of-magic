@@ -192,12 +192,15 @@ func (font *Font) RenderWrapped(image *ebiten.Image, x float64, y float64, wrapp
     }
 }
 
+// FIXME: put this somewhere else
+const NewLine = 0x14
+
 // precompute an object that can be used to render a wrapped string
 func (font *Font) CreateWrappedText(maxWidth float64, scale float64, text string) WrappedText {
     var lines []string
     var yPos float64 = 0
 
-    textLines := bytes.Split([]byte(text), []byte{20})
+    textLines := bytes.Split([]byte(text), []byte{NewLine})
 
     for _, lineByte := range textLines {
         // line := strings.TrimSpace(string(lineByte))

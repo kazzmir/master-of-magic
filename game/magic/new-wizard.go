@@ -473,6 +473,43 @@ type NewWizardScreen struct {
     counter uint64
 }
 
+// FIXME: probably move this into lib/lbx
+// remove all alpha-0 pixels from the border of the image
+func autoCrop(img image.Image) image.Image {
+    bounds := img.Bounds()
+    minX := bounds.Max.X
+    minY := bounds.Max.Y
+    maxX := bounds.Min.X
+    maxY := bounds.Min.Y
+
+    for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+        for x := bounds.Min.X; x < bounds.Max.X; x++ {
+            _, _, _, a := img.At(x, y).RGBA()
+            if a > 0 {
+                if x < minX {
+                    minX = x
+                }
+                if y < minY {
+                    minY = y
+                }
+                if x > maxX {
+                    maxX = x
+                }
+                if y > maxY {
+                    maxY = y
+                }
+            }
+        }
+    }
+
+    paletted, ok := img.(*image.Paletted)
+    if ok {
+        return paletted.SubImage(image.Rect(minX, minY, maxX, maxY))
+    }
+
+    return img
+}
+
 func (screen *NewWizardScreen) MakeCustomNameUI() *UI {
     const portraitX = 24
     const portraitY = 10
@@ -791,7 +828,7 @@ func (screen *NewWizardScreen) LoadHelp(cache *lbx.LbxCache) error {
             return nil, fmt.Errorf("no images found in %s entry %d", lbxName, index)
         }
 
-        return ebiten.NewImageFromImage(images[0]), nil
+        return ebiten.NewImageFromImage(autoCrop(images[0])), nil
     }
 
     scrollTopImages, err := helpLbx.ReadImages(0)
@@ -1379,6 +1416,7 @@ func (screen *NewWizardScreen) makeHelpElement(help lbx.HelpEntry) *UIElement {
 
     var extraImage *ebiten.Image
     if help.Lbx != "" {
+        // fmt.Printf("Load extra image from %v index %v\n", help.Lbx, help.LbxIndex)
         use, err := screen.HelpImageLoader(help.Lbx, help.LbxIndex)
         if err == nil && use != nil {
             extraImage = use
