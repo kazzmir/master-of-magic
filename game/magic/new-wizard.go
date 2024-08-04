@@ -1286,7 +1286,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
         screen.CustomWizard.Books = []wizardBook{
             wizardBook{
                 Magic: ChaosMagic,
-                Count: 10,
+                Count: 5,
             },
         }
 
@@ -1941,6 +1941,11 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *UI {
         uncommonSpells := chooseSpells(magic, lbx.SpellRarityUncommon)
         rareSpells := chooseSpells(magic, lbx.SpellRarityRare)
 
+        for _, index := range rand.Perm(len(commonSpells.Spells))[0:commonMax] {
+            screen.CustomWizard.Spells.AddSpell(commonSpells.Spells[index])
+            commonPicks -= 1
+        }
+
         picksLeft := func() int {
             return commonPicks + uncommonPicks + rarePicks
         }
@@ -1951,7 +1956,7 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *UI {
         titleFont := font.MakeOptimizedFontWithPalette(screen.LbxFonts[4], getPalette(magic))
         descriptionFont := font.MakeOptimizedFontWithPalette(screen.LbxFonts[3], getPalette(magic))
 
-        if commonPicks > 0 {
+        if commonMax > 0 {
             x := 169
             top := 28 + descriptionFont.Height() + 3
             y := top
