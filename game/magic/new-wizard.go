@@ -228,6 +228,7 @@ const (
     NewWizardScreenStateCustomAbility
     NewWizardScreenStateCustomBooks
     NewWizardScreenStateSelectSpells
+    NewWizardScreenStateSelectRace
 )
 
 type wizardCustom struct {
@@ -1285,8 +1286,12 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
         // screen.CustomWizard.Spells.AddSpell(screen.Spells.FindByName("Disrupt"))
         screen.CustomWizard.Books = []wizardBook{
             wizardBook{
+                Magic: LifeMagic,
+                Count: 3,
+            },
+            wizardBook{
                 Magic: ChaosMagic,
-                Count: 11,
+                Count: 8,
             },
         }
 
@@ -1927,6 +1932,8 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *UI {
         return screen.Spells.GetSpellsByMagic(toSpellMagic(magic)).GetSpellsByRarity(rarity)
     }
 
+    var doNextMagicUI func (magic MagicType)
+
     makeUIForMagic := func (magic MagicType) *UI {
         commonMax := computeCommon(screen.CustomWizard.MagicLevel(magic))
         uncommonMax := computeUncommon(screen.CustomWizard.MagicLevel(magic))
@@ -2040,14 +2047,11 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *UI {
         elements = append(elements, &UIElement{
             Rect: image.Rect(252, 182, 252 + screen.OkReady.Bounds().Dx(), 182 + screen.OkReady.Bounds().Dy()),
             LeftClick: func(this *UIElement){
-                /*
                 if picksLeft() == 0 {
-                    screen.State = NewWizardScreenStateSelectSpells
-                    screen.UI = screen.MakeSelectSpellsUI()
+                    doNextMagicUI(magic)
                 } else {
                     screen.UI.AddElement(screen.makeErrorElement("You need to make all your picks before you can continue"))
                 }
-                */
             },
             RightClick: func(this *UIElement){
                 /*
@@ -2142,8 +2146,26 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *UI {
         return ui
     }
 
+    // user has clicked ok, so go to next magic spell selection screen
+    // example: wizard has 3 life, 4 chaos. show life screen, show chaos screen, then goto race selection screen
+    doNextMagicUI = func(current MagicType){
+        for i := 0; i < len(magicOrder); i++ {
+            if current == magicOrder[i] {
+                for j := i + 1; j < len(magicOrder); j++ {
+                    if screen.CustomWizard.MagicLevel(magicOrder[j]) > 1 {
+                        screen.UI = makeUIForMagic(magicOrder[j])
+                        return
+                    }
+                }
+            }
+        }
+
+        screen.State = NewWizardScreenStateSelectRace
+        screen.UI = screen.MakeSelectRaceUI()
+    }
+
     for _, magic := range magicOrder {
-        if screen.CustomWizard.MagicLevel(magic) > 0 {
+        if screen.CustomWizard.MagicLevel(magic) > 1 {
             return makeUIForMagic(magic)
         }
     }
@@ -2153,8 +2175,13 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *UI {
 }
 
 func (screen *NewWizardScreen) MakeSelectRaceUI() *UI {
-    // TODO
-    return nil
+
+    ui := &UI{
+        Draw: func(ui *UI, window *ebiten.Image){
+        },
+    }
+
+    return ui
 }
 
 func (screen *NewWizardScreen) Draw(window *ebiten.Image) {
