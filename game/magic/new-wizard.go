@@ -951,12 +951,32 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
             color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
         }
 
+        selectYellowPalette := color.Palette{
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xfa, G: 0xe1, B: 0x16, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xef, B: 0x2f, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xef, B: 0x2f, A: 0xff},
+            color.RGBA{R: 0xe0, G: 0x8a, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xd2, G: 0x7f, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xd2, G: 0x7f, B: 0x0, A: 0xff},
+            color.RGBA{R: 0x99, G: 0x4f, B: 0x0, A: 0xff},
+            color.RGBA{R: 0x99, G: 0x4f, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+            color.RGBA{R: 0x99, G: 0x4f, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        }
+
         screen.LbxFonts = fonts
 
         screen.Font = font.MakeOptimizedFont(fonts[4])
 
         // FIXME: load with a yellowish palette
-        screen.SelectFont = font.MakeOptimizedFont(fonts[5])
+        screen.SelectFont = font.MakeOptimizedFontWithPalette(fonts[5], selectYellowPalette)
 
         screen.AbilityFont = font.MakeOptimizedFontWithPalette(fonts[0], transparentPalette)
         screen.AbilityFontSelected = font.MakeOptimizedFontWithPalette(fonts[0], brightYellowPalette)
@@ -1301,6 +1321,8 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
             screen.UI = screen.MakeCustomWizardBooksUI()
         } else if screen.State == NewWizardScreenStateSelectSpells {
             screen.UI = screen.MakeSelectSpellsUI()
+        } else if screen.State == NewWizardScreenStateSelectRace {
+            screen.UI = screen.MakeSelectRaceUI()
         }
     })
 
@@ -2178,6 +2200,23 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *UI {
 
     ui := &UI{
         Draw: func(ui *UI, window *ebiten.Image){
+            const portraitX = 24
+            const portraitY = 10
+
+            const nameX = 75
+            const nameY = 120
+
+            var options ebiten.DrawImageOptions
+            window.DrawImage(screen.Background, &options)
+
+            options.GeoM.Translate(portraitX, portraitY)
+            window.DrawImage(screen.CustomWizard.Portrait, &options)
+            screen.Font.PrintCenter(window, nameX, nameY, 1, screen.CustomWizard.Name)
+
+            screen.DrawBooks(window, 37, 135, screen.CustomWizard.Books)
+
+            screen.SelectFont.PrintCenter(window, 245, 2, 1, "Select Race")
+
         },
     }
 
@@ -2204,6 +2243,6 @@ func MakeNewWizardScreen() *NewWizardScreen {
     return &NewWizardScreen{
         CurrentWizard: 0,
         BooksOrder: randomizeBookOrder(12),
-        State: NewWizardScreenStateSelectSpells,
+        State: NewWizardScreenStateSelectRace,
     }
 }
