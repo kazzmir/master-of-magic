@@ -442,6 +442,8 @@ type NewWizardScreen struct {
     SpellBackground2 *ebiten.Image
     SpellBackground3 *ebiten.Image
 
+    RaceBackground *ebiten.Image
+
     Spells lbx.Spells
 
     OkReady *ebiten.Image
@@ -1090,6 +1092,8 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
         screen.OkNotReady = loadImage(43, 0)
 
         screen.PickOkSlot = loadImage(51, 0)
+
+        screen.RaceBackground = loadImage(55, 0)
 
         screen.SpellBackground1 = loadImage(48, 0)
         screen.SpellBackground2 = loadImage(49, 0)
@@ -2196,7 +2200,51 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *UI {
     return screen.MakeSelectRaceUI()
 }
 
+func premultiplyAlpha(c color.RGBA, alpha float32) color.RGBA {
+    return color.RGBA{
+        R: uint8(float32(c.R) * alpha),
+        G: uint8(float32(c.G) * alpha),
+        B: uint8(float32(c.B) * alpha),
+        A: uint8(float32(c.A) * alpha),
+    }
+}
+
 func (screen *NewWizardScreen) MakeSelectRaceUI() *UI {
+
+    black := color.RGBA{R: 0, G: 0, B: 0, A: 0xff}
+    blackPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        black, black, black, black, black,
+    }
+
+    raceColor := color.RGBA{R: 0xc1, G: 0x7a, B: 0x23, A: 0xff}
+    racePalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        raceColor, raceColor, raceColor,
+        raceColor, raceColor, raceColor,
+    }
+
+    raceShadowFont := font.MakeOptimizedFontWithPalette(screen.LbxFonts[3], blackPalette)
+    raceFont := font.MakeOptimizedFontWithPalette(screen.LbxFonts[3], racePalette)
+
+    yellow1 := color.RGBA{R: 0xd6, G: 0xb3, B: 0x85, A: 0xff}
+    availablePalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        premultiplyAlpha(color.RGBA{R: 0xd6, G: 0xb3, B: 0x85, A: 0xff}, 0.5),
+        // color.RGBA{R: 0x85, G: 0x68, B: 0x3d, A: 0xff},
+        yellow1, yellow1, yellow1,
+        yellow1, yellow1, yellow1,
+    }
+
+    yellow2 := premultiplyAlpha(yellow1, 0.3)
+    raceUnavailablePalette := color.Palette {
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        yellow2, yellow2, yellow2,
+        yellow2, yellow2, yellow2,
+    }
+
+    raceAvailable := font.MakeOptimizedFontWithPalette(screen.LbxFonts[2], availablePalette)
+    raceUnavailable := font.MakeOptimizedFontWithPalette(screen.LbxFonts[2], raceUnavailablePalette)
 
     ui := &UI{
         Draw: func(ui *UI, window *ebiten.Image){
@@ -2216,6 +2264,40 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *UI {
             screen.DrawBooks(window, 37, 135, screen.CustomWizard.Books)
 
             screen.SelectFont.PrintCenter(window, 245, 2, 1, "Select Race")
+
+            options.GeoM.Reset()
+            options.GeoM.Translate(180, 18)
+            window.DrawImage(screen.WindyBorder, &options)
+
+            arcanianRaces := []string{"Barbarian", "Gnoll", "Halfling", "High Elf", "High Men", "Klackon", "Lizardman", "Nomad", "Orc"}
+            myrranRaces := []string{"Beastmen", "Dark Elf", "Draconian", "Dwarven", "Troll"}
+
+            raceShadowFont.PrintCenter(window, 243 + 1, 25, 1, "Arcanian Races:")
+            raceFont.PrintCenter(window, 243, 25, 1, "Arcanian Races:")
+
+            options.GeoM.Reset()
+            options.GeoM.Translate(210, 33)
+            window.DrawImage(screen.RaceBackground, &options)
+
+            for i, race := range arcanianRaces {
+                yPos := 35 + 1 + i * (raceFont.Height() + 1)
+                raceAvailable.Print(window, 215, float64(yPos), 1, race)
+            }
+
+            raceShadowFont.PrintCenter(window, 243 + 1, 132, 1, "Myrran Races:")
+            raceFont.PrintCenter(window, 243, 132, 1, "Myrran Races:")
+
+            for i, race := range myrranRaces {
+                yPos := 145 + 1 + i * (raceFont.Height() + 1)
+                fontUse := raceUnavailable
+
+                if screen.CustomWizard.AbilityEnabled(AbilityMyrran){
+                    fontUse = raceAvailable
+                }
+
+                fontUse.Print(window, 215, float64(yPos), 1, race)
+            }
+
 
         },
     }
