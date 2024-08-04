@@ -6,6 +6,7 @@ import (
     "image"
     "image/color"
     "strings"
+    "bytes"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/hajimehoshi/ebiten/v2"
@@ -196,19 +197,25 @@ func (font *Font) CreateWrappedText(maxWidth float64, scale float64, text string
     var lines []string
     var yPos float64 = 0
 
-    for text != "" {
-        show, rest := font.splitText(text, maxWidth, scale)
+    textLines := bytes.Split([]byte(text), []byte{20})
 
-        // we were unable to split the text, just bail
-        if show == "" {
-            break
+    for _, lineByte := range textLines {
+        // line := strings.TrimSpace(string(lineByte))
+        line := string(lineByte)
+        for line != "" {
+            show, rest := font.splitText(line, maxWidth, scale)
+
+            // we were unable to split the text, just bail
+            if show == "" {
+                break
+            }
+
+            lines = append(lines, show)
+
+            yPos += float64(font.Height()) * scale + 1
+
+            line = rest
         }
-
-        lines = append(lines, show)
-
-        yPos += float64(font.Height()) * scale + 1
-
-        text = rest
     }
 
     return WrappedText{

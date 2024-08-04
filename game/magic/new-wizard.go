@@ -1370,6 +1370,8 @@ func (screen *NewWizardScreen) makeHelpElement(help lbx.HelpEntry) *UIElement {
     infoBodyMargin := 3
     maxInfoWidth := infoWidth - infoLeftMargin - infoBodyMargin - 15
 
+    // fmt.Printf("Help text: %v\n", []byte(help.Text))
+
     wrapped := screen.HelpFont.CreateWrappedText(float64(maxInfoWidth), 1, help.Text)
 
     helpTextY := infoY + infoTopMargin
@@ -1931,6 +1933,14 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *UI {
                             screen.CustomWizard.Spells.AddSpell(spell)
                             commonPicks -= 1
                         }
+                    },
+                    RightClick: func(this *UIElement){
+                        helpEntries := screen.Help.GetEntriesByName(spell.Name)
+                        if helpEntries == nil {
+                            return
+                        }
+
+                        screen.UI.AddElement(screen.makeHelpElement(helpEntries[0]))
                     },
                     Draw: func(this *UIElement, window *ebiten.Image){
                         if screen.CustomWizard.Spells.HasSpell(spell) {
