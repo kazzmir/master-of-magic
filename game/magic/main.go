@@ -36,11 +36,13 @@ func NewMagicGame() (*MagicGame, error) {
         NewWizardScreen: setup.MakeNewWizardScreen(),
     }
 
+    /*
     err := game.NewGameScreen.Load(game.LbxCache)
     if err != nil {
         return nil, err
     }
     game.NewGameScreen.Activate()
+    */
 
     /*
     err := game.NewWizardScreen.Load(game.LbxCache)
@@ -49,6 +51,15 @@ func NewMagicGame() (*MagicGame, error) {
     }
     game.NewWizardScreen.Activate()
     */
+
+    game.Game = gamelib.MakeGame(setup.WizardCustom{
+    })
+
+    err := game.Game.Load(game.LbxCache)
+    if err != nil {
+        return nil, err
+    }
+    game.Game.Activate()
 
     return game, err
 }
@@ -85,6 +96,10 @@ func (game *MagicGame) Update() error {
                 wizard := game.NewWizardScreen.CustomWizard
                 log.Printf("Launch game with wizard: %+v\n", wizard)
                 game.Game = gamelib.MakeGame(wizard)
+                err := game.Game.Load(game.LbxCache)
+                if err != nil {
+                    return err
+                }
                 game.Game.Activate()
                 game.NewWizardScreen = nil
         }
