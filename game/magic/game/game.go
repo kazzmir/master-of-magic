@@ -12,7 +12,7 @@ type Game struct {
     active bool
 
     MainHud *ebiten.Image
-
+    Map *Map
 }
 
 func (game *Game) Load(cache *lbx.LbxCache) error {
@@ -48,7 +48,10 @@ func (game *Game) Load(cache *lbx.LbxCache) error {
 }
 
 func MakeGame(wizard setup.WizardCustom) *Game {
-    game := &Game{}
+    game := &Game{
+        active: false,
+        Map: MakeMap(),
+    }
     return game
 }
 
@@ -65,5 +68,9 @@ func (game *Game) Update(){
 
 func (game *Game) Draw(screen *ebiten.Image){
     var options ebiten.DrawImageOptions
+
+    game.Map.Draw(screen)
+
+    // draw hud on top of map
     screen.DrawImage(game.MainHud, &options)
 }
