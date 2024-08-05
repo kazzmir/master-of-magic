@@ -12,6 +12,7 @@ import (
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
+    uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
     _ "github.com/hajimehoshi/ebiten/v2/vector"
 
@@ -334,111 +335,6 @@ func (wizard *wizardCustom) MagicLevel(kind MagicType) int {
     return 0
 }
 
-type UIInsideElementFunc func(element *UIElement)
-type UINotInsideElementFunc func(element *UIElement)
-type UIClickElementFunc func(element *UIElement)
-type UIDrawFunc func(element *UIElement, window *ebiten.Image)
-type UIKeyFunc func(key ebiten.Key)
-
-type UILayer int
-
-type UIElement struct {
-    Rect image.Rectangle
-    NotInside UINotInsideElementFunc
-    Inside UIInsideElementFunc
-    LeftClick UIClickElementFunc
-    RightClick UIClickElementFunc
-    Draw UIDrawFunc
-    Layer UILayer
-}
-
-type UI struct {
-    // track the layer number of the elements
-    Elements map[UILayer][]*UIElement
-    // keep track of the minimum and maximum keys so we don't have to sort
-    minLayer UILayer
-    maxLayer UILayer
-    Draw func(*UI, *ebiten.Image)
-    HandleKey UIKeyFunc
-}
-
-func (ui *UI) AddElement(element *UIElement){
-    if element.Layer < ui.minLayer {
-        ui.minLayer = element.Layer
-    }
-    if element.Layer > ui.maxLayer {
-        ui.maxLayer = element.Layer
-    }
-
-    ui.Elements[element.Layer] = append(ui.Elements[element.Layer], element)
-}
-
-func (ui *UI) RemoveElement(toRemove *UIElement){
-    elements := ui.Elements[toRemove.Layer]
-    var out []*UIElement
-    for _, element := range elements {
-        if element != toRemove {
-            out = append(out, element)
-        }
-    }
-
-    ui.Elements[toRemove.Layer] = out
-
-    /*
-    // recompute min/max layers
-    // this is a minor optimization really, so implement it later
-    if len(out) == 0 {
-        min := 0
-        max := 0
-
-        for layer, elements := range ui.Elements {
-            if layer < min {
-                min = layer
-            }
-            if layer > max {
-                max = layer
-            }
-        }
-    }
-    */
-}
-
-func (ui *UI) IterateElementsByLayer(f func(*UIElement)){
-    for i := ui.minLayer; i <= ui.maxLayer; i++ {
-        for _, element := range ui.Elements[i] {
-            f(element)
-        }
-    }
-}
-
-func (ui *UI) GetHighestLayer() []*UIElement {
-    for i := ui.maxLayer; i >= ui.minLayer; i-- {
-        elements := ui.Elements[i]
-        if len(elements) > 0 {
-            return elements
-        }
-    }
-
-    return nil
-}
-
-func (ui *UI) SetElementsFromArray(elements []*UIElement){
-    out := make(map[UILayer][]*UIElement)
-
-    for _, element := range elements {
-        if element.Layer < ui.minLayer {
-            ui.minLayer = element.Layer
-        }
-
-        if element.Layer > ui.maxLayer {
-            ui.maxLayer = element.Layer
-        }
-
-        out[element.Layer] = append(out[element.Layer], element)
-    }
-
-    ui.Elements = out
-}
 
 type NewWizardScreen struct {
     Background *ebiten.Image
@@ -482,7 +378,7 @@ type NewWizardScreen struct {
     HelpTop *ebiten.Image
     HelpBottom *ebiten.Image
 
-    UI *UI
+    UI *uilib.UI
 
     NameBox *ebiten.Image
 
@@ -541,15 +437,15 @@ func autoCrop(img image.Image) image.Image {
     return img
 }
 
-func (screen *NewWizardScreen) MakeCustomNameUI() *UI {
+func (screen *NewWizardScreen) MakeCustomNameUI() *uilib.UI {
     const portraitX = 24
     const portraitY = 10
 
     const nameX = 75
     const nameY = 120
 
-    ui := &UI{
-        Elements: make(map[UILayer][]*UIElement),
+    ui := &uilib.UI{
+        Elements: make(map[uilib.UILayer][]*uilib.UIElement),
         HandleKey: func(key ebiten.Key){
             switch key {
                 case ebiten.KeyBackspace:
@@ -574,7 +470,7 @@ func (screen *NewWizardScreen) MakeCustomNameUI() *UI {
                 screen.CustomWizard.Name = screen.CustomWizard.Name[0:MaxNameLength]
             }
         },
-        Draw: func(this *UI, window *ebiten.Image){
+        Draw: func(this *uilib.UI, window *ebiten.Image){
             var options ebiten.DrawImageOptions
             window.DrawImage(screen.Background, &options)
 
@@ -603,7 +499,7 @@ func (screen *NewWizardScreen) MakeCustomNameUI() *UI {
     return ui
 }
 
-func (screen *NewWizardScreen) MakeCustomPictureUI() *UI {
+func (screen *NewWizardScreen) MakeCustomPictureUI() *uilib.UI {
 
     clickFunc := func(wizard int){
         screen.State = NewWizardScreenStateCustomName
@@ -617,8 +513,8 @@ func (screen *NewWizardScreen) MakeCustomPictureUI() *UI {
 
     elements := screen.MakeWizardUIElements(clickFunc, insideFunc)
 
-    ui := &UI{
-        Draw: func(this *UI, window *ebiten.Image){
+    ui := &uilib.UI{
+        Draw: func(this *uilib.UI, window *ebiten.Image){
             var options ebiten.DrawImageOptions
             window.DrawImage(screen.Background, &options)
 
@@ -631,7 +527,7 @@ func (screen *NewWizardScreen) MakeCustomPictureUI() *UI {
             options.GeoM.Translate(166, 18)
             window.DrawImage(screen.CustomPictureBackground, &options)
 
-            this.IterateElementsByLayer(func (element *UIElement){
+            this.IterateElementsByLayer(func (element *uilib.UIElement){
                 element.Draw(element, window)
             })
 
@@ -648,8 +544,8 @@ func (screen *NewWizardScreen) MakeCustomPictureUI() *UI {
     return ui
 }
 
-func (screen *NewWizardScreen) MakeWizardUIElements(clickFunc func(wizard int), insideFunc func(wizard int)) []*UIElement {
-    var elements []*UIElement
+func (screen *NewWizardScreen) MakeWizardUIElements(clickFunc func(wizard int), insideFunc func(wizard int)) []*uilib.UIElement {
+    var elements []*uilib.UIElement
 
     top := 28
     space := 22
@@ -670,16 +566,16 @@ func (screen *NewWizardScreen) MakeWizardUIElements(clickFunc func(wizard int), 
             x2 := x1 + background.Bounds().Dx()
             y2 := y1 + background.Bounds().Dy()
 
-            elements = append(elements, &UIElement{
+            elements = append(elements, &uilib.UIElement{
                 Rect: image.Rect(x1, y1, x2, y2),
-                LeftClick: func(this *UIElement){
+                LeftClick: func(this *uilib.UIElement){
                     clickFunc(wizard)
                 },
-                Inside: func(this *UIElement){
+                Inside: func(this *uilib.UIElement){
                     insideFunc(wizard)
                     // screen.CurrentWizard = wizard
                 },
-                Draw: func(this *UIElement, window *ebiten.Image){
+                Draw: func(this *uilib.UIElement, window *ebiten.Image){
                     var options ebiten.DrawImageOptions
                     options.GeoM.Translate(float64(x1), float64(y1))
                     window.DrawImage(background, &options)
@@ -692,7 +588,7 @@ func (screen *NewWizardScreen) MakeWizardUIElements(clickFunc func(wizard int), 
     return elements
 }
 
-func (screen *NewWizardScreen) MakeSelectWizardUI() *UI {
+func (screen *NewWizardScreen) MakeSelectWizardUI() *uilib.UI {
     top := 28
     space := 22
     columnSpace := 76
@@ -710,24 +606,24 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *UI {
     elements := screen.MakeWizardUIElements(clickFunc, insideFunc)
 
     // custom element
-    elements = append(elements, (func () *UIElement {
+    elements = append(elements, (func () *uilib.UIElement {
         background := screen.WizardSlots[len(elements)].Background
         x1 := left + columnSpace
         y1 := top + 7 * space
         x2 := x1 + background.Bounds().Dx()
         y2 := y1 + background.Bounds().Dy()
 
-        return &UIElement{
+        return &uilib.UIElement{
             Rect: image.Rect(x1, y1, x2, y2),
-            LeftClick: func(this *UIElement){
+            LeftClick: func(this *uilib.UIElement){
                 screen.State = NewWizardScreenStateCustomPicture
                 screen.UI = screen.MakeCustomPictureUI()
 
             },
-            Inside: func(this *UIElement){
+            Inside: func(this *uilib.UIElement){
                 screen.CurrentWizard = -1
             },
-            Draw: func(this *UIElement, window *ebiten.Image){
+            Draw: func(this *uilib.UIElement, window *ebiten.Image){
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(float64(x1), float64(y1))
                 window.DrawImage(background, &options)
@@ -736,13 +632,13 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *UI {
         }
     })())
 
-    ui := &UI{
-        Draw: func(this *UI, window *ebiten.Image){
+    ui := &uilib.UI{
+        Draw: func(this *uilib.UI, window *ebiten.Image){
             var options ebiten.DrawImageOptions
             window.DrawImage(screen.Background, &options)
             screen.SelectFont.PrintCenter(window, 245, 2, 1, "Select Wizard")
 
-            this.IterateElementsByLayer(func (element *UIElement){
+            this.IterateElementsByLayer(func (element *uilib.UIElement){
                 element.Draw(element, window)
             })
 
@@ -1422,7 +1318,7 @@ func (screen *NewWizardScreen) DrawBooks(window *ebiten.Image, x float64, y floa
     }
 }
 
-func (screen *NewWizardScreen) makeErrorElement(message string) *UIElement {
+func (screen *NewWizardScreen) makeErrorElement(message string) *uilib.UIElement {
     errorX := 67
     errorY := 73
 
@@ -1438,13 +1334,13 @@ func (screen *NewWizardScreen) makeErrorElement(message string) *UIElement {
 
     topDraw := screen.ErrorTop.SubImage(image.Rect(0, 0, screen.ErrorTop.Bounds().Dx(), int(bottom) - errorY)).(*ebiten.Image)
 
-    element := &UIElement{
+    element := &uilib.UIElement{
         Rect: image.Rect(0, 0, ScreenWidth, ScreenHeight),
         Layer: 1,
-        LeftClick: func(this *UIElement){
+        LeftClick: func(this *uilib.UIElement){
             screen.UI.RemoveElement(this)
         },
-        Draw: func(this *UIElement, window *ebiten.Image){
+        Draw: func(this *uilib.UIElement, window *ebiten.Image){
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(errorX), float64(errorY))
             window.DrawImage(topDraw, &options)
@@ -1460,7 +1356,7 @@ func (screen *NewWizardScreen) makeErrorElement(message string) *UIElement {
     return element
 }
 
-func (screen *NewWizardScreen) makeHelpElement(help lbx.HelpEntry, helpEntries ...lbx.HelpEntry) *UIElement {
+func (screen *NewWizardScreen) makeHelpElement(help lbx.HelpEntry, helpEntries ...lbx.HelpEntry) *uilib.UIElement {
     infoX := 55
     infoY := 30
     infoWidth := screen.HelpTop.Bounds().Dx()
@@ -1503,10 +1399,10 @@ func (screen *NewWizardScreen) makeHelpElement(help lbx.HelpEntry, helpEntries .
     // only draw as much of the top scroll as there are lines of text
     topImage := screen.HelpTop.SubImage(image.Rect(0, 0, screen.HelpTop.Bounds().Dx(), int(bottom) - infoY)).(*ebiten.Image)
 
-    infoElement := &UIElement{
+    infoElement := &uilib.UIElement{
         // Rect: image.Rect(infoX, infoY, infoX + infoWidth, infoY + infoHeight),
         Rect: image.Rect(0, 0, ScreenWidth, ScreenHeight),
-        Draw: func (infoThis *UIElement, window *ebiten.Image){
+        Draw: func (infoThis *uilib.UIElement, window *ebiten.Image){
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(infoX), float64(infoY))
             window.DrawImage(topImage, &options)
@@ -1531,7 +1427,7 @@ func (screen *NewWizardScreen) makeHelpElement(help lbx.HelpEntry, helpEntries .
             screen.HelpTitleFont.Print(window, float64(titleX), float64(infoY + infoTopMargin + titleYAdjust), 1, help.Headline)
             screen.HelpFont.RenderWrapped(window, float64(infoX + infoLeftMargin + infoBodyMargin), float64(helpTextY), wrapped)
         },
-        LeftClick: func(infoThis *UIElement){
+        LeftClick: func(infoThis *uilib.UIElement){
             screen.UI.RemoveElement(infoThis)
         },
         Layer: 1,
@@ -1540,7 +1436,7 @@ func (screen *NewWizardScreen) makeHelpElement(help lbx.HelpEntry, helpEntries .
     return infoElement
 }
 
-func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
+func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
 
     picksLeft := func() int {
         picks := MaxPicks
@@ -1556,7 +1452,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
         return picks
     }
 
-    var elements []*UIElement
+    var elements []*uilib.UIElement
 
     const bookWidth = 8
     const bookHeight = 20
@@ -1615,12 +1511,12 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
         y2 := y1 + bookHeight
 
         // element to remove all books
-        elements = append(elements, &UIElement{
+        elements = append(elements, &uilib.UIElement{
             Rect: image.Rect(x1, y1, x2, y2),
-            LeftClick: func(this *UIElement){
+            LeftClick: func(this *uilib.UIElement){
                 screen.CustomWizard.SetMagicLevel(bookMagic, 0)
             },
-            Draw: func(this *UIElement, window *ebiten.Image){
+            Draw: func(this *uilib.UIElement, window *ebiten.Image){
             },
         })
 
@@ -1650,9 +1546,9 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
 
             level := i
 
-            element := &UIElement{
+            element := &uilib.UIElement{
                 Rect: image.Rect(x1, y1, x2, y2),
-                LeftClick: func(this *UIElement){
+                LeftClick: func(this *uilib.UIElement){
 
                     // user cannot hold both life and death magic
                     if bookMagic == LifeMagic && screen.CustomWizard.MagicLevel(DeathMagic) > 0 {
@@ -1676,7 +1572,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
                         }
                     }
                 },
-                RightClick: func(this *UIElement){
+                RightClick: func(this *uilib.UIElement){
                     helpEntries := screen.Help.GetEntriesByName(book.Help)
                     if helpEntries == nil {
                         return
@@ -1684,11 +1580,11 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
 
                     screen.UI.AddElement(screen.makeHelpElement(helpEntries[0]))
                 },
-                Inside: func(this *UIElement){
+                Inside: func(this *uilib.UIElement){
                     // if the user hovers over this element, then draw partially transparent books
                     ghostBooks = level
                 },
-                Draw: func(this *UIElement, window *ebiten.Image){
+                Draw: func(this *uilib.UIElement, window *ebiten.Image){
                     if screen.CustomWizard.MagicLevel(bookMagic) > level {
                         var options ebiten.DrawImageOptions
                         options.GeoM.Translate(float64(x1), float64(y1))
@@ -1708,9 +1604,9 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
         }
 
         // add a non-drawing UI element that is used to detect if the user is pointing at any of the books
-        elements = append(elements, &UIElement{
+        elements = append(elements, &uilib.UIElement{
             Rect: image.Rect(minX, bookY, maxX, bookY + bookHeight),
-            NotInside: func(this *UIElement){
+            NotInside: func(this *uilib.UIElement){
                 ghostBooks = -1
             },
         })
@@ -1788,9 +1684,9 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
     }
 
     for ability := range produceAbilityPositions() {
-        elements = append(elements, &UIElement{
+        elements = append(elements, &uilib.UIElement{
             Rect: image.Rect(int(ability.X), int(ability.Y), int(ability.X) + ability.Length, int(ability.Y) + screen.AbilityFont.Height()),
-            LeftClick: func(this *UIElement){
+            LeftClick: func(this *uilib.UIElement){
                 if screen.CustomWizard.AbilityEnabled(ability.Ability) {
                     screen.CustomWizard.ToggleAbility(ability.Ability, picksLeft())
                 } else if isAbilityAvailable(ability.Ability) {
@@ -1805,7 +1701,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
                     }
                 }
             },
-            RightClick: func(this *UIElement){
+            RightClick: func(this *uilib.UIElement){
 
                 helpEntries := screen.Help.GetEntriesByName(ability.Ability.String())
                 if helpEntries == nil {
@@ -1819,7 +1715,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
 
                 screen.UI.AddElement(screen.makeHelpElement(helpEntries[0]))
             },
-            Draw: func(this *UIElement, window *ebiten.Image){
+            Draw: func(this *uilib.UIElement, window *ebiten.Image){
                 font := screen.AbilityFont
 
                 if screen.CustomWizard.AbilityEnabled(ability.Ability) {
@@ -1837,9 +1733,9 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
     }
 
     // ok button
-    elements = append(elements, &UIElement{
+    elements = append(elements, &uilib.UIElement{
         Rect: image.Rect(252, 182, 252 + screen.OkReady.Bounds().Dx(), 182 + screen.OkReady.Bounds().Dy()),
-        LeftClick: func(this *UIElement){
+        LeftClick: func(this *uilib.UIElement){
             if picksLeft() == 0 {
                 screen.State = NewWizardScreenStateSelectSpells
                 screen.UI = screen.MakeSelectSpellsUI()
@@ -1847,7 +1743,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
                 screen.UI.AddElement(screen.makeErrorElement("You need to make all your picks before you can continue"))
             }
         },
-        RightClick: func(this *UIElement){
+        RightClick: func(this *uilib.UIElement){
             helpEntries := screen.Help.GetEntriesByName("ok button")
             if helpEntries == nil {
                 return
@@ -1855,7 +1751,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
 
             screen.UI.AddElement(screen.makeHelpElement(helpEntries[0]))
         },
-        Draw: func(this *UIElement, window *ebiten.Image){
+        Draw: func(this *uilib.UIElement, window *ebiten.Image){
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(252, 182)
             if picksLeft() == 0 {
@@ -1866,8 +1762,8 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
         },
     })
 
-    ui := &UI{
-        Draw: func(ui *UI, window *ebiten.Image){
+    ui := &uilib.UI{
+        Draw: func(ui *uilib.UI, window *ebiten.Image){
             const portraitX = 24
             const portraitY = 10
 
@@ -1883,7 +1779,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
 
             screen.DrawBooks(window, 37, 135, screen.CustomWizard.Books)
 
-            ui.IterateElementsByLayer(func (element *UIElement){
+            ui.IterateElementsByLayer(func (element *uilib.UIElement){
                 if element.Draw != nil {
                     element.Draw(element, window)
                 }
@@ -1900,7 +1796,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *UI {
 
 }
 
-func (screen *NewWizardScreen) MakeSelectSpellsUI() *UI {
+func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
 
     // for each book of magic the user has create a spell ui that allows the user to select
     // some set of spells, so if the user has 4 nature and 4 chaos, then the user would see
@@ -1992,7 +1888,7 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *UI {
 
     var doNextMagicUI func (magic MagicType)
 
-    makeUIForMagic := func (magic MagicType) *UI {
+    makeUIForMagic := func (magic MagicType) *uilib.UI {
         commonMax := computeCommon(screen.CustomWizard.MagicLevel(magic))
         uncommonMax := computeUncommon(screen.CustomWizard.MagicLevel(magic))
         rareMax := computeRare(screen.CustomWizard.MagicLevel(magic))
@@ -2028,7 +1924,7 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *UI {
             return commonPicks + uncommonPicks + rarePicks
         }
 
-        var elements []*UIElement
+        var elements []*uilib.UIElement
 
         // make fonts in the color of the magic book (blue for sorcery, etc)
         titleFont := font.MakeOptimizedFontWithPalette(screen.LbxFonts[4], getPalette(magic))
@@ -2042,9 +1938,9 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *UI {
                 useX := x
                 useY := y
 
-                elements = append(elements, &UIElement{
+                elements = append(elements, &uilib.UIElement{
                     Rect: image.Rect(int(x), int(y), int(x) + width, int(y) + screen.AbilityFontAvailable.Height()),
-                    LeftClick: func(this *UIElement){
+                    LeftClick: func(this *uilib.UIElement){
                         if screen.CustomWizard.Spells.HasSpell(spell) {
                             screen.CustomWizard.Spells.RemoveSpell(spell)
                             *picks += 1
@@ -2055,7 +1951,7 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *UI {
                             screen.UI.AddElement(screen.makeErrorElement("You have no picks left in this area, to deselect click on a selected item"))
                         }
                     },
-                    RightClick: func(this *UIElement){
+                    RightClick: func(this *uilib.UIElement){
                         helpEntries := screen.Help.GetEntriesByName(spell.Name)
                         if helpEntries == nil {
                             return
@@ -2063,7 +1959,7 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *UI {
 
                         screen.UI.AddElement(screen.makeHelpElement(helpEntries[0]))
                     },
-                    Draw: func(this *UIElement, window *ebiten.Image){
+                    Draw: func(this *uilib.UIElement, window *ebiten.Image){
                         if screen.CustomWizard.Spells.HasSpell(spell) {
                             var options ebiten.DrawImageOptions
                             options.GeoM.Translate(float64(useX), float64(useY))
@@ -2102,16 +1998,16 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *UI {
         }
 
         // ok button
-        elements = append(elements, &UIElement{
+        elements = append(elements, &uilib.UIElement{
             Rect: image.Rect(252, 182, 252 + screen.OkReady.Bounds().Dx(), 182 + screen.OkReady.Bounds().Dy()),
-            LeftClick: func(this *UIElement){
+            LeftClick: func(this *uilib.UIElement){
                 if picksLeft() == 0 {
                     doNextMagicUI(magic)
                 } else {
                     screen.UI.AddElement(screen.makeErrorElement("You need to make all your picks before you can continue"))
                 }
             },
-            RightClick: func(this *UIElement){
+            RightClick: func(this *uilib.UIElement){
                 /*
                 helpEntries := screen.Help.GetEntriesByName("ok button")
                 if helpEntries == nil {
@@ -2121,7 +2017,7 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *UI {
                 screen.UI.AddElement(screen.makeHelpElement(helpEntries[0]))
                 */
             },
-            Draw: func(this *UIElement, window *ebiten.Image){
+            Draw: func(this *uilib.UIElement, window *ebiten.Image){
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(252, 182)
                 if picksLeft() == 0 {
@@ -2132,8 +2028,8 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *UI {
             },
         })
 
-        ui := &UI{
-            Draw: func(ui *UI, window *ebiten.Image){
+        ui := &uilib.UI{
+            Draw: func(ui *uilib.UI, window *ebiten.Image){
                 const portraitX = 24
                 const portraitY = 10
 
@@ -2191,7 +2087,7 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *UI {
                     showDescription(78, fmt.Sprintf("Rare: %v", rareMax), screen.SpellBackground2)
                 }
 
-                ui.IterateElementsByLayer(func (element *UIElement){
+                ui.IterateElementsByLayer(func (element *uilib.UIElement){
                     if element.Draw != nil {
                         element.Draw(element, window)
                     }
@@ -2241,7 +2137,7 @@ func premultiplyAlpha(c color.RGBA, alpha float32) color.RGBA {
     }
 }
 
-func (screen *NewWizardScreen) MakeSelectRaceUI() *UI {
+func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
 
     black := color.RGBA{R: 0, G: 0, B: 0, A: 0xff}
     blackPalette := color.Palette{
@@ -2287,7 +2183,7 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *UI {
     raceUnavailable := font.MakeOptimizedFontWithPalette(screen.LbxFonts[2], raceUnavailablePalette)
     raceSelect := font.MakeOptimizedFontWithPalette(screen.LbxFonts[2], selectPalette)
 
-    var elements []*UIElement
+    var elements []*uilib.UIElement
 
     // technically 'Lizardmen' should be 'Lizardman' and 'Dwarf' should be 'Dwarven', but the help has them listed as
     // 'Lizardmen Townsfolk' and 'Dwarf Townsfolk'
@@ -2299,20 +2195,20 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *UI {
 
         highlight := false
 
-        elements = append(elements, &UIElement{
+        elements = append(elements, &uilib.UIElement{
             Rect: image.Rect(210, yPos, 210 + screen.RaceBackground.Bounds().Dx(), yPos + raceAvailable.Height()),
-            Inside: func(this *UIElement){
+            Inside: func(this *uilib.UIElement){
                 highlight = true
             },
-            NotInside: func(this *UIElement){
+            NotInside: func(this *uilib.UIElement){
                 highlight = false
             },
-            LeftClick: func(this *UIElement){
+            LeftClick: func(this *uilib.UIElement){
                 screen.CustomWizard.Race = race
                 screen.UI = screen.MakeSelectBannerUI()
                 screen.State = NewWizardScreenStateSelectBanner
             },
-            RightClick: func(this *UIElement){
+            RightClick: func(this *uilib.UIElement){
                 helpEntries := screen.Help.GetEntriesByName(fmt.Sprintf("%v townsfolk", race))
                 if helpEntries == nil {
                     log.Printf("Warning: no help found for race '%v'", race)
@@ -2321,7 +2217,7 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *UI {
 
                 screen.UI.AddElement(screen.makeHelpElement(helpEntries[0], helpEntries[1:]...))
             },
-            Draw: func(this *UIElement, window *ebiten.Image){
+            Draw: func(this *uilib.UIElement, window *ebiten.Image){
                 if highlight {
                     raceSelect.Print(window, 215, float64(yPos), 1, race)
                 } else {
@@ -2341,15 +2237,15 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *UI {
 
         highlight := false
 
-        elements = append(elements, &UIElement{
+        elements = append(elements, &uilib.UIElement{
             Rect: image.Rect(210, yPos, 210 + screen.RaceBackground.Bounds().Dx(), yPos + raceAvailable.Height()),
-            Inside: func(this *UIElement){
+            Inside: func(this *uilib.UIElement){
                 highlight = true
             },
-            NotInside: func(this *UIElement){
+            NotInside: func(this *uilib.UIElement){
                 highlight = false
             },
-            LeftClick: func(this *UIElement){
+            LeftClick: func(this *uilib.UIElement){
                 if screen.CustomWizard.AbilityEnabled(AbilityMyrran) {
                     screen.CustomWizard.Race = race
                     screen.UI = screen.MakeSelectBannerUI()
@@ -2358,7 +2254,7 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *UI {
                     screen.UI.AddElement(screen.makeErrorElement("You can not select a Myrran race unless you have the Myrran special."))
                 }
             },
-            RightClick: func(this *UIElement){
+            RightClick: func(this *uilib.UIElement){
                 helpEntries := screen.Help.GetEntriesByName(fmt.Sprintf("%v townsfolk", race))
                 if helpEntries == nil {
                     log.Printf("Warning: no help found for race '%v'", race)
@@ -2367,7 +2263,7 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *UI {
 
                 screen.UI.AddElement(screen.makeHelpElement(helpEntries[0], helpEntries[1:]...))
             },
-            Draw: func(this *UIElement, window *ebiten.Image){
+            Draw: func(this *uilib.UIElement, window *ebiten.Image){
                 fontDraw := fontUse
                 if screen.CustomWizard.AbilityEnabled(AbilityMyrran) {
                     if highlight {
@@ -2382,8 +2278,8 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *UI {
         })
     }
 
-    ui := &UI{
-        Draw: func(ui *UI, window *ebiten.Image){
+    ui := &uilib.UI{
+        Draw: func(ui *uilib.UI, window *ebiten.Image){
             const portraitX = 24
             const portraitY = 10
 
@@ -2417,7 +2313,7 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *UI {
 
             screen.AbilityFontSelected.Print(window, 12, 180, 1, joinAbilities(screen.CustomWizard.Abilities))
 
-            ui.IterateElementsByLayer(func (element *UIElement){
+            ui.IterateElementsByLayer(func (element *uilib.UIElement){
                 if element.Draw != nil {
                     element.Draw(element, window)
                 }
@@ -2431,23 +2327,23 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *UI {
     return ui
 }
 
-func (screen *NewWizardScreen) MakeSelectBannerUI() *UI {
-    var elements []*UIElement
+func (screen *NewWizardScreen) MakeSelectBannerUI() *uilib.UI {
+    var elements []*uilib.UIElement
 
     for i, banner := range []BannerType{BannerGreen, BannerBlue, BannerRed, BannerPurple, BannerYellow} {
         height := 34
         yPos := 24 + i * height
-        elements = append(elements, &UIElement{
+        elements = append(elements, &uilib.UIElement{
             Rect: image.Rect(160, yPos, 320, yPos + height),
-            Draw: func(this *UIElement, window *ebiten.Image){
+            Draw: func(this *uilib.UIElement, window *ebiten.Image){
                 // vector.StrokeRect(window, 160, float32(yPos), 160, float32(height), 1, color.RGBA{R: 0xff, G: uint8(i * 20), B: uint8(i * 20), A: 0xff}, true)
             },
-            LeftClick: func(this *UIElement){
+            LeftClick: func(this *uilib.UIElement){
                 screen.CustomWizard.Banner = banner
                 screen.State = NewWizardScreenStateFinished
                 // fmt.Printf("choose banner %v\n", banner)
             },
-            RightClick: func(this *UIElement){
+            RightClick: func(this *uilib.UIElement){
                 helpEntries := screen.Help.GetEntriesByName("Select a banner")
                 if helpEntries == nil {
                     return
@@ -2458,8 +2354,8 @@ func (screen *NewWizardScreen) MakeSelectBannerUI() *UI {
         })
     }
 
-    ui := &UI{
-        Draw: func(ui *UI, window *ebiten.Image){
+    ui := &uilib.UI{
+        Draw: func(ui *uilib.UI, window *ebiten.Image){
             const portraitX = 24
             const portraitY = 10
 
@@ -2483,7 +2379,7 @@ func (screen *NewWizardScreen) MakeSelectBannerUI() *UI {
 
             screen.AbilityFontSelected.Print(window, 12, 180, 1, joinAbilities(screen.CustomWizard.Abilities))
 
-            ui.IterateElementsByLayer(func (element *UIElement){
+            ui.IterateElementsByLayer(func (element *uilib.UIElement){
                 if element.Draw != nil {
                     element.Draw(element, window)
                 }
