@@ -238,6 +238,7 @@ type wizardCustom struct {
     Abilities []WizardAbility
     Books []wizardBook
     Spells lbx.Spells
+    Race string
 }
 
 func (wizard *wizardCustom) AbilityEnabled(ability WizardAbility) bool {
@@ -2277,7 +2278,8 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *UI {
                 highlight = false
             },
             LeftClick: func(this *UIElement){
-                // set ui to pick flag
+                screen.CustomWizard.Race = race
+                screen.UI = screen.MakeSelectBannerUI()
             },
             RightClick: func(this *UIElement){
                 helpEntries := screen.Help.GetEntriesByName(fmt.Sprintf("%v townsfolk", race))
@@ -2318,7 +2320,8 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *UI {
             },
             LeftClick: func(this *UIElement){
                 if screen.CustomWizard.AbilityEnabled(AbilityMyrran) {
-                    // continue with next select screen
+                    screen.CustomWizard.Race = race
+                    screen.UI = screen.MakeSelectBannerUI()
                 } else {
                     screen.UI.AddElement(screen.makeErrorElement("You can not select a Myrran race unless you have the Myrran special."))
                 }
@@ -2392,6 +2395,15 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *UI {
     }
 
     ui.SetElementsFromArray(elements)
+
+    return ui
+}
+
+func (screen *NewWizardScreen) MakeSelectBannerUI() *UI {
+    ui := &UI{
+        Draw: func(ui *UI, window *ebiten.Image){
+        },
+    }
 
     return ui
 }
