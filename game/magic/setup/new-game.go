@@ -8,9 +8,9 @@ import (
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
+    uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
 
     "github.com/hajimehoshi/ebiten/v2"
-    "github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
 const DifficultyMax = 4
@@ -108,8 +108,12 @@ type NewGameScreen struct {
     loaded sync.Once
     Font *font.Font
 
+    State NewGameState
+
     Settings NewGameSettings
     Active bool
+
+    UI *uilib.UI
 }
 
 func (newGameScreen *NewGameScreen) Activate() {
@@ -182,9 +186,140 @@ func (newGameScreen *NewGameScreen) Load(cache *lbx.LbxCache) error {
         newGameScreen.OpponentsBlock = loadImage(5, 0)
         newGameScreen.LandSizeBlock = loadImage(6, 0)
         newGameScreen.MagicBlock = loadImage(7, 0)
+
+        newGameScreen.UI = newGameScreen.MakeUI()
     })
 
     return outError
+}
+
+func (newGameScreen *NewGameScreen) MakeUI() *uilib.UI {
+
+    var elements []*uilib.UIElement
+
+    okX := 160 + 91
+    okY := 179
+
+    elements = append(elements, &uilib.UIElement{
+        Rect: image.Rect(okX, okY, okX + newGameScreen.OkButtons[0].Bounds().Dx(), okY + newGameScreen.OkButtons[0].Bounds().Dy()),
+        LeftClick: func(element *uilib.UIElement) {
+            newGameScreen.State = NewGameStateOk
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(okX), float64(okY))
+            screen.DrawImage(newGameScreen.OkButtons[0], &options)
+        },
+    })
+
+    cancelX := 160 + 10
+    cancelY := 179
+
+    elements = append(elements, &uilib.UIElement{
+        Rect: image.Rect(cancelX, cancelY, cancelX + newGameScreen.CancelButtons[0].Bounds().Dx(), cancelY + newGameScreen.CancelButtons[0].Bounds().Dy()),
+        LeftClick: func(element *uilib.UIElement) {
+            newGameScreen.State = NewGameStateCancel
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(cancelX), float64(cancelY))
+            screen.DrawImage(newGameScreen.CancelButtons[0], &options)
+        },
+    })
+
+    difficultyX := 160 + 91
+    difficultyY := 39
+
+    elements = append(elements, &uilib.UIElement{
+        Rect: image.Rect(difficultyX, difficultyY, difficultyX + newGameScreen.DifficultyBlock.Bounds().Dx(), difficultyY + newGameScreen.DifficultyBlock.Bounds().Dy()),
+        LeftClick: func(element *uilib.UIElement) {
+            newGameScreen.Settings.DifficultyNext()
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(difficultyX), float64(difficultyY))
+            screen.DrawImage(newGameScreen.DifficultyBlock, &options)
+
+            x := difficultyX + newGameScreen.DifficultyBlock.Bounds().Dx() / 2
+            y := difficultyY + 3
+            newGameScreen.Font.PrintCenter(screen, float64(x), float64(y), 1, newGameScreen.Settings.DifficultyString())
+        },
+    })
+
+    opponentsX := 160 + 91
+    opponentsY := 66
+
+    elements = append(elements, &uilib.UIElement{
+        Rect: image.Rect(opponentsX, opponentsY, opponentsX + newGameScreen.OpponentsBlock.Bounds().Dx(), opponentsY + newGameScreen.OpponentsBlock.Bounds().Dy()),
+        LeftClick: func(element *uilib.UIElement) {
+            newGameScreen.Settings.OpponentsNext()
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(opponentsX), float64(opponentsY))
+            screen.DrawImage(newGameScreen.OpponentsBlock, &options)
+            x := opponentsX + newGameScreen.OpponentsBlock.Bounds().Dx() / 2
+            y := opponentsY + 4
+            newGameScreen.Font.PrintCenter(screen, float64(x), float64(y), 1, newGameScreen.Settings.OpponentsString())
+        },
+    })
+
+    landsizeX := 160 + 91
+    landsizeY := 93
+
+    elements = append(elements, &uilib.UIElement{
+        Rect: image.Rect(landsizeX, landsizeY, landsizeX + newGameScreen.LandSizeBlock.Bounds().Dx(), landsizeY + newGameScreen.LandSizeBlock.Bounds().Dy()),
+        LeftClick: func(element *uilib.UIElement) {
+            newGameScreen.Settings.LandSizeNext()
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(landsizeX), float64(landsizeY))
+            screen.DrawImage(newGameScreen.LandSizeBlock, &options)
+
+            x := landsizeX + newGameScreen.LandSizeBlock.Bounds().Dx() / 2
+            y := landsizeY + 4
+
+            newGameScreen.Font.PrintCenter(screen, float64(x), float64(y), 1, newGameScreen.Settings.LandSizeString())
+        },
+    })
+
+    magicX := 160 + 91
+    magicY := 120
+
+    elements = append(elements, &uilib.UIElement{
+        Rect: image.Rect(magicX, magicY, magicX + newGameScreen.MagicBlock.Bounds().Dx(), magicY + newGameScreen.MagicBlock.Bounds().Dy()),
+        LeftClick: func(element *uilib.UIElement) {
+            newGameScreen.Settings.MagicNext()
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(magicX), float64(magicY))
+            screen.DrawImage(newGameScreen.MagicBlock, &options)
+            x := magicX + newGameScreen.MagicBlock.Bounds().Dx() / 2
+            y := magicY + 4
+            newGameScreen.Font.PrintCenter(screen, float64(x), float64(y), 1, newGameScreen.Settings.MagicString())
+        },
+    })
+
+    ui := uilib.UI{
+        Draw: func(ui *uilib.UI, screen *ebiten.Image) {
+            var options ebiten.DrawImageOptions
+            screen.DrawImage(newGameScreen.Background, &options)
+
+            options.GeoM.Reset()
+            options.GeoM.Translate(160 + 5, 0)
+            screen.DrawImage(newGameScreen.Options, &options)
+
+            ui.IterateElementsByLayer(func (element *uilib.UIElement){
+                element.Draw(element, screen)
+            })
+        },
+    }
+
+    ui.SetElementsFromArray(elements)
+
+    return &ui
 }
 
 func (newGameScreen *NewGameScreen) GetUIRect(component NewGameUI) image.Rectangle {
@@ -225,6 +360,12 @@ func (newGameScreen *NewGameScreen) GetUIRect(component NewGameUI) image.Rectang
 }
 
 func (newGameScreen *NewGameScreen) Update() NewGameState {
+
+    if newGameScreen.UI != nil {
+        newGameScreen.UI.StandardUpdate()
+    }
+
+    /*
     if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
         x, y := ebiten.CursorPosition()
         if pointInRect(x, y, newGameScreen.GetUIRect(NewGameDifficulty)) {
@@ -251,75 +392,19 @@ func (newGameScreen *NewGameScreen) Update() NewGameState {
             return NewGameStateCancel
         }
     }
+    */
 
-    return NewGameStateRunning
+    return newGameScreen.State
 }
 
 func (newGameScreen *NewGameScreen) Draw(screen *ebiten.Image) {
-    if newGameScreen.Background != nil {
-        var options ebiten.DrawImageOptions
-        screen.DrawImage(newGameScreen.Background, &options)
-    }
-
-    if newGameScreen.Options != nil {
-        var options ebiten.DrawImageOptions
-        options.GeoM.Translate(160 + 5, 0)
-        screen.DrawImage(newGameScreen.Options, &options)
-    }
-
-    if newGameScreen.OkButtons[0] != nil {
-        var options ebiten.DrawImageOptions
-        rect := newGameScreen.GetUIRect(NewGameOk)
-        options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
-        screen.DrawImage(newGameScreen.OkButtons[0], &options)
-    }
-
-    if newGameScreen.CancelButtons[0] != nil {
-        var options ebiten.DrawImageOptions
-        rect := newGameScreen.GetUIRect(NewGameCancel)
-        options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
-        screen.DrawImage(newGameScreen.CancelButtons[0], &options)
-    }
-
-    if newGameScreen.DifficultyBlock != nil {
-        var options ebiten.DrawImageOptions
-        rect := newGameScreen.GetUIRect(NewGameDifficulty)
-        options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
-        screen.DrawImage(newGameScreen.DifficultyBlock, &options)
-    }
-
-    if newGameScreen.OpponentsBlock != nil {
-        var options ebiten.DrawImageOptions
-        rect := newGameScreen.GetUIRect(NewGameOppoonents)
-        options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
-        screen.DrawImage(newGameScreen.OpponentsBlock, &options)
-    }
-
-    if newGameScreen.LandSizeBlock != nil {
-        var options ebiten.DrawImageOptions
-        rect := newGameScreen.GetUIRect(NewGameLandSize)
-        options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
-        screen.DrawImage(newGameScreen.LandSizeBlock, &options)
-    }
-
-    if newGameScreen.MagicBlock != nil {
-        var options ebiten.DrawImageOptions
-        rect := newGameScreen.GetUIRect(NewGameMagic)
-        options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
-        screen.DrawImage(newGameScreen.MagicBlock, &options)
-    }
-
-    if newGameScreen.Font != nil {
-        newGameScreen.Font.PrintCenter(screen, 160 + 91 + float64(newGameScreen.DifficultyBlock.Bounds().Dx()) / 2, 39 + 3, 1, newGameScreen.Settings.DifficultyString())
-        newGameScreen.Font.PrintCenter(screen, 160 + 91 + float64(newGameScreen.OpponentsBlock.Bounds().Dx()) / 2, 66 + 4, 1, newGameScreen.Settings.OpponentsString())
-        newGameScreen.Font.PrintCenter(screen, 160 + 91 + float64(newGameScreen.LandSizeBlock.Bounds().Dx()) / 2, 93 + 4, 1, newGameScreen.Settings.LandSizeString())
-        newGameScreen.Font.PrintCenter(screen, 160 + 91 + float64(newGameScreen.LandSizeBlock.Bounds().Dx()) / 2, 120 + 4, 1, newGameScreen.Settings.MagicString())
-    }
+    newGameScreen.UI.Draw(newGameScreen.UI, screen)
 }
 
 func MakeNewGameScreen() *NewGameScreen {
     return &NewGameScreen{
         Active: false,
+        State: NewGameStateRunning,
         Settings: NewGameSettings{
             Difficulty: 0,
             Opponents: 3,

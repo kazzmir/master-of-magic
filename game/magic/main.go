@@ -36,19 +36,19 @@ func NewMagicGame() (*MagicGame, error) {
         NewWizardScreen: setup.MakeNewWizardScreen(),
     }
 
-    /*
     err := game.NewGameScreen.Load(game.LbxCache)
     if err != nil {
         return nil, err
     }
     game.NewGameScreen.Activate()
-    */
 
+    /*
     err := game.NewWizardScreen.Load(game.LbxCache)
     if err != nil {
         return nil, err
     }
     game.NewWizardScreen.Activate()
+    */
 
     return game, err
 }

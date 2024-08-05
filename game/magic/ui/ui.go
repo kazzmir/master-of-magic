@@ -3,6 +3,7 @@ package ui
 import (
     "image"
     "github.com/hajimehoshi/ebiten/v2"
+    "github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
 type UIInsideElementFunc func(element *UIElement)
@@ -111,3 +112,36 @@ func (ui *UI) SetElementsFromArray(elements []*UIElement){
     ui.Elements = out
 }
 
+func (ui *UI) StandardUpdate() {
+    if ui.HandleKey != nil {
+        keys := make([]ebiten.Key, 0)
+        keys = inpututil.AppendJustPressedKeys(keys)
+
+        for _, key := range keys {
+            ui.HandleKey(key)
+        }
+    }
+
+    leftClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)
+    rightClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight)
+
+    mouseX, mouseY := ebiten.CursorPosition()
+
+    for _, element := range ui.GetHighestLayer() {
+        if mouseX >= element.Rect.Min.X && mouseY >= element.Rect.Min.Y && mouseX < element.Rect.Max.X && mouseY <= element.Rect.Max.Y {
+            if element.Inside != nil {
+                element.Inside(element)
+            }
+            if leftClick && element.LeftClick != nil {
+                element.LeftClick(element)
+            }
+            if rightClick && element.RightClick != nil {
+                element.RightClick(element)
+            }
+        } else {
+            if element.NotInside != nil {
+                element.NotInside(element)
+            }
+        }
+    }
+}

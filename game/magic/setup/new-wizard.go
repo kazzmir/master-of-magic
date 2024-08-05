@@ -14,7 +14,6 @@ import (
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
-    "github.com/hajimehoshi/ebiten/v2/inpututil"
     _ "github.com/hajimehoshi/ebiten/v2/vector"
 
     "github.com/hajimehoshi/ebiten/v2"
@@ -700,6 +699,11 @@ const MaxNameLength = 18
 func (screen *NewWizardScreen) Update() NewWizardScreenState {
     screen.counter += 1
 
+    if screen.UI != nil {
+        screen.UI.StandardUpdate()
+    }
+
+    /*
     if screen.UI.HandleKey != nil {
         keys := make([]ebiten.Key, 0)
         keys = inpututil.AppendJustPressedKeys(keys)
@@ -733,6 +737,7 @@ func (screen *NewWizardScreen) Update() NewWizardScreenState {
             }
         }
     }
+    */
 
     return screen.State
 }
