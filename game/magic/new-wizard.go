@@ -40,6 +40,27 @@ func (magic MagicType) String() string {
     return ""
 }
 
+type BannerType int
+const (
+    BannerGreen BannerType = iota
+    BannerBlue
+    BannerRed
+    BannerPurple
+    BannerYellow
+)
+
+func (banner BannerType) String() string {
+    switch banner {
+        case BannerGreen: return "green"
+        case BannerBlue: return "blue"
+        case BannerRed: return "red"
+        case BannerPurple: return "purple"
+        case BannerYellow: return "yellow"
+    }
+
+    return ""
+}
+
 const MaxPicks = 11
 
 /* the number of books a wizard has of a specific magic type */
@@ -231,6 +252,7 @@ const (
     NewWizardScreenStateSelectSpells
     NewWizardScreenStateSelectRace
     NewWizardScreenStateSelectBanner
+    NewWizardScreenStateFinished
 )
 
 type wizardCustom struct {
@@ -240,6 +262,7 @@ type wizardCustom struct {
     Books []wizardBook
     Spells lbx.Spells
     Race string
+    Banner BannerType
 }
 
 func (wizard *wizardCustom) AbilityEnabled(ability WizardAbility) bool {
@@ -2407,6 +2430,32 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *UI {
 }
 
 func (screen *NewWizardScreen) MakeSelectBannerUI() *UI {
+    var elements []*UIElement
+
+    for i, banner := range []BannerType{BannerGreen, BannerBlue, BannerRed, BannerPurple, BannerYellow} {
+        height := 34
+        yPos := 24 + i * height
+        elements = append(elements, &UIElement{
+            Rect: image.Rect(160, yPos, 320, yPos + height),
+            Draw: func(this *UIElement, window *ebiten.Image){
+                // vector.StrokeRect(window, 160, float32(yPos), 160, float32(height), 1, color.RGBA{R: 0xff, G: uint8(i * 20), B: uint8(i * 20), A: 0xff}, true)
+            },
+            LeftClick: func(this *UIElement){
+                screen.CustomWizard.Banner = banner
+                screen.State = NewWizardScreenStateFinished
+                // fmt.Printf("choose banner %v\n", banner)
+            },
+            RightClick: func(this *UIElement){
+                helpEntries := screen.Help.GetEntriesByName("Select a banner")
+                if helpEntries == nil {
+                    return
+                }
+
+                screen.UI.AddElement(screen.makeHelpElement(helpEntries[0]))
+            },
+        })
+    }
+
     ui := &UI{
         Draw: func(ui *UI, window *ebiten.Image){
             const portraitX = 24
@@ -2439,6 +2488,8 @@ func (screen *NewWizardScreen) MakeSelectBannerUI() *UI {
             })
         },
     }
+
+    ui.SetElementsFromArray(elements)
 
     return ui
 }
