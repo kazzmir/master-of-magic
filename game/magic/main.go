@@ -8,6 +8,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    gamelib "github.com/kazzmir/master-of-magic/game/magic/game"
 
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -19,35 +20,13 @@ func stretchImage(screen *ebiten.Image, sprite *ebiten.Image){
     screen.DrawImage(sprite, &options)
 }
 
-type Game struct {
-    active bool
-}
-
-func MakeGame(wizard setup.WizardCustom) *Game {
-    return &Game{}
-}
-
-func (game *Game) IsActive() bool {
-    return game.active
-}
-
-func (game *Game) Activate() {
-    game.active = true
-}
-
-func (game *Game) Update(){
-}
-
-func (game *Game) Draw(screen *ebiten.Image){
-}
-
 type MagicGame struct {
     LbxCache *lbx.LbxCache
 
     NewGameScreen *setup.NewGameScreen
     NewWizardScreen *setup.NewWizardScreen
 
-    Game *Game
+    Game *gamelib.Game
 }
 
 func NewMagicGame() (*MagicGame, error) {
@@ -105,7 +84,7 @@ func (game *MagicGame) Update() error {
                 game.NewWizardScreen.Deactivate()
                 wizard := game.NewWizardScreen.CustomWizard
                 log.Printf("Launch game with wizard: %+v\n", wizard)
-                game.Game = MakeGame(wizard)
+                game.Game = gamelib.MakeGame(wizard)
                 game.Game.Activate()
                 game.NewWizardScreen = nil
         }
