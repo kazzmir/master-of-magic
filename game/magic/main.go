@@ -7,17 +7,16 @@ import (
     "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/game/magic/setup"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
 
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
-const ScreenWidth = 320
-const ScreenHeight = 200
-
 func stretchImage(screen *ebiten.Image, sprite *ebiten.Image){
     var options ebiten.DrawImageOptions
-    options.GeoM.Scale(float64(ScreenWidth) / float64(sprite.Bounds().Dx()), float64(ScreenHeight) / float64(sprite.Bounds().Dy()))
+    options.GeoM.Scale(float64(data.ScreenWidth) / float64(sprite.Bounds().Dx()), float64(data.ScreenHeight) / float64(sprite.Bounds().Dy()))
     screen.DrawImage(sprite, &options)
 }
 
@@ -29,7 +28,7 @@ type Game struct {
     active bool
 }
 
-func MakeGame(wizard wizardCustom) *Game {
+func MakeGame(wizard setup.WizardCustom) *Game {
     return &Game{}
 }
 
@@ -51,7 +50,7 @@ type MagicGame struct {
     LbxCache *lbx.LbxCache
 
     NewGameScreen *NewGameScreen
-    NewWizardScreen *NewWizardScreen
+    NewWizardScreen *setup.NewWizardScreen
 
     Game *Game
 }
@@ -60,7 +59,7 @@ func NewMagicGame() (*MagicGame, error) {
     game := &MagicGame{
         LbxCache: lbx.MakeLbxCache("magic-data"),
         NewGameScreen: MakeNewGameScreen(),
-        NewWizardScreen: MakeNewWizardScreen(),
+        NewWizardScreen: setup.MakeNewWizardScreen(),
     }
 
     /*
@@ -107,7 +106,7 @@ func (game *MagicGame) Update() error {
 
     if game.NewWizardScreen != nil && game.NewWizardScreen.IsActive() {
         switch game.NewWizardScreen.Update() {
-            case NewWizardScreenStateFinished:
+            case setup.NewWizardScreenStateFinished:
                 game.NewWizardScreen.Deactivate()
                 wizard := game.NewWizardScreen.CustomWizard
                 log.Printf("Launch game with wizard: %+v\n", wizard)
@@ -125,7 +124,7 @@ func (game *MagicGame) Update() error {
 }
 
 func (game *MagicGame) Layout(outsideWidth int, outsideHeight int) (int, int) {
-    return ScreenWidth, ScreenHeight
+    return data.ScreenWidth, data.ScreenHeight
 }
 
 func (game *MagicGame) Draw(screen *ebiten.Image) {
@@ -147,7 +146,7 @@ func (game *MagicGame) Draw(screen *ebiten.Image) {
 func main() {
     log.SetFlags(log.Ldate | log.Lshortfile | log.Lmicroseconds)
 
-    ebiten.SetWindowSize(ScreenWidth * 5, ScreenHeight * 5)
+    ebiten.SetWindowSize(data.ScreenWidth * 5, data.ScreenHeight * 5)
     ebiten.SetWindowTitle("magic")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 

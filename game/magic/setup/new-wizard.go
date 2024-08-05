@@ -1,4 +1,4 @@
-package main
+package setup
 
 import (
     "fmt"
@@ -12,6 +12,7 @@ import (
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
     _ "github.com/hajimehoshi/ebiten/v2/vector"
@@ -131,7 +132,7 @@ func (ability WizardAbility) DependencyExplanation() string {
 }
 
 // some abilities can only be selected if other properties of the wizard are set
-func (ability WizardAbility) SatisifiedDependencies(wizard *wizardCustom) bool {
+func (ability WizardAbility) SatisifiedDependencies(wizard *WizardCustom) bool {
     switch ability {
         case AbilityAlchemy: return true
         case AbilityWarlord: return true
@@ -256,7 +257,7 @@ const (
     NewWizardScreenStateFinished
 )
 
-type wizardCustom struct {
+type WizardCustom struct {
     Name string
     Portrait *ebiten.Image
     Abilities []WizardAbility
@@ -266,7 +267,7 @@ type wizardCustom struct {
     Banner BannerType
 }
 
-func (wizard *wizardCustom) AbilityEnabled(ability WizardAbility) bool {
+func (wizard *WizardCustom) AbilityEnabled(ability WizardAbility) bool {
     for _, check := range wizard.Abilities {
         if check == ability {
             return true
@@ -276,7 +277,7 @@ func (wizard *wizardCustom) AbilityEnabled(ability WizardAbility) bool {
     return false
 }
 
-func (wizard *wizardCustom) ToggleAbility(ability WizardAbility, picksLeft int){
+func (wizard *WizardCustom) ToggleAbility(ability WizardAbility, picksLeft int){
     var out []WizardAbility
 
     found := false
@@ -296,7 +297,7 @@ func (wizard *wizardCustom) ToggleAbility(ability WizardAbility, picksLeft int){
     wizard.Abilities = out
 }
 
-func (wizard *wizardCustom) SetMagicLevel(kind MagicType, count int){
+func (wizard *WizardCustom) SetMagicLevel(kind MagicType, count int){
     var out []wizardBook
 
     found := false
@@ -325,7 +326,7 @@ func (wizard *wizardCustom) SetMagicLevel(kind MagicType, count int){
     wizard.Books = out
 }
 
-func (wizard *wizardCustom) MagicLevel(kind MagicType) int {
+func (wizard *WizardCustom) MagicLevel(kind MagicType) int {
     for _, book := range wizard.Books {
         if book.Magic == kind {
             return book.Count
@@ -392,7 +393,7 @@ type NewWizardScreen struct {
 
     State NewWizardScreenState
 
-    CustomWizard wizardCustom
+    CustomWizard WizardCustom
 
     CurrentWizard int
     Active bool
@@ -1335,7 +1336,7 @@ func (screen *NewWizardScreen) makeErrorElement(message string) *uilib.UIElement
     topDraw := screen.ErrorTop.SubImage(image.Rect(0, 0, screen.ErrorTop.Bounds().Dx(), int(bottom) - errorY)).(*ebiten.Image)
 
     element := &uilib.UIElement{
-        Rect: image.Rect(0, 0, ScreenWidth, ScreenHeight),
+        Rect: image.Rect(0, 0, data.ScreenWidth, data.ScreenHeight),
         Layer: 1,
         LeftClick: func(this *uilib.UIElement){
             screen.UI.RemoveElement(this)
@@ -1401,7 +1402,7 @@ func (screen *NewWizardScreen) makeHelpElement(help lbx.HelpEntry, helpEntries .
 
     infoElement := &uilib.UIElement{
         // Rect: image.Rect(infoX, infoY, infoX + infoWidth, infoY + infoHeight),
-        Rect: image.Rect(0, 0, ScreenWidth, ScreenHeight),
+        Rect: image.Rect(0, 0, data.ScreenWidth, data.ScreenHeight),
         Draw: func (infoThis *uilib.UIElement, window *ebiten.Image){
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(infoX), float64(infoY))
