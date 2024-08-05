@@ -1,4 +1,4 @@
-package main
+package setup
 
 import (
     "fmt"
@@ -17,6 +17,10 @@ const DifficultyMax = 4
 const OpponentsMax = 4
 const LandSizeMax = 2
 const MagicMax = 2
+
+func pointInRect(x int, y int, rect image.Rectangle) bool {
+    return x >= rect.Min.X && x < rect.Max.X && y >= rect.Min.Y && y < rect.Max.Y
+}
 
 type NewGameSettings struct {
     Difficulty int

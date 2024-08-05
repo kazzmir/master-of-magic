@@ -3,7 +3,6 @@ package main
 import (
     "log"
     _ "fmt"
-    "image"
     "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -18,10 +17,6 @@ func stretchImage(screen *ebiten.Image, sprite *ebiten.Image){
     var options ebiten.DrawImageOptions
     options.GeoM.Scale(float64(data.ScreenWidth) / float64(sprite.Bounds().Dx()), float64(data.ScreenHeight) / float64(sprite.Bounds().Dy()))
     screen.DrawImage(sprite, &options)
-}
-
-func pointInRect(x int, y int, rect image.Rectangle) bool {
-    return x >= rect.Min.X && x < rect.Max.X && y >= rect.Min.Y && y < rect.Max.Y
 }
 
 type Game struct {
@@ -49,7 +44,7 @@ func (game *Game) Draw(screen *ebiten.Image){
 type MagicGame struct {
     LbxCache *lbx.LbxCache
 
-    NewGameScreen *NewGameScreen
+    NewGameScreen *setup.NewGameScreen
     NewWizardScreen *setup.NewWizardScreen
 
     Game *Game
@@ -58,7 +53,7 @@ type MagicGame struct {
 func NewMagicGame() (*MagicGame, error) {
     game := &MagicGame{
         LbxCache: lbx.MakeLbxCache("magic-data"),
-        NewGameScreen: MakeNewGameScreen(),
+        NewGameScreen: setup.MakeNewGameScreen(),
         NewWizardScreen: setup.MakeNewWizardScreen(),
     }
 
@@ -91,15 +86,15 @@ func (game *MagicGame) Update() error {
 
     if game.NewGameScreen != nil && game.NewGameScreen.IsActive() {
         switch game.NewGameScreen.Update() {
-            case NewGameStateRunning:
-            case NewGameStateOk:
+            case setup.NewGameStateRunning:
+            case setup.NewGameStateOk:
                 game.NewGameScreen.Deactivate()
                 err := game.NewWizardScreen.Load(game.LbxCache)
                 if err != nil {
                     return err
                 }
                 game.NewWizardScreen.Activate()
-            case NewGameStateCancel:
+            case setup.NewGameStateCancel:
                 return ebiten.Termination
         }
     }
