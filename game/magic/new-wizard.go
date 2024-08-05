@@ -8,6 +8,7 @@ import (
     "strings"
     "image"
     "image/color"
+    "log"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
@@ -1306,7 +1307,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
         // set custom wizard to merlin for now
         screen.CustomWizard.Portrait = screen.WizardSlots[0].Portrait
         screen.CustomWizard.Name = screen.WizardSlots[0].Name
-        // screen.CustomWizard.Abilities = []WizardAbility{AbilityAlchemy, AbilityConjurer, AbilityFamous}
+        screen.CustomWizard.Abilities = []WizardAbility{AbilityMyrran}
         // screen.CustomWizard.Spells.AddSpell(screen.Spells.FindByName("Disrupt"))
         screen.CustomWizard.Books = []wizardBook{
             wizardBook{
@@ -1428,7 +1429,7 @@ func (screen *NewWizardScreen) makeErrorElement(message string) *UIElement {
     return element
 }
 
-func (screen *NewWizardScreen) makeHelpElement(help lbx.HelpEntry) *UIElement {
+func (screen *NewWizardScreen) makeHelpElement(help lbx.HelpEntry, helpEntries ...lbx.HelpEntry) *UIElement {
     infoX := 55
     infoY := 30
     infoWidth := screen.HelpTop.Bounds().Dx()
@@ -2243,8 +2244,108 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *UI {
         yellow2, yellow2, yellow2,
     }
 
+    selectColor := color.RGBA{R: 0xfc, G: 0xf3, B: 0x1c, A: 0xff}
+    selectPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        premultiplyAlpha(selectColor, 0.5),
+        selectColor, selectColor, selectColor,
+        selectColor, selectColor, selectColor,
+    }
+
     raceAvailable := font.MakeOptimizedFontWithPalette(screen.LbxFonts[2], availablePalette)
     raceUnavailable := font.MakeOptimizedFontWithPalette(screen.LbxFonts[2], raceUnavailablePalette)
+    raceSelect := font.MakeOptimizedFontWithPalette(screen.LbxFonts[2], selectPalette)
+
+    var elements []*UIElement
+
+    // technically 'Lizardmen' should be 'Lizardman' and 'Dwarf' should be 'Dwarven', but the help has them listed as
+    // 'Lizardmen Townsfolk' and 'Dwarf Townsfolk'
+    arcanianRaces := []string{"Barbarian", "Gnoll", "Halfling", "High Elf", "High Men", "Klackon", "Lizardmen", "Nomad", "Orc"}
+    myrranRaces := []string{"Beastmen", "Dark Elf", "Draconian", "Dwarf", "Troll"}
+
+    for i, race := range arcanianRaces {
+        yPos := 35 + 1 + i * (raceFont.Height() + 1)
+
+        highlight := false
+
+        elements = append(elements, &UIElement{
+            Rect: image.Rect(210, yPos, 210 + screen.RaceBackground.Bounds().Dx(), yPos + raceAvailable.Height()),
+            Inside: func(this *UIElement){
+                highlight = true
+            },
+            NotInside: func(this *UIElement){
+                highlight = false
+            },
+            LeftClick: func(this *UIElement){
+                // set ui to pick flag
+            },
+            RightClick: func(this *UIElement){
+                helpEntries := screen.Help.GetEntriesByName(fmt.Sprintf("%v townsfolk", race))
+                if helpEntries == nil {
+                    log.Printf("Warning: no help found for race '%v'", race)
+                    return
+                }
+
+                screen.UI.AddElement(screen.makeHelpElement(helpEntries[0], helpEntries[1:]...))
+            },
+            Draw: func(this *UIElement, window *ebiten.Image){
+                if highlight {
+                    raceSelect.Print(window, 215, float64(yPos), 1, race)
+                } else {
+                    raceAvailable.Print(window, 215, float64(yPos), 1, race)
+                }
+            },
+        })
+    }
+
+    for i, race := range myrranRaces {
+        yPos := 145 + 1 + i * (raceFont.Height() + 1)
+        fontUse := raceUnavailable
+
+        if screen.CustomWizard.AbilityEnabled(AbilityMyrran){
+            fontUse = raceAvailable
+        }
+
+        highlight := false
+
+        elements = append(elements, &UIElement{
+            Rect: image.Rect(210, yPos, 210 + screen.RaceBackground.Bounds().Dx(), yPos + raceAvailable.Height()),
+            Inside: func(this *UIElement){
+                highlight = true
+            },
+            NotInside: func(this *UIElement){
+                highlight = false
+            },
+            LeftClick: func(this *UIElement){
+                if screen.CustomWizard.AbilityEnabled(AbilityMyrran) {
+                    // continue with next select screen
+                } else {
+                    screen.UI.AddElement(screen.makeErrorElement("You can not select a Myrran race unless you have the Myrran special."))
+                }
+            },
+            RightClick: func(this *UIElement){
+                helpEntries := screen.Help.GetEntriesByName(fmt.Sprintf("%v townsfolk", race))
+                if helpEntries == nil {
+                    log.Printf("Warning: no help found for race '%v'", race)
+                    return
+                }
+
+                screen.UI.AddElement(screen.makeHelpElement(helpEntries[0], helpEntries[1:]...))
+            },
+            Draw: func(this *UIElement, window *ebiten.Image){
+                fontDraw := fontUse
+                if screen.CustomWizard.AbilityEnabled(AbilityMyrran) {
+                    if highlight {
+                        fontDraw = raceSelect
+                    } else {
+                        fontDraw = raceAvailable
+                    }
+                }
+
+                fontDraw.Print(window, 215, float64(yPos), 1, race)
+            },
+        })
+    }
 
     ui := &UI{
         Draw: func(ui *UI, window *ebiten.Image){
@@ -2269,9 +2370,6 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *UI {
             options.GeoM.Translate(180, 18)
             window.DrawImage(screen.WindyBorder, &options)
 
-            arcanianRaces := []string{"Barbarian", "Gnoll", "Halfling", "High Elf", "High Men", "Klackon", "Lizardman", "Nomad", "Orc"}
-            myrranRaces := []string{"Beastmen", "Dark Elf", "Draconian", "Dwarven", "Troll"}
-
             raceShadowFont.PrintCenter(window, 243 + 1, 25, 1, "Arcanian Races:")
             raceFont.PrintCenter(window, 243, 25, 1, "Arcanian Races:")
 
@@ -2279,28 +2377,21 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *UI {
             options.GeoM.Translate(210, 33)
             window.DrawImage(screen.RaceBackground, &options)
 
-            for i, race := range arcanianRaces {
-                yPos := 35 + 1 + i * (raceFont.Height() + 1)
-                raceAvailable.Print(window, 215, float64(yPos), 1, race)
-            }
-
             raceShadowFont.PrintCenter(window, 243 + 1, 132, 1, "Myrran Races:")
             raceFont.PrintCenter(window, 243, 132, 1, "Myrran Races:")
 
-            for i, race := range myrranRaces {
-                yPos := 145 + 1 + i * (raceFont.Height() + 1)
-                fontUse := raceUnavailable
+            screen.AbilityFontSelected.Print(window, 12, 180, 1, joinAbilities(screen.CustomWizard.Abilities))
 
-                if screen.CustomWizard.AbilityEnabled(AbilityMyrran){
-                    fontUse = raceAvailable
+            ui.IterateElementsByLayer(func (element *UIElement){
+                if element.Draw != nil {
+                    element.Draw(element, window)
                 }
-
-                fontUse.Print(window, 215, float64(yPos), 1, race)
-            }
-
+            })
 
         },
     }
+
+    ui.SetElementsFromArray(elements)
 
     return ui
 }
