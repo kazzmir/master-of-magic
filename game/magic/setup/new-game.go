@@ -18,10 +18,6 @@ const OpponentsMax = 4
 const LandSizeMax = 2
 const MagicMax = 2
 
-func pointInRect(x int, y int, rect image.Rectangle) bool {
-    return x >= rect.Min.X && x < rect.Max.X && y >= rect.Min.Y && y < rect.Max.Y
-}
-
 type NewGameSettings struct {
     Difficulty int
     Opponents int
@@ -76,17 +72,6 @@ func (settings *NewGameSettings) MagicString() string {
     kinds := []string{"Weak", "Normal", "Powerful"}
     return kinds[settings.Magic]
 }
-
-type NewGameUI int
-
-const (
-    NewGameDifficulty NewGameUI = iota
-    NewGameOppoonents
-    NewGameLandSize
-    NewGameMagic
-    NewGameOk
-    NewGameCancel
-)
 
 type NewGameState int
 const (
@@ -322,77 +307,11 @@ func (newGameScreen *NewGameScreen) MakeUI() *uilib.UI {
     return &ui
 }
 
-func (newGameScreen *NewGameScreen) GetUIRect(component NewGameUI) image.Rectangle {
-    switch component {
-        case NewGameDifficulty:
-            bounds := newGameScreen.DifficultyBlock.Bounds()
-            x := 160 + 91
-            y := 39
-            return image.Rect(x, y, x + bounds.Dx(), y + bounds.Dy())
-        case NewGameOppoonents:
-            bounds := newGameScreen.OpponentsBlock.Bounds()
-            x := 160 + 91
-            y := 66
-            return image.Rect(x, y, x + bounds.Dx(), y + bounds.Dy())
-        case NewGameLandSize:
-            bounds := newGameScreen.LandSizeBlock.Bounds()
-            x := 160 + 91
-            y := 93
-            return image.Rect(x, y, x + bounds.Dx(), y + bounds.Dy())
-        case NewGameMagic:
-            bounds := newGameScreen.MagicBlock.Bounds()
-            x := 160 + 91
-            y := 120
-            return image.Rect(x, y, x + bounds.Dx(), y + bounds.Dy())
-        case NewGameOk:
-            bounds := newGameScreen.OkButtons[0].Bounds()
-            x := 160 + 91
-            y := 179
-            return image.Rect(x, y, x + bounds.Dx(), y + bounds.Dy())
-        case NewGameCancel:
-            bounds := newGameScreen.CancelButtons[0].Bounds()
-            x := 160 + 10
-            y := 179
-            return image.Rect(x, y, x + bounds.Dx(), y + bounds.Dy())
-    }
-
-    return image.Rectangle{}
-}
-
 func (newGameScreen *NewGameScreen) Update() NewGameState {
 
     if newGameScreen.UI != nil {
         newGameScreen.UI.StandardUpdate()
     }
-
-    /*
-    if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-        x, y := ebiten.CursorPosition()
-        if pointInRect(x, y, newGameScreen.GetUIRect(NewGameDifficulty)) {
-            newGameScreen.Settings.DifficultyNext()
-        }
-
-        if pointInRect(x, y, newGameScreen.GetUIRect(NewGameOppoonents)) {
-            newGameScreen.Settings.OpponentsNext()
-        }
-
-        if pointInRect(x, y, newGameScreen.GetUIRect(NewGameLandSize)) {
-            newGameScreen.Settings.LandSizeNext()
-        }
-
-        if pointInRect(x, y, newGameScreen.GetUIRect(NewGameMagic)) {
-            newGameScreen.Settings.MagicNext()
-        }
-
-        if pointInRect(x, y, newGameScreen.GetUIRect(NewGameOk)) {
-            return NewGameStateOk
-        }
-
-        if pointInRect(x, y, newGameScreen.GetUIRect(NewGameCancel)) {
-            return NewGameStateCancel
-        }
-    }
-    */
 
     return newGameScreen.State
 }

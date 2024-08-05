@@ -703,42 +703,6 @@ func (screen *NewWizardScreen) Update() NewWizardScreenState {
         screen.UI.StandardUpdate()
     }
 
-    /*
-    if screen.UI.HandleKey != nil {
-        keys := make([]ebiten.Key, 0)
-        keys = inpututil.AppendJustPressedKeys(keys)
-
-        for _, key := range keys {
-            screen.UI.HandleKey(key)
-        }
-    }
-
-    leftClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)
-    rightClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight)
-
-    mouseX, mouseY := ebiten.CursorPosition()
-
-    if screen.UI != nil {
-        for _, element := range screen.UI.GetHighestLayer() {
-            if mouseX >= element.Rect.Min.X && mouseY >= element.Rect.Min.Y && mouseX < element.Rect.Max.X && mouseY <= element.Rect.Max.Y {
-                if element.Inside != nil {
-                    element.Inside(element)
-                }
-                if leftClick && element.LeftClick != nil {
-                    element.LeftClick(element)
-                }
-                if rightClick && element.RightClick != nil {
-                    element.RightClick(element)
-                }
-            } else {
-                if element.NotInside != nil {
-                    element.NotInside(element)
-                }
-            }
-        }
-    }
-    */
-
     return screen.State
 }
 
