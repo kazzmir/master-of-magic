@@ -25,11 +25,35 @@ func pointInRect(x int, y int, rect image.Rectangle) bool {
     return x >= rect.Min.X && x < rect.Max.X && y >= rect.Min.Y && y < rect.Max.Y
 }
 
+type Game struct {
+    active bool
+}
+
+func MakeGame(wizard wizardCustom) *Game {
+    return &Game{}
+}
+
+func (game *Game) IsActive() bool {
+    return game.active
+}
+
+func (game *Game) Activate() {
+    game.active = true
+}
+
+func (game *Game) Update(){
+}
+
+func (game *Game) Draw(screen *ebiten.Image){
+}
+
 type MagicGame struct {
     LbxCache *lbx.LbxCache
 
     NewGameScreen *NewGameScreen
     NewWizardScreen *NewWizardScreen
+
+    Game *Game
 }
 
 func NewMagicGame() (*MagicGame, error) {
@@ -66,7 +90,7 @@ func (game *MagicGame) Update() error {
         }
     }
 
-    if game.NewGameScreen.IsActive() {
+    if game.NewGameScreen != nil && game.NewGameScreen.IsActive() {
         switch game.NewGameScreen.Update() {
             case NewGameStateRunning:
             case NewGameStateOk:
@@ -81,8 +105,20 @@ func (game *MagicGame) Update() error {
         }
     }
 
-    if game.NewWizardScreen.IsActive() {
-        game.NewWizardScreen.Update()
+    if game.NewWizardScreen != nil && game.NewWizardScreen.IsActive() {
+        switch game.NewWizardScreen.Update() {
+            case NewWizardScreenStateFinished:
+                game.NewWizardScreen.Deactivate()
+                wizard := game.NewWizardScreen.CustomWizard
+                log.Printf("Launch game with wizard: %+v\n", wizard)
+                game.Game = MakeGame(wizard)
+                game.Game.Activate()
+                game.NewWizardScreen = nil
+        }
+    }
+
+    if game.Game != nil && game.Game.IsActive() {
+        game.Game.Update()
     }
 
     return nil
@@ -99,8 +135,12 @@ func (game *MagicGame) Draw(screen *ebiten.Image) {
         game.NewGameScreen.Draw(screen)
     }
 
-    if game.NewWizardScreen.IsActive() {
+    if game.NewWizardScreen != nil && game.NewWizardScreen.IsActive() {
         game.NewWizardScreen.Draw(screen)
+    }
+
+    if game.Game != nil && game.Game.IsActive() {
+        game.Game.Draw(screen)
     }
 }
 

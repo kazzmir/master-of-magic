@@ -607,7 +607,6 @@ func (screen *NewWizardScreen) MakeCustomPictureUI() *UI {
 
     clickFunc := func(wizard int){
         screen.State = NewWizardScreenStateCustomName
-
         screen.UI = screen.MakeCustomNameUI()
     }
 
@@ -722,7 +721,6 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *UI {
             Rect: image.Rect(x1, y1, x2, y2),
             LeftClick: func(this *UIElement){
                 screen.State = NewWizardScreenStateCustomPicture
-
                 screen.UI = screen.MakeCustomPictureUI()
 
             },
@@ -795,7 +793,7 @@ func validNameString(text string) bool {
 
 const MaxNameLength = 18
 
-func (screen *NewWizardScreen) Update() {
+func (screen *NewWizardScreen) Update() NewWizardScreenState {
     screen.counter += 1
 
     if screen.UI.HandleKey != nil {
@@ -831,6 +829,8 @@ func (screen *NewWizardScreen) Update() {
             }
         }
     }
+
+    return screen.State
 }
 
 func (screen *NewWizardScreen) LoadHelp(cache *lbx.LbxCache) error {
@@ -2310,6 +2310,7 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *UI {
             LeftClick: func(this *UIElement){
                 screen.CustomWizard.Race = race
                 screen.UI = screen.MakeSelectBannerUI()
+                screen.State = NewWizardScreenStateSelectBanner
             },
             RightClick: func(this *UIElement){
                 helpEntries := screen.Help.GetEntriesByName(fmt.Sprintf("%v townsfolk", race))
@@ -2352,6 +2353,7 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *UI {
                 if screen.CustomWizard.AbilityEnabled(AbilityMyrran) {
                     screen.CustomWizard.Race = race
                     screen.UI = screen.MakeSelectBannerUI()
+                    screen.State = NewWizardScreenStateSelectBanner
                 } else {
                     screen.UI.AddElement(screen.makeErrorElement("You can not select a Myrran race unless you have the Myrran special."))
                 }
