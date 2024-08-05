@@ -230,6 +230,7 @@ const (
     NewWizardScreenStateCustomBooks
     NewWizardScreenStateSelectSpells
     NewWizardScreenStateSelectRace
+    NewWizardScreenStateSelectBanner
 )
 
 type wizardCustom struct {
@@ -450,6 +451,8 @@ type NewWizardScreen struct {
 
     OkReady *ebiten.Image
     OkNotReady *ebiten.Image
+
+    BannerBackground *ebiten.Image
 
     Help lbx.Help
     HelpImageLoader func(string, int) (*ebiten.Image, error)
@@ -1103,6 +1106,8 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
 
         screen.WindyBorder = loadImage(47, 0)
 
+        screen.BannerBackground = loadImage(46, 0)
+
         screen.CustomPictureBackground = loadImage(39, 0)
         screen.CustomWizardBooks = loadImage(41, 0)
 
@@ -1329,6 +1334,8 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
             screen.UI = screen.MakeSelectSpellsUI()
         } else if screen.State == NewWizardScreenStateSelectRace {
             screen.UI = screen.MakeSelectRaceUI()
+        } else if screen.State == NewWizardScreenStateSelectBanner {
+            screen.UI = screen.MakeSelectBannerUI()
         }
     })
 
@@ -2402,6 +2409,34 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *UI {
 func (screen *NewWizardScreen) MakeSelectBannerUI() *UI {
     ui := &UI{
         Draw: func(ui *UI, window *ebiten.Image){
+            const portraitX = 24
+            const portraitY = 10
+
+            const nameX = 75
+            const nameY = 120
+
+            var options ebiten.DrawImageOptions
+            window.DrawImage(screen.Background, &options)
+
+            options.GeoM.Translate(portraitX, portraitY)
+            window.DrawImage(screen.CustomWizard.Portrait, &options)
+            screen.Font.PrintCenter(window, nameX, nameY, 1, screen.CustomWizard.Name)
+
+            screen.DrawBooks(window, 37, 135, screen.CustomWizard.Books)
+
+            options.GeoM.Reset()
+            options.GeoM.Translate(160, 0)
+            window.DrawImage(screen.BannerBackground, &options)
+
+            screen.SelectFont.PrintCenter(window, 245, 2, 1, "Select Banner")
+
+            screen.AbilityFontSelected.Print(window, 12, 180, 1, joinAbilities(screen.CustomWizard.Abilities))
+
+            ui.IterateElementsByLayer(func (element *UIElement){
+                if element.Draw != nil {
+                    element.Draw(element, window)
+                }
+            })
         },
     }
 
@@ -2428,6 +2463,6 @@ func MakeNewWizardScreen() *NewWizardScreen {
     return &NewWizardScreen{
         CurrentWizard: 0,
         BooksOrder: randomizeBookOrder(12),
-        State: NewWizardScreenStateSelectRace,
+        State: NewWizardScreenStateSelectBanner,
     }
 }
