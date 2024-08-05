@@ -79,8 +79,6 @@ type wizardSlot struct {
     Portrait *ebiten.Image
     Books []wizardBook
     ExtraAbility WizardAbility
-    X int
-    Y int
 }
 
 type WizardAbility int
@@ -597,7 +595,16 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *uilib.UI {
     left := 170
 
     clickFunc := func(wizard int){
-        // TODO: make this the selected wizard
+        screen.CustomWizard.Name = screen.WizardSlots[wizard].Name
+        screen.CustomWizard.Books = screen.WizardSlots[wizard].Books
+        screen.CustomWizard.Abilities = make([]WizardAbility, 0)
+        screen.CustomWizard.Portrait = screen.WizardSlots[wizard].Portrait
+        if screen.WizardSlots[wizard].ExtraAbility != AbilityNone {
+            screen.CustomWizard.Abilities = append(screen.CustomWizard.Abilities, screen.WizardSlots[wizard].ExtraAbility)
+        }
+
+        screen.State = NewWizardScreenStateSelectSpells
+        screen.UI = screen.MakeSelectSpellsUI()
     }
 
     insideFunc := func(wizard int){
@@ -1053,9 +1060,6 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
 
         screen.CheckMark = loadImage(52, 0)
 
-        top := 28
-        space := 22
-
         screen.WizardSlots = []wizardSlot{
             wizardSlot{
                 Name: "Merlin",
@@ -1066,8 +1070,6 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                     wizardBook{Magic: NatureMagic, Count: 5},
                 },
                 ExtraAbility: AbilitySageMaster,
-                X: 170,
-                Y: top,
             },
             wizardSlot{
                 Name: "Raven",
@@ -1078,8 +1080,6 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                     wizardBook{Magic: NatureMagic, Count: 5},
                 },
                 ExtraAbility: AbilityNone,
-                X: 170,
-                Y: top + 1 * space,
             },
             wizardSlot{
                 Name: "Sharee",
@@ -1090,8 +1090,6 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                     wizardBook{Magic: ChaosMagic, Count: 5},
                 },
                 ExtraAbility: AbilityConjurer,
-                X: 170,
-                Y: top + 2 * space,
             },
             wizardSlot{
                 Name: "Lo Pan",
@@ -1102,8 +1100,6 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                     wizardBook{Magic: ChaosMagic, Count: 5},
                 },
                 ExtraAbility: AbilityChanneler,
-                X: 170,
-                Y: top + 3 * space,
             },
             wizardSlot{
                 Name: "Jafar",
@@ -1113,8 +1109,6 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                     wizardBook{Magic: SorceryMagic, Count: 10},
                 },
                 ExtraAbility: AbilityAlchemy,
-                X: 170,
-                Y: top + 4 * space,
             },
             wizardSlot{
                 Name: "Oberic",
@@ -1125,8 +1119,6 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                     wizardBook{Magic: ChaosMagic, Count: 5},
                 },
                 ExtraAbility: AbilityManaFocusing,
-                X: 170,
-                Y: top + 5 * space,
             },
             wizardSlot{
                 Name: "Rjak",
@@ -1136,8 +1128,6 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                     wizardBook{Magic: DeathMagic, Count: 9},
                 },
                 ExtraAbility: AbilityInfernalPower,
-                X: 170,
-                Y: top + 6 * space,
             },
             wizardSlot{
                 Name: "Ssr'ra",
@@ -1148,8 +1138,6 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                     wizardBook{Magic: ChaosMagic, Count: 4},
                 },
                 ExtraAbility: AbilityMyrran,
-                X: 246,
-                Y: top + 0 * space,
             },
             wizardSlot{
                 Name: "Tauron",
@@ -1159,8 +1147,6 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                     wizardBook{Magic: ChaosMagic, Count: 10},
                 },
                 ExtraAbility: AbilityChaosMastery,
-                X: 246,
-                Y: top + 1 * space,
             },
             wizardSlot{
                 Name: "Freya",
@@ -1170,8 +1156,6 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                     wizardBook{Magic: NatureMagic, Count: 10},
                 },
                 ExtraAbility: AbilityNatureMastery,
-                X: 246,
-                Y: top + 2 * space,
             },
             wizardSlot{
                 Name: "Horus",
@@ -1182,8 +1166,6 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                     wizardBook{Magic: SorceryMagic, Count: 5},
                 },
                 ExtraAbility: AbilityArchmage,
-                X: 246,
-                Y: top + 3 * space,
             },
             wizardSlot{
                 Name: "Ariel",
@@ -1193,8 +1175,6 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                     wizardBook{Magic: LifeMagic, Count: 10},
                 },
                 ExtraAbility: AbilityCharismatic,
-                X: 246,
-                Y: top + 4 * space,
             },
             wizardSlot{
                 Name: "Tlaloc",
@@ -1205,8 +1185,6 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                     wizardBook{Magic: DeathMagic, Count: 5},
                 },
                 ExtraAbility: AbilityWarlord,
-                X: 246,
-                Y: top + 5 * space,
             },
             wizardSlot{
                 Name: "Kali",
@@ -1217,16 +1195,12 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                     wizardBook{Magic: DeathMagic, Count: 5},
                 },
                 ExtraAbility: AbilityArtificer,
-                X: 246,
-                Y: top + 6 * space,
             },
             wizardSlot{
                 Name: "Custom",
                 Background: loadImage(23, 0),
                 Books: nil,
                 Portrait: nil,
-                X: 246,
-                Y: top + 7 * space,
             },
         }
 
@@ -2413,6 +2387,6 @@ func MakeNewWizardScreen() *NewWizardScreen {
     return &NewWizardScreen{
         CurrentWizard: 0,
         BooksOrder: randomizeBookOrder(12),
-        State: NewWizardScreenStateSelectBanner,
+        State: NewWizardScreenStateSelectWizard,
     }
 }
