@@ -23,7 +23,7 @@ type Game struct {
     PlaneButtons []*ebiten.Image
 
     GoldFoodMagic *ebiten.Image
-    NextTurnBackground *ebiten.Image
+    GenericBackground *ebiten.Image
     NextTurn *ebiten.Image
 
     WhiteFont *font.Font
@@ -121,7 +121,7 @@ func (game *Game) Load(cache *lbx.LbxCache) error {
 
     game.GoldFoodMagic = loadImage(34, 0)
     game.NextTurn = loadImage(35, 0)
-    game.NextTurnBackground = loadImage(33, 0)
+    game.GenericBackground = loadImage(33, 0)
 
     return outError
 }
