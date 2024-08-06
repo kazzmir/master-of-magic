@@ -26,6 +26,8 @@ type Game struct {
     NextTurnBackground *ebiten.Image
     NextTurn *ebiten.Image
 
+    WhiteFont *font.Font
+
     InfoFontYellow *font.Font
 
     // FIXME: need one map for arcanus and one for myrran
@@ -56,6 +58,13 @@ func (game *Game) Load(cache *lbx.LbxCache) error {
     }
 
     game.InfoFontYellow = font.MakeOptimizedFontWithPalette(fonts[0], yellowPalette)
+
+    whitePalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.White, color.White, color.White, color.White,
+    }
+
+    game.WhiteFont = font.MakeOptimizedFontWithPalette(fonts[0], whitePalette)
 
     mainLbx, err := cache.GetLbxFile("MAIN.LBX")
     if err != nil {
@@ -177,6 +186,9 @@ func (game *Game) Draw(screen *ebiten.Image){
     game.InfoFontYellow.PrintCenter(screen, 278, 103, 1, "1 Gold")
     game.InfoFontYellow.PrintCenter(screen, 278, 135, 1, "1 Food")
     game.InfoFontYellow.PrintCenter(screen, 278, 167, 1, "1 Mana")
+
+    game.WhiteFont.Print(screen, 257, 68, 1, "75 GP")
+    game.WhiteFont.Print(screen, 298, 68, 1, "0 MP")
 
     /*
     options.GeoM.Reset()
