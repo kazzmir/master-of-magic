@@ -2,9 +2,11 @@ package game
 
 import (
     "fmt"
+    "image/color"
 
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -24,11 +26,37 @@ type Game struct {
     NextTurnBackground *ebiten.Image
     NextTurn *ebiten.Image
 
+    InfoFontYellow *font.Font
+
     // FIXME: need one map for arcanus and one for myrran
     Map *Map
 }
 
 func (game *Game) Load(cache *lbx.LbxCache) error {
+    fontLbx, err := cache.GetLbxFile("FONTS.LBX")
+    if err != nil {
+        return err
+    }
+
+    fonts, err := fontLbx.ReadFonts(0)
+    if err != nil {
+        return err
+    }
+
+    orange := color.RGBA{R: 0xc7, G: 0x82, B: 0x1b, A: 0xff}
+
+    yellowPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        orange,
+        orange,
+        orange,
+        orange,
+        orange,
+        orange,
+    }
+
+    game.InfoFontYellow = font.MakeOptimizedFontWithPalette(fonts[0], yellowPalette)
+
     mainLbx, err := cache.GetLbxFile("MAIN.LBX")
     if err != nil {
         return fmt.Errorf("Unable to load MAIN.LBX: %v", err)
@@ -145,6 +173,10 @@ func (game *Game) Draw(screen *ebiten.Image){
     options.GeoM.Reset()
     options.GeoM.Translate(240, 77)
     screen.DrawImage(game.GoldFoodMagic, &options)
+
+    game.InfoFontYellow.PrintCenter(screen, 278, 103, 1, "1 Gold")
+    game.InfoFontYellow.PrintCenter(screen, 278, 135, 1, "1 Food")
+    game.InfoFontYellow.PrintCenter(screen, 278, 167, 1, "1 Mana")
 
     /*
     options.GeoM.Reset()
