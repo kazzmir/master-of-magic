@@ -35,6 +35,7 @@ type Viewer struct {
     Images []ImageGPU
     Font *text.GoTextFaceSource
     Choice int
+    Counter uint64
     StartingRow int
 }
 
@@ -71,33 +72,68 @@ func (viewer *Viewer) TilesPerColumn() int {
 }
 
 func (viewer *Viewer) Update() error {
+    viewer.Counter += 1
     keys := make([]ebiten.Key, 0)
+    keys = inpututil.AppendPressedKeys(keys)
+
+    moveRight := false
+    moveLeft := false
+    moveUp := false
+    moveDown := false
+
+    leftShift := inpututil.KeyPressDuration(ebiten.KeyShiftLeft) > 0
+
+    if viewer.Counter % 3 == 0 && leftShift{
+
+        for _, key := range keys {
+            switch key {
+                case ebiten.KeyRight: moveRight = true
+                case ebiten.KeyLeft: moveLeft = true
+                case ebiten.KeyUp: moveUp = true
+                case ebiten.KeyDown: moveDown = true
+            }
+        }
+    }
+
+    keys = make([]ebiten.Key, 0)
     keys = inpututil.AppendJustPressedKeys(keys)
 
     for _, key := range keys {
         switch key {
-            case ebiten.KeyRight:
-                viewer.Choice += 1
-                if viewer.Choice >= len(viewer.Images) {
-                    viewer.Choice = len(viewer.Images) - 1
-                }
-            case ebiten.KeyLeft:
-                viewer.Choice -= 1
-                if viewer.Choice < 0 {
-                    viewer.Choice = 0
-                }
-            case ebiten.KeyUp:
-                viewer.Choice -= viewer.TilesPerRow()
-                if viewer.Choice < 0 {
-                    viewer.Choice = 0
-                }
-            case ebiten.KeyDown:
-                viewer.Choice += viewer.TilesPerRow()
-                if viewer.Choice >= len(viewer.Images) {
-                    viewer.Choice = len(viewer.Images) - 1
-                }
+            case ebiten.KeyRight: moveRight = true
+            case ebiten.KeyLeft: moveLeft = true
+            case ebiten.KeyUp: moveUp = true
+            case ebiten.KeyDown: moveDown = true
             case ebiten.KeyEscape, ebiten.KeyCapsLock:
                 return ebiten.Termination
+        }
+    }
+
+    if moveRight {
+        viewer.Choice += 1
+        if viewer.Choice >= len(viewer.Images) {
+            viewer.Choice = len(viewer.Images) - 1
+        }
+    }
+
+    if moveLeft {
+        viewer.Choice -= 1
+        if viewer.Choice < 0 {
+            viewer.Choice = 0
+        }
+    }
+
+    if moveUp {
+        viewer.Choice -= viewer.TilesPerRow()
+        if viewer.Choice < 0 {
+            viewer.Choice = 0
+        }
+    }
+
+    if moveDown {
+        viewer.Choice += viewer.TilesPerRow()
+        if viewer.Choice >= len(viewer.Images) {
+            viewer.Choice = len(viewer.Images) - 1
         }
     }
 
