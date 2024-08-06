@@ -3,18 +3,28 @@ package main
 import (
     "os"
     "fmt"
+    "bytes"
     "image"
     "image/color"
+    _ "embed"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
 
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
     "github.com/hajimehoshi/ebiten/v2/vector"
+    "github.com/hajimehoshi/ebiten/v2/text/v2"
 )
+
+//go:embed futura.ttf
+var FuturaTTF []byte
 
 const ScreenWidth = 1024
 const ScreenHeight = 768
+
+func LoadFont() (*text.GoTextFaceSource, error) {
+    return text.NewGoTextFaceSource(bytes.NewReader(FuturaTTF))
+}
 
 type ImageGPU struct {
     Raw image.Image
@@ -23,6 +33,7 @@ type ImageGPU struct {
 
 type Viewer struct {
     Images []ImageGPU
+    Font *text.GoTextFaceSource
     Choice int
 }
 
@@ -36,8 +47,14 @@ func MakeViewer(images []image.Image) *Viewer {
         })
     }
 
+    font, err := LoadFont()
+    if err != nil {
+        fmt.Printf("Could not load font: %v\n", err)
+    }
+
     return &Viewer{
         Images: use,
+        Font: font,
         Choice: 0,
     }
 }
@@ -88,9 +105,21 @@ func (viewer *Viewer) Layout(outsideWidth int, outsideHeight int) (int, int) {
 func (viewer *Viewer) Draw(screen *ebiten.Image) {
     screen.Fill(color.RGBA{0x10, 0x10, 0x10, 0xff})
 
+    face := &text.GoTextFace{Source: viewer.Font, Size: 15}
+    op := &text.DrawOptions{}
+    op.GeoM.Translate(1, 1)
+    op.ColorScale.ScaleWithColor(color.White)
+    text.Draw(screen, fmt.Sprintf("Terrain entry: %v/%v", viewer.Choice, len(viewer.Images)-1), face, op)
+
     var options ebiten.DrawImageOptions
     x := float64(3)
-    y := float64(100)
+    y := float64(110)
+
+    options.GeoM.Scale(4, 4)
+    options.GeoM.Translate(ScreenWidth/2, 10)
+    if viewer.Images[viewer.Choice].GPU != nil {
+        screen.DrawImage(viewer.Images[viewer.Choice].GPU, &options)
+    }
 
     for i, img := range viewer.Images {
         if img.GPU == nil {
@@ -98,9 +127,9 @@ func (viewer *Viewer) Draw(screen *ebiten.Image) {
             viewer.Images[i] = img
         }
 
-        screen.DrawImage(img.GPU, &options)
         options.GeoM.Reset()
         options.GeoM.Translate(x, y)
+        screen.DrawImage(img.GPU, &options)
 
         if i == viewer.Choice {
             width := float32(img.Raw.Bounds().Dx())
