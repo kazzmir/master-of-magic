@@ -20,6 +20,10 @@ type Game struct {
     InfoButtons []*ebiten.Image
     PlaneButtons []*ebiten.Image
 
+    GoldFoodMagic *ebiten.Image
+    NextTurnBackground *ebiten.Image
+    NextTurn *ebiten.Image
+
     // FIXME: need one map for arcanus and one for myrran
     Map *Map
 }
@@ -78,6 +82,10 @@ func (game *Game) Load(cache *lbx.LbxCache) error {
     game.InfoButtons = loadImages(6)
     game.PlaneButtons = loadImages(7)
 
+    game.GoldFoodMagic = loadImage(34, 0)
+    game.NextTurn = loadImage(35, 0)
+    game.NextTurnBackground = loadImage(33, 0)
+
     return outError
 }
 
@@ -133,4 +141,18 @@ func (game *Game) Draw(screen *ebiten.Image){
 
     options.GeoM.Translate(float64(game.InfoButtons[0].Bounds().Dx()) + 1, 0)
     screen.DrawImage(game.PlaneButtons[0], &options)
+
+    options.GeoM.Reset()
+    options.GeoM.Translate(240, 77)
+    screen.DrawImage(game.GoldFoodMagic, &options)
+
+    /*
+    options.GeoM.Reset()
+    options.GeoM.Translate(245, 180)
+    screen.DrawImage(game.NextTurnBackground, &options)
+    */
+
+    options.GeoM.Reset()
+    options.GeoM.Translate(240, 174)
+    screen.DrawImage(game.NextTurn, &options)
 }
