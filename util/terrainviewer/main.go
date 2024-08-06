@@ -35,6 +35,7 @@ type Viewer struct {
     Images []ImageGPU
     Font *text.GoTextFaceSource
     Choice int
+    StartingRow int
 }
 
 func MakeViewer(images []image.Image) *Viewer {
@@ -56,12 +57,17 @@ func MakeViewer(images []image.Image) *Viewer {
         Images: use,
         Font: font,
         Choice: 0,
+        StartingRow: 0,
     }
 }
 
 func (viewer *Viewer) TilesPerRow() int {
     // hack: why is +1 needed?
     return (ScreenWidth - 3) / (viewer.Images[0].Raw.Bounds().Dx() + 5) + 1
+}
+
+func (viewer *Viewer) TilesPerColumn() int {
+    return (ScreenHeight - 110) / (viewer.Images[0].Raw.Bounds().Dy() + 5)
 }
 
 func (viewer *Viewer) Update() error {
@@ -95,6 +101,14 @@ func (viewer *Viewer) Update() error {
         }
     }
 
+    for viewer.Choice < viewer.StartingRow * viewer.TilesPerRow() {
+        viewer.StartingRow -= 1
+    }
+
+    for viewer.Choice >= (viewer.StartingRow + viewer.TilesPerColumn()) * viewer.TilesPerRow() {
+        viewer.StartingRow += 1
+    }
+
     return nil
 }
 
@@ -121,7 +135,10 @@ func (viewer *Viewer) Draw(screen *ebiten.Image) {
         screen.DrawImage(viewer.Images[viewer.Choice].GPU, &options)
     }
 
-    for i, img := range viewer.Images {
+    startPosition := viewer.StartingRow * viewer.TilesPerRow()
+
+    for i := startPosition; i < len(viewer.Images); i++ {
+        img := viewer.Images[i]
         if img.GPU == nil {
             img.GPU = ebiten.NewImageFromImage(img.Raw)
             viewer.Images[i] = img
