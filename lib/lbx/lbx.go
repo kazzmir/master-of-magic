@@ -1038,6 +1038,14 @@ func (lbx *LbxFile) ReadImages(entry int) ([]image.Image, error) {
     return images, nil
 }
 
+func (lbxFile *LbxFile) RawData(entry int) ([]byte, error) {
+    if entry < 0 || entry >= len(lbxFile.Data) {
+        return nil, fmt.Errorf("invalid lbx index %v, must be between 0 and %v", entry, len(lbxFile.Data) - 1)
+    }
+
+    return lbxFile.Data[entry], nil
+}
+
 const LbxSignature = 0x0000fead
 
 func ReadLbx(reader io.ReadSeeker) (LbxFile, error) {

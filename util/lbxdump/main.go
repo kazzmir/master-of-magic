@@ -28,7 +28,7 @@ func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int, rawDump bool) 
 
     os.Mkdir(dir, 0755)
 
-    if lbxName == "terrain.lbx" {
+    if lbxName == "terrain.lbx" && !rawDump {
         index := 0
         images, err := file.ReadTerrainImages(index)
         if err != nil {

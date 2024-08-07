@@ -9,6 +9,16 @@ An 8 word header
 The image data 
 A 4 word footer
 
+total: 8*2 + (20*18) + 4*2 = 16 + 360 + 8 = 360 + 24 = 384
+
 The first word of the header is the width - this is always 20. The second word is the height - this is always 18. I've no idea what the remaining 6 bytes in the header or the 4 words in the footer are for.
 
-The image data is therefore always 20 * 18 = 360 bytes long, so each image including the header and footer takes up 372 bytes. Each byte of image data is an index into the standard MoM palette (see code in post about standard graphics format for this palette). There are 1,761 images. The pixels are in row major order, so the first 20 pixels are in row 0, the second 20 pixels are row 1, etc.
+The image data is therefore always 20 * 18 = 360 bytes long, so each image including the header and footer takes up 384 bytes. Each byte of image data is an index into the standard MoM palette (see code in post about standard graphics format for this palette). There are 1,761 images. The pixels are in row major order, so the first 20 pixels are in row 0, the second 20 pixels are row 1, etc.
+
+Subfile 1 is metadata about terrain tiles. Every 2 bytes is a record where the first byte defines whether the terrain tile is animated and also takes part of computing which index into the images from subfile 0 to use.
+
+  byte0 byte1
+
+If byte0 is 0 then the resulting index into the images is 'byte1 - 2'. If byte0 is >= 0x80 then the tile is animated, which means 4 tiles starting from the computed index are part of the animation. If byte0 is >= 80 then it is anded with 0x7f to bring it below 0x80, and the index is computed as follows
+
+  index = byte0 * 16384 / 384 + byte1 - 2
