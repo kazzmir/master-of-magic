@@ -113,14 +113,14 @@ var allTiles []Tile
 func makeTile(index int, bitPattern uint8) Tile {
     var directions []Direction
 
-    // bit 0: north west
-    // bit 1: north
-    // bit 2: north east
-    // bit 3: east
-    // bit 4: south east
-    // bit 5: south
-    // bit 6: south west
-    // bit 7: west
+    // bit 7: north west
+    // bit 6: north
+    // bit 5: north east
+    // bit 4: east
+    // bit 3: south east
+    // bit 2: south
+    // bit 1: south west
+    // bit 0: west
 
     choices := []Direction{West, SouthWest, South, SouthEast, East, NorthEast, North, NorthWest}
     for i, choice := range choices {
@@ -139,6 +139,20 @@ func makeTile(index int, bitPattern uint8) Tile {
     return tile
 }
 
+// expand from 4 cardinal directions to 8 directions
+// 0001 -> 0000 0001
+// 0010 -> 0000 0100
+// 0100 -> 0001 0000
+// 1000 -> 0100 0000
+func expand4(value uint8) uint8 {
+    v1 := value & 1
+    v2 := (value & 2) << 1
+    v3 := (value & 4) << 2
+    v4 := (value & 8) << 3
+
+    return v1 | v2 | v3 | v4
+}
+
 func getTile(index int) Tile {
     if index >= len(allTiles) {
         return Tile{}
@@ -147,9 +161,11 @@ func getTile(index int) Tile {
     return allTiles[index]
 }
 
+const AllDirections uint8 = 0b1111_1111
+
 var (
     TileOcean = makeTile(0x0, 0)
-    TileLand = makeTile(0x1, 0b1111_1111)
+    TileLand = makeTile(0x1, AllDirections)
     TileShore1_00001000 = makeTile(0x2, 0b00001000)
     TileShore1_00001100 = makeTile(0x3, 0b00001100)
 
@@ -168,7 +184,7 @@ var (
     TileShore1_00111000 = makeTile(0x10, 0b00111000)
     TileShore1_00010000 = makeTile(0x11, 0b00010000)
 
-    TileLake = makeTile(0x12, 0b1111_1111)
+    TileLake = makeTile(0x12, AllDirections)
     TileShore1_00000001 = makeTile(0x13, 0b00000001)
     TileShore1_10000011 = makeTile(0x14, 0b10000011)
     TileShore1_00110000 = makeTile(0x15, 0b00110000)
@@ -313,46 +329,47 @@ var (
     TileShore1_10100111 = makeTile(0xA0, 0b10100111)
     TileShore1_10101111 = makeTile(0xA1, 0b10101111)
 
+    TileGrasslands1     = makeTile(0xA2, AllDirections)
+    TileForest1         = makeTile(0xA3, AllDirections)
+    TileMountain1      = makeTile(0xA4, AllDirections)
+    TileAllDesert1      = makeTile(0xA5, AllDirections)
+    TileSwamp1          = makeTile(0xA6, AllDirections)
+    TileAllTundra1      = makeTile(0xA7, AllDirections)
+    TileSorceryLake     = makeTile(0xA8, AllDirections)
+    TileNatureForest    = makeTile(0xA9, AllDirections)
+    TileChaosVolcano    = makeTile(0xAA, AllDirections)
+    TileHills1         = makeTile(0xAB, AllDirections)
+    TileGrasslands2     = makeTile(0xAC, AllDirections)
+    TileGrasslands3     = makeTile(0xAD, AllDirections)
+    TileAllDesert2      = makeTile(0xAE, AllDirections)
+    TileAllDesert3      = makeTile(0xAF, AllDirections)
+    TileAllDesert4      = makeTile(0xB0, AllDirections)
+    TileSwamp2          = makeTile(0xB1, AllDirections)
+    TileSwamp3          = makeTile(0xB2, AllDirections)
+    TileVolcano         = makeTile(0xB3, AllDirections)
+    TileGrasslands4     = makeTile(0xB4, AllDirections)
+    TileAllTundra2      = makeTile(0xB5, AllDirections)
+    TileAllTundra3      = makeTile(0xB6, AllDirections)
+    TileForest2         = makeTile(0xB7, AllDirections)
+    TileForest3         = makeTile(0xB8, AllDirections)
+    TileRiver0010       = makeTile(0xB9, expand4(0b0010))
+    TileRiver0001       = makeTile(0xBA, expand4(0b0001))
+    TileRiver1000       = makeTile(0xBB, expand4(0b1000))
+    TileRiver0100       = makeTile(0xBC, expand4(0b0100))
+    TileRiver1100       = makeTile(0xBD, expand4(0b1100))
+    TileRiver0011       = makeTile(0xBE, expand4(0b0011))
+    TileRiver0110       = makeTile(0xBF, expand4(0b0110))
+    TileRiver1001       = makeTile(0xC0, expand4(0b1001))
+    TileRiver1100_1       = makeTile(0xC1, expand4(0b1100))
+    TileRiver0011_1       = makeTile(0xC2, expand4(0b0011))
+    TileRiver0110_1       = makeTile(0xC3, expand4(0b0110))
+    TileRiver1001_1       = makeTile(0xC4, expand4(0b1001))
+    TileLakeRiverWest      = makeTile(0xC5, expand4(0b0001))
+    TileLakeRiverNorth      = makeTile(0xC6, expand4(0b1000))
+    TileLakeRiverEast      = makeTile(0xC7, expand4(0b0100))
+    TileLakeRiverSouth      = makeTile(0xC8, expand4(0b0010))
+
     /*
-    _Grasslands1     = 0xA2,
-    _Forest1         = 0xA3,
-    _1Mountain1      = 0xA4,
-    _AllDesert1      = 0xA5,
-    _Swamp1          = 0xA6,
-    _AllTundra1      = 0xA7,
-    _SorceryLake     = 0xA8,
-    _NatureForest    = 0xA9,
-    _ChaosVolcano    = 0xAA,
-    _1Hills1         = 0xAB,
-    _Grasslands2     = 0xAC,
-    _Grasslands3     = 0xAD,
-    _AllDesert2      = 0xAE,
-    _AllDesert3      = 0xAF,
-    _AllDesert4      = 0xB0,
-    _Swamp2          = 0xB1,
-    _Swamp3          = 0xB2,
-    _Volcano         = 0xB3,
-    _Grasslands4     = 0xB4,
-    _AllTundra2      = 0xB5,
-    _AllTundra3      = 0xB6,
-    _Forest2         = 0xB7,
-    _Forest3         = 0xB8,
-    _River0010       = 0xB9,
-    _River0001       = 0xBA,
-    _River1000       = 0xBB,
-    _River0100       = 0xBC,
-    _River1100_1     = 0xBD,
-    _River0011_1     = 0xBE,
-    _River0110_1     = 0xBF,
-    _River1001_1     = 0xC0,
-    _River1100_2     = 0xC1,
-    _River0011_2     = 0xC2,
-    _River0110_2     = 0xC3,
-    _River1001_2     = 0xC4,
-    _1LakeRiv_W      = 0xC5,
-    _1LakeRiv_N      = 0xC6,
-    _1LakeRiv_E      = 0xC7,
-    _1LakeRiv_S      = 0xC8,
     _Shore1R00000R   = 0xC9,
     _Shore1R10000R   = 0xCA,
     _Shore1R00001R   = 0xCB,
