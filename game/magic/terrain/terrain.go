@@ -2,6 +2,7 @@ package terrain
 
 import (
     "bytes"
+    "image"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
 )
@@ -67,6 +68,77 @@ const (
     IndexOcean2      = 0x259
     IndexTundra_1st  = 0x25A
     IndexTundra_Last = 0x2F9
+)
+
+type Direction int
+
+const (
+    NorthWest Direction = iota
+    North
+    NorthEast
+    East
+    SouthEast
+    South
+    SouthWest
+    West
+)
+
+type Tile {
+    // index into the TerrainTile array
+    Index int
+    Directions []Direction
+}
+
+func (tile Tile) String() string {
+    return fmt.Sprintf("Tile{Index: %d, Directions: %v}", tile.Index, tile.Directions)
+}
+
+func makeTile(index int, bitPattern uint8) Tile {
+    var directions []Direction
+
+    // bit 0: north west
+    // bit 1: north
+    // bit 2: north east
+    // bit 3: east
+    // bit 4: south east
+    // bit 5: south
+    // bit 6: south west
+    // bit 7: west
+
+    choices := []Direction{West, SouthWest, South, SouthEast, East, NorthEast, North, NorthWest}
+    for i, choice := range choices {
+        if bitPattern & (1 << i) != 0 {
+            directions = append(directions, choice)
+        }
+    }
+
+    return Tile{
+        Index: index,
+        Directions: directions,
+    }
+}
+
+var (
+    TileOcean = makeTile(0x0, 0)
+    TileLand = makeTile(0x1, 0b1111_1111)
+    TileShore1_00001000 = makeTile(0x2, 0b00001000)
+    TileShore1_00001100 = makeTile(0x3, 0b00001100)
+
+    // _Shore00001110   = 0x4,
+    // _Shore00000110   = 0x5,
+    // _Shore00000010   = 0x6,
+    // _Shore00001010   = 0x7,
+    // _Shore00100010   = 0x8,
+    // _Shore10000010   = 0x9,
+    // _Shore00011000   = 0x0A,
+    // _Shore00000100   = 0x0B,
+    // _Shore00000011   = 0x0C,
+    // _Shore10100000   = 0x0D,
+    // _Shore10001000   = 0x0E,
+    // _Shore00101000   = 0x0F,
+    // _Shore00111000   = 0x10,
+    // _Shore00010000   = 0x11,
+
 )
 
 // a bit pattern on a tile indicates the positions where the tile can match up with another tile
@@ -854,8 +926,7 @@ type TerrainData struct {
 }
 
 type TerrainTile struct {
-    Image int
-    Animiation bool
+    Images []image.Image
 }
 
 // pass in terrain.lbx
@@ -864,6 +935,13 @@ func ReadTerrainData(lbxFile *LbxFile) (*TerrainData, error) {
     if err != nil {
         return nil, err
     }
+
+    images, err := lbxFile.ReadTerrainImages(0)
+    if err != nil {
+        return nil, err
+    }
+
+    // TODO: lbxFile entry 2 is the terrain palette for the minimap
 
     reader := bytes.NewReader(data)
 
@@ -900,15 +978,19 @@ func ReadTerrainData(lbxFile *LbxFile) (*TerrainData, error) {
             index = value1 * 16384 / 384 + value2 - 2
         }
 
-        tiles = append(tiles, TerrainTile{
-            Image: index,
-            Animation: animation,
-        })
-    }
+        var tileImages []image.Image
+        if animation {
+            // animation tiles are always 4 images
+            for i := 0; i < 4; i++ {
+                tileImages = append(tileImages, images[index + i])
+            }
+        } else {
+            tileImages = append(tileImages, images[index])
+        }
 
-    images, err := lbxFile.ReadTerrainImages(0)
-    if err != nil {
-        return nil, err
+        tiles = append(tiles, TerrainTile{
+            Image: tileImages,
+        })
     }
 
     return &TerrainData{
