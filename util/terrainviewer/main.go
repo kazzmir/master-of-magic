@@ -9,6 +9,7 @@ import (
     _ "embed"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/game/magic/terrain"
 
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -203,7 +204,13 @@ func (viewer *Viewer) Draw(screen *ebiten.Image) {
 }
 
 func display(lbxData lbx.LbxFile) error {
+    /*
     images, err := lbxData.ReadTerrainImages(0)
+    if err != nil {
+        return err
+    }
+    */
+    data, err := terrain.ReadTerrainData(&lbxData)
     if err != nil {
         return err
     }
@@ -212,7 +219,7 @@ func display(lbxData lbx.LbxFile) error {
     ebiten.SetWindowTitle("terrain viewer")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 
-    viewer := MakeViewer(images)
+    viewer := MakeViewer(data.Images)
     
     err = ebiten.RunGame(viewer)
 

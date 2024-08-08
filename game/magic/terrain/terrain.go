@@ -3,6 +3,7 @@ package terrain
 import (
     "bytes"
     "image"
+    "fmt"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
 )
@@ -83,7 +84,7 @@ const (
     West
 )
 
-type Tile {
+type Tile struct {
     // index into the TerrainTile array
     Index int
     Directions []Direction
@@ -930,7 +931,7 @@ type TerrainTile struct {
 }
 
 // pass in terrain.lbx
-func ReadTerrainData(lbxFile *LbxFile) (*TerrainData, error) {
+func ReadTerrainData(lbxFile *lbx.LbxFile) (*TerrainData, error) {
     data, err := lbxFile.RawData(1)
     if err != nil {
         return nil, err
@@ -969,13 +970,13 @@ func ReadTerrainData(lbxFile *LbxFile) (*TerrainData, error) {
         var index int
 
         if value1 == 0 {
-            index = value2 - 2
+            index = int(value2) - 2
         } else {
             // this formula comes from
             // terrain_lbx_000_offset = (terrain_001_0 * 16384) + (terrain_001_1 * 384) - 0xC0 - 384;
             // this only works if value1 is a multiple of 3
             // 3 -> 126, 6 -> 254, 9 -> 382
-            index = value1 * 16384 / 384 + value2 - 2
+            index = int(value1) * 16384 / 384 + int(value2) - 2
         }
 
         var tileImages []image.Image
@@ -989,12 +990,12 @@ func ReadTerrainData(lbxFile *LbxFile) (*TerrainData, error) {
         }
 
         tiles = append(tiles, TerrainTile{
-            Image: tileImages,
+            Images: tileImages,
         })
     }
 
     return &TerrainData{
         Images: images,
         Tiles: tiles,
-    }
+    }, nil
 }
