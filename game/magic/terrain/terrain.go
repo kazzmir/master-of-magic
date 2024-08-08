@@ -84,6 +84,20 @@ const (
     West
 )
 
+func (direction Direction) String() string {
+    switch direction {
+        case NorthWest: return "NorthWest"
+        case North: return "North"
+        case NorthEast: return "NorthEast"
+        case East: return "East"
+        case SouthEast: return "SouthEast"
+        case South: return "South"
+        case SouthWest: return "SouthWest"
+        case West: return "West"
+        default: return "Unknown"
+    }
+}
+
 type Tile struct {
     // index into the TerrainTile array
     Index int
@@ -93,6 +107,8 @@ type Tile struct {
 func (tile Tile) String() string {
     return fmt.Sprintf("Tile{Index: %d, Directions: %v}", tile.Index, tile.Directions)
 }
+
+var allTiles []Tile
 
 func makeTile(index int, bitPattern uint8) Tile {
     var directions []Direction
@@ -113,10 +129,22 @@ func makeTile(index int, bitPattern uint8) Tile {
         }
     }
 
-    return Tile{
+    tile := Tile{
         Index: index,
         Directions: directions,
     }
+
+    allTiles = append(allTiles, tile)
+
+    return tile
+}
+
+func getTile(index int) Tile {
+    if index >= len(allTiles) {
+        return Tile{}
+    }
+
+    return allTiles[index]
 }
 
 var (
@@ -125,10 +153,10 @@ var (
     TileShore1_00001000 = makeTile(0x2, 0b00001000)
     TileShore1_00001100 = makeTile(0x3, 0b00001100)
 
-    // _Shore00001110   = 0x4,
-    // _Shore00000110   = 0x5,
-    // _Shore00000010   = 0x6,
-    // _Shore00001010   = 0x7,
+    TileShore1_00001110  = makeTile(0x4, 0b00001110)
+    TileShore1_00000110  = makeTile(0x5, 0b00000110)
+    TileShore1_00000010  = makeTile(0x6, 0b00000010)
+    TileShore1_00001010  = makeTile(0x7, 0b00001010)
     // _Shore00100010   = 0x8,
     // _Shore10000010   = 0x9,
     // _Shore00011000   = 0x0A,
@@ -922,12 +950,24 @@ enum OVL_Tiles_Extended
  */
 
 type TerrainData struct {
+    // the full array of all tile images
     Images []image.Image
     Tiles []TerrainTile
 }
 
 type TerrainTile struct {
+    // the index into the original array of images, if needed
+    ImageIndex int
+    // the index of the tile, useful for indexing into the terrain metadata
+    TileIndex int
+    // the images associated with this tile. for non-animated tiles this will be of length 1
+    // for animated tiles this will be length 4
     Images []image.Image
+    Tile Tile
+}
+
+func (tile *TerrainTile) ContainsImageIndex(index int) bool {
+    return index >= tile.ImageIndex && index < tile.ImageIndex + len(tile.Images)
 }
 
 // pass in terrain.lbx
@@ -947,6 +987,8 @@ func ReadTerrainData(lbxFile *lbx.LbxFile) (*TerrainData, error) {
     reader := bytes.NewReader(data)
 
     var tiles []TerrainTile
+
+    tileIndex := 0
 
     for reader.Len() > 0 {
         var animation = false
@@ -990,8 +1032,13 @@ func ReadTerrainData(lbxFile *lbx.LbxFile) (*TerrainData, error) {
         }
 
         tiles = append(tiles, TerrainTile{
+            ImageIndex: index,
+            TileIndex: tileIndex,
+            Tile: getTile(tileIndex),
             Images: tileImages,
         })
+
+        tileIndex += 1
     }
 
     return &TerrainData{

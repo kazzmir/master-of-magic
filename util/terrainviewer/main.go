@@ -34,16 +34,17 @@ type ImageGPU struct {
 
 type Viewer struct {
     Images []ImageGPU
+    Data *terrain.TerrainData
     Font *text.GoTextFaceSource
     Choice int
     Counter uint64
     StartingRow int
 }
 
-func MakeViewer(images []image.Image) *Viewer {
+func MakeViewer(data *terrain.TerrainData) *Viewer {
     var use []ImageGPU
 
-    for _, img := range images {
+    for _, img := range data.Images {
         use = append(use, ImageGPU{
             Raw: img,
             GPU: nil,
@@ -56,6 +57,7 @@ func MakeViewer(images []image.Image) *Viewer {
     }
 
     return &Viewer{
+        Data: data,
         Images: use,
         Font: font,
         Choice: 0,
@@ -162,6 +164,14 @@ func (viewer *Viewer) Draw(screen *ebiten.Image) {
     op.ColorScale.ScaleWithColor(color.White)
     text.Draw(screen, fmt.Sprintf("Terrain entry: %v/%v", viewer.Choice, len(viewer.Images)-1), face, op)
 
+    for i, tile := range viewer.Data.Tiles {
+        if tile.ContainsImageIndex(viewer.Choice) {
+            op.GeoM.Translate(0, 20)
+            text.Draw(screen, fmt.Sprintf("Tile %v (0x%x) %v", i, i, tile.Tile), face, op)
+            break
+        }
+    }
+
     var options ebiten.DrawImageOptions
     x := float64(3)
     y := float64(110)
@@ -219,7 +229,7 @@ func display(lbxData lbx.LbxFile) error {
     ebiten.SetWindowTitle("terrain viewer")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 
-    viewer := MakeViewer(data.Images)
+    viewer := MakeViewer(data)
     
     err = ebiten.RunGame(viewer)
 
