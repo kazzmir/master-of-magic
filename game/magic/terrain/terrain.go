@@ -102,6 +102,7 @@ type Tile struct {
     // index into the TerrainTile array
     Index int
     Directions []Direction
+    Directions2 []Direction
 }
 
 func (tile Tile) String() string {
@@ -110,8 +111,15 @@ func (tile Tile) String() string {
 
 var allTiles []Tile
 
+// FIXME: have one argument specify the type of other tiles this one can attach to
+// meaning, 1 bits can attach to tiles of type X, and 0 bits can attach to tiles of type Y
 func makeTile(index int, bitPattern uint8) Tile {
+    return makeTile2(index, bitPattern, 0)
+}
+
+func makeTile2(index int, bitPattern1 uint8, bitPattern2 uint8) Tile {
     var directions []Direction
+    var directions2 []Direction
 
     // bit 7: north west
     // bit 6: north
@@ -124,14 +132,19 @@ func makeTile(index int, bitPattern uint8) Tile {
 
     choices := []Direction{West, SouthWest, South, SouthEast, East, NorthEast, North, NorthWest}
     for i, choice := range choices {
-        if bitPattern & (1 << i) != 0 {
+        if bitPattern1 & (1 << i) != 0 {
             directions = append(directions, choice)
+        }
+
+        if bitPattern2 & (1 << i) != 0 {
+            directions2 = append(directions2, choice)
         }
     }
 
     tile := Tile{
         Index: index,
         Directions: directions,
+        Directions2: directions2,
     }
 
     allTiles = append(allTiles, tile)
@@ -369,22 +382,26 @@ var (
     TileLakeRiverEast      = makeTile(0xC7, expand4(0b0100))
     TileLakeRiverSouth      = makeTile(0xC8, expand4(0b0010))
 
+    // land at north-west, river at west and north
+    // FIXME: using two directions is not ideal
+    // first direction is land, second is river
+    TileShore_1R00000R   = makeTile2(0xC9, 0b10000000, 0b01000001)
+    TileShore_1R10000R   = makeTile2(0xCA, 0b10100000, 0b01000001)
+    TileShore_1R00001R   = makeTile2(0xCB, 0b10000010, 0b01000001)
+    TileShore_1R10001R   = makeTile2(0xCC, 0b10100010, 0b01000001)
+    TileShore_000R1R00   = makeTile2(0xCD, 0b00001000, 0b00010100)
+    TileShore_000R1R10   = makeTile2(0xCE, 0b00001010, 0b00010100)
+    TileShore_001R1R00   = makeTile2(0xCF, 0b00101000, 0b00010100)
+    TileShore_001R1R10   = makeTile2(0xD0, 0b00101010, 0b00010100)
+    TileShore_0R1R0000   = makeTile2(0xD1, 0b00100000, 0b01010000)
+    TileShore_0R1R1000   = makeTile2(0xD2, 0b00101000, 0b01010000)
+    TileShore_1R1R0000   = makeTile2(0xD3, 0b10100000, 0b01010000)
+    TileShore_1R1R1000   = makeTile2(0xD4, 0b10101000, 0b01010000)
+    TileShore_00000R1R   = makeTile2(0xD5, 0b00000010, 0b00000101)
+    TileShore_00001R1R   = makeTile2(0xD6, 0b00001010, 0b00000101)
+    TileShore_10000R1R   = makeTile2(0xD7, 0b10000010, 0b00000101)
+
     /*
-    _Shore1R00000R   = 0xC9,
-    _Shore1R10000R   = 0xCA,
-    _Shore1R00001R   = 0xCB,
-    _Shore1R10001R   = 0xCC,
-    _Shore000R1R00   = 0xCD,
-    _Shore000R1R10   = 0xCE,
-    _Shore001R1R00   = 0xCF,
-    _Shore001R1R10   = 0xD0,
-    _Shore0R1R0000   = 0xD1,
-    _Shore0R1R1000   = 0xD2,
-    _Shore1R1R0000   = 0xD3,
-    _Shore1R1R1000   = 0xD4,
-    _Shore00000R1R   = 0xD5,
-    _Shore00001R1R   = 0xD6,
-    _Shore10000R1R   = 0xD7,
     _Shore10001R1R   = 0xD8,
     _Shore00001R10   = 0xD9,
     _Shore00001R00   = 0xDA,
