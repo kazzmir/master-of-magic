@@ -39,6 +39,7 @@ type Viewer struct {
     Choice int
     Counter uint64
     StartingRow int
+    TileIndex int
 }
 
 func MakeViewer(data *terrain.TerrainData) *Viewer {
@@ -62,6 +63,7 @@ func MakeViewer(data *terrain.TerrainData) *Viewer {
         Font: font,
         Choice: 0,
         StartingRow: 0,
+        TileIndex: 0,
     }
 }
 
@@ -112,7 +114,10 @@ func (viewer *Viewer) Update() error {
         }
     }
 
+    needUpdate := false
+
     if moveRight {
+        needUpdate = true
         viewer.Choice += 1
         if viewer.Choice >= len(viewer.Images) {
             viewer.Choice = len(viewer.Images) - 1
@@ -120,6 +125,7 @@ func (viewer *Viewer) Update() error {
     }
 
     if moveLeft {
+        needUpdate = true
         viewer.Choice -= 1
         if viewer.Choice < 0 {
             viewer.Choice = 0
@@ -127,6 +133,7 @@ func (viewer *Viewer) Update() error {
     }
 
     if moveUp {
+        needUpdate = true
         viewer.Choice -= viewer.TilesPerRow()
         if viewer.Choice < 0 {
             viewer.Choice = 0
@@ -134,6 +141,7 @@ func (viewer *Viewer) Update() error {
     }
 
     if moveDown {
+        needUpdate = true
         viewer.Choice += viewer.TilesPerRow()
         if viewer.Choice >= len(viewer.Images) {
             viewer.Choice = len(viewer.Images) - 1
@@ -146,6 +154,15 @@ func (viewer *Viewer) Update() error {
 
     for viewer.Choice >= (viewer.StartingRow + viewer.TilesPerColumn()) * viewer.TilesPerRow() {
         viewer.StartingRow += 1
+    }
+
+    if needUpdate {
+        for i, tile := range viewer.Data.Tiles {
+            if tile.ContainsImageIndex(viewer.Choice) {
+                viewer.TileIndex = i
+                break
+            }
+        }
     }
 
     return nil
@@ -164,12 +181,10 @@ func (viewer *Viewer) Draw(screen *ebiten.Image) {
     op.ColorScale.ScaleWithColor(color.White)
     text.Draw(screen, fmt.Sprintf("Terrain entry: %v/%v", viewer.Choice, len(viewer.Images)-1), face, op)
 
-    for i, tile := range viewer.Data.Tiles {
-        if tile.ContainsImageIndex(viewer.Choice) {
-            op.GeoM.Translate(0, 20)
-            text.Draw(screen, fmt.Sprintf("Tile %v (0x%x) %v", i, i, tile.Tile), face, op)
-            break
-        }
+    if viewer.TileIndex != -1 {
+        // tile := viewer.Data.Tiles[viewer.TileIndex]
+        op.GeoM.Translate(0, 20)
+        text.Draw(screen, fmt.Sprintf("Tile %v (0x%x)", viewer.TileIndex, viewer.TileIndex), face, op)
     }
 
     var options ebiten.DrawImageOptions
