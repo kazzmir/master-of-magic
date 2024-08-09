@@ -162,14 +162,6 @@ func (tile Tile) String() string {
 
 var allTiles []Tile
 
-// FIXME: have one argument specify the type of other tiles this one can attach to
-// meaning, 1 bits can attach to tiles of type X, and 0 bits can attach to tiles of type Y
-/*
-func makeTile(index int, bitPattern uint8) Tile {
-    return makeTile2(index, bitPattern, 0)
-}
-*/
-
 /* create directions from 8-bit pattern */
 func makeDirections(bitPattern uint8) []Direction {
     var directions []Direction
@@ -196,43 +188,6 @@ func makeCompatabilities(directions []Direction, terrain TerrainType) []Compatab
 
     return out
 }
-
-/*
-func makeTile2(index int, bitPattern1 uint8, bitPattern2 uint8) Tile {
-    var directions []Direction
-    var directions2 []Direction
-
-    // bit 7: north west
-    // bit 6: north
-    // bit 5: north east
-    // bit 4: east
-    // bit 3: south east
-    // bit 2: south
-    // bit 1: south west
-    // bit 0: west
-
-    choices := []Direction{West, SouthWest, South, SouthEast, East, NorthEast, North, NorthWest}
-    for i, choice := range choices {
-        if bitPattern1 & (1 << i) != 0 {
-            directions = append(directions, choice)
-        }
-
-        if bitPattern2 & (1 << i) != 0 {
-            directions2 = append(directions2, choice)
-        }
-    }
-
-    tile := Tile{
-        Index: index,
-        Directions: directions,
-        Directions2: directions2,
-    }
-
-    allTiles = append(allTiles, tile)
-
-    return tile
-}
-*/
 
 func makeTile(index int, compatabilities []Compatability) Tile {
     tile := Tile{
