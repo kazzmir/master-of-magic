@@ -262,6 +262,11 @@ func makeShoreTile(index int, bitPattern uint8) Tile {
     return makeTile(index, append(makeCompatabilities(makeDirections(bitPattern), Shore), makeCompatabilities(makeDirections(^bitPattern), Ocean)...))
 }
 
+// pattern is desert, rest is land
+func makeDesertTile(index int, bitPattern uint8) Tile {
+    return makeTile(index, append(makeCompatabilities(makeDirections(bitPattern), Desert), makeCompatabilities(makeDirections(^bitPattern), Land)...))
+}
+
 const AllDirections uint8 = 0b1111_1111
 
 // a bit pattern on a tile indicates the positions where the tile can match up with another tile
@@ -444,22 +449,25 @@ var (
     TileShore1_10100111 = makeShoreTile(0xA0, 0b10100111)
     TileShore1_10101111 = makeShoreTile(0xA1, 0b10101111)
 
+    TileGrasslands1     = makeTile(0xA2, makeCompatabilities(makeDirections(AllDirections), Land))
+    // maybe make compatability be Forest?
+    TileForest1         = makeTile(0xA3, makeCompatabilities(makeDirections(AllDirections), Land))
+    // maybe make compatability be Mountain?
+    TileMountain1      = makeTile(0xA4, makeCompatabilities(makeDirections(AllDirections), Land))
+    TileAllDesert1      = makeDesertTile(0xA5, AllDirections)
+    TileSwamp1          = makeTile(0xA6, makeCompatabilities(makeDirections(AllDirections), Swamp))
+    TileAllTundra1      = makeTile(0xA7, makeCompatabilities(makeDirections(AllDirections), Tundra))
+    TileSorceryLake     = makeTile(0xA8, makeCompatabilities(makeDirections(AllDirections), Land))
+    TileNatureForest    = makeTile(0xA9, makeCompatabilities(makeDirections(AllDirections), Land))
+    TileChaosVolcano    = makeTile(0xAA, makeCompatabilities(makeDirections(AllDirections), Land))
+    TileHills1         = makeTile(0xAB, makeCompatabilities(makeDirections(AllDirections), Hill))
+    TileGrasslands2     = makeTile(0xAC, makeCompatabilities(makeDirections(AllDirections), Land))
+    TileGrasslands3     = makeTile(0xAD, makeCompatabilities(makeDirections(AllDirections), Land))
+    TileAllDesert2      = makeDesertTile(0xAE, AllDirections)
+    TileAllDesert3      = makeDesertTile(0xAF, AllDirections)
+    TileAllDesert4      = makeDesertTile(0xB0, AllDirections)
+
     /*
-    TileGrasslands1     = makeTile(0xA2, AllDirections)
-    TileForest1         = makeTile(0xA3, AllDirections)
-    TileMountain1      = makeTile(0xA4, AllDirections)
-    TileAllDesert1      = makeTile(0xA5, AllDirections)
-    TileSwamp1          = makeTile(0xA6, AllDirections)
-    TileAllTundra1      = makeTile(0xA7, AllDirections)
-    TileSorceryLake     = makeTile(0xA8, AllDirections)
-    TileNatureForest    = makeTile(0xA9, AllDirections)
-    TileChaosVolcano    = makeTile(0xAA, AllDirections)
-    TileHills1         = makeTile(0xAB, AllDirections)
-    TileGrasslands2     = makeTile(0xAC, AllDirections)
-    TileGrasslands3     = makeTile(0xAD, AllDirections)
-    TileAllDesert2      = makeTile(0xAE, AllDirections)
-    TileAllDesert3      = makeTile(0xAF, AllDirections)
-    TileAllDesert4      = makeTile(0xB0, AllDirections)
     TileSwamp2          = makeTile(0xB1, AllDirections)
     TileSwamp3          = makeTile(0xB2, AllDirections)
     TileVolcano         = makeTile(0xB3, AllDirections)
