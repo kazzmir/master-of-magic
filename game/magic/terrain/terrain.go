@@ -267,9 +267,9 @@ func makeDesertTile(index int, bitPattern uint8) Tile {
     return makeTile(index, append(makeCompatabilities(makeDirections(bitPattern), Desert), makeCompatabilities(makeDirections(^bitPattern), Land)...))
 }
 
-// pattern is tundra, rest is land
+// pattern is land, rest is tundra
 func makeTundraTile(index int, bitPattern uint8) Tile {
-    return makeTile(index, append(makeCompatabilities(makeDirections(bitPattern), Tundra), makeCompatabilities(makeDirections(^bitPattern), Land)...))
+    return makeTile(index, append(makeCompatabilities(makeDirections(bitPattern), Land), makeCompatabilities(makeDirections(^bitPattern), Tundra)...))
 }
 
 // pattern is 4-bit cardindal directions, 0's are land
