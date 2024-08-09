@@ -267,6 +267,12 @@ func makeDesertTile(index int, bitPattern uint8) Tile {
     return makeTile(index, append(makeCompatabilities(makeDirections(bitPattern), Desert), makeCompatabilities(makeDirections(^bitPattern), Land)...))
 }
 
+// pattern is 4-bit cardindal directions, 0's are land
+func makeRiverTile(index int, bitPattern uint8) Tile {
+    full := expand4(bitPattern)
+    return makeTile(0xB9, append(makeCompatabilities(makeDirections(full), River), makeCompatabilities(makeDirections(^full), Land)...))
+}
+
 const AllDirections uint8 = 0b1111_1111
 
 // a bit pattern on a tile indicates the positions where the tile can match up with another tile
@@ -466,32 +472,34 @@ var (
     TileAllDesert2      = makeDesertTile(0xAE, AllDirections)
     TileAllDesert3      = makeDesertTile(0xAF, AllDirections)
     TileAllDesert4      = makeDesertTile(0xB0, AllDirections)
+    TileSwamp2          = makeTile(0xB1, makeCompatabilities(makeDirections(AllDirections), Swamp))
+    TileSwamp3          = makeTile(0xB2, makeCompatabilities(makeDirections(AllDirections), Swamp))
+    TileVolcano         = makeTile(0xB3, makeCompatabilities(makeDirections(AllDirections), Land))
+    TileGrasslands4     = makeTile(0xB4, makeCompatabilities(makeDirections(AllDirections), Land))
+    TileAllTundra2      = makeTile(0xB5, makeCompatabilities(makeDirections(AllDirections), Tundra))
+    TileAllTundra3      = makeTile(0xB6, makeCompatabilities(makeDirections(AllDirections), Tundra))
+    TileForest2         = makeTile(0xB7, makeCompatabilities(makeDirections(AllDirections), Land))
+    TileForest3         = makeTile(0xB8, makeCompatabilities(makeDirections(AllDirections), Land))
+
+    TileRiver0010       = makeRiverTile(0xB9, 0b0010)
+    TileRiver0001       = makeRiverTile(0xBA, 0b0001)
+    TileRiver1000       = makeRiverTile(0xBB, 0b1000)
+    TileRiver0100       = makeRiverTile(0xBC, 0b0100)
+    TileRiver1100       = makeRiverTile(0xBD, 0b1100)
+    TileRiver0011       = makeRiverTile(0xBE, 0b0011)
+    TileRiver0110       = makeRiverTile(0xBF, 0b0110)
+    TileRiver1001       = makeRiverTile(0xC0, 0b1001)
+    TileRiver1100_1     = makeRiverTile(0xC1, 0b1100)
+    TileRiver0011_1     = makeRiverTile(0xC2, 0b0011)
+    TileRiver0110_1     = makeRiverTile(0xC3, 0b0110)
+    TileRiver1001_1     = makeRiverTile(0xC4, 0b1001)
+
+    TileLakeRiverWest   = makeRiverTile(0xC5, 0b0001)
+    TileLakeRiverNorth  = makeRiverTile(0xC6, 0b1000)
+    TileLakeRiverEast   = makeRiverTile(0xC7, 0b0100)
+    TileLakeRiverSouth  = makeRiverTile(0xC8, 0b0010)
 
     /*
-    TileSwamp2          = makeTile(0xB1, AllDirections)
-    TileSwamp3          = makeTile(0xB2, AllDirections)
-    TileVolcano         = makeTile(0xB3, AllDirections)
-    TileGrasslands4     = makeTile(0xB4, AllDirections)
-    TileAllTundra2      = makeTile(0xB5, AllDirections)
-    TileAllTundra3      = makeTile(0xB6, AllDirections)
-    TileForest2         = makeTile(0xB7, AllDirections)
-    TileForest3         = makeTile(0xB8, AllDirections)
-    TileRiver0010       = makeTile(0xB9, expand4(0b0010))
-    TileRiver0001       = makeTile(0xBA, expand4(0b0001))
-    TileRiver1000       = makeTile(0xBB, expand4(0b1000))
-    TileRiver0100       = makeTile(0xBC, expand4(0b0100))
-    TileRiver1100       = makeTile(0xBD, expand4(0b1100))
-    TileRiver0011       = makeTile(0xBE, expand4(0b0011))
-    TileRiver0110       = makeTile(0xBF, expand4(0b0110))
-    TileRiver1001       = makeTile(0xC0, expand4(0b1001))
-    TileRiver1100_1       = makeTile(0xC1, expand4(0b1100))
-    TileRiver0011_1       = makeTile(0xC2, expand4(0b0011))
-    TileRiver0110_1       = makeTile(0xC3, expand4(0b0110))
-    TileRiver1001_1       = makeTile(0xC4, expand4(0b1001))
-    TileLakeRiverWest      = makeTile(0xC5, expand4(0b0001))
-    TileLakeRiverNorth      = makeTile(0xC6, expand4(0b1000))
-    TileLakeRiverEast      = makeTile(0xC7, expand4(0b0100))
-    TileLakeRiverSouth      = makeTile(0xC8, expand4(0b0010))
 
     // land at north-west, river at west and north
     // FIXME: using two directions is not ideal
