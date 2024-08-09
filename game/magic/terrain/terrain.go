@@ -261,6 +261,10 @@ func expand4(value uint8) uint8 {
 }
 
 func getTile(index int) Tile {
+    if index >= 0x2fa {
+        index -= 0x2fa
+    }
+
     if index >= len(allTiles) {
         return Tile{}
     }
@@ -1131,6 +1135,14 @@ type TerrainTile struct {
     // for animated tiles this will be length 4
     Images []image.Image
     Tile Tile
+}
+
+func (tile *TerrainTile) IsMyrran() bool {
+    return tile.TileIndex >= 0x25A
+}
+
+func (tile *TerrainTile) IsArcanus() bool {
+    return tile.TileIndex < 0x25A
 }
 
 func (tile *TerrainTile) ContainsImageIndex(index int) bool {
