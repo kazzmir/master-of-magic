@@ -182,9 +182,43 @@ func (viewer *Viewer) Draw(screen *ebiten.Image) {
     text.Draw(screen, fmt.Sprintf("Terrain entry: %v/%v", viewer.Choice, len(viewer.Images)-1), face, op)
 
     if viewer.TileIndex != -1 {
-        // tile := viewer.Data.Tiles[viewer.TileIndex]
+        tile := viewer.Data.Tiles[viewer.TileIndex]
         op.GeoM.Translate(0, 20)
         text.Draw(screen, fmt.Sprintf("Tile %v (0x%x)", viewer.TileIndex, viewer.TileIndex), face, op)
+
+        face2 := &text.GoTextFace{Source: viewer.Font, Size: 10}
+
+        op.GeoM.Reset()
+        op.GeoM.Translate(ScreenWidth/2 + 25, 1)
+        text.Draw(screen, fmt.Sprintf("%v", tile.Tile.GetDirection(terrain.North)), face2, op)
+
+        op.GeoM.Reset()
+        op.GeoM.Translate(ScreenWidth/2 - 20, 1)
+        text.Draw(screen, fmt.Sprintf("%v", tile.Tile.GetDirection(terrain.NorthWest)), face2, op)
+
+        op.GeoM.Reset()
+        op.GeoM.Translate(ScreenWidth/2 + 80, 1)
+        text.Draw(screen, fmt.Sprintf("%v", tile.Tile.GetDirection(terrain.NorthEast)), face2, op)
+
+        op.GeoM.Reset()
+        op.GeoM.Translate(ScreenWidth/2 - 40, 45)
+        text.Draw(screen, fmt.Sprintf("%v", tile.Tile.GetDirection(terrain.West)), face2, op)
+
+        op.GeoM.Reset()
+        op.GeoM.Translate(ScreenWidth/2 - 25, 90)
+        text.Draw(screen, fmt.Sprintf("%v", tile.Tile.GetDirection(terrain.SouthWest)), face2, op)
+
+        op.GeoM.Reset()
+        op.GeoM.Translate(ScreenWidth/2 + 25, 90)
+        text.Draw(screen, fmt.Sprintf("%v", tile.Tile.GetDirection(terrain.South)), face2, op)
+
+        op.GeoM.Reset()
+        op.GeoM.Translate(ScreenWidth/2 + 80, 90)
+        text.Draw(screen, fmt.Sprintf("%v", tile.Tile.GetDirection(terrain.SouthEast)), face2, op)
+
+        op.GeoM.Reset()
+        op.GeoM.Translate(ScreenWidth/2 + 95, 45)
+        text.Draw(screen, fmt.Sprintf("%v", tile.Tile.GetDirection(terrain.East)), face2, op)
     }
 
     var options ebiten.DrawImageOptions
@@ -192,7 +226,7 @@ func (viewer *Viewer) Draw(screen *ebiten.Image) {
     y := float64(110)
 
     options.GeoM.Scale(4, 4)
-    options.GeoM.Translate(ScreenWidth/2, 10)
+    options.GeoM.Translate(ScreenWidth/2, 15)
     if viewer.Images[viewer.Choice].GPU != nil {
         screen.DrawImage(viewer.Images[viewer.Choice].GPU, &options)
     }

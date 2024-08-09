@@ -84,6 +84,7 @@ const (
     Swamp
     Desert
     Tundra
+    Unknown
 )
 
 func (terrain TerrainType) String() string {
@@ -98,7 +99,8 @@ func (terrain TerrainType) String() string {
         case Swamp: return "swamp"
         case Desert: return "desert"
         case Tundra: return "tundra"
-        default: return "unknown"
+        case Unknown: return "unknown"
+        default: return "error"
     }
 }
 
@@ -142,6 +144,16 @@ type Tile struct {
     // index into the TerrainTile array
     Index int
     Compatabilities []Compatability
+}
+
+func (tile *Tile) GetDirection(direction Direction) TerrainType {
+    for _, compatability := range tile.Compatabilities {
+        if compatability.Direction == direction {
+            return compatability.Terrain
+        }
+    }
+
+    return Unknown
 }
 
 func (tile Tile) String() string {
