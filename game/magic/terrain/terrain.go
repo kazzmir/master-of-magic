@@ -71,6 +71,37 @@ const (
     IndexTundra_Last = 0x2F9
 )
 
+type TerrainType int
+
+const (
+    Ocean TerrainType = iota
+    Land
+    River
+    Shore
+    Mountain
+    Hill
+    Grass
+    Swamp
+    Desert
+    Tundra
+)
+
+func (terrain TerrainType) String() string {
+    switch terrain {
+        case Ocean: return "ocean"
+        case Land: return "land"
+        case River: return "river"
+        case Shore: return "shore"
+        case Mountain: return "mountain"
+        case Hill: return "hill"
+        case Grass: return "grass"
+        case Swamp: return "swamp"
+        case Desert: return "desert"
+        case Tundra: return "tundra"
+        default: return "unknown"
+    }
+}
+
 type Direction int
 
 const (
@@ -98,25 +129,63 @@ func (direction Direction) String() string {
     }
 }
 
+type Compatability struct {
+    Direction Direction
+    Terrain TerrainType
+}
+
+func (compatability Compatability) String() string {
+    return fmt.Sprintf("(%s, %s)", compatability.Direction, compatability.Terrain)
+}
+
 type Tile struct {
     // index into the TerrainTile array
     Index int
-    Directions []Direction
-    Directions2 []Direction
+    Compatabilities []Compatability
 }
 
 func (tile Tile) String() string {
-    return fmt.Sprintf("Tile{Index: %d, Directions: %v}", tile.Index, tile.Directions)
+    return fmt.Sprintf("Tile{Index: %d, Compatabilities: %v}", tile.Index, tile.Compatabilities)
 }
 
 var allTiles []Tile
 
 // FIXME: have one argument specify the type of other tiles this one can attach to
 // meaning, 1 bits can attach to tiles of type X, and 0 bits can attach to tiles of type Y
+/*
 func makeTile(index int, bitPattern uint8) Tile {
     return makeTile2(index, bitPattern, 0)
 }
+*/
 
+/* create directions from 8-bit pattern */
+func makeDirections(bitPattern uint8) []Direction {
+    var directions []Direction
+
+    choices := []Direction{West, SouthWest, South, SouthEast, East, NorthEast, North, NorthWest}
+    for i, choice := range choices {
+        if bitPattern & (1 << i) != 0 {
+            directions = append(directions, choice)
+        }
+    }
+
+    return directions
+}
+
+func makeCompatabilities(directions []Direction, terrain TerrainType) []Compatability {
+    var out []Compatability
+
+    for _, direction := range directions {
+        out = append(out, Compatability{
+            Direction: direction,
+            Terrain: terrain,
+        })
+    }
+
+    return out
+}
+
+/*
 func makeTile2(index int, bitPattern1 uint8, bitPattern2 uint8) Tile {
     var directions []Direction
     var directions2 []Direction
@@ -151,6 +220,19 @@ func makeTile2(index int, bitPattern1 uint8, bitPattern2 uint8) Tile {
 
     return tile
 }
+*/
+
+func makeTile(index int, compatabilities []Compatability) Tile {
+    tile := Tile{
+        Index: index,
+        Compatabilities: compatabilities,
+    }
+
+    allTiles = append(allTiles, tile)
+
+    return tile
+
+}
 
 // expand from 4 cardinal directions to 8 directions
 // 0001 -> 0000 0001
@@ -174,6 +256,12 @@ func getTile(index int) Tile {
     return allTiles[index]
 }
 
+// the bit pattern is for shore/land tiles
+// everything else is ocean
+func makeShoreTile(index int, bitPattern uint8) Tile {
+    return makeTile(index, append(makeCompatabilities(makeDirections(bitPattern), Shore), makeCompatabilities(makeDirections(^bitPattern), Ocean)...))
+}
+
 const AllDirections uint8 = 0b1111_1111
 
 // a bit pattern on a tile indicates the positions where the tile can match up with another tile
@@ -190,171 +278,173 @@ const AllDirections uint8 = 0b1111_1111
 // bit 7: west
 
 var (
-    TileOcean = makeTile(0x0, AllDirections)
-    TileLand = makeTile(0x1, AllDirections)
-    TileShore1_00001000 = makeTile(0x2, 0b00001000)
-    TileShore1_00001100 = makeTile(0x3, 0b00001100)
+    TileOcean = makeTile(0x0, makeCompatabilities(makeDirections(AllDirections), Ocean))
+    TileLand = makeTile(0x1, makeCompatabilities(makeDirections(AllDirections), Land))
+    TileShore1_00001000 = makeShoreTile(0x2, 0b00001000)
+    TileShore1_00001100 = makeShoreTile(0x3, 0b00001100)
 
-    TileShore1_00001110 = makeTile(0x4, 0b00001110)
-    TileShore1_00000110 = makeTile(0x5, 0b00000110)
-    TileShore1_00000010 = makeTile(0x6, 0b00000010)
-    TileShore1_00001010 = makeTile(0x7, 0b00001010)
-    TileShore1_00100010 = makeTile(0x8, 0b00100010)
-    TileShore1_10000010 = makeTile(0x9, 0b10000010)
-    TileShore1_00011000 = makeTile(0xA, 0b00011000)
-    TileShore1_00000100 = makeTile(0xB, 0b00000100)
-    TileShore1_00000011 = makeTile(0xC, 0b00000011)
-    TileShore1_10100000 = makeTile(0xD, 0b10100000)
-    TileShore1_10001000 = makeTile(0x0E, 0b10001000)
-    TileShore1_00101000 = makeTile(0x0F, 0b00101000)
-    TileShore1_00111000 = makeTile(0x10, 0b00111000)
-    TileShore1_00010000 = makeTile(0x11, 0b00010000)
+    TileShore1_00001110 = makeShoreTile(0x4, 0b00001110)
+    TileShore1_00000110 = makeShoreTile(0x5, 0b00000110)
+    TileShore1_00000010 = makeShoreTile(0x6, 0b00000010)
+    TileShore1_00001010 = makeShoreTile(0x7, 0b00001010)
+    TileShore1_00100010 = makeShoreTile(0x8, 0b00100010)
+    TileShore1_10000010 = makeShoreTile(0x9, 0b10000010)
+    TileShore1_00011000 = makeShoreTile(0xA, 0b00011000)
+    TileShore1_00000100 = makeShoreTile(0xB, 0b00000100)
+    TileShore1_00000011 = makeShoreTile(0xC, 0b00000011)
+    TileShore1_10100000 = makeShoreTile(0xD, 0b10100000)
+    TileShore1_10001000 = makeShoreTile(0x0E, 0b10001000)
+    TileShore1_00101000 = makeShoreTile(0x0F, 0b00101000)
+    TileShore1_00111000 = makeShoreTile(0x10, 0b00111000)
+    TileShore1_00010000 = makeShoreTile(0x11, 0b00010000)
 
-    TileLake = makeTile(0x12, AllDirections)
-    TileShore1_00000001 = makeTile(0x13, 0b00000001)
-    TileShore1_10000011 = makeTile(0x14, 0b10000011)
-    TileShore1_00110000 = makeTile(0x15, 0b00110000)
-    TileShore1_01000000 = makeTile(0x16, 0b01000000)
-    TileShore1_10000001 = makeTile(0x17, 0b10000001)
-    TileShore1_10101000 = makeTile(0x18, 0b10101000)
-    TileShore1_00101010 = makeTile(0x19, 0b00101010)
-    TileShore1_10001010 = makeTile(0x1A, 0b10001010)
-    TileShore1_00100000 = makeTile(0x1B, 0b00100000)
-    TileShore1_01100000 = makeTile(0x1C, 0b01100000)
-    TileShore1_11100000 = makeTile(0x1D, 0b11100000)
-    TileShore1_11000000 = makeTile(0x1E, 0b11000000)
-    TileShore1_10000000 = makeTile(0x1F, 0b10000000)
-    TileShore1_10100010 = makeTile(0x20, 0b10100010)
-    TileShore1_10101010 = makeTile(0x21, 0b10101010)
-    TileShore1_11000001 = makeTile(0x22, 0b11000001)
-    TileShore1_11100001 = makeTile(0x23, 0b11100001)
-    TileShore1_11000011 = makeTile(0x24, 0b11000011)
-    TileShore1_11100011 = makeTile(0x25, 0b11100011)
-    TileShore1_00011100 = makeTile(0x26, 0b00011100)
-    TileShore1_00111100 = makeTile(0x27, 0b00111100)
-    TileShore1_00011110 = makeTile(0x28, 0b00011110)
-    TileShore1_00111110 = makeTile(0x29, 0b00111110)
-    TileShore1_01110000 = makeTile(0x2A, 0b01110000)
-    TileShore1_01111000 = makeTile(0x2B, 0b01111000)
-    TileShore1_11110000 = makeTile(0x2C, 0b11110000)
-    TileShore1_11111000 = makeTile(0x2D, 0b11111000)
-    TileShore1_00000111 = makeTile(0x2E, 0b00000111)
-    TileShore1_00001111 = makeTile(0x2F, 0b00001111)
-    TileShore1_10000111 = makeTile(0x30, 0b10000111)
-    TileShore1_10001111 = makeTile(0x31, 0b10001111)
-    TileShore1_11101110 = makeTile(0x32, 0b11101110)
-    TileShore1_11100110 = makeTile(0x33, 0b11100110)
-    TileShore1_11101100 = makeTile(0x34, 0b11101100)
-    TileShore1_11100100 = makeTile(0x35, 0b11100100)
-    TileShore1_11001110 = makeTile(0x36, 0b11001110)
-    TileShore1_11000110 = makeTile(0x37, 0b11000110)
-    TileShore1_11001100 = makeTile(0x38, 0b11001100)
-    TileShore1_11000100 = makeTile(0x39, 0b11000100)
-    TileShore1_01101110 = makeTile(0x3A, 0b01101110)
-    TileShore1_01100110 = makeTile(0x3B, 0b01100110)
-    TileShore1_01101100 = makeTile(0x3C, 0b01101100)
-    TileShore1_01100100 = makeTile(0x3D, 0b01100100)
-    TileShore1_01001110 = makeTile(0x3E, 0b01001110)
-    TileShore1_01000110 = makeTile(0x3F, 0b01000110)
-    TileShore1_01001100 = makeTile(0x40, 0b01001100)
-    TileShore1_01000100 = makeTile(0x41, 0b01000100)
-    TileShore1_10010011 = makeTile(0x42, 0b10010011)
-    TileShore1_10011011 = makeTile(0x43, 0b10011011)
-    TileShore1_10110011 = makeTile(0x44, 0b10110011)
-    TileShore1_10111011 = makeTile(0x45, 0b10111011)
-    TileShore1_10010001 = makeTile(0x46, 0b10010001)
-    TileShore1_10011001 = makeTile(0x47, 0b10011001)
-    TileShore1_10110001 = makeTile(0x48, 0b10110001)
-    TileShore1_10111001 = makeTile(0x49, 0b10111001)
-    TileShore1_00010011 = makeTile(0x4A, 0b00010011)
-    TileShore1_00011011 = makeTile(0x4B, 0b00011011)
-    TileShore1_00110011 = makeTile(0x4C, 0b00110011)
-    TileShore1_00111011 = makeTile(0x4D, 0b00111011)
-    TileShore1_00010001 = makeTile(0x4E, 0b00010001)
-    TileShore1_00011001 = makeTile(0x4F, 0b00011001)
-    TileShore1_00110001 = makeTile(0x50, 0b00110001)
-    TileShore1_00111001 = makeTile(0x51, 0b00111001)
-    TileShore1_00011111 = makeTile(0x52, 0b00011111)
-    TileShore1_11000111 = makeTile(0x53, 0b11000111)
-    TileShore1_11110001 = makeTile(0x54, 0b11110001)
-    TileShore1_01111100 = makeTile(0x55, 0b01111100)
-    TileShore1_10011111 = makeTile(0x56, 0b10011111)
-    TileShore1_11100111 = makeTile(0x57, 0b11100111)
-    TileShore1_11111001 = makeTile(0x58, 0b11111001)
-    TileShore1_01111110 = makeTile(0x59, 0b01111110)
-    TileShore1_00111111 = makeTile(0x5A, 0b00111111)
-    TileShore1_11001111 = makeTile(0x5B, 0b11001111)
-    TileShore1_11110011 = makeTile(0x5C, 0b11110011)
-    TileShore1_11111100 = makeTile(0x5D, 0b11111100)
-    TileShore1_10111111 = makeTile(0x5E, 0b10111111)
-    TileShore1_11101111 = makeTile(0x5F, 0b11101111)
-    TileShore1_11111011 = makeTile(0x60, 0b11111011)
-    TileShore1_11111110 = makeTile(0x61, 0b11111110)
-    TileShore1_10111000 = makeTile(0x62, 0b10111000)
-    TileShore1_10110000 = makeTile(0x63, 0b10110000)
-    TileShore1_10011000 = makeTile(0x64, 0b10011000)
-    TileShore1_10010000 = makeTile(0x65, 0b10010000)
-    TileShore1_10111010 = makeTile(0x66, 0b10111010)
-    TileShore1_10110010 = makeTile(0x67, 0b10110010)
-    TileShore1_10011010 = makeTile(0x68, 0b10011010)
-    TileShore1_10010010 = makeTile(0x69, 0b10010010)
-    TileShore1_00111010 = makeTile(0x6A, 0b00111010)
-    TileShore1_00110010 = makeTile(0x6B, 0b00110010)
-    TileShore1_00011010 = makeTile(0x6C, 0b00011010)
-    TileShore1_00010010 = makeTile(0x6D, 0b00010010)
-    TileShore1_10001110 = makeTile(0x6E, 0b10001110)
-    TileShore1_10101110 = makeTile(0x6F, 0b10101110)
-    TileShore1_00101110 = makeTile(0x70, 0b00101110)
-    TileShore1_10001100 = makeTile(0x71, 0b10001100)
-    TileShore1_10101100 = makeTile(0x72, 0b10101100)
-    TileShore1_00101100 = makeTile(0x73, 0b00101100)
-    TileShore1_10000110 = makeTile(0x74, 0b10000110)
-    TileShore1_10100110 = makeTile(0x75, 0b10100110)
-    TileShore1_00100110 = makeTile(0x76, 0b00100110)
-    TileShore1_10000100 = makeTile(0x77, 0b10000100)
-    TileShore1_10100100 = makeTile(0x78, 0b10100100)
-    TileShore1_00100100 = makeTile(0x79, 0b00100100)
-    TileShore1_00100001 = makeTile(0x7A, 0b00100001)
-    TileShore1_10100001 = makeTile(0x7B, 0b10100001)
-    TileShore1_00100011 = makeTile(0x7C, 0b00100011)
-    TileShore1_10100011 = makeTile(0x7D, 0b10100011)
-    TileShore1_00101001 = makeTile(0x7E, 0b00101001)
-    TileShore1_10101001 = makeTile(0x7F, 0b10101001)
-    TileShore1_00101011 = makeTile(0x80, 0b00101011)
-    TileShore1_10101011 = makeTile(0x81, 0b10101011)
-    TileShore1_00001001 = makeTile(0x82, 0b00001001)
-    TileShore1_10001001 = makeTile(0x83, 0b10001001)
-    TileShore1_00001011 = makeTile(0x84, 0b00001011)
-    TileShore1_10001011 = makeTile(0x85, 0b10001011)
-    TileShore1_01000010 = makeTile(0x86, 0b01000010)
-    TileShore1_01001010 = makeTile(0x87, 0b01001010)
-    TileShore1_01001000 = makeTile(0x88, 0b01001000)
-    TileShore1_11000010 = makeTile(0x89, 0b11000010)
-    TileShore1_11001010 = makeTile(0x8A, 0b11001010)
-    TileShore1_11001000 = makeTile(0x8B, 0b11001000)
-    TileShore1_01100010 = makeTile(0x8C, 0b01100010)
-    TileShore1_01101010 = makeTile(0x8D, 0b01101010)
-    TileShore1_01101000 = makeTile(0x8E, 0b01101000)
-    TileShore1_11100010 = makeTile(0x8F, 0b11100010)
-    TileShore1_11101010 = makeTile(0x90, 0b11101010)
-    TileShore1_11101000 = makeTile(0x91, 0b11101000)
-    TileShore1_11001001 = makeTile(0x92, 0b11001001)
-    TileShore1_11101001 = makeTile(0x93, 0b11101001)
-    TileShore1_11001011 = makeTile(0x94, 0b11001011)
-    TileShore1_11101011 = makeTile(0x95, 0b11101011)
-    TileShore1_10011100 = makeTile(0x96, 0b10011100)
-    TileShore1_10111100 = makeTile(0x97, 0b10111100)
-    TileShore1_10011110 = makeTile(0x98, 0b10011110)
-    TileShore1_10111110 = makeTile(0x99, 0b10111110)
-    TileShore1_01110010 = makeTile(0x9A, 0b01110010)
-    TileShore1_01111010 = makeTile(0x9B, 0b01111010)
-    TileShore1_11110010 = makeTile(0x9C, 0b11110010)
-    TileShore1_11111010 = makeTile(0x9D, 0b11111010)
-    TileShore1_00100111 = makeTile(0x9E, 0b00100111)
-    TileShore1_00101111 = makeTile(0x9F, 0b00101111)
-    TileShore1_10100111 = makeTile(0xA0, 0b10100111)
-    TileShore1_10101111 = makeTile(0xA1, 0b10101111)
+    TileLake = makeTile(0x12, makeCompatabilities(makeDirections(AllDirections), Land))
 
+    TileShore1_00000001 = makeShoreTile(0x13, 0b00000001)
+    TileShore1_10000011 = makeShoreTile(0x14, 0b10000011)
+    TileShore1_00110000 = makeShoreTile(0x15, 0b00110000)
+    TileShore1_01000000 = makeShoreTile(0x16, 0b01000000)
+    TileShore1_10000001 = makeShoreTile(0x17, 0b10000001)
+    TileShore1_10101000 = makeShoreTile(0x18, 0b10101000)
+    TileShore1_00101010 = makeShoreTile(0x19, 0b00101010)
+    TileShore1_10001010 = makeShoreTile(0x1A, 0b10001010)
+    TileShore1_00100000 = makeShoreTile(0x1B, 0b00100000)
+    TileShore1_01100000 = makeShoreTile(0x1C, 0b01100000)
+    TileShore1_11100000 = makeShoreTile(0x1D, 0b11100000)
+    TileShore1_11000000 = makeShoreTile(0x1E, 0b11000000)
+    TileShore1_10000000 = makeShoreTile(0x1F, 0b10000000)
+    TileShore1_10100010 = makeShoreTile(0x20, 0b10100010)
+    TileShore1_10101010 = makeShoreTile(0x21, 0b10101010)
+    TileShore1_11000001 = makeShoreTile(0x22, 0b11000001)
+    TileShore1_11100001 = makeShoreTile(0x23, 0b11100001)
+    TileShore1_11000011 = makeShoreTile(0x24, 0b11000011)
+    TileShore1_11100011 = makeShoreTile(0x25, 0b11100011)
+    TileShore1_00011100 = makeShoreTile(0x26, 0b00011100)
+    TileShore1_00111100 = makeShoreTile(0x27, 0b00111100)
+    TileShore1_00011110 = makeShoreTile(0x28, 0b00011110)
+    TileShore1_00111110 = makeShoreTile(0x29, 0b00111110)
+    TileShore1_01110000 = makeShoreTile(0x2A, 0b01110000)
+    TileShore1_01111000 = makeShoreTile(0x2B, 0b01111000)
+    TileShore1_11110000 = makeShoreTile(0x2C, 0b11110000)
+    TileShore1_11111000 = makeShoreTile(0x2D, 0b11111000)
+    TileShore1_00000111 = makeShoreTile(0x2E, 0b00000111)
+    TileShore1_00001111 = makeShoreTile(0x2F, 0b00001111)
+    TileShore1_10000111 = makeShoreTile(0x30, 0b10000111)
+    TileShore1_10001111 = makeShoreTile(0x31, 0b10001111)
+    TileShore1_11101110 = makeShoreTile(0x32, 0b11101110)
+    TileShore1_11100110 = makeShoreTile(0x33, 0b11100110)
+    TileShore1_11101100 = makeShoreTile(0x34, 0b11101100)
+    TileShore1_11100100 = makeShoreTile(0x35, 0b11100100)
+    TileShore1_11001110 = makeShoreTile(0x36, 0b11001110)
+    TileShore1_11000110 = makeShoreTile(0x37, 0b11000110)
+    TileShore1_11001100 = makeShoreTile(0x38, 0b11001100)
+    TileShore1_11000100 = makeShoreTile(0x39, 0b11000100)
+    TileShore1_01101110 = makeShoreTile(0x3A, 0b01101110)
+    TileShore1_01100110 = makeShoreTile(0x3B, 0b01100110)
+    TileShore1_01101100 = makeShoreTile(0x3C, 0b01101100)
+    TileShore1_01100100 = makeShoreTile(0x3D, 0b01100100)
+    TileShore1_01001110 = makeShoreTile(0x3E, 0b01001110)
+    TileShore1_01000110 = makeShoreTile(0x3F, 0b01000110)
+    TileShore1_01001100 = makeShoreTile(0x40, 0b01001100)
+    TileShore1_01000100 = makeShoreTile(0x41, 0b01000100)
+    TileShore1_10010011 = makeShoreTile(0x42, 0b10010011)
+    TileShore1_10011011 = makeShoreTile(0x43, 0b10011011)
+    TileShore1_10110011 = makeShoreTile(0x44, 0b10110011)
+    TileShore1_10111011 = makeShoreTile(0x45, 0b10111011)
+    TileShore1_10010001 = makeShoreTile(0x46, 0b10010001)
+    TileShore1_10011001 = makeShoreTile(0x47, 0b10011001)
+    TileShore1_10110001 = makeShoreTile(0x48, 0b10110001)
+    TileShore1_10111001 = makeShoreTile(0x49, 0b10111001)
+    TileShore1_00010011 = makeShoreTile(0x4A, 0b00010011)
+    TileShore1_00011011 = makeShoreTile(0x4B, 0b00011011)
+    TileShore1_00110011 = makeShoreTile(0x4C, 0b00110011)
+    TileShore1_00111011 = makeShoreTile(0x4D, 0b00111011)
+    TileShore1_00010001 = makeShoreTile(0x4E, 0b00010001)
+    TileShore1_00011001 = makeShoreTile(0x4F, 0b00011001)
+    TileShore1_00110001 = makeShoreTile(0x50, 0b00110001)
+    TileShore1_00111001 = makeShoreTile(0x51, 0b00111001)
+    TileShore1_00011111 = makeShoreTile(0x52, 0b00011111)
+    TileShore1_11000111 = makeShoreTile(0x53, 0b11000111)
+    TileShore1_11110001 = makeShoreTile(0x54, 0b11110001)
+    TileShore1_01111100 = makeShoreTile(0x55, 0b01111100)
+    TileShore1_10011111 = makeShoreTile(0x56, 0b10011111)
+    TileShore1_11100111 = makeShoreTile(0x57, 0b11100111)
+    TileShore1_11111001 = makeShoreTile(0x58, 0b11111001)
+    TileShore1_01111110 = makeShoreTile(0x59, 0b01111110)
+    TileShore1_00111111 = makeShoreTile(0x5A, 0b00111111)
+    TileShore1_11001111 = makeShoreTile(0x5B, 0b11001111)
+    TileShore1_11110011 = makeShoreTile(0x5C, 0b11110011)
+    TileShore1_11111100 = makeShoreTile(0x5D, 0b11111100)
+    TileShore1_10111111 = makeShoreTile(0x5E, 0b10111111)
+    TileShore1_11101111 = makeShoreTile(0x5F, 0b11101111)
+    TileShore1_11111011 = makeShoreTile(0x60, 0b11111011)
+    TileShore1_11111110 = makeShoreTile(0x61, 0b11111110)
+    TileShore1_10111000 = makeShoreTile(0x62, 0b10111000)
+    TileShore1_10110000 = makeShoreTile(0x63, 0b10110000)
+    TileShore1_10011000 = makeShoreTile(0x64, 0b10011000)
+    TileShore1_10010000 = makeShoreTile(0x65, 0b10010000)
+    TileShore1_10111010 = makeShoreTile(0x66, 0b10111010)
+    TileShore1_10110010 = makeShoreTile(0x67, 0b10110010)
+    TileShore1_10011010 = makeShoreTile(0x68, 0b10011010)
+    TileShore1_10010010 = makeShoreTile(0x69, 0b10010010)
+    TileShore1_00111010 = makeShoreTile(0x6A, 0b00111010)
+    TileShore1_00110010 = makeShoreTile(0x6B, 0b00110010)
+    TileShore1_00011010 = makeShoreTile(0x6C, 0b00011010)
+    TileShore1_00010010 = makeShoreTile(0x6D, 0b00010010)
+    TileShore1_10001110 = makeShoreTile(0x6E, 0b10001110)
+    TileShore1_10101110 = makeShoreTile(0x6F, 0b10101110)
+    TileShore1_00101110 = makeShoreTile(0x70, 0b00101110)
+    TileShore1_10001100 = makeShoreTile(0x71, 0b10001100)
+    TileShore1_10101100 = makeShoreTile(0x72, 0b10101100)
+    TileShore1_00101100 = makeShoreTile(0x73, 0b00101100)
+    TileShore1_10000110 = makeShoreTile(0x74, 0b10000110)
+    TileShore1_10100110 = makeShoreTile(0x75, 0b10100110)
+    TileShore1_00100110 = makeShoreTile(0x76, 0b00100110)
+    TileShore1_10000100 = makeShoreTile(0x77, 0b10000100)
+    TileShore1_10100100 = makeShoreTile(0x78, 0b10100100)
+    TileShore1_00100100 = makeShoreTile(0x79, 0b00100100)
+    TileShore1_00100001 = makeShoreTile(0x7A, 0b00100001)
+    TileShore1_10100001 = makeShoreTile(0x7B, 0b10100001)
+    TileShore1_00100011 = makeShoreTile(0x7C, 0b00100011)
+    TileShore1_10100011 = makeShoreTile(0x7D, 0b10100011)
+    TileShore1_00101001 = makeShoreTile(0x7E, 0b00101001)
+    TileShore1_10101001 = makeShoreTile(0x7F, 0b10101001)
+    TileShore1_00101011 = makeShoreTile(0x80, 0b00101011)
+    TileShore1_10101011 = makeShoreTile(0x81, 0b10101011)
+    TileShore1_00001001 = makeShoreTile(0x82, 0b00001001)
+    TileShore1_10001001 = makeShoreTile(0x83, 0b10001001)
+    TileShore1_00001011 = makeShoreTile(0x84, 0b00001011)
+    TileShore1_10001011 = makeShoreTile(0x85, 0b10001011)
+    TileShore1_01000010 = makeShoreTile(0x86, 0b01000010)
+    TileShore1_01001010 = makeShoreTile(0x87, 0b01001010)
+    TileShore1_01001000 = makeShoreTile(0x88, 0b01001000)
+    TileShore1_11000010 = makeShoreTile(0x89, 0b11000010)
+    TileShore1_11001010 = makeShoreTile(0x8A, 0b11001010)
+    TileShore1_11001000 = makeShoreTile(0x8B, 0b11001000)
+    TileShore1_01100010 = makeShoreTile(0x8C, 0b01100010)
+    TileShore1_01101010 = makeShoreTile(0x8D, 0b01101010)
+    TileShore1_01101000 = makeShoreTile(0x8E, 0b01101000)
+    TileShore1_11100010 = makeShoreTile(0x8F, 0b11100010)
+    TileShore1_11101010 = makeShoreTile(0x90, 0b11101010)
+    TileShore1_11101000 = makeShoreTile(0x91, 0b11101000)
+    TileShore1_11001001 = makeShoreTile(0x92, 0b11001001)
+    TileShore1_11101001 = makeShoreTile(0x93, 0b11101001)
+    TileShore1_11001011 = makeShoreTile(0x94, 0b11001011)
+    TileShore1_11101011 = makeShoreTile(0x95, 0b11101011)
+    TileShore1_10011100 = makeShoreTile(0x96, 0b10011100)
+    TileShore1_10111100 = makeShoreTile(0x97, 0b10111100)
+    TileShore1_10011110 = makeShoreTile(0x98, 0b10011110)
+    TileShore1_10111110 = makeShoreTile(0x99, 0b10111110)
+    TileShore1_01110010 = makeShoreTile(0x9A, 0b01110010)
+    TileShore1_01111010 = makeShoreTile(0x9B, 0b01111010)
+    TileShore1_11110010 = makeShoreTile(0x9C, 0b11110010)
+    TileShore1_11111010 = makeShoreTile(0x9D, 0b11111010)
+    TileShore1_00100111 = makeShoreTile(0x9E, 0b00100111)
+    TileShore1_00101111 = makeShoreTile(0x9F, 0b00101111)
+    TileShore1_10100111 = makeShoreTile(0xA0, 0b10100111)
+    TileShore1_10101111 = makeShoreTile(0xA1, 0b10101111)
+
+    /*
     TileGrasslands1     = makeTile(0xA2, AllDirections)
     TileForest1         = makeTile(0xA3, AllDirections)
     TileMountain1      = makeTile(0xA4, AllDirections)
@@ -970,6 +1060,7 @@ var (
     TileTundra_00101111  = makeTile(0x2F7, 0b00101111)
     TileTundra_10100111  = makeTile(0x2F8, 0b10100111)
     TileTundra_10101111  = makeTile(0x2F9, 0b10101111)
+    */
 
 )
 
