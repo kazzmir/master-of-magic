@@ -3,12 +3,14 @@ package main
 import (
     "os"
     "fmt"
+    "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
 
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
+    "github.com/hajimehoshi/ebiten/v2/vector"
 )
 
 const ScreenWidth = 1024
@@ -16,6 +18,10 @@ const ScreenHeight = 768
 
 type Editor struct {
     Data *terrain.TerrainData
+
+    Terrain [][]int
+
+    TileGpuCache map[int]*ebiten.Image
 }
 
 func (editor *Editor) Update() error {
@@ -36,10 +42,33 @@ func (editor *Editor) Update() error {
 }
 
 func (editor *Editor) Draw(screen *ebiten.Image){
+
+    size := 20
+
+    startX := 10
+    startY := 10
+
+    for y := 0; y < len(editor.Terrain); y++ {
+        for x := 0; x < len(editor.Terrain[y]); x++ {
+            xPos := startX + x * size
+            yPos := startY + y * size
+            vector.StrokeRect(screen, float32(xPos), float32(yPos), float32(size), float32(size), 1.5, color.White, true)
+        }
+    }
+
 }
 
 func (editor *Editor) Layout(outsideWidth int, outsideHeight int) (int, int) {
     return ScreenWidth, ScreenHeight
+}
+
+func createTerrain(rows int, columns int) [][]int {
+    out := make([][]int, columns)
+    for i := 0; i < columns; i++ {
+        out[i] = make([]int, rows)
+    }
+
+    return out
 }
 
 func MakeEditor(lbxFile *lbx.LbxFile) *Editor {
@@ -51,6 +80,8 @@ func MakeEditor(lbxFile *lbx.LbxFile) *Editor {
 
     return &Editor{
         Data: data,
+        Terrain: createTerrain(50, 50),
+        TileGpuCache: make(map[int]*ebiten.Image),
     }
 }
 
