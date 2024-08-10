@@ -41,6 +41,22 @@ func (editor *Editor) Update() error {
     return nil
 }
 
+func (editor *Editor) GetTileImage(x int, y int) *ebiten.Image {
+    index := editor.Terrain[y][x]
+
+    use, ok := editor.TileGpuCache[index]
+    if ok {
+        return use
+    }
+
+    useImage := editor.Data.Tiles[index].Images[0]
+    use = ebiten.NewImageFromImage(useImage)
+
+    editor.TileGpuCache[index] = use
+
+    return use
+}
+
 func (editor *Editor) Draw(screen *ebiten.Image){
 
     size := 20
@@ -52,6 +68,12 @@ func (editor *Editor) Draw(screen *ebiten.Image){
         for x := 0; x < len(editor.Terrain[y]); x++ {
             xPos := startX + x * size
             yPos := startY + y * size
+
+            tileImage := editor.GetTileImage(x, y)
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(xPos), float64(yPos))
+            screen.DrawImage(tileImage, &options)
+
             vector.StrokeRect(screen, float32(xPos), float32(yPos), float32(size), float32(size), 1.5, color.White, true)
         }
     }
