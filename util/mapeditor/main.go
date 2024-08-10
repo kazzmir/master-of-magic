@@ -3,6 +3,7 @@ package main
 import (
     "os"
     "fmt"
+    "log"
     "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -37,6 +38,21 @@ func (editor *Editor) Update() error {
         }
     }
 
+    leftClick := ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft)
+
+    if leftClick {
+        x, y := ebiten.CursorPosition()
+        x -= 10
+        y -= 10
+        x /= 20
+        y /= 20
+
+        if x >= 0 && x < len(editor.Terrain[0]) && y >= 0 && y < len(editor.Terrain) {
+            editor.Terrain[y][x] = terrain.TileLand.Index
+        }
+    }
+
+    // fmt.Printf("TPS: %v\n", ebiten.ActualTPS())
 
     return nil
 }
@@ -58,11 +74,12 @@ func (editor *Editor) GetTileImage(x int, y int) *ebiten.Image {
 }
 
 func (editor *Editor) Draw(screen *ebiten.Image){
-
     size := 20
 
     startX := 10
     startY := 10
+
+    // log.Printf("Draw start")
 
     for y := 0; y < len(editor.Terrain); y++ {
         for x := 0; x < len(editor.Terrain[y]); x++ {
@@ -74,10 +91,13 @@ func (editor *Editor) Draw(screen *ebiten.Image){
             options.GeoM.Translate(float64(xPos), float64(yPos))
             screen.DrawImage(tileImage, &options)
 
-            vector.StrokeRect(screen, float32(xPos), float32(yPos), float32(size), float32(size), 1.5, color.White, true)
+            if 2 < 1 {
+                vector.StrokeRect(screen, float32(xPos), float32(yPos), float32(size), float32(size), 1.5, color.White, true)
+            }
         }
     }
 
+    // log.Printf("Draw end")
 }
 
 func (editor *Editor) Layout(outsideWidth int, outsideHeight int) (int, int) {
@@ -108,6 +128,8 @@ func MakeEditor(lbxFile *lbx.LbxFile) *Editor {
 }
 
 func main() {
+    log.SetFlags(log.Ldate | log.Lshortfile | log.Lmicroseconds)
+
     if len(os.Args) < 2 {
         fmt.Printf("Give the terrain.lbx file as an argument\n")
         return
