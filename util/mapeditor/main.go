@@ -74,7 +74,7 @@ func (editor *Editor) GetTileImage(x int, y int) *ebiten.Image {
 }
 
 func (editor *Editor) Draw(screen *ebiten.Image){
-    size := 20
+    size := editor.GetTileImage(0, 0).Bounds().Dx()
 
     startX := 10
     startY := 10
