@@ -8,6 +8,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
 
     "github.com/hajimehoshi/ebiten/v2"
+    "github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
 const ScreenWidth = 1024
@@ -18,6 +19,19 @@ type Editor struct {
 }
 
 func (editor *Editor) Update() error {
+    var keys []ebiten.Key
+
+    keys = make([]ebiten.Key, 0)
+    keys = inpututil.AppendJustPressedKeys(keys)
+
+    for _, key := range keys {
+        switch key {
+            case ebiten.KeyEscape, ebiten.KeyCapsLock:
+                return ebiten.Termination
+        }
+    }
+
+
     return nil
 }
 

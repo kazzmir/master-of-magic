@@ -74,7 +74,9 @@ const (
 type TerrainType int
 
 const (
-    Ocean TerrainType = iota
+    // 0 value is unknown
+    Unknown TerrainType = iota
+    Ocean
     Land
     River
     // Shore
@@ -84,7 +86,6 @@ const (
     Swamp
     Desert
     Tundra
-    Unknown
 )
 
 func (terrain TerrainType) String() string {
@@ -143,14 +144,13 @@ func (compatability Compatability) String() string {
 type Tile struct {
     // index into the TerrainTile array
     Index int
-    Compatabilities []Compatability
+    Compatabilities map[Direction]TerrainType
 }
 
 func (tile *Tile) GetDirection(direction Direction) TerrainType {
-    for _, compatability := range tile.Compatabilities {
-        if compatability.Direction == direction {
-            return compatability.Terrain
-        }
+    compatability, ok := tile.Compatabilities[direction]
+    if ok {
+        return compatability
     }
 
     return Unknown
@@ -190,9 +190,15 @@ func makeCompatabilities(directions []Direction, terrain TerrainType) []Compatab
 }
 
 func makeTile(index int, compatabilities []Compatability) Tile {
+    all := make(map[Direction]TerrainType)
+
+    for _, compatability := range compatabilities {
+        all[compatability.Direction] = compatability.Terrain
+    }
+
     tile := Tile{
         Index: index,
-        Compatabilities: compatabilities,
+        Compatabilities: all,
     }
 
     allTiles = append(allTiles, tile)
