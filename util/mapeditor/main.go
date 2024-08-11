@@ -28,6 +28,57 @@ type Editor struct {
     TileY int
 }
 
+// given a position in the terrain matrix, find a tile that fits all the neighbors of the tile
+func (editor *Editor) ResolveTile(x int, y int) (int, error) {
+
+    matching := make(map[terrain.Direction]terrain.TerrainType)
+
+    getDirection := func(x int, y int, direction terrain.Direction) terrain.TerrainType {
+        index := editor.Terrain[y][x]
+        return editor.Data.Tiles[index].Tile.GetDirection(direction)
+    }
+
+    if x > 0 {
+        matching[terrain.West] = getDirection(x-1, y, terrain.East)
+    }
+
+    if x > 0 && y > 0 {
+        matching[terrain.NorthWest] = getDirection(x-1, y-1, terrain.SouthEast)
+    }
+
+    if x > 0 && y < len(editor.Terrain) - 1 {
+        matching[terrain.SouthWest] = getDirection(x-1, y+1, terrain.NorthEast)
+    }
+
+    if x < len(editor.Terrain[0]) - 1 {
+        matching[terrain.East] = getDirection(x+1, y, terrain.West)
+    }
+
+    if y > 0 {
+        matching[terrain.North] = getDirection(x, y-1, terrain.South)
+    }
+
+    if y < len(editor.Terrain) - 1 {
+        matching[terrain.South] = getDirection(x, y+1, terrain.North)
+    }
+
+    if x < len(editor.Terrain[0]) - 1 && y > 0 {
+        matching[terrain.NorthEast] = getDirection(x+1, y-1, terrain.SouthWest)
+    }
+
+    if x < len(editor.Terrain[0]) - 1 && y < len(editor.Terrain) - 1 {
+        matching[terrain.SouthEast] = getDirection(x+1, y+1, terrain.NorthWest)
+    }
+
+
+    tile := editor.Data.FindMatchingTile(matching)
+    if tile == -1 {
+        return -1, fmt.Errorf("no matching tile for %v", matching)
+    }
+
+    return tile, nil
+}
+
 func (editor *Editor) Update() error {
     var keys []ebiten.Key
 
@@ -42,6 +93,7 @@ func (editor *Editor) Update() error {
     }
 
     leftClick := ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft)
+    rightClick := ebiten.IsMouseButtonPressed(ebiten.MouseButtonRight)
 
     x, y := ebiten.CursorPosition()
     x -= 10
@@ -55,6 +107,13 @@ func (editor *Editor) Update() error {
     if leftClick {
         if x >= 0 && x < len(editor.Terrain[0]) && y >= 0 && y < len(editor.Terrain) {
             editor.Terrain[y][x] = terrain.TileLand.Index
+        }
+    } else if rightClick {
+        resolved, err := editor.ResolveTile(x, y)
+        if err == nil {
+            editor.Terrain[y][x] = resolved
+        } else {
+            fmt.Printf("Unable to resolve tile %v, %v: %v\n", x, y, err)
         }
     }
 

@@ -147,6 +147,19 @@ type Tile struct {
     Compatabilities map[Direction]TerrainType
 }
 
+// for every direction/terraintype pair, check if this tile has the same pair.
+// match can contain less pairs than what the tile has in its Compatabilities map
+// that is, a 'match' map with no entries would match any tile
+func (tile *Tile) Matches(match map[Direction]TerrainType) bool {
+    for direction, terrain := range match {
+        if tile.GetDirection(direction) != terrain {
+            return false
+        }
+    }
+
+    return true
+}
+
 func (tile *Tile) GetDirection(direction Direction) TerrainType {
     compatability, ok := tile.Compatabilities[direction]
     if ok {
@@ -1085,6 +1098,17 @@ type TerrainData struct {
     // the full array of all tile images
     Images []image.Image
     Tiles []TerrainTile
+}
+
+// returns an index into the tiles that matchess the given map, or -1 if there is no such tile
+func (data *TerrainData) FindMatchingTile(match map[Direction]TerrainType) int {
+    for i, tile := range data.Tiles {
+        if tile.Tile.Matches(match) {
+            return i
+        }
+    }
+
+    return -1
 }
 
 type TerrainTile struct {
