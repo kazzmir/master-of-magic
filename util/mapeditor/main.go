@@ -23,6 +23,9 @@ type Editor struct {
     Terrain [][]int
 
     TileGpuCache map[int]*ebiten.Image
+
+    TileX int
+    TileY int
 }
 
 func (editor *Editor) Update() error {
@@ -40,13 +43,16 @@ func (editor *Editor) Update() error {
 
     leftClick := ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft)
 
-    if leftClick {
-        x, y := ebiten.CursorPosition()
-        x -= 10
-        y -= 10
-        x /= 20
-        y /= 20
+    x, y := ebiten.CursorPosition()
+    x -= 10
+    y -= 10
+    x /= 20
+    y /= 20
 
+    editor.TileX = x
+    editor.TileY = y
+
+    if leftClick {
         if x >= 0 && x < len(editor.Terrain[0]) && y >= 0 && y < len(editor.Terrain) {
             editor.Terrain[y][x] = terrain.TileLand.Index
         }
@@ -91,7 +97,7 @@ func (editor *Editor) Draw(screen *ebiten.Image){
             options.GeoM.Translate(float64(xPos), float64(yPos))
             screen.DrawImage(tileImage, &options)
 
-            if 2 < 1 {
+            if editor.TileX == x && editor.TileY == y {
                 vector.StrokeRect(screen, float32(xPos), float32(yPos), float32(size), float32(size), 1.5, color.White, true)
             }
         }
@@ -124,6 +130,8 @@ func MakeEditor(lbxFile *lbx.LbxFile) *Editor {
         Data: data,
         Terrain: createTerrain(50, 50),
         TileGpuCache: make(map[int]*ebiten.Image),
+        TileX: -1,
+        TileY: -1,
     }
 }
 
