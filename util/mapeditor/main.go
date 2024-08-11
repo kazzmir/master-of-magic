@@ -95,11 +95,14 @@ func (editor *Editor) Update() error {
     leftClick := ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft)
     rightClick := ebiten.IsMouseButtonPressed(ebiten.MouseButtonRight)
 
+    xSize := editor.GetTileImage(0, 0).Bounds().Dx()
+    ySize := editor.GetTileImage(0, 0).Bounds().Dy()
+
     x, y := ebiten.CursorPosition()
     x -= 10
     y -= 10
-    x /= 20
-    y /= 20
+    x /= xSize
+    y /= ySize
 
     editor.TileX = x
     editor.TileY = y
@@ -139,7 +142,8 @@ func (editor *Editor) GetTileImage(x int, y int) *ebiten.Image {
 }
 
 func (editor *Editor) Draw(screen *ebiten.Image){
-    size := editor.GetTileImage(0, 0).Bounds().Dx()
+    xSize := editor.GetTileImage(0, 0).Bounds().Dx()
+    ySize := editor.GetTileImage(0, 0).Bounds().Dy()
 
     startX := 10
     startY := 10
@@ -148,8 +152,8 @@ func (editor *Editor) Draw(screen *ebiten.Image){
 
     for y := 0; y < len(editor.Terrain); y++ {
         for x := 0; x < len(editor.Terrain[y]); x++ {
-            xPos := startX + x * size
-            yPos := startY + y * size
+            xPos := startX + x * xSize
+            yPos := startY + y * ySize
 
             tileImage := editor.GetTileImage(x, y)
             var options ebiten.DrawImageOptions
@@ -157,7 +161,7 @@ func (editor *Editor) Draw(screen *ebiten.Image){
             screen.DrawImage(tileImage, &options)
 
             if editor.TileX == x && editor.TileY == y {
-                vector.StrokeRect(screen, float32(xPos), float32(yPos), float32(size), float32(size), 1.5, color.White, true)
+                vector.StrokeRect(screen, float32(xPos), float32(yPos), float32(xSize), float32(ySize), 1.5, color.White, true)
             }
         }
     }
