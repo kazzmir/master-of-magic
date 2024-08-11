@@ -10,6 +10,13 @@ import (
 
 // terrain tiles are indicies 0-0x259 for arcanus, and 0x25A - 0x5f4 for myrror
 
+type Plane int
+
+const (
+    Arcanus Plane = iota
+    Myrror
+)
+
 type TerrainIndex int
 
 const (
@@ -1100,15 +1107,16 @@ type TerrainData struct {
     Tiles []TerrainTile
 }
 
-// returns an index into the tiles that matchess the given map, or -1 if there is no such tile
-func (data *TerrainData) FindMatchingTile(match map[Direction]TerrainType) int {
+// returns an array of tile indicies that match the given map
+func (data *TerrainData) FindMatchingAllTiles(match map[Direction]TerrainType) []int {
+    var out []int
     for i, tile := range data.Tiles {
         if tile.Tile.Matches(match) {
-            return i
+            out = append(out, i)
         }
     }
 
-    return -1
+    return out
 }
 
 type TerrainTile struct {
@@ -1122,7 +1130,7 @@ type TerrainTile struct {
     Tile Tile
 }
 
-func (tile *TerrainTile) IsMyrran() bool {
+func (tile *TerrainTile) IsMyrror() bool {
     return tile.TileIndex >= 0x25A
 }
 

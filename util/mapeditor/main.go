@@ -5,6 +5,7 @@ import (
     "fmt"
     "log"
     "image/color"
+    "math/rand"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
@@ -26,6 +27,23 @@ type Editor struct {
 
     TileX int
     TileY int
+}
+
+func chooseRandomElement(values []int) int {
+    index := rand.Intn(len(values))
+    return values[index]
+}
+
+func (editor *Editor) removeMyrror(tiles []int) []int {
+    var out []int
+
+    for _, tile := range tiles {
+        if ! editor.Data.Tiles[tile].IsMyrror() {
+            out = append(out, tile)
+        }
+    }
+
+    return out
 }
 
 // given a position in the terrain matrix, find a tile that fits all the neighbors of the tile
@@ -70,13 +88,12 @@ func (editor *Editor) ResolveTile(x int, y int) (int, error) {
         matching[terrain.SouthEast] = getDirection(x+1, y+1, terrain.NorthWest)
     }
 
-
-    tile := editor.Data.FindMatchingTile(matching)
-    if tile == -1 {
+    tiles := editor.Data.FindMatchingAllTiles(matching)
+    if tiles == nil {
         return -1, fmt.Errorf("no matching tile for %v", matching)
     }
 
-    return tile, nil
+    return chooseRandomElement(editor.removeMyrror(tiles)), nil
 }
 
 func (editor *Editor) Update() error {
@@ -93,7 +110,7 @@ func (editor *Editor) Update() error {
     }
 
     leftClick := ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft)
-    rightClick := ebiten.IsMouseButtonPressed(ebiten.MouseButtonRight)
+    rightClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight)
 
     xSize := editor.GetTileImage(0, 0).Bounds().Dx()
     ySize := editor.GetTileImage(0, 0).Bounds().Dy()
