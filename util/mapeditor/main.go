@@ -388,7 +388,21 @@ func (editor *Editor) Draw(screen *ebiten.Image){
         op.ColorScale.ScaleWithColor(color.White)
         text.Draw(editor.InfoImage, fmt.Sprintf("Map Dimensions: %vx%v", len(editor.Terrain[0]), len(editor.Terrain)), face, op)
         op.GeoM.Translate(0, face.Size + 2)
-        text.Draw(editor.InfoImage, fmt.Sprintf("Tile: %v,%v", editor.TileX, editor.TileY), face, op)
+        value := -1
+
+        if editor.TileX >= 0 && editor.TileX < len(editor.Terrain[0]) && editor.TileY >= 0 && editor.TileY < len(editor.Terrain) {
+            value = editor.Terrain[editor.TileY][editor.TileX]
+        }
+
+        text.Draw(editor.InfoImage, fmt.Sprintf("Tile: %v,%v: %v (0x%x)", editor.TileX, editor.TileY, value, value), face, op)
+
+        if editor.TileX >= 0 && editor.TileX < len(editor.Terrain[0]) && editor.TileY >= 0 && editor.TileY < len(editor.Terrain) {
+            tileImage := editor.GetTileImage(editor.TileX, editor.TileY)
+            var options ebiten.DrawImageOptions
+            options.GeoM.Scale(1.5, 1.5)
+            options.GeoM.Translate(1, face.Size * 3)
+            editor.InfoImage.DrawImage(tileImage, &options)
+        }
 
         var options ebiten.DrawImageOptions
         options.GeoM.Translate(2, 2)
