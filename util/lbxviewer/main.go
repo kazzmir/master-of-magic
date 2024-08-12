@@ -6,12 +6,11 @@ import (
     "fmt"
     "sync"
     "math"
-    "bytes"
-    _ "embed"
 
     "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/util/common"
 
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/vector"
@@ -19,15 +18,8 @@ import (
     "github.com/hajimehoshi/ebiten/v2/text/v2"
 )
 
-//go:embed futura.ttf
-var FuturaTTF []byte
-
 const ScreenWidth = 1024
 const ScreenHeight = 768
-
-func LoadFont() (*text.GoTextFaceSource, error) {
-    return text.NewGoTextFaceSource(bytes.NewReader(FuturaTTF))
-}
 
 type LbxImages struct {
     Images []*ebiten.Image
@@ -288,7 +280,7 @@ func (viewer *Viewer) Draw(screen *ebiten.Image) {
 }
 
 func MakeViewer(lbxFile *lbx.LbxFile) (*Viewer, error) {
-    font, err := LoadFont()
+    font, err := common.LoadFont()
     if err != nil {
         return nil, err
     }

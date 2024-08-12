@@ -35,6 +35,8 @@ type Editor struct {
 
     Counter uint64
     Scale float64
+
+    ShowInfo bool
 }
 
 func chooseRandomElement(values []int) int {
@@ -403,6 +405,7 @@ func MakeEditor(lbxFile *lbx.LbxFile) *Editor {
         Scale: 1.0,
         CameraX: 0,
         CameraY: 0,
+        ShowInfo: true,
     }
 }
 
