@@ -29,6 +29,11 @@ type Editor struct {
 
     TileX int
     TileY int
+
+    CameraX int
+    CameraY int
+
+    Counter uint64
 }
 
 func chooseRandomElement(values []int) int {
@@ -208,7 +213,34 @@ func (editor *Editor) ResolveTiles(){
 }
 
 func (editor *Editor) Update() error {
+    editor.Counter += 1
+
     var keys []ebiten.Key
+
+    canScroll := editor.Counter % 2 == 0
+
+    keys = make([]ebiten.Key, 0)
+    keys = inpututil.AppendPressedKeys(keys)
+    for _, key := range keys {
+        switch key {
+            case ebiten.KeyUp:
+                if editor.CameraY > 0 && canScroll {
+                    editor.CameraY -= 1
+                }
+            case ebiten.KeyDown:
+                if editor.CameraY < len(editor.Terrain[0]) && canScroll {
+                    editor.CameraY += 1
+                }
+            case ebiten.KeyLeft:
+                if editor.CameraX > 0 && canScroll {
+                    editor.CameraX -= 1
+                }
+            case ebiten.KeyRight:
+                if editor.CameraX < len(editor.Terrain) && canScroll {
+                    editor.CameraX += 1
+                }
+        }
+    }
 
     keys = make([]ebiten.Key, 0)
     keys = inpututil.AppendJustPressedKeys(keys)
@@ -245,6 +277,9 @@ func (editor *Editor) Update() error {
     x /= xSize
     y /= ySize
 
+    x += editor.CameraX
+    y += editor.CameraY
+
     editor.TileX = x
     editor.TileY = y
 
@@ -259,11 +294,13 @@ func (editor *Editor) Update() error {
             editor.Terrain[y][x] = use
         }
     } else if rightClick {
-        resolved, err := editor.ResolveTile(x, y)
-        if err == nil {
-            editor.Terrain[y][x] = resolved
-        } else {
-            fmt.Printf("Unable to resolve tile %v, %v: %v\n", x, y, err)
+        if x >= 0 && x < len(editor.Terrain[0]) && y >= 0 && y < len(editor.Terrain) {
+            resolved, err := editor.ResolveTile(x, y)
+            if err == nil {
+                editor.Terrain[y][x] = resolved
+            } else {
+                fmt.Printf("Unable to resolve tile %v, %v: %v\n", x, y, err)
+            }
         }
     }
 
@@ -302,13 +339,18 @@ func (editor *Editor) Draw(screen *ebiten.Image){
             xPos := startX + x * xSize
             yPos := startY + y * ySize
 
-            tileImage := editor.GetTileImage(x, y)
-            var options ebiten.DrawImageOptions
-            options.GeoM.Translate(float64(xPos), float64(yPos))
-            screen.DrawImage(tileImage, &options)
+            xUse := x + editor.CameraX
+            yUse := y + editor.CameraY
 
-            if editor.TileX == x && editor.TileY == y {
-                vector.StrokeRect(screen, float32(xPos), float32(yPos), float32(xSize), float32(ySize), 1.5, color.White, true)
+            if xUse >= 0 && xUse < len(editor.Terrain[0]) && yUse >= 0 && yUse < len(editor.Terrain) {
+                tileImage := editor.GetTileImage(xUse, yUse)
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(xPos), float64(yPos))
+                screen.DrawImage(tileImage, &options)
+
+                if editor.TileX == xUse && editor.TileY == yUse {
+                    vector.StrokeRect(screen, float32(xPos), float32(yPos), float32(xSize), float32(ySize), 1.5, color.White, true)
+                }
             }
         }
     }
@@ -342,6 +384,8 @@ func MakeEditor(lbxFile *lbx.LbxFile) *Editor {
         TileGpuCache: make(map[int]*ebiten.Image),
         TileX: -1,
         TileY: -1,
+        CameraX: 0,
+        CameraY: 0,
     }
 }
 
