@@ -1119,6 +1119,16 @@ func (data *TerrainData) FindMatchingAllTiles(match map[Direction]TerrainType) [
     return out
 }
 
+func (data *TerrainData) FindMatchingTile(match map[Direction]TerrainType) int {
+    for i, tile := range data.Tiles {
+        if tile.Tile.Matches(match) {
+            return i
+        }
+    }
+
+    return -1
+}
+
 type TerrainTile struct {
     // the index into the original array of images, if needed
     ImageIndex int

@@ -4,6 +4,7 @@ import (
     "os"
     "fmt"
     "log"
+    "time"
     "image"
     "image/color"
     "math/rand"
@@ -93,13 +94,15 @@ func (editor *Editor) ResolveTile(x int, y int) (int, error) {
         matching[terrain.SouthEast] = getDirection(x+1, y+1, terrain.NorthWest)
     }
 
-    tiles := editor.Data.FindMatchingAllTiles(matching)
-    if tiles == nil {
+    tile := editor.Data.FindMatchingTile(matching)
+    if tile == -1 {
         return -1, fmt.Errorf("no matching tile for %v", matching)
     }
 
+    return tile, nil
+
     // return chooseRandomElement(editor.removeMyrror(tiles)), nil
-    return editor.removeMyrror(tiles)[0], nil
+    // return editor.removeMyrror(tiles)[0], nil
 }
 
 func (editor *Editor) ResolveTiles(){
@@ -120,7 +123,8 @@ func (editor *Editor) ResolveTiles(){
         quit = true
         var more []image.Point
 
-        for _, point := range unresolved {
+        for _, index := range rand.Perm(len(unresolved)) {
+            point := unresolved[index]
             choice, err := editor.ResolveTile(point.X, point.Y)
             if err != nil {
                 more = append(more, point)
@@ -129,6 +133,8 @@ func (editor *Editor) ResolveTiles(){
                 quit = false
             }
         }
+
+        unresolved = more
 
         // fmt.Printf("resolve loop %d\n", count)
     }
@@ -143,11 +149,16 @@ func (editor *Editor) Update() error {
     for _, key := range keys {
         switch key {
             case ebiten.KeyS:
+                start := time.Now()
                 editor.ResolveTiles()
+                end := time.Now()
+                log.Printf("Resolve tiles took %v", end.Sub(start))
             case ebiten.KeyEscape, ebiten.KeyCapsLock:
                 return ebiten.Termination
         }
     }
+
+    leftShift := inpututil.KeyPressDuration(ebiten.KeyShiftLeft) > 0
 
     leftClick := ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft)
     // rightClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight)
@@ -167,7 +178,13 @@ func (editor *Editor) Update() error {
 
     if leftClick {
         if x >= 0 && x < len(editor.Terrain[0]) && y >= 0 && y < len(editor.Terrain) {
-            editor.Terrain[y][x] = terrain.TileLand.Index
+            use := terrain.TileLand.Index
+
+            if leftShift {
+                use = terrain.TileOcean.Index
+            }
+
+            editor.Terrain[y][x] = use
         }
     } else if rightClick {
         resolved, err := editor.ResolveTile(x, y)
