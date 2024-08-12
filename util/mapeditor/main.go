@@ -33,8 +33,8 @@ type Editor struct {
     TileX int
     TileY int
 
-    CameraX int
-    CameraY int
+    CameraX float64
+    CameraY float64
 
     Counter uint64
     Scale float64
@@ -232,32 +232,35 @@ func (editor *Editor) Update() error {
         switch key {
             case ebiten.KeyUp:
                 if editor.CameraY > 0 && canScroll {
-                    editor.CameraY -= 1
+                    editor.CameraY -= 1.0 / editor.Scale
                 }
             case ebiten.KeyDown:
-                if editor.CameraY < len(editor.Terrain[0]) && canScroll {
-                    editor.CameraY += 1
+                if int(editor.CameraY) < len(editor.Terrain[0]) && canScroll {
+                    editor.CameraY += 1.0 / editor.Scale
                 }
             case ebiten.KeyLeft:
                 if editor.CameraX > 0 && canScroll {
-                    editor.CameraX -= 1
+                    editor.CameraX -= 1.0 / editor.Scale
                 }
             case ebiten.KeyRight:
-                if editor.CameraX < len(editor.Terrain) && canScroll {
-                    editor.CameraX += 1
+                if int(editor.CameraX) < len(editor.Terrain) && canScroll {
+                    editor.CameraX += 1.0 / editor.Scale
                 }
             case ebiten.KeyMinus:
                 editor.Scale *= 0.98
-                if editor.Scale < 0.2 {
-                    editor.Scale = 0.2
-                }
-
             case ebiten.KeyEqual:
                 editor.Scale *= 1.02
-                if editor.Scale > 2 {
-                    editor.Scale = 2
-                }
         }
+    }
+
+    _, wheelY := ebiten.Wheel()
+    editor.Scale *= 1 + float64(wheelY) * 0.1
+
+    if editor.Scale < 0.2 {
+        editor.Scale = 0.2
+    }
+    if editor.Scale > 2 {
+        editor.Scale = 2
     }
 
     keys = make([]ebiten.Key, 0)
@@ -297,8 +300,8 @@ func (editor *Editor) Update() error {
     x = int(float64(x) / (float64(xSize) * editor.Scale))
     y = int(float64(y) / (float64(ySize) * editor.Scale))
 
-    x += editor.CameraX
-    y += editor.CameraY
+    x += int(editor.CameraX)
+    y += int(editor.CameraY)
 
     editor.TileX = x
     editor.TileY = y
@@ -361,8 +364,8 @@ func (editor *Editor) Draw(screen *ebiten.Image){
             xPos := float64(x * xSize)
             yPos := float64(y * ySize)
 
-            xUse := x + editor.CameraX
-            yUse := y + editor.CameraY
+            xUse := x + int(editor.CameraX)
+            yUse := y + int(editor.CameraY)
 
             if xUse >= 0 && xUse < len(editor.Terrain[0]) && yUse >= 0 && yUse < len(editor.Terrain) {
                 tileImage := editor.GetTileImage(xUse, yUse)
