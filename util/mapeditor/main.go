@@ -40,6 +40,7 @@ type Editor struct {
     Scale float64
 
     ShowInfo bool
+    InfoImage *ebiten.Image
 }
 
 func chooseRandomElement(values []int) int {
@@ -274,6 +275,8 @@ func (editor *Editor) Update() error {
                 editor.ResolveTiles()
                 end := time.Now()
                 log.Printf("Resolve tiles took %v", end.Sub(start))
+            case ebiten.KeyTab:
+                editor.ShowInfo = !editor.ShowInfo
             case ebiten.KeyEscape, ebiten.KeyCapsLock:
                 return ebiten.Termination
         }
@@ -376,6 +379,24 @@ func (editor *Editor) Draw(screen *ebiten.Image){
         }
     }
 
+    if editor.ShowInfo {
+        editor.InfoImage.Fill(color.RGBA{32, 32, 32, 128})
+
+        face := &text.GoTextFace{Source: editor.Font, Size: 13}
+        op := &text.DrawOptions{}
+        op.GeoM.Translate(1, 1)
+        op.ColorScale.ScaleWithColor(color.White)
+        text.Draw(editor.InfoImage, fmt.Sprintf("Map Dimensions: %vx%v", len(editor.Terrain[0]), len(editor.Terrain)), face, op)
+        op.GeoM.Translate(0, face.Size + 2)
+        text.Draw(editor.InfoImage, fmt.Sprintf("Tile: %v,%v", editor.TileX, editor.TileY), face, op)
+
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(2, 2)
+        scale := 0.9
+        options.ColorM.Scale(scale, scale, scale, scale)
+        screen.DrawImage(editor.InfoImage, &options)
+    }
+
     // log.Printf("Draw end")
 }
 
@@ -416,6 +437,7 @@ func MakeEditor(lbxFile *lbx.LbxFile) *Editor {
         CameraX: 0,
         CameraY: 0,
         ShowInfo: true,
+        InfoImage: ebiten.NewImage(200, 100),
     }
 }
 
