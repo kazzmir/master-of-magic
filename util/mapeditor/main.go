@@ -4,6 +4,7 @@ import (
     "os"
     "fmt"
     "log"
+    "image"
     "image/color"
     "math/rand"
 
@@ -53,6 +54,10 @@ func (editor *Editor) ResolveTile(x int, y int) (int, error) {
 
     getDirection := func(x int, y int, direction terrain.Direction) terrain.TerrainType {
         index := editor.Terrain[y][x]
+        if index < 0 || index >= len(editor.Data.Tiles) {
+            fmt.Printf("Error: invalid index in terrain %v at %v,%v\n", index, x, y)
+            return terrain.Unknown
+        }
         return editor.Data.Tiles[index].Tile.GetDirection(direction)
     }
 
@@ -93,7 +98,40 @@ func (editor *Editor) ResolveTile(x int, y int) (int, error) {
         return -1, fmt.Errorf("no matching tile for %v", matching)
     }
 
-    return chooseRandomElement(editor.removeMyrror(tiles)), nil
+    // return chooseRandomElement(editor.removeMyrror(tiles)), nil
+    return editor.removeMyrror(tiles)[0], nil
+}
+
+func (editor *Editor) ResolveTiles(){
+    // go through every tile and try to resolve it, keep doing this in a loop until there are no more tiles to resolve
+
+    quit := false
+
+    var unresolved []image.Point
+    for x := 0; x < len(editor.Terrain[0]); x++ {
+        for y := 0; y < len(editor.Terrain); y++ {
+            unresolved = append(unresolved, image.Pt(x, y))
+        }
+    }
+
+    count := 0
+    for !quit && count < 5 {
+        count += 1
+        quit = true
+        var more []image.Point
+
+        for _, point := range unresolved {
+            choice, err := editor.ResolveTile(point.X, point.Y)
+            if err != nil {
+                more = append(more, point)
+            } else if choice != editor.Terrain[point.Y][point.X] {
+                editor.Terrain[point.Y][point.X] = choice
+                quit = false
+            }
+        }
+
+        // fmt.Printf("resolve loop %d\n", count)
+    }
 }
 
 func (editor *Editor) Update() error {
@@ -104,13 +142,16 @@ func (editor *Editor) Update() error {
 
     for _, key := range keys {
         switch key {
+            case ebiten.KeyS:
+                editor.ResolveTiles()
             case ebiten.KeyEscape, ebiten.KeyCapsLock:
                 return ebiten.Termination
         }
     }
 
     leftClick := ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft)
-    rightClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight)
+    // rightClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight)
+    rightClick := ebiten.IsMouseButtonPressed(ebiten.MouseButtonRight)
 
     xSize := editor.GetTileImage(0, 0).Bounds().Dx()
     ySize := editor.GetTileImage(0, 0).Bounds().Dy()
