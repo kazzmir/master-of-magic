@@ -34,6 +34,7 @@ type Editor struct {
     CameraY int
 
     Counter uint64
+    Scale float64
 }
 
 func chooseRandomElement(values []int) int {
@@ -239,6 +240,17 @@ func (editor *Editor) Update() error {
                 if editor.CameraX < len(editor.Terrain) && canScroll {
                     editor.CameraX += 1
                 }
+            case ebiten.KeyMinus:
+                editor.Scale *= 0.98
+                if editor.Scale < 0.2 {
+                    editor.Scale = 0.2
+                }
+
+            case ebiten.KeyEqual:
+                editor.Scale *= 1.02
+                if editor.Scale > 2 {
+                    editor.Scale = 2
+                }
         }
     }
 
@@ -274,8 +286,8 @@ func (editor *Editor) Update() error {
     x, y := ebiten.CursorPosition()
     x -= 10
     y -= 10
-    x /= xSize
-    y /= ySize
+    x = int(float64(x) / (float64(xSize) * editor.Scale))
+    y = int(float64(y) / (float64(ySize) * editor.Scale))
 
     x += editor.CameraX
     y += editor.CameraY
@@ -329,15 +341,17 @@ func (editor *Editor) Draw(screen *ebiten.Image){
     xSize := editor.GetTileImage(0, 0).Bounds().Dx()
     ySize := editor.GetTileImage(0, 0).Bounds().Dy()
 
-    startX := 10
-    startY := 10
+    startX := 10.0
+    startY := 10.0
 
     // log.Printf("Draw start")
 
     for y := 0; y < len(editor.Terrain); y++ {
         for x := 0; x < len(editor.Terrain[y]); x++ {
-            xPos := startX + x * xSize
-            yPos := startY + y * ySize
+            // xPos := startX + float64(x * xSize) //  * editor.Scale
+            // yPos := startY + float64(y * ySize) // * editor.Scale
+            xPos := float64(x * xSize)
+            yPos := float64(y * ySize)
 
             xUse := x + editor.CameraX
             yUse := y + editor.CameraY
@@ -346,10 +360,12 @@ func (editor *Editor) Draw(screen *ebiten.Image){
                 tileImage := editor.GetTileImage(xUse, yUse)
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(float64(xPos), float64(yPos))
+                options.GeoM.Scale(editor.Scale, editor.Scale)
+                options.GeoM.Translate(startX, startY)
                 screen.DrawImage(tileImage, &options)
 
                 if editor.TileX == xUse && editor.TileY == yUse {
-                    vector.StrokeRect(screen, float32(xPos), float32(yPos), float32(xSize), float32(ySize), 1.5, color.White, true)
+                    vector.StrokeRect(screen, float32(startX) + float32(xPos * editor.Scale), float32(startY) + float32(yPos * editor.Scale), float32(xSize) * float32(editor.Scale), float32(ySize) * float32(editor.Scale), 1.5, color.White, true)
                 }
             }
         }
@@ -384,6 +400,7 @@ func MakeEditor(lbxFile *lbx.LbxFile) *Editor {
         TileGpuCache: make(map[int]*ebiten.Image),
         TileX: -1,
         TileY: -1,
+        Scale: 1.0,
         CameraX: 0,
         CameraY: 0,
     }
