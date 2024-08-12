@@ -91,7 +91,7 @@ func (editor *Editor) GenerateLand() {
     // finally, end by calling ResolveTiles() to clean up edges
 
     const threshold = 0.0
-    const smoothRounds = 3
+    const smoothRounds = 4
 
     data := make([][]float32, len(editor.Terrain))
     for y := 0; y < len(data); y++ {
@@ -179,8 +179,6 @@ func (editor *Editor) ResolveTile(x int, y int) (int, error) {
 func (editor *Editor) ResolveTiles(){
     // go through every tile and try to resolve it, keep doing this in a loop until there are no more tiles to resolve
 
-    quit := false
-
     var unresolved []image.Point
     for x := 0; x < len(editor.Terrain[0]); x++ {
         for y := 0; y < len(editor.Terrain); y++ {
@@ -189,9 +187,8 @@ func (editor *Editor) ResolveTiles(){
     }
 
     count := 0
-    for !quit && count < 5 {
+    for len(unresolved) > 0 && count < 5 {
         count += 1
-        quit = true
         var more []image.Point
 
         for _, index := range rand.Perm(len(unresolved)) {
@@ -201,7 +198,6 @@ func (editor *Editor) ResolveTiles(){
                 more = append(more, point)
             } else if choice != editor.Terrain[point.Y][point.X] {
                 editor.Terrain[point.Y][point.X] = choice
-                quit = false
             }
         }
 
@@ -220,7 +216,10 @@ func (editor *Editor) Update() error {
     for _, key := range keys {
         switch key {
             case ebiten.KeyG:
+                start := time.Now()
                 editor.GenerateLand()
+                end := time.Now()
+                log.Printf("Generate land took %v", end.Sub(start))
             case ebiten.KeyS:
                 start := time.Now()
                 editor.ResolveTiles()
@@ -339,7 +338,7 @@ func MakeEditor(lbxFile *lbx.LbxFile) *Editor {
 
     return &Editor{
         Data: data,
-        Terrain: createTerrain(50, 50),
+        Terrain: createTerrain(200, 100),
         TileGpuCache: make(map[int]*ebiten.Image),
         TileX: -1,
         TileY: -1,
