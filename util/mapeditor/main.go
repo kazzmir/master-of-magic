@@ -10,11 +10,13 @@ import (
     "math/rand"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/util/common"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
 
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
     "github.com/hajimehoshi/ebiten/v2/vector"
+    "github.com/hajimehoshi/ebiten/v2/text/v2"
 )
 
 const ScreenWidth = 1024
@@ -22,6 +24,7 @@ const ScreenHeight = 768
 
 type Editor struct {
     Data *terrain.TerrainData
+    Font *text.GoTextFaceSource
 
     Terrain [][]int
 
@@ -390,6 +393,12 @@ func createTerrain(rows int, columns int) [][]int {
 }
 
 func MakeEditor(lbxFile *lbx.LbxFile) *Editor {
+    font, err := common.LoadFont()
+    if err != nil {
+        fmt.Printf("Could not load font: %v\n", err)
+        os.Exit(0)
+    }
+
     data, err := terrain.ReadTerrainData(lbxFile)
     if err != nil {
         fmt.Printf("Could not read terrain data: %v\n", err)
@@ -398,6 +407,7 @@ func MakeEditor(lbxFile *lbx.LbxFile) *Editor {
 
     return &Editor{
         Data: data,
+        Font: font,
         Terrain: createTerrain(200, 100),
         TileGpuCache: make(map[int]*ebiten.Image),
         TileX: -1,

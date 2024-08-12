@@ -3,12 +3,11 @@ package main
 import (
     "os"
     "fmt"
-    "bytes"
     "image"
     "image/color"
-    _ "embed"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/util/common"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
 
     "github.com/hajimehoshi/ebiten/v2"
@@ -17,15 +16,8 @@ import (
     "github.com/hajimehoshi/ebiten/v2/text/v2"
 )
 
-//go:embed futura.ttf
-var FuturaTTF []byte
-
 const ScreenWidth = 1024
 const ScreenHeight = 768
-
-func LoadFont() (*text.GoTextFaceSource, error) {
-    return text.NewGoTextFaceSource(bytes.NewReader(FuturaTTF))
-}
 
 type ImageGPU struct {
     Raw image.Image
@@ -52,7 +44,7 @@ func MakeViewer(data *terrain.TerrainData) *Viewer {
         })
     }
 
-    font, err := LoadFont()
+    font, err := common.LoadFont()
     if err != nil {
         fmt.Printf("Could not load font: %v\n", err)
     }
