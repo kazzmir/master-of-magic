@@ -48,6 +48,77 @@ func (editor *Editor) removeMyrror(tiles []int) []int {
     return out
 }
 
+func averageCell(data [][]float32, cx int, cy int) float32 {
+    var total float32 = 0
+    count := 0
+
+    for x := -1; x <= 1; x++ {
+        for y := -1; y <= 1; y++ {
+            nx := cx + x
+            ny := cy + y
+
+            if nx >= 0 && nx < len(data[0]) && ny >= 0 && ny < len(data) {
+                total += data[ny][nx]
+                count += 1
+            }
+        }
+    }
+
+    return total / float32(count)
+}
+
+func averageCells(data [][]float32) [][]float32 {
+    out := make([][]float32, len(data))
+    for y := 0; y < len(data); y++ {
+        out[y] = make([]float32, len(data[0]))
+    }
+
+    for x := 0; x < len(data[0]); x++ {
+        for y := 0; y < len(data); y++ {
+            out[y][x] = averageCell(data, x, y)
+        }
+    }
+
+    return out
+}
+
+func (editor *Editor) GenerateLand() {
+    // create a matrix of floats the same dimensions as the terrain
+    // fill in matrix with random values between -1,1
+    // do a few rounds of averaging out the cells with their neighbors
+    // for every cell below some threshold, put an ocean tile there.
+    // every cell above the threshold, put a land tile
+    // finally, end by calling ResolveTiles() to clean up edges
+
+    const threshold = 0.0
+    const smoothRounds = 3
+
+    data := make([][]float32, len(editor.Terrain))
+    for y := 0; y < len(data); y++ {
+        data[y] = make([]float32, len(editor.Terrain[0]))
+
+        for x := 0; x < len(data[y]); x++ {
+            data[y][x] = rand.Float32() * 2 - 1
+        }
+    }
+
+    for i := 0; i < smoothRounds; i++ {
+        data = averageCells(data)
+    }
+
+    for x := 0; x < len(data[0]); x++ {
+        for y := 0; y < len(data); y++ {
+            if data[y][x] < threshold {
+                editor.Terrain[y][x] = terrain.TileOcean.Index
+            } else {
+                editor.Terrain[y][x] = terrain.TileLand.Index
+            }
+        }
+    }
+
+    editor.ResolveTiles()
+}
+
 // given a position in the terrain matrix, find a tile that fits all the neighbors of the tile
 func (editor *Editor) ResolveTile(x int, y int) (int, error) {
 
@@ -148,6 +219,8 @@ func (editor *Editor) Update() error {
 
     for _, key := range keys {
         switch key {
+            case ebiten.KeyG:
+                editor.GenerateLand()
             case ebiten.KeyS:
                 start := time.Now()
                 editor.ResolveTiles()
