@@ -94,7 +94,101 @@ func averageCells(data [][]float32) [][]float32 {
     return out
 }
 
-func (editor *Editor) GenerateLand() {
+func makeCells(rows int, columns int) [][]bool {
+    out := make([][]bool, columns)
+    for i := 0; i < columns; i++ {
+        out[i] = make([]bool, rows)
+    }
+
+    return out
+}
+
+func countNeighbors(cells [][]bool, x int, y int) int {
+    count := 0
+
+    for dx := -1; dx <= 1; dx++ {
+        for dy := -1; dy <= 1; dy++ {
+
+            if dx == 0 && dy == 0 {
+                continue
+            }
+
+            nx := x + dx
+            ny := y + dy
+
+            if nx >= 0 && nx < len(cells[0]) && ny >= 0 && ny < len(cells) {
+                if cells[ny][nx] {
+                    count += 1
+                }
+            }
+        }
+    }
+
+    return count
+}
+
+func (editor *Editor) GenerateLandCellularAutomata(){
+    // run a cellular automata simulation for a few rounds to generate
+    // land and ocean tiles. then call ResolveTiles() to clean up the edges
+
+    cells := makeCells(len(editor.Terrain[0]), len(editor.Terrain))
+    tmpCells := makeCells(len(editor.Terrain[0]), len(editor.Terrain))
+
+    cellRounds := 4
+
+    const deathRate = 3
+    const birthRate = 3
+
+    stepCells := func(cells [][]bool, tmpCells [][]bool) {
+        for x := 0; x < len(cells[0]); x++ {
+            for y := 0; y < len(cells); y++ {
+                neighbors := countNeighbors(cells, x, y)
+
+                if cells[y][x] {
+                    if neighbors < deathRate {
+                        tmpCells[y][x] = false
+                    } else {
+                        tmpCells[y][x] = true
+                    }
+                } else {
+                    if neighbors < birthRate {
+                        tmpCells[y][x] = false
+                    } else {
+                        tmpCells[y][x] = true
+                    }
+                }
+            }
+        }
+    }
+
+    // set some cells to be alive
+    max := float64(len(cells) * len(cells[0])) * 0.6
+    for i := 0; i < int(max); i++ {
+        x := rand.Intn(len(cells[0]))
+        y := rand.Intn(len(cells))
+
+        cells[y][x] = rand.Intn(2) == 1
+    }
+
+    for i := 0; i < cellRounds; i++ {
+        stepCells(cells, tmpCells)
+        cells, tmpCells = tmpCells, cells
+    }
+
+    for x := 0; x < len(editor.Terrain[0]); x++ {
+        for y := 0; y < len(editor.Terrain); y++ {
+            if cells[y][x] {
+                editor.Terrain[y][x] = terrain.TileLand.Index
+            } else {
+                editor.Terrain[y][x] = terrain.TileOcean.Index
+            }
+        }
+    }
+
+    editor.ResolveTiles()
+}
+
+func (editor *Editor) GenerateLand1() {
     // create a matrix of floats the same dimensions as the terrain
     // fill in matrix with random values between -1,1
     // do a few rounds of averaging out the cells with their neighbors
@@ -235,7 +329,7 @@ func (editor *Editor) Update() error {
                     editor.CameraY -= 1.0 / editor.Scale
                 }
             case ebiten.KeyDown:
-                if int(editor.CameraY) < len(editor.Terrain[0]) && canScroll {
+                if int(editor.CameraY) < len(editor.Terrain) && canScroll {
                     editor.CameraY += 1.0 / editor.Scale
                 }
             case ebiten.KeyLeft:
@@ -243,7 +337,7 @@ func (editor *Editor) Update() error {
                     editor.CameraX -= 1.0 / editor.Scale
                 }
             case ebiten.KeyRight:
-                if int(editor.CameraX) < len(editor.Terrain) && canScroll {
+                if int(editor.CameraX) < len(editor.Terrain[0]) && canScroll {
                     editor.CameraX += 1.0 / editor.Scale
                 }
             case ebiten.KeyMinus:
@@ -270,7 +364,7 @@ func (editor *Editor) Update() error {
         switch key {
             case ebiten.KeyG:
                 start := time.Now()
-                editor.GenerateLand()
+                editor.GenerateLandCellularAutomata()
                 end := time.Now()
                 log.Printf("Generate land took %v", end.Sub(start))
             case ebiten.KeyS:
