@@ -134,7 +134,7 @@ func (editor *Editor) GenerateLandCellularAutomata(){
     cells := makeCells(len(editor.Terrain[0]), len(editor.Terrain))
     tmpCells := makeCells(len(editor.Terrain[0]), len(editor.Terrain))
 
-    cellRounds := 4
+    cellRounds := 5
 
     const deathRate = 3
     const birthRate = 3
@@ -171,6 +171,14 @@ func (editor *Editor) GenerateLandCellularAutomata(){
     }
 
     for i := 0; i < cellRounds; i++ {
+        // kill some cells randomly
+        for z := 0; z < int(float64(len(cells[0]) * len(cells)) * 0.03); z++ {
+            x := rand.Intn(len(cells[0]))
+            y := rand.Intn(len(cells))
+
+            cells[y][x] = false
+        }
+
         stepCells(cells, tmpCells)
         cells, tmpCells = tmpCells, cells
     }
@@ -185,7 +193,76 @@ func (editor *Editor) GenerateLandCellularAutomata(){
         }
     }
 
+    editor.RemoveSmallIslands(100)
+
     editor.ResolveTiles()
+}
+
+// remove land masses that contain less squares than 'area'
+func (editor *Editor) RemoveSmallIslands(area int){
+
+    seen := makeCells(len(editor.Terrain[0]), len(editor.Terrain))
+
+    var countTiles func(x int, y int, kind int) int
+
+    // count all tiles connected to this one of the same kind
+    countTiles = func(x int, y int, kind int) int {
+        if seen[y][x] == true {
+            return 0
+        }
+
+        count := 1
+        seen[y][x] = true
+
+        for dx := -1; dx <= 1; dx++ {
+            for dy := -1; dy <= 1; dy++ {
+                nx := x + dx
+                ny := y + dy
+
+                if nx >= 0 && nx < len(editor.Terrain[0]) && ny >= 0 && ny < len(editor.Terrain) {
+                    if editor.Terrain[ny][nx] == kind {
+                        count += countTiles(nx, ny, kind)
+                    }
+                }
+            }
+        }
+
+        return count
+    }
+
+    var floodFill func(x int, y int, what int, kind int)
+
+    floodFill = func(x int, y int, what int, kind int) {
+        for dx := -1; dx <= 1; dx++ {
+            for dy := -1; dy <= 1; dy++ {
+                nx := x + dx
+                ny := y + dy
+
+                if nx >= 0 && nx < len(editor.Terrain[0]) && ny >= 0 && ny < len(editor.Terrain) {
+                    if editor.Terrain[ny][nx] == what {
+                        editor.Terrain[ny][nx] = kind
+                        floodFill(nx, ny, what, kind)
+                    }
+                }
+            }
+        }
+    }
+
+    for x := 0; x < len(editor.Terrain[0]); x++ {
+        for y := 0; y < len(editor.Terrain); y++ {
+            if seen[y][x] {
+                continue
+            }
+
+            if editor.Terrain[y][x] == terrain.TileLand.Index {
+                count := countTiles(x, y, terrain.TileLand.Index)
+                if count < area {
+                    floodFill(x, y, terrain.TileLand.Index, terrain.TileOcean.Index)
+                }
+            }
+        }
+    }
+
 }
 
 func (editor *Editor) GenerateLand1() {
