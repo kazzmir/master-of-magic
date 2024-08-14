@@ -195,7 +195,44 @@ func (editor *Editor) GenerateLandCellularAutomata(){
 
     editor.RemoveSmallIslands(100)
 
+    editor.PlaceRandomTerrainTiles()
+
     editor.ResolveTiles()
+}
+
+// put down other tiles like forests, mountains, special nodes, etc
+func (editor *Editor) PlaceRandomTerrainTiles(){
+
+    for i := 0; i < 10; i++ {
+
+        for try := 0; try < 10; try++ {
+            x := rand.Intn(len(editor.Terrain[0]))
+            y := rand.Intn(len(editor.Terrain))
+
+            if editor.Terrain[y][x] == terrain.TileLand.Index {
+                editor.Terrain[y][x] = terrain.TileLake.Index
+                break
+            }
+        }
+
+        for try := 0; try < 10; try++ {
+            x := rand.Intn(len(editor.Terrain[0]))
+            y := rand.Intn(len(editor.Terrain))
+
+            if editor.Terrain[y][x] == terrain.TileLand.Index {
+                use := terrain.TileSorceryLake.Index
+                switch rand.Intn(3) {
+                    case 0: use = terrain.TileSorceryLake.Index
+                    case 1: use = terrain.TileNatureForest.Index
+                    case 2: use = terrain.TileChaosVolcano.Index
+                }
+
+                editor.Terrain[y][x] = use
+            }
+        }
+
+    }
+
 }
 
 // remove land masses that contain less squares than 'area'
@@ -346,6 +383,10 @@ func (editor *Editor) ResolveTile(x int, y int) (int, error) {
 
     if x < len(editor.Terrain[0]) - 1 && y < len(editor.Terrain) - 1 {
         matching[terrain.SouthEast] = getDirection(x+1, y+1, terrain.NorthWest)
+    }
+
+    if editor.Data.Tiles[editor.Terrain[y][x]].Tile.Matches(matching) {
+        return editor.Terrain[y][x], nil
     }
 
     tile := editor.Data.FindMatchingTile(matching)
