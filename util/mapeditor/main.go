@@ -22,11 +22,34 @@ import (
 const ScreenWidth = 1024
 const ScreenHeight = 768
 
+type Map struct {
+    Terrain [][]int
+}
+
+func (map_ *Map) Rows() int {
+    return len(map_.Terrain[0])
+}
+
+func (map_ *Map) Columns() int {
+    return len(map_.Terrain)
+}
+
+func MakeMap(rows int, columns int) *Map {
+    terrain := make([][]int, columns)
+    for i := 0; i < columns; i++ {
+        terrain[i] = make([]int, rows)
+    }
+
+    return &Map{
+        Terrain: terrain,
+    }
+}
+
 type Editor struct {
     Data *terrain.TerrainData
     Font *text.GoTextFaceSource
 
-    Terrain [][]int
+    Map *Map
 
     TileGpuCache map[int]*ebiten.Image
 
@@ -116,8 +139,8 @@ func countNeighbors(cells [][]bool, x int, y int) int {
             nx := x + dx
             ny := y + dy
 
-            if nx >= 0 && nx < len(cells[0]) && ny >= 0 && ny < len(cells) {
-                if cells[ny][nx] {
+            if nx >= 0 && nx < len(cells) && ny >= 0 && ny < len(cells[0]) {
+                if cells[nx][ny] {
                     count += 1
                 }
             }
@@ -131,8 +154,8 @@ func (editor *Editor) GenerateLandCellularAutomata(){
     // run a cellular automata simulation for a few rounds to generate
     // land and ocean tiles. then call ResolveTiles() to clean up the edges
 
-    cells := makeCells(len(editor.Terrain[0]), len(editor.Terrain))
-    tmpCells := makeCells(len(editor.Terrain[0]), len(editor.Terrain))
+    cells := makeCells(editor.Map.Rows(), editor.Map.Columns())
+    tmpCells := makeCells(editor.Map.Rows(), editor.Map.Columns())
 
     cellRounds := 5
 
@@ -140,21 +163,21 @@ func (editor *Editor) GenerateLandCellularAutomata(){
     const birthRate = 3
 
     stepCells := func(cells [][]bool, tmpCells [][]bool) {
-        for x := 0; x < len(cells[0]); x++ {
-            for y := 0; y < len(cells); y++ {
+        for x := 0; x < editor.Map.Columns(); x++ {
+            for y := 0; y < editor.Map.Rows(); y++ {
                 neighbors := countNeighbors(cells, x, y)
 
-                if cells[y][x] {
+                if cells[x][y] {
                     if neighbors < deathRate {
-                        tmpCells[y][x] = false
+                        tmpCells[x][y] = false
                     } else {
-                        tmpCells[y][x] = true
+                        tmpCells[x][y] = true
                     }
                 } else {
                     if neighbors < birthRate {
-                        tmpCells[y][x] = false
+                        tmpCells[x][y] = false
                     } else {
-                        tmpCells[y][x] = true
+                        tmpCells[x][y] = true
                     }
                 }
             }
@@ -164,31 +187,31 @@ func (editor *Editor) GenerateLandCellularAutomata(){
     // set some cells to be alive
     max := float64(len(cells) * len(cells[0])) * 0.6
     for i := 0; i < int(max); i++ {
-        x := rand.Intn(len(cells[0]))
-        y := rand.Intn(len(cells))
+        x := rand.Intn(editor.Map.Columns())
+        y := rand.Intn(editor.Map.Rows())
 
-        cells[y][x] = rand.Intn(2) == 1
+        cells[x][y] = rand.Intn(2) == 1
     }
 
     for i := 0; i < cellRounds; i++ {
         // kill some cells randomly
         for z := 0; z < int(float64(len(cells[0]) * len(cells)) * 0.03); z++ {
-            x := rand.Intn(len(cells[0]))
-            y := rand.Intn(len(cells))
+            x := rand.Intn(editor.Map.Columns())
+            y := rand.Intn(editor.Map.Rows())
 
-            cells[y][x] = false
+            cells[x][y] = false
         }
 
         stepCells(cells, tmpCells)
         cells, tmpCells = tmpCells, cells
     }
 
-    for x := 0; x < len(editor.Terrain[0]); x++ {
-        for y := 0; y < len(editor.Terrain); y++ {
-            if cells[y][x] {
-                editor.Terrain[y][x] = terrain.TileLand.Index
+    for x := 0; x < editor.Map.Columns(); x++ {
+        for y := 0; y < editor.Map.Rows(); y++ {
+            if cells[x][y] {
+                editor.Map.Terrain[x][y] = terrain.TileLand.Index
             } else {
-                editor.Terrain[y][x] = terrain.TileOcean.Index
+                editor.Map.Terrain[x][y] = terrain.TileOcean.Index
             }
         }
     }
@@ -206,20 +229,20 @@ func (editor *Editor) PlaceRandomTerrainTiles(){
     for i := 0; i < 10; i++ {
 
         for try := 0; try < 10; try++ {
-            x := rand.Intn(len(editor.Terrain[0]))
-            y := rand.Intn(len(editor.Terrain))
+            x := rand.Intn(editor.Map.Columns())
+            y := rand.Intn(editor.Map.Rows())
 
-            if editor.Terrain[y][x] == terrain.TileLand.Index {
-                editor.Terrain[y][x] = terrain.TileLake.Index
+            if editor.Map.Terrain[x][y] == terrain.TileLand.Index {
+                editor.Map.Terrain[x][y] = terrain.TileLake.Index
                 break
             }
         }
 
         for try := 0; try < 10; try++ {
-            x := rand.Intn(len(editor.Terrain[0]))
-            y := rand.Intn(len(editor.Terrain))
+            x := rand.Intn(editor.Map.Columns())
+            y := rand.Intn(editor.Map.Rows())
 
-            if editor.Terrain[y][x] == terrain.TileLand.Index {
+            if editor.Map.Terrain[x][y] == terrain.TileLand.Index {
                 use := terrain.TileSorceryLake.Index
                 switch rand.Intn(3) {
                     case 0: use = terrain.TileSorceryLake.Index
@@ -227,7 +250,7 @@ func (editor *Editor) PlaceRandomTerrainTiles(){
                     case 2: use = terrain.TileChaosVolcano.Index
                 }
 
-                editor.Terrain[y][x] = use
+                editor.Map.Terrain[x][y] = use
             }
         }
 
@@ -238,26 +261,26 @@ func (editor *Editor) PlaceRandomTerrainTiles(){
 // remove land masses that contain less squares than 'area'
 func (editor *Editor) RemoveSmallIslands(area int){
 
-    seen := makeCells(len(editor.Terrain[0]), len(editor.Terrain))
+    seen := makeCells(editor.Map.Rows(), editor.Map.Columns())
 
     var countTiles func(x int, y int, kind int) int
 
     // count all tiles connected to this one of the same kind
     countTiles = func(x int, y int, kind int) int {
-        if seen[y][x] == true {
+        if seen[x][y] == true {
             return 0
         }
 
         count := 1
-        seen[y][x] = true
+        seen[x][y] = true
 
         for dx := -1; dx <= 1; dx++ {
             for dy := -1; dy <= 1; dy++ {
                 nx := x + dx
                 ny := y + dy
 
-                if nx >= 0 && nx < len(editor.Terrain[0]) && ny >= 0 && ny < len(editor.Terrain) {
-                    if editor.Terrain[ny][nx] == kind {
+                if nx >= 0 && nx < editor.Map.Columns() && ny >= 0 && ny < editor.Map.Rows() {
+                    if editor.Map.Terrain[nx][ny] == kind {
                         count += countTiles(nx, ny, kind)
                     }
                 }
@@ -275,9 +298,9 @@ func (editor *Editor) RemoveSmallIslands(area int){
                 nx := x + dx
                 ny := y + dy
 
-                if nx >= 0 && nx < len(editor.Terrain[0]) && ny >= 0 && ny < len(editor.Terrain) {
-                    if editor.Terrain[ny][nx] == what {
-                        editor.Terrain[ny][nx] = kind
+                if nx >= 0 && nx < editor.Map.Columns() && ny >= 0 && ny < editor.Map.Rows() {
+                    if editor.Map.Terrain[nx][ny] == what {
+                        editor.Map.Terrain[nx][ny] = kind
                         floodFill(nx, ny, what, kind)
                     }
                 }
@@ -285,13 +308,13 @@ func (editor *Editor) RemoveSmallIslands(area int){
         }
     }
 
-    for x := 0; x < len(editor.Terrain[0]); x++ {
-        for y := 0; y < len(editor.Terrain); y++ {
-            if seen[y][x] {
+    for x := 0; x < editor.Map.Columns(); x++ {
+        for y := 0; y < editor.Map.Rows(); y++ {
+            if seen[x][y] {
                 continue
             }
 
-            if editor.Terrain[y][x] == terrain.TileLand.Index {
+            if editor.Map.Terrain[x][y] == terrain.TileLand.Index {
                 count := countTiles(x, y, terrain.TileLand.Index)
                 if count < area {
                     floodFill(x, y, terrain.TileLand.Index, terrain.TileOcean.Index)
@@ -313,12 +336,12 @@ func (editor *Editor) GenerateLand1() {
     const threshold = 0.0
     const smoothRounds = 4
 
-    data := make([][]float32, len(editor.Terrain))
-    for y := 0; y < len(data); y++ {
-        data[y] = make([]float32, len(editor.Terrain[0]))
+    data := make([][]float32, editor.Map.Columns())
+    for x := 0; x < len(data); x++ {
+        data[x] = make([]float32, editor.Map.Rows())
 
-        for x := 0; x < len(data[y]); x++ {
-            data[y][x] = rand.Float32() * 2 - 1
+        for y := 0; y < len(data[x]); y++ {
+            data[x][y] = rand.Float32() * 2 - 1
         }
     }
 
@@ -326,12 +349,12 @@ func (editor *Editor) GenerateLand1() {
         data = averageCells(data)
     }
 
-    for x := 0; x < len(data[0]); x++ {
-        for y := 0; y < len(data); y++ {
-            if data[y][x] < threshold {
-                editor.Terrain[y][x] = terrain.TileOcean.Index
+    for x := 0; x < len(data); x++ {
+        for y := 0; y < len(data[0]); y++ {
+            if data[x][y] < threshold {
+                editor.Map.Terrain[x][y] = terrain.TileOcean.Index
             } else {
-                editor.Terrain[y][x] = terrain.TileLand.Index
+                editor.Map.Terrain[x][y] = terrain.TileLand.Index
             }
         }
     }
@@ -345,7 +368,7 @@ func (editor *Editor) ResolveTile(x int, y int) (int, error) {
     matching := make(map[terrain.Direction]terrain.TerrainType)
 
     getDirection := func(x int, y int, direction terrain.Direction) terrain.TerrainType {
-        index := editor.Terrain[y][x]
+        index := editor.Map.Terrain[x][y]
         if index < 0 || index >= len(editor.Data.Tiles) {
             fmt.Printf("Error: invalid index in terrain %v at %v,%v\n", index, x, y)
             return terrain.Unknown
@@ -361,11 +384,11 @@ func (editor *Editor) ResolveTile(x int, y int) (int, error) {
         matching[terrain.NorthWest] = getDirection(x-1, y-1, terrain.SouthEast)
     }
 
-    if x > 0 && y < len(editor.Terrain) - 1 {
+    if x > 0 && y < editor.Map.Rows() - 1 {
         matching[terrain.SouthWest] = getDirection(x-1, y+1, terrain.NorthEast)
     }
 
-    if x < len(editor.Terrain[0]) - 1 {
+    if x < editor.Map.Columns() - 1 {
         matching[terrain.East] = getDirection(x+1, y, terrain.West)
     }
 
@@ -373,20 +396,20 @@ func (editor *Editor) ResolveTile(x int, y int) (int, error) {
         matching[terrain.North] = getDirection(x, y-1, terrain.South)
     }
 
-    if y < len(editor.Terrain) - 1 {
+    if y < editor.Map.Rows() - 1 {
         matching[terrain.South] = getDirection(x, y+1, terrain.North)
     }
 
-    if x < len(editor.Terrain[0]) - 1 && y > 0 {
+    if x < editor.Map.Columns() - 1 && y > 0 {
         matching[terrain.NorthEast] = getDirection(x+1, y-1, terrain.SouthWest)
     }
 
-    if x < len(editor.Terrain[0]) - 1 && y < len(editor.Terrain) - 1 {
+    if x < editor.Map.Columns() - 1 && y < editor.Map.Rows() - 1 {
         matching[terrain.SouthEast] = getDirection(x+1, y+1, terrain.NorthWest)
     }
 
-    if editor.Data.Tiles[editor.Terrain[y][x]].Tile.Matches(matching) {
-        return editor.Terrain[y][x], nil
+    if editor.Data.Tiles[editor.Map.Terrain[x][y]].Tile.Matches(matching) {
+        return editor.Map.Terrain[x][y], nil
     }
 
     tile := editor.Data.FindMatchingTile(matching)
@@ -404,8 +427,8 @@ func (editor *Editor) ResolveTiles(){
     // go through every tile and try to resolve it, keep doing this in a loop until there are no more tiles to resolve
 
     var unresolved []image.Point
-    for x := 0; x < len(editor.Terrain[0]); x++ {
-        for y := 0; y < len(editor.Terrain); y++ {
+    for x := 0; x < editor.Map.Columns(); x++ {
+        for y := 0; y < editor.Map.Rows(); y++ {
             unresolved = append(unresolved, image.Pt(x, y))
         }
     }
@@ -420,8 +443,8 @@ func (editor *Editor) ResolveTiles(){
             choice, err := editor.ResolveTile(point.X, point.Y)
             if err != nil {
                 more = append(more, point)
-            } else if choice != editor.Terrain[point.Y][point.X] {
-                editor.Terrain[point.Y][point.X] = choice
+            } else if choice != editor.Map.Terrain[point.X][point.Y] {
+                editor.Map.Terrain[point.X][point.Y] = choice
             }
         }
 
@@ -447,7 +470,7 @@ func (editor *Editor) Update() error {
                     editor.CameraY -= 1.0 / editor.Scale
                 }
             case ebiten.KeyDown:
-                if int(editor.CameraY) < len(editor.Terrain) && canScroll {
+                if int(editor.CameraY) < editor.Map.Rows() && canScroll {
                     editor.CameraY += 1.0 / editor.Scale
                 }
             case ebiten.KeyLeft:
@@ -455,7 +478,7 @@ func (editor *Editor) Update() error {
                     editor.CameraX -= 1.0 / editor.Scale
                 }
             case ebiten.KeyRight:
-                if int(editor.CameraX) < len(editor.Terrain[0]) && canScroll {
+                if int(editor.CameraX) < editor.Map.Columns() && canScroll {
                     editor.CameraX += 1.0 / editor.Scale
                 }
             case ebiten.KeyMinus:
@@ -519,20 +542,20 @@ func (editor *Editor) Update() error {
     editor.TileY = y
 
     if leftClick {
-        if x >= 0 && x < len(editor.Terrain[0]) && y >= 0 && y < len(editor.Terrain) {
+        if x >= 0 && x < editor.Map.Columns() && y >= 0 && y < editor.Map.Rows() {
             use := terrain.TileLand.Index
 
             if leftShift {
                 use = terrain.TileOcean.Index
             }
 
-            editor.Terrain[y][x] = use
+            editor.Map.Terrain[x][y] = use
         }
     } else if rightClick {
-        if x >= 0 && x < len(editor.Terrain[0]) && y >= 0 && y < len(editor.Terrain) {
+        if x >= 0 && x < editor.Map.Columns() && y >= 0 && y < editor.Map.Rows() {
             resolved, err := editor.ResolveTile(x, y)
             if err == nil {
-                editor.Terrain[y][x] = resolved
+                editor.Map.Terrain[x][y] = resolved
             } else {
                 fmt.Printf("Unable to resolve tile %v, %v: %v\n", x, y, err)
             }
@@ -545,7 +568,7 @@ func (editor *Editor) Update() error {
 }
 
 func (editor *Editor) GetTileImage(x int, y int) *ebiten.Image {
-    index := editor.Terrain[y][x]
+    index := editor.Map.Terrain[x][y]
 
     use, ok := editor.TileGpuCache[index]
     if ok {
@@ -569,8 +592,8 @@ func (editor *Editor) Draw(screen *ebiten.Image){
 
     // log.Printf("Draw start")
 
-    for y := 0; y < len(editor.Terrain); y++ {
-        for x := 0; x < len(editor.Terrain[y]); x++ {
+    for y := 0; y < editor.Map.Rows(); y++ {
+        for x := 0; x < editor.Map.Columns(); x++ {
             // xPos := startX + float64(x * xSize) //  * editor.Scale
             // yPos := startY + float64(y * ySize) // * editor.Scale
             xPos := float64(x * xSize)
@@ -579,7 +602,7 @@ func (editor *Editor) Draw(screen *ebiten.Image){
             xUse := x + int(editor.CameraX)
             yUse := y + int(editor.CameraY)
 
-            if xUse >= 0 && xUse < len(editor.Terrain[0]) && yUse >= 0 && yUse < len(editor.Terrain) {
+            if xUse >= 0 && xUse < editor.Map.Columns() && yUse >= 0 && yUse < editor.Map.Rows() {
                 tileImage := editor.GetTileImage(xUse, yUse)
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(float64(xPos), float64(yPos))
@@ -601,17 +624,17 @@ func (editor *Editor) Draw(screen *ebiten.Image){
         op := &text.DrawOptions{}
         op.GeoM.Translate(1, 1)
         op.ColorScale.ScaleWithColor(color.White)
-        text.Draw(editor.InfoImage, fmt.Sprintf("Map Dimensions: %vx%v", len(editor.Terrain[0]), len(editor.Terrain)), face, op)
+        text.Draw(editor.InfoImage, fmt.Sprintf("Map Dimensions: %vx%v", editor.Map.Columns(), editor.Map.Rows()), face, op)
         op.GeoM.Translate(0, face.Size + 2)
         value := -1
 
-        if editor.TileX >= 0 && editor.TileX < len(editor.Terrain[0]) && editor.TileY >= 0 && editor.TileY < len(editor.Terrain) {
-            value = editor.Terrain[editor.TileY][editor.TileX]
+        if editor.TileX >= 0 && editor.TileX < editor.Map.Columns() && editor.TileY >= 0 && editor.TileY < editor.Map.Rows() {
+            value = editor.Map.Terrain[editor.TileX][editor.TileY]
         }
 
         text.Draw(editor.InfoImage, fmt.Sprintf("Tile: %v,%v: %v (0x%x)", editor.TileX, editor.TileY, value, value), face, op)
 
-        if editor.TileX >= 0 && editor.TileX < len(editor.Terrain[0]) && editor.TileY >= 0 && editor.TileY < len(editor.Terrain) {
+        if editor.TileX >= 0 && editor.TileX < editor.Map.Columns() && editor.TileY >= 0 && editor.TileY < editor.Map.Rows() {
             tileImage := editor.GetTileImage(editor.TileX, editor.TileY)
             var options ebiten.DrawImageOptions
             options.GeoM.Scale(1.5, 1.5)
@@ -633,15 +656,6 @@ func (editor *Editor) Layout(outsideWidth int, outsideHeight int) (int, int) {
     return ScreenWidth, ScreenHeight
 }
 
-func createTerrain(rows int, columns int) [][]int {
-    out := make([][]int, columns)
-    for i := 0; i < columns; i++ {
-        out[i] = make([]int, rows)
-    }
-
-    return out
-}
-
 func MakeEditor(lbxFile *lbx.LbxFile) *Editor {
     font, err := common.LoadFont()
     if err != nil {
@@ -658,7 +672,7 @@ func MakeEditor(lbxFile *lbx.LbxFile) *Editor {
     return &Editor{
         Data: data,
         Font: font,
-        Terrain: createTerrain(200, 100),
+        Map: MakeMap(100, 200),
         TileGpuCache: make(map[int]*ebiten.Image),
         TileX: -1,
         TileY: -1,
