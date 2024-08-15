@@ -22,6 +22,13 @@ import (
 const ScreenWidth = 1024
 const ScreenHeight = 768
 
+// a continent is a list of points that are indices into the Terrain matrix
+type Continent []image.Point
+
+func (continent Continent) Size() int {
+    return len(continent)
+}
+
 type Map struct {
     Terrain [][]int
 }
@@ -32,6 +39,51 @@ func (map_ *Map) Rows() int {
 
 func (map_ *Map) Columns() int {
     return len(map_.Terrain)
+}
+
+func (map_ *Map) FindContinents() []Continent {
+
+    seen := makeCells(map_.Rows(), map_.Columns())
+
+    var searchTiles func(x int, y int, continent *Continent)
+
+    // count all tiles connected to this one of the same kind
+    searchTiles = func(x int, y int, continent *Continent){
+        if seen[x][y] == true {
+            return
+        }
+
+        seen[x][y] = true
+
+        for dx := -1; dx <= 1; dx++ {
+            for dy := -1; dy <= 1; dy++ {
+                nx := x + dx
+                ny := y + dy
+
+                if nx >= 0 && nx < map_.Columns() && ny >= 0 && ny < map_.Rows() {
+                    if map_.Terrain[nx][ny] == terrain.TileLand.Index {
+                        *continent = append(*continent, image.Pt(nx, ny))
+                        searchTiles(nx, ny, continent)
+                    }
+                }
+            }
+        }
+    }
+
+    var continents []Continent
+
+    for x := 0; x < map_.Columns(); x++ {
+        for y := 0; y < map_.Rows(); y++ {
+            if map_.Terrain[x][y] == terrain.TileLand.Index && seen[x][y] == false {
+                var continent Continent
+                continent = append(continent, image.Pt(x, y))
+                searchTiles(x, y, &continent)
+                continents = append(continents, continent)
+            }
+        }
+    }
+
+    return continents
 }
 
 func MakeMap(rows int, columns int) *Map {
@@ -217,6 +269,9 @@ func (editor *Editor) GenerateLandCellularAutomata(){
     }
 
     editor.RemoveSmallIslands(100)
+
+    continents := editor.Map.FindContinents()
+    log.Printf("Continents: %v\n", len(continents))
 
     editor.PlaceRandomTerrainTiles()
 
