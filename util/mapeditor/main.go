@@ -41,6 +41,28 @@ func (map_ *Map) Columns() int {
     return len(map_.Terrain)
 }
 
+type FloodFunc func(x int, y int) bool
+func (map_ *Map) FloodWalk(x int, y int, f FloodFunc){
+    var walk func(x int, y int)
+
+    walk = func(x int, y int){
+        for dx := -1; dx <= 1; dx++ {
+            for dy := -1; dy <= 1; dy++ {
+                nx := x + dx
+                ny := y + dy
+
+                if nx >= 0 && nx < map_.Columns() && ny >= 0 && ny < map_.Rows() {
+                    if f(nx, ny) {
+                        walk(nx, ny)
+                    }
+                }
+            }
+        }
+    }
+
+    walk(x, y)
+}
+
 func (map_ *Map) FindContinents() []Continent {
 
     seen := makeCells(map_.Rows(), map_.Columns())
@@ -315,69 +337,15 @@ func (editor *Editor) PlaceRandomTerrainTiles(){
 
 // remove land masses that contain less squares than 'area'
 func (editor *Editor) RemoveSmallIslands(area int){
+    continents := editor.Map.FindContinents()
 
-    seen := makeCells(editor.Map.Rows(), editor.Map.Columns())
-
-    var countTiles func(x int, y int, kind int) int
-
-    // count all tiles connected to this one of the same kind
-    countTiles = func(x int, y int, kind int) int {
-        if seen[x][y] == true {
-            return 0
-        }
-
-        count := 1
-        seen[x][y] = true
-
-        for dx := -1; dx <= 1; dx++ {
-            for dy := -1; dy <= 1; dy++ {
-                nx := x + dx
-                ny := y + dy
-
-                if nx >= 0 && nx < editor.Map.Columns() && ny >= 0 && ny < editor.Map.Rows() {
-                    if editor.Map.Terrain[nx][ny] == kind {
-                        count += countTiles(nx, ny, kind)
-                    }
-                }
-            }
-        }
-
-        return count
-    }
-
-    var floodFill func(x int, y int, what int, kind int)
-
-    floodFill = func(x int, y int, what int, kind int) {
-        for dx := -1; dx <= 1; dx++ {
-            for dy := -1; dy <= 1; dy++ {
-                nx := x + dx
-                ny := y + dy
-
-                if nx >= 0 && nx < editor.Map.Columns() && ny >= 0 && ny < editor.Map.Rows() {
-                    if editor.Map.Terrain[nx][ny] == what {
-                        editor.Map.Terrain[nx][ny] = kind
-                        floodFill(nx, ny, what, kind)
-                    }
-                }
+    for _, continent := range continents {
+        if continent.Size() < area {
+            for _, point := range continent {
+                editor.Map.Terrain[point.X][point.Y] = terrain.TileOcean.Index
             }
         }
     }
-
-    for x := 0; x < editor.Map.Columns(); x++ {
-        for y := 0; y < editor.Map.Rows(); y++ {
-            if seen[x][y] {
-                continue
-            }
-
-            if editor.Map.Terrain[x][y] == terrain.TileLand.Index {
-                count := countTiles(x, y, terrain.TileLand.Index)
-                if count < area {
-                    floodFill(x, y, terrain.TileLand.Index, terrain.TileOcean.Index)
-                }
-            }
-        }
-    }
-
 }
 
 func (editor *Editor) GenerateLand1() {
