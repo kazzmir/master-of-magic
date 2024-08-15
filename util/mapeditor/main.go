@@ -8,6 +8,7 @@ import (
     "image"
     "image/color"
     "math/rand"
+    "math"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/util/common"
@@ -140,7 +141,7 @@ type Editor struct {
     InfoImage *ebiten.Image
 }
 
-func chooseRandomElement(values []int) int {
+func chooseRandomElement[T any](values []T) T {
     index := rand.Intn(len(values))
     return values[index]
 }
@@ -303,36 +304,24 @@ func (editor *Editor) GenerateLandCellularAutomata(){
 // put down other tiles like forests, mountains, special nodes, etc
 func (editor *Editor) PlaceRandomTerrainTiles(){
 
-    for i := 0; i < 10; i++ {
+    continents := editor.Map.FindContinents()
 
-        for try := 0; try < 10; try++ {
-            x := rand.Intn(editor.Map.Columns())
-            y := rand.Intn(editor.Map.Rows())
+    for _, continent := range continents {
 
-            if editor.Map.Terrain[x][y] == terrain.TileLand.Index {
-                editor.Map.Terrain[x][y] = terrain.TileLake.Index
-                break
+        for i := 0; i < int(math.Sqrt(float64(continent.Size()))) / 8; i++ {
+            point := chooseRandomElement(continent)
+
+            use := terrain.TileSorceryLake.Index
+            switch rand.Intn(4) {
+                case 0: use = terrain.TileSorceryLake.Index
+                case 1: use = terrain.TileNatureForest.Index
+                case 2: use = terrain.TileChaosVolcano.Index
+                case 3: use = terrain.TileLake.Index
             }
+
+            editor.Map.Terrain[point.X][point.Y] = use
         }
-
-        for try := 0; try < 10; try++ {
-            x := rand.Intn(editor.Map.Columns())
-            y := rand.Intn(editor.Map.Rows())
-
-            if editor.Map.Terrain[x][y] == terrain.TileLand.Index {
-                use := terrain.TileSorceryLake.Index
-                switch rand.Intn(3) {
-                    case 0: use = terrain.TileSorceryLake.Index
-                    case 1: use = terrain.TileNatureForest.Index
-                    case 2: use = terrain.TileChaosVolcano.Index
-                }
-
-                editor.Map.Terrain[x][y] = use
-            }
-        }
-
     }
-
 }
 
 // remove land masses that contain less squares than 'area'
