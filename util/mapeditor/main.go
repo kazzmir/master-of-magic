@@ -70,6 +70,9 @@ func (map_ *Map) FindContinents() []Continent {
 
     var searchTiles func(x int, y int, continent *Continent)
 
+    rows := map_.Rows()
+    columns := map_.Columns()
+
     // count all tiles connected to this one of the same kind
     searchTiles = func(x int, y int, continent *Continent){
         if seen[x][y] == true {
@@ -83,7 +86,7 @@ func (map_ *Map) FindContinents() []Continent {
                 nx := x + dx
                 ny := y + dy
 
-                if nx >= 0 && nx < map_.Columns() && ny >= 0 && ny < map_.Rows() {
+                if nx >= 0 && nx < columns && ny >= 0 && ny < rows {
                     if map_.Terrain[nx][ny] == terrain.TileLand.Index {
                         *continent = append(*continent, image.Pt(nx, ny))
                         searchTiles(nx, ny, continent)
@@ -205,19 +208,26 @@ func countNeighbors(cells [][]bool, x int, y int) int {
     count := 0
 
     for dx := -1; dx <= 1; dx++ {
+        nx := x + dx
+
+        if nx < 0 || nx >= len(cells) {
+            continue
+        }
+
         for dy := -1; dy <= 1; dy++ {
 
             if dx == 0 && dy == 0 {
                 continue
             }
 
-            nx := x + dx
             ny := y + dy
 
-            if nx >= 0 && nx < len(cells) && ny >= 0 && ny < len(cells[0]) {
-                if cells[nx][ny] {
-                    count += 1
-                }
+            if ny < 0 || ny >= len(cells[0]) {
+                continue
+            }
+
+            if cells[nx][ny] {
+                count += 1
             }
         }
     }
@@ -225,12 +235,9 @@ func countNeighbors(cells [][]bool, x int, y int) int {
     return count
 }
 
-func (editor *Editor) GenerateLandCellularAutomata(){
-    // run a cellular automata simulation for a few rounds to generate
-    // land and ocean tiles. then call ResolveTiles() to clean up the edges
-
-    cells := makeCells(editor.Map.Rows(), editor.Map.Columns())
-    tmpCells := makeCells(editor.Map.Rows(), editor.Map.Columns())
+func (map_ *Map) GenerateLandCellularAutomata(){
+    cells := makeCells(map_.Rows(), map_.Columns())
+    tmpCells := makeCells(map_.Rows(), map_.Columns())
 
     cellRounds := 5
 
@@ -238,8 +245,8 @@ func (editor *Editor) GenerateLandCellularAutomata(){
     const birthRate = 3
 
     stepCells := func(cells [][]bool, tmpCells [][]bool) {
-        for x := 0; x < editor.Map.Columns(); x++ {
-            for y := 0; y < editor.Map.Rows(); y++ {
+        for x := 0; x < map_.Columns(); x++ {
+            for y := 0; y < map_.Rows(); y++ {
                 neighbors := countNeighbors(cells, x, y)
 
                 if cells[x][y] {
@@ -262,8 +269,8 @@ func (editor *Editor) GenerateLandCellularAutomata(){
     // set some cells to be alive
     max := float64(len(cells) * len(cells[0])) * 0.6
     for i := 0; i < int(max); i++ {
-        x := rand.Intn(editor.Map.Columns())
-        y := rand.Intn(editor.Map.Rows())
+        x := rand.Intn(map_.Columns())
+        y := rand.Intn(map_.Rows())
 
         cells[x][y] = rand.Intn(2) == 1
     }
@@ -271,8 +278,8 @@ func (editor *Editor) GenerateLandCellularAutomata(){
     for i := 0; i < cellRounds; i++ {
         // kill some cells randomly
         for z := 0; z < int(float64(len(cells[0]) * len(cells)) * 0.03); z++ {
-            x := rand.Intn(editor.Map.Columns())
-            y := rand.Intn(editor.Map.Rows())
+            x := rand.Intn(map_.Columns())
+            y := rand.Intn(map_.Rows())
 
             cells[x][y] = false
         }
@@ -281,30 +288,41 @@ func (editor *Editor) GenerateLandCellularAutomata(){
         cells, tmpCells = tmpCells, cells
     }
 
-    for x := 0; x < editor.Map.Columns(); x++ {
-        for y := 0; y < editor.Map.Rows(); y++ {
+    for x := 0; x < map_.Columns(); x++ {
+        for y := 0; y < map_.Rows(); y++ {
             if cells[x][y] {
-                editor.Map.Terrain[x][y] = terrain.TileLand.Index
+                map_.Terrain[x][y] = terrain.TileLand.Index
             } else {
-                editor.Map.Terrain[x][y] = terrain.TileOcean.Index
+                map_.Terrain[x][y] = terrain.TileOcean.Index
             }
         }
     }
+}
 
-    editor.RemoveSmallIslands(100)
+func (editor *Editor) GenerateLandCellularAutomata(){
+    // run a cellular automata simulation for a few rounds to generate
+    // land and ocean tiles. then call ResolveTiles() to clean up the edges
+    editor.Map.GenerateLandCellularAutomata()
 
+    editor.Map.RemoveSmallIslands(100)
+
+    /*
     continents := editor.Map.FindContinents()
     log.Printf("Continents: %v\n", len(continents))
+    */
 
-    editor.PlaceRandomTerrainTiles()
+    editor.Map.PlaceRandomTerrainTiles()
 
+    // start := time.Now()
     editor.ResolveTiles()
+    // end := time.Now()
+    // log.Printf("Resolve tiles took %v", end.Sub(start))
 }
 
 // put down other tiles like forests, mountains, special nodes, etc
-func (editor *Editor) PlaceRandomTerrainTiles(){
+func (map_ *Map) PlaceRandomTerrainTiles(){
 
-    continents := editor.Map.FindContinents()
+    continents := map_.FindContinents()
 
     for _, continent := range continents {
 
@@ -319,19 +337,19 @@ func (editor *Editor) PlaceRandomTerrainTiles(){
                 case 3: use = terrain.TileLake.Index
             }
 
-            editor.Map.Terrain[point.X][point.Y] = use
+            map_.Terrain[point.X][point.Y] = use
         }
     }
 }
 
 // remove land masses that contain less squares than 'area'
-func (editor *Editor) RemoveSmallIslands(area int){
-    continents := editor.Map.FindContinents()
+func (map_ *Map) RemoveSmallIslands(area int){
+    continents := map_.FindContinents()
 
     for _, continent := range continents {
         if continent.Size() < area {
             for _, point := range continent {
-                editor.Map.Terrain[point.X][point.Y] = terrain.TileOcean.Index
+                map_.Terrain[point.X][point.Y] = terrain.TileOcean.Index
             }
         }
     }
