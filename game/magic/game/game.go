@@ -60,6 +60,8 @@ func (cache *ImageCache) GetImage(lbxFile string, spriteIndex int, animationInde
 type Game struct {
     active bool
 
+    ImageCache ImageCache
+
     MainHud *ebiten.Image
     GameButtons []*ebiten.Image
     SpellButtons []*ebiten.Image
@@ -173,10 +175,14 @@ func (game *Game) Load(cache *lbx.LbxCache) error {
     return outError
 }
 
-func MakeGame(wizard setup.WizardCustom) *Game {
+func MakeGame(wizard setup.WizardCustom, lbxCache *lbx.LbxCache) *Game {
     game := &Game{
         active: false,
         Map: MakeMap(),
+        ImageCache: ImageCache{
+            LbxCache: lbxCache,
+            Cache: make(map[string][]*ebiten.Image),
+        },
     }
     return game
 }
@@ -198,7 +204,10 @@ func (game *Game) Draw(screen *ebiten.Image){
     game.Map.Draw(screen)
 
     // draw hud on top of map
-    screen.DrawImage(game.MainHud, &options)
+    mainHud, err := game.ImageCache.GetImage("main.lbx", 0, 0)
+    if err == nil {
+        screen.DrawImage(mainHud, &options)
+    }
 
     options.GeoM.Reset()
     x := float64(7)
