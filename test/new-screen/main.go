@@ -3,8 +3,8 @@ package main
 import (
     "log"
 
-    _ "github.com/kazzmir/master-of-magic/lib/lbx"
-    _ "github.com/kazzmir/master-of-magic/game/magic/setup"
+    "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/data"
 
     "github.com/hajimehoshi/ebiten/v2"
@@ -12,10 +12,24 @@ import (
 )
 
 type Engine struct {
+    LbxCache *lbx.LbxCache
+    NewGameScreen *setup.NewGameScreen
 }
 
 func NewEngine() (*Engine, error) {
+    cache := lbx.MakeLbxCache("magic-data")
+
+    screen := setup.MakeNewGameScreen()
+    err := screen.Load(cache)
+    if err != nil {
+        return nil, err
+    }
+
+    screen.Activate()
+
     return &Engine{
+        LbxCache: cache,
+        NewGameScreen: screen,
     }, nil
 }
 
@@ -30,11 +44,21 @@ func (engine *Engine) Update() error {
         }
     }
 
+    switch engine.NewGameScreen.Update() {
+        case setup.NewGameStateRunning:
+        case setup.NewGameStateOk:
+            log.Printf("Creating new game")
+            return ebiten.Termination
+        case setup.NewGameStateCancel:
+            log.Printf("Cancel")
+            return ebiten.Termination
+    }
 
     return nil
 }
 
 func (engine *Engine) Draw(screen *ebiten.Image) {
+    engine.NewGameScreen.Draw(screen)
 }
 
 func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
