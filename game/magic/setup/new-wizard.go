@@ -1173,6 +1173,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
             },
         }
 
+        /*
         // set custom wizard to merlin for now
         screen.CustomWizard.Portrait = screen.WizardSlots[0].Portrait
         screen.CustomWizard.Name = screen.WizardSlots[0].Name
@@ -1188,6 +1189,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                 Count: 8,
             },
         }
+        */
 
         if screen.State == NewWizardScreenStateSelectWizard {
             screen.UI = screen.MakeSelectWizardUI()
