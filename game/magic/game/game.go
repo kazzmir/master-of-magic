@@ -4,6 +4,7 @@ import (
     "fmt"
     "image/color"
     "strings"
+    "log"
 
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -61,20 +62,6 @@ type Game struct {
     active bool
 
     ImageCache ImageCache
-
-    MainHud *ebiten.Image
-    GameButtons []*ebiten.Image
-    SpellButtons []*ebiten.Image
-    ArmyButtons []*ebiten.Image
-    CityButtons []*ebiten.Image
-    MagicButtons []*ebiten.Image
-    InfoButtons []*ebiten.Image
-    PlaneButtons []*ebiten.Image
-
-    GoldFoodMagic *ebiten.Image
-    GenericBackground *ebiten.Image
-    NextTurn *ebiten.Image
-
     WhiteFont *font.Font
 
     InfoFontYellow *font.Font
@@ -115,64 +102,7 @@ func (game *Game) Load(cache *lbx.LbxCache) error {
 
     game.WhiteFont = font.MakeOptimizedFontWithPalette(fonts[0], whitePalette)
 
-    mainLbx, err := cache.GetLbxFile("MAIN.LBX")
-    if err != nil {
-        return fmt.Errorf("Unable to load MAIN.LBX: %v", err)
-    }
-
-    var outError error
-
-    loadImages := func(index int) []*ebiten.Image {
-        if outError != nil {
-            return nil
-        }
-
-        sprites, err := mainLbx.ReadImages(index)
-        if err != nil {
-            outError = fmt.Errorf("Unable to read background image from NEWGAME.LBX: %v", err)
-            return nil
-        }
-
-        var out []*ebiten.Image
-        for i := 0; i < len(sprites); i++ {
-            out = append(out, ebiten.NewImageFromImage(sprites[i]))
-        }
-        return out
-    }
-
-    loadImage := func(index int, subIndex int) *ebiten.Image {
-        if outError != nil {
-            return nil
-        }
-
-        sprites, err := mainLbx.ReadImages(index)
-        if err != nil {
-            outError = fmt.Errorf("Unable to read background image from NEWGAME.LBX: %v", err)
-            return nil
-        }
-
-        if len(sprites) <= subIndex {
-            outError = fmt.Errorf("Unable to read background image from NEWGAME.LBX: index %d out of range", subIndex)
-            return nil
-        }
-
-        return ebiten.NewImageFromImage(sprites[subIndex])
-    }
-
-    game.MainHud = loadImage(0, 0)
-    game.GameButtons = loadImages(1)
-    game.SpellButtons = loadImages(2)
-    game.ArmyButtons = loadImages(3)
-    game.CityButtons = loadImages(4)
-    game.MagicButtons = loadImages(5)
-    game.InfoButtons = loadImages(6)
-    game.PlaneButtons = loadImages(7)
-
-    game.GoldFoodMagic = loadImage(34, 0)
-    game.NextTurn = loadImage(35, 0)
-    game.GenericBackground = loadImage(33, 0)
-
-    return outError
+    return nil
 }
 
 func MakeGame(wizard setup.WizardCustom, lbxCache *lbx.LbxCache) *Game {
@@ -198,13 +128,23 @@ func (game *Game) Activate() {
 func (game *Game) Update(){
 }
 
+func (game *Game) GetMainImage(index int) (*ebiten.Image, error) {
+    image, err := game.ImageCache.GetImage("main.lbx", index, 0)
+
+    if err != nil {
+        log.Printf("Error: image in main.lbx is missing: %v\n", err)
+    }
+
+    return image, err
+}
+
 func (game *Game) Draw(screen *ebiten.Image){
     var options ebiten.DrawImageOptions
 
     game.Map.Draw(screen)
 
     // draw hud on top of map
-    mainHud, err := game.ImageCache.GetImage("main.lbx", 0, 0)
+    mainHud, err := game.GetMainImage(0)
     if err == nil {
         screen.DrawImage(mainHud, &options)
     }
@@ -213,31 +153,56 @@ func (game *Game) Draw(screen *ebiten.Image){
     x := float64(7)
     y := float64(4)
     options.GeoM.Translate(x, y)
-    screen.DrawImage(game.GameButtons[0], &options)
 
-    x += float64(game.GameButtons[0].Bounds().Dx())
+    gameButton1, err := game.GetMainImage(1)
+    if err == nil {
+        screen.DrawImage(gameButton1, &options)
+        x += float64(gameButton1.Bounds().Dx())
+        options.GeoM.Translate(float64(gameButton1.Bounds().Dx()) + 1, 0)
+    }
 
-    options.GeoM.Translate(float64(game.GameButtons[0].Bounds().Dx()) + 1, 0)
-    screen.DrawImage(game.SpellButtons[0], &options)
+    spellButton, err := game.GetMainImage(2)
+    if err == nil {
+        screen.DrawImage(spellButton, &options)
+        options.GeoM.Translate(float64(spellButton.Bounds().Dx()) + 1, 0)
+    }
 
-    options.GeoM.Translate(float64(game.SpellButtons[0].Bounds().Dx()) + 1, 0)
-    screen.DrawImage(game.ArmyButtons[0], &options)
+    armyButton, err := game.GetMainImage(3)
+    if err == nil {
+        screen.DrawImage(armyButton, &options)
+        options.GeoM.Translate(float64(armyButton.Bounds().Dx()) + 1, 0)
+    }
 
-    options.GeoM.Translate(float64(game.ArmyButtons[0].Bounds().Dx()) + 1, 0)
-    screen.DrawImage(game.CityButtons[0], &options)
+    cityButton, err := game.GetMainImage(4)
+    if err == nil {
+        screen.DrawImage(cityButton, &options)
+        options.GeoM.Translate(float64(cityButton.Bounds().Dx()) + 1, 0)
+    }
 
-    options.GeoM.Translate(float64(game.CityButtons[0].Bounds().Dx()) + 1, 0)
-    screen.DrawImage(game.MagicButtons[0], &options)
+    magicButton, err := game.GetMainImage(5)
+    if err == nil {
+        screen.DrawImage(magicButton, &options)
+        options.GeoM.Translate(float64(magicButton.Bounds().Dx()) + 1, 0)
+    }
 
-    options.GeoM.Translate(float64(game.MagicButtons[0].Bounds().Dx()) + 1, 0)
-    screen.DrawImage(game.InfoButtons[0], &options)
+    infoButton, err := game.GetMainImage(6)
+    if err == nil {
+        screen.DrawImage(infoButton, &options)
+        options.GeoM.Translate(float64(infoButton.Bounds().Dx()) + 1, 0)
+    }
 
-    options.GeoM.Translate(float64(game.InfoButtons[0].Bounds().Dx()) + 1, 0)
-    screen.DrawImage(game.PlaneButtons[0], &options)
+    planeButton, err := game.GetMainImage(7)
+    if err == nil {
+        screen.DrawImage(planeButton, &options)
+    }
 
     options.GeoM.Reset()
-    options.GeoM.Translate(240, 77)
-    screen.DrawImage(game.GoldFoodMagic, &options)
+
+    goldFood, err := game.GetMainImage(34)
+    if err == nil {
+        options.GeoM.Translate(240, 77)
+        screen.DrawImage(goldFood, &options)
+    }
 
     game.InfoFontYellow.PrintCenter(screen, 278, 103, 1, "1 Gold")
     game.InfoFontYellow.PrintCenter(screen, 278, 135, 1, "1 Food")
@@ -252,7 +217,10 @@ func (game *Game) Draw(screen *ebiten.Image){
     screen.DrawImage(game.NextTurnBackground, &options)
     */
 
-    options.GeoM.Reset()
-    options.GeoM.Translate(240, 174)
-    screen.DrawImage(game.NextTurn, &options)
+    nextTurn, err := game.GetMainImage(35)
+    if err == nil {
+        options.GeoM.Reset()
+        options.GeoM.Translate(240, 174)
+        screen.DrawImage(nextTurn, &options)
+    }
 }
