@@ -393,17 +393,17 @@ func (editor *Editor) GenerateLand1() {
 }
 
 // given a position in the terrain matrix, find a tile that fits all the neighbors of the tile
-func (editor *Editor) ResolveTile(x int, y int) (int, error) {
+func (map_ *Map) ResolveTile(x int, y int, data *terrain.TerrainData) (int, error) {
 
     matching := make(map[terrain.Direction]terrain.TerrainType)
 
     getDirection := func(x int, y int, direction terrain.Direction) terrain.TerrainType {
-        index := editor.Map.Terrain[x][y]
-        if index < 0 || index >= len(editor.Data.Tiles) {
+        index := map_.Terrain[x][y]
+        if index < 0 || index >= len(data.Tiles) {
             fmt.Printf("Error: invalid index in terrain %v at %v,%v\n", index, x, y)
             return terrain.Unknown
         }
-        return editor.Data.Tiles[index].Tile.GetDirection(direction)
+        return data.Tiles[index].Tile.GetDirection(direction)
     }
 
     if x > 0 {
@@ -414,11 +414,11 @@ func (editor *Editor) ResolveTile(x int, y int) (int, error) {
         matching[terrain.NorthWest] = getDirection(x-1, y-1, terrain.SouthEast)
     }
 
-    if x > 0 && y < editor.Map.Rows() - 1 {
+    if x > 0 && y < map_.Rows() - 1 {
         matching[terrain.SouthWest] = getDirection(x-1, y+1, terrain.NorthEast)
     }
 
-    if x < editor.Map.Columns() - 1 {
+    if x < map_.Columns() - 1 {
         matching[terrain.East] = getDirection(x+1, y, terrain.West)
     }
 
@@ -426,23 +426,23 @@ func (editor *Editor) ResolveTile(x int, y int) (int, error) {
         matching[terrain.North] = getDirection(x, y-1, terrain.South)
     }
 
-    if y < editor.Map.Rows() - 1 {
+    if y < map_.Rows() - 1 {
         matching[terrain.South] = getDirection(x, y+1, terrain.North)
     }
 
-    if x < editor.Map.Columns() - 1 && y > 0 {
+    if x < map_.Columns() - 1 && y > 0 {
         matching[terrain.NorthEast] = getDirection(x+1, y-1, terrain.SouthWest)
     }
 
-    if x < editor.Map.Columns() - 1 && y < editor.Map.Rows() - 1 {
+    if x < map_.Columns() - 1 && y < map_.Rows() - 1 {
         matching[terrain.SouthEast] = getDirection(x+1, y+1, terrain.NorthWest)
     }
 
-    if editor.Data.Tiles[editor.Map.Terrain[x][y]].Tile.Matches(matching) {
-        return editor.Map.Terrain[x][y], nil
+    if data.Tiles[map_.Terrain[x][y]].Tile.Matches(matching) {
+        return map_.Terrain[x][y], nil
     }
 
-    tile := editor.Data.FindMatchingTile(matching)
+    tile := data.FindMatchingTile(matching)
     if tile == -1 {
         return -1, fmt.Errorf("no matching tile for %v", matching)
     }
@@ -470,7 +470,7 @@ func (editor *Editor) ResolveTiles(){
 
         for _, index := range rand.Perm(len(unresolved)) {
             point := unresolved[index]
-            choice, err := editor.ResolveTile(point.X, point.Y)
+            choice, err := editor.Map.ResolveTile(point.X, point.Y, editor.Data)
             if err != nil {
                 more = append(more, point)
             } else if choice != editor.Map.Terrain[point.X][point.Y] {
@@ -583,7 +583,7 @@ func (editor *Editor) Update() error {
         }
     } else if rightClick {
         if x >= 0 && x < editor.Map.Columns() && y >= 0 && y < editor.Map.Rows() {
-            resolved, err := editor.ResolveTile(x, y)
+            resolved, err := editor.Map.ResolveTile(x, y, editor.Data)
             if err == nil {
                 editor.Map.Terrain[x][y] = resolved
             } else {
