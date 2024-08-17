@@ -314,7 +314,7 @@ func (editor *Editor) GenerateLandCellularAutomata(){
     editor.Map.PlaceRandomTerrainTiles()
 
     // start := time.Now()
-    editor.ResolveTiles()
+    editor.Map.ResolveTiles(editor.Data)
     // end := time.Now()
     // log.Printf("Resolve tiles took %v", end.Sub(start))
 }
@@ -389,7 +389,7 @@ func (editor *Editor) GenerateLand1() {
         }
     }
 
-    editor.ResolveTiles()
+    editor.Map.ResolveTiles(editor.Data)
 }
 
 // given a position in the terrain matrix, find a tile that fits all the neighbors of the tile
@@ -453,12 +453,12 @@ func (map_ *Map) ResolveTile(x int, y int, data *terrain.TerrainData) (int, erro
     // return editor.removeMyrror(tiles)[0], nil
 }
 
-func (editor *Editor) ResolveTiles(){
+func (map_ *Map) ResolveTiles(data *terrain.TerrainData){
     // go through every tile and try to resolve it, keep doing this in a loop until there are no more tiles to resolve
 
     var unresolved []image.Point
-    for x := 0; x < editor.Map.Columns(); x++ {
-        for y := 0; y < editor.Map.Rows(); y++ {
+    for x := 0; x < map_.Columns(); x++ {
+        for y := 0; y < map_.Rows(); y++ {
             unresolved = append(unresolved, image.Pt(x, y))
         }
     }
@@ -470,11 +470,11 @@ func (editor *Editor) ResolveTiles(){
 
         for _, index := range rand.Perm(len(unresolved)) {
             point := unresolved[index]
-            choice, err := editor.Map.ResolveTile(point.X, point.Y, editor.Data)
+            choice, err := map_.ResolveTile(point.X, point.Y, data)
             if err != nil {
                 more = append(more, point)
-            } else if choice != editor.Map.Terrain[point.X][point.Y] {
-                editor.Map.Terrain[point.X][point.Y] = choice
+            } else if choice != map_.Terrain[point.X][point.Y] {
+                map_.Terrain[point.X][point.Y] = choice
             }
         }
 
@@ -540,7 +540,7 @@ func (editor *Editor) Update() error {
                 log.Printf("Generate land took %v", end.Sub(start))
             case ebiten.KeyS:
                 start := time.Now()
-                editor.ResolveTiles()
+                editor.Map.ResolveTiles(editor.Data)
                 end := time.Now()
                 log.Printf("Resolve tiles took %v", end.Sub(start))
             case ebiten.KeyTab:
