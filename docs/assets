@@ -8,9 +8,9 @@ INSTALL.DAT - unknown
 FILE_ID.DIZ - unknown
 INSTALL.EXE - unknown
 ITEMMAKE.EXE - unknown
-MAGIC.EXE - main executable for game
+MAGIC.EXE - main executable for game. this has the new game and new wizard screens in it, and then executes wizards.exe to play the game
 MPSCOPY.EXE - unknown
-WIZARDS.EXE - unknown
+WIZARDS.EXE - executable for running the gameplay
 INSTALL.GIF - unknown
 ARMYLIST.LBX - graphics, contains backgrounds for item alchemy and hero screen
 BACKGRND.LBX - graphics, some city backgrounds
