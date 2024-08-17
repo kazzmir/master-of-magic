@@ -47,7 +47,7 @@ func (engine *Engine) Update() error {
     switch engine.NewGameScreen.Update() {
         case setup.NewGameStateRunning:
         case setup.NewGameStateOk:
-            log.Printf("Creating new game")
+            log.Printf("Creating new game with settings: %+v", engine.NewGameScreen.Settings)
             return ebiten.Termination
         case setup.NewGameStateCancel:
             log.Printf("Cancel")
