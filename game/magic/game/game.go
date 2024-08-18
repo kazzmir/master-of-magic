@@ -7,6 +7,7 @@ import (
     "log"
 
     "github.com/kazzmir/master-of-magic/game/magic/setup"
+    "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
@@ -181,11 +182,11 @@ func (game *Game) GetUnitBackgroundImage(flag Flag) (*ebiten.Image, error) {
     return image, err
 }
 
-func (game *Game) GetUnit2Image(index int) (*ebiten.Image, error) {
-    image, err := game.ImageCache.GetImage("units2.lbx", index, 0)
+func (game *Game) GetUnitImage(unit units.Unit) (*ebiten.Image, error) {
+    image, err := game.ImageCache.GetImage(unit.LbxFile, unit.Index, 0)
 
     if err != nil {
-        log.Printf("Error: image in units2.lbx is missing: %v", err)
+        log.Printf("Error: image in %v is missing: %v", unit.LbxFile, err)
     }
 
     return image, err
@@ -209,7 +210,7 @@ func (game *Game) Draw(screen *ebiten.Image){
         options.GeoM.Translate(float64(unitTileX * tileWidth), float64(unitTileY * tileHeight))
         screen.DrawImage(unitBack, &options)
 
-        bat, err := game.GetUnit2Image(41)
+        bat, err := game.GetUnitImage(units.GiantBat)
         if err == nil {
             options.GeoM.Translate(1, 1)
             screen.DrawImage(bat, &options)
