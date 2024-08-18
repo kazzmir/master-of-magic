@@ -162,7 +162,7 @@ const (
     FlagBrown
 )
 
-func (game *Game) GetUnitBackground(flag Flag) (*ebiten.Image, error) {
+func (game *Game) GetUnitBackgroundImage(flag Flag) (*ebiten.Image, error) {
     index := -1
     switch flag {
         case FlagBlue: index = 14
@@ -181,12 +181,22 @@ func (game *Game) GetUnitBackground(flag Flag) (*ebiten.Image, error) {
     return image, err
 }
 
+func (game *Game) GetUnit2Image(index int) (*ebiten.Image, error) {
+    image, err := game.ImageCache.GetImage("units2.lbx", index, 0)
+
+    if err != nil {
+        log.Printf("Error: image in units2.lbx is missing: %v", err)
+    }
+
+    return image, err
+}
+
 func (game *Game) Draw(screen *ebiten.Image){
     var options ebiten.DrawImageOptions
 
     game.Map.Draw(0, 0, screen)
 
-    unitBack, err := game.GetUnitBackground(FlagBlue)
+    unitBack, err := game.GetUnitBackgroundImage(FlagBlue)
     if err == nil {
         // FIXME: get these from Map
         tileWidth := 20
@@ -198,6 +208,13 @@ func (game *Game) Draw(screen *ebiten.Image){
         var options ebiten.DrawImageOptions
         options.GeoM.Translate(float64(unitTileX * tileWidth), float64(unitTileY * tileHeight))
         screen.DrawImage(unitBack, &options)
+
+        bat, err := game.GetUnit2Image(41)
+        if err == nil {
+            options.GeoM.Translate(1, 1)
+            screen.DrawImage(bat, &options)
+        }
+
     }
 
     // draw hud on top of map
