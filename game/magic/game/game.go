@@ -7,6 +7,7 @@ import (
     "log"
 
     "github.com/kazzmir/master-of-magic/game/magic/setup"
+    "github.com/kazzmir/master-of-magic/game/magic/terrain"
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/hajimehoshi/ebiten/v2"
@@ -106,9 +107,22 @@ func (game *Game) Load(cache *lbx.LbxCache) error {
 }
 
 func MakeGame(wizard setup.WizardCustom, lbxCache *lbx.LbxCache) *Game {
+
+    terrainLbx, err := lbxCache.GetLbxFile("terrain.lbx")
+    if err != nil {
+        log.Printf("Error: could not load terrain: %v", err)
+        return nil
+    }
+
+    terrainData, err := terrain.ReadTerrainData(terrainLbx)
+    if err != nil {
+        log.Printf("Error: could not load terrain: %v", err)
+        return nil
+    }
+
     game := &Game{
         active: false,
-        Map: MakeMap(),
+        Map: MakeMap(terrainData),
         ImageCache: ImageCache{
             LbxCache: lbxCache,
             Cache: make(map[string][]*ebiten.Image),
@@ -132,7 +146,36 @@ func (game *Game) GetMainImage(index int) (*ebiten.Image, error) {
     image, err := game.ImageCache.GetImage("main.lbx", index, 0)
 
     if err != nil {
-        log.Printf("Error: image in main.lbx is missing: %v\n", err)
+        log.Printf("Error: image in main.lbx is missing: %v", err)
+    }
+
+    return image, err
+}
+
+type Flag int
+const (
+    FlagBlue Flag = iota
+    FlagGreen
+    FlagPurple
+    FlagRed
+    FlagYellow
+    FlagBrown
+)
+
+func (game *Game) GetUnitBackground(flag Flag) (*ebiten.Image, error) {
+    index := -1
+    switch flag {
+        case FlagBlue: index = 14
+        case FlagGreen: index = 15
+        case FlagPurple: index = 16
+        case FlagRed: index = 17
+        case FlagYellow: index = 18
+        case FlagBrown: index = 19
+    }
+
+    image, err := game.ImageCache.GetImage("mapback.lbx", index, 0)
+    if err != nil {
+        log.Printf("Error: image in mapback.lbx is missing: %v", err)
     }
 
     return image, err
@@ -141,7 +184,21 @@ func (game *Game) GetMainImage(index int) (*ebiten.Image, error) {
 func (game *Game) Draw(screen *ebiten.Image){
     var options ebiten.DrawImageOptions
 
-    game.Map.Draw(screen)
+    game.Map.Draw(0, 0, screen)
+
+    unitBack, err := game.GetUnitBackground(FlagBlue)
+    if err == nil {
+        // FIXME: get these from Map
+        tileWidth := 20
+        tileHeight := 18
+
+        unitTileX := 8
+        unitTileY := 8
+
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(float64(unitTileX * tileWidth), float64(unitTileY * tileHeight))
+        screen.DrawImage(unitBack, &options)
+    }
 
     // draw hud on top of map
     mainHud, err := game.GetMainImage(0)
