@@ -102,8 +102,8 @@ TERRSTAT.LBX - unknown
 TERRTYPE.LBX - unknown
 TUNDRA.LBX - graphics, tundra tiles
 UNITVIEW.LBX - graphics, ui for managing units
-UNITS1.LBX - graphics, sprites for units
-UNITS2.LBX - graphics, sprites for units
+UNITS1.LBX - graphics, sprites for units on the overworld
+UNITS2.LBX - graphics, sprites for units on the overworld
 WALLRISE.LBX - graphics, special effects on the walls of a castle in a battle
 WIN.LBX - graphics, animations when the user wins
 WIZLAB.LBX - graphics, animations when summoning creatures

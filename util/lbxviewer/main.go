@@ -168,7 +168,10 @@ func (viewer *Viewer) Update() error {
                 }
 
             case ebiten.KeyEscape, ebiten.KeyCapsLock:
-                return ebiten.Termination
+                switch viewer.State {
+                    case ViewStateTiles: return ebiten.Termination
+                    case ViewStateImage: viewer.State = ViewStateTiles
+                }
         }
     }
 
