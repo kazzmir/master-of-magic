@@ -9,6 +9,7 @@ const (
     RaceOrc
     RaceTroll
     RaceFantastic
+    RaceHero
 )
 
 type Unit struct {
@@ -485,4 +486,214 @@ var Nagas Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 77,
     Race: RaceFantastic,
+}
+
+var HeroBrax Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 0,
+    Race: RaceHero,
+}
+
+var HeroGunther Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 1,
+    Race: RaceHero,
+}
+
+var HeroZaldron Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 2,
+    Race: RaceHero,
+}
+
+var HeroBShan Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 3,
+    Race: RaceHero,
+}
+
+var HeroRakir Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 4,
+    Race: RaceHero,
+}
+
+var HeroValana Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 5,
+    Race: RaceHero,
+}
+
+var HeroBahgtru Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 6,
+    Race: RaceHero,
+}
+
+var HeroSerena Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 7,
+    Race: RaceHero,
+}
+
+var HeroShuri Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 8,
+    Race: RaceHero,
+}
+
+var HeroTheria Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 9,
+    Race: RaceHero,
+}
+
+var HeroGreyfairer Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 10,
+    Race: RaceHero,
+}
+
+var HeroTaki Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 11,
+    Race: RaceHero,
+}
+
+var HeroReywind Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 12,
+    Race: RaceHero,
+}
+
+var HeroMalleus Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 13,
+    Race: RaceHero,
+}
+
+var HeroTumu Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 14,
+    Race: RaceHero,
+}
+
+var HeroJaer Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 15,
+    Race: RaceHero,
+}
+
+var HeroMarcus Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 16,
+    Race: RaceHero,
+}
+
+var HeroFang Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 17,
+    Race: RaceHero,
+}
+
+var HeroMorgana Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 18,
+    Race: RaceHero,
+}
+
+var HeroAureus Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 19,
+    Race: RaceHero,
+}
+
+var HeroShinBo Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 20,
+    Race: RaceHero,
+}
+
+var HeroSpyder Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 21,
+    Race: RaceHero,
+}
+
+var HeroShalla Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 22,
+    Race: RaceHero,
+}
+
+var HeroYramrag Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 23,
+    Race: RaceHero,
+}
+
+var HeroMysticX Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 24,
+    Race: RaceHero,
+}
+
+var HeroAeirie Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 25,
+    Race: RaceHero,
+}
+
+var HeroDethStryke Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 26,
+    Race: RaceHero,
+}
+
+var HeroElana Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 27,
+    Race: RaceHero,
+}
+
+var HeroRoland Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 28,
+    Race: RaceHero,
+}
+
+var HeroMortu Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 29,
+    Race: RaceHero,
+}
+
+var HeroAlorra Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 30,
+    Race: RaceHero,
+}
+
+var HeroSirHarold Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 31,
+    Race: RaceHero,
+}
+
+var HeroRavashack Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 32,
+    Race: RaceHero,
+}
+
+var HeroWarrax Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 33,
+    Race: RaceHero,
+}
+
+var HeroTorin Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 34,
+    Race: RaceHero,
 }
