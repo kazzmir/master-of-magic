@@ -60,6 +60,11 @@ func (cache *ImageCache) GetImage(lbxFile string, spriteIndex int, animationInde
     return nil, fmt.Errorf("invalid animation index: %d for %v:%v", animationIndex, lbxFile, spriteIndex)
 }
 
+type GameState int
+const (
+    GameStateRunning GameState = iota
+)
+
 type Game struct {
     active bool
 
@@ -140,7 +145,8 @@ func (game *Game) Activate() {
     game.active = true
 }
 
-func (game *Game) Update(){
+func (game *Game) Update() GameState {
+    return GameStateRunning
 }
 
 func (game *Game) GetMainImage(index int) (*ebiten.Image, error) {
