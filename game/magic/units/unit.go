@@ -18,6 +18,9 @@ const (
     RaceDwarf
     RaceGnoll
     RaceHalfling
+    RaceHighElf
+    RaceHighMen
+    RaceKlackon
 )
 
 type Unit struct {
@@ -1066,3 +1069,152 @@ var Slingers Unit = Unit{
     Race: RaceHalfling,
 }
 
+var HighElfSpearmen Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 95,
+    Race: RaceHighElf,
+}
+
+var HighElfSwordsmen Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 96,
+    Race: RaceHighElf,
+}
+
+var HighElfHalberdiers Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 97,
+    Race: RaceHighElf,
+}
+
+var HighElfCavalry Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 98,
+    Race: RaceHighElf,
+}
+
+var HighElfMagician Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 99,
+    Race: RaceHighElf,
+}
+
+var HighElfSettlers Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 100,
+    Race: RaceHighElf,
+}
+
+var Longbowmen Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 101,
+    Race: RaceHighElf,
+}
+
+var ElvenLord Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 102,
+    Race: RaceHighElf,
+}
+
+var Pegasai Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 103,
+    Race: RaceHighElf,
+}
+
+var HighMenSpearmen Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 104,
+    Race: RaceHighMen,
+}
+
+var HighMenSwordsmen Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 105,
+    Race: RaceHighMen,
+}
+
+var HighMenBowmen Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 106,
+    Race: RaceHighMen,
+}
+
+var HighMenCavalry Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 107,
+    Race: RaceHighMen,
+}
+
+var HighMenPreist Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 108,
+    Race: RaceHighMen,
+}
+
+var HighMenMagician Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 109,
+    Race: RaceHighMen,
+}
+
+var HighMenEngineer Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 110,
+    Race: RaceHighMen,
+}
+
+var HighMenSettlers Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 111,
+    Race: RaceHighMen,
+}
+
+var HighMenPikemen Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 112,
+    Race: RaceHighMen,
+}
+
+var Paladin Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 113,
+    Race: RaceHighMen,
+}
+
+var KlackonSpearmen Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 114,
+    Race: RaceKlackon,
+}
+
+var KlackonSwordsmen Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 115,
+    Race: RaceKlackon,
+}
+
+var KlackonHalberdiers Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 116,
+    Race: RaceKlackon,
+}
+
+var KlackonEngineer Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 117,
+    Race: RaceKlackon,
+}
+
+var KlackonSettlers Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 118,
+    Race: RaceKlackon,
+}
+
+var StagBeetle Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 119,
+    Race: RaceKlackon,
+}
