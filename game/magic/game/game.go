@@ -59,6 +59,7 @@ type Player struct {
     Cities []*City
 }
 
+/* make anything within the given radius viewable by the player */
 func (player *Player) LiftFog(x int, y int, radius int){
 
     // FIXME: make this a parameter
@@ -66,10 +67,11 @@ func (player *Player) LiftFog(x int, y int, radius int){
 
     for dx := -radius; dx <= radius; dx++ {
         for dy := -radius; dy <= radius; dy++ {
+            if x + dx < 0 || x + dx >= len(fog) || y + dy < 0 || y + dy >= len(fog[0]) {
+                continue
+            }
+
             if dx * dx + dy * dy <= radius * radius {
-                if x + dx < 0 || x + dx >= len(fog) || y + dy < 0 || y + dy >= len(fog[0]) {
-                    continue
-                }
                 fog[x + dx][y + dy] = true
             }
         }
@@ -109,6 +111,7 @@ type Game struct {
     InfoFontYellow *font.Font
     Counter uint64
     Fog *ebiten.Image
+
 
     // FIXME: need one map for arcanus and one for myrran
     Map *Map
@@ -375,25 +378,185 @@ func (game *Game) DrawHud(screen *ebiten.Image){
 
 func (game *Game) DrawFog(screen *ebiten.Image, player *Player, cameraX int, cameraY int){
 
-    fog := game.GetFogImage()
+    fogImage := func(index int) *ebiten.Image {
+        img, err := game.ImageCache.GetImage("mapback.lbx", index, 0)
+        if err != nil {
+            log.Printf("Error: image in mapback.lbx is missing: %v", err)
+            return nil
+        }
+        return img
+    }
+
+    FogEdge_N_E := fogImage(0)
+    FogEdge_S_E := fogImage(1)
+    FogEdge_S_W := fogImage(3)
+    FogEdge_S := fogImage(5)
+    FogEdge_N_W := fogImage(7)
+    FogEdge_N := fogImage(8)
+    FogEdge_W := fogImage(9)
+
+    /*
+    FogEdge_SW := fogImage(6)
+    FogEdge_SW_W_NW_N_NE := fogImage(7)
+    FogEdge_NW_N_NE := fogImage(8)
+    FogEdge_SW_N := fogImage(9)
+    FogEdge_NW_W := fogImage(10)
+    FogEdge_SW_W_NW_N := fogImage(11)
+    */
+
+    fogBlack := game.GetFogImage()
 
     tilesPerRow := data.ScreenWidth / game.Map.TileWidth()
     tilesPerColumn := data.ScreenHeight / game.Map.TileHeight()
     var options ebiten.DrawImageOptions
+
+    // FIXME: make this dependant on whether we are rendering arcanus or myrror
+    fog := player.ArcanusFog
+
+    /*
+    fogNW := func(x int, y int) bool {
+        if x == 0 || y == 0 {
+            return false
+        }
+
+        return fog[x - 1][y - 1]
+    }
+    */
+
+    fogN := func(x int, y int) bool {
+        if y == 0 {
+            return false
+        }
+
+        return !fog[x][y - 1]
+    }
+
+    /*
+    fogNE := func(x int, y int) bool {
+        if x == len(fog) - 1 || y == 0 {
+            return false
+        }
+
+        return fog[x + 1][y - 1]
+    }
+    */
+
+    fogE := func(x int, y int) bool {
+        if x == len(fog) - 1 {
+            return false
+        }
+
+        return !fog[x + 1][y]
+    }
+
+    /*
+    fogSE := func(x int, y int) bool {
+        if x == len(fog) - 1 || y == len(fog[0]) - 1 {
+            return false
+        }
+
+        return fog[x + 1][y + 1]
+    }
+    */
+
+    fogS := func(x int, y int) bool {
+        if y == len(fog[0]) - 1 {
+            return false
+        }
+
+        return !fog[x][y + 1]
+    }
+
+    /*
+    fogSW := func(x int, y int) bool {
+        if x == 0 || y == len(fog[0]) - 1 {
+            return false
+        }
+
+        return fog[x - 1][y + 1]
+    }
+    */
+
+    fogW := func(x int, y int) bool {
+        if x == 0 {
+            return false
+        }
+
+        return !fog[x - 1][y]
+    }
+
     for x := 0; x < tilesPerRow; x++ {
         for y := 0; y < tilesPerColumn; y++ {
 
             tileX := x + cameraX
             tileY := y + cameraY
 
-            if player.ArcanusFog[tileX][tileY] {
+            options.GeoM.Reset()
+            options.GeoM.Translate(float64(x * game.Map.TileWidth()), float64(y * game.Map.TileHeight()))
 
-                // draw edge fog tiles
+            // nw := fogNW(tileX, tileY)
+            n := fogN(tileX, tileY)
+            // ne := fogNE(tileX, tileY)
+            e := fogE(tileX, tileY)
+            // se := fogSE(tileX, tileY)
+            s := fogS(tileX, tileY)
+            // sw := fogSW(tileX, tileY)
+            w := fogW(tileX, tileY)
 
+            if fog[tileX][tileY] {
+
+                if n && e {
+                    screen.DrawImage(FogEdge_N_E, &options)
+                } else if n {
+                    screen.DrawImage(FogEdge_N, &options)
+                } else if e {
+                    options.GeoM.Scale(1, -1)
+                    screen.DrawImage(FogEdge_W, &options)
+                }
+
+                if s && e {
+                    screen.DrawImage(FogEdge_S_E, &options)
+                } else if s {
+                    screen.DrawImage(FogEdge_S, &options)
+                }
+
+                if n && w {
+                    screen.DrawImage(FogEdge_N_W, &options)
+                } else if w && !s {
+                    screen.DrawImage(FogEdge_W, &options)
+                }
+
+                if s && w {
+                    screen.DrawImage(FogEdge_S_W, &options)
+                }
+
+                /*
+                if nw && n && ne && e && se && !s && !sw && !w {
+                    screen.DrawImage(FogEdge_NW_N_NE_E_SE, &options)
+                } else if sw && s && se && e && ne && !n && !nw && !w {
+                    screen.DrawImage(FogEdge_SW_S_SE_E_NE, &options)
+                } else if nw && w && sw && s && se && !e && !ne && !n {
+                    screen.DrawImage(FogEdge_NW_W_SW_S_SE, &options)
+                } else if nw && s && !n && !ne && !e && !se && !sw && !w {
+                    screen.DrawImage(FogEdge_NW_S, &options)
+                } else if sw && s && se && !n && !ne && !e && !nw && !w {
+                    screen.DrawImage(FogEdge_SW_S_SE, &options)
+                } else if sw && !n && !ne && !e && !se && !s && !nw && !w {
+                    screen.DrawImage(FogEdge_SW, &options)
+                } else if nw && w && sw && !s && n && ne && !e && !se {
+                    screen.DrawImage(FogEdge_SW_W_NW_N_NE, &options)
+                } else if nw && n && ne && !s && !se && !e && !sw && !w {
+                    screen.DrawImage(FogEdge_NW_N_NE, &options)
+                } else if sw && n && !ne && !e && !se && !s && !nw && !w {
+                    screen.DrawImage(FogEdge_SW_N, &options)
+                } else if nw && w && !n && !ne && !e && !se && !s && !sw {
+                    screen.DrawImage(FogEdge_NW_W, &options)
+                } else if sw && w && nw && n && !ne && !e && !se && !s {
+                    screen.DrawImage(FogEdge_SW_W_NW_N, &options)
+                }
+                */
             } else {
-                options.GeoM.Reset()
-                options.GeoM.Translate(float64(x * game.Map.TileWidth()), float64(y * game.Map.TileHeight()))
-                screen.DrawImage(fog, &options)
+                screen.DrawImage(fogBlack, &options)
             }
         }
     }

@@ -39,20 +39,20 @@ func NewEngine() (*Engine, error) {
     player.AddCity(gamelib.City{
         Population: 6000,
         Wall: false,
-        X: 3,
-        Y: 5,
-    })
-
-    player.LiftFog(3, 5, 5)
-
-    player.AddUnit(gamelib.Unit{
-        Unit: units.GreatDrake,
-        Banner: wizard.Banner,
         X: 4,
         Y: 5,
     })
 
     player.LiftFog(4, 5, 3)
+
+    player.AddUnit(gamelib.Unit{
+        Unit: units.GreatDrake,
+        Banner: wizard.Banner,
+        X: 5,
+        Y: 5,
+    })
+
+    player.LiftFog(5, 5, 3)
 
     return &Engine{
         LbxCache: cache,
