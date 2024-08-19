@@ -24,6 +24,7 @@ type Game struct {
     WhiteFont *font.Font
 
     InfoFontYellow *font.Font
+    Counter uint64
 
     // FIXME: need one map for arcanus and one for myrran
     Map *Map
@@ -98,6 +99,8 @@ func (game *Game) Activate() {
 }
 
 func (game *Game) Update() GameState {
+    game.Counter += 1
+
     return GameStateRunning
 }
 
@@ -192,7 +195,7 @@ func (game *Game) GetCityWallImage(size CitySize) (*ebiten.Image, error) {
 func (game *Game) Draw(screen *ebiten.Image){
     var options ebiten.DrawImageOptions
 
-    game.Map.Draw(0, 0, screen)
+    game.Map.Draw(0, 0, game.Counter / 4, screen)
 
     city1, err := game.GetCityNoWallImage(CitySizeCity)
     if err == nil {

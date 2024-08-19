@@ -33,7 +33,7 @@ func (mapObject *Map) TileHeight() int {
     return mapObject.Data.TileHeight()
 }
 
-func (mapObject *Map) GetTileImage(tileX int, tileY int) (*ebiten.Image, error) {
+func (mapObject *Map) GetTileImage(tileX int, tileY int, animationCounter uint64) (*ebiten.Image, error) {
     tile := mapObject.Map.Terrain[tileX][tileY]
 
     if image, ok := mapObject.TileCache[tile]; ok {
@@ -42,14 +42,13 @@ func (mapObject *Map) GetTileImage(tileX int, tileY int) (*ebiten.Image, error) 
 
     tileInfo := mapObject.Data.Tiles[tile]
 
-    // FIXME: handle animation
-    gpuImage := ebiten.NewImageFromImage(tileInfo.Images[0])
+    gpuImage := ebiten.NewImageFromImage(tileInfo.Images[animationCounter % uint64(len(tileInfo.Images))])
 
     mapObject.TileCache[tile] = gpuImage
     return gpuImage, nil
 }
 
-func (mapObject *Map) Draw(cameraX int, cameraY int, screen *ebiten.Image){
+func (mapObject *Map) Draw(cameraX int, cameraY int, animationCounter uint64, screen *ebiten.Image){
 
     // FIXME: get these from map
     tileWidth := 20
@@ -70,7 +69,7 @@ func (mapObject *Map) Draw(cameraX int, cameraY int, screen *ebiten.Image){
                 continue
             }
 
-            image, err := mapObject.GetTileImage(tileX, tileY)
+            image, err := mapObject.GetTileImage(tileX, tileY, animationCounter)
             if err == nil {
                 options.GeoM.Reset()
                 options.GeoM.Translate(float64(x * tileWidth), float64(y * tileHeight))
