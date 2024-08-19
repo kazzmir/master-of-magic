@@ -10,6 +10,10 @@ const (
     RaceTroll
     RaceFantastic
     RaceHero
+    RaceNone
+    RaceBarbarian
+    RaceBeastmen
+    RaceDarkElf
 )
 
 type Unit struct {
@@ -697,3 +701,190 @@ var HeroTorin Unit = Unit{
     Index: 34,
     Race: RaceHero,
 }
+
+var Trireme Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 35,
+    Race: RaceNone,
+}
+
+var Galley Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 36,
+    Race: RaceNone,
+}
+
+var Catapult Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 37,
+    Race: RaceNone,
+}
+
+var Warship Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 38,
+    Race: RaceNone,
+}
+
+var BarbarianSpearmen Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 39,
+    Race: RaceBarbarian,
+}
+
+var BarbarianSwordsmen Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 40,
+    Race: RaceBarbarian,
+}
+
+var BarbarianBowmen Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 41,
+    Race: RaceBarbarian,
+}
+
+var BarbarianCavalry Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 42,
+    Race: RaceBarbarian,
+}
+
+var BarbarianShaman Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 43,
+    Race: RaceBarbarian,
+}
+
+var BarbarianSettlers Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 44,
+    Race: RaceBarbarian,
+}
+
+var Berserkers Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 45,
+    Race: RaceBarbarian,
+}
+
+var BeastmenSpearmen Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 46,
+    Race: RaceBeastmen,
+}
+
+var BeastmenSwordsmen Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 47,
+    Race: RaceBeastmen,
+}
+
+var BeastmenHalberdiers Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 48,
+    Race: RaceBeastmen,
+}
+
+var BeastmenBowmen Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 49,
+    Race: RaceBeastmen,
+}
+
+var BeastmenPriest Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 50,
+    Race: RaceBeastmen,
+}
+
+var BeastmenMagician Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 51,
+    Race: RaceBeastmen,
+}
+
+var BeastmenEngineer Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 52,
+    Race: RaceBeastmen,
+}
+
+var BeastmenSettlers Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 53,
+    Race: RaceBeastmen,
+}
+
+var Centaur Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 54,
+    Race: RaceBeastmen,
+}
+
+var Manticore Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 55,
+    Race: RaceBeastmen,
+}
+
+var Minotaur Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 56,
+    Race: RaceBeastmen,
+}
+
+var DarkElfSpearmen Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 57,
+    Race: RaceDarkElf,
+}
+
+var DarkElfSwordsmen Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 58,
+    Race: RaceDarkElf,
+}
+
+var DarkElfHalberdiers Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 59,
+    Race: RaceDarkElf,
+}
+
+var DarkElfCavalry Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 60,
+    Race: RaceDarkElf,
+}
+
+var DarkElfPriests Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 61,
+    Race: RaceDarkElf,
+}
+
+var DarkElfSettlers Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 62,
+    Race: RaceDarkElf,
+}
+
+var Nightblades Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 63,
+    Race: RaceDarkElf,
+}
+
+var Warlocks Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 64,
+    Race: RaceDarkElf,
+}
+
+var Nightmares Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 65,
+    Race: RaceDarkElf,
+}
+
