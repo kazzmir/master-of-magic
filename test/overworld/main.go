@@ -5,6 +5,7 @@ import (
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
+    "github.com/kazzmir/master-of-magic/game/magic/units"
     gamelib "github.com/kazzmir/master-of-magic/game/magic/game"
     "github.com/kazzmir/master-of-magic/game/magic/data"
 
@@ -21,6 +22,7 @@ func NewEngine() (*Engine, error) {
     cache := lbx.MakeLbxCache("magic-data")
 
     wizard := setup.WizardCustom{
+        Banner: data.BannerBlue,
     }
 
     game := gamelib.MakeGame(wizard, cache)
@@ -31,6 +33,22 @@ func NewEngine() (*Engine, error) {
     }
 
     game.Activate()
+
+    player := game.AddPlayer(wizard)
+
+    player.AddCity(gamelib.City{
+        Population: 6000,
+        Wall: false,
+        X: 3,
+        Y: 5,
+    })
+
+    player.AddUnit(gamelib.Unit{
+        Unit: units.GreatDrake,
+        Banner: wizard.Banner,
+        X: 4,
+        Y: 5,
+    })
 
     return &Engine{
         LbxCache: cache,

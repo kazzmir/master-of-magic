@@ -41,27 +41,6 @@ func (magic MagicType) String() string {
     return ""
 }
 
-type BannerType int
-const (
-    BannerGreen BannerType = iota
-    BannerBlue
-    BannerRed
-    BannerPurple
-    BannerYellow
-)
-
-func (banner BannerType) String() string {
-    switch banner {
-        case BannerGreen: return "green"
-        case BannerBlue: return "blue"
-        case BannerRed: return "red"
-        case BannerPurple: return "purple"
-        case BannerYellow: return "yellow"
-    }
-
-    return ""
-}
-
 const MaxPicks = 11
 
 /* the number of books a wizard has of a specific magic type */
@@ -261,7 +240,7 @@ type WizardCustom struct {
     Books []wizardBook
     Spells lbx.Spells
     Race string
-    Banner BannerType
+    Banner data.BannerType
 }
 
 func (wizard *WizardCustom) AbilityEnabled(ability WizardAbility) bool {
@@ -2276,7 +2255,7 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
 func (screen *NewWizardScreen) MakeSelectBannerUI() *uilib.UI {
     var elements []*uilib.UIElement
 
-    for i, banner := range []BannerType{BannerGreen, BannerBlue, BannerRed, BannerPurple, BannerYellow} {
+    for i, banner := range []data.BannerType{data.BannerGreen, data.BannerBlue, data.BannerRed, data.BannerPurple, data.BannerYellow} {
         height := 34
         yPos := 24 + i * height
         elements = append(elements, &uilib.UIElement{

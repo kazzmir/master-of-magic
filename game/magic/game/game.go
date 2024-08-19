@@ -7,6 +7,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/hajimehoshi/ebiten/v2"
@@ -14,7 +15,7 @@ import (
 
 type Unit struct {
     Unit units.Unit
-    Flag Flag
+    Banner data.BannerType
     X int
     Y int
 }
@@ -56,6 +57,14 @@ type Player struct {
 
     Units []*Unit
     Cities []*City
+}
+
+func (player *Player) AddCity(city City) {
+    player.Cities = append(player.Cities, &city)
+}
+
+func (player *Player) AddUnit(unit Unit) {
+    player.Units = append(player.Units, &unit)
 }
 
 type GameState int
@@ -182,16 +191,6 @@ func (game *Game) GetMainImage(index int) (*ebiten.Image, error) {
     return image, err
 }
 
-type Flag int
-const (
-    FlagBlue Flag = iota
-    FlagGreen
-    FlagPurple
-    FlagRed
-    FlagYellow
-    FlagBrown
-)
-
 type CitySize int
 const (
     CitySizeHamlet CitySize = iota
@@ -201,15 +200,15 @@ const (
     CitySizeCapital
 )
 
-func (game *Game) GetUnitBackgroundImage(flag Flag) (*ebiten.Image, error) {
+func (game *Game) GetUnitBackgroundImage(banner data.BannerType) (*ebiten.Image, error) {
     index := -1
-    switch flag {
-        case FlagBlue: index = 14
-        case FlagGreen: index = 15
-        case FlagPurple: index = 16
-        case FlagRed: index = 17
-        case FlagYellow: index = 18
-        case FlagBrown: index = 19
+    switch banner {
+        case data.BannerBlue: index = 14
+        case data.BannerGreen: index = 15
+        case data.BannerPurple: index = 16
+        case data.BannerRed: index = 17
+        case data.BannerYellow: index = 18
+        case data.BannerBrown: index = 19
     }
 
     image, err := game.ImageCache.GetImage("mapback.lbx", index, 0)
@@ -260,74 +259,8 @@ func (game *Game) GetCityWallImage(size CitySize) (*ebiten.Image, error) {
     return game.ImageCache.GetImage("mapback.lbx", 21, index)
 }
 
-func (game *Game) Draw(screen *ebiten.Image){
+func (game *Game) DrawHud(screen *ebiten.Image){
     var options ebiten.DrawImageOptions
-
-    game.Map.Draw(0, 0, game.Counter / 4, screen)
-
-    if len(game.Players) > 0 {
-        player := game.Players[0]
-
-        for _, city := range player.Cities {
-            var cityPic *ebiten.Image
-            var err error
-            if city.Wall {
-                cityPic, err = game.GetCityWallImage(city.GetSize())
-            } else {
-                cityPic, err = game.GetCityNoWallImage(city.GetSize())
-            }
-
-            if err == nil {
-                var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(city.X * game.Map.TileWidth()), float64(city.Y * game.Map.TileHeight()))
-                screen.DrawImage(cityPic, &options)
-            }
-        }
-
-        for _, unit := range player.Units {
-            unitBack, err := game.GetUnitBackgroundImage(unit.Flag)
-            if err == nil {
-                var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(unit.X * game.Map.TileWidth()), float64(unit.Y * game.Map.TileHeight()))
-                screen.DrawImage(unitBack, &options)
-            }
-
-            pic, err := game.GetUnitImage(unit.Unit)
-            if err == nil {
-                options.GeoM.Translate(1, 1)
-                screen.DrawImage(pic, &options)
-            }
-        }
-    }
-
-    /*
-    city1, err := game.GetCityNoWallImage(CitySizeCity)
-    if err == nil {
-        tileX := 4
-        tileY := 4
-
-        var options ebiten.DrawImageOptions
-        options.GeoM.Translate(float64(tileX * game.Map.TileWidth()), float64(tileY * game.Map.TileHeight()))
-        screen.DrawImage(city1, &options)
-    }
-
-    unitBack, err := game.GetUnitBackgroundImage(FlagBlue)
-    if err == nil {
-        unitTileX := 8
-        unitTileY := 8
-
-        var options ebiten.DrawImageOptions
-        options.GeoM.Translate(float64(unitTileX * game.Map.TileWidth()), float64(unitTileY * game.Map.TileHeight()))
-        screen.DrawImage(unitBack, &options)
-
-        bat, err := game.GetUnitImage(units.DoomBat)
-        if err == nil {
-            options.GeoM.Translate(1, 1)
-            screen.DrawImage(bat, &options)
-        }
-
-    }
-    */
 
     // draw hud on top of map
     mainHud, err := game.GetMainImage(0)
@@ -409,4 +342,74 @@ func (game *Game) Draw(screen *ebiten.Image){
         options.GeoM.Translate(240, 174)
         screen.DrawImage(nextTurn, &options)
     }
+}
+
+func (game *Game) Draw(screen *ebiten.Image){
+    game.Map.Draw(0, 0, game.Counter / 4, screen)
+
+    if len(game.Players) > 0 {
+        player := game.Players[0]
+
+        for _, city := range player.Cities {
+            var cityPic *ebiten.Image
+            var err error
+            if city.Wall {
+                cityPic, err = game.GetCityWallImage(city.GetSize())
+            } else {
+                cityPic, err = game.GetCityNoWallImage(city.GetSize())
+            }
+
+            if err == nil {
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(city.X * game.Map.TileWidth()), float64(city.Y * game.Map.TileHeight()))
+                screen.DrawImage(cityPic, &options)
+            }
+        }
+
+        for _, unit := range player.Units {
+            var options ebiten.DrawImageOptions
+            unitBack, err := game.GetUnitBackgroundImage(unit.Banner)
+            if err == nil {
+                options.GeoM.Translate(float64(unit.X * game.Map.TileWidth()), float64(unit.Y * game.Map.TileHeight()))
+                screen.DrawImage(unitBack, &options)
+            }
+
+            pic, err := game.GetUnitImage(unit.Unit)
+            if err == nil {
+                options.GeoM.Translate(1, 1)
+                screen.DrawImage(pic, &options)
+            }
+        }
+    }
+
+    /*
+    city1, err := game.GetCityNoWallImage(CitySizeCity)
+    if err == nil {
+        tileX := 4
+        tileY := 4
+
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(float64(tileX * game.Map.TileWidth()), float64(tileY * game.Map.TileHeight()))
+        screen.DrawImage(city1, &options)
+    }
+
+    unitBack, err := game.GetUnitBackgroundImage(FlagBlue)
+    if err == nil {
+        unitTileX := 8
+        unitTileY := 8
+
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(float64(unitTileX * game.Map.TileWidth()), float64(unitTileY * game.Map.TileHeight()))
+        screen.DrawImage(unitBack, &options)
+
+        bat, err := game.GetUnitImage(units.DoomBat)
+        if err == nil {
+            options.GeoM.Translate(1, 1)
+            screen.DrawImage(bat, &options)
+        }
+
+    }
+    */
+
+    game.DrawHud(screen)
 }
