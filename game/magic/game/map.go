@@ -25,6 +25,14 @@ func MakeMap(data *terrain.TerrainData) *Map {
     }
 }
 
+func (mapObject *Map) TileWidth() int {
+    return mapObject.Data.TileWidth()
+}
+
+func (mapObject *Map) TileHeight() int {
+    return mapObject.Data.TileHeight()
+}
+
 func (mapObject *Map) GetTileImage(tileX int, tileY int) (*ebiten.Image, error) {
     tile := mapObject.Map.Terrain[tileX][tileY]
 

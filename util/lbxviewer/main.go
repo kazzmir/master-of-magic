@@ -306,7 +306,7 @@ func MakeViewer(lbxFile *lbx.LbxFile) (*Viewer, error) {
             loader.Load.Do(func(){
                 rawImages, err := lbxFile.ReadImages(i)
                 if err != nil {
-                    log.Printf("Unable to load images: %v", err)
+                    log.Printf("Unable to load images at index %v: %v", i, err)
                     return
                 }
                 var images []*ebiten.Image

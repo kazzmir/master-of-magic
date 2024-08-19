@@ -1107,6 +1107,22 @@ type TerrainData struct {
     Tiles []TerrainTile
 }
 
+func (data *TerrainData) TileWidth() int {
+    if len(data.Images) > 0 {
+        return data.Images[0].Bounds().Dx()
+    }
+
+    return 0
+}
+
+func (data *TerrainData) TileHeight() int {
+    if len(data.Images) > 0 {
+        return data.Images[0].Bounds().Dy()
+    }
+
+    return 0
+}
+
 // returns an array of tile indicies that match the given map
 func (data *TerrainData) FindMatchingAllTiles(match map[Direction]TerrainType) []int {
     var out []int

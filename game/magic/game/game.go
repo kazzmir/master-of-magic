@@ -163,6 +163,15 @@ const (
     FlagBrown
 )
 
+type CitySize int
+const (
+    CitySizeHamlet CitySize = iota
+    CitySizeVillage
+    CitySizeTown
+    CitySizeCity
+    CitySizeCapital
+)
+
 func (game *Game) GetUnitBackgroundImage(flag Flag) (*ebiten.Image, error) {
     index := -1
     switch flag {
@@ -192,22 +201,58 @@ func (game *Game) GetUnitImage(unit units.Unit) (*ebiten.Image, error) {
     return image, err
 }
 
+func (game *Game) GetCityNoWallImage(size CitySize) (*ebiten.Image, error) {
+    var index int = 0
+
+    switch size {
+        case CitySizeHamlet: index = 0
+        case CitySizeVillage: index = 1
+        case CitySizeTown: index = 2
+        case CitySizeCity: index = 3
+        case CitySizeCapital: index = 4
+    }
+
+    // the city image is a sub-frame of animation 20
+    return game.ImageCache.GetImage("mapback.lbx", 20, index)
+}
+
+func (game *Game) GetCityWallImage(size CitySize) (*ebiten.Image, error) {
+    var index int = 0
+
+    switch size {
+        case CitySizeHamlet: index = 0
+        case CitySizeVillage: index = 1
+        case CitySizeTown: index = 2
+        case CitySizeCity: index = 3
+        case CitySizeCapital: index = 4
+    }
+
+    // the city image is a sub-frame of animation 21
+    return game.ImageCache.GetImage("mapback.lbx", 21, index)
+}
+
 func (game *Game) Draw(screen *ebiten.Image){
     var options ebiten.DrawImageOptions
 
     game.Map.Draw(0, 0, screen)
 
+    city1, err := game.GetCityNoWallImage(CitySizeCity)
+    if err == nil {
+        tileX := 4
+        tileY := 4
+
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(float64(tileX * game.Map.TileWidth()), float64(tileY * game.Map.TileHeight()))
+        screen.DrawImage(city1, &options)
+    }
+
     unitBack, err := game.GetUnitBackgroundImage(FlagBlue)
     if err == nil {
-        // FIXME: get these from Map
-        tileWidth := 20
-        tileHeight := 18
-
         unitTileX := 8
         unitTileY := 8
 
         var options ebiten.DrawImageOptions
-        options.GeoM.Translate(float64(unitTileX * tileWidth), float64(unitTileY * tileHeight))
+        options.GeoM.Translate(float64(unitTileX * game.Map.TileWidth()), float64(unitTileY * game.Map.TileHeight()))
         screen.DrawImage(unitBack, &options)
 
         bat, err := game.GetUnitImage(units.DoomBat)
