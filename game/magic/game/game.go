@@ -59,12 +59,40 @@ type Player struct {
     Cities []*City
 }
 
+func (player *Player) LiftFog(x int, y int, radius int){
+
+    // FIXME: make this a parameter
+    fog := player.ArcanusFog
+
+    for dx := -radius; dx <= radius; dx++ {
+        for dy := -radius; dy <= radius; dy++ {
+            if dx * dx + dy * dy <= radius * radius {
+                if x + dx < 0 || x + dx >= len(fog) || y + dy < 0 || y + dy >= len(fog[0]) {
+                    continue
+                }
+                fog[x + dx][y + dy] = true
+            }
+        }
+    }
+
+}
+
 func (player *Player) AddCity(city City) {
     player.Cities = append(player.Cities, &city)
 }
 
 func (player *Player) AddUnit(unit Unit) {
     player.Units = append(player.Units, &unit)
+}
+
+func (game *Game) GetFogImage() *ebiten.Image {
+    if game.Fog != nil {
+        return game.Fog
+    }
+
+    game.Fog = ebiten.NewImage(game.Map.TileWidth(), game.Map.TileHeight())
+    game.Fog.Fill(color.RGBA{R: 0, G: 0, B: 0, A: 0xff})
+    return game.Fog
 }
 
 type GameState int
@@ -80,6 +108,7 @@ type Game struct {
 
     InfoFontYellow *font.Font
     Counter uint64
+    Fog *ebiten.Image
 
     // FIXME: need one map for arcanus and one for myrran
     Map *Map
@@ -344,8 +373,38 @@ func (game *Game) DrawHud(screen *ebiten.Image){
     }
 }
 
+func (game *Game) DrawFog(screen *ebiten.Image, player *Player, cameraX int, cameraY int){
+
+    fog := game.GetFogImage()
+
+    tilesPerRow := data.ScreenWidth / game.Map.TileWidth()
+    tilesPerColumn := data.ScreenHeight / game.Map.TileHeight()
+    var options ebiten.DrawImageOptions
+    for x := 0; x < tilesPerRow; x++ {
+        for y := 0; y < tilesPerColumn; y++ {
+
+            tileX := x + cameraX
+            tileY := y + cameraY
+
+            if player.ArcanusFog[tileX][tileY] {
+
+                // draw edge fog tiles
+
+            } else {
+                options.GeoM.Reset()
+                options.GeoM.Translate(float64(x * game.Map.TileWidth()), float64(y * game.Map.TileHeight()))
+                screen.DrawImage(fog, &options)
+            }
+        }
+    }
+
+}
+
 func (game *Game) Draw(screen *ebiten.Image){
-    game.Map.Draw(0, 0, game.Counter / 4, screen)
+    cameraX := 0
+    cameraY := 0
+
+    game.Map.Draw(cameraX, cameraY, game.Counter / 4, screen)
 
     if len(game.Players) > 0 {
         player := game.Players[0]
@@ -361,7 +420,7 @@ func (game *Game) Draw(screen *ebiten.Image){
 
             if err == nil {
                 var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(city.X * game.Map.TileWidth()), float64(city.Y * game.Map.TileHeight()))
+                options.GeoM.Translate(float64((city.X - cameraX) * game.Map.TileWidth()), float64((city.Y - cameraY) * game.Map.TileHeight()))
                 screen.DrawImage(cityPic, &options)
             }
         }
@@ -370,7 +429,7 @@ func (game *Game) Draw(screen *ebiten.Image){
             var options ebiten.DrawImageOptions
             unitBack, err := game.GetUnitBackgroundImage(unit.Banner)
             if err == nil {
-                options.GeoM.Translate(float64(unit.X * game.Map.TileWidth()), float64(unit.Y * game.Map.TileHeight()))
+                options.GeoM.Translate(float64((unit.X - cameraX) * game.Map.TileWidth()), float64((unit.Y - cameraY) * game.Map.TileHeight()))
                 screen.DrawImage(unitBack, &options)
             }
 
@@ -380,9 +439,10 @@ func (game *Game) Draw(screen *ebiten.Image){
                 screen.DrawImage(pic, &options)
             }
         }
+
+        game.DrawFog(screen, player, cameraX, cameraY)
     }
 
-    // FIXME: render fog
 
     game.DrawHud(screen)
 }
