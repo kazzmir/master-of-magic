@@ -6,6 +6,7 @@ type Race int
 const (
     RaceLizard Race = iota
     RaceNomad
+    RaceOrc
 )
 
 type Unit struct {
@@ -115,6 +116,66 @@ var Griffin Unit = Unit{
     Index: 16,
     // maybe race magical?
     Race: RaceNomad,
+}
+
+var OrcSpearmen Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 17,
+    Race: RaceOrc,
+}
+
+var OrcSwordsmen Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 18,
+    Race: RaceOrc,
+}
+
+var OrcHalberdiers Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 19,
+    Race: RaceOrc,
+}
+
+var OrcBowmen Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 20,
+    Race: RaceOrc,
+}
+
+var OrcCavalry Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 21,
+    Race: RaceOrc,
+}
+
+var OrcShamans Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 22,
+    Race: RaceOrc,
+}
+
+var OrcMagicians Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 23,
+    Race: RaceOrc,
+}
+
+var OrcEngineers Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 24,
+    Race: RaceOrc,
+}
+
+var OrcSettlers Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 25,
+    Race: RaceOrc,
+}
+
+var WyvernRiders Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 26,
+    Race: RaceOrc,
 }
 
 var GiantBat Unit = Unit{
