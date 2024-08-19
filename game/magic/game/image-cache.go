@@ -10,6 +10,7 @@ import (
 
 type ImageCache struct {
     LbxCache *lbx.LbxCache
+    // FIXME: have some limit on the number of entries, and remove old ones LRU-style
     Cache map[string][]*ebiten.Image
 }
 
