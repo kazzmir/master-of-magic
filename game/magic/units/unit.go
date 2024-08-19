@@ -14,6 +14,10 @@ const (
     RaceBarbarian
     RaceBeastmen
     RaceDarkElf
+    RaceDraconian
+    RaceDwarf
+    RaceGnoll
+    RaceHalfling
 )
 
 type Unit struct {
@@ -886,5 +890,179 @@ var Nightmares Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 65,
     Race: RaceDarkElf,
+}
+
+var DraconianSpearmen Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 66,
+    Race: RaceDraconian,
+}
+
+var DraconianSwordsmen Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 67,
+    Race: RaceDraconian,
+}
+
+var DraconianHalberdiers Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 68,
+    Race: RaceDraconian,
+}
+
+var DraconianBowmen Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 69,
+    Race: RaceDraconian,
+}
+
+var DraconianShaman Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 70,
+    Race: RaceDraconian,
+}
+
+var DraconianMagician Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 71,
+    Race: RaceDraconian,
+}
+
+var DraconianEngineer Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 72,
+    Race: RaceDraconian,
+}
+
+var DraconianSettlers Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 73,
+    Race: RaceDraconian,
+}
+
+var DoomDrake Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 74,
+    Race: RaceDraconian,
+}
+
+var AirShip Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 75,
+    Race: RaceDraconian,
+}
+
+var DwarfSwordsmen Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 76,
+    Race: RaceDwarf,
+}
+
+var DwarfHalberdiers Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 77,
+    Race: RaceDwarf,
+}
+
+var DwarfEngineer Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 78,
+    Race: RaceDwarf,
+}
+
+var Hammerhands Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 79,
+    Race: RaceDwarf,
+}
+
+var SteamCannon Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 80,
+    Race: RaceDwarf,
+}
+
+var Golem Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 81,
+    Race: RaceDwarf,
+}
+
+var DwarfSettlers Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 82,
+    Race: RaceDwarf,
+}
+
+var GnollSpearmen Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 83,
+    Race: RaceGnoll,
+}
+
+var GnollSwordsmen Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 84,
+    Race: RaceGnoll,
+}
+
+var GnollHalberdiers Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 85,
+    Race: RaceGnoll,
+}
+
+var GnollBowmen Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 86,
+    Race: RaceGnoll,
+}
+
+var GnollSettlers Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 87,
+    Race: RaceGnoll,
+}
+
+var WolfRiders Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 88,
+    Race: RaceGnoll,
+}
+
+var HalflingSpearmen Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 89,
+    Race: RaceHalfling,
+}
+
+var HalflingSwordsmen Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 90,
+    Race: RaceHalfling,
+}
+
+var HalflingBowmen Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 91,
+    Race: RaceHalfling,
+}
+
+var HalflingShamans Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 92,
+    Race: RaceHalfling,
+}
+
+var HalflingSettlers Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 93,
+    Race: RaceHalfling,
+}
+
+var Slingers Unit = Unit{
+    LbxFile: "units1.lbx",
+    Index: 94,
+    Race: RaceHalfling,
 }
 
