@@ -210,7 +210,7 @@ func (game *Game) Draw(screen *ebiten.Image){
         options.GeoM.Translate(float64(unitTileX * tileWidth), float64(unitTileY * tileHeight))
         screen.DrawImage(unitBack, &options)
 
-        bat, err := game.GetUnitImage(units.GiantBat)
+        bat, err := game.GetUnitImage(units.DoomBat)
         if err == nil {
             options.GeoM.Translate(1, 1)
             screen.DrawImage(bat, &options)

@@ -7,6 +7,8 @@ const (
     RaceLizard Race = iota
     RaceNomad
     RaceOrc
+    RaceTroll
+    RaceFantastic
 )
 
 type Unit struct {
@@ -178,8 +180,309 @@ var WyvernRiders Unit = Unit{
     Race: RaceOrc,
 }
 
-var GiantBat Unit = Unit{
+var TrollSpearmen Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 27,
+    Race: RaceTroll,
+}
+
+var TrollSwordsmen Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 28,
+    Race: RaceTroll,
+}
+
+var TrollHalberdiers Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 29,
+    Race: RaceTroll,
+}
+
+var TrollShamans Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 30,
+    Race: RaceTroll,
+}
+
+var TrollSettlers Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 31,
+    Race: RaceTroll,
+}
+
+var WarTrolls Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 32,
+    Race: RaceTroll,
+}
+
+var WarMammoths Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 33,
+    Race: RaceTroll,
+}
+
+var MagicSpirit Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 34,
+    // FIXME: check on this
+    Race: RaceFantastic,
+}
+
+var HellHounds Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 35,
+    Race: RaceFantastic,
+}
+
+var Gargoyle Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 36,
+    Race: RaceFantastic,
+}
+
+var FireGiant Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 37,
+    Race: RaceFantastic,
+}
+
+var FireElemental Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 38,
+    Race: RaceFantastic,
+}
+
+var ChaosSpawn Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 39,
+    Race: RaceFantastic,
+}
+
+var Chimeras Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 40,
+    Race: RaceFantastic,
+}
+
+var DoomBat Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 41,
-    Race: RaceLizard,
+    Race: RaceFantastic,
+}
+
+var Efreet Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 42,
+    Race: RaceFantastic,
+}
+
+var Hydra Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 43,
+    Race: RaceFantastic,
+}
+
+var GreatDrake Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 44,
+    Race: RaceFantastic,
+}
+
+var Skeleton Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 45,
+    Race: RaceFantastic,
+}
+
+var Ghoul Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 46,
+    Race: RaceFantastic,
+}
+
+var NightStalker Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 47,
+    Race: RaceFantastic,
+}
+
+var WereWolf Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 48,
+    Race: RaceFantastic,
+}
+
+var Demon Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 49,
+    Race: RaceFantastic,
+}
+
+var Wraith Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 50,
+    Race: RaceFantastic,
+}
+
+var ShadowDemon Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 51,
+    Race: RaceFantastic,
+}
+
+var DeathKnight Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 52,
+    Race: RaceFantastic,
+}
+
+var DemonLord Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 53,
+    Race: RaceFantastic,
+}
+
+var Zombie Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 54,
+    Race: RaceFantastic,
+}
+
+var Unicorn Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 55,
+    Race: RaceFantastic,
+}
+
+var GuardianSpirit Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 56,
+    Race: RaceFantastic,
+}
+
+var Angel Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 57,
+    Race: RaceFantastic,
+}
+
+var ArchAngel Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 58,
+    Race: RaceFantastic,
+}
+
+var WarBear Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 59,
+    Race: RaceFantastic,
+}
+
+var Sprite Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 60,
+    Race: RaceFantastic,
+}
+
+var Cockatrice Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 61,
+    Race: RaceFantastic,
+}
+
+var Basilisk Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 62,
+    Race: RaceFantastic,
+}
+
+var GiantSpider Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 63,
+    Race: RaceFantastic,
+}
+
+var StoneGiant Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 64,
+    Race: RaceFantastic,
+}
+
+var Colossus Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 65,
+    Race: RaceFantastic,
+}
+
+var Gorgon Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 66,
+    Race: RaceFantastic,
+}
+
+var EarthElemental Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 67,
+    Race: RaceFantastic,
+}
+
+var Behemoth Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 68,
+    Race: RaceFantastic,
+}
+
+var GreatWyrm Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 69,
+    Race: RaceFantastic,
+}
+
+var FloatingIsland Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 70,
+    Race: RaceFantastic,
+}
+
+var PhantomBeast Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 71,
+    Race: RaceFantastic,
+}
+
+var PhantomWarrior Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 72,
+    Race: RaceFantastic,
+}
+
+var StormGiant Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 73,
+    Race: RaceFantastic,
+}
+
+var AirElemental Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 74,
+    Race: RaceFantastic,
+}
+
+var Djinn Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 75,
+    Race: RaceFantastic,
+}
+
+var SkyDrake Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 76,
+    Race: RaceFantastic,
+}
+
+var Nagas Unit = Unit{
+    LbxFile: "units2.lbx",
+    Index: 77,
+    Race: RaceFantastic,
 }
