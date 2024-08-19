@@ -382,34 +382,7 @@ func (game *Game) Draw(screen *ebiten.Image){
         }
     }
 
-    /*
-    city1, err := game.GetCityNoWallImage(CitySizeCity)
-    if err == nil {
-        tileX := 4
-        tileY := 4
-
-        var options ebiten.DrawImageOptions
-        options.GeoM.Translate(float64(tileX * game.Map.TileWidth()), float64(tileY * game.Map.TileHeight()))
-        screen.DrawImage(city1, &options)
-    }
-
-    unitBack, err := game.GetUnitBackgroundImage(FlagBlue)
-    if err == nil {
-        unitTileX := 8
-        unitTileY := 8
-
-        var options ebiten.DrawImageOptions
-        options.GeoM.Translate(float64(unitTileX * game.Map.TileWidth()), float64(unitTileY * game.Map.TileHeight()))
-        screen.DrawImage(unitBack, &options)
-
-        bat, err := game.GetUnitImage(units.DoomBat)
-        if err == nil {
-            options.GeoM.Translate(1, 1)
-            screen.DrawImage(bat, &options)
-        }
-
-    }
-    */
+    // FIXME: render fog
 
     game.DrawHud(screen)
 }
