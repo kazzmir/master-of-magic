@@ -12,6 +12,52 @@ import (
     "github.com/hajimehoshi/ebiten/v2"
 )
 
+type Unit struct {
+    Unit units.Unit
+    Flag Flag
+    X int
+    Y int
+}
+
+type City struct {
+    Population int
+    Wall bool
+    X int
+    Y int
+}
+
+func (city *City) GetSize() CitySize {
+    if city.Population < 5000 {
+        return CitySizeHamlet
+    }
+
+    if city.Population < 9000 {
+        return CitySizeVillage
+    }
+
+    if city.Population < 13000 {
+        return CitySizeTown
+    }
+
+    if city.Population < 17000 {
+        return CitySizeCity
+    }
+
+    return CitySizeCapital
+}
+
+type Player struct {
+    // matrix the same size as the map, where true means the player can see the tile
+    // and false means the tile has not yet been discovered
+    ArcanusFog [][]bool
+    MyrrorFog [][]bool
+
+    Wizard setup.WizardCustom
+
+    Units []*Unit
+    Cities []*City
+}
+
 type GameState int
 const (
     GameStateRunning GameState = iota
@@ -28,6 +74,28 @@ type Game struct {
 
     // FIXME: need one map for arcanus and one for myrran
     Map *Map
+
+    Players []*Player
+}
+
+func (game *Game) MakeFog() [][]bool {
+    fog := make([][]bool, game.Map.Width())
+    for x := 0; x < game.Map.Width(); x++ {
+        fog[x] = make([]bool, game.Map.Height())
+    }
+
+    return fog
+}
+
+func (game *Game) AddPlayer(wizard setup.WizardCustom) *Player{
+    newPlayer := &Player{
+        ArcanusFog: game.MakeFog(),
+        MyrrorFog: game.MakeFog(),
+        Wizard: wizard,
+    }
+
+    game.Players = append(game.Players, newPlayer)
+    return newPlayer
 }
 
 func (game *Game) Load(cache *lbx.LbxCache) error {
@@ -197,6 +265,42 @@ func (game *Game) Draw(screen *ebiten.Image){
 
     game.Map.Draw(0, 0, game.Counter / 4, screen)
 
+    if len(game.Players) > 0 {
+        player := game.Players[0]
+
+        for _, city := range player.Cities {
+            var cityPic *ebiten.Image
+            var err error
+            if city.Wall {
+                cityPic, err = game.GetCityWallImage(city.GetSize())
+            } else {
+                cityPic, err = game.GetCityNoWallImage(city.GetSize())
+            }
+
+            if err == nil {
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(city.X * game.Map.TileWidth()), float64(city.Y * game.Map.TileHeight()))
+                screen.DrawImage(cityPic, &options)
+            }
+        }
+
+        for _, unit := range player.Units {
+            unitBack, err := game.GetUnitBackgroundImage(unit.Flag)
+            if err == nil {
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(unit.X * game.Map.TileWidth()), float64(unit.Y * game.Map.TileHeight()))
+                screen.DrawImage(unitBack, &options)
+            }
+
+            pic, err := game.GetUnitImage(unit.Unit)
+            if err == nil {
+                options.GeoM.Translate(1, 1)
+                screen.DrawImage(pic, &options)
+            }
+        }
+    }
+
+    /*
     city1, err := game.GetCityNoWallImage(CitySizeCity)
     if err == nil {
         tileX := 4
@@ -223,6 +327,7 @@ func (game *Game) Draw(screen *ebiten.Image){
         }
 
     }
+    */
 
     // draw hud on top of map
     mainHud, err := game.GetMainImage(0)

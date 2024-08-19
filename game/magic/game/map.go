@@ -25,6 +25,14 @@ func MakeMap(data *terrain.TerrainData) *Map {
     }
 }
 
+func (mapObject *Map) Width() int {
+    return mapObject.Map.Columns()
+}
+
+func (mapObject *Map) Height() int {
+    return mapObject.Map.Rows()
+}
+
 func (mapObject *Map) TileWidth() int {
     return mapObject.Data.TileWidth()
 }
