@@ -68,6 +68,15 @@ func (cityScreen *CityScreen) Update() {
 }
 
 func (cityScreen *CityScreen) Draw(screen *ebiten.Image) {
+    // 5 is grasslands
+    landBackground, err := cityScreen.ImageCache.GetImage("cityscap.lbx", 0, 4)
+    if err == nil {
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(4, 102)
+        screen.DrawImage(landBackground, &options)
+    }
+
+
     ui, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", 6, 0)
     if err == nil {
         var options ebiten.DrawImageOptions
