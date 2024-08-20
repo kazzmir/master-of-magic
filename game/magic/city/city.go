@@ -9,8 +9,26 @@ const (
     CitySizeCapital
 )
 
+func (citySize CitySize) String() string {
+    switch citySize {
+    case CitySizeHamlet:
+        return "hamlet"
+    case CitySizeVillage:
+        return "village"
+    case CitySizeTown:
+        return "town"
+    case CitySizeCity:
+        return "city"
+    case CitySizeCapital:
+        return "capital"
+    }
+
+    return "Unknown"
+}
+
 type City struct {
     Population int
+    Name string
     Wall bool
     X int
     Y int

@@ -833,6 +833,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
             color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
         }
 
+        // FIXME: move this to the font module
         selectYellowPalette := color.Palette{
             color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
             color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},

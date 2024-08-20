@@ -4,7 +4,7 @@ import (
     "log"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
-    "github.com/kazzmir/master-of-magic/game/magic/city"
+    citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     "github.com/kazzmir/master-of-magic/game/magic/data"
 
     "github.com/hajimehoshi/ebiten/v2"
@@ -13,13 +13,21 @@ import (
 
 type Engine struct {
     LbxCache *lbx.LbxCache
-    CityScreen *city.CityScreen
+    CityScreen *citylib.CityScreen
 }
 
 func NewEngine() (*Engine, error) {
     cache := lbx.MakeLbxCache("magic-data")
 
-    cityScreen := city.MakeCityScreen(cache)
+    city := citylib.City{
+        Population: 5000,
+        Name: "Boston",
+        Wall: false,
+        X: 3,
+        Y: 8,
+    }
+
+    cityScreen := citylib.MakeCityScreen(cache, &city)
 
     return &Engine{
         LbxCache: cache,
