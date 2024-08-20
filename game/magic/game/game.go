@@ -376,7 +376,7 @@ func (game *Game) DrawHud(screen *ebiten.Image){
     }
 }
 
-func (game *Game) DrawFog(screen *ebiten.Image, player *Player, cameraX int, cameraY int){
+func (game *Game) DrawFog(screen *ebiten.Image, fog [][]bool, cameraX int, cameraY int){
 
     fogImage := func(index int) *ebiten.Image {
         img, err := game.ImageCache.GetImage("mapback.lbx", index, 0)
@@ -409,9 +409,6 @@ func (game *Game) DrawFog(screen *ebiten.Image, player *Player, cameraX int, cam
     tilesPerRow := data.ScreenWidth / game.Map.TileWidth()
     tilesPerColumn := data.ScreenHeight / game.Map.TileHeight()
     var options ebiten.DrawImageOptions
-
-    // FIXME: make this dependant on whether we are rendering arcanus or myrror
-    fog := player.ArcanusFog
 
     /*
     fogNW := func(x int, y int) bool {
@@ -603,7 +600,8 @@ func (game *Game) Draw(screen *ebiten.Image){
             }
         }
 
-        game.DrawFog(screen, player, cameraX, cameraY)
+        // FIXME: render the proper plane
+        game.DrawFog(screen, player.ArcanusFog, cameraX, cameraY)
     }
 
 

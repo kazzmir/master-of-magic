@@ -58,9 +58,8 @@ func (mapObject *Map) GetTileImage(tileX int, tileY int, animationCounter uint64
 
 func (mapObject *Map) Draw(cameraX int, cameraY int, animationCounter uint64, screen *ebiten.Image){
 
-    // FIXME: get these from map
-    tileWidth := 20
-    tileHeight := 18
+    tileWidth := mapObject.TileWidth()
+    tileHeight := mapObject.TileHeight()
 
     tilesPerRow := data.ScreenWidth / tileWidth
     tilesPerColumn := data.ScreenHeight / tileHeight
