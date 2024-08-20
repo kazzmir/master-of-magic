@@ -17,6 +17,8 @@ type CityScreen struct {
     ImageCache util.ImageCache
     Font *font.Font
     City *City
+
+    Counter uint64
 }
 
 func MakeCityScreen(cache *lbx.LbxCache, city *City) *CityScreen {
@@ -65,6 +67,7 @@ func MakeCityScreen(cache *lbx.LbxCache, city *City) *CityScreen {
 }
 
 func (cityScreen *CityScreen) Update() {
+    cityScreen.Counter += 1
 }
 
 func (cityScreen *CityScreen) Draw(screen *ebiten.Image) {
@@ -76,6 +79,16 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image) {
         screen.DrawImage(landBackground, &options)
     }
 
+    river, err := cityScreen.ImageCache.GetImages("cityscap.lbx", 3)
+    if err == nil {
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(5, 100)
+        screen.DrawImage(river[0], &options)
+
+        index := (cityScreen.Counter / 20) % 5
+
+        screen.DrawImage(river[index + 1], &options)
+    }
 
     ui, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", 6, 0)
     if err == nil {
