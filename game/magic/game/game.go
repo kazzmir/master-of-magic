@@ -20,9 +20,20 @@ type Unit struct {
     X int
     Y int
     Id uint64
+
+    Movement int
+    MoveX int
+    MoveY int
 }
 
+const MovementLimit = 10
+
 func (unit *Unit) Move(dx int, dy int){
+    unit.Movement = MovementLimit
+
+    unit.MoveX = unit.X
+    unit.MoveY = unit.Y
+
     unit.X += dx
     unit.Y += dy
 
@@ -128,6 +139,7 @@ func (game *Game) GetFogImage() *ebiten.Image {
 type GameState int
 const (
     GameStateRunning GameState = iota
+    GameStateUnitMoving
 )
 
 type Game struct {
@@ -139,6 +151,7 @@ type Game struct {
     InfoFontYellow *font.Font
     Counter uint64
     Fog *ebiten.Image
+    State GameState
 
 
     // FIXME: need one map for arcanus and one for myrran
@@ -219,6 +232,7 @@ func MakeGame(wizard setup.WizardCustom, lbxCache *lbx.LbxCache) *Game {
     game := &Game{
         active: false,
         Map: MakeMap(terrainData),
+        State: GameStateRunning,
         ImageCache: ImageCache{
             LbxCache: lbxCache,
             Cache: make(map[string][]*ebiten.Image),
@@ -238,28 +252,38 @@ func (game *Game) Activate() {
 func (game *Game) Update() GameState {
     game.Counter += 1
 
-    keys := make([]ebiten.Key, 0)
-    keys = inpututil.AppendJustPressedKeys(keys)
+    if game.State == GameStateRunning {
+        // log.Printf("Game.Update")
+        keys := make([]ebiten.Key, 0)
+        keys = inpututil.AppendJustPressedKeys(keys)
 
-    dx := 0
-    dy := 0
+        dx := 0
+        dy := 0
 
-    for _, key := range keys {
-        switch key {
-            case ebiten.KeyUp: dy = -1
-            case ebiten.KeyDown: dy = 1
-            case ebiten.KeyLeft: dx = -1
-            case ebiten.KeyRight: dx = 1
+        for _, key := range keys {
+            switch key {
+                case ebiten.KeyUp: dy = -1
+                case ebiten.KeyDown: dy = 1
+                case ebiten.KeyLeft: dx = -1
+                case ebiten.KeyRight: dx = 1
+            }
+        }
+
+        if game.Players[0].SelectedUnit != nil && (dx != 0 || dy != 0){
+            unit := game.Players[0].SelectedUnit
+            unit.Move(dx, dy)
+            game.Players[0].LiftFog(unit.X, unit.Y, 2)
+            game.State = GameStateUnitMoving
+        }
+    } else if game.State == GameStateUnitMoving {
+        unit := game.Players[0].SelectedUnit
+        unit.Movement -= 1
+        if unit.Movement == 0 {
+            game.State = GameStateRunning
         }
     }
 
-    if game.Players[0].SelectedUnit != nil {
-        unit := game.Players[0].SelectedUnit
-        unit.Move(dx, dy)
-        game.Players[0].LiftFog(unit.X, unit.Y, 2)
-    }
-
-    return GameStateRunning
+    return game.State
 }
 
 func (game *Game) GetMainImage(index int) (*ebiten.Image, error) {
@@ -652,11 +676,18 @@ func (game *Game) Draw(screen *ebiten.Image){
         }
 
         for _, unit := range player.Units {
-            if chosenUnit != unit || game.Counter / 55 % 2 == 0 {
+            if chosenUnit != unit || game.State == GameStateUnitMoving || game.Counter / 55 % 2 == 0 {
                 var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64((unit.X - cameraX) * game.Map.TileWidth()), float64((unit.Y - cameraY) * game.Map.TileHeight()))
+
+                if game.State == GameStateUnitMoving && chosenUnit == unit {
+                    dx := float64(float64(unit.MoveX - unit.X) * float64(game.Map.TileWidth() * unit.Movement) / float64(MovementLimit))
+                    dy := float64(float64(unit.MoveY - unit.Y) * float64(game.Map.TileHeight() * unit.Movement) / float64(MovementLimit))
+                    options.GeoM.Translate(dx, dy)
+                }
+
                 unitBack, err := game.GetUnitBackgroundImage(unit.Banner)
                 if err == nil {
-                    options.GeoM.Translate(float64((unit.X - cameraX) * game.Map.TileWidth()), float64((unit.Y - cameraY) * game.Map.TileHeight()))
                     screen.DrawImage(unitBack, &options)
                 }
 
