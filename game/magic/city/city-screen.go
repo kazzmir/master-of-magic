@@ -71,6 +71,8 @@ func (cityScreen *CityScreen) Update() {
 }
 
 func (cityScreen *CityScreen) Draw(screen *ebiten.Image) {
+    animationCounter := cityScreen.Counter / 8
+
     // 5 is grasslands
     landBackground, err := cityScreen.ImageCache.GetImage("cityscap.lbx", 0, 4)
     if err == nil {
@@ -85,7 +87,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image) {
         options.GeoM.Translate(5, 100)
         screen.DrawImage(river[0], &options)
 
-        index := (cityScreen.Counter / 20) % 5
+        index := animationCounter % 5
 
         screen.DrawImage(river[index + 1], &options)
     }
