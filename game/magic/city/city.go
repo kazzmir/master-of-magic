@@ -30,6 +30,7 @@ type City struct {
     Population int
     Name string
     Wall bool
+    FoodProduction int
     X int
     Y int
 }

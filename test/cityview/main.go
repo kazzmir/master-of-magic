@@ -23,6 +23,7 @@ func NewEngine() (*Engine, error) {
         Population: 5000,
         Name: "Boston",
         Wall: false,
+        FoodProduction: 3,
         X: 3,
         Y: 8,
     }
