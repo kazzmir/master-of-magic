@@ -76,13 +76,21 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image) {
 
     cityScreen.Font.Print(screen, 20, 3, 1, fmt.Sprintf("%v of %s", cityScreen.City.GetSize(), cityScreen.City.Name))
 
-    bread, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", 40, 0)
+    smallFood, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", 40, 0)
     if err == nil {
         var options ebiten.DrawImageOptions
         options.GeoM.Translate(6, 52)
         for i := 0; i < cityScreen.City.FoodProduction; i++ {
-            screen.DrawImage(bread, &options)
-            options.GeoM.Translate(float64(bread.Bounds().Dx() + 1), 0)
+            screen.DrawImage(smallFood, &options)
+            options.GeoM.Translate(float64(smallFood.Bounds().Dx() + 1), 0)
         }
     }
+
+    // big food is 88
+    // hammer is 41
+    // big hammer is 89
+    // coin is 42
+    // big coin is 90
+    // small magic is 43
+    // big magic is 91
 }
