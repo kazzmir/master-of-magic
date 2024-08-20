@@ -31,6 +31,9 @@ type City struct {
     Name string
     Wall bool
     FoodProduction int
+    WorkProduction int
+    MoneyProduction int
+    MagicProduction int
     X int
     Y int
 }

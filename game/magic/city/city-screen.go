@@ -88,9 +88,38 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image) {
 
     // big food is 88
     // hammer is 41
+    smallWork, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", 41, 0)
+    if err == nil {
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(6, 60)
+        for i := 0; i < cityScreen.City.WorkProduction; i++ {
+            screen.DrawImage(smallWork, &options)
+            options.GeoM.Translate(float64(smallWork.Bounds().Dx() + 1), 0)
+        }
+    }
+
     // big hammer is 89
     // coin is 42
+    smallCoin, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", 42, 0)
+    if err == nil {
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(6, 68)
+        for i := 0; i < cityScreen.City.MoneyProduction; i++ {
+            screen.DrawImage(smallCoin, &options)
+            options.GeoM.Translate(float64(smallCoin.Bounds().Dx() + 1), 0)
+        }
+    }
+
     // big coin is 90
     // small magic is 43
+    smallMagic, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", 43, 0)
+    if err == nil {
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(6, 76)
+        for i := 0; i < cityScreen.City.MagicProduction; i++ {
+            screen.DrawImage(smallMagic, &options)
+            options.GeoM.Translate(float64(smallMagic.Bounds().Dx() + 1), 0)
+        }
+    }
     // big magic is 91
 }

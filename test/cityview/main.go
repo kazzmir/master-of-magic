@@ -24,6 +24,9 @@ func NewEngine() (*Engine, error) {
         Name: "Boston",
         Wall: false,
         FoodProduction: 3,
+        WorkProduction: 3,
+        MoneyProduction: 4,
+        MagicProduction: 3,
         X: 3,
         Y: 8,
     }
