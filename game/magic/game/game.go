@@ -153,6 +153,9 @@ type Game struct {
     Fog *ebiten.Image
     State GameState
 
+    cameraX int
+    cameraY int
+
 
     // FIXME: need one map for arcanus and one for myrran
     Map *Map
@@ -252,6 +255,9 @@ func (game *Game) Activate() {
 func (game *Game) Update() GameState {
     game.Counter += 1
 
+    tilesPerRow := data.ScreenWidth / game.Map.TileWidth()
+    tilesPerColumn := data.ScreenHeight / game.Map.TileHeight()
+
     if game.State == GameStateRunning {
         // log.Printf("Game.Update")
         keys := make([]ebiten.Key, 0)
@@ -269,11 +275,24 @@ func (game *Game) Update() GameState {
             }
         }
 
-        if game.Players[0].SelectedUnit != nil && (dx != 0 || dy != 0){
+        if game.Players[0].SelectedUnit != nil {
             unit := game.Players[0].SelectedUnit
-            unit.Move(dx, dy)
-            game.Players[0].LiftFog(unit.X, unit.Y, 2)
-            game.State = GameStateUnitMoving
+            game.cameraX = unit.X - tilesPerRow / 2
+            game.cameraY = unit.Y - tilesPerColumn / 2
+
+            if game.cameraX < 0 {
+                game.cameraX = 0
+            }
+
+            if game.cameraY < 0 {
+                game.cameraY = 0
+            }
+
+            if dx != 0 || dy != 0 {
+                unit.Move(dx, dy)
+                game.Players[0].LiftFog(unit.X, unit.Y, 2)
+                game.State = GameStateUnitMoving
+            }
         }
     } else if game.State == GameStateUnitMoving {
         unit := game.Players[0].SelectedUnit
@@ -634,27 +653,7 @@ func (game *Game) DrawFog(screen *ebiten.Image, fog [][]bool, cameraX int, camer
 }
 
 func (game *Game) Draw(screen *ebiten.Image){
-    tilesPerRow := data.ScreenWidth / game.Map.TileWidth()
-    tilesPerColumn := data.ScreenHeight / game.Map.TileHeight()
-
-    cameraX := 0
-    cameraY := 0
-
-    chosenUnit := game.Players[0].SelectedUnit
-    if chosenUnit != nil {
-        cameraX = chosenUnit.X - tilesPerRow / 2
-        cameraY = chosenUnit.Y - tilesPerColumn / 2
-    }
-
-    if cameraX < 0 {
-        cameraX = 0
-    }
-
-    if cameraY < 0 {
-        cameraY = 0
-    }
-
-    game.Map.Draw(cameraX, cameraY, game.Counter / 4, screen)
+    game.Map.Draw(game.cameraX, game.cameraY, game.Counter / 4, screen)
 
     if len(game.Players) > 0 {
         player := game.Players[0]
@@ -670,17 +669,17 @@ func (game *Game) Draw(screen *ebiten.Image){
 
             if err == nil {
                 var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64((city.X - cameraX) * game.Map.TileWidth()), float64((city.Y - cameraY) * game.Map.TileHeight()))
+                options.GeoM.Translate(float64((city.X - game.cameraX) * game.Map.TileWidth()), float64((city.Y - game.cameraY) * game.Map.TileHeight()))
                 screen.DrawImage(cityPic, &options)
             }
         }
 
         for _, unit := range player.Units {
-            if chosenUnit != unit || game.State == GameStateUnitMoving || game.Counter / 55 % 2 == 0 {
+            if player.SelectedUnit != unit || game.State == GameStateUnitMoving || game.Counter / 55 % 2 == 0 {
                 var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64((unit.X - cameraX) * game.Map.TileWidth()), float64((unit.Y - cameraY) * game.Map.TileHeight()))
+                options.GeoM.Translate(float64((unit.X - game.cameraX) * game.Map.TileWidth()), float64((unit.Y - game.cameraY) * game.Map.TileHeight()))
 
-                if game.State == GameStateUnitMoving && chosenUnit == unit {
+                if game.State == GameStateUnitMoving && player.SelectedUnit == unit {
                     dx := float64(float64(unit.MoveX - unit.X) * float64(game.Map.TileWidth() * unit.Movement) / float64(MovementLimit))
                     dy := float64(float64(unit.MoveY - unit.Y) * float64(game.Map.TileHeight() * unit.Movement) / float64(MovementLimit))
                     options.GeoM.Translate(dx, dy)
@@ -700,7 +699,7 @@ func (game *Game) Draw(screen *ebiten.Image){
         }
 
         // FIXME: render the proper plane
-        game.DrawFog(screen, player.ArcanusFog, cameraX, cameraY)
+        game.DrawFog(screen, player.ArcanusFog, game.cameraX, game.cameraY)
     }
 
     game.DrawHud(screen)
