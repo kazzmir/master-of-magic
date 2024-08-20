@@ -1,5 +1,46 @@
 package city
 
+import (
+    "github.com/kazzmir/master-of-magic/lib/set"
+)
+
+type Building int
+const (
+    BuildingBarracks Building = iota
+    BuildingArmory
+    BuildingFightersGuild
+    BuildingArmorersGuild
+    BuildingWarCollege
+    BuildingSmithy
+    BuildingStables
+    BuildingAnimistsGuild
+    BuildingFantasticStable
+    BuildingShipwrightsGuild
+    BuildingShipYard
+    BuildingMaritimeGuild
+    BuildingSawmill
+    BuildingLibrary
+    BuildingSagesGuild
+    BuildingOracle
+    BuildingAlchemistsGuild
+    BuildingUniversity
+    BuildingWizardsGuild
+    BuildingShrine
+    BuildingTemple
+    BuildingParthenon
+    BuildingCathedral
+    BuildingMarketplace
+    BuildingBank
+    BuildingMerchantsGuild
+    BuildingGranary
+    BuildingFarmersMarket
+    BuildingForestersGuild
+    BuildingBuildersHall
+    BuildingMechaniciansGuild
+    BuildingMinersGuild
+    BuildingCityWalls
+)
+
 type CitySize int
 const (
     CitySizeHamlet CitySize = iota
@@ -36,6 +77,7 @@ type City struct {
     MagicProduction int
     X int
     Y int
+    Buildings *set.Set[Building]
 }
 
 func (city *City) GetSize() CitySize {

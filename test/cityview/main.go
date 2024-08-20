@@ -4,6 +4,7 @@ import (
     "log"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/set"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     "github.com/kazzmir/master-of-magic/game/magic/data"
 
@@ -29,6 +30,7 @@ func NewEngine() (*Engine, error) {
         MagicProduction: 3,
         X: 3,
         Y: 8,
+        Buildings: set.MakeSet[citylib.Building](),
     }
 
     cityScreen := citylib.MakeCityScreen(cache, &city)
