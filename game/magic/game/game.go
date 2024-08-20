@@ -561,8 +561,21 @@ func (game *Game) DrawFog(screen *ebiten.Image, fog [][]bool, cameraX int, camer
 }
 
 func (game *Game) Draw(screen *ebiten.Image){
-    cameraX := 0
-    cameraY := 0
+    tilesPerRow := data.ScreenWidth / game.Map.TileWidth()
+    tilesPerColumn := data.ScreenHeight / game.Map.TileHeight()
+
+    chosenUnit := game.Players[0].Units[0]
+
+    cameraX := chosenUnit.X - tilesPerRow / 2
+    cameraY := chosenUnit.Y - tilesPerColumn / 2
+
+    if cameraX < 0 {
+        cameraX = 0
+    }
+
+    if cameraY < 0 {
+        cameraY = 0
+    }
 
     game.Map.Draw(cameraX, cameraY, game.Counter / 4, screen)
 
@@ -586,24 +599,25 @@ func (game *Game) Draw(screen *ebiten.Image){
         }
 
         for _, unit := range player.Units {
-            var options ebiten.DrawImageOptions
-            unitBack, err := game.GetUnitBackgroundImage(unit.Banner)
-            if err == nil {
-                options.GeoM.Translate(float64((unit.X - cameraX) * game.Map.TileWidth()), float64((unit.Y - cameraY) * game.Map.TileHeight()))
-                screen.DrawImage(unitBack, &options)
-            }
+            if chosenUnit != unit || game.Counter / 55 % 2 == 0 {
+                var options ebiten.DrawImageOptions
+                unitBack, err := game.GetUnitBackgroundImage(unit.Banner)
+                if err == nil {
+                    options.GeoM.Translate(float64((unit.X - cameraX) * game.Map.TileWidth()), float64((unit.Y - cameraY) * game.Map.TileHeight()))
+                    screen.DrawImage(unitBack, &options)
+                }
 
-            pic, err := game.GetUnitImage(unit.Unit)
-            if err == nil {
-                options.GeoM.Translate(1, 1)
-                screen.DrawImage(pic, &options)
+                pic, err := game.GetUnitImage(unit.Unit)
+                if err == nil {
+                    options.GeoM.Translate(1, 1)
+                    screen.DrawImage(pic, &options)
+                }
             }
         }
 
         // FIXME: render the proper plane
         game.DrawFog(screen, player.ArcanusFog, cameraX, cameraY)
     }
-
 
     game.DrawHud(screen)
 }
