@@ -5,10 +5,11 @@ package main
 
 import (
     "testing"
+    "github.com/kazzmir/master-of-magic/game/magic/terrain"
 )
 
 func BenchmarkGeneration(bench *testing.B){
-    map_ := MakeMap(100, 200)
+    map_ := terrain.MakeMap(100, 200)
 
     for i := 0; i < bench.N; i++ {
         map_.GenerateLandCellularAutomata()

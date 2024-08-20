@@ -7,6 +7,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
+    citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -49,33 +50,6 @@ func (unit *Unit) Move(dx int, dy int){
     }
 }
 
-type City struct {
-    Population int
-    Wall bool
-    X int
-    Y int
-}
-
-func (city *City) GetSize() CitySize {
-    if city.Population < 5000 {
-        return CitySizeHamlet
-    }
-
-    if city.Population < 9000 {
-        return CitySizeVillage
-    }
-
-    if city.Population < 13000 {
-        return CitySizeTown
-    }
-
-    if city.Population < 17000 {
-        return CitySizeCity
-    }
-
-    return CitySizeCapital
-}
-
 type Player struct {
     // matrix the same size as the map, where true means the player can see the tile
     // and false means the tile has not yet been discovered
@@ -85,7 +59,7 @@ type Player struct {
     Wizard setup.WizardCustom
 
     Units []*Unit
-    Cities []*City
+    Cities []*citylib.City
 
     UnitId uint64
     SelectedUnit *Unit
@@ -115,7 +89,7 @@ func (player *Player) LiftFog(x int, y int, radius int){
 
 }
 
-func (player *Player) AddCity(city City) {
+func (player *Player) AddCity(city citylib.City) {
     player.Cities = append(player.Cities, &city)
 }
 
@@ -313,15 +287,6 @@ func (game *Game) GetMainImage(index int) (*ebiten.Image, error) {
     return image, err
 }
 
-type CitySize int
-const (
-    CitySizeHamlet CitySize = iota
-    CitySizeVillage
-    CitySizeTown
-    CitySizeCity
-    CitySizeCapital
-)
-
 func (game *Game) GetUnitBackgroundImage(banner data.BannerType) (*ebiten.Image, error) {
     index := -1
     switch banner {
@@ -351,30 +316,30 @@ func (game *Game) GetUnitImage(unit units.Unit) (*ebiten.Image, error) {
     return image, err
 }
 
-func (game *Game) GetCityNoWallImage(size CitySize) (*ebiten.Image, error) {
+func (game *Game) GetCityNoWallImage(size citylib.CitySize) (*ebiten.Image, error) {
     var index int = 0
 
     switch size {
-        case CitySizeHamlet: index = 0
-        case CitySizeVillage: index = 1
-        case CitySizeTown: index = 2
-        case CitySizeCity: index = 3
-        case CitySizeCapital: index = 4
+        case citylib.CitySizeHamlet: index = 0
+        case citylib.CitySizeVillage: index = 1
+        case citylib.CitySizeTown: index = 2
+        case citylib.CitySizeCity: index = 3
+        case citylib.CitySizeCapital: index = 4
     }
 
     // the city image is a sub-frame of animation 20
     return game.ImageCache.GetImage("mapback.lbx", 20, index)
 }
 
-func (game *Game) GetCityWallImage(size CitySize) (*ebiten.Image, error) {
+func (game *Game) GetCityWallImage(size citylib.CitySize) (*ebiten.Image, error) {
     var index int = 0
 
     switch size {
-        case CitySizeHamlet: index = 0
-        case CitySizeVillage: index = 1
-        case CitySizeTown: index = 2
-        case CitySizeCity: index = 3
-        case CitySizeCapital: index = 4
+        case citylib.CitySizeHamlet: index = 0
+        case citylib.CitySizeVillage: index = 1
+        case citylib.CitySizeTown: index = 2
+        case citylib.CitySizeCity: index = 3
+        case citylib.CitySizeCapital: index = 4
     }
 
     // the city image is a sub-frame of animation 21

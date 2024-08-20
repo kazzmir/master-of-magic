@@ -7,6 +7,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     gamelib "github.com/kazzmir/master-of-magic/game/magic/game"
+    citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     "github.com/kazzmir/master-of-magic/game/magic/data"
 
     "github.com/hajimehoshi/ebiten/v2"
@@ -36,7 +37,7 @@ func NewEngine() (*Engine, error) {
 
     player := game.AddPlayer(wizard)
 
-    player.AddCity(gamelib.City{
+    player.AddCity(citylib.City{
         Population: 6000,
         Wall: false,
         X: 4,

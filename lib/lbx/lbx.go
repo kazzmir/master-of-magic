@@ -519,8 +519,6 @@ func readImage(reader io.Reader, img *image.Paletted, palette color.Palette, sta
 
         x += 1
     }
-
-    return nil
 }
 
 /* use this to read a font entry, usually from fonts.lbx */
