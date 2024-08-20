@@ -8,6 +8,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/hajimehoshi/ebiten/v2"
@@ -145,7 +146,7 @@ const (
 type Game struct {
     active bool
 
-    ImageCache ImageCache
+    ImageCache util.ImageCache
     WhiteFont *font.Font
 
     InfoFontYellow *font.Font
@@ -236,10 +237,7 @@ func MakeGame(wizard setup.WizardCustom, lbxCache *lbx.LbxCache) *Game {
         active: false,
         Map: MakeMap(terrainData),
         State: GameStateRunning,
-        ImageCache: ImageCache{
-            LbxCache: lbxCache,
-            Cache: make(map[string][]*ebiten.Image),
-        },
+        ImageCache: util.MakeImageCache(lbxCache),
     }
     return game
 }

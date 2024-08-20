@@ -1,4 +1,4 @@
-package game
+package util
 
 import (
     "fmt"
@@ -12,6 +12,13 @@ type ImageCache struct {
     LbxCache *lbx.LbxCache
     // FIXME: have some limit on the number of entries, and remove old ones LRU-style
     Cache map[string][]*ebiten.Image
+}
+
+func MakeImageCache(lbxCache *lbx.LbxCache) ImageCache {
+    return ImageCache{
+        LbxCache: lbxCache,
+        Cache:    make(map[string][]*ebiten.Image),
+    }
 }
 
 func (cache *ImageCache) GetImages(lbxPath string, index int) ([]*ebiten.Image, error) {
