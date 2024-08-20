@@ -45,14 +45,16 @@ func NewEngine() (*Engine, error) {
 
     player.LiftFog(4, 5, 3)
 
-    player.AddUnit(gamelib.Unit{
+    drake := player.AddUnit(gamelib.Unit{
         Unit: units.GreatDrake,
         Banner: wizard.Banner,
         X: 5,
         Y: 5,
     })
 
-    player.LiftFog(5, 5, 3)
+    player.SetSelectedUnit(drake)
+
+    player.LiftFog(5, 5, 2)
 
     return &Engine{
         LbxCache: cache,

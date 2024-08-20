@@ -11,6 +11,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/hajimehoshi/ebiten/v2"
+    "github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
 type Unit struct {
@@ -18,6 +19,22 @@ type Unit struct {
     Banner data.BannerType
     X int
     Y int
+    Id uint64
+}
+
+func (unit *Unit) Move(dx int, dy int){
+    unit.X += dx
+    unit.Y += dy
+
+    // FIXME: can't move off of map
+
+    if unit.X < 0 {
+        unit.X = 0
+    }
+
+    if unit.Y < 0 {
+        unit.Y = 0
+    }
 }
 
 type City struct {
@@ -57,6 +74,13 @@ type Player struct {
 
     Units []*Unit
     Cities []*City
+
+    UnitId uint64
+    SelectedUnit *Unit
+}
+
+func (player *Player) SetSelectedUnit(unit *Unit){
+    player.SelectedUnit = unit
 }
 
 /* make anything within the given radius viewable by the player */
@@ -83,8 +107,12 @@ func (player *Player) AddCity(city City) {
     player.Cities = append(player.Cities, &city)
 }
 
-func (player *Player) AddUnit(unit Unit) {
-    player.Units = append(player.Units, &unit)
+func (player *Player) AddUnit(unit Unit) *Unit {
+    unit.Id = player.UnitId
+    player.UnitId += 1
+    unit_ptr := &unit
+    player.Units = append(player.Units, unit_ptr)
+    return unit_ptr
 }
 
 func (game *Game) GetFogImage() *ebiten.Image {
@@ -209,6 +237,27 @@ func (game *Game) Activate() {
 
 func (game *Game) Update() GameState {
     game.Counter += 1
+
+    keys := make([]ebiten.Key, 0)
+    keys = inpututil.AppendJustPressedKeys(keys)
+
+    dx := 0
+    dy := 0
+
+    for _, key := range keys {
+        switch key {
+            case ebiten.KeyUp: dy = -1
+            case ebiten.KeyDown: dy = 1
+            case ebiten.KeyLeft: dx = -1
+            case ebiten.KeyRight: dx = 1
+        }
+    }
+
+    if game.Players[0].SelectedUnit != nil {
+        unit := game.Players[0].SelectedUnit
+        unit.Move(dx, dy)
+        game.Players[0].LiftFog(unit.X, unit.Y, 2)
+    }
 
     return GameStateRunning
 }
@@ -564,10 +613,14 @@ func (game *Game) Draw(screen *ebiten.Image){
     tilesPerRow := data.ScreenWidth / game.Map.TileWidth()
     tilesPerColumn := data.ScreenHeight / game.Map.TileHeight()
 
-    chosenUnit := game.Players[0].Units[0]
+    cameraX := 0
+    cameraY := 0
 
-    cameraX := chosenUnit.X - tilesPerRow / 2
-    cameraY := chosenUnit.Y - tilesPerColumn / 2
+    chosenUnit := game.Players[0].SelectedUnit
+    if chosenUnit != nil {
+        cameraX = chosenUnit.X - tilesPerRow / 2
+        cameraY = chosenUnit.Y - tilesPerColumn / 2
+    }
 
     if cameraX < 0 {
         cameraX = 0
