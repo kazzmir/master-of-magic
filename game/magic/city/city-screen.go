@@ -174,12 +174,8 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
         if err == nil {
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(x), float64(y))
-            screen.DrawImage(images[0], &options)
-
-            if len(images) > 1 {
-                animationIndex := animationCounter % uint64(len(images) - 1) + 1
-                screen.DrawImage(images[animationIndex], &options)
-            }
+            animationIndex := animationCounter % uint64(len(images))
+            screen.DrawImage(images[animationIndex], &options)
         }
     }
 
@@ -187,11 +183,8 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
     if err == nil {
         var options ebiten.DrawImageOptions
         options.GeoM.Translate(5, 100)
-        screen.DrawImage(river[0], &options)
-
-        index := animationCounter % 5
-
-        screen.DrawImage(river[index + 1], &options)
+        index := animationCounter % uint64(len(river))
+        screen.DrawImage(river[index], &options)
     }
 
     ui, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", 6, 0)

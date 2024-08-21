@@ -386,9 +386,21 @@ func readPalette(reader io.ReadSeeker, index int, firstColor int, count int) (co
 
 const debug = false
 
+func copyImage(img *image.Paletted) *image.Paletted {
+    out := image.NewPaletted(image.Rect(0, 0, img.Bounds().Dx(), img.Bounds().Dy()), img.Palette)
+
+    for y := 0; y < img.Bounds().Dy(); y++ {
+        for x := 0; x < img.Bounds().Dx(); x++ {
+            out.SetColorIndex(x, y, img.ColorIndexAt(x, y))
+        }
+    }
+
+    return out
+}
+
 /* read an RLE encoded image using the given palette, storing pixels into 'img'
  */
-func readImage(reader io.Reader, img *image.Paletted, palette color.Palette, startRleValue int) error {
+func readImage(reader io.Reader, lastImage *image.Paletted, width int, height int, palette color.Palette, startRleValue int) (*image.Paletted, error) {
     byteReader, ok := reader.(io.ByteReader)
     if !ok {
         byteReader = bufio.NewReader(reader)
@@ -396,26 +408,37 @@ func readImage(reader io.Reader, img *image.Paletted, palette color.Palette, sta
 
     reset, err := byteReader.ReadByte()
     if err != nil {
-        return err
+        return nil, err
     }
 
-    if reset == 1 {
-        // TODO: reset image to blank, which is magic pink 0xff00ff in the original code
+    deltaFrame := reset == 0
+
+    var img *image.Paletted
+
+    if deltaFrame {
+        img = copyImage(lastImage)
+    } else {
+        img = image.NewPaletted(image.Rect(0, 0, width, height), palette)
     }
 
     x := 0
 
+    // for each column of pixel data, read an operation and perform the operation.
+    // an operation could be 'set the next pixel to value X' or an rle operation
+    // which means to set the next N pixels to value X
     for {
         v, err := byteReader.ReadByte()
         if err != nil {
-            return nil
+            return img, nil
         }
 
         if debug {
             log.Printf("Read byte 0x%x\n", v)
         }
 
+        // done with this column, just go to the next one
         if v == 0xff {
+            x += 1
             continue
         }
 
@@ -426,27 +449,27 @@ func readImage(reader io.Reader, img *image.Paletted, palette color.Palette, sta
         } else if v == 0x80 {
             rle = 0xe0
         } else {
-            return fmt.Errorf("unexpected rle value 0x%x", v)
+            return nil, fmt.Errorf("unexpected rle value 0x%x", v)
         }
 
         next_, err := byteReader.ReadByte()
         if err != nil {
-            return err
+            return nil, err
         }
         next := int(next_) - 2
 
         if next == 0 {
-            return fmt.Errorf("next bitmap location cannot be 0")
+            return nil, fmt.Errorf("next bitmap location cannot be 0")
         }
 
         data, err := byteReader.ReadByte()
         if err != nil {
-            return err
+            return nil, err
         }
 
         y, err := byteReader.ReadByte()
         if err != nil {
-            return err
+            return nil, err
         }
 
         if debug {
@@ -459,7 +482,7 @@ func readImage(reader io.Reader, img *image.Paletted, palette color.Palette, sta
             for data > 0 {
                 v2, err := byteReader.ReadByte()
                 if err != nil {
-                    return err
+                    return nil, err
                 }
 
                 total += 1
@@ -468,12 +491,12 @@ func readImage(reader io.Reader, img *image.Paletted, palette color.Palette, sta
                     length := int(v2) - int(rle) + 1
                     index, err := byteReader.ReadByte()
                     if err != nil {
-                        return err
+                        return nil, err
                     }
                     total += 1
 
                     if length > img.Bounds().Dy() {
-                        return fmt.Errorf("rle length %v is greater than image height %v", length, img.Bounds().Dy())
+                        return nil, fmt.Errorf("rle length %v is greater than image height %v", length, img.Bounds().Dy())
                     }
 
                     if debug {
@@ -503,11 +526,11 @@ func readImage(reader io.Reader, img *image.Paletted, palette color.Palette, sta
                 }
                 newData, err := byteReader.ReadByte()
                 if err != nil {
-                    return err
+                    return nil, err
                 }
                 newY, err := byteReader.ReadByte()
                 if err != nil {
-                    return err
+                    return nil, err
                 }
 
                 total += 2
@@ -998,6 +1021,7 @@ func (lbx *LbxFile) ReadImages(entry int) ([]image.Image, error) {
 
     var images []image.Image
 
+    var lastImage *image.Paletted
     for i := 0; i < int(bitmapCount); i++ {
         end := offsets[i+1]
         if debug {
@@ -1008,12 +1032,14 @@ func (lbx *LbxFile) ReadImages(entry int) ([]image.Image, error) {
 
         imageReader := io.LimitReader(reader, int64(end - offsets[i]))
 
-        img := image.NewPaletted(image.Rect(0, 0, int(width), int(height)), palette)
+        // img := image.NewPaletted(image.Rect(0, 0, int(width), int(height)), palette)
 
-        err = readImage(imageReader, img, palette, int(paletteInfo.FirstColorIndex + paletteInfo.Count))
+        img, err := readImage(imageReader, lastImage, int(width), int(height), palette, int(paletteInfo.FirstColorIndex + paletteInfo.Count))
         if err != nil {
             return nil, err
         }
+
+        lastImage = img
 
         if debug {
             x := 39
