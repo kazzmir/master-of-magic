@@ -26,3 +26,12 @@ func (set *Set[T]) Size() int {
 func (set *Set[T]) Remove(v T) {
     delete(set.data, v)
 }
+
+// FIXME: turn this into an iterator
+func (set *Set[T]) Values() []T {
+    var out []T
+    for k := range set.data {
+        out = append(out, k)
+    }
+    return out
+}

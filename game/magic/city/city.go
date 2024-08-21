@@ -39,6 +39,7 @@ const (
     BuildingMechaniciansGuild
     BuildingMinersGuild
     BuildingCityWalls
+    BuildingWizardTower
 )
 
 type CitySize int
@@ -78,6 +79,10 @@ type City struct {
     X int
     Y int
     Buildings *set.Set[Building]
+}
+
+func (city *City) AddBuilding(building Building){
+    city.Buildings.Insert(building)
 }
 
 func (city *City) GetSize() CitySize {
