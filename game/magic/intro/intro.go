@@ -60,9 +60,9 @@ func (intro *Intro) Update() IntroState {
     if intro.Counter % animationSpeed == 0 {
         if !intro.Scene.Next() {
             intro.CurrentScene += 1
+            intro.ImageCache.Clear()
             images, err := intro.ImageCache.GetImages("intro.lbx", intro.CurrentScene)
             if err == nil {
-                intro.ImageCache.Clear()
                 intro.Scene = util.MakeAnimation(images, false)
             }
         }
@@ -76,15 +76,8 @@ func (intro *Intro) Draw(screen *ebiten.Image){
         return
     }
 
-    var options ebiten.DrawImageOptions
     if intro.Scene.Frame() != nil {
+        var options ebiten.DrawImageOptions
         screen.DrawImage(intro.Scene.Frame(), &options)
     }
-    /*
-    img, err := intro.ImageCache.GetImage("intro.lbx", intro.CurrentScene, intro.CurrentIndex)
-    if err == nil {
-        var options ebiten.DrawImageOptions
-        screen.DrawImage(img, &options)
-    }
-    */
 }
