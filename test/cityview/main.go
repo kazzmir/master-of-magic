@@ -2,6 +2,7 @@ package main
 
 import (
     "log"
+    "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/set"
@@ -61,7 +62,9 @@ func (engine *Engine) Update() error {
 }
 
 func (engine *Engine) Draw(screen *ebiten.Image) {
-    engine.CityScreen.Draw(screen)
+    engine.CityScreen.Draw(screen, func (where *ebiten.Image, options ebiten.DrawImageOptions) {
+        where.Fill(color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff})
+    })
 }
 
 func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {

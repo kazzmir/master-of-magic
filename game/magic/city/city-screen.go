@@ -3,6 +3,7 @@ package city
 import (
     "log"
     "fmt"
+    "image"
     "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -152,7 +153,7 @@ func (cityScreen *CityScreen) GetBuildingPosition(building Building) (int, int){
     return 0, 0
 }
 
-func (cityScreen *CityScreen) Draw(screen *ebiten.Image) {
+func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *ebiten.Image, options ebiten.DrawImageOptions)) {
     animationCounter := cityScreen.Counter / 8
 
     // 5 is grasslands
@@ -247,4 +248,14 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image) {
         }
     }
     // big magic is 91
+
+    // draw a few squares of the map
+    mapX := 215
+    mapY := 4
+    mapWidth := 100
+    mapHeight := 88
+    mapPart := screen.SubImage(image.Rect(mapX, mapY, mapX + mapWidth, mapY + mapHeight)).(*ebiten.Image)
+    var mapOptions ebiten.DrawImageOptions
+    mapOptions.GeoM.Translate(float64(mapX), float64(mapY))
+    mapView(mapPart, mapOptions)
 }
