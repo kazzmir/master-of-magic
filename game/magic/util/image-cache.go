@@ -21,6 +21,11 @@ func MakeImageCache(lbxCache *lbx.LbxCache) ImageCache {
     }
 }
 
+/* remove all entries from the cache */
+func (cache *ImageCache) Clear(){
+    cache.Cache = make(map[string][]*ebiten.Image)
+}
+
 func (cache *ImageCache) GetImages(lbxPath string, index int) ([]*ebiten.Image, error) {
     lbxPath = strings.ToLower(lbxPath)
     key := fmt.Sprintf("%s:%d", lbxPath, index)

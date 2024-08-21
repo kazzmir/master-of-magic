@@ -398,7 +398,9 @@ func copyImage(img *image.Paletted) *image.Paletted {
     return out
 }
 
-/* read an RLE encoded image using the given palette, storing pixels into 'img'
+/* read an RLE encoded image using the given palette, and return the new image.
+ * if this image is a delta frame (when the first byte is 0) then this image starts
+ * with a copy of lastImage, and modifies it with the new data.
  */
 func readImage(reader io.Reader, lastImage *image.Paletted, width int, height int, palette color.Palette, startRleValue int) (*image.Paletted, error) {
     byteReader, ok := reader.(io.ByteReader)
