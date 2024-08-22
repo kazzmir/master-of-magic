@@ -7,9 +7,9 @@ import (
     "sort"
     "image"
     "image/color"
+    "hash/fnv"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
-    "github.com/kazzmir/master-of-magic/lib/set"
     "github.com/kazzmir/master-of-magic/game/magic/util"
 
     "github.com/kazzmir/master-of-magic/lib/font"
@@ -82,19 +82,6 @@ type CityScreen struct {
     Counter uint64
 }
 
-/*
-func (cityScreen *CityScreen) BuildingOrder() []Building {
-    var out []Building
-
-    var slots []BuildingSlot
-    for building, v := range cityScreen.Slots {
-        slots = append(slots, BuildingSlot{Building: building, Point: v})
-    }
-
-    return buildingOrder(cityScreen.City.Buildings)
-}
-*/
-
 type BuildingNativeSort []Building
 func (b BuildingNativeSort) Len() int {
     return len(b)
@@ -109,6 +96,12 @@ func (b BuildingNativeSort) Swap(i, j int) {
 func sortBuildings(buildings []Building) []Building {
     sort.Sort(BuildingNativeSort(buildings))
     return buildings
+}
+
+func hash(str string) uint64 {
+    hasher := fnv.New64a()
+    hasher.Write([]byte(str))
+    return hasher.Sum64()
 }
 
 func MakeCityScreen(cache *lbx.LbxCache, city *City) *CityScreen {
@@ -148,7 +141,8 @@ func MakeCityScreen(cache *lbx.LbxCache, city *City) *CityScreen {
     bigFont := font.MakeOptimizedFontWithPalette(fonts[5], yellowPalette)
 
     // FIXME: include city name in the random source
-    random := rand.New(rand.NewPCG(uint64(city.X), uint64(city.Y)))
+    random := rand.New(rand.NewPCG(uint64(city.X), uint64(city.Y) + hash(city.Name)))
+    // random = rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64()))
     openSlots := randomSlots(random)
     // openSlots := buildingSlots()
 
@@ -166,6 +160,16 @@ func MakeCityScreen(cache *lbx.LbxCache, city *City) *CityScreen {
         buildings = append(buildings, BuildingSlot{Building: building, Point: point})
     }
 
+    maxTrees := random.IntN(15) + 20
+    for i := 0; i < maxTrees; i++ {
+        x := random.IntN(150) + 20
+        y := random.IntN(60) + 10
+
+        tree := []Building{BuildingTree1, BuildingTree2, BuildingTree3}[random.IntN(3)]
+
+        buildings = append(buildings, BuildingSlot{Building: tree, Point: image.Pt(x, y)})
+    }
+
     sort.Sort(BuildingSlotSort(buildings))
 
     cityScreen := &CityScreen{
@@ -181,57 +185,6 @@ func MakeCityScreen(cache *lbx.LbxCache, city *City) *CityScreen {
 
 func (cityScreen *CityScreen) Update() {
     cityScreen.Counter += 1
-}
-
-func buildingOrder(buildings *set.Set[Building]) []Building {
-    order := []Building{
-        BuildingBarracks,
-        BuildingArmory,
-        BuildingFightersGuild,
-        BuildingArmorersGuild,
-        BuildingWarCollege,
-        BuildingStables,
-        BuildingAnimistsGuild,
-        BuildingFantasticStable,
-        BuildingShipwrightsGuild,
-        BuildingShipYard,
-        BuildingMaritimeGuild,
-        BuildingSawmill,
-        BuildingLibrary,
-        BuildingSagesGuild,
-        BuildingOracle,
-        BuildingAlchemistsGuild,
-        BuildingUniversity,
-        BuildingWizardsGuild,
-        BuildingShrine,
-        BuildingTemple,
-        BuildingParthenon,
-        BuildingCathedral,
-        BuildingMarketplace,
-        BuildingBank,
-        BuildingMerchantsGuild,
-        BuildingGranary,
-        BuildingFarmersMarket,
-        BuildingForestersGuild,
-        BuildingMechaniciansGuild,
-        BuildingMinersGuild,
-        BuildingCityWalls,
-        BuildingWizardTower,
-        BuildingSummoningCircle,
-
-        BuildingSmithy,
-        BuildingBuildersHall,
-    }
-
-    var out []Building
-
-    for _, building := range order {
-        if buildings.Contains(building) {
-            out = append(out, building)
-        }
-    }
-
-    return out
 }
 
 func (cityScreen *CityScreen) GetBuildingIndex(building Building) int {
@@ -271,51 +224,12 @@ func (cityScreen *CityScreen) GetBuildingIndex(building Building) int {
         case BuildingForestersGuild: return 78
         case BuildingWizardTower: return 40
         case BuildingSummoningCircle: return 6
+        case BuildingTree1: return 19
+        case BuildingTree2: return 20
+        case BuildingTree3: return 21
     }
 
     return -1
-}
-
-func (cityScreen *CityScreen) GetBuildingPosition(building Building) (int, int){
-    switch building {
-        case BuildingBarracks: return 1, 1
-        case BuildingArmory: return 1, 1
-        case BuildingFightersGuild: return 1, 1
-        case BuildingArmorersGuild: return 1, 1
-        case BuildingWarCollege: return 1, 1
-        case BuildingSmithy: return 38, 25
-        case BuildingStables: return 1, 1
-        case BuildingAnimistsGuild: return 1, 1
-        case BuildingFantasticStable: return 1, 1
-        case BuildingShipwrightsGuild: return 1, 1
-        case BuildingShipYard: return 1, 1
-        case BuildingMaritimeGuild: return 1, 1
-        case BuildingSawmill: return 1, 1
-        case BuildingLibrary: return 1, 1
-        case BuildingSagesGuild: return 1, 1
-        case BuildingOracle: return 1, 1
-        case BuildingAlchemistsGuild: return 1, 1
-        case BuildingUniversity: return 1, 1
-        case BuildingWizardsGuild: return 20, 0
-        case BuildingShrine: return 1, 1
-        case BuildingTemple: return 1, 1
-        case BuildingParthenon: return 1, 1
-        case BuildingCathedral: return 1, 1
-        case BuildingMarketplace: return 1, 1
-        case BuildingBank: return 1, 1
-        case BuildingMerchantsGuild: return 1, 1
-        case BuildingGranary: return 1, 1
-        case BuildingFarmersMarket: return 1, 1
-        case BuildingBuildersHall: return 110, 30
-        case BuildingMechaniciansGuild: return 1, 1
-        case BuildingMinersGuild: return 1, 1
-        case BuildingCityWalls: return 1, 1
-        case BuildingForestersGuild: return 1, 1
-        case BuildingWizardTower: return 92, -4
-        case BuildingSummoningCircle: return 129, 6
-    }
-
-    return 0, 0
 }
 
 func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *ebiten.Image, options ebiten.DrawImageOptions)) {

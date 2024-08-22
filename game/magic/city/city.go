@@ -41,6 +41,11 @@ const (
     BuildingCityWalls
     BuildingWizardTower
     BuildingSummoningCircle
+
+    // not a real building, just something that shows up in the city view screen
+    BuildingTree1
+    BuildingTree2
+    BuildingTree3
 )
 
 type CitySize int
