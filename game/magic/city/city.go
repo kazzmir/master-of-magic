@@ -42,6 +42,9 @@ const (
     BuildingWizardTower
     BuildingSummoningCircle
 
+    BuildingHousing
+    BuildingTradeGoods
+
     // not a real building, just a marker
     BuildingLast
 )
@@ -83,6 +86,8 @@ type City struct {
     X int
     Y int
     Buildings *set.Set[Building]
+
+    Producing Building
 }
 
 func (city *City) AddBuilding(building Building){

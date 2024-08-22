@@ -29,6 +29,7 @@ func NewEngine() (*Engine, error) {
         WorkProduction: 3,
         MoneyProduction: 4,
         MagicProduction: 3,
+        Producing: citylib.BuildingHousing,
         X: 3,
         Y: 8,
         Buildings: set.MakeSet[citylib.Building](),

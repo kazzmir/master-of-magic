@@ -21,6 +21,12 @@ const (
     BuildingTree1 Building = iota + BuildingLast
     BuildingTree2
     BuildingTree3
+
+    BuildingTreeHouse1
+    BuildingTreeHouse2
+    BuildingTreeHouse3
+    BuildingTreeHouse4
+    BuildingTreeHouse5
 )
 
 // buildings can appear in certain well-defined places around the city
@@ -177,6 +183,18 @@ func MakeCityScreen(cache *lbx.LbxCache, city *City) *CityScreen {
         buildings = append(buildings, BuildingSlot{Building: tree, Point: image.Pt(x, y)})
     }
 
+    // FIXME: this is based on the population of the city
+    maxHouses := random.IntN(15) + 20
+
+    for i := 0; i < maxHouses; i++ {
+        x := random.IntN(150) + 20
+        y := random.IntN(60) + 10
+
+        house := []Building{BuildingTreeHouse1, BuildingTreeHouse2, BuildingTreeHouse3, BuildingTreeHouse4, BuildingTreeHouse5}[random.IntN(5)]
+
+        buildings = append(buildings, BuildingSlot{Building: house, Point: image.Pt(x, y)})
+    }
+
     sort.Sort(BuildingSlotSort(buildings))
 
     cityScreen := &CityScreen{
@@ -234,6 +252,12 @@ func (cityScreen *CityScreen) GetBuildingIndex(building Building) int {
         case BuildingTree1: return 19
         case BuildingTree2: return 20
         case BuildingTree3: return 21
+
+        case BuildingTreeHouse1: return 30
+        case BuildingTreeHouse2: return 31
+        case BuildingTreeHouse3: return 32
+        case BuildingTreeHouse4: return 33
+        case BuildingTreeHouse5: return 34
     }
 
     return -1
