@@ -26,3 +26,25 @@ func (banner BannerType) String() string {
     return ""
 }
 
+type Race int
+
+const (
+    RaceNone Race = iota
+    RaceLizard
+    RaceNomad
+    RaceOrc
+    RaceTroll
+    RaceFantastic
+    RaceHero
+    RaceBarbarian
+    RaceBeastmen
+    RaceDarkElf
+    RaceDraconian
+    RaceDwarf
+    RaceGnoll
+    RaceHalfling
+    RaceHighElf
+    RaceHighMen
+    RaceKlackon
+)
+

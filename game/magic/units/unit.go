@@ -1,32 +1,13 @@
 package units
 
-// FIXME: probably move this somewhere else
-type Race int
-
-const (
-    RaceLizard Race = iota
-    RaceNomad
-    RaceOrc
-    RaceTroll
-    RaceFantastic
-    RaceHero
-    RaceNone
-    RaceBarbarian
-    RaceBeastmen
-    RaceDarkElf
-    RaceDraconian
-    RaceDwarf
-    RaceGnoll
-    RaceHalfling
-    RaceHighElf
-    RaceHighMen
-    RaceKlackon
+import (
+    "github.com/kazzmir/master-of-magic/game/magic/data"
 )
 
 type Unit struct {
     LbxFile string
     Index int
-    Race Race
+    Race data.Race
     // FIXME: add construction cost, building requirements to build this unit
     //  upkeep cost, how many figures appear in the battlefield, movement speed,
     //  attack power, ranged attack, defense, magic resistance, hit points, special power
@@ -35,67 +16,67 @@ type Unit struct {
 var LizardSpearmen Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 0,
-    Race: RaceLizard,
+    Race: data.RaceLizard,
 }
 
 var LizardSwordsmen Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 1,
-    Race: RaceLizard,
+    Race: data.RaceLizard,
 }
 
 var LizardHalberdiers Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 2,
-    Race: RaceLizard,
+    Race: data.RaceLizard,
 }
 
 var LizardJavelineers Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 3,
-    Race: RaceLizard,
+    Race: data.RaceLizard,
 }
 
 var LizardShamans Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 4,
-    Race: RaceLizard,
+    Race: data.RaceLizard,
 }
 
 var LizardSettlers Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 5,
-    Race: RaceLizard,
+    Race: data.RaceLizard,
 }
 
 var DragonTurtle Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 6,
-    Race: RaceLizard,
+    Race: data.RaceLizard,
 }
 
 var NomadSpearmen Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 7,
-    Race: RaceNomad,
+    Race: data.RaceNomad,
 }
 
 var NomadSwordsmen Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 8,
-    Race: RaceNomad,
+    Race: data.RaceNomad,
 }
 
 var NomadBowmen Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 9,
-    Race: RaceNomad,
+    Race: data.RaceNomad,
 }
 
 var NomadPriest Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 10,
-    Race: RaceNomad,
+    Race: data.RaceNomad,
 }
 
 // what is units2.lbx index 11?
@@ -104,1117 +85,1117 @@ var NomadPriest Unit = Unit{
 var NomadSettlers Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 12,
-    Race: RaceNomad,
+    Race: data.RaceNomad,
 }
 
 var NomadHorsebowemen Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 13,
-    Race: RaceNomad,
+    Race: data.RaceNomad,
 }
 
 var NomadPikemen Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 14,
-    Race: RaceNomad,
+    Race: data.RaceNomad,
 }
 
 var NomadRangers Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 15,
-    Race: RaceNomad,
+    Race: data.RaceNomad,
 }
 
 var Griffin Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 16,
     // maybe race magical?
-    Race: RaceNomad,
+    Race: data.RaceNomad,
 }
 
 var OrcSpearmen Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 17,
-    Race: RaceOrc,
+    Race: data.RaceOrc,
 }
 
 var OrcSwordsmen Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 18,
-    Race: RaceOrc,
+    Race: data.RaceOrc,
 }
 
 var OrcHalberdiers Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 19,
-    Race: RaceOrc,
+    Race: data.RaceOrc,
 }
 
 var OrcBowmen Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 20,
-    Race: RaceOrc,
+    Race: data.RaceOrc,
 }
 
 var OrcCavalry Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 21,
-    Race: RaceOrc,
+    Race: data.RaceOrc,
 }
 
 var OrcShamans Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 22,
-    Race: RaceOrc,
+    Race: data.RaceOrc,
 }
 
 var OrcMagicians Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 23,
-    Race: RaceOrc,
+    Race: data.RaceOrc,
 }
 
 var OrcEngineers Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 24,
-    Race: RaceOrc,
+    Race: data.RaceOrc,
 }
 
 var OrcSettlers Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 25,
-    Race: RaceOrc,
+    Race: data.RaceOrc,
 }
 
 var WyvernRiders Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 26,
-    Race: RaceOrc,
+    Race: data.RaceOrc,
 }
 
 var TrollSpearmen Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 27,
-    Race: RaceTroll,
+    Race: data.RaceTroll,
 }
 
 var TrollSwordsmen Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 28,
-    Race: RaceTroll,
+    Race: data.RaceTroll,
 }
 
 var TrollHalberdiers Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 29,
-    Race: RaceTroll,
+    Race: data.RaceTroll,
 }
 
 var TrollShamans Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 30,
-    Race: RaceTroll,
+    Race: data.RaceTroll,
 }
 
 var TrollSettlers Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 31,
-    Race: RaceTroll,
+    Race: data.RaceTroll,
 }
 
 var WarTrolls Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 32,
-    Race: RaceTroll,
+    Race: data.RaceTroll,
 }
 
 var WarMammoths Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 33,
-    Race: RaceTroll,
+    Race: data.RaceTroll,
 }
 
 var MagicSpirit Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 34,
     // FIXME: check on this
-    Race: RaceFantastic,
+    Race: data.RaceFantastic,
 }
 
 var HellHounds Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 35,
-    Race: RaceFantastic,
+    Race: data.RaceFantastic,
 }
 
 var Gargoyle Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 36,
-    Race: RaceFantastic,
+    Race: data.RaceFantastic,
 }
 
 var FireGiant Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 37,
-    Race: RaceFantastic,
+    Race: data.RaceFantastic,
 }
 
 var FireElemental Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 38,
-    Race: RaceFantastic,
+    Race: data.RaceFantastic,
 }
 
 var ChaosSpawn Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 39,
-    Race: RaceFantastic,
+    Race: data.RaceFantastic,
 }
 
 var Chimeras Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 40,
-    Race: RaceFantastic,
+    Race: data.RaceFantastic,
 }
 
 var DoomBat Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 41,
-    Race: RaceFantastic,
+    Race: data.RaceFantastic,
 }
 
 var Efreet Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 42,
-    Race: RaceFantastic,
+    Race: data.RaceFantastic,
 }
 
 var Hydra Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 43,
-    Race: RaceFantastic,
+    Race: data.RaceFantastic,
 }
 
 var GreatDrake Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 44,
-    Race: RaceFantastic,
+    Race: data.RaceFantastic,
 }
 
 var Skeleton Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 45,
-    Race: RaceFantastic,
+    Race: data.RaceFantastic,
 }
 
 var Ghoul Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 46,
-    Race: RaceFantastic,
+    Race: data.RaceFantastic,
 }
 
 var NightStalker Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 47,
-    Race: RaceFantastic,
+    Race: data.RaceFantastic,
 }
 
 var WereWolf Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 48,
-    Race: RaceFantastic,
+    Race: data.RaceFantastic,
 }
 
 var Demon Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 49,
-    Race: RaceFantastic,
+    Race: data.RaceFantastic,
 }
 
 var Wraith Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 50,
-    Race: RaceFantastic,
+    Race: data.RaceFantastic,
 }
 
 var ShadowDemon Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 51,
-    Race: RaceFantastic,
+    Race: data.RaceFantastic,
 }
 
 var DeathKnight Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 52,
-    Race: RaceFantastic,
+    Race: data.RaceFantastic,
 }
 
 var DemonLord Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 53,
-    Race: RaceFantastic,
+    Race: data.RaceFantastic,
 }
 
 var Zombie Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 54,
-    Race: RaceFantastic,
+    Race: data.RaceFantastic,
 }
 
 var Unicorn Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 55,
-    Race: RaceFantastic,
+    Race: data.RaceFantastic,
 }
 
 var GuardianSpirit Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 56,
-    Race: RaceFantastic,
+    Race: data.RaceFantastic,
 }
 
 var Angel Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 57,
-    Race: RaceFantastic,
+    Race: data.RaceFantastic,
 }
 
 var ArchAngel Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 58,
-    Race: RaceFantastic,
+    Race: data.RaceFantastic,
 }
 
 var WarBear Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 59,
-    Race: RaceFantastic,
+    Race: data.RaceFantastic,
 }
 
 var Sprite Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 60,
-    Race: RaceFantastic,
+    Race: data.RaceFantastic,
 }
 
 var Cockatrice Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 61,
-    Race: RaceFantastic,
+    Race: data.RaceFantastic,
 }
 
 var Basilisk Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 62,
-    Race: RaceFantastic,
+    Race: data.RaceFantastic,
 }
 
 var GiantSpider Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 63,
-    Race: RaceFantastic,
+    Race: data.RaceFantastic,
 }
 
 var StoneGiant Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 64,
-    Race: RaceFantastic,
+    Race: data.RaceFantastic,
 }
 
 var Colossus Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 65,
-    Race: RaceFantastic,
+    Race: data.RaceFantastic,
 }
 
 var Gorgon Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 66,
-    Race: RaceFantastic,
+    Race: data.RaceFantastic,
 }
 
 var EarthElemental Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 67,
-    Race: RaceFantastic,
+    Race: data.RaceFantastic,
 }
 
 var Behemoth Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 68,
-    Race: RaceFantastic,
+    Race: data.RaceFantastic,
 }
 
 var GreatWyrm Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 69,
-    Race: RaceFantastic,
+    Race: data.RaceFantastic,
 }
 
 var FloatingIsland Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 70,
-    Race: RaceFantastic,
+    Race: data.RaceFantastic,
 }
 
 var PhantomBeast Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 71,
-    Race: RaceFantastic,
+    Race: data.RaceFantastic,
 }
 
 var PhantomWarrior Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 72,
-    Race: RaceFantastic,
+    Race: data.RaceFantastic,
 }
 
 var StormGiant Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 73,
-    Race: RaceFantastic,
+    Race: data.RaceFantastic,
 }
 
 var AirElemental Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 74,
-    Race: RaceFantastic,
+    Race: data.RaceFantastic,
 }
 
 var Djinn Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 75,
-    Race: RaceFantastic,
+    Race: data.RaceFantastic,
 }
 
 var SkyDrake Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 76,
-    Race: RaceFantastic,
+    Race: data.RaceFantastic,
 }
 
 var Nagas Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 77,
-    Race: RaceFantastic,
+    Race: data.RaceFantastic,
 }
 
 var HeroBrax Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 0,
-    Race: RaceHero,
+    Race: data.RaceHero,
 }
 
 var HeroGunther Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 1,
-    Race: RaceHero,
+    Race: data.RaceHero,
 }
 
 var HeroZaldron Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 2,
-    Race: RaceHero,
+    Race: data.RaceHero,
 }
 
 var HeroBShan Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 3,
-    Race: RaceHero,
+    Race: data.RaceHero,
 }
 
 var HeroRakir Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 4,
-    Race: RaceHero,
+    Race: data.RaceHero,
 }
 
 var HeroValana Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 5,
-    Race: RaceHero,
+    Race: data.RaceHero,
 }
 
 var HeroBahgtru Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 6,
-    Race: RaceHero,
+    Race: data.RaceHero,
 }
 
 var HeroSerena Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 7,
-    Race: RaceHero,
+    Race: data.RaceHero,
 }
 
 var HeroShuri Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 8,
-    Race: RaceHero,
+    Race: data.RaceHero,
 }
 
 var HeroTheria Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 9,
-    Race: RaceHero,
+    Race: data.RaceHero,
 }
 
 var HeroGreyfairer Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 10,
-    Race: RaceHero,
+    Race: data.RaceHero,
 }
 
 var HeroTaki Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 11,
-    Race: RaceHero,
+    Race: data.RaceHero,
 }
 
 var HeroReywind Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 12,
-    Race: RaceHero,
+    Race: data.RaceHero,
 }
 
 var HeroMalleus Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 13,
-    Race: RaceHero,
+    Race: data.RaceHero,
 }
 
 var HeroTumu Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 14,
-    Race: RaceHero,
+    Race: data.RaceHero,
 }
 
 var HeroJaer Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 15,
-    Race: RaceHero,
+    Race: data.RaceHero,
 }
 
 var HeroMarcus Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 16,
-    Race: RaceHero,
+    Race: data.RaceHero,
 }
 
 var HeroFang Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 17,
-    Race: RaceHero,
+    Race: data.RaceHero,
 }
 
 var HeroMorgana Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 18,
-    Race: RaceHero,
+    Race: data.RaceHero,
 }
 
 var HeroAureus Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 19,
-    Race: RaceHero,
+    Race: data.RaceHero,
 }
 
 var HeroShinBo Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 20,
-    Race: RaceHero,
+    Race: data.RaceHero,
 }
 
 var HeroSpyder Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 21,
-    Race: RaceHero,
+    Race: data.RaceHero,
 }
 
 var HeroShalla Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 22,
-    Race: RaceHero,
+    Race: data.RaceHero,
 }
 
 var HeroYramrag Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 23,
-    Race: RaceHero,
+    Race: data.RaceHero,
 }
 
 var HeroMysticX Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 24,
-    Race: RaceHero,
+    Race: data.RaceHero,
 }
 
 var HeroAeirie Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 25,
-    Race: RaceHero,
+    Race: data.RaceHero,
 }
 
 var HeroDethStryke Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 26,
-    Race: RaceHero,
+    Race: data.RaceHero,
 }
 
 var HeroElana Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 27,
-    Race: RaceHero,
+    Race: data.RaceHero,
 }
 
 var HeroRoland Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 28,
-    Race: RaceHero,
+    Race: data.RaceHero,
 }
 
 var HeroMortu Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 29,
-    Race: RaceHero,
+    Race: data.RaceHero,
 }
 
 var HeroAlorra Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 30,
-    Race: RaceHero,
+    Race: data.RaceHero,
 }
 
 var HeroSirHarold Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 31,
-    Race: RaceHero,
+    Race: data.RaceHero,
 }
 
 var HeroRavashack Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 32,
-    Race: RaceHero,
+    Race: data.RaceHero,
 }
 
 var HeroWarrax Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 33,
-    Race: RaceHero,
+    Race: data.RaceHero,
 }
 
 var HeroTorin Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 34,
-    Race: RaceHero,
+    Race: data.RaceHero,
 }
 
 var Trireme Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 35,
-    Race: RaceNone,
+    Race: data.RaceNone,
 }
 
 var Galley Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 36,
-    Race: RaceNone,
+    Race: data.RaceNone,
 }
 
 var Catapult Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 37,
-    Race: RaceNone,
+    Race: data.RaceNone,
 }
 
 var Warship Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 38,
-    Race: RaceNone,
+    Race: data.RaceNone,
 }
 
 var BarbarianSpearmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 39,
-    Race: RaceBarbarian,
+    Race: data.RaceBarbarian,
 }
 
 var BarbarianSwordsmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 40,
-    Race: RaceBarbarian,
+    Race: data.RaceBarbarian,
 }
 
 var BarbarianBowmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 41,
-    Race: RaceBarbarian,
+    Race: data.RaceBarbarian,
 }
 
 var BarbarianCavalry Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 42,
-    Race: RaceBarbarian,
+    Race: data.RaceBarbarian,
 }
 
 var BarbarianShaman Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 43,
-    Race: RaceBarbarian,
+    Race: data.RaceBarbarian,
 }
 
 var BarbarianSettlers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 44,
-    Race: RaceBarbarian,
+    Race: data.RaceBarbarian,
 }
 
 var Berserkers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 45,
-    Race: RaceBarbarian,
+    Race: data.RaceBarbarian,
 }
 
 var BeastmenSpearmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 46,
-    Race: RaceBeastmen,
+    Race: data.RaceBeastmen,
 }
 
 var BeastmenSwordsmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 47,
-    Race: RaceBeastmen,
+    Race: data.RaceBeastmen,
 }
 
 var BeastmenHalberdiers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 48,
-    Race: RaceBeastmen,
+    Race: data.RaceBeastmen,
 }
 
 var BeastmenBowmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 49,
-    Race: RaceBeastmen,
+    Race: data.RaceBeastmen,
 }
 
 var BeastmenPriest Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 50,
-    Race: RaceBeastmen,
+    Race: data.RaceBeastmen,
 }
 
 var BeastmenMagician Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 51,
-    Race: RaceBeastmen,
+    Race: data.RaceBeastmen,
 }
 
 var BeastmenEngineer Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 52,
-    Race: RaceBeastmen,
+    Race: data.RaceBeastmen,
 }
 
 var BeastmenSettlers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 53,
-    Race: RaceBeastmen,
+    Race: data.RaceBeastmen,
 }
 
 var Centaur Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 54,
-    Race: RaceBeastmen,
+    Race: data.RaceBeastmen,
 }
 
 var Manticore Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 55,
-    Race: RaceBeastmen,
+    Race: data.RaceBeastmen,
 }
 
 var Minotaur Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 56,
-    Race: RaceBeastmen,
+    Race: data.RaceBeastmen,
 }
 
 var DarkElfSpearmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 57,
-    Race: RaceDarkElf,
+    Race: data.RaceDarkElf,
 }
 
 var DarkElfSwordsmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 58,
-    Race: RaceDarkElf,
+    Race: data.RaceDarkElf,
 }
 
 var DarkElfHalberdiers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 59,
-    Race: RaceDarkElf,
+    Race: data.RaceDarkElf,
 }
 
 var DarkElfCavalry Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 60,
-    Race: RaceDarkElf,
+    Race: data.RaceDarkElf,
 }
 
 var DarkElfPriests Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 61,
-    Race: RaceDarkElf,
+    Race: data.RaceDarkElf,
 }
 
 var DarkElfSettlers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 62,
-    Race: RaceDarkElf,
+    Race: data.RaceDarkElf,
 }
 
 var Nightblades Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 63,
-    Race: RaceDarkElf,
+    Race: data.RaceDarkElf,
 }
 
 var Warlocks Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 64,
-    Race: RaceDarkElf,
+    Race: data.RaceDarkElf,
 }
 
 var Nightmares Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 65,
-    Race: RaceDarkElf,
+    Race: data.RaceDarkElf,
 }
 
 var DraconianSpearmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 66,
-    Race: RaceDraconian,
+    Race: data.RaceDraconian,
 }
 
 var DraconianSwordsmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 67,
-    Race: RaceDraconian,
+    Race: data.RaceDraconian,
 }
 
 var DraconianHalberdiers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 68,
-    Race: RaceDraconian,
+    Race: data.RaceDraconian,
 }
 
 var DraconianBowmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 69,
-    Race: RaceDraconian,
+    Race: data.RaceDraconian,
 }
 
 var DraconianShaman Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 70,
-    Race: RaceDraconian,
+    Race: data.RaceDraconian,
 }
 
 var DraconianMagician Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 71,
-    Race: RaceDraconian,
+    Race: data.RaceDraconian,
 }
 
 var DraconianEngineer Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 72,
-    Race: RaceDraconian,
+    Race: data.RaceDraconian,
 }
 
 var DraconianSettlers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 73,
-    Race: RaceDraconian,
+    Race: data.RaceDraconian,
 }
 
 var DoomDrake Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 74,
-    Race: RaceDraconian,
+    Race: data.RaceDraconian,
 }
 
 var AirShip Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 75,
-    Race: RaceDraconian,
+    Race: data.RaceDraconian,
 }
 
 var DwarfSwordsmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 76,
-    Race: RaceDwarf,
+    Race: data.RaceDwarf,
 }
 
 var DwarfHalberdiers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 77,
-    Race: RaceDwarf,
+    Race: data.RaceDwarf,
 }
 
 var DwarfEngineer Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 78,
-    Race: RaceDwarf,
+    Race: data.RaceDwarf,
 }
 
 var Hammerhands Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 79,
-    Race: RaceDwarf,
+    Race: data.RaceDwarf,
 }
 
 var SteamCannon Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 80,
-    Race: RaceDwarf,
+    Race: data.RaceDwarf,
 }
 
 var Golem Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 81,
-    Race: RaceDwarf,
+    Race: data.RaceDwarf,
 }
 
 var DwarfSettlers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 82,
-    Race: RaceDwarf,
+    Race: data.RaceDwarf,
 }
 
 var GnollSpearmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 83,
-    Race: RaceGnoll,
+    Race: data.RaceGnoll,
 }
 
 var GnollSwordsmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 84,
-    Race: RaceGnoll,
+    Race: data.RaceGnoll,
 }
 
 var GnollHalberdiers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 85,
-    Race: RaceGnoll,
+    Race: data.RaceGnoll,
 }
 
 var GnollBowmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 86,
-    Race: RaceGnoll,
+    Race: data.RaceGnoll,
 }
 
 var GnollSettlers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 87,
-    Race: RaceGnoll,
+    Race: data.RaceGnoll,
 }
 
 var WolfRiders Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 88,
-    Race: RaceGnoll,
+    Race: data.RaceGnoll,
 }
 
 var HalflingSpearmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 89,
-    Race: RaceHalfling,
+    Race: data.RaceHalfling,
 }
 
 var HalflingSwordsmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 90,
-    Race: RaceHalfling,
+    Race: data.RaceHalfling,
 }
 
 var HalflingBowmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 91,
-    Race: RaceHalfling,
+    Race: data.RaceHalfling,
 }
 
 var HalflingShamans Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 92,
-    Race: RaceHalfling,
+    Race: data.RaceHalfling,
 }
 
 var HalflingSettlers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 93,
-    Race: RaceHalfling,
+    Race: data.RaceHalfling,
 }
 
 var Slingers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 94,
-    Race: RaceHalfling,
+    Race: data.RaceHalfling,
 }
 
 var HighElfSpearmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 95,
-    Race: RaceHighElf,
+    Race: data.RaceHighElf,
 }
 
 var HighElfSwordsmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 96,
-    Race: RaceHighElf,
+    Race: data.RaceHighElf,
 }
 
 var HighElfHalberdiers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 97,
-    Race: RaceHighElf,
+    Race: data.RaceHighElf,
 }
 
 var HighElfCavalry Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 98,
-    Race: RaceHighElf,
+    Race: data.RaceHighElf,
 }
 
 var HighElfMagician Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 99,
-    Race: RaceHighElf,
+    Race: data.RaceHighElf,
 }
 
 var HighElfSettlers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 100,
-    Race: RaceHighElf,
+    Race: data.RaceHighElf,
 }
 
 var Longbowmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 101,
-    Race: RaceHighElf,
+    Race: data.RaceHighElf,
 }
 
 var ElvenLord Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 102,
-    Race: RaceHighElf,
+    Race: data.RaceHighElf,
 }
 
 var Pegasai Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 103,
-    Race: RaceHighElf,
+    Race: data.RaceHighElf,
 }
 
 var HighMenSpearmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 104,
-    Race: RaceHighMen,
+    Race: data.RaceHighMen,
 }
 
 var HighMenSwordsmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 105,
-    Race: RaceHighMen,
+    Race: data.RaceHighMen,
 }
 
 var HighMenBowmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 106,
-    Race: RaceHighMen,
+    Race: data.RaceHighMen,
 }
 
 var HighMenCavalry Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 107,
-    Race: RaceHighMen,
+    Race: data.RaceHighMen,
 }
 
 var HighMenPreist Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 108,
-    Race: RaceHighMen,
+    Race: data.RaceHighMen,
 }
 
 var HighMenMagician Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 109,
-    Race: RaceHighMen,
+    Race: data.RaceHighMen,
 }
 
 var HighMenEngineer Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 110,
-    Race: RaceHighMen,
+    Race: data.RaceHighMen,
 }
 
 var HighMenSettlers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 111,
-    Race: RaceHighMen,
+    Race: data.RaceHighMen,
 }
 
 var HighMenPikemen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 112,
-    Race: RaceHighMen,
+    Race: data.RaceHighMen,
 }
 
 var Paladin Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 113,
-    Race: RaceHighMen,
+    Race: data.RaceHighMen,
 }
 
 var KlackonSpearmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 114,
-    Race: RaceKlackon,
+    Race: data.RaceKlackon,
 }
 
 var KlackonSwordsmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 115,
-    Race: RaceKlackon,
+    Race: data.RaceKlackon,
 }
 
 var KlackonHalberdiers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 116,
-    Race: RaceKlackon,
+    Race: data.RaceKlackon,
 }
 
 var KlackonEngineer Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 117,
-    Race: RaceKlackon,
+    Race: data.RaceKlackon,
 }
 
 var KlackonSettlers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 118,
-    Race: RaceKlackon,
+    Race: data.RaceKlackon,
 }
 
 var StagBeetle Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 119,
-    Race: RaceKlackon,
+    Race: data.RaceKlackon,
 }

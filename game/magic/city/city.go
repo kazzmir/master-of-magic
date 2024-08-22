@@ -2,6 +2,7 @@ package city
 
 import (
     "github.com/kazzmir/master-of-magic/lib/set"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
 )
 
 type Building int
@@ -85,6 +86,7 @@ type City struct {
     WorkProduction int
     MoneyProduction int
     MagicProduction int
+    Race data.Race
     X int
     Y int
     Buildings *set.Set[Building]

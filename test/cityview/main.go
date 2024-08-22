@@ -25,6 +25,7 @@ func NewEngine() (*Engine, error) {
         Population: 5000,
         Name: "Boston",
         Wall: false,
+        Race: data.RaceKlackon,
         FoodProduction: 3,
         WorkProduction: 3,
         MoneyProduction: 4,

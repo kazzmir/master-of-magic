@@ -11,6 +11,7 @@ import (
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/game/magic/util"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
 
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/hajimehoshi/ebiten/v2"
@@ -268,6 +269,51 @@ func (cityScreen *CityScreen) GetBuildingIndex(building Building) int {
     return -1
 }
 
+// index into backgrnd.lbx for the farmer image of the given race
+func getRaceFarmerIndex(race data.Race) int {
+    switch race {
+        case data.RaceNone: return -1
+        case data.RaceBarbarian: return 59
+        case data.RaceBeastmen: return 60
+        case data.RaceDarkElf: return 61
+        case data.RaceDraconian: return 62
+        case data.RaceDwarf: return 63
+        case data.RaceGnoll: return 64
+        case data.RaceHalfling: return 65
+        case data.RaceHighElf: return 66
+        case data.RaceHighMen: return 67
+        case data.RaceKlackon: return 68
+        case data.RaceLizard: return 69
+        case data.RaceNomad: return 70
+        case data.RaceOrc: return 71
+        case data.RaceTroll: return 72
+    }
+
+    return -1
+}
+
+func getRaceWorkerIndex(race data.Race) int {
+    switch race {
+        case data.RaceNone: return -1
+        case data.RaceBarbarian: return 45
+        case data.RaceBeastmen: return 46
+        case data.RaceDarkElf: return 47
+        case data.RaceDraconian: return 48
+        case data.RaceDwarf: return 49
+        case data.RaceGnoll: return 50
+        case data.RaceHalfling: return 51
+        case data.RaceHighElf: return 52
+        case data.RaceHighMen: return 53
+        case data.RaceKlackon: return 54
+        case data.RaceLizard: return 55
+        case data.RaceNomad: return 56
+        case data.RaceOrc: return 57
+        case data.RaceTroll: return 58
+    }
+
+    return -1
+}
+
 func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *ebiten.Image, options ebiten.DrawImageOptions)) {
     animationCounter := cityScreen.Counter / 8
 
@@ -374,6 +420,20 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
         }
     }
     // big magic is 91
+
+    farmer, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", getRaceFarmerIndex(cityScreen.City.Race), 0)
+    if err == nil {
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(6, 27)
+        screen.DrawImage(farmer, &options)
+    }
+
+    worker, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", getRaceWorkerIndex(cityScreen.City.Race), 0)
+    if err == nil {
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(15, 27)
+        screen.DrawImage(worker, &options)
+    }
 
     producingPic, err := cityScreen.ImageCache.GetImage("cityscap.lbx", cityScreen.GetBuildingIndex(cityScreen.City.Producing), 0)
     if err == nil {
