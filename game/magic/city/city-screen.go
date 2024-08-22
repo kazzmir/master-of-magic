@@ -16,6 +16,13 @@ import (
     "github.com/hajimehoshi/ebiten/v2"
 )
 
+const (
+    // not a real building, just something that shows up in the city view screen
+    BuildingTree1 Building = iota + BuildingLast
+    BuildingTree2
+    BuildingTree3
+)
+
 // buildings can appear in certain well-defined places around the city
 func buildingSlots() []image.Point {
     return []image.Point{
