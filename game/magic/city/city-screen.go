@@ -414,7 +414,17 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
 
     cityScreen.DescriptionFont.Print(screen, 6, 19, 1, fmt.Sprintf("%v", cityScreen.City.Race))
 
-    cityScreen.DescriptionFont.PrintRight(screen, 210, 19, 1, fmt.Sprintf("Population: %v (%v)", cityScreen.City.Population, 80))
+    deltaNumber := func(n int) string {
+        if n > 0 {
+            return fmt.Sprintf("+%v", n)
+        } else if n == 0 {
+            return "0"
+        } else {
+            return fmt.Sprintf("-%v", n)
+        }
+    }
+
+    cityScreen.DescriptionFont.PrintRight(screen, 210, 19, 1, fmt.Sprintf("Population: %v (%v)", cityScreen.City.Population, deltaNumber(80)))
 
     smallFood, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", 40, 0)
     if err == nil {
@@ -463,18 +473,27 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
     }
     // big magic is 91
 
+    citizenX := 6
+
+    // FIXME: add gap between required farmers and extra workers
     farmer, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", getRaceFarmerIndex(cityScreen.City.Race), 0)
     if err == nil {
-        var options ebiten.DrawImageOptions
-        options.GeoM.Translate(6, 27)
-        screen.DrawImage(farmer, &options)
+        for i := 0; i < cityScreen.City.Farmers; i++ {
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(citizenX), 27)
+            screen.DrawImage(farmer, &options)
+            citizenX += farmer.Bounds().Dx()
+        }
     }
 
     worker, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", getRaceWorkerIndex(cityScreen.City.Race), 0)
     if err == nil {
-        var options ebiten.DrawImageOptions
-        options.GeoM.Translate(15, 27)
-        screen.DrawImage(worker, &options)
+        for i := 0; i < cityScreen.City.Workers; i++ {
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(citizenX), 27)
+            screen.DrawImage(worker, &options)
+            citizenX += worker.Bounds().Dx()
+        }
     }
 
     producingBackground, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", 13, 0)

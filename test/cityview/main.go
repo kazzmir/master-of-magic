@@ -23,6 +23,9 @@ func NewEngine() (*Engine, error) {
 
     city := citylib.City{
         Population: 5000,
+        Farmers: 2,
+        Workers: 2,
+        Rebels: 1,
         Name: "Boston",
         Wall: false,
         Race: data.RaceHighElf,

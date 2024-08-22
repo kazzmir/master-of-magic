@@ -125,6 +125,9 @@ func (citySize CitySize) String() string {
 
 type City struct {
     Population int
+    Farmers int
+    Workers int
+    Rebels int
     Name string
     Wall bool
     FoodProduction int
