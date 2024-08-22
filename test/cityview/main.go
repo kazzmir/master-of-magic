@@ -19,7 +19,7 @@ type Engine struct {
 }
 
 func NewEngine() (*Engine, error) {
-    cache := lbx.MakeLbxCache("magic-data")
+    cache := lbx.AutoCache()
 
     city := citylib.City{
         Population: 5000,

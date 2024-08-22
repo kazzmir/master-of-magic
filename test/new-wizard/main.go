@@ -17,7 +17,7 @@ type Engine struct {
 }
 
 func NewEngine() (*Engine, error) {
-    cache := lbx.MakeLbxCache("magic-data")
+    cache := lbx.AutoCache()
 
     screen := setup.MakeNewWizardScreen()
     err := screen.Load(cache)

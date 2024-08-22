@@ -13,6 +13,8 @@ const (
     IntroStateDone
 )
 
+const DefaultAnimationSpeed = 10
+
 type Intro struct {
     Counter uint64
     CurrentScene int
@@ -21,11 +23,10 @@ type Intro struct {
     CurrentIndex int
     ImageCache util.ImageCache
     LbxCache *lbx.LbxCache
+    AnimationSpeed uint64
 }
 
-const animationSpeed = 10
-
-func MakeIntro(lbxCache *lbx.LbxCache) (*Intro, error) {
+func MakeIntro(lbxCache *lbx.LbxCache, animationSpeed uint64) (*Intro, error) {
 
     introLbx, err := lbxCache.GetLbxFile("intro.lbx")
     if err != nil {
@@ -47,6 +48,7 @@ func MakeIntro(lbxCache *lbx.LbxCache) (*Intro, error) {
         Scene: util.MakeAnimation(images, false),
         ImageCache: imageCache,
         LbxCache: lbxCache,
+        AnimationSpeed: animationSpeed,
     }, nil
 }
 
@@ -57,7 +59,7 @@ func (intro *Intro) Update() IntroState {
 
     intro.Counter += 1
 
-    if intro.Counter % animationSpeed == 0 {
+    if intro.Counter % intro.AnimationSpeed == 0 {
         if !intro.Scene.Next() {
             intro.CurrentScene += 1
             intro.ImageCache.Clear()
