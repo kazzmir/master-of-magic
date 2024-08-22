@@ -34,7 +34,10 @@ func NewEngine() (*Engine, error) {
         Buildings: set.MakeSet[citylib.Building](),
     }
 
-    city.AddBuilding(citylib.BuildingWizardsGuild)
+    // city.AddBuilding(citylib.BuildingWizardsGuild)
+    city.AddBuilding(citylib.BuildingSmithy)
+    city.AddBuilding(citylib.BuildingSummoningCircle)
+    city.AddBuilding(citylib.BuildingOracle)
     city.AddBuilding(citylib.BuildingWizardTower)
 
     cityScreen := citylib.MakeCityScreen(cache, &city)

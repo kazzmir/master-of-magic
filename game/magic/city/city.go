@@ -40,6 +40,7 @@ const (
     BuildingMinersGuild
     BuildingCityWalls
     BuildingWizardTower
+    BuildingSummoningCircle
 )
 
 type CitySize int

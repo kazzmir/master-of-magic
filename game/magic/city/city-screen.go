@@ -3,15 +3,73 @@ package city
 import (
     "log"
     "fmt"
+    "math/rand/v2"
+    "sort"
     "image"
     "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/set"
     "github.com/kazzmir/master-of-magic/game/magic/util"
 
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/hajimehoshi/ebiten/v2"
 )
+
+// buildings can appear in certain well-defined places around the city
+func buildingSlots() []image.Point {
+    return []image.Point{
+        // row 1
+        image.Pt(30, 23),
+        image.Pt(70, 23),
+        image.Pt(110, 23),
+        image.Pt(150, 23),
+
+        // row 2
+        image.Pt(50, 43),
+        image.Pt(94, 43),
+        image.Pt(135, 43),
+
+        // row 3
+        image.Pt(35, 64),
+        image.Pt(75, 64),
+        image.Pt(115, 64),
+
+        /*
+        image.Pt(92, -4),
+        image.Pt(129, 6),
+        image.Pt(38, 25),
+        image.Pt(10, 10),
+        */
+    }
+}
+
+func randomSlots(random *rand.Rand) []image.Point {
+    slots := buildingSlots()
+    random.Shuffle(len(slots), func(i, j int) {
+        slots[i], slots[j] = slots[j], slots[i]
+    })
+    return slots
+}
+
+type BuildingSlot struct {
+    Building Building
+    Point image.Point
+}
+
+type BuildingSlotSort []BuildingSlot
+
+func (b BuildingSlotSort) Len() int {
+    return len(b)
+}
+
+func (b BuildingSlotSort) Less(i, j int) bool {
+    return b[i].Point.Y < b[j].Point.Y || (b[i].Point.Y == b[j].Point.Y && b[i].Point.X < b[j].Point.X)
+}
+
+func (b BuildingSlotSort) Swap(i, j int) {
+    b[i], b[j] = b[j], b[i]
+}
 
 type CityScreen struct {
     LbxCache *lbx.LbxCache
@@ -19,7 +77,38 @@ type CityScreen struct {
     Font *font.Font
     City *City
 
+    Buildings []BuildingSlot
+
     Counter uint64
+}
+
+/*
+func (cityScreen *CityScreen) BuildingOrder() []Building {
+    var out []Building
+
+    var slots []BuildingSlot
+    for building, v := range cityScreen.Slots {
+        slots = append(slots, BuildingSlot{Building: building, Point: v})
+    }
+
+    return buildingOrder(cityScreen.City.Buildings)
+}
+*/
+
+type BuildingNativeSort []Building
+func (b BuildingNativeSort) Len() int {
+    return len(b)
+}
+func (b BuildingNativeSort) Less(i, j int) bool {
+    return b[i] < b[j]
+}
+func (b BuildingNativeSort) Swap(i, j int) {
+    b[i], b[j] = b[j], b[i]
+}
+
+func sortBuildings(buildings []Building) []Building {
+    sort.Sort(BuildingNativeSort(buildings))
+    return buildings
 }
 
 func MakeCityScreen(cache *lbx.LbxCache, city *City) *CityScreen {
@@ -58,17 +147,91 @@ func MakeCityScreen(cache *lbx.LbxCache, city *City) *CityScreen {
 
     bigFont := font.MakeOptimizedFontWithPalette(fonts[5], yellowPalette)
 
+    // FIXME: include city name in the random source
+    random := rand.New(rand.NewPCG(uint64(city.X), uint64(city.Y)))
+    openSlots := randomSlots(random)
+    // openSlots := buildingSlots()
+
+    var buildings []BuildingSlot
+
+    for _, building := range sortBuildings(city.Buildings.Values()) {
+        if len(openSlots) == 0 {
+            log.Printf("Ran out of open slots in city view for %+v", city)
+            break
+        }
+
+        point := openSlots[0]
+        openSlots = openSlots[1:]
+
+        buildings = append(buildings, BuildingSlot{Building: building, Point: point})
+    }
+
+    sort.Sort(BuildingSlotSort(buildings))
+
     cityScreen := &CityScreen{
         LbxCache: cache,
         ImageCache: util.MakeImageCache(cache),
         City: city,
         Font: bigFont,
+        Buildings: buildings,
     }
+
     return cityScreen
 }
 
 func (cityScreen *CityScreen) Update() {
     cityScreen.Counter += 1
+}
+
+func buildingOrder(buildings *set.Set[Building]) []Building {
+    order := []Building{
+        BuildingBarracks,
+        BuildingArmory,
+        BuildingFightersGuild,
+        BuildingArmorersGuild,
+        BuildingWarCollege,
+        BuildingStables,
+        BuildingAnimistsGuild,
+        BuildingFantasticStable,
+        BuildingShipwrightsGuild,
+        BuildingShipYard,
+        BuildingMaritimeGuild,
+        BuildingSawmill,
+        BuildingLibrary,
+        BuildingSagesGuild,
+        BuildingOracle,
+        BuildingAlchemistsGuild,
+        BuildingUniversity,
+        BuildingWizardsGuild,
+        BuildingShrine,
+        BuildingTemple,
+        BuildingParthenon,
+        BuildingCathedral,
+        BuildingMarketplace,
+        BuildingBank,
+        BuildingMerchantsGuild,
+        BuildingGranary,
+        BuildingFarmersMarket,
+        BuildingForestersGuild,
+        BuildingMechaniciansGuild,
+        BuildingMinersGuild,
+        BuildingCityWalls,
+        BuildingWizardTower,
+        BuildingSummoningCircle,
+
+        BuildingSmithy,
+        BuildingBuildersHall,
+    }
+
+    var out []Building
+
+    for _, building := range order {
+        if buildings.Contains(building) {
+            out = append(out, building)
+        }
+    }
+
+    return out
 }
 
 func (cityScreen *CityScreen) GetBuildingIndex(building Building) int {
@@ -107,6 +270,7 @@ func (cityScreen *CityScreen) GetBuildingIndex(building Building) int {
         case BuildingCityWalls: return 76
         case BuildingForestersGuild: return 78
         case BuildingWizardTower: return 40
+        case BuildingSummoningCircle: return 6
     }
 
     return -1
@@ -119,7 +283,7 @@ func (cityScreen *CityScreen) GetBuildingPosition(building Building) (int, int){
         case BuildingFightersGuild: return 1, 1
         case BuildingArmorersGuild: return 1, 1
         case BuildingWarCollege: return 1, 1
-        case BuildingSmithy: return 1, 1
+        case BuildingSmithy: return 38, 25
         case BuildingStables: return 1, 1
         case BuildingAnimistsGuild: return 1, 1
         case BuildingFantasticStable: return 1, 1
@@ -132,7 +296,7 @@ func (cityScreen *CityScreen) GetBuildingPosition(building Building) (int, int){
         case BuildingOracle: return 1, 1
         case BuildingAlchemistsGuild: return 1, 1
         case BuildingUniversity: return 1, 1
-        case BuildingWizardsGuild: return 30, 120
+        case BuildingWizardsGuild: return 20, 0
         case BuildingShrine: return 1, 1
         case BuildingTemple: return 1, 1
         case BuildingParthenon: return 1, 1
@@ -142,12 +306,13 @@ func (cityScreen *CityScreen) GetBuildingPosition(building Building) (int, int){
         case BuildingMerchantsGuild: return 1, 1
         case BuildingGranary: return 1, 1
         case BuildingFarmersMarket: return 1, 1
-        case BuildingBuildersHall: return 1, 1
+        case BuildingBuildersHall: return 110, 30
         case BuildingMechaniciansGuild: return 1, 1
         case BuildingMinersGuild: return 1, 1
         case BuildingCityWalls: return 1, 1
         case BuildingForestersGuild: return 1, 1
-        case BuildingWizardTower: return 110, 120
+        case BuildingWizardTower: return 92, -4
+        case BuildingSummoningCircle: return 129, 6
     }
 
     return 0, 0
@@ -164,18 +329,29 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
         screen.DrawImage(landBackground, &options)
     }
 
-    // FIXME: sort the buildings from back to front as they are painted
-    for _, building := range cityScreen.City.Buildings.Values() {
+    roadX := 4.0
+    roadY := 120.0
 
-        index := cityScreen.GetBuildingIndex(building)
-        x, y := cityScreen.GetBuildingPosition(building)
+    normalRoad, err := cityScreen.ImageCache.GetImage("cityscap.lbx", 5, 0)
+    if err == nil {
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(roadX, roadY)
+        screen.DrawImage(normalRoad, &options)
+    }
+
+    for _, building := range cityScreen.Buildings {
+
+        index := cityScreen.GetBuildingIndex(building.Building)
+        x, y := building.Point.X, building.Point.Y
 
         images, err := cityScreen.ImageCache.GetImages("cityscap.lbx", index)
         if err == nil {
-            var options ebiten.DrawImageOptions
-            options.GeoM.Translate(float64(x), float64(y))
             animationIndex := animationCounter % uint64(len(images))
-            screen.DrawImage(images[animationIndex], &options)
+            use := images[animationIndex]
+            var options ebiten.DrawImageOptions
+            // x,y position is the bottom left of the sprite
+            options.GeoM.Translate(float64(x) + roadX, float64(y - use.Bounds().Dy()) + roadY)
+            screen.DrawImage(use, &options)
         }
     }
 
