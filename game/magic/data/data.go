@@ -48,3 +48,24 @@ const (
     RaceKlackon
 )
 
+func (race Race) String() string {
+    switch race {
+        case RaceNone: return "none"
+        case RaceLizard: return "Lizardmen"
+        case RaceNomad: return "Nomad"
+        case RaceOrc: return "Orc"
+        case RaceTroll: return "Troll"
+        case RaceBarbarian: return "Barbarian"
+        case RaceBeastmen: return "Beastmen"
+        case RaceDarkElf: return "Dark Elf"
+        case RaceDraconian: return "Draconian"
+        case RaceDwarf: return "Dwarf"
+        case RaceGnoll: return "Gnoll"
+        case RaceHalfling: return "Halfling"
+        case RaceHighElf: return "High Elf"
+        case RaceHighMen: return "High Men"
+        case RaceKlackon: return "Klackon"
+    }
+
+    return "?"
+}

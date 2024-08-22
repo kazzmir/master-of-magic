@@ -153,6 +153,11 @@ func (font *Font) PrintCenter(image *ebiten.Image, x float64, y float64, scale f
     font.Print(image, x - width / 2, y, scale, text)
 }
 
+func (font *Font) PrintRight(image *ebiten.Image, x float64, y float64, scale float64, text string) {
+    width := font.MeasureTextWidth(text, scale)
+    font.Print(image, x - width, y, scale, text)
+}
+
 /* split the input text ABCD into two substrings AB and CD such that the pixel width of AB is less than maxWidth */
 func (font *Font) splitText(text string, maxWidth float64, scale float64) (string, string) {
     size := font.MeasureTextWidth(text, scale)

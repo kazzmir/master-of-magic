@@ -88,7 +88,9 @@ func (b BuildingSlotSort) Swap(i, j int) {
 type CityScreen struct {
     LbxCache *lbx.LbxCache
     ImageCache util.ImageCache
-    Font *font.Font
+    BigFont *font.Font
+    DescriptionFont *font.Font
+    ProducingFont *font.Font
     City *City
 
     Buildings []BuildingSlot
@@ -154,6 +156,39 @@ func MakeCityScreen(cache *lbx.LbxCache, city *City) *CityScreen {
 
     bigFont := font.MakeOptimizedFontWithPalette(fonts[5], yellowPalette)
 
+    brownPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0xe1, G: 0x8e, B: 0x32, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+    }
+
+    // fixme: make shadow font as well
+    descriptionFont := font.MakeOptimizedFontWithPalette(fonts[1], brownPalette)
+
+    whitePalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+    }
+
+    producingFont := font.MakeOptimizedFontWithPalette(fonts[0], whitePalette)
+
     // FIXME: include city name in the random source
     random := rand.New(rand.NewPCG(uint64(city.X), uint64(city.Y) + hash(city.Name)))
     // random = rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64()))
@@ -202,7 +237,9 @@ func MakeCityScreen(cache *lbx.LbxCache, city *City) *CityScreen {
         LbxCache: cache,
         ImageCache: util.MakeImageCache(cache),
         City: city,
-        Font: bigFont,
+        BigFont: bigFont,
+        DescriptionFont: descriptionFont,
+        ProducingFont: producingFont,
         Buildings: buildings,
     }
 
@@ -372,7 +409,11 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
         screen.DrawImage(ui, &options)
     }
 
-    cityScreen.Font.Print(screen, 20, 3, 1, fmt.Sprintf("%v of %s", cityScreen.City.GetSize(), cityScreen.City.Name))
+    cityScreen.BigFont.Print(screen, 20, 3, 1, fmt.Sprintf("%v of %s", cityScreen.City.GetSize(), cityScreen.City.Name))
+
+    cityScreen.DescriptionFont.Print(screen, 6, 19, 1, fmt.Sprintf("%v", cityScreen.City.Race))
+
+    cityScreen.DescriptionFont.PrintRight(screen, 210, 19, 1, fmt.Sprintf("Population: %v (%v)", cityScreen.City.Population, 80))
 
     smallFood, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", 40, 0)
     if err == nil {
