@@ -253,6 +253,11 @@ func (cityScreen *CityScreen) GetBuildingIndex(building Building) int {
         case BuildingTree2: return 20
         case BuildingTree3: return 21
 
+        case BuildingTradeGoods: return 41
+
+        // FIXME: housing is indices 42-44, based on the race of the city
+        case BuildingHousing: return 43
+
         case BuildingTreeHouse1: return 30
         case BuildingTreeHouse2: return 31
         case BuildingTreeHouse3: return 32
@@ -362,6 +367,13 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
         }
     }
     // big magic is 91
+
+    producingPic, err := cityScreen.ImageCache.GetImage("cityscap.lbx", cityScreen.GetBuildingIndex(cityScreen.City.Producing), 0)
+    if err == nil {
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(217, 144)
+        screen.DrawImage(producingPic, &options)
+    }
 
     // draw a few squares of the map
     mapX := 215

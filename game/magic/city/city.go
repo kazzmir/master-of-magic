@@ -6,7 +6,9 @@ import (
 
 type Building int
 const (
-    BuildingBarracks Building = iota
+    BuildingNone Building = iota
+
+    BuildingBarracks
     BuildingArmory
     BuildingFightersGuild
     BuildingArmorersGuild
