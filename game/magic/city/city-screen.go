@@ -279,6 +279,13 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
         screen.DrawImage(landBackground, &options)
     }
 
+    hills1, err := cityScreen.ImageCache.GetImage("cityscap.lbx", 7, 0)
+    if err == nil {
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(4, 101)
+        screen.DrawImage(hills1, &options)
+    }
+
     roadX := 4.0
     roadY := 120.0
 
