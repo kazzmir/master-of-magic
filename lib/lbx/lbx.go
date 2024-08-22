@@ -418,6 +418,11 @@ func readImage(reader io.Reader, lastImage *image.Paletted, width int, height in
     var img *image.Paletted
 
     if deltaFrame {
+
+        if lastImage == nil {
+            return nil, fmt.Errorf("cannot have a delta frame without a full frame before it")
+        }
+
         img = copyImage(lastImage)
     } else {
         img = image.NewPaletted(image.Rect(0, 0, width, height), palette)
