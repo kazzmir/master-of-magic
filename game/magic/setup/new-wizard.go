@@ -1253,7 +1253,6 @@ func (screen *NewWizardScreen) makeErrorElement(message string) *uilib.UIElement
 
     maxWidth := screen.ErrorTop.Bounds().Dx() - errorMargin * 2
 
-    // FIXME: each line of text should be centered. maybe just RenderWrapped needs an extra parameter
     wrapped := screen.ErrorFont.CreateWrappedText(float64(maxWidth), 1, message)
 
     bottom := float64(errorY + errorTopMargin) + wrapped.TotalHeight
@@ -1271,7 +1270,7 @@ func (screen *NewWizardScreen) makeErrorElement(message string) *uilib.UIElement
             options.GeoM.Translate(float64(errorX), float64(errorY))
             window.DrawImage(topDraw, &options)
 
-            screen.ErrorFont.RenderWrapped(window, float64(errorX + errorMargin), float64(errorY + errorTopMargin), wrapped)
+            screen.ErrorFont.RenderWrapped(window, float64(errorX + errorMargin + maxWidth / 2), float64(errorY + errorTopMargin), wrapped, true)
 
             options.GeoM.Reset()
             options.GeoM.Translate(float64(errorX), float64(bottom))
@@ -1351,7 +1350,7 @@ func (screen *NewWizardScreen) makeHelpElement(help lbx.HelpEntry, helpEntries .
             }
 
             screen.HelpTitleFont.Print(window, float64(titleX), float64(infoY + infoTopMargin + titleYAdjust), 1, help.Headline)
-            screen.HelpFont.RenderWrapped(window, float64(infoX + infoLeftMargin + infoBodyMargin), float64(helpTextY), wrapped)
+            screen.HelpFont.RenderWrapped(window, float64(infoX + infoLeftMargin + infoBodyMargin), float64(helpTextY), wrapped, false)
         },
         LeftClick: func(infoThis *uilib.UIElement){
             screen.UI.RemoveElement(infoThis)

@@ -2,9 +2,9 @@ package game
 
 import (
     "log"
+    "math"
 
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
-    "github.com/kazzmir/master-of-magic/game/magic/data"
 
     "github.com/hajimehoshi/ebiten/v2"
 )
@@ -56,13 +56,13 @@ func (mapObject *Map) GetTileImage(tileX int, tileY int, animationCounter uint64
     return gpuImage, nil
 }
 
-func (mapObject *Map) Draw(cameraX int, cameraY int, animationCounter uint64, screen *ebiten.Image){
+func (mapObject *Map) Draw(cameraX int, cameraY int, animationCounter uint64, screen *ebiten.Image, geom ebiten.GeoM){
 
     tileWidth := mapObject.TileWidth()
     tileHeight := mapObject.TileHeight()
 
-    tilesPerRow := data.ScreenWidth / tileWidth
-    tilesPerColumn := data.ScreenHeight / tileHeight
+    tilesPerRow := int(math.Ceil(float64(screen.Bounds().Dx()) / float64(tileWidth)))
+    tilesPerColumn := int(math.Ceil(float64(screen.Bounds().Dy()) / float64(tileHeight)))
 
     var options ebiten.DrawImageOptions
 
@@ -78,7 +78,8 @@ func (mapObject *Map) Draw(cameraX int, cameraY int, animationCounter uint64, sc
 
             image, err := mapObject.GetTileImage(tileX, tileY, animationCounter)
             if err == nil {
-                options.GeoM.Reset()
+                options.GeoM = geom
+                // options.GeoM.Reset()
                 options.GeoM.Translate(float64(x * tileWidth), float64(y * tileHeight))
                 screen.DrawImage(image, &options)
             } else {

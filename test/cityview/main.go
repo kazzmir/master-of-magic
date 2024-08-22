@@ -8,6 +8,8 @@ import (
     "github.com/kazzmir/master-of-magic/lib/set"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/terrain"
+    "github.com/kazzmir/master-of-magic/game/magic/game"
 
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -16,6 +18,7 @@ import (
 type Engine struct {
     LbxCache *lbx.LbxCache
     CityScreen *citylib.CityScreen
+    Map game.Map
 }
 
 func NewEngine() (*Engine, error) {
@@ -47,9 +50,24 @@ func NewEngine() (*Engine, error) {
 
     cityScreen := citylib.MakeCityScreen(cache, &city)
 
+    terrainLbx, err := cache.GetLbxFile("terrain.lbx")
+    if err != nil {
+        return nil, err
+    }
+
+    terrainData, err := terrain.ReadTerrainData(terrainLbx)
+    if err != nil {
+        return nil, err
+    }
+
     return &Engine{
         LbxCache: cache,
         CityScreen: cityScreen,
+        Map: game.Map{
+            Data: terrainData,
+            Map: terrain.GenerateLandCellularAutomata(20, 20, terrainData),
+            TileCache: make(map[int]*ebiten.Image),
+        },
     }, nil
 }
 
@@ -70,8 +88,11 @@ func (engine *Engine) Update() error {
 }
 
 func (engine *Engine) Draw(screen *ebiten.Image) {
-    engine.CityScreen.Draw(screen, func (where *ebiten.Image, options ebiten.DrawImageOptions) {
+    engine.CityScreen.Draw(screen, func (where *ebiten.Image, geom ebiten.GeoM, counter uint64) {
         where.Fill(color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff})
+
+        engine.Map.Draw(engine.CityScreen.City.X - 2, engine.CityScreen.City.Y - 2, counter / 10, where, geom)
+
     })
 }
 

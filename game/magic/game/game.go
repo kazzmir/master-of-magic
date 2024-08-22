@@ -616,7 +616,7 @@ func (game *Game) DrawFog(screen *ebiten.Image, fog [][]bool, cameraX int, camer
 }
 
 func (game *Game) Draw(screen *ebiten.Image){
-    game.Map.Draw(game.cameraX, game.cameraY, game.Counter / 4, screen)
+    game.Map.Draw(game.cameraX, game.cameraY, game.Counter / 4, screen, ebiten.GeoM{})
 
     if len(game.Players) > 0 {
         player := game.Players[0]
