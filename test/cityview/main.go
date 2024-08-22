@@ -10,6 +10,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
     "github.com/kazzmir/master-of-magic/game/magic/game"
+    "github.com/kazzmir/master-of-magic/game/magic/util"
 
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -18,6 +19,7 @@ import (
 type Engine struct {
     LbxCache *lbx.LbxCache
     CityScreen *citylib.CityScreen
+    ImageCache util.ImageCache
     Map game.Map
 }
 
@@ -63,6 +65,7 @@ func NewEngine() (*Engine, error) {
     return &Engine{
         LbxCache: cache,
         CityScreen: cityScreen,
+        ImageCache: util.MakeImageCache(cache),
         Map: game.Map{
             Data: terrainData,
             Map: terrain.GenerateLandCellularAutomata(20, 20, terrainData),
@@ -88,10 +91,30 @@ func (engine *Engine) Update() error {
 }
 
 func (engine *Engine) Draw(screen *ebiten.Image) {
+    cameraX := engine.CityScreen.City.X - 2
+    cameraY := engine.CityScreen.City.Y - 2
+
     engine.CityScreen.Draw(screen, func (where *ebiten.Image, geom ebiten.GeoM, counter uint64) {
         where.Fill(color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff})
 
-        engine.Map.Draw(engine.CityScreen.City.X - 2, engine.CityScreen.City.Y - 2, counter / 10, where, geom)
+        engine.Map.Draw(cameraX, cameraY, counter / 10, where, geom)
+
+        city := engine.CityScreen.City
+        var cityPic *ebiten.Image
+        var err error
+        if city.Wall {
+            cityPic, err = game.GetCityWallImage(city.GetSize(), &engine.ImageCache)
+        } else {
+            cityPic, err = game.GetCityNoWallImage(city.GetSize(), &engine.ImageCache)
+        }
+
+        if err == nil {
+            var options ebiten.DrawImageOptions
+            options.GeoM = geom
+
+            options.GeoM.Translate(float64(city.X - cameraX) * float64(engine.Map.TileWidth()), float64(city.Y - cameraY) * float64(engine.Map.TileHeight()))
+            where.DrawImage(cityPic, &options)
+        }
 
     })
 }

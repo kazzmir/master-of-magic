@@ -316,7 +316,7 @@ func (game *Game) GetUnitImage(unit units.Unit) (*ebiten.Image, error) {
     return image, err
 }
 
-func (game *Game) GetCityNoWallImage(size citylib.CitySize) (*ebiten.Image, error) {
+func GetCityNoWallImage(size citylib.CitySize, cache *util.ImageCache) (*ebiten.Image, error) {
     var index int = 0
 
     switch size {
@@ -328,10 +328,10 @@ func (game *Game) GetCityNoWallImage(size citylib.CitySize) (*ebiten.Image, erro
     }
 
     // the city image is a sub-frame of animation 20
-    return game.ImageCache.GetImage("mapback.lbx", 20, index)
+    return cache.GetImage("mapback.lbx", 20, index)
 }
 
-func (game *Game) GetCityWallImage(size citylib.CitySize) (*ebiten.Image, error) {
+func GetCityWallImage(size citylib.CitySize, cache *util.ImageCache) (*ebiten.Image, error) {
     var index int = 0
 
     switch size {
@@ -343,7 +343,7 @@ func (game *Game) GetCityWallImage(size citylib.CitySize) (*ebiten.Image, error)
     }
 
     // the city image is a sub-frame of animation 21
-    return game.ImageCache.GetImage("mapback.lbx", 21, index)
+    return cache.GetImage("mapback.lbx", 21, index)
 }
 
 func (game *Game) DrawHud(screen *ebiten.Image){
@@ -625,9 +625,9 @@ func (game *Game) Draw(screen *ebiten.Image){
             var cityPic *ebiten.Image
             var err error
             if city.Wall {
-                cityPic, err = game.GetCityWallImage(city.GetSize())
+                cityPic, err = GetCityWallImage(city.GetSize(), &game.ImageCache)
             } else {
-                cityPic, err = game.GetCityNoWallImage(city.GetSize())
+                cityPic, err = GetCityNoWallImage(city.GetSize(), &game.ImageCache)
             }
 
             if err == nil {
