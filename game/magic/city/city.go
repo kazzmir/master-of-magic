@@ -1,6 +1,8 @@
 package city
 
 import (
+    "math"
+
     "github.com/kazzmir/master-of-magic/lib/set"
     "github.com/kazzmir/master-of-magic/game/magic/data"
 )
@@ -166,3 +168,16 @@ func (city *City) GetSize() CitySize {
     return CitySizeCapital
 }
 
+func (city *City) Citizens() int {
+    return city.Population / 1000
+}
+
+/* FIXME: take enchantments into account
+ * https://masterofmagic.fandom.com/wiki/Farmer
+ */
+func (city *City) ComputeSubsistenceFarmers() int {
+    // FIXME: take buildings into account (granary, farmers market, etc)
+    // each citizen needs 2 food
+    // round up in case of an odd number of citizens
+    return int(math.Ceil(float64(city.Citizens()) / 2.0))
+}

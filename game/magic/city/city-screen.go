@@ -475,10 +475,22 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
 
     citizenX := 6
 
+    requiredFarmers := cityScreen.City.ComputeSubsistenceFarmers()
+
     // FIXME: add gap between required farmers and extra workers
     farmer, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", getRaceFarmerIndex(cityScreen.City.Race), 0)
     if err == nil {
-        for i := 0; i < cityScreen.City.Farmers; i++ {
+        i := 0
+        for i = 0; i < requiredFarmers && i < cityScreen.City.Farmers; i++ {
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(citizenX), 27)
+            screen.DrawImage(farmer, &options)
+            citizenX += farmer.Bounds().Dx()
+        }
+
+        citizenX += 3
+
+        for ; i < cityScreen.City.Farmers; i++ {
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(citizenX), 27)
             screen.DrawImage(farmer, &options)

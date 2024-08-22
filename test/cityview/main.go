@@ -22,8 +22,8 @@ func NewEngine() (*Engine, error) {
     cache := lbx.AutoCache()
 
     city := citylib.City{
-        Population: 5000,
-        Farmers: 2,
+        Population: 6000,
+        Farmers: 4,
         Workers: 2,
         Rebels: 1,
         Name: "Boston",
