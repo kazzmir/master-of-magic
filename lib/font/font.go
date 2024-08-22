@@ -179,7 +179,12 @@ func (font *Font) splitText(text string, maxWidth float64, scale float64) (strin
 
 func (font *Font) PrintWrap(image *ebiten.Image, x float64, y float64, maxWidth float64, scale float64, text string) {
     wrapped := font.CreateWrappedText(maxWidth, scale, text)
-    font.RenderWrapped(image, x, y, wrapped)
+    font.RenderWrapped(image, x, y, wrapped, false)
+}
+
+func (font *Font) PrintWrapCenter(image *ebiten.Image, x float64, y float64, maxWidth float64, scale float64, text string) {
+    wrapped := font.CreateWrappedText(maxWidth, scale, text)
+    font.RenderWrapped(image, x, y, wrapped, true)
 }
 
 type WrappedText struct {
@@ -189,10 +194,14 @@ type WrappedText struct {
     Scale float64
 }
 
-func (font *Font) RenderWrapped(image *ebiten.Image, x float64, y float64, wrapped WrappedText) {
+func (font *Font) RenderWrapped(image *ebiten.Image, x float64, y float64, wrapped WrappedText, center bool) {
     yPos := y
     for _, line := range wrapped.Lines {
-        font.Print(image, x, yPos, wrapped.Scale, line)
+        if center {
+            font.PrintCenter(image, x, yPos, wrapped.Scale, line)
+        } else {
+            font.Print(image, x, yPos, wrapped.Scale, line)
+        }
         yPos += float64(font.Height()) * wrapped.Scale + 1
     }
 }

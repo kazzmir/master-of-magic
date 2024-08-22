@@ -477,6 +477,13 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
         screen.DrawImage(worker, &options)
     }
 
+    producingBackground, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", 13, 0)
+    if err == nil {
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(260, 149)
+        screen.DrawImage(producingBackground, &options)
+    }
+
     producingPic, err := cityScreen.ImageCache.GetImage("cityscap.lbx", cityScreen.GetBuildingIndex(cityScreen.City.Producing), 0)
     if err == nil {
         var options ebiten.DrawImageOptions
@@ -485,6 +492,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
     }
 
     cityScreen.ProducingFont.PrintCenter(screen, 237, 179, 1, fmt.Sprintf("%v", cityScreen.City.Producing))
+    cityScreen.ProducingFont.PrintWrapCenter(screen, 285, 155, 60, 1, fmt.Sprintf("Increases population growth rate."))
 
     // draw a few squares of the map
     mapX := 215
