@@ -52,6 +52,51 @@ const (
     BuildingLast
 )
 
+func (building Building) String() string {
+    switch building {
+        case BuildingBarracks: return "Barracks"
+        case BuildingArmory: return "Armory"
+        case BuildingFightersGuild: return "Fighters Guild"
+        case BuildingArmorersGuild: return "Armorers Guild"
+        case BuildingWarCollege: return "War College"
+        case BuildingSmithy: return "Smithy"
+        case BuildingStables: return "Stables"
+        case BuildingAnimistsGuild: return "Animists Guild"
+        case BuildingFantasticStable: return "Fantastic Stable"
+        case BuildingShipwrightsGuild: return "Shipwrights Guild"
+        case BuildingShipYard: return "Ship Yard"
+        case BuildingMaritimeGuild: return "Maritime Guild"
+        case BuildingSawmill: return "Sawmill"
+        case BuildingLibrary: return "Library"
+        case BuildingSagesGuild: return "Sages Guild"
+        case BuildingOracle: return "Oracle"
+        case BuildingAlchemistsGuild: return "Alchemists Guild"
+        case BuildingUniversity: return "University"
+        case BuildingWizardsGuild: return "Wizards Guild"
+        case BuildingShrine: return "Shrine"
+        case BuildingTemple: return "Temple"
+        case BuildingParthenon: return "Parthenon"
+        case BuildingCathedral: return "Cathedral"
+        case BuildingMarketplace: return "Marketplace"
+        case BuildingBank: return "Bank"
+        case BuildingMerchantsGuild: return "Merchants Guild"
+        case BuildingGranary: return "Granary"
+        case BuildingFarmersMarket: return "Farmers Market"
+        case BuildingForestersGuild: return "Foresters Guild"
+        case BuildingBuildersHall: return "Builders Hall"
+        case BuildingMechaniciansGuild: return "Mechanicians Guild"
+        case BuildingMinersGuild: return "Miners Guild"
+        case BuildingCityWalls: return "City Walls"
+        case BuildingWizardTower: return "Wizard Tower"
+        case BuildingSummoningCircle: return "Summoning Circle"
+
+        case BuildingHousing: return "Housing"
+        case BuildingTradeGoods: return "Trade Goods"
+    }
+
+    return "?"
+}
+
 type CitySize int
 const (
     CitySizeHamlet CitySize = iota

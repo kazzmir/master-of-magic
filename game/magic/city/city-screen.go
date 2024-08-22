@@ -176,6 +176,7 @@ func MakeCityScreen(cache *lbx.LbxCache, city *City) *CityScreen {
 
     whitePalette := color.Palette{
         color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
         color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
         color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
         color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
@@ -187,7 +188,7 @@ func MakeCityScreen(cache *lbx.LbxCache, city *City) *CityScreen {
         color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
     }
 
-    producingFont := font.MakeOptimizedFontWithPalette(fonts[0], whitePalette)
+    producingFont := font.MakeOptimizedFontWithPalette(fonts[1], whitePalette)
 
     // FIXME: include city name in the random source
     random := rand.New(rand.NewPCG(uint64(city.X), uint64(city.Y) + hash(city.Name)))
@@ -482,6 +483,8 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
         options.GeoM.Translate(217, 144)
         screen.DrawImage(producingPic, &options)
     }
+
+    cityScreen.ProducingFont.PrintCenter(screen, 237, 179, 1, fmt.Sprintf("%v", cityScreen.City.Producing))
 
     // draw a few squares of the map
     mapX := 215
