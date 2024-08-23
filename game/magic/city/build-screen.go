@@ -153,6 +153,11 @@ func MakeBuildDescriptions(cache *lbx.LbxCache) *BuildingDescriptions {
     }
 }
 
+// FIXME
+func GetBuildingMaintenance(building Building) int {
+    return 2
+}
+
 func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *City) *uilib.UI {
 
     fontLbx, err := cache.GetLbxFile("fonts.lbx")
@@ -259,6 +264,19 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *City) *
                 descriptionFont.Print(screen, 130, 14, 1, building.String())
 
                 descriptionFont.Print(screen, 85, 48, 1, "Maintenance")
+
+                buildingMaintenance := GetBuildingMaintenance(building)
+
+                smallCoin, err := imageCache.GetImage("backgrnd.lbx", 42, 0)
+                if err == nil {
+                    var options ebiten.DrawImageOptions
+                    options.GeoM.Translate(85 + descriptionFont.MeasureTextWidth("Maintenance", 1) + 3, 50)
+                    for i := 0; i < buildingMaintenance; i++ {
+                        screen.DrawImage(smallCoin, &options)
+                        options.GeoM.Translate(float64(smallCoin.Bounds().Dx() + 2), 0)
+                    }
+                }
+
                 descriptionFont.Print(screen, 85, 58, 1, "Allows")
 
                 descriptionFont.RenderWrapped(screen, 85, 108, descriptionWrapped, false)
