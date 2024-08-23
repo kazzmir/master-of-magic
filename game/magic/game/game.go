@@ -227,8 +227,8 @@ func (game *Game) Activate() {
 func (game *Game) Update() GameState {
     game.Counter += 1
 
-    tilesPerRow := data.ScreenWidth / game.Map.TileWidth()
-    tilesPerColumn := data.ScreenHeight / game.Map.TileHeight()
+    tilesPerRow := game.Map.TilesPerRow(data.ScreenWidth)
+    tilesPerColumn := game.Map.TilesPerColumn(data.ScreenHeight)
 
     if game.State == GameStateRunning {
         // log.Printf("Game.Update")
@@ -461,8 +461,8 @@ func (game *Game) DrawFog(screen *ebiten.Image, fog [][]bool, cameraX int, camer
 
     fogBlack := game.GetFogImage()
 
-    tilesPerRow := data.ScreenWidth / game.Map.TileWidth()
-    tilesPerColumn := data.ScreenHeight / game.Map.TileHeight()
+    tilesPerRow := game.Map.TilesPerRow(screen.Bounds().Dx())
+    tilesPerColumn := game.Map.TilesPerColumn(screen.Bounds().Dy())
     var options ebiten.DrawImageOptions
 
     /*

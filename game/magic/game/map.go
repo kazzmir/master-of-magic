@@ -56,13 +56,21 @@ func (mapObject *Map) GetTileImage(tileX int, tileY int, animationCounter uint64
     return gpuImage, nil
 }
 
+func (mapObject *Map) TilesPerRow(screenWidth int) int {
+    return int(math.Ceil(float64(screenWidth) / float64(mapObject.TileWidth())))
+}
+
+func (mapObject *Map) TilesPerColumn(screenHeight int) int {
+    return int(math.Ceil(float64(screenHeight) / float64(mapObject.TileHeight())))
+}
+
 func (mapObject *Map) Draw(cameraX int, cameraY int, animationCounter uint64, screen *ebiten.Image, geom ebiten.GeoM){
 
     tileWidth := mapObject.TileWidth()
     tileHeight := mapObject.TileHeight()
 
-    tilesPerRow := int(math.Ceil(float64(screen.Bounds().Dx()) / float64(tileWidth)))
-    tilesPerColumn := int(math.Ceil(float64(screen.Bounds().Dy()) / float64(tileHeight)))
+    tilesPerRow := mapObject.TilesPerRow(screen.Bounds().Dx())
+    tilesPerColumn := mapObject.TilesPerColumn(screen.Bounds().Dy())
 
     var options ebiten.DrawImageOptions
 
