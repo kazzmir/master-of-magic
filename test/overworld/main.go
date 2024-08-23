@@ -35,10 +35,13 @@ func NewEngine() (*Engine, error) {
 
     game.Activate()
 
+    game.Plane = data.PlaneArcanus
+
     player := game.AddPlayer(wizard)
 
     player.AddCity(citylib.City{
         Population: 6000,
+        Plane: data.PlaneArcanus,
         Wall: false,
         X: 4,
         Y: 5,
@@ -48,6 +51,7 @@ func NewEngine() (*Engine, error) {
 
     drake := player.AddUnit(gamelib.Unit{
         Unit: units.GreatDrake,
+        Plane: data.PlaneArcanus,
         Banner: wizard.Banner,
         X: 5,
         Y: 5,

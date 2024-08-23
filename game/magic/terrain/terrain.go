@@ -10,13 +10,6 @@ import (
 
 // terrain tiles are indicies 0-0x259 for arcanus, and 0x25A - 0x5f4 for myrror
 
-type Plane int
-
-const (
-    Arcanus Plane = iota
-    Myrror
-)
-
 type TerrainIndex int
 
 const (

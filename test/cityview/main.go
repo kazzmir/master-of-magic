@@ -2,7 +2,7 @@ package main
 
 import (
     "log"
-    "image/color"
+    // "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/set"
@@ -95,27 +95,21 @@ func (engine *Engine) Draw(screen *ebiten.Image) {
     cameraY := engine.CityScreen.City.Y - 2
 
     engine.CityScreen.Draw(screen, func (where *ebiten.Image, geom ebiten.GeoM, counter uint64) {
-        where.Fill(color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff})
-
-        engine.Map.Draw(cameraX, cameraY, counter / 10, where, geom)
-
-        city := engine.CityScreen.City
-        var cityPic *ebiten.Image
-        var err error
-        if city.Wall {
-            cityPic, err = game.GetCityWallImage(city.GetSize(), &engine.ImageCache)
-        } else {
-            cityPic, err = game.GetCityNoWallImage(city.GetSize(), &engine.ImageCache)
+        overworld := game.Overworld{
+            CameraX: cameraX,
+            CameraY: cameraY,
+            Map: &engine.Map,
+            Cities: []*citylib.City{engine.CityScreen.City},
+            Units: []*game.Unit{},
+            SelectedUnit: nil,
+            ImageCache: &engine.ImageCache,
+            Counter: counter,
+            Fog: nil,
+            ShowAnimation: false,
+            FogBlack: nil,
         }
 
-        if err == nil {
-            var options ebiten.DrawImageOptions
-            options.GeoM = geom
-
-            options.GeoM.Translate(float64(city.X - cameraX) * float64(engine.Map.TileWidth()), float64(city.Y - cameraY) * float64(engine.Map.TileHeight()))
-            where.DrawImage(cityPic, &options)
-        }
-
+        overworld.DrawOverworld(where, geom)
     })
 }
 

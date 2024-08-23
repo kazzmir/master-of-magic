@@ -14,11 +14,13 @@ import (
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
+    _ "github.com/hajimehoshi/ebiten/v2/vector"
 )
 
 type Unit struct {
     Unit units.Unit
     Banner data.BannerType
+    Plane data.Plane
     X int
     Y int
     Id uint64
@@ -63,6 +65,14 @@ type Player struct {
 
     UnitId uint64
     SelectedUnit *Unit
+}
+
+func (player *Player) GetFog(plane data.Plane) [][]bool {
+    if plane == data.PlaneArcanus {
+        return player.ArcanusFog
+    } else {
+        return player.MyrrorFog
+    }
 }
 
 func (player *Player) SetSelectedUnit(unit *Unit){
@@ -127,6 +137,7 @@ type Game struct {
     Counter uint64
     Fog *ebiten.Image
     State GameState
+    Plane data.Plane
 
     cameraX int
     cameraY int
@@ -287,7 +298,7 @@ func (game *Game) GetMainImage(index int) (*ebiten.Image, error) {
     return image, err
 }
 
-func (game *Game) GetUnitBackgroundImage(banner data.BannerType) (*ebiten.Image, error) {
+func GetUnitBackgroundImage(banner data.BannerType, imageCache *util.ImageCache) (*ebiten.Image, error) {
     index := -1
     switch banner {
         case data.BannerBlue: index = 14
@@ -298,7 +309,7 @@ func (game *Game) GetUnitBackgroundImage(banner data.BannerType) (*ebiten.Image,
         case data.BannerBrown: index = 19
     }
 
-    image, err := game.ImageCache.GetImage("mapback.lbx", index, 0)
+    image, err := imageCache.GetImage("mapback.lbx", index, 0)
     if err != nil {
         log.Printf("Error: image in mapback.lbx is missing: %v", err)
     }
@@ -306,8 +317,8 @@ func (game *Game) GetUnitBackgroundImage(banner data.BannerType) (*ebiten.Image,
     return image, err
 }
 
-func (game *Game) GetUnitImage(unit units.Unit) (*ebiten.Image, error) {
-    image, err := game.ImageCache.GetImage(unit.LbxFile, unit.Index, 0)
+func GetUnitImage(unit units.Unit, imageCache *util.ImageCache) (*ebiten.Image, error) {
+    image, err := imageCache.GetImage(unit.LbxFile, unit.Index, 0)
 
     if err != nil {
         log.Printf("Error: image in %v is missing: %v", unit.LbxFile, err)
@@ -431,10 +442,10 @@ func (game *Game) DrawHud(screen *ebiten.Image){
     }
 }
 
-func (game *Game) DrawFog(screen *ebiten.Image, fog [][]bool, cameraX int, cameraY int){
+func (overworld *Overworld) DrawFog(screen *ebiten.Image, geom ebiten.GeoM){
 
     fogImage := func(index int) *ebiten.Image {
-        img, err := game.ImageCache.GetImage("mapback.lbx", index, 0)
+        img, err := overworld.ImageCache.GetImage("mapback.lbx", index, 0)
         if err != nil {
             log.Printf("Error: image in mapback.lbx is missing: %v", err)
             return nil
@@ -459,11 +470,16 @@ func (game *Game) DrawFog(screen *ebiten.Image, fog [][]bool, cameraX int, camer
     FogEdge_SW_W_NW_N := fogImage(11)
     */
 
-    fogBlack := game.GetFogImage()
+    // fogBlack := game.GetFogImage()
 
-    tilesPerRow := game.Map.TilesPerRow(screen.Bounds().Dx())
-    tilesPerColumn := game.Map.TilesPerColumn(screen.Bounds().Dy())
+    tileWidth := overworld.Map.TileWidth()
+    tileHeight := overworld.Map.TileHeight()
+
+    tilesPerRow := overworld.Map.TilesPerRow(screen.Bounds().Dx())
+    tilesPerColumn := overworld.Map.TilesPerColumn(screen.Bounds().Dy())
     var options ebiten.DrawImageOptions
+
+    fog := overworld.Fog
 
     /*
     fogNW := func(x int, y int) bool {
@@ -540,11 +556,11 @@ func (game *Game) DrawFog(screen *ebiten.Image, fog [][]bool, cameraX int, camer
     for x := 0; x < tilesPerRow; x++ {
         for y := 0; y < tilesPerColumn; y++ {
 
-            tileX := x + cameraX
-            tileY := y + cameraY
+            tileX := x + overworld.CameraX
+            tileY := y + overworld.CameraY
 
-            options.GeoM.Reset()
-            options.GeoM.Translate(float64(x * game.Map.TileWidth()), float64(y * game.Map.TileHeight()))
+            options.GeoM = geom
+            options.GeoM.Translate(float64(x * tileWidth), float64(y * tileHeight))
 
             // nw := fogNW(tileX, tileY)
             n := fogN(tileX, tileY)
@@ -608,62 +624,142 @@ func (game *Game) DrawFog(screen *ebiten.Image, fog [][]bool, cameraX int, camer
                 }
                 */
             } else {
-                screen.DrawImage(fogBlack, &options)
+
+                if overworld.FogBlack != nil {
+                    screen.DrawImage(overworld.FogBlack, &options)
+                }
             }
         }
     }
 
 }
 
-func (game *Game) Draw(screen *ebiten.Image){
-    game.Map.Draw(game.cameraX, game.cameraY, game.Counter / 4, screen, ebiten.GeoM{})
+type Overworld struct {
+    CameraX int
+    CameraY int
+    Counter uint64
+    Map *Map
+    Cities []*citylib.City
+    Units []*Unit
+    SelectedUnit *Unit
+    ImageCache *util.ImageCache
+    Fog [][]bool
+    ShowAnimation bool
+    FogBlack *ebiten.Image
+}
 
-    if len(game.Players) > 0 {
-        player := game.Players[0]
+func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM){
+    overworld.Map.Draw(overworld.CameraX, overworld.CameraY, overworld.Counter, screen, geom)
 
-        for _, city := range player.Cities {
-            var cityPic *ebiten.Image
-            var err error
-            if city.Wall {
-                cityPic, err = GetCityWallImage(city.GetSize(), &game.ImageCache)
-            } else {
-                cityPic, err = GetCityNoWallImage(city.GetSize(), &game.ImageCache)
+    tileWidth := overworld.Map.TileWidth()
+    tileHeight := overworld.Map.TileHeight()
+
+    convertTileCoordinates := func(x int, y int) (int, int) {
+        outX := (x - overworld.CameraX) * tileWidth
+        outY := (y - overworld.CameraY) * tileHeight
+        return outX, outY
+    }
+
+    for _, city := range overworld.Cities {
+        var cityPic *ebiten.Image
+        var err error
+        if city.Wall {
+            cityPic, err = GetCityWallImage(city.GetSize(), overworld.ImageCache)
+        } else {
+            cityPic, err = GetCityNoWallImage(city.GetSize(), overworld.ImageCache)
+        }
+
+        if err == nil {
+            var options ebiten.DrawImageOptions
+            x, y := convertTileCoordinates(city.X, city.Y)
+            options.GeoM = geom
+            // draw the city in the center of the tile
+            // first compute center of tile
+            options.GeoM.Translate(float64(x) + float64(tileWidth) / 2.0, float64(y) + float64(tileHeight) / 2.0)
+            // then move the city image so that the center of the image is at the center of the tile
+            options.GeoM.Translate(float64(-cityPic.Bounds().Dx()) / 2.0, float64(-cityPic.Bounds().Dy()) / 2.0)
+            screen.DrawImage(cityPic, &options)
+
+            /*
+            tx, ty := options.GeoM.Apply(float64(0), float64(0))
+            vector.StrokeRect(screen, float32(tx), float32(ty), float32(cityPic.Bounds().Dx()), float32(cityPic.Bounds().Dy()), 1, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, true)
+            vector.DrawFilledCircle(screen, float32(x) + float32(tileWidth) / 2, float32(y) + float32(tileHeight) / 2, 2, color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, true)
+            */
+        }
+    }
+
+    for _, unit := range overworld.Units {
+        if overworld.SelectedUnit != unit || overworld.ShowAnimation || overworld.Counter / 55 % 2 == 0 {
+            var options ebiten.DrawImageOptions
+            options.GeoM = geom
+            x, y := convertTileCoordinates(unit.X, unit.Y)
+            options.GeoM.Translate(float64(x), float64(y))
+
+            if overworld.ShowAnimation && overworld.SelectedUnit == unit {
+                dx := float64(float64(unit.MoveX - unit.X) * float64(tileWidth * unit.Movement) / float64(MovementLimit))
+                dy := float64(float64(unit.MoveY - unit.Y) * float64(tileHeight * unit.Movement) / float64(MovementLimit))
+                options.GeoM.Translate(dx, dy)
             }
 
+            unitBack, err := GetUnitBackgroundImage(unit.Banner, overworld.ImageCache)
             if err == nil {
-                var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64((city.X - game.cameraX) * game.Map.TileWidth()), float64((city.Y - game.cameraY) * game.Map.TileHeight()))
-                screen.DrawImage(cityPic, &options)
+                screen.DrawImage(unitBack, &options)
+            }
+
+            pic, err := GetUnitImage(unit.Unit, overworld.ImageCache)
+            if err == nil {
+                options.GeoM.Translate(1, 1)
+                screen.DrawImage(pic, &options)
+            }
+        }
+    }
+
+    if overworld.Fog != nil {
+        overworld.DrawFog(screen, geom)
+    }
+}
+
+func (game *Game) Draw(screen *ebiten.Image){
+
+    var cities []*citylib.City
+    var units []*Unit
+    var selectedUnit *Unit
+    var fog [][]bool
+
+    for i, player := range game.Players {
+        for _, city := range player.Cities {
+            if city.Plane == game.Plane {
+                cities = append(cities, city)
             }
         }
 
         for _, unit := range player.Units {
-            if player.SelectedUnit != unit || game.State == GameStateUnitMoving || game.Counter / 55 % 2 == 0 {
-                var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64((unit.X - game.cameraX) * game.Map.TileWidth()), float64((unit.Y - game.cameraY) * game.Map.TileHeight()))
-
-                if game.State == GameStateUnitMoving && player.SelectedUnit == unit {
-                    dx := float64(float64(unit.MoveX - unit.X) * float64(game.Map.TileWidth() * unit.Movement) / float64(MovementLimit))
-                    dy := float64(float64(unit.MoveY - unit.Y) * float64(game.Map.TileHeight() * unit.Movement) / float64(MovementLimit))
-                    options.GeoM.Translate(dx, dy)
-                }
-
-                unitBack, err := game.GetUnitBackgroundImage(unit.Banner)
-                if err == nil {
-                    screen.DrawImage(unitBack, &options)
-                }
-
-                pic, err := game.GetUnitImage(unit.Unit)
-                if err == nil {
-                    options.GeoM.Translate(1, 1)
-                    screen.DrawImage(pic, &options)
-                }
+            if unit.Plane == game.Plane {
+                units = append(units, unit)
             }
         }
 
-        // FIXME: render the proper plane
-        game.DrawFog(screen, player.ArcanusFog, game.cameraX, game.cameraY)
+        if i == 0 {
+            selectedUnit = player.SelectedUnit
+            fog = player.GetFog(game.Plane)
+        }
     }
+
+    overworld := Overworld{
+        CameraX: game.cameraX,
+        CameraY: game.cameraY,
+        Counter: game.Counter,
+        Map: game.Map,
+        Cities: cities,
+        Units: units,
+        SelectedUnit: selectedUnit,
+        ImageCache: &game.ImageCache,
+        Fog: fog,
+        ShowAnimation: game.State == GameStateUnitMoving,
+        FogBlack: game.GetFogImage(),
+    }
+
+    overworld.DrawOverworld(screen, ebiten.GeoM{})
 
     game.DrawHud(screen)
 }

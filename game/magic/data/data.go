@@ -69,3 +69,11 @@ func (race Race) String() string {
 
     return "?"
 }
+
+type Plane int
+
+const (
+    PlaneArcanus Plane = iota
+    PlaneMyrror
+)
+

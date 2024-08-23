@@ -132,6 +132,7 @@ type City struct {
     Rebels int
     Name string
     Wall bool
+    Plane data.Plane
     FoodProduction int
     WorkProduction int
     MoneyProduction int
