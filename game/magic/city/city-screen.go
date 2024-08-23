@@ -15,6 +15,7 @@ import (
 
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/hajimehoshi/ebiten/v2"
+    "github.com/hajimehoshi/ebiten/v2/vector"
 )
 
 const (
@@ -94,6 +95,7 @@ type CityScreen struct {
     City *City
 
     Buildings []BuildingSlot
+    BuildScreen *BuildScreen
 
     Counter uint64
 }
@@ -249,6 +251,14 @@ func MakeCityScreen(cache *lbx.LbxCache, city *City) *CityScreen {
 
 func (cityScreen *CityScreen) Update() {
     cityScreen.Counter += 1
+
+    if cityScreen.BuildScreen == nil {
+        cityScreen.BuildScreen = MakeBuildScreen(cityScreen.LbxCache, cityScreen.City)
+    }
+
+    if cityScreen.BuildScreen != nil {
+        cityScreen.BuildScreen.Update()
+    }
 }
 
 func (cityScreen *CityScreen) GetBuildingIndex(building Building) int {
@@ -534,4 +544,10 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
     var mapGeom ebiten.GeoM
     mapGeom.Translate(float64(mapX), float64(mapY))
     mapView(mapPart, mapGeom, cityScreen.Counter)
+
+    if cityScreen.BuildScreen != nil {
+        // screen.Fill(color.RGBA{R: 0, G: 0, B: 0, A: 0x80})
+        vector.DrawFilledRect(screen, 0, 0, float32(screen.Bounds().Dx()), float32(screen.Bounds().Dy()), color.RGBA{R: 0, G: 0, B: 0, A: 0x80}, true)
+        cityScreen.BuildScreen.Draw(screen)
+    }
 }

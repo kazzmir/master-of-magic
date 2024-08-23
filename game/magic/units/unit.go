@@ -7,21 +7,28 @@ import (
 type Unit struct {
     LbxFile string
     Index int
+    Name string
     Race data.Race
     // FIXME: add construction cost, building requirements to build this unit
     //  upkeep cost, how many figures appear in the battlefield, movement speed,
     //  attack power, ranged attack, defense, magic resistance, hit points, special power
 }
 
+func (unit *Unit) String() string {
+    return unit.Name
+}
+
 var LizardSpearmen Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 0,
+    Name: "Spearmen",
     Race: data.RaceLizard,
 }
 
 var LizardSwordsmen Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 1,
+    Name: "Swordsmen",
     Race: data.RaceLizard,
 }
 
@@ -46,6 +53,7 @@ var LizardShamans Unit = Unit{
 var LizardSettlers Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 5,
+    Name: "Settlers",
     Race: data.RaceLizard,
 }
 
