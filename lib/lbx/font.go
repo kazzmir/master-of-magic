@@ -191,7 +191,7 @@ func readFonts(reader *bytes.Reader) ([]*Font, error) {
     }
 
     for i := 0; i < 8; i++ {
-        height, err := readUint16(reader)
+        height, err := ReadUint16(reader)
         if err != nil {
             return nil, err
         }
@@ -199,7 +199,7 @@ func readFonts(reader *bytes.Reader) ([]*Font, error) {
     }
 
     for i := 0; i < 8; i++ {
-        width, err := readUint16(reader)
+        width, err := ReadUint16(reader)
         if err != nil {
             return nil, err
         }
@@ -207,7 +207,7 @@ func readFonts(reader *bytes.Reader) ([]*Font, error) {
     }
 
     for i := 0; i < 8; i++ {
-        height, err := readUint16(reader)
+        height, err := ReadUint16(reader)
         if err != nil {
             return nil, err
         }
@@ -226,7 +226,7 @@ func readFonts(reader *bytes.Reader) ([]*Font, error) {
 
     for i := 0; i < 8; i++ {
         for g := 0; g < 96; g++ {
-            offset, err := readUint16(reader)
+            offset, err := ReadUint16(reader)
             if err != nil {
                 return nil, err
             }

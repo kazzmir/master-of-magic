@@ -32,6 +32,7 @@ type UI struct {
     maxLayer UILayer
     Draw func(*UI, *ebiten.Image)
     HandleKey UIKeyFunc
+    Counter uint64
 }
 
 func (ui *UI) AddElement(element *UIElement){
@@ -113,6 +114,8 @@ func (ui *UI) SetElementsFromArray(elements []*UIElement){
 }
 
 func (ui *UI) StandardUpdate() {
+    ui.Counter += 1
+
     if ui.HandleKey != nil {
         keys := make([]ebiten.Key, 0)
         keys = inpututil.AppendJustPressedKeys(keys)

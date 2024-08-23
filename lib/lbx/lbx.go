@@ -11,7 +11,7 @@ import (
     "image/color"
 )
 
-func readUint16(reader io.Reader) (uint16, error) {
+func ReadUint16(reader io.Reader) (uint16, error) {
     var value uint16
     err := binary.Read(reader, binary.LittleEndian, &value)
     return value, err
@@ -319,22 +319,22 @@ func clonePalette(p color.Palette) color.Palette {
 func readPaletteInfo(reader io.ReadSeeker, index int) (PaletteInfo, error) {
     reader.Seek(int64(index), io.SeekStart)
 
-    offset, err := readUint16(reader)
+    offset, err := ReadUint16(reader)
     if err != nil {
         return PaletteInfo{}, err
     }
 
-    firstColor, err := readUint16(reader)
+    firstColor, err := ReadUint16(reader)
     if err != nil {
         return PaletteInfo{}, err
     }
 
-    count, err := readUint16(reader)
+    count, err := ReadUint16(reader)
     if err != nil {
         return PaletteInfo{}, err
     }
 
-    unknown1, err := readUint16(reader)
+    unknown1, err := ReadUint16(reader)
     if err != nil {
         return PaletteInfo{}, err
     }
@@ -578,18 +578,18 @@ func (lbx *LbxFile) ReadTerrainImages(entry int) ([]image.Image, error) {
 
     var images []image.Image
     for reader.Len() > 0 {
-        width, err := readUint16(reader)
+        width, err := ReadUint16(reader)
         if err != nil {
             break
         }
 
-        height, err := readUint16(reader)
+        height, err := ReadUint16(reader)
         if err != nil {
             return nil, err
         }
 
         for i := 0; i < 6; i++ {
-            readUint16(reader)
+            ReadUint16(reader)
         }
 
         img := image.NewPaletted(image.Rect(0, 0, int(width), int(height)), defaultPalette)
@@ -605,7 +605,7 @@ func (lbx *LbxFile) ReadTerrainImages(entry int) ([]image.Image, error) {
         }
 
         for i := 0; i < 4; i++ {
-            readUint16(reader)
+            ReadUint16(reader)
         }
 
         images = append(images, img)
@@ -625,12 +625,12 @@ func (lbx *LbxFile) ReadSpells(entry int) (Spells, error) {
 
     reader := bytes.NewReader(lbx.Data[entry])
 
-    numEntries, err := readUint16(reader)
+    numEntries, err := ReadUint16(reader)
     if err != nil {
         return Spells{}, err
     }
 
-    entrySize, err := readUint16(reader)
+    entrySize, err := ReadUint16(reader)
     if err != nil {
         return Spells{}, err
     }
@@ -829,12 +829,12 @@ func (lbx *LbxFile) ReadHelp(entry int) (Help, error) {
 
     reader := bytes.NewReader(lbx.Data[entry])
 
-    numEntries, err := readUint16(reader)
+    numEntries, err := ReadUint16(reader)
     if err != nil {
         return Help{}, err
     }
 
-    entrySize, err := readUint16(reader)
+    entrySize, err := ReadUint16(reader)
     if err != nil {
         return Help{}, err
     }
@@ -883,14 +883,14 @@ func (lbx *LbxFile) ReadHelp(entry int) (Help, error) {
 
         // fmt.Printf("  at position 0x%x\n", n - buffer.Len())
 
-        pictureIndex, err := readUint16(buffer)
+        pictureIndex, err := ReadUint16(buffer)
         if err != nil {
             return Help{}, fmt.Errorf("Error reading help index %v: %v", i, err)
         }
 
         // fmt.Printf("  lbx index: %v\n", pictureIndex)
 
-        appendHelpText, err := readUint16(buffer)
+        appendHelpText, err := ReadUint16(buffer)
         if err != nil {
             return Help{}, err
         }
@@ -928,51 +928,51 @@ func (lbx *LbxFile) ReadImages(entry int) ([]image.Image, error) {
 
     reader := bytes.NewReader(lbx.Data[entry])
 
-    width, err := readUint16(reader)
+    width, err := ReadUint16(reader)
     if err != nil {
         return nil, err
     }
 
-    height, err := readUint16(reader)
+    height, err := ReadUint16(reader)
     if err != nil {
         return nil, err
     }
 
-    unknown1, err := readUint16(reader)
+    unknown1, err := ReadUint16(reader)
     if err != nil {
         return nil, err
     }
     _ = unknown1
 
-    bitmapCount, err := readUint16(reader)
+    bitmapCount, err := ReadUint16(reader)
     if err != nil {
         return nil, err
     }
 
-    unknown2, err := readUint16(reader)
+    unknown2, err := ReadUint16(reader)
     if err != nil {
         return nil, err
     }
     _ = unknown2
 
-    unknown3, err := readUint16(reader)
+    unknown3, err := ReadUint16(reader)
     if err != nil {
         return nil, err
     }
     _ = unknown3
 
-    unknown4, err := readUint16(reader)
+    unknown4, err := ReadUint16(reader)
     if err != nil {
         return nil, err
     }
     _ = unknown4
 
-    paletteOffset, err := readUint16(reader)
+    paletteOffset, err := ReadUint16(reader)
     if err != nil {
         return nil, err
     }
 
-    unknown5, err := readUint16(reader)
+    unknown5, err := ReadUint16(reader)
     if err != nil {
         return nil, err
     }
@@ -1080,7 +1080,7 @@ func (lbxFile *LbxFile) RawData(entry int) ([]byte, error) {
 const LbxSignature = 0x0000fead
 
 func ReadLbx(reader io.ReadSeeker) (LbxFile, error) {
-    numFiles, err := readUint16(reader)
+    numFiles, err := ReadUint16(reader)
     if err != nil {
         return LbxFile{}, err
     }
@@ -1094,7 +1094,7 @@ func ReadLbx(reader io.ReadSeeker) (LbxFile, error) {
         return LbxFile{}, fmt.Errorf("Invalid lbx signature, was 0x%x but expected 0x%x\n", signature, LbxSignature)
     }
 
-    version, err := readUint16(reader)
+    version, err := ReadUint16(reader)
     if err != nil {
         return LbxFile{}, err
     }

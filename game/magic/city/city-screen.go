@@ -261,7 +261,7 @@ func (cityScreen *CityScreen) Update() {
     }
 }
 
-func (cityScreen *CityScreen) GetBuildingIndex(building Building) int {
+func GetBuildingIndex(building Building) int {
     switch building {
         case BuildingBarracks: return 45
         case BuildingArmory: return 46
@@ -392,7 +392,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
 
     for _, building := range cityScreen.Buildings {
 
-        index := cityScreen.GetBuildingIndex(building.Building)
+        index := GetBuildingIndex(building.Building)
         x, y := building.Point.X, building.Point.Y
 
         images, err := cityScreen.ImageCache.GetImages("cityscap.lbx", index)
@@ -525,7 +525,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
         screen.DrawImage(producingBackground, &options)
     }
 
-    producingPic, err := cityScreen.ImageCache.GetImage("cityscap.lbx", cityScreen.GetBuildingIndex(cityScreen.City.Producing), 0)
+    producingPic, err := cityScreen.ImageCache.GetImage("cityscap.lbx", GetBuildingIndex(cityScreen.City.Producing), 0)
     if err == nil {
         var options ebiten.DrawImageOptions
         options.GeoM.Translate(217, 144)
