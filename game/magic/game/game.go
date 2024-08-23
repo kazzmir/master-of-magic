@@ -649,7 +649,7 @@ type Overworld struct {
 }
 
 func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM){
-    overworld.Map.Draw(overworld.CameraX, overworld.CameraY, overworld.Counter, screen, geom)
+    overworld.Map.Draw(overworld.CameraX, overworld.CameraY, overworld.Counter / 8, screen, geom)
 
     tileWidth := overworld.Map.TileWidth()
     tileHeight := overworld.Map.TileHeight()

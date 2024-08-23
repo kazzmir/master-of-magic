@@ -9,6 +9,7 @@ import (
     gamelib "github.com/kazzmir/master-of-magic/game/magic/game"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    // "github.com/kazzmir/master-of-magic/game/magic/terrain"
 
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -46,6 +47,8 @@ func NewEngine() (*Engine, error) {
         X: 4,
         Y: 5,
     })
+
+    // game.Map.Map.Terrain[3][6] = terrain.TileNatureForest.Index
 
     player.LiftFog(4, 5, 3)
 
