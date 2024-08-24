@@ -1060,6 +1060,7 @@ var Slingers Unit = Unit{
 
 var HighElfSpearmen Unit = Unit{
     LbxFile: "units1.lbx",
+    Name: "Spearmen",
     Index: 95,
     Race: data.RaceHighElf,
 }
@@ -1090,6 +1091,7 @@ var HighElfMagician Unit = Unit{
 
 var HighElfSettlers Unit = Unit{
     LbxFile: "units1.lbx",
+    Name: "Settlers",
     Index: 100,
     Race: data.RaceHighElf,
 }
@@ -1114,6 +1116,7 @@ var Pegasai Unit = Unit{
 
 var HighMenSpearmen Unit = Unit{
     LbxFile: "units1.lbx",
+    Name: "Spearmen",
     Index: 104,
     Race: data.RaceHighMen,
 }
@@ -1156,6 +1159,7 @@ var HighMenEngineer Unit = Unit{
 
 var HighMenSettlers Unit = Unit{
     LbxFile: "units1.lbx",
+    Name: "Settlers",
     Index: 111,
     Race: data.RaceHighMen,
 }

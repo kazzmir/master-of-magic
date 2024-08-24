@@ -262,6 +262,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *City) *
                 }
 
                 descriptionFont.Print(screen, 130, 14, 1, building.String())
+                // FIXME: show cost here
 
                 descriptionFont.Print(screen, 85, 48, 1, "Maintenance")
 
@@ -292,6 +293,25 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *City) *
                     descriptionFont.Print(screen, 85, 90, 1, entry)
                 }
                 */
+            },
+        }
+        ui.AddElement(mainElement)
+    }
+
+    updateMainElementUnit := func(unit units.Unit){
+        ui.RemoveElement(mainElement)
+        mainElement = &uilib.UIElement{
+            Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
+                middleX := float64(104)
+                middleY := float64(20)
+
+                image, err := imageCache.GetImage(unit.LbxFile, unit.Index, 0)
+                if err == nil {
+                    var options ebiten.DrawImageOptions
+                    options.GeoM.Translate(middleX, middleY)
+                    options.GeoM.Translate(-float64(image.Bounds().Dx() / 2), -float64(image.Bounds().Dy() / 2))
+                    screen.DrawImage(image, &options)
+                }
             },
         }
         ui.AddElement(mainElement)
@@ -334,15 +354,33 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *City) *
 
     unitInfo, err := imageCache.GetImage("unitview.lbx", 32, 0)
     if err == nil {
-        possibleUnits := []units.Unit{units.LizardSpearmen, units.LizardSettlers}
+        possibleUnits := []units.Unit{units.HighElfSpearmen, units.HighElfSettlers}
         for i, unit := range possibleUnits {
+
+            x1 := 240
+            y1 := 4 + i * (buildingInfo.Bounds().Dy() + 1)
+            x2 := x1 + unitInfo.Bounds().Dx()
+            y2 := y1 + unitInfo.Bounds().Dy()
+
             element := &uilib.UIElement{
+                Rect: image.Rect(x1, y1, x2, y2),
+                LeftClick: func(this *uilib.UIElement) {
+                    selectedElement = this
+                    updateMainElementUnit(unit)
+                },
                 Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
                     var options ebiten.DrawImageOptions
-                    options.GeoM.Translate(240, 4 + float64(i * (unitInfo.Bounds().Dy() + 1)))
+                    options.GeoM.Translate(float64(x1), float64(y1))
                     screen.DrawImage(unitInfo, &options)
-                    x, y := options.GeoM.Apply(0, 0)
-                    titleFont.Print(screen, x + 2, y + 1, 1, unit.String())
+
+                    use := titleFont
+
+                    // show highlight if element was clicked on
+                    if selectedElement == this {
+                        use = titleFontWhite
+                    }
+
+                    use.Print(screen, float64(x1 + 2), float64(y1 + 1), 1, unit.String())
                 },
             }
 
