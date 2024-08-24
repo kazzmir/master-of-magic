@@ -158,36 +158,35 @@ func GetBuildingMaintenance(building Building) int {
     return 2
 }
 
-// FIXME: can this be computed?
-func combatPoints(facing units.Facing, count int) []image.Point {
-    switch facing {
-        case units.FacingRight:
-            switch count {
-                case 0: return nil
-                case 1: return []image.Point{image.Pt(0, 0)}
-                case 8:
-                    return []image.Point{
-                        image.Pt(2, -4),
-                        image.Pt(6, -2),
-                        image.Pt(-1, 0),
-                        image.Pt(-8, 0),
-                        image.Pt(10, 0),
-                        image.Pt(3, 1),
-                        image.Pt(-4, 3),
-                        image.Pt(1, 5),
-                    }
+// hard coding the points is what the real master of magic does
+// see Unit_Figure_Position() in UnitView.C
+// https://github.com/jbalcomb/ReMoM/blob/8642bb8c46433cc31c058759b28f297947b3b501/src/UnitView.C#L2685
+func combatPoints(count int) []image.Point {
+    switch count {
+        case 0: return nil
+        case 1: return []image.Point{image.Pt(0, 0)}
+        case 8:
+            return []image.Point{
+                image.Pt(2, -4),
+                image.Pt(6, -2),
+                image.Pt(-1, 0),
+                image.Pt(-8, 0),
+                image.Pt(10, 0),
+                image.Pt(3, 1),
+                image.Pt(-4, 3),
+                image.Pt(1, 5),
             }
     }
 
     return nil
 }
 
-func renderCombatUnit(screen *ebiten.Image, use *ebiten.Image, facing units.Facing, options ebiten.DrawImageOptions, count int){
+func renderCombatUnit(screen *ebiten.Image, use *ebiten.Image, options ebiten.DrawImageOptions, count int){
     // the ground is always 6 pixels above the bottom of the unit image
     groundHeight := float64(6)
 
     geoM := options.GeoM
-    for _, point := range combatPoints(facing, count) {
+    for _, point := range combatPoints(count) {
         options.GeoM = geoM
         options.GeoM.Translate(float64(point.X), float64(point.Y))
 
@@ -360,12 +359,16 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *City) *
                         screen.DrawImage(grass, &options)
                     }
 
+                    /*
                     index := (ui.Counter / 7) % uint64(len(images))
                     use := images[index]
+                    */
+
+                    use := images[2]
 
                     options.GeoM.Reset()
                     options.GeoM.Translate(middleX, middleY)
-                    renderCombatUnit(screen, use, units.FacingRight, options, unit.Count)
+                    renderCombatUnit(screen, use, options, unit.Count)
 
                     /*
                     options.GeoM.Translate(-float64(use.Bounds().Dx() / 2), -float64(use.Bounds().Dy() / 2))
