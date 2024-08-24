@@ -2,6 +2,7 @@ package city
 
 import (
     "log"
+    "fmt"
     "image"
     "image/color"
     "bytes"
@@ -181,6 +182,7 @@ func combatPoints(count int) []image.Point {
     return nil
 }
 
+// FIXME: move this to some kind of combat module
 func renderCombatUnit(screen *ebiten.Image, use *ebiten.Image, options ebiten.DrawImageOptions, count int){
     // the ground is always 6 pixels above the bottom of the unit image
     groundHeight := float64(6)
@@ -255,6 +257,8 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *City) *
     }
 
     descriptionFont := font.MakeOptimizedFontWithPalette(fonts[4], descriptionPalette)
+
+    smallFont := font.MakeOptimizedFontWithPalette(fonts[1], descriptionPalette)
 
     var elements []*uilib.UIElement
 
@@ -353,6 +357,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *City) *
                     var options ebiten.DrawImageOptions
                     options.GeoM.Translate(middleX, middleY)
 
+                    // FIXME: does this tile change depending on where the town is on the map?
                     grass, err := imageCache.GetImage("cmbgrass.lbx", 0, 0)
                     if err == nil {
                         options.GeoM.Translate(-float64(grass.Bounds().Dx() / 2), -float64(grass.Bounds().Dy() / 2))
@@ -370,10 +375,46 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *City) *
                     options.GeoM.Translate(middleX, middleY)
                     renderCombatUnit(screen, use, options, unit.Count)
 
-                    /*
-                    options.GeoM.Translate(-float64(use.Bounds().Dx() / 2), -float64(use.Bounds().Dy() / 2))
-                    screen.DrawImage(use, &options)
-                    */
+                    descriptionFont.Print(screen, 130, 7, 1, unit.Name)
+
+                    smallFont.Print(screen, 130, 18, 1, "Moves")
+
+                    unitMoves := 2
+
+                    smallBoot, err := imageCache.GetImage("compix.lbx", 72, 0)
+                    if err == nil {
+                        var options ebiten.DrawImageOptions
+                        options.GeoM.Translate(130 + smallFont.MeasureTextWidth("Upkeep ", 1), 16)
+
+                        for i := 0; i < unitMoves; i++ {
+                            screen.DrawImage(smallBoot, &options)
+                            options.GeoM.Translate(float64(smallBoot.Bounds().Dx()), 0)
+                        }
+                    }
+
+                    smallFont.Print(screen, 130, 25, 1, "Upkeep")
+
+                    unitCostMoney := 2
+                    unitCostFood := 2
+
+                    smallCoin, err1 := imageCache.GetImage("backgrnd.lbx", 42, 0)
+                    smallFood, err2 := imageCache.GetImage("backgrnd.lbx", 40, 0)
+                    if err1 == nil && err2 == nil {
+                        var options ebiten.DrawImageOptions
+                        options.GeoM.Translate(130 + smallFont.MeasureTextWidth("Upkeep ", 1), 24)
+                        for i := 0; i < unitCostMoney; i++ {
+                            screen.DrawImage(smallCoin, &options)
+                            options.GeoM.Translate(float64(smallCoin.Bounds().Dx() + 1), 0)
+                        }
+
+                        for i := 0; i < unitCostFood; i++ {
+                            screen.DrawImage(smallFood, &options)
+                            options.GeoM.Translate(float64(smallFood.Bounds().Dx() + 1), 0)
+                        }
+                    }
+
+                    cost := 90
+                    smallFont.Print(screen, 130, 32, 1, fmt.Sprintf("Cost %v(%v)", cost, cost))
                 }
             },
         }
