@@ -381,7 +381,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *City) *
 
                     unitMoves := 2
 
-                    smallBoot, err := imageCache.GetImage("compix.lbx", 72, 0)
+                    smallBoot, err := imageCache.GetImage("unitview.lbx", 24, 0)
                     if err == nil {
                         var options ebiten.DrawImageOptions
                         options.GeoM.Translate(130 + smallFont.MeasureTextWidth("Upkeep ", 1), 16)
@@ -415,6 +415,87 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *City) *
 
                     cost := 90
                     smallFont.Print(screen, 130, 32, 1, fmt.Sprintf("Cost %v(%v)", cost, cost))
+
+                    width := descriptionFont.MeasureTextWidth("Armor", 1)
+
+                    y := 48
+
+                    descriptionFont.Print(screen, 85, float64(y), 1, "Melee")
+
+                    unitMelee := 3
+
+                    weaponIcon, err := imageCache.GetImage("unitview.lbx", 13, 0)
+                    if err == nil {
+                        var options ebiten.DrawImageOptions
+                        options.GeoM.Translate(85 + width + 1, float64(y))
+                        for i := 0; i < unitMelee; i++ {
+                            screen.DrawImage(weaponIcon, &options)
+                            options.GeoM.Translate(float64(weaponIcon.Bounds().Dx() + 1), 0)
+                        }
+                    }
+
+                    unitRange := 3
+
+                    y += descriptionFont.Height()
+                    descriptionFont.Print(screen, 85, float64(y), 1, "Range")
+
+                    rangeBow, err := imageCache.GetImage("unitview.lbx", 18, 0)
+                    if err == nil {
+                        var options ebiten.DrawImageOptions
+                        options.GeoM.Translate(85 + width + 1, float64(y))
+                        for i := 0; i < unitRange; i++ {
+                            screen.DrawImage(rangeBow, &options)
+                            options.GeoM.Translate(float64(rangeBow.Bounds().Dx() + 1), 0)
+                        }
+                    }
+
+                    y += descriptionFont.Height()
+                    descriptionFont.Print(screen, 85, float64(y), 1, "Armor")
+
+                    unitArmor := 3
+                    armorIcon, err := imageCache.GetImage("unitview.lbx", 22, 0)
+                    if err == nil {
+                        var options ebiten.DrawImageOptions
+                        options.GeoM.Translate(85 + width + 1, float64(y))
+                        for i := 0; i < unitArmor; i++ {
+                            screen.DrawImage(armorIcon, &options)
+                            options.GeoM.Translate(float64(armorIcon.Bounds().Dx() + 1), 0)
+                        }
+                    }
+
+                    y += descriptionFont.Height()
+                    descriptionFont.Print(screen, 85, float64(y), 1, "Resist")
+
+                    unitResist := 4
+
+                    resistIcon, err := imageCache.GetImage("unitview.lbx", 27, 0)
+                    if err == nil {
+                        var options ebiten.DrawImageOptions
+                        options.GeoM.Translate(85 + width + 1, float64(y))
+                        for i := 0; i < unitResist; i++ {
+                            screen.DrawImage(resistIcon, &options)
+                            options.GeoM.Translate(float64(resistIcon.Bounds().Dx() + 1), 0)
+                        }
+                    }
+
+                    y += descriptionFont.Height()
+                    descriptionFont.Print(screen, 85, float64(y), 1, "Hits")
+
+                    unitHealth := 3
+
+                    healthIcon, err := imageCache.GetImage("unitview.lbx", 23, 0)
+                    if err == nil {
+                        var options ebiten.DrawImageOptions
+                        options.GeoM.Translate(85 + width + 1, float64(y))
+                        for i := 0; i < unitHealth; i++ {
+                            screen.DrawImage(healthIcon, &options)
+                            options.GeoM.Translate(float64(healthIcon.Bounds().Dx() + 1), 0)
+                        }
+                    }
+
+                    // FIXME: draw special abilities, like forester, etc
+                    // use SPECIAL.LBX for icons
+
                 }
             },
         }
@@ -487,6 +568,12 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *City) *
                     use.Print(screen, float64(x1 + 2), float64(y1 + 1), 1, unit.String())
                 },
             }
+
+            // hack to select some unit
+            defer func(){
+                selectedElement = element
+                updateMainElementUnit(unit)
+            }()
 
             elements = append(elements, element)
         }
