@@ -17,24 +17,53 @@ import (
     // "github.com/hajimehoshi/ebiten/v2/vector"
 )
 
+type BuildScreenState int
+const (
+    BuildScreenRunning BuildScreenState = iota
+    BuildScreenCanceled
+    BuildScreenOk
+)
+
 type BuildScreen struct {
     LbxCache *lbx.LbxCache
     ImageCache *util.ImageCache
     City *City
     UI *uilib.UI
+    State BuildScreenState
 }
 
 func MakeBuildScreen(cache *lbx.LbxCache, city *City) *BuildScreen {
     imageCache := util.MakeImageCache(cache)
 
-    ui := makeBuildUI(cache, &imageCache, city)
+    var buildScreen *BuildScreen
 
-    return &BuildScreen{
+    doCancel := func(){
+        buildScreen.Cancel()
+    }
+
+    doOk := func(){
+        buildScreen.Ok()
+    }
+
+    ui := makeBuildUI(cache, &imageCache, city, doCancel, doOk)
+
+    buildScreen = &BuildScreen{
         LbxCache: cache,
         ImageCache: &imageCache,
         City: city,
         UI: ui,
+        State: BuildScreenRunning,
     }
+
+    return buildScreen
+}
+
+func (buildScreen *BuildScreen) Cancel() {
+    buildScreen.State = BuildScreenCanceled
+}
+
+func (buildScreen *BuildScreen) Ok() {
+    buildScreen.State = BuildScreenOk
 }
 
 func premultiplyAlpha(c color.RGBA) color.RGBA {
@@ -203,7 +232,7 @@ func renderCombatUnit(screen *ebiten.Image, use *ebiten.Image, options ebiten.Dr
     }
 }
 
-func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *City) *uilib.UI {
+func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *City, doCancel func(), doOk func()) *uilib.UI {
 
     fontLbx, err := cache.GetLbxFile("fonts.lbx")
     if err != nil {
@@ -603,46 +632,53 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *City) *
         }
     }
 
-    // cancel button
-    elements = append(elements, &uilib.UIElement{
-        Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
-            background, err := imageCache.GetImage("backgrnd.lbx", 24, 0)
-            if err == nil {
-                x := 100
-                y := 181
+    buttonBackground, err := imageCache.GetImage("backgrnd.lbx", 24, 0)
+
+    if err == nil {
+        cancelX := 100
+        cancelY := 181
+
+        // cancel button
+        elements = append(elements, &uilib.UIElement{
+            Rect: image.Rect(cancelX, cancelY, cancelX + buttonBackground.Bounds().Dx(), cancelY + buttonBackground.Bounds().Dy()),
+            LeftClick: func(this *uilib.UIElement) {
+                doCancel()
+            },
+            Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
                 var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(x), float64(y))
-                screen.DrawImage(background, &options)
+                options.GeoM.Translate(float64(cancelX), float64(cancelY))
+                screen.DrawImage(buttonBackground, &options)
 
-                okCancelFont.PrintCenter(screen, float64(x + background.Bounds().Dx() / 2), float64(y + 1), 1, "Cancel")
-            }
-        },
-    })
+                okCancelFont.PrintCenter(screen, float64(cancelX + buttonBackground.Bounds().Dx() / 2), float64(cancelY + 1), 1, "Cancel")
+            },
+        })
 
-    // ok button
-    elements = append(elements, &uilib.UIElement{
-        Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
-            background, err := imageCache.GetImage("backgrnd.lbx", 24, 0)
-            if err == nil {
-                x := 173
-                y := 181
+        okX := 173
+        okY := 181
+        // ok button
+        elements = append(elements, &uilib.UIElement{
+            Rect: image.Rect(okX, okY, okX + buttonBackground.Bounds().Dx(), okY + buttonBackground.Bounds().Dy()),
+            LeftClick: func(this *uilib.UIElement) {
+                doOk()
+            },
+            Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
                 var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(x), float64(y))
-                screen.DrawImage(background, &options)
+                options.GeoM.Translate(float64(okX), float64(okY))
+                screen.DrawImage(buttonBackground, &options)
 
-                okCancelFont.PrintCenter(screen, float64(x + background.Bounds().Dx() / 2), float64(y + 1), 1, "Ok")
-            }
-        },
-    })
-
+                okCancelFont.PrintCenter(screen, float64(okX + buttonBackground.Bounds().Dx() / 2), float64(okY + 1), 1, "Ok")
+            },
+        })
+    }
 
     ui.SetElementsFromArray(elements)
 
     return ui
 }
 
-func (build *BuildScreen) Update() {
+func (build *BuildScreen) Update() BuildScreenState {
     build.UI.StandardUpdate()
+    return build.State
 }
 
 func (build *BuildScreen) Draw(screen *ebiten.Image) {

@@ -257,7 +257,13 @@ func (cityScreen *CityScreen) Update() {
     }
 
     if cityScreen.BuildScreen != nil {
-        cityScreen.BuildScreen.Update()
+        switch cityScreen.BuildScreen.Update() {
+            case BuildScreenRunning:
+            case BuildScreenCanceled:
+                cityScreen.BuildScreen = nil
+            case BuildScreenOk:
+                cityScreen.BuildScreen = nil
+        }
     }
 }
 
