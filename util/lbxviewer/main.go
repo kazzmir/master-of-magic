@@ -278,6 +278,11 @@ func (viewer *Viewer) Draw(screen *ebiten.Image) {
             options.GeoM.Scale(viewer.Scale, viewer.Scale)
             options.GeoM.Translate(float64(middleX), float64(middleY))
             screen.DrawImage(useImage, &options)
+
+            x1, y1 := options.GeoM.Apply(0, 0)
+            x2, y2 := options.GeoM.Apply(float64(bounds.Dx()), float64(bounds.Dy()))
+
+            vector.StrokeRect(screen, float32(x1), float32(y1), float32(x2 - x1), float32(y2 - y1), 1, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, true)
         }
     }
 }

@@ -158,6 +158,40 @@ func GetBuildingMaintenance(building Building) int {
     return 2
 }
 
+func renderCombatUnit(screen *ebiten.Image, use *ebiten.Image, options ebiten.DrawImageOptions, count int){
+    switch count {
+        case 1:
+            options.GeoM.Translate(-float64(use.Bounds().Dx() / 2), -float64(use.Bounds().Dy() / 2))
+            screen.DrawImage(use, &options)
+        case 8:
+            points := []image.Point{
+                image.Pt(0, -4),
+                image.Pt(-2, -1),
+                image.Pt(3, -2),
+                image.Pt(-8, 0),
+                image.Pt(7, 0),
+                image.Pt(2, 1),
+                image.Pt(-4, 2),
+                image.Pt(-1, 4),
+            }
+
+            geoM := options.GeoM
+            for _, point := range points {
+                options.GeoM = geoM
+                options.GeoM.Translate(float64(point.X), float64(point.Y))
+
+                /*
+                x, y := options.GeoM.Apply(0, 0)
+                vector.DrawFilledCircle(screen, float32(x), float32(y), 1, color.RGBA{255, 0, 0, 255}, true)
+                */
+
+                // options.GeoM.Translate(-float64(use.Bounds().Dx() / 2), -float64(use.Bounds().Dy()) / 2)
+                options.GeoM.Translate(-13, -22)
+                screen.DrawImage(use, &options)
+            }
+    }
+}
+
 func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *City) *uilib.UI {
 
     fontLbx, err := cache.GetLbxFile("fonts.lbx")
@@ -310,11 +344,23 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *City) *
                     var options ebiten.DrawImageOptions
                     options.GeoM.Translate(middleX, middleY)
 
+                    grass, err := imageCache.GetImage("cmbgrass.lbx", 0, 0)
+                    if err == nil {
+                        options.GeoM.Translate(-float64(grass.Bounds().Dx() / 2), -float64(grass.Bounds().Dy() / 2))
+                        screen.DrawImage(grass, &options)
+                    }
+
                     index := (ui.Counter / 7) % uint64(len(images))
                     use := images[index]
 
+                    options.GeoM.Reset()
+                    options.GeoM.Translate(middleX, middleY)
+                    renderCombatUnit(screen, use, options, unit.Count)
+
+                    /*
                     options.GeoM.Translate(-float64(use.Bounds().Dx() / 2), -float64(use.Bounds().Dy() / 2))
                     screen.DrawImage(use, &options)
+                    */
                 }
             },
         }

@@ -1096,7 +1096,7 @@ var HighElfSpearmen Unit = Unit{
     Index: 95,
     CombatLbxFile: "figures7.lbx",
     CombatIndex: 40,
-    Count: 7,
+    Count: 8,
     Name: "Spearmen",
     Race: data.RaceHighElf,
 }
