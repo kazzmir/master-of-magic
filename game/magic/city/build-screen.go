@@ -158,37 +158,47 @@ func GetBuildingMaintenance(building Building) int {
     return 2
 }
 
-func renderCombatUnit(screen *ebiten.Image, use *ebiten.Image, options ebiten.DrawImageOptions, count int){
-    switch count {
-        case 1:
-            options.GeoM.Translate(-float64(use.Bounds().Dx() / 2), -float64(use.Bounds().Dy() / 2))
-            screen.DrawImage(use, &options)
-        case 8:
-            points := []image.Point{
-                image.Pt(0, -4),
-                image.Pt(-2, -1),
-                image.Pt(3, -2),
-                image.Pt(-8, 0),
-                image.Pt(7, 0),
-                image.Pt(2, 1),
-                image.Pt(-4, 2),
-                image.Pt(-1, 4),
+// FIXME: can this be computed?
+func combatPoints(facing units.Facing, count int) []image.Point {
+    switch facing {
+        case units.FacingRight:
+            switch count {
+                case 0: return nil
+                case 1: return []image.Point{image.Pt(0, 0)}
+                case 8:
+                    return []image.Point{
+                        image.Pt(2, -4),
+                        image.Pt(6, -2),
+                        image.Pt(-1, 0),
+                        image.Pt(-8, 0),
+                        image.Pt(10, 0),
+                        image.Pt(3, 1),
+                        image.Pt(-4, 3),
+                        image.Pt(1, 5),
+                    }
             }
+    }
 
-            geoM := options.GeoM
-            for _, point := range points {
-                options.GeoM = geoM
-                options.GeoM.Translate(float64(point.X), float64(point.Y))
+    return nil
+}
 
-                /*
-                x, y := options.GeoM.Apply(0, 0)
-                vector.DrawFilledCircle(screen, float32(x), float32(y), 1, color.RGBA{255, 0, 0, 255}, true)
-                */
+func renderCombatUnit(screen *ebiten.Image, use *ebiten.Image, facing units.Facing, options ebiten.DrawImageOptions, count int){
+    // the ground is always 6 pixels above the bottom of the unit image
+    groundHeight := float64(6)
 
-                // options.GeoM.Translate(-float64(use.Bounds().Dx() / 2), -float64(use.Bounds().Dy()) / 2)
-                options.GeoM.Translate(-13, -22)
-                screen.DrawImage(use, &options)
-            }
+    geoM := options.GeoM
+    for _, point := range combatPoints(facing, count) {
+        options.GeoM = geoM
+        options.GeoM.Translate(float64(point.X), float64(point.Y))
+
+        /*
+        x, y := options.GeoM.Apply(0, 0)
+        vector.DrawFilledCircle(screen, float32(x), float32(y), 1, color.RGBA{255, 0, 0, 255}, true)
+        */
+
+        options.GeoM.Translate(-float64(use.Bounds().Dx() / 2), -float64(use.Bounds().Dy()) + groundHeight)
+        // options.GeoM.Translate(-13, -22)
+        screen.DrawImage(use, &options)
     }
 }
 
@@ -337,7 +347,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *City) *
         mainElement = &uilib.UIElement{
             Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
                 middleX := float64(104)
-                middleY := float64(20)
+                middleY := float64(28)
 
                 images, err := imageCache.GetImages(unit.CombatLbxFile, unit.GetCombatIndex(units.FacingRight))
                 if err == nil {
@@ -355,7 +365,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *City) *
 
                     options.GeoM.Reset()
                     options.GeoM.Translate(middleX, middleY)
-                    renderCombatUnit(screen, use, options, unit.Count)
+                    renderCombatUnit(screen, use, units.FacingRight, options, unit.Count)
 
                     /*
                     options.GeoM.Translate(-float64(use.Bounds().Dx() / 2), -float64(use.Bounds().Dy() / 2))

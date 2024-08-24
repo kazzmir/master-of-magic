@@ -1128,6 +1128,9 @@ var HighElfMagician Unit = Unit{
 var HighElfSettlers Unit = Unit{
     LbxFile: "units1.lbx",
     Name: "Settlers",
+    CombatLbxFile: "figures7.lbx",
+    CombatIndex: 80,
+    Count: 1,
     Index: 100,
     Race: data.RaceHighElf,
 }
