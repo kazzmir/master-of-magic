@@ -273,6 +273,8 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *City) *
 
     smallFont := font.MakeOptimizedFontWithPalette(fonts[1], descriptionPalette)
 
+    mediumFont := font.MakeOptimizedFontWithPalette(fonts[2], descriptionPalette)
+
     var elements []*uilib.UIElement
 
     ui := &uilib.UI{
@@ -506,8 +508,17 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *City) *
                         }
                     }
 
-                    // FIXME: draw special abilities, like forester, etc
-                    // use SPECIAL.LBX for icons
+                    y = 110
+                    for _, ability := range unit.Abilities {
+                        pic, err := imageCache.GetImage(ability.LbxFile(), ability.LbxIndex(), 0)
+                        if err == nil {
+                            var options ebiten.DrawImageOptions
+                            options.GeoM.Translate(85, float64(y))
+                            screen.DrawImage(pic, &options)
+
+                            mediumFont.Print(screen, float64(85 + pic.Bounds().Dx() + 2), float64(y) + 5, 1, ability.Name())
+                        }
+                    }
 
                 }
             },

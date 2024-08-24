@@ -24,6 +24,7 @@ type Unit struct {
     CombatIndex int
     Name string
     Race data.Race
+    Abilities []Ability
 
     // number of figures that are drawn in a single combat tile
     Count int
@@ -1098,6 +1099,7 @@ var HighElfSpearmen Unit = Unit{
     CombatIndex: 40,
     Count: 8,
     Name: "Spearmen",
+    Abilities: []Ability{AbilityForester},
     Race: data.RaceHighElf,
 }
 
