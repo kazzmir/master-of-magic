@@ -85,7 +85,11 @@ func (engine *Engine) Update() error {
         }
     }
 
-    engine.CityScreen.Update()
+    switch engine.CityScreen.Update() {
+        case citylib.CityScreenStateRunning:
+        case citylib.CityScreenStateDone:
+            return ebiten.Termination
+    }
 
     return nil
 }

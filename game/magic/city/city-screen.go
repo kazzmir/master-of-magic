@@ -12,6 +12,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
 
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/hajimehoshi/ebiten/v2"
@@ -86,6 +87,13 @@ func (b BuildingSlotSort) Swap(i, j int) {
     b[i], b[j] = b[j], b[i]
 }
 
+type CityScreenState int
+
+const (
+    CityScreenStateRunning CityScreenState = iota
+    CityScreenStateDone
+)
+
 type CityScreen struct {
     LbxCache *lbx.LbxCache
     ImageCache util.ImageCache
@@ -94,10 +102,13 @@ type CityScreen struct {
     ProducingFont *font.Font
     City *City
 
+    UI *uilib.UI
+
     Buildings []BuildingSlot
     BuildScreen *BuildScreen
 
     Counter uint64
+    State CityScreenState
 }
 
 type BuildingNativeSort []Building
@@ -192,8 +203,11 @@ func MakeCityScreen(cache *lbx.LbxCache, city *City) *CityScreen {
 
     producingFont := font.MakeOptimizedFontWithPalette(fonts[1], whitePalette)
 
-    // FIXME: include city name in the random source
+    // use a random seed based on the position and name of the city so that each game gets
+    // a different city view, but within the same game the city view is consistent
     random := rand.New(rand.NewPCG(uint64(city.X), uint64(city.Y) + hash(city.Name)))
+
+    // for testing purposes, use a random seed
     // random = rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64()))
     openSlots := randomSlots(random)
     // openSlots := buildingSlots()
@@ -229,6 +243,7 @@ func MakeCityScreen(cache *lbx.LbxCache, city *City) *CityScreen {
         x := random.IntN(150) + 20
         y := random.IntN(60) + 10
 
+        // house types are based on population size (village vs capital, etc)
         house := []Building{BuildingTreeHouse1, BuildingTreeHouse2, BuildingTreeHouse3, BuildingTreeHouse4, BuildingTreeHouse5}[random.IntN(5)]
 
         buildings = append(buildings, BuildingSlot{Building: house, Point: image.Pt(x, y)})
@@ -244,17 +259,87 @@ func MakeCityScreen(cache *lbx.LbxCache, city *City) *CityScreen {
         DescriptionFont: descriptionFont,
         ProducingFont: producingFont,
         Buildings: buildings,
+        State: CityScreenStateRunning,
     }
+
+    cityScreen.UI = cityScreen.MakeUI()
 
     return cityScreen
 }
 
-func (cityScreen *CityScreen) Update() {
-    cityScreen.Counter += 1
-
-    if cityScreen.BuildScreen == nil {
-        cityScreen.BuildScreen = MakeBuildScreen(cityScreen.LbxCache, cityScreen.City)
+func (cityScreen *CityScreen) MakeUI() *uilib.UI {
+    ui := &uilib.UI{
+        Draw: func(ui *uilib.UI, screen *ebiten.Image) {
+            ui.IterateElementsByLayer(func (element *uilib.UIElement){
+                if element.Draw != nil {
+                    element.Draw(element, screen)
+                }
+            })
+        },
     }
+
+    var elements []*uilib.UIElement
+
+    // FIXME: show disabled buy button if the item is not buyable (not enough money, or the item is trade goods/housing)
+    // buy button
+    buyButton, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", 7, 0)
+    if err == nil {
+        buyX := 214
+        buyY := 188
+        elements = append(elements, &uilib.UIElement{
+            Rect: image.Rect(buyX, buyY, buyX + buyButton.Bounds().Dx(), buyY + buyButton.Bounds().Dy()),
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(buyX), float64(buyY))
+                screen.DrawImage(buyButton, &options)
+            },
+        })
+    }
+
+    // change button
+    changeButton, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", 8, 0)
+    if err == nil {
+        changeX := 247
+        changeY := 188
+        elements = append(elements, &uilib.UIElement{
+            Rect: image.Rect(changeX, changeY, changeX + changeButton.Bounds().Dx(), changeY + changeButton.Bounds().Dy()),
+            LeftClick: func(element *uilib.UIElement) {
+                if cityScreen.BuildScreen == nil {
+                    cityScreen.BuildScreen = MakeBuildScreen(cityScreen.LbxCache, cityScreen.City)
+                }
+            },
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(changeX), float64(changeY))
+                screen.DrawImage(changeButton, &options)
+            },
+        })
+    }
+
+    // ok button
+    okButton, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", 9, 0)
+    if err == nil {
+        okX := 286
+        okY := 188
+        elements = append(elements, &uilib.UIElement{
+            Rect: image.Rect(okX, okY, okX + okButton.Bounds().Dx(), okY + okButton.Bounds().Dy()),
+            LeftClick: func(element *uilib.UIElement) {
+                cityScreen.State = CityScreenStateDone
+            },
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(okX), float64(okY))
+                screen.DrawImage(okButton, &options)
+            },
+        })
+    }
+    ui.SetElementsFromArray(elements)
+
+    return ui
+}
+
+func (cityScreen *CityScreen) Update() CityScreenState {
+    cityScreen.Counter += 1
 
     if cityScreen.BuildScreen != nil {
         switch cityScreen.BuildScreen.Update() {
@@ -264,7 +349,11 @@ func (cityScreen *CityScreen) Update() {
             case BuildScreenOk:
                 cityScreen.BuildScreen = nil
         }
+    } else {
+        cityScreen.UI.StandardUpdate()
     }
+
+    return cityScreen.State
 }
 
 func GetBuildingIndex(building Building) int {
@@ -550,6 +639,8 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
     var mapGeom ebiten.GeoM
     mapGeom.Translate(float64(mapX), float64(mapY))
     mapView(mapPart, mapGeom, cityScreen.Counter)
+
+    cityScreen.UI.Draw(cityScreen.UI, screen)
 
     if cityScreen.BuildScreen != nil {
         // screen.Fill(color.RGBA{R: 0, G: 0, B: 0, A: 0x80})
