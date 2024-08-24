@@ -4,14 +4,47 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
 )
 
+type Facing int
+const (
+    FacingUp Facing = iota
+    FacingUpRight
+    FacingRight
+    FacingDownRight
+    FacingDown
+    FacingDownLeft
+    FacingLeft
+    FacingUpLeft
+)
+
 type Unit struct {
     LbxFile string
+    CombatLbxFile string
     Index int
+    // first index of combat tiles, order is always up, up-right, right, down-right, down, down-left, left, up-left
+    CombatIndex int
     Name string
     Race data.Race
+
+    // number of figures that are drawn in a single combat tile
+    Count int
     // FIXME: add construction cost, building requirements to build this unit
     //  upkeep cost, how many figures appear in the battlefield, movement speed,
     //  attack power, ranged attack, defense, magic resistance, hit points, special power
+}
+
+func (unit *Unit) GetCombatIndex(facing Facing) int {
+    switch facing {
+        case FacingUp: return unit.CombatIndex + 0
+        case FacingUpRight: return unit.CombatIndex + 1
+        case FacingRight: return unit.CombatIndex + 2
+        case FacingDownRight: return unit.CombatIndex + 3
+        case FacingDown: return unit.CombatIndex + 4
+        case FacingDownLeft: return unit.CombatIndex + 5
+        case FacingLeft: return unit.CombatIndex + 6
+        case FacingUpLeft: return unit.CombatIndex + 7
+    }
+
+    return unit.CombatIndex
 }
 
 func (unit *Unit) String() string {
@@ -1060,8 +1093,11 @@ var Slingers Unit = Unit{
 
 var HighElfSpearmen Unit = Unit{
     LbxFile: "units1.lbx",
-    Name: "Spearmen",
     Index: 95,
+    CombatLbxFile: "figures7.lbx",
+    CombatIndex: 40,
+    Count: 7,
+    Name: "Spearmen",
     Race: data.RaceHighElf,
 }
 

@@ -305,12 +305,16 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *City) *
                 middleX := float64(104)
                 middleY := float64(20)
 
-                image, err := imageCache.GetImage(unit.LbxFile, unit.Index, 0)
+                images, err := imageCache.GetImages(unit.CombatLbxFile, unit.GetCombatIndex(units.FacingRight))
                 if err == nil {
                     var options ebiten.DrawImageOptions
                     options.GeoM.Translate(middleX, middleY)
-                    options.GeoM.Translate(-float64(image.Bounds().Dx() / 2), -float64(image.Bounds().Dy() / 2))
-                    screen.DrawImage(image, &options)
+
+                    index := (ui.Counter / 7) % uint64(len(images))
+                    use := images[index]
+
+                    options.GeoM.Translate(-float64(use.Bounds().Dx() / 2), -float64(use.Bounds().Dy() / 2))
+                    screen.DrawImage(use, &options)
                 }
             },
         }
