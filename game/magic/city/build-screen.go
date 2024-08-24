@@ -258,6 +258,19 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *City) *
 
     descriptionFont := font.MakeOptimizedFontWithPalette(fonts[4], descriptionPalette)
 
+    yellowGradient := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
+    }
+
+    okCancelFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowGradient)
+
     smallFont := font.MakeOptimizedFontWithPalette(fonts[1], descriptionPalette)
 
     var elements []*uilib.UIElement
@@ -578,6 +591,39 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *City) *
             elements = append(elements, element)
         }
     }
+
+    // cancel button
+    elements = append(elements, &uilib.UIElement{
+        Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
+            background, err := imageCache.GetImage("backgrnd.lbx", 24, 0)
+            if err == nil {
+                x := 100
+                y := 181
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(x), float64(y))
+                screen.DrawImage(background, &options)
+
+                okCancelFont.PrintCenter(screen, float64(x + background.Bounds().Dx() / 2), float64(y + 1), 1, "Cancel")
+            }
+        },
+    })
+
+    // ok button
+    elements = append(elements, &uilib.UIElement{
+        Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
+            background, err := imageCache.GetImage("backgrnd.lbx", 24, 0)
+            if err == nil {
+                x := 173
+                y := 181
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(x), float64(y))
+                screen.DrawImage(background, &options)
+
+                okCancelFont.PrintCenter(screen, float64(x + background.Bounds().Dx() / 2), float64(y + 1), 1, "Ok")
+            }
+        },
+    })
+
 
     ui.SetElementsFromArray(elements)
 
