@@ -21,8 +21,14 @@ import (
 const ScreenWidth = 1024
 const ScreenHeight = 768
 
+type LbxData struct {
+    Lbx *lbx.LbxFile
+    Name string
+}
+
 type LbxImages struct {
     Images []*ebiten.Image
+    LbxData *LbxData
     Load sync.Once
     Loaded bool
     Lock sync.Mutex
@@ -42,7 +48,9 @@ const (
 )
 
 type Viewer struct {
-    Lbx *lbx.LbxFile
+    Data []*LbxData
+    StartingRow int
+    Indexes map[string]int
     Images []*LbxImages
     Scale float64
     CurrentImage int
@@ -175,6 +183,17 @@ func (viewer *Viewer) Update() error {
         }
     }
 
+    tilesPerRow := (ScreenWidth - 1) / TileWidth
+    tilesPerColumn := (ScreenHeight - 100) / TileHeight
+
+    if viewer.CurrentTile > (viewer.StartingRow + tilesPerColumn) * tilesPerRow {
+        viewer.StartingRow = viewer.CurrentTile / tilesPerRow - tilesPerColumn
+    }
+
+    if viewer.CurrentTile < viewer.StartingRow * tilesPerRow {
+        viewer.StartingRow = viewer.CurrentTile / tilesPerRow
+    }
+
     if viewer.AnimationFrame != -1 {
         if viewer.AnimationCount > 0 {
             viewer.AnimationCount -= 1
@@ -211,7 +230,7 @@ func (viewer *Viewer) Draw(screen *ebiten.Image) {
     op := &text.DrawOptions{}
     op.GeoM.Translate(1, 1)
     op.ColorScale.ScaleWithColor(color.White)
-    text.Draw(screen, fmt.Sprintf("Lbx entry: %v/%v", viewer.CurrentTile, viewer.Lbx.TotalEntries() - 1), face, op)
+    text.Draw(screen, fmt.Sprintf("%v entry: %v/%v", viewer.Images[viewer.CurrentTile].LbxData.Name, viewer.CurrentTile - viewer.Indexes[viewer.Images[viewer.CurrentTile].LbxData.Name], viewer.Images[viewer.CurrentTile].LbxData.Lbx.TotalEntries() - 1), face, op)
     op.GeoM.Translate(1, 20)
     if viewer.AnimationFrame != -1 {
         text.Draw(screen, fmt.Sprintf("Animation : %v/%v", viewer.AnimationFrame+1, len(viewer.Images[viewer.CurrentTile].Images)), face, op)
@@ -232,8 +251,10 @@ func (viewer *Viewer) Draw(screen *ebiten.Image) {
     x := startX
     y := startY
 
-    // FIXME: handle the case when there are more images than can fit on the screen
     for i, image := range viewer.Images {
+        if i < viewer.StartingRow * tilesPerRow() {
+            continue
+        }
         if image.IsLoaded() && len(image.Images) > 0 {
             var options ebiten.DrawImageOptions
 
@@ -287,14 +308,14 @@ func (viewer *Viewer) Draw(screen *ebiten.Image) {
     }
 }
 
-func MakeViewer(lbxFile *lbx.LbxFile) (*Viewer, error) {
+func MakeViewer(data []*LbxData) (*Viewer, error) {
     font, err := common.LoadFont()
     if err != nil {
         return nil, err
     }
 
     viewer := &Viewer{
-        Lbx: lbxFile,
+        Data: data,
         Scale: 1,
         Font: font,
         CurrentImage: 0,
@@ -303,31 +324,100 @@ func MakeViewer(lbxFile *lbx.LbxFile) (*Viewer, error) {
         State: ViewStateTiles,
     }
 
-    for i := 0; i < lbxFile.TotalEntries(); i++ {
-        loader := &LbxImages{}
-        viewer.Images = append(viewer.Images, loader)
-
-        go func(){
-            loader.Load.Do(func(){
-                rawImages, err := lbxFile.ReadImages(i)
-                if err != nil {
-                    log.Printf("Unable to load images at index %v: %v", i, err)
-                    return
-                }
-                var images []*ebiten.Image
-                for _, rawImage := range rawImages {
-                    images = append(images, ebiten.NewImageFromImage(rawImage))
-                }
-                loader.Images = images
-
-                loader.Lock.Lock()
-                loader.Loaded = true
-                loader.Lock.Unlock()
-            })
-        }()
+    maxLoad := make(chan bool, 4)
+    for i := 0; i < 4; i++ {
+        maxLoad <- true
     }
 
+    indexes := make(map[string]int)
+
+    imageIndex := 0
+    for _, lbxData := range data {
+        indexes[lbxData.Name] = imageIndex
+        imageIndex += lbxData.Lbx.TotalEntries()
+        for i := 0; i < lbxData.Lbx.TotalEntries(); i++ {
+            loader := &LbxImages{}
+            loader.LbxData = lbxData
+            viewer.Images = append(viewer.Images, loader)
+
+            go func(){
+                <-maxLoad
+
+                loader.Load.Do(func(){
+                    rawImages, err := lbxData.Lbx.ReadImages(i)
+                    if err != nil {
+                        log.Printf("Unable to load images from %v at index %v: %v", lbxData.Name, i, err)
+                        return
+                    }
+                    var images []*ebiten.Image
+                    for _, rawImage := range rawImages {
+                        images = append(images, ebiten.NewImageFromImage(rawImage))
+                    }
+                    loader.Images = images
+
+                    loader.Lock.Lock()
+                    loader.Loaded = true
+                    loader.Lock.Unlock()
+                })
+
+                maxLoad <- true
+            }()
+        }
+    }
+
+    viewer.Indexes = indexes
+
     return viewer, nil
+}
+
+func MakeSingleFileViewer(path string) (*Viewer, error) {
+    var lbxFile lbx.LbxFile
+
+    open, err := os.Open(path)
+    if err != nil {
+        return nil, err
+    }
+    defer open.Close()
+    lbxFile, err = lbx.ReadLbx(open)
+    if err != nil {
+        return nil, err
+    }
+    log.Printf("Loaded lbx file: %v\n", path)
+
+    return MakeViewer([]*LbxData{&LbxData{Lbx: &lbxFile, Name: path}})
+}
+
+func MakeMultiViewer(path string) (*Viewer, error) {
+    entries, err := os.ReadDir(path)
+    if err != nil {
+        return nil, err
+    }
+
+    var data []*LbxData
+
+    for _, entry := range entries {
+        open, err := os.Open(path + "/" + entry.Name())
+        if err != nil {
+            continue
+        }
+
+        lbxFile, err := lbx.ReadLbx(open)
+        if err == nil {
+            data = append(data, &LbxData{Lbx: &lbxFile, Name: entry.Name()})
+        }
+
+        open.Close()
+    }
+
+    return MakeViewer(data)
+}
+
+func isFile(path string) bool {
+    info, err := os.Stat(path)
+    if err != nil {
+        return false
+    }
+    return !info.IsDir()
 }
 
 func main() {
@@ -344,28 +434,23 @@ func main() {
     ebiten.SetWindowTitle("lbx viewer")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 
-    var lbxFile lbx.LbxFile
+    var viewer *Viewer
+    var err error
 
-    func(){
-        open, err := os.Open(file)
+    if isFile(file) {
+        viewer, err = MakeSingleFileViewer(file)
         if err != nil {
             log.Printf("Error: %v", err)
             return
         }
-        defer open.Close()
-        lbxFile, err = lbx.ReadLbx(open)
+    } else {
+        viewer, err = MakeMultiViewer(file)
         if err != nil {
-            log.Printf("Error: %v\n", err)
+            log.Printf("Error: %v", err)
             return
         }
-        log.Printf("Loaded lbx file: %v\n", file)
-    }()
-
-    viewer, err := MakeViewer(&lbxFile)
-    if err != nil {
-        log.Printf("Error: %v", err)
-        return
     }
+
 
     err = ebiten.RunGame(viewer)
     if err != nil {
