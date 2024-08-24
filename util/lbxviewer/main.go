@@ -59,6 +59,7 @@ type Viewer struct {
     Font *text.GoTextFaceSource
     AnimationFrame int
     AnimationCount int
+    ShiftCount int
 }
 
 const TileWidth = 50
@@ -75,15 +76,25 @@ func (viewer *Viewer) Update() error {
 
     const AnimationSpeed = 30
 
-    // control_pressed := false
+    shift_pressed := false
 
     scaleAmount := 0.06
+
+    press_up := false
+    press_down := false
+    press_left := false
+    press_right := false
+
+    shiftSpeed := 4
 
     for _, key := range keys {
         switch key {
             case ebiten.KeyUp:
                 if viewer.State == ViewStateImage {
                     viewer.Scale *= 1 + scaleAmount
+                }
+                if viewer.State == ViewStateTiles && viewer.ShiftCount % shiftSpeed == 1 {
+                    press_up = true
                 }
             case ebiten.KeyDown:
                 if viewer.State == ViewStateImage {
@@ -92,10 +103,20 @@ func (viewer *Viewer) Update() error {
                         viewer.Scale = 1
                     }
                 }
-                /*
-            case ebiten.KeyControlLeft:
-                control_pressed = true
-                */
+
+                if viewer.State == ViewStateTiles && viewer.ShiftCount % shiftSpeed == 1 {
+                    press_down = true
+                }
+            case ebiten.KeyLeft:
+                if viewer.State == ViewStateTiles && viewer.ShiftCount % shiftSpeed == 1 {
+                    press_left = true
+                }
+            case ebiten.KeyRight:
+                if viewer.State == ViewStateTiles && viewer.ShiftCount % shiftSpeed == 1 {
+                    press_right = true
+                }
+            case ebiten.KeyShiftLeft:
+                shift_pressed = true
             case ebiten.KeySpace:
                 if viewer.State == ViewStateImage {
                     if len(viewer.Images[viewer.CurrentTile].Images) > 0 {
@@ -104,7 +125,12 @@ func (viewer *Viewer) Update() error {
                     }
                 }
         }
+    }
 
+    if shift_pressed {
+        viewer.ShiftCount += 1
+    } else {
+        viewer.ShiftCount = 0
     }
 
     keys = make([]ebiten.Key, 0)
@@ -122,10 +148,7 @@ func (viewer *Viewer) Update() error {
             case ebiten.KeyLeft:
                 switch viewer.State {
                     case ViewStateTiles:
-                        if viewer.CurrentTile > 0 {
-                            viewer.CurrentTile -= 1
-                            viewer.CurrentImage = 0
-                        }
+                        press_left = true
                     case ViewStateImage:
                         viewer.CurrentImage -= 1
                         if viewer.CurrentImage < 0 {
@@ -136,10 +159,7 @@ func (viewer *Viewer) Update() error {
             case ebiten.KeyRight:
                 switch viewer.State {
                     case ViewStateTiles:
-                        if viewer.CurrentTile < len(viewer.Images) - 1 {
-                            viewer.CurrentTile += 1
-                            viewer.CurrentImage = 0
-                        }
+                        press_right = true
                     case ViewStateImage:
                         viewer.CurrentImage += 1
                         if viewer.CurrentImage >= len(viewer.Images[viewer.CurrentTile].Images) {
@@ -150,21 +170,13 @@ func (viewer *Viewer) Update() error {
             case ebiten.KeyUp:
                 switch viewer.State {
                     case ViewStateTiles:
-                        position := viewer.CurrentTile - tilesPerRow()
-                        if position >= 0 {
-                            viewer.CurrentTile = position
-                            viewer.CurrentImage = 0
-                        }
+                        press_up = true
                 }
 
             case ebiten.KeyDown:
                 switch viewer.State {
                     case ViewStateTiles:
-                        position := viewer.CurrentTile + tilesPerRow()
-                        if position < len(viewer.Images) {
-                            viewer.CurrentTile = position
-                            viewer.CurrentImage = 0
-                        }
+                        press_down = true
                 }
 
             case ebiten.KeyA:
@@ -183,8 +195,38 @@ func (viewer *Viewer) Update() error {
         }
     }
 
+    if press_left {
+        if viewer.CurrentTile > 0 {
+            viewer.CurrentTile -= 1
+            viewer.CurrentImage = 0
+        }
+    }
+
+    if press_right {
+        if viewer.CurrentTile < len(viewer.Images) - 1 {
+            viewer.CurrentTile += 1
+            viewer.CurrentImage = 0
+        }
+    }
+
+    if press_up {
+        position := viewer.CurrentTile - tilesPerRow()
+        if position >= 0 {
+            viewer.CurrentTile = position
+            viewer.CurrentImage = 0
+        }
+    }
+
+    if press_down {
+        position := viewer.CurrentTile + tilesPerRow()
+        if position < len(viewer.Images) {
+            viewer.CurrentTile = position
+            viewer.CurrentImage = 0
+        }
+    }
+
     tilesPerRow := (ScreenWidth - 1) / TileWidth
-    tilesPerColumn := (ScreenHeight - 100) / TileHeight
+    tilesPerColumn := (ScreenHeight - 100) / TileHeight - 1
 
     if viewer.CurrentTile > (viewer.StartingRow + tilesPerColumn) * tilesPerRow {
         viewer.StartingRow = viewer.CurrentTile / tilesPerRow - tilesPerColumn
