@@ -17,7 +17,7 @@ func MakeHelpElement(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, h
     if err != nil {
         return nil
     }
-        
+
     fontLbx, err := cache.GetLbxFile("FONTS.LBX")
     if err != nil {
         return nil
@@ -139,3 +139,75 @@ func MakeHelpElement(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, h
 
     return infoElement
 }
+
+func MakeErrorElement(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, message string) *UIElement {
+    errorX := 67
+    errorY := 73
+
+    errorMargin := 15
+    errorTopMargin := 10
+
+    errorTop, err := imageCache.GetImage("newgame.lbx", 44, 0)
+    if err != nil {
+        return nil
+    }
+
+    errorBottom, err := imageCache.GetImage("newgame.lbx", 45, 0)
+    if err != nil {
+        return nil
+    }
+
+    // FIXME: this should be a fade from bright yellow to dark yellow/orange
+    yellowFade := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0xb2, G: 0x8c, B: 0x05, A: 0xff},
+        color.RGBA{R: 0xc9, G: 0xa1, B: 0x26, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xd3, B: 0x5b, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xe8, B: 0x6f, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+    }
+
+    fontLbx, err := cache.GetLbxFile("FONTS.LBX")
+    if err != nil {
+        return nil
+    }
+
+    fonts, err := fontLbx.ReadFonts(0)
+    if err != nil {
+        return nil
+    }
+
+    errorFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowFade)
+
+    maxWidth := errorTop.Bounds().Dx() - errorMargin * 2
+
+    wrapped := errorFont.CreateWrappedText(float64(maxWidth), 1, message)
+
+    bottom := float64(errorY + errorTopMargin) + wrapped.TotalHeight
+
+    topDraw := errorTop.SubImage(image.Rect(0, 0, errorTop.Bounds().Dx(), int(bottom) - errorY)).(*ebiten.Image)
+
+    element := &UIElement{
+        Rect: image.Rect(0, 0, data.ScreenWidth, data.ScreenHeight),
+        Layer: 1,
+        LeftClick: func(this *UIElement){
+            ui.RemoveElement(this)
+        },
+        Draw: func(this *UIElement, window *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(errorX), float64(errorY))
+            window.DrawImage(topDraw, &options)
+
+            errorFont.RenderWrapped(window, float64(errorX + errorMargin + maxWidth / 2), float64(errorY + errorTopMargin), wrapped, true)
+
+            options.GeoM.Reset()
+            options.GeoM.Translate(float64(errorX), float64(bottom))
+            window.DrawImage(errorBottom, &options)
+        },
+    }
+
+    return element
+}
+
