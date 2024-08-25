@@ -1,0 +1,27 @@
+name: Build Linux
+
+on: push
+
+jobs:
+  build:
+    name: Build code
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up go
+        uses: actions/setup-go@v5
+
+      - name: Install ubuntu dependencies
+        run: |
+          sudo apt update
+          sudo apt install libasound2-dev xorg-dev
+
+      - name: Install go dependencies
+        run: |
+          go get ./...
+          go mod tidy
+
+      - name: Build
+        run: go build ./game/magic
