@@ -191,7 +191,7 @@ func MakeBuildDescriptions(cache *lbx.LbxCache) *BuildingDescriptions {
 
 // FIXME
 func GetBuildingMaintenance(building Building) int {
-    return 2
+    return 0
 }
 
 func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *City, buildScreen *BuildScreen, doCancel func(), doOk func()) *uilib.UI {
@@ -321,13 +321,17 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *City, b
 
                 buildingMaintenance := GetBuildingMaintenance(building)
 
-                smallCoin, err := imageCache.GetImage("backgrnd.lbx", 42, 0)
-                if err == nil {
-                    var options ebiten.DrawImageOptions
-                    options.GeoM.Translate(85 + descriptionFont.MeasureTextWidth("Maintenance", 1) + 3, 50)
-                    for i := 0; i < buildingMaintenance; i++ {
-                        screen.DrawImage(smallCoin, &options)
-                        options.GeoM.Translate(float64(smallCoin.Bounds().Dx() + 2), 0)
+                if buildingMaintenance == 0 {
+                    mediumFont.Print(screen, 85 + descriptionFont.MeasureTextWidth("Maintenance", 1) + 4, 49, 1, "0")
+                } else {
+                    smallCoin, err := imageCache.GetImage("backgrnd.lbx", 42, 0)
+                    if err == nil {
+                        var options ebiten.DrawImageOptions
+                        options.GeoM.Translate(85 + descriptionFont.MeasureTextWidth("Maintenance", 1) + 3, 50)
+                        for i := 0; i < buildingMaintenance; i++ {
+                            screen.DrawImage(smallCoin, &options)
+                            options.GeoM.Translate(float64(smallCoin.Bounds().Dx() + 2), 0)
+                        }
                     }
                 }
 
