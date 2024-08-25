@@ -189,8 +189,44 @@ func MakeBuildDescriptions(cache *lbx.LbxCache) *BuildingDescriptions {
     }
 }
 
-// FIXME
+// FIXME: these values come from buildat.lbx
 func GetBuildingMaintenance(building Building) int {
+    switch building {
+        case BuildingBarracks: return 0
+        case BuildingArmory: return 2
+        case BuildingFightersGuild: return 3
+        case BuildingArmorersGuild: return 4
+        case BuildingWarCollege: return 5
+        case BuildingSmithy: return 1
+        case BuildingStables: return 2
+        case BuildingAnimistsGuild: return 5
+        case BuildingFantasticStable: return 6
+        case BuildingShipwrightsGuild: return 1
+        case BuildingShipYard: return 2
+        case BuildingMaritimeGuild: return 4
+        case BuildingSawmill: return 2
+        case BuildingLibrary: return 1
+        case BuildingSagesGuild: return 2
+        case BuildingOracle: return 4
+        case BuildingAlchemistsGuild: return 3
+        case BuildingUniversity: return 3
+        case BuildingWizardsGuild: return 5 // FIXME: also requires 3 power
+        case BuildingShrine: return 1
+        case BuildingTemple: return 2
+        case BuildingParthenon: return 3
+        case BuildingCathedral: return 4
+        case BuildingMarketplace: return 1
+        case BuildingBank: return 3
+        case BuildingMerchantsGuild: return 5
+        case BuildingGranary: return 1
+        case BuildingFarmersMarket: return 2
+        case BuildingForestersGuild: return 2
+        case BuildingBuildersHall: return 1
+        case BuildingMechaniciansGuild: return 5
+        case BuildingMinersGuild: return 3
+        case BuildingCityWalls: return 2
+    }
+
     return 0
 }
 
