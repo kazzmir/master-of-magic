@@ -289,6 +289,22 @@ func (cityScreen *CityScreen) MakeUI() *uilib.UI {
         buyY := 188
         elements = append(elements, &uilib.UIElement{
             Rect: image.Rect(buyX, buyY, buyX + buyButton.Bounds().Dx(), buyY + buyButton.Bounds().Dy()),
+            LeftClick: func(element *uilib.UIElement) {
+
+                var elements []*uilib.UIElement
+
+                yes := func(){
+                    // FIXME: buy the thing being produced
+                    ui.RemoveElements(elements)
+                }
+
+                no := func(){
+                    ui.RemoveElements(elements)
+                }
+
+                elements = uilib.MakeConfirmDialog(cityScreen.UI, cityScreen.LbxCache, &cityScreen.ImageCache, "Are you sure you want to buy this building?", yes, no)
+                ui.AddElements(elements)
+            },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(float64(buyX), float64(buyY))

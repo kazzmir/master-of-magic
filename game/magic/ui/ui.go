@@ -19,6 +19,7 @@ type UIElement struct {
     NotInside UINotInsideElementFunc
     Inside UIInsideElementFunc
     LeftClick UIClickElementFunc
+    LeftClickRelease UIClickElementFunc
     RightClick UIClickElementFunc
     Draw UIDrawFunc
     Layer UILayer
@@ -33,6 +34,14 @@ type UI struct {
     Draw func(*UI, *ebiten.Image)
     HandleKey UIKeyFunc
     Counter uint64
+
+    LeftClickedElements []*UIElement
+}
+
+func (ui *UI) AddElements(elements []*UIElement){
+    for _, element := range elements {
+        ui.AddElement(element)
+    }
 }
 
 func (ui *UI) AddElement(element *UIElement){
@@ -44,6 +53,12 @@ func (ui *UI) AddElement(element *UIElement){
     }
 
     ui.Elements[element.Layer] = append(ui.Elements[element.Layer], element)
+}
+
+func (ui *UI) RemoveElements(toRemove []*UIElement){
+    for _, element := range toRemove {
+        ui.RemoveElement(element)
+    }
 }
 
 func (ui *UI) RemoveElement(toRemove *UIElement){
@@ -126,9 +141,20 @@ func (ui *UI) StandardUpdate() {
     }
 
     leftClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)
+    leftClickReleased := inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft)
     rightClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight)
 
     mouseX, mouseY := ebiten.CursorPosition()
+
+    if leftClickReleased {
+        for _, element := range ui.LeftClickedElements {
+            if element.LeftClickRelease != nil {
+                element.LeftClickRelease(element)
+            }
+        }
+
+        ui.LeftClickedElements = nil
+    }
 
     for _, element := range ui.GetHighestLayer() {
         if mouseX >= element.Rect.Min.X && mouseY >= element.Rect.Min.Y && mouseX < element.Rect.Max.X && mouseY <= element.Rect.Max.Y {
@@ -137,6 +163,7 @@ func (ui *UI) StandardUpdate() {
             }
             if leftClick && element.LeftClick != nil {
                 element.LeftClick(element)
+                ui.LeftClickedElements = append(ui.LeftClickedElements, element)
             }
             if rightClick && element.RightClick != nil {
                 element.RightClick(element)
