@@ -3,6 +3,7 @@ package city
 import (
     "log"
     "fmt"
+    "math"
     "math/rand/v2"
     "sort"
     "image"
@@ -687,6 +688,16 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
     }
 
     if showWork {
+        turn := ""
+        turns := float64(workRequired - cityScreen.City.Production) / float64(cityScreen.City.WorkProductionRate)
+        if turns <= 0 {
+            turn = "1 Turn"
+        } else {
+            turn = fmt.Sprintf("%v Turns", int(math.Ceil(turns)))
+        }
+
+        cityScreen.DescriptionFont.PrintRight(screen, 318, 140, 1, turn)
+
         workEmpty, err1 := cityScreen.ImageCache.GetImage("backgrnd.lbx", 11, 0)
         workFull, err2 := cityScreen.ImageCache.GetImage("backgrnd.lbx", 12, 0)
         if err1 == nil && err2 == nil {
