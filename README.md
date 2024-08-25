@@ -1,3 +1,5 @@
+![build](https://github.com/kazzmir/master-of-magic/actions/workflows/build-linux.yml/badge.svg)
+
 Master of Magic clone
 
 * Source language: golang, https://go.dev/
