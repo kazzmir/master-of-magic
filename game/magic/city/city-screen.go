@@ -12,6 +12,8 @@ import (
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/combat"
+    "github.com/kazzmir/master-of-magic/game/magic/units"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
 
     "github.com/kazzmir/master-of-magic/lib/font"
@@ -657,7 +659,17 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
             cityScreen.ProducingFont.PrintWrapCenter(screen, 285, 155, 60, 1, fmt.Sprintf("Increases population growth rate."))
         }
     } else if !cityScreen.City.ProducingUnit.IsNone() {
-        // FIXME: render combat unit
+        images, err := cityScreen.ImageCache.GetImages(cityScreen.City.ProducingUnit.CombatLbxFile, cityScreen.City.ProducingUnit.GetCombatIndex(units.FacingRight))
+        if err == nil {
+            var options ebiten.DrawImageOptions
+            use := images[2]
+
+            options.GeoM.Translate(238, 168)
+            combat.RenderCombatTile(screen, &cityScreen.ImageCache, options)
+            combat.RenderCombatUnit(screen, use, options, cityScreen.City.ProducingUnit.Count)
+            cityScreen.ProducingFont.PrintCenter(screen, 237, 179, 1, cityScreen.City.ProducingUnit.Name)
+        }
+
     }
 
     // draw a few squares of the map
