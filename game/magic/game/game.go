@@ -258,7 +258,7 @@ func (game *Game) Update() GameState {
             }
         }
 
-        if game.Players[0].SelectedUnit != nil {
+        if len(game.Players) > 0 && game.Players[0].SelectedUnit != nil {
             unit := game.Players[0].SelectedUnit
             game.cameraX = unit.X - tilesPerRow / 2
             game.cameraY = unit.Y - tilesPerColumn / 2
