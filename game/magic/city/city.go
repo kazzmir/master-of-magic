@@ -5,6 +5,7 @@ import (
 
     "github.com/kazzmir/master-of-magic/lib/set"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/units"
 )
 
 type Building int
@@ -142,7 +143,8 @@ type City struct {
     Y int
     Buildings *set.Set[Building]
 
-    Producing Building
+    ProducingBuilding Building
+    ProducingUnit units.Unit
 }
 
 func (city *City) AddBuilding(building Building){

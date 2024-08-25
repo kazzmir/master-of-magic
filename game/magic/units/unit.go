@@ -48,8 +48,16 @@ func (unit *Unit) GetCombatIndex(facing Facing) int {
     return unit.CombatIndex
 }
 
+func (unit *Unit) IsNone() bool {
+    return unit.Index == -1
+}
+
 func (unit *Unit) String() string {
     return unit.Name
+}
+
+var UnitNone Unit = Unit{
+    Index: -1,
 }
 
 var LizardSpearmen Unit = Unit{

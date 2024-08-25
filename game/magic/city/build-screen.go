@@ -30,9 +30,11 @@ type BuildScreen struct {
     City *City
     UI *uilib.UI
     State BuildScreenState
+    ProducingBuilding Building
+    ProducingUnit units.Unit
 }
 
-func MakeBuildScreen(cache *lbx.LbxCache, city *City) *BuildScreen {
+func MakeBuildScreen(cache *lbx.LbxCache, city *City, producingBuilding Building, producingUnit units.Unit) *BuildScreen {
     imageCache := util.MakeImageCache(cache)
 
     var buildScreen *BuildScreen
@@ -45,15 +47,18 @@ func MakeBuildScreen(cache *lbx.LbxCache, city *City) *BuildScreen {
         buildScreen.Ok()
     }
 
-    ui := makeBuildUI(cache, &imageCache, city, doCancel, doOk)
-
     buildScreen = &BuildScreen{
         LbxCache: cache,
         ImageCache: &imageCache,
         City: city,
-        UI: ui,
         State: BuildScreenRunning,
+        ProducingBuilding: producingBuilding,
+        ProducingUnit: producingUnit,
     }
+
+    ui := makeBuildUI(cache, &imageCache, city, buildScreen, doCancel, doOk)
+
+    buildScreen.UI = ui
 
     return buildScreen
 }
@@ -232,7 +237,7 @@ func renderCombatUnit(screen *ebiten.Image, use *ebiten.Image, options ebiten.Dr
     }
 }
 
-func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *City, doCancel func(), doOk func()) *uilib.UI {
+func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *City, buildScreen *BuildScreen, doCancel func(), doOk func()) *uilib.UI {
 
     fontLbx, err := cache.GetLbxFile("fonts.lbx")
     if err != nil {
@@ -566,8 +571,11 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *City, d
 
             element := &uilib.UIElement{
                 Rect: image.Rect(x1, y1, x2, y2),
+                // FIXME: double left click, confirm this selection and quit the build screen
                 LeftClick: func(this *uilib.UIElement) {
                     selectedElement = this
+                    buildScreen.ProducingBuilding = building
+                    buildScreen.ProducingUnit = units.UnitNone
                     updateMainElementBuilding(building)
                 },
                 Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
@@ -602,8 +610,11 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *City, d
 
             element := &uilib.UIElement{
                 Rect: image.Rect(x1, y1, x2, y2),
+                // FIXME: double left click, confirm this selection and quit the build screen
                 LeftClick: func(this *uilib.UIElement) {
                     selectedElement = this
+                    buildScreen.ProducingBuilding = BuildingNone
+                    buildScreen.ProducingUnit = unit
                     updateMainElementUnit(unit)
                 },
                 Draw: func(this *uilib.UIElement, screen *ebiten.Image) {

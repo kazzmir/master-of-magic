@@ -322,7 +322,7 @@ func (cityScreen *CityScreen) MakeUI() *uilib.UI {
             Rect: image.Rect(changeX, changeY, changeX + changeButton.Bounds().Dx(), changeY + changeButton.Bounds().Dy()),
             LeftClick: func(element *uilib.UIElement) {
                 if cityScreen.BuildScreen == nil {
-                    cityScreen.BuildScreen = MakeBuildScreen(cityScreen.LbxCache, cityScreen.City)
+                    cityScreen.BuildScreen = MakeBuildScreen(cityScreen.LbxCache, cityScreen.City, cityScreen.City.ProducingBuilding, cityScreen.City.ProducingUnit)
                 }
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
@@ -364,6 +364,8 @@ func (cityScreen *CityScreen) Update() CityScreenState {
             case BuildScreenCanceled:
                 cityScreen.BuildScreen = nil
             case BuildScreenOk:
+                cityScreen.City.ProducingBuilding = cityScreen.BuildScreen.ProducingBuilding
+                cityScreen.City.ProducingUnit = cityScreen.BuildScreen.ProducingUnit
                 cityScreen.BuildScreen = nil
         }
     } else {
@@ -630,22 +632,33 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
         }
     }
 
-    producingBackground, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", 13, 0)
-    if err == nil {
-        var options ebiten.DrawImageOptions
-        options.GeoM.Translate(260, 149)
-        screen.DrawImage(producingBackground, &options)
-    }
+    if cityScreen.City.ProducingBuilding != BuildingNone {
+        producingPics, err := cityScreen.ImageCache.GetImages("cityscap.lbx", GetBuildingIndex(cityScreen.City.ProducingBuilding))
+        if err == nil {
+            index := animationCounter % uint64(len(producingPics))
 
-    producingPic, err := cityScreen.ImageCache.GetImage("cityscap.lbx", GetBuildingIndex(cityScreen.City.Producing), 0)
-    if err == nil {
-        var options ebiten.DrawImageOptions
-        options.GeoM.Translate(217, 144)
-        screen.DrawImage(producingPic, &options)
-    }
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(217, 144)
+            screen.DrawImage(producingPics[index], &options)
+        }
 
-    cityScreen.ProducingFont.PrintCenter(screen, 237, 179, 1, fmt.Sprintf("%v", cityScreen.City.Producing))
-    cityScreen.ProducingFont.PrintWrapCenter(screen, 285, 155, 60, 1, fmt.Sprintf("Increases population growth rate."))
+        cityScreen.ProducingFont.PrintCenter(screen, 237, 179, 1, fmt.Sprintf("%v", cityScreen.City.ProducingBuilding))
+
+        // for all buildings besides trade goods and housing, show amount of work required to build
+
+        if cityScreen.City.ProducingBuilding == BuildingTradeGoods || cityScreen.City.ProducingBuilding == BuildingHousing {
+            producingBackground, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", 13, 0)
+            if err == nil {
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(260, 149)
+                screen.DrawImage(producingBackground, &options)
+            }
+
+            cityScreen.ProducingFont.PrintWrapCenter(screen, 285, 155, 60, 1, fmt.Sprintf("Increases population growth rate."))
+        }
+    } else if !cityScreen.City.ProducingUnit.IsNone() {
+        // FIXME: render combat unit
+    }
 
     // draw a few squares of the map
     mapX := 215

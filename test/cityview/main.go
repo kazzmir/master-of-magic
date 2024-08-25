@@ -11,6 +11,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
     "github.com/kazzmir/master-of-magic/game/magic/game"
     "github.com/kazzmir/master-of-magic/game/magic/util"
+    "github.com/kazzmir/master-of-magic/game/magic/units"
 
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -38,7 +39,8 @@ func NewEngine() (*Engine, error) {
         WorkProduction: 3,
         MoneyProduction: 4,
         MagicProduction: 3,
-        Producing: citylib.BuildingHousing,
+        ProducingBuilding: citylib.BuildingHousing,
+        ProducingUnit: units.UnitNone,
         X: 3,
         Y: 8,
         Buildings: set.MakeSet[citylib.Building](),
