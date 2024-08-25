@@ -254,8 +254,6 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *City, b
         return nil
     }
 
-    _ = help
-
     buildDescriptions := MakeBuildDescriptions(cache)
     
     titleFont := font.MakeOptimizedFont(fonts[2])
@@ -569,6 +567,12 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *City, b
                     buildScreen.ProducingUnit = units.UnitNone
                     updateMainElementBuilding(building)
                 },
+                RightClick: func(this *uilib.UIElement) {
+                    helpEntries := help.GetEntriesByName("Building Options")
+                    if helpEntries != nil {
+                        ui.AddElement(uilib.MakeHelpElement(ui, cache, imageCache, helpEntries[0]))
+                    }
+                },
                 Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
                     var options ebiten.DrawImageOptions
                     options.GeoM.Translate(float64(x1), float64(y1))
@@ -617,6 +621,12 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *City, b
                     buildScreen.ProducingUnit = unit
                     updateMainElementUnit(unit)
                 },
+                RightClick: func(this *uilib.UIElement) {
+                    helpEntries := help.GetEntriesByName("Unit Options")
+                    if helpEntries != nil {
+                        ui.AddElement(uilib.MakeHelpElement(ui, cache, imageCache, helpEntries[0]))
+                    }
+                },
                 Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
                     var options ebiten.DrawImageOptions
                     options.GeoM.Translate(float64(x1), float64(y1))
@@ -656,6 +666,12 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *City, b
             LeftClick: func(this *uilib.UIElement) {
                 doCancel()
             },
+            RightClick: func(this *uilib.UIElement) {
+                helpEntries := help.GetEntries(376)
+                if helpEntries != nil {
+                    ui.AddElement(uilib.MakeHelpElement(ui, cache, imageCache, helpEntries[0]))
+                }
+            },
             Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(float64(cancelX), float64(cancelY))
@@ -672,6 +688,12 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *City, b
             Rect: image.Rect(okX, okY, okX + buttonBackground.Bounds().Dx(), okY + buttonBackground.Bounds().Dy()),
             LeftClick: func(this *uilib.UIElement) {
                 doOk()
+            },
+            RightClick: func(this *uilib.UIElement) {
+                helpEntries := help.GetEntries(377)
+                if helpEntries != nil {
+                    ui.AddElement(uilib.MakeHelpElement(ui, cache, imageCache, helpEntries[0]))
+                }
             },
             Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
                 var options ebiten.DrawImageOptions
