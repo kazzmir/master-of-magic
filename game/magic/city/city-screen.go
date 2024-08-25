@@ -281,6 +281,16 @@ func (cityScreen *CityScreen) MakeUI() *uilib.UI {
         },
     }
 
+    helpLbx, err := cityScreen.LbxCache.GetLbxFile("HELP.LBX")
+    if err != nil {
+        return nil
+    }
+
+    help, err := helpLbx.ReadHelp(2)
+    if err != nil {
+        return nil
+    }
+
     var elements []*uilib.UIElement
 
     // FIXME: show disabled buy button if the item is not buyable (not enough money, or the item is trade goods/housing)
@@ -308,6 +318,12 @@ func (cityScreen *CityScreen) MakeUI() *uilib.UI {
                 elements = uilib.MakeConfirmDialog(cityScreen.UI, cityScreen.LbxCache, &cityScreen.ImageCache, "Are you sure you want to buy this building?", yes, no)
                 ui.AddElements(elements)
             },
+            RightClick: func(element *uilib.UIElement) {
+                helpEntries := help.GetEntries(305)
+                if helpEntries != nil {
+                    ui.AddElement(uilib.MakeHelpElement(ui, cityScreen.LbxCache, &cityScreen.ImageCache, helpEntries[0]))
+                }
+            },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(float64(buyX), float64(buyY))
@@ -328,6 +344,12 @@ func (cityScreen *CityScreen) MakeUI() *uilib.UI {
                     cityScreen.BuildScreen = MakeBuildScreen(cityScreen.LbxCache, cityScreen.City, cityScreen.City.ProducingBuilding, cityScreen.City.ProducingUnit)
                 }
             },
+            RightClick: func(element *uilib.UIElement) {
+                helpEntries := help.GetEntries(306)
+                if helpEntries != nil {
+                    ui.AddElement(uilib.MakeHelpElement(ui, cityScreen.LbxCache, &cityScreen.ImageCache, helpEntries[0]))
+                }
+            },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(float64(changeX), float64(changeY))
@@ -345,6 +367,12 @@ func (cityScreen *CityScreen) MakeUI() *uilib.UI {
             Rect: image.Rect(okX, okY, okX + okButton.Bounds().Dx(), okY + okButton.Bounds().Dy()),
             LeftClick: func(element *uilib.UIElement) {
                 cityScreen.State = CityScreenStateDone
+            },
+            RightClick: func(element *uilib.UIElement) {
+                helpEntries := help.GetEntries(307)
+                if helpEntries != nil {
+                    ui.AddElement(uilib.MakeHelpElement(ui, cityScreen.LbxCache, &cityScreen.ImageCache, helpEntries[0]))
+                }
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
                 var options ebiten.DrawImageOptions
