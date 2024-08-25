@@ -34,6 +34,10 @@ type Unit struct {
     //  attack power, ranged attack, defense, magic resistance, hit points, special power
 }
 
+func (unit *Unit) Equals(other Unit) bool {
+    return unit.LbxFile == other.LbxFile && unit.Index == other.Index
+}
+
 func (unit *Unit) GetCombatIndex(facing Facing) int {
     switch facing {
         case FacingUp: return unit.CombatIndex + 0

@@ -314,8 +314,8 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *City, b
                     // vector.DrawFilledCircle(screen, float32(middleX), float32(middleY), 1, color.RGBA{255, 255, 255, 255}, true)
                 }
 
-                descriptionFont.Print(screen, 130, 14, 1, building.String())
-                // FIXME: show cost here
+                descriptionFont.Print(screen, 130, 12, 1, building.String())
+                smallFont.Print(screen, 130, 33, 1, fmt.Sprintf("Cost %v", building.ProductionCost()))
 
                 descriptionFont.Print(screen, 85, 48, 1, "Maintenance")
 
@@ -545,6 +545,13 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *City, b
                 },
             }
 
+            defer func(){
+                if city.ProducingBuilding == building {
+                    selectedElement = element
+                    updateMainElementBuilding(building)
+                }
+            }()
+
             elements = append(elements, element)
         }
     }
@@ -586,10 +593,11 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *City, b
                 },
             }
 
-            // hack to select some unit
             defer func(){
-                selectedElement = element
-                updateMainElementUnit(unit)
+                if city.ProducingUnit.Equals(unit) {
+                    selectedElement = element
+                    updateMainElementUnit(unit)
+                }
             }()
 
             elements = append(elements, element)
