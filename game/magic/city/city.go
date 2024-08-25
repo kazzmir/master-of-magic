@@ -55,6 +55,47 @@ const (
     BuildingLast
 )
 
+// FIXME: these values can come from buildat.lbx
+func (building Building) ProductionCost() int {
+    switch building {
+        case BuildingBarracks: return 30
+        case BuildingArmory: return 80
+        case BuildingFightersGuild: return 200
+        case BuildingArmorersGuild: return 350
+        case BuildingWarCollege: return 500
+        case BuildingSmithy: return 40
+        case BuildingStables: return 80
+        case BuildingAnimistsGuild: return 300
+        case BuildingFantasticStable: return 600
+        case BuildingShipwrightsGuild: return 100
+        case BuildingShipYard: return 200
+        case BuildingMaritimeGuild: return 400
+        case BuildingSawmill: return 100
+        case BuildingLibrary: return 60
+        case BuildingSagesGuild: return 120
+        case BuildingOracle: return 500
+        case BuildingAlchemistsGuild: return 250
+        case BuildingUniversity: return 300
+        case BuildingWizardsGuild: return 1000
+        case BuildingShrine: return 100
+        case BuildingTemple: return 200
+        case BuildingParthenon: return 400
+        case BuildingCathedral: return 800
+        case BuildingMarketplace: return 100
+        case BuildingBank: return 250
+        case BuildingMerchantsGuild: return 600
+        case BuildingGranary: return 40
+        case BuildingFarmersMarket: return 100
+        case BuildingForestersGuild: return 200
+        case BuildingBuildersHall: return 60
+        case BuildingMechaniciansGuild: return 600
+        case BuildingMinersGuild: return 300
+        case BuildingCityWalls: return 150
+    }
+
+    return 0
+}
+
 func (building Building) String() string {
     switch building {
         case BuildingBarracks: return "Barracks"
@@ -134,15 +175,17 @@ type City struct {
     Name string
     Wall bool
     Plane data.Plane
-    FoodProduction int
-    WorkProduction int
-    MoneyProduction int
-    MagicProduction int
+    FoodProductionRate int
+    WorkProductionRate int
+    MoneyProductionRate int
+    MagicProductionRate int
     Race data.Race
     X int
     Y int
     Buildings *set.Set[Building]
 
+    // how many hammers the city has produced towards the current project
+    Production int
     ProducingBuilding Building
     ProducingUnit units.Unit
 }

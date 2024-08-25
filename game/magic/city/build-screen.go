@@ -510,7 +510,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *City, b
     }
 
     if err == nil {
-        possibleBuildings := []Building{BuildingTradeGoods, BuildingHousing, BuildingBarracks, BuildingStables}
+        possibleBuildings := []Building{BuildingTradeGoods, BuildingHousing, BuildingBarracks, BuildingStables, BuildingWizardsGuild}
         for i, building := range possibleBuildings {
 
             x1 := 0

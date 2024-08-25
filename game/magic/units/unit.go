@@ -28,6 +28,7 @@ type Unit struct {
 
     // number of figures that are drawn in a single combat tile
     Count int
+    ProductionCost int
     // FIXME: add construction cost, building requirements to build this unit
     //  upkeep cost, how many figures appear in the battlefield, movement speed,
     //  attack power, ranged attack, defense, magic resistance, hit points, special power
@@ -1107,6 +1108,7 @@ var HighElfSpearmen Unit = Unit{
     CombatIndex: 40,
     Count: 8,
     Name: "Spearmen",
+    ProductionCost: 15,
     Abilities: []Ability{AbilityForester},
     Race: data.RaceHighElf,
 }

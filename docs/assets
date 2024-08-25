@@ -16,7 +16,7 @@ ARMYLIST.LBX - graphics, contains backgrounds for item alchemy and hero screen
 BACKGRND.LBX - graphics, some city backgrounds
 BOOK.LBX - graphics, spell book animation
 BUILDESC.LBX - unknown
-BUILDDAT.LBX - unknown
+BUILDDAT.LBX - building attributes (production cost
 CHRIVER.LBX - graphics, overland tiles I think for myrror
 CITYSCAP.LBX - graphics, sprites to show in the city view
 CITYWALL.LBX - graphics, sprites of the city wall to show in a battle

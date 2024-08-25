@@ -556,7 +556,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
     if err == nil {
         var options ebiten.DrawImageOptions
         options.GeoM.Translate(6, 52)
-        for i := 0; i < cityScreen.City.FoodProduction; i++ {
+        for i := 0; i < cityScreen.City.FoodProductionRate; i++ {
             screen.DrawImage(smallFood, &options)
             options.GeoM.Translate(float64(smallFood.Bounds().Dx() + 1), 0)
         }
@@ -568,7 +568,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
     if err == nil {
         var options ebiten.DrawImageOptions
         options.GeoM.Translate(6, 60)
-        for i := 0; i < cityScreen.City.WorkProduction; i++ {
+        for i := 0; i < cityScreen.City.WorkProductionRate; i++ {
             screen.DrawImage(smallWork, &options)
             options.GeoM.Translate(float64(smallWork.Bounds().Dx() + 1), 0)
         }
@@ -580,7 +580,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
     if err == nil {
         var options ebiten.DrawImageOptions
         options.GeoM.Translate(6, 68)
-        for i := 0; i < cityScreen.City.MoneyProduction; i++ {
+        for i := 0; i < cityScreen.City.MoneyProductionRate; i++ {
             screen.DrawImage(smallCoin, &options)
             options.GeoM.Translate(float64(smallCoin.Bounds().Dx() + 1), 0)
         }
@@ -592,7 +592,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
     if err == nil {
         var options ebiten.DrawImageOptions
         options.GeoM.Translate(6, 76)
-        for i := 0; i < cityScreen.City.MagicProduction; i++ {
+        for i := 0; i < cityScreen.City.MagicProductionRate; i++ {
             screen.DrawImage(smallMagic, &options)
             options.GeoM.Translate(float64(smallMagic.Bounds().Dx() + 1), 0)
         }
@@ -634,6 +634,9 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
         }
     }
 
+    showWork := false
+    workRequired := 0
+
     if cityScreen.City.ProducingBuilding != BuildingNone {
         producingPics, err := cityScreen.ImageCache.GetImages("cityscap.lbx", GetBuildingIndex(cityScreen.City.ProducingBuilding))
         if err == nil {
@@ -656,7 +659,16 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
                 screen.DrawImage(producingBackground, &options)
             }
 
-            cityScreen.ProducingFont.PrintWrapCenter(screen, 285, 155, 60, 1, fmt.Sprintf("Increases population growth rate."))
+            description := ""
+            switch cityScreen.City.ProducingBuilding {
+                case BuildingTradeGoods: description = "Trade Goods"
+                case BuildingHousing: description = "Increases population growth rate."
+            }
+
+            cityScreen.ProducingFont.PrintWrapCenter(screen, 285, 155, 60, 1, description)
+        } else {
+            showWork = true
+            workRequired = cityScreen.City.ProducingBuilding.ProductionCost()
         }
     } else if !cityScreen.City.ProducingUnit.IsNone() {
         images, err := cityScreen.ImageCache.GetImages(cityScreen.City.ProducingUnit.CombatLbxFile, cityScreen.City.ProducingUnit.GetCombatIndex(units.FacingRight))
@@ -670,6 +682,58 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
             cityScreen.ProducingFont.PrintCenter(screen, 237, 179, 1, cityScreen.City.ProducingUnit.Name)
         }
 
+        showWork = true
+        workRequired = cityScreen.City.ProducingUnit.ProductionCost
+    }
+
+    if showWork {
+        workEmpty, err1 := cityScreen.ImageCache.GetImage("backgrnd.lbx", 11, 0)
+        workFull, err2 := cityScreen.ImageCache.GetImage("backgrnd.lbx", 12, 0)
+        if err1 == nil && err2 == nil {
+            startX := 262
+
+            x := startX
+            y := 151
+
+            coinsPerRow := 10
+            xSpacing := 5
+
+            if workRequired / 10 > 50 {
+                coinsPerRow = 20
+                xSpacing = 2
+            }
+
+            coinsProduced := float64(cityScreen.City.Production) / 10.0
+
+            row := 0
+            for i := 0; i < workRequired / 10; i++ {
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(x), float64(y))
+
+                if coinsProduced > float64(i) {
+                    leftOver := coinsProduced - float64(i)
+                    if leftOver >= 1 {
+                        screen.DrawImage(workFull, &options)
+                    } else if leftOver > 0.05 {
+                        screen.DrawImage(workEmpty, &options)
+                        part := workFull.SubImage(image.Rect(0, 0, int(float64(workFull.Bounds().Dx()) * leftOver), workFull.Bounds().Dy())).(*ebiten.Image)
+                        screen.DrawImage(part, &options)
+                    }
+
+                } else {
+                    screen.DrawImage(workEmpty, &options)
+                }
+
+                row += 1
+                if row >= coinsPerRow {
+                    y += workFull.Bounds().Dy()
+                    x = startX
+                    row = 0
+                } else {
+                    x += xSpacing
+                }
+            }
+        }
     }
 
     // draw a few squares of the map
@@ -681,6 +745,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
     var mapGeom ebiten.GeoM
     mapGeom.Translate(float64(mapX), float64(mapY))
     mapView(mapPart, mapGeom, cityScreen.Counter)
+    // FIXME: draw black translucent squares on the corner of the map to show the catchment area
 
     cityScreen.UI.Draw(cityScreen.UI, screen)
 
