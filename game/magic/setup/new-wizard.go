@@ -13,6 +13,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/util"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     _ "github.com/hajimehoshi/ebiten/v2/vector"
 
@@ -314,6 +315,8 @@ func (wizard *WizardCustom) MagicLevel(kind MagicType) int {
 
 
 type NewWizardScreen struct {
+    LbxCache *lbx.LbxCache
+
     Background *ebiten.Image
     CustomPictureBackground *ebiten.Image
     CustomWizardBooks *ebiten.Image
@@ -323,8 +326,6 @@ type NewWizardScreen struct {
     AbilityFont *font.Font
     AbilityFontSelected *font.Font
     AbilityFontAvailable *font.Font
-    HelpFont *font.Font
-    HelpTitleFont *font.Font
     ErrorFont *font.Font
     CheckMark *ebiten.Image
     WindyBorder *ebiten.Image
@@ -351,9 +352,6 @@ type NewWizardScreen struct {
     BannerBackground *ebiten.Image
 
     Help lbx.Help
-    HelpImageLoader func(string, int) (*ebiten.Image, error)
-    HelpTop *ebiten.Image
-    HelpBottom *ebiten.Image
 
     UI *uilib.UI
 
@@ -375,43 +373,6 @@ type NewWizardScreen struct {
     Active bool
 
     counter uint64
-}
-
-// FIXME: probably move this into lib/lbx
-// remove all alpha-0 pixels from the border of the image
-func autoCrop(img image.Image) image.Image {
-    bounds := img.Bounds()
-    minX := bounds.Max.X
-    minY := bounds.Max.Y
-    maxX := bounds.Min.X
-    maxY := bounds.Min.Y
-
-    for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
-        for x := bounds.Min.X; x < bounds.Max.X; x++ {
-            _, _, _, a := img.At(x, y).RGBA()
-            if a > 0 {
-                if x < minX {
-                    minX = x
-                }
-                if y < minY {
-                    minY = y
-                }
-                if x > maxX {
-                    maxX = x
-                }
-                if y > maxY {
-                    maxY = y
-                }
-            }
-        }
-    }
-
-    paletted, ok := img.(*image.Paletted)
-    if ok {
-        return paletted.SubImage(image.Rect(minX, minY, maxX, maxY))
-    }
-
-    return img
 }
 
 func (screen *NewWizardScreen) MakeCustomNameUI() *uilib.UI {
@@ -696,46 +657,6 @@ func (screen *NewWizardScreen) LoadHelp(cache *lbx.LbxCache) error {
         return err
     }
 
-    screen.HelpImageLoader = func(lbxName string, index int) (*ebiten.Image, error) {
-        lbxFile, err := cache.GetLbxFile(lbxName)
-        if err != nil {
-            return nil, err
-        }
-
-        images, err := lbxFile.ReadImages(index)
-        if err != nil {
-            return nil, err
-        }
-
-        if len(images) == 0 {
-            return nil, fmt.Errorf("no images found in %s entry %d", lbxName, index)
-        }
-
-        return ebiten.NewImageFromImage(autoCrop(images[0])), nil
-    }
-
-    scrollTopImages, err := helpLbx.ReadImages(0)
-    if err != nil {
-        return err
-    }
-
-    if len(scrollTopImages) == 0 {
-        return fmt.Errorf("no images found in HELP.LBX entry 0")
-    }
-
-    screen.HelpTop = ebiten.NewImageFromImage(scrollTopImages[0])
-
-    scrollBottomImages, err := helpLbx.ReadImages(1)
-    if err != nil {
-        return err
-    }
-
-    if len(scrollBottomImages) == 0 {
-        return fmt.Errorf("no images found in HELP.LBX entry 1")
-    }
-
-    screen.HelpBottom = ebiten.NewImageFromImage(scrollBottomImages[0])
-
     return nil
 }
 
@@ -864,35 +785,6 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
         screen.AbilityFont = font.MakeOptimizedFontWithPalette(fonts[0], transparentPalette)
         screen.AbilityFontSelected = font.MakeOptimizedFontWithPalette(fonts[0], brightYellowPalette)
         screen.AbilityFontAvailable = font.MakeOptimizedFontWithPalette(fonts[0], whitishPalette)
-
-        helpPalette := color.Palette{
-            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-            color.RGBA{R: 0x5e, G: 0x0, B: 0x0, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        }
-
-        screen.HelpFont = font.MakeOptimizedFontWithPalette(fonts[1], helpPalette)
-
-        titleRed := color.RGBA{R: 0x50, G: 0x00, B: 0x0e, A: 0xff}
-        titlePalette := color.Palette{
-            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-            titleRed,
-            titleRed,
-            titleRed,
-            titleRed,
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        }
-
-        screen.HelpTitleFont = font.MakeOptimizedFontWithPalette(fonts[4], titlePalette)
 
         // FIXME: use a monochrome color scheme, light-brownish
         screen.NameFont = font.MakeOptimizedFont(fonts[3])
@@ -1281,87 +1173,9 @@ func (screen *NewWizardScreen) makeErrorElement(message string) *uilib.UIElement
     return element
 }
 
-func (screen *NewWizardScreen) makeHelpElement(help lbx.HelpEntry, helpEntries ...lbx.HelpEntry) *uilib.UIElement {
-    infoX := 55
-    infoY := 30
-    infoWidth := screen.HelpTop.Bounds().Dx()
-    // infoHeight := screen.HelpTop.Bounds().Dy()
-    infoLeftMargin := 18
-    infoTopMargin := 26
-    infoBodyMargin := 3
-    maxInfoWidth := infoWidth - infoLeftMargin - infoBodyMargin - 15
-
-    // fmt.Printf("Help text: %v\n", []byte(help.Text))
-
-    wrapped := screen.HelpFont.CreateWrappedText(float64(maxInfoWidth), 1, help.Text)
-
-    helpTextY := infoY + infoTopMargin
-    titleYAdjust := 0
-
-    var extraImage *ebiten.Image
-    if help.Lbx != "" {
-        // fmt.Printf("Load extra image from %v index %v\n", help.Lbx, help.LbxIndex)
-        use, err := screen.HelpImageLoader(help.Lbx, help.LbxIndex)
-        if err == nil && use != nil {
-            extraImage = use
-        }
-    }
-
-    if extraImage != nil {
-        titleYAdjust = extraImage.Bounds().Dy() / 2 - screen.HelpTitleFont.Height() / 2
-
-        if extraImage.Bounds().Dy() > screen.HelpTitleFont.Height() {
-            helpTextY += extraImage.Bounds().Dy() + 1
-        } else {
-            helpTextY += screen.HelpTitleFont.Height() + 1
-        }
-    } else {
-        helpTextY += screen.HelpTitleFont.Height() + 1
-    }
-
-    bottom := float64(helpTextY) + wrapped.TotalHeight
-
-    // only draw as much of the top scroll as there are lines of text
-    topImage := screen.HelpTop.SubImage(image.Rect(0, 0, screen.HelpTop.Bounds().Dx(), int(bottom) - infoY)).(*ebiten.Image)
-
-    infoElement := &uilib.UIElement{
-        // Rect: image.Rect(infoX, infoY, infoX + infoWidth, infoY + infoHeight),
-        Rect: image.Rect(0, 0, data.ScreenWidth, data.ScreenHeight),
-        Draw: func (infoThis *uilib.UIElement, window *ebiten.Image){
-            var options ebiten.DrawImageOptions
-            options.GeoM.Translate(float64(infoX), float64(infoY))
-            window.DrawImage(topImage, &options)
-
-            options.GeoM.Reset()
-            options.GeoM.Translate(float64(infoX), float64(bottom))
-            window.DrawImage(screen.HelpBottom, &options)
-
-            // for debugging
-            // vector.StrokeRect(window, float32(infoX), float32(infoY), float32(infoWidth), float32(infoHeight), 1, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, true)
-            // vector.StrokeRect(window, float32(infoX + infoLeftMargin), float32(infoY + infoTopMargin), float32(maxInfoWidth), float32(screen.HelpTitleFont.Height() + 20 + 1), 1, color.RGBA{R: 0, G: 0xff, B: 0, A: 0xff}, false)
-
-            titleX := infoX + infoLeftMargin
-
-            if extraImage != nil {
-                var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(titleX), float64(infoY + infoTopMargin))
-                window.DrawImage(extraImage, &options)
-                titleX += extraImage.Bounds().Dx() + 5
-            }
-
-            screen.HelpTitleFont.Print(window, float64(titleX), float64(infoY + infoTopMargin + titleYAdjust), 1, help.Headline)
-            screen.HelpFont.RenderWrapped(window, float64(infoX + infoLeftMargin + infoBodyMargin), float64(helpTextY), wrapped, false)
-        },
-        LeftClick: func(infoThis *uilib.UIElement){
-            screen.UI.RemoveElement(infoThis)
-        },
-        Layer: 1,
-    }
-
-    return infoElement
-}
-
 func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
+
+    imageCache := util.MakeImageCache(screen.LbxCache)
 
     picksLeft := func() int {
         picks := MaxPicks
@@ -1503,7 +1317,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
                         return
                     }
 
-                    screen.UI.AddElement(screen.makeHelpElement(helpEntries[0]))
+                    screen.UI.AddElement(uilib.MakeHelpElement(screen.UI, screen.LbxCache, &imageCache, helpEntries[0]))
                 },
                 Inside: func(this *uilib.UIElement){
                     // if the user hovers over this element, then draw partially transparent books
@@ -1638,7 +1452,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
                     helpEntries = []lbx.HelpEntry{screen.Help.GetRawEntry(702)}
                 }
 
-                screen.UI.AddElement(screen.makeHelpElement(helpEntries[0]))
+                screen.UI.AddElement(uilib.MakeHelpElement(screen.UI, screen.LbxCache, &imageCache, helpEntries[0]))
             },
             Draw: func(this *uilib.UIElement, window *ebiten.Image){
                 font := screen.AbilityFont
@@ -1674,7 +1488,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
                 return
             }
 
-            screen.UI.AddElement(screen.makeHelpElement(helpEntries[0]))
+            screen.UI.AddElement(uilib.MakeHelpElement(screen.UI, screen.LbxCache, &imageCache, helpEntries[0]))
         },
         Draw: func(this *uilib.UIElement, window *ebiten.Image){
             var options ebiten.DrawImageOptions
@@ -1737,6 +1551,8 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
     // 9 picks = 8 common
     // 10 picks = 9 common
     // 11 picks = 2 uncommon, 1 rare
+
+    imageCache := util.MakeImageCache(screen.LbxCache)
 
     magicOrder := []MagicType{LifeMagic, DeathMagic, ChaosMagic, NatureMagic, SorceryMagic}
 
@@ -1882,7 +1698,7 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
                             return
                         }
 
-                        screen.UI.AddElement(screen.makeHelpElement(helpEntries[0]))
+                        screen.UI.AddElement(uilib.MakeHelpElement(screen.UI, screen.LbxCache, &imageCache, helpEntries[0]))
                     },
                     Draw: func(this *uilib.UIElement, window *ebiten.Image){
                         if screen.CustomWizard.Spells.HasSpell(spell) {
@@ -2064,6 +1880,8 @@ func premultiplyAlpha(c color.RGBA, alpha float32) color.RGBA {
 
 func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
 
+    imageCache := util.MakeImageCache(screen.LbxCache)
+
     black := color.RGBA{R: 0, G: 0, B: 0, A: 0xff}
     blackPalette := color.Palette{
         color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
@@ -2140,7 +1958,7 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
                     return
                 }
 
-                screen.UI.AddElement(screen.makeHelpElement(helpEntries[0], helpEntries[1:]...))
+                screen.UI.AddElement(uilib.MakeHelpElement(screen.UI, screen.LbxCache, &imageCache, helpEntries[0], helpEntries[1:]...))
             },
             Draw: func(this *uilib.UIElement, window *ebiten.Image){
                 if highlight {
@@ -2186,7 +2004,7 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
                     return
                 }
 
-                screen.UI.AddElement(screen.makeHelpElement(helpEntries[0], helpEntries[1:]...))
+                screen.UI.AddElement(uilib.MakeHelpElement(screen.UI, screen.LbxCache, &imageCache, helpEntries[0], helpEntries[1:]...))
             },
             Draw: func(this *uilib.UIElement, window *ebiten.Image){
                 fontDraw := fontUse
@@ -2254,6 +2072,7 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
 
 func (screen *NewWizardScreen) MakeSelectBannerUI() *uilib.UI {
     var elements []*uilib.UIElement
+    imageCache := util.MakeImageCache(screen.LbxCache)
 
     for i, banner := range []data.BannerType{data.BannerGreen, data.BannerBlue, data.BannerRed, data.BannerPurple, data.BannerYellow} {
         height := 34
@@ -2274,7 +2093,7 @@ func (screen *NewWizardScreen) MakeSelectBannerUI() *uilib.UI {
                     return
                 }
 
-                screen.UI.AddElement(screen.makeHelpElement(helpEntries[0]))
+                screen.UI.AddElement(uilib.MakeHelpElement(screen.UI, screen.LbxCache, &imageCache, helpEntries[0]))
             },
         })
     }
@@ -2333,8 +2152,9 @@ func randomizeBookOrder(books int) []int {
     return order
 }
 
-func MakeNewWizardScreen() *NewWizardScreen {
+func MakeNewWizardScreen(cache *lbx.LbxCache) *NewWizardScreen {
     return &NewWizardScreen{
+        LbxCache: cache,
         CurrentWizard: 0,
         BooksOrder: randomizeBookOrder(12),
         State: NewWizardScreenStateSelectWizard,

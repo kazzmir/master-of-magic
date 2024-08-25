@@ -30,10 +30,11 @@ type MagicGame struct {
 }
 
 func NewMagicGame() (*MagicGame, error) {
+    cache := lbx.AutoCache()
     game := &MagicGame{
-        LbxCache: lbx.AutoCache(),
+        LbxCache: cache,
         NewGameScreen: setup.MakeNewGameScreen(),
-        NewWizardScreen: setup.MakeNewWizardScreen(),
+        NewWizardScreen: setup.MakeNewWizardScreen(cache),
     }
 
     /*

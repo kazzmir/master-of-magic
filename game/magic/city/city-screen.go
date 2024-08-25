@@ -282,6 +282,7 @@ func (cityScreen *CityScreen) MakeUI() *uilib.UI {
 
     // FIXME: show disabled buy button if the item is not buyable (not enough money, or the item is trade goods/housing)
     // buy button
+    // confirmation images are in resource.lbx
     buyButton, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", 7, 0)
     if err == nil {
         buyX := 214
