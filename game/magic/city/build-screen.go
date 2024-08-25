@@ -571,7 +571,9 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *City, b
 
             element := &uilib.UIElement{
                 Rect: image.Rect(x1, y1, x2, y2),
-                // FIXME: double left click, confirm this selection and quit the build screen
+                DoubleLeftClick: func(this *uilib.UIElement) {
+                    doOk()
+                },
                 LeftClick: func(this *uilib.UIElement) {
                     selectedElement = this
                     buildScreen.ProducingBuilding = building
@@ -610,7 +612,9 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *City, b
 
             element := &uilib.UIElement{
                 Rect: image.Rect(x1, y1, x2, y2),
-                // FIXME: double left click, confirm this selection and quit the build screen
+                DoubleLeftClick: func(this *uilib.UIElement) {
+                    doOk()
+                },
                 LeftClick: func(this *uilib.UIElement) {
                     selectedElement = this
                     buildScreen.ProducingBuilding = BuildingNone

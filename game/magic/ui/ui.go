@@ -1,7 +1,9 @@
 package ui
 
 import (
+    // "log"
     "image"
+    "slices"
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
 )
@@ -20,9 +22,17 @@ type UIElement struct {
     Inside UIInsideElementFunc
     LeftClick UIClickElementFunc
     LeftClickRelease UIClickElementFunc
+    DoubleLeftClick UIClickElementFunc
     RightClick UIClickElementFunc
     Draw UIDrawFunc
     Layer UILayer
+}
+
+const DoubleClickThreshold = 20
+
+type doubleClick struct {
+    Element *UIElement
+    Time uint64
 }
 
 type UI struct {
@@ -34,6 +44,8 @@ type UI struct {
     Draw func(*UI, *ebiten.Image)
     HandleKey UIKeyFunc
     Counter uint64
+
+    doubleClickCandidates []doubleClick
 
     LeftClickedElements []*UIElement
 }
@@ -156,6 +168,14 @@ func (ui *UI) StandardUpdate() {
         ui.LeftClickedElements = nil
     }
 
+    var keepDoubleClick []doubleClick
+    for _, candidate := range ui.doubleClickCandidates {
+        if ui.Counter - candidate.Time < DoubleClickThreshold {
+            keepDoubleClick = append(keepDoubleClick, candidate)
+        }
+    }
+    ui.doubleClickCandidates = keepDoubleClick
+
     for _, element := range ui.GetHighestLayer() {
         if mouseX >= element.Rect.Min.X && mouseY >= element.Rect.Min.Y && mouseX < element.Rect.Max.X && mouseY <= element.Rect.Max.Y {
             if element.Inside != nil {
@@ -164,6 +184,28 @@ func (ui *UI) StandardUpdate() {
             if leftClick && element.LeftClick != nil {
                 element.LeftClick(element)
                 ui.LeftClickedElements = append(ui.LeftClickedElements, element)
+
+                addDoubleClick := true
+
+                for i, candidate := range ui.doubleClickCandidates {
+                    if candidate.Element == element {
+                        diff := ui.Counter - candidate.Time
+                        if diff < DoubleClickThreshold && element.DoubleLeftClick != nil {
+                            element.DoubleLeftClick(element)
+                            // an alternative here is just to set ui.doubleClickCandidates[i].Element = nil
+                            // and let the list be cleaned up later
+                            ui.doubleClickCandidates = slices.Delete(ui.doubleClickCandidates, i, i + 1)
+                        }
+
+                        addDoubleClick = false
+                        break
+                    }
+                }
+
+                if addDoubleClick {
+                    ui.doubleClickCandidates = append(ui.doubleClickCandidates, doubleClick{Element: element, Time: ui.Counter})
+                }
+
             }
             if rightClick && element.RightClick != nil {
                 element.RightClick(element)
