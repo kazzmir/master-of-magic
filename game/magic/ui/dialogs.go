@@ -326,7 +326,7 @@ func MakeConfirmDialog(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache,
             },
             LeftClickRelease: func(this *UIElement){
                 clicked = false
-                confirm()
+                cancel()
             },
             Draw: func(this *UIElement, window *ebiten.Image){
                 var options ebiten.DrawImageOptions

@@ -73,6 +73,8 @@ func randomSlots(random *rand.Rand) []image.Point {
 
 type BuildingSlot struct {
     Building Building
+    IsRubble bool // in case of rubble
+    RubbleIndex int
     Point image.Point
 }
 
@@ -104,6 +106,7 @@ type CityScreen struct {
     DescriptionFont *font.Font
     ProducingFont *font.Font
     SmallFont *font.Font
+    RubbleFont *font.Font
     City *City
 
     UI *uilib.UI
@@ -221,6 +224,18 @@ func MakeCityScreen(cache *lbx.LbxCache, city *City) *CityScreen {
 
     smallFont := font.MakeOptimizedFontWithPalette(fonts[1], smallFontPalette)
 
+    rubbleFontPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0x0},
+        color.RGBA{R: 128, G: 0, B: 0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+    }
+
+    rubbleFont := font.MakeOptimizedFontWithPalette(fonts[1], rubbleFontPalette)
+
     // use a random seed based on the position and name of the city so that each game gets
     // a different city view, but within the same game the city view is consistent
     random := rand.New(rand.NewPCG(uint64(city.X), uint64(city.Y) + hash(city.Name)))
@@ -277,6 +292,7 @@ func MakeCityScreen(cache *lbx.LbxCache, city *City) *CityScreen {
         DescriptionFont: descriptionFont,
         ProducingFont: producingFont,
         SmallFont: smallFont,
+        RubbleFont: rubbleFont,
         Buildings: buildings,
         State: CityScreenStateRunning,
     }
@@ -301,6 +317,22 @@ func sellAmount(building Building) int {
     }
 
     return cost
+}
+
+func (cityScreen *CityScreen) SellBuilding(building Building) {
+    // convert the building pic to one of the rubble ones
+    // give player back the gold for the building
+    // remove building from the city
+
+    cityScreen.City.Buildings.Remove(building)
+
+    for i, _ := range cityScreen.Buildings {
+        if cityScreen.Buildings[i].Building == building {
+            cityScreen.Buildings[i].IsRubble = true
+            cityScreen.Buildings[i].RubbleIndex = rand.IntN(4)
+            break
+        }
+    }
 }
 
 func (cityScreen *CityScreen) MakeUI() *uilib.UI {
@@ -369,9 +401,10 @@ func (cityScreen *CityScreen) MakeUI() *uilib.UI {
                 var confirmElements []*uilib.UIElement
 
                 yes := func(){
-                    // FIXME: sell the building, reduce it to rubble
+                    cityScreen.SellBuilding(cityScreen.BuildingLook)
                     ui.RemoveElements(confirmElements)
                 }
+
                 no := func(){
                     ui.RemoveElements(confirmElements)
                 }
@@ -669,6 +702,11 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
     for _, building := range cityScreen.Buildings {
 
         index := GetBuildingIndex(building.Building)
+
+        if building.IsRubble {
+            index = 105 + building.RubbleIndex
+        }
+
         x, y := building.Point.X, building.Point.Y
 
         images, err := cityScreen.ImageCache.GetImages("cityscap.lbx", index)
@@ -682,7 +720,13 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
 
             if cityScreen.BuildingLook == building.Building {
                 drawName = func(){
-                    cityScreen.SmallFont.PrintCenter(screen, float64(x + 10) + roadX, float64(y + 1) + roadY, 1, building.Building.String())
+                    useFont := cityScreen.SmallFont
+                    text := building.Building.String()
+                    if building.IsRubble {
+                        text = "Destroyed " + text
+                        useFont = cityScreen.RubbleFont
+                    }
+                    useFont.PrintCenter(screen, float64(x + 10) + roadX, float64(y + 1) + roadY, 1, text)
                 }
             }
         }
