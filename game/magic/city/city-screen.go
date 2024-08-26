@@ -293,6 +293,30 @@ func (cityScreen *CityScreen) MakeUI() *uilib.UI {
 
     var elements []*uilib.UIElement
 
+    roadX := 4
+    roadY := 120
+
+    buildingView := image.Rect(5, 103, 208, 195)
+    elements = append(elements, &uilib.UIElement{
+        Rect: buildingView,
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+            // vector.StrokeRect(screen, float32(buildingView.Min.X), float32(buildingView.Min.Y), float32(buildingView.Dx()), float32(buildingView.Dy()), 1, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff}, true)
+        },
+        Inside: func(element *uilib.UIElement, x int, y int){
+            // log.Printf("inside building view: %v, %v", x, y)
+
+            for _, slot := range cityScreen.Buildings {
+                // if image.Pt(x, y).In(image.Rect(slot.Point.X + buildingView.Min.X, slot.Point.Y + buildingView.Min.Y, slot.Point.X + buildingView.Min.X + 32, slot.Point.Y + buildingView.Min.Y + 32)) {
+                tx := (slot.Point.X + roadX - buildingView.Min.X) - x
+                ty := (slot.Point.Y + roadY - buildingView.Min.Y) - y
+
+                if tx * tx + ty * ty < 20 {
+                    log.Printf("look at building %v", slot.Building)
+                }
+            }
+        },
+    })
+
     // FIXME: show disabled buy button if the item is not buyable (not enough money, or the item is trade goods/housing)
     // buy button
     // confirmation images are in resource.lbx

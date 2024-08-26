@@ -8,7 +8,7 @@ import (
     "github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
-type UIInsideElementFunc func(element *UIElement)
+type UIInsideElementFunc func(element *UIElement, x int, y int)
 type UINotInsideElementFunc func(element *UIElement)
 type UIClickElementFunc func(element *UIElement)
 type UIDrawFunc func(element *UIElement, window *ebiten.Image)
@@ -179,7 +179,7 @@ func (ui *UI) StandardUpdate() {
     for _, element := range ui.GetHighestLayer() {
         if mouseX >= element.Rect.Min.X && mouseY >= element.Rect.Min.Y && mouseX < element.Rect.Max.X && mouseY <= element.Rect.Max.Y {
             if element.Inside != nil {
-                element.Inside(element)
+                element.Inside(element, mouseX - element.Rect.Min.X, mouseY - element.Rect.Min.Y)
             }
             if leftClick && element.LeftClick != nil {
                 element.LeftClick(element)
