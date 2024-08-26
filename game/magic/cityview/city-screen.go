@@ -332,6 +332,8 @@ func (cityScreen *CityScreen) SellBuilding(building citylib.Building) {
 
     cityScreen.City.SoldBuilding = true
 
+    cityScreen.Player.Gold += sellAmount(building)
+
     cityScreen.City.Buildings.Remove(building)
 
     for i, _ := range cityScreen.Buildings {
@@ -614,7 +616,7 @@ func GetBuildingIndex(building citylib.Building) int {
         case citylib.BuildingMinersGuild: return 75
         case citylib.BuildingCityWalls: return 76
         case citylib.BuildingForestersGuild: return 78
-        case citylib.BuildingWizardTower: return 40
+        case citylib.BuildingFortress: return 40
         case citylib.BuildingSummoningCircle: return 6
         case BuildingTree1: return 19
         case BuildingTree2: return 20
@@ -738,6 +740,11 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
                         text = "Destroyed " + text
                         useFont = cityScreen.RubbleFont
                     }
+
+                    if building.Building == citylib.BuildingFortress {
+                        text = fmt.Sprintf("%v's Fortress", cityScreen.Player.Wizard.Name)
+                    }
+
                     useFont.PrintCenter(screen, float64(x + 10) + roadX, float64(y + 1) + roadY, 1, text)
                 }
             }

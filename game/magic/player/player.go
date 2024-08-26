@@ -48,6 +48,10 @@ type Player struct {
     ArcanusFog [][]bool
     MyrrorFog [][]bool
 
+    Gold int
+    Food int
+    Mana int
+
     Wizard setup.WizardCustom
 
     Units []*Unit

@@ -45,7 +45,7 @@ const (
     BuildingMechaniciansGuild
     BuildingMinersGuild
     BuildingCityWalls
-    BuildingWizardTower
+    BuildingFortress
     BuildingSummoningCircle
 
     BuildingHousing
@@ -131,7 +131,7 @@ func (building Building) String() string {
         case BuildingMechaniciansGuild: return "Mechanician's Guild"
         case BuildingMinersGuild: return "Miner's Guild"
         case BuildingCityWalls: return "City Walls"
-        case BuildingWizardTower: return "Fortress"
+        case BuildingFortress: return "Fortress"
         case BuildingSummoningCircle: return "Summoning Circle"
 
         case BuildingHousing: return "Housing"
@@ -229,4 +229,10 @@ func (city *City) ComputeSubsistenceFarmers() int {
     // each citizen needs 2 food
     // round up in case of an odd number of citizens
     return int(math.Ceil(float64(city.Citizens()) / 2.0))
+}
+
+// do all the stuff needed per turn
+// increase population, add production, add food/money, etc
+func (city *City) DoNextTurn(){
+    city.SoldBuilding = false
 }

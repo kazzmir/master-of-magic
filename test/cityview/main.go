@@ -9,6 +9,7 @@ import (
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     "github.com/kazzmir/master-of-magic/game/magic/cityview"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
     "github.com/kazzmir/master-of-magic/game/magic/game"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
@@ -30,6 +31,9 @@ func NewEngine() (*Engine, error) {
     cache := lbx.AutoCache()
 
     player := playerlib.Player{
+        Wizard: setup.WizardCustom{
+            Name: "Billy",
+        },
     }
 
     city := citylib.City{
@@ -58,7 +62,7 @@ func NewEngine() (*Engine, error) {
     city.AddBuilding(citylib.BuildingSmithy)
     city.AddBuilding(citylib.BuildingSummoningCircle)
     city.AddBuilding(citylib.BuildingOracle)
-    city.AddBuilding(citylib.BuildingWizardTower)
+    city.AddBuilding(citylib.BuildingFortress)
 
     cityScreen := cityview.MakeCityScreen(cache, &city, &player)
 
