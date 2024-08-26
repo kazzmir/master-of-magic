@@ -79,6 +79,7 @@ func (magic *MagicScreen) MakeUI() *uilib.UI {
 
     var elements []*uilib.UIElement
 
+    // FIXME: these default percent should come from the player
     var manaPercent float64 = 1.0 / 3
     var researchPercent float64 = 1.0 / 3
     var skillPercent float64 = 1.0 / 3
