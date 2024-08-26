@@ -33,9 +33,9 @@ func MakeMagicScreen(cache *lbx.LbxCache) *MagicScreen {
         Cache: cache,
         ImageCache: util.MakeImageCache(cache),
 
-        ManaLocked: true,
-        ResearchLocked: true,
-        SkillLocked: true,
+        ManaLocked: false,
+        ResearchLocked: false,
+        SkillLocked: false,
     }
 
     magic.UI = magic.MakeUI()
@@ -79,66 +79,87 @@ func (magic *MagicScreen) MakeUI() *uilib.UI {
 
     var elements []*uilib.UIElement
 
-    elements = append(elements, &uilib.UIElement{
-        Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
-            manaStaff, err := magic.ImageCache.GetImage("magic.lbx", 7, 0)
-            if err == nil {
-                var options ebiten.DrawImageOptions
-                options.GeoM.Translate(29, 83)
-                screen.DrawImage(manaStaff, &options)
-            }
+    manaLocked, err := magic.ImageCache.GetImage("magic.lbx", 15, 0)
+    if err == nil {
+        elements = append(elements, &uilib.UIElement{
+            Rect: image.Rect(27, 81, 27 + manaLocked.Bounds().Dx(), 81 + manaLocked.Bounds().Dy()),
+            LeftClick: func(element *uilib.UIElement){
+                magic.ManaLocked = !magic.ManaLocked
+            },
+        })
 
-            if magic.ManaLocked {
-                manaLocked, err := magic.ImageCache.GetImage("magic.lbx", 15, 0)
+        elements = append(elements, &uilib.UIElement{
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+                manaStaff, err := magic.ImageCache.GetImage("magic.lbx", 7, 0)
                 if err == nil {
+                    var options ebiten.DrawImageOptions
+                    options.GeoM.Translate(29, 83)
+                    screen.DrawImage(manaStaff, &options)
+                }
+
+                if magic.ManaLocked {
                     var options ebiten.DrawImageOptions
                     options.GeoM.Translate(27, 81)
                     screen.DrawImage(manaLocked, &options)
                 }
-            }
-        },
-    })
+            },
+        })
+    }
 
-    elements = append(elements, &uilib.UIElement{
-        Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
-            researchStaff, err := magic.ImageCache.GetImage("magic.lbx", 9, 0)
-            if err == nil {
-                var options ebiten.DrawImageOptions
-                options.GeoM.Translate(75, 85)
-                screen.DrawImage(researchStaff, &options)
-            }
+    researchLocked, err := magic.ImageCache.GetImage("magic.lbx", 16, 0)
+    if err == nil {
+        elements = append(elements, &uilib.UIElement{
+            Rect: image.Rect(74, 81, 74 + researchLocked.Bounds().Dx(), 81 + researchLocked.Bounds().Dy()),
+            LeftClick: func(element *uilib.UIElement){
+                magic.ResearchLocked = !magic.ResearchLocked
+            },
+        })
 
-            if magic.ResearchLocked {
-                researchLocked, err := magic.ImageCache.GetImage("magic.lbx", 16, 0)
+        elements = append(elements, &uilib.UIElement{
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+                researchStaff, err := magic.ImageCache.GetImage("magic.lbx", 9, 0)
                 if err == nil {
+                    var options ebiten.DrawImageOptions
+                    options.GeoM.Translate(75, 85)
+                    screen.DrawImage(researchStaff, &options)
+                }
+
+                if magic.ResearchLocked {
                     var options ebiten.DrawImageOptions
                     options.GeoM.Translate(74, 81)
                     screen.DrawImage(researchLocked, &options)
                 }
-            }
 
-        },
-    })
+            },
+        })
+    }
 
-    elements = append(elements, &uilib.UIElement{
-        Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
-            skillStaff, err := magic.ImageCache.GetImage("magic.lbx", 11, 0)
-            if err == nil {
-                var options ebiten.DrawImageOptions
-                options.GeoM.Translate(122, 83)
-                screen.DrawImage(skillStaff, &options)
-            }
+    skillLocked, err := magic.ImageCache.GetImage("magic.lbx", 17, 0)
+    if err == nil {
+        elements = append(elements, &uilib.UIElement{
+            Rect: image.Rect(121, 81, 121 + skillLocked.Bounds().Dx(), 81 + skillLocked.Bounds().Dy()),
+            LeftClick: func(element *uilib.UIElement){
+                magic.SkillLocked = !magic.SkillLocked
+            },
+        })
 
-            if magic.SkillLocked {
-                skillLocked, err := magic.ImageCache.GetImage("magic.lbx", 17, 0)
+        elements = append(elements, &uilib.UIElement{
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+                skillStaff, err := magic.ImageCache.GetImage("magic.lbx", 11, 0)
                 if err == nil {
+                    var options ebiten.DrawImageOptions
+                    options.GeoM.Translate(122, 83)
+                    screen.DrawImage(skillStaff, &options)
+                }
+
+                if magic.SkillLocked {
                     var options ebiten.DrawImageOptions
                     options.GeoM.Translate(121, 81)
                     screen.DrawImage(skillLocked, &options)
                 }
-            }
-        },
-    })
+            },
+        })
+    }
 
     ui.SetElementsFromArray(elements)
 
