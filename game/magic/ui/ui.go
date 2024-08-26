@@ -177,7 +177,7 @@ func (ui *UI) StandardUpdate() {
     ui.doubleClickCandidates = keepDoubleClick
 
     for _, element := range ui.GetHighestLayer() {
-        if mouseX >= element.Rect.Min.X && mouseY >= element.Rect.Min.Y && mouseX < element.Rect.Max.X && mouseY <= element.Rect.Max.Y {
+        if image.Pt(mouseX, mouseY).In(element.Rect) {
             if element.Inside != nil {
                 element.Inside(element, mouseX - element.Rect.Min.X, mouseY - element.Rect.Min.Y)
             }

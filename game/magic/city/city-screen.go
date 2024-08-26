@@ -103,12 +103,15 @@ type CityScreen struct {
     BigFont *font.Font
     DescriptionFont *font.Font
     ProducingFont *font.Font
+    SmallFont *font.Font
     City *City
 
     UI *uilib.UI
 
     Buildings []BuildingSlot
     BuildScreen *BuildScreen
+    // the building the user is currently hovering their mouse over
+    BuildingLook Building
 
     Counter uint64
     State CityScreenState
@@ -206,6 +209,18 @@ func MakeCityScreen(cache *lbx.LbxCache, city *City) *CityScreen {
 
     producingFont := font.MakeOptimizedFontWithPalette(fonts[1], whitePalette)
 
+    smallFontPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0x0},
+        color.RGBA{R: 128, G: 128, B: 128, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+    }
+
+    smallFont := font.MakeOptimizedFontWithPalette(fonts[1], smallFontPalette)
+
     // use a random seed based on the position and name of the city so that each game gets
     // a different city view, but within the same game the city view is consistent
     random := rand.New(rand.NewPCG(uint64(city.X), uint64(city.Y) + hash(city.Name)))
@@ -261,6 +276,7 @@ func MakeCityScreen(cache *lbx.LbxCache, city *City) *CityScreen {
         BigFont: bigFont,
         DescriptionFont: descriptionFont,
         ProducingFont: producingFont,
+        SmallFont: smallFont,
         Buildings: buildings,
         State: CityScreenStateRunning,
     }
@@ -296,22 +312,70 @@ func (cityScreen *CityScreen) MakeUI() *uilib.UI {
     roadX := 4
     roadY := 120
 
+    rawImageCache := make(map[int]image.Image)
+
+    getRawImage := func(index int) (image.Image, error) {
+        if pic, ok := rawImageCache[index]; ok {
+            return pic, nil
+        }
+
+        cityScapLbx, err := cityScreen.LbxCache.GetLbxFile("cityscap.lbx")
+        if err != nil {
+            return nil, err
+        }
+        images, err := cityScapLbx.ReadImages(index)
+        if err != nil {
+            return nil, err
+        }
+
+        rawImageCache[index] = images[0]
+
+        return images[0], nil
+    }
+
     buildingView := image.Rect(5, 103, 208, 195)
     elements = append(elements, &uilib.UIElement{
         Rect: buildingView,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
             // vector.StrokeRect(screen, float32(buildingView.Min.X), float32(buildingView.Min.Y), float32(buildingView.Dx()), float32(buildingView.Dy()), 1, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff}, true)
         },
+        // if the user hovers over a building then show the name of the building
         Inside: func(element *uilib.UIElement, x int, y int){
+            cityScreen.BuildingLook = BuildingNone
             // log.Printf("inside building view: %v, %v", x, y)
 
-            for _, slot := range cityScreen.Buildings {
-                // if image.Pt(x, y).In(image.Rect(slot.Point.X + buildingView.Min.X, slot.Point.Y + buildingView.Min.Y, slot.Point.X + buildingView.Min.X + 32, slot.Point.Y + buildingView.Min.Y + 32)) {
-                tx := (slot.Point.X + roadX - buildingView.Min.X) - x
-                ty := (slot.Point.Y + roadY - buildingView.Min.Y) - y
+            // go in reverse order so we select the one in front first
+            for i := len(cityScreen.Buildings) - 1; i >= 0; i-- {
+                slot := cityScreen.Buildings[i]
 
-                if tx * tx + ty * ty < 20 {
-                    log.Printf("look at building %v", slot.Building)
+                if slot.Building.String() == "?" || slot.Building.String() == "" {
+                    continue
+                }
+
+                index := GetBuildingIndex(slot.Building)
+
+                pic, err := getRawImage(index)
+                if err == nil {
+                    x1 := roadX + slot.Point.X
+                    y1 := roadY + slot.Point.Y - pic.Bounds().Dy()
+                    x2 := x1 + pic.Bounds().Dx()
+                    y2 := y1 + pic.Bounds().Dy()
+
+                    useX := x + buildingView.Min.X
+                    useY := y + buildingView.Min.Y
+
+                    // do pixel perfect detection
+                    if image.Pt(useX, useY).In(image.Rect(x1, y1, x2, y2)) {
+                        pixelX := useX - x1
+                        pixelY := useY - y1
+
+                        _, _, _, a := pic.At(pixelX, pixelY).RGBA()
+                        if a > 0 {
+                            cityScreen.BuildingLook = slot.Building
+                            // log.Printf("look at building %v (%v,%v) in (%v,%v,%v,%v)", slot.Building, useX, useY, x1, y1, x2, y2)
+                            break
+                        }
+                    }
                 }
             }
         },
@@ -319,7 +383,6 @@ func (cityScreen *CityScreen) MakeUI() *uilib.UI {
 
     // FIXME: show disabled buy button if the item is not buyable (not enough money, or the item is trade goods/housing)
     // buy button
-    // confirmation images are in resource.lbx
     buyButton, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", 7, 0)
     if err == nil {
         buyX := 214
@@ -559,6 +622,9 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
         screen.DrawImage(normalRoad, &options)
     }
 
+    drawName := func(){
+    }
+
     for _, building := range cityScreen.Buildings {
 
         index := GetBuildingIndex(building.Building)
@@ -572,8 +638,16 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
             // x,y position is the bottom left of the sprite
             options.GeoM.Translate(float64(x) + roadX, float64(y - use.Bounds().Dy()) + roadY)
             screen.DrawImage(use, &options)
+
+            if cityScreen.BuildingLook == building.Building {
+                drawName = func(){
+                    cityScreen.SmallFont.PrintCenter(screen, float64(x + 10) + roadX, float64(y + 1) + roadY, 1, building.Building.String())
+                }
+            }
         }
     }
+
+    drawName()
 
     river, err := cityScreen.ImageCache.GetImages("cityscap.lbx", 3)
     if err == nil {
