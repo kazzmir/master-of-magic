@@ -2,7 +2,6 @@ package magicview
 
 import (
     "image"
-    // "log"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/game/magic/util"
@@ -88,13 +87,35 @@ func (magic *MagicScreen) MakeUI() *uilib.UI {
             },
         })
 
+        manaStaff, _ := magic.ImageCache.GetImage("magic.lbx", 7, 0)
+
+        posY := 0
+        var percent float64 = 0
+
+        powerStaff, _ := magic.ImageCache.GetImage("magic.lbx", 8, 0)
+        staffRect := image.Rect(33, 100, 38, 100 + powerStaff.Bounds().Dy())
+
         elements = append(elements, &uilib.UIElement{
+            Rect: staffRect,
+            LeftClick: func(element *uilib.UIElement){
+                // log.Printf("click mana staff at %v", manaStaff.Bounds().Dy() - posY)
+                amount := powerStaff.Bounds().Dy() - posY
+                percent = float64(amount) / float64(powerStaff.Bounds().Dy())
+            },
+            Inside: func(element *uilib.UIElement, x, y int){
+                posY = y
+            },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
-                manaStaff, err := magic.ImageCache.GetImage("magic.lbx", 7, 0)
-                if err == nil {
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(29, 83)
+                screen.DrawImage(manaStaff, &options)
+
+                if percent > 0 {
+                    length := powerStaff.Bounds().Dy() - int(float64(powerStaff.Bounds().Dy()) * percent)
+                    part := powerStaff.SubImage(image.Rect(0, length, powerStaff.Bounds().Dx(), powerStaff.Bounds().Dy())).(*ebiten.Image)
                     var options ebiten.DrawImageOptions
-                    options.GeoM.Translate(29, 83)
-                    screen.DrawImage(manaStaff, &options)
+                    options.GeoM.Translate(32, float64(staffRect.Min.Y + length))
+                    screen.DrawImage(part, &options)
                 }
 
                 if magic.ManaLocked {
