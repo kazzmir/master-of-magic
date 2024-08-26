@@ -7,6 +7,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
+    "github.com/kazzmir/master-of-magic/game/magic/player"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/util"
@@ -16,100 +17,6 @@ import (
     "github.com/hajimehoshi/ebiten/v2/inpututil"
     _ "github.com/hajimehoshi/ebiten/v2/vector"
 )
-
-type Unit struct {
-    Unit units.Unit
-    Banner data.BannerType
-    Plane data.Plane
-    X int
-    Y int
-    Id uint64
-
-    Movement int
-    MoveX int
-    MoveY int
-}
-
-const MovementLimit = 10
-
-func (unit *Unit) Move(dx int, dy int){
-    unit.Movement = MovementLimit
-
-    unit.MoveX = unit.X
-    unit.MoveY = unit.Y
-
-    unit.X += dx
-    unit.Y += dy
-
-    // FIXME: can't move off of map
-
-    if unit.X < 0 {
-        unit.X = 0
-    }
-
-    if unit.Y < 0 {
-        unit.Y = 0
-    }
-}
-
-type Player struct {
-    // matrix the same size as the map, where true means the player can see the tile
-    // and false means the tile has not yet been discovered
-    ArcanusFog [][]bool
-    MyrrorFog [][]bool
-
-    Wizard setup.WizardCustom
-
-    Units []*Unit
-    Cities []*citylib.City
-
-    UnitId uint64
-    SelectedUnit *Unit
-}
-
-func (player *Player) GetFog(plane data.Plane) [][]bool {
-    if plane == data.PlaneArcanus {
-        return player.ArcanusFog
-    } else {
-        return player.MyrrorFog
-    }
-}
-
-func (player *Player) SetSelectedUnit(unit *Unit){
-    player.SelectedUnit = unit
-}
-
-/* make anything within the given radius viewable by the player */
-func (player *Player) LiftFog(x int, y int, radius int){
-
-    // FIXME: make this a parameter
-    fog := player.ArcanusFog
-
-    for dx := -radius; dx <= radius; dx++ {
-        for dy := -radius; dy <= radius; dy++ {
-            if x + dx < 0 || x + dx >= len(fog) || y + dy < 0 || y + dy >= len(fog[0]) {
-                continue
-            }
-
-            if dx * dx + dy * dy <= radius * radius {
-                fog[x + dx][y + dy] = true
-            }
-        }
-    }
-
-}
-
-func (player *Player) AddCity(city citylib.City) {
-    player.Cities = append(player.Cities, &city)
-}
-
-func (player *Player) AddUnit(unit Unit) *Unit {
-    unit.Id = player.UnitId
-    player.UnitId += 1
-    unit_ptr := &unit
-    player.Units = append(player.Units, unit_ptr)
-    return unit_ptr
-}
 
 func (game *Game) GetFogImage() *ebiten.Image {
     if game.Fog != nil {
@@ -146,7 +53,7 @@ type Game struct {
     // FIXME: need one map for arcanus and one for myrran
     Map *Map
 
-    Players []*Player
+    Players []*player.Player
 }
 
 func (game *Game) MakeFog() [][]bool {
@@ -158,8 +65,8 @@ func (game *Game) MakeFog() [][]bool {
     return fog
 }
 
-func (game *Game) AddPlayer(wizard setup.WizardCustom) *Player{
-    newPlayer := &Player{
+func (game *Game) AddPlayer(wizard setup.WizardCustom) *player.Player{
+    newPlayer := &player.Player{
         ArcanusFog: game.MakeFog(),
         MyrrorFog: game.MakeFog(),
         Wizard: wizard,
@@ -640,8 +547,8 @@ type Overworld struct {
     Counter uint64
     Map *Map
     Cities []*citylib.City
-    Units []*Unit
-    SelectedUnit *Unit
+    Units []*player.Unit
+    SelectedUnit *player.Unit
     ImageCache *util.ImageCache
     Fog [][]bool
     ShowAnimation bool
@@ -696,8 +603,8 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
             options.GeoM.Translate(float64(x), float64(y))
 
             if overworld.ShowAnimation && overworld.SelectedUnit == unit {
-                dx := float64(float64(unit.MoveX - unit.X) * float64(tileWidth * unit.Movement) / float64(MovementLimit))
-                dy := float64(float64(unit.MoveY - unit.Y) * float64(tileHeight * unit.Movement) / float64(MovementLimit))
+                dx := float64(float64(unit.MoveX - unit.X) * float64(tileWidth * unit.Movement) / float64(player.MovementLimit))
+                dy := float64(float64(unit.MoveY - unit.Y) * float64(tileHeight * unit.Movement) / float64(player.MovementLimit))
                 options.GeoM.Translate(dx, dy)
             }
 
@@ -722,8 +629,8 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
 func (game *Game) Draw(screen *ebiten.Image){
 
     var cities []*citylib.City
-    var units []*Unit
-    var selectedUnit *Unit
+    var units []*player.Unit
+    var selectedUnit *player.Unit
     var fog [][]bool
 
     for i, player := range game.Players {

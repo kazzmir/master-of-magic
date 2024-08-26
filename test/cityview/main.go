@@ -10,6 +10,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
     "github.com/kazzmir/master-of-magic/game/magic/game"
+    "github.com/kazzmir/master-of-magic/game/magic/player"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/units"
 
@@ -109,7 +110,7 @@ func (engine *Engine) Draw(screen *ebiten.Image) {
             CameraY: cameraY,
             Map: &engine.Map,
             Cities: []*citylib.City{engine.CityScreen.City},
-            Units: []*game.Unit{},
+            Units: []*player.Unit{},
             SelectedUnit: nil,
             ImageCache: &engine.ImageCache,
             Counter: counter,

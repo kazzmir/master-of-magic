@@ -222,6 +222,7 @@ func MakeCityScreen(cache *lbx.LbxCache, city *City) *CityScreen {
         color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
     }
 
+    // FIXME: this font should have a black outline around all the glyphs
     smallFont := font.MakeOptimizedFontWithPalette(fonts[1], smallFontPalette)
 
     rubbleFontPalette := color.Palette{
@@ -234,6 +235,7 @@ func MakeCityScreen(cache *lbx.LbxCache, city *City) *CityScreen {
         color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
     }
 
+    // FIXME: this font should have a black outline around all the glyphs
     rubbleFont := font.MakeOptimizedFontWithPalette(fonts[1], rubbleFontPalette)
 
     // use a random seed based on the position and name of the city so that each game gets
