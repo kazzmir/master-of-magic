@@ -57,4 +57,25 @@ func (magic *MagicScreen) Draw(screen *ebiten.Image){
         }
     }
 
+    manaStaff, err := magic.ImageCache.GetImage("magic.lbx", 7, 0)
+    if err == nil {
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(29, 83)
+        screen.DrawImage(manaStaff, &options)
+    }
+
+    researchStaff, err := magic.ImageCache.GetImage("magic.lbx", 9, 0)
+    if err == nil {
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(75, 85)
+        screen.DrawImage(researchStaff, &options)
+    }
+
+    skillStaff, err := magic.ImageCache.GetImage("magic.lbx", 11, 0)
+    if err == nil {
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(122, 83)
+        screen.DrawImage(skillStaff, &options)
+    }
+
 }
