@@ -286,6 +286,23 @@ func MakeCityScreen(cache *lbx.LbxCache, city *City) *CityScreen {
     return cityScreen
 }
 
+func canSellBuilding(building Building) bool {
+    return building.ProductionCost() > 0
+}
+
+func sellAmount(building Building) int {
+    cost := building.ProductionCost() / 3
+    if building == BuildingCityWalls {
+        cost /= 2
+    }
+
+    if cost < 1 {
+        cost = 1
+    }
+
+    return cost
+}
+
 func (cityScreen *CityScreen) MakeUI() *uilib.UI {
     ui := &uilib.UI{
         Draw: func(ui *uilib.UI, screen *ebiten.Image) {
@@ -338,6 +355,30 @@ func (cityScreen *CityScreen) MakeUI() *uilib.UI {
         Rect: buildingView,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
             // vector.StrokeRect(screen, float32(buildingView.Min.X), float32(buildingView.Min.Y), float32(buildingView.Dx()), float32(buildingView.Dy()), 1, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff}, true)
+        },
+        RightClick: func(element *uilib.UIElement) {
+            if cityScreen.BuildingLook != BuildingNone {
+                helpEntries := help.GetEntriesByName(cityScreen.BuildingLook.String())
+                if helpEntries != nil {
+                    ui.AddElement(uilib.MakeHelpElement(ui, cityScreen.LbxCache, &cityScreen.ImageCache, helpEntries[0]))
+                }
+            }
+        },
+        LeftClick: func(element *uilib.UIElement) {
+            if cityScreen.BuildingLook != BuildingNone && canSellBuilding(cityScreen.BuildingLook) {
+                var confirmElements []*uilib.UIElement
+
+                yes := func(){
+                    // FIXME: sell the building, reduce it to rubble
+                    ui.RemoveElements(confirmElements)
+                }
+                no := func(){
+                    ui.RemoveElements(confirmElements)
+                }
+
+                confirmElements = uilib.MakeConfirmDialog(cityScreen.UI, cityScreen.LbxCache, &cityScreen.ImageCache, fmt.Sprintf("Are you sure you want to sell back the %v for %v gold?", cityScreen.BuildingLook, sellAmount(cityScreen.BuildingLook)), yes, no)
+                ui.AddElements(confirmElements)
+            }
         },
         // if the user hovers over a building then show the name of the building
         Inside: func(element *uilib.UIElement, x int, y int){

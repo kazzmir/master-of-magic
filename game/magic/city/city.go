@@ -131,7 +131,7 @@ func (building Building) String() string {
         case BuildingMechaniciansGuild: return "Mechanician's Guild"
         case BuildingMinersGuild: return "Miner's Guild"
         case BuildingCityWalls: return "City Walls"
-        case BuildingWizardTower: return "Wizard Tower"
+        case BuildingWizardTower: return "Fortress"
         case BuildingSummoningCircle: return "Summoning Circle"
 
         case BuildingHousing: return "Housing"
