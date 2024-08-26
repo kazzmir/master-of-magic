@@ -1,6 +1,8 @@
 package magicview
 
 import (
+    "image"
+
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/hajimehoshi/ebiten/v2"
@@ -32,4 +34,27 @@ func (magic *MagicScreen) Update() MagicScreenState {
 }
 
 func (magic *MagicScreen) Draw(screen *ebiten.Image){
+    background, err := magic.ImageCache.GetImage("magic.lbx", 0, 0)
+    if err == nil {
+        var options ebiten.DrawImageOptions
+        screen.DrawImage(background, &options)
+    }
+
+    gemPositions := []image.Point{
+        image.Pt(24, 4),
+        image.Pt(101, 4),
+        image.Pt(178, 4),
+        image.Pt(255, 4),
+    }
+
+    for _, position := range gemPositions {
+        // FIXME: the gem color is based on what the banner color of the known wizard is
+        gemUnknown, err := magic.ImageCache.GetImage("magic.lbx", 6, 0)
+        if err == nil {
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(position.X), float64(position.Y))
+            screen.DrawImage(gemUnknown, &options)
+        }
+    }
+
 }
