@@ -509,7 +509,7 @@ func (screen *NewWizardScreen) MakeWizardUIElements(clickFunc func(wizard int), 
                 LeftClick: func(this *uilib.UIElement){
                     clickFunc(wizard)
                 },
-                Inside: func(this *uilib.UIElement){
+                Inside: func(this *uilib.UIElement, x int, y int){
                     insideFunc(wizard)
                     // screen.CurrentWizard = wizard
                 },
@@ -567,7 +567,7 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *uilib.UI {
                 screen.UI = screen.MakeCustomPictureUI()
 
             },
-            Inside: func(this *uilib.UIElement){
+            Inside: func(this *uilib.UIElement, x int, y int){
                 screen.CurrentWizard = -1
             },
             Draw: func(this *uilib.UIElement, window *ebiten.Image){
@@ -1282,7 +1282,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
 
                     screen.UI.AddElement(uilib.MakeHelpElement(screen.UI, screen.LbxCache, &imageCache, helpEntries[0]))
                 },
-                Inside: func(this *uilib.UIElement){
+                Inside: func(this *uilib.UIElement, x int, y int){
                     // if the user hovers over this element, then draw partially transparent books
                     ghostBooks = level
                 },
@@ -1903,7 +1903,7 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
 
         elements = append(elements, &uilib.UIElement{
             Rect: image.Rect(210, yPos, 210 + screen.RaceBackground.Bounds().Dx(), yPos + raceAvailable.Height()),
-            Inside: func(this *uilib.UIElement){
+            Inside: func(this *uilib.UIElement, x int, y int){
                 highlight = true
             },
             NotInside: func(this *uilib.UIElement){
@@ -1945,7 +1945,7 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
 
         elements = append(elements, &uilib.UIElement{
             Rect: image.Rect(210, yPos, 210 + screen.RaceBackground.Bounds().Dx(), yPos + raceAvailable.Height()),
-            Inside: func(this *uilib.UIElement){
+            Inside: func(this *uilib.UIElement, x int, y int){
                 highlight = true
             },
             NotInside: func(this *uilib.UIElement){
