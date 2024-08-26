@@ -11,7 +11,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
     "github.com/kazzmir/master-of-magic/game/magic/game"
-    "github.com/kazzmir/master-of-magic/game/magic/player"
+    playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/units"
 
@@ -28,6 +28,9 @@ type Engine struct {
 
 func NewEngine() (*Engine, error) {
     cache := lbx.AutoCache()
+
+    player := playerlib.Player{
+    }
 
     city := citylib.City{
         Population: 6000,
@@ -57,7 +60,7 @@ func NewEngine() (*Engine, error) {
     city.AddBuilding(citylib.BuildingOracle)
     city.AddBuilding(citylib.BuildingWizardTower)
 
-    cityScreen := cityview.MakeCityScreen(cache, &city)
+    cityScreen := cityview.MakeCityScreen(cache, &city, &player)
 
     terrainLbx, err := cache.GetLbxFile("terrain.lbx")
     if err != nil {
@@ -111,7 +114,7 @@ func (engine *Engine) Draw(screen *ebiten.Image) {
             CameraY: cameraY,
             Map: &engine.Map,
             Cities: []*citylib.City{engine.CityScreen.City},
-            Units: []*player.Unit{},
+            Units: []*playerlib.Unit{},
             SelectedUnit: nil,
             ImageCache: &engine.ImageCache,
             Counter: counter,

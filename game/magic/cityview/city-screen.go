@@ -15,6 +15,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/combat"
     "github.com/kazzmir/master-of-magic/game/magic/units"
+    playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
 
@@ -111,6 +112,7 @@ type CityScreen struct {
     City *citylib.City
 
     UI *uilib.UI
+    Player *playerlib.Player
 
     Buildings []BuildingSlot
     BuildScreen *BuildScreen
@@ -143,7 +145,7 @@ func hash(str string) uint64 {
     return hasher.Sum64()
 }
 
-func MakeCityScreen(cache *lbx.LbxCache, city *citylib.City) *CityScreen {
+func MakeCityScreen(cache *lbx.LbxCache, city *citylib.City, player *playerlib.Player) *CityScreen {
 
     fontLbx, err := cache.GetLbxFile("fonts.lbx")
     if err != nil {
@@ -298,6 +300,7 @@ func MakeCityScreen(cache *lbx.LbxCache, city *citylib.City) *CityScreen {
         RubbleFont: rubbleFont,
         Buildings: buildings,
         State: CityScreenStateRunning,
+        Player: player,
     }
 
     cityScreen.UI = cityScreen.MakeUI()
@@ -326,6 +329,8 @@ func (cityScreen *CityScreen) SellBuilding(building citylib.Building) {
     // convert the building pic to one of the rubble ones
     // give player back the gold for the building
     // remove building from the city
+
+    cityScreen.City.SoldBuilding = true
 
     cityScreen.City.Buildings.Remove(building)
 
@@ -401,19 +406,23 @@ func (cityScreen *CityScreen) MakeUI() *uilib.UI {
         },
         LeftClick: func(element *uilib.UIElement) {
             if cityScreen.BuildingLook != citylib.BuildingNone && canSellBuilding(cityScreen.BuildingLook) {
-                var confirmElements []*uilib.UIElement
+                if cityScreen.City.SoldBuilding {
+                    ui.AddElement(uilib.MakeErrorElement(cityScreen.UI, cityScreen.LbxCache, &cityScreen.ImageCache, "You can only sell back one building per turn."))
+                } else {
+                    var confirmElements []*uilib.UIElement
 
-                yes := func(){
-                    cityScreen.SellBuilding(cityScreen.BuildingLook)
-                    ui.RemoveElements(confirmElements)
+                    yes := func(){
+                        cityScreen.SellBuilding(cityScreen.BuildingLook)
+                        ui.RemoveElements(confirmElements)
+                    }
+
+                    no := func(){
+                        ui.RemoveElements(confirmElements)
+                    }
+
+                    confirmElements = uilib.MakeConfirmDialog(cityScreen.UI, cityScreen.LbxCache, &cityScreen.ImageCache, fmt.Sprintf("Are you sure you want to sell back the %v for %v gold?", cityScreen.BuildingLook, sellAmount(cityScreen.BuildingLook)), yes, no)
+                    ui.AddElements(confirmElements)
                 }
-
-                no := func(){
-                    ui.RemoveElements(confirmElements)
-                }
-
-                confirmElements = uilib.MakeConfirmDialog(cityScreen.UI, cityScreen.LbxCache, &cityScreen.ImageCache, fmt.Sprintf("Are you sure you want to sell back the %v for %v gold?", cityScreen.BuildingLook, sellAmount(cityScreen.BuildingLook)), yes, no)
-                ui.AddElements(confirmElements)
             }
         },
         // if the user hovers over a building then show the name of the building

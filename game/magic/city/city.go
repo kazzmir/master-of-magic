@@ -184,6 +184,9 @@ type City struct {
     Y int
     Buildings *set.Set[Building]
 
+    // reset every turn, keeps track of whether the player sold a building
+    SoldBuilding bool
+
     // how many hammers the city has produced towards the current project
     Production int
     ProducingBuilding Building
