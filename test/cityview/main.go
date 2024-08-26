@@ -7,6 +7,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/set"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
+    "github.com/kazzmir/master-of-magic/game/magic/cityview"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
     "github.com/kazzmir/master-of-magic/game/magic/game"
@@ -20,7 +21,7 @@ import (
 
 type Engine struct {
     LbxCache *lbx.LbxCache
-    CityScreen *citylib.CityScreen
+    CityScreen *cityview.CityScreen
     ImageCache util.ImageCache
     Map game.Map
 }
@@ -56,7 +57,7 @@ func NewEngine() (*Engine, error) {
     city.AddBuilding(citylib.BuildingOracle)
     city.AddBuilding(citylib.BuildingWizardTower)
 
-    cityScreen := citylib.MakeCityScreen(cache, &city)
+    cityScreen := cityview.MakeCityScreen(cache, &city)
 
     terrainLbx, err := cache.GetLbxFile("terrain.lbx")
     if err != nil {
@@ -92,8 +93,8 @@ func (engine *Engine) Update() error {
     }
 
     switch engine.CityScreen.Update() {
-        case citylib.CityScreenStateRunning:
-        case citylib.CityScreenStateDone:
+        case cityview.CityScreenStateRunning:
+        case cityview.CityScreenStateDone:
             return ebiten.Termination
     }
 
