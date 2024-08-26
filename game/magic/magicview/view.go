@@ -18,12 +18,20 @@ const (
 type MagicScreen struct {
     Cache *lbx.LbxCache
     ImageCache util.ImageCache
+
+    ManaLocked bool
+    ResearchLocked bool
+    SkillLocked bool
 }
 
 func MakeMagicScreen(cache *lbx.LbxCache) *MagicScreen {
     magic := &MagicScreen{
         Cache: cache,
         ImageCache: util.MakeImageCache(cache),
+
+        ManaLocked: true,
+        ResearchLocked: true,
+        SkillLocked: true,
     }
     return magic
 }
@@ -64,6 +72,15 @@ func (magic *MagicScreen) Draw(screen *ebiten.Image){
         screen.DrawImage(manaStaff, &options)
     }
 
+    if magic.ManaLocked {
+        manaLocked, err := magic.ImageCache.GetImage("magic.lbx", 15, 0)
+        if err == nil {
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(27, 81)
+            screen.DrawImage(manaLocked, &options)
+        }
+    }
+
     researchStaff, err := magic.ImageCache.GetImage("magic.lbx", 9, 0)
     if err == nil {
         var options ebiten.DrawImageOptions
@@ -71,11 +88,29 @@ func (magic *MagicScreen) Draw(screen *ebiten.Image){
         screen.DrawImage(researchStaff, &options)
     }
 
+    if magic.ResearchLocked {
+        researchLocked, err := magic.ImageCache.GetImage("magic.lbx", 16, 0)
+        if err == nil {
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(74, 81)
+            screen.DrawImage(researchLocked, &options)
+        }
+    }
+
     skillStaff, err := magic.ImageCache.GetImage("magic.lbx", 11, 0)
     if err == nil {
         var options ebiten.DrawImageOptions
         options.GeoM.Translate(122, 83)
         screen.DrawImage(skillStaff, &options)
+    }
+
+    if magic.SkillLocked {
+        skillLocked, err := magic.ImageCache.GetImage("magic.lbx", 17, 0)
+        if err == nil {
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(121, 81)
+            screen.DrawImage(skillLocked, &options)
+        }
     }
 
 }
