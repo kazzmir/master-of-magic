@@ -53,6 +53,7 @@ type Player struct {
     Units []*Unit
     Cities []*citylib.City
 
+    // counter for the next created unit owned by this player
     UnitId uint64
     SelectedUnit *Unit
 }
