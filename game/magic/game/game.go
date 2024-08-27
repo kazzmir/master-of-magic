@@ -368,16 +368,21 @@ func (game *Game) MakeHudUI() *uilib.UI {
     // magic button
     magicButtons, _ := game.ImageCache.GetImages("main.lbx", 5)
     magicRect := image.Rect(184, 4, 184 + magicButtons[0].Bounds().Dx(), 4 + magicButtons[0].Bounds().Dy())
+    magicIndex := 0
     elements = append(elements, &uilib.UIElement{
         Rect: magicRect,
         LeftClick: func(this *uilib.UIElement){
+            magicIndex = 1
+        },
+        LeftClickRelease: func(this *uilib.UIElement){
             game.MagicScreen = magicview.MakeMagicScreen(game.Cache)
             game.State = GameStateMagicView
+            magicIndex = 0
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(184, 4)
-            screen.DrawImage(magicButtons[0], &options)
+            screen.DrawImage(magicButtons[magicIndex], &options)
         },
     })
 
