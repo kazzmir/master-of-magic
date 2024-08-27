@@ -70,8 +70,12 @@ func (magic *MagicScreen) MakeTransmuteElements(ui *uilib.UI, smallFont *font.Fo
 
     powerToGold, _ := magic.ImageCache.GetImage("magic.lbx", 59, 0)
 
+    // FIXME: get these from the player/wizard
     totalGold := 78
     totalMana := 93
+
+    // FIXME: set to 1 if the wizard has AbilityAlchemy
+    alchemyConversion := 0.5
 
     conveyor, _ := magic.ImageCache.GetImage("magic.lbx", 57, 0)
     cursor, _ := magic.ImageCache.GetImage("magic.lbx", 58, 0)
@@ -150,11 +154,11 @@ func (magic *MagicScreen) MakeTransmuteElements(ui *uilib.UI, smallFont *font.Fo
             leftSide := float64(122)
             rightSide := float64(224)
             if isRight {
-                smallFont.PrintRight(screen, leftSide, 86, 1, fmt.Sprintf("%v GP", int(float64(totalMana) * changePercent * 0.5)))
+                smallFont.PrintRight(screen, leftSide, 86, 1, fmt.Sprintf("%v GP", int(float64(totalMana) * changePercent * alchemyConversion)))
                 smallFont.PrintRight(screen, rightSide, 86, 1, fmt.Sprintf("%v PP", int(float64(totalMana) * changePercent)))
             } else {
                 smallFont.PrintRight(screen, leftSide, 86, 1, fmt.Sprintf("%v GP", int(float64(totalGold) * changePercent)))
-                smallFont.PrintRight(screen, rightSide, 86, 1, fmt.Sprintf("%v PP", int(float64(totalGold) * changePercent * 0.5)))
+                smallFont.PrintRight(screen, rightSide, 86, 1, fmt.Sprintf("%v PP", int(float64(totalGold) * changePercent * alchemyConversion)))
             }
         },
     })
