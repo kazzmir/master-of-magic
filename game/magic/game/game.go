@@ -111,7 +111,7 @@ func (game *Game) Load(cache *lbx.LbxCache) error {
     return nil
 }
 
-func MakeGame(wizard setup.WizardCustom, lbxCache *lbx.LbxCache) *Game {
+func MakeGame(lbxCache *lbx.LbxCache) *Game {
 
     terrainLbx, err := lbxCache.GetLbxFile("terrain.lbx")
     if err != nil {

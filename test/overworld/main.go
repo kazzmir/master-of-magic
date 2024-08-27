@@ -28,7 +28,7 @@ func NewEngine() (*Engine, error) {
         Banner: data.BannerBlue,
     }
 
-    game := gamelib.MakeGame(wizard, cache)
+    game := gamelib.MakeGame(cache)
     err := game.Load(cache)
 
     if err != nil {
