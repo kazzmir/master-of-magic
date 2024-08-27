@@ -11,8 +11,7 @@ import (
     "archive/zip"
     // "path/filepath"
 
-    // FIXME: ugly to have to import this here
-    "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/data"
 )
 
 type LbxCache struct {

@@ -1,14 +1,7 @@
 package data
 
-import (
-    _ "embed"
-)
-
 const ScreenWidth = 320
 const ScreenHeight = 200
-
-//go:embed data.zip
-var DataZip []byte
 
 type BannerType int
 const (
