@@ -89,6 +89,8 @@ func (magic *MagicScreen) MakeTransmuteElements(ui *uilib.UI) []*uilib.UIElement
 
             options.GeoM.Reset()
             options.GeoM.Translate(float64(arrowRect.Min.X), float64(arrowRect.Min.Y))
+
+            flip := false
             if isRight {
                 screen.DrawImage(arrowRight, &options)
 
@@ -96,7 +98,7 @@ func (magic *MagicScreen) MakeTransmuteElements(ui *uilib.UI) []*uilib.UIElement
                 options.GeoM.Translate(87, 70)
                 screen.DrawImage(powerToGold, &options)
 
-                // FIXME: flip conveyor belt
+                flip = true
             } else {
                 screen.DrawImage(arrowLeft, &options)
             }
@@ -105,17 +107,32 @@ func (magic *MagicScreen) MakeTransmuteElements(ui *uilib.UI) []*uilib.UIElement
             conveyorArea := screen.SubImage(image.Rect(131, 85, 131 + cursorPosition + 3, 85 + 7)).(*ebiten.Image)
 
             // draw an animated conveyor belt by drawing the same image twice with a slight offset
-            movement := (ui.Counter / 6) % 8
-            options.GeoM.Reset()
-            options.GeoM.Translate(131, 85)
-            options.GeoM.Translate(float64(-conveyor.Bounds().Dx()), 0)
-            options.GeoM.Translate(float64(movement), 0)
-            conveyorArea.DrawImage(conveyor, &options)
+            movement := int((ui.Counter / 6) % 8)
+            if flip {
+                options.GeoM.Reset()
+                options.GeoM.Scale(-1, 1)
+                options.GeoM.Translate(131, 85)
+                options.GeoM.Translate(float64(cursorPosition + 3 + conveyor.Bounds().Dx()), 0)
+                options.GeoM.Translate(float64(-movement), 0)
+                conveyorArea.DrawImage(conveyor, &options)
 
-            options.GeoM.Reset()
-            options.GeoM.Translate(131, 85)
-            options.GeoM.Translate(float64(movement), 0)
-            conveyorArea.DrawImage(conveyor, &options)
+                options.GeoM.Reset()
+                options.GeoM.Scale(-1, 1)
+                options.GeoM.Translate(131 + float64(cursorPosition) + 3, 85)
+                options.GeoM.Translate(float64(-movement), 0)
+                conveyorArea.DrawImage(conveyor, &options)
+            } else {
+                options.GeoM.Reset()
+                options.GeoM.Translate(131, 85)
+                options.GeoM.Translate(float64(-conveyor.Bounds().Dx()), 0)
+                options.GeoM.Translate(float64(movement), 0)
+                conveyorArea.DrawImage(conveyor, &options)
+
+                options.GeoM.Reset()
+                options.GeoM.Translate(131, 85)
+                options.GeoM.Translate(float64(movement), 0)
+                conveyorArea.DrawImage(conveyor, &options)
+            }
 
             // draw the cursor itself
             options.GeoM.Reset()
