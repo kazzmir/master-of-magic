@@ -10,6 +10,9 @@ import (
     "strings"
     "archive/zip"
     // "path/filepath"
+
+    // FIXME: ugly to have to import this here
+    "github.com/kazzmir/master-of-magic/game/magic/data"
 )
 
 type LbxCache struct {
@@ -64,6 +67,13 @@ func AutoCache() *LbxCache {
     // 2. check all the directories in the current working directory to see if any of them contain lbx files
     // 3. look at all zip files in the current working directory to see if any of the zip files contain lbx files
     // 4. possibly use an embedded fs with all data in it
+
+    byteReader := bytes.NewReader(data.DataZip)
+    zipReader, err := zip.NewReader(byteReader, int64(len(data.DataZip)))
+    if err == nil && validateData(zipReader) {
+        log.Printf("Found data in embedded zip")
+        return MakeLbxCache(zipReader)
+    }
 
     here := os.DirFS(".")
     if validateData(here) {
