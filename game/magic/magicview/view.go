@@ -67,11 +67,15 @@ func (magic *MagicScreen) MakeUI() *uilib.UI {
         blue, blue, blue, blue,
     }
 
+    normalFont := font.MakeOptimizedFontWithPalette(fonts[2], bluishPalette)
+
+    blue2Palette := bluishPalette
+    blue2Palette[1] = color.RGBA{R: 0x52, G: 0x61, B: 0xca, A: 0xff}
+    smallerFont := font.MakeOptimizedFontWithPalette(fonts[1], blue2Palette)
+
     manaRate := 8
     researchRate := 4
     skillRate := 3
-
-    normalFont := font.MakeOptimizedFontWithPalette(fonts[2], bluishPalette)
 
     ui := &uilib.UI{
         Draw: func(ui *uilib.UI, screen *ebiten.Image) {
@@ -107,6 +111,14 @@ func (magic *MagicScreen) MakeUI() *uilib.UI {
             normalFont.PrintRight(screen, 56, 160, 1, fmt.Sprintf("%v MP", manaRate))
             normalFont.PrintRight(screen, 103, 160, 1, fmt.Sprintf("%v RP", researchRate))
             normalFont.PrintRight(screen, 151, 160, 1, fmt.Sprintf("%v SP", skillRate))
+
+            smallerFont.Print(screen, 5, 176, 1, fmt.Sprintf("Casting Skill: %v(%v)", 20, 20))
+            smallerFont.Print(screen, 5, 183, 1, fmt.Sprintf("Magic Reserve: %v", 90))
+            smallerFont.Print(screen, 5, 190, 1, fmt.Sprintf("Power Base: %v", 12))
+
+            smallerFont.Print(screen, 100, 176, 1, fmt.Sprintf("Casting: %v", "None"))
+            smallerFont.Print(screen, 100, 183, 1, fmt.Sprintf("Researching: %v", "Whatever"))
+            smallerFont.Print(screen, 100, 190, 1, fmt.Sprintf("Summon To: %v", "Somewhere"))
         },
     }
 
