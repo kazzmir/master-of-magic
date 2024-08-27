@@ -9,6 +9,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
     "github.com/kazzmir/master-of-magic/game/magic/player"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
+    "github.com/kazzmir/master-of-magic/game/magic/cityview"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -32,11 +33,13 @@ type GameState int
 const (
     GameStateRunning GameState = iota
     GameStateUnitMoving
+    GameStateCityView
 )
 
 type Game struct {
     active bool
 
+    Cache *lbx.LbxCache
     ImageCache util.ImageCache
     WhiteFont *font.Font
 
@@ -49,6 +52,7 @@ type Game struct {
     cameraX int
     cameraY int
 
+    CityScreen *cityview.CityScreen
 
     // FIXME: need one map for arcanus and one for myrran
     Map *Map
@@ -123,6 +127,7 @@ func MakeGame(lbxCache *lbx.LbxCache) *Game {
 
     game := &Game{
         active: false,
+        Cache: lbxCache,
         Map: MakeMap(terrainData),
         State: GameStateRunning,
         ImageCache: util.MakeImageCache(lbxCache),
@@ -146,48 +151,69 @@ func (game *Game) Update() GameState {
     tilesPerRow := game.Map.TilesPerRow(data.ScreenWidth)
     tilesPerColumn := game.Map.TilesPerColumn(data.ScreenHeight)
 
-    if game.State == GameStateRunning {
-        // log.Printf("Game.Update")
-        keys := make([]ebiten.Key, 0)
-        keys = inpututil.AppendJustPressedKeys(keys)
-
-        dx := 0
-        dy := 0
-
-        for _, key := range keys {
-            switch key {
-                case ebiten.KeyUp: dy = -1
-                case ebiten.KeyDown: dy = 1
-                case ebiten.KeyLeft: dx = -1
-                case ebiten.KeyRight: dx = 1
+    switch game.State {
+        case GameStateCityView:
+            switch game.CityScreen.Update() {
+                case cityview.CityScreenStateRunning:
+                case cityview.CityScreenStateDone:
+                    game.State = GameStateRunning
+                    game.CityScreen = nil
             }
-        }
+        case GameStateRunning:
+            // log.Printf("Game.Update")
+            keys := make([]ebiten.Key, 0)
+            keys = inpututil.AppendJustPressedKeys(keys)
 
-        if len(game.Players) > 0 && game.Players[0].SelectedUnit != nil {
+            dx := 0
+            dy := 0
+
+            for _, key := range keys {
+                switch key {
+                    case ebiten.KeyUp: dy = -1
+                    case ebiten.KeyDown: dy = 1
+                    case ebiten.KeyLeft: dx = -1
+                    case ebiten.KeyRight: dx = 1
+                }
+            }
+
+            if len(game.Players) > 0 && game.Players[0].SelectedUnit != nil {
+                unit := game.Players[0].SelectedUnit
+                game.cameraX = unit.X - tilesPerRow / 2
+                game.cameraY = unit.Y - tilesPerColumn / 2
+
+                if game.cameraX < 0 {
+                    game.cameraX = 0
+                }
+
+                if game.cameraY < 0 {
+                    game.cameraY = 0
+                }
+
+                if dx != 0 || dy != 0 {
+                    unit.Move(dx, dy)
+                    game.Players[0].LiftFog(unit.X, unit.Y, 2)
+                    game.State = GameStateUnitMoving
+                }
+
+                rightClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight)
+                if rightClick {
+                    mouseX, mouseY := ebiten.CursorPosition()
+                    tileX := game.cameraX + mouseX / game.Map.TileWidth()
+                    tileY := game.cameraY + mouseY / game.Map.TileHeight()
+                    for _, city := range game.Players[0].Cities {
+                        if city.X == tileX && city.Y == tileY {
+                            game.State = GameStateCityView
+                            game.CityScreen = cityview.MakeCityScreen(game.Cache, city, game.Players[0])
+                        }
+                    }
+                }
+            }
+        case GameStateUnitMoving:
             unit := game.Players[0].SelectedUnit
-            game.cameraX = unit.X - tilesPerRow / 2
-            game.cameraY = unit.Y - tilesPerColumn / 2
-
-            if game.cameraX < 0 {
-                game.cameraX = 0
+            unit.Movement -= 1
+            if unit.Movement == 0 {
+                game.State = GameStateRunning
             }
-
-            if game.cameraY < 0 {
-                game.cameraY = 0
-            }
-
-            if dx != 0 || dy != 0 {
-                unit.Move(dx, dy)
-                game.Players[0].LiftFog(unit.X, unit.Y, 2)
-                game.State = GameStateUnitMoving
-            }
-        }
-    } else if game.State == GameStateUnitMoving {
-        unit := game.Players[0].SelectedUnit
-        unit.Movement -= 1
-        if unit.Movement == 0 {
-            game.State = GameStateRunning
-        }
     }
 
     return game.State
@@ -662,6 +688,16 @@ func (game *Game) Draw(screen *ebiten.Image){
         Fog: fog,
         ShowAnimation: game.State == GameStateUnitMoving,
         FogBlack: game.GetFogImage(),
+    }
+
+    if game.State == GameStateCityView {
+        overworld.CameraX = game.CityScreen.City.X - 2
+        overworld.CameraY = game.CityScreen.City.Y - 2
+        overworld.SelectedUnit = nil
+        game.CityScreen.Draw(screen, func (mapView *ebiten.Image, geom ebiten.GeoM, counter uint64){
+            overworld.DrawOverworld(mapView, geom)
+        })
+        return
     }
 
     overworld.DrawOverworld(screen, ebiten.GeoM{})

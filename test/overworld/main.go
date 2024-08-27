@@ -37,6 +37,7 @@ func NewEngine() (*Engine, error) {
 
     player.AddCity(citylib.City{
         Population: 6000,
+        Name: "Test City",
         Plane: data.PlaneArcanus,
         Wall: false,
         X: 4,

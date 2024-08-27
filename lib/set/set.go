@@ -29,6 +29,10 @@ func (set *Set[T]) Remove(v T) {
 
 // FIXME: turn this into an iterator
 func (set *Set[T]) Values() []T {
+    if set == nil {
+        return nil
+    }
+
     var out []T
     for k := range set.data {
         out = append(out, k)
