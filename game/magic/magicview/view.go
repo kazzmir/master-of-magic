@@ -1,10 +1,13 @@
 package magicview
 
 import (
-    // "log"
+    "fmt"
+    "log"
     "image"
+    "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     "github.com/hajimehoshi/ebiten/v2"
@@ -44,6 +47,32 @@ func MakeMagicScreen(cache *lbx.LbxCache) *MagicScreen {
 }
 
 func (magic *MagicScreen) MakeUI() *uilib.UI {
+
+    fontLbx, err := magic.Cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        log.Printf("Unable to read fonts.lbx: %v", err)
+        return nil
+    }
+
+    fonts, err := fontLbx.ReadFonts(0)
+    if err != nil {
+        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
+        return nil
+    }
+
+    blue := color.RGBA{R: 0x6e, G: 0x79, B: 0xe6, A: 0xff}
+    bluishPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        blue, blue, blue, blue,
+    }
+
+    manaRate := 8
+    researchRate := 4
+    skillRate := 3
+
+    normalFont := font.MakeOptimizedFontWithPalette(fonts[2], bluishPalette)
+
     ui := &uilib.UI{
         Draw: func(ui *uilib.UI, screen *ebiten.Image) {
             background, err := magic.ImageCache.GetImage("magic.lbx", 0, 0)
@@ -74,6 +103,10 @@ func (magic *MagicScreen) MakeUI() *uilib.UI {
                     element.Draw(element, screen)
                 }
             })
+
+            normalFont.PrintRight(screen, 56, 160, 1, fmt.Sprintf("%v MP", manaRate))
+            normalFont.PrintRight(screen, 103, 160, 1, fmt.Sprintf("%v RP", researchRate))
+            normalFont.PrintRight(screen, 151, 160, 1, fmt.Sprintf("%v SP", skillRate))
         },
     }
 
