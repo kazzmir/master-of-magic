@@ -73,16 +73,6 @@ func (buildScreen *BuildScreen) Ok() {
     buildScreen.State = BuildScreenOk
 }
 
-func premultiplyAlpha(c color.RGBA) color.RGBA {
-    a := float64(c.A) / 255.0
-    return color.RGBA{
-        R: uint8(float64(c.R) * a),
-        G: uint8(float64(c.G) * a),
-        B: uint8(float64(c.B) * a),
-        A: c.A,
-    }
-}
-
 type BuildingDescriptions struct {
     Descriptions []string
 }
@@ -259,7 +249,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
     
     titleFont := font.MakeOptimizedFont(fonts[2])
 
-    alphaWhite := premultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 180})
+    alphaWhite := util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 180})
 
     whitePalette := color.Palette{
         color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
@@ -271,11 +261,11 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
 
     descriptionPalette := color.Palette{
         color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        premultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 90}),
-        premultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}),
-        premultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 200}),
-        premultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 200}),
-        premultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 200}),
+        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 90}),
+        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}),
+        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 200}),
+        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 200}),
+        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 200}),
         color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
         color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
         color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},

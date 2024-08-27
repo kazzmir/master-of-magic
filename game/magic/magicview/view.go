@@ -244,7 +244,15 @@ func (magic *MagicScreen) MakeUI() *uilib.UI {
     blue2Palette[1] = color.RGBA{R: 0x52, G: 0x61, B: 0xca, A: 0xff}
     smallerFont := font.MakeOptimizedFontWithPalette(fonts[1], blue2Palette)
 
-    transmuteFont := font.MakeOptimizedFont(fonts[0])
+    translucentWhite := util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 80})
+    transmutePalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        translucentWhite, translucentWhite, translucentWhite,
+        translucentWhite, translucentWhite, translucentWhite,
+    }
+
+    transmuteFont := font.MakeOptimizedFontWithPalette(fonts[0], transmutePalette)
 
     manaRate := 8
     researchRate := 4
