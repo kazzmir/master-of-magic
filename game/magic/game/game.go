@@ -324,6 +324,76 @@ func (game *Game) MakeHudUI() *uilib.UI {
         },
     })
 
+    // spell button
+    elements = append(elements, &uilib.UIElement{
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            image, _ := game.ImageCache.GetImage("main.lbx", 2, 0)
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(47, 4)
+            screen.DrawImage(image, &options)
+        },
+    })
+
+    // army button
+    elements = append(elements, &uilib.UIElement{
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            image, _ := game.ImageCache.GetImage("main.lbx", 3, 0)
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(89, 4)
+            screen.DrawImage(image, &options)
+        },
+    })
+
+    // cities button
+    elements = append(elements, &uilib.UIElement{
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            image, _ := game.ImageCache.GetImage("main.lbx", 4, 0)
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(140, 4)
+            screen.DrawImage(image, &options)
+        },
+    })
+
+    // magic button
+    elements = append(elements, &uilib.UIElement{
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            image, _ := game.ImageCache.GetImage("main.lbx", 5, 0)
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(184, 4)
+            screen.DrawImage(image, &options)
+        },
+    })
+
+    // info button
+    elements = append(elements, &uilib.UIElement{
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            image, _ := game.ImageCache.GetImage("main.lbx", 6, 0)
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(226, 4)
+            screen.DrawImage(image, &options)
+        },
+    })
+
+    // plane button
+    elements = append(elements, &uilib.UIElement{
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            image, _ := game.ImageCache.GetImage("main.lbx", 7, 0)
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(270, 4)
+            screen.DrawImage(image, &options)
+        },
+    })
+
+    // next turn
+    elements = append(elements, &uilib.UIElement{
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            image, _ := game.ImageCache.GetImage("main.lbx", 35, 0)
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(240, 174)
+            screen.DrawImage(image, &options)
+        },
+    })
+
     ui.SetElementsFromArray(elements)
 
     return ui
@@ -331,61 +401,6 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
 func (game *Game) DrawHud(screen *ebiten.Image){
     /*
-    var options ebiten.DrawImageOptions
-
-    // draw hud on top of map
-    mainHud, err := game.GetMainImage(0)
-    if err == nil {
-        screen.DrawImage(mainHud, &options)
-    }
-
-    options.GeoM.Reset()
-    x := float64(7)
-    y := float64(4)
-    options.GeoM.Translate(x, y)
-
-    gameButton1, err := game.GetMainImage(1)
-    if err == nil {
-        screen.DrawImage(gameButton1, &options)
-        x += float64(gameButton1.Bounds().Dx())
-        options.GeoM.Translate(float64(gameButton1.Bounds().Dx()) + 1, 0)
-    }
-
-    spellButton, err := game.GetMainImage(2)
-    if err == nil {
-        screen.DrawImage(spellButton, &options)
-        options.GeoM.Translate(float64(spellButton.Bounds().Dx()) + 1, 0)
-    }
-
-    armyButton, err := game.GetMainImage(3)
-    if err == nil {
-        screen.DrawImage(armyButton, &options)
-        options.GeoM.Translate(float64(armyButton.Bounds().Dx()) + 1, 0)
-    }
-
-    cityButton, err := game.GetMainImage(4)
-    if err == nil {
-        screen.DrawImage(cityButton, &options)
-        options.GeoM.Translate(float64(cityButton.Bounds().Dx()) + 1, 0)
-    }
-
-    magicButton, err := game.GetMainImage(5)
-    if err == nil {
-        screen.DrawImage(magicButton, &options)
-        options.GeoM.Translate(float64(magicButton.Bounds().Dx()) + 1, 0)
-    }
-
-    infoButton, err := game.GetMainImage(6)
-    if err == nil {
-        screen.DrawImage(infoButton, &options)
-        options.GeoM.Translate(float64(infoButton.Bounds().Dx()) + 1, 0)
-    }
-
-    planeButton, err := game.GetMainImage(7)
-    if err == nil {
-        screen.DrawImage(planeButton, &options)
-    }
-
     options.GeoM.Reset()
 
     goldFood, err := game.GetMainImage(34)
@@ -409,12 +424,7 @@ func (game *Game) DrawHud(screen *ebiten.Image){
     */
 
     /*
-    nextTurn, err := game.GetMainImage(35)
-    if err == nil {
-        options.GeoM.Reset()
-        options.GeoM.Translate(240, 174)
-        screen.DrawImage(nextTurn, &options)
-    }
+    
     */
 }
 
