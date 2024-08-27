@@ -65,7 +65,7 @@ func MakeHelpElement(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, h
     infoLeftMargin := 18
     infoTopMargin := 26
     infoBodyMargin := 3
-    maxInfoWidth := infoWidth - infoLeftMargin - infoBodyMargin - 15
+    maxInfoWidth := infoWidth - infoLeftMargin - infoBodyMargin - 14
 
     // fmt.Printf("Help text: %v\n", []byte(help.Text))
 

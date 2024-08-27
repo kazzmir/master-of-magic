@@ -405,6 +405,12 @@ func (magic *MagicScreen) MakeUI() *uilib.UI {
                     adjustManaPercent(float64(amount) / float64(manaPowerStaff.Bounds().Dy()))
                 }
             },
+            RightClick: func(element *uilib.UIElement){
+                helpEntries := help.GetEntriesByName("Mana Points Ratio")
+                if helpEntries != nil {
+                    ui.AddElement(uilib.MakeHelpElement(ui, magic.Cache, &magic.ImageCache, helpEntries[0], helpEntries[1:]...))
+                }
+            },
             Inside: func(element *uilib.UIElement, x, y int){
                 posY = y
             },
@@ -464,6 +470,12 @@ func (magic *MagicScreen) MakeUI() *uilib.UI {
             LeftClick: func(element *uilib.UIElement){
                 magic.ResearchLocked = !magic.ResearchLocked
             },
+            RightClick: func(element *uilib.UIElement){
+                helpEntries := help.GetEntriesByName("Research Ratio")
+                if helpEntries != nil {
+                    ui.AddElement(uilib.MakeHelpElement(ui, magic.Cache, &magic.ImageCache, helpEntries[0], helpEntries[1:]...))
+                }
+            },
         })
 
         researchPowerStaff, _ := magic.ImageCache.GetImage("magic.lbx", 10, 0)
@@ -477,6 +489,12 @@ func (magic *MagicScreen) MakeUI() *uilib.UI {
                     // log.Printf("click mana staff at %v", manaStaff.Bounds().Dy() - posY)
                     amount := researchPowerStaff.Bounds().Dy() - posY
                     adjustResearchPercent(float64(amount) / float64(researchPowerStaff.Bounds().Dy()))
+                }
+            },
+            RightClick: func(element *uilib.UIElement){
+                helpEntries := help.GetEntriesByName("Research Ratio")
+                if helpEntries != nil {
+                    ui.AddElement(uilib.MakeHelpElement(ui, magic.Cache, &magic.ImageCache, helpEntries[0], helpEntries[1:]...))
                 }
             },
             Inside: func(element *uilib.UIElement, x, y int){
@@ -512,6 +530,12 @@ func (magic *MagicScreen) MakeUI() *uilib.UI {
             LeftClick: func(element *uilib.UIElement){
                 magic.SkillLocked = !magic.SkillLocked
             },
+            RightClick: func(element *uilib.UIElement){
+                helpEntries := help.GetEntriesByName("Casting Skill Ratio")
+                if helpEntries != nil {
+                    ui.AddElement(uilib.MakeHelpElement(ui, magic.Cache, &magic.ImageCache, helpEntries[0], helpEntries[1:]...))
+                }
+            },
         })
 
         skillPowerStaff, _ := magic.ImageCache.GetImage("magic.lbx", 10, 0)
@@ -525,6 +549,12 @@ func (magic *MagicScreen) MakeUI() *uilib.UI {
                     // log.Printf("click mana staff at %v", manaStaff.Bounds().Dy() - posY)
                     amount := skillPowerStaff.Bounds().Dy() - posY
                     adjustSkillPercent(float64(amount) / float64(skillPowerStaff.Bounds().Dy()))
+                }
+            },
+            RightClick: func(element *uilib.UIElement){
+                helpEntries := help.GetEntriesByName("Casting Skill Ratio")
+                if helpEntries != nil {
+                    ui.AddElement(uilib.MakeHelpElement(ui, magic.Cache, &magic.ImageCache, helpEntries[0], helpEntries[1:]...))
                 }
             },
             Inside: func(element *uilib.UIElement, x, y int){
@@ -554,6 +584,38 @@ func (magic *MagicScreen) MakeUI() *uilib.UI {
             },
         })
     }
+
+    spellCastUIRect := image.Rect(5, 175, 99, 196)
+    elements = append(elements, &uilib.UIElement{
+        Rect: spellCastUIRect,
+        RightClick: func(element *uilib.UIElement){
+            helpEntries := help.GetEntriesByName("Spell Casting Skill")
+            if helpEntries != nil {
+                ui.AddElement(uilib.MakeHelpElement(ui, magic.Cache, &magic.ImageCache, helpEntries[0], helpEntries[1:]...))
+            }
+        },
+        /*
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            vector.StrokeRect(screen, float32(spellCastUIRect.Min.X), float32(spellCastUIRect.Min.Y), float32(spellCastUIRect.Dx()), float32(spellCastUIRect.Dy()), 1, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff}, false)
+        },
+        */
+    })
+
+    castingRect := image.Rect(100, 175, 220, 196)
+    elements = append(elements, &uilib.UIElement{
+        Rect: castingRect,
+        RightClick: func(element *uilib.UIElement){
+            helpEntries := help.GetEntries(276)
+            if helpEntries != nil {
+                ui.AddElement(uilib.MakeHelpElement(ui, magic.Cache, &magic.ImageCache, helpEntries[0], helpEntries[1:]...))
+            }
+        },
+        /*
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            util.DrawRect(screen, castingRect, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff})
+        },
+        */
+    })
 
     ui.SetElementsFromArray(elements)
 
