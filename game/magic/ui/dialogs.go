@@ -13,6 +13,10 @@ import (
 )
 
 func MakeHelpElement(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, help lbx.HelpEntry, helpEntries ...lbx.HelpEntry) *UIElement {
+    return MakeHelpElementWithLayer(ui, cache, imageCache, UILayer(1), help, helpEntries...)
+}
+
+func MakeHelpElementWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, layer UILayer, help lbx.HelpEntry, helpEntries ...lbx.HelpEntry) *UIElement {
 
     helpTop, err := imageCache.GetImage("help.lbx", 0, 0)
     if err != nil {
@@ -156,7 +160,7 @@ func MakeHelpElement(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, h
         LeftClick: func(infoThis *UIElement){
             ui.RemoveElement(infoThis)
         },
-        Layer: 1,
+        Layer: layer,
     }
 
     return infoElement

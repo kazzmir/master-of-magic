@@ -49,7 +49,7 @@ func MakeMagicScreen(cache *lbx.LbxCache) *MagicScreen {
     return magic
 }
 
-func (magic *MagicScreen) MakeTransmuteElements(ui *uilib.UI, smallFont *font.Font) []*uilib.UIElement {
+func (magic *MagicScreen) MakeTransmuteElements(ui *uilib.UI, smallFont *font.Font, help *lbx.Help) []*uilib.UIElement {
     var elements []*uilib.UIElement
 
     ok, _ := magic.ImageCache.GetImages("magic.lbx", 54)
@@ -170,6 +170,12 @@ func (magic *MagicScreen) MakeTransmuteElements(ui *uilib.UI, smallFont *font.Fo
         elements = append(elements, &uilib.UIElement{
             Rect: conveyorRect,
             Layer: 1,
+            RightClick: func(element *uilib.UIElement){
+                helpEntries := help.GetEntriesByName("Alchemy Ratio")
+                if helpEntries != nil {
+                    ui.AddElement(uilib.MakeHelpElementWithLayer(ui, magic.Cache, &magic.ImageCache, 2, helpEntries[0], helpEntries[1:]...))
+                }
+            },
             LeftClick: func(element *uilib.UIElement){
                 cursorPosition = posX
                 if cursorPosition < 0 {
@@ -183,6 +189,28 @@ func (magic *MagicScreen) MakeTransmuteElements(ui *uilib.UI, smallFont *font.Fo
         })
     }
 
+    elements = append(elements, &uilib.UIElement{
+        Rect: image.Rect(94, 85, 123, 92),
+        Layer: 1,
+        RightClick: func(element *uilib.UIElement){
+            helpEntries := help.GetEntriesByName("Alchemy Gold")
+            if helpEntries != nil {
+                ui.AddElement(uilib.MakeHelpElementWithLayer(ui, magic.Cache, &magic.ImageCache, 2, helpEntries[0], helpEntries[1:]...))
+            }
+        },
+    })
+
+    elements = append(elements, &uilib.UIElement{
+        Rect: image.Rect(195, 85, 225, 92),
+        Layer: 1,
+        RightClick: func(element *uilib.UIElement){
+            helpEntries := help.GetEntriesByName("Alchemy Power")
+            if helpEntries != nil {
+                ui.AddElement(uilib.MakeHelpElementWithLayer(ui, magic.Cache, &magic.ImageCache, 2, helpEntries[0], helpEntries[1:]...))
+            }
+        },
+    })
+
     // cancel button
     elements = append(elements, &uilib.UIElement{
         Rect: cancelRect,
@@ -194,6 +222,12 @@ func (magic *MagicScreen) MakeTransmuteElements(ui *uilib.UI, smallFont *font.Fo
             cancelIndex = 0
             ui.RemoveElements(elements)
         },
+        RightClick: func(element *uilib.UIElement){
+            helpEntries := help.GetEntries(371)
+            if helpEntries != nil {
+                ui.AddElement(uilib.MakeHelpElementWithLayer(ui, magic.Cache, &magic.ImageCache, 2, helpEntries[0], helpEntries[1:]...))
+            }
+        },
     })
 
     // arrow button
@@ -202,6 +236,12 @@ func (magic *MagicScreen) MakeTransmuteElements(ui *uilib.UI, smallFont *font.Fo
         Layer: 1,
         LeftClick: func(element *uilib.UIElement){
             isRight = !isRight
+        },
+        RightClick: func(element *uilib.UIElement){
+            helpEntries := help.GetEntries(372)
+            if helpEntries != nil {
+                ui.AddElement(uilib.MakeHelpElementWithLayer(ui, magic.Cache, &magic.ImageCache, 2, helpEntries[0], helpEntries[1:]...))
+            }
         },
     })
 
@@ -217,6 +257,13 @@ func (magic *MagicScreen) MakeTransmuteElements(ui *uilib.UI, smallFont *font.Fo
             // FIXME: do transmutation
             ui.RemoveElements(elements)
         },
+        RightClick: func(element *uilib.UIElement){
+            helpEntries := help.GetEntries(373)
+            if helpEntries != nil {
+                ui.AddElement(uilib.MakeHelpElementWithLayer(ui, magic.Cache, &magic.ImageCache, 2, helpEntries[0], helpEntries[1:]...))
+            }
+        },
+
     })
 
     return elements
@@ -301,14 +348,6 @@ func (magic *MagicScreen) MakeUI() *uilib.UI {
             normalFont.PrintRight(screen, 56, 160, 1, fmt.Sprintf("%v MP", manaRate))
             normalFont.PrintRight(screen, 103, 160, 1, fmt.Sprintf("%v RP", researchRate))
             normalFont.PrintRight(screen, 151, 160, 1, fmt.Sprintf("%v SP", skillRate))
-
-            smallerFont.Print(screen, 5, 176, 1, fmt.Sprintf("Casting Skill: %v(%v)", 20, 20))
-            smallerFont.Print(screen, 5, 183, 1, fmt.Sprintf("Magic Reserve: %v", 90))
-            smallerFont.Print(screen, 5, 190, 1, fmt.Sprintf("Power Base: %v", 12))
-
-            smallerFont.Print(screen, 100, 176, 1, fmt.Sprintf("Casting: %v", "None"))
-            smallerFont.Print(screen, 100, 183, 1, fmt.Sprintf("Researching: %v", "Whatever"))
-            smallerFont.Print(screen, 100, 190, 1, fmt.Sprintf("Summon To: %v", "Somewhere"))
 
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
                 if element.Draw != nil {
@@ -441,8 +480,14 @@ func (magic *MagicScreen) MakeUI() *uilib.UI {
     elements = append(elements, &uilib.UIElement{
         Rect: transmuteRect,
         LeftClick: func(element *uilib.UIElement){
-            transmuteElements := magic.MakeTransmuteElements(ui, transmuteFont)
+            transmuteElements := magic.MakeTransmuteElements(ui, transmuteFont, &help)
             ui.AddElements(transmuteElements)
+        },
+        RightClick: func(element *uilib.UIElement){
+            helpEntries := help.GetEntries(247)
+            if helpEntries != nil {
+                ui.AddElement(uilib.MakeHelpElement(ui, magic.Cache, &magic.ImageCache, helpEntries[0], helpEntries[1:]...))
+            }
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             // vector.StrokeRect(screen, float32(transmuteRect.Min.X), float32(transmuteRect.Min.Y), float32(transmuteRect.Dx()), float32(transmuteRect.Bounds().Dy()), 1, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff}, true)
@@ -455,6 +500,12 @@ func (magic *MagicScreen) MakeUI() *uilib.UI {
         Rect: okRect,
         LeftClick: func(element *uilib.UIElement){
             magic.State = MagicScreenStateDone
+        },
+        RightClick: func(element *uilib.UIElement){
+            helpEntries := help.GetEntries(248)
+            if helpEntries != nil {
+                ui.AddElement(uilib.MakeHelpElement(ui, magic.Cache, &magic.ImageCache, helpEntries[0], helpEntries[1:]...))
+            }
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             // vector.StrokeRect(screen, float32(okRect.Min.X), float32(okRect.Min.Y), float32(okRect.Dx()), float32(okRect.Bounds().Dy()), 1, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff}, true)
@@ -594,11 +645,13 @@ func (magic *MagicScreen) MakeUI() *uilib.UI {
                 ui.AddElement(uilib.MakeHelpElement(ui, magic.Cache, &magic.ImageCache, helpEntries[0], helpEntries[1:]...))
             }
         },
-        /*
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            vector.StrokeRect(screen, float32(spellCastUIRect.Min.X), float32(spellCastUIRect.Min.Y), float32(spellCastUIRect.Dx()), float32(spellCastUIRect.Dy()), 1, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff}, false)
+            // vector.StrokeRect(screen, float32(spellCastUIRect.Min.X), float32(spellCastUIRect.Min.Y), float32(spellCastUIRect.Dx()), float32(spellCastUIRect.Dy()), 1, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff}, false)
+
+            smallerFont.Print(screen, 5, 176, 1, fmt.Sprintf("Casting Skill: %v(%v)", 20, 20))
+            smallerFont.Print(screen, 5, 183, 1, fmt.Sprintf("Magic Reserve: %v", 90))
+            smallerFont.Print(screen, 5, 190, 1, fmt.Sprintf("Power Base: %v", 12))
         },
-        */
     })
 
     castingRect := image.Rect(100, 175, 220, 196)
@@ -610,11 +663,26 @@ func (magic *MagicScreen) MakeUI() *uilib.UI {
                 ui.AddElement(uilib.MakeHelpElement(ui, magic.Cache, &magic.ImageCache, helpEntries[0], helpEntries[1:]...))
             }
         },
-        /*
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            util.DrawRect(screen, castingRect, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff})
+            // util.DrawRect(screen, castingRect, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff})
+            smallerFont.Print(screen, 100, 176, 1, fmt.Sprintf("Casting: %v", "None"))
+            smallerFont.Print(screen, 100, 183, 1, fmt.Sprintf("Researching: %v", "Whatever"))
+            smallerFont.Print(screen, 100, 190, 1, fmt.Sprintf("Summon To: %v", "Somewhere"))
         },
-        */
+    })
+
+    enchantmentsRect := image.Rect(168, 67, 310, 172)
+    elements = append(elements, &uilib.UIElement{
+        Rect: enchantmentsRect,
+        RightClick: func(element *uilib.UIElement){
+            helpEntries := help.GetEntriesByName("Enchantments")
+            if helpEntries != nil {
+                ui.AddElement(uilib.MakeHelpElement(ui, magic.Cache, &magic.ImageCache, helpEntries[0], helpEntries[1:]...))
+            }
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            // util.DrawRect(screen, enchantmentsRect, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff})
+        },
     })
 
     ui.SetElementsFromArray(elements)
