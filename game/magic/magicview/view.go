@@ -11,6 +11,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/util"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     "github.com/hajimehoshi/ebiten/v2"
+    // "github.com/hajimehoshi/ebiten/v2/vector"
 )
 
 type MagicScreenState int
@@ -25,6 +26,7 @@ type MagicScreen struct {
     ImageCache util.ImageCache
 
     UI *uilib.UI
+    State MagicScreenState
 
     ManaLocked bool
     ResearchLocked bool
@@ -35,6 +37,7 @@ func MakeMagicScreen(cache *lbx.LbxCache) *MagicScreen {
     magic := &MagicScreen{
         Cache: cache,
         ImageCache: util.MakeImageCache(cache),
+        State: MagicScreenStateRunning,
 
         ManaLocked: false,
         ResearchLocked: false,
@@ -228,6 +231,18 @@ func (magic *MagicScreen) MakeUI() *uilib.UI {
         })
     }
 
+    // ok button
+    okRect := image.Rect(296, 185, 316, 195)
+    elements = append(elements, &uilib.UIElement{
+        Rect: okRect,
+        LeftClick: func(element *uilib.UIElement){
+            magic.State = MagicScreenStateDone
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            // vector.StrokeRect(screen, float32(okRect.Min.X), float32(okRect.Min.Y), float32(okRect.Dx()), float32(okRect.Bounds().Dy()), 1, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff}, true)
+        },
+    })
+
     researchLocked, err := magic.ImageCache.GetImage("magic.lbx", 16, 0)
     if err == nil {
         researchStaff, _ := magic.ImageCache.GetImage("magic.lbx", 9, 0)
@@ -336,7 +351,7 @@ func (magic *MagicScreen) MakeUI() *uilib.UI {
 func (magic *MagicScreen) Update() MagicScreenState {
     magic.UI.StandardUpdate()
 
-    return MagicScreenStateRunning
+    return magic.State
 }
 
 func (magic *MagicScreen) Draw(screen *ebiten.Image){
