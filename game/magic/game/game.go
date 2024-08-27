@@ -2,6 +2,7 @@ package game
 
 import (
     "image/color"
+    "image"
     "log"
 
     "github.com/kazzmir/master-of-magic/game/magic/setup"
@@ -10,6 +11,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/player"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     "github.com/kazzmir/master-of-magic/game/magic/cityview"
+    "github.com/kazzmir/master-of-magic/game/magic/magicview"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
@@ -35,6 +37,7 @@ const (
     GameStateRunning GameState = iota
     GameStateUnitMoving
     GameStateCityView
+    GameStateMagicView
 )
 
 type Game struct {
@@ -54,6 +57,7 @@ type Game struct {
     cameraY int
 
     CityScreen *cityview.CityScreen
+    MagicScreen *magicview.MagicScreen
 
     HudUI *uilib.UI
 
@@ -164,6 +168,13 @@ func (game *Game) Update() GameState {
                 case cityview.CityScreenStateDone:
                     game.State = GameStateRunning
                     game.CityScreen = nil
+            }
+        case GameStateMagicView:
+            switch game.MagicScreen.Update() {
+                case magicview.MagicScreenStateRunning:
+                case magicview.MagicScreenStateDone:
+                    game.State = GameStateRunning
+                    game.MagicScreen = nil
             }
         case GameStateRunning:
 
@@ -355,12 +366,18 @@ func (game *Game) MakeHudUI() *uilib.UI {
     })
 
     // magic button
+    magicButtons, _ := game.ImageCache.GetImages("main.lbx", 5)
+    magicRect := image.Rect(184, 4, 184 + magicButtons[0].Bounds().Dx(), 4 + magicButtons[0].Bounds().Dy())
     elements = append(elements, &uilib.UIElement{
+        Rect: magicRect,
+        LeftClick: func(this *uilib.UIElement){
+            game.MagicScreen = magicview.MakeMagicScreen(game.Cache)
+            game.State = GameStateMagicView
+        },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            image, _ := game.ImageCache.GetImage("main.lbx", 5, 0)
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(184, 4)
-            screen.DrawImage(image, &options)
+            screen.DrawImage(magicButtons[0], &options)
         },
     })
 
@@ -752,6 +769,11 @@ func (game *Game) Draw(screen *ebiten.Image){
         game.CityScreen.Draw(screen, func (mapView *ebiten.Image, geom ebiten.GeoM, counter uint64){
             overworld.DrawOverworld(mapView, geom)
         })
+        return
+    }
+
+    if game.State == GameStateMagicView {
+        game.MagicScreen.Draw(screen)
         return
     }
 
