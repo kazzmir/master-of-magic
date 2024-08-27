@@ -12,6 +12,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/cityview"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/util"
+    uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/hajimehoshi/ebiten/v2"
@@ -53,6 +54,8 @@ type Game struct {
     cameraY int
 
     CityScreen *cityview.CityScreen
+
+    HudUI *uilib.UI
 
     // FIXME: need one map for arcanus and one for myrran
     Map *Map
@@ -134,6 +137,9 @@ func MakeGame(lbxCache *lbx.LbxCache) *Game {
         InfoFontYellow: infoFontYellow,
         WhiteFont: whiteFont,
     }
+
+    game.HudUI = game.MakeHudUI()
+
     return game
 }
 
@@ -160,6 +166,9 @@ func (game *Game) Update() GameState {
                     game.CityScreen = nil
             }
         case GameStateRunning:
+
+            game.HudUI.StandardUpdate()
+
             // log.Printf("Game.Update")
             keys := make([]ebiten.Key, 0)
             keys = inpututil.AppendJustPressedKeys(keys)
@@ -288,7 +297,40 @@ func GetCityWallImage(size citylib.CitySize, cache *util.ImageCache) (*ebiten.Im
     return cache.GetImage("mapback.lbx", 21, index)
 }
 
+func (game *Game) MakeHudUI() *uilib.UI {
+    ui := &uilib.UI{
+        Draw: func(ui *uilib.UI, screen *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            mainHud, _ := game.ImageCache.GetImage("main.lbx", 0, 0)
+            screen.DrawImage(mainHud, &options)
+
+            ui.IterateElementsByLayer(func (element *uilib.UIElement){
+                if element.Draw != nil {
+                    element.Draw(element, screen)
+                }
+            })
+        },
+    }
+
+    var elements []*uilib.UIElement
+
+    // game button
+    elements = append(elements, &uilib.UIElement{
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            image, _ := game.ImageCache.GetImage("main.lbx", 1, 0)
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(7, 4)
+            screen.DrawImage(image, &options)
+        },
+    })
+
+    ui.SetElementsFromArray(elements)
+
+    return ui
+}
+
 func (game *Game) DrawHud(screen *ebiten.Image){
+    /*
     var options ebiten.DrawImageOptions
 
     // draw hud on top of map
@@ -358,6 +400,7 @@ func (game *Game) DrawHud(screen *ebiten.Image){
 
     game.WhiteFont.Print(screen, 257, 68, 1, "75 GP")
     game.WhiteFont.Print(screen, 298, 68, 1, "0 MP")
+    */
 
     /*
     options.GeoM.Reset()
@@ -365,12 +408,14 @@ func (game *Game) DrawHud(screen *ebiten.Image){
     screen.DrawImage(game.NextTurnBackground, &options)
     */
 
+    /*
     nextTurn, err := game.GetMainImage(35)
     if err == nil {
         options.GeoM.Reset()
         options.GeoM.Translate(240, 174)
         screen.DrawImage(nextTurn, &options)
     }
+    */
 }
 
 func (overworld *Overworld) DrawFog(screen *ebiten.Image, geom ebiten.GeoM){
@@ -702,5 +747,5 @@ func (game *Game) Draw(screen *ebiten.Image){
 
     overworld.DrawOverworld(screen, ebiten.GeoM{})
 
-    game.DrawHud(screen)
+    game.HudUI.Draw(game.HudUI, screen)
 }
