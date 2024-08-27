@@ -49,6 +49,89 @@ func MakeMagicScreen(cache *lbx.LbxCache) *MagicScreen {
     return magic
 }
 
+func (magic *MagicScreen) MakeTransmuteElements(ui *uilib.UI) []*uilib.UIElement {
+    var elements []*uilib.UIElement
+
+    ok, _ := magic.ImageCache.GetImages("magic.lbx", 54)
+    okRect := image.Rect(176, 99, 176 + ok[0].Bounds().Dx(), 99 + ok[0].Bounds().Dy())
+    okIndex := 0
+
+    arrowRight, _ := magic.ImageCache.GetImage("magic.lbx", 55, 0)
+    arrowLeft, _ := magic.ImageCache.GetImage("magic.lbx", 56, 0)
+
+    isRight := true
+
+    arrowRect := image.Rect(146, 99, 146 + arrowRight.Bounds().Dx(), 99 + arrowRight.Bounds().Dy())
+
+    cancel, _ := magic.ImageCache.GetImages("magic.lbx", 53)
+    cancelRect := image.Rect(93, 99, 93 + cancel[0].Bounds().Dx(), 99 + cancel[0].Bounds().Dy())
+    cancelIndex := 0
+
+    elements = append(elements, &uilib.UIElement{
+        Layer: 1,
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            background, _ := magic.ImageCache.GetImage("magic.lbx", 52, 0)
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(75, 60)
+            screen.DrawImage(background, &options)
+
+            options.GeoM.Reset()
+            options.GeoM.Translate(float64(okRect.Min.X), float64(okRect.Min.Y))
+            screen.DrawImage(ok[okIndex], &options)
+
+            options.GeoM.Reset()
+            options.GeoM.Translate(float64(arrowRect.Min.X), float64(arrowRect.Min.Y))
+            if isRight {
+                screen.DrawImage(arrowRight, &options)
+            } else {
+                screen.DrawImage(arrowLeft, &options)
+            }
+
+            options.GeoM.Reset()
+            options.GeoM.Translate(float64(cancelRect.Min.X), float64(cancelRect.Min.Y))
+            screen.DrawImage(cancel[cancelIndex], &options)
+        },
+    })
+
+    // cancel button
+    elements = append(elements, &uilib.UIElement{
+        Rect: cancelRect,
+        Layer: 1,
+        LeftClick: func(element *uilib.UIElement){
+            cancelIndex = 1
+        },
+        LeftClickRelease: func(element *uilib.UIElement){
+            cancelIndex = 0
+            ui.RemoveElements(elements)
+        },
+    })
+
+    // arrow button
+    elements = append(elements, &uilib.UIElement{
+        Rect: arrowRect,
+        Layer: 1,
+        LeftClick: func(element *uilib.UIElement){
+            isRight = !isRight
+        },
+    })
+
+    // ok button
+    elements = append(elements, &uilib.UIElement{
+        Rect: okRect,
+        Layer: 1,
+        LeftClick: func(element *uilib.UIElement){
+            okIndex = 1
+        },
+        LeftClickRelease: func(element *uilib.UIElement){
+            okIndex = 0
+            // FIXME: do transmutation
+            ui.RemoveElements(elements)
+        },
+    })
+
+    return elements
+}
+
 func (magic *MagicScreen) MakeUI() *uilib.UI {
 
     fontLbx, err := magic.Cache.GetLbxFile("fonts.lbx")
@@ -230,6 +313,19 @@ func (magic *MagicScreen) MakeUI() *uilib.UI {
             },
         })
     }
+
+    // transmute button
+    transmuteRect := image.Rect(235, 185, 290, 195)
+    elements = append(elements, &uilib.UIElement{
+        Rect: transmuteRect,
+        LeftClick: func(element *uilib.UIElement){
+            transmuteElements := magic.MakeTransmuteElements(ui)
+            ui.AddElements(transmuteElements)
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            // vector.StrokeRect(screen, float32(transmuteRect.Min.X), float32(transmuteRect.Min.Y), float32(transmuteRect.Dx()), float32(transmuteRect.Bounds().Dy()), 1, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff}, true)
+        },
+    })
 
     // ok button
     okRect := image.Rect(296, 185, 316, 195)
