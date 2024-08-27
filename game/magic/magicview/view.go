@@ -49,7 +49,7 @@ func MakeMagicScreen(cache *lbx.LbxCache) *MagicScreen {
     return magic
 }
 
-func (magic *MagicScreen) MakeTransmuteElements(ui *uilib.UI) []*uilib.UIElement {
+func (magic *MagicScreen) MakeTransmuteElements(ui *uilib.UI, smallFont *font.Font) []*uilib.UIElement {
     var elements []*uilib.UIElement
 
     ok, _ := magic.ImageCache.GetImages("magic.lbx", 54)
@@ -70,10 +70,14 @@ func (magic *MagicScreen) MakeTransmuteElements(ui *uilib.UI) []*uilib.UIElement
 
     powerToGold, _ := magic.ImageCache.GetImage("magic.lbx", 59, 0)
 
+    totalGold := 78
+    totalMana := 93
+
     conveyor, _ := magic.ImageCache.GetImage("magic.lbx", 57, 0)
     cursor, _ := magic.ImageCache.GetImage("magic.lbx", 58, 0)
 
-    cursorPosition := 20
+    cursorPosition := 0
+    changePercent := float64(0)
 
     elements = append(elements, &uilib.UIElement{
         Layer: 1,
@@ -104,7 +108,7 @@ func (magic *MagicScreen) MakeTransmuteElements(ui *uilib.UI) []*uilib.UIElement
             }
 
             // the conveyor belt should only be drawn until the position of the cursor
-            conveyorArea := screen.SubImage(image.Rect(131, 85, 131 + cursorPosition + 3, 85 + 7)).(*ebiten.Image)
+            conveyorArea := screen.SubImage(image.Rect(131, 85, 131 + cursorPosition, 85 + 7)).(*ebiten.Image)
 
             // draw an animated conveyor belt by drawing the same image twice with a slight offset
             movement := int((ui.Counter / 6) % 8)
@@ -112,13 +116,13 @@ func (magic *MagicScreen) MakeTransmuteElements(ui *uilib.UI) []*uilib.UIElement
                 options.GeoM.Reset()
                 options.GeoM.Scale(-1, 1)
                 options.GeoM.Translate(131, 85)
-                options.GeoM.Translate(float64(cursorPosition + 3 + conveyor.Bounds().Dx()), 0)
+                options.GeoM.Translate(float64(cursorPosition + conveyor.Bounds().Dx()), 0)
                 options.GeoM.Translate(float64(-movement), 0)
                 conveyorArea.DrawImage(conveyor, &options)
 
                 options.GeoM.Reset()
                 options.GeoM.Scale(-1, 1)
-                options.GeoM.Translate(131 + float64(cursorPosition) + 3, 85)
+                options.GeoM.Translate(131 + float64(cursorPosition), 85)
                 options.GeoM.Translate(float64(-movement), 0)
                 conveyorArea.DrawImage(conveyor, &options)
             } else {
@@ -136,26 +140,37 @@ func (magic *MagicScreen) MakeTransmuteElements(ui *uilib.UI) []*uilib.UIElement
 
             // draw the cursor itself
             options.GeoM.Reset()
-            options.GeoM.Translate(131 + float64(cursorPosition), 85)
+            options.GeoM.Translate(131 + float64(cursorPosition) - 3, 85)
             screen.DrawImage(cursor, &options)
 
             options.GeoM.Reset()
             options.GeoM.Translate(float64(cancelRect.Min.X), float64(cancelRect.Min.Y))
             screen.DrawImage(cancel[cancelIndex], &options)
+
+            leftSide := float64(122)
+            rightSide := float64(224)
+            if isRight {
+                smallFont.PrintRight(screen, leftSide, 86, 1, fmt.Sprintf("%v GP", int(float64(totalMana) * changePercent * 0.5)))
+                smallFont.PrintRight(screen, rightSide, 86, 1, fmt.Sprintf("%v PP", int(float64(totalMana) * changePercent)))
+            } else {
+                smallFont.PrintRight(screen, leftSide, 86, 1, fmt.Sprintf("%v GP", int(float64(totalGold) * changePercent)))
+                smallFont.PrintRight(screen, rightSide, 86, 1, fmt.Sprintf("%v PP", int(float64(totalGold) * changePercent * 0.5)))
+            }
         },
     })
 
     {
         posX := 0
-        conveyorRect := image.Rect(131, 85, 131 + 53, 85 + 7)
+        conveyorRect := image.Rect(131, 85, 131 + 56, 85 + 7)
         elements = append(elements, &uilib.UIElement{
             Rect: conveyorRect,
             Layer: 1,
             LeftClick: func(element *uilib.UIElement){
-                cursorPosition = posX - 3
+                cursorPosition = posX
                 if cursorPosition < 0 {
                     cursorPosition = 0
                 }
+                changePercent = float64(cursorPosition) / float64(conveyorRect.Dx())
             },
             Inside: func(element *uilib.UIElement, x, y int){
                 posX = x
@@ -228,6 +243,8 @@ func (magic *MagicScreen) MakeUI() *uilib.UI {
     blue2Palette := bluishPalette
     blue2Palette[1] = color.RGBA{R: 0x52, G: 0x61, B: 0xca, A: 0xff}
     smallerFont := font.MakeOptimizedFontWithPalette(fonts[1], blue2Palette)
+
+    transmuteFont := font.MakeOptimizedFont(fonts[0])
 
     manaRate := 8
     researchRate := 4
@@ -389,7 +406,7 @@ func (magic *MagicScreen) MakeUI() *uilib.UI {
     elements = append(elements, &uilib.UIElement{
         Rect: transmuteRect,
         LeftClick: func(element *uilib.UIElement){
-            transmuteElements := magic.MakeTransmuteElements(ui)
+            transmuteElements := magic.MakeTransmuteElements(ui, transmuteFont)
             ui.AddElements(transmuteElements)
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
