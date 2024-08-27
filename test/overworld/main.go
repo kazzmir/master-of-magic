@@ -29,12 +29,6 @@ func NewEngine() (*Engine, error) {
     }
 
     game := gamelib.MakeGame(cache)
-    err := game.Load(cache)
-
-    if err != nil {
-        return nil, err
-    }
-
     game.Activate()
 
     game.Plane = data.PlaneArcanus

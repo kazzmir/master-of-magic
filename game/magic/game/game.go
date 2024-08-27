@@ -76,41 +76,6 @@ func (game *Game) AddPlayer(wizard setup.WizardCustom) *player.Player{
     return newPlayer
 }
 
-func (game *Game) Load(cache *lbx.LbxCache) error {
-    fontLbx, err := cache.GetLbxFile("FONTS.LBX")
-    if err != nil {
-        return err
-    }
-
-    fonts, err := fontLbx.ReadFonts(0)
-    if err != nil {
-        return err
-    }
-
-    orange := color.RGBA{R: 0xc7, G: 0x82, B: 0x1b, A: 0xff}
-
-    yellowPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        orange,
-        orange,
-        orange,
-        orange,
-        orange,
-        orange,
-    }
-
-    game.InfoFontYellow = font.MakeOptimizedFontWithPalette(fonts[0], yellowPalette)
-
-    whitePalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.White, color.White, color.White, color.White,
-    }
-
-    game.WhiteFont = font.MakeOptimizedFontWithPalette(fonts[0], whitePalette)
-
-    return nil
-}
-
 func MakeGame(lbxCache *lbx.LbxCache) *Game {
 
     terrainLbx, err := lbxCache.GetLbxFile("terrain.lbx")
@@ -125,11 +90,44 @@ func MakeGame(lbxCache *lbx.LbxCache) *Game {
         return nil
     }
 
+    fontLbx, err := lbxCache.GetLbxFile("FONTS.LBX")
+    if err != nil {
+        return nil
+    }
+
+    fonts, err := fontLbx.ReadFonts(0)
+    if err != nil {
+        return nil
+    }
+
+    orange := color.RGBA{R: 0xc7, G: 0x82, B: 0x1b, A: 0xff}
+
+    yellowPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        orange,
+        orange,
+        orange,
+        orange,
+        orange,
+        orange,
+    }
+
+    infoFontYellow := font.MakeOptimizedFontWithPalette(fonts[0], yellowPalette)
+
+    whitePalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.White, color.White, color.White, color.White,
+    }
+
+    whiteFont := font.MakeOptimizedFontWithPalette(fonts[0], whitePalette)
+
     game := &Game{
         active: false,
         Map: MakeMap(terrainData),
         State: GameStateRunning,
         ImageCache: util.MakeImageCache(lbxCache),
+        InfoFontYellow: infoFontYellow,
+        WhiteFont: whiteFont,
     }
     return game
 }
