@@ -23,5 +23,8 @@ jobs:
           go get ./...
           go mod tidy
 
+      - name: Vet
+        run: go vet ./...
+
       - name: Build
         run: go build ./game/magic
