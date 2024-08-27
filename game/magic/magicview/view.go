@@ -59,6 +59,7 @@ func (magic *MagicScreen) MakeTransmuteElements(ui *uilib.UI) []*uilib.UIElement
     arrowRight, _ := magic.ImageCache.GetImage("magic.lbx", 55, 0)
     arrowLeft, _ := magic.ImageCache.GetImage("magic.lbx", 56, 0)
 
+    // if true, then convert power to gold, otherwise convert gold to power
     isRight := true
 
     arrowRect := image.Rect(146, 99, 146 + arrowRight.Bounds().Dx(), 99 + arrowRight.Bounds().Dy())
@@ -66,6 +67,13 @@ func (magic *MagicScreen) MakeTransmuteElements(ui *uilib.UI) []*uilib.UIElement
     cancel, _ := magic.ImageCache.GetImages("magic.lbx", 53)
     cancelRect := image.Rect(93, 99, 93 + cancel[0].Bounds().Dx(), 99 + cancel[0].Bounds().Dy())
     cancelIndex := 0
+
+    powerToGold, _ := magic.ImageCache.GetImage("magic.lbx", 59, 0)
+
+    conveyor, _ := magic.ImageCache.GetImage("magic.lbx", 57, 0)
+    cursor, _ := magic.ImageCache.GetImage("magic.lbx", 58, 0)
+
+    cursorPosition := 20
 
     elements = append(elements, &uilib.UIElement{
         Layer: 1,
@@ -83,15 +91,60 @@ func (magic *MagicScreen) MakeTransmuteElements(ui *uilib.UI) []*uilib.UIElement
             options.GeoM.Translate(float64(arrowRect.Min.X), float64(arrowRect.Min.Y))
             if isRight {
                 screen.DrawImage(arrowRight, &options)
+
+                options.GeoM.Reset()
+                options.GeoM.Translate(87, 70)
+                screen.DrawImage(powerToGold, &options)
+
+                // FIXME: flip conveyor belt
             } else {
                 screen.DrawImage(arrowLeft, &options)
             }
+
+            // the conveyor belt should only be drawn until the position of the cursor
+            conveyorArea := screen.SubImage(image.Rect(131, 85, 131 + cursorPosition + 3, 85 + 7)).(*ebiten.Image)
+
+            // draw an animated conveyor belt by drawing the same image twice with a slight offset
+            movement := (ui.Counter / 6) % 8
+            options.GeoM.Reset()
+            options.GeoM.Translate(131, 85)
+            options.GeoM.Translate(float64(-conveyor.Bounds().Dx()), 0)
+            options.GeoM.Translate(float64(movement), 0)
+            conveyorArea.DrawImage(conveyor, &options)
+
+            options.GeoM.Reset()
+            options.GeoM.Translate(131, 85)
+            options.GeoM.Translate(float64(movement), 0)
+            conveyorArea.DrawImage(conveyor, &options)
+
+            // draw the cursor itself
+            options.GeoM.Reset()
+            options.GeoM.Translate(131 + float64(cursorPosition), 85)
+            screen.DrawImage(cursor, &options)
 
             options.GeoM.Reset()
             options.GeoM.Translate(float64(cancelRect.Min.X), float64(cancelRect.Min.Y))
             screen.DrawImage(cancel[cancelIndex], &options)
         },
     })
+
+    {
+        posX := 0
+        conveyorRect := image.Rect(131, 85, 131 + 53, 85 + 7)
+        elements = append(elements, &uilib.UIElement{
+            Rect: conveyorRect,
+            Layer: 1,
+            LeftClick: func(element *uilib.UIElement){
+                cursorPosition = posX - 3
+                if cursorPosition < 0 {
+                    cursorPosition = 0
+                }
+            },
+            Inside: func(element *uilib.UIElement, x, y int){
+                posX = x
+            },
+        })
+    }
 
     // cancel button
     elements = append(elements, &uilib.UIElement{
