@@ -59,7 +59,7 @@ func MakeHelpElement(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, h
     helpTitleFont := font.MakeOptimizedFontWithPalette(fonts[4], titlePalette)
 
     infoX := 55
-    infoY := 30
+    // infoY := 30
     infoWidth := helpTop.Bounds().Dx()
     // infoHeight := screen.HelpTop.Bounds().Dy()
     infoLeftMargin := 18
@@ -71,7 +71,7 @@ func MakeHelpElement(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, h
 
     wrapped := helpFont.CreateWrappedText(float64(maxInfoWidth), 1, help.Text)
 
-    helpTextY := infoY + infoTopMargin
+    helpTextY := infoTopMargin
     titleYAdjust := 0
 
     var extraImage *ebiten.Image
@@ -97,12 +97,25 @@ func MakeHelpElement(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, h
 
     bottom := float64(helpTextY) + wrapped.TotalHeight
 
+    var moreHelp []font.WrappedText
+
+    // add in more help entries
+    for _, entry := range helpEntries {
+        bottom += 2
+        bottom += float64(helpTitleFont.Height()) + 1
+        moreWrapped := helpFont.CreateWrappedText(float64(maxInfoWidth), 1, entry.Text)
+        moreHelp = append(moreHelp, moreWrapped)
+        bottom += moreWrapped.TotalHeight
+    }
+
     // only draw as much of the top scroll as there are lines of text
-    topImage := helpTop.SubImage(image.Rect(0, 0, helpTop.Bounds().Dx(), int(bottom) - infoY)).(*ebiten.Image)
+    topImage := helpTop.SubImage(image.Rect(0, 0, helpTop.Bounds().Dx(), int(bottom))).(*ebiten.Image)
     helpBottom, err := imageCache.GetImage("help.lbx", 1, 0)
     if err != nil {
         return nil
     }
+
+    infoY := (float64(data.ScreenHeight) - bottom - float64(helpBottom.Bounds().Dy())) / 2
 
     infoElement := &UIElement{
         // Rect: image.Rect(infoX, infoY, infoX + infoWidth, infoY + infoHeight),
@@ -113,7 +126,7 @@ func MakeHelpElement(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, h
             window.DrawImage(topImage, &options)
 
             options.GeoM.Reset()
-            options.GeoM.Translate(float64(infoX), float64(bottom))
+            options.GeoM.Translate(float64(infoX), float64(bottom) + infoY)
             window.DrawImage(helpBottom, &options)
 
             // for debugging
@@ -124,13 +137,21 @@ func MakeHelpElement(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, h
 
             if extraImage != nil {
                 var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(titleX), float64(infoY + infoTopMargin))
+                options.GeoM.Translate(float64(titleX), infoY + float64(infoTopMargin))
                 window.DrawImage(extraImage, &options)
                 titleX += extraImage.Bounds().Dx() + 5
             }
 
-            helpTitleFont.Print(window, float64(titleX), float64(infoY + infoTopMargin + titleYAdjust), 1, help.Headline)
-            helpFont.RenderWrapped(window, float64(infoX + infoLeftMargin + infoBodyMargin), float64(helpTextY), wrapped, false)
+            helpTitleFont.Print(window, float64(titleX), infoY + float64(infoTopMargin + titleYAdjust), 1, help.Headline)
+            helpFont.RenderWrapped(window, float64(infoX + infoLeftMargin + infoBodyMargin), float64(helpTextY) + infoY, wrapped, false)
+
+            yPos := float64(helpTextY) + infoY + wrapped.TotalHeight + 2
+            for i, moreWrapped := range moreHelp {
+                helpTitleFont.Print(window, float64(titleX), float64(yPos), 1, helpEntries[i].Headline)
+                helpFont.RenderWrapped(window, float64(infoX + infoLeftMargin + infoBodyMargin), yPos + float64(helpTitleFont.Height()) + 1, moreWrapped, false)
+                yPos += float64(helpTitleFont.Height()) + 1 + float64(moreWrapped.TotalHeight) + 2
+            }
+
         },
         LeftClick: func(infoThis *UIElement){
             ui.RemoveElement(infoThis)

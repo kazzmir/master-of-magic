@@ -126,7 +126,8 @@ func (magic *MagicScreen) MakeTransmuteElements(ui *uilib.UI, smallFont *font.Fo
 
                 options.GeoM.Reset()
                 options.GeoM.Scale(-1, 1)
-                options.GeoM.Translate(131 + float64(cursorPosition), 85)
+                options.GeoM.Translate(131, 85)
+                options.GeoM.Translate(float64(cursorPosition), 0)
                 options.GeoM.Translate(float64(-movement), 0)
                 conveyorArea.DrawImage(conveyor, &options)
             } else {
@@ -258,6 +259,16 @@ func (magic *MagicScreen) MakeUI() *uilib.UI {
 
     transmuteFont := font.MakeOptimizedFontWithPalette(fonts[0], transmutePalette)
 
+    helpLbx, err := magic.Cache.GetLbxFile("help.lbx")
+    if err != nil {
+        return nil
+    }
+
+    help, err := helpLbx.ReadHelp(2)
+    if err != nil {
+        return nil
+    }
+
     manaRate := 8
     researchRate := 4
     skillRate := 3
@@ -287,12 +298,6 @@ func (magic *MagicScreen) MakeUI() *uilib.UI {
                 }
             }
 
-            ui.IterateElementsByLayer(func (element *uilib.UIElement){
-                if element.Draw != nil {
-                    element.Draw(element, screen)
-                }
-            })
-
             normalFont.PrintRight(screen, 56, 160, 1, fmt.Sprintf("%v MP", manaRate))
             normalFont.PrintRight(screen, 103, 160, 1, fmt.Sprintf("%v RP", researchRate))
             normalFont.PrintRight(screen, 151, 160, 1, fmt.Sprintf("%v SP", skillRate))
@@ -304,6 +309,12 @@ func (magic *MagicScreen) MakeUI() *uilib.UI {
             smallerFont.Print(screen, 100, 176, 1, fmt.Sprintf("Casting: %v", "None"))
             smallerFont.Print(screen, 100, 183, 1, fmt.Sprintf("Researching: %v", "Whatever"))
             smallerFont.Print(screen, 100, 190, 1, fmt.Sprintf("Summon To: %v", "Somewhere"))
+
+            ui.IterateElementsByLayer(func (element *uilib.UIElement){
+                if element.Draw != nil {
+                    element.Draw(element, screen)
+                }
+            })
         },
     }
 
@@ -368,6 +379,12 @@ func (magic *MagicScreen) MakeUI() *uilib.UI {
     if err == nil {
         elements = append(elements, &uilib.UIElement{
             Rect: image.Rect(27, 81, 27 + manaLocked.Bounds().Dx(), 81 + manaLocked.Bounds().Dy() - 2),
+            RightClick: func(element *uilib.UIElement){
+                helpEntries := help.GetEntriesByName("Mana Points Ratio")
+                if helpEntries != nil {
+                    ui.AddElement(uilib.MakeHelpElement(ui, magic.Cache, &magic.ImageCache, helpEntries[0], helpEntries[1:]...))
+                }
+            },
             LeftClick: func(element *uilib.UIElement){
                 magic.ManaLocked = !magic.ManaLocked
             },
