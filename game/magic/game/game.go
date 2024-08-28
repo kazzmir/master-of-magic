@@ -60,6 +60,7 @@ type Game struct {
     MagicScreen *magicview.MagicScreen
 
     HudUI *uilib.UI
+    Help lbx.Help
 
     // FIXME: need one map for arcanus and one for myrran
     Map *Map
@@ -101,6 +102,16 @@ func MakeGame(lbxCache *lbx.LbxCache) *Game {
         return nil
     }
 
+    helpLbx, err := lbxCache.GetLbxFile("help.lbx")
+    if err != nil {
+        return nil
+    }
+
+    help, err := helpLbx.ReadHelp(2)
+    if err != nil {
+        return nil
+    }
+
     fontLbx, err := lbxCache.GetLbxFile("FONTS.LBX")
     if err != nil {
         return nil
@@ -135,6 +146,7 @@ func MakeGame(lbxCache *lbx.LbxCache) *Game {
     game := &Game{
         active: false,
         Cache: lbxCache,
+        Help: help,
         Map: MakeMap(terrainData),
         State: GameStateRunning,
         ImageCache: util.MakeImageCache(lbxCache),
@@ -412,12 +424,23 @@ func (game *Game) MakeHudUI() *uilib.UI {
     })
 
     // next turn
+    nextTurnImage, _ := game.ImageCache.GetImage("main.lbx", 35, 0)
+    nextTurnRect := image.Rect(240, 174, 240 + nextTurnImage.Bounds().Dx(), 174 + nextTurnImage.Bounds().Dy())
     elements = append(elements, &uilib.UIElement{
+        Rect: nextTurnRect,
+        LeftClick: func(this *uilib.UIElement){
+            game.DoNextTurn()
+        },
+        RightClick: func(this *uilib.UIElement){
+            helpEntries := game.Help.GetEntriesByName("Next Turn")
+            if helpEntries != nil {
+                ui.AddElement(uilib.MakeHelpElementWithLayer(ui, game.Cache, &game.ImageCache, 1, helpEntries[0], helpEntries[1:]...))
+            }
+        },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            image, _ := game.ImageCache.GetImage("main.lbx", 35, 0)
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(240, 174)
-            screen.DrawImage(image, &options)
+            screen.DrawImage(nextTurnImage, &options)
         },
     })
 
@@ -440,6 +463,10 @@ func (game *Game) MakeHudUI() *uilib.UI {
     ui.SetElementsFromArray(elements)
 
     return ui
+}
+
+func (game *Game) DoNextTurn(){
+    // FIXME
 }
 
 func (overworld *Overworld) DrawFog(screen *ebiten.Image, geom ebiten.GeoM){
