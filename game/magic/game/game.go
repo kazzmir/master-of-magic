@@ -393,6 +393,26 @@ func (game *Game) MakeUnitContextMenu(ui *uilib.UI, unit *player.Unit) []*uilib.
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(cancelRect.Min.X), float64(cancelRect.Min.Y))
             screen.DrawImage(buttonBackgrounds[cancelIndex], &options)
+            // FIXME: draw text 'Dismiss' with the yellow fade font
+        },
+    })
+
+    okRect := util.ImageRect(257, 169, buttonBackgrounds[0])
+    okIndex := 0
+    elements = append(elements, &uilib.UIElement{
+        Layer: 1,
+        Rect: okRect,
+        LeftClick: func(this *uilib.UIElement){
+            okIndex = 1
+        },
+        LeftClickRelease: func(this *uilib.UIElement){
+            ui.RemoveElements(elements)
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(okRect.Min.X), float64(okRect.Min.Y))
+            screen.DrawImage(buttonBackgrounds[okIndex], &options)
+            // FIXME: draw text 'Ok' with the yellow fade font
         },
     })
 
