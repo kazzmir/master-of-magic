@@ -35,6 +35,11 @@ type doubleClick struct {
     Time uint64
 }
 
+type UIDelay struct {
+    Time uint64
+    Func func()
+}
+
 type UI struct {
     // track the layer number of the elements
     Elements map[UILayer][]*UIElement
@@ -48,12 +53,18 @@ type UI struct {
     doubleClickCandidates []doubleClick
 
     LeftClickedElements []*UIElement
+
+    Delays []UIDelay
 }
 
 func (ui *UI) AddElements(elements []*UIElement){
     for _, element := range elements {
         ui.AddElement(element)
     }
+}
+
+func (ui *UI) AddDelay(time uint64, f func()){
+    ui.Delays = append(ui.Delays, UIDelay{Time: ui.Counter + time, Func: f})
 }
 
 func (ui *UI) AddElement(element *UIElement){
@@ -151,6 +162,17 @@ func (ui *UI) SetElementsFromArray(elements []*UIElement){
 
 func (ui *UI) StandardUpdate() {
     ui.Counter += 1
+
+    var keepDelays []UIDelay
+
+    for _, delay := range ui.Delays {
+        if ui.Counter <= delay.Time {
+            keepDelays = append(keepDelays, delay)
+        } else {
+            delay.Func()
+        }
+    }
+    ui.Delays = keepDelays
 
     if ui.HandleKey != nil {
         keys := make([]ebiten.Key, 0)

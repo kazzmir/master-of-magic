@@ -334,12 +334,38 @@ func GetCityWallImage(size citylib.CitySize, cache *util.ImageCache) (*ebiten.Im
 func (game *Game) MakeUnitContextMenu(ui *uilib.UI, unit *player.Unit) []*uilib.UIElement {
     var elements []*uilib.UIElement
 
+    const fadeSpeed = 7
+
+    startCounter := ui.Counter
+    maxCounter := ui.Counter + fadeSpeed
+
+    fadeIn := true
+
+    getAlpha := func() float32 {
+        if fadeIn {
+            now := ui.Counter
+            if now > maxCounter {
+                return 1
+            }
+
+            return float32(now - startCounter) / float32(maxCounter - startCounter)
+        } else {
+            now := ui.Counter
+            if now > maxCounter {
+                return 0
+            }
+
+            return 1 - float32(now - startCounter) / float32(maxCounter - startCounter)
+        }
+    }
+
     elements = append(elements, &uilib.UIElement{
         Layer: 1,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             background, _ := game.ImageCache.GetImage("unitview.lbx", 1, 0)
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(31, 6)
+            options.ColorScale.ScaleAlpha(getAlpha())
             screen.DrawImage(background, &options)
 
             options.GeoM.Translate(25, 30)
@@ -358,6 +384,7 @@ func (game *Game) MakeUnitContextMenu(ui *uilib.UI, unit *player.Unit) []*uilib.
             box, _ := game.ImageCache.GetImage("unitview.lbx", 2, 0)
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(248, 139)
+            options.ColorScale.ScaleAlpha(getAlpha())
             screen.DrawImage(box, &options)
         },
     })
@@ -394,6 +421,7 @@ func (game *Game) MakeUnitContextMenu(ui *uilib.UI, unit *player.Unit) []*uilib.
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(cancelRect.Min.X), float64(cancelRect.Min.Y))
+            options.ColorScale.ScaleAlpha(getAlpha())
             screen.DrawImage(buttonBackgrounds[cancelIndex], &options)
             // FIXME: draw text 'Dismiss' with the yellow fade font
         },
@@ -408,11 +436,18 @@ func (game *Game) MakeUnitContextMenu(ui *uilib.UI, unit *player.Unit) []*uilib.
             okIndex = 1
         },
         LeftClickRelease: func(this *uilib.UIElement){
-            ui.RemoveElements(elements)
+            fadeIn = false
+            startCounter = ui.Counter
+            maxCounter = ui.Counter + fadeSpeed
+
+            ui.AddDelay(fadeSpeed, func(){
+                ui.RemoveElements(elements)
+            })
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(okRect.Min.X), float64(okRect.Min.Y))
+            options.ColorScale.ScaleAlpha(getAlpha())
             screen.DrawImage(buttonBackgrounds[okIndex], &options)
             // FIXME: draw text 'Ok' with the yellow fade font
         },
