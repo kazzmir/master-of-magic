@@ -481,11 +481,9 @@ func (cityScreen *CityScreen) MakeUI() *uilib.UI {
 
                 yes := func(){
                     // FIXME: buy the thing being produced
-                    ui.RemoveElements(elements)
                 }
 
                 no := func(){
-                    ui.RemoveElements(elements)
                 }
 
                 elements = uilib.MakeConfirmDialog(cityScreen.UI, cityScreen.LbxCache, &cityScreen.ImageCache, "Are you sure you want to buy this building?", yes, no)

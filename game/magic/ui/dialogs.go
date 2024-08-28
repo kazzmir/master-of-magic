@@ -33,6 +33,10 @@ func MakeHelpElementWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.Imag
         return nil
     }
 
+    const fadeSpeed = 7
+
+    getAlpha := ui.MakeFadeIn(fadeSpeed)
+
     helpPalette := color.Palette{
         color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
         color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
@@ -127,10 +131,12 @@ func MakeHelpElementWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.Imag
         Draw: func (infoThis *UIElement, window *ebiten.Image){
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(infoX), float64(infoY))
+            options.ColorScale.ScaleAlpha(getAlpha())
             window.DrawImage(topImage, &options)
 
             options.GeoM.Reset()
             options.GeoM.Translate(float64(infoX), float64(bottom) + infoY)
+            options.ColorScale.ScaleAlpha(getAlpha())
             window.DrawImage(helpBottom, &options)
 
             // for debugging
@@ -142,23 +148,27 @@ func MakeHelpElementWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.Imag
             if extraImage != nil {
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(float64(titleX), infoY + float64(infoTopMargin))
+                options.ColorScale.ScaleAlpha(getAlpha())
                 window.DrawImage(extraImage, &options)
                 titleX += extraImage.Bounds().Dx() + 5
             }
 
-            helpTitleFont.Print(window, float64(titleX), infoY + float64(infoTopMargin + titleYAdjust), 1, ebiten.ColorScale{}, help.Headline)
-            helpFont.RenderWrapped(window, float64(infoX + infoLeftMargin + infoBodyMargin), float64(helpTextY) + infoY, wrapped, ebiten.ColorScale{}, false)
+            helpTitleFont.Print(window, float64(titleX), infoY + float64(infoTopMargin + titleYAdjust), 1, options.ColorScale, help.Headline)
+            helpFont.RenderWrapped(window, float64(infoX + infoLeftMargin + infoBodyMargin), float64(helpTextY) + infoY, wrapped, options.ColorScale, false)
 
             yPos := float64(helpTextY) + infoY + wrapped.TotalHeight + 2
             for i, moreWrapped := range moreHelp {
-                helpTitleFont.Print(window, float64(titleX), float64(yPos), 1, ebiten.ColorScale{}, helpEntries[i].Headline)
-                helpFont.RenderWrapped(window, float64(infoX + infoLeftMargin + infoBodyMargin), yPos + float64(helpTitleFont.Height()) + 1, moreWrapped, ebiten.ColorScale{}, false)
+                helpTitleFont.Print(window, float64(titleX), float64(yPos), 1, options.ColorScale, helpEntries[i].Headline)
+                helpFont.RenderWrapped(window, float64(infoX + infoLeftMargin + infoBodyMargin), yPos + float64(helpTitleFont.Height()) + 1, moreWrapped, options.ColorScale, false)
                 yPos += float64(helpTitleFont.Height()) + 1 + float64(moreWrapped.TotalHeight) + 2
             }
 
         },
         LeftClick: func(infoThis *UIElement){
-            ui.RemoveElement(infoThis)
+            getAlpha = ui.MakeFadeOut(fadeSpeed)
+            ui.AddDelay(fadeSpeed, func(){
+                ui.RemoveElement(infoThis)
+            })
         },
         Layer: layer,
     }
