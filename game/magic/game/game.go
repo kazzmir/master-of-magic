@@ -218,12 +218,17 @@ func (game *Game) Update() GameState {
                 rightClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight)
                 if rightClick {
                     mouseX, mouseY := ebiten.CursorPosition()
-                    tileX := game.cameraX + mouseX / game.Map.TileWidth()
-                    tileY := game.cameraY + mouseY / game.Map.TileHeight()
-                    for _, city := range game.Players[0].Cities {
-                        if city.X == tileX && city.Y == tileY {
-                            game.State = GameStateCityView
-                            game.CityScreen = cityview.MakeCityScreen(game.Cache, city, game.Players[0])
+
+                    // can only click into the area not hidden by the hud
+                    if mouseX < 240 && mouseY > 18 {
+                        // log.Printf("Click at %v, %v", mouseX, mouseY)
+                        tileX := game.cameraX + mouseX / game.Map.TileWidth()
+                        tileY := game.cameraY + mouseY / game.Map.TileHeight()
+                        for _, city := range game.Players[0].Cities {
+                            if city.X == tileX && city.Y == tileY {
+                                game.State = GameStateCityView
+                                game.CityScreen = cityview.MakeCityScreen(game.Cache, city, game.Players[0])
+                            }
                         }
                     }
                 }
