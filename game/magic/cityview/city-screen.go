@@ -415,11 +415,9 @@ func (cityScreen *CityScreen) MakeUI() *uilib.UI {
 
                     yes := func(){
                         cityScreen.SellBuilding(cityScreen.BuildingLook)
-                        ui.RemoveElements(confirmElements)
                     }
 
                     no := func(){
-                        ui.RemoveElements(confirmElements)
                     }
 
                     confirmElements = uilib.MakeConfirmDialog(cityScreen.UI, cityScreen.LbxCache, &cityScreen.ImageCache, fmt.Sprintf("Are you sure you want to sell back the %v for %v gold?", cityScreen.BuildingLook, sellAmount(cityScreen.BuildingLook)), yes, no)

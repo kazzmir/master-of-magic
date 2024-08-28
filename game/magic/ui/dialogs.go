@@ -248,6 +248,10 @@ func MakeConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.Im
     confirmMargin := 15
     confirmTopMargin := 10
 
+    const fadeSpeed = 7
+
+    getAlpha := ui.MakeFadeIn(fadeSpeed)
+
     confirmTop, err := imageCache.GetImage("resource.lbx", 0, 0)
     if err != nil {
         return nil
@@ -301,9 +305,10 @@ func MakeConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.Im
         Draw: func(this *UIElement, window *ebiten.Image){
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(confirmX), float64(confirmY))
+            options.ColorScale.ScaleAlpha(getAlpha())
             window.DrawImage(topDraw, &options)
 
-            confirmFont.RenderWrapped(window, float64(confirmX + confirmMargin + maxWidth / 2), float64(confirmY + confirmTopMargin), wrapped, ebiten.ColorScale{}, true)
+            confirmFont.RenderWrapped(window, float64(confirmX + confirmMargin + maxWidth / 2), float64(confirmY + confirmTopMargin), wrapped, options.ColorScale, true)
 
             options.GeoM.Reset()
             options.GeoM.Translate(float64(confirmX), float64(bottom))
@@ -327,10 +332,16 @@ func MakeConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.Im
             LeftClickRelease: func(this *UIElement){
                 clicked = false
                 confirm()
+
+                getAlpha = ui.MakeFadeOut(fadeSpeed)
+                ui.AddDelay(fadeSpeed, func(){
+                    ui.RemoveElements(elements)
+                })
             },
             Draw: func(this *UIElement, window *ebiten.Image){
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(float64(yesX), float64(yesY))
+                options.ColorScale.ScaleAlpha(getAlpha())
 
                 index := 0
                 if clicked {
@@ -356,10 +367,16 @@ func MakeConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.Im
             LeftClickRelease: func(this *UIElement){
                 clicked = false
                 cancel()
+
+                getAlpha = ui.MakeFadeOut(fadeSpeed)
+                ui.AddDelay(fadeSpeed, func(){
+                    ui.RemoveElements(elements)
+                })
             },
             Draw: func(this *UIElement, window *ebiten.Image){
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(float64(noX), float64(noY))
+                options.ColorScale.ScaleAlpha(getAlpha())
 
                 index := 0
                 if clicked {

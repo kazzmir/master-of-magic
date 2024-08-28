@@ -382,12 +382,10 @@ func (game *Game) MakeUnitContextMenu(ui *uilib.UI, unit *player.Unit) []*uilib.
 
             yes := func(){
                 ui.RemoveElements(elements)
-                ui.RemoveElements(confirmElements)
                 // FIXME: disband unit
             }
 
             no := func(){
-                ui.RemoveElements(confirmElements)
             }
 
             confirmElements = uilib.MakeConfirmDialogWithLayer(ui, game.Cache, &game.ImageCache, 2, fmt.Sprintf("Do you wish to disband the unit of %v?", unit.Unit.Name), yes, no)
