@@ -192,54 +192,58 @@ func (game *Game) Update() GameState {
 
             game.HudUI.StandardUpdate()
 
-            // log.Printf("Game.Update")
-            keys := make([]ebiten.Key, 0)
-            keys = inpututil.AppendJustPressedKeys(keys)
+            // kind of a hack to not allow player to interact with anything other than the current ui modal
+            if game.HudUI.GetHighestLayerValue() == 0 {
 
-            dx := 0
-            dy := 0
+                // log.Printf("Game.Update")
+                keys := make([]ebiten.Key, 0)
+                keys = inpututil.AppendJustPressedKeys(keys)
 
-            for _, key := range keys {
-                switch key {
-                    case ebiten.KeyUp: dy = -1
-                    case ebiten.KeyDown: dy = 1
-                    case ebiten.KeyLeft: dx = -1
-                    case ebiten.KeyRight: dx = 1
-                }
-            }
+                dx := 0
+                dy := 0
 
-            if len(game.Players) > 0 && game.Players[0].SelectedUnit != nil {
-                unit := game.Players[0].SelectedUnit
-                game.cameraX = unit.X - tilesPerRow / 2
-                game.cameraY = unit.Y - tilesPerColumn / 2
-
-                if game.cameraX < 0 {
-                    game.cameraX = 0
+                for _, key := range keys {
+                    switch key {
+                        case ebiten.KeyUp: dy = -1
+                        case ebiten.KeyDown: dy = 1
+                        case ebiten.KeyLeft: dx = -1
+                        case ebiten.KeyRight: dx = 1
+                    }
                 }
 
-                if game.cameraY < 0 {
-                    game.cameraY = 0
-                }
+                if len(game.Players) > 0 && game.Players[0].SelectedUnit != nil {
+                    unit := game.Players[0].SelectedUnit
+                    game.cameraX = unit.X - tilesPerRow / 2
+                    game.cameraY = unit.Y - tilesPerColumn / 2
 
-                if dx != 0 || dy != 0 {
-                    unit.Move(dx, dy)
-                    game.Players[0].LiftFog(unit.X, unit.Y, 2)
-                    game.State = GameStateUnitMoving
-                }
+                    if game.cameraX < 0 {
+                        game.cameraX = 0
+                    }
 
-                rightClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight)
-                if rightClick {
-                    mouseX, mouseY := ebiten.CursorPosition()
+                    if game.cameraY < 0 {
+                        game.cameraY = 0
+                    }
 
-                    // can only click into the area not hidden by the hud
-                    if mouseX < 240 && mouseY > 18 {
-                        // log.Printf("Click at %v, %v", mouseX, mouseY)
-                        tileX := game.cameraX + mouseX / game.Map.TileWidth()
-                        tileY := game.cameraY + mouseY / game.Map.TileHeight()
-                        for _, city := range game.Players[0].Cities {
-                            if city.X == tileX && city.Y == tileY {
-                                game.State = GameStateCityView
-                                game.CityScreen = cityview.MakeCityScreen(game.Cache, city, game.Players[0])
+                    if dx != 0 || dy != 0 {
+                        unit.Move(dx, dy)
+                        game.Players[0].LiftFog(unit.X, unit.Y, 2)
+                        game.State = GameStateUnitMoving
+                    }
+
+                    rightClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight)
+                    if rightClick {
+                        mouseX, mouseY := ebiten.CursorPosition()
+
+                        // can only click into the area not hidden by the hud
+                        if mouseX < 240 && mouseY > 18 {
+                            // log.Printf("Click at %v, %v", mouseX, mouseY)
+                            tileX := game.cameraX + mouseX / game.Map.TileWidth()
+                            tileY := game.cameraY + mouseY / game.Map.TileHeight()
+                            for _, city := range game.Players[0].Cities {
+                                if city.X == tileX && city.Y == tileY {
+                                    game.State = GameStateCityView
+                                    game.CityScreen = cityview.MakeCityScreen(game.Cache, city, game.Players[0])
+                                }
                             }
                         }
                     }
