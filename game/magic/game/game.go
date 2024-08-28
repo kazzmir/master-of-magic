@@ -336,28 +336,7 @@ func (game *Game) MakeUnitContextMenu(ui *uilib.UI, unit *player.Unit) []*uilib.
 
     const fadeSpeed = 7
 
-    startCounter := ui.Counter
-    maxCounter := ui.Counter + fadeSpeed
-
-    fadeIn := true
-
-    getAlpha := func() float32 {
-        if fadeIn {
-            now := ui.Counter
-            if now > maxCounter {
-                return 1
-            }
-
-            return float32(now - startCounter) / float32(maxCounter - startCounter)
-        } else {
-            now := ui.Counter
-            if now > maxCounter {
-                return 0
-            }
-
-            return 1 - float32(now - startCounter) / float32(maxCounter - startCounter)
-        }
-    }
+    getAlpha := ui.MakeFadeIn(fadeSpeed)
 
     elements = append(elements, &uilib.UIElement{
         Layer: 1,
@@ -436,9 +415,7 @@ func (game *Game) MakeUnitContextMenu(ui *uilib.UI, unit *player.Unit) []*uilib.
             okIndex = 1
         },
         LeftClickRelease: func(this *uilib.UIElement){
-            fadeIn = false
-            startCounter = ui.Counter
-            maxCounter = ui.Counter + fadeSpeed
+            getAlpha = ui.MakeFadeOut(fadeSpeed)
 
             ui.AddDelay(fadeSpeed, func(){
                 ui.RemoveElements(elements)

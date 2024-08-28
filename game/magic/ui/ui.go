@@ -16,6 +16,8 @@ type UIKeyFunc func(key ebiten.Key)
 
 type UILayer int
 
+type AlphaFadeFunc func() float32
+
 type UIElement struct {
     Rect image.Rectangle
     NotInside UINotInsideElementFunc
@@ -55,6 +57,30 @@ type UI struct {
     LeftClickedElements []*UIElement
 
     Delays []UIDelay
+}
+
+func (ui *UI) MakeFadeIn(time uint64) AlphaFadeFunc {
+    start := ui.Counter
+    return func() float32 {
+        diff := ui.Counter - start
+        if diff > time {
+            return 1.0
+        }
+
+        return float32(diff) / float32(time)
+    }
+}
+
+func (ui *UI) MakeFadeOut(time uint64) AlphaFadeFunc {
+    start := ui.Counter
+    return func() float32 {
+        diff := ui.Counter - start
+        if diff > time {
+            return 0.0
+        }
+
+        return 1.0 - (float32(diff) / float32(time))
+    }
 }
 
 func (ui *UI) AddElements(elements []*UIElement){
