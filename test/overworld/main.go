@@ -39,6 +39,9 @@ func NewEngine() (*Engine, error) {
         Population: 6000,
         Name: "Test City",
         Plane: data.PlaneArcanus,
+        ProducingBuilding: citylib.BuildingHousing,
+        ProducingUnit: units.UnitNone,
+        Race: data.RaceHighElf,
         Wall: false,
         X: 4,
         Y: 5,
@@ -59,6 +62,8 @@ func NewEngine() (*Engine, error) {
     player.SetSelectedUnit(drake)
 
     player.LiftFog(5, 5, 2)
+
+    game.DoNextTurn()
 
     return &Engine{
         LbxCache: cache,

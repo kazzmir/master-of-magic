@@ -111,6 +111,15 @@ func (ui *UI) IterateElementsByLayer(f func(*UIElement)){
     }
 }
 
+func (ui *UI) GetHighestLayerValue() UILayer {
+    elements := ui.GetHighestLayer()
+    if len(elements) > 0 {
+        return elements[0].Layer
+    }
+
+    return 0
+}
+
 func (ui *UI) GetHighestLayer() []*UIElement {
     for i := ui.maxLayer; i >= ui.minLayer; i-- {
         elements := ui.Elements[i]

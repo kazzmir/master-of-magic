@@ -43,16 +43,18 @@ func (mapObject *Map) TileHeight() int {
 
 func (mapObject *Map) GetTileImage(tileX int, tileY int, animationCounter uint64) (*ebiten.Image, error) {
     tile := mapObject.Map.Terrain[tileX][tileY]
+    tileInfo := mapObject.Data.Tiles[tile]
 
-    if image, ok := mapObject.TileCache[tile * 1000 + int(animationCounter)]; ok {
+    animationIndex := animationCounter % uint64(len(tileInfo.Images))
+
+    if image, ok := mapObject.TileCache[tile * 100 + int(animationIndex)]; ok {
         return image, nil
     }
 
-    tileInfo := mapObject.Data.Tiles[tile]
 
     gpuImage := ebiten.NewImageFromImage(tileInfo.Images[animationCounter % uint64(len(tileInfo.Images))])
 
-    mapObject.TileCache[tile * 1000 + int(animationCounter)] = gpuImage
+    mapObject.TileCache[tile * 100 + int(animationIndex)] = gpuImage
     return gpuImage, nil
 }
 

@@ -2,6 +2,7 @@ package game
 
 import (
     "image/color"
+    "image"
     "log"
 
     "github.com/kazzmir/master-of-magic/game/magic/setup"
@@ -10,8 +11,10 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/player"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     "github.com/kazzmir/master-of-magic/game/magic/cityview"
+    "github.com/kazzmir/master-of-magic/game/magic/magicview"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/util"
+    uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/hajimehoshi/ebiten/v2"
@@ -34,6 +37,7 @@ const (
     GameStateRunning GameState = iota
     GameStateUnitMoving
     GameStateCityView
+    GameStateMagicView
 )
 
 type Game struct {
@@ -53,6 +57,10 @@ type Game struct {
     cameraY int
 
     CityScreen *cityview.CityScreen
+    MagicScreen *magicview.MagicScreen
+
+    HudUI *uilib.UI
+    Help lbx.Help
 
     // FIXME: need one map for arcanus and one for myrran
     Map *Map
@@ -94,6 +102,16 @@ func MakeGame(lbxCache *lbx.LbxCache) *Game {
         return nil
     }
 
+    helpLbx, err := lbxCache.GetLbxFile("help.lbx")
+    if err != nil {
+        return nil
+    }
+
+    help, err := helpLbx.ReadHelp(2)
+    if err != nil {
+        return nil
+    }
+
     fontLbx, err := lbxCache.GetLbxFile("FONTS.LBX")
     if err != nil {
         return nil
@@ -128,12 +146,16 @@ func MakeGame(lbxCache *lbx.LbxCache) *Game {
     game := &Game{
         active: false,
         Cache: lbxCache,
+        Help: help,
         Map: MakeMap(terrainData),
         State: GameStateRunning,
         ImageCache: util.MakeImageCache(lbxCache),
         InfoFontYellow: infoFontYellow,
         WhiteFont: whiteFont,
     }
+
+    game.HudUI = game.MakeHudUI()
+
     return game
 }
 
@@ -159,51 +181,70 @@ func (game *Game) Update() GameState {
                     game.State = GameStateRunning
                     game.CityScreen = nil
             }
-        case GameStateRunning:
-            // log.Printf("Game.Update")
-            keys := make([]ebiten.Key, 0)
-            keys = inpututil.AppendJustPressedKeys(keys)
-
-            dx := 0
-            dy := 0
-
-            for _, key := range keys {
-                switch key {
-                    case ebiten.KeyUp: dy = -1
-                    case ebiten.KeyDown: dy = 1
-                    case ebiten.KeyLeft: dx = -1
-                    case ebiten.KeyRight: dx = 1
-                }
+        case GameStateMagicView:
+            switch game.MagicScreen.Update() {
+                case magicview.MagicScreenStateRunning:
+                case magicview.MagicScreenStateDone:
+                    game.State = GameStateRunning
+                    game.MagicScreen = nil
             }
+        case GameStateRunning:
 
-            if len(game.Players) > 0 && game.Players[0].SelectedUnit != nil {
-                unit := game.Players[0].SelectedUnit
-                game.cameraX = unit.X - tilesPerRow / 2
-                game.cameraY = unit.Y - tilesPerColumn / 2
+            game.HudUI.StandardUpdate()
 
-                if game.cameraX < 0 {
-                    game.cameraX = 0
+            // kind of a hack to not allow player to interact with anything other than the current ui modal
+            if game.HudUI.GetHighestLayerValue() == 0 {
+
+                // log.Printf("Game.Update")
+                keys := make([]ebiten.Key, 0)
+                keys = inpututil.AppendJustPressedKeys(keys)
+
+                dx := 0
+                dy := 0
+
+                for _, key := range keys {
+                    switch key {
+                        case ebiten.KeyUp: dy = -1
+                        case ebiten.KeyDown: dy = 1
+                        case ebiten.KeyLeft: dx = -1
+                        case ebiten.KeyRight: dx = 1
+                    }
                 }
 
-                if game.cameraY < 0 {
-                    game.cameraY = 0
-                }
+                if len(game.Players) > 0 && game.Players[0].SelectedUnit != nil {
+                    unit := game.Players[0].SelectedUnit
+                    game.cameraX = unit.X - tilesPerRow / 2
+                    game.cameraY = unit.Y - tilesPerColumn / 2
 
-                if dx != 0 || dy != 0 {
-                    unit.Move(dx, dy)
-                    game.Players[0].LiftFog(unit.X, unit.Y, 2)
-                    game.State = GameStateUnitMoving
-                }
+                    if game.cameraX < 0 {
+                        game.cameraX = 0
+                    }
 
-                rightClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight)
-                if rightClick {
-                    mouseX, mouseY := ebiten.CursorPosition()
-                    tileX := game.cameraX + mouseX / game.Map.TileWidth()
-                    tileY := game.cameraY + mouseY / game.Map.TileHeight()
-                    for _, city := range game.Players[0].Cities {
-                        if city.X == tileX && city.Y == tileY {
-                            game.State = GameStateCityView
-                            game.CityScreen = cityview.MakeCityScreen(game.Cache, city, game.Players[0])
+                    if game.cameraY < 0 {
+                        game.cameraY = 0
+                    }
+
+                    if dx != 0 || dy != 0 {
+                        unit.Move(dx, dy)
+                        game.Players[0].LiftFog(unit.X, unit.Y, 2)
+                        game.State = GameStateUnitMoving
+                    }
+
+                    rightClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight)
+                    if rightClick {
+                        mouseX, mouseY := ebiten.CursorPosition()
+
+                        // can only click into the area not hidden by the hud
+                        if mouseX < 240 && mouseY > 18 {
+                            // log.Printf("Click at %v, %v", mouseX, mouseY)
+                            tileX := game.cameraX + mouseX / game.Map.TileWidth()
+                            tileY := game.cameraY + mouseY / game.Map.TileHeight()
+                            for _, city := range game.Players[0].Cities {
+                                if city.X == tileX && city.Y == tileY {
+                                    game.State = GameStateCityView
+                                    game.CityScreen = cityview.MakeCityScreen(game.Cache, city, game.Players[0])
+                                }
+                            }
                         }
                     }
                 }
@@ -288,88 +329,275 @@ func GetCityWallImage(size citylib.CitySize, cache *util.ImageCache) (*ebiten.Im
     return cache.GetImage("mapback.lbx", 21, index)
 }
 
-func (game *Game) DrawHud(screen *ebiten.Image){
-    var options ebiten.DrawImageOptions
+func (game *Game) MakeHudUI() *uilib.UI {
+    ui := &uilib.UI{
+        Draw: func(ui *uilib.UI, screen *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            mainHud, _ := game.ImageCache.GetImage("main.lbx", 0, 0)
+            screen.DrawImage(mainHud, &options)
 
-    // draw hud on top of map
-    mainHud, err := game.GetMainImage(0)
-    if err == nil {
-        screen.DrawImage(mainHud, &options)
+            ui.IterateElementsByLayer(func (element *uilib.UIElement){
+                if element.Draw != nil {
+                    element.Draw(element, screen)
+                }
+            })
+        },
     }
 
-    options.GeoM.Reset()
-    x := float64(7)
-    y := float64(4)
-    options.GeoM.Translate(x, y)
+    var elements []*uilib.UIElement
 
-    gameButton1, err := game.GetMainImage(1)
-    if err == nil {
-        screen.DrawImage(gameButton1, &options)
-        x += float64(gameButton1.Bounds().Dx())
-        options.GeoM.Translate(float64(gameButton1.Bounds().Dx()) + 1, 0)
+    // game button
+    elements = append(elements, &uilib.UIElement{
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            image, _ := game.ImageCache.GetImage("main.lbx", 1, 0)
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(7, 4)
+            screen.DrawImage(image, &options)
+        },
+    })
+
+    // spell button
+    elements = append(elements, &uilib.UIElement{
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            image, _ := game.ImageCache.GetImage("main.lbx", 2, 0)
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(47, 4)
+            screen.DrawImage(image, &options)
+        },
+    })
+
+    // army button
+    elements = append(elements, &uilib.UIElement{
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            image, _ := game.ImageCache.GetImage("main.lbx", 3, 0)
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(89, 4)
+            screen.DrawImage(image, &options)
+        },
+    })
+
+    // cities button
+    elements = append(elements, &uilib.UIElement{
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            image, _ := game.ImageCache.GetImage("main.lbx", 4, 0)
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(140, 4)
+            screen.DrawImage(image, &options)
+        },
+    })
+
+    // magic button
+    magicButtons, _ := game.ImageCache.GetImages("main.lbx", 5)
+    magicRect := image.Rect(184, 4, 184 + magicButtons[0].Bounds().Dx(), 4 + magicButtons[0].Bounds().Dy())
+    magicIndex := 0
+    elements = append(elements, &uilib.UIElement{
+        Rect: magicRect,
+        LeftClick: func(this *uilib.UIElement){
+            magicIndex = 1
+        },
+        LeftClickRelease: func(this *uilib.UIElement){
+            game.MagicScreen = magicview.MakeMagicScreen(game.Cache)
+            game.State = GameStateMagicView
+            magicIndex = 0
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(184, 4)
+            screen.DrawImage(magicButtons[magicIndex], &options)
+        },
+    })
+
+    // info button
+    elements = append(elements, &uilib.UIElement{
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            image, _ := game.ImageCache.GetImage("main.lbx", 6, 0)
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(226, 4)
+            screen.DrawImage(image, &options)
+        },
+    })
+
+    // plane button
+    elements = append(elements, &uilib.UIElement{
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            image, _ := game.ImageCache.GetImage("main.lbx", 7, 0)
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(270, 4)
+            screen.DrawImage(image, &options)
+        },
+    })
+
+    if len(game.Players) > 0 && game.Players[0].SelectedUnit != nil {
+        unit := game.Players[0].SelectedUnit
+
+        // show a unit element for each unit in the stack
+        // image index increases by 1 for each unit, indexes 24-32
+        unitBackground, _ := game.ImageCache.GetImage("main.lbx", 24, 0)
+        unitRect := util.ImageRect(246, 79, unitBackground)
+        elements = append(elements, &uilib.UIElement{
+            Rect: unitRect,
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(unitRect.Min.X), float64(unitRect.Min.Y))
+                screen.DrawImage(unitBackground, &options)
+
+                options.GeoM.Translate(1, 1)
+
+                unitBack, _ := GetUnitBackgroundImage(unit.Banner, &game.ImageCache)
+                screen.DrawImage(unitBack, &options)
+
+                options.GeoM.Translate(1, 1)
+                unitImage, _ := GetUnitImage(unit.Unit, &game.ImageCache)
+                screen.DrawImage(unitImage, &options)
+            },
+        })
+
+        doneImages, _ := game.ImageCache.GetImages("main.lbx", 8)
+        doneIndex := 0
+        doneRect := util.ImageRect(246, 176, doneImages[0])
+        elements = append(elements, &uilib.UIElement{
+            Rect: doneRect,
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(doneRect.Min.X), float64(doneRect.Min.Y))
+                screen.DrawImage(doneImages[doneIndex], &options)
+            },
+            LeftClick: func(this *uilib.UIElement){
+                doneIndex = 1
+            },
+            LeftClickRelease: func(this *uilib.UIElement){
+                doneIndex = 0
+                game.DoNextUnit()
+            },
+        })
+
+        patrolImages, _ := game.ImageCache.GetImages("main.lbx", 9)
+        patrolIndex := 0
+        patrolRect := util.ImageRect(280, 176, patrolImages[0])
+        elements = append(elements, &uilib.UIElement{
+            Rect: patrolRect,
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(patrolRect.Min.X), float64(patrolRect.Min.Y))
+                screen.DrawImage(patrolImages[patrolIndex], &options)
+            },
+            LeftClick: func(this *uilib.UIElement){
+                patrolIndex = 1
+            },
+            LeftClickRelease: func(this *uilib.UIElement){
+                patrolIndex = 0
+                game.DoNextUnit()
+            },
+        })
+
+        waitImages, _ := game.ImageCache.GetImages("main.lbx", 10)
+        waitIndex := 0
+        waitRect := util.ImageRect(246, 186, waitImages[0])
+        elements = append(elements, &uilib.UIElement{
+            Rect: waitRect,
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(waitRect.Min.X), float64(waitRect.Min.Y))
+                screen.DrawImage(waitImages[waitIndex], &options)
+            },
+            LeftClick: func(this *uilib.UIElement){
+                waitIndex = 1
+            },
+            LeftClickRelease: func(this *uilib.UIElement){
+                waitIndex = 0
+                game.DoNextUnit()
+            },
+        })
+
+        // FIXME: use index 15 to show inactive build button
+        buildImages, _ := game.ImageCache.GetImages("main.lbx", 11)
+        buildIndex := 0
+        buildRect := util.ImageRect(280, 186, buildImages[0])
+        elements = append(elements, &uilib.UIElement{
+            Rect: buildRect,
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(buildRect.Min.X), float64(buildRect.Min.Y))
+                screen.DrawImage(buildImages[buildIndex], &options)
+            },
+            LeftClick: func(this *uilib.UIElement){
+                buildIndex = 1
+            },
+            LeftClickRelease: func(this *uilib.UIElement){
+                buildIndex = 0
+                // FIXME: build a city
+            },
+        })
+
+    } else {
+        // next turn
+        nextTurnImage, _ := game.ImageCache.GetImage("main.lbx", 35, 0)
+        nextTurnRect := image.Rect(240, 174, 240 + nextTurnImage.Bounds().Dx(), 174 + nextTurnImage.Bounds().Dy())
+        elements = append(elements, &uilib.UIElement{
+            Rect: nextTurnRect,
+            LeftClick: func(this *uilib.UIElement){
+                game.DoNextTurn()
+            },
+            RightClick: func(this *uilib.UIElement){
+                helpEntries := game.Help.GetEntriesByName("Next Turn")
+                if helpEntries != nil {
+                    ui.AddElement(uilib.MakeHelpElementWithLayer(ui, game.Cache, &game.ImageCache, 1, helpEntries[0], helpEntries[1:]...))
+                }
+            },
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(240, 174)
+                screen.DrawImage(nextTurnImage, &options)
+            },
+        })
+
+        elements = append(elements, &uilib.UIElement{
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                goldFood, _ := game.ImageCache.GetImage("main.lbx", 34, 0)
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(240, 77)
+                screen.DrawImage(goldFood, &options)
+
+                game.InfoFontYellow.PrintCenter(screen, 278, 103, 1, "1 Gold")
+                game.InfoFontYellow.PrintCenter(screen, 278, 135, 1, "1 Food")
+                game.InfoFontYellow.PrintCenter(screen, 278, 167, 1, "1 Mana")
+            },
+        })
     }
 
-    spellButton, err := game.GetMainImage(2)
-    if err == nil {
-        screen.DrawImage(spellButton, &options)
-        options.GeoM.Translate(float64(spellButton.Bounds().Dx()) + 1, 0)
+    elements = append(elements, &uilib.UIElement{
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            game.WhiteFont.Print(screen, 257, 68, 1, "75 GP")
+        },
+    })
+
+    elements = append(elements, &uilib.UIElement{
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            game.WhiteFont.Print(screen, 298, 68, 1, "0 MP")
+        },
+    })
+
+    ui.SetElementsFromArray(elements)
+
+    return ui
+}
+
+func (game *Game) DoNextUnit(){
+    if len(game.Players) > 0 {
+        game.Players[0].SelectedUnit = nil
     }
 
-    armyButton, err := game.GetMainImage(3)
-    if err == nil {
-        screen.DrawImage(armyButton, &options)
-        options.GeoM.Translate(float64(armyButton.Bounds().Dx()) + 1, 0)
-    }
+    game.HudUI = game.MakeHudUI()
+}
 
-    cityButton, err := game.GetMainImage(4)
-    if err == nil {
-        screen.DrawImage(cityButton, &options)
-        options.GeoM.Translate(float64(cityButton.Bounds().Dx()) + 1, 0)
-    }
+func (game *Game) DoNextTurn(){
+    // FIXME
 
-    magicButton, err := game.GetMainImage(5)
-    if err == nil {
-        screen.DrawImage(magicButton, &options)
-        options.GeoM.Translate(float64(magicButton.Bounds().Dx()) + 1, 0)
-    }
-
-    infoButton, err := game.GetMainImage(6)
-    if err == nil {
-        screen.DrawImage(infoButton, &options)
-        options.GeoM.Translate(float64(infoButton.Bounds().Dx()) + 1, 0)
-    }
-
-    planeButton, err := game.GetMainImage(7)
-    if err == nil {
-        screen.DrawImage(planeButton, &options)
-    }
-
-    options.GeoM.Reset()
-
-    goldFood, err := game.GetMainImage(34)
-    if err == nil {
-        options.GeoM.Translate(240, 77)
-        screen.DrawImage(goldFood, &options)
-    }
-
-    game.InfoFontYellow.PrintCenter(screen, 278, 103, 1, "1 Gold")
-    game.InfoFontYellow.PrintCenter(screen, 278, 135, 1, "1 Food")
-    game.InfoFontYellow.PrintCenter(screen, 278, 167, 1, "1 Mana")
-
-    game.WhiteFont.Print(screen, 257, 68, 1, "75 GP")
-    game.WhiteFont.Print(screen, 298, 68, 1, "0 MP")
-
-    /*
-    options.GeoM.Reset()
-    options.GeoM.Translate(245, 180)
-    screen.DrawImage(game.NextTurnBackground, &options)
-    */
-
-    nextTurn, err := game.GetMainImage(35)
-    if err == nil {
-        options.GeoM.Reset()
-        options.GeoM.Translate(240, 174)
-        screen.DrawImage(nextTurn, &options)
+    if len(game.Players) > 0 {
+        if len(game.Players[0].Units) > 0 {
+            game.Players[0].SelectedUnit = game.Players[0].Units[0]
+        }
+        game.HudUI = game.MakeHudUI()
     }
 }
 
@@ -700,7 +928,12 @@ func (game *Game) Draw(screen *ebiten.Image){
         return
     }
 
+    if game.State == GameStateMagicView {
+        game.MagicScreen.Draw(screen)
+        return
+    }
+
     overworld.DrawOverworld(screen, ebiten.GeoM{})
 
-    game.DrawHud(screen)
+    game.HudUI.Draw(game.HudUI, screen)
 }
