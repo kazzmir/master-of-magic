@@ -334,7 +334,10 @@ var Hydra Unit = Unit{
 var GreatDrake Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 44,
+    CombatLbxFile: "figure11.lbx",
+    CombatIndex: 112,
     Race: data.RaceFantastic,
+    Count: 1,
 }
 
 var Skeleton Unit = Unit{

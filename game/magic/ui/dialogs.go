@@ -238,6 +238,10 @@ func MakeErrorElement(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, 
 }
 
 func MakeConfirmDialog(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, message string, confirm func(), cancel func()) []*UIElement {
+    return MakeConfirmDialogWithLayer(ui, cache, imageCache, 1, message, confirm, cancel)
+}
+
+func MakeConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, layer UILayer, message string, confirm func(), cancel func()) []*UIElement {
     confirmX := 67
     confirmY := 73
 
@@ -290,7 +294,7 @@ func MakeConfirmDialog(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache,
 
     elements = append(elements, &UIElement{
         Rect: image.Rect(0, 0, data.ScreenWidth, data.ScreenHeight),
-        Layer: 1,
+        Layer: layer,
         LeftClick: func(this *UIElement){
             // ui.RemoveElement(this)
         },
@@ -316,7 +320,7 @@ func MakeConfirmDialog(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache,
         clicked := false
         elements = append(elements, &UIElement{
             Rect: image.Rect(int(yesX), int(yesY), int(yesX) + yesButtons[0].Bounds().Dx(), int(yesY) + yesButtons[0].Bounds().Dy()),
-            Layer: 1,
+            Layer: layer,
             LeftClick: func(this *UIElement){
                 clicked = true
             },
@@ -345,7 +349,7 @@ func MakeConfirmDialog(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache,
         clicked := false
         elements = append(elements, &UIElement{
             Rect: image.Rect(int(noX), int(noY), int(noX) + noButtons[0].Bounds().Dx(), int(noY) + noButtons[0].Bounds().Dy()),
-            Layer: 1,
+            Layer: layer,
             LeftClick: func(this *UIElement){
                 clicked = true
             },

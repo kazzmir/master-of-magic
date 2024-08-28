@@ -646,6 +646,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
         }
     }
 
+    // FIXME: get both background images, index 1 is when the button is clicked
     buttonBackground, err := imageCache.GetImage("backgrnd.lbx", 24, 0)
 
     if err == nil {

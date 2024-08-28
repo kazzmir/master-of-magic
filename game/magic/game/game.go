@@ -4,11 +4,13 @@ import (
     "image/color"
     "image"
     "log"
+    "fmt"
 
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
     "github.com/kazzmir/master-of-magic/game/magic/player"
+    "github.com/kazzmir/master-of-magic/game/magic/combat"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     "github.com/kazzmir/master-of-magic/game/magic/cityview"
     "github.com/kazzmir/master-of-magic/game/magic/magicview"
@@ -329,6 +331,74 @@ func GetCityWallImage(size citylib.CitySize, cache *util.ImageCache) (*ebiten.Im
     return cache.GetImage("mapback.lbx", 21, index)
 }
 
+func (game *Game) MakeUnitContextMenu(ui *uilib.UI, unit *player.Unit) []*uilib.UIElement {
+    var elements []*uilib.UIElement
+
+    elements = append(elements, &uilib.UIElement{
+        Layer: 1,
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            background, _ := game.ImageCache.GetImage("unitview.lbx", 1, 0)
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(31, 6)
+            screen.DrawImage(background, &options)
+
+            options.GeoM.Translate(25, 30)
+
+            combatImages, err := game.ImageCache.GetImages(unit.Unit.CombatLbxFile, unit.Unit.GetCombatIndex(units.FacingRight))
+            if err == nil {
+                combat.RenderCombatTile(screen, &game.ImageCache, options)
+                combat.RenderCombatUnit(screen, combatImages[2], options, unit.Unit.Count)
+            }
+        },
+    })
+
+    elements = append(elements, &uilib.UIElement{
+        Layer: 1,
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            box, _ := game.ImageCache.GetImage("unitview.lbx", 2, 0)
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(248, 139)
+            screen.DrawImage(box, &options)
+        },
+    })
+
+    buttonBackgrounds, _ := game.ImageCache.GetImages("backgrnd.lbx", 24)
+    // dismiss button
+    cancelRect := util.ImageRect(257, 149, buttonBackgrounds[0])
+    cancelIndex := 0
+    elements = append(elements, &uilib.UIElement{
+        Layer: 1,
+        Rect: cancelRect,
+        LeftClick: func(this *uilib.UIElement){
+            cancelIndex = 1
+
+            var confirmElements []*uilib.UIElement
+
+            yes := func(){
+                ui.RemoveElements(elements)
+                ui.RemoveElements(confirmElements)
+            }
+
+            no := func(){
+            }
+
+            confirmElements = uilib.MakeConfirmDialogWithLayer(ui, game.Cache, &game.ImageCache, 2, fmt.Sprintf("Do you wish to disband the unit of %v?", unit.Unit.Name), yes, no)
+
+            ui.AddElements(confirmElements)
+        },
+        LeftClickRelease: func(this *uilib.UIElement){
+            cancelIndex = 0
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(cancelRect.Min.X), float64(cancelRect.Min.Y))
+            screen.DrawImage(buttonBackgrounds[cancelIndex], &options)
+        },
+    })
+
+    return elements
+}
+
 func (game *Game) MakeHudUI() *uilib.UI {
     ui := &uilib.UI{
         Draw: func(ui *uilib.UI, screen *ebiten.Image){
@@ -436,6 +506,9 @@ func (game *Game) MakeHudUI() *uilib.UI {
         unitRect := util.ImageRect(246, 79, unitBackground)
         elements = append(elements, &uilib.UIElement{
             Rect: unitRect,
+            RightClick: func(this *uilib.UIElement){
+                ui.AddElements(game.MakeUnitContextMenu(ui, unit))
+            },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(float64(unitRect.Min.X), float64(unitRect.Min.Y))
