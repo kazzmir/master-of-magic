@@ -63,6 +63,8 @@ func NewEngine() (*Engine, error) {
 
     player.LiftFog(5, 5, 2)
 
+    game.DoNextTurn()
+
     return &Engine{
         LbxCache: cache,
         Game: game,

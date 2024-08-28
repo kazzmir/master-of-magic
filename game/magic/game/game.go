@@ -427,50 +427,146 @@ func (game *Game) MakeHudUI() *uilib.UI {
         },
     })
 
-    // next turn
-    nextTurnImage, _ := game.ImageCache.GetImage("main.lbx", 35, 0)
-    nextTurnRect := image.Rect(240, 174, 240 + nextTurnImage.Bounds().Dx(), 174 + nextTurnImage.Bounds().Dy())
-    elements = append(elements, &uilib.UIElement{
-        Rect: nextTurnRect,
-        LeftClick: func(this *uilib.UIElement){
-            game.DoNextTurn()
-        },
-        RightClick: func(this *uilib.UIElement){
-            helpEntries := game.Help.GetEntriesByName("Next Turn")
-            if helpEntries != nil {
-                ui.AddElement(uilib.MakeHelpElementWithLayer(ui, game.Cache, &game.ImageCache, 1, helpEntries[0], helpEntries[1:]...))
-            }
-        },
-        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            var options ebiten.DrawImageOptions
-            options.GeoM.Translate(240, 174)
-            screen.DrawImage(nextTurnImage, &options)
-        },
-    })
+    if len(game.Players) > 0 && game.Players[0].SelectedUnit != nil {
 
-    elements = append(elements, &uilib.UIElement{
-        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            goldFood, _ := game.ImageCache.GetImage("main.lbx", 34, 0)
-            var options ebiten.DrawImageOptions
-            options.GeoM.Translate(240, 77)
-            screen.DrawImage(goldFood, &options)
+        doneImages, _ := game.ImageCache.GetImages("main.lbx", 8)
+        doneIndex := 0
+        doneRect := util.ImageRect(246, 176, doneImages[0])
+        elements = append(elements, &uilib.UIElement{
+            Rect: doneRect,
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(doneRect.Min.X), float64(doneRect.Min.Y))
+                screen.DrawImage(doneImages[doneIndex], &options)
+            },
+            LeftClick: func(this *uilib.UIElement){
+                doneIndex = 1
+            },
+            LeftClickRelease: func(this *uilib.UIElement){
+                doneIndex = 0
+                game.DoNextUnit()
+            },
+        })
 
-            game.InfoFontYellow.PrintCenter(screen, 278, 103, 1, "1 Gold")
-            game.InfoFontYellow.PrintCenter(screen, 278, 135, 1, "1 Food")
-            game.InfoFontYellow.PrintCenter(screen, 278, 167, 1, "1 Mana")
+        patrolImages, _ := game.ImageCache.GetImages("main.lbx", 9)
+        patrolIndex := 0
+        patrolRect := util.ImageRect(280, 176, patrolImages[0])
+        elements = append(elements, &uilib.UIElement{
+            Rect: patrolRect,
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(patrolRect.Min.X), float64(patrolRect.Min.Y))
+                screen.DrawImage(patrolImages[patrolIndex], &options)
+            },
+            LeftClick: func(this *uilib.UIElement){
+                patrolIndex = 1
+            },
+            LeftClickRelease: func(this *uilib.UIElement){
+                patrolIndex = 0
+                game.DoNextUnit()
+            },
+        })
 
-            game.WhiteFont.Print(screen, 257, 68, 1, "75 GP")
-            game.WhiteFont.Print(screen, 298, 68, 1, "0 MP")
-        },
-    })
+        waitImages, _ := game.ImageCache.GetImages("main.lbx", 10)
+        waitIndex := 0
+        waitRect := util.ImageRect(246, 186, waitImages[0])
+        elements = append(elements, &uilib.UIElement{
+            Rect: waitRect,
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(waitRect.Min.X), float64(waitRect.Min.Y))
+                screen.DrawImage(waitImages[waitIndex], &options)
+            },
+            LeftClick: func(this *uilib.UIElement){
+                waitIndex = 1
+            },
+            LeftClickRelease: func(this *uilib.UIElement){
+                waitIndex = 0
+                game.DoNextUnit()
+            },
+        })
+
+        // FIXME: use index 15 to show inactive build button
+        buildImages, _ := game.ImageCache.GetImages("main.lbx", 11)
+        buildIndex := 0
+        buildRect := util.ImageRect(280, 186, buildImages[0])
+        elements = append(elements, &uilib.UIElement{
+            Rect: buildRect,
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(buildRect.Min.X), float64(buildRect.Min.Y))
+                screen.DrawImage(buildImages[buildIndex], &options)
+            },
+            LeftClick: func(this *uilib.UIElement){
+                buildIndex = 1
+            },
+            LeftClickRelease: func(this *uilib.UIElement){
+                buildIndex = 0
+                // FIXME: build a city
+            },
+        })
+
+    } else {
+        // next turn
+        nextTurnImage, _ := game.ImageCache.GetImage("main.lbx", 35, 0)
+        nextTurnRect := image.Rect(240, 174, 240 + nextTurnImage.Bounds().Dx(), 174 + nextTurnImage.Bounds().Dy())
+        elements = append(elements, &uilib.UIElement{
+            Rect: nextTurnRect,
+            LeftClick: func(this *uilib.UIElement){
+                game.DoNextTurn()
+            },
+            RightClick: func(this *uilib.UIElement){
+                helpEntries := game.Help.GetEntriesByName("Next Turn")
+                if helpEntries != nil {
+                    ui.AddElement(uilib.MakeHelpElementWithLayer(ui, game.Cache, &game.ImageCache, 1, helpEntries[0], helpEntries[1:]...))
+                }
+            },
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(240, 174)
+                screen.DrawImage(nextTurnImage, &options)
+            },
+        })
+
+        elements = append(elements, &uilib.UIElement{
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                goldFood, _ := game.ImageCache.GetImage("main.lbx", 34, 0)
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(240, 77)
+                screen.DrawImage(goldFood, &options)
+
+                game.InfoFontYellow.PrintCenter(screen, 278, 103, 1, "1 Gold")
+                game.InfoFontYellow.PrintCenter(screen, 278, 135, 1, "1 Food")
+                game.InfoFontYellow.PrintCenter(screen, 278, 167, 1, "1 Mana")
+
+                game.WhiteFont.Print(screen, 257, 68, 1, "75 GP")
+                game.WhiteFont.Print(screen, 298, 68, 1, "0 MP")
+            },
+        })
+    }
 
     ui.SetElementsFromArray(elements)
 
     return ui
 }
 
+func (game *Game) DoNextUnit(){
+    if len(game.Players) > 0 {
+        game.Players[0].SelectedUnit = nil
+    }
+
+    game.HudUI = game.MakeHudUI()
+}
+
 func (game *Game) DoNextTurn(){
     // FIXME
+
+    if len(game.Players) > 0 {
+        if len(game.Players[0].Units) > 0 {
+            game.Players[0].SelectedUnit = game.Players[0].Units[0]
+        }
+        game.HudUI = game.MakeHudUI()
+    }
 }
 
 func (overworld *Overworld) DrawFog(screen *ebiten.Image, geom ebiten.GeoM){
