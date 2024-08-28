@@ -688,22 +688,22 @@ func (game *Game) MakeHudUI() *uilib.UI {
                 options.GeoM.Translate(240, 77)
                 screen.DrawImage(goldFood, &options)
 
-                game.InfoFontYellow.PrintCenter(screen, 278, 103, 1, "1 Gold")
-                game.InfoFontYellow.PrintCenter(screen, 278, 135, 1, "1 Food")
-                game.InfoFontYellow.PrintCenter(screen, 278, 167, 1, "1 Mana")
+                game.InfoFontYellow.PrintCenter(screen, 278, 103, 1, ebiten.ColorScale{}, "1 Gold")
+                game.InfoFontYellow.PrintCenter(screen, 278, 135, 1, ebiten.ColorScale{}, "1 Food")
+                game.InfoFontYellow.PrintCenter(screen, 278, 167, 1, ebiten.ColorScale{}, "1 Mana")
             },
         })
     }
 
     elements = append(elements, &uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            game.WhiteFont.Print(screen, 257, 68, 1, "75 GP")
+            game.WhiteFont.Print(screen, 257, 68, 1, ebiten.ColorScale{}, "75 GP")
         },
     })
 
     elements = append(elements, &uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            game.WhiteFont.Print(screen, 298, 68, 1, "0 MP")
+            game.WhiteFont.Print(screen, 298, 68, 1, ebiten.ColorScale{}, "0 MP")
         },
     })
 

@@ -227,7 +227,7 @@ func (newGameScreen *NewGameScreen) MakeUI() *uilib.UI {
 
             x := difficultyX + newGameScreen.DifficultyBlock.Bounds().Dx() / 2
             y := difficultyY + 3
-            newGameScreen.Font.PrintCenter(screen, float64(x), float64(y), 1, newGameScreen.Settings.DifficultyString())
+            newGameScreen.Font.PrintCenter(screen, float64(x), float64(y), 1, ebiten.ColorScale{}, newGameScreen.Settings.DifficultyString())
         },
     })
 
@@ -245,7 +245,7 @@ func (newGameScreen *NewGameScreen) MakeUI() *uilib.UI {
             screen.DrawImage(newGameScreen.OpponentsBlock, &options)
             x := opponentsX + newGameScreen.OpponentsBlock.Bounds().Dx() / 2
             y := opponentsY + 4
-            newGameScreen.Font.PrintCenter(screen, float64(x), float64(y), 1, newGameScreen.Settings.OpponentsString())
+            newGameScreen.Font.PrintCenter(screen, float64(x), float64(y), 1, ebiten.ColorScale{}, newGameScreen.Settings.OpponentsString())
         },
     })
 
@@ -265,7 +265,7 @@ func (newGameScreen *NewGameScreen) MakeUI() *uilib.UI {
             x := landsizeX + newGameScreen.LandSizeBlock.Bounds().Dx() / 2
             y := landsizeY + 4
 
-            newGameScreen.Font.PrintCenter(screen, float64(x), float64(y), 1, newGameScreen.Settings.LandSizeString())
+            newGameScreen.Font.PrintCenter(screen, float64(x), float64(y), 1, ebiten.ColorScale{}, newGameScreen.Settings.LandSizeString())
         },
     })
 
@@ -283,7 +283,7 @@ func (newGameScreen *NewGameScreen) MakeUI() *uilib.UI {
             screen.DrawImage(newGameScreen.MagicBlock, &options)
             x := magicX + newGameScreen.MagicBlock.Bounds().Dx() / 2
             y := magicY + 4
-            newGameScreen.Font.PrintCenter(screen, float64(x), float64(y), 1, newGameScreen.Settings.MagicString())
+            newGameScreen.Font.PrintCenter(screen, float64(x), float64(y), 1, ebiten.ColorScale{}, newGameScreen.Settings.MagicString())
         },
     })
 

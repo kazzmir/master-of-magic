@@ -745,7 +745,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
                         text = fmt.Sprintf("%v's Fortress", cityScreen.Player.Wizard.Name)
                     }
 
-                    useFont.PrintCenter(screen, float64(x + 10) + roadX, float64(y + 1) + roadY, 1, text)
+                    useFont.PrintCenter(screen, float64(x + 10) + roadX, float64(y + 1) + roadY, 1, ebiten.ColorScale{}, text)
                 }
             }
         }
@@ -767,9 +767,9 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
         screen.DrawImage(ui, &options)
     }
 
-    cityScreen.BigFont.Print(screen, 20, 3, 1, fmt.Sprintf("%v of %s", cityScreen.City.GetSize(), cityScreen.City.Name))
+    cityScreen.BigFont.Print(screen, 20, 3, 1, ebiten.ColorScale{}, fmt.Sprintf("%v of %s", cityScreen.City.GetSize(), cityScreen.City.Name))
 
-    cityScreen.DescriptionFont.Print(screen, 6, 19, 1, fmt.Sprintf("%v", cityScreen.City.Race))
+    cityScreen.DescriptionFont.Print(screen, 6, 19, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", cityScreen.City.Race))
 
     deltaNumber := func(n int) string {
         if n > 0 {
@@ -781,7 +781,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
         }
     }
 
-    cityScreen.DescriptionFont.PrintRight(screen, 210, 19, 1, fmt.Sprintf("Population: %v (%v)", cityScreen.City.Population, deltaNumber(80)))
+    cityScreen.DescriptionFont.PrintRight(screen, 210, 19, 1, ebiten.ColorScale{}, fmt.Sprintf("Population: %v (%v)", cityScreen.City.Population, deltaNumber(80)))
 
     smallFood, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", 40, 0)
     if err == nil {
@@ -878,7 +878,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
             screen.DrawImage(producingPics[index], &options)
         }
 
-        cityScreen.ProducingFont.PrintCenter(screen, 237, 179, 1, fmt.Sprintf("%v", cityScreen.City.ProducingBuilding))
+        cityScreen.ProducingFont.PrintCenter(screen, 237, 179, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", cityScreen.City.ProducingBuilding))
 
         // for all buildings besides trade goods and housing, show amount of work required to build
 
@@ -896,7 +896,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
                 case citylib.BuildingHousing: description = "Increases population growth rate."
             }
 
-            cityScreen.ProducingFont.PrintWrapCenter(screen, 285, 155, 60, 1, description)
+            cityScreen.ProducingFont.PrintWrapCenter(screen, 285, 155, 60, 1, ebiten.ColorScale{}, description)
         } else {
             showWork = true
             workRequired = cityScreen.City.ProducingBuilding.ProductionCost()
@@ -910,7 +910,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
             options.GeoM.Translate(238, 168)
             combat.RenderCombatTile(screen, &cityScreen.ImageCache, options)
             combat.RenderCombatUnit(screen, use, options, cityScreen.City.ProducingUnit.Count)
-            cityScreen.ProducingFont.PrintCenter(screen, 237, 179, 1, cityScreen.City.ProducingUnit.Name)
+            cityScreen.ProducingFont.PrintCenter(screen, 237, 179, 1, ebiten.ColorScale{}, cityScreen.City.ProducingUnit.Name)
         }
 
         showWork = true
@@ -926,7 +926,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
             turn = fmt.Sprintf("%v Turns", int(math.Ceil(turns)))
         }
 
-        cityScreen.DescriptionFont.PrintRight(screen, 318, 140, 1, turn)
+        cityScreen.DescriptionFont.PrintRight(screen, 318, 140, 1, ebiten.ColorScale{}, turn)
 
         workEmpty, err1 := cityScreen.ImageCache.GetImage("backgrnd.lbx", 11, 0)
         workFull, err2 := cityScreen.ImageCache.GetImage("backgrnd.lbx", 12, 0)

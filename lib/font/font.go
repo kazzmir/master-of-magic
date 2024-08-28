@@ -102,7 +102,7 @@ func (font *Font) getGlyphImage(index int) *ebiten.Image {
     return font.Image.SubImage(image.Rect(x1, y1, x2, y2)).(*ebiten.Image)
 }
 
-func (font *Font) Print(image *ebiten.Image, x float64, y float64, scale float64, text string) {
+func (font *Font) Print(image *ebiten.Image, x float64, y float64, scale float64, colorScale ebiten.ColorScale, text string) {
     useX := x
     for _, c := range text {
         if c == '\n' {
@@ -121,6 +121,7 @@ func (font *Font) Print(image *ebiten.Image, x float64, y float64, scale float64
         var options ebiten.DrawImageOptions
         options.GeoM.Scale(scale, scale)
         options.GeoM.Translate(useX, y)
+        options.ColorScale = colorScale
         glyphImage := font.getGlyphImage(glyphIndex)
         image.DrawImage(glyphImage, &options)
 
@@ -148,14 +149,14 @@ func (font *Font) MeasureTextWidth(text string, scale float64) float64 {
     return float64(width) * scale
 }
 
-func (font *Font) PrintCenter(image *ebiten.Image, x float64, y float64, scale float64, text string) {
+func (font *Font) PrintCenter(image *ebiten.Image, x float64, y float64, scale float64, colorScale ebiten.ColorScale, text string) {
     width := font.MeasureTextWidth(text, scale)
-    font.Print(image, x - width / 2, y, scale, text)
+    font.Print(image, x - width / 2, y, scale, colorScale, text)
 }
 
-func (font *Font) PrintRight(image *ebiten.Image, x float64, y float64, scale float64, text string) {
+func (font *Font) PrintRight(image *ebiten.Image, x float64, y float64, scale float64, colorScale ebiten.ColorScale, text string) {
     width := font.MeasureTextWidth(text, scale)
-    font.Print(image, x - width, y, scale, text)
+    font.Print(image, x - width, y, scale, colorScale, text)
 }
 
 /* split the input text ABCD into two substrings AB and CD such that the pixel width of AB is less than maxWidth */
@@ -177,14 +178,14 @@ func (font *Font) splitText(text string, maxWidth float64, scale float64) (strin
     return "", text
 }
 
-func (font *Font) PrintWrap(image *ebiten.Image, x float64, y float64, maxWidth float64, scale float64, text string) {
+func (font *Font) PrintWrap(image *ebiten.Image, x float64, y float64, maxWidth float64, scale float64, colorScale ebiten.ColorScale, text string) {
     wrapped := font.CreateWrappedText(maxWidth, scale, text)
-    font.RenderWrapped(image, x, y, wrapped, false)
+    font.RenderWrapped(image, x, y, wrapped, colorScale, false)
 }
 
-func (font *Font) PrintWrapCenter(image *ebiten.Image, x float64, y float64, maxWidth float64, scale float64, text string) {
+func (font *Font) PrintWrapCenter(image *ebiten.Image, x float64, y float64, maxWidth float64, scale float64, colorScale ebiten.ColorScale, text string) {
     wrapped := font.CreateWrappedText(maxWidth, scale, text)
-    font.RenderWrapped(image, x, y, wrapped, true)
+    font.RenderWrapped(image, x, y, wrapped, colorScale, true)
 }
 
 type WrappedText struct {
@@ -194,13 +195,13 @@ type WrappedText struct {
     Scale float64
 }
 
-func (font *Font) RenderWrapped(image *ebiten.Image, x float64, y float64, wrapped WrappedText, center bool) {
+func (font *Font) RenderWrapped(image *ebiten.Image, x float64, y float64, wrapped WrappedText, colorScale ebiten.ColorScale, center bool) {
     yPos := y
     for _, line := range wrapped.Lines {
         if center {
-            font.PrintCenter(image, x, yPos, wrapped.Scale, line)
+            font.PrintCenter(image, x, yPos, wrapped.Scale, colorScale, line)
         } else {
-            font.Print(image, x, yPos, wrapped.Scale, line)
+            font.Print(image, x, yPos, wrapped.Scale, colorScale, line)
         }
         yPos += float64(font.Height()) * wrapped.Scale + 1
     }

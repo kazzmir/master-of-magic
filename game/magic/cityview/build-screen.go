@@ -339,15 +339,15 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
                     // vector.DrawFilledCircle(screen, float32(middleX), float32(middleY), 1, color.RGBA{255, 255, 255, 255}, true)
                 }
 
-                descriptionFont.Print(screen, 130, 12, 1, building.String())
-                smallFont.Print(screen, 130, 33, 1, fmt.Sprintf("Cost %v", building.ProductionCost()))
+                descriptionFont.Print(screen, 130, 12, 1, ebiten.ColorScale{}, building.String())
+                smallFont.Print(screen, 130, 33, 1, ebiten.ColorScale{}, fmt.Sprintf("Cost %v", building.ProductionCost()))
 
-                descriptionFont.Print(screen, 85, 48, 1, "Maintenance")
+                descriptionFont.Print(screen, 85, 48, 1, ebiten.ColorScale{}, "Maintenance")
 
                 buildingMaintenance := GetBuildingMaintenance(building)
 
                 if buildingMaintenance == 0 {
-                    mediumFont.Print(screen, 85 + descriptionFont.MeasureTextWidth("Maintenance", 1) + 4, 49, 1, "0")
+                    mediumFont.Print(screen, 85 + descriptionFont.MeasureTextWidth("Maintenance", 1) + 4, 49, 1, ebiten.ColorScale{}, "0")
                 } else {
                     smallCoin, err := imageCache.GetImage("backgrnd.lbx", 42, 0)
                     if err == nil {
@@ -360,9 +360,9 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
                     }
                 }
 
-                descriptionFont.Print(screen, 85, 58, 1, "Allows")
+                descriptionFont.Print(screen, 85, 58, 1, ebiten.ColorScale{}, "Allows")
 
-                descriptionFont.RenderWrapped(screen, 85, 108, descriptionWrapped, false)
+                descriptionFont.RenderWrapped(screen, 85, 108, descriptionWrapped, ebiten.ColorScale{}, false)
 
                 /*
                 helpEntries := help.GetEntriesByName(building.String())
@@ -402,9 +402,9 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
                     combat.RenderCombatTile(screen, imageCache, options)
                     combat.RenderCombatUnit(screen, use, options, unit.Count)
 
-                    descriptionFont.Print(screen, 130, 7, 1, unit.Name)
+                    descriptionFont.Print(screen, 130, 7, 1, ebiten.ColorScale{}, unit.Name)
 
-                    smallFont.Print(screen, 130, 18, 1, "Moves")
+                    smallFont.Print(screen, 130, 18, 1, ebiten.ColorScale{}, "Moves")
 
                     unitMoves := 2
 
@@ -419,7 +419,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
                         }
                     }
 
-                    smallFont.Print(screen, 130, 25, 1, "Upkeep")
+                    smallFont.Print(screen, 130, 25, 1, ebiten.ColorScale{}, "Upkeep")
 
                     unitCostMoney := 2
                     unitCostFood := 2
@@ -441,13 +441,13 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
                     }
 
                     cost := 90
-                    smallFont.Print(screen, 130, 32, 1, fmt.Sprintf("Cost %v(%v)", cost, cost))
+                    smallFont.Print(screen, 130, 32, 1, ebiten.ColorScale{}, fmt.Sprintf("Cost %v(%v)", cost, cost))
 
                     width := descriptionFont.MeasureTextWidth("Armor", 1)
 
                     y := 48
 
-                    descriptionFont.Print(screen, 85, float64(y), 1, "Melee")
+                    descriptionFont.Print(screen, 85, float64(y), 1, ebiten.ColorScale{}, "Melee")
 
                     unitMelee := 3
 
@@ -464,7 +464,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
                     unitRange := 3
 
                     y += descriptionFont.Height()
-                    descriptionFont.Print(screen, 85, float64(y), 1, "Range")
+                    descriptionFont.Print(screen, 85, float64(y), 1, ebiten.ColorScale{}, "Range")
 
                     rangeBow, err := imageCache.GetImage("unitview.lbx", 18, 0)
                     if err == nil {
@@ -477,7 +477,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
                     }
 
                     y += descriptionFont.Height()
-                    descriptionFont.Print(screen, 85, float64(y), 1, "Armor")
+                    descriptionFont.Print(screen, 85, float64(y), 1, ebiten.ColorScale{}, "Armor")
 
                     unitArmor := 3
                     armorIcon, err := imageCache.GetImage("unitview.lbx", 22, 0)
@@ -491,7 +491,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
                     }
 
                     y += descriptionFont.Height()
-                    descriptionFont.Print(screen, 85, float64(y), 1, "Resist")
+                    descriptionFont.Print(screen, 85, float64(y), 1, ebiten.ColorScale{}, "Resist")
 
                     unitResist := 4
 
@@ -506,7 +506,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
                     }
 
                     y += descriptionFont.Height()
-                    descriptionFont.Print(screen, 85, float64(y), 1, "Hits")
+                    descriptionFont.Print(screen, 85, float64(y), 1, ebiten.ColorScale{}, "Hits")
 
                     unitHealth := 3
 
@@ -528,7 +528,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
                             options.GeoM.Translate(85, float64(y))
                             screen.DrawImage(pic, &options)
 
-                            mediumFont.Print(screen, float64(85 + pic.Bounds().Dx() + 2), float64(y) + 5, 1, ability.Name())
+                            mediumFont.Print(screen, float64(85 + pic.Bounds().Dx() + 2), float64(y) + 5, 1, ebiten.ColorScale{}, ability.Name())
                         }
                     }
 
@@ -577,7 +577,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
                         use = titleFontWhite
                     }
 
-                    use.Print(screen, float64(x1 + 2), float64(y1 + 1), 1, building.String())
+                    use.Print(screen, float64(x1 + 2), float64(y1 + 1), 1, ebiten.ColorScale{}, building.String())
                 },
             }
 
@@ -631,7 +631,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
                         use = titleFontWhite
                     }
 
-                    use.Print(screen, float64(x1 + 2), float64(y1 + 1), 1, unit.String())
+                    use.Print(screen, float64(x1 + 2), float64(y1 + 1), 1, ebiten.ColorScale{}, unit.String())
                 },
             }
 
@@ -670,7 +670,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
                 options.GeoM.Translate(float64(cancelX), float64(cancelY))
                 screen.DrawImage(buttonBackground, &options)
 
-                okCancelFont.PrintCenter(screen, float64(cancelX + buttonBackground.Bounds().Dx() / 2), float64(cancelY + 1), 1, "Cancel")
+                okCancelFont.PrintCenter(screen, float64(cancelX + buttonBackground.Bounds().Dx() / 2), float64(cancelY + 1), 1, ebiten.ColorScale{}, "Cancel")
             },
         })
 
@@ -693,7 +693,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
                 options.GeoM.Translate(float64(okX), float64(okY))
                 screen.DrawImage(buttonBackground, &options)
 
-                okCancelFont.PrintCenter(screen, float64(okX + buttonBackground.Bounds().Dx() / 2), float64(okY + 1), 1, "Ok")
+                okCancelFont.PrintCenter(screen, float64(okX + buttonBackground.Bounds().Dx() / 2), float64(okY + 1), 1, ebiten.ColorScale{}, "Ok")
             },
         })
     }

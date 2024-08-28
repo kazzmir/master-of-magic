@@ -155,11 +155,11 @@ func (magic *MagicScreen) MakeTransmuteElements(ui *uilib.UI, smallFont *font.Fo
             leftSide := float64(122)
             rightSide := float64(224)
             if isRight {
-                smallFont.PrintRight(screen, leftSide, 86, 1, fmt.Sprintf("%v GP", int(float64(totalMana) * changePercent * alchemyConversion)))
-                smallFont.PrintRight(screen, rightSide, 86, 1, fmt.Sprintf("%v PP", int(float64(totalMana) * changePercent)))
+                smallFont.PrintRight(screen, leftSide, 86, 1, ebiten.ColorScale{}, fmt.Sprintf("%v GP", int(float64(totalMana) * changePercent * alchemyConversion)))
+                smallFont.PrintRight(screen, rightSide, 86, 1, ebiten.ColorScale{}, fmt.Sprintf("%v PP", int(float64(totalMana) * changePercent)))
             } else {
-                smallFont.PrintRight(screen, leftSide, 86, 1, fmt.Sprintf("%v GP", int(float64(totalGold) * changePercent)))
-                smallFont.PrintRight(screen, rightSide, 86, 1, fmt.Sprintf("%v PP", int(float64(totalGold) * changePercent * alchemyConversion)))
+                smallFont.PrintRight(screen, leftSide, 86, 1, ebiten.ColorScale{}, fmt.Sprintf("%v GP", int(float64(totalGold) * changePercent)))
+                smallFont.PrintRight(screen, rightSide, 86, 1, ebiten.ColorScale{}, fmt.Sprintf("%v PP", int(float64(totalGold) * changePercent * alchemyConversion)))
             }
         },
     })
@@ -345,9 +345,9 @@ func (magic *MagicScreen) MakeUI() *uilib.UI {
                 }
             }
 
-            normalFont.PrintRight(screen, 56, 160, 1, fmt.Sprintf("%v MP", manaRate))
-            normalFont.PrintRight(screen, 103, 160, 1, fmt.Sprintf("%v RP", researchRate))
-            normalFont.PrintRight(screen, 151, 160, 1, fmt.Sprintf("%v SP", skillRate))
+            normalFont.PrintRight(screen, 56, 160, 1, ebiten.ColorScale{}, fmt.Sprintf("%v MP", manaRate))
+            normalFont.PrintRight(screen, 103, 160, 1, ebiten.ColorScale{}, fmt.Sprintf("%v RP", researchRate))
+            normalFont.PrintRight(screen, 151, 160, 1, ebiten.ColorScale{}, fmt.Sprintf("%v SP", skillRate))
 
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
                 if element.Draw != nil {
@@ -648,9 +648,9 @@ func (magic *MagicScreen) MakeUI() *uilib.UI {
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             // vector.StrokeRect(screen, float32(spellCastUIRect.Min.X), float32(spellCastUIRect.Min.Y), float32(spellCastUIRect.Dx()), float32(spellCastUIRect.Dy()), 1, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff}, false)
 
-            smallerFont.Print(screen, 5, 176, 1, fmt.Sprintf("Casting Skill: %v(%v)", 20, 20))
-            smallerFont.Print(screen, 5, 183, 1, fmt.Sprintf("Magic Reserve: %v", 90))
-            smallerFont.Print(screen, 5, 190, 1, fmt.Sprintf("Power Base: %v", 12))
+            smallerFont.Print(screen, 5, 176, 1, ebiten.ColorScale{}, fmt.Sprintf("Casting Skill: %v(%v)", 20, 20))
+            smallerFont.Print(screen, 5, 183, 1, ebiten.ColorScale{}, fmt.Sprintf("Magic Reserve: %v", 90))
+            smallerFont.Print(screen, 5, 190, 1, ebiten.ColorScale{}, fmt.Sprintf("Power Base: %v", 12))
         },
     })
 
@@ -665,9 +665,9 @@ func (magic *MagicScreen) MakeUI() *uilib.UI {
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             // util.DrawRect(screen, castingRect, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff})
-            smallerFont.Print(screen, 100, 176, 1, fmt.Sprintf("Casting: %v", "None"))
-            smallerFont.Print(screen, 100, 183, 1, fmt.Sprintf("Researching: %v", "Whatever"))
-            smallerFont.Print(screen, 100, 190, 1, fmt.Sprintf("Summon To: %v", "Somewhere"))
+            smallerFont.Print(screen, 100, 176, 1, ebiten.ColorScale{}, fmt.Sprintf("Casting: %v", "None"))
+            smallerFont.Print(screen, 100, 183, 1, ebiten.ColorScale{}, fmt.Sprintf("Researching: %v", "Whatever"))
+            smallerFont.Print(screen, 100, 190, 1, ebiten.ColorScale{}, fmt.Sprintf("Summon To: %v", "Somewhere"))
         },
     })
 

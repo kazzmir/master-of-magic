@@ -146,13 +146,13 @@ func MakeHelpElementWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.Imag
                 titleX += extraImage.Bounds().Dx() + 5
             }
 
-            helpTitleFont.Print(window, float64(titleX), infoY + float64(infoTopMargin + titleYAdjust), 1, help.Headline)
-            helpFont.RenderWrapped(window, float64(infoX + infoLeftMargin + infoBodyMargin), float64(helpTextY) + infoY, wrapped, false)
+            helpTitleFont.Print(window, float64(titleX), infoY + float64(infoTopMargin + titleYAdjust), 1, ebiten.ColorScale{}, help.Headline)
+            helpFont.RenderWrapped(window, float64(infoX + infoLeftMargin + infoBodyMargin), float64(helpTextY) + infoY, wrapped, ebiten.ColorScale{}, false)
 
             yPos := float64(helpTextY) + infoY + wrapped.TotalHeight + 2
             for i, moreWrapped := range moreHelp {
-                helpTitleFont.Print(window, float64(titleX), float64(yPos), 1, helpEntries[i].Headline)
-                helpFont.RenderWrapped(window, float64(infoX + infoLeftMargin + infoBodyMargin), yPos + float64(helpTitleFont.Height()) + 1, moreWrapped, false)
+                helpTitleFont.Print(window, float64(titleX), float64(yPos), 1, ebiten.ColorScale{}, helpEntries[i].Headline)
+                helpFont.RenderWrapped(window, float64(infoX + infoLeftMargin + infoBodyMargin), yPos + float64(helpTitleFont.Height()) + 1, moreWrapped, ebiten.ColorScale{}, false)
                 yPos += float64(helpTitleFont.Height()) + 1 + float64(moreWrapped.TotalHeight) + 2
             }
 
@@ -226,7 +226,7 @@ func MakeErrorElement(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, 
             options.GeoM.Translate(float64(errorX), float64(errorY))
             window.DrawImage(topDraw, &options)
 
-            errorFont.RenderWrapped(window, float64(errorX + errorMargin + maxWidth / 2), float64(errorY + errorTopMargin), wrapped, true)
+            errorFont.RenderWrapped(window, float64(errorX + errorMargin + maxWidth / 2), float64(errorY + errorTopMargin), wrapped, ebiten.ColorScale{}, true)
 
             options.GeoM.Reset()
             options.GeoM.Translate(float64(errorX), float64(bottom))
@@ -303,7 +303,7 @@ func MakeConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.Im
             options.GeoM.Translate(float64(confirmX), float64(confirmY))
             window.DrawImage(topDraw, &options)
 
-            confirmFont.RenderWrapped(window, float64(confirmX + confirmMargin + maxWidth / 2), float64(confirmY + confirmTopMargin), wrapped, true)
+            confirmFont.RenderWrapped(window, float64(confirmX + confirmMargin + maxWidth / 2), float64(confirmY + confirmTopMargin), wrapped, ebiten.ColorScale{}, true)
 
             options.GeoM.Reset()
             options.GeoM.Translate(float64(confirmX), float64(bottom))

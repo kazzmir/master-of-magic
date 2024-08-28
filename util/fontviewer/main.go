@@ -117,7 +117,7 @@ func (viewer *Viewer) Draw(screen *ebiten.Image) {
     screen.DrawImage(viewer.Optimized.Image, &options)
 
     vector.StrokeRect(screen, 50, 500, float32(float64(viewer.Optimized.GlyphWidth) * 20 * viewer.Scale), float32(float64(viewer.Optimized.GlyphHeight) * viewer.Scale), 1, &color.RGBA{R: 0xff, A: 0xff}, true)
-    viewer.Optimized.Print(screen, 50, 500, viewer.Scale, "Hello, potato! money")
+    viewer.Optimized.Print(screen, 50, 500, viewer.Scale, ebiten.ColorScale{}, "Hello, potato! money")
 
     /*
     yPos := 1
