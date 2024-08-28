@@ -428,6 +428,29 @@ func (game *Game) MakeHudUI() *uilib.UI {
     })
 
     if len(game.Players) > 0 && game.Players[0].SelectedUnit != nil {
+        unit := game.Players[0].SelectedUnit
+
+        // show a unit element for each unit in the stack
+        // image index increases by 1 for each unit, indexes 24-32
+        unitBackground, _ := game.ImageCache.GetImage("main.lbx", 24, 0)
+        unitRect := util.ImageRect(246, 79, unitBackground)
+        elements = append(elements, &uilib.UIElement{
+            Rect: unitRect,
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(unitRect.Min.X), float64(unitRect.Min.Y))
+                screen.DrawImage(unitBackground, &options)
+
+                options.GeoM.Translate(1, 1)
+
+                unitBack, _ := GetUnitBackgroundImage(unit.Banner, &game.ImageCache)
+                screen.DrawImage(unitBack, &options)
+
+                options.GeoM.Translate(1, 1)
+                unitImage, _ := GetUnitImage(unit.Unit, &game.ImageCache)
+                screen.DrawImage(unitImage, &options)
+            },
+        })
 
         doneImages, _ := game.ImageCache.GetImages("main.lbx", 8)
         doneIndex := 0
@@ -538,12 +561,21 @@ func (game *Game) MakeHudUI() *uilib.UI {
                 game.InfoFontYellow.PrintCenter(screen, 278, 103, 1, "1 Gold")
                 game.InfoFontYellow.PrintCenter(screen, 278, 135, 1, "1 Food")
                 game.InfoFontYellow.PrintCenter(screen, 278, 167, 1, "1 Mana")
-
-                game.WhiteFont.Print(screen, 257, 68, 1, "75 GP")
-                game.WhiteFont.Print(screen, 298, 68, 1, "0 MP")
             },
         })
     }
+
+    elements = append(elements, &uilib.UIElement{
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            game.WhiteFont.Print(screen, 257, 68, 1, "75 GP")
+        },
+    })
+
+    elements = append(elements, &uilib.UIElement{
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            game.WhiteFont.Print(screen, 298, 68, 1, "0 MP")
+        },
+    })
 
     ui.SetElementsFromArray(elements)
 
