@@ -421,38 +421,25 @@ func (game *Game) MakeHudUI() *uilib.UI {
         },
     })
 
+    elements = append(elements, &uilib.UIElement{
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            goldFood, _ := game.ImageCache.GetImage("main.lbx", 34, 0)
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(240, 77)
+            screen.DrawImage(goldFood, &options)
+
+            game.InfoFontYellow.PrintCenter(screen, 278, 103, 1, "1 Gold")
+            game.InfoFontYellow.PrintCenter(screen, 278, 135, 1, "1 Food")
+            game.InfoFontYellow.PrintCenter(screen, 278, 167, 1, "1 Mana")
+
+            game.WhiteFont.Print(screen, 257, 68, 1, "75 GP")
+            game.WhiteFont.Print(screen, 298, 68, 1, "0 MP")
+        },
+    })
+
     ui.SetElementsFromArray(elements)
 
     return ui
-}
-
-func (game *Game) DrawHud(screen *ebiten.Image){
-    /*
-    options.GeoM.Reset()
-
-    goldFood, err := game.GetMainImage(34)
-    if err == nil {
-        options.GeoM.Translate(240, 77)
-        screen.DrawImage(goldFood, &options)
-    }
-
-    game.InfoFontYellow.PrintCenter(screen, 278, 103, 1, "1 Gold")
-    game.InfoFontYellow.PrintCenter(screen, 278, 135, 1, "1 Food")
-    game.InfoFontYellow.PrintCenter(screen, 278, 167, 1, "1 Mana")
-
-    game.WhiteFont.Print(screen, 257, 68, 1, "75 GP")
-    game.WhiteFont.Print(screen, 298, 68, 1, "0 MP")
-    */
-
-    /*
-    options.GeoM.Reset()
-    options.GeoM.Translate(245, 180)
-    screen.DrawImage(game.NextTurnBackground, &options)
-    */
-
-    /*
-    
-    */
 }
 
 func (overworld *Overworld) DrawFog(screen *ebiten.Image, geom ebiten.GeoM){
