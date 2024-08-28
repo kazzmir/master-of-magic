@@ -1,11 +1,11 @@
 ![build](https://github.com/kazzmir/master-of-magic/actions/workflows/build-linux.yml/badge.svg)
 
-Master of Magic clone
+# Master of Magic clone
 
 * Source language: golang, https://go.dev/
 * Graphics library: ebiten, https://ebitengine.org/
 
-Run/Build:
+# Run/Build:
 
 ```
 $ go get -u ./game/magic
@@ -20,6 +20,12 @@ or
 $ make
 ```
 
-Screenshots:
+# Screenshots:
 ![new wizard](./images/new-custom-wizard.png)
 
+# Directory layout:
+- game/ Contains go code that implements the game functionality
+- lib/ Supporting code used to load data/fonts
+- util/ Extra utility programs for development purposes (sprite viewer, font viewer, etc)
+- data/ Put a zip file with the game data to embed the data in the final binary
+- test/ Test programs for executing small pieces of functionality at a time
