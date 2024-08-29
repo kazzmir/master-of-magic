@@ -562,12 +562,21 @@ func (game *Game) MakeHudUI() *uilib.UI {
     })
 
     // info button
+    infoButtons, _ := game.ImageCache.GetImages("main.lbx", 6)
+    infoButtonIndex := 0
+    infoRect := image.Rect(226, 4, 226 + infoButtons[0].Bounds().Dx(), 4 + infoButtons[0].Bounds().Dy())
     elements = append(elements, &uilib.UIElement{
+        Rect: infoRect,
+        LeftClick: func(this *uilib.UIElement){
+            infoButtonIndex = 1
+        },
+        LeftClickRelease: func(this *uilib.UIElement){
+            infoButtonIndex = 0
+        },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            image, _ := game.ImageCache.GetImage("main.lbx", 6, 0)
             var options ebiten.DrawImageOptions
-            options.GeoM.Translate(226, 4)
-            screen.DrawImage(image, &options)
+            options.GeoM.Translate(float64(infoRect.Min.X), float64(infoRect.Min.Y))
+            screen.DrawImage(infoButtons[infoButtonIndex], &options)
         },
     })
 
