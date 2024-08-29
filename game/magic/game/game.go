@@ -362,6 +362,19 @@ func (game *Game) MakeUnitContextMenu(ui *uilib.UI, unit *player.Unit) []*uilib.
     smallFont := font.MakeOptimizedFontWithPalette(fonts[1], descriptionPalette)
     mediumFont := font.MakeOptimizedFontWithPalette(fonts[2], descriptionPalette)
 
+    yellowGradient := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0},
+        color.RGBA{R: 0xed, G: 0xa4, B: 0x00, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xbc, B: 0x00, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xd6, B: 0x11, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
+    }
+
+    okDismissFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowGradient)
+
     var elements []*uilib.UIElement
 
     const fadeSpeed = 7
@@ -433,7 +446,10 @@ func (game *Game) MakeUnitContextMenu(ui *uilib.UI, unit *player.Unit) []*uilib.
             options.GeoM.Translate(float64(cancelRect.Min.X), float64(cancelRect.Min.Y))
             options.ColorScale.ScaleAlpha(getAlpha())
             screen.DrawImage(buttonBackgrounds[cancelIndex], &options)
-            // FIXME: draw text 'Dismiss' with the yellow fade font
+
+            x := float64(cancelRect.Min.X + cancelRect.Max.X) / 2
+            y := float64(cancelRect.Min.Y + cancelRect.Max.Y) / 2
+            okDismissFont.PrintCenter(screen, x, y - 5, 1, options.ColorScale, "Dismiss")
         },
     })
 
@@ -457,7 +473,10 @@ func (game *Game) MakeUnitContextMenu(ui *uilib.UI, unit *player.Unit) []*uilib.
             options.GeoM.Translate(float64(okRect.Min.X), float64(okRect.Min.Y))
             options.ColorScale.ScaleAlpha(getAlpha())
             screen.DrawImage(buttonBackgrounds[okIndex], &options)
-            // FIXME: draw text 'Ok' with the yellow fade font
+
+            x := float64(okRect.Min.X + okRect.Max.X) / 2
+            y := float64(okRect.Min.Y + okRect.Max.Y) / 2
+            okDismissFont.PrintCenter(screen, x, y - 5, 1, options.ColorScale, "Ok")
         },
     })
 
