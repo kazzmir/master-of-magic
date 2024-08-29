@@ -13,7 +13,8 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
-    "github.com/kazzmir/master-of-magic/game/magic/combat"
+    // "github.com/kazzmir/master-of-magic/game/magic/combat"
+    "github.com/kazzmir/master-of-magic/game/magic/unitview"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     "github.com/hajimehoshi/ebiten/v2"
     // "github.com/hajimehoshi/ebiten/v2/vector"
@@ -384,155 +385,21 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
         ui.RemoveElement(mainElement)
         mainElement = &uilib.UIElement{
             Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
-                middleX := float64(104)
-                middleY := float64(28)
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(104, 28)
+                unitview.RenderCombatImage(screen, imageCache, &unit, options)
 
-                images, err := imageCache.GetImages(unit.CombatLbxFile, unit.GetCombatIndex(units.FacingRight))
-                if err == nil {
-                    var options ebiten.DrawImageOptions
+                options.GeoM.Reset()
+                options.GeoM.Translate(130, 7)
+                unitview.RenderUnitInfoBuild(screen, imageCache, &unit, descriptionFont, smallFont, options)
 
-                    /*
-                    index := (ui.Counter / 7) % uint64(len(images))
-                    use := images[index]
-                    */
+                options.GeoM.Reset()
+                options.GeoM.Translate(85, 48)
+                unitview.RenderUnitInfoStats(screen, imageCache, &unit, descriptionFont, smallFont, options)
 
-                    use := images[2]
-
-                    options.GeoM.Translate(middleX, middleY)
-                    combat.RenderCombatTile(screen, imageCache, options)
-                    combat.RenderCombatUnit(screen, use, options, unit.Count)
-
-                    descriptionFont.Print(screen, 130, 7, 1, ebiten.ColorScale{}, unit.Name)
-
-                    smallFont.Print(screen, 130, 18, 1, ebiten.ColorScale{}, "Moves")
-
-                    unitMoves := 2
-
-                    smallBoot, err := imageCache.GetImage("unitview.lbx", 24, 0)
-                    if err == nil {
-                        var options ebiten.DrawImageOptions
-                        options.GeoM.Translate(130 + smallFont.MeasureTextWidth("Upkeep ", 1), 16)
-
-                        for i := 0; i < unitMoves; i++ {
-                            screen.DrawImage(smallBoot, &options)
-                            options.GeoM.Translate(float64(smallBoot.Bounds().Dx()), 0)
-                        }
-                    }
-
-                    smallFont.Print(screen, 130, 25, 1, ebiten.ColorScale{}, "Upkeep")
-
-                    unitCostMoney := 2
-                    unitCostFood := 2
-
-                    smallCoin, err1 := imageCache.GetImage("backgrnd.lbx", 42, 0)
-                    smallFood, err2 := imageCache.GetImage("backgrnd.lbx", 40, 0)
-                    if err1 == nil && err2 == nil {
-                        var options ebiten.DrawImageOptions
-                        options.GeoM.Translate(130 + smallFont.MeasureTextWidth("Upkeep ", 1), 24)
-                        for i := 0; i < unitCostMoney; i++ {
-                            screen.DrawImage(smallCoin, &options)
-                            options.GeoM.Translate(float64(smallCoin.Bounds().Dx() + 1), 0)
-                        }
-
-                        for i := 0; i < unitCostFood; i++ {
-                            screen.DrawImage(smallFood, &options)
-                            options.GeoM.Translate(float64(smallFood.Bounds().Dx() + 1), 0)
-                        }
-                    }
-
-                    cost := 90
-                    smallFont.Print(screen, 130, 32, 1, ebiten.ColorScale{}, fmt.Sprintf("Cost %v(%v)", cost, cost))
-
-                    width := descriptionFont.MeasureTextWidth("Armor", 1)
-
-                    y := 48
-
-                    descriptionFont.Print(screen, 85, float64(y), 1, ebiten.ColorScale{}, "Melee")
-
-                    unitMelee := 3
-
-                    weaponIcon, err := imageCache.GetImage("unitview.lbx", 13, 0)
-                    if err == nil {
-                        var options ebiten.DrawImageOptions
-                        options.GeoM.Translate(85 + width + 1, float64(y))
-                        for i := 0; i < unitMelee; i++ {
-                            screen.DrawImage(weaponIcon, &options)
-                            options.GeoM.Translate(float64(weaponIcon.Bounds().Dx() + 1), 0)
-                        }
-                    }
-
-                    unitRange := 3
-
-                    y += descriptionFont.Height()
-                    descriptionFont.Print(screen, 85, float64(y), 1, ebiten.ColorScale{}, "Range")
-
-                    rangeBow, err := imageCache.GetImage("unitview.lbx", 18, 0)
-                    if err == nil {
-                        var options ebiten.DrawImageOptions
-                        options.GeoM.Translate(85 + width + 1, float64(y))
-                        for i := 0; i < unitRange; i++ {
-                            screen.DrawImage(rangeBow, &options)
-                            options.GeoM.Translate(float64(rangeBow.Bounds().Dx() + 1), 0)
-                        }
-                    }
-
-                    y += descriptionFont.Height()
-                    descriptionFont.Print(screen, 85, float64(y), 1, ebiten.ColorScale{}, "Armor")
-
-                    unitArmor := 3
-                    armorIcon, err := imageCache.GetImage("unitview.lbx", 22, 0)
-                    if err == nil {
-                        var options ebiten.DrawImageOptions
-                        options.GeoM.Translate(85 + width + 1, float64(y))
-                        for i := 0; i < unitArmor; i++ {
-                            screen.DrawImage(armorIcon, &options)
-                            options.GeoM.Translate(float64(armorIcon.Bounds().Dx() + 1), 0)
-                        }
-                    }
-
-                    y += descriptionFont.Height()
-                    descriptionFont.Print(screen, 85, float64(y), 1, ebiten.ColorScale{}, "Resist")
-
-                    unitResist := 4
-
-                    resistIcon, err := imageCache.GetImage("unitview.lbx", 27, 0)
-                    if err == nil {
-                        var options ebiten.DrawImageOptions
-                        options.GeoM.Translate(85 + width + 1, float64(y))
-                        for i := 0; i < unitResist; i++ {
-                            screen.DrawImage(resistIcon, &options)
-                            options.GeoM.Translate(float64(resistIcon.Bounds().Dx() + 1), 0)
-                        }
-                    }
-
-                    y += descriptionFont.Height()
-                    descriptionFont.Print(screen, 85, float64(y), 1, ebiten.ColorScale{}, "Hits")
-
-                    unitHealth := 3
-
-                    healthIcon, err := imageCache.GetImage("unitview.lbx", 23, 0)
-                    if err == nil {
-                        var options ebiten.DrawImageOptions
-                        options.GeoM.Translate(85 + width + 1, float64(y))
-                        for i := 0; i < unitHealth; i++ {
-                            screen.DrawImage(healthIcon, &options)
-                            options.GeoM.Translate(float64(healthIcon.Bounds().Dx() + 1), 0)
-                        }
-                    }
-
-                    y = 110
-                    for _, ability := range unit.Abilities {
-                        pic, err := imageCache.GetImage(ability.LbxFile(), ability.LbxIndex(), 0)
-                        if err == nil {
-                            var options ebiten.DrawImageOptions
-                            options.GeoM.Translate(85, float64(y))
-                            screen.DrawImage(pic, &options)
-
-                            mediumFont.Print(screen, float64(85 + pic.Bounds().Dx() + 2), float64(y) + 5, 1, ebiten.ColorScale{}, ability.Name())
-                        }
-                    }
-
-                }
+                options.GeoM.Reset()
+                options.GeoM.Translate(85, 108)
+                unitview.RenderUnitAbilities(screen, imageCache, &unit, mediumFont, options)
             },
         }
         ui.AddElement(mainElement)
