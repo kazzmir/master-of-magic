@@ -26,7 +26,7 @@ const ScreenHeight = 768
 type Viewer struct {
     Lbx *lbx.LbxFile
     FontIndex int
-    Fonts []*lbx.Font
+    Fonts []*lbx.LbxFont
     Optimized *font.Font
     Scale float64
 }

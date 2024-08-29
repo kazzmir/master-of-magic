@@ -321,7 +321,7 @@ type NewWizardScreen struct {
     CustomPictureBackground *ebiten.Image
     CustomWizardBooks *ebiten.Image
     Slots *ebiten.Image
-    LbxFonts []*lbx.Font
+    LbxFonts []*lbx.LbxFont
     Font *font.Font
     AbilityFont *font.Font
     AbilityFontSelected *font.Font

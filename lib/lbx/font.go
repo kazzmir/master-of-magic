@@ -102,7 +102,7 @@ func (glyph *Glyph) MakeImageWithPalette(palette color.Palette) image.Image {
     if glyph.Width == 0 {
         return nil
     }
-    // FIXME: what palette to use?
+
     out := image.NewPaletted(image.Rect(0, 0, glyph.Width, glyph.Height), palette)
 
     dataIndex := 0
@@ -158,14 +158,14 @@ type internalFontInfo struct {
     Glyphs []Glyph
 }
 
-type Font struct {
+type LbxFont struct {
     Height int
     HorizontalSpacing int
     VerticalSpacing int
     Glyphs []Glyph
 }
 
-func (font *Font) GlyphForRune(r rune) *Glyph {
+func (font *LbxFont) GlyphForRune(r rune) *Glyph {
     if r < 32 || r >= 128 {
         return nil
     }
@@ -173,11 +173,11 @@ func (font *Font) GlyphForRune(r rune) *Glyph {
     return &font.Glyphs[r - 32]
 }
 
-func (font *Font) GlyphCount() int {
+func (font *LbxFont) GlyphCount() int {
     return len(font.Glyphs)
 }
 
-func readFonts(reader *bytes.Reader) ([]*Font, error) {
+func readFonts(reader *bytes.Reader) ([]*LbxFont, error) {
     _, err := reader.Seek(internalFontHeaderSize(), io.SeekStart)
     if err != nil {
         return nil, err
@@ -254,10 +254,10 @@ func readFonts(reader *bytes.Reader) ([]*Font, error) {
     fmt.Println()
     */
 
-    var fonts []*Font
+    var fonts []*LbxFont
 
     for fontIndex := 0; fontIndex < 8; fontIndex++ {
-        font := Font{
+        font := LbxFont{
             Height: fontInfo[fontIndex].Height,
             HorizontalSpacing: fontInfo[fontIndex].HorizontalSpacing,
             VerticalSpacing: fontInfo[fontIndex].VerticalSpacing,

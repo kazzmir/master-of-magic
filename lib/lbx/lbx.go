@@ -552,7 +552,7 @@ func readImage(reader io.Reader, lastImage *image.Paletted, width int, height in
 }
 
 /* use this to read a font entry, usually from fonts.lbx */
-func (lbx *LbxFile) ReadFonts(entry int) ([]*Font, error) {
+func (lbx *LbxFile) ReadFonts(entry int) ([]*LbxFont, error) {
     if entry < 0 || entry >= len(lbx.Data) {
         return nil, fmt.Errorf("invalid lbx index %v, must be between 0 and %v", entry, len(lbx.Data) - 1)
     }
