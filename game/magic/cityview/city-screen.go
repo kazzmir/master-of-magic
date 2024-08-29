@@ -153,7 +153,7 @@ func MakeCityScreen(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
         return nil
     }
 
-    fonts, err := fontLbx.ReadFonts(0)
+    fonts, err := font.ReadFonts(fontLbx, 0)
     if err != nil {
         log.Printf("Unable to read fonts from fonts.lbx: %v", err)
         return nil

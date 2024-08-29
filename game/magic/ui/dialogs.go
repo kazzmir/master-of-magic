@@ -28,7 +28,7 @@ func MakeHelpElementWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.Imag
         return nil
     }
 
-    fonts, err := fontLbx.ReadFonts(0)
+    fonts, err := font.ReadFonts(fontLbx, 0)
     if err != nil {
         return nil
     }
@@ -210,7 +210,7 @@ func MakeErrorElement(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, 
         return nil
     }
 
-    fonts, err := fontLbx.ReadFonts(0)
+    fonts, err := font.ReadFonts(fontLbx, 0)
     if err != nil {
         return nil
     }
@@ -289,7 +289,7 @@ func MakeConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.Im
         return nil
     }
 
-    fonts, err := fontLbx.ReadFonts(0)
+    fonts, err := font.ReadFonts(fontLbx, 0)
     if err != nil {
         return nil
     }

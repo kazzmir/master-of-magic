@@ -1,4 +1,4 @@
-package lbx
+package font
 
 import (
     "bytes"
@@ -7,6 +7,8 @@ import (
     "image"
     "io"
     "image/color"
+
+    "github.com/kazzmir/master-of-magic/lib/lbx"
 )
 
 /*
@@ -95,7 +97,7 @@ var fontPalette = color.Palette {
 }
 
 func (glyph *Glyph) MakeImage() image.Image {
-    return glyph.MakeImageWithPalette(defaultPalette)
+    return glyph.MakeImageWithPalette(lbx.GetDefaultPalette())
 }
 
 func (glyph *Glyph) MakeImageWithPalette(palette color.Palette) image.Image {
@@ -191,7 +193,7 @@ func readFonts(reader *bytes.Reader) ([]*LbxFont, error) {
     }
 
     for i := 0; i < 8; i++ {
-        height, err := ReadUint16(reader)
+        height, err := lbx.ReadUint16(reader)
         if err != nil {
             return nil, err
         }
@@ -199,7 +201,7 @@ func readFonts(reader *bytes.Reader) ([]*LbxFont, error) {
     }
 
     for i := 0; i < 8; i++ {
-        width, err := ReadUint16(reader)
+        width, err := lbx.ReadUint16(reader)
         if err != nil {
             return nil, err
         }
@@ -207,7 +209,7 @@ func readFonts(reader *bytes.Reader) ([]*LbxFont, error) {
     }
 
     for i := 0; i < 8; i++ {
-        height, err := ReadUint16(reader)
+        height, err := lbx.ReadUint16(reader)
         if err != nil {
             return nil, err
         }
@@ -226,7 +228,7 @@ func readFonts(reader *bytes.Reader) ([]*LbxFont, error) {
 
     for i := 0; i < 8; i++ {
         for g := 0; g < 96; g++ {
-            offset, err := ReadUint16(reader)
+            offset, err := lbx.ReadUint16(reader)
             if err != nil {
                 return nil, err
             }
@@ -301,3 +303,13 @@ func readFonts(reader *bytes.Reader) ([]*LbxFont, error) {
 
     return fonts, nil
 }
+
+func ReadFonts(lbxFile *lbx.LbxFile, entry int) ([]*LbxFont, error) {
+    reader, err := lbxFile.GetReader(entry)
+    if err != nil {
+        return nil, err
+    }
+
+    return readFonts(reader)
+}
+

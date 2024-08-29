@@ -123,7 +123,7 @@ func (newGameScreen *NewGameScreen) Load(cache *lbx.LbxCache) error {
             return
         }
 
-        fonts, err := fontLbx.ReadFonts(0)
+        fonts, err := font.ReadFonts(fontLbx, 0)
         if err != nil {
             outError = fmt.Errorf("Unable to read fonts from FONTS.LBX: %v", err)
             return
