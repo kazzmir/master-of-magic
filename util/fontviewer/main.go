@@ -26,13 +26,13 @@ const ScreenHeight = 768
 type Viewer struct {
     Lbx *lbx.LbxFile
     FontIndex int
-    Fonts []*lbx.Font
+    Fonts []*font.LbxFont
     Optimized *font.Font
     Scale float64
 }
 
 func MakeViewer(lbxFile *lbx.LbxFile) (*Viewer, error) {
-    fonts, err := lbxFile.ReadFonts(0)
+    fonts, err := font.ReadFonts(lbxFile, 0)
     if err != nil {
         return nil, err
     }

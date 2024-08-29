@@ -321,7 +321,7 @@ type NewWizardScreen struct {
     CustomPictureBackground *ebiten.Image
     CustomWizardBooks *ebiten.Image
     Slots *ebiten.Image
-    LbxFonts []*lbx.Font
+    LbxFonts []*font.LbxFont
     Font *font.Font
     AbilityFont *font.Font
     AbilityFontSelected *font.Font
@@ -679,7 +679,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
             return
         }
 
-        fonts, err := fontLbx.ReadFonts(0)
+        fonts, err := font.ReadFonts(fontLbx, 0)
         if err != nil {
             outError = fmt.Errorf("Unable to read fonts from FONTS.LBX: %v", err)
             return

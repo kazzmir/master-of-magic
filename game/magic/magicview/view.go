@@ -277,7 +277,7 @@ func (magic *MagicScreen) MakeUI() *uilib.UI {
         return nil
     }
 
-    fonts, err := fontLbx.ReadFonts(0)
+    fonts, err := font.ReadFonts(fontLbx, 0)
     if err != nil {
         log.Printf("Unable to read fonts from fonts.lbx: %v", err)
         return nil

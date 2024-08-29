@@ -13,6 +13,7 @@ import (
     "archive/zip"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/font"
 )
 
 func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int, rawDump bool) error {
@@ -51,7 +52,7 @@ func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int, rawDump bool) 
             }()
         }
     } else if lbxName == "fonts.lbx" {
-        fonts, err := file.ReadFonts(0)
+        fonts, err := font.ReadFonts(&file, 0)
         if err != nil {
             return fmt.Errorf("Unable to read fonts: %v", err)
         }

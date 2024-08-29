@@ -18,15 +18,15 @@ type Font struct {
     GlyphHeight int
     Rows int
     Columns int
-    Glyphs []lbx.Glyph
-    internalFont *lbx.Font
+    Glyphs []Glyph
+    internalFont *LbxFont
 }
 
-func MakeGPUSpriteMap(font *lbx.Font) (*ebiten.Image, int, int, int, int) {
+func MakeGPUSpriteMap(font *LbxFont) (*ebiten.Image, int, int, int, int) {
     return MakeGPUSpriteMapWithPalette(font, lbx.GetDefaultPalette())
 }
 
-func MakeGPUSpriteMapWithPalette(font *lbx.Font, palette color.Palette) (*ebiten.Image, int, int, int, int) {
+func MakeGPUSpriteMapWithPalette(font *LbxFont, palette color.Palette) (*ebiten.Image, int, int, int, int) {
     // make one huge ebiten.Image and draw all glyphs onto it, keeping track of the location of each glyph
 
     totalGlyphs := font.GlyphCount()
@@ -68,11 +68,11 @@ func MakeGPUSpriteMapWithPalette(font *lbx.Font, palette color.Palette) (*ebiten
     return sheet, maxWidth, font.Height, rows, columns
 }
 
-func MakeOptimizedFont(font *lbx.Font) *Font {
+func MakeOptimizedFont(font *LbxFont) *Font {
     return MakeOptimizedFontWithPalette(font, lbx.GetDefaultPalette())
 }
 
-func MakeOptimizedFontWithPalette(font *lbx.Font, palette color.Palette) *Font {
+func MakeOptimizedFontWithPalette(font *LbxFont, palette color.Palette) *Font {
     sheet, width, height, rows, columns := MakeGPUSpriteMapWithPalette(font, palette)
 
     return &Font{
