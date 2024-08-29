@@ -253,6 +253,9 @@ func readFont(reader *bytes.Reader, fontInfo *internalFontInfo) (*LbxFont, error
             // log.Printf("Empty glyph at font=%v glyph=%v", fontIndex, glyphIndex)
             font.Glyphs = append(font.Glyphs, Glyph{Width: 0})
         } else {
+            // FIXME: this doesn't really have to be a copy of the data, we could just as
+            // easily create a new reader for the slice at the current position of 'reader'
+            // that can read for at most Width*Height bytes
             glyphData := make([]byte, fontInfo.Widths[glyphIndex] * fontInfo.Height)
             n, err := reader.Read(glyphData)
             if err != nil {
