@@ -337,6 +337,7 @@ var GreatDrake Unit = Unit{
     CombatLbxFile: "figure11.lbx",
     CombatIndex: 112,
     Race: data.RaceFantastic,
+    Abilities: []Ability{AbilityForester, AbilityDoomGaze},
     Count: 1,
 }
 

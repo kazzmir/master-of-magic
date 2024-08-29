@@ -10,7 +10,8 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
     "github.com/kazzmir/master-of-magic/game/magic/player"
-    "github.com/kazzmir/master-of-magic/game/magic/combat"
+    // "github.com/kazzmir/master-of-magic/game/magic/combat"
+    "github.com/kazzmir/master-of-magic/game/magic/unitview"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     "github.com/kazzmir/master-of-magic/game/magic/cityview"
     "github.com/kazzmir/master-of-magic/game/magic/magicview"
@@ -332,6 +333,35 @@ func GetCityWallImage(size citylib.CitySize, cache *util.ImageCache) (*ebiten.Im
 }
 
 func (game *Game) MakeUnitContextMenu(ui *uilib.UI, unit *player.Unit) []*uilib.UIElement {
+    fontLbx, err := game.Cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        log.Printf("Unable to read fonts.lbx: %v", err)
+        return nil
+    }
+
+    fonts, err := fontLbx.ReadFonts(0)
+    if err != nil {
+        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
+        return nil
+    }
+
+    descriptionPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 90}),
+        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}),
+        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 200}),
+        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 200}),
+        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 200}),
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+    }
+
+    descriptionFont := font.MakeOptimizedFontWithPalette(fonts[4], descriptionPalette)
+    smallFont := font.MakeOptimizedFontWithPalette(fonts[1], descriptionPalette)
+    mediumFont := font.MakeOptimizedFontWithPalette(fonts[2], descriptionPalette)
+
     var elements []*uilib.UIElement
 
     const fadeSpeed = 7
@@ -348,12 +378,15 @@ func (game *Game) MakeUnitContextMenu(ui *uilib.UI, unit *player.Unit) []*uilib.
             screen.DrawImage(background, &options)
 
             options.GeoM.Translate(25, 30)
+            unitview.RenderCombatImage(screen, &game.ImageCache, &unit.Unit, options)
 
-            combatImages, err := game.ImageCache.GetImages(unit.Unit.CombatLbxFile, unit.Unit.GetCombatIndex(units.FacingRight))
-            if err == nil {
-                combat.RenderCombatTile(screen, &game.ImageCache, options)
-                combat.RenderCombatUnit(screen, combatImages[2], options, unit.Unit.Count)
-            }
+            options.GeoM.Reset()
+            options.GeoM.Translate(31, 6)
+            options.GeoM.Translate(10, 50)
+            unitview.RenderUnitInfoStats(screen, &game.ImageCache, &unit.Unit, descriptionFont, smallFont, options)
+
+            options.GeoM.Translate(0, 60)
+            unitview.RenderUnitAbilities(screen, &game.ImageCache, &unit.Unit, mediumFont, options)
         },
     })
 

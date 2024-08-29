@@ -86,7 +86,7 @@ func (ability Ability) LbxFile() string {
         case AbilityDeathImmunity: return ""
         case AbilityDispelEvil: return ""
         case AbilityDoomBoltSpell: return ""
-        case AbilityDoomGaze: return ""
+        case AbilityDoomGaze: return "special.lbx"
         case AbilityFireballSpell: return ""
         case AbilityFireBreath: return ""
         case AbilityFireImmunity: return ""
@@ -159,7 +159,7 @@ func (ability Ability) Name() string {
         case AbilityDeathImmunity: return ""
         case AbilityDispelEvil: return ""
         case AbilityDoomBoltSpell: return ""
-        case AbilityDoomGaze: return ""
+        case AbilityDoomGaze: return "Doom Gaze"
         case AbilityFireballSpell: return ""
         case AbilityFireBreath: return ""
         case AbilityFireImmunity: return ""
@@ -232,7 +232,7 @@ func (ability Ability) LbxIndex() int {
         case AbilityDeathImmunity: return -1
         case AbilityDispelEvil: return -1
         case AbilityDoomBoltSpell: return -1
-        case AbilityDoomGaze: return -1
+        case AbilityDoomGaze: return 64 // FIXME
         case AbilityFireballSpell: return -1
         case AbilityFireBreath: return -1
         case AbilityFireImmunity: return -1

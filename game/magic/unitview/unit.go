@@ -131,7 +131,7 @@ func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit
     }
 
     y += float64(descriptionFont.Height())
-    descriptionFont.Print(screen, 85, float64(y), 1, defaultOptions.ColorScale, "Resist")
+    descriptionFont.Print(screen, x, float64(y), 1, defaultOptions.ColorScale, "Resist")
 
     unitResist := 4
 
@@ -147,7 +147,7 @@ func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit
     }
 
     y += float64(descriptionFont.Height())
-    descriptionFont.Print(screen, 85, float64(y), 1, defaultOptions.ColorScale, "Hits")
+    descriptionFont.Print(screen, x, float64(y), 1, defaultOptions.ColorScale, "Hits")
 
     unitHealth := 3
 
