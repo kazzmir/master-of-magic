@@ -232,7 +232,7 @@ func (ability Ability) LbxIndex() int {
         case AbilityDeathImmunity: return -1
         case AbilityDispelEvil: return -1
         case AbilityDoomBoltSpell: return -1
-        case AbilityDoomGaze: return 64 // FIXME
+        case AbilityDoomGaze: return 26
         case AbilityFireballSpell: return -1
         case AbilityFireBreath: return -1
         case AbilityFireImmunity: return -1
