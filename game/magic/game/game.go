@@ -483,6 +483,33 @@ func (game *Game) MakeUnitContextMenu(ui *uilib.UI, unit *player.Unit) []*uilib.
     return elements
 }
 
+func (game *Game) MakeInfoUI(cornerX int, cornerY int) []*uilib.UIElement {
+    var elements []*uilib.UIElement
+
+    elements = append(elements, &uilib.UIElement{
+        Layer: 1,
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            bottom, _ := game.ImageCache.GetImage("resource.lbx", 9, 0)
+            options.GeoM.Reset()
+            options.GeoM.Translate(float64(cornerX), float64(cornerY) + 70)
+            screen.DrawImage(bottom, &options)
+
+            left, _ := game.ImageCache.GetImage("resource.lbx", 6, 0)
+            options.GeoM.Reset()
+            options.GeoM.Translate(float64(cornerX), float64(cornerY) + 70)
+            screen.DrawImage(left, &options)
+
+            top, _ := game.ImageCache.GetImage("resource.lbx", 7, 0)
+            options.GeoM.Reset()
+            options.GeoM.Translate(float64(cornerX), float64(cornerY))
+            screen.DrawImage(top, &options)
+        },
+    })
+
+    return elements
+}
+
 func (game *Game) MakeHudUI() *uilib.UI {
     ui := &uilib.UI{
         Draw: func(ui *uilib.UI, screen *ebiten.Image){
@@ -569,6 +596,8 @@ func (game *Game) MakeHudUI() *uilib.UI {
         Rect: infoRect,
         LeftClick: func(this *uilib.UIElement){
             infoButtonIndex = 1
+
+            ui.AddElements(game.MakeInfoUI(30, 30))
         },
         LeftClickRelease: func(this *uilib.UIElement){
             infoButtonIndex = 0
