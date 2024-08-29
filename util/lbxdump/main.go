@@ -36,7 +36,7 @@ func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int, rawDump bool) 
             return err
         }
 
-        fmt.Printf("Loaded %v images\n", len(images))
+        // fmt.Printf("Loaded %v images\n", len(images))
         for i, image := range images {
             func (){
                 name := filepath.Join(dir, fmt.Sprintf("image_%v_%v.png", index, i))
@@ -48,7 +48,7 @@ func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int, rawDump bool) 
                 defer out.Close()
 
                 png.Encode(out, image)
-                fmt.Printf("Saved image %v to %v\n", i, name)
+                // fmt.Printf("Saved image %v to %v\n", i, name)
             }()
         }
     } else if lbxName == "fonts.lbx" {
@@ -108,7 +108,7 @@ func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int, rawDump bool) 
                 continue
             }
 
-            fmt.Printf("File %v: 0x%x (%v) bytes\n", index, len(data), len(data))
+            // fmt.Printf("File %v: 0x%x (%v) bytes\n", index, len(data), len(data))
 
             if rawDump {
                 func (){
@@ -130,7 +130,7 @@ func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int, rawDump bool) 
                     continue
                 }
 
-                fmt.Printf("Loaded %v images\n", len(images))
+                // fmt.Printf("Loaded %v images\n", len(images))
                 for i, image := range images {
                     func (){
                         name := filepath.Join(dir, fmt.Sprintf("image_%v_%v.png", index, i))
@@ -142,7 +142,7 @@ func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int, rawDump bool) 
                         defer out.Close()
 
                         png.Encode(out, image)
-                        fmt.Printf("Saved image %v to %v\n", i, name)
+                        // fmt.Printf("Saved image %v to %v\n", i, name)
                     }()
                 }
             }
