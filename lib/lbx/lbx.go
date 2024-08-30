@@ -384,7 +384,7 @@ func readPalette(reader io.ReadSeeker, index int, firstColor int, count int) (co
     // return palette, nil
 }
 
-const debug = false
+var debug = false
 
 func copyImage(img *image.Paletted) *image.Paletted {
     out := image.NewPaletted(image.Rect(0, 0, img.Bounds().Dx(), img.Bounds().Dy()), img.Palette)
@@ -398,11 +398,125 @@ func copyImage(img *image.Paletted) *image.Paletted {
     return out
 }
 
+// given a chunk of bytes that reader can read one byte at a time in sequential order, read a sprite out
+// if the first byte is 0, then this is a delta frame and the lastImage is used as a base to modify
+func readImage(reader io.Reader, lastImage *image.Paletted, width int, height int, palette color.Palette, startRleValue int) (*image.Paletted, error) {
+    byteReader, ok := reader.(io.ByteReader)
+    if !ok {
+        byteReader = bufio.NewReader(reader)
+    }
+
+    reset, err := byteReader.ReadByte()
+    if err != nil {
+        return nil, err
+    }
+
+    deltaFrame := reset == 0
+
+    var img *image.Paletted
+
+    if deltaFrame {
+        if lastImage == nil {
+            return nil, fmt.Errorf("cannot have a delta frame without a full frame before it")
+        }
+
+        img = copyImage(lastImage)
+    } else {
+        img = image.NewPaletted(image.Rect(0, 0, width, height), palette)
+    }
+
+    // for each column of pixel data, read an operation and perform the operation.
+    // an operation could be 'set the next pixel to value X' or an rle operation
+    // which means to set the next N pixels to value X
+    for x := 0; x < width; x++ {
+        operation, err := byteReader.ReadByte()
+        if err != nil {
+            // return img, nil
+            return nil, fmt.Errorf("Missing operation byte")
+        }
+
+        if operation == 0xff {
+            continue
+        }
+
+        isRLE := false
+        if operation == 0x80 {
+            isRLE = true
+        } else if operation == 0 {
+            isRLE = false
+        } else {
+            return nil, fmt.Errorf("Invalid pixel operation: 0x%x", operation)
+        }
+
+        // Read some number of packets (size is packet_count)
+        // each packet consists of a skip count followed by data bytes
+        // a data byte can either be just a pixel value, or an RLE length
+        // if the operation is RLE and the value > 0xdf
+
+        b, err := byteReader.ReadByte()
+        if err != nil {
+            return nil, fmt.Errorf("Missing packet count byte")
+        }
+        packet_count := int(b)
+
+        y := 0
+        for packet_count > 0 {
+            b, err := byteReader.ReadByte()
+            if err != nil {
+                return nil, fmt.Errorf("Missing data count byte")
+            }
+            packet_count -= 1
+            data_count := int(b)
+
+            skip_count, err := byteReader.ReadByte()
+            if err != nil {
+                return nil, fmt.Errorf("Missing skip count byte")
+            }
+            packet_count -= 1
+
+            y += int(skip_count)
+            packet_count -= data_count
+
+            // read data_count bytes
+            for i := 0; i < data_count; i++ {
+                value, err := byteReader.ReadByte()
+                if err != nil {
+                    return nil, fmt.Errorf("Missing palette index byte")
+                }
+
+                if y < height {
+                    if isRLE && value > 0xdf {
+                        length := value - 0xdf
+                        pixel, err := byteReader.ReadByte()
+                        if err != nil {
+                            return nil, fmt.Errorf("Missing pixel value")
+                        }
+                        i += 1
+
+                        for j := byte(0); j < length; j++ {
+                            if y < height {
+                                img.SetColorIndex(x, y, pixel)
+                                y += 1
+                            }
+                        }
+                    } else {
+                        img.SetColorIndex(x, y, value)
+                        y += 1
+                    }
+                }
+            }
+        }
+    }
+
+    return img, nil
+}
+
 /* read an RLE encoded image using the given palette, and return the new image.
  * if this image is a delta frame (when the first byte is 0) then this image starts
  * with a copy of lastImage, and modifies it with the new data.
  */
-func readImage(reader io.Reader, lastImage *image.Paletted, width int, height int, palette color.Palette, startRleValue int) (*image.Paletted, error) {
+/*
+func readImage2(reader io.Reader, lastImage *image.Paletted, width int, height int, palette color.Palette, startRleValue int) (*image.Paletted, error) {
     byteReader, ok := reader.(io.ByteReader)
     if !ok {
         byteReader = bufio.NewReader(reader)
@@ -550,6 +664,7 @@ func readImage(reader io.Reader, lastImage *image.Paletted, width int, height in
         x += 1
     }
 }
+*/
 
 func (lbx *LbxFile) GetReader(entry int) (*bytes.Reader, error) {
     if entry < 0 || entry >= len(lbx.Data) {
@@ -931,7 +1046,6 @@ func (lbx *LbxFile) ReadHelp(entry int) (Help, error) {
 }
 
 func (lbx *LbxFile) ReadImages(entry int) ([]image.Image, error) {
-
     if entry < 0 || entry >= len(lbx.Data) {
         return nil, fmt.Errorf("invalid lbx index %v, must be between 0 and %v", entry, len(lbx.Data) - 1)
     }
@@ -999,10 +1113,10 @@ func (lbx *LbxFile) ReadImages(entry int) ([]image.Image, error) {
     }
 
     if debug {
-        fmt.Printf("Width: %v\n", width)
-        fmt.Printf("Height: %v\n", height)
-        fmt.Printf("Bitmap count: %v\n", bitmapCount)
-        fmt.Printf("Palette offset: %v\n", paletteOffset)
+        log.Printf("Width: %v\n", width)
+        log.Printf("Height: %v\n", height)
+        log.Printf("Bitmap count: %v\n", bitmapCount)
+        log.Printf("Palette offset: %v\n", paletteOffset)
     }
 
     var paletteInfo PaletteInfo
@@ -1033,7 +1147,7 @@ func (lbx *LbxFile) ReadImages(entry int) ([]image.Image, error) {
     }
 
     if debug {
-        fmt.Printf("Palette info: %+v\n", paletteInfo)
+        log.Printf("Palette info: %+v\n", paletteInfo)
     }
 
     var images []image.Image
@@ -1042,7 +1156,7 @@ func (lbx *LbxFile) ReadImages(entry int) ([]image.Image, error) {
     for i := 0; i < int(bitmapCount); i++ {
         end := offsets[i+1]
         if debug {
-            fmt.Printf("Read image %v at offset %v size %v\n", i, offsets[i], end - offsets[i])
+            log.Printf("Read entry %v image %v at offset %v size %v\n", entry, i, offsets[i], end - offsets[i])
         }
 
         reader.Seek(int64(offsets[i]), io.SeekStart)
@@ -1062,7 +1176,7 @@ func (lbx *LbxFile) ReadImages(entry int) ([]image.Image, error) {
             x := 39
             y := 20
             index := img.ColorIndexAt(x, y)
-            fmt.Printf("(%v,%v)=%v\n", x, y, index)
+            log.Printf("(%v,%v)=%v\n", x, y, index)
             /*
             for x := 0; x < img.Bounds().Dx(); x++ {
                 for y := 0; y < img.Bounds().Dy(); y++ {
