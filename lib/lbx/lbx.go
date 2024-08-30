@@ -439,6 +439,12 @@ func readImage(reader io.Reader, lastImage *image.Paletted, width int, height in
 
         switch v {
             case 0:
+                // byte 0: packet size in bytes
+                // N data frames of total size packet size
+                // frame byte 0: bytes in frame
+                // frame byte 1: lines of y to skip
+                // frame byte N: set x,y to value, increment y
+
                 b, err := byteReader.ReadByte()
                 if err != nil {
                     return nil, fmt.Errorf("Missing packet count byte")
@@ -453,42 +459,53 @@ func readImage(reader io.Reader, lastImage *image.Paletted, width int, height in
                     log.Printf("  x: %v packet count: %v", x, packet_count)
                 }
 
-                yLength := height
                 y := 0
                 for packet_count > 0 {
                     b, err := byteReader.ReadByte()
                     if err != nil {
                         return nil, fmt.Errorf("Missing data count byte")
                     }
+                    packet_count -= 1
                     data_count := int(b)
 
                     skip_count, err := byteReader.ReadByte()
+                    if err != nil {
+                        return nil, fmt.Errorf("Missing skip count byte")
+                    }
+                    packet_count -= 1
 
-                    yLength -= int(skip_count)
-                    packet_count -= data_count + 2
                     y += int(skip_count)
+                    packet_count -= data_count
 
                     if debug {
                         log.Printf("  y: %v data count: %v packet count: %v\n", y, data_count, packet_count)
                     }
 
+                    // read data_count bytes
                     for i := 0; i < data_count; i++ {
                         value, err := byteReader.ReadByte()
                         if err != nil {
                             return nil, fmt.Errorf("Missing palette index byte")
                         }
-                        if y >= 0 {
+
+                        if y < height {
                             if debug {
                                 log.Printf("  set pixel %v,%v to %v\n", x, y, value)
                             }
                             img.SetColorIndex(x, y, value)
-                            yLength -= 1
                             y += 1
                         }
                     }
                 }
 
             case 0x80:
+                // byte 0: packet size in bytes
+                // N data frames of total size packet size
+                // frame byte 0: bytes in frame
+                // frame byte 1: lines of y to skip
+                // frame byte N: if value is <= 223, set x,y to value, increment yj
+                //   if value > 223 then next byte is RLE length, set next RLE length pixels to value, increment y each time
+
                 b, err := byteReader.ReadByte()
                 if err != nil {
                     return nil, fmt.Errorf("Missing packet count byte")
@@ -508,15 +525,17 @@ func readImage(reader io.Reader, lastImage *image.Paletted, width int, height in
                         return nil, fmt.Errorf("Missing data count byte")
                     }
                     data_count := int(b)
+                    packet_count -= 1
 
                     skip_count, err := byteReader.ReadByte()
                     if err != nil {
                         return nil, fmt.Errorf("Missing skip count")
                     }
+                    packet_count -= 1
 
                     yLength -= int(skip_count)
                     y += int(skip_count)
-                    packet_count -= data_count + 2
+                    packet_count -= data_count
 
                     if debug {
                         log.Printf("  rle data y: %v data count: %v packet count: %v\n", y, data_count, packet_count)
@@ -567,107 +586,6 @@ func readImage(reader io.Reader, lastImage *image.Paletted, width int, height in
         }
 
     }
-
-        /*
-        rle := startRleValue
-
-        if v == 0 {
-            rle = startRleValue
-        } else if v == 0x80 {
-            rle = 0xe0
-        } else {
-            return nil, fmt.Errorf("unexpected rle value 0x%x", v)
-        }
-
-        next_, err := byteReader.ReadByte()
-        if err != nil {
-            return nil, err
-        }
-        next := int(next_) - 2
-
-        if next == 0 {
-            return nil, fmt.Errorf("next bitmap location cannot be 0")
-        }
-
-        data, err := byteReader.ReadByte()
-        if err != nil {
-            return nil, err
-        }
-
-        y, err := byteReader.ReadByte()
-        if err != nil {
-            return nil, err
-        }
-
-        if debug {
-            log.Printf("RLE: 0x%x, Next: %v, Data: %v, Y: %v\n", rle, next, data, y)
-        }
-
-        total := 0
-
-        for total < next {
-            for data > 0 {
-                v2, err := byteReader.ReadByte()
-                if err != nil {
-                    return nil, err
-                }
-
-                total += 1
-
-                if int(v2) >= rle {
-                    length := int(v2) - int(rle) + 1
-                    index, err := byteReader.ReadByte()
-                    if err != nil {
-                        return nil, err
-                    }
-                    total += 1
-
-                    if length > img.Bounds().Dy() {
-                        return nil, fmt.Errorf("rle length %v is greater than image height %v", length, img.Bounds().Dy())
-                    }
-
-                    if debug {
-                        log.Printf("rle length=%v index=%v x=%v y=%v\n", length, index, x, y)
-                    }
-
-                    for i := 0; i < length; i++ {
-                        img.SetColorIndex(x, int(y), uint8(index))
-                        y += 1
-                    }
-
-                    data -= 2
-
-                } else {
-                    if debug {
-                        log.Printf("normal pixel x=%v y=%v v=%v\n", x, y, v2)
-                    }
-                    img.SetColorIndex(x, int(y), uint8(v2))
-                    y += 1
-                    data -= 1
-                }
-            }
-
-            if total < next {
-                if debug {
-                    log.Printf("Have to read two more bytes total=%v next=%v\n", total, next)
-                }
-                newData, err := byteReader.ReadByte()
-                if err != nil {
-                    return nil, err
-                }
-                newY, err := byteReader.ReadByte()
-                if err != nil {
-                    return nil, err
-                }
-
-                total += 2
-
-                y += newY
-                data = newData
-            }
-        }
-    }
-            */
 
     return img, nil
 }
