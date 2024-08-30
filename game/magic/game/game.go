@@ -495,15 +495,26 @@ func (game *Game) MakeInfoUI(cornerX int, cornerY int) []*uilib.UIElement {
             options.GeoM.Translate(float64(cornerX), float64(cornerY) + 70)
             screen.DrawImage(bottom, &options)
 
-            left, _ := game.ImageCache.GetImage("resource.lbx", 6, 0)
+            bottomLeft, _ := game.ImageCache.GetImage("resource.lbx", 6, 0)
             options.GeoM.Reset()
             options.GeoM.Translate(float64(cornerX), float64(cornerY) + 70)
+            screen.DrawImage(bottomLeft, &options)
+
+            left, _ := game.ImageCache.GetImage("resource.lbx", 5, 0)
+            options.GeoM.Reset()
+            options.GeoM.Translate(float64(cornerX), float64(cornerY))
             screen.DrawImage(left, &options)
 
             top, _ := game.ImageCache.GetImage("resource.lbx", 7, 0)
             options.GeoM.Reset()
-            options.GeoM.Translate(float64(cornerX), float64(cornerY))
+            options.GeoM.Translate(float64(cornerX + left.Bounds().Dx()), float64(cornerY))
             screen.DrawImage(top, &options)
+
+            right, _ := game.ImageCache.GetImage("resource.lbx", 8, 0)
+            options.GeoM.Reset()
+            options.GeoM.Translate(float64(cornerX + left.Bounds().Dx() + top.Bounds().Dx()), float64(cornerY))
+            screen.DrawImage(right, &options)
+
         },
     })
 

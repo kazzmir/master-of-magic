@@ -306,17 +306,35 @@ var defaultPalette = color.Palette {
     color.RGBA{R: 0x10, G: 0xc,  B: 0x20, A: 0xff},
     color.RGBA{R: 0x14, G: 0xc,  B: 0x8, A: 0xff},
     color.RGBA{R: 0x18, G: 0x10, B: 0xc, A: 0xff},
-    color.RGBA{R: 0x0,  G: 0x0,  B: 0x0, A: 0xff},
-    color.RGBA{R: 0x0,  G: 0x0,  B: 0x0, A: 0xff},
-    color.RGBA{R: 0x0,  G: 0x0,  B: 0x0, A: 0xff},
-    color.RGBA{R: 0x0,  G: 0x0,  B: 0x0, A: 0xff},
-    color.RGBA{R: 0x0,  G: 0x0,  B: 0x0, A: 0xff},
-    color.RGBA{R: 0x0,  G: 0x0,  B: 0x0, A: 0xff},
-    color.RGBA{R: 0x0,  G: 0x0,  B: 0x0, A: 0xff},
-    color.RGBA{R: 0x0,  G: 0x0,  B: 0x0, A: 0xff},
-    color.RGBA{R: 0x0,  G: 0x0,  B: 0x0, A: 0xff},
-    color.RGBA{R: 0x0,  G: 0x0,  B: 0x0, A: 0xff},
-    color.RGBA{R: 0x0,  G: 0x0,  B: 0x0, A: 0xff},
+
+    color.RGBA{R: 0x30, G: 0x30, B: 0x50, A: 0xff}, // 244
+    color.RGBA{R: 0x28, G: 0x28, B: 0x48, A: 0xff}, // 245
+    color.RGBA{R: 0x24, G: 0x24, B: 0x40, A: 0xff}, // 246
+    color.RGBA{R: 0x20, G: 0x1c, B: 0x38, A: 0xff}, // 247
+
+    /*
+    color.RGBA{R: 0x0,  G: 0x0,  B: 0x0, A: 0xff}, // 244
+    color.RGBA{R: 0x0,  G: 0x0,  B: 0x0, A: 0xff}, // 245
+    color.RGBA{R: 0x0,  G: 0x0,  B: 0x0, A: 0xff}, // 246
+    color.RGBA{R: 0x0,  G: 0x0,  B: 0x0, A: 0xff}, // 247
+    */
+
+    color.RGBA{R: 0x1c, G: 0x18, B: 0x34, A: 0xff}, // 248
+    color.RGBA{R: 0x18, G: 0x14, B: 0x2c, A: 0xff}, // 249
+    color.RGBA{R: 0x14, G: 0x10, B: 0x24, A: 0xff}, // 250
+    color.RGBA{R: 0x10, G: 0xc,  B: 0x20, A: 0xff}, // 251
+    color.RGBA{R: 0x40, G: 0x3c, B: 0x60, A: 0xff}, // 252
+
+    /*
+    color.RGBA{R: 0x0,  G: 0x0,  B: 0x0, A: 0xff}, // 248
+    color.RGBA{R: 0x0,  G: 0x0,  B: 0x0, A: 0xff}, // 249
+    color.RGBA{R: 0x0,  G: 0x0,  B: 0x0, A: 0xff}, // 250
+    color.RGBA{R: 0x0,  G: 0x0,  B: 0x0, A: 0xff}, // 251
+    color.RGBA{R: 0x0,  G: 0x0,  B: 0x0, A: 0xff}, // 252
+    */
+
+    color.RGBA{R: 0x0,  G: 0x0,  B: 0x0, A: 0xff}, // 253
+    color.RGBA{R: 0x0,  G: 0x0,  B: 0x0, A: 0xff}, // 254
     color.RGBA{R: 0x0,  G: 0x0,  B: 0x0, A: 0xff}, // 255
 }
 
@@ -1127,16 +1145,17 @@ func (lbx *LbxFile) ReadImages(entry int) ([]*image.Paletted, error) {
     }
 
     if debug {
-        log.Printf("Width: %v\n", width)
-        log.Printf("Height: %v\n", height)
-        log.Printf("Bitmap count: %v\n", bitmapCount)
-        log.Printf("Palette offset: %v\n", paletteOffset)
+        log.Printf("%v: Width: %v\n", entry, width)
+        log.Printf("%v: Height: %v\n", entry, height)
+        log.Printf("%v: Bitmap count: %v\n", entry, bitmapCount)
+        log.Printf("%v: Palette offset: %v\n", entry, paletteOffset)
     }
 
     var paletteInfo PaletteInfo
     palette := GetDefaultPalette()
 
     if paletteOffset > 0 {
+
         paletteInfo, err = readPaletteInfo(reader, int(paletteOffset))
         if err != nil {
             return nil, err
@@ -1149,6 +1168,11 @@ func (lbx *LbxFile) ReadImages(entry int) ([]*image.Paletted, error) {
 
         if debug {
             fmt.Printf("Read palette with %v colors first color %v count %v\n", len(palette), paletteInfo.FirstColorIndex, paletteInfo.Count)
+            log.Printf("Entry %v custom palette", entry)
+            for i, c := range palette {
+                r, g, b, _ := c.RGBA()
+                fmt.Printf("  %v: r=0x%x g=0x%x b=0x%x\n", i, r/255, g/255, b/255)
+            }
         }
     }
 
