@@ -46,6 +46,16 @@ type PaletteInfo struct {
     FirstColorIndex uint16
 }
 
+func premultiply(c color.RGBA) color.RGBA {
+    a := float64(c.A) / 255.0
+    return color.RGBA{
+        R: uint8(float64(c.R) * a),
+        G: uint8(float64(c.G) * a),
+        B: uint8(float64(c.B) * a),
+        A: c.A,
+    }
+}
+
 var defaultPalette = color.Palette {
     // FIXME: set color 0 to transparent, double check that this is correct
     color.RGBA{R: 0x0,  G: 0x0,  B: 0x0, A: 0x0},
@@ -280,7 +290,11 @@ var defaultPalette = color.Palette {
     color.RGBA{R: 0x18, G: 0x14, B: 0x2c, A: 0xff},
     color.RGBA{R: 0x14, G: 0x10, B: 0x24, A: 0xff},
     color.RGBA{R: 0x10, G: 0xc,  B: 0x20, A: 0xff},
-    color.RGBA{R: 0xa0, G: 0xa0, B: 0xb4, A: 0xff},
+
+    // the transparent color 232
+    // color.RGBA{R: 0xa0, G: 0xa0, B: 0xb4, A: 0xff},
+    premultiply(color.RGBA{R: 0x10, G: 0x10, B: 0x10, A: 160}),
+
     color.RGBA{R: 0x88, G: 0x88, B: 0xa4, A: 0xff},
     color.RGBA{R: 0x74, G: 0x74, B: 0x90, A: 0xff},
     color.RGBA{R: 0x60, G: 0x60, B: 0x80, A: 0xff},
@@ -1120,7 +1134,7 @@ func (lbx *LbxFile) ReadImages(entry int) ([]*image.Paletted, error) {
     }
 
     var paletteInfo PaletteInfo
-    palette := defaultPalette
+    palette := GetDefaultPalette()
 
     if paletteOffset > 0 {
         paletteInfo, err = readPaletteInfo(reader, int(paletteOffset))
@@ -1137,6 +1151,11 @@ func (lbx *LbxFile) ReadImages(entry int) ([]*image.Paletted, error) {
             fmt.Printf("Read palette with %v colors first color %v count %v\n", len(palette), paletteInfo.FirstColorIndex, paletteInfo.Count)
         }
     }
+
+    /*
+    r, g, b, _ := palette[232].RGBA()
+    palette[232] = premultiply(color.RGBA{R: uint8(r), G: uint8(g), B: uint8(b), A: 96})
+    */
 
     // palette[241] = color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff}
 
