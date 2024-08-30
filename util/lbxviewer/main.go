@@ -140,6 +140,7 @@ type Viewer struct {
     CurrentImage int
     CurrentTile int
     State ViewerState
+    ShowPalette bool
     Font *text.GoTextFaceSource
     AnimationFrame int
     AnimationCount int
@@ -231,6 +232,11 @@ func (viewer *Viewer) Update() error {
                     viewer.State = ViewStateImage
                 } else {
                     viewer.State = ViewStateTiles
+                }
+
+            case ebiten.KeyTab:
+                if viewer.State == ViewStateImage {
+                    viewer.ShowPalette = !viewer.ShowPalette
                 }
 
             case ebiten.KeyLeft:
@@ -419,31 +425,84 @@ func (viewer *Viewer) Draw(screen *ebiten.Image) {
 
     if viewer.State == ViewStateImage {
         if len(viewer.Images[viewer.CurrentTile].Images) > 0 {
-            vector.DrawFilledRect(screen, 0, float32(startY), float32(ScreenWidth), float32(ScreenHeight - startY), color.RGBA{0, 0, 0, 64}, false)
+            vector.DrawFilledRect(screen, 0, float32(startY), float32(ScreenWidth), float32(ScreenHeight - startY), color.RGBA{0, 0, 0, 92}, false)
             middleX := ScreenWidth / 2
             middleY := ScreenHeight / 2
 
             tile := viewer.Images[viewer.CurrentTile]
 
-            var options ebiten.DrawImageOptions
-            var useImage *ebiten.Image
+            if viewer.ShowPalette {
+                useImage := tile.Images[viewer.CurrentImage]
+                bounds := useImage.Bounds()
+                var options ebiten.DrawImageOptions
+                tileSize := 8
+                options.GeoM.Translate(float64(-bounds.Dx() * tileSize) / 2.0, float64(-bounds.Dy() * tileSize) / 2.0)
+                options.GeoM.Scale(viewer.Scale, viewer.Scale)
+                options.GeoM.Translate(float64(middleX), float64(middleY))
 
-            if viewer.AnimationFrame != -1 && viewer.AnimationFrame < len(tile.Images) {
-                useImage = viewer.ImageCache.GetImage(tile.Keys[viewer.AnimationFrame], tile.Images[viewer.AnimationFrame], viewer.Time)
+                x1, y1 := options.GeoM.Apply(0, 0)
+                x2, y2 := options.GeoM.Apply(float64(bounds.Dx() * tileSize), float64(bounds.Dy() * tileSize))
+                vector.DrawFilledRect(screen, float32(x1), float32(y1), float32(x2 - x1), float32(y2 - y1), color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, false)
+
+                for x := x1; x < x2; x += float64(tileSize) * viewer.Scale {
+                    vector.StrokeLine(screen, float32(x), float32(y1), float32(x), float32(y2), 1, color.RGBA{R: 0, G: 0, B: 0, A: 0xff}, false)
+                }
+
+                for y := y1; y < y2; y += float64(tileSize) * viewer.Scale {
+                    vector.StrokeLine(screen, float32(x1), float32(y), float32(x2), float32(y), 1, color.RGBA{R: 0, G: 0, B: 0, A: 0xff}, false)
+                }
+
+                face := &text.GoTextFace{Source: viewer.Font, Size: 3 * viewer.Scale}
+                op := text.DrawOptions{}
+                op.GeoM.Translate(1, 1)
+                op.ColorScale.ScaleWithColor(color.Black)
+
+                for x := 0; x < bounds.Dx(); x++ {
+                    for y := 0; y < bounds.Dy(); y++ {
+                        posX, posY := options.GeoM.Apply(float64(x * tileSize) + 2, float64(y * tileSize) + 2)
+
+                        /*
+                        r, g, b, a := useImage.Palette[image.At(x, y)].RGBA()
+                        useColor := color.RGBA{
+                            R: uint8(r),
+                            G: uint8(g),
+                            B: uint8(b),
+                            A: uint8(a),
+                        }
+                        */
+                        useColor := useImage.At(x, y)
+                        vector.DrawFilledCircle(screen, float32(posX), float32(posY), 2 * float32(viewer.Scale), useColor, false)
+
+                        textX, textY := options.GeoM.Apply(float64(x * tileSize) + 1, float64(y * tileSize) + 4)
+
+                        op.GeoM.Reset()
+                        op.GeoM.Translate(textX, textY)
+                        index := useImage.ColorIndexAt(x, y)
+                        text.Draw(screen, fmt.Sprintf("%v", index), face, &op)
+                    }
+                }
+
             } else {
-                useImage = viewer.ImageCache.GetImage(tile.Keys[viewer.CurrentImage], tile.Images[viewer.CurrentImage], viewer.Time)
+                var options ebiten.DrawImageOptions
+                var useImage *ebiten.Image
+
+                if viewer.AnimationFrame != -1 && viewer.AnimationFrame < len(tile.Images) {
+                    useImage = viewer.ImageCache.GetImage(tile.Keys[viewer.AnimationFrame], tile.Images[viewer.AnimationFrame], viewer.Time)
+                } else {
+                    useImage = viewer.ImageCache.GetImage(tile.Keys[viewer.CurrentImage], tile.Images[viewer.CurrentImage], viewer.Time)
+                }
+
+                bounds := useImage.Bounds()
+                options.GeoM.Translate(float64(-bounds.Dx()) / 2.0, float64(-bounds.Dy()) / 2.0)
+                options.GeoM.Scale(viewer.Scale, viewer.Scale)
+                options.GeoM.Translate(float64(middleX), float64(middleY))
+                screen.DrawImage(useImage, &options)
+
+                x1, y1 := options.GeoM.Apply(0, 0)
+                x2, y2 := options.GeoM.Apply(float64(bounds.Dx()), float64(bounds.Dy()))
+
+                vector.StrokeRect(screen, float32(x1), float32(y1), float32(x2 - x1), float32(y2 - y1), 1, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, false)
             }
-
-            bounds := useImage.Bounds()
-            options.GeoM.Translate(float64(-bounds.Dx()) / 2.0, float64(-bounds.Dy()) / 2.0)
-            options.GeoM.Scale(viewer.Scale, viewer.Scale)
-            options.GeoM.Translate(float64(middleX), float64(middleY))
-            screen.DrawImage(useImage, &options)
-
-            x1, y1 := options.GeoM.Apply(0, 0)
-            x2, y2 := options.GeoM.Apply(float64(bounds.Dx()), float64(bounds.Dy()))
-
-            vector.StrokeRect(screen, float32(x1), float32(y1), float32(x2 - x1), float32(y2 - y1), 1, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, true)
         }
     }
 }
