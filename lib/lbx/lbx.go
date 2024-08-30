@@ -1122,10 +1122,10 @@ func (lbx *LbxFile) ReadImages(entry int) ([]image.Image, error) {
     }
 
     if debug {
-        fmt.Printf("Width: %v\n", width)
-        fmt.Printf("Height: %v\n", height)
-        fmt.Printf("Bitmap count: %v\n", bitmapCount)
-        fmt.Printf("Palette offset: %v\n", paletteOffset)
+        log.Printf("Width: %v\n", width)
+        log.Printf("Height: %v\n", height)
+        log.Printf("Bitmap count: %v\n", bitmapCount)
+        log.Printf("Palette offset: %v\n", paletteOffset)
     }
 
     var paletteInfo PaletteInfo
@@ -1156,7 +1156,7 @@ func (lbx *LbxFile) ReadImages(entry int) ([]image.Image, error) {
     }
 
     if debug {
-        fmt.Printf("Palette info: %+v\n", paletteInfo)
+        log.Printf("Palette info: %+v\n", paletteInfo)
     }
 
     var images []image.Image
@@ -1165,7 +1165,7 @@ func (lbx *LbxFile) ReadImages(entry int) ([]image.Image, error) {
     for i := 0; i < int(bitmapCount); i++ {
         end := offsets[i+1]
         if debug {
-            fmt.Printf("Read entry %v image %v at offset %v size %v\n", entry, i, offsets[i], end - offsets[i])
+            log.Printf("Read entry %v image %v at offset %v size %v\n", entry, i, offsets[i], end - offsets[i])
         }
 
         reader.Seek(int64(offsets[i]), io.SeekStart)
@@ -1185,7 +1185,7 @@ func (lbx *LbxFile) ReadImages(entry int) ([]image.Image, error) {
             x := 39
             y := 20
             index := img.ColorIndexAt(x, y)
-            fmt.Printf("(%v,%v)=%v\n", x, y, index)
+            log.Printf("(%v,%v)=%v\n", x, y, index)
             /*
             for x := 0; x < img.Bounds().Dx(); x++ {
                 for y := 0; y < img.Bounds().Dy(); y++ {
