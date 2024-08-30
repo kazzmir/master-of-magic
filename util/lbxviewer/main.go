@@ -51,9 +51,10 @@ func (cache *ImageCache) GetImage(key string, raw *image.Paletted, time uint64) 
 }
 
 func (cache *ImageCache) Cleanup(){
-    maxExtra := 5
+    // maxExtra := 5
 
-    if len(cache.Images) > cache.MaxSize + maxExtra {
+    if len(cache.Images) > cache.MaxSize {
+        maxExtra := len(cache.Images) - cache.MaxSize
         // var oldestKey string
         // var oldestTime uint64
 
@@ -93,6 +94,7 @@ func (cache *ImageCache) Cleanup(){
             }
         }
 
+        // log.Printf("Evicting %v keys", len(toRemove))
         for _, key := range toRemove {
             // log.Printf("Cache eviction: %v", key.Key)
             delete(cache.Images, key.Key)
