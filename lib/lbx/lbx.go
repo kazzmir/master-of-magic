@@ -1046,15 +1046,6 @@ func (lbx *LbxFile) ReadHelp(entry int) (Help, error) {
 }
 
 func (lbx *LbxFile) ReadImages(entry int) ([]image.Image, error) {
-
-    /*
-    if entry == 13 {
-        debug = true
-    } else {
-        debug = false
-    }
-    */
-
     if entry < 0 || entry >= len(lbx.Data) {
         return nil, fmt.Errorf("invalid lbx index %v, must be between 0 and %v", entry, len(lbx.Data) - 1)
     }
