@@ -398,6 +398,8 @@ func copyImage(img *image.Paletted) *image.Paletted {
     return out
 }
 
+// given a chunk of bytes that reader can read one byte at a time in sequential order, read a sprite out
+// if the first byte is 0, then this is a delta frame and the lastImage is used as a base to modify
 func readImage(reader io.Reader, lastImage *image.Paletted, width int, height int, palette color.Palette, startRleValue int) (*image.Paletted, error) {
     byteReader, ok := reader.(io.ByteReader)
     if !ok {
@@ -414,7 +416,6 @@ func readImage(reader io.Reader, lastImage *image.Paletted, width int, height in
     var img *image.Paletted
 
     if deltaFrame {
-
         if lastImage == nil {
             return nil, fmt.Errorf("cannot have a delta frame without a full frame before it")
         }
@@ -428,163 +429,103 @@ func readImage(reader io.Reader, lastImage *image.Paletted, width int, height in
     // an operation could be 'set the next pixel to value X' or an rle operation
     // which means to set the next N pixels to value X
     for x := 0; x < width; x++ {
-        v, err := byteReader.ReadByte()
+        operation, err := byteReader.ReadByte()
         if err != nil {
-            return img, nil
+            // return img, nil
+            return nil, fmt.Errorf("Missing operation byte")
         }
 
         if debug {
-            log.Printf("x:%v Read byte 0x%x\n", x, v)
+            log.Printf("x:%v Read byte 0x%x\n", x, operation)
         }
 
-        switch v {
-            case 0:
-                // byte 0: packet size in bytes
-                // N data frames of total size packet size
-                // frame byte 0: bytes in frame
-                // frame byte 1: lines of y to skip
-                // frame byte N: set x,y to value, increment y
+        if operation == 0xff {
+            continue
+        }
 
-                b, err := byteReader.ReadByte()
+        isRLE := false
+        if operation == 0x80 {
+            isRLE = true
+        } else if operation == 0 {
+            isRLE = false
+        } else {
+            return nil, fmt.Errorf("Invalid pixel operation: 0x%x", operation)
+        }
+
+        // Read some number of packets (size is packet_count)
+        // each packet consists of a skip count followed by data bytes
+        // a data byte can either be just a pixel value, or an RLE length
+        // if the operation is RLE and the value > 0xdf
+
+        b, err := byteReader.ReadByte()
+        if err != nil {
+            return nil, fmt.Errorf("Missing packet count byte")
+        }
+        packet_count := int(b)
+
+        if debug {
+            log.Printf("x:%v packet count: %v packet op 0x%x", x, packet_count, operation)
+        }
+
+        if debug {
+            log.Printf("  x: %v packet count: %v", x, packet_count)
+        }
+
+        y := 0
+        for packet_count > 0 {
+            b, err := byteReader.ReadByte()
+            if err != nil {
+                return nil, fmt.Errorf("Missing data count byte")
+            }
+            packet_count -= 1
+            data_count := int(b)
+
+            skip_count, err := byteReader.ReadByte()
+            if err != nil {
+                return nil, fmt.Errorf("Missing skip count byte")
+            }
+            packet_count -= 1
+
+            y += int(skip_count)
+            packet_count -= data_count
+
+            if debug {
+                log.Printf("  y: %v data count: %v packet count: %v\n", y, data_count, packet_count)
+            }
+
+            // read data_count bytes
+            for i := 0; i < data_count; i++ {
+                value, err := byteReader.ReadByte()
                 if err != nil {
-                    return nil, fmt.Errorf("Missing packet count byte")
-                }
-                packet_count := int(b)
-
-                if debug {
-                    log.Printf("x:%v packet count: %v packet op 0x%x", x, packet_count, v)
+                    return nil, fmt.Errorf("Missing palette index byte")
                 }
 
-                if debug {
-                    log.Printf("  x: %v packet count: %v", x, packet_count)
-                }
-
-                y := 0
-                for packet_count > 0 {
-                    b, err := byteReader.ReadByte()
-                    if err != nil {
-                        return nil, fmt.Errorf("Missing data count byte")
-                    }
-                    packet_count -= 1
-                    data_count := int(b)
-
-                    skip_count, err := byteReader.ReadByte()
-                    if err != nil {
-                        return nil, fmt.Errorf("Missing skip count byte")
-                    }
-                    packet_count -= 1
-
-                    y += int(skip_count)
-                    packet_count -= data_count
-
+                if y < height {
                     if debug {
-                        log.Printf("  y: %v data count: %v packet count: %v\n", y, data_count, packet_count)
+                        log.Printf("  set pixel %v,%v to %v\n", x, y, value)
                     }
 
-                    // read data_count bytes
-                    for i := 0; i < data_count; i++ {
-                        value, err := byteReader.ReadByte()
+                    if isRLE && value > 0xdf {
+                        length := value - 0xdf
+                        pixel, err := byteReader.ReadByte()
                         if err != nil {
-                            return nil, fmt.Errorf("Missing palette index byte")
+                            return nil, fmt.Errorf("Missing pixel value")
                         }
+                        i += 1
 
-                        if y < height {
-                            if debug {
-                                log.Printf("  set pixel %v,%v to %v\n", x, y, value)
-                            }
-                            img.SetColorIndex(x, y, value)
-                            y += 1
-                        }
-                    }
-                }
-
-            case 0x80:
-                // byte 0: packet size in bytes
-                // N data frames of total size packet size
-                // frame byte 0: bytes in frame
-                // frame byte 1: lines of y to skip
-                // frame byte N: if value is <= 223, set x,y to value, increment yj
-                //   if value > 223 then next byte is RLE length, set next RLE length pixels to value, increment y each time
-
-                b, err := byteReader.ReadByte()
-                if err != nil {
-                    return nil, fmt.Errorf("Missing packet count byte")
-                }
-                packet_count := int(b)
-
-                if debug {
-                    log.Printf("x:%v packet count: %v packet op 0x%x", x, packet_count, v)
-                }
-
-                yLength := height
-                y := 0
-
-                for packet_count > 0 {
-                    b, err := byteReader.ReadByte()
-                    if err != nil {
-                        return nil, fmt.Errorf("Missing data count byte")
-                    }
-                    data_count := int(b)
-                    packet_count -= 1
-
-                    skip_count, err := byteReader.ReadByte()
-                    if err != nil {
-                        return nil, fmt.Errorf("Missing skip count")
-                    }
-                    packet_count -= 1
-
-                    yLength -= int(skip_count)
-                    y += int(skip_count)
-                    packet_count -= data_count
-
-                    if debug {
-                        log.Printf("  rle data y: %v data count: %v packet count: %v\n", y, data_count, packet_count)
-                    }
-
-                    for i := 0; i < data_count; i++ {
-                        value, err := byteReader.ReadByte()
-                        if err != nil {
-                            return nil, fmt.Errorf("Missing RLE byte")
-                        }
-
-                        if debug {
-                            log.Printf("  rle value %v\n", value)
-                        }
-
-                        if yLength >= 0 {
-                            if value <= 0xdf {
-                                img.SetColorIndex(x, y, value)
+                        for j := byte(0); j < length; j++ {
+                            if y < height {
+                                img.SetColorIndex(x, y, pixel)
                                 y += 1
-                            } else {
-                                length := value - 0xdf
-                                pixel, err := byteReader.ReadByte()
-                                if err != nil {
-                                    return nil, fmt.Errorf("Missing pixel value")
-                                }
-                                i += 1
-                                yLength += 1
-
-                                for j := byte(0); j < length; j++ {
-                                    if yLength >= 0 {
-                                        img.SetColorIndex(x, y, pixel)
-                                        yLength -= 1
-                                        y += 1
-                                    }
-                                }
                             }
-
-                            yLength -= 1
                         }
+                    } else {
+                        img.SetColorIndex(x, y, value)
+                        y += 1
                     }
                 }
-            case 0xff:
-                if debug {
-                    log.Printf("x:%v skip\n", x)
-                }
-            default:
-                return nil, fmt.Errorf("invalid pixel operation: 0x%x", v)
+            }
         }
-
     }
 
     return img, nil
