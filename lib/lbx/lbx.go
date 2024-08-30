@@ -9,6 +9,8 @@ import (
     "encoding/binary"
     "image"
     "image/color"
+    "strings"
+    "path/filepath"
 )
 
 func ReadUint16(reader io.Reader) (uint16, error) {
@@ -1137,6 +1139,7 @@ func (lbx *LbxFile) ReadImages(entry int) ([]*image.Paletted, error) {
     return lbx.ReadImagesWithPalette(entry, defaultPalette)
 }
 
+/* a nil palette means to use the default palette */
 func (lbx *LbxFile) ReadImagesWithPalette(entry int, palette color.Palette) ([]*image.Paletted, error) {
     if entry < 0 || entry >= len(lbx.Data) {
         return nil, fmt.Errorf("invalid lbx index %v, must be between 0 and %v", entry, len(lbx.Data) - 1)
@@ -1237,6 +1240,10 @@ func (lbx *LbxFile) ReadImagesWithPalette(entry int, palette color.Palette) ([]*
                 fmt.Printf("  %v: r=0x%x g=0x%x b=0x%x\n", i, r/255, g/255, b/255)
             }
         }
+    }
+
+    if palette == nil {
+        palette = defaultPalette
     }
 
     /*
@@ -1355,4 +1362,31 @@ func ReadLbx(reader io.ReadSeeker) (LbxFile, error) {
     }
 
     return lbx, nil
+}
+
+/* some lbx images implicitly use a palette from a specific entry
+ * return a mapping from lbx entry -> palette to be used for that entry, e.g.
+ *   lbx.ReadImagesWithPalette(3, overrideMap[3])
+ */
+func GetPaletteOverrideMap(lbxFile *LbxFile, filename string) (map[int]color.Palette, error) {
+    clean := strings.ToLower(filepath.Base(filename))
+    out := make(map[int]color.Palette)
+
+    if clean == "resource.lbx" {
+        palette, err := lbxFile.GetPalette(7)
+        if err != nil {
+            return nil, err
+        }
+        out[5] = palette
+        out[6] = palette
+        out[8] = palette
+        out[9] = palette
+        out[10] = palette
+    }
+
+    if filename == "spellose.lbx" {
+        // FIXME: every entry uses the custom palette
+    }
+
+    return out, nil
 }

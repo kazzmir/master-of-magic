@@ -535,6 +535,12 @@ func MakeViewer(data []*LbxData) (*Viewer, error) {
     for _, lbxData := range data {
         indexes[lbxData.Name] = imageIndex
         imageIndex += lbxData.Lbx.TotalEntries()
+
+        customPalette, err := lbx.GetPaletteOverrideMap(lbxData.Lbx, lbxData.Name)
+        if err != nil {
+            return nil, err
+        }
+
         for i := 0; i < lbxData.Lbx.TotalEntries(); i++ {
             loader := &LbxImages{}
             loader.LbxData = lbxData
@@ -544,7 +550,7 @@ func MakeViewer(data []*LbxData) (*Viewer, error) {
                 <-maxLoad
 
                 loader.Load.Do(func(){
-                    rawImages, err := lbxData.Lbx.ReadImages(i)
+                    rawImages, err := lbxData.Lbx.ReadImagesWithPalette(i, customPalette[i])
                     if err != nil {
                         log.Printf("Unable to load images from %v at index %v: %v", lbxData.Name, i, err)
                         return
