@@ -303,7 +303,7 @@ var defaultPalette = color.Palette {
     color.RGBA{R: 0x0,  G: 0x0,  B: 0x0, A: 0xff},
     color.RGBA{R: 0x0,  G: 0x0,  B: 0x0, A: 0xff},
     color.RGBA{R: 0x0,  G: 0x0,  B: 0x0, A: 0xff},
-    color.RGBA{R: 0x0,  G: 0x0,  B: 0x0, A: 0xff},
+    color.RGBA{R: 0x0,  G: 0x0,  B: 0x0, A: 0xff}, // 255
 }
 
 func GetDefaultPalette() color.Palette {
@@ -1045,7 +1045,7 @@ func (lbx *LbxFile) ReadHelp(entry int) (Help, error) {
     return out, nil
 }
 
-func (lbx *LbxFile) ReadImages(entry int) ([]image.Image, error) {
+func (lbx *LbxFile) ReadImages(entry int) ([]*image.Paletted, error) {
     if entry < 0 || entry >= len(lbx.Data) {
         return nil, fmt.Errorf("invalid lbx index %v, must be between 0 and %v", entry, len(lbx.Data) - 1)
     }
@@ -1150,7 +1150,7 @@ func (lbx *LbxFile) ReadImages(entry int) ([]image.Image, error) {
         log.Printf("Palette info: %+v\n", paletteInfo)
     }
 
-    var images []image.Image
+    var images []*image.Paletted
 
     var lastImage *image.Paletted
     for i := 0; i < int(bitmapCount); i++ {

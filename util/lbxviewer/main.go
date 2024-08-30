@@ -6,8 +6,10 @@ import (
     "fmt"
     "sync"
     "math"
+    "slices"
 
     "image/color"
+    "image"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/util/common"
@@ -26,8 +28,86 @@ type LbxData struct {
     Name string
 }
 
+type CacheData struct {
+    Image *ebiten.Image
+    Time uint64
+}
+
+// LRU cache
+type ImageCache struct {
+    Images map[string]CacheData
+    MaxSize int
+}
+
+func (cache *ImageCache) GetImage(key string, raw *image.Paletted, time uint64) *ebiten.Image {
+    data, ok := cache.Images[key]
+    if !ok {
+        data.Image = ebiten.NewImageFromImage(raw)
+    }
+
+    data.Time = time
+    cache.Images[key] = data
+    return data.Image
+}
+
+func (cache *ImageCache) Cleanup(){
+    maxExtra := 5
+
+    if len(cache.Images) > cache.MaxSize + maxExtra {
+        // var oldestKey string
+        // var oldestTime uint64
+
+        type removeKey struct {
+            Time uint64
+            Key string
+        }
+
+        var toRemove []removeKey
+
+        for key, data := range cache.Images {
+            /*
+            if oldestTime == 0 || data.Time < oldestTime {
+                oldestTime = data.Time
+                oldestKey = key
+            }
+            */
+
+            added := false
+
+            for i := 0; i < len(toRemove); i++ {
+                if data.Time < toRemove[i].Time {
+                    toRemove = slices.Insert(toRemove, i, removeKey{Time: data.Time, Key: key})
+                    added = true
+                    break
+                }
+            }
+
+            if !added && len(toRemove) < maxExtra {
+                toRemove = append(toRemove, removeKey{Time: data.Time, Key: key})
+            }
+
+            if len(toRemove) > maxExtra {
+                toRemove = toRemove[:maxExtra]
+            }
+        }
+
+        for _, key := range toRemove {
+            // log.Printf("Cache eviction: %v", key.Key)
+            delete(cache.Images, key.Key)
+        }
+    }
+}
+
+func MakeImageCache(size int) ImageCache {
+    return ImageCache{
+        Images: make(map[string]CacheData),
+        MaxSize: size,
+    }
+}
+
 type LbxImages struct {
-    Images []*ebiten.Image
+    Keys []string
+    Images []*image.Paletted
     LbxData *LbxData
     Load sync.Once
     Loaded bool
@@ -60,6 +140,8 @@ type Viewer struct {
     AnimationFrame int
     AnimationCount int
     ShiftCount int
+    Time uint64
+    ImageCache ImageCache
 }
 
 const TileWidth = 50
@@ -71,6 +153,8 @@ func tilesPerRow() int {
 }
 
 func (viewer *Viewer) Update() error {
+    viewer.ImageCache.Cleanup()
+    viewer.Time += 1
     keys := make([]ebiten.Key, 0)
     keys = inpututil.AppendPressedKeys(keys)
 
@@ -300,7 +384,7 @@ func (viewer *Viewer) Draw(screen *ebiten.Image) {
         if image.IsLoaded() && len(image.Images) > 0 {
             var options ebiten.DrawImageOptions
 
-            draw := image.Images[0]
+            draw := viewer.ImageCache.GetImage(image.Keys[0], image.Images[0], viewer.Time)
 
             scaleX, scaleY := aspectScale(draw.Bounds().Dx(), draw.Bounds().Dy(), TileWidth, TileHeight)
 
@@ -322,6 +406,10 @@ func (viewer *Viewer) Draw(screen *ebiten.Image) {
         if x + TileWidth >= ScreenWidth {
             x = 1
             y += TileHeight
+
+            if y >= ScreenHeight {
+                break
+            }
         }
     }
 
@@ -331,11 +419,17 @@ func (viewer *Viewer) Draw(screen *ebiten.Image) {
             middleX := ScreenWidth / 2
             middleY := ScreenHeight / 2
 
+            tile := viewer.Images[viewer.CurrentTile]
+
             var options ebiten.DrawImageOptions
-            useImage := viewer.Images[viewer.CurrentTile].Images[viewer.CurrentImage]
-            if viewer.AnimationFrame != -1 && viewer.AnimationFrame < len(viewer.Images[viewer.CurrentTile].Images) {
-                useImage = viewer.Images[viewer.CurrentTile].Images[viewer.AnimationFrame]
+            var useImage *ebiten.Image
+
+            if viewer.AnimationFrame != -1 && viewer.AnimationFrame < len(tile.Images) {
+                useImage = viewer.ImageCache.GetImage(tile.Keys[viewer.AnimationFrame], tile.Images[viewer.AnimationFrame], viewer.Time)
+            } else {
+                useImage = viewer.ImageCache.GetImage(tile.Keys[viewer.CurrentImage], tile.Images[viewer.CurrentImage], viewer.Time)
             }
+
             bounds := useImage.Bounds()
             options.GeoM.Translate(float64(-bounds.Dx()) / 2.0, float64(-bounds.Dy()) / 2.0)
             options.GeoM.Scale(viewer.Scale, viewer.Scale)
@@ -364,6 +458,7 @@ func MakeViewer(data []*LbxData) (*Viewer, error) {
         AnimationFrame: -1,
         AnimationCount: 0,
         State: ViewStateTiles,
+        ImageCache: MakeImageCache(300),
     }
 
     maxLoad := make(chan bool, 4)
@@ -391,11 +486,14 @@ func MakeViewer(data []*LbxData) (*Viewer, error) {
                         log.Printf("Unable to load images from %v at index %v: %v", lbxData.Name, i, err)
                         return
                     }
-                    var images []*ebiten.Image
-                    for _, rawImage := range rawImages {
-                        images = append(images, ebiten.NewImageFromImage(rawImage))
+
+                    var keys []string
+                    for z := 0; z < len(rawImages); z++ {
+                        keys = append(keys, fmt.Sprintf("%v-%v-%v", lbxData.Name, i, z))
                     }
-                    loader.Images = images
+
+                    loader.Keys = keys
+                    loader.Images = rawImages
 
                     loader.Lock.Lock()
                     loader.Loaded = true
@@ -492,7 +590,6 @@ func main() {
             return
         }
     }
-
 
     err = ebiten.RunGame(viewer)
     if err != nil {
