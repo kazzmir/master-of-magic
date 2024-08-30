@@ -74,11 +74,13 @@ func (cache *ImageCache) Cleanup(){
 
             added := false
 
-            for i := 0; i < len(toRemove); i++ {
-                if data.Time < toRemove[i].Time {
-                    toRemove = slices.Insert(toRemove, i, removeKey{Time: data.Time, Key: key})
-                    added = true
-                    break
+            if len(toRemove) > 0 && data.Time < toRemove[len(toRemove)-1].Time {
+                for i := 0; i < len(toRemove); i++ {
+                    if data.Time < toRemove[i].Time {
+                        toRemove = slices.Insert(toRemove, i, removeKey{Time: data.Time, Key: key})
+                        added = true
+                        break
+                    }
                 }
             }
 
