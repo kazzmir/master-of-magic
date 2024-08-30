@@ -435,10 +435,6 @@ func readImage(reader io.Reader, lastImage *image.Paletted, width int, height in
             return nil, fmt.Errorf("Missing operation byte")
         }
 
-        if debug {
-            log.Printf("x:%v Read byte 0x%x\n", x, operation)
-        }
-
         if operation == 0xff {
             continue
         }
@@ -463,14 +459,6 @@ func readImage(reader io.Reader, lastImage *image.Paletted, width int, height in
         }
         packet_count := int(b)
 
-        if debug {
-            log.Printf("x:%v packet count: %v packet op 0x%x", x, packet_count, operation)
-        }
-
-        if debug {
-            log.Printf("  x: %v packet count: %v", x, packet_count)
-        }
-
         y := 0
         for packet_count > 0 {
             b, err := byteReader.ReadByte()
@@ -489,10 +477,6 @@ func readImage(reader io.Reader, lastImage *image.Paletted, width int, height in
             y += int(skip_count)
             packet_count -= data_count
 
-            if debug {
-                log.Printf("  y: %v data count: %v packet count: %v\n", y, data_count, packet_count)
-            }
-
             // read data_count bytes
             for i := 0; i < data_count; i++ {
                 value, err := byteReader.ReadByte()
@@ -501,10 +485,6 @@ func readImage(reader io.Reader, lastImage *image.Paletted, width int, height in
                 }
 
                 if y < height {
-                    if debug {
-                        log.Printf("  set pixel %v,%v to %v\n", x, y, value)
-                    }
-
                     if isRLE && value > 0xdf {
                         length := value - 0xdf
                         pixel, err := byteReader.ReadByte()
@@ -535,6 +515,7 @@ func readImage(reader io.Reader, lastImage *image.Paletted, width int, height in
  * if this image is a delta frame (when the first byte is 0) then this image starts
  * with a copy of lastImage, and modifies it with the new data.
  */
+/*
 func readImage2(reader io.Reader, lastImage *image.Paletted, width int, height int, palette color.Palette, startRleValue int) (*image.Paletted, error) {
     byteReader, ok := reader.(io.ByteReader)
     if !ok {
@@ -683,6 +664,7 @@ func readImage2(reader io.Reader, lastImage *image.Paletted, width int, height i
         x += 1
     }
 }
+*/
 
 func (lbx *LbxFile) GetReader(entry int) (*bytes.Reader, error) {
     if entry < 0 || entry >= len(lbx.Data) {
