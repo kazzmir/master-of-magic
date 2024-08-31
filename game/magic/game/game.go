@@ -537,6 +537,13 @@ func (game *Game) MakeInfoUI(cornerX int, cornerY int) []*uilib.UIElement {
 
     elements = append(elements, &uilib.UIElement{
         Layer: 1,
+        NotLeftClicked: func(this *uilib.UIElement){
+            getAlpha = game.HudUI.MakeFadeOut(7)
+
+            game.HudUI.AddDelay(7, func(){
+                game.HudUI.RemoveElements(elements)
+            })
+        },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             var options ebiten.DrawImageOptions
             options.ColorScale.ScaleAlpha(getAlpha())
@@ -619,7 +626,6 @@ func (game *Game) MakeInfoUI(cornerX int, cornerY int) []*uilib.UIElement {
         })
 
         y1 += images[0].Bounds().Dy()
-
     }
 
     return elements

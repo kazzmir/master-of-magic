@@ -20,11 +20,19 @@ type AlphaFadeFunc func() float32
 
 type UIElement struct {
     Rect image.Rectangle
+    // fires if the mouse is not inside this element
     NotInside UINotInsideElementFunc
+    // fires if the mouse is inside this element
     Inside UIInsideElementFunc
+    // fires if a left click occurred but no other element was clicked on
+    NotLeftClicked UIClickElementFunc
+    // fires when a left click occurs on this element
     LeftClick UIClickElementFunc
+    // fires when the left click button is released on this element
     LeftClickRelease UIClickElementFunc
+    // fires when this element is double clicked
     DoubleLeftClick UIClickElementFunc
+    // fires when this element is right clicked
     RightClick UIClickElementFunc
     Draw UIDrawFunc
     Layer UILayer
@@ -233,13 +241,18 @@ func (ui *UI) StandardUpdate() {
     }
     ui.doubleClickCandidates = keepDoubleClick
 
+    elementLeftClicked := false
+
     for _, element := range ui.GetHighestLayer() {
         if image.Pt(mouseX, mouseY).In(element.Rect) {
             if element.Inside != nil {
                 element.Inside(element, mouseX - element.Rect.Min.X, mouseY - element.Rect.Min.Y)
             }
-            if leftClick && element.LeftClick != nil {
-                element.LeftClick(element)
+            if leftClick {
+                elementLeftClicked = true
+                if element.LeftClick != nil {
+                    element.LeftClick(element)
+                }
                 ui.LeftClickedElements = append(ui.LeftClickedElements, element)
 
                 addDoubleClick := true
@@ -270,6 +283,14 @@ func (ui *UI) StandardUpdate() {
         } else {
             if element.NotInside != nil {
                 element.NotInside(element)
+            }
+        }
+    }
+
+    if leftClick && !elementLeftClicked {
+        for _, element := range ui.GetHighestLayer() {
+            if element.NotLeftClicked != nil {
+                element.NotLeftClicked(element)
             }
         }
     }
