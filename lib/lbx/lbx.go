@@ -1396,6 +1396,9 @@ func GetPaletteOverrideMap(lbxFile *LbxFile, filename string) (map[int]color.Pal
                 return nil, err
             }
 
+            r, g, b, _ := palette[0].RGBA()
+            palette[0] = color.RGBA{R: uint8(r/255), G: uint8(g/255), B: uint8(b/255), A: 0}
+
             out[-1] = palette
         case "conquest.lbx":
         case "lose.lbx":

@@ -77,6 +77,7 @@ func (cache *ImageCache) GetImagesTransform(lbxPath string, index int, transform
         return nil, err
     }
 
+    // FIXME: cache this for the given lbxFile and lbxPath
     customPaletteMap, err := lbx.GetPaletteOverrideMap(lbxFile, lbxPath)
     if err != nil {
         return nil, err
