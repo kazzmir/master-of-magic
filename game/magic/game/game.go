@@ -535,7 +535,49 @@ func (game *Game) MakeInfoUI(cornerX int, cornerY int) []*uilib.UIElement {
     left, _ := game.ImageCache.GetImage("resource.lbx", 5, 0)
     top, _ := game.ImageCache.GetImage("resource.lbx", 7, 0)
 
-    advisors := []string{"Surveyor", "Cartographer", "Apprentice", "Historian", "Astrologer", "Chancellor", "Tax Collector", "Grand Vizier", "Mirror"}
+    type advisorInfo struct {
+        Name string
+        Action func()
+    }
+
+    advisors := []advisorInfo{
+        advisorInfo{
+            Name: "Surveyor",
+            Action: func(){},
+        },
+        advisorInfo{
+            Name: "Cartographer",
+            Action: func(){},
+        },
+        advisorInfo{
+            Name: "Apprentice",
+            Action: func(){},
+        },
+        advisorInfo{
+            Name: "Historian",
+            Action: func(){},
+        },
+        advisorInfo{
+            Name: "Astrologer",
+            Action: func(){},
+        },
+        advisorInfo{
+            Name: "Chancellor",
+            Action: func(){},
+        },
+        advisorInfo{
+            Name: "Tax Collector",
+            Action: func(){},
+        },
+        advisorInfo{
+            Name: "Grand Vizier",
+            Action: func(){},
+        },
+        advisorInfo{
+            Name: "Mirror",
+            Action: func(){},
+        },
+    }
 
     totalHeight := buttonBackground1.Bounds().Dy() * len(advisors)
 
@@ -612,6 +654,14 @@ func (game *Game) MakeInfoUI(cornerX int, cornerY int) []*uilib.UIElement {
             NotInside: func(this *uilib.UIElement){
                 imageIndex = 0
             },
+            LeftClick: func(this *uilib.UIElement){
+                getAlpha = game.HudUI.MakeFadeOut(fadeSpeed)
+
+                game.HudUI.AddDelay(fadeSpeed, func(){
+                    game.HudUI.RemoveElements(elements)
+                    advisor.Action()
+                })
+            },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 var options ebiten.DrawImageOptions
                 options.ColorScale.ScaleAlpha(getAlpha())
@@ -623,7 +673,7 @@ func (game *Game) MakeInfoUI(cornerX int, cornerY int) []*uilib.UIElement {
                 options.GeoM.Translate(float64(use.Bounds().Dx()), 0)
                 screen.DrawImage(ends[imageIndex], &options)
 
-                buttonFont.Print(screen, float64(myX + 2), float64(myY + 2), 1, options.ColorScale, advisor)
+                buttonFont.Print(screen, float64(myX + 2), float64(myY + 2), 1, options.ColorScale, advisor.Name)
                 buttonFont.PrintRight(screen, float64(myX) + requiredWidth - 2, float64(myY + 2), 1, options.ColorScale, fmt.Sprintf("(F%v)", advisorIndex+1))
             },
         })
