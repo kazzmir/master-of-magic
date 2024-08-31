@@ -499,7 +499,9 @@ func (game *Game) MakeInfoUI(cornerX int, cornerY int) []*uilib.UIElement {
         return nil
     }
 
-    getAlpha := game.HudUI.MakeFadeIn(7)
+    fadeSpeed := uint64(6)
+
+    getAlpha := game.HudUI.MakeFadeIn(fadeSpeed)
 
     blackPalette := color.Palette{
         color.RGBA{R: 0, G: 0, B: 0, A: 0},
@@ -533,14 +535,16 @@ func (game *Game) MakeInfoUI(cornerX int, cornerY int) []*uilib.UIElement {
     left, _ := game.ImageCache.GetImage("resource.lbx", 5, 0)
     top, _ := game.ImageCache.GetImage("resource.lbx", 7, 0)
 
-    totalHeight := buttonBackground1.Bounds().Dy() * 9
+    advisors := []string{"Surveyor", "Cartographer", "Apprentice", "Historian", "Astrologer", "Chancellor", "Tax Collector", "Grand Vizier", "Mirror"}
+
+    totalHeight := buttonBackground1.Bounds().Dy() * len(advisors)
 
     elements = append(elements, &uilib.UIElement{
         Layer: 1,
         NotLeftClicked: func(this *uilib.UIElement){
-            getAlpha = game.HudUI.MakeFadeOut(7)
+            getAlpha = game.HudUI.MakeFadeOut(fadeSpeed)
 
-            game.HudUI.AddDelay(7, func(){
+            game.HudUI.AddDelay(fadeSpeed, func(){
                 game.HudUI.RemoveElements(elements)
             })
         },
@@ -584,7 +588,6 @@ func (game *Game) MakeInfoUI(cornerX int, cornerY int) []*uilib.UIElement {
         },
     })
 
-    advisors := []string{"Surveyor", "Cartographer", "Apprentice", "Historian", "Astrologer", "Chancellor", "Tax Collector", "Grand Vizier", "Mirror"}
 
     x1 := cornerX + left.Bounds().Dx()
     y1 := cornerY + top.Bounds().Dy()
