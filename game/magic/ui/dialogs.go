@@ -1,7 +1,7 @@
 package ui
 
 import (
-    // "log"
+    "log"
     "image"
     "image/color"
 
@@ -395,6 +395,179 @@ func MakeConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.Im
                 window.DrawImage(noButtons[index], &options)
             },
         })
+    }
+
+    return elements
+}
+
+type Selection struct {
+    Name string
+    Action func()
+    Hotkey string
+}
+
+func MakeSelectionUI(ui *UI, lbxCache *lbx.LbxCache, imageCache *util.ImageCache, cornerX int, cornerY int, selectionTitle string,choices []Selection) []*UIElement {
+    var elements []*UIElement
+
+    fontLbx, err := lbxCache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        log.Printf("Unable to read fonts.lbx: %v", err)
+        return nil
+    }
+
+    font4, err := font.ReadFont(fontLbx, 0, 4)
+    if err != nil {
+        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
+        return nil
+    }
+
+    fadeSpeed := uint64(6)
+
+    getAlpha := ui.MakeFadeIn(fadeSpeed)
+
+    blackPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0xff},
+    }
+
+    // FIXME: this is too bright
+    yellowGradient := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0},
+        color.RGBA{R: 0xed, G: 0xa4, B: 0x00, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xbc, B: 0x00, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xd6, B: 0x11, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
+    }
+
+    buttonFont := font.MakeOptimizedFontWithPalette(font4, blackPalette)
+    topFont := font.MakeOptimizedFontWithPalette(font4, yellowGradient)
+
+    buttonBackground1, _ := imageCache.GetImage("resource.lbx", 13, 0)
+    left, _ := imageCache.GetImage("resource.lbx", 5, 0)
+    top, _ := imageCache.GetImage("resource.lbx", 7, 0)
+
+    requiredWidth := float64(0)
+
+    for _, choice := range choices {
+        width := buttonFont.MeasureTextWidth(choice.Name, 1) + 2
+        if choice.Hotkey != "" {
+            width += buttonFont.MeasureTextWidth(choice.Hotkey, 1) + 2
+        }
+        if width > requiredWidth {
+            requiredWidth = width
+        }
+    }
+
+    totalHeight := buttonBackground1.Bounds().Dy() * len(choices)
+
+    elements = append(elements, &UIElement{
+        Layer: 1,
+        NotLeftClicked: func(this *UIElement){
+            getAlpha = ui.MakeFadeOut(fadeSpeed)
+
+            ui.AddDelay(fadeSpeed, func(){
+                ui.RemoveElements(elements)
+            })
+        },
+        Draw: func(element *UIElement, screen *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            options.ColorScale.ScaleAlpha(getAlpha())
+            bottom, _ := imageCache.GetImage("resource.lbx", 9, 0)
+            options.GeoM.Reset()
+            // FIXME: figure out why -3 is needed
+            options.GeoM.Translate(float64(cornerX + left.Bounds().Dx()), float64(cornerY + top.Bounds().Dy() + totalHeight - 3))
+            bottomSub := bottom.SubImage(image.Rect(0, 0, int(requiredWidth), bottom.Bounds().Dy())).(*ebiten.Image)
+            screen.DrawImage(bottomSub, &options)
+
+            bottomLeft, _ := imageCache.GetImage("resource.lbx", 6, 0)
+            options.GeoM.Reset()
+            options.GeoM.Translate(float64(cornerX), float64(cornerY + totalHeight))
+            screen.DrawImage(bottomLeft, &options)
+
+            options.GeoM.Reset()
+            options.GeoM.Translate(float64(cornerX), float64(cornerY))
+            leftSub := left.SubImage(image.Rect(0, 0, left.Bounds().Dx(), totalHeight)).(*ebiten.Image)
+            screen.DrawImage(leftSub, &options)
+
+            topSub := top.SubImage(image.Rect(0, 0, int(requiredWidth), top.Bounds().Dy())).(*ebiten.Image)
+            options.GeoM.Reset()
+            options.GeoM.Translate(float64(cornerX + left.Bounds().Dx()), float64(cornerY))
+            screen.DrawImage(topSub, &options)
+
+            right, _ := imageCache.GetImage("resource.lbx", 8, 0)
+            options.GeoM.Reset()
+            options.GeoM.Translate(float64(cornerX + left.Bounds().Dx()) + requiredWidth, float64(cornerY))
+            rightSub := right.SubImage(image.Rect(0, 0, right.Bounds().Dx(), totalHeight)).(*ebiten.Image)
+            screen.DrawImage(rightSub, &options)
+
+            bottomRight, _ := imageCache.GetImage("resource.lbx", 10, 0)
+            options.GeoM.Reset()
+            options.GeoM.Translate(float64(cornerX + left.Bounds().Dx()) + requiredWidth, float64(cornerY + totalHeight))
+            screen.DrawImage(bottomRight, &options)
+
+            topFont.Print(screen, float64(cornerX + left.Bounds().Dx() + 4), float64(cornerY + 4), 1, options.ColorScale, selectionTitle)
+        },
+    })
+
+    x1 := cornerX + left.Bounds().Dx()
+    y1 := cornerY + top.Bounds().Dy()
+
+    // FIXME: handle more than 9 choices
+    for choiceIndex, choice := range choices {
+        images, _ := imageCache.GetImages("resource.lbx", 12 + choiceIndex)
+        // the ends are all the same image
+        ends, _ := imageCache.GetImages("resource.lbx", 22)
+
+        myX := x1
+        myY := y1
+
+        rect := image.Rect(myX, myY, myX + int(requiredWidth), myY + images[0].Bounds().Dy())
+        imageIndex := 0
+        elements = append(elements, &UIElement{
+            Rect: rect,
+            Layer: 1,
+            Inside: func(this *UIElement, x int, y int){
+                imageIndex = 1
+            },
+            NotInside: func(this *UIElement){
+                imageIndex = 0
+            },
+            LeftClick: func(this *UIElement){
+                getAlpha = ui.MakeFadeOut(fadeSpeed)
+
+                ui.AddDelay(fadeSpeed, func(){
+                    ui.RemoveElements(elements)
+                    choice.Action()
+                })
+            },
+            Draw: func(element *UIElement, screen *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.ColorScale.ScaleAlpha(getAlpha())
+                options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
+
+                use := images[imageIndex].SubImage(image.Rect(0, 0, int(requiredWidth), images[imageIndex].Bounds().Dy())).(*ebiten.Image)
+                screen.DrawImage(use, &options)
+
+                options.GeoM.Translate(float64(use.Bounds().Dx()), 0)
+                screen.DrawImage(ends[imageIndex], &options)
+
+                buttonFont.Print(screen, float64(myX + 2), float64(myY + 2), 1, options.ColorScale, choice.Name)
+                if choice.Hotkey != "" {
+                    buttonFont.PrintRight(screen, float64(myX) + requiredWidth - 2, float64(myY + 2), 1, options.ColorScale, choice.Hotkey)
+                }
+            },
+        })
+
+        y1 += images[0].Bounds().Dy()
     }
 
     return elements
