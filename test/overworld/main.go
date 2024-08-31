@@ -26,6 +26,10 @@ func NewEngine() (*Engine, error) {
 
     wizard := setup.WizardCustom{
         Banner: data.BannerBlue,
+        Abilities: []setup.WizardAbility{
+            setup.AbilityAlchemy,
+            setup.AbilitySageMaster,
+        },
         Books: []data.WizardBook{
             data.WizardBook{
                 Magic: data.LifeMagic,

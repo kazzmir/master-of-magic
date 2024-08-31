@@ -36,25 +36,25 @@ type wizardSlot struct {
 
 type WizardAbility int
 const (
-        AbilityAlchemy WizardAbility = iota
-        AbilityWarlord
-        AbilityChanneler
-        AbilityArchmage
-        AbilityArtificer
-        AbilityConjurer
-        AbilitySageMaster
-        AbilityMyrran
-        AbilityDivinePower
-        AbilityFamous
-        AbilityRunemaster
-        AbilityCharismatic
-        AbilityChaosMastery
-        AbilityNatureMastery
-        AbilitySorceryMastery
-        AbilityInfernalPower
-        AbilityManaFocusing
-        AbilityNodeMastery
-        AbilityNone
+    AbilityAlchemy WizardAbility = iota
+    AbilityWarlord
+    AbilityChanneler
+    AbilityArchmage
+    AbilityArtificer
+    AbilityConjurer
+    AbilitySageMaster
+    AbilityMyrran
+    AbilityDivinePower
+    AbilityFamous
+    AbilityRunemaster
+    AbilityCharismatic
+    AbilityChaosMastery
+    AbilityNatureMastery
+    AbilitySorceryMastery
+    AbilityInfernalPower
+    AbilityManaFocusing
+    AbilityNodeMastery
+    AbilityNone
 )
 
 func (ability WizardAbility) DependencyExplanation() string {
@@ -1074,7 +1074,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
     return outError
 }
 
-func joinAbilities(abilities []WizardAbility) string {
+func JoinAbilities(abilities []WizardAbility) string {
     // this could be simplified by iterating backwards through the array and
     // preprending 'and' or ', ' for each element, depending on its index
 
@@ -1486,7 +1486,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
                 }
             })
 
-            screen.AbilityFontSelected.Print(window, 12, 180, 1, ebiten.ColorScale{}, joinAbilities(screen.CustomWizard.Abilities))
+            screen.AbilityFontSelected.Print(window, 12, 180, 1, ebiten.ColorScale{}, JoinAbilities(screen.CustomWizard.Abilities))
             screen.NameFontBright.PrintCenter(window, 223, 185, 1, ebiten.ColorScale{}, fmt.Sprintf("%v picks", picksLeft()))
         },
     }
@@ -1766,7 +1766,7 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
                 options.GeoM.Translate(180, 18)
                 window.DrawImage(screen.WindyBorder, &options)
 
-                screen.AbilityFontSelected.Print(window, 12, 180, 1, ebiten.ColorScale{}, joinAbilities(screen.CustomWizard.Abilities))
+                screen.AbilityFontSelected.Print(window, 12, 180, 1, ebiten.ColorScale{}, JoinAbilities(screen.CustomWizard.Abilities))
                 screen.NameFontBright.PrintCenter(window, 223, 185, 1, ebiten.ColorScale{}, fmt.Sprintf("%v picks", picksLeft()))
 
                 showDescription := func(y float64, text string, background *ebiten.Image){
@@ -2022,7 +2022,7 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
             raceShadowFont.PrintCenter(window, 243 + 1, 132, 1, ebiten.ColorScale{}, "Myrran Races:")
             raceFont.PrintCenter(window, 243, 132, 1, ebiten.ColorScale{}, "Myrran Races:")
 
-            screen.AbilityFontSelected.Print(window, 12, 180, 1, ebiten.ColorScale{}, joinAbilities(screen.CustomWizard.Abilities))
+            screen.AbilityFontSelected.Print(window, 12, 180, 1, ebiten.ColorScale{}, JoinAbilities(screen.CustomWizard.Abilities))
 
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
                 if element.Draw != nil {
@@ -2091,7 +2091,7 @@ func (screen *NewWizardScreen) MakeSelectBannerUI() *uilib.UI {
 
             screen.SelectFont.PrintCenter(window, 245, 2, 1, ebiten.ColorScale{}, "Select Banner")
 
-            screen.AbilityFontSelected.Print(window, 12, 180, 1, ebiten.ColorScale{}, joinAbilities(screen.CustomWizard.Abilities))
+            screen.AbilityFontSelected.Print(window, 12, 180, 1, ebiten.ColorScale{}, JoinAbilities(screen.CustomWizard.Abilities))
 
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
                 if element.Draw != nil {

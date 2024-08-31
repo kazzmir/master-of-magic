@@ -536,6 +536,8 @@ func (game *Game) ShowMirrorUI(){
 
     smallFont := font.MakeOptimizedFontWithPalette(fonts[0], yellowPalette)
 
+    heroFont := font.MakeOptimizedFontWithPalette(fonts[2], yellowPalette)
+
     var element *uilib.UIElement
 
     getAlpha := game.HudUI.MakeFadeIn(7)
@@ -613,6 +615,11 @@ func (game *Game) ShowMirrorUI(){
 
             options.GeoM.Translate(34, 55)
             draw.DrawBooks(screen, options, &imageCache, player.Wizard.Books, game.BookOrder)
+
+            smallFont.Print(screen, float64(cornerX + 13), float64(cornerY + 112), 1, options.ColorScale, setup.JoinAbilities(player.Wizard.Abilities))
+
+            heroFont.PrintCenter(screen, float64(cornerX + 90), float64(cornerY + 131), 1, options.ColorScale, "Heroes")
+            // FIXME: draw hero portraits here
         },
     }
 
