@@ -8,6 +8,8 @@ import (
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/units"
+    playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     gamelib "github.com/kazzmir/master-of-magic/game/magic/game"
 
     "github.com/hajimehoshi/ebiten/v2"
@@ -53,8 +55,27 @@ func NewMagicGame() (*MagicGame, error) {
     game.NewWizardScreen.Activate()
     */
 
+    wizard := setup.WizardCustom{
+        Banner: data.BannerBlue,
+    }
+
     game.Game = gamelib.MakeGame(game.LbxCache)
+    game.Game.Plane = data.PlaneArcanus
     game.Game.Activate()
+
+    player := game.Game.AddPlayer(wizard)
+
+    player.AddUnit(playerlib.Unit{
+        Unit: units.GreatDrake,
+        Plane: data.PlaneArcanus,
+        Banner: wizard.Banner,
+        X: 5,
+        Y: 5,
+    })
+
+    player.LiftFog(4, 5, 3)
+
+    game.Game.DoNextTurn()
 
     return game, nil
 }
