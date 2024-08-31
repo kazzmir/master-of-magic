@@ -1372,20 +1372,46 @@ func GetPaletteOverrideMap(lbxFile *LbxFile, filename string) (map[int]color.Pal
     clean := strings.ToLower(filepath.Base(filename))
     out := make(map[int]color.Palette)
 
-    if clean == "resource.lbx" {
-        palette, err := lbxFile.GetPalette(7)
-        if err != nil {
-            return nil, err
-        }
-        out[5] = palette
-        out[6] = palette
-        out[8] = palette
-        out[9] = palette
-        out[10] = palette
-    }
+    switch clean {
+        case "resource.lbx":
+            palette, err := lbxFile.GetPalette(7)
+            if err != nil {
+                return nil, err
+            }
+            out[5] = palette
+            out[6] = palette
+            out[8] = palette
+            out[9] = palette
+            out[10] = palette
+        case "spellose.lbx":
+            palette, err := lbxFile.GetPalette(28)
+            if err != nil {
+                return nil, err
+            }
 
-    if filename == "spellose.lbx" {
-        // FIXME: every entry uses the custom palette
+            out[-1] = palette
+        case "mainscrn.lbx":
+            palette, err := lbxFile.GetPalette(0)
+            if err != nil {
+                return nil, err
+            }
+
+            out[-1] = palette
+        case "conquest.lbx":
+        case "lose.lbx":
+        case "splmastr.lbx":
+        case "wizlab.lbx":
+        case "vortex.lbx":
+            // FIXME
+
+            /*
+            palette, err := lbxFile.GetPalette(0)
+            if err != nil {
+                return nil, err
+            }
+
+            out[-1] = palette
+            */
     }
 
     return out, nil

@@ -112,6 +112,7 @@ func MakeImageCache(size int) ImageCache {
 type LbxImages struct {
     Keys []string
     Images []*image.Paletted
+    CustomPalette bool
     LbxData *LbxData
     Load sync.Once
     Loaded bool
@@ -380,6 +381,8 @@ func (viewer *Viewer) Draw(screen *ebiten.Image) {
         img := viewer.Images[viewer.CurrentTile].Images[viewer.CurrentImage]
         text.Draw(screen, fmt.Sprintf("Dimensions: %v x %v", img.Bounds().Dx(), img.Bounds().Dy()), face, op)
     }
+    op.GeoM.Translate(0, 20)
+    text.Draw(screen, fmt.Sprintf("Has Palette: %v", viewer.Images[viewer.CurrentTile].CustomPalette), face, op)
 
     startX := 1
     startY := 100
@@ -536,7 +539,7 @@ func MakeViewer(data []*LbxData) (*Viewer, error) {
         indexes[lbxData.Name] = imageIndex
         imageIndex += lbxData.Lbx.TotalEntries()
 
-        customPalette, err := lbx.GetPaletteOverrideMap(lbxData.Lbx, lbxData.Name)
+        customPaletteMap, err := lbx.GetPaletteOverrideMap(lbxData.Lbx, lbxData.Name)
         if err != nil {
             return nil, err
         }
@@ -550,7 +553,13 @@ func MakeViewer(data []*LbxData) (*Viewer, error) {
                 <-maxLoad
 
                 loader.Load.Do(func(){
-                    rawImages, err := lbxData.Lbx.ReadImagesWithPalette(i, customPalette[i])
+
+                    palette := customPaletteMap[i]
+                    if palette == nil {
+                        palette = customPaletteMap[-1]
+                    }
+
+                    rawImages, err := lbxData.Lbx.ReadImagesWithPalette(i, palette)
                     if err != nil {
                         log.Printf("Unable to load images from %v at index %v: %v", lbxData.Name, i, err)
                         return
@@ -563,6 +572,13 @@ func MakeViewer(data []*LbxData) (*Viewer, error) {
 
                     loader.Keys = keys
                     loader.Images = rawImages
+
+                    hasPalette, err := lbxData.Lbx.GetPalette(i)
+                    if err == nil && hasPalette != nil {
+                        loader.CustomPalette = true
+                    } else {
+                        loader.CustomPalette = false
+                    }
 
                     loader.Lock.Lock()
                     loader.Loaded = true
