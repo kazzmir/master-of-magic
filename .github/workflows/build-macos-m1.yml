@@ -1,0 +1,25 @@
+name: Build Macos M1
+
+on: push
+
+jobs:
+  build:
+    name: Build code
+    runs-on: macos-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up go
+        uses: actions/setup-go@v5
+
+      - name: Install go dependencies
+        run: |
+          go get ./...
+          go mod tidy
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Build
+        run: go build ./game/magic
