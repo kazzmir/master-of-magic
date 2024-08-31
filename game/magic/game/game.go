@@ -5,6 +5,7 @@ import (
     "image"
     "math/rand"
     "log"
+    "bytes"
     "fmt"
 
     "github.com/kazzmir/master-of-magic/game/magic/setup"
@@ -661,6 +662,54 @@ func (game *Game) ShowTaxCollectorUI(cornerX int, cornerY int){
     game.HudUI.AddElements(uilib.MakeSelectionUI(game.HudUI, game.Cache, &game.ImageCache, cornerX, cornerY, "Tax Per Population", taxes))
 }
 
+// pass in desc.lbx
+func ReadSpellDescriptions(file *lbx.LbxFile) ([]string, error) {
+    entries, err := file.RawData(0)
+    if err != nil {
+        return nil, err
+    }
+
+    reader := bytes.NewReader(entries)
+
+    count, err := lbx.ReadUint16(reader)
+    if err != nil {
+        return nil, err
+    }
+
+    if count > 10000 {
+        return nil, fmt.Errorf("Spell count was too high: %v", count)
+    }
+
+    size, err := lbx.ReadUint16(reader)
+    if err != nil {
+        return nil, err
+    }
+
+    if size > 10000 {
+        return nil, fmt.Errorf("Size of each spell entry was too high: %v", size)
+    }
+
+    var descriptions []string
+
+    for i := 0; i < int(count); i++ {
+        data := make([]byte, size)
+        _, err := reader.Read(data)
+
+        if err != nil {
+            break
+        }
+
+        nullByte := bytes.IndexByte(data, 0)
+        if nullByte != -1 {
+            descriptions = append(descriptions, string(data[0:nullByte]))
+        } else {
+            descriptions = append(descriptions, string(data))
+        }
+    }
+
+    return descriptions, nil
+}
+
 func (game *Game) ShowApprenticeUI(){
     var elements []*uilib.UIElement
 
@@ -673,6 +722,31 @@ func (game *Game) ShowApprenticeUI(){
     bookFlip, _ := imageCache.GetImages("book.lbx", 1)
     bookFlipIndex := uint64(0)
     bookFlipReverse := false
+
+    fontLbx, err := game.Cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        log.Printf("Unable to read fonts: %v", err)
+        return
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        log.Printf("Unable to read fonts: %v", err)
+        return
+    }
+
+    red := color.RGBA{R: 0x5a, G: 0, B: 0, A: 0xff}
+    redPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        red, red, red,
+        red, red, red,
+        red, red, red,
+        red, red, red,
+        red, red, red,
+        red, red, red,
+    }
+
+    titleFont := font.MakeOptimizedFontWithPalette(fonts[5], redPalette)
 
     // title font: fonts[5]
     // mystery font title: fonts[7]
@@ -692,6 +766,8 @@ func (game *Game) ShowApprenticeUI(){
             var options ebiten.DrawImageOptions
             options.ColorScale.ScaleAlpha(getAlpha())
             screen.DrawImage(background, &options)
+
+            titleFont.PrintCenter(screen, 90, 11, 1, options.ColorScale, "Unit Spells")
 
             animationIndex := game.HudUI.Counter
             if bookFlipIndex > 0 && (animationIndex - bookFlipIndex) / 6 < uint64(len(bookFlip)) {

@@ -49,6 +49,11 @@ func MakeGPUSpriteMapWithPalette(font *LbxFont, palette color.Palette) (*ebiten.
 
     for _, glyph := range font.Glyphs {
         raw := glyph.MakeImageWithPalette(palette)
+
+        // FIXME: check that all the pixels referenced by the glyph are actually in the palette
+        // meaning, if the palette doesn't have enough values in it then we will get a crash
+        // at the ebiten.NewImageFromImage() call
+
         if raw != nil {
             posX := x * maxWidth
             posY := y * font.Height
