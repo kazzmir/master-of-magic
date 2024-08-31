@@ -82,8 +82,6 @@ func NewEngine() (*Engine, error) {
 
     game.DoNextTurn()
 
-    game.ShowMirrorUI()
-
     return &Engine{
         LbxCache: cache,
         Game: game,
