@@ -1,4 +1,5 @@
-![build](https://github.com/kazzmir/master-of-magic/actions/workflows/build-linux.yml/badge.svg)
+![build linux](https://github.com/kazzmir/master-of-magic/actions/workflows/build-linux.yml/badge.svg)
+![build macos](https://github.com/kazzmir/master-of-magic/actions/workflows/build-macos-m1.yml/badge.svg)
 
 # Master of Magic clone
 
