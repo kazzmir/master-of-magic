@@ -77,3 +77,21 @@ const (
     PlaneMyrror
 )
 
+type WizardBase int
+
+const (
+    WizardMerlin WizardBase = iota
+    WizardRaven
+    WizardSharee
+    WizardLoPan
+    WizardJafar
+    WizardOberic
+    WizardRjak
+    WizardSssra
+    WizardTauron
+    WizardFreya
+    WizardHorus
+    WizardAriel
+    WizardTlaloc
+    WizardKali
+)

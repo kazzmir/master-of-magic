@@ -495,6 +495,82 @@ func (game *Game) ShowGrandVizierUI(){
     game.HudUI.AddElements(uilib.MakeConfirmDialogWithLayer(game.HudUI, game.Cache, &game.ImageCache, 1, "Do you wish to allow the Grand Vizier to select what buildings your cities create?", yes, no))
 }
 
+func (game *Game) ShowMirrorUI(){
+    cornerX := 50
+    cornerY := 1
+
+    var element *uilib.UIElement
+
+    getAlpha := game.HudUI.MakeFadeIn(7)
+
+    var portrait *ebiten.Image
+
+    if len(game.Players) > 0 {
+
+        bannerIndex := 0
+        switch game.Players[0].Wizard.Banner {
+            case data.BannerBlue: bannerIndex = 0
+            case data.BannerGreen: bannerIndex = 1
+            case data.BannerPurple: bannerIndex = 2
+            case data.BannerRed: bannerIndex = 3
+            case data.BannerYellow: bannerIndex = 4
+        }
+
+        wizardIndex := 0
+
+        switch game.Players[0].Wizard.Base {
+            case data.WizardMerlin: wizardIndex = 0
+            case data.WizardRaven: wizardIndex = 5
+            case data.WizardSharee: wizardIndex = 10
+            case data.WizardLoPan: wizardIndex = 15
+            case data.WizardJafar: wizardIndex = 20
+            case data.WizardOberic: wizardIndex = 25
+            case data.WizardRjak: wizardIndex = 30
+            case data.WizardSssra: wizardIndex = 35
+            case data.WizardTauron: wizardIndex = 40
+            case data.WizardFreya: wizardIndex = 45
+            case data.WizardHorus: wizardIndex = 50
+            case data.WizardAriel: wizardIndex = 55
+            case data.WizardTlaloc: wizardIndex = 60
+            case data.WizardKali: wizardIndex = 65
+        }
+
+        portrait, _ = game.ImageCache.GetImage("lilwiz.lbx", wizardIndex + bannerIndex, 0)
+    }
+
+    doClose := func(){
+        getAlpha = game.HudUI.MakeFadeOut(7)
+        game.HudUI.AddDelay(7, func(){
+            game.HudUI.RemoveElement(element)
+        })
+    }
+
+    element = &uilib.UIElement{
+        Layer: 1,
+        LeftClick: func(this *uilib.UIElement){
+            doClose()
+        },
+        NotLeftClicked: func(this *uilib.UIElement){
+            doClose()
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            background, _ := game.ImageCache.GetImage("backgrnd.lbx", 4, 0)
+
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(cornerX), float64(cornerY))
+            options.ColorScale.ScaleAlpha(getAlpha())
+            screen.DrawImage(background, &options)
+
+            if portrait != nil {
+                options.GeoM.Translate(11, 11)
+                screen.DrawImage(portrait, &options)
+            }
+        },
+    }
+
+    game.HudUI.AddElement(element)
+}
+
 func (game *Game) ShowTaxCollectorUI(cornerX int, cornerY int){
     taxes := []uilib.Selection{
         uilib.Selection{
@@ -579,7 +655,9 @@ func (game *Game) MakeInfoUI(cornerX int, cornerY int) []*uilib.UIElement {
         },
         uilib.Selection{
             Name: "Mirror",
-            Action: func(){},
+            Action: func(){
+                game.ShowMirrorUI()
+            },
             Hotkey: "(F9)",
         },
     }

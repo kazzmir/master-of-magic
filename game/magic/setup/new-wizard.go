@@ -54,6 +54,7 @@ type wizardSlot struct {
     Name string
     // the block that the wizard's name is printed on in the ui
     Background *ebiten.Image
+    Base data.WizardBase
     // the portrait of the wizard shown when the user's cursor is on top of their name
     Portrait *ebiten.Image
     Books []wizardBook
@@ -236,7 +237,9 @@ const (
 
 type WizardCustom struct {
     Name string
+    // FIXME: remove portrait
     Portrait *ebiten.Image
+    Base data.WizardBase
     Abilities []WizardAbility
     Books []wizardBook
     Spells lbx.Spells
@@ -447,6 +450,7 @@ func (screen *NewWizardScreen) MakeCustomPictureUI() *uilib.UI {
     insideFunc := func(wizard int){
         screen.CustomWizard.Portrait = screen.WizardSlots[wizard].Portrait
         screen.CustomWizard.Name = screen.WizardSlots[wizard].Name
+        screen.CustomWizard.Base = screen.WizardSlots[wizard].Base
     }
 
     elements := screen.MakeWizardUIElements(clickFunc, insideFunc)
@@ -906,6 +910,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                 Name: "Merlin",
                 Background: loadImage(9, 0),
                 Portrait: loadWizardPortrait(0),
+                Base: data.WizardMerlin,
                 Books: []wizardBook{
                     wizardBook{Magic: LifeMagic, Count: 5},
                     wizardBook{Magic: NatureMagic, Count: 5},
@@ -916,6 +921,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                 Name: "Raven",
                 Background: loadImage(10, 0),
                 Portrait: loadWizardPortrait(1),
+                Base: data.WizardRaven,
                 Books: []wizardBook{
                     wizardBook{Magic: SorceryMagic, Count: 6},
                     wizardBook{Magic: NatureMagic, Count: 5},
@@ -926,6 +932,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                 Name: "Sharee",
                 Background: loadImage(11, 0),
                 Portrait: loadWizardPortrait(2),
+                Base: data.WizardSharee,
                 Books: []wizardBook{
                     wizardBook{Magic: DeathMagic, Count: 5},
                     wizardBook{Magic: ChaosMagic, Count: 5},
@@ -936,6 +943,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                 Name: "Lo Pan",
                 Background: loadImage(12, 0),
                 Portrait: loadWizardPortrait(3),
+                Base: data.WizardLoPan,
                 Books: []wizardBook{
                     wizardBook{Magic: SorceryMagic, Count: 5},
                     wizardBook{Magic: ChaosMagic, Count: 5},
@@ -946,6 +954,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                 Name: "Jafar",
                 Background: loadImage(13, 0),
                 Portrait: loadWizardPortrait(4),
+                Base: data.WizardJafar,
                 Books: []wizardBook{
                     wizardBook{Magic: SorceryMagic, Count: 10},
                 },
@@ -955,6 +964,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                 Name: "Oberic",
                 Background: loadImage(14, 0),
                 Portrait: loadWizardPortrait(5),
+                Base: data.WizardOberic,
                 Books: []wizardBook{
                     wizardBook{Magic: NatureMagic, Count: 5},
                     wizardBook{Magic: ChaosMagic, Count: 5},
@@ -965,15 +975,17 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                 Name: "Rjak",
                 Background: loadImage(15, 0),
                 Portrait: loadWizardPortrait(6),
+                Base: data.WizardRjak,
                 Books: []wizardBook{
                     wizardBook{Magic: DeathMagic, Count: 9},
                 },
                 ExtraAbility: AbilityInfernalPower,
             },
             wizardSlot{
-                Name: "Ssr'ra",
+                Name: "Sss'ra",
                 Background: loadImage(16, 0),
                 Portrait: loadWizardPortrait(7),
+                Base: data.WizardSssra,
                 Books: []wizardBook{
                     wizardBook{Magic: LifeMagic, Count: 4},
                     wizardBook{Magic: ChaosMagic, Count: 4},
@@ -984,6 +996,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                 Name: "Tauron",
                 Background: loadImage(17, 0),
                 Portrait: loadWizardPortrait(8),
+                Base: data.WizardTauron,
                 Books: []wizardBook{
                     wizardBook{Magic: ChaosMagic, Count: 10},
                 },
@@ -993,6 +1006,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                 Name: "Freya",
                 Background: loadImage(18, 0),
                 Portrait: loadWizardPortrait(9),
+                Base: data.WizardFreya,
                 Books: []wizardBook{
                     wizardBook{Magic: NatureMagic, Count: 10},
                 },
@@ -1002,6 +1016,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                 Name: "Horus",
                 Background: loadImage(19, 0),
                 Portrait: loadWizardPortrait(10),
+                Base: data.WizardHorus,
                 Books: []wizardBook{
                     wizardBook{Magic: LifeMagic, Count: 5},
                     wizardBook{Magic: SorceryMagic, Count: 5},
@@ -1012,6 +1027,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                 Name: "Ariel",
                 Background: loadImage(20, 0),
                 Portrait: loadWizardPortrait(11),
+                Base: data.WizardAriel,
                 Books: []wizardBook{
                     wizardBook{Magic: LifeMagic, Count: 10},
                 },
@@ -1021,6 +1037,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                 Name: "Tlaloc",
                 Background: loadImage(21, 0),
                 Portrait: loadWizardPortrait(12),
+                Base: data.WizardTlaloc,
                 Books: []wizardBook{
                     wizardBook{Magic: NatureMagic, Count: 4},
                     wizardBook{Magic: DeathMagic, Count: 5},
@@ -1031,6 +1048,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                 Name: "Kali",
                 Background: loadImage(22, 0),
                 Portrait: loadWizardPortrait(13),
+                Base: data.WizardKali,
                 Books: []wizardBook{
                     wizardBook{Magic: SorceryMagic, Count: 5},
                     wizardBook{Magic: DeathMagic, Count: 5},
