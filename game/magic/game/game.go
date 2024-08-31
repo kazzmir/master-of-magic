@@ -483,40 +483,129 @@ func (game *Game) MakeUnitContextMenu(ui *uilib.UI, unit *player.Unit) []*uilib.
     return elements
 }
 
+// advisor ui
 func (game *Game) MakeInfoUI(cornerX int, cornerY int) []*uilib.UIElement {
     var elements []*uilib.UIElement
+
+    fontLbx, err := game.Cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        log.Printf("Unable to read fonts.lbx: %v", err)
+        return nil
+    }
+
+    font4, err := font.ReadFont(fontLbx, 0, 4)
+    if err != nil {
+        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
+        return nil
+    }
+
+    getAlpha := game.HudUI.MakeFadeIn(7)
+
+    blackPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0xff},
+    }
+
+    buttonFont := font.MakeOptimizedFontWithPalette(font4, blackPalette)
+
+    requiredWidth := buttonFont.MeasureTextWidth("Cartographer (F2)", 1) + 2
+
+    buttonBackground1, _ := game.ImageCache.GetImage("resource.lbx", 13, 0)
+    left, _ := game.ImageCache.GetImage("resource.lbx", 5, 0)
+    top, _ := game.ImageCache.GetImage("resource.lbx", 7, 0)
+
+    totalHeight := buttonBackground1.Bounds().Dy() * 9
 
     elements = append(elements, &uilib.UIElement{
         Layer: 1,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             var options ebiten.DrawImageOptions
+            options.ColorScale.ScaleAlpha(getAlpha())
             bottom, _ := game.ImageCache.GetImage("resource.lbx", 9, 0)
             options.GeoM.Reset()
-            options.GeoM.Translate(float64(cornerX), float64(cornerY) + 70)
-            screen.DrawImage(bottom, &options)
+            // FIXME: figure out why -3 is needed
+            options.GeoM.Translate(float64(cornerX + left.Bounds().Dx()), float64(cornerY + top.Bounds().Dy() + totalHeight - 3))
+            bottomSub := bottom.SubImage(image.Rect(0, 0, int(requiredWidth), bottom.Bounds().Dy())).(*ebiten.Image)
+            screen.DrawImage(bottomSub, &options)
 
             bottomLeft, _ := game.ImageCache.GetImage("resource.lbx", 6, 0)
             options.GeoM.Reset()
-            options.GeoM.Translate(float64(cornerX), float64(cornerY) + 70)
+            options.GeoM.Translate(float64(cornerX), float64(cornerY + totalHeight))
             screen.DrawImage(bottomLeft, &options)
 
-            left, _ := game.ImageCache.GetImage("resource.lbx", 5, 0)
             options.GeoM.Reset()
             options.GeoM.Translate(float64(cornerX), float64(cornerY))
-            screen.DrawImage(left, &options)
+            leftSub := left.SubImage(image.Rect(0, 0, left.Bounds().Dx(), totalHeight)).(*ebiten.Image)
+            screen.DrawImage(leftSub, &options)
 
-            top, _ := game.ImageCache.GetImage("resource.lbx", 7, 0)
+            topSub := top.SubImage(image.Rect(0, 0, int(requiredWidth), top.Bounds().Dy())).(*ebiten.Image)
             options.GeoM.Reset()
             options.GeoM.Translate(float64(cornerX + left.Bounds().Dx()), float64(cornerY))
-            screen.DrawImage(top, &options)
+            screen.DrawImage(topSub, &options)
 
             right, _ := game.ImageCache.GetImage("resource.lbx", 8, 0)
             options.GeoM.Reset()
-            options.GeoM.Translate(float64(cornerX + left.Bounds().Dx() + top.Bounds().Dx()), float64(cornerY))
-            screen.DrawImage(right, &options)
+            options.GeoM.Translate(float64(cornerX + left.Bounds().Dx()) + requiredWidth, float64(cornerY))
+            rightSub := right.SubImage(image.Rect(0, 0, right.Bounds().Dx(), totalHeight)).(*ebiten.Image)
+            screen.DrawImage(rightSub, &options)
 
+            bottomRight, _ := game.ImageCache.GetImage("resource.lbx", 10, 0)
+            options.GeoM.Reset()
+            options.GeoM.Translate(float64(cornerX + left.Bounds().Dx()) + requiredWidth, float64(cornerY + totalHeight))
+            screen.DrawImage(bottomRight, &options)
         },
     })
+
+    advisors := []string{"Surveyor", "Cartographer", "Apprentice", "Historian", "Astrologer", "Chancellor", "Tax Collector", "Grand Vizier", "Mirror"}
+
+    x1 := cornerX + left.Bounds().Dx()
+    y1 := cornerY + top.Bounds().Dy()
+
+    for advisorIndex, advisor := range advisors {
+
+        images, _ := game.ImageCache.GetImages("resource.lbx", 12 + advisorIndex)
+        // the ends are all the same image
+        ends, _ := game.ImageCache.GetImages("resource.lbx", 22)
+
+        myX := x1
+        myY := y1
+
+        rect := image.Rect(myX, myY, myX + int(requiredWidth), myY + images[0].Bounds().Dy())
+        imageIndex := 0
+        elements = append(elements, &uilib.UIElement{
+            Rect: rect,
+            Layer: 1,
+            Inside: func(this *uilib.UIElement, x int, y int){
+                imageIndex = 1
+            },
+            NotInside: func(this *uilib.UIElement){
+                imageIndex = 0
+            },
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.ColorScale.ScaleAlpha(getAlpha())
+                options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
+
+                use := images[imageIndex].SubImage(image.Rect(0, 0, int(requiredWidth), images[imageIndex].Bounds().Dy())).(*ebiten.Image)
+                screen.DrawImage(use, &options)
+
+                options.GeoM.Translate(float64(use.Bounds().Dx()), 0)
+                screen.DrawImage(ends[imageIndex], &options)
+
+                buttonFont.Print(screen, float64(myX + 2), float64(myY + 2), 1, options.ColorScale, advisor)
+                buttonFont.PrintRight(screen, float64(myX) + requiredWidth - 2, float64(myY + 2), 1, options.ColorScale, fmt.Sprintf("(F%v)", advisorIndex+1))
+            },
+        })
+
+        y1 += images[0].Bounds().Dy()
+
+    }
 
     return elements
 }
@@ -608,7 +697,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
         LeftClick: func(this *uilib.UIElement){
             infoButtonIndex = 1
 
-            ui.AddElements(game.MakeInfoUI(30, 30))
+            ui.AddElements(game.MakeInfoUI(60, 25))
         },
         LeftClickRelease: func(this *uilib.UIElement){
             infoButtonIndex = 0
