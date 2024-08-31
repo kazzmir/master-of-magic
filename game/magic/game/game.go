@@ -512,7 +512,20 @@ func (game *Game) MakeInfoUI(cornerX int, cornerY int) []*uilib.UIElement {
         color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0xff},
     }
 
+    // FIXME: this is too bright
+    yellowGradient := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0},
+        color.RGBA{R: 0xed, G: 0xa4, B: 0x00, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xbc, B: 0x00, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xd6, B: 0x11, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
+    }
+
     buttonFont := font.MakeOptimizedFontWithPalette(font4, blackPalette)
+    topFont := font.MakeOptimizedFontWithPalette(font4, yellowGradient)
 
     requiredWidth := buttonFont.MeasureTextWidth("Cartographer (F2)", 1) + 2
 
@@ -559,6 +572,8 @@ func (game *Game) MakeInfoUI(cornerX int, cornerY int) []*uilib.UIElement {
             options.GeoM.Reset()
             options.GeoM.Translate(float64(cornerX + left.Bounds().Dx()) + requiredWidth, float64(cornerY + totalHeight))
             screen.DrawImage(bottomRight, &options)
+
+            topFont.Print(screen, float64(cornerX + left.Bounds().Dx() + 4), float64(cornerY + 4), 1, options.ColorScale, "Select An Advisor")
         },
     })
 
