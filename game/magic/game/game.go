@@ -571,7 +571,17 @@ func (game *Game) MakeInfoUI(cornerX int, cornerY int) []*uilib.UIElement {
         },
         advisorInfo{
             Name: "Grand Vizier",
-            Action: func(){},
+            Action: func(){
+                yes := func(){
+                    // FIXME: enable grand vizier
+                }
+
+                no := func(){
+                    // FIXME: disable grand vizier
+                }
+
+                game.HudUI.AddElements(uilib.MakeConfirmDialogWithLayer(game.HudUI, game.Cache, &game.ImageCache, 1, "Do you wish to allow the Grand Vizier to select what buildings your cities create?", yes, no))
+            },
         },
         advisorInfo{
             Name: "Mirror",
