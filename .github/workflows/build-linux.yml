@@ -15,8 +15,8 @@ jobs:
 
       - name: Install ubuntu dependencies
         run: |
-          sudo apt update
-          sudo apt install libasound2-dev xorg-dev
+          sudo apt-get -y update
+          sudo apt-get -y install libasound2-dev xorg-dev
 
       - name: Install go dependencies
         run: |
