@@ -3,13 +3,14 @@ package game
 import (
     "image/color"
     "image"
+    "math/rand"
     "log"
     "fmt"
 
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
-    "github.com/kazzmir/master-of-magic/game/magic/player"
+    playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     // "github.com/kazzmir/master-of-magic/game/magic/combat"
     "github.com/kazzmir/master-of-magic/game/magic/unitview"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
@@ -17,6 +18,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/magicview"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/util"
+    "github.com/kazzmir/master-of-magic/game/magic/draw"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
@@ -56,6 +58,8 @@ type Game struct {
     State GameState
     Plane data.Plane
 
+    BookOrder []int
+
     cameraX int
     cameraY int
 
@@ -68,7 +72,17 @@ type Game struct {
     // FIXME: need one map for arcanus and one for myrran
     Map *Map
 
-    Players []*player.Player
+    Players []*playerlib.Player
+}
+
+// create an array of N integers where each integer is some value between 0 and 2
+// these values correlate to the index of the book image to draw under the wizard portrait
+func randomizeBookOrder(books int) []int {
+    order := make([]int, books)
+    for i := 0; i < books; i++ {
+        order[i] = rand.Intn(3)
+    }
+    return order
 }
 
 func (game *Game) MakeFog() [][]bool {
@@ -80,8 +94,8 @@ func (game *Game) MakeFog() [][]bool {
     return fog
 }
 
-func (game *Game) AddPlayer(wizard setup.WizardCustom) *player.Player{
-    newPlayer := &player.Player{
+func (game *Game) AddPlayer(wizard setup.WizardCustom) *playerlib.Player{
+    newPlayer := &playerlib.Player{
         ArcanusFog: game.MakeFog(),
         MyrrorFog: game.MakeFog(),
         Wizard: wizard,
@@ -152,6 +166,7 @@ func MakeGame(lbxCache *lbx.LbxCache) *Game {
         Help: help,
         Map: MakeMap(terrainData),
         State: GameStateRunning,
+        BookOrder: randomizeBookOrder(12),
         ImageCache: util.MakeImageCache(lbxCache),
         InfoFontYellow: infoFontYellow,
         WhiteFont: whiteFont,
@@ -332,7 +347,7 @@ func GetCityWallImage(size citylib.CitySize, cache *util.ImageCache) (*ebiten.Im
     return cache.GetImage("mapback.lbx", 21, index)
 }
 
-func (game *Game) MakeUnitContextMenu(ui *uilib.UI, unit *player.Unit) []*uilib.UIElement {
+func (game *Game) MakeUnitContextMenu(ui *uilib.UI, unit *playerlib.Unit) []*uilib.UIElement {
     fontLbx, err := game.Cache.GetLbxFile("fonts.lbx")
     if err != nil {
         log.Printf("Unable to read fonts.lbx: %v", err)
@@ -499,44 +514,71 @@ func (game *Game) ShowMirrorUI(){
     cornerX := 50
     cornerY := 1
 
+    fontLbx, err := game.Cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        log.Printf("Could not read fonts: %v", err)
+        return
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        log.Printf("Could not read fonts: %v", err)
+        return
+    }
+
+    yellow := color.RGBA{R: 0xea, G: 0xb6, B: 0x00, A: 0xff}
+    yellowPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        yellow, yellow, yellow,
+        yellow, yellow, yellow,
+    }
+
+    smallFont := font.MakeOptimizedFontWithPalette(fonts[0], yellowPalette)
+
     var element *uilib.UIElement
 
     getAlpha := game.HudUI.MakeFadeIn(7)
 
     var portrait *ebiten.Image
 
-    if len(game.Players) > 0 {
-
-        bannerIndex := 0
-        switch game.Players[0].Wizard.Banner {
-            case data.BannerBlue: bannerIndex = 0
-            case data.BannerGreen: bannerIndex = 1
-            case data.BannerPurple: bannerIndex = 2
-            case data.BannerRed: bannerIndex = 3
-            case data.BannerYellow: bannerIndex = 4
-        }
-
-        wizardIndex := 0
-
-        switch game.Players[0].Wizard.Base {
-            case data.WizardMerlin: wizardIndex = 0
-            case data.WizardRaven: wizardIndex = 5
-            case data.WizardSharee: wizardIndex = 10
-            case data.WizardLoPan: wizardIndex = 15
-            case data.WizardJafar: wizardIndex = 20
-            case data.WizardOberic: wizardIndex = 25
-            case data.WizardRjak: wizardIndex = 30
-            case data.WizardSssra: wizardIndex = 35
-            case data.WizardTauron: wizardIndex = 40
-            case data.WizardFreya: wizardIndex = 45
-            case data.WizardHorus: wizardIndex = 50
-            case data.WizardAriel: wizardIndex = 55
-            case data.WizardTlaloc: wizardIndex = 60
-            case data.WizardKali: wizardIndex = 65
-        }
-
-        portrait, _ = game.ImageCache.GetImage("lilwiz.lbx", wizardIndex + bannerIndex, 0)
+    if len(game.Players) == 0 {
+        return
     }
+
+    player := game.Players[0]
+
+    imageCache := util.MakeImageCache(game.Cache)
+
+    bannerIndex := 0
+    switch player.Wizard.Banner {
+        case data.BannerBlue: bannerIndex = 0
+        case data.BannerGreen: bannerIndex = 1
+        case data.BannerPurple: bannerIndex = 2
+        case data.BannerRed: bannerIndex = 3
+        case data.BannerYellow: bannerIndex = 4
+    }
+
+    wizardIndex := 0
+
+    switch player.Wizard.Base {
+        case data.WizardMerlin: wizardIndex = 0
+        case data.WizardRaven: wizardIndex = 5
+        case data.WizardSharee: wizardIndex = 10
+        case data.WizardLoPan: wizardIndex = 15
+        case data.WizardJafar: wizardIndex = 20
+        case data.WizardOberic: wizardIndex = 25
+        case data.WizardRjak: wizardIndex = 30
+        case data.WizardSssra: wizardIndex = 35
+        case data.WizardTauron: wizardIndex = 40
+        case data.WizardFreya: wizardIndex = 45
+        case data.WizardHorus: wizardIndex = 50
+        case data.WizardAriel: wizardIndex = 55
+        case data.WizardTlaloc: wizardIndex = 60
+        case data.WizardKali: wizardIndex = 65
+    }
+
+    portrait, _ = imageCache.GetImage("lilwiz.lbx", wizardIndex + bannerIndex, 0)
 
     doClose := func(){
         getAlpha = game.HudUI.MakeFadeOut(7)
@@ -554,7 +596,7 @@ func (game *Game) ShowMirrorUI(){
             doClose()
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            background, _ := game.ImageCache.GetImage("backgrnd.lbx", 4, 0)
+            background, _ := imageCache.GetImage("backgrnd.lbx", 4, 0)
 
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(cornerX), float64(cornerY))
@@ -565,6 +607,12 @@ func (game *Game) ShowMirrorUI(){
                 options.GeoM.Translate(11, 11)
                 screen.DrawImage(portrait, &options)
             }
+
+            smallFont.PrintCenter(screen, float64(cornerX + 30), float64(cornerY + 75), 1, options.ColorScale, fmt.Sprintf("%v GP", player.Gold))
+            smallFont.PrintRight(screen, float64(cornerX + 170), float64(cornerY + 75), 1, options.ColorScale, fmt.Sprintf("%v MP", player.Mana))
+
+            options.GeoM.Translate(34, 55)
+            draw.DrawBooks(screen, options, &imageCache, player.Wizard.Books, game.BookOrder)
         },
     }
 
@@ -917,13 +965,13 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
     elements = append(elements, &uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            game.WhiteFont.Print(screen, 257, 68, 1, ebiten.ColorScale{}, "75 GP")
+            game.WhiteFont.Print(screen, 257, 68, 1, ebiten.ColorScale{}, fmt.Sprintf("%v GP", game.Players[0].Gold))
         },
     })
 
     elements = append(elements, &uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            game.WhiteFont.Print(screen, 298, 68, 1, ebiten.ColorScale{}, "0 MP")
+            game.WhiteFont.Print(screen, 298, 68, 1, ebiten.ColorScale{}, fmt.Sprintf("%v MP", game.Players[0].Mana))
         },
     })
 
@@ -1149,8 +1197,8 @@ type Overworld struct {
     Counter uint64
     Map *Map
     Cities []*citylib.City
-    Units []*player.Unit
-    SelectedUnit *player.Unit
+    Units []*playerlib.Unit
+    SelectedUnit *playerlib.Unit
     ImageCache *util.ImageCache
     Fog [][]bool
     ShowAnimation bool
@@ -1205,8 +1253,8 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
             options.GeoM.Translate(float64(x), float64(y))
 
             if overworld.ShowAnimation && overworld.SelectedUnit == unit {
-                dx := float64(float64(unit.MoveX - unit.X) * float64(tileWidth * unit.Movement) / float64(player.MovementLimit))
-                dy := float64(float64(unit.MoveY - unit.Y) * float64(tileHeight * unit.Movement) / float64(player.MovementLimit))
+                dx := float64(float64(unit.MoveX - unit.X) * float64(tileWidth * unit.Movement) / float64(playerlib.MovementLimit))
+                dy := float64(float64(unit.MoveY - unit.Y) * float64(tileHeight * unit.Movement) / float64(playerlib.MovementLimit))
                 options.GeoM.Translate(dx, dy)
             }
 
@@ -1231,8 +1279,8 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
 func (game *Game) Draw(screen *ebiten.Image){
 
     var cities []*citylib.City
-    var units []*player.Unit
-    var selectedUnit *player.Unit
+    var units []*playerlib.Unit
+    var selectedUnit *playerlib.Unit
     var fog [][]bool
 
     for i, player := range game.Players {

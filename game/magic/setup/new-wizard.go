@@ -13,6 +13,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/draw"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     _ "github.com/hajimehoshi/ebiten/v2/vector"
@@ -20,35 +21,7 @@ import (
     "github.com/hajimehoshi/ebiten/v2"
 )
 
-type MagicType int
-
-const (
-    LifeMagic MagicType = iota
-    SorceryMagic
-    NatureMagic
-    DeathMagic
-    ChaosMagic
-)
-
-func (magic MagicType) String() string {
-    switch magic {
-        case LifeMagic: return "Life"
-        case SorceryMagic: return "Sorcery"
-        case NatureMagic: return "Nature"
-        case DeathMagic: return "Death"
-        case ChaosMagic: return "Chaos"
-    }
-
-    return ""
-}
-
 const MaxPicks = 11
-
-/* the number of books a wizard has of a specific magic type */
-type wizardBook struct {
-    Magic MagicType
-    Count int
-}
 
 type wizardSlot struct {
     Name string
@@ -57,7 +30,7 @@ type wizardSlot struct {
     Base data.WizardBase
     // the portrait of the wizard shown when the user's cursor is on top of their name
     Portrait *ebiten.Image
-    Books []wizardBook
+    Books []data.WizardBook
     ExtraAbility WizardAbility
 }
 
@@ -135,7 +108,7 @@ func (ability WizardAbility) SatisifiedDependencies(wizard *WizardCustom) bool {
             }
             return count >= 2
         case AbilityMyrran: return true
-        case AbilityDivinePower: return wizard.MagicLevel(LifeMagic) >= 4
+        case AbilityDivinePower: return wizard.MagicLevel(data.LifeMagic) >= 4
         case AbilityFamous: return true
         case AbilityRunemaster:
             // need at least 3 books of different magic types with 2 picks per type
@@ -147,10 +120,10 @@ func (ability WizardAbility) SatisifiedDependencies(wizard *WizardCustom) bool {
             }
             return count >= 3
         case AbilityCharismatic: return true
-        case AbilityChaosMastery: return wizard.MagicLevel(ChaosMagic) >= 4
-        case AbilityNatureMastery: return wizard.MagicLevel(NatureMagic) >= 4
-        case AbilitySorceryMastery: return wizard.MagicLevel(SorceryMagic) >= 4
-        case AbilityInfernalPower: return wizard.MagicLevel(DeathMagic) >= 4
+        case AbilityChaosMastery: return wizard.MagicLevel(data.ChaosMagic) >= 4
+        case AbilityNatureMastery: return wizard.MagicLevel(data.NatureMagic) >= 4
+        case AbilitySorceryMastery: return wizard.MagicLevel(data.SorceryMagic) >= 4
+        case AbilityInfernalPower: return wizard.MagicLevel(data.DeathMagic) >= 4
         case AbilityManaFocusing:
             // need at least 4 books of some magic type
             for _, book := range wizard.Books {
@@ -161,7 +134,7 @@ func (ability WizardAbility) SatisifiedDependencies(wizard *WizardCustom) bool {
             return false
         case AbilityNodeMastery:
             // one pick in chaos, nature, and sorcery
-            return wizard.MagicLevel(ChaosMagic) >= 1 && wizard.MagicLevel(NatureMagic) >= 1 && wizard.MagicLevel(SorceryMagic) >= 1
+            return wizard.MagicLevel(data.ChaosMagic) >= 1 && wizard.MagicLevel(data.NatureMagic) >= 1 && wizard.MagicLevel(data.SorceryMagic) >= 1
         case AbilityNone: return true
     }
 
@@ -241,7 +214,7 @@ type WizardCustom struct {
     Portrait *ebiten.Image
     Base data.WizardBase
     Abilities []WizardAbility
-    Books []wizardBook
+    Books []data.WizardBook
     Spells lbx.Spells
     Race string
     Banner data.BannerType
@@ -277,8 +250,8 @@ func (wizard *WizardCustom) ToggleAbility(ability WizardAbility, picksLeft int){
     wizard.Abilities = out
 }
 
-func (wizard *WizardCustom) SetMagicLevel(kind MagicType, count int){
-    var out []wizardBook
+func (wizard *WizardCustom) SetMagicLevel(kind data.MagicType, count int){
+    var out []data.WizardBook
 
     found := false
 
@@ -295,7 +268,7 @@ func (wizard *WizardCustom) SetMagicLevel(kind MagicType, count int){
     }
 
     if !found {
-        out = append(out, wizardBook{
+        out = append(out, data.WizardBook{
             Magic: kind,
             Count: count,
         })
@@ -306,7 +279,7 @@ func (wizard *WizardCustom) SetMagicLevel(kind MagicType, count int){
     wizard.Books = out
 }
 
-func (wizard *WizardCustom) MagicLevel(kind MagicType) int {
+func (wizard *WizardCustom) MagicLevel(kind data.MagicType) int {
     for _, book := range wizard.Books {
         if book.Magic == kind {
             return book.Count
@@ -340,6 +313,7 @@ type NewWizardScreen struct {
     SelectFont *font.Font
     loaded sync.Once
     WizardSlots []wizardSlot
+    ImageCache util.ImageCache
 
     SpellBackground1 *ebiten.Image
     SpellBackground2 *ebiten.Image
@@ -607,7 +581,10 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *uilib.UI {
                     window.DrawImage(portrait, &options)
                     screen.Font.PrintCenter(window, nameX, nameY, 1, ebiten.ColorScale{}, screen.WizardSlots[screen.CurrentWizard].Name)
 
-                    screen.DrawBooks(window, 36, 135, screen.WizardSlots[screen.CurrentWizard].Books)
+                    // screen.DrawBooks(window, 36, 135, screen.WizardSlots[screen.CurrentWizard].Books)
+                    options.GeoM.Reset()
+                    options.GeoM.Translate(36, 135)
+                    draw.DrawBooks(window, options, &screen.ImageCache, screen.WizardSlots[screen.CurrentWizard].Books, screen.BooksOrder)
                     if screen.WizardSlots[screen.CurrentWizard].ExtraAbility != AbilityNone {
                         screen.AbilityFont.Print(window, 12, 180, 1, ebiten.ColorScale{}, screen.WizardSlots[screen.CurrentWizard].ExtraAbility.String())
                     }
@@ -911,9 +888,9 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                 Background: loadImage(9, 0),
                 Portrait: loadWizardPortrait(0),
                 Base: data.WizardMerlin,
-                Books: []wizardBook{
-                    wizardBook{Magic: LifeMagic, Count: 5},
-                    wizardBook{Magic: NatureMagic, Count: 5},
+                Books: []data.WizardBook{
+                    data.WizardBook{Magic: data.LifeMagic, Count: 5},
+                    data.WizardBook{Magic: data.NatureMagic, Count: 5},
                 },
                 ExtraAbility: AbilitySageMaster,
             },
@@ -922,9 +899,9 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                 Background: loadImage(10, 0),
                 Portrait: loadWizardPortrait(1),
                 Base: data.WizardRaven,
-                Books: []wizardBook{
-                    wizardBook{Magic: SorceryMagic, Count: 6},
-                    wizardBook{Magic: NatureMagic, Count: 5},
+                Books: []data.WizardBook{
+                    data.WizardBook{Magic: data.SorceryMagic, Count: 6},
+                    data.WizardBook{Magic: data.NatureMagic, Count: 5},
                 },
                 ExtraAbility: AbilityNone,
             },
@@ -933,9 +910,9 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                 Background: loadImage(11, 0),
                 Portrait: loadWizardPortrait(2),
                 Base: data.WizardSharee,
-                Books: []wizardBook{
-                    wizardBook{Magic: DeathMagic, Count: 5},
-                    wizardBook{Magic: ChaosMagic, Count: 5},
+                Books: []data.WizardBook{
+                    data.WizardBook{Magic: data.DeathMagic, Count: 5},
+                    data.WizardBook{Magic: data.ChaosMagic, Count: 5},
                 },
                 ExtraAbility: AbilityConjurer,
             },
@@ -944,9 +921,9 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                 Background: loadImage(12, 0),
                 Portrait: loadWizardPortrait(3),
                 Base: data.WizardLoPan,
-                Books: []wizardBook{
-                    wizardBook{Magic: SorceryMagic, Count: 5},
-                    wizardBook{Magic: ChaosMagic, Count: 5},
+                Books: []data.WizardBook{
+                    data.WizardBook{Magic: data.SorceryMagic, Count: 5},
+                    data.WizardBook{Magic: data.ChaosMagic, Count: 5},
                 },
                 ExtraAbility: AbilityChanneler,
             },
@@ -955,8 +932,8 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                 Background: loadImage(13, 0),
                 Portrait: loadWizardPortrait(4),
                 Base: data.WizardJafar,
-                Books: []wizardBook{
-                    wizardBook{Magic: SorceryMagic, Count: 10},
+                Books: []data.WizardBook{
+                    data.WizardBook{Magic: data.SorceryMagic, Count: 10},
                 },
                 ExtraAbility: AbilityAlchemy,
             },
@@ -965,9 +942,9 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                 Background: loadImage(14, 0),
                 Portrait: loadWizardPortrait(5),
                 Base: data.WizardOberic,
-                Books: []wizardBook{
-                    wizardBook{Magic: NatureMagic, Count: 5},
-                    wizardBook{Magic: ChaosMagic, Count: 5},
+                Books: []data.WizardBook{
+                    data.WizardBook{Magic: data.NatureMagic, Count: 5},
+                    data.WizardBook{Magic: data.ChaosMagic, Count: 5},
                 },
                 ExtraAbility: AbilityManaFocusing,
             },
@@ -976,8 +953,8 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                 Background: loadImage(15, 0),
                 Portrait: loadWizardPortrait(6),
                 Base: data.WizardRjak,
-                Books: []wizardBook{
-                    wizardBook{Magic: DeathMagic, Count: 9},
+                Books: []data.WizardBook{
+                    data.WizardBook{Magic: data.DeathMagic, Count: 9},
                 },
                 ExtraAbility: AbilityInfernalPower,
             },
@@ -986,9 +963,9 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                 Background: loadImage(16, 0),
                 Portrait: loadWizardPortrait(7),
                 Base: data.WizardSssra,
-                Books: []wizardBook{
-                    wizardBook{Magic: LifeMagic, Count: 4},
-                    wizardBook{Magic: ChaosMagic, Count: 4},
+                Books: []data.WizardBook{
+                    data.WizardBook{Magic: data.LifeMagic, Count: 4},
+                    data.WizardBook{Magic: data.ChaosMagic, Count: 4},
                 },
                 ExtraAbility: AbilityMyrran,
             },
@@ -997,8 +974,8 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                 Background: loadImage(17, 0),
                 Portrait: loadWizardPortrait(8),
                 Base: data.WizardTauron,
-                Books: []wizardBook{
-                    wizardBook{Magic: ChaosMagic, Count: 10},
+                Books: []data.WizardBook{
+                    data.WizardBook{Magic: data.ChaosMagic, Count: 10},
                 },
                 ExtraAbility: AbilityChaosMastery,
             },
@@ -1007,8 +984,8 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                 Background: loadImage(18, 0),
                 Portrait: loadWizardPortrait(9),
                 Base: data.WizardFreya,
-                Books: []wizardBook{
-                    wizardBook{Magic: NatureMagic, Count: 10},
+                Books: []data.WizardBook{
+                    data.WizardBook{Magic: data.NatureMagic, Count: 10},
                 },
                 ExtraAbility: AbilityNatureMastery,
             },
@@ -1017,9 +994,9 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                 Background: loadImage(19, 0),
                 Portrait: loadWizardPortrait(10),
                 Base: data.WizardHorus,
-                Books: []wizardBook{
-                    wizardBook{Magic: LifeMagic, Count: 5},
-                    wizardBook{Magic: SorceryMagic, Count: 5},
+                Books: []data.WizardBook{
+                    data.WizardBook{Magic: data.LifeMagic, Count: 5},
+                    data.WizardBook{Magic: data.SorceryMagic, Count: 5},
                 },
                 ExtraAbility: AbilityArchmage,
             },
@@ -1028,8 +1005,8 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                 Background: loadImage(20, 0),
                 Portrait: loadWizardPortrait(11),
                 Base: data.WizardAriel,
-                Books: []wizardBook{
-                    wizardBook{Magic: LifeMagic, Count: 10},
+                Books: []data.WizardBook{
+                    data.WizardBook{Magic: data.LifeMagic, Count: 10},
                 },
                 ExtraAbility: AbilityCharismatic,
             },
@@ -1038,9 +1015,9 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                 Background: loadImage(21, 0),
                 Portrait: loadWizardPortrait(12),
                 Base: data.WizardTlaloc,
-                Books: []wizardBook{
-                    wizardBook{Magic: NatureMagic, Count: 4},
-                    wizardBook{Magic: DeathMagic, Count: 5},
+                Books: []data.WizardBook{
+                    data.WizardBook{Magic: data.NatureMagic, Count: 4},
+                    data.WizardBook{Magic: data.DeathMagic, Count: 5},
                 },
                 ExtraAbility: AbilityWarlord,
             },
@@ -1049,9 +1026,9 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
                 Background: loadImage(22, 0),
                 Portrait: loadWizardPortrait(13),
                 Base: data.WizardKali,
-                Books: []wizardBook{
-                    wizardBook{Magic: SorceryMagic, Count: 5},
-                    wizardBook{Magic: DeathMagic, Count: 5},
+                Books: []data.WizardBook{
+                    data.WizardBook{Magic: data.SorceryMagic, Count: 5},
+                    data.WizardBook{Magic: data.DeathMagic, Count: 5},
                 },
                 ExtraAbility: AbilityArtificer,
             },
@@ -1124,6 +1101,7 @@ func joinAbilities(abilities []WizardAbility) string {
     return out
 }
 
+/*
 func (screen *NewWizardScreen) DrawBooks(window *ebiten.Image, x float64, y float64, books []wizardBook){
     offsetX := 0
     index := 0
@@ -1153,6 +1131,7 @@ func (screen *NewWizardScreen) DrawBooks(window *ebiten.Image, x float64, y floa
         }
     }
 }
+*/
 
 func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
 
@@ -1179,7 +1158,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
     const bookX = 197
 
     type bookData struct {
-        Kind MagicType
+        Kind data.MagicType
         Help string
         Image *ebiten.Image
         Y int
@@ -1187,31 +1166,31 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
 
     books := []bookData{
         bookData{
-            Kind: LifeMagic,
+            Kind: data.LifeMagic,
             Help: "Life Spells",
             Image: screen.LifeBooks[0],
             Y: 49,
         },
         bookData{
-            Kind: DeathMagic,
+            Kind: data.DeathMagic,
             Help: "Death Spells",
             Image: screen.DeathBooks[0],
             Y: 75,
         },
         bookData{
-            Kind: ChaosMagic,
+            Kind: data.ChaosMagic,
             Help: "Chaos Spells",
             Image: screen.ChaosBooks[0],
             Y: 101,
         },
         bookData{
-            Kind: NatureMagic,
+            Kind: data.NatureMagic,
             Help: "Nature Spells",
             Image: screen.NatureBooks[0],
             Y: 127,
         },
         bookData{
-            Kind: SorceryMagic,
+            Kind: data.SorceryMagic,
             Help: "Sorcery Spells",
             Image: screen.SorceryBooks[0],
             Y: 153,
@@ -1271,12 +1250,12 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
                 LeftClick: func(this *uilib.UIElement){
 
                     // user cannot hold both life and death magic
-                    if bookMagic == LifeMagic && screen.CustomWizard.MagicLevel(DeathMagic) > 0 {
+                    if bookMagic == data.LifeMagic && screen.CustomWizard.MagicLevel(data.DeathMagic) > 0 {
                         screen.UI.AddElement(uilib.MakeErrorElement(screen.UI, screen.LbxCache, &imageCache, "You can not select both Life and Death magic"))
                         return
                     }
 
-                    if bookMagic == DeathMagic && screen.CustomWizard.MagicLevel(LifeMagic) > 0 {
+                    if bookMagic == data.DeathMagic && screen.CustomWizard.MagicLevel(data.LifeMagic) > 0 {
                         screen.UI.AddElement(uilib.MakeErrorElement(screen.UI, screen.LbxCache, &imageCache, "You can not select both Life and Death magic"))
                         return
                     }
@@ -1497,7 +1476,9 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
             window.DrawImage(screen.CustomWizard.Portrait, &options)
             screen.Font.PrintCenter(window, nameX, nameY, 1, ebiten.ColorScale{}, screen.CustomWizard.Name)
 
-            screen.DrawBooks(window, 37, 135, screen.CustomWizard.Books)
+            options.GeoM.Reset()
+            options.GeoM.Translate(37, 135)
+            draw.DrawBooks(window, options, &screen.ImageCache, screen.CustomWizard.Books, screen.BooksOrder)
 
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
                 if element.Draw != nil {
@@ -1535,7 +1516,7 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
 
     imageCache := util.MakeImageCache(screen.LbxCache)
 
-    magicOrder := []MagicType{LifeMagic, DeathMagic, ChaosMagic, NatureMagic, SorceryMagic}
+    magicOrder := []data.MagicType{data.LifeMagic, data.DeathMagic, data.ChaosMagic, data.NatureMagic, data.SorceryMagic}
 
     computeCommon := func(books int) int {
         if books == 0 || books == 11 {
@@ -1573,14 +1554,14 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
     }
 
     // create a mono-color palette where the color depends on the magic type
-    getPalette := func(magic MagicType) color.Palette {
+    getPalette := func(magic data.MagicType) color.Palette {
         var use color.RGBA
         switch magic {
-            case LifeMagic: use = color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}
-            case DeathMagic: use = color.RGBA{R: 0x80, G: 0x25, B: 0xca, A: 0xff}
-            case ChaosMagic: use = color.RGBA{R: 0xcc, G: 0x16, B: 0x27, A: 0xff}
-            case NatureMagic: use = color.RGBA{R: 0x15, G: 0xa5, B: 0x1b, A: 0xff}
-            case SorceryMagic: use = color.RGBA{R: 0x00, G: 0x60, B: 0xd6, A: 0xff}
+            case data.LifeMagic: use = color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}
+            case data.DeathMagic: use = color.RGBA{R: 0x80, G: 0x25, B: 0xca, A: 0xff}
+            case data.ChaosMagic: use = color.RGBA{R: 0xcc, G: 0x16, B: 0x27, A: 0xff}
+            case data.NatureMagic: use = color.RGBA{R: 0x15, G: 0xa5, B: 0x1b, A: 0xff}
+            case data.SorceryMagic: use = color.RGBA{R: 0x00, G: 0x60, B: 0xd6, A: 0xff}
         }
 
         return color.Palette{
@@ -1592,25 +1573,25 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
     blackFont := font.MakeOptimizedFontWithPalette(screen.LbxFonts[4], blackPalette)
     shadowDescriptionFont := font.MakeOptimizedFontWithPalette(screen.LbxFonts[3], blackPalette)
 
-    toSpellMagic := func(magic MagicType) lbx.SpellMagic {
+    toSpellMagic := func(magic data.MagicType) lbx.SpellMagic {
         switch magic {
-            case LifeMagic: return lbx.SpellMagicLife
-            case DeathMagic: return lbx.SpellMagicDeath
-            case ChaosMagic: return lbx.SpellMagicChaos
-            case NatureMagic: return lbx.SpellMagicNature
-            case SorceryMagic: return lbx.SpellMagicSorcery
+            case data.LifeMagic: return lbx.SpellMagicLife
+            case data.DeathMagic: return lbx.SpellMagicDeath
+            case data.ChaosMagic: return lbx.SpellMagicChaos
+            case data.NatureMagic: return lbx.SpellMagicNature
+            case data.SorceryMagic: return lbx.SpellMagicSorcery
         }
 
         return lbx.SpellMagicNone
     }
 
-    chooseSpells := func(magic MagicType, rarity lbx.SpellRarity) lbx.Spells {
+    chooseSpells := func(magic data.MagicType, rarity lbx.SpellRarity) lbx.Spells {
         return screen.Spells.GetSpellsByMagic(toSpellMagic(magic)).GetSpellsByRarity(rarity)
     }
 
-    var doNextMagicUI func (magic MagicType)
+    var doNextMagicUI func (magic data.MagicType)
 
-    makeUIForMagic := func (magic MagicType) *uilib.UI {
+    makeUIForMagic := func (magic data.MagicType) *uilib.UI {
         commonMax := computeCommon(screen.CustomWizard.MagicLevel(magic))
         uncommonMax := computeUncommon(screen.CustomWizard.MagicLevel(magic))
         rareMax := computeRare(screen.CustomWizard.MagicLevel(magic))
@@ -1765,7 +1746,11 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
                 window.DrawImage(screen.CustomWizard.Portrait, &options)
                 screen.Font.PrintCenter(window, nameX, nameY, 1, ebiten.ColorScale{}, screen.CustomWizard.Name)
 
-                screen.DrawBooks(window, 37, 135, screen.CustomWizard.Books)
+                options.GeoM.Reset()
+                options.GeoM.Translate(37, 135)
+                draw.DrawBooks(window, options, &screen.ImageCache, screen.CustomWizard.Books, screen.BooksOrder)
+
+                // screen.DrawBooks(window, 37, 135, screen.CustomWizard.Books)
 
                 options.GeoM.Reset()
                 options.GeoM.Translate(196, 180)
@@ -1824,7 +1809,7 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
 
     // user has clicked ok, so go to next magic spell selection screen
     // example: wizard has 3 life, 4 chaos. show life screen, show chaos screen, then goto race selection screen
-    doNextMagicUI = func(current MagicType){
+    doNextMagicUI = func(current data.MagicType){
         for i := 0; i < len(magicOrder); i++ {
             if current == magicOrder[i] {
                 for j := i + 1; j < len(magicOrder); j++ {
@@ -2017,7 +2002,9 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
             window.DrawImage(screen.CustomWizard.Portrait, &options)
             screen.Font.PrintCenter(window, nameX, nameY, 1, ebiten.ColorScale{}, screen.CustomWizard.Name)
 
-            screen.DrawBooks(window, 37, 135, screen.CustomWizard.Books)
+            options.GeoM.Reset()
+            options.GeoM.Translate(37, 135)
+            draw.DrawBooks(window, options, &imageCache, screen.CustomWizard.Books, screen.BooksOrder)
 
             screen.SelectFont.PrintCenter(window, 245, 2, 1, ebiten.ColorScale{}, "Select Race")
 
@@ -2094,7 +2081,9 @@ func (screen *NewWizardScreen) MakeSelectBannerUI() *uilib.UI {
             window.DrawImage(screen.CustomWizard.Portrait, &options)
             screen.Font.PrintCenter(window, nameX, nameY, 1, ebiten.ColorScale{}, screen.CustomWizard.Name)
 
-            screen.DrawBooks(window, 37, 135, screen.CustomWizard.Books)
+            options.GeoM.Reset()
+            options.GeoM.Translate(37, 135)
+            draw.DrawBooks(window, options, &imageCache, screen.CustomWizard.Books, screen.BooksOrder)
 
             options.GeoM.Reset()
             options.GeoM.Translate(160, 0)
@@ -2136,6 +2125,7 @@ func randomizeBookOrder(books int) []int {
 func MakeNewWizardScreen(cache *lbx.LbxCache) *NewWizardScreen {
     return &NewWizardScreen{
         LbxCache: cache,
+        ImageCache: util.MakeImageCache(cache),
         CurrentWizard: 0,
         BooksOrder: randomizeBookOrder(12),
         State: NewWizardScreenStateSelectWizard,

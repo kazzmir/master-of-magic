@@ -26,6 +26,16 @@ func NewEngine() (*Engine, error) {
 
     wizard := setup.WizardCustom{
         Banner: data.BannerBlue,
+        Books: []data.WizardBook{
+            data.WizardBook{
+                Magic: data.LifeMagic,
+                Count: 3,
+            },
+            data.WizardBook{
+                Magic: data.SorceryMagic,
+                Count: 8,
+            },
+        },
     }
 
     game := gamelib.MakeGame(cache)
@@ -47,6 +57,9 @@ func NewEngine() (*Engine, error) {
         Y: 5,
     })
 
+    player.Gold = 83
+    player.Mana = 26
+
     // game.Map.Map.Terrain[3][6] = terrain.TileNatureForest.Index
 
     player.LiftFog(4, 5, 3)
@@ -64,6 +77,8 @@ func NewEngine() (*Engine, error) {
     player.LiftFog(5, 5, 2)
 
     game.DoNextTurn()
+
+    game.ShowMirrorUI()
 
     return &Engine{
         LbxCache: cache,

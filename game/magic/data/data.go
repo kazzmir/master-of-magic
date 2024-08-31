@@ -95,3 +95,31 @@ const (
     WizardTlaloc
     WizardKali
 )
+
+type MagicType int
+
+const (
+    LifeMagic MagicType = iota
+    SorceryMagic
+    NatureMagic
+    DeathMagic
+    ChaosMagic
+)
+
+func (magic MagicType) String() string {
+    switch magic {
+        case LifeMagic: return "Life"
+        case SorceryMagic: return "Sorcery"
+        case NatureMagic: return "Nature"
+        case DeathMagic: return "Death"
+        case ChaosMagic: return "Chaos"
+    }
+
+    return ""
+}
+
+/* the number of books a wizard has of a specific magic type */
+type WizardBook struct {
+    Magic MagicType
+    Count int
+}
