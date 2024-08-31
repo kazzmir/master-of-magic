@@ -37,9 +37,13 @@ func MakeMainScreen(cache *lbx.LbxCache) *MainScreen {
 
 func (main *MainScreen) MakeUI() *uilib.UI {
 
+    var getAlpha uilib.AlphaFadeFunc
+
     ui := &uilib.UI{
         Draw: func(ui *uilib.UI, screen *ebiten.Image) {
             var options ebiten.DrawImageOptions
+            options.ColorScale.ScaleAlpha(getAlpha())
+
             top, err := main.ImageCache.GetImages("mainscrn.lbx", 0)
             if err == nil {
                 use := top[(main.Counter / 4) % uint64(len(top))]
@@ -60,6 +64,8 @@ func (main *MainScreen) MakeUI() *uilib.UI {
         },
     }
 
+    getAlpha = ui.MakeFadeIn(8)
+
     var elements []*uilib.UIElement
 
     makeButton := func(index int, x, y int, action func()) *uilib.UIElement {
@@ -77,6 +83,7 @@ func (main *MainScreen) MakeUI() *uilib.UI {
             Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
+                options.ColorScale.ScaleAlpha(getAlpha())
                 screen.DrawImage(images[imageIndex], &options)
             },
         }
