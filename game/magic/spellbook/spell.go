@@ -150,7 +150,9 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
                 }
             }
 
-            halfPages = append(halfPages, pageSpells)
+            if len(pageSpells.Spells) > 0 {
+                halfPages = append(halfPages, pageSpells)
+            }
         }
     }
 
@@ -207,7 +209,7 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
             rightSpells := getRightPageSpells(page)
 
             if len(leftSpells.Spells) > 0 {
-                section := rightSpells.Spells[0].Section
+                section := leftSpells.Spells[0].Section
                 titleFont.PrintCenter(screen, 90, 11, 1, options.ColorScale, section.Name())
 
                 x := float64(25)
