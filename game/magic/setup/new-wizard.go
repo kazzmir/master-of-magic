@@ -678,7 +678,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
             return
         }
 
-        screen.Spells, err = spellsLbx.ReadSpells(0)
+        screen.Spells, err = lbx.ReadSpells(spellsLbx, 0)
         if err != nil {
             outError = fmt.Errorf("Unable to read spells from SPELLDAT.LBX: %v", err)
             return

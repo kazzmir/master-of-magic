@@ -62,7 +62,7 @@ func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int, rawDump bool) 
             fmt.Printf("  font %v glyphs %v\n", i, font.GlyphCount())
         }
     } else if lbxName == "spelldat.lbx" {
-        spells, err := file.ReadSpells(0)
+        spells, err := lbx.ReadSpells(&file, 0)
         if err != nil {
             return err
         }
