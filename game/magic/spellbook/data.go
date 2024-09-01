@@ -1,10 +1,13 @@
-package lbx
+package spellbook
 
 import (
     "math/rand"
     "strings"
     "fmt"
     "bytes"
+
+    "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
 )
 
 type Spell struct {
@@ -24,7 +27,7 @@ type Spell struct {
     Flag3 int
 
     // which book of magic this spell is a part of
-    Magic SpellMagic
+    Magic data.MagicType
     Rarity SpellRarity
 }
 
@@ -43,31 +46,6 @@ func (rarity SpellRarity) String() string {
         case SpellRarityUncommon: return "Uncommon"
         case SpellRarityRare: return "Rare"
         case SpellRarityVeryRare: return "Very Rare"
-        default: return "Unknown"
-    }
-}
-
-type SpellMagic int
-
-const (
-    SpellMagicNone SpellMagic = iota
-    SpellMagicNature
-    SpellMagicChaos
-    SpellMagicDeath
-    SpellMagicLife
-    SpellMagicSorcery
-    SpellMagicArcane
-)
-
-func (magic SpellMagic) String() string {
-    switch magic {
-        case SpellMagicNone: return "None"
-        case SpellMagicNature: return "Nature"
-        case SpellMagicChaos: return "Chaos"
-        case SpellMagicDeath: return "Death"
-        case SpellMagicLife: return "Life"
-        case SpellMagicSorcery: return "Sorcery"
-        case SpellMagicArcane: return "Arcane"
         default: return "Unknown"
     }
 }
@@ -104,7 +82,7 @@ func (spells *Spells) HasSpell(spell Spell) bool {
     return spells.FindByName(spell.Name).Name == spell.Name
 }
 
-func (spells Spells) GetSpellsByMagic(magic SpellMagic) Spells {
+func (spells Spells) GetSpellsByMagic(magic data.MagicType) Spells {
     var out []Spell
 
     for _, spell := range spells.Spells {
@@ -140,19 +118,19 @@ func SpellsFromArray(spells []Spell) Spells {
     }
 }
 
-func ReadSpells(lbx *LbxFile, entry int) (Spells, error) {
-    if entry < 0 || entry >= len(lbx.Data) {
-        return Spells{}, fmt.Errorf("invalid lbx index %v, must be between 0 and %v", entry, len(lbx.Data) - 1)
+func ReadSpells(lbxFile *lbx.LbxFile, entry int) (Spells, error) {
+    if entry < 0 || entry >= len(lbxFile.Data) {
+        return Spells{}, fmt.Errorf("invalid lbx index %v, must be between 0 and %v", entry, len(lbxFile.Data) - 1)
     }
 
-    reader := bytes.NewReader(lbx.Data[entry])
+    reader := bytes.NewReader(lbxFile.Data[entry])
 
-    numEntries, err := ReadUint16(reader)
+    numEntries, err := lbx.ReadUint16(reader)
     if err != nil {
         return Spells{}, err
     }
 
-    entrySize, err := ReadUint16(reader)
+    entrySize, err := lbx.ReadUint16(reader)
     if err != nil {
         return Spells{}, err
     }
@@ -160,7 +138,7 @@ func ReadSpells(lbx *LbxFile, entry int) (Spells, error) {
     var spells Spells
 
     type MagicData struct {
-        Magic SpellMagic
+        Magic data.MagicType
         Rarity SpellRarity
     }
 
@@ -170,8 +148,8 @@ func ReadSpells(lbx *LbxFile, entry int) (Spells, error) {
         go func() {
             defer close(out)
 
-            out <- MagicData{Magic: SpellMagicNone}
-            order := []SpellMagic{SpellMagicNature, SpellMagicSorcery, SpellMagicChaos, SpellMagicLife, SpellMagicDeath}
+            out <- MagicData{Magic: data.MagicNone}
+            order := []data.MagicType{data.NatureMagic, data.SorceryMagic, data.ChaosMagic, data.LifeMagic, data.DeathMagic}
             rarities := []SpellRarity{SpellRarityCommon, SpellRarityUncommon, SpellRarityRare, SpellRarityVeryRare}
 
             for _, magic := range order {
@@ -190,18 +168,18 @@ func ReadSpells(lbx *LbxFile, entry int) (Spells, error) {
             // very rare: spell of mastery
 
             for i := 0; i < 4; i++ {
-                out <- MagicData{Magic: SpellMagicArcane, Rarity: SpellRarityCommon}
+                out <- MagicData{Magic: data.ArcaneMagic, Rarity: SpellRarityCommon}
             }
 
             for i := 0; i < 5; i++ {
-                out <- MagicData{Magic: SpellMagicArcane, Rarity: SpellRarityUncommon}
+                out <- MagicData{Magic: data.ArcaneMagic, Rarity: SpellRarityUncommon}
             }
 
             for i := 0; i < 4; i++ {
-                out <- MagicData{Magic: SpellMagicArcane, Rarity: SpellRarityRare}
+                out <- MagicData{Magic: data.ArcaneMagic, Rarity: SpellRarityRare}
             }
 
-            out <- MagicData{Magic: SpellMagicArcane, Rarity: SpellRarityVeryRare}
+            out <- MagicData{Magic: data.ArcaneMagic, Rarity: SpellRarityVeryRare}
         }()
 
         return out
@@ -269,14 +247,14 @@ func ReadSpells(lbx *LbxFile, entry int) (Spells, error) {
 
         buffer.Next(1) // ignore extra unused byte from 2-byte alignment
 
-        castCost, err := readUint16Big(buffer)
+        castCost, err := lbx.ReadUint16Big(buffer)
         if err != nil {
             return Spells{}, err
         }
 
         // fmt.Printf("  Casting Cost: %v\n", castCost)
 
-        researchCost, err := readUint16Big(buffer)
+        researchCost, err := lbx.ReadUint16Big(buffer)
         if err != nil {
             return Spells{}, err
         }

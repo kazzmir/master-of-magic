@@ -19,7 +19,7 @@ func ReadUint16(reader io.Reader) (uint16, error) {
     return value, err
 }
 
-func readUint16Big(reader io.Reader) (uint16, error) {
+func ReadUint16Big(reader io.Reader) (uint16, error) {
     var value uint16
     err := binary.Read(reader, binary.BigEndian, &value)
     return value, err

@@ -15,6 +15,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/draw"
     "github.com/kazzmir/master-of-magic/game/magic/util"
+    "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     _ "github.com/hajimehoshi/ebiten/v2/vector"
 
@@ -215,7 +216,7 @@ type WizardCustom struct {
     Base data.WizardBase
     Abilities []WizardAbility
     Books []data.WizardBook
-    Spells lbx.Spells
+    Spells spellbook.Spells
     Race string
     Banner data.BannerType
 }
@@ -321,7 +322,7 @@ type NewWizardScreen struct {
 
     RaceBackground *ebiten.Image
 
-    Spells lbx.Spells
+    Spells spellbook.Spells
 
     OkReady *ebiten.Image
     OkNotReady *ebiten.Image
@@ -678,7 +679,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
             return
         }
 
-        screen.Spells, err = lbx.ReadSpells(spellsLbx, 0)
+        screen.Spells, err = spellbook.ReadSpells(spellsLbx, 0)
         if err != nil {
             outError = fmt.Errorf("Unable to read spells from SPELLDAT.LBX: %v", err)
             return
@@ -1573,20 +1574,8 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
     blackFont := font.MakeOptimizedFontWithPalette(screen.LbxFonts[4], blackPalette)
     shadowDescriptionFont := font.MakeOptimizedFontWithPalette(screen.LbxFonts[3], blackPalette)
 
-    toSpellMagic := func(magic data.MagicType) lbx.SpellMagic {
-        switch magic {
-            case data.LifeMagic: return lbx.SpellMagicLife
-            case data.DeathMagic: return lbx.SpellMagicDeath
-            case data.ChaosMagic: return lbx.SpellMagicChaos
-            case data.NatureMagic: return lbx.SpellMagicNature
-            case data.SorceryMagic: return lbx.SpellMagicSorcery
-        }
-
-        return lbx.SpellMagicNone
-    }
-
-    chooseSpells := func(magic data.MagicType, rarity lbx.SpellRarity) lbx.Spells {
-        return screen.Spells.GetSpellsByMagic(toSpellMagic(magic)).GetSpellsByRarity(rarity)
+    chooseSpells := func(magic data.MagicType, rarity spellbook.SpellRarity) spellbook.Spells {
+        return screen.Spells.GetSpellsByMagic(magic).GetSpellsByRarity(rarity)
     }
 
     var doNextMagicUI func (magic data.MagicType)
@@ -1601,9 +1590,9 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
         uncommonPicks := uncommonMax
         rarePicks := rareMax
 
-        commonSpells := chooseSpells(magic, lbx.SpellRarityCommon)
-        uncommonSpells := chooseSpells(magic, lbx.SpellRarityUncommon)
-        rareSpells := chooseSpells(magic, lbx.SpellRarityRare)
+        commonSpells := chooseSpells(magic, spellbook.SpellRarityCommon)
+        uncommonSpells := chooseSpells(magic, spellbook.SpellRarityUncommon)
+        rareSpells := chooseSpells(magic, spellbook.SpellRarityRare)
 
         // assign common spells
         for _, index := range rand.Perm(len(commonSpells.Spells))[0:commonMax] {
@@ -1633,7 +1622,7 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
         titleFont := font.MakeOptimizedFontWithPalette(screen.LbxFonts[4], getPalette(magic))
         descriptionFont := font.MakeOptimizedFontWithPalette(screen.LbxFonts[3], getPalette(magic))
 
-        createSpellElements := func(spells lbx.Spells, x int, yTop int, picks *int){
+        createSpellElements := func(spells spellbook.Spells, x int, yTop int, picks *int){
             y := yTop
             margin := screen.CheckMark.Bounds().Dx() + 1
             width := (screen.SpellBackground1.Bounds().Dx() - 2) / 2

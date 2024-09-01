@@ -14,6 +14,7 @@ import (
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
+    "github.com/kazzmir/master-of-magic/game/magic/spellbook"
 )
 
 func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int, rawDump bool) error {
@@ -62,7 +63,7 @@ func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int, rawDump bool) 
             fmt.Printf("  font %v glyphs %v\n", i, font.GlyphCount())
         }
     } else if lbxName == "spelldat.lbx" {
-        spells, err := lbx.ReadSpells(&file, 0)
+        spells, err := spellbook.ReadSpells(&file, 0)
         if err != nil {
             return err
         }

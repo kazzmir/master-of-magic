@@ -99,11 +99,13 @@ const (
 type MagicType int
 
 const (
-    LifeMagic MagicType = iota
+    MagicNone MagicType = iota
+    LifeMagic
     SorceryMagic
     NatureMagic
     DeathMagic
     ChaosMagic
+    ArcaneMagic
 )
 
 func (magic MagicType) String() string {
@@ -113,6 +115,7 @@ func (magic MagicType) String() string {
         case NatureMagic: return "Nature"
         case DeathMagic: return "Death"
         case ChaosMagic: return "Chaos"
+        case ArcaneMagic: return "Arcane"
     }
 
     return ""
