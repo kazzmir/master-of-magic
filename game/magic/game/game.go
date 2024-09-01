@@ -728,6 +728,10 @@ func (game *Game) MakeInfoUI(cornerX int, cornerY int) []*uilib.UIElement {
     return uilib.MakeSelectionUI(game.HudUI, game.Cache, &game.ImageCache, cornerX, cornerY, "Select An Advisor", advisors)
 }
 
+func (game *Game) ShowSpellBookCastUI(){
+    game.HudUI.AddElements(spellbook.MakeSpellBookCastUI(game.HudUI, game.Cache))
+}
+
 func (game *Game) MakeHudUI() *uilib.UI {
     ui := &uilib.UI{
         Draw: func(ui *uilib.UI, screen *ebiten.Image){
@@ -743,6 +747,33 @@ func (game *Game) MakeHudUI() *uilib.UI {
         },
     }
 
+    // onClick - true to perform the action when the left click occurs, false to perform the action when the left click is released
+    makeButton := func(lbxIndex int, x int, y int, onClick bool, action func()) *uilib.UIElement {
+        buttons, _ := game.ImageCache.GetImages("main.lbx", lbxIndex)
+        rect := image.Rect(x, y, x + buttons[0].Bounds().Dx(), y + buttons[0].Bounds().Dy())
+        index := 0
+        return &uilib.UIElement{
+            Rect: rect,
+            LeftClick: func(this *uilib.UIElement){
+                index = 1
+                if onClick {
+                    action()
+                }
+            },
+            LeftClickRelease: func(this *uilib.UIElement){
+                index = 0
+                if !onClick {
+                    action()
+                }
+            },
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
+                screen.DrawImage(buttons[index], &options)
+            },
+        }
+    }
+
     var elements []*uilib.UIElement
 
     // game button
@@ -756,14 +787,9 @@ func (game *Game) MakeHudUI() *uilib.UI {
     })
 
     // spell button
-    elements = append(elements, &uilib.UIElement{
-        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            image, _ := game.ImageCache.GetImage("main.lbx", 2, 0)
-            var options ebiten.DrawImageOptions
-            options.GeoM.Translate(47, 4)
-            screen.DrawImage(image, &options)
-        },
-    })
+    elements = append(elements, makeButton(2, 47, 4, false, func(){
+        game.ShowSpellBookCastUI()
+    }))
 
     // army button
     elements = append(elements, &uilib.UIElement{
@@ -786,46 +812,15 @@ func (game *Game) MakeHudUI() *uilib.UI {
     })
 
     // magic button
-    magicButtons, _ := game.ImageCache.GetImages("main.lbx", 5)
-    magicRect := image.Rect(184, 4, 184 + magicButtons[0].Bounds().Dx(), 4 + magicButtons[0].Bounds().Dy())
-    magicIndex := 0
-    elements = append(elements, &uilib.UIElement{
-        Rect: magicRect,
-        LeftClick: func(this *uilib.UIElement){
-            magicIndex = 1
-        },
-        LeftClickRelease: func(this *uilib.UIElement){
-            game.MagicScreen = magicview.MakeMagicScreen(game.Cache)
-            game.State = GameStateMagicView
-            magicIndex = 0
-        },
-        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            var options ebiten.DrawImageOptions
-            options.GeoM.Translate(184, 4)
-            screen.DrawImage(magicButtons[magicIndex], &options)
-        },
-    })
+    elements = append(elements, makeButton(5, 184, 4, false, func(){
+        game.MagicScreen = magicview.MakeMagicScreen(game.Cache)
+        game.State = GameStateMagicView
+    }))
 
     // info button
-    infoButtons, _ := game.ImageCache.GetImages("main.lbx", 6)
-    infoButtonIndex := 0
-    infoRect := image.Rect(226, 4, 226 + infoButtons[0].Bounds().Dx(), 4 + infoButtons[0].Bounds().Dy())
-    elements = append(elements, &uilib.UIElement{
-        Rect: infoRect,
-        LeftClick: func(this *uilib.UIElement){
-            infoButtonIndex = 1
-
-            ui.AddElements(game.MakeInfoUI(60, 25))
-        },
-        LeftClickRelease: func(this *uilib.UIElement){
-            infoButtonIndex = 0
-        },
-        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            var options ebiten.DrawImageOptions
-            options.GeoM.Translate(float64(infoRect.Min.X), float64(infoRect.Min.Y))
-            screen.DrawImage(infoButtons[infoButtonIndex], &options)
-        },
-    })
+    elements = append(elements, makeButton(6, 226, 4, true, func(){
+        ui.AddElements(game.MakeInfoUI(60, 25))
+    }))
 
     // plane button
     elements = append(elements, &uilib.UIElement{

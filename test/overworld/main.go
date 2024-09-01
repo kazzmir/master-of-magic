@@ -82,7 +82,7 @@ func NewEngine() (*Engine, error) {
 
     game.DoNextTurn()
 
-    game.ShowApprenticeUI()
+    // game.ShowApprenticeUI()
 
     return &Engine{
         LbxCache: cache,

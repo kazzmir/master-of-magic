@@ -12,6 +12,7 @@ import (
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
 
     "github.com/hajimehoshi/ebiten/v2"
+    "github.com/hajimehoshi/ebiten/v2/vector"
 )
 
 func computeHalfPages(spells Spells) []Spells {
@@ -322,6 +323,35 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
                 options.ColorScale.ScaleAlpha(getAlpha())
                 screen.DrawImage(rightTurn, &options)
             }
+        },
+    })
+
+    return elements
+}
+
+func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
+    var elements []*uilib.UIElement
+
+    imageCache := util.MakeImageCache(cache)
+
+    getAlpha := ui.MakeFadeIn(7)
+
+    elements = append(elements, &uilib.UIElement{
+        Layer: 1,
+        NotLeftClicked: func(this *uilib.UIElement){
+            getAlpha = ui.MakeFadeOut(7)
+            ui.AddDelay(7, func(){
+                ui.RemoveElements(elements)
+            })
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            vector.DrawFilledRect(screen, 0, 0, float32(screen.Bounds().Dx()), float32(screen.Bounds().Dy()), color.RGBA{R: 0, G: 0, B: 0, A: 128}, false)
+
+            background, _ := imageCache.GetImage("spells.lbx", 0, 0)
+            var options ebiten.DrawImageOptions
+            options.ColorScale.ScaleAlpha(getAlpha())
+            options.GeoM.Translate(10, 10)
+            screen.DrawImage(background, &options)
         },
     })
 
