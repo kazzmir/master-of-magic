@@ -6,6 +6,7 @@ import (
     "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/game/magic/util"
 
     "github.com/hajimehoshi/ebiten/v2"
@@ -13,13 +14,15 @@ import (
     "github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
-const ScreenWidth = 1024
-const ScreenHeight = 768
+const ScreenWidth = 800
+const ScreenHeight = 600
 
 type Engine struct {
     Cache *lbx.LbxCache
     ImageCache util.ImageCache
     Images []*ebiten.Image
+
+    PageImage *ebiten.Image
 }
 
 func (engine *Engine) Update() error {
@@ -37,6 +40,7 @@ func (engine *Engine) Update() error {
 
 func drawDistortedImage(destination *ebiten.Image, source *ebiten.Image, vertices []ebiten.Vertex){
 
+    /*
     vertices[0].SrcX = 0
     vertices[0].SrcY = 0
     vertices[1].SrcX = float32(source.Bounds().Dx())
@@ -45,6 +49,7 @@ func drawDistortedImage(destination *ebiten.Image, source *ebiten.Image, vertice
     vertices[2].SrcY = float32(source.Bounds().Dy())
     vertices[3].SrcX = 0
     vertices[3].SrcY = float32(source.Bounds().Dy())
+    */
 
     for i := 0; i < 4; i++ {
         vertices[i].ColorA = 1
@@ -65,18 +70,46 @@ func (engine *Engine) DrawPage1(screen *ebiten.Image, page *ebiten.Image, option
         imageOptions.GeoM.Skew(0.05, 0)
         */
 
-    use := engine.Images[0]
-
     ax0, ay0 := options.GeoM.Apply(0, 0)
     ax1, ay1 := options.GeoM.Apply(float64(page.Bounds().Dx()), float64(page.Bounds().Dy()))
     subScreen := screen.SubImage(image.Rect(int(ax0), int(ay0), int(ax1), int(ay1))).(*ebiten.Image)
+
+    use := engine.PageImage
 
     x1, y1 := options.GeoM.Apply(float64(page.Bounds().Dx())/2 + 20, 5)
     x2, y2 := options.GeoM.Apply(float64(page.Bounds().Dx())/2 + 40, 0)
     x3, y3 := options.GeoM.Apply(float64(page.Bounds().Dx())/2 + 40, float64(page.Bounds().Dy()) - 25)
     x4, y4 := options.GeoM.Apply(float64(page.Bounds().Dx())/2 + 20, float64(page.Bounds().Dy()) - 12)
 
-    drawDistortedImage(subScreen, use, []ebiten.Vertex{ebiten.Vertex{DstX: float32(x1), DstY: float32(y1)}, ebiten.Vertex{DstX: float32(x2), DstY: float32(y2)}, ebiten.Vertex{DstX: float32(x3), DstY: float32(y3)}, ebiten.Vertex{DstX: float32(x4), DstY: float32(y4)}})
+    sx := float32(0)
+    sy := float32(engine.PageImage.Bounds().Dy())
+
+    drawDistortedImage(subScreen, use, []ebiten.Vertex{
+        ebiten.Vertex{
+            DstX: float32(x1),
+            DstY: float32(y1),
+            SrcX: sx + 30 * 0,
+            SrcY: 0,
+        },
+        ebiten.Vertex{
+            DstX: float32(x2),
+            DstY: float32(y2),
+            SrcX: sx + 30 * 1,
+            SrcY: 0,
+        },
+        ebiten.Vertex{
+            DstX: float32(x3),
+            DstY: float32(y3),
+            SrcX: sx + 30 * 1,
+            SrcY: sy,
+        },
+        ebiten.Vertex{
+            DstX: float32(x4),
+            DstY: float32(y4),
+            SrcX: sx + 30 * 0,
+            SrcY: sy,
+        },
+    })
 
     x1 = x2
     y1 = y2
@@ -85,35 +118,138 @@ func (engine *Engine) DrawPage1(screen *ebiten.Image, page *ebiten.Image, option
     x2, y2 = options.GeoM.Apply(float64(page.Bounds().Dx())/2 + 60, -10)
     x3, y3 = options.GeoM.Apply(float64(page.Bounds().Dx())/2 + 60, float64(page.Bounds().Dy()) - 33)
 
-    drawDistortedImage(subScreen, use, []ebiten.Vertex{ebiten.Vertex{DstX: float32(x1), DstY: float32(y1)}, ebiten.Vertex{DstX: float32(x2), DstY: float32(y2)}, ebiten.Vertex{DstX: float32(x3), DstY: float32(y3)}, ebiten.Vertex{DstX: float32(x4), DstY: float32(y4)}})
+    // drawDistortedImage(subScreen, use, []ebiten.Vertex{ebiten.Vertex{DstX: float32(x1), DstY: float32(y1)}, ebiten.Vertex{DstX: float32(x2), DstY: float32(y2)}, ebiten.Vertex{DstX: float32(x3), DstY: float32(y3)}, ebiten.Vertex{DstX: float32(x4), DstY: float32(y4)}})
+
+    drawDistortedImage(subScreen, use, []ebiten.Vertex{
+        ebiten.Vertex{
+            DstX: float32(x1),
+            DstY: float32(y1),
+            SrcX: sx + 30 * 1,
+            SrcY: 0,
+        },
+        ebiten.Vertex{
+            DstX: float32(x2),
+            DstY: float32(y2),
+            SrcX: sx + 30 * 2,
+            SrcY: 0,
+        },
+        ebiten.Vertex{
+            DstX: float32(x3),
+            DstY: float32(y3),
+            SrcX: sx + 30 * 2,
+            SrcY: sy,
+        },
+        ebiten.Vertex{
+            DstX: float32(x4),
+            DstY: float32(y4),
+            SrcX: sx + 30 * 1,
+            SrcY: sy,
+        },
+    })
 
     x1 = x2
     y1 = y2
     x4 = x3
     y4 = y3
-    x2, y2 = options.GeoM.Apply(float64(page.Bounds().Dx())/2 + 80, -20)
+    x2, y2 = options.GeoM.Apply(float64(page.Bounds().Dx())/2 + 80, -10)
     x3, y3 = options.GeoM.Apply(float64(page.Bounds().Dx())/2 + 80, float64(page.Bounds().Dy()) - 30)
 
-    drawDistortedImage(subScreen, engine.Images[1], []ebiten.Vertex{ebiten.Vertex{DstX: float32(x1), DstY: float32(y1)}, ebiten.Vertex{DstX: float32(x2), DstY: float32(y2)}, ebiten.Vertex{DstX: float32(x3), DstY: float32(y3)}, ebiten.Vertex{DstX: float32(x4), DstY: float32(y4)}})
+    drawDistortedImage(subScreen, use, []ebiten.Vertex{
+        ebiten.Vertex{
+            DstX: float32(x1),
+            DstY: float32(y1),
+            SrcX: sx + 30 * 2,
+            SrcY: 0,
+        },
+        ebiten.Vertex{
+            DstX: float32(x2),
+            DstY: float32(y2),
+            SrcX: sx + 30 * 3,
+            SrcY: 0,
+        },
+        ebiten.Vertex{
+            DstX: float32(x3),
+            DstY: float32(y3),
+            SrcX: sx + 30 * 3,
+            SrcY: sy,
+        },
+        ebiten.Vertex{
+            DstX: float32(x4),
+            DstY: float32(y4),
+            SrcX: sx + 30 * 2,
+            SrcY: sy,
+        },
+    })
 
     x1 = x2
     y1 = y2
     x4 = x3
     y4 = y3
-    x2, y2 = options.GeoM.Apply(float64(page.Bounds().Dx())/2 + 100, -30)
+    x2, y2 = options.GeoM.Apply(float64(page.Bounds().Dx())/2 + 100, -0)
     x3, y3 = options.GeoM.Apply(float64(page.Bounds().Dx())/2 + 100, float64(page.Bounds().Dy()) - 22)
 
-    drawDistortedImage(subScreen, engine.Images[1], []ebiten.Vertex{ebiten.Vertex{DstX: float32(x1), DstY: float32(y1)}, ebiten.Vertex{DstX: float32(x2), DstY: float32(y2)}, ebiten.Vertex{DstX: float32(x3), DstY: float32(y3)}, ebiten.Vertex{DstX: float32(x4), DstY: float32(y4)}})
+    drawDistortedImage(subScreen, use, []ebiten.Vertex{
+        ebiten.Vertex{
+            DstX: float32(x1),
+            DstY: float32(y1),
+            SrcX: sx + 30 * 3,
+            SrcY: 0,
+        },
+        ebiten.Vertex{
+            DstX: float32(x2),
+            DstY: float32(y2),
+            SrcX: sx + 30 * 4,
+            SrcY: 0,
+        },
+        ebiten.Vertex{
+            DstX: float32(x3),
+            DstY: float32(y3),
+            SrcX: sx + 30 * 4,
+            SrcY: sy,
+        },
+        ebiten.Vertex{
+            DstX: float32(x4),
+            DstY: float32(y4),
+            SrcX: sx + 30 * 3,
+            SrcY: sy,
+        },
+    })
 
     x1 = x2
     y1 = y2
     x4 = x3
     y4 = y3
-    x2, y2 = options.GeoM.Apply(float64(page.Bounds().Dx())/2 + 120, -20)
-    x3, y3 = options.GeoM.Apply(float64(page.Bounds().Dx())/2 + 120, float64(page.Bounds().Dy()) - 12)
+    x2, y2 = options.GeoM.Apply(float64(page.Bounds().Dx())/2 + 130, -10)
+    x3, y3 = options.GeoM.Apply(float64(page.Bounds().Dx())/2 + 130, float64(page.Bounds().Dy()) - 12)
 
-    drawDistortedImage(subScreen, engine.Images[1], []ebiten.Vertex{ebiten.Vertex{DstX: float32(x1), DstY: float32(y1)}, ebiten.Vertex{DstX: float32(x2), DstY: float32(y2)}, ebiten.Vertex{DstX: float32(x3), DstY: float32(y3)}, ebiten.Vertex{DstX: float32(x4), DstY: float32(y4)}})
+    drawDistortedImage(subScreen, use, []ebiten.Vertex{
+        ebiten.Vertex{
+            DstX: float32(x1),
+            DstY: float32(y1),
+            SrcX: sx + 30 * 4,
+            SrcY: 0,
+        },
+        ebiten.Vertex{
+            DstX: float32(x2),
+            DstY: float32(y2),
+            SrcX: sx + 30 * 5,
+            SrcY: 0,
+        },
+        ebiten.Vertex{
+            DstX: float32(x3),
+            DstY: float32(y3),
+            SrcX: sx + 30 * 5,
+            SrcY: sy,
+        },
+        ebiten.Vertex{
+            DstX: float32(x4),
+            DstY: float32(y4),
+            SrcX: sx + 30 * 4,
+            SrcY: sy,
+        },
+    })
 
+    /*
     x1 = x2
     y1 = y2
     x4 = x3
@@ -121,7 +257,8 @@ func (engine *Engine) DrawPage1(screen *ebiten.Image, page *ebiten.Image, option
     x2, y2 = options.GeoM.Apply(float64(page.Bounds().Dx())/2 + 140, 10)
     x3, y3 = options.GeoM.Apply(float64(page.Bounds().Dx())/2 + 140, float64(page.Bounds().Dy()) - 3)
 
-    drawDistortedImage(subScreen, engine.Images[1], []ebiten.Vertex{ebiten.Vertex{DstX: float32(x1), DstY: float32(y1)}, ebiten.Vertex{DstX: float32(x2), DstY: float32(y2)}, ebiten.Vertex{DstX: float32(x3), DstY: float32(y3)}, ebiten.Vertex{DstX: float32(x4), DstY: float32(y4)}})
+    drawDistortedImage(subScreen, use, []ebiten.Vertex{ebiten.Vertex{DstX: float32(x1), DstY: float32(y1)}, ebiten.Vertex{DstX: float32(x2), DstY: float32(y2)}, ebiten.Vertex{DstX: float32(x3), DstY: float32(y3)}, ebiten.Vertex{DstX: float32(x4), DstY: float32(y4)}})
+    */
 
 }
 
@@ -204,7 +341,8 @@ func (engine *Engine) Draw(screen *ebiten.Image){
     screen.DrawImage(background, &options)
 
     options.GeoM.Translate(200, 10)
-    screen.DrawImage(engine.Images[0], &options)
+    // screen.DrawImage(engine.Images[0], &options)
+    screen.DrawImage(engine.PageImage, &options)
 }
 
 func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
@@ -225,17 +363,51 @@ func NewEngine() (*Engine, error){
 
     images := []*ebiten.Image{image1, image2}
 
+    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        return nil, err
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        return nil, err
+    }
+
+    greyLight := util.PremultiplyAlpha(color.RGBA{R: 35, G: 35, B: 35, A: 164})
+    textPaletteLighter := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        util.PremultiplyAlpha(color.RGBA{R: 35, G: 35, B: 35, A: 64}),
+        greyLight, greyLight, greyLight,
+        greyLight, greyLight, greyLight,
+    }
+    
+    textFont := font.MakeOptimizedFontWithPalette(fonts[0], textPaletteLighter)
+
+    spellPage := ebiten.NewImage(150, 170)
+    spellPage.Fill(color.RGBA{R: 0, G: 0, B: 0, A: 0})
+
+    textFont.PrintWrap(spellPage, 0, 5, 135, 1, ebiten.ColorScale{}, "This is a test of the emergency broadcast system. This is only a test. If this were a real emergency, you would be instructed to do something else.")
+    // textFont.PrintWrap(spellPage, 0, 50, 135, 1, ebiten.ColorScale{}, "A sub-image returned by SubImage can be used as a rendering source and a rendering destination. If a sub-image is used as a rendering source, the image is used as if it is a small image. If a sub-image is used as a rendering destination, the region being rendered is clipped.")
+    textFont.PrintWrap(spellPage, 0, 50, 135, 1, ebiten.ColorScale{}, "aaaaa aaaaaa bbbbb bbbbb bbbb ccccc ccccc ccccc ccc dddd ddddd dddd dddd eeee eeee eeee")
+
+    vector.DrawFilledCircle(spellPage, 10, 90, 5, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, true)
+    vector.DrawFilledCircle(spellPage, 45, 90, 5, color.RGBA{R: 0x0, G: 0xff, B: 0, A: 0xff}, true)
+    
+    vector.StrokeLine(spellPage, 10, 110, 120, 110, 3, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, true)
+    vector.StrokeLine(spellPage, 10, 130, 120, 130, 3, color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff}, true)
+
     return &Engine{
         Cache: cache,
         ImageCache: util.MakeImageCache(cache),
         Images: images,
+        PageImage: spellPage,
     }, nil
 }
 
 func main(){
     log.SetFlags(log.Ldate | log.Lshortfile | log.Lmicroseconds)
 
-    ebiten.SetWindowSize(ScreenWidth, ScreenHeight)
+    ebiten.SetWindowSize(int(float64(ScreenWidth) * 1.3), int(float64(ScreenHeight) * 1.3))
     ebiten.SetWindowTitle("page turn")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 
