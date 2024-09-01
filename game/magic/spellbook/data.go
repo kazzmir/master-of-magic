@@ -12,10 +12,11 @@ import (
 
 type Spell struct {
     Name string
+    Index int
     AiGroup int
     AiValue int
     SpellType int
-    Section int
+    Section Section
     Realm int
     Eligibility int
     CastCost int
@@ -29,6 +30,68 @@ type Spell struct {
     // which book of magic this spell is a part of
     Magic data.MagicType
     Rarity SpellRarity
+}
+
+type Section int
+const (
+    SectionSpecial Section = 0
+    SectionSummoning Section = 1
+    SectionUnitSpell Section = 2
+    SectionCitySpell Section = 3
+    SectionEnchantment Section = 4
+    SectionCombatSpell Section = 5
+)
+
+func (section Section) Name() string {
+    switch section {
+        case SectionSpecial: return "Special Spells"
+        case SectionSummoning: return "Summoning"
+        case SectionEnchantment: return "Enchantment"
+        case SectionCitySpell: return "City Spells"
+        case SectionUnitSpell: return "Unit Spells"
+        case SectionCombatSpell: return "Combat Spells"
+    }
+
+    return "unknown"
+}
+
+func (section Section) String() string {
+    return fmt.Sprintf("%v (%d)", section.Name(), int(section))
+}
+
+// true if there is a section after this one
+func (section Section) HasNext() bool {
+    return section.NextSection() != section
+}
+
+func (section Section) HasPrevious() bool {
+    return section.PreviousSection() != section
+}
+
+func (section Section) NextSection() Section {
+    switch section {
+        case SectionSummoning: return SectionSpecial
+        case SectionSpecial: return SectionCitySpell
+        case SectionCitySpell: return SectionEnchantment
+        case SectionEnchantment: return SectionUnitSpell
+        case SectionUnitSpell: return SectionCombatSpell
+        case SectionCombatSpell: return SectionCombatSpell
+    }
+
+    return section
+}
+
+func (section Section) PreviousSection() Section {
+    switch section {
+        case SectionSummoning: return SectionSummoning
+        case SectionSpecial: return SectionSummoning
+        case SectionCitySpell: return SectionSpecial
+        case SectionEnchantment: return SectionCitySpell
+        case SectionUnitSpell: return SectionEnchantment
+        case SectionCombatSpell: return SectionUnitSpell
+    }
+
+    return section
 }
 
 type SpellRarity int
@@ -82,6 +145,18 @@ func (spells *Spells) HasSpell(spell Spell) bool {
     return spells.FindByName(spell.Name).Name == spell.Name
 }
 
+func (spells Spells) GetSpellsBySection(section Section) Spells {
+    var out []Spell
+
+    for _, spell := range spells.Spells {
+        if spell.Section == section {
+            out = append(out, spell)
+        }
+    }
+
+    return SpellsFromArray(out)
+}
+
 func (spells Spells) GetSpellsByMagic(magic data.MagicType) Spells {
     var out []Spell
 
@@ -118,6 +193,15 @@ func SpellsFromArray(spells []Spell) Spells {
     }
 }
 
+func ReadSpellsFromCache(cache *lbx.LbxCache) (Spells, error) {
+    file, err := cache.GetLbxFile("spelldat.lbx")
+    if err != nil {
+        return Spells{}, err
+    }
+    return ReadSpells(file, 0)
+}
+
+// pass in spelldat.lbx and 0
 func ReadSpells(lbxFile *lbx.LbxFile, entry int) (Spells, error) {
     if entry < 0 || entry >= len(lbxFile.Data) {
         return Spells{}, fmt.Errorf("invalid lbx index %v, must be between 0 and %v", entry, len(lbxFile.Data) - 1)
@@ -142,6 +226,7 @@ func ReadSpells(lbxFile *lbx.LbxFile, entry int) (Spells, error) {
         Rarity SpellRarity
     }
 
+    // FIXME: turn this into a go 1.23 iterator
     spellMagicIterator := (func() chan MagicData {
         out := make(chan MagicData)
 
@@ -194,7 +279,7 @@ func ReadSpells(lbxFile *lbx.LbxFile, entry int) (Spells, error) {
 
         buffer := bytes.NewBuffer(data[0:n])
 
-        nameData := buffer.Next(18)
+        nameData := buffer.Next(19)
         // fmt.Printf("Spell %v\n", i)
 
         name, err := bytes.NewBuffer(nameData).ReadString(0)
@@ -300,10 +385,11 @@ func ReadSpells(lbxFile *lbx.LbxFile, entry int) (Spells, error) {
 
         spells.AddSpell(Spell{
             Name: name,
+            Index: i,
             AiGroup: int(aiGroup),
             AiValue: int(aiValue),
             SpellType: int(spellType),
-            Section: int(section),
+            Section: Section(section),
             Realm: int(realm),
             Eligibility: int(eligibility),
             CastCost: int(castCost),
@@ -320,4 +406,60 @@ func ReadSpells(lbxFile *lbx.LbxFile, entry int) (Spells, error) {
     }
 
     return spells, nil
+}
+
+func ReadSpellDescriptionsFromCache(cache *lbx.LbxCache) ([]string, error) {
+    file, err := cache.GetLbxFile("desc.lbx")
+    if err != nil {
+        return nil, err
+    }
+    return ReadSpellDescriptions(file)
+}
+
+// pass in desc.lbx
+func ReadSpellDescriptions(file *lbx.LbxFile) ([]string, error) {
+    entries, err := file.RawData(0)
+    if err != nil {
+        return nil, err
+    }
+
+    reader := bytes.NewReader(entries)
+
+    count, err := lbx.ReadUint16(reader)
+    if err != nil {
+        return nil, err
+    }
+
+    if count > 10000 {
+        return nil, fmt.Errorf("Spell count was too high: %v", count)
+    }
+
+    size, err := lbx.ReadUint16(reader)
+    if err != nil {
+        return nil, err
+    }
+
+    if size > 10000 {
+        return nil, fmt.Errorf("Size of each spell entry was too high: %v", size)
+    }
+
+    var descriptions []string
+
+    for i := 0; i < int(count); i++ {
+        data := make([]byte, size)
+        _, err := reader.Read(data)
+
+        if err != nil {
+            break
+        }
+
+        nullByte := bytes.IndexByte(data, 0)
+        if nullByte != -1 {
+            descriptions = append(descriptions, string(data[0:nullByte]))
+        } else {
+            descriptions = append(descriptions, string(data))
+        }
+    }
+
+    return descriptions, nil
 }

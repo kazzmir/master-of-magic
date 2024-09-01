@@ -1,8 +1,6 @@
 package spellbook
 
 import (
-    "bytes"
-    "fmt"
     "image"
     "image/color"
     "log"
@@ -15,60 +13,24 @@ import (
     "github.com/hajimehoshi/ebiten/v2"
 )
 
-// pass in desc.lbx
-func ReadSpellDescriptions(file *lbx.LbxFile) ([]string, error) {
-    entries, err := file.RawData(0)
-    if err != nil {
-        return nil, err
-    }
-
-    reader := bytes.NewReader(entries)
-
-    count, err := lbx.ReadUint16(reader)
-    if err != nil {
-        return nil, err
-    }
-
-    if count > 10000 {
-        return nil, fmt.Errorf("Spell count was too high: %v", count)
-    }
-
-    size, err := lbx.ReadUint16(reader)
-    if err != nil {
-        return nil, err
-    }
-
-    if size > 10000 {
-        return nil, fmt.Errorf("Size of each spell entry was too high: %v", size)
-    }
-
-    var descriptions []string
-
-    for i := 0; i < int(count); i++ {
-        data := make([]byte, size)
-        _, err := reader.Read(data)
-
-        if err != nil {
-            break
-        }
-
-        nullByte := bytes.IndexByte(data, 0)
-        if nullByte != -1 {
-            descriptions = append(descriptions, string(data[0:nullByte]))
-        } else {
-            descriptions = append(descriptions, string(data))
-        }
-    }
-
-    return descriptions, nil
-}
-
 func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
     var elements []*uilib.UIElement
 
     imageCache := util.MakeImageCache(cache)
 
     fadeSpeed := uint64(7)
+
+    spells, err := ReadSpellsFromCache(cache)
+    if err != nil {
+        log.Printf("Unable to read spells: %v", err)
+        return nil
+    }
+
+    spellDescriptions, err := ReadSpellDescriptionsFromCache(cache)
+    if err != nil {
+        log.Printf("Unable to read spell descriptions: %v", err)
+        return nil
+    }
 
     getAlpha := ui.MakeFadeIn(fadeSpeed)
 
@@ -101,9 +63,67 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
 
     titleFont := font.MakeOptimizedFontWithPalette(fonts[5], redPalette)
 
-    // title font: fonts[5]
+    grey := color.RGBA{R: 35, G: 35, B: 35, A: 0xff}
+    textPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        util.PremultiplyAlpha(color.RGBA{R: 35, G: 35, B: 35, A: 64}),
+        grey, grey, grey,
+        grey, grey, grey,
+        grey, grey, grey,
+        grey, grey, grey,
+    }
+
+    greyLight := util.PremultiplyAlpha(color.RGBA{R: 35, G: 35, B: 35, A: 164})
+    textPaletteLighter := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        util.PremultiplyAlpha(color.RGBA{R: 35, G: 35, B: 35, A: 64}),
+        greyLight, greyLight, greyLight,
+        greyLight, greyLight, greyLight,
+    }
+
+    spellTitleNormalFont := font.MakeOptimizedFontWithPalette(fonts[4], textPalette)
+    spellTextNormalFont := font.MakeOptimizedFontWithPalette(fonts[0], textPaletteLighter)
+
+    spellTitleAlienFont := font.MakeOptimizedFontWithPalette(fonts[7], textPalette)
+    spellTextAlienFont := font.MakeOptimizedFontWithPalette(fonts[6], textPaletteLighter)
+
     // mystery font title: fonts[7]
     // mystery font normal: fonts[6]
+
+    showSection := SectionUnitSpell
+
+    wrapWidth := float64(130)
+
+    spellDescriptionNormalCache := make(map[int]font.WrappedText)
+
+    getSpellDescriptionNormalText := func(index int) font.WrappedText {
+        text, ok := spellDescriptionNormalCache[index]
+        if ok {
+            return text
+        }
+
+        wrapped := spellTextNormalFont.CreateWrappedText(wrapWidth, 1, spellDescriptions[index])
+        spellDescriptionNormalCache[index] = wrapped
+        return wrapped
+    }
+
+    spellDescriptionAlienCache := make(map[int]font.WrappedText)
+
+    getSpellDescriptionAlienText := func(index int) font.WrappedText {
+        text, ok := spellDescriptionAlienCache[index]
+        if ok {
+            return text
+        }
+
+        wrapped := spellTextAlienFont.CreateWrappedText(wrapWidth, 1, spellDescriptions[index])
+        spellDescriptionAlienCache[index] = wrapped
+        return wrapped
+    }
+
+    knownSpell := func(spell Spell) bool {
+        return true
+        // return spell.Index <= 2
+    }
 
     elements = append(elements, &uilib.UIElement{
         Layer: 1,
@@ -120,7 +140,29 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
             options.ColorScale.ScaleAlpha(getAlpha())
             screen.DrawImage(background, &options)
 
-            titleFont.PrintCenter(screen, 90, 11, 1, options.ColorScale, "Unit Spells")
+            titleFont.PrintCenter(screen, 90, 11, 1, options.ColorScale, showSection.Name())
+
+            sectionSpells := spells.GetSpellsBySection(showSection)
+
+            x := float64(25)
+            y := float64(35)
+            for i, spell := range sectionSpells.Spells {
+                if i >= 4 {
+                    break
+                }
+
+                if knownSpell(spell) {
+                    spellTitleNormalFont.Print(screen, x, y, 1, options.ColorScale, spell.Name)
+                    wrapped := getSpellDescriptionNormalText(spell.Index)
+                    spellTextNormalFont.RenderWrapped(screen, x, y + 10, wrapped, options.ColorScale, false)
+                } else {
+                    spellTitleAlienFont.Print(screen, x, y, 1, options.ColorScale, spell.Name)
+                    wrapped := getSpellDescriptionAlienText(spell.Index)
+                    spellTextAlienFont.RenderWrapped(screen, x, y + 10, wrapped, options.ColorScale, false)
+                }
+
+                y += 35
+            }
 
             animationIndex := ui.Counter
             if bookFlipIndex > 0 && (animationIndex - bookFlipIndex) / 6 < uint64(len(bookFlip)) {
@@ -144,6 +186,8 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
         LeftClick: func(this *uilib.UIElement){
             bookFlipIndex = ui.Counter
             bookFlipReverse = true
+
+            showSection = showSection.PreviousSection()
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             var options ebiten.DrawImageOptions
@@ -162,6 +206,7 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
         LeftClick: func(this *uilib.UIElement){
             bookFlipIndex = ui.Counter
             bookFlipReverse = false
+            showSection = showSection.NextSection()
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             var options ebiten.DrawImageOptions
