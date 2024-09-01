@@ -14,6 +14,34 @@ import (
     "github.com/hajimehoshi/ebiten/v2"
 )
 
+func computeHalfPages(spells Spells) []Spells {
+    var halfPages []Spells
+
+    sections := []Section{SectionSummoning, SectionSpecial, SectionCitySpell, SectionEnchantment, SectionUnitSpell, SectionCombatSpell}
+
+    for _, section := range sections {
+        sectionSpells := spells.GetSpellsBySection(section)
+        numSpells := len(sectionSpells.Spells)
+
+        for i := 0; i < int(math.Ceil(float64(numSpells) / 4)); i++ {
+            var pageSpells Spells
+
+            for j := 0; j < 4; j++ {
+                index := i * 4 + j
+                if index < numSpells {
+                    pageSpells.AddSpell(sectionSpells.Spells[index])
+                }
+            }
+
+            if len(pageSpells.Spells) > 0 {
+                halfPages = append(halfPages, pageSpells)
+            }
+        }
+    }
+
+    return halfPages
+}
+
 func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
     var elements []*uilib.UIElement
 
@@ -35,6 +63,7 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
 
     getAlpha := ui.MakeFadeIn(fadeSpeed)
 
+    // use index 0 for a smaller book (like when casting?)
     bookFlip, _ := imageCache.GetImages("book.lbx", 1)
     bookFlipIndex := uint64(0)
     bookFlipReverse := false
@@ -88,15 +117,13 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
     spellTitleAlienFont := font.MakeOptimizedFontWithPalette(fonts[7], textPalette)
     spellTextAlienFont := font.MakeOptimizedFontWithPalette(fonts[6], textPaletteLighter)
 
-    // mystery font title: fonts[7]
-    // mystery font normal: fonts[6]
-
     // showSection := SectionSpecial
     // page N refers to both left and right sides of the book
     // given 5 summoning spells and 2 unit spells
     // page 0 would be left: summoning spells 1-4, right: summoning spell 5
     // page 1 would be left: unit spells 1-2, right: empty
 
+    // FIXME: this page could be passed in, so that it is stored for a while
     page := 0
 
     wrapWidth := float64(130)
@@ -132,30 +159,10 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
         // return spell.Index <= 2
     }
 
-    sections := []Section{SectionSummoning, SectionSpecial, SectionCitySpell, SectionEnchantment, SectionUnitSpell, SectionCombatSpell}
     // compute half pages
-    var halfPages []Spells
+    halfPages := computeHalfPages(spells)
 
-    for _, section := range sections {
-        sectionSpells := spells.GetSpellsBySection(section)
-        numSpells := len(sectionSpells.Spells)
-
-        for i := 0; i < int(math.Ceil(float64(numSpells) / 4)); i++ {
-            var pageSpells Spells
-
-            for j := 0; j < 4; j++ {
-                index := i * 4 + j
-                if index < numSpells {
-                    pageSpells.AddSpell(sectionSpells.Spells[index])
-                }
-            }
-
-            if len(pageSpells.Spells) > 0 {
-                halfPages = append(halfPages, pageSpells)
-            }
-        }
-    }
-
+    // for debugging
     /*
     for i, halfPage := range halfPages {
         log.Printf("Half page %d: length=%v %+v", i, len(halfPage.Spells), halfPage)
