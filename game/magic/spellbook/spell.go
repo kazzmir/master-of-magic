@@ -262,16 +262,18 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
 
                     y += 35
                 }
+            }
 
-                animationIndex := ui.Counter
-                if bookFlipIndex > 0 && (animationIndex - bookFlipIndex) / 6 < uint64(len(bookFlip)) {
-                    index := (animationIndex - bookFlipIndex) / 6
-                    if bookFlipReverse {
-                        index = uint64(len(bookFlip)) - 1 - index
-                    }
-                    options.GeoM.Translate(0, 0)
-                    screen.DrawImage(bookFlip[index], &options)
+            // FIXME: print the page text on the page flip animation while it is happening
+            // somehow the page text needs to be distorted correctly
+            animationIndex := ui.Counter
+            if bookFlipIndex > 0 && (animationIndex - bookFlipIndex) / 6 < uint64(len(bookFlip)) {
+                index := (animationIndex - bookFlipIndex) / 6
+                if bookFlipReverse {
+                    index = uint64(len(bookFlip)) - 1 - index
                 }
+                options.GeoM.Translate(0, 0)
+                screen.DrawImage(bookFlip[index], &options)
             }
 
         },
