@@ -3,6 +3,7 @@ package spellbook
 import (
     "image"
     "image/color"
+    "math"
     "log"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -90,7 +91,13 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
     // mystery font title: fonts[7]
     // mystery font normal: fonts[6]
 
-    showSection := SectionUnitSpell
+    // showSection := SectionSpecial
+    // page N refers to both left and right sides of the book
+    // given 5 summoning spells and 2 unit spells
+    // page 0 would be left: summoning spells 1-4, right: summoning spell 5
+    // page 1 would be left: unit spells 1-2, right: empty
+
+    page := 0
 
     wrapWidth := float64(130)
 
@@ -125,6 +132,62 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
         // return spell.Index <= 2
     }
 
+    sections := []Section{SectionSummoning, SectionSpecial, SectionCitySpell, SectionEnchantment, SectionUnitSpell, SectionCombatSpell}
+    // compute half pages
+    var halfPages []Spells
+
+    for _, section := range sections {
+        sectionSpells := spells.GetSpellsBySection(section)
+        numSpells := len(sectionSpells.Spells)
+
+        for i := 0; i < int(math.Ceil(float64(numSpells) / 4)); i++ {
+            var pageSpells Spells
+
+            for j := 0; j < 4; j++ {
+                index := i * 4 + j
+                if index < numSpells {
+                    pageSpells.AddSpell(sectionSpells.Spells[index])
+                }
+            }
+
+            halfPages = append(halfPages, pageSpells)
+        }
+    }
+
+    /*
+    for i, halfPage := range halfPages {
+        log.Printf("Half page %d: length=%v %+v", i, len(halfPage.Spells), halfPage)
+    }
+    */
+
+    hasNextPage := func(page int) bool {
+        halfPageUse := (page+1) * 2
+        return halfPageUse < len(halfPages)
+    }
+
+    hasPreviousPage := func(page int) bool {
+        halfPageUse := (page-1) * 2
+        return halfPageUse >= 0
+    }
+
+    getLeftPageSpells := func(page int) Spells {
+        halfPageUse := page * 2
+        if halfPageUse >= len(halfPages) {
+            return Spells{}
+        }
+
+        return halfPages[halfPageUse]
+    }
+
+    getRightPageSpells := func(page int) Spells {
+        halfPageUse := page * 2 + 1
+        if halfPageUse >= len(halfPages) {
+            return Spells{}
+        }
+
+        return halfPages[halfPageUse]
+    }
+
     elements = append(elements, &uilib.UIElement{
         Layer: 1,
         NotLeftClicked: func(this *uilib.UIElement){
@@ -140,38 +203,66 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
             options.ColorScale.ScaleAlpha(getAlpha())
             screen.DrawImage(background, &options)
 
-            titleFont.PrintCenter(screen, 90, 11, 1, options.ColorScale, showSection.Name())
+            leftSpells := getLeftPageSpells(page)
+            rightSpells := getRightPageSpells(page)
 
-            sectionSpells := spells.GetSpellsBySection(showSection)
+            if len(leftSpells.Spells) > 0 {
+                section := rightSpells.Spells[0].Section
+                titleFont.PrintCenter(screen, 90, 11, 1, options.ColorScale, section.Name())
 
-            x := float64(25)
-            y := float64(35)
-            for i, spell := range sectionSpells.Spells {
-                if i >= 4 {
-                    break
+                x := float64(25)
+                y := float64(35)
+                for i, spell := range leftSpells.Spells {
+                    if i >= 4 {
+                        break
+                    }
+
+                    if knownSpell(spell) {
+                        spellTitleNormalFont.Print(screen, x, y, 1, options.ColorScale, spell.Name)
+                        wrapped := getSpellDescriptionNormalText(spell.Index)
+                        spellTextNormalFont.RenderWrapped(screen, x, y + 10, wrapped, options.ColorScale, false)
+                    } else {
+                        spellTitleAlienFont.Print(screen, x, y, 1, options.ColorScale, spell.Name)
+                        wrapped := getSpellDescriptionAlienText(spell.Index)
+                        spellTextAlienFont.RenderWrapped(screen, x, y + 10, wrapped, options.ColorScale, false)
+                    }
+
+                    y += 35
                 }
-
-                if knownSpell(spell) {
-                    spellTitleNormalFont.Print(screen, x, y, 1, options.ColorScale, spell.Name)
-                    wrapped := getSpellDescriptionNormalText(spell.Index)
-                    spellTextNormalFont.RenderWrapped(screen, x, y + 10, wrapped, options.ColorScale, false)
-                } else {
-                    spellTitleAlienFont.Print(screen, x, y, 1, options.ColorScale, spell.Name)
-                    wrapped := getSpellDescriptionAlienText(spell.Index)
-                    spellTextAlienFont.RenderWrapped(screen, x, y + 10, wrapped, options.ColorScale, false)
-                }
-
-                y += 35
             }
 
-            animationIndex := ui.Counter
-            if bookFlipIndex > 0 && (animationIndex - bookFlipIndex) / 6 < uint64(len(bookFlip)) {
-                index := (animationIndex - bookFlipIndex) / 6
-                if bookFlipReverse {
-                    index = uint64(len(bookFlip)) - 1 - index
+            if len(rightSpells.Spells) >  0 {
+                section := rightSpells.Spells[0].Section
+                titleFont.PrintCenter(screen, 230, 11, 1, options.ColorScale, section.Name())
+                x := float64(170)
+                y := float64(35)
+                for i, spell := range rightSpells.Spells {
+                    if i >= 4 {
+                        break
+                    }
+
+                    if knownSpell(spell) {
+                        spellTitleNormalFont.Print(screen, x, y, 1, options.ColorScale, spell.Name)
+                        wrapped := getSpellDescriptionNormalText(spell.Index)
+                        spellTextNormalFont.RenderWrapped(screen, x, y + 10, wrapped, options.ColorScale, false)
+                    } else {
+                        spellTitleAlienFont.Print(screen, x, y, 1, options.ColorScale, spell.Name)
+                        wrapped := getSpellDescriptionAlienText(spell.Index)
+                        spellTextAlienFont.RenderWrapped(screen, x, y + 10, wrapped, options.ColorScale, false)
+                    }
+
+                    y += 35
                 }
-                options.GeoM.Translate(0, 0)
-                screen.DrawImage(bookFlip[index], &options)
+
+                animationIndex := ui.Counter
+                if bookFlipIndex > 0 && (animationIndex - bookFlipIndex) / 6 < uint64(len(bookFlip)) {
+                    index := (animationIndex - bookFlipIndex) / 6
+                    if bookFlipReverse {
+                        index = uint64(len(bookFlip)) - 1 - index
+                    }
+                    options.GeoM.Translate(0, 0)
+                    screen.DrawImage(bookFlip[index], &options)
+                }
             }
 
         },
@@ -184,16 +275,19 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
         Rect: leftRect,
         Layer: 1,
         LeftClick: func(this *uilib.UIElement){
-            bookFlipIndex = ui.Counter
-            bookFlipReverse = true
-
-            showSection = showSection.PreviousSection()
+            if hasPreviousPage(page){
+                bookFlipIndex = ui.Counter
+                bookFlipReverse = true
+                page -= 1
+            }
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            var options ebiten.DrawImageOptions
-            options.GeoM.Translate(float64(leftRect.Min.X), float64(leftRect.Min.Y))
-            options.ColorScale.ScaleAlpha(getAlpha())
-            screen.DrawImage(leftTurn, &options)
+            if hasPreviousPage(page){
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(leftRect.Min.X), float64(leftRect.Min.Y))
+                options.ColorScale.ScaleAlpha(getAlpha())
+                screen.DrawImage(leftTurn, &options)
+            }
         },
     })
 
@@ -204,15 +298,19 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
         Rect: rightRect,
         Layer: 1,
         LeftClick: func(this *uilib.UIElement){
-            bookFlipIndex = ui.Counter
-            bookFlipReverse = false
-            showSection = showSection.NextSection()
+            if hasNextPage(page){
+                bookFlipIndex = ui.Counter
+                bookFlipReverse = false
+                page += 1
+            }
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            var options ebiten.DrawImageOptions
-            options.GeoM.Translate(float64(rightRect.Min.X), float64(rightRect.Min.Y))
-            options.ColorScale.ScaleAlpha(getAlpha())
-            screen.DrawImage(rightTurn, &options)
+            if hasNextPage(page){
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(rightRect.Min.X), float64(rightRect.Min.Y))
+                options.ColorScale.ScaleAlpha(getAlpha())
+                screen.DrawImage(rightTurn, &options)
+            }
         },
     })
 
