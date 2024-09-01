@@ -1,4 +1,4 @@
-.PHONY: magic lbxdump wasm
+.PHONY: magic magic.wasm lbxdump wasm
 
 magic:
 	go build -o magic ./game/magic
