@@ -327,26 +327,6 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
         return page > 0
     }
 
-    /*
-    getLeftPageSpells := func(page int) Spells {
-        halfPageUse := page * 2
-        if halfPageUse >= len(halfPages) {
-            return Spells{}
-        }
-
-        return halfPages[halfPageUse]
-    }
-
-    getRightPageSpells := func(page int) Spells {
-        halfPageUse := page * 2 + 1
-        if halfPageUse >= len(halfPages) {
-            return Spells{}
-        }
-
-        return halfPages[halfPageUse]
-    }
-    */
-
     // create images of each page
     halfPageCache := make(map[int]*ebiten.Image)
 
