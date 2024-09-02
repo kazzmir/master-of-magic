@@ -4,6 +4,9 @@ import (
     "fmt"
 )
 
+// TODO: support return values of an arbitrary type T
+// Allow main function to cancel the coroutine?
+
 type Coroutine struct {
     yieldFrom chan struct{}
     yieldTo chan struct{}
@@ -12,6 +15,8 @@ type Coroutine struct {
 type YieldFunc func() error
 
 type AcceptYieldFunc func(yield YieldFunc) error
+
+var CoroutineFinished = fmt.Errorf("coroutine finished")
 
 func NewCoroutine(user AcceptYieldFunc) *Coroutine {
     yieldTo := make(chan struct{})
@@ -42,7 +47,8 @@ func (coro *Coroutine) Run() error {
     coro.yieldFrom <- struct{}{}
     _, ok := <-coro.yieldTo
     if !ok {
-        return fmt.Errorf("coroutine cancelled")
+        close(coro.yieldFrom)
+        return CoroutineFinished
     }
     return nil
 }
