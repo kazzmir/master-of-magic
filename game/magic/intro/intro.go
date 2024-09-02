@@ -1,11 +1,14 @@
 package intro
 
 import (
+    "log"
+
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/lib/lbx"
 
     "github.com/hajimehoshi/ebiten/v2"
+    audiolib "github.com/hajimehoshi/ebiten/v2/audio"
 )
 
 type IntroState int
@@ -14,7 +17,20 @@ const (
     IntroStateDone
 )
 
-const DefaultAnimationSpeed = 10
+const DefaultAnimationSpeed = 9
+
+type Scene int
+
+const (
+    SceneTitleGraphics Scene = 2
+    SceneMarching Scene = 3
+    SceneEvilWizardIntro = 4
+    SceneGoodWizardWalk = 5
+    SceneGoodWizardIntro = 6
+    SceneWorkMustStop = 7
+
+    SceneEvilScream = 11
+)
 
 type Intro struct {
     Counter uint64
@@ -64,11 +80,25 @@ func (intro *Intro) Update() IntroState {
         if !intro.Scene.Next() {
             intro.CurrentScene += 1
 
-            if intro.CurrentScene == 3 {
-                player, err := audio.LoadSound(intro.LbxCache, 3)
-                if err == nil {
-                    player.Play()
-                }
+            log.Printf("Switching to scene %d", intro.CurrentScene)
+
+            var player *audiolib.Player
+            var err error
+            switch Scene(intro.CurrentScene) {
+                case SceneWorkMustStop:
+                    player, err = audio.LoadSound(intro.LbxCache, 1)
+                case SceneEvilScream:
+                    player, err = audio.LoadSound(intro.LbxCache, 3)
+                case SceneMarching:
+                    player, err = audio.LoadSound(intro.LbxCache, 5)
+                case SceneGoodWizardIntro:
+                    player, err = audio.LoadSound(intro.LbxCache, 4)
+            }
+
+            if err == nil && player != nil {
+                player.Play()
+            } else if err != nil {
+                log.Printf("Unable to load sound for scene %d: %v", intro.CurrentScene, err)
             }
 
             intro.ImageCache.Clear()
