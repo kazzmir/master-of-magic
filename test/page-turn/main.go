@@ -165,25 +165,25 @@ func RightSideFlipLeftDistortions1(page *ebiten.Image) util.Distortion {
 
 func (engine *Engine) DrawPage1(screen *ebiten.Image, page *ebiten.Image, options ebiten.DrawImageOptions){
     screen.DrawImage(page, &options)
-    distortions := spellbook.LeftSideFlipLeftDistortions1(page)
+    distortions := spellbook.LeftSideDistortions1(page)
     util.DrawDistortion(screen, page, engine.PageImage, distortions, options)
 }
 
 func (engine *Engine) DrawPage2(screen *ebiten.Image, page *ebiten.Image, options ebiten.DrawImageOptions){
     screen.DrawImage(page, &options)
-    distortions := spellbook.LeftSideFlipLeftDistortions2(page)
+    distortions := spellbook.LeftSideDistortions2(page)
     util.DrawDistortion(screen, page, engine.PageImage, distortions, options)
 }
 
 func (engine *Engine) DrawPage3(screen *ebiten.Image, page *ebiten.Image, options ebiten.DrawImageOptions){
     screen.DrawImage(page, &options)
-    distortions := RightSideFlipLeftDistortions1(page)
+    distortions := spellbook.RightSideDistortions1(page)
     util.DrawDistortion(screen, page, engine.PageImage, distortions, options)
 }
 
 func (engine *Engine) DrawPage4(screen *ebiten.Image, page *ebiten.Image, options ebiten.DrawImageOptions){
     screen.DrawImage(page, &options)
-    distortions := RightSideFlipLeftDistortions2(page)
+    distortions := spellbook.RightSideDistortions2(page)
     util.DrawDistortion(screen, page, engine.PageImage, distortions, options)
 }
 

@@ -44,7 +44,7 @@ func computeHalfPages(spells Spells) []Spells {
 }
 
 // flipping the page to the left
-func LeftSideFlipLeftDistortions1(page *ebiten.Image) util.Distortion {
+func LeftSideDistortions1(page *ebiten.Image) util.Distortion {
     return util.Distortion{
         Top: image.Pt(page.Bounds().Dx()/2 + 20, 5),
         Bottom: image.Pt(page.Bounds().Dx()/2 + 20, page.Bounds().Dy() - 12),
@@ -73,7 +73,7 @@ func LeftSideFlipLeftDistortions1(page *ebiten.Image) util.Distortion {
     }
 }
 
-func LeftSideFlipLeftDistortions2(page *ebiten.Image) util.Distortion {
+func LeftSideDistortions2(page *ebiten.Image) util.Distortion {
     return util.Distortion{
         Top: image.Pt(page.Bounds().Dx()/2 + 20, 5),
         Bottom: image.Pt(page.Bounds().Dx()/2 + 20, page.Bounds().Dy() - 15),
@@ -102,7 +102,7 @@ func LeftSideFlipLeftDistortions2(page *ebiten.Image) util.Distortion {
     }
 }
 
-func RightSideFlipLeftDistortions2(page *ebiten.Image) util.Distortion {
+func RightSideDistortions2(page *ebiten.Image) util.Distortion {
     offset := 30
     return util.Distortion{
         Top: image.Pt(page.Bounds().Dx()/2 - 130 + offset, 5),
@@ -133,7 +133,7 @@ func RightSideFlipLeftDistortions2(page *ebiten.Image) util.Distortion {
     }
 }
 
-func RightSideFlipLeftDistortions1(page *ebiten.Image) util.Distortion {
+func RightSideDistortions1(page *ebiten.Image) util.Distortion {
     offset := 50
     return util.Distortion{
         Top: image.Pt(page.Bounds().Dx()/2 - 110 + offset, -10),
@@ -443,22 +443,22 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
                 if index == 0 {
                     if flipLeftSide >= 0 {
                         leftSide := getHalfPageImage(flipLeftSide)
-                        util.DrawDistortion(screen, bookFlip[index], leftSide, LeftSideFlipLeftDistortions1(bookFlip[index]), options)
+                        util.DrawDistortion(screen, bookFlip[index], leftSide, LeftSideDistortions1(bookFlip[index]), options)
                     }
                 } else if index == 1 {
                     if flipLeftSide >= 0 {
                         leftSide := getHalfPageImage(flipLeftSide)
-                        util.DrawDistortion(screen, bookFlip[index], leftSide, LeftSideFlipLeftDistortions2(bookFlip[index]), options)
+                        util.DrawDistortion(screen, bookFlip[index], leftSide, LeftSideDistortions2(bookFlip[index]), options)
                     }
                 } else if index == 2 {
                     if flipRightSide < len(halfPages) {
                         rightSide := getHalfPageImage(flipRightSide)
-                        util.DrawDistortion(screen, bookFlip[index], rightSide, RightSideFlipLeftDistortions1(bookFlip[index]), options)
+                        util.DrawDistortion(screen, bookFlip[index], rightSide, RightSideDistortions1(bookFlip[index]), options)
                     }
                 } else if index == 3 {
                     if flipRightSide < len(halfPages) {
                         rightSide := getHalfPageImage(flipRightSide)
-                        util.DrawDistortion(screen, bookFlip[index], rightSide, RightSideFlipLeftDistortions2(bookFlip[index]), options)
+                        util.DrawDistortion(screen, bookFlip[index], rightSide, RightSideDistortions2(bookFlip[index]), options)
                     }
                 }
             }
