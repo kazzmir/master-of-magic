@@ -6,6 +6,10 @@ import (
 	"io"
 )
 
+func sampleRateToDivisor(sampleRate float32) byte {
+	return byte(256 - int(rateBase/sampleRate))
+}
+
 // Save encodes the provided samples into the given writer
 func Save(writer io.Writer, sampleRate float32, samples []byte) {
 	writeHeader(writer)

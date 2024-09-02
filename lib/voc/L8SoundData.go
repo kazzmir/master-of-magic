@@ -10,7 +10,8 @@ type L8SoundData struct {
 func NewL8SoundData(sampleRate float32, samples []byte) *L8SoundData {
 	data := &L8SoundData{
 		sampleRate: sampleRate,
-		samples:    samples}
+		samples:    samples,
+    }
 
 	return data
 }
@@ -28,4 +29,8 @@ func (data *L8SoundData) SampleCount() int {
 // Samples returns the samples in the given range
 func (data *L8SoundData) Samples(from, to int) []byte {
 	return data.samples[from:to]
+}
+
+func (data *L8SoundData) AllSamples() []byte {
+    return data.samples
 }
