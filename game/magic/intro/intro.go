@@ -2,6 +2,7 @@ package intro
 
 import (
     "log"
+    "time"
 
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
@@ -17,7 +18,7 @@ const (
     IntroStateDone
 )
 
-const DefaultAnimationSpeed = 9
+const DefaultAnimationSpeed = 10
 
 type Scene int
 
@@ -37,8 +38,8 @@ const (
 
 type Intro struct {
     Counter uint64
-    CurrentScene int
-    MaxScene int
+    CurrentScene Scene
+    MaxScene Scene
     Scene *util.Animation
     CurrentIndex int
     ImageCache util.ImageCache
@@ -55,17 +56,15 @@ func MakeIntro(lbxCache *lbx.LbxCache, animationSpeed uint64) (*Intro, error) {
 
     sceneCount := introLbx.TotalEntries()
 
+    startScene := SceneTitleGraphics
+
     imageCache := util.MakeImageCache(lbxCache)
-    images, err := imageCache.GetImages("intro.lbx", 2)
-    if err != nil {
-        return nil, err
-    }
 
     return &Intro{
         // skip corporate graphics
-        CurrentScene: 2,
-        MaxScene: sceneCount,
-        Scene: util.MakeAnimation(images, false),
+        CurrentScene: startScene,
+        MaxScene: Scene(sceneCount),
+        Scene: util.MakeAnimation(nil, false),
         ImageCache: imageCache,
         LbxCache: lbxCache,
         AnimationSpeed: animationSpeed,
@@ -79,9 +78,11 @@ func (intro *Intro) Update() IntroState {
 
     intro.Counter += 1
 
-    if intro.Counter % intro.AnimationSpeed == 0 {
+    if intro.Counter % intro.AnimationSpeed == 0 || len(intro.Scene.Frames) == 0 {
         if !intro.Scene.Next() {
-            intro.CurrentScene += 1
+            if len(intro.Scene.Frames) > 0 {
+                intro.CurrentScene += 1
+            }
 
             log.Printf("Switching to scene %d", intro.CurrentScene)
 
@@ -96,15 +97,18 @@ func (intro *Intro) Update() IntroState {
                     player, err = audio.LoadSound(intro.LbxCache, 3)
 
                 case SceneLightningHitsTower:
-                    // FIXME:
+                    player, err = audio.LoadSound(intro.LbxCache, 1)
+                    if err == nil && player != nil {
+                        player.SetPosition(time.Millisecond * 3650)
+                    }
+
+                    // supposed to play this sound twice
 
                 case SceneLightningHitsShield:
-                    // FIXME:
-
-                    /*
-                case SceneMarching:
-                    player, err = audio.LoadSound(intro.LbxCache, 5)
-                    */
+                    player, err = audio.LoadSound(intro.LbxCache, 1)
+                    if err == nil && player != nil {
+                        player.SetPosition(time.Millisecond * 3650)
+                    }
                 case SceneGoodWizardCast:
                     player, err = audio.LoadSound(intro.LbxCache, 118)
                 case SceneGoodWizardWalk:
@@ -121,7 +125,7 @@ func (intro *Intro) Update() IntroState {
             }
 
             intro.ImageCache.Clear()
-            images, err := intro.ImageCache.GetImages("intro.lbx", intro.CurrentScene)
+            images, err := intro.ImageCache.GetImages("intro.lbx", int(intro.CurrentScene))
             if err == nil {
                 intro.Scene = util.MakeAnimation(images, false)
             }
