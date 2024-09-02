@@ -1,10 +1,14 @@
 package intro
 
 import (
+    "log"
+
     "github.com/kazzmir/master-of-magic/game/magic/util"
+    "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/lib/lbx"
 
     "github.com/hajimehoshi/ebiten/v2"
+    audiolib "github.com/hajimehoshi/ebiten/v2/audio"
 )
 
 type IntroState int
@@ -13,7 +17,23 @@ const (
     IntroStateDone
 )
 
-const DefaultAnimationSpeed = 10
+const DefaultAnimationSpeed = 9
+
+type Scene int
+
+const (
+    SceneTitleGraphics Scene = 2
+    SceneMarching Scene = 3
+    SceneEvilWizardIntro = 4
+    SceneGoodWizardWalk = 5
+    SceneGoodWizardIntro = 6
+    SceneWorkMustStop = 7
+    SceneLightningHitsTower = 8
+    SceneGoodWizardCast = 9
+    SceneLightningHitsShield = 10
+
+    SceneEvilScream = 11
+)
 
 type Intro struct {
     Counter uint64
@@ -62,6 +82,44 @@ func (intro *Intro) Update() IntroState {
     if intro.Counter % intro.AnimationSpeed == 0 {
         if !intro.Scene.Next() {
             intro.CurrentScene += 1
+
+            log.Printf("Switching to scene %d", intro.CurrentScene)
+
+            var player *audiolib.Player
+            var err error
+            switch Scene(intro.CurrentScene) {
+                case SceneWorkMustStop:
+                    player, err = audio.LoadSound(intro.LbxCache, 1)
+                case SceneEvilWizardIntro:
+                    player, err = audio.LoadSound(intro.LbxCache, 115)
+                case SceneEvilScream:
+                    player, err = audio.LoadSound(intro.LbxCache, 3)
+
+                case SceneLightningHitsTower:
+                    // FIXME:
+
+                case SceneLightningHitsShield:
+                    // FIXME:
+
+                    /*
+                case SceneMarching:
+                    player, err = audio.LoadSound(intro.LbxCache, 5)
+                    */
+                case SceneGoodWizardCast:
+                    player, err = audio.LoadSound(intro.LbxCache, 118)
+                case SceneGoodWizardWalk:
+                    // need a slight delay here
+                    player, err = audio.LoadSound(intro.LbxCache, 4)
+                case SceneGoodWizardIntro:
+                    player, err = audio.LoadSound(intro.LbxCache, 116)
+            }
+
+            if err == nil && player != nil {
+                player.Play()
+            } else if err != nil {
+                log.Printf("Unable to load sound for scene %d: %v", intro.CurrentScene, err)
+            }
+
             intro.ImageCache.Clear()
             images, err := intro.ImageCache.GetImages("intro.lbx", intro.CurrentScene)
             if err == nil {
