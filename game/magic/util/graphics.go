@@ -25,7 +25,7 @@ func ImageRect(x int, y int, img *ebiten.Image) image.Rectangle {
     return image.Rect(x, y, x + img.Bounds().Dx(), y + img.Bounds().Dy())
 }
 
-func drawDistortedImage(destination *ebiten.Image, source *ebiten.Image, vertices []ebiten.Vertex){
+func drawDistortedImage(destination *ebiten.Image, source *ebiten.Image, vertices [4]ebiten.Vertex){
     for i := 0; i < 4; i++ {
         vertices[i].ColorA = 1
         vertices[i].ColorR = 1
@@ -36,7 +36,7 @@ func drawDistortedImage(destination *ebiten.Image, source *ebiten.Image, vertice
     // the order probably doesn't matter all that much but we draw two triangles:
     // 1: top-left, top-right, bottom right
     // 2: bottom right, bottom left, top left
-    destination.DrawTriangles(vertices, []uint16{0, 1, 2, 2, 3, 0}, source, nil)
+    destination.DrawTriangles(vertices[:], []uint16{0, 1, 2, 2, 3, 0}, source, nil)
 }
 
 type Segment struct {
@@ -68,7 +68,7 @@ func DrawDistortion(screen *ebiten.Image, page *ebiten.Image, source *ebiten.Ima
         sx := float32(0)
         sy := float32(source.Bounds().Dy())
 
-        drawDistortedImage(subScreen, source, []ebiten.Vertex{
+        drawDistortedImage(subScreen, source, [4]ebiten.Vertex{
             ebiten.Vertex{
                 DstX: float32(x1),
                 DstY: float32(y1),
