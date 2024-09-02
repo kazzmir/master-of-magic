@@ -102,8 +102,95 @@ func LeftSideFlipLeftDistortions2(page *ebiten.Image) util.Distortion {
     }
 }
 
-func RightSideFlipLeftDistortions(page *ebiten.Image) util.Distortion {
-    return util.Distortion{}
+func RightSideFlipLeftDistortions2(page *ebiten.Image) util.Distortion {
+    offset := 30
+    return util.Distortion{
+        Top: image.Pt(page.Bounds().Dx()/2 - 130 + offset, 5),
+        Bottom: image.Pt(page.Bounds().Dx()/2 - 130 + offset, page.Bounds().Dy() - 0),
+
+        Segments: []util.Segment{
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 - 100 + offset, -0),
+                Bottom: image.Pt(page.Bounds().Dx()/2 - 100 + offset, page.Bounds().Dy() - 22),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 - 80 + offset, -10),
+                Bottom: image.Pt(page.Bounds().Dx()/2 - 80 + offset, page.Bounds().Dy() - 30),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 - 60 + offset, -10),
+                Bottom: image.Pt(page.Bounds().Dx()/2 - 60 + offset, page.Bounds().Dy() - 33),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 - 40 + offset, 0),
+                Bottom: image.Pt(page.Bounds().Dx()/2 - 40 + offset, page.Bounds().Dy() - 25),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 - 20 + offset, 5),
+                Bottom: image.Pt(page.Bounds().Dx()/2 - 20 + offset, page.Bounds().Dy() - 12),
+            },
+        },
+    }
+}
+
+func RightSideFlipLeftDistortions1(page *ebiten.Image) util.Distortion {
+    offset := 50
+    return util.Distortion{
+        Top: image.Pt(page.Bounds().Dx()/2 - 110 + offset, -10),
+        Bottom: image.Pt(page.Bounds().Dx()/2 - 110 + offset, page.Bounds().Dy() - 12),
+        Segments: []util.Segment{
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 - 90 + offset, -0),
+                Bottom: image.Pt(page.Bounds().Dx()/2 - 90 + offset, page.Bounds().Dy() - 22),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 - 73 + offset, -20),
+                Bottom: image.Pt(page.Bounds().Dx()/2 - 73 + offset, page.Bounds().Dy() - 35),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 - 58 + offset, -13),
+                Bottom: image.Pt(page.Bounds().Dx()/2 - 58 + offset, page.Bounds().Dy() - 35),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 - 40 + offset, 0),
+                Bottom: image.Pt(page.Bounds().Dx()/2 - 40 + offset, page.Bounds().Dy() - 28),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 - 20 + offset, 5),
+                Bottom: image.Pt(page.Bounds().Dx()/2 - 20 + offset, page.Bounds().Dy() - 15),
+            },
+        },
+    }
+}
+
+// flipping the page to the right
+func RightSideFlipRightDistortions1(page *ebiten.Image) util.Distortion {
+    return util.Distortion{
+        Top: image.Pt(page.Bounds().Dx()/2 + 20, 5),
+        Bottom: image.Pt(page.Bounds().Dx()/2 + 20, page.Bounds().Dy() - 12),
+        Segments: []util.Segment{
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 + 40, 0),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 40, page.Bounds().Dy() - 25),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 + 60, -10),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 60, page.Bounds().Dy() - 33),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 + 80, -10),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 80, page.Bounds().Dy() - 30),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 + 100, -0),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 100, page.Bounds().Dy() - 22),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 + 130, -10),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 130, page.Bounds().Dy() - 12),
+            },
+        },
+    }
 }
 
 func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
@@ -415,11 +502,17 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
                     } else if index == 1 {
                         leftSide := getHalfPageImage(flipLeftSide)
                         util.DrawDistortion(screen, bookFlip[index], leftSide, LeftSideFlipLeftDistortions2(bookFlip[index]), options)
+                    } else if index == 2 {
+                        rightSide := getHalfPageImage(flipRightSide)
+                        util.DrawDistortion(screen, bookFlip[index], rightSide, RightSideFlipLeftDistortions1(bookFlip[index]), options)
+                    } else if index == 3 {
+                        rightSide := getHalfPageImage(flipRightSide)
+                        util.DrawDistortion(screen, bookFlip[index], rightSide, RightSideFlipLeftDistortions2(bookFlip[index]), options)
                     }
                 } else {
                     if index == 0 {
                         rightSide := getHalfPageImage(flipRightSide)
-                        util.DrawDistortion(screen, bookFlip[index], rightSide, RightSideFlipLeftDistortions(bookFlip[index]), options)
+                        util.DrawDistortion(screen, bookFlip[index], rightSide, RightSideFlipRightDistortions1(bookFlip[index]), options)
                     }
                 }
             }
@@ -438,8 +531,11 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
                 bookFlipIndex = ui.Counter
                 bookFlipReverse = true
 
+                flipLeftSide = showLeftPage - 1
+                flipRightSide = showLeftPage
+                showLeftPage -= 2
+
                 ui.AddDelay(bookFlipSpeed * uint64(len(bookFlip)), func(){
-                    showLeftPage -= 2
                     showRightPage -= 2
                 })
             }
@@ -467,10 +563,10 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
 
                 flipLeftSide = showRightPage
                 flipRightSide = showRightPage + 1
+                showRightPage += 2
 
                 ui.AddDelay(bookFlipSpeed * uint64(len(bookFlip)), func(){
                     showLeftPage += 2
-                    showRightPage += 2
                 })
             }
         },
