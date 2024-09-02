@@ -219,7 +219,7 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
     bookFlipIndex := uint64(0)
     bookFlipReverse := false
 
-    bookFlipSpeed := uint64(8)
+    bookFlipSpeed := uint64(7)
 
     fontLbx, err := cache.GetLbxFile("fonts.lbx")
     if err != nil {
@@ -320,7 +320,7 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
     */
 
     hasNextPage := func(page int) bool {
-        return page < len(halfPages)
+        return page < len(halfPages) - 1
     }
 
     hasPreviousPage := func(page int) bool {
@@ -330,6 +330,7 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
     // create images of each page
     halfPageCache := make(map[int]*ebiten.Image)
 
+    // lazily construct the page graphics, which consists of the section title and 4 spell descriptions
     getHalfPageImage := func(halfPage int) *ebiten.Image {
         image, ok := halfPageCache[halfPage]
         if ok {
@@ -383,6 +384,8 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
 
     flipLeftSide := 0
     flipRightSide := 1
+
+    flipping := false
 
     elements = append(elements, &uilib.UIElement{
         Layer: 1,
@@ -453,16 +456,18 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
         Rect: leftRect,
         Layer: 1,
         LeftClick: func(this *uilib.UIElement){
-            if hasPreviousPage(showLeftPage){
+            if !flipping && hasPreviousPage(showLeftPage){
                 bookFlipIndex = ui.Counter
                 bookFlipReverse = true
 
                 flipLeftSide = showLeftPage - 1
                 flipRightSide = showLeftPage
                 showLeftPage -= 2
+                flipping = true
 
-                ui.AddDelay(bookFlipSpeed * uint64(len(bookFlip)), func(){
+                ui.AddDelay(bookFlipSpeed * uint64(len(bookFlip)) - 1, func(){
                     showRightPage -= 2
+                    flipping = false
                 })
             }
         },
@@ -483,7 +488,7 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
         Rect: rightRect,
         Layer: 1,
         LeftClick: func(this *uilib.UIElement){
-            if hasNextPage(showRightPage){
+            if !flipping && hasNextPage(showRightPage){
                 bookFlipIndex = ui.Counter
                 bookFlipReverse = false
 
@@ -491,8 +496,11 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
                 flipRightSide = showRightPage + 1
                 showRightPage += 2
 
-                ui.AddDelay(bookFlipSpeed * uint64(len(bookFlip)), func(){
+                flipping = true
+
+                ui.AddDelay(bookFlipSpeed * uint64(len(bookFlip)) - 1, func(){
                     showLeftPage += 2
+                    flipping = false
                 })
             }
         },
