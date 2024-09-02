@@ -57,6 +57,7 @@ func MakeIntro(lbxCache *lbx.LbxCache, animationSpeed uint64) (*Intro, error) {
     sceneCount := introLbx.TotalEntries()
 
     startScene := SceneTitleGraphics
+    // startScene = SceneLightningHitsTower
 
     imageCache := util.MakeImageCache(lbxCache)
 
@@ -88,6 +89,10 @@ func (intro *Intro) Update() IntroState {
 
             var player *audiolib.Player
             var err error
+            position := time.Duration(0)
+            plays := 1
+            delay := time.Duration(0)
+            var maxDuration []time.Duration
             switch Scene(intro.CurrentScene) {
                 case SceneWorkMustStop:
                     player, err = audio.LoadSound(intro.LbxCache, 1)
@@ -99,27 +104,44 @@ func (intro *Intro) Update() IntroState {
                 case SceneLightningHitsTower:
                     player, err = audio.LoadSound(intro.LbxCache, 1)
                     if err == nil && player != nil {
-                        player.SetPosition(time.Millisecond * 3650)
+                        position = time.Millisecond * 3650
+                        plays = 2
+                        // first lightning strike is cut short
+                        maxDuration = append(maxDuration, time.Millisecond * 4800)
                     }
-
-                    // supposed to play this sound twice
-
                 case SceneLightningHitsShield:
                     player, err = audio.LoadSound(intro.LbxCache, 1)
                     if err == nil && player != nil {
-                        player.SetPosition(time.Millisecond * 3650)
+                        position = time.Millisecond * 3650
                     }
                 case SceneGoodWizardCast:
                     player, err = audio.LoadSound(intro.LbxCache, 118)
                 case SceneGoodWizardWalk:
-                    // need a slight delay here
+                    delay = time.Millisecond * 1200
                     player, err = audio.LoadSound(intro.LbxCache, 4)
                 case SceneGoodWizardIntro:
                     player, err = audio.LoadSound(intro.LbxCache, 116)
             }
 
             if err == nil && player != nil {
-                player.Play()
+                go func(player *audiolib.Player, position time.Duration, plays int, delay time.Duration, maxDuration []time.Duration){
+                    if delay > 0 {
+                        time.Sleep(delay)
+                    }
+                    for i := 0; i < plays; i++ {
+                        for player.IsPlaying() {
+                            // log.Printf("i %v position %v maxDuration %v", i, player.Position(), maxDuration)
+                            if i <= len(maxDuration) && player.Position() > maxDuration[i-1] {
+                                break
+                            }
+
+                            time.Sleep(time.Millisecond * 10)
+                        }
+                        // player.Pause()
+                        player.SetPosition(position)
+                        player.Play()
+                    }
+                }(player, position, plays, delay, maxDuration)
             } else if err != nil {
                 log.Printf("Unable to load sound for scene %d: %v", intro.CurrentScene, err)
             }
