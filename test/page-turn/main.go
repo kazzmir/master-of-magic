@@ -21,11 +21,15 @@ type Engine struct {
     Cache *lbx.LbxCache
     ImageCache util.ImageCache
     Images []*ebiten.Image
+    Counter uint64
 
     PageImage *ebiten.Image
+    LeftPage *ebiten.Image
+    RightPage *ebiten.Image
 }
 
 func (engine *Engine) Update() error {
+    engine.Counter += 1
     keys := make([]ebiten.Key, 0)
     keys = inpututil.AppendJustPressedKeys(keys)
 
@@ -39,18 +43,6 @@ func (engine *Engine) Update() error {
 }
 
 func drawDistortedImage(destination *ebiten.Image, source *ebiten.Image, vertices []ebiten.Vertex){
-
-    /*
-    vertices[0].SrcX = 0
-    vertices[0].SrcY = 0
-    vertices[1].SrcX = float32(source.Bounds().Dx())
-    vertices[1].SrcY = 0
-    vertices[2].SrcX = float32(source.Bounds().Dx())
-    vertices[2].SrcY = float32(source.Bounds().Dy())
-    vertices[3].SrcX = 0
-    vertices[3].SrcY = float32(source.Bounds().Dy())
-    */
-
     for i := 0; i < 4; i++ {
         vertices[i].ColorA = 1
         vertices[i].ColorR = 1
@@ -61,7 +53,267 @@ func drawDistortedImage(destination *ebiten.Image, source *ebiten.Image, vertice
     destination.DrawTriangles(vertices, []uint16{0, 1, 2, 2, 3, 0}, source, nil)
 }
 
+type Segment struct {
+    Top image.Point
+    Bottom image.Point
+}
+
+type Distortion struct {
+    Top image.Point
+    Bottom image.Point
+    Segments []Segment
+}
+
+func (engine *Engine) DrawDistortion(screen *ebiten.Image, page *ebiten.Image, source *ebiten.Image, distortion Distortion, options ebiten.DrawImageOptions){
+    ax0, ay0 := options.GeoM.Apply(0, 0)
+    ax1, ay1 := options.GeoM.Apply(float64(page.Bounds().Dx()), float64(page.Bounds().Dy()))
+    subScreen := screen.SubImage(image.Rect(int(ax0), int(ay0), int(ax1), int(ay1))).(*ebiten.Image)
+
+    x1, y1 := options.GeoM.Apply(float64(distortion.Top.X), float64(distortion.Top.Y))
+    x4, y4 := options.GeoM.Apply(float64(distortion.Bottom.X), float64(distortion.Bottom.Y))
+
+    segmentWidth := float32(source.Bounds().Dx()) / float32(len(distortion.Segments))
+
+    for i := 0; i < len(distortion.Segments); i++ {
+        segment := distortion.Segments[i]
+        x2, y2 := options.GeoM.Apply(float64(segment.Top.X), float64(segment.Top.Y))
+        x3, y3 := options.GeoM.Apply(float64(segment.Bottom.X), float64(segment.Bottom.Y))
+
+        sx := float32(0)
+        sy := float32(source.Bounds().Dy())
+
+        drawDistortedImage(subScreen, source, []ebiten.Vertex{
+            ebiten.Vertex{
+                DstX: float32(x1),
+                DstY: float32(y1),
+                SrcX: sx + segmentWidth * float32(i),
+                SrcY: 0,
+            },
+            ebiten.Vertex{
+                DstX: float32(x2),
+                DstY: float32(y2),
+                SrcX: sx + segmentWidth * float32(i+1),
+                SrcY: 0,
+            },
+            ebiten.Vertex{
+                DstX: float32(x3),
+                DstY: float32(y3),
+                SrcX: sx + segmentWidth * float32(i+1),
+                SrcY: sy,
+            },
+            ebiten.Vertex{
+                DstX: float32(x4),
+                DstY: float32(y4),
+                SrcX: sx + segmentWidth * float32(i),
+                SrcY: sy,
+            },
+        })
+
+        x1 = x2
+        y1 = y2
+        x4 = x3
+        y4 = y3
+    }
+}
+
+func (engine *Engine) Page1Distortions(page *ebiten.Image) Distortion {
+    return Distortion{
+        Top: image.Pt(page.Bounds().Dx()/2 + 20, 5),
+        Bottom: image.Pt(page.Bounds().Dx()/2 + 20, page.Bounds().Dy() - 12),
+        Segments: []Segment{
+            Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 + 40, 0),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 40, page.Bounds().Dy() - 25),
+            },
+            Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 + 60, -10),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 60, page.Bounds().Dy() - 33),
+            },
+            Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 + 80, -10),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 80, page.Bounds().Dy() - 30),
+            },
+            Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 + 100, -0),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 100, page.Bounds().Dy() - 22),
+            },
+            Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 + 130, -10),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 130, page.Bounds().Dy() - 12),
+            },
+        },
+    }
+}
+
+func (engine *Engine) Page2Distortions(page *ebiten.Image) Distortion {
+
+    return Distortion{
+        Top: image.Pt(page.Bounds().Dx()/2 + 20, 5),
+        Bottom: image.Pt(page.Bounds().Dx()/2 + 20, page.Bounds().Dy() - 15),
+        Segments: []Segment{
+            Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 + 40, 0),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 40, page.Bounds().Dy() - 28),
+            },
+            Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 + 58, -13),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 58, page.Bounds().Dy() - 35),
+            },
+            Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 + 73, -20),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 73, page.Bounds().Dy() - 35),
+            },
+            Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 + 90, -0),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 90, page.Bounds().Dy() - 22),
+            },
+            Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 + 120, -10),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 120, page.Bounds().Dy() - 12),
+            },
+        },
+    }
+}
+
 func (engine *Engine) DrawPage1(screen *ebiten.Image, page *ebiten.Image, options ebiten.DrawImageOptions){
+    screen.DrawImage(page, &options)
+    distortions := engine.Page1Distortions(page)
+    engine.DrawDistortion(screen, page, engine.PageImage, distortions, options)
+}
+
+func (engine *Engine) DrawPage2(screen *ebiten.Image, page *ebiten.Image, options ebiten.DrawImageOptions){
+    screen.DrawImage(page, &options)
+    distortions := engine.Page2Distortions(page)
+    engine.DrawDistortion(screen, page, engine.PageImage, distortions, options)
+}
+
+func (engine *Engine) Draw(screen *ebiten.Image){
+    screen.Fill(color.RGBA{R: 0, G: 150, B: 200, A: 255})
+    pages, _ := engine.ImageCache.GetImages("book.lbx", 1)
+    var options ebiten.DrawImageOptions
+    options.GeoM.Scale(1.2, 1.2)
+    options.GeoM.Translate(10, 20)
+
+    engine.DrawPage1(screen, pages[0], options)
+
+    options.GeoM.Translate(float64(pages[0].Bounds().Dx() + 10), 0)
+    engine.DrawPage2(screen, pages[1], options)
+
+    options.GeoM.Reset()
+    options.GeoM.Scale(1.2, 1.2)
+    background, _ := engine.ImageCache.GetImage("scroll.lbx", 6, 0)
+    options.GeoM.Translate(10, 300)
+    screen.DrawImage(background, &options)
+
+    options.GeoM.Translate(200, 10)
+    // screen.DrawImage(engine.Images[0], &options)
+    screen.DrawImage(engine.PageImage, &options)
+
+
+    options.GeoM.Translate(200, -10)
+    screen.DrawImage(background, &options)
+
+    options2 := options
+    options2.GeoM.Translate(15, 10)
+    screen.DrawImage(engine.LeftPage, &options2)
+
+    options2.GeoM.Translate(175, 0)
+    screen.DrawImage(engine.RightPage, &options2)
+
+    pageIndex := (engine.Counter / 10) % uint64(len(pages) + 1)
+    if pageIndex == 0 {
+        engine.DrawPage1(screen, pages[pageIndex], options)
+    } else if pageIndex == 1 {
+        engine.DrawPage2(screen, pages[pageIndex], options)
+    } else if pageIndex < uint64(len(pages)) {
+        screen.DrawImage(pages[pageIndex], &options)
+    }
+}
+
+func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
+    return ScreenWidth, ScreenHeight
+}
+
+func NewEngine() (*Engine, error){
+    cache := lbx.AutoCache()
+
+    image1 := ebiten.NewImage(30, 170)
+    image1.Fill(color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff})
+    vector.DrawFilledCircle(image1, 15, 15, 8, color.RGBA{R: 0, G: 0xff, B: 0, A: 0xff}, true)
+
+    image2 := ebiten.NewImage(30, 170)
+    image2.Fill(color.RGBA{R: 0, G: 0, B: 0xff, A: 0xff})
+    image2.Fill(color.RGBA{R: 0, G: 0, B: 0x0, A: 0x0})
+    vector.DrawFilledCircle(image2, 15, 45, 8, color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff}, true)
+
+    images := []*ebiten.Image{image1, image2}
+
+    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        return nil, err
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        return nil, err
+    }
+
+    greyLight := util.PremultiplyAlpha(color.RGBA{R: 35, G: 35, B: 35, A: 164})
+    textPaletteLighter := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        util.PremultiplyAlpha(color.RGBA{R: 35, G: 35, B: 35, A: 64}),
+        greyLight, greyLight, greyLight,
+        greyLight, greyLight, greyLight,
+    }
+    
+    textFont := font.MakeOptimizedFontWithPalette(fonts[0], textPaletteLighter)
+
+    spellPage := ebiten.NewImage(150, 170)
+    spellPage.Fill(color.RGBA{R: 0, G: 0, B: 0, A: 0})
+
+    textFont.PrintWrap(spellPage, 0, 5, 135, 1, ebiten.ColorScale{}, "This is a test of the emergency broadcast system. This is only a test. If this were a real emergency, you would be instructed to do something else.")
+    // textFont.PrintWrap(spellPage, 0, 50, 135, 1, ebiten.ColorScale{}, "A sub-image returned by SubImage can be used as a rendering source and a rendering destination. If a sub-image is used as a rendering source, the image is used as if it is a small image. If a sub-image is used as a rendering destination, the region being rendered is clipped.")
+    textFont.PrintWrap(spellPage, 0, 50, 135, 1, ebiten.ColorScale{}, "aaaaa aaaaaa bbbbb bbbbb bbbb ccccc ccccc ccccc ccc dddd ddddd dddd dddd eeee eeee eeee")
+
+    vector.DrawFilledCircle(spellPage, 10, 90, 5, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, true)
+    vector.DrawFilledCircle(spellPage, 45, 90, 5, color.RGBA{R: 0x0, G: 0xff, B: 0, A: 0xff}, true)
+    
+    vector.StrokeLine(spellPage, 10, 110, 120, 110, 3, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, true)
+    vector.StrokeLine(spellPage, 10, 130, 120, 130, 3, color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff}, true)
+
+    leftPage := ebiten.NewImage(150, 170)
+    leftPage.Fill(color.RGBA{R: 0, G: 0, B: 0, A: 0})
+    textFont.PrintWrap(leftPage, 5, 5, 135, 1, ebiten.ColorScale{}, "This is some text on the left page. Note that an important logic should not rely on values returned by RGBA64At, since the returned values can include very slight differences between some machines.")
+    rightPage := ebiten.NewImage(150, 170)
+    textFont.PrintWrap(rightPage, 5, 5, 135, 1, ebiten.ColorScale{}, "If the shader unit is texels, one of the specified image is non-nil and its size is different from (width, height), DrawTrianglesShader panics. If one of the specified image is non-nil and is disposed, DrawTrianglesShader panics.")
+
+    return &Engine{
+        Cache: cache,
+        ImageCache: util.MakeImageCache(cache),
+        Images: images,
+        PageImage: spellPage,
+        LeftPage: leftPage,
+        RightPage: rightPage,
+    }, nil
+}
+
+func main(){
+    log.SetFlags(log.Ldate | log.Lshortfile | log.Lmicroseconds)
+
+    ebiten.SetWindowSize(int(float64(ScreenWidth) * 1.8), int(float64(ScreenHeight) * 1.8))
+    ebiten.SetWindowTitle("page turn")
+    ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
+
+    engine, err := NewEngine()
+
+    err = ebiten.RunGame(engine)
+    if err != nil {
+        log.Printf("Error: %v", err)
+    }
+}
+
+// legacy stuff
+func (engine *Engine) DrawPage1_old(screen *ebiten.Image, page *ebiten.Image, options ebiten.DrawImageOptions){
     screen.DrawImage(page, &options)
 
         /*
@@ -262,7 +514,7 @@ func (engine *Engine) DrawPage1(screen *ebiten.Image, page *ebiten.Image, option
 
 }
 
-func (engine *Engine) DrawPage2(screen *ebiten.Image, page *ebiten.Image, options ebiten.DrawImageOptions){
+func (engine *Engine) DrawPage2_old(screen *ebiten.Image, page *ebiten.Image, options ebiten.DrawImageOptions){
     screen.DrawImage(page, &options)
 
     ax0, ay0 := options.GeoM.Apply(0, 0)
@@ -444,157 +696,4 @@ func (engine *Engine) DrawPage2(screen *ebiten.Image, page *ebiten.Image, option
         },
     })
 
-}
-
-func (engine *Engine) Draw(screen *ebiten.Image){
-    screen.Fill(color.RGBA{R: 0, G: 150, B: 200, A: 255})
-    pages, _ := engine.ImageCache.GetImages("book.lbx", 1)
-    var options ebiten.DrawImageOptions
-    options.GeoM.Scale(1.2, 1.2)
-    options.GeoM.Translate(10, 20)
-
-    engine.DrawPage1(screen, pages[0], options)
-
-    options.GeoM.Translate(float64(pages[0].Bounds().Dx() + 10), 0)
-    engine.DrawPage2(screen, pages[1], options)
-
-    // for _, page := range pages[:2] {
-
-        /*
-        imageOptions := ebiten.DrawTrianglesOptions{}
-
-        vertex := []ebiten.Vertex{
-            ebiten.Vertex{
-                SrcX: 0,
-                SrcY: 0,
-                DstX: 7,
-                DstY: 3,
-                ColorA: 1,
-                ColorR: 1,
-                ColorG: 1,
-                ColorB: 1,
-            },
-            ebiten.Vertex{
-                SrcX: float32(use.Bounds().Dx()),
-                SrcY: 0,
-                DstX: 47,
-                DstY: 8,
-                ColorA: 1,
-                ColorR: 1,
-                ColorG: 1,
-                ColorB: 1,
-            },
-            ebiten.Vertex{
-                SrcX: float32(use.Bounds().Dx()-1),
-                SrcY: float32(use.Bounds().Dy()-1),
-                DstX: 80,
-                DstY: 96,
-                ColorA: 1,
-                ColorR: 1,
-                ColorG: 1,
-                ColorB: 1,
-            },
-            ebiten.Vertex{
-                SrcX: 0,
-                SrcY: float32(use.Bounds().Dy()-1),
-                DstX: 5,
-                DstY: 93,
-                ColorA: 1,
-                ColorR: 1,
-                ColorG: 1,
-                ColorB: 1,
-            },
-        }
-
-        screen.DrawTriangles(vertex, []uint16{0, 1, 2, 2, 3, 0}, engine.Images[0], &imageOptions)
-        */
-
-        /*
-        options.GeoM.Translate(float64(page.Bounds().Dx() + 10), 0)
-    }
-    */
-
-    options.GeoM.Reset()
-    options.GeoM.Scale(1.2, 1.2)
-    background, _ := engine.ImageCache.GetImage("scroll.lbx", 6, 0)
-    options.GeoM.Translate(10, 300)
-    screen.DrawImage(background, &options)
-
-    options.GeoM.Translate(200, 10)
-    // screen.DrawImage(engine.Images[0], &options)
-    screen.DrawImage(engine.PageImage, &options)
-}
-
-func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
-    return ScreenWidth, ScreenHeight
-}
-
-func NewEngine() (*Engine, error){
-    cache := lbx.AutoCache()
-
-    image1 := ebiten.NewImage(30, 170)
-    image1.Fill(color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff})
-    vector.DrawFilledCircle(image1, 15, 15, 8, color.RGBA{R: 0, G: 0xff, B: 0, A: 0xff}, true)
-
-    image2 := ebiten.NewImage(30, 170)
-    image2.Fill(color.RGBA{R: 0, G: 0, B: 0xff, A: 0xff})
-    image2.Fill(color.RGBA{R: 0, G: 0, B: 0x0, A: 0x0})
-    vector.DrawFilledCircle(image2, 15, 45, 8, color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff}, true)
-
-    images := []*ebiten.Image{image1, image2}
-
-    fontLbx, err := cache.GetLbxFile("fonts.lbx")
-    if err != nil {
-        return nil, err
-    }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        return nil, err
-    }
-
-    greyLight := util.PremultiplyAlpha(color.RGBA{R: 35, G: 35, B: 35, A: 164})
-    textPaletteLighter := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        util.PremultiplyAlpha(color.RGBA{R: 35, G: 35, B: 35, A: 64}),
-        greyLight, greyLight, greyLight,
-        greyLight, greyLight, greyLight,
-    }
-    
-    textFont := font.MakeOptimizedFontWithPalette(fonts[0], textPaletteLighter)
-
-    spellPage := ebiten.NewImage(150, 170)
-    spellPage.Fill(color.RGBA{R: 0, G: 0, B: 0, A: 0})
-
-    textFont.PrintWrap(spellPage, 0, 5, 135, 1, ebiten.ColorScale{}, "This is a test of the emergency broadcast system. This is only a test. If this were a real emergency, you would be instructed to do something else.")
-    // textFont.PrintWrap(spellPage, 0, 50, 135, 1, ebiten.ColorScale{}, "A sub-image returned by SubImage can be used as a rendering source and a rendering destination. If a sub-image is used as a rendering source, the image is used as if it is a small image. If a sub-image is used as a rendering destination, the region being rendered is clipped.")
-    textFont.PrintWrap(spellPage, 0, 50, 135, 1, ebiten.ColorScale{}, "aaaaa aaaaaa bbbbb bbbbb bbbb ccccc ccccc ccccc ccc dddd ddddd dddd dddd eeee eeee eeee")
-
-    vector.DrawFilledCircle(spellPage, 10, 90, 5, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, true)
-    vector.DrawFilledCircle(spellPage, 45, 90, 5, color.RGBA{R: 0x0, G: 0xff, B: 0, A: 0xff}, true)
-    
-    vector.StrokeLine(spellPage, 10, 110, 120, 110, 3, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, true)
-    vector.StrokeLine(spellPage, 10, 130, 120, 130, 3, color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff}, true)
-
-    return &Engine{
-        Cache: cache,
-        ImageCache: util.MakeImageCache(cache),
-        Images: images,
-        PageImage: spellPage,
-    }, nil
-}
-
-func main(){
-    log.SetFlags(log.Ldate | log.Lshortfile | log.Lmicroseconds)
-
-    ebiten.SetWindowSize(int(float64(ScreenWidth) * 1.8), int(float64(ScreenHeight) * 1.8))
-    ebiten.SetWindowTitle("page turn")
-    ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
-
-    engine, err := NewEngine()
-
-    err = ebiten.RunGame(engine)
-    if err != nil {
-        log.Printf("Error: %v", err)
-    }
 }
