@@ -1,10 +1,25 @@
 package voc
 
+// https://moddingwiki.shikadi.net/wiki/VOC_Format
+// https://en.wikipedia.org/wiki/Creative_Voice_file
+
 import (
     "encoding/binary"
     "fmt"
     "io"
     "log"
+)
+
+type Codec int
+const (
+    CodecU8 Codec = 0x0
+    Codec4_to_8_ADPCM Codec = 0x1
+    Codec3_to_8_ADPCM Codec = 0x2
+    Codec2_to_8_ADPCM Codec = 0x3
+    CodecS16PCM Codec = 0x4
+    CodecALaw Codec = 0x6
+    CodecULaw Codec = 0x7
+    Codec4_to_16_ADPCM Codec = 0x200
 )
 
 var errNotACreativeVoiceSound = fmt.Errorf("Not a Creative Voice Sound")
@@ -72,6 +87,11 @@ func readSoundData(source io.Reader) (*L8SoundData, error) {
         switch blockType(blockStart[0]) {
         case soundData:
             source.Read(meta)
+
+            if Codec(meta[1]) != CodecU8 {
+                return nil, fmt.Errorf("Only the u8 codec is supported")
+            }
+
             sampleRate = divisorToSampleRate(meta[0])
 
             // log.Printf("Sample rate: %v from 0x%x", sampleRate, meta[0])
