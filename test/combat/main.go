@@ -6,6 +6,7 @@ import (
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/game/magic/combat"
+    "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/data"
 
     "github.com/hajimehoshi/ebiten/v2"
@@ -21,9 +22,31 @@ func NewEngine() (*Engine, error) {
     cache := lbx.AutoCache()
 
     defendingArmy := combat.Army{
+        Units: []*combat.ArmyUnit{
+            &combat.ArmyUnit{
+                Unit: units.HighElfSpearmen,
+                Facing: units.FacingDownRight,
+                X: 3,
+                Y: 10,
+            },
+            &combat.ArmyUnit{
+                Unit: units.HighElfSpearmen,
+                Facing: units.FacingDownRight,
+                X: 4,
+                Y: 10,
+            },
+        },
     }
 
     attackingArmy := combat.Army{
+        Units: []*combat.ArmyUnit{
+            &combat.ArmyUnit{
+                Unit: units.GreatDrake,
+                Facing: units.FacingUpLeft,
+                X: 7,
+                Y: 20,
+            },
+        },
     }
 
     return &Engine{
