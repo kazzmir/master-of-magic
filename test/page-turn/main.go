@@ -42,102 +42,28 @@ func (engine *Engine) Update() error {
     return nil
 }
 
-func drawDistortedImage(destination *ebiten.Image, source *ebiten.Image, vertices []ebiten.Vertex){
-    for i := 0; i < 4; i++ {
-        vertices[i].ColorA = 1
-        vertices[i].ColorR = 1
-        vertices[i].ColorG = 1
-        vertices[i].ColorB = 1
-    }
-
-    destination.DrawTriangles(vertices, []uint16{0, 1, 2, 2, 3, 0}, source, nil)
-}
-
-type Segment struct {
-    Top image.Point
-    Bottom image.Point
-}
-
-type Distortion struct {
-    Top image.Point
-    Bottom image.Point
-    Segments []Segment
-}
-
-func (engine *Engine) DrawDistortion(screen *ebiten.Image, page *ebiten.Image, source *ebiten.Image, distortion Distortion, options ebiten.DrawImageOptions){
-    ax0, ay0 := options.GeoM.Apply(0, 0)
-    ax1, ay1 := options.GeoM.Apply(float64(page.Bounds().Dx()), float64(page.Bounds().Dy()))
-    subScreen := screen.SubImage(image.Rect(int(ax0), int(ay0), int(ax1), int(ay1))).(*ebiten.Image)
-
-    x1, y1 := options.GeoM.Apply(float64(distortion.Top.X), float64(distortion.Top.Y))
-    x4, y4 := options.GeoM.Apply(float64(distortion.Bottom.X), float64(distortion.Bottom.Y))
-
-    segmentWidth := float32(source.Bounds().Dx()) / float32(len(distortion.Segments))
-
-    for i := 0; i < len(distortion.Segments); i++ {
-        segment := distortion.Segments[i]
-        x2, y2 := options.GeoM.Apply(float64(segment.Top.X), float64(segment.Top.Y))
-        x3, y3 := options.GeoM.Apply(float64(segment.Bottom.X), float64(segment.Bottom.Y))
-
-        sx := float32(0)
-        sy := float32(source.Bounds().Dy())
-
-        drawDistortedImage(subScreen, source, []ebiten.Vertex{
-            ebiten.Vertex{
-                DstX: float32(x1),
-                DstY: float32(y1),
-                SrcX: sx + segmentWidth * float32(i),
-                SrcY: 0,
-            },
-            ebiten.Vertex{
-                DstX: float32(x2),
-                DstY: float32(y2),
-                SrcX: sx + segmentWidth * float32(i+1),
-                SrcY: 0,
-            },
-            ebiten.Vertex{
-                DstX: float32(x3),
-                DstY: float32(y3),
-                SrcX: sx + segmentWidth * float32(i+1),
-                SrcY: sy,
-            },
-            ebiten.Vertex{
-                DstX: float32(x4),
-                DstY: float32(y4),
-                SrcX: sx + segmentWidth * float32(i),
-                SrcY: sy,
-            },
-        })
-
-        x1 = x2
-        y1 = y2
-        x4 = x3
-        y4 = y3
-    }
-}
-
-func (engine *Engine) Page1Distortions(page *ebiten.Image) Distortion {
-    return Distortion{
+func (engine *Engine) Page1Distortions(page *ebiten.Image) util.Distortion {
+    return util.Distortion{
         Top: image.Pt(page.Bounds().Dx()/2 + 20, 5),
         Bottom: image.Pt(page.Bounds().Dx()/2 + 20, page.Bounds().Dy() - 12),
-        Segments: []Segment{
-            Segment{
+        Segments: []util.Segment{
+            util.Segment{
                 Top: image.Pt(page.Bounds().Dx()/2 + 40, 0),
                 Bottom: image.Pt(page.Bounds().Dx()/2 + 40, page.Bounds().Dy() - 25),
             },
-            Segment{
+            util.Segment{
                 Top: image.Pt(page.Bounds().Dx()/2 + 60, -10),
                 Bottom: image.Pt(page.Bounds().Dx()/2 + 60, page.Bounds().Dy() - 33),
             },
-            Segment{
+            util.Segment{
                 Top: image.Pt(page.Bounds().Dx()/2 + 80, -10),
                 Bottom: image.Pt(page.Bounds().Dx()/2 + 80, page.Bounds().Dy() - 30),
             },
-            Segment{
+            util.Segment{
                 Top: image.Pt(page.Bounds().Dx()/2 + 100, -0),
                 Bottom: image.Pt(page.Bounds().Dx()/2 + 100, page.Bounds().Dy() - 22),
             },
-            Segment{
+            util.Segment{
                 Top: image.Pt(page.Bounds().Dx()/2 + 130, -10),
                 Bottom: image.Pt(page.Bounds().Dx()/2 + 130, page.Bounds().Dy() - 12),
             },
@@ -145,29 +71,29 @@ func (engine *Engine) Page1Distortions(page *ebiten.Image) Distortion {
     }
 }
 
-func (engine *Engine) Page2Distortions(page *ebiten.Image) Distortion {
+func (engine *Engine) Page2Distortions(page *ebiten.Image) util.Distortion {
 
-    return Distortion{
+    return util.Distortion{
         Top: image.Pt(page.Bounds().Dx()/2 + 20, 5),
         Bottom: image.Pt(page.Bounds().Dx()/2 + 20, page.Bounds().Dy() - 15),
-        Segments: []Segment{
-            Segment{
+        Segments: []util.Segment{
+            util.Segment{
                 Top: image.Pt(page.Bounds().Dx()/2 + 40, 0),
                 Bottom: image.Pt(page.Bounds().Dx()/2 + 40, page.Bounds().Dy() - 28),
             },
-            Segment{
+            util.Segment{
                 Top: image.Pt(page.Bounds().Dx()/2 + 58, -13),
                 Bottom: image.Pt(page.Bounds().Dx()/2 + 58, page.Bounds().Dy() - 35),
             },
-            Segment{
+            util.Segment{
                 Top: image.Pt(page.Bounds().Dx()/2 + 73, -20),
                 Bottom: image.Pt(page.Bounds().Dx()/2 + 73, page.Bounds().Dy() - 35),
             },
-            Segment{
+            util.Segment{
                 Top: image.Pt(page.Bounds().Dx()/2 + 90, -0),
                 Bottom: image.Pt(page.Bounds().Dx()/2 + 90, page.Bounds().Dy() - 22),
             },
-            Segment{
+            util.Segment{
                 Top: image.Pt(page.Bounds().Dx()/2 + 120, -10),
                 Bottom: image.Pt(page.Bounds().Dx()/2 + 120, page.Bounds().Dy() - 12),
             },
@@ -178,13 +104,13 @@ func (engine *Engine) Page2Distortions(page *ebiten.Image) Distortion {
 func (engine *Engine) DrawPage1(screen *ebiten.Image, page *ebiten.Image, options ebiten.DrawImageOptions){
     screen.DrawImage(page, &options)
     distortions := engine.Page1Distortions(page)
-    engine.DrawDistortion(screen, page, engine.PageImage, distortions, options)
+    util.DrawDistortion(screen, page, engine.PageImage, distortions, options)
 }
 
 func (engine *Engine) DrawPage2(screen *ebiten.Image, page *ebiten.Image, options ebiten.DrawImageOptions){
     screen.DrawImage(page, &options)
     distortions := engine.Page2Distortions(page)
-    engine.DrawDistortion(screen, page, engine.PageImage, distortions, options)
+    util.DrawDistortion(screen, page, engine.PageImage, distortions, options)
 }
 
 func (engine *Engine) Draw(screen *ebiten.Image){
@@ -321,6 +247,8 @@ func (engine *Engine) DrawPage1_old(screen *ebiten.Image, page *ebiten.Image, op
         imageOptions.GeoM.Translate(400, 40)
         imageOptions.GeoM.Skew(0.05, 0)
         */
+
+        /*
 
     ax0, ay0 := options.GeoM.Apply(0, 0)
     ax1, ay1 := options.GeoM.Apply(float64(page.Bounds().Dx()), float64(page.Bounds().Dy()))
@@ -500,6 +428,7 @@ func (engine *Engine) DrawPage1_old(screen *ebiten.Image, page *ebiten.Image, op
             SrcY: sy,
         },
     })
+    */
 
     /*
     x1 = x2
@@ -517,6 +446,7 @@ func (engine *Engine) DrawPage1_old(screen *ebiten.Image, page *ebiten.Image, op
 func (engine *Engine) DrawPage2_old(screen *ebiten.Image, page *ebiten.Image, options ebiten.DrawImageOptions){
     screen.DrawImage(page, &options)
 
+    /*
     ax0, ay0 := options.GeoM.Apply(0, 0)
     ax1, ay1 := options.GeoM.Apply(float64(page.Bounds().Dx()), float64(page.Bounds().Dy()))
     subScreen := screen.SubImage(image.Rect(int(ax0), int(ay0), int(ax1), int(ay1))).(*ebiten.Image)
@@ -695,5 +625,6 @@ func (engine *Engine) DrawPage2_old(screen *ebiten.Image, page *ebiten.Image, op
             SrcY: sy,
         },
     })
+    */
 
 }
