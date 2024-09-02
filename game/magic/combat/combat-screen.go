@@ -37,6 +37,7 @@ type Army struct {
 }
 
 type CombatScreen struct {
+    Counter uint64
     Cache *lbx.LbxCache
     ImageCache util.ImageCache
     DefendingArmy *Army
@@ -79,10 +80,13 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
 }
 
 func (combat *CombatScreen) Update() CombatState {
+    combat.Counter += 1
     return CombatStateRunning
 }
 
 func (combat *CombatScreen) Draw(screen *ebiten.Image){
+
+    animationIndex := combat.Counter / 8
 
     var options ebiten.DrawImageOptions
 
@@ -124,24 +128,36 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
     }
 
     for _, unit := range combat.DefendingArmy.Units {
-        combatImage, _ := combat.ImageCache.GetImage(unit.Unit.CombatLbxFile, unit.Unit.GetCombatIndex(unit.Facing), 0)
+        combatImages, _ := combat.ImageCache.GetImages(unit.Unit.CombatLbxFile, unit.Unit.GetCombatIndex(unit.Facing))
 
-        if combatImage != nil {
+        if combatImages != nil {
             options.GeoM.Reset()
             tx, ty := tilePosition(unit.X, unit.Y)
             options.GeoM.Translate(tx, ty)
-            RenderCombatUnit(screen, combatImage, options, unit.Unit.Count)
+
+            index := uint64(0)
+            if unit.Unit.Flying {
+                index = animationIndex % (uint64(len(combatImages)) - 1)
+            }
+
+            RenderCombatUnit(screen, combatImages[index], options, unit.Unit.Count)
         }
     }
 
     for _, unit := range combat.AttackingArmy.Units {
-        combatImage, _ := combat.ImageCache.GetImage(unit.Unit.CombatLbxFile, unit.Unit.GetCombatIndex(unit.Facing), 0)
+        combatImages, _ := combat.ImageCache.GetImages(unit.Unit.CombatLbxFile, unit.Unit.GetCombatIndex(unit.Facing))
 
-        if combatImage != nil {
+        if combatImages != nil {
             options.GeoM.Reset()
             tx, ty := tilePosition(unit.X, unit.Y)
             options.GeoM.Translate(tx, ty)
-            RenderCombatUnit(screen, combatImage, options, unit.Unit.Count)
+
+            index := uint64(0)
+            if unit.Unit.Flying {
+                index = animationIndex % (uint64(len(combatImages)) - 1)
+            }
+
+            RenderCombatUnit(screen, combatImages[index], options, unit.Unit.Count)
         }
     }
 

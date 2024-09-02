@@ -24,6 +24,7 @@ type Unit struct {
     CombatIndex int
     Name string
     Race data.Race
+    Flying bool
     Abilities []Ability
 
     // number of figures that are drawn in a single combat tile
@@ -339,6 +340,7 @@ var GreatDrake Unit = Unit{
     Race: data.RaceFantastic,
     Abilities: []Ability{AbilityForester, AbilityDoomGaze},
     Count: 1,
+    Flying: true,
 }
 
 var Skeleton Unit = Unit{
