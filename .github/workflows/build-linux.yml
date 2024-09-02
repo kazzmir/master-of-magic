@@ -26,5 +26,8 @@ jobs:
       - name: Vet
         run: go vet ./...
 
+      - name: Test
+        run: go test ./lib/...
+
       - name: Build
         run: go build ./game/magic
