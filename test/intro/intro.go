@@ -6,6 +6,7 @@ import (
     "strconv"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     introlib "github.com/kazzmir/master-of-magic/game/magic/intro"
 
@@ -79,6 +80,8 @@ func main(){
     ebiten.SetWindowSize(data.ScreenWidth * 5, data.ScreenHeight * 5)
     ebiten.SetWindowTitle("intro")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
+
+    audio.Initialize()
 
     engine, err := NewEngine(speed)
 

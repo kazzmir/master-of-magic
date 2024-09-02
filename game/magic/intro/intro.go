@@ -2,6 +2,7 @@ package intro
 
 import (
     "github.com/kazzmir/master-of-magic/game/magic/util"
+    "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/lib/lbx"
 
     "github.com/hajimehoshi/ebiten/v2"
@@ -62,6 +63,14 @@ func (intro *Intro) Update() IntroState {
     if intro.Counter % intro.AnimationSpeed == 0 {
         if !intro.Scene.Next() {
             intro.CurrentScene += 1
+
+            if intro.CurrentScene == 3 {
+                player, err := audio.LoadSound(intro.LbxCache, 3)
+                if err == nil {
+                    player.Play()
+                }
+            }
+
             intro.ImageCache.Clear()
             images, err := intro.ImageCache.GetImages("intro.lbx", intro.CurrentScene)
             if err == nil {

@@ -1,7 +1,9 @@
 package audio
 
 import (
+    "fmt"
     "bytes"
+    "encoding/binary"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/voc"
@@ -13,6 +15,17 @@ const SampleRate = 44100
 
 func Initialize(){
     Context = audiolib.NewContext(SampleRate)
+}
+
+func convertToS16(u8samples []byte) []byte {
+    var out bytes.Buffer
+
+    for _, sample := range u8samples {
+        binary.Write(&out, binary.LittleEndian, (int16(sample) - 128) * 256)
+        binary.Write(&out, binary.LittleEndian, (int16(sample) - 128) * 256)
+    }
+
+    return out.Bytes()
 }
 
 func LoadSound(cache *lbx.LbxCache, index int) (*audiolib.Player, error){
@@ -38,7 +51,9 @@ func LoadSound(cache *lbx.LbxCache, index int) (*audiolib.Player, error){
         return nil, err
     }
 
-    resampled := audiolib.Resample(bytes.NewReader(vocData.AllSamples()), int64(vocData.SampleCount()), int(vocData.SampleRate()), SampleRate)
+    s16Samples := convertToS16(vocData.AllSamples())
+
+    resampled := audiolib.Resample(bytes.NewReader(s16Samples), int64(len(s16Samples)), int(vocData.SampleRate()), SampleRate)
 
     return Context.NewPlayer(resampled)
 }
