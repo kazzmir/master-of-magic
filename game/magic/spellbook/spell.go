@@ -43,6 +43,156 @@ func computeHalfPages(spells Spells) []Spells {
     return halfPages
 }
 
+// flipping the page to the left
+func LeftSideDistortions1(page *ebiten.Image) util.Distortion {
+    return util.Distortion{
+        Top: image.Pt(page.Bounds().Dx()/2 + 20, 5),
+        Bottom: image.Pt(page.Bounds().Dx()/2 + 20, page.Bounds().Dy() - 12),
+        Segments: []util.Segment{
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 + 40, 0),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 40, page.Bounds().Dy() - 25),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 + 60, -10),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 60, page.Bounds().Dy() - 33),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 + 80, -10),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 80, page.Bounds().Dy() - 30),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 + 100, -0),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 100, page.Bounds().Dy() - 22),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 + 130, -10),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 130, page.Bounds().Dy() - 12),
+            },
+        },
+    }
+}
+
+func LeftSideDistortions2(page *ebiten.Image) util.Distortion {
+    return util.Distortion{
+        Top: image.Pt(page.Bounds().Dx()/2 + 20, 5),
+        Bottom: image.Pt(page.Bounds().Dx()/2 + 20, page.Bounds().Dy() - 15),
+        Segments: []util.Segment{
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 + 40, 0),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 40, page.Bounds().Dy() - 28),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 + 58, -13),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 58, page.Bounds().Dy() - 35),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 + 73, -20),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 73, page.Bounds().Dy() - 35),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 + 90, -0),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 90, page.Bounds().Dy() - 22),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 + 120, -10),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 120, page.Bounds().Dy() - 12),
+            },
+        },
+    }
+}
+
+func RightSideDistortions2(page *ebiten.Image) util.Distortion {
+    offset := 30
+    return util.Distortion{
+        Top: image.Pt(page.Bounds().Dx()/2 - 130 + offset, 5),
+        Bottom: image.Pt(page.Bounds().Dx()/2 - 130 + offset, page.Bounds().Dy() - 0),
+
+        Segments: []util.Segment{
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 - 100 + offset, -0),
+                Bottom: image.Pt(page.Bounds().Dx()/2 - 100 + offset, page.Bounds().Dy() - 22),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 - 80 + offset, -10),
+                Bottom: image.Pt(page.Bounds().Dx()/2 - 80 + offset, page.Bounds().Dy() - 30),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 - 60 + offset, -10),
+                Bottom: image.Pt(page.Bounds().Dx()/2 - 60 + offset, page.Bounds().Dy() - 33),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 - 40 + offset, 0),
+                Bottom: image.Pt(page.Bounds().Dx()/2 - 40 + offset, page.Bounds().Dy() - 25),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 - 20 + offset, 5),
+                Bottom: image.Pt(page.Bounds().Dx()/2 - 20 + offset, page.Bounds().Dy() - 12),
+            },
+        },
+    }
+}
+
+func RightSideDistortions1(page *ebiten.Image) util.Distortion {
+    offset := 50
+    return util.Distortion{
+        Top: image.Pt(page.Bounds().Dx()/2 - 110 + offset, -10),
+        Bottom: image.Pt(page.Bounds().Dx()/2 - 110 + offset, page.Bounds().Dy() - 12),
+        Segments: []util.Segment{
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 - 90 + offset, -0),
+                Bottom: image.Pt(page.Bounds().Dx()/2 - 90 + offset, page.Bounds().Dy() - 22),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 - 73 + offset, -20),
+                Bottom: image.Pt(page.Bounds().Dx()/2 - 73 + offset, page.Bounds().Dy() - 35),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 - 58 + offset, -13),
+                Bottom: image.Pt(page.Bounds().Dx()/2 - 58 + offset, page.Bounds().Dy() - 35),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 - 40 + offset, 0),
+                Bottom: image.Pt(page.Bounds().Dx()/2 - 40 + offset, page.Bounds().Dy() - 28),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 - 20 + offset, 5),
+                Bottom: image.Pt(page.Bounds().Dx()/2 - 20 + offset, page.Bounds().Dy() - 15),
+            },
+        },
+    }
+}
+
+// flipping the page to the right
+func RightSideFlipRightDistortions1(page *ebiten.Image) util.Distortion {
+    return util.Distortion{
+        Top: image.Pt(page.Bounds().Dx()/2 + 20, 5),
+        Bottom: image.Pt(page.Bounds().Dx()/2 + 20, page.Bounds().Dy() - 12),
+        Segments: []util.Segment{
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 + 40, 0),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 40, page.Bounds().Dy() - 25),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 + 60, -10),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 60, page.Bounds().Dy() - 33),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 + 80, -10),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 80, page.Bounds().Dy() - 30),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 + 100, -0),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 100, page.Bounds().Dy() - 22),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 + 130, -10),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 130, page.Bounds().Dy() - 12),
+            },
+        },
+    }
+}
+
 func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
     var elements []*uilib.UIElement
 
@@ -68,6 +218,8 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
     bookFlip, _ := imageCache.GetImages("book.lbx", 1)
     bookFlipIndex := uint64(0)
     bookFlipReverse := false
+
+    bookFlipSpeed := uint64(7)
 
     fontLbx, err := cache.GetLbxFile("fonts.lbx")
     if err != nil {
@@ -124,9 +276,6 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
     // page 0 would be left: summoning spells 1-4, right: summoning spell 5
     // page 1 would be left: unit spells 1-2, right: empty
 
-    // FIXME: this page could be passed in, so that it is stored for a while
-    page := 0
-
     wrapWidth := float64(130)
 
     spellDescriptionNormalCache := make(map[int]font.WrappedText)
@@ -171,32 +320,72 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
     */
 
     hasNextPage := func(page int) bool {
-        halfPageUse := (page+1) * 2
-        return halfPageUse < len(halfPages)
+        return page < len(halfPages) - 1
     }
 
     hasPreviousPage := func(page int) bool {
-        halfPageUse := (page-1) * 2
-        return halfPageUse >= 0
+        return page > 0
     }
 
-    getLeftPageSpells := func(page int) Spells {
-        halfPageUse := page * 2
-        if halfPageUse >= len(halfPages) {
-            return Spells{}
+    // create images of each page
+    halfPageCache := make(map[int]*ebiten.Image)
+
+    // lazily construct the page graphics, which consists of the section title and 4 spell descriptions
+    getHalfPageImage := func(halfPage int) *ebiten.Image {
+        image, ok := halfPageCache[halfPage]
+        if ok {
+            return image
         }
 
-        return halfPages[halfPageUse]
-    }
-
-    getRightPageSpells := func(page int) Spells {
-        halfPageUse := page * 2 + 1
-        if halfPageUse >= len(halfPages) {
-            return Spells{}
+        var pageSpells Spells
+        if halfPage < len(halfPages) {
+            pageSpells = halfPages[halfPage]
         }
 
-        return halfPages[halfPageUse]
+        pageImage := ebiten.NewImage(155, 170)
+        pageImage.Fill(color.RGBA{R: 0, G: 0, B: 0, A: 0})
+
+        if len(pageSpells.Spells) > 0 {
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(0, 0)
+
+            section := pageSpells.Spells[0].Section
+            titleFont.PrintCenter(pageImage, 90, 11, 1, options.ColorScale, section.Name())
+
+            x := float64(25)
+            y := float64(35)
+            for i, spell := range pageSpells.Spells {
+                if i >= 4 {
+                    break
+                }
+
+                if knownSpell(spell) {
+                    spellTitleNormalFont.Print(pageImage, x, y, 1, options.ColorScale, spell.Name)
+                    wrapped := getSpellDescriptionNormalText(spell.Index)
+                    spellTextNormalFont.RenderWrapped(pageImage, x, y + 10, wrapped, options.ColorScale, false)
+                } else {
+                    spellTitleAlienFont.Print(pageImage, x, y, 1, options.ColorScale, spell.Name)
+                    wrapped := getSpellDescriptionAlienText(spell.Index)
+                    spellTextAlienFont.RenderWrapped(pageImage, x, y + 10, wrapped, options.ColorScale, false)
+                }
+
+                y += 35
+            }
+        }
+
+        halfPageCache[halfPage] = pageImage
+        return pageImage
     }
+
+    // FIXME: this page could be passed in, so that it is stored for a while
+    // page := 0
+    showLeftPage := 0
+    showRightPage := 1
+
+    flipLeftSide := 0
+    flipRightSide := 1
+
+    flipping := false
 
     elements = append(elements, &uilib.UIElement{
         Layer: 1,
@@ -213,68 +402,48 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
             options.ColorScale.ScaleAlpha(getAlpha())
             screen.DrawImage(background, &options)
 
-            leftSpells := getLeftPageSpells(page)
-            rightSpells := getRightPageSpells(page)
-
-            if len(leftSpells.Spells) > 0 {
-                section := leftSpells.Spells[0].Section
-                titleFont.PrintCenter(screen, 90, 11, 1, options.ColorScale, section.Name())
-
-                x := float64(25)
-                y := float64(35)
-                for i, spell := range leftSpells.Spells {
-                    if i >= 4 {
-                        break
-                    }
-
-                    if knownSpell(spell) {
-                        spellTitleNormalFont.Print(screen, x, y, 1, options.ColorScale, spell.Name)
-                        wrapped := getSpellDescriptionNormalText(spell.Index)
-                        spellTextNormalFont.RenderWrapped(screen, x, y + 10, wrapped, options.ColorScale, false)
-                    } else {
-                        spellTitleAlienFont.Print(screen, x, y, 1, options.ColorScale, spell.Name)
-                        wrapped := getSpellDescriptionAlienText(spell.Index)
-                        spellTextAlienFont.RenderWrapped(screen, x, y + 10, wrapped, options.ColorScale, false)
-                    }
-
-                    y += 35
-                }
+            if showLeftPage >= 0 {
+                leftPageImage := getHalfPageImage(showLeftPage)
+                screen.DrawImage(leftPageImage, &options)
             }
 
-            if len(rightSpells.Spells) >  0 {
-                section := rightSpells.Spells[0].Section
-                titleFont.PrintCenter(screen, 230, 11, 1, options.ColorScale, section.Name())
-                x := float64(170)
-                y := float64(35)
-                for i, spell := range rightSpells.Spells {
-                    if i >= 4 {
-                        break
-                    }
-
-                    if knownSpell(spell) {
-                        spellTitleNormalFont.Print(screen, x, y, 1, options.ColorScale, spell.Name)
-                        wrapped := getSpellDescriptionNormalText(spell.Index)
-                        spellTextNormalFont.RenderWrapped(screen, x, y + 10, wrapped, options.ColorScale, false)
-                    } else {
-                        spellTitleAlienFont.Print(screen, x, y, 1, options.ColorScale, spell.Name)
-                        wrapped := getSpellDescriptionAlienText(spell.Index)
-                        spellTextAlienFont.RenderWrapped(screen, x, y + 10, wrapped, options.ColorScale, false)
-                    }
-
-                    y += 35
-                }
+            if showRightPage < len(halfPages) {
+                rightPageImage := getHalfPageImage(showRightPage)
+                rightOptions := options
+                rightOptions.GeoM.Translate(148, 0)
+                screen.DrawImage(rightPageImage, &rightOptions)
             }
 
-            // FIXME: print the page text on the page flip animation while it is happening
-            // somehow the page text needs to be distorted correctly
             animationIndex := ui.Counter
-            if bookFlipIndex > 0 && (animationIndex - bookFlipIndex) / 6 < uint64(len(bookFlip)) {
-                index := (animationIndex - bookFlipIndex) / 6
+            if bookFlipIndex > 0 && (animationIndex - bookFlipIndex) / bookFlipSpeed < uint64(len(bookFlip)) {
+                index := (animationIndex - bookFlipIndex) / bookFlipSpeed
                 if bookFlipReverse {
                     index = uint64(len(bookFlip)) - 1 - index
                 }
                 options.GeoM.Translate(0, 0)
                 screen.DrawImage(bookFlip[index], &options)
+
+                if index == 0 {
+                    if flipLeftSide >= 0 {
+                        leftSide := getHalfPageImage(flipLeftSide)
+                        util.DrawDistortion(screen, bookFlip[index], leftSide, LeftSideDistortions1(bookFlip[index]), options)
+                    }
+                } else if index == 1 {
+                    if flipLeftSide >= 0 {
+                        leftSide := getHalfPageImage(flipLeftSide)
+                        util.DrawDistortion(screen, bookFlip[index], leftSide, LeftSideDistortions2(bookFlip[index]), options)
+                    }
+                } else if index == 2 {
+                    if flipRightSide < len(halfPages) {
+                        rightSide := getHalfPageImage(flipRightSide)
+                        util.DrawDistortion(screen, bookFlip[index], rightSide, RightSideDistortions1(bookFlip[index]), options)
+                    }
+                } else if index == 3 {
+                    if flipRightSide < len(halfPages) {
+                        rightSide := getHalfPageImage(flipRightSide)
+                        util.DrawDistortion(screen, bookFlip[index], rightSide, RightSideDistortions2(bookFlip[index]), options)
+                    }
+                }
             }
 
         },
@@ -287,14 +456,23 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
         Rect: leftRect,
         Layer: 1,
         LeftClick: func(this *uilib.UIElement){
-            if hasPreviousPage(page){
+            if !flipping && hasPreviousPage(showLeftPage){
                 bookFlipIndex = ui.Counter
                 bookFlipReverse = true
-                page -= 1
+
+                flipLeftSide = showLeftPage - 1
+                flipRightSide = showLeftPage
+                showLeftPage -= 2
+                flipping = true
+
+                ui.AddDelay(bookFlipSpeed * uint64(len(bookFlip)) - 1, func(){
+                    showRightPage -= 2
+                    flipping = false
+                })
             }
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            if hasPreviousPage(page){
+            if hasPreviousPage(showLeftPage){
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(float64(leftRect.Min.X), float64(leftRect.Min.Y))
                 options.ColorScale.ScaleAlpha(getAlpha())
@@ -310,14 +488,24 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
         Rect: rightRect,
         Layer: 1,
         LeftClick: func(this *uilib.UIElement){
-            if hasNextPage(page){
+            if !flipping && hasNextPage(showRightPage){
                 bookFlipIndex = ui.Counter
                 bookFlipReverse = false
-                page += 1
+
+                flipLeftSide = showRightPage
+                flipRightSide = showRightPage + 1
+                showRightPage += 2
+
+                flipping = true
+
+                ui.AddDelay(bookFlipSpeed * uint64(len(bookFlip)) - 1, func(){
+                    showLeftPage += 2
+                    flipping = false
+                })
             }
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            if hasNextPage(page){
+            if hasNextPage(showRightPage){
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(float64(rightRect.Min.X), float64(rightRect.Min.Y))
                 options.ColorScale.ScaleAlpha(getAlpha())
