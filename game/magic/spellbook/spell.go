@@ -419,34 +419,6 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
             options.ColorScale.ScaleAlpha(getAlpha())
             screen.DrawImage(background, &options)
 
-            /*
-            leftSpells := getLeftPageSpells(page)
-            if len(leftSpells.Spells) > 0 {
-                section := leftSpells.Spells[0].Section
-                titleFont.PrintCenter(screen, 90, 11, 1, options.ColorScale, section.Name())
-
-                x := float64(25)
-                y := float64(35)
-                for i, spell := range leftSpells.Spells {
-                    if i >= 4 {
-                        break
-                    }
-
-                    if knownSpell(spell) {
-                        spellTitleNormalFont.Print(screen, x, y, 1, options.ColorScale, spell.Name)
-                        wrapped := getSpellDescriptionNormalText(spell.Index)
-                        spellTextNormalFont.RenderWrapped(screen, x, y + 10, wrapped, options.ColorScale, false)
-                    } else {
-                        spellTitleAlienFont.Print(screen, x, y, 1, options.ColorScale, spell.Name)
-                        wrapped := getSpellDescriptionAlienText(spell.Index)
-                        spellTextAlienFont.RenderWrapped(screen, x, y + 10, wrapped, options.ColorScale, false)
-                    }
-
-                    y += 35
-                }
-            }
-            */
-
             if showLeftPage >= 0 {
                 leftPageImage := getHalfPageImage(showLeftPage)
                 screen.DrawImage(leftPageImage, &options)
@@ -459,33 +431,6 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
                 screen.DrawImage(rightPageImage, &rightOptions)
             }
 
-            /*
-            rightSpells := getRightPageSpells(page)
-            if len(rightSpells.Spells) >  0 {
-                section := rightSpells.Spells[0].Section
-                titleFont.PrintCenter(screen, 230, 11, 1, options.ColorScale, section.Name())
-                x := float64(170)
-                y := float64(35)
-                for i, spell := range rightSpells.Spells {
-                    if i >= 4 {
-                        break
-                    }
-
-                    if knownSpell(spell) {
-                        spellTitleNormalFont.Print(screen, x, y, 1, options.ColorScale, spell.Name)
-                        wrapped := getSpellDescriptionNormalText(spell.Index)
-                        spellTextNormalFont.RenderWrapped(screen, x, y + 10, wrapped, options.ColorScale, false)
-                    } else {
-                        spellTitleAlienFont.Print(screen, x, y, 1, options.ColorScale, spell.Name)
-                        wrapped := getSpellDescriptionAlienText(spell.Index)
-                        spellTextAlienFont.RenderWrapped(screen, x, y + 10, wrapped, options.ColorScale, false)
-                    }
-
-                    y += 35
-                }
-            }
-            */
-
             animationIndex := ui.Counter
             if bookFlipIndex > 0 && (animationIndex - bookFlipIndex) / bookFlipSpeed < uint64(len(bookFlip)) {
                 index := (animationIndex - bookFlipIndex) / bookFlipSpeed
@@ -495,24 +440,25 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
                 options.GeoM.Translate(0, 0)
                 screen.DrawImage(bookFlip[index], &options)
 
-                if !bookFlipReverse {
-                    if index == 0 {
+                if index == 0 {
+                    if flipLeftSide >= 0 {
                         leftSide := getHalfPageImage(flipLeftSide)
                         util.DrawDistortion(screen, bookFlip[index], leftSide, LeftSideFlipLeftDistortions1(bookFlip[index]), options)
-                    } else if index == 1 {
+                    }
+                } else if index == 1 {
+                    if flipLeftSide >= 0 {
                         leftSide := getHalfPageImage(flipLeftSide)
                         util.DrawDistortion(screen, bookFlip[index], leftSide, LeftSideFlipLeftDistortions2(bookFlip[index]), options)
-                    } else if index == 2 {
+                    }
+                } else if index == 2 {
+                    if flipRightSide < len(halfPages) {
                         rightSide := getHalfPageImage(flipRightSide)
                         util.DrawDistortion(screen, bookFlip[index], rightSide, RightSideFlipLeftDistortions1(bookFlip[index]), options)
-                    } else if index == 3 {
+                    }
+                } else if index == 3 {
+                    if flipRightSide < len(halfPages) {
                         rightSide := getHalfPageImage(flipRightSide)
                         util.DrawDistortion(screen, bookFlip[index], rightSide, RightSideFlipLeftDistortions2(bookFlip[index]), options)
-                    }
-                } else {
-                    if index == 0 {
-                        rightSide := getHalfPageImage(flipRightSide)
-                        util.DrawDistortion(screen, bookFlip[index], rightSide, RightSideFlipRightDistortions1(bookFlip[index]), options)
                     }
                 }
             }
