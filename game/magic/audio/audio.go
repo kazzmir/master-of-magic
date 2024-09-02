@@ -16,6 +16,10 @@ func Initialize(){
 }
 
 func LoadSound(cache *lbx.LbxCache, index int) (*audiolib.Player, error){
+    if Context == nil {
+        return nil, fmt.Errorf("audio has not been initialized")
+    }
+
     soundLbx, err := cache.GetLbxFile("soundfx.lbx")
     if err != nil {
         return nil, err
