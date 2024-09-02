@@ -28,6 +28,9 @@ const (
     SceneGoodWizardWalk = 5
     SceneGoodWizardIntro = 6
     SceneWorkMustStop = 7
+    SceneLightningHitsTower = 8
+    SceneGoodWizardCast = 9
+    SceneLightningHitsShield = 10
 
     SceneEvilScream = 11
 )
@@ -87,12 +90,28 @@ func (intro *Intro) Update() IntroState {
             switch Scene(intro.CurrentScene) {
                 case SceneWorkMustStop:
                     player, err = audio.LoadSound(intro.LbxCache, 1)
+                case SceneEvilWizardIntro:
+                    player, err = audio.LoadSound(intro.LbxCache, 115)
                 case SceneEvilScream:
                     player, err = audio.LoadSound(intro.LbxCache, 3)
+
+                case SceneLightningHitsTower:
+                    // FIXME:
+
+                case SceneLightningHitsShield:
+                    // FIXME:
+
+                    /*
                 case SceneMarching:
                     player, err = audio.LoadSound(intro.LbxCache, 5)
-                case SceneGoodWizardIntro:
+                    */
+                case SceneGoodWizardCast:
+                    player, err = audio.LoadSound(intro.LbxCache, 118)
+                case SceneGoodWizardWalk:
+                    // need a slight delay here
                     player, err = audio.LoadSound(intro.LbxCache, 4)
+                case SceneGoodWizardIntro:
+                    player, err = audio.LoadSound(intro.LbxCache, 116)
             }
 
             if err == nil && player != nil {

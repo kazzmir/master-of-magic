@@ -7,7 +7,7 @@ import (
     "encoding/binary"
     "fmt"
     "io"
-    "log"
+    // "log"
 )
 
 type Codec int
@@ -108,8 +108,15 @@ func readSoundData(source io.Reader) (*L8SoundData, error) {
             samples = newSamples
         case terminator:
             done = true
+        case text:
+            length := lengthFromBlockStart(blockStart)
+            if length > 0 {
+                textData := make([]byte, lengthFromBlockStart(blockStart))
+                source.Read(textData)
+                // fmt.Printf("Read text: '%v' of length %v\n", string(textData), lengthFromBlockStart(blockStart))
+            }
         default:
-            log.Printf("Unknown block type: %v", blockStart[0])
+            return nil, fmt.Errorf("Unknown block type: %v", blockStart[0])
         }
     }
 
