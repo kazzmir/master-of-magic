@@ -127,8 +127,11 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
 
     var coordinates ebiten.GeoM
 
+    // the battlefield is rotated by 45 degrees
     coordinates.Rotate(-math.Pi / 4)
-    coordinates.Scale(float64(tile0.Bounds().Dx())/2, float64(tile0.Bounds().Dy())/2)
+    // coordinates.Scale(float64(tile0.Bounds().Dx())/2, float64(tile0.Bounds().Dy())/2)
+    // FIXME: this math is hacky, but it works for now
+    coordinates.Scale(float64(tile0.Bounds().Dx()) * 3 / 4 - 2, float64(tile0.Bounds().Dy()) * 3 / 4 - 1)
     coordinates.Translate(-220, 80)
 
     screenToTile := coordinates
@@ -140,7 +143,7 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
         ImageCache: imageCache,
         DefendingArmy: defendingArmy,
         AttackingArmy: attackingArmy,
-        Tiles: makeTiles(35, 35),
+        Tiles: makeTiles(30, 30),
         SelectedUnit: selectedUnit,
         DebugFont: debugFont,
         Coordinates: coordinates,

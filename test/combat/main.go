@@ -26,14 +26,14 @@ func NewEngine() (*Engine, error) {
             &combat.ArmyUnit{
                 Unit: units.HighElfSpearmen,
                 Facing: units.FacingDownRight,
-                X: 14,
-                Y: 15,
+                X: 12,
+                Y: 10,
             },
             &combat.ArmyUnit{
                 Unit: units.HighElfSpearmen,
                 Facing: units.FacingDownRight,
-                X: 15,
-                Y: 15,
+                X: 13,
+                Y: 10,
             },
         },
     }
@@ -43,8 +43,8 @@ func NewEngine() (*Engine, error) {
             &combat.ArmyUnit{
                 Unit: units.GreatDrake,
                 Facing: units.FacingUpLeft,
-                X: 15,
-                Y: 28,
+                X: 11,
+                Y: 19,
             },
         },
     }
