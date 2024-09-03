@@ -60,6 +60,7 @@ type CombatScreen struct {
     SelectedUnit *ArmyUnit
 
     DebugFont *font.Font
+    HudFont *font.Font
 
     Coordinates ebiten.GeoM
     ScreenToTile ebiten.GeoM
@@ -115,6 +116,16 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
 
     debugFont := font.MakeOptimizedFontWithPalette(fonts[0], whitePalette)
 
+    black := color.RGBA{R: 0, G: 0, B: 0, A: 255}
+    blackPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        black, black, black,
+        black, black, black,
+    }
+
+    hudFont := font.MakeOptimizedFontWithPalette(fonts[0], blackPalette)
+
     var selectedUnit *ArmyUnit
     if len(attackingArmy.Units) > 0 {
         selectedUnit = attackingArmy.Units[0]
@@ -147,6 +158,7 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
         Tiles: makeTiles(30, 30),
         SelectedUnit: selectedUnit,
         DebugFont: debugFont,
+        HudFont: hudFont,
         Coordinates: coordinates,
         ScreenToTile: screenToTile,
     }
@@ -432,4 +444,11 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
 
     doneButtons, _ := combat.ImageCache.GetImages("compix.lbx", 3)
     screen.DrawImage(doneButtons[0], &options)
+
+    rightImage, _ := combat.ImageCache.GetImage(combat.SelectedUnit.Unit.CombatLbxFile, combat.SelectedUnit.Unit.GetCombatIndex(units.FacingRight), 0)
+    options.GeoM.Reset()
+    options.GeoM.Translate(90, 170)
+    screen.DrawImage(rightImage, &options)
+
+    combat.HudFont.Print(screen, 92, 167, 1, ebiten.ColorScale{}, combat.SelectedUnit.Unit.Name)
 }
