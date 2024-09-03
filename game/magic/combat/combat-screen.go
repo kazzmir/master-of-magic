@@ -50,6 +50,12 @@ type CombatScreen struct {
     SelectedUnit *ArmyUnit
 
     DebugFont *font.Font
+
+    Coordinates ebiten.GeoM
+    ScreenToTile ebiten.GeoM
+
+    MouseTileX int
+    MouseTileY int
 }
 
 func makeTiles(width int, height int) [][]Tile {
@@ -106,20 +112,87 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
         selectedUnit = defendingArmy.Units[0]
     }
 
+    imageCache := util.MakeImageCache(cache)
+
+    tile0, _ := imageCache.GetImage("cmbgrass.lbx", 0, 0)
+
+    var coordinates ebiten.GeoM
+
+    coordinates.Rotate(-math.Pi / 4)
+    coordinates.Scale(float64(tile0.Bounds().Dx())/2, float64(tile0.Bounds().Dy())/2)
+    coordinates.Translate(-220, 80)
+
+    screenToTile := coordinates
+    screenToTile.Translate(float64(tile0.Bounds().Dx())/2, float64(tile0.Bounds().Dy())/2)
+    screenToTile.Invert()
+
     return &CombatScreen{
         Cache: cache,
-        ImageCache: util.MakeImageCache(cache),
+        ImageCache: imageCache,
         DefendingArmy: defendingArmy,
         AttackingArmy: attackingArmy,
         Tiles: makeTiles(35, 35),
         SelectedUnit: selectedUnit,
         DebugFont: debugFont,
+        Coordinates: coordinates,
+        ScreenToTile: screenToTile,
     }
 }
 
 func (combat *CombatScreen) Update() CombatState {
     combat.Counter += 1
+
+    mouseX, mouseY := ebiten.CursorPosition()
+
+    tileX, tileY := combat.ScreenToTile.Apply(float64(mouseX), float64(mouseY))
+    combat.MouseTileX = int(math.Round(tileX))
+    combat.MouseTileY = int(math.Round(tileY))
+
+    // log.Printf("Mouse original %v,%v %v,%v -> %v,%v", mouseX, mouseY, tileX, tileY, combat.MouseTileX, combat.MouseTileY)
+
     return CombatStateRunning
+}
+
+func (combat *CombatScreen) DrawHighlightedTile(screen *ebiten.Image, x int, y int, minColor color.RGBA, maxColor color.RGBA){
+    tile0, _ := combat.ImageCache.GetImage("cmbgrass.lbx", 0, 0)
+
+    tx, ty := combat.Coordinates.Apply(float64(x), float64(y))
+    x1 := tx
+    y1 := ty + float64(tile0.Bounds().Dy()/2)
+
+    x2 := tx + float64(tile0.Bounds().Dx()/2)
+    y2 := ty
+
+    x3 := tx + float64(tile0.Bounds().Dx())
+    y3 := ty + float64(tile0.Bounds().Dy()/2)
+
+    x4 := tx + float64(tile0.Bounds().Dx()/2)
+    y4 := ty + float64(tile0.Bounds().Dy())
+
+    gradient := (math.Sin(float64(combat.Counter)/6) + 1)
+
+    lerp := func(minC uint8, maxC uint8) uint8 {
+        out := float64(minC) + gradient * float64(maxC - minC)/2
+        if out > 255 {
+            out = 255
+        }
+        if out < 0 {
+            out = 0
+        }
+
+        return uint8(out)
+    }
+
+    lineColor := util.PremultiplyAlpha(color.RGBA{
+        R: lerp(minColor.R, maxColor.R),
+        G: lerp(minColor.G, maxColor.G),
+        B: lerp(minColor.B, maxColor.B),
+        A: 190})
+
+    vector.StrokeLine(screen, float32(x1), float32(y1), float32(x2), float32(y2), 1, lineColor, false)
+    vector.StrokeLine(screen, float32(x2), float32(y2), float32(x3), float32(y3), 1, lineColor, false)
+    vector.StrokeLine(screen, float32(x3), float32(y3), float32(x4), float32(y4), 1, lineColor, false)
+    vector.StrokeLine(screen, float32(x4), float32(y4), float32(x1), float32(y1), 1, lineColor, false)
 }
 
 func (combat *CombatScreen) Draw(screen *ebiten.Image){
@@ -129,15 +202,6 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
     var options ebiten.DrawImageOptions
 
     tile0, _ := combat.ImageCache.GetImage("cmbgrass.lbx", 0, 0)
-
-    var coordinates ebiten.GeoM
-
-    coordinates.Rotate(-math.Pi / 4)
-    coordinates.Scale(float64(tile0.Bounds().Dx()/2), float64(tile0.Bounds().Dy()/2))
-    coordinates.Translate(-220, 80)
-
-    screenToTile := coordinates
-    screenToTile.Invert()
 
     /*
     a, b := screenToTile.Apply(160, 100)
@@ -150,7 +214,7 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
     */
 
     tilePosition := func(x int, y int) (float64, float64){
-        return coordinates.Apply(float64(x), float64(y))
+        return combat.Coordinates.Apply(float64(x), float64(y))
     }
 
     // draw base land
@@ -181,7 +245,14 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
         }
     }
 
+    combat.DrawHighlightedTile(screen, combat.MouseTileX, combat.MouseTileY, color.RGBA{R: 0, G: 0x67, B: 0x78, A: 255}, color.RGBA{R: 0, G: 0xef, B: 0xff, A: 255})
+
     if combat.SelectedUnit != nil {
+        minColor := color.RGBA{R: 32, G: 0, B: 0, A: 255}
+        maxColor := color.RGBA{R: 255, G: 0, B: 0, A: 255}
+        combat.DrawHighlightedTile(screen, combat.SelectedUnit.X, combat.SelectedUnit.Y, minColor, maxColor)
+
+        /*
         tx, ty := tilePosition(combat.SelectedUnit.X, combat.SelectedUnit.Y)
         x1 := tx
         y1 := ty + float64(tile0.Bounds().Dy()/2)
@@ -212,6 +283,7 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
         vector.StrokeLine(screen, float32(x2), float32(y2), float32(x3), float32(y3), 1, lineColor, false)
         vector.StrokeLine(screen, float32(x3), float32(y3), float32(x4), float32(y4), 1, lineColor, false)
         vector.StrokeLine(screen, float32(x4), float32(y4), float32(x1), float32(y1), 1, lineColor, false)
+        */
     }
 
     renderUnit := func(unit *ArmyUnit){
