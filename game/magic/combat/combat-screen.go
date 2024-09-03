@@ -12,6 +12,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/hajimehoshi/ebiten/v2"
+    "github.com/hajimehoshi/ebiten/v2/inpututil"
     "github.com/hajimehoshi/ebiten/v2/vector"
 )
 
@@ -32,8 +33,16 @@ type Tile struct {
 type ArmyUnit struct {
     Unit units.Unit
     Facing units.Facing
+    Moving bool
     X int
     Y int
+
+    Movement uint64
+    MoveX float64
+    MoveY float64
+
+    TargetX int
+    TargetY int
 }
 
 type Army struct {
@@ -147,6 +156,30 @@ func (combat *CombatScreen) Update() CombatState {
     tileX, tileY := combat.ScreenToTile.Apply(float64(mouseX), float64(mouseY))
     combat.MouseTileX = int(math.Round(tileX))
     combat.MouseTileY = int(math.Round(tileY))
+
+    if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) && combat.SelectedUnit.Moving == false {
+        combat.SelectedUnit.Movement = combat.Counter
+        combat.SelectedUnit.TargetX = combat.MouseTileX
+        combat.SelectedUnit.TargetY = combat.MouseTileY
+        combat.SelectedUnit.Moving = true
+    }
+
+    if combat.SelectedUnit.Moving {
+        angle := math.Atan2(float64(combat.SelectedUnit.TargetY - combat.SelectedUnit.Y), float64(combat.SelectedUnit.TargetX - combat.SelectedUnit.X))
+
+        speed := float64(combat.Counter - combat.SelectedUnit.Movement) / 4
+        newX := float64(combat.SelectedUnit.X) + math.Cos(angle) * speed
+        newY := float64(combat.SelectedUnit.Y) + math.Sin(angle) * speed
+
+        combat.SelectedUnit.MoveX = newX
+        combat.SelectedUnit.MoveY = newY
+
+        if math.Abs(newX - float64(combat.SelectedUnit.TargetX)) < 0.5 && math.Abs(newY - float64(combat.SelectedUnit.TargetY)) < 0.5 {
+            combat.SelectedUnit.Moving = false
+            combat.SelectedUnit.X = combat.SelectedUnit.TargetX
+            combat.SelectedUnit.Y = combat.SelectedUnit.TargetY
+        }
+    }
 
     // log.Printf("Mouse original %v,%v %v,%v -> %v,%v", mouseX, mouseY, tileX, tileY, combat.MouseTileX, combat.MouseTileY)
 
@@ -291,7 +324,14 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
 
         if combatImages != nil {
             options.GeoM.Reset()
-            tx, ty := tilePosition(unit.X, unit.Y)
+            var tx float64
+            var ty float64
+
+            if unit.Moving {
+                tx, ty = combat.Coordinates.Apply(unit.MoveX, unit.MoveY)
+            } else {
+                tx, ty = tilePosition(unit.X, unit.Y)
+            }
             options.GeoM.Translate(tx, ty)
             options.GeoM.Translate(float64(tile0.Bounds().Dx()/2), float64(tile0.Bounds().Dy()/2))
 
