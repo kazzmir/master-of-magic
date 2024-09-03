@@ -14,7 +14,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
-    "github.com/hajimehoshi/ebiten/v2/vector"
+    // "github.com/hajimehoshi/ebiten/v2/vector"
 )
 
 type CombatState int
@@ -67,6 +67,8 @@ type CombatScreen struct {
 
     Coordinates ebiten.GeoM
     ScreenToTile ebiten.GeoM
+
+    WhitePixel *ebiten.Image
 
     MouseTileX int
     MouseTileY int
@@ -155,6 +157,9 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
 
     allUnits := append(defendingArmy.Units, attackingArmy.Units...)
 
+    whitePixel := ebiten.NewImage(1, 1)
+    whitePixel.Fill(color.RGBA{R: 255, G: 255, B: 255, A: 255})
+
     return &CombatScreen{
         Cache: cache,
         AllUnits: allUnits,
@@ -168,6 +173,7 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
         HudFont: hudFont,
         Coordinates: coordinates,
         ScreenToTile: screenToTile,
+        WhitePixel: whitePixel,
     }
 }
 
@@ -222,6 +228,7 @@ func (combat *CombatScreen) Update() CombatState {
         angle := math.Atan2(float64(combat.SelectedUnit.TargetY - combat.SelectedUnit.Y), float64(combat.SelectedUnit.TargetX - combat.SelectedUnit.X))
 
         // rotate by 45 degrees to get the on screen facing angle
+        // have to negate the angle because the y axis is flipped (higher y values are lower on the screen)
         useAngle := -(angle - math.Pi/4)
 
         // log.Printf("Angle: %v from (%v,%v) to (%v,%v)", useAngle, combat.SelectedUnit.X, combat.SelectedUnit.Y, combat.SelectedUnit.TargetX, combat.SelectedUnit.TargetY)
@@ -325,10 +332,30 @@ func (combat *CombatScreen) DrawHighlightedTile(screen *ebiten.Image, x int, y i
         B: lerp(minColor.B, maxColor.B),
         A: 190})
 
+
+    rFloat := float32(lineColor.R) / 255
+    gFloat := float32(lineColor.G) / 255
+    bFloat := float32(lineColor.B) / 255
+    aFloat := float32(lineColor.A) / 255
+
+    vertices := []ebiten.Vertex{
+        ebiten.Vertex{DstX: float32(x1), DstY: float32(y1), SrcX: 0, SrcY: 0, ColorR: rFloat, ColorG: gFloat, ColorB: bFloat, ColorA: aFloat},
+        ebiten.Vertex{DstX: float32(x2), DstY: float32(y2), SrcX: 0, SrcY: 0, ColorR: rFloat, ColorG: gFloat, ColorB: bFloat, ColorA: aFloat},
+        ebiten.Vertex{DstX: float32(x3), DstY: float32(y3), SrcX: 0, SrcY: 0, ColorR: rFloat, ColorG: gFloat, ColorB: bFloat, ColorA: aFloat},
+        ebiten.Vertex{DstX: float32(x4), DstY: float32(y4), SrcX: 0, SrcY: 0, ColorR: rFloat, ColorG: gFloat, ColorB: bFloat, ColorA: aFloat},
+    }
+
+    indicies := []uint16{0, 1, 2, 2, 3, 0}
+
+    screen.DrawTriangles(vertices, indicies, combat.WhitePixel, &ebiten.DrawTrianglesOptions{})
+
+
+        /*
     vector.StrokeLine(screen, float32(x1), float32(y1), float32(x2), float32(y2), 1, lineColor, false)
     vector.StrokeLine(screen, float32(x2), float32(y2), float32(x3), float32(y3), 1, lineColor, false)
     vector.StrokeLine(screen, float32(x3), float32(y3), float32(x4), float32(y4), 1, lineColor, false)
     vector.StrokeLine(screen, float32(x4), float32(y4), float32(x1), float32(y1), 1, lineColor, false)
+    */
 }
 
 func (combat *CombatScreen) Draw(screen *ebiten.Image){
