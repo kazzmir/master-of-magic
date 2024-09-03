@@ -148,6 +148,34 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
     }
 }
 
+/* check that 'check' is between angle-spread and angle+spread
+ */
+func betweenAngle(check float64, angle float64, spread float64) bool {
+    minAngle := angle - spread
+    maxAngle := angle + spread
+
+    if minAngle < 0 {
+        minAngle += math.Pi * 2
+        maxAngle += math.Pi * 2
+    }
+
+    // at least make 'check' positive
+    for check < 0 {
+        check += math.Pi * 2
+    }
+
+    // if minAngle is above pi, then try to move 'check' to be in the same range
+    if check < minAngle {
+        check += math.Pi * 2
+    // same for max angle
+    } else if check > maxAngle {
+        check -= math.Pi * 2
+    }
+
+    // now check if 'check' is between min and max
+    return check >= minAngle && check <= maxAngle
+}
+
 func (combat *CombatScreen) Update() CombatState {
     combat.Counter += 1
 
@@ -166,6 +194,51 @@ func (combat *CombatScreen) Update() CombatState {
 
     if combat.SelectedUnit.Moving {
         angle := math.Atan2(float64(combat.SelectedUnit.TargetY - combat.SelectedUnit.Y), float64(combat.SelectedUnit.TargetX - combat.SelectedUnit.X))
+
+        // rotate by 45 degrees to get the on screen facing angle
+        useAngle := -(angle - math.Pi/4)
+
+        // log.Printf("Angle: %v from (%v,%v) to (%v,%v)", useAngle, combat.SelectedUnit.X, combat.SelectedUnit.Y, combat.SelectedUnit.TargetX, combat.SelectedUnit.TargetY)
+
+        // right
+        if betweenAngle(useAngle, 0, math.Pi/8){
+            combat.SelectedUnit.Facing = units.FacingRight
+        }
+
+        // left
+        if betweenAngle(useAngle, math.Pi, math.Pi/8){
+            combat.SelectedUnit.Facing = units.FacingLeft
+        }
+
+        // up
+        if betweenAngle(useAngle, math.Pi/2, math.Pi/8){
+            combat.SelectedUnit.Facing = units.FacingUp
+        }
+
+        // up-left
+        if betweenAngle(useAngle, math.Pi - math.Pi/4, math.Pi/8){
+            combat.SelectedUnit.Facing = units.FacingUpLeft
+        }
+
+        // up-right
+        if betweenAngle(useAngle, math.Pi/4, math.Pi/8){
+            combat.SelectedUnit.Facing = units.FacingUpRight
+        }
+
+        // down-left
+        if betweenAngle(useAngle, math.Pi + math.Pi/4, math.Pi/8){
+            combat.SelectedUnit.Facing = units.FacingDownLeft
+        }
+
+        // down
+        if betweenAngle(useAngle, math.Pi + math.Pi/2, math.Pi/8){
+            combat.SelectedUnit.Facing = units.FacingDown
+        }
+
+        // down-right
+        if betweenAngle(useAngle, math.Pi + math.Pi/2 + math.Pi/4, math.Pi/8){
+            combat.SelectedUnit.Facing = units.FacingDownRight
+        }
 
         speed := float64(combat.Counter - combat.SelectedUnit.Movement) / 4
         newX := float64(combat.SelectedUnit.X) + math.Cos(angle) * speed
