@@ -11,6 +11,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/util"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
     "github.com/hajimehoshi/ebiten/v2/vector"
@@ -188,7 +189,10 @@ func (combat *CombatScreen) Update() CombatState {
     combat.MouseTileX = int(math.Round(tileX))
     combat.MouseTileY = int(math.Round(tileY))
 
-    if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) && combat.SelectedUnit.Moving == false {
+    hudImage, _ := combat.ImageCache.GetImage("cmbtfx.lbx", 28, 0)
+
+    // dont allow clicks into the hud area
+    if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) && mouseY < data.ScreenHeight - hudImage.Bounds().Dy() && combat.SelectedUnit.Moving == false {
         combat.SelectedUnit.Movement = combat.Counter
         combat.SelectedUnit.TargetX = combat.MouseTileX
         combat.SelectedUnit.TargetY = combat.MouseTileY
@@ -360,39 +364,6 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
         minColor := color.RGBA{R: 32, G: 0, B: 0, A: 255}
         maxColor := color.RGBA{R: 255, G: 0, B: 0, A: 255}
         combat.DrawHighlightedTile(screen, combat.SelectedUnit.X, combat.SelectedUnit.Y, minColor, maxColor)
-
-        /*
-        tx, ty := tilePosition(combat.SelectedUnit.X, combat.SelectedUnit.Y)
-        x1 := tx
-        y1 := ty + float64(tile0.Bounds().Dy()/2)
-
-        x2 := tx + float64(tile0.Bounds().Dx()/2)
-        y2 := ty
-
-        x3 := tx + float64(tile0.Bounds().Dx())
-        y3 := ty + float64(tile0.Bounds().Dy()/2)
-
-        x4 := tx + float64(tile0.Bounds().Dx()/2)
-        y4 := ty + float64(tile0.Bounds().Dy())
-
-        minR := float64(32)
-        r := minR + (math.Sin(float64(combat.Counter)/6) + 1) * (256-minR)/2
-
-        if r > 255 {
-            r = 255
-        }
-
-        if r < 0 {
-            r = 0
-        }
-
-        lineColor := util.PremultiplyAlpha(color.RGBA{R: uint8(r), G: 0, B: 0, A: 190})
-
-        vector.StrokeLine(screen, float32(x1), float32(y1), float32(x2), float32(y2), 1, lineColor, false)
-        vector.StrokeLine(screen, float32(x2), float32(y2), float32(x3), float32(y3), 1, lineColor, false)
-        vector.StrokeLine(screen, float32(x3), float32(y3), float32(x4), float32(y4), 1, lineColor, false)
-        vector.StrokeLine(screen, float32(x4), float32(y4), float32(x1), float32(y1), 1, lineColor, false)
-        */
     }
 
     renderUnit := func(unit *ArmyUnit){
@@ -427,4 +398,38 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
         renderUnit(unit)
     }
 
+    hudImage, _ := combat.ImageCache.GetImage("cmbtfx.lbx", 28, 0)
+    options.GeoM.Reset()
+    options.GeoM.Translate(0, float64(data.ScreenHeight - hudImage.Bounds().Dy()))
+    for i := 0; i < 4; i++ {
+        screen.DrawImage(hudImage, &options)
+        options.GeoM.Translate(float64(hudImage.Bounds().Dx()), 0)
+    }
+
+    spellButtons, _ := combat.ImageCache.GetImages("compix.lbx", 1)
+    options.GeoM.Reset()
+    options.GeoM.Translate(139, 167)
+    screen.DrawImage(spellButtons[0], &options)
+
+    waitButtons, _ := combat.ImageCache.GetImages("compix.lbx", 2)
+    options.GeoM.Translate(float64(spellButtons[0].Bounds().Dx()), 0)
+    screen.DrawImage(waitButtons[0], &options)
+
+    options.GeoM.Translate(float64(-spellButtons[0].Bounds().Dx()), float64(spellButtons[0].Bounds().Dy()))
+
+    infoButtons, _ := combat.ImageCache.GetImages("compix.lbx", 20)
+    screen.DrawImage(infoButtons[0], &options)
+    options.GeoM.Translate(float64(spellButtons[0].Bounds().Dx()), 0)
+
+    autoButtons, _ := combat.ImageCache.GetImages("compix.lbx", 4)
+    screen.DrawImage(autoButtons[0], &options)
+
+    options.GeoM.Translate(float64(-spellButtons[0].Bounds().Dx()), float64(spellButtons[0].Bounds().Dy()))
+
+    fleeButtons, _ := combat.ImageCache.GetImages("compix.lbx", 21)
+    screen.DrawImage(fleeButtons[0], &options)
+    options.GeoM.Translate(float64(spellButtons[0].Bounds().Dx()), 0)
+
+    doneButtons, _ := combat.ImageCache.GetImages("compix.lbx", 3)
+    screen.DrawImage(doneButtons[0], &options)
 }
