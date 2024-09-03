@@ -1,11 +1,14 @@
 package combat
 
 import (
-    // "log"
-    // "math"
+    // "fmt"
+    "log"
+    "math"
     "math/rand"
+    "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/hajimehoshi/ebiten/v2"
@@ -43,6 +46,8 @@ type CombatScreen struct {
     DefendingArmy *Army
     AttackingArmy *Army
     Tiles [][]Tile
+
+    DebugFont *font.Font
 }
 
 func makeTiles(width int, height int) [][]Tile {
@@ -70,12 +75,35 @@ func makeTiles(width int, height int) [][]Tile {
 }
 
 func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Army) *CombatScreen {
+    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        log.Printf("Unable to read fonts.lbx: %v", err)
+        return nil
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
+        return nil
+    }
+
+    white := color.RGBA{R: 255, G: 255, B: 255, A: 255}
+    whitePalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        white, white, white,
+        white, white, white,
+    }
+
+    debugFont := font.MakeOptimizedFontWithPalette(fonts[0], whitePalette)
+
     return &CombatScreen{
         Cache: cache,
         ImageCache: util.MakeImageCache(cache),
         DefendingArmy: defendingArmy,
         AttackingArmy: attackingArmy,
-        Tiles: makeTiles(20, 30),
+        Tiles: makeTiles(35, 35),
+        DebugFont: debugFont,
     }
 }
 
@@ -92,13 +120,27 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
 
     tile0, _ := combat.ImageCache.GetImage("cmbgrass.lbx", 0, 0)
 
-    tilePosition := func(x int, y int) (float64, float64){
-        startX := 0
-        if y % 2 == 1 {
-            startX = -tile0.Bounds().Dx() / 2
-        }
+    var coordinates ebiten.GeoM
 
-        return float64(x * tile0.Bounds().Dx() + startX), float64(y * tile0.Bounds().Dy() / 2 - tile0.Bounds().Dy() / 2)
+    coordinates.Rotate(-math.Pi / 4)
+    coordinates.Scale(float64(tile0.Bounds().Dx()/2), float64(tile0.Bounds().Dy()/2))
+    coordinates.Translate(-220, 80)
+
+    screenToTile := coordinates
+    screenToTile.Invert()
+
+    /*
+    a, b := screenToTile.Apply(160, 100)
+    log.Printf("(160,100) -> (%f, %f)", a, b)
+    */
+
+    /*
+    a, b := coordinates.Apply(3, 0)
+    log.Printf("(3,3) -> (%f, %f)", a, b)
+    */
+
+    tilePosition := func(x int, y int) (float64, float64){
+        return coordinates.Apply(float64(x), float64(y))
     }
 
     // draw base land
@@ -110,6 +152,8 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
             tx, ty := tilePosition(x, y)
             options.GeoM.Translate(tx, ty)
             screen.DrawImage(image, &options)
+
+            // combat.DebugFont.Print(screen, tx, ty, 1, ebiten.ColorScale{}, fmt.Sprintf("%v,%v", x, y))
         }
     }
 
