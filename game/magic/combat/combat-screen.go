@@ -59,6 +59,9 @@ type CombatScreen struct {
     Tiles [][]Tile
     SelectedUnit *ArmyUnit
 
+    AllUnits []*ArmyUnit
+    CurrentUnit int
+
     DebugFont *font.Font
     HudFont *font.Font
 
@@ -150,8 +153,12 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
     screenToTile.Translate(float64(tile0.Bounds().Dx())/2, float64(tile0.Bounds().Dy())/2)
     screenToTile.Invert()
 
+    allUnits := append(defendingArmy.Units, attackingArmy.Units...)
+
     return &CombatScreen{
         Cache: cache,
+        AllUnits: allUnits,
+        CurrentUnit: 0,
         ImageCache: imageCache,
         DefendingArmy: defendingArmy,
         AttackingArmy: attackingArmy,
@@ -270,6 +277,10 @@ func (combat *CombatScreen) Update() CombatState {
             combat.SelectedUnit.Moving = false
             combat.SelectedUnit.X = combat.SelectedUnit.TargetX
             combat.SelectedUnit.Y = combat.SelectedUnit.TargetY
+
+            combat.CurrentUnit = (combat.CurrentUnit + 1) % len(combat.AllUnits)
+
+            combat.SelectedUnit = combat.AllUnits[combat.CurrentUnit]
         }
     }
 
