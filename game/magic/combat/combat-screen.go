@@ -44,11 +44,20 @@ type ArmyUnit struct {
 
     TargetX int
     TargetY int
+
+    LastTurn int
 }
 
 type Army struct {
     Units []*ArmyUnit
 }
+
+type Turn int
+
+const (
+    TurnDefending Turn = iota
+    TurnAttacking
+)
 
 type CombatScreen struct {
     Counter uint64
@@ -59,8 +68,8 @@ type CombatScreen struct {
     Tiles [][]Tile
     SelectedUnit *ArmyUnit
 
-    AllUnits []*ArmyUnit
-    CurrentUnit int
+    Turn Turn
+    CurrentTurn int
 
     DebugFont *font.Font
     HudFont *font.Font
@@ -132,10 +141,11 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
     hudFont := font.MakeOptimizedFontWithPalette(fonts[0], blackPalette)
 
     var selectedUnit *ArmyUnit
-    if len(attackingArmy.Units) > 0 {
-        selectedUnit = attackingArmy.Units[0]
-    } else if len(defendingArmy.Units) > 0 {
+    if len(defendingArmy.Units) > 0 {
         selectedUnit = defendingArmy.Units[0]
+    } else {
+        log.Printf("Error: No defending units")
+        return nil
     }
 
     imageCache := util.MakeImageCache(cache)
@@ -155,16 +165,14 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
     screenToTile.Translate(float64(tile0.Bounds().Dx())/2, float64(tile0.Bounds().Dy())/2)
     screenToTile.Invert()
 
-    allUnits := append(defendingArmy.Units, attackingArmy.Units...)
-
     whitePixel := ebiten.NewImage(1, 1)
     whitePixel.Fill(color.RGBA{R: 255, G: 255, B: 255, A: 255})
 
     return &CombatScreen{
         Cache: cache,
-        AllUnits: allUnits,
-        CurrentUnit: 0,
         ImageCache: imageCache,
+        Turn: TurnDefending,
+        CurrentTurn: 1,
         DefendingArmy: defendingArmy,
         AttackingArmy: attackingArmy,
         Tiles: makeTiles(30, 30),
@@ -281,13 +289,69 @@ func (combat *CombatScreen) Update() CombatState {
         combat.SelectedUnit.MoveY = newY
 
         if math.Abs(newX - float64(combat.SelectedUnit.TargetX)) < 0.5 && math.Abs(newY - float64(combat.SelectedUnit.TargetY)) < 0.5 {
+            combat.SelectedUnit.LastTurn = combat.CurrentTurn
             combat.SelectedUnit.Moving = false
             combat.SelectedUnit.X = combat.SelectedUnit.TargetX
             combat.SelectedUnit.Y = combat.SelectedUnit.TargetY
 
-            combat.CurrentUnit = (combat.CurrentUnit + 1) % len(combat.AllUnits)
+            if combat.Turn == TurnDefending {
+                combat.Turn = TurnAttacking
+            } else {
+                combat.Turn = TurnDefending
+            }
 
-            combat.SelectedUnit = combat.AllUnits[combat.CurrentUnit]
+            combat.SelectedUnit = nil
+
+            canMove := false
+            for _, unit := range combat.DefendingArmy.Units {
+                if unit.LastTurn < combat.CurrentTurn {
+                    canMove = true
+                    break
+                }
+            }
+
+            if !canMove {
+                for _, unit := range combat.AttackingArmy.Units {
+                    if unit.LastTurn < combat.CurrentTurn {
+                        canMove = true
+                        break
+                    }
+                }
+            }
+
+            // no one left can move in this turn, go to next turn
+            if !canMove {
+                combat.CurrentTurn += 1
+            }
+
+            for combat.SelectedUnit == nil {
+                switch combat.Turn {
+                    case TurnDefending:
+                        found := false
+                        for _, unit := range combat.DefendingArmy.Units {
+                            if unit.LastTurn < combat.CurrentTurn {
+                                combat.SelectedUnit = unit
+                                found = true
+                                break
+                            }
+                        }
+                        if !found {
+                            combat.Turn = TurnAttacking
+                        }
+                    case TurnAttacking:
+                        found := false
+                        for _, unit := range combat.AttackingArmy.Units {
+                            if unit.LastTurn < combat.CurrentTurn {
+                                combat.SelectedUnit = unit
+                                found = true
+                                break
+                            }
+                        }
+                        if !found {
+                            combat.Turn = TurnDefending
+                        }
+                }
+            }
         }
     }
 
