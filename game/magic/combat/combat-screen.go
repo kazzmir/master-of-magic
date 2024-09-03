@@ -12,6 +12,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/hajimehoshi/ebiten/v2"
+    "github.com/hajimehoshi/ebiten/v2/vector"
 )
 
 type CombatState int
@@ -46,6 +47,7 @@ type CombatScreen struct {
     DefendingArmy *Army
     AttackingArmy *Army
     Tiles [][]Tile
+    SelectedUnit *ArmyUnit
 
     DebugFont *font.Font
 }
@@ -97,12 +99,20 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
 
     debugFont := font.MakeOptimizedFontWithPalette(fonts[0], whitePalette)
 
+    var selectedUnit *ArmyUnit
+    if len(attackingArmy.Units) > 0 {
+        selectedUnit = attackingArmy.Units[0]
+    } else if len(defendingArmy.Units) > 0 {
+        selectedUnit = defendingArmy.Units[0]
+    }
+
     return &CombatScreen{
         Cache: cache,
         ImageCache: util.MakeImageCache(cache),
         DefendingArmy: defendingArmy,
         AttackingArmy: attackingArmy,
         Tiles: makeTiles(35, 35),
+        SelectedUnit: selectedUnit,
         DebugFont: debugFont,
     }
 }
@@ -171,38 +181,62 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
         }
     }
 
-    for _, unit := range combat.DefendingArmy.Units {
+    if combat.SelectedUnit != nil {
+        tx, ty := tilePosition(combat.SelectedUnit.X, combat.SelectedUnit.Y)
+        x1 := tx
+        y1 := ty + float64(tile0.Bounds().Dy()/2)
+
+        x2 := tx + float64(tile0.Bounds().Dx()/2)
+        y2 := ty
+
+        x3 := tx + float64(tile0.Bounds().Dx())
+        y3 := ty + float64(tile0.Bounds().Dy()/2)
+
+        x4 := tx + float64(tile0.Bounds().Dx()/2)
+        y4 := ty + float64(tile0.Bounds().Dy())
+
+        minR := float64(32)
+        r := minR + (math.Sin(float64(combat.Counter)/6) + 1) * (256-minR)/2
+
+        if r > 255 {
+            r = 255
+        }
+
+        if r < 0 {
+            r = 0
+        }
+
+        lineColor := util.PremultiplyAlpha(color.RGBA{R: uint8(r), G: 0, B: 0, A: 190})
+
+        vector.StrokeLine(screen, float32(x1), float32(y1), float32(x2), float32(y2), 1, lineColor, false)
+        vector.StrokeLine(screen, float32(x2), float32(y2), float32(x3), float32(y3), 1, lineColor, false)
+        vector.StrokeLine(screen, float32(x3), float32(y3), float32(x4), float32(y4), 1, lineColor, false)
+        vector.StrokeLine(screen, float32(x4), float32(y4), float32(x1), float32(y1), 1, lineColor, false)
+    }
+
+    renderUnit := func(unit *ArmyUnit){
         combatImages, _ := combat.ImageCache.GetImages(unit.Unit.CombatLbxFile, unit.Unit.GetCombatIndex(unit.Facing))
 
         if combatImages != nil {
             options.GeoM.Reset()
             tx, ty := tilePosition(unit.X, unit.Y)
             options.GeoM.Translate(tx, ty)
+            options.GeoM.Translate(float64(tile0.Bounds().Dx()/2), float64(tile0.Bounds().Dy()/2))
 
             index := uint64(0)
             if unit.Unit.Flying {
                 index = animationIndex % (uint64(len(combatImages)) - 1)
             }
-
             RenderCombatUnit(screen, combatImages[index], options, unit.Unit.Count)
         }
     }
 
+    for _, unit := range combat.DefendingArmy.Units {
+        renderUnit(unit)
+    }
+
     for _, unit := range combat.AttackingArmy.Units {
-        combatImages, _ := combat.ImageCache.GetImages(unit.Unit.CombatLbxFile, unit.Unit.GetCombatIndex(unit.Facing))
-
-        if combatImages != nil {
-            options.GeoM.Reset()
-            tx, ty := tilePosition(unit.X, unit.Y)
-            options.GeoM.Translate(tx, ty)
-
-            index := uint64(0)
-            if unit.Unit.Flying {
-                index = animationIndex % (uint64(len(combatImages)) - 1)
-            }
-
-            RenderCombatUnit(screen, combatImages[index], options, unit.Unit.Count)
-        }
+        renderUnit(unit)
     }
 
 }
