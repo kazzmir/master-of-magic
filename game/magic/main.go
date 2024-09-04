@@ -17,6 +17,7 @@ import (
     gamelib "github.com/kazzmir/master-of-magic/game/magic/game"
 
     "github.com/hajimehoshi/ebiten/v2"
+    "github.com/hajimehoshi/ebiten/v2/ebitenutil"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
@@ -54,7 +55,7 @@ func runIntro(yield coroutine.YieldFunc, game *MagicGame) {
     for intro.Update() == introlib.IntroStateRunning {
         yield()
 
-        if ebiten.IsKeyPressed(ebiten.KeySpace) {
+        if inpututil.IsKeyJustPressed(ebiten.KeySpace) || inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
             return
         }
     }
@@ -96,13 +97,18 @@ func runMainMenu(yield coroutine.YieldFunc, game *MagicGame) mainview.MainScreen
     }
 
     for menu.Update() == mainview.MainScreenStateRunning {
+
+        if inpututil.IsKeyJustPressed(ebiten.KeyEscape) || inpututil.IsKeyJustPressed(ebiten.KeyCapsLock) {
+            return mainview.MainScreenStateQuit
+        }
+
         yield()
     }
 
     return menu.State
 }
 
-func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup.NewGameSettings, wizard setup.WizardCustom) {
+func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup.NewGameSettings, wizard setup.WizardCustom) error {
     game := gamelib.MakeGame(magic.Cache)
     game.Plane = data.PlaneArcanus
     game.Activate()
@@ -126,21 +132,46 @@ func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup
     game.DoNextTurn()
 
     for game.Update() != gamelib.GameStateQuit {
-        keys := make([]ebiten.Key, 0)
-        keys = inpututil.AppendJustPressedKeys(keys)
-
-        for _, key := range keys {
-            if key == ebiten.KeyEscape || key == ebiten.KeyCapsLock {
-                // return ebiten.Termination
-                return
-            }
+        if inpututil.IsKeyJustPressed(ebiten.KeyEscape) || inpututil.IsKeyJustPressed(ebiten.KeyCapsLock) {
+            return ebiten.Termination
         }
 
         yield()
     }
+
+    return nil
+}
+
+func loadData(yield coroutine.YieldFunc, game *MagicGame) error {
+    game.Drawer = func(screen *ebiten.Image) {
+        ebitenutil.DebugPrintAt(screen, "Drag and drop a zip file that contains", 10, 10)
+        ebitenutil.DebugPrintAt(screen, "the master of magic data files", 10, 30)
+    }
+
+    var cache *lbx.LbxCache
+    for cache == nil {
+        cache = lbx.AutoCache()
+        if cache == nil {
+            yield()
+        }
+
+        if inpututil.IsKeyJustPressed(ebiten.KeyEscape) || inpututil.IsKeyJustPressed(ebiten.KeyCapsLock) {
+            return ebiten.Termination
+        }
+    }
+
+    game.Cache = cache
+
+    return nil
 }
 
 func runGame(yield coroutine.YieldFunc, game *MagicGame) error {
+
+    err := loadData(yield, game)
+    if err != nil {
+        return err
+    }
+
     runIntro(yield, game)
     state := runMainMenu(yield, game)
     switch state {
@@ -152,7 +183,10 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame) error {
             yield()
             wizard := runNewWizard(yield, game)
             yield()
-            runGameInstance(yield, game, settings, wizard)
+            err := runGameInstance(yield, game, settings, wizard)
+            if err != nil {
+                return err
+            }
     }
 
     return ebiten.Termination
@@ -165,9 +199,7 @@ func NewMagicGame() (*MagicGame, error) {
         return runGame(yield, game)
     }
 
-    cache := lbx.AutoCache()
     game = &MagicGame{
-        Cache: cache,
         MainCoroutine: coroutine.MakeCoroutine(run),
         Drawer: nil,
     }

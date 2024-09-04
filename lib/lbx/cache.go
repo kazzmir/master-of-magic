@@ -12,6 +12,7 @@ import (
     // "path/filepath"
 
     "github.com/kazzmir/master-of-magic/data"
+    "github.com/hajimehoshi/ebiten/v2"
 )
 
 type LbxCache struct {
@@ -27,11 +28,13 @@ func MakeLbxCache(base fs.FS) *LbxCache {
 }
 
 /* true if the fs contains the proper lbx files */
-func validateData(data fs.FS) bool {
+func validateData(entries []fs.DirEntry) bool {
+    /*
     entries, err := fs.ReadDir(data, ".")
     if err != nil {
         return false
     }
+    */
 
     // subset of the required files, add more if necessary
     required := make(map[string]bool)
@@ -60,59 +63,112 @@ func validateData(data fs.FS) bool {
     return false
 }
 
-func AutoCache() *LbxCache {
-    // Find where the data is
-    // 1. check in the current working directory for all existing lbx files
-    // 2. check all the directories in the current working directory to see if any of them contain lbx files
-    // 3. look at all zip files in the current working directory to see if any of the zip files contain lbx files
-    // 4. possibly use an embedded fs with all data in it
-
-    byteReader := bytes.NewReader(data.DataZip)
-    zipReader, err := zip.NewReader(byteReader, int64(len(data.DataZip)))
-    if err == nil && validateData(zipReader) {
-        log.Printf("Found data in embedded zip")
-        return MakeLbxCache(zipReader)
+func maybeOpenZip(here fs.FS, entry fs.DirEntry) *LbxCache {
+    reader, err := here.Open(entry.Name())
+    if err != nil {
+        return nil
     }
 
-    here := os.DirFS(".")
-    if validateData(here) {
-        log.Printf("Found data in .")
-        return MakeLbxCache(here)
+    /*
+    info, err := reader.Stat()
+    if err != nil {
+        reader.Close()
+        return nil
+    }
+    */
+
+    byteReader, err := makeByteReader(reader)
+    if err != nil {
+        return nil
     }
 
-    entries, err := os.ReadDir(".")
+    zipper, err := zip.NewReader(byteReader, byteReader.Size())
     if err == nil {
+        entries, err := fs.ReadDir(zipper, ".")
+
+        if err == nil && validateData(entries) {
+            log.Printf("Found data in zip file %v", entry.Name())
+            return MakeLbxCache(zipper)
+        }
+    } else {
+        log.Printf("Unable to open zip file %v: %v", entry.Name(), err)
+    }
+
+    reader.Close()
+
+    return nil
+}
+
+func searchFs(here fs.FS) *LbxCache {
+    entries, err := fs.ReadDir(here, ".")
+    if err == nil {
+        if validateData(entries){
+            return MakeLbxCache(here)
+        }
+
+        // log.Printf("Check entries: %v", entries)
         for _, entry := range entries {
             if entry.IsDir() {
-                check := os.DirFS(entry.Name())
-                if validateData(check) {
-                    log.Printf("Found data in %v", entry.Name())
-                    return MakeLbxCache(check)
-                }
-            } else if strings.HasSuffix(entry.Name(), ".zip") {
-                zipper, err := zip.OpenReader(entry.Name())
+                // check := os.DirFS(entry.Name())
+                check, err := fs.Sub(here, entry.Name())
                 if err == nil {
-                    if validateData(zipper) {
-                        log.Printf("Found data in zip file %v", entry.Name())
-                        return MakeLbxCache(zipper)
-                    } else {
-                        zipper.Close()
+                    entries, err := fs.ReadDir(check, ".")
+                    if err == nil && validateData(entries) {
+                        log.Printf("Found data in %v", entry.Name())
+                        return MakeLbxCache(check)
                     }
+                }
+            } else if strings.HasSuffix(strings.ToLower(entry.Name()), ".zip") {
+                // log.Printf("Check zip file '%v'", entry.Name())
+
+                cache := maybeOpenZip(here, entry)
+                if cache != nil {
+                    return cache
                 }
             }
         }
     }
 
-    log.Printf("Unable to find data")
+    return nil
+}
+
+func AutoCache() *LbxCache {
+    // Find where the data is
+    // 1. possibly use an embedded fs with all data in it, if it exists
+    // 2. check whats in the dropped files (for desktop and browsers)
+    // 3. check in the current working directory for all existing lbx files
+    // 4. check all the directories in the current working directory to see if any of them contain lbx files
+    // 5. look at all zip files in the current working directory to see if any of the zip files contain lbx files
+
+    byteReader := bytes.NewReader(data.DataZip)
+    zipReader, err := zip.NewReader(byteReader, int64(len(data.DataZip)))
+    if err == nil {
+        entries, err := fs.ReadDir(zipReader, ".")
+        if err == nil && validateData(entries) {
+            log.Printf("Found data in embedded zip")
+            return MakeLbxCache(zipReader)
+        }
+    }
+
+    droppedFiles := ebiten.DroppedFiles()
+    if droppedFiles != nil {
+        cache := searchFs(droppedFiles)
+        if cache != nil {
+            return cache
+        }
+    }
+
+    cache := searchFs(os.DirFS("."))
+    if cache != nil {
+        return cache
+    }
+
+    // log.Printf("Unable to find data")
 
     return nil
 }
 
-func createReadSeeker(reader fs.File) (io.ReadSeeker, error) {
-    if readSeeker, ok := reader.(io.ReadSeeker); ok {
-        return readSeeker, nil
-    }
-
+func makeByteReader(reader io.Reader) (*bytes.Reader, error) {
     rawData, err := io.ReadAll(reader)
     if err != nil {
         return nil, err
@@ -121,6 +177,14 @@ func createReadSeeker(reader fs.File) (io.ReadSeeker, error) {
     data := bytes.NewReader(rawData)
 
     return data, nil
+}
+
+func createReadSeeker(reader fs.File) (io.ReadSeeker, error) {
+    if readSeeker, ok := reader.(io.ReadSeeker); ok {
+        return readSeeker, nil
+    }
+
+    return makeByteReader(reader)
 }
 
 func (cache *LbxCache) GetLbxFile(filename string) (*LbxFile, error) {
