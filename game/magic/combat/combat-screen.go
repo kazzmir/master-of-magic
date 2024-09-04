@@ -324,11 +324,13 @@ func computeFacing(angle float64) units.Facing {
 }
 
 func (combat *CombatScreen) NextUnit() {
+    /*
     if combat.Turn == TurnDefending {
         combat.Turn = TurnAttacking
     } else {
         combat.Turn = TurnDefending
     }
+    */
 
     combat.SelectedUnit = nil
 
@@ -352,6 +354,12 @@ func (combat *CombatScreen) NextUnit() {
     // no one left can move in this turn, go to next turn
     if !canMove {
         combat.CurrentTurn += 1
+
+        if combat.Turn == TurnDefending {
+            combat.Turn = TurnAttacking
+        } else {
+            combat.Turn = TurnDefending
+        }
     }
 
     for combat.SelectedUnit == nil {
