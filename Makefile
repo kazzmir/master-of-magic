@@ -1,4 +1,4 @@
-.PHONY: magic magic.wasm lbxdump wasm
+.PHONY: magic magic.wasm lbxdump wasm itch.io
 
 magic:
 	go build -o magic ./game/magic
@@ -10,6 +10,10 @@ magic.wasm:
 
 lbxdump:
 	go build -o lbxdump ./util/lbxdump
+
+itch.io: wasm
+	cp magic.wasm itch.io
+	butler push itch.io kazzmir/magic:html
 
 update:
 	go get -u ./game/magic
