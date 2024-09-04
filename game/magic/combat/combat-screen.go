@@ -41,6 +41,9 @@ type ArmyUnit struct {
     Y int
     Health int
 
+    Attacking bool
+    AttackingCounter uint64
+
     Movement uint64
     MoveX float64
     MoveY float64
@@ -274,6 +277,131 @@ func (combat *CombatScreen) TileIsEmpty(x int, y int) bool {
     return true
 }
 
+// angle in radians
+func computeFacing(angle float64) units.Facing {
+    // right
+    if betweenAngle(angle, 0, math.Pi/8){
+        return units.FacingRight
+    }
+
+    // left
+    if betweenAngle(angle, math.Pi, math.Pi/8){
+        return units.FacingLeft
+    }
+
+    // up
+    if betweenAngle(angle, math.Pi/2, math.Pi/8){
+        return units.FacingUp
+    }
+
+    // up-left
+    if betweenAngle(angle, math.Pi - math.Pi/4, math.Pi/8){
+        return units.FacingUpLeft
+    }
+
+    // up-right
+    if betweenAngle(angle, math.Pi/4, math.Pi/8){
+        return units.FacingUpRight
+    }
+
+    // down-left
+    if betweenAngle(angle, math.Pi + math.Pi/4, math.Pi/8){
+        return units.FacingDownLeft
+    }
+
+    // down
+    if betweenAngle(angle, math.Pi + math.Pi/2, math.Pi/8){
+        return units.FacingDown
+    }
+
+    // down-right
+    if betweenAngle(angle, math.Pi + math.Pi/2 + math.Pi/4, math.Pi/8){
+        return units.FacingDownRight
+    }
+
+    // should be impossible to get here
+    return units.FacingRight
+}
+
+func (combat *CombatScreen) NextUnit() {
+    if combat.Turn == TurnDefending {
+        combat.Turn = TurnAttacking
+    } else {
+        combat.Turn = TurnDefending
+    }
+
+    combat.SelectedUnit = nil
+
+    canMove := false
+    for _, unit := range combat.DefendingArmy.Units {
+        if unit.LastTurn < combat.CurrentTurn {
+            canMove = true
+            break
+        }
+    }
+
+    if !canMove {
+        for _, unit := range combat.AttackingArmy.Units {
+            if unit.LastTurn < combat.CurrentTurn {
+                canMove = true
+                break
+            }
+        }
+    }
+
+    // no one left can move in this turn, go to next turn
+    if !canMove {
+        combat.CurrentTurn += 1
+    }
+
+    for combat.SelectedUnit == nil {
+        switch combat.Turn {
+        case TurnDefending:
+            found := false
+            for _, unit := range combat.DefendingArmy.Units {
+                if unit.LastTurn < combat.CurrentTurn {
+                    combat.SelectedUnit = unit
+                    found = true
+                    break
+                }
+            }
+            if !found {
+                combat.Turn = TurnAttacking
+            }
+        case TurnAttacking:
+            found := false
+            for _, unit := range combat.AttackingArmy.Units {
+                if unit.LastTurn < combat.CurrentTurn {
+                    combat.SelectedUnit = unit
+                    found = true
+                    break
+                }
+            }
+            if !found {
+                combat.Turn = TurnDefending
+            }
+        }
+    }
+}
+
+func (combat *CombatScreen) ContainsOppositeArmy(x int, y int, turn Turn) bool {
+    if turn == TurnDefending {
+        for _, unit := range combat.AttackingArmy.Units {
+            if unit.Health > 0 && unit.X == x && unit.Y == y {
+                return true
+            }
+        }
+    } else {
+        for _, unit := range combat.DefendingArmy.Units {
+            if unit.Health > 0 && unit.X == x && unit.Y == y {
+                return true
+            }
+        }
+    }
+
+    return false
+}
+
 func (combat *CombatScreen) Update() CombatState {
     combat.Counter += 1
 
@@ -288,12 +416,26 @@ func (combat *CombatScreen) Update() CombatState {
     // dont allow clicks into the hud area
     if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) &&
        mouseY < data.ScreenHeight - hudImage.Bounds().Dy() &&
-       combat.SelectedUnit.Moving == false &&
-       combat.TileIsEmpty(combat.MouseTileX, combat.MouseTileY) {
-        combat.SelectedUnit.Movement = combat.Counter
-        combat.SelectedUnit.TargetX = combat.MouseTileX
-        combat.SelectedUnit.TargetY = combat.MouseTileY
-        combat.SelectedUnit.Moving = true
+       combat.SelectedUnit.Moving == false && combat.SelectedUnit.Attacking == false {
+
+        if combat.TileIsEmpty(combat.MouseTileX, combat.MouseTileY) {
+            combat.SelectedUnit.Movement = combat.Counter
+            combat.SelectedUnit.TargetX = combat.MouseTileX
+            combat.SelectedUnit.TargetY = combat.MouseTileY
+            combat.SelectedUnit.Moving = true
+       } else {
+           if combat.ContainsOppositeArmy(combat.MouseTileX, combat.MouseTileY, combat.Turn) {
+               combat.SelectedUnit.Attacking = true
+               combat.SelectedUnit.AttackingCounter = combat.Counter
+           }
+       }
+    }
+
+    if combat.SelectedUnit.Attacking {
+        if combat.Counter - combat.SelectedUnit.AttackingCounter > 60 {
+            combat.SelectedUnit.Attacking = false
+            combat.SelectedUnit.AttackingCounter = 0
+        }
     }
 
     if combat.SelectedUnit.Moving {
@@ -305,45 +447,7 @@ func (combat *CombatScreen) Update() CombatState {
 
         // log.Printf("Angle: %v from (%v,%v) to (%v,%v)", useAngle, combat.SelectedUnit.X, combat.SelectedUnit.Y, combat.SelectedUnit.TargetX, combat.SelectedUnit.TargetY)
 
-        // right
-        if betweenAngle(useAngle, 0, math.Pi/8){
-            combat.SelectedUnit.Facing = units.FacingRight
-        }
-
-        // left
-        if betweenAngle(useAngle, math.Pi, math.Pi/8){
-            combat.SelectedUnit.Facing = units.FacingLeft
-        }
-
-        // up
-        if betweenAngle(useAngle, math.Pi/2, math.Pi/8){
-            combat.SelectedUnit.Facing = units.FacingUp
-        }
-
-        // up-left
-        if betweenAngle(useAngle, math.Pi - math.Pi/4, math.Pi/8){
-            combat.SelectedUnit.Facing = units.FacingUpLeft
-        }
-
-        // up-right
-        if betweenAngle(useAngle, math.Pi/4, math.Pi/8){
-            combat.SelectedUnit.Facing = units.FacingUpRight
-        }
-
-        // down-left
-        if betweenAngle(useAngle, math.Pi + math.Pi/4, math.Pi/8){
-            combat.SelectedUnit.Facing = units.FacingDownLeft
-        }
-
-        // down
-        if betweenAngle(useAngle, math.Pi + math.Pi/2, math.Pi/8){
-            combat.SelectedUnit.Facing = units.FacingDown
-        }
-
-        // down-right
-        if betweenAngle(useAngle, math.Pi + math.Pi/2 + math.Pi/4, math.Pi/8){
-            combat.SelectedUnit.Facing = units.FacingDownRight
-        }
+        combat.SelectedUnit.Facing = computeFacing(useAngle)
 
         speed := float64(combat.Counter - combat.SelectedUnit.Movement) / 4
         newX := float64(combat.SelectedUnit.X) + math.Cos(angle) * speed
@@ -358,64 +462,7 @@ func (combat *CombatScreen) Update() CombatState {
             combat.SelectedUnit.X = combat.SelectedUnit.TargetX
             combat.SelectedUnit.Y = combat.SelectedUnit.TargetY
 
-            if combat.Turn == TurnDefending {
-                combat.Turn = TurnAttacking
-            } else {
-                combat.Turn = TurnDefending
-            }
-
-            combat.SelectedUnit = nil
-
-            canMove := false
-            for _, unit := range combat.DefendingArmy.Units {
-                if unit.LastTurn < combat.CurrentTurn {
-                    canMove = true
-                    break
-                }
-            }
-
-            if !canMove {
-                for _, unit := range combat.AttackingArmy.Units {
-                    if unit.LastTurn < combat.CurrentTurn {
-                        canMove = true
-                        break
-                    }
-                }
-            }
-
-            // no one left can move in this turn, go to next turn
-            if !canMove {
-                combat.CurrentTurn += 1
-            }
-
-            for combat.SelectedUnit == nil {
-                switch combat.Turn {
-                    case TurnDefending:
-                        found := false
-                        for _, unit := range combat.DefendingArmy.Units {
-                            if unit.LastTurn < combat.CurrentTurn {
-                                combat.SelectedUnit = unit
-                                found = true
-                                break
-                            }
-                        }
-                        if !found {
-                            combat.Turn = TurnAttacking
-                        }
-                    case TurnAttacking:
-                        found := false
-                        for _, unit := range combat.AttackingArmy.Units {
-                            if unit.LastTurn < combat.CurrentTurn {
-                                combat.SelectedUnit = unit
-                                found = true
-                                break
-                            }
-                        }
-                        if !found {
-                            combat.Turn = TurnDefending
-                        }
-                }
-            }
+            combat.NextUnit()
         }
     }
 
@@ -564,6 +611,11 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
             if unit.Unit.Flying {
                 index = animationIndex % (uint64(len(combatImages)) - 1)
             }
+
+            if unit.Attacking {
+                index = 2 + animationIndex % 2
+            }
+
             RenderCombatUnit(screen, combatImages[index], options, unit.Unit.Count)
         }
     }
