@@ -440,6 +440,13 @@ func faceTowards(x1 int, y1 int, x2 int, y2 int) units.Facing {
     return computeFacing(useAngle)
 }
 
+func (combat *CombatScreen) withinMeleeRange(attacker *ArmyUnit, defender *ArmyUnit) bool {
+    xDiff := math.Abs(float64(attacker.X - defender.X))
+    yDiff := math.Abs(float64(attacker.Y - defender.Y))
+
+    return xDiff <= 1 && yDiff <= 1
+}
+
 func (combat *CombatScreen) Update() CombatState {
     combat.Counter += 1
 
@@ -462,13 +469,15 @@ func (combat *CombatScreen) Update() CombatState {
             combat.SelectedUnit.TargetY = combat.MouseTileY
             combat.SelectedUnit.Moving = true
        } else {
-           if combat.ContainsOppositeArmy(combat.MouseTileX, combat.MouseTileY, combat.SelectedUnit.Team) {
+
+           defender := combat.GetUnit(combat.MouseTileX, combat.MouseTileY)
+
+           if defender != nil && defender.Team != combat.SelectedUnit.Team && combat.withinMeleeRange(combat.SelectedUnit, defender){
                combat.SelectedUnit.Attacking = true
                combat.SelectedUnit.AttackingCounter = combat.Counter
 
                combat.SelectedUnit.Facing = faceTowards(combat.SelectedUnit.X, combat.SelectedUnit.Y, combat.MouseTileX, combat.MouseTileY)
-               defendingUnit := combat.GetUnit(combat.MouseTileX, combat.MouseTileY)
-               defendingUnit.Facing = faceTowards(defendingUnit.X, defendingUnit.Y, combat.SelectedUnit.X, combat.SelectedUnit.Y)
+               defender.Facing = faceTowards(defender.X, defender.Y, combat.SelectedUnit.X, combat.SelectedUnit.Y)
            }
        }
     }
