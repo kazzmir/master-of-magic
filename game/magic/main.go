@@ -17,7 +17,7 @@ import (
     gamelib "github.com/kazzmir/master-of-magic/game/magic/game"
 
     "github.com/hajimehoshi/ebiten/v2"
-    // "github.com/hajimehoshi/ebiten/v2/inpututil"
+    "github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
 func stretchImage(screen *ebiten.Image, sprite *ebiten.Image){
@@ -126,6 +126,16 @@ func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup
     game.DoNextTurn()
 
     for game.Update() != gamelib.GameStateQuit {
+        keys := make([]ebiten.Key, 0)
+        keys = inpututil.AppendJustPressedKeys(keys)
+
+        for _, key := range keys {
+            if key == ebiten.KeyEscape || key == ebiten.KeyCapsLock {
+                // return ebiten.Termination
+                return
+            }
+        }
+
         yield()
     }
 }
@@ -136,8 +146,12 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame) error {
     switch state {
         case mainview.MainScreenStateQuit: return ebiten.Termination
         case mainview.MainScreenStateNewGame:
+            // yield so that clicks from the menu don't bleed into the next part
+            yield()
             settings := runNewGame(yield, game)
+            yield()
             wizard := runNewWizard(yield, game)
+            yield()
             runGameInstance(yield, game, settings, wizard)
     }
 
@@ -158,46 +172,6 @@ func NewMagicGame() (*MagicGame, error) {
         Drawer: nil,
     }
 
-    /*
-    err := game.NewGameScreen.Load(game.LbxCache)
-    if err != nil {
-        return nil, err
-    }
-    game.NewGameScreen.Activate()
-    */
-
-    /*
-    err := game.NewWizardScreen.Load(game.LbxCache)
-    if err != nil {
-        return nil, err
-    }
-    game.NewWizardScreen.Activate()
-    */
-
-    /*
-    wizard := setup.WizardCustom{
-        Banner: data.BannerBlue,
-    }
-
-    game.Game = gamelib.MakeGame(game.LbxCache)
-    game.Game.Plane = data.PlaneArcanus
-    game.Game.Activate()
-
-    player := game.Game.AddPlayer(wizard)
-
-    player.AddUnit(playerlib.Unit{
-        Unit: units.GreatDrake,
-        Plane: data.PlaneArcanus,
-        Banner: wizard.Banner,
-        X: 5,
-        Y: 5,
-    })
-
-    player.LiftFog(4, 5, 3)
-
-    game.Game.DoNextTurn()
-    */
-
     return game, nil
 }
 
@@ -206,49 +180,6 @@ func (game *MagicGame) Update() error {
     if game.MainCoroutine.Run() != nil {
         return ebiten.Termination
     }
-
-    /*
-    keys := make([]ebiten.Key, 0)
-    keys = inpututil.AppendJustPressedKeys(keys)
-
-    for _, key := range keys {
-        if key == ebiten.KeyEscape || key == ebiten.KeyCapsLock {
-            return ebiten.Termination
-        }
-    }
-
-    if game.NewGameScreen != nil && game.NewGameScreen.IsActive() {
-        switch game.NewGameScreen.Update() {
-            case setup.NewGameStateRunning:
-            case setup.NewGameStateOk:
-                game.NewGameScreen.Deactivate()
-                err := game.NewWizardScreen.Load(game.LbxCache)
-                if err != nil {
-                    return err
-                }
-                game.NewWizardScreen.Activate()
-            case setup.NewGameStateCancel:
-                return ebiten.Termination
-        }
-    }
-
-    if game.NewWizardScreen != nil && game.NewWizardScreen.IsActive() {
-        switch game.NewWizardScreen.Update() {
-            case setup.NewWizardScreenStateFinished:
-                game.NewWizardScreen.Deactivate()
-                wizard := game.NewWizardScreen.CustomWizard
-                log.Printf("Launch game with wizard: %+v\n", wizard)
-                game.Game = gamelib.MakeGame(game.LbxCache)
-                game.Game.AddPlayer(wizard)
-                game.Game.Activate()
-                game.NewWizardScreen = nil
-        }
-    }
-
-    if game.Game != nil && game.Game.IsActive() {
-        game.Game.Update()
-    }
-    */
 
     return nil
 }
@@ -263,21 +194,6 @@ func (game *MagicGame) Draw(screen *ebiten.Image) {
     if game.Drawer != nil {
         game.Drawer(screen)
     }
-
-    /*
-
-    if game.NewGameScreen.IsActive() {
-        game.NewGameScreen.Draw(screen)
-    }
-
-    if game.NewWizardScreen != nil && game.NewWizardScreen.IsActive() {
-        game.NewWizardScreen.Draw(screen)
-    }
-
-    if game.Game != nil && game.Game.IsActive() {
-        game.Game.Draw(screen)
-    }
-    */
 }
 
 func main() {
