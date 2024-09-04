@@ -5,6 +5,7 @@ import (
     // "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/game/magic/combat"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/data"
@@ -117,6 +118,8 @@ func main(){
     ebiten.SetWindowSize(data.ScreenWidth * 5, data.ScreenHeight * 5)
     ebiten.SetWindowTitle("combat screen")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
+
+    audio.Initialize()
 
     engine, err := NewEngine()
 

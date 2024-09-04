@@ -10,6 +10,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/lib/colorconv"
+    "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
@@ -486,6 +487,11 @@ func (combat *CombatScreen) Update() CombatState {
 
                combat.SelectedUnit.Facing = faceTowards(combat.SelectedUnit.X, combat.SelectedUnit.Y, combat.MouseTileX, combat.MouseTileY)
                defender.Facing = faceTowards(defender.X, defender.Y, combat.SelectedUnit.X, combat.SelectedUnit.Y)
+
+               sound, err := audio.LoadCombatSound(combat.Cache, 1)
+               if err == nil {
+                   sound.Play()
+               }
            }
        }
     }

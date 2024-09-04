@@ -28,16 +28,7 @@ func convertToS16(u8samples []byte) []byte {
     return out.Bytes()
 }
 
-func LoadSound(cache *lbx.LbxCache, index int) (*audiolib.Player, error){
-    if Context == nil {
-        return nil, fmt.Errorf("audio has not been initialized")
-    }
-
-    soundLbx, err := cache.GetLbxFile("soundfx.lbx")
-    if err != nil {
-        return nil, err
-    }
-
+func LoadSoundFromLbx(soundLbx *lbx.LbxFile, index int) (*audiolib.Player, error){
     data, err := soundLbx.RawData(index)
     if err != nil {
         return nil, err
@@ -56,4 +47,30 @@ func LoadSound(cache *lbx.LbxCache, index int) (*audiolib.Player, error){
     resampled := audiolib.Resample(bytes.NewReader(s16Samples), int64(len(s16Samples)), int(vocData.SampleRate()), SampleRate)
 
     return Context.NewPlayer(resampled)
+}
+
+func LoadCombatSound(cache *lbx.LbxCache, index int) (*audiolib.Player, error){
+    if Context == nil {
+        return nil, fmt.Errorf("audio has not been initialized")
+    }
+
+    soundLbx, err := cache.GetLbxFile("cmbtsnd.lbx")
+    if err != nil {
+        return nil, err
+    }
+
+    return LoadSoundFromLbx(soundLbx, index)
+}
+
+func LoadSound(cache *lbx.LbxCache, index int) (*audiolib.Player, error){
+    if Context == nil {
+        return nil, fmt.Errorf("audio has not been initialized")
+    }
+
+    soundLbx, err := cache.GetLbxFile("soundfx.lbx")
+    if err != nil {
+        return nil, err
+    }
+
+    return LoadSoundFromLbx(soundLbx, index)
 }
