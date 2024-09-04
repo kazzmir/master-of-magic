@@ -26,6 +26,13 @@ const (
     CombatStateDone
 )
 
+type Team int
+
+const (
+    TeamAttacker Team = iota
+    TeamDefender
+)
+
 type Tile struct {
     // index of grass/floor
     Index int
@@ -40,6 +47,8 @@ type ArmyUnit struct {
     X int
     Y int
     Health int
+
+    Team Team
 
     Attacking bool
     AttackingCounter uint64
@@ -59,13 +68,6 @@ type Army struct {
     Player *player.Player
 }
 
-type Turn int
-
-const (
-    TurnDefending Turn = iota
-    TurnAttacking
-)
-
 type CombatScreen struct {
     Counter uint64
     Cache *lbx.LbxCache
@@ -75,7 +77,7 @@ type CombatScreen struct {
     Tiles [][]Tile
     SelectedUnit *ArmyUnit
 
-    Turn Turn
+    Turn Team
     CurrentTurn int
 
     DebugFont *font.Font
@@ -214,10 +216,20 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
     whitePixel := ebiten.NewImage(1, 1)
     whitePixel.Fill(color.RGBA{R: 255, G: 255, B: 255, A: 255})
 
+    for _, unit := range defendingArmy.Units {
+        unit.Team = TeamDefender
+    }
+
+    for _, unit := range attackingArmy.Units {
+        unit.Team = TeamAttacker
+    }
+
+    // FIXME: do layout of armys
+
     return &CombatScreen{
         Cache: cache,
         ImageCache: imageCache,
-        Turn: TurnDefending,
+        Turn: TeamDefender,
         CurrentTurn: 1,
         DefendingArmy: defendingArmy,
         AttackingArmy: attackingArmy,
@@ -239,7 +251,7 @@ func betweenAngle(check float64, angle float64, spread float64) bool {
     minAngle := angle - spread
     maxAngle := angle + spread
 
-    if minAngle < 0 {
+    for minAngle < 0 {
         minAngle += math.Pi * 2
         maxAngle += math.Pi * 2
     }
@@ -355,16 +367,16 @@ func (combat *CombatScreen) NextUnit() {
     if !canMove {
         combat.CurrentTurn += 1
 
-        if combat.Turn == TurnDefending {
-            combat.Turn = TurnAttacking
+        if combat.Turn == TeamDefender {
+            combat.Turn = TeamAttacker
         } else {
-            combat.Turn = TurnDefending
+            combat.Turn = TeamDefender
         }
     }
 
     for combat.SelectedUnit == nil {
         switch combat.Turn {
-        case TurnDefending:
+        case TeamDefender:
             found := false
             for _, unit := range combat.DefendingArmy.Units {
                 if unit.LastTurn < combat.CurrentTurn {
@@ -374,9 +386,9 @@ func (combat *CombatScreen) NextUnit() {
                 }
             }
             if !found {
-                combat.Turn = TurnAttacking
+                combat.Turn = TeamAttacker
             }
-        case TurnAttacking:
+        case TeamAttacker:
             found := false
             for _, unit := range combat.AttackingArmy.Units {
                 if unit.LastTurn < combat.CurrentTurn {
@@ -386,28 +398,46 @@ func (combat *CombatScreen) NextUnit() {
                 }
             }
             if !found {
-                combat.Turn = TurnDefending
+                combat.Turn = TeamDefender
             }
         }
     }
 }
 
-func (combat *CombatScreen) ContainsOppositeArmy(x int, y int, turn Turn) bool {
-    if turn == TurnDefending {
-        for _, unit := range combat.AttackingArmy.Units {
-            if unit.Health > 0 && unit.X == x && unit.Y == y {
-                return true
-            }
-        }
-    } else {
-        for _, unit := range combat.DefendingArmy.Units {
-            if unit.Health > 0 && unit.X == x && unit.Y == y {
-                return true
-            }
+func (combat *CombatScreen) GetUnit(x int, y int) *ArmyUnit {
+    for _, unit := range combat.DefendingArmy.Units {
+        if unit.Health > 0 && unit.X == x && unit.Y == y {
+            return unit
         }
     }
 
-    return false
+    for _, unit := range combat.AttackingArmy.Units {
+        if unit.Health > 0 && unit.X == x && unit.Y == y {
+            return unit
+        }
+    }
+
+    return nil
+}
+
+func (combat *CombatScreen) ContainsOppositeArmy(x int, y int, team Team) bool {
+    unit := combat.GetUnit(x, y)
+    if unit == nil {
+        return false
+    }
+    return unit.Team != team
+}
+
+func faceTowards(x1 int, y1 int, x2 int, y2 int) units.Facing {
+    angle := math.Atan2(float64(y2 - y1), float64(x2 - x1))
+
+    // rotate by 45 degrees to get the on screen facing angle
+    // have to negate the angle because the y axis is flipped (higher y values are lower on the screen)
+    useAngle := -(angle - math.Pi/4)
+
+    // log.Printf("Angle: %v from (%v,%v) to (%v,%v)", useAngle, combat.SelectedUnit.X, combat.SelectedUnit.Y, combat.SelectedUnit.TargetX, combat.SelectedUnit.TargetY)
+
+    return computeFacing(useAngle)
 }
 
 func (combat *CombatScreen) Update() CombatState {
@@ -432,9 +462,13 @@ func (combat *CombatScreen) Update() CombatState {
             combat.SelectedUnit.TargetY = combat.MouseTileY
             combat.SelectedUnit.Moving = true
        } else {
-           if combat.ContainsOppositeArmy(combat.MouseTileX, combat.MouseTileY, combat.Turn) {
+           if combat.ContainsOppositeArmy(combat.MouseTileX, combat.MouseTileY, combat.SelectedUnit.Team) {
                combat.SelectedUnit.Attacking = true
                combat.SelectedUnit.AttackingCounter = combat.Counter
+
+               combat.SelectedUnit.Facing = faceTowards(combat.SelectedUnit.X, combat.SelectedUnit.Y, combat.MouseTileX, combat.MouseTileY)
+               defendingUnit := combat.GetUnit(combat.MouseTileX, combat.MouseTileY)
+               defendingUnit.Facing = faceTowards(defendingUnit.X, defendingUnit.Y, combat.SelectedUnit.X, combat.SelectedUnit.Y)
            }
        }
     }
@@ -596,7 +630,10 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
     if combat.SelectedUnit != nil {
         minColor := color.RGBA{R: 32, G: 0, B: 0, A: 255}
         maxColor := color.RGBA{R: 255, G: 0, B: 0, A: 255}
-        combat.DrawHighlightedTile(screen, combat.SelectedUnit.X, combat.SelectedUnit.Y, minColor, maxColor)
+
+        if !combat.SelectedUnit.Moving {
+            combat.DrawHighlightedTile(screen, combat.SelectedUnit.X, combat.SelectedUnit.Y, minColor, maxColor)
+        }
     }
 
     renderUnit := func(unit *ArmyUnit){
