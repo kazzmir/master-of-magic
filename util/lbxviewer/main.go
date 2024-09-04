@@ -595,43 +595,43 @@ func MakeViewer(data []*LbxData) (*Viewer, error) {
     return viewer, nil
 }
 
-func MakeSingleFileViewer(path string) (*Viewer, error) {
-    var lbxFile lbx.LbxFile
-
-    open, err := os.Open(path)
-    if err != nil {
-        return nil, err
-    }
-    defer open.Close()
-    lbxFile, err = lbx.ReadLbx(open)
-    if err != nil {
-        return nil, err
-    }
-    log.Printf("Loaded lbx file: %v\n", path)
-
-    return MakeViewer([]*LbxData{&LbxData{Lbx: &lbxFile, Name: path}})
-}
-
-func MakeMultiViewer(path string) (*Viewer, error) {
-    entries, err := os.ReadDir(path)
-    if err != nil {
-        return nil, err
-    }
-
+func MakeViewerFromFiles(paths []string) (*Viewer, error) {
     var data []*LbxData
 
-    for _, entry := range entries {
-        open, err := os.Open(path + "/" + entry.Name())
-        if err != nil {
-            continue
-        }
+    for _, path := range paths {
+        if isFile(path) {
+            var lbxFile lbx.LbxFile
 
-        lbxFile, err := lbx.ReadLbx(open)
-        if err == nil {
-            data = append(data, &LbxData{Lbx: &lbxFile, Name: entry.Name()})
-        }
+            open, err := os.Open(path)
+            if err != nil {
+                return nil, err
+            }
+            defer open.Close()
+            lbxFile, err = lbx.ReadLbx(open)
+            if err != nil {
+                return nil, err
+            }
+            data = append(data, &LbxData{Lbx: &lbxFile, Name: path})
+        } else {
+            entries, err := os.ReadDir(path)
+            if err != nil {
+                return nil, err
+            }
 
-        open.Close()
+            for _, entry := range entries {
+                open, err := os.Open(path + "/" + entry.Name())
+                if err != nil {
+                    continue
+                }
+
+                lbxFile, err := lbx.ReadLbx(open)
+                if err == nil {
+                    data = append(data, &LbxData{Lbx: &lbxFile, Name: entry.Name()})
+                }
+
+                open.Close()
+            }
+        }
     }
 
     return MakeViewer(data)
@@ -653,27 +653,14 @@ func main() {
         return
     }
 
-    file := os.Args[1]
-
     ebiten.SetWindowSize(ScreenWidth, ScreenHeight)
     ebiten.SetWindowTitle("lbx viewer")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 
-    var viewer *Viewer
-    var err error
-
-    if isFile(file) {
-        viewer, err = MakeSingleFileViewer(file)
-        if err != nil {
-            log.Printf("Error: %v", err)
-            return
-        }
-    } else {
-        viewer, err = MakeMultiViewer(file)
-        if err != nil {
-            log.Printf("Error: %v", err)
-            return
-        }
+    viewer, err := MakeViewerFromFiles(os.Args[1:])
+    if err != nil {
+        log.Printf("Error: %v", err)
+        return
     }
 
     err = ebiten.RunGame(viewer)

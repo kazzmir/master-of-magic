@@ -15,7 +15,7 @@ INSTALL.GIF - unknown
 ARMYLIST.LBX - graphics, contains backgrounds for item alchemy and hero screen
 BACKGRND.LBX - graphics, some city backgrounds
 BOOK.LBX - graphics, spell book animation
-BUILDESC.LBX - unknown
+BUILDESC.LBX - descriptions of buildings
 BUILDDAT.LBX - building attributes (production cost
 CHRIVER.LBX - graphics, overland tiles I think for myrror
 CITYSCAP.LBX - graphics, sprites to show in the city view
@@ -24,7 +24,7 @@ CITYNAME.LBX - unknown
 CMBTWALL.LBX - graphics, sprites to show of the city wall in battle
 CMBTFX.LBX - graphics, various animations to show during combat, such as spells
 CMBTCITY.LBX - graphics, sprites of city objects in a battle, such as a house or the main wizard tower
-CMBTSND.LBX - unknown
+CMBTSND.LBX - sounds of attacks in combat
 CMBMAGIC.LBX - graphics, animations of spells in battle
 CMBGRASC.LBX - graphics, combat tiles
 CMBGRASS.LBX - graphics, combat tiles, similar to cmbgrasc but with a different palette
@@ -38,7 +38,7 @@ CONQUEST.LBX - graphics, animations of wizards being defeated
 COMPIX.LBX - graphics, various little icons
 COMBAT.LBX - graphics, combat tiles
 DESERT.LBX - graphics, combat tiles
-DESC.LBX - unknown
+DESC.LBX - descriptions of spells
 DIPLOMAC.LBX - graphics, sprites used in diplomancy window, pictures of other wizards
 DIPLOMSG.LBX - unknown
 EVENTS.LBX - graphics, icons for special events
@@ -88,7 +88,7 @@ RELOAD.LBX - graphics, some ui's for item enchantments, other icons
 RESOURCE.LBX - graphics, ui for yes/no
 SCROLL.LBX - graphics, scroll image for spells
 SNDDRV.LBX - unknown
-SOUNDFX.LBX - unknown
+SOUNDFX.LBX - sound files in VOC format
 SPLMASTR.LBX - graphics, I think the animation used in the intro when the wizard dies?
 SPELLSCR.LBX - graphics, ui for casting spells, such as summoning
 SPECFX.LBX - graphics, various spell animations, overworld enchatments
@@ -96,7 +96,7 @@ SPELLOSE.LBX - graphics, animations when a wizard is destroyed
 SPECIAL2.LBX - graphics, spell book ui and icons
 SPELLS.LBX - graphics, more spell book sprites
 SPECIAL.LBX - graphics, unit enchantments/upgrade icons
-SPELLDAT.LBX - unknown
+SPELLDAT.LBX - definitions of spells
 TERRAIN.LBX - graphics, terrain tiles (in a special graphics format)
 TERRSTAT.LBX - unknown
 TERRTYPE.LBX - unknown
