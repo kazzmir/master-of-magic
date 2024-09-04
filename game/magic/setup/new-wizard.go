@@ -233,7 +233,7 @@ type WizardCustom struct {
     Abilities []WizardAbility
     Books []data.WizardBook
     Spells spellbook.Spells
-    Race string
+    Race data.Race
     Banner data.BannerType
 }
 
@@ -1898,10 +1898,8 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
 
     var elements []*uilib.UIElement
 
-    // technically 'Lizardmen' should be 'Lizardman' and 'Dwarf' should be 'Dwarven', but the help has them listed as
-    // 'Lizardmen Townsfolk' and 'Dwarf Townsfolk'
-    arcanianRaces := []string{"Barbarian", "Gnoll", "Halfling", "High Elf", "High Men", "Klackon", "Lizardmen", "Nomad", "Orc"}
-    myrranRaces := []string{"Beastmen", "Dark Elf", "Draconian", "Dwarf", "Troll"}
+    arcanianRaces := data.ArcanianRaces()
+    myrranRaces := data.MyrranRaces()
 
     for i, race := range arcanianRaces {
         yPos := 35 + 1 + i * (raceFont.Height() + 1)
@@ -1932,9 +1930,9 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
             },
             Draw: func(this *uilib.UIElement, window *ebiten.Image){
                 if highlight {
-                    raceSelect.Print(window, 215, float64(yPos), 1, ebiten.ColorScale{}, race)
+                    raceSelect.Print(window, 215, float64(yPos), 1, ebiten.ColorScale{}, race.String())
                 } else {
-                    raceAvailable.Print(window, 215, float64(yPos), 1, ebiten.ColorScale{}, race)
+                    raceAvailable.Print(window, 215, float64(yPos), 1, ebiten.ColorScale{}, race.String())
                 }
             },
         })
@@ -1986,7 +1984,7 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
                     }
                 }
 
-                fontDraw.Print(window, 215, float64(yPos), 1, ebiten.ColorScale{}, race)
+                fontDraw.Print(window, 215, float64(yPos), 1, ebiten.ColorScale{}, race.String())
             },
         })
     }

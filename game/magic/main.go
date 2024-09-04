@@ -15,6 +15,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/mainview"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     gamelib "github.com/kazzmir/master-of-magic/game/magic/game"
+    citylib "github.com/kazzmir/master-of-magic/game/magic/city"
 
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/ebitenutil"
@@ -118,6 +119,18 @@ func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup
     }
 
     player := game.AddPlayer(wizard)
+
+    player.AddCity(citylib.City{
+        Population: 1000,
+        Name: "Test City",
+        Plane: data.PlaneArcanus,
+        ProducingBuilding: citylib.BuildingHousing,
+        ProducingUnit: units.UnitNone,
+        Race: player.Wizard.Race,
+        Wall: false,
+        X: 4,
+        Y: 5,
+    })
 
     player.AddUnit(playerlib.Unit{
         Unit: units.GreatDrake,

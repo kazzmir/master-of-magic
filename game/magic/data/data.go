@@ -48,6 +48,32 @@ const (
     RaceKlackon
 )
 
+func ArcanianRaces() []Race {
+    return []Race{
+        RaceBarbarian,
+        RaceGnoll,
+        RaceHalfling,
+        RaceHighElf,
+        RaceHighMen,
+        RaceKlackon,
+        RaceLizard,
+        RaceNomad,
+        RaceOrc,
+    }
+}
+
+func MyrranRaces() []Race {
+    return []Race{
+        RaceBeastmen,
+        RaceDarkElf,
+        RaceDraconian,
+        RaceDwarf,
+        RaceTroll,
+    }
+}
+
+// technically 'Lizardmen' should be 'Lizardman' and 'Dwarf' should be 'Dwarven', but the help has them listed as
+// 'Lizardmen Townsfolk' and 'Dwarf Townsfolk'
 func (race Race) String() string {
     switch race {
         case RaceNone: return "none"
