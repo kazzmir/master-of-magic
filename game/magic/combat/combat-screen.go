@@ -12,6 +12,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/player"
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
     // "github.com/hajimehoshi/ebiten/v2/vector"
@@ -51,6 +52,7 @@ type ArmyUnit struct {
 
 type Army struct {
     Units []*ArmyUnit
+    Player *player.Player
 }
 
 type Turn int
@@ -74,6 +76,9 @@ type CombatScreen struct {
 
     DebugFont *font.Font
     HudFont *font.Font
+
+    AttackingWizardFont *font.Font
+    DefendingWizardFont *font.Font
 
     Coordinates ebiten.GeoM
     ScreenToTile ebiten.GeoM
@@ -108,6 +113,29 @@ func makeTiles(width int, height int) [][]Tile {
     return tiles
 }
 
+func lighten(c color.RGBA, amount uint8) color.RGBA {
+    return c
+}
+
+func makePaletteFromBanner(banner data.BannerType) color.Palette {
+    var topColor color.RGBA
+
+    switch banner {
+        case data.BannerGreen: topColor = color.RGBA{R: 0, G: 0x80, B: 0, A: 0xff}
+        case data.BannerBrown: topColor = color.RGBA{R: 0x82, G: 0x60, B: 0x12, A: 0xff}
+    }
+
+    // red := color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}
+
+    return color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        lighten(topColor, 10), lighten(topColor, 6), lighten(topColor, 3),
+        topColor, topColor, topColor,
+        topColor, topColor, topColor,
+    }
+}
+
 func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Army) *CombatScreen {
     fontLbx, err := cache.GetLbxFile("fonts.lbx")
     if err != nil {
@@ -140,6 +168,9 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
     }
 
     hudFont := font.MakeOptimizedFontWithPalette(fonts[0], blackPalette)
+
+    defendingWizardFont := font.MakeOptimizedFontWithPalette(fonts[4], makePaletteFromBanner(defendingArmy.Player.Wizard.Banner))
+    attackingWizardFont := font.MakeOptimizedFontWithPalette(fonts[4], makePaletteFromBanner(attackingArmy.Player.Wizard.Banner))
 
     var selectedUnit *ArmyUnit
     if len(defendingArmy.Units) > 0 {
@@ -183,6 +214,8 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
         Coordinates: coordinates,
         ScreenToTile: screenToTile,
         WhitePixel: whitePixel,
+        AttackingWizardFont: attackingWizardFont,
+        DefendingWizardFont: defendingWizardFont,
     }
 }
 
@@ -591,4 +624,6 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
     options.GeoM.Translate(126, 188)
     screen.DrawImage(movementImage, &options)
     combat.HudFont.Print(screen, 121, 190, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", combat.SelectedUnit.Unit.MovementSpeed))
+
+    combat.AttackingWizardFont.Print(screen, 265, 170, 1, ebiten.ColorScale{}, combat.AttackingArmy.Player.Wizard.Name)
 }

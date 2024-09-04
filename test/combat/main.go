@@ -8,6 +8,8 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/combat"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/setup"
+    "github.com/kazzmir/master-of-magic/game/magic/player"
 
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -21,7 +23,15 @@ type Engine struct {
 func NewEngine() (*Engine, error) {
     cache := lbx.AutoCache()
 
+    defendingPlayer := player.Player{
+        Wizard: setup.WizardCustom{
+            Name: "Lair",
+            Banner: data.BannerBrown,
+        },
+    }
+
     defendingArmy := combat.Army{
+        Player: &defendingPlayer,
         Units: []*combat.ArmyUnit{
             &combat.ArmyUnit{
                 Unit: units.HighElfSpearmen,
@@ -47,7 +57,15 @@ func NewEngine() (*Engine, error) {
         },
     }
 
+    attackingPlayer := player.Player{
+        Wizard: setup.WizardCustom{
+            Name: "Merlin",
+            Banner: data.BannerGreen,
+        },
+    }
+
     attackingArmy := combat.Army{
+        Player: &attackingPlayer,
         Units: []*combat.ArmyUnit{
             &combat.ArmyUnit{
                 Unit: units.GreatDrake,
