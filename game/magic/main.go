@@ -6,14 +6,17 @@ import (
     "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/coroutine"
+    introlib "github.com/kazzmir/master-of-magic/game/magic/intro"
+    "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/data"
-    "github.com/kazzmir/master-of-magic/game/magic/units"
-    playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
+    // "github.com/kazzmir/master-of-magic/game/magic/units"
+    // playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     gamelib "github.com/kazzmir/master-of-magic/game/magic/game"
 
     "github.com/hajimehoshi/ebiten/v2"
-    "github.com/hajimehoshi/ebiten/v2/inpututil"
+    // "github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
 func stretchImage(screen *ebiten.Image, sprite *ebiten.Image){
@@ -22,8 +25,13 @@ func stretchImage(screen *ebiten.Image, sprite *ebiten.Image){
     screen.DrawImage(sprite, &options)
 }
 
+type DrawFunc func(*ebiten.Image)
+
 type MagicGame struct {
-    LbxCache *lbx.LbxCache
+    Cache *lbx.LbxCache
+
+    MainCoroutine *coroutine.Coroutine
+    Drawer DrawFunc
 
     NewGameScreen *setup.NewGameScreen
     NewWizardScreen *setup.NewWizardScreen
@@ -31,12 +39,57 @@ type MagicGame struct {
     Game *gamelib.Game
 }
 
+func runIntro(yield coroutine.YieldFunc, game *MagicGame) {
+    intro, err := introlib.MakeIntro(game.Cache, introlib.DefaultAnimationSpeed)
+    if err != nil {
+        log.Printf("Unable to run intro: %v", err)
+        return
+    }
+
+    game.Drawer = func(screen *ebiten.Image) {
+        intro.Draw(screen)
+    }
+
+    for intro.Update() == introlib.IntroStateRunning {
+        yield()
+
+        if ebiten.IsKeyPressed(ebiten.KeySpace) {
+            return
+        }
+    }
+}
+
+func runNewGame(yield coroutine.YieldFunc, game *MagicGame) {
+    newGame := setup.MakeNewGameScreen(game.Cache)
+
+    game.Drawer = func(screen *ebiten.Image) {
+        newGame.Draw(screen)
+    }
+
+    for newGame.Update() == setup.NewGameStateRunning {
+        yield()
+    }
+}
+
+func runGame(yield coroutine.YieldFunc, game *MagicGame) error {
+    runIntro(yield, game)
+    runNewGame(yield, game)
+
+    return ebiten.Termination
+}
+
 func NewMagicGame() (*MagicGame, error) {
+    var game *MagicGame
+
+    run := func(yield coroutine.YieldFunc) error {
+        return runGame(yield, game)
+    }
+
     cache := lbx.AutoCache()
-    game := &MagicGame{
-        LbxCache: cache,
-        NewGameScreen: setup.MakeNewGameScreen(),
-        NewWizardScreen: setup.MakeNewWizardScreen(cache),
+    game = &MagicGame{
+        Cache: cache,
+        MainCoroutine: coroutine.MakeCoroutine(run),
+        Drawer: nil,
     }
 
     /*
@@ -55,6 +108,7 @@ func NewMagicGame() (*MagicGame, error) {
     game.NewWizardScreen.Activate()
     */
 
+    /*
     wizard := setup.WizardCustom{
         Banner: data.BannerBlue,
     }
@@ -76,11 +130,18 @@ func NewMagicGame() (*MagicGame, error) {
     player.LiftFog(4, 5, 3)
 
     game.Game.DoNextTurn()
+    */
 
     return game, nil
 }
 
 func (game *MagicGame) Update() error {
+
+    if game.MainCoroutine.Run() != nil {
+        return ebiten.Termination
+    }
+
+    /*
     keys := make([]ebiten.Key, 0)
     keys = inpututil.AppendJustPressedKeys(keys)
 
@@ -121,6 +182,7 @@ func (game *MagicGame) Update() error {
     if game.Game != nil && game.Game.IsActive() {
         game.Game.Update()
     }
+    */
 
     return nil
 }
@@ -131,6 +193,12 @@ func (game *MagicGame) Layout(outsideWidth int, outsideHeight int) (int, int) {
 
 func (game *MagicGame) Draw(screen *ebiten.Image) {
     screen.Fill(color.RGBA{0x80, 0xa0, 0xc0, 0xff})
+
+    if game.Drawer != nil {
+        game.Drawer(screen)
+    }
+
+    /*
 
     if game.NewGameScreen.IsActive() {
         game.NewGameScreen.Draw(screen)
@@ -143,6 +211,7 @@ func (game *MagicGame) Draw(screen *ebiten.Image) {
     if game.Game != nil && game.Game.IsActive() {
         game.Game.Draw(screen)
     }
+    */
 }
 
 func main() {
@@ -151,6 +220,8 @@ func main() {
     ebiten.SetWindowSize(data.ScreenWidth * 5, data.ScreenHeight * 5)
     ebiten.SetWindowTitle("magic")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
+
+    audio.Initialize()
 
     game, err := NewMagicGame()
     

@@ -19,7 +19,7 @@ func TestCoroutine1(testing *testing.T) {
         return nil
     }
 
-    coro := NewCoroutine(v1)
+    coro := MakeCoroutine(v1)
 
     // fmt.Printf("coroutine main run 1\n")
     coro.Run()
@@ -46,7 +46,7 @@ func TestCoroutine2(testing *testing.T){
         return nil
     }
 
-    coro := NewCoroutine(v1)
+    coro := MakeCoroutine(v1)
     for {
         err := coro.Run()
         if err != nil {

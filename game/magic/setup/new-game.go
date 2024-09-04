@@ -320,8 +320,8 @@ func (newGameScreen *NewGameScreen) Draw(screen *ebiten.Image) {
     newGameScreen.UI.Draw(newGameScreen.UI, screen)
 }
 
-func MakeNewGameScreen() *NewGameScreen {
-    return &NewGameScreen{
+func MakeNewGameScreen(cache *lbx.LbxCache) *NewGameScreen {
+    out := &NewGameScreen{
         Active: false,
         State: NewGameStateRunning,
         Settings: NewGameSettings{
@@ -331,4 +331,6 @@ func MakeNewGameScreen() *NewGameScreen {
             Magic: 1,
         },
     }
+    out.Load(cache)
+    return out
 }
