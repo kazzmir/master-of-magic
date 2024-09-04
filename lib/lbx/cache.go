@@ -134,10 +134,11 @@ func searchFs(here fs.FS) *LbxCache {
 
 func AutoCache() *LbxCache {
     // Find where the data is
-    // 1. check in the current working directory for all existing lbx files
-    // 2. check all the directories in the current working directory to see if any of them contain lbx files
-    // 3. look at all zip files in the current working directory to see if any of the zip files contain lbx files
-    // 4. possibly use an embedded fs with all data in it
+    // 1. possibly use an embedded fs with all data in it, if it exists
+    // 2. check whats in the dropped files (for desktop and browsers)
+    // 3. check in the current working directory for all existing lbx files
+    // 4. check all the directories in the current working directory to see if any of them contain lbx files
+    // 5. look at all zip files in the current working directory to see if any of the zip files contain lbx files
 
     byteReader := bytes.NewReader(data.DataZip)
     zipReader, err := zip.NewReader(byteReader, int64(len(data.DataZip)))
