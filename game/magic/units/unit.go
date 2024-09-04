@@ -30,6 +30,8 @@ type Unit struct {
     // number of figures that are drawn in a single combat tile
     Count int
     ProductionCost int
+    MeleeAttackPower int
+    MovementSpeed int
     // FIXME: add construction cost, building requirements to build this unit
     //  upkeep cost, how many figures appear in the battlefield, movement speed,
     //  attack power, ranged attack, defense, magic resistance, hit points, special power
@@ -342,6 +344,8 @@ var GreatDrake Unit = Unit{
     Abilities: []Ability{AbilityForester, AbilityDoomGaze},
     Count: 1,
     Flying: true,
+    MeleeAttackPower: 30,
+    MovementSpeed: 2,
 }
 
 var Skeleton Unit = Unit{

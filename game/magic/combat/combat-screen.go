@@ -1,7 +1,7 @@
 package combat
 
 import (
-    // "fmt"
+    "fmt"
     "log"
     "math"
     "math/rand"
@@ -573,4 +573,22 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
     screen.DrawImage(rightImage, &options)
 
     combat.HudFont.Print(screen, 92, 167, 1, ebiten.ColorScale{}, combat.SelectedUnit.Unit.Name)
+
+    plainAttack, _ := combat.ImageCache.GetImage("compix.lbx", 29, 0)
+    options.GeoM.Reset()
+    options.GeoM.Translate(126, 173)
+    screen.DrawImage(plainAttack, &options)
+    combat.HudFont.Print(screen, 121, 174, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", combat.SelectedUnit.Unit.MeleeAttackPower))
+
+    var movementImage *ebiten.Image
+    if combat.SelectedUnit.Unit.Flying {
+        movementImage, _ = combat.ImageCache.GetImage("compix.lbx", 39, 0)
+    } else {
+        movementImage, _ = combat.ImageCache.GetImage("compix.lbx", 38, 0)
+    }
+
+    options.GeoM.Reset()
+    options.GeoM.Translate(126, 188)
+    screen.DrawImage(movementImage, &options)
+    combat.HudFont.Print(screen, 121, 190, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", combat.SelectedUnit.Unit.MovementSpeed))
 }
