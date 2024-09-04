@@ -37,6 +37,7 @@ type ArmyUnit struct {
     Moving bool
     X int
     Y int
+    Health int
 
     Movement uint64
     MoveX float64
@@ -213,6 +214,22 @@ func betweenAngle(check float64, angle float64, spread float64) bool {
     return check >= minAngle && check <= maxAngle
 }
 
+func (combat *CombatScreen) TileIsEmpty(x int, y int) bool {
+    for _, unit := range combat.DefendingArmy.Units {
+        if unit.Health > 0 && unit.X == x && unit.Y == y {
+            return false
+        }
+    }
+
+    for _, unit := range combat.AttackingArmy.Units {
+        if unit.Health > 0 && unit.X == x && unit.Y == y {
+            return false
+        }
+    }
+
+    return true
+}
+
 func (combat *CombatScreen) Update() CombatState {
     combat.Counter += 1
 
@@ -225,7 +242,10 @@ func (combat *CombatScreen) Update() CombatState {
     hudImage, _ := combat.ImageCache.GetImage("cmbtfx.lbx", 28, 0)
 
     // dont allow clicks into the hud area
-    if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) && mouseY < data.ScreenHeight - hudImage.Bounds().Dy() && combat.SelectedUnit.Moving == false {
+    if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) &&
+       mouseY < data.ScreenHeight - hudImage.Bounds().Dy() &&
+       combat.SelectedUnit.Moving == false &&
+       combat.TileIsEmpty(combat.MouseTileX, combat.MouseTileY) {
         combat.SelectedUnit.Movement = combat.Counter
         combat.SelectedUnit.TargetX = combat.MouseTileX
         combat.SelectedUnit.TargetY = combat.MouseTileY

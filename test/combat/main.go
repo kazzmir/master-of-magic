@@ -28,18 +28,21 @@ func NewEngine() (*Engine, error) {
                 Facing: units.FacingDownRight,
                 X: 12,
                 Y: 10,
+                Health: 10,
             },
             &combat.ArmyUnit{
                 Unit: units.HighElfSpearmen,
                 Facing: units.FacingDownRight,
                 X: 13,
                 Y: 10,
+                Health: 10,
             },
             &combat.ArmyUnit{
                 Unit: units.HighElfSpearmen,
                 Facing: units.FacingDownRight,
                 X: 14,
                 Y: 10,
+                Health: 10,
             },
         },
     }
@@ -51,6 +54,7 @@ func NewEngine() (*Engine, error) {
                 Facing: units.FacingUpLeft,
                 X: 11,
                 Y: 19,
+                Health: 10,
             },
         },
     }
