@@ -58,22 +58,34 @@ func (map_ *Map) FindContinents() []Continent {
     columns := map_.Columns()
 
     // count all tiles connected to this one of the same kind
-    searchTiles = func(x int, y int, continent *Continent){
-        if seen[x][y] == true {
-            return
-        }
+    searchTiles = func(startX int, startY int, continent *Continent){
 
-        seen[x][y] = true
+        search := []image.Point{image.Pt(startX, startY)}
 
-        for dx := -1; dx <= 1; dx++ {
-            for dy := -1; dy <= 1; dy++ {
-                nx := x + dx
-                ny := y + dy
+        for len(search) > 0 {
 
-                if nx >= 0 && nx < columns && ny >= 0 && ny < rows {
-                    if map_.Terrain[nx][ny] == TileLand.Index {
-                        *continent = append(*continent, image.Pt(nx, ny))
-                        searchTiles(nx, ny, continent)
+            point := search[0]
+            search = search[1:]
+            x := point.X
+            y := point.Y
+
+            if seen[x][y] == true {
+                continue
+            }
+
+            seen[x][y] = true
+
+            for dx := -1; dx <= 1; dx++ {
+                for dy := -1; dy <= 1; dy++ {
+                    nx := x + dx
+                    ny := y + dy
+
+                    if nx >= 0 && nx < columns && ny >= 0 && ny < rows {
+                        if map_.Terrain[nx][ny] == TileLand.Index {
+                            *continent = append(*continent, image.Pt(nx, ny))
+                            // searchTiles(nx, ny, continent)
+                            search = append(search, image.Pt(nx, ny))
+                        }
                     }
                 }
             }
