@@ -38,7 +38,7 @@ func HSLToColor(h, s, l float64) (color.Color, error) {
 	if err != nil {
 		return nil, err
 	}
-	return color.RGBA{R: r, G: g, B: b, A: 0}, nil
+	return color.RGBA{R: r, G: g, B: b, A: 0xff}, nil
 }
 
 //HSVToColor convert HSV triple into color.Color.
@@ -47,7 +47,7 @@ func HSVToColor(h, s, v float64) (color.Color, error) {
 	if err != nil {
 		return nil, err
 	}
-	return color.RGBA{R: r, G: g, B: b, A: 0}, nil
+	return color.RGBA{R: r, G: g, B: b, A: 0xff}, nil
 }
 
 //HexToColor convert Hex string into color.Color.
@@ -56,7 +56,7 @@ func HexToColor(hex string) (color.Color, error) {
 	if err != nil {
 		return nil, err
 	}
-	return color.RGBA{R: r, G: g, B: b, A: 0}, nil
+	return color.RGBA{R: r, G: g, B: b, A: 0xff}, nil
 }
 
 //RGBToHSL converts an RGB triple to an HSL triple.

@@ -9,6 +9,7 @@ import (
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
+    "github.com/kazzmir/master-of-magic/lib/colorconv"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
@@ -113,15 +114,25 @@ func makeTiles(width int, height int) [][]Tile {
     return tiles
 }
 
-func lighten(c color.RGBA, amount uint8) color.RGBA {
-    return c
+func lighten(c color.RGBA, amount float64) color.Color {
+    h, s, l := colorconv.ColorToHSL(c)
+    l += amount/100
+    if l > 1 {
+        l = 1
+    }
+    out, err := colorconv.HSLToColor(h, s, l)
+    if err != nil {
+        log.Printf("Error in lighten: %v", err)
+        return c
+    }
+    return out
 }
 
 func makePaletteFromBanner(banner data.BannerType) color.Palette {
     var topColor color.RGBA
 
     switch banner {
-        case data.BannerGreen: topColor = color.RGBA{R: 0, G: 0x80, B: 0, A: 0xff}
+        case data.BannerGreen: topColor = color.RGBA{R: 0x20, G: 0x80, B: 0x2c, A: 0xff}
         case data.BannerBrown: topColor = color.RGBA{R: 0x82, G: 0x60, B: 0x12, A: 0xff}
     }
 
@@ -130,7 +141,7 @@ func makePaletteFromBanner(banner data.BannerType) color.Palette {
     return color.Palette{
         color.RGBA{R: 0, G: 0, B: 0, A: 0},
         color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        lighten(topColor, 10), lighten(topColor, 6), lighten(topColor, 3),
+        lighten(topColor, 15), lighten(topColor, 10), lighten(topColor, 5),
         topColor, topColor, topColor,
         topColor, topColor, topColor,
     }
@@ -626,4 +637,5 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
     combat.HudFont.Print(screen, 121, 190, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", combat.SelectedUnit.Unit.MovementSpeed))
 
     combat.AttackingWizardFont.Print(screen, 265, 170, 1, ebiten.ColorScale{}, combat.AttackingArmy.Player.Wizard.Name)
+    combat.DefendingWizardFont.Print(screen, 30, 170, 1, ebiten.ColorScale{}, combat.DefendingArmy.Player.Wizard.Name)
 }
