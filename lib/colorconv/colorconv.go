@@ -67,27 +67,27 @@ func RGBToHSL(r, g, b uint8) (h, s, l float64) {
 	Gnot := float64(g) / 255
 	Bnot := float64(b) / 255
 	Cmax, Cmin := getMaxMin(Rnot, Gnot, Bnot)
-	Δ := Cmax - Cmin
+	delta := Cmax - Cmin
 	// Lightness calculation:
 	l = (Cmax + Cmin) / 2
 	// Hue and Saturation Calculation:
-	if Δ == 0 {
+	if delta == 0 {
 		h = 0
 		s = 0
 	} else {
 		switch Cmax {
 		case Rnot:
-			h = 60 * (math.Mod((Gnot-Bnot)/Δ, 6))
+			h = 60 * (math.Mod((Gnot-Bnot)/delta, 6))
 		case Gnot:
-			h = 60 * (((Bnot - Rnot) / Δ) + 2)
+			h = 60 * (((Bnot - Rnot) / delta) + 2)
 		case Bnot:
-			h = 60 * (((Rnot - Gnot) / Δ) + 4)
+			h = 60 * (((Rnot - Gnot) / delta) + 4)
 		}
 		if h < 0 {
 			h += 360
 		}
 
-		s = Δ / (1 - math.Abs((2*l)-1))
+		s = delta / (1 - math.Abs((2*l)-1))
 	}
 
 	return h, round(s), round(l)
@@ -134,19 +134,19 @@ func RGBToHSV(r, g, b uint8) (h, s, v float64) {
 	Gnot := float64(g) / 255
 	Bnot := float64(b) / 255
 	Cmax, Cmin := getMaxMin(Rnot, Gnot, Bnot)
-	Δ := Cmax - Cmin
+	delta := Cmax - Cmin
 
 	// Hue calculation:
-	if Δ == 0 {
+	if delta == 0 {
 		h = 0
 	} else {
 		switch Cmax {
 		case Rnot:
-			h = 60 * (math.Mod((Gnot-Bnot)/Δ, 6))
+			h = 60 * (math.Mod((Gnot-Bnot)/delta, 6))
 		case Gnot:
-			h = 60 * (((Bnot - Rnot) / Δ) + 2)
+			h = 60 * (((Bnot - Rnot) / delta) + 2)
 		case Bnot:
-			h = 60 * (((Rnot - Gnot) / Δ) + 4)
+			h = 60 * (((Rnot - Gnot) / delta) + 4)
 		}
 		if h < 0 {
 			h += 360
@@ -157,7 +157,7 @@ func RGBToHSV(r, g, b uint8) (h, s, v float64) {
 	if Cmax == 0 {
 		s = 0
 	} else {
-		s = Δ / Cmax
+		s = delta / Cmax
 	}
 	// Value calculation:
 	v = Cmax
