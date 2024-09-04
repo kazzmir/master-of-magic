@@ -19,12 +19,7 @@ type Engine struct {
 func NewEngine() (*Engine, error) {
     cache := lbx.AutoCache()
 
-    screen := setup.MakeNewGameScreen()
-    err := screen.Load(cache)
-    if err != nil {
-        return nil, err
-    }
-
+    screen := setup.MakeNewGameScreen(cache)
     screen.Activate()
 
     return &Engine{

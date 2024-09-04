@@ -18,7 +18,7 @@ type AcceptYieldFunc func(yield YieldFunc) error
 
 var CoroutineFinished = fmt.Errorf("coroutine finished")
 
-func NewCoroutine(user AcceptYieldFunc) *Coroutine {
+func MakeCoroutine(user AcceptYieldFunc) *Coroutine {
     yieldTo := make(chan struct{})
     yieldFrom := make(chan struct{})
 

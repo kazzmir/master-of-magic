@@ -3,12 +3,16 @@ package main
 import (
     "log"
     _ "fmt"
-    "image/color"
+    // "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/coroutine"
+    introlib "github.com/kazzmir/master-of-magic/game/magic/intro"
+    "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/units"
+    "github.com/kazzmir/master-of-magic/game/magic/mainview"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     gamelib "github.com/kazzmir/master-of-magic/game/magic/game"
 
@@ -22,8 +26,13 @@ func stretchImage(screen *ebiten.Image, sprite *ebiten.Image){
     screen.DrawImage(sprite, &options)
 }
 
+type DrawFunc func(*ebiten.Image)
+
 type MagicGame struct {
-    LbxCache *lbx.LbxCache
+    Cache *lbx.LbxCache
+
+    MainCoroutine *coroutine.Coroutine
+    Drawer DrawFunc
 
     NewGameScreen *setup.NewGameScreen
     NewWizardScreen *setup.NewWizardScreen
@@ -31,39 +40,78 @@ type MagicGame struct {
     Game *gamelib.Game
 }
 
-func NewMagicGame() (*MagicGame, error) {
-    cache := lbx.AutoCache()
-    game := &MagicGame{
-        LbxCache: cache,
-        NewGameScreen: setup.MakeNewGameScreen(),
-        NewWizardScreen: setup.MakeNewWizardScreen(cache),
-    }
-
-    /*
-    err := game.NewGameScreen.Load(game.LbxCache)
+func runIntro(yield coroutine.YieldFunc, game *MagicGame) {
+    intro, err := introlib.MakeIntro(game.Cache, introlib.DefaultAnimationSpeed)
     if err != nil {
-        return nil, err
-    }
-    game.NewGameScreen.Activate()
-    */
-
-    /*
-    err := game.NewWizardScreen.Load(game.LbxCache)
-    if err != nil {
-        return nil, err
-    }
-    game.NewWizardScreen.Activate()
-    */
-
-    wizard := setup.WizardCustom{
-        Banner: data.BannerBlue,
+        log.Printf("Unable to run intro: %v", err)
+        return
     }
 
-    game.Game = gamelib.MakeGame(game.LbxCache)
-    game.Game.Plane = data.PlaneArcanus
-    game.Game.Activate()
+    game.Drawer = func(screen *ebiten.Image) {
+        intro.Draw(screen)
+    }
 
-    player := game.Game.AddPlayer(wizard)
+    for intro.Update() == introlib.IntroStateRunning {
+        yield()
+
+        if ebiten.IsKeyPressed(ebiten.KeySpace) {
+            return
+        }
+    }
+}
+
+func runNewGame(yield coroutine.YieldFunc, game *MagicGame) setup.NewGameSettings {
+    newGame := setup.MakeNewGameScreen(game.Cache)
+
+    game.Drawer = func(screen *ebiten.Image) {
+        newGame.Draw(screen)
+    }
+
+    for newGame.Update() == setup.NewGameStateRunning {
+        yield()
+    }
+
+    return newGame.Settings
+}
+
+func runNewWizard(yield coroutine.YieldFunc, game *MagicGame) setup.WizardCustom {
+    newWizard := setup.MakeNewWizardScreen(game.Cache)
+
+    game.Drawer = func(screen *ebiten.Image) {
+        newWizard.Draw(screen)
+    }
+
+    for newWizard.Update() != setup.NewWizardScreenStateFinished {
+        yield()
+    }
+
+    return newWizard.CustomWizard
+}
+
+func runMainMenu(yield coroutine.YieldFunc, game *MagicGame) mainview.MainScreenState {
+    menu := mainview.MakeMainScreen(game.Cache)
+
+    game.Drawer = func(screen *ebiten.Image) {
+        menu.Draw(screen)
+    }
+
+    for menu.Update() == mainview.MainScreenStateRunning {
+        yield()
+    }
+
+    return menu.State
+}
+
+func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup.NewGameSettings, wizard setup.WizardCustom) {
+    game := gamelib.MakeGame(magic.Cache)
+    game.Plane = data.PlaneArcanus
+    game.Activate()
+
+    magic.Drawer = func(screen *ebiten.Image) {
+        game.Draw(screen)
+    }
+
+    player := game.AddPlayer(wizard)
 
     player.AddUnit(playerlib.Unit{
         Unit: units.GreatDrake,
@@ -75,51 +123,62 @@ func NewMagicGame() (*MagicGame, error) {
 
     player.LiftFog(4, 5, 3)
 
-    game.Game.DoNextTurn()
+    game.DoNextTurn()
+
+    for game.Update() != gamelib.GameStateQuit {
+        keys := make([]ebiten.Key, 0)
+        keys = inpututil.AppendJustPressedKeys(keys)
+
+        for _, key := range keys {
+            if key == ebiten.KeyEscape || key == ebiten.KeyCapsLock {
+                // return ebiten.Termination
+                return
+            }
+        }
+
+        yield()
+    }
+}
+
+func runGame(yield coroutine.YieldFunc, game *MagicGame) error {
+    runIntro(yield, game)
+    state := runMainMenu(yield, game)
+    switch state {
+        case mainview.MainScreenStateQuit: return ebiten.Termination
+        case mainview.MainScreenStateNewGame:
+            // yield so that clicks from the menu don't bleed into the next part
+            yield()
+            settings := runNewGame(yield, game)
+            yield()
+            wizard := runNewWizard(yield, game)
+            yield()
+            runGameInstance(yield, game, settings, wizard)
+    }
+
+    return ebiten.Termination
+}
+
+func NewMagicGame() (*MagicGame, error) {
+    var game *MagicGame
+
+    run := func(yield coroutine.YieldFunc) error {
+        return runGame(yield, game)
+    }
+
+    cache := lbx.AutoCache()
+    game = &MagicGame{
+        Cache: cache,
+        MainCoroutine: coroutine.MakeCoroutine(run),
+        Drawer: nil,
+    }
 
     return game, nil
 }
 
 func (game *MagicGame) Update() error {
-    keys := make([]ebiten.Key, 0)
-    keys = inpututil.AppendJustPressedKeys(keys)
 
-    for _, key := range keys {
-        if key == ebiten.KeyEscape || key == ebiten.KeyCapsLock {
-            return ebiten.Termination
-        }
-    }
-
-    if game.NewGameScreen != nil && game.NewGameScreen.IsActive() {
-        switch game.NewGameScreen.Update() {
-            case setup.NewGameStateRunning:
-            case setup.NewGameStateOk:
-                game.NewGameScreen.Deactivate()
-                err := game.NewWizardScreen.Load(game.LbxCache)
-                if err != nil {
-                    return err
-                }
-                game.NewWizardScreen.Activate()
-            case setup.NewGameStateCancel:
-                return ebiten.Termination
-        }
-    }
-
-    if game.NewWizardScreen != nil && game.NewWizardScreen.IsActive() {
-        switch game.NewWizardScreen.Update() {
-            case setup.NewWizardScreenStateFinished:
-                game.NewWizardScreen.Deactivate()
-                wizard := game.NewWizardScreen.CustomWizard
-                log.Printf("Launch game with wizard: %+v\n", wizard)
-                game.Game = gamelib.MakeGame(game.LbxCache)
-                game.Game.AddPlayer(wizard)
-                game.Game.Activate()
-                game.NewWizardScreen = nil
-        }
-    }
-
-    if game.Game != nil && game.Game.IsActive() {
-        game.Game.Update()
+    if game.MainCoroutine.Run() != nil {
+        return ebiten.Termination
     }
 
     return nil
@@ -130,18 +189,10 @@ func (game *MagicGame) Layout(outsideWidth int, outsideHeight int) (int, int) {
 }
 
 func (game *MagicGame) Draw(screen *ebiten.Image) {
-    screen.Fill(color.RGBA{0x80, 0xa0, 0xc0, 0xff})
+    // screen.Fill(color.RGBA{0x80, 0xa0, 0xc0, 0xff})
 
-    if game.NewGameScreen.IsActive() {
-        game.NewGameScreen.Draw(screen)
-    }
-
-    if game.NewWizardScreen != nil && game.NewWizardScreen.IsActive() {
-        game.NewWizardScreen.Draw(screen)
-    }
-
-    if game.Game != nil && game.Game.IsActive() {
-        game.Game.Draw(screen)
+    if game.Drawer != nil {
+        game.Drawer(screen)
     }
 }
 
@@ -151,6 +202,8 @@ func main() {
     ebiten.SetWindowSize(data.ScreenWidth * 5, data.ScreenHeight * 5)
     ebiten.SetWindowTitle("magic")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
+
+    audio.Initialize()
 
     game, err := NewMagicGame()
     

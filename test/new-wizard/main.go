@@ -20,10 +20,6 @@ func NewEngine() (*Engine, error) {
     cache := lbx.AutoCache()
 
     screen := setup.MakeNewWizardScreen(cache)
-    err := screen.Load(cache)
-    if err != nil {
-        return nil, err
-    }
 
     screen.Activate()
 

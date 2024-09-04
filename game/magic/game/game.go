@@ -44,6 +44,7 @@ const (
     GameStateUnitMoving
     GameStateCityView
     GameStateMagicView
+    GameStateQuit
 )
 
 type Game struct {

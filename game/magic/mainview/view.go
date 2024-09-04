@@ -15,11 +15,14 @@ type MainScreenState int
 
 const (
     MainScreenStateRunning MainScreenState = iota
+    MainScreenStateQuit
+    MainScreenStateNewGame
 )
 
 type MainScreen struct {
     Counter uint64
     Cache *lbx.LbxCache
+    State MainScreenState
     ImageCache util.ImageCache
     UI *uilib.UI
 }
@@ -29,6 +32,7 @@ func MakeMainScreen(cache *lbx.LbxCache) *MainScreen {
         Counter: 0,
         Cache: cache,
         ImageCache: util.MakeImageCache(cache),
+        State: MainScreenStateRunning,
     }
 
     main.UI = main.MakeUI()
@@ -74,6 +78,9 @@ func (main *MainScreen) MakeUI() *uilib.UI {
         imageIndex := 1
         return &uilib.UIElement{
             Rect: rect,
+            LeftClick: func(element *uilib.UIElement){
+                action()
+            },
             Inside: func(element *uilib.UIElement, x, y int) {
                 imageIndex = 0
             },
@@ -101,12 +108,12 @@ func (main *MainScreen) MakeUI() *uilib.UI {
 
     // new game
     elements = append(elements, makeButton(3, 110, 130 + 16 * 2, func(){
-        log.Printf("new game")
+        main.State = MainScreenStateNewGame
     }))
 
     // exit
     elements = append(elements, makeButton(4, 110, 130 + 16 * 3, func(){
-        log.Printf("exit")
+        main.State = MainScreenStateQuit
     }))
 
     ui.SetElementsFromArray(elements)
@@ -119,7 +126,7 @@ func (main *MainScreen) Update() MainScreenState {
 
     main.UI.StandardUpdate()
 
-    return MainScreenStateRunning
+    return main.State
 }
 
 func (main *MainScreen) Draw(screen *ebiten.Image) {

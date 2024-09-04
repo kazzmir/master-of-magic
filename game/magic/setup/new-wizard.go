@@ -209,6 +209,22 @@ const (
     NewWizardScreenStateFinished
 )
 
+func (state NewWizardScreenState) String() string {
+    switch state {
+        case NewWizardScreenStateSelectWizard: return "select wizard"
+        case NewWizardScreenStateCustomPicture: return "custom picture"
+        case NewWizardScreenStateCustomName: return "custom name"
+        case NewWizardScreenStateCustomAbility: return "custom ability"
+        case NewWizardScreenStateCustomBooks: return "custom books"
+        case NewWizardScreenStateSelectSpells: return "select spells"
+        case NewWizardScreenStateSelectRace: return "select race"
+        case NewWizardScreenStateSelectBanner: return "select banner"
+        case NewWizardScreenStateFinished: return "finished"
+    }
+
+    return "?"
+}
+
 type WizardCustom struct {
     Name string
     // FIXME: remove portrait
@@ -544,7 +560,6 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *uilib.UI {
             LeftClick: func(this *uilib.UIElement){
                 screen.State = NewWizardScreenStateCustomPicture
                 screen.UI = screen.MakeCustomPictureUI()
-
             },
             Inside: func(this *uilib.UIElement, x int, y int){
                 screen.CurrentWizard = -1
@@ -2112,11 +2127,19 @@ func randomizeBookOrder(books int) []int {
 }
 
 func MakeNewWizardScreen(cache *lbx.LbxCache) *NewWizardScreen {
-    return &NewWizardScreen{
+    out := &NewWizardScreen{
         LbxCache: cache,
         ImageCache: util.MakeImageCache(cache),
         CurrentWizard: 0,
         BooksOrder: randomizeBookOrder(12),
         State: NewWizardScreenStateSelectWizard,
     }
+
+    err := out.Load(cache)
+    if err != nil {
+        log.Printf("Error loading new wizard screen: %v", err)
+        return nil
+    }
+
+    return out
 }
