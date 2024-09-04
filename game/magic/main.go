@@ -3,7 +3,7 @@ package main
 import (
     "log"
     _ "fmt"
-    "image/color"
+    // "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
@@ -12,6 +12,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/units"
+    "github.com/kazzmir/master-of-magic/game/magic/mainview"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     gamelib "github.com/kazzmir/master-of-magic/game/magic/game"
 
@@ -87,6 +88,20 @@ func runNewWizard(yield coroutine.YieldFunc, game *MagicGame) setup.WizardCustom
     return newWizard.CustomWizard
 }
 
+func runMainMenu(yield coroutine.YieldFunc, game *MagicGame) mainview.MainScreenState {
+    menu := mainview.MakeMainScreen(game.Cache)
+
+    game.Drawer = func(screen *ebiten.Image) {
+        menu.Draw(screen)
+    }
+
+    for menu.Update() == mainview.MainScreenStateRunning {
+        yield()
+    }
+
+    return menu.State
+}
+
 func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup.NewGameSettings, wizard setup.WizardCustom) {
     game := gamelib.MakeGame(magic.Cache)
     game.Plane = data.PlaneArcanus
@@ -117,10 +132,14 @@ func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup
 
 func runGame(yield coroutine.YieldFunc, game *MagicGame) error {
     runIntro(yield, game)
-    settings := runNewGame(yield, game)
-    wizard := runNewWizard(yield, game)
-
-    runGameInstance(yield, game, settings, wizard)
+    state := runMainMenu(yield, game)
+    switch state {
+        case mainview.MainScreenStateQuit: return ebiten.Termination
+        case mainview.MainScreenStateNewGame:
+            settings := runNewGame(yield, game)
+            wizard := runNewWizard(yield, game)
+            runGameInstance(yield, game, settings, wizard)
+    }
 
     return ebiten.Termination
 }
@@ -239,7 +258,7 @@ func (game *MagicGame) Layout(outsideWidth int, outsideHeight int) (int, int) {
 }
 
 func (game *MagicGame) Draw(screen *ebiten.Image) {
-    screen.Fill(color.RGBA{0x80, 0xa0, 0xc0, 0xff})
+    // screen.Fill(color.RGBA{0x80, 0xa0, 0xc0, 0xff})
 
     if game.Drawer != nil {
         game.Drawer(screen)

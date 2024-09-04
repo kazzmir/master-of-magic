@@ -531,6 +531,7 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *uilib.UI {
 
     elements := screen.MakeWizardUIElements(clickFunc, insideFunc)
 
+    log.Printf("Add custom wizard")
     // custom element
     elements = append(elements, (func () *uilib.UIElement {
         background := screen.WizardSlots[len(elements)].Background
