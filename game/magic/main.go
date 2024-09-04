@@ -55,7 +55,7 @@ func runIntro(yield coroutine.YieldFunc, game *MagicGame) {
     for intro.Update() == introlib.IntroStateRunning {
         yield()
 
-        if ebiten.IsKeyPressed(ebiten.KeySpace) {
+        if inpututil.IsKeyJustPressed(ebiten.KeySpace) || inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
             return
         }
     }
@@ -97,13 +97,18 @@ func runMainMenu(yield coroutine.YieldFunc, game *MagicGame) mainview.MainScreen
     }
 
     for menu.Update() == mainview.MainScreenStateRunning {
+
+        if inpututil.IsKeyJustPressed(ebiten.KeyEscape) || inpututil.IsKeyJustPressed(ebiten.KeyCapsLock) {
+            return mainview.MainScreenStateQuit
+        }
+
         yield()
     }
 
     return menu.State
 }
 
-func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup.NewGameSettings, wizard setup.WizardCustom) {
+func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup.NewGameSettings, wizard setup.WizardCustom) error {
     game := gamelib.MakeGame(magic.Cache)
     game.Plane = data.PlaneArcanus
     game.Activate()
@@ -127,18 +132,14 @@ func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup
     game.DoNextTurn()
 
     for game.Update() != gamelib.GameStateQuit {
-        keys := make([]ebiten.Key, 0)
-        keys = inpututil.AppendJustPressedKeys(keys)
-
-        for _, key := range keys {
-            if key == ebiten.KeyEscape || key == ebiten.KeyCapsLock {
-                // return ebiten.Termination
-                return
-            }
+        if inpututil.IsKeyJustPressed(ebiten.KeyEscape) || inpututil.IsKeyJustPressed(ebiten.KeyCapsLock) {
+            return ebiten.Termination
         }
 
         yield()
     }
+
+    return nil
 }
 
 func loadData(yield coroutine.YieldFunc, game *MagicGame) error {
@@ -154,13 +155,8 @@ func loadData(yield coroutine.YieldFunc, game *MagicGame) error {
             yield()
         }
 
-        keys := make([]ebiten.Key, 0)
-        keys = inpututil.AppendJustPressedKeys(keys)
-
-        for _, key := range keys {
-            if key == ebiten.KeyEscape || key == ebiten.KeyCapsLock {
-                return ebiten.Termination
-            }
+        if inpututil.IsKeyJustPressed(ebiten.KeyEscape) || inpututil.IsKeyJustPressed(ebiten.KeyCapsLock) {
+            return ebiten.Termination
         }
     }
 
@@ -187,7 +183,10 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame) error {
             yield()
             wizard := runNewWizard(yield, game)
             yield()
-            runGameInstance(yield, game, settings, wizard)
+            err := runGameInstance(yield, game, settings, wizard)
+            if err != nil {
+                return err
+            }
     }
 
     return ebiten.Termination
