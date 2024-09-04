@@ -447,6 +447,14 @@ func (combat *CombatScreen) withinMeleeRange(attacker *ArmyUnit, defender *ArmyU
     return xDiff <= 1 && yDiff <= 1
 }
 
+func (combat *CombatScreen) canAttack(attacker *ArmyUnit, defender *ArmyUnit) bool {
+    if defender.Unit.Flying && !attacker.Unit.Flying {
+        return false
+    }
+
+    return true
+}
+
 func (combat *CombatScreen) Update() CombatState {
     combat.Counter += 1
 
@@ -472,7 +480,7 @@ func (combat *CombatScreen) Update() CombatState {
 
            defender := combat.GetUnit(combat.MouseTileX, combat.MouseTileY)
 
-           if defender != nil && defender.Team != combat.SelectedUnit.Team && combat.withinMeleeRange(combat.SelectedUnit, defender){
+           if defender != nil && defender.Team != combat.SelectedUnit.Team && combat.withinMeleeRange(combat.SelectedUnit, defender) && combat.canAttack(combat.SelectedUnit, defender){
                combat.SelectedUnit.Attacking = true
                combat.SelectedUnit.AttackingCounter = combat.Counter
 
