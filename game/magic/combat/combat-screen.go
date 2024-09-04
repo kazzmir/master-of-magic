@@ -488,6 +488,7 @@ func (combat *CombatScreen) Update() CombatState {
                combat.SelectedUnit.Facing = faceTowards(combat.SelectedUnit.X, combat.SelectedUnit.Y, combat.MouseTileX, combat.MouseTileY)
                defender.Facing = faceTowards(defender.X, defender.Y, combat.SelectedUnit.X, combat.SelectedUnit.Y)
 
+               // FIXME: sound is based on attacker type, and possibly defender type
                sound, err := audio.LoadCombatSound(combat.Cache, 1)
                if err == nil {
                    sound.Play()
