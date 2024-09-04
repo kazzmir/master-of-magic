@@ -141,6 +141,16 @@ func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup
 }
 
 func runGame(yield coroutine.YieldFunc, game *MagicGame) error {
+    var cache *lbx.LbxCache
+    for cache == nil {
+        cache = lbx.AutoCache()
+        if cache == nil {
+            yield()
+        }
+    }
+
+    game.Cache = cache
+
     runIntro(yield, game)
     state := runMainMenu(yield, game)
     switch state {
@@ -165,9 +175,7 @@ func NewMagicGame() (*MagicGame, error) {
         return runGame(yield, game)
     }
 
-    cache := lbx.AutoCache()
     game = &MagicGame{
-        Cache: cache,
         MainCoroutine: coroutine.MakeCoroutine(run),
         Drawer: nil,
     }
