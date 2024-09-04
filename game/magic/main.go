@@ -11,8 +11,8 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/data"
-    // "github.com/kazzmir/master-of-magic/game/magic/units"
-    // playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
+    "github.com/kazzmir/master-of-magic/game/magic/units"
+    playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     gamelib "github.com/kazzmir/master-of-magic/game/magic/game"
 
     "github.com/hajimehoshi/ebiten/v2"
@@ -59,7 +59,7 @@ func runIntro(yield coroutine.YieldFunc, game *MagicGame) {
     }
 }
 
-func runNewGame(yield coroutine.YieldFunc, game *MagicGame) {
+func runNewGame(yield coroutine.YieldFunc, game *MagicGame) setup.NewGameSettings {
     newGame := setup.MakeNewGameScreen(game.Cache)
 
     game.Drawer = func(screen *ebiten.Image) {
@@ -69,11 +69,58 @@ func runNewGame(yield coroutine.YieldFunc, game *MagicGame) {
     for newGame.Update() == setup.NewGameStateRunning {
         yield()
     }
+
+    return newGame.Settings
+}
+
+func runNewWizard(yield coroutine.YieldFunc, game *MagicGame) setup.WizardCustom {
+    newWizard := setup.MakeNewWizardScreen(game.Cache)
+
+    game.Drawer = func(screen *ebiten.Image) {
+        newWizard.Draw(screen)
+    }
+
+    for newWizard.Update() != setup.NewWizardScreenStateFinished {
+        yield()
+    }
+
+    return newWizard.CustomWizard
+}
+
+func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup.NewGameSettings, wizard setup.WizardCustom) {
+    game := gamelib.MakeGame(magic.Cache)
+    game.Plane = data.PlaneArcanus
+    game.Activate()
+
+    magic.Drawer = func(screen *ebiten.Image) {
+        game.Draw(screen)
+    }
+
+    player := game.AddPlayer(wizard)
+
+    player.AddUnit(playerlib.Unit{
+        Unit: units.GreatDrake,
+        Plane: data.PlaneArcanus,
+        Banner: wizard.Banner,
+        X: 5,
+        Y: 5,
+    })
+
+    player.LiftFog(4, 5, 3)
+
+    game.DoNextTurn()
+
+    for game.Update() != gamelib.GameStateQuit {
+        yield()
+    }
 }
 
 func runGame(yield coroutine.YieldFunc, game *MagicGame) error {
     runIntro(yield, game)
-    runNewGame(yield, game)
+    settings := runNewGame(yield, game)
+    wizard := runNewWizard(yield, game)
+
+    runGameInstance(yield, game, settings, wizard)
 
     return ebiten.Termination
 }

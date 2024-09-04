@@ -2112,11 +2112,19 @@ func randomizeBookOrder(books int) []int {
 }
 
 func MakeNewWizardScreen(cache *lbx.LbxCache) *NewWizardScreen {
-    return &NewWizardScreen{
+    out := &NewWizardScreen{
         LbxCache: cache,
         ImageCache: util.MakeImageCache(cache),
         CurrentWizard: 0,
         BooksOrder: randomizeBookOrder(12),
         State: NewWizardScreenStateSelectWizard,
     }
+
+    err := out.Load(cache)
+    if err != nil {
+        log.Printf("Error loading new wizard screen: %v", err)
+        return nil
+    }
+
+    return out
 }
