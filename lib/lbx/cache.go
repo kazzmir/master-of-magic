@@ -151,7 +151,6 @@ func AutoCache() *LbxCache {
 
     droppedFiles := ebiten.DroppedFiles()
     if droppedFiles != nil {
-        log.Printf("Dropped files fs: %v", droppedFiles)
         cache := searchFs(droppedFiles)
         if cache != nil {
             return cache

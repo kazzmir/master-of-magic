@@ -17,6 +17,7 @@ import (
     gamelib "github.com/kazzmir/master-of-magic/game/magic/game"
 
     "github.com/hajimehoshi/ebiten/v2"
+    "github.com/hajimehoshi/ebiten/v2/ebitenutil"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
@@ -140,16 +141,40 @@ func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup
     }
 }
 
-func runGame(yield coroutine.YieldFunc, game *MagicGame) error {
+func loadData(yield coroutine.YieldFunc, game *MagicGame) error {
+    game.Drawer = func(screen *ebiten.Image) {
+        ebitenutil.DebugPrintAt(screen, "Drag and drop a zip file that contains", 10, 10)
+        ebitenutil.DebugPrintAt(screen, "the master of magic data files", 10, 30)
+    }
+
     var cache *lbx.LbxCache
     for cache == nil {
         cache = lbx.AutoCache()
         if cache == nil {
             yield()
         }
+
+        keys := make([]ebiten.Key, 0)
+        keys = inpututil.AppendJustPressedKeys(keys)
+
+        for _, key := range keys {
+            if key == ebiten.KeyEscape || key == ebiten.KeyCapsLock {
+                return ebiten.Termination
+            }
+        }
     }
 
     game.Cache = cache
+
+    return nil
+}
+
+func runGame(yield coroutine.YieldFunc, game *MagicGame) error {
+
+    err := loadData(yield, game)
+    if err != nil {
+        return err
+    }
 
     runIntro(yield, game)
     state := runMainMenu(yield, game)
