@@ -21,18 +21,7 @@ type View struct {
     Mice []*ebiten.Image
 }
 
-func MakeView(cache *lbx.LbxCache) (*View, error) {
-
-    fontLbx, err := cache.GetLbxFile("fonts.lbx")
-    if err != nil {
-        return nil, err
-    }
-
-    data, err := fontLbx.RawData(2)
-    if err != nil {
-        return nil, err
-    }
-
+func readMousePics(data []byte) ([]*ebiten.Image, error) {
     var mainPalette color.Palette
 
     paletteData := data[0:256*3]
@@ -79,9 +68,30 @@ func MakeView(cache *lbx.LbxCache) (*View, error) {
         mousePics = append(mousePics, pic)
     }
 
+    return mousePics, nil
+}
+
+func MakeView(cache *lbx.LbxCache) (*View, error) {
+
+    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        return nil, err
+    }
+
+    var all []*ebiten.Image
+    for i := 2; i < 9; i++ {
+        data, err := fontLbx.RawData(i)
+        if err != nil {
+            return nil, err
+        }
+
+        mousePics, err := readMousePics(data)
+        all = append(all, mousePics...)
+    }
+
     return &View{
         Cache: cache,
-        Mice: mousePics,
+        Mice: all,
     }, nil
 }
 
@@ -109,9 +119,15 @@ func (view *View) Draw(screen *ebiten.Image){
     var options ebiten.DrawImageOptions
     options.GeoM.Scale(3, 3)
     options.GeoM.Translate(10, 10)
+    x := 0
     for _, pic := range view.Mice {
         options.GeoM.Translate(60, 0)
         screen.DrawImage(pic, &options)
+        x += 1
+        if x > 10 {
+            options.GeoM.Translate(float64(-(x * 60)), 60)
+            x = 0
+        }
     }
 }
 
