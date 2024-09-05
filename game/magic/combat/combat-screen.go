@@ -16,6 +16,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/player"
+    "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -345,7 +346,8 @@ func (combat *CombatScreen) MakeUI() *uilib.UI {
 
     // spell
     elements = append(elements, makeButton(1, 0, 0, func(){
-        // FIXME
+        spellUI := spellbook.MakeSpellBookCastUI(ui, combat.Cache)
+        ui.AddElements(spellUI)
     }))
 
     // wait
@@ -591,7 +593,9 @@ func (combat *CombatScreen) Update() CombatState {
     hudImage, _ := combat.ImageCache.GetImage("cmbtfx.lbx", 28, 0)
 
     // dont allow clicks into the hud area
-    if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) &&
+    // also don't allow clicks into the game if the ui is showing some overlay
+    if combat.UI.GetHighestLayerValue() == 0 &&
+       inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) &&
        mouseY < data.ScreenHeight - hudImage.Bounds().Dy() &&
        combat.SelectedUnit.Moving == false && combat.SelectedUnit.Attacking == false {
 

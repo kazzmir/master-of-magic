@@ -517,6 +517,8 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
     return elements
 }
 
+// FIXME: take in the wizard/player that is casting the spell
+// somehow return the spell chosen
 func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
     var elements []*uilib.UIElement
 
@@ -533,6 +535,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
             })
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            // FIXME: do the whole page flipping thing with distorted pages
             vector.DrawFilledRect(screen, 0, 0, float32(screen.Bounds().Dx()), float32(screen.Bounds().Dy()), color.RGBA{R: 0, G: 0, B: 0, A: 128}, false)
 
             background, _ := imageCache.GetImage("spells.lbx", 0, 0)
