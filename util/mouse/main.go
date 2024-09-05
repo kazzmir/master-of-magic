@@ -3,11 +3,11 @@ package main
 import (
     "log"
     "fmt"
-    "bytes"
 
     "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/mouse"
 
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -19,57 +19,8 @@ const ScreenHeight = 768
 type View struct {
     Cache *lbx.LbxCache
     Mice []*ebiten.Image
-}
-
-func readMousePics(data []byte) ([]*ebiten.Image, error) {
-    var mainPalette color.Palette
-
-    paletteData := data[0:256*3]
-    for i := 0; i < 256; i++ {
-        r := paletteData[i*3]
-        g := paletteData[i*3+1]
-        b := paletteData[i*3+2]
-        // log.Printf("palette[%d] = %d, %d, %d", i, r, g, b)
-        mainPalette = append(mainPalette, color.RGBA{R: r, G: g, B: b, A: 255})
-    }
-
-    // make transparent
-    mainPalette[0] = color.RGBA{R: 0, G: 0, B: 0, A: 0}
-
-    // 32 arrays of 16 colors
-    fontColors := data[256*3:256*3 + 1280-768]
-    _ = fontColors
-
-    // each pointer is 0x100 bytes
-    mouseData := data[1280:5376]
-
-    length := 0x100
-
-    var mousePics []*ebiten.Image
-
-    usePalette := lbx.GetDefaultPalette()
-    for i := 0; i < 16; i++ {
-        mouse := mouseData[i*length:i*length + length]
-        pic := ebiten.NewImage(16, 16)
-
-        reader := bytes.NewReader(mouse)
-
-        for x := 0; x < 16; x++ {
-            for y := 0; y < 16; y++ {
-                colorIndex, err := reader.ReadByte()
-                if err != nil {
-                    return nil, err
-                }
-
-                color := usePalette[colorIndex]
-                pic.Set(x, y, color)
-            }
-        }
-
-        mousePics = append(mousePics, pic)
-    }
-
-    return mousePics, nil
+    Cast []*ebiten.Image
+    Counter uint64
 }
 
 func MakeView(cache *lbx.LbxCache) (*View, error) {
@@ -81,22 +32,35 @@ func MakeView(cache *lbx.LbxCache) (*View, error) {
 
     var all []*ebiten.Image
     for i := 2; i < 9; i++ {
+        /*
         data, err := fontLbx.RawData(i)
         if err != nil {
             return nil, err
         }
 
         mousePics, err := readMousePics(data)
+        */
+        mousePics, err := mouse.ReadMouseImages(fontLbx, i)
+        if err != nil {
+            return nil, err
+        }
         all = append(all, mousePics...)
+    }
+
+    castImages, err := mouse.GetMouseCast(cache)
+    if err != nil {
+        return nil, err
     }
 
     return &View{
         Cache: cache,
         Mice: all,
+        Cast: castImages,
     }, nil
 }
 
 func (view *View) Update() error {
+    view.Counter += 1
     var keys []ebiten.Key
     keys = make([]ebiten.Key, 0)
     keys = inpututil.AppendJustPressedKeys(keys)
@@ -131,6 +95,13 @@ func (view *View) Draw(screen *ebiten.Image){
             x = 0
         }
     }
+
+    mouseX, mouseY := ebiten.CursorPosition()
+    index := int((view.Counter/4) % uint64(len(view.Cast)))
+    options.GeoM.Reset()
+    options.GeoM.Scale(3, 3)
+    options.GeoM.Translate(float64(mouseX), float64(mouseY))
+    screen.DrawImage(view.Cast[index], &options)
 }
 
 func main(){
@@ -148,6 +119,7 @@ func main(){
     ebiten.SetWindowSize(ScreenWidth, ScreenHeight)
     ebiten.SetWindowTitle("mouse viewer")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
+    ebiten.SetCursorMode(ebiten.CursorModeHidden)
     
     err = ebiten.RunGame(editor)
     if err != nil {
