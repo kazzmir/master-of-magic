@@ -10,6 +10,7 @@ import (
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
+    "github.com/kazzmir/master-of-magic/lib/mouse"
     "github.com/kazzmir/master-of-magic/lib/colorconv"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/game/magic/units"
@@ -90,6 +91,8 @@ type CombatScreen struct {
 
     TurnAttacker int
     TurnDefender int
+
+    Mouse *mouse.MouseData
 
     Turn Team
     CurrentTurn int
@@ -244,11 +247,18 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
         unit.Team = TeamAttacker
     }
 
+    mouseData, err := mouse.MakeMouseData(cache)
+    if err != nil {
+        log.Printf("Error loading mouse data: %v", err)
+        return nil
+    }
+
     // FIXME: do layout of armys
 
     combat := &CombatScreen{
         Cache: cache,
         ImageCache: imageCache,
+        Mouse: mouseData,
         Turn: TeamDefender,
         CurrentTurn: 1,
         DefendingArmy: defendingArmy,
@@ -825,4 +835,9 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
     }
 
     combat.UI.Draw(combat.UI, screen)
+
+    var mouseOptions ebiten.DrawImageOptions
+    mouseX, mouseY := ebiten.CursorPosition()
+    mouseOptions.GeoM.Translate(float64(mouseX), float64(mouseY))
+    screen.DrawImage(combat.Mouse.Normal, &mouseOptions)
 }

@@ -118,6 +118,7 @@ func main(){
     ebiten.SetWindowSize(data.ScreenWidth * 5, data.ScreenHeight * 5)
     ebiten.SetWindowTitle("combat screen")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
+    ebiten.SetCursorMode(ebiten.CursorModeHidden)
 
     audio.Initialize()
 
