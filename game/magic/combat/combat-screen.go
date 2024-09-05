@@ -322,77 +322,57 @@ func (combat *CombatScreen) MakeUI() *uilib.UI {
     buttonX := float64(139)
     buttonY := float64(167)
 
-    elements = append(elements, &uilib.UIElement{
-        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            var options ebiten.DrawImageOptions
-            spellButtons, _ := combat.ImageCache.GetImages("compix.lbx", 1)
-            options.GeoM.Reset()
-            options.GeoM.Translate(buttonX, buttonY)
-            screen.DrawImage(spellButtons[0], &options)
-        },
-    })
+    makeButton := func(lbxIndex int, x int, y int, action func()) *uilib.UIElement {
+        buttons, _ := combat.ImageCache.GetImages("compix.lbx", lbxIndex)
+        rect := image.Rect(0, 0, buttons[0].Bounds().Dx(), buttons[0].Bounds().Dy()).Add(image.Point{int(buttonX) + buttons[0].Bounds().Dx() * x, int(buttonY) + buttons[0].Bounds().Dy() * y})
+        index := 0
+        return &uilib.UIElement{
+            Rect: rect,
+            LeftClick: func(element *uilib.UIElement){
+                action()
+                index = 1
+            },
+            LeftClickRelease: func(element *uilib.UIElement){
+                index = 0
+            },
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
+                screen.DrawImage(buttons[index], &options)
+            },
+        }
+    }
+
+    // spell
+    elements = append(elements, makeButton(1, 0, 0, func(){
+        // FIXME
+    }))
 
     // wait
-    waitButtons, _ := combat.ImageCache.GetImages("compix.lbx", 2)
-    waitRect := image.Rect(0, 0, waitButtons[0].Bounds().Dx(), waitButtons[0].Bounds().Dy()).Add(image.Point{int(buttonX) + waitButtons[0].Bounds().Dx(), int(buttonY)})
-    elements = append(elements, &uilib.UIElement{
-        Rect: waitRect,
-        LeftClick: func(element *uilib.UIElement){
-            combat.NextUnit()
-        },
-        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            var options ebiten.DrawImageOptions
-            options.GeoM.Translate(float64(waitRect.Min.X), float64(waitRect.Min.Y))
-            screen.DrawImage(waitButtons[0], &options)
-        },
-    })
+    elements = append(elements, makeButton(2, 1, 0, func(){
+        combat.NextUnit()
+    }))
 
-    elements = append(elements, &uilib.UIElement{
-        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            var options ebiten.DrawImageOptions
+    // info
+    elements = append(elements, makeButton(20, 0, 1, func(){
+        // FIXME
+    }))
 
-            infoButtons, _ := combat.ImageCache.GetImages("compix.lbx", 20)
-            options.GeoM.Translate(buttonX, buttonY)
-            options.GeoM.Translate(0, float64(infoButtons[0].Bounds().Dy()))
-            screen.DrawImage(infoButtons[0], &options)
-        },
-    })
+    // auto
+    elements = append(elements, makeButton(4, 1, 1, func(){
+        // FIXME
+    }))
 
-    elements = append(elements, &uilib.UIElement{
-        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            autoButtons, _ := combat.ImageCache.GetImages("compix.lbx", 4)
-            var options ebiten.DrawImageOptions
-            options.GeoM.Translate(buttonX, buttonY)
-            options.GeoM.Translate(float64(autoButtons[0].Bounds().Dx()), float64(autoButtons[0].Bounds().Dy()))
-            screen.DrawImage(autoButtons[0], &options)
-        },
-    })
-
-    elements = append(elements, &uilib.UIElement{
-        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            var options ebiten.DrawImageOptions
-            fleeButtons, _ := combat.ImageCache.GetImages("compix.lbx", 21)
-            options.GeoM.Translate(buttonX, buttonY)
-            options.GeoM.Translate(0, float64(fleeButtons[0].Bounds().Dy()) * 2)
-            screen.DrawImage(fleeButtons[0], &options)
-        },
-    })
+    // flee
+    elements = append(elements, makeButton(21, 0, 2, func(){
+        // FIXME
+    }))
 
     // done
-    doneButtons, _ := combat.ImageCache.GetImages("compix.lbx", 3)
-    doneRect := image.Rect(0, 0, doneButtons[0].Bounds().Dx(), doneButtons[0].Bounds().Dy()).Add(image.Point{int(buttonX) + doneButtons[0].Bounds().Dx(), int(buttonY) + doneButtons[0].Bounds().Dy() * 2})
-    elements = append(elements, &uilib.UIElement{
-        Rect: doneRect,
-        LeftClick: func(element *uilib.UIElement){
-            combat.SelectedUnit.LastTurn = combat.CurrentTurn
-            combat.NextUnit()
-        },
-        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            var options ebiten.DrawImageOptions
-            options.GeoM.Translate(float64(doneRect.Min.X), float64(doneRect.Min.Y))
-            screen.DrawImage(doneButtons[0], &options)
-        },
-    })
+    elements = append(elements, makeButton(3, 1, 2, func(){
+        combat.SelectedUnit.LastTurn = combat.CurrentTurn
+        combat.NextUnit()
+    }))
 
     ui.SetElementsFromArray(elements)
 
