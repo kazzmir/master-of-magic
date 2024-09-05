@@ -16,11 +16,43 @@ import (
 const ScreenWidth = 1024
 const ScreenHeight = 768
 
+type MouseImage int
+
+const (
+    MouseNormal MouseImage = iota
+    MouseMagic
+    MouseError
+    MouseArrow
+    MouseAttack
+    MouseWait
+    MouseMove
+    MouseCast
+)
+
+func nextMouse(mouse MouseImage) MouseImage {
+    switch mouse {
+        case MouseNormal: return MouseMagic
+        case MouseMagic: return MouseError
+        case MouseError: return MouseArrow
+        case MouseArrow: return MouseAttack
+        case MouseAttack: return MouseWait
+        case MouseWait: return MouseMove
+        case MouseMove: return MouseCast
+        case MouseCast: return MouseNormal
+    }
+
+    return MouseNormal
+}
+
 type View struct {
     Cache *lbx.LbxCache
     Mice []*ebiten.Image
     Cast []*ebiten.Image
     Counter uint64
+
+    Mouse MouseImage
+
+    Images map[MouseImage]*ebiten.Image
 }
 
 func MakeView(cache *lbx.LbxCache) (*View, error) {
@@ -52,10 +84,42 @@ func MakeView(cache *lbx.LbxCache) (*View, error) {
         return nil, err
     }
 
+    images := make(map[MouseImage]*ebiten.Image)
+    x, err := mouse.GetMouseNormal(cache)
+    if err == nil {
+        images[MouseNormal] = x
+    }
+    x, err = mouse.GetMouseMagic(cache)
+    if err == nil {
+        images[MouseMagic] = x
+    }
+    x, err = mouse.GetMouseError(cache)
+    if err == nil {
+        images[MouseError] = x
+    }
+    x, err = mouse.GetMouseArrow(cache)
+    if err == nil {
+        images[MouseArrow] = x
+    }
+    x, err = mouse.GetMouseAttack(cache)
+    if err == nil {
+        images[MouseAttack] = x
+    }
+    x, err = mouse.GetMouseWait(cache)
+    if err == nil {
+        images[MouseWait] = x
+    }
+    x, err = mouse.GetMouseMove(cache)
+    if err == nil {
+        images[MouseMove] = x
+    }
+
     return &View{
         Cache: cache,
         Mice: all,
+        Mouse: MouseNormal,
         Cast: castImages,
+        Images: images,
     }, nil
 }
 
@@ -67,6 +131,8 @@ func (view *View) Update() error {
 
     for _, key := range keys {
         switch key {
+            case ebiten.KeyTab:
+                view.Mouse = nextMouse(view.Mouse)
             case ebiten.KeyEscape, ebiten.KeyCapsLock:
                 return ebiten.Termination
         }
@@ -96,12 +162,20 @@ func (view *View) Draw(screen *ebiten.Image){
         }
     }
 
-    mouseX, mouseY := ebiten.CursorPosition()
-    index := int((view.Counter/4) % uint64(len(view.Cast)))
     options.GeoM.Reset()
     options.GeoM.Scale(3, 3)
+    mouseX, mouseY := ebiten.CursorPosition()
     options.GeoM.Translate(float64(mouseX), float64(mouseY))
-    screen.DrawImage(view.Cast[index], &options)
+    switch view.Mouse {
+        case MouseCast:
+            index := int((view.Counter/4) % uint64(len(view.Cast)))
+            screen.DrawImage(view.Cast[index], &options)
+        default:
+            img, ok := view.Images[view.Mouse]
+            if ok {
+                screen.DrawImage(img, &options)
+            }
+    }
 }
 
 func main(){
