@@ -378,12 +378,18 @@ func (combat *CombatScreen) MakeUI() *uilib.UI {
         },
     })
 
+    // done
+    doneButtons, _ := combat.ImageCache.GetImages("compix.lbx", 3)
+    doneRect := image.Rect(0, 0, doneButtons[0].Bounds().Dx(), doneButtons[0].Bounds().Dy()).Add(image.Point{int(buttonX) + doneButtons[0].Bounds().Dx(), int(buttonY) + doneButtons[0].Bounds().Dy() * 2})
     elements = append(elements, &uilib.UIElement{
+        Rect: doneRect,
+        LeftClick: func(element *uilib.UIElement){
+            combat.SelectedUnit.LastTurn = combat.CurrentTurn
+            combat.NextUnit()
+        },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             var options ebiten.DrawImageOptions
-            doneButtons, _ := combat.ImageCache.GetImages("compix.lbx", 3)
-            options.GeoM.Translate(buttonX, buttonY)
-            options.GeoM.Translate(float64(doneButtons[0].Bounds().Dx()), float64(doneButtons[0].Bounds().Dy()) * 2)
+            options.GeoM.Translate(float64(doneRect.Min.X), float64(doneRect.Min.Y))
             screen.DrawImage(doneButtons[0], &options)
         },
     })
