@@ -12,6 +12,64 @@ import (
     "github.com/hajimehoshi/ebiten/v2"
 )
 
+// a collection of all mouse images
+type MouseData struct {
+    Normal *ebiten.Image
+    Magic *ebiten.Image
+    Error *ebiten.Image
+    Arrow *ebiten.Image
+    Attack *ebiten.Image
+    Wait *ebiten.Image
+    Move *ebiten.Image
+    Cast []*ebiten.Image
+}
+
+func MakeMouseData(cache *lbx.LbxCache) (*MouseData, error) {
+    normal, err := GetMouseNormal(cache)
+    if err != nil {
+        return nil, err
+    }
+    magic, err := GetMouseMagic(cache)
+    if err != nil {
+        return nil, err
+    }
+    errorImage, err := GetMouseError(cache)
+    if err != nil {
+        return nil, err
+    }
+    arrow, err := GetMouseArrow(cache)
+    if err != nil {
+        return nil, err
+    }
+    attack, err := GetMouseAttack(cache)
+    if err != nil {
+        return nil, err
+    }
+    wait, err := GetMouseWait(cache)
+    if err != nil {
+        return nil, err
+    }
+    move, err := GetMouseMove(cache)
+    if err != nil {
+        return nil, err
+    }
+    cast, err := GetMouseCast(cache)
+    if err != nil {
+        return nil, err
+    }
+
+    return &MouseData{
+        Normal: normal,
+        Magic: magic,
+        Error: errorImage,
+        Arrow: arrow,
+        Attack: attack,
+        Wait: wait,
+        Move: move,
+        Cast: cast,
+    }, nil
+}
+
 // pass in an entry from fonts.lbx within range 2-8
 func readMousePics(data []byte) ([]*ebiten.Image, error) {
     if len(data) < 5376 {
