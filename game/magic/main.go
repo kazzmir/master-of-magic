@@ -185,10 +185,17 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame) error {
         return err
     }
 
+    shutdown := func (screen *ebiten.Image){
+        ebitenutil.DebugPrintAt(screen, "Shutting down", 10, 10)
+    }
+
     runIntro(yield, game)
     state := runMainMenu(yield, game)
     switch state {
-        case mainview.MainScreenStateQuit: return ebiten.Termination
+        case mainview.MainScreenStateQuit:
+            game.Drawer = shutdown
+            yield()
+            return ebiten.Termination
         case mainview.MainScreenStateNewGame:
             // yield so that clicks from the menu don't bleed into the next part
             yield()
@@ -197,11 +204,16 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame) error {
             wizard := runNewWizard(yield, game)
             yield()
             err := runGameInstance(yield, game, settings, wizard)
+
+            game.Drawer = shutdown
+            yield()
             if err != nil {
                 return err
             }
     }
 
+    game.Drawer = shutdown
+    yield()
     return ebiten.Termination
 }
 
