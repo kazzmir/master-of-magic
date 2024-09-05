@@ -8,6 +8,11 @@
 * Graphics library: ebiten, https://ebitengine.org/
 * Master of Magic wiki: https://masterofmagic.fandom.com/
 
+# Online demo
+
+Play a wasm build of this game
+https://kazzmir.itch.io/magic
+
 # Run/Build:
 
 ```
