@@ -52,7 +52,7 @@ func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int, rawDump bool) 
                 // fmt.Printf("Saved image %v to %v\n", i, name)
             }()
         }
-    } else if lbxName == "fonts.lbx" {
+    } else if lbxName == "fonts.lbx" && !rawDump {
         fonts, err := font.ReadFonts(&file, 0)
         if err != nil {
             return fmt.Errorf("Unable to read fonts: %v", err)
@@ -62,7 +62,7 @@ func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int, rawDump bool) 
         for i, font := range fonts {
             fmt.Printf("  font %v glyphs %v\n", i, font.GlyphCount())
         }
-    } else if lbxName == "spelldat.lbx" {
+    } else if lbxName == "spelldat.lbx" && !rawDump {
         spells, err := spellbook.ReadSpells(&file, 0)
         if err != nil {
             return err
@@ -72,7 +72,7 @@ func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int, rawDump bool) 
             fmt.Printf("Spell %v: %+v\n", i, spell)
         }
 
-    } else if lbxName == "help.lbx" {
+    } else if lbxName == "help.lbx" && !rawDump {
         // uint16 number of entries
         // uint16 size of each entry
         help, err := file.ReadHelp(2)
@@ -103,8 +103,20 @@ func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int, rawDump bool) 
         }
 
     } else {
-        for index, data := range file.Data {
+        func (){
+            name := filepath.Join(dir, "strings.txt")
+            out, err := os.Create(name)
+            if err != nil {
+                fmt.Printf("Error creating strings file: %v\n", err)
+                return
+            }
+            defer out.Close()
+            for i, str := range file.Strings {
+                fmt.Fprintf(out, "%v: %v\n", i, str)
+            }
+        }()
 
+        for index, data := range file.Data {
             if onlyIndex != -1 && index != onlyIndex {
                 continue
             }

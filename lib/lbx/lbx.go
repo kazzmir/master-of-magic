@@ -40,6 +40,8 @@ type LbxFile struct {
     Signature uint32
     Version uint16
     Data [][]byte
+    // most lbx files have an extra strings section
+    Strings []string
 }
 
 type PaletteInfo struct {
@@ -1096,6 +1098,27 @@ func (lbxFile *LbxFile) RawData(entry int) ([]byte, error) {
     return lbxFile.Data[entry], nil
 }
 
+func readStringsSection(reader io.ReadSeeker, start int64, end uint32) []string {
+    var out []string
+
+    if int64(end) > start {
+        reader.Seek(start, io.SeekStart)
+
+        data := make([]byte, int64(end) - start)
+        reader.Read(data)
+
+        parts := bytes.Split(data, []byte{0})
+
+        for _, part := range parts {
+            if len(part) > 0 {
+                out = append(out, string(part))
+            }
+        }
+    }
+
+    return out
+}
+
 const LbxSignature = 0x0000fead
 
 func ReadLbx(reader io.ReadSeeker) (LbxFile, error) {
@@ -1133,6 +1156,12 @@ func ReadLbx(reader io.ReadSeeker) (LbxFile, error) {
         offsets = append(offsets, offset)
     }
 
+    // the last 4 bytes are the size of the file
+    readUint32(reader)
+
+    currentPosition, _ := reader.Seek(0, io.SeekCurrent)
+
+    // but lets just get the true end of the file ourselves
     reader.Seek(0, io.SeekEnd)
     lastByte, _ := reader.Seek(0, io.SeekCurrent)
 
@@ -1140,6 +1169,16 @@ func ReadLbx(reader io.ReadSeeker) (LbxFile, error) {
 
     lbx.Signature = signature
     lbx.Version = version
+
+    /*
+    if len(offsets) > 0 {
+        log.Printf("Position after offsets 0x%x first offset 0x%x difference 0x%x\n", currentPosition, offsets[0], offsets[0] - uint32(currentPosition))
+    }
+    */
+
+    lbx.Strings = readStringsSection(reader, currentPosition, offsets[0])
+
+    // log.Printf("Strings: %v", strings)
 
     for i, offset := range offsets {
         reader.Seek(int64(offset), io.SeekStart)
