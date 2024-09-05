@@ -5,6 +5,7 @@ import (
     "log"
     "math"
     "math/rand"
+    "image"
     "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -34,6 +35,13 @@ const (
     TeamAttacker Team = iota
     TeamDefender
 )
+
+func oppositeTeam(a Team) Team {
+    if a == TeamAttacker {
+        return TeamDefender
+    }
+    return TeamAttacker
+}
 
 type Tile struct {
     // index of grass/floor
@@ -78,6 +86,9 @@ type CombatScreen struct {
     AttackingArmy *Army
     Tiles [][]Tile
     SelectedUnit *ArmyUnit
+
+    TurnAttacker int
+    TurnDefender int
 
     Turn Team
     CurrentTurn int
@@ -240,7 +251,9 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
         Turn: TeamDefender,
         CurrentTurn: 1,
         DefendingArmy: defendingArmy,
+        TurnDefender: 0,
         AttackingArmy: attackingArmy,
+        TurnAttacker: 0,
         Tiles: makeTiles(30, 30),
         SelectedUnit: selectedUnit,
         DebugFont: debugFont,
@@ -319,13 +332,17 @@ func (combat *CombatScreen) MakeUI() *uilib.UI {
         },
     })
 
-
+    // wait
+    waitButtons, _ := combat.ImageCache.GetImages("compix.lbx", 2)
+    waitRect := image.Rect(0, 0, waitButtons[0].Bounds().Dx(), waitButtons[0].Bounds().Dy()).Add(image.Point{int(buttonX) + waitButtons[0].Bounds().Dx(), int(buttonY)})
     elements = append(elements, &uilib.UIElement{
+        Rect: waitRect,
+        LeftClick: func(element *uilib.UIElement){
+            combat.NextUnit()
+        },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             var options ebiten.DrawImageOptions
-            waitButtons, _ := combat.ImageCache.GetImages("compix.lbx", 2)
-            options.GeoM.Translate(buttonX, buttonY)
-            options.GeoM.Translate(float64(waitButtons[0].Bounds().Dx()), 0)
+            options.GeoM.Translate(float64(waitRect.Min.X), float64(waitRect.Min.Y))
             screen.DrawImage(waitButtons[0], &options)
         },
     })
@@ -466,73 +483,61 @@ func computeFacing(angle float64) units.Facing {
     return units.FacingRight
 }
 
-func (combat *CombatScreen) NextUnit() {
-    /*
-    if combat.Turn == TurnDefending {
-        combat.Turn = TurnAttacking
-    } else {
-        combat.Turn = TurnDefending
+/* choose a unit from the given team such that
+ * the unit's LastTurn is less than the current turn
+ */
+func (combat *CombatScreen) ChooseNextUnit(team Team) *ArmyUnit {
+
+    switch team {
+        case TeamAttacker:
+            for i := 0; i < len(combat.AttackingArmy.Units); i++ {
+                combat.TurnAttacker = (combat.TurnAttacker + 1) % len(combat.AttackingArmy.Units)
+                unit := combat.AttackingArmy.Units[combat.TurnAttacker]
+                if unit.LastTurn < combat.CurrentTurn {
+                    return unit
+                }
+            }
+            return nil
+        case TeamDefender:
+            for i := 0; i < len(combat.DefendingArmy.Units); i++ {
+                combat.TurnDefender = (combat.TurnDefender + 1) % len(combat.DefendingArmy.Units)
+                unit := combat.DefendingArmy.Units[combat.TurnDefender]
+                if unit.LastTurn < combat.CurrentTurn {
+                    return unit
+                }
+            }
+            return nil
     }
-    */
 
-    combat.SelectedUnit = nil
+    return nil
+}
 
-    canMove := false
-    for _, unit := range combat.DefendingArmy.Units {
-        if unit.LastTurn < combat.CurrentTurn {
-            canMove = true
+func (combat *CombatScreen) NextUnit() {
+
+    var nextChoice *ArmyUnit
+    for i := 0; i < 2; i++ {
+        // find a unit on the same team
+        nextChoice = combat.ChooseNextUnit(combat.Turn)
+        if nextChoice == nil {
+            // if there are no available units then the team must be out of moves, so try the next team
+            combat.Turn = oppositeTeam(combat.Turn)
+            nextChoice = combat.ChooseNextUnit(combat.Turn)
+
+            if nextChoice == nil {
+                // if the other team still has nothing available then the entire turn has finished
+                // so go to the next turn and try again
+                combat.CurrentTurn += 1
+                combat.SelectedUnit = nil
+            }
+        }
+
+        // found something so break the loop
+        if nextChoice != nil {
             break
         }
     }
 
-    if !canMove {
-        for _, unit := range combat.AttackingArmy.Units {
-            if unit.LastTurn < combat.CurrentTurn {
-                canMove = true
-                break
-            }
-        }
-    }
-
-    // no one left can move in this turn, go to next turn
-    if !canMove {
-        combat.CurrentTurn += 1
-
-        if combat.Turn == TeamDefender {
-            combat.Turn = TeamAttacker
-        } else {
-            combat.Turn = TeamDefender
-        }
-    }
-
-    for combat.SelectedUnit == nil {
-        switch combat.Turn {
-        case TeamDefender:
-            found := false
-            for _, unit := range combat.DefendingArmy.Units {
-                if unit.LastTurn < combat.CurrentTurn {
-                    combat.SelectedUnit = unit
-                    found = true
-                    break
-                }
-            }
-            if !found {
-                combat.Turn = TeamAttacker
-            }
-        case TeamAttacker:
-            found := false
-            for _, unit := range combat.AttackingArmy.Units {
-                if unit.LastTurn < combat.CurrentTurn {
-                    combat.SelectedUnit = unit
-                    found = true
-                    break
-                }
-            }
-            if !found {
-                combat.Turn = TeamDefender
-            }
-        }
-    }
+    combat.SelectedUnit = nextChoice
 }
 
 func (combat *CombatScreen) GetUnit(x int, y int) *ArmyUnit {
@@ -588,6 +593,8 @@ func (combat *CombatScreen) canAttack(attacker *ArmyUnit, defender *ArmyUnit) bo
 
 func (combat *CombatScreen) Update() CombatState {
     combat.Counter += 1
+
+    combat.UI.StandardUpdate()
 
     mouseX, mouseY := ebiten.CursorPosition()
 
