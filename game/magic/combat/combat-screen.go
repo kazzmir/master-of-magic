@@ -15,6 +15,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/player"
+    uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
     // "github.com/hajimehoshi/ebiten/v2/vector"
@@ -80,6 +81,8 @@ type CombatScreen struct {
 
     Turn Team
     CurrentTurn int
+
+    UI *uilib.UI
 
     DebugFont *font.Font
     HudFont *font.Font
@@ -231,7 +234,7 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
 
     // FIXME: do layout of armys
 
-    return &CombatScreen{
+    combat := &CombatScreen{
         Cache: cache,
         ImageCache: imageCache,
         Turn: TeamDefender,
@@ -248,6 +251,129 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
         AttackingWizardFont: attackingWizardFont,
         DefendingWizardFont: defendingWizardFont,
     }
+
+    combat.UI = combat.MakeUI()
+    return combat
+}
+
+func (combat *CombatScreen) MakeUI() *uilib.UI {
+    var elements []*uilib.UIElement
+
+    ui := &uilib.UI{
+        Draw: func(ui *uilib.UI, screen *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            hudImage, _ := combat.ImageCache.GetImage("cmbtfx.lbx", 28, 0)
+            options.GeoM.Reset()
+            options.GeoM.Translate(0, float64(data.ScreenHeight - hudImage.Bounds().Dy()))
+            for i := 0; i < 4; i++ {
+                screen.DrawImage(hudImage, &options)
+                options.GeoM.Translate(float64(hudImage.Bounds().Dx()), 0)
+            }
+
+            combat.AttackingWizardFont.Print(screen, 265, 170, 1, ebiten.ColorScale{}, combat.AttackingArmy.Player.Wizard.Name)
+            combat.DefendingWizardFont.Print(screen, 30, 170, 1, ebiten.ColorScale{}, combat.DefendingArmy.Player.Wizard.Name)
+
+            rightImage, _ := combat.ImageCache.GetImage(combat.SelectedUnit.Unit.CombatLbxFile, combat.SelectedUnit.Unit.GetCombatIndex(units.FacingRight), 0)
+            options.GeoM.Reset()
+            options.GeoM.Translate(90, 170)
+            screen.DrawImage(rightImage, &options)
+
+            combat.HudFont.Print(screen, 92, 167, 1, ebiten.ColorScale{}, combat.SelectedUnit.Unit.Name)
+
+            plainAttack, _ := combat.ImageCache.GetImage("compix.lbx", 29, 0)
+            options.GeoM.Reset()
+            options.GeoM.Translate(126, 173)
+            screen.DrawImage(plainAttack, &options)
+            combat.HudFont.Print(screen, 121, 174, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", combat.SelectedUnit.Unit.MeleeAttackPower))
+
+            var movementImage *ebiten.Image
+            if combat.SelectedUnit.Unit.Flying {
+                movementImage, _ = combat.ImageCache.GetImage("compix.lbx", 39, 0)
+            } else {
+                movementImage, _ = combat.ImageCache.GetImage("compix.lbx", 38, 0)
+            }
+
+            options.GeoM.Reset()
+            options.GeoM.Translate(126, 188)
+            screen.DrawImage(movementImage, &options)
+            combat.HudFont.Print(screen, 121, 190, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", combat.SelectedUnit.Unit.MovementSpeed))
+
+            ui.IterateElementsByLayer(func (element *uilib.UIElement){
+                if element.Draw != nil {
+                    element.Draw(element, screen)
+                }
+            })
+        },
+    }
+
+    buttonX := float64(139)
+    buttonY := float64(167)
+
+    elements = append(elements, &uilib.UIElement{
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            spellButtons, _ := combat.ImageCache.GetImages("compix.lbx", 1)
+            options.GeoM.Reset()
+            options.GeoM.Translate(buttonX, buttonY)
+            screen.DrawImage(spellButtons[0], &options)
+        },
+    })
+
+
+    elements = append(elements, &uilib.UIElement{
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            waitButtons, _ := combat.ImageCache.GetImages("compix.lbx", 2)
+            options.GeoM.Translate(buttonX, buttonY)
+            options.GeoM.Translate(float64(waitButtons[0].Bounds().Dx()), 0)
+            screen.DrawImage(waitButtons[0], &options)
+        },
+    })
+
+    elements = append(elements, &uilib.UIElement{
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            var options ebiten.DrawImageOptions
+
+            infoButtons, _ := combat.ImageCache.GetImages("compix.lbx", 20)
+            options.GeoM.Translate(buttonX, buttonY)
+            options.GeoM.Translate(0, float64(infoButtons[0].Bounds().Dy()))
+            screen.DrawImage(infoButtons[0], &options)
+        },
+    })
+
+    elements = append(elements, &uilib.UIElement{
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            autoButtons, _ := combat.ImageCache.GetImages("compix.lbx", 4)
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(buttonX, buttonY)
+            options.GeoM.Translate(float64(autoButtons[0].Bounds().Dx()), float64(autoButtons[0].Bounds().Dy()))
+            screen.DrawImage(autoButtons[0], &options)
+        },
+    })
+
+    elements = append(elements, &uilib.UIElement{
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            fleeButtons, _ := combat.ImageCache.GetImages("compix.lbx", 21)
+            options.GeoM.Translate(buttonX, buttonY)
+            options.GeoM.Translate(0, float64(fleeButtons[0].Bounds().Dy()) * 2)
+            screen.DrawImage(fleeButtons[0], &options)
+        },
+    })
+
+    elements = append(elements, &uilib.UIElement{
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            doneButtons, _ := combat.ImageCache.GetImages("compix.lbx", 3)
+            options.GeoM.Translate(buttonX, buttonY)
+            options.GeoM.Translate(float64(doneButtons[0].Bounds().Dx()), float64(doneButtons[0].Bounds().Dy()) * 2)
+            screen.DrawImage(doneButtons[0], &options)
+        },
+    })
+
+    ui.SetElementsFromArray(elements)
+
+    return ui
 }
 
 /* check that 'check' is between angle-spread and angle+spread
@@ -701,66 +827,5 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
         renderUnit(unit)
     }
 
-    hudImage, _ := combat.ImageCache.GetImage("cmbtfx.lbx", 28, 0)
-    options.GeoM.Reset()
-    options.GeoM.Translate(0, float64(data.ScreenHeight - hudImage.Bounds().Dy()))
-    for i := 0; i < 4; i++ {
-        screen.DrawImage(hudImage, &options)
-        options.GeoM.Translate(float64(hudImage.Bounds().Dx()), 0)
-    }
-
-    spellButtons, _ := combat.ImageCache.GetImages("compix.lbx", 1)
-    options.GeoM.Reset()
-    options.GeoM.Translate(139, 167)
-    screen.DrawImage(spellButtons[0], &options)
-
-    waitButtons, _ := combat.ImageCache.GetImages("compix.lbx", 2)
-    options.GeoM.Translate(float64(spellButtons[0].Bounds().Dx()), 0)
-    screen.DrawImage(waitButtons[0], &options)
-
-    options.GeoM.Translate(float64(-spellButtons[0].Bounds().Dx()), float64(spellButtons[0].Bounds().Dy()))
-
-    infoButtons, _ := combat.ImageCache.GetImages("compix.lbx", 20)
-    screen.DrawImage(infoButtons[0], &options)
-    options.GeoM.Translate(float64(spellButtons[0].Bounds().Dx()), 0)
-
-    autoButtons, _ := combat.ImageCache.GetImages("compix.lbx", 4)
-    screen.DrawImage(autoButtons[0], &options)
-
-    options.GeoM.Translate(float64(-spellButtons[0].Bounds().Dx()), float64(spellButtons[0].Bounds().Dy()))
-
-    fleeButtons, _ := combat.ImageCache.GetImages("compix.lbx", 21)
-    screen.DrawImage(fleeButtons[0], &options)
-    options.GeoM.Translate(float64(spellButtons[0].Bounds().Dx()), 0)
-
-    doneButtons, _ := combat.ImageCache.GetImages("compix.lbx", 3)
-    screen.DrawImage(doneButtons[0], &options)
-
-    rightImage, _ := combat.ImageCache.GetImage(combat.SelectedUnit.Unit.CombatLbxFile, combat.SelectedUnit.Unit.GetCombatIndex(units.FacingRight), 0)
-    options.GeoM.Reset()
-    options.GeoM.Translate(90, 170)
-    screen.DrawImage(rightImage, &options)
-
-    combat.HudFont.Print(screen, 92, 167, 1, ebiten.ColorScale{}, combat.SelectedUnit.Unit.Name)
-
-    plainAttack, _ := combat.ImageCache.GetImage("compix.lbx", 29, 0)
-    options.GeoM.Reset()
-    options.GeoM.Translate(126, 173)
-    screen.DrawImage(plainAttack, &options)
-    combat.HudFont.Print(screen, 121, 174, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", combat.SelectedUnit.Unit.MeleeAttackPower))
-
-    var movementImage *ebiten.Image
-    if combat.SelectedUnit.Unit.Flying {
-        movementImage, _ = combat.ImageCache.GetImage("compix.lbx", 39, 0)
-    } else {
-        movementImage, _ = combat.ImageCache.GetImage("compix.lbx", 38, 0)
-    }
-
-    options.GeoM.Reset()
-    options.GeoM.Translate(126, 188)
-    screen.DrawImage(movementImage, &options)
-    combat.HudFont.Print(screen, 121, 190, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", combat.SelectedUnit.Unit.MovementSpeed))
-
-    combat.AttackingWizardFont.Print(screen, 265, 170, 1, ebiten.ColorScale{}, combat.AttackingArmy.Player.Wizard.Name)
-    combat.DefendingWizardFont.Print(screen, 30, 170, 1, ebiten.ColorScale{}, combat.DefendingArmy.Player.Wizard.Name)
+    combat.UI.Draw(combat.UI, screen)
 }
