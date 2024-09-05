@@ -47,6 +47,7 @@ func readMousePics(data []byte) ([]*ebiten.Image, error) {
 
     var mousePics []*ebiten.Image
 
+    usePalette := lbx.GetDefaultPalette()
     for i := 0; i < 16; i++ {
         mouse := mouseData[i*length:i*length + length]
         pic := ebiten.NewImage(16, 16)
@@ -60,7 +61,7 @@ func readMousePics(data []byte) ([]*ebiten.Image, error) {
                     return nil, err
                 }
 
-                color := mainPalette[colorIndex]
+                color := usePalette[colorIndex]
                 pic.Set(x, y, color)
             }
         }
@@ -120,12 +121,13 @@ func (view *View) Draw(screen *ebiten.Image){
     options.GeoM.Scale(3, 3)
     options.GeoM.Translate(10, 10)
     x := 0
+    spacing := 55
     for _, pic := range view.Mice {
-        options.GeoM.Translate(60, 0)
+        options.GeoM.Translate(float64(spacing), 0)
         screen.DrawImage(pic, &options)
         x += 1
-        if x > 10 {
-            options.GeoM.Translate(float64(-(x * 60)), 60)
+        if x >= 16 {
+            options.GeoM.Translate(float64(-(x * spacing)), 60)
             x = 0
         }
     }
