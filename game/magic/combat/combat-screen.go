@@ -1006,17 +1006,19 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
 
     var mouseOptions ebiten.DrawImageOptions
     mouseX, mouseY := ebiten.CursorPosition()
-    mouseOptions.GeoM.Translate(float64(mouseX-1), float64(mouseY-1))
+    mouseOptions.GeoM.Translate(float64(mouseX), float64(mouseY))
     switch combat.MouseState {
         case CombatMoveOk:
             screen.DrawImage(combat.Mouse.Move, &mouseOptions)
         case CombatClickHud:
             screen.DrawImage(combat.Mouse.Normal, &mouseOptions)
         case CombatMeleeAttackOk:
+            mouseOptions.GeoM.Translate(-1, -1)
             screen.DrawImage(combat.Mouse.Attack, &mouseOptions)
         case CombatRangeAttackOk:
             screen.DrawImage(combat.Mouse.Arrow, &mouseOptions)
         case CombatNotOk:
+            mouseOptions.GeoM.Translate(-1, -1)
             screen.DrawImage(combat.Mouse.Error, &mouseOptions)
     }
 }
