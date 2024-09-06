@@ -591,6 +591,8 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells) []*ui
 
     spellPages := computeHalfPages(spells, 6)
 
+    var chosenSpell Spell
+
     // lazily construct the page graphics, which consists of the section title and 4 spell descriptions
     getPageImage := func(page int) *ebiten.Image {
         cached, ok := pageCache[page]
@@ -688,6 +690,8 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells) []*ui
             getAlpha = ui.MakeFadeOut(7)
             ui.AddDelay(7, func(){
                 ui.RemoveElements(elements)
+
+                log.Printf("Chose spell %+v", chosenSpell)
             })
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
@@ -711,6 +715,67 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells) []*ui
         },
     })
 
+    var spellButtons []*uilib.UIElement
+    setupSpells := func(page int) {
+        ui.RemoveElements(spellButtons)
+        spellButtons = nil
+
+        leftSpells := spellPages[page].Spells
+
+        for i, spell := range leftSpells {
+
+            x1 := 24
+            y1 := 30 + i * 22
+            width := 122
+            height := 20
+
+            rect := image.Rect(0, 0, width, height).Add(image.Pt(x1, y1))
+            spellButtons = append(spellButtons, &uilib.UIElement{
+                Rect: rect,
+                Layer: 1,
+                LeftClick: func(this *uilib.UIElement){
+                    log.Printf("Click on spell %v", spell)
+                    chosenSpell = spell
+                },
+                Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                    vector.StrokeRect(screen, float32(rect.Min.X), float32(rect.Min.Y), float32(rect.Max.X - rect.Min.X), float32(rect.Max.Y - rect.Min.Y), 1, color.RGBA{R: 255, G: 255, B: 255, A: 255}, false)
+                },
+            })
+        }
+
+        if page + 1 < len(spellPages) {
+            rightSpells := spellPages[page+1].Spells
+
+            for i, spell := range rightSpells {
+
+                x1 := 159
+                y1 := 30 + i * 22
+                width := 122
+                height := 20
+
+                rect := image.Rect(0, 0, width, height).Add(image.Pt(x1, y1))
+                spellButtons = append(spellButtons, &uilib.UIElement{
+                    Rect: rect,
+                    Layer: 1,
+                    LeftClick: func(this *uilib.UIElement){
+                        log.Printf("Click on spell %v", spell)
+                        chosenSpell = spell
+                    },
+                    Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                        vector.StrokeRect(screen, float32(rect.Min.X), float32(rect.Min.Y), float32(rect.Max.X - rect.Min.X), float32(rect.Max.Y - rect.Min.Y), 1, color.RGBA{R: 255, G: 255, B: 255, A: 255}, false)
+                    },
+                })
+            }
+        }
+
+        ui.AddElements(spellButtons)
+    }
+
+    // hack to add the spell ui elements after the main element
+    ui.AddDelay(0, func(){
+        setupSpells(currentPage)
+    })
+
     pageTurnRight, _ := imageCache.GetImage("spells.lbx", 2, 0)
     pageTurnRightRect := image.Rect(0, 0, pageTurnRight.Bounds().Dx(), pageTurnRight.Bounds().Dy()).Add(image.Pt(268, 14))
     elements = append(elements, &uilib.UIElement{
@@ -719,6 +784,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells) []*ui
         LeftClick: func(this *uilib.UIElement){
             if currentPage + 1 < len(spellPages) {
                 currentPage += 2
+                setupSpells(currentPage)
             }
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
@@ -738,6 +804,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells) []*ui
         LeftClick: func(this *uilib.UIElement){
             if currentPage >= 2 {
                 currentPage -= 2
+                setupSpells(currentPage)
             }
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
