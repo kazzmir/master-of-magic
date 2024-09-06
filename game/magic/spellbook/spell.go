@@ -17,7 +17,7 @@ import (
     "github.com/hajimehoshi/ebiten/v2/vector"
 )
 
-func computeHalfPages(spells Spells) []Spells {
+func computeHalfPages(spells Spells, max int) []Spells {
     var halfPages []Spells
 
     sections := []Section{SectionSummoning, SectionSpecial, SectionCitySpell, SectionEnchantment, SectionUnitSpell, SectionCombatSpell}
@@ -26,11 +26,11 @@ func computeHalfPages(spells Spells) []Spells {
         sectionSpells := spells.GetSpellsBySection(section)
         numSpells := len(sectionSpells.Spells)
 
-        for i := 0; i < int(math.Ceil(float64(numSpells) / 4)); i++ {
+        for i := 0; i < int(math.Ceil(float64(numSpells) / float64(max))); i++ {
             var pageSpells Spells
 
-            for j := 0; j < 4; j++ {
-                index := i * 4 + j
+            for j := 0; j < max; j++ {
+                index := i * max + j
                 if index < numSpells {
                     pageSpells.AddSpell(sectionSpells.Spells[index])
                 }
@@ -312,7 +312,7 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
     }
 
     // compute half pages
-    halfPages := computeHalfPages(spells)
+    halfPages := computeHalfPages(spells, 4)
 
     // for debugging
     /*
@@ -587,6 +587,101 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells) []*ui
 
     titleFont := font.MakeOptimizedFontWithPalette(fonts[4], redPalette)
 
+    pageCache := make(map[int]*ebiten.Image)
+
+    spellPages := computeHalfPages(spells, 6)
+
+    // lazily construct the page graphics, which consists of the section title and 4 spell descriptions
+    getPageImage := func(page int) *ebiten.Image {
+        cached, ok := pageCache[page]
+        if ok {
+            return cached
+        }
+
+        out := ebiten.NewImage(120, 154)
+        out.Fill(color.RGBA{R: 0, G: 0, B: 0, A: 0})
+
+        var options ebiten.DrawImageOptions
+        if page < len(spellPages) {
+            titleFont.PrintCenter(out, 60, 1, 1, options.ColorScale, "Summoning")
+            gibberish, _ := imageCache.GetImage("spells.lbx", 10, 0)
+            gibberishHeight := 18
+
+            options2 := options
+            options2.GeoM.Translate(0, 15)
+            for _, spell := range spellPages[page].Spells {
+                spellX, spellY := options2.GeoM.Apply(0, 0)
+
+                infoFont.Print(out, spellX, spellY, 1, options.ColorScale, spell.Name)
+                infoFont.PrintRight(out, spellX + 124, spellY, 1, options.ColorScale, fmt.Sprintf("%v MP", spell.CastCost))
+                icon := getMagicIcon(spell)
+
+                nameLength := infoFont.MeasureTextWidth(spell.Name, 1) + 1
+                mpLength := infoFont.MeasureTextWidth(fmt.Sprintf("%v MP", spell.CastCost), 1)
+
+                gibberishPart := gibberish.SubImage(image.Rect(0, 0, gibberish.Bounds().Dx(), gibberishHeight)).(*ebiten.Image)
+
+                partIndex := 0
+                partHeight := 20
+
+                subLines := 6
+
+                part1 := gibberishPart.SubImage(image.Rect(int(nameLength), partIndex * partHeight, int(nameLength) + gibberishPart.Bounds().Dx() - int(nameLength + mpLength), partIndex * partHeight + subLines)).(*ebiten.Image)
+
+                part1Options := options2
+                part1Options.GeoM.Translate(nameLength, 0)
+                out.DrawImage(part1, &part1Options)
+
+                // FIXME: what is the proper denominator here? spell 'heroism' costs 150 and shows 4 icons
+                // sprites cost 100 and shows 3
+                iconCount := spell.CastCost / 33
+                if iconCount < 1 {
+                    iconCount = 1
+                }
+
+                iconOptions := options2
+                iconOptions.GeoM.Translate(0, float64(infoFont.Height())+1)
+                part3Options := iconOptions
+
+                icons1 := iconCount
+                if icons1 > 20 {
+                    icons1 = 20
+                    iconCount -= icons1
+                } else {
+                    iconCount = 0
+                }
+
+                for i := 0; i < icons1; i++ {
+                    out.DrawImage(icon, &iconOptions)
+                    iconOptions.GeoM.Translate(float64(icon.Bounds().Dx()) + 1, 0)
+                }
+
+                part2 := gibberishPart.SubImage(image.Rect((icon.Bounds().Dx() + 1) * icons1 + 3, partIndex * partHeight + subLines, gibberish.Bounds().Dx(), partIndex * partHeight + subLines * 2)).(*ebiten.Image)
+                part2Options := iconOptions
+                part2Options.GeoM.Translate(3, 0)
+                out.DrawImage(part2, &part2Options)
+
+                part3Options.GeoM.Translate(0, float64(icon.Bounds().Dy()+1))
+
+                for i := 0; i < iconCount; i++ {
+                    out.DrawImage(icon, &part3Options)
+                    part3Options.GeoM.Translate(float64(icon.Bounds().Dx()) + 1, 0)
+                }
+
+                part3 := gibberishPart.SubImage(image.Rect((icon.Bounds().Dx() + 1) * iconCount, partIndex * partHeight + subLines * 2, gibberish.Bounds().Dx(), partIndex * partHeight + subLines * 3)).(*ebiten.Image)
+                out.DrawImage(part3, &part3Options)
+
+                options2.GeoM.Translate(0, 22)
+            }
+        }
+
+        // vector.StrokeRect(out, 1, 1, float32(out.Bounds().Dx()-1), float32(out.Bounds().Dy()-10), 1, color.RGBA{R: 255, G: 255, B: 255, A: 255}, false)
+        pageCache[page] = out
+        return out
+    }
+
+    currentPage := 0
+
     elements = append(elements, &uilib.UIElement{
         Layer: 1,
         NotLeftClicked: func(this *uilib.UIElement){
@@ -605,10 +700,18 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells) []*ui
             options.GeoM.Translate(10, 10)
             screen.DrawImage(background, &options)
 
+            left := getPageImage(currentPage)
+            right := getPageImage(currentPage+1)
+
+            options.GeoM.Translate(15, 5)
+            screen.DrawImage(left, &options)
+
+            options.GeoM.Translate(134, 0)
+            screen.DrawImage(right, &options)
+
+            /*
             bookX, bookY := options.GeoM.Apply(0, 0)
-
             titleFont.PrintCenter(screen, bookX + 80, bookY + 7, 1, options.ColorScale, "Summoning")
-
             gibberish, _ := imageCache.GetImage("spells.lbx", 10, 0)
             gibberishHeight := 18
 
@@ -675,6 +778,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells) []*ui
 
                 options2.GeoM.Translate(0, 22)
             }
+            */
 
         },
     })
