@@ -601,6 +601,9 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells) []*ui
 
             titleFont.PrintCenter(screen, bookX + 80, bookY + 7, 1, options.ColorScale, "Summoning")
 
+            gibberish, _ := imageCache.GetImage("spells.lbx", 10, 0)
+            gibberishHeight := 18
+
             if len(spells.Spells) > 0 {
                 spell := spells.Spells[0]
                 infoFont.Print(screen, bookX+15, bookY+20, 1, options.ColorScale, spell.Name)
@@ -609,8 +612,36 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells) []*ui
 
                 options2 := options
                 options2.GeoM.Translate(15, 20)
+
+                nameLength := infoFont.MeasureTextWidth(spell.Name, 1) + 1
+                mpLength := infoFont.MeasureTextWidth(fmt.Sprintf("%v MP", spell.CastCost), 1)
+
+                gibberishPart := gibberish.SubImage(image.Rect(0, 0, gibberish.Bounds().Dx(), gibberishHeight)).(*ebiten.Image)
+
+                part1 := gibberishPart.SubImage(image.Rect(int(nameLength), 0, int(nameLength) + gibberishPart.Bounds().Dx() - int(nameLength + mpLength), 6)).(*ebiten.Image)
+
+                part1Options := options2
+                part1Options.GeoM.Translate(nameLength, 0)
+                screen.DrawImage(part1, &part1Options)
+
+                iconCount := 3
+
                 options2.GeoM.Translate(0, float64(infoFont.Height())+1)
-                screen.DrawImage(icon, &options2)
+                part3Options := options2
+
+                for i := 0; i < iconCount; i++ {
+                    screen.DrawImage(icon, &options2)
+                    options2.GeoM.Translate(float64(icon.Bounds().Dx()) + 1, 0)
+                }
+
+                part2 := gibberishPart.SubImage(image.Rect((icon.Bounds().Dx() + 1) * iconCount + 3, 6, gibberish.Bounds().Dx(), 12)).(*ebiten.Image)
+                part2Options := options2
+                part2Options.GeoM.Translate(3, 0)
+                screen.DrawImage(part2, &part2Options)
+
+                part3 := gibberishPart.SubImage(image.Rect(0, 12, gibberish.Bounds().Dx(), 18)).(*ebiten.Image)
+                part3Options.GeoM.Translate(0, float64(icon.Bounds().Dy()+1))
+                screen.DrawImage(part3, &part3Options)
             }
 
         },
