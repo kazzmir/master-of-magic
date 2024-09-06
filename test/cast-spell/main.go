@@ -3,6 +3,10 @@ package main
 import (
     "log"
 
+    uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
+    "github.com/kazzmir/master-of-magic/game/magic/spellbook"
+    "github.com/kazzmir/master-of-magic/lib/lbx"
+
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
 )
@@ -12,12 +16,37 @@ const ScreenHeight = 200
 
 type Engine struct {
     Counter uint64
+    UI *uilib.UI
+    Cache *lbx.LbxCache
 }
 
 func NewEngine() (*Engine, error) {
-    return &Engine{
+    cache := lbx.AutoCache()
+    engine := &Engine{
         Counter: 0,
-    }, nil
+        Cache: cache,
+    }
+
+    engine.UI = engine.MakeUI()
+    return engine, nil
+}
+
+func (engine *Engine) MakeUI() *uilib.UI {
+    ui := &uilib.UI{
+        Draw: func(ui *uilib.UI, screen *ebiten.Image) {
+            ui.IterateElementsByLayer(func(element *uilib.UIElement) {
+                if element.Draw != nil {
+                    element.Draw(element, screen)
+                }
+            })
+        },
+    }
+    ui.SetElementsFromArray(nil)
+
+    more := spellbook.MakeSpellBookCastUI(ui, engine.Cache)
+    ui.AddElements(more)
+
+    return ui
 }
 
 func (engine *Engine) Update() error {
@@ -31,10 +60,13 @@ func (engine *Engine) Update() error {
         }
     }
 
+    engine.UI.StandardUpdate()
+
     return nil
 }
 
 func (engine *Engine) Draw(screen *ebiten.Image){
+    engine.UI.Draw(engine.UI, screen)
 }
 
 func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
