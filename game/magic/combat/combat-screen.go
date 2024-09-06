@@ -379,7 +379,7 @@ func (combat *CombatScreen) MakeUI() *uilib.UI {
             options.GeoM.Reset()
             options.GeoM.Translate(126, 188)
             screen.DrawImage(movementImage, &options)
-            combat.HudFont.Print(screen, 121, 190, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", combat.SelectedUnit.Unit.MovementSpeed))
+            combat.HudFont.Print(screen, 121, 190, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", combat.SelectedUnit.MovesLeft))
 
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
                 if element.Draw != nil {
@@ -665,6 +665,10 @@ func (combat *CombatScreen) withinArrowRange(attacker *ArmyUnit, defender *ArmyU
 }
 
 func (combat *CombatScreen) canAttack(attacker *ArmyUnit, defender *ArmyUnit) bool {
+    if attacker.MovesLeft == 0 {
+        return false
+    }
+
     if defender.Unit.Flying && !attacker.Unit.Flying {
         return false
     }
@@ -729,6 +733,7 @@ func (combat *CombatScreen) Update() CombatState {
             combat.SelectedUnit.TargetX = combat.MouseTileX
             combat.SelectedUnit.TargetY = combat.MouseTileY
             combat.SelectedUnit.Moving = true
+            combat.SelectedUnit.MovesLeft -= computeMoves(combat.SelectedUnit.X, combat.SelectedUnit.Y, combat.MouseTileX, combat.MouseTileY)
        } else {
 
            defender := combat.GetUnit(combat.MouseTileX, combat.MouseTileY)
@@ -736,6 +741,8 @@ func (combat *CombatScreen) Update() CombatState {
            if defender != nil && defender.Team != combat.SelectedUnit.Team && combat.withinMeleeRange(combat.SelectedUnit, defender) && combat.canAttack(combat.SelectedUnit, defender){
                combat.SelectedUnit.Attacking = true
                combat.SelectedUnit.AttackingCounter = combat.Counter
+               // FIXME: how many moves does an attack take?
+               combat.SelectedUnit.MovesLeft -= 1
 
                combat.SelectedUnit.Facing = faceTowards(combat.SelectedUnit.X, combat.SelectedUnit.Y, combat.MouseTileX, combat.MouseTileY)
                defender.Facing = faceTowards(defender.X, defender.Y, combat.SelectedUnit.X, combat.SelectedUnit.Y)
@@ -775,12 +782,14 @@ func (combat *CombatScreen) Update() CombatState {
         combat.SelectedUnit.MoveY = newY
 
         if math.Abs(newX - float64(combat.SelectedUnit.TargetX)) < 0.5 && math.Abs(newY - float64(combat.SelectedUnit.TargetY)) < 0.5 {
-            combat.SelectedUnit.LastTurn = combat.CurrentTurn
-            combat.SelectedUnit.Moving = false
             combat.SelectedUnit.X = combat.SelectedUnit.TargetX
             combat.SelectedUnit.Y = combat.SelectedUnit.TargetY
+            combat.SelectedUnit.Moving = false
 
-            combat.NextUnit()
+            if combat.SelectedUnit.MovesLeft == 0 {
+                combat.SelectedUnit.LastTurn = combat.CurrentTurn
+                combat.NextUnit()
+            }
         }
     }
 
@@ -980,7 +989,7 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
         options.GeoM.Reset()
         options.GeoM.Translate(float64(x1 + 14), float64(y1 + 26))
         screen.DrawImage(movementImage, &options)
-        combat.InfoFont.PrintRight(screen, float64(x1 + 14), float64(y1 + 26 + 2), 1, ebiten.ColorScale{}, fmt.Sprintf("%v", combat.HighlightedUnit.Unit.MovementSpeed))
+        combat.InfoFont.PrintRight(screen, float64(x1 + 14), float64(y1 + 26 + 2), 1, ebiten.ColorScale{}, fmt.Sprintf("%v", combat.HighlightedUnit.MovesLeft))
 
         armorImage, _ := combat.ImageCache.GetImage("compix.lbx", 70, 0)
         options.GeoM.Reset()
