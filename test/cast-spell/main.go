@@ -43,7 +43,7 @@ func (engine *Engine) MakeUI() *uilib.UI {
     spells.AddSpell(allSpells.FindByName("Guardian Spirit"))
     spells.AddSpell(allSpells.FindByName("Sprites"))
     spells.AddSpell(allSpells.FindByName("Magic Spirit"))
-    spells.AddSpell(allSpells.FindByName("Wall of Stone"))
+    spells.AddSpell(allSpells.FindByName("Great Wyrm"))
     spells.AddSpell(allSpells.FindByName("Gorgons"))
 
     ui := &uilib.UI{

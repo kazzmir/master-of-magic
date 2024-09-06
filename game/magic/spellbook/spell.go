@@ -612,10 +612,6 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells) []*ui
             gibberish, _ := imageCache.GetImage("spells.lbx", 10, 0)
             gibberishHeight := 18
 
-            /*
-            spellX := bookX + 15
-            spellY := bookY + 20
-            */
             options2 := options
             options2.GeoM.Translate(15, 20)
             for _, spell := range maxRange(spells.Spells, 6) {
@@ -641,27 +637,42 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells) []*ui
                 part1Options.GeoM.Translate(nameLength, 0)
                 screen.DrawImage(part1, &part1Options)
 
-                iconCount := 3
+                // FIXME: what is the proper denominator here? spell 'heroism' costs 150 and shows 4 icons
+                // sprites cost 100 and shows 3
+                iconCount := spell.CastCost / 33
 
                 iconOptions := options2
                 iconOptions.GeoM.Translate(0, float64(infoFont.Height())+1)
                 part3Options := iconOptions
 
-                for i := 0; i < iconCount; i++ {
+                icons1 := iconCount
+                if icons1 > 20 {
+                    icons1 = 20
+                    iconCount -= icons1
+                } else {
+                    iconCount = 0
+                }
+
+                for i := 0; i < icons1; i++ {
                     screen.DrawImage(icon, &iconOptions)
                     iconOptions.GeoM.Translate(float64(icon.Bounds().Dx()) + 1, 0)
                 }
 
-                part2 := gibberishPart.SubImage(image.Rect((icon.Bounds().Dx() + 1) * iconCount + 3, partIndex * partHeight + subLines, gibberish.Bounds().Dx(), partIndex * partHeight + subLines * 2)).(*ebiten.Image)
+                part2 := gibberishPart.SubImage(image.Rect((icon.Bounds().Dx() + 1) * icons1 + 3, partIndex * partHeight + subLines, gibberish.Bounds().Dx(), partIndex * partHeight + subLines * 2)).(*ebiten.Image)
                 part2Options := iconOptions
                 part2Options.GeoM.Translate(3, 0)
                 screen.DrawImage(part2, &part2Options)
 
-                part3 := gibberishPart.SubImage(image.Rect(0, partIndex * partHeight + subLines * 2, gibberish.Bounds().Dx(), partIndex * partHeight + subLines * 3)).(*ebiten.Image)
                 part3Options.GeoM.Translate(0, float64(icon.Bounds().Dy()+1))
+
+                for i := 0; i < iconCount; i++ {
+                    screen.DrawImage(icon, &part3Options)
+                    part3Options.GeoM.Translate(float64(icon.Bounds().Dx()) + 1, 0)
+                }
+
+                part3 := gibberishPart.SubImage(image.Rect((icon.Bounds().Dx() + 1) * iconCount, partIndex * partHeight + subLines * 2, gibberish.Bounds().Dx(), partIndex * partHeight + subLines * 3)).(*ebiten.Image)
                 screen.DrawImage(part3, &part3Options)
 
-                spellY += 40
                 options2.GeoM.Translate(0, 22)
             }
 
