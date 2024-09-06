@@ -1125,6 +1125,7 @@ var HighElfSpearmen Unit = Unit{
     Name: "Spearmen",
     ProductionCost: 15,
     Abilities: []Ability{AbilityForester},
+    MovementSpeed: 1,
     Race: data.RaceHighElf,
 }
 

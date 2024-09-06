@@ -45,6 +45,15 @@ func oppositeTeam(a Team) Team {
     return TeamAttacker
 }
 
+type MouseState int
+const (
+    CombatClickHud MouseState = iota
+    CombatMoveOk
+    CombatMeleeAttackOk
+    CombatRangeAttackOk
+    CombatNotOk
+)
+
 type Tile struct {
     // index of grass/floor
     Index int
@@ -59,13 +68,14 @@ type ArmyUnit struct {
     X int
     Y int
     Health int
+    MovesLeft int
 
     Team Team
 
     Attacking bool
     AttackingCounter uint64
 
-    Movement uint64
+    MovementTick uint64
     MoveX float64
     MoveY float64
 
@@ -73,6 +83,13 @@ type ArmyUnit struct {
     TargetY int
 
     LastTurn int
+}
+
+func (unit *ArmyUnit) CanMoveTo(x int, y int) bool {
+    // log.Printf("CanMoveTo: %v,%v -> %v,%v moves left %v", unit.X, unit.Y, x, y, unit.MovesLeft)
+    xDiff := math.Abs(float64(unit.X - x))
+    yDiff := math.Abs(float64(unit.Y - y))
+    return int(xDiff + yDiff) <= unit.MovesLeft
 }
 
 type Army struct {
@@ -91,6 +108,8 @@ type CombatScreen struct {
 
     TurnAttacker int
     TurnDefender int
+
+    MouseState MouseState
 
     Mouse *mouse.MouseData
 
@@ -211,14 +230,6 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
     defendingWizardFont := font.MakeOptimizedFontWithPalette(fonts[4], makePaletteFromBanner(defendingArmy.Player.Wizard.Banner))
     attackingWizardFont := font.MakeOptimizedFontWithPalette(fonts[4], makePaletteFromBanner(attackingArmy.Player.Wizard.Banner))
 
-    var selectedUnit *ArmyUnit
-    if len(defendingArmy.Units) > 0 {
-        selectedUnit = defendingArmy.Units[0]
-    } else {
-        log.Printf("Error: No defending units")
-        return nil
-    }
-
     imageCache := util.MakeImageCache(cache)
 
     tile0, _ := imageCache.GetImage("cmbgrass.lbx", 0, 0)
@@ -260,13 +271,13 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
         ImageCache: imageCache,
         Mouse: mouseData,
         Turn: TeamDefender,
-        CurrentTurn: 1,
+        CurrentTurn: 0,
         DefendingArmy: defendingArmy,
         TurnDefender: 0,
         AttackingArmy: attackingArmy,
         TurnAttacker: 0,
         Tiles: makeTiles(30, 30),
-        SelectedUnit: selectedUnit,
+        SelectedUnit: nil,
         DebugFont: debugFont,
         HudFont: hudFont,
         Coordinates: coordinates,
@@ -277,6 +288,9 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
     }
 
     combat.UI = combat.MakeUI()
+    combat.NextTurn()
+    combat.SelectedUnit = combat.ChooseNextUnit(TeamDefender)
+
     return combat
 }
 
@@ -510,6 +524,19 @@ func (combat *CombatScreen) ChooseNextUnit(team Team) *ArmyUnit {
     return nil
 }
 
+func (combat *CombatScreen) NextTurn() {
+    combat.CurrentTurn += 1
+
+    /* reset movement */
+    for _, unit := range combat.DefendingArmy.Units {
+        unit.MovesLeft = unit.Unit.MovementSpeed
+    }
+
+    for _, unit := range combat.AttackingArmy.Units {
+        unit.MovesLeft = unit.Unit.MovementSpeed
+    }
+}
+
 func (combat *CombatScreen) NextUnit() {
 
     var nextChoice *ArmyUnit
@@ -524,7 +551,7 @@ func (combat *CombatScreen) NextUnit() {
             if nextChoice == nil {
                 // if the other team still has nothing available then the entire turn has finished
                 // so go to the next turn and try again
-                combat.CurrentTurn += 1
+                combat.NextTurn()
                 combat.SelectedUnit = nil
             }
         }
@@ -581,8 +608,23 @@ func (combat *CombatScreen) withinMeleeRange(attacker *ArmyUnit, defender *ArmyU
     return xDiff <= 1 && yDiff <= 1
 }
 
+func (combat *CombatScreen) withinArrowRange(attacker *ArmyUnit, defender *ArmyUnit) bool {
+    /*
+    xDiff := math.Abs(float64(attacker.X - defender.X))
+    yDiff := math.Abs(float64(attacker.Y - defender.Y))
+
+    return xDiff <= 1 && yDiff <= 1
+    */
+    // FIXME: what is the actual range distance?
+    return false
+}
+
 func (combat *CombatScreen) canAttack(attacker *ArmyUnit, defender *ArmyUnit) bool {
     if defender.Unit.Flying && !attacker.Unit.Flying {
+        return false
+    }
+
+    if attacker.Team == defender.Team {
         return false
     }
 
@@ -602,6 +644,31 @@ func (combat *CombatScreen) Update() CombatState {
 
     hudImage, _ := combat.ImageCache.GetImage("cmbtfx.lbx", 28, 0)
 
+    if combat.UI.GetHighestLayerValue() > 0 || mouseY >= data.ScreenHeight - hudImage.Bounds().Dy() {
+        combat.MouseState = CombatClickHud
+    } else if combat.SelectedUnit != nil && combat.SelectedUnit.Moving {
+        combat.MouseState = CombatClickHud
+    } else {
+        who := combat.GetUnit(combat.MouseTileX, combat.MouseTileY)
+        if who == nil {
+            if combat.SelectedUnit.CanMoveTo(combat.MouseTileX, combat.MouseTileY) {
+                combat.MouseState = CombatMoveOk
+            } else {
+                combat.MouseState = CombatNotOk
+            }
+        } else {
+            if combat.canAttack(combat.SelectedUnit, who){
+                if combat.withinMeleeRange(combat.SelectedUnit, who) {
+                    combat.MouseState = CombatMeleeAttackOk
+                } else if combat.withinArrowRange(combat.SelectedUnit, who) {
+                    combat.MouseState = CombatRangeAttackOk
+                }
+            } else {
+                combat.MouseState = CombatNotOk
+            }
+        }
+    }
+
     // dont allow clicks into the hud area
     // also don't allow clicks into the game if the ui is showing some overlay
     if combat.UI.GetHighestLayerValue() == 0 &&
@@ -609,8 +676,8 @@ func (combat *CombatScreen) Update() CombatState {
        mouseY < data.ScreenHeight - hudImage.Bounds().Dy() &&
        combat.SelectedUnit.Moving == false && combat.SelectedUnit.Attacking == false {
 
-        if combat.TileIsEmpty(combat.MouseTileX, combat.MouseTileY) {
-            combat.SelectedUnit.Movement = combat.Counter
+        if combat.TileIsEmpty(combat.MouseTileX, combat.MouseTileY) && combat.SelectedUnit.CanMoveTo(combat.MouseTileX, combat.MouseTileY){
+            combat.SelectedUnit.MovementTick = combat.Counter
             combat.SelectedUnit.TargetX = combat.MouseTileX
             combat.SelectedUnit.TargetY = combat.MouseTileY
             combat.SelectedUnit.Moving = true
@@ -652,7 +719,7 @@ func (combat *CombatScreen) Update() CombatState {
 
         combat.SelectedUnit.Facing = computeFacing(useAngle)
 
-        speed := float64(combat.Counter - combat.SelectedUnit.Movement) / 4
+        speed := float64(combat.Counter - combat.SelectedUnit.MovementTick) / 4
         newX := float64(combat.SelectedUnit.X) + math.Cos(angle) * speed
         newY := float64(combat.SelectedUnit.Y) + math.Sin(angle) * speed
 
@@ -839,5 +906,16 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
     var mouseOptions ebiten.DrawImageOptions
     mouseX, mouseY := ebiten.CursorPosition()
     mouseOptions.GeoM.Translate(float64(mouseX), float64(mouseY))
-    screen.DrawImage(combat.Mouse.Normal, &mouseOptions)
+    switch combat.MouseState {
+        case CombatMoveOk:
+            screen.DrawImage(combat.Mouse.Move, &mouseOptions)
+        case CombatClickHud:
+            screen.DrawImage(combat.Mouse.Normal, &mouseOptions)
+        case CombatMeleeAttackOk:
+            screen.DrawImage(combat.Mouse.Attack, &mouseOptions)
+        case CombatRangeAttackOk:
+            screen.DrawImage(combat.Mouse.Arrow, &mouseOptions)
+        case CombatNotOk:
+            screen.DrawImage(combat.Mouse.Error, &mouseOptions)
+    }
 }
