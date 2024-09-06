@@ -464,7 +464,7 @@ func (combat *CombatScreen) MakeUI() *uilib.UI {
 
     // spell
     elements = append(elements, makeButton(1, 0, 0, func(){
-        spellUI := spellbook.MakeSpellBookCastUI(ui, combat.Cache)
+        spellUI := spellbook.MakeSpellBookCastUI(ui, combat.Cache, spellbook.Spells{})
         ui.AddElements(spellUI)
     }))
 

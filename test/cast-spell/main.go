@@ -32,6 +32,15 @@ func NewEngine() (*Engine, error) {
 }
 
 func (engine *Engine) MakeUI() *uilib.UI {
+    allSpells, err := spellbook.ReadSpellsFromCache(engine.Cache)
+    if err != nil {
+        log.Printf("Unable to read spells: %v", err)
+        allSpells = spellbook.Spells{}
+    }
+
+    spells := spellbook.Spells{}
+    spells.AddSpell(allSpells.FindByName("War Bears"))
+
     ui := &uilib.UI{
         Draw: func(ui *uilib.UI, screen *ebiten.Image) {
             ui.IterateElementsByLayer(func(element *uilib.UIElement) {
@@ -43,7 +52,7 @@ func (engine *Engine) MakeUI() *uilib.UI {
     }
     ui.SetElementsFromArray(nil)
 
-    more := spellbook.MakeSpellBookCastUI(ui, engine.Cache)
+    more := spellbook.MakeSpellBookCastUI(ui, engine.Cache, spells)
     ui.AddElements(more)
 
     return ui

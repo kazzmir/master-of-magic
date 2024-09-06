@@ -1,6 +1,7 @@
 package spellbook
 
 import (
+    "fmt"
     "image"
     "image/color"
     "math"
@@ -8,6 +9,7 @@ import (
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
 
@@ -519,12 +521,63 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
 
 // FIXME: take in the wizard/player that is casting the spell
 // somehow return the spell chosen
-func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
+func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells) []*uilib.UIElement {
     var elements []*uilib.UIElement
 
     imageCache := util.MakeImageCache(cache)
 
     getAlpha := ui.MakeFadeIn(7)
+
+    black := color.RGBA{R: 0, G: 0, B: 0, A: 0xff}
+
+    paletteBlack := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        black, black, black,
+        black, black, black,
+    }
+
+    getMagicIcon := func(spell Spell) *ebiten.Image {
+        index := -1
+        switch spell.Magic {
+            case data.LifeMagic: index = 7
+            case data.SorceryMagic: index = 5
+            case data.NatureMagic: index = 4
+            case data.DeathMagic: index = 8
+            case data.ChaosMagic: index = 6
+            case data.ArcaneMagic: index = 9
+        }
+
+        if index == -1 {
+            return nil
+        }
+
+        img, _ := imageCache.GetImage("spells.lbx", index, 0)
+        return img
+    }
+
+    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        log.Printf("Could not read fonts: %v", err)
+        return nil
+    }
+
+    fonts, _ := font.ReadFonts(fontLbx, 0)
+
+    infoFont := font.MakeOptimizedFontWithPalette(fonts[1], paletteBlack)
+
+    red := color.RGBA{R: 0x5a, G: 0, B: 0, A: 0xff}
+    redPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        red, red, red,
+        red, red, red,
+        red, red, red,
+        red, red, red,
+        red, red, red,
+        red, red, red,
+    }
+
+    titleFont := font.MakeOptimizedFontWithPalette(fonts[4], redPalette)
 
     elements = append(elements, &uilib.UIElement{
         Layer: 1,
@@ -543,6 +596,23 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
             options.ColorScale.ScaleAlpha(getAlpha())
             options.GeoM.Translate(10, 10)
             screen.DrawImage(background, &options)
+
+            bookX, bookY := options.GeoM.Apply(0, 0)
+
+            titleFont.PrintCenter(screen, bookX + 80, bookY + 7, 1, options.ColorScale, "Summoning")
+
+            if len(spells.Spells) > 0 {
+                spell := spells.Spells[0]
+                infoFont.Print(screen, bookX+15, bookY+20, 1, options.ColorScale, spell.Name)
+                infoFont.PrintRight(screen, bookX + 140, bookY+20, 1, options.ColorScale, fmt.Sprintf("%v MP", spell.CastCost))
+                icon := getMagicIcon(spell)
+
+                options2 := options
+                options2.GeoM.Translate(15, 20)
+                options2.GeoM.Translate(0, float64(infoFont.Height())+1)
+                screen.DrawImage(icon, &options2)
+            }
+
         },
     })
 
