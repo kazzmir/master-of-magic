@@ -916,7 +916,8 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
         combatImages, _ := combat.ImageCache.GetImages(unit.Unit.CombatLbxFile, unit.Unit.GetCombatIndex(unit.Facing))
 
         if combatImages != nil {
-            options.GeoM.Reset()
+            var unitOptions ebiten.DrawImageOptions
+            unitOptions.GeoM.Reset()
             var tx float64
             var ty float64
 
@@ -925,8 +926,8 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
             } else {
                 tx, ty = tilePosition(unit.X, unit.Y)
             }
-            options.GeoM.Translate(tx, ty)
-            options.GeoM.Translate(float64(tile0.Bounds().Dx()/2), float64(tile0.Bounds().Dy()/2))
+            unitOptions.GeoM.Translate(tx, ty)
+            unitOptions.GeoM.Translate(float64(tile0.Bounds().Dx()/2), float64(tile0.Bounds().Dy()/2))
 
             index := uint64(0)
             if unit.Unit.Flying {
@@ -937,7 +938,12 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
                 index = 2 + animationIndex % 2
             }
 
-            RenderCombatUnit(screen, combatImages[index], options, unit.Unit.Count)
+            if combat.HighlightedUnit == unit {
+                scaleValue := 1.5 + math.Sin(float64(combat.Counter)/5)/2
+                unitOptions.ColorScale.Scale(float32(scaleValue), 1, 1, 1)
+            }
+
+            RenderCombatUnit(screen, combatImages[index], unitOptions, unit.Unit.Count)
         }
     }
 
