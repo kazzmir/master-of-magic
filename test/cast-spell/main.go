@@ -45,6 +45,9 @@ func (engine *Engine) MakeUI() *uilib.UI {
     spells.AddSpell(allSpells.FindByName("Magic Spirit"))
     spells.AddSpell(allSpells.FindByName("Great Wyrm"))
     spells.AddSpell(allSpells.FindByName("Gorgons"))
+    spells.AddSpell(allSpells.FindByName("Arch Angel"))
+    spells.AddSpell(allSpells.FindByName("Bless"))
+    spells.AddSpell(allSpells.FindByName("Iron Skin"))
 
     ui := &uilib.UI{
         Draw: func(ui *uilib.UI, screen *ebiten.Image) {

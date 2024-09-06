@@ -708,6 +708,16 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells) []*ui
 
             options.GeoM.Translate(134, 0)
             screen.DrawImage(right, &options)
+
+            pageTurnRight, _ := imageCache.GetImage("spells.lbx", 2, 0)
+            options.GeoM.Reset()
+            options.GeoM.Translate(268, 14)
+            screen.DrawImage(pageTurnRight, &options)
+
+            pageTurnLeft, _ := imageCache.GetImage("spells.lbx", 1, 0)
+            options.GeoM.Reset()
+            options.GeoM.Translate(23, 14)
+            screen.DrawImage(pageTurnLeft, &options)
         },
     })
 
