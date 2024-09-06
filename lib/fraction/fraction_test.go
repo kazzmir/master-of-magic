@@ -30,4 +30,8 @@ func TestMore(test *testing.T){
     if !f1.Multiply(Make(0, 0)).IsZero() {
         test.Errorf("Expected %v to be zero", f1.Multiply(Make(0, 0)))
     }
+
+    if !Make(6, 11).Divide(Make(2, 3)).Equals(Make(9, 11)){
+        test.Errorf("Expected %v to equal %v", Make(6, 11).Divide(Make(2, 3)), Make(9, 11))
+    }
 }

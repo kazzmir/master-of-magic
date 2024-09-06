@@ -15,10 +15,22 @@ func GCD(a, b int) int {
 }
 
 func Make(numerator int, denominator int) Fraction {
+    if denominator == 0 {
+        // maybe panic?
+        return Fraction{}
+    }
+
     return Fraction{
         Numerator: numerator,
         Denominator: denominator,
     }.Reduce()
+}
+
+func FromInt(numerator int) Fraction {
+    return Fraction{
+        Numerator: numerator,
+        Denominator: 1,
+    }
 }
 
 func (fraction Fraction) ToFloat() float64 {
@@ -84,6 +96,17 @@ func (fraction Fraction) Negate() Fraction {
     }
 }
 
+func (fraction Fraction) Invert() Fraction {
+    if fraction.IsZero() {
+        return Fraction{}
+    }
+
+    return Fraction{
+        Numerator: fraction.Denominator,
+        Denominator: fraction.Numerator,
+    }
+}
+
 func (fraction Fraction) Multiply(other Fraction) Fraction {
     if fraction.IsZero() || other.IsZero() {
         return Fraction{}
@@ -93,4 +116,8 @@ func (fraction Fraction) Multiply(other Fraction) Fraction {
         Numerator: fraction.Numerator * other.Numerator,
         Denominator: fraction.Denominator * other.Denominator,
     }.Reduce()
+}
+
+func (fraction Fraction) Divide(other Fraction) Fraction {
+    return fraction.Multiply(other.Invert())
 }
