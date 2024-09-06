@@ -708,16 +708,45 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells) []*ui
 
             options.GeoM.Translate(134, 0)
             screen.DrawImage(right, &options)
+        },
+    })
 
-            pageTurnRight, _ := imageCache.GetImage("spells.lbx", 2, 0)
-            options.GeoM.Reset()
-            options.GeoM.Translate(268, 14)
-            screen.DrawImage(pageTurnRight, &options)
+    pageTurnRight, _ := imageCache.GetImage("spells.lbx", 2, 0)
+    pageTurnRightRect := image.Rect(0, 0, pageTurnRight.Bounds().Dx(), pageTurnRight.Bounds().Dy()).Add(image.Pt(268, 14))
+    elements = append(elements, &uilib.UIElement{
+        Layer: 1,
+        Rect: pageTurnRightRect,
+        LeftClick: func(this *uilib.UIElement){
+            if currentPage + 1 < len(spellPages) {
+                currentPage += 2
+            }
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            if currentPage + 1 < len(spellPages) {
+                options.GeoM.Translate(float64(pageTurnRightRect.Min.X), float64(pageTurnRightRect.Min.Y))
+                screen.DrawImage(pageTurnRight, &options)
+            }
+        },
+    })
 
-            pageTurnLeft, _ := imageCache.GetImage("spells.lbx", 1, 0)
-            options.GeoM.Reset()
-            options.GeoM.Translate(23, 14)
-            screen.DrawImage(pageTurnLeft, &options)
+    pageTurnLeft, _ := imageCache.GetImage("spells.lbx", 1, 0)
+    pageTurnLeftRect := image.Rect(0, 0, pageTurnLeft.Bounds().Dx(), pageTurnLeft.Bounds().Dy()).Add(image.Pt(23, 14))
+    elements = append(elements, &uilib.UIElement{
+        Rect: pageTurnLeftRect,
+        Layer: 1,
+        LeftClick: func(this *uilib.UIElement){
+            if currentPage >= 2 {
+                currentPage -= 2
+            }
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            if currentPage > 0 {
+                options.GeoM.Translate(float64(pageTurnLeftRect.Min.X), float64(pageTurnLeftRect.Min.Y))
+                screen.DrawImage(pageTurnLeft, &options)
+            }
+
         },
     })
 
