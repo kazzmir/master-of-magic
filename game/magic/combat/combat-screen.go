@@ -21,7 +21,7 @@ import (
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
-    // "github.com/hajimehoshi/ebiten/v2/vector"
+    "github.com/hajimehoshi/ebiten/v2/vector"
 )
 
 type CombatState int
@@ -150,6 +150,10 @@ type CombatScreen struct {
 
     DebugFont *font.Font
     HudFont *font.Font
+    InfoFont *font.Font
+
+    // when the user hovers over a unit, that unit should be shown in a little info box at the upper right
+    HighlightedUnit *ArmyUnit
 
     AttackingWizardFont *font.Font
     DefendingWizardFont *font.Font
@@ -257,6 +261,16 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
 
     hudFont := font.MakeOptimizedFontWithPalette(fonts[0], blackPalette)
 
+    orange := color.RGBA{R: 0xf6, G: 0x9c, B: 0x22, A: 0xff}
+    orangePalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        orange, orange, orange,
+        orange, orange, orange,
+    }
+
+    infoFont := font.MakeOptimizedFontWithPalette(fonts[0], orangePalette)
+
     defendingWizardFont := font.MakeOptimizedFontWithPalette(fonts[4], makePaletteFromBanner(defendingArmy.Player.Wizard.Banner))
     attackingWizardFont := font.MakeOptimizedFontWithPalette(fonts[4], makePaletteFromBanner(attackingArmy.Player.Wizard.Banner))
 
@@ -310,6 +324,7 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
         SelectedUnit: nil,
         DebugFont: debugFont,
         HudFont: hudFont,
+        InfoFont: infoFont,
         Coordinates: coordinates,
         ScreenToTile: screenToTile,
         WhitePixel: whitePixel,
@@ -699,6 +714,9 @@ func (combat *CombatScreen) Update() CombatState {
         }
     }
 
+    // if there is no unit at the tile position then the highlighted unit will be nil
+    combat.HighlightedUnit = combat.GetUnit(combat.MouseTileX, combat.MouseTileY)
+
     // dont allow clicks into the hud area
     // also don't allow clicks into the game if the ui is showing some overlay
     if combat.UI.GetHighestLayerValue() == 0 &&
@@ -933,9 +951,56 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
 
     combat.UI.Draw(combat.UI, screen)
 
+    if combat.HighlightedUnit != nil {
+        x1 := 255 - 1
+        y1 := 5
+        width := 65
+        height := 45
+        vector.DrawFilledRect(screen, float32(x1), float32(y1), float32(width), float32(height), color.RGBA{R: 0, G: 0, B: 0, A: 100}, false)
+        vector.StrokeRect(screen, float32(x1), float32(y1), float32(width), float32(height), 1, util.PremultiplyAlpha(color.RGBA{R: 0x27, G: 0x4e, B: 0xdc, A: 100}), false)
+        combat.InfoFont.PrintCenter(screen, float64(x1 + 35), float64(y1 + 2), 1, ebiten.ColorScale{}, fmt.Sprintf("%v", combat.HighlightedUnit.Unit.Name))
+
+        meleeImage, _ := combat.ImageCache.GetImage("compix.lbx", 61, 0)
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(float64(x1 + 14), float64(y1 + 10))
+        screen.DrawImage(meleeImage, &options)
+        combat.InfoFont.PrintRight(screen, float64(x1 + 14), float64(y1 + 10 + 2), 1, ebiten.ColorScale{}, fmt.Sprintf("%v", combat.HighlightedUnit.Unit.MeleeAttackPower))
+
+        movementImage, _ := combat.ImageCache.GetImage("compix.lbx", 72, 0)
+        if combat.HighlightedUnit.Unit.Flying {
+            movementImage, _ = combat.ImageCache.GetImage("compix.lbx", 73, 0)
+        }
+
+        options.GeoM.Reset()
+        options.GeoM.Translate(float64(x1 + 14), float64(y1 + 26))
+        screen.DrawImage(movementImage, &options)
+        combat.InfoFont.PrintRight(screen, float64(x1 + 14), float64(y1 + 26 + 2), 1, ebiten.ColorScale{}, fmt.Sprintf("%v", combat.HighlightedUnit.Unit.MovementSpeed))
+
+        armorImage, _ := combat.ImageCache.GetImage("compix.lbx", 70, 0)
+        options.GeoM.Reset()
+        options.GeoM.Translate(float64(x1 + 48), float64(y1 + 10))
+        screen.DrawImage(armorImage, &options)
+        combat.InfoFont.PrintRight(screen, float64(x1 + 48), float64(y1 + 10 + 2), 1, ebiten.ColorScale{}, fmt.Sprintf("%v", combat.HighlightedUnit.Unit.Defense))
+
+        resistanceImage, _ := combat.ImageCache.GetImage("compix.lbx", 75, 0)
+        options.GeoM.Reset()
+        options.GeoM.Translate(float64(x1 + 48), float64(y1 + 18))
+        screen.DrawImage(resistanceImage, &options)
+        combat.InfoFont.PrintRight(screen, float64(x1 + 48), float64(y1 + 18 + 2), 1, ebiten.ColorScale{}, fmt.Sprintf("%v", combat.HighlightedUnit.Unit.Resistance))
+
+        combat.InfoFont.PrintCenter(screen, float64(x1 + 14), float64(y1 + 37), 1, ebiten.ColorScale{}, "Hits")
+
+        healthyColor := color.RGBA{R: 0, G: 0xff, B: 0, A: 0xff}
+        // medium healthy is yellow
+        // unhealthy is red
+        healthWidth := 15
+
+        vector.StrokeLine(screen, float32(x1 + 25), float32(y1 + 40), float32(x1 + 25 + healthWidth), float32(y1 + 40), 1, healthyColor, false)
+    }
+
     var mouseOptions ebiten.DrawImageOptions
     mouseX, mouseY := ebiten.CursorPosition()
-    mouseOptions.GeoM.Translate(float64(mouseX), float64(mouseY))
+    mouseOptions.GeoM.Translate(float64(mouseX-1), float64(mouseY-1))
     switch combat.MouseState {
         case CombatMoveOk:
             screen.DrawImage(combat.Mouse.Move, &mouseOptions)
