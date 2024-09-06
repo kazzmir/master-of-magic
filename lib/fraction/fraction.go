@@ -1,5 +1,9 @@
 package fraction
 
+import (
+    "fmt"
+)
+
 // represents exact fractions, instead of using floats
 
 type Fraction struct {
@@ -43,6 +47,9 @@ func (fraction Fraction) Reduce() Fraction {
     }
 
     gcd := GCD(fraction.Numerator, fraction.Denominator)
+    if gcd < 0 {
+        gcd = -gcd
+    }
     return Fraction{
         Numerator: fraction.Numerator / gcd,
         Denominator: fraction.Denominator / gcd,
@@ -120,4 +127,21 @@ func (fraction Fraction) Multiply(other Fraction) Fraction {
 
 func (fraction Fraction) Divide(other Fraction) Fraction {
     return fraction.Multiply(other.Invert())
+}
+
+func (fraction Fraction) LessThanEqual(other Fraction) bool {
+    return fraction.Equals(other) || fraction.LessThan(other)
+}
+
+func (fraction Fraction) LessThan(other Fraction) bool {
+    rest := other.Subtract(fraction)
+    return rest.Numerator > 0
+}
+
+func (fraction Fraction) GreaterThan(other Fraction) bool {
+    return !fraction.LessThanEqual(other)
+}
+
+func (fraction Fraction) String() string {
+    return fmt.Sprintf("%v/%v", fraction.Numerator, fraction.Denominator)
 }

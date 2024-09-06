@@ -34,4 +34,20 @@ func TestMore(test *testing.T){
     if !Make(6, 11).Divide(Make(2, 3)).Equals(Make(9, 11)){
         test.Errorf("Expected %v to equal %v", Make(6, 11).Divide(Make(2, 3)), Make(9, 11))
     }
+
+    if !Make(1, 2).LessThanEqual(Make(3, 4)){
+        test.Errorf("Expected %v to be less than or equal to %v", Make(1, 2), Make(3, 4))
+    }
+
+    if !Make(1, 2).LessThanEqual(Make(1, 2)){
+        test.Errorf("Expected %v to be less than or equal to %v", Make(1, 2), Make(1, 2))
+    }
+
+    if Make(1, 2).LessThanEqual(Make(1, 3)){
+        test.Errorf("Expected %v to not be less than or equal to %v. Diff %v", Make(1, 2), Make(1, 3), Make(1, 3).Subtract(Make(1, 2)))
+    }
+
+    if !Make(-1, 2).LessThanEqual(FromInt(0)){
+        test.Errorf("Expected %v to be less than or equal to %v", Make(-1, 2), FromInt(0))
+    }
 }

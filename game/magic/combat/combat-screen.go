@@ -9,6 +9,7 @@ import (
     "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/fraction"
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/lib/mouse"
     "github.com/kazzmir/master-of-magic/lib/colorconv"
@@ -68,7 +69,7 @@ type ArmyUnit struct {
     X int
     Y int
     Health int
-    MovesLeft int
+    MovesLeft fraction.Fraction
 
     Team Team
 
@@ -85,11 +86,21 @@ type ArmyUnit struct {
     LastTurn int
 }
 
-func computeMoves(x1 int, y1 int, x2 int, y2 int) int {
-    movesNeeded := 0
+func computeMoves(x1 int, y1 int, x2 int, y2 int) fraction.Fraction {
+    movesNeeded := fraction.Fraction{}
 
     for x1 != x2 || y1 != y2 {
-        movesNeeded += 1
+        // movesNeeded += 1
+
+        xDiff := int(math.Abs(float64(x1 - x2)))
+        yDiff := int(math.Abs(float64(y1 - y2)))
+
+        // move diagonally
+        if xDiff > 0 && yDiff > 0 {
+            movesNeeded = movesNeeded.Add(fraction.Make(3, 2))
+        } else {
+            movesNeeded = movesNeeded.Add(fraction.FromInt(1))
+        }
 
         // a move can be made in any of the 8 available directions
         if x1 < x2 {
@@ -109,11 +120,49 @@ func computeMoves(x1 int, y1 int, x2 int, y2 int) int {
     return movesNeeded
 }
 
+// this allows a unit to move a space diagonally even if they only have 0.5 movement points left
 func (unit *ArmyUnit) CanMoveTo(x int, y int) bool {
+    /*
     movesNeeded := computeMoves(unit.X, unit.Y, x, y)
     // log.Printf("CanMoveTo: %v,%v -> %v,%v moves left %v need %v", unit.X, unit.Y, x, y, unit.MovesLeft, movesNeeded)
 
-    return movesNeeded <= unit.MovesLeft
+    return movesNeeded.LessThanEqual(unit.MovesLeft)
+    */
+
+    moves := unit.MovesLeft
+
+    x1 := unit.X
+    y1 := unit.Y
+
+    for x1 != x || y1 != y && moves.GreaterThan(fraction.FromInt(0)) {
+        xDiff := int(math.Abs(float64(x1 - x)))
+        yDiff := int(math.Abs(float64(y1 - y)))
+
+        // move diagonally
+        if xDiff > 0 && yDiff > 0 {
+            moves = moves.Subtract(fraction.Make(3, 2))
+        } else {
+            moves = moves.Subtract(fraction.FromInt(1))
+        }
+
+        // a move can be made in any of the 8 available directions
+        if x1 < x {
+            x1 += 1
+        }
+        if x1 > x {
+            x1 -= 1
+        }
+        if y1 < y {
+            y1 += 1
+        }
+        if y1 > y {
+            y1 -= 1
+        }
+    }
+
+    return x1 == x && y1 == y
+
+    // return movesRemaining(unit.X, unit.Y, x, y, unit.MovesLeft).GreaterThanEqual(fraction.FromInt(0))
 
     /*
     xDiff := math.Abs(float64(unit.X - x))
@@ -358,7 +407,7 @@ func (combat *CombatScreen) MakeUI() *uilib.UI {
 
             rightImage, _ := combat.ImageCache.GetImage(combat.SelectedUnit.Unit.CombatLbxFile, combat.SelectedUnit.Unit.GetCombatIndex(units.FacingRight), 0)
             options.GeoM.Reset()
-            options.GeoM.Translate(90, 170)
+            options.GeoM.Translate(89, 170)
             screen.DrawImage(rightImage, &options)
 
             combat.HudFont.Print(screen, 92, 167, 1, ebiten.ColorScale{}, combat.SelectedUnit.Unit.Name)
@@ -367,7 +416,7 @@ func (combat *CombatScreen) MakeUI() *uilib.UI {
             options.GeoM.Reset()
             options.GeoM.Translate(126, 173)
             screen.DrawImage(plainAttack, &options)
-            combat.HudFont.Print(screen, 121, 174, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", combat.SelectedUnit.Unit.MeleeAttackPower))
+            combat.HudFont.PrintRight(screen, 126, 174, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", combat.SelectedUnit.Unit.MeleeAttackPower))
 
             var movementImage *ebiten.Image
             if combat.SelectedUnit.Unit.Flying {
@@ -379,7 +428,7 @@ func (combat *CombatScreen) MakeUI() *uilib.UI {
             options.GeoM.Reset()
             options.GeoM.Translate(126, 188)
             screen.DrawImage(movementImage, &options)
-            combat.HudFont.Print(screen, 121, 190, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", combat.SelectedUnit.MovesLeft))
+            combat.HudFont.PrintRight(screen, 126, 190, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", combat.SelectedUnit.MovesLeft.ToFloat()))
 
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
                 if element.Draw != nil {
@@ -574,11 +623,11 @@ func (combat *CombatScreen) NextTurn() {
 
     /* reset movement */
     for _, unit := range combat.DefendingArmy.Units {
-        unit.MovesLeft = unit.Unit.MovementSpeed
+        unit.MovesLeft = fraction.FromInt(unit.Unit.MovementSpeed)
     }
 
     for _, unit := range combat.AttackingArmy.Units {
-        unit.MovesLeft = unit.Unit.MovementSpeed
+        unit.MovesLeft = fraction.FromInt(unit.Unit.MovementSpeed)
     }
 }
 
@@ -665,7 +714,7 @@ func (combat *CombatScreen) withinArrowRange(attacker *ArmyUnit, defender *ArmyU
 }
 
 func (combat *CombatScreen) canAttack(attacker *ArmyUnit, defender *ArmyUnit) bool {
-    if attacker.MovesLeft == 0 {
+    if attacker.MovesLeft.LessThanEqual(fraction.FromInt(0)) {
         return false
     }
 
@@ -733,7 +782,10 @@ func (combat *CombatScreen) Update() CombatState {
             combat.SelectedUnit.TargetX = combat.MouseTileX
             combat.SelectedUnit.TargetY = combat.MouseTileY
             combat.SelectedUnit.Moving = true
-            combat.SelectedUnit.MovesLeft -= computeMoves(combat.SelectedUnit.X, combat.SelectedUnit.Y, combat.MouseTileX, combat.MouseTileY)
+            combat.SelectedUnit.MovesLeft = combat.SelectedUnit.MovesLeft.Subtract(computeMoves(combat.SelectedUnit.X, combat.SelectedUnit.Y, combat.MouseTileX, combat.MouseTileY))
+            if combat.SelectedUnit.MovesLeft.LessThan(fraction.FromInt(0)) {
+                combat.SelectedUnit.MovesLeft = fraction.FromInt(0)
+            }
        } else {
 
            defender := combat.GetUnit(combat.MouseTileX, combat.MouseTileY)
@@ -741,8 +793,12 @@ func (combat *CombatScreen) Update() CombatState {
            if defender != nil && defender.Team != combat.SelectedUnit.Team && combat.withinMeleeRange(combat.SelectedUnit, defender) && combat.canAttack(combat.SelectedUnit, defender){
                combat.SelectedUnit.Attacking = true
                combat.SelectedUnit.AttackingCounter = combat.Counter
-               // FIXME: how many moves does an attack take?
-               combat.SelectedUnit.MovesLeft -= 1
+               // attacking takes 50% of movement points
+               // FIXME: in some cases an extra 0.5 movements points is lost, possibly due to counter attacks?
+               combat.SelectedUnit.MovesLeft = combat.SelectedUnit.MovesLeft.Subtract(fraction.FromInt(combat.SelectedUnit.Unit.MovementSpeed).Divide(fraction.FromInt(2)))
+               if combat.SelectedUnit.MovesLeft.LessThan(fraction.FromInt(0)) {
+                   combat.SelectedUnit.MovesLeft = fraction.FromInt(0)
+               }
 
                combat.SelectedUnit.Facing = faceTowards(combat.SelectedUnit.X, combat.SelectedUnit.Y, combat.MouseTileX, combat.MouseTileY)
                defender.Facing = faceTowards(defender.X, defender.Y, combat.SelectedUnit.X, combat.SelectedUnit.Y)
@@ -760,6 +816,11 @@ func (combat *CombatScreen) Update() CombatState {
         if combat.Counter - combat.SelectedUnit.AttackingCounter > 60 {
             combat.SelectedUnit.Attacking = false
             combat.SelectedUnit.AttackingCounter = 0
+
+            if combat.SelectedUnit.MovesLeft.LessThanEqual(fraction.FromInt(0)) {
+                combat.SelectedUnit.LastTurn = combat.CurrentTurn
+                combat.NextUnit()
+            }
         }
     }
 
@@ -786,7 +847,7 @@ func (combat *CombatScreen) Update() CombatState {
             combat.SelectedUnit.Y = combat.SelectedUnit.TargetY
             combat.SelectedUnit.Moving = false
 
-            if combat.SelectedUnit.MovesLeft == 0 {
+            if combat.SelectedUnit.MovesLeft.LessThanEqual(fraction.FromInt(0)) {
                 combat.SelectedUnit.LastTurn = combat.CurrentTurn
                 combat.NextUnit()
             }
@@ -989,7 +1050,7 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
         options.GeoM.Reset()
         options.GeoM.Translate(float64(x1 + 14), float64(y1 + 26))
         screen.DrawImage(movementImage, &options)
-        combat.InfoFont.PrintRight(screen, float64(x1 + 14), float64(y1 + 26 + 2), 1, ebiten.ColorScale{}, fmt.Sprintf("%v", combat.HighlightedUnit.MovesLeft))
+        combat.InfoFont.PrintRight(screen, float64(x1 + 14), float64(y1 + 26 + 2), 1, ebiten.ColorScale{}, fmt.Sprintf("%v", combat.HighlightedUnit.MovesLeft.ToFloat()))
 
         armorImage, _ := combat.ImageCache.GetImage("compix.lbx", 70, 0)
         options.GeoM.Reset()
