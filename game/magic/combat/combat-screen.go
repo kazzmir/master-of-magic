@@ -85,11 +85,41 @@ type ArmyUnit struct {
     LastTurn int
 }
 
+func computeMoves(x1 int, y1 int, x2 int, y2 int) int {
+    movesNeeded := 0
+
+    for x1 != x2 || y1 != y2 {
+        movesNeeded += 1
+
+        // a move can be made in any of the 8 available directions
+        if x1 < x2 {
+            x1 += 1
+        }
+        if x1 > x2 {
+            x1 -= 1
+        }
+        if y1 < y2 {
+            y1 += 1
+        }
+        if y1 > y2 {
+            y1 -= 1
+        }
+    }
+
+    return movesNeeded
+}
+
 func (unit *ArmyUnit) CanMoveTo(x int, y int) bool {
-    // log.Printf("CanMoveTo: %v,%v -> %v,%v moves left %v", unit.X, unit.Y, x, y, unit.MovesLeft)
+    movesNeeded := computeMoves(unit.X, unit.Y, x, y)
+    // log.Printf("CanMoveTo: %v,%v -> %v,%v moves left %v need %v", unit.X, unit.Y, x, y, unit.MovesLeft, movesNeeded)
+
+    return movesNeeded <= unit.MovesLeft
+
+    /*
     xDiff := math.Abs(float64(unit.X - x))
     yDiff := math.Abs(float64(unit.Y - y))
     return int(xDiff + yDiff) <= unit.MovesLeft
+    */
 }
 
 type Army struct {
