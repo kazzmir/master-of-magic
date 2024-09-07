@@ -1087,8 +1087,10 @@ func distanceInRange(x1 float64, y1 float64, x2 float64, y2 float64, r float64) 
     return xDiff * xDiff + yDiff * yDiff <= r*r
 }
 
-func (combat *CombatScreen) UpdateProjectiles(){
+func (combat *CombatScreen) UpdateProjectiles() bool {
     animationSpeed := uint64(5)
+
+    alive := len(combat.Projectiles) > 0
 
     var projectilesOut []*Projectile
     for _, projectile := range combat.Projectiles {
@@ -1114,6 +1116,8 @@ func (combat *CombatScreen) UpdateProjectiles(){
     }
 
     combat.Projectiles = projectilesOut
+
+    return alive
 }
 
 func (combat *CombatScreen) Update() CombatState {
@@ -1157,7 +1161,12 @@ func (combat *CombatScreen) Update() CombatState {
         return CombatStateRunning
     }
 
-    combat.UpdateProjectiles()
+    if combat.UpdateProjectiles() {
+        combat.UI.Disable()
+        return CombatStateRunning
+    }
+
+    combat.UI.Enable()
 
     if combat.UI.GetHighestLayerValue() > 0 || mouseY >= hudY {
         combat.MouseState = CombatClickHud

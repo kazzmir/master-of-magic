@@ -65,6 +65,21 @@ type UI struct {
     LeftClickedElements []*UIElement
 
     Delays []UIDelay
+
+    // disabled so that the zero value is enabled
+    Disabled bool
+}
+
+func (ui *UI) Enable() {
+    ui.Disabled = false
+}
+
+func (ui *UI) Disable() {
+    ui.Disabled = true
+}
+
+func (ui *UI) IsDisabled() bool {
+    return ui.Disabled
 }
 
 func (ui *UI) MakeFadeIn(time uint64) AlphaFadeFunc {
@@ -208,7 +223,7 @@ func (ui *UI) StandardUpdate() {
     }
     ui.Delays = keepDelays
 
-    if ui.HandleKey != nil {
+    if !ui.Disabled && ui.HandleKey != nil {
         keys := make([]ebiten.Key, 0)
         keys = inpututil.AppendJustPressedKeys(keys)
 
@@ -248,7 +263,7 @@ func (ui *UI) StandardUpdate() {
             if element.Inside != nil {
                 element.Inside(element, mouseX - element.Rect.Min.X, mouseY - element.Rect.Min.Y)
             }
-            if leftClick {
+            if !ui.Disabled && leftClick {
                 elementLeftClicked = true
                 if element.LeftClick != nil {
                     element.LeftClick(element)
@@ -277,7 +292,7 @@ func (ui *UI) StandardUpdate() {
                 }
 
             }
-            if rightClick && element.RightClick != nil {
+            if !ui.Disabled && rightClick && element.RightClick != nil {
                 element.RightClick(element)
             }
         } else {
@@ -287,7 +302,7 @@ func (ui *UI) StandardUpdate() {
         }
     }
 
-    if leftClick && !elementLeftClicked {
+    if !ui.Disabled && leftClick && !elementLeftClicked {
         for _, element := range ui.GetHighestLayer() {
             if element.NotLeftClicked != nil {
                 element.NotLeftClicked(element)
