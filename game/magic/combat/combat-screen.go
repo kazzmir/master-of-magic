@@ -427,6 +427,41 @@ func (combat *CombatScreen) AddProjectile(projectile *Projectile){
     combat.Projectiles = append(combat.Projectiles, projectile)
 }
 
+func (combat *CombatScreen) CreateIceBoltProjectile(target *ArmyUnit) {
+    images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 11)
+
+    loopImages := images[0:3]
+    explodeImages := images[3:]
+
+    // find where on the screen the unit is
+    screenX, screenY := combat.Coordinates.Apply(float64(target.X), float64(target.Y))
+    screenY -= 10
+    screenX += 2
+
+    x := screenX + 40 + rand.Float64() * 60
+    y := -rand.Float64() * 40
+
+    speed := 2.5
+
+    angle := math.Atan2(screenY - y, screenX - x)
+
+    // log.Printf("Create fireball projectile at %v,%v -> %v,%v", x, y, screenX, screenY)
+
+    projectile := &Projectile{
+        X: x,
+        Y: y,
+        Speed: speed,
+        Angle: angle,
+        TargetX: screenX,
+        TargetY: screenY,
+        Animation: util.MakeAnimation(loopImages, true),
+        Explode: util.MakeAnimation(explodeImages, false),
+    }
+
+    combat.AddProjectile(projectile)
+
+}
+
 func (combat *CombatScreen) CreateFireballProjectile(target *ArmyUnit) {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 23)
 
@@ -466,70 +501,81 @@ func (combat *CombatScreen) CreateFireballProjectile(target *ArmyUnit) {
     combat.AddProjectile(projectile)
 }
 
-func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellbook.Spell){
-    if spell.Name == "Fireball" {
-        teamAttacked := TeamAttacker
-        if combat.AttackingArmy.Player == player {
-            teamAttacked = TeamDefender
-        }
+func (combat *CombatScreen) DoTargetUnitSpell(player *playerlib.Player, spell spellbook.Spell, onTarget func(*ArmyUnit)){
+    teamAttacked := TeamAttacker
+    if combat.AttackingArmy.Player == player {
+        teamAttacked = TeamDefender
+    }
 
-        // log.Printf("Create sound for spell %v: %v", spell.Name, spell.Sound)
+    // log.Printf("Create sound for spell %v: %v", spell.Name, spell.Sound)
 
-        x := 250
-        if player == combat.DefendingArmy.Player {
-            x = 3
-        }
+    x := 250
+    if player == combat.DefendingArmy.Player {
+        x = 3
+    }
 
-        y := 168
+    y := 168
 
-        var elements []*uilib.UIElement
+    var elements []*uilib.UIElement
 
-        removeElements := func(){
-            combat.UI.RemoveElements(elements)
-        }
+    removeElements := func(){
+        combat.UI.RemoveElements(elements)
+    }
 
-        selectElement := &uilib.UIElement{
-            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                combat.WhiteFont.PrintWrap(screen, float64(x), float64(y), 70, 1, ebiten.ColorScale{}, fmt.Sprintf("Select a target for a %v spell.", spell.Name))
-            },
-        }
+    selectElement := &uilib.UIElement{
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            combat.WhiteFont.PrintWrap(screen, float64(x), float64(y), 75, 1, ebiten.ColorScale{}, fmt.Sprintf("Select a target for a %v spell.", spell.Name))
+        },
+    }
 
-        cancelImages, _ := combat.ImageCache.GetImages("compix.lbx", 22)
-        cancelRect := image.Rect(0, 0, cancelImages[0].Bounds().Dx(), cancelImages[0].Bounds().Dy()).Add(image.Point{x + 15, y + 15})
-        cancelIndex := 0
-        cancelElement := &uilib.UIElement{
-            Rect: cancelRect,
-            LeftClick: func(element *uilib.UIElement){
-                cancelIndex = 1
-            },
-            LeftClickRelease: func(element *uilib.UIElement){
-                cancelIndex = 0
-                combat.DoSelectUnit = false
-                combat.SelectTarget = func(target *ArmyUnit){}
-                removeElements()
-            },
-            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(cancelRect.Min.X), float64(cancelRect.Min.Y))
-                screen.DrawImage(cancelImages[cancelIndex], &options)
-            },
-        }
-
-        elements = append(elements, selectElement, cancelElement)
-
-        combat.UI.AddElements(elements)
-
-        combat.DoSelectUnit = true
-        combat.SelectTeam = teamAttacked
-        combat.SelectTarget = func(target *ArmyUnit){
-            sound, err := audio.LoadSound(combat.Cache, spell.Sound)
-            if err == nil {
-                sound.Play()
-            }
-
+    cancelImages, _ := combat.ImageCache.GetImages("compix.lbx", 22)
+    cancelRect := image.Rect(0, 0, cancelImages[0].Bounds().Dx(), cancelImages[0].Bounds().Dy()).Add(image.Point{x + 15, y + 15})
+    cancelIndex := 0
+    cancelElement := &uilib.UIElement{
+        Rect: cancelRect,
+        LeftClick: func(element *uilib.UIElement){
+            cancelIndex = 1
+        },
+        LeftClickRelease: func(element *uilib.UIElement){
+            cancelIndex = 0
+            combat.DoSelectUnit = false
+            combat.SelectTarget = func(target *ArmyUnit){}
             removeElements()
-            combat.CreateFireballProjectile(target)
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(cancelRect.Min.X), float64(cancelRect.Min.Y))
+            screen.DrawImage(cancelImages[cancelIndex], &options)
+        },
+    }
+
+    elements = append(elements, selectElement, cancelElement)
+
+    combat.UI.AddElements(elements)
+
+    combat.DoSelectUnit = true
+    combat.SelectTeam = teamAttacked
+    combat.SelectTarget = func(target *ArmyUnit){
+        sound, err := audio.LoadSound(combat.Cache, spell.Sound)
+        if err == nil {
+            sound.Play()
         }
+
+        removeElements()
+        onTarget(target)
+    }
+}
+
+func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellbook.Spell){
+    switch spell.Name {
+        case "Fireball":
+            combat.DoTargetUnitSpell(player, spell, func(target *ArmyUnit){
+                combat.CreateFireballProjectile(target)
+            })
+        case "Ice Bolt":
+            combat.DoTargetUnitSpell(player, spell, func(target *ArmyUnit){
+                combat.CreateIceBoltProjectile(target)
+            })
     }
 }
 
@@ -892,6 +938,35 @@ func distanceInRange(x1 float64, y1 float64, x2 float64, y2 float64, r float64) 
     return xDiff * xDiff + yDiff * yDiff <= r*r
 }
 
+func (combat *CombatScreen) UpdateProjectiles(){
+    animationSpeed := uint64(5)
+
+    var projectilesOut []*Projectile
+    for _, projectile := range combat.Projectiles {
+        keep := false
+        if distanceInRange(projectile.X, projectile.Y, projectile.TargetX, projectile.TargetY, 5) {
+            projectile.Exploding = true
+            keep = true
+            if combat.Counter % animationSpeed == 0 && !projectile.Explode.Next() {
+                keep = false
+            }
+        } else {
+            projectile.X += math.Cos(projectile.Angle) * projectile.Speed
+            projectile.Y += math.Sin(projectile.Angle) * projectile.Speed
+            if combat.Counter % animationSpeed == 0 {
+                projectile.Animation.Next()
+            }
+            keep = true
+        }
+
+        if keep {
+            projectilesOut = append(projectilesOut, projectile)
+        }
+    }
+
+    combat.Projectiles = projectilesOut
+}
+
 func (combat *CombatScreen) Update() CombatState {
     combat.Counter += 1
 
@@ -933,30 +1008,7 @@ func (combat *CombatScreen) Update() CombatState {
         return CombatStateRunning
     }
 
-    var projectilesOut []*Projectile
-    for _, projectile := range combat.Projectiles {
-        keep := false
-        if distanceInRange(projectile.X, projectile.Y, projectile.TargetX, projectile.TargetY, 5) {
-            projectile.Exploding = true
-            keep = true
-            if combat.Counter % 4 == 0 && !projectile.Explode.Next() {
-                keep = false
-            }
-        } else {
-            projectile.X += math.Cos(projectile.Angle) * projectile.Speed
-            projectile.Y += math.Sin(projectile.Angle) * projectile.Speed
-            if combat.Counter % 5 == 0 {
-                projectile.Animation.Next()
-            }
-            keep = true
-        }
-
-        if keep {
-            projectilesOut = append(projectilesOut, projectile)
-        }
-    }
-
-    combat.Projectiles = projectilesOut
+    combat.UpdateProjectiles()
 
     if combat.UI.GetHighestLayerValue() > 0 || mouseY >= hudY {
         combat.MouseState = CombatClickHud
