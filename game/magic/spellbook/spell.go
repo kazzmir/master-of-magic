@@ -536,7 +536,8 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
 
     getAlpha := ui.MakeFadeIn(7)
 
-    black := color.RGBA{R: 0, G: 0, B: 0, A: 0xff}
+    // value needs to be one so that the ColorScale later on works
+    black := color.RGBA{R: 1, G: 1, B: 1, A: 0xff}
 
     paletteBlack := color.Palette{
         color.RGBA{R: 0, G: 0, B: 0, A: 0},
@@ -593,6 +594,8 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
 
     var chosenSpell Spell
 
+    var highlightedSpell Spell
+
     renderPage := func(screen *ebiten.Image, options ebiten.DrawImageOptions, spells Spells){
         section := spells.Spells[0].Section
 
@@ -605,10 +608,21 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
         options2 := options
         options2.GeoM.Translate(0, 15)
         for _, spell := range spells.Spells {
-            spellX, spellY := options2.GeoM.Apply(0, 0)
 
-            infoFont.Print(screen, spellX, spellY, 1, options.ColorScale, spell.Name)
-            infoFont.PrintRight(screen, spellX + 124, spellY, 1, options.ColorScale, fmt.Sprintf("%v MP", spell.CastCost))
+            spellOptions := options2
+
+            textColorScale := spellOptions.ColorScale
+
+            if highlightedSpell.Name == spell.Name {
+                // spellOptions.ColorScale.Scale(1.5, 1, 1, 1)
+                r := math.Cos(float64(ui.Counter) / 5) * 128 + 128
+                textColorScale.SetR(float32(r))
+            }
+
+            spellX, spellY := spellOptions.GeoM.Apply(0, 0)
+
+            infoFont.Print(screen, spellX, spellY, 1, textColorScale, spell.Name)
+            infoFont.PrintRight(screen, spellX + 124, spellY, 1, textColorScale, fmt.Sprintf("%v MP", spell.CastCost))
             icon := getMagicIcon(spell)
 
             nameLength := infoFont.MeasureTextWidth(spell.Name, 1) + 1
@@ -632,7 +646,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
                 iconCount = 1
             }
 
-            iconOptions := options2
+            iconOptions := spellOptions
             iconOptions.GeoM.Translate(0, float64(infoFont.Height())+1)
             part3Options := iconOptions
 
@@ -659,7 +673,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
             if spell.CastCost < castingSkill {
                 x, y := iconOptions.GeoM.Apply(0, 0)
                 x += 2
-                infoFont.Print(screen, x, y, 1, options.ColorScale, "Instant")
+                infoFont.Print(screen, x, y, 1, spellOptions.ColorScale, "Instant")
                 icon1Width += int(infoFont.MeasureTextWidth("Instant", 1)) + 2
                 iconOptions.GeoM.Translate(infoFont.MeasureTextWidth("Instant", 1) + 2, 0)
             }
@@ -714,6 +728,28 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
             return
         }
 
+        makeSpell := func(rect image.Rectangle, spell Spell) *uilib.UIElement {
+            return &uilib.UIElement{
+                Rect: rect,
+                Layer: 1,
+                Inside: func(this *uilib.UIElement, x, y int){
+                    highlightedSpell = spell
+                },
+                NotInside: func(this *uilib.UIElement){
+                    if highlightedSpell.Name == spell.Name {
+                        highlightedSpell = Spell{}
+                    }
+                },
+                LeftClick: func(this *uilib.UIElement){
+                    log.Printf("Click on spell %v", spell)
+                    chosenSpell = spell
+                },
+                Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                    vector.StrokeRect(screen, float32(rect.Min.X), float32(rect.Min.Y), float32(rect.Max.X - rect.Min.X), float32(rect.Max.Y - rect.Min.Y), 1, color.RGBA{R: 255, G: 255, B: 255, A: 255}, false)
+                },
+            }
+        }
+
         leftSpells := spellPages[page].Spells
 
         for i, spell := range leftSpells {
@@ -724,41 +760,20 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
             height := 20
 
             rect := image.Rect(0, 0, width, height).Add(image.Pt(x1, y1))
-            spellButtons = append(spellButtons, &uilib.UIElement{
-                Rect: rect,
-                Layer: 1,
-                LeftClick: func(this *uilib.UIElement){
-                    log.Printf("Click on spell %v", spell)
-                    chosenSpell = spell
-                },
-                Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                    vector.StrokeRect(screen, float32(rect.Min.X), float32(rect.Min.Y), float32(rect.Max.X - rect.Min.X), float32(rect.Max.Y - rect.Min.Y), 1, color.RGBA{R: 255, G: 255, B: 255, A: 255}, false)
-                },
-            })
+            spellButtons = append(spellButtons, makeSpell(rect, spell))
         }
 
         if page + 1 < len(spellPages) {
             rightSpells := spellPages[page+1].Spells
 
             for i, spell := range rightSpells {
-
                 x1 := 159
                 y1 := 30 + i * 22
                 width := 122
                 height := 20
 
                 rect := image.Rect(0, 0, width, height).Add(image.Pt(x1, y1))
-                spellButtons = append(spellButtons, &uilib.UIElement{
-                    Rect: rect,
-                    Layer: 1,
-                    LeftClick: func(this *uilib.UIElement){
-                        log.Printf("Click on spell %v", spell)
-                        chosenSpell = spell
-                    },
-                    Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                        vector.StrokeRect(screen, float32(rect.Min.X), float32(rect.Min.Y), float32(rect.Max.X - rect.Min.X), float32(rect.Max.Y - rect.Min.Y), 1, color.RGBA{R: 255, G: 255, B: 255, A: 255}, false)
-                    },
-                })
+                spellButtons = append(spellButtons, makeSpell(rect, spell))
             }
         }
 
