@@ -229,9 +229,6 @@ type CombatScreen struct {
     // when the user hovers over a unit, that unit should be shown in a little info box at the upper right
     HighlightedUnit *ArmyUnit
 
-    // the spell currently being cast
-    CastingSpell spellbook.Spell
-
     AttackingWizardFont *font.Font
     DefendingWizardFont *font.Font
 
@@ -478,15 +475,59 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
 
         // log.Printf("Create sound for spell %v: %v", spell.Name, spell.Sound)
 
+        x := 250
+        if player == combat.DefendingArmy.Player {
+            x = 1
+        }
+
+        y := 168
+
+        var elements []*uilib.UIElement
+
+        removeElements := func(){
+            combat.UI.RemoveElements(elements)
+        }
+
+        selectElement := &uilib.UIElement{
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                combat.WhiteFont.PrintWrap(screen, float64(x), float64(y), 70, 1, ebiten.ColorScale{}, fmt.Sprintf("Select a target for a %v spell.", spell.Name))
+            },
+        }
+
+        cancelImages, _ := combat.ImageCache.GetImages("compix.lbx", 22)
+        cancelRect := image.Rect(0, 0, cancelImages[0].Bounds().Dx(), cancelImages[0].Bounds().Dy()).Add(image.Point{x + 15, y + 15})
+        cancelIndex := 0
+        cancelElement := &uilib.UIElement{
+            Rect: cancelRect,
+            LeftClick: func(element *uilib.UIElement){
+                cancelIndex = 1
+            },
+            LeftClickRelease: func(element *uilib.UIElement){
+                cancelIndex = 0
+                combat.DoSelectUnit = false
+                combat.SelectTarget = func(target *ArmyUnit){}
+                removeElements()
+            },
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(cancelRect.Min.X), float64(cancelRect.Min.Y))
+                screen.DrawImage(cancelImages[cancelIndex], &options)
+            },
+        }
+
+        elements = append(elements, selectElement, cancelElement)
+
+        combat.UI.AddElements(elements)
+
         combat.DoSelectUnit = true
         combat.SelectTeam = teamAttacked
-        combat.CastingSpell = spell
         combat.SelectTarget = func(target *ArmyUnit){
             sound, err := audio.LoadSound(combat.Cache, spell.Sound)
             if err == nil {
                 sound.Play()
             }
 
+            removeElements()
             combat.CreateFireballProjectile(target)
         }
     }
@@ -507,7 +548,6 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
             }
 
             if combat.AttackingArmy.Player == player && combat.DoSelectUnit {
-                combat.WhiteFont.PrintWrap(screen, 250, 168, 70, 1, ebiten.ColorScale{}, fmt.Sprintf("Select a target for a %v spell.", combat.CastingSpell.Name))
             } else {
                 combat.AttackingWizardFont.Print(screen, 265, 170, 1, ebiten.ColorScale{}, combat.AttackingArmy.Player.Wizard.Name)
             }
