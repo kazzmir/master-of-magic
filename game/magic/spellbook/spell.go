@@ -1000,7 +1000,9 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
 
             } else {
                 options.GeoM.Translate(15, 5)
-                renderPage(screen, options, spellPages[currentPage], highlightedSpell)
+                if currentPage < len(spellPages) {
+                    renderPage(screen, options, spellPages[currentPage], highlightedSpell)
+                }
 
                 if currentPage + 1 < len(spellPages) {
                     options.GeoM.Translate(134, 0)
