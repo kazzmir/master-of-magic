@@ -497,7 +497,16 @@ func (combat *CombatScreen) createVerticalSkyProjectile(target *ArmyUnit, images
 func (combat *CombatScreen) createUnitProjectile(target *ArmyUnit, images []*ebiten.Image, explodeImages []*ebiten.Image) *Projectile {
     // find where on the screen the unit is
     screenX, screenY := combat.Coordinates.Apply(float64(target.X), float64(target.Y))
-    screenY -= 10
+
+    var useImage *ebiten.Image
+    if len(images) > 0 {
+        useImage = images[0]
+    } else if len(explodeImages) > 0 {
+        useImage = explodeImages[0]
+    }
+
+    screenY += 11
+    screenY -= float64(useImage.Bounds().Dy())
     screenX += 2
 
     // log.Printf("Create fireball projectile at %v,%v -> %v,%v", x, y, screenX, screenY)
@@ -687,6 +696,28 @@ func (combat *CombatScreen) DoTargetUnitSpell(player *playerlib.Player, spell sp
     }
 }
 
+func (combat *CombatScreen) CreateFlameStrikeProjectile(target *ArmyUnit) {
+    images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 33)
+    var loopImages []*ebiten.Image
+    explodeImages := images
+
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages))
+}
+
+func (combat *CombatScreen) DoAllUnitsSpell(player *playerlib.Player, spell spellbook.Spell, onTarget func(*ArmyUnit)) {
+    var units []*ArmyUnit
+
+    if player == combat.DefendingArmy.Player {
+        units = combat.AttackingArmy.Units
+    } else {
+        units = combat.DefendingArmy.Units
+    }
+
+    for _, unit := range units {
+        onTarget(unit)
+    }
+}
+
 func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellbook.Spell){
     targetAny := func (target *ArmyUnit) bool { return true }
     switch spell.Name {
@@ -725,6 +756,10 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
             combat.DoTargetUnitSpell(player, spell, func(target *ArmyUnit){
                 combat.CreateWarpLightningProjectile(target)
             }, targetAny)
+        case "Flame Strike":
+            combat.DoAllUnitsSpell(player, spell, func(target *ArmyUnit){
+                combat.CreateFlameStrikeProjectile(target)
+            })
     }
 }
 

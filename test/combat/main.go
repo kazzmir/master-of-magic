@@ -85,6 +85,7 @@ func NewEngine() (*Engine, error) {
     defendingPlayer.Spells.AddSpell(allSpells.FindByName("Psionic Blast"))
     defendingPlayer.Spells.AddSpell(allSpells.FindByName("Doom Bolt"))
     defendingPlayer.Spells.AddSpell(allSpells.FindByName("Warp Lightning"))
+    defendingPlayer.Spells.AddSpell(allSpells.FindByName("Flame Strike"))
 
     attackingArmy := combat.Army{
         Player: &attackingPlayer,
@@ -94,6 +95,13 @@ func NewEngine() (*Engine, error) {
                 Facing: units.FacingUpLeft,
                 X: 11,
                 Y: 19,
+                Health: 10,
+            },
+            &combat.ArmyUnit{
+                Unit: units.GreatDrake,
+                Facing: units.FacingUpLeft,
+                X: 9,
+                Y: 18,
                 Health: 10,
             },
         },
