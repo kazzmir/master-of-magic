@@ -606,6 +606,41 @@ func CastRightSideDistortions1(page *ebiten.Image) util.Distortion {
     }
 }
 
+func CastRightSideDistortions2(page *ebiten.Image) util.Distortion {
+    offset := 40
+    return util.Distortion{
+        Top: image.Pt(page.Bounds().Dx()/2 - 130 + offset + 2, 15),
+        Bottom: image.Pt(page.Bounds().Dx()/2 - 130 + offset + 2, page.Bounds().Dy() - 3),
+
+        Segments: []util.Segment{
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 - 100 + offset, -0),
+                Bottom: image.Pt(page.Bounds().Dx()/2 - 100 + offset, page.Bounds().Dy() - 18),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 - 80 + offset, -10),
+                Bottom: image.Pt(page.Bounds().Dx()/2 - 80 + offset, page.Bounds().Dy() - 27),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 - 60 + offset, -10),
+                Bottom: image.Pt(page.Bounds().Dx()/2 - 60 + offset, page.Bounds().Dy() - 31),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 - 40 + offset, -3),
+                Bottom: image.Pt(page.Bounds().Dx()/2 - 40 + offset, page.Bounds().Dy() - 28),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 - 30 + offset, -2),
+                Bottom: image.Pt(page.Bounds().Dx()/2 - 30 + offset, page.Bounds().Dy() - 22),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 - 20 + offset + 3, 15),
+                Bottom: image.Pt(page.Bounds().Dx()/2 - 20 + offset + 1, page.Bounds().Dy() - 5),
+            },
+        },
+    }
+}
+
 // FIXME: take in the wizard/player that is casting the spell
 // somehow return the spell chosen
 func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, castingSkill int) []*uilib.UIElement {
@@ -785,18 +820,18 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
         out.Fill(color.RGBA{R: 0, G: 0, B: 0, A: 0})
 
         if page < len(spellPages) {
-            /*
             var options ebiten.DrawImageOptions
             renderPage(out, options, spellPages[page], Spell{})
-            */
             // out.Fill(color.RGBA{R: 255, G: 0, B: 0, A: 255})
 
+            /*
             alpha := uint8(64)
             vector.DrawFilledRect(out, 0, 0, 30, float32(out.Bounds().Dy()), util.PremultiplyAlpha(color.RGBA{R: 255, G: 0, B: 0, A: alpha}), false)
             vector.DrawFilledRect(out, 30, 0, 30, float32(out.Bounds().Dy()), util.PremultiplyAlpha(color.RGBA{R: 0, G: 255, B: 0, A: alpha}), false)
             vector.DrawFilledRect(out, 60, 0, 30, float32(out.Bounds().Dy()), util.PremultiplyAlpha(color.RGBA{R: 0, G: 0, B: 255, A: alpha}), false)
             vector.DrawFilledRect(out, 90, 0, 30, float32(out.Bounds().Dy()), util.PremultiplyAlpha(color.RGBA{R: 255, G: 255, B: 0, A: alpha}), false)
             vector.StrokeLine(out, 0, 80, float32(out.Bounds().Dx()), 80, 2, color.RGBA{R: 255, G: 255, B: 255, A: 255}, false)
+            */
         }
 
         // vector.StrokeRect(out, 1, 1, float32(out.Bounds().Dx()-1), float32(out.Bounds().Dy()-10), 1, color.RGBA{R: 255, G: 255, B: 255, A: 255}, false)
@@ -872,7 +907,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
     bookFlip, _ := imageCache.GetImages("book.lbx", 0)
     bookFlipIndex := uint64(0)
     bookFlipReverse := false
-    bookFlipSpeed := uint64(500)
+    bookFlipSpeed := uint64(6)
     flipping := false
 
     showPageLeft := 0
@@ -921,7 +956,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
                         index = uint64(len(bookFlip)) - 1 - index
                     }
 
-                    index = 2
+                    // index = 3
 
                     flipOptions.GeoM.Translate(-17, -10)
                     screen.DrawImage(bookFlip[index], &flipOptions)
@@ -943,8 +978,8 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
                         }
                     } else if index == 3 {
                         if pageSideRight < len(spellPages) {
-                            // rightSide := getPageImage(flipRightSide)
-                            // util.DrawDistortion(screen, bookFlip[index], rightSide, RightSideDistortions2(bookFlip[index]), flipOptions)
+                            rightSide := getPageImage(pageSideRight)
+                            util.DrawDistortion(screen, bookFlip[index], rightSide, CastRightSideDistortions2(bookFlip[index]), flipOptions)
                         }
                     }
                 }
@@ -974,7 +1009,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
         Layer: 1,
         Rect: pageTurnRightRect,
         LeftClick: func(this *uilib.UIElement){
-            if currentPage + 2 < len(spellPages) {
+            if currentPage + 2 < len(spellPages) && !flipping {
                 flipping = true
                 bookFlipReverse = false
                 bookFlipIndex = ui.Counter
@@ -1006,7 +1041,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
         Rect: pageTurnLeftRect,
         Layer: 1,
         LeftClick: func(this *uilib.UIElement){
-            if currentPage >= 2 {
+            if currentPage >= 2 && !flipping {
                 flipping = true
                 bookFlipReverse = true
                 bookFlipIndex = ui.Counter
@@ -1016,7 +1051,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
                 pageSideLeft = currentPage - 1
                 pageSideRight = currentPage
 
-                ui.AddDelay(bookFlipSpeed * uint64(len(bookFlip)), func (){
+                ui.AddDelay(bookFlipSpeed * uint64(len(bookFlip) - 1), func (){
                     flipping = false
                     currentPage -= 2
                     setupSpells(currentPage)
