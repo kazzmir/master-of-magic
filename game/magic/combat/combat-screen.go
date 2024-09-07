@@ -427,12 +427,7 @@ func (combat *CombatScreen) AddProjectile(projectile *Projectile){
     combat.Projectiles = append(combat.Projectiles, projectile)
 }
 
-func (combat *CombatScreen) CreateIceBoltProjectile(target *ArmyUnit) {
-    images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 11)
-
-    loopImages := images[0:3]
-    explodeImages := images[3:]
-
+func (combat *CombatScreen) createProjectile(target *ArmyUnit, images []*ebiten.Image, explodeImages []*ebiten.Image) *Projectile {
     // find where on the screen the unit is
     screenX, screenY := combat.Coordinates.Apply(float64(target.X), float64(target.Y))
     screenY -= 10
@@ -441,6 +436,7 @@ func (combat *CombatScreen) CreateIceBoltProjectile(target *ArmyUnit) {
     x := screenX + 40 + rand.Float64() * 60
     y := -rand.Float64() * 40
 
+    // FIXME: make this a parameter?
     speed := 2.5
 
     angle := math.Atan2(screenY - y, screenX - x)
@@ -454,12 +450,43 @@ func (combat *CombatScreen) CreateIceBoltProjectile(target *ArmyUnit) {
         Angle: angle,
         TargetX: screenX,
         TargetY: screenY,
-        Animation: util.MakeAnimation(loopImages, true),
+        Animation: util.MakeAnimation(images, true),
         Explode: util.MakeAnimation(explodeImages, false),
     }
 
-    combat.AddProjectile(projectile)
+    return projectile
+}
 
+// needs a new name, but creates a projectile that is already at the target
+func (combat *CombatScreen) createProjectileTarget(target *ArmyUnit, images []*ebiten.Image, explodeImages []*ebiten.Image) *Projectile {
+    // find where on the screen the unit is
+    screenX, screenY := combat.Coordinates.Apply(float64(target.X), float64(target.Y))
+    screenY -= 10
+    screenX += 2
+
+    // log.Printf("Create fireball projectile at %v,%v -> %v,%v", x, y, screenX, screenY)
+
+    projectile := &Projectile{
+        X: screenX,
+        Y: screenY,
+        Speed: 0,
+        Angle: 0,
+        TargetX: screenX,
+        TargetY: screenY,
+        Animation: util.MakeAnimation(images, true),
+        Explode: util.MakeAnimation(explodeImages, false),
+    }
+
+    return projectile
+}
+
+func (combat *CombatScreen) CreateIceBoltProjectile(target *ArmyUnit) {
+    images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 11)
+
+    loopImages := images[0:3]
+    explodeImages := images[3:]
+
+    combat.Projectiles = append(combat.Projectiles, combat.createProjectile(target, loopImages, explodeImages))
 }
 
 func (combat *CombatScreen) CreateFireballProjectile(target *ArmyUnit) {
@@ -468,37 +495,15 @@ func (combat *CombatScreen) CreateFireballProjectile(target *ArmyUnit) {
     loopImages := images[0:11]
     explodeImages := images[11:]
 
-    // find where on the screen the unit is
-    screenX, screenY := combat.Coordinates.Apply(float64(target.X), float64(target.Y))
-    screenY -= 10
-    screenX += 2
+    combat.Projectiles = append(combat.Projectiles, combat.createProjectile(target, loopImages, explodeImages))
+}
 
-    x := screenX + 40 + rand.Float64() * 60
-    y := -rand.Float64() * 40
+func (combat *CombatScreen) CreateStarFiresProjectile(target *ArmyUnit) {
+    images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 9)
+    var loopImages []*ebiten.Image
+    explodeImages := images
 
-    /*
-    x = 160
-    y = 100
-    */
-
-    speed := 2.5
-
-    angle := math.Atan2(screenY - y, screenX - x)
-
-    // log.Printf("Create fireball projectile at %v,%v -> %v,%v", x, y, screenX, screenY)
-
-    projectile := &Projectile{
-        X: x,
-        Y: y,
-        Speed: speed,
-        Angle: angle,
-        TargetX: screenX,
-        TargetY: screenY,
-        Animation: util.MakeAnimation(loopImages, true),
-        Explode: util.MakeAnimation(explodeImages, false),
-    }
-
-    combat.AddProjectile(projectile)
+    combat.Projectiles = append(combat.Projectiles, combat.createProjectileTarget(target, loopImages, explodeImages))
 }
 
 func (combat *CombatScreen) DoTargetUnitSpell(player *playerlib.Player, spell spellbook.Spell, onTarget func(*ArmyUnit)){
@@ -575,6 +580,10 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
         case "Ice Bolt":
             combat.DoTargetUnitSpell(player, spell, func(target *ArmyUnit){
                 combat.CreateIceBoltProjectile(target)
+            })
+        case "Star Fires":
+            combat.DoTargetUnitSpell(player, spell, func(target *ArmyUnit){
+                combat.CreateStarFiresProjectile(target)
             })
     }
 }

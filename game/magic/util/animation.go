@@ -31,5 +31,8 @@ func (animation *Animation) Next() bool {
 }
 
 func (animation *Animation) Frame() *ebiten.Image {
-    return animation.Frames[animation.CurrentFrame]
+    if animation.CurrentFrame < len(animation.Frames) {
+        return animation.Frames[animation.CurrentFrame]
+    }
+    return nil
 }
