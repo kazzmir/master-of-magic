@@ -246,6 +246,7 @@ type CombatScreen struct {
     SelectTeam Team
     // invoke this function on the unit that is selected
     SelectTarget func(*ArmyUnit)
+    CanTarget func(*ArmyUnit) bool
 }
 
 func makeTiles(width int, height int) [][]Tile {
@@ -427,7 +428,9 @@ func (combat *CombatScreen) AddProjectile(projectile *Projectile){
     combat.Projectiles = append(combat.Projectiles, projectile)
 }
 
-func (combat *CombatScreen) createProjectile(target *ArmyUnit, images []*ebiten.Image, explodeImages []*ebiten.Image) *Projectile {
+/* a projectile that shoots down from the sky
+ */
+func (combat *CombatScreen) createSkyProjectile(target *ArmyUnit, images []*ebiten.Image, explodeImages []*ebiten.Image) *Projectile {
     // find where on the screen the unit is
     screenX, screenY := combat.Coordinates.Apply(float64(target.X), float64(target.Y))
     screenY -= 10
@@ -457,8 +460,9 @@ func (combat *CombatScreen) createProjectile(target *ArmyUnit, images []*ebiten.
     return projectile
 }
 
-// needs a new name, but creates a projectile that is already at the target
-func (combat *CombatScreen) createProjectileTarget(target *ArmyUnit, images []*ebiten.Image, explodeImages []*ebiten.Image) *Projectile {
+/* needs a new name, but creates a projectile that is already at the target
+ */
+func (combat *CombatScreen) createUnitProjectile(target *ArmyUnit, images []*ebiten.Image, explodeImages []*ebiten.Image) *Projectile {
     // find where on the screen the unit is
     screenX, screenY := combat.Coordinates.Apply(float64(target.X), float64(target.Y))
     screenY -= 10
@@ -486,7 +490,7 @@ func (combat *CombatScreen) CreateIceBoltProjectile(target *ArmyUnit) {
     loopImages := images[0:3]
     explodeImages := images[3:]
 
-    combat.Projectiles = append(combat.Projectiles, combat.createProjectile(target, loopImages, explodeImages))
+    combat.Projectiles = append(combat.Projectiles, combat.createSkyProjectile(target, loopImages, explodeImages))
 }
 
 func (combat *CombatScreen) CreateFireballProjectile(target *ArmyUnit) {
@@ -495,7 +499,7 @@ func (combat *CombatScreen) CreateFireballProjectile(target *ArmyUnit) {
     loopImages := images[0:11]
     explodeImages := images[11:]
 
-    combat.Projectiles = append(combat.Projectiles, combat.createProjectile(target, loopImages, explodeImages))
+    combat.Projectiles = append(combat.Projectiles, combat.createSkyProjectile(target, loopImages, explodeImages))
 }
 
 func (combat *CombatScreen) CreateStarFiresProjectile(target *ArmyUnit) {
@@ -503,10 +507,10 @@ func (combat *CombatScreen) CreateStarFiresProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createProjectileTarget(target, loopImages, explodeImages))
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages))
 }
 
-func (combat *CombatScreen) DoTargetUnitSpell(player *playerlib.Player, spell spellbook.Spell, onTarget func(*ArmyUnit)){
+func (combat *CombatScreen) DoTargetUnitSpell(player *playerlib.Player, spell spellbook.Spell, onTarget func(*ArmyUnit), canTarget func(*ArmyUnit) bool) {
     teamAttacked := TeamAttacker
     if combat.AttackingArmy.Player == player {
         teamAttacked = TeamDefender
@@ -545,6 +549,7 @@ func (combat *CombatScreen) DoTargetUnitSpell(player *playerlib.Player, spell sp
             cancelIndex = 0
             combat.DoSelectUnit = false
             combat.SelectTarget = func(target *ArmyUnit){}
+            combat.CanTarget = func(target *ArmyUnit) bool { return false }
             removeElements()
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
@@ -560,6 +565,7 @@ func (combat *CombatScreen) DoTargetUnitSpell(player *playerlib.Player, spell sp
 
     combat.DoSelectUnit = true
     combat.SelectTeam = teamAttacked
+    combat.CanTarget = canTarget
     combat.SelectTarget = func(target *ArmyUnit){
         sound, err := audio.LoadSound(combat.Cache, spell.Sound)
         if err == nil {
@@ -572,18 +578,22 @@ func (combat *CombatScreen) DoTargetUnitSpell(player *playerlib.Player, spell sp
 }
 
 func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellbook.Spell){
+    targetAny := func (target *ArmyUnit) bool { return true }
     switch spell.Name {
         case "Fireball":
             combat.DoTargetUnitSpell(player, spell, func(target *ArmyUnit){
                 combat.CreateFireballProjectile(target)
-            })
+            }, targetAny)
         case "Ice Bolt":
             combat.DoTargetUnitSpell(player, spell, func(target *ArmyUnit){
                 combat.CreateIceBoltProjectile(target)
-            })
+            }, targetAny)
         case "Star Fires":
             combat.DoTargetUnitSpell(player, spell, func(target *ArmyUnit){
                 combat.CreateStarFiresProjectile(target)
+            }, func (target *ArmyUnit) bool {
+                // FIXME: can only target fantastic creatures that are death or chaos
+                return true
             })
     }
 }
@@ -999,11 +1009,11 @@ func (combat *CombatScreen) Update() CombatState {
         }
 
         unit := combat.GetUnit(combat.MouseTileX, combat.MouseTileY)
-        if unit == nil || unit.Team != combat.SelectTeam {
+        if unit == nil || unit.Team != combat.SelectTeam || !combat.CanTarget(unit){
             combat.MouseState = CombatNotOk
         }
 
-        if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) && mouseY < hudY {
+        if combat.CanTarget(unit) && inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) && mouseY < hudY {
             // log.Printf("Click unit at %v,%v -> %v", combat.MouseTileX, combat.MouseTileY, unit)
             if unit != nil && unit.Team == combat.SelectTeam {
                 combat.SelectTarget(unit)
