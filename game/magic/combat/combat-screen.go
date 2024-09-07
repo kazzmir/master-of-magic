@@ -510,6 +510,14 @@ func (combat *CombatScreen) CreateStarFiresProjectile(target *ArmyUnit) {
     combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages))
 }
 
+func (combat *CombatScreen) CreatePsionicBlastProjectile(target *ArmyUnit) {
+    images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 16)
+    var loopImages []*ebiten.Image
+    explodeImages := images
+
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages))
+}
+
 func (combat *CombatScreen) DoTargetUnitSpell(player *playerlib.Player, spell spellbook.Spell, onTarget func(*ArmyUnit), canTarget func(*ArmyUnit) bool) {
     teamAttacked := TeamAttacker
     if combat.AttackingArmy.Player == player {
@@ -595,6 +603,10 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
                 // FIXME: can only target fantastic creatures that are death or chaos
                 return true
             })
+        case "Psionic Blast":
+            combat.DoTargetUnitSpell(player, spell, func(target *ArmyUnit){
+                combat.CreatePsionicBlastProjectile(target)
+            }, targetAny)
     }
 }
 
