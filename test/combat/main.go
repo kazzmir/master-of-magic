@@ -87,6 +87,8 @@ func NewEngine() (*Engine, error) {
     defendingPlayer.Spells.AddSpell(allSpells.FindByName("Warp Lightning"))
     defendingPlayer.Spells.AddSpell(allSpells.FindByName("Flame Strike"))
     defendingPlayer.Spells.AddSpell(allSpells.FindByName("Life Drain"))
+    defendingPlayer.Spells.AddSpell(allSpells.FindByName("Dispel Evil"))
+    defendingPlayer.Spells.AddSpell(allSpells.FindByName("Healing"))
 
     attackingArmy := combat.Army{
         Player: &attackingPlayer,

@@ -492,9 +492,15 @@ func (combat *CombatScreen) createVerticalSkyProjectile(target *ArmyUnit, images
     return projectile
 }
 
+type UnitPosition int
+const (
+    UnitPositionMiddle UnitPosition = iota
+    UnitPositionUnder
+)
+
 /* needs a new name, but creates a projectile that is already at the target
  */
-func (combat *CombatScreen) createUnitProjectile(target *ArmyUnit, images []*ebiten.Image, explodeImages []*ebiten.Image) *Projectile {
+func (combat *CombatScreen) createUnitProjectile(target *ArmyUnit, images []*ebiten.Image, explodeImages []*ebiten.Image, position UnitPosition) *Projectile {
     // find where on the screen the unit is
     screenX, screenY := combat.Coordinates.Apply(float64(target.X), float64(target.Y))
 
@@ -505,9 +511,17 @@ func (combat *CombatScreen) createUnitProjectile(target *ArmyUnit, images []*ebi
         useImage = explodeImages[0]
     }
 
-    screenY += 11
-    screenY -= float64(useImage.Bounds().Dy())
-    screenX += 2
+    switch position {
+        case UnitPositionMiddle:
+            screenY += 3
+            screenY -= float64(useImage.Bounds().Dy()/2)
+            screenX += 14
+            screenX -= float64(useImage.Bounds().Dx()/2)
+        case UnitPositionUnder:
+            screenY += 11
+            screenY -= float64(useImage.Bounds().Dy())
+    }
+
 
     // log.Printf("Create fireball projectile at %v,%v -> %v,%v", x, y, screenX, screenY)
 
@@ -556,7 +570,15 @@ func (combat *CombatScreen) CreateStarFiresProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages))
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle))
+}
+
+func (combat *CombatScreen) CreateDispelEvilProjectile(target *ArmyUnit) {
+    images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 10)
+    var loopImages []*ebiten.Image
+    explodeImages := images
+
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle))
 }
 
 func (combat *CombatScreen) CreatePsionicBlastProjectile(target *ArmyUnit) {
@@ -564,7 +586,7 @@ func (combat *CombatScreen) CreatePsionicBlastProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages))
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle))
 }
 
 func (combat *CombatScreen) CreateDoomBoltProjectile(target *ArmyUnit) {
@@ -632,7 +654,7 @@ func (combat *CombatScreen) CreateLifeDrainProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages))
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle))
 }
 
 func (combat *CombatScreen) CreateFlameStrikeProjectile(target *ArmyUnit) {
@@ -640,7 +662,16 @@ func (combat *CombatScreen) CreateFlameStrikeProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages))
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle))
+}
+
+func (combat *CombatScreen) CreateHealingProjectile(target *ArmyUnit) {
+    // FIXME: the images should be mostly with with transparency
+    images, _ := combat.ImageCache.GetImages("specfx.lbx", 3)
+    var loopImages []*ebiten.Image
+    explodeImages := images
+
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle))
 }
 
 /* let the user select a target, then cast the spell on that target
@@ -739,6 +770,7 @@ func (combat *CombatScreen) DoAllUnitsSpell(player *playerlib.Player, spell spel
 
 func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellbook.Spell){
     targetAny := func (target *ArmyUnit) bool { return true }
+
     switch spell.Name {
         case "Fireball":
             combat.DoTargetUnitSpell(player, spell, func(target *ArmyUnit){
@@ -783,6 +815,46 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
             combat.DoTargetUnitSpell(player, spell, func(target *ArmyUnit){
                 combat.CreateLifeDrainProjectile(target)
             }, targetAny)
+        case "Dispel Evil":
+            combat.DoTargetUnitSpell(player, spell, func(target *ArmyUnit){
+                combat.CreateDispelEvilProjectile(target)
+            }, func (target *ArmyUnit) bool {
+                // FIXME: can only target units that are death or chaos
+                return true
+            })
+        case "Healing":
+            combat.DoTargetUnitSpell(player, spell, func(target *ArmyUnit){
+                combat.CreateHealingProjectile(target)
+            }, func (target *ArmyUnit) bool {
+                // FIXME: can only target units that are not death
+                return true
+            })
+
+            /*
+Disenchant Area
+Dispel Magic
+Recall Hero	
+Holy Word
+Mass Healing
+Raise Dead
+Cracks Call
+Earth to Mud
+Petrify	
+Web	￼
+Banish	
+Disenchant True
+Dispel Magic True
+Word of Recall
+Call Chaos	￼
+Disintegrate	￼
+Disrupt	￼
+Magic Vortex	
+Warp Wood	￼
+Animate Dead	
+Death Spell	￼
+Word of Death
+            */
+
     }
 }
 
