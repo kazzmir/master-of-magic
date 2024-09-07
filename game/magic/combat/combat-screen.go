@@ -674,6 +674,15 @@ func (combat *CombatScreen) CreateHealingProjectile(target *ArmyUnit) {
     combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle))
 }
 
+func (combat *CombatScreen) CreateHolyWordProjectile(target *ArmyUnit) {
+    // FIXME: the images should be mostly with with transparency
+    images, _ := combat.ImageCache.GetImages("specfx.lbx", 3)
+    var loopImages []*ebiten.Image
+    explodeImages := images
+
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle))
+}
+
 /* let the user select a target, then cast the spell on that target
  */
 func (combat *CombatScreen) DoTargetUnitSpell(player *playerlib.Player, spell spellbook.Spell, onTarget func(*ArmyUnit), canTarget func(*ArmyUnit) bool) {
@@ -747,7 +756,7 @@ func (combat *CombatScreen) DoTargetUnitSpell(player *playerlib.Player, spell sp
 
 /* create projectiles on all units immediately, no targeting required
  */
-func (combat *CombatScreen) DoAllUnitsSpell(player *playerlib.Player, spell spellbook.Spell, onTarget func(*ArmyUnit)) {
+func (combat *CombatScreen) DoAllUnitsSpell(player *playerlib.Player, spell spellbook.Spell, onTarget func(*ArmyUnit), canTarget func(*ArmyUnit) bool) {
     var units []*ArmyUnit
 
     if player == combat.DefendingArmy.Player {
@@ -764,7 +773,9 @@ func (combat *CombatScreen) DoAllUnitsSpell(player *playerlib.Player, spell spel
     }
 
     for _, unit := range units {
-        onTarget(unit)
+        if canTarget(unit){
+            onTarget(unit)
+        }
     }
 }
 
@@ -810,6 +821,8 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
         case "Flame Strike":
             combat.DoAllUnitsSpell(player, spell, func(target *ArmyUnit){
                 combat.CreateFlameStrikeProjectile(target)
+            }, func (target *ArmyUnit) bool {
+                return true
             })
         case "Life Drain":
             combat.DoTargetUnitSpell(player, spell, func(target *ArmyUnit){
@@ -829,12 +842,18 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
                 // FIXME: can only target units that are not death
                 return true
             })
+        case "Holy Word":
+            combat.DoAllUnitsSpell(player, spell, func(target *ArmyUnit){
+                combat.CreateHolyWordProjectile(target)
+            }, func (target *ArmyUnit) bool {
+                // FIXME: can only target fantastic units, chaos channeled and undead
+                return true
+            })
 
             /*
 Disenchant Area
 Dispel Magic
 Recall Hero	
-Holy Word
 Mass Healing
 Raise Dead
 Cracks Call
