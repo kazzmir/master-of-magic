@@ -518,12 +518,62 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
     return elements
 }
 
-func maxRange[T any](slice []T, max int) []T {
-    if len(slice) <= max {
-        return slice
+func CastLeftSideDistortions1(page *ebiten.Image) util.Distortion {
+    return util.Distortion{
+        Top: image.Pt(page.Bounds().Dx()/2 + 25, 12),
+        Bottom: image.Pt(page.Bounds().Dx()/2 + 25, page.Bounds().Dy() - 4),
+        Segments: []util.Segment{
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 + 40, -5),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 40, page.Bounds().Dy() - 25),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 + 60, -10),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 60, page.Bounds().Dy() - 33),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 + 80, -10),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 80, page.Bounds().Dy() - 30),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 + 100, -3),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 100, page.Bounds().Dy() - 22),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 + 135, 16),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 135, page.Bounds().Dy() - 3),
+            },
+        },
     }
+}
 
-    return slice[:max]
+func CastLeftSideDistortions2(page *ebiten.Image) util.Distortion {
+    return util.Distortion{
+        Top: image.Pt(page.Bounds().Dx()/2 + 25, 9),
+        Bottom: image.Pt(page.Bounds().Dx()/2 + 25, page.Bounds().Dy() - 2),
+        Segments: []util.Segment{
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 + 40, -12),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 40, page.Bounds().Dy() - 33),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 + 58, -13),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 58, page.Bounds().Dy() - 43),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 + 73, -20),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 73, page.Bounds().Dy() - 43),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 + 90, -3),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 90, page.Bounds().Dy() - 34),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 + 99, 1),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 99, page.Bounds().Dy() - 24),
+            },
+        },
+    }
 }
 
 // FIXME: take in the wizard/player that is casting the spell
@@ -704,17 +754,25 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
         out := ebiten.NewImage(120, 154)
         out.Fill(color.RGBA{R: 0, G: 0, B: 0, A: 0})
 
-        var options ebiten.DrawImageOptions
         if page < len(spellPages) {
+            var options ebiten.DrawImageOptions
             renderPage(out, options, spellPages[page], Spell{})
+            // out.Fill(color.RGBA{R: 255, G: 0, B: 0, A: 255})
+
+            /*
+            alpha := uint8(64)
+            vector.DrawFilledRect(out, 0, 0, 30, float32(out.Bounds().Dy()), util.PremultiplyAlpha(color.RGBA{R: 255, G: 0, B: 0, A: alpha}), false)
+            vector.DrawFilledRect(out, 30, 0, 30, float32(out.Bounds().Dy()), util.PremultiplyAlpha(color.RGBA{R: 0, G: 255, B: 0, A: alpha}), false)
+            vector.DrawFilledRect(out, 60, 0, 30, float32(out.Bounds().Dy()), util.PremultiplyAlpha(color.RGBA{R: 0, G: 0, B: 255, A: alpha}), false)
+            vector.DrawFilledRect(out, 90, 0, 30, float32(out.Bounds().Dy()), util.PremultiplyAlpha(color.RGBA{R: 255, G: 255, B: 0, A: alpha}), false)
+            vector.StrokeLine(out, 0, 80, float32(out.Bounds().Dx()), 80, 2, color.RGBA{R: 255, G: 255, B: 255, A: 255}, false)
+            */
         }
 
         // vector.StrokeRect(out, 1, 1, float32(out.Bounds().Dx()-1), float32(out.Bounds().Dy()-10), 1, color.RGBA{R: 255, G: 255, B: 255, A: 255}, false)
         pageCache[page] = out
         return out
     }
-
-    _ = getPageImage
 
     var highlightedSpell Spell
 
@@ -784,7 +842,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
     bookFlip, _ := imageCache.GetImages("book.lbx", 0)
     bookFlipIndex := uint64(0)
     bookFlipReverse := false
-    bookFlipSpeed := uint64(20)
+    bookFlipSpeed := uint64(500)
     flipping := false
 
     showPageLeft := 0
@@ -816,13 +874,6 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
             options.GeoM.Translate(10, 10)
             screen.DrawImage(background, &options)
 
-            /*
-            left := getPageImage(currentPage)
-            right := getPageImage(currentPage+1)
-            */
-
-            // screen.DrawImage(left, &options)
-
             flipOptions := options
 
             if flipping {
@@ -840,8 +891,32 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
                         index = uint64(len(bookFlip)) - 1 - index
                     }
 
+                    index = 1
+
                     flipOptions.GeoM.Translate(-17, -10)
                     screen.DrawImage(bookFlip[index], &flipOptions)
+
+                    if index == 0 {
+                        if pageSideLeft >= 0 {
+                            leftSide := getPageImage(pageSideLeft)
+                            util.DrawDistortion(screen, bookFlip[index], leftSide, CastLeftSideDistortions1(bookFlip[index]), flipOptions)
+                        }
+                    } else if index == 1 {
+                        if pageSideLeft >= 0 {
+                            leftSide := getPageImage(pageSideLeft)
+                            util.DrawDistortion(screen, bookFlip[index], leftSide, CastLeftSideDistortions2(bookFlip[index]), flipOptions)
+                        }
+                    } else if index == 2 {
+                        if pageSideRight < len(spellPages) {
+                            // rightSide := getPageImage(pageSideRight)
+                            // util.DrawDistortion(screen, bookFlip[index], rightSide, RightSideDistortions1(bookFlip[index]), flipOptions)
+                        }
+                    } else if index == 3 {
+                        if pageSideRight < len(spellPages) {
+                            // rightSide := getPageImage(flipRightSide)
+                            // util.DrawDistortion(screen, bookFlip[index], rightSide, RightSideDistortions2(bookFlip[index]), flipOptions)
+                        }
+                    }
                 }
 
             } else {
