@@ -682,43 +682,14 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells) []*ui
         return out
     }
 
-    currentPage := 0
-
-    elements = append(elements, &uilib.UIElement{
-        Layer: 1,
-        NotLeftClicked: func(this *uilib.UIElement){
-            getAlpha = ui.MakeFadeOut(7)
-            ui.AddDelay(7, func(){
-                ui.RemoveElements(elements)
-
-                log.Printf("Chose spell %+v", chosenSpell)
-            })
-        },
-        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            // FIXME: do the whole page flipping thing with distorted pages
-            vector.DrawFilledRect(screen, 0, 0, float32(screen.Bounds().Dx()), float32(screen.Bounds().Dy()), color.RGBA{R: 0, G: 0, B: 0, A: 128}, false)
-
-            background, _ := imageCache.GetImage("spells.lbx", 0, 0)
-            var options ebiten.DrawImageOptions
-            options.ColorScale.ScaleAlpha(getAlpha())
-            options.GeoM.Translate(10, 10)
-            screen.DrawImage(background, &options)
-
-            left := getPageImage(currentPage)
-            right := getPageImage(currentPage+1)
-
-            options.GeoM.Translate(15, 5)
-            screen.DrawImage(left, &options)
-
-            options.GeoM.Translate(134, 0)
-            screen.DrawImage(right, &options)
-        },
-    })
-
     var spellButtons []*uilib.UIElement
     setupSpells := func(page int) {
         ui.RemoveElements(spellButtons)
         spellButtons = nil
+
+        if page < 0 {
+            return
+        }
 
         leftSpells := spellPages[page].Spells
 
@@ -771,6 +742,41 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells) []*ui
         ui.AddElements(spellButtons)
     }
 
+    currentPage := 0
+
+    elements = append(elements, &uilib.UIElement{
+        Layer: 1,
+        NotLeftClicked: func(this *uilib.UIElement){
+            getAlpha = ui.MakeFadeOut(7)
+            ui.AddDelay(7, func(){
+                ui.RemoveElements(elements)
+                setupSpells(-1)
+
+                log.Printf("Chose spell %+v", chosenSpell)
+            })
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            // FIXME: do the whole page flipping thing with distorted pages
+            vector.DrawFilledRect(screen, 0, 0, float32(screen.Bounds().Dx()), float32(screen.Bounds().Dy()), color.RGBA{R: 0, G: 0, B: 0, A: 128}, false)
+
+            background, _ := imageCache.GetImage("spells.lbx", 0, 0)
+            var options ebiten.DrawImageOptions
+            options.ColorScale.ScaleAlpha(getAlpha())
+            options.GeoM.Translate(10, 10)
+            screen.DrawImage(background, &options)
+
+            left := getPageImage(currentPage)
+            right := getPageImage(currentPage+1)
+
+            options.GeoM.Translate(15, 5)
+            screen.DrawImage(left, &options)
+
+            options.GeoM.Translate(134, 0)
+            screen.DrawImage(right, &options)
+        },
+    })
+
+
     // hack to add the spell ui elements after the main element
     ui.AddDelay(0, func(){
         setupSpells(currentPage)
@@ -782,14 +788,14 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells) []*ui
         Layer: 1,
         Rect: pageTurnRightRect,
         LeftClick: func(this *uilib.UIElement){
-            if currentPage + 1 < len(spellPages) {
+            if currentPage + 2 < len(spellPages) {
                 currentPage += 2
                 setupSpells(currentPage)
             }
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             var options ebiten.DrawImageOptions
-            if currentPage + 1 < len(spellPages) {
+            if currentPage + 2 < len(spellPages) {
                 options.GeoM.Translate(float64(pageTurnRightRect.Min.X), float64(pageTurnRightRect.Min.Y))
                 screen.DrawImage(pageTurnRight, &options)
             }
