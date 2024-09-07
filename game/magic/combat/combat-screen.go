@@ -592,6 +592,32 @@ func (combat *CombatScreen) CreateLightningBoltProjectile(target *ArmyUnit) {
     combat.Projectiles = append(combat.Projectiles, projectile)
 }
 
+func (combat *CombatScreen) CreateWarpLightningProjectile(target *ArmyUnit) {
+    images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 3)
+    // loopImages := images
+    explodeImages := images
+
+    screenX, screenY := combat.Coordinates.Apply(float64(target.X), float64(target.Y))
+    screenY += 13
+    screenX += 3
+
+    screenY -= float64(images[0].Bounds().Dy())
+
+    projectile := &Projectile{
+        X: screenX,
+        Y: screenY,
+        Speed: 0,
+        Angle: 0,
+        TargetX: screenX,
+        TargetY: screenY,
+        Animation: util.MakeAnimation(images, true),
+        Explode: util.MakeRepeatAnimation(explodeImages, 2),
+        Exploding: true,
+    }
+
+    combat.Projectiles = append(combat.Projectiles, projectile)
+}
+
 func (combat *CombatScreen) DoTargetUnitSpell(player *playerlib.Player, spell spellbook.Spell, onTarget func(*ArmyUnit), canTarget func(*ArmyUnit) bool) {
     teamAttacked := TeamAttacker
     if combat.AttackingArmy.Player == player {
@@ -652,6 +678,8 @@ func (combat *CombatScreen) DoTargetUnitSpell(player *playerlib.Player, spell sp
         sound, err := audio.LoadSound(combat.Cache, spell.Sound)
         if err == nil {
             sound.Play()
+        } else {
+            log.Printf("No such sound %v for %v: %v", spell.Sound, spell.Name, err)
         }
 
         removeElements()
@@ -692,6 +720,10 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
         case "Lightning Bolt":
             combat.DoTargetUnitSpell(player, spell, func(target *ArmyUnit){
                 combat.CreateLightningBoltProjectile(target)
+            }, targetAny)
+        case "Warp Lightning":
+            combat.DoTargetUnitSpell(player, spell, func(target *ArmyUnit){
+                combat.CreateWarpLightningProjectile(target)
             }, targetAny)
     }
 }
