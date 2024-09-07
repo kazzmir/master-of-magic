@@ -224,9 +224,13 @@ type CombatScreen struct {
     DebugFont *font.Font
     HudFont *font.Font
     InfoFont *font.Font
+    WhiteFont *font.Font
 
     // when the user hovers over a unit, that unit should be shown in a little info box at the upper right
     HighlightedUnit *ArmyUnit
+
+    // the spell currently being cast
+    CastingSpell spellbook.Spell
 
     AttackingWizardFont *font.Font
     DefendingWizardFont *font.Font
@@ -351,6 +355,8 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
 
     infoFont := font.MakeOptimizedFontWithPalette(fonts[0], orangePalette)
 
+    whiteFont := font.MakeOptimizedFontWithPalette(fonts[0], whitePalette)
+
     defendingWizardFont := font.MakeOptimizedFontWithPalette(fonts[4], makePaletteFromBanner(defendingArmy.Player.Wizard.Banner))
     attackingWizardFont := font.MakeOptimizedFontWithPalette(fonts[4], makePaletteFromBanner(attackingArmy.Player.Wizard.Banner))
 
@@ -405,6 +411,7 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
         DebugFont: debugFont,
         HudFont: hudFont,
         InfoFont: infoFont,
+        WhiteFont: whiteFont,
         Coordinates: coordinates,
         ScreenToTile: screenToTile,
         WhitePixel: whitePixel,
@@ -473,6 +480,7 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
 
         combat.DoSelectUnit = true
         combat.SelectTeam = teamAttacked
+        combat.CastingSpell = spell
         combat.SelectTarget = func(target *ArmyUnit){
             sound, err := audio.LoadSound(combat.Cache, spell.Sound)
             if err == nil {
@@ -498,8 +506,16 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                 options.GeoM.Translate(float64(hudImage.Bounds().Dx()), 0)
             }
 
-            combat.AttackingWizardFont.Print(screen, 265, 170, 1, ebiten.ColorScale{}, combat.AttackingArmy.Player.Wizard.Name)
-            combat.DefendingWizardFont.Print(screen, 30, 170, 1, ebiten.ColorScale{}, combat.DefendingArmy.Player.Wizard.Name)
+            if combat.AttackingArmy.Player == player && combat.DoSelectUnit {
+                combat.WhiteFont.PrintWrap(screen, 250, 168, 70, 1, ebiten.ColorScale{}, fmt.Sprintf("Select a target for a %v spell.", combat.CastingSpell.Name))
+            } else {
+                combat.AttackingWizardFont.Print(screen, 265, 170, 1, ebiten.ColorScale{}, combat.AttackingArmy.Player.Wizard.Name)
+            }
+
+            if combat.DefendingArmy.Player == player && combat.DoSelectUnit {
+            } else {
+                combat.DefendingWizardFont.Print(screen, 30, 170, 1, ebiten.ColorScale{}, combat.DefendingArmy.Player.Wizard.Name)
+            }
 
             rightImage, _ := combat.ImageCache.GetImage(combat.SelectedUnit.Unit.CombatLbxFile, combat.SelectedUnit.Unit.GetCombatIndex(units.FacingRight), 0)
             options.GeoM.Reset()
