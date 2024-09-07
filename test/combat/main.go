@@ -11,6 +11,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/player"
+    "github.com/kazzmir/master-of-magic/game/magic/spellbook"
 
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -60,6 +61,12 @@ func NewEngine() (*Engine, error) {
         },
     }
 
+    allSpells, err := spellbook.ReadSpellsFromCache(cache)
+    if err != nil {
+        log.Printf("Unable to read spells: %v", err)
+        allSpells = spellbook.Spells{}
+    }
+
     attackingPlayer := player.Player{
         Wizard: setup.WizardCustom{
             Name: "Merlin",
@@ -67,6 +74,8 @@ func NewEngine() (*Engine, error) {
         },
         CastingSkill: 10,
     }
+
+    attackingPlayer.Spells.AddSpell(allSpells.FindByName("Fireball"))
 
     attackingArmy := combat.Army{
         Player: &attackingPlayer,

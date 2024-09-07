@@ -40,6 +40,14 @@ const (
     TeamDefender
 )
 
+func (team Team) String() string {
+    switch team {
+        case TeamAttacker: return "Attacker"
+        case TeamDefender: return "Defender"
+    }
+    return "Unknown"
+}
+
 func oppositeTeam(a Team) Team {
     if a == TeamAttacker {
         return TeamDefender
@@ -54,6 +62,7 @@ const (
     CombatMeleeAttackOk
     CombatRangeAttackOk
     CombatNotOk
+    CombatCast
 )
 
 type Tile struct {
@@ -177,6 +186,18 @@ type Army struct {
     Player *player.Player
 }
 
+type Projectile struct {
+    X float64
+    Y float64
+    Speed float64
+    Angle float64
+    TargetX float64
+    TargetY float64
+    Exploding bool
+    Animation *util.Animation
+    Explode *util.Animation
+}
+
 type CombatScreen struct {
     Counter uint64
     Cache *lbx.LbxCache
@@ -198,6 +219,8 @@ type CombatScreen struct {
 
     UI *uilib.UI
 
+    Projectiles []*Projectile
+
     DebugFont *font.Font
     HudFont *font.Font
     InfoFont *font.Font
@@ -215,6 +238,13 @@ type CombatScreen struct {
 
     MouseTileX int
     MouseTileY int
+
+    // if true then the player should select a unit to cast a spell on
+    DoSelectUnit bool
+    // which team to pick a unit from
+    SelectTeam Team
+    // invoke this function on the unit that is selected
+    SelectTarget func(*ArmyUnit)
 }
 
 func makeTiles(width int, height int) [][]Tile {
@@ -389,6 +419,64 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
     return combat
 }
 
+func (combat *CombatScreen) AddProjectile(projectile *Projectile){
+    combat.Projectiles = append(combat.Projectiles, projectile)
+}
+
+func (combat *CombatScreen) CreateFireballProjectile(target *ArmyUnit) {
+    images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 23)
+
+    loopImages := images[0:11]
+    explodeImages := images[11:]
+
+    // find where on the screen the unit is
+    screenX, screenY := combat.Coordinates.Apply(float64(target.X), float64(target.Y))
+    screenY -= 10
+    screenX += 2
+
+    x := screenX + 40 + rand.Float64() * 60
+    y := -rand.Float64() * 40
+
+    /*
+    x = 160
+    y = 100
+    */
+
+    speed := 2.5
+
+    angle := math.Atan2(screenY - y, screenX - x)
+
+    // log.Printf("Create fireball projectile at %v,%v -> %v,%v", x, y, screenX, screenY)
+
+    projectile := &Projectile{
+        X: x,
+        Y: y,
+        Speed: speed,
+        Angle: angle,
+        TargetX: screenX,
+        TargetY: screenY,
+        Animation: util.MakeAnimation(loopImages, true),
+        Explode: util.MakeAnimation(explodeImages, false),
+    }
+
+    combat.AddProjectile(projectile)
+}
+
+func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellbook.Spell){
+    if spell.Name == "Fireball" {
+        teamAttacked := TeamAttacker
+        if combat.AttackingArmy.Player == player {
+            teamAttacked = TeamDefender
+        }
+
+        combat.DoSelectUnit = true
+        combat.SelectTeam = teamAttacked
+        combat.SelectTarget = func(target *ArmyUnit){
+            combat.CreateFireballProjectile(target)
+        }
+    }
+}
+
 func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
     var elements []*uilib.UIElement
 
@@ -467,7 +555,8 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
     elements = append(elements, makeButton(1, 0, 0, func(){
         spellUI := spellbook.MakeSpellBookCastUI(ui, combat.Cache, player.Spells, player.CastingSkill, func (spell spellbook.Spell, picked bool){
             if picked {
-                // do something with the spell
+                // player mana and skill should go down accordingly
+                combat.InvokeSpell(player, spell)
             }
         })
         ui.AddElements(spellUI)
@@ -734,20 +823,70 @@ func (combat *CombatScreen) canAttack(attacker *ArmyUnit, defender *ArmyUnit) bo
     return true
 }
 
+func distanceInRange(x1 float64, y1 float64, x2 float64, y2 float64, r float64) bool {
+    xDiff := x2 - x1
+    yDiff := y2 - y1
+    return xDiff * xDiff + yDiff * yDiff <= r*r
+}
+
 func (combat *CombatScreen) Update() CombatState {
     combat.Counter += 1
 
     combat.UI.StandardUpdate()
 
     mouseX, mouseY := ebiten.CursorPosition()
+    hudImage, _ := combat.ImageCache.GetImage("cmbtfx.lbx", 28, 0)
 
     tileX, tileY := combat.ScreenToTile.Apply(float64(mouseX), float64(mouseY))
     combat.MouseTileX = int(math.Round(tileX))
     combat.MouseTileY = int(math.Round(tileY))
 
-    hudImage, _ := combat.ImageCache.GetImage("cmbtfx.lbx", 28, 0)
+    hudY := data.ScreenHeight - hudImage.Bounds().Dy()
 
-    if combat.UI.GetHighestLayerValue() > 0 || mouseY >= data.ScreenHeight - hudImage.Bounds().Dy() {
+    if combat.DoSelectUnit {
+        combat.MouseState = CombatCast
+
+        if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) && mouseY < hudY {
+            unit := combat.GetUnit(combat.MouseTileX, combat.MouseTileY)
+            // log.Printf("Click unit at %v,%v -> %v", combat.MouseTileX, combat.MouseTileY, unit)
+            if unit != nil && unit.Team == combat.SelectTeam {
+                combat.SelectTarget(unit)
+                combat.DoSelectUnit = false
+
+                // shouldn't need to set the mouse state here
+                combat.MouseState = CombatClickHud
+            }
+        }
+
+        return CombatStateRunning
+    }
+
+    var projectilesOut []*Projectile
+    for _, projectile := range combat.Projectiles {
+        keep := false
+        if distanceInRange(projectile.X, projectile.Y, projectile.TargetX, projectile.TargetY, 5) {
+            projectile.Exploding = true
+            keep = true
+            if combat.Counter % 4 == 0 && !projectile.Explode.Next() {
+                keep = false
+            }
+        } else {
+            projectile.X += math.Cos(projectile.Angle) * projectile.Speed
+            projectile.Y += math.Sin(projectile.Angle) * projectile.Speed
+            if combat.Counter % 5 == 0 {
+                projectile.Animation.Next()
+            }
+            keep = true
+        }
+
+        if keep {
+            projectilesOut = append(projectilesOut, projectile)
+        }
+    }
+
+    combat.Projectiles = projectilesOut
+
+    if combat.UI.GetHighestLayerValue() > 0 || mouseY >= hudY {
         combat.MouseState = CombatClickHud
     } else if combat.SelectedUnit != nil && combat.SelectedUnit.Moving {
         combat.MouseState = CombatClickHud
@@ -779,7 +918,7 @@ func (combat *CombatScreen) Update() CombatState {
     // also don't allow clicks into the game if the ui is showing some overlay
     if combat.UI.GetHighestLayerValue() == 0 &&
        inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) &&
-       mouseY < data.ScreenHeight - hudImage.Bounds().Dy() &&
+       mouseY < hudY &&
        combat.SelectedUnit.Moving == false && combat.SelectedUnit.Attacking == false {
 
         if combat.TileIsEmpty(combat.MouseTileX, combat.MouseTileY) && combat.SelectedUnit.CanMoveTo(combat.MouseTileX, combat.MouseTileY){
@@ -1079,6 +1218,20 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
         vector.StrokeLine(screen, float32(x1 + 25), float32(y1 + 40), float32(x1 + 25 + healthWidth), float32(y1 + 40), 1, healthyColor, false)
     }
 
+    for _, projectile := range combat.Projectiles {
+        var frame *ebiten.Image
+        if projectile.Exploding {
+            frame = projectile.Explode.Frame()
+        } else {
+            frame = projectile.Animation.Frame()
+        }
+        if frame != nil {
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(projectile.X, projectile.Y)
+            screen.DrawImage(frame, &options)
+        }
+    }
+
     var mouseOptions ebiten.DrawImageOptions
     mouseX, mouseY := ebiten.CursorPosition()
     mouseOptions.GeoM.Translate(float64(mouseX), float64(mouseY))
@@ -1095,5 +1248,8 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
         case CombatNotOk:
             mouseOptions.GeoM.Translate(-1, -1)
             screen.DrawImage(combat.Mouse.Error, &mouseOptions)
+        case CombatCast:
+            index := (combat.Counter / 8) % uint64(len(combat.Mouse.Cast))
+            screen.DrawImage(combat.Mouse.Cast[index], &mouseOptions)
     }
 }
