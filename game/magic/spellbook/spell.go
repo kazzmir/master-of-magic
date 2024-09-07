@@ -216,7 +216,6 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
 
     getAlpha := ui.MakeFadeIn(fadeSpeed)
 
-    // use index 0 for a smaller book (like when casting?)
     bookFlip, _ := imageCache.GetImages("book.lbx", 1)
     bookFlipIndex := uint64(0)
     bookFlipReverse := false
@@ -745,7 +744,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
                     chosenSpell = spell
                 },
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                    vector.StrokeRect(screen, float32(rect.Min.X), float32(rect.Min.Y), float32(rect.Max.X - rect.Min.X), float32(rect.Max.Y - rect.Min.Y), 1, color.RGBA{R: 255, G: 255, B: 255, A: 255}, false)
+                    // vector.StrokeRect(screen, float32(rect.Min.X), float32(rect.Min.Y), float32(rect.Max.X - rect.Min.X), float32(rect.Max.Y - rect.Min.Y), 1, color.RGBA{R: 255, G: 255, B: 255, A: 255}, false)
                 },
             }
         }
@@ -782,6 +781,20 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
 
     currentPage := 0
 
+    bookFlip, _ := imageCache.GetImages("book.lbx", 0)
+    bookFlipIndex := uint64(0)
+    bookFlipReverse := false
+    bookFlipSpeed := uint64(20)
+    flipping := false
+
+    showPageLeft := 0
+    showPageRight := 0
+    pageSideLeft := 0
+    pageSideRight := 0
+
+    _ = pageSideLeft
+    _ = pageSideRight
+
     elements = append(elements, &uilib.UIElement{
         Layer: 1,
         NotLeftClicked: func(this *uilib.UIElement){
@@ -808,14 +821,38 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
             right := getPageImage(currentPage+1)
             */
 
-            options.GeoM.Translate(15, 5)
-            renderPage(screen, options, spellPages[currentPage], highlightedSpell)
             // screen.DrawImage(left, &options)
 
-            if currentPage + 1 < len(spellPages) {
-                options.GeoM.Translate(134, 0)
-                // screen.DrawImage(right, &options)
-                renderPage(screen, options, spellPages[currentPage+1], highlightedSpell)
+            flipOptions := options
+
+            if flipping {
+                options.GeoM.Translate(15, 5)
+                renderPage(screen, options, spellPages[showPageLeft], Spell{})
+
+                if showPageRight < len(spellPages) {
+                    options.GeoM.Translate(134, 0)
+                    renderPage(screen, options, spellPages[showPageRight], Spell{})
+                }
+
+                if bookFlipIndex > 0 && (ui.Counter - bookFlipIndex) / bookFlipSpeed < uint64(len(bookFlip)) {
+                    index := (ui.Counter - bookFlipIndex) / bookFlipSpeed
+                    if bookFlipReverse {
+                        index = uint64(len(bookFlip)) - 1 - index
+                    }
+
+                    flipOptions.GeoM.Translate(-17, -10)
+                    screen.DrawImage(bookFlip[index], &flipOptions)
+                }
+
+            } else {
+                options.GeoM.Translate(15, 5)
+                renderPage(screen, options, spellPages[currentPage], highlightedSpell)
+
+                if currentPage + 1 < len(spellPages) {
+                    options.GeoM.Translate(134, 0)
+                    // screen.DrawImage(right, &options)
+                    renderPage(screen, options, spellPages[currentPage+1], highlightedSpell)
+                }
             }
         },
     })
@@ -833,8 +870,20 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
         Rect: pageTurnRightRect,
         LeftClick: func(this *uilib.UIElement){
             if currentPage + 2 < len(spellPages) {
-                currentPage += 2
-                setupSpells(currentPage)
+                flipping = true
+                bookFlipReverse = false
+                bookFlipIndex = ui.Counter
+
+                showPageRight = currentPage + 3
+                pageSideLeft = currentPage + 1
+                pageSideRight = currentPage + 2
+                showPageLeft = currentPage
+
+                ui.AddDelay(bookFlipSpeed * uint64(len(bookFlip)), func (){
+                    flipping = false
+                    currentPage += 2
+                    setupSpells(currentPage)
+                })
             }
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
@@ -853,8 +902,20 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
         Layer: 1,
         LeftClick: func(this *uilib.UIElement){
             if currentPage >= 2 {
-                currentPage -= 2
-                setupSpells(currentPage)
+                flipping = true
+                bookFlipReverse = true
+                bookFlipIndex = ui.Counter
+
+                showPageRight = currentPage + 1
+                showPageLeft = currentPage - 2
+                pageSideLeft = currentPage - 1
+                pageSideRight = currentPage
+
+                ui.AddDelay(bookFlipSpeed * uint64(len(bookFlip)), func (){
+                    flipping = false
+                    currentPage -= 2
+                    setupSpells(currentPage)
+                })
             }
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
