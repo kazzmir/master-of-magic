@@ -9,6 +9,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/game/magic/util"
+    playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     "github.com/hajimehoshi/ebiten/v2"
     // "github.com/hajimehoshi/ebiten/v2/vector"
@@ -33,7 +34,7 @@ type MagicScreen struct {
     SkillLocked bool
 }
 
-func MakeMagicScreen(cache *lbx.LbxCache) *MagicScreen {
+func MakeMagicScreen(cache *lbx.LbxCache, player *playerlib.Player) *MagicScreen {
     magic := &MagicScreen{
         Cache: cache,
         ImageCache: util.MakeImageCache(cache),
@@ -44,7 +45,7 @@ func MakeMagicScreen(cache *lbx.LbxCache) *MagicScreen {
         SkillLocked: false,
     }
 
-    magic.UI = magic.MakeUI()
+    magic.UI = magic.MakeUI(player)
 
     return magic
 }
@@ -269,7 +270,7 @@ func (magic *MagicScreen) MakeTransmuteElements(ui *uilib.UI, smallFont *font.Fo
     return elements
 }
 
-func (magic *MagicScreen) MakeUI() *uilib.UI {
+func (magic *MagicScreen) MakeUI(player *playerlib.Player) *uilib.UI {
 
     fontLbx, err := magic.Cache.GetLbxFile("fonts.lbx")
     if err != nil {
@@ -648,7 +649,7 @@ func (magic *MagicScreen) MakeUI() *uilib.UI {
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             // vector.StrokeRect(screen, float32(spellCastUIRect.Min.X), float32(spellCastUIRect.Min.Y), float32(spellCastUIRect.Dx()), float32(spellCastUIRect.Dy()), 1, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff}, false)
 
-            smallerFont.Print(screen, 5, 176, 1, ebiten.ColorScale{}, fmt.Sprintf("Casting Skill: %v(%v)", 20, 20))
+            smallerFont.Print(screen, 5, 176, 1, ebiten.ColorScale{}, fmt.Sprintf("Casting Skill: %v(%v)", player.CastingSkill, player.CastingSkill))
             smallerFont.Print(screen, 5, 183, 1, ebiten.ColorScale{}, fmt.Sprintf("Magic Reserve: %v", 90))
             smallerFont.Print(screen, 5, 190, 1, ebiten.ColorScale{}, fmt.Sprintf("Power Base: %v", 12))
         },

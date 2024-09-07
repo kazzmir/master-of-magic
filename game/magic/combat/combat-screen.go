@@ -465,7 +465,7 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
 
     // spell
     elements = append(elements, makeButton(1, 0, 0, func(){
-        spellUI := spellbook.MakeSpellBookCastUI(ui, combat.Cache, spellbook.Spells{}, player.CastingSkill, func (spell spellbook.Spell, picked bool){
+        spellUI := spellbook.MakeSpellBookCastUI(ui, combat.Cache, player.Spells, player.CastingSkill, func (spell spellbook.Spell, picked bool){
             if picked {
                 // do something with the spell
             }

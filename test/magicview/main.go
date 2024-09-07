@@ -8,6 +8,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/magicview"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/util"
+    playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
 
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -22,7 +23,11 @@ type Engine struct {
 func NewEngine() (*Engine, error) {
     cache := lbx.AutoCache()
 
-    magicScreen := magicview.MakeMagicScreen(cache)
+    player := &playerlib.Player{
+        CastingSkill: 28,
+    }
+
+    magicScreen := magicview.MakeMagicScreen(cache, player)
 
     return &Engine{
         LbxCache: cache,

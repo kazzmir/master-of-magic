@@ -4,6 +4,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
 )
 
@@ -51,6 +52,9 @@ type Player struct {
     Gold int
     Food int
     Mana int
+
+    // known spells
+    Spells spellbook.Spells
 
     CastingSkill int
 

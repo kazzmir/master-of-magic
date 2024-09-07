@@ -818,7 +818,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
     // magic button
     elements = append(elements, makeButton(5, 184, 4, false, func(){
-        game.MagicScreen = magicview.MakeMagicScreen(game.Cache)
+        game.MagicScreen = magicview.MakeMagicScreen(game.Cache, game.Players[0])
         game.State = GameStateMagicView
     }))
 
