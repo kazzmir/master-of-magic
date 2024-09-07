@@ -77,6 +77,8 @@ func NewEngine() (*Engine, error) {
 
     attackingPlayer.Spells.AddSpell(allSpells.FindByName("Fireball"))
 
+    defendingPlayer.Spells.AddSpell(allSpells.FindByName("Fireball"))
+
     attackingArmy := combat.Army{
         Player: &attackingPlayer,
         Units: []*combat.ArmyUnit{
@@ -92,7 +94,7 @@ func NewEngine() (*Engine, error) {
 
     return &Engine{
         LbxCache: cache,
-        CombatScreen: combat.MakeCombatScreen(cache, &defendingArmy, &attackingArmy, &attackingPlayer),
+        CombatScreen: combat.MakeCombatScreen(cache, &defendingArmy, &attackingArmy, &defendingPlayer),
     }, nil
 }
 

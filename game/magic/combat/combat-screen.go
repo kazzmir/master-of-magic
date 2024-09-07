@@ -477,7 +477,7 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
 
         x := 250
         if player == combat.DefendingArmy.Player {
-            x = 1
+            x = 3
         }
 
         y := 168
