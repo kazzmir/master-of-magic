@@ -627,6 +627,22 @@ func (combat *CombatScreen) CreateWarpLightningProjectile(target *ArmyUnit) {
     combat.Projectiles = append(combat.Projectiles, projectile)
 }
 
+func (combat *CombatScreen) CreateLifeDrainProjectile(target *ArmyUnit) {
+    images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 6)
+    var loopImages []*ebiten.Image
+    explodeImages := images
+
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages))
+}
+
+func (combat *CombatScreen) CreateFlameStrikeProjectile(target *ArmyUnit) {
+    images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 33)
+    var loopImages []*ebiten.Image
+    explodeImages := images
+
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages))
+}
+
 func (combat *CombatScreen) DoTargetUnitSpell(player *playerlib.Player, spell spellbook.Spell, onTarget func(*ArmyUnit), canTarget func(*ArmyUnit) bool) {
     teamAttacked := TeamAttacker
     if combat.AttackingArmy.Player == player {
@@ -696,14 +712,6 @@ func (combat *CombatScreen) DoTargetUnitSpell(player *playerlib.Player, spell sp
     }
 }
 
-func (combat *CombatScreen) CreateFlameStrikeProjectile(target *ArmyUnit) {
-    images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 33)
-    var loopImages []*ebiten.Image
-    explodeImages := images
-
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages))
-}
-
 func (combat *CombatScreen) DoAllUnitsSpell(player *playerlib.Player, spell spellbook.Spell, onTarget func(*ArmyUnit)) {
     var units []*ArmyUnit
 
@@ -711,6 +719,13 @@ func (combat *CombatScreen) DoAllUnitsSpell(player *playerlib.Player, spell spel
         units = combat.AttackingArmy.Units
     } else {
         units = combat.DefendingArmy.Units
+    }
+
+    sound, err := audio.LoadSound(combat.Cache, spell.Sound)
+    if err == nil {
+        sound.Play()
+    } else {
+        log.Printf("No such sound %v for %v: %v", spell.Sound, spell.Name, err)
     }
 
     for _, unit := range units {
@@ -760,6 +775,10 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
             combat.DoAllUnitsSpell(player, spell, func(target *ArmyUnit){
                 combat.CreateFlameStrikeProjectile(target)
             })
+        case "Life Drain":
+            combat.DoTargetUnitSpell(player, spell, func(target *ArmyUnit){
+                combat.CreateLifeDrainProjectile(target)
+            }, targetAny)
     }
 }
 
