@@ -576,6 +576,36 @@ func CastLeftSideDistortions2(page *ebiten.Image) util.Distortion {
     }
 }
 
+func CastRightSideDistortions1(page *ebiten.Image) util.Distortion {
+    offset := 60
+    return util.Distortion{
+        Top: image.Pt(page.Bounds().Dx()/2 - 110 + offset - 3, 2),
+        Bottom: image.Pt(page.Bounds().Dx()/2 - 110 + offset, page.Bounds().Dy() - 28),
+        Segments: []util.Segment{
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 - 90 + offset, -0),
+                Bottom: image.Pt(page.Bounds().Dx()/2 - 90 + offset, page.Bounds().Dy() - 43),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 - 73 + offset, -10),
+                Bottom: image.Pt(page.Bounds().Dx()/2 - 73 + offset, page.Bounds().Dy() - 43),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 - 58 + offset, -13),
+                Bottom: image.Pt(page.Bounds().Dx()/2 - 58 + offset, page.Bounds().Dy() - 35),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 - 40 + offset, 4),
+                Bottom: image.Pt(page.Bounds().Dx()/2 - 40 + offset, page.Bounds().Dy() - 21),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 - 38 + offset, 18),
+                Bottom: image.Pt(page.Bounds().Dx()/2 - 38 + offset, page.Bounds().Dy() - 10),
+            },
+        },
+    }
+}
+
 // FIXME: take in the wizard/player that is casting the spell
 // somehow return the spell chosen
 func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, castingSkill int) []*uilib.UIElement {
@@ -755,18 +785,18 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
         out.Fill(color.RGBA{R: 0, G: 0, B: 0, A: 0})
 
         if page < len(spellPages) {
+            /*
             var options ebiten.DrawImageOptions
             renderPage(out, options, spellPages[page], Spell{})
+            */
             // out.Fill(color.RGBA{R: 255, G: 0, B: 0, A: 255})
 
-            /*
             alpha := uint8(64)
             vector.DrawFilledRect(out, 0, 0, 30, float32(out.Bounds().Dy()), util.PremultiplyAlpha(color.RGBA{R: 255, G: 0, B: 0, A: alpha}), false)
             vector.DrawFilledRect(out, 30, 0, 30, float32(out.Bounds().Dy()), util.PremultiplyAlpha(color.RGBA{R: 0, G: 255, B: 0, A: alpha}), false)
             vector.DrawFilledRect(out, 60, 0, 30, float32(out.Bounds().Dy()), util.PremultiplyAlpha(color.RGBA{R: 0, G: 0, B: 255, A: alpha}), false)
             vector.DrawFilledRect(out, 90, 0, 30, float32(out.Bounds().Dy()), util.PremultiplyAlpha(color.RGBA{R: 255, G: 255, B: 0, A: alpha}), false)
             vector.StrokeLine(out, 0, 80, float32(out.Bounds().Dx()), 80, 2, color.RGBA{R: 255, G: 255, B: 255, A: 255}, false)
-            */
         }
 
         // vector.StrokeRect(out, 1, 1, float32(out.Bounds().Dx()-1), float32(out.Bounds().Dy()-10), 1, color.RGBA{R: 255, G: 255, B: 255, A: 255}, false)
@@ -891,7 +921,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
                         index = uint64(len(bookFlip)) - 1 - index
                     }
 
-                    index = 1
+                    index = 2
 
                     flipOptions.GeoM.Translate(-17, -10)
                     screen.DrawImage(bookFlip[index], &flipOptions)
@@ -908,8 +938,8 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
                         }
                     } else if index == 2 {
                         if pageSideRight < len(spellPages) {
-                            // rightSide := getPageImage(pageSideRight)
-                            // util.DrawDistortion(screen, bookFlip[index], rightSide, RightSideDistortions1(bookFlip[index]), flipOptions)
+                            rightSide := getPageImage(pageSideRight)
+                            util.DrawDistortion(screen, bookFlip[index], rightSide, CastRightSideDistortions1(bookFlip[index]), flipOptions)
                         }
                     } else if index == 3 {
                         if pageSideRight < len(spellPages) {
