@@ -469,9 +469,16 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
             teamAttacked = TeamDefender
         }
 
+        // log.Printf("Create sound for spell %v: %v", spell.Name, spell.Sound)
+
         combat.DoSelectUnit = true
         combat.SelectTeam = teamAttacked
         combat.SelectTarget = func(target *ArmyUnit){
+            sound, err := audio.LoadSound(combat.Cache, spell.Sound)
+            if err == nil {
+                sound.Play()
+            }
+
             combat.CreateFireballProjectile(target)
         }
     }
