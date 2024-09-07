@@ -655,12 +655,23 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
                     iconCount = 0
                 }
 
+                icon1Width := 0
+
                 for i := 0; i < icons1; i++ {
                     out.DrawImage(icon, &iconOptions)
                     iconOptions.GeoM.Translate(float64(icon.Bounds().Dx()) + 1, 0)
+                    icon1Width += icon.Bounds().Dx() + 1
                 }
 
-                part2 := gibberishPart.SubImage(image.Rect((icon.Bounds().Dx() + 1) * icons1 + 3, partIndex * partHeight + subLines, gibberish.Bounds().Dx(), partIndex * partHeight + subLines * 2)).(*ebiten.Image)
+                if spell.CastCost < castingSkill {
+                    x, y := iconOptions.GeoM.Apply(0, 0)
+                    x += 2
+                    infoFont.Print(out, x, y, 1, options.ColorScale, "Instant")
+                    icon1Width += int(infoFont.MeasureTextWidth("Instant", 1)) + 2
+                    iconOptions.GeoM.Translate(infoFont.MeasureTextWidth("Instant", 1) + 2, 0)
+                }
+
+                part2 := gibberishPart.SubImage(image.Rect(icon1Width + 3, partIndex * partHeight + subLines, gibberish.Bounds().Dx(), partIndex * partHeight + subLines * 2)).(*ebiten.Image)
                 part2Options := iconOptions
                 part2Options.GeoM.Translate(3, 0)
                 out.DrawImage(part2, &part2Options)
