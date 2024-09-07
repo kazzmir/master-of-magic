@@ -428,7 +428,7 @@ func (combat *CombatScreen) AddProjectile(projectile *Projectile){
     combat.Projectiles = append(combat.Projectiles, projectile)
 }
 
-/* a projectile that shoots down from the sky
+/* a projectile that shoots down from the sky at an angle
  */
 func (combat *CombatScreen) createSkyProjectile(target *ArmyUnit, images []*ebiten.Image, explodeImages []*ebiten.Image) *Projectile {
     // find where on the screen the unit is
@@ -443,6 +443,38 @@ func (combat *CombatScreen) createSkyProjectile(target *ArmyUnit, images []*ebit
     speed := 2.5
 
     angle := math.Atan2(screenY - y, screenX - x)
+
+    // log.Printf("Create fireball projectile at %v,%v -> %v,%v", x, y, screenX, screenY)
+
+    projectile := &Projectile{
+        X: x,
+        Y: y,
+        Speed: speed,
+        Angle: angle,
+        TargetX: screenX,
+        TargetY: screenY,
+        Animation: util.MakeAnimation(images, true),
+        Explode: util.MakeAnimation(explodeImages, false),
+    }
+
+    return projectile
+}
+
+/* a projectile that shoots down from the sky vertically
+ */
+func (combat *CombatScreen) createVerticalSkyProjectile(target *ArmyUnit, images []*ebiten.Image, explodeImages []*ebiten.Image) *Projectile {
+    // find where on the screen the unit is
+    screenX, screenY := combat.Coordinates.Apply(float64(target.X), float64(target.Y))
+    screenY -= 10
+    screenX += 2
+
+    x := screenX
+    y := -40.0
+
+    // FIXME: make this a parameter?
+    speed := 2.5
+
+    angle := math.Pi / 2
 
     // log.Printf("Create fireball projectile at %v,%v -> %v,%v", x, y, screenX, screenY)
 
@@ -516,6 +548,14 @@ func (combat *CombatScreen) CreatePsionicBlastProjectile(target *ArmyUnit) {
     explodeImages := images
 
     combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages))
+}
+
+func (combat *CombatScreen) CreateDoomBoltProjectile(target *ArmyUnit) {
+    images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 5)
+    loopImages := images[0:3]
+    explodeImages := images[3:]
+
+    combat.Projectiles = append(combat.Projectiles, combat.createVerticalSkyProjectile(target, loopImages, explodeImages))
 }
 
 func (combat *CombatScreen) DoTargetUnitSpell(player *playerlib.Player, spell spellbook.Spell, onTarget func(*ArmyUnit), canTarget func(*ArmyUnit) bool) {
@@ -606,6 +646,10 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
         case "Psionic Blast":
             combat.DoTargetUnitSpell(player, spell, func(target *ArmyUnit){
                 combat.CreatePsionicBlastProjectile(target)
+            }, targetAny)
+        case "Doom Bolt":
+            combat.DoTargetUnitSpell(player, spell, func(target *ArmyUnit){
+                combat.CreateDoomBoltProjectile(target)
             }, targetAny)
     }
 }
