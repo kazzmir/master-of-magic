@@ -594,9 +594,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
 
     var chosenSpell Spell
 
-    var highlightedSpell Spell
-
-    renderPage := func(screen *ebiten.Image, options ebiten.DrawImageOptions, spells Spells){
+    renderPage := func(screen *ebiten.Image, options ebiten.DrawImageOptions, spells Spells, highlightedSpell Spell){
         section := spells.Spells[0].Section
 
         titleX, titleY := options.GeoM.Apply(60, 1)
@@ -709,7 +707,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
 
         var options ebiten.DrawImageOptions
         if page < len(spellPages) {
-            renderPage(out, options, spellPages[page])
+            renderPage(out, options, spellPages[page], Spell{})
         }
 
         // vector.StrokeRect(out, 1, 1, float32(out.Bounds().Dx()-1), float32(out.Bounds().Dy()-10), 1, color.RGBA{R: 255, G: 255, B: 255, A: 255}, false)
@@ -718,6 +716,8 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
     }
 
     _ = getPageImage
+
+    var highlightedSpell Spell
 
     var spellButtons []*uilib.UIElement
     setupSpells := func(page int) {
@@ -809,13 +809,13 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
             */
 
             options.GeoM.Translate(15, 5)
-            renderPage(screen, options, spellPages[currentPage])
+            renderPage(screen, options, spellPages[currentPage], highlightedSpell)
             // screen.DrawImage(left, &options)
 
             if currentPage + 1 < len(spellPages) {
                 options.GeoM.Translate(134, 0)
                 // screen.DrawImage(right, &options)
-                renderPage(screen, options, spellPages[currentPage+1])
+                renderPage(screen, options, spellPages[currentPage+1], highlightedSpell)
             }
         },
     })
