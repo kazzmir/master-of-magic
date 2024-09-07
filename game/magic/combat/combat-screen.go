@@ -643,6 +643,8 @@ func (combat *CombatScreen) CreateFlameStrikeProjectile(target *ArmyUnit) {
     combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages))
 }
 
+/* let the user select a target, then cast the spell on that target
+ */
 func (combat *CombatScreen) DoTargetUnitSpell(player *playerlib.Player, spell spellbook.Spell, onTarget func(*ArmyUnit), canTarget func(*ArmyUnit) bool) {
     teamAttacked := TeamAttacker
     if combat.AttackingArmy.Player == player {
@@ -712,6 +714,8 @@ func (combat *CombatScreen) DoTargetUnitSpell(player *playerlib.Player, spell sp
     }
 }
 
+/* create projectiles on all units immediately, no targeting required
+ */
 func (combat *CombatScreen) DoAllUnitsSpell(player *playerlib.Player, spell spellbook.Spell, onTarget func(*ArmyUnit)) {
     var units []*ArmyUnit
 
