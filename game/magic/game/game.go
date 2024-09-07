@@ -730,7 +730,11 @@ func (game *Game) MakeInfoUI(cornerX int, cornerY int) []*uilib.UIElement {
 }
 
 func (game *Game) ShowSpellBookCastUI(){
-    game.HudUI.AddElements(spellbook.MakeSpellBookCastUI(game.HudUI, game.Cache))
+    game.HudUI.AddElements(spellbook.MakeSpellBookCastUI(game.HudUI, game.Cache, spellbook.Spells{}, game.Players[0].CastingSkill, func (spell spellbook.Spell, picked bool){
+        if picked {
+            // FIXME: do something
+        }
+    }))
 }
 
 func (game *Game) MakeHudUI() *uilib.UI {

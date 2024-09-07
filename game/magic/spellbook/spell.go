@@ -1,6 +1,7 @@
 package spellbook
 
 import (
+    "fmt"
     "image"
     "image/color"
     "math"
@@ -8,6 +9,7 @@ import (
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
 
@@ -15,7 +17,7 @@ import (
     "github.com/hajimehoshi/ebiten/v2/vector"
 )
 
-func computeHalfPages(spells Spells) []Spells {
+func computeHalfPages(spells Spells, max int) []Spells {
     var halfPages []Spells
 
     sections := []Section{SectionSummoning, SectionSpecial, SectionCitySpell, SectionEnchantment, SectionUnitSpell, SectionCombatSpell}
@@ -24,11 +26,11 @@ func computeHalfPages(spells Spells) []Spells {
         sectionSpells := spells.GetSpellsBySection(section)
         numSpells := len(sectionSpells.Spells)
 
-        for i := 0; i < int(math.Ceil(float64(numSpells) / 4)); i++ {
+        for i := 0; i < int(math.Ceil(float64(numSpells) / float64(max))); i++ {
             var pageSpells Spells
 
-            for j := 0; j < 4; j++ {
-                index := i * 4 + j
+            for j := 0; j < max; j++ {
+                index := i * max + j
                 if index < numSpells {
                     pageSpells.AddSpell(sectionSpells.Spells[index])
                 }
@@ -214,7 +216,6 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
 
     getAlpha := ui.MakeFadeIn(fadeSpeed)
 
-    // use index 0 for a smaller book (like when casting?)
     bookFlip, _ := imageCache.GetImages("book.lbx", 1)
     bookFlipIndex := uint64(0)
     bookFlipReverse := false
@@ -310,7 +311,7 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
     }
 
     // compute half pages
-    halfPages := computeHalfPages(spells)
+    halfPages := computeHalfPages(spells, 4)
 
     // for debugging
     /*
@@ -517,23 +518,431 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
     return elements
 }
 
+func CastLeftSideDistortions1(page *ebiten.Image) util.Distortion {
+    return util.Distortion{
+        Top: image.Pt(page.Bounds().Dx()/2 + 25, 12),
+        Bottom: image.Pt(page.Bounds().Dx()/2 + 25, page.Bounds().Dy() - 4),
+        Segments: []util.Segment{
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 + 40, -5),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 40, page.Bounds().Dy() - 25),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 + 60, -10),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 60, page.Bounds().Dy() - 33),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 + 80, -10),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 80, page.Bounds().Dy() - 30),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 + 100, -3),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 100, page.Bounds().Dy() - 22),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 + 135, 16),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 135, page.Bounds().Dy() - 3),
+            },
+        },
+    }
+}
+
+func CastLeftSideDistortions2(page *ebiten.Image) util.Distortion {
+    return util.Distortion{
+        Top: image.Pt(page.Bounds().Dx()/2 + 25, 9),
+        Bottom: image.Pt(page.Bounds().Dx()/2 + 25, page.Bounds().Dy() - 2),
+        Segments: []util.Segment{
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 + 40, -12),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 40, page.Bounds().Dy() - 33),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 + 58, -13),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 58, page.Bounds().Dy() - 43),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 + 73, -20),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 73, page.Bounds().Dy() - 43),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 + 90, -3),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 90, page.Bounds().Dy() - 34),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 + 99, 1),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 99, page.Bounds().Dy() - 24),
+            },
+        },
+    }
+}
+
+func CastRightSideDistortions1(page *ebiten.Image) util.Distortion {
+    offset := 60
+    return util.Distortion{
+        Top: image.Pt(page.Bounds().Dx()/2 - 110 + offset - 3, 2),
+        Bottom: image.Pt(page.Bounds().Dx()/2 - 110 + offset, page.Bounds().Dy() - 28),
+        Segments: []util.Segment{
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 - 90 + offset, -0),
+                Bottom: image.Pt(page.Bounds().Dx()/2 - 90 + offset, page.Bounds().Dy() - 43),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 - 73 + offset, -10),
+                Bottom: image.Pt(page.Bounds().Dx()/2 - 73 + offset, page.Bounds().Dy() - 43),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 - 58 + offset, -13),
+                Bottom: image.Pt(page.Bounds().Dx()/2 - 58 + offset, page.Bounds().Dy() - 35),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 - 40 + offset, 4),
+                Bottom: image.Pt(page.Bounds().Dx()/2 - 40 + offset, page.Bounds().Dy() - 21),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 - 38 + offset, 18),
+                Bottom: image.Pt(page.Bounds().Dx()/2 - 38 + offset, page.Bounds().Dy() - 10),
+            },
+        },
+    }
+}
+
+func CastRightSideDistortions2(page *ebiten.Image) util.Distortion {
+    offset := 40
+    return util.Distortion{
+        Top: image.Pt(page.Bounds().Dx()/2 - 130 + offset + 2, 15),
+        Bottom: image.Pt(page.Bounds().Dx()/2 - 130 + offset + 2, page.Bounds().Dy() - 3),
+
+        Segments: []util.Segment{
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 - 100 + offset, -0),
+                Bottom: image.Pt(page.Bounds().Dx()/2 - 100 + offset, page.Bounds().Dy() - 18),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 - 80 + offset, -10),
+                Bottom: image.Pt(page.Bounds().Dx()/2 - 80 + offset, page.Bounds().Dy() - 27),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 - 60 + offset, -10),
+                Bottom: image.Pt(page.Bounds().Dx()/2 - 60 + offset, page.Bounds().Dy() - 31),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 - 40 + offset, -3),
+                Bottom: image.Pt(page.Bounds().Dx()/2 - 40 + offset, page.Bounds().Dy() - 28),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 - 30 + offset, -2),
+                Bottom: image.Pt(page.Bounds().Dx()/2 - 30 + offset, page.Bounds().Dy() - 22),
+            },
+            util.Segment{
+                Top: image.Pt(page.Bounds().Dx()/2 - 20 + offset + 3, 15),
+                Bottom: image.Pt(page.Bounds().Dx()/2 - 20 + offset + 1, page.Bounds().Dy() - 5),
+            },
+        },
+    }
+}
+
 // FIXME: take in the wizard/player that is casting the spell
-// somehow return the spell chosen
-func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
+// chosenCallback is invoked when the spellbook ui goes away, either because the user
+// selected a spell or because they canceled the ui
+// if a spell is chosen then it will be passed in as the first argument to the callback along with true
+// if the ui is cancelled then the second argument will be false
+func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, castingSkill int, chosenCallback func(Spell, bool)) []*uilib.UIElement {
     var elements []*uilib.UIElement
 
     imageCache := util.MakeImageCache(cache)
 
     getAlpha := ui.MakeFadeIn(7)
 
+    // value needs to be one so that the ColorScale later on works
+    black := color.RGBA{R: 1, G: 1, B: 1, A: 0xff}
+
+    paletteBlack := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        black, black, black,
+        black, black, black,
+    }
+
+    getMagicIcon := func(spell Spell) *ebiten.Image {
+        index := -1
+        switch spell.Magic {
+            case data.LifeMagic: index = 7
+            case data.SorceryMagic: index = 5
+            case data.NatureMagic: index = 4
+            case data.DeathMagic: index = 8
+            case data.ChaosMagic: index = 6
+            case data.ArcaneMagic: index = 9
+        }
+
+        if index == -1 {
+            return nil
+        }
+
+        img, _ := imageCache.GetImage("spells.lbx", index, 0)
+        return img
+    }
+
+    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        log.Printf("Could not read fonts: %v", err)
+        return nil
+    }
+
+    fonts, _ := font.ReadFonts(fontLbx, 0)
+
+    infoFont := font.MakeOptimizedFontWithPalette(fonts[1], paletteBlack)
+
+    red := color.RGBA{R: 0x5a, G: 0, B: 0, A: 0xff}
+    redPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        red, red, red,
+        red, red, red,
+        red, red, red,
+        red, red, red,
+        red, red, red,
+        red, red, red,
+    }
+
+    titleFont := font.MakeOptimizedFontWithPalette(fonts[4], redPalette)
+
+    pageCache := make(map[int]*ebiten.Image)
+
+    spellPages := computeHalfPages(spells, 6)
+
+    renderPage := func(screen *ebiten.Image, options ebiten.DrawImageOptions, spells Spells, highlightedSpell Spell){
+        section := spells.Spells[0].Section
+
+        titleX, titleY := options.GeoM.Apply(60, 1)
+
+        titleFont.PrintCenter(screen, titleX, titleY, 1, options.ColorScale, section.Name())
+        gibberish, _ := imageCache.GetImage("spells.lbx", 10, 0)
+        gibberishHeight := 18
+
+        options2 := options
+        options2.GeoM.Translate(0, 15)
+        for _, spell := range spells.Spells {
+
+            spellOptions := options2
+
+            textColorScale := spellOptions.ColorScale
+
+            if highlightedSpell.Name == spell.Name {
+                // spellOptions.ColorScale.Scale(1.5, 1, 1, 1)
+                r := math.Cos(float64(ui.Counter) / 5) * 128 + 128
+                textColorScale.SetR(float32(r))
+            }
+
+            spellX, spellY := spellOptions.GeoM.Apply(0, 0)
+
+            infoFont.Print(screen, spellX, spellY, 1, textColorScale, spell.Name)
+            infoFont.PrintRight(screen, spellX + 124, spellY, 1, textColorScale, fmt.Sprintf("%v MP", spell.CastCost))
+            icon := getMagicIcon(spell)
+
+            nameLength := infoFont.MeasureTextWidth(spell.Name, 1) + 1
+            mpLength := infoFont.MeasureTextWidth(fmt.Sprintf("%v MP", spell.CastCost), 1)
+
+            gibberishPart := gibberish.SubImage(image.Rect(0, 0, gibberish.Bounds().Dx(), gibberishHeight)).(*ebiten.Image)
+
+            partIndex := 0
+            partHeight := 20
+
+            subLines := 6
+
+            part1 := gibberishPart.SubImage(image.Rect(int(nameLength), partIndex * partHeight, int(nameLength) + gibberishPart.Bounds().Dx() - int(nameLength + mpLength), partIndex * partHeight + subLines)).(*ebiten.Image)
+
+            part1Options := options2
+            part1Options.GeoM.Translate(nameLength, 0)
+            screen.DrawImage(part1, &part1Options)
+
+            iconCount := spell.CastCost / int(math.Max(1, float64(castingSkill)))
+            if iconCount < 1 {
+                iconCount = 1
+            }
+
+            iconOptions := spellOptions
+            iconOptions.GeoM.Translate(0, float64(infoFont.Height())+1)
+            part3Options := iconOptions
+
+            icons1 := iconCount
+            if icons1 > 20 {
+                icons1 = 20
+                iconCount -= icons1
+                // FIXME: what to do if there is still overflow here?
+                if iconCount > 20 {
+                    iconCount = 20
+                }
+            } else {
+                iconCount = 0
+            }
+
+            icon1Width := 0
+
+            for i := 0; i < icons1; i++ {
+                screen.DrawImage(icon, &iconOptions)
+                iconOptions.GeoM.Translate(float64(icon.Bounds().Dx()) + 1, 0)
+                icon1Width += icon.Bounds().Dx() + 1
+            }
+
+            if spell.CastCost < castingSkill {
+                x, y := iconOptions.GeoM.Apply(0, 0)
+                x += 2
+                infoFont.Print(screen, x, y, 1, spellOptions.ColorScale, "Instant")
+                icon1Width += int(infoFont.MeasureTextWidth("Instant", 1)) + 2
+                iconOptions.GeoM.Translate(infoFont.MeasureTextWidth("Instant", 1) + 2, 0)
+            }
+
+            part2 := gibberishPart.SubImage(image.Rect(icon1Width + 3, partIndex * partHeight + subLines, gibberish.Bounds().Dx(), partIndex * partHeight + subLines * 2)).(*ebiten.Image)
+            part2Options := iconOptions
+            part2Options.GeoM.Translate(3, 0)
+            screen.DrawImage(part2, &part2Options)
+
+            part3Options.GeoM.Translate(0, float64(icon.Bounds().Dy()+1))
+
+            for i := 0; i < iconCount; i++ {
+                screen.DrawImage(icon, &part3Options)
+                part3Options.GeoM.Translate(float64(icon.Bounds().Dx()) + 1, 0)
+            }
+
+            part3 := gibberishPart.SubImage(image.Rect((icon.Bounds().Dx() + 1) * iconCount, partIndex * partHeight + subLines * 2, gibberish.Bounds().Dx(), partIndex * partHeight + subLines * 3)).(*ebiten.Image)
+            screen.DrawImage(part3, &part3Options)
+
+            options2.GeoM.Translate(0, 22)
+        }
+    }
+
+    // lazily construct the page graphics, which consists of the section title and 4 spell descriptions
+    getPageImage := func(page int) *ebiten.Image {
+        cached, ok := pageCache[page]
+        if ok {
+            return cached
+        }
+
+        out := ebiten.NewImage(120, 154)
+        out.Fill(color.RGBA{R: 0, G: 0, B: 0, A: 0})
+
+        if page < len(spellPages) {
+            var options ebiten.DrawImageOptions
+            renderPage(out, options, spellPages[page], Spell{})
+            // out.Fill(color.RGBA{R: 255, G: 0, B: 0, A: 255})
+
+            /*
+            alpha := uint8(64)
+            vector.DrawFilledRect(out, 0, 0, 30, float32(out.Bounds().Dy()), util.PremultiplyAlpha(color.RGBA{R: 255, G: 0, B: 0, A: alpha}), false)
+            vector.DrawFilledRect(out, 30, 0, 30, float32(out.Bounds().Dy()), util.PremultiplyAlpha(color.RGBA{R: 0, G: 255, B: 0, A: alpha}), false)
+            vector.DrawFilledRect(out, 60, 0, 30, float32(out.Bounds().Dy()), util.PremultiplyAlpha(color.RGBA{R: 0, G: 0, B: 255, A: alpha}), false)
+            vector.DrawFilledRect(out, 90, 0, 30, float32(out.Bounds().Dy()), util.PremultiplyAlpha(color.RGBA{R: 255, G: 255, B: 0, A: alpha}), false)
+            vector.StrokeLine(out, 0, 80, float32(out.Bounds().Dx()), 80, 2, color.RGBA{R: 255, G: 255, B: 255, A: 255}, false)
+            */
+        }
+
+        // vector.StrokeRect(out, 1, 1, float32(out.Bounds().Dx()-1), float32(out.Bounds().Dy()-10), 1, color.RGBA{R: 255, G: 255, B: 255, A: 255}, false)
+        pageCache[page] = out
+        return out
+    }
+
+    var highlightedSpell Spell
+
+    var shutdown func(Spell, bool)
+
+    var spellButtons []*uilib.UIElement
+    setupSpells := func(page int) {
+        ui.RemoveElements(spellButtons)
+        spellButtons = nil
+
+        if page < 0 || page >= len(spellPages) {
+            return
+        }
+
+        makeSpell := func(rect image.Rectangle, spell Spell) *uilib.UIElement {
+            return &uilib.UIElement{
+                Rect: rect,
+                Layer: 1,
+                Inside: func(this *uilib.UIElement, x, y int){
+                    highlightedSpell = spell
+                },
+                NotInside: func(this *uilib.UIElement){
+                    if highlightedSpell.Name == spell.Name {
+                        highlightedSpell = Spell{}
+                    }
+                },
+                LeftClick: func(this *uilib.UIElement){
+                    // log.Printf("Click on spell %v", spell)
+                    shutdown(spell, true)
+                },
+                Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                    // vector.StrokeRect(screen, float32(rect.Min.X), float32(rect.Min.Y), float32(rect.Max.X - rect.Min.X), float32(rect.Max.Y - rect.Min.Y), 1, color.RGBA{R: 255, G: 255, B: 255, A: 255}, false)
+                },
+            }
+        }
+
+        leftSpells := spellPages[page].Spells
+
+        for i, spell := range leftSpells {
+
+            x1 := 24
+            y1 := 30 + i * 22
+            width := 122
+            height := 20
+
+            rect := image.Rect(0, 0, width, height).Add(image.Pt(x1, y1))
+            spellButtons = append(spellButtons, makeSpell(rect, spell))
+        }
+
+        if page + 1 < len(spellPages) {
+            rightSpells := spellPages[page+1].Spells
+
+            for i, spell := range rightSpells {
+                x1 := 159
+                y1 := 30 + i * 22
+                width := 122
+                height := 20
+
+                rect := image.Rect(0, 0, width, height).Add(image.Pt(x1, y1))
+                spellButtons = append(spellButtons, makeSpell(rect, spell))
+            }
+        }
+
+        ui.AddElements(spellButtons)
+    }
+
+    currentPage := 0
+
+    bookFlip, _ := imageCache.GetImages("book.lbx", 0)
+    bookFlipIndex := uint64(0)
+    bookFlipReverse := false
+    bookFlipSpeed := uint64(6)
+    flipping := false
+
+    showPageLeft := 0
+    showPageRight := 0
+    pageSideLeft := 0
+    pageSideRight := 0
+
+    _ = pageSideLeft
+    _ = pageSideRight
+
+    shutdown = func(spell Spell, picked bool){
+        getAlpha = ui.MakeFadeOut(7)
+        ui.AddDelay(7, func(){
+            setupSpells(-1)
+            ui.RemoveElements(elements)
+            chosenCallback(spell, picked)
+        })
+    }
+
     elements = append(elements, &uilib.UIElement{
         Layer: 1,
+        /*
         NotLeftClicked: func(this *uilib.UIElement){
             getAlpha = ui.MakeFadeOut(7)
             ui.AddDelay(7, func(){
                 ui.RemoveElements(elements)
+                setupSpells(-1)
+
+                log.Printf("Chose spell %+v", chosenSpell)
             })
         },
+        */
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             // FIXME: do the whole page flipping thing with distorted pages
             vector.DrawFilledRect(screen, 0, 0, float32(screen.Bounds().Dx()), float32(screen.Bounds().Dy()), color.RGBA{R: 0, G: 0, B: 0, A: 128}, false)
@@ -543,6 +952,146 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
             options.ColorScale.ScaleAlpha(getAlpha())
             options.GeoM.Translate(10, 10)
             screen.DrawImage(background, &options)
+
+            flipOptions := options
+
+            if flipping {
+                options.GeoM.Translate(15, 5)
+                renderPage(screen, options, spellPages[showPageLeft], Spell{})
+
+                if showPageRight < len(spellPages) {
+                    options.GeoM.Translate(134, 0)
+                    renderPage(screen, options, spellPages[showPageRight], Spell{})
+                }
+
+                if bookFlipIndex > 0 && (ui.Counter - bookFlipIndex) / bookFlipSpeed < uint64(len(bookFlip)) {
+                    index := (ui.Counter - bookFlipIndex) / bookFlipSpeed
+                    if bookFlipReverse {
+                        index = uint64(len(bookFlip)) - 1 - index
+                    }
+
+                    // index = 3
+
+                    flipOptions.GeoM.Translate(-17, -10)
+                    screen.DrawImage(bookFlip[index], &flipOptions)
+
+                    if index == 0 {
+                        if pageSideLeft >= 0 {
+                            leftSide := getPageImage(pageSideLeft)
+                            util.DrawDistortion(screen, bookFlip[index], leftSide, CastLeftSideDistortions1(bookFlip[index]), flipOptions)
+                        }
+                    } else if index == 1 {
+                        if pageSideLeft >= 0 {
+                            leftSide := getPageImage(pageSideLeft)
+                            util.DrawDistortion(screen, bookFlip[index], leftSide, CastLeftSideDistortions2(bookFlip[index]), flipOptions)
+                        }
+                    } else if index == 2 {
+                        if pageSideRight < len(spellPages) {
+                            rightSide := getPageImage(pageSideRight)
+                            util.DrawDistortion(screen, bookFlip[index], rightSide, CastRightSideDistortions1(bookFlip[index]), flipOptions)
+                        }
+                    } else if index == 3 {
+                        if pageSideRight < len(spellPages) {
+                            rightSide := getPageImage(pageSideRight)
+                            util.DrawDistortion(screen, bookFlip[index], rightSide, CastRightSideDistortions2(bookFlip[index]), flipOptions)
+                        }
+                    }
+                }
+
+            } else {
+                options.GeoM.Translate(15, 5)
+                renderPage(screen, options, spellPages[currentPage], highlightedSpell)
+
+                if currentPage + 1 < len(spellPages) {
+                    options.GeoM.Translate(134, 0)
+                    // screen.DrawImage(right, &options)
+                    renderPage(screen, options, spellPages[currentPage+1], highlightedSpell)
+                }
+            }
+        },
+    })
+
+    cancelRect := image.Rect(0, 0, 18, 25).Add(image.Pt(170, 170))
+    elements = append(elements, &uilib.UIElement{
+        Rect: cancelRect,
+        Layer: 1,
+        LeftClick: func(this *uilib.UIElement){
+            shutdown(Spell{}, false)
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            // vector.StrokeRect(screen, float32(cancelRect.Min.X), float32(cancelRect.Min.Y), float32(cancelRect.Dx()), float32(cancelRect.Dy()), 1, color.RGBA{R: 255, G: 255, B: 255, A: 255}, false)
+        },
+    })
+
+    // hack to add the spell ui elements after the main element
+    ui.AddDelay(0, func(){
+        setupSpells(currentPage)
+    })
+
+    pageTurnRight, _ := imageCache.GetImage("spells.lbx", 2, 0)
+    pageTurnRightRect := image.Rect(0, 0, pageTurnRight.Bounds().Dx(), pageTurnRight.Bounds().Dy()).Add(image.Pt(268, 14))
+    elements = append(elements, &uilib.UIElement{
+        Layer: 1,
+        Rect: pageTurnRightRect,
+        LeftClick: func(this *uilib.UIElement){
+            if currentPage + 2 < len(spellPages) && !flipping {
+                flipping = true
+                bookFlipReverse = false
+                bookFlipIndex = ui.Counter
+
+                showPageRight = currentPage + 3
+                pageSideLeft = currentPage + 1
+                pageSideRight = currentPage + 2
+                showPageLeft = currentPage
+
+                ui.AddDelay(bookFlipSpeed * uint64(len(bookFlip)), func (){
+                    flipping = false
+                    currentPage += 2
+                    setupSpells(currentPage)
+                })
+            }
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            if currentPage + 2 < len(spellPages) {
+                var options ebiten.DrawImageOptions
+                options.ColorScale.ScaleAlpha(getAlpha())
+                options.GeoM.Translate(float64(pageTurnRightRect.Min.X), float64(pageTurnRightRect.Min.Y))
+                screen.DrawImage(pageTurnRight, &options)
+            }
+        },
+    })
+
+    pageTurnLeft, _ := imageCache.GetImage("spells.lbx", 1, 0)
+    pageTurnLeftRect := image.Rect(0, 0, pageTurnLeft.Bounds().Dx(), pageTurnLeft.Bounds().Dy()).Add(image.Pt(23, 14))
+    elements = append(elements, &uilib.UIElement{
+        Rect: pageTurnLeftRect,
+        Layer: 1,
+        LeftClick: func(this *uilib.UIElement){
+            if currentPage >= 2 && !flipping {
+                flipping = true
+                bookFlipReverse = true
+                bookFlipIndex = ui.Counter
+
+                showPageRight = currentPage + 1
+                showPageLeft = currentPage - 2
+                pageSideLeft = currentPage - 1
+                pageSideRight = currentPage
+
+                ui.AddDelay(bookFlipSpeed * uint64(len(bookFlip) - 1), func (){
+                    flipping = false
+                    currentPage -= 2
+                    setupSpells(currentPage)
+                })
+            }
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            if currentPage > 0 {
+                var options ebiten.DrawImageOptions
+                options.ColorScale.ScaleAlpha(getAlpha())
+                options.GeoM.Translate(float64(pageTurnLeftRect.Min.X), float64(pageTurnLeftRect.Min.Y))
+                screen.DrawImage(pageTurnLeft, &options)
+            }
+
         },
     })
 

@@ -65,6 +65,7 @@ func NewEngine() (*Engine, error) {
             Name: "Merlin",
             Banner: data.BannerGreen,
         },
+        CastingSkill: 10,
     }
 
     attackingArmy := combat.Army{
@@ -82,7 +83,7 @@ func NewEngine() (*Engine, error) {
 
     return &Engine{
         LbxCache: cache,
-        CombatScreen: combat.MakeCombatScreen(cache, &defendingArmy, &attackingArmy),
+        CombatScreen: combat.MakeCombatScreen(cache, &defendingArmy, &attackingArmy, &attackingPlayer),
     }, nil
 }
 

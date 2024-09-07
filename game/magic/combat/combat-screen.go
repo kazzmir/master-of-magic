@@ -13,6 +13,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/lib/mouse"
     "github.com/kazzmir/master-of-magic/lib/colorconv"
+    playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/util"
@@ -277,7 +278,7 @@ func makePaletteFromBanner(banner data.BannerType) color.Palette {
     }
 }
 
-func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Army) *CombatScreen {
+func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Army, player *playerlib.Player) *CombatScreen {
     fontLbx, err := cache.GetLbxFile("fonts.lbx")
     if err != nil {
         log.Printf("Unable to read fonts.lbx: %v", err)
@@ -381,14 +382,14 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
         DefendingWizardFont: defendingWizardFont,
     }
 
-    combat.UI = combat.MakeUI()
+    combat.UI = combat.MakeUI(player)
     combat.NextTurn()
     combat.SelectedUnit = combat.ChooseNextUnit(TeamDefender)
 
     return combat
 }
 
-func (combat *CombatScreen) MakeUI() *uilib.UI {
+func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
     var elements []*uilib.UIElement
 
     ui := &uilib.UI{
@@ -464,7 +465,11 @@ func (combat *CombatScreen) MakeUI() *uilib.UI {
 
     // spell
     elements = append(elements, makeButton(1, 0, 0, func(){
-        spellUI := spellbook.MakeSpellBookCastUI(ui, combat.Cache)
+        spellUI := spellbook.MakeSpellBookCastUI(ui, combat.Cache, spellbook.Spells{}, player.CastingSkill, func (spell spellbook.Spell, picked bool){
+            if picked {
+                // do something with the spell
+            }
+        })
         ui.AddElements(spellUI)
     }))
 

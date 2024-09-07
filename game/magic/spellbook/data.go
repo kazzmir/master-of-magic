@@ -332,14 +332,14 @@ func ReadSpells(lbxFile *lbx.LbxFile, entry int) (Spells, error) {
 
         buffer.Next(1) // ignore extra unused byte from 2-byte alignment
 
-        castCost, err := lbx.ReadUint16Big(buffer)
+        castCost, err := lbx.ReadUint16(buffer)
         if err != nil {
             return Spells{}, err
         }
 
         // fmt.Printf("  Casting Cost: %v\n", castCost)
 
-        researchCost, err := lbx.ReadUint16Big(buffer)
+        researchCost, err := lbx.ReadUint16(buffer)
         if err != nil {
             return Spells{}, err
         }
