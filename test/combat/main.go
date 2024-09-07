@@ -80,6 +80,7 @@ func NewEngine() (*Engine, error) {
     defendingPlayer.Spells.AddSpell(allSpells.FindByName("Fireball"))
     defendingPlayer.Spells.AddSpell(allSpells.FindByName("Ice Bolt"))
     defendingPlayer.Spells.AddSpell(allSpells.FindByName("Fire Bolt"))
+    defendingPlayer.Spells.AddSpell(allSpells.FindByName("Lightning Bolt"))
     defendingPlayer.Spells.AddSpell(allSpells.FindByName("Star Fires"))
     defendingPlayer.Spells.AddSpell(allSpells.FindByName("Psionic Blast"))
     defendingPlayer.Spells.AddSpell(allSpells.FindByName("Doom Bolt"))

@@ -566,6 +566,32 @@ func (combat *CombatScreen) CreateDoomBoltProjectile(target *ArmyUnit) {
     combat.Projectiles = append(combat.Projectiles, combat.createVerticalSkyProjectile(target, loopImages, explodeImages))
 }
 
+func (combat *CombatScreen) CreateLightningBoltProjectile(target *ArmyUnit) {
+    images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 24)
+    // loopImages := images
+    explodeImages := images
+
+    screenX, screenY := combat.Coordinates.Apply(float64(target.X), float64(target.Y))
+    screenY += 3
+    screenX += 5
+
+    screenY -= float64(images[0].Bounds().Dy())
+
+    projectile := &Projectile{
+        X: screenX,
+        Y: screenY,
+        Speed: 0,
+        Angle: 0,
+        TargetX: screenX,
+        TargetY: screenY,
+        Animation: util.MakeAnimation(images, true),
+        Explode: util.MakeRepeatAnimation(explodeImages, 2),
+        Exploding: true,
+    }
+
+    combat.Projectiles = append(combat.Projectiles, projectile)
+}
+
 func (combat *CombatScreen) DoTargetUnitSpell(player *playerlib.Player, spell spellbook.Spell, onTarget func(*ArmyUnit), canTarget func(*ArmyUnit) bool) {
     teamAttacked := TeamAttacker
     if combat.AttackingArmy.Player == player {
@@ -662,6 +688,10 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
         case "Fire Bolt":
             combat.DoTargetUnitSpell(player, spell, func(target *ArmyUnit){
                 combat.CreateFireBoltProjectile(target)
+            }, targetAny)
+        case "Lightning Bolt":
+            combat.DoTargetUnitSpell(player, spell, func(target *ArmyUnit){
+                combat.CreateLightningBoltProjectile(target)
             }, targetAny)
     }
 }
@@ -1031,7 +1061,7 @@ func (combat *CombatScreen) UpdateProjectiles(){
     var projectilesOut []*Projectile
     for _, projectile := range combat.Projectiles {
         keep := false
-        if distanceInRange(projectile.X, projectile.Y, projectile.TargetX, projectile.TargetY, 5) {
+        if projectile.Exploding || distanceInRange(projectile.X, projectile.Y, projectile.TargetX, projectile.TargetY, 5) {
             projectile.Exploding = true
             keep = true
             if combat.Counter % animationSpeed == 0 && !projectile.Explode.Next() {
