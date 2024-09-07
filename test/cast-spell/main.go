@@ -62,7 +62,11 @@ func (engine *Engine) MakeUI() *uilib.UI {
     }
     ui.SetElementsFromArray(nil)
 
-    more := spellbook.MakeSpellBookCastUI(ui, engine.Cache, spells, 60)
+    more := spellbook.MakeSpellBookCastUI(ui, engine.Cache, spells, 60, func (result spellbook.Spell, picked bool){
+        if picked {
+            log.Printf("Picked spell %v", result)
+        }
+    })
     ui.AddElements(more)
 
     return ui

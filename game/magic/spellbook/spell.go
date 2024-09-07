@@ -642,8 +642,11 @@ func CastRightSideDistortions2(page *ebiten.Image) util.Distortion {
 }
 
 // FIXME: take in the wizard/player that is casting the spell
-// somehow return the spell chosen
-func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, castingSkill int) []*uilib.UIElement {
+// chosenCallback is invoked when the spellbook ui goes away, either because the user
+// selected a spell or because they canceled the ui
+// if a spell is chosen then it will be passed in as the first argument to the callback along with true
+// if the ui is cancelled then the second argument will be false
+func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, castingSkill int, chosenCallback func(Spell, bool)) []*uilib.UIElement {
     var elements []*uilib.UIElement
 
     imageCache := util.MakeImageCache(cache)
@@ -705,8 +708,6 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
     pageCache := make(map[int]*ebiten.Image)
 
     spellPages := computeHalfPages(spells, 6)
-
-    var chosenSpell Spell
 
     renderPage := func(screen *ebiten.Image, options ebiten.DrawImageOptions, spells Spells, highlightedSpell Spell){
         section := spells.Spells[0].Section
@@ -841,6 +842,8 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
 
     var highlightedSpell Spell
 
+    var shutdown func(Spell, bool)
+
     var spellButtons []*uilib.UIElement
     setupSpells := func(page int) {
         ui.RemoveElements(spellButtons)
@@ -863,8 +866,8 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
                     }
                 },
                 LeftClick: func(this *uilib.UIElement){
-                    log.Printf("Click on spell %v", spell)
-                    chosenSpell = spell
+                    // log.Printf("Click on spell %v", spell)
+                    shutdown(spell, true)
                 },
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                     // vector.StrokeRect(screen, float32(rect.Min.X), float32(rect.Min.Y), float32(rect.Max.X - rect.Min.X), float32(rect.Max.Y - rect.Min.Y), 1, color.RGBA{R: 255, G: 255, B: 255, A: 255}, false)
@@ -918,8 +921,18 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
     _ = pageSideLeft
     _ = pageSideRight
 
+    shutdown = func(spell Spell, picked bool){
+        getAlpha = ui.MakeFadeOut(7)
+        ui.AddDelay(7, func(){
+            setupSpells(-1)
+            ui.RemoveElements(elements)
+            chosenCallback(spell, picked)
+        })
+    }
+
     elements = append(elements, &uilib.UIElement{
         Layer: 1,
+        /*
         NotLeftClicked: func(this *uilib.UIElement){
             getAlpha = ui.MakeFadeOut(7)
             ui.AddDelay(7, func(){
@@ -929,6 +942,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
                 log.Printf("Chose spell %+v", chosenSpell)
             })
         },
+        */
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             // FIXME: do the whole page flipping thing with distorted pages
             vector.DrawFilledRect(screen, 0, 0, float32(screen.Bounds().Dx()), float32(screen.Bounds().Dy()), color.RGBA{R: 0, G: 0, B: 0, A: 128}, false)
@@ -997,6 +1011,17 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
         },
     })
 
+    cancelRect := image.Rect(0, 0, 18, 25).Add(image.Pt(170, 170))
+    elements = append(elements, &uilib.UIElement{
+        Rect: cancelRect,
+        Layer: 1,
+        LeftClick: func(this *uilib.UIElement){
+            shutdown(Spell{}, false)
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            // vector.StrokeRect(screen, float32(cancelRect.Min.X), float32(cancelRect.Min.Y), float32(cancelRect.Dx()), float32(cancelRect.Dy()), 1, color.RGBA{R: 255, G: 255, B: 255, A: 255}, false)
+        },
+    })
 
     // hack to add the spell ui elements after the main element
     ui.AddDelay(0, func(){
@@ -1027,8 +1052,9 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
             }
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            var options ebiten.DrawImageOptions
             if currentPage + 2 < len(spellPages) {
+                var options ebiten.DrawImageOptions
+                options.ColorScale.ScaleAlpha(getAlpha())
                 options.GeoM.Translate(float64(pageTurnRightRect.Min.X), float64(pageTurnRightRect.Min.Y))
                 screen.DrawImage(pageTurnRight, &options)
             }
@@ -1059,8 +1085,9 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
             }
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            var options ebiten.DrawImageOptions
             if currentPage > 0 {
+                var options ebiten.DrawImageOptions
+                options.ColorScale.ScaleAlpha(getAlpha())
                 options.GeoM.Translate(float64(pageTurnLeftRect.Min.X), float64(pageTurnLeftRect.Min.Y))
                 screen.DrawImage(pageTurnLeft, &options)
             }
