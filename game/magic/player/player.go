@@ -52,6 +52,8 @@ type Player struct {
     Food int
     Mana int
 
+    CastingSkill int
+
     Wizard setup.WizardCustom
 
     Units []*Unit

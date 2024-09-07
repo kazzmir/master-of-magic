@@ -529,7 +529,7 @@ func maxRange[T any](slice []T, max int) []T {
 
 // FIXME: take in the wizard/player that is casting the spell
 // somehow return the spell chosen
-func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells) []*uilib.UIElement {
+func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, castingSkill int) []*uilib.UIElement {
     var elements []*uilib.UIElement
 
     imageCache := util.MakeImageCache(cache)
@@ -634,9 +634,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells) []*ui
                 part1Options.GeoM.Translate(nameLength, 0)
                 out.DrawImage(part1, &part1Options)
 
-                // FIXME: what is the proper denominator here? spell 'heroism' costs 150 and shows 4 icons
-                // sprites cost 100 and shows 3
-                iconCount := spell.CastCost / 33
+                iconCount := spell.CastCost / int(math.Max(1, float64(castingSkill)))
                 if iconCount < 1 {
                     iconCount = 1
                 }
@@ -649,6 +647,10 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells) []*ui
                 if icons1 > 20 {
                     icons1 = 20
                     iconCount -= icons1
+                    // FIXME: what to do if there is still overflow here?
+                    if iconCount > 20 {
+                        iconCount = 20
+                    }
                 } else {
                     iconCount = 0
                 }
@@ -687,7 +689,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells) []*ui
         ui.RemoveElements(spellButtons)
         spellButtons = nil
 
-        if page < 0 {
+        if page < 0 || page >= len(spellPages) {
             return
         }
 

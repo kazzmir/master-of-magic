@@ -62,7 +62,7 @@ func (engine *Engine) MakeUI() *uilib.UI {
     }
     ui.SetElementsFromArray(nil)
 
-    more := spellbook.MakeSpellBookCastUI(ui, engine.Cache, spells)
+    more := spellbook.MakeSpellBookCastUI(ui, engine.Cache, spells, 32)
     ui.AddElements(more)
 
     return ui

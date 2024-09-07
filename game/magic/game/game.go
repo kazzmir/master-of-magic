@@ -730,7 +730,7 @@ func (game *Game) MakeInfoUI(cornerX int, cornerY int) []*uilib.UIElement {
 }
 
 func (game *Game) ShowSpellBookCastUI(){
-    game.HudUI.AddElements(spellbook.MakeSpellBookCastUI(game.HudUI, game.Cache, spellbook.Spells{}))
+    game.HudUI.AddElements(spellbook.MakeSpellBookCastUI(game.HudUI, game.Cache, spellbook.Spells{}, game.Players[0].CastingSkill))
 }
 
 func (game *Game) MakeHudUI() *uilib.UI {
