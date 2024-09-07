@@ -593,6 +593,96 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
 
     var chosenSpell Spell
 
+    renderPage := func(screen *ebiten.Image, options ebiten.DrawImageOptions, spells Spells){
+        section := spells.Spells[0].Section
+
+        titleX, titleY := options.GeoM.Apply(60, 1)
+
+        titleFont.PrintCenter(screen, titleX, titleY, 1, options.ColorScale, section.Name())
+        gibberish, _ := imageCache.GetImage("spells.lbx", 10, 0)
+        gibberishHeight := 18
+
+        options2 := options
+        options2.GeoM.Translate(0, 15)
+        for _, spell := range spells.Spells {
+            spellX, spellY := options2.GeoM.Apply(0, 0)
+
+            infoFont.Print(screen, spellX, spellY, 1, options.ColorScale, spell.Name)
+            infoFont.PrintRight(screen, spellX + 124, spellY, 1, options.ColorScale, fmt.Sprintf("%v MP", spell.CastCost))
+            icon := getMagicIcon(spell)
+
+            nameLength := infoFont.MeasureTextWidth(spell.Name, 1) + 1
+            mpLength := infoFont.MeasureTextWidth(fmt.Sprintf("%v MP", spell.CastCost), 1)
+
+            gibberishPart := gibberish.SubImage(image.Rect(0, 0, gibberish.Bounds().Dx(), gibberishHeight)).(*ebiten.Image)
+
+            partIndex := 0
+            partHeight := 20
+
+            subLines := 6
+
+            part1 := gibberishPart.SubImage(image.Rect(int(nameLength), partIndex * partHeight, int(nameLength) + gibberishPart.Bounds().Dx() - int(nameLength + mpLength), partIndex * partHeight + subLines)).(*ebiten.Image)
+
+            part1Options := options2
+            part1Options.GeoM.Translate(nameLength, 0)
+            screen.DrawImage(part1, &part1Options)
+
+            iconCount := spell.CastCost / int(math.Max(1, float64(castingSkill)))
+            if iconCount < 1 {
+                iconCount = 1
+            }
+
+            iconOptions := options2
+            iconOptions.GeoM.Translate(0, float64(infoFont.Height())+1)
+            part3Options := iconOptions
+
+            icons1 := iconCount
+            if icons1 > 20 {
+                icons1 = 20
+                iconCount -= icons1
+                // FIXME: what to do if there is still overflow here?
+                if iconCount > 20 {
+                    iconCount = 20
+                }
+            } else {
+                iconCount = 0
+            }
+
+            icon1Width := 0
+
+            for i := 0; i < icons1; i++ {
+                screen.DrawImage(icon, &iconOptions)
+                iconOptions.GeoM.Translate(float64(icon.Bounds().Dx()) + 1, 0)
+                icon1Width += icon.Bounds().Dx() + 1
+            }
+
+            if spell.CastCost < castingSkill {
+                x, y := iconOptions.GeoM.Apply(0, 0)
+                x += 2
+                infoFont.Print(screen, x, y, 1, options.ColorScale, "Instant")
+                icon1Width += int(infoFont.MeasureTextWidth("Instant", 1)) + 2
+                iconOptions.GeoM.Translate(infoFont.MeasureTextWidth("Instant", 1) + 2, 0)
+            }
+
+            part2 := gibberishPart.SubImage(image.Rect(icon1Width + 3, partIndex * partHeight + subLines, gibberish.Bounds().Dx(), partIndex * partHeight + subLines * 2)).(*ebiten.Image)
+            part2Options := iconOptions
+            part2Options.GeoM.Translate(3, 0)
+            screen.DrawImage(part2, &part2Options)
+
+            part3Options.GeoM.Translate(0, float64(icon.Bounds().Dy()+1))
+
+            for i := 0; i < iconCount; i++ {
+                screen.DrawImage(icon, &part3Options)
+                part3Options.GeoM.Translate(float64(icon.Bounds().Dx()) + 1, 0)
+            }
+
+            part3 := gibberishPart.SubImage(image.Rect((icon.Bounds().Dx() + 1) * iconCount, partIndex * partHeight + subLines * 2, gibberish.Bounds().Dx(), partIndex * partHeight + subLines * 3)).(*ebiten.Image)
+            screen.DrawImage(part3, &part3Options)
+
+            options2.GeoM.Translate(0, 22)
+        }
+    }
+
     // lazily construct the page graphics, which consists of the section title and 4 spell descriptions
     getPageImage := func(page int) *ebiten.Image {
         cached, ok := pageCache[page]
@@ -605,95 +695,15 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
 
         var options ebiten.DrawImageOptions
         if page < len(spellPages) {
-            titleFont.PrintCenter(out, 60, 1, 1, options.ColorScale, "Summoning")
-            gibberish, _ := imageCache.GetImage("spells.lbx", 10, 0)
-            gibberishHeight := 18
-
-            options2 := options
-            options2.GeoM.Translate(0, 15)
-            for _, spell := range spellPages[page].Spells {
-                spellX, spellY := options2.GeoM.Apply(0, 0)
-
-                infoFont.Print(out, spellX, spellY, 1, options.ColorScale, spell.Name)
-                infoFont.PrintRight(out, spellX + 124, spellY, 1, options.ColorScale, fmt.Sprintf("%v MP", spell.CastCost))
-                icon := getMagicIcon(spell)
-
-                nameLength := infoFont.MeasureTextWidth(spell.Name, 1) + 1
-                mpLength := infoFont.MeasureTextWidth(fmt.Sprintf("%v MP", spell.CastCost), 1)
-
-                gibberishPart := gibberish.SubImage(image.Rect(0, 0, gibberish.Bounds().Dx(), gibberishHeight)).(*ebiten.Image)
-
-                partIndex := 0
-                partHeight := 20
-
-                subLines := 6
-
-                part1 := gibberishPart.SubImage(image.Rect(int(nameLength), partIndex * partHeight, int(nameLength) + gibberishPart.Bounds().Dx() - int(nameLength + mpLength), partIndex * partHeight + subLines)).(*ebiten.Image)
-
-                part1Options := options2
-                part1Options.GeoM.Translate(nameLength, 0)
-                out.DrawImage(part1, &part1Options)
-
-                iconCount := spell.CastCost / int(math.Max(1, float64(castingSkill)))
-                if iconCount < 1 {
-                    iconCount = 1
-                }
-
-                iconOptions := options2
-                iconOptions.GeoM.Translate(0, float64(infoFont.Height())+1)
-                part3Options := iconOptions
-
-                icons1 := iconCount
-                if icons1 > 20 {
-                    icons1 = 20
-                    iconCount -= icons1
-                    // FIXME: what to do if there is still overflow here?
-                    if iconCount > 20 {
-                        iconCount = 20
-                    }
-                } else {
-                    iconCount = 0
-                }
-
-                icon1Width := 0
-
-                for i := 0; i < icons1; i++ {
-                    out.DrawImage(icon, &iconOptions)
-                    iconOptions.GeoM.Translate(float64(icon.Bounds().Dx()) + 1, 0)
-                    icon1Width += icon.Bounds().Dx() + 1
-                }
-
-                if spell.CastCost < castingSkill {
-                    x, y := iconOptions.GeoM.Apply(0, 0)
-                    x += 2
-                    infoFont.Print(out, x, y, 1, options.ColorScale, "Instant")
-                    icon1Width += int(infoFont.MeasureTextWidth("Instant", 1)) + 2
-                    iconOptions.GeoM.Translate(infoFont.MeasureTextWidth("Instant", 1) + 2, 0)
-                }
-
-                part2 := gibberishPart.SubImage(image.Rect(icon1Width + 3, partIndex * partHeight + subLines, gibberish.Bounds().Dx(), partIndex * partHeight + subLines * 2)).(*ebiten.Image)
-                part2Options := iconOptions
-                part2Options.GeoM.Translate(3, 0)
-                out.DrawImage(part2, &part2Options)
-
-                part3Options.GeoM.Translate(0, float64(icon.Bounds().Dy()+1))
-
-                for i := 0; i < iconCount; i++ {
-                    out.DrawImage(icon, &part3Options)
-                    part3Options.GeoM.Translate(float64(icon.Bounds().Dx()) + 1, 0)
-                }
-
-                part3 := gibberishPart.SubImage(image.Rect((icon.Bounds().Dx() + 1) * iconCount, partIndex * partHeight + subLines * 2, gibberish.Bounds().Dx(), partIndex * partHeight + subLines * 3)).(*ebiten.Image)
-                out.DrawImage(part3, &part3Options)
-
-                options2.GeoM.Translate(0, 22)
-            }
+            renderPage(out, options, spellPages[page])
         }
 
         // vector.StrokeRect(out, 1, 1, float32(out.Bounds().Dx()-1), float32(out.Bounds().Dy()-10), 1, color.RGBA{R: 255, G: 255, B: 255, A: 255}, false)
         pageCache[page] = out
         return out
     }
+
+    _ = getPageImage
 
     var spellButtons []*uilib.UIElement
     setupSpells := func(page int) {
@@ -778,14 +788,20 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
             options.GeoM.Translate(10, 10)
             screen.DrawImage(background, &options)
 
+            /*
             left := getPageImage(currentPage)
             right := getPageImage(currentPage+1)
+            */
 
             options.GeoM.Translate(15, 5)
-            screen.DrawImage(left, &options)
+            renderPage(screen, options, spellPages[currentPage])
+            // screen.DrawImage(left, &options)
 
-            options.GeoM.Translate(134, 0)
-            screen.DrawImage(right, &options)
+            if currentPage + 1 < len(spellPages) {
+                options.GeoM.Translate(134, 0)
+                // screen.DrawImage(right, &options)
+                renderPage(screen, options, spellPages[currentPage+1])
+            }
         },
     })
 
