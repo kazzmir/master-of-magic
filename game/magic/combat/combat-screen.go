@@ -909,8 +909,17 @@ func (combat *CombatScreen) Update() CombatState {
     if combat.DoSelectUnit {
         combat.MouseState = CombatCast
 
+        if mouseY >= hudY {
+            combat.MouseState = CombatClickHud
+            return CombatStateRunning
+        }
+
+        unit := combat.GetUnit(combat.MouseTileX, combat.MouseTileY)
+        if unit == nil || unit.Team != combat.SelectTeam {
+            combat.MouseState = CombatNotOk
+        }
+
         if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) && mouseY < hudY {
-            unit := combat.GetUnit(combat.MouseTileX, combat.MouseTileY)
             // log.Printf("Click unit at %v,%v -> %v", combat.MouseTileX, combat.MouseTileY, unit)
             if unit != nil && unit.Team == combat.SelectTeam {
                 combat.SelectTarget(unit)
