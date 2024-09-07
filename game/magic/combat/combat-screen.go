@@ -436,7 +436,7 @@ func (combat *CombatScreen) createSkyProjectile(target *ArmyUnit, images []*ebit
     screenY -= 10
     screenX += 2
 
-    x := screenX + 40 + rand.Float64() * 60
+    x := screenX + 80 + rand.Float64() * 60
     y := -rand.Float64() * 40
 
     // FIXME: make this a parameter?
@@ -519,6 +519,14 @@ func (combat *CombatScreen) createUnitProjectile(target *ArmyUnit, images []*ebi
 func (combat *CombatScreen) CreateIceBoltProjectile(target *ArmyUnit) {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 11)
 
+    loopImages := images[0:3]
+    explodeImages := images[3:]
+
+    combat.Projectiles = append(combat.Projectiles, combat.createSkyProjectile(target, loopImages, explodeImages))
+}
+
+func (combat *CombatScreen) CreateFireBoltProjectile(target *ArmyUnit) {
+    images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 0)
     loopImages := images[0:3]
     explodeImages := images[3:]
 
@@ -650,6 +658,10 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
         case "Doom Bolt":
             combat.DoTargetUnitSpell(player, spell, func(target *ArmyUnit){
                 combat.CreateDoomBoltProjectile(target)
+            }, targetAny)
+        case "Fire Bolt":
+            combat.DoTargetUnitSpell(player, spell, func(target *ArmyUnit){
+                combat.CreateFireBoltProjectile(target)
             }, targetAny)
     }
 }
