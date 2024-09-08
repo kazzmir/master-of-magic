@@ -753,6 +753,20 @@ func (combat *CombatScreen) CreateBanishProjectile(target *ArmyUnit) {
     combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionUnder))
 }
 
+func (combat *CombatScreen) CreateDisruptProjectile(x int, y int) {
+    images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 1)
+
+    var loopImages []*ebiten.Image
+    explodeImages := images
+
+    fakeTarget := ArmyUnit{
+        X: x,
+        Y: y,
+    }
+
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(&fakeTarget, loopImages, explodeImages, UnitPositionUnder))
+}
+
 /* let the user select a target, then cast the spell on that target
  */
 func (combat *CombatScreen) DoTargetUnitSpell(player *playerlib.Player, spell spellbook.Spell, targetKind Targeting, onTarget func(*ArmyUnit), canTarget func(*ArmyUnit) bool) {
@@ -1058,6 +1072,11 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateDisintegrateProjectile(target)
             }, targetAny)
+        case "Disrupt":
+            // FIXME: can only target city walls
+            combat.DoTargetTileSpell(player, spell, func (x int, y int){
+                combat.CreateDisruptProjectile(x, y)
+            })
 
             /*
 Disenchant Area
@@ -1066,7 +1085,6 @@ Raise Dead
 Petrify	
 Disenchant True
 Call Chaos	￼
-Disrupt	￼
 Magic Vortex	
 Warp Wood	￼
 Animate Dead	

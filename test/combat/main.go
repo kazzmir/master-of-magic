@@ -99,6 +99,7 @@ func NewEngine() (*Engine, error) {
     defendingPlayer.Spells.AddSpell(allSpells.FindByName("Dispel Magic True"))
     defendingPlayer.Spells.AddSpell(allSpells.FindByName("Word of Recall"))
     defendingPlayer.Spells.AddSpell(allSpells.FindByName("Disintegrate"))
+    defendingPlayer.Spells.AddSpell(allSpells.FindByName("Disrupt"))
 
     attackingArmy := combat.Army{
         Player: &attackingPlayer,
