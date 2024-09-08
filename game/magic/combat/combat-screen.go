@@ -865,6 +865,14 @@ func (combat *CombatScreen) CreateEarthElemental(player *playerlib.Player, x int
     combat.addNewUnit(player, x, y, units.EarthElemental, units.FacingDown)
 }
 
+func (combat *CombatScreen) CreateAirElemental(player *playerlib.Player, x int, y int) {
+    combat.addNewUnit(player, x, y, units.AirElemental, units.FacingDown)
+}
+
+func (combat *CombatScreen) CreateFireElemental(player *playerlib.Player, x int, y int) {
+    combat.addNewUnit(player, x, y, units.FireElemental, units.FacingDown)
+}
+
 /* let the user select a target, then cast the spell on that target
  */
 func (combat *CombatScreen) DoTargetUnitSpell(player *playerlib.Player, spell spellbook.Spell, targetKind Targeting, onTarget func(*ArmyUnit), canTarget func(*ArmyUnit) bool) {
@@ -1211,6 +1219,14 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
         case "Earth Elemental":
             combat.DoSummoningSpell(player, spell, func(x int, y int){
                 combat.CreateEarthElemental(player, x, y)
+            })
+        case "Air Elemental":
+            combat.DoSummoningSpell(player, spell, func(x int, y int){
+                combat.CreateAirElemental(player, x, y)
+            })
+        case "Fire Elemental":
+            combat.DoSummoningSpell(player, spell, func(x int, y int){
+                combat.CreateFireElemental(player, x, y)
             })
 
             /*

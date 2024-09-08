@@ -107,6 +107,8 @@ func NewEngine() (*Engine, error) {
     defendingPlayer.Spells.AddSpell(allSpells.FindByName("Phantom Warriors"))
     defendingPlayer.Spells.AddSpell(allSpells.FindByName("Phantom Beast"))
     defendingPlayer.Spells.AddSpell(allSpells.FindByName("Earth Elemental"))
+    defendingPlayer.Spells.AddSpell(allSpells.FindByName("Air Elemental"))
+    defendingPlayer.Spells.AddSpell(allSpells.FindByName("Fire Elemental"))
 
     attackingArmy := combat.Army{
         Player: &attackingPlayer,

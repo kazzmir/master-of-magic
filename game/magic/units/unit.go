@@ -305,6 +305,14 @@ var FireElemental Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 38,
     Race: data.RaceFantastic,
+    CombatLbxFile: "figure11.lbx",
+    CombatIndex: 64,
+    Count: 1,
+    MovementSpeed: 1,
+    MeleeAttackPower: 12,
+    Defense: 4,
+    Resistance: 6,
+    HitPoints: 10,
 }
 
 var ChaosSpawn Unit = Unit{
@@ -556,6 +564,15 @@ var AirElemental Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 74,
     Race: data.RaceFantastic,
+    CombatLbxFile: "figure13.lbx",
+    CombatIndex: 112,
+    Count: 1,
+    Flying: true,
+    MovementSpeed: 5,
+    MeleeAttackPower: 15,
+    Defense: 8,
+    Resistance: 9,
+    HitPoints: 10,
 }
 
 var Djinn Unit = Unit{
