@@ -38,12 +38,14 @@ type Team int
 const (
     TeamAttacker Team = iota
     TeamDefender
+    TeamEither
 )
 
 func (team Team) String() string {
     switch team {
         case TeamAttacker: return "Attacker"
         case TeamDefender: return "Defender"
+        case TeamEither: return "Either"
     }
     return "Unknown"
 }
@@ -507,6 +509,7 @@ type Targeting int
 const (
     TargetFriend Targeting = iota
     TargetEnemy
+    TargetEither
 )
 
 /* needs a new name, but creates a projectile that is already at the target
@@ -710,6 +713,14 @@ func (combat *CombatScreen) CreateWebProjectile(target *ArmyUnit) {
     combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle))
 }
 
+func (combat *CombatScreen) CreateDispelMagicProjectile(target *ArmyUnit) {
+    images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 26)
+    var loopImages []*ebiten.Image
+    explodeImages := images
+
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle))
+}
+
 func (combat *CombatScreen) CreateCracksCallProjectile(target *ArmyUnit) {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 15)
     var loopImages []*ebiten.Image
@@ -736,11 +747,13 @@ func (combat *CombatScreen) DoTargetUnitSpell(player *playerlib.Player, spell sp
         if combat.DefendingArmy.Player == player {
             teamAttacked = TeamDefender
         }
-    } else {
+    } else if targetKind == TargetEnemy {
         /* if the player is the attacker and we are targeting an enemy then the team should be the defenders */
         if combat.AttackingArmy.Player == player {
             teamAttacked = TeamDefender
         }
+    } else if targetKind == TargetEither {
+        teamAttacked = TeamEither
     }
 
     // log.Printf("Create sound for spell %v: %v", spell.Name, spell.Sound)
@@ -1017,7 +1030,10 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
                 // FIXME: must be a fantastic unit
                 return true
             })
-
+        case "Dispel Magic True":
+            combat.DoTargetUnitSpell(player, spell, TargetEither, func(target *ArmyUnit){
+                combat.CreateDispelMagicProjectile(target)
+            }, targetAny)
 
             /*
 Disenchant Area
@@ -1025,7 +1041,6 @@ Dispel Magic
 Raise Dead
 Petrify	
 Disenchant True
-Dispel Magic True
 Word of Recall
 Call Chaos	￼
 Disintegrate	￼
@@ -1471,13 +1486,13 @@ func (combat *CombatScreen) Update() CombatState {
         }
 
         unit := combat.GetUnit(combat.MouseTileX, combat.MouseTileY)
-        if unit == nil || unit.Team != combat.SelectTeam || !combat.CanTarget(unit){
+        if unit == nil || (combat.SelectTeam != TeamEither && unit.Team != combat.SelectTeam) || !combat.CanTarget(unit){
             combat.MouseState = CombatNotOk
         }
 
         if combat.CanTarget(unit) && inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) && mouseY < hudY {
             // log.Printf("Click unit at %v,%v -> %v", combat.MouseTileX, combat.MouseTileY, unit)
-            if unit != nil && unit.Team == combat.SelectTeam {
+            if unit != nil && (combat.SelectTeam == TeamEither || unit.Team == combat.SelectTeam) {
                 combat.SelectTarget(unit)
                 combat.DoSelectUnit = false
 

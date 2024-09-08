@@ -96,6 +96,7 @@ func NewEngine() (*Engine, error) {
     defendingPlayer.Spells.AddSpell(allSpells.FindByName("Earth To Mud"))
     defendingPlayer.Spells.AddSpell(allSpells.FindByName("Web"))
     defendingPlayer.Spells.AddSpell(allSpells.FindByName("Banish"))
+    defendingPlayer.Spells.AddSpell(allSpells.FindByName("Dispel Magic True"))
 
     attackingArmy := combat.Army{
         Player: &attackingPlayer,
