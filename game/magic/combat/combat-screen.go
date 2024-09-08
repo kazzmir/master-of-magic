@@ -70,6 +70,7 @@ type Tile struct {
     Index int
     // tree/rock on top, or -1 if nothing
     ExtraObject int
+    Mud bool
 }
 
 type ArmyUnit struct {
@@ -239,6 +240,10 @@ type CombatScreen struct {
 
     MouseTileX int
     MouseTileY int
+
+    // if true then the player should select a tile to cast a spell on
+    DoSelectTile bool
+    SelectTile func(int, int)
 
     // if true then the player should select a unit to cast a spell on
     DoSelectUnit bool
@@ -782,6 +787,72 @@ func (combat *CombatScreen) DoTargetUnitSpell(player *playerlib.Player, spell sp
 
         removeElements()
         onTarget(target)
+
+        combat.SelectTarget = func(*ArmyUnit){}
+        combat.CanTarget = func(*ArmyUnit) bool { return false }
+    }
+}
+
+func (combat *CombatScreen) DoTargetTileSpell(player *playerlib.Player, spell spellbook.Spell, onTarget func(int, int)){
+    // log.Printf("Create sound for spell %v: %v", spell.Name, spell.Sound)
+
+    x := 250
+    if player == combat.DefendingArmy.Player {
+        x = 3
+    }
+
+    y := 168
+
+    var elements []*uilib.UIElement
+
+    removeElements := func(){
+        combat.UI.RemoveElements(elements)
+    }
+
+    selectElement := &uilib.UIElement{
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            combat.WhiteFont.PrintWrap(screen, float64(x), float64(y), 75, 1, ebiten.ColorScale{}, fmt.Sprintf("Select a target for a %v spell.", spell.Name))
+        },
+    }
+
+    cancelImages, _ := combat.ImageCache.GetImages("compix.lbx", 22)
+    cancelRect := image.Rect(0, 0, cancelImages[0].Bounds().Dx(), cancelImages[0].Bounds().Dy()).Add(image.Point{x + 15, y + 15})
+    cancelIndex := 0
+    cancelElement := &uilib.UIElement{
+        Rect: cancelRect,
+        LeftClick: func(element *uilib.UIElement){
+            cancelIndex = 1
+        },
+        LeftClickRelease: func(element *uilib.UIElement){
+            cancelIndex = 0
+            combat.DoSelectTile = false
+            combat.SelectTile = func(x int, y int){}
+            removeElements()
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(cancelRect.Min.X), float64(cancelRect.Min.Y))
+            screen.DrawImage(cancelImages[cancelIndex], &options)
+        },
+    }
+
+    elements = append(elements, selectElement, cancelElement)
+
+    combat.UI.AddElements(elements)
+
+    combat.DoSelectTile = true
+    combat.SelectTile = func(x int, y int){
+        sound, err := audio.LoadSound(combat.Cache, spell.Sound)
+        if err == nil {
+            sound.Play()
+        } else {
+            log.Printf("No such sound %v for %v: %v", spell.Sound, spell.Name, err)
+        }
+
+        removeElements()
+        onTarget(x, y)
+
+        combat.SelectTile = func(int, int){}
     }
 }
 
@@ -810,6 +881,18 @@ func (combat *CombatScreen) DoAllUnitsSpell(player *playerlib.Player, spell spel
     for _, unit := range units {
         if canTarget(unit){
             onTarget(unit)
+        }
+    }
+}
+
+func (combat *CombatScreen) CreateEarthToMud(centerX int, centerY int){
+    log.Printf("Create earth to mud at %v, %v", centerX, centerY)
+
+    for x := centerX - 2; x <= centerX + 2; x++ {
+        for y := centerY - 2; y <= centerY + 2; y++ {
+            if x >= 0 && x < len(combat.Tiles[0]) && y >= 0 && y < len(combat.Tiles) {
+                combat.Tiles[y][x].Mud = true
+            }
         }
     }
 }
@@ -901,12 +984,15 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateCracksCallProjectile(target)
             }, targetAny)
+        case "Earth to Mud":
+            combat.DoTargetTileSpell(player, spell, func (x int, y int){
+                combat.CreateEarthToMud(x, y)
+            })
 
             /*
 Disenchant Area
 Dispel Magic
 Raise Dead
-Earth to Mud
 Petrify	
 Web	￼
 Banish	
@@ -940,12 +1026,12 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                 options.GeoM.Translate(float64(hudImage.Bounds().Dx()), 0)
             }
 
-            if combat.AttackingArmy.Player == player && combat.DoSelectUnit {
+            if combat.AttackingArmy.Player == player && (combat.DoSelectUnit || combat.DoSelectTile) {
             } else {
                 combat.AttackingWizardFont.Print(screen, 265, 170, 1, ebiten.ColorScale{}, combat.AttackingArmy.Player.Wizard.Name)
             }
 
-            if combat.DefendingArmy.Player == player && combat.DoSelectUnit {
+            if combat.DefendingArmy.Player == player && (combat.DoSelectUnit || combat.DoSelectTile) {
             } else {
                 combat.DefendingWizardFont.Print(screen, 30, 170, 1, ebiten.ColorScale{}, combat.DefendingArmy.Player.Wizard.Name)
             }
@@ -1332,6 +1418,22 @@ func (combat *CombatScreen) Update() CombatState {
 
     hudY := data.ScreenHeight - hudImage.Bounds().Dy()
 
+    if combat.DoSelectTile {
+        combat.MouseState = CombatCast
+
+        if mouseY >= hudY {
+            combat.MouseState = CombatClickHud
+            return CombatStateRunning
+        }
+
+        if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) && mouseY < hudY {
+            combat.SelectTile(combat.MouseTileX, combat.MouseTileY)
+            combat.DoSelectTile = false
+        }
+
+        return CombatStateRunning
+    }
+
     if combat.DoSelectUnit {
         combat.MouseState = CombatCast
 
@@ -1587,6 +1689,12 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
             options.GeoM.Reset()
             tx, ty := tilePosition(x, y)
             options.GeoM.Translate(tx, ty)
+
+            if combat.Tiles[y][x].Mud {
+                mudTiles, _ := combat.ImageCache.GetImages("cmbtcity.lbx", 118)
+                index := animationIndex % uint64(len(mudTiles))
+                screen.DrawImage(mudTiles[index], &options)
+            }
 
             if combat.Tiles[y][x].ExtraObject != -1 {
                 extraImage, _ := combat.ImageCache.GetImage("cmbgrass.lbx", 48 + combat.Tiles[y][x].ExtraObject, 0)
