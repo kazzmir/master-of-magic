@@ -833,7 +833,7 @@ func (combat *CombatScreen) addNewUnit(player *playerlib.Player, x int, y int, u
         X: x,
         Y: y,
         Health: 10, // FIXME: figures * hitpoints?
-        LastTurn: combat.CurrentTurn,
+        LastTurn: combat.CurrentTurn-1,
     }
 
     if player == combat.DefendingArmy.Player {
