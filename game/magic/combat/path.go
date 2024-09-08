@@ -6,6 +6,7 @@ import (
     "image"
     "slices"
     "math"
+    _ "log"
 )
 
 var Infinity = math.Inf(1)
@@ -13,7 +14,7 @@ var Infinity = math.Inf(1)
 /* returns an array of points that is the shortest/cheapest path from start->end and true, or false if no such path exists
  * basically djikstra's shortest path algorithm
  */
-func FindPath(start image.Point, end image.Point, maxPath int, tileCost func(int, int) float64, neighbors func (int, int) []image.Point) ([]image.Point, bool) {
+func FindPath(start image.Point, end image.Point, maxPath float64, tileCost func(int, int) float64, neighbors func (int, int) []image.Point) ([]image.Point, bool) {
 
     // set distance to start as 0
     // put start in open list
@@ -51,10 +52,12 @@ func FindPath(start image.Point, end image.Point, maxPath int, tileCost func(int
             continue
         }
 
+        // log.Printf("visiting node: %+v", node)
+
         nodes[node.point].visited = true
 
         // ignore paths that are already more expensive than the lowest cost path
-        if node.cost > lowestCost {
+        if node.cost > lowestCost || node.cost > maxPath {
             continue
         }
 
@@ -84,7 +87,7 @@ func FindPath(start image.Point, end image.Point, maxPath int, tileCost func(int
     if endNode != nil {
         // max path to ensure we don't follow an infinite loop somehow
         var out []image.Point
-        for len(out) < maxPath && endNode != nil && !endNode.point.Eq(start) {
+        for endNode != nil && !endNode.point.Eq(start) {
             out = append(out, endNode.point)
             endNode = endNode.previous
         }
@@ -100,5 +103,4 @@ func FindPath(start image.Point, end image.Point, maxPath int, tileCost func(int
     }
 
     return nil, false
-
 }
