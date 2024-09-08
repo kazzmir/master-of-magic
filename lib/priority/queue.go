@@ -31,6 +31,6 @@ func (queue *PriorityQueue) Clear() {
     queue.Heap = MakeEmptyHeap()
 }
 
-func (queue *PriorityQueue) Top() []int {
+func (queue *PriorityQueue) Top() int {
     return queue.Heap.Min()
 }
