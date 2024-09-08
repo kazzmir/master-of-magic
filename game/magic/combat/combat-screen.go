@@ -839,6 +839,7 @@ func (combat *CombatScreen) addNewUnit(player *playerlib.Player, x int, y int, u
         X: x,
         Y: y,
         Health: 10, // FIXME: figures * hitpoints?
+        MovesLeft: fraction.FromInt(unit.MovementSpeed),
         LastTurn: combat.CurrentTurn-1,
     }
 
@@ -858,6 +859,10 @@ func (combat *CombatScreen) CreatePhantomWarriors(player *playerlib.Player, x in
 
 func (combat *CombatScreen) CreatePhantomBeast(player *playerlib.Player, x int, y int) {
     combat.addNewUnit(player, x, y, units.PhantomBeast, units.FacingDown)
+}
+
+func (combat *CombatScreen) CreateEarthElemental(player *playerlib.Player, x int, y int) {
+    combat.addNewUnit(player, x, y, units.EarthElemental, units.FacingDown)
 }
 
 /* let the user select a target, then cast the spell on that target
@@ -1202,6 +1207,10 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
         case "Phantom Beast":
             combat.DoSummoningSpell(player, spell, func(x int, y int){
                 combat.CreatePhantomBeast(player, x, y)
+            })
+        case "Earth Elemental":
+            combat.DoSummoningSpell(player, spell, func(x int, y int){
+                combat.CreateEarthElemental(player, x, y)
             })
 
             /*

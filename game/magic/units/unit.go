@@ -489,6 +489,15 @@ var EarthElemental Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 67,
     Race: data.RaceFantastic,
+    CombatLbxFile: "figure15.lbx",
+    CombatIndex: 64,
+    Name: "Earth Elemental",
+    Count: 1,
+    MeleeAttackPower: 25,
+    Defense: 4,
+    MovementSpeed: 1,
+    Resistance: 8,
+    HitPoints: 30,
 }
 
 var Behemoth Unit = Unit{
