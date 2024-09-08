@@ -718,6 +718,14 @@ func (combat *CombatScreen) CreateCracksCallProjectile(target *ArmyUnit) {
     combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionUnder))
 }
 
+func (combat *CombatScreen) CreateBanishProjectile(target *ArmyUnit) {
+    images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 19)
+    var loopImages []*ebiten.Image
+    explodeImages := images
+
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionUnder))
+}
+
 /* let the user select a target, then cast the spell on that target
  */
 func (combat *CombatScreen) DoTargetUnitSpell(player *playerlib.Player, spell spellbook.Spell, targetKind Targeting, onTarget func(*ArmyUnit), canTarget func(*ArmyUnit) bool) {
@@ -893,8 +901,10 @@ func (combat *CombatScreen) DoAllUnitsSpell(player *playerlib.Player, spell spel
     }
 }
 
+/* makes a 5x5 square of tiles have mud on them
+ */
 func (combat *CombatScreen) CreateEarthToMud(centerX int, centerY int){
-    log.Printf("Create earth to mud at %v, %v", centerX, centerY)
+    // log.Printf("Create earth to mud at %v, %v", centerX, centerY)
 
     for x := centerX - 2; x <= centerX + 2; x++ {
         for y := centerY - 2; y <= centerY + 2; y++ {
@@ -1000,6 +1010,13 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateWebProjectile(target)
             }, targetAny)
+        case "Banish":
+            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
+                combat.CreateBanishProjectile(target)
+            }, func (target *ArmyUnit) bool {
+                // FIXME: must be a fantastic unit
+                return true
+            })
 
 
             /*
@@ -1007,7 +1024,6 @@ Disenchant Area
 Dispel Magic
 Raise Dead
 Petrify	
-Banish	
 Disenchant True
 Dispel Magic True
 Word of Recall
