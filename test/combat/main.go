@@ -101,6 +101,7 @@ func NewEngine() (*Engine, error) {
     defendingPlayer.Spells.AddSpell(allSpells.FindByName("Disintegrate"))
     defendingPlayer.Spells.AddSpell(allSpells.FindByName("Disrupt"))
     defendingPlayer.Spells.AddSpell(allSpells.FindByName("Magic Vortex"))
+    defendingPlayer.Spells.AddSpell(allSpells.FindByName("Warp Wood"))
 
     attackingArmy := combat.Army{
         Player: &attackingPlayer,

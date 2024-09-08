@@ -722,6 +722,14 @@ func (combat *CombatScreen) CreateWebProjectile(target *ArmyUnit) {
     combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle))
 }
 
+func (combat *CombatScreen) CreateWarpWoodProjectile(target *ArmyUnit) {
+    images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 2)
+    var loopImages []*ebiten.Image
+    explodeImages := images
+
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle))
+}
+
 func (combat *CombatScreen) CreateDisintegrateProjectile(target *ArmyUnit) {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 4)
     var loopImages []*ebiten.Image
@@ -1102,6 +1110,13 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
             combat.DoTargetTileSpell(player, spell, func (x int, y int){
                 combat.CreateMagicVortex(x, y)
             })
+        case "Warp Wood":
+            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
+                combat.CreateWarpWoodProjectile(target)
+            }, func (target *ArmyUnit) bool {
+                // FIXME: can be cast on a normal unit or hero that has a ranged missle attack
+                return true
+            })
 
             /*
 Disenchant Area - need picture
@@ -1110,7 +1125,6 @@ Raise Dead - need picture
 Petrify	- need picture
 Disenchant True - need picture
 Call Chaos - need picture
-Warp Wood	￼
 Animate Dead	
 Death Spell	￼
 Word of Death
