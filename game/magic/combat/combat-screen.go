@@ -144,10 +144,12 @@ func (unit *ArmyUnit) CanMoveTo(x int, y int) bool {
 
     moves := unit.MovesLeft
 
+    // movesA := moves
+
     x1 := unit.X
     y1 := unit.Y
 
-    for x1 != x || y1 != y && moves.GreaterThan(fraction.FromInt(0)) {
+    for (x1 != x || y1 != y) && moves.GreaterThan(fraction.FromInt(0)) {
         xDiff := int(math.Abs(float64(x1 - x)))
         yDiff := int(math.Abs(float64(y1 - y)))
 
@@ -172,6 +174,10 @@ func (unit *ArmyUnit) CanMoveTo(x int, y int) bool {
             y1 -= 1
         }
     }
+
+    // movesB := moves
+
+    // log.Printf("CanMoveTo: %v,%v -> %v,%v moves start %v left %v", unit.X, unit.Y, x, y, movesA, movesB)
 
     return x1 == x && y1 == y
 
