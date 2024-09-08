@@ -730,6 +730,14 @@ func (combat *CombatScreen) CreateDeathSpellProjectile(target *ArmyUnit) {
     combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle))
 }
 
+func (combat *CombatScreen) CreateWordOfDeathProjectile(target *ArmyUnit) {
+    images, _ := combat.ImageCache.GetImages("specfx.lbx", 14)
+    var loopImages []*ebiten.Image
+    explodeImages := images
+
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle))
+}
+
 func (combat *CombatScreen) CreateWarpWoodProjectile(target *ArmyUnit) {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 2)
     var loopImages []*ebiten.Image
@@ -1125,6 +1133,10 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
             combat.DoAllUnitsSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateDeathSpellProjectile(target)
             }, targetAny)
+        case "Word of Death":
+            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
+                combat.CreateWordOfDeathProjectile(target)
+            }, targetAny)
 
             /*
 Disenchant Area - need picture
@@ -1134,7 +1146,6 @@ Petrify	- need picture
 Disenchant True - need picture
 Call Chaos - need picture
 Animate Dead - need picture
-Word of Death
             */
 
     }
