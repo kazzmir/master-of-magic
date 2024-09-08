@@ -665,6 +665,14 @@ func (combat *CombatScreen) CreateFlameStrikeProjectile(target *ArmyUnit) {
     combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle))
 }
 
+func (combat *CombatScreen) CreateRecallHeroProjectile(target *ArmyUnit) {
+    images, _ := combat.ImageCache.GetImages("specfx.lbx", 5)
+    var loopImages []*ebiten.Image
+    explodeImages := images
+
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle))
+}
+
 func (combat *CombatScreen) CreateHealingProjectile(target *ArmyUnit) {
     // FIXME: the images should be mostly with with transparency
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 3)
@@ -849,11 +857,17 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
                 // FIXME: can only target fantastic units, chaos channeled and undead
                 return true
             })
+        case "Recall Hero":
+            combat.DoTargetUnitSpell(player, spell, func(target *ArmyUnit){
+                combat.CreateRecallHeroProjectile(target)
+            }, func (target *ArmyUnit) bool {
+                // FIXME: can only target heros
+                return true
+            })
 
             /*
 Disenchant Area
 Dispel Magic
-Recall Hero	
 Mass Healing
 Raise Dead
 Cracks Call

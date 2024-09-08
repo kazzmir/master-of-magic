@@ -90,6 +90,7 @@ func NewEngine() (*Engine, error) {
     defendingPlayer.Spells.AddSpell(allSpells.FindByName("Dispel Evil"))
     defendingPlayer.Spells.AddSpell(allSpells.FindByName("Healing"))
     defendingPlayer.Spells.AddSpell(allSpells.FindByName("Holy Word"))
+    defendingPlayer.Spells.AddSpell(allSpells.FindByName("Recall Hero"))
 
     attackingArmy := combat.Army{
         Player: &attackingPlayer,
