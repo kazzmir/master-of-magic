@@ -7,6 +7,7 @@ import (
     "math/rand"
     "image"
     "image/color"
+    "slices"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/fraction"
@@ -221,6 +222,8 @@ type CombatScreen struct {
     DefendingArmy *Army
     AttackingArmy *Army
     Tiles [][]Tile
+    // order to draw tiles in such that they are drawn from the top of the screen to the bottom (painter's order)
+    TopDownOrder []image.Point
     SelectedUnit *ArmyUnit
 
     TurnAttacker int
@@ -439,11 +442,57 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
         DefendingWizardFont: defendingWizardFont,
     }
 
+    combat.TopDownOrder = combat.computeTopDownOrder()
+
+    /*
+    log.Printf("Top down order: %v", combat.TopDownOrder)
+
+    for i := 0; i < 5; i++ {
+        x1, y1 := combat.Coordinates.Apply(float64(combat.TopDownOrder[i].X), float64(combat.TopDownOrder[i].Y))
+        log.Printf("tile %v (%v,%v): %v,%v", i, combat.TopDownOrder[i].X, combat.TopDownOrder[i].Y, x1, y1)
+    }
+    */
+
     combat.UI = combat.MakeUI(player)
     combat.NextTurn()
     combat.SelectedUnit = combat.ChooseNextUnit(TeamDefender)
 
     return combat
+}
+
+func (combat *CombatScreen) computeTopDownOrder() []image.Point {
+    var points []image.Point
+    for y := 0; y < len(combat.Tiles); y++ {
+        for x := 0; x < len(combat.Tiles[y]); x++ {
+            points = append(points, image.Pt(x, y))
+        }
+    }
+
+    compare := func(a image.Point, b image.Point) int {
+        ax, ay := combat.Coordinates.Apply(float64(a.X), float64(a.Y))
+        bx, by := combat.Coordinates.Apply(float64(b.X), float64(b.Y))
+
+        if ay < by {
+            return -1
+        }
+
+        if ay > by {
+            return 1
+        }
+
+        if ax < bx {
+            return -1
+        }
+
+        if ax > bx {
+            return 1
+        }
+
+        return 0
+    }
+
+    slices.SortFunc(points, compare)
+    return points
 }
 
 func (combat *CombatScreen) AddProjectile(projectile *Projectile){
@@ -1940,7 +1989,30 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
         return combat.Coordinates.Apply(float64(x), float64(y))
     }
 
+    for _, point := range combat.TopDownOrder {
+        x := point.X
+        y := point.Y
+
+        image, _ := combat.ImageCache.GetImage("cmbgrass.lbx", combat.Tiles[y][x].Index, 0)
+        options.GeoM.Reset()
+        tx, ty := tilePosition(x, y)
+        options.GeoM.Translate(tx, ty)
+        screen.DrawImage(image, &options)
+
+        if combat.Tiles[y][x].Mud {
+            mudTiles, _ := combat.ImageCache.GetImages("cmbtcity.lbx", 118)
+            index := animationIndex % uint64(len(mudTiles))
+            screen.DrawImage(mudTiles[index], &options)
+        }
+
+        if combat.Tiles[y][x].ExtraObject != -1 {
+            extraImage, _ := combat.ImageCache.GetImage("cmbgrass.lbx", 48 + combat.Tiles[y][x].ExtraObject, 0)
+            screen.DrawImage(extraImage, &options)
+        }
+    }
+
     // draw base land
+    /*
     for y := 0; y < len(combat.Tiles); y++ {
         for x := 0; x < len(combat.Tiles[y]); x++ {
             image, _ := combat.ImageCache.GetImage("cmbgrass.lbx", combat.Tiles[y][x].Index, 0)
@@ -1973,6 +2045,7 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
             }
         }
     }
+    */
 
     combat.DrawHighlightedTile(screen, combat.MouseTileX, combat.MouseTileY, color.RGBA{R: 0, G: 0x67, B: 0x78, A: 255}, color.RGBA{R: 0, G: 0xef, B: 0xff, A: 255})
 
