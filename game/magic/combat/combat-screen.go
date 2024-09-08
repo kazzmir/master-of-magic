@@ -189,6 +189,13 @@ type Army struct {
     Player *player.Player
 }
 
+// represents a unit that is not part of the army, for things like magic vortex, for things like magic vortex
+type CombatUnit struct {
+    X int
+    Y int
+    Animation *util.Animation
+}
+
 type Projectile struct {
     X float64
     Y float64
@@ -212,6 +219,8 @@ type CombatScreen struct {
 
     TurnAttacker int
     TurnDefender int
+
+    OtherUnits []*CombatUnit
 
     MouseState MouseState
 
@@ -767,6 +776,18 @@ func (combat *CombatScreen) CreateDisruptProjectile(x int, y int) {
     combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(&fakeTarget, loopImages, explodeImages, UnitPositionUnder))
 }
 
+func (combat *CombatScreen) CreateMagicVortex(x int, y int) {
+    images, _ := combat.ImageCache.GetImages("cmbmagic.lbx", 120)
+
+    unit := &CombatUnit{
+        X: x,
+        Y: y,
+        Animation: util.MakeAnimation(images, true),
+    }
+
+    combat.OtherUnits = append(combat.OtherUnits, unit)
+}
+
 /* let the user select a target, then cast the spell on that target
  */
 func (combat *CombatScreen) DoTargetUnitSpell(player *playerlib.Player, spell spellbook.Spell, targetKind Targeting, onTarget func(*ArmyUnit), canTarget func(*ArmyUnit) bool) {
@@ -1077,15 +1098,18 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
             combat.DoTargetTileSpell(player, spell, func (x int, y int){
                 combat.CreateDisruptProjectile(x, y)
             })
+        case "Magic Vortex":
+            combat.DoTargetTileSpell(player, spell, func (x int, y int){
+                combat.CreateMagicVortex(x, y)
+            })
 
             /*
-Disenchant Area
-Dispel Magic
-Raise Dead
-Petrify	
-Disenchant True
-Call Chaos	￼
-Magic Vortex	
+Disenchant Area - need picture
+Dispel Magic - need picture
+Raise Dead - need picture
+Petrify	- need picture
+Disenchant True - need picture
+Call Chaos - need picture
 Warp Wood	￼
 Animate Dead	
 Death Spell	￼
@@ -1499,6 +1523,12 @@ func (combat *CombatScreen) Update() CombatState {
     combat.MouseTileX = int(math.Round(tileX))
     combat.MouseTileY = int(math.Round(tileY))
 
+    for _, unit := range combat.OtherUnits {
+        if combat.Counter % 6 == 0 {
+            unit.Animation.Next()
+        }
+    }
+
     hudY := data.ScreenHeight - hudImage.Bounds().Dy()
 
     if combat.DoSelectTile {
@@ -1838,6 +1868,17 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
 
     for _, unit := range combat.AttackingArmy.Units {
         renderUnit(unit)
+    }
+
+    for _, unit := range combat.OtherUnits {
+        var unitOptions ebiten.DrawImageOptions
+        tx, ty := tilePosition(unit.X, unit.Y)
+        unitOptions.GeoM.Translate(tx, ty)
+        unitOptions.GeoM.Translate(float64(tile0.Bounds().Dx()/2), float64(tile0.Bounds().Dy()/2))
+
+        frame := unit.Animation.Frame()
+        unitOptions.GeoM.Translate(float64(-frame.Bounds().Dx()/2), float64(-frame.Bounds().Dy()))
+        screen.DrawImage(frame, &unitOptions)
     }
 
     combat.UI.Draw(combat.UI, screen)
