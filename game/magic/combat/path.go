@@ -9,6 +9,7 @@ import (
 const Infinity = 1000000
 
 /* returns an array of points that is the shortest/cheapest path from start->end and true, or false if no such path exists
+ * basically djikstra's shortest path algorithm
  */
 func FindPath(start image.Point, end image.Point, maxPath int, tileCost func(int, int) int, neighbors (int, int) []image.Point) ([]image.Point, bool) {
 
@@ -34,6 +35,9 @@ func FindPath(start image.Point, end image.Point, maxPath int, tileCost func(int
         visited: false,
     }
 
+    lowestCost := Infinity
+
+    // this should be a priority queue
     var openList []*Node
     openList = append(openList, nodes[start])
 
@@ -47,10 +51,16 @@ func FindPath(start image.Point, end image.Point, maxPath int, tileCost func(int
 
         nodes[node.point].visited = true
 
-        // FIXME: we might reach the end nodes from multiple paths
+        // ignore paths that are already more expensive than the lowest cost path
+        if node.cost > lowestCost {
+            continue
+        }
+
         if node.point.Eq(end) {
             endNode = node
-            break
+            if node.cost < lowestCost {
+                lowestCost = node.cost
+            }
         }
 
         for _, neighbor := range neighbors(node.point.X, node.point.Y) {
