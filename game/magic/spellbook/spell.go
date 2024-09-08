@@ -722,6 +722,11 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
         options2.GeoM.Translate(0, 15)
         for _, spell := range spells.Spells {
 
+            // invalid spell?
+            if spell.Name == "" {
+                continue
+            }
+
             spellOptions := options2
 
             textColorScale := spellOptions.ColorScale

@@ -873,6 +873,10 @@ func (combat *CombatScreen) CreateFireElemental(player *playerlib.Player, x int,
     combat.addNewUnit(player, x, y, units.FireElemental, units.FacingDown)
 }
 
+func (combat *CombatScreen) CreateDemon(player *playerlib.Player, x int, y int) {
+    combat.addNewUnit(player, x, y, units.Demon, units.FacingDown)
+}
+
 /* let the user select a target, then cast the spell on that target
  */
 func (combat *CombatScreen) DoTargetUnitSpell(player *playerlib.Player, spell spellbook.Spell, targetKind Targeting, onTarget func(*ArmyUnit), canTarget func(*ArmyUnit) bool) {
@@ -1074,6 +1078,30 @@ func (combat *CombatScreen) CreateEarthToMud(centerX int, centerY int){
     }
 }
 
+func (combat *CombatScreen) FindEmptyTile() (int, int, error) {
+
+    middleX := len(combat.Tiles[0]) / 2
+    middleY := len(combat.Tiles) / 2
+
+    distance := 3
+    tries := 0
+    for tries < 100 {
+        x := middleX + rand.Intn(distance) - distance/2
+        y := middleY + rand.Intn(distance) - distance/2
+
+        if x >= 0 && x < len(combat.Tiles[0]) && y >= 0 && y < len(combat.Tiles) && combat.GetUnit(x, y) == nil {
+            return x, y, nil
+        }
+
+        distance += 1
+        if distance > len(combat.Tiles) * 2 {
+            distance = len(combat.Tiles) * 2
+        }
+    }
+
+    return -1, -1, fmt.Errorf("unable to find a free tile")
+}
+
 func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellbook.Spell){
     targetAny := func (target *ArmyUnit) bool { return true }
 
@@ -1228,6 +1256,13 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
             combat.DoSummoningSpell(player, spell, func(x int, y int){
                 combat.CreateFireElemental(player, x, y)
             })
+        case "Summon Demon":
+            // FIXME: the tile should be near the middle of the map
+            x, y, err := combat.FindEmptyTile()
+            if err == nil {
+                combat.CreateSummoningCircle(x, y)
+                combat.CreateDemon(player, x, y)
+            }
 
             /*
 Disenchant Area - need picture

@@ -389,6 +389,15 @@ var Demon Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 49,
     Race: data.RaceFantastic,
+    CombatLbxFile: "figure12.lbx",
+    CombatIndex: 32,
+    Count: 1,
+    MovementSpeed: 2,
+    Flying: true,
+    MeleeAttackPower: 14,
+    Defense: 6,
+    Resistance: 7,
+    HitPoints: 12,
 }
 
 var Wraith Unit = Unit{
