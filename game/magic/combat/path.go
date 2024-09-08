@@ -5,14 +5,15 @@ package combat
 import (
     "image"
     "slices"
+    "math"
 )
 
-const Infinity = 1000000
+var Infinity = math.Inf(1)
 
 /* returns an array of points that is the shortest/cheapest path from start->end and true, or false if no such path exists
  * basically djikstra's shortest path algorithm
  */
-func FindPath(start image.Point, end image.Point, maxPath int, tileCost func(int, int) int, neighbors func (int, int) []image.Point) ([]image.Point, bool) {
+func FindPath(start image.Point, end image.Point, maxPath int, tileCost func(int, int) float64, neighbors func (int, int) []image.Point) ([]image.Point, bool) {
 
     // set distance to start as 0
     // put start in open list
@@ -23,7 +24,7 @@ func FindPath(start image.Point, end image.Point, maxPath int, tileCost func(int
         point image.Point
         previous *Node
         visited bool
-        cost int
+        cost float64
     }
 
     var endNode *Node
