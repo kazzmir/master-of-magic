@@ -89,4 +89,9 @@ func TestPath1(test *testing.T){
     if !slices.EqualFunc(path, expectedPath, equalPoints) {
         test.Errorf("path not as expected: expected=%v actual=%v", expectedPath, path)
     }
+
+    path2, ok := FindPath(start, end, 3, tileCost, neighbors)
+    if ok {
+        test.Errorf("expected no path, but found one: %v", path2)
+    }
 }
