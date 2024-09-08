@@ -34,6 +34,7 @@ type Unit struct {
     MovementSpeed int
     Defense int
     Resistance int
+    HitPoints int
     // FIXME: add construction cost, building requirements to build this unit
     //  upkeep cost, how many figures appear in the battlefield, movement speed,
     //  attack power, ranged attack, defense, magic resistance, hit points, special power
@@ -517,6 +518,14 @@ var PhantomBeast Unit = Unit{
 var PhantomWarrior Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 72,
+    CombatLbxFile: "figure13.lbx",
+    CombatIndex: 96,
+    Name: "Phantom Warriors",
+    MovementSpeed: 1,
+    Count: 6,
+    MeleeAttackPower: 3,
+    HitPoints: 1,
+    Resistance: 6,
     Race: data.RaceFantastic,
 }
 

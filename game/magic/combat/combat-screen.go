@@ -800,6 +800,19 @@ func (combat *CombatScreen) CreateDisruptProjectile(x int, y int) {
     combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(&fakeTarget, loopImages, explodeImages, UnitPositionUnder))
 }
 
+func (combat *CombatScreen) CreateSummoningCircle(x int, y int) {
+    images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 22)
+    var loopImages []*ebiten.Image
+    explodeImages := images
+
+    fakeTarget := ArmyUnit{
+        X: x,
+        Y: y,
+    }
+
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(&fakeTarget, loopImages, explodeImages, UnitPositionUnder))
+}
+
 func (combat *CombatScreen) CreateMagicVortex(x int, y int) {
     images, _ := combat.ImageCache.GetImages("cmbmagic.lbx", 120)
 
@@ -810,6 +823,27 @@ func (combat *CombatScreen) CreateMagicVortex(x int, y int) {
     }
 
     combat.OtherUnits = append(combat.OtherUnits, unit)
+}
+
+func (combat *CombatScreen) CreatePhantomWarriors(player *playerlib.Player, x int, y int) {
+
+    unit := ArmyUnit{
+        Unit: units.PhantomWarrior,
+        Facing: units.FacingDown,
+        Moving: false,
+        X: x,
+        Y: y,
+        Health: 10,
+        LastTurn: combat.CurrentTurn,
+    }
+
+    if player == combat.DefendingArmy.Player {
+        unit.Team = TeamDefender
+        combat.DefendingArmy.Units = append(combat.DefendingArmy.Units, &unit)
+    } else {
+        unit.Team = TeamAttacker
+        combat.AttackingArmy.Units = append(combat.AttackingArmy.Units, &unit)
+    }
 }
 
 /* let the user select a target, then cast the spell on that target
@@ -897,6 +931,7 @@ func (combat *CombatScreen) DoTargetUnitSpell(player *playerlib.Player, spell sp
     }
 }
 
+// FIXME: take in a canTarget function to check if the tile is legal
 func (combat *CombatScreen) DoTargetTileSpell(player *playerlib.Player, spell spellbook.Spell, onTarget func(int, int)){
     // log.Printf("Create sound for spell %v: %v", spell.Name, spell.Sound)
 
@@ -958,6 +993,15 @@ func (combat *CombatScreen) DoTargetTileSpell(player *playerlib.Player, spell sp
 
         combat.SelectTile = func(int, int){}
     }
+}
+
+func (combat *CombatScreen) DoSummoningSpell(player *playerlib.Player, spell spellbook.Spell, onTarget func(int, int)){
+    // FIXME: pass in a canTarget function that only allows summoning on an empty tile on the casting wizards side of the battlefield
+    combat.DoTargetTileSpell(player, spell, func (x int, y int){
+        combat.CreateSummoningCircle(x, y)
+        // FIXME: there should be a delay between the summoning circle appearing and when the unit appears
+        onTarget(x, y)
+    })
 }
 
 /* create projectiles on all units immediately, no targeting required
@@ -1137,6 +1181,10 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateWordOfDeathProjectile(target)
             }, targetAny)
+        case "Phantom Warriors":
+            combat.DoSummoningSpell(player, spell, func(x int, y int){
+                combat.CreatePhantomWarriors(player, x, y)
+            })
 
             /*
 Disenchant Area - need picture

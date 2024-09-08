@@ -13,6 +13,16 @@ func combatPoints(count int) []image.Point {
     switch count {
         case 0: return nil
         case 1: return []image.Point{image.Pt(0, 0)}
+        case 6:
+            // FIXME: this was just copied from case 8
+            return []image.Point{
+                image.Pt(2, -4),
+                image.Pt(6, -2),
+                image.Pt(-1, 0),
+                image.Pt(-8, 0),
+                image.Pt(10, 0),
+                image.Pt(3, 1),
+            }
         // FIXME: handle cases 2-7
         case 8:
             return []image.Point{
