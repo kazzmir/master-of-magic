@@ -825,25 +825,33 @@ func (combat *CombatScreen) CreateMagicVortex(x int, y int) {
     combat.OtherUnits = append(combat.OtherUnits, unit)
 }
 
-func (combat *CombatScreen) CreatePhantomWarriors(player *playerlib.Player, x int, y int) {
-
-    unit := ArmyUnit{
-        Unit: units.PhantomWarrior,
-        Facing: units.FacingDown,
+func (combat *CombatScreen) addNewUnit(player *playerlib.Player, x int, y int, unit units.Unit, facing units.Facing) {
+    newUnit := ArmyUnit{
+        Unit: unit,
+        Facing: facing,
         Moving: false,
         X: x,
         Y: y,
-        Health: 10,
+        Health: 10, // FIXME: figures * hitpoints?
         LastTurn: combat.CurrentTurn,
     }
 
     if player == combat.DefendingArmy.Player {
-        unit.Team = TeamDefender
-        combat.DefendingArmy.Units = append(combat.DefendingArmy.Units, &unit)
+        newUnit.Team = TeamDefender
+        combat.DefendingArmy.Units = append(combat.DefendingArmy.Units, &newUnit)
     } else {
-        unit.Team = TeamAttacker
-        combat.AttackingArmy.Units = append(combat.AttackingArmy.Units, &unit)
+        newUnit.Team = TeamAttacker
+        combat.AttackingArmy.Units = append(combat.AttackingArmy.Units, &newUnit)
     }
+}
+
+func (combat *CombatScreen) CreatePhantomWarriors(player *playerlib.Player, x int, y int) {
+    // FIXME: compute facing based on player
+    combat.addNewUnit(player, x, y, units.PhantomWarrior, units.FacingDown)
+}
+
+func (combat *CombatScreen) CreatePhantomBeast(player *playerlib.Player, x int, y int) {
+    combat.addNewUnit(player, x, y, units.PhantomBeast, units.FacingDown)
 }
 
 /* let the user select a target, then cast the spell on that target
@@ -1184,6 +1192,10 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
         case "Phantom Warriors":
             combat.DoSummoningSpell(player, spell, func(x int, y int){
                 combat.CreatePhantomWarriors(player, x, y)
+            })
+        case "Phantom Beast":
+            combat.DoSummoningSpell(player, spell, func(x int, y int){
+                combat.CreatePhantomBeast(player, x, y)
             })
 
             /*

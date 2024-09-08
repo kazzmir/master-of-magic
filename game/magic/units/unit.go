@@ -513,6 +513,14 @@ var PhantomBeast Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 71,
     Race: data.RaceFantastic,
+    CombatLbxFile: "figure13.lbx",
+    CombatIndex: 88,
+    Name: "Phantom Beast",
+    Count: 1,
+    MeleeAttackPower: 18,
+    MovementSpeed: 2,
+    Resistance: 8,
+    HitPoints: 20,
 }
 
 var PhantomWarrior Unit = Unit{
