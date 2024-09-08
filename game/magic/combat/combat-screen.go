@@ -722,6 +722,14 @@ func (combat *CombatScreen) CreateWebProjectile(target *ArmyUnit) {
     combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle))
 }
 
+func (combat *CombatScreen) CreateDeathSpellProjectile(target *ArmyUnit) {
+    images, _ := combat.ImageCache.GetImages("specfx.lbx", 14)
+    var loopImages []*ebiten.Image
+    explodeImages := images
+
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle))
+}
+
 func (combat *CombatScreen) CreateWarpWoodProjectile(target *ArmyUnit) {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 2)
     var loopImages []*ebiten.Image
@@ -1029,9 +1037,7 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
         case "Flame Strike":
             combat.DoAllUnitsSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateFlameStrikeProjectile(target)
-            }, func (target *ArmyUnit) bool {
-                return true
-            })
+            }, targetAny)
         case "Life Drain":
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateLifeDrainProjectile(target)
@@ -1067,9 +1073,7 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
         case "Mass Healing":
             combat.DoAllUnitsSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 combat.CreateHealingProjectile(target)
-            }, func (target *ArmyUnit) bool {
-                return true
-            })
+            }, targetAny)
         case "Cracks Call":
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateCracksCallProjectile(target)
@@ -1117,6 +1121,10 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
                 // FIXME: can be cast on a normal unit or hero that has a ranged missle attack
                 return true
             })
+        case "Death Spell":
+            combat.DoAllUnitsSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
+                combat.CreateDeathSpellProjectile(target)
+            }, targetAny)
 
             /*
 Disenchant Area - need picture
@@ -1125,8 +1133,7 @@ Raise Dead - need picture
 Petrify	- need picture
 Disenchant True - need picture
 Call Chaos - need picture
-Animate Dead	
-Death Spell	￼
+Animate Dead - need picture
 Word of Death
             */
 
