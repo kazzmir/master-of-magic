@@ -498,6 +498,12 @@ const (
     UnitPositionUnder
 )
 
+type Targeting int
+const (
+    TargetFriend Targeting = iota
+    TargetEnemy
+)
+
 /* needs a new name, but creates a projectile that is already at the target
  */
 func (combat *CombatScreen) createUnitProjectile(target *ArmyUnit, images []*ebiten.Image, explodeImages []*ebiten.Image, position UnitPosition) *Projectile {
@@ -693,10 +699,19 @@ func (combat *CombatScreen) CreateHolyWordProjectile(target *ArmyUnit) {
 
 /* let the user select a target, then cast the spell on that target
  */
-func (combat *CombatScreen) DoTargetUnitSpell(player *playerlib.Player, spell spellbook.Spell, onTarget func(*ArmyUnit), canTarget func(*ArmyUnit) bool) {
+func (combat *CombatScreen) DoTargetUnitSpell(player *playerlib.Player, spell spellbook.Spell, targetKind Targeting, onTarget func(*ArmyUnit), canTarget func(*ArmyUnit) bool) {
     teamAttacked := TeamAttacker
-    if combat.AttackingArmy.Player == player {
-        teamAttacked = TeamDefender
+
+    if targetKind == TargetFriend {
+        /* if the player is the defender and we are targeting a friend then the team should be the defenders */
+        if combat.DefendingArmy.Player == player {
+            teamAttacked = TeamDefender
+        }
+    } else {
+        /* if the player is the attacker and we are targeting an enemy then the team should be the defenders */
+        if combat.AttackingArmy.Player == player {
+            teamAttacked = TeamDefender
+        }
     }
 
     // log.Printf("Create sound for spell %v: %v", spell.Name, spell.Sound)
@@ -764,13 +779,17 @@ func (combat *CombatScreen) DoTargetUnitSpell(player *playerlib.Player, spell sp
 
 /* create projectiles on all units immediately, no targeting required
  */
-func (combat *CombatScreen) DoAllUnitsSpell(player *playerlib.Player, spell spellbook.Spell, onTarget func(*ArmyUnit), canTarget func(*ArmyUnit) bool) {
+func (combat *CombatScreen) DoAllUnitsSpell(player *playerlib.Player, spell spellbook.Spell, targetKind Targeting, onTarget func(*ArmyUnit), canTarget func(*ArmyUnit) bool) {
     var units []*ArmyUnit
 
-    if player == combat.DefendingArmy.Player {
+    if player == combat.DefendingArmy.Player && targetKind == TargetEnemy {
         units = combat.AttackingArmy.Units
-    } else {
+    } else if player == combat.AttackingArmy.Player && targetKind == TargetEnemy {
         units = combat.DefendingArmy.Units
+    } else if player == combat.DefendingArmy.Player && targetKind == TargetFriend {
+        units = combat.DefendingArmy.Units
+    } else if player == combat.AttackingArmy.Player && targetKind == TargetFriend {
+        units = combat.AttackingArmy.Units
     }
 
     sound, err := audio.LoadSound(combat.Cache, spell.Sound)
@@ -792,83 +811,88 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
 
     switch spell.Name {
         case "Fireball":
-            combat.DoTargetUnitSpell(player, spell, func(target *ArmyUnit){
+            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateFireballProjectile(target)
             }, targetAny)
         case "Ice Bolt":
-            combat.DoTargetUnitSpell(player, spell, func(target *ArmyUnit){
+            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateIceBoltProjectile(target)
             }, targetAny)
         case "Star Fires":
-            combat.DoTargetUnitSpell(player, spell, func(target *ArmyUnit){
+            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateStarFiresProjectile(target)
             }, func (target *ArmyUnit) bool {
                 // FIXME: can only target fantastic creatures that are death or chaos
                 return true
             })
         case "Psionic Blast":
-            combat.DoTargetUnitSpell(player, spell, func(target *ArmyUnit){
+            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreatePsionicBlastProjectile(target)
             }, targetAny)
         case "Doom Bolt":
-            combat.DoTargetUnitSpell(player, spell, func(target *ArmyUnit){
+            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateDoomBoltProjectile(target)
             }, targetAny)
         case "Fire Bolt":
-            combat.DoTargetUnitSpell(player, spell, func(target *ArmyUnit){
+            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateFireBoltProjectile(target)
             }, targetAny)
         case "Lightning Bolt":
-            combat.DoTargetUnitSpell(player, spell, func(target *ArmyUnit){
+            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateLightningBoltProjectile(target)
             }, targetAny)
         case "Warp Lightning":
-            combat.DoTargetUnitSpell(player, spell, func(target *ArmyUnit){
+            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateWarpLightningProjectile(target)
             }, targetAny)
         case "Flame Strike":
-            combat.DoAllUnitsSpell(player, spell, func(target *ArmyUnit){
+            combat.DoAllUnitsSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateFlameStrikeProjectile(target)
             }, func (target *ArmyUnit) bool {
                 return true
             })
         case "Life Drain":
-            combat.DoTargetUnitSpell(player, spell, func(target *ArmyUnit){
+            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateLifeDrainProjectile(target)
             }, targetAny)
         case "Dispel Evil":
-            combat.DoTargetUnitSpell(player, spell, func(target *ArmyUnit){
+            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateDispelEvilProjectile(target)
             }, func (target *ArmyUnit) bool {
                 // FIXME: can only target units that are death or chaos
                 return true
             })
         case "Healing":
-            combat.DoTargetUnitSpell(player, spell, func(target *ArmyUnit){
+            combat.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 combat.CreateHealingProjectile(target)
             }, func (target *ArmyUnit) bool {
                 // FIXME: can only target units that are not death
                 return true
             })
         case "Holy Word":
-            combat.DoAllUnitsSpell(player, spell, func(target *ArmyUnit){
+            combat.DoAllUnitsSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateHolyWordProjectile(target)
             }, func (target *ArmyUnit) bool {
                 // FIXME: can only target fantastic units, chaos channeled and undead
                 return true
             })
         case "Recall Hero":
-            combat.DoTargetUnitSpell(player, spell, func(target *ArmyUnit){
+            combat.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 combat.CreateRecallHeroProjectile(target)
             }, func (target *ArmyUnit) bool {
                 // FIXME: can only target heros
+                return true
+            })
+        case "Mass Healing":
+            combat.DoAllUnitsSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+                combat.CreateHealingProjectile(target)
+            }, func (target *ArmyUnit) bool {
                 return true
             })
 
             /*
 Disenchant Area
 Dispel Magic
-Mass Healing
 Raise Dead
 Cracks Call
 Earth to Mud
