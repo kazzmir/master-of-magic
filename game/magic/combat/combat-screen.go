@@ -713,6 +713,14 @@ func (combat *CombatScreen) CreateWebProjectile(target *ArmyUnit) {
     combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle))
 }
 
+func (combat *CombatScreen) CreateWordOfRecallProjectile(target *ArmyUnit) {
+    images, _ := combat.ImageCache.GetImages("specfx.lbx", 1)
+    var loopImages []*ebiten.Image
+    explodeImages := images
+
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle))
+}
+
 func (combat *CombatScreen) CreateDispelMagicProjectile(target *ArmyUnit) {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 26)
     var loopImages []*ebiten.Image
@@ -1034,6 +1042,10 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
             combat.DoTargetUnitSpell(player, spell, TargetEither, func(target *ArmyUnit){
                 combat.CreateDispelMagicProjectile(target)
             }, targetAny)
+        case "Word of Recall":
+            combat.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+                combat.CreateWordOfRecallProjectile(target)
+            }, targetAny)
 
             /*
 Disenchant Area
@@ -1041,7 +1053,6 @@ Dispel Magic
 Raise Dead
 Petrify	
 Disenchant True
-Word of Recall
 Call Chaos	￼
 Disintegrate	￼
 Disrupt	￼
