@@ -524,7 +524,7 @@ func (combat *CombatScreen) createUnitProjectile(target *ArmyUnit, images []*ebi
             screenX += 14
             screenX -= float64(useImage.Bounds().Dx()/2)
         case UnitPositionUnder:
-            screenY += 11
+            screenY += 15
             screenY -= float64(useImage.Bounds().Dy())
     }
 
@@ -695,6 +695,14 @@ func (combat *CombatScreen) CreateHolyWordProjectile(target *ArmyUnit) {
     explodeImages := images
 
     combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle))
+}
+
+func (combat *CombatScreen) CreateCracksCallProjectile(target *ArmyUnit) {
+    images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 15)
+    var loopImages []*ebiten.Image
+    explodeImages := images
+
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionUnder))
 }
 
 /* let the user select a target, then cast the spell on that target
@@ -889,12 +897,15 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
             }, func (target *ArmyUnit) bool {
                 return true
             })
+        case "Cracks Call":
+            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
+                combat.CreateCracksCallProjectile(target)
+            }, targetAny)
 
             /*
 Disenchant Area
 Dispel Magic
 Raise Dead
-Cracks Call
 Earth to Mud
 Petrify	
 Web	￼
