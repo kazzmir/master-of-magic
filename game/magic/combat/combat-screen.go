@@ -702,6 +702,14 @@ func (combat *CombatScreen) CreateHolyWordProjectile(target *ArmyUnit) {
     combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle))
 }
 
+func (combat *CombatScreen) CreateWebProjectile(target *ArmyUnit) {
+    images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 13)
+    var loopImages []*ebiten.Image
+    explodeImages := images
+
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle))
+}
+
 func (combat *CombatScreen) CreateCracksCallProjectile(target *ArmyUnit) {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 15)
     var loopImages []*ebiten.Image
@@ -988,13 +996,17 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
             combat.DoTargetTileSpell(player, spell, func (x int, y int){
                 combat.CreateEarthToMud(x, y)
             })
+        case "Web":
+            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
+                combat.CreateWebProjectile(target)
+            }, targetAny)
+
 
             /*
 Disenchant Area
 Dispel Magic
 Raise Dead
 Petrify	
-Web	￼
 Banish	
 Disenchant True
 Dispel Magic True
