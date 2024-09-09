@@ -8,17 +8,19 @@ import (
     "math/rand"
 )
 
-func makeMap(data string) [][]int {
+func makeMap(data string) [][]float64 {
     lines := strings.Split(data, "\n")
 
-    var out [][]int
+    var out [][]float64
 
     for _, line := range lines {
-        var row []int
+        var row []float64
 
         for _, c := range line {
             if c >= '0' && c <= '9' {
-                row = append(row, int(c - '0'))
+                row = append(row, float64(c - '0'))
+            } else if c == 'X' {
+                row = append(row, Infinity)
             }
         }
 
@@ -30,17 +32,17 @@ func makeMap(data string) [][]int {
     return out
 }
 
-func makeTileCost(tiles [][]int) func(int, int) float64 {
+func makeTileCost(tiles [][]float64) func(int, int) float64 {
     return func(x int, y int) float64 {
         if x < 0 || y < 0 || y >= len(tiles) || x >= len(tiles[y]) {
             return Infinity
         }
 
-        return float64(tiles[y][x])
+        return tiles[y][x]
     }
 }
 
-func makeNeighbors(tiles [][]int) func(int, int) []image.Point {
+func makeNeighbors(tiles [][]float64) func(int, int) []image.Point {
     return func(cx int, cy int) []image.Point {
         var out []image.Point
 
@@ -104,13 +106,51 @@ func TestPath1(test *testing.T){
     }
 }
 
-func makeRandomMap(rows int, columns int, value int) [][]int {
-    var out [][]int
+func TestPathBlocked(test *testing.T){
+    tiles := makeMap(`
+1123
+XXX3
+213X
+2111
+`)
+
+    start := image.Pt(0, 0)
+    end := image.Pt(3, 3)
+
+    expectedPath := []image.Point{
+        image.Pt(0, 0),
+        image.Pt(1, 0),
+        image.Pt(2, 0),
+        image.Pt(3, 1),
+        image.Pt(2, 2),
+        image.Pt(3, 3),
+    }
+
+    tileCost := makeTileCost(tiles)
+    neighbors := makeNeighbors(tiles)
+
+    path, ok := FindPath(start, end, 12, tileCost, neighbors)
+    if !ok {
+        test.Errorf("unable to find path")
+    }
+
+    equalPoints := func (a image.Point, b image.Point) bool {
+        return a.Eq(b)
+    }
+
+    if !slices.EqualFunc(path, expectedPath, equalPoints) {
+        test.Errorf("path not as expected: expected=%v actual=%v", expectedPath, path)
+    }
+
+}
+
+func makeRandomMap(rows int, columns int, value int) [][]float64 {
+    var out [][]float64
 
     for y := 0; y < rows; y++ {
-        var row []int
+        var row []float64
         for x := 0; x < columns; x++ {
-            row = append(row, rand.Intn(value))
+            row = append(row, float64(rand.Intn(value)))
         }
         out = append(out, row)
     }
