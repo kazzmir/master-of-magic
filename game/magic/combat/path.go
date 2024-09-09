@@ -7,6 +7,8 @@ import (
     "slices"
     "math"
     _ "log"
+
+    "github.com/kazzmir/master-of-magic/lib/priority"
 )
 
 var Infinity = math.Inf(1)
@@ -40,13 +42,24 @@ func FindPath(start image.Point, end image.Point, maxPath float64, tileCost func
 
     lowestCost := Infinity
 
-    // this should be a priority queue
-    var openList []*Node
-    openList = append(openList, nodes[start])
+    compare := func (a *Node, b *Node) int {
+        if a.cost < b.cost {
+            return -1
+        }
 
-    for len(openList) > 0 {
-        node := openList[0]
-        openList = openList[1:]
+        if a.cost > b.cost {
+            return 1
+        }
+
+        return 0
+    }
+
+    // this should be a priority queue
+    unvisited := priority.MakePriorityQueue[*Node](compare)
+    unvisited.Insert(nodes[start])
+
+    for !unvisited.IsEmpty() {
+        node := unvisited.ExtractMin()
 
         if node.visited {
             continue
@@ -66,6 +79,7 @@ func FindPath(start image.Point, end image.Point, maxPath float64, tileCost func
             if node.cost < lowestCost {
                 lowestCost = node.cost
             }
+            continue
         }
 
         for _, neighbor := range neighbors(node.point.X, node.point.Y) {
@@ -79,15 +93,23 @@ func FindPath(start image.Point, end image.Point, maxPath float64, tileCost func
             if newCost < newNode.cost {
                 newNode.cost = newCost
                 newNode.previous = node
-                openList = append(openList, newNode)
+                unvisited.Insert(newNode)
             }
         }
     }
 
     if endNode != nil {
-        // max path to ensure we don't follow an infinite loop somehow
         var out []image.Point
+        seen := make(map[image.Point]struct{})
         for endNode != nil && !endNode.point.Eq(start) {
+            /* make sure we never see the same node twice, otherwise we entered into a loop somehow */
+            _, ok := seen[endNode.point]
+            if ok {
+                return nil, false
+            }
+
+            seen[endNode.point] = struct{}{}
+
             out = append(out, endNode.point)
             endNode = endNode.previous
         }
