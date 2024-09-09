@@ -5,8 +5,20 @@ import (
     "math/rand"
 )
 
+func intCompare(a int, b int) int {
+    if a < b {
+        return -1
+    }
+
+    if a == b {
+        return 0
+    }
+
+    return 1
+}
+
 func TestBasic(test *testing.T){
-    heap := MakeHeap([]int{3, 2, 1})
+    heap := MakeHeap([]int{3, 2, 1}, intCompare)
 
     if heap.Size() != 3 {
         test.Errorf("Expected size 3, got %d", heap.Size())
@@ -33,7 +45,7 @@ func TestBasic(test *testing.T){
 }
 
 func TestInsert(test *testing.T){
-    heap := MakeEmptyHeap()
+    heap := MakeEmptyHeap(intCompare)
 
     N := 1000
 
