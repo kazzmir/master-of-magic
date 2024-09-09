@@ -11,12 +11,17 @@ import (
     "github.com/kazzmir/master-of-magic/lib/priority"
 )
 
+// cost to move from (x1,y1) -> (x2,y2)
+type TileCostFunc func(int, int, int, int) float64
+// neighbor points given a point x,y
+type NeighborsFunc func (int, int) []image.Point
+
 var Infinity = math.Inf(1)
 
 /* returns an array of points that is the shortest/cheapest path from start->end and true, or false if no such path exists
  * basically djikstra's shortest path algorithm
  */
-func FindPath(start image.Point, end image.Point, maxPath float64, tileCost func(int, int) float64, neighbors func (int, int) []image.Point) ([]image.Point, bool) {
+func FindPath(start image.Point, end image.Point, maxPath float64, tileCost TileCostFunc, neighbors NeighborsFunc) ([]image.Point, bool) {
 
     // set distance to start as 0
     // put start in open list
@@ -89,7 +94,7 @@ func FindPath(start image.Point, end image.Point, maxPath float64, tileCost func
                 nodes[neighbor] = newNode
             }
 
-            newCost := node.cost + tileCost(newNode.point.X, newNode.point.Y)
+            newCost := node.cost + tileCost(node.point.X, node.point.Y, newNode.point.X, newNode.point.Y)
             if newCost < newNode.cost {
                 newNode.cost = newCost
                 newNode.previous = node

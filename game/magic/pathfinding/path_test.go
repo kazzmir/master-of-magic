@@ -32,17 +32,18 @@ func makeMap(data string) [][]float64 {
     return out
 }
 
-func makeTileCost(tiles [][]float64) func(int, int) float64 {
-    return func(x int, y int) float64 {
-        if x < 0 || y < 0 || y >= len(tiles) || x >= len(tiles[y]) {
+func makeTileCost(tiles [][]float64) TileCostFunc {
+    // just consider cost of new tile
+    return func(x1 int, y1 int, x2 int, y2 int) float64 {
+        if x2 < 0 || y2 < 0 || y2 >= len(tiles) || x2 >= len(tiles[y2]) {
             return Infinity
         }
 
-        return tiles[y][x]
+        return tiles[y2][x2]
     }
 }
 
-func makeNeighbors(tiles [][]float64) func(int, int) []image.Point {
+func makeNeighbors(tiles [][]float64) NeighborsFunc {
     return func(cx int, cy int) []image.Point {
         var out []image.Point
 
