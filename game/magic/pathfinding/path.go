@@ -1,4 +1,4 @@
-package combat
+package pathfinding
 
 /* various path finding algorithms */
 

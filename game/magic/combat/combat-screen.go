@@ -21,6 +21,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/player"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
+    "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -134,8 +135,136 @@ func computeMoves(x1 int, y1 int, x2 int, y2 int) fraction.Fraction {
     return movesNeeded
 }
 
+func (combat *CombatScreen) FindPath(x1 int, y1 int, x2 int, y2 int) ([]image.Point, bool) {
+
+    containsUnit := make(map[image.Point]bool)
+
+    tileEmpty := func (x int, y int) bool {
+        // check if the tile is empty
+        where := image.Pt(x, y)
+        contains, ok := containsUnit[where]
+        if ok {
+            return !contains
+        } else {
+            unit := combat.GetUnit(x, y)
+            if unit == nil {
+                containsUnit[where] = false
+                return true
+            } else {
+                containsUnit[where] = true
+                return false
+            }
+        }
+    }
+
+    tileCost := func (x1 int, y1 int, x2 int, y2 int) float64 {
+
+        if x2 < 0 || y2 < 0 || y2 >= len(combat.Tiles) || x2 >= len(combat.Tiles[y2]) {
+            return pathfinding.Infinity
+        }
+
+        if !tileEmpty(x2, y2) {
+            return pathfinding.Infinity
+        }
+
+        xDiff := int(math.Abs(float64(x1 - x2)))
+        yDiff := int(math.Abs(float64(y1 - y2)))
+
+        if xDiff == 0 && yDiff == 1 {
+            return 1
+        }
+
+        if xDiff == 1 && yDiff == 0 {
+            return 1
+        }
+
+        if xDiff == 1 && yDiff == 1 {
+            return 1.5
+        }
+
+        if xDiff == 0 && yDiff == 0 {
+            return 0
+        }
+
+        // shouldn't ever really get here
+        return float64(xDiff + yDiff)
+    }
+
+    neighbors := func(cx int, cy int) []image.Point {
+        var out []image.Point
+        for dx := -1; dx <= 1; dx++ {
+            for dy := -1; dy <= 1; dy++ {
+                if dx == 0 && dy == 0 {
+                    continue
+                }
+
+                x := cx + dx
+                y := cy + dy
+
+                if x >= 0 && y >= 0 && y < len(combat.Tiles) && x < len(combat.Tiles[y]) {
+                    // ignore non-empty tiles entirely
+                    if tileEmpty(x, y) {
+                        out = append(out, image.Pt(x, y))
+                    }
+                }
+            }
+        }
+        return out
+    }
+
+    return pathfinding.FindPath(image.Pt(x1, y1), image.Pt(x2, y2), 50, tileCost, neighbors)
+}
+
+func (combat *CombatScreen) CanMoveTo(unit *ArmyUnit, x int, y int) bool {
+    path, ok := combat.FindPath(unit.X, unit.Y, x, y)
+    if !ok {
+        // log.Printf("No such path from %v,%v -> %v,%v", unit.X, unit.Y, x, y)
+        return false
+    }
+
+    // cost to move one tile in one of the 8 directions
+    pathCost := func (from image.Point, to image.Point) fraction.Fraction {
+        xDiff := int(math.Abs(float64(from.X - to.X)))
+        yDiff := int(math.Abs(float64(from.Y - to.Y)))
+
+        if xDiff == 0 && yDiff == 1 {
+            return fraction.FromInt(1)
+        }
+
+        if xDiff == 1 && yDiff == 0 {
+            return fraction.FromInt(1)
+        }
+
+        if xDiff == 1 && yDiff == 1 {
+            return fraction.Make(3, 2)
+        }
+
+        if xDiff == 0 && yDiff == 0 {
+            return fraction.FromInt(0)
+        }
+
+        // shouldn't ever really get here
+        return fraction.Make(xDiff + yDiff, 1)
+    }
+
+    movesLeft := unit.MovesLeft
+    current := image.Pt(x, y)
+
+    // log.Printf("Can move from %v,%v to %v,%v path %v", unit.X, unit.Y, x, y, path)
+
+    for i := 1; i < len(path); i++ {
+        if movesLeft.GreaterThan(fraction.FromInt(0)) {
+            movesLeft = movesLeft.Subtract(pathCost(current, path[i]))
+        } else {
+            return false
+        }
+    }
+
+    return true
+}
+
 // this allows a unit to move a space diagonally even if they only have 0.5 movement points left
-func (unit *ArmyUnit) CanMoveTo(x int, y int) bool {
+func (unit *ArmyUnit) CanMoveTo2(x int, y int) bool {
     /*
     movesNeeded := computeMoves(unit.X, unit.Y, x, y)
     // log.Printf("CanMoveTo: %v,%v -> %v,%v moves left %v need %v", unit.X, unit.Y, x, y, unit.MovesLeft, movesNeeded)
@@ -1795,7 +1924,7 @@ func (combat *CombatScreen) Update() CombatState {
     } else {
         who := combat.GetUnit(combat.MouseTileX, combat.MouseTileY)
         if who == nil {
-            if combat.SelectedUnit.CanMoveTo(combat.MouseTileX, combat.MouseTileY) {
+            if combat.CanMoveTo(combat.SelectedUnit, combat.MouseTileX, combat.MouseTileY) {
                 combat.MouseState = CombatMoveOk
             } else {
                 combat.MouseState = CombatNotOk
@@ -1823,7 +1952,7 @@ func (combat *CombatScreen) Update() CombatState {
        mouseY < hudY &&
        combat.SelectedUnit.Moving == false && combat.SelectedUnit.Attacking == false {
 
-        if combat.TileIsEmpty(combat.MouseTileX, combat.MouseTileY) && combat.SelectedUnit.CanMoveTo(combat.MouseTileX, combat.MouseTileY){
+        if combat.TileIsEmpty(combat.MouseTileX, combat.MouseTileY) && combat.CanMoveTo(combat.SelectedUnit, combat.MouseTileX, combat.MouseTileY){
             combat.SelectedUnit.MovementTick = combat.Counter
             combat.SelectedUnit.TargetX = combat.MouseTileX
             combat.SelectedUnit.TargetY = combat.MouseTileY
