@@ -99,6 +99,9 @@ type ArmyUnit struct {
     TargetY int
 
     LastTurn int
+
+    // ugly to need this, but this caches paths computed for the unit
+    Paths map[image.Point]pathfinding.Path
 }
 
 func computeMoves(x1 int, y1 int, x2 int, y2 int) fraction.Fraction {
@@ -216,8 +219,15 @@ func (combat *CombatScreen) FindPath(x1 int, y1 int, x2 int, y2 int) ([]image.Po
 }
 
 func (combat *CombatScreen) CanMoveTo(unit *ArmyUnit, x int, y int) bool {
-    path, ok := combat.FindPath(unit.X, unit.Y, x, y)
+    end := image.Pt(x, y)
+    path, ok := unit.Paths[end]
+    if ok {
+        return len(path) > 0
+    }
+
+    path, ok = combat.FindPath(unit.X, unit.Y, x, y)
     if !ok {
+        unit.Paths[end] = nil
         // log.Printf("No such path from %v,%v -> %v,%v", unit.X, unit.Y, x, y)
         return false
     }
@@ -250,15 +260,18 @@ func (combat *CombatScreen) CanMoveTo(unit *ArmyUnit, x int, y int) bool {
     movesLeft := unit.MovesLeft
     current := image.Pt(x, y)
 
-    // log.Printf("Can move from %v,%v to %v,%v path %v", unit.X, unit.Y, x, y, path)
+    log.Printf("Can move from %v,%v to %v,%v path %v", unit.X, unit.Y, x, y, path)
 
     for i := 1; i < len(path); i++ {
         if movesLeft.GreaterThan(fraction.FromInt(0)) {
             movesLeft = movesLeft.Subtract(pathCost(current, path[i]))
         } else {
+            unit.Paths[end] = nil
             return false
         }
     }
+
+    unit.Paths[end] = path
 
     return true
 }
@@ -1679,6 +1692,7 @@ func (combat *CombatScreen) ChooseNextUnit(team Team) *ArmyUnit {
                 combat.TurnAttacker = (combat.TurnAttacker + 1) % len(combat.AttackingArmy.Units)
                 unit := combat.AttackingArmy.Units[combat.TurnAttacker]
                 if unit.LastTurn < combat.CurrentTurn {
+                    unit.Paths = make(map[image.Point]pathfinding.Path)
                     return unit
                 }
             }
@@ -1688,6 +1702,7 @@ func (combat *CombatScreen) ChooseNextUnit(team Team) *ArmyUnit {
                 combat.TurnDefender = (combat.TurnDefender + 1) % len(combat.DefendingArmy.Units)
                 unit := combat.DefendingArmy.Units[combat.TurnDefender]
                 if unit.LastTurn < combat.CurrentTurn {
+                    unit.Paths = make(map[image.Point]pathfinding.Path)
                     return unit
                 }
             }
@@ -1703,10 +1718,12 @@ func (combat *CombatScreen) NextTurn() {
     /* reset movement */
     for _, unit := range combat.DefendingArmy.Units {
         unit.MovesLeft = fraction.FromInt(unit.Unit.MovementSpeed)
+        unit.Paths = make(map[image.Point]pathfinding.Path)
     }
 
     for _, unit := range combat.AttackingArmy.Units {
         unit.MovesLeft = fraction.FromInt(unit.Unit.MovementSpeed)
+        unit.Paths = make(map[image.Point]pathfinding.Path)
     }
 }
 
