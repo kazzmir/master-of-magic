@@ -42,7 +42,6 @@ func NewEngine() (*Engine, error) {
                 Y: 10,
                 Health: 10,
             },
-            /*
             &combat.ArmyUnit{
                 Unit: units.HighElfSpearmen,
                 Facing: units.FacingDownRight,
@@ -57,7 +56,6 @@ func NewEngine() (*Engine, error) {
                 Y: 10,
                 Health: 10,
             },
-            */
         },
     }
 

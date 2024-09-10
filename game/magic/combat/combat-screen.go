@@ -104,6 +104,54 @@ type ArmyUnit struct {
     Paths map[image.Point]pathfinding.Path
 }
 
+func (unit *ArmyUnit) CanFollowPath(path pathfinding.Path) bool {
+    // cost to move one tile in one of the 8 directions
+    pathCost := func (from image.Point, to image.Point) fraction.Fraction {
+        xDiff := int(math.Abs(float64(from.X - to.X)))
+        yDiff := int(math.Abs(float64(from.Y - to.Y)))
+
+        if xDiff == 0 && yDiff == 1 {
+            return fraction.FromInt(1)
+        }
+
+        if xDiff == 1 && yDiff == 0 {
+            return fraction.FromInt(1)
+        }
+
+        if xDiff == 1 && yDiff == 1 {
+            return fraction.Make(3, 2)
+        }
+
+        if xDiff == 0 && yDiff == 0 {
+            return fraction.FromInt(0)
+        }
+
+        // shouldn't ever really get here
+        return fraction.Make(xDiff + yDiff, 1)
+    }
+
+    movesLeft := unit.MovesLeft
+
+    var start image.Point
+    var end image.Point
+    if len(path) > 0 {
+        start = path[0]
+        end = path[len(path) - 1]
+    }
+
+    log.Printf("Can move from %v,%v to %v,%v path %v", start.X, start.Y, end.X, end.Y, path)
+
+    for i := 1; i < len(path); i++ {
+        if movesLeft.GreaterThan(fraction.FromInt(0)) {
+            movesLeft = movesLeft.Subtract(pathCost(path[i-1], path[i]))
+        } else {
+            return false
+        }
+    }
+
+    return true
+}
+
 func computeMoves(x1 int, y1 int, x2 int, y2 int) fraction.Fraction {
     movesNeeded := fraction.Fraction{}
 
@@ -138,7 +186,7 @@ func computeMoves(x1 int, y1 int, x2 int, y2 int) fraction.Fraction {
     return movesNeeded
 }
 
-func (combat *CombatScreen) FindPath(x1 int, y1 int, x2 int, y2 int) ([]image.Point, bool) {
+func (combat *CombatScreen) computePath(x1 int, y1 int, x2 int, y2 int) (pathfinding.Path, bool) {
 
     containsUnit := make(map[image.Point]bool)
 
@@ -219,66 +267,41 @@ func (combat *CombatScreen) FindPath(x1 int, y1 int, x2 int, y2 int) ([]image.Po
     return pathfinding.FindPath(image.Pt(x1, y1), image.Pt(x2, y2), 50, tileCost, neighbors)
 }
 
-func (combat *CombatScreen) CanMoveTo(unit *ArmyUnit, x int, y int) bool {
+/* return a valid path that the given unit can take to reach tile position x, y
+ * this caches the path such that the next call to FindPath() will return the same path without computing it
+ */
+func (combat *CombatScreen) FindPath(unit *ArmyUnit, x int, y int) (pathfinding.Path, bool) {
     end := image.Pt(x, y)
     path, ok := unit.Paths[end]
     if ok {
-        return len(path) > 0
+        return path, len(path) > 0
     }
 
-    path, ok = combat.FindPath(unit.X, unit.Y, x, y)
+    path, ok = combat.computePath(unit.X, unit.Y, x, y)
     if !ok {
         unit.Paths[end] = nil
         // log.Printf("No such path from %v,%v -> %v,%v", unit.X, unit.Y, x, y)
-        return false
+        return nil, false
     }
 
-    // cost to move one tile in one of the 8 directions
-    pathCost := func (from image.Point, to image.Point) fraction.Fraction {
-        xDiff := int(math.Abs(float64(from.X - to.X)))
-        yDiff := int(math.Abs(float64(from.Y - to.Y)))
+    canMove := unit.CanFollowPath(path)
 
-        if xDiff == 0 && yDiff == 1 {
-            return fraction.FromInt(1)
-        }
-
-        if xDiff == 1 && yDiff == 0 {
-            return fraction.FromInt(1)
-        }
-
-        if xDiff == 1 && yDiff == 1 {
-            return fraction.Make(3, 2)
-        }
-
-        if xDiff == 0 && yDiff == 0 {
-            return fraction.FromInt(0)
-        }
-
-        // shouldn't ever really get here
-        return fraction.Make(xDiff + yDiff, 1)
+    if canMove {
+        unit.Paths[end] = path
+    } else {
+        unit.Paths[end] = nil
     }
 
-    movesLeft := unit.MovesLeft
-    current := image.Pt(x, y)
+    return path, canMove
+}
 
-    log.Printf("Can move from %v,%v to %v,%v path %v", unit.X, unit.Y, x, y, path)
-
-    for i := 1; i < len(path); i++ {
-        if movesLeft.GreaterThan(fraction.FromInt(0)) {
-            movesLeft = movesLeft.Subtract(pathCost(current, path[i]))
-        } else {
-            unit.Paths[end] = nil
-            return false
-        }
-    }
-
-    unit.Paths[end] = path
-
-    return true
+func (combat *CombatScreen) CanMoveTo(unit *ArmyUnit, x int, y int) bool {
+    _, ok := combat.FindPath(unit, x, y)
+    return ok
 }
 
 // this allows a unit to move a space diagonally even if they only have 0.5 movement points left
-func (unit *ArmyUnit) CanMoveTo2(x int, y int) bool {
+func (unit *ArmyUnit) CanMoveTo_legacy(x int, y int) bool {
     /*
     movesNeeded := computeMoves(unit.X, unit.Y, x, y)
     // log.Printf("CanMoveTo: %v,%v -> %v,%v moves left %v need %v", unit.X, unit.Y, x, y, unit.MovesLeft, movesNeeded)
@@ -2158,6 +2181,7 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
         }
     }
 
+
     // draw base land
     /*
     for y := 0; y < len(combat.Tiles); y++ {
@@ -2195,6 +2219,28 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
     */
 
     combat.DrawHighlightedTile(screen, combat.MouseTileX, combat.MouseTileY, color.RGBA{R: 0, G: 0x67, B: 0x78, A: 255}, color.RGBA{R: 0, G: 0xef, B: 0xff, A: 255})
+
+    if combat.SelectedUnit != nil {
+        path, ok := combat.FindPath(combat.SelectedUnit, combat.MouseTileX, combat.MouseTileY)
+        if ok {
+            var options ebiten.DrawImageOptions
+            options.ColorScale.ScaleAlpha(0.8)
+            for i := 1; i < len(path); i++ {
+                tileX, tileY := path[i].X, path[i].Y
+
+                tx, ty := tilePosition(tileX, tileY)
+                tx += float64(tile0.Bounds().Dx())/2
+                ty += float64(tile0.Bounds().Dy())/2
+                movementImage, _ := combat.ImageCache.GetImage("compix.lbx", 72, 0)
+                tx -= float64(movementImage.Bounds().Dx())/2
+                ty -= float64(movementImage.Bounds().Dy())/2
+
+                options.GeoM.Reset()
+                options.GeoM.Translate(tx, ty)
+                screen.DrawImage(movementImage, &options)
+            }
+        }
+    }
 
     if combat.SelectedUnit != nil {
         minColor := color.RGBA{R: 32, G: 0, B: 0, A: 255}
