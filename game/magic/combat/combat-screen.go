@@ -208,6 +208,7 @@ func (combat *CombatScreen) computePath(x1 int, y1 int, x2 int, y2 int) (pathfin
         }
     }
 
+    // FIXME: take into account mud, hills, other types of terrain obstacles
     tileCost := func (x1 int, y1 int, x2 int, y2 int) float64 {
 
         if x2 < 0 || y2 < 0 || y2 >= len(combat.Tiles) || x2 >= len(combat.Tiles[y2]) {
