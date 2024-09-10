@@ -194,7 +194,8 @@ func (combat *CombatScreen) FindPath(x1 int, y1 int, x2 int, y2 int) ([]image.Po
     }
 
     neighbors := func(cx int, cy int) []image.Point {
-        var out []image.Point
+        // var out []image.Point
+        out := make([]image.Point, 0, 8)
         for dx := -1; dx <= 1; dx++ {
             for dy := -1; dy <= 1; dy++ {
                 if dx == 0 && dy == 0 {

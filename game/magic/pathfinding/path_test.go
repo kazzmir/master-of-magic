@@ -45,7 +45,8 @@ func makeTileCost(tiles [][]float64) TileCostFunc {
 
 func makeNeighbors(tiles [][]float64) NeighborsFunc {
     return func(cx int, cy int) []image.Point {
-        var out []image.Point
+        // var out []image.Point
+        out := make([]image.Point, 0, 8)
 
         for x := -1; x <= 1; x++ {
             for y := -1; y <= 1; y++ {
