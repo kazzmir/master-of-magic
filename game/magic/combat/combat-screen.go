@@ -2062,6 +2062,8 @@ func (combat *CombatScreen) Update() CombatState {
             combat.SelectedUnit.X = combat.SelectedUnit.TargetX
             combat.SelectedUnit.Y = combat.SelectedUnit.TargetY
             combat.SelectedUnit.Moving = false
+            // reset path computations
+            combat.SelectedUnit.Paths = make(map[image.Point]pathfinding.Path)
 
             if combat.SelectedUnit.MovesLeft.LessThanEqual(fraction.FromInt(0)) {
                 combat.SelectedUnit.LastTurn = combat.CurrentTurn
