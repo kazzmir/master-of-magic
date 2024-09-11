@@ -32,6 +32,8 @@ type CombatState int
 
 const (
     CombatStateRunning CombatState = iota
+    CombatStateAttackerWin
+    CombatStateDefenderWin
     CombatStateDone
 )
 
@@ -2217,6 +2219,14 @@ func (combat *CombatScreen) Update() CombatState {
     }
 
     // log.Printf("Mouse original %v,%v %v,%v -> %v,%v", mouseX, mouseY, tileX, tileY, combat.MouseTileX, combat.MouseTileY)
+
+    if len(combat.AttackingArmy.Units) == 0 {
+        return CombatStateDefenderWin
+    }
+
+    if len(combat.DefendingArmy.Units) == 0 {
+        return CombatStateAttackerWin
+    }
 
     return CombatStateRunning
 }

@@ -149,6 +149,12 @@ func (engine *Engine) Update() error {
 
     switch engine.CombatScreen.Update() {
         case combat.CombatStateRunning:
+        case combat.CombatStateAttackerWin:
+            log.Printf("Attackers win")
+            return ebiten.Termination
+        case combat.CombatStateDefenderWin:
+            log.Printf("Defenders win")
+            return ebiten.Termination
         case combat.CombatStateDone:
             return ebiten.Termination
     }
