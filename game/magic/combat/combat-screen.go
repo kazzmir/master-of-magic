@@ -126,6 +126,13 @@ func (unit *ArmyUnit) TakeDamage(damage int) {
     unit.Health -= damage
 }
 
+func (unit *ArmyUnit) Heal(amount int){
+    unit.Health += amount
+    if unit.Health > unit.Unit.GetMaxHealth() {
+        unit.Health = unit.Unit.GetMaxHealth()
+    }
+}
+
 func (unit *ArmyUnit) ComputeMeleeDamage() int {
     damage := 0
     for figure := 0; figure < unit.Figures(); figure++ {
@@ -768,7 +775,7 @@ const (
 
 /* needs a new name, but creates a projectile that is already at the target
  */
-func (combat *CombatScreen) createUnitProjectile(target *ArmyUnit, images []*ebiten.Image, explodeImages []*ebiten.Image, position UnitPosition) *Projectile {
+func (combat *CombatScreen) createUnitProjectile(target *ArmyUnit, images []*ebiten.Image, explodeImages []*ebiten.Image, position UnitPosition, effect ProjectileEffect) *Projectile {
     // find where on the screen the unit is
     screenX, screenY := combat.Coordinates.Apply(float64(target.X), float64(target.Y))
 
@@ -799,6 +806,7 @@ func (combat *CombatScreen) createUnitProjectile(target *ArmyUnit, images []*ebi
         Target: target,
         Speed: 0,
         Angle: 0,
+        Effect: effect,
         TargetX: screenX,
         TargetY: screenY,
         Animation: util.MakeAnimation(images, true),
@@ -863,7 +871,7 @@ func (combat *CombatScreen) CreateStarFiresProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle))
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
 }
 
 func (combat *CombatScreen) CreateDispelEvilProjectile(target *ArmyUnit) {
@@ -871,7 +879,7 @@ func (combat *CombatScreen) CreateDispelEvilProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle))
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
 }
 
 func (combat *CombatScreen) CreatePsionicBlastProjectile(target *ArmyUnit) {
@@ -879,7 +887,7 @@ func (combat *CombatScreen) CreatePsionicBlastProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle))
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
 }
 
 func (combat *CombatScreen) CreateDoomBoltProjectile(target *ArmyUnit) {
@@ -949,7 +957,7 @@ func (combat *CombatScreen) CreateLifeDrainProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle))
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
 }
 
 func (combat *CombatScreen) CreateFlameStrikeProjectile(target *ArmyUnit) {
@@ -957,7 +965,7 @@ func (combat *CombatScreen) CreateFlameStrikeProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle))
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
 }
 
 func (combat *CombatScreen) CreateRecallHeroProjectile(target *ArmyUnit) {
@@ -965,7 +973,7 @@ func (combat *CombatScreen) CreateRecallHeroProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle))
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
 }
 
 func (combat *CombatScreen) CreateHealingProjectile(target *ArmyUnit) {
@@ -974,7 +982,11 @@ func (combat *CombatScreen) CreateHealingProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle))
+    heal := func (unit *ArmyUnit){
+        unit.Heal(5)
+    }
+
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, heal))
 }
 
 func (combat *CombatScreen) CreateHolyWordProjectile(target *ArmyUnit) {
@@ -983,7 +995,7 @@ func (combat *CombatScreen) CreateHolyWordProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle))
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
 }
 
 func (combat *CombatScreen) CreateWebProjectile(target *ArmyUnit) {
@@ -991,7 +1003,7 @@ func (combat *CombatScreen) CreateWebProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle))
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
 }
 
 func (combat *CombatScreen) CreateDeathSpellProjectile(target *ArmyUnit) {
@@ -999,7 +1011,7 @@ func (combat *CombatScreen) CreateDeathSpellProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle))
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
 }
 
 func (combat *CombatScreen) CreateWordOfDeathProjectile(target *ArmyUnit) {
@@ -1007,7 +1019,7 @@ func (combat *CombatScreen) CreateWordOfDeathProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle))
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
 }
 
 func (combat *CombatScreen) CreateWarpWoodProjectile(target *ArmyUnit) {
@@ -1015,7 +1027,7 @@ func (combat *CombatScreen) CreateWarpWoodProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle))
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
 }
 
 func (combat *CombatScreen) CreateDisintegrateProjectile(target *ArmyUnit) {
@@ -1023,7 +1035,7 @@ func (combat *CombatScreen) CreateDisintegrateProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle))
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
 }
 
 func (combat *CombatScreen) CreateWordOfRecallProjectile(target *ArmyUnit) {
@@ -1031,7 +1043,7 @@ func (combat *CombatScreen) CreateWordOfRecallProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle))
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
 }
 
 func (combat *CombatScreen) CreateDispelMagicProjectile(target *ArmyUnit) {
@@ -1039,7 +1051,7 @@ func (combat *CombatScreen) CreateDispelMagicProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle))
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
 }
 
 func (combat *CombatScreen) CreateCracksCallProjectile(target *ArmyUnit) {
@@ -1047,7 +1059,7 @@ func (combat *CombatScreen) CreateCracksCallProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionUnder))
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionUnder, func (*ArmyUnit){}))
 }
 
 func (combat *CombatScreen) CreateBanishProjectile(target *ArmyUnit) {
@@ -1055,7 +1067,7 @@ func (combat *CombatScreen) CreateBanishProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionUnder))
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionUnder, func (*ArmyUnit){}))
 }
 
 func (combat *CombatScreen) CreateDisruptProjectile(x int, y int) {
@@ -1069,7 +1081,7 @@ func (combat *CombatScreen) CreateDisruptProjectile(x int, y int) {
         Y: y,
     }
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(&fakeTarget, loopImages, explodeImages, UnitPositionUnder))
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(&fakeTarget, loopImages, explodeImages, UnitPositionUnder, func (*ArmyUnit){}))
 }
 
 func (combat *CombatScreen) CreateSummoningCircle(x int, y int) {
@@ -1082,7 +1094,7 @@ func (combat *CombatScreen) CreateSummoningCircle(x int, y int) {
         Y: y,
     }
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(&fakeTarget, loopImages, explodeImages, UnitPositionUnder))
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(&fakeTarget, loopImages, explodeImages, UnitPositionUnder, func (*ArmyUnit){}))
 }
 
 func (combat *CombatScreen) CreateMagicVortex(x int, y int) {
