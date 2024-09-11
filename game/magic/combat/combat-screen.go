@@ -2453,12 +2453,26 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
 
         combat.InfoFont.PrintCenter(screen, float64(x1 + 14), float64(y1 + 37), 1, ebiten.ColorScale{}, "Hits")
 
-        healthyColor := color.RGBA{R: 0, G: 0xff, B: 0, A: 0xff}
-        // medium healthy is yellow
-        // unhealthy is red
+        highHealth := color.RGBA{R: 0, G: 0xff, B: 0, A: 0xff}
+        mediumHealth := color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff}
+        lowHealth := color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}
         healthWidth := 15
 
-        vector.StrokeLine(screen, float32(x1 + 25), float32(y1 + 40), float32(x1 + 25 + healthWidth), float32(y1 + 40), 1, healthyColor, false)
+        vector.StrokeLine(screen, float32(x1 + 25), float32(y1 + 40), float32(x1 + 25 + healthWidth), float32(y1 + 40), 1, color.RGBA{R: 0, G: 0, B: 0, A: 0xff}, false)
+
+        healthPercent := float64(combat.HighlightedUnit.Health) / float64(combat.HighlightedUnit.Unit.GetMaxHealth())
+        healthLength := float64(healthWidth) * healthPercent
+
+        useColor := highHealth
+        if healthPercent < 0.33 {
+            useColor = lowHealth
+        } else if healthPercent < 0.66 {
+            useColor = mediumHealth
+        } else {
+            useColor = highHealth
+        }
+
+        vector.StrokeLine(screen, float32(x1 + 25), float32(y1 + 40), float32(x1 + 25) + float32(healthLength), float32(y1 + 40), 1, useColor, false)
     }
 
     for _, projectile := range combat.Projectiles {
