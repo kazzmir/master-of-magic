@@ -32,6 +32,8 @@ type CombatState int
 
 const (
     CombatStateRunning CombatState = iota
+    CombatStateAttackerWin
+    CombatStateDefenderWin
     CombatStateDone
 )
 
@@ -105,6 +107,62 @@ type ArmyUnit struct {
 
     // ugly to need this, but this caches paths computed for the unit
     Paths map[image.Point]pathfinding.Path
+}
+
+func (unit *ArmyUnit) ApplyDefense(damage int) int {
+    for figure := 0; figure < unit.Figures() && damage > 0; figure++ {
+        for i := 0; i < unit.Unit.Defense && damage > 0; i++ {
+            if rand.Intn(100) < unit.ToDefend() {
+                damage -= 1
+            }
+        }
+    }
+
+    return damage
+}
+
+func (unit *ArmyUnit) TakeDamage(damage int) {
+    // the first figure should take damage, and if it dies then the next unit takes damage, etc
+    unit.Health -= damage
+}
+
+func (unit *ArmyUnit) Heal(amount int){
+    unit.Health += amount
+    if unit.Health > unit.Unit.GetMaxHealth() {
+        unit.Health = unit.Unit.GetMaxHealth()
+    }
+}
+
+func (unit *ArmyUnit) ComputeMeleeDamage() int {
+    damage := 0
+    for figure := 0; figure < unit.Figures(); figure++ {
+        for i := 0; i < unit.Unit.MeleeAttackPower; i++ {
+            if rand.Intn(100) < unit.ToHitMelee() {
+                damage += 1
+            }
+        }
+    }
+
+    return damage
+}
+
+// tohit percent
+func (unit *ArmyUnit) ToHitMelee() int {
+    return 30
+}
+
+func (unit *ArmyUnit) ToDefend() int {
+    return 30
+}
+
+// number of alive figures in this unit
+func (unit *ArmyUnit) Figures() int {
+
+    // health per figure = max health / figures
+    // figures = health / health per figure
+
+    health_per_figure := float64(unit.Unit.GetMaxHealth()) / float64(unit.Unit.Count)
+    return int(math.Ceil(float64(unit.Health) / health_per_figure))
 }
 
 // cost to move one tile in one of the 8 directions
@@ -311,6 +369,18 @@ type Army struct {
     Player *player.Player
 }
 
+func (army *Army) RemoveUnit(remove *ArmyUnit){
+    var units []*ArmyUnit
+
+    for _, unit := range army.Units {
+        if remove != unit {
+            units = append(units, unit)
+        }
+    }
+
+    army.Units = units
+}
+
 // represents a unit that is not part of the army, for things like magic vortex, for things like magic vortex
 type CombatUnit struct {
     X int
@@ -318,16 +388,20 @@ type CombatUnit struct {
     Animation *util.Animation
 }
 
+type ProjectileEffect func(*ArmyUnit)
+
 type Projectile struct {
     X float64
     Y float64
     Speed float64
     Angle float64
+    Target *ArmyUnit
     TargetX float64
     TargetY float64
     Exploding bool
     Animation *util.Animation
     Explode *util.Animation
+    Effect ProjectileEffect
 }
 
 type CombatScreen struct {
@@ -345,6 +419,8 @@ type CombatScreen struct {
     TurnDefender int
 
     OtherUnits []*CombatUnit
+
+    AttackHandler func()
 
     MouseState MouseState
 
@@ -532,6 +608,7 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
         Mouse: mouseData,
         Turn: TeamDefender,
         CurrentTurn: 0,
+        AttackHandler: func(){},
         DefendingArmy: defendingArmy,
         TurnDefender: 0,
         AttackingArmy: attackingArmy,
@@ -618,7 +695,7 @@ func (combat *CombatScreen) AddProjectile(projectile *Projectile){
 
 /* a projectile that shoots down from the sky at an angle
  */
-func (combat *CombatScreen) createSkyProjectile(target *ArmyUnit, images []*ebiten.Image, explodeImages []*ebiten.Image) *Projectile {
+func (combat *CombatScreen) createSkyProjectile(target *ArmyUnit, images []*ebiten.Image, explodeImages []*ebiten.Image, effect ProjectileEffect) *Projectile {
     // find where on the screen the unit is
     screenX, screenY := combat.Coordinates.Apply(float64(target.X), float64(target.Y))
     screenY -= 10
@@ -639,10 +716,12 @@ func (combat *CombatScreen) createSkyProjectile(target *ArmyUnit, images []*ebit
         Y: y,
         Speed: speed,
         Angle: angle,
+        Target: target,
         TargetX: screenX,
         TargetY: screenY,
         Animation: util.MakeAnimation(images, true),
         Explode: util.MakeAnimation(explodeImages, false),
+        Effect: effect,
     }
 
     return projectile
@@ -671,6 +750,7 @@ func (combat *CombatScreen) createVerticalSkyProjectile(target *ArmyUnit, images
         Y: y,
         Speed: speed,
         Angle: angle,
+        Target: target,
         TargetX: screenX,
         TargetY: screenY,
         Animation: util.MakeAnimation(images, true),
@@ -695,7 +775,7 @@ const (
 
 /* needs a new name, but creates a projectile that is already at the target
  */
-func (combat *CombatScreen) createUnitProjectile(target *ArmyUnit, images []*ebiten.Image, explodeImages []*ebiten.Image, position UnitPosition) *Projectile {
+func (combat *CombatScreen) createUnitProjectile(target *ArmyUnit, images []*ebiten.Image, explodeImages []*ebiten.Image, position UnitPosition, effect ProjectileEffect) *Projectile {
     // find where on the screen the unit is
     screenX, screenY := combat.Coordinates.Apply(float64(target.X), float64(target.Y))
 
@@ -723,8 +803,10 @@ func (combat *CombatScreen) createUnitProjectile(target *ArmyUnit, images []*ebi
     projectile := &Projectile{
         X: screenX,
         Y: screenY,
+        Target: target,
         Speed: 0,
         Angle: 0,
+        Effect: effect,
         TargetX: screenX,
         TargetY: screenY,
         Animation: util.MakeAnimation(images, true),
@@ -740,7 +822,15 @@ func (combat *CombatScreen) CreateIceBoltProjectile(target *ArmyUnit) {
     loopImages := images[0:3]
     explodeImages := images[3:]
 
-    combat.Projectiles = append(combat.Projectiles, combat.createSkyProjectile(target, loopImages, explodeImages))
+    // FIXME: made up
+    damage := func(unit *ArmyUnit) {
+        unit.TakeDamage(3)
+        if unit.Health <= 0 {
+            combat.RemoveUnit(unit)
+        }
+    }
+
+    combat.Projectiles = append(combat.Projectiles, combat.createSkyProjectile(target, loopImages, explodeImages, damage))
 }
 
 func (combat *CombatScreen) CreateFireBoltProjectile(target *ArmyUnit) {
@@ -748,7 +838,15 @@ func (combat *CombatScreen) CreateFireBoltProjectile(target *ArmyUnit) {
     loopImages := images[0:3]
     explodeImages := images[3:]
 
-    combat.Projectiles = append(combat.Projectiles, combat.createSkyProjectile(target, loopImages, explodeImages))
+    // FIXME: made up
+    damage := func(unit *ArmyUnit) {
+        unit.TakeDamage(3)
+        if unit.Health <= 0 {
+            combat.RemoveUnit(unit)
+        }
+    }
+
+    combat.Projectiles = append(combat.Projectiles, combat.createSkyProjectile(target, loopImages, explodeImages, damage))
 }
 
 func (combat *CombatScreen) CreateFireballProjectile(target *ArmyUnit) {
@@ -757,7 +855,15 @@ func (combat *CombatScreen) CreateFireballProjectile(target *ArmyUnit) {
     loopImages := images[0:11]
     explodeImages := images[11:]
 
-    combat.Projectiles = append(combat.Projectiles, combat.createSkyProjectile(target, loopImages, explodeImages))
+    // FIXME: made up
+    damage := func(unit *ArmyUnit) {
+        unit.TakeDamage(3)
+        if unit.Health <= 0 {
+            combat.RemoveUnit(unit)
+        }
+    }
+
+    combat.Projectiles = append(combat.Projectiles, combat.createSkyProjectile(target, loopImages, explodeImages, damage))
 }
 
 func (combat *CombatScreen) CreateStarFiresProjectile(target *ArmyUnit) {
@@ -765,7 +871,7 @@ func (combat *CombatScreen) CreateStarFiresProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle))
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
 }
 
 func (combat *CombatScreen) CreateDispelEvilProjectile(target *ArmyUnit) {
@@ -773,7 +879,7 @@ func (combat *CombatScreen) CreateDispelEvilProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle))
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
 }
 
 func (combat *CombatScreen) CreatePsionicBlastProjectile(target *ArmyUnit) {
@@ -781,7 +887,7 @@ func (combat *CombatScreen) CreatePsionicBlastProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle))
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
 }
 
 func (combat *CombatScreen) CreateDoomBoltProjectile(target *ArmyUnit) {
@@ -806,6 +912,7 @@ func (combat *CombatScreen) CreateLightningBoltProjectile(target *ArmyUnit) {
     projectile := &Projectile{
         X: screenX,
         Y: screenY,
+        Target: target,
         Speed: 0,
         Angle: 0,
         TargetX: screenX,
@@ -832,6 +939,7 @@ func (combat *CombatScreen) CreateWarpLightningProjectile(target *ArmyUnit) {
     projectile := &Projectile{
         X: screenX,
         Y: screenY,
+        Target: target,
         Speed: 0,
         Angle: 0,
         TargetX: screenX,
@@ -849,7 +957,7 @@ func (combat *CombatScreen) CreateLifeDrainProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle))
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
 }
 
 func (combat *CombatScreen) CreateFlameStrikeProjectile(target *ArmyUnit) {
@@ -857,7 +965,7 @@ func (combat *CombatScreen) CreateFlameStrikeProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle))
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
 }
 
 func (combat *CombatScreen) CreateRecallHeroProjectile(target *ArmyUnit) {
@@ -865,7 +973,7 @@ func (combat *CombatScreen) CreateRecallHeroProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle))
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
 }
 
 func (combat *CombatScreen) CreateHealingProjectile(target *ArmyUnit) {
@@ -874,7 +982,11 @@ func (combat *CombatScreen) CreateHealingProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle))
+    heal := func (unit *ArmyUnit){
+        unit.Heal(5)
+    }
+
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, heal))
 }
 
 func (combat *CombatScreen) CreateHolyWordProjectile(target *ArmyUnit) {
@@ -883,7 +995,7 @@ func (combat *CombatScreen) CreateHolyWordProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle))
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
 }
 
 func (combat *CombatScreen) CreateWebProjectile(target *ArmyUnit) {
@@ -891,7 +1003,7 @@ func (combat *CombatScreen) CreateWebProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle))
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
 }
 
 func (combat *CombatScreen) CreateDeathSpellProjectile(target *ArmyUnit) {
@@ -899,7 +1011,7 @@ func (combat *CombatScreen) CreateDeathSpellProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle))
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
 }
 
 func (combat *CombatScreen) CreateWordOfDeathProjectile(target *ArmyUnit) {
@@ -907,7 +1019,7 @@ func (combat *CombatScreen) CreateWordOfDeathProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle))
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
 }
 
 func (combat *CombatScreen) CreateWarpWoodProjectile(target *ArmyUnit) {
@@ -915,7 +1027,7 @@ func (combat *CombatScreen) CreateWarpWoodProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle))
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
 }
 
 func (combat *CombatScreen) CreateDisintegrateProjectile(target *ArmyUnit) {
@@ -923,7 +1035,7 @@ func (combat *CombatScreen) CreateDisintegrateProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle))
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
 }
 
 func (combat *CombatScreen) CreateWordOfRecallProjectile(target *ArmyUnit) {
@@ -931,7 +1043,7 @@ func (combat *CombatScreen) CreateWordOfRecallProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle))
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
 }
 
 func (combat *CombatScreen) CreateDispelMagicProjectile(target *ArmyUnit) {
@@ -939,7 +1051,7 @@ func (combat *CombatScreen) CreateDispelMagicProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle))
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
 }
 
 func (combat *CombatScreen) CreateCracksCallProjectile(target *ArmyUnit) {
@@ -947,7 +1059,7 @@ func (combat *CombatScreen) CreateCracksCallProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionUnder))
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionUnder, func (*ArmyUnit){}))
 }
 
 func (combat *CombatScreen) CreateBanishProjectile(target *ArmyUnit) {
@@ -955,7 +1067,7 @@ func (combat *CombatScreen) CreateBanishProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionUnder))
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionUnder, func (*ArmyUnit){}))
 }
 
 func (combat *CombatScreen) CreateDisruptProjectile(x int, y int) {
@@ -969,7 +1081,7 @@ func (combat *CombatScreen) CreateDisruptProjectile(x int, y int) {
         Y: y,
     }
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(&fakeTarget, loopImages, explodeImages, UnitPositionUnder))
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(&fakeTarget, loopImages, explodeImages, UnitPositionUnder, func (*ArmyUnit){}))
 }
 
 func (combat *CombatScreen) CreateSummoningCircle(x int, y int) {
@@ -982,7 +1094,7 @@ func (combat *CombatScreen) CreateSummoningCircle(x int, y int) {
         Y: y,
     }
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(&fakeTarget, loopImages, explodeImages, UnitPositionUnder))
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(&fakeTarget, loopImages, explodeImages, UnitPositionUnder, func (*ArmyUnit){}))
 }
 
 func (combat *CombatScreen) CreateMagicVortex(x int, y int) {
@@ -1004,7 +1116,7 @@ func (combat *CombatScreen) addNewUnit(player *playerlib.Player, x int, y int, u
         Moving: false,
         X: x,
         Y: y,
-        Health: 10, // FIXME: figures * hitpoints?
+        Health: unit.GetMaxHealth(),
         MovesLeft: fraction.FromInt(unit.MovementSpeed),
         LastTurn: combat.CurrentTurn-1,
     }
@@ -1839,6 +1951,10 @@ func (combat *CombatScreen) UpdateProjectiles() bool {
             keep = true
             if combat.Counter % animationSpeed == 0 && !projectile.Explode.Next() {
                 keep = false
+
+                if projectile.Target != nil && projectile.Effect != nil {
+                    projectile.Effect(projectile.Target)
+                }
             }
         } else {
             projectile.X += math.Cos(projectile.Angle) * projectile.Speed
@@ -1859,6 +1975,46 @@ func (combat *CombatScreen) UpdateProjectiles() bool {
     return alive
 }
 
+/* attacker is performing a physical melee attack against defender
+ */
+func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
+    // for each figure in attacker, choose a random number from 1-100, if lower than the ToHit percent then
+    // add 1 damage point. do this random roll for however much the melee attack power is
+
+    attackerDamage := attacker.ComputeMeleeDamage()
+    defenderCounterDamage := defender.ComputeMeleeDamage()
+
+    originalAttackerDamage := attackerDamage
+    originalDefenderCounterDamage := defenderCounterDamage
+
+    attackerDamage = defender.ApplyDefense(attackerDamage)
+    defenderCounterDamage = attacker.ApplyDefense(defenderCounterDamage)
+
+    log.Printf("Attacker damage roll %v, defender defended %v, attacker damage to defender %v", originalAttackerDamage, originalAttackerDamage - attackerDamage, attackerDamage)
+    log.Printf("Defender counter damage roll %v, attacker defended %v, defender damage to attacker %v", originalDefenderCounterDamage, originalDefenderCounterDamage - defenderCounterDamage, defenderCounterDamage)
+
+    attacker.TakeDamage(defenderCounterDamage)
+    defender.TakeDamage(attackerDamage)
+
+    if attacker.Health <= 0 {
+        combat.RemoveUnit(attacker)
+    }
+
+    if defender.Health <= 0 {
+        combat.RemoveUnit(defender)
+    }
+}
+
+func (combat *CombatScreen) RemoveUnit(unit *ArmyUnit){
+    if unit.Team == TeamDefender {
+        combat.DefendingArmy.RemoveUnit(unit)
+    } else {
+        combat.AttackingArmy.RemoveUnit(unit)
+    }
+
+    combat.Tiles[unit.Y][unit.X].Unit = nil
+}
+
 func (combat *CombatScreen) Update() CombatState {
     combat.Counter += 1
 
@@ -1876,6 +2032,8 @@ func (combat *CombatScreen) Update() CombatState {
             unit.Animation.Next()
         }
     }
+
+    combat.AttackHandler()
 
     hudY := data.ScreenHeight - hudImage.Bounds().Dy()
 
@@ -1989,6 +2147,18 @@ func (combat *CombatScreen) Update() CombatState {
                combat.SelectedUnit.Facing = faceTowards(combat.SelectedUnit.X, combat.SelectedUnit.Y, combat.MouseTileX, combat.MouseTileY)
                defender.Facing = faceTowards(defender.X, defender.Y, combat.SelectedUnit.X, combat.SelectedUnit.Y)
 
+               attackCounter := 20
+               combat.AttackHandler = func(){
+                   if attackCounter > 0 {
+                       attackCounter -= 1
+                       return
+                   }
+
+                   combat.meleeAttack(combat.SelectedUnit, defender)
+
+                   combat.AttackHandler = func(){}
+               }
+
                // FIXME: sound is based on attacker type, and possibly defender type
                sound, err := audio.LoadCombatSound(combat.Cache, 1)
                if err == nil {
@@ -2061,6 +2231,14 @@ func (combat *CombatScreen) Update() CombatState {
     }
 
     // log.Printf("Mouse original %v,%v %v,%v -> %v,%v", mouseX, mouseY, tileX, tileY, combat.MouseTileX, combat.MouseTileY)
+
+    if len(combat.AttackingArmy.Units) == 0 {
+        return CombatStateDefenderWin
+    }
+
+    if len(combat.DefendingArmy.Units) == 0 {
+        return CombatStateAttackerWin
+    }
 
     return CombatStateRunning
 }
@@ -2233,7 +2411,7 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
                 unitOptions.ColorScale.Scale(float32(scaleValue), 1, 1, 1)
             }
 
-            RenderCombatUnit(screen, combatImages[index], unitOptions, unit.Unit.Count)
+            RenderCombatUnit(screen, combatImages[index], unitOptions, unit.Figures())
         }
     }
 
@@ -2297,12 +2475,26 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
 
         combat.InfoFont.PrintCenter(screen, float64(x1 + 14), float64(y1 + 37), 1, ebiten.ColorScale{}, "Hits")
 
-        healthyColor := color.RGBA{R: 0, G: 0xff, B: 0, A: 0xff}
-        // medium healthy is yellow
-        // unhealthy is red
+        highHealth := color.RGBA{R: 0, G: 0xff, B: 0, A: 0xff}
+        mediumHealth := color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff}
+        lowHealth := color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}
         healthWidth := 15
 
-        vector.StrokeLine(screen, float32(x1 + 25), float32(y1 + 40), float32(x1 + 25 + healthWidth), float32(y1 + 40), 1, healthyColor, false)
+        vector.StrokeLine(screen, float32(x1 + 25), float32(y1 + 40), float32(x1 + 25 + healthWidth), float32(y1 + 40), 1, color.RGBA{R: 0, G: 0, B: 0, A: 0xff}, false)
+
+        healthPercent := float64(combat.HighlightedUnit.Health) / float64(combat.HighlightedUnit.Unit.GetMaxHealth())
+        healthLength := float64(healthWidth) * healthPercent
+
+        useColor := highHealth
+        if healthPercent < 0.33 {
+            useColor = lowHealth
+        } else if healthPercent < 0.66 {
+            useColor = mediumHealth
+        } else {
+            useColor = highHealth
+        }
+
+        vector.StrokeLine(screen, float32(x1 + 25), float32(y1 + 40), float32(x1 + 25) + float32(healthLength), float32(y1 + 40), 1, useColor, false)
     }
 
     for _, projectile := range combat.Projectiles {
