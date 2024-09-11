@@ -2130,6 +2130,11 @@ func (combat *CombatScreen) Update() CombatState {
             combat.SelectedUnit.Moving = true
             combat.SelectedUnit.MoveX = float64(combat.SelectedUnit.X)
             combat.SelectedUnit.MoveY = float64(combat.SelectedUnit.Y)
+
+            sound, err := audio.LoadSound(combat.Cache, combat.SelectedUnit.Unit.MovementSound.LbxIndex())
+            if err == nil {
+                sound.Play()
+            }
        } else {
 
            defender := combat.GetUnit(combat.MouseTileX, combat.MouseTileY)
@@ -2189,7 +2194,7 @@ func (combat *CombatScreen) Update() CombatState {
         combat.SelectedUnit.Facing = computeFacing(useAngle)
 
         // speed := float64(combat.Counter - combat.SelectedUnit.MovementTick) / 4
-        speed := float64(0.09)
+        speed := float64(0.08)
         combat.SelectedUnit.MoveX += math.Cos(angle) * speed
         combat.SelectedUnit.MoveY += math.Sin(angle) * speed
 

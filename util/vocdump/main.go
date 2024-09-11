@@ -34,14 +34,14 @@ func saveVoc(lbxFile *lbx.LbxFile, entryIndex int) error {
 
     // fmt.Printf("Voc file: %v\n", vocFile)
 
-    output, err := os.Create(filepath.Join(outputDir, fmt.Sprintf("output-%d.voc", entryIndex)))
+    output, err := os.Create(filepath.Join(outputDir, fmt.Sprintf("output-%03d.voc", entryIndex)))
     if err != nil {
         return err
     }
     defer output.Close()
     voc.Save(output, vocFile.SampleRate(), vocFile.AllSamples())
 
-    fmt.Printf("Wrote voc file to %v/output-%d.voc\n", outputDir, entryIndex)
+    fmt.Printf("Wrote voc file to %v/output-%03d.voc\n", outputDir, entryIndex)
 
     return nil
 }

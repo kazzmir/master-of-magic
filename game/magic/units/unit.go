@@ -34,6 +34,30 @@ func (sound AttackSound) LbxIndex() int {
     return -1
 }
 
+type MovementSound int
+
+const (
+    MovementSoundNone MovementSound = iota
+    MovementSoundMarching
+    MovementSoundHorse
+    MovementSoundFly
+    MovementSoundBigSteps
+    MovementSoundMerge
+)
+
+func (sound MovementSound) LbxIndex() int {
+    switch sound {
+        case MovementSoundNone: return -1
+        case MovementSoundMarching: return 5
+        case MovementSoundHorse: return 6
+        case MovementSoundFly: return 7
+        case MovementSoundBigSteps: return 10
+        case MovementSoundMerge: return 12
+    }
+
+    return -1
+}
+
 type Facing int
 const (
     FacingUp Facing = iota
@@ -58,6 +82,7 @@ type Unit struct {
     Abilities []Ability
 
     AttackSound AttackSound
+    MovementSound MovementSound
 
     // number of figures that are drawn in a single combat tile
     Count int
@@ -395,6 +420,7 @@ var GreatDrake Unit = Unit{
     HitPoints: 30,
     Flying: true,
     AttackSound: AttackSoundMonster2,
+    MovementSound: MovementSoundFly,
     MeleeAttackPower: 30,
     MovementSpeed: 2,
     Defense: 10,
@@ -1222,6 +1248,8 @@ var HighElfSpearmen Unit = Unit{
     ProductionCost: 15,
     MeleeAttackPower: 1,
     Defense: 2,
+    AttackSound: AttackSoundNormal,
+    MovementSound: MovementSoundMarching,
     Resistance: 6,
     Abilities: []Ability{AbilityForester},
     MovementSpeed: 1,
