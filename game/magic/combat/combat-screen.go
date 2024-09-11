@@ -107,6 +107,51 @@ type ArmyUnit struct {
     Paths map[image.Point]pathfinding.Path
 }
 
+func (unit *ArmyUnit) ApplyDefense(damage int) int {
+    for figure := 0; figure < unit.Figures() && damage > 0; figure++ {
+        for i := 0; i < unit.Unit.Defense; i++ {
+            if rand.Intn(100) < unit.ToDefend() {
+                damage -= 1
+            }
+        }
+    }
+
+    return damage
+}
+
+func (unit *ArmyUnit) TakeDamage(damage int) {
+    // the first figure should take damage, and if it dies then the next unit takes damage, etc
+    unit.Health -= damage
+}
+
+func (unit *ArmyUnit) ComputeMeleeDamage() int {
+    damage := 0
+    for figure := 0; figure < unit.Figures(); figure++ {
+        for i := 0; i < unit.Unit.MeleeAttackPower; i++ {
+            if rand.Intn(100) < unit.ToHitMelee() {
+                damage += 1
+            }
+        }
+    }
+
+    return damage
+}
+
+// tohit percent
+func (unit *ArmyUnit) ToHitMelee() int {
+    return 30
+}
+
+func (unit *ArmyUnit) ToDefend() int {
+    return 30
+}
+
+// number of alive figures in this unit
+func (unit *ArmyUnit) Figures() int {
+    // FIXME: keep track of how many units are alive
+    return unit.Unit.Count
+}
+
 // cost to move one tile in one of the 8 directions
 func pathCost(from image.Point, to image.Point) fraction.Fraction {
     xDiff := int(math.Abs(float64(from.X - to.X)))
@@ -1857,6 +1902,22 @@ func (combat *CombatScreen) UpdateProjectiles() bool {
     combat.Projectiles = projectilesOut
 
     return alive
+}
+
+/* attacker is performing a physical melee attack against defender
+ */
+func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
+    // for each figure in attacker, choose a random number from 1-100, if lower than the ToHit percent then
+    // add 1 damage point. do this random roll for however much the melee attack power is
+
+    attackerDamage := attacker.ComputeMeleeDamage()
+    defenderCounterDamage := defender.ComputeMeleeDamage()
+
+    attackerDamage = defender.ApplyDefense(attackerDamage)
+    defenderCounterDamage = attacker.ApplyDefense(defenderCounterDamage)
+
+    attacker.TakeDamage(defenderCounterDamage)
+    defender.TakeDamage(attackerDamage)
 }
 
 func (combat *CombatScreen) Update() CombatState {
