@@ -2297,7 +2297,7 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
             unitOptions.GeoM.Translate(float64(tile0.Bounds().Dx()/2), float64(tile0.Bounds().Dy()/2))
 
             index := uint64(0)
-            if unit.Unit.Flying {
+            if unit.Unit.Flying || unit.Moving {
                 index = animationIndex % (uint64(len(combatImages)) - 1)
             }
 
