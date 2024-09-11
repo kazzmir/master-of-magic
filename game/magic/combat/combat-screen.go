@@ -1858,6 +1858,12 @@ func distanceInRange(x1 float64, y1 float64, x2 float64, y2 float64, r float64) 
     return xDiff * xDiff + yDiff * yDiff <= r*r
 }
 
+func distanceAboveRange(x1 float64, y1 float64, x2 float64, y2 float64, r float64) bool {
+    xDiff := x2 - x1
+    yDiff := y2 - y1
+    return xDiff * xDiff + yDiff * yDiff >= r*r
+}
+
 func (combat *CombatScreen) UpdateProjectiles() bool {
     animationSpeed := uint64(5)
 
@@ -2077,7 +2083,9 @@ func (combat *CombatScreen) Update() CombatState {
         */
 
         // if math.Abs(combat.SelectedUnit.MoveX - float64(targetX)) < speed*2 && math.Abs(combat.SelectedUnit.MoveY - float64(targetY)) < 0.5 {
-        if distanceInRange(combat.SelectedUnit.MoveX, combat.SelectedUnit.MoveY, float64(targetX), float64(targetY), speed * 3) {
+        if distanceInRange(combat.SelectedUnit.MoveX, combat.SelectedUnit.MoveY, float64(targetX), float64(targetY), speed * 3) ||
+           // a stop gap to ensure the unit doesn't fly off the screen somehow
+           distanceAboveRange(float64(combat.SelectedUnit.X), float64(combat.SelectedUnit.Y), float64(targetX), float64(targetY), 2.5) {
             combat.SelectedUnit.MovesLeft = combat.SelectedUnit.MovesLeft.Subtract(pathCost(image.Pt(combat.SelectedUnit.X, combat.SelectedUnit.Y), image.Pt(targetX, targetY)))
             combat.SelectedUnit.X = targetX
             combat.SelectedUnit.Y = targetY
