@@ -95,6 +95,7 @@ type ArmyUnit struct {
 
     Attacking bool
     AttackingCounter uint64
+    Defending bool
 
     MovementTick uint64
     MoveX float64
@@ -2151,6 +2152,7 @@ func (combat *CombatScreen) Update() CombatState {
 
                combat.SelectedUnit.Facing = faceTowards(combat.SelectedUnit.X, combat.SelectedUnit.Y, combat.MouseTileX, combat.MouseTileY)
                defender.Facing = faceTowards(defender.X, defender.Y, combat.SelectedUnit.X, combat.SelectedUnit.Y)
+               defender.Defending = true
 
                attackCounter := 20
                combat.AttackHandler = func(){
@@ -2160,6 +2162,8 @@ func (combat *CombatScreen) Update() CombatState {
                    }
 
                    combat.meleeAttack(combat.SelectedUnit, defender)
+
+                   defender.Defending = false
 
                    combat.AttackHandler = func(){}
                }
@@ -2404,7 +2408,7 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
                 index = animationIndex % (uint64(len(combatImages)) - 1)
             }
 
-            if unit.Attacking {
+            if unit.Attacking || unit.Defending {
                 index = 2 + animationIndex % 2
             }
 
