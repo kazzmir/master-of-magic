@@ -379,16 +379,20 @@ type CombatUnit struct {
     Animation *util.Animation
 }
 
+type ProjectileEffect func(*ArmyUnit)
+
 type Projectile struct {
     X float64
     Y float64
     Speed float64
     Angle float64
+    Target *ArmyUnit
     TargetX float64
     TargetY float64
     Exploding bool
     Animation *util.Animation
     Explode *util.Animation
+    Effect ProjectileEffect
 }
 
 type CombatScreen struct {
@@ -682,7 +686,7 @@ func (combat *CombatScreen) AddProjectile(projectile *Projectile){
 
 /* a projectile that shoots down from the sky at an angle
  */
-func (combat *CombatScreen) createSkyProjectile(target *ArmyUnit, images []*ebiten.Image, explodeImages []*ebiten.Image) *Projectile {
+func (combat *CombatScreen) createSkyProjectile(target *ArmyUnit, images []*ebiten.Image, explodeImages []*ebiten.Image, effect ProjectileEffect) *Projectile {
     // find where on the screen the unit is
     screenX, screenY := combat.Coordinates.Apply(float64(target.X), float64(target.Y))
     screenY -= 10
@@ -703,10 +707,12 @@ func (combat *CombatScreen) createSkyProjectile(target *ArmyUnit, images []*ebit
         Y: y,
         Speed: speed,
         Angle: angle,
+        Target: target,
         TargetX: screenX,
         TargetY: screenY,
         Animation: util.MakeAnimation(images, true),
         Explode: util.MakeAnimation(explodeImages, false),
+        Effect: effect,
     }
 
     return projectile
@@ -735,6 +741,7 @@ func (combat *CombatScreen) createVerticalSkyProjectile(target *ArmyUnit, images
         Y: y,
         Speed: speed,
         Angle: angle,
+        Target: target,
         TargetX: screenX,
         TargetY: screenY,
         Animation: util.MakeAnimation(images, true),
@@ -787,6 +794,7 @@ func (combat *CombatScreen) createUnitProjectile(target *ArmyUnit, images []*ebi
     projectile := &Projectile{
         X: screenX,
         Y: screenY,
+        Target: target,
         Speed: 0,
         Angle: 0,
         TargetX: screenX,
@@ -804,7 +812,15 @@ func (combat *CombatScreen) CreateIceBoltProjectile(target *ArmyUnit) {
     loopImages := images[0:3]
     explodeImages := images[3:]
 
-    combat.Projectiles = append(combat.Projectiles, combat.createSkyProjectile(target, loopImages, explodeImages))
+    // FIXME: made up
+    damage := func(unit *ArmyUnit) {
+        unit.TakeDamage(3)
+        if unit.Health <= 0 {
+            combat.RemoveUnit(unit)
+        }
+    }
+
+    combat.Projectiles = append(combat.Projectiles, combat.createSkyProjectile(target, loopImages, explodeImages, damage))
 }
 
 func (combat *CombatScreen) CreateFireBoltProjectile(target *ArmyUnit) {
@@ -812,7 +828,15 @@ func (combat *CombatScreen) CreateFireBoltProjectile(target *ArmyUnit) {
     loopImages := images[0:3]
     explodeImages := images[3:]
 
-    combat.Projectiles = append(combat.Projectiles, combat.createSkyProjectile(target, loopImages, explodeImages))
+    // FIXME: made up
+    damage := func(unit *ArmyUnit) {
+        unit.TakeDamage(3)
+        if unit.Health <= 0 {
+            combat.RemoveUnit(unit)
+        }
+    }
+
+    combat.Projectiles = append(combat.Projectiles, combat.createSkyProjectile(target, loopImages, explodeImages, damage))
 }
 
 func (combat *CombatScreen) CreateFireballProjectile(target *ArmyUnit) {
@@ -821,7 +845,15 @@ func (combat *CombatScreen) CreateFireballProjectile(target *ArmyUnit) {
     loopImages := images[0:11]
     explodeImages := images[11:]
 
-    combat.Projectiles = append(combat.Projectiles, combat.createSkyProjectile(target, loopImages, explodeImages))
+    // FIXME: made up
+    damage := func(unit *ArmyUnit) {
+        unit.TakeDamage(3)
+        if unit.Health <= 0 {
+            combat.RemoveUnit(unit)
+        }
+    }
+
+    combat.Projectiles = append(combat.Projectiles, combat.createSkyProjectile(target, loopImages, explodeImages, damage))
 }
 
 func (combat *CombatScreen) CreateStarFiresProjectile(target *ArmyUnit) {
@@ -870,6 +902,7 @@ func (combat *CombatScreen) CreateLightningBoltProjectile(target *ArmyUnit) {
     projectile := &Projectile{
         X: screenX,
         Y: screenY,
+        Target: target,
         Speed: 0,
         Angle: 0,
         TargetX: screenX,
@@ -896,6 +929,7 @@ func (combat *CombatScreen) CreateWarpLightningProjectile(target *ArmyUnit) {
     projectile := &Projectile{
         X: screenX,
         Y: screenY,
+        Target: target,
         Speed: 0,
         Angle: 0,
         TargetX: screenX,
@@ -1903,6 +1937,10 @@ func (combat *CombatScreen) UpdateProjectiles() bool {
             keep = true
             if combat.Counter % animationSpeed == 0 && !projectile.Explode.Next() {
                 keep = false
+
+                if projectile.Target != nil && projectile.Effect != nil {
+                    projectile.Effect(projectile.Target)
+                }
             }
         } else {
             projectile.X += math.Cos(projectile.Angle) * projectile.Speed
