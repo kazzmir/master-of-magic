@@ -75,6 +75,9 @@ type Tile struct {
     // tree/rock on top, or -1 if nothing
     ExtraObject int
     Mud bool
+
+    // a unit standing on this tile, if any
+    Unit *ArmyUnit
 }
 
 type ArmyUnit struct {
@@ -515,14 +518,6 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
     whitePixel := ebiten.NewImage(1, 1)
     whitePixel.Fill(color.RGBA{R: 255, G: 255, B: 255, A: 255})
 
-    for _, unit := range defendingArmy.Units {
-        unit.Team = TeamDefender
-    }
-
-    for _, unit := range attackingArmy.Units {
-        unit.Team = TeamAttacker
-    }
-
     mouseData, err := mouse.MakeMouseData(cache)
     if err != nil {
         log.Printf("Error loading mouse data: %v", err)
@@ -552,6 +547,16 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
         WhitePixel: whitePixel,
         AttackingWizardFont: attackingWizardFont,
         DefendingWizardFont: defendingWizardFont,
+    }
+
+    for _, unit := range defendingArmy.Units {
+        unit.Team = TeamDefender
+        combat.Tiles[unit.Y][unit.X].Unit = unit
+    }
+
+    for _, unit := range attackingArmy.Units {
+        unit.Team = TeamAttacker
+        combat.Tiles[unit.Y][unit.X].Unit = unit
     }
 
     combat.TopDownOrder = combat.computeTopDownOrder()
@@ -1003,6 +1008,8 @@ func (combat *CombatScreen) addNewUnit(player *playerlib.Player, x int, y int, u
         MovesLeft: fraction.FromInt(unit.MovementSpeed),
         LastTurn: combat.CurrentTurn-1,
     }
+
+    combat.Tiles[y][x].Unit = &newUnit
 
     if player == combat.DefendingArmy.Player {
         newUnit.Team = TeamDefender
@@ -1590,6 +1597,11 @@ func betweenAngle(check float64, angle float64, spread float64) bool {
 }
 
 func (combat *CombatScreen) TileIsEmpty(x int, y int) bool {
+    unit := combat.GetUnit(x, y)
+    if unit != nil && unit.Health > 0 {
+        return false
+    }
+    /*
     for _, unit := range combat.DefendingArmy.Units {
         if unit.Health > 0 && unit.X == x && unit.Y == y {
             return false
@@ -1601,6 +1613,7 @@ func (combat *CombatScreen) TileIsEmpty(x int, y int) bool {
             return false
         }
     }
+    */
 
     return true
 }
@@ -1726,6 +1739,11 @@ func (combat *CombatScreen) NextUnit() {
 }
 
 func (combat *CombatScreen) GetUnit(x int, y int) *ArmyUnit {
+    if x >= 0 && y >= 0 && y < len(combat.Tiles) && x < len(combat.Tiles[0]) {
+        return combat.Tiles[y][x].Unit
+    }
+
+    /*
     for _, unit := range combat.DefendingArmy.Units {
         if unit.Health > 0 && unit.X == x && unit.Y == y {
             return unit
@@ -1737,6 +1755,7 @@ func (combat *CombatScreen) GetUnit(x int, y int) *ArmyUnit {
             return unit
         }
     }
+    */
 
     return nil
 }
@@ -1917,7 +1936,7 @@ func (combat *CombatScreen) Update() CombatState {
     } else {
         who := combat.GetUnit(combat.MouseTileX, combat.MouseTileY)
         if who == nil {
-            if combat.CanMoveTo(combat.SelectedUnit, combat.MouseTileX, combat.MouseTileY) {
+            if combat.TileIsEmpty(combat.MouseTileX, combat.MouseTileY) && combat.CanMoveTo(combat.SelectedUnit, combat.MouseTileX, combat.MouseTileY) {
                 combat.MouseState = CombatMoveOk
             } else {
                 combat.MouseState = CombatNotOk
@@ -1949,19 +1968,9 @@ func (combat *CombatScreen) Update() CombatState {
             path, _ := combat.FindPath(combat.SelectedUnit, combat.MouseTileX, combat.MouseTileY)
             combat.SelectedUnit.MovementTick = combat.Counter
             combat.SelectedUnit.MovementPath = path[1:]
-            /*
-            combat.SelectedUnit.TargetX = combat.MouseTileX
-            combat.SelectedUnit.TargetY = combat.MouseTileY
-            */
             combat.SelectedUnit.Moving = true
             combat.SelectedUnit.MoveX = float64(combat.SelectedUnit.X)
             combat.SelectedUnit.MoveY = float64(combat.SelectedUnit.Y)
-            /*
-            combat.SelectedUnit.MovesLeft = combat.SelectedUnit.MovesLeft.Subtract(computeMoves(combat.SelectedUnit.X, combat.SelectedUnit.Y, combat.MouseTileX, combat.MouseTileY))
-            if combat.SelectedUnit.MovesLeft.LessThan(fraction.FromInt(0)) {
-                combat.SelectedUnit.MovesLeft = fraction.FromInt(0)
-            }
-            */
        } else {
 
            defender := combat.GetUnit(combat.MouseTileX, combat.MouseTileY)
@@ -2020,20 +2029,21 @@ func (combat *CombatScreen) Update() CombatState {
 
         // log.Printf("Moving %v,%v -> %v,%v", combat.SelectedUnit.X, combat.SelectedUnit.Y, combat.SelectedUnit.MoveX, combat.SelectedUnit.MoveY)
 
-        /*
-        combat.SelectedUnit.MoveX = newX
-        combat.SelectedUnit.MoveY = newY
-        */
-
         // if math.Abs(combat.SelectedUnit.MoveX - float64(targetX)) < speed*2 && math.Abs(combat.SelectedUnit.MoveY - float64(targetY)) < 0.5 {
         if distanceInRange(combat.SelectedUnit.MoveX, combat.SelectedUnit.MoveY, float64(targetX), float64(targetY), speed * 3) ||
            // a stop gap to ensure the unit doesn't fly off the screen somehow
            distanceAboveRange(float64(combat.SelectedUnit.X), float64(combat.SelectedUnit.Y), float64(targetX), float64(targetY), 2.5) {
+
+            // tile where the unit came from is now empty
+            combat.Tiles[combat.SelectedUnit.Y][combat.SelectedUnit.X].Unit = nil
+
             combat.SelectedUnit.MovesLeft = combat.SelectedUnit.MovesLeft.Subtract(pathCost(image.Pt(combat.SelectedUnit.X, combat.SelectedUnit.Y), image.Pt(targetX, targetY)))
             combat.SelectedUnit.X = targetX
             combat.SelectedUnit.Y = targetY
             combat.SelectedUnit.MoveX = float64(targetX)
             combat.SelectedUnit.MoveY = float64(targetY)
+            // new tile the unit landed on is now occupied
+            combat.Tiles[combat.SelectedUnit.Y][combat.SelectedUnit.X].Unit = combat.SelectedUnit
             combat.SelectedUnit.MovementPath = combat.SelectedUnit.MovementPath[1:]
 
             if len(combat.SelectedUnit.MovementPath) == 0 {
@@ -2160,43 +2170,6 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
         }
     }
 
-
-    // draw base land
-    /*
-    for y := 0; y < len(combat.Tiles); y++ {
-        for x := 0; x < len(combat.Tiles[y]); x++ {
-            image, _ := combat.ImageCache.GetImage("cmbgrass.lbx", combat.Tiles[y][x].Index, 0)
-            options.GeoM.Reset()
-            // options.GeoM.Rotate(math.Pi/2)
-            tx, ty := tilePosition(x, y)
-            options.GeoM.Translate(tx, ty)
-            screen.DrawImage(image, &options)
-
-            // combat.DebugFont.Print(screen, tx, ty, 1, ebiten.ColorScale{}, fmt.Sprintf("%v,%v", x, y))
-        }
-    }
-
-    // draw extra trees/rocks on top
-    for y := 0; y < len(combat.Tiles); y++ {
-        for x := 0; x < len(combat.Tiles[y]); x++ {
-            options.GeoM.Reset()
-            tx, ty := tilePosition(x, y)
-            options.GeoM.Translate(tx, ty)
-
-            if combat.Tiles[y][x].Mud {
-                mudTiles, _ := combat.ImageCache.GetImages("cmbtcity.lbx", 118)
-                index := animationIndex % uint64(len(mudTiles))
-                screen.DrawImage(mudTiles[index], &options)
-            }
-
-            if combat.Tiles[y][x].ExtraObject != -1 {
-                extraImage, _ := combat.ImageCache.GetImage("cmbgrass.lbx", 48 + combat.Tiles[y][x].ExtraObject, 0)
-                screen.DrawImage(extraImage, &options)
-            }
-        }
-    }
-    */
-
     combat.DrawHighlightedTile(screen, combat.MouseTileX, combat.MouseTileY, color.RGBA{R: 0, G: 0x67, B: 0x78, A: 255}, color.RGBA{R: 0, G: 0xef, B: 0xff, A: 255})
 
     if combat.SelectedUnit != nil {
@@ -2219,9 +2192,7 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
                 screen.DrawImage(movementImage, &options)
             }
         }
-    }
 
-    if combat.SelectedUnit != nil {
         minColor := color.RGBA{R: 32, G: 0, B: 0, A: 255}
         maxColor := color.RGBA{R: 255, G: 0, B: 0, A: 255}
 
