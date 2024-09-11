@@ -42,7 +42,6 @@ func NewEngine() (*Engine, error) {
                 Y: 10,
                 Health: 10,
             },
-            /*
             &combat.ArmyUnit{
                 Unit: units.HighElfSpearmen,
                 Facing: units.FacingDownRight,
@@ -57,7 +56,6 @@ func NewEngine() (*Engine, error) {
                 Y: 10,
                 Health: 10,
             },
-            */
         },
     }
 
@@ -167,7 +165,7 @@ func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, scre
 func main(){
     log.SetFlags(log.Ldate | log.Lshortfile | log.Lmicroseconds)
 
-    ebiten.SetWindowSize(data.ScreenWidth * 5, data.ScreenHeight * 5)
+    ebiten.SetWindowSize(data.ScreenWidth * 3, data.ScreenHeight * 3)
     ebiten.SetWindowTitle("combat screen")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
     ebiten.SetCursorMode(ebiten.CursorModeHidden)

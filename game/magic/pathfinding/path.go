@@ -1,4 +1,4 @@
-package combat
+package pathfinding
 
 /* various path finding algorithms */
 
@@ -11,6 +11,8 @@ import (
     "github.com/kazzmir/master-of-magic/lib/priority"
 )
 
+type Path []image.Point
+
 // cost to move from (x1,y1) -> (x2,y2)
 type TileCostFunc func(int, int, int, int) float64
 // neighbor points given a point x,y
@@ -21,7 +23,7 @@ var Infinity = math.Inf(1)
 /* returns an array of points that is the shortest/cheapest path from start->end and true, or false if no such path exists
  * basically djikstra's shortest path algorithm
  */
-func FindPath(start image.Point, end image.Point, maxPath float64, tileCost TileCostFunc, neighbors NeighborsFunc) ([]image.Point, bool) {
+func FindPath(start image.Point, end image.Point, maxPath float64, tileCost TileCostFunc, neighbors NeighborsFunc) (Path, bool) {
 
     // set distance to start as 0
     // put start in open list

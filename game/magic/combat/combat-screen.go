@@ -21,6 +21,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/player"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
+    "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -94,10 +95,63 @@ type ArmyUnit struct {
     MoveX float64
     MoveY float64
 
-    TargetX int
-    TargetY int
+    // the path the unit is currently following
+    MovementPath pathfinding.Path
 
     LastTurn int
+
+    // ugly to need this, but this caches paths computed for the unit
+    Paths map[image.Point]pathfinding.Path
+}
+
+// cost to move one tile in one of the 8 directions
+func pathCost(from image.Point, to image.Point) fraction.Fraction {
+    xDiff := int(math.Abs(float64(from.X - to.X)))
+    yDiff := int(math.Abs(float64(from.Y - to.Y)))
+
+    if xDiff == 0 && yDiff == 1 {
+        return fraction.FromInt(1)
+    }
+
+    if xDiff == 1 && yDiff == 0 {
+        return fraction.FromInt(1)
+    }
+
+    if xDiff == 1 && yDiff == 1 {
+        return fraction.Make(3, 2)
+    }
+
+    if xDiff == 0 && yDiff == 0 {
+        return fraction.FromInt(0)
+    }
+
+    // shouldn't ever really get here
+    return fraction.Make(xDiff + yDiff, 1)
+}
+
+func (unit *ArmyUnit) CanFollowPath(path pathfinding.Path) bool {
+    movesLeft := unit.MovesLeft
+
+    /*
+    var start image.Point
+    var end image.Point
+    if len(path) > 0 {
+        start = path[0]
+        end = path[len(path) - 1]
+    }
+
+    log.Printf("Can move from %v,%v to %v,%v path %v", start.X, start.Y, end.X, end.Y, path)
+    */
+
+    for i := 1; i < len(path); i++ {
+        if movesLeft.GreaterThan(fraction.FromInt(0)) {
+            movesLeft = movesLeft.Subtract(pathCost(path[i-1], path[i]))
+        } else {
+            return false
+        }
+    }
+
+    return true
 }
 
 func computeMoves(x1 int, y1 int, x2 int, y2 int) fraction.Fraction {
@@ -134,61 +188,119 @@ func computeMoves(x1 int, y1 int, x2 int, y2 int) fraction.Fraction {
     return movesNeeded
 }
 
-// this allows a unit to move a space diagonally even if they only have 0.5 movement points left
-func (unit *ArmyUnit) CanMoveTo(x int, y int) bool {
-    /*
-    movesNeeded := computeMoves(unit.X, unit.Y, x, y)
-    // log.Printf("CanMoveTo: %v,%v -> %v,%v moves left %v need %v", unit.X, unit.Y, x, y, unit.MovesLeft, movesNeeded)
+func (combat *CombatScreen) computePath(x1 int, y1 int, x2 int, y2 int) (pathfinding.Path, bool) {
 
-    return movesNeeded.LessThanEqual(unit.MovesLeft)
-    */
+    containsUnit := make(map[image.Point]bool)
 
-    moves := unit.MovesLeft
-
-    // movesA := moves
-
-    x1 := unit.X
-    y1 := unit.Y
-
-    for (x1 != x || y1 != y) && moves.GreaterThan(fraction.FromInt(0)) {
-        xDiff := int(math.Abs(float64(x1 - x)))
-        yDiff := int(math.Abs(float64(y1 - y)))
-
-        // move diagonally
-        if xDiff > 0 && yDiff > 0 {
-            moves = moves.Subtract(fraction.Make(3, 2))
+    tileEmpty := func (x int, y int) bool {
+        // check if the tile is empty
+        where := image.Pt(x, y)
+        contains, ok := containsUnit[where]
+        if ok {
+            return !contains
         } else {
-            moves = moves.Subtract(fraction.FromInt(1))
-        }
-
-        // a move can be made in any of the 8 available directions
-        if x1 < x {
-            x1 += 1
-        }
-        if x1 > x {
-            x1 -= 1
-        }
-        if y1 < y {
-            y1 += 1
-        }
-        if y1 > y {
-            y1 -= 1
+            unit := combat.GetUnit(x, y)
+            if unit == nil {
+                containsUnit[where] = false
+                return true
+            } else {
+                containsUnit[where] = true
+                return false
+            }
         }
     }
 
-    // movesB := moves
+    // FIXME: take into account mud, hills, other types of terrain obstacles
+    tileCost := func (x1 int, y1 int, x2 int, y2 int) float64 {
 
-    // log.Printf("CanMoveTo: %v,%v -> %v,%v moves start %v left %v", unit.X, unit.Y, x, y, movesA, movesB)
+        if x2 < 0 || y2 < 0 || y2 >= len(combat.Tiles) || x2 >= len(combat.Tiles[y2]) {
+            return pathfinding.Infinity
+        }
 
-    return x1 == x && y1 == y
+        if !tileEmpty(x2, y2) {
+            return pathfinding.Infinity
+        }
 
-    // return movesRemaining(unit.X, unit.Y, x, y, unit.MovesLeft).GreaterThanEqual(fraction.FromInt(0))
+        xDiff := int(math.Abs(float64(x1 - x2)))
+        yDiff := int(math.Abs(float64(y1 - y2)))
 
-    /*
-    xDiff := math.Abs(float64(unit.X - x))
-    yDiff := math.Abs(float64(unit.Y - y))
-    return int(xDiff + yDiff) <= unit.MovesLeft
-    */
+        if xDiff == 0 && yDiff == 1 {
+            return 1
+        }
+
+        if xDiff == 1 && yDiff == 0 {
+            return 1
+        }
+
+        if xDiff == 1 && yDiff == 1 {
+            return 1.5
+        }
+
+        if xDiff == 0 && yDiff == 0 {
+            return 0
+        }
+
+        // shouldn't ever really get here
+        return float64(xDiff + yDiff)
+    }
+
+    neighbors := func(cx int, cy int) []image.Point {
+        // var out []image.Point
+        out := make([]image.Point, 0, 8)
+        for dx := -1; dx <= 1; dx++ {
+            for dy := -1; dy <= 1; dy++ {
+                if dx == 0 && dy == 0 {
+                    continue
+                }
+
+                x := cx + dx
+                y := cy + dy
+
+                if x >= 0 && y >= 0 && y < len(combat.Tiles) && x < len(combat.Tiles[y]) {
+                    // ignore non-empty tiles entirely
+                    if tileEmpty(x, y) {
+                        out = append(out, image.Pt(x, y))
+                    }
+                }
+            }
+        }
+        return out
+    }
+
+    return pathfinding.FindPath(image.Pt(x1, y1), image.Pt(x2, y2), 50, tileCost, neighbors)
+}
+
+/* return a valid path that the given unit can take to reach tile position x, y
+ * this caches the path such that the next call to FindPath() will return the same path without computing it
+ */
+func (combat *CombatScreen) FindPath(unit *ArmyUnit, x int, y int) (pathfinding.Path, bool) {
+    end := image.Pt(x, y)
+    path, ok := unit.Paths[end]
+    if ok {
+        return path, len(path) > 0
+    }
+
+    path, ok = combat.computePath(unit.X, unit.Y, x, y)
+    if !ok {
+        unit.Paths[end] = nil
+        // log.Printf("No such path from %v,%v -> %v,%v", unit.X, unit.Y, x, y)
+        return nil, false
+    }
+
+    canMove := unit.CanFollowPath(path)
+
+    if canMove {
+        unit.Paths[end] = path
+    } else {
+        unit.Paths[end] = nil
+    }
+
+    return path, canMove
+}
+
+func (combat *CombatScreen) CanMoveTo(unit *ArmyUnit, x int, y int) bool {
+    _, ok := combat.FindPath(unit, x, y)
+    return ok
 }
 
 type Army struct {
@@ -1550,6 +1662,7 @@ func (combat *CombatScreen) ChooseNextUnit(team Team) *ArmyUnit {
                 combat.TurnAttacker = (combat.TurnAttacker + 1) % len(combat.AttackingArmy.Units)
                 unit := combat.AttackingArmy.Units[combat.TurnAttacker]
                 if unit.LastTurn < combat.CurrentTurn {
+                    unit.Paths = make(map[image.Point]pathfinding.Path)
                     return unit
                 }
             }
@@ -1559,6 +1672,7 @@ func (combat *CombatScreen) ChooseNextUnit(team Team) *ArmyUnit {
                 combat.TurnDefender = (combat.TurnDefender + 1) % len(combat.DefendingArmy.Units)
                 unit := combat.DefendingArmy.Units[combat.TurnDefender]
                 if unit.LastTurn < combat.CurrentTurn {
+                    unit.Paths = make(map[image.Point]pathfinding.Path)
                     return unit
                 }
             }
@@ -1574,10 +1688,12 @@ func (combat *CombatScreen) NextTurn() {
     /* reset movement */
     for _, unit := range combat.DefendingArmy.Units {
         unit.MovesLeft = fraction.FromInt(unit.Unit.MovementSpeed)
+        unit.Paths = make(map[image.Point]pathfinding.Path)
     }
 
     for _, unit := range combat.AttackingArmy.Units {
         unit.MovesLeft = fraction.FromInt(unit.Unit.MovementSpeed)
+        unit.Paths = make(map[image.Point]pathfinding.Path)
     }
 }
 
@@ -1683,6 +1799,12 @@ func distanceInRange(x1 float64, y1 float64, x2 float64, y2 float64, r float64) 
     xDiff := x2 - x1
     yDiff := y2 - y1
     return xDiff * xDiff + yDiff * yDiff <= r*r
+}
+
+func distanceAboveRange(x1 float64, y1 float64, x2 float64, y2 float64, r float64) bool {
+    xDiff := x2 - x1
+    yDiff := y2 - y1
+    return xDiff * xDiff + yDiff * yDiff >= r*r
 }
 
 func (combat *CombatScreen) UpdateProjectiles() bool {
@@ -1795,7 +1917,7 @@ func (combat *CombatScreen) Update() CombatState {
     } else {
         who := combat.GetUnit(combat.MouseTileX, combat.MouseTileY)
         if who == nil {
-            if combat.SelectedUnit.CanMoveTo(combat.MouseTileX, combat.MouseTileY) {
+            if combat.CanMoveTo(combat.SelectedUnit, combat.MouseTileX, combat.MouseTileY) {
                 combat.MouseState = CombatMoveOk
             } else {
                 combat.MouseState = CombatNotOk
@@ -1823,15 +1945,23 @@ func (combat *CombatScreen) Update() CombatState {
        mouseY < hudY &&
        combat.SelectedUnit.Moving == false && combat.SelectedUnit.Attacking == false {
 
-        if combat.TileIsEmpty(combat.MouseTileX, combat.MouseTileY) && combat.SelectedUnit.CanMoveTo(combat.MouseTileX, combat.MouseTileY){
+        if combat.TileIsEmpty(combat.MouseTileX, combat.MouseTileY) && combat.CanMoveTo(combat.SelectedUnit, combat.MouseTileX, combat.MouseTileY){
+            path, _ := combat.FindPath(combat.SelectedUnit, combat.MouseTileX, combat.MouseTileY)
             combat.SelectedUnit.MovementTick = combat.Counter
+            combat.SelectedUnit.MovementPath = path[1:]
+            /*
             combat.SelectedUnit.TargetX = combat.MouseTileX
             combat.SelectedUnit.TargetY = combat.MouseTileY
+            */
             combat.SelectedUnit.Moving = true
+            combat.SelectedUnit.MoveX = float64(combat.SelectedUnit.X)
+            combat.SelectedUnit.MoveY = float64(combat.SelectedUnit.Y)
+            /*
             combat.SelectedUnit.MovesLeft = combat.SelectedUnit.MovesLeft.Subtract(computeMoves(combat.SelectedUnit.X, combat.SelectedUnit.Y, combat.MouseTileX, combat.MouseTileY))
             if combat.SelectedUnit.MovesLeft.LessThan(fraction.FromInt(0)) {
                 combat.SelectedUnit.MovesLeft = fraction.FromInt(0)
             }
+            */
        } else {
 
            defender := combat.GetUnit(combat.MouseTileX, combat.MouseTileY)
@@ -1871,7 +2001,9 @@ func (combat *CombatScreen) Update() CombatState {
     }
 
     if combat.SelectedUnit.Moving {
-        angle := math.Atan2(float64(combat.SelectedUnit.TargetY - combat.SelectedUnit.Y), float64(combat.SelectedUnit.TargetX - combat.SelectedUnit.X))
+        targetX, targetY := combat.SelectedUnit.MovementPath[0].X, combat.SelectedUnit.MovementPath[0].Y
+
+        angle := math.Atan2(float64(targetY) - combat.SelectedUnit.MoveY, float64(targetX) - combat.SelectedUnit.MoveX)
 
         // rotate by 45 degrees to get the on screen facing angle
         // have to negate the angle because the y axis is flipped (higher y values are lower on the screen)
@@ -1881,21 +2013,38 @@ func (combat *CombatScreen) Update() CombatState {
 
         combat.SelectedUnit.Facing = computeFacing(useAngle)
 
-        speed := float64(combat.Counter - combat.SelectedUnit.MovementTick) / 4
-        newX := float64(combat.SelectedUnit.X) + math.Cos(angle) * speed
-        newY := float64(combat.SelectedUnit.Y) + math.Sin(angle) * speed
+        // speed := float64(combat.Counter - combat.SelectedUnit.MovementTick) / 4
+        speed := float64(0.09)
+        combat.SelectedUnit.MoveX += math.Cos(angle) * speed
+        combat.SelectedUnit.MoveY += math.Sin(angle) * speed
 
+        // log.Printf("Moving %v,%v -> %v,%v", combat.SelectedUnit.X, combat.SelectedUnit.Y, combat.SelectedUnit.MoveX, combat.SelectedUnit.MoveY)
+
+        /*
         combat.SelectedUnit.MoveX = newX
         combat.SelectedUnit.MoveY = newY
+        */
 
-        if math.Abs(newX - float64(combat.SelectedUnit.TargetX)) < 0.5 && math.Abs(newY - float64(combat.SelectedUnit.TargetY)) < 0.5 {
-            combat.SelectedUnit.X = combat.SelectedUnit.TargetX
-            combat.SelectedUnit.Y = combat.SelectedUnit.TargetY
-            combat.SelectedUnit.Moving = false
+        // if math.Abs(combat.SelectedUnit.MoveX - float64(targetX)) < speed*2 && math.Abs(combat.SelectedUnit.MoveY - float64(targetY)) < 0.5 {
+        if distanceInRange(combat.SelectedUnit.MoveX, combat.SelectedUnit.MoveY, float64(targetX), float64(targetY), speed * 3) ||
+           // a stop gap to ensure the unit doesn't fly off the screen somehow
+           distanceAboveRange(float64(combat.SelectedUnit.X), float64(combat.SelectedUnit.Y), float64(targetX), float64(targetY), 2.5) {
+            combat.SelectedUnit.MovesLeft = combat.SelectedUnit.MovesLeft.Subtract(pathCost(image.Pt(combat.SelectedUnit.X, combat.SelectedUnit.Y), image.Pt(targetX, targetY)))
+            combat.SelectedUnit.X = targetX
+            combat.SelectedUnit.Y = targetY
+            combat.SelectedUnit.MoveX = float64(targetX)
+            combat.SelectedUnit.MoveY = float64(targetY)
+            combat.SelectedUnit.MovementPath = combat.SelectedUnit.MovementPath[1:]
 
-            if combat.SelectedUnit.MovesLeft.LessThanEqual(fraction.FromInt(0)) {
-                combat.SelectedUnit.LastTurn = combat.CurrentTurn
-                combat.NextUnit()
+            if len(combat.SelectedUnit.MovementPath) == 0 {
+                combat.SelectedUnit.Moving = false
+                // reset path computations
+                combat.SelectedUnit.Paths = make(map[image.Point]pathfinding.Path)
+
+                if combat.SelectedUnit.MovesLeft.LessThanEqual(fraction.FromInt(0)) {
+                    combat.SelectedUnit.LastTurn = combat.CurrentTurn
+                    combat.NextUnit()
+                }
             }
         }
     }
@@ -2011,6 +2160,7 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
         }
     }
 
+
     // draw base land
     /*
     for y := 0; y < len(combat.Tiles); y++ {
@@ -2050,6 +2200,28 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
     combat.DrawHighlightedTile(screen, combat.MouseTileX, combat.MouseTileY, color.RGBA{R: 0, G: 0x67, B: 0x78, A: 255}, color.RGBA{R: 0, G: 0xef, B: 0xff, A: 255})
 
     if combat.SelectedUnit != nil {
+        path, ok := combat.FindPath(combat.SelectedUnit, combat.MouseTileX, combat.MouseTileY)
+        if ok {
+            var options ebiten.DrawImageOptions
+            options.ColorScale.ScaleAlpha(0.8)
+            for i := 1; i < len(path); i++ {
+                tileX, tileY := path[i].X, path[i].Y
+
+                tx, ty := tilePosition(tileX, tileY)
+                tx += float64(tile0.Bounds().Dx())/2
+                ty += float64(tile0.Bounds().Dy())/2
+                movementImage, _ := combat.ImageCache.GetImage("compix.lbx", 72, 0)
+                tx -= float64(movementImage.Bounds().Dx())/2
+                ty -= float64(movementImage.Bounds().Dy())/2
+
+                options.GeoM.Reset()
+                options.GeoM.Translate(tx, ty)
+                screen.DrawImage(movementImage, &options)
+            }
+        }
+    }
+
+    if combat.SelectedUnit != nil {
         minColor := color.RGBA{R: 32, G: 0, B: 0, A: 255}
         maxColor := color.RGBA{R: 255, G: 0, B: 0, A: 255}
 
@@ -2076,7 +2248,7 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
             unitOptions.GeoM.Translate(float64(tile0.Bounds().Dx()/2), float64(tile0.Bounds().Dy()/2))
 
             index := uint64(0)
-            if unit.Unit.Flying {
+            if unit.Unit.Flying || unit.Moving {
                 index = animationIndex % (uint64(len(combatImages)) - 1)
             }
 
