@@ -2033,8 +2033,6 @@ func (combat *CombatScreen) Update() CombatState {
         }
     }
 
-    combat.AttackHandler()
-
     hudY := data.ScreenHeight - hudImage.Bounds().Dy()
 
     if combat.DoSelectTile {
@@ -2084,6 +2082,8 @@ func (combat *CombatScreen) Update() CombatState {
         combat.UI.Disable()
         return CombatStateRunning
     }
+
+    combat.AttackHandler()
 
     combat.UI.Enable()
 
@@ -2172,11 +2172,6 @@ func (combat *CombatScreen) Update() CombatState {
         if combat.Counter - combat.SelectedUnit.AttackingCounter > 60 {
             combat.SelectedUnit.Attacking = false
             combat.SelectedUnit.AttackingCounter = 0
-
-            if combat.SelectedUnit.MovesLeft.LessThanEqual(fraction.FromInt(0)) {
-                combat.SelectedUnit.LastTurn = combat.CurrentTurn
-                combat.NextUnit()
-            }
         }
     }
 
@@ -2221,17 +2216,19 @@ func (combat *CombatScreen) Update() CombatState {
                 combat.SelectedUnit.Moving = false
                 // reset path computations
                 combat.SelectedUnit.Paths = make(map[image.Point]pathfinding.Path)
-
-                if combat.SelectedUnit.MovesLeft.LessThanEqual(fraction.FromInt(0)) {
-                    combat.SelectedUnit.LastTurn = combat.CurrentTurn
-                    combat.NextUnit()
-                }
             }
         }
     }
 
+    // the unit died or is out of moves
+    if combat.SelectedUnit != nil && (combat.SelectedUnit.Health <= 0 || combat.SelectedUnit.MovesLeft.LessThanEqual(fraction.FromInt(0))) {
+        combat.SelectedUnit.LastTurn = combat.CurrentTurn
+        combat.NextUnit()
+    }
+
     // log.Printf("Mouse original %v,%v %v,%v -> %v,%v", mouseX, mouseY, tileX, tileY, combat.MouseTileX, combat.MouseTileY)
 
+    // defender wins in a tie
     if len(combat.AttackingArmy.Units) == 0 {
         return CombatStateDefenderWin
     }
