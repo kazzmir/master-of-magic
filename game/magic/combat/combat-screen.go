@@ -1597,6 +1597,11 @@ func betweenAngle(check float64, angle float64, spread float64) bool {
 }
 
 func (combat *CombatScreen) TileIsEmpty(x int, y int) bool {
+    unit := combat.GetUnit(x, y)
+    if unit != nil && unit.Health > 0 {
+        return false
+    }
+    /*
     for _, unit := range combat.DefendingArmy.Units {
         if unit.Health > 0 && unit.X == x && unit.Y == y {
             return false
@@ -1608,6 +1613,7 @@ func (combat *CombatScreen) TileIsEmpty(x int, y int) bool {
             return false
         }
     }
+    */
 
     return true
 }
@@ -1930,7 +1936,7 @@ func (combat *CombatScreen) Update() CombatState {
     } else {
         who := combat.GetUnit(combat.MouseTileX, combat.MouseTileY)
         if who == nil {
-            if combat.CanMoveTo(combat.SelectedUnit, combat.MouseTileX, combat.MouseTileY) {
+            if combat.TileIsEmpty(combat.MouseTileX, combat.MouseTileY) && combat.CanMoveTo(combat.SelectedUnit, combat.MouseTileX, combat.MouseTileY) {
                 combat.MouseState = CombatMoveOk
             } else {
                 combat.MouseState = CombatNotOk
