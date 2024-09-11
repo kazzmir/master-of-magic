@@ -1936,21 +1936,22 @@ func (combat *CombatScreen) Update() CombatState {
     } else {
         who := combat.GetUnit(combat.MouseTileX, combat.MouseTileY)
         if who == nil {
-            if combat.TileIsEmpty(combat.MouseTileX, combat.MouseTileY) && combat.CanMoveTo(combat.SelectedUnit, combat.MouseTileX, combat.MouseTileY) {
+            if combat.CanMoveTo(combat.SelectedUnit, combat.MouseTileX, combat.MouseTileY) {
                 combat.MouseState = CombatMoveOk
             } else {
                 combat.MouseState = CombatNotOk
             }
         } else {
+            newState := CombatNotOk
             if combat.canAttack(combat.SelectedUnit, who){
                 if combat.withinMeleeRange(combat.SelectedUnit, who) {
-                    combat.MouseState = CombatMeleeAttackOk
+                    newState = CombatMeleeAttackOk
                 } else if combat.withinArrowRange(combat.SelectedUnit, who) {
-                    combat.MouseState = CombatRangeAttackOk
+                    newState = CombatRangeAttackOk
                 }
-            } else {
-                combat.MouseState = CombatNotOk
             }
+
+            combat.MouseState = newState
         }
     }
 
