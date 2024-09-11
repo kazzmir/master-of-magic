@@ -40,22 +40,24 @@ func NewEngine() (*Engine, error) {
                 Facing: units.FacingDownRight,
                 X: 12,
                 Y: 10,
-                Health: 10,
+                Health: units.HighElfSpearmen.GetMaxHealth(),
             },
+            /*
             &combat.ArmyUnit{
                 Unit: units.HighElfSpearmen,
                 Facing: units.FacingDownRight,
                 X: 13,
                 Y: 10,
-                Health: 10,
+                Health: units.HighElfSpearmen.GetMaxHealth(),
             },
             &combat.ArmyUnit{
                 Unit: units.HighElfSpearmen,
                 Facing: units.FacingDownRight,
                 X: 14,
                 Y: 10,
-                Health: 10,
+                Health: units.HighElfSpearmen.GetMaxHealth(),
             },
+            */
         },
     }
 
@@ -114,16 +116,16 @@ func NewEngine() (*Engine, error) {
             &combat.ArmyUnit{
                 Unit: units.GreatDrake,
                 Facing: units.FacingUpLeft,
-                X: 11,
-                Y: 19,
-                Health: 10,
+                X: 12,
+                Y: 11,
+                Health: units.GreatDrake.GetMaxHealth(),
             },
             &combat.ArmyUnit{
                 Unit: units.GreatDrake,
                 Facing: units.FacingUpLeft,
                 X: 9,
                 Y: 18,
-                Health: 10,
+                Health: units.GreatDrake.GetMaxHealth(),
             },
         },
     }

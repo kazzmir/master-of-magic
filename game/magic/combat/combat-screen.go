@@ -109,7 +109,7 @@ type ArmyUnit struct {
 
 func (unit *ArmyUnit) ApplyDefense(damage int) int {
     for figure := 0; figure < unit.Figures() && damage > 0; figure++ {
-        for i := 0; i < unit.Unit.Defense; i++ {
+        for i := 0; i < unit.Unit.Defense && damage > 0; i++ {
             if rand.Intn(100) < unit.ToDefend() {
                 damage -= 1
             }
@@ -148,8 +148,12 @@ func (unit *ArmyUnit) ToDefend() int {
 
 // number of alive figures in this unit
 func (unit *ArmyUnit) Figures() int {
-    // FIXME: keep track of how many units are alive
-    return unit.Unit.Count
+
+    // health per figure = max health / figures
+    // figures = health / health per figure
+
+    health_per_figure := float64(unit.Unit.GetMaxHealth()) / float64(unit.Unit.Count)
+    return int(math.Ceil(float64(unit.Health) / health_per_figure))
 }
 
 // cost to move one tile in one of the 8 directions
@@ -356,6 +360,18 @@ type Army struct {
     Player *player.Player
 }
 
+func (army *Army) RemoveUnit(remove *ArmyUnit){
+    var units []*ArmyUnit
+
+    for _, unit := range army.Units {
+        if remove != unit {
+            units = append(units, unit)
+        }
+    }
+
+    army.Units = units
+}
+
 // represents a unit that is not part of the army, for things like magic vortex, for things like magic vortex
 type CombatUnit struct {
     X int
@@ -390,6 +406,8 @@ type CombatScreen struct {
     TurnDefender int
 
     OtherUnits []*CombatUnit
+
+    AttackHandler func()
 
     MouseState MouseState
 
@@ -577,6 +595,7 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
         Mouse: mouseData,
         Turn: TeamDefender,
         CurrentTurn: 0,
+        AttackHandler: func(){},
         DefendingArmy: defendingArmy,
         TurnDefender: 0,
         AttackingArmy: attackingArmy,
@@ -1049,7 +1068,7 @@ func (combat *CombatScreen) addNewUnit(player *playerlib.Player, x int, y int, u
         Moving: false,
         X: x,
         Y: y,
-        Health: 10, // FIXME: figures * hitpoints?
+        Health: unit.GetMaxHealth(),
         MovesLeft: fraction.FromInt(unit.MovementSpeed),
         LastTurn: combat.CurrentTurn-1,
     }
@@ -1913,11 +1932,35 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
     attackerDamage := attacker.ComputeMeleeDamage()
     defenderCounterDamage := defender.ComputeMeleeDamage()
 
+    originalAttackerDamage := attackerDamage
+    originalDefenderCounterDamage := defenderCounterDamage
+
     attackerDamage = defender.ApplyDefense(attackerDamage)
     defenderCounterDamage = attacker.ApplyDefense(defenderCounterDamage)
 
+    log.Printf("Attacker damage roll %v, defender defended %v, attacker damage to defender %v", originalAttackerDamage, originalAttackerDamage - attackerDamage, attackerDamage)
+    log.Printf("Defender counter damage roll %v, attacker defended %v, defender damage to attacker %v", originalDefenderCounterDamage, originalDefenderCounterDamage - defenderCounterDamage, defenderCounterDamage)
+
     attacker.TakeDamage(defenderCounterDamage)
     defender.TakeDamage(attackerDamage)
+
+    if attacker.Health <= 0 {
+        combat.RemoveUnit(attacker)
+    }
+
+    if defender.Health <= 0 {
+        combat.RemoveUnit(defender)
+    }
+}
+
+func (combat *CombatScreen) RemoveUnit(unit *ArmyUnit){
+    if unit.Team == TeamDefender {
+        combat.DefendingArmy.RemoveUnit(unit)
+    } else {
+        combat.AttackingArmy.RemoveUnit(unit)
+    }
+
+    combat.Tiles[unit.Y][unit.X].Unit = nil
 }
 
 func (combat *CombatScreen) Update() CombatState {
@@ -1937,6 +1980,8 @@ func (combat *CombatScreen) Update() CombatState {
             unit.Animation.Next()
         }
     }
+
+    combat.AttackHandler()
 
     hudY := data.ScreenHeight - hudImage.Bounds().Dy()
 
@@ -2049,6 +2094,18 @@ func (combat *CombatScreen) Update() CombatState {
 
                combat.SelectedUnit.Facing = faceTowards(combat.SelectedUnit.X, combat.SelectedUnit.Y, combat.MouseTileX, combat.MouseTileY)
                defender.Facing = faceTowards(defender.X, defender.Y, combat.SelectedUnit.X, combat.SelectedUnit.Y)
+
+               attackCounter := 20
+               combat.AttackHandler = func(){
+                   if attackCounter > 0 {
+                       attackCounter -= 1
+                       return
+                   }
+
+                   combat.meleeAttack(combat.SelectedUnit, defender)
+
+                   combat.AttackHandler = func(){}
+               }
 
                // FIXME: sound is based on attacker type, and possibly defender type
                sound, err := audio.LoadCombatSound(combat.Cache, 1)
@@ -2294,7 +2351,7 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
                 unitOptions.ColorScale.Scale(float32(scaleValue), 1, 1, 1)
             }
 
-            RenderCombatUnit(screen, combatImages[index], unitOptions, unit.Unit.Count)
+            RenderCombatUnit(screen, combatImages[index], unitOptions, unit.Figures())
         }
     }
 

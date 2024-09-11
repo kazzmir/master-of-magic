@@ -44,6 +44,12 @@ func (unit *Unit) Equals(other Unit) bool {
     return unit.LbxFile == other.LbxFile && unit.Index == other.Index
 }
 
+/* maximum health is the number of figures * the number of hit points per figure
+ */
+func (unit *Unit) GetMaxHealth() int {
+    return unit.HitPoints * unit.Count
+}
+
 func (unit *Unit) GetCombatIndex(facing Facing) int {
     switch facing {
         case FacingUp: return unit.CombatIndex + 0
@@ -354,6 +360,7 @@ var GreatDrake Unit = Unit{
     Race: data.RaceFantastic,
     Abilities: []Ability{AbilityForester, AbilityDoomGaze},
     Count: 1,
+    HitPoints: 30,
     Flying: true,
     MeleeAttackPower: 30,
     MovementSpeed: 2,
@@ -1180,9 +1187,13 @@ var HighElfSpearmen Unit = Unit{
     Count: 8,
     Name: "Spearmen",
     ProductionCost: 15,
+    MeleeAttackPower: 1,
+    Defense: 2,
+    Resistance: 6,
     Abilities: []Ability{AbilityForester},
     MovementSpeed: 1,
     Race: data.RaceHighElf,
+    HitPoints: 1,
 }
 
 var HighElfSwordsmen Unit = Unit{
