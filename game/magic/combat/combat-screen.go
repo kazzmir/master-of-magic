@@ -2160,7 +2160,7 @@ func (combat *CombatScreen) Update() CombatState {
                }
 
                // FIXME: sound is based on attacker type, and possibly defender type
-               sound, err := audio.LoadCombatSound(combat.Cache, 1)
+               sound, err := audio.LoadCombatSound(combat.Cache, combat.SelectedUnit.Unit.AttackSound.LbxIndex())
                if err == nil {
                    sound.Play()
                }
