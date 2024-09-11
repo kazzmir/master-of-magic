@@ -303,63 +303,6 @@ func (combat *CombatScreen) CanMoveTo(unit *ArmyUnit, x int, y int) bool {
     return ok
 }
 
-// this allows a unit to move a space diagonally even if they only have 0.5 movement points left
-func (unit *ArmyUnit) CanMoveTo_legacy(x int, y int) bool {
-    /*
-    movesNeeded := computeMoves(unit.X, unit.Y, x, y)
-    // log.Printf("CanMoveTo: %v,%v -> %v,%v moves left %v need %v", unit.X, unit.Y, x, y, unit.MovesLeft, movesNeeded)
-
-    return movesNeeded.LessThanEqual(unit.MovesLeft)
-    */
-
-    moves := unit.MovesLeft
-
-    // movesA := moves
-
-    x1 := unit.X
-    y1 := unit.Y
-
-    for (x1 != x || y1 != y) && moves.GreaterThan(fraction.FromInt(0)) {
-        xDiff := int(math.Abs(float64(x1 - x)))
-        yDiff := int(math.Abs(float64(y1 - y)))
-
-        // move diagonally
-        if xDiff > 0 && yDiff > 0 {
-            moves = moves.Subtract(fraction.Make(3, 2))
-        } else {
-            moves = moves.Subtract(fraction.FromInt(1))
-        }
-
-        // a move can be made in any of the 8 available directions
-        if x1 < x {
-            x1 += 1
-        }
-        if x1 > x {
-            x1 -= 1
-        }
-        if y1 < y {
-            y1 += 1
-        }
-        if y1 > y {
-            y1 -= 1
-        }
-    }
-
-    // movesB := moves
-
-    // log.Printf("CanMoveTo: %v,%v -> %v,%v moves start %v left %v", unit.X, unit.Y, x, y, movesA, movesB)
-
-    return x1 == x && y1 == y
-
-    // return movesRemaining(unit.X, unit.Y, x, y, unit.MovesLeft).GreaterThanEqual(fraction.FromInt(0))
-
-    /*
-    xDiff := math.Abs(float64(unit.X - x))
-    yDiff := math.Abs(float64(unit.Y - y))
-    return int(xDiff + yDiff) <= unit.MovesLeft
-    */
-}
-
 type Army struct {
     Units []*ArmyUnit
     Player *player.Player
