@@ -7,6 +7,7 @@ import (
     "math/rand"
     "image"
     "image/color"
+    "time"
     "slices"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -2131,10 +2132,24 @@ func (combat *CombatScreen) Update() CombatState {
             combat.SelectedUnit.MoveX = float64(combat.SelectedUnit.X)
             combat.SelectedUnit.MoveY = float64(combat.SelectedUnit.Y)
 
-            sound, err := audio.LoadSound(combat.Cache, combat.SelectedUnit.Unit.MovementSound.LbxIndex())
-            if err == nil {
-                sound.Play()
-            }
+            mover := combat.SelectedUnit
+
+            // keep playing movement sound in a loop until the unit stops moving
+            go func(){
+                sound, err := audio.LoadSound(combat.Cache, mover.Unit.MovementSound.LbxIndex())
+                if err == nil {
+                    for mover.Moving {
+                        err = sound.Rewind()
+                        if err != nil {
+                            log.Printf("Unable to rewind sound for %v: %v", mover.Unit.MovementSound, err)
+                        }
+                        sound.Play()
+                        for mover.Moving && sound.IsPlaying() {
+                            time.Sleep(10 * time.Millisecond)
+                        }
+                    }
+                }
+            }()
        } else {
 
            defender := combat.GetUnit(combat.MouseTileX, combat.MouseTileY)
