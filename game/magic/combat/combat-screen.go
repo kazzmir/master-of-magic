@@ -1924,8 +1924,6 @@ func (combat *CombatScreen) canRangeAttack(attacker *ArmyUnit, defender *ArmyUni
 
     if attacker.MovesLeft.LessThanEqual(fraction.FromInt(0)) {
         return false
-        return false
-
     }
 
     return true
