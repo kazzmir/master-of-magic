@@ -94,7 +94,6 @@ type ArmyUnit struct {
     Team Team
 
     Attacking bool
-    AttackingCounter uint64
     Defending bool
 
     MovementTick uint64
@@ -2141,47 +2140,42 @@ func (combat *CombatScreen) Update() CombatState {
            defender := combat.GetUnit(combat.MouseTileX, combat.MouseTileY)
 
            if defender != nil && defender.Team != combat.SelectedUnit.Team && combat.withinMeleeRange(combat.SelectedUnit, defender) && combat.canAttack(combat.SelectedUnit, defender){
-               combat.SelectedUnit.Attacking = true
-               combat.SelectedUnit.AttackingCounter = combat.Counter
+               attacker := combat.SelectedUnit
+
+               attacker.Attacking = true
                // attacking takes 50% of movement points
                // FIXME: in some cases an extra 0.5 movements points is lost, possibly due to counter attacks?
-               combat.SelectedUnit.MovesLeft = combat.SelectedUnit.MovesLeft.Subtract(fraction.FromInt(combat.SelectedUnit.Unit.MovementSpeed).Divide(fraction.FromInt(2)))
-               if combat.SelectedUnit.MovesLeft.LessThan(fraction.FromInt(0)) {
-                   combat.SelectedUnit.MovesLeft = fraction.FromInt(0)
+               attacker.MovesLeft = attacker.MovesLeft.Subtract(fraction.FromInt(attacker.Unit.MovementSpeed).Divide(fraction.FromInt(2)))
+               if attacker.MovesLeft.LessThan(fraction.FromInt(0)) {
+                   attacker.MovesLeft = fraction.FromInt(0)
                }
 
-               combat.SelectedUnit.Facing = faceTowards(combat.SelectedUnit.X, combat.SelectedUnit.Y, combat.MouseTileX, combat.MouseTileY)
-               defender.Facing = faceTowards(defender.X, defender.Y, combat.SelectedUnit.X, combat.SelectedUnit.Y)
+               attacker.Facing = faceTowards(attacker.X, attacker.Y, defender.X, defender.Y)
+               defender.Facing = faceTowards(defender.X, defender.Y, attacker.X, attacker.Y)
                defender.Defending = true
 
-               attackCounter := 20
+               attackCounter := 60
                combat.AttackHandler = func(){
-                   if attackCounter > 0 {
-                       attackCounter -= 1
-                       return
+                   attackCounter -= 1
+
+                   if attackCounter == 20 {
+                       combat.meleeAttack(combat.SelectedUnit, defender)
                    }
 
-                   combat.meleeAttack(combat.SelectedUnit, defender)
-
-                   defender.Defending = false
-
-                   combat.AttackHandler = func(){}
+                   if attackCounter <= 0 {
+                       attacker.Attacking = false
+                       defender.Defending = false
+                       combat.AttackHandler = func(){}
+                   }
                }
 
                // FIXME: sound is based on attacker type, and possibly defender type
-               sound, err := audio.LoadCombatSound(combat.Cache, combat.SelectedUnit.Unit.AttackSound.LbxIndex())
+               sound, err := audio.LoadCombatSound(combat.Cache, attacker.Unit.AttackSound.LbxIndex())
                if err == nil {
                    sound.Play()
                }
            }
        }
-    }
-
-    if combat.SelectedUnit.Attacking {
-        if combat.Counter - combat.SelectedUnit.AttackingCounter > 60 {
-            combat.SelectedUnit.Attacking = false
-            combat.SelectedUnit.AttackingCounter = 0
-        }
     }
 
     if combat.SelectedUnit.Moving {
