@@ -109,6 +109,9 @@ type Unit struct {
     MovementSound MovementSound
     RangeAttackSound RangeAttackSound
 
+    // first sprite index in cmbmagic.lbx for the range attack
+    RangeAttackIndex int
+
     // number of figures that are drawn in a single combat tile
     Count int
     ProductionCost int
@@ -132,6 +135,21 @@ func (unit *Unit) Equals(other Unit) bool {
  */
 func (unit *Unit) GetMaxHealth() int {
     return unit.HitPoints * unit.Count
+}
+
+func (unit *Unit) GetCombatRangeIndex(facing Facing) int {
+    switch facing {
+        case FacingUp: return unit.RangeAttackIndex + 0
+        case FacingUpRight: return unit.RangeAttackIndex + 1
+        case FacingRight: return unit.RangeAttackIndex + 2
+        case FacingDownRight: return unit.RangeAttackIndex + 3
+        case FacingDown: return unit.RangeAttackIndex + 4
+        case FacingDownLeft: return unit.RangeAttackIndex + 5
+        case FacingLeft: return unit.RangeAttackIndex + 6
+        case FacingUpLeft: return unit.RangeAttackIndex + 7
+    }
+
+    return unit.RangeAttackIndex
 }
 
 func (unit *Unit) GetCombatIndex(facing Facing) int {
@@ -1085,6 +1103,7 @@ var Warlocks Unit = Unit{
     Race: data.RaceDarkElf,
     Count: 4,
     Name: "Warlocks",
+    RangeAttackIndex: 16,
     MeleeAttackPower: 1,
     RangedAttackPower: 7,
     RangeAttackSound: RangeAttackSoundFireball,

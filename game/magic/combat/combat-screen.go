@@ -138,6 +138,19 @@ func (unit *ArmyUnit) Heal(amount int){
     }
 }
 
+func (unit *ArmyUnit) ComputeRangeDamage() int {
+    damage := 0
+    for figure := 0; figure < unit.Figures(); figure++ {
+        for i := 0; i < unit.Unit.RangedAttackPower; i++ {
+            if rand.Intn(100) < unit.ToHitMelee() {
+                damage += 1
+            }
+        }
+    }
+
+    return damage
+}
+
 func (unit *ArmyUnit) ComputeMeleeDamage() int {
     damage := 0
     for figure := 0; figure < unit.Figures(); figure++ {
@@ -2024,6 +2037,86 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
     }
 }
 
+func (combat *CombatScreen) createUnitToUnitProjectile(attacker *ArmyUnit, target *ArmyUnit, images []*ebiten.Image, explodeImages []*ebiten.Image) *Projectile {
+    // find where on the screen the unit is
+    screenX, screenY := combat.Coordinates.Apply(float64(attacker.X), float64(attacker.Y))
+    targetX, targetY := combat.Coordinates.Apply(float64(target.X), float64(target.Y))
+
+    var useImage *ebiten.Image
+    if len(images) > 0 {
+        useImage = images[0]
+    } else if len(explodeImages) > 0 {
+        useImage = explodeImages[0]
+    }
+
+    targetY += 3
+    targetY -= float64(useImage.Bounds().Dy()/2)
+    targetX += 14
+    targetX -= float64(useImage.Bounds().Dx()/2)
+
+    /*
+    switch position {
+        case UnitPositionMiddle:)
+            screenY += 3
+            screenY -= float64(useImage.Bounds().Dy()/2)
+            screenX += 14
+            screenX -= float64(useImage.Bounds().Dx()/2)
+        case UnitPositionUnder:
+            screenY += 15
+            screenY -= float64(useImage.Bounds().Dy())
+    }
+    */
+
+    effect := func (target *ArmyUnit){
+        damage := attacker.ComputeRangeDamage()
+        damage = target.ApplyDefense(damage)
+        target.TakeDamage(damage)
+        if target.Health <= 0 {
+            combat.RemoveUnit(target)
+        }
+    }
+
+    speed := 2.8
+
+    angle := math.Atan2(targetY - screenY, targetX - screenX)
+
+    // log.Printf("Create fireball projectile at %v,%v -> %v,%v", x, y, screenX, screenY)
+
+    projectile := &Projectile{
+        X: screenX,
+        Y: screenY,
+        Target: target,
+        Speed: speed,
+        Angle: angle,
+        Effect: effect,
+        TargetX: targetX,
+        TargetY: targetY,
+        Animation: util.MakeAnimation(images, true),
+        Explode: util.MakeAnimation(explodeImages, false),
+    }
+
+    return projectile
+}
+
+func (combat *CombatScreen) createRangeAttack(attacker *ArmyUnit, defender *ArmyUnit){
+    index := attacker.Unit.GetCombatRangeIndex(attacker.Facing)
+    images, err := combat.ImageCache.GetImages("cmbmagic.lbx", index)
+    if err != nil {
+        log.Printf("Unable to load attacker range images for %v index %v: %v", attacker.Unit.Name, index, err)
+        return
+    }
+
+    if len(images) != 4 {
+        log.Printf("Invalid number of attack range animation images for %v: %v", attacker.Unit.Name, len(images))
+        return
+    }
+
+    animation := images[0:3]
+    explode := images[3:]
+
+    combat.Projectiles = append(combat.Projectiles, combat.createUnitToUnitProjectile(attacker, defender, animation, explode))
+}
+
 func (combat *CombatScreen) RemoveUnit(unit *ArmyUnit){
     if unit.Team == TeamDefender {
         combat.DefendingArmy.RemoveUnit(unit)
@@ -2221,6 +2314,8 @@ func (combat *CombatScreen) Update() CombatState {
                }
 
                attacker.RangedAttacks -= 1
+
+               combat.createRangeAttack(attacker, defender)
 
                sound, err := audio.LoadSound(combat.Cache, attacker.Unit.RangeAttackSound.LbxIndex())
                if err == nil {
