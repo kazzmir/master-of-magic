@@ -4,6 +4,12 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
 )
 
+type Damage int
+const (
+    DamageNone Damage = iota
+    DamageMagical
+)
+
 type AttackSound int
 
 const (
@@ -104,6 +110,8 @@ type Unit struct {
     Race data.Race
     Flying bool
     Abilities []Ability
+
+    RangedAttackDamageType Damage
 
     AttackSound AttackSound
     MovementSound MovementSound
@@ -1103,6 +1111,7 @@ var Warlocks Unit = Unit{
     Race: data.RaceDarkElf,
     Count: 4,
     Name: "Warlocks",
+    RangedAttackDamageType: DamageMagical,
     RangeAttackIndex: 16,
     MeleeAttackPower: 1,
     RangedAttackPower: 7,

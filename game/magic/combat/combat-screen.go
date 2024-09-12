@@ -2083,6 +2083,9 @@ func (combat *CombatScreen) createUnitToUnitProjectile(attacker *ArmyUnit, targe
             return
         }
 
+        // FIXME: compute to-hit penalities for non-magical ranged attacks
+        // FIXME: apply defenses for magic immunity or missle immunity
+
         damage := attacker.ComputeRangeDamage()
         damage = target.ApplyDefense(damage)
         target.TakeDamage(damage)
@@ -2291,7 +2294,23 @@ func (combat *CombatScreen) Update() CombatState {
            defender := combat.GetUnit(combat.MouseTileX, combat.MouseTileY)
            attacker := combat.SelectedUnit
 
-           if defender != nil && defender.Team != attacker.Team && combat.withinMeleeRange(attacker, defender) && combat.canMeleeAttack(attacker, defender){
+           // try a ranged attack first
+           if defender != nil && combat.withinArrowRange(attacker, defender) && combat.canRangeAttack(attacker, defender) {
+               attacker.MovesLeft = attacker.MovesLeft.Subtract(fraction.FromInt(10))
+               if attacker.MovesLeft.LessThan(fraction.FromInt(0)) {
+                   attacker.MovesLeft = fraction.FromInt(0)
+               }
+
+               attacker.RangedAttacks -= 1
+
+               combat.createRangeAttack(attacker, defender)
+
+               sound, err := audio.LoadSound(combat.Cache, attacker.Unit.RangeAttackSound.LbxIndex())
+               if err == nil {
+                   sound.Play()
+               }
+           // then fall back to melee
+           } else if defender != nil && defender.Team != attacker.Team && combat.withinMeleeRange(attacker, defender) && combat.canMeleeAttack(attacker, defender){
                attacker.Attacking = true
                // attacking takes 50% of movement points
                // FIXME: in some cases an extra 0.5 movements points is lost, possibly due to counter attacks?
@@ -2321,20 +2340,6 @@ func (combat *CombatScreen) Update() CombatState {
 
                // FIXME: sound is based on attacker type, and possibly defender type
                sound, err := audio.LoadCombatSound(combat.Cache, attacker.Unit.AttackSound.LbxIndex())
-               if err == nil {
-                   sound.Play()
-               }
-           } else if defender != nil && combat.withinArrowRange(attacker, defender) && combat.canRangeAttack(attacker, defender) {
-               attacker.MovesLeft = attacker.MovesLeft.Subtract(fraction.FromInt(10))
-               if attacker.MovesLeft.LessThan(fraction.FromInt(0)) {
-                   attacker.MovesLeft = fraction.FromInt(0)
-               }
-
-               attacker.RangedAttacks -= 1
-
-               combat.createRangeAttack(attacker, defender)
-
-               sound, err := audio.LoadSound(combat.Cache, attacker.Unit.RangeAttackSound.LbxIndex())
                if err == nil {
                    sound.Play()
                }
