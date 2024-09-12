@@ -9,6 +9,7 @@ import (
     "image/color"
     "time"
     "slices"
+    "context"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/fraction"
@@ -87,6 +88,7 @@ type ArmyUnit struct {
     Unit units.Unit
     Facing units.Facing
     Moving bool
+    DoneMovingFunc context.CancelFunc
     X int
     Y int
     Health int
@@ -2126,6 +2128,10 @@ func (combat *CombatScreen) Update() CombatState {
 
         if combat.TileIsEmpty(combat.MouseTileX, combat.MouseTileY) && combat.CanMoveTo(combat.SelectedUnit, combat.MouseTileX, combat.MouseTileY){
             path, _ := combat.FindPath(combat.SelectedUnit, combat.MouseTileX, combat.MouseTileY)
+            // just be extremely sure that the last sound playing has stopped
+            if combat.SelectedUnit.DoneMovingFunc != nil {
+                combat.SelectedUnit.DoneMovingFunc()
+            }
             combat.SelectedUnit.MovementTick = combat.Counter
             combat.SelectedUnit.MovementPath = path[1:]
             combat.SelectedUnit.Moving = true
@@ -2133,19 +2139,25 @@ func (combat *CombatScreen) Update() CombatState {
             combat.SelectedUnit.MoveY = float64(combat.SelectedUnit.Y)
 
             mover := combat.SelectedUnit
+            quit, cancel := context.WithCancel(context.Background())
+            mover.DoneMovingFunc = cancel
 
             // keep playing movement sound in a loop until the unit stops moving
             go func(){
                 sound, err := audio.LoadSound(combat.Cache, mover.Unit.MovementSound.LbxIndex())
                 if err == nil {
-                    for mover.Moving {
+                    for quit.Err() == nil {
                         err = sound.Rewind()
                         if err != nil {
                             log.Printf("Unable to rewind sound for %v: %v", mover.Unit.MovementSound, err)
                         }
                         sound.Play()
-                        for mover.Moving && sound.IsPlaying() {
-                            time.Sleep(10 * time.Millisecond)
+                        for sound.IsPlaying() {
+                            select {
+                                case <-quit.Done():
+                                    return
+                                case <-time.After(10 * time.Millisecond):
+                            }
                         }
                     }
                 }
@@ -2232,6 +2244,7 @@ func (combat *CombatScreen) Update() CombatState {
 
             if len(combat.SelectedUnit.MovementPath) == 0 {
                 combat.SelectedUnit.Moving = false
+                combat.SelectedUnit.DoneMovingFunc()
                 // reset path computations
                 combat.SelectedUnit.Paths = make(map[image.Point]pathfinding.Path)
             }
