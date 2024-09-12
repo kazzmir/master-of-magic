@@ -1939,6 +1939,10 @@ func (combat *CombatScreen) canRangeAttack(attacker *ArmyUnit, defender *ArmyUni
         return false
     }
 
+    // FIXME: check if defender has missle immunity and attacker is using regular non-magical attacks
+    // FIXME: check if defender has magic immunity and attacker is using magical attacks
+    // FIXME: check if defender has invisible, and attacker doesn't have illusions immunity
+
     return true
 }
 
@@ -2233,10 +2237,11 @@ func (combat *CombatScreen) Update() CombatState {
             }
         } else {
             newState := CombatNotOk
-            if combat.canMeleeAttack(combat.SelectedUnit, who) && combat.withinMeleeRange(combat.SelectedUnit, who) {
-                newState = CombatMeleeAttackOk
-            } else if combat.canRangeAttack(combat.SelectedUnit, who) && combat.withinArrowRange(combat.SelectedUnit, who) {
+            // prioritize range attack over melee
+            if combat.canRangeAttack(combat.SelectedUnit, who) && combat.withinArrowRange(combat.SelectedUnit, who) {
                 newState = CombatRangeAttackOk
+            } else if combat.canMeleeAttack(combat.SelectedUnit, who) && combat.withinMeleeRange(combat.SelectedUnit, who) {
+                newState = CombatMeleeAttackOk
             }
 
             combat.MouseState = newState
