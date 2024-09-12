@@ -2179,10 +2179,9 @@ func (combat *CombatScreen) Update() CombatState {
        } else {
 
            defender := combat.GetUnit(combat.MouseTileX, combat.MouseTileY)
+           attacker := combat.SelectedUnit
 
-           if defender != nil && defender.Team != combat.SelectedUnit.Team && combat.withinMeleeRange(combat.SelectedUnit, defender) && combat.canMeleeAttack(combat.SelectedUnit, defender){
-               attacker := combat.SelectedUnit
-
+           if defender != nil && defender.Team != attacker.Team && combat.withinMeleeRange(attacker, defender) && combat.canMeleeAttack(attacker, defender){
                attacker.Attacking = true
                // attacking takes 50% of movement points
                // FIXME: in some cases an extra 0.5 movements points is lost, possibly due to counter attacks?
@@ -2212,6 +2211,16 @@ func (combat *CombatScreen) Update() CombatState {
 
                // FIXME: sound is based on attacker type, and possibly defender type
                sound, err := audio.LoadCombatSound(combat.Cache, attacker.Unit.AttackSound.LbxIndex())
+               if err == nil {
+                   sound.Play()
+               }
+           } else if defender != nil && combat.withinArrowRange(attacker, defender) && combat.canRangeAttack(attacker, defender) {
+               attacker.MovesLeft = attacker.MovesLeft.Subtract(fraction.FromInt(10))
+               if attacker.MovesLeft.LessThan(fraction.FromInt(0)) {
+                   attacker.MovesLeft = fraction.FromInt(0)
+               }
+
+               sound, err := audio.LoadSound(combat.Cache, attacker.Unit.RangeAttackSound.LbxIndex())
                if err == nil {
                    sound.Play()
                }

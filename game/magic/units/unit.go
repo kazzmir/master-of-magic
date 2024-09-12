@@ -18,6 +18,27 @@ const (
     AttackSoundWeak
 )
 
+type RangeAttackSound int
+const (
+    RangeAttackSoundNone RangeAttackSound = iota
+    RangeAttackSoundFireball
+    RangeAttackSoundArrow
+    RangeAttackSoundSling
+    RangeAttackSoundLaunch // for catapult or other similar things
+)
+
+func (sound RangeAttackSound) LbxIndex() int {
+    switch sound {
+        case RangeAttackSoundNone: return -1
+        case RangeAttackSoundFireball: return 20
+        case RangeAttackSoundArrow: return 17
+        case RangeAttackSoundSling: return 18
+        case RangeAttackSoundLaunch: return 15
+    }
+
+    return -1
+}
+
 func (sound AttackSound) LbxIndex() int {
     switch sound {
         case AttackSoundNone: return -1
@@ -71,9 +92,12 @@ const (
 )
 
 type Unit struct {
+    // icon on the overworld and in various ui's
     LbxFile string
-    CombatLbxFile string
     Index int
+
+    // sprites to use in combat
+    CombatLbxFile string
     // first index of combat tiles, order is always up, up-right, right, down-right, down, down-left, left, up-left
     CombatIndex int
     Name string
@@ -83,6 +107,7 @@ type Unit struct {
 
     AttackSound AttackSound
     MovementSound MovementSound
+    RangeAttackSound RangeAttackSound
 
     // number of figures that are drawn in a single combat tile
     Count int
@@ -1059,8 +1084,10 @@ var Warlocks Unit = Unit{
     Index: 64,
     Race: data.RaceDarkElf,
     Count: 4,
+    Name: "Warlocks",
     MeleeAttackPower: 1,
     RangedAttackPower: 7,
+    RangeAttackSound: RangeAttackSoundFireball,
     Defense: 4,
     Resistance: 9,
     HitPoints: 1,
