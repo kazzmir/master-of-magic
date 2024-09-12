@@ -633,11 +633,13 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
 
     for _, unit := range defendingArmy.Units {
         unit.Team = TeamDefender
+        unit.RangedAttacks = unit.Unit.RangedAttacks
         combat.Tiles[unit.Y][unit.X].Unit = unit
     }
 
     for _, unit := range attackingArmy.Units {
         unit.Team = TeamAttacker
+        unit.RangedAttacks = unit.Unit.RangedAttacks
         combat.Tiles[unit.Y][unit.X].Unit = unit
     }
 
@@ -1819,13 +1821,11 @@ func (combat *CombatScreen) NextTurn() {
     for _, unit := range combat.DefendingArmy.Units {
         unit.MovesLeft = fraction.FromInt(unit.Unit.MovementSpeed)
         unit.Paths = make(map[image.Point]pathfinding.Path)
-        unit.RangedAttacks = unit.Unit.RangedAttacks
     }
 
     for _, unit := range combat.AttackingArmy.Units {
         unit.MovesLeft = fraction.FromInt(unit.Unit.MovementSpeed)
         unit.Paths = make(map[image.Point]pathfinding.Path)
-        unit.RangedAttacks = unit.Unit.RangedAttacks
     }
 }
 
@@ -2219,6 +2219,8 @@ func (combat *CombatScreen) Update() CombatState {
                if attacker.MovesLeft.LessThan(fraction.FromInt(0)) {
                    attacker.MovesLeft = fraction.FromInt(0)
                }
+
+               attacker.RangedAttacks -= 1
 
                sound, err := audio.LoadSound(combat.Cache, attacker.Unit.RangeAttackSound.LbxIndex())
                if err == nil {
