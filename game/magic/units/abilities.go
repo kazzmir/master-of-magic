@@ -74,6 +74,7 @@ const (
     AbilitySage
 )
 
+// the file that stores the icon for this ability
 func (ability Ability) LbxFile() string {
     switch ability {
         case AbilityArmorPiercing: return ""
@@ -158,7 +159,7 @@ func (ability Ability) Name() string {
         case AbilityDeathGaze: return ""
         case AbilityDeathImmunity: return ""
         case AbilityDispelEvil: return ""
-        case AbilityDoomBoltSpell: return ""
+        case AbilityDoomBoltSpell: return "Doom Bolt Spell"
         case AbilityDoomGaze: return "Doom Gaze"
         case AbilityFireballSpell: return ""
         case AbilityFireBreath: return ""
@@ -178,7 +179,7 @@ func (ability Ability) Name() string {
         case AbilityMagicImmunity: return ""
         case AbilityMeld: return ""
         case AbilityMerging: return ""
-        case AbilityMissleImmunity: return ""
+        case AbilityMissleImmunity: return "Missle Immunity"
         case AbilityMountaineer: return ""
         case AbilityNegateFirstStrike: return ""
         case AbilityNonCorporeal: return ""
@@ -220,6 +221,7 @@ func (ability Ability) Name() string {
 
 }
 
+// the index in the lbx file for this icon
 func (ability Ability) LbxIndex() int {
     switch ability {
         case AbilityArmorPiercing: return -1

@@ -35,12 +35,21 @@ func NewEngine() (*Engine, error) {
     defendingArmy := combat.Army{
         Player: &defendingPlayer,
         Units: []*combat.ArmyUnit{
+            /*
             &combat.ArmyUnit{
                 Unit: units.HighElfSpearmen,
                 Facing: units.FacingDownRight,
                 X: 12,
                 Y: 10,
                 Health: units.HighElfSpearmen.GetMaxHealth(),
+            },
+            */
+            &combat.ArmyUnit{
+                Unit: units.Warlocks,
+                Facing: units.FacingDownRight,
+                X: 12,
+                Y: 10,
+                Health: units.Warlocks.GetMaxHealth(),
             },
             /*
             &combat.ArmyUnit{
@@ -116,8 +125,8 @@ func NewEngine() (*Engine, error) {
             &combat.ArmyUnit{
                 Unit: units.GreatDrake,
                 Facing: units.FacingUpLeft,
-                X: 12,
-                Y: 11,
+                X: 10,
+                Y: 17,
                 Health: units.GreatDrake.GetMaxHealth(),
             },
             &combat.ArmyUnit{

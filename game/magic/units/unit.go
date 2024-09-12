@@ -92,6 +92,8 @@ type Unit struct {
     Defense int
     Resistance int
     HitPoints int
+    RangedAttackPower int
+    RangedAttacks int
     // FIXME: add construction cost, building requirements to build this unit
     //  upkeep cost, how many figures appear in the battlefield, movement speed,
     //  attack power, ranged attack, defense, magic resistance, hit points, special power
@@ -1056,6 +1058,17 @@ var Warlocks Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 64,
     Race: data.RaceDarkElf,
+    Count: 4,
+    MeleeAttackPower: 1,
+    RangedAttackPower: 7,
+    Defense: 4,
+    Resistance: 9,
+    HitPoints: 1,
+    RangedAttacks: 4,
+    MovementSpeed: 1,
+    Abilities: []Ability{AbilityDoomBoltSpell, AbilityMissleImmunity},
+    CombatLbxFile: "figures5.lbx",
+    CombatIndex: 32,
 }
 
 var Nightmares Unit = Unit{
