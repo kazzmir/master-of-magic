@@ -8,6 +8,7 @@ type Damage int
 const (
     DamageNone Damage = iota
     DamageMagical
+    DamagePhysical
 )
 
 type AttackSound int
@@ -1394,6 +1395,19 @@ var HighMenBowmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 106,
     Race: data.RaceHighMen,
+    Name: "Bowmen",
+    Count: 6,
+    MovementSpeed: 1,
+    RangedAttackPower: 1,
+    RangeAttackIndex: 8,
+    RangedAttacks: 8,
+    RangeAttackSound: RangeAttackSoundArrow,
+    RangedAttackDamageType: DamagePhysical,
+    MovementSound: MovementSoundMarching,
+    Resistance: 4,
+    HitPoints: 1,
+    CombatLbxFile: "figures8.lbx",
+    CombatIndex: 8,
 }
 
 var HighMenCavalry Unit = Unit{

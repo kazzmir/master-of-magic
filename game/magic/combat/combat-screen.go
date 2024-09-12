@@ -2308,6 +2308,8 @@ func (combat *CombatScreen) Update() CombatState {
 
                attacker.RangedAttacks -= 1
 
+               attacker.Facing = faceTowards(attacker.X, attacker.Y, defender.X, defender.Y)
+
                combat.createRangeAttack(attacker, defender)
 
                sound, err := audio.LoadSound(combat.Cache, attacker.Unit.RangeAttackSound.LbxIndex())

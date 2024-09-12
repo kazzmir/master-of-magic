@@ -22,18 +22,9 @@ type Engine struct {
     CombatScreen *combat.CombatScreen
 }
 
-func NewEngine() (*Engine, error) {
-    cache := lbx.AutoCache()
-
-    defendingPlayer := player.Player{
-        Wizard: setup.WizardCustom{
-            Name: "Lair",
-            Banner: data.BannerBrown,
-        },
-    }
-
-    defendingArmy := combat.Army{
-        Player: &defendingPlayer,
+func createWarlockArmy(player *player.Player) combat.Army {
+    return combat.Army{
+        Player: player,
         Units: []*combat.ArmyUnit{
             /*
             &combat.ArmyUnit{
@@ -69,6 +60,35 @@ func NewEngine() (*Engine, error) {
             */
         },
     }
+}
+
+func createHighMenBowmanArmy(player *player.Player) combat.Army {
+    return combat.Army{
+        Player: player,
+        Units: []*combat.ArmyUnit{
+            &combat.ArmyUnit{
+                Unit: units.HighMenBowmen,
+                Facing: units.FacingDownRight,
+                X: 12,
+                Y: 10,
+                Health: units.HighMenBowmen.GetMaxHealth(),
+            },
+        },
+    }
+}
+
+func NewEngine() (*Engine, error) {
+    cache := lbx.AutoCache()
+
+    defendingPlayer := player.Player{
+        Wizard: setup.WizardCustom{
+            Name: "Lair",
+            Banner: data.BannerBrown,
+        },
+    }
+
+    // defendingArmy := createWarlockArmy(&defendingPlayer)
+    defendingArmy := createHighMenBowmanArmy(&defendingPlayer)
 
     allSpells, err := spellbook.ReadSpellsFromCache(cache)
     if err != nil {
