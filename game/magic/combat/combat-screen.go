@@ -96,6 +96,8 @@ type ArmyUnit struct {
 
     Team Team
 
+    RangedAttacks int
+
     Attacking bool
     Defending bool
 
@@ -1817,11 +1819,13 @@ func (combat *CombatScreen) NextTurn() {
     for _, unit := range combat.DefendingArmy.Units {
         unit.MovesLeft = fraction.FromInt(unit.Unit.MovementSpeed)
         unit.Paths = make(map[image.Point]pathfinding.Path)
+        unit.RangedAttacks = unit.Unit.RangedAttacks
     }
 
     for _, unit := range combat.AttackingArmy.Units {
         unit.MovesLeft = fraction.FromInt(unit.Unit.MovementSpeed)
         unit.Paths = make(map[image.Point]pathfinding.Path)
+        unit.RangedAttacks = unit.Unit.RangedAttacks
     }
 }
 
@@ -1910,10 +1914,24 @@ func (combat *CombatScreen) withinArrowRange(attacker *ArmyUnit, defender *ArmyU
     return xDiff <= 1 && yDiff <= 1
     */
     // FIXME: what is the actual range distance?
-    return false
+    return true
 }
 
-func (combat *CombatScreen) canAttack(attacker *ArmyUnit, defender *ArmyUnit) bool {
+func (combat *CombatScreen) canRangeAttack(attacker *ArmyUnit, defender *ArmyUnit) bool {
+    if attacker.RangedAttacks <= 0 {
+        return false
+    }
+
+    if attacker.MovesLeft.LessThanEqual(fraction.FromInt(0)) {
+        return false
+        return false
+
+    }
+
+    return true
+}
+
+func (combat *CombatScreen) canMeleeAttack(attacker *ArmyUnit, defender *ArmyUnit) bool {
     if attacker.MovesLeft.LessThanEqual(fraction.FromInt(0)) {
         return false
     }
@@ -2104,12 +2122,10 @@ func (combat *CombatScreen) Update() CombatState {
             }
         } else {
             newState := CombatNotOk
-            if combat.canAttack(combat.SelectedUnit, who){
-                if combat.withinMeleeRange(combat.SelectedUnit, who) {
-                    newState = CombatMeleeAttackOk
-                } else if combat.withinArrowRange(combat.SelectedUnit, who) {
-                    newState = CombatRangeAttackOk
-                }
+            if combat.canMeleeAttack(combat.SelectedUnit, who) && combat.withinMeleeRange(combat.SelectedUnit, who) {
+                newState = CombatMeleeAttackOk
+            } else if combat.canRangeAttack(combat.SelectedUnit, who) && combat.withinArrowRange(combat.SelectedUnit, who) {
+                newState = CombatRangeAttackOk
             }
 
             combat.MouseState = newState
@@ -2166,7 +2182,7 @@ func (combat *CombatScreen) Update() CombatState {
 
            defender := combat.GetUnit(combat.MouseTileX, combat.MouseTileY)
 
-           if defender != nil && defender.Team != combat.SelectedUnit.Team && combat.withinMeleeRange(combat.SelectedUnit, defender) && combat.canAttack(combat.SelectedUnit, defender){
+           if defender != nil && defender.Team != combat.SelectedUnit.Team && combat.withinMeleeRange(combat.SelectedUnit, defender) && combat.canMeleeAttack(combat.SelectedUnit, defender){
                attacker := combat.SelectedUnit
 
                attacker.Attacking = true
