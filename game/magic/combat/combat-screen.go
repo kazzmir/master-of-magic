@@ -7,7 +7,9 @@ import (
     "math/rand"
     "image"
     "image/color"
+    "time"
     "slices"
+    "context"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/fraction"
@@ -86,6 +88,7 @@ type ArmyUnit struct {
     Unit units.Unit
     Facing units.Facing
     Moving bool
+    DoneMovingFunc context.CancelFunc
     X int
     Y int
     Health int
@@ -94,7 +97,7 @@ type ArmyUnit struct {
     Team Team
 
     Attacking bool
-    AttackingCounter uint64
+    Defending bool
 
     MovementTick uint64
     MoveX float64
@@ -2033,8 +2036,6 @@ func (combat *CombatScreen) Update() CombatState {
         }
     }
 
-    combat.AttackHandler()
-
     hudY := data.ScreenHeight - hudImage.Bounds().Dy()
 
     if combat.DoSelectTile {
@@ -2085,6 +2086,8 @@ func (combat *CombatScreen) Update() CombatState {
         return CombatStateRunning
     }
 
+    combat.AttackHandler()
+
     combat.UI.Enable()
 
     if combat.UI.GetHighestLayerValue() > 0 || mouseY >= hudY {
@@ -2125,59 +2128,81 @@ func (combat *CombatScreen) Update() CombatState {
 
         if combat.TileIsEmpty(combat.MouseTileX, combat.MouseTileY) && combat.CanMoveTo(combat.SelectedUnit, combat.MouseTileX, combat.MouseTileY){
             path, _ := combat.FindPath(combat.SelectedUnit, combat.MouseTileX, combat.MouseTileY)
+            // just be extremely sure that the last sound playing has stopped
+            if combat.SelectedUnit.DoneMovingFunc != nil {
+                combat.SelectedUnit.DoneMovingFunc()
+            }
             combat.SelectedUnit.MovementTick = combat.Counter
             combat.SelectedUnit.MovementPath = path[1:]
             combat.SelectedUnit.Moving = true
             combat.SelectedUnit.MoveX = float64(combat.SelectedUnit.X)
             combat.SelectedUnit.MoveY = float64(combat.SelectedUnit.Y)
+
+            mover := combat.SelectedUnit
+            quit, cancel := context.WithCancel(context.Background())
+            mover.DoneMovingFunc = cancel
+
+            // keep playing movement sound in a loop until the unit stops moving
+            go func(){
+                sound, err := audio.LoadSound(combat.Cache, mover.Unit.MovementSound.LbxIndex())
+                if err == nil {
+                    for quit.Err() == nil {
+                        err = sound.Rewind()
+                        if err != nil {
+                            log.Printf("Unable to rewind sound for %v: %v", mover.Unit.MovementSound, err)
+                        }
+                        sound.Play()
+                        for sound.IsPlaying() {
+                            select {
+                                case <-quit.Done():
+                                    return
+                                case <-time.After(10 * time.Millisecond):
+                            }
+                        }
+                    }
+                }
+            }()
        } else {
 
            defender := combat.GetUnit(combat.MouseTileX, combat.MouseTileY)
 
            if defender != nil && defender.Team != combat.SelectedUnit.Team && combat.withinMeleeRange(combat.SelectedUnit, defender) && combat.canAttack(combat.SelectedUnit, defender){
-               combat.SelectedUnit.Attacking = true
-               combat.SelectedUnit.AttackingCounter = combat.Counter
+               attacker := combat.SelectedUnit
+
+               attacker.Attacking = true
                // attacking takes 50% of movement points
                // FIXME: in some cases an extra 0.5 movements points is lost, possibly due to counter attacks?
-               combat.SelectedUnit.MovesLeft = combat.SelectedUnit.MovesLeft.Subtract(fraction.FromInt(combat.SelectedUnit.Unit.MovementSpeed).Divide(fraction.FromInt(2)))
-               if combat.SelectedUnit.MovesLeft.LessThan(fraction.FromInt(0)) {
-                   combat.SelectedUnit.MovesLeft = fraction.FromInt(0)
+               attacker.MovesLeft = attacker.MovesLeft.Subtract(fraction.FromInt(attacker.Unit.MovementSpeed).Divide(fraction.FromInt(2)))
+               if attacker.MovesLeft.LessThan(fraction.FromInt(0)) {
+                   attacker.MovesLeft = fraction.FromInt(0)
                }
 
-               combat.SelectedUnit.Facing = faceTowards(combat.SelectedUnit.X, combat.SelectedUnit.Y, combat.MouseTileX, combat.MouseTileY)
-               defender.Facing = faceTowards(defender.X, defender.Y, combat.SelectedUnit.X, combat.SelectedUnit.Y)
+               attacker.Facing = faceTowards(attacker.X, attacker.Y, defender.X, defender.Y)
+               defender.Facing = faceTowards(defender.X, defender.Y, attacker.X, attacker.Y)
+               defender.Defending = true
 
-               attackCounter := 20
+               attackCounter := 60
                combat.AttackHandler = func(){
-                   if attackCounter > 0 {
-                       attackCounter -= 1
-                       return
+                   attackCounter -= 1
+
+                   if attackCounter == 20 {
+                       combat.meleeAttack(combat.SelectedUnit, defender)
                    }
 
-                   combat.meleeAttack(combat.SelectedUnit, defender)
-
-                   combat.AttackHandler = func(){}
+                   if attackCounter <= 0 {
+                       attacker.Attacking = false
+                       defender.Defending = false
+                       combat.AttackHandler = func(){}
+                   }
                }
 
                // FIXME: sound is based on attacker type, and possibly defender type
-               sound, err := audio.LoadCombatSound(combat.Cache, 1)
+               sound, err := audio.LoadCombatSound(combat.Cache, attacker.Unit.AttackSound.LbxIndex())
                if err == nil {
                    sound.Play()
                }
            }
        }
-    }
-
-    if combat.SelectedUnit.Attacking {
-        if combat.Counter - combat.SelectedUnit.AttackingCounter > 60 {
-            combat.SelectedUnit.Attacking = false
-            combat.SelectedUnit.AttackingCounter = 0
-
-            if combat.SelectedUnit.MovesLeft.LessThanEqual(fraction.FromInt(0)) {
-                combat.SelectedUnit.LastTurn = combat.CurrentTurn
-                combat.NextUnit()
-            }
-        }
     }
 
     if combat.SelectedUnit.Moving {
@@ -2194,7 +2219,7 @@ func (combat *CombatScreen) Update() CombatState {
         combat.SelectedUnit.Facing = computeFacing(useAngle)
 
         // speed := float64(combat.Counter - combat.SelectedUnit.MovementTick) / 4
-        speed := float64(0.09)
+        speed := float64(0.08)
         combat.SelectedUnit.MoveX += math.Cos(angle) * speed
         combat.SelectedUnit.MoveY += math.Sin(angle) * speed
 
@@ -2219,19 +2244,22 @@ func (combat *CombatScreen) Update() CombatState {
 
             if len(combat.SelectedUnit.MovementPath) == 0 {
                 combat.SelectedUnit.Moving = false
+                combat.SelectedUnit.DoneMovingFunc()
                 // reset path computations
                 combat.SelectedUnit.Paths = make(map[image.Point]pathfinding.Path)
-
-                if combat.SelectedUnit.MovesLeft.LessThanEqual(fraction.FromInt(0)) {
-                    combat.SelectedUnit.LastTurn = combat.CurrentTurn
-                    combat.NextUnit()
-                }
             }
         }
     }
 
+    // the unit died or is out of moves
+    if combat.SelectedUnit != nil && (combat.SelectedUnit.Health <= 0 || combat.SelectedUnit.MovesLeft.LessThanEqual(fraction.FromInt(0))) {
+        combat.SelectedUnit.LastTurn = combat.CurrentTurn
+        combat.NextUnit()
+    }
+
     // log.Printf("Mouse original %v,%v %v,%v -> %v,%v", mouseX, mouseY, tileX, tileY, combat.MouseTileX, combat.MouseTileY)
 
+    // defender wins in a tie
     if len(combat.AttackingArmy.Units) == 0 {
         return CombatStateDefenderWin
     }
@@ -2402,7 +2430,7 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
                 index = animationIndex % (uint64(len(combatImages)) - 1)
             }
 
-            if unit.Attacking {
+            if unit.Attacking || unit.Defending {
                 index = 2 + animationIndex % 2
             }
 

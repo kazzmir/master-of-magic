@@ -4,6 +4,60 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
 )
 
+type AttackSound int
+
+const (
+    AttackSoundNone AttackSound = iota
+    AttackSoundMonster1
+    AttackSoundMonster2
+    AttackSoundMonster3
+    AttackSoundMonster4
+    AttackSoundMonsterVsNormal
+    AttackSoundMonster5
+    AttackSoundNormal
+    AttackSoundWeak
+)
+
+func (sound AttackSound) LbxIndex() int {
+    switch sound {
+        case AttackSoundNone: return -1
+        case AttackSoundMonster1: return 0
+        case AttackSoundMonster2: return 1
+        case AttackSoundMonster3: return 2
+        case AttackSoundMonster4: return 3
+        case AttackSoundMonsterVsNormal: return 4
+        case AttackSoundMonster5: return 5
+        case AttackSoundNormal: return 6
+        case AttackSoundWeak: return 7
+    }
+
+    return -1
+}
+
+type MovementSound int
+
+const (
+    MovementSoundNone MovementSound = iota
+    MovementSoundMarching
+    MovementSoundHorse
+    MovementSoundFly
+    MovementSoundBigSteps
+    MovementSoundMerge
+)
+
+func (sound MovementSound) LbxIndex() int {
+    switch sound {
+        case MovementSoundNone: return -1
+        case MovementSoundMarching: return 5
+        case MovementSoundHorse: return 6
+        case MovementSoundFly: return 7
+        case MovementSoundBigSteps: return 10
+        case MovementSoundMerge: return 12
+    }
+
+    return -1
+}
+
 type Facing int
 const (
     FacingUp Facing = iota
@@ -26,6 +80,9 @@ type Unit struct {
     Race data.Race
     Flying bool
     Abilities []Ability
+
+    AttackSound AttackSound
+    MovementSound MovementSound
 
     // number of figures that are drawn in a single combat tile
     Count int
@@ -362,6 +419,8 @@ var GreatDrake Unit = Unit{
     Count: 1,
     HitPoints: 30,
     Flying: true,
+    AttackSound: AttackSoundMonster2,
+    MovementSound: MovementSoundFly,
     MeleeAttackPower: 30,
     MovementSpeed: 2,
     Defense: 10,
@@ -1189,6 +1248,8 @@ var HighElfSpearmen Unit = Unit{
     ProductionCost: 15,
     MeleeAttackPower: 1,
     Defense: 2,
+    AttackSound: AttackSoundNormal,
+    MovementSound: MovementSoundMarching,
     Resistance: 6,
     Abilities: []Ability{AbilityForester},
     MovementSpeed: 1,
