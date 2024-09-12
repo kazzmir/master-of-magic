@@ -2037,7 +2037,7 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
     }
 }
 
-func (combat *CombatScreen) createUnitToUnitProjectile(attacker *ArmyUnit, target *ArmyUnit, images []*ebiten.Image, explodeImages []*ebiten.Image) *Projectile {
+func (combat *CombatScreen) createUnitToUnitProjectile(attacker *ArmyUnit, target *ArmyUnit, offset image.Point, images []*ebiten.Image, explodeImages []*ebiten.Image) *Projectile {
     // find where on the screen the unit is
     screenX, screenY := combat.Coordinates.Apply(float64(attacker.X), float64(attacker.Y))
     targetX, targetY := combat.Coordinates.Apply(float64(target.X), float64(target.Y))
@@ -2049,10 +2049,21 @@ func (combat *CombatScreen) createUnitToUnitProjectile(attacker *ArmyUnit, targe
         useImage = explodeImages[0]
     }
 
+    screenY += 3
+    screenY -= float64(useImage.Bounds().Dy()/2)
+    screenX += 14
+    screenX -= float64(useImage.Bounds().Dx()/2)
+
+    screenY += float64(offset.Y)
+    screenX += float64(offset.X)
+
     targetY += 3
     targetY -= float64(useImage.Bounds().Dy()/2)
     targetX += 14
     targetX -= float64(useImage.Bounds().Dx()/2)
+
+    targetY += rand.Float64() * 6 - 3
+    targetX += rand.Float64() * 6 - 3
 
     /*
     switch position {
@@ -2068,6 +2079,10 @@ func (combat *CombatScreen) createUnitToUnitProjectile(attacker *ArmyUnit, targe
     */
 
     effect := func (target *ArmyUnit){
+        if target.Health <= 0 {
+            return
+        }
+
         damage := attacker.ComputeRangeDamage()
         damage = target.ApplyDefense(damage)
         target.TakeDamage(damage)
@@ -2114,7 +2129,9 @@ func (combat *CombatScreen) createRangeAttack(attacker *ArmyUnit, defender *Army
     animation := images[0:3]
     explode := images[3:]
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitToUnitProjectile(attacker, defender, animation, explode))
+    for _, offset := range combatPoints(attacker.Figures()) {
+        combat.Projectiles = append(combat.Projectiles, combat.createUnitToUnitProjectile(attacker, defender, offset, animation, explode))
+    }
 }
 
 func (combat *CombatScreen) RemoveUnit(unit *ArmyUnit){
