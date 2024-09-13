@@ -157,7 +157,7 @@ func (unit *ArmyUnit) ComputeRangeDamage(tileDistance int) int {
                 toHit -= 10
             } else if tileDistance >= 6 && tileDistance <= 8 {
                 toHit -= 20
-            } else {
+            } else if tileDistance > 8 {
                 toHit = 10
             }
         }
