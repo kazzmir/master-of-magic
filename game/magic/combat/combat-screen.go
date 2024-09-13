@@ -2611,6 +2611,67 @@ func (combat *CombatScreen) DrawHighlightedTile(screen *ebiten.Image, x int, y i
     */
 }
 
+func (combat *CombatScreen) ShowUnitInfo(screen *ebiten.Image, unit *ArmyUnit){
+    x1 := 255 - 1
+    y1 := 5
+    width := 65
+    height := 45
+    vector.DrawFilledRect(screen, float32(x1), float32(y1), float32(width), float32(height), color.RGBA{R: 0, G: 0, B: 0, A: 100}, false)
+    vector.StrokeRect(screen, float32(x1), float32(y1), float32(width), float32(height), 1, util.PremultiplyAlpha(color.RGBA{R: 0x27, G: 0x4e, B: 0xdc, A: 100}), false)
+    combat.InfoFont.PrintCenter(screen, float64(x1 + 35), float64(y1 + 2), 1, ebiten.ColorScale{}, fmt.Sprintf("%v", unit.Unit.Name))
+
+    meleeImage, _ := combat.ImageCache.GetImage("compix.lbx", 61, 0)
+    var options ebiten.DrawImageOptions
+    options.GeoM.Translate(float64(x1 + 14), float64(y1 + 10))
+    screen.DrawImage(meleeImage, &options)
+    combat.InfoFont.PrintRight(screen, float64(x1 + 14), float64(y1 + 10 + 2), 1, ebiten.ColorScale{}, fmt.Sprintf("%v", unit.Unit.MeleeAttackPower))
+
+    movementImage, _ := combat.ImageCache.GetImage("compix.lbx", 72, 0)
+    if unit.Unit.Flying {
+        movementImage, _ = combat.ImageCache.GetImage("compix.lbx", 73, 0)
+    }
+
+    options.GeoM.Reset()
+    options.GeoM.Translate(float64(x1 + 14), float64(y1 + 26))
+    screen.DrawImage(movementImage, &options)
+    combat.InfoFont.PrintRight(screen, float64(x1 + 14), float64(y1 + 26 + 2), 1, ebiten.ColorScale{}, fmt.Sprintf("%v", unit.MovesLeft.ToFloat()))
+
+    armorImage, _ := combat.ImageCache.GetImage("compix.lbx", 70, 0)
+    options.GeoM.Reset()
+    options.GeoM.Translate(float64(x1 + 48), float64(y1 + 10))
+    screen.DrawImage(armorImage, &options)
+    combat.InfoFont.PrintRight(screen, float64(x1 + 48), float64(y1 + 10 + 2), 1, ebiten.ColorScale{}, fmt.Sprintf("%v", unit.Unit.Defense))
+
+    resistanceImage, _ := combat.ImageCache.GetImage("compix.lbx", 75, 0)
+    options.GeoM.Reset()
+    options.GeoM.Translate(float64(x1 + 48), float64(y1 + 18))
+    screen.DrawImage(resistanceImage, &options)
+    combat.InfoFont.PrintRight(screen, float64(x1 + 48), float64(y1 + 18 + 2), 1, ebiten.ColorScale{}, fmt.Sprintf("%v", unit.Unit.Resistance))
+
+    combat.InfoFont.PrintCenter(screen, float64(x1 + 14), float64(y1 + 37), 1, ebiten.ColorScale{}, "Hits")
+
+    highHealth := color.RGBA{R: 0, G: 0xff, B: 0, A: 0xff}
+    mediumHealth := color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff}
+    lowHealth := color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}
+    healthWidth := 15
+
+    vector.StrokeLine(screen, float32(x1 + 25), float32(y1 + 40), float32(x1 + 25 + healthWidth), float32(y1 + 40), 1, color.RGBA{R: 0, G: 0, B: 0, A: 0xff}, false)
+
+    healthPercent := float64(unit.Health) / float64(unit.Unit.GetMaxHealth())
+    healthLength := float64(healthWidth) * healthPercent
+
+    useColor := highHealth
+    if healthPercent < 0.33 {
+        useColor = lowHealth
+    } else if healthPercent < 0.66 {
+        useColor = mediumHealth
+    } else {
+        useColor = highHealth
+    }
+
+    vector.StrokeLine(screen, float32(x1 + 25), float32(y1 + 40), float32(x1 + 25) + float32(healthLength), float32(y1 + 40), 1, useColor, false)
+}
+
 func (combat *CombatScreen) Draw(screen *ebiten.Image){
 
     animationIndex := combat.Counter / 8
@@ -2743,64 +2804,7 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
     combat.UI.Draw(combat.UI, screen)
 
     if combat.HighlightedUnit != nil {
-        x1 := 255 - 1
-        y1 := 5
-        width := 65
-        height := 45
-        vector.DrawFilledRect(screen, float32(x1), float32(y1), float32(width), float32(height), color.RGBA{R: 0, G: 0, B: 0, A: 100}, false)
-        vector.StrokeRect(screen, float32(x1), float32(y1), float32(width), float32(height), 1, util.PremultiplyAlpha(color.RGBA{R: 0x27, G: 0x4e, B: 0xdc, A: 100}), false)
-        combat.InfoFont.PrintCenter(screen, float64(x1 + 35), float64(y1 + 2), 1, ebiten.ColorScale{}, fmt.Sprintf("%v", combat.HighlightedUnit.Unit.Name))
-
-        meleeImage, _ := combat.ImageCache.GetImage("compix.lbx", 61, 0)
-        var options ebiten.DrawImageOptions
-        options.GeoM.Translate(float64(x1 + 14), float64(y1 + 10))
-        screen.DrawImage(meleeImage, &options)
-        combat.InfoFont.PrintRight(screen, float64(x1 + 14), float64(y1 + 10 + 2), 1, ebiten.ColorScale{}, fmt.Sprintf("%v", combat.HighlightedUnit.Unit.MeleeAttackPower))
-
-        movementImage, _ := combat.ImageCache.GetImage("compix.lbx", 72, 0)
-        if combat.HighlightedUnit.Unit.Flying {
-            movementImage, _ = combat.ImageCache.GetImage("compix.lbx", 73, 0)
-        }
-
-        options.GeoM.Reset()
-        options.GeoM.Translate(float64(x1 + 14), float64(y1 + 26))
-        screen.DrawImage(movementImage, &options)
-        combat.InfoFont.PrintRight(screen, float64(x1 + 14), float64(y1 + 26 + 2), 1, ebiten.ColorScale{}, fmt.Sprintf("%v", combat.HighlightedUnit.MovesLeft.ToFloat()))
-
-        armorImage, _ := combat.ImageCache.GetImage("compix.lbx", 70, 0)
-        options.GeoM.Reset()
-        options.GeoM.Translate(float64(x1 + 48), float64(y1 + 10))
-        screen.DrawImage(armorImage, &options)
-        combat.InfoFont.PrintRight(screen, float64(x1 + 48), float64(y1 + 10 + 2), 1, ebiten.ColorScale{}, fmt.Sprintf("%v", combat.HighlightedUnit.Unit.Defense))
-
-        resistanceImage, _ := combat.ImageCache.GetImage("compix.lbx", 75, 0)
-        options.GeoM.Reset()
-        options.GeoM.Translate(float64(x1 + 48), float64(y1 + 18))
-        screen.DrawImage(resistanceImage, &options)
-        combat.InfoFont.PrintRight(screen, float64(x1 + 48), float64(y1 + 18 + 2), 1, ebiten.ColorScale{}, fmt.Sprintf("%v", combat.HighlightedUnit.Unit.Resistance))
-
-        combat.InfoFont.PrintCenter(screen, float64(x1 + 14), float64(y1 + 37), 1, ebiten.ColorScale{}, "Hits")
-
-        highHealth := color.RGBA{R: 0, G: 0xff, B: 0, A: 0xff}
-        mediumHealth := color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff}
-        lowHealth := color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}
-        healthWidth := 15
-
-        vector.StrokeLine(screen, float32(x1 + 25), float32(y1 + 40), float32(x1 + 25 + healthWidth), float32(y1 + 40), 1, color.RGBA{R: 0, G: 0, B: 0, A: 0xff}, false)
-
-        healthPercent := float64(combat.HighlightedUnit.Health) / float64(combat.HighlightedUnit.Unit.GetMaxHealth())
-        healthLength := float64(healthWidth) * healthPercent
-
-        useColor := highHealth
-        if healthPercent < 0.33 {
-            useColor = lowHealth
-        } else if healthPercent < 0.66 {
-            useColor = mediumHealth
-        } else {
-            useColor = highHealth
-        }
-
-        vector.StrokeLine(screen, float32(x1 + 25), float32(y1 + 40), float32(x1 + 25) + float32(healthLength), float32(y1 + 40), 1, useColor, false)
+        combat.ShowUnitInfo(screen, combat.HighlightedUnit)
     }
 
     for _, projectile := range combat.Projectiles {
