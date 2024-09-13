@@ -140,6 +140,16 @@ func (unit *Unit) Equals(other Unit) bool {
     return unit.LbxFile == other.LbxFile && unit.Index == other.Index
 }
 
+func (unit *Unit) HasAbility(ability Ability) bool {
+    for _, check := range unit.Abilities {
+        if check == ability {
+            return true
+        }
+    }
+
+    return false
+}
+
 /* maximum health is the number of figures * the number of hit points per figure
  */
 func (unit *Unit) GetMaxHealth() int {

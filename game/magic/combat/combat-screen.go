@@ -140,11 +140,34 @@ func (unit *ArmyUnit) Heal(amount int){
     }
 }
 
-func (unit *ArmyUnit) ComputeRangeDamage() int {
+// given the distance to the target in tiles, return the amount of range damage done
+func (unit *ArmyUnit) ComputeRangeDamage(tileDistance int) int {
+
+    toHit := unit.ToHitMelee()
+
+    // magical attacks don't suffer a to-hit penalty
+    if unit.Unit.RangedAttackDamageType != units.DamageMagical {
+
+        if unit.Unit.HasAbility(units.AbilityLongRange) {
+            if tileDistance >= 3 {
+                toHit -= 10
+            }
+        } else {
+            if tileDistance >= 3 && tileDistance <= 5 {
+                toHit -= 10
+            } else if tileDistance >= 6 && tileDistance <= 8 {
+                toHit -= 20
+            } else {
+                toHit = 10
+            }
+        }
+
+    }
+
     damage := 0
     for figure := 0; figure < unit.Figures(); figure++ {
         for i := 0; i < unit.Unit.RangedAttackPower; i++ {
-            if rand.Intn(100) < unit.ToHitMelee() {
+            if rand.Intn(100) < toHit {
                 damage += 1
             }
         }
@@ -208,6 +231,46 @@ func pathCost(from image.Point, to image.Point) fraction.Fraction {
 
     // shouldn't ever really get here
     return fraction.Make(xDiff + yDiff, 1)
+}
+
+/* compute the distance between two tiles by moving in one of the 8 directions
+ */
+func computeTileDistance(x1 int, y1 int, x2 int, y2 int) int {
+    distance := 0
+
+    for x1 != x2 || y1 != y2 {
+        xDiff := int(math.Abs(float64(x1 - x2)))
+        yDiff := int(math.Abs(float64(y1 - y2)))
+        if xDiff > 0 && yDiff > 0 {
+            distance += 1
+            if x1 < x2 {
+                x1 += 1
+            } else {
+                x1 -= 1
+            }
+            if y1 < y2 {
+                y1 += 1
+            } else {
+                y1 -= 1
+            }
+        } else if xDiff > 0 && yDiff == 0 {
+            distance += 1
+            if x1 < x2 {
+                x1 += 1
+            } else {
+                x1 -= 1
+            }
+        } else if yDiff > 0 && xDiff == 0 {
+            distance += 1
+            if y1 < y2 {
+                y1 += 1
+            } else {
+                y1 -= 1
+            }
+        }
+    }
+
+    return distance
 }
 
 func (unit *ArmyUnit) CanFollowPath(path pathfinding.Path) bool {
@@ -2133,16 +2196,20 @@ func (combat *CombatScreen) createRangeAttack(attacker *ArmyUnit, defender *Army
     animation := images[0:3]
     explode := images[3:]
 
+    tileDistance := computeTileDistance(attacker.X, attacker.Y, defender.X, defender.Y)
+
     effect := func (target *ArmyUnit){
         if target.Health <= 0 {
             return
         }
 
-        // FIXME: compute to-hit penalities for non-magical ranged attacks
         // FIXME: apply defenses for magic immunity or missle immunity
 
-        damage := attacker.ComputeRangeDamage()
+        damage := attacker.ComputeRangeDamage(tileDistance)
         defense := target.ComputeDefense(attacker.Unit.RangedAttackDamageType)
+
+        // log.Printf("Ranged attack from %v: damage=%v defense=%v distance=%v", attacker.Unit.Name, damage, defense, tileDistance)
+
         damage -= defense
         if damage < 0 {
             damage = 0
