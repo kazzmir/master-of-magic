@@ -72,6 +72,7 @@ const (
     MovementSoundFly
     MovementSoundBigSteps
     MovementSoundMerge
+    MovementSoundShuffle
 )
 
 func (sound MovementSound) LbxIndex() int {
@@ -82,6 +83,7 @@ func (sound MovementSound) LbxIndex() int {
         case MovementSoundFly: return 7
         case MovementSoundBigSteps: return 10
         case MovementSoundMerge: return 12
+        case MovementSoundShuffle: return 9
     }
 
     return -1
@@ -1133,6 +1135,7 @@ var Warlocks Unit = Unit{
     HitPoints: 1,
     RangedAttacks: 4,
     MovementSpeed: 1,
+    MovementSound: MovementSoundShuffle,
     Abilities: []Ability{AbilityDoomBoltSpell, AbilityMissileImmunity},
     CombatLbxFile: "figures5.lbx",
     CombatIndex: 32,
@@ -1416,7 +1419,7 @@ var HighMenBowmen Unit = Unit{
     RangedAttacks: 8,
     RangeAttackSound: RangeAttackSoundArrow,
     RangedAttackDamageType: DamageRangedPhysical,
-    MovementSound: MovementSoundMarching,
+    MovementSound: MovementSoundShuffle,
     Resistance: 4,
     HitPoints: 1,
     CombatLbxFile: "figures8.lbx",

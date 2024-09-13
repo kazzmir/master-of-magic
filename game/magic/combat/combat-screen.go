@@ -2402,10 +2402,11 @@ func (combat *CombatScreen) Update() CombatState {
             quit, cancel := context.WithCancel(context.Background())
             mover.DoneMovingFunc = cancel
 
-            // keep playing movement sound in a loop until the unit stops moving
-            go func(){
-                sound, err := audio.LoadSound(combat.Cache, mover.Unit.MovementSound.LbxIndex())
-                if err == nil {
+            sound, err := audio.LoadSound(combat.Cache, mover.Unit.MovementSound.LbxIndex())
+            if err == nil {
+                // keep playing movement sound in a loop until the unit stops moving
+                go func(){
+                    // defer sound.Pause()
                     for quit.Err() == nil {
                         err = sound.Rewind()
                         if err != nil {
@@ -2420,8 +2421,8 @@ func (combat *CombatScreen) Update() CombatState {
                             }
                         }
                     }
-                }
-            }()
+                }()
+            }
        } else {
 
            defender := combat.GetUnit(combat.MouseTileX, combat.MouseTileY)
