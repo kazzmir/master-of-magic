@@ -2048,6 +2048,10 @@ func (combat *CombatScreen) canRangeAttack(attacker *ArmyUnit, defender *ArmyUni
         return false
     }
 
+    if attacker.Team == defender.Team {
+        return false
+    }
+
     // FIXME: check if defender has missle immunity and attacker is using regular non-magical attacks
     // FIXME: check if defender has magic immunity and attacker is using magical attacks
     // FIXME: check if defender has invisible, and attacker doesn't have illusions immunity
@@ -2625,6 +2629,21 @@ func (combat *CombatScreen) ShowUnitInfo(screen *ebiten.Image, unit *ArmyUnit){
     options.GeoM.Translate(float64(x1 + 14), float64(y1 + 10))
     screen.DrawImage(meleeImage, &options)
     combat.InfoFont.PrintRight(screen, float64(x1 + 14), float64(y1 + 10 + 2), 1, ebiten.ColorScale{}, fmt.Sprintf("%v", unit.Unit.MeleeAttackPower))
+
+    switch unit.Unit.RangedAttackDamageType {
+        case units.DamageRangedMagical:
+            fire, _ := combat.ImageCache.GetImage("compix.lbx", 62, 0)
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(x1 + 14), float64(y1 + 18))
+            screen.DrawImage(fire, &options)
+            combat.InfoFont.PrintRight(screen, float64(x1 + 14), float64(y1 + 18 + 2), 1, ebiten.ColorScale{}, fmt.Sprintf("%v", unit.Unit.RangedAttackPower))
+        case units.DamageRangedPhysical:
+            arrow, _ := combat.ImageCache.GetImage("compix.lbx", 66, 0)
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(x1 + 14), float64(y1 + 18))
+            screen.DrawImage(arrow, &options)
+            combat.InfoFont.PrintRight(screen, float64(x1 + 14), float64(y1 + 18 + 2), 1, ebiten.ColorScale{}, fmt.Sprintf("%v", unit.Unit.RangedAttackPower))
+    }
 
     movementImage, _ := combat.ImageCache.GetImage("compix.lbx", 72, 0)
     if unit.Unit.Flying {
