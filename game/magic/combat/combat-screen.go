@@ -114,16 +114,18 @@ type ArmyUnit struct {
     Paths map[image.Point]pathfinding.Path
 }
 
-func (unit *ArmyUnit) ApplyDefense(damage int) int {
-    for figure := 0; figure < unit.Figures() && damage > 0; figure++ {
-        for i := 0; i < unit.Unit.Defense && damage > 0; i++ {
+func (unit *ArmyUnit) ComputeDefense(damage units.Damage) int {
+    defense := 0
+
+    for figure := 0; figure < unit.Figures(); figure++ {
+        for i := 0; i < unit.Unit.Defense; i++ {
             if rand.Intn(100) < unit.ToDefend() {
-                damage -= 1
+                defense += 1
             }
         }
     }
 
-    return damage
+    return defense
 }
 
 func (unit *ArmyUnit) TakeDamage(damage int) {
@@ -2023,8 +2025,19 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
     originalAttackerDamage := attackerDamage
     originalDefenderCounterDamage := defenderCounterDamage
 
-    attackerDamage = defender.ApplyDefense(attackerDamage)
-    defenderCounterDamage = attacker.ApplyDefense(defenderCounterDamage)
+    defenderDefense := defender.ComputeDefense(units.DamagePhysical)
+    attackerDefense := attacker.ComputeDefense(units.DamagePhysical)
+
+    attackerDamage -= defenderDefense
+    defenderCounterDamage -= attackerDefense
+
+    if attackerDamage < 0 {
+        attackerDamage = 0
+    }
+
+    if defenderCounterDamage < 0 {
+        defenderCounterDamage = 0
+    }
 
     log.Printf("Attacker damage roll %v, defender defended %v, attacker damage to defender %v", originalAttackerDamage, originalAttackerDamage - attackerDamage, attackerDamage)
     log.Printf("Defender counter damage roll %v, attacker defended %v, defender damage to attacker %v", originalDefenderCounterDamage, originalDefenderCounterDamage - defenderCounterDamage, defenderCounterDamage)
@@ -2041,7 +2054,7 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
     }
 }
 
-func (combat *CombatScreen) createUnitToUnitProjectile(attacker *ArmyUnit, target *ArmyUnit, offset image.Point, images []*ebiten.Image, explodeImages []*ebiten.Image) *Projectile {
+func (combat *CombatScreen) createUnitToUnitProjectile(attacker *ArmyUnit, target *ArmyUnit, offset image.Point, images []*ebiten.Image, explodeImages []*ebiten.Image, effect ProjectileEffect) *Projectile {
     // find where on the screen the unit is
     screenX, screenY := combat.Coordinates.Apply(float64(attacker.X), float64(attacker.Y))
     targetX, targetY := combat.Coordinates.Apply(float64(target.X), float64(target.Y))
@@ -2082,22 +2095,6 @@ func (combat *CombatScreen) createUnitToUnitProjectile(attacker *ArmyUnit, targe
     }
     */
 
-    effect := func (target *ArmyUnit){
-        if target.Health <= 0 {
-            return
-        }
-
-        // FIXME: compute to-hit penalities for non-magical ranged attacks
-        // FIXME: apply defenses for magic immunity or missle immunity
-
-        damage := attacker.ComputeRangeDamage()
-        damage = target.ApplyDefense(damage)
-        target.TakeDamage(damage)
-        if target.Health <= 0 {
-            combat.RemoveUnit(target)
-        }
-    }
-
     speed := 2.8
 
     angle := math.Atan2(targetY - screenY, targetX - screenX)
@@ -2136,8 +2133,28 @@ func (combat *CombatScreen) createRangeAttack(attacker *ArmyUnit, defender *Army
     animation := images[0:3]
     explode := images[3:]
 
+    effect := func (target *ArmyUnit){
+        if target.Health <= 0 {
+            return
+        }
+
+        // FIXME: compute to-hit penalities for non-magical ranged attacks
+        // FIXME: apply defenses for magic immunity or missle immunity
+
+        damage := attacker.ComputeRangeDamage()
+        defense := target.ComputeDefense(attacker.Unit.RangedAttackDamageType)
+        damage -= defense
+        if damage < 0 {
+            damage = 0
+        }
+        target.TakeDamage(damage)
+        if target.Health <= 0 {
+            combat.RemoveUnit(target)
+        }
+    }
+
     for _, offset := range combatPoints(attacker.Figures()) {
-        combat.Projectiles = append(combat.Projectiles, combat.createUnitToUnitProjectile(attacker, defender, offset, animation, explode))
+        combat.Projectiles = append(combat.Projectiles, combat.createUnitToUnitProjectile(attacker, defender, offset, animation, explode, effect))
     }
 }
 
