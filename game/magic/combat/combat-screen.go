@@ -1723,6 +1723,24 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
             screen.DrawImage(plainAttack, &options)
             combat.HudFont.PrintRight(screen, 126, 174, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", combat.SelectedUnit.Unit.MeleeAttackPower))
 
+            if combat.SelectedUnit.RangedAttacks > 0 {
+                y := float64(180)
+                switch combat.SelectedUnit.Unit.RangedAttackDamageType {
+                    case units.DamageRangedPhysical:
+                        arrow, _ := combat.ImageCache.GetImage("compix.lbx", 34, 0)
+                        options.GeoM.Reset()
+                        options.GeoM.Translate(126, y)
+                        screen.DrawImage(arrow, &options)
+                        combat.HudFont.PrintRight(screen, 126, y+2, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", combat.SelectedUnit.Unit.RangedAttackPower))
+                    case units.DamageRangedMagical:
+                        magic, _ := combat.ImageCache.GetImage("compix.lbx", 30, 0)
+                        options.GeoM.Reset()
+                        options.GeoM.Translate(126, y)
+                        screen.DrawImage(magic, &options)
+                        combat.HudFont.PrintRight(screen, 126, y+2, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", combat.SelectedUnit.Unit.RangedAttackPower))
+                }
+            }
+
             var movementImage *ebiten.Image
             if combat.SelectedUnit.Unit.Flying {
                 movementImage, _ = combat.ImageCache.GetImage("compix.lbx", 39, 0)
