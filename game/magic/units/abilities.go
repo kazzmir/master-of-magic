@@ -34,7 +34,7 @@ const (
     AbilityMagicImmunity
     AbilityMeld
     AbilityMerging
-    AbilityMissleImmunity
+    AbilityMissileImmunity
     AbilityMountaineer
     AbilityNegateFirstStrike
     AbilityNonCorporeal
@@ -106,7 +106,7 @@ func (ability Ability) LbxFile() string {
         case AbilityMagicImmunity: return ""
         case AbilityMeld: return ""
         case AbilityMerging: return ""
-        case AbilityMissleImmunity: return ""
+        case AbilityMissileImmunity: return ""
         case AbilityMountaineer: return ""
         case AbilityNegateFirstStrike: return ""
         case AbilityNonCorporeal: return ""
@@ -179,7 +179,7 @@ func (ability Ability) Name() string {
         case AbilityMagicImmunity: return ""
         case AbilityMeld: return ""
         case AbilityMerging: return ""
-        case AbilityMissleImmunity: return "Missle Immunity"
+        case AbilityMissileImmunity: return "Missile Immunity"
         case AbilityMountaineer: return ""
         case AbilityNegateFirstStrike: return ""
         case AbilityNonCorporeal: return ""
@@ -253,7 +253,7 @@ func (ability Ability) LbxIndex() int {
         case AbilityMagicImmunity: return -1
         case AbilityMeld: return -1
         case AbilityMerging: return -1
-        case AbilityMissleImmunity: return -1
+        case AbilityMissileImmunity: return -1
         case AbilityMountaineer: return -1
         case AbilityNegateFirstStrike: return -1
         case AbilityNonCorporeal: return -1

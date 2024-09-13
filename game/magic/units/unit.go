@@ -7,8 +7,9 @@ import (
 type Damage int
 const (
     DamageNone Damage = iota
-    DamageMagical
-    DamagePhysical
+    DamageRangedMagical
+    DamageRangedPhysical
+    DamageMeleePhysical
 )
 
 type AttackSound int
@@ -1122,7 +1123,7 @@ var Warlocks Unit = Unit{
     Race: data.RaceDarkElf,
     Count: 4,
     Name: "Warlocks",
-    RangedAttackDamageType: DamageMagical,
+    RangedAttackDamageType: DamageRangedMagical,
     RangeAttackIndex: 16,
     MeleeAttackPower: 1,
     RangedAttackPower: 7,
@@ -1132,7 +1133,7 @@ var Warlocks Unit = Unit{
     HitPoints: 1,
     RangedAttacks: 4,
     MovementSpeed: 1,
-    Abilities: []Ability{AbilityDoomBoltSpell, AbilityMissleImmunity},
+    Abilities: []Ability{AbilityDoomBoltSpell, AbilityMissileImmunity},
     CombatLbxFile: "figures5.lbx",
     CombatIndex: 32,
 }
@@ -1414,7 +1415,7 @@ var HighMenBowmen Unit = Unit{
     RangeAttackIndex: 8,
     RangedAttacks: 8,
     RangeAttackSound: RangeAttackSoundArrow,
-    RangedAttackDamageType: DamagePhysical,
+    RangedAttackDamageType: DamageRangedPhysical,
     MovementSound: MovementSoundMarching,
     Resistance: 4,
     HitPoints: 1,

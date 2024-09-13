@@ -77,6 +77,28 @@ func createHighMenBowmanArmy(player *player.Player) combat.Army {
     }
 }
 
+func createGreatDrakeArmy(player *player.Player) *combat.Army{
+    return &combat.Army{
+        Player: player,
+        Units: []*combat.ArmyUnit{
+            &combat.ArmyUnit{
+                Unit: units.GreatDrake,
+                Facing: units.FacingUpLeft,
+                X: 10,
+                Y: 17,
+                Health: units.GreatDrake.GetMaxHealth(),
+            },
+            &combat.ArmyUnit{
+                Unit: units.GreatDrake,
+                Facing: units.FacingUpLeft,
+                X: 9,
+                Y: 18,
+                Health: units.GreatDrake.GetMaxHealth(),
+            },
+        },
+    }
+}
+
 func NewEngine() (*Engine, error) {
     cache := lbx.AutoCache()
 
@@ -139,25 +161,9 @@ func NewEngine() (*Engine, error) {
     defendingPlayer.Spells.AddSpell(allSpells.FindByName("Air Elemental"))
     defendingPlayer.Spells.AddSpell(allSpells.FindByName("Fire Elemental"))
 
-    attackingArmy := combat.Army{
-        Player: &attackingPlayer,
-        Units: []*combat.ArmyUnit{
-            &combat.ArmyUnit{
-                Unit: units.GreatDrake,
-                Facing: units.FacingUpLeft,
-                X: 10,
-                Y: 17,
-                Health: units.GreatDrake.GetMaxHealth(),
-            },
-            &combat.ArmyUnit{
-                Unit: units.GreatDrake,
-                Facing: units.FacingUpLeft,
-                X: 9,
-                Y: 18,
-                Health: units.GreatDrake.GetMaxHealth(),
-            },
-        },
-    }
+    // attackingArmy := createGreatDrakeArmy(attackingPlayer)
+    attackingArmy := createWarlockArmy(&attackingPlayer)
+    attackingArmy.LayoutUnits(combat.TeamAttacker)
 
     return &Engine{
         LbxCache: cache,

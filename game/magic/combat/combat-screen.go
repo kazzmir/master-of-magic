@@ -117,9 +117,22 @@ type ArmyUnit struct {
 func (unit *ArmyUnit) ComputeDefense(damage units.Damage) int {
     defense := 0
 
+    toDefend := unit.ToDefend()
+
+    switch damage {
+        case units.DamageRangedMagical:
+            if unit.Unit.HasAbility(units.AbilityMagicImmunity) {
+                toDefend = 50
+            }
+        case units.DamageRangedPhysical:
+            if unit.Unit.HasAbility(units.AbilityMissileImmunity) {
+                toDefend = 50
+            }
+    }
+
     for figure := 0; figure < unit.Figures(); figure++ {
         for i := 0; i < unit.Unit.Defense; i++ {
-            if rand.Intn(100) < unit.ToDefend() {
+            if rand.Intn(100) < toDefend {
                 defense += 1
             }
         }
@@ -146,7 +159,7 @@ func (unit *ArmyUnit) ComputeRangeDamage(tileDistance int) int {
     toHit := unit.ToHitMelee()
 
     // magical attacks don't suffer a to-hit penalty
-    if unit.Unit.RangedAttackDamageType != units.DamageMagical {
+    if unit.Unit.RangedAttackDamageType != units.DamageRangedMagical {
 
         if unit.Unit.HasAbility(units.AbilityLongRange) {
             if tileDistance >= 3 {
@@ -450,6 +463,37 @@ func (combat *CombatScreen) CanMoveTo(unit *ArmyUnit, x int, y int) bool {
 type Army struct {
     Units []*ArmyUnit
     Player *player.Player
+}
+
+func (army *Army) LayoutUnits(team Team){
+    x := 12
+    y := 10
+
+    facing := units.FacingDownRight
+
+    if team == TeamAttacker {
+        x = 11
+        y = 17
+        facing = units.FacingUpLeft
+    }
+
+    cx := x
+    cy := y
+
+    row := 0
+    for _, unit := range army.Units {
+        unit.X = cx
+        unit.Y = cy
+        unit.Facing = facing
+
+        cx += 1
+        row += 1
+        if row >= 5 {
+            row = 0
+            cx = x
+            cy += 1
+        }
+    }
 }
 
 func (army *Army) RemoveUnit(remove *ArmyUnit){
@@ -2088,8 +2132,8 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
     originalAttackerDamage := attackerDamage
     originalDefenderCounterDamage := defenderCounterDamage
 
-    defenderDefense := defender.ComputeDefense(units.DamagePhysical)
-    attackerDefense := attacker.ComputeDefense(units.DamagePhysical)
+    defenderDefense := defender.ComputeDefense(units.DamageMeleePhysical)
+    attackerDefense := attacker.ComputeDefense(units.DamageMeleePhysical)
 
     attackerDamage -= defenderDefense
     defenderCounterDamage -= attackerDefense
