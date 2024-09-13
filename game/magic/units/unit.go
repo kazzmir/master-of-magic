@@ -4,6 +4,14 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
 )
 
+type Damage int
+const (
+    DamageNone Damage = iota
+    DamageRangedMagical
+    DamageRangedPhysical
+    DamageMeleePhysical
+)
+
 type AttackSound int
 
 const (
@@ -17,6 +25,27 @@ const (
     AttackSoundNormal
     AttackSoundWeak
 )
+
+type RangeAttackSound int
+const (
+    RangeAttackSoundNone RangeAttackSound = iota
+    RangeAttackSoundFireball
+    RangeAttackSoundArrow
+    RangeAttackSoundSling
+    RangeAttackSoundLaunch // for catapult or other similar things
+)
+
+func (sound RangeAttackSound) LbxIndex() int {
+    switch sound {
+        case RangeAttackSoundNone: return -1
+        case RangeAttackSoundFireball: return 20
+        case RangeAttackSoundArrow: return 17
+        case RangeAttackSoundSling: return 18
+        case RangeAttackSoundLaunch: return 15
+    }
+
+    return -1
+}
 
 func (sound AttackSound) LbxIndex() int {
     switch sound {
@@ -71,9 +100,12 @@ const (
 )
 
 type Unit struct {
+    // icon on the overworld and in various ui's
     LbxFile string
-    CombatLbxFile string
     Index int
+
+    // sprites to use in combat
+    CombatLbxFile string
     // first index of combat tiles, order is always up, up-right, right, down-right, down, down-left, left, up-left
     CombatIndex int
     Name string
@@ -81,8 +113,14 @@ type Unit struct {
     Flying bool
     Abilities []Ability
 
+    RangedAttackDamageType Damage
+
     AttackSound AttackSound
     MovementSound MovementSound
+    RangeAttackSound RangeAttackSound
+
+    // first sprite index in cmbmagic.lbx for the range attack
+    RangeAttackIndex int
 
     // number of figures that are drawn in a single combat tile
     Count int
@@ -92,6 +130,8 @@ type Unit struct {
     Defense int
     Resistance int
     HitPoints int
+    RangedAttackPower int
+    RangedAttacks int
     // FIXME: add construction cost, building requirements to build this unit
     //  upkeep cost, how many figures appear in the battlefield, movement speed,
     //  attack power, ranged attack, defense, magic resistance, hit points, special power
@@ -101,10 +141,35 @@ func (unit *Unit) Equals(other Unit) bool {
     return unit.LbxFile == other.LbxFile && unit.Index == other.Index
 }
 
+func (unit *Unit) HasAbility(ability Ability) bool {
+    for _, check := range unit.Abilities {
+        if check == ability {
+            return true
+        }
+    }
+
+    return false
+}
+
 /* maximum health is the number of figures * the number of hit points per figure
  */
 func (unit *Unit) GetMaxHealth() int {
     return unit.HitPoints * unit.Count
+}
+
+func (unit *Unit) GetCombatRangeIndex(facing Facing) int {
+    switch facing {
+        case FacingUp: return unit.RangeAttackIndex + 0
+        case FacingUpRight: return unit.RangeAttackIndex + 1
+        case FacingRight: return unit.RangeAttackIndex + 2
+        case FacingDownRight: return unit.RangeAttackIndex + 3
+        case FacingDown: return unit.RangeAttackIndex + 4
+        case FacingDownLeft: return unit.RangeAttackIndex + 5
+        case FacingLeft: return unit.RangeAttackIndex + 6
+        case FacingUpLeft: return unit.RangeAttackIndex + 7
+    }
+
+    return unit.RangeAttackIndex
 }
 
 func (unit *Unit) GetCombatIndex(facing Facing) int {
@@ -1056,6 +1121,21 @@ var Warlocks Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 64,
     Race: data.RaceDarkElf,
+    Count: 4,
+    Name: "Warlocks",
+    RangedAttackDamageType: DamageRangedMagical,
+    RangeAttackIndex: 16,
+    MeleeAttackPower: 1,
+    RangedAttackPower: 7,
+    RangeAttackSound: RangeAttackSoundFireball,
+    Defense: 4,
+    Resistance: 9,
+    HitPoints: 1,
+    RangedAttacks: 4,
+    MovementSpeed: 1,
+    Abilities: []Ability{AbilityDoomBoltSpell, AbilityMissileImmunity},
+    CombatLbxFile: "figures5.lbx",
+    CombatIndex: 32,
 }
 
 var Nightmares Unit = Unit{
@@ -1326,6 +1406,21 @@ var HighMenBowmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 106,
     Race: data.RaceHighMen,
+    Name: "Bowmen",
+    Count: 6,
+    Defense: 1,
+    MovementSpeed: 1,
+    MeleeAttackPower: 1,
+    RangedAttackPower: 1,
+    RangeAttackIndex: 8,
+    RangedAttacks: 8,
+    RangeAttackSound: RangeAttackSoundArrow,
+    RangedAttackDamageType: DamageRangedPhysical,
+    MovementSound: MovementSoundMarching,
+    Resistance: 4,
+    HitPoints: 1,
+    CombatLbxFile: "figures8.lbx",
+    CombatIndex: 8,
 }
 
 var HighMenCavalry Unit = Unit{

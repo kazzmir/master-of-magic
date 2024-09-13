@@ -96,6 +96,8 @@ type ArmyUnit struct {
 
     Team Team
 
+    RangedAttacks int
+
     Attacking bool
     Defending bool
 
@@ -112,16 +114,31 @@ type ArmyUnit struct {
     Paths map[image.Point]pathfinding.Path
 }
 
-func (unit *ArmyUnit) ApplyDefense(damage int) int {
-    for figure := 0; figure < unit.Figures() && damage > 0; figure++ {
-        for i := 0; i < unit.Unit.Defense && damage > 0; i++ {
-            if rand.Intn(100) < unit.ToDefend() {
-                damage -= 1
+func (unit *ArmyUnit) ComputeDefense(damage units.Damage) int {
+    defense := 0
+
+    toDefend := unit.ToDefend()
+
+    switch damage {
+        case units.DamageRangedMagical:
+            if unit.Unit.HasAbility(units.AbilityMagicImmunity) {
+                toDefend = 50
+            }
+        case units.DamageRangedPhysical:
+            if unit.Unit.HasAbility(units.AbilityMissileImmunity) {
+                toDefend = 50
+            }
+    }
+
+    for figure := 0; figure < unit.Figures(); figure++ {
+        for i := 0; i < unit.Unit.Defense; i++ {
+            if rand.Intn(100) < toDefend {
+                defense += 1
             }
         }
     }
 
-    return damage
+    return defense
 }
 
 func (unit *ArmyUnit) TakeDamage(damage int) {
@@ -134,6 +151,42 @@ func (unit *ArmyUnit) Heal(amount int){
     if unit.Health > unit.Unit.GetMaxHealth() {
         unit.Health = unit.Unit.GetMaxHealth()
     }
+}
+
+// given the distance to the target in tiles, return the amount of range damage done
+func (unit *ArmyUnit) ComputeRangeDamage(tileDistance int) int {
+
+    toHit := unit.ToHitMelee()
+
+    // magical attacks don't suffer a to-hit penalty
+    if unit.Unit.RangedAttackDamageType != units.DamageRangedMagical {
+
+        if unit.Unit.HasAbility(units.AbilityLongRange) {
+            if tileDistance >= 3 {
+                toHit -= 10
+            }
+        } else {
+            if tileDistance >= 3 && tileDistance <= 5 {
+                toHit -= 10
+            } else if tileDistance >= 6 && tileDistance <= 8 {
+                toHit -= 20
+            } else if tileDistance > 8 {
+                toHit = 10
+            }
+        }
+
+    }
+
+    damage := 0
+    for figure := 0; figure < unit.Figures(); figure++ {
+        for i := 0; i < unit.Unit.RangedAttackPower; i++ {
+            if rand.Intn(100) < toHit {
+                damage += 1
+            }
+        }
+    }
+
+    return damage
 }
 
 func (unit *ArmyUnit) ComputeMeleeDamage() int {
@@ -191,6 +244,46 @@ func pathCost(from image.Point, to image.Point) fraction.Fraction {
 
     // shouldn't ever really get here
     return fraction.Make(xDiff + yDiff, 1)
+}
+
+/* compute the distance between two tiles by moving in one of the 8 directions
+ */
+func computeTileDistance(x1 int, y1 int, x2 int, y2 int) int {
+    distance := 0
+
+    for x1 != x2 || y1 != y2 {
+        xDiff := int(math.Abs(float64(x1 - x2)))
+        yDiff := int(math.Abs(float64(y1 - y2)))
+        if xDiff > 0 && yDiff > 0 {
+            distance += 1
+            if x1 < x2 {
+                x1 += 1
+            } else {
+                x1 -= 1
+            }
+            if y1 < y2 {
+                y1 += 1
+            } else {
+                y1 -= 1
+            }
+        } else if xDiff > 0 && yDiff == 0 {
+            distance += 1
+            if x1 < x2 {
+                x1 += 1
+            } else {
+                x1 -= 1
+            }
+        } else if yDiff > 0 && xDiff == 0 {
+            distance += 1
+            if y1 < y2 {
+                y1 += 1
+            } else {
+                y1 -= 1
+            }
+        }
+    }
+
+    return distance
 }
 
 func (unit *ArmyUnit) CanFollowPath(path pathfinding.Path) bool {
@@ -370,6 +463,37 @@ func (combat *CombatScreen) CanMoveTo(unit *ArmyUnit, x int, y int) bool {
 type Army struct {
     Units []*ArmyUnit
     Player *player.Player
+}
+
+func (army *Army) LayoutUnits(team Team){
+    x := 12
+    y := 10
+
+    facing := units.FacingDownRight
+
+    if team == TeamAttacker {
+        x = 11
+        y = 17
+        facing = units.FacingUpLeft
+    }
+
+    cx := x
+    cy := y
+
+    row := 0
+    for _, unit := range army.Units {
+        unit.X = cx
+        unit.Y = cy
+        unit.Facing = facing
+
+        cx += 1
+        row += 1
+        if row >= 5 {
+            row = 0
+            cx = x
+            cy += 1
+        }
+    }
 }
 
 func (army *Army) RemoveUnit(remove *ArmyUnit){
@@ -631,11 +755,13 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
 
     for _, unit := range defendingArmy.Units {
         unit.Team = TeamDefender
+        unit.RangedAttacks = unit.Unit.RangedAttacks
         combat.Tiles[unit.Y][unit.X].Unit = unit
     }
 
     for _, unit := range attackingArmy.Units {
         unit.Team = TeamAttacker
+        unit.RangedAttacks = unit.Unit.RangedAttacks
         combat.Tiles[unit.Y][unit.X].Unit = unit
     }
 
@@ -1910,10 +2036,26 @@ func (combat *CombatScreen) withinArrowRange(attacker *ArmyUnit, defender *ArmyU
     return xDiff <= 1 && yDiff <= 1
     */
     // FIXME: what is the actual range distance?
-    return false
+    return true
 }
 
-func (combat *CombatScreen) canAttack(attacker *ArmyUnit, defender *ArmyUnit) bool {
+func (combat *CombatScreen) canRangeAttack(attacker *ArmyUnit, defender *ArmyUnit) bool {
+    if attacker.RangedAttacks <= 0 {
+        return false
+    }
+
+    if attacker.MovesLeft.LessThanEqual(fraction.FromInt(0)) {
+        return false
+    }
+
+    // FIXME: check if defender has missle immunity and attacker is using regular non-magical attacks
+    // FIXME: check if defender has magic immunity and attacker is using magical attacks
+    // FIXME: check if defender has invisible, and attacker doesn't have illusions immunity
+
+    return true
+}
+
+func (combat *CombatScreen) canMeleeAttack(attacker *ArmyUnit, defender *ArmyUnit) bool {
     if attacker.MovesLeft.LessThanEqual(fraction.FromInt(0)) {
         return false
     }
@@ -1990,8 +2132,19 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
     originalAttackerDamage := attackerDamage
     originalDefenderCounterDamage := defenderCounterDamage
 
-    attackerDamage = defender.ApplyDefense(attackerDamage)
-    defenderCounterDamage = attacker.ApplyDefense(defenderCounterDamage)
+    defenderDefense := defender.ComputeDefense(units.DamageMeleePhysical)
+    attackerDefense := attacker.ComputeDefense(units.DamageMeleePhysical)
+
+    attackerDamage -= defenderDefense
+    defenderCounterDamage -= attackerDefense
+
+    if attackerDamage < 0 {
+        attackerDamage = 0
+    }
+
+    if defenderCounterDamage < 0 {
+        defenderCounterDamage = 0
+    }
 
     log.Printf("Attacker damage roll %v, defender defended %v, attacker damage to defender %v", originalAttackerDamage, originalAttackerDamage - attackerDamage, attackerDamage)
     log.Printf("Defender counter damage roll %v, attacker defended %v, defender damage to attacker %v", originalDefenderCounterDamage, originalDefenderCounterDamage - defenderCounterDamage, defenderCounterDamage)
@@ -2005,6 +2158,114 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
 
     if defender.Health <= 0 {
         combat.RemoveUnit(defender)
+    }
+}
+
+func (combat *CombatScreen) createUnitToUnitProjectile(attacker *ArmyUnit, target *ArmyUnit, offset image.Point, images []*ebiten.Image, explodeImages []*ebiten.Image, effect ProjectileEffect) *Projectile {
+    // find where on the screen the unit is
+    screenX, screenY := combat.Coordinates.Apply(float64(attacker.X), float64(attacker.Y))
+    targetX, targetY := combat.Coordinates.Apply(float64(target.X), float64(target.Y))
+
+    var useImage *ebiten.Image
+    if len(images) > 0 {
+        useImage = images[0]
+    } else if len(explodeImages) > 0 {
+        useImage = explodeImages[0]
+    }
+
+    screenY += 3
+    screenY -= float64(useImage.Bounds().Dy()/2)
+    screenX += 14
+    screenX -= float64(useImage.Bounds().Dx()/2)
+
+    screenY += float64(offset.Y)
+    screenX += float64(offset.X)
+
+    targetY += 3
+    targetY -= float64(useImage.Bounds().Dy()/2)
+    targetX += 14
+    targetX -= float64(useImage.Bounds().Dx()/2)
+
+    targetY += rand.Float64() * 6 - 3
+    targetX += rand.Float64() * 6 - 3
+
+    /*
+    switch position {
+        case UnitPositionMiddle:)
+            screenY += 3
+            screenY -= float64(useImage.Bounds().Dy()/2)
+            screenX += 14
+            screenX -= float64(useImage.Bounds().Dx()/2)
+        case UnitPositionUnder:
+            screenY += 15
+            screenY -= float64(useImage.Bounds().Dy())
+    }
+    */
+
+    speed := 2.8
+
+    angle := math.Atan2(targetY - screenY, targetX - screenX)
+
+    // log.Printf("Create fireball projectile at %v,%v -> %v,%v", x, y, screenX, screenY)
+
+    projectile := &Projectile{
+        X: screenX,
+        Y: screenY,
+        Target: target,
+        Speed: speed,
+        Angle: angle,
+        Effect: effect,
+        TargetX: targetX,
+        TargetY: targetY,
+        Animation: util.MakeAnimation(images, true),
+        Explode: util.MakeAnimation(explodeImages, false),
+    }
+
+    return projectile
+}
+
+func (combat *CombatScreen) createRangeAttack(attacker *ArmyUnit, defender *ArmyUnit){
+    index := attacker.Unit.GetCombatRangeIndex(attacker.Facing)
+    images, err := combat.ImageCache.GetImages("cmbmagic.lbx", index)
+    if err != nil {
+        log.Printf("Unable to load attacker range images for %v index %v: %v", attacker.Unit.Name, index, err)
+        return
+    }
+
+    if len(images) != 4 {
+        log.Printf("Invalid number of attack range animation images for %v: %v", attacker.Unit.Name, len(images))
+        return
+    }
+
+    animation := images[0:3]
+    explode := images[3:]
+
+    tileDistance := computeTileDistance(attacker.X, attacker.Y, defender.X, defender.Y)
+
+    effect := func (target *ArmyUnit){
+        if target.Health <= 0 {
+            return
+        }
+
+        // FIXME: apply defenses for magic immunity or missle immunity
+
+        damage := attacker.ComputeRangeDamage(tileDistance)
+        defense := target.ComputeDefense(attacker.Unit.RangedAttackDamageType)
+
+        // log.Printf("Ranged attack from %v: damage=%v defense=%v distance=%v", attacker.Unit.Name, damage, defense, tileDistance)
+
+        damage -= defense
+        if damage < 0 {
+            damage = 0
+        }
+        target.TakeDamage(damage)
+        if target.Health <= 0 {
+            combat.RemoveUnit(target)
+        }
+    }
+
+    for _, offset := range combatPoints(attacker.Figures()) {
+        combat.Projectiles = append(combat.Projectiles, combat.createUnitToUnitProjectile(attacker, defender, offset, animation, explode, effect))
     }
 }
 
@@ -2104,12 +2365,11 @@ func (combat *CombatScreen) Update() CombatState {
             }
         } else {
             newState := CombatNotOk
-            if combat.canAttack(combat.SelectedUnit, who){
-                if combat.withinMeleeRange(combat.SelectedUnit, who) {
-                    newState = CombatMeleeAttackOk
-                } else if combat.withinArrowRange(combat.SelectedUnit, who) {
-                    newState = CombatRangeAttackOk
-                }
+            // prioritize range attack over melee
+            if combat.canRangeAttack(combat.SelectedUnit, who) && combat.withinArrowRange(combat.SelectedUnit, who) {
+                newState = CombatRangeAttackOk
+            } else if combat.canMeleeAttack(combat.SelectedUnit, who) && combat.withinMeleeRange(combat.SelectedUnit, who) {
+                newState = CombatMeleeAttackOk
             }
 
             combat.MouseState = newState
@@ -2165,10 +2425,27 @@ func (combat *CombatScreen) Update() CombatState {
        } else {
 
            defender := combat.GetUnit(combat.MouseTileX, combat.MouseTileY)
+           attacker := combat.SelectedUnit
 
-           if defender != nil && defender.Team != combat.SelectedUnit.Team && combat.withinMeleeRange(combat.SelectedUnit, defender) && combat.canAttack(combat.SelectedUnit, defender){
-               attacker := combat.SelectedUnit
+           // try a ranged attack first
+           if defender != nil && combat.withinArrowRange(attacker, defender) && combat.canRangeAttack(attacker, defender) {
+               attacker.MovesLeft = attacker.MovesLeft.Subtract(fraction.FromInt(10))
+               if attacker.MovesLeft.LessThan(fraction.FromInt(0)) {
+                   attacker.MovesLeft = fraction.FromInt(0)
+               }
 
+               attacker.RangedAttacks -= 1
+
+               attacker.Facing = faceTowards(attacker.X, attacker.Y, defender.X, defender.Y)
+
+               combat.createRangeAttack(attacker, defender)
+
+               sound, err := audio.LoadSound(combat.Cache, attacker.Unit.RangeAttackSound.LbxIndex())
+               if err == nil {
+                   sound.Play()
+               }
+           // then fall back to melee
+           } else if defender != nil && defender.Team != attacker.Team && combat.withinMeleeRange(attacker, defender) && combat.canMeleeAttack(attacker, defender){
                attacker.Attacking = true
                // attacking takes 50% of movement points
                // FIXME: in some cases an extra 0.5 movements points is lost, possibly due to counter attacks?
