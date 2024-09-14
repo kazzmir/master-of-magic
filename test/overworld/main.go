@@ -82,7 +82,7 @@ func NewEngine() (*Engine, error) {
 
     game.DoNextTurn()
 
-    game.ShowApprenticeUI()
+    // game.ShowApprenticeUI()
 
     return &Engine{
         LbxCache: cache,
@@ -120,7 +120,11 @@ func main(){
 
     log.SetFlags(log.Ldate | log.Lshortfile | log.Lmicroseconds)
 
-    ebiten.SetWindowSize(data.ScreenWidth * 5, data.ScreenHeight * 5)
+    monitorWidth, _ := ebiten.Monitor().Size()
+
+    size := monitorWidth / 390
+
+    ebiten.SetWindowSize(data.ScreenWidth * size, data.ScreenHeight * size)
     ebiten.SetWindowTitle("new screen")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 
