@@ -320,7 +320,20 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
         combatScreen.Draw(screen)
     }
 
-    for combatScreen.Update() == combat.CombatStateRunning {
+    state := combat.CombatStateRunning
+    for state == combat.CombatStateRunning {
+        state = combatScreen.Update()
+        yield()
+    }
+
+    endScreen := combat.MakeCombatEndScreen(game.Cache, combatScreen, state == combat.CombatStateAttackerWin)
+    game.Drawer = func (screen *ebiten.Image, game *Game){
+        endScreen.Draw(screen)
+    }
+
+    state2 := combat.CombatEndScreenRunning
+    for state2 == combat.CombatEndScreenRunning {
+        state2 = endScreen.Update()
         yield()
     }
 
