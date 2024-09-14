@@ -465,14 +465,25 @@ type Army struct {
     Player *player.Player
 }
 
+/* must call LayoutUnits() some time after invoking AddUnit() to ensure
+ * the units are laid out correctly
+ */
+func (army *Army) AddUnit(unit units.Unit){
+    army.Units = append(army.Units, &ArmyUnit{
+        Unit: unit,
+        Facing: units.FacingDownRight,
+        Health: unit.GetMaxHealth(),
+    })
+}
+
 func (army *Army) LayoutUnits(team Team){
-    x := 12
-    y := 10
+    x := 10
+    y := 9
 
     facing := units.FacingDownRight
 
     if team == TeamAttacker {
-        x = 11
+        x = 10
         y = 17
         facing = units.FacingUpLeft
     }

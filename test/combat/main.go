@@ -63,6 +63,30 @@ func createWarlockArmy(player *player.Player) combat.Army {
     }
 }
 
+func createWarlockArmyN(player *player.Player, count int) combat.Army {
+    army := combat.Army{
+        Player: player,
+    }
+
+    for i := 0; i < count; i++ {
+        army.AddUnit(units.Warlocks)
+    }
+
+    return army
+}
+
+func createHighMenBowmanArmyN(player *player.Player, count int) combat.Army {
+    army := combat.Army{
+        Player: player,
+    }
+
+    for i := 0; i < count; i++ {
+        army.AddUnit(units.HighMenBowmen)
+    }
+
+    return army
+}
+
 func createHighMenBowmanArmy(player *player.Player) combat.Army {
     return combat.Army{
         Player: player,
@@ -111,7 +135,8 @@ func NewEngine() (*Engine, error) {
     }
 
     // defendingArmy := createWarlockArmy(&defendingPlayer)
-    defendingArmy := createHighMenBowmanArmy(&defendingPlayer)
+    defendingArmy := createHighMenBowmanArmyN(&defendingPlayer, 9)
+    defendingArmy.LayoutUnits(combat.TeamDefender)
 
     allSpells, err := spellbook.ReadSpellsFromCache(cache)
     if err != nil {
@@ -163,7 +188,7 @@ func NewEngine() (*Engine, error) {
     defendingPlayer.Spells.AddSpell(allSpells.FindByName("Fire Elemental"))
 
     // attackingArmy := createGreatDrakeArmy(attackingPlayer)
-    attackingArmy := createWarlockArmy(&attackingPlayer)
+    attackingArmy := createWarlockArmyN(&attackingPlayer, 9)
     attackingArmy.LayoutUnits(combat.TeamAttacker)
 
     return &Engine{
