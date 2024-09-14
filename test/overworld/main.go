@@ -4,6 +4,8 @@ import (
     "log"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/coroutine"
+    "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
@@ -19,12 +21,14 @@ import (
 type Engine struct {
     LbxCache *lbx.LbxCache
     Game *gamelib.Game
+    Coroutine *coroutine.Coroutine
 }
 
 func NewEngine() (*Engine, error) {
     cache := lbx.AutoCache()
 
     wizard := setup.WizardCustom{
+        Name: "player",
         Banner: data.BannerBlue,
         Abilities: []setup.WizardAbility{
             setup.AbilityAlchemy,
@@ -80,12 +84,34 @@ func NewEngine() (*Engine, error) {
 
     player.LiftFog(5, 5, 2)
 
+    enemy1 := game.AddPlayer(setup.WizardCustom{
+        Name: "dingus",
+        Banner: data.BannerRed,
+    })
+
+    enemy1.AddUnit(playerlib.Unit{
+        Unit: units.Warlocks,
+        Plane: data.PlaneArcanus,
+        Banner: enemy1.Wizard.Banner,
+        X: 6,
+        Y: 6,
+    })
+
     game.DoNextTurn()
 
-    game.ShowApprenticeUI()
+    // game.ShowApprenticeUI()
+
+    run := func(yield coroutine.YieldFunc) error {
+        for game.Update(yield) != gamelib.GameStateQuit {
+            yield()
+        }
+
+        return ebiten.Termination
+    }
 
     return &Engine{
         LbxCache: cache,
+        Coroutine: coroutine.MakeCoroutine(run),
         Game: game,
     }, nil
 }
@@ -101,8 +127,13 @@ func (engine *Engine) Update() error {
         }
     }
 
+    /*
     switch engine.Game.Update() {
         case gamelib.GameStateRunning:
+    }
+    */
+    if engine.Coroutine.Run() != nil {
+        return ebiten.Termination
     }
 
     return nil
@@ -120,11 +151,17 @@ func main(){
 
     log.SetFlags(log.Ldate | log.Lshortfile | log.Lmicroseconds)
 
-    ebiten.SetWindowSize(data.ScreenWidth * 5, data.ScreenHeight * 5)
+    monitorWidth, _ := ebiten.Monitor().Size()
+
+    size := monitorWidth / 390
+
+    ebiten.SetWindowSize(data.ScreenWidth * size, data.ScreenHeight * size)
     ebiten.SetWindowTitle("new screen")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 
     engine, err := NewEngine()
+
+    audio.Initialize()
 
     if err != nil {
         log.Printf("Error: unable to load engine: %v", err)
