@@ -2861,6 +2861,10 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
         }
     }
 
+    combat.DrawMouse(screen)
+}
+
+func (combat *CombatScreen) DrawMouse(screen *ebiten.Image){
     var mouseOptions ebiten.DrawImageOptions
     mouseX, mouseY := ebiten.CursorPosition()
     mouseOptions.GeoM.Translate(float64(mouseX), float64(mouseY))
@@ -2966,7 +2970,7 @@ func (end *CombatEndScreen) MakeUI() *uilib.UI {
     extraFont := font.MakeOptimizedFontWithPalette(fonts[1], extraPalette)
 
     element := &uilib.UIElement{
-        Rect: image.Rect(0, 0, 320, 200),
+        Rect: image.Rect(0, 0, data.ScreenWidth, data.ScreenHeight),
         LeftClick: func(element *uilib.UIElement){
             getAlpha = ui.MakeFadeOut(fadeSpeed)
             ui.AddDelay(fadeSpeed, func(){
@@ -3018,6 +3022,7 @@ func (end *CombatEndScreen) MakeUI() *uilib.UI {
 }
 
 func (end *CombatEndScreen) Update() CombatEndScreenState {
+    end.CombatScreen.MouseState = CombatClickHud
     end.UI.StandardUpdate()
     return end.State
 }
@@ -3025,4 +3030,5 @@ func (end *CombatEndScreen) Update() CombatEndScreenState {
 func (end *CombatEndScreen) Draw(screen *ebiten.Image) {
     end.CombatScreen.Draw(screen)
     end.UI.Draw(end.UI, screen)
+    end.CombatScreen.DrawMouse(screen)
 }
