@@ -144,6 +144,9 @@ func (unit *ArmyUnit) ComputeDefense(damage units.Damage) int {
 func (unit *ArmyUnit) TakeDamage(damage int) {
     // the first figure should take damage, and if it dies then the next unit takes damage, etc
     unit.Health -= damage
+    if unit.Health <= 0 {
+        unit.Health = 0
+    }
 }
 
 func (unit *ArmyUnit) Heal(amount int){
@@ -2838,11 +2841,43 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
         }
     }
 
+    // sort units in top down order before drawing them
+    allUnits := make([]*ArmyUnit, 0, len(combat.DefendingArmy.Units) + len(combat.AttackingArmy.Units))
     for _, unit := range combat.DefendingArmy.Units {
-        renderUnit(unit)
+        allUnits = append(allUnits, unit)
     }
 
     for _, unit := range combat.AttackingArmy.Units {
+        allUnits = append(allUnits, unit)
+    }
+
+    compareUnit := func(unitA *ArmyUnit, unitB *ArmyUnit) int {
+        ax, ay := combat.Coordinates.Apply(float64(unitA.X), float64(unitA.Y))
+        bx, by := combat.Coordinates.Apply(float64(unitB.X), float64(unitB.Y))
+
+        if ay < by {
+            return -1
+        }
+
+        if ay > by {
+            return 1
+        }
+
+        if ax < bx {
+            return -1
+        }
+
+        if ax > bx {
+            return 1
+        }
+
+        return 0
+
+    }
+
+    slices.SortFunc(allUnits, compareUnit)
+
+    for _, unit := range allUnits {
         renderUnit(unit)
     }
 
