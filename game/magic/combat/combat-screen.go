@@ -2824,8 +2824,13 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
                 index = 2 + animationIndex % 2
             }
 
+            if combat.SelectedUnit == unit {
+                scaleValue := 1.5 + math.Sin(float64(combat.Counter)/6)/2
+                unitOptions.ColorScale.Scale(float32(scaleValue), float32(scaleValue), 1, 1)
+            }
+
             if combat.HighlightedUnit == unit {
-                scaleValue := 1.5 + math.Sin(float64(combat.Counter)/5)/2
+                scaleValue := 1.5 + math.Sin(float64(combat.Counter)/6)/2
                 unitOptions.ColorScale.Scale(float32(scaleValue), 1, 1, 1)
             }
 
