@@ -5,6 +5,7 @@ import (
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
+    "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
@@ -159,6 +160,8 @@ func main(){
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 
     engine, err := NewEngine()
+
+    audio.Initialize()
 
     if err != nil {
         log.Printf("Error: unable to load engine: %v", err)

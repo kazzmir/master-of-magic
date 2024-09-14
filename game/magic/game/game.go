@@ -12,7 +12,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
-    // "github.com/kazzmir/master-of-magic/game/magic/combat"
+    "github.com/kazzmir/master-of-magic/game/magic/combat"
     "github.com/kazzmir/master-of-magic/game/magic/unitview"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     "github.com/kazzmir/master-of-magic/game/magic/cityview"
@@ -58,6 +58,7 @@ type Game struct {
     InfoFontYellow *font.Font
     Counter uint64
     Fog *ebiten.Image
+    Drawer func (*ebiten.Image, *Game)
     State GameState
     Plane data.Plane
 
@@ -176,6 +177,9 @@ func MakeGame(lbxCache *lbx.LbxCache) *Game {
     }
 
     game.HudUI = game.MakeHudUI()
+    game.Drawer = func(screen *ebiten.Image, game *Game){
+        game.DrawGame(screen)
+    }
 
     return game
 }
@@ -210,7 +214,6 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                     game.MagicScreen = nil
             }
         case GameStateRunning:
-
             game.HudUI.StandardUpdate()
 
             // kind of a hack to not allow player to interact with anything other than the current ui modal
@@ -275,10 +278,54 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
             unit.Movement -= 1
             if unit.Movement == 0 {
                 game.State = GameStateRunning
+
+                mainPlayer := game.Players[0]
+
+                for _, otherPlayer := range game.Players[1:] {
+                    for _, otherUnit := range otherPlayer.Units {
+                        if otherUnit.X == unit.X && otherUnit.Y == unit.Y {
+                            game.doCombat(yield, mainPlayer, unit, otherPlayer, otherUnit)
+                        }
+                    }
+                }
+
             }
     }
 
     return game.State
+}
+
+func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player, attackerUnit *playerlib.Unit, defender *playerlib.Player, defenderUnit *playerlib.Unit){
+    attackingArmy := combat.Army{
+        Player: attacker,
+    }
+
+    attackingArmy.AddUnit(attackerUnit.Unit)
+
+    defendingArmy := combat.Army{
+        Player: defender,
+    }
+
+    defendingArmy.AddUnit(defenderUnit.Unit)
+
+    attackingArmy.LayoutUnits(combat.TeamAttacker)
+    defendingArmy.LayoutUnits(combat.TeamDefender)
+
+    combatScreen := combat.MakeCombatScreen(game.Cache, &attackingArmy, &defendingArmy, attacker)
+    oldDrawer := game.Drawer
+
+    ebiten.SetCursorMode(ebiten.CursorModeHidden)
+
+    game.Drawer = func (screen *ebiten.Image, game *Game){
+        combatScreen.Draw(screen)
+    }
+
+    for combatScreen.Update() == combat.CombatStateRunning {
+        yield()
+    }
+
+    ebiten.SetCursorMode(ebiten.CursorModeVisible)
+    game.Drawer = oldDrawer
 }
 
 func (game *Game) GetMainImage(index int) (*ebiten.Image, error) {
@@ -1292,6 +1339,10 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
 }
 
 func (game *Game) Draw(screen *ebiten.Image){
+    game.Drawer(screen, game)
+}
+
+func (game *Game) DrawGame(screen *ebiten.Image){
 
     var cities []*citylib.City
     var units []*playerlib.Unit
