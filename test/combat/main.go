@@ -20,6 +20,7 @@ import (
 type Engine struct {
     LbxCache *lbx.LbxCache
     CombatScreen *combat.CombatScreen
+    CombatEndScreen *combat.CombatEndScreen
 }
 
 func createWarlockArmy(player *player.Player) combat.Army {
@@ -168,6 +169,7 @@ func NewEngine() (*Engine, error) {
     return &Engine{
         LbxCache: cache,
         CombatScreen: combat.MakeCombatScreen(cache, &defendingArmy, &attackingArmy, &defendingPlayer),
+        CombatEndScreen: nil,
     }, nil
 }
 
@@ -182,23 +184,35 @@ func (engine *Engine) Update() error {
         }
     }
 
-    switch engine.CombatScreen.Update() {
-        case combat.CombatStateRunning:
-        case combat.CombatStateAttackerWin:
-            log.Printf("Attackers win")
-            return ebiten.Termination
-        case combat.CombatStateDefenderWin:
-            log.Printf("Defenders win")
-            return ebiten.Termination
-        case combat.CombatStateDone:
-            return ebiten.Termination
+    if engine.CombatEndScreen != nil {
+        switch engine.CombatEndScreen.Update() {
+            case combat.CombatEndScreenRunning:
+            case combat.CombatEndScreenDone:
+                return ebiten.Termination
+        }
+    } else {
+        switch engine.CombatScreen.Update() {
+            case combat.CombatStateRunning:
+            case combat.CombatStateAttackerWin:
+                log.Printf("Attackers win")
+                engine.CombatEndScreen = combat.MakeCombatEndScreen(engine.LbxCache, engine.CombatScreen, true)
+            case combat.CombatStateDefenderWin:
+                log.Printf("Defenders win")
+                engine.CombatEndScreen = combat.MakeCombatEndScreen(engine.LbxCache, engine.CombatScreen, false)
+            case combat.CombatStateDone:
+                return ebiten.Termination
+        }
     }
 
     return nil
 }
 
 func (engine *Engine) Draw(screen *ebiten.Image) {
-    engine.CombatScreen.Draw(screen)
+    if engine.CombatEndScreen != nil {
+        engine.CombatEndScreen.Draw(screen)
+    } else {
+        engine.CombatScreen.Draw(screen)
+    }
 }
 
 func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
