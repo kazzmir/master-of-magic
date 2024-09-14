@@ -4,6 +4,7 @@ import (
     "log"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
@@ -19,6 +20,7 @@ import (
 type Engine struct {
     LbxCache *lbx.LbxCache
     Game *gamelib.Game
+    Coroutine *coroutine.Coroutine
 }
 
 func NewEngine() (*Engine, error) {
@@ -98,8 +100,17 @@ func NewEngine() (*Engine, error) {
 
     // game.ShowApprenticeUI()
 
+    run := func(yield coroutine.YieldFunc) error {
+        for game.Update(yield) != gamelib.GameStateQuit {
+            yield()
+        }
+
+        return ebiten.Termination
+    }
+
     return &Engine{
         LbxCache: cache,
+        Coroutine: coroutine.MakeCoroutine(run),
         Game: game,
     }, nil
 }
@@ -115,8 +126,13 @@ func (engine *Engine) Update() error {
         }
     }
 
+    /*
     switch engine.Game.Update() {
         case gamelib.GameStateRunning:
+    }
+    */
+    if engine.Coroutine.Run() != nil {
+        return ebiten.Termination
     }
 
     return nil

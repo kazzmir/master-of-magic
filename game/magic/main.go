@@ -144,7 +144,7 @@ func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup
 
     game.DoNextTurn()
 
-    for game.Update() != gamelib.GameStateQuit {
+    for game.Update(yield) != gamelib.GameStateQuit {
         if inpututil.IsKeyJustPressed(ebiten.KeyEscape) || inpututil.IsKeyJustPressed(ebiten.KeyCapsLock) {
             return ebiten.Termination
         }

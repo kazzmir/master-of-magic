@@ -22,6 +22,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/draw"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -187,7 +188,7 @@ func (game *Game) Activate() {
     game.active = true
 }
 
-func (game *Game) Update() GameState {
+func (game *Game) Update(yield coroutine.YieldFunc) GameState {
     game.Counter += 1
 
     tilesPerRow := game.Map.TilesPerRow(data.ScreenWidth)
