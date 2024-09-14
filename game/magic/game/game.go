@@ -663,7 +663,6 @@ func (game *Game) ShowTaxCollectorUI(cornerX int, cornerY int){
     game.HudUI.AddElements(uilib.MakeSelectionUI(game.HudUI, game.Cache, &game.ImageCache, cornerX, cornerY, "Tax Per Population", taxes))
 }
 
-
 func (game *Game) ShowApprenticeUI(){
     game.HudUI.AddElements(spellbook.MakeSpellBookUI(game.HudUI, game.Cache))
 }

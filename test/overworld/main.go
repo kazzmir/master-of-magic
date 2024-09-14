@@ -25,6 +25,7 @@ func NewEngine() (*Engine, error) {
     cache := lbx.AutoCache()
 
     wizard := setup.WizardCustom{
+        Name: "player",
         Banner: data.BannerBlue,
         Abilities: []setup.WizardAbility{
             setup.AbilityAlchemy,
@@ -79,6 +80,19 @@ func NewEngine() (*Engine, error) {
     player.SetSelectedUnit(drake)
 
     player.LiftFog(5, 5, 2)
+
+    enemy1 := game.AddPlayer(setup.WizardCustom{
+        Name: "dingus",
+        Banner: data.BannerRed,
+    })
+
+    enemy1.AddUnit(playerlib.Unit{
+        Unit: units.Warlocks,
+        Plane: data.PlaneArcanus,
+        Banner: enemy1.Wizard.Banner,
+        X: 6,
+        Y: 6,
+    })
 
     game.DoNextTurn()
 
