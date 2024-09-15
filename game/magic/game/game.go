@@ -249,9 +249,20 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                     }
 
                     if dx != 0 || dy != 0 {
-                        stack.Move(dx, dy)
-                        game.Players[0].LiftFog(stack.X(), stack.Y(), 2)
-                        game.State = GameStateUnitMoving
+                        activeUnits := stack.ActiveUnits()
+                        if len(activeUnits) > 0 {
+                            inactiveUnits := stack.InactiveUnits()
+                            if len(inactiveUnits) > 0 {
+                                stack.RemoveUnits(inactiveUnits)
+                                game.Players[0].AddStack(playerlib.MakeUnitStackFromUnits(inactiveUnits))
+
+                                game.HudUI = game.MakeHudUI()
+                            }
+
+                            stack.Move(dx, dy)
+                            game.Players[0].LiftFog(stack.X(), stack.Y(), 2)
+                            game.State = GameStateUnitMoving
+                        }
                     }
 
                     rightClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight)

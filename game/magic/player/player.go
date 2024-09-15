@@ -52,9 +52,20 @@ type UnitStack struct {
 }
 
 func MakeUnitStack() *UnitStack {
-    return &UnitStack{
+    return MakeUnitStackFromUnits(nil)
+}
+
+func MakeUnitStackFromUnits(units []*Unit) *UnitStack {
+    stack := &UnitStack{
+        units: units,
         active: make(map[*Unit]bool),
     }
+
+    for _, unit := range units {
+        stack.active[unit] = true
+    }
+
+    return stack
 }
 
 func (stack *UnitStack) IsEmpty() bool {
@@ -63,6 +74,28 @@ func (stack *UnitStack) IsEmpty() bool {
 
 func (stack *UnitStack) Units() []*Unit {
     return stack.units
+}
+
+func (stack *UnitStack) ActiveUnits() []*Unit {
+    var out []*Unit
+    for unit, active := range stack.active {
+        if active {
+            out = append(out, unit)
+        }
+    }
+
+    return out
+}
+
+func (stack *UnitStack) InactiveUnits() []*Unit {
+    var inactive []*Unit
+    for unit, active := range stack.active {
+        if !active {
+            inactive = append(inactive, unit)
+        }
+    }
+
+    return inactive
 }
 
 func (stack *UnitStack) ToggleActive(unit *Unit){
@@ -83,6 +116,12 @@ func (stack *UnitStack) IsActive(unit *Unit) bool {
         return false
     }
     return val
+}
+
+func (stack *UnitStack) RemoveUnits(units []*Unit){
+    for _, unit := range units {
+        stack.RemoveUnit(unit)
+    }
 }
 
 func (stack *UnitStack) RemoveUnit(unit *Unit){
@@ -112,6 +151,14 @@ func (stack *UnitStack) Move(dx int, dy int){
 }
 
 func (stack *UnitStack) Leader() *Unit {
+    // return the first active unit
+    for _, unit := range stack.units {
+        if stack.active[unit] {
+            return unit
+        }
+    }
+
+    // otherwise just return any unit
     if len(stack.units) > 0 {
         return stack.units[0]
     }
@@ -247,6 +294,10 @@ func (player *Player) RemoveUnit(unit *Unit) {
 
 func (player *Player) AddCity(city citylib.City) {
     player.Cities = append(player.Cities, &city)
+}
+
+func (player *Player) AddStack(stack *UnitStack){
+    player.Stacks = append(player.Stacks, stack)
 }
 
 func (player *Player) AddUnit(unit Unit) *Unit {
