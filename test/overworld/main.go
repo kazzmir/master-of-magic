@@ -97,6 +97,14 @@ func NewEngine() (*Engine, error) {
         Y: 6,
     })
 
+    enemy1.AddUnit(playerlib.Unit{
+        Unit: units.HighMenBowmen,
+        Plane: data.PlaneArcanus,
+        Banner: enemy1.Wizard.Banner,
+        X: 6,
+        Y: 6,
+    })
+
     game.DoNextTurn()
 
     // game.ShowApprenticeUI()
