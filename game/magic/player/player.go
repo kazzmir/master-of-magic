@@ -275,6 +275,20 @@ func (player *Player) FindStack(x int, y int) *UnitStack {
     return nil
 }
 
+func (player *Player) MergeStacks(stack1 *UnitStack, stack2 *UnitStack) *UnitStack {
+    stack1.units = append(stack1.units, stack2.units...)
+
+    for unit, active := range stack2.active {
+        stack1.active[unit] = active
+    }
+
+    player.Stacks = slices.DeleteFunc(player.Stacks, func (s *UnitStack) bool {
+        return s == stack2
+    })
+
+    return stack1
+}
+
 func (player *Player) RemoveUnit(unit *Unit) {
     player.Units = slices.DeleteFunc(player.Units, func (u *Unit) bool {
         return u == unit

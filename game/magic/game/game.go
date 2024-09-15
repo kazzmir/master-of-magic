@@ -249,6 +249,7 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                     }
 
                     if dx != 0 || dy != 0 {
+                        remakeUI := false
                         activeUnits := stack.ActiveUnits()
                         if len(activeUnits) > 0 {
                             inactiveUnits := stack.InactiveUnits()
@@ -256,12 +257,28 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                                 stack.RemoveUnits(inactiveUnits)
                                 game.Players[0].AddStack(playerlib.MakeUnitStackFromUnits(inactiveUnits))
 
-                                game.HudUI = game.MakeHudUI()
+                                remakeUI = true
                             }
 
+                            newX := stack.X() + dx
+                            newY := stack.Y() + dy
+
+                            mergeStack := game.Players[0].FindStack(newX, newY)
+
                             stack.Move(dx, dy)
+
+                            if mergeStack != nil {
+                                stack = game.Players[0].MergeStacks(mergeStack, stack)
+                                game.Players[0].SelectedStack = stack
+                                remakeUI = true
+                            }
+
                             game.Players[0].LiftFog(stack.X(), stack.Y(), 2)
                             game.State = GameStateUnitMoving
+                        }
+
+                        if remakeUI {
+                            game.HudUI = game.MakeHudUI()
                         }
                     }
 
