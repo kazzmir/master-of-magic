@@ -211,7 +211,7 @@ func validNameString(s string) bool {
     return strings.ContainsAny(s, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
 }
 
-func (game *Game) doInputCityName(yield coroutine.YieldFunc) {
+func (game *Game) doInput(yield coroutine.YieldFunc, title string, name string) string {
     oldDrawer := game.Drawer
     defer func(){
         game.Drawer = oldDrawer
@@ -220,13 +220,13 @@ func (game *Game) doInputCityName(yield coroutine.YieldFunc) {
     fontLbx, err := game.Cache.GetLbxFile("fonts.lbx")
     if err != nil {
         log.Printf("Unable to read fonts.lbx: %v", err)
-        return
+        return ""
     }
 
     fonts, err := font.ReadFonts(fontLbx, 0)
     if err != nil {
         log.Printf("Unable to read fonts from fonts.lbx: %v", err)
-        return
+        return ""
     }
 
     bluish := color.RGBA{R: 0xcf, G: 0xef, B: 0xf9, A: 0xff}
@@ -252,13 +252,9 @@ func (game *Game) doInputCityName(yield coroutine.YieldFunc) {
 
     maxLength := 26
 
-    title := "Name Starting City"
-
     nameFont := font.MakeOptimizedFontWithPalette(fonts[4], namePalette)
 
     titleFont := font.MakeOptimizedFontWithPalette(fonts[4], titlePalette)
-
-    name := "Bremen"
 
     quit := false
 
@@ -360,6 +356,16 @@ func (game *Game) doInputCityName(yield coroutine.YieldFunc) {
 
         yield()
     }
+
+    return name
+}
+
+func (game *Game) doInputCityName(yield coroutine.YieldFunc, city *citylib.City){
+    title := "Name Starting City"
+    name := "Bremen"
+
+    name = game.doInput(yield, title, name)
+    city.Name = name
 }
 
 func (game *Game) Update(yield coroutine.YieldFunc) GameState {
@@ -374,7 +380,7 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                 case GameEventMagicView:
                     game.doMagicView(yield)
                 case GameEventCityName:
-                    game.doInputCityName(yield)
+                    game.doInputCityName(yield, game.Players[0].Cities[0])
             }
         default:
     }
