@@ -342,12 +342,21 @@ func (game *Game) doInput(yield coroutine.YieldFunc, title string, name string) 
                     if len(name) > 0 {
                         quit = true
                     }
+                case ebiten.KeySpace:
+                    if len(name) < maxLength {
+                        name += " "
+                    }
                 case ebiten.KeyBackspace:
                     if len(name) > 0 {
                         name = name[:len(name) - 1]
                     }
                 default:
                     str := strings.ToLower(key.String())
+
+                    if ebiten.IsKeyPressed(ebiten.KeyShift) {
+                        str = strings.ToUpper(str)
+                    }
+
                     if validNameString(str) && len(name) < maxLength {
                         name += str
                     }
