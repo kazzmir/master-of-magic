@@ -6,6 +6,7 @@ import (
     "math/rand"
     "log"
     "fmt"
+    "strings"
 
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/units"
@@ -202,8 +203,46 @@ func (game *Game) doMagicView(yield coroutine.YieldFunc) {
     game.Drawer = oldDrawer
 }
 
+func validNameString(s string) bool {
+    if len(s) != 1 {
+        return false
+    }
+
+    return strings.ContainsAny(s, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+}
+
 func (game *Game) doInputCityName(yield coroutine.YieldFunc) {
     oldDrawer := game.Drawer
+    defer func(){
+        game.Drawer = oldDrawer
+    }()
+
+    fontLbx, err := game.Cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        log.Printf("Unable to read fonts.lbx: %v", err)
+        return
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
+        return
+    }
+
+    white := color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}
+    namePalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        white, white, white,
+        white, white, white,
+        white, white, white,
+    }
+
+    nameFont := font.MakeOptimizedFontWithPalette(fonts[2], namePalette)
+
+    name := "test"
+
+    quit := false
 
     game.Drawer = func (screen *ebiten.Image, game *Game){
         game.DrawGame(screen)
@@ -212,24 +251,34 @@ func (game *Game) doInputCityName(yield coroutine.YieldFunc) {
         var options ebiten.DrawImageOptions
         options.GeoM.Translate(60, 28)
         screen.DrawImage(background, &options)
-    }
 
-    quit := false
+        x, y := options.GeoM.Apply(13, 20)
+
+        nameFont.Print(screen, x, y, 1, options.ColorScale, name)
+    }
 
     for !quit {
 
         keys := make([]ebiten.Key, 0)
         keys = inpututil.AppendJustPressedKeys(keys)
         for _, key := range keys {
-            if key == ebiten.KeyEnter {
-                quit = true
+            switch key {
+                case ebiten.KeyEnter:
+                    quit = true
+                case ebiten.KeyBackspace:
+                    if len(name) > 0 {
+                        name = name[:len(name) - 1]
+                    }
+                default:
+                    str := strings.ToLower(key.String())
+                    if validNameString(str) {
+                        name += str
+                    }
             }
         }
 
         yield()
     }
-
-    game.Drawer = oldDrawer
 }
 
 func (game *Game) Update(yield coroutine.YieldFunc) GameState {
