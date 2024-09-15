@@ -331,12 +331,36 @@ func (game *Game) doInput(yield coroutine.YieldFunc, title string, name string) 
         cursorArea.DrawTriangles(vertices[:], []uint16{0, 1, 2, 2, 3, 0}, source, nil)
     }
 
-    for !quit {
-        game.Counter += 1
+    repeats := make(map[ebiten.Key]uint64)
 
+    doInput := func(){
         keys := make([]ebiten.Key, 0)
-        keys = inpututil.AppendJustPressedKeys(keys)
+        keys = inpututil.AppendJustReleasedKeys(keys)
         for _, key := range keys {
+            delete(repeats, key)
+        }
+
+        keys = make([]ebiten.Key, 0)
+        keys = inpututil.AppendPressedKeys(keys)
+        for _, key := range keys {
+            repeat, ok := repeats[key]
+            if !ok {
+                repeats[key] = game.Counter
+                repeat = game.Counter
+            }
+
+            diff := game.Counter - repeat
+            // log.Printf("repeat %v diff=%v", key, diff)
+            if diff == 0 {
+                // use = true
+            } else if diff < 15 {
+                continue
+            } else if diff % 5 == 0 {
+                // use = true
+            } else {
+                continue
+            }
+
             switch key {
                 case ebiten.KeyEnter:
                     if len(name) > 0 {
@@ -366,7 +390,11 @@ func (game *Game) doInput(yield coroutine.YieldFunc, title string, name string) 
                     }
             }
         }
+    }
 
+    for !quit {
+        game.Counter += 1
+        doInput()
         yield()
     }
 
