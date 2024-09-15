@@ -244,6 +244,9 @@ func (game *Game) doInputCityName(yield coroutine.YieldFunc) {
 
     quit := false
 
+    source := ebiten.NewImage(1, 1)
+    source.Fill(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff})
+
     game.Drawer = func (screen *ebiten.Image, game *Game){
         game.DrawGame(screen)
 
@@ -255,9 +258,66 @@ func (game *Game) doInputCityName(yield coroutine.YieldFunc) {
         x, y := options.GeoM.Apply(13, 20)
 
         nameFont.Print(screen, x, y, 1, options.ColorScale, name)
+
+        cursorX := x + nameFont.MeasureTextWidth(name, 1)
+
+        width := float64(4)
+        height := float64(8)
+
+        yOffset := float64((game.Counter/3) % 16) - 8
+
+        vertices := [4]ebiten.Vertex{
+            ebiten.Vertex{
+                DstX: float32(cursorX),
+                DstY: float32(y - yOffset),
+                SrcX: 0,
+                SrcY: 0,
+                ColorA: 1,
+                ColorB: 1 ,
+                ColorG: 1,
+                ColorR: 1,
+            },
+            ebiten.Vertex{
+                DstX: float32(cursorX + width),
+                DstY: float32(y - yOffset),
+                SrcX: 0,
+                SrcY: 0,
+                ColorA: 1,
+                ColorB: 1 ,
+                ColorG: 1,
+                ColorR: 1,
+            },
+            ebiten.Vertex{
+                DstX: float32(cursorX + width),
+                DstY: float32(y + height - yOffset),
+                SrcX: 0,
+                SrcY: 0,
+                ColorA: 0.1,
+                ColorB: 1 ,
+                ColorG: 1,
+                ColorR: 1,
+            },
+            ebiten.Vertex{
+                DstX: float32(cursorX),
+                DstY: float32(y + height - yOffset),
+                SrcX: 0,
+                SrcY: 0,
+                ColorA: 0.1,
+                ColorB: 1 ,
+                ColorG: 1,
+                ColorR: 1,
+            },
+        }
+
+        cursorArea := screen.SubImage(image.Rect(int(cursorX), int(y), int(cursorX + width), int(y + height))).(*ebiten.Image)
+
+        cursorArea.DrawTriangles(vertices[:], []uint16{0, 1, 2, 2, 3, 0}, source, nil)
+
+        // vector.DrawFilledRect(screen, float32(cursorX), float32(y), 3, 8, white, false)
     }
 
     for !quit {
+        game.Counter += 1
 
         keys := make([]ebiten.Key, 0)
         keys = inpututil.AppendJustPressedKeys(keys)
