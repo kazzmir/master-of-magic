@@ -299,7 +299,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
         Player: attacker,
     }
 
-    for _, unit := range attackerStack.Units {
+    for _, unit := range attackerStack.Units() {
         attackingArmy.AddUnit(unit.Unit)
     }
 
@@ -307,7 +307,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
         Player: defender,
     }
 
-    for _, unit := range defenderStack.Units {
+    for _, unit := range defenderStack.Units() {
         defendingArmy.AddUnit(unit.Unit)
     }
 
@@ -910,7 +910,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
         unitY := unitY1
 
         row := 0
-        for _, unit := range stack.Units {
+        for _, unit := range stack.Units() {
             // show a unit element for each unit in the stack
             // image index increases by 1 for each unit, indexes 24-32
             unitBackground, _ := game.ImageCache.GetImage("main.lbx", 24, 0)
@@ -1348,17 +1348,17 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
             options.GeoM.Translate(float64(x), float64(y))
 
             if overworld.ShowAnimation && stack == overworld.SelectedStack {
-                dx := float64(float64(stack.Units[0].MoveX - stack.X()) * float64(tileWidth * stack.Units[0].MovementAnimation) / float64(playerlib.MovementLimit))
-                dy := float64(float64(stack.Units[0].MoveY - stack.Y()) * float64(tileHeight * stack.Units[0].MovementAnimation) / float64(playerlib.MovementLimit))
+                dx := float64(float64(stack.Leader().MoveX - stack.X()) * float64(tileWidth * stack.Leader().MovementAnimation) / float64(playerlib.MovementLimit))
+                dy := float64(float64(stack.Leader().MoveY - stack.Y()) * float64(tileHeight * stack.Leader().MovementAnimation) / float64(playerlib.MovementLimit))
                 options.GeoM.Translate(dx, dy)
             }
 
-            unitBack, err := GetUnitBackgroundImage(stack.Units[0].Banner, overworld.ImageCache)
+            unitBack, err := GetUnitBackgroundImage(stack.Leader().Banner, overworld.ImageCache)
             if err == nil {
                 screen.DrawImage(unitBack, &options)
             }
 
-            pic, err := GetUnitImage(stack.Units[0].Unit, overworld.ImageCache)
+            pic, err := GetUnitImage(stack.Leader().Unit, overworld.ImageCache)
             if err == nil {
                 options.GeoM.Translate(1, 1)
                 screen.DrawImage(pic, &options)

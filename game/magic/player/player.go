@@ -47,30 +47,65 @@ func (unit *Unit) Move(dx int, dy int){
 }
 
 type UnitStack struct {
-    Units []*Unit
+    units []*Unit
+    active []bool
+}
+
+func (stack *UnitStack) IsEmpty() bool {
+    return len(stack.units) == 0
+}
+
+func (stack *UnitStack) MakeStack(units []*Unit){
+    stack.units = units
+    stack.active = make([]bool, len(units))
+    for i := range stack.active {
+        stack.active[i] = true
+    }
+}
+
+func (stack *UnitStack) Units() []*Unit {
+    return stack.units
+}
+
+func (stack *UnitStack) AddUnit(unit *Unit){
+    stack.units = append(stack.units, unit)
+    stack.active = append(stack.active, true)
+}
+
+func (stack *UnitStack) RemoveUnit(unit *Unit){
+    index := -1
+
+    for i := 0; i < len(stack.units); i++ {
+        if stack.units[i] == unit {
+            index = i
+        }
+    }
+
+    stack.units = slices.Delete(stack.units, index, index+1)
+    stack.active = slices.Delete(stack.active, index, index+1)
 }
 
 func (stack *UnitStack) ContainsUnit(unit *Unit) bool {
-    return slices.Contains(stack.Units, unit)
+    return slices.Contains(stack.units, unit)
 }
 
 func (stack *UnitStack) Plane() data.Plane {
-    if len(stack.Units) > 0 {
-        return stack.Units[0].Plane
+    if len(stack.units) > 0 {
+        return stack.units[0].Plane
     }
 
     return data.PlaneArcanus
 }
 
 func (stack *UnitStack) Move(dx int, dy int){
-    for _, unit := range stack.Units {
+    for _, unit := range stack.units {
         unit.Move(dx, dy)
     }
 }
 
 func (stack *UnitStack) Leader() *Unit {
-    if len(stack.Units) > 0 {
-        return stack.Units[0]
+    if len(stack.units) > 0 {
+        return stack.units[0]
     }
 
     return nil
@@ -78,30 +113,30 @@ func (stack *UnitStack) Leader() *Unit {
 
 // reduce movement of all units, return true if units are done moving
 func (stack *UnitStack) UpdateMovement() bool {
-    for _, unit := range stack.Units {
+    for _, unit := range stack.units {
         if unit.MovementAnimation > 0 {
             unit.MovementAnimation -= 1
         }
     }
 
-    if len(stack.Units) > 0 {
-        return stack.Units[0].MovementAnimation == 0
+    if len(stack.units) > 0 {
+        return stack.units[0].MovementAnimation == 0
     }
 
     return true
 }
 
 func (stack *UnitStack) X() int {
-    if len(stack.Units) > 0 {
-        return stack.Units[0].X
+    if len(stack.units) > 0 {
+        return stack.units[0].X
     }
 
     return 0
 }
 
 func (stack *UnitStack) Y() int {
-    if len(stack.Units) > 0 {
-        return stack.Units[0].Y
+    if len(stack.units) > 0 {
+        return stack.units[0].Y
     }
 
     return 0
@@ -192,11 +227,9 @@ func (player *Player) RemoveUnit(unit *Unit) {
 
     stack := player.FindStack(unit.X, unit.Y)
     if stack != nil {
-        stack.Units = slices.DeleteFunc(stack.Units, func (u *Unit) bool {
-            return u == unit
-        })
+        stack.RemoveUnit(unit)
 
-        if len(stack.Units) == 0 {
+        if stack.IsEmpty() {
             player.Stacks = slices.DeleteFunc(player.Stacks, func (s *UnitStack) bool {
                 return s == stack
             })
@@ -221,7 +254,7 @@ func (player *Player) AddUnit(unit Unit) *Unit {
     } else {
     }
 
-    stack.Units = append(stack.Units, unit_ptr)
+    stack.AddUnit(unit_ptr)
 
     return unit_ptr
 }
