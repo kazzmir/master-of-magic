@@ -15,7 +15,6 @@ import (
     "github.com/kazzmir/master-of-magic/lib/fraction"
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/lib/mouse"
-    "github.com/kazzmir/master-of-magic/lib/colorconv"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/game/magic/units"
@@ -630,20 +629,6 @@ func makeTiles(width int, height int) [][]Tile {
     return tiles
 }
 
-func lighten(c color.RGBA, amount float64) color.Color {
-    h, s, l := colorconv.ColorToHSL(c)
-    l += amount/100
-    if l > 1 {
-        l = 1
-    }
-    out, err := colorconv.HSLToColor(h, s, l)
-    if err != nil {
-        log.Printf("Error in lighten: %v", err)
-        return c
-    }
-    return out
-}
-
 func makePaletteFromBanner(banner data.BannerType) color.Palette {
     var topColor color.RGBA
 
@@ -661,7 +646,7 @@ func makePaletteFromBanner(banner data.BannerType) color.Palette {
     return color.Palette{
         color.RGBA{R: 0, G: 0, B: 0, A: 0},
         color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        lighten(topColor, 15), lighten(topColor, 10), lighten(topColor, 5),
+        util.Lighten(topColor, 15), util.Lighten(topColor, 10), util.Lighten(topColor, 5),
         topColor, topColor, topColor,
         topColor, topColor, topColor,
     }

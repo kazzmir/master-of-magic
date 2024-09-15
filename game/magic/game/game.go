@@ -229,23 +229,27 @@ func (game *Game) doInputCityName(yield coroutine.YieldFunc) {
         return
     }
 
-    white := color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}
+    bluish := color.RGBA{R: 0xcf, G: 0xef, B: 0xf9, A: 0xff}
+    // red := color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}
     namePalette := color.Palette{
         color.RGBA{R: 0, G: 0, B: 0, A: 0},
         color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        white, white, white,
-        white, white, white,
-        white, white, white,
+        util.Lighten(bluish, -30),
+        util.Lighten(bluish, -20),
+        util.Lighten(bluish, -10),
+        util.Lighten(bluish, 0),
     }
 
-    nameFont := font.MakeOptimizedFontWithPalette(fonts[2], namePalette)
+    maxLength := 26
 
-    name := "test"
+    nameFont := font.MakeOptimizedFontWithPalette(fonts[4], namePalette)
+
+    name := "Bremen"
 
     quit := false
 
     source := ebiten.NewImage(1, 1)
-    source.Fill(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff})
+    source.Fill(color.RGBA{R: 0xcf, G: 0xef, B: 0xf9, A: 0xff})
 
     game.Drawer = func (screen *ebiten.Image, game *Game){
         game.DrawGame(screen)
@@ -324,14 +328,16 @@ func (game *Game) doInputCityName(yield coroutine.YieldFunc) {
         for _, key := range keys {
             switch key {
                 case ebiten.KeyEnter:
-                    quit = true
+                    if len(name) > 0 {
+                        quit = true
+                    }
                 case ebiten.KeyBackspace:
                     if len(name) > 0 {
                         name = name[:len(name) - 1]
                     }
                 default:
                     str := strings.ToLower(key.String())
-                    if validNameString(str) {
+                    if validNameString(str) && len(name) < maxLength {
                         name += str
                     }
             }
