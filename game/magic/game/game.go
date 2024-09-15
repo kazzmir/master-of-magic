@@ -1333,8 +1333,8 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
             options.GeoM.Translate(float64(x), float64(y))
 
             if overworld.ShowAnimation && stack == overworld.SelectedStack {
-                dx := float64(float64(stack.Units[0].MoveX - stack.X()) * float64(tileWidth * stack.Units[0].Movement) / float64(playerlib.MovementLimit))
-                dy := float64(float64(stack.Units[0].MoveY - stack.Y()) * float64(tileHeight * stack.Units[0].Movement) / float64(playerlib.MovementLimit))
+                dx := float64(float64(stack.Units[0].MoveX - stack.X()) * float64(tileWidth * stack.Units[0].MovementAnimation) / float64(playerlib.MovementLimit))
+                dy := float64(float64(stack.Units[0].MoveY - stack.Y()) * float64(tileHeight * stack.Units[0].MovementAnimation) / float64(playerlib.MovementLimit))
                 options.GeoM.Translate(dx, dy)
             }
 

@@ -18,7 +18,7 @@ type Unit struct {
     Y int
     Id uint64
 
-    Movement int
+    MovementAnimation int
     // the tile the unit was just on in order to animate moving around
     MoveX int
     MoveY int
@@ -27,7 +27,7 @@ type Unit struct {
 const MovementLimit = 10
 
 func (unit *Unit) Move(dx int, dy int){
-    unit.Movement = MovementLimit
+    unit.MovementAnimation = MovementLimit
 
     unit.MoveX = unit.X
     unit.MoveY = unit.Y
@@ -79,13 +79,13 @@ func (stack *UnitStack) Leader() *Unit {
 // reduce movement of all units, return true if units are done moving
 func (stack *UnitStack) UpdateMovement() bool {
     for _, unit := range stack.Units {
-        if unit.Movement > 0 {
-            unit.Movement -= 1
+        if unit.MovementAnimation > 0 {
+            unit.MovementAnimation -= 1
         }
     }
 
     if len(stack.Units) > 0 {
-        return stack.Units[0].Movement == 0
+        return stack.Units[0].MovementAnimation == 0
     }
 
     return true
