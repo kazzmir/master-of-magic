@@ -214,7 +214,18 @@ func (game *Game) doInputCityName(yield coroutine.YieldFunc) {
         screen.DrawImage(background, &options)
     }
 
-    for {
+    quit := false
+
+    for !quit {
+
+        keys := make([]ebiten.Key, 0)
+        keys = inpututil.AppendJustPressedKeys(keys)
+        for _, key := range keys {
+            if key == ebiten.KeyEnter {
+                quit = true
+            }
+        }
+
         yield()
     }
 
