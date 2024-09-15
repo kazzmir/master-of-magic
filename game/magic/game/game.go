@@ -43,7 +43,6 @@ type GameState int
 const (
     GameStateRunning GameState = iota
     GameStateUnitMoving
-    GameStateCityView
     GameStateMagicView
     GameStateQuit
 )
@@ -67,7 +66,6 @@ type Game struct {
     cameraX int
     cameraY int
 
-    CityScreen *cityview.CityScreen
     MagicScreen *magicview.MagicScreen
 
     HudUI *uilib.UI
@@ -199,13 +197,6 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
     tilesPerColumn := game.Map.TilesPerColumn(data.ScreenHeight)
 
     switch game.State {
-        case GameStateCityView:
-            switch game.CityScreen.Update() {
-                case cityview.CityScreenStateRunning:
-                case cityview.CityScreenStateDone:
-                    game.State = GameStateRunning
-                    game.CityScreen = nil
-            }
         case GameStateMagicView:
             switch game.MagicScreen.Update() {
                 case magicview.MagicScreenStateRunning:
@@ -293,8 +284,7 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                             tileY := game.cameraY + mouseY / game.Map.TileHeight()
                             for _, city := range game.Players[0].Cities {
                                 if city.X == tileX && city.Y == tileY {
-                                    game.State = GameStateCityView
-                                    game.CityScreen = cityview.MakeCityScreen(game.Cache, city, game.Players[0])
+                                    game.doCityScreen(yield, city, game.Players[0])
                                 }
                             }
                         }
@@ -320,6 +310,60 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
     }
 
     return game.State
+}
+
+func (game *Game) doCityScreen(yield coroutine.YieldFunc, city *citylib.City, player *playerlib.Player){
+    cityScreen := cityview.MakeCityScreen(game.Cache, city, game.Players[0])
+
+    var cities []*citylib.City
+    var stacks []*playerlib.UnitStack
+    var fog [][]bool
+
+    for i, player := range game.Players {
+        for _, city := range player.Cities {
+            if city.Plane == game.Plane {
+                cities = append(cities, city)
+            }
+        }
+
+        for _, stack := range player.Stacks {
+            if stack.Plane() == game.Plane {
+                stacks = append(stacks, stack)
+            }
+        }
+
+        if i == 0 {
+            fog = player.GetFog(game.Plane)
+        }
+    }
+
+    overworld := Overworld{
+        CameraX: city.X - 2,
+        CameraY: city.Y - 2,
+        Counter: 0,
+        Map: game.Map,
+        Cities: cities,
+        Stacks: stacks,
+        SelectedStack: nil,
+        ImageCache: &game.ImageCache,
+        Fog: fog,
+        ShowAnimation: false,
+        FogBlack: game.GetFogImage(),
+    }
+
+    oldDrawer := game.Drawer
+    game.Drawer = func(screen *ebiten.Image, game *Game){
+        cityScreen.Draw(screen, func (mapView *ebiten.Image, geom ebiten.GeoM, counter uint64){
+            overworld.DrawOverworld(mapView, geom)
+        })
+    }
+
+    for cityScreen.Update() == cityview.CityScreenStateRunning {
+        overworld.Counter += 1
+        yield()
+    }
+
+    game.Drawer = oldDrawer
 }
 
 func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player, attackerStack *playerlib.UnitStack, defender *playerlib.Player, defenderStack *playerlib.UnitStack){
@@ -1454,16 +1498,6 @@ func (game *Game) DrawGame(screen *ebiten.Image){
         Fog: fog,
         ShowAnimation: game.State == GameStateUnitMoving,
         FogBlack: game.GetFogImage(),
-    }
-
-    if game.State == GameStateCityView {
-        overworld.CameraX = game.CityScreen.City.X - 2
-        overworld.CameraY = game.CityScreen.City.Y - 2
-        overworld.SelectedStack = nil
-        game.CityScreen.Draw(screen, func (mapView *ebiten.Image, geom ebiten.GeoM, counter uint64){
-            overworld.DrawOverworld(mapView, geom)
-        })
-        return
     }
 
     if game.State == GameStateMagicView {
