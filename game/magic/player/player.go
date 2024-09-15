@@ -48,41 +48,49 @@ func (unit *Unit) Move(dx int, dy int){
 
 type UnitStack struct {
     units []*Unit
-    active []bool
+    active map[*Unit]bool
+}
+
+func MakeUnitStack() *UnitStack {
+    return &UnitStack{
+        active: make(map[*Unit]bool),
+    }
 }
 
 func (stack *UnitStack) IsEmpty() bool {
     return len(stack.units) == 0
 }
 
-func (stack *UnitStack) MakeStack(units []*Unit){
-    stack.units = units
-    stack.active = make([]bool, len(units))
-    for i := range stack.active {
-        stack.active[i] = true
-    }
-}
-
 func (stack *UnitStack) Units() []*Unit {
     return stack.units
 }
 
+func (stack *UnitStack) ToggleActive(unit *Unit){
+    _, ok := stack.active[unit]
+    if ok {
+        stack.active[unit] = !stack.active[unit]
+    }
+}
+
 func (stack *UnitStack) AddUnit(unit *Unit){
     stack.units = append(stack.units, unit)
-    stack.active = append(stack.active, true)
+    stack.active[unit] = true
+}
+
+func (stack *UnitStack) IsActive(unit *Unit) bool {
+    val, ok := stack.active[unit]
+    if !ok {
+        return false
+    }
+    return val
 }
 
 func (stack *UnitStack) RemoveUnit(unit *Unit){
-    index := -1
+    stack.units = slices.DeleteFunc(stack.units, func(u *Unit) bool {
+        return u == unit
+    })
 
-    for i := 0; i < len(stack.units); i++ {
-        if stack.units[i] == unit {
-            index = i
-        }
-    }
-
-    stack.units = slices.Delete(stack.units, index, index+1)
-    stack.active = slices.Delete(stack.active, index, index+1)
+    delete(stack.active, unit)
 }
 
 func (stack *UnitStack) ContainsUnit(unit *Unit) bool {
@@ -249,7 +257,7 @@ func (player *Player) AddUnit(unit Unit) *Unit {
 
     stack := player.FindStack(unit.X, unit.Y)
     if stack == nil {
-        stack = &UnitStack{}
+        stack = MakeUnitStack()
         player.Stacks = append(player.Stacks, stack)
     } else {
     }

@@ -917,6 +917,9 @@ func (game *Game) MakeHudUI() *uilib.UI {
             unitRect := util.ImageRect(unitX, unitY, unitBackground)
             elements = append(elements, &uilib.UIElement{
                 Rect: unitRect,
+                LeftClick: func(this *uilib.UIElement){
+                    stack.ToggleActive(unit)
+                },
                 RightClick: func(this *uilib.UIElement){
                     ui.AddElements(game.MakeUnitContextMenu(ui, unit))
                 },
@@ -927,8 +930,10 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
                     options.GeoM.Translate(1, 1)
 
-                    unitBack, _ := GetUnitBackgroundImage(unit.Banner, &game.ImageCache)
-                    screen.DrawImage(unitBack, &options)
+                    if stack.IsActive(unit){
+                        unitBack, _ := GetUnitBackgroundImage(unit.Banner, &game.ImageCache)
+                        screen.DrawImage(unitBack, &options)
+                    }
 
                     options.GeoM.Translate(1, 1)
                     unitImage, _ := GetUnitImage(unit.Unit, &game.ImageCache)
