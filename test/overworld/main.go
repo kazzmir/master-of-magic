@@ -24,9 +24,7 @@ type Engine struct {
     Coroutine *coroutine.Coroutine
 }
 
-func NewEngine() (*Engine, error) {
-    cache := lbx.AutoCache()
-
+func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
     wizard := setup.WizardCustom{
         Name: "player",
         Banner: data.BannerBlue,
@@ -116,9 +114,15 @@ func NewEngine() (*Engine, error) {
         Y: 6,
     })
 
-    game.DoNextTurn()
+    return game
+}
 
-    // game.ShowApprenticeUI()
+func NewEngine() (*Engine, error) {
+    cache := lbx.AutoCache()
+
+    game := createScenario1(cache)
+
+    game.DoNextTurn()
 
     run := func(yield coroutine.YieldFunc) error {
         for game.Update(yield) != gamelib.GameStateQuit {
