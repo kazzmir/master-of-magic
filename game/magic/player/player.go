@@ -62,6 +62,35 @@ func (stack *UnitStack) Plane() data.Plane {
     return data.PlaneArcanus
 }
 
+func (stack *UnitStack) Move(dx int, dy int){
+    for _, unit := range stack.Units {
+        unit.Move(dx, dy)
+    }
+}
+
+func (stack *UnitStack) Leader() *Unit {
+    if len(stack.Units) > 0 {
+        return stack.Units[0]
+    }
+
+    return nil
+}
+
+// reduce movement of all units, return true if units are done moving
+func (stack *UnitStack) UpdateMovement() bool {
+    for _, unit := range stack.Units {
+        if unit.Movement > 0 {
+            unit.Movement -= 1
+        }
+    }
+
+    if len(stack.Units) > 0 {
+        return stack.Units[0].Movement == 0
+    }
+
+    return true
+}
+
 func (stack *UnitStack) X() int {
     if len(stack.Units) > 0 {
         return stack.Units[0].X
@@ -101,7 +130,7 @@ type Player struct {
 
     // counter for the next created unit owned by this player
     UnitId uint64
-    SelectedUnit *Unit
+    SelectedStack *UnitStack
 }
 
 func (player *Player) GetFog(plane data.Plane) [][]bool {
@@ -112,8 +141,8 @@ func (player *Player) GetFog(plane data.Plane) [][]bool {
     }
 }
 
-func (player *Player) SetSelectedUnit(unit *Unit){
-    player.SelectedUnit = unit
+func (player *Player) SetSelectedStack(stack *UnitStack){
+    player.SelectedStack = stack
 }
 
 /* make anything within the given radius viewable by the player */
@@ -134,6 +163,16 @@ func (player *Player) LiftFog(x int, y int, radius int){
         }
     }
 
+}
+
+func (player *Player) FindStackByUnit(unit *Unit) *UnitStack {
+    for _, stack := range player.Stacks {
+        if stack.ContainsUnit(unit) {
+            return stack
+        }
+    }
+
+    return nil
 }
 
 func (player *Player) FindStack(x int, y int) *UnitStack {

@@ -235,10 +235,10 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                     }
                 }
 
-                if len(game.Players) > 0 && game.Players[0].SelectedUnit != nil {
-                    unit := game.Players[0].SelectedUnit
-                    game.cameraX = unit.X - tilesPerRow / 2
-                    game.cameraY = unit.Y - tilesPerColumn / 2
+                if len(game.Players) > 0 && game.Players[0].SelectedStack != nil {
+                    stack := game.Players[0].SelectedStack
+                    game.cameraX = stack.X() - tilesPerRow / 2
+                    game.cameraY = stack.Y() - tilesPerColumn / 2
 
                     if game.cameraX < 0 {
                         game.cameraX = 0
@@ -249,8 +249,8 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                     }
 
                     if dx != 0 || dy != 0 {
-                        unit.Move(dx, dy)
-                        game.Players[0].LiftFog(unit.X, unit.Y, 2)
+                        stack.Move(dx, dy)
+                        game.Players[0].LiftFog(stack.X(), stack.Y(), 2)
                         game.State = GameStateUnitMoving
                     }
 
@@ -274,19 +274,17 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                 }
             }
         case GameStateUnitMoving:
-            unit := game.Players[0].SelectedUnit
-            unit.Movement -= 1
-            if unit.Movement == 0 {
+            stack := game.Players[0].SelectedStack
+            if stack.UpdateMovement() {
                 game.State = GameStateRunning
 
                 mainPlayer := game.Players[0]
 
                 for _, otherPlayer := range game.Players[1:] {
 
-                    otherStack := otherPlayer.FindStack(unit.X, unit.Y)
+                    otherStack := otherPlayer.FindStack(stack.X(), stack.Y())
                     if otherStack != nil {
-                        playerStack := &playerlib.UnitStack{Units: []*playerlib.Unit{unit}}
-                        game.doCombat(yield, mainPlayer, playerStack, otherPlayer, otherStack)
+                        game.doCombat(yield, mainPlayer, stack, otherPlayer, otherStack)
                     }
                 }
 
@@ -902,8 +900,10 @@ func (game *Game) MakeHudUI() *uilib.UI {
         },
     })
 
-    if len(game.Players) > 0 && game.Players[0].SelectedUnit != nil {
-        unit := game.Players[0].SelectedUnit
+    if len(game.Players) > 0 && game.Players[0].SelectedStack != nil {
+        stack := game.Players[0].SelectedStack
+
+        unit := stack.Leader()
 
         // show a unit element for each unit in the stack
         // image index increases by 1 for each unit, indexes 24-32
@@ -1062,7 +1062,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
 func (game *Game) DoNextUnit(){
     if len(game.Players) > 0 {
-        game.Players[0].SelectedUnit = nil
+        game.Players[0].SelectedStack = nil
     }
 
     game.HudUI = game.MakeHudUI()
@@ -1072,8 +1072,8 @@ func (game *Game) DoNextTurn(){
     // FIXME
 
     if len(game.Players) > 0 {
-        if len(game.Players[0].Units) > 0 {
-            game.Players[0].SelectedUnit = game.Players[0].Units[0]
+        if len(game.Players[0].Stacks) > 0 {
+            game.Players[0].SelectedStack = game.Players[0].Stacks[0]
         }
         game.HudUI = game.MakeHudUI()
     }
@@ -1278,7 +1278,7 @@ type Overworld struct {
     Map *Map
     Cities []*citylib.City
     Stacks []*playerlib.UnitStack
-    SelectedUnit *playerlib.Unit
+    SelectedStack *playerlib.UnitStack
     ImageCache *util.ImageCache
     Fog [][]bool
     ShowAnimation bool
@@ -1326,13 +1326,13 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
     }
 
     for _, stack := range overworld.Stacks {
-        if !stack.ContainsUnit(overworld.SelectedUnit) || overworld.ShowAnimation || overworld.Counter / 55 % 2 == 0 {
+        if stack != overworld.SelectedStack || overworld.ShowAnimation || overworld.Counter / 55 % 2 == 0 {
             var options ebiten.DrawImageOptions
             options.GeoM = geom
             x, y := convertTileCoordinates(stack.X(), stack.Y())
             options.GeoM.Translate(float64(x), float64(y))
 
-            if overworld.ShowAnimation && stack.ContainsUnit(overworld.SelectedUnit) {
+            if overworld.ShowAnimation && stack == overworld.SelectedStack {
                 dx := float64(float64(stack.Units[0].MoveX - stack.X()) * float64(tileWidth * stack.Units[0].Movement) / float64(playerlib.MovementLimit))
                 dy := float64(float64(stack.Units[0].MoveY - stack.Y()) * float64(tileHeight * stack.Units[0].Movement) / float64(playerlib.MovementLimit))
                 options.GeoM.Translate(dx, dy)
@@ -1364,7 +1364,7 @@ func (game *Game) DrawGame(screen *ebiten.Image){
 
     var cities []*citylib.City
     var stacks []*playerlib.UnitStack
-    var selectedUnit *playerlib.Unit
+    var selectedStack *playerlib.UnitStack
     var fog [][]bool
 
     for i, player := range game.Players {
@@ -1389,7 +1389,7 @@ func (game *Game) DrawGame(screen *ebiten.Image){
         */
 
         if i == 0 {
-            selectedUnit = player.SelectedUnit
+            selectedStack = player.SelectedStack
             fog = player.GetFog(game.Plane)
         }
     }
@@ -1401,7 +1401,7 @@ func (game *Game) DrawGame(screen *ebiten.Image){
         Map: game.Map,
         Cities: cities,
         Stacks: stacks,
-        SelectedUnit: selectedUnit,
+        SelectedStack: selectedStack,
         ImageCache: &game.ImageCache,
         Fog: fog,
         ShowAnimation: game.State == GameStateUnitMoving,
@@ -1411,7 +1411,7 @@ func (game *Game) DrawGame(screen *ebiten.Image){
     if game.State == GameStateCityView {
         overworld.CameraX = game.CityScreen.City.X - 2
         overworld.CameraY = game.CityScreen.City.Y - 2
-        overworld.SelectedUnit = nil
+        overworld.SelectedStack = nil
         game.CityScreen.Draw(screen, func (mapView *ebiten.Image, geom ebiten.GeoM, counter uint64){
             overworld.DrawOverworld(mapView, geom)
         })

@@ -80,7 +80,8 @@ func NewEngine() (*Engine, error) {
         Y: 5,
     })
 
-    player.SetSelectedUnit(drake)
+    stack := player.FindStackByUnit(drake)
+    player.SetSelectedStack(stack)
 
     player.LiftFog(5, 5, 2)
 

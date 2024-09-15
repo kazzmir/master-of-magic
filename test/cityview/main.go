@@ -119,7 +119,7 @@ func (engine *Engine) Draw(screen *ebiten.Image) {
             Map: &engine.Map,
             Cities: []*citylib.City{engine.CityScreen.City},
             Stacks: []*playerlib.UnitStack{},
-            SelectedUnit: nil,
+            SelectedStack: nil,
             ImageCache: &engine.ImageCache,
             Counter: counter,
             Fog: nil,
