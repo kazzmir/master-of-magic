@@ -6,6 +6,7 @@ import (
     "math/rand"
     "log"
     "fmt"
+    "strings"
 
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/units"
@@ -39,16 +40,21 @@ func (game *Game) GetFogImage() *ebiten.Image {
     return game.Fog
 }
 
-type GameEvent int
-const (
-    GameEventMagicView GameEvent = iota
-)
+type GameEvent interface {
+}
+
+type GameEventMagicView struct {
+}
+
+type GameEventCityName struct {
+    Title string
+    City *citylib.City
+}
 
 type GameState int
 const (
     GameStateRunning GameState = iota
     GameStateUnitMoving
-    GameStateMagicView
     GameStateQuit
 )
 
@@ -201,6 +207,246 @@ func (game *Game) doMagicView(yield coroutine.YieldFunc) {
     game.Drawer = oldDrawer
 }
 
+func validNameString(s string) bool {
+    if len(s) != 1 {
+        return false
+    }
+
+    return strings.ContainsAny(s, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-~@^")
+}
+
+func convertKey(input ebiten.Key, shift bool) string {
+    switch input {
+        case ebiten.KeyMinus:
+            if shift {
+                return "_"
+            } else {
+                return "-"
+            }
+        case ebiten.KeyBackquote:
+            if shift {
+                // no glyph
+                return ""
+            } else {
+                return "`"
+            }
+        case ebiten.Key1, ebiten.Key2, ebiten.Key3,
+             ebiten.Key4, ebiten.Key5, ebiten.Key6,
+             ebiten.Key7, ebiten.Key8, ebiten.Key9,
+             ebiten.Key0:
+
+             if shift {
+                 switch input {
+                     case ebiten.Key1: return "!"
+                     case ebiten.Key2: return "@"
+                     case ebiten.Key3: return "#"
+                     case ebiten.Key4: return "$"
+                     case ebiten.Key5: return "%"
+                     case ebiten.Key6: return "^"
+                     case ebiten.Key7: return "&"
+                     case ebiten.Key8: return "*"
+                     case ebiten.Key9: return "("
+                     case ebiten.Key0: return ")"
+                 }
+             }
+
+            str := strings.ToLower(input.String())
+            if strings.HasPrefix(str, "digit"){
+                str = strings.TrimPrefix(str, "digit")
+            }
+            return str
+        default:
+            str := strings.ToLower(input.String())
+            if shift {
+                str = strings.ToUpper(str)
+            }
+            return str
+    }
+}
+
+func (game *Game) doInput(yield coroutine.YieldFunc, title string, name string) string {
+    oldDrawer := game.Drawer
+    defer func(){
+        game.Drawer = oldDrawer
+    }()
+
+    fontLbx, err := game.Cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        log.Printf("Unable to read fonts.lbx: %v", err)
+        return ""
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
+        return ""
+    }
+
+    bluish := color.RGBA{R: 0xcf, G: 0xef, B: 0xf9, A: 0xff}
+    // red := color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}
+    namePalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        util.Lighten(bluish, -30),
+        util.Lighten(bluish, -20),
+        util.Lighten(bluish, -10),
+        util.Lighten(bluish, 0),
+    }
+
+    orange := color.RGBA{R: 0xed, G: 0xa7, B: 0x12, A: 0xff}
+    titlePalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        util.Lighten(orange, -30),
+        util.Lighten(orange, -20),
+        util.Lighten(orange, -10),
+        util.Lighten(orange, 0),
+    }
+
+    maxLength := float64(84)
+
+    nameFont := font.MakeOptimizedFontWithPalette(fonts[4], namePalette)
+
+    titleFont := font.MakeOptimizedFontWithPalette(fonts[4], titlePalette)
+
+    quit := false
+
+    source := ebiten.NewImage(1, 1)
+    source.Fill(color.RGBA{R: 0xcf, G: 0xef, B: 0xf9, A: 0xff})
+
+    game.Drawer = func (screen *ebiten.Image, game *Game){
+        game.DrawGame(screen)
+
+        background, _ := game.ImageCache.GetImage("backgrnd.lbx", 33, 0)
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(60, 28)
+        screen.DrawImage(background, &options)
+
+        x, y := options.GeoM.Apply(13, 20)
+
+        nameFont.Print(screen, x, y, 1, options.ColorScale, name)
+
+        tx, ty := options.GeoM.Apply(9, 6)
+        titleFont.Print(screen, tx, ty, 1, options.ColorScale, title)
+
+        // draw cursor
+        cursorX := x + nameFont.MeasureTextWidth(name, 1)
+
+        width := float64(4)
+        height := float64(8)
+
+        yOffset := float64((game.Counter/3) % 16) - 8
+
+        vertices := [4]ebiten.Vertex{
+            ebiten.Vertex{
+                DstX: float32(cursorX),
+                DstY: float32(y - yOffset),
+                SrcX: 0,
+                SrcY: 0,
+                ColorA: 1,
+                ColorB: 1 ,
+                ColorG: 1,
+                ColorR: 1,
+            },
+            ebiten.Vertex{
+                DstX: float32(cursorX + width),
+                DstY: float32(y - yOffset),
+                SrcX: 0,
+                SrcY: 0,
+                ColorA: 1,
+                ColorB: 1 ,
+                ColorG: 1,
+                ColorR: 1,
+            },
+            ebiten.Vertex{
+                DstX: float32(cursorX + width),
+                DstY: float32(y + height - yOffset),
+                SrcX: 0,
+                SrcY: 0,
+                ColorA: 0.1,
+                ColorB: 1 ,
+                ColorG: 1,
+                ColorR: 1,
+            },
+            ebiten.Vertex{
+                DstX: float32(cursorX),
+                DstY: float32(y + height - yOffset),
+                SrcX: 0,
+                SrcY: 0,
+                ColorA: 0.1,
+                ColorB: 1 ,
+                ColorG: 1,
+                ColorR: 1,
+            },
+        }
+
+        cursorArea := screen.SubImage(image.Rect(int(cursorX), int(y), int(cursorX + width), int(y + height))).(*ebiten.Image)
+        cursorArea.DrawTriangles(vertices[:], []uint16{0, 1, 2, 2, 3, 0}, source, nil)
+    }
+
+    repeats := make(map[ebiten.Key]uint64)
+
+    doInput := func(){
+        keys := make([]ebiten.Key, 0)
+        keys = inpututil.AppendJustReleasedKeys(keys)
+        for _, key := range keys {
+            delete(repeats, key)
+        }
+
+        keys = make([]ebiten.Key, 0)
+        keys = inpututil.AppendPressedKeys(keys)
+        for _, key := range keys {
+            repeat, ok := repeats[key]
+            if !ok {
+                repeats[key] = game.Counter
+                repeat = game.Counter
+            }
+
+            diff := game.Counter - repeat
+            // log.Printf("repeat %v diff=%v", key, diff)
+            if diff == 0 {
+                // use = true
+            } else if diff < 15 {
+                continue
+            } else if diff % 5 == 0 {
+                // use = true
+            } else {
+                continue
+            }
+
+            switch key {
+                case ebiten.KeyEnter:
+                    if len(name) > 0 {
+                        quit = true
+                    }
+                case ebiten.KeySpace:
+                    if nameFont.MeasureTextWidth(name + " ", 1) < maxLength {
+                        name += " "
+                    }
+                case ebiten.KeyBackspace:
+                    if len(name) > 0 {
+                        name = name[:len(name) - 1]
+                    }
+                default:
+                    str := convertKey(key, ebiten.IsKeyPressed(ebiten.KeyShift))
+                    // log.Printf("key: %v -> '%v'", key, str)
+
+                    if str != "" && validNameString(str) && nameFont.MeasureTextWidth(name + str, 1) < maxLength {
+                        name += str
+                    }
+            }
+        }
+    }
+
+    for !quit {
+        game.Counter += 1
+        doInput()
+        yield()
+    }
+
+    return name
+}
+
 func (game *Game) Update(yield coroutine.YieldFunc) GameState {
     game.Counter += 1
 
@@ -209,9 +455,13 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
 
     select {
         case event := <-game.Events:
-            switch event {
-                case GameEventMagicView:
+            switch event.(type) {
+                case *GameEventMagicView:
                     game.doMagicView(yield)
+                case *GameEventCityName:
+                    cityEvent := event.(*GameEventCityName)
+                    city := cityEvent.City
+                    city.Name = game.doInput(yield, cityEvent.Title, city.Name)
             }
         default:
     }
@@ -967,7 +1217,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
     // magic button
     elements = append(elements, makeButton(5, 184, 4, false, func(){
         select {
-            case game.Events<- GameEventMagicView:
+            case game.Events<- &GameEventMagicView{}:
             default:
         }
     }))

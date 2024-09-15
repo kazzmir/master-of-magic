@@ -119,9 +119,9 @@ func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup
 
     player := game.AddPlayer(wizard)
 
-    player.AddCity(citylib.City{
+    introCity := player.AddCity(citylib.City{
         Population: 1000,
-        Name: "Test City",
+        Name: "City1",
         Plane: data.PlaneArcanus,
         ProducingBuilding: citylib.BuildingHousing,
         ProducingUnit: units.UnitNone,
@@ -140,6 +140,11 @@ func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup
     })
 
     player.LiftFog(4, 5, 3)
+
+    game.Events <- &gamelib.GameEventCityName{
+        Title: "Name Starting City",
+        City: introCity,
+    }
 
     game.DoNextTurn()
 
