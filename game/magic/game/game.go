@@ -250,7 +250,7 @@ func (game *Game) doInput(yield coroutine.YieldFunc, title string, name string) 
         util.Lighten(orange, 0),
     }
 
-    maxLength := 26
+    maxLength := float64(84)
 
     nameFont := font.MakeOptimizedFontWithPalette(fonts[4], namePalette)
 
@@ -343,7 +343,7 @@ func (game *Game) doInput(yield coroutine.YieldFunc, title string, name string) 
                         quit = true
                     }
                 case ebiten.KeySpace:
-                    if len(name) < maxLength {
+                    if nameFont.MeasureTextWidth(name + " ", 1) < maxLength {
                         name += " "
                     }
                 case ebiten.KeyBackspace:
@@ -353,11 +353,15 @@ func (game *Game) doInput(yield coroutine.YieldFunc, title string, name string) 
                 default:
                     str := strings.ToLower(key.String())
 
+                    if strings.HasPrefix(str, "digit"){
+                        str = strings.TrimPrefix(str, "digit")
+                    }
+
                     if ebiten.IsKeyPressed(ebiten.KeyShift) {
                         str = strings.ToUpper(str)
                     }
 
-                    if validNameString(str) && len(name) < maxLength {
+                    if validNameString(str) && nameFont.MeasureTextWidth(name + str, 1) < maxLength {
                         name += str
                     }
             }
