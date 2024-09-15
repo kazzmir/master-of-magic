@@ -981,11 +981,6 @@ func (game *Game) MakeHudUI() *uilib.UI {
             case game.Events<- GameEventMagicView:
             default:
         }
-
-        /*
-        game.MagicScreen = magicview.MakeMagicScreen(game.Cache, game.Players[0])
-        game.State = GameStateMagicView
-        */
     }))
 
     // info button
