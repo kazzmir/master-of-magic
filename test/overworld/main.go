@@ -80,6 +80,17 @@ func NewEngine() (*Engine, error) {
         Y: 5,
     })
 
+    for i := 0; i < 5; i++ {
+        fireElemental := player.AddUnit(playerlib.Unit{
+            Unit: units.FireElemental,
+            Plane: data.PlaneArcanus,
+            Banner: wizard.Banner,
+            X: 5,
+            Y: 5,
+        })
+        _ = fireElemental
+    }
+
     stack := player.FindStackByUnit(drake)
     player.SetSelectedStack(stack)
 

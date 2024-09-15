@@ -903,32 +903,47 @@ func (game *Game) MakeHudUI() *uilib.UI {
     if len(game.Players) > 0 && game.Players[0].SelectedStack != nil {
         stack := game.Players[0].SelectedStack
 
-        unit := stack.Leader()
+        unitX1 := 246
+        unitY1 := 79
 
-        // show a unit element for each unit in the stack
-        // image index increases by 1 for each unit, indexes 24-32
-        unitBackground, _ := game.ImageCache.GetImage("main.lbx", 24, 0)
-        unitRect := util.ImageRect(246, 79, unitBackground)
-        elements = append(elements, &uilib.UIElement{
-            Rect: unitRect,
-            RightClick: func(this *uilib.UIElement){
-                ui.AddElements(game.MakeUnitContextMenu(ui, unit))
-            },
-            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(unitRect.Min.X), float64(unitRect.Min.Y))
-                screen.DrawImage(unitBackground, &options)
+        unitX := unitX1
+        unitY := unitY1
 
-                options.GeoM.Translate(1, 1)
+        row := 0
+        for _, unit := range stack.Units {
+            // show a unit element for each unit in the stack
+            // image index increases by 1 for each unit, indexes 24-32
+            unitBackground, _ := game.ImageCache.GetImage("main.lbx", 24, 0)
+            unitRect := util.ImageRect(unitX, unitY, unitBackground)
+            elements = append(elements, &uilib.UIElement{
+                Rect: unitRect,
+                RightClick: func(this *uilib.UIElement){
+                    ui.AddElements(game.MakeUnitContextMenu(ui, unit))
+                },
+                Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                    var options ebiten.DrawImageOptions
+                    options.GeoM.Translate(float64(unitRect.Min.X), float64(unitRect.Min.Y))
+                    screen.DrawImage(unitBackground, &options)
 
-                unitBack, _ := GetUnitBackgroundImage(unit.Banner, &game.ImageCache)
-                screen.DrawImage(unitBack, &options)
+                    options.GeoM.Translate(1, 1)
 
-                options.GeoM.Translate(1, 1)
-                unitImage, _ := GetUnitImage(unit.Unit, &game.ImageCache)
-                screen.DrawImage(unitImage, &options)
-            },
-        })
+                    unitBack, _ := GetUnitBackgroundImage(unit.Banner, &game.ImageCache)
+                    screen.DrawImage(unitBack, &options)
+
+                    options.GeoM.Translate(1, 1)
+                    unitImage, _ := GetUnitImage(unit.Unit, &game.ImageCache)
+                    screen.DrawImage(unitImage, &options)
+                },
+            })
+
+            row += 1
+            unitX += unitBackground.Bounds().Dx()
+            if row >= 3 {
+                row = 0
+                unitX = unitX1
+                unitY += unitBackground.Bounds().Dy()
+            }
+        }
 
         doneImages, _ := game.ImageCache.GetImages("main.lbx", 8)
         doneIndex := 0
