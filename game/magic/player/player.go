@@ -306,8 +306,9 @@ func (player *Player) RemoveUnit(unit *Unit) {
     }
 }
 
-func (player *Player) AddCity(city citylib.City) {
+func (player *Player) AddCity(city citylib.City) *citylib.City {
     player.Cities = append(player.Cities, &city)
+    return &city
 }
 
 func (player *Player) AddStack(stack *UnitStack){

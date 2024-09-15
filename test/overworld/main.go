@@ -144,7 +144,7 @@ func createScenario2(cache *lbx.LbxCache) *gamelib.Game {
 
     player := game.AddPlayer(wizard)
 
-    player.AddCity(citylib.City{
+    introCity := player.AddCity(citylib.City{
         Population: 6000,
         Name: "Test City",
         Plane: data.PlaneArcanus,
@@ -174,7 +174,10 @@ func createScenario2(cache *lbx.LbxCache) *gamelib.Game {
     stack := player.FindStackByUnit(drake)
     player.SetSelectedStack(stack)
 
-    game.Events <- gamelib.GameEventCityName
+    game.Events <- &gamelib.GameEventCityName{
+        Title: "Name Starting City",
+        City: introCity,
+    }
 
     player.LiftFog(5, 5, 2)
 

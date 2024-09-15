@@ -40,17 +40,21 @@ func (game *Game) GetFogImage() *ebiten.Image {
     return game.Fog
 }
 
-type GameEvent int
-const (
-    GameEventMagicView GameEvent = iota
-    GameEventCityName
-)
+type GameEvent interface {
+}
+
+type GameEventMagicView struct {
+}
+
+type GameEventCityName struct {
+    Title string
+    City *citylib.City
+}
 
 type GameState int
 const (
     GameStateRunning GameState = iota
     GameStateUnitMoving
-    GameStateMagicView
     GameStateQuit
 )
 
@@ -401,14 +405,6 @@ func (game *Game) doInput(yield coroutine.YieldFunc, title string, name string) 
     return name
 }
 
-func (game *Game) doInputCityName(yield coroutine.YieldFunc, city *citylib.City){
-    title := "Name Starting City"
-    name := "Bremen"
-
-    name = game.doInput(yield, title, name)
-    city.Name = name
-}
-
 func (game *Game) Update(yield coroutine.YieldFunc) GameState {
     game.Counter += 1
 
@@ -417,11 +413,13 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
 
     select {
         case event := <-game.Events:
-            switch event {
-                case GameEventMagicView:
+            switch event.(type) {
+                case *GameEventMagicView:
                     game.doMagicView(yield)
-                case GameEventCityName:
-                    game.doInputCityName(yield, game.Players[0].Cities[0])
+                case *GameEventCityName:
+                    cityEvent := event.(*GameEventCityName)
+                    city := cityEvent.City
+                    city.Name = game.doInput(yield, cityEvent.Title, city.Name)
             }
         default:
     }
@@ -1177,7 +1175,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
     // magic button
     elements = append(elements, makeButton(5, 184, 4, false, func(){
         select {
-            case game.Events<- GameEventMagicView:
+            case game.Events<- &GameEventMagicView{}:
             default:
         }
     }))
