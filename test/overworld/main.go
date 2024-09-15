@@ -117,10 +117,75 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
     return game
 }
 
+// test the starting city name input
+func createScenario2(cache *lbx.LbxCache) *gamelib.Game {
+    wizard := setup.WizardCustom{
+        Name: "player",
+        Banner: data.BannerBlue,
+        Abilities: []setup.WizardAbility{
+            setup.AbilityAlchemy,
+            setup.AbilitySageMaster,
+        },
+        Books: []data.WizardBook{
+            data.WizardBook{
+                Magic: data.LifeMagic,
+                Count: 3,
+            },
+            data.WizardBook{
+                Magic: data.SorceryMagic,
+                Count: 8,
+            },
+        },
+    }
+
+    game := gamelib.MakeGame(cache)
+
+    game.Plane = data.PlaneArcanus
+
+    player := game.AddPlayer(wizard)
+
+    player.AddCity(citylib.City{
+        Population: 6000,
+        Name: "Test City",
+        Plane: data.PlaneArcanus,
+        ProducingBuilding: citylib.BuildingHousing,
+        ProducingUnit: units.UnitNone,
+        Race: data.RaceHighElf,
+        Wall: false,
+        X: 4,
+        Y: 5,
+    })
+
+    player.Gold = 83
+    player.Mana = 26
+
+    // game.Map.Map.Terrain[3][6] = terrain.TileNatureForest.Index
+
+    player.LiftFog(4, 5, 3)
+
+    drake := player.AddUnit(playerlib.Unit{
+        Unit: units.GreatDrake,
+        Plane: data.PlaneArcanus,
+        Banner: wizard.Banner,
+        X: 5,
+        Y: 5,
+    })
+
+    stack := player.FindStackByUnit(drake)
+    player.SetSelectedStack(stack)
+
+    game.Events <- gamelib.GameEventCityName
+
+    player.LiftFog(5, 5, 2)
+
+    return game
+}
+
 func NewEngine() (*Engine, error) {
     cache := lbx.AutoCache()
 
-    game := createScenario1(cache)
+    // game := createScenario1(cache)
+    game := createScenario2(cache)
 
     game.DoNextTurn()
 

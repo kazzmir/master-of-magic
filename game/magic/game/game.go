@@ -42,6 +42,7 @@ func (game *Game) GetFogImage() *ebiten.Image {
 type GameEvent int
 const (
     GameEventMagicView GameEvent = iota
+    GameEventCityName
 )
 
 type GameState int
@@ -201,6 +202,25 @@ func (game *Game) doMagicView(yield coroutine.YieldFunc) {
     game.Drawer = oldDrawer
 }
 
+func (game *Game) doInputCityName(yield coroutine.YieldFunc) {
+    oldDrawer := game.Drawer
+
+    game.Drawer = func (screen *ebiten.Image, game *Game){
+        game.DrawGame(screen)
+
+        background, _ := game.ImageCache.GetImage("backgrnd.lbx", 33, 0)
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(60, 28)
+        screen.DrawImage(background, &options)
+    }
+
+    for {
+        yield()
+    }
+
+    game.Drawer = oldDrawer
+}
+
 func (game *Game) Update(yield coroutine.YieldFunc) GameState {
     game.Counter += 1
 
@@ -212,6 +232,8 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
             switch event {
                 case GameEventMagicView:
                     game.doMagicView(yield)
+                case GameEventCityName:
+                    game.doInputCityName(yield)
             }
         default:
     }
