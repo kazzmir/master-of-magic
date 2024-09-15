@@ -437,6 +437,7 @@ var FireElemental Unit = Unit{
     Race: data.RaceFantastic,
     CombatLbxFile: "figure11.lbx",
     CombatIndex: 64,
+    Name: "Fire Elemental",
     Count: 1,
     MovementSpeed: 1,
     MeleeAttackPower: 12,

@@ -80,7 +80,19 @@ func NewEngine() (*Engine, error) {
         Y: 5,
     })
 
-    player.SetSelectedUnit(drake)
+    for i := 0; i < 5; i++ {
+        fireElemental := player.AddUnit(playerlib.Unit{
+            Unit: units.FireElemental,
+            Plane: data.PlaneArcanus,
+            Banner: wizard.Banner,
+            X: 5,
+            Y: 5,
+        })
+        _ = fireElemental
+    }
+
+    stack := player.FindStackByUnit(drake)
+    player.SetSelectedStack(stack)
 
     player.LiftFog(5, 5, 2)
 
@@ -91,6 +103,14 @@ func NewEngine() (*Engine, error) {
 
     enemy1.AddUnit(playerlib.Unit{
         Unit: units.Warlocks,
+        Plane: data.PlaneArcanus,
+        Banner: enemy1.Wizard.Banner,
+        X: 6,
+        Y: 6,
+    })
+
+    enemy1.AddUnit(playerlib.Unit{
+        Unit: units.HighMenBowmen,
         Plane: data.PlaneArcanus,
         Banner: enemy1.Wizard.Banner,
         X: 6,

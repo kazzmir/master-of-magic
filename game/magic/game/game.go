@@ -235,10 +235,10 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                     }
                 }
 
-                if len(game.Players) > 0 && game.Players[0].SelectedUnit != nil {
-                    unit := game.Players[0].SelectedUnit
-                    game.cameraX = unit.X - tilesPerRow / 2
-                    game.cameraY = unit.Y - tilesPerColumn / 2
+                if len(game.Players) > 0 && game.Players[0].SelectedStack != nil {
+                    stack := game.Players[0].SelectedStack
+                    game.cameraX = stack.X() - tilesPerRow / 2
+                    game.cameraY = stack.Y() - tilesPerColumn / 2
 
                     if game.cameraX < 0 {
                         game.cameraX = 0
@@ -249,9 +249,37 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                     }
 
                     if dx != 0 || dy != 0 {
-                        unit.Move(dx, dy)
-                        game.Players[0].LiftFog(unit.X, unit.Y, 2)
-                        game.State = GameStateUnitMoving
+                        remakeUI := false
+                        activeUnits := stack.ActiveUnits()
+                        if len(activeUnits) > 0 {
+                            inactiveUnits := stack.InactiveUnits()
+                            if len(inactiveUnits) > 0 {
+                                stack.RemoveUnits(inactiveUnits)
+                                game.Players[0].AddStack(playerlib.MakeUnitStackFromUnits(inactiveUnits))
+
+                                remakeUI = true
+                            }
+
+                            newX := stack.X() + dx
+                            newY := stack.Y() + dy
+
+                            mergeStack := game.Players[0].FindStack(newX, newY)
+
+                            stack.Move(dx, dy)
+
+                            if mergeStack != nil {
+                                stack = game.Players[0].MergeStacks(mergeStack, stack)
+                                game.Players[0].SelectedStack = stack
+                                remakeUI = true
+                            }
+
+                            game.Players[0].LiftFog(stack.X(), stack.Y(), 2)
+                            game.State = GameStateUnitMoving
+                        }
+
+                        if remakeUI {
+                            game.HudUI = game.MakeHudUI()
+                        }
                     }
 
                     rightClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight)
@@ -274,18 +302,17 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                 }
             }
         case GameStateUnitMoving:
-            unit := game.Players[0].SelectedUnit
-            unit.Movement -= 1
-            if unit.Movement == 0 {
+            stack := game.Players[0].SelectedStack
+            if stack.UpdateMovement() {
                 game.State = GameStateRunning
 
                 mainPlayer := game.Players[0]
 
                 for _, otherPlayer := range game.Players[1:] {
-                    for _, otherUnit := range otherPlayer.Units {
-                        if otherUnit.X == unit.X && otherUnit.Y == unit.Y {
-                            game.doCombat(yield, mainPlayer, unit, otherPlayer, otherUnit)
-                        }
+
+                    otherStack := otherPlayer.FindStack(stack.X(), stack.Y())
+                    if otherStack != nil {
+                        game.doCombat(yield, mainPlayer, stack, otherPlayer, otherStack)
                     }
                 }
 
@@ -295,23 +322,27 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
     return game.State
 }
 
-func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player, attackerUnit *playerlib.Unit, defender *playerlib.Player, defenderUnit *playerlib.Unit){
+func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player, attackerStack *playerlib.UnitStack, defender *playerlib.Player, defenderStack *playerlib.UnitStack){
     attackingArmy := combat.Army{
         Player: attacker,
     }
 
-    attackingArmy.AddUnit(attackerUnit.Unit)
+    for _, unit := range attackerStack.Units() {
+        attackingArmy.AddUnit(unit.Unit)
+    }
 
     defendingArmy := combat.Army{
         Player: defender,
     }
 
-    defendingArmy.AddUnit(defenderUnit.Unit)
+    for _, unit := range defenderStack.Units() {
+        defendingArmy.AddUnit(unit.Unit)
+    }
 
     attackingArmy.LayoutUnits(combat.TeamAttacker)
     defendingArmy.LayoutUnits(combat.TeamDefender)
 
-    combatScreen := combat.MakeCombatScreen(game.Cache, &attackingArmy, &defendingArmy, attacker)
+    combatScreen := combat.MakeCombatScreen(game.Cache, &defendingArmy, &attackingArmy, attacker)
     oldDrawer := game.Drawer
 
     ebiten.SetCursorMode(ebiten.CursorModeHidden)
@@ -897,33 +928,55 @@ func (game *Game) MakeHudUI() *uilib.UI {
         },
     })
 
-    if len(game.Players) > 0 && game.Players[0].SelectedUnit != nil {
-        unit := game.Players[0].SelectedUnit
+    if len(game.Players) > 0 && game.Players[0].SelectedStack != nil {
+        stack := game.Players[0].SelectedStack
 
-        // show a unit element for each unit in the stack
-        // image index increases by 1 for each unit, indexes 24-32
-        unitBackground, _ := game.ImageCache.GetImage("main.lbx", 24, 0)
-        unitRect := util.ImageRect(246, 79, unitBackground)
-        elements = append(elements, &uilib.UIElement{
-            Rect: unitRect,
-            RightClick: func(this *uilib.UIElement){
-                ui.AddElements(game.MakeUnitContextMenu(ui, unit))
-            },
-            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(unitRect.Min.X), float64(unitRect.Min.Y))
-                screen.DrawImage(unitBackground, &options)
+        unitX1 := 246
+        unitY1 := 79
 
-                options.GeoM.Translate(1, 1)
+        unitX := unitX1
+        unitY := unitY1
 
-                unitBack, _ := GetUnitBackgroundImage(unit.Banner, &game.ImageCache)
-                screen.DrawImage(unitBack, &options)
+        row := 0
+        for _, unit := range stack.Units() {
+            // show a unit element for each unit in the stack
+            // image index increases by 1 for each unit, indexes 24-32
+            unitBackground, _ := game.ImageCache.GetImage("main.lbx", 24, 0)
+            unitRect := util.ImageRect(unitX, unitY, unitBackground)
+            elements = append(elements, &uilib.UIElement{
+                Rect: unitRect,
+                LeftClick: func(this *uilib.UIElement){
+                    stack.ToggleActive(unit)
+                },
+                RightClick: func(this *uilib.UIElement){
+                    ui.AddElements(game.MakeUnitContextMenu(ui, unit))
+                },
+                Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                    var options ebiten.DrawImageOptions
+                    options.GeoM.Translate(float64(unitRect.Min.X), float64(unitRect.Min.Y))
+                    screen.DrawImage(unitBackground, &options)
 
-                options.GeoM.Translate(1, 1)
-                unitImage, _ := GetUnitImage(unit.Unit, &game.ImageCache)
-                screen.DrawImage(unitImage, &options)
-            },
-        })
+                    options.GeoM.Translate(1, 1)
+
+                    if stack.IsActive(unit){
+                        unitBack, _ := GetUnitBackgroundImage(unit.Banner, &game.ImageCache)
+                        screen.DrawImage(unitBack, &options)
+                    }
+
+                    options.GeoM.Translate(1, 1)
+                    unitImage, _ := GetUnitImage(unit.Unit, &game.ImageCache)
+                    screen.DrawImage(unitImage, &options)
+                },
+            })
+
+            row += 1
+            unitX += unitBackground.Bounds().Dx()
+            if row >= 3 {
+                row = 0
+                unitX = unitX1
+                unitY += unitBackground.Bounds().Dy()
+            }
+        }
 
         doneImages, _ := game.ImageCache.GetImages("main.lbx", 8)
         doneIndex := 0
@@ -1057,7 +1110,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
 func (game *Game) DoNextUnit(){
     if len(game.Players) > 0 {
-        game.Players[0].SelectedUnit = nil
+        game.Players[0].SelectedStack = nil
     }
 
     game.HudUI = game.MakeHudUI()
@@ -1067,8 +1120,8 @@ func (game *Game) DoNextTurn(){
     // FIXME
 
     if len(game.Players) > 0 {
-        if len(game.Players[0].Units) > 0 {
-            game.Players[0].SelectedUnit = game.Players[0].Units[0]
+        if len(game.Players[0].Stacks) > 0 {
+            game.Players[0].SelectedStack = game.Players[0].Stacks[0]
         }
         game.HudUI = game.MakeHudUI()
     }
@@ -1272,8 +1325,8 @@ type Overworld struct {
     Counter uint64
     Map *Map
     Cities []*citylib.City
-    Units []*playerlib.Unit
-    SelectedUnit *playerlib.Unit
+    Stacks []*playerlib.UnitStack
+    SelectedStack *playerlib.UnitStack
     ImageCache *util.ImageCache
     Fog [][]bool
     ShowAnimation bool
@@ -1320,25 +1373,25 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
         }
     }
 
-    for _, unit := range overworld.Units {
-        if overworld.SelectedUnit != unit || overworld.ShowAnimation || overworld.Counter / 55 % 2 == 0 {
+    for _, stack := range overworld.Stacks {
+        if stack != overworld.SelectedStack || overworld.ShowAnimation || overworld.Counter / 55 % 2 == 0 {
             var options ebiten.DrawImageOptions
             options.GeoM = geom
-            x, y := convertTileCoordinates(unit.X, unit.Y)
+            x, y := convertTileCoordinates(stack.X(), stack.Y())
             options.GeoM.Translate(float64(x), float64(y))
 
-            if overworld.ShowAnimation && overworld.SelectedUnit == unit {
-                dx := float64(float64(unit.MoveX - unit.X) * float64(tileWidth * unit.Movement) / float64(playerlib.MovementLimit))
-                dy := float64(float64(unit.MoveY - unit.Y) * float64(tileHeight * unit.Movement) / float64(playerlib.MovementLimit))
+            if overworld.ShowAnimation && stack == overworld.SelectedStack {
+                dx := float64(float64(stack.Leader().MoveX - stack.X()) * float64(tileWidth * stack.Leader().MovementAnimation) / float64(playerlib.MovementLimit))
+                dy := float64(float64(stack.Leader().MoveY - stack.Y()) * float64(tileHeight * stack.Leader().MovementAnimation) / float64(playerlib.MovementLimit))
                 options.GeoM.Translate(dx, dy)
             }
 
-            unitBack, err := GetUnitBackgroundImage(unit.Banner, overworld.ImageCache)
+            unitBack, err := GetUnitBackgroundImage(stack.Leader().Banner, overworld.ImageCache)
             if err == nil {
                 screen.DrawImage(unitBack, &options)
             }
 
-            pic, err := GetUnitImage(unit.Unit, overworld.ImageCache)
+            pic, err := GetUnitImage(stack.Leader().Unit, overworld.ImageCache)
             if err == nil {
                 options.GeoM.Translate(1, 1)
                 screen.DrawImage(pic, &options)
@@ -1358,8 +1411,8 @@ func (game *Game) Draw(screen *ebiten.Image){
 func (game *Game) DrawGame(screen *ebiten.Image){
 
     var cities []*citylib.City
-    var units []*playerlib.Unit
-    var selectedUnit *playerlib.Unit
+    var stacks []*playerlib.UnitStack
+    var selectedStack *playerlib.UnitStack
     var fog [][]bool
 
     for i, player := range game.Players {
@@ -1369,14 +1422,22 @@ func (game *Game) DrawGame(screen *ebiten.Image){
             }
         }
 
+        for _, stack := range player.Stacks {
+            if stack.Plane() == game.Plane {
+                stacks = append(stacks, stack)
+            }
+        }
+
+        /*
         for _, unit := range player.Units {
             if unit.Plane == game.Plane {
                 units = append(units, unit)
             }
         }
+        */
 
         if i == 0 {
-            selectedUnit = player.SelectedUnit
+            selectedStack = player.SelectedStack
             fog = player.GetFog(game.Plane)
         }
     }
@@ -1387,8 +1448,8 @@ func (game *Game) DrawGame(screen *ebiten.Image){
         Counter: game.Counter,
         Map: game.Map,
         Cities: cities,
-        Units: units,
-        SelectedUnit: selectedUnit,
+        Stacks: stacks,
+        SelectedStack: selectedStack,
         ImageCache: &game.ImageCache,
         Fog: fog,
         ShowAnimation: game.State == GameStateUnitMoving,
@@ -1398,7 +1459,7 @@ func (game *Game) DrawGame(screen *ebiten.Image){
     if game.State == GameStateCityView {
         overworld.CameraX = game.CityScreen.City.X - 2
         overworld.CameraY = game.CityScreen.City.Y - 2
-        overworld.SelectedUnit = nil
+        overworld.SelectedStack = nil
         game.CityScreen.Draw(screen, func (mapView *ebiten.Image, geom ebiten.GeoM, counter uint64){
             overworld.DrawOverworld(mapView, geom)
         })
