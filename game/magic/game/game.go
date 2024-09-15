@@ -282,10 +282,11 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                 mainPlayer := game.Players[0]
 
                 for _, otherPlayer := range game.Players[1:] {
-                    for _, otherUnit := range otherPlayer.Units {
-                        if otherUnit.X == unit.X && otherUnit.Y == unit.Y {
-                            game.doCombat(yield, mainPlayer, unit, otherPlayer, otherUnit)
-                        }
+
+                    otherStack := otherPlayer.FindStack(unit.X, unit.Y)
+                    if otherStack != nil {
+                        playerStack := &playerlib.UnitStack{Units: []*playerlib.Unit{unit}}
+                        game.doCombat(yield, mainPlayer, playerStack, otherPlayer, otherStack)
                     }
                 }
 
@@ -295,18 +296,22 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
     return game.State
 }
 
-func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player, attackerUnit *playerlib.Unit, defender *playerlib.Player, defenderUnit *playerlib.Unit){
+func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player, attackerStack *playerlib.UnitStack, defender *playerlib.Player, defenderStack *playerlib.UnitStack){
     attackingArmy := combat.Army{
         Player: attacker,
     }
 
-    attackingArmy.AddUnit(attackerUnit.Unit)
+    for _, unit := range attackerStack.Units {
+        attackingArmy.AddUnit(unit.Unit)
+    }
 
     defendingArmy := combat.Army{
         Player: defender,
     }
 
-    defendingArmy.AddUnit(defenderUnit.Unit)
+    for _, unit := range defenderStack.Units {
+        defendingArmy.AddUnit(unit.Unit)
+    }
 
     attackingArmy.LayoutUnits(combat.TeamAttacker)
     defendingArmy.LayoutUnits(combat.TeamDefender)

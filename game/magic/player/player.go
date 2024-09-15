@@ -1,6 +1,8 @@
 package player
 
 import (
+    "slices"
+
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/data"
@@ -17,6 +19,7 @@ type Unit struct {
     Id uint64
 
     Movement int
+    // the tile the unit was just on in order to animate moving around
     MoveX int
     MoveY int
 }
@@ -43,6 +46,26 @@ func (unit *Unit) Move(dx int, dy int){
     }
 }
 
+type UnitStack struct {
+    Units []*Unit
+}
+
+func (stack *UnitStack) X() int {
+    if len(stack.Units) > 0 {
+        return stack.Units[0].X
+    }
+
+    return 0
+}
+
+func (stack *UnitStack) Y() int {
+    if len(stack.Units) > 0 {
+        return stack.Units[0].Y
+    }
+
+    return 0
+}
+
 type Player struct {
     // matrix the same size as the map, where true means the player can see the tile
     // and false means the tile has not yet been discovered
@@ -61,6 +84,7 @@ type Player struct {
     Wizard setup.WizardCustom
 
     Units []*Unit
+    Stacks []*UnitStack
     Cities []*citylib.City
 
     // counter for the next created unit owned by this player
@@ -100,6 +124,35 @@ func (player *Player) LiftFog(x int, y int, radius int){
 
 }
 
+func (player *Player) FindStack(x int, y int) *UnitStack {
+    for _, stack := range player.Stacks {
+        if stack.X() == x && stack.Y() == y {
+            return stack
+        }
+    }
+
+    return nil
+}
+
+func (player *Player) RemoveUnit(unit *Unit) {
+    player.Units = slices.DeleteFunc(player.Units, func (u *Unit) bool {
+        return u == unit
+    })
+
+    stack := player.FindStack(unit.X, unit.Y)
+    if stack != nil {
+        stack.Units = slices.DeleteFunc(stack.Units, func (u *Unit) bool {
+            return u == unit
+        })
+
+        if len(stack.Units) == 0 {
+            player.Stacks = slices.DeleteFunc(player.Stacks, func (s *UnitStack) bool {
+                return s == stack
+            })
+        }
+    }
+}
+
 func (player *Player) AddCity(city citylib.City) {
     player.Cities = append(player.Cities, &city)
 }
@@ -109,5 +162,15 @@ func (player *Player) AddUnit(unit Unit) *Unit {
     player.UnitId += 1
     unit_ptr := &unit
     player.Units = append(player.Units, unit_ptr)
+
+    stack := player.FindStack(unit.X, unit.Y)
+    if stack == nil {
+        stack = &UnitStack{}
+        player.Stacks = append(player.Stacks, stack)
+    } else {
+    }
+
+    stack.Units = append(stack.Units, unit_ptr)
+
     return unit_ptr
 }
