@@ -2551,6 +2551,10 @@ func (combat *CombatScreen) Update() CombatState {
             combat.Tiles[combat.SelectedUnit.Y][combat.SelectedUnit.X].Unit = nil
 
             combat.SelectedUnit.MovesLeft = combat.SelectedUnit.MovesLeft.Subtract(pathCost(image.Pt(combat.SelectedUnit.X, combat.SelectedUnit.Y), image.Pt(targetX, targetY)))
+            if combat.SelectedUnit.MovesLeft.LessThan(fraction.FromInt(0)) {
+                combat.SelectedUnit.MovesLeft = fraction.FromInt(0)
+            }
+
             combat.SelectedUnit.X = targetX
             combat.SelectedUnit.Y = targetY
             combat.SelectedUnit.MoveX = float64(targetX)

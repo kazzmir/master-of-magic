@@ -314,7 +314,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     attackingArmy.LayoutUnits(combat.TeamAttacker)
     defendingArmy.LayoutUnits(combat.TeamDefender)
 
-    combatScreen := combat.MakeCombatScreen(game.Cache, &attackingArmy, &defendingArmy, attacker)
+    combatScreen := combat.MakeCombatScreen(game.Cache, &defendingArmy, &attackingArmy, attacker)
     oldDrawer := game.Drawer
 
     ebiten.SetCursorMode(ebiten.CursorModeHidden)
