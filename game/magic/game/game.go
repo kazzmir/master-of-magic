@@ -240,9 +240,23 @@ func (game *Game) doInputCityName(yield coroutine.YieldFunc) {
         util.Lighten(bluish, 0),
     }
 
+    orange := color.RGBA{R: 0xed, G: 0xa7, B: 0x12, A: 0xff}
+    titlePalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        util.Lighten(orange, -30),
+        util.Lighten(orange, -20),
+        util.Lighten(orange, -10),
+        util.Lighten(orange, 0),
+    }
+
     maxLength := 26
 
+    title := "Name Starting City"
+
     nameFont := font.MakeOptimizedFontWithPalette(fonts[4], namePalette)
+
+    titleFont := font.MakeOptimizedFontWithPalette(fonts[4], titlePalette)
 
     name := "Bremen"
 
@@ -263,6 +277,10 @@ func (game *Game) doInputCityName(yield coroutine.YieldFunc) {
 
         nameFont.Print(screen, x, y, 1, options.ColorScale, name)
 
+        tx, ty := options.GeoM.Apply(9, 6)
+        titleFont.Print(screen, tx, ty, 1, options.ColorScale, title)
+
+        // draw cursor
         cursorX := x + nameFont.MeasureTextWidth(name, 1)
 
         width := float64(4)
@@ -314,10 +332,7 @@ func (game *Game) doInputCityName(yield coroutine.YieldFunc) {
         }
 
         cursorArea := screen.SubImage(image.Rect(int(cursorX), int(y), int(cursorX + width), int(y + height))).(*ebiten.Image)
-
         cursorArea.DrawTriangles(vertices[:], []uint16{0, 1, 2, 2, 3, 0}, source, nil)
-
-        // vector.DrawFilledRect(screen, float32(cursorX), float32(y), 3, 8, white, false)
     }
 
     for !quit {
