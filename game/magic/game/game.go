@@ -1277,7 +1277,7 @@ type Overworld struct {
     Counter uint64
     Map *Map
     Cities []*citylib.City
-    Units []*playerlib.Unit
+    Stacks []*playerlib.UnitStack
     SelectedUnit *playerlib.Unit
     ImageCache *util.ImageCache
     Fog [][]bool
@@ -1325,25 +1325,25 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
         }
     }
 
-    for _, unit := range overworld.Units {
-        if overworld.SelectedUnit != unit || overworld.ShowAnimation || overworld.Counter / 55 % 2 == 0 {
+    for _, stack := range overworld.Stacks {
+        if !stack.ContainsUnit(overworld.SelectedUnit) || overworld.ShowAnimation || overworld.Counter / 55 % 2 == 0 {
             var options ebiten.DrawImageOptions
             options.GeoM = geom
-            x, y := convertTileCoordinates(unit.X, unit.Y)
+            x, y := convertTileCoordinates(stack.X(), stack.Y())
             options.GeoM.Translate(float64(x), float64(y))
 
-            if overworld.ShowAnimation && overworld.SelectedUnit == unit {
-                dx := float64(float64(unit.MoveX - unit.X) * float64(tileWidth * unit.Movement) / float64(playerlib.MovementLimit))
-                dy := float64(float64(unit.MoveY - unit.Y) * float64(tileHeight * unit.Movement) / float64(playerlib.MovementLimit))
+            if overworld.ShowAnimation && stack.ContainsUnit(overworld.SelectedUnit) {
+                dx := float64(float64(stack.Units[0].MoveX - stack.X()) * float64(tileWidth * stack.Units[0].Movement) / float64(playerlib.MovementLimit))
+                dy := float64(float64(stack.Units[0].MoveY - stack.Y()) * float64(tileHeight * stack.Units[0].Movement) / float64(playerlib.MovementLimit))
                 options.GeoM.Translate(dx, dy)
             }
 
-            unitBack, err := GetUnitBackgroundImage(unit.Banner, overworld.ImageCache)
+            unitBack, err := GetUnitBackgroundImage(stack.Units[0].Banner, overworld.ImageCache)
             if err == nil {
                 screen.DrawImage(unitBack, &options)
             }
 
-            pic, err := GetUnitImage(unit.Unit, overworld.ImageCache)
+            pic, err := GetUnitImage(stack.Units[0].Unit, overworld.ImageCache)
             if err == nil {
                 options.GeoM.Translate(1, 1)
                 screen.DrawImage(pic, &options)
@@ -1363,7 +1363,7 @@ func (game *Game) Draw(screen *ebiten.Image){
 func (game *Game) DrawGame(screen *ebiten.Image){
 
     var cities []*citylib.City
-    var units []*playerlib.Unit
+    var stacks []*playerlib.UnitStack
     var selectedUnit *playerlib.Unit
     var fog [][]bool
 
@@ -1374,11 +1374,19 @@ func (game *Game) DrawGame(screen *ebiten.Image){
             }
         }
 
+        for _, stack := range player.Stacks {
+            if stack.Plane() == game.Plane {
+                stacks = append(stacks, stack)
+            }
+        }
+
+        /*
         for _, unit := range player.Units {
             if unit.Plane == game.Plane {
                 units = append(units, unit)
             }
         }
+        */
 
         if i == 0 {
             selectedUnit = player.SelectedUnit
@@ -1392,7 +1400,7 @@ func (game *Game) DrawGame(screen *ebiten.Image){
         Counter: game.Counter,
         Map: game.Map,
         Cities: cities,
-        Units: units,
+        Stacks: stacks,
         SelectedUnit: selectedUnit,
         ImageCache: &game.ImageCache,
         Fog: fog,

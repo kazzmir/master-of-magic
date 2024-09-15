@@ -50,6 +50,18 @@ type UnitStack struct {
     Units []*Unit
 }
 
+func (stack *UnitStack) ContainsUnit(unit *Unit) bool {
+    return slices.Contains(stack.Units, unit)
+}
+
+func (stack *UnitStack) Plane() data.Plane {
+    if len(stack.Units) > 0 {
+        return stack.Units[0].Plane
+    }
+
+    return data.PlaneArcanus
+}
+
 func (stack *UnitStack) X() int {
     if len(stack.Units) > 0 {
         return stack.Units[0].X
