@@ -212,7 +212,56 @@ func validNameString(s string) bool {
         return false
     }
 
-    return strings.ContainsAny(s, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+    return strings.ContainsAny(s, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-~@^")
+}
+
+func convertKey(input ebiten.Key, shift bool) string {
+    switch input {
+        case ebiten.KeyMinus:
+            if shift {
+                return "_"
+            } else {
+                return "-"
+            }
+        case ebiten.KeyBackquote:
+            if shift {
+                // no glyph
+                return ""
+            } else {
+                return "`"
+            }
+        case ebiten.Key1, ebiten.Key2, ebiten.Key3,
+             ebiten.Key4, ebiten.Key5, ebiten.Key6,
+             ebiten.Key7, ebiten.Key8, ebiten.Key9,
+             ebiten.Key0:
+
+             if shift {
+                 switch input {
+                     case ebiten.Key1: return "!"
+                     case ebiten.Key2: return "@"
+                     case ebiten.Key3: return "#"
+                     case ebiten.Key4: return "$"
+                     case ebiten.Key5: return "%"
+                     case ebiten.Key6: return "^"
+                     case ebiten.Key7: return "&"
+                     case ebiten.Key8: return "*"
+                     case ebiten.Key9: return "("
+                     case ebiten.Key0: return ")"
+                 }
+             }
+
+            str := strings.ToLower(input.String())
+            if strings.HasPrefix(str, "digit"){
+                str = strings.TrimPrefix(str, "digit")
+            }
+            return str
+        default:
+            str := strings.ToLower(input.String())
+            if shift {
+                str = strings.ToUpper(str)
+            }
+            return str
+    }
 }
 
 func (game *Game) doInput(yield coroutine.YieldFunc, title string, name string) string {
@@ -379,17 +428,10 @@ func (game *Game) doInput(yield coroutine.YieldFunc, title string, name string) 
                         name = name[:len(name) - 1]
                     }
                 default:
-                    str := strings.ToLower(key.String())
+                    str := convertKey(key, ebiten.IsKeyPressed(ebiten.KeyShift))
+                    // log.Printf("key: %v -> '%v'", key, str)
 
-                    if strings.HasPrefix(str, "digit"){
-                        str = strings.TrimPrefix(str, "digit")
-                    }
-
-                    if ebiten.IsKeyPressed(ebiten.KeyShift) {
-                        str = strings.ToUpper(str)
-                    }
-
-                    if validNameString(str) && nameFont.MeasureTextWidth(name + str, 1) < maxLength {
+                    if str != "" && validNameString(str) && nameFont.MeasureTextWidth(name + str, 1) < maxLength {
                         name += str
                     }
             }
