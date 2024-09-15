@@ -39,6 +39,11 @@ func (game *Game) GetFogImage() *ebiten.Image {
     return game.Fog
 }
 
+type GameEvent int
+const (
+    GameEventMagicView GameEvent = iota
+)
+
 type GameState int
 const (
     GameStateRunning GameState = iota
@@ -61,12 +66,12 @@ type Game struct {
     State GameState
     Plane data.Plane
 
+    Events chan GameEvent
+
     BookOrder []int
 
     cameraX int
     cameraY int
-
-    MagicScreen *magicview.MagicScreen
 
     HudUI *uilib.UI
     Help lbx.Help
@@ -166,6 +171,7 @@ func MakeGame(lbxCache *lbx.LbxCache) *Game {
         active: false,
         Cache: lbxCache,
         Help: help,
+        Events: make(chan GameEvent, 1),
         Map: MakeMap(terrainData),
         State: GameStateRunning,
         BookOrder: randomizeBookOrder(12),
@@ -190,20 +196,38 @@ func (game *Game) Activate() {
     game.active = true
 }
 
+func (game *Game) doMagicView(yield coroutine.YieldFunc) {
+
+    oldDrawer := game.Drawer
+    magicScreen := magicview.MakeMagicScreen(game.Cache, game.Players[0])
+
+    game.Drawer = func (screen *ebiten.Image, game *Game){
+        magicScreen.Draw(screen)
+    }
+
+    for magicScreen.Update() == magicview.MagicScreenStateRunning {
+        yield()
+    }
+
+    game.Drawer = oldDrawer
+}
+
 func (game *Game) Update(yield coroutine.YieldFunc) GameState {
     game.Counter += 1
 
     tilesPerRow := game.Map.TilesPerRow(data.ScreenWidth)
     tilesPerColumn := game.Map.TilesPerColumn(data.ScreenHeight)
 
-    switch game.State {
-        case GameStateMagicView:
-            switch game.MagicScreen.Update() {
-                case magicview.MagicScreenStateRunning:
-                case magicview.MagicScreenStateDone:
-                    game.State = GameStateRunning
-                    game.MagicScreen = nil
+    select {
+        case event := <-game.Events:
+            switch event {
+                case GameEventMagicView:
+                    game.doMagicView(yield)
             }
+        default:
+    }
+
+    switch game.State {
         case GameStateRunning:
             game.HudUI.StandardUpdate()
 
@@ -953,8 +977,10 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
     // magic button
     elements = append(elements, makeButton(5, 184, 4, false, func(){
-        game.MagicScreen = magicview.MakeMagicScreen(game.Cache, game.Players[0])
-        game.State = GameStateMagicView
+        select {
+            case game.Events<- GameEventMagicView:
+            default:
+        }
     }))
 
     // info button
@@ -1498,11 +1524,6 @@ func (game *Game) DrawGame(screen *ebiten.Image){
         Fog: fog,
         ShowAnimation: game.State == GameStateUnitMoving,
         FogBlack: game.GetFogImage(),
-    }
-
-    if game.State == GameStateMagicView {
-        game.MagicScreen.Draw(screen)
-        return
     }
 
     overworld.DrawOverworld(screen, ebiten.GeoM{})
