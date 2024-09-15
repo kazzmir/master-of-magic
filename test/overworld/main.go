@@ -47,7 +47,6 @@ func NewEngine() (*Engine, error) {
     }
 
     game := gamelib.MakeGame(cache)
-    game.Activate()
 
     game.Plane = data.PlaneArcanus
 

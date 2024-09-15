@@ -53,8 +53,6 @@ const (
 )
 
 type Game struct {
-    active bool
-
     Cache *lbx.LbxCache
     ImageCache util.ImageCache
     WhiteFont *font.Font
@@ -168,7 +166,6 @@ func MakeGame(lbxCache *lbx.LbxCache) *Game {
     whiteFont := font.MakeOptimizedFontWithPalette(fonts[0], whitePalette)
 
     game := &Game{
-        active: false,
         Cache: lbxCache,
         Help: help,
         Events: make(chan GameEvent, 1),
@@ -186,14 +183,6 @@ func MakeGame(lbxCache *lbx.LbxCache) *Game {
     }
 
     return game
-}
-
-func (game *Game) IsActive() bool {
-    return game.active
-}
-
-func (game *Game) Activate() {
-    game.active = true
 }
 
 func (game *Game) doMagicView(yield coroutine.YieldFunc) {
