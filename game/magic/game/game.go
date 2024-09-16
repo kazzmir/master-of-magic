@@ -185,6 +185,7 @@ func MakeGame(lbxCache *lbx.LbxCache) *Game {
 
     yellowPalette := color.Palette{
         color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
         orange,
         orange,
         orange,
@@ -456,6 +457,31 @@ func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, sta
         game.Drawer = drawer
     }()
 
+    fontLbx, err := game.Cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        log.Printf("Unable to read fonts.lbx: %v", err)
+        return
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
+        return
+    }
+
+    yellow := color.RGBA{R: 0xea, G: 0xb6, B: 0x00, A: 0xff}
+    yellowPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        yellow, yellow, yellow,
+        yellow, yellow, yellow,
+        yellow, yellow, yellow,
+        yellow, yellow, yellow,
+    }
+
+    bigFont := font.MakeOptimizedFontWithPalette(fonts[5], yellowPalette)
+
     game.Drawer = func (screen *ebiten.Image, game *Game){
         drawer(screen, game)
 
@@ -494,6 +520,12 @@ func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, sta
                 stackOptions.GeoM.Translate(float64(pic.Bounds().Dx()) + 1, 0)
             }
         }
+
+        x, y := options.GeoM.Apply(6, 22)
+        game.InfoFontYellow.Print(screen, x, y, 1, options.ColorScale, city.Race.String())
+
+        x, y = options.GeoM.Apply(20, 5)
+        bigFont.Print(screen, x, y, 1, options.ColorScale, "New Outpost Founded")
     }
 
     quit := false
