@@ -17,21 +17,11 @@ type Unit struct {
     X int
     Y int
     Id uint64
-
-    MovementAnimation int
-    // the tile the unit was just on in order to animate moving around
-    MoveX int
-    MoveY int
 }
 
 const MovementLimit = 10
 
 func (unit *Unit) Move(dx int, dy int){
-    unit.MovementAnimation = MovementLimit
-
-    unit.MoveX = unit.X
-    unit.MoveY = unit.Y
-
     unit.X += dx
     unit.Y += dy
 
@@ -49,6 +39,10 @@ func (unit *Unit) Move(dx int, dy int){
 type UnitStack struct {
     units []*Unit
     active map[*Unit]bool
+
+    // non-zero while animating movement on the overworld
+    offsetX float64
+    offsetY float64
 }
 
 func MakeUnitStack() *UnitStack {
@@ -66,6 +60,19 @@ func MakeUnitStackFromUnits(units []*Unit) *UnitStack {
     }
 
     return stack
+}
+
+func (stack *UnitStack) SetOffset(x float64, y float64) {
+    stack.offsetX = x
+    stack.offsetY = y
+}
+
+func (stack *UnitStack) OffsetX() float64 {
+    return stack.offsetX
+}
+
+func (stack *UnitStack) OffsetY() float64 {
+    return stack.offsetY
 }
 
 func (stack *UnitStack) IsEmpty() bool {
@@ -164,21 +171,6 @@ func (stack *UnitStack) Leader() *Unit {
     }
 
     return nil
-}
-
-// reduce movement of all units, return true if units are done moving
-func (stack *UnitStack) UpdateMovement() bool {
-    for _, unit := range stack.units {
-        if unit.MovementAnimation > 0 {
-            unit.MovementAnimation -= 1
-        }
-    }
-
-    if len(stack.units) > 0 {
-        return stack.units[0].MovementAnimation == 0
-    }
-
-    return true
 }
 
 func (stack *UnitStack) X() int {

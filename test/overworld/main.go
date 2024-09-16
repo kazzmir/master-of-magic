@@ -1,7 +1,9 @@
 package main
 
 import (
+    "os"
     "log"
+    "strconv"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
@@ -259,11 +261,17 @@ func createScenario3(cache *lbx.LbxCache) *gamelib.Game {
     return game
 }
 
-func NewEngine() (*Engine, error) {
+func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
-    // game := createScenario1(cache)
-    game := createScenario3(cache)
+    var game *gamelib.Game
+
+    switch scenario {
+        case 1: game = createScenario1(cache)
+        case 2: game = createScenario2(cache)
+        case 3: game = createScenario3(cache)
+        default: game = createScenario1(cache)
+    }
 
     game.DoNextTurn()
 
@@ -325,7 +333,18 @@ func main(){
     ebiten.SetWindowTitle("new screen")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 
-    engine, err := NewEngine()
+    scenario := 1
+
+    if len(os.Args) > 1 {
+        var err error
+        scenario, err = strconv.Atoi(os.Args[1])
+        if err != nil {
+            log.Printf("Error choosing scenario: %v", err)
+            return
+        }
+    }
+
+    engine, err := NewEngine(scenario)
 
     audio.Initialize()
 

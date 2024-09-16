@@ -563,6 +563,27 @@ func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, sta
     city.Name = game.doInput(yield, "New Outpost", city.Name, 80, 100)
 }
 
+func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, stack *playerlib.UnitStack){
+    // the number of frames it takes to move a unit one tile
+    frames := 10
+
+    dx := float64(oldX - stack.X())
+    dy := float64(oldY - stack.Y())
+
+    game.State = GameStateUnitMoving
+
+    for i := 0; i < frames; i++ {
+        game.Counter += 1
+        stack.SetOffset(dx * float64(frames - i) / float64(frames), dy * float64(frames - i) / float64(frames))
+        yield()
+    }
+
+    game.State = GameStateRunning
+
+    stack.SetOffset(0, 0)
+    game.CenterCamera(stack.X(), stack.Y())
+}
+
 func (game *Game) Update(yield coroutine.YieldFunc) GameState {
     game.Counter += 1
 
@@ -618,16 +639,17 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                         // game.CenterCamera(stack.X(), stack.Y())
 
                         if dx != 0 || dy != 0 {
-                            remakeUI := false
                             activeUnits := stack.ActiveUnits()
                             if len(activeUnits) > 0 {
                                 inactiveUnits := stack.InactiveUnits()
                                 if len(inactiveUnits) > 0 {
                                     stack.RemoveUnits(inactiveUnits)
                                     player.AddStack(playerlib.MakeUnitStackFromUnits(inactiveUnits))
-
-                                    remakeUI = true
+                                    game.HudUI = game.MakeHudUI()
                                 }
+
+                                oldX := stack.X()
+                                oldY := stack.Y()
 
                                 newX := stack.X() + dx
                                 newY := stack.Y() + dy
@@ -636,18 +658,24 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
 
                                 stack.Move(dx, dy)
 
+                                game.showMovement(yield, oldX, oldY, stack)
+
+                                player.LiftFog(stack.X(), stack.Y(), 2)
+
+                                // game.State = GameStateUnitMoving
+
                                 if mergeStack != nil {
                                     stack = player.MergeStacks(mergeStack, stack)
                                     player.SelectedStack = stack
-                                    remakeUI = true
+                                    game.HudUI = game.MakeHudUI()
                                 }
 
-                                player.LiftFog(stack.X(), stack.Y(), 2)
-                                game.State = GameStateUnitMoving
-                            }
-
-                            if remakeUI {
-                                game.HudUI = game.MakeHudUI()
+                                for _, otherPlayer := range game.Players[1:] {
+                                    otherStack := otherPlayer.FindStack(stack.X(), stack.Y())
+                                    if otherStack != nil {
+                                        game.doCombat(yield, player, stack, otherPlayer, otherStack)
+                                    }
+                                }
                             }
                         }
                     }
@@ -672,24 +700,6 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                         }
                     }
                 }
-            }
-        case GameStateUnitMoving:
-            stack := game.Players[0].SelectedStack
-            if stack.UpdateMovement() {
-                game.CenterCamera(stack.X(), stack.Y())
-
-                game.State = GameStateRunning
-
-                mainPlayer := game.Players[0]
-
-                for _, otherPlayer := range game.Players[1:] {
-
-                    otherStack := otherPlayer.FindStack(stack.X(), stack.Y())
-                    if otherStack != nil {
-                        game.doCombat(yield, mainPlayer, stack, otherPlayer, otherStack)
-                    }
-                }
-
             }
     }
 
@@ -1869,12 +1879,12 @@ type Overworld struct {
 func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM){
     overworld.Map.Draw(overworld.CameraX, overworld.CameraY, overworld.Counter / 8, screen, geom)
 
-    tileWidth := overworld.Map.TileWidth()
-    tileHeight := overworld.Map.TileHeight()
+    tileWidth := float64(overworld.Map.TileWidth())
+    tileHeight := float64(overworld.Map.TileHeight())
 
-    convertTileCoordinates := func(x int, y int) (int, int) {
-        outX := (x - overworld.CameraX) * tileWidth
-        outY := (y - overworld.CameraY) * tileHeight
+    convertTileCoordinates := func(x float64, y float64) (float64, float64) {
+        outX := (x - float64(overworld.CameraX)) * tileWidth
+        outY := (y - float64(overworld.CameraY)) * tileHeight
         return outX, outY
     }
 
@@ -1889,11 +1899,11 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
 
         if err == nil {
             var options ebiten.DrawImageOptions
-            x, y := convertTileCoordinates(city.X, city.Y)
+            x, y := convertTileCoordinates(float64(city.X), float64(city.Y))
             options.GeoM = geom
             // draw the city in the center of the tile
             // first compute center of tile
-            options.GeoM.Translate(float64(x) + float64(tileWidth) / 2.0, float64(y) + float64(tileHeight) / 2.0)
+            options.GeoM.Translate(x + tileWidth / 2.0, y + tileHeight / 2.0)
             // then move the city image so that the center of the image is at the center of the tile
             options.GeoM.Translate(float64(-cityPic.Bounds().Dx()) / 2.0, float64(-cityPic.Bounds().Dy()) / 2.0)
             screen.DrawImage(cityPic, &options)
@@ -1910,14 +1920,8 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
         if stack != overworld.SelectedStack || overworld.ShowAnimation || overworld.Counter / 55 % 2 == 0 {
             var options ebiten.DrawImageOptions
             options.GeoM = geom
-            x, y := convertTileCoordinates(stack.X(), stack.Y())
-            options.GeoM.Translate(float64(x), float64(y))
-
-            if overworld.ShowAnimation && stack == overworld.SelectedStack {
-                dx := float64(float64(stack.Leader().MoveX - stack.X()) * float64(tileWidth * stack.Leader().MovementAnimation) / float64(playerlib.MovementLimit))
-                dy := float64(float64(stack.Leader().MoveY - stack.Y()) * float64(tileHeight * stack.Leader().MovementAnimation) / float64(playerlib.MovementLimit))
-                options.GeoM.Translate(dx, dy)
-            }
+            x, y := convertTileCoordinates(float64(stack.X()) + stack.OffsetX(), float64(stack.Y()) + stack.OffsetY())
+            options.GeoM.Translate(x, y)
 
             unitBack, err := GetUnitBackgroundImage(stack.Leader().Banner, overworld.ImageCache)
             if err == nil {
