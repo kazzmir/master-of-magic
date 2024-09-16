@@ -262,8 +262,8 @@ func createScenario3(cache *lbx.LbxCache) *gamelib.Game {
 func NewEngine() (*Engine, error) {
     cache := lbx.AutoCache()
 
-    // game := createScenario1(cache)
-    game := createScenario3(cache)
+    game := createScenario1(cache)
+    // game := createScenario3(cache)
 
     game.DoNextTurn()
 

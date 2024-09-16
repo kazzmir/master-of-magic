@@ -668,6 +668,13 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                                     player.SelectedStack = stack
                                     game.HudUI = game.MakeHudUI()
                                 }
+
+                                for _, otherPlayer := range game.Players[1:] {
+                                    otherStack := otherPlayer.FindStack(stack.X(), stack.Y())
+                                    if otherStack != nil {
+                                        game.doCombat(yield, player, stack, otherPlayer, otherStack)
+                                    }
+                                }
                             }
                         }
                     }
@@ -692,24 +699,6 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                         }
                     }
                 }
-            }
-        case GameStateUnitMoving:
-            stack := game.Players[0].SelectedStack
-            if stack.UpdateMovement() {
-                game.CenterCamera(stack.X(), stack.Y())
-
-                game.State = GameStateRunning
-
-                mainPlayer := game.Players[0]
-
-                for _, otherPlayer := range game.Players[1:] {
-
-                    otherStack := otherPlayer.FindStack(stack.X(), stack.Y())
-                    if otherStack != nil {
-                        game.doCombat(yield, mainPlayer, stack, otherPlayer, otherStack)
-                    }
-                }
-
             }
     }
 
