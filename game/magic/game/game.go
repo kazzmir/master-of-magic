@@ -105,6 +105,19 @@ func (game *Game) MakeFog() [][]bool {
     return fog
 }
 
+func (game *Game) CenterCamera(x int, y int){
+    game.cameraX = x - 5
+    game.cameraY = y - 5
+
+    if game.cameraX < 0 {
+        game.cameraX = 0
+    }
+
+    if game.cameraY < 0 {
+        game.cameraY = 0
+    }
+}
+
 func (game *Game) AddPlayer(wizard setup.WizardCustom) *playerlib.Player{
     newPlayer := &playerlib.Player{
         ArcanusFog: game.MakeFog(),
@@ -189,6 +202,26 @@ func MakeGame(lbxCache *lbx.LbxCache) *Game {
     }
 
     return game
+}
+
+func (game *Game) FindValidCityLocation() (int, int) {
+    continents := game.Map.Map.FindContinents()
+
+    for i := 0; i < 10; i++ {
+        continentIndex := rand.Intn(len(continents))
+        continent := continents[continentIndex]
+        if len(continent) > 100 {
+            index := rand.Intn(len(continent))
+            x := continent[index].X
+            y := continent[index].Y
+
+            if game.Map.Map.Terrain[x][y] == terrain.TileLand.Index {
+                return x, y
+            }
+        }
+    }
+
+    return 0, 0
 }
 
 func (game *Game) doMagicView(yield coroutine.YieldFunc) {
