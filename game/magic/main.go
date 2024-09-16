@@ -119,6 +119,8 @@ func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup
 
     player := game.AddPlayer(wizard)
 
+    cityX, cityY := game.FindValidCityLocation()
+
     introCity := player.AddCity(citylib.City{
         Population: 1000,
         Name: "City1",
@@ -127,24 +129,26 @@ func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup
         ProducingUnit: units.UnitNone,
         Race: player.Wizard.Race,
         Wall: false,
-        X: 4,
-        Y: 5,
+        X: cityX,
+        Y: cityY,
     })
 
     player.AddUnit(playerlib.Unit{
         Unit: units.GreatDrake,
         Plane: data.PlaneArcanus,
         Banner: wizard.Banner,
-        X: 5,
-        Y: 5,
+        X: cityX,
+        Y: cityY,
     })
 
-    player.LiftFog(4, 5, 3)
+    player.LiftFog(cityX, cityY, 3)
 
     game.Events <- &gamelib.GameEventCityName{
         Title: "Name Starting City",
         City: introCity,
     }
+
+    game.CenterCamera(cityX, cityY)
 
     game.DoNextTurn()
 
