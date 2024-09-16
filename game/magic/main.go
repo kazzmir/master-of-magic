@@ -143,10 +143,7 @@ func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup
 
     player.LiftFog(cityX, cityY, 3)
 
-    game.Events <- &gamelib.GameEventCityName{
-        Title: "Name Starting City",
-        City: introCity,
-    }
+    game.Events <- gamelib.StartingCityEvent(introCity)
 
     game.CenterCamera(cityX, cityY)
 

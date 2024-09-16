@@ -47,9 +47,26 @@ type GameEvent interface {
 type GameEventMagicView struct {
 }
 
+type GameEventNewOutpost struct {
+    City *citylib.City
+    Stack *playerlib.UnitStack
+}
+
 type GameEventCityName struct {
     Title string
     City *citylib.City
+    // position on screen where to show the input box
+    X int
+    Y int
+}
+
+func StartingCityEvent(city *citylib.City) *GameEventCityName {
+    return &GameEventCityName{
+        Title: "New Starting City",
+        City: city,
+        X: 60,
+        Y: 28,
+    }
 }
 
 type GameState int
@@ -249,7 +266,7 @@ func validNameString(s string) bool {
     return strings.ContainsAny(s, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-~@^")
 }
 
-func (game *Game) doInput(yield coroutine.YieldFunc, title string, name string) string {
+func (game *Game) doInput(yield coroutine.YieldFunc, title string, name string, topX int, topY int) string {
     oldDrawer := game.Drawer
     defer func(){
         game.Drawer = oldDrawer
@@ -300,11 +317,11 @@ func (game *Game) doInput(yield coroutine.YieldFunc, title string, name string) 
     source.Fill(color.RGBA{R: 0xcf, G: 0xef, B: 0xf9, A: 0xff})
 
     game.Drawer = func (screen *ebiten.Image, game *Game){
-        game.DrawGame(screen)
+        oldDrawer(screen, game)
 
         background, _ := game.ImageCache.GetImage("backgrnd.lbx", 33, 0)
         var options ebiten.DrawImageOptions
-        options.GeoM.Translate(60, 28)
+        options.GeoM.Translate(float64(topX), float64(topY))
         screen.DrawImage(background, &options)
 
         x, y := options.GeoM.Apply(13, 20)
@@ -433,6 +450,119 @@ func (game *Game) doInput(yield coroutine.YieldFunc, title string, name string) 
     return name
 }
 
+func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, stack *playerlib.UnitStack){
+    drawer := game.Drawer
+    defer func(){
+        game.Drawer = drawer
+    }()
+
+    fontLbx, err := game.Cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        log.Printf("Unable to read fonts.lbx: %v", err)
+        return
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
+        return
+    }
+
+    yellow := color.RGBA{R: 0xea, G: 0xb6, B: 0x00, A: 0xff}
+    yellowPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        yellow, yellow, yellow,
+        yellow, yellow, yellow,
+        yellow, yellow, yellow,
+        yellow, yellow, yellow,
+    }
+
+    bigFont := font.MakeOptimizedFontWithPalette(fonts[5], yellowPalette)
+
+    game.Drawer = func (screen *ebiten.Image, game *Game){
+        drawer(screen, game)
+
+        background, _ := game.ImageCache.GetImage("backgrnd.lbx", 32, 0)
+
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(30, 50)
+        screen.DrawImage(background, &options)
+
+        numHouses := 3
+        maxHouses := 10
+
+        houseOptions := options
+        houseOptions.GeoM.Translate(7, 31)
+
+        house, _ := game.ImageCache.GetImage("backgrnd.lbx", 34, 0)
+
+        for i := 0; i < numHouses; i++ {
+            screen.DrawImage(house, &houseOptions)
+            houseOptions.GeoM.Translate(float64(house.Bounds().Dx()) + 1, 0)
+        }
+
+        emptyHouse, _ := game.ImageCache.GetImage("backgrnd.lbx", 37, 0)
+        for i := numHouses; i < maxHouses; i++ {
+            screen.DrawImage(emptyHouse, &houseOptions)
+            houseOptions.GeoM.Translate(float64(emptyHouse.Bounds().Dx()) + 1, 0)
+        }
+
+        if stack != nil {
+            stackOptions := options
+            stackOptions.GeoM.Translate(7, 55)
+
+            for _, unit := range stack.Units() {
+                pic, _ := GetUnitImage(unit.Unit, &game.ImageCache)
+                screen.DrawImage(pic, &stackOptions)
+                stackOptions.GeoM.Translate(float64(pic.Bounds().Dx()) + 1, 0)
+            }
+        }
+
+        x, y := options.GeoM.Apply(6, 22)
+        game.InfoFontYellow.Print(screen, x, y, 1, options.ColorScale, city.Race.String())
+
+        x, y = options.GeoM.Apply(20, 5)
+        bigFont.Print(screen, x, y, 1, options.ColorScale, "New Outpost Founded")
+
+        cityScapeOptions := options
+        cityScapeOptions.GeoM.Translate(185, 30)
+        x, y = cityScapeOptions.GeoM.Apply(0, 0)
+        cityScape := screen.SubImage(image.Rect(int(x), int(y), int(x + 72), int(y + 66))).(*ebiten.Image)
+
+        cityScapeBackground, _ := game.ImageCache.GetImage("cityscap.lbx", 0, 0)
+        cityScape.DrawImage(cityScapeBackground, &cityScapeOptions)
+
+        cityHouse, _ := game.ImageCache.GetImage("cityscap.lbx", 25, 0)
+        options2 := cityScapeOptions
+        options2.GeoM.Translate(30, 20)
+        cityScape.DrawImage(cityHouse, &options2)
+
+        /*
+        x, y = options2.GeoM.Apply(0, 0)
+        vector.DrawFilledRect(cityScape, float32(x), float32(y), float32(cityScape.Bounds().Dx()), float32(cityScape.Bounds().Dy()), color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, false)
+        log.Printf("cityscape at %v, %v", x, y)
+        x = 30
+        */
+        // vector.DrawFilledCircle(cityScape, float32(x), float32(y), 3, color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, false)
+        // vector.DrawFilledCircle(screen, float32(x), float32(y), 3, color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, false)
+        // vector.StrokeRect(cityScape, float32(x+1), float32(y+1), float32(cityScape.Bounds().Dx())-1, float32(cityScape.Bounds().Dy())-1, 1, color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, false)
+        // vector.DrawFilledRect(cityScape, 0, 0, 320, 200, util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0x80}), false)
+    }
+
+    quit := false
+    for !quit {
+        if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
+            quit = true
+        }
+
+        yield()
+    }
+
+    city.Name = game.doInput(yield, "New Outpost", city.Name, 80, 100)
+}
+
 func (game *Game) Update(yield coroutine.YieldFunc) GameState {
     game.Counter += 1
 
@@ -446,10 +576,13 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
             switch event.(type) {
                 case *GameEventMagicView:
                     game.doMagicView(yield)
+                case *GameEventNewOutpost:
+                    outpost := event.(*GameEventNewOutpost)
+                    game.showOutpost(yield, outpost.City, outpost.Stack)
                 case *GameEventCityName:
                     cityEvent := event.(*GameEventCityName)
                     city := cityEvent.City
-                    city.Name = game.doInput(yield, cityEvent.Title, city.Name)
+                    city.Name = game.doInput(yield, cityEvent.Title, city.Name, cityEvent.X, cityEvent.Y)
             }
         default:
     }
@@ -477,53 +610,45 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                     }
                 }
 
-                if len(game.Players) > 0 && game.Players[0].SelectedStack != nil {
-                    stack := game.Players[0].SelectedStack
-                    /*
-                    game.cameraX = stack.X() - tilesPerRow / 2
-                    game.cameraY = stack.Y() - tilesPerColumn / 2
+                if len(game.Players) > 0 {
+                    player := game.Players[0]
+                    if player.SelectedStack != nil {
+                        stack := player.SelectedStack
 
-                    if game.cameraX < 0 {
-                        game.cameraX = 0
-                    }
+                        // game.CenterCamera(stack.X(), stack.Y())
 
-                    if game.cameraY < 0 {
-                        game.cameraY = 0
-                    }
-                    */
-                    game.CenterCamera(stack.X(), stack.Y())
+                        if dx != 0 || dy != 0 {
+                            remakeUI := false
+                            activeUnits := stack.ActiveUnits()
+                            if len(activeUnits) > 0 {
+                                inactiveUnits := stack.InactiveUnits()
+                                if len(inactiveUnits) > 0 {
+                                    stack.RemoveUnits(inactiveUnits)
+                                    player.AddStack(playerlib.MakeUnitStackFromUnits(inactiveUnits))
 
-                    if dx != 0 || dy != 0 {
-                        remakeUI := false
-                        activeUnits := stack.ActiveUnits()
-                        if len(activeUnits) > 0 {
-                            inactiveUnits := stack.InactiveUnits()
-                            if len(inactiveUnits) > 0 {
-                                stack.RemoveUnits(inactiveUnits)
-                                game.Players[0].AddStack(playerlib.MakeUnitStackFromUnits(inactiveUnits))
+                                    remakeUI = true
+                                }
 
-                                remakeUI = true
+                                newX := stack.X() + dx
+                                newY := stack.Y() + dy
+
+                                mergeStack := player.FindStack(newX, newY)
+
+                                stack.Move(dx, dy)
+
+                                if mergeStack != nil {
+                                    stack = player.MergeStacks(mergeStack, stack)
+                                    player.SelectedStack = stack
+                                    remakeUI = true
+                                }
+
+                                player.LiftFog(stack.X(), stack.Y(), 2)
+                                game.State = GameStateUnitMoving
                             }
 
-                            newX := stack.X() + dx
-                            newY := stack.Y() + dy
-
-                            mergeStack := game.Players[0].FindStack(newX, newY)
-
-                            stack.Move(dx, dy)
-
-                            if mergeStack != nil {
-                                stack = game.Players[0].MergeStacks(mergeStack, stack)
-                                game.Players[0].SelectedStack = stack
-                                remakeUI = true
+                            if remakeUI {
+                                game.HudUI = game.MakeHudUI()
                             }
-
-                            game.Players[0].LiftFog(stack.X(), stack.Y(), 2)
-                            game.State = GameStateUnitMoving
-                        }
-
-                        if remakeUI {
-                            game.HudUI = game.MakeHudUI()
                         }
                     }
 
@@ -536,9 +661,12 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                             // log.Printf("Click at %v, %v", mouseX, mouseY)
                             tileX := game.cameraX + mouseX / game.Map.TileWidth()
                             tileY := game.cameraY + mouseY / game.Map.TileHeight()
-                            for _, city := range game.Players[0].Cities {
+
+                            game.CenterCamera(tileX, tileY)
+
+                            for _, city := range player.Cities {
                                 if city.X == tileX && city.Y == tileY {
-                                    game.doCityScreen(yield, city, game.Players[0])
+                                    game.doCityScreen(yield, city, player)
                                 }
                             }
                         }
@@ -548,6 +676,8 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
         case GameStateUnitMoving:
             stack := game.Players[0].SelectedStack
             if stack.UpdateMovement() {
+                game.CenterCamera(stack.X(), stack.Y())
+
                 game.State = GameStateRunning
 
                 mainPlayer := game.Players[0]
@@ -1126,6 +1256,24 @@ func (game *Game) ShowSpellBookCastUI(){
     }))
 }
 
+func (game *Game) CreateOutpost(settlers *playerlib.Unit, player *playerlib.Player){
+    newCity := citylib.MakeCity("New City", settlers.X, settlers.Y, settlers.Unit.Race)
+    newCity.Plane = settlers.Plane
+    newCity.Population = 1000
+
+    player.RemoveUnit(settlers)
+    player.SelectedStack = nil
+    game.HudUI = game.MakeHudUI()
+    cityPtr := player.AddCity(newCity)
+
+    stack := player.FindStack(newCity.X, newCity.Y)
+
+    select {
+        case game.Events<- &GameEventNewOutpost{City: cityPtr, Stack: stack}:
+        default:
+    }
+}
+
 func (game *Game) MakeHudUI() *uilib.UI {
     ui := &uilib.UI{
         Draw: func(ui *uilib.UI, screen *ebiten.Image){
@@ -1406,7 +1554,18 @@ func (game *Game) MakeHudUI() *uilib.UI {
             },
             LeftClickRelease: func(this *uilib.UIElement){
                 buildIndex = 0
-                // FIXME: build a city
+
+                player := game.Players[0]
+                if player.SelectedStack != nil {
+                    // search for the settlers (the only unit with the create outpost ability
+                    for _, settlers := range player.SelectedStack.ActiveUnits() {
+                        // FIXME: check if this tile is valid to build an outpost on
+                        if settlers.Unit.HasAbility(units.AbilityCreateOutpost) {
+                            game.CreateOutpost(settlers, player)
+                            break
+                        }
+                    }
+                }
             },
         })
 
@@ -1475,8 +1634,12 @@ func (game *Game) DoNextTurn(){
     // FIXME
 
     if len(game.Players) > 0 {
-        if len(game.Players[0].Stacks) > 0 {
-            game.Players[0].SelectedStack = game.Players[0].Stacks[0]
+        player := game.Players[0]
+        if len(player.Stacks) > 0 {
+            player.SelectedStack = player.Stacks[0]
+            game.CenterCamera(player.SelectedStack.X(), player.SelectedStack.Y())
+        } else {
+            game.CenterCamera(player.Cities[0].X, player.Cities[0].Y)
         }
         game.HudUI = game.MakeHudUI()
     }

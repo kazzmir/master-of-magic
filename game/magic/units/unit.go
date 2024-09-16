@@ -1455,6 +1455,8 @@ var HighMenSettlers Unit = Unit{
     LbxFile: "units1.lbx",
     Name: "Settlers",
     Index: 111,
+    MovementSpeed: 1,
+    Abilities: []Ability{AbilityCreateOutpost},
     Race: data.RaceHighMen,
 }
 
