@@ -230,11 +230,19 @@ func createScenario3(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 3)
 
+    player.AddUnit(playerlib.Unit{
+        Unit: units.HighMenBowmen,
+        Plane: data.PlaneArcanus,
+        Banner: wizard.Banner,
+        X: x+1,
+        Y: y,
+    })
+
     settlers := player.AddUnit(playerlib.Unit{
         Unit: units.HighMenSettlers,
         Plane: data.PlaneArcanus,
         Banner: wizard.Banner,
-        X: x,
+        X: x+1,
         Y: y,
     })
 

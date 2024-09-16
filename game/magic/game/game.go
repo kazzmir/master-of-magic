@@ -49,6 +49,7 @@ type GameEventMagicView struct {
 
 type GameEventNewOutpost struct {
     City *citylib.City
+    Stack *playerlib.UnitStack
 }
 
 type GameEventCityName struct {
@@ -449,7 +450,7 @@ func (game *Game) doInput(yield coroutine.YieldFunc, title string, name string, 
     return name
 }
 
-func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City){
+func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, stack *playerlib.UnitStack){
     drawer := game.Drawer
     defer func(){
         game.Drawer = drawer
@@ -463,6 +464,36 @@ func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City){
         var options ebiten.DrawImageOptions
         options.GeoM.Translate(30, 50)
         screen.DrawImage(background, &options)
+
+        numHouses := 3
+        maxHouses := 10
+
+        houseOptions := options
+        houseOptions.GeoM.Translate(7, 31)
+
+        house, _ := game.ImageCache.GetImage("backgrnd.lbx", 34, 0)
+
+        for i := 0; i < numHouses; i++ {
+            screen.DrawImage(house, &houseOptions)
+            houseOptions.GeoM.Translate(float64(house.Bounds().Dx()) + 1, 0)
+        }
+
+        emptyHouse, _ := game.ImageCache.GetImage("backgrnd.lbx", 37, 0)
+        for i := numHouses; i < maxHouses; i++ {
+            screen.DrawImage(emptyHouse, &houseOptions)
+            houseOptions.GeoM.Translate(float64(emptyHouse.Bounds().Dx()) + 1, 0)
+        }
+
+        if stack != nil {
+            stackOptions := options
+            stackOptions.GeoM.Translate(7, 55)
+
+            for _, unit := range stack.Units() {
+                pic, _ := GetUnitImage(unit.Unit, &game.ImageCache)
+                screen.DrawImage(pic, &stackOptions)
+                stackOptions.GeoM.Translate(float64(pic.Bounds().Dx()) + 1, 0)
+            }
+        }
     }
 
     quit := false
@@ -492,7 +523,7 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                     game.doMagicView(yield)
                 case *GameEventNewOutpost:
                     outpost := event.(*GameEventNewOutpost)
-                    game.showOutpost(yield, outpost.City)
+                    game.showOutpost(yield, outpost.City, outpost.Stack)
                 case *GameEventCityName:
                     cityEvent := event.(*GameEventCityName)
                     city := cityEvent.City
@@ -1180,8 +1211,10 @@ func (game *Game) CreateOutpost(settlers *playerlib.Unit, player *playerlib.Play
     game.HudUI = game.MakeHudUI()
     cityPtr := player.AddCity(newCity)
 
+    stack := player.FindStack(newCity.X, newCity.Y)
+
     select {
-        case game.Events<- &GameEventNewOutpost{City: cityPtr}:
+        case game.Events<- &GameEventNewOutpost{City: cityPtr, Stack: stack}:
         default:
     }
 }
