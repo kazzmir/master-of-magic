@@ -193,6 +193,18 @@ type City struct {
     ProducingUnit units.Unit
 }
 
+func MakeCity(name string, x int, y int, race data.Race) City {
+    city := City{
+        Name: name,
+        X: x,
+        Y: y,
+        Race: race,
+        Buildings: set.MakeSet[Building](),
+    }
+
+    return city
+}
+
 func (city *City) AddBuilding(building Building){
     city.Buildings.Insert(building)
 }

@@ -81,7 +81,7 @@ func (ability Ability) LbxFile() string {
         case AbilityCauseFear: return ""
         case AbilityColdImmunity: return ""
         case AbilityConstruction: return ""
-        case AbilityCreateOutpost: return ""
+        case AbilityCreateOutpost: return "special.lbx"
         case AbilityCreateUndead: return ""
         case AbilityDeathGaze: return ""
         case AbilityDeathImmunity: return ""
@@ -154,7 +154,7 @@ func (ability Ability) Name() string {
         case AbilityCauseFear: return ""
         case AbilityColdImmunity: return ""
         case AbilityConstruction: return ""
-        case AbilityCreateOutpost: return ""
+        case AbilityCreateOutpost: return "Create Outpost"
         case AbilityCreateUndead: return ""
         case AbilityDeathGaze: return ""
         case AbilityDeathImmunity: return ""
@@ -228,7 +228,7 @@ func (ability Ability) LbxIndex() int {
         case AbilityCauseFear: return -1
         case AbilityColdImmunity: return -1
         case AbilityConstruction: return -1
-        case AbilityCreateOutpost: return -1
+        case AbilityCreateOutpost: return 17
         case AbilityCreateUndead: return -1
         case AbilityDeathGaze: return -1
         case AbilityDeathImmunity: return -1

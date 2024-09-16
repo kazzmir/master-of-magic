@@ -189,6 +189,7 @@ func createScenario3(cache *lbx.LbxCache) *gamelib.Game {
     wizard := setup.WizardCustom{
         Name: "player",
         Banner: data.BannerBlue,
+        Race: data.RaceHighMen,
         Abilities: []setup.WizardAbility{
             setup.AbilityAlchemy,
             setup.AbilitySageMaster,
@@ -232,15 +233,15 @@ func createScenario3(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 3)
 
-    drake := player.AddUnit(playerlib.Unit{
-        Unit: units.GreatDrake,
+    settlers := player.AddUnit(playerlib.Unit{
+        Unit: units.HighMenSettlers,
         Plane: data.PlaneArcanus,
         Banner: wizard.Banner,
         X: x,
         Y: y,
     })
 
-    stack := player.FindStackByUnit(drake)
+    stack := player.FindStackByUnit(settlers)
     player.SetSelectedStack(stack)
 
     game.Events <- &gamelib.GameEventCityName{

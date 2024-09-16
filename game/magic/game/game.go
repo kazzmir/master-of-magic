@@ -1126,6 +1126,20 @@ func (game *Game) ShowSpellBookCastUI(){
     }))
 }
 
+func (game *Game) CreateOutpost(settlers *playerlib.Unit, player *playerlib.Player){
+    newCity := citylib.MakeCity("New City", settlers.X, settlers.Y, settlers.Unit.Race)
+    newCity.Plane = settlers.Plane
+    newCity.Population = 1000
+
+    player.RemoveUnit(settlers)
+    cityPtr := player.AddCity(newCity)
+
+    select {
+        case game.Events<- &GameEventCityName{City: cityPtr, Title: "Name Your New City"}:
+        default:
+    }
+}
+
 func (game *Game) MakeHudUI() *uilib.UI {
     ui := &uilib.UI{
         Draw: func(ui *uilib.UI, screen *ebiten.Image){
@@ -1406,7 +1420,14 @@ func (game *Game) MakeHudUI() *uilib.UI {
             },
             LeftClickRelease: func(this *uilib.UIElement){
                 buildIndex = 0
-                // FIXME: build a city
+
+                player := game.Players[0]
+                if player.SelectedStack != nil {
+                    settlers := player.SelectedStack.Leader()
+                    if settlers.Unit.HasAbility(units.AbilityCreateOutpost) {
+                        game.CreateOutpost(settlers, player)
+                    }
+                }
             },
         })
 
@@ -1475,8 +1496,11 @@ func (game *Game) DoNextTurn(){
     // FIXME
 
     if len(game.Players) > 0 {
-        if len(game.Players[0].Stacks) > 0 {
-            game.Players[0].SelectedStack = game.Players[0].Stacks[0]
+        player := game.Players[0]
+        if len(player.Stacks) > 0 {
+            player.SelectedStack = player.Stacks[0]
+        } else {
+            game.CenterCamera(player.Cities[0].X, player.Cities[0].Y)
         }
         game.HudUI = game.MakeHudUI()
     }
