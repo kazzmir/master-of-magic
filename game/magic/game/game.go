@@ -529,7 +529,7 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                     if player.SelectedStack != nil {
                         stack := player.SelectedStack
 
-                        game.CenterCamera(stack.X(), stack.Y())
+                        // game.CenterCamera(stack.X(), stack.Y())
 
                         if dx != 0 || dy != 0 {
                             remakeUI := false
@@ -590,6 +590,8 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
         case GameStateUnitMoving:
             stack := game.Players[0].SelectedStack
             if stack.UpdateMovement() {
+                game.CenterCamera(stack.X(), stack.Y())
+
                 game.State = GameStateRunning
 
                 mainPlayer := game.Players[0]
@@ -1174,6 +1176,8 @@ func (game *Game) CreateOutpost(settlers *playerlib.Unit, player *playerlib.Play
     newCity.Population = 1000
 
     player.RemoveUnit(settlers)
+    player.SelectedStack = nil
+    game.HudUI = game.MakeHudUI()
     cityPtr := player.AddCity(newCity)
 
     select {
@@ -1545,6 +1549,7 @@ func (game *Game) DoNextTurn(){
         player := game.Players[0]
         if len(player.Stacks) > 0 {
             player.SelectedStack = player.Stacks[0]
+            game.CenterCamera(player.SelectedStack.X(), player.SelectedStack.Y())
         } else {
             game.CenterCamera(player.Cities[0].X, player.Cities[0].Y)
         }
