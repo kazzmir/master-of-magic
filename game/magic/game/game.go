@@ -492,23 +492,7 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                     game.doMagicView(yield)
                 case *GameEventNewOutpost:
                     outpost := event.(*GameEventNewOutpost)
-
                     game.showOutpost(yield, outpost.City)
-
-                    /*
-                    nameEvent := &GameEventCityName{
-                        Title: "New Outpost",
-                        City: outpost.City,
-                        X: 40,
-                        Y: 40,
-                    }
-
-                    select {
-                        case game.Events<- nameEvent:
-                        default:
-                    }
-                    */
-
                 case *GameEventCityName:
                     cityEvent := event.(*GameEventCityName)
                     city := cityEvent.City
