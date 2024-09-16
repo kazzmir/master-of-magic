@@ -477,53 +477,45 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                     }
                 }
 
-                if len(game.Players) > 0 && game.Players[0].SelectedStack != nil {
-                    stack := game.Players[0].SelectedStack
-                    /*
-                    game.cameraX = stack.X() - tilesPerRow / 2
-                    game.cameraY = stack.Y() - tilesPerColumn / 2
+                if len(game.Players) > 0 {
+                    player := game.Players[0]
+                    if player.SelectedStack != nil {
+                        stack := player.SelectedStack
 
-                    if game.cameraX < 0 {
-                        game.cameraX = 0
-                    }
+                        game.CenterCamera(stack.X(), stack.Y())
 
-                    if game.cameraY < 0 {
-                        game.cameraY = 0
-                    }
-                    */
-                    game.CenterCamera(stack.X(), stack.Y())
+                        if dx != 0 || dy != 0 {
+                            remakeUI := false
+                            activeUnits := stack.ActiveUnits()
+                            if len(activeUnits) > 0 {
+                                inactiveUnits := stack.InactiveUnits()
+                                if len(inactiveUnits) > 0 {
+                                    stack.RemoveUnits(inactiveUnits)
+                                    player.AddStack(playerlib.MakeUnitStackFromUnits(inactiveUnits))
 
-                    if dx != 0 || dy != 0 {
-                        remakeUI := false
-                        activeUnits := stack.ActiveUnits()
-                        if len(activeUnits) > 0 {
-                            inactiveUnits := stack.InactiveUnits()
-                            if len(inactiveUnits) > 0 {
-                                stack.RemoveUnits(inactiveUnits)
-                                game.Players[0].AddStack(playerlib.MakeUnitStackFromUnits(inactiveUnits))
+                                    remakeUI = true
+                                }
 
-                                remakeUI = true
+                                newX := stack.X() + dx
+                                newY := stack.Y() + dy
+
+                                mergeStack := player.FindStack(newX, newY)
+
+                                stack.Move(dx, dy)
+
+                                if mergeStack != nil {
+                                    stack = player.MergeStacks(mergeStack, stack)
+                                    player.SelectedStack = stack
+                                    remakeUI = true
+                                }
+
+                                player.LiftFog(stack.X(), stack.Y(), 2)
+                                game.State = GameStateUnitMoving
                             }
 
-                            newX := stack.X() + dx
-                            newY := stack.Y() + dy
-
-                            mergeStack := game.Players[0].FindStack(newX, newY)
-
-                            stack.Move(dx, dy)
-
-                            if mergeStack != nil {
-                                stack = game.Players[0].MergeStacks(mergeStack, stack)
-                                game.Players[0].SelectedStack = stack
-                                remakeUI = true
+                            if remakeUI {
+                                game.HudUI = game.MakeHudUI()
                             }
-
-                            game.Players[0].LiftFog(stack.X(), stack.Y(), 2)
-                            game.State = GameStateUnitMoving
-                        }
-
-                        if remakeUI {
-                            game.HudUI = game.MakeHudUI()
                         }
                     }
 
@@ -536,9 +528,12 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                             // log.Printf("Click at %v, %v", mouseX, mouseY)
                             tileX := game.cameraX + mouseX / game.Map.TileWidth()
                             tileY := game.cameraY + mouseY / game.Map.TileHeight()
-                            for _, city := range game.Players[0].Cities {
+
+                            game.CenterCamera(tileX, tileY)
+
+                            for _, city := range player.Cities {
                                 if city.X == tileX && city.Y == tileY {
-                                    game.doCityScreen(yield, city, game.Players[0])
+                                    game.doCityScreen(yield, city, player)
                                 }
                             }
                         }
