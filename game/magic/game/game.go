@@ -564,6 +564,7 @@ func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, sta
 }
 
 func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, stack *playerlib.UnitStack){
+    // the number of frames it takes to move a unit one tile
     frames := 10
 
     dx := float64(oldX - stack.X())
@@ -1921,14 +1922,6 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
             options.GeoM = geom
             x, y := convertTileCoordinates(float64(stack.X()) + stack.OffsetX(), float64(stack.Y()) + stack.OffsetY())
             options.GeoM.Translate(x, y)
-
-            /*
-            if overworld.ShowAnimation && stack == overworld.SelectedStack {
-                dx := float64(float64(stack.Leader().MoveX - stack.X()) * float64(tileWidth * stack.Leader().MovementAnimation) / float64(playerlib.MovementLimit))
-                dy := float64(float64(stack.Leader().MoveY - stack.Y()) * float64(tileHeight * stack.Leader().MovementAnimation) / float64(playerlib.MovementLimit))
-                options.GeoM.Translate(dx, dy)
-            }
-            */
 
             unitBack, err := GetUnitBackgroundImage(stack.Leader().Banner, overworld.ImageCache)
             if err == nil {
