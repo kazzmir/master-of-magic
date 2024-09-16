@@ -5,6 +5,7 @@ import (
     "image"
     "math/rand"
     "log"
+    "math"
     "fmt"
     "strings"
 
@@ -1328,12 +1329,27 @@ func (game *Game) MakeHudUI() *uilib.UI {
         doneImages, _ := game.ImageCache.GetImages("main.lbx", 8)
         doneIndex := 0
         doneRect := util.ImageRect(246, 176, doneImages[0])
+        doneCounter := uint64(0)
         elements = append(elements, &uilib.UIElement{
             Rect: doneRect,
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                colorScale := ebiten.ColorScale{}
+
+                if doneCounter > 0 {
+                    v := float32(1 + (math.Sin(float64(doneCounter / 4)) / 2 + 0.5) / 2)
+                    colorScale.Scale(v, v, v, 1)
+                }
+
                 var options ebiten.DrawImageOptions
+                options.ColorScale.ScaleWithColorScale(colorScale)
                 options.GeoM.Translate(float64(doneRect.Min.X), float64(doneRect.Min.Y))
                 screen.DrawImage(doneImages[doneIndex], &options)
+            },
+            Inside: func(this *uilib.UIElement, x int, y int){
+                doneCounter += 1
+            },
+            NotInside: func(this *uilib.UIElement){
+                doneCounter = 0
             },
             LeftClick: func(this *uilib.UIElement){
                 doneIndex = 1
@@ -1347,12 +1363,27 @@ func (game *Game) MakeHudUI() *uilib.UI {
         patrolImages, _ := game.ImageCache.GetImages("main.lbx", 9)
         patrolIndex := 0
         patrolRect := util.ImageRect(280, 176, patrolImages[0])
+        patrolCounter := uint64(0)
         elements = append(elements, &uilib.UIElement{
             Rect: patrolRect,
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                colorScale := ebiten.ColorScale{}
+
+                if patrolCounter > 0 {
+                    v := float32(1 + (math.Sin(float64(patrolCounter / 4)) / 2 + 0.5) / 2)
+                    colorScale.Scale(v, v, v, 1)
+                }
+
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(float64(patrolRect.Min.X), float64(patrolRect.Min.Y))
+                options.ColorScale.ScaleWithColorScale(colorScale)
                 screen.DrawImage(patrolImages[patrolIndex], &options)
+            },
+            Inside: func(this *uilib.UIElement, x int, y int){
+                patrolCounter += 1
+            },
+            NotInside: func(this *uilib.UIElement){
+                patrolCounter = 0
             },
             LeftClick: func(this *uilib.UIElement){
                 patrolIndex = 1
@@ -1366,12 +1397,27 @@ func (game *Game) MakeHudUI() *uilib.UI {
         waitImages, _ := game.ImageCache.GetImages("main.lbx", 10)
         waitIndex := 0
         waitRect := util.ImageRect(246, 186, waitImages[0])
+        waitCounter := uint64(0)
         elements = append(elements, &uilib.UIElement{
             Rect: waitRect,
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                colorScale := ebiten.ColorScale{}
+
+                if waitCounter > 0 {
+                    v := float32(1 + (math.Sin(float64(waitCounter / 4)) / 2 + 0.5) / 2)
+                    colorScale.Scale(v, v, v, 1)
+                }
+
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(float64(waitRect.Min.X), float64(waitRect.Min.Y))
+                options.ColorScale.ScaleWithColorScale(colorScale)
                 screen.DrawImage(waitImages[waitIndex], &options)
+            },
+            Inside: func(this *uilib.UIElement, x int, y int){
+                waitCounter += 1
+            },
+            NotInside: func(this *uilib.UIElement){
+                waitCounter = 0
             },
             LeftClick: func(this *uilib.UIElement){
                 waitIndex = 1
@@ -1386,12 +1432,27 @@ func (game *Game) MakeHudUI() *uilib.UI {
         buildImages, _ := game.ImageCache.GetImages("main.lbx", 11)
         buildIndex := 0
         buildRect := util.ImageRect(280, 186, buildImages[0])
+        buildCounter := uint64(0)
         elements = append(elements, &uilib.UIElement{
             Rect: buildRect,
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                colorScale := ebiten.ColorScale{}
+
+                if buildCounter > 0 {
+                    v := float32(1 + (math.Sin(float64(buildCounter / 4)) / 2 + 0.5) / 2)
+                    colorScale.Scale(v, v, v, 1)
+                }
+
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(float64(buildRect.Min.X), float64(buildRect.Min.Y))
+                options.ColorScale.ScaleWithColorScale(colorScale)
                 screen.DrawImage(buildImages[buildIndex], &options)
+            },
+            Inside: func(this *uilib.UIElement, x int, y int){
+                buildCounter += 1
+            },
+            NotInside: func(this *uilib.UIElement){
+                buildCounter = 0
             },
             LeftClick: func(this *uilib.UIElement){
                 buildIndex = 1
