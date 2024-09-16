@@ -1194,8 +1194,15 @@ func (game *Game) MakeHudUI() *uilib.UI {
         buttons, _ := game.ImageCache.GetImages("main.lbx", lbxIndex)
         rect := image.Rect(x, y, x + buttons[0].Bounds().Dx(), y + buttons[0].Bounds().Dy())
         index := 0
+        counter := uint64(0)
         return &uilib.UIElement{
             Rect: rect,
+            Inside: func(this *uilib.UIElement, x int, y int){
+                counter += 1
+            },
+            NotInside: func(this *uilib.UIElement){
+                counter = 0
+            },
             LeftClick: func(this *uilib.UIElement){
                 index = 1
                 if onClick {
@@ -1209,8 +1216,16 @@ func (game *Game) MakeHudUI() *uilib.UI {
                 }
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                colorScale := ebiten.ColorScale{}
+
+                if counter > 0 {
+                    v := float32(1 + (math.Sin(float64(counter / 4)) / 2 + 0.5) / 2)
+                    colorScale.Scale(v, v, v, 1)
+                }
+
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
+                options.ColorScale.ScaleWithColorScale(colorScale)
                 screen.DrawImage(buttons[index], &options)
             },
         }
@@ -1219,14 +1234,9 @@ func (game *Game) MakeHudUI() *uilib.UI {
     var elements []*uilib.UIElement
 
     // game button
-    elements = append(elements, &uilib.UIElement{
-        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            image, _ := game.ImageCache.GetImage("main.lbx", 1, 0)
-            var options ebiten.DrawImageOptions
-            options.GeoM.Translate(7, 4)
-            screen.DrawImage(image, &options)
-        },
-    })
+    elements = append(elements, makeButton(1, 7, 4, false, func(){
+        // TODO
+    }))
 
     // spell button
     elements = append(elements, makeButton(2, 47, 4, false, func(){
@@ -1234,24 +1244,14 @@ func (game *Game) MakeHudUI() *uilib.UI {
     }))
 
     // army button
-    elements = append(elements, &uilib.UIElement{
-        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            image, _ := game.ImageCache.GetImage("main.lbx", 3, 0)
-            var options ebiten.DrawImageOptions
-            options.GeoM.Translate(89, 4)
-            screen.DrawImage(image, &options)
-        },
-    })
+    elements = append(elements, makeButton(3, 89, 4, false, func(){
+        // TODO
+    }))
 
     // cities button
-    elements = append(elements, &uilib.UIElement{
-        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            image, _ := game.ImageCache.GetImage("main.lbx", 4, 0)
-            var options ebiten.DrawImageOptions
-            options.GeoM.Translate(140, 4)
-            screen.DrawImage(image, &options)
-        },
-    })
+    elements = append(elements, makeButton(4, 140, 4, false, func(){
+        // TODO
+    }))
 
     // magic button
     elements = append(elements, makeButton(5, 184, 4, false, func(){
@@ -1267,14 +1267,9 @@ func (game *Game) MakeHudUI() *uilib.UI {
     }))
 
     // plane button
-    elements = append(elements, &uilib.UIElement{
-        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            image, _ := game.ImageCache.GetImage("main.lbx", 7, 0)
-            var options ebiten.DrawImageOptions
-            options.GeoM.Translate(270, 4)
-            screen.DrawImage(image, &options)
-        },
-    })
+    elements = append(elements, makeButton(7, 270, 4, false, func(){
+        // TODO
+    }))
 
     if len(game.Players) > 0 && game.Players[0].SelectedStack != nil {
         stack := game.Players[0].SelectedStack
