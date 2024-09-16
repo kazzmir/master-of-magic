@@ -47,6 +47,10 @@ type GameEvent interface {
 type GameEventMagicView struct {
 }
 
+type GameEventNewOutpost struct {
+    City *citylib.City
+}
+
 type GameEventCityName struct {
     Title string
     City *citylib.City
@@ -433,6 +437,32 @@ func (game *Game) doInput(yield coroutine.YieldFunc, title string, name string) 
     return name
 }
 
+func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City){
+    drawer := game.Drawer
+    defer func(){
+        game.Drawer = drawer
+    }()
+
+    game.Drawer = func (screen *ebiten.Image, game *Game){
+        game.DrawGame(screen)
+
+        background, _ := game.ImageCache.GetImage("backgrnd.lbx", 32, 0)
+
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(20, 30)
+        screen.DrawImage(background, &options)
+    }
+
+    quit := false
+    for !quit {
+        if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
+            quit = true
+        }
+
+        yield()
+    }
+}
+
 func (game *Game) Update(yield coroutine.YieldFunc) GameState {
     game.Counter += 1
 
@@ -446,6 +476,21 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
             switch event.(type) {
                 case *GameEventMagicView:
                     game.doMagicView(yield)
+                case *GameEventNewOutpost:
+                    outpost := event.(*GameEventNewOutpost)
+
+                    game.showOutpost(yield, outpost.City)
+
+                    nameEvent := &GameEventCityName{
+                        Title: "New Outpost",
+                        City: outpost.City,
+                    }
+
+                    select {
+                        case game.Events<- nameEvent:
+                        default:
+                    }
+
                 case *GameEventCityName:
                     cityEvent := event.(*GameEventCityName)
                     city := cityEvent.City
@@ -1130,7 +1175,7 @@ func (game *Game) CreateOutpost(settlers *playerlib.Unit, player *playerlib.Play
     cityPtr := player.AddCity(newCity)
 
     select {
-        case game.Events<- &GameEventCityName{City: cityPtr, Title: "Name Your New City"}:
+        case game.Events<- &GameEventNewOutpost{City: cityPtr}:
         default:
     }
 }
@@ -1418,9 +1463,12 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
                 player := game.Players[0]
                 if player.SelectedStack != nil {
-                    settlers := player.SelectedStack.Leader()
-                    if settlers.Unit.HasAbility(units.AbilityCreateOutpost) {
-                        game.CreateOutpost(settlers, player)
+                    // search for the settlers (the only unit with the create outpost ability
+                    for _, settlers := range player.SelectedStack.ActiveUnits() {
+                        if settlers.Unit.HasAbility(units.AbilityCreateOutpost) {
+                            game.CreateOutpost(settlers, player)
+                            break
+                        }
                     }
                 }
             },
