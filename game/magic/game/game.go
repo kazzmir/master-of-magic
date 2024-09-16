@@ -185,7 +185,6 @@ func MakeGame(lbxCache *lbx.LbxCache) *Game {
 
     yellowPalette := color.Palette{
         color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
         orange,
         orange,
         orange,
