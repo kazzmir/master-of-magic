@@ -526,6 +526,30 @@ func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, sta
 
         x, y = options.GeoM.Apply(20, 5)
         bigFont.Print(screen, x, y, 1, options.ColorScale, "New Outpost Founded")
+
+        cityScapeOptions := options
+        cityScapeOptions.GeoM.Translate(185, 30)
+        x, y = cityScapeOptions.GeoM.Apply(0, 0)
+        cityScape := screen.SubImage(image.Rect(int(x), int(y), int(x + 72), int(y + 66))).(*ebiten.Image)
+
+        cityScapeBackground, _ := game.ImageCache.GetImage("cityscap.lbx", 0, 0)
+        cityScape.DrawImage(cityScapeBackground, &cityScapeOptions)
+
+        cityHouse, _ := game.ImageCache.GetImage("cityscap.lbx", 25, 0)
+        options2 := cityScapeOptions
+        options2.GeoM.Translate(30, 20)
+        cityScape.DrawImage(cityHouse, &options2)
+
+        /*
+        x, y = options2.GeoM.Apply(0, 0)
+        vector.DrawFilledRect(cityScape, float32(x), float32(y), float32(cityScape.Bounds().Dx()), float32(cityScape.Bounds().Dy()), color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, false)
+        log.Printf("cityscape at %v, %v", x, y)
+        x = 30
+        */
+        // vector.DrawFilledCircle(cityScape, float32(x), float32(y), 3, color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, false)
+        // vector.DrawFilledCircle(screen, float32(x), float32(y), 3, color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, false)
+        // vector.StrokeRect(cityScape, float32(x+1), float32(y+1), float32(cityScape.Bounds().Dx())-1, float32(cityScape.Bounds().Dy())-1, 1, color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, false)
+        // vector.DrawFilledRect(cityScape, 0, 0, 320, 200, util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0x80}), false)
     }
 
     quit := false
