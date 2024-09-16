@@ -54,6 +54,18 @@ type GameEventNewOutpost struct {
 type GameEventCityName struct {
     Title string
     City *citylib.City
+    // position on screen where to show the input box
+    X int
+    Y int
+}
+
+func StartingCityEvent(city *citylib.City) *GameEventCityName {
+    return &GameEventCityName{
+        Title: "New Starting City",
+        City: city,
+        X: 60,
+        Y: 28,
+    }
 }
 
 type GameState int
@@ -253,7 +265,7 @@ func validNameString(s string) bool {
     return strings.ContainsAny(s, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-~@^")
 }
 
-func (game *Game) doInput(yield coroutine.YieldFunc, title string, name string) string {
+func (game *Game) doInput(yield coroutine.YieldFunc, title string, name string, topX int, topY int) string {
     oldDrawer := game.Drawer
     defer func(){
         game.Drawer = oldDrawer
@@ -304,11 +316,11 @@ func (game *Game) doInput(yield coroutine.YieldFunc, title string, name string) 
     source.Fill(color.RGBA{R: 0xcf, G: 0xef, B: 0xf9, A: 0xff})
 
     game.Drawer = func (screen *ebiten.Image, game *Game){
-        game.DrawGame(screen)
+        oldDrawer(screen, game)
 
         background, _ := game.ImageCache.GetImage("backgrnd.lbx", 33, 0)
         var options ebiten.DrawImageOptions
-        options.GeoM.Translate(60, 28)
+        options.GeoM.Translate(float64(topX), float64(topY))
         screen.DrawImage(background, &options)
 
         x, y := options.GeoM.Apply(13, 20)
@@ -444,12 +456,12 @@ func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City){
     }()
 
     game.Drawer = func (screen *ebiten.Image, game *Game){
-        game.DrawGame(screen)
+        drawer(screen, game)
 
         background, _ := game.ImageCache.GetImage("backgrnd.lbx", 32, 0)
 
         var options ebiten.DrawImageOptions
-        options.GeoM.Translate(20, 30)
+        options.GeoM.Translate(30, 50)
         screen.DrawImage(background, &options)
     }
 
@@ -461,6 +473,8 @@ func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City){
 
         yield()
     }
+
+    city.Name = game.doInput(yield, "New Outpost", city.Name, 80, 100)
 }
 
 func (game *Game) Update(yield coroutine.YieldFunc) GameState {
@@ -481,20 +495,24 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
 
                     game.showOutpost(yield, outpost.City)
 
+                    /*
                     nameEvent := &GameEventCityName{
                         Title: "New Outpost",
                         City: outpost.City,
+                        X: 40,
+                        Y: 40,
                     }
 
                     select {
                         case game.Events<- nameEvent:
                         default:
                     }
+                    */
 
                 case *GameEventCityName:
                     cityEvent := event.(*GameEventCityName)
                     city := cityEvent.City
-                    city.Name = game.doInput(yield, cityEvent.Title, city.Name)
+                    city.Name = game.doInput(yield, cityEvent.Title, city.Name, cityEvent.X, cityEvent.Y)
             }
         default:
     }

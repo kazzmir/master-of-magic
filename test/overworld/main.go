@@ -174,10 +174,7 @@ func createScenario2(cache *lbx.LbxCache) *gamelib.Game {
     stack := player.FindStackByUnit(drake)
     player.SetSelectedStack(stack)
 
-    game.Events <- &gamelib.GameEventCityName{
-        Title: "Name Starting City",
-        City: introCity,
-    }
+    game.Events <- gamelib.StartingCityEvent(introCity)
 
     player.LiftFog(5, 5, 2)
 
@@ -244,10 +241,8 @@ func createScenario3(cache *lbx.LbxCache) *gamelib.Game {
     stack := player.FindStackByUnit(settlers)
     player.SetSelectedStack(stack)
 
-    game.Events <- &gamelib.GameEventCityName{
-        Title: "Name Starting City",
-        City: introCity,
-    }
+    _ = introCity
+    // game.Events <- gamelib.StartingCityEvent(introCity)
 
     player.LiftFog(x, y, 2)
 
