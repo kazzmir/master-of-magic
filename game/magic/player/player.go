@@ -49,6 +49,10 @@ func (unit *Unit) Move(dx int, dy int){
 type UnitStack struct {
     units []*Unit
     active map[*Unit]bool
+
+    // non-zero while animating movement on the overworld
+    offsetX float64
+    offsetY float64
 }
 
 func MakeUnitStack() *UnitStack {
@@ -66,6 +70,19 @@ func MakeUnitStackFromUnits(units []*Unit) *UnitStack {
     }
 
     return stack
+}
+
+func (stack *UnitStack) SetOffset(x float64, y float64) {
+    stack.offsetX = x
+    stack.offsetY = y
+}
+
+func (stack *UnitStack) OffsetX() float64 {
+    return stack.offsetX
+}
+
+func (stack *UnitStack) OffsetY() float64 {
+    return stack.offsetY
 }
 
 func (stack *UnitStack) IsEmpty() bool {
