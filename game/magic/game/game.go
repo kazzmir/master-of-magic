@@ -483,8 +483,10 @@ func (game *Game) doInput(yield coroutine.YieldFunc, title string, name string) 
 func (game *Game) Update(yield coroutine.YieldFunc) GameState {
     game.Counter += 1
 
+    /*
     tilesPerRow := game.Map.TilesPerRow(data.ScreenWidth)
     tilesPerColumn := game.Map.TilesPerColumn(data.ScreenHeight)
+    */
 
     select {
         case event := <-game.Events:
@@ -524,6 +526,7 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
 
                 if len(game.Players) > 0 && game.Players[0].SelectedStack != nil {
                     stack := game.Players[0].SelectedStack
+                    /*
                     game.cameraX = stack.X() - tilesPerRow / 2
                     game.cameraY = stack.Y() - tilesPerColumn / 2
 
@@ -534,6 +537,8 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                     if game.cameraY < 0 {
                         game.cameraY = 0
                     }
+                    */
+                    game.CenterCamera(stack.X(), stack.Y())
 
                     if dx != 0 || dy != 0 {
                         remakeUI := false
@@ -1523,6 +1528,10 @@ func (overworld *Overworld) DrawFog(screen *ebiten.Image, geom ebiten.GeoM){
             return false
         }
 
+        if x >= len(fog) || y - 1 >= len(fog[x]) {
+            return false
+        }
+
         return !fog[x][y - 1]
     }
 
@@ -1538,6 +1547,10 @@ func (overworld *Overworld) DrawFog(screen *ebiten.Image, geom ebiten.GeoM){
 
     fogE := func(x int, y int) bool {
         if x == len(fog) - 1 {
+            return false
+        }
+
+        if x + 1 >= len(fog) || y >= len(fog[x + 1]) {
             return false
         }
 
@@ -1559,6 +1572,10 @@ func (overworld *Overworld) DrawFog(screen *ebiten.Image, geom ebiten.GeoM){
             return false
         }
 
+        if x >= len(fog) || y + 1 >= len(fog[x]) {
+            return false
+        }
+
         return !fog[x][y + 1]
     }
 
@@ -1577,6 +1594,10 @@ func (overworld *Overworld) DrawFog(screen *ebiten.Image, geom ebiten.GeoM){
             return false
         }
 
+        if x - 1 < 0 || y >= len(fog[x - 1]) {
+            return false
+        }
+
         return !fog[x - 1][y]
     }
 
@@ -1589,16 +1610,15 @@ func (overworld *Overworld) DrawFog(screen *ebiten.Image, geom ebiten.GeoM){
             options.GeoM = geom
             options.GeoM.Translate(float64(x * tileWidth), float64(y * tileHeight))
 
-            // nw := fogNW(tileX, tileY)
-            n := fogN(tileX, tileY)
-            // ne := fogNE(tileX, tileY)
-            e := fogE(tileX, tileY)
-            // se := fogSE(tileX, tileY)
-            s := fogS(tileX, tileY)
-            // sw := fogSW(tileX, tileY)
-            w := fogW(tileX, tileY)
-
-            if fog[tileX][tileY] {
+            if tileX >= 0 && tileY >= 0 && tileX < len(fog) && tileY < len(fog[tileX]) && fog[tileX][tileY] {
+                // nw := fogNW(tileX, tileY)
+                n := fogN(tileX, tileY)
+                // ne := fogNE(tileX, tileY)
+                e := fogE(tileX, tileY)
+                // se := fogSE(tileX, tileY)
+                s := fogS(tileX, tileY)
+                // sw := fogSW(tileX, tileY)
+                w := fogW(tileX, tileY)
 
                 if n && e {
                     screen.DrawImage(FogEdge_N_E, &options)
