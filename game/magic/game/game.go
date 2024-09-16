@@ -1467,6 +1467,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                 if player.SelectedStack != nil {
                     // search for the settlers (the only unit with the create outpost ability
                     for _, settlers := range player.SelectedStack.ActiveUnits() {
+                        // FIXME: check if this tile is valid to build an outpost on
                         if settlers.Unit.HasAbility(units.AbilityCreateOutpost) {
                             game.CreateOutpost(settlers, player)
                             break
