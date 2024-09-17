@@ -16,6 +16,7 @@ type Unit struct {
     Banner data.BannerType
     Plane data.Plane
     MovesLeft fraction.Fraction
+    Patrol bool
     X int
     Y int
     Id uint64
@@ -137,8 +138,12 @@ func (stack *UnitStack) ToggleActive(unit *Unit){
     if ok {
         // if unit is active then set to inactive
         // if unit is inactive, then only set to active if the unit has moves left
-        if value || unit.MovesLeft.GreaterThan(fraction.Zero()) {
-            stack.active[unit] = !stack.active[unit]
+
+        if value {
+            stack.active[unit] = false
+        } else if unit.MovesLeft.GreaterThan(fraction.Zero()) {
+            stack.active[unit] = true
+            unit.Patrol = false
         }
     }
 }
@@ -191,7 +196,7 @@ func (stack *UnitStack) ExhaustMoves(){
 
 func (stack *UnitStack) EnableMovers(){
     for _, unit := range stack.units {
-        if unit.MovesLeft.GreaterThan(fraction.Zero()) {
+        if unit.MovesLeft.GreaterThan(fraction.Zero()) && !unit.Patrol {
             stack.active[unit] = true
         } else {
             stack.active[unit] = false

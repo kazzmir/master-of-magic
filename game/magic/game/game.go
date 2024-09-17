@@ -1571,6 +1571,16 @@ func (game *Game) MakeHudUI() *uilib.UI {
             },
             LeftClickRelease: func(this *uilib.UIElement){
                 patrolIndex = 0
+
+                player := game.Players[0]
+                if player.SelectedStack != nil {
+                    for _, unit := range player.SelectedStack.ActiveUnits() {
+                        unit.Patrol = true
+                    }
+                }
+
+                player.SelectedStack.EnableMovers()
+
                 game.DoNextUnit()
             },
         })
@@ -1728,7 +1738,7 @@ func (game *Game) DoNextUnit(){
         for i := 0; i < len(player.Stacks); i++ {
             index := (i + startingIndex) % len(player.Stacks)
             stack := player.Stacks[index]
-            if stack.HasMoves() {
+            if stack.HasMoves() && len(stack.ActiveUnits()) > 0 {
                 player.SelectedStack = stack
                 stack.EnableMovers()
                 game.CenterCamera(stack.X(), stack.Y())
@@ -1742,12 +1752,14 @@ func (game *Game) DoNextUnit(){
 
 func (game *Game) DoNextTurn(){
     // FIXME
+    // log.Printf("next turn")
 
     if len(game.Players) > 0 {
         player := game.Players[0]
 
         for _, stack := range player.Stacks {
             stack.ResetMoves()
+            stack.EnableMovers()
         }
 
         game.CenterCamera(player.Cities[0].X, player.Cities[0].Y)
