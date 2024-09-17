@@ -97,34 +97,6 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, geom ebiten.GeoM, camera
             }
 
             set(x, y, use)
-
-            // r, g, b, a := use.RGBA()
-
-            /*
-            pixels[(y * mapObject.Map.Columns() + x) * 4 + 0] = byte(r/255)
-            pixels[(y * mapObject.Map.Columns() + x) * 4 + 1] = byte(g/255)
-            pixels[(y * mapObject.Map.Columns() + x) * 4 + 2] = byte(b/255)
-            pixels[(y * mapObject.Map.Columns() + x) * 4 + 3] = byte(a/255)
-            */
-
-            /*
-            pixels[(y * mapObject.Map.Columns() + x) * 4 + 0] = byte(r >> 8)
-            pixels[(y * mapObject.Map.Columns() + x) * 4 + 1] = byte(g >> 8)
-            pixels[(y * mapObject.Map.Columns() + x) * 4 + 2] = byte(b >> 8)
-            pixels[(y * mapObject.Map.Columns() + x) * 4 + 3] = byte(a >> 8)
-            */
-
-            /*
-            image, err := mapObject.GetTileImage(tileX, tileY, animationCounter)
-            if err == nil {
-                options.GeoM = geom
-                // options.GeoM.Reset()
-                options.GeoM.Translate(float64(x * tileWidth), float64(y * tileHeight))
-                screen.DrawImage(image, &options)
-            } else {
-                log.Printf("Unable to render tilte at %d, %d: %v", tileX, tileY, err)
-            }
-            */
         }
     }
 
