@@ -16,6 +16,8 @@ type Map struct {
     Data *terrain.TerrainData
 
     TileCache map[int]*ebiten.Image
+
+    miniMapPixels []byte
 }
 
 func MakeMap(data *terrain.TerrainData) *Map {
@@ -67,16 +69,22 @@ func (mapObject *Map) TilesPerColumn(screenHeight int) int {
     return int(math.Ceil(float64(screenHeight) / float64(mapObject.TileHeight())))
 }
 
-func (mapObject *Map) DrawMinimap(screen *ebiten.Image, geom ebiten.GeoM, cameraX int, cameraY int){
-    pixels := make([]byte, mapObject.Map.Columns() * mapObject.Map.Rows() * 4)
+func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cameraX int, cameraY int){
+    if len(mapObject.miniMapPixels) != screen.Bounds().Dx() * screen.Bounds().Dy() * 4 {
+        mapObject.miniMapPixels = make([]byte, screen.Bounds().Dx() * screen.Bounds().Dy() * 4)
+    }
+
+    rowSize := screen.Bounds().Dx()
 
     set := func(x int, y int, c color.RGBA){
         r, g, b, a := c.RGBA()
-        pixels[(y * mapObject.Map.Columns() + x) * 4 + 0] = byte(r >> 8)
-        pixels[(y * mapObject.Map.Columns() + x) * 4 + 1] = byte(g >> 8)
-        pixels[(y * mapObject.Map.Columns() + x) * 4 + 2] = byte(b >> 8)
-        pixels[(y * mapObject.Map.Columns() + x) * 4 + 3] = byte(a >> 8)
+        mapObject.miniMapPixels[(y * rowSize + x) * 4 + 0] = byte(r >> 8)
+        mapObject.miniMapPixels[(y * rowSize + x) * 4 + 1] = byte(g >> 8)
+        mapObject.miniMapPixels[(y * rowSize + x) * 4 + 2] = byte(b >> 8)
+        mapObject.miniMapPixels[(y * rowSize + x) * 4 + 3] = byte(a >> 8)
     }
+
+    black := color.RGBA{R: 0, G: 0, B: 0, A: 255}
 
     for x := 0; x < screen.Bounds().Dx(); x++ {
         for y := 0; y < screen.Bounds().Dy(); y++ {
@@ -85,6 +93,7 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, geom ebiten.GeoM, camera
             tileY := y + cameraY - screen.Bounds().Dy() / 2
 
             if tileX < 0 || tileX >= mapObject.Map.Columns() || tileY < 0 || tileY >= mapObject.Map.Rows() {
+                set(x, y, black)
                 continue
             }
 
@@ -100,14 +109,7 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, geom ebiten.GeoM, camera
         }
     }
 
-    // set(cameraX, cameraY, color.RGBA{R: 255, G: 255, B: 255, A: 255})
-
-    var options ebiten.DrawImageOptions
-    options.GeoM = geom
-    mini := ebiten.NewImage(mapObject.Map.Columns(), mapObject.Map.Rows())
-    mini.Fill(color.RGBA{R: 0, G: 0, B: 0, A: 0xff})
-    mini.WritePixels(pixels)
-    screen.DrawImage(mini, &options)
+    screen.WritePixels(mapObject.miniMapPixels)
 }
 
 func (mapObject *Map) Draw(cameraX int, cameraY int, animationCounter uint64, screen *ebiten.Image, geom ebiten.GeoM){
