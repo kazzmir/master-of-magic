@@ -47,6 +47,14 @@ func (mapObject *Map) TileHeight() int {
     return mapObject.Data.TileHeight()
 }
 
+func (mapObject *Map) GetTile(tileX int, tileY int) terrain.Tile {
+    if tileX >= 0 && tileX < mapObject.Map.Columns() && tileY >= 0 && tileY < mapObject.Map.Rows() {
+        return mapObject.Data.Tiles[mapObject.Map.Terrain[tileX][tileY]].Tile
+    }
+
+    return terrain.Tile{Index: -1}
+}
+
 func (mapObject *Map) GetTileImage(tileX int, tileY int, animationCounter uint64) (*ebiten.Image, error) {
     tile := mapObject.Map.Terrain[tileX][tileY]
     tileInfo := mapObject.Data.Tiles[tile]

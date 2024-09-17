@@ -73,6 +73,12 @@ func MakeUnitStackFromUnits(units []*Unit) *UnitStack {
     return stack
 }
 
+func (stack *UnitStack) ResetMoves(){
+    for _, unit := range stack.units {
+        unit.ResetMoves()
+    }
+}
+
 func (stack *UnitStack) SetOffset(x float64, y float64) {
     stack.offsetX = x
     stack.offsetY = y
@@ -116,10 +122,24 @@ func (stack *UnitStack) InactiveUnits() []*Unit {
     return inactive
 }
 
+func (stack *UnitStack) AllFlyers() bool {
+    for _, unit := range stack.ActiveUnits() {
+        if !unit.Unit.Flying {
+            return false
+        }
+    }
+
+    return true
+}
+
 func (stack *UnitStack) ToggleActive(unit *Unit){
-    _, ok := stack.active[unit]
+    value, ok := stack.active[unit]
     if ok {
-        stack.active[unit] = !stack.active[unit]
+        // if unit is active then set to inactive
+        // if unit is inactive, then only set to active if the unit has moves left
+        if value || unit.MovesLeft.GreaterThan(fraction.Zero()) {
+            stack.active[unit] = !stack.active[unit]
+        }
     }
 }
 
@@ -162,10 +182,36 @@ func (stack *UnitStack) Plane() data.Plane {
     return data.PlaneArcanus
 }
 
+func (stack *UnitStack) EnableMovers(){
+    for _, unit := range stack.units {
+        if unit.MovesLeft.GreaterThan(fraction.Zero()) {
+            stack.active[unit] = true
+        } else {
+            stack.active[unit] = false
+        }
+    }
+}
+
 func (stack *UnitStack) Move(dx int, dy int, cost fraction.Fraction){
     for _, unit := range stack.units {
         unit.Move(dx, dy, cost)
     }
+}
+
+// true if no unit has any moves left
+func (stack *UnitStack) OutOfMoves() bool {
+    for _, unit := range stack.units {
+        if unit.MovesLeft.GreaterThan(fraction.Zero()) {
+            return false
+        }
+    }
+
+    return true
+}
+
+// true if any unit in the stack has moves left
+func (stack *UnitStack) HasMoves() bool {
+    return !stack.OutOfMoves()
 }
 
 func (stack *UnitStack) Leader() *Unit {
