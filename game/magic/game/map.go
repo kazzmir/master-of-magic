@@ -80,9 +80,11 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []*citylib.City, 
     set := func(x int, y int, c color.RGBA){
         baseIndex := (y * rowSize + x) * 4
 
+        /*
         if baseIndex > len(mapObject.miniMapPixels) {
             return
         }
+        */
 
         r, g, b, a := c.RGBA()
 
