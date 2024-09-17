@@ -134,6 +134,10 @@ func (game *Game) CenterCamera(x int, y int){
     if game.cameraY < 0 {
         game.cameraY = 0
     }
+
+    if game.cameraY >= game.Map.Height() - 11 {
+        game.cameraY = game.Map.Height() - 11
+    }
 }
 
 func (game *Game) AddPlayer(wizard setup.WizardCustom) *playerlib.Player{
@@ -647,39 +651,42 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                         if dx != 0 || dy != 0 {
                             activeUnits := stack.ActiveUnits()
                             if len(activeUnits) > 0 {
-                                inactiveUnits := stack.InactiveUnits()
-                                if len(inactiveUnits) > 0 {
-                                    stack.RemoveUnits(inactiveUnits)
-                                    player.AddStack(playerlib.MakeUnitStackFromUnits(inactiveUnits))
-                                    game.HudUI = game.MakeHudUI()
-                                }
-
                                 oldX := stack.X()
                                 oldY := stack.Y()
 
                                 newX := stack.X() + dx
                                 newY := stack.Y() + dy
 
-                                mergeStack := player.FindStack(newX, newY)
+                                if newY > 0 && newY < game.Map.Height() && newX > 0 && newX < game.Map.Width() {
 
-                                stack.Move(dx, dy)
+                                    inactiveUnits := stack.InactiveUnits()
+                                    if len(inactiveUnits) > 0 {
+                                        stack.RemoveUnits(inactiveUnits)
+                                        player.AddStack(playerlib.MakeUnitStackFromUnits(inactiveUnits))
+                                        game.HudUI = game.MakeHudUI()
+                                    }
 
-                                game.showMovement(yield, oldX, oldY, stack)
+                                    mergeStack := player.FindStack(newX, newY)
 
-                                player.LiftFog(stack.X(), stack.Y(), 2)
+                                    stack.Move(dx, dy)
 
-                                // game.State = GameStateUnitMoving
+                                    game.showMovement(yield, oldX, oldY, stack)
 
-                                if mergeStack != nil {
-                                    stack = player.MergeStacks(mergeStack, stack)
-                                    player.SelectedStack = stack
-                                    game.HudUI = game.MakeHudUI()
-                                }
+                                    player.LiftFog(stack.X(), stack.Y(), 2)
 
-                                for _, otherPlayer := range game.Players[1:] {
-                                    otherStack := otherPlayer.FindStack(stack.X(), stack.Y())
-                                    if otherStack != nil {
-                                        game.doCombat(yield, player, stack, otherPlayer, otherStack)
+                                    // game.State = GameStateUnitMoving
+
+                                    if mergeStack != nil {
+                                        stack = player.MergeStacks(mergeStack, stack)
+                                        player.SelectedStack = stack
+                                        game.HudUI = game.MakeHudUI()
+                                    }
+
+                                    for _, otherPlayer := range game.Players[1:] {
+                                        otherStack := otherPlayer.FindStack(stack.X(), stack.Y())
+                                        if otherStack != nil {
+                                            game.doCombat(yield, player, stack, otherPlayer, otherStack)
+                                        }
                                     }
                                 }
                             }
