@@ -728,6 +728,9 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                                             }
                                         }
 
+                                        // some units in the stack might not have any moves left
+                                        stack.EnableMovers()
+
                                         if stack.OutOfMoves() {
                                             game.DoNextUnit()
                                         }
