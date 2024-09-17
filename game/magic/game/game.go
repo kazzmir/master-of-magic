@@ -1751,11 +1751,12 @@ func (game *Game) DoNextUnit(){
 }
 
 func (game *Game) DoNextTurn(){
-    // FIXME
-    // log.Printf("next turn")
-
     if len(game.Players) > 0 {
         player := game.Players[0]
+
+        for _, city := range player.Cities {
+            city.DoNextTurn()
+        }
 
         for _, stack := range player.Stacks {
             stack.ResetMoves()
@@ -1766,6 +1767,8 @@ func (game *Game) DoNextTurn(){
         game.DoNextUnit()
         game.HudUI = game.MakeHudUI()
     }
+
+    // FIXME: run other players/AI
 }
 
 func (overworld *Overworld) DrawFog(screen *ebiten.Image, geom ebiten.GeoM){

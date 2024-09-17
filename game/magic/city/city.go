@@ -247,4 +247,5 @@ func (city *City) ComputeSubsistenceFarmers() int {
 // increase population, add production, add food/money, etc
 func (city *City) DoNextTurn(){
     city.SoldBuilding = false
+    // TODO
 }
