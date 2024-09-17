@@ -71,7 +71,7 @@ func (mapObject *Map) TilesPerColumn(screenHeight int) int {
     return int(math.Ceil(float64(screenHeight) / float64(mapObject.TileHeight())))
 }
 
-func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []*citylib.City, cameraX int, cameraY int, counter uint64){
+func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []*citylib.City, cameraX int, cameraY int, fog [][]bool, counter uint64){
     if len(mapObject.miniMapPixels) != screen.Bounds().Dx() * screen.Bounds().Dy() * 4 {
         mapObject.miniMapPixels = make([]byte, screen.Bounds().Dx() * screen.Bounds().Dy() * 4)
     }
@@ -103,7 +103,7 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []*citylib.City, 
             tileX := x + cameraX - screen.Bounds().Dx() / 2
             tileY := y + cameraY - screen.Bounds().Dy() / 2
 
-            if tileX < 0 || tileX >= mapObject.Map.Columns() || tileY < 0 || tileY >= mapObject.Map.Rows() {
+            if tileX < 0 || tileX >= mapObject.Map.Columns() || tileY < 0 || tileY >= mapObject.Map.Rows() || !fog[tileX][tileY] {
                 set(x, y, black)
                 continue
             }
@@ -121,11 +121,13 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []*citylib.City, 
     }
 
     for _, city := range cities {
-        posX := city.X - cameraX + screen.Bounds().Dx() / 2
-        posY := city.Y - cameraY + screen.Bounds().Dy() / 2
+        if fog[city.X][city.Y] {
+            posX := city.X - cameraX + screen.Bounds().Dx() / 2
+            posY := city.Y - cameraY + screen.Bounds().Dy() / 2
 
-        if posX >= 0 && posX < screen.Bounds().Dx() && posY >= 0 && posY < screen.Bounds().Dy() {
-            set(posX, posY, color.RGBA{R: 255, G: 255, B: 255, A: 255})
+            if posX >= 0 && posX < screen.Bounds().Dx() && posY >= 0 && posY < screen.Bounds().Dy() {
+                set(posX, posY, color.RGBA{R: 255, G: 255, B: 255, A: 255})
+            }
         }
     }
 
