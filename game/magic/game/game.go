@@ -26,6 +26,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/font"
+    "github.com/kazzmir/master-of-magic/lib/fraction"
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
     _ "github.com/hajimehoshi/ebiten/v2/vector"
@@ -588,6 +589,41 @@ func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, st
     game.CenterCamera(stack.X(), stack.Y())
 }
 
+/* return the cost to move from the current position the stack is on to the new given coordinates.
+ * also return true/false if the move is even possible
+ */
+func (game *Game) ComputeTerrainCost(stack *playerlib.UnitStack, x int, y int) (fraction.Fraction, bool) {
+    if stack.OutOfMoves() {
+        return fraction.Zero(), false
+    }
+
+    tileFrom := game.Map.GetTile(stack.X(), stack.Y())
+    tileTo := game.Map.GetTile(x, y)
+
+    // can't move from land to ocean unless all units are flyers
+    if tileFrom.Index == terrain.TileLand.Index && tileTo.Index != terrain.TileLand.Index {
+        if !stack.AllFlyers() {
+            return fraction.Zero(), false
+        }
+    }
+
+    oldX := stack.X()
+    oldY := stack.Y()
+
+    xDiff := int(math.Abs(float64(x - oldX)))
+    yDiff := int(math.Abs(float64(y - oldY)))
+
+    if xDiff == 1 && yDiff == 1 {
+        return fraction.Make(3, 2), true
+    }
+
+    if xDiff == 1 || yDiff == 1 {
+        return fraction.FromInt(1), true
+    }
+
+    return fraction.Zero(), false
+}
+
 func (game *Game) Update(yield coroutine.YieldFunc) GameState {
     game.Counter += 1
 
@@ -666,26 +702,37 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                                         game.HudUI = game.MakeHudUI()
                                     }
 
-                                    mergeStack := player.FindStack(newX, newY)
+                                    terrainCost, canMove := game.ComputeTerrainCost(stack, newX, newY)
 
-                                    stack.Move(dx, dy)
+                                    if canMove {
+                                        mergeStack := player.FindStack(newX, newY)
 
-                                    game.showMovement(yield, oldX, oldY, stack)
+                                        stack.Move(dx, dy, terrainCost)
 
-                                    player.LiftFog(stack.X(), stack.Y(), 2)
+                                        game.showMovement(yield, oldX, oldY, stack)
 
-                                    // game.State = GameStateUnitMoving
+                                        player.LiftFog(stack.X(), stack.Y(), 2)
 
-                                    if mergeStack != nil {
-                                        stack = player.MergeStacks(mergeStack, stack)
-                                        player.SelectedStack = stack
-                                        game.HudUI = game.MakeHudUI()
-                                    }
+                                        // game.State = GameStateUnitMoving
 
-                                    for _, otherPlayer := range game.Players[1:] {
-                                        otherStack := otherPlayer.FindStack(stack.X(), stack.Y())
-                                        if otherStack != nil {
-                                            game.doCombat(yield, player, stack, otherPlayer, otherStack)
+                                        if mergeStack != nil {
+                                            stack = player.MergeStacks(mergeStack, stack)
+                                            player.SelectedStack = stack
+                                            game.HudUI = game.MakeHudUI()
+                                        }
+
+                                        for _, otherPlayer := range game.Players[1:] {
+                                            otherStack := otherPlayer.FindStack(stack.X(), stack.Y())
+                                            if otherStack != nil {
+                                                game.doCombat(yield, player, stack, otherPlayer, otherStack)
+                                            }
+                                        }
+
+                                        // some units in the stack might not have any moves left
+                                        stack.EnableMovers()
+
+                                        if stack.OutOfMoves() {
+                                            game.DoNextUnit()
                                         }
                                     }
                                 }
@@ -1310,6 +1357,14 @@ func (game *Game) MakeHudUI() *uilib.UI {
                 }
             })
         },
+        HandleKey: func(key ebiten.Key){
+            switch key {
+                case ebiten.KeySpace:
+                    if game.Players[0].SelectedStack == nil {
+                        game.DoNextTurn()
+                    }
+            }
+        },
     }
 
     // onClick - true to perform the action when the left click occurs, false to perform the action when the left click is released
@@ -1474,6 +1529,14 @@ func (game *Game) MakeHudUI() *uilib.UI {
             },
             LeftClickRelease: func(this *uilib.UIElement){
                 doneIndex = 0
+
+                if len(game.Players) > 0 {
+                    player := game.Players[0]
+                    if player.SelectedStack != nil {
+                        player.SelectedStack.ExhaustMoves()
+                    }
+                }
+
                 game.DoNextUnit()
             },
         })
@@ -1508,6 +1571,16 @@ func (game *Game) MakeHudUI() *uilib.UI {
             },
             LeftClickRelease: func(this *uilib.UIElement){
                 patrolIndex = 0
+
+                player := game.Players[0]
+                if player.SelectedStack != nil {
+                    for _, unit := range player.SelectedStack.ActiveUnits() {
+                        unit.Patrol = true
+                    }
+                }
+
+                player.SelectedStack.EnableMovers()
+
                 game.DoNextUnit()
             },
         })
@@ -1647,7 +1720,31 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
 func (game *Game) DoNextUnit(){
     if len(game.Players) > 0 {
-        game.Players[0].SelectedStack = nil
+
+        player := game.Players[0]
+
+        startingIndex := 0
+        if player.SelectedStack != nil {
+            for i, stack := range player.Stacks {
+                if stack == player.SelectedStack {
+                    startingIndex = i + 1
+                    break
+                }
+            }
+        }
+
+        player.SelectedStack = nil
+
+        for i := 0; i < len(player.Stacks); i++ {
+            index := (i + startingIndex) % len(player.Stacks)
+            stack := player.Stacks[index]
+            if stack.HasMoves() && len(stack.ActiveUnits()) > 0 {
+                player.SelectedStack = stack
+                stack.EnableMovers()
+                game.CenterCamera(stack.X(), stack.Y())
+                break
+            }
+        }
     }
 
     game.HudUI = game.MakeHudUI()
@@ -1655,15 +1752,18 @@ func (game *Game) DoNextUnit(){
 
 func (game *Game) DoNextTurn(){
     // FIXME
+    // log.Printf("next turn")
 
     if len(game.Players) > 0 {
         player := game.Players[0]
-        if len(player.Stacks) > 0 {
-            player.SelectedStack = player.Stacks[0]
-            game.CenterCamera(player.SelectedStack.X(), player.SelectedStack.Y())
-        } else {
-            game.CenterCamera(player.Cities[0].X, player.Cities[0].Y)
+
+        for _, stack := range player.Stacks {
+            stack.ResetMoves()
+            stack.EnableMovers()
         }
+
+        game.CenterCamera(player.Cities[0].X, player.Cities[0].Y)
+        game.DoNextUnit()
         game.HudUI = game.MakeHudUI()
     }
 }
