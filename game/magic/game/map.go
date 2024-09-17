@@ -67,20 +67,38 @@ func (mapObject *Map) TilesPerColumn(screenHeight int) int {
     return int(math.Ceil(float64(screenHeight) / float64(mapObject.TileHeight())))
 }
 
-func (mapObject *Map) DrawMinimap(screen *ebiten.Image, geom ebiten.GeoM){
+func (mapObject *Map) DrawMinimap(screen *ebiten.Image, geom ebiten.GeoM, cameraX int, cameraY int){
     pixels := make([]byte, mapObject.Map.Columns() * mapObject.Map.Rows() * 4)
-    for x := 0; x < mapObject.Map.Columns(); x++ {
-        for y := 0; y < mapObject.Map.Rows(); y++ {
+
+    set := func(x int, y int, c color.RGBA){
+        r, g, b, a := c.RGBA()
+        pixels[(y * mapObject.Map.Columns() + x) * 4 + 0] = byte(r >> 8)
+        pixels[(y * mapObject.Map.Columns() + x) * 4 + 1] = byte(g >> 8)
+        pixels[(y * mapObject.Map.Columns() + x) * 4 + 2] = byte(b >> 8)
+        pixels[(y * mapObject.Map.Columns() + x) * 4 + 3] = byte(a >> 8)
+    }
+
+    for x := 0; x < screen.Bounds().Dx(); x++ {
+        for y := 0; y < screen.Bounds().Dy(); y++ {
+
+            tileX := x + cameraX - screen.Bounds().Dx() / 2
+            tileY := y + cameraY - screen.Bounds().Dy() / 2
+
+            if tileX < 0 || tileX >= mapObject.Map.Columns() || tileY < 0 || tileY >= mapObject.Map.Rows() {
+                continue
+            }
 
             var use color.RGBA
 
-            switch mapObject.Map.Terrain[x][y] {
+            switch mapObject.Map.Terrain[tileX][tileY] {
                 case terrain.TileLand.Index: use = color.RGBA{R: 0, G: 255, B: 0, A: 255}
                 case terrain.TileOcean.Index: use = color.RGBA{R: 0, G: 0, B: 255, A: 255}
                 default: use = color.RGBA{R: 64, G: 64, B: 64, A: 255}
             }
 
-            r, g, b, a := use.RGBA()
+            set(x, y, use)
+
+            // r, g, b, a := use.RGBA()
 
             /*
             pixels[(y * mapObject.Map.Columns() + x) * 4 + 0] = byte(r/255)
@@ -89,10 +107,12 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, geom ebiten.GeoM){
             pixels[(y * mapObject.Map.Columns() + x) * 4 + 3] = byte(a/255)
             */
 
+            /*
             pixels[(y * mapObject.Map.Columns() + x) * 4 + 0] = byte(r >> 8)
             pixels[(y * mapObject.Map.Columns() + x) * 4 + 1] = byte(g >> 8)
             pixels[(y * mapObject.Map.Columns() + x) * 4 + 2] = byte(b >> 8)
             pixels[(y * mapObject.Map.Columns() + x) * 4 + 3] = byte(a >> 8)
+            */
 
             /*
             image, err := mapObject.GetTileImage(tileX, tileY, animationCounter)
@@ -108,9 +128,12 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, geom ebiten.GeoM){
         }
     }
 
+    // set(cameraX, cameraY, color.RGBA{R: 255, G: 255, B: 255, A: 255})
+
     var options ebiten.DrawImageOptions
     options.GeoM = geom
     mini := ebiten.NewImage(mapObject.Map.Columns(), mapObject.Map.Rows())
+    mini.Fill(color.RGBA{R: 0, G: 0, B: 0, A: 0xff})
     mini.WritePixels(pixels)
     screen.DrawImage(mini, &options)
 }
