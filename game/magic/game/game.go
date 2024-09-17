@@ -588,6 +588,12 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
     game.Counter += 1
 
     /*
+    if game.Counter % 10 == 0 {
+        log.Printf("TPS: %v FPS: %v", ebiten.ActualTPS(), ebiten.ActualFPS())
+    }
+    */
+
+    /*
     tilesPerRow := game.Map.TilesPerRow(data.ScreenWidth)
     tilesPerColumn := game.Map.TilesPerColumn(data.ScreenHeight)
     */
@@ -1876,6 +1882,10 @@ type Overworld struct {
     FogBlack *ebiten.Image
 }
 
+func (overworld *Overworld) DrawMinimap(screen *ebiten.Image){
+    overworld.Map.DrawMinimap(screen, overworld.Cities, overworld.CameraX, overworld.CameraY, overworld.Fog, overworld.Counter)
+}
+
 func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM){
     overworld.Map.Draw(overworld.CameraX, overworld.CameraY, overworld.Counter / 8, screen, geom)
 
@@ -1994,6 +2004,14 @@ func (game *Game) DrawGame(screen *ebiten.Image){
     }
 
     overworld.DrawOverworld(screen, ebiten.GeoM{})
+
+    var miniGeom ebiten.GeoM
+    miniGeom.Translate(250, 20)
+    mx, my := miniGeom.Apply(0, 0)
+    miniWidth := 60
+    miniHeight := 30
+    mini := screen.SubImage(image.Rect(int(mx), int(my), int(mx) + miniWidth, int(my) + miniHeight)).(*ebiten.Image)
+    overworld.DrawMinimap(mini)
 
     game.HudUI.Draw(game.HudUI, screen)
 }
