@@ -51,14 +51,13 @@ func (mapObject *Map) GetTileImage(tileX int, tileY int, animationCounter uint64
 
     animationIndex := animationCounter % uint64(len(tileInfo.Images))
 
-    if image, ok := mapObject.TileCache[tile * 100 + int(animationIndex)]; ok {
+    if image, ok := mapObject.TileCache[tile * 0x1000 + int(animationIndex)]; ok {
         return image, nil
     }
 
-
     gpuImage := ebiten.NewImageFromImage(tileInfo.Images[animationCounter % uint64(len(tileInfo.Images))])
 
-    mapObject.TileCache[tile * 100 + int(animationIndex)] = gpuImage
+    mapObject.TileCache[tile * 0x1000 + int(animationIndex)] = gpuImage
     return gpuImage, nil
 }
 
