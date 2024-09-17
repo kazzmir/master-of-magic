@@ -6,6 +6,7 @@ import (
     "image/color"
 
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
+    citylib "github.com/kazzmir/master-of-magic/game/magic/city"
 
     "github.com/hajimehoshi/ebiten/v2"
 )
@@ -69,7 +70,7 @@ func (mapObject *Map) TilesPerColumn(screenHeight int) int {
     return int(math.Ceil(float64(screenHeight) / float64(mapObject.TileHeight())))
 }
 
-func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cameraX int, cameraY int){
+func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []*citylib.City, cameraX int, cameraY int){
     if len(mapObject.miniMapPixels) != screen.Bounds().Dx() * screen.Bounds().Dy() * 4 {
         mapObject.miniMapPixels = make([]byte, screen.Bounds().Dx() * screen.Bounds().Dy() * 4)
     }
@@ -77,11 +78,18 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cameraX int, cameraY int
     rowSize := screen.Bounds().Dx()
 
     set := func(x int, y int, c color.RGBA){
+        baseIndex := (y * rowSize + x) * 4
+
+        if baseIndex > len(mapObject.miniMapPixels) {
+            return
+        }
+
         r, g, b, a := c.RGBA()
-        mapObject.miniMapPixels[(y * rowSize + x) * 4 + 0] = byte(r >> 8)
-        mapObject.miniMapPixels[(y * rowSize + x) * 4 + 1] = byte(g >> 8)
-        mapObject.miniMapPixels[(y * rowSize + x) * 4 + 2] = byte(b >> 8)
-        mapObject.miniMapPixels[(y * rowSize + x) * 4 + 3] = byte(a >> 8)
+
+        mapObject.miniMapPixels[baseIndex + 0] = byte(r >> 8)
+        mapObject.miniMapPixels[baseIndex + 1] = byte(g >> 8)
+        mapObject.miniMapPixels[baseIndex + 2] = byte(b >> 8)
+        mapObject.miniMapPixels[baseIndex + 3] = byte(a >> 8)
     }
 
     black := color.RGBA{R: 0, G: 0, B: 0, A: 255}
@@ -106,6 +114,15 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cameraX int, cameraY int
             }
 
             set(x, y, use)
+        }
+    }
+
+    for _, city := range cities {
+        posX := city.X - cameraX + screen.Bounds().Dx() / 2
+        posY := city.Y - cameraY + screen.Bounds().Dy() / 2
+
+        if posX >= 0 && posX < screen.Bounds().Dx() && posY >= 0 && posY < screen.Bounds().Dy() {
+            set(posX, posY, color.RGBA{R: 255, G: 255, B: 255, A: 255})
         }
     }
 
