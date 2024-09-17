@@ -27,9 +27,14 @@ func (unit *Unit) ResetMoves(){
     unit.MovesLeft = fraction.FromInt(unit.Unit.MovementSpeed)
 }
 
-func (unit *Unit) Move(dx int, dy int){
+func (unit *Unit) Move(dx int, dy int, cost fraction.Fraction){
     unit.X += dx
     unit.Y += dy
+
+    unit.MovesLeft = unit.MovesLeft.Subtract(cost)
+    if unit.MovesLeft.LessThan(fraction.Zero()) {
+        unit.MovesLeft = fraction.Zero()
+    }
 
     // FIXME: can't move off of map
 
@@ -157,9 +162,9 @@ func (stack *UnitStack) Plane() data.Plane {
     return data.PlaneArcanus
 }
 
-func (stack *UnitStack) Move(dx int, dy int){
+func (stack *UnitStack) Move(dx int, dy int, cost fraction.Fraction){
     for _, unit := range stack.units {
-        unit.Move(dx, dy)
+        unit.Move(dx, dy, cost)
     }
 }
 

@@ -18,6 +18,10 @@ func GCD(a, b int) int {
     return a
 }
 
+func Zero() Fraction {
+    return Fraction{}
+}
+
 func Make(numerator int, denominator int) Fraction {
     if denominator == 0 {
         // maybe panic?

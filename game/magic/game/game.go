@@ -26,6 +26,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/font"
+    "github.com/kazzmir/master-of-magic/lib/fraction"
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
     _ "github.com/hajimehoshi/ebiten/v2/vector"
@@ -668,7 +669,7 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
 
                                     mergeStack := player.FindStack(newX, newY)
 
-                                    stack.Move(dx, dy)
+                                    stack.Move(dx, dy, fraction.FromInt(1))
 
                                     game.showMovement(yield, oldX, oldY, stack)
 
