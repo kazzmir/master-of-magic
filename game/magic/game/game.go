@@ -588,6 +588,12 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
     game.Counter += 1
 
     /*
+    if game.Counter % 10 == 0 {
+        log.Printf("TPS: %v FPS: %v", ebiten.ActualTPS(), ebiten.ActualFPS())
+    }
+    */
+
+    /*
     tilesPerRow := game.Map.TilesPerRow(data.ScreenWidth)
     tilesPerColumn := game.Map.TilesPerColumn(data.ScreenHeight)
     */
