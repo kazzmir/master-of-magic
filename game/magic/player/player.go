@@ -7,6 +7,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
+    "github.com/kazzmir/master-of-magic/lib/fraction"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
 )
 
@@ -14,12 +15,17 @@ type Unit struct {
     Unit units.Unit
     Banner data.BannerType
     Plane data.Plane
+    MovesLeft fraction.Fraction
     X int
     Y int
     Id uint64
 }
 
 const MovementLimit = 10
+
+func (unit *Unit) ResetMoves(){
+    unit.MovesLeft = fraction.FromInt(unit.Unit.MovementSpeed)
+}
 
 func (unit *Unit) Move(dx int, dy int){
     unit.X += dx
