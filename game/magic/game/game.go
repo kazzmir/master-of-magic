@@ -1883,7 +1883,7 @@ type Overworld struct {
 }
 
 func (overworld *Overworld) DrawMinimap(screen *ebiten.Image){
-    overworld.Map.DrawMinimap(screen, overworld.Cities, overworld.CameraX, overworld.CameraY, overworld.Fog, overworld.Counter)
+    overworld.Map.DrawMinimap(screen, overworld.Cities, overworld.CameraX + 5, overworld.CameraY + 5, overworld.Fog, overworld.Counter)
 }
 
 func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM){
@@ -2009,7 +2009,7 @@ func (game *Game) DrawGame(screen *ebiten.Image){
     miniGeom.Translate(250, 20)
     mx, my := miniGeom.Apply(0, 0)
     miniWidth := 60
-    miniHeight := 30
+    miniHeight := 31
     mini := screen.SubImage(image.Rect(int(mx), int(my), int(mx) + miniWidth, int(my) + miniHeight)).(*ebiten.Image)
     overworld.DrawMinimap(mini)
 
