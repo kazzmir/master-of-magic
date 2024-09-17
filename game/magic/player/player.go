@@ -182,6 +182,13 @@ func (stack *UnitStack) Plane() data.Plane {
     return data.PlaneArcanus
 }
 
+func (stack *UnitStack) ExhaustMoves(){
+    for _, unit := range stack.units {
+        unit.MovesLeft = fraction.Zero()
+        stack.active[unit] = false
+    }
+}
+
 func (stack *UnitStack) EnableMovers(){
     for _, unit := range stack.units {
         if unit.MovesLeft.GreaterThan(fraction.Zero()) {

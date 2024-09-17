@@ -1357,6 +1357,14 @@ func (game *Game) MakeHudUI() *uilib.UI {
                 }
             })
         },
+        HandleKey: func(key ebiten.Key){
+            switch key {
+                case ebiten.KeySpace:
+                    if game.Players[0].SelectedStack == nil {
+                        game.DoNextTurn()
+                    }
+            }
+        },
     }
 
     // onClick - true to perform the action when the left click occurs, false to perform the action when the left click is released
@@ -1521,6 +1529,14 @@ func (game *Game) MakeHudUI() *uilib.UI {
             },
             LeftClickRelease: func(this *uilib.UIElement){
                 doneIndex = 0
+
+                if len(game.Players) > 0 {
+                    player := game.Players[0]
+                    if player.SelectedStack != nil {
+                        player.SelectedStack.ExhaustMoves()
+                    }
+                }
+
                 game.DoNextUnit()
             },
         })
@@ -1696,9 +1712,22 @@ func (game *Game) DoNextUnit(){
     if len(game.Players) > 0 {
 
         player := game.Players[0]
+
+        startingIndex := 0
+        if player.SelectedStack != nil {
+            for i, stack := range player.Stacks {
+                if stack == player.SelectedStack {
+                    startingIndex = i + 1
+                    break
+                }
+            }
+        }
+
         player.SelectedStack = nil
 
-        for _, stack := range player.Stacks {
+        for i := 0; i < len(player.Stacks); i++ {
+            index := (i + startingIndex) % len(player.Stacks)
+            stack := player.Stacks[index]
             if stack.HasMoves() {
                 player.SelectedStack = stack
                 stack.EnableMovers()
