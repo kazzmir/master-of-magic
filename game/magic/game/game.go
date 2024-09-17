@@ -601,7 +601,7 @@ func (game *Game) ComputeTerrainCost(stack *playerlib.UnitStack, x int, y int) (
     tileTo := game.Map.GetTile(x, y)
 
     // can't move from land to ocean unless all units are flyers
-    if tileFrom.Index == terrain.TileLand.Index && tileTo.Index == terrain.TileOcean.Index {
+    if tileFrom.Index == terrain.TileLand.Index && tileTo.Index != terrain.TileLand.Index {
         if !stack.AllFlyers() {
             return fraction.Zero(), false
         }
