@@ -286,6 +286,13 @@ type Player struct {
     SelectedStack *UnitStack
 }
 
+func (player *Player) UpdateTaxRate(rate fraction.Fraction){
+    player.TaxRate = rate
+    for _, city := range player.Cities {
+        city.UpdateTaxRate(rate)
+    }
+}
+
 func (player *Player) GetFog(plane data.Plane) [][]bool {
     if plane == data.PlaneArcanus {
         return player.ArcanusFog

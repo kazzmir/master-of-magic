@@ -632,6 +632,23 @@ func (cityScreen *CityScreen) MakeUI() *uilib.UI {
                 }
             }
 
+            rebel, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", getRaceRebelIndex(cityScreen.City.Race), 0)
+            if err == nil {
+                for i := 0; i < cityScreen.City.Rebels; i++ {
+                    posX := citizenX
+
+                    workerElements = append(workerElements, &uilib.UIElement{
+                        Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+                            var options ebiten.DrawImageOptions
+                            options.GeoM.Translate(float64(posX), workerY-2)
+                            screen.DrawImage(rebel, &options)
+                        },
+                    })
+
+                    citizenX += rebel.Bounds().Dx()
+                }
+            }
+
             ui.AddElements(workerElements)
         }
     } else {
@@ -761,6 +778,28 @@ func getRaceWorkerIndex(race data.Race) int {
         case data.RaceNomad: return 56
         case data.RaceOrc: return 57
         case data.RaceTroll: return 58
+    }
+
+    return -1
+}
+
+func getRaceRebelIndex(race data.Race) int {
+    switch race {
+        case data.RaceNone: return -1
+        case data.RaceBarbarian: return 74
+        case data.RaceBeastmen: return 75
+        case data.RaceDarkElf: return 76
+        case data.RaceDraconian: return 77
+        case data.RaceDwarf: return 78
+        case data.RaceGnoll: return 79
+        case data.RaceHalfling: return 80
+        case data.RaceHighElf: return 81
+        case data.RaceHighMen: return 82
+        case data.RaceKlackon: return 83
+        case data.RaceLizard: return 84
+        case data.RaceNomad: return 85
+        case data.RaceOrc: return 86
+        case data.RaceTroll: return 87
     }
 
     return -1

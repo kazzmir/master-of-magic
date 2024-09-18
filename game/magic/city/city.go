@@ -235,7 +235,7 @@ type City struct {
     Y int
     Buildings *set.Set[Building]
 
-    TaxRate *fraction.Fraction
+    TaxRate fraction.Fraction
 
     // reset every turn, keeps track of whether the player sold a building
     SoldBuilding bool
@@ -246,7 +246,7 @@ type City struct {
     ProducingUnit units.Unit
 }
 
-func MakeCity(name string, x int, y int, race data.Race, taxRate *fraction.Fraction) *City {
+func MakeCity(name string, x int, y int, race data.Race, taxRate fraction.Fraction) *City {
     city := City{
         Name: name,
         X: x,
@@ -257,6 +257,11 @@ func MakeCity(name string, x int, y int, race data.Race, taxRate *fraction.Fract
     }
 
     return &city
+}
+
+func (city *City) UpdateTaxRate(taxRate fraction.Fraction){
+    city.TaxRate = taxRate
+    city.UpdateUnrest()
 }
 
 func (city *City) AddBuilding(building Building){
@@ -290,6 +295,7 @@ func (city *City) Citizens() int {
 func (city *City) ResetCitizens() {
     city.Farmers = city.ComputeSubsistenceFarmers()
     city.Workers = city.Citizens() - city.Rebels - city.Farmers
+    city.UpdateUnrest()
 }
 
 /* FIXME: take enchantments into account
@@ -312,9 +318,71 @@ func (city *City) ComputeSubsistenceFarmers() int {
     return maxFarmers
 }
 
-func (city *City) ComputeUnreset() int {
-    unrestPercent := float32(0)
+func (city *City) UpdateUnrest() {
+    rebels := city.ComputeUnrest()
 
+    if rebels > city.Rebels {
+        for i := city.Rebels; i < rebels && city.Workers > 0; i++ {
+            city.Workers -= 1
+            city.Rebels += 1
+        }
+
+        minimumFarmers := city.ComputeSubsistenceFarmers()
+        for i := city.Rebels; i < rebels && city.Farmers > minimumFarmers; i++ {
+            city.Farmers -= 1
+            city.Rebels += 1
+        }
+    } else if rebels < city.Rebels {
+        // turn rebels into workers
+        city.Workers += city.Rebels - rebels
+        city.Rebels = rebels
+    }
+}
+
+func templePacification(race data.Race) int {
+    switch race {
+        case data.RaceKlackon: return 0
+        default: return 1
+    }
+}
+
+func parthenonPacification(race data.Race) int {
+    switch race {
+        case data.RaceGnoll, data.RaceHighElf, data.RaceKlackon, data.RaceLizard, data.RaceDwarf: return 0
+        default: return 1
+    }
+}
+
+func cathedralPaclification(race data.Race) int {
+    switch race {
+        case data.RaceBarbarian, data.RaceGnoll, data.RaceHighElf,
+             data.RaceKlackon, data.RaceLizard, data.RaceDarkElf,
+             data.RaceDwarf: return 0
+        default: return 1
+    }
+}
+
+func animistsGuildPacification(race data.Race) int {
+    switch race {
+        case data.RaceBarbarian, data.RaceGnoll, data.RaceHalfling,
+             data.RaceKlackon, data.RaceLizard, data.RaceDwarf: return 0
+        default: return 1
+    }
+}
+
+func oraclePacification(race data.Race) int {
+    switch race {
+        case data.RaceBarbarian, data.RaceGnoll, data.RaceHalfling,
+             data.RaceHighElf, data.RaceKlackon, data.RaceLizard,
+             data.RaceDwarf, data.RaceTroll: return 0
+        default: return 2
+    }
+}
+
+func (city *City) ComputeUnrest() int {
+    unrestPercent := float64(0)
+
+    // unrest percent from taxes
     if city.TaxRate.Equals(fraction.Zero()) {
         unrestPercent = 0
     } else if city.TaxRate.Equals(fraction.Make(1,2)) {
@@ -331,13 +399,43 @@ func (city *City) ComputeUnreset() int {
         unrestPercent = 0.75
     }
 
-    // unrest percent from taxes
     // capital race vs town race modifier
     // unrest from spells
     // supression from units
     // pacification from buildings
 
-    return int(unrestPercent * float32(city.Citizens()))
+    pacificationRetort := float64(1)
+    // if has Divine Power or Infernal Power
+    // pacificationRetort = 1.5
+
+    pacification := float64(0)
+    if city.Buildings.Contains(BuildingShrine) {
+        pacification += 1 * pacificationRetort
+    }
+
+    if city.Buildings.Contains(BuildingTemple) {
+        pacification += float64(templePacification(city.Race)) * pacificationRetort
+    }
+
+    if city.Buildings.Contains(BuildingParthenon) {
+        pacification += float64(parthenonPacification(city.Race)) * pacificationRetort
+    }
+
+    if city.Buildings.Contains(BuildingCathedral) {
+        pacification += float64(cathedralPaclification(city.Race)) * pacificationRetort
+    }
+
+    if city.Buildings.Contains(BuildingAnimistsGuild) {
+        pacification += float64(animistsGuildPacification(city.Race))
+    }
+
+    if city.Buildings.Contains(BuildingOracle) {
+        pacification += float64(oraclePacification(city.Race))
+    }
+
+    total := unrestPercent * float64(city.Citizens()) - pacification
+
+    return int(math.Max(0, total))
 }
 
 /* returns the maximum number of citizens. population is citizens * 1000
