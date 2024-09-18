@@ -264,7 +264,7 @@ type Player struct {
     ArcanusFog [][]bool
     MyrrorFog [][]bool
 
-    TaxRate float32
+    TaxRate fraction.Fraction
 
     Gold int
     Food int

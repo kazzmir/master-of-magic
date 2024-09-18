@@ -143,7 +143,7 @@ func (game *Game) CenterCamera(x int, y int){
 
 func (game *Game) AddPlayer(wizard setup.WizardCustom) *playerlib.Player{
     newPlayer := &playerlib.Player{
-        TaxRate: 1,
+        TaxRate: fraction.FromInt(1),
         ArcanusFog: game.MakeFog(),
         MyrrorFog: game.MakeFog(),
         Wizard: wizard,
@@ -1220,34 +1220,59 @@ func (game *Game) ShowMirrorUI(){
 }
 
 func (game *Game) ShowTaxCollectorUI(cornerX int, cornerY int){
+    player := game.Players[0]
+
+    // put a * on the value that is currently selected
+    selected := func(s string, use bool) string {
+        if use {
+            return fmt.Sprintf("%v*", s)
+        }
+
+        return s
+    }
+
     taxes := []uilib.Selection{
         uilib.Selection{
-            Name: "0 gold, 0% unrest",
-            Action: func(){},
+            Name: selected("0 gold, 0% unrest", player.TaxRate.IsZero()),
+            Action: func(){
+                player.TaxRate = fraction.Zero()
+            },
         },
         uilib.Selection{
-            Name: "0.5 gold, 10% unrest",
-            Action: func(){},
+            Name: selected("0.5 gold, 10% unrest", player.TaxRate.Equals(fraction.Make(1, 2))),
+            Action: func(){
+                player.TaxRate = fraction.Make(1, 2)
+            },
         },
         uilib.Selection{
-            Name: "1 gold, 20% unrest",
-            Action: func(){},
+            Name: selected("1 gold, 20% unrest", player.TaxRate.Equals(fraction.Make(1, 1))),
+            Action: func(){
+                player.TaxRate = fraction.Make(1, 1)
+            },
         },
         uilib.Selection{
-            Name: "1.5 gold, 30% unrest",
-            Action: func(){},
+            Name: selected("1.5 gold, 30% unrest", player.TaxRate.Equals(fraction.Make(3, 2))),
+            Action: func(){
+                player.TaxRate = fraction.Make(3, 2)
+            },
         },
         uilib.Selection{
-            Name: "2 gold, 45% unrest",
-            Action: func(){},
+            Name: selected("2 gold, 45% unrest", player.TaxRate.Equals(fraction.Make(2, 1))),
+            Action: func(){
+                player.TaxRate = fraction.Make(2, 1)
+            },
         },
         uilib.Selection{
-            Name: "2.5 gold, 60% unrest",
-            Action: func(){},
+            Name: selected("2.5 gold, 60% unrest", player.TaxRate.Equals(fraction.Make(5, 2))),
+            Action: func(){
+                player.TaxRate = fraction.Make(5, 2)
+            },
         },
         uilib.Selection{
-            Name: "3 gold, 75% unrest",
-            Action: func(){},
+            Name: selected("3 gold, 75% unrest", player.TaxRate.Equals(fraction.Make(3, 1))),
+            Action: func(){
+                player.TaxRate = fraction.Make(3, 1)
+            },
         },
     }
 
@@ -1328,7 +1353,7 @@ func (game *Game) ShowSpellBookCastUI(){
 }
 
 func (game *Game) CreateOutpost(settlers *playerlib.Unit, player *playerlib.Player){
-    newCity := citylib.MakeCity("New City", settlers.X, settlers.Y, settlers.Unit.Race)
+    newCity := citylib.MakeCity("New City", settlers.X, settlers.Y, settlers.Unit.Race, &player.TaxRate)
     newCity.Plane = settlers.Plane
     newCity.Population = 1000
 

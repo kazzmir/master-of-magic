@@ -53,7 +53,7 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
 
     player := game.AddPlayer(wizard)
 
-    city := citylib.MakeCity("Test City", 4, 5, data.RaceHighElf)
+    city := citylib.MakeCity("Test City", 4, 5, data.RaceHighElf, &player.TaxRate)
     city.Population = 6000
     city.Plane = data.PlaneArcanus
     city.ProducingBuilding = citylib.BuildingGranary
@@ -149,7 +149,7 @@ func createScenario2(cache *lbx.LbxCache) *gamelib.Game {
 
     player := game.AddPlayer(wizard)
 
-    introCity := citylib.MakeCity("Test City", 4, 5, data.RaceHighElf)
+    introCity := citylib.MakeCity("Test City", 4, 5, data.RaceHighElf, &player.TaxRate)
     introCity.Population = 6000
     introCity.Plane = data.PlaneArcanus
     introCity.ProducingBuilding = citylib.BuildingHousing
@@ -213,7 +213,7 @@ func createScenario3(cache *lbx.LbxCache) *gamelib.Game {
 
     x, y := game.FindValidCityLocation()
 
-    introCity := citylib.MakeCity("Test City", x, y, data.RaceHighElf)
+    introCity := citylib.MakeCity("Test City", x, y, data.RaceHighElf, &player.TaxRate)
     introCity.Population = 6000
     introCity.Plane = data.PlaneArcanus
     introCity.ProducingBuilding = citylib.BuildingHousing

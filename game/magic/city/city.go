@@ -4,6 +4,7 @@ import (
     "math"
 
     "github.com/kazzmir/master-of-magic/lib/set"
+    "github.com/kazzmir/master-of-magic/lib/fraction"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/units"
 )
@@ -234,6 +235,8 @@ type City struct {
     Y int
     Buildings *set.Set[Building]
 
+    TaxRate *fraction.Fraction
+
     // reset every turn, keeps track of whether the player sold a building
     SoldBuilding bool
 
@@ -243,13 +246,14 @@ type City struct {
     ProducingUnit units.Unit
 }
 
-func MakeCity(name string, x int, y int, race data.Race) *City {
+func MakeCity(name string, x int, y int, race data.Race, taxRate *fraction.Fraction) *City {
     city := City{
         Name: name,
         X: x,
         Y: y,
         Race: race,
         Buildings: set.MakeSet[Building](),
+        TaxRate: taxRate,
     }
 
     return &city
@@ -306,6 +310,34 @@ func (city *City) ComputeSubsistenceFarmers() int {
     }
 
     return maxFarmers
+}
+
+func (city *City) ComputeUnreset() int {
+    unrestPercent := float32(0)
+
+    if city.TaxRate.Equals(fraction.Zero()) {
+        unrestPercent = 0
+    } else if city.TaxRate.Equals(fraction.Make(1,2)) {
+        unrestPercent = 0.1
+    } else if city.TaxRate.Equals(fraction.Make(1, 1)) {
+        unrestPercent = 0.2
+    } else if city.TaxRate.Equals(fraction.Make(3, 2)) {
+        unrestPercent = 0.3
+    } else if city.TaxRate.Equals(fraction.Make(2, 1)) {
+        unrestPercent = 0.45
+    } else if city.TaxRate.Equals(fraction.Make(5, 2)) {
+        unrestPercent = 0.60
+    } else if city.TaxRate.Equals(fraction.Make(3, 1)) {
+        unrestPercent = 0.75
+    }
+
+    // unrest percent from taxes
+    // capital race vs town race modifier
+    // unrest from spells
+    // supression from units
+    // pacification from buildings
+
+    return int(unrestPercent * float32(city.Citizens()))
 }
 
 /* returns the maximum number of citizens. population is citizens * 1000
@@ -426,8 +458,8 @@ func (city *City) ComputeUpkeep() int {
     return costs
 }
 
-func (city *City) MoneyProductionRate(taxRate float32) int {
-    citizenIncome := float32(city.Citizens()) * taxRate
+func (city *City) MoneyProductionRate() int {
+    citizenIncome := float32(city.Citizens()) * float32(city.TaxRate.ToFloat())
 
     bonus := float32(0)
 
@@ -477,7 +509,7 @@ func (city *City) DoNextTurn() []CityEvent {
     }
 
     if math.Abs(float64(city.Population - oldPopulation)) >= 1000 {
-        cityEvents = append(cityEvents, CityEventPopulationGrowth{Size: city.Population - oldPopulation})
+        cityEvents = append(cityEvents, CityEventPopulationGrowth{Size: (city.Population - oldPopulation)/1000})
     }
 
     if city.ProducingBuilding.ProductionCost() != 0 || !city.ProducingUnit.Equals(units.UnitNone) {
