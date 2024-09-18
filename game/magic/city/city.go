@@ -167,6 +167,8 @@ func (citySize CitySize) String() string {
     return "Unknown"
 }
 
+const MAX_CITY_POPULATION = 25000
+
 type City struct {
     Population int
     Farmers int
@@ -193,7 +195,7 @@ type City struct {
     ProducingUnit units.Unit
 }
 
-func MakeCity(name string, x int, y int, race data.Race) City {
+func MakeCity(name string, x int, y int, race data.Race) *City {
     city := City{
         Name: name,
         X: x,
@@ -202,7 +204,7 @@ func MakeCity(name string, x int, y int, race data.Race) City {
         Buildings: set.MakeSet[Building](),
     }
 
-    return city
+    return &city
 }
 
 func (city *City) AddBuilding(building Building){
@@ -243,9 +245,61 @@ func (city *City) ComputeSubsistenceFarmers() int {
     return int(math.Ceil(float64(city.Citizens()) / 2.0))
 }
 
+func (city *City) MaximumCitySize() int {
+    // FIXME: based on surrounding tiles
+    foodAvailability := 20
+    bonus := 0
+
+    if city.Buildings.Contains(BuildingGranary) {
+        bonus += 1
+    }
+
+    if city.Buildings.Contains(BuildingFarmersMarket) {
+        bonus += 3
+    }
+
+    return foodAvailability + bonus
+}
+
+func (city *City) PopulationGrowthRate() int {
+    base := 10 * (city.MaximumCitySize() - city.Citizens() + 1) / 2
+    switch city.Race {
+        case data.RaceBarbarian: base += 20
+        case data.RaceGnoll: base -= 10
+        case data.RaceHalfling:
+        case data.RaceHighElf: base -= 20
+        case data.RaceHighMen:
+        case data.RaceKlackon: base -= 10
+        case data.RaceLizard: base += 10
+        case data.RaceNomad: base -= 10
+        case data.RaceOrc:
+        case data.RaceBeastmen:
+        case data.RaceDarkElf: base -= 10
+        case data.RaceDraconian: base -= 10
+        case data.RaceDwarf: base -= 20
+        case data.RaceTroll: base -= 20
+    }
+
+    if city.Buildings.Contains(BuildingGranary) {
+        base += 20
+    }
+
+    if city.Buildings.Contains(BuildingFarmersMarket) {
+        base += 30
+    }
+
+    return base
+}
+
 // do all the stuff needed per turn
 // increase population, add production, add food/money, etc
 func (city *City) DoNextTurn(){
     city.SoldBuilding = false
+
+    city.Population += city.PopulationGrowthRate()
+    if city.Population > city.MaximumCitySize() * 1000 {
+        city.Population = city.MaximumCitySize() * 1000
+    }
+
     // TODO
 }

@@ -773,11 +773,11 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
         } else if n == 0 {
             return "0"
         } else {
-            return fmt.Sprintf("-%v", n)
+            return fmt.Sprintf("%v", n)
         }
     }
 
-    cityScreen.DescriptionFont.PrintRight(screen, 210, 19, 1, ebiten.ColorScale{}, fmt.Sprintf("Population: %v (%v)", cityScreen.City.Population, deltaNumber(80)))
+    cityScreen.DescriptionFont.PrintRight(screen, 210, 19, 1, ebiten.ColorScale{}, fmt.Sprintf("Population: %v (%v)", cityScreen.City.Population, deltaNumber(cityScreen.City.PopulationGrowthRate())))
 
     smallFood, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", 40, 0)
     if err == nil {
