@@ -63,6 +63,8 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
     city.Workers = 3
     city.Wall = false
 
+    city.ResetCitizens()
+
     player.AddCity(city)
 
     player.Gold = 83

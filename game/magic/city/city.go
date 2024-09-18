@@ -283,11 +283,16 @@ func (city *City) Citizens() int {
     return city.Population / 1000
 }
 
+func (city *City) ResetCitizens() {
+    city.Farmers = city.ComputeSubsistenceFarmers()
+    city.Workers = city.Citizens() - city.Rebels - city.Farmers
+}
+
 /* FIXME: take enchantments into account
  * https://masterofmagic.fandom.com/wiki/Farmer
  */
 func (city *City) ComputeSubsistenceFarmers() int {
-
+    // each citizen needs 1 unit of food
     requiredFood := city.Citizens()
 
     maxFarmers := city.Citizens() - city.Rebels
@@ -301,13 +306,6 @@ func (city *City) ComputeSubsistenceFarmers() int {
     }
 
     return maxFarmers
-
-    /*
-    // FIXME: take buildings into account (granary, farmers market, etc)
-    // each citizen needs 2 food
-    // round up in case of an odd number of citizens
-    return int(math.Ceil(float64(city.Citizens()) / 2.0))
-    */
 }
 
 /* returns the maximum number of citizens. population is citizens * 1000
