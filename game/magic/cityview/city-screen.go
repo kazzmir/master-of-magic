@@ -783,7 +783,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
     if err == nil {
         var options ebiten.DrawImageOptions
         options.GeoM.Translate(6, 52)
-        for i := 0; i < cityScreen.City.FoodProductionRate; i++ {
+        for i := 0; i < cityScreen.City.FoodProductionRate(); i++ {
             screen.DrawImage(smallFood, &options)
             options.GeoM.Translate(float64(smallFood.Bounds().Dx() + 1), 0)
         }

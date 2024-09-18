@@ -44,7 +44,6 @@ func NewEngine() (*Engine, error) {
         Name: "Boston",
         Wall: false,
         Race: data.RaceHighElf,
-        FoodProductionRate: 3,
         MoneyProductionRate: 4,
         MagicProductionRate: 3,
         Production: 18,

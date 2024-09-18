@@ -188,7 +188,6 @@ type City struct {
     Name string
     Wall bool
     Plane data.Plane
-    FoodProductionRate int
     MoneyProductionRate int
     MagicProductionRate int
     Race data.Race
@@ -301,6 +300,26 @@ func (city *City) PopulationGrowthRate() int {
     }
 
     return base
+}
+
+func (city *City) FoodProductionRate() int {
+    rate := 2
+
+    switch city.Race {
+        case data.RaceHalfling: rate = 3
+    }
+
+    bonus := 0
+
+    if city.Buildings.Contains(BuildingGranary) {
+        bonus += 2
+    }
+
+    if city.Buildings.Contains(BuildingFarmersMarket) {
+        bonus += 3
+    }
+
+    return rate * city.Farmers + bonus
 }
 
 func (city *City) WorkProductionRate() float32 {
