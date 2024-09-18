@@ -575,8 +575,8 @@ func (cityScreen *CityScreen) MakeUI() *uilib.UI {
                         screen.DrawImage(farmer, &options)
                     },
                     LeftClick: func(element *uilib.UIElement) {
-                        cityScreen.City.Farmers += cityScreen.City.Workers
-                        cityScreen.City.Workers = 0
+                        cityScreen.City.Farmers = subsistenceFarmers
+                        cityScreen.City.Workers = cityScreen.City.Citizens() - cityScreen.City.Rebels - cityScreen.City.Farmers
                         setupWorkers()
                     },
                 })
@@ -584,6 +584,7 @@ func (cityScreen *CityScreen) MakeUI() *uilib.UI {
                 citizenX += farmer.Bounds().Dx()
             }
 
+            // the farmers that can be changed to workers
             citizenX += 3
             for i := subsistenceFarmers; i < cityScreen.City.Farmers; i++ {
                 posX := citizenX
@@ -621,8 +622,8 @@ func (cityScreen *CityScreen) MakeUI() *uilib.UI {
                             screen.DrawImage(worker, &options)
                         },
                         LeftClick: func(element *uilib.UIElement) {
-                            cityScreen.City.Workers = workerNum
-                            cityScreen.City.Farmers = cityScreen.City.Citizens() - cityScreen.City.Rebels - cityScreen.City.Workers
+                            cityScreen.City.Workers -= workerNum + 1
+                            cityScreen.City.Farmers += workerNum + 1
                             setupWorkers()
                         },
                     })
