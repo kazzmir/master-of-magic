@@ -44,7 +44,6 @@ func NewEngine() (*Engine, error) {
         Name: "Boston",
         Wall: false,
         Race: data.RaceHighElf,
-        MoneyProductionRate: 4,
         MagicProductionRate: 3,
         Production: 18,
         ProducingBuilding: citylib.BuildingNone,

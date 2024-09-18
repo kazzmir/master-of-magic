@@ -96,6 +96,46 @@ func (building Building) ProductionCost() int {
     return 0
 }
 
+func (building Building) UpkeepCost() int {
+    switch building {
+        case BuildingBarracks: return 0
+        case BuildingArmory: return 2
+        case BuildingFightersGuild: return 3
+        case BuildingArmorersGuild: return 4
+        case BuildingWarCollege: return 5
+        case BuildingSmithy: return 1
+        case BuildingStables: return 2
+        case BuildingAnimistsGuild: return 5
+        case BuildingFantasticStable: return 6
+        case BuildingShipwrightsGuild: return 1
+        case BuildingShipYard: return 2
+        case BuildingMaritimeGuild: return 4
+        case BuildingSawmill: return 2
+        case BuildingLibrary: return 1
+        case BuildingSagesGuild: return 2
+        case BuildingOracle: return 4
+        case BuildingAlchemistsGuild: return 3
+        case BuildingUniversity: return 3
+        case BuildingWizardsGuild: return 5
+        case BuildingShrine: return 1
+        case BuildingTemple: return 2
+        case BuildingParthenon: return 3
+        case BuildingCathedral: return 4
+        case BuildingMarketplace: return 1
+        case BuildingBank: return 3
+        case BuildingMerchantsGuild: return 5
+        case BuildingGranary: return 1
+        case BuildingFarmersMarket: return 2
+        case BuildingForestersGuild: return 2
+        case BuildingBuildersHall: return 1
+        case BuildingMechaniciansGuild: return 5
+        case BuildingMinersGuild: return 3
+        case BuildingCityWalls: return 2
+    }
+
+    return 0
+}
+
 func (building Building) String() string {
     switch building {
         case BuildingBarracks: return "Barracks"
@@ -188,7 +228,6 @@ type City struct {
     Name string
     Wall bool
     Plane data.Plane
-    MoneyProductionRate int
     MagicProductionRate int
     Race data.Race
     X int
@@ -320,6 +359,30 @@ func (city *City) FoodProductionRate() int {
     }
 
     return rate * city.Farmers + bonus
+}
+
+func (city *City) ComputeUpkeep() int {
+    costs := 0
+
+    for _, building := range city.Buildings.Values() {
+        costs += building.UpkeepCost()
+    }
+
+    return costs
+}
+
+func (city *City) MoneyProductionRate(taxRate float32) int {
+    citizenIncome := float32(city.Citizens()) * taxRate
+
+    bonus := float32(0)
+
+    if city.ProducingBuilding == BuildingTradeGoods {
+        bonus = city.WorkProductionRate() / 2
+    }
+
+    upkeepCosts := city.ComputeUpkeep()
+
+    return int(citizenIncome + bonus) - upkeepCosts
 }
 
 func (city *City) WorkProductionRate() float32 {

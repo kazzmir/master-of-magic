@@ -143,6 +143,7 @@ func (game *Game) CenterCamera(x int, y int){
 
 func (game *Game) AddPlayer(wizard setup.WizardCustom) *playerlib.Player{
     newPlayer := &playerlib.Player{
+        TaxRate: 1,
         ArcanusFog: game.MakeFog(),
         MyrrorFog: game.MakeFog(),
         Wizard: wizard,

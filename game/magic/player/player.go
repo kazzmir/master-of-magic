@@ -264,6 +264,8 @@ type Player struct {
     ArcanusFog [][]bool
     MyrrorFog [][]bool
 
+    TaxRate float32
+
     Gold int
     Food int
     Mana int

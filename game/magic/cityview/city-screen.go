@@ -807,7 +807,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
     if err == nil {
         var options ebiten.DrawImageOptions
         options.GeoM.Translate(6, 68)
-        for i := 0; i < cityScreen.City.MoneyProductionRate; i++ {
+        for i := 0; i < cityScreen.City.MoneyProductionRate(cityScreen.Player.TaxRate); i++ {
             screen.DrawImage(smallCoin, &options)
             options.GeoM.Translate(float64(smallCoin.Bounds().Dx() + 1), 0)
         }
