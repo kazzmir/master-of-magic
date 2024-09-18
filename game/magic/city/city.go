@@ -218,7 +218,7 @@ func (citySize CitySize) String() string {
     return "Unknown"
 }
 
-const MAX_CITY_POPULATION = 25000
+const MAX_CITY_CITIZENS = 25
 
 type City struct {
     Population int
@@ -287,17 +287,36 @@ func (city *City) Citizens() int {
  * https://masterofmagic.fandom.com/wiki/Farmer
  */
 func (city *City) ComputeSubsistenceFarmers() int {
+
+    requiredFood := city.Citizens()
+
+    maxFarmers := city.Citizens() - city.Rebels
+
+    // compute how many farmers are needed to produce the given amount of food
+    for i := 0; i < maxFarmers; i++ {
+        food := city.foodProductionRate(i)
+        if food >= requiredFood {
+            return i
+        }
+    }
+
+    return maxFarmers
+
+    /*
     // FIXME: take buildings into account (granary, farmers market, etc)
     // each citizen needs 2 food
     // round up in case of an odd number of citizens
     return int(math.Ceil(float64(city.Citizens()) / 2.0))
+    */
 }
 
 /* returns the maximum number of citizens. population is citizens * 1000
  */
 func (city *City) MaximumCitySize() int {
-    // FIXME: based on surrounding tiles
-    foodAvailability := 20
+    foodAvailability := city.BaseFoodLevel()
+
+    // TODO: 1/2 if famine is active
+
     bonus := 0
 
     if city.Buildings.Contains(BuildingGranary) {
@@ -308,7 +327,9 @@ func (city *City) MaximumCitySize() int {
         bonus += 3
     }
 
-    return foodAvailability + bonus
+    // TODO: add 2 for each wild game in the city's catchment area
+
+    return int(math.Min(MAX_CITY_CITIZENS, float64(foodAvailability + bonus)))
 }
 
 func (city *City) PopulationGrowthRate() int {
@@ -341,11 +362,45 @@ func (city *City) PopulationGrowthRate() int {
     return base
 }
 
+/* amount of food needed to feed the citizens
+ */
+func (city *City) RequiredFood() int {
+    return city.Citizens()
+}
+
+func (city *City) SurplusFood() int {
+    return city.FoodProductionRate() - city.RequiredFood()
+}
+
+/* compute amount of available food on tiles in catchment area
+ */
+func (city *City) BaseFoodLevel() int {
+    // TODO
+    return 10
+}
+
 func (city *City) FoodProductionRate() int {
+    return city.foodProductionRate(city.Farmers)
+}
+
+func (city *City) foodProductionRate(farmers int) int {
     rate := 2
 
     switch city.Race {
         case data.RaceHalfling: rate = 3
+    }
+
+    baseRate := float32(rate * farmers)
+
+    if city.Buildings.Contains(BuildingForestersGuild) {
+        baseRate += 2
+    }
+
+    // TODO: if famine is active then base rate is halved
+
+    baseLevel := float32(city.BaseFoodLevel())
+    if baseRate > baseLevel {
+        baseRate = baseLevel + (baseLevel - baseRate) / 2
     }
 
     bonus := 0
@@ -358,7 +413,9 @@ func (city *City) FoodProductionRate() int {
         bonus += 3
     }
 
-    return rate * city.Farmers + bonus
+    // TODO: add 2 for each wild game tile in the catchment area
+
+    return int(baseRate) + bonus
 }
 
 func (city *City) ComputeUpkeep() int {
@@ -437,6 +494,11 @@ func (city *City) DoNextTurn() []CityEvent {
                 cityEvents = append(cityEvents, CityEventNewUnit{Unit: city.ProducingUnit})
             }
         }
+    }
+
+    if city.Farmers < city.ComputeSubsistenceFarmers() {
+        city.Farmers = city.ComputeSubsistenceFarmers()
+        city.Workers = city.Citizens() - city.Rebels
     }
 
     return cityEvents
