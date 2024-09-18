@@ -30,6 +30,7 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
     wizard := setup.WizardCustom{
         Name: "player",
         Banner: data.BannerBlue,
+        Race: data.RaceHighMen,
         Abilities: []setup.WizardAbility{
             setup.AbilityAlchemy,
             setup.AbilitySageMaster,
@@ -55,8 +56,11 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
     city := citylib.MakeCity("Test City", 4, 5, data.RaceHighElf)
     city.Population = 6000
     city.Plane = data.PlaneArcanus
-    city.ProducingBuilding = citylib.BuildingHousing
+    city.ProducingBuilding = citylib.BuildingGranary
     city.ProducingUnit = units.UnitNone
+    city.Race = wizard.Race
+    city.Farmers = 3
+    city.Workers = 3
     city.Wall = false
 
     player.AddCity(city)

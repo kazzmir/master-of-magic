@@ -795,7 +795,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
     if err == nil {
         var options ebiten.DrawImageOptions
         options.GeoM.Translate(6, 60)
-        for i := 0; i < cityScreen.City.WorkProductionRate; i++ {
+        for i := 0; i < int(cityScreen.City.WorkProductionRate()); i++ {
             screen.DrawImage(smallWork, &options)
             options.GeoM.Translate(float64(smallWork.Bounds().Dx() + 1), 0)
         }
@@ -915,7 +915,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
 
     if showWork {
         turn := ""
-        turns := float64(workRequired - cityScreen.City.Production) / float64(cityScreen.City.WorkProductionRate)
+        turns := (float64(workRequired) - float64(cityScreen.City.Production)) / float64(cityScreen.City.WorkProductionRate())
         if turns <= 0 {
             turn = "1 Turn"
         } else {

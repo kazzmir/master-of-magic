@@ -141,6 +141,17 @@ func (building Building) String() string {
     return "?"
 }
 
+type CityEvent interface {
+}
+
+type CityEventPopulationGrowth struct {
+    Size int
+}
+
+type CityEventNewUnit struct {
+    Unit units.Unit
+}
+
 type CitySize int
 const (
     CitySizeHamlet CitySize = iota
@@ -178,7 +189,6 @@ type City struct {
     Wall bool
     Plane data.Plane
     FoodProductionRate int
-    WorkProductionRate int
     MoneyProductionRate int
     MagicProductionRate int
     Race data.Race
@@ -190,7 +200,7 @@ type City struct {
     SoldBuilding bool
 
     // how many hammers the city has produced towards the current project
-    Production int
+    Production float32
     ProducingBuilding Building
     ProducingUnit units.Unit
 }
@@ -245,6 +255,8 @@ func (city *City) ComputeSubsistenceFarmers() int {
     return int(math.Ceil(float64(city.Citizens()) / 2.0))
 }
 
+/* returns the maximum number of citizens. population is citizens * 1000
+ */
 func (city *City) MaximumCitySize() int {
     // FIXME: based on surrounding tiles
     foodAvailability := 20
@@ -291,15 +303,59 @@ func (city *City) PopulationGrowthRate() int {
     return base
 }
 
+func (city *City) WorkProductionRate() float32 {
+    workerRate := 2
+
+    switch city.Race {
+        case data.RaceBarbarian: workerRate = 2
+        case data.RaceGnoll: workerRate = 2
+        case data.RaceHalfling: workerRate = 2
+        case data.RaceHighElf: workerRate = 2
+        case data.RaceHighMen: workerRate = 2
+        case data.RaceKlackon: workerRate = 3
+        case data.RaceLizard: workerRate = 2
+        case data.RaceNomad: workerRate = 2
+        case data.RaceOrc: workerRate = 2
+        case data.RaceBeastmen: workerRate = 2
+        case data.RaceDarkElf: workerRate = 2
+        case data.RaceDraconian: workerRate = 2
+        case data.RaceDwarf: workerRate = 2
+        case data.RaceTroll: workerRate = 3
+    }
+
+    return float32(workerRate * city.Workers) + 0.5 * float32(city.Farmers)
+}
+
 // do all the stuff needed per turn
 // increase population, add production, add food/money, etc
-func (city *City) DoNextTurn(){
+func (city *City) DoNextTurn() []CityEvent {
+    var cityEvents []CityEvent
+
     city.SoldBuilding = false
 
+    oldPopulation := city.Population
     city.Population += city.PopulationGrowthRate()
     if city.Population > city.MaximumCitySize() * 1000 {
         city.Population = city.MaximumCitySize() * 1000
     }
 
-    // TODO
+    if math.Abs(float64(city.Population - oldPopulation)) >= 1000 {
+        cityEvents = append(cityEvents, CityEventPopulationGrowth{Size: city.Population - oldPopulation})
+    }
+
+    if city.ProducingBuilding.ProductionCost() != 0 || !city.ProducingUnit.Equals(units.UnitNone) {
+        city.Production += city.WorkProductionRate()
+
+        if city.ProducingBuilding.ProductionCost() != 0 {
+            if city.Production >= float32(city.ProducingBuilding.ProductionCost()) {
+                city.Buildings.Insert(city.ProducingBuilding)
+                city.Production = 0
+                city.ProducingBuilding = BuildingTradeGoods
+            } else if !city.ProducingUnit.Equals(units.UnitNone) && city.Production >= float32(city.ProducingUnit.ProductionCost) {
+                cityEvents = append(cityEvents, CityEventNewUnit{Unit: city.ProducingUnit})
+            }
+        }
+    }
+
+    return cityEvents
 }
