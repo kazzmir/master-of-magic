@@ -30,6 +30,7 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
     wizard := setup.WizardCustom{
         Name: "player",
         Banner: data.BannerBlue,
+        Race: data.RaceHighMen,
         Abilities: []setup.WizardAbility{
             setup.AbilityAlchemy,
             setup.AbilitySageMaster,
@@ -52,17 +53,20 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
 
     player := game.AddPlayer(wizard)
 
-    player.AddCity(citylib.City{
-        Population: 6000,
-        Name: "Test City",
-        Plane: data.PlaneArcanus,
-        ProducingBuilding: citylib.BuildingHousing,
-        ProducingUnit: units.UnitNone,
-        Race: data.RaceHighElf,
-        Wall: false,
-        X: 4,
-        Y: 5,
-    })
+    city := citylib.MakeCity("Test City", 4, 5, data.RaceHighElf, player.TaxRate)
+    city.Population = 6000
+    city.Plane = data.PlaneArcanus
+    city.Banner = wizard.Banner
+    city.ProducingBuilding = citylib.BuildingGranary
+    city.ProducingUnit = units.UnitNone
+    city.Race = wizard.Race
+    city.Farmers = 3
+    city.Workers = 3
+    city.Wall = false
+
+    city.ResetCitizens()
+
+    player.AddCity(city)
 
     player.Gold = 83
     player.Mana = 26
@@ -146,17 +150,14 @@ func createScenario2(cache *lbx.LbxCache) *gamelib.Game {
 
     player := game.AddPlayer(wizard)
 
-    introCity := player.AddCity(citylib.City{
-        Population: 6000,
-        Name: "Test City",
-        Plane: data.PlaneArcanus,
-        ProducingBuilding: citylib.BuildingHousing,
-        ProducingUnit: units.UnitNone,
-        Race: data.RaceHighElf,
-        Wall: false,
-        X: 4,
-        Y: 5,
-    })
+    introCity := citylib.MakeCity("Test City", 4, 5, data.RaceHighElf, player.TaxRate)
+    introCity.Population = 6000
+    introCity.Plane = data.PlaneArcanus
+    introCity.ProducingBuilding = citylib.BuildingHousing
+    introCity.ProducingUnit = units.UnitNone
+    introCity.Wall = false
+
+    player.AddCity(introCity)
 
     player.Gold = 83
     player.Mana = 26
@@ -213,17 +214,16 @@ func createScenario3(cache *lbx.LbxCache) *gamelib.Game {
 
     x, y := game.FindValidCityLocation()
 
-    introCity := player.AddCity(citylib.City{
-        Population: 6000,
-        Name: "Test City",
-        Plane: data.PlaneArcanus,
-        ProducingBuilding: citylib.BuildingHousing,
-        ProducingUnit: units.UnitNone,
-        Race: data.RaceHighElf,
-        Wall: false,
-        X: x,
-        Y: y,
-    })
+    introCity := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.TaxRate)
+    introCity.Population = 6000
+    introCity.Plane = data.PlaneArcanus
+    introCity.ProducingBuilding = citylib.BuildingHousing
+    introCity.ProducingUnit = units.UnitNone
+    introCity.Wall = false
+
+    introCity.ResetCitizens()
+
+    player.AddCity(introCity)
 
     player.Gold = 83
     player.Mana = 26

@@ -143,6 +143,7 @@ func (game *Game) CenterCamera(x int, y int){
 
 func (game *Game) AddPlayer(wizard setup.WizardCustom) *playerlib.Player{
     newPlayer := &playerlib.Player{
+        TaxRate: fraction.FromInt(1),
         ArcanusFog: game.MakeFog(),
         MyrrorFog: game.MakeFog(),
         Wizard: wizard,
@@ -707,9 +708,23 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                                     if canMove {
                                         mergeStack := player.FindStack(newX, newY)
 
+                                        oldCity := player.FindCity(oldX, oldY)
+                                        if oldCity != nil {
+                                            for _, unit := range stack.Units() {
+                                                oldCity.RemoveGarrisonUnit(unit.Unit)
+                                            }
+                                        }
+
                                         stack.Move(dx, dy, terrainCost)
 
                                         game.showMovement(yield, oldX, oldY, stack)
+
+                                        newCity := player.FindCity(stack.X(), stack.Y())
+                                        if newCity != nil {
+                                            for _, unit := range stack.Units() {
+                                                newCity.AddGarrisonUnit(unit.Unit)
+                                            }
+                                        }
 
                                         player.LiftFog(stack.X(), stack.Y(), 2)
 
@@ -875,25 +890,6 @@ func (game *Game) GetMainImage(index int) (*ebiten.Image, error) {
 
     if err != nil {
         log.Printf("Error: image in main.lbx is missing: %v", err)
-    }
-
-    return image, err
-}
-
-func GetUnitBackgroundImage(banner data.BannerType, imageCache *util.ImageCache) (*ebiten.Image, error) {
-    index := -1
-    switch banner {
-        case data.BannerBlue: index = 14
-        case data.BannerGreen: index = 15
-        case data.BannerPurple: index = 16
-        case data.BannerRed: index = 17
-        case data.BannerYellow: index = 18
-        case data.BannerBrown: index = 19
-    }
-
-    image, err := imageCache.GetImage("mapback.lbx", index, 0)
-    if err != nil {
-        log.Printf("Error: image in mapback.lbx is missing: %v", err)
     }
 
     return image, err
@@ -1219,34 +1215,59 @@ func (game *Game) ShowMirrorUI(){
 }
 
 func (game *Game) ShowTaxCollectorUI(cornerX int, cornerY int){
+    player := game.Players[0]
+
+    // put a * on the value that is currently selected
+    selected := func(s string, use bool) string {
+        if use {
+            return fmt.Sprintf("%v*", s)
+        }
+
+        return s
+    }
+
     taxes := []uilib.Selection{
         uilib.Selection{
-            Name: "0 gold, 0% unrest",
-            Action: func(){},
+            Name: selected("0 gold, 0% unrest", player.TaxRate.IsZero()),
+            Action: func(){
+                player.UpdateTaxRate(fraction.Zero())
+            },
         },
         uilib.Selection{
-            Name: "0.5 gold, 10% unrest",
-            Action: func(){},
+            Name: selected("0.5 gold, 10% unrest", player.TaxRate.Equals(fraction.Make(1, 2))),
+            Action: func(){
+                player.UpdateTaxRate(fraction.Make(1, 2))
+            },
         },
         uilib.Selection{
-            Name: "1 gold, 20% unrest",
-            Action: func(){},
+            Name: selected("1 gold, 20% unrest", player.TaxRate.Equals(fraction.Make(1, 1))),
+            Action: func(){
+                player.UpdateTaxRate(fraction.Make(1, 1))
+            },
         },
         uilib.Selection{
-            Name: "1.5 gold, 30% unrest",
-            Action: func(){},
+            Name: selected("1.5 gold, 30% unrest", player.TaxRate.Equals(fraction.Make(3, 2))),
+            Action: func(){
+                player.UpdateTaxRate(fraction.Make(3, 2))
+            },
         },
         uilib.Selection{
-            Name: "2 gold, 45% unrest",
-            Action: func(){},
+            Name: selected("2 gold, 45% unrest", player.TaxRate.Equals(fraction.Make(2, 1))),
+            Action: func(){
+                player.UpdateTaxRate(fraction.Make(2, 1))
+            },
         },
         uilib.Selection{
-            Name: "2.5 gold, 60% unrest",
-            Action: func(){},
+            Name: selected("2.5 gold, 60% unrest", player.TaxRate.Equals(fraction.Make(5, 2))),
+            Action: func(){
+                player.UpdateTaxRate(fraction.Make(5, 2))
+            },
         },
         uilib.Selection{
-            Name: "3 gold, 75% unrest",
-            Action: func(){},
+            Name: selected("3 gold, 75% unrest", player.TaxRate.Equals(fraction.Make(3, 1))),
+            Action: func(){
+                player.UpdateTaxRate(fraction.Make(3, 1))
+            },
         },
     }
 
@@ -1326,22 +1347,25 @@ func (game *Game) ShowSpellBookCastUI(){
     }))
 }
 
-func (game *Game) CreateOutpost(settlers *playerlib.Unit, player *playerlib.Player){
-    newCity := citylib.MakeCity("New City", settlers.X, settlers.Y, settlers.Unit.Race)
+func (game *Game) CreateOutpost(settlers *playerlib.Unit, player *playerlib.Player) *citylib.City {
+    newCity := citylib.MakeCity("New City", settlers.X, settlers.Y, settlers.Unit.Race, player.TaxRate)
     newCity.Plane = settlers.Plane
     newCity.Population = 1000
+    newCity.Banner = player.Wizard.Banner
 
     player.RemoveUnit(settlers)
     player.SelectedStack = nil
     game.HudUI = game.MakeHudUI()
-    cityPtr := player.AddCity(newCity)
+    player.AddCity(newCity)
 
     stack := player.FindStack(newCity.X, newCity.Y)
 
     select {
-        case game.Events<- &GameEventNewOutpost{City: cityPtr, Stack: stack}:
+        case game.Events<- &GameEventNewOutpost{City: newCity, Stack: stack}:
         default:
     }
+
+    return newCity
 }
 
 func (game *Game) MakeHudUI() *uilib.UI {
@@ -1480,7 +1504,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                     options.GeoM.Translate(1, 1)
 
                     if stack.IsActive(unit){
-                        unitBack, _ := GetUnitBackgroundImage(unit.Banner, &game.ImageCache)
+                        unitBack, _ := units.GetUnitBackgroundImage(unit.Banner, &game.ImageCache)
                         screen.DrawImage(unitBack, &options)
                     }
 
@@ -1657,7 +1681,10 @@ func (game *Game) MakeHudUI() *uilib.UI {
                     for _, settlers := range player.SelectedStack.ActiveUnits() {
                         // FIXME: check if this tile is valid to build an outpost on
                         if settlers.Unit.HasAbility(units.AbilityCreateOutpost) {
-                            game.CreateOutpost(settlers, player)
+                            city := game.CreateOutpost(settlers, player)
+                            for _, unit := range player.SelectedStack.ActiveUnits() {
+                                city.AddGarrisonUnit(unit.Unit)
+                            }
                             break
                         }
                     }
@@ -1755,7 +1782,22 @@ func (game *Game) DoNextTurn(){
         player := game.Players[0]
 
         for _, city := range player.Cities {
-            city.DoNextTurn()
+            cityEvents := city.DoNextTurn()
+            for _, event := range cityEvents {
+                switch event.(type) {
+                    case *citylib.CityEventPopulationGrowth:
+                        growth := event.(*citylib.CityEventPopulationGrowth)
+                        if growth.Size > 0 {
+                            log.Printf("City grew by %v to %v", growth.Size, city.Citizens())
+                        } else {
+                            log.Printf("City shrunk by %v to %v", -growth.Size, city.Citizens())
+                        }
+                    case *citylib.CityEventNewUnit:
+                        newUnit := event.(*citylib.CityEventNewUnit)
+                        player.AddUnit(playerlib.MakeUnitFromUnit(newUnit.Unit, city.X, city.Y, city.Plane, city.Banner))
+                        city.AddGarrisonUnit(newUnit.Unit)
+                }
+            }
         }
 
         for _, stack := range player.Stacks {
@@ -2043,7 +2085,7 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
             x, y := convertTileCoordinates(float64(stack.X()) + stack.OffsetX(), float64(stack.Y()) + stack.OffsetY())
             options.GeoM.Translate(x, y)
 
-            unitBack, err := GetUnitBackgroundImage(stack.Leader().Banner, overworld.ImageCache)
+            unitBack, err := units.GetUnitBackgroundImage(stack.Leader().Banner, overworld.ImageCache)
             if err == nil {
                 screen.DrawImage(unitBack, &options)
             }

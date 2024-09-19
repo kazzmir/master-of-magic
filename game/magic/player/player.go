@@ -22,6 +22,18 @@ type Unit struct {
     Id uint64
 }
 
+func MakeUnitFromUnit(unit units.Unit, x int, y int, plane data.Plane, banner data.BannerType) Unit {
+    return Unit{
+        Unit: unit,
+        Banner: banner,
+        Plane: plane,
+        MovesLeft: fraction.FromInt(unit.MovementSpeed),
+        Patrol: false,
+        X: x,
+        Y: y,
+    }
+}
+
 const MovementLimit = 10
 
 func (unit *Unit) ResetMoves(){
@@ -264,6 +276,8 @@ type Player struct {
     ArcanusFog [][]bool
     MyrrorFog [][]bool
 
+    TaxRate fraction.Fraction
+
     Gold int
     Food int
     Mana int
@@ -282,6 +296,23 @@ type Player struct {
     // counter for the next created unit owned by this player
     UnitId uint64
     SelectedStack *UnitStack
+}
+
+func (player *Player) UpdateTaxRate(rate fraction.Fraction){
+    player.TaxRate = rate
+    for _, city := range player.Cities {
+        city.UpdateTaxRate(rate)
+    }
+}
+
+func (player *Player) FindCity(x int, y int) *citylib.City {
+    for _, city := range player.Cities {
+        if city.X == x && city.Y == y {
+            return city
+        }
+    }
+
+    return nil
 }
 
 func (player *Player) GetFog(plane data.Plane) [][]bool {
@@ -367,9 +398,9 @@ func (player *Player) RemoveUnit(unit *Unit) {
     }
 }
 
-func (player *Player) AddCity(city citylib.City) *citylib.City {
-    player.Cities = append(player.Cities, &city)
-    return &city
+func (player *Player) AddCity(city *citylib.City) *citylib.City {
+    player.Cities = append(player.Cities, city)
+    return city
 }
 
 func (player *Player) AddStack(stack *UnitStack){

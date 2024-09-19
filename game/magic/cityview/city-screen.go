@@ -552,7 +552,112 @@ func (cityScreen *CityScreen) MakeUI() *uilib.UI {
             },
         })
     }
+
+    farmer, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", getRaceFarmerIndex(cityScreen.City.Race), 0)
+    var setupWorkers func()
+    if err == nil {
+        workerY := float64(27)
+        var workerElements []*uilib.UIElement
+        setupWorkers = func(){
+            ui.RemoveElements(workerElements)
+            workerElements = nil
+            citizenX := 6
+
+            subsistenceFarmers := cityScreen.City.ComputeSubsistenceFarmers()
+
+            for i := 0; i < subsistenceFarmers; i++ {
+                posX := citizenX
+                workerElements = append(workerElements, &uilib.UIElement{
+                    Rect: util.ImageRect(posX, int(workerY), farmer),
+                    Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+                        var options ebiten.DrawImageOptions
+                        options.GeoM.Translate(float64(posX), workerY)
+                        screen.DrawImage(farmer, &options)
+                    },
+                    LeftClick: func(element *uilib.UIElement) {
+                        cityScreen.City.Farmers = subsistenceFarmers
+                        cityScreen.City.Workers = cityScreen.City.Citizens() - cityScreen.City.Rebels - cityScreen.City.Farmers
+                        setupWorkers()
+                    },
+                })
+
+                citizenX += farmer.Bounds().Dx()
+            }
+
+            // the farmers that can be changed to workers
+            citizenX += 3
+            for i := subsistenceFarmers; i < cityScreen.City.Farmers; i++ {
+                posX := citizenX
+
+                extraFarmer := i
+
+                workerElements = append(workerElements, &uilib.UIElement{
+                    Rect: util.ImageRect(posX, int(workerY), farmer),
+                    Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+                        var options ebiten.DrawImageOptions
+                        options.GeoM.Translate(float64(posX), workerY)
+                        screen.DrawImage(farmer, &options)
+                    },
+                    LeftClick: func(element *uilib.UIElement) {
+                        cityScreen.City.Farmers = extraFarmer
+                        cityScreen.City.Workers = cityScreen.City.Citizens() - cityScreen.City.Rebels - cityScreen.City.Farmers
+                        setupWorkers()
+                    },
+                })
+
+                citizenX += farmer.Bounds().Dx()
+            }
+
+            worker, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", getRaceWorkerIndex(cityScreen.City.Race), 0)
+            if err == nil {
+                for i := 0; i < cityScreen.City.Workers; i++ {
+                    posX := citizenX
+
+                    workerNum := i
+                    workerElements = append(workerElements, &uilib.UIElement{
+                        Rect: util.ImageRect(posX, int(workerY), worker),
+                        Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+                            var options ebiten.DrawImageOptions
+                            options.GeoM.Translate(float64(posX), workerY)
+                            screen.DrawImage(worker, &options)
+                        },
+                        LeftClick: func(element *uilib.UIElement) {
+                            cityScreen.City.Workers -= workerNum + 1
+                            cityScreen.City.Farmers += workerNum + 1
+                            setupWorkers()
+                        },
+                    })
+
+                    citizenX += worker.Bounds().Dx()
+                }
+            }
+
+            rebel, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", getRaceRebelIndex(cityScreen.City.Race), 0)
+            if err == nil {
+                for i := 0; i < cityScreen.City.Rebels; i++ {
+                    posX := citizenX
+
+                    workerElements = append(workerElements, &uilib.UIElement{
+                        Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+                            var options ebiten.DrawImageOptions
+                            options.GeoM.Translate(float64(posX), workerY-2)
+                            screen.DrawImage(rebel, &options)
+                        },
+                    })
+
+                    citizenX += rebel.Bounds().Dx()
+                }
+            }
+
+            ui.AddElements(workerElements)
+        }
+    } else {
+        setupWorkers = func(){
+        }
+    }
+
     ui.SetElementsFromArray(elements)
+    setupWorkers()
 
     return ui
 }
@@ -678,6 +783,28 @@ func getRaceWorkerIndex(race data.Race) int {
     return -1
 }
 
+func getRaceRebelIndex(race data.Race) int {
+    switch race {
+        case data.RaceNone: return -1
+        case data.RaceBarbarian: return 74
+        case data.RaceBeastmen: return 75
+        case data.RaceDarkElf: return 76
+        case data.RaceDraconian: return 77
+        case data.RaceDwarf: return 78
+        case data.RaceGnoll: return 79
+        case data.RaceHalfling: return 80
+        case data.RaceHighElf: return 81
+        case data.RaceHighMen: return 82
+        case data.RaceKlackon: return 83
+        case data.RaceLizard: return 84
+        case data.RaceNomad: return 85
+        case data.RaceOrc: return 86
+        case data.RaceTroll: return 87
+    }
+
+    return -1
+}
+
 func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *ebiten.Image, geom ebiten.GeoM, counter uint64)) {
     animationCounter := cityScreen.Counter / 8
 
@@ -773,17 +900,17 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
         } else if n == 0 {
             return "0"
         } else {
-            return fmt.Sprintf("-%v", n)
+            return fmt.Sprintf("%v", n)
         }
     }
 
-    cityScreen.DescriptionFont.PrintRight(screen, 210, 19, 1, ebiten.ColorScale{}, fmt.Sprintf("Population: %v (%v)", cityScreen.City.Population, deltaNumber(80)))
+    cityScreen.DescriptionFont.PrintRight(screen, 210, 19, 1, ebiten.ColorScale{}, fmt.Sprintf("Population: %v (%v)", cityScreen.City.Population, deltaNumber(cityScreen.City.PopulationGrowthRate())))
 
     smallFood, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", 40, 0)
     if err == nil {
         var options ebiten.DrawImageOptions
         options.GeoM.Translate(6, 52)
-        for i := 0; i < cityScreen.City.FoodProductionRate; i++ {
+        for i := 0; i < cityScreen.City.FoodProductionRate(); i++ {
             screen.DrawImage(smallFood, &options)
             options.GeoM.Translate(float64(smallFood.Bounds().Dx() + 1), 0)
         }
@@ -795,7 +922,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
     if err == nil {
         var options ebiten.DrawImageOptions
         options.GeoM.Translate(6, 60)
-        for i := 0; i < cityScreen.City.WorkProductionRate; i++ {
+        for i := 0; i < int(cityScreen.City.WorkProductionRate()); i++ {
             screen.DrawImage(smallWork, &options)
             options.GeoM.Translate(float64(smallWork.Bounds().Dx() + 1), 0)
         }
@@ -807,7 +934,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
     if err == nil {
         var options ebiten.DrawImageOptions
         options.GeoM.Translate(6, 68)
-        for i := 0; i < cityScreen.City.MoneyProductionRate; i++ {
+        for i := 0; i < cityScreen.City.MoneyProductionRate(); i++ {
             screen.DrawImage(smallCoin, &options)
             options.GeoM.Translate(float64(smallCoin.Bounds().Dx() + 1), 0)
         }
@@ -825,41 +952,6 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
         }
     }
     // big magic is 91
-
-    citizenX := 6
-
-    requiredFarmers := cityScreen.City.ComputeSubsistenceFarmers()
-
-    // FIXME: add gap between required farmers and extra workers
-    farmer, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", getRaceFarmerIndex(cityScreen.City.Race), 0)
-    if err == nil {
-        i := 0
-        for i = 0; i < requiredFarmers && i < cityScreen.City.Farmers; i++ {
-            var options ebiten.DrawImageOptions
-            options.GeoM.Translate(float64(citizenX), 27)
-            screen.DrawImage(farmer, &options)
-            citizenX += farmer.Bounds().Dx()
-        }
-
-        citizenX += 3
-
-        for ; i < cityScreen.City.Farmers; i++ {
-            var options ebiten.DrawImageOptions
-            options.GeoM.Translate(float64(citizenX), 27)
-            screen.DrawImage(farmer, &options)
-            citizenX += farmer.Bounds().Dx()
-        }
-    }
-
-    worker, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", getRaceWorkerIndex(cityScreen.City.Race), 0)
-    if err == nil {
-        for i := 0; i < cityScreen.City.Workers; i++ {
-            var options ebiten.DrawImageOptions
-            options.GeoM.Translate(float64(citizenX), 27)
-            screen.DrawImage(worker, &options)
-            citizenX += worker.Bounds().Dx()
-        }
-    }
 
     showWork := false
     workRequired := 0
@@ -915,7 +1007,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
 
     if showWork {
         turn := ""
-        turns := float64(workRequired - cityScreen.City.Production) / float64(cityScreen.City.WorkProductionRate)
+        turns := (float64(workRequired) - float64(cityScreen.City.Production)) / float64(cityScreen.City.WorkProductionRate())
         if turns <= 0 {
             turn = "1 Turn"
         } else {
@@ -969,6 +1061,34 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
                 } else {
                     x += xSpacing
                 }
+            }
+        }
+    }
+
+    garrisonX := 216
+    garrisonY := 103
+
+    garrisonRow := 0
+
+    garrisonBackground, err := units.GetUnitBackgroundImage(cityScreen.City.Banner, &cityScreen.ImageCache)
+    if err == nil {
+        for _, unit := range cityScreen.City.Garrison {
+            pic, err := cityScreen.ImageCache.GetImage(unit.LbxFile, unit.Index, 0)
+            if err == nil {
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(garrisonX), float64(garrisonY))
+                screen.DrawImage(garrisonBackground, &options)
+                options.GeoM.Translate(1, 1)
+                // FIXME: if unit is out of moves then draw in grey scale
+                screen.DrawImage(pic, &options)
+            }
+
+            garrisonX += pic.Bounds().Dx() + 1
+            garrisonRow += 1
+            if garrisonRow >= 5 {
+                garrisonRow = 0
+                garrisonX = 216
+                garrisonY += pic.Bounds().Dy() + 1
             }
         }
     }
