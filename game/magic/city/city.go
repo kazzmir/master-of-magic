@@ -235,6 +235,8 @@ type City struct {
     Y int
     Buildings *set.Set[Building]
 
+    Garrison []units.Unit
+
     TaxRate fraction.Fraction
 
     // reset every turn, keeps track of whether the player sold a building
@@ -257,6 +259,25 @@ func MakeCity(name string, x int, y int, race data.Race, taxRate fraction.Fracti
     }
 
     return &city
+}
+
+func (city *City) AddGarrisonUnit(unit units.Unit){
+    city.Garrison = append(city.Garrison, unit)
+}
+
+func (city *City) RemoveGarrisonUnit(toRemove units.Unit){
+    var out []units.Unit
+
+    found := false
+    for _, unit := range city.Garrison {
+        if !found && unit.Equals(toRemove) {
+            found = true
+        } else {
+            out = append(out, unit)
+        }
+    }
+
+    city.Garrison = out
 }
 
 func (city *City) UpdateTaxRate(taxRate fraction.Fraction){
@@ -406,6 +427,13 @@ func (city *City) ComputeUnrest() int {
     // capital race vs town race modifier
     // unrest from spells
     // supression from units
+    garrisonSupression := float64(0)
+    for _, unit := range city.Garrison {
+        if unit.Race != data.RaceFantastic {
+            garrisonSupression += 1
+        }
+    }
+
     // pacification from buildings
 
     pacificationRetort := float64(1)
@@ -437,7 +465,7 @@ func (city *City) ComputeUnrest() int {
         pacification += float64(oraclePacification(city.Race))
     }
 
-    total := unrestPercent * float64(city.Citizens()) - pacification
+    total := unrestPercent * float64(city.Citizens()) - pacification - garrisonSupression / 2
 
     return int(math.Max(0, total))
 }

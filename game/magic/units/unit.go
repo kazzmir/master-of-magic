@@ -126,7 +126,10 @@ type Unit struct {
 
     // number of figures that are drawn in a single combat tile
     Count int
+
+    // cost in terms of production to build the unit
     ProductionCost int
+
     MeleeAttackPower int
     MovementSpeed int
     Defense int
