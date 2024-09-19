@@ -49,10 +49,13 @@ func NewEngine() (*Engine, error) {
     city.ProducingUnit = units.HighElfSpearmen
         // ProducingUnit: units.UnitNone,
 
-    city.AddGarrisonUnit(units.GreatDrake)
-    city.AddGarrisonUnit(units.GreatDrake)
+    for i := 0; i < 2; i++ {
+        unit := units.MakeOverworldUnitFromUnit(units.GreatDrake, city.X, city.Y, city.Plane, city.Banner)
+        city.AddGarrisonUnit(&unit)
+    }
     for i := 0; i < 4; i++ {
-        city.AddGarrisonUnit(units.FireElemental)
+        unit := units.MakeOverworldUnitFromUnit(units.FireElemental, city.X, city.Y, city.Plane, city.Banner)
+        city.AddGarrisonUnit(&unit)
     }
 
     // city.AddBuilding(citylib.BuildingWizardsGuild)

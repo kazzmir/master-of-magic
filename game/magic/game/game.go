@@ -711,7 +711,7 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                                         oldCity := player.FindCity(oldX, oldY)
                                         if oldCity != nil {
                                             for _, unit := range stack.Units() {
-                                                oldCity.RemoveGarrisonUnit(unit.Unit)
+                                                oldCity.RemoveGarrisonUnit(unit)
                                             }
                                         }
 
@@ -722,7 +722,7 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                                         newCity := player.FindCity(stack.X(), stack.Y())
                                         if newCity != nil {
                                             for _, unit := range stack.Units() {
-                                                newCity.AddGarrisonUnit(unit.Unit)
+                                                newCity.AddGarrisonUnit(unit)
                                             }
                                         }
 
@@ -935,7 +935,7 @@ func GetCityWallImage(size citylib.CitySize, cache *util.ImageCache) (*ebiten.Im
     return cache.GetImage("mapback.lbx", 21, index)
 }
 
-func (game *Game) MakeUnitContextMenu(ui *uilib.UI, unit *playerlib.Unit) []*uilib.UIElement {
+func (game *Game) MakeUnitContextMenu(ui *uilib.UI, unit *units.OverworldUnit) []*uilib.UIElement {
     fontLbx, err := game.Cache.GetLbxFile("fonts.lbx")
     if err != nil {
         log.Printf("Unable to read fonts.lbx: %v", err)
@@ -1347,7 +1347,7 @@ func (game *Game) ShowSpellBookCastUI(){
     }))
 }
 
-func (game *Game) CreateOutpost(settlers *playerlib.Unit, player *playerlib.Player) *citylib.City {
+func (game *Game) CreateOutpost(settlers *units.OverworldUnit, player *playerlib.Player) *citylib.City {
     newCity := citylib.MakeCity("New City", settlers.X, settlers.Y, settlers.Unit.Race, player.TaxRate)
     newCity.Plane = settlers.Plane
     newCity.Population = 1000
@@ -1683,7 +1683,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                         if settlers.Unit.HasAbility(units.AbilityCreateOutpost) {
                             city := game.CreateOutpost(settlers, player)
                             for _, unit := range player.SelectedStack.ActiveUnits() {
-                                city.AddGarrisonUnit(unit.Unit)
+                                city.AddGarrisonUnit(unit)
                             }
                             break
                         }
@@ -1794,8 +1794,8 @@ func (game *Game) DoNextTurn(){
                         }
                     case *citylib.CityEventNewUnit:
                         newUnit := event.(*citylib.CityEventNewUnit)
-                        player.AddUnit(playerlib.MakeUnitFromUnit(newUnit.Unit, city.X, city.Y, city.Plane, city.Banner))
-                        city.AddGarrisonUnit(newUnit.Unit)
+                        unit := player.AddUnit(units.MakeOverworldUnitFromUnit(newUnit.Unit, city.X, city.Y, city.Plane, city.Banner))
+                        city.AddGarrisonUnit(unit)
                 }
             }
         }

@@ -237,7 +237,7 @@ type City struct {
     Banner data.BannerType
     Buildings *set.Set[Building]
 
-    Garrison []units.Unit
+    Garrison []*units.OverworldUnit
 
     TaxRate fraction.Fraction
 
@@ -263,16 +263,16 @@ func MakeCity(name string, x int, y int, race data.Race, taxRate fraction.Fracti
     return &city
 }
 
-func (city *City) AddGarrisonUnit(unit units.Unit){
+func (city *City) AddGarrisonUnit(unit *units.OverworldUnit){
     city.Garrison = append(city.Garrison, unit)
 }
 
-func (city *City) RemoveGarrisonUnit(toRemove units.Unit){
-    var out []units.Unit
+func (city *City) RemoveGarrisonUnit(toRemove *units.OverworldUnit){
+    var out []*units.OverworldUnit
 
     found := false
     for _, unit := range city.Garrison {
-        if !found && unit.Equals(toRemove) {
+        if !found && unit == toRemove {
             found = true
         } else {
             out = append(out, unit)
@@ -431,7 +431,7 @@ func (city *City) ComputeUnrest() int {
     // supression from units
     garrisonSupression := float64(0)
     for _, unit := range city.Garrison {
-        if unit.Race != data.RaceFantastic {
+        if unit.Unit.Race != data.RaceFantastic {
             garrisonSupression += 1
         }
     }

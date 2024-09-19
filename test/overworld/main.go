@@ -10,7 +10,6 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/units"
-    playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     gamelib "github.com/kazzmir/master-of-magic/game/magic/game"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     "github.com/kazzmir/master-of-magic/game/magic/data"
@@ -75,7 +74,7 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(4, 5, 3)
 
-    drake := player.AddUnit(playerlib.Unit{
+    drake := player.AddUnit(units.OverworldUnit{
         Unit: units.GreatDrake,
         Plane: data.PlaneArcanus,
         Banner: wizard.Banner,
@@ -84,7 +83,7 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
     })
 
     for i := 0; i < 5; i++ {
-        fireElemental := player.AddUnit(playerlib.Unit{
+        fireElemental := player.AddUnit(units.OverworldUnit{
             Unit: units.FireElemental,
             Plane: data.PlaneArcanus,
             Banner: wizard.Banner,
@@ -104,7 +103,7 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
         Banner: data.BannerRed,
     })
 
-    enemy1.AddUnit(playerlib.Unit{
+    enemy1.AddUnit(units.OverworldUnit{
         Unit: units.Warlocks,
         Plane: data.PlaneArcanus,
         Banner: enemy1.Wizard.Banner,
@@ -112,7 +111,7 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
         Y: 6,
     })
 
-    enemy1.AddUnit(playerlib.Unit{
+    enemy1.AddUnit(units.OverworldUnit{
         Unit: units.HighMenBowmen,
         Plane: data.PlaneArcanus,
         Banner: enemy1.Wizard.Banner,
@@ -166,7 +165,7 @@ func createScenario2(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(4, 5, 3)
 
-    drake := player.AddUnit(playerlib.Unit{
+    drake := player.AddUnit(units.OverworldUnit{
         Unit: units.GreatDrake,
         Plane: data.PlaneArcanus,
         Banner: wizard.Banner,
@@ -232,7 +231,7 @@ func createScenario3(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 3)
 
-    player.AddUnit(playerlib.Unit{
+    player.AddUnit(units.OverworldUnit{
         Unit: units.HighMenBowmen,
         Plane: data.PlaneArcanus,
         Banner: wizard.Banner,
@@ -240,7 +239,7 @@ func createScenario3(cache *lbx.LbxCache) *gamelib.Game {
         Y: y,
     })
 
-    settlers := player.AddUnit(playerlib.Unit{
+    settlers := player.AddUnit(units.OverworldUnit{
         Unit: units.HighMenSettlers,
         Plane: data.PlaneArcanus,
         Banner: wizard.Banner,

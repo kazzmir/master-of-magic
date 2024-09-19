@@ -1070,18 +1070,23 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
 
     garrisonRow := 0
 
-    garrisonBackground, err := units.GetUnitBackgroundImage(cityScreen.City.Banner, &cityScreen.ImageCache)
-    if err == nil {
-        for _, unit := range cityScreen.City.Garrison {
-            pic, err := cityScreen.ImageCache.GetImage(unit.LbxFile, unit.Index, 0)
-            if err == nil {
-                var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(garrisonX), float64(garrisonY))
-                screen.DrawImage(garrisonBackground, &options)
-                options.GeoM.Translate(1, 1)
-                // FIXME: if unit is out of moves then draw in grey scale
-                screen.DrawImage(pic, &options)
+    for _, unit := range cityScreen.City.Garrison {
+        func (){
+            garrisonBackground, err := units.GetUnitBackgroundImage(unit.Banner, &cityScreen.ImageCache)
+            if err != nil {
+                return
             }
+            pic, err := cityScreen.ImageCache.GetImage(unit.Unit.LbxFile, unit.Unit.Index, 0)
+            if err != nil {
+                return
+            }
+
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(garrisonX), float64(garrisonY))
+            screen.DrawImage(garrisonBackground, &options)
+            options.GeoM.Translate(1, 1)
+            // FIXME: if unit is out of moves then draw in grey scale
+            screen.DrawImage(pic, &options)
 
             garrisonX += pic.Bounds().Dx() + 1
             garrisonRow += 1
@@ -1090,7 +1095,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
                 garrisonX = 216
                 garrisonY += pic.Bounds().Dy() + 1
             }
-        }
+        }()
     }
 
     // draw a few squares of the map
