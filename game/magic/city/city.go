@@ -1,6 +1,7 @@
 package city
 
 import (
+    _ "log"
     "math"
 
     "github.com/kazzmir/master-of-magic/lib/set"
@@ -640,7 +641,7 @@ func (city *City) DoNextTurn() []CityEvent {
     }
 
     if math.Abs(float64(city.Population - oldPopulation)) >= 1000 {
-        cityEvents = append(cityEvents, CityEventPopulationGrowth{Size: (city.Population - oldPopulation)/1000})
+        cityEvents = append(cityEvents, &CityEventPopulationGrowth{Size: (city.Population - oldPopulation)/1000})
     }
 
     if city.ProducingBuilding.ProductionCost() != 0 || !city.ProducingUnit.Equals(units.UnitNone) {
@@ -651,9 +652,10 @@ func (city *City) DoNextTurn() []CityEvent {
                 city.Buildings.Insert(city.ProducingBuilding)
                 city.Production = 0
                 city.ProducingBuilding = BuildingTradeGoods
-            } else if !city.ProducingUnit.Equals(units.UnitNone) && city.Production >= float32(city.ProducingUnit.ProductionCost) {
-                cityEvents = append(cityEvents, CityEventNewUnit{Unit: city.ProducingUnit})
             }
+        } else if !city.ProducingUnit.Equals(units.UnitNone) && city.Production >= float32(city.ProducingUnit.ProductionCost) {
+            cityEvents = append(cityEvents, &CityEventNewUnit{Unit: city.ProducingUnit})
+            city.Production = 0
         }
     }
 

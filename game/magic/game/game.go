@@ -1782,7 +1782,22 @@ func (game *Game) DoNextTurn(){
         player := game.Players[0]
 
         for _, city := range player.Cities {
-            city.DoNextTurn()
+            cityEvents := city.DoNextTurn()
+            for _, event := range cityEvents {
+                switch event.(type) {
+                    case *citylib.CityEventPopulationGrowth:
+                        growth := event.(*citylib.CityEventPopulationGrowth)
+                        if growth.Size > 0 {
+                            log.Printf("City grew by %v to %v", growth.Size, city.Citizens())
+                        } else {
+                            log.Printf("City shrunk by %v to %v", -growth.Size, city.Citizens())
+                        }
+                    case *citylib.CityEventNewUnit:
+                        newUnit := event.(*citylib.CityEventNewUnit)
+                        player.AddUnit(playerlib.MakeUnitFromUnit(newUnit.Unit, city.X, city.Y, city.Plane, city.Banner))
+                        city.AddGarrisonUnit(newUnit.Unit)
+                }
+            }
         }
 
         for _, stack := range player.Stacks {

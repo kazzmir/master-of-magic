@@ -22,6 +22,18 @@ type Unit struct {
     Id uint64
 }
 
+func MakeUnitFromUnit(unit units.Unit, x int, y int, plane data.Plane, banner data.BannerType) Unit {
+    return Unit{
+        Unit: unit,
+        Banner: banner,
+        Plane: plane,
+        MovesLeft: fraction.FromInt(unit.MovementSpeed),
+        Patrol: false,
+        X: x,
+        Y: y,
+    }
+}
+
 const MovementLimit = 10
 
 func (unit *Unit) ResetMoves(){
