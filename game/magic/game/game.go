@@ -1766,7 +1766,7 @@ func (game *Game) DoNextTurn(){
         player := game.Players[0]
 
         for _, city := range player.Cities {
-            cityEvents := city.DoNextTurn()
+            cityEvents := city.DoNextTurn(player.GetUnits(city.X, city.Y))
             for _, event := range cityEvents {
                 switch event.(type) {
                     case *citylib.CityEventPopulationGrowth:

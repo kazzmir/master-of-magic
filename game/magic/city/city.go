@@ -299,8 +299,16 @@ func (city *City) NonRebels() int {
 }
 
 func (city *City) ResetCitizens(garrison []*units.OverworldUnit) {
-    city.Farmers = city.ComputeSubsistenceFarmers()
-    city.Workers = city.Citizens() - city.Rebels - city.Farmers
+    // try to leave farmers alone, but adjust them if necessary
+    minimumFarmers := city.ComputeSubsistenceFarmers()
+    if city.Farmers < minimumFarmers {
+        city.Farmers = minimumFarmers
+    }
+    if city.Farmers > city.Citizens() {
+        city.Farmers = city.Citizens()
+    }
+    city.Workers = city.Citizens() - city.Farmers
+    city.Rebels = 0
     city.UpdateUnrest(garrison)
 }
 
@@ -608,7 +616,7 @@ func (city *City) WorkProductionRate() float32 {
 
 // do all the stuff needed per turn
 // increase population, add production, add food/money, etc
-func (city *City) DoNextTurn() []CityEvent {
+func (city *City) DoNextTurn(garrison []*units.OverworldUnit) []CityEvent {
     var cityEvents []CityEvent
 
     city.SoldBuilding = false
@@ -635,13 +643,21 @@ func (city *City) DoNextTurn() []CityEvent {
         } else if !city.ProducingUnit.Equals(units.UnitNone) && city.Production >= float32(city.ProducingUnit.ProductionCost) {
             cityEvents = append(cityEvents, &CityEventNewUnit{Unit: city.ProducingUnit})
             city.Production = 0
+
+            if city.ProducingUnit.IsSettlers() {
+                city.Population -= 1000
+            }
         }
     }
 
+    /*
     if city.Farmers < city.ComputeSubsistenceFarmers() {
         city.Farmers = city.ComputeSubsistenceFarmers()
         city.Workers = city.Citizens() - city.Rebels
     }
+    */
+
+    city.ResetCitizens(garrison)
 
     return cityEvents
 }

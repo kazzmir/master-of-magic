@@ -156,6 +156,10 @@ func (unit *Unit) HasAbility(ability Ability) bool {
     return false
 }
 
+func (unit *Unit) IsSettlers() bool {
+    return unit.HasAbility(AbilityCreateOutpost)
+}
+
 /* maximum health is the number of figures * the number of hit points per figure
  */
 func (unit *Unit) GetMaxHealth() int {
@@ -1376,6 +1380,13 @@ var HighElfSettlers Unit = Unit{
     Count: 1,
     Index: 100,
     Race: data.RaceHighElf,
+    ProductionCost: 90,
+    MovementSpeed: 1,
+    Resistance: 6,
+    MeleeAttackPower: 1,
+    HitPoints: 1,
+    Defense: 1,
+    Abilities: []Ability{AbilityCreateOutpost},
 }
 
 var Longbowmen Unit = Unit{
@@ -1459,6 +1470,7 @@ var HighMenSettlers Unit = Unit{
     Name: "Settlers",
     Index: 111,
     MovementSpeed: 1,
+    ProductionCost: 60,
     Abilities: []Ability{AbilityCreateOutpost},
     Race: data.RaceHighMen,
 }
