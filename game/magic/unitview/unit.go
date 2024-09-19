@@ -75,7 +75,7 @@ func RenderUnitInfoBuild(screen *ebiten.Image, imageCache *util.ImageCache, unit
         }
     }
 
-    cost := 90
+    cost := unit.ProductionCost
     smallFont.Print(screen, x, y + 27, 1, defaultOptions.ColorScale, fmt.Sprintf("Cost %v(%v)", cost, cost))
 }
 
