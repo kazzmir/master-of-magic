@@ -708,9 +708,23 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                                     if canMove {
                                         mergeStack := player.FindStack(newX, newY)
 
+                                        oldCity := player.FindCity(oldX, oldY)
+                                        if oldCity != nil {
+                                            for _, unit := range stack.Units() {
+                                                oldCity.RemoveGarrisonUnit(unit.Unit)
+                                            }
+                                        }
+
                                         stack.Move(dx, dy, terrainCost)
 
                                         game.showMovement(yield, oldX, oldY, stack)
+
+                                        newCity := player.FindCity(stack.X(), stack.Y())
+                                        if newCity != nil {
+                                            for _, unit := range stack.Units() {
+                                                newCity.AddGarrisonUnit(unit.Unit)
+                                            }
+                                        }
 
                                         player.LiftFog(stack.X(), stack.Y(), 2)
 
@@ -1352,7 +1366,7 @@ func (game *Game) ShowSpellBookCastUI(){
     }))
 }
 
-func (game *Game) CreateOutpost(settlers *playerlib.Unit, player *playerlib.Player){
+func (game *Game) CreateOutpost(settlers *playerlib.Unit, player *playerlib.Player) *citylib.City {
     newCity := citylib.MakeCity("New City", settlers.X, settlers.Y, settlers.Unit.Race, player.TaxRate)
     newCity.Plane = settlers.Plane
     newCity.Population = 1000
@@ -1360,14 +1374,16 @@ func (game *Game) CreateOutpost(settlers *playerlib.Unit, player *playerlib.Play
     player.RemoveUnit(settlers)
     player.SelectedStack = nil
     game.HudUI = game.MakeHudUI()
-    cityPtr := player.AddCity(newCity)
+    player.AddCity(newCity)
 
     stack := player.FindStack(newCity.X, newCity.Y)
 
     select {
-        case game.Events<- &GameEventNewOutpost{City: cityPtr, Stack: stack}:
+        case game.Events<- &GameEventNewOutpost{City: newCity, Stack: stack}:
         default:
     }
+
+    return newCity
 }
 
 func (game *Game) MakeHudUI() *uilib.UI {
@@ -1683,7 +1699,10 @@ func (game *Game) MakeHudUI() *uilib.UI {
                     for _, settlers := range player.SelectedStack.ActiveUnits() {
                         // FIXME: check if this tile is valid to build an outpost on
                         if settlers.Unit.HasAbility(units.AbilityCreateOutpost) {
-                            game.CreateOutpost(settlers, player)
+                            city := game.CreateOutpost(settlers, player)
+                            for _, unit := range player.SelectedStack.ActiveUnits() {
+                                city.AddGarrisonUnit(unit.Unit)
+                            }
                             break
                         }
                     }

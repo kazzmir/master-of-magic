@@ -293,6 +293,16 @@ func (player *Player) UpdateTaxRate(rate fraction.Fraction){
     }
 }
 
+func (player *Player) FindCity(x int, y int) *citylib.City {
+    for _, city := range player.Cities {
+        if city.X == x && city.Y == y {
+            return city
+        }
+    }
+
+    return nil
+}
+
 func (player *Player) GetFog(plane data.Plane) [][]bool {
     if plane == data.PlaneArcanus {
         return player.ArcanusFog
