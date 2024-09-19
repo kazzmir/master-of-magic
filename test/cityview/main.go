@@ -52,10 +52,12 @@ func NewEngine() (*Engine, error) {
     var garrison []*units.OverworldUnit
     for i := 0; i < 2; i++ {
         unit := units.MakeOverworldUnitFromUnit(units.GreatDrake, city.X, city.Y, city.Plane, city.Banner)
+        player.AddUnit(unit)
         garrison = append(garrison, &unit)
     }
     for i := 0; i < 4; i++ {
         unit := units.MakeOverworldUnitFromUnit(units.FireElemental, city.X, city.Y, city.Plane, city.Banner)
+        player.AddUnit(unit)
         garrison = append(garrison, &unit)
     }
 
