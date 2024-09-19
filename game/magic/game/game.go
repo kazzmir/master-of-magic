@@ -711,7 +711,7 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                                         oldCity := player.FindCity(oldX, oldY)
                                         if oldCity != nil {
                                             for _, unit := range stack.Units() {
-                                                oldCity.RemoveGarrisonUnit(unit.Unit)
+                                                oldCity.RemoveGarrisonUnit(unit)
                                             }
                                         }
 
@@ -722,7 +722,7 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                                         newCity := player.FindCity(stack.X(), stack.Y())
                                         if newCity != nil {
                                             for _, unit := range stack.Units() {
-                                                newCity.AddGarrisonUnit(unit.Unit)
+                                                newCity.AddGarrisonUnit(unit)
                                             }
                                         }
 
@@ -1683,7 +1683,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                         if settlers.Unit.HasAbility(units.AbilityCreateOutpost) {
                             city := game.CreateOutpost(settlers, player)
                             for _, unit := range player.SelectedStack.ActiveUnits() {
-                                city.AddGarrisonUnit(unit.Unit)
+                                city.AddGarrisonUnit(unit)
                             }
                             break
                         }
@@ -1794,8 +1794,8 @@ func (game *Game) DoNextTurn(){
                         }
                     case *citylib.CityEventNewUnit:
                         newUnit := event.(*citylib.CityEventNewUnit)
-                        player.AddUnit(units.MakeOverworldUnitFromUnit(newUnit.Unit, city.X, city.Y, city.Plane, city.Banner))
-                        city.AddGarrisonUnit(newUnit.Unit)
+                        unit := player.AddUnit(units.MakeOverworldUnitFromUnit(newUnit.Unit, city.X, city.Y, city.Plane, city.Banner))
+                        city.AddGarrisonUnit(unit)
                 }
             }
         }
