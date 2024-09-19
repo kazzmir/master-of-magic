@@ -13,7 +13,6 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/mainview"
-    playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     gamelib "github.com/kazzmir/master-of-magic/game/magic/game"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
 
@@ -132,7 +131,7 @@ func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup
 
     player.AddCity(introCity)
 
-    player.AddUnit(playerlib.OverworldUnit{
+    player.AddUnit(units.OverworldUnit{
         Unit: units.GreatDrake,
         Plane: data.PlaneArcanus,
         Banner: wizard.Banner,
