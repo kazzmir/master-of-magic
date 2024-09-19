@@ -1065,6 +1065,27 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
         }
     }
 
+    garrisonX := 216
+    garrisonY := 103
+
+    garrisonRow := 0
+    for _, unit := range cityScreen.City.Garrison {
+        pic, err := cityScreen.ImageCache.GetImage(unit.LbxFile, unit.Index, 0)
+        if err == nil {
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(garrisonX), float64(garrisonY))
+            screen.DrawImage(pic, &options)
+        }
+
+        garrisonX += pic.Bounds().Dx() + 1
+        garrisonRow += 1
+        if garrisonRow >= 5 {
+            garrisonRow = 0
+            garrisonX = 216
+            garrisonY += pic.Bounds().Dy() + 1
+        }
+    }
+
     // draw a few squares of the map
     mapX := 215
     mapY := 4

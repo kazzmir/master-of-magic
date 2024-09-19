@@ -5,7 +5,7 @@ import (
     // "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
-    "github.com/kazzmir/master-of-magic/lib/set"
+    "github.com/kazzmir/master-of-magic/lib/fraction"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     "github.com/kazzmir/master-of-magic/game/magic/cityview"
     "github.com/kazzmir/master-of-magic/game/magic/data"
@@ -36,23 +36,22 @@ func NewEngine() (*Engine, error) {
         },
     }
 
-    city := citylib.City{
-        Population: 6000,
-        Farmers: 4,
-        Workers: 2,
-        Rebels: 1,
-        Name: "Boston",
-        Wall: false,
-        Race: data.RaceHighElf,
-        MagicProductionRate: 3,
-        Production: 18,
-        ProducingBuilding: citylib.BuildingNone,
-        // ProducingBuilding: citylib.BuildingBarracks,
-        ProducingUnit: units.HighElfSpearmen,
+    city := citylib.MakeCity("Boston", 3, 8, data.RaceHighElf, fraction.Make(1, 1))
+    city.Population = 6000
+    city.Farmers = 4
+    city.Workers = 2
+    city.Wall = false
+    city.MagicProductionRate = 3
+    city.Production = 18
+    city.ProducingBuilding = citylib.BuildingNone
+    // ProducingBuilding: citylib.BuildingBarracks,
+    city.ProducingUnit = units.HighElfSpearmen
         // ProducingUnit: units.UnitNone,
-        X: 3,
-        Y: 8,
-        Buildings: set.MakeSet[citylib.Building](),
+
+    city.AddGarrisonUnit(units.GreatDrake)
+    city.AddGarrisonUnit(units.GreatDrake)
+    for i := 0; i < 4; i++ {
+        city.AddGarrisonUnit(units.FireElemental)
     }
 
     // city.AddBuilding(citylib.BuildingWizardsGuild)
@@ -61,7 +60,7 @@ func NewEngine() (*Engine, error) {
     city.AddBuilding(citylib.BuildingOracle)
     city.AddBuilding(citylib.BuildingFortress)
 
-    cityScreen := cityview.MakeCityScreen(cache, &city, &player)
+    cityScreen := cityview.MakeCityScreen(cache, city, &player)
 
     terrainLbx, err := cache.GetLbxFile("terrain.lbx")
     if err != nil {
@@ -135,7 +134,10 @@ func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, scre
 func main(){
     log.SetFlags(log.Ldate | log.Lshortfile | log.Lmicroseconds)
 
-    ebiten.SetWindowSize(data.ScreenWidth * 5, data.ScreenHeight * 5)
+    monitorWidth, _ := ebiten.Monitor().Size()
+    size := monitorWidth / 390
+
+    ebiten.SetWindowSize(data.ScreenWidth * size, data.ScreenHeight * size)
     ebiten.SetWindowTitle("city view")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 
