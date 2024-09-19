@@ -747,7 +747,7 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                                         stack.EnableMovers()
 
                                         if stack.OutOfMoves() {
-                                            game.DoNextUnit()
+                                            game.DoNextUnit(player)
                                         }
                                     }
                                 }
@@ -1474,7 +1474,8 @@ func (game *Game) MakeHudUI() *uilib.UI {
     }))
 
     if len(game.Players) > 0 && game.Players[0].SelectedStack != nil {
-        stack := game.Players[0].SelectedStack
+        player := game.Players[0]
+        stack := player.SelectedStack
 
         unitX1 := 246
         unitY1 := 79
@@ -1559,9 +1560,9 @@ func (game *Game) MakeHudUI() *uilib.UI {
                     if player.SelectedStack != nil {
                         player.SelectedStack.ExhaustMoves()
                     }
-                }
 
-                game.DoNextUnit()
+                    game.DoNextUnit(player)
+                }
             },
         })
 
@@ -1605,7 +1606,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
                 player.SelectedStack.EnableMovers()
 
-                game.DoNextUnit()
+                game.DoNextUnit(player)
             },
         })
 
@@ -1639,7 +1640,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
             },
             LeftClickRelease: func(this *uilib.UIElement){
                 waitIndex = 0
-                game.DoNextUnit()
+                game.DoNextUnit(player)
             },
         })
 
@@ -1745,35 +1746,31 @@ func (game *Game) MakeHudUI() *uilib.UI {
     return ui
 }
 
-func (game *Game) DoNextUnit(){
-    if len(game.Players) > 0 {
-
-        player := game.Players[0]
-
-        startingIndex := 0
-        if player.SelectedStack != nil {
-            for i, stack := range player.Stacks {
-                if stack == player.SelectedStack {
-                    startingIndex = i + 1
-                    break
-                }
-            }
-        }
-
-        player.SelectedStack = nil
-
-        for i := 0; i < len(player.Stacks); i++ {
-            index := (i + startingIndex) % len(player.Stacks)
-            stack := player.Stacks[index]
-            if stack.HasMoves() && len(stack.ActiveUnits()) > 0 {
-                player.SelectedStack = stack
-                stack.EnableMovers()
-                game.CenterCamera(stack.X(), stack.Y())
+func (game *Game) DoNextUnit(player *playerlib.Player){
+    startingIndex := 0
+    if player.SelectedStack != nil {
+        for i, stack := range player.Stacks {
+            if stack == player.SelectedStack {
+                startingIndex = i + 1
                 break
             }
         }
     }
 
+    player.SelectedStack = nil
+
+    for i := 0; i < len(player.Stacks); i++ {
+        index := (i + startingIndex) % len(player.Stacks)
+        stack := player.Stacks[index]
+        if stack.HasMoves() && len(stack.ActiveUnits()) > 0 {
+            player.SelectedStack = stack
+            stack.EnableMovers()
+            game.CenterCamera(stack.X(), stack.Y())
+            break
+        }
+    }
+
+    // FIXME: only do this for human player
     game.HudUI = game.MakeHudUI()
 }
 
@@ -1806,7 +1803,7 @@ func (game *Game) DoNextTurn(){
         }
 
         game.CenterCamera(player.Cities[0].X, player.Cities[0].Y)
-        game.DoNextUnit()
+        game.DoNextUnit(player)
         game.HudUI = game.MakeHudUI()
     }
 
