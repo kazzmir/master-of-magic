@@ -935,7 +935,7 @@ func GetCityWallImage(size citylib.CitySize, cache *util.ImageCache) (*ebiten.Im
     return cache.GetImage("mapback.lbx", 21, index)
 }
 
-func (game *Game) MakeUnitContextMenu(ui *uilib.UI, unit *playerlib.Unit) []*uilib.UIElement {
+func (game *Game) MakeUnitContextMenu(ui *uilib.UI, unit *playerlib.OverworldUnit) []*uilib.UIElement {
     fontLbx, err := game.Cache.GetLbxFile("fonts.lbx")
     if err != nil {
         log.Printf("Unable to read fonts.lbx: %v", err)
@@ -1347,7 +1347,7 @@ func (game *Game) ShowSpellBookCastUI(){
     }))
 }
 
-func (game *Game) CreateOutpost(settlers *playerlib.Unit, player *playerlib.Player) *citylib.City {
+func (game *Game) CreateOutpost(settlers *playerlib.OverworldUnit, player *playerlib.Player) *citylib.City {
     newCity := citylib.MakeCity("New City", settlers.X, settlers.Y, settlers.Unit.Race, player.TaxRate)
     newCity.Plane = settlers.Plane
     newCity.Population = 1000

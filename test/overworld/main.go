@@ -75,7 +75,7 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(4, 5, 3)
 
-    drake := player.AddUnit(playerlib.Unit{
+    drake := player.AddUnit(playerlib.OverworldUnit{
         Unit: units.GreatDrake,
         Plane: data.PlaneArcanus,
         Banner: wizard.Banner,
@@ -84,7 +84,7 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
     })
 
     for i := 0; i < 5; i++ {
-        fireElemental := player.AddUnit(playerlib.Unit{
+        fireElemental := player.AddUnit(playerlib.OverworldUnit{
             Unit: units.FireElemental,
             Plane: data.PlaneArcanus,
             Banner: wizard.Banner,
@@ -104,7 +104,7 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
         Banner: data.BannerRed,
     })
 
-    enemy1.AddUnit(playerlib.Unit{
+    enemy1.AddUnit(playerlib.OverworldUnit{
         Unit: units.Warlocks,
         Plane: data.PlaneArcanus,
         Banner: enemy1.Wizard.Banner,
@@ -112,7 +112,7 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
         Y: 6,
     })
 
-    enemy1.AddUnit(playerlib.Unit{
+    enemy1.AddUnit(playerlib.OverworldUnit{
         Unit: units.HighMenBowmen,
         Plane: data.PlaneArcanus,
         Banner: enemy1.Wizard.Banner,
@@ -166,7 +166,7 @@ func createScenario2(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(4, 5, 3)
 
-    drake := player.AddUnit(playerlib.Unit{
+    drake := player.AddUnit(playerlib.OverworldUnit{
         Unit: units.GreatDrake,
         Plane: data.PlaneArcanus,
         Banner: wizard.Banner,
@@ -232,7 +232,7 @@ func createScenario3(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 3)
 
-    player.AddUnit(playerlib.Unit{
+    player.AddUnit(playerlib.OverworldUnit{
         Unit: units.HighMenBowmen,
         Plane: data.PlaneArcanus,
         Banner: wizard.Banner,
@@ -240,7 +240,7 @@ func createScenario3(cache *lbx.LbxCache) *gamelib.Game {
         Y: y,
     })
 
-    settlers := player.AddUnit(playerlib.Unit{
+    settlers := player.AddUnit(playerlib.OverworldUnit{
         Unit: units.HighMenSettlers,
         Plane: data.PlaneArcanus,
         Banner: wizard.Banner,

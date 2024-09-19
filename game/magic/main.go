@@ -132,7 +132,7 @@ func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup
 
     player.AddCity(introCity)
 
-    player.AddUnit(playerlib.Unit{
+    player.AddUnit(playerlib.OverworldUnit{
         Unit: units.GreatDrake,
         Plane: data.PlaneArcanus,
         Banner: wizard.Banner,

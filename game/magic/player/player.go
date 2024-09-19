@@ -11,7 +11,7 @@ import (
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
 )
 
-type Unit struct {
+type OverworldUnit struct {
     Unit units.Unit
     Banner data.BannerType
     Plane data.Plane
@@ -22,8 +22,8 @@ type Unit struct {
     Id uint64
 }
 
-func MakeUnitFromUnit(unit units.Unit, x int, y int, plane data.Plane, banner data.BannerType) Unit {
-    return Unit{
+func MakeUnitFromUnit(unit units.Unit, x int, y int, plane data.Plane, banner data.BannerType) OverworldUnit {
+    return OverworldUnit{
         Unit: unit,
         Banner: banner,
         Plane: plane,
@@ -36,11 +36,11 @@ func MakeUnitFromUnit(unit units.Unit, x int, y int, plane data.Plane, banner da
 
 const MovementLimit = 10
 
-func (unit *Unit) ResetMoves(){
+func (unit *OverworldUnit) ResetMoves(){
     unit.MovesLeft = fraction.FromInt(unit.Unit.MovementSpeed)
 }
 
-func (unit *Unit) Move(dx int, dy int, cost fraction.Fraction){
+func (unit *OverworldUnit) Move(dx int, dy int, cost fraction.Fraction){
     unit.X += dx
     unit.Y += dy
 
@@ -61,8 +61,8 @@ func (unit *Unit) Move(dx int, dy int, cost fraction.Fraction){
 }
 
 type UnitStack struct {
-    units []*Unit
-    active map[*Unit]bool
+    units []*OverworldUnit
+    active map[*OverworldUnit]bool
 
     // non-zero while animating movement on the overworld
     offsetX float64
@@ -73,10 +73,10 @@ func MakeUnitStack() *UnitStack {
     return MakeUnitStackFromUnits(nil)
 }
 
-func MakeUnitStackFromUnits(units []*Unit) *UnitStack {
+func MakeUnitStackFromUnits(units []*OverworldUnit) *UnitStack {
     stack := &UnitStack{
         units: units,
-        active: make(map[*Unit]bool),
+        active: make(map[*OverworldUnit]bool),
     }
 
     for _, unit := range units {
@@ -109,12 +109,12 @@ func (stack *UnitStack) IsEmpty() bool {
     return len(stack.units) == 0
 }
 
-func (stack *UnitStack) Units() []*Unit {
+func (stack *UnitStack) Units() []*OverworldUnit {
     return stack.units
 }
 
-func (stack *UnitStack) ActiveUnits() []*Unit {
-    var out []*Unit
+func (stack *UnitStack) ActiveUnits() []*OverworldUnit {
+    var out []*OverworldUnit
     for unit, active := range stack.active {
         if active {
             out = append(out, unit)
@@ -124,8 +124,8 @@ func (stack *UnitStack) ActiveUnits() []*Unit {
     return out
 }
 
-func (stack *UnitStack) InactiveUnits() []*Unit {
-    var inactive []*Unit
+func (stack *UnitStack) InactiveUnits() []*OverworldUnit {
+    var inactive []*OverworldUnit
     for unit, active := range stack.active {
         if !active {
             inactive = append(inactive, unit)
@@ -145,7 +145,7 @@ func (stack *UnitStack) AllFlyers() bool {
     return true
 }
 
-func (stack *UnitStack) ToggleActive(unit *Unit){
+func (stack *UnitStack) ToggleActive(unit *OverworldUnit){
     value, ok := stack.active[unit]
     if ok {
         // if unit is active then set to inactive
@@ -160,12 +160,12 @@ func (stack *UnitStack) ToggleActive(unit *Unit){
     }
 }
 
-func (stack *UnitStack) AddUnit(unit *Unit){
+func (stack *UnitStack) AddUnit(unit *OverworldUnit){
     stack.units = append(stack.units, unit)
     stack.active[unit] = true
 }
 
-func (stack *UnitStack) IsActive(unit *Unit) bool {
+func (stack *UnitStack) IsActive(unit *OverworldUnit) bool {
     val, ok := stack.active[unit]
     if !ok {
         return false
@@ -173,21 +173,21 @@ func (stack *UnitStack) IsActive(unit *Unit) bool {
     return val
 }
 
-func (stack *UnitStack) RemoveUnits(units []*Unit){
+func (stack *UnitStack) RemoveUnits(units []*OverworldUnit){
     for _, unit := range units {
         stack.RemoveUnit(unit)
     }
 }
 
-func (stack *UnitStack) RemoveUnit(unit *Unit){
-    stack.units = slices.DeleteFunc(stack.units, func(u *Unit) bool {
+func (stack *UnitStack) RemoveUnit(unit *OverworldUnit){
+    stack.units = slices.DeleteFunc(stack.units, func(u *OverworldUnit) bool {
         return u == unit
     })
 
     delete(stack.active, unit)
 }
 
-func (stack *UnitStack) ContainsUnit(unit *Unit) bool {
+func (stack *UnitStack) ContainsUnit(unit *OverworldUnit) bool {
     return slices.Contains(stack.units, unit)
 }
 
@@ -238,7 +238,7 @@ func (stack *UnitStack) HasMoves() bool {
     return !stack.OutOfMoves()
 }
 
-func (stack *UnitStack) Leader() *Unit {
+func (stack *UnitStack) Leader() *OverworldUnit {
     // return the first active unit
     for _, unit := range stack.units {
         if stack.active[unit] {
@@ -289,7 +289,7 @@ type Player struct {
 
     Wizard setup.WizardCustom
 
-    Units []*Unit
+    Units []*OverworldUnit
     Stacks []*UnitStack
     Cities []*citylib.City
 
@@ -347,7 +347,7 @@ func (player *Player) LiftFog(x int, y int, radius int){
 
 }
 
-func (player *Player) FindStackByUnit(unit *Unit) *UnitStack {
+func (player *Player) FindStackByUnit(unit *OverworldUnit) *UnitStack {
     for _, stack := range player.Stacks {
         if stack.ContainsUnit(unit) {
             return stack
@@ -381,8 +381,8 @@ func (player *Player) MergeStacks(stack1 *UnitStack, stack2 *UnitStack) *UnitSta
     return stack1
 }
 
-func (player *Player) RemoveUnit(unit *Unit) {
-    player.Units = slices.DeleteFunc(player.Units, func (u *Unit) bool {
+func (player *Player) RemoveUnit(unit *OverworldUnit) {
+    player.Units = slices.DeleteFunc(player.Units, func (u *OverworldUnit) bool {
         return u == unit
     })
 
@@ -407,7 +407,7 @@ func (player *Player) AddStack(stack *UnitStack){
     player.Stacks = append(player.Stacks, stack)
 }
 
-func (player *Player) AddUnit(unit Unit) *Unit {
+func (player *Player) AddUnit(unit OverworldUnit) *OverworldUnit {
     unit.Id = player.UnitId
     player.UnitId += 1
     unit_ptr := &unit
