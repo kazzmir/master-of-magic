@@ -11,7 +11,7 @@ func TestBasicCity(test *testing.T){
     city.Population = 6000
     city.Farmers = 6
     city.Workers = 0
-    city.ResetCitizens()
+    city.ResetCitizens(nil)
     if city.Name != "Test City" {
         test.Error("City name is not correct")
     }
@@ -30,18 +30,18 @@ func TestBasicCity(test *testing.T){
         test.Errorf("Subsistence farmers should have been 3 but was %v", city.ComputeSubsistenceFarmers())
     }
 
-    if city.ComputeUnrest() != 1 {
-        test.Errorf("Unrest should have been 1 but was %v", city.ComputeUnrest())
+    if city.ComputeUnrest(nil) != 1 {
+        test.Errorf("Unrest should have been 1 but was %v", city.ComputeUnrest(nil))
     }
 
     if city.Rebels != 1 {
         test.Errorf("Rebels should have been 1 but was %v", city.Rebels)
     }
 
-    city.UpdateTaxRate(fraction.Make(3, 1))
+    city.UpdateTaxRate(fraction.Make(3, 1), nil)
 
-    if city.ComputeUnrest() != 4 {
-        test.Errorf("Unrest should have been 4 but was %v", city.ComputeUnrest())
+    if city.ComputeUnrest(nil) != 4 {
+        test.Errorf("Unrest should have been 4 but was %v", city.ComputeUnrest(nil))
     }
 
     if city.Rebels != 3 {

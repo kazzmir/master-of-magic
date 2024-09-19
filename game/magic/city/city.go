@@ -237,8 +237,6 @@ type City struct {
     Banner data.BannerType
     Buildings *set.Set[Building]
 
-    Garrison []*units.OverworldUnit
-
     TaxRate fraction.Fraction
 
     // reset every turn, keeps track of whether the player sold a building
@@ -263,28 +261,9 @@ func MakeCity(name string, x int, y int, race data.Race, taxRate fraction.Fracti
     return &city
 }
 
-func (city *City) AddGarrisonUnit(unit *units.OverworldUnit){
-    city.Garrison = append(city.Garrison, unit)
-}
-
-func (city *City) RemoveGarrisonUnit(toRemove *units.OverworldUnit){
-    var out []*units.OverworldUnit
-
-    found := false
-    for _, unit := range city.Garrison {
-        if !found && unit == toRemove {
-            found = true
-        } else {
-            out = append(out, unit)
-        }
-    }
-
-    city.Garrison = out
-}
-
-func (city *City) UpdateTaxRate(taxRate fraction.Fraction){
+func (city *City) UpdateTaxRate(taxRate fraction.Fraction, garrison []*units.OverworldUnit){
     city.TaxRate = taxRate
-    city.UpdateUnrest()
+    city.UpdateUnrest(garrison)
 }
 
 func (city *City) AddBuilding(building Building){
@@ -319,10 +298,10 @@ func (city *City) NonRebels() int {
     return city.Citizens() - city.Rebels
 }
 
-func (city *City) ResetCitizens() {
+func (city *City) ResetCitizens(garrison []*units.OverworldUnit) {
     city.Farmers = city.ComputeSubsistenceFarmers()
     city.Workers = city.Citizens() - city.Rebels - city.Farmers
-    city.UpdateUnrest()
+    city.UpdateUnrest(garrison)
 }
 
 /* FIXME: take enchantments into account
@@ -345,8 +324,8 @@ func (city *City) ComputeSubsistenceFarmers() int {
     return maxFarmers
 }
 
-func (city *City) UpdateUnrest() {
-    rebels := city.ComputeUnrest()
+func (city *City) UpdateUnrest(garrison []*units.OverworldUnit) {
+    rebels := city.ComputeUnrest(garrison)
 
     if rebels > city.Rebels {
         for i := city.Rebels; i < rebels && city.Workers > 0; i++ {
@@ -406,7 +385,7 @@ func oraclePacification(race data.Race) int {
     }
 }
 
-func (city *City) ComputeUnrest() int {
+func (city *City) ComputeUnrest(garrison []*units.OverworldUnit) int {
     unrestPercent := float64(0)
 
     // unrest percent from taxes
@@ -430,7 +409,7 @@ func (city *City) ComputeUnrest() int {
     // unrest from spells
     // supression from units
     garrisonSupression := float64(0)
-    for _, unit := range city.Garrison {
+    for _, unit := range garrison {
         if unit.Unit.Race != data.RaceFantastic {
             garrisonSupression += 1
         }

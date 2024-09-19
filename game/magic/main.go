@@ -127,7 +127,7 @@ func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup
     introCity.ProducingBuilding = citylib.BuildingHousing
     introCity.ProducingUnit = units.UnitNone
 
-    introCity.ResetCitizens()
+    introCity.ResetCitizens(player.GetUnits(cityX, cityY))
 
     player.AddCity(introCity)
 
