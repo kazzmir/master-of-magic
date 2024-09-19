@@ -694,7 +694,12 @@ func (cityScreen *CityScreen) MakeUI() *uilib.UI {
                     options.GeoM.Translate(float64(posX), float64(posY))
                     screen.DrawImage(garrisonBackground, &options)
                     options.GeoM.Translate(1, 1)
-                    // FIXME: if unit is out of moves then draw in grey scale
+
+                    // draw in grey scale if the unit is on patrol
+                    if useUnit.Patrol {
+                        options.ColorM.ChangeHSV(0, 0, 1)
+                    }
+
                     screen.DrawImage(pic, &options)
                 },
             })

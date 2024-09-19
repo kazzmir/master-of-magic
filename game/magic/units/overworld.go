@@ -32,6 +32,10 @@ func (unit *OverworldUnit) ResetMoves(){
     unit.MovesLeft = fraction.FromInt(unit.Unit.MovementSpeed)
 }
 
+func (unit *OverworldUnit) HasMovesLeft() bool {
+    return unit.MovesLeft.GreaterThan(fraction.Zero())
+}
+
 func (unit *OverworldUnit) Move(dx int, dy int, cost fraction.Fraction){
     unit.X += dx
     unit.Y += dy
