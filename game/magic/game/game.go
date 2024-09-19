@@ -708,32 +708,22 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                                     if canMove {
                                         mergeStack := player.FindStack(newX, newY)
 
-                                        oldCity := player.FindCity(oldX, oldY)
-                                        if oldCity != nil {
-                                            for _, unit := range stack.Units() {
-                                                oldCity.RemoveGarrisonUnit(unit)
-                                            }
-                                        }
-
                                         stack.Move(dx, dy, terrainCost)
 
                                         game.showMovement(yield, oldX, oldY, stack)
 
-                                        newCity := player.FindCity(stack.X(), stack.Y())
-                                        if newCity != nil {
-                                            for _, unit := range stack.Units() {
-                                                newCity.AddGarrisonUnit(unit)
-                                            }
-                                        }
-
                                         player.LiftFog(stack.X(), stack.Y(), 2)
-
-                                        // game.State = GameStateUnitMoving
 
                                         if mergeStack != nil {
                                             stack = player.MergeStacks(mergeStack, stack)
                                             player.SelectedStack = stack
                                             game.HudUI = game.MakeHudUI()
+                                        }
+
+                                        // update unrest for new units in the city
+                                        newCity := player.FindCity(stack.X(), stack.Y())
+                                        if newCity != nil {
+                                            newCity.UpdateUnrest(stack.Units())
                                         }
 
                                         for _, otherPlayer := range game.Players[1:] {
@@ -1682,10 +1672,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                     for _, settlers := range player.SelectedStack.ActiveUnits() {
                         // FIXME: check if this tile is valid to build an outpost on
                         if settlers.Unit.HasAbility(units.AbilityCreateOutpost) {
-                            city := game.CreateOutpost(settlers, player)
-                            for _, unit := range player.SelectedStack.ActiveUnits() {
-                                city.AddGarrisonUnit(unit)
-                            }
+                            game.CreateOutpost(settlers, player)
                             break
                         }
                     }
@@ -1791,8 +1778,7 @@ func (game *Game) DoNextTurn(){
                         }
                     case *citylib.CityEventNewUnit:
                         newUnit := event.(*citylib.CityEventNewUnit)
-                        unit := player.AddUnit(units.MakeOverworldUnitFromUnit(newUnit.Unit, city.X, city.Y, city.Plane, city.Banner))
-                        city.AddGarrisonUnit(unit)
+                        player.AddUnit(units.MakeOverworldUnitFromUnit(newUnit.Unit, city.X, city.Y, city.Plane, city.Banner))
                 }
             }
         }

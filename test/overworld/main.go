@@ -63,7 +63,7 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
     city.Workers = 3
     city.Wall = false
 
-    city.ResetCitizens()
+    city.ResetCitizens(nil)
 
     player.AddCity(city)
 
@@ -220,7 +220,7 @@ func createScenario3(cache *lbx.LbxCache) *gamelib.Game {
     introCity.ProducingUnit = units.UnitNone
     introCity.Wall = false
 
-    introCity.ResetCitizens()
+    introCity.ResetCitizens(nil)
 
     player.AddCity(introCity)
 

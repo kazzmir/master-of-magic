@@ -29,8 +29,6 @@ func MakeUnitStack() *UnitStack {
 func MakeUnitStackFromUnits(units []*units.OverworldUnit) *UnitStack {
     stack := &UnitStack{
         units: units,
-        // ?? golang compiler bug? units.OverworldUnit is not a type
-        // active: make(map[*units.OverworldUnit]bool),
         active: make(ActiveMap),
     }
 
@@ -256,8 +254,17 @@ type Player struct {
 func (player *Player) UpdateTaxRate(rate fraction.Fraction){
     player.TaxRate = rate
     for _, city := range player.Cities {
-        city.UpdateTaxRate(rate)
+        city.UpdateTaxRate(rate, player.GetUnits(city.X, city.Y))
     }
+}
+
+func (player *Player) GetUnits(x int, y int) []*units.OverworldUnit {
+    stack := player.FindStack(x, y)
+    if stack != nil {
+        return stack.Units()
+    }
+
+    return nil
 }
 
 func (player *Player) FindCity(x int, y int) *citylib.City {

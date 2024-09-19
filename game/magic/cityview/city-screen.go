@@ -1070,7 +1070,14 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
 
     garrisonRow := 0
 
-    for _, unit := range cityScreen.City.Garrison {
+    var garrison []*units.OverworldUnit
+
+    cityStack := cityScreen.Player.FindStack(cityScreen.City.X, cityScreen.City.Y)
+    if cityStack != nil {
+        garrison = cityStack.Units()
+    }
+
+    for _, unit := range garrison {
         func (){
             garrisonBackground, err := units.GetUnitBackgroundImage(unit.Banner, &cityScreen.ImageCache)
             if err != nil {
