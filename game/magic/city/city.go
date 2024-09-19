@@ -292,6 +292,10 @@ func (city *City) Citizens() int {
     return city.Population / 1000
 }
 
+func (city *City) NonRebels() int {
+    return city.Citizens() - city.Rebels
+}
+
 func (city *City) ResetCitizens() {
     city.Farmers = city.ComputeSubsistenceFarmers()
     city.Workers = city.Citizens() - city.Rebels - city.Farmers
@@ -557,7 +561,7 @@ func (city *City) ComputeUpkeep() int {
 }
 
 func (city *City) MoneyProductionRate() int {
-    citizenIncome := float32(city.Citizens()) * float32(city.TaxRate.ToFloat())
+    citizenIncome := float32(city.NonRebels()) * float32(city.TaxRate.ToFloat())
 
     bonus := float32(0)
 
