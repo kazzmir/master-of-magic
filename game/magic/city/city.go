@@ -233,6 +233,7 @@ type City struct {
     Race data.Race
     X int
     Y int
+    Banner data.BannerType
     Buildings *set.Set[Building]
 
     Garrison []units.Unit

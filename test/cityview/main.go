@@ -44,6 +44,7 @@ func NewEngine() (*Engine, error) {
     city.MagicProductionRate = 3
     city.Production = 18
     city.ProducingBuilding = citylib.BuildingNone
+    city.Banner = data.BannerBlue
     // ProducingBuilding: citylib.BuildingBarracks,
     city.ProducingUnit = units.HighElfSpearmen
         // ProducingUnit: units.UnitNone,

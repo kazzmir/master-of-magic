@@ -895,25 +895,6 @@ func (game *Game) GetMainImage(index int) (*ebiten.Image, error) {
     return image, err
 }
 
-func GetUnitBackgroundImage(banner data.BannerType, imageCache *util.ImageCache) (*ebiten.Image, error) {
-    index := -1
-    switch banner {
-        case data.BannerBlue: index = 14
-        case data.BannerGreen: index = 15
-        case data.BannerPurple: index = 16
-        case data.BannerRed: index = 17
-        case data.BannerYellow: index = 18
-        case data.BannerBrown: index = 19
-    }
-
-    image, err := imageCache.GetImage("mapback.lbx", index, 0)
-    if err != nil {
-        log.Printf("Error: image in mapback.lbx is missing: %v", err)
-    }
-
-    return image, err
-}
-
 func GetUnitImage(unit units.Unit, imageCache *util.ImageCache) (*ebiten.Image, error) {
     image, err := imageCache.GetImage(unit.LbxFile, unit.Index, 0)
 
@@ -1370,6 +1351,7 @@ func (game *Game) CreateOutpost(settlers *playerlib.Unit, player *playerlib.Play
     newCity := citylib.MakeCity("New City", settlers.X, settlers.Y, settlers.Unit.Race, player.TaxRate)
     newCity.Plane = settlers.Plane
     newCity.Population = 1000
+    newCity.Banner = player.Wizard.Banner
 
     player.RemoveUnit(settlers)
     player.SelectedStack = nil
@@ -1522,7 +1504,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                     options.GeoM.Translate(1, 1)
 
                     if stack.IsActive(unit){
-                        unitBack, _ := GetUnitBackgroundImage(unit.Banner, &game.ImageCache)
+                        unitBack, _ := units.GetUnitBackgroundImage(unit.Banner, &game.ImageCache)
                         screen.DrawImage(unitBack, &options)
                     }
 
@@ -2088,7 +2070,7 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
             x, y := convertTileCoordinates(float64(stack.X()) + stack.OffsetX(), float64(stack.Y()) + stack.OffsetY())
             options.GeoM.Translate(x, y)
 
-            unitBack, err := GetUnitBackgroundImage(stack.Leader().Banner, overworld.ImageCache)
+            unitBack, err := units.GetUnitBackgroundImage(stack.Leader().Banner, overworld.ImageCache)
             if err == nil {
                 screen.DrawImage(unitBack, &options)
             }
