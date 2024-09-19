@@ -16,7 +16,7 @@ type OverworldUnit struct {
     Id uint64
 }
 
-func MakeUnitFromUnit(unit Unit, x int, y int, plane data.Plane, banner data.BannerType) OverworldUnit {
+func MakeOverworldUnitFromUnit(unit Unit, x int, y int, plane data.Plane, banner data.BannerType) OverworldUnit {
     return OverworldUnit{
         Unit: unit,
         Banner: banner,
