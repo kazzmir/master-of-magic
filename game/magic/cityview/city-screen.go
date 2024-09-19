@@ -15,6 +15,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/combat"
     "github.com/kazzmir/master-of-magic/game/magic/units"
+    "github.com/kazzmir/master-of-magic/game/magic/unitview"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
@@ -656,6 +657,58 @@ func (cityScreen *CityScreen) MakeUI() *uilib.UI {
         }
     }
 
+    garrisonX := 216
+    garrisonY := 103
+
+    garrisonRow := 0
+
+    var garrison []*units.OverworldUnit
+
+    cityStack := cityScreen.Player.FindStack(cityScreen.City.X, cityScreen.City.Y)
+    if cityStack != nil {
+        garrison = cityStack.Units()
+    }
+
+    for _, unit := range garrison {
+        func (){
+            garrisonBackground, err := units.GetUnitBackgroundImage(unit.Banner, &cityScreen.ImageCache)
+            if err != nil {
+                return
+            }
+            pic, err := cityScreen.ImageCache.GetImage(unit.Unit.LbxFile, unit.Unit.Index, 0)
+            if err != nil {
+                return
+            }
+
+            posX := garrisonX
+            posY := garrisonY
+            useUnit := unit
+
+            elements = append(elements, &uilib.UIElement{
+                Rect: util.ImageRect(posX, posY, garrisonBackground),
+                RightClick: func(element *uilib.UIElement) {
+                    ui.AddElements(unitview.MakeUnitContextMenu(cityScreen.LbxCache, ui, useUnit))
+                },
+                Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+                    var options ebiten.DrawImageOptions
+                    options.GeoM.Translate(float64(posX), float64(posY))
+                    screen.DrawImage(garrisonBackground, &options)
+                    options.GeoM.Translate(1, 1)
+                    // FIXME: if unit is out of moves then draw in grey scale
+                    screen.DrawImage(pic, &options)
+                },
+            })
+
+            garrisonX += pic.Bounds().Dx() + 1
+            garrisonRow += 1
+            if garrisonRow >= 5 {
+                garrisonRow = 0
+                garrisonX = 216
+                garrisonY += pic.Bounds().Dy() + 1
+            }
+        }()
+    }
+
     ui.SetElementsFromArray(elements)
     setupWorkers()
 
@@ -1063,46 +1116,6 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
                 }
             }
         }
-    }
-
-    garrisonX := 216
-    garrisonY := 103
-
-    garrisonRow := 0
-
-    var garrison []*units.OverworldUnit
-
-    cityStack := cityScreen.Player.FindStack(cityScreen.City.X, cityScreen.City.Y)
-    if cityStack != nil {
-        garrison = cityStack.Units()
-    }
-
-    for _, unit := range garrison {
-        func (){
-            garrisonBackground, err := units.GetUnitBackgroundImage(unit.Banner, &cityScreen.ImageCache)
-            if err != nil {
-                return
-            }
-            pic, err := cityScreen.ImageCache.GetImage(unit.Unit.LbxFile, unit.Unit.Index, 0)
-            if err != nil {
-                return
-            }
-
-            var options ebiten.DrawImageOptions
-            options.GeoM.Translate(float64(garrisonX), float64(garrisonY))
-            screen.DrawImage(garrisonBackground, &options)
-            options.GeoM.Translate(1, 1)
-            // FIXME: if unit is out of moves then draw in grey scale
-            screen.DrawImage(pic, &options)
-
-            garrisonX += pic.Bounds().Dx() + 1
-            garrisonRow += 1
-            if garrisonRow >= 5 {
-                garrisonRow = 0
-                garrisonX = 216
-                garrisonY += pic.Bounds().Dy() + 1
-            }
-        }()
     }
 
     // draw a few squares of the map
