@@ -19,12 +19,12 @@ func ReadBuildingInfo(cache *lbx.LbxCache) error {
 
     numBuildings, err := lbx.ReadUint16(reader)
     if err != nil {
-        fmt.Errorf("read error: %v", err)
+        return fmt.Errorf("read error: %v", err)
     }
 
     entrySize, err := lbx.ReadUint16(reader)
     if err != nil {
-        fmt.Errorf("read error: %v", err)
+        return fmt.Errorf("read error: %v", err)
     }
 
     for i := 0; i < int(numBuildings); i++ {
