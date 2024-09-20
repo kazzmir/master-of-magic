@@ -646,7 +646,7 @@ func makePaletteFromBanner(banner data.BannerType) color.Palette {
     return color.Palette{
         color.RGBA{R: 0, G: 0, B: 0, A: 0},
         color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        util.Lighten(topColor, 15), util.Lighten(topColor, 10), util.Lighten(topColor, 5),
+        util.Lighten(topColor, 25), util.Lighten(topColor, 18), util.Lighten(topColor, 12),
         topColor, topColor, topColor,
         topColor, topColor, topColor,
     }

@@ -1,11 +1,12 @@
 package util
 
 import (
-    "log"
+    // "log"
     "image"
     "image/color"
-    "github.com/kazzmir/master-of-magic/lib/colorconv"
+    // "github.com/kazzmir/master-of-magic/lib/colorconv"
     "github.com/hajimehoshi/ebiten/v2"
+    "github.com/hajimehoshi/ebiten/v2/colorm"
     "github.com/hajimehoshi/ebiten/v2/vector"
 )
 
@@ -115,6 +116,13 @@ func DrawDistortion(screen *ebiten.Image, page *ebiten.Image, source *ebiten.Ima
 }
 
 func Lighten(c color.RGBA, amount float64) color.Color {
+    var change colorm.ColorM
+    change.ChangeHSV(0, 1, 1 + amount/100)
+    return change.Apply(c)
+}
+
+/*
+func Lighten2(c color.RGBA, amount float64) color.Color {
     h, s, v := colorconv.ColorToHSV(c)
     v += amount/100
     if v > 1 {
@@ -127,3 +135,4 @@ func Lighten(c color.RGBA, amount float64) color.Color {
     }
     return out
 }
+*/
