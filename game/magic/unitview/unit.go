@@ -86,80 +86,64 @@ func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit
 
     descriptionFont.Print(screen, x, y, 1, defaultOptions.ColorScale, "Melee")
 
-    unitMelee := 3
-
-    weaponIcon, err := imageCache.GetImage("unitview.lbx", 13, 0)
-    if err == nil {
+    // show rows of icons. the second row is offset a bit to the right and down
+    showNIcons := func(icon *ebiten.Image, count int, x, y float64) {
         var options ebiten.DrawImageOptions
-        options = defaultOptions
+        options.GeoM.Translate(x, y)
         options.GeoM.Translate(width + 1, 0)
-        for i := 0; i < unitMelee; i++ {
-            screen.DrawImage(weaponIcon, &options)
-            options.GeoM.Translate(float64(weaponIcon.Bounds().Dx() + 1), 0)
+        saveGeoM := options.GeoM
+        for i := 0; i < count; i++ {
+            if i > 0 && i % 5 == 0 {
+                options.GeoM.Translate(3, 0)
+            }
+
+            if i > 0 && i % 15 == 0 {
+                options.GeoM = saveGeoM
+                options.GeoM.Translate(float64(3 * (i/15)), 2 * float64(i/15))
+            }
+
+            screen.DrawImage(icon, &options)
+            // FIXME: if a stat is given due to an ability/spell then render the icon in gold
+            options.GeoM.Translate(float64(icon.Bounds().Dx() + 1), 0)
         }
     }
 
-    unitRange := 3
+    weaponIcon, err := imageCache.GetImage("unitview.lbx", 13, 0)
+    if err == nil {
+        showNIcons(weaponIcon, unit.MeleeAttackPower, x, y)
+    }
 
     y += float64(descriptionFont.Height())
     descriptionFont.Print(screen, x, y, 1, defaultOptions.ColorScale, "Range")
 
+    // FIXME: use the rock icon for sling, or the magic icon fire magic damage
     rangeBow, err := imageCache.GetImage("unitview.lbx", 18, 0)
     if err == nil {
-        var options ebiten.DrawImageOptions
-        options = defaultOptions
-        options.GeoM.Translate(width + 1, float64(descriptionFont.Height()))
-        for i := 0; i < unitRange; i++ {
-            screen.DrawImage(rangeBow, &options)
-            options.GeoM.Translate(float64(rangeBow.Bounds().Dx() + 1), 0)
-        }
+        showNIcons(rangeBow, unit.RangedAttackPower, x, y)
     }
 
     y += float64(descriptionFont.Height())
     descriptionFont.Print(screen, x, float64(y), 1, defaultOptions.ColorScale, "Armor")
 
-    unitArmor := 3
     armorIcon, err := imageCache.GetImage("unitview.lbx", 22, 0)
     if err == nil {
-        var options ebiten.DrawImageOptions
-        options = defaultOptions
-        options.GeoM.Translate(width + 1, float64(descriptionFont.Height() * 2))
-        for i := 0; i < unitArmor; i++ {
-            screen.DrawImage(armorIcon, &options)
-            options.GeoM.Translate(float64(armorIcon.Bounds().Dx() + 1), 0)
-        }
+        showNIcons(armorIcon, unit.Defense, x, y)
     }
 
     y += float64(descriptionFont.Height())
     descriptionFont.Print(screen, x, float64(y), 1, defaultOptions.ColorScale, "Resist")
 
-    unitResist := 4
-
     resistIcon, err := imageCache.GetImage("unitview.lbx", 27, 0)
     if err == nil {
-        var options ebiten.DrawImageOptions
-        options = defaultOptions
-        options.GeoM.Translate(width + 1, float64(descriptionFont.Height() * 3))
-        for i := 0; i < unitResist; i++ {
-            screen.DrawImage(resistIcon, &options)
-            options.GeoM.Translate(float64(resistIcon.Bounds().Dx() + 1), 0)
-        }
+        showNIcons(resistIcon, unit.Resistance, x, y)
     }
 
     y += float64(descriptionFont.Height())
     descriptionFont.Print(screen, x, float64(y), 1, defaultOptions.ColorScale, "Hits")
 
-    unitHealth := 3
-
     healthIcon, err := imageCache.GetImage("unitview.lbx", 23, 0)
     if err == nil {
-        var options ebiten.DrawImageOptions
-        options = defaultOptions
-        options.GeoM.Translate(width + 1, float64(descriptionFont.Height() * 4))
-        for i := 0; i < unitHealth; i++ {
-            screen.DrawImage(healthIcon, &options)
-            options.GeoM.Translate(float64(healthIcon.Bounds().Dx() + 1), 0)
-        }
+        showNIcons(healthIcon, unit.HitPoints, x, y)
     }
 }
 
