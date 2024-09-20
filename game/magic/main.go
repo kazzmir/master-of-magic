@@ -15,6 +15,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/mainview"
     gamelib "github.com/kazzmir/master-of-magic/game/magic/game"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
+    buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
 
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/ebitenutil"
@@ -124,7 +125,7 @@ func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup
     introCity.Population = 1000
     introCity.Wall = false
     introCity.Plane = data.PlaneArcanus
-    introCity.ProducingBuilding = citylib.BuildingHousing
+    introCity.ProducingBuilding = buildinglib.BuildingHousing
     introCity.ProducingUnit = units.UnitNone
 
     introCity.ResetCitizens(player.GetUnits(cityX, cityY))

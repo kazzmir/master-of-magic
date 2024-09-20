@@ -5,7 +5,6 @@ import (
     "fmt"
     "image"
     "image/color"
-    "bytes"
     // "strings"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -13,6 +12,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
+    buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
     // "github.com/kazzmir/master-of-magic/game/magic/combat"
     "github.com/kazzmir/master-of-magic/game/magic/unitview"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
@@ -33,11 +33,11 @@ type BuildScreen struct {
     City *citylib.City
     UI *uilib.UI
     State BuildScreenState
-    ProducingBuilding citylib.Building
+    ProducingBuilding buildinglib.Building
     ProducingUnit units.Unit
 }
 
-func MakeBuildScreen(cache *lbx.LbxCache, city *citylib.City, producingBuilding citylib.Building, producingUnit units.Unit) *BuildScreen {
+func MakeBuildScreen(cache *lbx.LbxCache, city *citylib.City, producingBuilding buildinglib.Building, producingUnit units.Unit) *BuildScreen {
     imageCache := util.MakeImageCache(cache)
 
     var buildScreen *BuildScreen
@@ -74,153 +74,6 @@ func (buildScreen *BuildScreen) Ok() {
     buildScreen.State = BuildScreenOk
 }
 
-type BuildingDescriptions struct {
-    Descriptions []string
-}
-
-func (descriptions *BuildingDescriptions) Get(building citylib.Building) string {
-    switch building {
-        case citylib.BuildingTradeGoods: return descriptions.Descriptions[1]
-        case citylib.BuildingHousing: return descriptions.Descriptions[2]
-        case citylib.BuildingBarracks: return descriptions.Descriptions[3]
-        case citylib.BuildingArmory: return descriptions.Descriptions[4]
-        case citylib.BuildingFightersGuild: return descriptions.Descriptions[5]
-        case citylib.BuildingArmorersGuild: return descriptions.Descriptions[6]
-        case citylib.BuildingWarCollege: return descriptions.Descriptions[7]
-        case citylib.BuildingSmithy: return descriptions.Descriptions[8]
-        case citylib.BuildingStables: return descriptions.Descriptions[9]
-        case citylib.BuildingAnimistsGuild: return descriptions.Descriptions[10]
-        case citylib.BuildingFantasticStable: return descriptions.Descriptions[11]
-        case citylib.BuildingShipwrightsGuild: return descriptions.Descriptions[12]
-        case citylib.BuildingShipYard: return descriptions.Descriptions[13]
-        case citylib.BuildingMaritimeGuild: return descriptions.Descriptions[14]
-        case citylib.BuildingSawmill: return descriptions.Descriptions[15]
-        case citylib.BuildingLibrary: return descriptions.Descriptions[16]
-        case citylib.BuildingSagesGuild: return descriptions.Descriptions[17]
-        case citylib.BuildingOracle: return descriptions.Descriptions[18]
-        case citylib.BuildingAlchemistsGuild: return descriptions.Descriptions[19]
-        case citylib.BuildingUniversity: return descriptions.Descriptions[20]
-        case citylib.BuildingWizardsGuild: return descriptions.Descriptions[21]
-        case citylib.BuildingShrine: return descriptions.Descriptions[22]
-        case citylib.BuildingTemple: return descriptions.Descriptions[23]
-        case citylib.BuildingParthenon: return descriptions.Descriptions[24]
-        case citylib.BuildingCathedral: return descriptions.Descriptions[25]
-        case citylib.BuildingMarketplace: return descriptions.Descriptions[26]
-        case citylib.BuildingBank: return descriptions.Descriptions[27]
-        case citylib.BuildingMerchantsGuild: return descriptions.Descriptions[28]
-        case citylib.BuildingGranary: return descriptions.Descriptions[29]
-        case citylib.BuildingFarmersMarket: return descriptions.Descriptions[30]
-        case citylib.BuildingForestersGuild: return descriptions.Descriptions[31]
-        case citylib.BuildingBuildersHall: return descriptions.Descriptions[32]
-        case citylib.BuildingMechaniciansGuild: return descriptions.Descriptions[33]
-        case citylib.BuildingMinersGuild: return descriptions.Descriptions[34]
-        case citylib.BuildingCityWalls: return descriptions.Descriptions[35]
-    }
-
-    return ""
-}
-
-func readBuildDescriptions(buildDescriptionLbx *lbx.LbxFile) []string {
-    entries, err := buildDescriptionLbx.RawData(0)
-    if err != nil {
-        return nil
-    }
-
-    reader := bytes.NewReader(entries)
-
-    count, err := lbx.ReadUint16(reader)
-    if err != nil {
-        return nil
-    }
-
-    if count > 10000 {
-        return nil
-    }
-
-    size, err := lbx.ReadUint16(reader)
-    if err != nil {
-        return nil
-    }
-
-    if size > 10000 {
-        return nil
-    }
-
-    var descriptions []string
-
-    for i := 0; i < int(count); i++ {
-        data := make([]byte, size)
-        _, err := reader.Read(data)
-
-        if err != nil {
-            break
-        }
-
-        nullByte := bytes.IndexByte(data, 0)
-        if nullByte != -1 {
-            descriptions = append(descriptions, string(data[0:nullByte]))
-        } else {
-            descriptions = append(descriptions, string(data))
-        }
-    }
-
-    return descriptions
-}
-
-func MakeBuildDescriptions(cache *lbx.LbxCache) *BuildingDescriptions {
-    buildDescriptionLbx, err := cache.GetLbxFile("buildesc.lbx")
-    if err == nil {
-    } else {
-        log.Printf("Unable to read building descriptions")
-    }
-
-    descriptions := readBuildDescriptions(buildDescriptionLbx)
-
-    return &BuildingDescriptions{
-        Descriptions: descriptions,
-    }
-}
-
-// FIXME: these values come from buildat.lbx
-func GetBuildingMaintenance(building citylib.Building) int {
-    switch building {
-        case citylib.BuildingBarracks: return 0
-        case citylib.BuildingArmory: return 2
-        case citylib.BuildingFightersGuild: return 3
-        case citylib.BuildingArmorersGuild: return 4
-        case citylib.BuildingWarCollege: return 5
-        case citylib.BuildingSmithy: return 1
-        case citylib.BuildingStables: return 2
-        case citylib.BuildingAnimistsGuild: return 5
-        case citylib.BuildingFantasticStable: return 6
-        case citylib.BuildingShipwrightsGuild: return 1
-        case citylib.BuildingShipYard: return 2
-        case citylib.BuildingMaritimeGuild: return 4
-        case citylib.BuildingSawmill: return 2
-        case citylib.BuildingLibrary: return 1
-        case citylib.BuildingSagesGuild: return 2
-        case citylib.BuildingOracle: return 4
-        case citylib.BuildingAlchemistsGuild: return 3
-        case citylib.BuildingUniversity: return 3
-        case citylib.BuildingWizardsGuild: return 5 // FIXME: also requires 3 power
-        case citylib.BuildingShrine: return 1
-        case citylib.BuildingTemple: return 2
-        case citylib.BuildingParthenon: return 3
-        case citylib.BuildingCathedral: return 4
-        case citylib.BuildingMarketplace: return 1
-        case citylib.BuildingBank: return 3
-        case citylib.BuildingMerchantsGuild: return 5
-        case citylib.BuildingGranary: return 1
-        case citylib.BuildingFarmersMarket: return 2
-        case citylib.BuildingForestersGuild: return 2
-        case citylib.BuildingBuildersHall: return 1
-        case citylib.BuildingMechaniciansGuild: return 5
-        case citylib.BuildingMinersGuild: return 3
-        case citylib.BuildingCityWalls: return 2
-    }
-
-    return 0
-}
 
 func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib.City, buildScreen *BuildScreen, doCancel func(), doOk func()) *uilib.UI {
 
@@ -246,7 +99,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
         return nil
     }
 
-    buildDescriptions := MakeBuildDescriptions(cache)
+    buildDescriptions := buildinglib.MakeBuildDescriptions(cache)
     
     titleFont := font.MakeOptimizedFont(fonts[2])
 
@@ -321,7 +174,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
 
     var selectedElement *uilib.UIElement
 
-    updateMainElementBuilding := func(building citylib.Building){
+    updateMainElementBuilding := func(building buildinglib.Building){
         descriptionWrapped := descriptionFont.CreateWrappedText(155, 1, buildDescriptions.Get(building))
         ui.RemoveElement(mainElement)
         mainElement = &uilib.UIElement{
@@ -345,7 +198,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
 
                 descriptionFont.Print(screen, 85, 48, 1, ebiten.ColorScale{}, "Maintenance")
 
-                buildingMaintenance := GetBuildingMaintenance(building)
+                buildingMaintenance := buildinglib.GetBuildingMaintenance(building)
 
                 if buildingMaintenance == 0 {
                     mediumFont.Print(screen, 85 + descriptionFont.MeasureTextWidth("Maintenance", 1) + 4, 49, 1, ebiten.ColorScale{}, "0")
@@ -407,7 +260,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
 
     if err == nil {
         // FIXME: compute this based on what is in the city already
-        possibleBuildings := []citylib.Building{citylib.BuildingTradeGoods, citylib.BuildingHousing, citylib.BuildingBarracks, citylib.BuildingStables, citylib.BuildingWizardsGuild}
+        possibleBuildings := []buildinglib.Building{buildinglib.BuildingTradeGoods, buildinglib.BuildingHousing, buildinglib.BuildingBarracks, buildinglib.BuildingStables, buildinglib.BuildingWizardsGuild}
         for i, building := range possibleBuildings {
 
             x1 := 0
@@ -476,7 +329,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
                 },
                 LeftClick: func(this *uilib.UIElement) {
                     selectedElement = this
-                    buildScreen.ProducingBuilding = citylib.BuildingNone
+                    buildScreen.ProducingBuilding = buildinglib.BuildingNone
                     buildScreen.ProducingUnit = unit
                     updateMainElementUnit(unit)
                 },

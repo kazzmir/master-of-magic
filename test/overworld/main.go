@@ -12,6 +12,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/units"
     gamelib "github.com/kazzmir/master-of-magic/game/magic/game"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
+    buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     // "github.com/kazzmir/master-of-magic/game/magic/terrain"
 
@@ -56,7 +57,7 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
     city.Population = 6000
     city.Plane = data.PlaneArcanus
     city.Banner = wizard.Banner
-    city.ProducingBuilding = citylib.BuildingGranary
+    city.ProducingBuilding = buildinglib.BuildingGranary
     city.ProducingUnit = units.UnitNone
     city.Race = wizard.Race
     city.Farmers = 3
@@ -152,7 +153,7 @@ func createScenario2(cache *lbx.LbxCache) *gamelib.Game {
     introCity := citylib.MakeCity("Test City", 4, 5, data.RaceHighElf, player.TaxRate)
     introCity.Population = 6000
     introCity.Plane = data.PlaneArcanus
-    introCity.ProducingBuilding = citylib.BuildingHousing
+    introCity.ProducingBuilding = buildinglib.BuildingHousing
     introCity.ProducingUnit = units.UnitNone
     introCity.Wall = false
 
@@ -216,7 +217,7 @@ func createScenario3(cache *lbx.LbxCache) *gamelib.Game {
     introCity := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.TaxRate)
     introCity.Population = 6000
     introCity.Plane = data.PlaneArcanus
-    introCity.ProducingBuilding = citylib.BuildingHousing
+    introCity.ProducingBuilding = buildinglib.BuildingHousing
     introCity.ProducingUnit = units.UnitNone
     introCity.Wall = false
 
