@@ -123,7 +123,9 @@ func RenderUnitInfoBuild(screen *ebiten.Image, imageCache *util.ImageCache, unit
     renderUpkeep(screen, imageCache, unit, options)
 
     cost := unit.ProductionCost
-    smallFont.Print(screen, x, y + 27, 1, defaultOptions.ColorScale, fmt.Sprintf("Cost %v(%v)", cost, cost))
+    // FIXME: compute discounted cost based on the unit being built and the tiles surrounding the city
+    discountedCost := cost
+    smallFont.Print(screen, x, y + 27, 1, defaultOptions.ColorScale, fmt.Sprintf("Cost %v(%v)", discountedCost, cost))
 }
 
 func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit *units.Unit, descriptionFont *font.Font, smallFont *font.Font, defaultOptions ebiten.DrawImageOptions) {
