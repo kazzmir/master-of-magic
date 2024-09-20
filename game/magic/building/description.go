@@ -16,6 +16,7 @@ func MakeBuildDescriptions(cache *lbx.LbxCache) *BuildingDescriptions {
     if err == nil {
     } else {
         log.Printf("Unable to read building descriptions")
+        return nil
     }
 
     descriptions := readBuildDescriptions(buildDescriptionLbx)
