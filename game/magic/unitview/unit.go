@@ -32,32 +32,7 @@ func RenderCombatImage(screen *ebiten.Image, imageCache *util.ImageCache, unit *
     }
 }
 
-func RenderUnitInfoNormal(screen *ebiten.Image, imageCache *util.ImageCache, unit *units.Unit, descriptionFont *font.Font, smallFont *font.Font, defaultOptions ebiten.DrawImageOptions) {
-    x, y := defaultOptions.GeoM.Apply(0, 0)
-
-    descriptionFont.Print(screen, x, y, 1, defaultOptions.ColorScale, unit.Name)
-
-    y += 5
-    defaultOptions.GeoM.Translate(0, 5)
-
-    smallFont.Print(screen, x, y + 11, 1, defaultOptions.ColorScale, "Moves")
-
-    unitMoves := 2
-
-    smallBoot, err := imageCache.GetImage("unitview.lbx", 24, 0)
-    if err == nil {
-        var options ebiten.DrawImageOptions
-        options = defaultOptions
-        options.GeoM.Translate(smallFont.MeasureTextWidth("Upkeep ", 1), 9)
-
-        for i := 0; i < unitMoves; i++ {
-            screen.DrawImage(smallBoot, &options)
-            options.GeoM.Translate(float64(smallBoot.Bounds().Dx()), 0)
-        }
-    }
-
-    smallFont.Print(screen, x, y + 19, 1, defaultOptions.ColorScale, "Upkeep")
-
+func renderUpkeep(screen *ebiten.Image, imageCache *util.ImageCache, unit *units.Unit, options ebiten.DrawImageOptions) {
     unitCostMoney := unit.UpkeepGold
     unitCostFood := unit.UpkeepFood
     unitCostMana := unit.UpkeepMana
@@ -69,10 +44,6 @@ func RenderUnitInfoNormal(screen *ebiten.Image, imageCache *util.ImageCache, uni
     bigCoin, _ := imageCache.GetImage("backgrnd.lbx", 90, 0)
     bigFood, _ := imageCache.GetImage("backgrnd.lbx", 88, 0)
     bigMana, _ := imageCache.GetImage("backgrnd.lbx", 91, 0)
-
-    var options ebiten.DrawImageOptions
-    options = defaultOptions
-    options.GeoM.Translate(smallFont.MeasureTextWidth("Upkeep ", 1), 18)
 
     renderIcons := func(count int, small *ebiten.Image, big *ebiten.Image){
         for i := 0; i < count / 10; i++ {
@@ -91,15 +62,19 @@ func RenderUnitInfoNormal(screen *ebiten.Image, imageCache *util.ImageCache, uni
     renderIcons(unitCostMana, smallMana, bigMana)
 }
 
-func RenderUnitInfoBuild(screen *ebiten.Image, imageCache *util.ImageCache, unit *units.Unit, descriptionFont *font.Font, smallFont *font.Font, defaultOptions ebiten.DrawImageOptions) {
+func RenderUnitInfoNormal(screen *ebiten.Image, imageCache *util.ImageCache, unit *units.Unit, descriptionFont *font.Font, smallFont *font.Font, defaultOptions ebiten.DrawImageOptions) {
     x, y := defaultOptions.GeoM.Apply(0, 0)
 
     descriptionFont.Print(screen, x, y, 1, defaultOptions.ColorScale, unit.Name)
 
+    y += 5
+    defaultOptions.GeoM.Translate(0, 5)
+
     smallFont.Print(screen, x, y + 11, 1, defaultOptions.ColorScale, "Moves")
 
-    unitMoves := 2
+    unitMoves := unit.MovementSpeed
 
+    // FIXME: show wings if flying, or the water thing if can walk on water
     smallBoot, err := imageCache.GetImage("unitview.lbx", 24, 0)
     if err == nil {
         var options ebiten.DrawImageOptions
@@ -114,25 +89,38 @@ func RenderUnitInfoBuild(screen *ebiten.Image, imageCache *util.ImageCache, unit
 
     smallFont.Print(screen, x, y + 19, 1, defaultOptions.ColorScale, "Upkeep")
 
-    unitCostMoney := 2
-    unitCostFood := 2
+    options := defaultOptions
+    options.GeoM.Translate(smallFont.MeasureTextWidth("Upkeep ", 1), 18)
+    renderUpkeep(screen, imageCache, unit, options)
+}
 
-    smallCoin, err1 := imageCache.GetImage("backgrnd.lbx", 42, 0)
-    smallFood, err2 := imageCache.GetImage("backgrnd.lbx", 40, 0)
-    if err1 == nil && err2 == nil {
+func RenderUnitInfoBuild(screen *ebiten.Image, imageCache *util.ImageCache, unit *units.Unit, descriptionFont *font.Font, smallFont *font.Font, defaultOptions ebiten.DrawImageOptions) {
+    x, y := defaultOptions.GeoM.Apply(0, 0)
+
+    descriptionFont.Print(screen, x, y, 1, defaultOptions.ColorScale, unit.Name)
+
+    smallFont.Print(screen, x, y + 11, 1, defaultOptions.ColorScale, "Moves")
+
+    unitMoves := unit.MovementSpeed
+
+    // FIXME: show wings if flying or the water thing if water walking
+    smallBoot, err := imageCache.GetImage("unitview.lbx", 24, 0)
+    if err == nil {
         var options ebiten.DrawImageOptions
         options = defaultOptions
-        options.GeoM.Translate(smallFont.MeasureTextWidth("Upkeep ", 1), 18)
-        for i := 0; i < unitCostMoney; i++ {
-            screen.DrawImage(smallCoin, &options)
-            options.GeoM.Translate(float64(smallCoin.Bounds().Dx() + 1), 0)
-        }
+        options.GeoM.Translate(smallFont.MeasureTextWidth("Upkeep ", 1), 9)
 
-        for i := 0; i < unitCostFood; i++ {
-            screen.DrawImage(smallFood, &options)
-            options.GeoM.Translate(float64(smallFood.Bounds().Dx() + 1), 0)
+        for i := 0; i < unitMoves; i++ {
+            screen.DrawImage(smallBoot, &options)
+            options.GeoM.Translate(float64(smallBoot.Bounds().Dx()), 0)
         }
     }
+
+    smallFont.Print(screen, x, y + 19, 1, defaultOptions.ColorScale, "Upkeep")
+
+    options := defaultOptions
+    options.GeoM.Translate(smallFont.MeasureTextWidth("Upkeep ", 1), 18)
+    renderUpkeep(screen, imageCache, unit, options)
 
     cost := unit.ProductionCost
     smallFont.Print(screen, x, y + 27, 1, defaultOptions.ColorScale, fmt.Sprintf("Cost %v(%v)", cost, cost))

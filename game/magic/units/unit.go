@@ -1350,6 +1350,7 @@ var HighElfSpearmen Unit = Unit{
     MovementSpeed: 1,
     Race: data.RaceHighElf,
     HitPoints: 1,
+    UpkeepFood: 1,
 }
 
 var HighElfSwordsmen Unit = Unit{
