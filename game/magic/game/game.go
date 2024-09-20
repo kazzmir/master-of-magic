@@ -760,6 +760,7 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                             for _, city := range player.Cities {
                                 if city.X == tileX && city.Y == tileY {
                                     game.doCityScreen(yield, city, player)
+                                    game.HudUI = game.MakeHudUI()
                                 }
                             }
                         }

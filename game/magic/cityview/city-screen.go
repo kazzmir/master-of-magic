@@ -686,6 +686,10 @@ func (cityScreen *CityScreen) MakeUI() *uilib.UI {
 
             elements = append(elements, &uilib.UIElement{
                 Rect: util.ImageRect(posX, posY, garrisonBackground),
+                LeftClick: func(element *uilib.UIElement) {
+                    cityScreen.State = CityScreenStateDone
+                    cityScreen.Player.SelectedStack = cityScreen.Player.FindStackByUnit(useUnit)
+                },
                 RightClick: func(element *uilib.UIElement) {
                     ui.AddElements(unitview.MakeUnitContextMenu(cityScreen.LbxCache, ui, useUnit))
                 },
