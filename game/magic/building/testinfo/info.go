@@ -9,8 +9,12 @@ import (
 
 func main(){
     cache := lbx.AutoCache()
-    err := building.ReadBuildingInfo(cache)
+    infos, err := building.ReadBuildingInfo(cache)
     if err != nil {
         log.Printf("Error: %v", err)
+    } else {
+        for i, info := range infos {
+            log.Printf("Building %v: %+v", i, info)
+        }
     }
 }

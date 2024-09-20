@@ -19,6 +19,8 @@ const ForrestTerrain = 101
 const WaterTerrain = 110
 const MineralTerrain = 200
 
+type BuildingInfos []BuildingInfo
+
 type BuildingInfo struct {
     Name string
 
@@ -55,54 +57,65 @@ type BuildingInfo struct {
     Category int
 }
 
-func ReadBuildingInfo(cache *lbx.LbxCache) error {
+func (info BuildingInfos) GetBuildingByName(name string) *BuildingInfo {
+    for i := 0; i < len(info); i++ {
+        if info[i].Name == name {
+            return &info[i]
+        }
+    }
+    return nil
+}
+
+func ReadBuildingInfo(cache *lbx.LbxCache) (BuildingInfos, error) {
     data, err := cache.GetLbxFile("builddat.lbx")
     if err != nil {
-        return fmt.Errorf("Unable to read builddat.lbx: %v", err)
+        return nil, fmt.Errorf("Unable to read builddat.lbx: %v", err)
     }
 
     reader, err := data.GetReader(0)
     if err != nil {
-        return fmt.Errorf("unable to read entry 0 in builddat.lbx: %v", err)
+        return nil, fmt.Errorf("unable to read entry 0 in builddat.lbx: %v", err)
     }
 
     numBuildings, err := lbx.ReadUint16(reader)
     if err != nil {
-        return fmt.Errorf("read error: %v", err)
+        return nil, fmt.Errorf("read error: %v", err)
     }
 
     entrySize, err := lbx.ReadUint16(reader)
     if err != nil {
-        return fmt.Errorf("read error: %v", err)
+        return nil, fmt.Errorf("read error: %v", err)
     }
+
+    var out BuildingInfos
 
     for i := 0; i < int(numBuildings); i++ {
         buildingData := make([]byte, entrySize)
         n, err := reader.Read(buildingData)
         if err != nil || n != int(entrySize) {
-            return fmt.Errorf("unable to read building info %v: %v", i, err)
+            return nil, fmt.Errorf("unable to read building info %v: %v", i, err)
         }
 
         buildingReader := bytes.NewReader(buildingData)
         name := make([]byte, 20)
         _, err = buildingReader.Read(name)
         if err != nil {
-            return fmt.Errorf("unable to read building name %v: %v", i, err)
+            return nil, fmt.Errorf("unable to read building name %v: %v", i, err)
         }
 
         dependency1, err := lbx.ReadUint16(buildingReader)
         if err != nil {
-            return fmt.Errorf("unable to read building dependency1 %v: %v", i, err)
+            return nil, fmt.Errorf("unable to read building dependency1 %v: %v", i, err)
         }
 
         dependency2, err := lbx.ReadUint16(buildingReader)
         if err != nil {
-            return fmt.Errorf("unable to read building dependency2 %v: %v", i, err)
+            return nil, fmt.Errorf("unable to read building dependency2 %v: %v", i, err)
         }
 
         replace, err := lbx.ReadUint16(buildingReader)
         if err != nil {
-            return fmt.Errorf("unable to read building replace %v: %v", i, err)
+            return nil, fmt.Errorf("unable to read building replace %v: %v", i, err)
         }
 
         if replace == 65535 {
@@ -111,70 +124,70 @@ func ReadBuildingInfo(cache *lbx.LbxCache) error {
 
         grant20xp, err := lbx.ReadUint16(buildingReader)
         if err != nil {
-            return fmt.Errorf("unable to read building grant20xp %v: %v", i, err)
+            return nil, fmt.Errorf("unable to read building grant20xp %v: %v", i, err)
         }
 
         grant60xp, err := lbx.ReadUint16(buildingReader)
         if err != nil {
-            return fmt.Errorf("unable to read building grant60xp %v: %v", i, err)
+            return nil, fmt.Errorf("unable to read building grant60xp %v: %v", i, err)
         }
 
         alchemist, err := lbx.ReadUint16(buildingReader)
         if err != nil {
-            return fmt.Errorf("unable to read building alchemist %v: %v", i, err)
+            return nil, fmt.Errorf("unable to read building alchemist %v: %v", i, err)
         }
 
         upkeepGold, err := lbx.ReadUint16(buildingReader)
         if err != nil {
-            return fmt.Errorf("unable to read building upkeepGold %v: %v", i, err)
+            return nil, fmt.Errorf("unable to read building upkeepGold %v: %v", i, err)
         }
 
         populationGrowth, err := lbx.ReadUint16(buildingReader)
         if err != nil {
-            return fmt.Errorf("unable to read building populationGrowth %v: %v", i, err)
+            return nil, fmt.Errorf("unable to read building populationGrowth %v: %v", i, err)
         }
 
         unknown1, err := lbx.ReadUint16(buildingReader)
         if err != nil {
-            return fmt.Errorf("unable to read building unknown1 %v: %v", i, err)
+            return nil, fmt.Errorf("unable to read building unknown1 %v: %v", i, err)
         }
         _ = unknown1
 
         unknown2, err := lbx.ReadUint16(buildingReader)
         if err != nil {
-            return fmt.Errorf("unable to read building unknown2 %v: %v", i, err)
+            return nil, fmt.Errorf("unable to read building unknown2 %v: %v", i, err)
         }
         _ = unknown2
 
         religion, err := lbx.ReadUint16(buildingReader)
         if err != nil {
-            return fmt.Errorf("unable to read building religion %v: %v", i, err)
+            return nil, fmt.Errorf("unable to read building religion %v: %v", i, err)
         }
 
         research, err := lbx.ReadUint16(buildingReader)
         if err != nil {
-            return fmt.Errorf("unable to read building research %v: %v", i, err)
+            return nil, fmt.Errorf("unable to read building research %v: %v", i, err)
         }
 
         constructionCost, err := lbx.ReadUint16(buildingReader)
         if err != nil {
-            return fmt.Errorf("unable to read building constructionCost %v: %v", i, err)
+            return nil, fmt.Errorf("unable to read building constructionCost %v: %v", i, err)
         }
 
         unknown3, err := lbx.ReadUint16(buildingReader)
         if err != nil {
-            return fmt.Errorf("unable to read building unknown3 %v: %v", i, err)
+            return nil, fmt.Errorf("unable to read building unknown3 %v: %v", i, err)
         }
         _ = unknown3
 
         animation, err := lbx.ReadUint16(buildingReader)
         if err != nil {
-            return fmt.Errorf("unable to read building animation %v: %v", i, err)
+            return nil, fmt.Errorf("unable to read building animation %v: %v", i, err)
         }
 
         category, err := lbx.ReadUint16(buildingReader)
         if err != nil {
-            return fmt.Errorf("unable to read building category %v: %v", i, err)
+            return nil, fmt.Errorf("unable to read building category %v: %v", i, err)
         }
 
         terrainDependency := uint16(0)
@@ -201,8 +214,15 @@ func ReadBuildingInfo(cache *lbx.LbxCache) error {
             Category: int(category),
         }
 
-        fmt.Printf("Building %v: %+v\n", i, info)
+        // fmt.Printf("Building %v: %+v\n", i, info)
+        out = append(out, info)
     }
 
-    return nil
+    // builddat has research as 7, but its supposed to be 5
+    university := out.GetBuildingByName("University")
+    if university != nil {
+        university.Research = 5
+    }
+
+    return out, nil
 }
