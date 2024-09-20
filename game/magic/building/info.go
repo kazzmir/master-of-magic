@@ -21,11 +21,38 @@ const MineralTerrain = 200
 
 type BuildingInfo struct {
     Name string
+
+    // index of building that must exist first, or 0 if no dependency
     BuildingDependency1 int
     BuildingDependency2 int
+
     // -1 for no terrain, otherwise specifies a tile index that the building can be built on
     TerrainDependency int
+
+    // replaces the given building
     BuildingReplace int
+
+    Grant20XP bool
+    Grant60XP bool
+    // grants magic weapons to new units if appropriate minerals around
+    Alchemist bool
+
+    // required gold to maintain this building
+    UpkeepGold int
+    PopulationGrowth int
+    Religion int
+    // points of research produced each turn
+    Research int
+
+    ConstructionCost int
+    Animation int
+
+    // 0:  None, Trade, Housing
+    // 1:  Marketplace, Bank, Merchants Guild, Maritime Guild
+    // 2:  Shrine, Temple, Parthenon, Cathedral
+    // 3:  Library, Sages Guild, Oracle, Alchemists Guild, University, Wizards Guild
+    // 4:  Barracks, Armory, Fighters Guild, Armorers Guild, War College, Smithy, Stables, Fantastic Stable, Mechanicians Guild, City Walls
+    Category int
 }
 
 func ReadBuildingInfo(cache *lbx.LbxCache) error {
@@ -78,7 +105,77 @@ func ReadBuildingInfo(cache *lbx.LbxCache) error {
             return fmt.Errorf("unable to read building replace %v: %v", i, err)
         }
 
-        // fmt.Printf("Building %v: name='%v' dependency1=%v dependency2=%v\n", i, parseName(name), dependency1, dependency2)
+        if replace == 65535 {
+            replace = 0
+        }
+
+        grant20xp, err := lbx.ReadUint16(buildingReader)
+        if err != nil {
+            return fmt.Errorf("unable to read building grant20xp %v: %v", i, err)
+        }
+
+        grant60xp, err := lbx.ReadUint16(buildingReader)
+        if err != nil {
+            return fmt.Errorf("unable to read building grant60xp %v: %v", i, err)
+        }
+
+        alchemist, err := lbx.ReadUint16(buildingReader)
+        if err != nil {
+            return fmt.Errorf("unable to read building alchemist %v: %v", i, err)
+        }
+
+        upkeepGold, err := lbx.ReadUint16(buildingReader)
+        if err != nil {
+            return fmt.Errorf("unable to read building upkeepGold %v: %v", i, err)
+        }
+
+        populationGrowth, err := lbx.ReadUint16(buildingReader)
+        if err != nil {
+            return fmt.Errorf("unable to read building populationGrowth %v: %v", i, err)
+        }
+
+        unknown1, err := lbx.ReadUint16(buildingReader)
+        if err != nil {
+            return fmt.Errorf("unable to read building unknown1 %v: %v", i, err)
+        }
+        _ = unknown1
+
+        unknown2, err := lbx.ReadUint16(buildingReader)
+        if err != nil {
+            return fmt.Errorf("unable to read building unknown2 %v: %v", i, err)
+        }
+        _ = unknown2
+
+        religion, err := lbx.ReadUint16(buildingReader)
+        if err != nil {
+            return fmt.Errorf("unable to read building religion %v: %v", i, err)
+        }
+
+        research, err := lbx.ReadUint16(buildingReader)
+        if err != nil {
+            return fmt.Errorf("unable to read building research %v: %v", i, err)
+        }
+
+        constructionCost, err := lbx.ReadUint16(buildingReader)
+        if err != nil {
+            return fmt.Errorf("unable to read building constructionCost %v: %v", i, err)
+        }
+
+        unknown3, err := lbx.ReadUint16(buildingReader)
+        if err != nil {
+            return fmt.Errorf("unable to read building unknown3 %v: %v", i, err)
+        }
+        _ = unknown3
+
+        animation, err := lbx.ReadUint16(buildingReader)
+        if err != nil {
+            return fmt.Errorf("unable to read building animation %v: %v", i, err)
+        }
+
+        category, err := lbx.ReadUint16(buildingReader)
+        if err != nil {
+            return fmt.Errorf("unable to read building category %v: %v", i, err)
+        }
 
         terrainDependency := uint16(0)
         if dependency1 > 100 {
@@ -92,6 +189,16 @@ func ReadBuildingInfo(cache *lbx.LbxCache) error {
             BuildingDependency2: int(dependency2),
             TerrainDependency: int(terrainDependency),
             BuildingReplace: int(replace),
+            Grant20XP: grant20xp == 1,
+            Grant60XP: grant60xp == 1,
+            Alchemist: alchemist == 1,
+            UpkeepGold: -int(int16(upkeepGold)),
+            PopulationGrowth: int(populationGrowth),
+            Religion: int(religion),
+            Research: int(research),
+            ConstructionCost: int(constructionCost),
+            Animation: int(int16(animation)),
+            Category: int(category),
         }
 
         fmt.Printf("Building %v: %+v\n", i, info)
