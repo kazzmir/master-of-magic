@@ -32,6 +32,65 @@ func RenderCombatImage(screen *ebiten.Image, imageCache *util.ImageCache, unit *
     }
 }
 
+func RenderUnitInfoNormal(screen *ebiten.Image, imageCache *util.ImageCache, unit *units.Unit, descriptionFont *font.Font, smallFont *font.Font, defaultOptions ebiten.DrawImageOptions) {
+    x, y := defaultOptions.GeoM.Apply(0, 0)
+
+    descriptionFont.Print(screen, x, y, 1, defaultOptions.ColorScale, unit.Name)
+
+    y += 5
+    defaultOptions.GeoM.Translate(0, 5)
+
+    smallFont.Print(screen, x, y + 11, 1, defaultOptions.ColorScale, "Moves")
+
+    unitMoves := 2
+
+    smallBoot, err := imageCache.GetImage("unitview.lbx", 24, 0)
+    if err == nil {
+        var options ebiten.DrawImageOptions
+        options = defaultOptions
+        options.GeoM.Translate(smallFont.MeasureTextWidth("Upkeep ", 1), 9)
+
+        for i := 0; i < unitMoves; i++ {
+            screen.DrawImage(smallBoot, &options)
+            options.GeoM.Translate(float64(smallBoot.Bounds().Dx()), 0)
+        }
+    }
+
+    smallFont.Print(screen, x, y + 19, 1, defaultOptions.ColorScale, "Upkeep")
+
+    unitCostMoney := unit.UpkeepGold
+    unitCostFood := unit.UpkeepFood
+    unitCostMana := unit.UpkeepMana
+
+    smallCoin, _ := imageCache.GetImage("backgrnd.lbx", 42, 0)
+    smallFood, _ := imageCache.GetImage("backgrnd.lbx", 40, 0)
+    smallMana, _ := imageCache.GetImage("backgrnd.lbx", 43, 0)
+
+    bigCoin, _ := imageCache.GetImage("backgrnd.lbx", 90, 0)
+    bigFood, _ := imageCache.GetImage("backgrnd.lbx", 88, 0)
+    bigMana, _ := imageCache.GetImage("backgrnd.lbx", 91, 0)
+
+    var options ebiten.DrawImageOptions
+    options = defaultOptions
+    options.GeoM.Translate(smallFont.MeasureTextWidth("Upkeep ", 1), 18)
+
+    renderIcons := func(count int, small *ebiten.Image, big *ebiten.Image){
+        for i := 0; i < count / 10; i++ {
+            screen.DrawImage(big, &options)
+            options.GeoM.Translate(float64(big.Bounds().Dx() + 1), 0)
+        }
+
+        for i := 0; i < count % 10; i++ {
+            screen.DrawImage(small, &options)
+            options.GeoM.Translate(float64(small.Bounds().Dx() + 1), 0)
+        }
+    }
+
+    renderIcons(unitCostMoney, smallCoin, bigCoin)
+    renderIcons(unitCostFood, smallFood, bigFood)
+    renderIcons(unitCostMana, smallMana, bigMana)
+}
+
 func RenderUnitInfoBuild(screen *ebiten.Image, imageCache *util.ImageCache, unit *units.Unit, descriptionFont *font.Font, smallFont *font.Font, defaultOptions ebiten.DrawImageOptions) {
     x, y := defaultOptions.GeoM.Apply(0, 0)
 

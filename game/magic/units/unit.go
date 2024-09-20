@@ -137,6 +137,9 @@ type Unit struct {
     HitPoints int
     RangedAttackPower int
     RangedAttacks int
+    UpkeepGold int
+    UpkeepFood int
+    UpkeepMana int
     // FIXME: add construction cost, building requirements to build this unit
     //  upkeep cost, how many figures appear in the battlefield, movement speed,
     //  attack power, ranged attack, defense, magic resistance, hit points, special power
@@ -498,6 +501,7 @@ var GreatDrake Unit = Unit{
     MovementSound: MovementSoundFly,
     MeleeAttackPower: 30,
     MovementSpeed: 2,
+    UpkeepMana: 30,
     Defense: 10,
     Resistance: 12,
 }
