@@ -402,7 +402,7 @@ func (city *City) ComputeUpkeep() int {
     costs := 0
 
     for _, building := range city.Buildings.Values() {
-        costs += building.UpkeepCost()
+        costs += city.BuildingInfo.UpkeepCost(building)
     }
 
     return costs
