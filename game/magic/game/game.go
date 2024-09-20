@@ -17,6 +17,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/combat"
     "github.com/kazzmir/master-of-magic/game/magic/unitview"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
+    buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
     "github.com/kazzmir/master-of-magic/game/magic/cityview"
     "github.com/kazzmir/master-of-magic/game/magic/magicview"
     "github.com/kazzmir/master-of-magic/game/magic/data"
@@ -90,6 +91,7 @@ type Game struct {
     Plane data.Plane
 
     Events chan GameEvent
+    BuildingInfo buildinglib.BuildingInfos
 
     BookOrder []int
 
@@ -208,6 +210,12 @@ func MakeGame(lbxCache *lbx.LbxCache) *Game {
 
     whiteFont := font.MakeOptimizedFontWithPalette(fonts[0], whitePalette)
 
+    buildingInfo, err := buildinglib.ReadBuildingInfo(lbxCache)
+    if err != nil {
+        log.Printf("Unable to read building info: %v", err)
+        return nil
+    }
+
     game := &Game{
         Cache: lbxCache,
         Help: help,
@@ -218,6 +226,7 @@ func MakeGame(lbxCache *lbx.LbxCache) *Game {
         ImageCache: util.MakeImageCache(lbxCache),
         InfoFontYellow: infoFontYellow,
         WhiteFont: whiteFont,
+        BuildingInfo: buildingInfo,
     }
 
     game.HudUI = game.MakeHudUI()
@@ -1188,7 +1197,7 @@ func (game *Game) ShowSpellBookCastUI(){
 }
 
 func (game *Game) CreateOutpost(settlers *units.OverworldUnit, player *playerlib.Player) *citylib.City {
-    newCity := citylib.MakeCity("New City", settlers.X, settlers.Y, settlers.Unit.Race, player.TaxRate)
+    newCity := citylib.MakeCity("New City", settlers.X, settlers.Y, settlers.Unit.Race, player.TaxRate, game.BuildingInfo)
     newCity.Plane = settlers.Plane
     newCity.Population = 1000
     newCity.Banner = player.Wizard.Banner

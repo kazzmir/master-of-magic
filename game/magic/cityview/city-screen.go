@@ -16,6 +16,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/combat"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/unitview"
+    buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
@@ -27,7 +28,7 @@ import (
 
 const (
     // not a real building, just something that shows up in the city view screen
-    BuildingTree1 citylib.Building = iota + citylib.BuildingLast
+    BuildingTree1 buildinglib.Building = iota + buildinglib.BuildingLast
     BuildingTree2
     BuildingTree3
 
@@ -75,7 +76,7 @@ func randomSlots(random *rand.Rand) []image.Point {
 }
 
 type BuildingSlot struct {
-    Building citylib.Building
+    Building buildinglib.Building
     IsRubble bool // in case of rubble
     RubbleIndex int
     Point image.Point
@@ -118,13 +119,13 @@ type CityScreen struct {
     Buildings []BuildingSlot
     BuildScreen *BuildScreen
     // the building the user is currently hovering their mouse over
-    BuildingLook citylib.Building
+    BuildingLook buildinglib.Building
 
     Counter uint64
     State CityScreenState
 }
 
-type BuildingNativeSort []citylib.Building
+type BuildingNativeSort []buildinglib.Building
 func (b BuildingNativeSort) Len() int {
     return len(b)
 }
@@ -135,7 +136,7 @@ func (b BuildingNativeSort) Swap(i, j int) {
     b[i], b[j] = b[j], b[i]
 }
 
-func sortBuildings(buildings []citylib.Building) []citylib.Building {
+func sortBuildings(buildings []buildinglib.Building) []buildinglib.Building {
     sort.Sort(BuildingNativeSort(buildings))
     return buildings
 }
@@ -270,7 +271,7 @@ func MakeCityScreen(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
         x := random.IntN(150) + 20
         y := random.IntN(60) + 10
 
-        tree := []citylib.Building{BuildingTree1, BuildingTree2, BuildingTree3}[random.IntN(3)]
+        tree := []buildinglib.Building{BuildingTree1, BuildingTree2, BuildingTree3}[random.IntN(3)]
 
         buildings = append(buildings, BuildingSlot{Building: tree, Point: image.Pt(x, y)})
     }
@@ -283,7 +284,7 @@ func MakeCityScreen(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
         y := random.IntN(60) + 10
 
         // house types are based on population size (village vs capital, etc)
-        house := []citylib.Building{BuildingTreeHouse1, BuildingTreeHouse2, BuildingTreeHouse3, BuildingTreeHouse4, BuildingTreeHouse5}[random.IntN(5)]
+        house := []buildinglib.Building{BuildingTreeHouse1, BuildingTreeHouse2, BuildingTreeHouse3, BuildingTreeHouse4, BuildingTreeHouse5}[random.IntN(5)]
 
         buildings = append(buildings, BuildingSlot{Building: house, Point: image.Pt(x, y)})
     }
@@ -309,13 +310,13 @@ func MakeCityScreen(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
     return cityScreen
 }
 
-func canSellBuilding(building citylib.Building) bool {
-    return building.ProductionCost() > 0
+func canSellBuilding(city *citylib.City, building buildinglib.Building) bool {
+    return city.BuildingInfo.ProductionCost(building) > 0
 }
 
-func sellAmount(building citylib.Building) int {
-    cost := building.ProductionCost() / 3
-    if building == citylib.BuildingCityWalls {
+func sellAmount(city *citylib.City, building buildinglib.Building) int {
+    cost := city.BuildingInfo.ProductionCost(building) / 3
+    if building == buildinglib.BuildingCityWalls {
         cost /= 2
     }
 
@@ -326,14 +327,14 @@ func sellAmount(building citylib.Building) int {
     return cost
 }
 
-func (cityScreen *CityScreen) SellBuilding(building citylib.Building) {
+func (cityScreen *CityScreen) SellBuilding(building buildinglib.Building) {
     // convert the building pic to one of the rubble ones
     // give player back the gold for the building
     // remove building from the city
 
     cityScreen.City.SoldBuilding = true
 
-    cityScreen.Player.Gold += sellAmount(building)
+    cityScreen.Player.Gold += sellAmount(cityScreen.City, building)
 
     cityScreen.City.Buildings.Remove(building)
 
@@ -400,15 +401,15 @@ func (cityScreen *CityScreen) MakeUI() *uilib.UI {
             // vector.StrokeRect(screen, float32(buildingView.Min.X), float32(buildingView.Min.Y), float32(buildingView.Dx()), float32(buildingView.Dy()), 1, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff}, true)
         },
         RightClick: func(element *uilib.UIElement) {
-            if cityScreen.BuildingLook != citylib.BuildingNone {
-                helpEntries := help.GetEntriesByName(cityScreen.BuildingLook.String())
+            if cityScreen.BuildingLook != buildinglib.BuildingNone {
+                helpEntries := help.GetEntriesByName(cityScreen.City.BuildingInfo.Name(cityScreen.BuildingLook))
                 if helpEntries != nil {
                     ui.AddElement(uilib.MakeHelpElement(ui, cityScreen.LbxCache, &cityScreen.ImageCache, helpEntries[0]))
                 }
             }
         },
         LeftClick: func(element *uilib.UIElement) {
-            if cityScreen.BuildingLook != citylib.BuildingNone && canSellBuilding(cityScreen.BuildingLook) {
+            if cityScreen.BuildingLook != buildinglib.BuildingNone && canSellBuilding(cityScreen.City, cityScreen.BuildingLook) {
                 if cityScreen.City.SoldBuilding {
                     ui.AddElement(uilib.MakeErrorElement(cityScreen.UI, cityScreen.LbxCache, &cityScreen.ImageCache, "You can only sell back one building per turn."))
                 } else {
@@ -421,21 +422,23 @@ func (cityScreen *CityScreen) MakeUI() *uilib.UI {
                     no := func(){
                     }
 
-                    confirmElements = uilib.MakeConfirmDialog(cityScreen.UI, cityScreen.LbxCache, &cityScreen.ImageCache, fmt.Sprintf("Are you sure you want to sell back the %v for %v gold?", cityScreen.BuildingLook, sellAmount(cityScreen.BuildingLook)), yes, no)
+                    confirmElements = uilib.MakeConfirmDialog(cityScreen.UI, cityScreen.LbxCache, &cityScreen.ImageCache, fmt.Sprintf("Are you sure you want to sell back the %v for %v gold?", cityScreen.City.BuildingInfo.Name(cityScreen.BuildingLook), sellAmount(cityScreen.City, cityScreen.BuildingLook)), yes, no)
                     ui.AddElements(confirmElements)
                 }
             }
         },
         // if the user hovers over a building then show the name of the building
         Inside: func(element *uilib.UIElement, x int, y int){
-            cityScreen.BuildingLook = citylib.BuildingNone
+            cityScreen.BuildingLook = buildinglib.BuildingNone
             // log.Printf("inside building view: %v, %v", x, y)
 
             // go in reverse order so we select the one in front first
             for i := len(cityScreen.Buildings) - 1; i >= 0; i-- {
                 slot := cityScreen.Buildings[i]
 
-                if slot.Building.String() == "?" || slot.Building.String() == "" {
+                buildingName := cityScreen.City.BuildingInfo.Name(slot.Building)
+
+                if buildingName == "?" || buildingName == "" {
                     continue
                 }
 
@@ -744,51 +747,51 @@ func (cityScreen *CityScreen) Update() CityScreenState {
     return cityScreen.State
 }
 
-func GetBuildingIndex(building citylib.Building) int {
+func GetBuildingIndex(building buildinglib.Building) int {
     switch building {
-        case citylib.BuildingBarracks: return 45
-        case citylib.BuildingArmory: return 46
-        case citylib.BuildingFightersGuild: return 47
-        case citylib.BuildingArmorersGuild: return 48
-        case citylib.BuildingWarCollege: return 49
-        case citylib.BuildingSmithy: return 50
-        case citylib.BuildingStables: return 51
-        case citylib.BuildingAnimistsGuild: return 52
-        case citylib.BuildingFantasticStable: return 53
-        case citylib.BuildingShipwrightsGuild: return 54
-        case citylib.BuildingShipYard: return 55
-        case citylib.BuildingMaritimeGuild: return 56
-        case citylib.BuildingSawmill: return 57
-        case citylib.BuildingLibrary: return 58
-        case citylib.BuildingSagesGuild: return 59
-        case citylib.BuildingOracle: return 60
-        case citylib.BuildingAlchemistsGuild: return 61
-        case citylib.BuildingUniversity: return 62
-        case citylib.BuildingWizardsGuild: return 63
-        case citylib.BuildingShrine: return 64
-        case citylib.BuildingTemple: return 65
-        case citylib.BuildingParthenon: return 66
-        case citylib.BuildingCathedral: return 67
-        case citylib.BuildingMarketplace: return 68
-        case citylib.BuildingBank: return 69
-        case citylib.BuildingMerchantsGuild: return 70
-        case citylib.BuildingGranary: return 71
-        case citylib.BuildingFarmersMarket: return 72
-        case citylib.BuildingBuildersHall: return 73
-        case citylib.BuildingMechaniciansGuild: return 74
-        case citylib.BuildingMinersGuild: return 75
-        case citylib.BuildingCityWalls: return 76
-        case citylib.BuildingForestersGuild: return 78
-        case citylib.BuildingFortress: return 40
-        case citylib.BuildingSummoningCircle: return 6
+        case buildinglib.BuildingBarracks: return 45
+        case buildinglib.BuildingArmory: return 46
+        case buildinglib.BuildingFightersGuild: return 47
+        case buildinglib.BuildingArmorersGuild: return 48
+        case buildinglib.BuildingWarCollege: return 49
+        case buildinglib.BuildingSmithy: return 50
+        case buildinglib.BuildingStables: return 51
+        case buildinglib.BuildingAnimistsGuild: return 52
+        case buildinglib.BuildingFantasticStable: return 53
+        case buildinglib.BuildingShipwrightsGuild: return 54
+        case buildinglib.BuildingShipYard: return 55
+        case buildinglib.BuildingMaritimeGuild: return 56
+        case buildinglib.BuildingSawmill: return 57
+        case buildinglib.BuildingLibrary: return 58
+        case buildinglib.BuildingSagesGuild: return 59
+        case buildinglib.BuildingOracle: return 60
+        case buildinglib.BuildingAlchemistsGuild: return 61
+        case buildinglib.BuildingUniversity: return 62
+        case buildinglib.BuildingWizardsGuild: return 63
+        case buildinglib.BuildingShrine: return 64
+        case buildinglib.BuildingTemple: return 65
+        case buildinglib.BuildingParthenon: return 66
+        case buildinglib.BuildingCathedral: return 67
+        case buildinglib.BuildingMarketplace: return 68
+        case buildinglib.BuildingBank: return 69
+        case buildinglib.BuildingMerchantsGuild: return 70
+        case buildinglib.BuildingGranary: return 71
+        case buildinglib.BuildingFarmersMarket: return 72
+        case buildinglib.BuildingBuildersHall: return 73
+        case buildinglib.BuildingMechaniciansGuild: return 74
+        case buildinglib.BuildingMinersGuild: return 75
+        case buildinglib.BuildingCityWalls: return 76
+        case buildinglib.BuildingForestersGuild: return 78
+        case buildinglib.BuildingFortress: return 40
+        case buildinglib.BuildingSummoningCircle: return 6
         case BuildingTree1: return 19
         case BuildingTree2: return 20
         case BuildingTree3: return 21
 
-        case citylib.BuildingTradeGoods: return 41
+        case buildinglib.BuildingTradeGoods: return 41
 
         // FIXME: housing is indices 42-44, based on the race of the city
-        case citylib.BuildingHousing: return 43
+        case buildinglib.BuildingHousing: return 43
 
         case BuildingTreeHouse1: return 30
         case BuildingTreeHouse2: return 31
@@ -920,13 +923,13 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
             if cityScreen.BuildingLook == building.Building {
                 drawName = func(){
                     useFont := cityScreen.SmallFont
-                    text := building.Building.String()
+                    text := cityScreen.City.BuildingInfo.Name(building.Building)
                     if building.IsRubble {
                         text = "Destroyed " + text
                         useFont = cityScreen.RubbleFont
                     }
 
-                    if building.Building == citylib.BuildingFortress {
+                    if building.Building == buildinglib.BuildingFortress {
                         text = fmt.Sprintf("%v's Fortress", cityScreen.Player.Wizard.Name)
                     }
 
@@ -1018,7 +1021,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
     showWork := false
     workRequired := 0
 
-    if cityScreen.City.ProducingBuilding != citylib.BuildingNone {
+    if cityScreen.City.ProducingBuilding != buildinglib.BuildingNone {
         producingPics, err := cityScreen.ImageCache.GetImages("cityscap.lbx", GetBuildingIndex(cityScreen.City.ProducingBuilding))
         if err == nil {
             index := animationCounter % uint64(len(producingPics))
@@ -1032,7 +1035,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
 
         // for all buildings besides trade goods and housing, show amount of work required to build
 
-        if cityScreen.City.ProducingBuilding == citylib.BuildingTradeGoods || cityScreen.City.ProducingBuilding == citylib.BuildingHousing {
+        if cityScreen.City.ProducingBuilding == buildinglib.BuildingTradeGoods || cityScreen.City.ProducingBuilding == buildinglib.BuildingHousing {
             producingBackground, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", 13, 0)
             if err == nil {
                 var options ebiten.DrawImageOptions
@@ -1042,14 +1045,14 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
 
             description := ""
             switch cityScreen.City.ProducingBuilding {
-                case citylib.BuildingTradeGoods: description = "Trade Goods"
-                case citylib.BuildingHousing: description = "Increases population growth rate."
+                case buildinglib.BuildingTradeGoods: description = "Trade Goods"
+                case buildinglib.BuildingHousing: description = "Increases population growth rate."
             }
 
             cityScreen.ProducingFont.PrintWrapCenter(screen, 285, 155, 60, 1, ebiten.ColorScale{}, description)
         } else {
             showWork = true
-            workRequired = cityScreen.City.ProducingBuilding.ProductionCost()
+            workRequired = cityScreen.City.BuildingInfo.ProductionCost(cityScreen.City.ProducingBuilding)
         }
     } else if !cityScreen.City.ProducingUnit.IsNone() {
         images, err := cityScreen.ImageCache.GetImages(cityScreen.City.ProducingUnit.CombatLbxFile, cityScreen.City.ProducingUnit.GetCombatIndex(units.FacingRight))

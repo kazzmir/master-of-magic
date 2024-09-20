@@ -7,6 +7,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/fraction"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
+    buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
     "github.com/kazzmir/master-of-magic/game/magic/cityview"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
@@ -36,14 +37,16 @@ func NewEngine() (*Engine, error) {
         },
     }
 
-    city := citylib.MakeCity("Boston", 3, 8, data.RaceHighElf, fraction.Make(1, 1))
+    buildingInfo, _ := buildinglib.ReadBuildingInfo(cache)
+
+    city := citylib.MakeCity("Boston", 3, 8, data.RaceHighElf, fraction.Make(1, 1), buildingInfo)
     city.Population = 6000
     city.Farmers = 4
     city.Workers = 2
     city.Wall = false
     city.MagicProductionRate = 3
     city.Production = 18
-    city.ProducingBuilding = citylib.BuildingNone
+    city.ProducingBuilding = buildinglib.BuildingNone
     city.Banner = data.BannerBlue
     // ProducingBuilding: citylib.BuildingBarracks,
     city.ProducingUnit = units.HighElfSpearmen
@@ -63,11 +66,11 @@ func NewEngine() (*Engine, error) {
 
     city.UpdateUnrest(garrison)
 
-    // city.AddBuilding(citylib.BuildingWizardsGuild)
-    city.AddBuilding(citylib.BuildingSmithy)
-    city.AddBuilding(citylib.BuildingSummoningCircle)
-    city.AddBuilding(citylib.BuildingOracle)
-    city.AddBuilding(citylib.BuildingFortress)
+    // city.AddBuilding(buildinglib.BuildingWizardsGuild)
+    city.AddBuilding(buildinglib.BuildingSmithy)
+    city.AddBuilding(buildinglib.BuildingSummoningCircle)
+    city.AddBuilding(buildinglib.BuildingOracle)
+    city.AddBuilding(buildinglib.BuildingFortress)
 
     cityScreen := cityview.MakeCityScreen(cache, city, &player)
 
