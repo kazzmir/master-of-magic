@@ -79,6 +79,12 @@ func MakeUnitContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit *units.Overworl
 
             options.GeoM.Reset()
             options.GeoM.Translate(31, 6)
+            options.GeoM.Translate(51, 8)
+
+            RenderUnitInfoNormal(screen, &imageCache, &unit.Unit, descriptionFont, smallFont, options)
+
+            options.GeoM.Reset()
+            options.GeoM.Translate(31, 6)
             options.GeoM.Translate(10, 50)
             RenderUnitInfoStats(screen, &imageCache, &unit.Unit, descriptionFont, smallFont, options)
 
