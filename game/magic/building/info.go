@@ -66,6 +66,24 @@ func (info BuildingInfos) GetBuildingByName(name string) *BuildingInfo {
     return nil
 }
 
+func (info BuildingInfos) Dependencies(building Building) []Building {
+    var out []Building
+    data := info.BuildingInfo(building)
+    if data.BuildingDependency1 != 0 {
+        out = append(out, indexToBuilding(data.BuildingDependency1))
+    }
+
+    if data.BuildingDependency2 != 0 {
+        out = append(out, indexToBuilding(data.BuildingDependency2))
+    }
+
+    return out
+}
+
+func (info BuildingInfos) BuildingInfo(building Building) BuildingInfo {
+    return info[info.GetBuildingIndex(building)]
+}
+
 func (info BuildingInfos) ProductionCost(building Building) int {
     return info[info.GetBuildingIndex(building)].ConstructionCost
 }
@@ -127,6 +145,49 @@ func (info BuildingInfos) GetBuildingIndex(building Building) int {
     }
 
     return 0
+}
+
+func indexToBuilding(index int) Building {
+    switch index {
+        case 0: return BuildingNone
+        case 1: return BuildingTradeGoods
+        case 2: return BuildingHousing
+        case 3: return BuildingBarracks
+        case 4: return BuildingArmory
+        case 5: return BuildingFightersGuild
+        case 6: return BuildingArmorersGuild
+        case 7: return BuildingWarCollege
+        case 8: return BuildingSmithy
+        case 9: return BuildingStables
+        case 10: return BuildingAnimistsGuild
+        case 11: return BuildingFantasticStable
+        case 12: return BuildingShipwrightsGuild
+        case 13: return BuildingShipYard
+        case 14: return BuildingMaritimeGuild
+        case 15: return BuildingSawmill
+        case 16: return BuildingLibrary
+        case 17: return BuildingSagesGuild
+        case 18: return BuildingOracle
+        case 19: return BuildingAlchemistsGuild
+        case 20: return BuildingUniversity
+        case 21: return BuildingWizardsGuild
+        case 22: return BuildingShrine
+        case 23: return BuildingTemple
+        case 24: return BuildingParthenon
+        case 25: return BuildingCathedral
+        case 26: return BuildingMarketplace
+        case 27: return BuildingBank
+        case 28: return BuildingMerchantsGuild
+        case 29: return BuildingGranary
+        case 30: return BuildingFarmersMarket
+        case 31: return BuildingForestersGuild
+        case 32: return BuildingBuildersHall
+        case 33: return BuildingMechaniciansGuild
+        case 34: return BuildingMinersGuild
+        case 35: return BuildingCityWalls
+    }
+
+    return BuildingNone
 }
 
 func ReadBuildingInfo(cache *lbx.LbxCache) (BuildingInfos, error) {

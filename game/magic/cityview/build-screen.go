@@ -74,6 +74,33 @@ func (buildScreen *BuildScreen) Ok() {
     buildScreen.State = BuildScreenOk
 }
 
+/* return the buildings that can be built, based on what the city already has
+ */
+func computePossibleBuildings(city *citylib.City) []buildinglib.Building {
+    // FIXME: take race into account
+    var possibleBuildings []buildinglib.Building
+
+    for _, building := range buildinglib.Buildings() {
+        if city.Buildings.Contains(building) {
+            continue
+        }
+
+        canBuild := true
+        for _, dependency := range city.BuildingInfo.Dependencies(building) {
+            if !city.Buildings.Contains(dependency) {
+                canBuild = false
+            }
+        }
+
+        // FIXME: take terrain dependency into account
+
+        if canBuild {
+            possibleBuildings = append(possibleBuildings, building)
+        }
+    }
+
+    return possibleBuildings
+}
 
 func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib.City, buildScreen *BuildScreen, doCancel func(), doOk func()) *uilib.UI {
 
@@ -259,8 +286,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
     }
 
     if err == nil {
-        // FIXME: compute this based on what is in the city already
-        possibleBuildings := []buildinglib.Building{buildinglib.BuildingTradeGoods, buildinglib.BuildingHousing, buildinglib.BuildingBarracks, buildinglib.BuildingStables, buildinglib.BuildingWizardsGuild}
+        possibleBuildings := computePossibleBuildings(city)
         for i, building := range possibleBuildings {
 
             x1 := 0

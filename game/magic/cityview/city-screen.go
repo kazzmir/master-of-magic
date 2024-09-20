@@ -1031,7 +1031,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
             screen.DrawImage(producingPics[index], &options)
         }
 
-        cityScreen.ProducingFont.PrintCenter(screen, 237, 179, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", cityScreen.City.ProducingBuilding))
+        cityScreen.ProducingFont.PrintCenter(screen, 237, 179, 1, ebiten.ColorScale{}, cityScreen.City.BuildingInfo.Name(cityScreen.City.ProducingBuilding))
 
         // for all buildings besides trade goods and housing, show amount of work required to build
 
