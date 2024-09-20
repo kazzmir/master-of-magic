@@ -193,12 +193,12 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
                     // vector.DrawFilledCircle(screen, float32(middleX), float32(middleY), 1, color.RGBA{255, 255, 255, 255}, true)
                 }
 
-                descriptionFont.Print(screen, 130, 12, 1, ebiten.ColorScale{}, building.String())
+                descriptionFont.Print(screen, 130, 12, 1, ebiten.ColorScale{}, city.BuildingInfo.Name(building))
                 smallFont.Print(screen, 130, 33, 1, ebiten.ColorScale{}, fmt.Sprintf("Cost %v", city.BuildingInfo.ProductionCost(building)))
 
                 descriptionFont.Print(screen, 85, 48, 1, ebiten.ColorScale{}, "Maintenance")
 
-                buildingMaintenance := buildinglib.GetBuildingMaintenance(building)
+                buildingMaintenance := city.BuildingInfo.UpkeepCost(building)
 
                 if buildingMaintenance == 0 {
                     mediumFont.Print(screen, 85 + descriptionFont.MeasureTextWidth("Maintenance", 1) + 4, 49, 1, ebiten.ColorScale{}, "0")
@@ -297,7 +297,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
                         use = titleFontWhite
                     }
 
-                    use.Print(screen, float64(x1 + 2), float64(y1 + 1), 1, ebiten.ColorScale{}, building.String())
+                    use.Print(screen, float64(x1 + 2), float64(y1 + 1), 1, ebiten.ColorScale{}, city.BuildingInfo.Name(building))
                 },
             }
 

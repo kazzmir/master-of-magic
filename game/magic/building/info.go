@@ -70,6 +70,22 @@ func (info BuildingInfos) ProductionCost(building Building) int {
     return info[info.GetBuildingIndex(building)].ConstructionCost
 }
 
+func (info BuildingInfos) UpkeepCost(building Building) int {
+    return info[info.GetBuildingIndex(building)].UpkeepGold
+}
+
+func (info BuildingInfos) Name(building Building) string {
+    if building == BuildingFortress {
+        return "Fortress"
+    }
+
+    if building == BuildingSummoningCircle {
+        return "Summoning Circle"
+    }
+
+    return info[info.GetBuildingIndex(building)].Name
+}
+
 func (info BuildingInfos) GetBuildingIndex(building Building) int {
     switch building {
         case BuildingNone: return 0
@@ -269,6 +285,11 @@ func ReadBuildingInfo(cache *lbx.LbxCache) (BuildingInfos, error) {
     university := out.GetBuildingByName("University")
     if university != nil {
         university.Research = 5
+    }
+
+    none := out.GetBuildingByName("None")
+    if none != nil {
+        none.Name = ""
     }
 
     return out, nil

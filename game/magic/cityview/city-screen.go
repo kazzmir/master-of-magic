@@ -402,7 +402,7 @@ func (cityScreen *CityScreen) MakeUI() *uilib.UI {
         },
         RightClick: func(element *uilib.UIElement) {
             if cityScreen.BuildingLook != buildinglib.BuildingNone {
-                helpEntries := help.GetEntriesByName(cityScreen.BuildingLook.String())
+                helpEntries := help.GetEntriesByName(cityScreen.City.BuildingInfo.Name(cityScreen.BuildingLook))
                 if helpEntries != nil {
                     ui.AddElement(uilib.MakeHelpElement(ui, cityScreen.LbxCache, &cityScreen.ImageCache, helpEntries[0]))
                 }
@@ -422,7 +422,7 @@ func (cityScreen *CityScreen) MakeUI() *uilib.UI {
                     no := func(){
                     }
 
-                    confirmElements = uilib.MakeConfirmDialog(cityScreen.UI, cityScreen.LbxCache, &cityScreen.ImageCache, fmt.Sprintf("Are you sure you want to sell back the %v for %v gold?", cityScreen.BuildingLook, sellAmount(cityScreen.City, cityScreen.BuildingLook)), yes, no)
+                    confirmElements = uilib.MakeConfirmDialog(cityScreen.UI, cityScreen.LbxCache, &cityScreen.ImageCache, fmt.Sprintf("Are you sure you want to sell back the %v for %v gold?", cityScreen.City.BuildingInfo.Name(cityScreen.BuildingLook), sellAmount(cityScreen.City, cityScreen.BuildingLook)), yes, no)
                     ui.AddElements(confirmElements)
                 }
             }
@@ -436,7 +436,9 @@ func (cityScreen *CityScreen) MakeUI() *uilib.UI {
             for i := len(cityScreen.Buildings) - 1; i >= 0; i-- {
                 slot := cityScreen.Buildings[i]
 
-                if slot.Building.String() == "?" || slot.Building.String() == "" {
+                buildingName := cityScreen.City.BuildingInfo.Name(slot.Building)
+
+                if buildingName == "?" || buildingName == "" {
                     continue
                 }
 
@@ -921,7 +923,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
             if cityScreen.BuildingLook == building.Building {
                 drawName = func(){
                     useFont := cityScreen.SmallFont
-                    text := building.Building.String()
+                    text := cityScreen.City.BuildingInfo.Name(building.Building)
                     if building.IsRubble {
                         text = "Destroyed " + text
                         useFont = cityScreen.RubbleFont
