@@ -20,7 +20,7 @@ BUILDDAT.LBX - building attributes (production cost
 CHRIVER.LBX - graphics, overland tiles I think for myrror
 CITYSCAP.LBX - graphics, sprites to show in the city view
 CITYWALL.LBX - graphics, sprites of the city wall to show in a battle
-CITYNAME.LBX - unknown
+CITYNAME.LBX - a bunch of names for cities
 CMBTWALL.LBX - graphics, sprites to show of the city wall in battle
 CMBTFX.LBX - graphics, various animations to show during combat, such as spells
 CMBTCITY.LBX - graphics, sprites of city objects in a battle, such as a house or the main wizard tower
@@ -59,14 +59,14 @@ FIGURES8.LBX - graphics, sprites of units in combat
 FIGURES4.LBX - graphics, sprites of units in combat
 FIGURE16.LBX - graphics, sprites of units in combat
 FIGURE14.LBX - graphics, sprites of units in combat
-FONTS.LBX - unknown
-HELP.LBX - unknown
+FONTS.LBX - contains font data, 8 fonts + palettes
+HELP.LBX - help data. each entry corresponds to some ui element in the game
 HERODATA.LBX - unknown
 HIRE.LBX - graphics, used for hiring a hero screen
 HLPENTRY.LBX - unknown
 INTRO.LBX - graphics, introduction animation
-INTROSFX.LBX - unknown
-INTROSND.LBX - unknown
+INTROSFX.LBX - voc sound effects used during intro
+INTROSND.LBX - music for intro
 ITEMISC.LBX - graphics, various icons for items and upgrades
 ITEMS.LBX - graphics, various icons for items and weapons
 ITEMDATA.LBX - unknown
@@ -80,14 +80,14 @@ MAIN.LBX - graphics, hud ui in game
 MAPBACK.LBX - graphics, map tiles such as cities
 MOODWIZ.LBX - graphics, wizard animations during diplomacy talks
 MONSTER.LBX - graphics, images of big monsters that appear in caves/dungeons
-MUSIC.LBX - unknown
+MUSIC.LBX - XMI midi files for music in the game
 NAMES.LBX - unknown
 NEWGAME.LBX - graphics, ui for creating a new game
 PORTRAIT.LBX - graphics, icon portraits for heros
 RELOAD.LBX - graphics, some ui's for item enchantments, other icons
 RESOURCE.LBX - graphics, ui for yes/no
 SCROLL.LBX - graphics, scroll image for spells
-SNDDRV.LBX - unknown
+SNDDRV.LBX - midi driver for dos
 SOUNDFX.LBX - sound files in VOC format
 SPLMASTR.LBX - graphics, I think the animation used in the intro when the wizard dies?
 SPELLSCR.LBX - graphics, ui for casting spells, such as summoning
@@ -114,7 +114,7 @@ FAT.OPL - unknown
 INSTALL.PIF - unknown
 MAGIC.SET - unknown
 README.TXT - unknown
-NEWSOUND.LBX - unknown
+NEWSOUND.LBX - more sound effects in voc format
 VORTEX.LBX - graphics, vortex animation (lose screen?)
 LISTDAT.LBX - unknown
 MESSAGE.LBX - unknown
