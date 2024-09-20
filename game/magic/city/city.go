@@ -74,9 +74,11 @@ type City struct {
     Production float32
     ProducingBuilding building.Building
     ProducingUnit units.Unit
+
+    BuildingInfo building.BuildingInfos
 }
 
-func MakeCity(name string, x int, y int, race data.Race, taxRate fraction.Fraction) *City {
+func MakeCity(name string, x int, y int, race data.Race, taxRate fraction.Fraction, buildingInfo building.BuildingInfos) *City {
     city := City{
         Name: name,
         X: x,
@@ -84,6 +86,7 @@ func MakeCity(name string, x int, y int, race data.Race, taxRate fraction.Fracti
         Race: race,
         Buildings: set.MakeSet[building.Building](),
         TaxRate: taxRate,
+        BuildingInfo: buildingInfo,
     }
 
     return &city
@@ -459,11 +462,13 @@ func (city *City) DoNextTurn(garrison []*units.OverworldUnit) []CityEvent {
         cityEvents = append(cityEvents, &CityEventPopulationGrowth{Size: (city.Population - oldPopulation)/1000})
     }
 
-    if city.ProducingBuilding.ProductionCost() != 0 || !city.ProducingUnit.Equals(units.UnitNone) {
+    buildingCost := city.BuildingInfo.ProductionCost(city.ProducingBuilding)
+
+    if buildingCost != 0 || !city.ProducingUnit.Equals(units.UnitNone) {
         city.Production += city.WorkProductionRate()
 
-        if city.ProducingBuilding.ProductionCost() != 0 {
-            if city.Production >= float32(city.ProducingBuilding.ProductionCost()) {
+        if buildingCost != 0 {
+            if city.Production >= float32(buildingCost) {
                 city.Buildings.Insert(city.ProducingBuilding)
                 city.Production = 0
                 city.ProducingBuilding = building.BuildingHousing

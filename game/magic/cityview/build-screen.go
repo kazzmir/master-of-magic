@@ -194,7 +194,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
                 }
 
                 descriptionFont.Print(screen, 130, 12, 1, ebiten.ColorScale{}, building.String())
-                smallFont.Print(screen, 130, 33, 1, ebiten.ColorScale{}, fmt.Sprintf("Cost %v", building.ProductionCost()))
+                smallFont.Print(screen, 130, 33, 1, ebiten.ColorScale{}, fmt.Sprintf("Cost %v", city.BuildingInfo.ProductionCost(building)))
 
                 descriptionFont.Print(screen, 85, 48, 1, ebiten.ColorScale{}, "Maintenance")
 

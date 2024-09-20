@@ -48,7 +48,7 @@ const (
 )
 
 // FIXME: these values can come from buildat.lbx
-func (building Building) ProductionCost() int {
+func (building Building) ProductionCost_legacy() int {
     switch building {
         case BuildingBarracks: return 30
         case BuildingArmory: return 80

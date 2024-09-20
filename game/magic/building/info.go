@@ -66,6 +66,53 @@ func (info BuildingInfos) GetBuildingByName(name string) *BuildingInfo {
     return nil
 }
 
+func (info BuildingInfos) ProductionCost(building Building) int {
+    return info[info.GetBuildingIndex(building)].ConstructionCost
+}
+
+func (info BuildingInfos) GetBuildingIndex(building Building) int {
+    switch building {
+        case BuildingNone: return 0
+        case BuildingTradeGoods: return 1
+        case BuildingHousing: return 2
+        case BuildingBarracks: return 3
+        case BuildingArmory: return 4
+        case BuildingFightersGuild: return 5
+        case BuildingArmorersGuild: return 6
+        case BuildingWarCollege: return 7
+        case BuildingSmithy: return 8
+        case BuildingStables: return 9
+        case BuildingAnimistsGuild: return 10
+        case BuildingFantasticStable: return 11
+        case BuildingShipwrightsGuild: return 12
+        case BuildingShipYard: return 13
+        case BuildingMaritimeGuild: return 14
+        case BuildingSawmill: return 15
+        case BuildingLibrary: return 16
+        case BuildingSagesGuild: return 17
+        case BuildingOracle: return 18
+        case BuildingAlchemistsGuild: return 19
+        case BuildingUniversity: return 20
+        case BuildingWizardsGuild: return 21
+        case BuildingShrine: return 22
+        case BuildingTemple: return 23
+        case BuildingParthenon: return 24
+        case BuildingCathedral: return 25
+        case BuildingMarketplace: return 26
+        case BuildingBank: return 27
+        case BuildingMerchantsGuild: return 28
+        case BuildingGranary: return 29
+        case BuildingFarmersMarket: return 30
+        case BuildingForestersGuild: return 31
+        case BuildingBuildersHall: return 32
+        case BuildingMechaniciansGuild: return 33
+        case BuildingMinersGuild: return 34
+        case BuildingCityWalls: return 35
+    }
+
+    return 0
+}
+
 func ReadBuildingInfo(cache *lbx.LbxCache) (BuildingInfos, error) {
     data, err := cache.GetLbxFile("builddat.lbx")
     if err != nil {
@@ -199,8 +246,8 @@ func ReadBuildingInfo(cache *lbx.LbxCache) (BuildingInfos, error) {
         info := BuildingInfo{
             Name: parseName(name),
             BuildingDependency1: int(dependency1),
-            BuildingDependency2: int(dependency2),
-            TerrainDependency: int(terrainDependency),
+            BuildingDependency2: int(int16(dependency2)),
+            TerrainDependency: int(int16(terrainDependency)),
             BuildingReplace: int(replace),
             Grant20XP: grant20xp == 1,
             Grant60XP: grant60xp == 1,

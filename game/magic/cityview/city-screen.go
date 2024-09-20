@@ -310,12 +310,12 @@ func MakeCityScreen(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
     return cityScreen
 }
 
-func canSellBuilding(building buildinglib.Building) bool {
-    return building.ProductionCost() > 0
+func canSellBuilding(city *citylib.City, building buildinglib.Building) bool {
+    return city.BuildingInfo.ProductionCost(building) > 0
 }
 
-func sellAmount(building buildinglib.Building) int {
-    cost := building.ProductionCost() / 3
+func sellAmount(city *citylib.City, building buildinglib.Building) int {
+    cost := city.BuildingInfo.ProductionCost(building) / 3
     if building == buildinglib.BuildingCityWalls {
         cost /= 2
     }
@@ -334,7 +334,7 @@ func (cityScreen *CityScreen) SellBuilding(building buildinglib.Building) {
 
     cityScreen.City.SoldBuilding = true
 
-    cityScreen.Player.Gold += sellAmount(building)
+    cityScreen.Player.Gold += sellAmount(cityScreen.City, building)
 
     cityScreen.City.Buildings.Remove(building)
 
@@ -409,7 +409,7 @@ func (cityScreen *CityScreen) MakeUI() *uilib.UI {
             }
         },
         LeftClick: func(element *uilib.UIElement) {
-            if cityScreen.BuildingLook != buildinglib.BuildingNone && canSellBuilding(cityScreen.BuildingLook) {
+            if cityScreen.BuildingLook != buildinglib.BuildingNone && canSellBuilding(cityScreen.City, cityScreen.BuildingLook) {
                 if cityScreen.City.SoldBuilding {
                     ui.AddElement(uilib.MakeErrorElement(cityScreen.UI, cityScreen.LbxCache, &cityScreen.ImageCache, "You can only sell back one building per turn."))
                 } else {
@@ -422,7 +422,7 @@ func (cityScreen *CityScreen) MakeUI() *uilib.UI {
                     no := func(){
                     }
 
-                    confirmElements = uilib.MakeConfirmDialog(cityScreen.UI, cityScreen.LbxCache, &cityScreen.ImageCache, fmt.Sprintf("Are you sure you want to sell back the %v for %v gold?", cityScreen.BuildingLook, sellAmount(cityScreen.BuildingLook)), yes, no)
+                    confirmElements = uilib.MakeConfirmDialog(cityScreen.UI, cityScreen.LbxCache, &cityScreen.ImageCache, fmt.Sprintf("Are you sure you want to sell back the %v for %v gold?", cityScreen.BuildingLook, sellAmount(cityScreen.City, cityScreen.BuildingLook)), yes, no)
                     ui.AddElements(confirmElements)
                 }
             }
@@ -1050,7 +1050,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
             cityScreen.ProducingFont.PrintWrapCenter(screen, 285, 155, 60, 1, ebiten.ColorScale{}, description)
         } else {
             showWork = true
-            workRequired = cityScreen.City.ProducingBuilding.ProductionCost()
+            workRequired = cityScreen.City.BuildingInfo.ProductionCost(cityScreen.City.ProducingBuilding)
         }
     } else if !cityScreen.City.ProducingUnit.IsNone() {
         images, err := cityScreen.ImageCache.GetImages(cityScreen.City.ProducingUnit.CombatLbxFile, cityScreen.City.ProducingUnit.GetCombatIndex(units.FacingRight))

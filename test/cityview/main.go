@@ -37,7 +37,9 @@ func NewEngine() (*Engine, error) {
         },
     }
 
-    city := citylib.MakeCity("Boston", 3, 8, data.RaceHighElf, fraction.Make(1, 1))
+    buildingInfo, _ := buildinglib.ReadBuildingInfo(cache)
+
+    city := citylib.MakeCity("Boston", 3, 8, data.RaceHighElf, fraction.Make(1, 1), buildingInfo)
     city.Population = 6000
     city.Farmers = 4
     city.Workers = 2
