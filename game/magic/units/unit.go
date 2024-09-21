@@ -1366,18 +1366,24 @@ var HighElfSwordsmen Unit = Unit{
 
 var HighElfHalberdiers Unit = Unit{
     LbxFile: "units1.lbx",
+    Name: "Halberdiers",
+    RequiredBuildings: []building.Building{building.BuildingArmory},
     Index: 97,
     Race: data.RaceHighElf,
 }
 
 var HighElfCavalry Unit = Unit{
     LbxFile: "units1.lbx",
+    Name: "Cavalry",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingStables},
     Index: 98,
     Race: data.RaceHighElf,
 }
 
 var HighElfMagician Unit = Unit{
     LbxFile: "units1.lbx",
+    Name: "Magicians",
+    RequiredBuildings: []building.Building{building.BuildingWizardsGuild},
     Index: 99,
     Race: data.RaceHighElf,
 }
@@ -1402,17 +1408,23 @@ var HighElfSettlers Unit = Unit{
 var Longbowmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 101,
+    Name: "Longbowmen",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSawmill},
     Race: data.RaceHighElf,
 }
 
 var ElvenLord Unit = Unit{
     LbxFile: "units1.lbx",
+    Name: "ElvenLord",
+    RequiredBuildings: []building.Building{building.BuildingArmorersGuild},
     Index: 102,
     Race: data.RaceHighElf,
 }
 
 var Pegasai Unit = Unit{
     LbxFile: "units1.lbx",
+    Name: "Pegasai",
+    RequiredBuildings: []building.Building{building.BuildingFantasticStable},
     Index: 103,
     Race: data.RaceHighElf,
 }
@@ -1710,12 +1722,12 @@ var AllUnits []Unit = []Unit{
     HalflingShamans,
     HalflingSettlers,
     Slingers,
+    HighElfSettlers,
     HighElfSpearmen,
     HighElfSwordsmen,
     HighElfHalberdiers,
     HighElfCavalry,
     HighElfMagician,
-    HighElfSettlers,
     Longbowmen,
     ElvenLord,
     Pegasai,
