@@ -264,31 +264,38 @@ var DragonTurtle Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 6,
     Name: "Dragon Turtle",
-    RequiredBuildings: []building.Building{building.BuildingArmorersGuild, building.BuildingFantasticStable},
+    RequiredBuildings: []building.Building{building.BuildingArmorersGuild, building.BuildingStables},
     Race: data.RaceLizard,
 }
 
 var NomadSpearmen Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 7,
+    Name: "Spearmen",
     Race: data.RaceNomad,
 }
 
 var NomadSwordsmen Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 8,
+    Name: "Swordsmen",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSmithy},
     Race: data.RaceNomad,
 }
 
 var NomadBowmen Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 9,
+    Name: "Bowmen",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSawmill},
     Race: data.RaceNomad,
 }
 
 var NomadPriest Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 10,
+    Name: "Priests",
+    RequiredBuildings: []building.Building{building.BuildingParthenon},
     Race: data.RaceNomad,
 }
 
@@ -298,30 +305,39 @@ var NomadPriest Unit = Unit{
 var NomadSettlers Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 12,
+    Name: "Settlers",
     Race: data.RaceNomad,
 }
 
 var NomadHorsebowemen Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 13,
+    Name: "Horsebowmen",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingStables},
     Race: data.RaceNomad,
 }
 
 var NomadPikemen Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 14,
+    Name: "Pikemen",
+    RequiredBuildings: []building.Building{building.BuildingFightersGuild},
     Race: data.RaceNomad,
 }
 
 var NomadRangers Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 15,
+    Name: "Rangers",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingAnimistsGuild},
     Race: data.RaceNomad,
 }
 
 var Griffin Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 16,
+    Name: "Griffins",
+    RequiredBuildings: []building.Building{building.BuildingFantasticStable},
     // maybe race magical?
     Race: data.RaceNomad,
 }
