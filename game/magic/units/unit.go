@@ -1170,42 +1170,54 @@ var Minotaur Unit = Unit{
 var DarkElfSpearmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 57,
+    Name: "Spearmen",
     Race: data.RaceDarkElf,
 }
 
 var DarkElfSwordsmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 58,
+    Name: "Swordsmen",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSmithy},
     Race: data.RaceDarkElf,
 }
 
 var DarkElfHalberdiers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 59,
+    Name: "Halberdiers",
+    RequiredBuildings: []building.Building{building.BuildingArmory},
     Race: data.RaceDarkElf,
 }
 
 var DarkElfCavalry Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 60,
+    Name: "Cavalry",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingStables},
     Race: data.RaceDarkElf,
 }
 
 var DarkElfPriests Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 61,
+    Name: "Priests",
+    RequiredBuildings: []building.Building{building.BuildingParthenon},
     Race: data.RaceDarkElf,
 }
 
 var DarkElfSettlers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 62,
+    Name: "Settlers",
     Race: data.RaceDarkElf,
 }
 
 var Nightblades Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 63,
+    Name: "Nightblades",
+    RequiredBuildings: []building.Building{building.BuildingFightersGuild},
     Race: data.RaceDarkElf,
 }
 
@@ -1215,6 +1227,7 @@ var Warlocks Unit = Unit{
     Race: data.RaceDarkElf,
     Count: 4,
     Name: "Warlocks",
+    RequiredBuildings: []building.Building{building.BuildingWizardsGuild},
     RangedAttackDamageType: DamageRangedMagical,
     RangeAttackIndex: 16,
     MeleeAttackPower: 1,
@@ -1234,6 +1247,8 @@ var Warlocks Unit = Unit{
 var Nightmares Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 65,
+    Name: "Nightmares",
+    RequiredBuildings: []building.Building{building.BuildingFantasticStable},
     Race: data.RaceDarkElf,
 }
 
