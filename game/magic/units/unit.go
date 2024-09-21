@@ -1325,36 +1325,46 @@ var WolfRiders Unit = Unit{
 var HalflingSpearmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 89,
+    Name: "Spearmen",
     Race: data.RaceHalfling,
 }
 
 var HalflingSwordsmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 90,
+    Name: "Swordsmen",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSmithy},
     Race: data.RaceHalfling,
 }
 
 var HalflingBowmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 91,
+    Name: "Bowmen",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSawmill},
     Race: data.RaceHalfling,
 }
 
 var HalflingShamans Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 92,
+    Name: "Shamans",
+    RequiredBuildings: []building.Building{building.BuildingShrine},
     Race: data.RaceHalfling,
 }
 
 var HalflingSettlers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 93,
+    Name: "Settlers",
     Race: data.RaceHalfling,
 }
 
 var Slingers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 94,
+    Name: "Slingers",
+    RequiredBuildings: []building.Building{building.BuildingArmory},
     Race: data.RaceHalfling,
 }
 
@@ -1738,11 +1748,11 @@ var AllUnits []Unit = []Unit{
     GnollHalberdiers,
     GnollBowmen,
     WolfRiders,
+    HalflingSettlers,
     HalflingSpearmen,
     HalflingSwordsmen,
     HalflingBowmen,
     HalflingShamans,
-    HalflingSettlers,
     Slingers,
     HighElfSettlers,
     HighElfSpearmen,
