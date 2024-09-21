@@ -1084,66 +1084,86 @@ var Berserkers Unit = Unit{
 var BeastmenSpearmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 46,
+    Name: "Spearmen",
     Race: data.RaceBeastmen,
 }
 
 var BeastmenSwordsmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 47,
+    Name: "Swordsmen",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSmithy},
     Race: data.RaceBeastmen,
 }
 
 var BeastmenHalberdiers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 48,
+    Name: "Halberdiers",
+    RequiredBuildings: []building.Building{building.BuildingArmory},
     Race: data.RaceBeastmen,
 }
 
 var BeastmenBowmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 49,
+    Name: "Bowmen",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSawmill},
     Race: data.RaceBeastmen,
 }
 
 var BeastmenPriest Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 50,
+    Name: "Priests",
+    RequiredBuildings: []building.Building{building.BuildingParthenon},
     Race: data.RaceBeastmen,
 }
 
 var BeastmenMagician Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 51,
+    Name: "Magicians",
+    RequiredBuildings: []building.Building{building.BuildingWizardsGuild},
     Race: data.RaceBeastmen,
 }
 
 var BeastmenEngineer Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 52,
+    Name: "Engineers",
+    RequiredBuildings: []building.Building{building.BuildingBuildersHall},
     Race: data.RaceBeastmen,
 }
 
 var BeastmenSettlers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 53,
+    Name: "Settlers",
     Race: data.RaceBeastmen,
 }
 
 var Centaur Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 54,
+    Name: "Centaurs",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingStables},
     Race: data.RaceBeastmen,
 }
 
 var Manticore Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 55,
+    Name: "Manticores",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingAnimistsGuild},
     Race: data.RaceBeastmen,
 }
 
 var Minotaur Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 56,
+    Name: "Minotaurs",
+    RequiredBuildings: []building.Building{building.BuildingArmorersGuild},
     Race: data.RaceBeastmen,
 }
 
