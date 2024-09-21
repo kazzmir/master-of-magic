@@ -225,24 +225,31 @@ var LizardSwordsmen Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 1,
     Name: "Swordsmen",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSmithy},
     Race: data.RaceLizard,
 }
 
 var LizardHalberdiers Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 2,
+    Name: "Halberdiers",
+    RequiredBuildings: []building.Building{building.BuildingArmory},
     Race: data.RaceLizard,
 }
 
 var LizardJavelineers Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 3,
+    Name: "Javelineers",
+    RequiredBuildings: []building.Building{building.BuildingFightersGuild},
     Race: data.RaceLizard,
 }
 
 var LizardShamans Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 4,
+    Name: "Shamans",
+    RequiredBuildings: []building.Building{building.BuildingShrine},
     Race: data.RaceLizard,
 }
 
@@ -256,6 +263,8 @@ var LizardSettlers Unit = Unit{
 var DragonTurtle Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 6,
+    Name: "Dragon Turtle",
+    RequiredBuildings: []building.Building{building.BuildingArmorersGuild, building.BuildingFantasticStable},
     Race: data.RaceLizard,
 }
 
