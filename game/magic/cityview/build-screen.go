@@ -102,6 +102,28 @@ func computePossibleBuildings(city *citylib.City) []buildinglib.Building {
     return possibleBuildings
 }
 
+func combineStrings(all []string) string {
+    if len(all) == 0 {
+        return ""
+    }
+
+    if len(all) == 1 {
+        return all[0]
+    }
+
+    if len(all) == 2 {
+        return all[0] + " and " + all[1]
+    }
+
+    out := ""
+    for i := 0; i < len(all) - 1; i++ {
+        out += all[i] + ", "
+    }
+
+    out += "and " + all[len(all) - 1]
+    return out
+}
+
 func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib.City, buildScreen *BuildScreen, doCancel func(), doOk func()) *uilib.UI {
 
     fontLbx, err := cache.GetLbxFile("fonts.lbx")
@@ -203,6 +225,17 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
 
     updateMainElementBuilding := func(building buildinglib.Building){
         descriptionWrapped := descriptionFont.CreateWrappedText(155, 1, buildDescriptions.Get(building))
+
+        allowedBuildings := city.BuildingInfo.Allows(building)
+        var allowStrings []string
+        for _, allowed := range allowedBuildings {
+            allowStrings = append(allowStrings, city.BuildingInfo.Name(allowed))
+        }
+
+        allows := combineStrings(allowStrings)
+
+        allowsWrapped := mediumFont.CreateWrappedText(100, 1, allows)
+
         ui.RemoveElement(mainElement)
         mainElement = &uilib.UIElement{
             Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
@@ -242,6 +275,8 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
                 }
 
                 descriptionFont.Print(screen, 85, 58, 1, ebiten.ColorScale{}, "Allows")
+
+                mediumFont.RenderWrapped(screen, 85 + descriptionFont.MeasureTextWidth("Allows", 1) + 10, 59, allowsWrapped, ebiten.ColorScale{}, false)
 
                 descriptionFont.RenderWrapped(screen, 85, 108, descriptionWrapped, ebiten.ColorScale{}, false)
 

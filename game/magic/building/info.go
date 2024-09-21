@@ -57,6 +57,25 @@ type BuildingInfo struct {
     Category int
 }
 
+/* return the buildings that have the provided building as a dependency */
+func (info BuildingInfos) Allows(building Building) []Building {
+    var out []Building
+
+    buildingIndex := info.GetBuildingIndex(building)
+
+    for i, check := range info {
+        if check.BuildingDependency1 == buildingIndex {
+            out = append(out, indexToBuilding(i))
+        }
+
+        if check.BuildingDependency2 == buildingIndex {
+            out = append(out, indexToBuilding(i))
+        }
+    }
+
+    return out
+}
+
 func (info BuildingInfos) GetBuildingByName(name string) *BuildingInfo {
     for i := 0; i < len(info); i++ {
         if info[i].Name == name {
