@@ -247,10 +247,14 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
     updateMainElementBuilding := func(building buildinglib.Building){
         descriptionWrapped := descriptionFont.CreateWrappedText(155, 1, buildDescriptions.Get(building))
 
-        allowedBuildings := city.BuildingInfo.Allows(building)
+        allowedBuildings := city.AllowedBuildings(building)
+        allowedUnits := city.AllowedUnits(building)
         var allowStrings []string
         for _, allowed := range allowedBuildings {
             allowStrings = append(allowStrings, city.BuildingInfo.Name(allowed))
+        }
+        for _, allowed := range allowedUnits {
+            allowStrings = append(allowStrings, allowed.Name)
         }
 
         allows := combineStrings(allowStrings)
