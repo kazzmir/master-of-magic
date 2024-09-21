@@ -986,6 +986,7 @@ var Warship Unit = Unit{
 
 var BarbarianSpearmen Unit = Unit{
     LbxFile: "units1.lbx",
+    Name: "Spearmen",
     Index: 39,
     Race: data.RaceBarbarian,
 }
@@ -993,36 +994,47 @@ var BarbarianSpearmen Unit = Unit{
 var BarbarianSwordsmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 40,
+    Name: "Swordsmen",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSmithy},
     Race: data.RaceBarbarian,
 }
 
 var BarbarianBowmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 41,
+    Name: "Bowmen",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSawmill},
     Race: data.RaceBarbarian,
 }
 
 var BarbarianCavalry Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 42,
+    Name: "Cavalry",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingStables},
     Race: data.RaceBarbarian,
 }
 
 var BarbarianShaman Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 43,
+    Name: "Shaman",
+    RequiredBuildings: []building.Building{building.BuildingShrine},
     Race: data.RaceBarbarian,
 }
 
 var BarbarianSettlers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 44,
+    Name: "Settlers",
     Race: data.RaceBarbarian,
 }
 
 var Berserkers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 45,
+    Name: "Berserkers",
+    RequiredBuildings: []building.Building{building.BuildingArmorersGuild},
     Race: data.RaceBarbarian,
 }
 
@@ -1666,12 +1678,12 @@ var AllUnits []Unit = []Unit{
     Galley,
     Catapult,
     Warship,
+    BarbarianSettlers,
     BarbarianSpearmen,
     BarbarianSwordsmen,
     BarbarianBowmen,
     BarbarianCavalry,
     BarbarianShaman,
-    BarbarianSettlers,
     Berserkers,
     BeastmenSpearmen,
     BeastmenSwordsmen,
