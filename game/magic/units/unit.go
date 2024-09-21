@@ -1559,36 +1559,46 @@ var Paladin Unit = Unit{
 var KlackonSpearmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 114,
+    Name: "Spearmen",
     Race: data.RaceKlackon,
 }
 
 var KlackonSwordsmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 115,
+    Name: "Swordsmen",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSmithy},
     Race: data.RaceKlackon,
 }
 
 var KlackonHalberdiers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 116,
+    Name: "Halberdiers",
+    RequiredBuildings: []building.Building{building.BuildingArmory},
     Race: data.RaceKlackon,
 }
 
 var KlackonEngineer Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 117,
+    Name: "Engineer",
+    RequiredBuildings: []building.Building{building.BuildingBuildersHall},
     Race: data.RaceKlackon,
 }
 
 var KlackonSettlers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 118,
+    Name: "Settlers",
     Race: data.RaceKlackon,
 }
 
 var StagBeetle Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 119,
+    Name: "Stag Beetle",
+    RequiredBuildings: []building.Building{building.BuildingArmorersGuild, building.BuildingFantasticStable},
     Race: data.RaceKlackon,
 }
 
@@ -1597,22 +1607,23 @@ var StagBeetle Unit = Unit{
 // -------------------------------------------------
 
 var AllUnits []Unit = []Unit{
+    LizardSettlers,
     LizardSpearmen,
     LizardSwordsmen,
     LizardHalberdiers,
     LizardJavelineers,
     LizardShamans,
-    LizardSettlers,
     DragonTurtle,
+    NomadSettlers,
     NomadSpearmen,
     NomadSwordsmen,
     NomadBowmen,
     NomadPriest,
-    NomadSettlers,
     NomadHorsebowemen,
     NomadPikemen,
     NomadRangers,
     Griffin,
+    OrcSettlers,
     OrcSpearmen,
     OrcSwordsmen,
     OrcHalberdiers,
@@ -1621,13 +1632,12 @@ var AllUnits []Unit = []Unit{
     OrcShamans,
     OrcMagicians,
     OrcEngineers,
-    OrcSettlers,
     WyvernRiders,
+    TrollSettlers,
     TrollSpearmen,
     TrollSwordsmen,
     TrollHalberdiers,
     TrollShamans,
-    TrollSettlers,
     WarTrolls,
     WarMammoths,
     MagicSpirit,
@@ -1720,6 +1730,7 @@ var AllUnits []Unit = []Unit{
     BarbarianCavalry,
     BarbarianShaman,
     Berserkers,
+    BeastmenSettlers,
     BeastmenSpearmen,
     BeastmenSwordsmen,
     BeastmenHalberdiers,
@@ -1727,19 +1738,19 @@ var AllUnits []Unit = []Unit{
     BeastmenPriest,
     BeastmenMagician,
     BeastmenEngineer,
-    BeastmenSettlers,
     Centaur,
     Manticore,
     Minotaur,
+    DarkElfSettlers,
     DarkElfSpearmen,
     DarkElfSwordsmen,
     DarkElfHalberdiers,
     DarkElfCavalry,
     DarkElfPriests,
-    DarkElfSettlers,
     Nightblades,
     Warlocks,
     Nightmares,
+    DraconianSettlers,
     DraconianSpearmen,
     DraconianSwordsmen,
     DraconianHalberdiers,
@@ -1747,16 +1758,15 @@ var AllUnits []Unit = []Unit{
     DraconianShaman,
     DraconianMagician,
     DraconianEngineer,
-    DraconianSettlers,
     DoomDrake,
     AirShip,
+    DwarfSettlers,
     DwarfSwordsmen,
     DwarfHalberdiers,
     DwarfEngineer,
     Hammerhands,
     SteamCannon,
     Golem,
-    DwarfSettlers,
     GnollSettlers,
     GnollSpearmen,
     GnollSwordsmen,
@@ -1788,10 +1798,10 @@ var AllUnits []Unit = []Unit{
     HighMenMagician,
     HighMenPikemen,
     Paladin,
+    KlackonSettlers,
     KlackonSpearmen,
     KlackonSwordsmen,
     KlackonHalberdiers,
     KlackonEngineer,
-    KlackonSettlers,
     StagBeetle,
 }
