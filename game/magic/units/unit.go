@@ -345,60 +345,78 @@ var Griffin Unit = Unit{
 var OrcSpearmen Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 17,
+    Name: "Spearmen",
     Race: data.RaceOrc,
 }
 
 var OrcSwordsmen Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 18,
+    Name: "Swordsmen",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSmithy},
     Race: data.RaceOrc,
 }
 
 var OrcHalberdiers Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 19,
+    Name: "Halberdiers",
+    RequiredBuildings: []building.Building{building.BuildingArmory},
     Race: data.RaceOrc,
 }
 
 var OrcBowmen Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 20,
+    Name: "Bowmen",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSawmill},
     Race: data.RaceOrc,
 }
 
 var OrcCavalry Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 21,
+    Name: "Calvary",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingStables},
     Race: data.RaceOrc,
 }
 
 var OrcShamans Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 22,
+    Name: "Shamans",
+    RequiredBuildings: []building.Building{building.BuildingShrine},
     Race: data.RaceOrc,
 }
 
 var OrcMagicians Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 23,
+    Name: "Magicians",
+    RequiredBuildings: []building.Building{building.BuildingWizardsGuild},
     Race: data.RaceOrc,
 }
 
 var OrcEngineers Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 24,
+    Name: "Engineers",
+    RequiredBuildings: []building.Building{building.BuildingBuildersHall},
     Race: data.RaceOrc,
 }
 
 var OrcSettlers Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 25,
+    Name: "Settlers",
     Race: data.RaceOrc,
 }
 
 var WyvernRiders Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 26,
+    Name: "Wyvern Riders",
+    RequiredBuildings: []building.Building{building.BuildingFantasticStable},
     Race: data.RaceOrc,
 }
 
