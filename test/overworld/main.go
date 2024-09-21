@@ -30,7 +30,7 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
     wizard := setup.WizardCustom{
         Name: "player",
         Banner: data.BannerBlue,
-        Race: data.RaceBarbarian,
+        Race: data.RaceGnoll,
         Abilities: []setup.WizardAbility{
             setup.AbilityAlchemy,
             setup.AbilitySageMaster,

@@ -1279,36 +1279,46 @@ var DwarfSettlers Unit = Unit{
 var GnollSpearmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 83,
+    Name: "Spearmen",
     Race: data.RaceGnoll,
 }
 
 var GnollSwordsmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 84,
+    Name: "Swordsmen",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSmithy},
     Race: data.RaceGnoll,
 }
 
 var GnollHalberdiers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 85,
+    Name: "Halberdiers",
+    RequiredBuildings: []building.Building{building.BuildingArmory},
     Race: data.RaceGnoll,
 }
 
 var GnollBowmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 86,
+    Name: "Bowmen",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSawmill},
     Race: data.RaceGnoll,
 }
 
 var GnollSettlers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 87,
+    Name: "Settlers",
     Race: data.RaceGnoll,
 }
 
 var WolfRiders Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 88,
+    Name: "Wolf Riders",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingStables},
     Race: data.RaceGnoll,
 }
 
@@ -1722,11 +1732,11 @@ var AllUnits []Unit = []Unit{
     SteamCannon,
     Golem,
     DwarfSettlers,
+    GnollSettlers,
     GnollSpearmen,
     GnollSwordsmen,
     GnollHalberdiers,
     GnollBowmen,
-    GnollSettlers,
     WolfRiders,
     HalflingSpearmen,
     HalflingSwordsmen,
