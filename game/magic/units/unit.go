@@ -1471,6 +1471,8 @@ var HighMenSpearmen Unit = Unit{
 var HighMenSwordsmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 105,
+    Name: "Swordsmen",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSmithy},
     Race: data.RaceHighMen,
 }
 
@@ -1479,6 +1481,7 @@ var HighMenBowmen Unit = Unit{
     Index: 106,
     Race: data.RaceHighMen,
     Name: "Bowmen",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSawmill},
     Count: 6,
     Defense: 1,
     MovementSpeed: 1,
@@ -1498,24 +1501,32 @@ var HighMenBowmen Unit = Unit{
 var HighMenCavalry Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 107,
+    Name: "Cavalry",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingStables},
     Race: data.RaceHighMen,
 }
 
-var HighMenPreist Unit = Unit{
+var HighMenPriest Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 108,
+    Name: "Priests",
+    RequiredBuildings: []building.Building{building.BuildingParthenon},
     Race: data.RaceHighMen,
 }
 
 var HighMenMagician Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 109,
+    Name: "Magicians",
+    RequiredBuildings: []building.Building{building.BuildingWizardsGuild},
     Race: data.RaceHighMen,
 }
 
 var HighMenEngineer Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 110,
+    Name: "Engineers",
+    RequiredBuildings: []building.Building{building.BuildingBuildersHall},
     Race: data.RaceHighMen,
 }
 
@@ -1532,12 +1543,16 @@ var HighMenSettlers Unit = Unit{
 var HighMenPikemen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 112,
+    Name: "Pikemen",
+    RequiredBuildings: []building.Building{building.BuildingFightersGuild},
     Race: data.RaceHighMen,
 }
 
 var Paladin Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 113,
+    Name: "Paladins",
+    RequiredBuildings: []building.Building{building.BuildingArmorersGuild, building.BuildingCathedral},
     Race: data.RaceHighMen,
 }
 
@@ -1763,14 +1778,14 @@ var AllUnits []Unit = []Unit{
     Longbowmen,
     ElvenLord,
     Pegasai,
+    HighMenSettlers,
+    HighMenEngineer,
     HighMenSpearmen,
     HighMenSwordsmen,
     HighMenBowmen,
     HighMenCavalry,
-    HighMenPreist,
+    HighMenPriest,
     HighMenMagician,
-    HighMenEngineer,
-    HighMenSettlers,
     HighMenPikemen,
     Paladin,
     KlackonSpearmen,
