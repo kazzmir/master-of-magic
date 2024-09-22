@@ -1920,6 +1920,7 @@ func (game *Game) DoNextTurn(){
 
                         scrollEvent := GameEventScroll{
                             Title: "CITY GROWTH",
+                            // FIXME: 'has shrunk' if growth is negative?
                             Text: fmt.Sprintf("%v has grown to a population of %v.", city.Name, city.Citizens()),
                         }
 
