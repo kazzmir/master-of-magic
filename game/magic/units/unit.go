@@ -1255,60 +1255,81 @@ var Nightmares Unit = Unit{
 var DraconianSpearmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 66,
+    Name: "Spearmen",
     Race: data.RaceDraconian,
 }
 
 var DraconianSwordsmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 67,
+    Name: "Swordsmen",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSmithy},
     Race: data.RaceDraconian,
 }
 
 var DraconianHalberdiers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 68,
+    Name: "Halberdiers",
+    RequiredBuildings: []building.Building{building.BuildingArmory},
     Race: data.RaceDraconian,
 }
 
 var DraconianBowmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 69,
+    Name: "Bowmen",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSawmill},
     Race: data.RaceDraconian,
 }
 
 var DraconianShaman Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 70,
+    Name: "Shaman",
+    RequiredBuildings: []building.Building{building.BuildingShrine},
     Race: data.RaceDraconian,
 }
 
 var DraconianMagician Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 71,
+    Name: "Magicians",
+    RequiredBuildings: []building.Building{building.BuildingWizardsGuild},
     Race: data.RaceDraconian,
 }
 
+// removed from game
+/*
 var DraconianEngineer Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 72,
+    Name: "Engineers",
+    RequiredBuildings: []building.Building{building.BuildingBuildersHall},
     Race: data.RaceDraconian,
 }
+*/
 
 var DraconianSettlers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 73,
+    Name: "Settlers",
     Race: data.RaceDraconian,
 }
 
 var DoomDrake Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 74,
+    Name: "Doom Drake",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingStables},
     Race: data.RaceDraconian,
 }
 
 var AirShip Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 75,
+    Name: "Air Ship",
+    RequiredBuildings: []building.Building{building.BuildingShipYard},
     Race: data.RaceDraconian,
 }
 
@@ -1835,7 +1856,6 @@ var AllUnits []Unit = []Unit{
     DraconianBowmen,
     DraconianShaman,
     DraconianMagician,
-    DraconianEngineer,
     DoomDrake,
     AirShip,
     DwarfSettlers,
