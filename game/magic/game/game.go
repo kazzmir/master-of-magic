@@ -992,6 +992,18 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                         newX := stack.X() + dx
                         newY := stack.Y() + dy
 
+                        leftClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)
+                        if leftClick {
+                            mouseX, mouseY := ebiten.CursorPosition()
+
+                            // can only click into the area not hidden by the hud
+                            if mouseX < 240 && mouseY > 18 {
+                                // log.Printf("Click at %v, %v", mouseX, mouseY)
+                                newX = game.cameraX + mouseX / game.Map.TileWidth()
+                                newY = game.cameraY + mouseY / game.Map.TileHeight()
+                            }
+                        }
+
                         if newX != oldX || newY != oldY {
                             activeUnits := stack.ActiveUnits()
                             if len(activeUnits) > 0 {
