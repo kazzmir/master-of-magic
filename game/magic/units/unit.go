@@ -423,42 +423,54 @@ var WyvernRiders Unit = Unit{
 var TrollSpearmen Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 27,
+    Name: "Spearmen",
     Race: data.RaceTroll,
 }
 
 var TrollSwordsmen Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 28,
+    Name: "Swordsmen",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSmithy},
     Race: data.RaceTroll,
 }
 
 var TrollHalberdiers Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 29,
+    Name: "Halberdiers",
+    RequiredBuildings: []building.Building{building.BuildingArmory},
     Race: data.RaceTroll,
 }
 
 var TrollShamans Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 30,
+    Name: "Shamans",
+    RequiredBuildings: []building.Building{building.BuildingShrine},
     Race: data.RaceTroll,
 }
 
 var TrollSettlers Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 31,
+    Name: "Settlers",
     Race: data.RaceTroll,
 }
 
 var WarTrolls Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 32,
+    Name: "War Trolls",
+    RequiredBuildings: []building.Building{building.BuildingFightersGuild},
     Race: data.RaceTroll,
 }
 
 var WarMammoths Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 33,
+    Name: "War Mammoths",
+    RequiredBuildings: []building.Building{building.BuildingArmorersGuild, building.BuildingStables},
     Race: data.RaceTroll,
 }
 
