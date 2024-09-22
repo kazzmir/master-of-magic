@@ -481,7 +481,7 @@ func (city *City) DoNextTurn(garrison []*units.OverworldUnit) []CityEvent {
         city.Population = city.MaximumCitySize() * 1000
     }
 
-    if math.Abs(float64(city.Population - oldPopulation)) >= 1000 {
+    if math.Abs(float64(city.Population/1000 - oldPopulation/1000)) > 0 {
         cityEvents = append(cityEvents, &CityEventPopulationGrowth{Size: (city.Population - oldPopulation)/1000})
     }
 
