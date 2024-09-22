@@ -514,6 +514,11 @@ func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City,
 
     getAlpha := util.MakeFadeIn(7, &game.Counter)
 
+    buildingPic, _ := game.ImageCache.GetImage("cityscap.lbx", buildinglib.GetBuildingIndex(building), 0)
+
+    // FIXME: pick background based on tile the land is on?
+    landBackground, _ := game.ImageCache.GetImage("cityscap.lbx", 0, 4)
+
     game.Drawer = func (screen *ebiten.Image, game *Game){
         drawer(screen, game)
 
@@ -530,6 +535,20 @@ func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City,
 
         options.GeoM.Translate(float64(background.Bounds().Dx()), 0)
         screen.DrawImage(rightSide, &options)
+
+        x, y = options.GeoM.Apply(4, 6)
+        buildingSpace := screen.SubImage(image.Rect(int(x), int(y), int(x + 45), int(y + 47))).(*ebiten.Image)
+
+        // vector.DrawFilledRect(buildingSpace, float32(x), float32(y), float32(buildingSpace.Bounds().Dx()), float32(buildingSpace.Bounds().Dy()), color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, false)
+
+        landOptions := options
+        landOptions.GeoM.Translate(-10, -10)
+        buildingSpace.DrawImage(landBackground, &landOptions)
+
+        buildingOptions := options
+        buildingOptions.GeoM.Translate(float64(buildingSpace.Bounds().Dx()) / 2, float64(buildingSpace.Bounds().Dy()) / 2)
+        buildingOptions.GeoM.Translate(float64(buildingPic.Bounds().Dx()) / -2, float64(buildingPic.Bounds().Dy()) / -2)
+        buildingSpace.DrawImage(buildingPic, &buildingOptions)
     }
 
     quit := false
