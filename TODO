@@ -1,0 +1,33 @@
+* overworld path finding to point on map
+* city view: separate surplus food/gold from subsistence food/gold
+* combat: cast unit spells
+* select spell to research
+* select spell to cast
+* cast spell on overworld
+* hire popup for hero
+* summon artifact/weapon animation
+* summon hero/champion animation
+* banish animation for defeated wizard
+* enter node (sorcery, nature, chaos) in overworld
+* create artifact screen
+* cartographer advisor
+* surveyor advisor
+* city catchment area
+* combat: results from combat should be reflected in overworld units
+* combat: draw town sprites in combat scene
+* overworld units should render health and veteran status
+* combat: ai controlled units
+* overworld: ai controlled wizards/empires
+* myrror plane
+* filter buildings by race
+* roaming bands of neutral enemies
+* neutral towns/cities
+* game menu - save game, exit, etc
+* refactor new wizard/new game to use image cache
+* units disband if not enough food
+* buildings destroyed if not enough gold for upkeep
+* play midi music
+* font editor - choose colors for font palette
+* melee/defense/heart icons should have white border
+* armies screen
+* cities screen
