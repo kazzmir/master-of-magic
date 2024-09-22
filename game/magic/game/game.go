@@ -972,7 +972,7 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
         }
 
         // don't know what the cost is, assume we can move there
-        if fog[y2][x2] {
+        if fog[x2][y2] {
             return baseCost
         }
 
@@ -1143,11 +1143,17 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
 
                         stepsTaken := 0
                         var mergeStack *playerlib.UnitStack
+
+                        quitMoving:
                         for i, step := range stack.CurrentPath {
+                            if stack.OutOfMoves() {
+                                break
+                            }
+
                             terrainCost, canMove := game.ComputeTerrainCost(stack, step.X, step.Y)
 
                             if canMove {
-                                stepsTaken = i
+                                stepsTaken = i + 1
                                 mergeStack = player.FindStack(step.X, step.Y)
 
                                 stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost)
@@ -1160,6 +1166,8 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                                     otherStack := otherPlayer.FindStack(stack.X(), stack.Y())
                                     if otherStack != nil {
                                         game.doCombat(yield, player, stack, otherPlayer, otherStack)
+                                        stepsTaken = len(stack.CurrentPath)
+                                        break quitMoving
                                     }
                                 }
 
