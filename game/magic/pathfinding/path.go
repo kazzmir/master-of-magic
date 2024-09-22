@@ -80,7 +80,7 @@ func FindPath(start image.Point, end image.Point, maxPath float64, tileCost Tile
             continue
         }
 
-        if node.point.Eq(end) {
+        if node.point.Eq(end) && node.cost < Infinity {
             endNode = node
             if node.cost < lowestCost {
                 lowestCost = node.cost
