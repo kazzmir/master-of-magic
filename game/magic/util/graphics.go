@@ -10,6 +10,8 @@ import (
     "github.com/hajimehoshi/ebiten/v2/vector"
 )
 
+type AlphaFadeFunc func() float32
+
 func PremultiplyAlpha(c color.RGBA) color.RGBA {
     a := float64(c.A) / 255.0
     return color.RGBA{
@@ -136,3 +138,27 @@ func Lighten2(c color.RGBA, amount float64) color.Color {
     return out
 }
 */
+
+func MakeFadeIn(time uint64, counter *uint64) AlphaFadeFunc {
+    start := *counter
+    return func() float32 {
+        diff := *counter - start
+        if diff > time {
+            return 1.0
+        }
+
+        return float32(diff) / float32(time)
+    }
+}
+
+func MakeFadeOut(time uint64, counter *uint64) AlphaFadeFunc {
+    start := *counter
+    return func() float32 {
+        diff := *counter - start
+        if diff > time {
+            return 0.0
+        }
+
+        return 1.0 - (float32(diff) / float32(time))
+    }
+}

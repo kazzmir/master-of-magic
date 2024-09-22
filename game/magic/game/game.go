@@ -512,10 +512,13 @@ func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City,
 
     rightSide, _ := game.ImageCache.GetImage("resource.lbx", 41, 0)
 
+    getAlpha := util.MakeFadeIn(7, &game.Counter)
+
     game.Drawer = func (screen *ebiten.Image, game *Game){
         drawer(screen, game)
 
         var options ebiten.DrawImageOptions
+        options.ColorScale.ScaleAlpha(getAlpha())
         options.GeoM.Translate(8, 60)
         screen.DrawImage(background, &options)
         iconOptions := options
@@ -530,12 +533,19 @@ func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City,
     }
 
     quit := false
-    for !quit {
+    quitCounter := 0
+
+    for !quit || quitCounter < 7 {
         game.Counter += 1
 
-        leftClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)
-        if leftClick {
-            quit = true
+        if quit {
+            quitCounter += 1
+        } else {
+            leftClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)
+            if leftClick {
+                quit = true
+                getAlpha = util.MakeFadeOut(7, &game.Counter)
+            }
         }
 
         yield()
