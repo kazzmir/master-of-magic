@@ -1336,42 +1336,55 @@ var AirShip Unit = Unit{
 var DwarfSwordsmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 76,
+    Name: "Swordsmen",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSmithy},
     Race: data.RaceDwarf,
 }
 
 var DwarfHalberdiers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 77,
+    Name: "Halberdiers",
+    RequiredBuildings: []building.Building{building.BuildingArmory},
     Race: data.RaceDwarf,
 }
 
 var DwarfEngineer Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 78,
+    Name: "Engineers",
+    RequiredBuildings: []building.Building{building.BuildingBuildersHall},
     Race: data.RaceDwarf,
 }
 
 var Hammerhands Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 79,
+    Name: "Hammerhands",
+    RequiredBuildings: []building.Building{building.BuildingFightersGuild},
     Race: data.RaceDwarf,
 }
 
 var SteamCannon Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 80,
+    Name: "Steam Cannon",
+    RequiredBuildings: []building.Building{building.BuildingMinersGuild},
     Race: data.RaceDwarf,
 }
 
 var Golem Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 81,
+    Name: "Golem",
+    RequiredBuildings: []building.Building{building.BuildingArmorersGuild},
     Race: data.RaceDwarf,
 }
 
 var DwarfSettlers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 82,
+    Name: "Settlers",
     Race: data.RaceDwarf,
 }
 
