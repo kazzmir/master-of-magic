@@ -965,9 +965,15 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
         tileFrom := game.Map.GetTile(x1, y1)
         tileTo := game.Map.GetTile(x2, y2)
 
+        baseCost := float64(1)
+
+        if x1 != x2 && y1 != y2 {
+            baseCost = 1.5
+        }
+
         // don't know what the cost is, assume we can move there
         if fog[y2][x2] {
-            return 1
+            return baseCost
         }
 
         // can't move from land to ocean unless all units are flyers
@@ -977,7 +983,7 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
             }
         }
 
-        return 1
+        return baseCost
     }
 
     neighbors := func (x int, y int) []image.Point {
