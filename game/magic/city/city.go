@@ -341,6 +341,16 @@ func (city *City) PopulationGrowthRate() int {
     return base
 }
 
+func (city *City) ResearchProduction() int {
+    research := 0
+
+    for _, building := range city.Buildings.Values() {
+        research += city.BuildingInfo.ResearchProduction(building)
+    }
+
+    return research
+}
+
 func (city *City) ManaProduction() int {
     mana := 0
 

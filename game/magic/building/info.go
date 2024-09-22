@@ -115,6 +115,10 @@ func (info BuildingInfos) ManaProduction(building Building) int {
     return info[info.GetBuildingIndex(building)].Religion
 }
 
+func (info BuildingInfos) ResearchProduction(building Building) int {
+    return info[info.GetBuildingIndex(building)].Research
+}
+
 func (info BuildingInfos) Name(building Building) string {
     if building == BuildingFortress {
         return "Fortress"

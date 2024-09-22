@@ -1636,10 +1636,13 @@ func (game *Game) DoNextTurn(){
         if player.Gold < 0 {
             player.Gold = 0
         }
+
         player.Mana += player.ManaPerTurn()
         if player.Mana < 0 {
             player.Mana = 0
         }
+
+        player.SpellResearch += player.SpellResearchPerTurn()
 
         for _, city := range player.Cities {
             cityEvents := city.DoNextTurn(player.GetUnits(city.X, city.Y))

@@ -239,6 +239,9 @@ type Player struct {
 
     CastingSkill int
 
+    // amount of research put towards the current spell
+    SpellResearch int
+
     Wizard setup.WizardCustom
 
     Units []*units.OverworldUnit
@@ -248,6 +251,16 @@ type Player struct {
     // counter for the next created unit owned by this player
     UnitId uint64
     SelectedStack *UnitStack
+}
+
+func (player *Player) SpellResearchPerTurn() int {
+    research := 0
+
+    for _, city := range player.Cities {
+        research += city.ResearchProduction()
+    }
+
+    return research
 }
 
 func (player *Player) GoldPerTurn() int {
