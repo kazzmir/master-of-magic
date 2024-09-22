@@ -969,34 +969,32 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                 keys := make([]ebiten.Key, 0)
                 keys = inpututil.AppendJustPressedKeys(keys)
 
-                dx := 0
-                dy := 0
-
-                for _, key := range keys {
-                    switch key {
-                        case ebiten.KeyUp: dy = -1
-                        case ebiten.KeyDown: dy = 1
-                        case ebiten.KeyLeft: dx = -1
-                        case ebiten.KeyRight: dx = 1
-                    }
-                }
-
                 if len(game.Players) > 0 {
                     player := game.Players[0]
                     if player.SelectedStack != nil {
                         stack := player.SelectedStack
 
-                        // game.CenterCamera(stack.X(), stack.Y())
+                        oldX := stack.X()
+                        oldY := stack.Y()
 
-                        if dx != 0 || dy != 0 {
+                        dx := 0
+                        dy := 0
+
+                        for _, key := range keys {
+                            switch key {
+                                case ebiten.KeyUp: dy = -1
+                                case ebiten.KeyDown: dy = 1
+                                case ebiten.KeyLeft: dx = -1
+                                case ebiten.KeyRight: dx = 1
+                            }
+                        }
+
+                        newX := stack.X() + dx
+                        newY := stack.Y() + dy
+
+                        if newX != oldX || newY != oldY {
                             activeUnits := stack.ActiveUnits()
                             if len(activeUnits) > 0 {
-                                oldX := stack.X()
-                                oldY := stack.Y()
-
-                                newX := stack.X() + dx
-                                newY := stack.Y() + dy
-
                                 if newY > 0 && newY < game.Map.Height() && newX > 0 && newX < game.Map.Width() {
 
                                     inactiveUnits := stack.InactiveUnits()
