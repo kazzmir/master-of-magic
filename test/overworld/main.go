@@ -347,6 +347,68 @@ func createScenario4(cache *lbx.LbxCache) *gamelib.Game {
     return game
 }
 
+func createScenario5(cache *lbx.LbxCache) *gamelib.Game {
+    wizard := setup.WizardCustom{
+        Name: "player",
+        Banner: data.BannerBlue,
+        Race: data.RaceHighMen,
+        Abilities: []setup.WizardAbility{
+            setup.AbilityAlchemy,
+            setup.AbilitySageMaster,
+        },
+        Books: []data.WizardBook{
+            data.WizardBook{
+                Magic: data.LifeMagic,
+                Count: 3,
+            },
+            data.WizardBook{
+                Magic: data.SorceryMagic,
+                Count: 8,
+            },
+        },
+    }
+
+    game := gamelib.MakeGame(cache)
+
+    game.Plane = data.PlaneArcanus
+
+    player := game.AddPlayer(wizard)
+
+    x, y := game.FindValidCityLocation()
+
+    introCity := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.TaxRate, game.BuildingInfo)
+    introCity.Population = 6000
+    introCity.Plane = data.PlaneArcanus
+    introCity.ProducingBuilding = buildinglib.BuildingHousing
+    introCity.ProducingUnit = units.UnitNone
+    introCity.Wall = false
+
+    introCity.AddBuilding(buildinglib.BuildingShrine)
+
+    introCity.ResetCitizens(nil)
+
+    player.AddCity(introCity)
+
+    player.Gold = 83
+    player.Mana = 26
+
+    // game.Map.Map.Terrain[3][6] = terrain.TileNatureForest.Index
+
+    player.LiftFog(x, y, 3)
+
+    _ = introCity
+
+    game.CenterCamera(x, y)
+
+    game.Events <- &gamelib.GameEventScroll{
+        Title: "CITY GROWTH",
+        Text: "New Haven has grown to a population of 8",
+        // Text: "this is a really long piece of text that has something to do with city growth. what will it look like on the screen? lets keep going until this runs out of space",
+    }
+
+    return game
+}
+
 func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
@@ -357,6 +419,7 @@ func NewEngine(scenario int) (*Engine, error) {
         case 2: game = createScenario2(cache)
         case 3: game = createScenario3(cache)
         case 4: game = createScenario4(cache)
+        case 5: game = createScenario5(cache)
         default: game = createScenario1(cache)
     }
 
