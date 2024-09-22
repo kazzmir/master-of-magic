@@ -2,6 +2,7 @@ package units
 
 import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/building"
 )
 
 type Damage int
@@ -115,6 +116,8 @@ type Unit struct {
     Flying bool
     Abilities []Ability
 
+    RequiredBuildings []building.Building
+
     RangedAttackDamageType Damage
 
     AttackSound AttackSound
@@ -222,24 +225,31 @@ var LizardSwordsmen Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 1,
     Name: "Swordsmen",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSmithy},
     Race: data.RaceLizard,
 }
 
 var LizardHalberdiers Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 2,
+    Name: "Halberdiers",
+    RequiredBuildings: []building.Building{building.BuildingArmory},
     Race: data.RaceLizard,
 }
 
 var LizardJavelineers Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 3,
+    Name: "Javelineers",
+    RequiredBuildings: []building.Building{building.BuildingFightersGuild},
     Race: data.RaceLizard,
 }
 
 var LizardShamans Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 4,
+    Name: "Shamans",
+    RequiredBuildings: []building.Building{building.BuildingShrine},
     Race: data.RaceLizard,
 }
 
@@ -253,30 +263,39 @@ var LizardSettlers Unit = Unit{
 var DragonTurtle Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 6,
+    Name: "Dragon Turtle",
+    RequiredBuildings: []building.Building{building.BuildingArmorersGuild, building.BuildingStables},
     Race: data.RaceLizard,
 }
 
 var NomadSpearmen Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 7,
+    Name: "Spearmen",
     Race: data.RaceNomad,
 }
 
 var NomadSwordsmen Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 8,
+    Name: "Swordsmen",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSmithy},
     Race: data.RaceNomad,
 }
 
 var NomadBowmen Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 9,
+    Name: "Bowmen",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSawmill},
     Race: data.RaceNomad,
 }
 
 var NomadPriest Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 10,
+    Name: "Priests",
+    RequiredBuildings: []building.Building{building.BuildingParthenon},
     Race: data.RaceNomad,
 }
 
@@ -286,30 +305,39 @@ var NomadPriest Unit = Unit{
 var NomadSettlers Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 12,
+    Name: "Settlers",
     Race: data.RaceNomad,
 }
 
 var NomadHorsebowemen Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 13,
+    Name: "Horsebowmen",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingStables},
     Race: data.RaceNomad,
 }
 
 var NomadPikemen Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 14,
+    Name: "Pikemen",
+    RequiredBuildings: []building.Building{building.BuildingFightersGuild},
     Race: data.RaceNomad,
 }
 
 var NomadRangers Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 15,
+    Name: "Rangers",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingAnimistsGuild},
     Race: data.RaceNomad,
 }
 
 var Griffin Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 16,
+    Name: "Griffins",
+    RequiredBuildings: []building.Building{building.BuildingFantasticStable},
     // maybe race magical?
     Race: data.RaceNomad,
 }
@@ -317,102 +345,132 @@ var Griffin Unit = Unit{
 var OrcSpearmen Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 17,
+    Name: "Spearmen",
     Race: data.RaceOrc,
 }
 
 var OrcSwordsmen Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 18,
+    Name: "Swordsmen",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSmithy},
     Race: data.RaceOrc,
 }
 
 var OrcHalberdiers Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 19,
+    Name: "Halberdiers",
+    RequiredBuildings: []building.Building{building.BuildingArmory},
     Race: data.RaceOrc,
 }
 
 var OrcBowmen Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 20,
+    Name: "Bowmen",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSawmill},
     Race: data.RaceOrc,
 }
 
 var OrcCavalry Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 21,
+    Name: "Calvary",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingStables},
     Race: data.RaceOrc,
 }
 
 var OrcShamans Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 22,
+    Name: "Shamans",
+    RequiredBuildings: []building.Building{building.BuildingShrine},
     Race: data.RaceOrc,
 }
 
 var OrcMagicians Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 23,
+    Name: "Magicians",
+    RequiredBuildings: []building.Building{building.BuildingWizardsGuild},
     Race: data.RaceOrc,
 }
 
 var OrcEngineers Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 24,
+    Name: "Engineers",
+    RequiredBuildings: []building.Building{building.BuildingBuildersHall},
     Race: data.RaceOrc,
 }
 
 var OrcSettlers Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 25,
+    Name: "Settlers",
     Race: data.RaceOrc,
 }
 
 var WyvernRiders Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 26,
+    Name: "Wyvern Riders",
+    RequiredBuildings: []building.Building{building.BuildingFantasticStable},
     Race: data.RaceOrc,
 }
 
 var TrollSpearmen Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 27,
+    Name: "Spearmen",
     Race: data.RaceTroll,
 }
 
 var TrollSwordsmen Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 28,
+    Name: "Swordsmen",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSmithy},
     Race: data.RaceTroll,
 }
 
 var TrollHalberdiers Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 29,
+    Name: "Halberdiers",
+    RequiredBuildings: []building.Building{building.BuildingArmory},
     Race: data.RaceTroll,
 }
 
 var TrollShamans Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 30,
+    Name: "Shamans",
+    RequiredBuildings: []building.Building{building.BuildingShrine},
     Race: data.RaceTroll,
 }
 
 var TrollSettlers Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 31,
+    Name: "Settlers",
     Race: data.RaceTroll,
 }
 
 var WarTrolls Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 32,
+    Name: "War Trolls",
+    RequiredBuildings: []building.Building{building.BuildingFightersGuild},
     Race: data.RaceTroll,
 }
 
 var WarMammoths Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 33,
+    Name: "War Mammoths",
+    RequiredBuildings: []building.Building{building.BuildingArmorersGuild, building.BuildingStables},
     Race: data.RaceTroll,
 }
 
@@ -960,29 +1018,38 @@ var HeroTorin Unit = Unit{
 var Trireme Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 35,
+    Name: "Trireme",
+    RequiredBuildings: []building.Building{building.BuildingShipwrightsGuild},
     Race: data.RaceNone,
 }
 
 var Galley Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 36,
+    Name: "Galley",
+    RequiredBuildings: []building.Building{building.BuildingShipYard},
     Race: data.RaceNone,
 }
 
 var Catapult Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 37,
+    Name: "Catapult",
+    RequiredBuildings: []building.Building{building.BuildingMechaniciansGuild},
     Race: data.RaceNone,
 }
 
 var Warship Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 38,
+    Name: "Warship",
+    RequiredBuildings: []building.Building{building.BuildingMaritimeGuild},
     Race: data.RaceNone,
 }
 
 var BarbarianSpearmen Unit = Unit{
     LbxFile: "units1.lbx",
+    Name: "Spearmen",
     Index: 39,
     Race: data.RaceBarbarian,
 }
@@ -990,144 +1057,187 @@ var BarbarianSpearmen Unit = Unit{
 var BarbarianSwordsmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 40,
+    Name: "Swordsmen",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSmithy},
     Race: data.RaceBarbarian,
 }
 
 var BarbarianBowmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 41,
+    Name: "Bowmen",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSawmill},
     Race: data.RaceBarbarian,
 }
 
 var BarbarianCavalry Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 42,
+    Name: "Cavalry",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingStables},
     Race: data.RaceBarbarian,
 }
 
 var BarbarianShaman Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 43,
+    Name: "Shaman",
+    RequiredBuildings: []building.Building{building.BuildingShrine},
     Race: data.RaceBarbarian,
 }
 
 var BarbarianSettlers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 44,
+    Name: "Settlers",
     Race: data.RaceBarbarian,
 }
 
 var Berserkers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 45,
+    Name: "Berserkers",
+    RequiredBuildings: []building.Building{building.BuildingArmorersGuild},
     Race: data.RaceBarbarian,
 }
 
 var BeastmenSpearmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 46,
+    Name: "Spearmen",
     Race: data.RaceBeastmen,
 }
 
 var BeastmenSwordsmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 47,
+    Name: "Swordsmen",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSmithy},
     Race: data.RaceBeastmen,
 }
 
 var BeastmenHalberdiers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 48,
+    Name: "Halberdiers",
+    RequiredBuildings: []building.Building{building.BuildingArmory},
     Race: data.RaceBeastmen,
 }
 
 var BeastmenBowmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 49,
+    Name: "Bowmen",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSawmill},
     Race: data.RaceBeastmen,
 }
 
 var BeastmenPriest Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 50,
+    Name: "Priests",
+    RequiredBuildings: []building.Building{building.BuildingParthenon},
     Race: data.RaceBeastmen,
 }
 
 var BeastmenMagician Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 51,
+    Name: "Magicians",
+    RequiredBuildings: []building.Building{building.BuildingWizardsGuild},
     Race: data.RaceBeastmen,
 }
 
 var BeastmenEngineer Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 52,
+    Name: "Engineers",
+    RequiredBuildings: []building.Building{building.BuildingBuildersHall},
     Race: data.RaceBeastmen,
 }
 
 var BeastmenSettlers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 53,
+    Name: "Settlers",
     Race: data.RaceBeastmen,
 }
 
 var Centaur Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 54,
+    Name: "Centaurs",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingStables},
     Race: data.RaceBeastmen,
 }
 
 var Manticore Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 55,
+    Name: "Manticores",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingAnimistsGuild},
     Race: data.RaceBeastmen,
 }
 
 var Minotaur Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 56,
+    Name: "Minotaurs",
+    RequiredBuildings: []building.Building{building.BuildingArmorersGuild},
     Race: data.RaceBeastmen,
 }
 
 var DarkElfSpearmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 57,
+    Name: "Spearmen",
     Race: data.RaceDarkElf,
 }
 
 var DarkElfSwordsmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 58,
+    Name: "Swordsmen",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSmithy},
     Race: data.RaceDarkElf,
 }
 
 var DarkElfHalberdiers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 59,
+    Name: "Halberdiers",
+    RequiredBuildings: []building.Building{building.BuildingArmory},
     Race: data.RaceDarkElf,
 }
 
 var DarkElfCavalry Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 60,
+    Name: "Cavalry",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingStables},
     Race: data.RaceDarkElf,
 }
 
 var DarkElfPriests Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 61,
+    Name: "Priests",
+    RequiredBuildings: []building.Building{building.BuildingParthenon},
     Race: data.RaceDarkElf,
 }
 
 var DarkElfSettlers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 62,
+    Name: "Settlers",
     Race: data.RaceDarkElf,
 }
 
 var Nightblades Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 63,
+    Name: "Nightblades",
+    RequiredBuildings: []building.Building{building.BuildingFightersGuild},
     Race: data.RaceDarkElf,
 }
 
@@ -1137,6 +1247,7 @@ var Warlocks Unit = Unit{
     Race: data.RaceDarkElf,
     Count: 4,
     Name: "Warlocks",
+    RequiredBuildings: []building.Building{building.BuildingWizardsGuild},
     RangedAttackDamageType: DamageRangedMagical,
     RangeAttackIndex: 16,
     MeleeAttackPower: 1,
@@ -1156,180 +1267,236 @@ var Warlocks Unit = Unit{
 var Nightmares Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 65,
+    Name: "Nightmares",
+    RequiredBuildings: []building.Building{building.BuildingFantasticStable},
     Race: data.RaceDarkElf,
 }
 
 var DraconianSpearmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 66,
+    Name: "Spearmen",
     Race: data.RaceDraconian,
 }
 
 var DraconianSwordsmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 67,
+    Name: "Swordsmen",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSmithy},
     Race: data.RaceDraconian,
 }
 
 var DraconianHalberdiers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 68,
+    Name: "Halberdiers",
+    RequiredBuildings: []building.Building{building.BuildingArmory},
     Race: data.RaceDraconian,
 }
 
 var DraconianBowmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 69,
+    Name: "Bowmen",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSawmill},
     Race: data.RaceDraconian,
 }
 
 var DraconianShaman Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 70,
+    Name: "Shaman",
+    RequiredBuildings: []building.Building{building.BuildingShrine},
     Race: data.RaceDraconian,
 }
 
 var DraconianMagician Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 71,
+    Name: "Magicians",
+    RequiredBuildings: []building.Building{building.BuildingWizardsGuild},
     Race: data.RaceDraconian,
 }
 
+// removed from game
+/*
 var DraconianEngineer Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 72,
+    Name: "Engineers",
+    RequiredBuildings: []building.Building{building.BuildingBuildersHall},
     Race: data.RaceDraconian,
 }
+*/
 
 var DraconianSettlers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 73,
+    Name: "Settlers",
     Race: data.RaceDraconian,
 }
 
 var DoomDrake Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 74,
+    Name: "Doom Drake",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingStables},
     Race: data.RaceDraconian,
 }
 
 var AirShip Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 75,
+    Name: "Air Ship",
+    RequiredBuildings: []building.Building{building.BuildingShipYard},
     Race: data.RaceDraconian,
 }
 
 var DwarfSwordsmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 76,
+    Name: "Swordsmen",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSmithy},
     Race: data.RaceDwarf,
 }
 
 var DwarfHalberdiers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 77,
+    Name: "Halberdiers",
+    RequiredBuildings: []building.Building{building.BuildingArmory},
     Race: data.RaceDwarf,
 }
 
 var DwarfEngineer Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 78,
+    Name: "Engineers",
+    RequiredBuildings: []building.Building{building.BuildingBuildersHall},
     Race: data.RaceDwarf,
 }
 
 var Hammerhands Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 79,
+    Name: "Hammerhands",
+    RequiredBuildings: []building.Building{building.BuildingFightersGuild},
     Race: data.RaceDwarf,
 }
 
 var SteamCannon Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 80,
+    Name: "Steam Cannon",
+    RequiredBuildings: []building.Building{building.BuildingMinersGuild},
     Race: data.RaceDwarf,
 }
 
 var Golem Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 81,
+    Name: "Golem",
+    RequiredBuildings: []building.Building{building.BuildingArmorersGuild},
     Race: data.RaceDwarf,
 }
 
 var DwarfSettlers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 82,
+    Name: "Settlers",
     Race: data.RaceDwarf,
 }
 
 var GnollSpearmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 83,
+    Name: "Spearmen",
     Race: data.RaceGnoll,
 }
 
 var GnollSwordsmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 84,
+    Name: "Swordsmen",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSmithy},
     Race: data.RaceGnoll,
 }
 
 var GnollHalberdiers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 85,
+    Name: "Halberdiers",
+    RequiredBuildings: []building.Building{building.BuildingArmory},
     Race: data.RaceGnoll,
 }
 
 var GnollBowmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 86,
+    Name: "Bowmen",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSawmill},
     Race: data.RaceGnoll,
 }
 
 var GnollSettlers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 87,
+    Name: "Settlers",
     Race: data.RaceGnoll,
 }
 
 var WolfRiders Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 88,
+    Name: "Wolf Riders",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingStables},
     Race: data.RaceGnoll,
 }
 
 var HalflingSpearmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 89,
+    Name: "Spearmen",
     Race: data.RaceHalfling,
 }
 
 var HalflingSwordsmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 90,
+    Name: "Swordsmen",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSmithy},
     Race: data.RaceHalfling,
 }
 
 var HalflingBowmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 91,
+    Name: "Bowmen",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSawmill},
     Race: data.RaceHalfling,
 }
 
 var HalflingShamans Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 92,
+    Name: "Shamans",
+    RequiredBuildings: []building.Building{building.BuildingShrine},
     Race: data.RaceHalfling,
 }
 
 var HalflingSettlers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 93,
+    Name: "Settlers",
     Race: data.RaceHalfling,
 }
 
 var Slingers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 94,
+    Name: "Slingers",
+    RequiredBuildings: []building.Building{building.BuildingArmory},
     Race: data.RaceHalfling,
 }
 
@@ -1355,24 +1522,32 @@ var HighElfSpearmen Unit = Unit{
 
 var HighElfSwordsmen Unit = Unit{
     LbxFile: "units1.lbx",
+    Name: "Swordsmen",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSmithy},
     Index: 96,
     Race: data.RaceHighElf,
 }
 
 var HighElfHalberdiers Unit = Unit{
     LbxFile: "units1.lbx",
+    Name: "Halberdiers",
+    RequiredBuildings: []building.Building{building.BuildingArmory},
     Index: 97,
     Race: data.RaceHighElf,
 }
 
 var HighElfCavalry Unit = Unit{
     LbxFile: "units1.lbx",
+    Name: "Cavalry",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingStables},
     Index: 98,
     Race: data.RaceHighElf,
 }
 
 var HighElfMagician Unit = Unit{
     LbxFile: "units1.lbx",
+    Name: "Magicians",
+    RequiredBuildings: []building.Building{building.BuildingWizardsGuild},
     Index: 99,
     Race: data.RaceHighElf,
 }
@@ -1397,17 +1572,23 @@ var HighElfSettlers Unit = Unit{
 var Longbowmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 101,
+    Name: "Longbowmen",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSawmill},
     Race: data.RaceHighElf,
 }
 
 var ElvenLord Unit = Unit{
     LbxFile: "units1.lbx",
+    Name: "ElvenLord",
+    RequiredBuildings: []building.Building{building.BuildingArmorersGuild},
     Index: 102,
     Race: data.RaceHighElf,
 }
 
 var Pegasai Unit = Unit{
     LbxFile: "units1.lbx",
+    Name: "Pegasai",
+    RequiredBuildings: []building.Building{building.BuildingFantasticStable},
     Index: 103,
     Race: data.RaceHighElf,
 }
@@ -1422,6 +1603,8 @@ var HighMenSpearmen Unit = Unit{
 var HighMenSwordsmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 105,
+    Name: "Swordsmen",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSmithy},
     Race: data.RaceHighMen,
 }
 
@@ -1430,6 +1613,7 @@ var HighMenBowmen Unit = Unit{
     Index: 106,
     Race: data.RaceHighMen,
     Name: "Bowmen",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSawmill},
     Count: 6,
     Defense: 1,
     MovementSpeed: 1,
@@ -1449,24 +1633,32 @@ var HighMenBowmen Unit = Unit{
 var HighMenCavalry Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 107,
+    Name: "Cavalry",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingStables},
     Race: data.RaceHighMen,
 }
 
-var HighMenPreist Unit = Unit{
+var HighMenPriest Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 108,
+    Name: "Priests",
+    RequiredBuildings: []building.Building{building.BuildingParthenon},
     Race: data.RaceHighMen,
 }
 
 var HighMenMagician Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 109,
+    Name: "Magicians",
+    RequiredBuildings: []building.Building{building.BuildingWizardsGuild},
     Race: data.RaceHighMen,
 }
 
 var HighMenEngineer Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 110,
+    Name: "Engineers",
+    RequiredBuildings: []building.Building{building.BuildingBuildersHall},
     Race: data.RaceHighMen,
 }
 
@@ -1483,47 +1675,264 @@ var HighMenSettlers Unit = Unit{
 var HighMenPikemen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 112,
+    Name: "Pikemen",
+    RequiredBuildings: []building.Building{building.BuildingFightersGuild},
     Race: data.RaceHighMen,
 }
 
 var Paladin Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 113,
+    Name: "Paladins",
+    RequiredBuildings: []building.Building{building.BuildingArmorersGuild, building.BuildingCathedral},
     Race: data.RaceHighMen,
 }
 
 var KlackonSpearmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 114,
+    Name: "Spearmen",
     Race: data.RaceKlackon,
 }
 
 var KlackonSwordsmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 115,
+    Name: "Swordsmen",
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSmithy},
     Race: data.RaceKlackon,
 }
 
 var KlackonHalberdiers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 116,
+    Name: "Halberdiers",
+    RequiredBuildings: []building.Building{building.BuildingArmory},
     Race: data.RaceKlackon,
 }
 
 var KlackonEngineer Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 117,
+    Name: "Engineer",
+    RequiredBuildings: []building.Building{building.BuildingBuildersHall},
     Race: data.RaceKlackon,
 }
 
 var KlackonSettlers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 118,
+    Name: "Settlers",
     Race: data.RaceKlackon,
 }
 
 var StagBeetle Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 119,
+    Name: "Stag Beetle",
+    RequiredBuildings: []building.Building{building.BuildingArmorersGuild, building.BuildingFantasticStable},
     Race: data.RaceKlackon,
+}
+
+// -------------------------------------------------
+// -------------------------------------------------
+// -------------------------------------------------
+
+var AllUnits []Unit = []Unit{
+    LizardSettlers,
+    LizardSpearmen,
+    LizardSwordsmen,
+    LizardHalberdiers,
+    LizardJavelineers,
+    LizardShamans,
+    DragonTurtle,
+    NomadSettlers,
+    NomadSpearmen,
+    NomadSwordsmen,
+    NomadBowmen,
+    NomadPriest,
+    NomadHorsebowemen,
+    NomadPikemen,
+    NomadRangers,
+    Griffin,
+    OrcSettlers,
+    OrcSpearmen,
+    OrcSwordsmen,
+    OrcHalberdiers,
+    OrcBowmen,
+    OrcCavalry,
+    OrcShamans,
+    OrcMagicians,
+    OrcEngineers,
+    WyvernRiders,
+    TrollSettlers,
+    TrollSpearmen,
+    TrollSwordsmen,
+    TrollHalberdiers,
+    TrollShamans,
+    WarTrolls,
+    WarMammoths,
+    MagicSpirit,
+    HellHounds,
+    Gargoyle,
+    FireGiant,
+    FireElemental,
+    ChaosSpawn,
+    Chimeras,
+    DoomBat,
+    Efreet,
+    Hydra,
+    GreatDrake,
+    Skeleton,
+    Ghoul,
+    NightStalker,
+    WereWolf,
+    Demon,
+    Wraith,
+    ShadowDemon,
+    DeathKnight,
+    DemonLord,
+    Zombie,
+    Unicorn,
+    GuardianSpirit,
+    Angel,
+    ArchAngel,
+    WarBear,
+    Sprite,
+    Cockatrice,
+    Basilisk,
+    GiantSpider,
+    StoneGiant,
+    Colossus,
+    Gorgon,
+    EarthElemental,
+    Behemoth,
+    GreatWyrm,
+    FloatingIsland,
+    PhantomBeast,
+    PhantomWarrior,
+    StormGiant,
+    AirElemental,
+    Djinn,
+    SkyDrake,
+    Nagas,
+    HeroBrax,
+    HeroGunther,
+    HeroZaldron,
+    HeroBShan,
+    HeroRakir,
+    HeroValana,
+    HeroBahgtru,
+    HeroSerena,
+    HeroShuri,
+    HeroTheria,
+    HeroGreyfairer,
+    HeroTaki,
+    HeroReywind,
+    HeroMalleus,
+    HeroTumu,
+    HeroJaer,
+    HeroMarcus,
+    HeroFang,
+    HeroMorgana,
+    HeroAureus,
+    HeroShinBo,
+    HeroSpyder,
+    HeroShalla,
+    HeroYramrag,
+    HeroMysticX,
+    HeroAeirie,
+    HeroDethStryke,
+    HeroElana,
+    HeroRoland,
+    HeroMortu,
+    HeroAlorra,
+    HeroSirHarold,
+    HeroRavashack,
+    HeroWarrax,
+    HeroTorin,
+    Trireme,
+    Galley,
+    Catapult,
+    Warship,
+    BarbarianSettlers,
+    BarbarianSpearmen,
+    BarbarianSwordsmen,
+    BarbarianBowmen,
+    BarbarianCavalry,
+    BarbarianShaman,
+    Berserkers,
+    BeastmenSettlers,
+    BeastmenSpearmen,
+    BeastmenSwordsmen,
+    BeastmenHalberdiers,
+    BeastmenBowmen,
+    BeastmenPriest,
+    BeastmenMagician,
+    BeastmenEngineer,
+    Centaur,
+    Manticore,
+    Minotaur,
+    DarkElfSettlers,
+    DarkElfSpearmen,
+    DarkElfSwordsmen,
+    DarkElfHalberdiers,
+    DarkElfCavalry,
+    DarkElfPriests,
+    Nightblades,
+    Warlocks,
+    Nightmares,
+    DraconianSettlers,
+    DraconianSpearmen,
+    DraconianSwordsmen,
+    DraconianHalberdiers,
+    DraconianBowmen,
+    DraconianShaman,
+    DraconianMagician,
+    DoomDrake,
+    AirShip,
+    DwarfSettlers,
+    DwarfSwordsmen,
+    DwarfHalberdiers,
+    DwarfEngineer,
+    Hammerhands,
+    SteamCannon,
+    Golem,
+    GnollSettlers,
+    GnollSpearmen,
+    GnollSwordsmen,
+    GnollHalberdiers,
+    GnollBowmen,
+    WolfRiders,
+    HalflingSettlers,
+    HalflingSpearmen,
+    HalflingSwordsmen,
+    HalflingBowmen,
+    HalflingShamans,
+    Slingers,
+    HighElfSettlers,
+    HighElfSpearmen,
+    HighElfSwordsmen,
+    HighElfHalberdiers,
+    HighElfCavalry,
+    HighElfMagician,
+    Longbowmen,
+    ElvenLord,
+    Pegasai,
+    HighMenSettlers,
+    HighMenEngineer,
+    HighMenSpearmen,
+    HighMenSwordsmen,
+    HighMenBowmen,
+    HighMenCavalry,
+    HighMenPriest,
+    HighMenMagician,
+    HighMenPikemen,
+    Paladin,
+    KlackonSettlers,
+    KlackonSpearmen,
+    KlackonSwordsmen,
+    KlackonHalberdiers,
+    KlackonEngineer,
+    StagBeetle,
 }

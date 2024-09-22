@@ -494,3 +494,29 @@ func (city *City) DoNextTurn(garrison []*units.OverworldUnit) []CityEvent {
 
     return cityEvents
 }
+
+func (city *City) AllowedBuildings(what building.Building) []building.Building {
+    return city.BuildingInfo.Allows(what)
+}
+
+func (city *City) AllowedUnits(what building.Building) []units.Unit {
+    var out []units.Unit
+
+    for _, unit := range units.AllUnits {
+        if unit.Race == data.RaceNone || unit.Race == city.Race {
+            canBuild := false
+
+            for _, required := range unit.RequiredBuildings {
+                if required == what {
+                    canBuild = true
+                }
+            }
+
+            if canBuild {
+                out = append(out, unit)
+            }
+        }
+    }
+
+    return out
+}

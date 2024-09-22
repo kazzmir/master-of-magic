@@ -10,6 +10,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/game/magic/util"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
@@ -124,6 +125,27 @@ func combineStrings(all []string) string {
     return out
 }
 
+func getPossibleUnits(city *citylib.City) []units.Unit {
+    var out []units.Unit
+    for _, unit := range units.AllUnits {
+        if unit.Race == data.RaceNone || unit.Race == city.Race {
+
+            canBuild := true
+            for _, building := range unit.RequiredBuildings {
+                if !city.Buildings.Contains(building) {
+                    canBuild = false
+                }
+            }
+
+            if canBuild {
+                out = append(out, unit)
+            }
+        }
+    }
+
+    return out
+}
+
 func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib.City, buildScreen *BuildScreen, doCancel func(), doOk func()) *uilib.UI {
 
     fontLbx, err := cache.GetLbxFile("fonts.lbx")
@@ -226,10 +248,14 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
     updateMainElementBuilding := func(building buildinglib.Building){
         descriptionWrapped := descriptionFont.CreateWrappedText(155, 1, buildDescriptions.Get(building))
 
-        allowedBuildings := city.BuildingInfo.Allows(building)
+        allowedBuildings := city.AllowedBuildings(building)
+        allowedUnits := city.AllowedUnits(building)
         var allowStrings []string
         for _, allowed := range allowedBuildings {
             allowStrings = append(allowStrings, city.BuildingInfo.Name(allowed))
+        }
+        for _, allowed := range allowedUnits {
+            allowStrings = append(allowStrings, allowed.Name)
         }
 
         allows := combineStrings(allowStrings)
@@ -375,7 +401,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
 
     unitInfo, err := imageCache.GetImage("unitview.lbx", 32, 0)
     if err == nil {
-        possibleUnits := []units.Unit{units.HighElfSpearmen, units.HighElfSettlers}
+        possibleUnits := getPossibleUnits(city)
         for i, unit := range possibleUnits {
 
             x1 := 240
