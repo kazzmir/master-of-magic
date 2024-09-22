@@ -54,6 +54,11 @@ type GameEventNewOutpost struct {
     Stack *playerlib.UnitStack
 }
 
+type GameEventNewBuilding struct {
+    City *citylib.City
+    Building buildinglib.Building
+}
+
 type GameEventCityName struct {
     Title string
     City *citylib.City
@@ -1659,6 +1664,14 @@ func (game *Game) DoNextTurn(){
                         } else {
                             log.Printf("City shrunk by %v to %v", -growth.Size, city.Citizens())
                         }
+                    case *citylib.CityEventNewBuilding:
+                        newBuilding := event.(*citylib.CityEventNewBuilding)
+
+                        select {
+                            case game.Events<- &GameEventNewBuilding{City: city, Building: newBuilding.Building}:
+                            default:
+                        }
+
                     case *citylib.CityEventNewUnit:
                         newUnit := event.(*citylib.CityEventNewUnit)
                         player.AddUnit(units.MakeOverworldUnitFromUnit(newUnit.Unit, city.X, city.Y, city.Plane, city.Banner))

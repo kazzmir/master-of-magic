@@ -22,6 +22,10 @@ type CityEventNewUnit struct {
     Unit units.Unit
 }
 
+type CityEventNewBuilding struct {
+    Building building.Building
+}
+
 type CitySize int
 const (
     CitySizeHamlet CitySize = iota
@@ -491,6 +495,9 @@ func (city *City) DoNextTurn(garrison []*units.OverworldUnit) []CityEvent {
                 city.Buildings.Insert(city.ProducingBuilding)
                 city.Production = 0
                 city.ProducingBuilding = building.BuildingHousing
+
+                cityEvents = append(cityEvents, &CityEventNewBuilding{Building: city.ProducingBuilding})
+
             }
         } else if !city.ProducingUnit.Equals(units.UnitNone) && city.Production >= float32(city.ProducingUnit.ProductionCost) {
             cityEvents = append(cityEvents, &CityEventNewUnit{Unit: city.ProducingUnit})
