@@ -1561,18 +1561,26 @@ func (game *Game) MakeHudUI() *uilib.UI {
             },
         })
 
-        elements = append(elements, &uilib.UIElement{
-            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                goldFood, _ := game.ImageCache.GetImage("main.lbx", 34, 0)
-                var options ebiten.DrawImageOptions
-                options.GeoM.Translate(240, 77)
-                screen.DrawImage(goldFood, &options)
+        if len(game.Players) > 0 {
+            player := game.Players[0]
 
-                game.InfoFontYellow.PrintCenter(screen, 278, 103, 1, ebiten.ColorScale{}, "1 Gold")
-                game.InfoFontYellow.PrintCenter(screen, 278, 135, 1, ebiten.ColorScale{}, "1 Food")
-                game.InfoFontYellow.PrintCenter(screen, 278, 167, 1, ebiten.ColorScale{}, "1 Mana")
-            },
-        })
+            goldPerTurn := player.GoldPerTurn()
+            foodPerTurn := player.FoodPerTurn()
+            manaPerTurn := player.ManaPerTurn()
+
+            elements = append(elements, &uilib.UIElement{
+                Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                    goldFood, _ := game.ImageCache.GetImage("main.lbx", 34, 0)
+                    var options ebiten.DrawImageOptions
+                    options.GeoM.Translate(240, 77)
+                    screen.DrawImage(goldFood, &options)
+
+                    game.InfoFontYellow.PrintCenter(screen, 278, 103, 1, ebiten.ColorScale{}, fmt.Sprintf("%v Gold", goldPerTurn))
+                    game.InfoFontYellow.PrintCenter(screen, 278, 135, 1, ebiten.ColorScale{}, fmt.Sprintf("%v Food", foodPerTurn))
+                    game.InfoFontYellow.PrintCenter(screen, 278, 167, 1, ebiten.ColorScale{}, fmt.Sprintf("%v Mana", manaPerTurn))
+                },
+            })
+        }
     }
 
     elements = append(elements, &uilib.UIElement{
@@ -1623,6 +1631,15 @@ func (game *Game) DoNextUnit(player *playerlib.Player){
 func (game *Game) DoNextTurn(){
     if len(game.Players) > 0 {
         player := game.Players[0]
+
+        player.Gold += player.GoldPerTurn()
+        if player.Gold < 0 {
+            player.Gold = 0
+        }
+        player.Mana += player.ManaPerTurn()
+        if player.Mana < 0 {
+            player.Mana = 0
+        }
 
         for _, city := range player.Cities {
             cityEvents := city.DoNextTurn(player.GetUnits(city.X, city.Y))

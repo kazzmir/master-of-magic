@@ -232,7 +232,6 @@ type Player struct {
     TaxRate fraction.Fraction
 
     Gold int
-    Food int
     Mana int
 
     // known spells
@@ -249,6 +248,48 @@ type Player struct {
     // counter for the next created unit owned by this player
     UnitId uint64
     SelectedStack *UnitStack
+}
+
+func (player *Player) GoldPerTurn() int {
+    gold := 0
+
+    for _, city := range player.Cities {
+        gold += city.MoneyProductionRate()
+    }
+
+    for _, unit := range player.Units {
+        gold -= unit.Unit.UpkeepGold
+    }
+
+    return gold
+}
+
+func (player *Player) FoodPerTurn() int {
+    food := 0
+
+    for _, city := range player.Cities {
+        food += city.SurplusFood()
+    }
+
+    for _, unit := range player.Units {
+        food -= unit.Unit.UpkeepFood
+    }
+
+    return food
+}
+
+func (player *Player) ManaPerTurn() int {
+    mana := 0
+
+    for _, city := range player.Cities {
+        mana += city.ManaProduction()
+    }
+
+    for _, unit := range player.Units {
+        mana -= unit.Unit.UpkeepMana
+    }
+
+    return mana
 }
 
 func (player *Player) UpdateTaxRate(rate fraction.Fraction){

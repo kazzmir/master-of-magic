@@ -342,6 +342,10 @@ func (city *City) PopulationGrowthRate() int {
     return base
 }
 
+func (city *City) ManaProduction() int {
+    return 0
+}
+
 /* amount of food needed to feed the citizens
  */
 func (city *City) RequiredFood() int {
