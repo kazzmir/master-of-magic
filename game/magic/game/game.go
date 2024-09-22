@@ -59,6 +59,11 @@ type GameEventNewBuilding struct {
     Building buildinglib.Building
 }
 
+type GameEventScroll struct {
+    Title string
+    Text string
+}
+
 type GameEventCityName struct {
     Title string
     City *citylib.City
@@ -583,6 +588,140 @@ func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City,
 
 }
 
+func (game *Game) showScroll(yield coroutine.YieldFunc, title string, text string){
+    fontLbx, err := game.Cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        log.Printf("Unable to read fonts.lbx: %v", err)
+        return
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
+        return
+    }
+
+    red := util.Lighten(color.RGBA{R: 0xff, G: 0x00, B: 0x00, A: 0xff}, -60)
+    redPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        red, red, red,
+        red, red, red,
+    }
+
+    red2 := util.Lighten(color.RGBA{R: 0xff, G: 0x00, B: 0x00, A: 0xff}, -80)
+    redPalette2 := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        red2, red2, red2,
+        red2, red2, red2,
+    }
+
+    bigFont := font.MakeOptimizedFontWithPalette(fonts[4], redPalette)
+
+    smallFont := font.MakeOptimizedFontWithPalette(fonts[1], redPalette2)
+    wrappedText := smallFont.CreateWrappedText(180, 1, text)
+
+    scrollImages, _ := game.ImageCache.GetImages("scroll.lbx", 2)
+
+    totalImages := int((wrappedText.TotalHeight + float64(bigFont.Height())) / 5) + 1
+
+    if totalImages < 3 {
+        totalImages = 3
+    }
+
+    if totalImages > len(scrollImages) {
+        totalImages = len(scrollImages)
+    }
+
+    // only show some of the scroll being unwound
+    scrollAnimation := util.MakeAnimation(scrollImages[:totalImages], false)
+    pageBackground, _ := game.ImageCache.GetImage("scroll.lbx", 5, 0)
+
+    drawer := game.Drawer
+    defer func(){
+        game.Drawer = drawer
+    }()
+
+    scrollLength := 30
+
+    getAlpha := util.MakeFadeIn(7, &game.Counter)
+
+    game.Drawer = func (screen *ebiten.Image, game *Game){
+        drawer(screen, game)
+
+        var options ebiten.DrawImageOptions
+        options.ColorScale.ScaleAlpha(getAlpha())
+
+        options.GeoM.Translate(65, 25)
+
+        middleY := pageBackground.Bounds().Dy() / 2
+        length := scrollLength / 2
+        if length > middleY {
+            length = middleY
+        }
+        pagePart := pageBackground.SubImage(image.Rect(0, middleY - length, pageBackground.Bounds().Dx(), middleY + length)).(*ebiten.Image)
+
+        pageOptions := options
+        pageOptions.GeoM.Translate(0, float64(middleY - length) + 5)
+        screen.DrawImage(pagePart, &pageOptions)
+
+        x, y := options.GeoM.Apply(float64(pageBackground.Bounds().Dx()) / 2, float64(middleY) - wrappedText.TotalHeight / 2 - float64(bigFont.Height()) / 2 + 5)
+        bigFont.PrintCenter(screen, x, y, 1, options.ColorScale, title)
+        y += float64(bigFont.Height()) + 1
+        smallFont.RenderWrapped(screen, x, y, wrappedText, options.ColorScale, true)
+
+        scrollOptions := options
+        scrollOptions.GeoM.Translate(-63, -20)
+        screen.DrawImage(scrollAnimation.Frame(), &scrollOptions)
+    }
+
+    quit := false
+
+    animationSpeed := uint64(6)
+
+    // show scroll opening up
+    for !quit {
+        game.Counter += 1
+
+        if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
+            quit = true
+        }
+
+        if game.Counter % animationSpeed == 0 {
+            if scrollAnimation.Next() {
+                scrollLength += 10
+            }
+        }
+
+        yield()
+    }
+
+    // scroll closes
+    scrollAnimation = util.MakeReverseAnimation(scrollImages[:totalImages], false)
+    quit = false
+    for !quit {
+        game.Counter += 1
+
+        if game.Counter % animationSpeed == 0 {
+            if scrollAnimation.Next() {
+                scrollLength -= 10
+            } else {
+                quit = true
+            }
+        }
+
+        yield()
+    }
+
+    // fade out
+    getAlpha = util.MakeFadeOut(7, &game.Counter)
+    for i := 0; i < 7; i++ {
+        game.Counter += 1
+        yield()
+    }
+}
+
 func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, stack *playerlib.UnitStack){
     drawer := game.Drawer
     defer func(){
@@ -774,6 +913,9 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                 case *GameEventNewOutpost:
                     outpost := event.(*GameEventNewOutpost)
                     game.showOutpost(yield, outpost.City, outpost.Stack)
+                case *GameEventScroll:
+                    scroll := event.(*GameEventScroll)
+                    game.showScroll(yield, scroll.Title, scroll.Text)
                 case *GameEventNewBuilding:
                     buildingEvent := event.(*GameEventNewBuilding)
                     game.showNewBuilding(yield, buildingEvent.City, buildingEvent.Building)
@@ -1774,12 +1916,26 @@ func (game *Game) DoNextTurn(){
             for _, event := range cityEvents {
                 switch event.(type) {
                     case *citylib.CityEventPopulationGrowth:
-                        growth := event.(*citylib.CityEventPopulationGrowth)
+                        // growth := event.(*citylib.CityEventPopulationGrowth)
+
+                        scrollEvent := GameEventScroll{
+                            Title: "CITY GROWTH",
+                            // FIXME: 'has shrunk' if growth is negative?
+                            Text: fmt.Sprintf("%v has grown to a population of %v.", city.Name, city.Citizens()),
+                        }
+
+                        select {
+                            case game.Events<- &scrollEvent:
+                            default:
+                        }
+
+                        /*
                         if growth.Size > 0 {
                             log.Printf("City grew by %v to %v", growth.Size, city.Citizens())
                         } else {
                             log.Printf("City shrunk by %v to %v", -growth.Size, city.Citizens())
                         }
+                        */
                     case *citylib.CityEventNewBuilding:
                         newBuilding := event.(*citylib.CityEventNewBuilding)
 

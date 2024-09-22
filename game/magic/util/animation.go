@@ -1,6 +1,7 @@
 package util
 
 import (
+    "slices"
     "github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -15,14 +16,13 @@ func MakeAnimation(frames []*ebiten.Image, loop bool) *Animation {
         return MakeRepeatAnimation(frames, -1)
     }
     return MakeRepeatAnimation(frames, 0)
+}
 
-    /*
-    return &Animation{
-        Frames: frames,
-        CurrentFrame: 0,
-        Loop: loop,
-    }
-    */
+func MakeReverseAnimation(frames []*ebiten.Image, loop bool) *Animation {
+    newFrames := slices.Clone(frames)
+    slices.Reverse(newFrames)
+
+    return MakeAnimation(newFrames, loop)
 }
 
 func MakeRepeatAnimation(frames []*ebiten.Image, repeats int) *Animation {
