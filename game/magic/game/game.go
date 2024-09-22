@@ -514,7 +514,14 @@ func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City,
 
     getAlpha := util.MakeFadeIn(7, &game.Counter)
 
-    buildingPic, _ := game.ImageCache.GetImage("cityscap.lbx", buildinglib.GetBuildingIndex(building), 0)
+    buildingPics, err := game.ImageCache.GetImagesTransform("cityscap.lbx", buildinglib.GetBuildingIndex(building), util.AutoCrop)
+
+    if err != nil {
+        log.Printf("Error: Unable to get building picture for %v: %v", game.BuildingInfo.Name(building), err)
+        return
+    }
+
+    buildingPicsAnimation := util.MakeAnimation(buildingPics, true)
 
     // FIXME: pick background based on tile the land is on?
     landBackground, _ := game.ImageCache.GetImage("cityscap.lbx", 0, 4)
@@ -547,8 +554,8 @@ func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City,
 
         buildingOptions := options
         buildingOptions.GeoM.Translate(float64(buildingSpace.Bounds().Dx()) / 2, float64(buildingSpace.Bounds().Dy()) / 2)
-        buildingOptions.GeoM.Translate(float64(buildingPic.Bounds().Dx()) / -2, float64(buildingPic.Bounds().Dy()) / -2)
-        buildingSpace.DrawImage(buildingPic, &buildingOptions)
+        buildingOptions.GeoM.Translate(float64(buildingPicsAnimation.Frame().Bounds().Dx()) / -2, float64(buildingPicsAnimation.Frame().Bounds().Dy()) / -2)
+        buildingSpace.DrawImage(buildingPicsAnimation.Frame(), &buildingOptions)
     }
 
     quit := false
@@ -564,6 +571,10 @@ func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City,
             if leftClick {
                 quit = true
                 getAlpha = util.MakeFadeOut(7, &game.Counter)
+            }
+
+            if game.Counter % 8 == 0 {
+                buildingPicsAnimation.Next()
             }
         }
 

@@ -493,11 +493,10 @@ func (city *City) DoNextTurn(garrison []*units.OverworldUnit) []CityEvent {
         if buildingCost != 0 {
             if city.Production >= float32(buildingCost) {
                 city.Buildings.Insert(city.ProducingBuilding)
-                city.Production = 0
-                city.ProducingBuilding = building.BuildingHousing
-
                 cityEvents = append(cityEvents, &CityEventNewBuilding{Building: city.ProducingBuilding})
 
+                city.Production = 0
+                city.ProducingBuilding = building.BuildingHousing
             }
         } else if !city.ProducingUnit.Equals(units.UnitNone) && city.Production >= float32(city.ProducingUnit.ProductionCost) {
             cityEvents = append(cityEvents, &CityEventNewUnit{Unit: city.ProducingUnit})
