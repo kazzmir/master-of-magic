@@ -1011,7 +1011,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
     if err == nil {
         var options ebiten.DrawImageOptions
         options.GeoM.Translate(6, 76)
-        for i := 0; i < cityScreen.City.MagicProductionRate; i++ {
+        for i := 0; i < cityScreen.City.ManaProduction(); i++ {
             screen.DrawImage(smallMagic, &options)
             options.GeoM.Translate(float64(smallMagic.Bounds().Dx() + 1), 0)
         }

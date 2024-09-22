@@ -111,6 +111,10 @@ func (info BuildingInfos) UpkeepCost(building Building) int {
     return info[info.GetBuildingIndex(building)].UpkeepGold
 }
 
+func (info BuildingInfos) ManaProduction(building Building) int {
+    return info[info.GetBuildingIndex(building)].Religion
+}
+
 func (info BuildingInfos) Name(building Building) string {
     if building == BuildingFortress {
         return "Fortress"

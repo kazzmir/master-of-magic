@@ -221,6 +221,8 @@ func createScenario3(cache *lbx.LbxCache) *gamelib.Game {
     introCity.ProducingUnit = units.UnitNone
     introCity.Wall = false
 
+    introCity.AddBuilding(buildinglib.BuildingShrine)
+
     introCity.ResetCitizens(nil)
 
     player.AddCity(introCity)

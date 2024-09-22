@@ -44,7 +44,6 @@ func NewEngine() (*Engine, error) {
     city.Farmers = 4
     city.Workers = 2
     city.Wall = false
-    city.MagicProductionRate = 3
     city.Production = 18
     city.ProducingBuilding = buildinglib.BuildingNone
     city.Banner = data.BannerBlue

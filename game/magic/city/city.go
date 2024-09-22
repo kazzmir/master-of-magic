@@ -58,7 +58,6 @@ type City struct {
     Name string
     Wall bool
     Plane data.Plane
-    MagicProductionRate int
     Race data.Race
     X int
     Y int
@@ -343,7 +342,13 @@ func (city *City) PopulationGrowthRate() int {
 }
 
 func (city *City) ManaProduction() int {
-    return 0
+    mana := 0
+
+    for _, building := range city.Buildings.Values() {
+        mana += city.BuildingInfo.ManaProduction(building)
+    }
+
+    return mana
 }
 
 /* amount of food needed to feed the citizens
