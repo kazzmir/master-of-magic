@@ -1018,24 +1018,32 @@ var HeroTorin Unit = Unit{
 var Trireme Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 35,
+    Name: "Trireme",
+    RequiredBuildings: []building.Building{building.BuildingShipwrightsGuild},
     Race: data.RaceNone,
 }
 
 var Galley Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 36,
+    Name: "Galley",
+    RequiredBuildings: []building.Building{building.BuildingShipYard},
     Race: data.RaceNone,
 }
 
 var Catapult Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 37,
+    Name: "Catapult",
+    RequiredBuildings: []building.Building{building.BuildingMechaniciansGuild},
     Race: data.RaceNone,
 }
 
 var Warship Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 38,
+    Name: "Warship",
+    RequiredBuildings: []building.Building{building.BuildingMaritimeGuild},
     Race: data.RaceNone,
 }
 
