@@ -40,7 +40,7 @@ func NewEngine() (*Engine, error) {
     buildingInfo, _ := buildinglib.ReadBuildingInfo(cache)
 
     city := citylib.MakeCity("Boston", 3, 8, data.RaceHighElf, fraction.Make(1, 1), buildingInfo)
-    city.Population = 6000
+    city.Population = 12000
     city.Farmers = 4
     city.Workers = 2
     city.Wall = false
@@ -49,6 +49,7 @@ func NewEngine() (*Engine, error) {
     city.Banner = data.BannerBlue
     // ProducingBuilding: citylib.BuildingBarracks,
     city.ProducingUnit = units.HighElfSpearmen
+    city.ResetCitizens(nil)
         // ProducingUnit: units.UnitNone,
 
     var garrison []*units.OverworldUnit
@@ -70,6 +71,7 @@ func NewEngine() (*Engine, error) {
     city.AddBuilding(buildinglib.BuildingSummoningCircle)
     city.AddBuilding(buildinglib.BuildingOracle)
     city.AddBuilding(buildinglib.BuildingFortress)
+    city.AddBuilding(buildinglib.BuildingShrine)
 
     cityScreen := cityview.MakeCityScreen(cache, city, &player)
 

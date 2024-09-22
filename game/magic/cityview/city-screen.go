@@ -943,52 +943,50 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
 
     cityScreen.DescriptionFont.PrintRight(screen, 210, 19, 1, ebiten.ColorScale{}, fmt.Sprintf("Population: %v (%v)", cityScreen.City.Population, deltaNumber(cityScreen.City.PopulationGrowthRate())))
 
-    smallFood, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", 40, 0)
-    if err == nil {
+    drawIcons := func(total int, small *ebiten.Image, large *ebiten.Image, x float64, y float64) float64 {
         var options ebiten.DrawImageOptions
-        options.GeoM.Translate(6, 52)
-        for i := 0; i < cityScreen.City.FoodProductionRate(); i++ {
-            screen.DrawImage(smallFood, &options)
-            options.GeoM.Translate(float64(smallFood.Bounds().Dx() + 1), 0)
+        options.GeoM.Translate(x, y)
+
+        for i := 0; i < total / 10; i++ {
+            screen.DrawImage(large, &options)
+            options.GeoM.Translate(float64(large.Bounds().Dx() + 1), 0)
         }
+
+        for i := 0; i < total % 10; i++ {
+            screen.DrawImage(small, &options)
+            options.GeoM.Translate(float64(small.Bounds().Dx() + 1), 0)
+        }
+
+        endX, _ := options.GeoM.Apply(0, 0)
+        return endX
     }
 
-    // big food is 88
-    // hammer is 41
-    smallWork, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", 41, 0)
-    if err == nil {
-        var options ebiten.DrawImageOptions
-        options.GeoM.Translate(6, 60)
-        for i := 0; i < int(cityScreen.City.WorkProductionRate()); i++ {
-            screen.DrawImage(smallWork, &options)
-            options.GeoM.Translate(float64(smallWork.Bounds().Dx() + 1), 0)
-        }
-    }
+    foodRequired := cityScreen.City.RequiredFood()
+    foodSurplus := cityScreen.City.SurplusFood()
 
-    // big hammer is 89
-    // coin is 42
-    smallCoin, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", 42, 0)
-    if err == nil {
-        var options ebiten.DrawImageOptions
-        options.GeoM.Translate(6, 68)
-        for i := 0; i < cityScreen.City.GoldSurplus(); i++ {
-            screen.DrawImage(smallCoin, &options)
-            options.GeoM.Translate(float64(smallCoin.Bounds().Dx() + 1), 0)
-        }
-    }
+    smallFood, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 40, 0)
+    bigFood, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 88, 0)
 
-    // big coin is 90
-    // small magic is 43
-    smallMagic, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", 43, 0)
-    if err == nil {
-        var options ebiten.DrawImageOptions
-        options.GeoM.Translate(6, 76)
-        for i := 0; i < cityScreen.City.ManaProduction(); i++ {
-            screen.DrawImage(smallMagic, &options)
-            options.GeoM.Translate(float64(smallMagic.Bounds().Dx() + 1), 0)
-        }
-    }
-    // big magic is 91
+    foodX := drawIcons(foodRequired, smallFood, bigFood, 6, 52)
+    foodX += 5
+    drawIcons(foodSurplus, smallFood, bigFood, foodX, 52)
+
+    smallHammer, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 41, 0)
+    bigHammer, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 89, 0)
+
+    drawIcons(int(cityScreen.City.WorkProductionRate()), smallHammer, bigHammer, 6, 60)
+
+    smallCoin, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 42, 0)
+    bigCoin, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 90, 0)
+
+    coinX := drawIcons(cityScreen.City.ComputeUpkeep(), smallCoin, bigCoin, 6, 68)
+    drawIcons(cityScreen.City.GoldSurplus(), smallCoin, bigCoin, coinX + 6, 68)
+
+    smallMagic, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 43, 0)
+    bigMagic, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 91, 0)
+
+    magicX := drawIcons(cityScreen.City.ManaCost(), smallMagic, bigMagic, 6, 76)
+    drawIcons(cityScreen.City.ManaSurplus(), smallMagic, bigMagic, magicX + 6, 76)
 
     showWork := false
     workRequired := 0

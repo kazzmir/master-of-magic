@@ -1,5 +1,4 @@
 * overworld path finding to point on map
-* city view: separate surplus food/gold from subsistence food/gold
 * combat: cast unit spells
 * select spell to research
 * select spell to cast
@@ -31,3 +30,5 @@
 * melee/defense/heart icons should have white border
 * armies screen
 * cities screen
+
+9/22/2024 * city view: separate surplus food/gold from subsistence food/gold

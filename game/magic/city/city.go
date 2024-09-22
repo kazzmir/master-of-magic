@@ -1,7 +1,6 @@
 package city
 
 import (
-    _ "log"
     "math"
 
     "github.com/kazzmir/master-of-magic/lib/set"
@@ -394,7 +393,7 @@ func (city *City) SurplusFood() int {
  */
 func (city *City) BaseFoodLevel() int {
     // TODO
-    return 10
+    return 20
 }
 
 func (city *City) FoodProductionRate() int {
