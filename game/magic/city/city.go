@@ -355,6 +355,21 @@ func (city *City) ResearchProduction() int {
     return research
 }
 
+func (city *City) ManaCost() int {
+    mana := 0
+
+    for _, building := range city.Buildings.Values() {
+        mana += city.BuildingInfo.ManaCost(building)
+    }
+
+    return mana
+
+}
+
+func (city *City) ManaSurplus() int {
+    return city.ManaProduction() - city.ManaCost()
+}
+
 func (city *City) ManaProduction() int {
     mana := 0
 
@@ -431,7 +446,7 @@ func (city *City) ComputeUpkeep() int {
     return costs
 }
 
-func (city *City) MoneyProductionRate() int {
+func (city *City) GoldSurplus() int {
     citizenIncome := float32(city.NonRebels()) * float32(city.TaxRate.ToFloat())
 
     bonus := float32(0)

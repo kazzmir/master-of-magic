@@ -267,7 +267,7 @@ func (player *Player) GoldPerTurn() int {
     gold := 0
 
     for _, city := range player.Cities {
-        gold += city.MoneyProductionRate()
+        gold += city.GoldSurplus()
     }
 
     for _, unit := range player.Units {
@@ -295,7 +295,7 @@ func (player *Player) ManaPerTurn() int {
     mana := 0
 
     for _, city := range player.Cities {
-        mana += city.ManaProduction()
+        mana += city.ManaSurplus()
     }
 
     for _, unit := range player.Units {

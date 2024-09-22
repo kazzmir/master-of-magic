@@ -41,6 +41,7 @@ type BuildingInfo struct {
 
     // required gold to maintain this building
     UpkeepGold int
+    UpkeepMana int
     PopulationGrowth int
     Religion int
     // points of research produced each turn
@@ -113,6 +114,10 @@ func (info BuildingInfos) UpkeepCost(building Building) int {
 
 func (info BuildingInfos) ManaProduction(building Building) int {
     return info[info.GetBuildingIndex(building)].Religion
+}
+
+func (info BuildingInfos) ManaCost(building Building) int {
+    return info[info.GetBuildingIndex(building)].UpkeepMana
 }
 
 func (info BuildingInfos) ResearchProduction(building Building) int {
@@ -373,6 +378,12 @@ func ReadBuildingInfo(cache *lbx.LbxCache) (BuildingInfos, error) {
     university := out.GetBuildingByName("University")
     if university != nil {
         university.Research = 5
+    }
+
+    // FIXME: does this value live in builddat.lbx?
+    wizardsGuild := out.GetBuildingByName("Wizards' Guild")
+    if wizardsGuild != nil {
+        wizardsGuild.UpkeepMana = 3
     }
 
     none := out.GetBuildingByName("None")
