@@ -51,6 +51,9 @@ type GameEvent interface {
 type GameEventMagicView struct {
 }
 
+type GameEventArmyView struct {
+}
+
 type GameEventNewOutpost struct {
     City *citylib.City
     Stack *playerlib.UnitStack
@@ -268,6 +271,13 @@ func (game *Game) FindValidCityLocation() (int, int) {
     }
 
     return 0, 0
+}
+
+func (game *Game) doArmyView(yield coroutine.YieldFunc) {
+    oldDrawer := game.Drawer
+    defer func(){
+        game.Drawer = oldDrawer
+    }()
 }
 
 func (game *Game) doMagicView(yield coroutine.YieldFunc) {
@@ -1057,6 +1067,8 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
             switch event.(type) {
                 case *GameEventMagicView:
                     game.doMagicView(yield)
+                case *GameEventArmyView:
+                    game.doArmyView(yield)
                 case *GameEventNewOutpost:
                     outpost := event.(*GameEventNewOutpost)
                     game.showOutpost(yield, outpost.City, outpost.Stack)
@@ -1754,7 +1766,10 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
     // army button
     elements = append(elements, makeButton(3, 89, 4, false, func(){
-        // TODO
+        select {
+            case game.Events<- &GameEventArmyView{}:
+            default:
+        }
     }))
 
     // cities button
