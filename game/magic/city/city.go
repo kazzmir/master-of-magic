@@ -38,15 +38,15 @@ const (
 func (citySize CitySize) String() string {
     switch citySize {
     case CitySizeHamlet:
-        return "hamlet"
+        return "Hamlet"
     case CitySizeVillage:
-        return "village"
+        return "Village"
     case CitySizeTown:
-        return "town"
+        return "Town"
     case CitySizeCity:
-        return "city"
+        return "City"
     case CitySizeCapital:
-        return "capital"
+        return "Capital"
     }
 
     return "Unknown"

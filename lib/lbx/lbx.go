@@ -1226,6 +1226,30 @@ func GetPaletteOverrideMap(lbxFile *LbxFile, filename string) (map[int]color.Pal
             out[8] = palette
             out[9] = palette
             out[10] = palette
+
+            paletteEvent, err := lbxFile.GetPalette(40)
+            if err != nil {
+                return nil, err
+            }
+
+            out[41] = paletteEvent
+            out[42] = paletteEvent
+
+            paletteHire, err := lbxFile.GetPalette(43)
+            if err != nil {
+                return nil, err
+            }
+
+            out[44] = paletteHire
+            out[45] = paletteHire
+
+            paletteItem, err := lbxFile.GetPalette(46)
+            if err != nil {
+                return nil, err
+            }
+
+            out[47] = paletteItem
+            out[48] = paletteItem
         case "spellose.lbx":
             palette, err := lbxFile.GetPalette(28)
             if err != nil {

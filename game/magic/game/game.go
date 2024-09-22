@@ -470,6 +470,79 @@ func (game *Game) doInput(yield coroutine.YieldFunc, title string, name string, 
     return name
 }
 
+func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City, building buildinglib.Building){
+    drawer := game.Drawer
+    defer func(){
+        game.Drawer = drawer
+    }()
+
+    fontLbx, err := game.Cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        log.Printf("Unable to read fonts.lbx: %v", err)
+        return
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
+        return
+    }
+
+    yellow := color.RGBA{R: 0xea, G: 0xb6, B: 0x00, A: 0xff}
+    yellowPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        yellow, yellow, yellow,
+        yellow, yellow, yellow,
+        yellow, yellow, yellow,
+        yellow, yellow, yellow,
+    }
+
+    bigFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowPalette)
+
+    background, _ := game.ImageCache.GetImage("resource.lbx", 40, 0)
+    // devil: 51
+    // cat: 52
+    // bird: 53
+    // snake: 54
+    // beetle: 55
+    snake, _ := game.ImageCache.GetImageTransform("resource.lbx", 54, 0, util.AutoCrop)
+
+    wrappedText := bigFont.CreateWrappedText(180, 1, fmt.Sprintf("The %s of %s has completed the construction of a %s.", city.GetSize(), city.Name, game.BuildingInfo.Name(building)))
+
+    rightSide, _ := game.ImageCache.GetImage("resource.lbx", 41, 0)
+
+    game.Drawer = func (screen *ebiten.Image, game *Game){
+        drawer(screen, game)
+
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(8, 60)
+        screen.DrawImage(background, &options)
+        iconOptions := options
+        iconOptions.GeoM.Translate(6, -10)
+        screen.DrawImage(snake, &iconOptions)
+
+        x, y := options.GeoM.Apply(8 + float64(snake.Bounds().Dx()), 9)
+        bigFont.RenderWrapped(screen, x, y, wrappedText, options.ColorScale, false)
+
+        options.GeoM.Translate(float64(background.Bounds().Dx()), 0)
+        screen.DrawImage(rightSide, &options)
+    }
+
+    quit := false
+    for !quit {
+        game.Counter += 1
+
+        leftClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)
+        if leftClick {
+            quit = true
+        }
+
+        yield()
+    }
+
+}
+
 func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, stack *playerlib.UnitStack){
     drawer := game.Drawer
     defer func(){
@@ -661,6 +734,9 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                 case *GameEventNewOutpost:
                     outpost := event.(*GameEventNewOutpost)
                     game.showOutpost(yield, outpost.City, outpost.Stack)
+                case *GameEventNewBuilding:
+                    buildingEvent := event.(*GameEventNewBuilding)
+                    game.showNewBuilding(yield, buildingEvent.City, buildingEvent.Building)
                 case *GameEventCityName:
                     cityEvent := event.(*GameEventCityName)
                     city := cityEvent.City

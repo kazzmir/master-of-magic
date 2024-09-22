@@ -263,6 +263,90 @@ func createScenario3(cache *lbx.LbxCache) *gamelib.Game {
     return game
 }
 
+// put starting city on a valid map tile
+func createScenario4(cache *lbx.LbxCache) *gamelib.Game {
+    wizard := setup.WizardCustom{
+        Name: "player",
+        Banner: data.BannerBlue,
+        Race: data.RaceHighMen,
+        Abilities: []setup.WizardAbility{
+            setup.AbilityAlchemy,
+            setup.AbilitySageMaster,
+        },
+        Books: []data.WizardBook{
+            data.WizardBook{
+                Magic: data.LifeMagic,
+                Count: 3,
+            },
+            data.WizardBook{
+                Magic: data.SorceryMagic,
+                Count: 8,
+            },
+        },
+    }
+
+    game := gamelib.MakeGame(cache)
+
+    game.Plane = data.PlaneArcanus
+
+    player := game.AddPlayer(wizard)
+
+    x, y := game.FindValidCityLocation()
+
+    introCity := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.TaxRate, game.BuildingInfo)
+    introCity.Population = 6000
+    introCity.Plane = data.PlaneArcanus
+    introCity.ProducingBuilding = buildinglib.BuildingHousing
+    introCity.ProducingUnit = units.UnitNone
+    introCity.Wall = false
+
+    introCity.AddBuilding(buildinglib.BuildingShrine)
+
+    introCity.ResetCitizens(nil)
+
+    player.AddCity(introCity)
+
+    player.Gold = 83
+    player.Mana = 26
+
+    // game.Map.Map.Terrain[3][6] = terrain.TileNatureForest.Index
+
+    player.LiftFog(x, y, 3)
+
+    player.AddUnit(units.OverworldUnit{
+        Unit: units.HighMenBowmen,
+        Plane: data.PlaneArcanus,
+        Banner: wizard.Banner,
+        X: x+1,
+        Y: y,
+    })
+
+    settlers := player.AddUnit(units.OverworldUnit{
+        Unit: units.HighMenSettlers,
+        Plane: data.PlaneArcanus,
+        Banner: wizard.Banner,
+        X: x+1,
+        Y: y,
+    })
+
+    stack := player.FindStackByUnit(settlers)
+    player.SetSelectedStack(stack)
+
+    _ = introCity
+    // game.Events <- gamelib.StartingCityEvent(introCity)
+
+    player.LiftFog(x, y, 2)
+
+    game.CenterCamera(x, y)
+
+    game.Events <- &gamelib.GameEventNewBuilding{
+        City: introCity,
+        Building: buildinglib.BuildingShrine,
+    }
+
+    return game
+}
+
 func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
@@ -272,6 +356,7 @@ func NewEngine(scenario int) (*Engine, error) {
         case 1: game = createScenario1(cache)
         case 2: game = createScenario2(cache)
         case 3: game = createScenario3(cache)
+        case 4: game = createScenario4(cache)
         default: game = createScenario1(cache)
     }
 
