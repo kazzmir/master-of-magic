@@ -10,6 +10,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/game/magic/util"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
@@ -127,7 +128,7 @@ func combineStrings(all []string) string {
 func getPossibleUnits(city *citylib.City) []units.Unit {
     var out []units.Unit
     for _, unit := range units.AllUnits {
-        if unit.Race == city.Race {
+        if unit.Race == data.RaceNone || unit.Race == city.Race {
 
             canBuild := true
             for _, building := range unit.RequiredBuildings {
