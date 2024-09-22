@@ -129,6 +129,7 @@ func randomizeBookOrder(books int) []int {
     return order
 }
 
+// a true value in fog means the tile is visible, false means not visible
 func (game *Game) MakeFog() [][]bool {
     fog := make([][]bool, game.Map.Width())
     for x := 0; x < game.Map.Width(); x++ {
@@ -965,6 +966,8 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
         tileFrom := game.Map.GetTile(x1, y1)
         tileTo := game.Map.GetTile(x2, y2)
 
+        // FIXME: consider terrain type, roads, and unit abilities
+
         baseCost := float64(1)
 
         if x1 != x2 && y1 != y2 {
@@ -972,7 +975,7 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
         }
 
         // don't know what the cost is, assume we can move there
-        if fog[x2][y2] {
+        if !fog[x2][y2] {
             return baseCost
         }
 
@@ -1172,7 +1175,13 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                                 }
 
                                 // some units in the stack might not have any moves left
+                                beforeActive := len(stack.ActiveUnits())
                                 stack.EnableMovers()
+                                afterActive := len(stack.ActiveUnits())
+                                if afterActive > 0 && afterActive != beforeActive {
+                                    stepsTaken = len(stack.CurrentPath)
+                                    break
+                                }
                             } else {
                                 // can't move, so abort the rest of the path
                                 stepsTaken = len(stack.CurrentPath)
