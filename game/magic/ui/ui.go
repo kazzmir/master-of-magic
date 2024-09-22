@@ -4,6 +4,7 @@ import (
     // "log"
     "image"
     "slices"
+    "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
 )
@@ -15,8 +16,6 @@ type UIDrawFunc func(element *UIElement, window *ebiten.Image)
 type UIKeyFunc func(key ebiten.Key)
 
 type UILayer int
-
-type AlphaFadeFunc func() float32
 
 type UIElement struct {
     Rect image.Rectangle
@@ -82,28 +81,12 @@ func (ui *UI) IsDisabled() bool {
     return ui.Disabled
 }
 
-func (ui *UI) MakeFadeIn(time uint64) AlphaFadeFunc {
-    start := ui.Counter
-    return func() float32 {
-        diff := ui.Counter - start
-        if diff > time {
-            return 1.0
-        }
-
-        return float32(diff) / float32(time)
-    }
+func (ui *UI) MakeFadeIn(time uint64) util.AlphaFadeFunc {
+    return util.MakeFadeIn(time, &ui.Counter)
 }
 
-func (ui *UI) MakeFadeOut(time uint64) AlphaFadeFunc {
-    start := ui.Counter
-    return func() float32 {
-        diff := ui.Counter - start
-        if diff > time {
-            return 0.0
-        }
-
-        return 1.0 - (float32(diff) / float32(time))
-    }
+func (ui *UI) MakeFadeOut(time uint64) util.AlphaFadeFunc {
+    return util.MakeFadeOut(time, &ui.Counter)
 }
 
 func (ui *UI) AddElements(elements []*UIElement){

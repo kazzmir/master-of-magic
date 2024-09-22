@@ -54,6 +54,11 @@ type GameEventNewOutpost struct {
     Stack *playerlib.UnitStack
 }
 
+type GameEventNewBuilding struct {
+    City *citylib.City
+    Building buildinglib.Building
+}
+
 type GameEventCityName struct {
     Title string
     City *citylib.City
@@ -465,6 +470,119 @@ func (game *Game) doInput(yield coroutine.YieldFunc, title string, name string, 
     return name
 }
 
+func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City, building buildinglib.Building){
+    drawer := game.Drawer
+    defer func(){
+        game.Drawer = drawer
+    }()
+
+    fontLbx, err := game.Cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        log.Printf("Unable to read fonts.lbx: %v", err)
+        return
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
+        return
+    }
+
+    yellow := color.RGBA{R: 0xea, G: 0xb6, B: 0x00, A: 0xff}
+    yellowPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        yellow, yellow, yellow,
+        yellow, yellow, yellow,
+        yellow, yellow, yellow,
+        yellow, yellow, yellow,
+    }
+
+    bigFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowPalette)
+
+    background, _ := game.ImageCache.GetImage("resource.lbx", 40, 0)
+    // devil: 51
+    // cat: 52
+    // bird: 53
+    // snake: 54
+    // beetle: 55
+    snake, _ := game.ImageCache.GetImageTransform("resource.lbx", 54, 0, util.AutoCrop)
+
+    wrappedText := bigFont.CreateWrappedText(180, 1, fmt.Sprintf("The %s of %s has completed the construction of a %s.", city.GetSize(), city.Name, game.BuildingInfo.Name(building)))
+
+    rightSide, _ := game.ImageCache.GetImage("resource.lbx", 41, 0)
+
+    getAlpha := util.MakeFadeIn(7, &game.Counter)
+
+    buildingPics, err := game.ImageCache.GetImagesTransform("cityscap.lbx", buildinglib.GetBuildingIndex(building), util.AutoCrop)
+
+    if err != nil {
+        log.Printf("Error: Unable to get building picture for %v: %v", game.BuildingInfo.Name(building), err)
+        return
+    }
+
+    buildingPicsAnimation := util.MakeAnimation(buildingPics, true)
+
+    // FIXME: pick background based on tile the land is on?
+    landBackground, _ := game.ImageCache.GetImage("cityscap.lbx", 0, 4)
+
+    game.Drawer = func (screen *ebiten.Image, game *Game){
+        drawer(screen, game)
+
+        var options ebiten.DrawImageOptions
+        options.ColorScale.ScaleAlpha(getAlpha())
+        options.GeoM.Translate(8, 60)
+        screen.DrawImage(background, &options)
+        iconOptions := options
+        iconOptions.GeoM.Translate(6, -10)
+        screen.DrawImage(snake, &iconOptions)
+
+        x, y := options.GeoM.Apply(8 + float64(snake.Bounds().Dx()), 9)
+        bigFont.RenderWrapped(screen, x, y, wrappedText, options.ColorScale, false)
+
+        options.GeoM.Translate(float64(background.Bounds().Dx()), 0)
+        screen.DrawImage(rightSide, &options)
+
+        x, y = options.GeoM.Apply(4, 6)
+        buildingSpace := screen.SubImage(image.Rect(int(x), int(y), int(x + 45), int(y + 47))).(*ebiten.Image)
+
+        // vector.DrawFilledRect(buildingSpace, float32(x), float32(y), float32(buildingSpace.Bounds().Dx()), float32(buildingSpace.Bounds().Dy()), color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, false)
+
+        landOptions := options
+        landOptions.GeoM.Translate(-10, -10)
+        buildingSpace.DrawImage(landBackground, &landOptions)
+
+        buildingOptions := options
+        buildingOptions.GeoM.Translate(float64(buildingSpace.Bounds().Dx()) / 2, float64(buildingSpace.Bounds().Dy()) / 2)
+        buildingOptions.GeoM.Translate(float64(buildingPicsAnimation.Frame().Bounds().Dx()) / -2, float64(buildingPicsAnimation.Frame().Bounds().Dy()) / -2)
+        buildingSpace.DrawImage(buildingPicsAnimation.Frame(), &buildingOptions)
+    }
+
+    quit := false
+    quitCounter := 0
+
+    for !quit || quitCounter < 7 {
+        game.Counter += 1
+
+        if quit {
+            quitCounter += 1
+        } else {
+            leftClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)
+            if leftClick {
+                quit = true
+                getAlpha = util.MakeFadeOut(7, &game.Counter)
+            }
+
+            if game.Counter % 8 == 0 {
+                buildingPicsAnimation.Next()
+            }
+        }
+
+        yield()
+    }
+
+}
+
 func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, stack *playerlib.UnitStack){
     drawer := game.Drawer
     defer func(){
@@ -656,6 +774,9 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                 case *GameEventNewOutpost:
                     outpost := event.(*GameEventNewOutpost)
                     game.showOutpost(yield, outpost.City, outpost.Stack)
+                case *GameEventNewBuilding:
+                    buildingEvent := event.(*GameEventNewBuilding)
+                    game.showNewBuilding(yield, buildingEvent.City, buildingEvent.Building)
                 case *GameEventCityName:
                     cityEvent := event.(*GameEventCityName)
                     city := cityEvent.City
@@ -1659,6 +1780,14 @@ func (game *Game) DoNextTurn(){
                         } else {
                             log.Printf("City shrunk by %v to %v", -growth.Size, city.Citizens())
                         }
+                    case *citylib.CityEventNewBuilding:
+                        newBuilding := event.(*citylib.CityEventNewBuilding)
+
+                        select {
+                            case game.Events<- &GameEventNewBuilding{City: city, Building: newBuilding.Building}:
+                            default:
+                        }
+
                     case *citylib.CityEventNewUnit:
                         newUnit := event.(*citylib.CityEventNewUnit)
                         player.AddUnit(units.MakeOverworldUnitFromUnit(newUnit.Unit, city.X, city.Y, city.Plane, city.Banner))

@@ -22,6 +22,10 @@ type CityEventNewUnit struct {
     Unit units.Unit
 }
 
+type CityEventNewBuilding struct {
+    Building building.Building
+}
+
 type CitySize int
 const (
     CitySizeHamlet CitySize = iota
@@ -34,15 +38,15 @@ const (
 func (citySize CitySize) String() string {
     switch citySize {
     case CitySizeHamlet:
-        return "hamlet"
+        return "Hamlet"
     case CitySizeVillage:
-        return "village"
+        return "Village"
     case CitySizeTown:
-        return "town"
+        return "Town"
     case CitySizeCity:
-        return "city"
+        return "City"
     case CitySizeCapital:
-        return "capital"
+        return "Capital"
     }
 
     return "Unknown"
@@ -489,6 +493,8 @@ func (city *City) DoNextTurn(garrison []*units.OverworldUnit) []CityEvent {
         if buildingCost != 0 {
             if city.Production >= float32(buildingCost) {
                 city.Buildings.Insert(city.ProducingBuilding)
+                cityEvents = append(cityEvents, &CityEventNewBuilding{Building: city.ProducingBuilding})
+
                 city.Production = 0
                 city.ProducingBuilding = building.BuildingHousing
             }

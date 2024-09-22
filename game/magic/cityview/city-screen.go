@@ -747,43 +747,15 @@ func (cityScreen *CityScreen) Update() CityScreenState {
     return cityScreen.State
 }
 
+// the index in cityscap.lbx for the picture of this building
 func GetBuildingIndex(building buildinglib.Building) int {
+    index := buildinglib.GetBuildingIndex(building)
+
+    if index != -1 {
+        return index
+    }
+
     switch building {
-        case buildinglib.BuildingBarracks: return 45
-        case buildinglib.BuildingArmory: return 46
-        case buildinglib.BuildingFightersGuild: return 47
-        case buildinglib.BuildingArmorersGuild: return 48
-        case buildinglib.BuildingWarCollege: return 49
-        case buildinglib.BuildingSmithy: return 50
-        case buildinglib.BuildingStables: return 51
-        case buildinglib.BuildingAnimistsGuild: return 52
-        case buildinglib.BuildingFantasticStable: return 53
-        case buildinglib.BuildingShipwrightsGuild: return 54
-        case buildinglib.BuildingShipYard: return 55
-        case buildinglib.BuildingMaritimeGuild: return 56
-        case buildinglib.BuildingSawmill: return 57
-        case buildinglib.BuildingLibrary: return 58
-        case buildinglib.BuildingSagesGuild: return 59
-        case buildinglib.BuildingOracle: return 60
-        case buildinglib.BuildingAlchemistsGuild: return 61
-        case buildinglib.BuildingUniversity: return 62
-        case buildinglib.BuildingWizardsGuild: return 63
-        case buildinglib.BuildingShrine: return 64
-        case buildinglib.BuildingTemple: return 65
-        case buildinglib.BuildingParthenon: return 66
-        case buildinglib.BuildingCathedral: return 67
-        case buildinglib.BuildingMarketplace: return 68
-        case buildinglib.BuildingBank: return 69
-        case buildinglib.BuildingMerchantsGuild: return 70
-        case buildinglib.BuildingGranary: return 71
-        case buildinglib.BuildingFarmersMarket: return 72
-        case buildinglib.BuildingBuildersHall: return 73
-        case buildinglib.BuildingMechaniciansGuild: return 74
-        case buildinglib.BuildingMinersGuild: return 75
-        case buildinglib.BuildingCityWalls: return 76
-        case buildinglib.BuildingForestersGuild: return 78
-        case buildinglib.BuildingFortress: return 40
-        case buildinglib.BuildingSummoningCircle: return 6
         case BuildingTree1: return 19
         case BuildingTree2: return 20
         case BuildingTree3: return 21

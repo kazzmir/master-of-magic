@@ -41,7 +41,7 @@ func MakeMainScreen(cache *lbx.LbxCache) *MainScreen {
 
 func (main *MainScreen) MakeUI() *uilib.UI {
 
-    var getAlpha uilib.AlphaFadeFunc
+    var getAlpha util.AlphaFadeFunc
 
     ui := &uilib.UI{
         Draw: func(ui *uilib.UI, screen *ebiten.Image) {
