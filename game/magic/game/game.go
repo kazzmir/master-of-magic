@@ -865,6 +865,7 @@ func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, st
     game.Drawer = func (screen *ebiten.Image, game *Game){
         drawer(screen, game)
 
+        // draw boot images on the map that show where the unit is moving to
         for _, point := range stack.CurrentPath {
             var options ebiten.DrawImageOptions
             x, y := convertTileCoordinates(float64(point.X), float64(point.Y))
@@ -958,11 +959,16 @@ func (game *Game) blinkRed(yield coroutine.YieldFunc) {
     }
 }
 
-func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *playerlib.UnitStack) pathfinding.Path {
+func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *playerlib.UnitStack, fog [][]bool) pathfinding.Path {
 
     tileCost := func (x1 int, y1 int, x2 int, y2 int) float64 {
         tileFrom := game.Map.GetTile(x1, y1)
         tileTo := game.Map.GetTile(x2, y2)
+
+        // don't know what the cost is, assume we can move there
+        if fog[y2][x2] {
+            return 1
+        }
 
         // can't move from land to ocean unless all units are flyers
         if tileFrom.Index == terrain.TileLand.Index && tileTo.Index != terrain.TileLand.Index {
@@ -1020,7 +1026,7 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
         return out
     }
 
-    path, ok := pathfinding.FindPath(image.Pt(oldX, oldY), image.Pt(newX, newY), pathfinding.Infinity, tileCost, neighbors)
+    path, ok := pathfinding.FindPath(image.Pt(oldX, oldY), image.Pt(newX, newY), 10000, tileCost, neighbors)
     if ok {
         return path[1:]
     }
@@ -1118,7 +1124,7 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                                             game.HudUI = game.MakeHudUI()
                                         }
 
-                                        path := game.FindPath(oldX, oldY, newX, newY, stack)
+                                        path := game.FindPath(oldX, oldY, newX, newY, stack, player.GetFog(game.Plane))
                                         if path == nil {
                                             game.blinkRed(yield)
                                         } else {
@@ -1153,6 +1159,10 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
 
                                 // some units in the stack might not have any moves left
                                 stack.EnableMovers()
+                            } else {
+                                // can't move, so abort the rest of the path
+                                stepsTaken = len(stack.CurrentPath)
+                                break
                             }
                         }
 

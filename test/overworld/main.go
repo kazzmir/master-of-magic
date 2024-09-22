@@ -54,7 +54,7 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
     player := game.AddPlayer(wizard)
 
     city := citylib.MakeCity("Test City", 4, 5, data.RaceHighElf, player.TaxRate, game.BuildingInfo)
-    city.Population = 6990
+    city.Population = 6190
     city.Plane = data.PlaneArcanus
     city.Banner = wizard.Banner
     city.ProducingBuilding = buildinglib.BuildingGranary
