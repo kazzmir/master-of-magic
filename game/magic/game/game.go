@@ -846,13 +846,34 @@ func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, st
     // the number of frames it takes to move a unit one tile
     frames := 10
 
+    tileWidth := float64(game.Map.TileWidth())
+    tileHeight := float64(game.Map.TileHeight())
+
+    convertTileCoordinates := func(x float64, y float64) (float64, float64) {
+        outX := (x - float64(game.cameraX)) * tileWidth
+        outY := (y - float64(game.cameraY)) * tileHeight
+        return outX, outY
+    }
+
     dx := float64(oldX - stack.X())
     dy := float64(oldY - stack.Y())
 
     game.State = GameStateUnitMoving
 
+    boot, _ := game.ImageCache.GetImage("compix.lbx", 72, 0)
+
     game.Drawer = func (screen *ebiten.Image, game *Game){
         drawer(screen, game)
+
+        for _, point := range stack.CurrentPath {
+            var options ebiten.DrawImageOptions
+            x, y := convertTileCoordinates(float64(point.X), float64(point.Y))
+            options.GeoM.Translate(x, y)
+            options.GeoM.Translate(float64(tileWidth) / 2, float64(tileHeight) / 2)
+            options.GeoM.Translate(float64(boot.Bounds().Dx()) / -2, float64(boot.Bounds().Dy()) / -2)
+            screen.DrawImage(boot, &options)
+        }
+
     }
 
     for i := 0; i < frames; i++ {
@@ -1001,7 +1022,7 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
 
     path, ok := pathfinding.FindPath(image.Pt(oldX, oldY), image.Pt(newX, newY), pathfinding.Infinity, tileCost, neighbors)
     if ok {
-        return path
+        return path[1:]
     }
 
     return nil
