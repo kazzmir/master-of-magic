@@ -96,6 +96,14 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
         _ = fireElemental
     }
 
+    player.AddUnit(units.OverworldUnit{
+        Unit: units.HighMenSpearmen,
+        Plane: data.PlaneArcanus,
+        Banner: wizard.Banner,
+        X: 30,
+        Y: 30,
+    })
+
     stack := player.FindStackByUnit(drake)
     player.SetSelectedStack(stack)
 
