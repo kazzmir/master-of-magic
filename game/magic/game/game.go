@@ -1201,6 +1201,8 @@ func (game *Game) CreateOutpost(settlers *units.OverworldUnit, player *playerlib
     newCity.Plane = settlers.Plane
     newCity.Population = 1000
     newCity.Banner = player.Wizard.Banner
+    newCity.ProducingBuilding = buildinglib.BuildingHousing
+    newCity.ProducingUnit = units.UnitNone
 
     player.RemoveUnit(settlers)
     player.SelectedStack = nil
