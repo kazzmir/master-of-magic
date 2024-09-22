@@ -18,6 +18,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/unitview"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
+    "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     "github.com/kazzmir/master-of-magic/game/magic/cityview"
     "github.com/kazzmir/master-of-magic/game/magic/magicview"
     "github.com/kazzmir/master-of-magic/game/magic/data"
@@ -29,8 +30,9 @@ import (
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/lib/fraction"
     "github.com/hajimehoshi/ebiten/v2"
+    "github.com/hajimehoshi/ebiten/v2/colorm"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
-    _ "github.com/hajimehoshi/ebiten/v2/vector"
+    "github.com/hajimehoshi/ebiten/v2/vector"
 )
 
 func (game *Game) GetFogImage() *ebiten.Image {
@@ -127,6 +129,7 @@ func randomizeBookOrder(books int) []int {
     return order
 }
 
+// a true value in fog means the tile is visible, false means not visible
 func (game *Game) MakeFog() [][]bool {
     fog := make([][]bool, game.Map.Width())
     for x := 0; x < game.Map.Width(); x++ {
@@ -836,13 +839,44 @@ func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, sta
 }
 
 func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, stack *playerlib.UnitStack){
+    drawer := game.Drawer
+    defer func(){
+        game.Drawer = drawer
+    }()
+
     // the number of frames it takes to move a unit one tile
     frames := 10
+
+    tileWidth := float64(game.Map.TileWidth())
+    tileHeight := float64(game.Map.TileHeight())
+
+    convertTileCoordinates := func(x float64, y float64) (float64, float64) {
+        outX := (x - float64(game.cameraX)) * tileWidth
+        outY := (y - float64(game.cameraY)) * tileHeight
+        return outX, outY
+    }
 
     dx := float64(oldX - stack.X())
     dy := float64(oldY - stack.Y())
 
     game.State = GameStateUnitMoving
+
+    boot, _ := game.ImageCache.GetImage("compix.lbx", 72, 0)
+
+    game.Drawer = func (screen *ebiten.Image, game *Game){
+        drawer(screen, game)
+
+        // draw boot images on the map that show where the unit is moving to
+        for _, point := range stack.CurrentPath {
+            var options ebiten.DrawImageOptions
+            x, y := convertTileCoordinates(float64(point.X), float64(point.Y))
+            options.GeoM.Translate(x, y)
+            options.GeoM.Translate(float64(tileWidth) / 2, float64(tileHeight) / 2)
+            options.GeoM.Translate(float64(boot.Bounds().Dx()) / -2, float64(boot.Bounds().Dy()) / -2)
+            screen.DrawImage(boot, &options)
+        }
+
+    }
 
     for i := 0; i < frames; i++ {
         game.Counter += 1
@@ -891,6 +925,124 @@ func (game *Game) ComputeTerrainCost(stack *playerlib.UnitStack, x int, y int) (
     return fraction.Zero(), false
 }
 
+/* blink the game screen red to indicate the user attempted to do something invalid
+ */
+func (game *Game) blinkRed(yield coroutine.YieldFunc) {
+    drawer := game.Drawer
+    defer func(){
+        game.Drawer = drawer
+    }()
+
+    fadeSpeed := uint64(6)
+
+    counter := uint64(0)
+    getAlpha := util.MakeFadeIn(fadeSpeed, &counter)
+
+    game.Drawer = func (screen *ebiten.Image, game *Game){
+        drawer(screen, game)
+
+        var scale colorm.ColorM
+        scale.Scale(1, 1, 1, float64(getAlpha() / 2))
+
+        vector.DrawFilledRect(screen, 0, 0, float32(screen.Bounds().Dx()), float32(screen.Bounds().Dy()), scale.Apply(color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}), false)
+    }
+
+    for i := uint64(0); i < fadeSpeed; i++ {
+        counter += 1
+        yield()
+    }
+
+    getAlpha = util.MakeFadeOut(fadeSpeed, &counter)
+
+    for i := uint64(0); i < fadeSpeed; i++ {
+        counter += 1
+        yield()
+    }
+}
+
+func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *playerlib.UnitStack, fog [][]bool) pathfinding.Path {
+
+    tileCost := func (x1 int, y1 int, x2 int, y2 int) float64 {
+        tileFrom := game.Map.GetTile(x1, y1)
+        tileTo := game.Map.GetTile(x2, y2)
+
+        // FIXME: consider terrain type, roads, and unit abilities
+
+        baseCost := float64(1)
+
+        if x1 != x2 && y1 != y2 {
+            baseCost = 1.5
+        }
+
+        // don't know what the cost is, assume we can move there
+        if !fog[x2][y2] {
+            return baseCost
+        }
+
+        // can't move from land to ocean unless all units are flyers
+        if tileFrom.Index == terrain.TileLand.Index && tileTo.Index != terrain.TileLand.Index {
+            if !stack.AllFlyers() {
+                return pathfinding.Infinity
+            }
+        }
+
+        return baseCost
+    }
+
+    neighbors := func (x int, y int) []image.Point {
+        var out []image.Point
+
+        // up left
+        if x > 0 && y > 0 {
+            out = append(out, image.Pt(x - 1, y - 1))
+        }
+
+        // left
+        if x > 0 {
+            out = append(out, image.Pt(x - 1, y))
+        }
+
+        // down left
+        if x > 0 && y < game.Map.Height() - 1 {
+            out = append(out, image.Pt(x - 1, y + 1))
+        }
+
+        // up right
+        if x < game.Map.Width() - 1 && y > 0 {
+            out = append(out, image.Pt(x + 1, y - 1))
+        }
+
+        // up
+        if y > 0 {
+            out = append(out, image.Pt(x, y - 1))
+        }
+
+        // right
+        if x < game.Map.Width() - 1 {
+            out = append(out, image.Pt(x + 1, y))
+        }
+
+        // down right
+        if x < game.Map.Width() - 1 && y < game.Map.Height() - 1 {
+            out = append(out, image.Pt(x + 1, y + 1))
+        }
+
+        // down
+        if y < game.Map.Height() - 1 {
+            out = append(out, image.Pt(x, y + 1))
+        }
+
+        return out
+    }
+
+    path, ok := pathfinding.FindPath(image.Pt(oldX, oldY), image.Pt(newX, newY), 10000, tileCost, neighbors)
+    if ok {
+        return path[1:]
+    }
+
+    return nil
+}
+
 func (game *Game) Update(yield coroutine.YieldFunc) GameState {
     game.Counter += 1
 
@@ -898,11 +1050,6 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
     if game.Counter % 10 == 0 {
         log.Printf("TPS: %v FPS: %v", ebiten.ActualTPS(), ebiten.ActualFPS())
     }
-    */
-
-    /*
-    tilesPerRow := game.Map.TilesPerRow(data.ScreenWidth)
-    tilesPerColumn := game.Map.TilesPerColumn(data.ScreenHeight)
     */
 
     select {
@@ -938,82 +1085,128 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                 keys := make([]ebiten.Key, 0)
                 keys = inpututil.AppendJustPressedKeys(keys)
 
-                dx := 0
-                dy := 0
-
-                for _, key := range keys {
-                    switch key {
-                        case ebiten.KeyUp: dy = -1
-                        case ebiten.KeyDown: dy = 1
-                        case ebiten.KeyLeft: dx = -1
-                        case ebiten.KeyRight: dx = 1
-                    }
-                }
-
                 if len(game.Players) > 0 {
                     player := game.Players[0]
                     if player.SelectedStack != nil {
                         stack := player.SelectedStack
+                        oldX := stack.X()
+                        oldY := stack.Y()
 
-                        // game.CenterCamera(stack.X(), stack.Y())
+                        if len(stack.CurrentPath) == 0 {
 
-                        if dx != 0 || dy != 0 {
-                            activeUnits := stack.ActiveUnits()
-                            if len(activeUnits) > 0 {
-                                oldX := stack.X()
-                                oldY := stack.Y()
+                            dx := 0
+                            dy := 0
 
-                                newX := stack.X() + dx
-                                newY := stack.Y() + dy
+                            for _, key := range keys {
+                                switch key {
+                                    case ebiten.KeyUp: dy = -1
+                                    case ebiten.KeyDown: dy = 1
+                                    case ebiten.KeyLeft: dx = -1
+                                    case ebiten.KeyRight: dx = 1
+                                }
+                            }
 
-                                if newY > 0 && newY < game.Map.Height() && newX > 0 && newX < game.Map.Width() {
+                            newX := stack.X() + dx
+                            newY := stack.Y() + dy
 
-                                    inactiveUnits := stack.InactiveUnits()
-                                    if len(inactiveUnits) > 0 {
-                                        stack.RemoveUnits(inactiveUnits)
-                                        player.AddStack(playerlib.MakeUnitStackFromUnits(inactiveUnits))
-                                        game.HudUI = game.MakeHudUI()
-                                    }
+                            leftClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)
+                            if leftClick {
+                                mouseX, mouseY := ebiten.CursorPosition()
 
-                                    terrainCost, canMove := game.ComputeTerrainCost(stack, newX, newY)
+                                // can only click into the area not hidden by the hud
+                                if mouseX < 240 && mouseY > 18 {
+                                    // log.Printf("Click at %v, %v", mouseX, mouseY)
+                                    newX = game.cameraX + mouseX / game.Map.TileWidth()
+                                    newY = game.cameraY + mouseY / game.Map.TileHeight()
+                                }
+                            }
 
-                                    if canMove {
-                                        mergeStack := player.FindStack(newX, newY)
+                            if newX != oldX || newY != oldY {
+                                activeUnits := stack.ActiveUnits()
+                                if len(activeUnits) > 0 {
+                                    if newY > 0 && newY < game.Map.Height() && newX > 0 && newX < game.Map.Width() {
 
-                                        stack.Move(dx, dy, terrainCost)
-
-                                        game.showMovement(yield, oldX, oldY, stack)
-
-                                        player.LiftFog(stack.X(), stack.Y(), 2)
-
-                                        if mergeStack != nil {
-                                            stack = player.MergeStacks(mergeStack, stack)
-                                            player.SelectedStack = stack
+                                        inactiveUnits := stack.InactiveUnits()
+                                        if len(inactiveUnits) > 0 {
+                                            stack.RemoveUnits(inactiveUnits)
+                                            player.AddStack(playerlib.MakeUnitStackFromUnits(inactiveUnits))
                                             game.HudUI = game.MakeHudUI()
                                         }
 
-                                        // update unrest for new units in the city
-                                        newCity := player.FindCity(stack.X(), stack.Y())
-                                        if newCity != nil {
-                                            newCity.UpdateUnrest(stack.Units())
-                                        }
-
-                                        for _, otherPlayer := range game.Players[1:] {
-                                            otherStack := otherPlayer.FindStack(stack.X(), stack.Y())
-                                            if otherStack != nil {
-                                                game.doCombat(yield, player, stack, otherPlayer, otherStack)
-                                            }
-                                        }
-
-                                        // some units in the stack might not have any moves left
-                                        stack.EnableMovers()
-
-                                        if stack.OutOfMoves() {
-                                            game.DoNextUnit(player)
+                                        path := game.FindPath(oldX, oldY, newX, newY, stack, player.GetFog(game.Plane))
+                                        if path == nil {
+                                            game.blinkRed(yield)
+                                        } else {
+                                            stack.CurrentPath = path
                                         }
                                     }
                                 }
                             }
+                        }
+
+                        stepsTaken := 0
+                        var mergeStack *playerlib.UnitStack
+
+                        quitMoving:
+                        for i, step := range stack.CurrentPath {
+                            if stack.OutOfMoves() {
+                                break
+                            }
+
+                            terrainCost, canMove := game.ComputeTerrainCost(stack, step.X, step.Y)
+
+                            if canMove {
+                                stepsTaken = i + 1
+                                mergeStack = player.FindStack(step.X, step.Y)
+
+                                stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost)
+
+                                game.showMovement(yield, oldX, oldY, stack)
+
+                                player.LiftFog(stack.X(), stack.Y(), 2)
+
+                                for _, otherPlayer := range game.Players[1:] {
+                                    otherStack := otherPlayer.FindStack(stack.X(), stack.Y())
+                                    if otherStack != nil {
+                                        game.doCombat(yield, player, stack, otherPlayer, otherStack)
+                                        stepsTaken = len(stack.CurrentPath)
+                                        break quitMoving
+                                    }
+                                }
+
+                                // some units in the stack might not have any moves left
+                                beforeActive := len(stack.ActiveUnits())
+                                stack.EnableMovers()
+                                afterActive := len(stack.ActiveUnits())
+                                if afterActive > 0 && afterActive != beforeActive {
+                                    stepsTaken = len(stack.CurrentPath)
+                                    break
+                                }
+                            } else {
+                                // can't move, so abort the rest of the path
+                                stepsTaken = len(stack.CurrentPath)
+                                break
+                            }
+                        }
+
+                        if stepsTaken > 0 {
+                            stack.CurrentPath = stack.CurrentPath[stepsTaken:]
+                        }
+
+                        if mergeStack != nil {
+                            stack = player.MergeStacks(mergeStack, stack)
+                            player.SelectedStack = stack
+                            game.HudUI = game.MakeHudUI()
+                        }
+
+                        // update unrest for new units in the city
+                        newCity := player.FindCity(stack.X(), stack.Y())
+                        if newCity != nil {
+                            newCity.UpdateUnrest(stack.Units())
+                        }
+
+                        if stack.OutOfMoves() {
+                            game.DoNextUnit(player)
                         }
                     }
 

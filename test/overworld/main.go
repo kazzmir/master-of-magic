@@ -53,8 +53,10 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
 
     player := game.AddPlayer(wizard)
 
-    city := citylib.MakeCity("Test City", 4, 5, data.RaceHighElf, player.TaxRate, game.BuildingInfo)
-    city.Population = 6990
+    x, y := game.FindValidCityLocation()
+
+    city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.TaxRate, game.BuildingInfo)
+    city.Population = 6190
     city.Plane = data.PlaneArcanus
     city.Banner = wizard.Banner
     city.ProducingBuilding = buildinglib.BuildingGranary
@@ -73,14 +75,14 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
 
     // game.Map.Map.Terrain[3][6] = terrain.TileNatureForest.Index
 
-    player.LiftFog(4, 5, 3)
+    player.LiftFog(x, y, 3)
 
     drake := player.AddUnit(units.OverworldUnit{
         Unit: units.GreatDrake,
         Plane: data.PlaneArcanus,
         Banner: wizard.Banner,
-        X: 5,
-        Y: 5,
+        X: x + 1,
+        Y: y + 1,
     })
 
     for i := 0; i < 5; i++ {
@@ -88,8 +90,8 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
             Unit: units.FireElemental,
             Plane: data.PlaneArcanus,
             Banner: wizard.Banner,
-            X: 5,
-            Y: 5,
+            X: x + 1,
+            Y: y + 1,
         })
         _ = fireElemental
     }
@@ -97,7 +99,7 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
     stack := player.FindStackByUnit(drake)
     player.SetSelectedStack(stack)
 
-    player.LiftFog(5, 5, 2)
+    player.LiftFog(stack.X(), stack.Y(), 2)
 
     enemy1 := game.AddPlayer(setup.WizardCustom{
         Name: "dingus",
@@ -108,16 +110,16 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
         Unit: units.Warlocks,
         Plane: data.PlaneArcanus,
         Banner: enemy1.Wizard.Banner,
-        X: 6,
-        Y: 6,
+        X: x + 2,
+        Y: y + 2,
     })
 
     enemy1.AddUnit(units.OverworldUnit{
         Unit: units.HighMenBowmen,
         Plane: data.PlaneArcanus,
         Banner: enemy1.Wizard.Banner,
-        X: 6,
-        Y: 6,
+        X: x + 2,
+        Y: y + 2,
     })
 
     return game

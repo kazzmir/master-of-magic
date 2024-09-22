@@ -108,7 +108,8 @@ func TestPath1(test *testing.T){
     }
 }
 
-func TestPathBlocked(test *testing.T){
+/* can't move through walls (X) */
+func TestPathObstacles(test *testing.T){
     tiles := makeMap(`
 1123
 XXX3
@@ -144,6 +145,27 @@ XXX3
         test.Errorf("path not as expected: expected=%v actual=%v", expectedPath, path)
     }
 
+}
+
+/* no path at all because there are no openings in the walls */
+func TestPathFullBlocked(test *testing.T){
+    tiles := makeMap(`
+1123
+XXXX
+2132
+2111
+`)
+
+    start := image.Pt(0, 0)
+    end := image.Pt(3, 3)
+
+    tileCost := makeTileCost(tiles)
+    neighbors := makeNeighbors(tiles)
+
+    _, ok := FindPath(start, end, Infinity, tileCost, neighbors)
+    if ok {
+        test.Errorf("able to find path through blocked map")
+    }
 }
 
 func makeRandomMap(rows int, columns int, value int) [][]float64 {
