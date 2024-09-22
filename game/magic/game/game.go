@@ -20,6 +20,7 @@ import (
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     "github.com/kazzmir/master-of-magic/game/magic/cityview"
+    "github.com/kazzmir/master-of-magic/game/magic/armyview"
     "github.com/kazzmir/master-of-magic/game/magic/magicview"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/util"
@@ -278,6 +279,16 @@ func (game *Game) doArmyView(yield coroutine.YieldFunc) {
     defer func(){
         game.Drawer = oldDrawer
     }()
+
+    army := armyview.MakeArmyScreen(game.Cache, game.Players[0])
+
+    game.Drawer = func (screen *ebiten.Image, game *Game){
+        army.Draw(screen)
+    }
+
+    for army.Update() == armyview.ArmyScreenStateRunning {
+        yield()
+    }
 }
 
 func (game *Game) doMagicView(yield coroutine.YieldFunc) {
