@@ -899,7 +899,7 @@ func GetUnitImage(unit units.Unit, imageCache *util.ImageCache) (*ebiten.Image, 
     image, err := imageCache.GetImage(unit.LbxFile, unit.Index, 0)
 
     if err != nil {
-        log.Printf("Error: image in %v is missing: %v", unit.LbxFile, err)
+        log.Printf("Error: unit '%v' image in lbx file %v is missing: %v", unit.Name, unit.LbxFile, err)
     }
 
     return image, err
@@ -1359,8 +1359,10 @@ func (game *Game) MakeHudUI() *uilib.UI {
                     }
 
                     options.GeoM.Translate(1, 1)
-                    unitImage, _ := GetUnitImage(unit.Unit, &game.ImageCache)
-                    screen.DrawImage(unitImage, &options)
+                    unitImage, err := GetUnitImage(unit.Unit, &game.ImageCache)
+                    if err == nil {
+                        screen.DrawImage(unitImage, &options)
+                    }
                 },
             })
 

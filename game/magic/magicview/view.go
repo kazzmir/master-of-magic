@@ -650,7 +650,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player) *uilib.UI {
             // vector.StrokeRect(screen, float32(spellCastUIRect.Min.X), float32(spellCastUIRect.Min.Y), float32(spellCastUIRect.Dx()), float32(spellCastUIRect.Dy()), 1, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff}, false)
 
             smallerFont.Print(screen, 5, 176, 1, ebiten.ColorScale{}, fmt.Sprintf("Casting Skill: %v(%v)", player.CastingSkill, player.CastingSkill))
-            smallerFont.Print(screen, 5, 183, 1, ebiten.ColorScale{}, fmt.Sprintf("Magic Reserve: %v", 90))
+            smallerFont.Print(screen, 5, 183, 1, ebiten.ColorScale{}, fmt.Sprintf("Magic Reserve: %v", player.Mana))
             smallerFont.Print(screen, 5, 190, 1, ebiten.ColorScale{}, fmt.Sprintf("Power Base: %v", 12))
         },
     })
