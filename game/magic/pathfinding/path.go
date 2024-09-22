@@ -61,7 +61,6 @@ func FindPath(start image.Point, end image.Point, maxPath float64, tileCost Tile
         return 0
     }
 
-    // this should be a priority queue
     unvisited := priority.MakePriorityQueue[*Node](compare)
     unvisited.Insert(nodes[start])
 

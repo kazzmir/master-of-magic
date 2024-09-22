@@ -29,8 +29,9 @@ import (
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/lib/fraction"
     "github.com/hajimehoshi/ebiten/v2"
+    "github.com/hajimehoshi/ebiten/v2/colorm"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
-    _ "github.com/hajimehoshi/ebiten/v2/vector"
+    "github.com/hajimehoshi/ebiten/v2/vector"
 )
 
 func (game *Game) GetFogImage() *ebiten.Image {
@@ -891,6 +892,41 @@ func (game *Game) ComputeTerrainCost(stack *playerlib.UnitStack, x int, y int) (
     return fraction.Zero(), false
 }
 
+/* blink the game screen red to indicate the user attempted to do something invalid
+ */
+func (game *Game) blinkRed(yield coroutine.YieldFunc) {
+    drawer := game.Drawer
+    defer func(){
+        game.Drawer = drawer
+    }()
+
+    fadeSpeed := uint64(6)
+
+    counter := uint64(0)
+    getAlpha := util.MakeFadeIn(fadeSpeed, &counter)
+
+    game.Drawer = func (screen *ebiten.Image, game *Game){
+        drawer(screen, game)
+
+        var scale colorm.ColorM
+        scale.Scale(1, 1, 1, float64(getAlpha() / 2))
+
+        vector.DrawFilledRect(screen, 0, 0, float32(screen.Bounds().Dx()), float32(screen.Bounds().Dy()), scale.Apply(color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}), false)
+    }
+
+    for i := uint64(0); i < fadeSpeed; i++ {
+        counter += 1
+        yield()
+    }
+
+    getAlpha = util.MakeFadeOut(fadeSpeed, &counter)
+
+    for i := uint64(0); i < fadeSpeed; i++ {
+        counter += 1
+        yield()
+    }
+}
+
 func (game *Game) Update(yield coroutine.YieldFunc) GameState {
     game.Counter += 1
 
@@ -898,11 +934,6 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
     if game.Counter % 10 == 0 {
         log.Printf("TPS: %v FPS: %v", ebiten.ActualTPS(), ebiten.ActualFPS())
     }
-    */
-
-    /*
-    tilesPerRow := game.Map.TilesPerRow(data.ScreenWidth)
-    tilesPerColumn := game.Map.TilesPerColumn(data.ScreenHeight)
     */
 
     select {
@@ -1011,6 +1042,8 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                                         if stack.OutOfMoves() {
                                             game.DoNextUnit(player)
                                         }
+                                    } else {
+                                        game.blinkRed(yield)
                                     }
                                 }
                             }

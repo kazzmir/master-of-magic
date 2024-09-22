@@ -6,6 +6,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/lib/fraction"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
@@ -16,6 +17,8 @@ type ActiveMap map[*units.OverworldUnit]bool
 type UnitStack struct {
     units []*units.OverworldUnit
     active ActiveMap
+
+    CurrentPath pathfinding.Path
 
     // non-zero while animating movement on the overworld
     offsetX float64
