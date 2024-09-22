@@ -503,7 +503,7 @@ func (city *City) AllowedUnits(what building.Building) []units.Unit {
     var out []units.Unit
 
     for _, unit := range units.AllUnits {
-        if unit.Race == city.Race {
+        if unit.Race == data.RaceNone || unit.Race == city.Race {
             canBuild := false
 
             for _, required := range unit.RequiredBuildings {
