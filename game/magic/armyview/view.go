@@ -211,6 +211,10 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
                             vector.DrawFilledRect(screen, float32(x), float32(y+1), float32(pic.Bounds().Dx()), float32(pic.Bounds().Dy())-1, highlightColor, false)
                         }
 
+                        if unit.Patrol {
+                            options.ColorM.ChangeHSV(0, 0, 1)
+                        }
+
                         screen.DrawImage(pic, &options)
                     },
                 })
