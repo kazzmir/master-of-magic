@@ -4,6 +4,7 @@ import (
     "log"
     "fmt"
     "slices"
+    "image"
     "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -13,6 +14,7 @@ import (
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     "github.com/hajimehoshi/ebiten/v2"
+    "github.com/hajimehoshi/ebiten/v2/vector"
 )
 
 type CityListScreenState int
@@ -76,6 +78,8 @@ func (view *CityListScreen) MakeUI() *uilib.UI {
     }
     bigFont := font.MakeOptimizedFontWithPalette(fonts[4], bigPalette)
 
+    var highlightedCity *citylib.City
+
     ui := &uilib.UI{
         Draw: func(ui *uilib.UI, screen *ebiten.Image) {
             background, _ := view.ImageCache.GetImage("reload.lbx", 21, 0)
@@ -117,12 +121,33 @@ func (view *CityListScreen) MakeUI() *uilib.UI {
         return 0
     })
 
+    highlightColor := util.PremultiplyAlpha(color.RGBA{R: 255, G: 255, B: 255, A: 90})
+
     y := 28
     for _, city := range cities {
+        if highlightedCity == nil {
+            highlightedCity = city
+        }
+
         elementY := float64(y)
         elements = append(elements, &uilib.UIElement{
+            Rect: image.Rect(28, int(elementY), 296, int(elementY + 14)),
+            Inside: func(element *uilib.UIElement, x int, y int){
+                highlightedCity = city
+            },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
                 x := float64(31)
+
+                if highlightedCity == city {
+                    vector.DrawFilledRect(screen, float32(x-1), float32(elementY-3), 52, 10, highlightColor, false)
+                    vector.DrawFilledRect(screen, float32(x-1+57), float32(elementY-3), 44, 10, highlightColor, false)
+                    vector.DrawFilledRect(screen, float32(x-1+119-14), float32(elementY-3), 16, 10, highlightColor, false)
+                    vector.DrawFilledRect(screen, float32(x-1+139-14), float32(elementY-3), 16, 10, highlightColor, false)
+                    vector.DrawFilledRect(screen, float32(x-1+159-14), float32(elementY-3), 16, 10, highlightColor, false)
+                    vector.DrawFilledRect(screen, float32(x-1+165), float32(elementY-3), 76, 10, highlightColor, false)
+                    vector.DrawFilledRect(screen, float32(x-1+258-13), float32(elementY-3), 15, 10, highlightColor, false)
+                }
+
                 normalFont.Print(screen, x, elementY, 1, ebiten.ColorScale{}, city.Name)
                 normalFont.Print(screen, x + 57, elementY, 1, ebiten.ColorScale{}, city.Race.String())
                 normalFont.PrintRight(screen, x + 119, elementY, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", city.Citizens()))
