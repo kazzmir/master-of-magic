@@ -170,6 +170,35 @@ func (view *CityListScreen) MakeUI() *uilib.UI {
         y += 14
     }
 
+    makeButton := func (x int, y int, normal *ebiten.Image, clickImage *ebiten.Image, action func()) *uilib.UIElement {
+        clicked := false
+
+        return &uilib.UIElement{
+            Rect: util.ImageRect(x, y, normal),
+            LeftClick: func (this *uilib.UIElement){
+                clicked = true
+            },
+            LeftClickRelease: func (this *uilib.UIElement){
+                action()
+                clicked = false
+            },
+            Draw: func(this *uilib.UIElement, screen *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(x), float64(y))
+                use := normal
+                if clicked {
+                    use = clickImage
+                }
+                screen.DrawImage(use, &options)
+            },
+        }
+    }
+
+    okButtons, _ := view.ImageCache.GetImages("reload.lbx", 22)
+    elements = append(elements, makeButton(239, 183, okButtons[0], okButtons[1], func(){
+        view.State = CityListScreenStateDone
+    }))
+
     ui.SetElementsFromArray(elements)
 
     return ui
