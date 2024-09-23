@@ -30,6 +30,7 @@
 * armies screen
 * cities screen
 * quake console
+* make overworld wrap horizontally
 
 9/22/2024 * city view: separate surplus food/gold from subsistence food/gold
 9/22/2024 * overworld path finding to point on map

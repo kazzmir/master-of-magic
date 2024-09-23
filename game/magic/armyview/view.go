@@ -83,6 +83,9 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
     }
     bigFont := font.MakeOptimizedFontWithPalette(fonts[4], bigPalette)
 
+    upArrows, _ := view.ImageCache.GetImages("armylist.lbx", 1)
+    downArrows, _ := view.ImageCache.GetImages("armylist.lbx", 2)
+
     ui := &uilib.UI{
         Draw: func(this *uilib.UI, screen *ebiten.Image) {
             background, _ := view.ImageCache.GetImage("armylist.lbx", 0, 0)
@@ -111,6 +114,52 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
     }
 
     var elements []*uilib.UIElement
+
+    makeButton := func (x int, y int, normal *ebiten.Image, clickImage *ebiten.Image, action func()) *uilib.UIElement {
+
+        clicked := false
+
+        return &uilib.UIElement{
+            Rect: util.ImageRect(x, y, normal),
+            LeftClick: func (this *uilib.UIElement){
+                clicked = true
+            },
+            LeftClickRelease: func (this *uilib.UIElement){
+                action()
+                clicked = false
+            },
+            Draw: func(this *uilib.UIElement, screen *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(x), float64(y))
+                use := normal
+                if clicked {
+                    use = clickImage
+                }
+                screen.DrawImage(use, &options)
+            },
+        }
+    }
+
+    scrollUnitsUp := func(){
+        if view.FirstRow > 0 {
+            view.FirstRow -= 1
+            view.UI = view.MakeUI()
+        }
+    }
+
+    scrollUnitsDown := func(){
+        totalStacks := len(view.Player.Stacks)
+        if view.FirstRow < totalStacks - 6 {
+            view.FirstRow += 1
+            view.UI = view.MakeUI()
+        }
+    }
+
+    elements = append(elements, makeButton(60, 26, upArrows[0], upArrows[1], scrollUnitsUp))
+    elements = append(elements, makeButton(250, 26, upArrows[0], upArrows[1], scrollUnitsUp))
+
+    elements = append(elements, makeButton(60, 139, downArrows[0], downArrows[1], scrollUnitsDown))
+    elements = append(elements, makeButton(250, 139, downArrows[0], downArrows[1], scrollUnitsDown))
 
     // row := view.FirstRow
     rowY := 25
@@ -161,7 +210,7 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
 
         // there are only 6 slots to show at a time
         rowCount += 1
-        if rowCount > 6 {
+        if rowCount >= 6 {
             break
         }
 
