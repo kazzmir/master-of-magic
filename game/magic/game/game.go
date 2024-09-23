@@ -1256,19 +1256,28 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                                 break
                             }
 
-                            beforeX := stack.X()
-                            beforeY := stack.Y()
-
                             terrainCost, canMove := game.ComputeTerrainCost(stack, step.X, step.Y)
 
                             if canMove {
+                                if game.Map.GetTile(step.X, step.Y).Index == terrain.TileNatureForest.Index {
+                                    if game.confirmEncounter(yield, step.X, step.Y) {
+
+                                        stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost)
+                                        game.showMovement(yield, oldX, oldY, stack)
+                                        player.LiftFog(stack.X(), stack.Y(), 2)
+
+                                        game.doNatureEncounter(yield, player, stack, stack.X(), stack.Y())
+                                    }
+
+                                    stopMoving = true
+                                    break quitMoving
+                                }
+
                                 stepsTaken = i + 1
                                 mergeStack = player.FindStack(step.X, step.Y)
 
                                 stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost)
-
                                 game.showMovement(yield, oldX, oldY, stack)
-
                                 player.LiftFog(stack.X(), stack.Y(), 2)
 
                                 for _, otherPlayer := range game.Players[1:] {
@@ -1278,16 +1287,6 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                                         stopMoving = true
                                         break quitMoving
                                     }
-                                }
-
-                                if game.Map.GetTile(stack.X(), stack.Y()).Index == terrain.TileNatureForest.Index {
-                                    moved := game.doNatureEncounter(yield, player, stack)
-                                    if !moved {
-                                        // move back to the tile the unit was just one
-                                        stack.Move(beforeX - stack.X(), beforeY - stack.Y(), fraction.Zero())
-                                    }
-                                    stopMoving = true
-                                    break quitMoving
                                 }
 
                                 // some units in the stack might not have any moves left
@@ -1409,38 +1408,24 @@ func (game *Game) doCityScreen(yield coroutine.YieldFunc, city *citylib.City, pl
     game.Drawer = oldDrawer
 }
 
-func (game *Game) doNatureEncounter(yield coroutine.YieldFunc, player *playerlib.Player, stack *playerlib.UnitStack) bool {
-
-    defender := playerlib.Player{
-        Wizard: setup.WizardCustom{
-            Name: "Lair",
-        },
-    }
-
-    enemies := []*units.OverworldUnit{
-        &units.OverworldUnit{
-            Unit: units.Sprite,
-        },
-        &units.OverworldUnit{
-            Unit: units.WarBear,
-        },
-    }
-
-    didCombat := false
-
+func (game *Game) confirmEncounter(yield coroutine.YieldFunc, x int, y int) bool {
     quit := false
+
+    result := false
 
     yes := func(){
         quit = true
-        didCombat = true
+        result = true
     }
 
     no := func(){
         quit = true
     }
 
+    // FIXME: create animation from palette rotation of some of the colors
     lairPicture, _ := game.ImageCache.GetImage("reload.lbx", 11, 0)
 
+    // FIXME: message is based on node type at the x,y map location
     game.HudUI.AddElements(uilib.MakeLairConfirmDialogWithLayer(game.HudUI, game.Cache, &game.ImageCache, lairPicture, 1, "You have found a nature node. Scouts have spotted War Bears within the nature node. Do you wish to enter?", yes, no))
 
     for !quit {
@@ -1454,12 +1439,31 @@ func (game *Game) doNatureEncounter(yield coroutine.YieldFunc, player *playerlib
         yield()
     }
 
-    if didCombat {
-        game.doCombat(yield, player, stack, &defender, playerlib.MakeUnitStackFromUnits(enemies))
-    }
-    yield()
+    return result
+}
 
-    return didCombat
+func (game *Game) doNatureEncounter(yield coroutine.YieldFunc, player *playerlib.Player, stack *playerlib.UnitStack, x int, y int){
+
+    defender := playerlib.Player{
+        Wizard: setup.WizardCustom{
+            Name: "Lair",
+        },
+    }
+
+    // FIXME: units depend on node at x,y location
+    enemies := []*units.OverworldUnit{
+        &units.OverworldUnit{
+            Unit: units.Sprite,
+        },
+        &units.OverworldUnit{
+            Unit: units.WarBear,
+        },
+    }
+
+    game.doCombat(yield, player, stack, &defender, playerlib.MakeUnitStackFromUnits(enemies))
+
+    // absorb extra clicks
+    yield()
 }
 
 func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player, attackerStack *playerlib.UnitStack, defender *playerlib.Player, defenderStack *playerlib.UnitStack){
