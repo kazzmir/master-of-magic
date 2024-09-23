@@ -1247,6 +1247,7 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                         }
 
                         stepsTaken := 0
+                        stopMoving := false
                         var mergeStack *playerlib.UnitStack
 
                         quitMoving:
@@ -1271,9 +1272,15 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                                     otherStack := otherPlayer.FindStack(stack.X(), stack.Y())
                                     if otherStack != nil {
                                         game.doCombat(yield, player, stack, otherPlayer, otherStack)
-                                        stepsTaken = len(stack.CurrentPath)
+                                        stopMoving = true
                                         break quitMoving
                                     }
+                                }
+
+                                if game.Map.GetTile(stack.X(), stack.Y()).Index == terrain.TileNatureForest.Index {
+                                    game.doNatureEncounter(yield, player, stack)
+                                    stopMoving = true
+                                    break quitMoving
                                 }
 
                                 // some units in the stack might not have any moves left
@@ -1281,17 +1288,19 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                                 stack.EnableMovers()
                                 afterActive := len(stack.ActiveUnits())
                                 if afterActive > 0 && afterActive != beforeActive {
-                                    stepsTaken = len(stack.CurrentPath)
+                                    stopMoving = true
                                     break
                                 }
                             } else {
                                 // can't move, so abort the rest of the path
-                                stepsTaken = len(stack.CurrentPath)
+                                stopMoving = true
                                 break
                             }
                         }
 
-                        if stepsTaken > 0 {
+                        if stopMoving {
+                            stack.CurrentPath = nil
+                        } else if stepsTaken > 0 {
                             stack.CurrentPath = stack.CurrentPath[stepsTaken:]
                         }
 
@@ -1391,6 +1400,26 @@ func (game *Game) doCityScreen(yield coroutine.YieldFunc, city *citylib.City, pl
     }
 
     game.Drawer = oldDrawer
+}
+
+func (game *Game) doNatureEncounter(yield coroutine.YieldFunc, player *playerlib.Player, stack *playerlib.UnitStack){
+
+    defender := playerlib.Player{
+        Wizard: setup.WizardCustom{
+            Name: "Lair",
+        },
+    }
+
+    enemies := []*units.OverworldUnit{
+        &units.OverworldUnit{
+            Unit: units.Sprite,
+        },
+        &units.OverworldUnit{
+            Unit: units.WarBear,
+        },
+    }
+
+    game.doCombat(yield, player, stack, &defender, playerlib.MakeUnitStackFromUnits(enemies))
 }
 
 func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player, attackerStack *playerlib.UnitStack, defender *playerlib.Player, defenderStack *playerlib.UnitStack){

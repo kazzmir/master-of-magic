@@ -659,13 +659,36 @@ var ArchAngel Unit = Unit{
 
 var WarBear Unit = Unit{
     LbxFile: "units2.lbx",
+    Name: "War Bears",
     Index: 59,
+    CombatLbxFile: "figure15.lbx",
+    CombatIndex: 0,
+    Count: 2,
+    MeleeAttackPower: 7,
+    Defense: 3,
+    Resistance: 6,
+    HitPoints: 8,
+    MovementSpeed: 2,
     Race: data.RaceFantastic,
 }
 
 var Sprite Unit = Unit{
     LbxFile: "units2.lbx",
+    Name: "Sprites",
     Index: 60,
+    CombatLbxFile: "figure15.lbx",
+    CombatIndex: 8,
+    Count: 4,
+    MeleeAttackPower: 4,
+    RangedAttacks: 4,
+    RangedAttackPower: 3,
+    RangedAttackDamageType: DamageRangedMagical,
+    RangeAttackIndex: 88,
+    MovementSpeed: 2,
+    Defense: 2,
+    Resistance: 8,
+    HitPoints: 1,
+    Flying: true,
     Race: data.RaceFantastic,
 }
 
