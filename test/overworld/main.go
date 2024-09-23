@@ -28,7 +28,7 @@ type Engine struct {
 
 func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
     wizard := setup.WizardCustom{
-        Name: "player",
+        Name: "bob",
         Banner: data.BannerBlue,
         Race: data.RaceTroll,
         Abilities: []setup.WizardAbility{
@@ -95,6 +95,14 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
         })
         _ = fireElemental
     }
+
+    player.AddUnit(units.OverworldUnit{
+        Unit: units.HighMenSpearmen,
+        Plane: data.PlaneArcanus,
+        Banner: wizard.Banner,
+        X: 30,
+        Y: 30,
+    })
 
     stack := player.FindStackByUnit(drake)
     player.SetSelectedStack(stack)
@@ -411,6 +419,92 @@ func createScenario5(cache *lbx.LbxCache) *gamelib.Game {
     return game
 }
 
+func createScenario6(cache *lbx.LbxCache) *gamelib.Game {
+    wizard := setup.WizardCustom{
+        Name: "player",
+        Banner: data.BannerBlue,
+        Race: data.RaceHighMen,
+        Abilities: []setup.WizardAbility{
+            setup.AbilityAlchemy,
+            setup.AbilitySageMaster,
+        },
+        Books: []data.WizardBook{
+            data.WizardBook{
+                Magic: data.LifeMagic,
+                Count: 3,
+            },
+            data.WizardBook{
+                Magic: data.SorceryMagic,
+                Count: 8,
+            },
+        },
+    }
+
+    game := gamelib.MakeGame(cache)
+
+    game.Plane = data.PlaneArcanus
+
+    player := game.AddPlayer(wizard)
+
+    x, y := game.FindValidCityLocation()
+
+    introCity := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.TaxRate, game.BuildingInfo)
+    introCity.Population = 6000
+    introCity.Plane = data.PlaneArcanus
+    introCity.ProducingBuilding = buildinglib.BuildingHousing
+    introCity.ProducingUnit = units.UnitNone
+    introCity.Wall = false
+
+    introCity.AddBuilding(buildinglib.BuildingShrine)
+
+    introCity.ResetCitizens(nil)
+
+    player.AddCity(introCity)
+
+    player.Gold = 83
+    player.Mana = 26
+
+    // game.Map.Map.Terrain[3][6] = terrain.TileNatureForest.Index
+
+    player.LiftFog(x, y, 3)
+
+    _ = introCity
+
+    for i := 0; i < 3; i++ {
+        player.AddUnit(units.OverworldUnit{
+            Unit: units.HighMenSpearmen,
+            Plane: data.PlaneArcanus,
+            Banner: wizard.Banner,
+            X: x + i,
+            Y: y + 1,
+        })
+    }
+
+    for i := 0; i < 3; i++ {
+        player.AddUnit(units.OverworldUnit{
+            Unit: units.GreatDrake,
+            Plane: data.PlaneArcanus,
+            Banner: wizard.Banner,
+            X: x + 3 + i,
+            Y: y + 1,
+        })
+    }
+
+    for i := 0; i < 3; i++ {
+        player.AddUnit(units.OverworldUnit{
+            Unit: units.FireElemental,
+            Plane: data.PlaneArcanus,
+            Banner: wizard.Banner,
+            X: x + 6 + i,
+            Y: y + 1,
+        })
+    }
+
+    game.CenterCamera(x, y)
+
+    return game
+}
+
 func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
@@ -422,6 +516,7 @@ func NewEngine(scenario int) (*Engine, error) {
         case 3: game = createScenario3(cache)
         case 4: game = createScenario4(cache)
         case 5: game = createScenario5(cache)
+        case 6: game = createScenario6(cache)
         default: game = createScenario1(cache)
     }
 

@@ -1598,6 +1598,7 @@ var HighMenSpearmen Unit = Unit{
     Name: "Spearmen",
     Index: 104,
     Race: data.RaceHighMen,
+    UpkeepFood: 1,
 }
 
 var HighMenSwordsmen Unit = Unit{

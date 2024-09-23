@@ -123,6 +123,12 @@ func Lighten(c color.RGBA, amount float64) color.Color {
     return change.Apply(c)
 }
 
+func RotateHue(c color.RGBA, radian float64) color.Color {
+    var rotate colorm.ColorM
+    rotate.ChangeHSV(radian, 1, 1)
+    return rotate.Apply(c)
+}
+
 /*
 func Lighten2(c color.RGBA, amount float64) color.Color {
     h, s, v := colorconv.ColorToHSV(c)

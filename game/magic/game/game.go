@@ -20,6 +20,7 @@ import (
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     "github.com/kazzmir/master-of-magic/game/magic/cityview"
+    "github.com/kazzmir/master-of-magic/game/magic/armyview"
     "github.com/kazzmir/master-of-magic/game/magic/magicview"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/util"
@@ -49,6 +50,9 @@ type GameEvent interface {
 }
 
 type GameEventMagicView struct {
+}
+
+type GameEventArmyView struct {
 }
 
 type GameEventNewOutpost struct {
@@ -268,6 +272,46 @@ func (game *Game) FindValidCityLocation() (int, int) {
     }
 
     return 0, 0
+}
+
+func (game *Game) AllCities() []*citylib.City {
+    var out []*citylib.City
+
+    for _, player := range game.Players {
+        for _, city := range player.Cities {
+            out = append(out, city)
+        }
+    }
+
+    return out
+}
+
+func (game *Game) doArmyView(yield coroutine.YieldFunc) {
+    oldDrawer := game.Drawer
+    defer func(){
+        game.Drawer = oldDrawer
+    }()
+
+    cities := game.AllCities()
+
+    drawMinimap := func (screen *ebiten.Image, x int, y int, fog [][]bool, counter uint64){
+        game.Map.DrawMinimap(screen, cities, x, y, fog, counter, false)
+    }
+
+    army := armyview.MakeArmyScreen(game.Cache, game.Players[0], drawMinimap)
+
+    game.Drawer = func (screen *ebiten.Image, game *Game){
+        army.Draw(screen)
+    }
+
+    for army.Update() == armyview.ArmyScreenStateRunning {
+        yield()
+    }
+
+    game.HudUI = game.MakeHudUI()
+
+    // absorb most recent left click
+    yield()
 }
 
 func (game *Game) doMagicView(yield coroutine.YieldFunc) {
@@ -975,7 +1019,7 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
         }
 
         // don't know what the cost is, assume we can move there
-        if !fog[x2][y2] {
+        if x2 >= 0 && x2 < len(fog) && y2 >= 0 && y2 < len(fog[x2]) && !fog[x2][y2] {
             return baseCost
         }
 
@@ -1057,6 +1101,8 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
             switch event.(type) {
                 case *GameEventMagicView:
                     game.doMagicView(yield)
+                case *GameEventArmyView:
+                    game.doArmyView(yield)
                 case *GameEventNewOutpost:
                     outpost := event.(*GameEventNewOutpost)
                     game.showOutpost(yield, outpost.City, outpost.Stack)
@@ -1754,7 +1800,10 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
     // army button
     elements = append(elements, makeButton(3, 89, 4, false, func(){
-        // TODO
+        select {
+            case game.Events<- &GameEventArmyView{}:
+            default:
+        }
     }))
 
     // cities button
@@ -2379,7 +2428,7 @@ type Overworld struct {
 }
 
 func (overworld *Overworld) DrawMinimap(screen *ebiten.Image){
-    overworld.Map.DrawMinimap(screen, overworld.Cities, overworld.CameraX + 5, overworld.CameraY + 5, overworld.Fog, overworld.Counter)
+    overworld.Map.DrawMinimap(screen, overworld.Cities, overworld.CameraX + 5, overworld.CameraY + 5, overworld.Fog, overworld.Counter, true)
 }
 
 func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM){
