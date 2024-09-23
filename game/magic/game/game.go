@@ -295,7 +295,7 @@ func (game *Game) doArmyView(yield coroutine.YieldFunc) {
     cities := game.AllCities()
 
     drawMinimap := func (screen *ebiten.Image, x int, y int, fog [][]bool, counter uint64){
-        game.Map.DrawMinimap(screen, cities, x, y, fog, counter)
+        game.Map.DrawMinimap(screen, cities, x, y, fog, counter, false)
     }
 
     army := armyview.MakeArmyScreen(game.Cache, game.Players[0], drawMinimap)
@@ -2428,7 +2428,7 @@ type Overworld struct {
 }
 
 func (overworld *Overworld) DrawMinimap(screen *ebiten.Image){
-    overworld.Map.DrawMinimap(screen, overworld.Cities, overworld.CameraX + 5, overworld.CameraY + 5, overworld.Fog, overworld.Counter)
+    overworld.Map.DrawMinimap(screen, overworld.Cities, overworld.CameraX + 5, overworld.CameraY + 5, overworld.Fog, overworld.Counter, true)
 }
 
 func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM){

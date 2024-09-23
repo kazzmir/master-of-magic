@@ -79,7 +79,7 @@ func (mapObject *Map) TilesPerColumn(screenHeight int) int {
     return int(math.Ceil(float64(screenHeight) / float64(mapObject.TileHeight())))
 }
 
-func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []*citylib.City, centerX int, centerY int, fog [][]bool, counter uint64){
+func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []*citylib.City, centerX int, centerY int, fog [][]bool, counter uint64, crosshairs bool){
     if len(mapObject.miniMapPixels) != screen.Bounds().Dx() * screen.Bounds().Dy() * 4 {
         mapObject.miniMapPixels = make([]byte, screen.Bounds().Dx() * screen.Bounds().Dy() * 4)
     }
@@ -156,42 +156,44 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []*citylib.City, 
         }
     }
 
-    cursorColorBlue := math.Sin(float64(counter) / 10.0) * 127.0 + 127.0
-    if cursorColorBlue > 255 {
-        cursorColorBlue = 255
-    }
-    cursorColor := util.PremultiplyAlpha(color.RGBA{R: 255, G: 255, B: byte(cursorColorBlue), A: 180})
+    if crosshairs {
+        cursorColorBlue := math.Sin(float64(counter) / 10.0) * 127.0 + 127.0
+        if cursorColorBlue > 255 {
+            cursorColorBlue = 255
+        }
+        cursorColor := util.PremultiplyAlpha(color.RGBA{R: 255, G: 255, B: byte(cursorColorBlue), A: 180})
 
-    cursorRadius := 5
-    x1 := centerX - cursorRadius - cameraX
-    y1 := centerY - cursorRadius - cameraY
-    x2 := centerX + cursorRadius - cameraX
-    y2 := y1
-    x3 := x1
-    y3 := centerY + cursorRadius - cameraY
-    x4 := x2
-    y4 := y3
-    points := []image.Point{
-        image.Pt(x1, y1),
-        image.Pt(x1+1, y1),
-        image.Pt(x1, y1+1),
+        cursorRadius := 5
+        x1 := centerX - cursorRadius - cameraX
+        y1 := centerY - cursorRadius - cameraY
+        x2 := centerX + cursorRadius - cameraX
+        y2 := y1
+        x3 := x1
+        y3 := centerY + cursorRadius - cameraY
+        x4 := x2
+        y4 := y3
+        points := []image.Point{
+            image.Pt(x1, y1),
+            image.Pt(x1+1, y1),
+            image.Pt(x1, y1+1),
 
-        image.Pt(x2, y2),
-        image.Pt(x2-1, y2),
-        image.Pt(x2, y2+1),
+            image.Pt(x2, y2),
+            image.Pt(x2-1, y2),
+            image.Pt(x2, y2+1),
 
-        image.Pt(x3, y3),
-        image.Pt(x3+1, y3),
-        image.Pt(x3, y3-1),
+            image.Pt(x3, y3),
+            image.Pt(x3+1, y3),
+            image.Pt(x3, y3-1),
 
-        image.Pt(x4, y4),
-        image.Pt(x4-1, y4),
-        image.Pt(x4, y4-1),
-    }
+            image.Pt(x4, y4),
+            image.Pt(x4-1, y4),
+            image.Pt(x4, y4-1),
+        }
 
-    for _, point := range points {
-        if point.X >= 0 && point.Y >= 0 && point.X < screen.Bounds().Dx() && point.Y < screen.Bounds().Dy(){
-            set(point.X, point.Y, cursorColor)
+        for _, point := range points {
+            if point.X >= 0 && point.Y >= 0 && point.X < screen.Bounds().Dx() && point.Y < screen.Bounds().Dy(){
+                set(point.X, point.Y, cursorColor)
+            }
         }
     }
 
