@@ -3,6 +3,7 @@ package armyview
 import (
     "log"
     "fmt"
+    "image"
     "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -30,14 +31,16 @@ type ArmyScreen struct {
     State ArmyScreenState
     FirstRow int
     UI *uilib.UI
+    DrawMinimap func(*ebiten.Image, int, int, [][]bool, uint64)
 }
 
-func MakeArmyScreen(cache *lbx.LbxCache, player *playerlib.Player) *ArmyScreen {
+func MakeArmyScreen(cache *lbx.LbxCache, player *playerlib.Player, drawMinimap func(*ebiten.Image, int, int, [][]bool, uint64)) *ArmyScreen {
     view := &ArmyScreen{
         Cache: cache,
         ImageCache: util.MakeImageCache(cache),
         Player: player,
         State: ArmyScreenStateRunning,
+        DrawMinimap: drawMinimap,
         FirstRow: 0,
     }
 
@@ -110,6 +113,13 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
                 normalFont.PrintCenter(screen, 45, 180, 1, options.ColorScale, fmt.Sprintf("%v", highlightedUnit.Unit.UpkeepMana))
                 normalFont.PrintCenter(screen, 45, 190, 1, options.ColorScale, fmt.Sprintf("%v", highlightedUnit.Unit.UpkeepFood))
             }
+
+            minimapRect := image.Rect(85, 163, 135, 197)
+            minimapArea := screen.SubImage(minimapRect).(*ebiten.Image)
+
+            view.DrawMinimap(minimapArea, highlightedUnit.X, highlightedUnit.Y, view.Player.GetFog(highlightedUnit.Plane), this.Counter)
+
+            // vector.DrawFilledRect(minimapArea, float32(minimapRect.Min.X), float32(minimapRect.Min.Y), float32(minimapRect.Bounds().Dx()), float32(minimapRect.Bounds().Dy()), util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0, B: 0, A: 128}), false)
         },
     }
 

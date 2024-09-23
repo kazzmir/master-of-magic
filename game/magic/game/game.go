@@ -274,13 +274,31 @@ func (game *Game) FindValidCityLocation() (int, int) {
     return 0, 0
 }
 
+func (game *Game) AllCities() []*citylib.City {
+    var out []*citylib.City
+
+    for _, player := range game.Players {
+        for _, city := range player.Cities {
+            out = append(out, city)
+        }
+    }
+
+    return out
+}
+
 func (game *Game) doArmyView(yield coroutine.YieldFunc) {
     oldDrawer := game.Drawer
     defer func(){
         game.Drawer = oldDrawer
     }()
 
-    army := armyview.MakeArmyScreen(game.Cache, game.Players[0])
+    cities := game.AllCities()
+
+    drawMinimap := func (screen *ebiten.Image, x int, y int, fog [][]bool, counter uint64){
+        game.Map.DrawMinimap(screen, cities, x, y, fog, counter)
+    }
+
+    army := armyview.MakeArmyScreen(game.Cache, game.Players[0], drawMinimap)
 
     game.Drawer = func (screen *ebiten.Image, game *Game){
         army.Draw(screen)
