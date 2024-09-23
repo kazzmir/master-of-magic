@@ -28,7 +28,7 @@ type Engine struct {
 
 func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
     wizard := setup.WizardCustom{
-        Name: "player",
+        Name: "bob",
         Banner: data.BannerBlue,
         Race: data.RaceTroll,
         Abilities: []setup.WizardAbility{

@@ -70,6 +70,19 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
     }
     normalFont := font.MakeOptimizedFontWithPalette(fonts[1], normalPalette)
 
+    // red := color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}
+
+    yellow := color.RGBA{R: 0xf9, G: 0xdb, B: 0x4c, A: 0xff}
+    bigPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        util.RotateHue(yellow, -0.50),
+        util.RotateHue(yellow, -0.30),
+        util.RotateHue(yellow, -0.10),
+        yellow,
+    }
+    bigFont := font.MakeOptimizedFontWithPalette(fonts[4], bigPalette)
+
     ui := &uilib.UI{
         Draw: func(this *uilib.UI, screen *ebiten.Image) {
             background, _ := view.ImageCache.GetImage("armylist.lbx", 0, 0)
@@ -82,7 +95,7 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
                 }
             })
 
-            // FIXME: print "The Armies of <name>" at top
+            bigFont.PrintCenter(screen, 160, 10, 1, options.ColorScale, fmt.Sprintf("The Armies Of %v", view.Player.Wizard.Name))
 
             if highlightedUnit != nil {
                 raceName := highlightedUnit.Unit.Race.String()
