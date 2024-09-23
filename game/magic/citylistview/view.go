@@ -89,6 +89,16 @@ func (view *CityListScreen) MakeUI() *uilib.UI {
             })
 
             bigFont.PrintCenter(screen, 160, 5, 1, ebiten.ColorScale{}, fmt.Sprintf("The Cities Of %v", view.Player.Wizard.Name))
+
+            y := float64(17)
+            x := float64(31)
+            normalFont.Print(screen, x, y, 1, ebiten.ColorScale{}, "Name")
+            normalFont.Print(screen, x + 57, y, 1, ebiten.ColorScale{}, "Race")
+            normalFont.PrintRight(screen, x + 119, y, 1, ebiten.ColorScale{}, "Pop")
+            normalFont.PrintRight(screen, x + 139, y, 1, ebiten.ColorScale{}, "Gold")
+            normalFont.PrintRight(screen, x + 159, y, 1, ebiten.ColorScale{}, "Prd")
+            normalFont.Print(screen, x + 165, y, 1, ebiten.ColorScale{}, "Producing")
+            normalFont.PrintRight(screen, x + 258, y, 1, ebiten.ColorScale{}, "Time")
         },
     }
 
