@@ -406,9 +406,9 @@ func MakeLairConfirmDialog(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCa
 
 func MakeLairConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, lairPicture *ebiten.Image, layer UILayer, message string, confirm func(), cancel func()) []*UIElement {
     confirmX := 67
-    confirmY := 73
+    confirmY := 40
 
-    confirmMargin := 15
+    confirmMargin := 50
     confirmTopMargin := 10
 
     const fadeSpeed = 7
@@ -449,7 +449,7 @@ func MakeLairConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *uti
 
     confirmFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowFade)
 
-    maxWidth := confirmTop.Bounds().Dx() - confirmMargin * 2
+    maxWidth := confirmTop.Bounds().Dx() - confirmMargin
 
     wrapped := confirmFont.CreateWrappedText(float64(maxWidth), 1, message)
 
@@ -471,10 +471,13 @@ func MakeLairConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *uti
             options.ColorScale.ScaleAlpha(getAlpha())
             window.DrawImage(topDraw, &options)
 
+            options.GeoM.Translate(7, 7)
+            window.DrawImage(lairPicture, &options)
+
             confirmFont.RenderWrapped(window, float64(confirmX + confirmMargin + maxWidth / 2), float64(confirmY + confirmTopMargin), wrapped, options.ColorScale, true)
 
             options.GeoM.Reset()
-            options.GeoM.Translate(float64(confirmX), float64(bottom))
+            options.GeoM.Translate(float64(confirmX - 1), float64(bottom))
             window.DrawImage(confirmBottom, &options)
         },
     })
