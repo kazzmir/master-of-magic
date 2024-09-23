@@ -21,6 +21,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     "github.com/kazzmir/master-of-magic/game/magic/cityview"
     "github.com/kazzmir/master-of-magic/game/magic/armyview"
+    "github.com/kazzmir/master-of-magic/game/magic/citylistview"
     "github.com/kazzmir/master-of-magic/game/magic/magicview"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/util"
@@ -53,6 +54,9 @@ type GameEventMagicView struct {
 }
 
 type GameEventArmyView struct {
+}
+
+type GameEventCityListView struct {
 }
 
 type GameEventNewOutpost struct {
@@ -105,6 +109,8 @@ type Game struct {
     Drawer func (*ebiten.Image, *Game)
     State GameState
     Plane data.Plane
+
+    TurnNumber uint64
 
     Events chan GameEvent
     BuildingInfo buildinglib.BuildingInfos
@@ -244,6 +250,7 @@ func MakeGame(lbxCache *lbx.LbxCache) *Game {
         InfoFontYellow: infoFontYellow,
         WhiteFont: whiteFont,
         BuildingInfo: buildingInfo,
+        TurnNumber: 1,
     }
 
     game.HudUI = game.MakeHudUI()
@@ -284,6 +291,45 @@ func (game *Game) AllCities() []*citylib.City {
     }
 
     return out
+}
+
+func (game *Game) doCityListView(yield coroutine.YieldFunc) {
+    oldDrawer := game.Drawer
+    defer func(){
+        game.Drawer = oldDrawer
+    }()
+
+    cities := game.AllCities()
+
+    drawMinimap := func (screen *ebiten.Image, x int, y int, fog [][]bool, counter uint64){
+        game.Map.DrawMinimap(screen, cities, x, y, fog, counter, false)
+    }
+
+    var showCity *citylib.City
+    selectCity := func(city *citylib.City){
+        // ignore outpost
+        if city.Citizens() >= 1 {
+            showCity = city
+        }
+        game.CenterCamera(city.X, city.Y)
+    }
+
+    view := citylistview.MakeCityListScreen(game.Cache, game.Players[0], drawMinimap, selectCity)
+
+    game.Drawer = func (screen *ebiten.Image, game *Game){
+        view.Draw(screen)
+    }
+
+    for view.Update() == citylistview.CityListScreenStateRunning {
+        yield()
+    }
+
+    // absorb most recent left click
+    yield()
+
+    if showCity != nil {
+        game.doCityScreen(yield, showCity, game.Players[0])
+    }
 }
 
 func (game *Game) doArmyView(yield coroutine.YieldFunc) {
@@ -1103,6 +1149,8 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                     game.doMagicView(yield)
                 case *GameEventArmyView:
                     game.doArmyView(yield)
+                case *GameEventCityListView:
+                    game.doCityListView(yield)
                 case *GameEventNewOutpost:
                     outpost := event.(*GameEventNewOutpost)
                     game.showOutpost(yield, outpost.City, outpost.Stack)
@@ -1808,7 +1856,10 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
     // cities button
     elements = append(elements, makeButton(4, 140, 4, false, func(){
-        // TODO
+        select {
+            case game.Events<- &GameEventCityListView{}:
+            default:
+        }
     }))
 
     // magic button
@@ -2204,6 +2255,8 @@ func (game *Game) DoNextTurn(){
     }
 
     // FIXME: run other players/AI
+
+    game.TurnNumber += 1
 }
 
 func (overworld *Overworld) DrawFog(screen *ebiten.Image, geom ebiten.GeoM){

@@ -3,7 +3,9 @@ package main
 import (
     "os"
     "log"
+    "fmt"
     "strconv"
+    "math/rand"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
@@ -500,7 +502,75 @@ func createScenario6(cache *lbx.LbxCache) *gamelib.Game {
         })
     }
 
+    x, y = game.FindValidCityLocation()
+
+    city2 := citylib.MakeCity("utah", x, y, data.RaceDarkElf, player.TaxRate, game.BuildingInfo)
+    city2.Population = 7000
+    city2.Plane = data.PlaneArcanus
+    city2.ProducingBuilding = buildinglib.BuildingShrine
+    city2.ProducingUnit = units.UnitNone
+    city2.Wall = false
+
+    city2.ResetCitizens(nil)
+
+    player.AddCity(city2)
+
+    player.LiftFog(x, y, 3)
+
     game.CenterCamera(x, y)
+
+    return game
+}
+
+func createScenario7(cache *lbx.LbxCache) *gamelib.Game {
+    wizard := setup.WizardCustom{
+        Name: "player",
+        Banner: data.BannerBlue,
+        Race: data.RaceHighMen,
+        Abilities: []setup.WizardAbility{
+            setup.AbilityAlchemy,
+            setup.AbilitySageMaster,
+        },
+        Books: []data.WizardBook{
+            data.WizardBook{
+                Magic: data.LifeMagic,
+                Count: 3,
+            },
+            data.WizardBook{
+                Magic: data.SorceryMagic,
+                Count: 8,
+            },
+        },
+    }
+
+    game := gamelib.MakeGame(cache)
+
+    game.Plane = data.PlaneArcanus
+
+    player := game.AddPlayer(wizard)
+
+    for i := 0; i < 15; i++ {
+        x, y := game.FindValidCityLocation()
+        player.LiftFog(x, y, 3)
+
+        introCity := citylib.MakeCity(fmt.Sprintf("city%v", i), x, y, data.RaceHighElf, player.TaxRate, game.BuildingInfo)
+        introCity.Population = rand.Intn(5000) + 5000
+        introCity.Plane = data.PlaneArcanus
+        introCity.ProducingBuilding = buildinglib.BuildingHousing
+        introCity.ProducingUnit = units.UnitNone
+        introCity.Wall = false
+
+        introCity.AddBuilding(buildinglib.BuildingShrine)
+
+        introCity.ResetCitizens(nil)
+
+        player.AddCity(introCity)
+    }
+
+    player.Gold = 83
+    player.Mana = 26
+
+    // game.Map.Map.Terrain[3][6] = terrain.TileNatureForest.Index
 
     return game
 }
@@ -517,6 +587,7 @@ func NewEngine(scenario int) (*Engine, error) {
         case 4: game = createScenario4(cache)
         case 5: game = createScenario5(cache)
         case 6: game = createScenario6(cache)
+        case 7: game = createScenario7(cache)
         default: game = createScenario1(cache)
     }
 

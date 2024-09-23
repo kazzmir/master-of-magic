@@ -80,7 +80,7 @@ type City struct {
     BuildingInfo building.BuildingInfos
 }
 
-func MakeCity(name string, x int, y int, race data.Race, taxRate fraction.Fraction, buildingInfo building.BuildingInfos) *City {
+func MakeCity(name string, x int, y int,race data.Race, taxRate fraction.Fraction, buildingInfo building.BuildingInfos) *City {
     city := City{
         Name: name,
         X: x,
@@ -101,6 +101,44 @@ func (city *City) UpdateTaxRate(taxRate fraction.Fraction, garrison []*units.Ove
 
 func (city *City) AddBuilding(building building.Building){
     city.Buildings.Insert(building)
+}
+
+func (city *City) ProducingString() string {
+    if city.ProducingBuilding != building.BuildingNone {
+        return city.BuildingInfo.Name(city.ProducingBuilding)
+    }
+
+    if !city.ProducingUnit.Equals(units.UnitNone) {
+        return city.ProducingUnit.Name
+    }
+
+    return ""
+}
+
+func (city *City) ProducingTurnsLeft() int {
+    if city.ProducingBuilding != building.BuildingNone {
+        switch city.ProducingBuilding {
+            case building.BuildingHousing, building.BuildingTradeGoods: return 1
+        }
+
+        cost := city.BuildingInfo.ProductionCost(city.ProducingBuilding) - int(city.Production)
+        if cost < 0 {
+            cost = 0
+        }
+
+        return int(math.Ceil(float64(cost) / float64(city.WorkProductionRate())))
+    }
+
+    if !city.ProducingUnit.Equals(units.UnitNone) {
+        cost := city.ProducingUnit.ProductionCost - int(city.Production)
+        if cost < 0 {
+            cost = 0
+        }
+
+        return int(math.Ceil(float64(cost) / float64(city.WorkProductionRate())))
+    }
+
+    return 0
 }
 
 func (city *City) GetSize() CitySize {
