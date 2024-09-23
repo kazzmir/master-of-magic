@@ -400,11 +400,11 @@ func MakeConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.Im
     return elements
 }
 
-func MakeLairConfirmDialog(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, lairPicture *ebiten.Image, message string, confirm func(), cancel func()) []*UIElement {
+func MakeLairConfirmDialog(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, lairPicture *util.Animation, message string, confirm func(), cancel func()) []*UIElement {
     return MakeLairConfirmDialogWithLayer(ui, cache, imageCache, lairPicture, 1, message, confirm, cancel)
 }
 
-func MakeLairConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, lairPicture *ebiten.Image, layer UILayer, message string, confirm func(), cancel func()) []*UIElement {
+func MakeLairConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, lairPicture *util.Animation, layer UILayer, message string, confirm func(), cancel func()) []*UIElement {
     confirmX := 67
     confirmY := 40
 
@@ -472,7 +472,7 @@ func MakeLairConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *uti
             window.DrawImage(topDraw, &options)
 
             options.GeoM.Translate(7, 7)
-            window.DrawImage(lairPicture, &options)
+            window.DrawImage(lairPicture.Frame(), &options)
 
             confirmFont.RenderWrapped(window, float64(confirmX + confirmMargin + maxWidth / 2), float64(confirmY + confirmTopMargin), wrapped, options.ColorScale, true)
 

@@ -1422,13 +1422,23 @@ func (game *Game) confirmEncounter(yield coroutine.YieldFunc, x int, y int) bool
         quit = true
     }
 
+    // nature node palette indices that rotate
+    // 76, 85, 87, 141, 142, 216, 217, 247, 248, 254
+    // rotate colors from 245 - 254
+
     // FIXME: create animation from palette rotation of some of the colors
     lairPicture, _ := game.ImageCache.GetImage("reload.lbx", 11, 0)
 
+    animation := util.MakeAnimation([]*ebiten.Image{lairPicture}, true)
+
     // FIXME: message is based on node type at the x,y map location
-    game.HudUI.AddElements(uilib.MakeLairConfirmDialogWithLayer(game.HudUI, game.Cache, &game.ImageCache, lairPicture, 1, "You have found a nature node. Scouts have spotted War Bears within the nature node. Do you wish to enter?", yes, no))
+    game.HudUI.AddElements(uilib.MakeLairConfirmDialogWithLayer(game.HudUI, game.Cache, &game.ImageCache, animation, 1, "You have found a nature node. Scouts have spotted War Bears within the nature node. Do you wish to enter?", yes, no))
 
     for !quit {
+        game.Counter += 1
+        if game.Counter % 6 == 0 {
+            animation.Next()
+        }
         game.HudUI.StandardUpdate()
         yield()
     }
