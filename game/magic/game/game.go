@@ -21,6 +21,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     "github.com/kazzmir/master-of-magic/game/magic/cityview"
     "github.com/kazzmir/master-of-magic/game/magic/armyview"
+    "github.com/kazzmir/master-of-magic/game/magic/citylistview"
     "github.com/kazzmir/master-of-magic/game/magic/magicview"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/util"
@@ -53,6 +54,9 @@ type GameEventMagicView struct {
 }
 
 type GameEventArmyView struct {
+}
+
+type GameEventCityListView struct {
 }
 
 type GameEventNewOutpost struct {
@@ -287,6 +291,26 @@ func (game *Game) AllCities() []*citylib.City {
     }
 
     return out
+}
+
+func (game *Game) doCityListView(yield coroutine.YieldFunc) {
+    oldDrawer := game.Drawer
+    defer func(){
+        game.Drawer = oldDrawer
+    }()
+
+    view := citylistview.MakeCityListScreen(game.Cache, game.Players[0])
+
+    game.Drawer = func (screen *ebiten.Image, game *Game){
+        view.Draw(screen)
+    }
+
+    for view.Update() == citylistview.CityListScreenStateRunning {
+        yield()
+    }
+
+    // absorb most recent left click
+    yield()
 }
 
 func (game *Game) doArmyView(yield coroutine.YieldFunc) {
@@ -1106,6 +1130,8 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                     game.doMagicView(yield)
                 case *GameEventArmyView:
                     game.doArmyView(yield)
+                case *GameEventCityListView:
+                    game.doCityListView(yield)
                 case *GameEventNewOutpost:
                     outpost := event.(*GameEventNewOutpost)
                     game.showOutpost(yield, outpost.City, outpost.Stack)
@@ -1811,7 +1837,10 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
     // cities button
     elements = append(elements, makeButton(4, 140, 4, false, func(){
-        // TODO
+        select {
+            case game.Events<- &GameEventCityListView{}:
+            default:
+        }
     }))
 
     // magic button
