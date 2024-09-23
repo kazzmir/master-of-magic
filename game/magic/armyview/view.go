@@ -150,6 +150,16 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
         }
     }
 
+    itemButtons, _ := view.ImageCache.GetImages("armylist.lbx", 3)
+    elements = append(elements, makeButton(273, 163, itemButtons[0], itemButtons[1], func(){
+        // FIXME: show item screen
+    }))
+
+    okButtons, _ := view.ImageCache.GetImages("armylist.lbx", 4)
+    elements = append(elements, makeButton(273, 183, okButtons[0], okButtons[1], func(){
+        view.State = ArmyScreenStateDone
+    }))
+
     scrollUnitsUp := func(){
         if view.FirstRow > 0 {
             view.FirstRow -= 1
