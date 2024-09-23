@@ -106,6 +106,18 @@ func (city *City) AddBuilding(building building.Building){
     city.Buildings.Insert(building)
 }
 
+func (city *City) ProducingString() string {
+    if city.ProducingBuilding != building.BuildingNone {
+        return city.BuildingInfo.Name(city.ProducingBuilding)
+    }
+
+    if !city.ProducingUnit.Equals(units.UnitNone) {
+        return city.ProducingUnit.Name
+    }
+
+    return ""
+}
+
 func (city *City) GetSize() CitySize {
     if city.Population < 5000 {
         return CitySizeHamlet

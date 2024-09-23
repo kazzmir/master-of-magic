@@ -500,6 +500,21 @@ func createScenario6(cache *lbx.LbxCache) *gamelib.Game {
         })
     }
 
+    x, y = game.FindValidCityLocation()
+
+    city2 := citylib.MakeCity("utah", x, y, 3, data.RaceDarkElf, player.TaxRate, game.BuildingInfo)
+    city2.Population = 7000
+    city2.Plane = data.PlaneArcanus
+    city2.ProducingBuilding = buildinglib.BuildingShrine
+    city2.ProducingUnit = units.UnitNone
+    city2.Wall = false
+
+    city2.ResetCitizens(nil)
+
+    player.AddCity(city2)
+
+    player.LiftFog(x, y, 3)
+
     game.CenterCamera(x, y)
 
     return game
