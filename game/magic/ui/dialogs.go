@@ -400,6 +400,159 @@ func MakeConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.Im
     return elements
 }
 
+func MakeLairConfirmDialog(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, lairPicture *ebiten.Image, message string, confirm func(), cancel func()) []*UIElement {
+    return MakeLairConfirmDialogWithLayer(ui, cache, imageCache, lairPicture, 1, message, confirm, cancel)
+}
+
+func MakeLairConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, lairPicture *ebiten.Image, layer UILayer, message string, confirm func(), cancel func()) []*UIElement {
+    confirmX := 67
+    confirmY := 73
+
+    confirmMargin := 15
+    confirmTopMargin := 10
+
+    const fadeSpeed = 7
+
+    getAlpha := ui.MakeFadeIn(fadeSpeed)
+
+    confirmTop, err := imageCache.GetImage("backgrnd.lbx", 25, 0)
+    if err != nil {
+        return nil
+    }
+
+    confirmBottom, err := imageCache.GetImage("resource.lbx", 1, 0)
+    if err != nil {
+        return nil
+    }
+
+    // FIXME: this should be a fade from bright yellow to dark yellow/orange
+    yellowFade := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0xb2, G: 0x8c, B: 0x05, A: 0xff},
+        color.RGBA{R: 0xc9, G: 0xa1, B: 0x26, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xd3, B: 0x5b, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xe8, B: 0x6f, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+    }
+
+    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        return nil
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        return nil
+    }
+
+    confirmFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowFade)
+
+    maxWidth := confirmTop.Bounds().Dx() - confirmMargin * 2
+
+    wrapped := confirmFont.CreateWrappedText(float64(maxWidth), 1, message)
+
+    bottom := float64(confirmY + confirmTopMargin) + wrapped.TotalHeight
+
+    topDraw := confirmTop.SubImage(image.Rect(0, 0, confirmTop.Bounds().Dx(), int(bottom) - confirmY)).(*ebiten.Image)
+
+    var elements []*UIElement
+
+    elements = append(elements, &UIElement{
+        Rect: image.Rect(0, 0, data.ScreenWidth, data.ScreenHeight),
+        Layer: layer,
+        LeftClick: func(this *UIElement){
+            // ui.RemoveElement(this)
+        },
+        Draw: func(this *UIElement, window *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(confirmX), float64(confirmY))
+            options.ColorScale.ScaleAlpha(getAlpha())
+            window.DrawImage(topDraw, &options)
+
+            confirmFont.RenderWrapped(window, float64(confirmX + confirmMargin + maxWidth / 2), float64(confirmY + confirmTopMargin), wrapped, options.ColorScale, true)
+
+            options.GeoM.Reset()
+            options.GeoM.Translate(float64(confirmX), float64(bottom))
+            window.DrawImage(confirmBottom, &options)
+        },
+    })
+
+    // add yes/no buttons
+    yesButtons, err := imageCache.GetImages("resource.lbx", 3)
+    if err == nil {
+        yesX := confirmX + 101
+        yesY := bottom + 5
+
+        clicked := false
+        elements = append(elements, &UIElement{
+            Rect: image.Rect(int(yesX), int(yesY), int(yesX) + yesButtons[0].Bounds().Dx(), int(yesY) + yesButtons[0].Bounds().Dy()),
+            Layer: layer,
+            LeftClick: func(this *UIElement){
+                clicked = true
+            },
+            LeftClickRelease: func(this *UIElement){
+                clicked = false
+                confirm()
+
+                getAlpha = ui.MakeFadeOut(fadeSpeed)
+                ui.AddDelay(fadeSpeed, func(){
+                    ui.RemoveElements(elements)
+                })
+            },
+            Draw: func(this *UIElement, window *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(yesX), float64(yesY))
+                options.ColorScale.ScaleAlpha(getAlpha())
+
+                index := 0
+                if clicked {
+                    index = 1
+                }
+                window.DrawImage(yesButtons[index], &options)
+            },
+        })
+    }
+
+    noButtons, err := imageCache.GetImages("resource.lbx", 4)
+    if err == nil {
+        noX := confirmX + 18
+        noY := bottom + 5
+
+        clicked := false
+        elements = append(elements, &UIElement{
+            Rect: image.Rect(int(noX), int(noY), int(noX) + noButtons[0].Bounds().Dx(), int(noY) + noButtons[0].Bounds().Dy()),
+            Layer: layer,
+            LeftClick: func(this *UIElement){
+                clicked = true
+            },
+            LeftClickRelease: func(this *UIElement){
+                clicked = false
+                cancel()
+
+                getAlpha = ui.MakeFadeOut(fadeSpeed)
+                ui.AddDelay(fadeSpeed, func(){
+                    ui.RemoveElements(elements)
+                })
+            },
+            Draw: func(this *UIElement, window *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(noX), float64(noY))
+                options.ColorScale.ScaleAlpha(getAlpha())
+
+                index := 0
+                if clicked {
+                    index = 1
+                }
+                window.DrawImage(noButtons[index], &options)
+            },
+        })
+    }
+
+    return elements
+}
+
 type Selection struct {
     Name string
     Action func()

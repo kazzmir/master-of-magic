@@ -1439,7 +1439,9 @@ func (game *Game) doNatureEncounter(yield coroutine.YieldFunc, player *playerlib
         quit = true
     }
 
-    game.HudUI.AddElements(uilib.MakeConfirmDialogWithLayer(game.HudUI, game.Cache, &game.ImageCache, 1, "Do you want to enter the nature node?", yes, no))
+    lairPicture, _ := game.ImageCache.GetImage("reload.lbx", 11, 0)
+
+    game.HudUI.AddElements(uilib.MakeLairConfirmDialogWithLayer(game.HudUI, game.Cache, &game.ImageCache, lairPicture, 1, "You have found a nature node. Scouts have spotted War Bears within the nature node. Do you wish to enter?", yes, no))
 
     for !quit {
         game.HudUI.StandardUpdate()
