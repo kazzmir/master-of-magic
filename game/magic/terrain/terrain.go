@@ -147,6 +147,48 @@ type Tile struct {
     Compatabilities map[Direction]TerrainType
 }
 
+func (tile Tile) IsLand() bool {
+    switch TerrainIndex(tile.Index) {
+        case IndexOcean1, IndexOcean2: return false
+        case IndexBugGrass: return true
+        case IndexLake: return false
+        case IndexGrass1, IndexForest1, IndexMountain1,
+             IndexDesert1, IndexSwamp1, IndexTundra1,
+             IndexSorcNode, IndexNatNode, IndexChaosNode,
+             IndexHills1, IndexGrass2, IndexGrass3,
+             IndexDesert2, IndexDesert3, IndexDesert4,
+             IndexSwamp2, IndexSwamp3, IndexVolcano,
+             IndexGrass4, IndexTundra2, IndexTundra3,
+             IndexForest2, IndexForest3, IndexRiverMStart,
+             IndexRiverMEnd:
+             return true
+
+        case IndexLake1, IndexLake2, IndexLake3, IndexLake4: return false
+    }
+
+    if tile.Index >= IndexShore1_1st && tile.Index <= IndexShore1_end {
+        return false
+    }
+
+    if tile.Index >= IndexShore2FStart && tile.Index <= IndexShore2FEnd {
+        return false
+    }
+
+    if tile.Index >= IndexShore2Start && tile.Index <= IndexShore2End {
+        return false
+    }
+
+    if tile.Index >= IndexShore3Start && tile.Index <= IndexShore3End {
+        return false
+    }
+
+    return true
+}
+
+func (tile Tile) IsWater() bool {
+    return !tile.IsLand()
+}
+
 // for every direction/terraintype pair, check if this tile has the same pair.
 // match can contain less pairs than what the tile has in its Compatabilities map
 // that is, a 'match' map with no entries would match any tile

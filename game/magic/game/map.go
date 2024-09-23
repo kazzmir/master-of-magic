@@ -13,6 +13,13 @@ import (
     "github.com/hajimehoshi/ebiten/v2"
 )
 
+type MagicNode int
+const (
+    MagicNodeNature MagicNode = iota
+    MagicNodeSorcery
+    MagicNodeChaos
+)
+
 type Map struct {
     Map *terrain.Map
 
@@ -29,6 +36,17 @@ func MakeMap(data *terrain.TerrainData) *Map {
         Map: terrain.GenerateLandCellularAutomata(100, 200, data),
         TileCache: make(map[int]*ebiten.Image),
     }
+}
+
+func (mapObject *Map) CreateNode(x int, y int, node MagicNode) {
+    tileType := 0
+    switch node {
+        case MagicNodeNature: tileType = terrain.TileNatureForest.Index
+        case MagicNodeSorcery: tileType = terrain.TileSorceryLake.Index
+        case MagicNodeChaos: tileType = terrain.TileChaosVolcano.Index
+    }
+
+    mapObject.Map.Terrain[x][y] = tileType
 }
 
 func (mapObject *Map) Width() int {

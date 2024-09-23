@@ -992,7 +992,7 @@ func (game *Game) ComputeTerrainCost(stack *playerlib.UnitStack, x int, y int) (
     tileTo := game.Map.GetTile(x, y)
 
     // can't move from land to ocean unless all units are flyers
-    if tileFrom.Index == terrain.TileLand.Index && tileTo.Index != terrain.TileLand.Index {
+    if tileFrom.IsLand() && !tileTo.IsLand() {
         if !stack.AllFlyers() {
             return fraction.Zero(), false
         }
@@ -1053,6 +1053,14 @@ func (game *Game) blinkRed(yield coroutine.YieldFunc) {
 func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *playerlib.UnitStack, fog [][]bool) pathfinding.Path {
 
     tileCost := func (x1 int, y1 int, x2 int, y2 int) float64 {
+        if x1 < 0 || x1 >= game.Map.Width() || y1 < 0 || y1 >= game.Map.Height() {
+            return pathfinding.Infinity
+        }
+
+        if x2 < 0 || x2 >= game.Map.Width() || y2 < 0 || y2 >= game.Map.Height() {
+            return pathfinding.Infinity
+        }
+
         tileFrom := game.Map.GetTile(x1, y1)
         tileTo := game.Map.GetTile(x2, y2)
 
@@ -1070,7 +1078,7 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
         }
 
         // can't move from land to ocean unless all units are flyers
-        if tileFrom.Index == terrain.TileLand.Index && tileTo.Index != terrain.TileLand.Index {
+        if tileFrom.IsLand() && !tileTo.IsLand() {
             if !stack.AllFlyers() {
                 return pathfinding.Infinity
             }
