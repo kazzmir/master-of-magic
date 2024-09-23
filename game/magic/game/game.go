@@ -106,6 +106,8 @@ type Game struct {
     State GameState
     Plane data.Plane
 
+    TurnNumber uint64
+
     Events chan GameEvent
     BuildingInfo buildinglib.BuildingInfos
 
@@ -244,6 +246,7 @@ func MakeGame(lbxCache *lbx.LbxCache) *Game {
         InfoFontYellow: infoFontYellow,
         WhiteFont: whiteFont,
         BuildingInfo: buildingInfo,
+        TurnNumber: 1,
     }
 
     game.HudUI = game.MakeHudUI()
@@ -1699,7 +1702,7 @@ func (game *Game) ShowSpellBookCastUI(){
 }
 
 func (game *Game) CreateOutpost(settlers *units.OverworldUnit, player *playerlib.Player) *citylib.City {
-    newCity := citylib.MakeCity("New City", settlers.X, settlers.Y, settlers.Unit.Race, player.TaxRate, game.BuildingInfo)
+    newCity := citylib.MakeCity("New City", settlers.X, settlers.Y, game.TurnNumber, settlers.Unit.Race, player.TaxRate, game.BuildingInfo)
     newCity.Plane = settlers.Plane
     newCity.Population = 1000
     newCity.Banner = player.Wizard.Banner
@@ -2204,6 +2207,8 @@ func (game *Game) DoNextTurn(){
     }
 
     // FIXME: run other players/AI
+
+    game.TurnNumber += 1
 }
 
 func (overworld *Overworld) DrawFog(screen *ebiten.Image, geom ebiten.GeoM){
