@@ -996,7 +996,7 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
         }
 
         // don't know what the cost is, assume we can move there
-        if !fog[x2][y2] {
+        if x2 >= 0 && x2 < len(fog) && y2 >= 0 && y2 < len(fog[x2]) && !fog[x2][y2] {
             return baseCost
         }
 

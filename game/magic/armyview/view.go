@@ -1,10 +1,14 @@
 package armyview
 
 import (
+    "log"
+    "fmt"
     "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/game/magic/util"
+    "github.com/kazzmir/master-of-magic/game/magic/units"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
 
@@ -43,6 +47,29 @@ func MakeArmyScreen(cache *lbx.LbxCache, player *playerlib.Player) *ArmyScreen {
 }
 
 func (view *ArmyScreen) MakeUI() *uilib.UI {
+    var highlightedUnit *units.OverworldUnit
+
+    fontLbx, err := view.Cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        log.Printf("Unable to read fonts.lbx: %v", err)
+        return nil
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
+        return nil
+    }
+
+    normalColor := util.Lighten(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, -30)
+    normalPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        normalColor, normalColor, normalColor,
+        normalColor, normalColor, normalColor,
+    }
+    normalFont := font.MakeOptimizedFontWithPalette(fonts[1], normalPalette)
+
     ui := &uilib.UI{
         Draw: func(this *uilib.UI, screen *ebiten.Image) {
             background, _ := view.ImageCache.GetImage("armylist.lbx", 0, 0)
@@ -54,6 +81,19 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
                     element.Draw(element, screen)
                 }
             })
+
+            // FIXME: print "The Armies of <name>" at top
+
+            if highlightedUnit != nil {
+                raceName := highlightedUnit.Unit.Race.String()
+                normalFont.PrintCenter(screen, 190, 162, 1, options.ColorScale, fmt.Sprintf("%v %v", raceName, highlightedUnit.Unit.Name))
+
+                normalFont.PrintCenter(screen, 30, 162, 1, options.ColorScale, "UPKEEP")
+
+                normalFont.PrintCenter(screen, 45, 170, 1, options.ColorScale, fmt.Sprintf("%v", highlightedUnit.Unit.UpkeepGold))
+                normalFont.PrintCenter(screen, 45, 180, 1, options.ColorScale, fmt.Sprintf("%v", highlightedUnit.Unit.UpkeepMana))
+                normalFont.PrintCenter(screen, 45, 190, 1, options.ColorScale, fmt.Sprintf("%v", highlightedUnit.Unit.UpkeepFood))
+            }
         },
     }
 
@@ -76,22 +116,21 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
             elementX := float64(x)
             elementY := float64(rowY)
 
-            highlighted := false
+            if highlightedUnit == nil {
+                highlightedUnit = unit
+            }
             pic, _ := view.ImageCache.GetImage(unit.Unit.LbxFile, unit.Unit.Index, 0)
             if pic != nil {
                 elements = append(elements, &uilib.UIElement{
                     Rect: util.ImageRect(int(elementX), int(elementY), pic),
                     Inside: func (this *uilib.UIElement, x, y int){
-                        highlighted = true
-                    },
-                    NotInside: func (this *uilib.UIElement){
-                        highlighted = false
+                        highlightedUnit = unit
                     },
                     Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
                         var options ebiten.DrawImageOptions
                         options.GeoM.Translate(elementX, elementY)
 
-                        if highlighted {
+                        if highlightedUnit == unit {
                             x, y := options.GeoM.Apply(0, 0)
                             vector.DrawFilledRect(screen, float32(x), float32(y+1), float32(pic.Bounds().Dx()), float32(pic.Bounds().Dy())-1, highlightColor, false)
                         }
