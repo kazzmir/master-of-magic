@@ -111,7 +111,11 @@ func (view *CityListScreen) MakeUI() *uilib.UI {
             normalFont.Print(screen, x + 165, y, 1, ebiten.ColorScale{}, "Producing")
             normalFont.PrintRight(screen, x + 258, y, 1, ebiten.ColorScale{}, "Time")
 
+            normalFont.Print(screen, 232, 173, 1, ebiten.ColorScale{}, fmt.Sprintf("%vGP", view.Player.Gold))
+            normalFont.Print(screen, 267, 173, 1, ebiten.ColorScale{}, fmt.Sprintf("%vMP", view.Player.Mana))
+
             if highlightedCity != nil {
+                normalFont.Print(screen, 99, 158, 1, ebiten.ColorScale{}, highlightedCity.Name)
                 minimapRect := image.Rect(42, 162, 91, 195)
                 minimapArea := screen.SubImage(minimapRect).(*ebiten.Image)
                 view.DrawMinimap(minimapArea, highlightedCity.X, highlightedCity.Y, view.Player.GetFog(highlightedCity.Plane), ui.Counter)
