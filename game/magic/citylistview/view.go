@@ -30,14 +30,16 @@ type CityListScreen struct {
     ImageCache util.ImageCache
     UI *uilib.UI
     State CityListScreenState
+    DrawMinimap func(*ebiten.Image, int, int, [][]bool, uint64)
 }
 
-func MakeCityListScreen(cache *lbx.LbxCache, player *playerlib.Player) *CityListScreen {
+func MakeCityListScreen(cache *lbx.LbxCache, player *playerlib.Player, drawMinimap func(*ebiten.Image, int, int, [][]bool, uint64)) *CityListScreen {
     view := &CityListScreen{
         Cache: cache,
         Player: player,
         ImageCache: util.MakeImageCache(cache),
         State: CityListScreenStateRunning,
+        DrawMinimap: drawMinimap,
     }
 
     view.UI = view.MakeUI()
@@ -103,6 +105,13 @@ func (view *CityListScreen) MakeUI() *uilib.UI {
             normalFont.PrintRight(screen, x + 159, y, 1, ebiten.ColorScale{}, "Prd")
             normalFont.Print(screen, x + 165, y, 1, ebiten.ColorScale{}, "Producing")
             normalFont.PrintRight(screen, x + 258, y, 1, ebiten.ColorScale{}, "Time")
+
+            if highlightedCity != nil {
+                minimapRect := image.Rect(42, 162, 91, 195)
+                minimapArea := screen.SubImage(minimapRect).(*ebiten.Image)
+                view.DrawMinimap(minimapArea, highlightedCity.X, highlightedCity.Y, view.Player.GetFog(highlightedCity.Plane), ui.Counter)
+            // vector.DrawFilledRect(minimapArea, float32(minimapRect.Min.X), float32(minimapRect.Min.Y), float32(minimapRect.Bounds().Dx()), float32(minimapRect.Bounds().Dy()), util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0, B: 0, A: 128}), false)
+            }
         },
     }
 

@@ -299,7 +299,13 @@ func (game *Game) doCityListView(yield coroutine.YieldFunc) {
         game.Drawer = oldDrawer
     }()
 
-    view := citylistview.MakeCityListScreen(game.Cache, game.Players[0])
+    cities := game.AllCities()
+
+    drawMinimap := func (screen *ebiten.Image, x int, y int, fog [][]bool, counter uint64){
+        game.Map.DrawMinimap(screen, cities, x, y, fog, counter, false)
+    }
+
+    view := citylistview.MakeCityListScreen(game.Cache, game.Players[0], drawMinimap)
 
     game.Drawer = func (screen *ebiten.Image, game *Game){
         view.Draw(screen)
