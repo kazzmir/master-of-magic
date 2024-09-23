@@ -4,6 +4,7 @@ import (
     "log"
     "fmt"
     "slices"
+    "strings"
     "image"
     "image/color"
 
@@ -31,15 +32,17 @@ type CityListScreen struct {
     UI *uilib.UI
     State CityListScreenState
     DrawMinimap func(*ebiten.Image, int, int, [][]bool, uint64)
+    DoSelectCity func(*citylib.City)
 }
 
-func MakeCityListScreen(cache *lbx.LbxCache, player *playerlib.Player, drawMinimap func(*ebiten.Image, int, int, [][]bool, uint64)) *CityListScreen {
+func MakeCityListScreen(cache *lbx.LbxCache, player *playerlib.Player, drawMinimap func(*ebiten.Image, int, int, [][]bool, uint64), selectCity func(*citylib.City)) *CityListScreen {
     view := &CityListScreen{
         Cache: cache,
         Player: player,
         ImageCache: util.MakeImageCache(cache),
         State: CityListScreenStateRunning,
         DrawMinimap: drawMinimap,
+        DoSelectCity: selectCity,
     }
 
     view.UI = view.MakeUI()
@@ -119,15 +122,7 @@ func (view *CityListScreen) MakeUI() *uilib.UI {
 
     cities := slices.Clone(view.Player.Cities)
     slices.SortFunc(cities, func(a *citylib.City, b *citylib.City) int {
-        if a.BirthTurn < b.BirthTurn {
-            return 1
-        }
-
-        if a.BirthTurn > b.BirthTurn {
-            return -1
-        }
-
-        return 0
+        return strings.Compare(a.Name, b.Name)
     })
 
     highlightColor := util.PremultiplyAlpha(color.RGBA{R: 255, G: 255, B: 255, A: 90})
@@ -141,6 +136,10 @@ func (view *CityListScreen) MakeUI() *uilib.UI {
         elementY := float64(y)
         elements = append(elements, &uilib.UIElement{
             Rect: image.Rect(28, int(elementY), 296, int(elementY + 14)),
+            LeftClickRelease: func(element *uilib.UIElement){
+                view.DoSelectCity(city)
+                view.State = CityListScreenStateDone
+            },
             Inside: func(element *uilib.UIElement, x int, y int){
                 highlightedCity = city
             },
@@ -163,7 +162,7 @@ func (view *CityListScreen) MakeUI() *uilib.UI {
                 normalFont.PrintRight(screen, x + 139, elementY, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", city.GoldSurplus()))
                 normalFont.PrintRight(screen, x + 159, elementY, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", int(city.WorkProductionRate())))
                 normalFont.Print(screen, x + 165, elementY, 1, ebiten.ColorScale{}, city.ProducingString())
-                normalFont.PrintRight(screen, x + 258, elementY, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", city.BirthTurn))
+                normalFont.PrintRight(screen, x + 258, elementY, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", city.ProducingTurnsLeft()))
             },
         })
 

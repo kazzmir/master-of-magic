@@ -305,7 +305,16 @@ func (game *Game) doCityListView(yield coroutine.YieldFunc) {
         game.Map.DrawMinimap(screen, cities, x, y, fog, counter, false)
     }
 
-    view := citylistview.MakeCityListScreen(game.Cache, game.Players[0], drawMinimap)
+    var showCity *citylib.City
+    selectCity := func(city *citylib.City){
+        // ignore outpost
+        if city.Citizens() >= 1 {
+            showCity = city
+        }
+        game.CenterCamera(city.X, city.Y)
+    }
+
+    view := citylistview.MakeCityListScreen(game.Cache, game.Players[0], drawMinimap, selectCity)
 
     game.Drawer = func (screen *ebiten.Image, game *Game){
         view.Draw(screen)
@@ -317,6 +326,10 @@ func (game *Game) doCityListView(yield coroutine.YieldFunc) {
 
     // absorb most recent left click
     yield()
+
+    if showCity != nil {
+        game.doCityScreen(yield, showCity, game.Players[0])
+    }
 }
 
 func (game *Game) doArmyView(yield coroutine.YieldFunc) {
@@ -1734,7 +1747,7 @@ func (game *Game) ShowSpellBookCastUI(){
 }
 
 func (game *Game) CreateOutpost(settlers *units.OverworldUnit, player *playerlib.Player) *citylib.City {
-    newCity := citylib.MakeCity("New City", settlers.X, settlers.Y, game.TurnNumber, settlers.Unit.Race, player.TaxRate, game.BuildingInfo)
+    newCity := citylib.MakeCity("New City", settlers.X, settlers.Y, settlers.Unit.Race, player.TaxRate, game.BuildingInfo)
     newCity.Plane = settlers.Plane
     newCity.Population = 1000
     newCity.Banner = player.Wizard.Banner

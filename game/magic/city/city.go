@@ -64,8 +64,6 @@ type City struct {
     Race data.Race
     X int
     Y int
-    // the turn this city was created on
-    BirthTurn uint64
     Banner data.BannerType
     Buildings *set.Set[building.Building]
 
@@ -82,12 +80,11 @@ type City struct {
     BuildingInfo building.BuildingInfos
 }
 
-func MakeCity(name string, x int, y int, birth uint64, race data.Race, taxRate fraction.Fraction, buildingInfo building.BuildingInfos) *City {
+func MakeCity(name string, x int, y int,race data.Race, taxRate fraction.Fraction, buildingInfo building.BuildingInfos) *City {
     city := City{
         Name: name,
         X: x,
         Y: y,
-        BirthTurn: birth,
         Race: race,
         Buildings: set.MakeSet[building.Building](),
         TaxRate: taxRate,
@@ -116,6 +113,32 @@ func (city *City) ProducingString() string {
     }
 
     return ""
+}
+
+func (city *City) ProducingTurnsLeft() int {
+    if city.ProducingBuilding != building.BuildingNone {
+        switch city.ProducingBuilding {
+            case building.BuildingHousing, building.BuildingTradeGoods: return 1
+        }
+
+        cost := city.BuildingInfo.ProductionCost(city.ProducingBuilding) - int(city.Production)
+        if cost < 0 {
+            cost = 0
+        }
+
+        return int(math.Ceil(float64(cost) / float64(city.WorkProductionRate())))
+    }
+
+    if !city.ProducingUnit.Equals(units.UnitNone) {
+        cost := city.ProducingUnit.ProductionCost - int(city.Production)
+        if cost < 0 {
+            cost = 0
+        }
+
+        return int(math.Ceil(float64(cost) / float64(city.WorkProductionRate())))
+    }
+
+    return 0
 }
 
 func (city *City) GetSize() CitySize {
