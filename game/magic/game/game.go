@@ -289,6 +289,11 @@ func (game *Game) doArmyView(yield coroutine.YieldFunc) {
     for army.Update() == armyview.ArmyScreenStateRunning {
         yield()
     }
+
+    game.HudUI = game.MakeHudUI()
+
+    // absorb most recent left click
+    yield()
 }
 
 func (game *Game) doMagicView(yield coroutine.YieldFunc) {

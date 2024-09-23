@@ -136,6 +136,10 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
             if pic != nil {
                 elements = append(elements, &uilib.UIElement{
                     Rect: util.ImageRect(int(elementX), int(elementY), pic),
+                    LeftClick: func (this *uilib.UIElement){
+                        view.Player.SelectedStack = stack
+                        view.State = ArmyScreenStateDone
+                    },
                     Inside: func (this *uilib.UIElement, x, y int){
                         highlightedUnit = unit
                     },
