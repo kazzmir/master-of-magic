@@ -33,6 +33,7 @@ type CityListScreen struct {
     State CityListScreenState
     DrawMinimap func(*ebiten.Image, int, int, [][]bool, uint64)
     DoSelectCity func(*citylib.City)
+    FirstRow int
 }
 
 func MakeCityListScreen(cache *lbx.LbxCache, player *playerlib.Player, drawMinimap func(*ebiten.Image, int, int, [][]bool, uint64), selectCity func(*citylib.City)) *CityListScreen {
@@ -43,6 +44,7 @@ func MakeCityListScreen(cache *lbx.LbxCache, player *playerlib.Player, drawMinim
         State: CityListScreenStateRunning,
         DrawMinimap: drawMinimap,
         DoSelectCity: selectCity,
+        FirstRow: 0,
     }
 
     view.UI = view.MakeUI()
@@ -127,8 +129,15 @@ func (view *CityListScreen) MakeUI() *uilib.UI {
 
     highlightColor := util.PremultiplyAlpha(color.RGBA{R: 255, G: 255, B: 255, A: 90})
 
+    maxRows := 9
     y := 28
-    for _, city := range cities {
+    rowCount := 0
+    for i, city := range cities {
+
+        if i < view.FirstRow {
+            continue
+        }
+
         if highlightedCity == nil {
             highlightedCity = city
         }
@@ -167,6 +176,11 @@ func (view *CityListScreen) MakeUI() *uilib.UI {
         })
 
         y += 14
+
+        rowCount += 1
+        if rowCount >= maxRows {
+            break
+        }
     }
 
     makeButton := func (x int, y int, normal *ebiten.Image, clickImage *ebiten.Image, action func()) *uilib.UIElement {
@@ -197,6 +211,29 @@ func (view *CityListScreen) MakeUI() *uilib.UI {
     elements = append(elements, makeButton(239, 183, okButtons[0], okButtons[1], func(){
         view.State = CityListScreenStateDone
     }))
+
+    upArrows, _ := view.ImageCache.GetImages("armylist.lbx", 1)
+    downArrows, _ := view.ImageCache.GetImages("armylist.lbx", 2)
+
+    scrollUpFunc := func(){
+        if view.FirstRow > 0 {
+            view.FirstRow -= 1
+            view.UI = view.MakeUI()
+        }
+    }
+
+    scrollDownFunc := func(){
+        if view.FirstRow < len(cities) - maxRows {
+            view.FirstRow += 1
+            view.UI = view.MakeUI()
+        }
+    }
+
+    elements = append(elements, makeButton(11, 27, upArrows[0], upArrows[1], scrollUpFunc))
+    elements = append(elements, makeButton(299, 27, upArrows[0], upArrows[1], scrollUpFunc))
+
+    elements = append(elements, makeButton(11, 138, downArrows[0], downArrows[1], scrollDownFunc))
+    elements = append(elements, makeButton(299, 138, downArrows[0], downArrows[1], scrollDownFunc))
 
     ui.SetElementsFromArray(elements)
 
