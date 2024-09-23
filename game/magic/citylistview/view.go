@@ -65,6 +65,17 @@ func (view *CityListScreen) MakeUI() *uilib.UI {
     }
     normalFont := font.MakeOptimizedFontWithPalette(fonts[1], normalPalette)
 
+    yellow := color.RGBA{R: 0xf9, G: 0xdb, B: 0x4c, A: 0xff}
+    bigPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        util.RotateHue(yellow, -0.50),
+        util.RotateHue(yellow, -0.30),
+        util.RotateHue(yellow, -0.10),
+        yellow,
+    }
+    bigFont := font.MakeOptimizedFontWithPalette(fonts[4], bigPalette)
+
     ui := &uilib.UI{
         Draw: func(ui *uilib.UI, screen *ebiten.Image) {
             background, _ := view.ImageCache.GetImage("reload.lbx", 21, 0)
@@ -76,6 +87,8 @@ func (view *CityListScreen) MakeUI() *uilib.UI {
                     element.Draw(element, screen)
                 }
             })
+
+            bigFont.PrintCenter(screen, 160, 5, 1, ebiten.ColorScale{}, fmt.Sprintf("The Cities Of %v", view.Player.Wizard.Name))
         },
     }
 
@@ -84,11 +97,11 @@ func (view *CityListScreen) MakeUI() *uilib.UI {
     cities := slices.Clone(view.Player.Cities)
     slices.SortFunc(cities, func(a *citylib.City, b *citylib.City) int {
         if a.BirthTurn < b.BirthTurn {
-            return -1
+            return 1
         }
 
         if a.BirthTurn > b.BirthTurn {
-            return 1
+            return -1
         }
 
         return 0
