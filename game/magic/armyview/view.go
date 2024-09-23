@@ -181,6 +181,8 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
     elements = append(elements, makeButton(60, 139, downArrows[0], downArrows[1], scrollUnitsDown))
     elements = append(elements, makeButton(250, 139, downArrows[0], downArrows[1], scrollUnitsDown))
 
+    // FIXME: show 6 heroes, 3 on either side
+
     // row := view.FirstRow
     rowY := 25
     rowCount := 0
