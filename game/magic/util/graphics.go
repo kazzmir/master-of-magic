@@ -117,7 +117,7 @@ func DrawDistortion(screen *ebiten.Image, page *ebiten.Image, source *ebiten.Ima
     }
 }
 
-func Lighten(c color.RGBA, amount float64) color.Color {
+func Lighten(c color.Color, amount float64) color.Color {
     var change colorm.ColorM
     change.ChangeHSV(0, 1, 1 + amount/100)
     return change.Apply(c)

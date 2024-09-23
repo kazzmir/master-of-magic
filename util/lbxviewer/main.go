@@ -559,7 +559,7 @@ func MakeViewer(data []*LbxData) (*Viewer, error) {
                         palette = customPaletteMap[-1]
                     }
 
-                    rawImages, err := lbxData.Lbx.ReadImagesWithPalette(i, palette)
+                    rawImages, err := lbxData.Lbx.ReadImagesWithPalette(i, palette, false)
                     if err != nil {
                         log.Printf("Unable to load images from %v at index %v: %v", lbxData.Name, i, err)
                         return

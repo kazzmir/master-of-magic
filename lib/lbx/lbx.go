@@ -942,11 +942,11 @@ func (lbx *LbxFile) GetPalette(entry int) (color.Palette, error){
 }
 
 func (lbx *LbxFile) ReadImages(entry int) ([]*image.Paletted, error) {
-    return lbx.ReadImagesWithPalette(entry, defaultPalette)
+    return lbx.ReadImagesWithPalette(entry, defaultPalette, false)
 }
 
 /* a nil palette means to use the default palette */
-func (lbx *LbxFile) ReadImagesWithPalette(entry int, palette color.Palette) ([]*image.Paletted, error) {
+func (lbx *LbxFile) ReadImagesWithPalette(entry int, palette color.Palette, forcePalette bool) ([]*image.Paletted, error) {
     if entry < 0 || entry >= len(lbx.Data) {
         return nil, fmt.Errorf("invalid lbx index %v, must be between 0 and %v", entry, len(lbx.Data) - 1)
     }
@@ -1026,7 +1026,8 @@ func (lbx *LbxFile) ReadImagesWithPalette(entry int, palette color.Palette) ([]*
 
     var paletteInfo PaletteInfo
 
-    if paletteOffset > 0 {
+    // if forcePalette is true then ignore the built-in palette in the image
+    if paletteOffset > 0 && !forcePalette {
 
         paletteInfo, err = readPaletteInfo(reader, int(paletteOffset))
         if err != nil {

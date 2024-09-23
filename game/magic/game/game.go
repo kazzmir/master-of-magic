@@ -1422,14 +1422,60 @@ func (game *Game) confirmEncounter(yield coroutine.YieldFunc, x int, y int) bool
         quit = true
     }
 
-    // nature node palette indices that rotate
-    // 76, 85, 87, 141, 142, 216, 217, 247, 248, 254
-    // rotate colors from 245 - 254
+    reloadLbx, err := game.Cache.GetLbxFile("reload.lbx")
+    if err != nil {
+        return false
+    }
 
-    // FIXME: create animation from palette rotation of some of the colors
-    lairPicture, _ := game.ImageCache.GetImage("reload.lbx", 11, 0)
+    // chaos is 10
+    // nature is 11
+    // sorcery is 12
 
-    animation := util.MakeAnimation([]*ebiten.Image{lairPicture}, true)
+    lairIndex := 11
+
+    basePalette, err := reloadLbx.GetPalette(lairIndex)
+    if err != nil {
+        return false
+    }
+
+    /*
+    for c := 245; c <= 254; c++ {
+        log.Printf("%v: %v", c, basePalette[c])
+    }
+    */
+
+    var images []*ebiten.Image
+
+    rotateIndexLow := 247
+    rotateIndexHigh := 254
+
+    for i := 0; i < (rotateIndexHigh-rotateIndexLow) + 1; i++ {
+
+        /*
+        rotatedPalette := make(color.Palette, len(basePalette))
+        copy(rotatedPalette, basePalette)
+
+        for c := 245; c <= 254; c++ {
+            v := math.Sin(float64(i + c) / 3) * 60
+            rotatedPalette[c] = util.Lighten(basePalette[c], v)
+        }
+        */
+
+        original := basePalette[rotateIndexHigh]
+        for c := rotateIndexHigh; c > rotateIndexLow; c-- {
+            basePalette[c] = basePalette[c - 1]
+        }
+        basePalette[rotateIndexLow] = original
+
+        newImages, err := reloadLbx.ReadImagesWithPalette(lairIndex, basePalette, true)
+        if err != nil || len(newImages) != 1 {
+            return false
+        }
+
+        images = append(images, ebiten.NewImageFromImage(newImages[0]))
+    }
+
+    animation := util.MakeAnimation(images, true)
 
     // FIXME: message is based on node type at the x,y map location
     game.HudUI.AddElements(uilib.MakeLairConfirmDialogWithLayer(game.HudUI, game.Cache, &game.ImageCache, animation, 1, "You have found a nature node. Scouts have spotted War Bears within the nature node. Do you wish to enter?", yes, no))

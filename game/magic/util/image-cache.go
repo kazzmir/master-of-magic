@@ -89,7 +89,7 @@ func (cache *ImageCache) GetImagesTransform(lbxPath string, index int, transform
         palette = customPaletteMap[-1]
     }
 
-    sprites, err := lbxFile.ReadImagesWithPalette(index, palette)
+    sprites, err := lbxFile.ReadImagesWithPalette(index, palette, false)
     if err != nil {
         return nil, err
     }
