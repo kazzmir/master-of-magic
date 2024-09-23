@@ -1256,6 +1256,9 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                                 break
                             }
 
+                            beforeX := stack.X()
+                            beforeY := stack.Y()
+
                             terrainCost, canMove := game.ComputeTerrainCost(stack, step.X, step.Y)
 
                             if canMove {
@@ -1278,7 +1281,11 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                                 }
 
                                 if game.Map.GetTile(stack.X(), stack.Y()).Index == terrain.TileNatureForest.Index {
-                                    game.doNatureEncounter(yield, player, stack)
+                                    moved := game.doNatureEncounter(yield, player, stack)
+                                    if !moved {
+                                        // move back to the tile the unit was just one
+                                        stack.Move(beforeX - stack.X(), beforeY - stack.Y(), fraction.Zero())
+                                    }
                                     stopMoving = true
                                     break quitMoving
                                 }
@@ -1402,7 +1409,7 @@ func (game *Game) doCityScreen(yield coroutine.YieldFunc, city *citylib.City, pl
     game.Drawer = oldDrawer
 }
 
-func (game *Game) doNatureEncounter(yield coroutine.YieldFunc, player *playerlib.Player, stack *playerlib.UnitStack){
+func (game *Game) doNatureEncounter(yield coroutine.YieldFunc, player *playerlib.Player, stack *playerlib.UnitStack) bool {
 
     defender := playerlib.Player{
         Wizard: setup.WizardCustom{
@@ -1419,7 +1426,38 @@ func (game *Game) doNatureEncounter(yield coroutine.YieldFunc, player *playerlib
         },
     }
 
-    game.doCombat(yield, player, stack, &defender, playerlib.MakeUnitStackFromUnits(enemies))
+    didCombat := false
+
+    quit := false
+
+    yes := func(){
+        quit = true
+        didCombat = true
+    }
+
+    no := func(){
+        quit = true
+    }
+
+    game.HudUI.AddElements(uilib.MakeConfirmDialogWithLayer(game.HudUI, game.Cache, &game.ImageCache, 1, "Do you want to enter the nature node?", yes, no))
+
+    for !quit {
+        game.HudUI.StandardUpdate()
+        yield()
+    }
+
+    // FIXME: wait for confirm dialog box to fade out, but need a better way to know
+    for i := 0; i < 7; i++ {
+        game.HudUI.StandardUpdate()
+        yield()
+    }
+
+    if didCombat {
+        game.doCombat(yield, player, stack, &defender, playerlib.MakeUnitStackFromUnits(enemies))
+    }
+    yield()
+
+    return didCombat
 }
 
 func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player, attackerStack *playerlib.UnitStack, defender *playerlib.Player, defenderStack *playerlib.UnitStack){

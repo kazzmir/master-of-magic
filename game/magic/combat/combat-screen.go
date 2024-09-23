@@ -1815,7 +1815,8 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
 
     // flee
     elements = append(elements, makeButton(21, 0, 2, func(){
-        // FIXME
+        // FIXME: choose the right side
+        combat.AttackingArmy.Units = nil
     }))
 
     // done
