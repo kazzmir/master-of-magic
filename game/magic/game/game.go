@@ -1517,13 +1517,25 @@ func (game *Game) doMagicEncounter(yield coroutine.YieldFunc, player *playerlib.
     }
 
     // FIXME: units depend on node at x,y location
-    enemies := []*units.OverworldUnit{
-        &units.OverworldUnit{
-            Unit: units.Sprite,
-        },
-        &units.OverworldUnit{
-            Unit: units.WarBear,
-        },
+    var enemies []*units.OverworldUnit
+
+    tile := game.Map.GetTile(x, y)
+    switch tile.Index {
+        case terrain.TileChaosVolcano.Index:
+            // fire elemental
+        case terrain.TileNatureForest.Index:
+            enemies = []*units.OverworldUnit{
+                &units.OverworldUnit{
+                    Unit: units.Sprite,
+                },
+                &units.OverworldUnit{
+                    Unit: units.WarBear,
+                },
+            }
+
+        case terrain.TileSorceryLake.Index:
+            // TODO
+            // phantom warriors/beast
     }
 
     game.doCombat(yield, player, stack, &defender, playerlib.MakeUnitStackFromUnits(enemies))
