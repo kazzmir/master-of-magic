@@ -4,7 +4,8 @@ import (
     // "log"
     "image"
     "image/color"
-    // "github.com/kazzmir/master-of-magic/lib/colorconv"
+    "github.com/kazzmir/master-of-magic/lib/lbx"
+
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/colorm"
     "github.com/hajimehoshi/ebiten/v2/vector"
@@ -167,4 +168,41 @@ func MakeFadeOut(time uint64, counter *uint64) AlphaFadeFunc {
 
         return 1.0 - (float32(diff) / float32(time))
     }
+}
+
+
+/* create an animation by rotating the colors in a palette for a given lbx/index pair.
+ * all the colors between indexLow and indexHigh will be rotated once in the animation
+ */
+func MakePaletteRotateAnimation(lbxFile *lbx.LbxFile, index int, rotateIndexLow int, rotateIndexHigh int) *Animation {
+    basePalette, err := lbxFile.GetPalette(index)
+    if err != nil {
+        return nil
+    }
+
+    var images []*ebiten.Image
+
+    for i := 0; i < (rotateIndexHigh-rotateIndexLow) + 1; i++ {
+
+        /*
+        rotatedPalette := make(color.Palette, len(basePalette))
+        copy(rotatedPalette, basePalette)
+
+        for c := 245; c <= 254; c++ {
+            v := math.Sin(float64(i + c) / 3) * 60
+            rotatedPalette[c] = util.Lighten(basePalette[c], v)
+        }
+        */
+
+        RotateSlice(basePalette[rotateIndexLow:rotateIndexHigh], false)
+
+        newImages, err := lbxFile.ReadImagesWithPalette(index, basePalette, true)
+        if err != nil || len(newImages) != 1 {
+            return nil
+        }
+
+        images = append(images, ebiten.NewImageFromImage(newImages[0]))
+    }
+
+    return MakeAnimation(images, true)
 }

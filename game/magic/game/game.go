@@ -1427,10 +1427,6 @@ func (game *Game) confirmEncounter(yield coroutine.YieldFunc, x int, y int) bool
         return false
     }
 
-    // chaos is 10
-    // nature is 11
-    // sorcery is 12
-
     lairIndex := 11
     nodeName := "nature"
 
@@ -1447,45 +1443,10 @@ func (game *Game) confirmEncounter(yield coroutine.YieldFunc, x int, y int) bool
             nodeName = "sorcery"
     }
 
-    basePalette, err := reloadLbx.GetPalette(lairIndex)
-    if err != nil {
-        return false
-    }
-
-    /*
-    for c := 245; c <= 254; c++ {
-        log.Printf("%v: %v", c, basePalette[c])
-    }
-    */
-
-    var images []*ebiten.Image
-
     rotateIndexLow := 247
     rotateIndexHigh := 254
 
-    for i := 0; i < (rotateIndexHigh-rotateIndexLow) + 1; i++ {
-
-        /*
-        rotatedPalette := make(color.Palette, len(basePalette))
-        copy(rotatedPalette, basePalette)
-
-        for c := 245; c <= 254; c++ {
-            v := math.Sin(float64(i + c) / 3) * 60
-            rotatedPalette[c] = util.Lighten(basePalette[c], v)
-        }
-        */
-
-        util.RotateSlice(basePalette[rotateIndexLow:rotateIndexHigh], false)
-
-        newImages, err := reloadLbx.ReadImagesWithPalette(lairIndex, basePalette, true)
-        if err != nil || len(newImages) != 1 {
-            return false
-        }
-
-        images = append(images, ebiten.NewImageFromImage(newImages[0]))
-    }
-
-    animation := util.MakeAnimation(images, true)
+    animation := util.MakePaletteRotateAnimation(reloadLbx, lairIndex, rotateIndexLow, rotateIndexHigh)
 
     // FIXME: message is based on node type at the x,y map location
     game.HudUI.AddElements(uilib.MakeLairConfirmDialogWithLayer(game.HudUI, game.Cache, &game.ImageCache, animation, 1, fmt.Sprintf("You have found a %v node. Scouts have spotted War Bears within the %v node. Do you wish to enter?", nodeName, nodeName), yes, no))
