@@ -147,6 +147,13 @@ type Tile struct {
     Compatabilities map[Direction]TerrainType
 }
 
+func (tile Tile) IsMagic() bool {
+    switch TerrainIndex(tile.Index) {
+        case IndexSorcNode, IndexNatNode, IndexChaosNode: return true
+        default: return false
+    }
+}
+
 func (tile Tile) IsLand() bool {
     switch TerrainIndex(tile.Index) {
         case IndexOcean1, IndexOcean2: return false

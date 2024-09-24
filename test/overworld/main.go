@@ -29,6 +29,8 @@ type Engine struct {
 }
 
 func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 1")
+
     wizard := setup.WizardCustom{
         Name: "bob",
         Banner: data.BannerBlue,
@@ -137,6 +139,7 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
 
 // test the starting city name input
 func createScenario2(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 2")
     wizard := setup.WizardCustom{
         Name: "player",
         Banner: data.BannerBlue,
@@ -198,6 +201,7 @@ func createScenario2(cache *lbx.LbxCache) *gamelib.Game {
 
 // put starting city on a valid map tile
 func createScenario3(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 3")
     wizard := setup.WizardCustom{
         Name: "player",
         Banner: data.BannerBlue,
@@ -277,6 +281,7 @@ func createScenario3(cache *lbx.LbxCache) *gamelib.Game {
 
 // put starting city on a valid map tile
 func createScenario4(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 4")
     wizard := setup.WizardCustom{
         Name: "player",
         Banner: data.BannerBlue,
@@ -360,6 +365,7 @@ func createScenario4(cache *lbx.LbxCache) *gamelib.Game {
 }
 
 func createScenario5(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 5")
     wizard := setup.WizardCustom{
         Name: "player",
         Banner: data.BannerBlue,
@@ -422,6 +428,7 @@ func createScenario5(cache *lbx.LbxCache) *gamelib.Game {
 }
 
 func createScenario6(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 6")
     wizard := setup.WizardCustom{
         Name: "player",
         Banner: data.BannerBlue,
@@ -523,6 +530,7 @@ func createScenario6(cache *lbx.LbxCache) *gamelib.Game {
 }
 
 func createScenario7(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 7")
     wizard := setup.WizardCustom{
         Name: "player",
         Banner: data.BannerBlue,
@@ -577,6 +585,7 @@ func createScenario7(cache *lbx.LbxCache) *gamelib.Game {
 
 // test entering a node with a unit
 func createScenario8(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 8")
     wizard := setup.WizardCustom{
         Name: "bob",
         Banner: data.BannerBlue,
@@ -606,6 +615,8 @@ func createScenario8(cache *lbx.LbxCache) *gamelib.Game {
     x, y := game.FindValidCityLocation()
 
     game.Map.CreateNode(x, y+1, gamelib.MagicNodeNature)
+    game.Map.CreateNode(x+1, y, gamelib.MagicNodeChaos)
+    game.Map.CreateNode(x+2, y+1, gamelib.MagicNodeSorcery)
 
     city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.TaxRate, game.BuildingInfo)
     city.Population = 6190

@@ -1259,14 +1259,14 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                             terrainCost, canMove := game.ComputeTerrainCost(stack, step.X, step.Y)
 
                             if canMove {
-                                if game.Map.GetTile(step.X, step.Y).Index == terrain.TileNatureForest.Index {
+                                if game.Map.GetTile(step.X, step.Y).IsMagic() {
                                     if game.confirmEncounter(yield, step.X, step.Y) {
 
                                         stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost)
                                         game.showMovement(yield, oldX, oldY, stack)
                                         player.LiftFog(stack.X(), stack.Y(), 2)
 
-                                        game.doNatureEncounter(yield, player, stack, stack.X(), stack.Y())
+                                        game.doMagicEncounter(yield, player, stack, stack.X(), stack.Y())
                                     }
 
                                     stopMoving = true
@@ -1432,6 +1432,20 @@ func (game *Game) confirmEncounter(yield coroutine.YieldFunc, x int, y int) bool
     // sorcery is 12
 
     lairIndex := 11
+    nodeName := "nature"
+
+    tile := game.Map.GetTile(x, y)
+    switch tile.Index {
+        case terrain.TileChaosVolcano.Index:
+            lairIndex = 10
+            nodeName = "chaos"
+        case terrain.TileNatureForest.Index:
+            lairIndex = 11
+            nodeName = "nature"
+        case terrain.TileSorceryLake.Index:
+            lairIndex = 12
+            nodeName = "sorcery"
+    }
 
     basePalette, err := reloadLbx.GetPalette(lairIndex)
     if err != nil {
@@ -1478,7 +1492,7 @@ func (game *Game) confirmEncounter(yield coroutine.YieldFunc, x int, y int) bool
     animation := util.MakeAnimation(images, true)
 
     // FIXME: message is based on node type at the x,y map location
-    game.HudUI.AddElements(uilib.MakeLairConfirmDialogWithLayer(game.HudUI, game.Cache, &game.ImageCache, animation, 1, "You have found a nature node. Scouts have spotted War Bears within the nature node. Do you wish to enter?", yes, no))
+    game.HudUI.AddElements(uilib.MakeLairConfirmDialogWithLayer(game.HudUI, game.Cache, &game.ImageCache, animation, 1, fmt.Sprintf("You have found a %v node. Scouts have spotted War Bears within the %v node. Do you wish to enter?", nodeName, nodeName), yes, no))
 
     for !quit {
         game.Counter += 1
@@ -1498,11 +1512,11 @@ func (game *Game) confirmEncounter(yield coroutine.YieldFunc, x int, y int) bool
     return result
 }
 
-func (game *Game) doNatureEncounter(yield coroutine.YieldFunc, player *playerlib.Player, stack *playerlib.UnitStack, x int, y int){
+func (game *Game) doMagicEncounter(yield coroutine.YieldFunc, player *playerlib.Player, stack *playerlib.UnitStack, x int, y int){
 
     defender := playerlib.Player{
         Wizard: setup.WizardCustom{
-            Name: "Lair",
+            Name: "Node",
         },
     }
 
