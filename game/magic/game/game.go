@@ -1475,11 +1475,15 @@ func (game *Game) confirmEncounter(yield coroutine.YieldFunc, x int, y int) bool
         }
         */
 
+        /*
         original := basePalette[rotateIndexHigh]
         for c := rotateIndexHigh; c > rotateIndexLow; c-- {
             basePalette[c] = basePalette[c - 1]
         }
         basePalette[rotateIndexLow] = original
+        */
+
+        util.RotateSlice(basePalette[rotateIndexLow:rotateIndexHigh], false)
 
         newImages, err := reloadLbx.ReadImagesWithPalette(lairIndex, basePalette, true)
         if err != nil || len(newImages) != 1 {
