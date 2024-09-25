@@ -6,7 +6,6 @@
 * summon artifact/weapon animation
 * summon hero/champion animation
 * banish animation for defeated wizard
-* enter node (sorcery, nature, chaos) in overworld
 * create artifact screen
 * cartographer advisor
 * surveyor advisor
@@ -36,3 +35,4 @@
 9/22/2024 * overworld path finding to point on map
 9/22/2024 * armies screen
 9/22/2024 * cities screen
+9/25/2024 * enter node combat (sorcery, nature, chaos) in overworld
