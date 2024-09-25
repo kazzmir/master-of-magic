@@ -20,8 +20,26 @@ const (
     MagicNodeChaos
 )
 
+type ExtraTile interface {
+    Draw(screen *ebiten.Image, options *ebiten.DrawImageOptions)
+}
+
+type ExtraRoad struct {
+}
+
+type ExtraMagicNode struct {
+    Kind MagicNode
+}
+
+func (node *ExtraMagicNode) Draw(screen *ebiten.Image, options *ebiten.DrawImageOptions){
+}
+
 type Map struct {
     Map *terrain.Map
+
+    // contains information about map squares that contain extra features on top
+    // such as a road, enchantment, encounter place (plane tower, lair, etc)
+    ExtraMap map[image.Point]ExtraTile
 
     Data *terrain.TerrainData
 
@@ -35,6 +53,7 @@ func MakeMap(data *terrain.TerrainData) *Map {
         Data: data,
         Map: terrain.GenerateLandCellularAutomata(100, 200, data),
         TileCache: make(map[int]*ebiten.Image),
+        ExtraMap: make(map[image.Point]ExtraTile),
     }
 }
 
@@ -47,6 +66,10 @@ func (mapObject *Map) CreateNode(x int, y int, node MagicNode) {
     }
 
     mapObject.Map.Terrain[x][y] = tileType
+
+    mapObject.ExtraMap[image.Pt(x, y)] = &ExtraMagicNode{
+        Kind: node,
+    }
 }
 
 func (mapObject *Map) Width() int {
@@ -219,7 +242,6 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []*citylib.City, 
 }
 
 func (mapObject *Map) Draw(cameraX int, cameraY int, animationCounter uint64, screen *ebiten.Image, geom ebiten.GeoM){
-
     tileWidth := mapObject.TileWidth()
     tileHeight := mapObject.TileHeight()
 
@@ -238,12 +260,17 @@ func (mapObject *Map) Draw(cameraX int, cameraY int, animationCounter uint64, sc
                 continue
             }
 
-            image, err := mapObject.GetTileImage(tileX, tileY, animationCounter)
+            tileImage, err := mapObject.GetTileImage(tileX, tileY, animationCounter)
             if err == nil {
                 options.GeoM = geom
                 // options.GeoM.Reset()
                 options.GeoM.Translate(float64(x * tileWidth), float64(y * tileHeight))
-                screen.DrawImage(image, &options)
+                screen.DrawImage(tileImage, &options)
+
+                extra, ok := mapObject.ExtraMap[image.Pt(tileX, tileY)]
+                if ok {
+                    extra.Draw(screen, &options)
+                }
             } else {
                 log.Printf("Unable to render tilte at %d, %d: %v", tileX, tileY, err)
             }
