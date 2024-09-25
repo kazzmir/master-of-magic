@@ -780,6 +780,15 @@ var Cockatrice Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 61,
     Name: "Cockatrice",
+    CombatLbxFile: "figure13.lbx",
+    CombatIndex: 8,
+    Count: 4,
+    MovementSpeed: 2,
+    Flying: true,
+    MeleeAttackPower: 4,
+    Defense: 3,
+    Resistance: 7,
+    HitPoints: 3,
     Race: data.RaceFantastic,
 }
 
@@ -787,6 +796,14 @@ var Basilisk Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 62,
     Name: "Basilisk",
+    CombatLbxFile: "figure13.lbx",
+    CombatIndex: 16,
+    Count: 1,
+    MovementSpeed: 2,
+    MeleeAttackPower: 15,
+    Defense: 4,
+    Resistance: 7,
+    HitPoints: 30,
     Race: data.RaceFantastic,
 }
 
@@ -794,6 +811,14 @@ var GiantSpider Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 63,
     Name: "Giant Spider",
+    CombatLbxFile: "figure13.lbx",
+    CombatIndex: 24,
+    Count: 2,
+    MovementSpeed: 2,
+    MeleeAttackPower: 4,
+    Defense: 3,
+    Resistance: 7,
+    HitPoints: 10,
     Race: data.RaceFantastic,
 }
 
@@ -801,6 +826,17 @@ var StoneGiant Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 64,
     Name: "Stone Giant",
+    CombatLbxFile: "figure13.lbx",
+    CombatIndex: 32,
+    Count: 1,
+    MovementSpeed: 2,
+    MeleeAttackPower: 15,
+    RangedAttackPower: 15,
+    RangedAttackDamageType: DamageRangedBoulder,
+    RangedAttacks: 2, // FIXME
+    Defense: 8,
+    Resistance: 9,
+    HitPoints: 20,
     Race: data.RaceFantastic,
 }
 
@@ -808,6 +844,14 @@ var Colossus Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 65,
     Name: "Colossus",
+    CombatLbxFile: "figure13.lbx",
+    CombatIndex: 40,
+    Count: 1,
+    MovementSpeed: 2,
+    MeleeAttackPower: 20,
+    Defense: 10,
+    Resistance: 15,
+    HitPoints: 30,
     Race: data.RaceFantastic,
 }
 
@@ -815,6 +859,15 @@ var Gorgon Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 66,
     Name: "Gorgons",
+    CombatLbxFile: "figure13.lbx",
+    CombatIndex: 48,
+    Count: 2,
+    MovementSpeed: 2,
+    Flying: true,
+    MeleeAttackPower: 8,
+    Defense: 7,
+    Resistance: 9,
+    HitPoints: 9,
     Race: data.RaceFantastic,
 }
 
@@ -837,6 +890,14 @@ var Behemoth Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 68,
     Name: "Behemoth",
+    CombatLbxFile: "figure13.lbx",
+    CombatIndex: 64,
+    Count: 1,
+    MovementSpeed: 2,
+    MeleeAttackPower: 25,
+    Defense: 9,
+    Resistance: 10,
+    HitPoints: 45,
     Race: data.RaceFantastic,
 }
 
@@ -844,6 +905,14 @@ var GreatWyrm Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 69,
     Name: "Great Wyrm",
+    CombatLbxFile: "figure13.lbx",
+    CombatIndex: 72,
+    Count: 1,
+    MovementSpeed: 3,
+    MeleeAttackPower: 25,
+    Defense: 12,
+    Resistance: 12,
+    HitPoints: 45,
     Race: data.RaceFantastic,
 }
 
