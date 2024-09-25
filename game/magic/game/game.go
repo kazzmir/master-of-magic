@@ -103,6 +103,8 @@ type Game struct {
     ImageCache util.ImageCache
     WhiteFont *font.Font
 
+    Settings setup.NewGameSettings
+
     InfoFontYellow *font.Font
     Counter uint64
     Fog *ebiten.Image
@@ -178,7 +180,7 @@ func (game *Game) AddPlayer(wizard setup.WizardCustom) *playerlib.Player{
     return newPlayer
 }
 
-func MakeGame(lbxCache *lbx.LbxCache) *Game {
+func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
 
     terrainLbx, err := lbxCache.GetLbxFile("terrain.lbx")
     if err != nil {

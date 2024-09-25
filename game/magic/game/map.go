@@ -8,7 +8,9 @@ import (
 
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
     "github.com/kazzmir/master-of-magic/game/magic/util"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
+    "github.com/kazzmir/master-of-magic/game/magic/units"
 
     "github.com/hajimehoshi/ebiten/v2"
 )
@@ -29,6 +31,30 @@ type ExtraRoad struct {
 
 type ExtraMagicNode struct {
     Kind MagicNode
+    Empty bool
+    Units []units.Unit
+    // also contains treasure
+}
+
+func computeNatureNodeEnemies(magicSetting data.MagicSetting) []units.Unit {
+    return nil
+}
+
+func MakeMagicNode(kind MagicNode, magicSetting data.MagicSetting) *ExtraMagicNode {
+    var enemies []units.Unit
+
+    switch kind {
+        case MagicNodeNature:
+            enemies = computeNatureNodeEnemies(magicSetting)
+        case MagicNodeSorcery:
+        case MagicNodeChaos:
+    }
+
+    return &ExtraMagicNode{
+        Kind: kind,
+        Empty: false,
+        Units: enemies,
+    }
 }
 
 func (node *ExtraMagicNode) Draw(screen *ebiten.Image, options *ebiten.DrawImageOptions){
@@ -57,7 +83,7 @@ func MakeMap(data *terrain.TerrainData) *Map {
     }
 }
 
-func (mapObject *Map) CreateNode(x int, y int, node MagicNode) {
+func (mapObject *Map) CreateNode(x int, y int, node MagicNode, magicSetting data.MagicSetting) {
     tileType := 0
     switch node {
         case MagicNodeNature: tileType = terrain.TileNatureForest.Index
@@ -67,9 +93,7 @@ func (mapObject *Map) CreateNode(x int, y int, node MagicNode) {
 
     mapObject.Map.Terrain[x][y] = tileType
 
-    mapObject.ExtraMap[image.Pt(x, y)] = &ExtraMagicNode{
-        Kind: node,
-    }
+    mapObject.ExtraMap[image.Pt(x, y)] = MakeMagicNode(node, magicSetting)
 }
 
 func (mapObject *Map) Width() int {

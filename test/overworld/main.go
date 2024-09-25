@@ -51,7 +51,7 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache)
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
 
     game.Plane = data.PlaneArcanus
 
@@ -159,7 +159,7 @@ func createScenario2(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache)
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
 
     game.Plane = data.PlaneArcanus
 
@@ -222,7 +222,7 @@ func createScenario3(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache)
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
 
     game.Plane = data.PlaneArcanus
 
@@ -302,7 +302,7 @@ func createScenario4(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache)
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
 
     game.Plane = data.PlaneArcanus
 
@@ -386,7 +386,7 @@ func createScenario5(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache)
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
 
     game.Plane = data.PlaneArcanus
 
@@ -449,7 +449,7 @@ func createScenario6(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache)
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
 
     game.Plane = data.PlaneArcanus
 
@@ -551,7 +551,7 @@ func createScenario7(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache)
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
 
     game.Plane = data.PlaneArcanus
 
@@ -606,7 +606,7 @@ func createScenario8(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache)
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
 
     game.Plane = data.PlaneArcanus
 
@@ -614,9 +614,9 @@ func createScenario8(cache *lbx.LbxCache) *gamelib.Game {
 
     x, y := game.FindValidCityLocation()
 
-    game.Map.CreateNode(x, y+1, gamelib.MagicNodeNature)
-    game.Map.CreateNode(x+1, y, gamelib.MagicNodeChaos)
-    game.Map.CreateNode(x+2, y+1, gamelib.MagicNodeSorcery)
+    game.Map.CreateNode(x, y+1, gamelib.MagicNodeNature, game.Settings.Magic)
+    game.Map.CreateNode(x+1, y, gamelib.MagicNodeChaos, game.Settings.Magic)
+    game.Map.CreateNode(x+2, y+1, gamelib.MagicNodeSorcery, game.Settings.Magic)
 
     city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.TaxRate, game.BuildingInfo)
     city.Population = 6190

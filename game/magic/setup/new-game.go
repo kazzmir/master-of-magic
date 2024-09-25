@@ -9,6 +9,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
 
     "github.com/hajimehoshi/ebiten/v2"
 )
@@ -22,7 +23,7 @@ type NewGameSettings struct {
     Difficulty int
     Opponents int
     LandSize int
-    Magic int
+    Magic data.MagicSetting
 }
 
 func (settings *NewGameSettings) DifficultyNext() {
@@ -47,9 +48,10 @@ func (settings *NewGameSettings) LandSizeNext() {
 }
 
 func (settings *NewGameSettings) MagicNext() {
-    settings.Magic += 1
-    if settings.Magic > MagicMax {
-        settings.Magic = 0
+    switch settings.Magic {
+        case data.MagicSettingWeak: settings.Magic = data.MagicSettingNormal
+        case data.MagicSettingNormal: settings.Magic = data.MagicSettingPowerful
+        case data.MagicSettingPowerful: settings.Magic = data.MagicSettingWeak
     }
 }
 
@@ -69,7 +71,11 @@ func (settings *NewGameSettings) LandSizeString() string {
 }
 
 func (settings *NewGameSettings) MagicString() string {
-    kinds := []string{"Weak", "Normal", "Powerful"}
+    kinds := map[data.MagicSetting]string{
+        data.MagicSettingWeak: "Weak",
+        data.MagicSettingNormal: "Normal",
+        data.MagicSettingPowerful: "Powerful",
+    }
     return kinds[settings.Magic]
 }
 
