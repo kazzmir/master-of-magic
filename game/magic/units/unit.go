@@ -550,12 +550,30 @@ var ChaosSpawn Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 39,
     Name: "Chaos Spawn",
+    CombatLbxFile: "figure11.lbx",
+    CombatIndex: 72,
+    MovementSpeed: 1,
+    Flying: true,
+    Count: 1,
+    MeleeAttackPower: 1,
+    Defense: 6,
+    Resistance: 10,
+    HitPoints: 15,
     Race: data.RaceFantastic,
 }
 
 var Chimeras Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 40,
+    CombatLbxFile: "figure11.lbx",
+    CombatIndex: 80,
+    MovementSpeed: 2,
+    Flying: true,
+    Count: 4,
+    MeleeAttackPower: 7,
+    Defense: 5,
+    Resistance: 8,
+    HitPoints: 8,
     Race: data.RaceFantastic,
 }
 
@@ -579,13 +597,33 @@ var Efreet Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 42,
     Name: "Efreet",
+    CombatLbxFile: "figure11.lbx",
+    CombatIndex: 96,
+    MovementSpeed: 3,
+    Flying: true,
+    Count: 1,
+    MeleeAttackPower: 9,
+    RangedAttackPower: 9,
+    RangedAttackDamageType: DamageRangedMagical,
+    Defense: 7,
+    Resistance: 10,
+    HitPoints: 12,
     Race: data.RaceFantastic,
 }
 
+// FIXME: hydra has 9 virtual figures, one for each head
 var Hydra Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 43,
     Name: "Hydra",
+    CombatLbxFile: "figure11.lbx",
+    CombatIndex: 104,
+    Count: 1,
+    MovementSpeed: 1,
+    MeleeAttackPower: 6,
+    Defense: 4,
+    Resistance:11,
+    HitPoints: 10,
     Race: data.RaceFantastic,
 }
 
