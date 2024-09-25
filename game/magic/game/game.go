@@ -1262,14 +1262,15 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                             terrainCost, canMove := game.ComputeTerrainCost(stack, step.X, step.Y)
 
                             if canMove {
-                                if game.Map.GetTile(step.X, step.Y).IsMagic() {
-                                    if game.confirmEncounter(yield, step.X, step.Y) {
+                                node := game.Map.GetMagicNode(step.X, step.Y)
+                                if node != nil && !node.Empty {
+                                    if game.confirmEncounter(yield, node) {
 
                                         stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost)
                                         game.showMovement(yield, oldX, oldY, stack)
                                         player.LiftFog(stack.X(), stack.Y(), 2)
 
-                                        game.doMagicEncounter(yield, player, stack, stack.X(), stack.Y())
+                                        game.doMagicEncounter(yield, player, stack, node)
                                     }
 
                                     stopMoving = true
@@ -1411,7 +1412,7 @@ func (game *Game) doCityScreen(yield coroutine.YieldFunc, city *citylib.City, pl
     game.Drawer = oldDrawer
 }
 
-func (game *Game) confirmEncounter(yield coroutine.YieldFunc, x int, y int) bool {
+func (game *Game) confirmEncounter(yield coroutine.YieldFunc, node *ExtraMagicNode) bool {
     quit := false
 
     result := false
@@ -1433,17 +1434,21 @@ func (game *Game) confirmEncounter(yield coroutine.YieldFunc, x int, y int) bool
     lairIndex := 11
     nodeName := "nature"
 
-    tile := game.Map.GetTile(x, y)
-    switch tile.Index {
-        case terrain.TileChaosVolcano.Index:
+    switch node.Kind {
+        case MagicNodeChaos:
             lairIndex = 10
             nodeName = "chaos"
-        case terrain.TileNatureForest.Index:
+        case MagicNodeNature:
             lairIndex = 11
             nodeName = "nature"
-        case terrain.TileSorceryLake.Index:
+        case MagicNodeSorcery:
             lairIndex = 12
             nodeName = "sorcery"
+    }
+
+    guardianName := ""
+    if len(node.Guardians) > 0 {
+        guardianName = node.Guardians[0].Name
     }
 
     rotateIndexLow := 247
@@ -1452,7 +1457,7 @@ func (game *Game) confirmEncounter(yield coroutine.YieldFunc, x int, y int) bool
     animation := util.MakePaletteRotateAnimation(reloadLbx, lairIndex, rotateIndexLow, rotateIndexHigh)
 
     // FIXME: message is based on node type at the x,y map location
-    game.HudUI.AddElements(uilib.MakeLairConfirmDialogWithLayer(game.HudUI, game.Cache, &game.ImageCache, animation, 1, fmt.Sprintf("You have found a %v node. Scouts have spotted War Bears within the %v node. Do you wish to enter?", nodeName, nodeName), yes, no))
+    game.HudUI.AddElements(uilib.MakeLairConfirmDialogWithLayer(game.HudUI, game.Cache, &game.ImageCache, animation, 1, fmt.Sprintf("You have found a %v node. Scouts have spotted %v within the %v node. Do you wish to enter?", nodeName, guardianName, nodeName), yes, no))
 
     for !quit {
         game.Counter += 1
@@ -1472,7 +1477,7 @@ func (game *Game) confirmEncounter(yield coroutine.YieldFunc, x int, y int) bool
     return result
 }
 
-func (game *Game) doMagicEncounter(yield coroutine.YieldFunc, player *playerlib.Player, stack *playerlib.UnitStack, x int, y int){
+func (game *Game) doMagicEncounter(yield coroutine.YieldFunc, player *playerlib.Player, stack *playerlib.UnitStack, node *ExtraMagicNode){
 
     defender := playerlib.Player{
         Wizard: setup.WizardCustom{
@@ -1483,23 +1488,12 @@ func (game *Game) doMagicEncounter(yield coroutine.YieldFunc, player *playerlib.
     // FIXME: units depend on node at x,y location
     var enemies []*units.OverworldUnit
 
-    tile := game.Map.GetTile(x, y)
-    switch tile.Index {
-        case terrain.TileChaosVolcano.Index:
-            // fire elemental
-        case terrain.TileNatureForest.Index:
-            enemies = []*units.OverworldUnit{
-                &units.OverworldUnit{
-                    Unit: units.Sprite,
-                },
-                &units.OverworldUnit{
-                    Unit: units.WarBear,
-                },
-            }
+    for _, unit := range node.Guardians {
+        enemies = append(enemies, &units.OverworldUnit{Unit: unit})
+    }
 
-        case terrain.TileSorceryLake.Index:
-            // TODO
-            // phantom warriors/beast
+    for _, unit := range node.Secondary {
+        enemies = append(enemies, &units.OverworldUnit{Unit: unit})
     }
 
     game.doCombat(yield, player, stack, &defender, playerlib.MakeUnitStackFromUnits(enemies))

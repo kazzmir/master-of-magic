@@ -242,7 +242,7 @@ func computeNatureNodeEnemies(magicSetting data.MagicSetting, difficultySetting 
     return chooseGuardianAndSecondary(enemyCosts, makeUnit, computeEncounterBudget(magicSetting, difficultySetting, zoneSize))
 }
 
-func computeChaosNodeEnemies(magicSetting data.MagicSetting, difficultySetting data.DifficultySetting, zoneSize int) ([]units.Unit, []units.Unit) {
+func computeSorceryNodeEnemies(magicSetting data.MagicSetting, difficultySetting data.DifficultySetting, zoneSize int) ([]units.Unit, []units.Unit) {
     type Enemy int
     const (
         None Enemy = iota
@@ -283,7 +283,7 @@ func computeChaosNodeEnemies(magicSetting data.MagicSetting, difficultySetting d
     return chooseGuardianAndSecondary(enemyCosts, makeUnit, computeEncounterBudget(magicSetting, difficultySetting, zoneSize))
 }
 
-func computeSorceryNodeEnemies(magicSetting data.MagicSetting, difficultySetting data.DifficultySetting, zoneSize int) ([]units.Unit, []units.Unit) {
+func computeChaosNodeEnemies(magicSetting data.MagicSetting, difficultySetting data.DifficultySetting, zoneSize int) ([]units.Unit, []units.Unit) {
     type Enemy int
     const (
         None Enemy = iota
@@ -394,6 +394,16 @@ func (mapObject *Map) CreateNode(x int, y int, node MagicNode, plane data.Plane,
     mapObject.Map.Terrain[x][y] = tileType
 
     mapObject.ExtraMap[image.Pt(x, y)] = MakeMagicNode(node, magicSetting, difficulty, plane)
+}
+
+func (mapObject *Map) GetMagicNode(x int, y int) *ExtraMagicNode {
+    if extra, ok := mapObject.ExtraMap[image.Pt(x, y)]; ok {
+        if node, ok := extra.(*ExtraMagicNode); ok {
+            return node
+        }
+    }
+
+    return nil
 }
 
 func (mapObject *Map) Width() int {
