@@ -33,7 +33,8 @@ type ExtraRoad struct {
 type ExtraMagicNode struct {
     Kind MagicNode
     Empty bool
-    Units []units.Unit
+    Guardians []units.Unit
+    Secondary []units.Unit
     // list of points that are affected by the node
     Zone []image.Point
 
@@ -136,7 +137,42 @@ func chooseEnemy[E comparable](enemyCosts map[E]int, budget int, numChoices int)
     return zero
 }
 
-func computeNatureNodeEnemies(magicSetting data.MagicSetting, difficultySetting data.DifficultySetting, zoneSize int) []units.Unit {
+func chooseGuardianAndSecondary[E comparable](enemyCosts map[E]int, makeUnit func(E) units.Unit, budget int) ([]units.Unit, []units.Unit) {
+    var guardians []units.Unit
+    var secondary []units.Unit
+
+    enemyChoice := chooseEnemy(enemyCosts, budget, 4)
+
+    var zero E
+
+    // chose no enemies!
+    if enemyChoice == zero {
+        return nil, nil
+    }
+
+    numGuardians := budget / enemyCosts[enemyChoice]
+
+    for i := 0; i < numGuardians; i++ {
+        guardians = append(guardians, makeUnit(enemyChoice))
+    }
+
+    remainingBudget := budget - numGuardians * enemyCosts[enemyChoice]
+
+    enemyChoice = chooseEnemy(enemyCosts, remainingBudget, 10 - numGuardians)
+
+    if enemyChoice != zero {
+        secondaryCount := remainingBudget / enemyCosts[enemyChoice]
+        for i := 0; i < secondaryCount; i++ {
+            secondary = append(secondary, makeUnit(enemyChoice))
+        }
+    }
+
+    return guardians, secondary
+}
+
+/* returns guardian units and secondary units
+ */
+func computeNatureNodeEnemies(magicSetting data.MagicSetting, difficultySetting data.DifficultySetting, zoneSize int) ([]units.Unit, []units.Unit) {
     type Enemy int
     const (
         None Enemy = iota
@@ -186,30 +222,12 @@ func computeNatureNodeEnemies(magicSetting data.MagicSetting, difficultySetting 
         GreatWyrm: 1000,
     }
 
+    return chooseGuardianAndSecondary(enemyCosts, makeUnit, computeEncounterBudget(magicSetting, difficultySetting, zoneSize))
+
+    /*
     budget := computeEncounterBudget(magicSetting, difficultySetting, zoneSize)
 
     enemyChoice := chooseEnemy(enemyCosts, budget, 4)
-
-    // divide the budget by the divisor, then choose the most expensive unit that fits
-    /*
-    for _, choice := range choices {
-        divisor := choice + 1
-
-        enemyChoice = None
-        maxCost = 0
-
-        for unit, cost := range enemyCosts {
-            if cost > maxCost && cost <= budget / divisor {
-                enemyChoice = unit
-                maxCost = cost
-            }
-        }
-
-        if enemyChoice != None {
-            break
-        }
-    }
-    */
 
     // chose no enemies!
     if enemyChoice == None {
@@ -226,26 +244,6 @@ func computeNatureNodeEnemies(magicSetting data.MagicSetting, difficultySetting 
 
     remainingBudget := budget - numGuardians * enemyCosts[enemyChoice]
 
-    // divide the budget by the divisor, then choose the most expensive unit that fits
-    /*
-    for _, choice := range choices {
-        divisor := choice + 1
-
-        enemyChoice = None
-        maxCost = 0
-
-        for unit, cost := range enemyCosts {
-            if cost > maxCost && cost <= remainingBudget / divisor {
-                enemyChoice = unit
-                maxCost = cost
-            }
-        }
-
-        if enemyChoice != None {
-            break
-        }
-    }
-    */
     enemyChoice = chooseEnemy(enemyCosts, remainingBudget, 10 - numGuardians)
 
     if enemyChoice != None {
@@ -256,25 +254,28 @@ func computeNatureNodeEnemies(magicSetting data.MagicSetting, difficultySetting 
     }
 
     return out
+    */
 }
 
 func MakeMagicNode(kind MagicNode, magicSetting data.MagicSetting, difficulty data.DifficultySetting, plane data.Plane) *ExtraMagicNode {
     zone := makeZone(plane)
-    var enemies []units.Unit
+    var guardians []units.Unit
+    var secondary []units.Unit
 
     switch kind {
         case MagicNodeNature:
-            enemies = computeNatureNodeEnemies(magicSetting, difficulty, len(zone))
+            guardians, secondary = computeNatureNodeEnemies(magicSetting, difficulty, len(zone))
         case MagicNodeSorcery:
         case MagicNodeChaos:
     }
 
-    log.Printf("Created nature node enemies: %v", enemies)
+    log.Printf("Created nature node guardians: %v secondary: %v", guardians, secondary)
 
     return &ExtraMagicNode{
         Kind: kind,
         Empty: false,
-        Units: enemies,
+        Guardians: guardians,
+        Secondary: secondary,
         Zone: zone,
     }
 }
