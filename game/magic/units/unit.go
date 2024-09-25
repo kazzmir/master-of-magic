@@ -484,18 +484,21 @@ var MagicSpirit Unit = Unit{
 var HellHounds Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 35,
+    Name: "Hell Hounds",
     Race: data.RaceFantastic,
 }
 
 var Gargoyle Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 36,
+    Name: "Gargoyles",
     Race: data.RaceFantastic,
 }
 
 var FireGiant Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 37,
+    Name: "Fire Giant",
     Race: data.RaceFantastic,
 }
 
@@ -517,6 +520,7 @@ var FireElemental Unit = Unit{
 var ChaosSpawn Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 39,
+    Name: "Chaos Spawn",
     Race: data.RaceFantastic,
 }
 
@@ -529,18 +533,21 @@ var Chimeras Unit = Unit{
 var DoomBat Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 41,
+    Name: "Doom Bat",
     Race: data.RaceFantastic,
 }
 
 var Efreet Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 42,
+    Name: "Efreet",
     Race: data.RaceFantastic,
 }
 
 var Hydra Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 43,
+    Name: "Hydra",
     Race: data.RaceFantastic,
 }
 
@@ -800,12 +807,14 @@ var PhantomWarrior Unit = Unit{
 var StormGiant Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 73,
+    Name: "Storm Giant",
     Race: data.RaceFantastic,
 }
 
 var AirElemental Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 74,
+    Name: "Air Elemental",
     Race: data.RaceFantastic,
     CombatLbxFile: "figure13.lbx",
     CombatIndex: 112,
@@ -821,18 +830,21 @@ var AirElemental Unit = Unit{
 var Djinn Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 75,
+    Name: "Djinn",
     Race: data.RaceFantastic,
 }
 
 var SkyDrake Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 76,
+    Name: "SkyDrake",
     Race: data.RaceFantastic,
 }
 
 var Nagas Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 77,
+    Name: "Nagas",
     Race: data.RaceFantastic,
 }
 
