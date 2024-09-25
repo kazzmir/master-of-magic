@@ -159,3 +159,13 @@ const (
     MagicSettingNormal
     MagicSettingPowerful
 )
+
+type DifficultySetting int
+const (
+    DifficultyIntro DifficultySetting = iota
+    DifficultyEasy
+    DifficultyAverage
+    DifficultyHard
+    DifficultyExtreme
+    DifficultyImpossible
+)

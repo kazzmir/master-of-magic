@@ -606,7 +606,10 @@ func createScenario8(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+        Magic: data.MagicSettingNormal,
+        Difficulty: data.DifficultyAverage,
+    })
 
     game.Plane = data.PlaneArcanus
 
@@ -614,9 +617,9 @@ func createScenario8(cache *lbx.LbxCache) *gamelib.Game {
 
     x, y := game.FindValidCityLocation()
 
-    game.Map.CreateNode(x, y+1, gamelib.MagicNodeNature, game.Settings.Magic)
-    game.Map.CreateNode(x+1, y, gamelib.MagicNodeChaos, game.Settings.Magic)
-    game.Map.CreateNode(x+2, y+1, gamelib.MagicNodeSorcery, game.Settings.Magic)
+    game.Map.CreateNode(x, y+1, gamelib.MagicNodeNature, game.Plane, game.Settings.Magic, game.Settings.Difficulty)
+    game.Map.CreateNode(x+1, y, gamelib.MagicNodeChaos, game.Plane, game.Settings.Magic, game.Settings.Difficulty)
+    game.Map.CreateNode(x+2, y+1, gamelib.MagicNodeSorcery, game.Plane, game.Settings.Magic, game.Settings.Difficulty)
 
     city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.TaxRate, game.BuildingInfo)
     city.Population = 6190

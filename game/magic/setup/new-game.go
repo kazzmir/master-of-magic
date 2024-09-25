@@ -20,16 +20,27 @@ const LandSizeMax = 2
 const MagicMax = 2
 
 type NewGameSettings struct {
-    Difficulty int
+    Difficulty data.DifficultySetting
     Opponents int
     LandSize int
     Magic data.MagicSetting
 }
 
 func (settings *NewGameSettings) DifficultyNext() {
-    settings.Difficulty += 1
-    if settings.Difficulty > DifficultyMax {
-        settings.Difficulty = 0
+    difficulties := []data.DifficultySetting{
+        data.DifficultyIntro,
+        data.DifficultyEasy,
+        data.DifficultyAverage,
+        data.DifficultyHard,
+        data.DifficultyExtreme,
+        data.DifficultyImpossible,
+    }
+
+    for i, diff := range difficulties {
+        if diff == settings.Difficulty {
+            settings.Difficulty = difficulties[(i + 1) % len(difficulties)]
+            return
+        }
     }
 }
 
@@ -56,8 +67,15 @@ func (settings *NewGameSettings) MagicNext() {
 }
 
 func (settings *NewGameSettings) DifficultyString() string {
-    kinds := []string{"Intro", "Easy", "Normal", "Hard", "Impossible"}
-    return kinds[settings.Difficulty]
+    names := map[data.DifficultySetting]string{
+        data.DifficultyIntro: "Intro",
+        data.DifficultyEasy: "Easy",
+        data.DifficultyAverage: "Average",
+        data.DifficultyHard: "Hard",
+        data.DifficultyExtreme: "Extreme",
+        data.DifficultyImpossible: "Impossible",
+    }
+    return names[settings.Difficulty]
 }
 
 func (settings *NewGameSettings) OpponentsString() string {

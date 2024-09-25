@@ -247,6 +247,7 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         Events: make(chan GameEvent, 1),
         Map: MakeMap(terrainData),
         State: GameStateRunning,
+        Settings: settings,
         BookOrder: randomizeBookOrder(12),
         ImageCache: util.MakeImageCache(lbxCache),
         InfoFontYellow: infoFontYellow,
@@ -2607,7 +2608,7 @@ func (overworld *Overworld) DrawMinimap(screen *ebiten.Image){
 }
 
 func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM){
-    overworld.Map.Draw(overworld.CameraX, overworld.CameraY, overworld.Counter / 8, screen, geom)
+    overworld.Map.Draw(overworld.CameraX, overworld.CameraY, overworld.Counter / 8, overworld.ImageCache, screen, geom)
 
     tileWidth := float64(overworld.Map.TileWidth())
     tileHeight := float64(overworld.Map.TileHeight())

@@ -3,6 +3,7 @@ package game
 import (
     "log"
     "math"
+    "math/rand"
     "image"
     "image/color"
 
@@ -23,7 +24,7 @@ const (
 )
 
 type ExtraTile interface {
-    Draw(screen *ebiten.Image, options *ebiten.DrawImageOptions)
+    Draw(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions)
 }
 
 type ExtraRoad struct {
@@ -33,31 +34,218 @@ type ExtraMagicNode struct {
     Kind MagicNode
     Empty bool
     Units []units.Unit
+    // list of points that are affected by the node
+    Zone []image.Point
+
     // also contains treasure
 }
 
-func computeNatureNodeEnemies(magicSetting data.MagicSetting) []units.Unit {
-    return nil
+func (node *ExtraMagicNode) Draw(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions){
 }
 
-func MakeMagicNode(kind MagicNode, magicSetting data.MagicSetting) *ExtraMagicNode {
+func makeZone(plane data.Plane) []image.Point {
+    // choose X points
+    maxSize := 4
+    numPoints := 0
+    if plane == data.PlaneArcanus {
+        maxSize = 4
+        numPoints = 5 + rand.Intn(5)
+    } else if plane == data.PlaneMyrror {
+        maxSize = 5
+        numPoints = 10 + rand.Intn(10)
+    }
+
+    chosen := make(map[image.Point]bool)
+    out := make([]image.Point, 0, numPoints)
+
+    // always choose the center, which is where the node itself is
+    chosen[image.Pt(0, 0)] = true
+    out = append(out, image.Pt(0, 0))
+
+    possible := make([]image.Point, 0, maxSize * maxSize)
+    for x := -maxSize / 2; x < maxSize / 2; x++ {
+        for y := -maxSize / 2; y < maxSize / 2; y++ {
+            if x == 0 && y == 0 {
+                continue
+            }
+            possible = append(possible, image.Pt(x, y))
+        }
+    }
+
+    // choose N points from the possible points
+    choices := rand.Perm(len(possible))[:numPoints]
+
+    for _, choice := range choices {
+        out = append(out, possible[choice])
+    }
+
+    return out
+}
+
+func computeNatureNodeEnemies(magicSetting data.MagicSetting, difficultySetting data.DifficultySetting, zoneSize int) []units.Unit {
+    budget := 0
+
+    // these formulas come from the master of magic wiki
+    switch magicSetting {
+        case data.MagicSettingWeak:
+            budget = (rand.Intn(11) + 4) * (zoneSize * zoneSize) / 2
+        case data.MagicSettingNormal:
+            budget = (rand.Intn(11) + 4) * (zoneSize * zoneSize)
+        case data.MagicSettingPowerful:
+            budget = (rand.Intn(11) + 4) * (zoneSize * zoneSize) * 3 / 2
+    }
+
+    bonus := float64(0)
+    switch difficultySetting {
+        case data.DifficultyIntro: bonus = -0.75
+        case data.DifficultyEasy: bonus = -0.5
+        case data.DifficultyAverage: bonus = -0.25
+        case data.DifficultyHard: bonus = 0
+        case data.DifficultyExtreme: bonus = 0.25
+        case data.DifficultyImpossible: bonus = 0.50
+    }
+
+    budget = budget + int(float64(budget) * bonus)
+
+    type Enemy int
+    const (
+        None Enemy = iota
+        WarBear
+        Sprite
+        EarthElemental
+        Spiders
+        Cockatrice
+        Basilisk
+        StoneGiant
+        Gorgons
+        Behemoth
+        Colossus
+        GreatWyrm
+    )
+
+    makeUnit := func(enemy Enemy) units.Unit {
+        switch enemy {
+            case WarBear: return units.WarBear
+            case Sprite: return units.Sprite
+            case EarthElemental: return units.EarthElemental
+            case Spiders: return units.GiantSpider
+            case Cockatrice: return units.Cockatrice
+            case Basilisk: return units.Basilisk
+            case StoneGiant: return units.StoneGiant
+            case Gorgons: return units.Gorgon
+            case Behemoth: return units.Behemoth
+            case Colossus: return units.Colossus
+            case GreatWyrm: return units.GreatWyrm
+        }
+
+        return units.UnitNone
+    }
+
+    enemyCosts := map[Enemy]int{
+        None: 0,
+        WarBear: 70,
+        Sprite: 100,
+        EarthElemental: 160,
+        Spiders: 200,
+        Cockatrice: 275,
+        Basilisk: 325,
+        StoneGiant: 450,
+        Gorgons: 600,
+        Behemoth: 700,
+        Colossus: 800,
+        GreatWyrm: 1000,
+    }
+
+    choices := rand.Perm(4)
+
+    enemyChoice := None
+    maxCost := 0
+
+    // divide the budget by the divisor, then choose the most expensive unit that fits
+    for _, choice := range choices {
+        divisor := choice + 1
+
+        enemyChoice = None
+        maxCost = 0
+
+        for unit, cost := range enemyCosts {
+            if cost > maxCost && cost <= budget / divisor {
+                enemyChoice = unit
+                maxCost = cost
+            }
+        }
+
+        if enemyChoice != None {
+            break
+        }
+    }
+
+    // chose no enemies!
+    if enemyChoice == None {
+        return nil
+    }
+
+    numGuardians := budget / enemyCosts[enemyChoice]
+
+    var out []units.Unit
+
+    for i := 0; i < numGuardians; i++ {
+        out = append(out, makeUnit(enemyChoice))
+    }
+
+    remainingBudget := budget - numGuardians * enemyCosts[enemyChoice]
+
+    enemyChoice = None
+    maxCost = 0
+
+    // divide the budget by the divisor, then choose the most expensive unit that fits
+    for _, choice := range choices {
+        divisor := choice + 1
+
+        enemyChoice = None
+        maxCost = 0
+
+        for unit, cost := range enemyCosts {
+            if cost > maxCost && cost <= remainingBudget / divisor {
+                enemyChoice = unit
+                maxCost = cost
+            }
+        }
+
+        if enemyChoice != None {
+            break
+        }
+    }
+
+    if enemyChoice != None {
+        secondary := remainingBudget / enemyCosts[enemyChoice]
+        for i := 0; i < secondary; i++ {
+            out = append(out, makeUnit(enemyChoice))
+        }
+    }
+
+    return out
+}
+
+func MakeMagicNode(kind MagicNode, magicSetting data.MagicSetting, difficulty data.DifficultySetting, plane data.Plane) *ExtraMagicNode {
+    zone := makeZone(plane)
     var enemies []units.Unit
 
     switch kind {
         case MagicNodeNature:
-            enemies = computeNatureNodeEnemies(magicSetting)
+            enemies = computeNatureNodeEnemies(magicSetting, difficulty, len(zone))
         case MagicNodeSorcery:
         case MagicNodeChaos:
     }
+
+    log.Printf("Created nature node enemies: %v", enemies)
 
     return &ExtraMagicNode{
         Kind: kind,
         Empty: false,
         Units: enemies,
+        Zone: zone,
     }
-}
-
-func (node *ExtraMagicNode) Draw(screen *ebiten.Image, options *ebiten.DrawImageOptions){
 }
 
 type Map struct {
@@ -83,7 +271,7 @@ func MakeMap(data *terrain.TerrainData) *Map {
     }
 }
 
-func (mapObject *Map) CreateNode(x int, y int, node MagicNode, magicSetting data.MagicSetting) {
+func (mapObject *Map) CreateNode(x int, y int, node MagicNode, plane data.Plane, magicSetting data.MagicSetting, difficulty data.DifficultySetting) {
     tileType := 0
     switch node {
         case MagicNodeNature: tileType = terrain.TileNatureForest.Index
@@ -93,7 +281,7 @@ func (mapObject *Map) CreateNode(x int, y int, node MagicNode, magicSetting data
 
     mapObject.Map.Terrain[x][y] = tileType
 
-    mapObject.ExtraMap[image.Pt(x, y)] = MakeMagicNode(node, magicSetting)
+    mapObject.ExtraMap[image.Pt(x, y)] = MakeMagicNode(node, magicSetting, difficulty, plane)
 }
 
 func (mapObject *Map) Width() int {
@@ -265,7 +453,7 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []*citylib.City, 
     screen.WritePixels(mapObject.miniMapPixels)
 }
 
-func (mapObject *Map) Draw(cameraX int, cameraY int, animationCounter uint64, screen *ebiten.Image, geom ebiten.GeoM){
+func (mapObject *Map) Draw(cameraX int, cameraY int, animationCounter uint64, imageCache *util.ImageCache, screen *ebiten.Image, geom ebiten.GeoM){
     tileWidth := mapObject.TileWidth()
     tileHeight := mapObject.TileHeight()
 
@@ -293,7 +481,7 @@ func (mapObject *Map) Draw(cameraX int, cameraY int, animationCounter uint64, sc
 
                 extra, ok := mapObject.ExtraMap[image.Pt(tileX, tileY)]
                 if ok {
-                    extra.Draw(screen, &options)
+                    extra.Draw(screen, imageCache, &options)
                 }
             } else {
                 log.Printf("Unable to render tilte at %d, %d: %v", tileX, tileY, err)
