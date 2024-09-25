@@ -9,6 +9,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
 
     "github.com/hajimehoshi/ebiten/v2"
 )
@@ -19,16 +20,27 @@ const LandSizeMax = 2
 const MagicMax = 2
 
 type NewGameSettings struct {
-    Difficulty int
+    Difficulty data.DifficultySetting
     Opponents int
     LandSize int
-    Magic int
+    Magic data.MagicSetting
 }
 
 func (settings *NewGameSettings) DifficultyNext() {
-    settings.Difficulty += 1
-    if settings.Difficulty > DifficultyMax {
-        settings.Difficulty = 0
+    difficulties := []data.DifficultySetting{
+        data.DifficultyIntro,
+        data.DifficultyEasy,
+        data.DifficultyAverage,
+        data.DifficultyHard,
+        data.DifficultyExtreme,
+        data.DifficultyImpossible,
+    }
+
+    for i, diff := range difficulties {
+        if diff == settings.Difficulty {
+            settings.Difficulty = difficulties[(i + 1) % len(difficulties)]
+            return
+        }
     }
 }
 
@@ -47,15 +59,23 @@ func (settings *NewGameSettings) LandSizeNext() {
 }
 
 func (settings *NewGameSettings) MagicNext() {
-    settings.Magic += 1
-    if settings.Magic > MagicMax {
-        settings.Magic = 0
+    switch settings.Magic {
+        case data.MagicSettingWeak: settings.Magic = data.MagicSettingNormal
+        case data.MagicSettingNormal: settings.Magic = data.MagicSettingPowerful
+        case data.MagicSettingPowerful: settings.Magic = data.MagicSettingWeak
     }
 }
 
 func (settings *NewGameSettings) DifficultyString() string {
-    kinds := []string{"Intro", "Easy", "Normal", "Hard", "Impossible"}
-    return kinds[settings.Difficulty]
+    names := map[data.DifficultySetting]string{
+        data.DifficultyIntro: "Intro",
+        data.DifficultyEasy: "Easy",
+        data.DifficultyAverage: "Average",
+        data.DifficultyHard: "Hard",
+        data.DifficultyExtreme: "Extreme",
+        data.DifficultyImpossible: "Impossible",
+    }
+    return names[settings.Difficulty]
 }
 
 func (settings *NewGameSettings) OpponentsString() string {
@@ -69,7 +89,11 @@ func (settings *NewGameSettings) LandSizeString() string {
 }
 
 func (settings *NewGameSettings) MagicString() string {
-    kinds := []string{"Weak", "Normal", "Powerful"}
+    kinds := map[data.MagicSetting]string{
+        data.MagicSettingWeak: "Weak",
+        data.MagicSettingNormal: "Normal",
+        data.MagicSettingPowerful: "Powerful",
+    }
     return kinds[settings.Magic]
 }
 

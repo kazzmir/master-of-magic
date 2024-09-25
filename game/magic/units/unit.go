@@ -10,6 +10,7 @@ const (
     DamageNone Damage = iota
     DamageRangedMagical
     DamageRangedPhysical
+    DamageRangedBoulder
     DamageMeleePhysical
 )
 
@@ -484,18 +485,49 @@ var MagicSpirit Unit = Unit{
 var HellHounds Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 35,
+    Name: "Hell Hounds",
+    CombatLbxFile: "figure11.lbx",
+    CombatIndex: 40,
+    MovementSpeed: 2,
+    MeleeAttackPower: 3,
+    Count: 4,
+    Defense: 2,
+    Resistance: 6,
+    HitPoints: 4,
     Race: data.RaceFantastic,
 }
 
 var Gargoyle Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 36,
+    Name: "Gargoyles",
+    CombatLbxFile: "figure11.lbx",
+    CombatIndex: 48,
+    MovementSpeed: 2,
+    Flying: true,
+    MeleeAttackPower: 4,
+    Count: 4,
+    Defense: 8,
+    Resistance: 7,
+    HitPoints: 4,
     Race: data.RaceFantastic,
 }
 
 var FireGiant Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 37,
+    Name: "Fire Giant",
+    CombatLbxFile: "figure11.lbx",
+    CombatIndex: 56,
+    MovementSpeed: 2,
+    Count: 1,
+    MeleeAttackPower: 10,
+    RangedAttackPower: 10,
+    RangedAttackDamageType: DamageRangedBoulder,
+    RangedAttacks: 2,
+    HitPoints: 15,
+    Defense: 5,
+    Resistance: 7,
     Race: data.RaceFantastic,
 }
 
@@ -517,30 +549,82 @@ var FireElemental Unit = Unit{
 var ChaosSpawn Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 39,
+    Name: "Chaos Spawn",
+    CombatLbxFile: "figure11.lbx",
+    CombatIndex: 72,
+    MovementSpeed: 1,
+    Flying: true,
+    Count: 1,
+    MeleeAttackPower: 1,
+    Defense: 6,
+    Resistance: 10,
+    HitPoints: 15,
     Race: data.RaceFantastic,
 }
 
 var Chimeras Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 40,
+    CombatLbxFile: "figure11.lbx",
+    CombatIndex: 80,
+    MovementSpeed: 2,
+    Flying: true,
+    Count: 4,
+    MeleeAttackPower: 7,
+    Defense: 5,
+    Resistance: 8,
+    HitPoints: 8,
     Race: data.RaceFantastic,
 }
 
 var DoomBat Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 41,
+    Name: "Doom Bat",
+    CombatLbxFile: "figure11.lbx",
+    CombatIndex: 88,
+    MovementSpeed: 4,
+    Flying: true,
+    MeleeAttackPower: 10,
+    Defense: 5,
+    Resistance: 9,
+    Count: 1,
+    HitPoints: 20,
     Race: data.RaceFantastic,
 }
 
 var Efreet Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 42,
+    Name: "Efreet",
+    CombatLbxFile: "figure11.lbx",
+    CombatIndex: 96,
+    MovementSpeed: 3,
+    Flying: true,
+    Count: 1,
+    // caster 20
+    MeleeAttackPower: 9,
+    RangedAttackPower: 9,
+    RangedAttackDamageType: DamageRangedMagical,
+    Defense: 7,
+    Resistance: 10,
+    HitPoints: 12,
     Race: data.RaceFantastic,
 }
 
+// FIXME: hydra has 9 virtual figures, one for each head
 var Hydra Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 43,
+    Name: "Hydra",
+    CombatLbxFile: "figure11.lbx",
+    CombatIndex: 104,
+    Count: 1,
+    MovementSpeed: 1,
+    MeleeAttackPower: 6,
+    Defense: 4,
+    Resistance:11,
+    HitPoints: 10,
     Race: data.RaceFantastic,
 }
 
@@ -659,49 +743,131 @@ var ArchAngel Unit = Unit{
 
 var WarBear Unit = Unit{
     LbxFile: "units2.lbx",
+    Name: "War Bears",
     Index: 59,
+    CombatLbxFile: "figure15.lbx",
+    CombatIndex: 0,
+    Count: 2,
+    MeleeAttackPower: 7,
+    Defense: 3,
+    Resistance: 6,
+    HitPoints: 8,
+    MovementSpeed: 2,
     Race: data.RaceFantastic,
 }
 
 var Sprite Unit = Unit{
     LbxFile: "units2.lbx",
+    Name: "Sprites",
     Index: 60,
+    CombatLbxFile: "figure15.lbx",
+    CombatIndex: 8,
+    Count: 4,
+    MeleeAttackPower: 4,
+    RangedAttacks: 4,
+    RangedAttackPower: 3,
+    RangedAttackDamageType: DamageRangedMagical,
+    RangeAttackIndex: 88,
+    MovementSpeed: 2,
+    Defense: 2,
+    Resistance: 8,
+    HitPoints: 1,
+    Flying: true,
     Race: data.RaceFantastic,
 }
 
 var Cockatrice Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 61,
+    Name: "Cockatrice",
+    CombatLbxFile: "figure13.lbx",
+    CombatIndex: 8,
+    Count: 4,
+    MovementSpeed: 2,
+    Flying: true,
+    MeleeAttackPower: 4,
+    Defense: 3,
+    Resistance: 7,
+    HitPoints: 3,
     Race: data.RaceFantastic,
 }
 
 var Basilisk Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 62,
+    Name: "Basilisk",
+    CombatLbxFile: "figure13.lbx",
+    CombatIndex: 16,
+    Count: 1,
+    MovementSpeed: 2,
+    MeleeAttackPower: 15,
+    Defense: 4,
+    Resistance: 7,
+    HitPoints: 30,
     Race: data.RaceFantastic,
 }
 
 var GiantSpider Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 63,
+    Name: "Giant Spider",
+    CombatLbxFile: "figure13.lbx",
+    CombatIndex: 24,
+    Count: 2,
+    MovementSpeed: 2,
+    MeleeAttackPower: 4,
+    Defense: 3,
+    Resistance: 7,
+    HitPoints: 10,
     Race: data.RaceFantastic,
 }
 
 var StoneGiant Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 64,
+    Name: "Stone Giant",
+    CombatLbxFile: "figure13.lbx",
+    CombatIndex: 32,
+    Count: 1,
+    MovementSpeed: 2,
+    MeleeAttackPower: 15,
+    RangedAttackPower: 15,
+    RangedAttackDamageType: DamageRangedBoulder,
+    RangedAttacks: 2, // FIXME
+    Defense: 8,
+    Resistance: 9,
+    HitPoints: 20,
     Race: data.RaceFantastic,
 }
 
 var Colossus Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 65,
+    Name: "Colossus",
+    CombatLbxFile: "figure13.lbx",
+    CombatIndex: 40,
+    Count: 1,
+    MovementSpeed: 2,
+    MeleeAttackPower: 20,
+    Defense: 10,
+    Resistance: 15,
+    HitPoints: 30,
     Race: data.RaceFantastic,
 }
 
 var Gorgon Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 66,
+    Name: "Gorgons",
+    CombatLbxFile: "figure13.lbx",
+    CombatIndex: 48,
+    Count: 2,
+    MovementSpeed: 2,
+    Flying: true,
+    MeleeAttackPower: 8,
+    Defense: 7,
+    Resistance: 9,
+    HitPoints: 9,
     Race: data.RaceFantastic,
 }
 
@@ -723,12 +889,30 @@ var EarthElemental Unit = Unit{
 var Behemoth Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 68,
+    Name: "Behemoth",
+    CombatLbxFile: "figure13.lbx",
+    CombatIndex: 64,
+    Count: 1,
+    MovementSpeed: 2,
+    MeleeAttackPower: 25,
+    Defense: 9,
+    Resistance: 10,
+    HitPoints: 45,
     Race: data.RaceFantastic,
 }
 
 var GreatWyrm Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 69,
+    Name: "Great Wyrm",
+    CombatLbxFile: "figure13.lbx",
+    CombatIndex: 72,
+    Count: 1,
+    MovementSpeed: 3,
+    MeleeAttackPower: 25,
+    Defense: 12,
+    Resistance: 12,
+    HitPoints: 45,
     Race: data.RaceFantastic,
 }
 
@@ -769,12 +953,25 @@ var PhantomWarrior Unit = Unit{
 var StormGiant Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 73,
+    Name: "Storm Giant",
+    CombatLbxFile: "figure13.lbx",
+    CombatIndex: 104,
+    Count: 1,
+    MovementSpeed: 2,
+    MeleeAttackPower: 12,
+    RangedAttackPower: 10,
+    RangedAttacks: 4,
+    RangedAttackDamageType: DamageRangedMagical,
+    Defense: 7,
+    Resistance: 9,
+    HitPoints: 20,
     Race: data.RaceFantastic,
 }
 
 var AirElemental Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 74,
+    Name: "Air Elemental",
     Race: data.RaceFantastic,
     CombatLbxFile: "figure13.lbx",
     CombatIndex: 112,
@@ -790,18 +987,50 @@ var AirElemental Unit = Unit{
 var Djinn Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 75,
+    Name: "Djinn",
+    CombatLbxFile: "figure14.lbx",
+    CombatIndex: 0,
+    Count: 1,
+    MovementSpeed: 3,
+    Flying: true,
+    MeleeAttackPower: 15,
+    RangedAttackPower: 8,
+    // caster 20
+    RangedAttackDamageType: DamageRangedMagical,
+    Defense: 8,
+    Resistance: 10,
+    HitPoints: 20,
     Race: data.RaceFantastic,
 }
 
 var SkyDrake Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 76,
+    Name: "SkyDrake",
+    CombatLbxFile: "figure14.lbx",
+    CombatIndex: 8,
+    Count: 1,
+    MovementSpeed: 4,
+    Flying: true,
+    MeleeAttackPower: 20,
+    Defense: 10,
+    Resistance: 14,
+    HitPoints: 25,
     Race: data.RaceFantastic,
 }
 
 var Nagas Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 77,
+    Name: "Nagas",
+    CombatLbxFile: "figure14.lbx",
+    CombatIndex: 16,
+    MovementSpeed: 1,
+    Count: 2,
+    MeleeAttackPower: 4,
+    Defense: 3,
+    Resistance: 7,
+    HitPoints: 6,
     Race: data.RaceFantastic,
 }
 

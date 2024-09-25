@@ -103,6 +103,8 @@ type Game struct {
     ImageCache util.ImageCache
     WhiteFont *font.Font
 
+    Settings setup.NewGameSettings
+
     InfoFontYellow *font.Font
     Counter uint64
     Fog *ebiten.Image
@@ -178,7 +180,7 @@ func (game *Game) AddPlayer(wizard setup.WizardCustom) *playerlib.Player{
     return newPlayer
 }
 
-func MakeGame(lbxCache *lbx.LbxCache) *Game {
+func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
 
     terrainLbx, err := lbxCache.GetLbxFile("terrain.lbx")
     if err != nil {
@@ -245,6 +247,7 @@ func MakeGame(lbxCache *lbx.LbxCache) *Game {
         Events: make(chan GameEvent, 1),
         Map: MakeMap(terrainData),
         State: GameStateRunning,
+        Settings: settings,
         BookOrder: randomizeBookOrder(12),
         ImageCache: util.MakeImageCache(lbxCache),
         InfoFontYellow: infoFontYellow,
@@ -992,7 +995,7 @@ func (game *Game) ComputeTerrainCost(stack *playerlib.UnitStack, x int, y int) (
     tileTo := game.Map.GetTile(x, y)
 
     // can't move from land to ocean unless all units are flyers
-    if tileFrom.Index == terrain.TileLand.Index && tileTo.Index != terrain.TileLand.Index {
+    if tileFrom.IsLand() && !tileTo.IsLand() {
         if !stack.AllFlyers() {
             return fraction.Zero(), false
         }
@@ -1053,6 +1056,14 @@ func (game *Game) blinkRed(yield coroutine.YieldFunc) {
 func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *playerlib.UnitStack, fog [][]bool) pathfinding.Path {
 
     tileCost := func (x1 int, y1 int, x2 int, y2 int) float64 {
+        if x1 < 0 || x1 >= game.Map.Width() || y1 < 0 || y1 >= game.Map.Height() {
+            return pathfinding.Infinity
+        }
+
+        if x2 < 0 || x2 >= game.Map.Width() || y2 < 0 || y2 >= game.Map.Height() {
+            return pathfinding.Infinity
+        }
+
         tileFrom := game.Map.GetTile(x1, y1)
         tileTo := game.Map.GetTile(x2, y2)
 
@@ -1070,7 +1081,7 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
         }
 
         // can't move from land to ocean unless all units are flyers
-        if tileFrom.Index == terrain.TileLand.Index && tileTo.Index != terrain.TileLand.Index {
+        if tileFrom.IsLand() && !tileTo.IsLand() {
             if !stack.AllFlyers() {
                 return pathfinding.Infinity
             }
@@ -1239,6 +1250,7 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                         }
 
                         stepsTaken := 0
+                        stopMoving := false
                         var mergeStack *playerlib.UnitStack
 
                         quitMoving:
@@ -1250,20 +1262,33 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                             terrainCost, canMove := game.ComputeTerrainCost(stack, step.X, step.Y)
 
                             if canMove {
+                                node := game.Map.GetMagicNode(step.X, step.Y)
+                                if node != nil && !node.Empty {
+                                    if game.confirmEncounter(yield, node) {
+
+                                        stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost)
+                                        game.showMovement(yield, oldX, oldY, stack)
+                                        player.LiftFog(stack.X(), stack.Y(), 2)
+
+                                        game.doMagicEncounter(yield, player, stack, node)
+                                    }
+
+                                    stopMoving = true
+                                    break quitMoving
+                                }
+
                                 stepsTaken = i + 1
                                 mergeStack = player.FindStack(step.X, step.Y)
 
                                 stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost)
-
                                 game.showMovement(yield, oldX, oldY, stack)
-
                                 player.LiftFog(stack.X(), stack.Y(), 2)
 
                                 for _, otherPlayer := range game.Players[1:] {
                                     otherStack := otherPlayer.FindStack(stack.X(), stack.Y())
                                     if otherStack != nil {
                                         game.doCombat(yield, player, stack, otherPlayer, otherStack)
-                                        stepsTaken = len(stack.CurrentPath)
+                                        stopMoving = true
                                         break quitMoving
                                     }
                                 }
@@ -1273,17 +1298,19 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                                 stack.EnableMovers()
                                 afterActive := len(stack.ActiveUnits())
                                 if afterActive > 0 && afterActive != beforeActive {
-                                    stepsTaken = len(stack.CurrentPath)
+                                    stopMoving = true
                                     break
                                 }
                             } else {
                                 // can't move, so abort the rest of the path
-                                stepsTaken = len(stack.CurrentPath)
+                                stopMoving = true
                                 break
                             }
                         }
 
-                        if stepsTaken > 0 {
+                        if stopMoving {
+                            stack.CurrentPath = nil
+                        } else if stepsTaken > 0 {
                             stack.CurrentPath = stack.CurrentPath[stepsTaken:]
                         }
 
@@ -1385,7 +1412,104 @@ func (game *Game) doCityScreen(yield coroutine.YieldFunc, city *citylib.City, pl
     game.Drawer = oldDrawer
 }
 
-func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player, attackerStack *playerlib.UnitStack, defender *playerlib.Player, defenderStack *playerlib.UnitStack){
+func (game *Game) confirmEncounter(yield coroutine.YieldFunc, node *ExtraMagicNode) bool {
+    quit := false
+
+    result := false
+
+    yes := func(){
+        quit = true
+        result = true
+    }
+
+    no := func(){
+        quit = true
+    }
+
+    reloadLbx, err := game.Cache.GetLbxFile("reload.lbx")
+    if err != nil {
+        return false
+    }
+
+    lairIndex := 11
+    nodeName := "nature"
+
+    switch node.Kind {
+        case MagicNodeChaos:
+            lairIndex = 10
+            nodeName = "chaos"
+        case MagicNodeNature:
+            lairIndex = 11
+            nodeName = "nature"
+        case MagicNodeSorcery:
+            lairIndex = 12
+            nodeName = "sorcery"
+    }
+
+    guardianName := ""
+    if len(node.Guardians) > 0 {
+        guardianName = node.Guardians[0].Name
+    }
+
+    rotateIndexLow := 247
+    rotateIndexHigh := 254
+
+    animation := util.MakePaletteRotateAnimation(reloadLbx, lairIndex, rotateIndexLow, rotateIndexHigh)
+
+    game.HudUI.AddElements(uilib.MakeLairConfirmDialogWithLayer(game.HudUI, game.Cache, &game.ImageCache, animation, 1, fmt.Sprintf("You have found a %v node. Scouts have spotted %v within the %v node. Do you wish to enter?", nodeName, guardianName, nodeName), yes, no))
+
+    for !quit {
+        game.Counter += 1
+        if game.Counter % 6 == 0 {
+            animation.Next()
+        }
+        game.HudUI.StandardUpdate()
+        yield()
+    }
+
+    // FIXME: wait for confirm dialog box to fade out, but need a better way to know
+    for i := 0; i < 7; i++ {
+        game.HudUI.StandardUpdate()
+        yield()
+    }
+
+    return result
+}
+
+func (game *Game) doMagicEncounter(yield coroutine.YieldFunc, player *playerlib.Player, stack *playerlib.UnitStack, node *ExtraMagicNode){
+
+    defender := playerlib.Player{
+        Wizard: setup.WizardCustom{
+            Name: "Node",
+        },
+    }
+
+    // FIXME: units depend on node at x,y location
+    var enemies []*units.OverworldUnit
+
+    for _, unit := range node.Guardians {
+        enemies = append(enemies, &units.OverworldUnit{Unit: unit})
+    }
+
+    for _, unit := range node.Secondary {
+        enemies = append(enemies, &units.OverworldUnit{Unit: unit})
+    }
+
+    result := game.doCombat(yield, player, stack, &defender, playerlib.MakeUnitStackFromUnits(enemies))
+    if result == combat.CombatStateAttackerWin {
+        // node should have no guardians
+        node.Empty = true
+
+        // FIXME: give treasure
+    }
+
+    // absorb extra clicks
+    yield()
+}
+
+/* run the tactical combat screen. returns the combat state as a result (attackers win, defenders win, flee, etc)
+ */
+func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player, attackerStack *playerlib.UnitStack, defender *playerlib.Player, defenderStack *playerlib.UnitStack) combat.CombatState {
     attackingArmy := combat.Army{
         Player: attacker,
     }
@@ -1433,6 +1557,8 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
 
     ebiten.SetCursorMode(ebiten.CursorModeVisible)
     game.Drawer = oldDrawer
+
+    return state
 }
 
 func (game *Game) GetMainImage(index int) (*ebiten.Image, error) {
@@ -2485,7 +2611,7 @@ func (overworld *Overworld) DrawMinimap(screen *ebiten.Image){
 }
 
 func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM){
-    overworld.Map.Draw(overworld.CameraX, overworld.CameraY, overworld.Counter / 8, screen, geom)
+    overworld.Map.Draw(overworld.CameraX, overworld.CameraY, overworld.Counter / 8, overworld.ImageCache, screen, geom)
 
     tileWidth := float64(overworld.Map.TileWidth())
     tileHeight := float64(overworld.Map.TileHeight())

@@ -29,6 +29,8 @@ type Engine struct {
 }
 
 func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 1")
+
     wizard := setup.WizardCustom{
         Name: "bob",
         Banner: data.BannerBlue,
@@ -49,7 +51,7 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache)
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
 
     game.Plane = data.PlaneArcanus
 
@@ -137,6 +139,7 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
 
 // test the starting city name input
 func createScenario2(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 2")
     wizard := setup.WizardCustom{
         Name: "player",
         Banner: data.BannerBlue,
@@ -156,7 +159,7 @@ func createScenario2(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache)
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
 
     game.Plane = data.PlaneArcanus
 
@@ -198,6 +201,7 @@ func createScenario2(cache *lbx.LbxCache) *gamelib.Game {
 
 // put starting city on a valid map tile
 func createScenario3(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 3")
     wizard := setup.WizardCustom{
         Name: "player",
         Banner: data.BannerBlue,
@@ -218,7 +222,7 @@ func createScenario3(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache)
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
 
     game.Plane = data.PlaneArcanus
 
@@ -277,6 +281,7 @@ func createScenario3(cache *lbx.LbxCache) *gamelib.Game {
 
 // put starting city on a valid map tile
 func createScenario4(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 4")
     wizard := setup.WizardCustom{
         Name: "player",
         Banner: data.BannerBlue,
@@ -297,7 +302,7 @@ func createScenario4(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache)
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
 
     game.Plane = data.PlaneArcanus
 
@@ -360,6 +365,7 @@ func createScenario4(cache *lbx.LbxCache) *gamelib.Game {
 }
 
 func createScenario5(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 5")
     wizard := setup.WizardCustom{
         Name: "player",
         Banner: data.BannerBlue,
@@ -380,7 +386,7 @@ func createScenario5(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache)
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
 
     game.Plane = data.PlaneArcanus
 
@@ -422,6 +428,7 @@ func createScenario5(cache *lbx.LbxCache) *gamelib.Game {
 }
 
 func createScenario6(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 6")
     wizard := setup.WizardCustom{
         Name: "player",
         Banner: data.BannerBlue,
@@ -442,7 +449,7 @@ func createScenario6(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache)
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
 
     game.Plane = data.PlaneArcanus
 
@@ -523,6 +530,7 @@ func createScenario6(cache *lbx.LbxCache) *gamelib.Game {
 }
 
 func createScenario7(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 7")
     wizard := setup.WizardCustom{
         Name: "player",
         Banner: data.BannerBlue,
@@ -543,7 +551,7 @@ func createScenario7(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache)
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
 
     game.Plane = data.PlaneArcanus
 
@@ -575,6 +583,93 @@ func createScenario7(cache *lbx.LbxCache) *gamelib.Game {
     return game
 }
 
+// test entering a node with a unit
+func createScenario8(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 8")
+    wizard := setup.WizardCustom{
+        Name: "bob",
+        Banner: data.BannerBlue,
+        Race: data.RaceTroll,
+        Abilities: []setup.WizardAbility{
+            setup.AbilityAlchemy,
+            setup.AbilitySageMaster,
+        },
+        Books: []data.WizardBook{
+            data.WizardBook{
+                Magic: data.LifeMagic,
+                Count: 3,
+            },
+            data.WizardBook{
+                Magic: data.SorceryMagic,
+                Count: 8,
+            },
+        },
+    }
+
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+        Magic: data.MagicSettingNormal,
+        Difficulty: data.DifficultyAverage,
+    })
+
+    game.Plane = data.PlaneArcanus
+
+    player := game.AddPlayer(wizard)
+
+    x, y := game.FindValidCityLocation()
+
+    game.Map.CreateNode(x, y+1, gamelib.MagicNodeNature, game.Plane, game.Settings.Magic, game.Settings.Difficulty)
+    game.Map.CreateNode(x+1, y, gamelib.MagicNodeChaos, game.Plane, game.Settings.Magic, game.Settings.Difficulty)
+    game.Map.CreateNode(x+2, y+1, gamelib.MagicNodeSorcery, game.Plane, game.Settings.Magic, game.Settings.Difficulty)
+
+    city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.TaxRate, game.BuildingInfo)
+    city.Population = 6190
+    city.Plane = data.PlaneArcanus
+    city.Banner = wizard.Banner
+    city.ProducingBuilding = buildinglib.BuildingGranary
+    city.ProducingUnit = units.UnitNone
+    city.Race = wizard.Race
+    city.Farmers = 3
+    city.Workers = 3
+    city.Wall = false
+
+    city.ResetCitizens(nil)
+
+    player.AddCity(city)
+
+    player.Gold = 83
+    player.Mana = 26
+
+    // game.Map.Map.Terrain[3][6] = terrain.TileNatureForest.Index
+
+    player.LiftFog(x, y, 3)
+
+    drake := player.AddUnit(units.OverworldUnit{
+        Unit: units.GreatDrake,
+        Plane: data.PlaneArcanus,
+        Banner: wizard.Banner,
+        X: x + 1,
+        Y: y + 1,
+    })
+
+    for i := 0; i < 1; i++ {
+        fireElemental := player.AddUnit(units.OverworldUnit{
+            Unit: units.FireElemental,
+            Plane: data.PlaneArcanus,
+            Banner: wizard.Banner,
+            X: x + 1,
+            Y: y + 1,
+        })
+        _ = fireElemental
+    }
+
+    stack := player.FindStackByUnit(drake)
+    player.SetSelectedStack(stack)
+
+    player.LiftFog(stack.X(), stack.Y(), 2)
+
+    return game
+}
+
 func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
@@ -588,6 +683,7 @@ func NewEngine(scenario int) (*Engine, error) {
         case 5: game = createScenario5(cache)
         case 6: game = createScenario6(cache)
         case 7: game = createScenario7(cache)
+        case 8: game = createScenario8(cache)
         default: game = createScenario1(cache)
     }
 

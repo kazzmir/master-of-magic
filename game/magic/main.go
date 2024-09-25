@@ -110,7 +110,7 @@ func runMainMenu(yield coroutine.YieldFunc, game *MagicGame) mainview.MainScreen
 }
 
 func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup.NewGameSettings, wizard setup.WizardCustom) error {
-    game := gamelib.MakeGame(magic.Cache)
+    game := gamelib.MakeGame(magic.Cache, settings)
     game.Plane = data.PlaneArcanus
 
     magic.Drawer = func(screen *ebiten.Image) {

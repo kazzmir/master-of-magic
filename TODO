@@ -6,7 +6,6 @@
 * summon artifact/weapon animation
 * summon hero/champion animation
 * banish animation for defeated wizard
-* enter node (sorcery, nature, chaos) in overworld
 * create artifact screen
 * cartographer advisor
 * surveyor advisor
@@ -29,8 +28,11 @@
 * melee/defense/heart icons should have white border
 * quake console
 * make overworld wrap horizontally
+* remap colors for some sprites, such as the flag in city tile sprites
+* magic spirite/guardian spirit meld with magic node
 
 9/22/2024 * city view: separate surplus food/gold from subsistence food/gold
 9/22/2024 * overworld path finding to point on map
 9/22/2024 * armies screen
 9/22/2024 * cities screen
+9/25/2024 * enter node combat (sorcery, nature, chaos) in overworld

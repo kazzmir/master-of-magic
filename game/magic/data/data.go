@@ -152,3 +152,20 @@ type WizardBook struct {
     Magic MagicType
     Count int
 }
+
+type MagicSetting int
+const (
+    MagicSettingWeak MagicSetting = iota
+    MagicSettingNormal
+    MagicSettingPowerful
+)
+
+type DifficultySetting int
+const (
+    DifficultyIntro DifficultySetting = iota
+    DifficultyEasy
+    DifficultyAverage
+    DifficultyHard
+    DifficultyExtreme
+    DifficultyImpossible
+)
