@@ -1456,7 +1456,6 @@ func (game *Game) confirmEncounter(yield coroutine.YieldFunc, node *ExtraMagicNo
 
     animation := util.MakePaletteRotateAnimation(reloadLbx, lairIndex, rotateIndexLow, rotateIndexHigh)
 
-    // FIXME: message is based on node type at the x,y map location
     game.HudUI.AddElements(uilib.MakeLairConfirmDialogWithLayer(game.HudUI, game.Cache, &game.ImageCache, animation, 1, fmt.Sprintf("You have found a %v node. Scouts have spotted %v within the %v node. Do you wish to enter?", nodeName, guardianName, nodeName), yes, no))
 
     for !quit {
