@@ -602,6 +602,7 @@ var Efreet Unit = Unit{
     MovementSpeed: 3,
     Flying: true,
     Count: 1,
+    // caster 20
     MeleeAttackPower: 9,
     RangedAttackPower: 9,
     RangedAttackDamageType: DamageRangedMagical,
@@ -884,6 +885,17 @@ var StormGiant Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 73,
     Name: "Storm Giant",
+    CombatLbxFile: "figure13.lbx",
+    CombatIndex: 104,
+    Count: 1,
+    MovementSpeed: 2,
+    MeleeAttackPower: 12,
+    RangedAttackPower: 10,
+    RangedAttacks: 4,
+    RangedAttackDamageType: DamageRangedMagical,
+    Defense: 7,
+    Resistance: 9,
+    HitPoints: 20,
     Race: data.RaceFantastic,
 }
 
@@ -907,6 +919,18 @@ var Djinn Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 75,
     Name: "Djinn",
+    CombatLbxFile: "figure14.lbx",
+    CombatIndex: 0,
+    Count: 1,
+    MovementSpeed: 3,
+    Flying: true,
+    MeleeAttackPower: 15,
+    RangedAttackPower: 8,
+    // caster 20
+    RangedAttackDamageType: DamageRangedMagical,
+    Defense: 8,
+    Resistance: 10,
+    HitPoints: 20,
     Race: data.RaceFantastic,
 }
 
@@ -914,6 +938,15 @@ var SkyDrake Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 76,
     Name: "SkyDrake",
+    CombatLbxFile: "figure14.lbx",
+    CombatIndex: 8,
+    Count: 1,
+    MovementSpeed: 4,
+    Flying: true,
+    MeleeAttackPower: 20,
+    Defense: 10,
+    Resistance: 14,
+    HitPoints: 25,
     Race: data.RaceFantastic,
 }
 
@@ -921,6 +954,14 @@ var Nagas Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 77,
     Name: "Nagas",
+    CombatLbxFile: "figure14.lbx",
+    CombatIndex: 16,
+    MovementSpeed: 1,
+    Count: 2,
+    MeleeAttackPower: 4,
+    Defense: 3,
+    Resistance: 7,
+    HitPoints: 6,
     Race: data.RaceFantastic,
 }
 
