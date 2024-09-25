@@ -695,36 +695,42 @@ var Sprite Unit = Unit{
 var Cockatrice Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 61,
+    Name: "Cockatrice",
     Race: data.RaceFantastic,
 }
 
 var Basilisk Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 62,
+    Name: "Basilisk",
     Race: data.RaceFantastic,
 }
 
 var GiantSpider Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 63,
+    Name: "Giant Spider",
     Race: data.RaceFantastic,
 }
 
 var StoneGiant Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 64,
+    Name: "Stone Giant",
     Race: data.RaceFantastic,
 }
 
 var Colossus Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 65,
+    Name: "Colossus",
     Race: data.RaceFantastic,
 }
 
 var Gorgon Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 66,
+    Name: "Gorgons",
     Race: data.RaceFantastic,
 }
 
@@ -746,12 +752,14 @@ var EarthElemental Unit = Unit{
 var Behemoth Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 68,
+    Name: "Behemoth",
     Race: data.RaceFantastic,
 }
 
 var GreatWyrm Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 69,
+    Name: "Great Wyrm",
     Race: data.RaceFantastic,
 }
 

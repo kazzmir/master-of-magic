@@ -43,6 +43,9 @@ type ExtraMagicNode struct {
 func (node *ExtraMagicNode) Draw(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions){
 }
 
+/* choose X points surrounding the node. 0,0 is the node itself. for arcanus, choose 5-10 points from a 4x4 square.
+ * for myrror choose 10-20 points from a 5x5 square.
+ */
 func makeZone(plane data.Plane) []image.Point {
     // choose X points
     maxSize := 4
@@ -82,7 +85,7 @@ func makeZone(plane data.Plane) []image.Point {
     return out
 }
 
-func computeNatureNodeEnemies(magicSetting data.MagicSetting, difficultySetting data.DifficultySetting, zoneSize int) []units.Unit {
+func computeEncounterBudget(magicSetting data.MagicSetting, difficultySetting data.DifficultySetting, zoneSize int) int {
     budget := 0
 
     // these formulas come from the master of magic wiki
@@ -105,8 +108,35 @@ func computeNatureNodeEnemies(magicSetting data.MagicSetting, difficultySetting 
         case data.DifficultyImpossible: bonus = 0.50
     }
 
-    budget = budget + int(float64(budget) * bonus)
+    return budget + int(float64(budget) * bonus)
+}
 
+func chooseEnemy[E comparable](enemyCosts map[E]int, budget int, numChoices int) E {
+    choices := rand.Perm(numChoices)
+    var zero E
+
+    for _, choice := range choices {
+        divisor := choice + 1
+
+        var enemyChoice E
+        maxCost := 0
+
+        for unit, cost := range enemyCosts {
+            if cost > maxCost && cost <= budget / divisor {
+                enemyChoice = unit
+                maxCost = cost
+            }
+        }
+
+        if enemyChoice != zero {
+            return enemyChoice
+        }
+    }
+
+    return zero
+}
+
+func computeNatureNodeEnemies(magicSetting data.MagicSetting, difficultySetting data.DifficultySetting, zoneSize int) []units.Unit {
     type Enemy int
     const (
         None Enemy = iota
@@ -156,12 +186,12 @@ func computeNatureNodeEnemies(magicSetting data.MagicSetting, difficultySetting 
         GreatWyrm: 1000,
     }
 
-    choices := rand.Perm(4)
+    budget := computeEncounterBudget(magicSetting, difficultySetting, zoneSize)
 
-    enemyChoice := None
-    maxCost := 0
+    enemyChoice := chooseEnemy(enemyCosts, budget, 4)
 
     // divide the budget by the divisor, then choose the most expensive unit that fits
+    /*
     for _, choice := range choices {
         divisor := choice + 1
 
@@ -179,6 +209,7 @@ func computeNatureNodeEnemies(magicSetting data.MagicSetting, difficultySetting 
             break
         }
     }
+    */
 
     // chose no enemies!
     if enemyChoice == None {
@@ -195,10 +226,8 @@ func computeNatureNodeEnemies(magicSetting data.MagicSetting, difficultySetting 
 
     remainingBudget := budget - numGuardians * enemyCosts[enemyChoice]
 
-    enemyChoice = None
-    maxCost = 0
-
     // divide the budget by the divisor, then choose the most expensive unit that fits
+    /*
     for _, choice := range choices {
         divisor := choice + 1
 
@@ -216,6 +245,8 @@ func computeNatureNodeEnemies(magicSetting data.MagicSetting, difficultySetting 
             break
         }
     }
+    */
+    enemyChoice = chooseEnemy(enemyCosts, remainingBudget, 10 - numGuardians)
 
     if enemyChoice != None {
         secondary := remainingBudget / enemyCosts[enemyChoice]
