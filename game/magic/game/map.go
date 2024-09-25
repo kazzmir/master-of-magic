@@ -118,6 +118,10 @@ func computeEncounterBudget(magicSetting data.MagicSetting, difficultySetting da
  * that fits in the divided result.
  */
 func chooseEnemy[E comparable](enemyCosts map[E]int, budget int, numChoices int) E {
+    if numChoices < 0 {
+        numChoices = 0
+    }
+
     choices := rand.Perm(numChoices)
     var zero E
 
