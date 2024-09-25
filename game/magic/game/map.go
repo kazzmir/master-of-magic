@@ -156,6 +156,9 @@ func chooseGuardianAndSecondary[E comparable](enemyCosts map[E]int, makeUnit fun
     }
 
     numGuardians := budget / enemyCosts[enemyChoice]
+    if numGuardians > 9 {
+        numGuardians = 9
+    }
 
     for i := 0; i < numGuardians; i++ {
         guardians = append(guardians, makeUnit(enemyChoice))
@@ -167,6 +170,11 @@ func chooseGuardianAndSecondary[E comparable](enemyCosts map[E]int, makeUnit fun
 
     if enemyChoice != zero {
         secondaryCount := remainingBudget / enemyCosts[enemyChoice]
+
+        if secondaryCount > 9 - numGuardians {
+            secondaryCount = 9 - numGuardians
+        }
+
         for i := 0; i < secondaryCount; i++ {
             secondary = append(secondary, makeUnit(enemyChoice))
         }
@@ -234,6 +242,47 @@ func computeChaosNodeEnemies(magicSetting data.MagicSetting, difficultySetting d
     type Enemy int
     const (
         None Enemy = iota
+        PhantomWarriors
+        Naga
+        AirElemental
+        PhantomBeast
+        StormGiant
+        Djinn
+        SkyDrake
+    )
+
+    makeUnit := func(enemy Enemy) units.Unit {
+        switch enemy {
+            case PhantomWarriors: return units.PhantomWarrior
+            case Naga: return units.Nagas
+            case AirElemental: return units.AirElemental
+            case PhantomBeast: return units.PhantomBeast
+            case StormGiant: return units.StormGiant
+            case Djinn: return units.Djinn
+            case SkyDrake: return units.SkyDrake
+        }
+
+        return units.UnitNone
+    }
+
+    enemyCosts := map[Enemy]int{
+        None: 0,
+        PhantomWarriors: 20,
+        Naga: 120,
+        AirElemental: 170,
+        PhantomBeast: 225,
+        StormGiant: 500,
+        Djinn: 650,
+        SkyDrake: 1000,
+    }
+
+    return chooseGuardianAndSecondary(enemyCosts, makeUnit, computeEncounterBudget(magicSetting, difficultySetting, zoneSize))
+}
+
+func computeSorceryNodeEnemies(magicSetting data.MagicSetting, difficultySetting data.DifficultySetting, zoneSize int) ([]units.Unit, []units.Unit) {
+    type Enemy int
+    const (
+        None Enemy = iota
         HellHounds
         FireElemental
         FireGiant
@@ -290,6 +339,8 @@ func MakeMagicNode(kind MagicNode, magicSetting data.MagicSetting, difficulty da
             guardians, secondary = computeNatureNodeEnemies(magicSetting, difficulty, len(zone))
             log.Printf("Created nature node guardians: %v secondary: %v", guardians, secondary)
         case MagicNodeSorcery:
+            guardians, secondary = computeSorceryNodeEnemies(magicSetting, difficulty, len(zone))
+            log.Printf("Created sorcery node guardians: %v secondary: %v", guardians, secondary)
         case MagicNodeChaos:
             guardians, secondary = computeChaosNodeEnemies(magicSetting, difficulty, len(zone))
             log.Printf("Created chaos node guardians: %v secondary: %v", guardians, secondary)

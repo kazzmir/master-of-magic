@@ -30,6 +30,7 @@
 * quake console
 * make overworld wrap horizontally
 * remap colors for some sprites, such as the flag in city tile sprites
+* magic spirite/guardian spirit meld with magic node
 
 9/22/2024 * city view: separate surplus food/gold from subsistence food/gold
 9/22/2024 * overworld path finding to point on map
