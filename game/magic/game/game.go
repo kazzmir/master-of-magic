@@ -1496,13 +1496,21 @@ func (game *Game) doMagicEncounter(yield coroutine.YieldFunc, player *playerlib.
         enemies = append(enemies, &units.OverworldUnit{Unit: unit})
     }
 
-    game.doCombat(yield, player, stack, &defender, playerlib.MakeUnitStackFromUnits(enemies))
+    result := game.doCombat(yield, player, stack, &defender, playerlib.MakeUnitStackFromUnits(enemies))
+    if result == combat.CombatStateAttackerWin {
+        // node should have no guardians
+        node.Empty = true
+
+        // FIXME: give treasure
+    }
 
     // absorb extra clicks
     yield()
 }
 
-func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player, attackerStack *playerlib.UnitStack, defender *playerlib.Player, defenderStack *playerlib.UnitStack){
+/* run the tactical combat screen. returns the combat state as a result (attackers win, defenders win, flee, etc)
+ */
+func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player, attackerStack *playerlib.UnitStack, defender *playerlib.Player, defenderStack *playerlib.UnitStack) combat.CombatState {
     attackingArmy := combat.Army{
         Player: attacker,
     }
@@ -1550,6 +1558,8 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
 
     ebiten.SetCursorMode(ebiten.CursorModeVisible)
     game.Drawer = oldDrawer
+
+    return state
 }
 
 func (game *Game) GetMainImage(index int) (*ebiten.Image, error) {
