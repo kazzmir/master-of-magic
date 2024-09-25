@@ -86,6 +86,8 @@ func makeZone(plane data.Plane) []image.Point {
     return out
 }
 
+/* budget for making encounter monsters is zone size + bonus
+ */
 func computeEncounterBudget(magicSetting data.MagicSetting, difficultySetting data.DifficultySetting, zoneSize int) int {
     budget := 0
 
@@ -112,6 +114,9 @@ func computeEncounterBudget(magicSetting data.MagicSetting, difficultySetting da
     return budget + int(float64(budget) * bonus)
 }
 
+/* divide budget by some divisor in range 1 to numChoices. find the enemy with the largest cost
+ * that fits in the divided result.
+ */
 func chooseEnemy[E comparable](enemyCosts map[E]int, budget int, numChoices int) E {
     choices := rand.Perm(numChoices)
     var zero E
@@ -223,38 +228,6 @@ func computeNatureNodeEnemies(magicSetting data.MagicSetting, difficultySetting 
     }
 
     return chooseGuardianAndSecondary(enemyCosts, makeUnit, computeEncounterBudget(magicSetting, difficultySetting, zoneSize))
-
-    /*
-    budget := computeEncounterBudget(magicSetting, difficultySetting, zoneSize)
-
-    enemyChoice := chooseEnemy(enemyCosts, budget, 4)
-
-    // chose no enemies!
-    if enemyChoice == None {
-        return nil
-    }
-
-    numGuardians := budget / enemyCosts[enemyChoice]
-
-    var out []units.Unit
-
-    for i := 0; i < numGuardians; i++ {
-        out = append(out, makeUnit(enemyChoice))
-    }
-
-    remainingBudget := budget - numGuardians * enemyCosts[enemyChoice]
-
-    enemyChoice = chooseEnemy(enemyCosts, remainingBudget, 10 - numGuardians)
-
-    if enemyChoice != None {
-        secondary := remainingBudget / enemyCosts[enemyChoice]
-        for i := 0; i < secondary; i++ {
-            out = append(out, makeUnit(enemyChoice))
-        }
-    }
-
-    return out
-    */
 }
 
 func MakeMagicNode(kind MagicNode, magicSetting data.MagicSetting, difficulty data.DifficultySetting, plane data.Plane) *ExtraMagicNode {
