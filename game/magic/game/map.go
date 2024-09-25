@@ -292,7 +292,7 @@ func computeChaosNodeEnemies(magicSetting data.MagicSetting, difficultySetting d
         FireGiant
         Gargoyles
         DoomBat
-        Manticore
+        Chimera
         ChaosSpawn
         Efreet
         Hydra
@@ -306,7 +306,7 @@ func computeChaosNodeEnemies(magicSetting data.MagicSetting, difficultySetting d
             case FireGiant: return units.FireGiant
             case Gargoyles: return units.Gargoyle
             case DoomBat: return units.DoomBat
-            case Manticore: return units.Manticore
+            case Chimera: return units.Chimeras
             case ChaosSpawn: return units.ChaosSpawn
             case Efreet: return units.Efreet
             case Hydra: return units.Hydra
@@ -323,7 +323,7 @@ func computeChaosNodeEnemies(magicSetting data.MagicSetting, difficultySetting d
         FireGiant: 150,
         Gargoyles: 200,
         DoomBat: 300,
-        Manticore: 350,
+        Chimera: 350,
         ChaosSpawn: 400,
         Efreet: 550,
         Hydra: 650,

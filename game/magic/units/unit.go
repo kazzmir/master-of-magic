@@ -10,6 +10,7 @@ const (
     DamageNone Damage = iota
     DamageRangedMagical
     DamageRangedPhysical
+    DamageRangedBoulder
     DamageMeleePhysical
 )
 
@@ -485,6 +486,14 @@ var HellHounds Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 35,
     Name: "Hell Hounds",
+    CombatLbxFile: "figure11.lbx",
+    CombatIndex: 40,
+    MovementSpeed: 2,
+    MeleeAttackPower: 3,
+    Count: 4,
+    Defense: 2,
+    Resistance: 6,
+    HitPoints: 4,
     Race: data.RaceFantastic,
 }
 
@@ -492,6 +501,15 @@ var Gargoyle Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 36,
     Name: "Gargoyles",
+    CombatLbxFile: "figure11.lbx",
+    CombatIndex: 48,
+    MovementSpeed: 2,
+    Flying: true,
+    MeleeAttackPower: 4,
+    Count: 4,
+    Defense: 8,
+    Resistance: 7,
+    HitPoints: 4,
     Race: data.RaceFantastic,
 }
 
@@ -499,6 +517,17 @@ var FireGiant Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 37,
     Name: "Fire Giant",
+    CombatLbxFile: "figure11.lbx",
+    CombatIndex: 56,
+    MovementSpeed: 2,
+    Count: 1,
+    MeleeAttackPower: 10,
+    RangedAttackPower: 10,
+    RangedAttackDamageType: DamageRangedBoulder,
+    RangedAttacks: 2,
+    HitPoints: 15,
+    Defense: 5,
+    Resistance: 7,
     Race: data.RaceFantastic,
 }
 
@@ -534,6 +563,15 @@ var DoomBat Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 41,
     Name: "Doom Bat",
+    CombatLbxFile: "figure11.lbx",
+    CombatIndex: 88,
+    MovementSpeed: 4,
+    Flying: true,
+    MeleeAttackPower: 10,
+    Defense: 5,
+    Resistance: 9,
+    Count: 1,
+    HitPoints: 20,
     Race: data.RaceFantastic,
 }
 
