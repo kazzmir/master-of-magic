@@ -48,6 +48,24 @@ func MakeSummonUnit(cache *lbx.LbxCache, unit units.Unit, wizard data.WizardBase
         monsterIndex = 1
     } else if unit.Equals(units.Gargoyle) {
         monsterIndex = 2
+    } else if unit.Equals(units.FireGiant) {
+        monsterIndex = 3
+    } else if unit.Equals(units.ChaosSpawn) {
+        monsterIndex = 5
+    } else if unit.Equals(units.Chimeras) {
+        monsterIndex = 6
+    } else if unit.Equals(units.DoomBat) {
+        monsterIndex = 7
+    } else if unit.Equals(units.Efreet) {
+        monsterIndex = 8
+    } else if unit.Equals(units.Hydra) {
+        monsterIndex = 9
+    } else if unit.Equals(units.GreatDrake) {
+        monsterIndex = 10
+    } else if unit.Equals(units.Skeleton) {
+        monsterIndex = 11
+    } else if unit.Equals(units.Ghoul) {
+        monsterIndex = 12
     }
 
     monsterPicture, err := summon.ImageCache.GetImage("monster.lbx", monsterIndex, 0)
