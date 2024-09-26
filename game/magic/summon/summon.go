@@ -1,6 +1,8 @@
 package summon
 
 import (
+    "image"
+
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/units"
@@ -24,6 +26,7 @@ type SummonUnit struct {
     State SummonState
     CircleBack *util.Animation
     CircleFront *util.Animation
+    SummonHeight int
 }
 
 func MakeSummonUnit(cache *lbx.LbxCache, unit units.Unit, wizard data.WizardBase) *SummonUnit {
@@ -50,6 +53,13 @@ func (summon *SummonUnit) Update() SummonState {
     if summon.Counter % 8 == 0 {
         summon.CircleBack.Next()
         summon.CircleFront.Next()
+    }
+
+    if summon.Counter % 2 == 0 {
+        // kind of a hack, but the summon images are all 80px in height
+        if summon.SummonHeight < 80 {
+            summon.SummonHeight += 1
+        }
     }
 
     return summon.State
@@ -94,8 +104,9 @@ func (summon *SummonUnit) Draw(screen *ebiten.Image){
 
     monster, _ := summon.ImageCache.GetImage("monster.lbx", monsterIndex, 0)
     monsterOptions := options
-    monsterOptions.GeoM.Translate(75, 30)
-    screen.DrawImage(monster, &monsterOptions)
+    monsterOptions.GeoM.Translate(75, 30 + 70 - float64(summon.SummonHeight))
+    partialMonster := monster.SubImage(image.Rect(0, 0, monster.Bounds().Dx(), summon.SummonHeight)).(*ebiten.Image)
+    screen.DrawImage(partialMonster, &monsterOptions)
 
     circleOptions.GeoM.Translate(10, 30)
     screen.DrawImage(summon.CircleFront.Frame(), &circleOptions)
