@@ -22,25 +22,43 @@ type SummonUnit struct {
     Unit units.Unit
     Wizard data.WizardBase
     State SummonState
+    CircleBack *util.Animation
+    CircleFront *util.Animation
 }
 
 func MakeSummonUnit(cache *lbx.LbxCache, unit units.Unit, wizard data.WizardBase) *SummonUnit {
-    return &SummonUnit{
+    summon := &SummonUnit{
         Unit: unit,
         Cache: cache,
         ImageCache: util.MakeImageCache(cache),
         Wizard: wizard,
         State: SummonStateRunning,
     }
+
+    summonBack, _ := summon.ImageCache.GetImages("spellscr.lbx", 10)
+    summon.CircleBack = util.MakeAnimation(summonBack, true)
+
+    summonFront, _ := summon.ImageCache.GetImages("spellscr.lbx", 11)
+    summon.CircleFront = util.MakeAnimation(summonFront, true)
+
+    return summon
 }
 
 func (summon *SummonUnit) Update() SummonState {
     summon.Counter += 1
+
+    if summon.Counter % 8 == 0 {
+        summon.CircleBack.Next()
+        summon.CircleFront.Next()
+    }
+
     return summon.State
 }
 
 func (summon *SummonUnit) Draw(screen *ebiten.Image){
     // magic spirit is monster.lbx, 0
+
+    monsterIndex := 0
 
     background, _ := summon.ImageCache.GetImage("spellscr.lbx", 9, 0)
     var options ebiten.DrawImageOptions
@@ -65,8 +83,20 @@ func (summon *SummonUnit) Draw(screen *ebiten.Image){
         case data.WizardKali: wizardIndex = 59
     }
 
+    circleOptions := options
+    circleOptions.GeoM.Translate(50, 53)
+    screen.DrawImage(summon.CircleBack.Frame(), &circleOptions)
+
     wizard, _ := summon.ImageCache.GetImage("spellscr.lbx", wizardIndex, 0)
     wizardOptions := options
     wizardOptions.GeoM.Translate(7, 3)
     screen.DrawImage(wizard, &wizardOptions)
+
+    monster, _ := summon.ImageCache.GetImage("monster.lbx", monsterIndex, 0)
+    monsterOptions := options
+    monsterOptions.GeoM.Translate(75, 30)
+    screen.DrawImage(monster, &monsterOptions)
+
+    circleOptions.GeoM.Translate(10, 30)
+    screen.DrawImage(summon.CircleFront.Frame(), &circleOptions)
 }
