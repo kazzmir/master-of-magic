@@ -2,6 +2,7 @@ package summon
 
 import (
     "image"
+    "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/game/magic/data"
@@ -26,6 +27,7 @@ type SummonUnit struct {
     State SummonState
     CircleBack *util.Animation
     CircleFront *util.Animation
+    Background *ebiten.Image
     SummonHeight int
 }
 
@@ -38,11 +40,42 @@ func MakeSummonUnit(cache *lbx.LbxCache, unit units.Unit, wizard data.WizardBase
         State: SummonStateRunning,
     }
 
-    summonBack, _ := summon.ImageCache.GetImages("spellscr.lbx", 10)
+    baseColor := color.RGBA{R: 0, B: 0, G: 0xff, A: 0xff}
+    // baseColor := color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}
+
+    updateColors := func (img *image.Paletted) image.Image {
+        // 228-245 remap colors
+        // colorRange := 245 - 226
+
+        newPalette := make(color.Palette, len(img.Palette))
+        copy(newPalette, img.Palette)
+        img.Palette = newPalette
+
+        light := 0
+        for i := 225; i <= 247; i++ {
+            img.Palette[i] = util.Lighten(baseColor, float64(light))
+            light -= 4
+        }
+
+        /*
+        img.Palette[227] = color.RGBA{R: 0, G: 0, B: 0, A: 0}
+        img.Palette[228] = color.RGBA{R: 0, G: 0, B: 0, A: 0}
+        img.Palette[237] = color.RGBA{R: 0, G: 0, B: 0, A: 0}
+        img.Palette[238] = color.RGBA{R: 0, G: 0, B: 0, A: 0}
+        img.Palette[239] = color.RGBA{R: 0, G: 0, B: 0, A: 0}
+        */
+
+        return img
+    }
+
+    summonBack, _ := summon.ImageCache.GetImagesTransform("spellscr.lbx", 10, updateColors)
     summon.CircleBack = util.MakeAnimation(summonBack, true)
 
-    summonFront, _ := summon.ImageCache.GetImages("spellscr.lbx", 11)
+    summonFront, _ := summon.ImageCache.GetImagesTransform("spellscr.lbx", 11, updateColors)
     summon.CircleFront = util.MakeAnimation(summonFront, true)
+
+    background, _ := summon.ImageCache.GetImageTransform("spellscr.lbx", 9, 0, updateColors)
+    summon.Background = background
 
     return summon
 }
@@ -50,7 +83,7 @@ func MakeSummonUnit(cache *lbx.LbxCache, unit units.Unit, wizard data.WizardBase
 func (summon *SummonUnit) Update() SummonState {
     summon.Counter += 1
 
-    if summon.Counter % 8 == 0 {
+    if summon.Counter % 7 == 0 {
         summon.CircleBack.Next()
         summon.CircleFront.Next()
     }
@@ -70,10 +103,10 @@ func (summon *SummonUnit) Draw(screen *ebiten.Image){
 
     monsterIndex := 0
 
-    background, _ := summon.ImageCache.GetImage("spellscr.lbx", 9, 0)
+    // background, _ := summon.ImageCache.GetImage("spellscr.lbx", 9, 0)
     var options ebiten.DrawImageOptions
     options.GeoM.Translate(70, 20)
-    screen.DrawImage(background, &options)
+    screen.DrawImage(summon.Background, &options)
 
     wizardIndex := 46
     switch summon.Wizard {
@@ -94,7 +127,7 @@ func (summon *SummonUnit) Draw(screen *ebiten.Image){
     }
 
     circleOptions := options
-    circleOptions.GeoM.Translate(50, 53)
+    circleOptions.GeoM.Translate(53, 54)
     screen.DrawImage(summon.CircleBack.Frame(), &circleOptions)
 
     wizard, _ := summon.ImageCache.GetImage("spellscr.lbx", wizardIndex, 0)
@@ -108,6 +141,7 @@ func (summon *SummonUnit) Draw(screen *ebiten.Image){
     partialMonster := monster.SubImage(image.Rect(0, 0, monster.Bounds().Dx(), summon.SummonHeight)).(*ebiten.Image)
     screen.DrawImage(partialMonster, &monsterOptions)
 
-    circleOptions.GeoM.Translate(10, 30)
+    circleOptions.GeoM.Translate(11, 26)
+    circleOptions.ColorScale.ScaleAlpha(1.0)
     screen.DrawImage(summon.CircleFront.Frame(), &circleOptions)
 }
