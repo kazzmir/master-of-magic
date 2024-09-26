@@ -50,7 +50,7 @@ func (engine *Engine) Update() error {
 }
 
 func (engine *Engine) Draw(screen *ebiten.Image) {
-    screen.Fill(color.RGBA{R: 100, G: 0, B: 100, A: 0xff})
+    screen.Fill(color.RGBA{R: 0, G: 150, B: 150, A: 0xff})
 
     engine.Summon.Draw(screen)
 }
