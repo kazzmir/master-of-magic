@@ -66,6 +66,56 @@ func MakeSummonUnit(cache *lbx.LbxCache, unit units.Unit, wizard data.WizardBase
         monsterIndex = 11
     } else if unit.Equals(units.Ghoul) {
         monsterIndex = 12
+    } else if unit.Equals(units.NightStalker) {
+        monsterIndex = 13
+    } else if unit.Equals(units.WereWolf) {
+        monsterIndex = 14
+    } else if unit.Equals(units.Wraith) {
+        monsterIndex = 16
+    } else if unit.Equals(units.NightStalker) {
+        monsterIndex = 17
+    } else if unit.Equals(units.DemonLord) {
+        monsterIndex = 19
+    } else if unit.Equals(units.Unicorn) {
+        monsterIndex = 21
+    } else if unit.Equals(units.GuardianSpirit) {
+        monsterIndex = 22
+    } else if unit.Equals(units.Angel) {
+        monsterIndex = 23
+    } else if unit.Equals(units.ArchAngel) {
+        monsterIndex = 24
+    } else if unit.Equals(units.WarBear) {
+        monsterIndex = 25
+    } else if unit.Equals(units.Sprite) {
+        monsterIndex = 26
+    } else if unit.Equals(units.Cockatrice) {
+        monsterIndex = 27
+    } else if unit.Equals(units.Basilisk) {
+        monsterIndex = 28
+    } else if unit.Equals(units.GiantSpider) {
+        monsterIndex = 29
+    } else if unit.Equals(units.StoneGiant) {
+        monsterIndex = 30
+    } else if unit.Equals(units.Colossus) {
+        monsterIndex = 31
+    } else if unit.Equals(units.Gorgon) {
+        monsterIndex = 32
+    } else if unit.Equals(units.EarthElemental) {
+        monsterIndex = 33
+    } else if unit.Equals(units.Behemoth) {
+        monsterIndex = 34
+    } else if unit.Equals(units.GreatWyrm) {
+        monsterIndex = 35
+    } else if unit.Equals(units.StormGiant) {
+        monsterIndex = 39
+    } else if unit.Equals(units.Djinn) {
+        monsterIndex = 41
+    } else if unit.Equals(units.SkyDrake) {
+        monsterIndex = 42
+    } else if unit.Equals(units.Nagas) {
+        monsterIndex = 43
+    } else {
+        log.Printf("Invalid summoning for unit %v", unit)
     }
 
     monsterPicture, err := summon.ImageCache.GetImage("monster.lbx", monsterIndex, 0)
