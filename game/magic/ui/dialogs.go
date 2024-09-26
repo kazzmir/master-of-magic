@@ -408,7 +408,7 @@ func MakeLairConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *uti
     confirmX := 67
     confirmY := 40
 
-    confirmMargin := 50
+    confirmMargin := 55
     confirmTopMargin := 10
 
     const fadeSpeed = 7
@@ -449,7 +449,7 @@ func MakeLairConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *uti
 
     confirmFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowFade)
 
-    maxWidth := confirmTop.Bounds().Dx() - confirmMargin
+    maxWidth := confirmTop.Bounds().Dx() - confirmMargin - 5
 
     wrapped := confirmFont.CreateWrappedText(float64(maxWidth), 1, message)
 
