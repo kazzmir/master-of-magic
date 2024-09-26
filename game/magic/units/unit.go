@@ -117,6 +117,9 @@ type Unit struct {
     Flying bool
     Abilities []Ability
 
+    // fantastic units belong to a specific magic realm
+    Realm data.MagicType
+
     RequiredBuildings []building.Building
 
     RangedAttackDamageType Damage
@@ -478,6 +481,7 @@ var WarMammoths Unit = Unit{
 var MagicSpirit Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 34,
+    Realm: data.ArcaneMagic,
     // FIXME: check on this
     Race: data.RaceFantastic,
 }
@@ -489,6 +493,7 @@ var HellHounds Unit = Unit{
     CombatLbxFile: "figure11.lbx",
     CombatIndex: 40,
     MovementSpeed: 2,
+    Realm: data.ChaosMagic,
     MeleeAttackPower: 3,
     Count: 4,
     Defense: 2,

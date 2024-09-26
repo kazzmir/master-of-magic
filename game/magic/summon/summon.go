@@ -1,6 +1,7 @@
 package summon
 
 import (
+    "log"
     "image"
     "image/color"
 
@@ -22,26 +23,47 @@ type SummonUnit struct {
     Counter uint64
     Cache *lbx.LbxCache
     ImageCache util.ImageCache
-    Unit units.Unit
     Wizard data.WizardBase
     State SummonState
     CircleBack *util.Animation
     CircleFront *util.Animation
     Background *ebiten.Image
+    Monster *ebiten.Image
     SummonHeight int
 }
 
 func MakeSummonUnit(cache *lbx.LbxCache, unit units.Unit, wizard data.WizardBase) *SummonUnit {
     summon := &SummonUnit{
-        Unit: unit,
         Cache: cache,
         ImageCache: util.MakeImageCache(cache),
         Wizard: wizard,
         State: SummonStateRunning,
     }
 
+    monsterIndex := 0
+    // magic spirit is monster.lbx, 0
+    if unit.Equals(units.MagicSpirit) {
+        monsterIndex = 0
+    } else if unit.Equals(units.HellHounds) {
+        monsterIndex = 1
+    } else if unit.Equals(units.Gargoyle) {
+        monsterIndex = 2
+    }
+
+    monsterPicture, err := summon.ImageCache.GetImage("monster.lbx", monsterIndex, 0)
+    if err != nil {
+        log.Printf("Error: could not load monster image at index %v: %v", monsterIndex, err)
+    }
+
     baseColor := color.RGBA{R: 0, B: 0, G: 0xff, A: 0xff}
-    // baseColor := color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}
+    switch unit.Realm {
+        case data.LifeMagic: baseColor = color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}
+        case data.SorceryMagic: baseColor = color.RGBA{R: 0, G: 0, B: 0xff, A: 0xff}
+        case data.NatureMagic: baseColor = color.RGBA{R: 0, B: 0, G: 0xff, A: 0xff}
+        case data.DeathMagic: baseColor = color.RGBA{R: 0xd6, G: 0x63, B: 0xff, A: 0xff}
+        case data.ChaosMagic: baseColor = color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}
+        case data.ArcaneMagic: baseColor = color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}
+    }
 
     updateColors := func (img *image.Paletted) image.Image {
         // 228-245 remap colors
@@ -77,6 +99,8 @@ func MakeSummonUnit(cache *lbx.LbxCache, unit units.Unit, wizard data.WizardBase
     background, _ := summon.ImageCache.GetImageTransform("spellscr.lbx", 9, 0, updateColors)
     summon.Background = background
 
+    summon.Monster = monsterPicture
+
     return summon
 }
 
@@ -89,8 +113,7 @@ func (summon *SummonUnit) Update() SummonState {
     }
 
     if summon.Counter % 2 == 0 {
-        // kind of a hack, but the summon images are all 80px in height
-        if summon.SummonHeight < 80 {
+        if summon.SummonHeight < summon.Monster.Bounds().Dy() {
             summon.SummonHeight += 1
         }
     }
@@ -99,9 +122,6 @@ func (summon *SummonUnit) Update() SummonState {
 }
 
 func (summon *SummonUnit) Draw(screen *ebiten.Image){
-    // magic spirit is monster.lbx, 0
-
-    monsterIndex := 0
 
     // background, _ := summon.ImageCache.GetImage("spellscr.lbx", 9, 0)
     var options ebiten.DrawImageOptions
@@ -135,7 +155,7 @@ func (summon *SummonUnit) Draw(screen *ebiten.Image){
     wizardOptions.GeoM.Translate(7, 3)
     screen.DrawImage(wizard, &wizardOptions)
 
-    monster, _ := summon.ImageCache.GetImage("monster.lbx", monsterIndex, 0)
+    monster := summon.Monster
     monsterOptions := options
     monsterOptions.GeoM.Translate(75, 30 + 70 - float64(summon.SummonHeight))
     partialMonster := monster.SubImage(image.Rect(0, 0, monster.Bounds().Dx(), summon.SummonHeight)).(*ebiten.Image)
