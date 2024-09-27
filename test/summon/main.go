@@ -17,17 +17,18 @@ import (
 
 type Engine struct {
     LbxCache *lbx.LbxCache
-    Summon *summon.SummonUnit
+    Summon *summon.Summon
 }
 
 func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
-    var summonUnit *summon.SummonUnit
+    var summonUnit *summon.Summon
 
     switch scenario {
         case 1: summonUnit = summon.MakeSummonUnit(cache, units.MagicSpirit, data.WizardMerlin)
         case 2: summonUnit = summon.MakeSummonUnit(cache, units.SkyDrake, data.WizardJafar)
+        case 3: summonUnit = summon.MakeSummonArtifact(cache, data.WizardFreya)
         default:
             summonUnit = summon.MakeSummonUnit(cache, units.MagicSpirit, data.WizardMerlin)
     }

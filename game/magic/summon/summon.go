@@ -217,6 +217,18 @@ func MakeSummonUnit(cache *lbx.LbxCache, unit units.Unit, wizard data.WizardBase
     return makeSummon(cache, fmt.Sprintf("%v Summoned", unit.Name), wizard, monsterPicture, getRealmColor(unit))
 }
 
+func MakeSummonArtifact(cache *lbx.LbxCache, wizard data.WizardBase) *Summon {
+    imageCache := util.MakeImageCache(cache)
+
+    artifactIndex := 46
+    monsterPicture, err := imageCache.GetImage("monster.lbx", artifactIndex, 0)
+    if err != nil {
+        log.Printf("Error: could not load monster image at index %v: %v", artifactIndex, err)
+    }
+
+    return makeSummon(cache, "Artifact Summoned", wizard, monsterPicture, color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff})
+}
+
 func (summon *Summon) Update() SummonState {
     summon.Counter += 1
 
