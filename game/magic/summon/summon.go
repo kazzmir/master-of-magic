@@ -138,6 +138,7 @@ func MakeSummonUnit(cache *lbx.LbxCache, unit units.Unit, wizard data.WizardBase
         case data.ArcaneMagic: baseColor = color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}
     }
 
+    // FIXME: some of the pixels still have the wrong color, like the outer edges of the summoning circle
     updateColors := func (img *image.Paletted) image.Image {
         // 228-245 remap colors
         // colorRange := 245 - 226
