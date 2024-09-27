@@ -5,6 +5,7 @@ import (
     "log"
     "image"
     "image/color"
+    "math/rand"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
@@ -223,10 +224,37 @@ func MakeSummonArtifact(cache *lbx.LbxCache, wizard data.WizardBase) *Summon {
     artifactIndex := 46
     monsterPicture, err := imageCache.GetImage("monster.lbx", artifactIndex, 0)
     if err != nil {
-        log.Printf("Error: could not load monster image at index %v: %v", artifactIndex, err)
+        log.Printf("Error: could not load artifact image at index %v: %v", artifactIndex, err)
     }
 
     return makeSummon(cache, "Artifact Summoned", wizard, monsterPicture, color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff})
+}
+
+func MakeSummonHero(cache *lbx.LbxCache, wizard data.WizardBase, champion bool) *Summon {
+    imageCache := util.MakeImageCache(cache)
+
+    // female 44
+    // male 45
+
+    heroIndex := 45
+
+    if rand.Intn(2) == 0 {
+        heroIndex = 44
+    } else {
+        heroIndex = 45
+    }
+
+    heroPicture, err := imageCache.GetImage("monster.lbx", heroIndex, 0)
+    if err != nil {
+        log.Printf("Error: could not load hero image at index %v: %v", heroIndex, err)
+    }
+
+    title := "Hero Summoned"
+    if champion {
+        title = "Champion Summoned"
+    }
+
+    return makeSummon(cache, title, wizard, heroPicture, color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff})
 }
 
 func (summon *Summon) Update() SummonState {
