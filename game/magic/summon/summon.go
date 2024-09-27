@@ -36,15 +36,80 @@ type Summon struct {
     SummonHeight int
 }
 
-func MakeSummonUnit(cache *lbx.LbxCache, unit units.Unit, wizard data.WizardBase) *Summon {
+func makeSummon(cache *lbx.LbxCache, title string, wizard data.WizardBase, summonPic *ebiten.Image, baseColor color.Color) *Summon {
     summon := &Summon{
         Cache: cache,
         ImageCache: util.MakeImageCache(cache),
         Wizard: wizard,
-        Title: fmt.Sprintf("%v Summoned", unit.Name),
+        Title: title,
+        SummonPic: summonPic,
         State: SummonStateRunning,
     }
 
+    // FIXME: some of the pixels still have the wrong color, like the outer edges of the summoning circle
+    updateColors := func (img *image.Paletted) image.Image {
+        // 228-245 remap colors
+        // colorRange := 245 - 226
+
+        newPalette := make(color.Palette, len(img.Palette))
+        copy(newPalette, img.Palette)
+        img.Palette = newPalette
+
+        light := 0
+        for i := 225; i <= 247; i++ {
+            img.Palette[i] = util.Lighten(baseColor, float64(light))
+            light -= 4
+        }
+
+        /*
+        img.Palette[227] = color.RGBA{R: 0, G: 0, B: 0, A: 0}
+        img.Palette[228] = color.RGBA{R: 0, G: 0, B: 0, A: 0}
+        img.Palette[237] = color.RGBA{R: 0, G: 0, B: 0, A: 0}
+        img.Palette[238] = color.RGBA{R: 0, G: 0, B: 0, A: 0}
+        img.Palette[239] = color.RGBA{R: 0, G: 0, B: 0, A: 0}
+        */
+
+        return img
+    }
+
+    summonBack, _ := summon.ImageCache.GetImagesTransform("spellscr.lbx", 10, updateColors)
+    summon.CircleBack = util.MakeAnimation(summonBack, true)
+
+    summonFront, _ := summon.ImageCache.GetImagesTransform("spellscr.lbx", 11, updateColors)
+    summon.CircleFront = util.MakeAnimation(summonFront, true)
+
+    background, _ := summon.ImageCache.GetImageTransform("spellscr.lbx", 9, 0, updateColors)
+    summon.Background = background
+
+    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        return nil
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        return nil
+    }
+
+    orange := color.RGBA{R: 0xc7, G: 0x82, B: 0x1b, A: 0xff}
+
+    yellowPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        util.Lighten(orange, 0),
+        util.Lighten(orange, 15),
+        util.Lighten(orange, 30),
+        util.Lighten(orange, 50),
+        util.Lighten(orange, 70),
+        util.Lighten(orange, 90),
+    }
+
+    infoFontYellow := font.MakeOptimizedFontWithPalette(fonts[4], yellowPalette)
+    summon.Font = infoFontYellow
+
+    return summon
+}
+
+func MakeSummonUnit(cache *lbx.LbxCache, unit units.Unit, wizard data.WizardBase) *Summon {
     monsterIndex := 0
     // magic spirit is monster.lbx, 0
     if unit.Equals(units.MagicSpirit) {
@@ -123,7 +188,9 @@ func MakeSummonUnit(cache *lbx.LbxCache, unit units.Unit, wizard data.WizardBase
         log.Printf("Invalid summoning for unit %v", unit)
     }
 
-    monsterPicture, err := summon.ImageCache.GetImage("monster.lbx", monsterIndex, 0)
+    imageCache := util.MakeImageCache(cache)
+
+    monsterPicture, err := imageCache.GetImage("monster.lbx", monsterIndex, 0)
     if err != nil {
         log.Printf("Error: could not load monster image at index %v: %v", monsterIndex, err)
     }
@@ -138,69 +205,7 @@ func MakeSummonUnit(cache *lbx.LbxCache, unit units.Unit, wizard data.WizardBase
         case data.ArcaneMagic: baseColor = color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}
     }
 
-    // FIXME: some of the pixels still have the wrong color, like the outer edges of the summoning circle
-    updateColors := func (img *image.Paletted) image.Image {
-        // 228-245 remap colors
-        // colorRange := 245 - 226
-
-        newPalette := make(color.Palette, len(img.Palette))
-        copy(newPalette, img.Palette)
-        img.Palette = newPalette
-
-        light := 0
-        for i := 225; i <= 247; i++ {
-            img.Palette[i] = util.Lighten(baseColor, float64(light))
-            light -= 4
-        }
-
-        /*
-        img.Palette[227] = color.RGBA{R: 0, G: 0, B: 0, A: 0}
-        img.Palette[228] = color.RGBA{R: 0, G: 0, B: 0, A: 0}
-        img.Palette[237] = color.RGBA{R: 0, G: 0, B: 0, A: 0}
-        img.Palette[238] = color.RGBA{R: 0, G: 0, B: 0, A: 0}
-        img.Palette[239] = color.RGBA{R: 0, G: 0, B: 0, A: 0}
-        */
-
-        return img
-    }
-
-    summonBack, _ := summon.ImageCache.GetImagesTransform("spellscr.lbx", 10, updateColors)
-    summon.CircleBack = util.MakeAnimation(summonBack, true)
-
-    summonFront, _ := summon.ImageCache.GetImagesTransform("spellscr.lbx", 11, updateColors)
-    summon.CircleFront = util.MakeAnimation(summonFront, true)
-
-    background, _ := summon.ImageCache.GetImageTransform("spellscr.lbx", 9, 0, updateColors)
-    summon.Background = background
-
-    summon.SummonPic = monsterPicture
-
-    fontLbx, err := cache.GetLbxFile("fonts.lbx")
-    if err != nil {
-        return nil
-    }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        return nil
-    }
-
-    orange := color.RGBA{R: 0xc7, G: 0x82, B: 0x1b, A: 0xff}
-
-    yellowPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        util.Lighten(orange, 0),
-        util.Lighten(orange, 15),
-        util.Lighten(orange, 30),
-        util.Lighten(orange, 50),
-        util.Lighten(orange, 70),
-        util.Lighten(orange, 90),
-    }
-
-    infoFontYellow := font.MakeOptimizedFontWithPalette(fonts[4], yellowPalette)
-    summon.Font = infoFontYellow
-
-    return summon
+    return makeSummon(cache, fmt.Sprintf("%v Summoned", unit.Name), wizard, monsterPicture, baseColor)
 }
 
 func (summon *Summon) Update() SummonState {
