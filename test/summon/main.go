@@ -3,6 +3,8 @@ package main
 import (
     "log"
     "image/color"
+    "strconv"
+    "os"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/game/magic/summon"
@@ -18,10 +20,17 @@ type Engine struct {
     Summon *summon.SummonUnit
 }
 
-func NewEngine() (*Engine, error) {
+func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
-    summonUnit := summon.MakeSummonUnit(cache, units.MagicSpirit, data.WizardMerlin)
+    var summonUnit *summon.SummonUnit
+
+    switch scenario {
+        case 1: summonUnit = summon.MakeSummonUnit(cache, units.MagicSpirit, data.WizardMerlin)
+        case 2: summonUnit = summon.MakeSummonUnit(cache, units.SkyDrake, data.WizardJafar)
+        default:
+            summonUnit = summon.MakeSummonUnit(cache, units.MagicSpirit, data.WizardMerlin)
+    }
 
     return &Engine{
         LbxCache: cache,
@@ -69,7 +78,18 @@ func main(){
     ebiten.SetWindowTitle("summon unit")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 
-    engine, err := NewEngine()
+    scenario := 1
+
+    if len(os.Args) >= 2 {
+        x, err := strconv.Atoi(os.Args[1])
+        if err != nil {
+            log.Fatalf("Error with scenario: %v", err)
+        }
+
+        scenario = x
+    }
+
+    engine, err := NewEngine(scenario)
 
     if err != nil {
         log.Printf("Error: unable to load engine: %v", err)
