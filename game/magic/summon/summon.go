@@ -223,7 +223,7 @@ func (summon *SummonUnit) Draw(screen *ebiten.Image){
 
     // background, _ := summon.ImageCache.GetImage("spellscr.lbx", 9, 0)
     var options ebiten.DrawImageOptions
-    options.GeoM.Translate(70, 20)
+    options.GeoM.Translate(30, 40)
     screen.DrawImage(summon.Background, &options)
 
     wizardIndex := 46
