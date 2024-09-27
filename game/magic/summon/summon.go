@@ -5,6 +5,7 @@ import (
     "log"
     "image"
     "image/color"
+    "math/rand"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
@@ -21,30 +22,95 @@ const (
     SummonStateDone
 )
 
-type SummonUnit struct {
+type Summon struct {
     Counter uint64
     Cache *lbx.LbxCache
     ImageCache util.ImageCache
-    Unit units.Unit
+    Title string
     Wizard data.WizardBase
     State SummonState
     Font *font.Font
     CircleBack *util.Animation
     CircleFront *util.Animation
     Background *ebiten.Image
-    Monster *ebiten.Image
+    SummonPic *ebiten.Image
     SummonHeight int
 }
 
-func MakeSummonUnit(cache *lbx.LbxCache, unit units.Unit, wizard data.WizardBase) *SummonUnit {
-    summon := &SummonUnit{
+func makeSummon(cache *lbx.LbxCache, title string, wizard data.WizardBase, summonPic *ebiten.Image, baseColor color.Color) *Summon {
+    summon := &Summon{
         Cache: cache,
         ImageCache: util.MakeImageCache(cache),
         Wizard: wizard,
-        Unit: unit,
+        Title: title,
+        SummonPic: summonPic,
         State: SummonStateRunning,
     }
 
+    // FIXME: some of the pixels still have the wrong color, like the outer edges of the summoning circle
+    updateColors := func (img *image.Paletted) image.Image {
+        // 228-245 remap colors
+        // colorRange := 245 - 226
+
+        newPalette := make(color.Palette, len(img.Palette))
+        copy(newPalette, img.Palette)
+        img.Palette = newPalette
+
+        light := 0
+        for i := 225; i <= 247; i++ {
+            img.Palette[i] = util.Lighten(baseColor, float64(light))
+            light -= 4
+        }
+
+        /*
+        img.Palette[227] = color.RGBA{R: 0, G: 0, B: 0, A: 0}
+        img.Palette[228] = color.RGBA{R: 0, G: 0, B: 0, A: 0}
+        img.Palette[237] = color.RGBA{R: 0, G: 0, B: 0, A: 0}
+        img.Palette[238] = color.RGBA{R: 0, G: 0, B: 0, A: 0}
+        img.Palette[239] = color.RGBA{R: 0, G: 0, B: 0, A: 0}
+        */
+
+        return img
+    }
+
+    summonBack, _ := summon.ImageCache.GetImagesTransform("spellscr.lbx", 10, updateColors)
+    summon.CircleBack = util.MakeAnimation(summonBack, true)
+
+    summonFront, _ := summon.ImageCache.GetImagesTransform("spellscr.lbx", 11, updateColors)
+    summon.CircleFront = util.MakeAnimation(summonFront, true)
+
+    background, _ := summon.ImageCache.GetImageTransform("spellscr.lbx", 9, 0, updateColors)
+    summon.Background = background
+
+    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        return nil
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        return nil
+    }
+
+    orange := color.RGBA{R: 0xc7, G: 0x82, B: 0x1b, A: 0xff}
+
+    yellowPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        util.Lighten(orange, 0),
+        util.Lighten(orange, 15),
+        util.Lighten(orange, 30),
+        util.Lighten(orange, 50),
+        util.Lighten(orange, 70),
+        util.Lighten(orange, 90),
+    }
+
+    infoFontYellow := font.MakeOptimizedFontWithPalette(fonts[4], yellowPalette)
+    summon.Font = infoFontYellow
+
+    return summon
+}
+
+func getMonsterIndex(unit units.Unit) int {
     monsterIndex := 0
     // magic spirit is monster.lbx, 0
     if unit.Equals(units.MagicSpirit) {
@@ -123,11 +189,10 @@ func MakeSummonUnit(cache *lbx.LbxCache, unit units.Unit, wizard data.WizardBase
         log.Printf("Invalid summoning for unit %v", unit)
     }
 
-    monsterPicture, err := summon.ImageCache.GetImage("monster.lbx", monsterIndex, 0)
-    if err != nil {
-        log.Printf("Error: could not load monster image at index %v: %v", monsterIndex, err)
-    }
+    return monsterIndex
+}
 
+func getRealmColor(unit units.Unit) color.Color {
     baseColor := color.RGBA{R: 0, B: 0, G: 0xff, A: 0xff}
     switch unit.Realm {
         case data.LifeMagic: baseColor = color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}
@@ -138,72 +203,61 @@ func MakeSummonUnit(cache *lbx.LbxCache, unit units.Unit, wizard data.WizardBase
         case data.ArcaneMagic: baseColor = color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}
     }
 
-    // FIXME: some of the pixels still have the wrong color, like the outer edges of the summoning circle
-    updateColors := func (img *image.Paletted) image.Image {
-        // 228-245 remap colors
-        // colorRange := 245 - 226
-
-        newPalette := make(color.Palette, len(img.Palette))
-        copy(newPalette, img.Palette)
-        img.Palette = newPalette
-
-        light := 0
-        for i := 225; i <= 247; i++ {
-            img.Palette[i] = util.Lighten(baseColor, float64(light))
-            light -= 4
-        }
-
-        /*
-        img.Palette[227] = color.RGBA{R: 0, G: 0, B: 0, A: 0}
-        img.Palette[228] = color.RGBA{R: 0, G: 0, B: 0, A: 0}
-        img.Palette[237] = color.RGBA{R: 0, G: 0, B: 0, A: 0}
-        img.Palette[238] = color.RGBA{R: 0, G: 0, B: 0, A: 0}
-        img.Palette[239] = color.RGBA{R: 0, G: 0, B: 0, A: 0}
-        */
-
-        return img
-    }
-
-    summonBack, _ := summon.ImageCache.GetImagesTransform("spellscr.lbx", 10, updateColors)
-    summon.CircleBack = util.MakeAnimation(summonBack, true)
-
-    summonFront, _ := summon.ImageCache.GetImagesTransform("spellscr.lbx", 11, updateColors)
-    summon.CircleFront = util.MakeAnimation(summonFront, true)
-
-    background, _ := summon.ImageCache.GetImageTransform("spellscr.lbx", 9, 0, updateColors)
-    summon.Background = background
-
-    summon.Monster = monsterPicture
-
-    fontLbx, err := cache.GetLbxFile("fonts.lbx")
-    if err != nil {
-        return nil
-    }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        return nil
-    }
-
-    orange := color.RGBA{R: 0xc7, G: 0x82, B: 0x1b, A: 0xff}
-
-    yellowPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        util.Lighten(orange, 0),
-        util.Lighten(orange, 15),
-        util.Lighten(orange, 30),
-        util.Lighten(orange, 50),
-        util.Lighten(orange, 70),
-        util.Lighten(orange, 90),
-    }
-
-    infoFontYellow := font.MakeOptimizedFontWithPalette(fonts[4], yellowPalette)
-    summon.Font = infoFontYellow
-
-    return summon
+    return baseColor
 }
 
-func (summon *SummonUnit) Update() SummonState {
+func MakeSummonUnit(cache *lbx.LbxCache, unit units.Unit, wizard data.WizardBase) *Summon {
+    imageCache := util.MakeImageCache(cache)
+
+    monsterIndex := getMonsterIndex(unit)
+    monsterPicture, err := imageCache.GetImage("monster.lbx", monsterIndex, 0)
+    if err != nil {
+        log.Printf("Error: could not load monster image at index %v: %v", monsterIndex, err)
+    }
+
+    return makeSummon(cache, fmt.Sprintf("%v Summoned", unit.Name), wizard, monsterPicture, getRealmColor(unit))
+}
+
+func MakeSummonArtifact(cache *lbx.LbxCache, wizard data.WizardBase) *Summon {
+    imageCache := util.MakeImageCache(cache)
+
+    artifactIndex := 46
+    monsterPicture, err := imageCache.GetImage("monster.lbx", artifactIndex, 0)
+    if err != nil {
+        log.Printf("Error: could not load artifact image at index %v: %v", artifactIndex, err)
+    }
+
+    return makeSummon(cache, "Artifact Summoned", wizard, monsterPicture, color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff})
+}
+
+func MakeSummonHero(cache *lbx.LbxCache, wizard data.WizardBase, champion bool) *Summon {
+    imageCache := util.MakeImageCache(cache)
+
+    // female 44
+    // male 45
+
+    heroIndex := 45
+
+    if rand.Intn(2) == 0 {
+        heroIndex = 44
+    } else {
+        heroIndex = 45
+    }
+
+    heroPicture, err := imageCache.GetImage("monster.lbx", heroIndex, 0)
+    if err != nil {
+        log.Printf("Error: could not load hero image at index %v: %v", heroIndex, err)
+    }
+
+    title := "Hero Summoned"
+    if champion {
+        title = "Champion Summoned"
+    }
+
+    return makeSummon(cache, title, wizard, heroPicture, color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff})
+}
+
+func (summon *Summon) Update() SummonState {
     summon.Counter += 1
 
     if summon.Counter % 7 == 0 {
@@ -212,15 +266,19 @@ func (summon *SummonUnit) Update() SummonState {
     }
 
     if summon.Counter % 2 == 0 {
-        if summon.SummonHeight < summon.Monster.Bounds().Dy() {
+        if summon.SummonHeight < summon.SummonPic.Bounds().Dy() {
             summon.SummonHeight += 1
         }
+    }
+
+    if summon.Counter > 400 {
+        return SummonStateDone
     }
 
     return summon.State
 }
 
-func (summon *SummonUnit) Draw(screen *ebiten.Image){
+func (summon *Summon) Draw(screen *ebiten.Image){
 
     // background, _ := summon.ImageCache.GetImage("spellscr.lbx", 9, 0)
     var options ebiten.DrawImageOptions
@@ -254,7 +312,7 @@ func (summon *SummonUnit) Draw(screen *ebiten.Image){
     wizardOptions.GeoM.Translate(7, 3)
     screen.DrawImage(wizard, &wizardOptions)
 
-    monster := summon.Monster
+    monster := summon.SummonPic
     monsterOptions := options
     monsterOptions.GeoM.Translate(75, 30 + 70 - float64(summon.SummonHeight))
     partialMonster := monster.SubImage(image.Rect(0, 0, monster.Bounds().Dx(), summon.SummonHeight)).(*ebiten.Image)
@@ -265,5 +323,5 @@ func (summon *SummonUnit) Draw(screen *ebiten.Image){
     screen.DrawImage(summon.CircleFront.Frame(), &circleOptions)
 
     x, y := options.GeoM.Apply(float64(summon.Background.Bounds().Dx())/2, float64(summon.Background.Bounds().Dy()) - 18)
-    summon.Font.PrintCenter(screen, x, y, 1, options.ColorScale, fmt.Sprintf("%v Summoned", summon.Unit.Name))
+    summon.Font.PrintCenter(screen, x, y, 1, options.ColorScale, summon.Title)
 }
