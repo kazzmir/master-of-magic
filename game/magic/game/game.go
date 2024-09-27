@@ -244,7 +244,7 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
     game := &Game{
         Cache: lbxCache,
         Help: help,
-        Events: make(chan GameEvent, 1),
+        Events: make(chan GameEvent, 1000),
         Map: MakeMap(terrainData),
         State: GameStateRunning,
         Settings: settings,
