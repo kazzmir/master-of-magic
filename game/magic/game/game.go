@@ -1144,6 +1144,38 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
     return nil
 }
 
+func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
+    // keep processing events until we don't receive one in the events channel
+    for {
+        select {
+            case event := <-game.Events:
+                switch event.(type) {
+                    case *GameEventMagicView:
+                        game.doMagicView(yield)
+                    case *GameEventArmyView:
+                        game.doArmyView(yield)
+                    case *GameEventCityListView:
+                        game.doCityListView(yield)
+                    case *GameEventNewOutpost:
+                        outpost := event.(*GameEventNewOutpost)
+                        game.showOutpost(yield, outpost.City, outpost.Stack)
+                    case *GameEventScroll:
+                        scroll := event.(*GameEventScroll)
+                        game.showScroll(yield, scroll.Title, scroll.Text)
+                    case *GameEventNewBuilding:
+                        buildingEvent := event.(*GameEventNewBuilding)
+                        game.showNewBuilding(yield, buildingEvent.City, buildingEvent.Building)
+                    case *GameEventCityName:
+                        cityEvent := event.(*GameEventCityName)
+                        city := cityEvent.City
+                        city.Name = game.doInput(yield, cityEvent.Title, city.Name, cityEvent.X, cityEvent.Y)
+                }
+            default:
+                return
+        }
+    }
+}
+
 func (game *Game) Update(yield coroutine.YieldFunc) GameState {
     game.Counter += 1
 
@@ -1153,31 +1185,8 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
     }
     */
 
-    select {
-        case event := <-game.Events:
-            switch event.(type) {
-                case *GameEventMagicView:
-                    game.doMagicView(yield)
-                case *GameEventArmyView:
-                    game.doArmyView(yield)
-                case *GameEventCityListView:
-                    game.doCityListView(yield)
-                case *GameEventNewOutpost:
-                    outpost := event.(*GameEventNewOutpost)
-                    game.showOutpost(yield, outpost.City, outpost.Stack)
-                case *GameEventScroll:
-                    scroll := event.(*GameEventScroll)
-                    game.showScroll(yield, scroll.Title, scroll.Text)
-                case *GameEventNewBuilding:
-                    buildingEvent := event.(*GameEventNewBuilding)
-                    game.showNewBuilding(yield, buildingEvent.City, buildingEvent.Building)
-                case *GameEventCityName:
-                    cityEvent := event.(*GameEventCityName)
-                    city := cityEvent.City
-                    city.Name = game.doInput(yield, cityEvent.Title, city.Name, cityEvent.X, cityEvent.Y)
-            }
-        default:
-    }
+    game.ProcessEvents(yield)
+    
 
     switch game.State {
         case GameStateRunning:
