@@ -1165,8 +1165,6 @@ func (game *Game) doSummon(yield coroutine.YieldFunc, summonObject *summon.Summo
         game.Drawer = drawer
     }()
 
-    // summonUnit := summon.MakeSummonUnit(game.Cache, unit, wizard)
-
     game.Drawer = func (screen *ebiten.Image, game *Game){
         drawer(screen, game)
         summonObject.Draw(screen)
