@@ -1163,14 +1163,11 @@ func (game *Game) doSummonUnit(yield coroutine.YieldFunc, wizard data.WizardBase
         summonUnit.Draw(screen)
     }
 
-    quit := false
-    for !quit {
+    for summonUnit.Update() == summon.SummonStateRunning {
         leftClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)
         if leftClick {
-            quit = true
+            break
         }
-
-        summonUnit.Update()
 
         yield()
     }

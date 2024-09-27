@@ -21,27 +21,27 @@ const (
     SummonStateDone
 )
 
-type SummonUnit struct {
+type Summon struct {
     Counter uint64
     Cache *lbx.LbxCache
     ImageCache util.ImageCache
-    Unit units.Unit
+    Title string
     Wizard data.WizardBase
     State SummonState
     Font *font.Font
     CircleBack *util.Animation
     CircleFront *util.Animation
     Background *ebiten.Image
-    Monster *ebiten.Image
+    SummonPic *ebiten.Image
     SummonHeight int
 }
 
-func MakeSummonUnit(cache *lbx.LbxCache, unit units.Unit, wizard data.WizardBase) *SummonUnit {
-    summon := &SummonUnit{
+func MakeSummonUnit(cache *lbx.LbxCache, unit units.Unit, wizard data.WizardBase) *Summon {
+    summon := &Summon{
         Cache: cache,
         ImageCache: util.MakeImageCache(cache),
         Wizard: wizard,
-        Unit: unit,
+        Title: fmt.Sprintf("%v Summoned", unit.Name),
         State: SummonStateRunning,
     }
 
@@ -173,7 +173,7 @@ func MakeSummonUnit(cache *lbx.LbxCache, unit units.Unit, wizard data.WizardBase
     background, _ := summon.ImageCache.GetImageTransform("spellscr.lbx", 9, 0, updateColors)
     summon.Background = background
 
-    summon.Monster = monsterPicture
+    summon.SummonPic = monsterPicture
 
     fontLbx, err := cache.GetLbxFile("fonts.lbx")
     if err != nil {
@@ -203,7 +203,7 @@ func MakeSummonUnit(cache *lbx.LbxCache, unit units.Unit, wizard data.WizardBase
     return summon
 }
 
-func (summon *SummonUnit) Update() SummonState {
+func (summon *Summon) Update() SummonState {
     summon.Counter += 1
 
     if summon.Counter % 7 == 0 {
@@ -212,15 +212,19 @@ func (summon *SummonUnit) Update() SummonState {
     }
 
     if summon.Counter % 2 == 0 {
-        if summon.SummonHeight < summon.Monster.Bounds().Dy() {
+        if summon.SummonHeight < summon.SummonPic.Bounds().Dy() {
             summon.SummonHeight += 1
         }
+    }
+
+    if summon.Counter > 400 {
+        return SummonStateDone
     }
 
     return summon.State
 }
 
-func (summon *SummonUnit) Draw(screen *ebiten.Image){
+func (summon *Summon) Draw(screen *ebiten.Image){
 
     // background, _ := summon.ImageCache.GetImage("spellscr.lbx", 9, 0)
     var options ebiten.DrawImageOptions
@@ -254,7 +258,7 @@ func (summon *SummonUnit) Draw(screen *ebiten.Image){
     wizardOptions.GeoM.Translate(7, 3)
     screen.DrawImage(wizard, &wizardOptions)
 
-    monster := summon.Monster
+    monster := summon.SummonPic
     monsterOptions := options
     monsterOptions.GeoM.Translate(75, 30 + 70 - float64(summon.SummonHeight))
     partialMonster := monster.SubImage(image.Rect(0, 0, monster.Bounds().Dx(), summon.SummonHeight)).(*ebiten.Image)
@@ -265,5 +269,5 @@ func (summon *SummonUnit) Draw(screen *ebiten.Image){
     screen.DrawImage(summon.CircleFront.Frame(), &circleOptions)
 
     x, y := options.GeoM.Apply(float64(summon.Background.Bounds().Dx())/2, float64(summon.Background.Bounds().Dy()) - 18)
-    summon.Font.PrintCenter(screen, x, y, 1, options.ColorScale, fmt.Sprintf("%v Summoned", summon.Unit.Name))
+    summon.Font.PrintCenter(screen, x, y, 1, options.ColorScale, summon.Title)
 }
