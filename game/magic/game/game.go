@@ -24,6 +24,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/citylistview"
     "github.com/kazzmir/master-of-magic/game/magic/magicview"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/summon"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/draw"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
@@ -62,6 +63,11 @@ type GameEventCityListView struct {
 type GameEventNewOutpost struct {
     City *citylib.City
     Stack *playerlib.UnitStack
+}
+
+type GameEventSummonUnit struct {
+    Wizard data.WizardBase
+    Unit units.Unit
 }
 
 type GameEventNewBuilding struct {
@@ -244,7 +250,7 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
     game := &Game{
         Cache: lbxCache,
         Help: help,
-        Events: make(chan GameEvent, 1),
+        Events: make(chan GameEvent, 1000),
         Map: MakeMap(terrainData),
         State: GameStateRunning,
         Settings: settings,
@@ -1144,6 +1150,70 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
     return nil
 }
 
+func (game *Game) doSummonUnit(yield coroutine.YieldFunc, wizard data.WizardBase, unit units.Unit) {
+    drawer := game.Drawer
+    defer func(){
+        game.Drawer = drawer
+    }()
+
+    summonUnit := summon.MakeSummonUnit(game.Cache, unit, wizard)
+
+    game.Drawer = func (screen *ebiten.Image, game *Game){
+        drawer(screen, game)
+        summonUnit.Draw(screen)
+    }
+
+    quit := false
+    for !quit {
+        leftClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)
+        if leftClick {
+            quit = true
+        }
+
+        summonUnit.Update()
+
+        yield()
+    }
+
+    // absorb left click
+    yield()
+}
+
+func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
+    // keep processing events until we don't receive one in the events channel
+    for {
+        select {
+            case event := <-game.Events:
+                switch event.(type) {
+                    case *GameEventMagicView:
+                        game.doMagicView(yield)
+                    case *GameEventArmyView:
+                        game.doArmyView(yield)
+                    case *GameEventCityListView:
+                        game.doCityListView(yield)
+                    case *GameEventNewOutpost:
+                        outpost := event.(*GameEventNewOutpost)
+                        game.showOutpost(yield, outpost.City, outpost.Stack)
+                    case *GameEventScroll:
+                        scroll := event.(*GameEventScroll)
+                        game.showScroll(yield, scroll.Title, scroll.Text)
+                    case *GameEventNewBuilding:
+                        buildingEvent := event.(*GameEventNewBuilding)
+                        game.showNewBuilding(yield, buildingEvent.City, buildingEvent.Building)
+                    case *GameEventCityName:
+                        cityEvent := event.(*GameEventCityName)
+                        city := cityEvent.City
+                        city.Name = game.doInput(yield, cityEvent.Title, city.Name, cityEvent.X, cityEvent.Y)
+                    case *GameEventSummonUnit:
+                        summonUnit := event.(*GameEventSummonUnit)
+                        game.doSummonUnit(yield, summonUnit.Wizard, summonUnit.Unit)
+                }
+            default:
+                return
+        }
+    }
+}
+
 func (game *Game) Update(yield coroutine.YieldFunc) GameState {
     game.Counter += 1
 
@@ -1153,31 +1223,8 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
     }
     */
 
-    select {
-        case event := <-game.Events:
-            switch event.(type) {
-                case *GameEventMagicView:
-                    game.doMagicView(yield)
-                case *GameEventArmyView:
-                    game.doArmyView(yield)
-                case *GameEventCityListView:
-                    game.doCityListView(yield)
-                case *GameEventNewOutpost:
-                    outpost := event.(*GameEventNewOutpost)
-                    game.showOutpost(yield, outpost.City, outpost.Stack)
-                case *GameEventScroll:
-                    scroll := event.(*GameEventScroll)
-                    game.showScroll(yield, scroll.Title, scroll.Text)
-                case *GameEventNewBuilding:
-                    buildingEvent := event.(*GameEventNewBuilding)
-                    game.showNewBuilding(yield, buildingEvent.City, buildingEvent.Building)
-                case *GameEventCityName:
-                    cityEvent := event.(*GameEventCityName)
-                    city := cityEvent.City
-                    city.Name = game.doInput(yield, cityEvent.Title, city.Name, cityEvent.X, cityEvent.Y)
-            }
-        default:
-    }
+    game.ProcessEvents(yield)
+    
 
     switch game.State {
         case GameStateRunning:

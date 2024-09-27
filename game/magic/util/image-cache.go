@@ -23,7 +23,7 @@ func MakeImageCache(lbxCache *lbx.LbxCache) ImageCache {
 }
 
 // remove all alpha-0 pixels from the border of the image
-func AutoCrop(img image.Image) image.Image {
+func AutoCrop(img *image.Paletted) image.Image {
     bounds := img.Bounds()
     minX := bounds.Max.X
     minY := bounds.Max.Y
@@ -50,12 +50,7 @@ func AutoCrop(img image.Image) image.Image {
         }
     }
 
-    paletted, ok := img.(*image.Paletted)
-    if ok {
-        return paletted.SubImage(image.Rect(minX, minY, maxX, maxY))
-    }
-
-    return img
+    return img.SubImage(image.Rect(minX, minY, maxX, maxY))
 }
 
 
@@ -64,7 +59,7 @@ func (cache *ImageCache) Clear(){
     cache.Cache = make(map[string][]*ebiten.Image)
 }
 
-func (cache *ImageCache) GetImagesTransform(lbxPath string, index int, transform func(image.Image) image.Image) ([]*ebiten.Image, error) {
+func (cache *ImageCache) GetImagesTransform(lbxPath string, index int, transform func(*image.Paletted) image.Image) ([]*ebiten.Image, error) {
     lbxPath = strings.ToLower(lbxPath)
     key := fmt.Sprintf("%s:%d", lbxPath, index)
 
@@ -105,12 +100,12 @@ func (cache *ImageCache) GetImagesTransform(lbxPath string, index int, transform
 }
 
 func (cache *ImageCache) GetImages(lbxPath string, index int) ([]*ebiten.Image, error) {
-    return cache.GetImagesTransform(lbxPath, index, func (img image.Image) image.Image {
+    return cache.GetImagesTransform(lbxPath, index, func (img *image.Paletted) image.Image {
         return img
     })
 }
 
-func (cache *ImageCache) GetImageTransform(lbxFile string, spriteIndex int, animationIndex int, transform func(image.Image) image.Image) (*ebiten.Image, error) {
+func (cache *ImageCache) GetImageTransform(lbxFile string, spriteIndex int, animationIndex int, transform func(*image.Paletted) image.Image) (*ebiten.Image, error) {
     images, err := cache.GetImagesTransform(lbxFile, spriteIndex, transform)
     if err != nil {
         return nil, err
@@ -124,7 +119,7 @@ func (cache *ImageCache) GetImageTransform(lbxFile string, spriteIndex int, anim
 }
 
 func (cache *ImageCache) GetImage(lbxFile string, spriteIndex int, animationIndex int) (*ebiten.Image, error) {
-    return cache.GetImageTransform(lbxFile, spriteIndex, animationIndex, func (img image.Image) image.Image {
+    return cache.GetImageTransform(lbxFile, spriteIndex, animationIndex, func (img *image.Paletted) image.Image {
         return img
     })
 }

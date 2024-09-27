@@ -117,6 +117,9 @@ type Unit struct {
     Flying bool
     Abilities []Ability
 
+    // fantastic units belong to a specific magic realm
+    Realm data.MagicType
+
     RequiredBuildings []building.Building
 
     RangedAttackDamageType Damage
@@ -478,6 +481,7 @@ var WarMammoths Unit = Unit{
 var MagicSpirit Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 34,
+    Realm: data.ArcaneMagic,
     // FIXME: check on this
     Race: data.RaceFantastic,
 }
@@ -489,6 +493,7 @@ var HellHounds Unit = Unit{
     CombatLbxFile: "figure11.lbx",
     CombatIndex: 40,
     MovementSpeed: 2,
+    Realm: data.ChaosMagic,
     MeleeAttackPower: 3,
     Count: 4,
     Defense: 2,
@@ -503,6 +508,7 @@ var Gargoyle Unit = Unit{
     Name: "Gargoyles",
     CombatLbxFile: "figure11.lbx",
     CombatIndex: 48,
+    Realm: data.ChaosMagic,
     MovementSpeed: 2,
     Flying: true,
     MeleeAttackPower: 4,
@@ -520,6 +526,7 @@ var FireGiant Unit = Unit{
     CombatLbxFile: "figure11.lbx",
     CombatIndex: 56,
     MovementSpeed: 2,
+    Realm: data.ChaosMagic,
     Count: 1,
     MeleeAttackPower: 10,
     RangedAttackPower: 10,
@@ -537,6 +544,7 @@ var FireElemental Unit = Unit{
     Race: data.RaceFantastic,
     CombatLbxFile: "figure11.lbx",
     CombatIndex: 64,
+    Realm: data.ChaosMagic,
     Name: "Fire Elemental",
     Count: 1,
     MovementSpeed: 1,
@@ -552,6 +560,7 @@ var ChaosSpawn Unit = Unit{
     Name: "Chaos Spawn",
     CombatLbxFile: "figure11.lbx",
     CombatIndex: 72,
+    Realm: data.ChaosMagic,
     MovementSpeed: 1,
     Flying: true,
     Count: 1,
@@ -567,6 +576,7 @@ var Chimeras Unit = Unit{
     Index: 40,
     CombatLbxFile: "figure11.lbx",
     CombatIndex: 80,
+    Realm: data.ChaosMagic,
     MovementSpeed: 2,
     Flying: true,
     Count: 4,
@@ -584,6 +594,7 @@ var DoomBat Unit = Unit{
     CombatLbxFile: "figure11.lbx",
     CombatIndex: 88,
     MovementSpeed: 4,
+    Realm: data.ChaosMagic,
     Flying: true,
     MeleeAttackPower: 10,
     Defense: 5,
@@ -600,6 +611,7 @@ var Efreet Unit = Unit{
     CombatLbxFile: "figure11.lbx",
     CombatIndex: 96,
     MovementSpeed: 3,
+    Realm: data.ChaosMagic,
     Flying: true,
     Count: 1,
     // caster 20
@@ -620,6 +632,7 @@ var Hydra Unit = Unit{
     CombatLbxFile: "figure11.lbx",
     CombatIndex: 104,
     Count: 1,
+    Realm: data.ChaosMagic,
     MovementSpeed: 1,
     MeleeAttackPower: 6,
     Defense: 4,
@@ -637,6 +650,7 @@ var GreatDrake Unit = Unit{
     Race: data.RaceFantastic,
     Abilities: []Ability{AbilityForester, AbilityDoomGaze},
     Count: 1,
+    Realm: data.ChaosMagic,
     HitPoints: 30,
     Flying: true,
     AttackSound: AttackSoundMonster2,
@@ -652,23 +666,27 @@ var Skeleton Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 45,
     Race: data.RaceFantastic,
+    Realm: data.DeathMagic,
 }
 
 var Ghoul Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 46,
+    Realm: data.DeathMagic,
     Race: data.RaceFantastic,
 }
 
 var NightStalker Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 47,
+    Realm: data.DeathMagic,
     Race: data.RaceFantastic,
 }
 
 var WereWolf Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 48,
+    Realm: data.DeathMagic,
     Race: data.RaceFantastic,
 }
 
@@ -679,6 +697,7 @@ var Demon Unit = Unit{
     CombatLbxFile: "figure12.lbx",
     CombatIndex: 32,
     Count: 1,
+    Realm: data.DeathMagic,
     MovementSpeed: 2,
     Flying: true,
     MeleeAttackPower: 14,
@@ -690,30 +709,35 @@ var Demon Unit = Unit{
 var Wraith Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 50,
+    Realm: data.DeathMagic,
     Race: data.RaceFantastic,
 }
 
 var ShadowDemon Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 51,
+    Realm: data.DeathMagic,
     Race: data.RaceFantastic,
 }
 
 var DeathKnight Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 52,
+    Realm: data.DeathMagic,
     Race: data.RaceFantastic,
 }
 
 var DemonLord Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 53,
+    Realm: data.DeathMagic,
     Race: data.RaceFantastic,
 }
 
 var Zombie Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 54,
+    Realm: data.DeathMagic,
     Race: data.RaceFantastic,
 }
 
@@ -721,24 +745,28 @@ var Unicorn Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 55,
     Race: data.RaceFantastic,
+    Realm: data.LifeMagic,
 }
 
 var GuardianSpirit Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 56,
     Race: data.RaceFantastic,
+    Realm: data.LifeMagic,
 }
 
 var Angel Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 57,
     Race: data.RaceFantastic,
+    Realm: data.LifeMagic,
 }
 
 var ArchAngel Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 58,
     Race: data.RaceFantastic,
+    Realm: data.LifeMagic,
 }
 
 var WarBear Unit = Unit{
@@ -748,6 +776,7 @@ var WarBear Unit = Unit{
     CombatLbxFile: "figure15.lbx",
     CombatIndex: 0,
     Count: 2,
+    Realm: data.NatureMagic,
     MeleeAttackPower: 7,
     Defense: 3,
     Resistance: 6,
@@ -763,6 +792,7 @@ var Sprite Unit = Unit{
     CombatLbxFile: "figure15.lbx",
     CombatIndex: 8,
     Count: 4,
+    Realm: data.NatureMagic,
     MeleeAttackPower: 4,
     RangedAttacks: 4,
     RangedAttackPower: 3,
@@ -782,6 +812,7 @@ var Cockatrice Unit = Unit{
     Name: "Cockatrice",
     CombatLbxFile: "figure13.lbx",
     CombatIndex: 8,
+    Realm: data.NatureMagic,
     Count: 4,
     MovementSpeed: 2,
     Flying: true,
@@ -799,6 +830,7 @@ var Basilisk Unit = Unit{
     CombatLbxFile: "figure13.lbx",
     CombatIndex: 16,
     Count: 1,
+    Realm: data.NatureMagic,
     MovementSpeed: 2,
     MeleeAttackPower: 15,
     Defense: 4,
@@ -813,6 +845,7 @@ var GiantSpider Unit = Unit{
     Name: "Giant Spider",
     CombatLbxFile: "figure13.lbx",
     CombatIndex: 24,
+    Realm: data.NatureMagic,
     Count: 2,
     MovementSpeed: 2,
     MeleeAttackPower: 4,
@@ -829,6 +862,7 @@ var StoneGiant Unit = Unit{
     CombatLbxFile: "figure13.lbx",
     CombatIndex: 32,
     Count: 1,
+    Realm: data.NatureMagic,
     MovementSpeed: 2,
     MeleeAttackPower: 15,
     RangedAttackPower: 15,
@@ -847,6 +881,7 @@ var Colossus Unit = Unit{
     CombatLbxFile: "figure13.lbx",
     CombatIndex: 40,
     Count: 1,
+    Realm: data.NatureMagic,
     MovementSpeed: 2,
     MeleeAttackPower: 20,
     Defense: 10,
@@ -863,6 +898,7 @@ var Gorgon Unit = Unit{
     CombatIndex: 48,
     Count: 2,
     MovementSpeed: 2,
+    Realm: data.NatureMagic,
     Flying: true,
     MeleeAttackPower: 8,
     Defense: 7,
@@ -877,6 +913,7 @@ var EarthElemental Unit = Unit{
     Race: data.RaceFantastic,
     CombatLbxFile: "figure15.lbx",
     CombatIndex: 64,
+    Realm: data.NatureMagic,
     Name: "Earth Elemental",
     Count: 1,
     MeleeAttackPower: 25,
@@ -893,6 +930,7 @@ var Behemoth Unit = Unit{
     CombatLbxFile: "figure13.lbx",
     CombatIndex: 64,
     Count: 1,
+    Realm: data.NatureMagic,
     MovementSpeed: 2,
     MeleeAttackPower: 25,
     Defense: 9,
@@ -908,6 +946,7 @@ var GreatWyrm Unit = Unit{
     CombatLbxFile: "figure13.lbx",
     CombatIndex: 72,
     Count: 1,
+    Realm: data.NatureMagic,
     MovementSpeed: 3,
     MeleeAttackPower: 25,
     Defense: 12,
@@ -920,6 +959,7 @@ var FloatingIsland Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 70,
     Race: data.RaceFantastic,
+    Realm: data.SorceryMagic,
 }
 
 var PhantomBeast Unit = Unit{
@@ -928,6 +968,7 @@ var PhantomBeast Unit = Unit{
     Race: data.RaceFantastic,
     CombatLbxFile: "figure13.lbx",
     CombatIndex: 88,
+    Realm: data.SorceryMagic,
     Name: "Phantom Beast",
     Count: 1,
     MeleeAttackPower: 18,
@@ -941,6 +982,7 @@ var PhantomWarrior Unit = Unit{
     Index: 72,
     CombatLbxFile: "figure13.lbx",
     CombatIndex: 96,
+    Realm: data.SorceryMagic,
     Name: "Phantom Warriors",
     MovementSpeed: 1,
     Count: 6,
@@ -957,6 +999,7 @@ var StormGiant Unit = Unit{
     CombatLbxFile: "figure13.lbx",
     CombatIndex: 104,
     Count: 1,
+    Realm: data.SorceryMagic,
     MovementSpeed: 2,
     MeleeAttackPower: 12,
     RangedAttackPower: 10,
@@ -976,6 +1019,7 @@ var AirElemental Unit = Unit{
     CombatLbxFile: "figure13.lbx",
     CombatIndex: 112,
     Count: 1,
+    Realm: data.SorceryMagic,
     Flying: true,
     MovementSpeed: 5,
     MeleeAttackPower: 15,
@@ -991,6 +1035,7 @@ var Djinn Unit = Unit{
     CombatLbxFile: "figure14.lbx",
     CombatIndex: 0,
     Count: 1,
+    Realm: data.SorceryMagic,
     MovementSpeed: 3,
     Flying: true,
     MeleeAttackPower: 15,
@@ -1007,6 +1052,7 @@ var SkyDrake Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 76,
     Name: "SkyDrake",
+    Realm: data.SorceryMagic,
     CombatLbxFile: "figure14.lbx",
     CombatIndex: 8,
     Count: 1,
@@ -1025,6 +1071,7 @@ var Nagas Unit = Unit{
     Name: "Nagas",
     CombatLbxFile: "figure14.lbx",
     CombatIndex: 16,
+    Realm: data.SorceryMagic,
     MovementSpeed: 1,
     Count: 2,
     MeleeAttackPower: 4,
