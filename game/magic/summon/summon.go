@@ -109,7 +109,7 @@ func makeSummon(cache *lbx.LbxCache, title string, wizard data.WizardBase, summo
     return summon
 }
 
-func MakeSummonUnit(cache *lbx.LbxCache, unit units.Unit, wizard data.WizardBase) *Summon {
+func getMonsterIndex(unit units.Unit) int {
     monsterIndex := 0
     // magic spirit is monster.lbx, 0
     if unit.Equals(units.MagicSpirit) {
@@ -188,13 +188,10 @@ func MakeSummonUnit(cache *lbx.LbxCache, unit units.Unit, wizard data.WizardBase
         log.Printf("Invalid summoning for unit %v", unit)
     }
 
-    imageCache := util.MakeImageCache(cache)
+    return monsterIndex
+}
 
-    monsterPicture, err := imageCache.GetImage("monster.lbx", monsterIndex, 0)
-    if err != nil {
-        log.Printf("Error: could not load monster image at index %v: %v", monsterIndex, err)
-    }
-
+func getRealmColor(unit units.Unit) color.Color {
     baseColor := color.RGBA{R: 0, B: 0, G: 0xff, A: 0xff}
     switch unit.Realm {
         case data.LifeMagic: baseColor = color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}
@@ -205,7 +202,19 @@ func MakeSummonUnit(cache *lbx.LbxCache, unit units.Unit, wizard data.WizardBase
         case data.ArcaneMagic: baseColor = color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}
     }
 
-    return makeSummon(cache, fmt.Sprintf("%v Summoned", unit.Name), wizard, monsterPicture, baseColor)
+    return baseColor
+}
+
+func MakeSummonUnit(cache *lbx.LbxCache, unit units.Unit, wizard data.WizardBase) *Summon {
+    imageCache := util.MakeImageCache(cache)
+
+    monsterIndex := getMonsterIndex(unit)
+    monsterPicture, err := imageCache.GetImage("monster.lbx", monsterIndex, 0)
+    if err != nil {
+        log.Printf("Error: could not load monster image at index %v: %v", monsterIndex, err)
+    }
+
+    return makeSummon(cache, fmt.Sprintf("%v Summoned", unit.Name), wizard, monsterPicture, getRealmColor(unit))
 }
 
 func (summon *Summon) Update() SummonState {
