@@ -70,6 +70,15 @@ type GameEventSummonUnit struct {
     Unit units.Unit
 }
 
+type GameEventSummonArtifact struct {
+    Wizard data.WizardBase
+}
+
+type GameEventSummonHero struct {
+    Wizard data.WizardBase
+    Champion bool
+}
+
 type GameEventNewBuilding struct {
     City *citylib.City
     Building buildinglib.Building
@@ -1150,20 +1159,20 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
     return nil
 }
 
-func (game *Game) doSummonUnit(yield coroutine.YieldFunc, wizard data.WizardBase, unit units.Unit) {
+func (game *Game) doSummon(yield coroutine.YieldFunc, summonObject *summon.Summon) {
     drawer := game.Drawer
     defer func(){
         game.Drawer = drawer
     }()
 
-    summonUnit := summon.MakeSummonUnit(game.Cache, unit, wizard)
+    // summonUnit := summon.MakeSummonUnit(game.Cache, unit, wizard)
 
     game.Drawer = func (screen *ebiten.Image, game *Game){
         drawer(screen, game)
-        summonUnit.Draw(screen)
+        summonObject.Draw(screen)
     }
 
-    for summonUnit.Update() == summon.SummonStateRunning {
+    for summonObject.Update() == summon.SummonStateRunning {
         leftClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)
         if leftClick {
             break
@@ -1203,7 +1212,13 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         city.Name = game.doInput(yield, cityEvent.Title, city.Name, cityEvent.X, cityEvent.Y)
                     case *GameEventSummonUnit:
                         summonUnit := event.(*GameEventSummonUnit)
-                        game.doSummonUnit(yield, summonUnit.Wizard, summonUnit.Unit)
+                        game.doSummon(yield, summon.MakeSummonUnit(game.Cache, summonUnit.Unit, summonUnit.Wizard))
+                    case *GameEventSummonArtifact:
+                        summonArtifact := event.(*GameEventSummonArtifact)
+                        game.doSummon(yield, summon.MakeSummonArtifact(game.Cache, summonArtifact.Wizard))
+                    case *GameEventSummonHero:
+                        summonHero := event.(*GameEventSummonHero)
+                        game.doSummon(yield, summon.MakeSummonHero(game.Cache, summonHero.Wizard, summonHero.Champion))
                 }
             default:
                 return
