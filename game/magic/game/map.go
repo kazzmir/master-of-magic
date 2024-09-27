@@ -11,6 +11,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
+    playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     "github.com/kazzmir/master-of-magic/game/magic/units"
 
     "github.com/hajimehoshi/ebiten/v2"
@@ -38,10 +39,53 @@ type ExtraMagicNode struct {
     // list of points that are affected by the node
     Zone []image.Point
 
+    // if this node is melded, then this player receives the power
+    MeldingWizard *playerlib.Player
+    // true if melded by a guardian spirit, otherwise false if melded by a magic spirit
+    GuardianSpiritMeld bool
+
     // also contains treasure
 }
 
 func (node *ExtraMagicNode) Draw(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions){
+    // if the node is melded then show the zone of influence with the sparkly images
+}
+
+func (node *ExtraMagicNode) Meld(meldingWizard *playerlib.Player, spirit units.Unit) bool {
+    if node.MeldingWizard == nil {
+        node.MeldingWizard = meldingWizard
+        if spirit.Equals(units.GuardianSpirit) {
+            node.GuardianSpiritMeld = true
+        } else {
+            node.GuardianSpiritMeld = false
+        }
+
+        return true
+    } else {
+        // can't meld the same node twice
+        if node.MeldingWizard == meldingWizard {
+            return false
+        }
+
+        successful := true
+        // 25% chance to meld if guardian spirit already melded it
+        if node.GuardianSpiritMeld && rand.Intn(4) != 0 {
+            successful = false
+        }
+
+        if successful {
+            node.MeldingWizard = meldingWizard
+            if spirit.Equals(units.GuardianSpirit) {
+                node.GuardianSpiritMeld = true
+            } else {
+                node.GuardianSpiritMeld = false
+            }
+
+            return true
+        }
+
+        return false
+    }
 }
 
 /* choose X points surrounding the node. 0,0 is the node itself. for arcanus, choose 5-10 points from a 4x4 square.
