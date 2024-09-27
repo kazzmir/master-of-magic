@@ -1,11 +1,13 @@
 package summon
 
 import (
+    "fmt"
     "log"
     "image"
     "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/util"
@@ -23,8 +25,10 @@ type SummonUnit struct {
     Counter uint64
     Cache *lbx.LbxCache
     ImageCache util.ImageCache
+    Unit units.Unit
     Wizard data.WizardBase
     State SummonState
+    Font *font.Font
     CircleBack *util.Animation
     CircleFront *util.Animation
     Background *ebiten.Image
@@ -37,6 +41,7 @@ func MakeSummonUnit(cache *lbx.LbxCache, unit units.Unit, wizard data.WizardBase
         Cache: cache,
         ImageCache: util.MakeImageCache(cache),
         Wizard: wizard,
+        Unit: unit,
         State: SummonStateRunning,
     }
 
@@ -169,6 +174,31 @@ func MakeSummonUnit(cache *lbx.LbxCache, unit units.Unit, wizard data.WizardBase
 
     summon.Monster = monsterPicture
 
+    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        return nil
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        return nil
+    }
+
+    orange := color.RGBA{R: 0xc7, G: 0x82, B: 0x1b, A: 0xff}
+
+    yellowPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        util.Lighten(orange, 0),
+        util.Lighten(orange, 15),
+        util.Lighten(orange, 30),
+        util.Lighten(orange, 50),
+        util.Lighten(orange, 70),
+        util.Lighten(orange, 90),
+    }
+
+    infoFontYellow := font.MakeOptimizedFontWithPalette(fonts[4], yellowPalette)
+    summon.Font = infoFontYellow
+
     return summon
 }
 
@@ -232,4 +262,7 @@ func (summon *SummonUnit) Draw(screen *ebiten.Image){
     circleOptions.GeoM.Translate(11, 26)
     circleOptions.ColorScale.ScaleAlpha(1.0)
     screen.DrawImage(summon.CircleFront.Frame(), &circleOptions)
+
+    x, y := options.GeoM.Apply(float64(summon.Background.Bounds().Dx())/2, float64(summon.Background.Bounds().Dy()) - 18)
+    summon.Font.PrintCenter(screen, x, y, 1, options.ColorScale, fmt.Sprintf("%v Summoned", summon.Unit.Name))
 }

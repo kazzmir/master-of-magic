@@ -64,6 +64,11 @@ type GameEventNewOutpost struct {
     Stack *playerlib.UnitStack
 }
 
+type GameEventSummonUnit struct {
+    Wizard data.WizardBase
+    Unit units.Unit
+}
+
 type GameEventNewBuilding struct {
     City *citylib.City
     Building buildinglib.Building
