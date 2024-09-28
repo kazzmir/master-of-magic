@@ -848,7 +848,7 @@ func createScenario11(cache *lbx.LbxCache) *gamelib.Game {
     log.Printf("Running scenario 11")
     wizard := setup.WizardCustom{
         Name: "bob",
-        Banner: data.BannerBlue,
+        Banner: data.BannerRed,
         Race: data.RaceTroll,
         Abilities: []setup.WizardAbility{
             setup.AbilityAlchemy,

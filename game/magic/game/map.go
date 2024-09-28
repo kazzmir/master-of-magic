@@ -51,12 +51,22 @@ func (node *ExtraMagicNode) Draw(screen *ebiten.Image, imageCache *util.ImageCac
     // if the node is melded then show the zone of influence with the sparkly images
 
     if node.Empty && node.MeldingWizard != nil {
+        index := 63
+        switch node.MeldingWizard.Wizard.Banner {
+            case data.BannerBlue: index = 63
+            case data.BannerGreen: index = 64
+            case data.BannerPurple: index = 65
+            case data.BannerRed: index = 66
+            case data.BannerYellow: index = 67
+        }
+
+        sparkle, _ := imageCache.GetImages("mapback.lbx", index)
+        use := sparkle[counter % uint64(len(sparkle))]
+
         for _, point := range node.Zone {
             options2 := *options
             options2.GeoM.Translate(float64(point.X * tileWidth), float64(point.Y * tileHeight))
 
-            sparkle, _ := imageCache.GetImages("mapback.lbx", 63)
-            use := sparkle[counter % uint64(len(sparkle))]
             screen.DrawImage(use, &options2)
         }
     }
