@@ -1952,6 +1952,50 @@ func (game *Game) CreateOutpost(settlers *units.OverworldUnit, player *playerlib
     return newCity
 }
 
+func (game *Game) DoMeld(unit *units.OverworldUnit, player *playerlib.Player, node *ExtraMagicNode){
+    node.Meld(player, unit.Unit)
+    player.RemoveUnit(unit)
+}
+
+func (game *Game) DoBuildAction(player *playerlib.Player){
+    if player.SelectedStack != nil {
+        buildPower := false
+        meldPower := false
+
+        if player.SelectedStack != nil {
+            for _, check := range player.SelectedStack.ActiveUnits() {
+                // FIXME: check if this tile is valid to build an outpost on
+                if check.Unit.HasAbility(units.AbilityCreateOutpost) {
+                    buildPower = true
+                }
+
+                if check.Unit.HasAbility(units.AbilityMeld) {
+                    meldPower = true
+                }
+            }
+        }
+
+        if buildPower {
+            // search for the settlers (the only unit with the create outpost ability
+            for _, settlers := range player.SelectedStack.ActiveUnits() {
+                // FIXME: check if this tile is valid to build an outpost on
+                if settlers.Unit.HasAbility(units.AbilityCreateOutpost) {
+                    game.CreateOutpost(settlers, player)
+                    break
+                }
+            }
+        } else if meldPower {
+            node := game.Map.GetMagicNode(player.SelectedStack.X(), player.SelectedStack.Y())
+            for _, melder := range player.SelectedStack.ActiveUnits() {
+                if melder.Unit.HasAbility(units.AbilityMeld) {
+                    game.DoMeld(melder, player, node)
+                    break
+                }
+            }
+        }
+    }
+}
+
 func (game *Game) MakeHudUI() *uilib.UI {
     ui := &uilib.UI{
         Draw: func(ui *uilib.UI, screen *ebiten.Image){
@@ -2341,15 +2385,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
                 buildIndex = 0
 
-                player := game.Players[0]
-                // search for the settlers (the only unit with the create outpost ability
-                for _, settlers := range player.SelectedStack.ActiveUnits() {
-                    // FIXME: check if this tile is valid to build an outpost on
-                    if settlers.Unit.HasAbility(units.AbilityCreateOutpost) {
-                        game.CreateOutpost(settlers, player)
-                            break
-                    }
-                }
+                game.DoBuildAction(player)
             },
         })
 
