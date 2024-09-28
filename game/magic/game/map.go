@@ -11,6 +11,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
+    playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     "github.com/kazzmir/master-of-magic/game/magic/units"
 
     "github.com/hajimehoshi/ebiten/v2"
@@ -24,7 +25,7 @@ const (
 )
 
 type ExtraTile interface {
-    Draw(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions)
+    Draw(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64, tileWidth int, tileHeight int)
 }
 
 type ExtraRoad struct {
@@ -38,10 +39,73 @@ type ExtraMagicNode struct {
     // list of points that are affected by the node
     Zone []image.Point
 
+    // if this node is melded, then this player receives the power
+    MeldingWizard *playerlib.Player
+    // true if melded by a guardian spirit, otherwise false if melded by a magic spirit
+    GuardianSpiritMeld bool
+
     // also contains treasure
 }
 
-func (node *ExtraMagicNode) Draw(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions){
+func (node *ExtraMagicNode) Draw(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64, tileWidth int, tileHeight int){
+    // if the node is melded then show the zone of influence with the sparkly images
+
+    if node.Empty && node.MeldingWizard != nil {
+        index := 63
+        switch node.MeldingWizard.Wizard.Banner {
+            case data.BannerBlue: index = 63
+            case data.BannerGreen: index = 64
+            case data.BannerPurple: index = 65
+            case data.BannerRed: index = 66
+            case data.BannerYellow: index = 67
+        }
+
+        sparkle, _ := imageCache.GetImages("mapback.lbx", index)
+        use := sparkle[counter % uint64(len(sparkle))]
+
+        for _, point := range node.Zone {
+            options2 := *options
+            options2.GeoM.Translate(float64(point.X * tileWidth), float64(point.Y * tileHeight))
+            screen.DrawImage(use, &options2)
+        }
+    }
+}
+
+func (node *ExtraMagicNode) Meld(meldingWizard *playerlib.Player, spirit units.Unit) bool {
+    if node.MeldingWizard == nil {
+        node.MeldingWizard = meldingWizard
+        if spirit.Equals(units.GuardianSpirit) {
+            node.GuardianSpiritMeld = true
+        } else {
+            node.GuardianSpiritMeld = false
+        }
+
+        return true
+    } else {
+        // can't meld the same node twice
+        if node.MeldingWizard == meldingWizard {
+            return false
+        }
+
+        successful := true
+        // 25% chance to meld if guardian spirit already melded it
+        if node.GuardianSpiritMeld && rand.Intn(4) != 0 {
+            successful = false
+        }
+
+        if successful {
+            node.MeldingWizard = meldingWizard
+            if spirit.Equals(units.GuardianSpirit) {
+                node.GuardianSpiritMeld = true
+            } else {
+                node.GuardianSpiritMeld = false
+            }
+
+            return true
+        }
+
+        return false
+    }
 }
 
 /* choose X points surrounding the node. 0,0 is the node itself. for arcanus, choose 5-10 points from a 4x4 square.
@@ -383,7 +447,7 @@ func MakeMap(data *terrain.TerrainData) *Map {
     }
 }
 
-func (mapObject *Map) CreateNode(x int, y int, node MagicNode, plane data.Plane, magicSetting data.MagicSetting, difficulty data.DifficultySetting) {
+func (mapObject *Map) CreateNode(x int, y int, node MagicNode, plane data.Plane, magicSetting data.MagicSetting, difficulty data.DifficultySetting) *ExtraMagicNode {
     tileType := 0
     switch node {
         case MagicNodeNature: tileType = terrain.TileNatureForest.Index
@@ -393,7 +457,11 @@ func (mapObject *Map) CreateNode(x int, y int, node MagicNode, plane data.Plane,
 
     mapObject.Map.Terrain[x][y] = tileType
 
-    mapObject.ExtraMap[image.Pt(x, y)] = MakeMagicNode(node, magicSetting, difficulty, plane)
+    out := MakeMagicNode(node, magicSetting, difficulty, plane)
+
+    mapObject.ExtraMap[image.Pt(x, y)] = out
+
+    return out
 }
 
 func (mapObject *Map) GetMagicNode(x int, y int) *ExtraMagicNode {
@@ -584,6 +652,7 @@ func (mapObject *Map) Draw(cameraX int, cameraY int, animationCounter uint64, im
 
     var options ebiten.DrawImageOptions
 
+    // draw all tiles first
     for x := 0; x < tilesPerRow; x++ {
         for y := 0; y < tilesPerColumn; y++ {
 
@@ -600,13 +669,28 @@ func (mapObject *Map) Draw(cameraX int, cameraY int, animationCounter uint64, im
                 // options.GeoM.Reset()
                 options.GeoM.Translate(float64(x * tileWidth), float64(y * tileHeight))
                 screen.DrawImage(tileImage, &options)
-
-                extra, ok := mapObject.ExtraMap[image.Pt(tileX, tileY)]
-                if ok {
-                    extra.Draw(screen, imageCache, &options)
-                }
             } else {
                 log.Printf("Unable to render tilte at %d, %d: %v", tileX, tileY, err)
+            }
+        }
+    }
+
+    // then draw all extra nodes on top
+    for x := 0; x < tilesPerRow; x++ {
+        for y := 0; y < tilesPerColumn; y++ {
+
+            tileX := cameraX + x
+            tileY := cameraY + y
+
+            if tileX < 0 || tileX >= mapObject.Map.Columns() || tileY < 0 || tileY >= mapObject.Map.Rows() {
+                continue
+            }
+
+            extra, ok := mapObject.ExtraMap[image.Pt(tileX, tileY)]
+            if ok {
+                options.GeoM = geom
+                options.GeoM.Translate(float64(x * tileWidth), float64(y * tileHeight))
+                extra.Draw(screen, imageCache, &options, animationCounter, tileWidth, tileHeight)
             }
         }
     }

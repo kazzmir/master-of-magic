@@ -1952,6 +1952,50 @@ func (game *Game) CreateOutpost(settlers *units.OverworldUnit, player *playerlib
     return newCity
 }
 
+func (game *Game) DoMeld(unit *units.OverworldUnit, player *playerlib.Player, node *ExtraMagicNode){
+    node.Meld(player, unit.Unit)
+    player.RemoveUnit(unit)
+}
+
+func (game *Game) DoBuildAction(player *playerlib.Player){
+    if player.SelectedStack != nil {
+        buildPower := false
+        meldPower := false
+
+        if player.SelectedStack != nil {
+            for _, check := range player.SelectedStack.ActiveUnits() {
+                // FIXME: check if this tile is valid to build an outpost on
+                if check.Unit.HasAbility(units.AbilityCreateOutpost) {
+                    buildPower = true
+                }
+
+                if check.Unit.HasAbility(units.AbilityMeld) {
+                    meldPower = true
+                }
+            }
+        }
+
+        if buildPower {
+            // search for the settlers (the only unit with the create outpost ability
+            for _, settlers := range player.SelectedStack.ActiveUnits() {
+                // FIXME: check if this tile is valid to build an outpost on
+                if settlers.Unit.HasAbility(units.AbilityCreateOutpost) {
+                    game.CreateOutpost(settlers, player)
+                    break
+                }
+            }
+        } else if meldPower {
+            node := game.Map.GetMagicNode(player.SelectedStack.X(), player.SelectedStack.Y())
+            for _, melder := range player.SelectedStack.ActiveUnits() {
+                if melder.Unit.HasAbility(units.AbilityMeld) {
+                    game.DoMeld(melder, player, node)
+                    break
+                }
+            }
+        }
+    }
+}
+
 func (game *Game) MakeHudUI() *uilib.UI {
     ui := &uilib.UI{
         Draw: func(ui *uilib.UI, screen *ebiten.Image){
@@ -2237,7 +2281,9 @@ func (game *Game) MakeHudUI() *uilib.UI {
         })
 
         // FIXME: use index 15 to show inactive build button
+        inactiveBuild, _ := game.ImageCache.GetImages("main.lbx", 15)
         buildImages, _ := game.ImageCache.GetImages("main.lbx", 11)
+        meldImages, _ := game.ImageCache.GetImages("main.lbx", 49)
         buildIndex := 0
         buildRect := util.ImageRect(280, 186, buildImages[0])
         buildCounter := uint64(0)
@@ -2254,7 +2300,43 @@ func (game *Game) MakeHudUI() *uilib.UI {
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(float64(buildRect.Min.X), float64(buildRect.Min.Y))
                 options.ColorScale.ScaleWithColorScale(colorScale)
-                screen.DrawImage(buildImages[buildIndex], &options)
+
+                var use *ebiten.Image
+                use = inactiveBuild[0]
+
+                buildPower := false
+                meldPower := false
+
+                if player.SelectedStack != nil {
+                    for _, check := range player.SelectedStack.ActiveUnits() {
+                        // FIXME: check if this tile is valid to build an outpost on
+                        if check.Unit.HasAbility(units.AbilityCreateOutpost) {
+                            buildPower = true
+                        }
+
+                        if check.Unit.HasAbility(units.AbilityMeld) {
+                            meldPower = true
+                        }
+                    }
+                }
+
+                if buildPower {
+                    use = buildImages[buildIndex]
+                } else if meldPower {
+                    use = meldImages[buildIndex]
+
+                    canMeld := false
+                    node := game.Map.GetMagicNode(player.SelectedStack.X(), player.SelectedStack.Y())
+                    if node != nil && node.Empty {
+                        canMeld = true
+                    }
+
+                    if !canMeld {
+                        options.ColorM.ChangeHSV(0, 0, 1)
+                    }
+                }
+
+                screen.DrawImage(use, &options)
             },
             Inside: func(this *uilib.UIElement, x int, y int){
                 buildCounter += 1
@@ -2263,22 +2345,47 @@ func (game *Game) MakeHudUI() *uilib.UI {
                 buildCounter = 0
             },
             LeftClick: func(this *uilib.UIElement){
-                buildIndex = 1
-            },
-            LeftClickRelease: func(this *uilib.UIElement){
-                buildIndex = 0
+                buildPower := false
+                meldPower := false
 
-                player := game.Players[0]
                 if player.SelectedStack != nil {
-                    // search for the settlers (the only unit with the create outpost ability
-                    for _, settlers := range player.SelectedStack.ActiveUnits() {
+                    for _, check := range player.SelectedStack.ActiveUnits() {
                         // FIXME: check if this tile is valid to build an outpost on
-                        if settlers.Unit.HasAbility(units.AbilityCreateOutpost) {
-                            game.CreateOutpost(settlers, player)
-                            break
+                        if check.Unit.HasAbility(units.AbilityCreateOutpost) {
+                            buildPower = true
+                        }
+
+                        if check.Unit.HasAbility(units.AbilityMeld) {
+                            meldPower = true
                         }
                     }
                 }
+
+                if buildPower {
+                    // FIXME: check if we can build an outpost here
+                    buildIndex = 1
+                } else if meldPower {
+                    canMeld := false
+                    node := game.Map.GetMagicNode(player.SelectedStack.X(), player.SelectedStack.Y())
+                    if node != nil && node.Empty {
+                        canMeld = true
+                    }
+
+                    if canMeld {
+                        buildIndex = 1
+                    }
+                }
+
+            },
+            LeftClickRelease: func(this *uilib.UIElement){
+                // if couldn't left click, then release should do nothing
+                if buildIndex == 0 {
+                    return
+                }
+
+                buildIndex = 0
+
+                game.DoBuildAction(player)
             },
         })
 
