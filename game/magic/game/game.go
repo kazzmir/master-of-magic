@@ -2237,7 +2237,9 @@ func (game *Game) MakeHudUI() *uilib.UI {
         })
 
         // FIXME: use index 15 to show inactive build button
+        inactiveBuild, _ := game.ImageCache.GetImages("main.lbx", 15)
         buildImages, _ := game.ImageCache.GetImages("main.lbx", 11)
+        meldImages, _ := game.ImageCache.GetImages("main.lbx", 49)
         buildIndex := 0
         buildRect := util.ImageRect(280, 186, buildImages[0])
         buildCounter := uint64(0)
@@ -2254,7 +2256,33 @@ func (game *Game) MakeHudUI() *uilib.UI {
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(float64(buildRect.Min.X), float64(buildRect.Min.Y))
                 options.ColorScale.ScaleWithColorScale(colorScale)
-                screen.DrawImage(buildImages[buildIndex], &options)
+
+                var use *ebiten.Image
+                use = inactiveBuild[0]
+
+                buildPower := false
+                meldPower := false
+
+                if player.SelectedStack != nil {
+                    for _, check := range player.SelectedStack.ActiveUnits() {
+                        // FIXME: check if this tile is valid to build an outpost on
+                        if check.Unit.HasAbility(units.AbilityCreateOutpost) {
+                            buildPower = true
+                        }
+
+                        if check.Unit.HasAbility(units.AbilityMeld) {
+                            meldPower = true
+                        }
+                    }
+                }
+
+                if buildPower {
+                    use = buildImages[buildIndex]
+                } else if meldPower {
+                    use = meldImages[buildIndex]
+                }
+
+                screen.DrawImage(use, &options)
             },
             Inside: func(this *uilib.UIElement, x int, y int){
                 buildCounter += 1

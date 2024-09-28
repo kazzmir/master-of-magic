@@ -482,6 +482,7 @@ var MagicSpirit Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 34,
     Realm: data.ArcaneMagic,
+    Abilities: []Ability{AbilityMeld, AbilityNonCorporeal},
     // FIXME: check on this
     Race: data.RaceFantastic,
 }
@@ -752,6 +753,7 @@ var GuardianSpirit Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 56,
     Race: data.RaceFantastic,
+    Abilities: []Ability{AbilityMeld, AbilityNonCorporeal, AbilityResistanceToAll},
     Realm: data.LifeMagic,
 }
 
