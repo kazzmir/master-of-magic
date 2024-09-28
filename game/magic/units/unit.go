@@ -483,6 +483,7 @@ var MagicSpirit Unit = Unit{
     Index: 34,
     Realm: data.ArcaneMagic,
     Abilities: []Ability{AbilityMeld, AbilityNonCorporeal},
+    MovementSpeed: 1,
     // FIXME: check on this
     Race: data.RaceFantastic,
 }
