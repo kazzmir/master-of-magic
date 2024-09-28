@@ -66,7 +66,6 @@ func (node *ExtraMagicNode) Draw(screen *ebiten.Image, imageCache *util.ImageCac
         for _, point := range node.Zone {
             options2 := *options
             options2.GeoM.Translate(float64(point.X * tileWidth), float64(point.Y * tileHeight))
-
             screen.DrawImage(use, &options2)
         }
     }
@@ -653,6 +652,7 @@ func (mapObject *Map) Draw(cameraX int, cameraY int, animationCounter uint64, im
 
     var options ebiten.DrawImageOptions
 
+    // draw all tiles first
     for x := 0; x < tilesPerRow; x++ {
         for y := 0; y < tilesPerColumn; y++ {
 
@@ -669,13 +669,28 @@ func (mapObject *Map) Draw(cameraX int, cameraY int, animationCounter uint64, im
                 // options.GeoM.Reset()
                 options.GeoM.Translate(float64(x * tileWidth), float64(y * tileHeight))
                 screen.DrawImage(tileImage, &options)
-
-                extra, ok := mapObject.ExtraMap[image.Pt(tileX, tileY)]
-                if ok {
-                    extra.Draw(screen, imageCache, &options, animationCounter, tileWidth, tileHeight)
-                }
             } else {
                 log.Printf("Unable to render tilte at %d, %d: %v", tileX, tileY, err)
+            }
+        }
+    }
+
+    // then draw all extra nodes on top
+    for x := 0; x < tilesPerRow; x++ {
+        for y := 0; y < tilesPerColumn; y++ {
+
+            tileX := cameraX + x
+            tileY := cameraY + y
+
+            if tileX < 0 || tileX >= mapObject.Map.Columns() || tileY < 0 || tileY >= mapObject.Map.Rows() {
+                continue
+            }
+
+            extra, ok := mapObject.ExtraMap[image.Pt(tileX, tileY)]
+            if ok {
+                options.GeoM = geom
+                options.GeoM.Translate(float64(x * tileWidth), float64(y * tileHeight))
+                extra.Draw(screen, imageCache, &options, animationCounter, tileWidth, tileHeight)
             }
         }
     }
