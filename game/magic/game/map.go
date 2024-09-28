@@ -427,7 +427,7 @@ func MakeMap(data *terrain.TerrainData) *Map {
     }
 }
 
-func (mapObject *Map) CreateNode(x int, y int, node MagicNode, plane data.Plane, magicSetting data.MagicSetting, difficulty data.DifficultySetting) {
+func (mapObject *Map) CreateNode(x int, y int, node MagicNode, plane data.Plane, magicSetting data.MagicSetting, difficulty data.DifficultySetting) *ExtraMagicNode {
     tileType := 0
     switch node {
         case MagicNodeNature: tileType = terrain.TileNatureForest.Index
@@ -437,7 +437,11 @@ func (mapObject *Map) CreateNode(x int, y int, node MagicNode, plane data.Plane,
 
     mapObject.Map.Terrain[x][y] = tileType
 
-    mapObject.ExtraMap[image.Pt(x, y)] = MakeMagicNode(node, magicSetting, difficulty, plane)
+    out := MakeMagicNode(node, magicSetting, difficulty, plane)
+
+    mapObject.ExtraMap[image.Pt(x, y)] = out
+
+    return out
 }
 
 func (mapObject *Map) GetMagicNode(x int, y int) *ExtraMagicNode {

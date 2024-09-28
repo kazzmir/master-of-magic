@@ -2280,6 +2280,16 @@ func (game *Game) MakeHudUI() *uilib.UI {
                     use = buildImages[buildIndex]
                 } else if meldPower {
                     use = meldImages[buildIndex]
+
+                    canMeld := false
+                    node := game.Map.GetMagicNode(player.SelectedStack.X(), player.SelectedStack.Y())
+                    if node != nil && node.Empty {
+                        canMeld = true
+                    }
+
+                    if !canMeld {
+                        options.ColorM.ChangeHSV(0, 0, 1)
+                    }
                 }
 
                 screen.DrawImage(use, &options)
