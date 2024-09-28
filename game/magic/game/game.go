@@ -65,6 +65,9 @@ type GameEventNewOutpost struct {
     Stack *playerlib.UnitStack
 }
 
+type GameEventLoadMenu struct {
+}
+
 type GameEventSummonUnit struct {
     Wizard data.WizardBase
     Unit units.Unit
@@ -1187,6 +1190,27 @@ func (game *Game) doSummon(yield coroutine.YieldFunc, summonObject *summon.Summo
     yield()
 }
 
+func (game *Game) doLoadMenu(yield coroutine.YieldFunc) {
+    oldDrawer := game.Drawer
+    defer func(){
+        game.Drawer = oldDrawer
+    }()
+
+    imageCache := util.MakeImageCache(game.Cache)
+
+    game.Drawer = func (screen *ebiten.Image, game *Game){
+        background, _ := imageCache.GetImage("load.lbx", 0, 0)
+        var options ebiten.DrawImageOptions
+        screen.DrawImage(background, &options)
+    }
+
+    quit := false
+
+    for !quit {
+        yield()
+    }
+}
+
 func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
     // keep processing events until we don't receive one in the events channel
     for {
@@ -1221,6 +1245,8 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                     case *GameEventSummonHero:
                         summonHero := event.(*GameEventSummonHero)
                         game.doSummon(yield, summon.MakeSummonHero(game.Cache, summonHero.Wizard, summonHero.Champion))
+                    case *GameEventLoadMenu:
+                        game.doLoadMenu(yield)
                 }
             default:
                 return
@@ -2069,7 +2095,10 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
     // game button
     elements = append(elements, makeButton(1, 7, 4, false, func(){
-        // TODO
+        select {
+            case game.Events <- &GameEventLoadMenu{}:
+            default:
+        }
     }))
 
     // spell button
