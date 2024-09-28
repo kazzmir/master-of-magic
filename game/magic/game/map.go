@@ -25,7 +25,7 @@ const (
 )
 
 type ExtraTile interface {
-    Draw(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions)
+    Draw(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64, tileWidth int, tileHeight int)
 }
 
 type ExtraRoad struct {
@@ -47,8 +47,19 @@ type ExtraMagicNode struct {
     // also contains treasure
 }
 
-func (node *ExtraMagicNode) Draw(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions){
+func (node *ExtraMagicNode) Draw(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64, tileWidth int, tileHeight int){
     // if the node is melded then show the zone of influence with the sparkly images
+
+    if node.Empty && node.MeldingWizard != nil {
+        for _, point := range node.Zone {
+            options2 := *options
+            options2.GeoM.Translate(float64(point.X * tileWidth), float64(point.Y * tileHeight))
+
+            sparkle, _ := imageCache.GetImages("mapback.lbx", 63)
+            use := sparkle[counter % uint64(len(sparkle))]
+            screen.DrawImage(use, &options2)
+        }
+    }
 }
 
 func (node *ExtraMagicNode) Meld(meldingWizard *playerlib.Player, spirit units.Unit) bool {
@@ -651,7 +662,7 @@ func (mapObject *Map) Draw(cameraX int, cameraY int, animationCounter uint64, im
 
                 extra, ok := mapObject.ExtraMap[image.Pt(tileX, tileY)]
                 if ok {
-                    extra.Draw(screen, imageCache, &options)
+                    extra.Draw(screen, imageCache, &options, animationCounter, tileWidth, tileHeight)
                 }
             } else {
                 log.Printf("Unable to render tilte at %d, %d: %v", tileX, tileY, err)
