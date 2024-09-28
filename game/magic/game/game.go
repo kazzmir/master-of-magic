@@ -677,14 +677,15 @@ func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City,
     quit := false
     quitCounter := 0
 
+    yield()
+
     for !quit || quitCounter < 7 {
         game.Counter += 1
 
         if quit {
             quitCounter += 1
         } else {
-            leftClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)
-            if leftClick {
+            if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) || inpututil.IsKeyJustPressed(ebiten.KeySpace) || inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
                 quit = true
                 getAlpha = util.MakeFadeOut(7, &game.Counter)
             }
@@ -791,11 +792,14 @@ func (game *Game) showScroll(yield coroutine.YieldFunc, title string, text strin
 
     animationSpeed := uint64(6)
 
+    // absorb clicks and key presses
+    yield()
+
     // show scroll opening up
     for !quit {
         game.Counter += 1
 
-        if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
+        if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) || inpututil.IsKeyJustPressed(ebiten.KeySpace) || inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
             quit = true
         }
 
