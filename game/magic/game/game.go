@@ -2301,20 +2301,53 @@ func (game *Game) MakeHudUI() *uilib.UI {
                 buildCounter = 0
             },
             LeftClick: func(this *uilib.UIElement){
-                buildIndex = 1
+                buildPower := false
+                meldPower := false
+
+                if player.SelectedStack != nil {
+                    for _, check := range player.SelectedStack.ActiveUnits() {
+                        // FIXME: check if this tile is valid to build an outpost on
+                        if check.Unit.HasAbility(units.AbilityCreateOutpost) {
+                            buildPower = true
+                        }
+
+                        if check.Unit.HasAbility(units.AbilityMeld) {
+                            meldPower = true
+                        }
+                    }
+                }
+
+                if buildPower {
+                    // FIXME: check if we can build an outpost here
+                    buildIndex = 1
+                } else if meldPower {
+                    canMeld := false
+                    node := game.Map.GetMagicNode(player.SelectedStack.X(), player.SelectedStack.Y())
+                    if node != nil && node.Empty {
+                        canMeld = true
+                    }
+
+                    if canMeld {
+                        buildIndex = 1
+                    }
+                }
+
             },
             LeftClickRelease: func(this *uilib.UIElement){
+                // if couldn't left click, then release should do nothing
+                if buildIndex == 0 {
+                    return
+                }
+
                 buildIndex = 0
 
                 player := game.Players[0]
-                if player.SelectedStack != nil {
-                    // search for the settlers (the only unit with the create outpost ability
-                    for _, settlers := range player.SelectedStack.ActiveUnits() {
-                        // FIXME: check if this tile is valid to build an outpost on
-                        if settlers.Unit.HasAbility(units.AbilityCreateOutpost) {
-                            game.CreateOutpost(settlers, player)
+                // search for the settlers (the only unit with the create outpost ability
+                for _, settlers := range player.SelectedStack.ActiveUnits() {
+                    // FIXME: check if this tile is valid to build an outpost on
+                    if settlers.Unit.HasAbility(units.AbilityCreateOutpost) {
+                        game.CreateOutpost(settlers, player)
                             break
-                        }
                     }
                 }
             },
