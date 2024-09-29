@@ -39,6 +39,8 @@ func NewEngine(scenario int) (*Engine, error) {
 
     ui.AddElements(hero.MakeHireScreenUI(cache, ui, &units.OverworldUnit{
         Unit: units.HighElfSpearmen,
+    }, func (hired bool){
+        log.Printf("hired %v", hired)
     }))
 
     return &Engine{

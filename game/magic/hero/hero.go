@@ -15,7 +15,7 @@ import (
     "github.com/hajimehoshi/ebiten/v2"
 )
 
-func MakeHireScreenUI(cache *lbx.LbxCache, ui *uilib.UI, unit *units.OverworldUnit) []*uilib.UIElement {
+func MakeHireScreenUI(cache *lbx.LbxCache, ui *uilib.UI, unit *units.OverworldUnit, action func(bool)) []*uilib.UIElement {
     goldToHire := 100
 
     fontLbx, err := cache.GetLbxFile("fonts.lbx")
@@ -141,7 +141,7 @@ func MakeHireScreenUI(cache *lbx.LbxCache, ui *uilib.UI, unit *units.OverworldUn
         },
         LeftClickRelease: func(this *uilib.UIElement){
             hireIndex = 0
-            // FIXME: hire hero
+            action(true)
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             var options ebiten.DrawImageOptions
@@ -168,6 +168,7 @@ func MakeHireScreenUI(cache *lbx.LbxCache, ui *uilib.UI, unit *units.OverworldUn
 
             ui.AddDelay(fadeSpeed, func(){
                 ui.RemoveElements(elements)
+                action(false)
             })
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
