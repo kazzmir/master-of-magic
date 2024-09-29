@@ -2,7 +2,6 @@
 * select spell to research
 * select spell to cast
 * cast spell on overworld
-* hire popup for hero
 * banish animation for defeated wizard
 * create artifact screen
 * cartographer advisor
@@ -38,3 +37,4 @@
 9/27/2024 * summon hero/champion animation
 9/28/2024 * magic spirite/guardian spirit meld with magic node
 9/28/2024 * game menu - show ui, implement quit/ok
+9/29/2024 * hire popup for hero
