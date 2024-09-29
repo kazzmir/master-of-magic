@@ -149,6 +149,32 @@ type Game struct {
     Players []*playerlib.Player
 }
 
+type UnitBuildPowers struct {
+    CreateOutpost bool
+    Meld bool
+    BuildRoad bool
+}
+
+func computeUnitBuildPowers(stack *playerlib.UnitStack) UnitBuildPowers {
+    var powers UnitBuildPowers
+
+    for _, check := range stack.ActiveUnits() {
+        if check.Unit.HasAbility(units.AbilityCreateOutpost) {
+            powers.CreateOutpost = true
+        }
+
+        if check.Unit.HasAbility(units.AbilityMeld) {
+            powers.Meld = true
+        }
+
+        if check.Unit.HasAbility(units.AbilityConstruction) {
+            powers.BuildRoad = true
+        }
+    }
+
+    return powers
+}
+
 // create an array of N integers where each integer is some value between 0 and 2
 // these values correlate to the index of the book image to draw under the wizard portrait
 func randomizeBookOrder(books int) []int {
@@ -2047,23 +2073,13 @@ func (game *Game) DoMeld(unit *units.OverworldUnit, player *playerlib.Player, no
 
 func (game *Game) DoBuildAction(player *playerlib.Player){
     if player.SelectedStack != nil {
-        buildPower := false
-        meldPower := false
+        var powers UnitBuildPowers
 
         if player.SelectedStack != nil {
-            for _, check := range player.SelectedStack.ActiveUnits() {
-                // FIXME: check if this tile is valid to build an outpost on
-                if check.Unit.HasAbility(units.AbilityCreateOutpost) {
-                    buildPower = true
-                }
-
-                if check.Unit.HasAbility(units.AbilityMeld) {
-                    meldPower = true
-                }
-            }
+            powers = computeUnitBuildPowers(player.SelectedStack)
         }
 
-        if buildPower {
+        if powers.CreateOutpost {
             // search for the settlers (the only unit with the create outpost ability
             for _, settlers := range player.SelectedStack.ActiveUnits() {
                 // FIXME: check if this tile is valid to build an outpost on
@@ -2072,7 +2088,7 @@ func (game *Game) DoBuildAction(player *playerlib.Player){
                     break
                 }
             }
-        } else if meldPower {
+        } else if powers.Meld {
             node := game.Map.GetMagicNode(player.SelectedStack.X(), player.SelectedStack.Y())
             for _, melder := range player.SelectedStack.ActiveUnits() {
                 if melder.Unit.HasAbility(units.AbilityMeld) {
@@ -2395,25 +2411,16 @@ func (game *Game) MakeHudUI() *uilib.UI {
                 var use *ebiten.Image
                 use = inactiveBuild[0]
 
-                buildPower := false
-                meldPower := false
+                var powers UnitBuildPowers
 
                 if player.SelectedStack != nil {
-                    for _, check := range player.SelectedStack.ActiveUnits() {
-                        // FIXME: check if this tile is valid to build an outpost on
-                        if check.Unit.HasAbility(units.AbilityCreateOutpost) {
-                            buildPower = true
-                        }
-
-                        if check.Unit.HasAbility(units.AbilityMeld) {
-                            meldPower = true
-                        }
-                    }
+                    powers = computeUnitBuildPowers(player.SelectedStack)
                 }
 
-                if buildPower {
+
+                if powers.CreateOutpost {
                     use = buildImages[buildIndex]
-                } else if meldPower {
+                } else if powers.Meld {
                     use = meldImages[buildIndex]
 
                     canMeld := false
@@ -2436,26 +2443,16 @@ func (game *Game) MakeHudUI() *uilib.UI {
                 buildCounter = 0
             },
             LeftClick: func(this *uilib.UIElement){
-                buildPower := false
-                meldPower := false
+                var powers UnitBuildPowers
 
                 if player.SelectedStack != nil {
-                    for _, check := range player.SelectedStack.ActiveUnits() {
-                        // FIXME: check if this tile is valid to build an outpost on
-                        if check.Unit.HasAbility(units.AbilityCreateOutpost) {
-                            buildPower = true
-                        }
-
-                        if check.Unit.HasAbility(units.AbilityMeld) {
-                            meldPower = true
-                        }
-                    }
+                    powers = computeUnitBuildPowers(player.SelectedStack)
                 }
 
-                if buildPower {
+                if powers.CreateOutpost {
                     // FIXME: check if we can build an outpost here
                     buildIndex = 1
-                } else if meldPower {
+                } else if powers.Meld {
                     canMeld := false
                     node := game.Map.GetMagicNode(player.SelectedStack.X(), player.SelectedStack.Y())
                     if node != nil && node.Empty {
