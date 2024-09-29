@@ -25,7 +25,8 @@ const (
 )
 
 type ExtraTile interface {
-    Draw(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64, tileWidth int, tileHeight int)
+    DrawLayer1(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64, tileWidth int, tileHeight int)
+    DrawLayer2(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64, tileWidth int, tileHeight int)
 }
 
 type ExtraRoad struct {
@@ -47,7 +48,10 @@ type ExtraMagicNode struct {
     // also contains treasure
 }
 
-func (node *ExtraMagicNode) Draw(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64, tileWidth int, tileHeight int){
+func (node *ExtraMagicNode) DrawLayer1(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64, tileWidth int, tileHeight int){
+}
+
+func (node *ExtraMagicNode) DrawLayer2(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64, tileWidth int, tileHeight int){
     // if the node is melded then show the zone of influence with the sparkly images
 
     if node.Empty && node.MeldingWizard != nil {
@@ -643,7 +647,7 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []*citylib.City, 
     screen.WritePixels(mapObject.miniMapPixels)
 }
 
-func (mapObject *Map) Draw(cameraX int, cameraY int, animationCounter uint64, imageCache *util.ImageCache, screen *ebiten.Image, geom ebiten.GeoM){
+func (mapObject *Map) DrawLayer1(cameraX int, cameraY int, animationCounter uint64, imageCache *util.ImageCache, screen *ebiten.Image, geom ebiten.GeoM){
     tileWidth := mapObject.TileWidth()
     tileHeight := mapObject.TileHeight()
 
@@ -669,11 +673,26 @@ func (mapObject *Map) Draw(cameraX int, cameraY int, animationCounter uint64, im
                 // options.GeoM.Reset()
                 options.GeoM.Translate(float64(x * tileWidth), float64(y * tileHeight))
                 screen.DrawImage(tileImage, &options)
+
+                extra, ok := mapObject.ExtraMap[image.Pt(tileX, tileY)]
+                if ok {
+                    extra.DrawLayer1(screen, imageCache, &options, animationCounter, tileWidth, tileHeight)
+                }
             } else {
                 log.Printf("Unable to render tilte at %d, %d: %v", tileX, tileY, err)
             }
         }
     }
+}
+
+func (mapObject *Map) DrawLayer2(cameraX int, cameraY int, animationCounter uint64, imageCache *util.ImageCache, screen *ebiten.Image, geom ebiten.GeoM){
+    tileWidth := mapObject.TileWidth()
+    tileHeight := mapObject.TileHeight()
+
+    tilesPerRow := mapObject.TilesPerRow(screen.Bounds().Dx())
+    tilesPerColumn := mapObject.TilesPerColumn(screen.Bounds().Dy())
+
+    var options ebiten.DrawImageOptions
 
     // then draw all extra nodes on top
     for x := 0; x < tilesPerRow; x++ {
@@ -690,7 +709,7 @@ func (mapObject *Map) Draw(cameraX int, cameraY int, animationCounter uint64, im
             if ok {
                 options.GeoM = geom
                 options.GeoM.Translate(float64(x * tileWidth), float64(y * tileHeight))
-                extra.Draw(screen, imageCache, &options, animationCounter, tileWidth, tileHeight)
+                extra.DrawLayer2(screen, imageCache, &options, animationCounter, tileWidth, tileHeight)
             }
         }
     }
