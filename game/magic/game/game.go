@@ -1198,15 +1198,42 @@ func (game *Game) doLoadMenu(yield coroutine.YieldFunc) {
 
     imageCache := util.MakeImageCache(game.Cache)
 
+    ui := &uilib.UI{
+        Draw: func(ui *uilib.UI, screen *ebiten.Image){
+            background, _ := imageCache.GetImage("load.lbx", 0, 0)
+            var options ebiten.DrawImageOptions
+            screen.DrawImage(background, &options)
+
+            ui.IterateElementsByLayer(func (element *uilib.UIElement){
+                if element.Draw != nil {
+                    element.Draw(element, screen)
+                }
+            })
+        },
+    }
+
+    var elements []*uilib.UIElement
+
+    quitImage, _ := imageCache.GetImage("load.lbx", 2, 0)
+    elements = append(elements, &uilib.UIElement{
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(43, 171)
+            screen.DrawImage(quitImage, &options)
+        },
+    })
+
+    ui.SetElementsFromArray(elements)
+
     game.Drawer = func (screen *ebiten.Image, game *Game){
-        background, _ := imageCache.GetImage("load.lbx", 0, 0)
-        var options ebiten.DrawImageOptions
-        screen.DrawImage(background, &options)
+        ui.Draw(ui, screen)
     }
 
     quit := false
 
     for !quit {
+        ui.StandardUpdate()
+
         yield()
     }
 }
