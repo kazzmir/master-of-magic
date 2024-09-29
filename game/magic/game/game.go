@@ -2863,7 +2863,7 @@ func (overworld *Overworld) DrawMinimap(screen *ebiten.Image){
 }
 
 func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM){
-    overworld.Map.Draw(overworld.CameraX, overworld.CameraY, overworld.Counter / 8, overworld.ImageCache, screen, geom)
+    overworld.Map.DrawLayer1(overworld.CameraX, overworld.CameraY, overworld.Counter / 8, overworld.ImageCache, screen, geom)
 
     tileWidth := float64(overworld.Map.TileWidth())
     tileHeight := float64(overworld.Map.TileHeight())
@@ -2921,6 +2921,8 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
             }
         }
     }
+
+    overworld.Map.DrawLayer2(overworld.CameraX, overworld.CameraY, overworld.Counter / 8, overworld.ImageCache, screen, geom)
 
     if overworld.Fog != nil {
         overworld.DrawFog(screen, geom)
