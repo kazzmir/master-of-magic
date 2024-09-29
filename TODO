@@ -17,7 +17,7 @@
 * filter buildings by race
 * roaming bands of neutral enemies
 * neutral towns/cities
-* game menu - save game, exit, etc
+* game menu - implement save/load game
 * refactor new wizard/new game to use image cache
 * units disband if not enough food
 * buildings destroyed if not enough gold for upkeep
@@ -37,3 +37,4 @@
 9/27/2024 * summon artifact/weapon animation
 9/27/2024 * summon hero/champion animation
 9/28/2024 * magic spirite/guardian spirit meld with magic node
+9/28/2024 * game menu - show ui, implement quit/ok
