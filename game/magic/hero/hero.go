@@ -2,6 +2,7 @@ package hero
 
 import (
     "log"
+    "fmt"
     "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -15,6 +16,8 @@ import (
 )
 
 func MakeHireScreenUI(cache *lbx.LbxCache, ui *uilib.UI, unit *units.OverworldUnit) []*uilib.UIElement {
+    goldToHire := 100
+
     fontLbx, err := cache.GetLbxFile("fonts.lbx")
     if err != nil {
         log.Printf("Unable to read fonts.lbx: %v", err)
@@ -187,6 +190,8 @@ func MakeHireScreenUI(cache *lbx.LbxCache, ui *uilib.UI, unit *units.OverworldUn
             options.GeoM.Translate(0, 0)
             options.ColorScale.ScaleAlpha(getAlpha())
             screen.DrawImage(banner, &options)
+
+            okDismissFont.PrintCenter(screen, 135, 6, 1, options.ColorScale, fmt.Sprintf("Hero for Hire: %v gold", goldToHire))
         },
     })
 
