@@ -647,6 +647,7 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []*citylib.City, 
     screen.WritePixels(mapObject.miniMapPixels)
 }
 
+// draw base map tiles, in general stuff that should go under cities/units
 func (mapObject *Map) DrawLayer1(cameraX int, cameraY int, animationCounter uint64, imageCache *util.ImageCache, screen *ebiten.Image, geom ebiten.GeoM){
     tileWidth := mapObject.TileWidth()
     tileHeight := mapObject.TileHeight()
@@ -685,6 +686,7 @@ func (mapObject *Map) DrawLayer1(cameraX int, cameraY int, animationCounter uint
     }
 }
 
+// give the extra nodes a chance to draw on top of cities/units, but still under the fog
 func (mapObject *Map) DrawLayer2(cameraX int, cameraY int, animationCounter uint64, imageCache *util.ImageCache, screen *ebiten.Image, geom ebiten.GeoM){
     tileWidth := mapObject.TileWidth()
     tileHeight := mapObject.TileHeight()
