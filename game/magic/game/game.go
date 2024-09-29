@@ -1196,6 +1196,8 @@ func (game *Game) doLoadMenu(yield coroutine.YieldFunc) {
         game.Drawer = oldDrawer
     }()
 
+    quit := false
+
     imageCache := util.MakeImageCache(game.Cache)
 
     ui := &uilib.UI{
@@ -1218,6 +1220,10 @@ func (game *Game) doLoadMenu(yield coroutine.YieldFunc) {
         useImage, _ := imageCache.GetImage("load.lbx", index, 0)
         return &uilib.UIElement{
             Rect: util.ImageRect(x, y, useImage),
+            LeftClick: func(element *uilib.UIElement){
+                action()
+                quit = true
+            },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(float64(x), float64(y))
@@ -1228,6 +1234,7 @@ func (game *Game) doLoadMenu(yield coroutine.YieldFunc) {
 
     // quit
     elements = append(elements, makeButton(2, 43, 171, func(){
+        game.State = GameStateQuit
     }))
 
     // load
@@ -1252,13 +1259,13 @@ func (game *Game) doLoadMenu(yield coroutine.YieldFunc) {
         ui.Draw(ui, screen)
     }
 
-    quit := false
-
+    yield()
     for !quit {
         ui.StandardUpdate()
 
         yield()
     }
+    yield()
 }
 
 func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
