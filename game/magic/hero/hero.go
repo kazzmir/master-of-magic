@@ -29,6 +29,8 @@ func MakeHireScreenUI(cache *lbx.LbxCache, ui *uilib.UI, unit *units.OverworldUn
 
     imageCache := util.MakeImageCache(cache)
 
+    yTop := float64(10)
+
     descriptionPalette := color.Palette{
         color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
         util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 90}),
@@ -70,6 +72,7 @@ func MakeHireScreenUI(cache *lbx.LbxCache, ui *uilib.UI, unit *units.OverworldUn
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             background, _ := imageCache.GetImage("unitview.lbx", 1, 0)
             var options ebiten.DrawImageOptions
+            options.GeoM.Translate(0, yTop)
             options.GeoM.Translate(31, 6)
             options.ColorScale.ScaleAlpha(getAlpha())
             screen.DrawImage(background, &options)
@@ -78,12 +81,14 @@ func MakeHireScreenUI(cache *lbx.LbxCache, ui *uilib.UI, unit *units.OverworldUn
             unitview.RenderCombatImage(screen, &imageCache, &unit.Unit, options)
 
             options.GeoM.Reset()
+            options.GeoM.Translate(0, yTop)
             options.GeoM.Translate(31, 6)
             options.GeoM.Translate(51, 8)
 
             unitview.RenderUnitInfoNormal(screen, &imageCache, &unit.Unit, descriptionFont, smallFont, options)
 
             options.GeoM.Reset()
+            options.GeoM.Translate(0, yTop)
             options.GeoM.Translate(31, 6)
             options.GeoM.Translate(10, 50)
             unitview.RenderUnitInfoStats(screen, &imageCache, &unit.Unit, descriptionFont, smallFont, options)
@@ -98,6 +103,7 @@ func MakeHireScreenUI(cache *lbx.LbxCache, ui *uilib.UI, unit *units.OverworldUn
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             box, _ := imageCache.GetImage("unitview.lbx", 2, 0)
             var options ebiten.DrawImageOptions
+            options.GeoM.Translate(0, yTop)
             options.GeoM.Translate(248, 139)
             options.ColorScale.ScaleAlpha(getAlpha())
             screen.DrawImage(box, &options)
@@ -106,7 +112,7 @@ func MakeHireScreenUI(cache *lbx.LbxCache, ui *uilib.UI, unit *units.OverworldUn
 
     buttonBackgrounds, _ := imageCache.GetImages("backgrnd.lbx", 24)
     // hire button
-    hireRect := util.ImageRect(257, 149, buttonBackgrounds[0])
+    hireRect := util.ImageRect(257, 149 + int(yTop), buttonBackgrounds[0])
     hireIndex := 0
     elements = append(elements, &uilib.UIElement{
         Layer: 1,
@@ -146,7 +152,7 @@ func MakeHireScreenUI(cache *lbx.LbxCache, ui *uilib.UI, unit *units.OverworldUn
         },
     })
 
-    rejectRect := util.ImageRect(257, 169, buttonBackgrounds[0])
+    rejectRect := util.ImageRect(257, 169 + int(yTop), buttonBackgrounds[0])
     rejectIndex := 0
     elements = append(elements, &uilib.UIElement{
         Layer: 1,
