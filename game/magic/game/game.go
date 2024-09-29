@@ -1214,14 +1214,37 @@ func (game *Game) doLoadMenu(yield coroutine.YieldFunc) {
 
     var elements []*uilib.UIElement
 
-    quitImage, _ := imageCache.GetImage("load.lbx", 2, 0)
-    elements = append(elements, &uilib.UIElement{
-        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            var options ebiten.DrawImageOptions
-            options.GeoM.Translate(43, 171)
-            screen.DrawImage(quitImage, &options)
-        },
-    })
+    makeButton := func (index int, x int, y int, action func()) *uilib.UIElement {
+        useImage, _ := imageCache.GetImage("load.lbx", index, 0)
+        return &uilib.UIElement{
+            Rect: util.ImageRect(x, y, useImage),
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(x), float64(y))
+                screen.DrawImage(useImage, &options)
+            },
+        }
+    }
+
+    // quit
+    elements = append(elements, makeButton(2, 43, 171, func(){
+    }))
+
+    // load
+    elements = append(elements, makeButton(1, 83, 171, func(){
+    }))
+
+    // save
+    elements = append(elements, makeButton(3, 122, 171, func(){
+    }))
+
+    // settings
+    elements = append(elements, makeButton(12, 172, 171, func(){
+    }))
+
+    // ok
+    elements = append(elements, makeButton(4, 231, 171, func(){
+    }))
 
     ui.SetElementsFromArray(elements)
 
