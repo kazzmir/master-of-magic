@@ -1251,6 +1251,7 @@ func (game *Game) doLoadMenu(yield coroutine.YieldFunc) {
 
     // ok
     elements = append(elements, makeButton(4, 231, 171, func(){
+        quit = true
     }))
 
     ui.SetElementsFromArray(elements)
