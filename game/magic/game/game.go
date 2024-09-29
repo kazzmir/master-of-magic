@@ -65,6 +65,9 @@ type GameEventNewOutpost struct {
     Stack *playerlib.UnitStack
 }
 
+type GameEventLoadMenu struct {
+}
+
 type GameEventSummonUnit struct {
     Wizard data.WizardBase
     Unit units.Unit
@@ -1187,6 +1190,85 @@ func (game *Game) doSummon(yield coroutine.YieldFunc, summonObject *summon.Summo
     yield()
 }
 
+func (game *Game) doLoadMenu(yield coroutine.YieldFunc) {
+    oldDrawer := game.Drawer
+    defer func(){
+        game.Drawer = oldDrawer
+    }()
+
+    quit := false
+
+    imageCache := util.MakeImageCache(game.Cache)
+
+    ui := &uilib.UI{
+        Draw: func(ui *uilib.UI, screen *ebiten.Image){
+            background, _ := imageCache.GetImage("load.lbx", 0, 0)
+            var options ebiten.DrawImageOptions
+            screen.DrawImage(background, &options)
+
+            ui.IterateElementsByLayer(func (element *uilib.UIElement){
+                if element.Draw != nil {
+                    element.Draw(element, screen)
+                }
+            })
+        },
+    }
+
+    var elements []*uilib.UIElement
+
+    makeButton := func (index int, x int, y int, action func()) *uilib.UIElement {
+        useImage, _ := imageCache.GetImage("load.lbx", index, 0)
+        return &uilib.UIElement{
+            Rect: util.ImageRect(x, y, useImage),
+            LeftClick: func(element *uilib.UIElement){
+                action()
+                quit = true
+            },
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(x), float64(y))
+                screen.DrawImage(useImage, &options)
+            },
+        }
+    }
+
+    // quit
+    elements = append(elements, makeButton(2, 43, 171, func(){
+        game.State = GameStateQuit
+    }))
+
+    // load
+    elements = append(elements, makeButton(1, 83, 171, func(){
+    }))
+
+    // save
+    elements = append(elements, makeButton(3, 122, 171, func(){
+    }))
+
+    // settings
+    elements = append(elements, makeButton(12, 172, 171, func(){
+    }))
+
+    // ok
+    elements = append(elements, makeButton(4, 231, 171, func(){
+        quit = true
+    }))
+
+    ui.SetElementsFromArray(elements)
+
+    game.Drawer = func (screen *ebiten.Image, game *Game){
+        ui.Draw(ui, screen)
+    }
+
+    yield()
+    for !quit {
+        ui.StandardUpdate()
+
+        yield()
+    }
+    yield()
+}
+
 func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
     // keep processing events until we don't receive one in the events channel
     for {
@@ -1221,6 +1303,8 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                     case *GameEventSummonHero:
                         summonHero := event.(*GameEventSummonHero)
                         game.doSummon(yield, summon.MakeSummonHero(game.Cache, summonHero.Wizard, summonHero.Champion))
+                    case *GameEventLoadMenu:
+                        game.doLoadMenu(yield)
                 }
             default:
                 return
@@ -2069,7 +2153,10 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
     // game button
     elements = append(elements, makeButton(1, 7, 4, false, func(){
-        // TODO
+        select {
+            case game.Events <- &GameEventLoadMenu{}:
+            default:
+        }
     }))
 
     // spell button
