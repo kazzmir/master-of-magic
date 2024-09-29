@@ -68,6 +68,17 @@ func MakeHireScreenUI(cache *lbx.LbxCache, ui *uilib.UI, unit *units.OverworldUn
     elements = append(elements, &uilib.UIElement{
         Layer: 1,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            banner, _ := imageCache.GetImage("hire.lbx", 0, 0)
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(0, 0)
+            options.ColorScale.ScaleAlpha(getAlpha())
+            screen.DrawImage(banner, &options)
+        },
+    })
+
+    elements = append(elements, &uilib.UIElement{
+        Layer: 1,
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             background, _ := imageCache.GetImage("unitview.lbx", 1, 0)
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(31, 6)
