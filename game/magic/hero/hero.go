@@ -15,7 +15,156 @@ import (
     "github.com/hajimehoshi/ebiten/v2"
 )
 
-func MakeHireScreenUI(cache *lbx.LbxCache, ui *uilib.UI, unit *units.OverworldUnit, action func(bool)) []*uilib.UIElement {
+type Hero struct {
+    Unit *units.OverworldUnit
+    Title string
+}
+
+func getHeroPortraitIndex(hero *Hero) int {
+    if hero.Unit.Unit.Equals(units.HeroTorin) {
+        return 0
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroFang) {
+        return 1
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroBShan) {
+        return 2
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroMorgana) {
+        return 3
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroWarrax) {
+        return 4
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroMysticX) {
+        return 5
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroBahgtru) {
+        return 6
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroDethStryke) {
+        return 7
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroSpyder) {
+        return 8
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroSirHarold) {
+        return 9
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroBrax) {
+        return 10
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroRavashack) {
+        return 11
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroGreyfairer) {
+        return 12
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroShalla) {
+        return 13
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroRoland) {
+        return 14
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroMalleus) {
+        return 15
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroMortu) {
+        return 16
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroGunther) {
+        return 17
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroRakir) {
+        return 18
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroJaer) {
+        return 19
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroTaki) {
+        return 20
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroYramrag) {
+        return 21
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroValana) {
+        return 22
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroElana) {
+        return 23
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroAerie) {
+        return 24
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroMarcus) {
+        return 25
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroReywind) {
+        return 26
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroAlorra) {
+        return 27
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroZaldron) {
+        return 28
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroShinBo) {
+        return 29
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroSerena) {
+        return 30
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroShuri) {
+        return 31
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroTheria) {
+        return 32
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroTumu) {
+        return 33
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroAureus) {
+        return 34
+    }
+
+    return -1
+}
+
+func MakeHireScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *Hero, action func(bool)) []*uilib.UIElement {
     goldToHire := 100
 
     fontLbx, err := cache.GetLbxFile("fonts.lbx")
@@ -70,6 +219,8 @@ func MakeHireScreenUI(cache *lbx.LbxCache, ui *uilib.UI, unit *units.OverworldUn
 
     getAlpha := ui.MakeFadeIn(fadeSpeed)
 
+    heroPortraitIndex := getHeroPortraitIndex(hero)
+
     elements = append(elements, &uilib.UIElement{
         Layer: 1,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
@@ -80,24 +231,29 @@ func MakeHireScreenUI(cache *lbx.LbxCache, ui *uilib.UI, unit *units.OverworldUn
             options.ColorScale.ScaleAlpha(getAlpha())
             screen.DrawImage(background, &options)
 
-            options.GeoM.Translate(25, 30)
-            unitview.RenderCombatImage(screen, &imageCache, &unit.Unit, options)
+            options.GeoM.Translate(9, 7)
+            portrait, err := imageCache.GetImage("portrait.lbx", heroPortraitIndex, 0)
+            if err == nil {
+                screen.DrawImage(portrait, &options)
+            }
+
+            // unitview.RenderCombatImage(screen, &imageCache, &hero.Unit.Unit, options)
 
             options.GeoM.Reset()
             options.GeoM.Translate(0, yTop)
             options.GeoM.Translate(31, 6)
-            options.GeoM.Translate(51, 8)
+            options.GeoM.Translate(51, 7)
 
-            unitview.RenderUnitInfoNormal(screen, &imageCache, &unit.Unit, descriptionFont, smallFont, options)
+            unitview.RenderUnitInfoNormal(screen, &imageCache, &hero.Unit.Unit, hero.Title, descriptionFont, smallFont, options)
 
             options.GeoM.Reset()
             options.GeoM.Translate(0, yTop)
             options.GeoM.Translate(31, 6)
             options.GeoM.Translate(10, 50)
-            unitview.RenderUnitInfoStats(screen, &imageCache, &unit.Unit, descriptionFont, smallFont, options)
+            unitview.RenderUnitInfoStats(screen, &imageCache, &hero.Unit.Unit, descriptionFont, smallFont, options)
 
             options.GeoM.Translate(0, 60)
-            unitview.RenderUnitAbilities(screen, &imageCache, &unit.Unit, mediumFont, options)
+            unitview.RenderUnitAbilities(screen, &imageCache, &hero.Unit.Unit, mediumFont, options)
         },
     })
 
