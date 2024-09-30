@@ -75,6 +75,9 @@ func MakeHireScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *Hero, action func
 
     getAlpha := ui.MakeFadeIn(fadeSpeed)
 
+    // 18 is rakir
+    heroPortraitIndex := 18
+
     elements = append(elements, &uilib.UIElement{
         Layer: 1,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
@@ -85,8 +88,11 @@ func MakeHireScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *Hero, action func
             options.ColorScale.ScaleAlpha(getAlpha())
             screen.DrawImage(background, &options)
 
-            options.GeoM.Translate(25, 30)
-            unitview.RenderCombatImage(screen, &imageCache, &hero.Unit.Unit, options)
+            options.GeoM.Translate(9, 7)
+            portrait, _ := imageCache.GetImage("portrait.lbx", heroPortraitIndex, 0)
+            screen.DrawImage(portrait, &options)
+
+            // unitview.RenderCombatImage(screen, &imageCache, &hero.Unit.Unit, options)
 
             options.GeoM.Reset()
             options.GeoM.Translate(0, yTop)
