@@ -1235,7 +1235,7 @@ var HeroMysticX Unit = Unit{
     Race: data.RaceHero,
 }
 
-var HeroAeirie Unit = Unit{
+var HeroAerie Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 25,
     Race: data.RaceHero,
@@ -2122,7 +2122,7 @@ var AllUnits []Unit = []Unit{
     HeroShalla,
     HeroYramrag,
     HeroMysticX,
-    HeroAeirie,
+    HeroAerie,
     HeroDethStryke,
     HeroElana,
     HeroRoland,

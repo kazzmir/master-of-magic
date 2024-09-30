@@ -26,75 +26,75 @@ func getHeroPortraitIndex(hero *Hero) int {
     }
 
     if hero.Unit.Unit.Equals(units.HeroGunther) {
-        return 0
+        return 17
     }
 
     if hero.Unit.Unit.Equals(units.HeroZaldron) {
-        return 0
+        return 28
     }
 
     if hero.Unit.Unit.Equals(units.HeroBShan) {
-        return 0
+        return 2
     }
 
     if hero.Unit.Unit.Equals(units.HeroValana) {
-        return 0
+        return 22
     }
 
     if hero.Unit.Unit.Equals(units.HeroBahgtru) {
-        return 0
+        return 6
     }
 
     if hero.Unit.Unit.Equals(units.HeroSerena) {
-        return 0
+        return 30
     }
 
     if hero.Unit.Unit.Equals(units.HeroShuri) {
-        return 0
+        return 31
     }
 
     if hero.Unit.Unit.Equals(units.HeroTheria) {
-        return 0
+        return 32
     }
 
     if hero.Unit.Unit.Equals(units.HeroGreyfairer) {
-        return 0
+        return 12
     }
 
     if hero.Unit.Unit.Equals(units.HeroTaki) {
-        return 0
+        return 20
     }
 
     if hero.Unit.Unit.Equals(units.HeroReywind) {
-        return 0
+        return 26
     }
 
     if hero.Unit.Unit.Equals(units.HeroMalleus) {
-        return 0
+        return 15
     }
 
     if hero.Unit.Unit.Equals(units.HeroTumu) {
-        return 0
+        return 33
     }
 
     if hero.Unit.Unit.Equals(units.HeroJaer) {
-        return 0
+        return 19
     }
 
     if hero.Unit.Unit.Equals(units.HeroMarcus) {
-        return 0
+        return 25
     }
 
     if hero.Unit.Unit.Equals(units.HeroFang) {
-        return 0
+        return 1
     }
 
     if hero.Unit.Unit.Equals(units.HeroMorgana) {
-        return 0
+        return 3
     }
 
     if hero.Unit.Unit.Equals(units.HeroAureus) {
-        return 0
+        return 34
     }
 
     if hero.Unit.Unit.Equals(units.HeroShinBo) {
@@ -102,43 +102,43 @@ func getHeroPortraitIndex(hero *Hero) int {
     }
 
     if hero.Unit.Unit.Equals(units.HeroSpyder) {
-        return 0
+        return 8
     }
 
     if hero.Unit.Unit.Equals(units.HeroShalla) {
-        return 0
+        return 13
     }
 
     if hero.Unit.Unit.Equals(units.HeroYramrag) {
-        return 0
+        return 21
     }
 
     if hero.Unit.Unit.Equals(units.HeroMysticX) {
         return 5
     }
 
-    if hero.Unit.Unit.Equals(units.HeroAeirie) {
-        return 0
+    if hero.Unit.Unit.Equals(units.HeroAerie) {
+        return 24
     }
 
     if hero.Unit.Unit.Equals(units.HeroDethStryke) {
-        return 0
+        return 7
     }
 
     if hero.Unit.Unit.Equals(units.HeroElana) {
-        return 0
+        return 23
     }
 
     if hero.Unit.Unit.Equals(units.HeroRoland) {
-        return 0
+        return 14
     }
 
     if hero.Unit.Unit.Equals(units.HeroMortu) {
-        return 0
+        return 16
     }
 
     if hero.Unit.Unit.Equals(units.HeroAlorra) {
-        return 0
+        return 27
     }
 
     if hero.Unit.Unit.Equals(units.HeroSirHarold) {
@@ -146,7 +146,7 @@ func getHeroPortraitIndex(hero *Hero) int {
     }
 
     if hero.Unit.Unit.Equals(units.HeroRavashack) {
-        return 0
+        return 11
     }
 
     if hero.Unit.Unit.Equals(units.HeroWarrax) {
@@ -154,7 +154,7 @@ func getHeroPortraitIndex(hero *Hero) int {
     }
 
     if hero.Unit.Unit.Equals(units.HeroTorin) {
-        return 34
+        return 0
     }
 
     if hero.Unit.Unit.Equals(units.HeroRakir) {
