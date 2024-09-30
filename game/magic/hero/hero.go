@@ -20,6 +20,150 @@ type Hero struct {
     Title string
 }
 
+func getHeroPortraitIndex(hero *Hero) int {
+    if hero.Unit.Unit.Equals(units.HeroBrax) {
+        return 0
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroGunther) {
+        return 0
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroZaldron) {
+        return 0
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroBShan) {
+        return 0
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroValana) {
+        return 0
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroBahgtru) {
+        return 0
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroSerena) {
+        return 0
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroShuri) {
+        return 0
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroTheria) {
+        return 0
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroGreyfairer) {
+        return 0
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroTaki) {
+        return 0
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroReywind) {
+        return 0
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroMalleus) {
+        return 0
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroTumu) {
+        return 0
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroJaer) {
+        return 0
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroMarcus) {
+        return 0
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroFang) {
+        return 0
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroMorgana) {
+        return 0
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroAureus) {
+        return 0
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroShinBo) {
+        return 0
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroSpyder) {
+        return 0
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroShalla) {
+        return 0
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroYramrag) {
+        return 0
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroMysticX) {
+        return 0
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroAeirie) {
+        return 0
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroDethStryke) {
+        return 0
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroElana) {
+        return 0
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroRoland) {
+        return 0
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroMortu) {
+        return 0
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroAlorra) {
+        return 0
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroSirHarold) {
+        return 0
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroRavashack) {
+        return 0
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroWarrax) {
+        return 0
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroTorin) {
+        return 0
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroRakir) {
+        return 18
+    }
+
+    return -1
+}
+
 func MakeHireScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *Hero, action func(bool)) []*uilib.UIElement {
     goldToHire := 100
 
@@ -76,7 +220,7 @@ func MakeHireScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *Hero, action func
     getAlpha := ui.MakeFadeIn(fadeSpeed)
 
     // 18 is rakir
-    heroPortraitIndex := 18
+    heroPortraitIndex := getHeroPortraitIndex(hero)
 
     elements = append(elements, &uilib.UIElement{
         Layer: 1,
@@ -89,8 +233,10 @@ func MakeHireScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *Hero, action func
             screen.DrawImage(background, &options)
 
             options.GeoM.Translate(9, 7)
-            portrait, _ := imageCache.GetImage("portrait.lbx", heroPortraitIndex, 0)
-            screen.DrawImage(portrait, &options)
+            portrait, err := imageCache.GetImage("portrait.lbx", heroPortraitIndex, 0)
+            if err == nil {
+                screen.DrawImage(portrait, &options)
+            }
 
             // unitview.RenderCombatImage(screen, &imageCache, &hero.Unit.Unit, options)
 
