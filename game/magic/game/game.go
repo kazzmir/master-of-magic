@@ -218,6 +218,11 @@ func (game *Game) AddPlayer(wizard setup.WizardCustom) *playerlib.Player{
         ArcanusFog: game.MakeFog(),
         MyrrorFog: game.MakeFog(),
         Wizard: wizard,
+        PowerDistribution: playerlib.PowerDistribution{
+            Mana: 1.0/3,
+            Research: 1.0/3,
+            Skill: 1.0/3,
+        },
     }
 
     game.Players = append(game.Players, newPlayer)

@@ -26,9 +26,9 @@ func NewEngine() (*Engine, error) {
     player := &playerlib.Player{
         CastingSkill: 28,
         PowerDistribution: playerlib.PowerDistribution{
-            Mana: 40,
-            Research: 40,
-            Skill: 20,
+            Mana: 1.0/3,
+            Research: 1.0/3,
+            Skill: 1.0/3,
         },
     }
 

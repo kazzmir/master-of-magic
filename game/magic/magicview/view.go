@@ -345,9 +345,9 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                 }
             }
 
-            normalFont.PrintRight(screen, 56, 160, 1, ebiten.ColorScale{}, fmt.Sprintf("%v MP", player.PowerDistribution.Mana))
-            normalFont.PrintRight(screen, 103, 160, 1, ebiten.ColorScale{}, fmt.Sprintf("%v RP", player.PowerDistribution.Research))
-            normalFont.PrintRight(screen, 151, 160, 1, ebiten.ColorScale{}, fmt.Sprintf("%v SP", player.PowerDistribution.Skill))
+            normalFont.PrintRight(screen, 56, 160, 1, ebiten.ColorScale{}, fmt.Sprintf("%v MP", int(player.PowerDistribution.Mana * float64(magic.Power))))
+            normalFont.PrintRight(screen, 103, 160, 1, ebiten.ColorScale{}, fmt.Sprintf("%v RP", int(player.PowerDistribution.Research * float64(magic.Power))))
+            normalFont.PrintRight(screen, 151, 160, 1, ebiten.ColorScale{}, fmt.Sprintf("%v SP", int(player.PowerDistribution.Skill * float64(magic.Power))))
 
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
                 if element.Draw != nil {
@@ -358,10 +358,6 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player) *uilib.UI {
     }
 
     var elements []*uilib.UIElement
-
-    var manaPercent float64 = float64(player.PowerDistribution.Mana) / float64(magic.Power)
-    var researchPercent float64 = float64(player.PowerDistribution.Research) / float64(magic.Power)
-    var skillPercent float64 = float64(player.PowerDistribution.Skill) / float64(magic.Power)
 
     distribute := func(amount float64, update *float64, other1 *float64, other1Locked bool, other2 *float64, other2Locked bool){
         if other1Locked && other2Locked {
@@ -400,27 +396,18 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player) *uilib.UI {
         }
     }
 
-    updateValues := func(){
-        player.PowerDistribution.Mana = int(manaPercent * float64(magic.Power))
-        player.PowerDistribution.Research = int(researchPercent * float64(magic.Power))
-        player.PowerDistribution.Skill = int(skillPercent * float64(magic.Power))
-    }
-
     adjustManaPercent := func(amount float64){
-        distribute(amount, &manaPercent, &researchPercent, magic.ResearchLocked, &skillPercent, magic.SkillLocked)
+        distribute(amount, &player.PowerDistribution.Mana, &player.PowerDistribution.Research, magic.ResearchLocked, &player.PowerDistribution.Skill, magic.SkillLocked)
         // log.Printf("mana: %v, research: %v, skill: %v total %v", manaPercent, researchPercent, skillPercent, manaPercent + researchPercent + skillPercent)
 
-        updateValues()
     }
 
     adjustResearchPercent := func(amount float64){
-        distribute(amount, &researchPercent, &manaPercent, magic.ManaLocked, &skillPercent, magic.SkillLocked)
-        updateValues()
+        distribute(amount, &player.PowerDistribution.Research, &player.PowerDistribution.Mana, magic.ManaLocked, &player.PowerDistribution.Skill, magic.SkillLocked)
     }
 
     adjustSkillPercent := func(amount float64){
-        distribute(amount, &skillPercent, &manaPercent, magic.ManaLocked, &researchPercent, magic.ResearchLocked)
-        updateValues()
+        distribute(amount, &player.PowerDistribution.Skill, &player.PowerDistribution.Mana, magic.ManaLocked, &player.PowerDistribution.Research, magic.ResearchLocked)
     }
 
     manaLocked, err := magic.ImageCache.GetImage("magic.lbx", 15, 0)
@@ -467,8 +454,8 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                 options.GeoM.Translate(29, 83)
                 screen.DrawImage(manaStaff, &options)
 
-                if manaPercent > 0 {
-                    length := manaPowerStaff.Bounds().Dy() - int(float64(manaPowerStaff.Bounds().Dy()) * manaPercent)
+                if player.PowerDistribution.Mana > 0 {
+                    length := manaPowerStaff.Bounds().Dy() - int(float64(manaPowerStaff.Bounds().Dy()) * player.PowerDistribution.Mana)
                     part := manaPowerStaff.SubImage(image.Rect(0, length, manaPowerStaff.Bounds().Dx(), manaPowerStaff.Bounds().Dy())).(*ebiten.Image)
                     var options ebiten.DrawImageOptions
                     options.GeoM.Translate(32, float64(staffRect.Min.Y + length))
@@ -565,8 +552,8 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                 options.GeoM.Translate(75, 85)
                 screen.DrawImage(researchStaff, &options)
 
-                if researchPercent > 0 {
-                    length := researchPowerStaff.Bounds().Dy() - int(float64(researchPowerStaff.Bounds().Dy()) * researchPercent)
+                if player.PowerDistribution.Research > 0 {
+                    length := researchPowerStaff.Bounds().Dy() - int(float64(researchPowerStaff.Bounds().Dy()) * player.PowerDistribution.Research)
                     part := researchPowerStaff.SubImage(image.Rect(0, length, researchPowerStaff.Bounds().Dx(), researchPowerStaff.Bounds().Dy())).(*ebiten.Image)
                     var options ebiten.DrawImageOptions
                     options.GeoM.Translate(float64(staffRect.Min.X), float64(staffRect.Min.Y + length))
@@ -628,8 +615,8 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                     screen.DrawImage(skillStaff, &options)
                 }
 
-                if skillPercent > 0 {
-                    length := skillPowerStaff.Bounds().Dy() - int(float64(skillPowerStaff.Bounds().Dy()) * skillPercent)
+                if player.PowerDistribution.Skill > 0 {
+                    length := skillPowerStaff.Bounds().Dy() - int(float64(skillPowerStaff.Bounds().Dy()) * player.PowerDistribution.Skill)
                     part := skillPowerStaff.SubImage(image.Rect(0, length, skillPowerStaff.Bounds().Dx(), skillPowerStaff.Bounds().Dy())).(*ebiten.Image)
                     var options ebiten.DrawImageOptions
                     options.GeoM.Translate(float64(staffRect.Min.X), float64(staffRect.Min.Y + length))

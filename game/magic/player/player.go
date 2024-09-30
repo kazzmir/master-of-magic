@@ -228,9 +228,9 @@ func (stack *UnitStack) Y() int {
 
 // in the magic screen, power is distributed across the 3 categories
 type PowerDistribution struct {
-    Mana int
-    Research int
-    Skill int
+    Mana float64
+    Research float64
+    Skill float64
 }
 
 type Player struct {
