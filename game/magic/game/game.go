@@ -407,10 +407,17 @@ func (game *Game) doArmyView(yield coroutine.YieldFunc) {
     yield()
 }
 
+/* how much power the player has.
+ * add up all melded node tiles, all buildings that produce power, etc
+ */
+func (game *Game) ComputePower(player *playerlib.Player) int {
+    return 50
+}
+
 func (game *Game) doMagicView(yield coroutine.YieldFunc) {
 
     oldDrawer := game.Drawer
-    magicScreen := magicview.MakeMagicScreen(game.Cache, game.Players[0])
+    magicScreen := magicview.MakeMagicScreen(game.Cache, game.Players[0], game.ComputePower(game.Players[0]))
 
     game.Drawer = func (screen *ebiten.Image, game *Game){
         magicScreen.Draw(screen)

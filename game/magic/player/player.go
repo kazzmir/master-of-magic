@@ -226,6 +226,13 @@ func (stack *UnitStack) Y() int {
     return 0
 }
 
+// in the magic screen, power is distributed across the 3 categories
+type PowerDistribution struct {
+    Mana int
+    Research int
+    Skill int
+}
+
 type Player struct {
     // matrix the same size as the map, where true means the player can see the tile
     // and false means the tile has not yet been discovered
@@ -239,6 +246,8 @@ type Player struct {
 
     // known spells
     Spells spellbook.Spells
+
+    PowerDistribution PowerDistribution
 
     CastingSkill int
 

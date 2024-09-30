@@ -25,9 +25,14 @@ func NewEngine() (*Engine, error) {
 
     player := &playerlib.Player{
         CastingSkill: 28,
+        PowerDistribution: playerlib.PowerDistribution{
+            Mana: 40,
+            Research: 40,
+            Skill: 20,
+        },
     }
 
-    magicScreen := magicview.MakeMagicScreen(cache, player)
+    magicScreen := magicview.MakeMagicScreen(cache, player, 100)
 
     return &Engine{
         LbxCache: cache,
