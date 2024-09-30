@@ -411,13 +411,25 @@ func (game *Game) doArmyView(yield coroutine.YieldFunc) {
  * add up all melded node tiles, all buildings that produce power, etc
  */
 func (game *Game) ComputePower(player *playerlib.Player) int {
-    power := 0
+    power := float64(0)
 
     for _, city := range player.Cities {
-        power += city.ComputePower()
+        power += float64(city.ComputePower())
     }
 
-    return power
+    magicBonus := float64(1)
+
+    switch game.Settings.Magic {
+        case data.MagicSettingWeak: magicBonus = 0.5
+        case data.MagicSettingNormal: magicBonus = 1
+        case data.MagicSettingPowerful: magicBonus = 1.5
+    }
+
+    for _, node := range game.Map.GetMeldedNodes(player) {
+        power += float64(len(node.Zone)) * magicBonus
+    }
+
+    return int(power)
 }
 
 func (game *Game) doMagicView(yield coroutine.YieldFunc) {
