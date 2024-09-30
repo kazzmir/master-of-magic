@@ -62,15 +62,26 @@ func renderUpkeep(screen *ebiten.Image, imageCache *util.ImageCache, unit *units
     renderIcons(unitCostMana, smallMana, bigMana)
 }
 
-func RenderUnitInfoNormal(screen *ebiten.Image, imageCache *util.ImageCache, unit *units.Unit, descriptionFont *font.Font, smallFont *font.Font, defaultOptions ebiten.DrawImageOptions) {
+func RenderUnitInfoNormal(screen *ebiten.Image, imageCache *util.ImageCache, unit *units.Unit, extraTitle string, descriptionFont *font.Font, smallFont *font.Font, defaultOptions ebiten.DrawImageOptions) {
     x, y := defaultOptions.GeoM.Apply(0, 0)
 
     descriptionFont.Print(screen, x, y, 1, defaultOptions.ColorScale, unit.Name)
 
-    y += 5
-    defaultOptions.GeoM.Translate(0, 5)
+    if extraTitle != "" {
+        y += float64(descriptionFont.Height())
+        defaultOptions.GeoM.Translate(0, float64(descriptionFont.Height()))
+        descriptionFont.Print(screen, x, y, 1, defaultOptions.ColorScale, extraTitle)
 
-    smallFont.Print(screen, x, y + 11, 1, defaultOptions.ColorScale, "Moves")
+        y += float64(descriptionFont.Height())
+        defaultOptions.GeoM.Translate(0, float64(descriptionFont.Height()))
+
+    } else {
+        y += 15
+        defaultOptions.GeoM.Translate(0, 14)
+    }
+
+    smallFont.Print(screen, x, y, 1, defaultOptions.ColorScale, "Moves")
+    y += float64(smallFont.Height()) + 1
 
     unitMoves := unit.MovementSpeed
 
@@ -79,7 +90,7 @@ func RenderUnitInfoNormal(screen *ebiten.Image, imageCache *util.ImageCache, uni
     if err == nil {
         var options ebiten.DrawImageOptions
         options = defaultOptions
-        options.GeoM.Translate(smallFont.MeasureTextWidth("Upkeep ", 1), 9)
+        options.GeoM.Translate(smallFont.MeasureTextWidth("Upkeep ", 1), 0)
 
         for i := 0; i < unitMoves; i++ {
             screen.DrawImage(smallBoot, &options)
@@ -87,10 +98,10 @@ func RenderUnitInfoNormal(screen *ebiten.Image, imageCache *util.ImageCache, uni
         }
     }
 
-    smallFont.Print(screen, x, y + 19, 1, defaultOptions.ColorScale, "Upkeep")
+    smallFont.Print(screen, x, y, 1, defaultOptions.ColorScale, "Upkeep")
 
     options := defaultOptions
-    options.GeoM.Translate(smallFont.MeasureTextWidth("Upkeep ", 1), 18)
+    options.GeoM.Translate(smallFont.MeasureTextWidth("Upkeep ", 1), float64(smallFont.Height()) + 2)
     renderUpkeep(screen, imageCache, unit, options)
 }
 

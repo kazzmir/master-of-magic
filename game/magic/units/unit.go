@@ -1111,6 +1111,7 @@ var HeroBShan Unit = Unit{
 var HeroRakir Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 4,
+    Name: "Rakir",
     Race: data.RaceHero,
 }
 

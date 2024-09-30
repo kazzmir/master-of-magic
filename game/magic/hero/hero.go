@@ -15,7 +15,12 @@ import (
     "github.com/hajimehoshi/ebiten/v2"
 )
 
-func MakeHireScreenUI(cache *lbx.LbxCache, ui *uilib.UI, unit *units.OverworldUnit, action func(bool)) []*uilib.UIElement {
+type Hero struct {
+    Unit *units.OverworldUnit
+    Title string
+}
+
+func MakeHireScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *Hero, action func(bool)) []*uilib.UIElement {
     goldToHire := 100
 
     fontLbx, err := cache.GetLbxFile("fonts.lbx")
@@ -81,23 +86,23 @@ func MakeHireScreenUI(cache *lbx.LbxCache, ui *uilib.UI, unit *units.OverworldUn
             screen.DrawImage(background, &options)
 
             options.GeoM.Translate(25, 30)
-            unitview.RenderCombatImage(screen, &imageCache, &unit.Unit, options)
+            unitview.RenderCombatImage(screen, &imageCache, &hero.Unit.Unit, options)
 
             options.GeoM.Reset()
             options.GeoM.Translate(0, yTop)
             options.GeoM.Translate(31, 6)
-            options.GeoM.Translate(51, 8)
+            options.GeoM.Translate(51, 7)
 
-            unitview.RenderUnitInfoNormal(screen, &imageCache, &unit.Unit, descriptionFont, smallFont, options)
+            unitview.RenderUnitInfoNormal(screen, &imageCache, &hero.Unit.Unit, hero.Title, descriptionFont, smallFont, options)
 
             options.GeoM.Reset()
             options.GeoM.Translate(0, yTop)
             options.GeoM.Translate(31, 6)
             options.GeoM.Translate(10, 50)
-            unitview.RenderUnitInfoStats(screen, &imageCache, &unit.Unit, descriptionFont, smallFont, options)
+            unitview.RenderUnitInfoStats(screen, &imageCache, &hero.Unit.Unit, descriptionFont, smallFont, options)
 
             options.GeoM.Translate(0, 60)
-            unitview.RenderUnitAbilities(screen, &imageCache, &unit.Unit, mediumFont, options)
+            unitview.RenderUnitAbilities(screen, &imageCache, &hero.Unit.Unit, mediumFont, options)
         },
     })
 
