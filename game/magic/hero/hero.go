@@ -22,7 +22,7 @@ type Hero struct {
 
 func getHeroPortraitIndex(hero *Hero) int {
     if hero.Unit.Unit.Equals(units.HeroBrax) {
-        return 0
+        return 10
     }
 
     if hero.Unit.Unit.Equals(units.HeroGunther) {
@@ -98,7 +98,7 @@ func getHeroPortraitIndex(hero *Hero) int {
     }
 
     if hero.Unit.Unit.Equals(units.HeroShinBo) {
-        return 0
+        return 29
     }
 
     if hero.Unit.Unit.Equals(units.HeroSpyder) {
@@ -114,7 +114,7 @@ func getHeroPortraitIndex(hero *Hero) int {
     }
 
     if hero.Unit.Unit.Equals(units.HeroMysticX) {
-        return 0
+        return 5
     }
 
     if hero.Unit.Unit.Equals(units.HeroAeirie) {
@@ -142,7 +142,7 @@ func getHeroPortraitIndex(hero *Hero) int {
     }
 
     if hero.Unit.Unit.Equals(units.HeroSirHarold) {
-        return 0
+        return 9
     }
 
     if hero.Unit.Unit.Equals(units.HeroRavashack) {
@@ -150,11 +150,11 @@ func getHeroPortraitIndex(hero *Hero) int {
     }
 
     if hero.Unit.Unit.Equals(units.HeroWarrax) {
-        return 0
+        return 4
     }
 
     if hero.Unit.Unit.Equals(units.HeroTorin) {
-        return 0
+        return 34
     }
 
     if hero.Unit.Unit.Equals(units.HeroRakir) {
