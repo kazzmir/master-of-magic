@@ -411,7 +411,13 @@ func (game *Game) doArmyView(yield coroutine.YieldFunc) {
  * add up all melded node tiles, all buildings that produce power, etc
  */
 func (game *Game) ComputePower(player *playerlib.Player) int {
-    return 50
+    power := 0
+
+    for _, city := range player.Cities {
+        power += city.ComputePower()
+    }
+
+    return power
 }
 
 func (game *Game) doMagicView(yield coroutine.YieldFunc) {
