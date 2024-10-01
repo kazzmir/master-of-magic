@@ -237,6 +237,17 @@ type WizardCustom struct {
     Banner data.BannerType
 }
 
+/* total number of all magic books combined
+ */
+func (wizard *WizardCustom) TotalBooks() int {
+    count := 0
+    for _, book := range wizard.Books {
+        count += book.Count
+    }
+
+    return count
+}
+
 func (wizard *WizardCustom) AbilityEnabled(ability WizardAbility) bool {
     for _, check := range wizard.Abilities {
         if check == ability {

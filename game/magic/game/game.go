@@ -422,6 +422,8 @@ func (game *Game) ComputePower(player *playerlib.Player) int {
         power += float64(city.ComputePower())
     }
 
+    power += float64(player.Wizard.TotalBooks())
+
     magicBonus := float64(1)
 
     switch game.Settings.Magic {

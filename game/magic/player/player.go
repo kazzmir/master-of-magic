@@ -314,7 +314,13 @@ func (player *Player) ManaPerTurn(power int) int {
         mana -= unit.Unit.UpkeepMana
     }
 
-    mana += int(float64(power) * player.PowerDistribution.Mana)
+    manaFocusingBonus := float64(1)
+
+    if player.Wizard.AbilityEnabled(setup.AbilityManaFocusing) {
+        manaFocusingBonus = 1.25
+    }
+
+    mana += int(float64(power) * player.PowerDistribution.Mana * manaFocusingBonus)
 
     return mana
 }
