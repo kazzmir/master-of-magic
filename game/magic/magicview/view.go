@@ -5,6 +5,7 @@ import (
     "log"
     "image"
     "image/color"
+    "math"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
@@ -345,9 +346,13 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                 }
             }
 
-            normalFont.PrintRight(screen, 56, 160, 1, ebiten.ColorScale{}, fmt.Sprintf("%v MP", int(player.PowerDistribution.Mana * float64(magic.Power))))
-            normalFont.PrintRight(screen, 103, 160, 1, ebiten.ColorScale{}, fmt.Sprintf("%v RP", int(player.PowerDistribution.Research * float64(magic.Power))))
-            normalFont.PrintRight(screen, 151, 160, 1, ebiten.ColorScale{}, fmt.Sprintf("%v SP", int(player.PowerDistribution.Skill * float64(magic.Power))))
+            mana := int(math.Round(player.PowerDistribution.Mana * float64(magic.Power)))
+            research := int(math.Round(player.PowerDistribution.Research * float64(magic.Power)))
+            skill := magic.Power - (mana + research)
+
+            normalFont.PrintRight(screen, 56, 160, 1, ebiten.ColorScale{}, fmt.Sprintf("%v MP", mana))
+            normalFont.PrintRight(screen, 103, 160, 1, ebiten.ColorScale{}, fmt.Sprintf("%v RP", research))
+            normalFont.PrintRight(screen, 151, 160, 1, ebiten.ColorScale{}, fmt.Sprintf("%v SP", skill))
 
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
                 if element.Draw != nil {
@@ -391,15 +396,14 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player) *uilib.UI {
 
             if *other2 < 0 {
                 *update += *other2
-                *other2= 0
+                *other2 = 0
             }
         }
     }
 
     adjustManaPercent := func(amount float64){
         distribute(amount, &player.PowerDistribution.Mana, &player.PowerDistribution.Research, magic.ResearchLocked, &player.PowerDistribution.Skill, magic.SkillLocked)
-        // log.Printf("mana: %v, research: %v, skill: %v total %v", manaPercent, researchPercent, skillPercent, manaPercent + researchPercent + skillPercent)
-
+        // log.Printf("distribution: %+v", player.PowerDistribution)
     }
 
     adjustResearchPercent := func(amount float64){
