@@ -2534,7 +2534,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
             goldPerTurn := player.GoldPerTurn()
             foodPerTurn := player.FoodPerTurn()
-            manaPerTurn := player.ManaPerTurn()
+            manaPerTurn := player.ManaPerTurn(game.ComputePower(player))
 
             elements = append(elements, &uilib.UIElement{
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image){
@@ -2605,7 +2605,7 @@ func (game *Game) DoNextTurn(){
             player.Gold = 0
         }
 
-        player.Mana += player.ManaPerTurn()
+        player.Mana += player.ManaPerTurn(game.ComputePower(player))
         if player.Mana < 0 {
             player.Mana = 0
         }

@@ -303,7 +303,7 @@ func (player *Player) FoodPerTurn() int {
     return food
 }
 
-func (player *Player) ManaPerTurn() int {
+func (player *Player) ManaPerTurn(power int) int {
     mana := 0
 
     for _, city := range player.Cities {
@@ -313,6 +313,8 @@ func (player *Player) ManaPerTurn() int {
     for _, unit := range player.Units {
         mana -= unit.Unit.UpkeepMana
     }
+
+    mana += int(float64(power) * player.PowerDistribution.Mana)
 
     return mana
 }
