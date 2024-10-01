@@ -2601,18 +2601,19 @@ func (game *Game) DoNextUnit(player *playerlib.Player){
 func (game *Game) DoNextTurn(){
     if len(game.Players) > 0 {
         player := game.Players[0]
+        power := game.ComputePower(player)
 
         player.Gold += player.GoldPerTurn()
         if player.Gold < 0 {
             player.Gold = 0
         }
 
-        player.Mana += player.ManaPerTurn(game.ComputePower(player))
+        player.Mana += player.ManaPerTurn(power)
         if player.Mana < 0 {
             player.Mana = 0
         }
 
-        player.SpellResearch += player.SpellResearchPerTurn()
+        player.SpellResearch += int(player.SpellResearchPerTurn(power))
 
         for _, city := range player.Cities {
             cityEvents := city.DoNextTurn(player.GetUnits(city.X, city.Y))

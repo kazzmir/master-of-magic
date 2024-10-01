@@ -265,12 +265,14 @@ type Player struct {
     SelectedStack *UnitStack
 }
 
-func (player *Player) SpellResearchPerTurn() int {
-    research := 0
+func (player *Player) SpellResearchPerTurn(power int) float64 {
+    research := float64(0)
 
     for _, city := range player.Cities {
-        research += city.ResearchProduction()
+        research += float64(city.ResearchProduction())
     }
+
+    research += float64(power) * player.PowerDistribution.Research
 
     return research
 }
