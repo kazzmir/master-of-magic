@@ -451,6 +451,20 @@ func MakeMap(data *terrain.TerrainData) *Map {
     }
 }
 
+func (mapObject *Map) GetMeldedNodes(player *playerlib.Player) []*ExtraMagicNode {
+    var out []*ExtraMagicNode
+
+    for _, extra := range mapObject.ExtraMap {
+        if node, ok := extra.(*ExtraMagicNode); ok {
+            if node.MeldingWizard == player {
+                out = append(out, node)
+            }
+        }
+    }
+
+    return out
+}
+
 func (mapObject *Map) CreateNode(x int, y int, node MagicNode, plane data.Plane, magicSetting data.MagicSetting, difficulty data.DifficultySetting) *ExtraMagicNode {
     tileType := 0
     switch node {

@@ -203,6 +203,40 @@ func (city *City) ComputeSubsistenceFarmers() int {
     return maxFarmers
 }
 
+/* power production from buildings and citizens
+ */
+func (city *City) ComputePower() int {
+    power := 0
+
+    religiousPower := 0
+
+    for _, buildingValue := range city.Buildings.Values() {
+        switch buildingValue {
+            case building.BuildingShrine: religiousPower += 1
+            case building.BuildingTemple: religiousPower += 2
+            case building.BuildingParthenon: religiousPower += 3
+            case building.BuildingCathedral: religiousPower += 4
+            case building.BuildingAlchemistsGuild: power += 3
+            case building.BuildingWizardsGuild: power -= 3
+            case building.BuildingFortress:
+                if city.Plane == data.PlaneMyrror {
+                    power += 5
+                }
+        }
+    }
+
+    // FIXME: take enchantments and bonuses for religious power into account
+
+    citizenPower := float64(0)
+    if city.Race == data.RaceDraconian || city.Race == data.RaceHighElf || city.Race == data.RaceBeastmen {
+        citizenPower = 0.5
+    } else if city.Race == data.RaceDarkElf {
+        citizenPower = 1
+    }
+
+    return power + religiousPower + int(citizenPower * float64(city.Citizens()))
+}
+
 func (city *City) UpdateUnrest(garrison []*units.OverworldUnit) {
     rebels := city.ComputeUnrest(garrison)
 

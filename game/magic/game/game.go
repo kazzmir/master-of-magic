@@ -218,6 +218,11 @@ func (game *Game) AddPlayer(wizard setup.WizardCustom) *playerlib.Player{
         ArcanusFog: game.MakeFog(),
         MyrrorFog: game.MakeFog(),
         Wizard: wizard,
+        PowerDistribution: playerlib.PowerDistribution{
+            Mana: 1.0/3,
+            Research: 1.0/3,
+            Skill: 1.0/3,
+        },
     }
 
     game.Players = append(game.Players, newPlayer)
@@ -407,10 +412,37 @@ func (game *Game) doArmyView(yield coroutine.YieldFunc) {
     yield()
 }
 
+/* how much power the player has.
+ * add up all melded node tiles, all buildings that produce power, etc
+ */
+func (game *Game) ComputePower(player *playerlib.Player) int {
+    power := float64(0)
+
+    for _, city := range player.Cities {
+        power += float64(city.ComputePower())
+    }
+
+    power += float64(player.Wizard.TotalBooks())
+
+    magicBonus := float64(1)
+
+    switch game.Settings.Magic {
+        case data.MagicSettingWeak: magicBonus = 0.5
+        case data.MagicSettingNormal: magicBonus = 1
+        case data.MagicSettingPowerful: magicBonus = 1.5
+    }
+
+    for _, node := range game.Map.GetMeldedNodes(player) {
+        power += float64(len(node.Zone)) * magicBonus
+    }
+
+    return int(power)
+}
+
 func (game *Game) doMagicView(yield coroutine.YieldFunc) {
 
     oldDrawer := game.Drawer
-    magicScreen := magicview.MakeMagicScreen(game.Cache, game.Players[0])
+    magicScreen := magicview.MakeMagicScreen(game.Cache, game.Players[0], game.ComputePower(game.Players[0]))
 
     game.Drawer = func (screen *ebiten.Image, game *Game){
         magicScreen.Draw(screen)
@@ -2504,7 +2536,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
             goldPerTurn := player.GoldPerTurn()
             foodPerTurn := player.FoodPerTurn()
-            manaPerTurn := player.ManaPerTurn()
+            manaPerTurn := player.ManaPerTurn(game.ComputePower(player))
 
             elements = append(elements, &uilib.UIElement{
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image){
@@ -2523,13 +2555,13 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
     elements = append(elements, &uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            game.WhiteFont.Print(screen, 257, 68, 1, ebiten.ColorScale{}, fmt.Sprintf("%v GP", game.Players[0].Gold))
+            game.WhiteFont.PrintRight(screen, 276, 68, 1, ebiten.ColorScale{}, fmt.Sprintf("%v GP", game.Players[0].Gold))
         },
     })
 
     elements = append(elements, &uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            game.WhiteFont.Print(screen, 298, 68, 1, ebiten.ColorScale{}, fmt.Sprintf("%v MP", game.Players[0].Mana))
+            game.WhiteFont.PrintRight(screen, 313, 68, 1, ebiten.ColorScale{}, fmt.Sprintf("%v MP", game.Players[0].Mana))
         },
     })
 
@@ -2569,18 +2601,19 @@ func (game *Game) DoNextUnit(player *playerlib.Player){
 func (game *Game) DoNextTurn(){
     if len(game.Players) > 0 {
         player := game.Players[0]
+        power := game.ComputePower(player)
 
         player.Gold += player.GoldPerTurn()
         if player.Gold < 0 {
             player.Gold = 0
         }
 
-        player.Mana += player.ManaPerTurn()
+        player.Mana += player.ManaPerTurn(power)
         if player.Mana < 0 {
             player.Mana = 0
         }
 
-        player.SpellResearch += player.SpellResearchPerTurn()
+        player.SpellResearch += int(player.SpellResearchPerTurn(power))
 
         for _, city := range player.Cities {
             cityEvents := city.DoNextTurn(player.GetUnits(city.X, city.Y))

@@ -226,6 +226,13 @@ func (stack *UnitStack) Y() int {
     return 0
 }
 
+// in the magic screen, power is distributed across the 3 categories
+type PowerDistribution struct {
+    Mana float64
+    Research float64
+    Skill float64
+}
+
 type Player struct {
     // matrix the same size as the map, where true means the player can see the tile
     // and false means the tile has not yet been discovered
@@ -239,6 +246,8 @@ type Player struct {
 
     // known spells
     Spells spellbook.Spells
+
+    PowerDistribution PowerDistribution
 
     CastingSkill int
 
@@ -256,12 +265,14 @@ type Player struct {
     SelectedStack *UnitStack
 }
 
-func (player *Player) SpellResearchPerTurn() int {
-    research := 0
+func (player *Player) SpellResearchPerTurn(power int) float64 {
+    research := float64(0)
 
     for _, city := range player.Cities {
-        research += city.ResearchProduction()
+        research += float64(city.ResearchProduction())
     }
+
+    research += float64(power) * player.PowerDistribution.Research
 
     return research
 }
@@ -294,7 +305,7 @@ func (player *Player) FoodPerTurn() int {
     return food
 }
 
-func (player *Player) ManaPerTurn() int {
+func (player *Player) ManaPerTurn(power int) int {
     mana := 0
 
     for _, city := range player.Cities {
@@ -304,6 +315,14 @@ func (player *Player) ManaPerTurn() int {
     for _, unit := range player.Units {
         mana -= unit.Unit.UpkeepMana
     }
+
+    manaFocusingBonus := float64(1)
+
+    if player.Wizard.AbilityEnabled(setup.AbilityManaFocusing) {
+        manaFocusingBonus = 1.25
+    }
+
+    mana += int(float64(power) * player.PowerDistribution.Mana * manaFocusingBonus)
 
     return mana
 }
