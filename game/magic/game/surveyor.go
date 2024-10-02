@@ -1,12 +1,13 @@
 package game
 
 import (
+    "log"
     "fmt"
     "image"
     "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/coroutine"
-    "github.com/kazzmir/master-of-magic/lib/lbx"
+    // "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
@@ -16,17 +17,7 @@ import (
     "github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
-func makeSurveyorFont(cache *lbx.LbxCache) *font.Font {
-    fontLbx, err := cache.GetLbxFile("fonts.lbx")
-    if err != nil {
-        return nil
-    }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        return nil
-    }
-
+func makeSurveyorFont(fonts []*font.LbxFont) *font.Font {
     white := color.RGBA{R: 255, G: 255, B: 255, A: 255}
     palette := color.Palette{
         color.RGBA{R: 0, G: 0, B: 0, A: 0},
@@ -36,6 +27,19 @@ func makeSurveyorFont(cache *lbx.LbxCache) *font.Font {
     }
 
     return font.MakeOptimizedFontWithPalette(fonts[4], palette)
+}
+
+func makeYellowFont(fonts []*font.LbxFont) *font.Font {
+    yellow := util.RotateHue(color.RGBA{R: 255, G: 255, B: 0, A: 255}, -0.15)
+
+    palette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        yellow, yellow, yellow,
+        yellow, yellow, yellow,
+    }
+
+    return font.MakeOptimizedFontWithPalette(fonts[1], palette)
 }
 
 func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
@@ -59,7 +63,20 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
         }
     }
 
-    surveyorFont := makeSurveyorFont(game.Cache)
+    fontLbx, err := game.Cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        log.Printf("Error reading fonts: %v", err)
+        return
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        log.Printf("Error reading fonts: %v", err)
+        return
+    }
+
+    surveyorFont := makeSurveyorFont(fonts)
+    yellowFont := makeYellowFont(fonts)
 
     // just draw cities and land, but no units
     overworld := Overworld{
@@ -107,7 +124,7 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
             if selectedPoint.X >= 0 && selectedPoint.X < game.Map.Width() && selectedPoint.Y >= 0 && selectedPoint.Y < game.Map.Height() {
                 if fog[selectedPoint.X][selectedPoint.Y] {
                     tile := game.Map.GetTile(selectedPoint.X, selectedPoint.Y)
-                    game.WhiteFont.PrintCenter(screen, 280, 93, 1, ebiten.ColorScale{}, tile.Name())
+                    yellowFont.PrintCenter(screen, 280, 93, 1, ebiten.ColorScale{}, tile.Name())
                 }
             }
         },
