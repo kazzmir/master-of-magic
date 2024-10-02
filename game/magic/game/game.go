@@ -1330,9 +1330,6 @@ func (game *Game) doLoadMenu(yield coroutine.YieldFunc) {
     yield()
 }
 
-func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
-}
-
 func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
     // keep processing events until we don't receive one in the events channel
     for {
