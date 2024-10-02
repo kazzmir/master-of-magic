@@ -74,6 +74,8 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
         FogBlack: game.GetFogImage(),
     }
 
+    selectedPoint := image.Pt(-1, -1)
+
     ui := &uilib.UI{
         Draw: func(ui *uilib.UI, screen *ebiten.Image){
             var options ebiten.DrawImageOptions
@@ -94,6 +96,12 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
             game.WhiteFont.PrintRight(screen, 313, 68, 1, ebiten.ColorScale{}, fmt.Sprintf("%v MP", game.Players[0].Mana))
 
             surveyorFont.PrintCenter(screen, 280, 81, 1, ebiten.ColorScale{}, "Surveyor")
+
+            if selectedPoint.X >= 0 && selectedPoint.X < game.Map.Width() && selectedPoint.Y >= 0 && selectedPoint.Y < game.Map.Height() {
+                if fog[selectedPoint.X][selectedPoint.Y] {
+                    game.WhiteFont.PrintCenter(screen, 280, 93, 1, ebiten.ColorScale{}, fmt.Sprintf("Forest"))
+                }
+            }
         },
     }
 
@@ -131,6 +139,16 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
     // plane button
     ui.AddElement(makeButton(7, 270, 4))
 
+    // cancel button at bottom
+    cancelButton, _ := game.ImageCache.GetImage("main.lbx", 47, 0)
+    ui.AddElement(&uilib.UIElement{
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(240, 174)
+            screen.DrawImage(cancelButton, &options)
+        },
+    })
+
     game.Drawer = func(screen *ebiten.Image, game *Game){
         overworld.DrawOverworld(screen, ebiten.GeoM{})
 
@@ -147,6 +165,17 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
 
     quit := false
     for !quit {
+        overworld.Counter += 1
+
+        x, y := ebiten.CursorPosition()
+
+        // within the viewable area
+        if x < 240 && y > 18 {
+            newX := game.cameraX + x / game.Map.TileWidth()
+            newY := game.cameraY + y / game.Map.TileHeight()
+            selectedPoint = image.Pt(newX, newY)
+        }
+
         yield()
     }
 }
