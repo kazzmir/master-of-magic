@@ -95,6 +95,10 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
 
     selectedPoint := image.Pt(-1, -1)
 
+    var cityInfoText font.WrappedText
+
+    cancelBackground, _ := game.ImageCache.GetImage("main.lbx", 47, 0)
+
     ui := &uilib.UI{
         Draw: func(ui *uilib.UI, screen *ebiten.Image){
             var options ebiten.DrawImageOptions
@@ -105,7 +109,6 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
             options.GeoM.Translate(240, 77)
             screen.DrawImage(landImage, &options)
 
-            cancelBackground, _ := game.ImageCache.GetImage("main.lbx", 47, 0)
             options.GeoM.Reset()
             options.GeoM.Translate(240, 174)
             screen.DrawImage(cancelBackground, &options)
@@ -125,6 +128,8 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
                 if fog[selectedPoint.X][selectedPoint.Y] {
                     tile := game.Map.GetTile(selectedPoint.X, selectedPoint.Y)
                     yellowFont.PrintCenter(screen, 280, 93, 1, ebiten.ColorScale{}, tile.Name())
+
+                    yellowFont.RenderWrapped(screen, 245, 160 - cityInfoText.TotalHeight, cityInfoText, ebiten.ColorScale{}, false)
                 }
             }
         },
@@ -229,7 +234,7 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
         if x < 240 && y > 18 {
             newX := game.cameraX + x / game.Map.TileWidth()
             newY := game.cameraY + y / game.Map.TileHeight()
-            selectedPoint = image.Pt(newX, newY)
+            newPoint := image.Pt(newX, newY)
 
             // right click should move the camera
             rightClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight)
@@ -245,6 +250,14 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
                     moveCamera.Y = game.Map.Height() - 11
                 }
             }
+
+            if selectedPoint != newPoint {
+                selectedPoint = newPoint
+
+                cityInfoText = yellowFont.CreateWrappedText(float64(cancelBackground.Bounds().Dx()) - 9, 1, "Cities cannot be built on water")
+            }
+        } else {
+            cityInfoText.Clear()
         }
 
         yield()
