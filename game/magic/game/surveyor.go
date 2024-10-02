@@ -13,6 +13,7 @@ import (
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
 
     "github.com/hajimehoshi/ebiten/v2"
+    "github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
 func makeSurveyorFont(cache *lbx.LbxCache) *font.Font {
@@ -181,6 +182,7 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
         ui.Draw(ui, screen)
     }
 
+    moveCamera := image.Pt(game.cameraX, game.cameraY)
     for !quit {
         overworld.Counter += 1
 
@@ -188,13 +190,43 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
 
         x, y := ebiten.CursorPosition()
 
-        // right click should move the camera
+        if overworld.Counter % 5 == 0 && (moveCamera.X != game.cameraX || moveCamera.Y != game.cameraY) {
+            if moveCamera.X < game.cameraX {
+                game.cameraX -= 1
+            } else if moveCamera.X > game.cameraX {
+                game.cameraX += 1
+            }
+
+            if moveCamera.Y < game.cameraY {
+                game.cameraY -= 1
+            } else if moveCamera.Y > game.cameraY {
+                game.cameraY += 1
+            }
+
+            overworld.CameraX = game.cameraX
+            overworld.CameraY = game.cameraY
+        }
 
         // within the viewable area
         if x < 240 && y > 18 {
             newX := game.cameraX + x / game.Map.TileWidth()
             newY := game.cameraY + y / game.Map.TileHeight()
             selectedPoint = image.Pt(newX, newY)
+
+            // right click should move the camera
+            rightClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight)
+            if rightClick {
+                moveCamera = selectedPoint.Add(image.Pt(-5, -5))
+                if moveCamera.X < 0 {
+                    moveCamera.X = 0
+                }
+                if moveCamera.Y < 0 {
+                    moveCamera.Y = 0
+                }
+                if moveCamera.Y >= game.Map.Height() - 11 {
+                    moveCamera.Y = game.Map.Height() - 11
+                }
+            }
         }
 
         yield()
