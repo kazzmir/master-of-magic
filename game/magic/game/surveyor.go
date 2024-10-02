@@ -256,10 +256,14 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
 
                 text := ""
 
-                if game.NearCity(newPoint, 3) {
+                tile := game.Map.GetTile(newX, newY)
+
+                if !tile.IsLand() {
+                    text = "Cannot build cities on water."
+                } else if game.NearCity(newPoint, 3) {
                     text = "Cities cannot be built less than 3 squares from any other city."
                 } else {
-                    text = "Cities cannot be built on water"
+                    text = "City Resources"
                 }
 
                 cityInfoText = yellowFont.CreateWrappedText(float64(cancelBackground.Bounds().Dx()) - 9, 1, text)
