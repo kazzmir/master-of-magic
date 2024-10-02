@@ -1,14 +1,40 @@
 package game
 
 import (
+    "fmt"
     "image"
+    "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/coroutine"
+    "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/font"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
 
     "github.com/hajimehoshi/ebiten/v2"
 )
+
+func makeSurveyorFont(cache *lbx.LbxCache) *font.Font {
+    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        return nil
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        return nil
+    }
+
+    white := color.RGBA{R: 255, G: 255, B: 255, A: 255}
+    palette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        white, white, white,
+        white, white, white,
+    }
+
+    return font.MakeOptimizedFontWithPalette(fonts[4], palette)
+}
 
 func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
     oldDrawer := game.Drawer
@@ -31,6 +57,8 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
         }
     }
 
+    surveyorFont := makeSurveyorFont(game.Cache)
+
     // just draw cities and land, but no units
     overworld := Overworld{
         CameraX: game.cameraX,
@@ -52,11 +80,20 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
             mainHud, _ := game.ImageCache.GetImage("main.lbx", 0, 0)
             screen.DrawImage(mainHud, &options)
 
+            landImage, _ := game.ImageCache.GetImage("main.lbx", 57, 0)
+            options.GeoM.Translate(240, 77)
+            screen.DrawImage(landImage, &options)
+
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
                 if element.Draw != nil {
                     element.Draw(element, screen)
                 }
             })
+
+            game.WhiteFont.PrintRight(screen, 276, 68, 1, ebiten.ColorScale{}, fmt.Sprintf("%v GP", game.Players[0].Gold))
+            game.WhiteFont.PrintRight(screen, 313, 68, 1, ebiten.ColorScale{}, fmt.Sprintf("%v MP", game.Players[0].Mana))
+
+            surveyorFont.PrintCenter(screen, 280, 81, 1, ebiten.ColorScale{}, "Surveyor")
         },
     }
 
