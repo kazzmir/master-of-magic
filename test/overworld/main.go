@@ -985,7 +985,7 @@ func createScenario12(cache *lbx.LbxCache) *gamelib.Game {
 
     game.Events <- &gamelib.GameEventSurveyor{}
 
-    player.LiftFog(stack.X(), stack.Y(), 2)
+    player.LiftFog(stack.X(), stack.Y(), 4)
 
     return game
 }
