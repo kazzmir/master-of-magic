@@ -97,6 +97,40 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
         },
     }
 
+    ui.SetElementsFromArray(nil)
+
+    makeButton := func(lbxIndex int, x int, y int) *uilib.UIElement {
+        button, _ := game.ImageCache.GetImage("main.lbx", lbxIndex, 0)
+        return &uilib.UIElement{
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(x), float64(y))
+                screen.DrawImage(button, &options)
+            },
+        }
+    }
+
+    // game
+    ui.AddElement(makeButton(1, 7, 4))
+
+    // spells
+    ui.AddElement(makeButton(2, 47, 4))
+
+    // army button
+    ui.AddElement(makeButton(3, 89, 4))
+
+    // cities button
+    ui.AddElement(makeButton(4, 140, 4))
+
+    // magic button
+    ui.AddElement(makeButton(5, 184, 4))
+
+    // info button
+    ui.AddElement(makeButton(6, 226, 4))
+
+    // plane button
+    ui.AddElement(makeButton(7, 270, 4))
+
     game.Drawer = func(screen *ebiten.Image, game *Game){
         overworld.DrawOverworld(screen, ebiten.GeoM{})
 
