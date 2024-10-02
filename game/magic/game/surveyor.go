@@ -188,6 +188,8 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
 
         x, y := ebiten.CursorPosition()
 
+        // right click should move the camera
+
         // within the viewable area
         if x < 240 && y > 18 {
             newX := game.cameraX + x / game.Map.TileWidth()
