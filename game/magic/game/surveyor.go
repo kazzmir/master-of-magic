@@ -254,7 +254,15 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
             if selectedPoint != newPoint {
                 selectedPoint = newPoint
 
-                cityInfoText = yellowFont.CreateWrappedText(float64(cancelBackground.Bounds().Dx()) - 9, 1, "Cities cannot be built on water")
+                text := ""
+
+                if game.NearCity(newPoint, 3) {
+                    text = "Cities cannot be built less than 3 squares from any other city."
+                } else {
+                    text = "Cities cannot be built on water"
+                }
+
+                cityInfoText = yellowFont.CreateWrappedText(float64(cancelBackground.Bounds().Dx()) - 9, 1, text)
             }
         } else {
             cityInfoText.Clear()

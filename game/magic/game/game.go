@@ -316,6 +316,24 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
     return game
 }
 
+func (game *Game) NearCity(point image.Point, squares int) bool {
+    for _, player := range game.Players {
+        for _, city := range player.Cities {
+            if city.Plane == game.Plane {
+                diff := image.Pt(city.X, city.Y).Sub(point)
+
+                total := int(math.Abs(float64(diff.X)) + math.Abs(float64(diff.Y)))
+
+                if total <= squares {
+                    return true
+                }
+            }
+        }
+    }
+
+    return false
+}
+
 func (game *Game) FindValidCityLocation() (int, int) {
     continents := game.Map.Map.FindContinents()
 
