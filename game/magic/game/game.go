@@ -57,6 +57,9 @@ type GameEventMagicView struct {
 type GameEventArmyView struct {
 }
 
+type GameEventSurveyor struct {
+}
+
 type GameEventCityListView struct {
 }
 
@@ -1327,6 +1330,9 @@ func (game *Game) doLoadMenu(yield coroutine.YieldFunc) {
     yield()
 }
 
+func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
+}
+
 func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
     // keep processing events until we don't receive one in the events channel
     for {
@@ -1335,6 +1341,8 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                 switch event.(type) {
                     case *GameEventMagicView:
                         game.doMagicView(yield)
+                    case *GameEventSurveyor:
+                        game.doSurveyor(yield)
                     case *GameEventArmyView:
                         game.doArmyView(yield)
                     case *GameEventCityListView:
@@ -2006,12 +2014,20 @@ func (game *Game) ShowApprenticeUI(){
     game.HudUI.AddElements(spellbook.MakeSpellBookUI(game.HudUI, game.Cache))
 }
 
+func (game *Game) ShowSurveyor(){
+}
+
 // advisor ui
 func (game *Game) MakeInfoUI(cornerX int, cornerY int) []*uilib.UIElement {
     advisors := []uilib.Selection{
         uilib.Selection{
             Name: "Surveyor",
-            Action: func(){},
+            Action: func(){
+                select {
+                    case game.Events<- &GameEventSurveyor{}:
+                    default:
+                }
+            },
             Hotkey: "(F1)",
         },
         uilib.Selection{
