@@ -8,6 +8,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
+    "github.com/kazzmir/master-of-magic/game/magic/util"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
 
@@ -86,6 +87,11 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
             options.GeoM.Translate(240, 77)
             screen.DrawImage(landImage, &options)
 
+            cancelBackground, _ := game.ImageCache.GetImage("main.lbx", 47, 0)
+            options.GeoM.Reset()
+            options.GeoM.Translate(240, 174)
+            screen.DrawImage(cancelBackground, &options)
+
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
                 if element.Draw != nil {
                     element.Draw(element, screen)
@@ -139,13 +145,25 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
     // plane button
     ui.AddElement(makeButton(7, 270, 4))
 
+    quit := false
+
     // cancel button at bottom
-    cancelButton, _ := game.ImageCache.GetImage("main.lbx", 47, 0)
+    cancel, _ := game.ImageCache.GetImages("main.lbx", 41)
+    cancelIndex := 0
+    cancelRect := util.ImageRect(263, 182, cancel[0])
     ui.AddElement(&uilib.UIElement{
+        Rect: cancelRect,
+        LeftClick: func(element *uilib.UIElement){
+            cancelIndex = 1
+        },
+        LeftClickRelease: func(element *uilib.UIElement){
+            cancelIndex = 0
+            quit = true
+        },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             var options ebiten.DrawImageOptions
-            options.GeoM.Translate(240, 174)
-            screen.DrawImage(cancelButton, &options)
+            options.GeoM.Translate(float64(cancelRect.Min.X), float64(cancelRect.Min.Y))
+            screen.DrawImage(cancel[cancelIndex], &options)
         },
     })
 
@@ -163,9 +181,10 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
         ui.Draw(ui, screen)
     }
 
-    quit := false
     for !quit {
         overworld.Counter += 1
+
+        ui.StandardUpdate()
 
         x, y := ebiten.CursorPosition()
 
