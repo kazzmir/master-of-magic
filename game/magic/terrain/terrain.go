@@ -154,6 +154,46 @@ func (tile Tile) IsMagic() bool {
     }
 }
 
+func (tile Tile) Name() string {
+    switch TerrainIndex(tile.Index) {
+        case IndexOcean1, IndexOcean2: return "Ocean"
+        case IndexBugGrass, IndexGrass1, IndexGrass2, IndexGrass3, IndexGrass4: return "Grasslands"
+        case IndexForest1, IndexForest2, IndexForest3: return "Forest"
+        case IndexMountain1: return "Mountain"
+        case IndexDesert1, IndexDesert2, IndexDesert3, IndexDesert4: return "Desert"
+        case IndexSwamp1, IndexSwamp2, IndexSwamp3: return "Swamp"
+        case IndexTundra1, IndexTundra2, IndexTundra3: return "Tundra"
+        case IndexSorcNode: return "Sorcery Node"
+        case IndexNatNode: return "Nature Node"
+        case IndexChaosNode: return "Chaos Node"
+        case IndexHills1: return "Hills"
+        case IndexVolcano: return "Volcano"
+        case IndexLake, IndexLake1, IndexLake2, IndexLake3, IndexLake4: return "Lake"
+    }
+
+    if tile.Index >= IndexRiverMStart && tile.Index <= IndexRiverMEnd {
+        return "River"
+    }
+
+    if tile.Index >= IndexShore1_1st && tile.Index <= IndexShore1_end {
+        return "Shore"
+    }
+
+    if tile.Index >= IndexShore2FStart && tile.Index <= IndexShore2FEnd {
+        return "Shore"
+    }
+
+    if tile.Index >= IndexShore2Start && tile.Index <= IndexShore2End {
+        return "Shore"
+    }
+
+    if tile.Index >= IndexShore3Start && tile.Index <= IndexShore3End {
+        return "Shore"
+    }
+
+    return "unknown"
+}
+
 func (tile Tile) IsLand() bool {
     switch TerrainIndex(tile.Index) {
         case IndexOcean1, IndexOcean2: return false
@@ -166,11 +206,14 @@ func (tile Tile) IsLand() bool {
              IndexDesert2, IndexDesert3, IndexDesert4,
              IndexSwamp2, IndexSwamp3, IndexVolcano,
              IndexGrass4, IndexTundra2, IndexTundra3,
-             IndexForest2, IndexForest3, IndexRiverMStart,
-             IndexRiverMEnd:
+             IndexForest2, IndexForest3:
              return true
 
         case IndexLake1, IndexLake2, IndexLake3, IndexLake4: return false
+    }
+
+    if tile.Index >= IndexRiverMStart && tile.Index <= IndexRiverMEnd {
+        return true
     }
 
     if tile.Index >= IndexShore1_1st && tile.Index <= IndexShore1_end {
