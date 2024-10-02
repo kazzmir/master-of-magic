@@ -106,7 +106,8 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
 
             if selectedPoint.X >= 0 && selectedPoint.X < game.Map.Width() && selectedPoint.Y >= 0 && selectedPoint.Y < game.Map.Height() {
                 if fog[selectedPoint.X][selectedPoint.Y] {
-                    game.WhiteFont.PrintCenter(screen, 280, 93, 1, ebiten.ColorScale{}, fmt.Sprintf("Forest"))
+                    tile := game.Map.GetTile(selectedPoint.X, selectedPoint.Y)
+                    game.WhiteFont.PrintCenter(screen, 280, 93, 1, ebiten.ColorScale{}, tile.Name())
                 }
             }
         },
