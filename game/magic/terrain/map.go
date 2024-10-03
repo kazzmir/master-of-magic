@@ -303,7 +303,29 @@ func (map_ *Map) PlaceRandomTerrainTiles(){
 
     continents := map_.FindContinents()
 
+    randomForest := func() int {
+        choices := []int{
+            TileForest1.Index,
+            TileForest2.Index,
+            TileForest3.Index,
+        }
+
+        return chooseRandomElement(choices)
+    }
+
     for _, continent := range continents {
+
+        for i := 0; i < int(math.Sqrt(float64(continent.Size()))) / 4; i++ {
+            point := chooseRandomElement(continent)
+
+            use := TileSorceryLake.Index
+            switch rand.Intn(2) {
+                case 0: use = randomForest()
+                case 1: use = TileMountain1.Index
+            }
+
+            map_.Terrain[point.X][point.Y] = use
+        }
 
         for i := 0; i < int(math.Sqrt(float64(continent.Size()))) / 8; i++ {
             point := chooseRandomElement(continent)
