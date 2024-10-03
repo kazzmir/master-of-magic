@@ -204,15 +204,29 @@ func (tile Tile) FoodBonus() fraction.Fraction {
         case IndexDesert1, IndexDesert2, IndexDesert3, IndexDesert4: return fraction.Zero()
         case IndexSwamp1, IndexSwamp2, IndexSwamp3: return fraction.Zero()
         case IndexTundra1, IndexTundra2, IndexTundra3: return fraction.Zero()
-        case IndexSorcNode: return fraction.Zero()
-        case IndexNatNode: return fraction.Zero()
+        case IndexSorcNode: return fraction.FromInt(2)
+        case IndexNatNode: return fraction.Make(5, 2)
         case IndexChaosNode: return fraction.Zero()
-        case IndexHills1: return fraction.Zero()
+        case IndexHills1: return fraction.Make(1, 2)
         case IndexVolcano: return fraction.Zero()
         case IndexLake, IndexLake1, IndexLake2, IndexLake3, IndexLake4: return fraction.Zero()
     }
 
+    if tile.Index >= IndexRiverMStart && tile.Index <= IndexRiverMEnd {
+        return fraction.FromInt(2)
+    }
+
+    if tile.IsShore() {
+        return fraction.Make(1, 2)
+    }
+
     return fraction.Zero()
+}
+
+// percent bonus increase, 3 = 3%
+func (tile Tile) GoldBonus() int {
+    // FIXME
+    return 0
 }
 
 // percent bonus increase, 3 = 3%
@@ -222,18 +236,46 @@ func (tile Tile) ProductionBonus() int {
         case IndexBugGrass, IndexGrass1, IndexGrass2, IndexGrass3, IndexGrass4: return 0
         case IndexForest1, IndexForest2, IndexForest3: return 3
         case IndexMountain1: return 5
-        case IndexDesert1, IndexDesert2, IndexDesert3, IndexDesert4: return 0
+        case IndexDesert1, IndexDesert2, IndexDesert3, IndexDesert4: return 3
         case IndexSwamp1, IndexSwamp2, IndexSwamp3: return 0
         case IndexTundra1, IndexTundra2, IndexTundra3: return 0
         case IndexSorcNode: return 0
         case IndexNatNode: return 0
         case IndexChaosNode: return 0
-        case IndexHills1: return 0
+        case IndexHills1: return 3
         case IndexVolcano: return 0
         case IndexLake, IndexLake1, IndexLake2, IndexLake3, IndexLake4: return 0
     }
 
+    if tile.Index >= IndexRiverMStart && tile.Index <= IndexRiverMEnd {
+        return 0
+    }
+
+    if tile.IsShore() {
+        return 0
+    }
+
     return 0
+}
+
+func (tile Tile) IsShore() bool {
+    if tile.Index >= IndexShore1_1st && tile.Index <= IndexShore1_end {
+        return true
+    }
+
+    if tile.Index >= IndexShore2FStart && tile.Index <= IndexShore2FEnd {
+        return true
+    }
+
+    if tile.Index >= IndexShore2Start && tile.Index <= IndexShore2End {
+        return true
+    }
+
+    if tile.Index >= IndexShore3Start && tile.Index <= IndexShore3End {
+        return true
+    }
+
+    return false
 }
 
 func (tile Tile) IsLand() bool {
@@ -258,19 +300,7 @@ func (tile Tile) IsLand() bool {
         return true
     }
 
-    if tile.Index >= IndexShore1_1st && tile.Index <= IndexShore1_end {
-        return false
-    }
-
-    if tile.Index >= IndexShore2FStart && tile.Index <= IndexShore2FEnd {
-        return false
-    }
-
-    if tile.Index >= IndexShore2Start && tile.Index <= IndexShore2End {
-        return false
-    }
-
-    if tile.Index >= IndexShore3Start && tile.Index <= IndexShore3End {
+    if tile.IsShore() {
         return false
     }
 
