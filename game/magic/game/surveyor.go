@@ -148,10 +148,18 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
             if selectedPoint.X >= 0 && selectedPoint.X < game.Map.Width() && selectedPoint.Y >= 0 && selectedPoint.Y < game.Map.Height() {
                 if fog[selectedPoint.X][selectedPoint.Y] {
                     tile := game.Map.GetTile(selectedPoint.X, selectedPoint.Y)
-                    yellowFont.PrintCenter(screen, 280, 93, 1, ebiten.ColorScale{}, tile.Name())
+                    y := float64(93)
+                    yellowFont.PrintCenter(screen, 280, y, 1, ebiten.ColorScale{}, tile.Name())
+                    y += float64(yellowFont.Height())
+
+                    foodProduction := tile.FoodProduction()
+                    if !foodProduction.IsZero() {
+                        whiteFont.PrintCenter(screen, 280, y, 1, ebiten.ColorScale{}, fmt.Sprintf("%v food", foodProduction.NormalString()))
+                        y += float64(whiteFont.Height())
+                    }
 
 
-                    y := 160 - cityInfoText.TotalHeight
+                    y = 160 - cityInfoText.TotalHeight
 
                     if resources.Enabled {
                         y = 170 - float64(whiteFont.Height()) * 3 - cityInfoText.TotalHeight

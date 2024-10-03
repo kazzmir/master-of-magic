@@ -6,6 +6,7 @@ import (
     "fmt"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/fraction"
 )
 
 // terrain tiles are indicies 0-0x259 for arcanus, and 0x25A - 0x5f4 for myrror
@@ -192,6 +193,26 @@ func (tile Tile) Name() string {
     }
 
     return "unknown"
+}
+
+func (tile Tile) FoodProduction() fraction.Fraction {
+    switch TerrainIndex(tile.Index) {
+        case IndexOcean1, IndexOcean2: return fraction.Zero()
+        case IndexBugGrass, IndexGrass1, IndexGrass2, IndexGrass3, IndexGrass4: return fraction.Make(3, 2)
+        case IndexForest1, IndexForest2, IndexForest3: return fraction.Make(1, 2)
+        case IndexMountain1: return fraction.Zero()
+        case IndexDesert1, IndexDesert2, IndexDesert3, IndexDesert4: return fraction.Zero()
+        case IndexSwamp1, IndexSwamp2, IndexSwamp3: return fraction.Zero()
+        case IndexTundra1, IndexTundra2, IndexTundra3: return fraction.Zero()
+        case IndexSorcNode: return fraction.Zero()
+        case IndexNatNode: return fraction.Zero()
+        case IndexChaosNode: return fraction.Zero()
+        case IndexHills1: return fraction.Zero()
+        case IndexVolcano: return fraction.Zero()
+        case IndexLake, IndexLake1, IndexLake2, IndexLake3, IndexLake4: return fraction.Zero()
+    }
+
+    return fraction.Zero()
 }
 
 func (tile Tile) IsLand() bool {

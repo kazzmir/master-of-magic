@@ -149,3 +149,22 @@ func (fraction Fraction) GreaterThan(other Fraction) bool {
 func (fraction Fraction) String() string {
     return fmt.Sprintf("%v/%v", fraction.Numerator, fraction.Denominator)
 }
+
+// convert 3/2 into '1 1/2'
+// 1/2 -> '1/2'
+func (fraction Fraction) NormalString() string {
+    if fraction.Numerator == 0 {
+        return "0"
+    }
+
+    if fraction.Numerator > fraction.Denominator {
+        v := fraction.Numerator / fraction.Denominator
+        if fraction.Numerator % fraction.Denominator == 0 {
+            return fmt.Sprintf("%v", v)
+        }
+
+        return fmt.Sprintf("%v %v/%v", v, fraction.Numerator % fraction.Denominator, fraction.Denominator)
+    }
+
+    return fmt.Sprintf("%v/%v", fraction.Numerator, fraction.Denominator)
+}

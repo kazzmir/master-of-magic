@@ -50,4 +50,16 @@ func TestMore(test *testing.T){
     if !Make(-1, 2).LessThanEqual(FromInt(0)){
         test.Errorf("Expected %v to be less than or equal to %v", Make(-1, 2), FromInt(0))
     }
+
+    if Make(1, 2).NormalString() != "1/2" {
+        test.Errorf("Expected %v to equal '1/2'", Make(1, 2).NormalString())
+    }
+
+    if Make(3, 2).NormalString() != "1 1/2" {
+        test.Errorf("Expected %v to equal '1 1/2'", Make(3, 2).NormalString())
+    }
+
+    if Make(5, 2).NormalString() != "2 1/2" {
+        test.Errorf("Expected %v to equal '2 1/2'", Make(5, 2).NormalString())
+    }
 }
