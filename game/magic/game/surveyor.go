@@ -42,6 +42,18 @@ func makeYellowFont(fonts []*font.LbxFont) *font.Font {
     return font.MakeOptimizedFontWithPalette(fonts[1], palette)
 }
 
+func makeWhiteFont(fonts []*font.LbxFont) *font.Font {
+    white := color.RGBA{R: 255, G: 255, B: 255, A: 255}
+    palette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        white, white, white,
+        white, white, white,
+    }
+
+    return font.MakeOptimizedFontWithPalette(fonts[1], palette)
+}
+
 func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
     oldDrawer := game.Drawer
     defer func(){
@@ -77,6 +89,7 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
 
     surveyorFont := makeSurveyorFont(fonts)
     yellowFont := makeYellowFont(fonts)
+    whiteFont := makeWhiteFont(fonts)
 
     // just draw cities and land, but no units
     overworld := Overworld{
@@ -96,6 +109,14 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
     selectedPoint := image.Pt(-1, -1)
 
     var cityInfoText font.WrappedText
+    type Resources struct {
+        Enabled bool
+        MaximumPopulation int
+        ProductionBonus int
+        GoldBonus int
+    }
+
+    var resources Resources
 
     cancelBackground, _ := game.ImageCache.GetImage("main.lbx", 47, 0)
 
@@ -129,7 +150,26 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
                     tile := game.Map.GetTile(selectedPoint.X, selectedPoint.Y)
                     yellowFont.PrintCenter(screen, 280, 93, 1, ebiten.ColorScale{}, tile.Name())
 
-                    yellowFont.RenderWrapped(screen, 245, 160 - cityInfoText.TotalHeight, cityInfoText, ebiten.ColorScale{}, false)
+
+                    y := 160 - cityInfoText.TotalHeight
+
+                    if resources.Enabled {
+                        y = 170 - float64(whiteFont.Height()) * 3 - cityInfoText.TotalHeight
+                    }
+
+                    yellowFont.RenderWrapped(screen, 245, y, cityInfoText, ebiten.ColorScale{}, false)
+                    y += cityInfoText.TotalHeight
+
+                    if resources.Enabled {
+                        whiteFont.Print(screen, 245, y, 1, ebiten.ColorScale{}, "Maximum Pop")
+                        whiteFont.PrintRight(screen, 308, y, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", resources.MaximumPopulation))
+                        y += float64(whiteFont.Height())
+                        whiteFont.Print(screen, 245, y, 1, ebiten.ColorScale{}, "Prod Bonus")
+                        whiteFont.PrintRight(screen, 314, y, 1, ebiten.ColorScale{}, fmt.Sprintf("+%v%%", resources.ProductionBonus))
+                        y += float64(whiteFont.Height())
+                        whiteFont.Print(screen, 245, y, 1, ebiten.ColorScale{}, "Gold Bonus")
+                        whiteFont.PrintRight(screen, 314, y, 1, ebiten.ColorScale{}, fmt.Sprintf("+%v%%", resources.GoldBonus))
+                    }
                 }
             }
         },
@@ -253,6 +293,7 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
 
             if selectedPoint != newPoint {
                 selectedPoint = newPoint
+                resources.Enabled = false
 
                 text := ""
 
@@ -264,12 +305,18 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
                     text = "Cities cannot be built less than 3 squares from any other city."
                 } else {
                     text = "City Resources"
+                    resources.Enabled = true
+                    // FIXME: compute proper values for these
+                    resources.MaximumPopulation = 12
+                    resources.ProductionBonus = 25
+                    resources.GoldBonus = 25
                 }
 
                 cityInfoText = yellowFont.CreateWrappedText(float64(cancelBackground.Bounds().Dx()) - 9, 1, text)
             }
         } else {
             cityInfoText.Clear()
+            resources.Enabled = false
         }
 
         yield()
