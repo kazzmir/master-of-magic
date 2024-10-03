@@ -152,12 +152,17 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
                     yellowFont.PrintCenter(screen, 280, y, 1, ebiten.ColorScale{}, tile.Name())
                     y += float64(yellowFont.Height())
 
-                    foodProduction := tile.FoodProduction()
-                    if !foodProduction.IsZero() {
-                        whiteFont.PrintCenter(screen, 280, y, 1, ebiten.ColorScale{}, fmt.Sprintf("%v food", foodProduction.NormalString()))
+                    foodBonus := tile.FoodBonus()
+                    if !foodBonus.IsZero() {
+                        whiteFont.PrintCenter(screen, 280, y, 1, ebiten.ColorScale{}, fmt.Sprintf("%v food", foodBonus.NormalString()))
                         y += float64(whiteFont.Height())
                     }
 
+                    productionBonus := tile.ProductionBonus()
+                    if productionBonus != 0 {
+                        whiteFont.PrintCenter(screen, 280, y, 1, ebiten.ColorScale{}, fmt.Sprintf("+%v%% production", productionBonus))
+                        y += float64(whiteFont.Height())
+                    }
 
                     y = 160 - cityInfoText.TotalHeight
 

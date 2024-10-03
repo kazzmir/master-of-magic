@@ -195,7 +195,7 @@ func (tile Tile) Name() string {
     return "unknown"
 }
 
-func (tile Tile) FoodProduction() fraction.Fraction {
+func (tile Tile) FoodBonus() fraction.Fraction {
     switch TerrainIndex(tile.Index) {
         case IndexOcean1, IndexOcean2: return fraction.Zero()
         case IndexBugGrass, IndexGrass1, IndexGrass2, IndexGrass3, IndexGrass4: return fraction.Make(3, 2)
@@ -213,6 +213,27 @@ func (tile Tile) FoodProduction() fraction.Fraction {
     }
 
     return fraction.Zero()
+}
+
+// percent bonus increase, 3 = 3%
+func (tile Tile) ProductionBonus() int {
+    switch TerrainIndex(tile.Index) {
+        case IndexOcean1, IndexOcean2: return 0
+        case IndexBugGrass, IndexGrass1, IndexGrass2, IndexGrass3, IndexGrass4: return 0
+        case IndexForest1, IndexForest2, IndexForest3: return 3
+        case IndexMountain1: return 5
+        case IndexDesert1, IndexDesert2, IndexDesert3, IndexDesert4: return 0
+        case IndexSwamp1, IndexSwamp2, IndexSwamp3: return 0
+        case IndexTundra1, IndexTundra2, IndexTundra3: return 0
+        case IndexSorcNode: return 0
+        case IndexNatNode: return 0
+        case IndexChaosNode: return 0
+        case IndexHills1: return 0
+        case IndexVolcano: return 0
+        case IndexLake, IndexLake1, IndexLake2, IndexLake3, IndexLake4: return 0
+    }
+
+    return 0
 }
 
 func (tile Tile) IsLand() bool {
