@@ -976,6 +976,7 @@ func createScenario12(cache *lbx.LbxCache) *gamelib.Game {
     game.Map.SetBonus(x-2, y-1, gamelib.BonusGem)
     game.Map.SetBonus(x-1, y-1, gamelib.BonusWildGame)
     game.Map.SetBonus(x, y-1, gamelib.BonusQuorkCrystal)
+    game.Map.SetBonus(x+1, y-1, gamelib.BonusIronOre)
 
     game.Events <- &gamelib.GameEventSurveyor{}
 

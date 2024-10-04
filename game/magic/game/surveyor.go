@@ -164,6 +164,30 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
                         y += float64(whiteFont.Height())
                     }
 
+                    y += float64(whiteFont.Height())
+
+                    showBonus := func (name string, bonus string) {
+                        yellowFont.PrintCenter(screen, 280, y, 1, ebiten.ColorScale{}, name)
+                        y += float64(yellowFont.Height())
+                        whiteFont.PrintWrapCenter(screen, 280, y, float64(cancelBackground.Bounds().Dx() - 5), 1, ebiten.ColorScale{}, bonus)
+                    }
+
+                    bonus := game.Map.GetBonusTile(selectedPoint.X, selectedPoint.Y)
+                    switch bonus {
+                        case BonusNone: // nothing
+                        case BonusGoldOre: showBonus("Gold Ore", fmt.Sprintf("+%v gold", bonus.GoldBonus()))
+                        case BonusSilverOre: showBonus("Silver Ore", fmt.Sprintf("+%v gold", bonus.GoldBonus()))
+                        case BonusWildGame: showBonus("Wild Game", fmt.Sprintf("+%v food", bonus.FoodBonus()))
+                        case BonusNightshade: showBonus("Nightshade", "")
+                        case BonusIronOre: showBonus("Iron Ore", fmt.Sprintf("Reduces normal unit cost by %v%%", bonus.UnitReductionBonus()))
+                        case BonusCoal: showBonus("Coal", fmt.Sprintf("Reduces normal unit cost by %v%%", bonus.UnitReductionBonus()))
+                        case BonusMithrilOre: showBonus("Mithril Ore", fmt.Sprintf("+%v power", bonus.PowerBonus()))
+                        case BonusAdamantiumOre: showBonus("Adamantium Ore", fmt.Sprintf("+%v power", bonus.PowerBonus()))
+                        case BonusGem: showBonus("Gem", fmt.Sprintf("+%v gold", bonus.GoldBonus()))
+                        case BonusQuorkCrystal: showBonus("Quork Crystal", fmt.Sprintf("+%v power", bonus.PowerBonus()))
+                        case BonusCrysxCrystal: showBonus("Crysx Crystal", fmt.Sprintf("+%v power", bonus.PowerBonus()))
+                    }
+
                     y = 160 - cityInfoText.TotalHeight
 
                     if resources.Enabled {
