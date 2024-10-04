@@ -80,13 +80,18 @@ const (
     Ocean
     Land
     River
-    // Shore
+    Shore
     Mountain
     Hill
     Grass
     Swamp
+    Forest
     Desert
     Tundra
+    Volcano
+    NatureNode
+    SorceryNode
+    ChaosNode
 )
 
 func (terrain TerrainType) String() string {
