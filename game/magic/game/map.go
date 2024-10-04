@@ -32,6 +32,63 @@ type ExtraTile interface {
 type ExtraRoad struct {
 }
 
+type BonusType int
+const (
+    BonusTypeNone BonusType = iota
+    BonusWildGame
+    BonusNightshade
+    BonusSilverOre
+    BonusGoldOre
+    BonusIronOre
+    BonusCoal
+    BonusMithrilOre
+    BonusAdamantiumOre
+    BonusGem
+    BonusQuorkCrystal
+    BonusCrysxCrystal
+)
+
+// wild game, gold ore, mithril, etc
+type ExtraBonus struct {
+    Bonus BonusType
+}
+
+func (bonus ExtraBonus) FoodBonus() int {
+    if bonus.Bonus == BonusWildGame {
+        return 2
+    }
+
+    return 0
+}
+
+func (bonus ExtraBonus) GoldBonus() int {
+    switch bonus.Bonus {
+        case BonusSilverOre: return 2
+        case BonusGoldOre: return 3
+        case BonusGem: return 5
+        default: return 0
+    }
+}
+
+func (bonus ExtraBonus) PowerBonus() int {
+    switch bonus.Bonus {
+        case BonusMithrilOre: return 1
+        case BonusAdamantiumOre: return 2
+        case BonusQuorkCrystal: return 3
+        case BonusCrysxCrystal: return 5
+        default: return 0
+    }
+}
+
+// returns a percent that unit costs are reduced by, 10 -> -10%
+func (bonus ExtraBonus) UnitReductionBonus() int {
+    switch bonus.Bonus {
+        case BonusIronOre: return 5
+        case BonusCoal: return 10
+        default: return 0
+    }
+}
+
 type ExtraMagicNode struct {
     Kind MagicNode
     Empty bool
