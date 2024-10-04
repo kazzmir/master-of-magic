@@ -967,25 +967,17 @@ func createScenario12(cache *lbx.LbxCache) *gamelib.Game {
     player.Gold = 83
     player.Mana = 26
 
-    player.LiftFog(x, y, 3)
+    player.LiftFog(x, y, 4)
 
     node := game.Map.CreateNode(x, y+2, gamelib.MagicNodeNature, game.Plane, game.Settings.Magic, game.Settings.Difficulty)
     node.Empty = true
 
-    spirit := player.AddUnit(units.OverworldUnit{
-        Unit: units.MagicSpirit,
-        Plane: data.PlaneArcanus,
-        Banner: wizard.Banner,
-        X: x + 1,
-        Y: y + 1,
-    })
-
-    stack := player.FindStackByUnit(spirit)
-    player.SetSelectedStack(stack)
+    game.Map.SetBonus(x-3, y-1, gamelib.BonusSilverOre)
+    game.Map.SetBonus(x-2, y-1, gamelib.BonusGem)
+    game.Map.SetBonus(x-1, y-1, gamelib.BonusWildGame)
+    game.Map.SetBonus(x, y-1, gamelib.BonusQuorkCrystal)
 
     game.Events <- &gamelib.GameEventSurveyor{}
-
-    player.LiftFog(stack.X(), stack.Y(), 4)
 
     return game
 }

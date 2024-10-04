@@ -89,6 +89,37 @@ func (bonus ExtraBonus) UnitReductionBonus() int {
     }
 }
 
+func (bonus *ExtraBonus) DrawLayer1(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64, tileWidth int, tileHeight int){
+    index := -1
+
+    switch bonus.Bonus {
+        case BonusWildGame: index = 92
+        case BonusNightshade: index = 91
+        case BonusSilverOre: index = 80
+        case BonusGoldOre: index = 81
+        case BonusIronOre: index = 78
+        case BonusCoal: index = 79
+        case BonusMithrilOre: index = 83
+        case BonusAdamantiumOre: index = 84
+        case BonusGem: index = 82
+        case BonusQuorkCrystal: index = 85
+        case BonusCrysxCrystal: index = 86
+    }
+
+    if index == -1 {
+        return
+    }
+
+    pic, err := imageCache.GetImage("mapback.lbx", index, 0)
+    if err == nil {
+        screen.DrawImage(pic, options)
+    }
+}
+
+func (bonus *ExtraBonus) DrawLayer2(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64, tileWidth int, tileHeight int){
+    // nothing
+}
+
 type ExtraMagicNode struct {
     Kind MagicNode
     Empty bool
@@ -520,6 +551,10 @@ func (mapObject *Map) GetMeldedNodes(player *playerlib.Player) []*ExtraMagicNode
     }
 
     return out
+}
+
+func (mapObject *Map) SetBonus(x int, y int, bonus BonusType) {
+    mapObject.ExtraMap[image.Pt(x, y)] = &ExtraBonus{Bonus: bonus}
 }
 
 func (mapObject *Map) CreateNode(x int, y int, node MagicNode, plane data.Plane, magicSetting data.MagicSetting, difficulty data.DifficultySetting) *ExtraMagicNode {
