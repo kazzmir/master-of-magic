@@ -2106,6 +2106,41 @@ func (game *Game) ShowSpellBookCastUI(){
     }))
 }
 
+func (game *Game) CatchmentArea(x int, y int) []image.Point {
+    var out []image.Point
+
+    for dx := -2; dx <= 2; dx++ {
+        for dy := -2; dy <= 2; dy++ {
+            // ignore corners
+            if int(math.Abs(float64(dx)) + math.Abs(float64(dy))) == 4 {
+                continue
+            }
+
+            out = append(out, image.Point{X: x + dx, Y: y + dy})
+        }
+    }
+
+    return out
+}
+
+func (game *Game) ComputeMaximumPopulation(x int, y int) int {
+    // find catchment area of x, y
+    // for each square, compute food production
+    // maximum pop is food production
+    catchment := game.CatchmentArea(x, y)
+
+    food := fraction.Zero()
+
+    for _, point := range catchment {
+        tile := game.Map.GetTile(point.X, point.Y)
+        food = food.Add(tile.FoodBonus())
+        bonus := game.Map.GetBonusTile(point.X, point.Y)
+        food = food.Add(fraction.FromInt(bonus.FoodBonus()))
+    }
+
+    return int(food.ToFloat())
+}
+
 func (game *Game) CreateOutpost(settlers *units.OverworldUnit, player *playerlib.Player) *citylib.City {
     newCity := citylib.MakeCity("New City", settlers.X, settlers.Y, settlers.Unit.Race, player.TaxRate, game.BuildingInfo)
     newCity.Plane = settlers.Plane

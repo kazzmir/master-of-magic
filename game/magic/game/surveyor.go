@@ -344,7 +344,7 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
                     text = "City Resources"
                     resources.Enabled = true
                     // FIXME: compute proper values for these
-                    resources.MaximumPopulation = 12
+                    resources.MaximumPopulation = game.ComputeMaximumPopulation(newX, newY)
                     resources.ProductionBonus = 25
                     resources.GoldBonus = 25
                 }
