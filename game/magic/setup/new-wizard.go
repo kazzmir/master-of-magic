@@ -340,8 +340,6 @@ type NewWizardScreen struct {
 
     UI *uilib.UI
 
-    NameBox *ebiten.Image
-
     LifeBooks [3]*ebiten.Image
     SorceryBooks [3]*ebiten.Image
     NatureBooks [3]*ebiten.Image
@@ -405,7 +403,8 @@ func (screen *NewWizardScreen) MakeCustomNameUI() *uilib.UI {
 
             options.GeoM.Reset()
             options.GeoM.Translate(184, 20)
-            window.DrawImage(screen.NameBox, &options)
+            nameBox, _ := screen.ImageCache.GetImage("newgame.lbx", 40, 0)
+            window.DrawImage(nameBox, &options)
 
             name := screen.CustomWizard.Name
 
@@ -848,7 +847,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
 
         // screen.Background = loadImage(0, 0)
         // screen.Slots = loadImage(8, 0)
-        screen.NameBox = loadImage(40, 0)
+        // screen.NameBox = loadImage(40, 0)
 
         /*
         screen.OkReady = loadImage(42, 0)
