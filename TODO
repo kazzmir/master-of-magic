@@ -5,7 +5,6 @@
 * banish animation for defeated wizard
 * create artifact screen
 * cartographer advisor
-* surveyor advisor
 * city catchment area
 * combat: results from combat should be reflected in overworld units
 * combat: draw town sprites in combat scene
@@ -39,3 +38,4 @@
 9/28/2024 * game menu - show ui, implement quit/ok
 9/29/2024 * hire popup for hero
 9/30/2024 * compute power
+10/4/2024 * surveyor advisor
