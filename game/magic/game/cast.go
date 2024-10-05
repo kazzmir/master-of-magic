@@ -39,6 +39,7 @@ func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Playe
 }
 
 /* return x,y and true/false, where true means cancelled, and false means something was selected */
+// FIXME: this copies a lot of code from the surveyor, try to combine the two with shared functions/code
 func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellbook.Spell) (int, int, bool) {
     oldDrawer := game.Drawer
     defer func(){
