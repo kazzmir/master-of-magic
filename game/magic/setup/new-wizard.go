@@ -327,7 +327,6 @@ type NewWizardScreen struct {
     AbilityFontSelected *font.Font
     AbilityFontAvailable *font.Font
     ErrorFont *font.Font
-    CheckMark *ebiten.Image
     WindyBorder *ebiten.Image
     ErrorTop *ebiten.Image
     ErrorBottom *ebiten.Image
@@ -907,7 +906,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
             screen.ChaosBooks[i] = loadImage(36 + i, 0)
         }
 
-        screen.CheckMark = loadImage(52, 0)
+        // screen.CheckMark = loadImage(52, 0)
 
         screen.WizardSlots = []wizardSlot{
             wizardSlot{
@@ -1446,8 +1445,9 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
 
                 if screen.CustomWizard.AbilityEnabled(ability.Ability) {
                     var options ebiten.DrawImageOptions
-                    options.GeoM.Translate(ability.X - float64(screen.CheckMark.Bounds().Dx()) - 1, ability.Y + 1)
-                    window.DrawImage(screen.CheckMark, &options)
+                    checkMark, _ := screen.ImageCache.GetImage("newgame.lbx", 52, 0)
+                    options.GeoM.Translate(ability.X - float64(checkMark.Bounds().Dx()) - 1, ability.Y + 1)
+                    window.DrawImage(checkMark, &options)
                     font = screen.AbilityFontSelected
                 } else if isAbilityAvailable(ability.Ability) {
                     font = screen.AbilityFontAvailable
@@ -1651,7 +1651,8 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
 
         createSpellElements := func(spells spellbook.Spells, x int, yTop int, picks *int){
             y := yTop
-            margin := screen.CheckMark.Bounds().Dx() + 1
+            checkMark, _ := screen.ImageCache.GetImage("newgame.lbx", 52, 0)
+            margin := checkMark.Bounds().Dx() + 1
             width := (screen.SpellBackground1.Bounds().Dx() - 2) / 2
             for i, spell := range spells.Spells {
                 useX := x
@@ -1682,7 +1683,7 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
                         if screen.CustomWizard.Spells.HasSpell(spell) {
                             var options ebiten.DrawImageOptions
                             options.GeoM.Translate(float64(useX), float64(useY))
-                            window.DrawImage(screen.CheckMark, &options)
+                            window.DrawImage(checkMark, &options)
                             screen.AbilityFontSelected.Print(window, float64(useX + margin), float64(useY), 1, ebiten.ColorScale{}, spell.Name)
                         } else {
                             screen.AbilityFontAvailable.Print(window, float64(useX + margin), float64(useY), 1, ebiten.ColorScale{}, spell.Name)
