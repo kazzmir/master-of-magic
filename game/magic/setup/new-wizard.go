@@ -334,11 +334,7 @@ type NewWizardScreen struct {
     WizardSlots []wizardSlot
     ImageCache util.ImageCache
 
-    RaceBackground *ebiten.Image
-
     Spells spellbook.Spells
-
-    BannerBackground *ebiten.Image
 
     Help lbx.Help
 
@@ -869,7 +865,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
 
         // screen.WindyBorder = loadImage(47, 0)
 
-        screen.BannerBackground = loadImage(46, 0)
+        // screen.BannerBackground = loadImage(46, 0)
 
         // screen.CustomPictureBackground = loadImage(39, 0)
         // screen.CustomWizardBooks = loadImage(41, 0)
@@ -2105,7 +2101,8 @@ func (screen *NewWizardScreen) MakeSelectBannerUI() *uilib.UI {
 
             options.GeoM.Reset()
             options.GeoM.Translate(160, 0)
-            window.DrawImage(screen.BannerBackground, &options)
+            bannerBackground, _ := screen.ImageCache.GetImage("newgame.lbx", 46, 0)
+            window.DrawImage(bannerBackground, &options)
 
             screen.SelectFont.PrintCenter(window, 245, 2, 1, ebiten.ColorScale{}, "Select Banner")
 
