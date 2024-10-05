@@ -12,6 +12,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/units"
+    "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     gamelib "github.com/kazzmir/master-of-magic/game/magic/game"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
@@ -991,6 +992,74 @@ func createScenario12(cache *lbx.LbxCache) *gamelib.Game {
     return game
 }
 
+func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 13")
+    wizard := setup.WizardCustom{
+        Name: "bob",
+        Banner: data.BannerRed,
+        Race: data.RaceTroll,
+        Abilities: []setup.WizardAbility{
+            setup.AbilityAlchemy,
+            setup.AbilitySageMaster,
+        },
+        Books: []data.WizardBook{
+            data.WizardBook{
+                Magic: data.LifeMagic,
+                Count: 3,
+            },
+            data.WizardBook{
+                Magic: data.SorceryMagic,
+                Count: 8,
+            },
+        },
+    }
+
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+        Magic: data.MagicSettingNormal,
+        Difficulty: data.DifficultyAverage,
+    })
+
+    game.Plane = data.PlaneArcanus
+
+    player := game.AddPlayer(wizard)
+
+    allSpells, _ := spellbook.ReadSpellsFromCache(cache)
+
+    player.Spells.AddSpell(allSpells.FindByName("Earth Lore"))
+
+    x, y := game.FindValidCityLocation()
+
+    city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.TaxRate, game.BuildingInfo)
+    city.Population = 6190
+    city.Plane = data.PlaneArcanus
+    city.Banner = wizard.Banner
+    city.ProducingBuilding = buildinglib.BuildingGranary
+    city.ProducingUnit = units.UnitNone
+    city.Race = wizard.Race
+    city.Farmers = 3
+    city.Workers = 3
+    city.Wall = false
+
+    city.ResetCitizens(nil)
+
+    player.AddCity(city)
+
+    player.Gold = 83
+    player.Mana = 26
+
+    player.LiftFog(x, y, 4)
+
+    player.AddUnit(units.OverworldUnit{
+        Unit: units.MagicSpirit,
+        Plane: data.PlaneArcanus,
+        Banner: wizard.Banner,
+        X: x + 1,
+        Y: y + 1,
+    })
+
+    return game
+}
+
 func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
@@ -1009,6 +1078,7 @@ func NewEngine(scenario int) (*Engine, error) {
         case 10: game = createScenario10(cache)
         case 11: game = createScenario11(cache)
         case 12: game = createScenario12(cache)
+        case 13: game = createScenario13(cache)
         default: game = createScenario1(cache)
     }
 

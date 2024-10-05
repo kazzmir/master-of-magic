@@ -71,6 +71,11 @@ type GameEventNewOutpost struct {
 type GameEventLoadMenu struct {
 }
 
+type GameEventCastSpell struct {
+    Player *playerlib.Player
+    Spell spellbook.Spell
+}
+
 type GameEventSummonUnit struct {
     Wizard data.WizardBase
     Unit units.Unit
@@ -1368,6 +1373,9 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                     case *GameEventScroll:
                         scroll := event.(*GameEventScroll)
                         game.showScroll(yield, scroll.Title, scroll.Text)
+                    case *GameEventCastSpell:
+                        castSpell := event.(*GameEventCastSpell)
+                        game.doCastSpell(yield, castSpell.Player, castSpell.Spell)
                     case *GameEventNewBuilding:
                         buildingEvent := event.(*GameEventNewBuilding)
                         game.showNewBuilding(yield, buildingEvent.City, buildingEvent.Building)
@@ -2096,9 +2104,10 @@ func (game *Game) MakeInfoUI(cornerX int, cornerY int) []*uilib.UIElement {
 }
 
 func (game *Game) ShowSpellBookCastUI(){
-    game.HudUI.AddElements(spellbook.MakeSpellBookCastUI(game.HudUI, game.Cache, spellbook.Spells{}, game.Players[0].CastingSkill, func (spell spellbook.Spell, picked bool){
+    game.HudUI.AddElements(spellbook.MakeSpellBookCastUI(game.HudUI, game.Cache, game.Players[0].Spells, game.Players[0].CastingSkill, func (spell spellbook.Spell, picked bool){
         if picked {
-            // FIXME: do something
+            log.Printf("Casting spell %v", spell.Name)
+            game.Events<- &GameEventCastSpell{Player: game.Players[0], Spell: spell}
         }
     }))
 }

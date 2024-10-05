@@ -62,6 +62,19 @@ func LoadCombatSound(cache *lbx.LbxCache, index int) (*audiolib.Player, error){
     return LoadSoundFromLbx(soundLbx, index)
 }
 
+func LoadNewSound(cache *lbx.LbxCache, index int) (*audiolib.Player, error){
+    if Context == nil {
+        return nil, fmt.Errorf("audio has not been initialized")
+    }
+
+    soundLbx, err := cache.GetLbxFile("newsound.lbx")
+    if err != nil {
+        return nil, err
+    }
+
+    return LoadSoundFromLbx(soundLbx, index)
+}
+
 func LoadSound(cache *lbx.LbxCache, index int) (*audiolib.Player, error){
     if Context == nil {
         return nil, fmt.Errorf("audio has not been initialized")
