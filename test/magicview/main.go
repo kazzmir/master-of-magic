@@ -24,7 +24,7 @@ func NewEngine() (*Engine, error) {
     cache := lbx.AutoCache()
 
     player := &playerlib.Player{
-        CastingSkill: 28,
+        CastingSkillPower: 28,
         PowerDistribution: playerlib.PowerDistribution{
             Mana: 1.0/3,
             Research: 1.0/3,

@@ -149,7 +149,7 @@ func NewEngine() (*Engine, error) {
             Name: "Merlin",
             Banner: data.BannerGreen,
         },
-        CastingSkill: 10,
+        CastingSkillPower: 10,
     }
 
     attackingPlayer.Spells.AddSpell(allSpells.FindByName("Fireball"))
