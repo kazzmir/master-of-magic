@@ -1,15 +1,13 @@
 package setup
 
 import (
-    "fmt"
-    _ "log"
-    "image"
-    "sync"
+    "log"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/util"
 
     "github.com/hajimehoshi/ebiten/v2"
 )
@@ -105,220 +103,169 @@ const (
 )
 
 type NewGameScreen struct {
-    LbxFile *lbx.LbxFile
-    Background *ebiten.Image
-    Options *ebiten.Image
-    OkButtons []*ebiten.Image
-    CancelButtons []*ebiten.Image
-    DifficultyBlock *ebiten.Image
-    OpponentsBlock *ebiten.Image
-    LandSizeBlock *ebiten.Image
-    MagicBlock *ebiten.Image
-    loaded sync.Once
-    Font *font.Font
+    Cache *lbx.LbxCache
+    ImageCache util.ImageCache
 
     State NewGameState
 
     Settings NewGameSettings
-    Active bool
 
     UI *uilib.UI
 }
 
-func (newGameScreen *NewGameScreen) Activate() {
-    newGameScreen.Active = true
-}
-
-func (newGameScreen *NewGameScreen) Deactivate() {
-    newGameScreen.Active = false
-}
-
-func (newGameScreen *NewGameScreen) IsActive() bool {
-    return newGameScreen.Active
-}
-
-func (newGameScreen *NewGameScreen) Load(cache *lbx.LbxCache) error {
-    var outError error = nil
-
-    newGameScreen.loaded.Do(func() {
-        fontLbx, err := cache.GetLbxFile("FONTS.LBX")
-        if err != nil {
-            outError = fmt.Errorf("Unable to read FONTS.LBX: %v", err)
-            return
-        }
-
-        fonts, err := font.ReadFonts(fontLbx, 0)
-        if err != nil {
-            outError = fmt.Errorf("Unable to read fonts from FONTS.LBX: %v", err)
-            return
-        }
-
-        newGameScreen.Font = font.MakeOptimizedFont(fonts[3])
-
-        newGameLbx, err := cache.GetLbxFile("NEWGAME.LBX")
-        if err != nil {
-            outError = fmt.Errorf("Unable to load NEWGAME.LBX: %v", err)
-            return
-        }
-
-        loadImage := func(index int, subIndex int) *ebiten.Image {
-            if outError != nil {
-                return nil
-            }
-
-            sprites, err := newGameLbx.ReadImages(index)
-            if err != nil {
-                outError = fmt.Errorf("Unable to read background image from NEWGAME.LBX: %v", err)
-                return nil
-            }
-
-            if len(sprites) <= subIndex {
-                outError = fmt.Errorf("Unable to read background image from NEWGAME.LBX: index %d out of range", subIndex)
-                return nil
-            }
-
-            return ebiten.NewImageFromImage(sprites[subIndex])
-        }
-
-        newGameScreen.Background = loadImage(0, 0)
-        newGameScreen.Options = loadImage(1, 0)
-
-        newGameScreen.OkButtons = make([]*ebiten.Image, 2)
-        newGameScreen.OkButtons[0] = loadImage(2, 0)
-        newGameScreen.OkButtons[1] = loadImage(2, 1)
-
-        newGameScreen.CancelButtons = make([]*ebiten.Image, 2)
-        newGameScreen.CancelButtons[0] = loadImage(3, 0)
-        newGameScreen.CancelButtons[1] = loadImage(3, 1)
-
-        newGameScreen.DifficultyBlock = loadImage(4, 0)
-        newGameScreen.OpponentsBlock = loadImage(5, 0)
-        newGameScreen.LandSizeBlock = loadImage(6, 0)
-        newGameScreen.MagicBlock = loadImage(7, 0)
-
-        newGameScreen.UI = newGameScreen.MakeUI()
-    })
-
-    return outError
-}
-
 func (newGameScreen *NewGameScreen) MakeUI() *uilib.UI {
+    fontLbx, err := newGameScreen.Cache.GetLbxFile("FONTS.LBX")
+    if err != nil {
+        log.Printf("Unable to open fonts: %v", err)
+        return nil
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        log.Printf("Unable to read fonts from FONTS.LBX: %v", err)
+        return nil
+    }
+
+    buttonFont := font.MakeOptimizedFont(fonts[3])
 
     var elements []*uilib.UIElement
 
     okX := 160 + 91
     okY := 179
 
+    okButtons, _ := newGameScreen.ImageCache.GetImages("newgame.lbx", 2)
+
+    okIndex := 0
     elements = append(elements, &uilib.UIElement{
-        Rect: image.Rect(okX, okY, okX + newGameScreen.OkButtons[0].Bounds().Dx(), okY + newGameScreen.OkButtons[0].Bounds().Dy()),
+        Rect: util.ImageRect(okX, okY, okButtons[0]),
         LeftClick: func(element *uilib.UIElement) {
+            okIndex = 1
+        },
+        LeftClickRelease: func(element *uilib.UIElement) {
+            okIndex = 0
             newGameScreen.State = NewGameStateOk
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(okX), float64(okY))
-            screen.DrawImage(newGameScreen.OkButtons[0], &options)
+            screen.DrawImage(okButtons[okIndex], &options)
         },
     })
 
     cancelX := 160 + 10
     cancelY := 179
 
+    cancelButtons, _ := newGameScreen.ImageCache.GetImages("newgame.lbx", 3)
+    cancelIndex := 0
     elements = append(elements, &uilib.UIElement{
-        Rect: image.Rect(cancelX, cancelY, cancelX + newGameScreen.CancelButtons[0].Bounds().Dx(), cancelY + newGameScreen.CancelButtons[0].Bounds().Dy()),
+        Rect: util.ImageRect(cancelX, cancelY, cancelButtons[0]),
         LeftClick: func(element *uilib.UIElement) {
+            cancelIndex = 1
+        },
+        LeftClickRelease: func(element *uilib.UIElement) {
+            cancelIndex = 0
             newGameScreen.State = NewGameStateCancel
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(cancelX), float64(cancelY))
-            screen.DrawImage(newGameScreen.CancelButtons[0], &options)
+            screen.DrawImage(cancelButtons[cancelIndex], &options)
         },
     })
 
     difficultyX := 160 + 91
     difficultyY := 39
 
+    difficultyBlock, _ := newGameScreen.ImageCache.GetImage("newgame.lbx", 4, 0)
+
     elements = append(elements, &uilib.UIElement{
-        Rect: image.Rect(difficultyX, difficultyY, difficultyX + newGameScreen.DifficultyBlock.Bounds().Dx(), difficultyY + newGameScreen.DifficultyBlock.Bounds().Dy()),
+        Rect: util.ImageRect(difficultyX, difficultyY, difficultyBlock),
         LeftClick: func(element *uilib.UIElement) {
             newGameScreen.Settings.DifficultyNext()
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(difficultyX), float64(difficultyY))
-            screen.DrawImage(newGameScreen.DifficultyBlock, &options)
+            screen.DrawImage(difficultyBlock, &options)
 
-            x := difficultyX + newGameScreen.DifficultyBlock.Bounds().Dx() / 2
+            x := difficultyX + difficultyBlock.Bounds().Dx() / 2
             y := difficultyY + 3
-            newGameScreen.Font.PrintCenter(screen, float64(x), float64(y), 1, ebiten.ColorScale{}, newGameScreen.Settings.DifficultyString())
+            buttonFont.PrintCenter(screen, float64(x), float64(y), 1, ebiten.ColorScale{}, newGameScreen.Settings.DifficultyString())
         },
     })
 
     opponentsX := 160 + 91
     opponentsY := 66
 
+    opponentsBlock, _ := newGameScreen.ImageCache.GetImage("newgame.lbx", 5, 0)
+
     elements = append(elements, &uilib.UIElement{
-        Rect: image.Rect(opponentsX, opponentsY, opponentsX + newGameScreen.OpponentsBlock.Bounds().Dx(), opponentsY + newGameScreen.OpponentsBlock.Bounds().Dy()),
+        Rect: util.ImageRect(opponentsX, opponentsY, opponentsBlock),
         LeftClick: func(element *uilib.UIElement) {
             newGameScreen.Settings.OpponentsNext()
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(opponentsX), float64(opponentsY))
-            screen.DrawImage(newGameScreen.OpponentsBlock, &options)
-            x := opponentsX + newGameScreen.OpponentsBlock.Bounds().Dx() / 2
+            screen.DrawImage(opponentsBlock, &options)
+            x := opponentsX + opponentsBlock.Bounds().Dx() / 2
             y := opponentsY + 4
-            newGameScreen.Font.PrintCenter(screen, float64(x), float64(y), 1, ebiten.ColorScale{}, newGameScreen.Settings.OpponentsString())
+            buttonFont.PrintCenter(screen, float64(x), float64(y), 1, ebiten.ColorScale{}, newGameScreen.Settings.OpponentsString())
         },
     })
 
     landsizeX := 160 + 91
     landsizeY := 93
+    landSizeBlock, _ := newGameScreen.ImageCache.GetImage("newgame.lbx", 6, 0)
 
     elements = append(elements, &uilib.UIElement{
-        Rect: image.Rect(landsizeX, landsizeY, landsizeX + newGameScreen.LandSizeBlock.Bounds().Dx(), landsizeY + newGameScreen.LandSizeBlock.Bounds().Dy()),
+        Rect: util.ImageRect(landsizeX, landsizeY, landSizeBlock),
         LeftClick: func(element *uilib.UIElement) {
             newGameScreen.Settings.LandSizeNext()
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(landsizeX), float64(landsizeY))
-            screen.DrawImage(newGameScreen.LandSizeBlock, &options)
+            screen.DrawImage(landSizeBlock, &options)
 
-            x := landsizeX + newGameScreen.LandSizeBlock.Bounds().Dx() / 2
+            x := landsizeX + landSizeBlock.Bounds().Dx() / 2
             y := landsizeY + 4
 
-            newGameScreen.Font.PrintCenter(screen, float64(x), float64(y), 1, ebiten.ColorScale{}, newGameScreen.Settings.LandSizeString())
+            buttonFont.PrintCenter(screen, float64(x), float64(y), 1, ebiten.ColorScale{}, newGameScreen.Settings.LandSizeString())
         },
     })
 
     magicX := 160 + 91
     magicY := 120
+    magicBlock, _ := newGameScreen.ImageCache.GetImage("newgame.lbx", 7, 0)
 
     elements = append(elements, &uilib.UIElement{
-        Rect: image.Rect(magicX, magicY, magicX + newGameScreen.MagicBlock.Bounds().Dx(), magicY + newGameScreen.MagicBlock.Bounds().Dy()),
+        Rect: util.ImageRect(magicX, magicY, magicBlock),
         LeftClick: func(element *uilib.UIElement) {
             newGameScreen.Settings.MagicNext()
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(magicX), float64(magicY))
-            screen.DrawImage(newGameScreen.MagicBlock, &options)
-            x := magicX + newGameScreen.MagicBlock.Bounds().Dx() / 2
+            screen.DrawImage(magicBlock, &options)
+            x := magicX + magicBlock.Bounds().Dx() / 2
             y := magicY + 4
-            newGameScreen.Font.PrintCenter(screen, float64(x), float64(y), 1, ebiten.ColorScale{}, newGameScreen.Settings.MagicString())
+            buttonFont.PrintCenter(screen, float64(x), float64(y), 1, ebiten.ColorScale{}, newGameScreen.Settings.MagicString())
         },
     })
 
     ui := uilib.UI{
         Draw: func(ui *uilib.UI, screen *ebiten.Image) {
             var options ebiten.DrawImageOptions
-            screen.DrawImage(newGameScreen.Background, &options)
+
+            background, _ := newGameScreen.ImageCache.GetImage("newgame.lbx", 0, 0)
+            screen.DrawImage(background, &options)
 
             options.GeoM.Reset()
             options.GeoM.Translate(160 + 5, 0)
-            screen.DrawImage(newGameScreen.Options, &options)
+
+            optionsImage, _ := newGameScreen.ImageCache.GetImage("newgame.lbx", 1, 0)
+            screen.DrawImage(optionsImage, &options)
 
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
                 element.Draw(element, screen)
@@ -346,8 +293,9 @@ func (newGameScreen *NewGameScreen) Draw(screen *ebiten.Image) {
 
 func MakeNewGameScreen(cache *lbx.LbxCache) *NewGameScreen {
     out := &NewGameScreen{
-        Active: false,
         State: NewGameStateRunning,
+        Cache: cache,
+        ImageCache: util.MakeImageCache(cache),
         Settings: NewGameSettings{
             Difficulty: 0,
             Opponents: 3,
@@ -355,6 +303,6 @@ func MakeNewGameScreen(cache *lbx.LbxCache) *NewGameScreen {
             Magic: 1,
         },
     }
-    out.Load(cache)
+    out.UI = out.MakeUI()
     return out
 }
