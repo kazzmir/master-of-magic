@@ -1963,7 +1963,7 @@ func (screen *NewWizardScreen) MakeSelectBannerUI() *uilib.UI {
             draw.DrawBooks(window, options, &imageCache, screen.CustomWizard.Books, screen.BooksOrder)
 
             options.GeoM.Reset()
-            options.GeoM.Translate(160, 0)
+            options.GeoM.Translate(158, 0)
             bannerBackground, _ := screen.ImageCache.GetImage("newgame.lbx", 46, 0)
             window.DrawImage(bannerBackground, &options)
 
