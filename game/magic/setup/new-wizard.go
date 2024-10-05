@@ -327,7 +327,6 @@ type NewWizardScreen struct {
     AbilityFontSelected *font.Font
     AbilityFontAvailable *font.Font
     ErrorFont *font.Font
-    WindyBorder *ebiten.Image
     ErrorTop *ebiten.Image
     ErrorBottom *ebiten.Image
     NameFont *font.Font
@@ -879,7 +878,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
         screen.SpellBackground2 = loadImage(49, 0)
         screen.SpellBackground3 = loadImage(50, 0)
 
-        screen.WindyBorder = loadImage(47, 0)
+        // screen.WindyBorder = loadImage(47, 0)
 
         screen.BannerBackground = loadImage(46, 0)
 
@@ -1782,7 +1781,8 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
 
                 options.GeoM.Reset()
                 options.GeoM.Translate(180, 18)
-                window.DrawImage(screen.WindyBorder, &options)
+                windyBorder, _ := screen.ImageCache.GetImage("newgame.lbx", 47, 0)
+                window.DrawImage(windyBorder, &options)
 
                 screen.AbilityFontSelected.Print(window, 12, 180, 1, ebiten.ColorScale{}, JoinAbilities(screen.CustomWizard.Abilities))
                 screen.NameFontBright.PrintCenter(window, 223, 185, 1, ebiten.ColorScale{}, fmt.Sprintf("%v picks", picksLeft()))
@@ -2027,7 +2027,8 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
 
             options.GeoM.Reset()
             options.GeoM.Translate(180, 18)
-            window.DrawImage(screen.WindyBorder, &options)
+            windyBorder, _ := screen.ImageCache.GetImage("newgame.lbx", 47, 0)
+            window.DrawImage(windyBorder, &options)
 
             raceShadowFont.PrintCenter(window, 243 + 1, 25, 1, ebiten.ColorScale{}, "Arcanian Races:")
             raceFont.PrintCenter(window, 243, 25, 1, ebiten.ColorScale{}, "Arcanian Races:")
