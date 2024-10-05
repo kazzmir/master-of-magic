@@ -206,43 +206,24 @@ func (tile Tile) TerrainType() TerrainType {
 }
 
 func (tile Tile) Name() string {
-    switch TerrainIndex(tile.Index) {
-        case IndexOcean1, IndexOcean2: return "Ocean"
-        case IndexBugGrass, IndexGrass1, IndexGrass2, IndexGrass3, IndexGrass4: return "Grasslands"
-        case IndexForest1, IndexForest2, IndexForest3: return "Forest"
-        case IndexMountain1: return "Mountain"
-        case IndexDesert1, IndexDesert2, IndexDesert3, IndexDesert4: return "Desert"
-        case IndexSwamp1, IndexSwamp2, IndexSwamp3: return "Swamp"
-        case IndexTundra1, IndexTundra2, IndexTundra3: return "Tundra"
-        case IndexSorcNode: return "Sorcery Node"
-        case IndexNatNode: return "Nature Node"
-        case IndexChaosNode: return "Chaos Node"
-        case IndexHills1: return "Hills"
-        case IndexVolcano: return "Volcano"
-        case IndexLake, IndexLake1, IndexLake2, IndexLake3, IndexLake4: return "Lake"
+    switch tile.TerrainType() {
+        case Ocean: return "Ocean"
+        case Grass: return "Grasslands"
+        case Forest: return "Forest"
+        case Mountain: return "Mountain"
+        case Desert: return "Desert"
+        case Swamp: return "Swamp"
+        case Tundra: return "Tundra"
+        case SorceryNode: return "Sorcery Node"
+        case NatureNode: return "Nature Node"
+        case ChaosNode: return "Chaos Node"
+        case Hill: return "Hills"
+        case Volcano: return "Volcano"
+        case Lake: return "Lake"
+        case River: return "River"
+        case Shore: return "Shore"
+        default: return "Unknown"
     }
-
-    if tile.Index >= IndexRiverMStart && tile.Index <= IndexRiverMEnd {
-        return "River"
-    }
-
-    if tile.Index >= IndexShore1_1st && tile.Index <= IndexShore1_end {
-        return "Shore"
-    }
-
-    if tile.Index >= IndexShore2FStart && tile.Index <= IndexShore2FEnd {
-        return "Shore"
-    }
-
-    if tile.Index >= IndexShore2Start && tile.Index <= IndexShore2End {
-        return "Shore"
-    }
-
-    if tile.Index >= IndexShore3Start && tile.Index <= IndexShore3End {
-        return "Shore"
-    }
-
-    return "unknown"
 }
 
 func (tile Tile) FoodBonus() fraction.Fraction {
