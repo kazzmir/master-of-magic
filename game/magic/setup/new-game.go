@@ -310,45 +310,45 @@ func (newGameScreen *NewGameScreen) MakeUI() *uilib.UI {
         },
     })
 
-    /*
     landsizeX := 160 + 91
     landsizeY := 93
+    landSizeBlock, _ := newGameScreen.ImageCache.GetImage("newgame.lbx", 6, 0)
 
     elements = append(elements, &uilib.UIElement{
-        Rect: image.Rect(landsizeX, landsizeY, landsizeX + newGameScreen.LandSizeBlock.Bounds().Dx(), landsizeY + newGameScreen.LandSizeBlock.Bounds().Dy()),
+        Rect: util.ImageRect(landsizeX, landsizeY, landSizeBlock),
         LeftClick: func(element *uilib.UIElement) {
             newGameScreen.Settings.LandSizeNext()
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(landsizeX), float64(landsizeY))
-            screen.DrawImage(newGameScreen.LandSizeBlock, &options)
+            screen.DrawImage(landSizeBlock, &options)
 
-            x := landsizeX + newGameScreen.LandSizeBlock.Bounds().Dx() / 2
+            x := landsizeX + landSizeBlock.Bounds().Dx() / 2
             y := landsizeY + 4
 
-            newGameScreen.Font.PrintCenter(screen, float64(x), float64(y), 1, ebiten.ColorScale{}, newGameScreen.Settings.LandSizeString())
+            buttonFont.PrintCenter(screen, float64(x), float64(y), 1, ebiten.ColorScale{}, newGameScreen.Settings.LandSizeString())
         },
     })
 
     magicX := 160 + 91
     magicY := 120
+    magicBlock, _ := newGameScreen.ImageCache.GetImage("newgame.lbx", 7, 0)
 
     elements = append(elements, &uilib.UIElement{
-        Rect: image.Rect(magicX, magicY, magicX + newGameScreen.MagicBlock.Bounds().Dx(), magicY + newGameScreen.MagicBlock.Bounds().Dy()),
+        Rect: util.ImageRect(magicX, magicY, magicBlock),
         LeftClick: func(element *uilib.UIElement) {
             newGameScreen.Settings.MagicNext()
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(magicX), float64(magicY))
-            screen.DrawImage(newGameScreen.MagicBlock, &options)
-            x := magicX + newGameScreen.MagicBlock.Bounds().Dx() / 2
+            screen.DrawImage(magicBlock, &options)
+            x := magicX + magicBlock.Bounds().Dx() / 2
             y := magicY + 4
-            newGameScreen.Font.PrintCenter(screen, float64(x), float64(y), 1, ebiten.ColorScale{}, newGameScreen.Settings.MagicString())
+            buttonFont.PrintCenter(screen, float64(x), float64(y), 1, ebiten.ColorScale{}, newGameScreen.Settings.MagicString())
         },
     })
-    */
 
     ui := uilib.UI{
         Draw: func(ui *uilib.UI, screen *ebiten.Image) {
