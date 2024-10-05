@@ -338,9 +338,6 @@ type NewWizardScreen struct {
 
     Spells spellbook.Spells
 
-    OkReady *ebiten.Image
-    OkNotReady *ebiten.Image
-
     BannerBackground *ebiten.Image
 
     Help lbx.Help
@@ -857,8 +854,10 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
         // screen.Slots = loadImage(8, 0)
         screen.NameBox = loadImage(40, 0)
 
+        /*
         screen.OkReady = loadImage(42, 0)
         screen.OkNotReady = loadImage(43, 0)
+        */
 
         // screen.PickOkSlot = loadImage(51, 0)
 
@@ -1448,8 +1447,10 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
     }
 
     // ok button
+    okReady, _ := screen.ImageCache.GetImage("newgame.lbx", 42, 0)
+    okNotReady, _ := screen.ImageCache.GetImage("newgame.lbx", 43, 0)
     elements = append(elements, &uilib.UIElement{
-        Rect: image.Rect(252, 182, 252 + screen.OkReady.Bounds().Dx(), 182 + screen.OkReady.Bounds().Dy()),
+        Rect: image.Rect(252, 182, 252 + okReady.Bounds().Dx(), 182 + okReady.Bounds().Dy()),
         LeftClick: func(this *uilib.UIElement){
             if picksLeft() == 0 {
                 screen.State = NewWizardScreenStateSelectSpells
@@ -1470,9 +1471,9 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(252, 182)
             if picksLeft() == 0 {
-                window.DrawImage(screen.OkReady, &options)
+                window.DrawImage(okReady, &options)
             } else {
-                window.DrawImage(screen.OkNotReady, &options)
+                window.DrawImage(okNotReady, &options)
             }
         },
     })
@@ -1709,8 +1710,10 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
         }
 
         // ok button
+        okReady, _ := screen.ImageCache.GetImage("newgame.lbx", 42, 0)
+        okNotReady, _ := screen.ImageCache.GetImage("newgame.lbx", 43, 0)
         elements = append(elements, &uilib.UIElement{
-            Rect: image.Rect(252, 182, 252 + screen.OkReady.Bounds().Dx(), 182 + screen.OkReady.Bounds().Dy()),
+            Rect: image.Rect(252, 182, 252 + okReady.Bounds().Dx(), 182 + okReady.Bounds().Dy()),
             LeftClick: func(this *uilib.UIElement){
                 if picksLeft() == 0 {
                     doNextMagicUI(magic)
@@ -1732,9 +1735,9 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(252, 182)
                 if picksLeft() == 0 {
-                    window.DrawImage(screen.OkReady, &options)
+                    window.DrawImage(okReady, &options)
                 } else {
-                    window.DrawImage(screen.OkNotReady, &options)
+                    window.DrawImage(okNotReady, &options)
                 }
             },
         })
