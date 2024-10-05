@@ -18,7 +18,7 @@ type Spell struct {
     SpellType int
     Section Section
     Realm int
-    Eligibility int
+    Eligibility EligibilityType
     CastCost int
     ResearchCost int
     Sound int
@@ -30,6 +30,38 @@ type Spell struct {
     // which book of magic this spell is a part of
     Magic data.MagicType
     Rarity SpellRarity
+}
+
+type EligibilityType int
+const (
+    EligibilityCombatOnly EligibilityType = 0xff
+    EligibilityCombatOnly2 EligibilityType = 0xfe
+    EligibilityBoth EligibilityType = 0x0
+    EligibilityOverlandOnly EligibilityType = 0x1
+    EligibilityBoth2 EligibilityType = 0x2
+    EligibilityOverlandOnlyFriendlyCity EligibilityType = 0x3
+    EligibilityBothSameCost = 0x4
+    EligibilityOverlandWhileBanished = 0x5
+)
+
+func (eligibility EligibilityType) CanCastInCombat() bool {
+    switch eligibility {
+        case EligibilityCombatOnly, EligibilityCombatOnly2, EligibilityBoth, EligibilityBoth2, EligibilityBothSameCost:
+            return true
+        default:
+            return false
+    }
+}
+
+func (eligibility EligibilityType) CanCastInOverland() bool {
+    switch eligibility {
+        case EligibilityBoth, EligibilityOverlandOnly, EligibilityBoth2,
+             EligibilityOverlandOnlyFriendlyCity, EligibilityBothSameCost,
+             EligibilityOverlandWhileBanished:
+            return true
+        default:
+            return false
+    }
 }
 
 type Section int
@@ -150,6 +182,32 @@ func (spells Spells) GetSpellsBySection(section Section) Spells {
 
     for _, spell := range spells.Spells {
         if spell.Section == section {
+            out = append(out, spell)
+        }
+    }
+
+    return SpellsFromArray(out)
+}
+
+/* the subset of spells that can be cast on the overworld */
+func (spells Spells) OverlandSpells() Spells {
+    var out []Spell
+
+    for _, spell := range spells.Spells {
+        if spell.Eligibility.CanCastInOverland() {
+            out = append(out, spell)
+        }
+    }
+
+    return SpellsFromArray(out)
+}
+
+/* the subset of spells that can be cast in combat */
+func (spells Spells) CombatSpells() Spells {
+    var out []Spell
+
+    for _, spell := range spells.Spells {
+        if spell.Eligibility.CanCastInCombat() {
             out = append(out, spell)
         }
     }
@@ -391,7 +449,7 @@ func ReadSpells(lbxFile *lbx.LbxFile, entry int) (Spells, error) {
             SpellType: int(spellType),
             Section: Section(section),
             Realm: int(realm),
-            Eligibility: int(eligibility),
+            Eligibility: EligibilityType(eligibility),
             CastCost: int(castCost),
             ResearchCost: int(researchCost),
             Sound: int(sound),
