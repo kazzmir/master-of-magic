@@ -789,108 +789,20 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
 
         screen.ErrorFont = font.MakeOptimizedFontWithPalette(fonts[4], yellowFade)
 
-        newGameLbx, err := cache.GetLbxFile("NEWGAME.LBX")
-        if err != nil {
-            outError = fmt.Errorf("Unable to load NEWGAME.LBX: %v", err)
-            return
-        }
-
-        loadImage := func(index int, subIndex int) *ebiten.Image {
-            if outError != nil {
-                return nil
-            }
-
-            sprites, err := newGameLbx.ReadImages(index)
-            if err != nil {
-                outError = fmt.Errorf("Unable to read background image from NEWGAME.LBX: %v", err)
-                return nil
-            }
-
-            if len(sprites) <= subIndex {
-                outError = fmt.Errorf("Unable to read background image from NEWGAME.LBX: index %d out of range", subIndex)
-                return nil
-            }
-
-            return ebiten.NewImageFromImage(sprites[subIndex])
-        }
-
-        wizardsLbx, err := cache.GetLbxFile("WIZARDS.LBX")
-        if err != nil {
-            outError = err
-            return
+        loadImage := func(index int) *ebiten.Image {
+            pic, _ := screen.ImageCache.GetImage("newgame.lbx", index, 0)
+            return pic
         }
 
         loadWizardPortrait := func(index int) *ebiten.Image {
-            if outError != nil {
-                return nil
-            }
-
-            sprites, err := wizardsLbx.ReadImages(index)
-            if err != nil {
-                outError = fmt.Errorf("Unable to read wizard portrait from WIZARDS.LBX: %v", err)
-                return nil
-            }
-
-            if len(sprites) == 0 {
-                outError = fmt.Errorf("Unable to read wizard portrait from WIZARDS.LBX: no images found")
-                return nil
-            }
-
-            return ebiten.NewImageFromImage(sprites[0])
+            portrait, _ := screen.ImageCache.GetImage("wizards.lbx", index, 0)
+            return portrait
         }
-
-        // screen.Background = loadImage(0, 0)
-        // screen.Slots = loadImage(8, 0)
-        // screen.NameBox = loadImage(40, 0)
-
-        /*
-        screen.OkReady = loadImage(42, 0)
-        screen.OkNotReady = loadImage(43, 0)
-        */
-
-        // screen.PickOkSlot = loadImage(51, 0)
-
-        // screen.RaceBackground = loadImage(55, 0)
-
-        // screen.SpellBackground1 = loadImage(48, 0)
-        // screen.SpellBackground2 = loadImage(49, 0)
-        // screen.SpellBackground3 = loadImage(50, 0)
-
-        // screen.WindyBorder = loadImage(47, 0)
-
-        // screen.BannerBackground = loadImage(46, 0)
-
-        // screen.CustomPictureBackground = loadImage(39, 0)
-        // screen.CustomWizardBooks = loadImage(41, 0)
-
-        /*
-        for i := 0; i < 3; i++ {
-            screen.LifeBooks[i] = loadImage(24 + i, 0)
-        }
-
-        for i := 0; i < 3; i++ {
-            screen.SorceryBooks[i] = loadImage(27 + i, 0)
-        }
-
-        for i := 0; i < 3; i++ {
-            screen.NatureBooks[i] = loadImage(30 + i, 0)
-        }
-
-        for i := 0; i < 3; i++ {
-            screen.DeathBooks[i] = loadImage(33 + i, 0)
-        }
-
-        for i := 0; i < 3; i++ {
-            screen.ChaosBooks[i] = loadImage(36 + i, 0)
-        }
-        */
-
-        // screen.CheckMark = loadImage(52, 0)
 
         screen.WizardSlots = []wizardSlot{
             wizardSlot{
                 Name: "Merlin",
-                Background: loadImage(9, 0),
+                Background: loadImage(9),
                 Portrait: loadWizardPortrait(0),
                 Base: data.WizardMerlin,
                 Books: []data.WizardBook{
@@ -901,7 +813,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
             },
             wizardSlot{
                 Name: "Raven",
-                Background: loadImage(10, 0),
+                Background: loadImage(10),
                 Portrait: loadWizardPortrait(1),
                 Base: data.WizardRaven,
                 Books: []data.WizardBook{
@@ -912,7 +824,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
             },
             wizardSlot{
                 Name: "Sharee",
-                Background: loadImage(11, 0),
+                Background: loadImage(11),
                 Portrait: loadWizardPortrait(2),
                 Base: data.WizardSharee,
                 Books: []data.WizardBook{
@@ -923,7 +835,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
             },
             wizardSlot{
                 Name: "Lo Pan",
-                Background: loadImage(12, 0),
+                Background: loadImage(12),
                 Portrait: loadWizardPortrait(3),
                 Base: data.WizardLoPan,
                 Books: []data.WizardBook{
@@ -934,7 +846,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
             },
             wizardSlot{
                 Name: "Jafar",
-                Background: loadImage(13, 0),
+                Background: loadImage(13),
                 Portrait: loadWizardPortrait(4),
                 Base: data.WizardJafar,
                 Books: []data.WizardBook{
@@ -944,7 +856,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
             },
             wizardSlot{
                 Name: "Oberic",
-                Background: loadImage(14, 0),
+                Background: loadImage(14),
                 Portrait: loadWizardPortrait(5),
                 Base: data.WizardOberic,
                 Books: []data.WizardBook{
@@ -955,7 +867,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
             },
             wizardSlot{
                 Name: "Rjak",
-                Background: loadImage(15, 0),
+                Background: loadImage(15),
                 Portrait: loadWizardPortrait(6),
                 Base: data.WizardRjak,
                 Books: []data.WizardBook{
@@ -965,7 +877,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
             },
             wizardSlot{
                 Name: "Sss'ra",
-                Background: loadImage(16, 0),
+                Background: loadImage(16),
                 Portrait: loadWizardPortrait(7),
                 Base: data.WizardSssra,
                 Books: []data.WizardBook{
@@ -976,7 +888,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
             },
             wizardSlot{
                 Name: "Tauron",
-                Background: loadImage(17, 0),
+                Background: loadImage(17),
                 Portrait: loadWizardPortrait(8),
                 Base: data.WizardTauron,
                 Books: []data.WizardBook{
@@ -986,7 +898,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
             },
             wizardSlot{
                 Name: "Freya",
-                Background: loadImage(18, 0),
+                Background: loadImage(18),
                 Portrait: loadWizardPortrait(9),
                 Base: data.WizardFreya,
                 Books: []data.WizardBook{
@@ -996,7 +908,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
             },
             wizardSlot{
                 Name: "Horus",
-                Background: loadImage(19, 0),
+                Background: loadImage(19),
                 Portrait: loadWizardPortrait(10),
                 Base: data.WizardHorus,
                 Books: []data.WizardBook{
@@ -1007,7 +919,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
             },
             wizardSlot{
                 Name: "Ariel",
-                Background: loadImage(20, 0),
+                Background: loadImage(20),
                 Portrait: loadWizardPortrait(11),
                 Base: data.WizardAriel,
                 Books: []data.WizardBook{
@@ -1017,7 +929,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
             },
             wizardSlot{
                 Name: "Tlaloc",
-                Background: loadImage(21, 0),
+                Background: loadImage(21),
                 Portrait: loadWizardPortrait(12),
                 Base: data.WizardTlaloc,
                 Books: []data.WizardBook{
@@ -1028,7 +940,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
             },
             wizardSlot{
                 Name: "Kali",
-                Background: loadImage(22, 0),
+                Background: loadImage(22),
                 Portrait: loadWizardPortrait(13),
                 Base: data.WizardKali,
                 Books: []data.WizardBook{
@@ -1039,29 +951,11 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
             },
             wizardSlot{
                 Name: "Custom",
-                Background: loadImage(23, 0),
+                Background: loadImage(23),
                 Books: nil,
                 Portrait: nil,
             },
         }
-
-        /*
-        // set custom wizard to merlin for now
-        screen.CustomWizard.Portrait = screen.WizardSlots[0].Portrait
-        screen.CustomWizard.Name = screen.WizardSlots[0].Name
-        screen.CustomWizard.Abilities = []WizardAbility{AbilityMyrran}
-        // screen.CustomWizard.Spells.AddSpell(screen.Spells.FindByName("Disrupt"))
-        screen.CustomWizard.Books = []wizardBook{
-            wizardBook{
-                Magic: LifeMagic,
-                Count: 3,
-            },
-            wizardBook{
-                Magic: ChaosMagic,
-                Count: 8,
-            },
-        }
-        */
 
         if screen.State == NewWizardScreenStateSelectWizard {
             screen.UI = screen.MakeSelectWizardUI()
