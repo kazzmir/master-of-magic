@@ -2,6 +2,11 @@ package game
 
 import (
     "image"
+    "log"
+    "math/rand"
+
+    "github.com/kazzmir/master-of-magic/game/magic/units"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
 )
 
 /* choose X points surrounding the node. 0,0 is the node itself. for arcanus, choose 5-10 points from a 4x4 square.
