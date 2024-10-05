@@ -340,12 +340,6 @@ type NewWizardScreen struct {
 
     UI *uilib.UI
 
-    LifeBooks [3]*ebiten.Image
-    SorceryBooks [3]*ebiten.Image
-    NatureBooks [3]*ebiten.Image
-    DeathBooks [3]*ebiten.Image
-    ChaosBooks [3]*ebiten.Image
-
     BooksOrder []int
 
     State NewWizardScreenState
@@ -869,6 +863,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
         // screen.CustomPictureBackground = loadImage(39, 0)
         // screen.CustomWizardBooks = loadImage(41, 0)
 
+        /*
         for i := 0; i < 3; i++ {
             screen.LifeBooks[i] = loadImage(24 + i, 0)
         }
@@ -888,6 +883,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
         for i := 0; i < 3; i++ {
             screen.ChaosBooks[i] = loadImage(36 + i, 0)
         }
+        */
 
         // screen.CheckMark = loadImage(52, 0)
 
@@ -1173,35 +1169,41 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
         Y int
     }
 
+    lifeBook, _ := imageCache.GetImage("newgame.lbx", 24, 0)
+    sorceryBook, _ := imageCache.GetImage("newgame.lbx", 27, 0)
+    natureBook, _ := imageCache.GetImage("newgame.lbx", 30, 0)
+    deathBook, _ := imageCache.GetImage("newgame.lbx", 33, 0)
+    chaosBook, _ := imageCache.GetImage("newgame.lbx", 36, 0)
+
     books := []bookData{
         bookData{
             Kind: data.LifeMagic,
             Help: "Life Spells",
-            Image: screen.LifeBooks[0],
+            Image: lifeBook,
             Y: 49,
         },
         bookData{
             Kind: data.DeathMagic,
             Help: "Death Spells",
-            Image: screen.DeathBooks[0],
+            Image: deathBook,
             Y: 75,
         },
         bookData{
             Kind: data.ChaosMagic,
             Help: "Chaos Spells",
-            Image: screen.ChaosBooks[0],
+            Image: chaosBook,
             Y: 101,
         },
         bookData{
             Kind: data.NatureMagic,
             Help: "Nature Spells",
-            Image: screen.NatureBooks[0],
+            Image: natureBook,
             Y: 127,
         },
         bookData{
             Kind: data.SorceryMagic,
             Help: "Sorcery Spells",
-            Image: screen.SorceryBooks[0],
+            Image: sorceryBook,
             Y: 153,
         },
     }
