@@ -2029,9 +2029,6 @@ func (game *Game) ShowApprenticeUI(){
     game.HudUI.AddElements(spellbook.MakeSpellBookUI(game.HudUI, game.Cache))
 }
 
-func (game *Game) ShowSurveyor(){
-}
-
 // advisor ui
 func (game *Game) MakeInfoUI(cornerX int, cornerY int) []*uilib.UIElement {
     advisors := []uilib.Selection{
