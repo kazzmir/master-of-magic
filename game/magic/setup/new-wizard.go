@@ -2,7 +2,6 @@ package setup
 
 import (
     "fmt"
-    "sync"
     "math"
     "math/rand"
     "strings"
@@ -330,7 +329,6 @@ type NewWizardScreen struct {
     NameFont *font.Font
     NameFontBright *font.Font
     SelectFont *font.Font
-    loaded sync.Once
     WizardSlots []wizardSlot
     ImageCache util.ImageCache
 
@@ -655,322 +653,313 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
     // 36-38 are chaos/red books
     // 41 is custom screen
 
-    var outError error
+    fontLbx, err := cache.GetLbxFile("FONTS.LBX")
+    if err != nil {
+        return err
+    }
 
-    screen.loaded.Do(func() {
-        fontLbx, err := cache.GetLbxFile("FONTS.LBX")
-        if err != nil {
-            outError = fmt.Errorf("Unable to read FONTS.LBX: %v", err)
-            return
-        }
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        return err
+    }
 
-        fonts, err := font.ReadFonts(fontLbx, 0)
-        if err != nil {
-            outError = fmt.Errorf("Unable to read fonts from FONTS.LBX: %v", err)
-            return
-        }
+    err = screen.LoadHelp(cache)
+    if err != nil {
+        return err
+    }
 
-        err = screen.LoadHelp(cache)
-        if err != nil {
-            outError = fmt.Errorf("Error reading help.lbx: %v", err)
-            return
-        }
+    spellsLbx, err := cache.GetLbxFile("SPELLDAT.LBX")
+    if err != nil {
+        return err
+    }
 
-        spellsLbx, err := cache.GetLbxFile("SPELLDAT.LBX")
-        if err != nil {
-            outError = fmt.Errorf("Unable to read SPELLDAT.LBX: %v", err)
-            return
-        }
+    screen.Spells, err = spellbook.ReadSpells(spellsLbx, 0)
+    if err != nil {
+        return err
+    }
 
-        screen.Spells, err = spellbook.ReadSpells(spellsLbx, 0)
-        if err != nil {
-            outError = fmt.Errorf("Unable to read spells from SPELLDAT.LBX: %v", err)
-            return
-        }
+    // FIXME: this is a fudged palette to look like the original, but its probably slightly wrong
+    brightYellowPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        // orangish
+        color.RGBA{R: 0xff, G: 0xaa, B: 0x00, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+    }
 
-        // FIXME: this is a fudged palette to look like the original, but its probably slightly wrong
-        brightYellowPalette := color.Palette{
-            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-            // orangish
-            color.RGBA{R: 0xff, G: 0xaa, B: 0x00, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        }
+    // FIXME: also a fudged palette
+    whitishPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0xc6, G: 0x9d, B: 0x65, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+    }
 
-        // FIXME: also a fudged palette
-        whitishPalette := color.Palette{
-            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-            color.RGBA{R: 0xc6, G: 0x9d, B: 0x65, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        }
+    pickPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0xc6, G: 0x9d, B: 0x65, A: 0xff},
+        color.RGBA{R: 0xc6, G: 0x9d, B: 0x65, A: 0xff},
+        color.RGBA{R: 0xc6, G: 0x9d, B: 0x65, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+    }
 
-        pickPalette := color.Palette{
-            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-            color.RGBA{R: 0xc6, G: 0x9d, B: 0x65, A: 0xff},
-            color.RGBA{R: 0xc6, G: 0x9d, B: 0x65, A: 0xff},
-            color.RGBA{R: 0xc6, G: 0x9d, B: 0x65, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        }
+    transparentPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: uint8(math.Round(0xc6 * 0.3)), G: uint8(math.Round(0x9d * 0.3)), B: uint8(math.Round(0x65 * 0.3)), A: uint8(math.Round(0xff * 0.3))},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+    }
 
-        transparentPalette := color.Palette{
-            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-            color.RGBA{R: uint8(math.Round(0xc6 * 0.3)), G: uint8(math.Round(0x9d * 0.3)), B: uint8(math.Round(0x65 * 0.3)), A: uint8(math.Round(0xff * 0.3))},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        }
+    // FIXME: move this to the font module
+    selectYellowPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xfa, G: 0xe1, B: 0x16, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xef, B: 0x2f, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xef, B: 0x2f, A: 0xff},
+        color.RGBA{R: 0xe0, G: 0x8a, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xd2, G: 0x7f, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xd2, G: 0x7f, B: 0x0, A: 0xff},
+        color.RGBA{R: 0x99, G: 0x4f, B: 0x0, A: 0xff},
+        color.RGBA{R: 0x99, G: 0x4f, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0x99, G: 0x4f, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+    }
 
-        // FIXME: move this to the font module
-        selectYellowPalette := color.Palette{
-            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-            color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-            color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-            color.RGBA{R: 0xfa, G: 0xe1, B: 0x16, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xef, B: 0x2f, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xef, B: 0x2f, A: 0xff},
-            color.RGBA{R: 0xe0, G: 0x8a, B: 0x0, A: 0xff},
-            color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-            color.RGBA{R: 0xd2, G: 0x7f, B: 0x0, A: 0xff},
-            color.RGBA{R: 0xd2, G: 0x7f, B: 0x0, A: 0xff},
-            color.RGBA{R: 0x99, G: 0x4f, B: 0x0, A: 0xff},
-            color.RGBA{R: 0x99, G: 0x4f, B: 0x0, A: 0xff},
-            color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-            color.RGBA{R: 0x99, G: 0x4f, B: 0x0, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        }
+    screen.LbxFonts = fonts
 
-        screen.LbxFonts = fonts
+    screen.Font = font.MakeOptimizedFont(fonts[4])
 
-        screen.Font = font.MakeOptimizedFont(fonts[4])
+    // FIXME: load with a yellowish palette
+    screen.SelectFont = font.MakeOptimizedFontWithPalette(fonts[5], selectYellowPalette)
 
-        // FIXME: load with a yellowish palette
-        screen.SelectFont = font.MakeOptimizedFontWithPalette(fonts[5], selectYellowPalette)
+    screen.AbilityFont = font.MakeOptimizedFontWithPalette(fonts[0], transparentPalette)
+    screen.AbilityFontSelected = font.MakeOptimizedFontWithPalette(fonts[0], brightYellowPalette)
+    screen.AbilityFontAvailable = font.MakeOptimizedFontWithPalette(fonts[0], whitishPalette)
 
-        screen.AbilityFont = font.MakeOptimizedFontWithPalette(fonts[0], transparentPalette)
-        screen.AbilityFontSelected = font.MakeOptimizedFontWithPalette(fonts[0], brightYellowPalette)
-        screen.AbilityFontAvailable = font.MakeOptimizedFontWithPalette(fonts[0], whitishPalette)
+    // FIXME: use a monochrome color scheme, light-brownish
+    screen.NameFont = font.MakeOptimizedFont(fonts[3])
+    screen.NameFontBright = font.MakeOptimizedFontWithPalette(fonts[3], pickPalette)
 
-        // FIXME: use a monochrome color scheme, light-brownish
-        screen.NameFont = font.MakeOptimizedFont(fonts[3])
-        screen.NameFontBright = font.MakeOptimizedFontWithPalette(fonts[3], pickPalette)
+    // FIXME: this should be a fade from bright yellow to dark yellow/orange
+    yellowFade := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0xb2, G: 0x8c, B: 0x05, A: 0xff},
+        color.RGBA{R: 0xc9, G: 0xa1, B: 0x26, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xd3, B: 0x5b, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xe8, B: 0x6f, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+    }
 
-        // FIXME: this should be a fade from bright yellow to dark yellow/orange
-        yellowFade := color.Palette{
-            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-            color.RGBA{R: 0xb2, G: 0x8c, B: 0x05, A: 0xff},
-            color.RGBA{R: 0xc9, G: 0xa1, B: 0x26, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xd3, B: 0x5b, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xe8, B: 0x6f, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        }
+    screen.ErrorFont = font.MakeOptimizedFontWithPalette(fonts[4], yellowFade)
 
-        screen.ErrorFont = font.MakeOptimizedFontWithPalette(fonts[4], yellowFade)
+    loadImage := func(index int) *ebiten.Image {
+        pic, _ := screen.ImageCache.GetImage("newgame.lbx", index, 0)
+        return pic
+    }
 
-        loadImage := func(index int) *ebiten.Image {
-            pic, _ := screen.ImageCache.GetImage("newgame.lbx", index, 0)
-            return pic
-        }
+    loadWizardPortrait := func(index int) *ebiten.Image {
+        portrait, _ := screen.ImageCache.GetImage("wizards.lbx", index, 0)
+        return portrait
+    }
 
-        loadWizardPortrait := func(index int) *ebiten.Image {
-            portrait, _ := screen.ImageCache.GetImage("wizards.lbx", index, 0)
-            return portrait
-        }
-
-        screen.WizardSlots = []wizardSlot{
-            wizardSlot{
-                Name: "Merlin",
-                Background: loadImage(9),
-                Portrait: loadWizardPortrait(0),
-                Base: data.WizardMerlin,
-                Books: []data.WizardBook{
-                    data.WizardBook{Magic: data.LifeMagic, Count: 5},
-                    data.WizardBook{Magic: data.NatureMagic, Count: 5},
-                },
-                ExtraAbility: AbilitySageMaster,
+    screen.WizardSlots = []wizardSlot{
+        wizardSlot{
+            Name: "Merlin",
+            Background: loadImage(9),
+            Portrait: loadWizardPortrait(0),
+            Base: data.WizardMerlin,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.LifeMagic, Count: 5},
+                data.WizardBook{Magic: data.NatureMagic, Count: 5},
             },
-            wizardSlot{
-                Name: "Raven",
-                Background: loadImage(10),
-                Portrait: loadWizardPortrait(1),
-                Base: data.WizardRaven,
-                Books: []data.WizardBook{
-                    data.WizardBook{Magic: data.SorceryMagic, Count: 6},
-                    data.WizardBook{Magic: data.NatureMagic, Count: 5},
-                },
-                ExtraAbility: AbilityNone,
+            ExtraAbility: AbilitySageMaster,
+        },
+        wizardSlot{
+            Name: "Raven",
+            Background: loadImage(10),
+            Portrait: loadWizardPortrait(1),
+            Base: data.WizardRaven,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.SorceryMagic, Count: 6},
+                data.WizardBook{Magic: data.NatureMagic, Count: 5},
             },
-            wizardSlot{
-                Name: "Sharee",
-                Background: loadImage(11),
-                Portrait: loadWizardPortrait(2),
-                Base: data.WizardSharee,
-                Books: []data.WizardBook{
-                    data.WizardBook{Magic: data.DeathMagic, Count: 5},
-                    data.WizardBook{Magic: data.ChaosMagic, Count: 5},
-                },
-                ExtraAbility: AbilityConjurer,
+            ExtraAbility: AbilityNone,
+        },
+        wizardSlot{
+            Name: "Sharee",
+            Background: loadImage(11),
+            Portrait: loadWizardPortrait(2),
+            Base: data.WizardSharee,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.DeathMagic, Count: 5},
+                data.WizardBook{Magic: data.ChaosMagic, Count: 5},
             },
-            wizardSlot{
-                Name: "Lo Pan",
-                Background: loadImage(12),
-                Portrait: loadWizardPortrait(3),
-                Base: data.WizardLoPan,
-                Books: []data.WizardBook{
-                    data.WizardBook{Magic: data.SorceryMagic, Count: 5},
-                    data.WizardBook{Magic: data.ChaosMagic, Count: 5},
-                },
-                ExtraAbility: AbilityChanneler,
+            ExtraAbility: AbilityConjurer,
+        },
+        wizardSlot{
+            Name: "Lo Pan",
+            Background: loadImage(12),
+            Portrait: loadWizardPortrait(3),
+            Base: data.WizardLoPan,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.SorceryMagic, Count: 5},
+                data.WizardBook{Magic: data.ChaosMagic, Count: 5},
             },
-            wizardSlot{
-                Name: "Jafar",
-                Background: loadImage(13),
-                Portrait: loadWizardPortrait(4),
-                Base: data.WizardJafar,
-                Books: []data.WizardBook{
-                    data.WizardBook{Magic: data.SorceryMagic, Count: 10},
-                },
-                ExtraAbility: AbilityAlchemy,
+            ExtraAbility: AbilityChanneler,
+        },
+        wizardSlot{
+            Name: "Jafar",
+            Background: loadImage(13),
+            Portrait: loadWizardPortrait(4),
+            Base: data.WizardJafar,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.SorceryMagic, Count: 10},
             },
-            wizardSlot{
-                Name: "Oberic",
-                Background: loadImage(14),
-                Portrait: loadWizardPortrait(5),
-                Base: data.WizardOberic,
-                Books: []data.WizardBook{
-                    data.WizardBook{Magic: data.NatureMagic, Count: 5},
-                    data.WizardBook{Magic: data.ChaosMagic, Count: 5},
-                },
-                ExtraAbility: AbilityManaFocusing,
+            ExtraAbility: AbilityAlchemy,
+        },
+        wizardSlot{
+            Name: "Oberic",
+            Background: loadImage(14),
+            Portrait: loadWizardPortrait(5),
+            Base: data.WizardOberic,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.NatureMagic, Count: 5},
+                data.WizardBook{Magic: data.ChaosMagic, Count: 5},
             },
-            wizardSlot{
-                Name: "Rjak",
-                Background: loadImage(15),
-                Portrait: loadWizardPortrait(6),
-                Base: data.WizardRjak,
-                Books: []data.WizardBook{
-                    data.WizardBook{Magic: data.DeathMagic, Count: 9},
-                },
-                ExtraAbility: AbilityInfernalPower,
+            ExtraAbility: AbilityManaFocusing,
+        },
+        wizardSlot{
+            Name: "Rjak",
+            Background: loadImage(15),
+            Portrait: loadWizardPortrait(6),
+            Base: data.WizardRjak,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.DeathMagic, Count: 9},
             },
-            wizardSlot{
-                Name: "Sss'ra",
-                Background: loadImage(16),
-                Portrait: loadWizardPortrait(7),
-                Base: data.WizardSssra,
-                Books: []data.WizardBook{
-                    data.WizardBook{Magic: data.LifeMagic, Count: 4},
-                    data.WizardBook{Magic: data.ChaosMagic, Count: 4},
-                },
-                ExtraAbility: AbilityMyrran,
+            ExtraAbility: AbilityInfernalPower,
+        },
+        wizardSlot{
+            Name: "Sss'ra",
+            Background: loadImage(16),
+            Portrait: loadWizardPortrait(7),
+            Base: data.WizardSssra,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.LifeMagic, Count: 4},
+                data.WizardBook{Magic: data.ChaosMagic, Count: 4},
             },
-            wizardSlot{
-                Name: "Tauron",
-                Background: loadImage(17),
-                Portrait: loadWizardPortrait(8),
-                Base: data.WizardTauron,
-                Books: []data.WizardBook{
-                    data.WizardBook{Magic: data.ChaosMagic, Count: 10},
-                },
-                ExtraAbility: AbilityChaosMastery,
+            ExtraAbility: AbilityMyrran,
+        },
+        wizardSlot{
+            Name: "Tauron",
+            Background: loadImage(17),
+            Portrait: loadWizardPortrait(8),
+            Base: data.WizardTauron,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.ChaosMagic, Count: 10},
             },
-            wizardSlot{
-                Name: "Freya",
-                Background: loadImage(18),
-                Portrait: loadWizardPortrait(9),
-                Base: data.WizardFreya,
-                Books: []data.WizardBook{
-                    data.WizardBook{Magic: data.NatureMagic, Count: 10},
-                },
-                ExtraAbility: AbilityNatureMastery,
+            ExtraAbility: AbilityChaosMastery,
+        },
+        wizardSlot{
+            Name: "Freya",
+            Background: loadImage(18),
+            Portrait: loadWizardPortrait(9),
+            Base: data.WizardFreya,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.NatureMagic, Count: 10},
             },
-            wizardSlot{
-                Name: "Horus",
-                Background: loadImage(19),
-                Portrait: loadWizardPortrait(10),
-                Base: data.WizardHorus,
-                Books: []data.WizardBook{
-                    data.WizardBook{Magic: data.LifeMagic, Count: 5},
-                    data.WizardBook{Magic: data.SorceryMagic, Count: 5},
-                },
-                ExtraAbility: AbilityArchmage,
+            ExtraAbility: AbilityNatureMastery,
+        },
+        wizardSlot{
+            Name: "Horus",
+            Background: loadImage(19),
+            Portrait: loadWizardPortrait(10),
+            Base: data.WizardHorus,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.LifeMagic, Count: 5},
+                data.WizardBook{Magic: data.SorceryMagic, Count: 5},
             },
-            wizardSlot{
-                Name: "Ariel",
-                Background: loadImage(20),
-                Portrait: loadWizardPortrait(11),
-                Base: data.WizardAriel,
-                Books: []data.WizardBook{
-                    data.WizardBook{Magic: data.LifeMagic, Count: 10},
-                },
-                ExtraAbility: AbilityCharismatic,
+            ExtraAbility: AbilityArchmage,
+        },
+        wizardSlot{
+            Name: "Ariel",
+            Background: loadImage(20),
+            Portrait: loadWizardPortrait(11),
+            Base: data.WizardAriel,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.LifeMagic, Count: 10},
             },
-            wizardSlot{
-                Name: "Tlaloc",
-                Background: loadImage(21),
-                Portrait: loadWizardPortrait(12),
-                Base: data.WizardTlaloc,
-                Books: []data.WizardBook{
-                    data.WizardBook{Magic: data.NatureMagic, Count: 4},
-                    data.WizardBook{Magic: data.DeathMagic, Count: 5},
-                },
-                ExtraAbility: AbilityWarlord,
+            ExtraAbility: AbilityCharismatic,
+        },
+        wizardSlot{
+            Name: "Tlaloc",
+            Background: loadImage(21),
+            Portrait: loadWizardPortrait(12),
+            Base: data.WizardTlaloc,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.NatureMagic, Count: 4},
+                data.WizardBook{Magic: data.DeathMagic, Count: 5},
             },
-            wizardSlot{
-                Name: "Kali",
-                Background: loadImage(22),
-                Portrait: loadWizardPortrait(13),
-                Base: data.WizardKali,
-                Books: []data.WizardBook{
-                    data.WizardBook{Magic: data.SorceryMagic, Count: 5},
-                    data.WizardBook{Magic: data.DeathMagic, Count: 5},
-                },
-                ExtraAbility: AbilityArtificer,
+            ExtraAbility: AbilityWarlord,
+        },
+        wizardSlot{
+            Name: "Kali",
+            Background: loadImage(22),
+            Portrait: loadWizardPortrait(13),
+            Base: data.WizardKali,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.SorceryMagic, Count: 5},
+                data.WizardBook{Magic: data.DeathMagic, Count: 5},
             },
-            wizardSlot{
-                Name: "Custom",
-                Background: loadImage(23),
-                Books: nil,
-                Portrait: nil,
-            },
-        }
+            ExtraAbility: AbilityArtificer,
+        },
+        wizardSlot{
+            Name: "Custom",
+            Background: loadImage(23),
+            Books: nil,
+            Portrait: nil,
+        },
+    }
 
-        if screen.State == NewWizardScreenStateSelectWizard {
-            screen.UI = screen.MakeSelectWizardUI()
-        } else if screen.State == NewWizardScreenStateCustomBooks {
-            screen.UI = screen.MakeCustomWizardBooksUI()
-        } else if screen.State == NewWizardScreenStateSelectSpells {
-            screen.UI = screen.MakeSelectSpellsUI()
-        } else if screen.State == NewWizardScreenStateSelectRace {
-            screen.UI = screen.MakeSelectRaceUI()
-        } else if screen.State == NewWizardScreenStateSelectBanner {
-            screen.UI = screen.MakeSelectBannerUI()
-        }
-    })
+    if screen.State == NewWizardScreenStateSelectWizard {
+        screen.UI = screen.MakeSelectWizardUI()
+    } else if screen.State == NewWizardScreenStateCustomBooks {
+        screen.UI = screen.MakeCustomWizardBooksUI()
+    } else if screen.State == NewWizardScreenStateSelectSpells {
+        screen.UI = screen.MakeSelectSpellsUI()
+    } else if screen.State == NewWizardScreenStateSelectRace {
+        screen.UI = screen.MakeSelectRaceUI()
+    } else if screen.State == NewWizardScreenStateSelectBanner {
+        screen.UI = screen.MakeSelectBannerUI()
+    }
 
-    return outError
+    return nil
 }
 
 func JoinAbilities(abilities []WizardAbility) string {
