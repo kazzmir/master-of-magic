@@ -224,8 +224,6 @@ func (newGameScreen *NewGameScreen) MakeUI() *uilib.UI {
 
     buttonFont := font.MakeOptimizedFont(fonts[3])
 
-    _ = buttonFont
-
     var elements []*uilib.UIElement
 
     okX := 160 + 91
@@ -250,59 +248,69 @@ func (newGameScreen *NewGameScreen) MakeUI() *uilib.UI {
         },
     })
 
-    /*
     cancelX := 160 + 10
     cancelY := 179
 
+    cancelButtons, _ := newGameScreen.ImageCache.GetImages("newgame.lbx", 3)
+    cancelIndex := 0
     elements = append(elements, &uilib.UIElement{
-        Rect: image.Rect(cancelX, cancelY, cancelX + newGameScreen.CancelButtons[0].Bounds().Dx(), cancelY + newGameScreen.CancelButtons[0].Bounds().Dy()),
+        Rect: util.ImageRect(cancelX, cancelY, cancelButtons[0]),
         LeftClick: func(element *uilib.UIElement) {
+            cancelIndex = 1
+        },
+        LeftClickRelease: func(element *uilib.UIElement) {
+            cancelIndex = 0
             newGameScreen.State = NewGameStateCancel
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(cancelX), float64(cancelY))
-            screen.DrawImage(newGameScreen.CancelButtons[0], &options)
+            screen.DrawImage(cancelButtons[cancelIndex], &options)
         },
     })
 
     difficultyX := 160 + 91
     difficultyY := 39
 
+    difficultyBlock, _ := newGameScreen.ImageCache.GetImage("newgame.lbx", 4, 0)
+
     elements = append(elements, &uilib.UIElement{
-        Rect: image.Rect(difficultyX, difficultyY, difficultyX + newGameScreen.DifficultyBlock.Bounds().Dx(), difficultyY + newGameScreen.DifficultyBlock.Bounds().Dy()),
+        Rect: util.ImageRect(difficultyX, difficultyY, difficultyBlock),
         LeftClick: func(element *uilib.UIElement) {
             newGameScreen.Settings.DifficultyNext()
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(difficultyX), float64(difficultyY))
-            screen.DrawImage(newGameScreen.DifficultyBlock, &options)
+            screen.DrawImage(difficultyBlock, &options)
 
-            x := difficultyX + newGameScreen.DifficultyBlock.Bounds().Dx() / 2
+            x := difficultyX + difficultyBlock.Bounds().Dx() / 2
             y := difficultyY + 3
-            newGameScreen.Font.PrintCenter(screen, float64(x), float64(y), 1, ebiten.ColorScale{}, newGameScreen.Settings.DifficultyString())
+            buttonFont.PrintCenter(screen, float64(x), float64(y), 1, ebiten.ColorScale{}, newGameScreen.Settings.DifficultyString())
         },
     })
 
     opponentsX := 160 + 91
     opponentsY := 66
 
+    opponentsBlock, _ := newGameScreen.ImageCache.GetImage("newgame.lbx", 5, 0)
+
     elements = append(elements, &uilib.UIElement{
-        Rect: image.Rect(opponentsX, opponentsY, opponentsX + newGameScreen.OpponentsBlock.Bounds().Dx(), opponentsY + newGameScreen.OpponentsBlock.Bounds().Dy()),
+        Rect: util.ImageRect(opponentsX, opponentsY, opponentsBlock),
         LeftClick: func(element *uilib.UIElement) {
             newGameScreen.Settings.OpponentsNext()
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(opponentsX), float64(opponentsY))
-            screen.DrawImage(newGameScreen.OpponentsBlock, &options)
-            x := opponentsX + newGameScreen.OpponentsBlock.Bounds().Dx() / 2
+            screen.DrawImage(opponentsBlock, &options)
+            x := opponentsX + opponentsBlock.Bounds().Dx() / 2
             y := opponentsY + 4
-            newGameScreen.Font.PrintCenter(screen, float64(x), float64(y), 1, ebiten.ColorScale{}, newGameScreen.Settings.OpponentsString())
+            buttonFont.PrintCenter(screen, float64(x), float64(y), 1, ebiten.ColorScale{}, newGameScreen.Settings.OpponentsString())
         },
     })
 
+    /*
     landsizeX := 160 + 91
     landsizeY := 93
 
