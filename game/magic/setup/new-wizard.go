@@ -321,7 +321,6 @@ func (wizard *WizardCustom) MagicLevel(kind data.MagicType) int {
 type NewWizardScreen struct {
     LbxCache *lbx.LbxCache
 
-    CustomWizardBooks *ebiten.Image
     Slots *ebiten.Image
     LbxFonts []*font.LbxFont
     Font *font.Font
@@ -887,7 +886,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
         screen.BannerBackground = loadImage(46, 0)
 
         // screen.CustomPictureBackground = loadImage(39, 0)
-        screen.CustomWizardBooks = loadImage(41, 0)
+        // screen.CustomWizardBooks = loadImage(41, 0)
 
         for i := 0; i < 3; i++ {
             screen.LifeBooks[i] = loadImage(24 + i, 0)
@@ -1499,7 +1498,8 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
             const nameY = 120
 
             var options ebiten.DrawImageOptions
-            window.DrawImage(screen.CustomWizardBooks, &options)
+            customWizardBooks, _ := screen.ImageCache.GetImage("newgame.lbx", 41, 0)
+            window.DrawImage(customWizardBooks, &options)
 
             options.GeoM.Translate(portraitX, portraitY)
             window.DrawImage(screen.CustomWizard.Portrait, &options)
