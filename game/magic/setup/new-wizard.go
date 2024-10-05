@@ -321,7 +321,6 @@ func (wizard *WizardCustom) MagicLevel(kind data.MagicType) int {
 type NewWizardScreen struct {
     LbxCache *lbx.LbxCache
 
-    Background *ebiten.Image
     CustomPictureBackground *ebiten.Image
     CustomWizardBooks *ebiten.Image
     Slots *ebiten.Image
@@ -415,7 +414,8 @@ func (screen *NewWizardScreen) MakeCustomNameUI() *uilib.UI {
         },
         Draw: func(this *uilib.UI, window *ebiten.Image){
             var options ebiten.DrawImageOptions
-            window.DrawImage(screen.Background, &options)
+            background, _ := screen.ImageCache.GetImage("newgame.lbx", 0, 0)
+            window.DrawImage(background, &options)
 
             options.GeoM.Translate(portraitX, portraitY)
             window.DrawImage(screen.CustomWizard.Portrait, &options)
@@ -460,7 +460,8 @@ func (screen *NewWizardScreen) MakeCustomPictureUI() *uilib.UI {
     ui := &uilib.UI{
         Draw: func(this *uilib.UI, window *ebiten.Image){
             var options ebiten.DrawImageOptions
-            window.DrawImage(screen.Background, &options)
+            background, _ := screen.ImageCache.GetImage("newgame.lbx", 0, 0)
+            window.DrawImage(background, &options)
 
             screen.SelectFont.PrintCenter(window, 245, 2, 1, ebiten.ColorScale{}, "Select Wizard")
 
@@ -587,7 +588,8 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *uilib.UI {
     ui := &uilib.UI{
         Draw: func(this *uilib.UI, window *ebiten.Image){
             var options ebiten.DrawImageOptions
-            window.DrawImage(screen.Background, &options)
+            background, _ := screen.ImageCache.GetImage("newgame.lbx", 0, 0)
+            window.DrawImage(background, &options)
             screen.SelectFont.PrintCenter(window, 245, 2, 1, ebiten.ColorScale{}, "Select Wizard")
 
             this.IterateElementsByLayer(func (element *uilib.UIElement){
@@ -865,7 +867,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
         screen.ErrorTop = loadImage(44, 0)
         screen.ErrorBottom = loadImage(45, 0)
 
-        screen.Background = loadImage(0, 0)
+        // screen.Background = loadImage(0, 0)
         screen.Slots = loadImage(8, 0)
         screen.NameBox = loadImage(40, 0)
 
@@ -1755,7 +1757,8 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
                 const nameY = 120
 
                 var options ebiten.DrawImageOptions
-                window.DrawImage(screen.Background, &options)
+                background, _ := screen.ImageCache.GetImage("newgame.lbx", 0, 0)
+                window.DrawImage(background, &options)
 
                 options.GeoM.Translate(portraitX, portraitY)
                 window.DrawImage(screen.CustomWizard.Portrait, &options)
@@ -2009,7 +2012,8 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
             const nameY = 120
 
             var options ebiten.DrawImageOptions
-            window.DrawImage(screen.Background, &options)
+            background, _ := screen.ImageCache.GetImage("newgame.lbx", 0, 0)
+            window.DrawImage(background, &options)
 
             options.GeoM.Translate(portraitX, portraitY)
             window.DrawImage(screen.CustomWizard.Portrait, &options)
@@ -2088,7 +2092,8 @@ func (screen *NewWizardScreen) MakeSelectBannerUI() *uilib.UI {
             const nameY = 120
 
             var options ebiten.DrawImageOptions
-            window.DrawImage(screen.Background, &options)
+            background, _ := screen.ImageCache.GetImage("newgame.lbx", 0, 0)
+            window.DrawImage(background, &options)
 
             options.GeoM.Translate(portraitX, portraitY)
             window.DrawImage(screen.CustomWizard.Portrait, &options)
