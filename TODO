@@ -16,7 +16,6 @@
 * roaming bands of neutral enemies
 * neutral towns/cities
 * game menu - implement save/load game
-* refactor new wizard/new game to use image cache
 * units disband if not enough food
 * buildings destroyed if not enough gold for upkeep
 * play midi music
@@ -39,3 +38,4 @@
 9/29/2024 * hire popup for hero
 9/30/2024 * compute power
 10/4/2024 * surveyor advisor
+10/4/2024 * refactor new wizard/new game to use image cache

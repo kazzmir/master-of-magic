@@ -2,7 +2,6 @@ package setup
 
 import (
     "fmt"
-    "sync"
     "math"
     "math/rand"
     "strings"
@@ -321,52 +320,23 @@ func (wizard *WizardCustom) MagicLevel(kind data.MagicType) int {
 type NewWizardScreen struct {
     LbxCache *lbx.LbxCache
 
-    Background *ebiten.Image
-    CustomPictureBackground *ebiten.Image
-    CustomWizardBooks *ebiten.Image
-    Slots *ebiten.Image
     LbxFonts []*font.LbxFont
     Font *font.Font
     AbilityFont *font.Font
     AbilityFontSelected *font.Font
     AbilityFontAvailable *font.Font
     ErrorFont *font.Font
-    CheckMark *ebiten.Image
-    WindyBorder *ebiten.Image
-    ErrorTop *ebiten.Image
-    ErrorBottom *ebiten.Image
     NameFont *font.Font
     NameFontBright *font.Font
-    PickOkSlot *ebiten.Image
     SelectFont *font.Font
-    loaded sync.Once
     WizardSlots []wizardSlot
     ImageCache util.ImageCache
 
-    SpellBackground1 *ebiten.Image
-    SpellBackground2 *ebiten.Image
-    SpellBackground3 *ebiten.Image
-
-    RaceBackground *ebiten.Image
-
     Spells spellbook.Spells
-
-    OkReady *ebiten.Image
-    OkNotReady *ebiten.Image
-
-    BannerBackground *ebiten.Image
 
     Help lbx.Help
 
     UI *uilib.UI
-
-    NameBox *ebiten.Image
-
-    LifeBooks [3]*ebiten.Image
-    SorceryBooks [3]*ebiten.Image
-    NatureBooks [3]*ebiten.Image
-    DeathBooks [3]*ebiten.Image
-    ChaosBooks [3]*ebiten.Image
 
     BooksOrder []int
 
@@ -415,7 +385,8 @@ func (screen *NewWizardScreen) MakeCustomNameUI() *uilib.UI {
         },
         Draw: func(this *uilib.UI, window *ebiten.Image){
             var options ebiten.DrawImageOptions
-            window.DrawImage(screen.Background, &options)
+            background, _ := screen.ImageCache.GetImage("newgame.lbx", 0, 0)
+            window.DrawImage(background, &options)
 
             options.GeoM.Translate(portraitX, portraitY)
             window.DrawImage(screen.CustomWizard.Portrait, &options)
@@ -424,7 +395,8 @@ func (screen *NewWizardScreen) MakeCustomNameUI() *uilib.UI {
 
             options.GeoM.Reset()
             options.GeoM.Translate(184, 20)
-            window.DrawImage(screen.NameBox, &options)
+            nameBox, _ := screen.ImageCache.GetImage("newgame.lbx", 40, 0)
+            window.DrawImage(nameBox, &options)
 
             name := screen.CustomWizard.Name
 
@@ -460,7 +432,8 @@ func (screen *NewWizardScreen) MakeCustomPictureUI() *uilib.UI {
     ui := &uilib.UI{
         Draw: func(this *uilib.UI, window *ebiten.Image){
             var options ebiten.DrawImageOptions
-            window.DrawImage(screen.Background, &options)
+            background, _ := screen.ImageCache.GetImage("newgame.lbx", 0, 0)
+            window.DrawImage(background, &options)
 
             screen.SelectFont.PrintCenter(window, 245, 2, 1, ebiten.ColorScale{}, "Select Wizard")
 
@@ -469,7 +442,8 @@ func (screen *NewWizardScreen) MakeCustomPictureUI() *uilib.UI {
 
             options.GeoM.Reset()
             options.GeoM.Translate(166, 18)
-            window.DrawImage(screen.CustomPictureBackground, &options)
+            customPictureBackground, _ := screen.ImageCache.GetImage("newgame.lbx", 39, 0)
+            window.DrawImage(customPictureBackground, &options)
 
             this.IterateElementsByLayer(func (element *uilib.UIElement){
                 element.Draw(element, window)
@@ -587,7 +561,8 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *uilib.UI {
     ui := &uilib.UI{
         Draw: func(this *uilib.UI, window *ebiten.Image){
             var options ebiten.DrawImageOptions
-            window.DrawImage(screen.Background, &options)
+            background, _ := screen.ImageCache.GetImage("newgame.lbx", 0, 0)
+            window.DrawImage(background, &options)
             screen.SelectFont.PrintCenter(window, 245, 2, 1, ebiten.ColorScale{}, "Select Wizard")
 
             this.IterateElementsByLayer(func (element *uilib.UIElement){
@@ -613,7 +588,7 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *uilib.UI {
                     options.GeoM.Translate(36, 135)
                     draw.DrawBooks(window, options, &screen.ImageCache, screen.WizardSlots[screen.CurrentWizard].Books, screen.BooksOrder)
                     if screen.WizardSlots[screen.CurrentWizard].ExtraAbility != AbilityNone {
-                        screen.AbilityFont.Print(window, 12, 180, 1, ebiten.ColorScale{}, screen.WizardSlots[screen.CurrentWizard].ExtraAbility.String())
+                        screen.AbilityFontSelected.Print(window, 12, 180, 1, ebiten.ColorScale{}, screen.WizardSlots[screen.CurrentWizard].ExtraAbility.String())
                     }
                 }
             }
@@ -678,427 +653,313 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
     // 36-38 are chaos/red books
     // 41 is custom screen
 
-    var outError error
+    fontLbx, err := cache.GetLbxFile("FONTS.LBX")
+    if err != nil {
+        return err
+    }
 
-    screen.loaded.Do(func() {
-        fontLbx, err := cache.GetLbxFile("FONTS.LBX")
-        if err != nil {
-            outError = fmt.Errorf("Unable to read FONTS.LBX: %v", err)
-            return
-        }
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        return err
+    }
 
-        fonts, err := font.ReadFonts(fontLbx, 0)
-        if err != nil {
-            outError = fmt.Errorf("Unable to read fonts from FONTS.LBX: %v", err)
-            return
-        }
+    err = screen.LoadHelp(cache)
+    if err != nil {
+        return err
+    }
 
-        err = screen.LoadHelp(cache)
-        if err != nil {
-            outError = fmt.Errorf("Error reading help.lbx: %v", err)
-            return
-        }
+    spellsLbx, err := cache.GetLbxFile("SPELLDAT.LBX")
+    if err != nil {
+        return err
+    }
 
-        spellsLbx, err := cache.GetLbxFile("SPELLDAT.LBX")
-        if err != nil {
-            outError = fmt.Errorf("Unable to read SPELLDAT.LBX: %v", err)
-            return
-        }
+    screen.Spells, err = spellbook.ReadSpells(spellsLbx, 0)
+    if err != nil {
+        return err
+    }
 
-        screen.Spells, err = spellbook.ReadSpells(spellsLbx, 0)
-        if err != nil {
-            outError = fmt.Errorf("Unable to read spells from SPELLDAT.LBX: %v", err)
-            return
-        }
+    // FIXME: this is a fudged palette to look like the original, but its probably slightly wrong
+    brightYellowPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        // orangish
+        color.RGBA{R: 0xff, G: 0xaa, B: 0x00, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+    }
 
-        // FIXME: this is a fudged palette to look like the original, but its probably slightly wrong
-        brightYellowPalette := color.Palette{
-            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-            // orangish
-            color.RGBA{R: 0xff, G: 0xaa, B: 0x00, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        }
+    // FIXME: also a fudged palette
+    whitishPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0xc6, G: 0x9d, B: 0x65, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+    }
 
-        // FIXME: also a fudged palette
-        whitishPalette := color.Palette{
-            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-            color.RGBA{R: 0xc6, G: 0x9d, B: 0x65, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        }
+    pickPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0xc6, G: 0x9d, B: 0x65, A: 0xff},
+        color.RGBA{R: 0xc6, G: 0x9d, B: 0x65, A: 0xff},
+        color.RGBA{R: 0xc6, G: 0x9d, B: 0x65, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+    }
 
-        pickPalette := color.Palette{
-            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-            color.RGBA{R: 0xc6, G: 0x9d, B: 0x65, A: 0xff},
-            color.RGBA{R: 0xc6, G: 0x9d, B: 0x65, A: 0xff},
-            color.RGBA{R: 0xc6, G: 0x9d, B: 0x65, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        }
+    transparentPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: uint8(math.Round(0xc6 * 0.3)), G: uint8(math.Round(0x9d * 0.3)), B: uint8(math.Round(0x65 * 0.3)), A: uint8(math.Round(0xff * 0.3))},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+    }
 
-        transparentPalette := color.Palette{
-            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-            color.RGBA{R: uint8(math.Round(0xc6 * 0.3)), G: uint8(math.Round(0x9d * 0.3)), B: uint8(math.Round(0x65 * 0.3)), A: uint8(math.Round(0xff * 0.3))},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        }
+    // FIXME: move this to the font module
+    selectYellowPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xfa, G: 0xe1, B: 0x16, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xef, B: 0x2f, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xef, B: 0x2f, A: 0xff},
+        color.RGBA{R: 0xe0, G: 0x8a, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xd2, G: 0x7f, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xd2, G: 0x7f, B: 0x0, A: 0xff},
+        color.RGBA{R: 0x99, G: 0x4f, B: 0x0, A: 0xff},
+        color.RGBA{R: 0x99, G: 0x4f, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0x99, G: 0x4f, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+    }
 
-        // FIXME: move this to the font module
-        selectYellowPalette := color.Palette{
-            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-            color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-            color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-            color.RGBA{R: 0xfa, G: 0xe1, B: 0x16, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xef, B: 0x2f, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xef, B: 0x2f, A: 0xff},
-            color.RGBA{R: 0xe0, G: 0x8a, B: 0x0, A: 0xff},
-            color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-            color.RGBA{R: 0xd2, G: 0x7f, B: 0x0, A: 0xff},
-            color.RGBA{R: 0xd2, G: 0x7f, B: 0x0, A: 0xff},
-            color.RGBA{R: 0x99, G: 0x4f, B: 0x0, A: 0xff},
-            color.RGBA{R: 0x99, G: 0x4f, B: 0x0, A: 0xff},
-            color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-            color.RGBA{R: 0x99, G: 0x4f, B: 0x0, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        }
+    screen.LbxFonts = fonts
 
-        screen.LbxFonts = fonts
+    screen.Font = font.MakeOptimizedFont(fonts[4])
 
-        screen.Font = font.MakeOptimizedFont(fonts[4])
+    // FIXME: load with a yellowish palette
+    screen.SelectFont = font.MakeOptimizedFontWithPalette(fonts[5], selectYellowPalette)
 
-        // FIXME: load with a yellowish palette
-        screen.SelectFont = font.MakeOptimizedFontWithPalette(fonts[5], selectYellowPalette)
+    screen.AbilityFont = font.MakeOptimizedFontWithPalette(fonts[0], transparentPalette)
+    screen.AbilityFontSelected = font.MakeOptimizedFontWithPalette(fonts[0], brightYellowPalette)
+    screen.AbilityFontAvailable = font.MakeOptimizedFontWithPalette(fonts[0], whitishPalette)
 
-        screen.AbilityFont = font.MakeOptimizedFontWithPalette(fonts[0], transparentPalette)
-        screen.AbilityFontSelected = font.MakeOptimizedFontWithPalette(fonts[0], brightYellowPalette)
-        screen.AbilityFontAvailable = font.MakeOptimizedFontWithPalette(fonts[0], whitishPalette)
+    // FIXME: use a monochrome color scheme, light-brownish
+    screen.NameFont = font.MakeOptimizedFont(fonts[3])
+    screen.NameFontBright = font.MakeOptimizedFontWithPalette(fonts[3], pickPalette)
 
-        // FIXME: use a monochrome color scheme, light-brownish
-        screen.NameFont = font.MakeOptimizedFont(fonts[3])
-        screen.NameFontBright = font.MakeOptimizedFontWithPalette(fonts[3], pickPalette)
+    // FIXME: this should be a fade from bright yellow to dark yellow/orange
+    yellowFade := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0xb2, G: 0x8c, B: 0x05, A: 0xff},
+        color.RGBA{R: 0xc9, G: 0xa1, B: 0x26, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xd3, B: 0x5b, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xe8, B: 0x6f, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+    }
 
-        // FIXME: this should be a fade from bright yellow to dark yellow/orange
-        yellowFade := color.Palette{
-            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-            color.RGBA{R: 0xb2, G: 0x8c, B: 0x05, A: 0xff},
-            color.RGBA{R: 0xc9, G: 0xa1, B: 0x26, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xd3, B: 0x5b, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xe8, B: 0x6f, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        }
+    screen.ErrorFont = font.MakeOptimizedFontWithPalette(fonts[4], yellowFade)
 
-        screen.ErrorFont = font.MakeOptimizedFontWithPalette(fonts[4], yellowFade)
+    loadImage := func(index int) *ebiten.Image {
+        pic, _ := screen.ImageCache.GetImage("newgame.lbx", index, 0)
+        return pic
+    }
 
-        newGameLbx, err := cache.GetLbxFile("NEWGAME.LBX")
-        if err != nil {
-            outError = fmt.Errorf("Unable to load NEWGAME.LBX: %v", err)
-            return
-        }
+    loadWizardPortrait := func(index int) *ebiten.Image {
+        portrait, _ := screen.ImageCache.GetImage("wizards.lbx", index, 0)
+        return portrait
+    }
 
-        loadImage := func(index int, subIndex int) *ebiten.Image {
-            if outError != nil {
-                return nil
-            }
-
-            sprites, err := newGameLbx.ReadImages(index)
-            if err != nil {
-                outError = fmt.Errorf("Unable to read background image from NEWGAME.LBX: %v", err)
-                return nil
-            }
-
-            if len(sprites) <= subIndex {
-                outError = fmt.Errorf("Unable to read background image from NEWGAME.LBX: index %d out of range", subIndex)
-                return nil
-            }
-
-            return ebiten.NewImageFromImage(sprites[subIndex])
-        }
-
-        wizardsLbx, err := cache.GetLbxFile("WIZARDS.LBX")
-        if err != nil {
-            outError = err
-            return
-        }
-
-        loadWizardPortrait := func(index int) *ebiten.Image {
-            if outError != nil {
-                return nil
-            }
-
-            sprites, err := wizardsLbx.ReadImages(index)
-            if err != nil {
-                outError = fmt.Errorf("Unable to read wizard portrait from WIZARDS.LBX: %v", err)
-                return nil
-            }
-
-            if len(sprites) == 0 {
-                outError = fmt.Errorf("Unable to read wizard portrait from WIZARDS.LBX: no images found")
-                return nil
-            }
-
-            return ebiten.NewImageFromImage(sprites[0])
-        }
-
-        screen.ErrorTop = loadImage(44, 0)
-        screen.ErrorBottom = loadImage(45, 0)
-
-        screen.Background = loadImage(0, 0)
-        screen.Slots = loadImage(8, 0)
-        screen.NameBox = loadImage(40, 0)
-
-        screen.OkReady = loadImage(42, 0)
-        screen.OkNotReady = loadImage(43, 0)
-
-        screen.PickOkSlot = loadImage(51, 0)
-
-        screen.RaceBackground = loadImage(55, 0)
-
-        screen.SpellBackground1 = loadImage(48, 0)
-        screen.SpellBackground2 = loadImage(49, 0)
-        screen.SpellBackground3 = loadImage(50, 0)
-
-        screen.WindyBorder = loadImage(47, 0)
-
-        screen.BannerBackground = loadImage(46, 0)
-
-        screen.CustomPictureBackground = loadImage(39, 0)
-        screen.CustomWizardBooks = loadImage(41, 0)
-
-        for i := 0; i < 3; i++ {
-            screen.LifeBooks[i] = loadImage(24 + i, 0)
-        }
-
-        for i := 0; i < 3; i++ {
-            screen.SorceryBooks[i] = loadImage(27 + i, 0)
-        }
-
-        for i := 0; i < 3; i++ {
-            screen.NatureBooks[i] = loadImage(30 + i, 0)
-        }
-
-        for i := 0; i < 3; i++ {
-            screen.DeathBooks[i] = loadImage(33 + i, 0)
-        }
-
-        for i := 0; i < 3; i++ {
-            screen.ChaosBooks[i] = loadImage(36 + i, 0)
-        }
-
-        screen.CheckMark = loadImage(52, 0)
-
-        screen.WizardSlots = []wizardSlot{
-            wizardSlot{
-                Name: "Merlin",
-                Background: loadImage(9, 0),
-                Portrait: loadWizardPortrait(0),
-                Base: data.WizardMerlin,
-                Books: []data.WizardBook{
-                    data.WizardBook{Magic: data.LifeMagic, Count: 5},
-                    data.WizardBook{Magic: data.NatureMagic, Count: 5},
-                },
-                ExtraAbility: AbilitySageMaster,
+    screen.WizardSlots = []wizardSlot{
+        wizardSlot{
+            Name: "Merlin",
+            Background: loadImage(9),
+            Portrait: loadWizardPortrait(0),
+            Base: data.WizardMerlin,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.LifeMagic, Count: 5},
+                data.WizardBook{Magic: data.NatureMagic, Count: 5},
             },
-            wizardSlot{
-                Name: "Raven",
-                Background: loadImage(10, 0),
-                Portrait: loadWizardPortrait(1),
-                Base: data.WizardRaven,
-                Books: []data.WizardBook{
-                    data.WizardBook{Magic: data.SorceryMagic, Count: 6},
-                    data.WizardBook{Magic: data.NatureMagic, Count: 5},
-                },
-                ExtraAbility: AbilityNone,
+            ExtraAbility: AbilitySageMaster,
+        },
+        wizardSlot{
+            Name: "Raven",
+            Background: loadImage(10),
+            Portrait: loadWizardPortrait(1),
+            Base: data.WizardRaven,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.SorceryMagic, Count: 6},
+                data.WizardBook{Magic: data.NatureMagic, Count: 5},
             },
-            wizardSlot{
-                Name: "Sharee",
-                Background: loadImage(11, 0),
-                Portrait: loadWizardPortrait(2),
-                Base: data.WizardSharee,
-                Books: []data.WizardBook{
-                    data.WizardBook{Magic: data.DeathMagic, Count: 5},
-                    data.WizardBook{Magic: data.ChaosMagic, Count: 5},
-                },
-                ExtraAbility: AbilityConjurer,
+            ExtraAbility: AbilityNone,
+        },
+        wizardSlot{
+            Name: "Sharee",
+            Background: loadImage(11),
+            Portrait: loadWizardPortrait(2),
+            Base: data.WizardSharee,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.DeathMagic, Count: 5},
+                data.WizardBook{Magic: data.ChaosMagic, Count: 5},
             },
-            wizardSlot{
-                Name: "Lo Pan",
-                Background: loadImage(12, 0),
-                Portrait: loadWizardPortrait(3),
-                Base: data.WizardLoPan,
-                Books: []data.WizardBook{
-                    data.WizardBook{Magic: data.SorceryMagic, Count: 5},
-                    data.WizardBook{Magic: data.ChaosMagic, Count: 5},
-                },
-                ExtraAbility: AbilityChanneler,
+            ExtraAbility: AbilityConjurer,
+        },
+        wizardSlot{
+            Name: "Lo Pan",
+            Background: loadImage(12),
+            Portrait: loadWizardPortrait(3),
+            Base: data.WizardLoPan,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.SorceryMagic, Count: 5},
+                data.WizardBook{Magic: data.ChaosMagic, Count: 5},
             },
-            wizardSlot{
-                Name: "Jafar",
-                Background: loadImage(13, 0),
-                Portrait: loadWizardPortrait(4),
-                Base: data.WizardJafar,
-                Books: []data.WizardBook{
-                    data.WizardBook{Magic: data.SorceryMagic, Count: 10},
-                },
-                ExtraAbility: AbilityAlchemy,
+            ExtraAbility: AbilityChanneler,
+        },
+        wizardSlot{
+            Name: "Jafar",
+            Background: loadImage(13),
+            Portrait: loadWizardPortrait(4),
+            Base: data.WizardJafar,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.SorceryMagic, Count: 10},
             },
-            wizardSlot{
-                Name: "Oberic",
-                Background: loadImage(14, 0),
-                Portrait: loadWizardPortrait(5),
-                Base: data.WizardOberic,
-                Books: []data.WizardBook{
-                    data.WizardBook{Magic: data.NatureMagic, Count: 5},
-                    data.WizardBook{Magic: data.ChaosMagic, Count: 5},
-                },
-                ExtraAbility: AbilityManaFocusing,
+            ExtraAbility: AbilityAlchemy,
+        },
+        wizardSlot{
+            Name: "Oberic",
+            Background: loadImage(14),
+            Portrait: loadWizardPortrait(5),
+            Base: data.WizardOberic,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.NatureMagic, Count: 5},
+                data.WizardBook{Magic: data.ChaosMagic, Count: 5},
             },
-            wizardSlot{
-                Name: "Rjak",
-                Background: loadImage(15, 0),
-                Portrait: loadWizardPortrait(6),
-                Base: data.WizardRjak,
-                Books: []data.WizardBook{
-                    data.WizardBook{Magic: data.DeathMagic, Count: 9},
-                },
-                ExtraAbility: AbilityInfernalPower,
+            ExtraAbility: AbilityManaFocusing,
+        },
+        wizardSlot{
+            Name: "Rjak",
+            Background: loadImage(15),
+            Portrait: loadWizardPortrait(6),
+            Base: data.WizardRjak,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.DeathMagic, Count: 9},
             },
-            wizardSlot{
-                Name: "Sss'ra",
-                Background: loadImage(16, 0),
-                Portrait: loadWizardPortrait(7),
-                Base: data.WizardSssra,
-                Books: []data.WizardBook{
-                    data.WizardBook{Magic: data.LifeMagic, Count: 4},
-                    data.WizardBook{Magic: data.ChaosMagic, Count: 4},
-                },
-                ExtraAbility: AbilityMyrran,
+            ExtraAbility: AbilityInfernalPower,
+        },
+        wizardSlot{
+            Name: "Sss'ra",
+            Background: loadImage(16),
+            Portrait: loadWizardPortrait(7),
+            Base: data.WizardSssra,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.LifeMagic, Count: 4},
+                data.WizardBook{Magic: data.ChaosMagic, Count: 4},
             },
-            wizardSlot{
-                Name: "Tauron",
-                Background: loadImage(17, 0),
-                Portrait: loadWizardPortrait(8),
-                Base: data.WizardTauron,
-                Books: []data.WizardBook{
-                    data.WizardBook{Magic: data.ChaosMagic, Count: 10},
-                },
-                ExtraAbility: AbilityChaosMastery,
+            ExtraAbility: AbilityMyrran,
+        },
+        wizardSlot{
+            Name: "Tauron",
+            Background: loadImage(17),
+            Portrait: loadWizardPortrait(8),
+            Base: data.WizardTauron,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.ChaosMagic, Count: 10},
             },
-            wizardSlot{
-                Name: "Freya",
-                Background: loadImage(18, 0),
-                Portrait: loadWizardPortrait(9),
-                Base: data.WizardFreya,
-                Books: []data.WizardBook{
-                    data.WizardBook{Magic: data.NatureMagic, Count: 10},
-                },
-                ExtraAbility: AbilityNatureMastery,
+            ExtraAbility: AbilityChaosMastery,
+        },
+        wizardSlot{
+            Name: "Freya",
+            Background: loadImage(18),
+            Portrait: loadWizardPortrait(9),
+            Base: data.WizardFreya,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.NatureMagic, Count: 10},
             },
-            wizardSlot{
-                Name: "Horus",
-                Background: loadImage(19, 0),
-                Portrait: loadWizardPortrait(10),
-                Base: data.WizardHorus,
-                Books: []data.WizardBook{
-                    data.WizardBook{Magic: data.LifeMagic, Count: 5},
-                    data.WizardBook{Magic: data.SorceryMagic, Count: 5},
-                },
-                ExtraAbility: AbilityArchmage,
+            ExtraAbility: AbilityNatureMastery,
+        },
+        wizardSlot{
+            Name: "Horus",
+            Background: loadImage(19),
+            Portrait: loadWizardPortrait(10),
+            Base: data.WizardHorus,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.LifeMagic, Count: 5},
+                data.WizardBook{Magic: data.SorceryMagic, Count: 5},
             },
-            wizardSlot{
-                Name: "Ariel",
-                Background: loadImage(20, 0),
-                Portrait: loadWizardPortrait(11),
-                Base: data.WizardAriel,
-                Books: []data.WizardBook{
-                    data.WizardBook{Magic: data.LifeMagic, Count: 10},
-                },
-                ExtraAbility: AbilityCharismatic,
+            ExtraAbility: AbilityArchmage,
+        },
+        wizardSlot{
+            Name: "Ariel",
+            Background: loadImage(20),
+            Portrait: loadWizardPortrait(11),
+            Base: data.WizardAriel,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.LifeMagic, Count: 10},
             },
-            wizardSlot{
-                Name: "Tlaloc",
-                Background: loadImage(21, 0),
-                Portrait: loadWizardPortrait(12),
-                Base: data.WizardTlaloc,
-                Books: []data.WizardBook{
-                    data.WizardBook{Magic: data.NatureMagic, Count: 4},
-                    data.WizardBook{Magic: data.DeathMagic, Count: 5},
-                },
-                ExtraAbility: AbilityWarlord,
+            ExtraAbility: AbilityCharismatic,
+        },
+        wizardSlot{
+            Name: "Tlaloc",
+            Background: loadImage(21),
+            Portrait: loadWizardPortrait(12),
+            Base: data.WizardTlaloc,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.NatureMagic, Count: 4},
+                data.WizardBook{Magic: data.DeathMagic, Count: 5},
             },
-            wizardSlot{
-                Name: "Kali",
-                Background: loadImage(22, 0),
-                Portrait: loadWizardPortrait(13),
-                Base: data.WizardKali,
-                Books: []data.WizardBook{
-                    data.WizardBook{Magic: data.SorceryMagic, Count: 5},
-                    data.WizardBook{Magic: data.DeathMagic, Count: 5},
-                },
-                ExtraAbility: AbilityArtificer,
+            ExtraAbility: AbilityWarlord,
+        },
+        wizardSlot{
+            Name: "Kali",
+            Background: loadImage(22),
+            Portrait: loadWizardPortrait(13),
+            Base: data.WizardKali,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.SorceryMagic, Count: 5},
+                data.WizardBook{Magic: data.DeathMagic, Count: 5},
             },
-            wizardSlot{
-                Name: "Custom",
-                Background: loadImage(23, 0),
-                Books: nil,
-                Portrait: nil,
-            },
-        }
+            ExtraAbility: AbilityArtificer,
+        },
+        wizardSlot{
+            Name: "Custom",
+            Background: loadImage(23),
+            Books: nil,
+            Portrait: nil,
+        },
+    }
 
-        /*
-        // set custom wizard to merlin for now
-        screen.CustomWizard.Portrait = screen.WizardSlots[0].Portrait
-        screen.CustomWizard.Name = screen.WizardSlots[0].Name
-        screen.CustomWizard.Abilities = []WizardAbility{AbilityMyrran}
-        // screen.CustomWizard.Spells.AddSpell(screen.Spells.FindByName("Disrupt"))
-        screen.CustomWizard.Books = []wizardBook{
-            wizardBook{
-                Magic: LifeMagic,
-                Count: 3,
-            },
-            wizardBook{
-                Magic: ChaosMagic,
-                Count: 8,
-            },
-        }
-        */
+    if screen.State == NewWizardScreenStateSelectWizard {
+        screen.UI = screen.MakeSelectWizardUI()
+    } else if screen.State == NewWizardScreenStateCustomBooks {
+        screen.UI = screen.MakeCustomWizardBooksUI()
+    } else if screen.State == NewWizardScreenStateSelectSpells {
+        screen.UI = screen.MakeSelectSpellsUI()
+    } else if screen.State == NewWizardScreenStateSelectRace {
+        screen.UI = screen.MakeSelectRaceUI()
+    } else if screen.State == NewWizardScreenStateSelectBanner {
+        screen.UI = screen.MakeSelectBannerUI()
+    }
 
-        if screen.State == NewWizardScreenStateSelectWizard {
-            screen.UI = screen.MakeSelectWizardUI()
-        } else if screen.State == NewWizardScreenStateCustomBooks {
-            screen.UI = screen.MakeCustomWizardBooksUI()
-        } else if screen.State == NewWizardScreenStateSelectSpells {
-            screen.UI = screen.MakeSelectSpellsUI()
-        } else if screen.State == NewWizardScreenStateSelectRace {
-            screen.UI = screen.MakeSelectRaceUI()
-        } else if screen.State == NewWizardScreenStateSelectBanner {
-            screen.UI = screen.MakeSelectBannerUI()
-        }
-    })
-
-    return outError
+    return nil
 }
 
 func JoinAbilities(abilities []WizardAbility) string {
@@ -1127,38 +988,6 @@ func JoinAbilities(abilities []WizardAbility) string {
     out += fmt.Sprintf("%v and %v", abilities[len(abilities) - 2], abilities[len(abilities) - 1])
     return out
 }
-
-/*
-func (screen *NewWizardScreen) DrawBooks(window *ebiten.Image, x float64, y float64, books []wizardBook){
-    offsetX := 0
-    index := 0
-
-    for _, book := range books {
-
-        for i := 0; i < book.Count; i++ {
-            // can't draw more books than we have
-            if index >= len(screen.BooksOrder) {
-                return
-            }
-
-            var img *ebiten.Image
-            switch book.Magic {
-                case LifeMagic: img = screen.LifeBooks[screen.BooksOrder[index]]
-                case SorceryMagic: img = screen.SorceryBooks[screen.BooksOrder[index]]
-                case NatureMagic: img = screen.NatureBooks[screen.BooksOrder[index]]
-                case DeathMagic: img = screen.DeathBooks[screen.BooksOrder[index]]
-                case ChaosMagic: img = screen.ChaosBooks[screen.BooksOrder[index]]
-            }
-
-            var options ebiten.DrawImageOptions
-            options.GeoM.Translate(x + float64(offsetX), y)
-            window.DrawImage(img, &options)
-            offsetX += img.Bounds().Dx() - 1
-            index += 1
-        }
-    }
-}
-*/
 
 func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
 
@@ -1191,35 +1020,41 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
         Y int
     }
 
+    lifeBook, _ := imageCache.GetImage("newgame.lbx", 24, 0)
+    sorceryBook, _ := imageCache.GetImage("newgame.lbx", 27, 0)
+    natureBook, _ := imageCache.GetImage("newgame.lbx", 30, 0)
+    deathBook, _ := imageCache.GetImage("newgame.lbx", 33, 0)
+    chaosBook, _ := imageCache.GetImage("newgame.lbx", 36, 0)
+
     books := []bookData{
         bookData{
             Kind: data.LifeMagic,
             Help: "Life Spells",
-            Image: screen.LifeBooks[0],
+            Image: lifeBook,
             Y: 49,
         },
         bookData{
             Kind: data.DeathMagic,
             Help: "Death Spells",
-            Image: screen.DeathBooks[0],
+            Image: deathBook,
             Y: 75,
         },
         bookData{
             Kind: data.ChaosMagic,
             Help: "Chaos Spells",
-            Image: screen.ChaosBooks[0],
+            Image: chaosBook,
             Y: 101,
         },
         bookData{
             Kind: data.NatureMagic,
             Help: "Nature Spells",
-            Image: screen.NatureBooks[0],
+            Image: natureBook,
             Y: 127,
         },
         bookData{
             Kind: data.SorceryMagic,
             Help: "Sorcery Spells",
-            Image: screen.SorceryBooks[0],
+            Image: sorceryBook,
             Y: 153,
         },
     }
@@ -1446,8 +1281,9 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
 
                 if screen.CustomWizard.AbilityEnabled(ability.Ability) {
                     var options ebiten.DrawImageOptions
-                    options.GeoM.Translate(ability.X - float64(screen.CheckMark.Bounds().Dx()) - 1, ability.Y + 1)
-                    window.DrawImage(screen.CheckMark, &options)
+                    checkMark, _ := screen.ImageCache.GetImage("newgame.lbx", 52, 0)
+                    options.GeoM.Translate(ability.X - float64(checkMark.Bounds().Dx()) - 1, ability.Y + 1)
+                    window.DrawImage(checkMark, &options)
                     font = screen.AbilityFontSelected
                 } else if isAbilityAvailable(ability.Ability) {
                     font = screen.AbilityFontAvailable
@@ -1459,8 +1295,10 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
     }
 
     // ok button
+    okReady, _ := screen.ImageCache.GetImage("newgame.lbx", 42, 0)
+    okNotReady, _ := screen.ImageCache.GetImage("newgame.lbx", 43, 0)
     elements = append(elements, &uilib.UIElement{
-        Rect: image.Rect(252, 182, 252 + screen.OkReady.Bounds().Dx(), 182 + screen.OkReady.Bounds().Dy()),
+        Rect: image.Rect(252, 182, 252 + okReady.Bounds().Dx(), 182 + okReady.Bounds().Dy()),
         LeftClick: func(this *uilib.UIElement){
             if picksLeft() == 0 {
                 screen.State = NewWizardScreenStateSelectSpells
@@ -1481,9 +1319,9 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(252, 182)
             if picksLeft() == 0 {
-                window.DrawImage(screen.OkReady, &options)
+                window.DrawImage(okReady, &options)
             } else {
-                window.DrawImage(screen.OkNotReady, &options)
+                window.DrawImage(okNotReady, &options)
             }
         },
     })
@@ -1497,7 +1335,8 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
             const nameY = 120
 
             var options ebiten.DrawImageOptions
-            window.DrawImage(screen.CustomWizardBooks, &options)
+            customWizardBooks, _ := screen.ImageCache.GetImage("newgame.lbx", 41, 0)
+            window.DrawImage(customWizardBooks, &options)
 
             options.GeoM.Translate(portraitX, portraitY)
             window.DrawImage(screen.CustomWizard.Portrait, &options)
@@ -1505,7 +1344,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
 
             options.GeoM.Reset()
             options.GeoM.Translate(37, 135)
-            draw.DrawBooks(window, options, &screen.ImageCache, screen.CustomWizard.Books, screen.BooksOrder)
+            draw.DrawBooks(window, options, &imageCache, screen.CustomWizard.Books, screen.BooksOrder)
 
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
                 if element.Draw != nil {
@@ -1650,8 +1489,11 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
 
         createSpellElements := func(spells spellbook.Spells, x int, yTop int, picks *int){
             y := yTop
-            margin := screen.CheckMark.Bounds().Dx() + 1
-            width := (screen.SpellBackground1.Bounds().Dx() - 2) / 2
+            checkMark, _ := screen.ImageCache.GetImage("newgame.lbx", 52, 0)
+            margin := checkMark.Bounds().Dx() + 1
+            spellBackground1, _ := screen.ImageCache.GetImage("newgame.lbx", 48, 0)
+
+            width := (spellBackground1.Bounds().Dx() - 2) / 2
             for i, spell := range spells.Spells {
                 useX := x
                 useY := y
@@ -1681,7 +1523,7 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
                         if screen.CustomWizard.Spells.HasSpell(spell) {
                             var options ebiten.DrawImageOptions
                             options.GeoM.Translate(float64(useX), float64(useY))
-                            window.DrawImage(screen.CheckMark, &options)
+                            window.DrawImage(checkMark, &options)
                             screen.AbilityFontSelected.Print(window, float64(useX + margin), float64(useY), 1, ebiten.ColorScale{}, spell.Name)
                         } else {
                             screen.AbilityFontAvailable.Print(window, float64(useX + margin), float64(useY), 1, ebiten.ColorScale{}, spell.Name)
@@ -1716,8 +1558,10 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
         }
 
         // ok button
+        okReady, _ := screen.ImageCache.GetImage("newgame.lbx", 42, 0)
+        okNotReady, _ := screen.ImageCache.GetImage("newgame.lbx", 43, 0)
         elements = append(elements, &uilib.UIElement{
-            Rect: image.Rect(252, 182, 252 + screen.OkReady.Bounds().Dx(), 182 + screen.OkReady.Bounds().Dy()),
+            Rect: image.Rect(252, 182, 252 + okReady.Bounds().Dx(), 182 + okReady.Bounds().Dy()),
             LeftClick: func(this *uilib.UIElement){
                 if picksLeft() == 0 {
                     doNextMagicUI(magic)
@@ -1739,9 +1583,9 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(252, 182)
                 if picksLeft() == 0 {
-                    window.DrawImage(screen.OkReady, &options)
+                    window.DrawImage(okReady, &options)
                 } else {
-                    window.DrawImage(screen.OkNotReady, &options)
+                    window.DrawImage(okNotReady, &options)
                 }
             },
         })
@@ -1755,21 +1599,23 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
                 const nameY = 120
 
                 var options ebiten.DrawImageOptions
-                window.DrawImage(screen.Background, &options)
+                background, _ := screen.ImageCache.GetImage("newgame.lbx", 0, 0)
+                window.DrawImage(background, &options)
 
                 options.GeoM.Translate(portraitX, portraitY)
                 window.DrawImage(screen.CustomWizard.Portrait, &options)
                 screen.Font.PrintCenter(window, nameX, nameY, 1, ebiten.ColorScale{}, screen.CustomWizard.Name)
 
                 options.GeoM.Reset()
-                options.GeoM.Translate(37, 135)
-                draw.DrawBooks(window, options, &screen.ImageCache, screen.CustomWizard.Books, screen.BooksOrder)
+                options.GeoM.Translate(36, 135)
+                draw.DrawBooks(window, options, &imageCache, screen.CustomWizard.Books, screen.BooksOrder)
 
                 // screen.DrawBooks(window, 37, 135, screen.CustomWizard.Books)
 
                 options.GeoM.Reset()
                 options.GeoM.Translate(196, 180)
-                window.DrawImage(screen.PickOkSlot, &options)
+                pickOkSlot, _  := screen.ImageCache.GetImage("newgame.lbx", 51, 0)
+                window.DrawImage(pickOkSlot, &options)
 
                 titleX := 240
                 titleY := 5
@@ -1779,7 +1625,8 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
 
                 options.GeoM.Reset()
                 options.GeoM.Translate(180, 18)
-                window.DrawImage(screen.WindyBorder, &options)
+                windyBorder, _ := screen.ImageCache.GetImage("newgame.lbx", 47, 0)
+                window.DrawImage(windyBorder, &options)
 
                 screen.AbilityFontSelected.Print(window, 12, 180, 1, ebiten.ColorScale{}, JoinAbilities(screen.CustomWizard.Abilities))
                 screen.NameFontBright.PrintCenter(window, 223, 185, 1, ebiten.ColorScale{}, fmt.Sprintf("%v picks", picksLeft()))
@@ -1797,16 +1644,18 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
                     window.DrawImage(background, &options)
                 }
 
+                spellBackground1, _ := screen.ImageCache.GetImage("newgame.lbx", 48, 0)
                 if commonMax > 0 {
-                    showDescription(28, fmt.Sprintf("Common: %v", commonMax), screen.SpellBackground1)
+                    showDescription(28, fmt.Sprintf("Common: %v", commonMax), spellBackground1)
                 }
 
                 if uncommonMax > 0 {
-                    showDescription(28, fmt.Sprintf("Uncommon: %v", uncommonMax), screen.SpellBackground1)
+                    showDescription(28, fmt.Sprintf("Uncommon: %v", uncommonMax), spellBackground1)
                 }
 
                 if rareMax > 0 {
-                    showDescription(78, fmt.Sprintf("Rare: %v", rareMax), screen.SpellBackground2)
+                    spellBackground2, _ := screen.ImageCache.GetImage("newgame.lbx", 49, 0)
+                    showDescription(78, fmt.Sprintf("Rare: %v", rareMax), spellBackground2)
                 }
 
                 ui.IterateElementsByLayer(func (element *uilib.UIElement){
@@ -1912,13 +1761,14 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
     arcanianRaces := data.ArcanianRaces()
     myrranRaces := data.MyrranRaces()
 
+    raceBackground, _ := screen.ImageCache.GetImage("newgame.lbx", 55, 0)
     for i, race := range arcanianRaces {
         yPos := 35 + 1 + i * (raceFont.Height() + 1)
 
         highlight := false
 
         elements = append(elements, &uilib.UIElement{
-            Rect: image.Rect(210, yPos, 210 + screen.RaceBackground.Bounds().Dx(), yPos + raceAvailable.Height()),
+            Rect: image.Rect(210, yPos, 210 + raceBackground.Bounds().Dx(), yPos + raceAvailable.Height()),
             Inside: func(this *uilib.UIElement, x int, y int){
                 highlight = true
             },
@@ -1960,7 +1810,7 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
         highlight := false
 
         elements = append(elements, &uilib.UIElement{
-            Rect: image.Rect(210, yPos, 210 + screen.RaceBackground.Bounds().Dx(), yPos + raceAvailable.Height()),
+            Rect: image.Rect(210, yPos, 210 + raceBackground.Bounds().Dx(), yPos + raceAvailable.Height()),
             Inside: func(this *uilib.UIElement, x int, y int){
                 highlight = true
             },
@@ -2009,28 +1859,30 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
             const nameY = 120
 
             var options ebiten.DrawImageOptions
-            window.DrawImage(screen.Background, &options)
+            background, _ := screen.ImageCache.GetImage("newgame.lbx", 0, 0)
+            window.DrawImage(background, &options)
 
             options.GeoM.Translate(portraitX, portraitY)
             window.DrawImage(screen.CustomWizard.Portrait, &options)
             screen.Font.PrintCenter(window, nameX, nameY, 1, ebiten.ColorScale{}, screen.CustomWizard.Name)
 
             options.GeoM.Reset()
-            options.GeoM.Translate(37, 135)
+            options.GeoM.Translate(36, 135)
             draw.DrawBooks(window, options, &imageCache, screen.CustomWizard.Books, screen.BooksOrder)
 
             screen.SelectFont.PrintCenter(window, 245, 2, 1, ebiten.ColorScale{}, "Select Race")
 
             options.GeoM.Reset()
             options.GeoM.Translate(180, 18)
-            window.DrawImage(screen.WindyBorder, &options)
+            windyBorder, _ := screen.ImageCache.GetImage("newgame.lbx", 47, 0)
+            window.DrawImage(windyBorder, &options)
 
             raceShadowFont.PrintCenter(window, 243 + 1, 25, 1, ebiten.ColorScale{}, "Arcanian Races:")
             raceFont.PrintCenter(window, 243, 25, 1, ebiten.ColorScale{}, "Arcanian Races:")
 
             options.GeoM.Reset()
             options.GeoM.Translate(210, 33)
-            window.DrawImage(screen.RaceBackground, &options)
+            window.DrawImage(raceBackground, &options)
 
             raceShadowFont.PrintCenter(window, 243 + 1, 132, 1, ebiten.ColorScale{}, "Myrran Races:")
             raceFont.PrintCenter(window, 243, 132, 1, ebiten.ColorScale{}, "Myrran Races:")
@@ -2088,19 +1940,21 @@ func (screen *NewWizardScreen) MakeSelectBannerUI() *uilib.UI {
             const nameY = 120
 
             var options ebiten.DrawImageOptions
-            window.DrawImage(screen.Background, &options)
+            background, _ := screen.ImageCache.GetImage("newgame.lbx", 0, 0)
+            window.DrawImage(background, &options)
 
             options.GeoM.Translate(portraitX, portraitY)
             window.DrawImage(screen.CustomWizard.Portrait, &options)
             screen.Font.PrintCenter(window, nameX, nameY, 1, ebiten.ColorScale{}, screen.CustomWizard.Name)
 
             options.GeoM.Reset()
-            options.GeoM.Translate(37, 135)
+            options.GeoM.Translate(36, 135)
             draw.DrawBooks(window, options, &imageCache, screen.CustomWizard.Books, screen.BooksOrder)
 
             options.GeoM.Reset()
-            options.GeoM.Translate(160, 0)
-            window.DrawImage(screen.BannerBackground, &options)
+            options.GeoM.Translate(158, 0)
+            bannerBackground, _ := screen.ImageCache.GetImage("newgame.lbx", 46, 0)
+            window.DrawImage(bannerBackground, &options)
 
             screen.SelectFont.PrintCenter(window, 245, 2, 1, ebiten.ColorScale{}, "Select Banner")
 
