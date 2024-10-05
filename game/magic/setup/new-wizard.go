@@ -861,7 +861,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
 
         // screen.PickOkSlot = loadImage(51, 0)
 
-        screen.RaceBackground = loadImage(55, 0)
+        // screen.RaceBackground = loadImage(55, 0)
 
         // screen.SpellBackground1 = loadImage(48, 0)
         // screen.SpellBackground2 = loadImage(49, 0)
@@ -1913,13 +1913,14 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
     arcanianRaces := data.ArcanianRaces()
     myrranRaces := data.MyrranRaces()
 
+    raceBackground, _ := screen.ImageCache.GetImage("newgame.lbx", 55, 0)
     for i, race := range arcanianRaces {
         yPos := 35 + 1 + i * (raceFont.Height() + 1)
 
         highlight := false
 
         elements = append(elements, &uilib.UIElement{
-            Rect: image.Rect(210, yPos, 210 + screen.RaceBackground.Bounds().Dx(), yPos + raceAvailable.Height()),
+            Rect: image.Rect(210, yPos, 210 + raceBackground.Bounds().Dx(), yPos + raceAvailable.Height()),
             Inside: func(this *uilib.UIElement, x int, y int){
                 highlight = true
             },
@@ -1961,7 +1962,7 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
         highlight := false
 
         elements = append(elements, &uilib.UIElement{
-            Rect: image.Rect(210, yPos, 210 + screen.RaceBackground.Bounds().Dx(), yPos + raceAvailable.Height()),
+            Rect: image.Rect(210, yPos, 210 + raceBackground.Bounds().Dx(), yPos + raceAvailable.Height()),
             Inside: func(this *uilib.UIElement, x int, y int){
                 highlight = true
             },
@@ -2033,7 +2034,7 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
 
             options.GeoM.Reset()
             options.GeoM.Translate(210, 33)
-            window.DrawImage(screen.RaceBackground, &options)
+            window.DrawImage(raceBackground, &options)
 
             raceShadowFont.PrintCenter(window, 243 + 1, 132, 1, ebiten.ColorScale{}, "Myrran Races:")
             raceFont.PrintCenter(window, 243, 132, 1, ebiten.ColorScale{}, "Myrran Races:")
