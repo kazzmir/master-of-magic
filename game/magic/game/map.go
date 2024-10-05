@@ -326,6 +326,19 @@ func (mapObject *Map) TilesPerColumn(screenHeight int) int {
     return int(math.Ceil(float64(screenHeight) / float64(mapObject.TileHeight())))
 }
 
+func bannerColor(banner data.BannerType) color.RGBA {
+    switch banner {
+        case data.BannerBlue: return color.RGBA{R: 0, G: 0, B: 255, A: 255}
+        case data.BannerGreen: return color.RGBA{R: 0, G: 255, B: 0, A: 255}
+        case data.BannerPurple: return color.RGBA{R: 255, G: 0, B: 255, A: 255}
+        case data.BannerRed: return color.RGBA{R: 255, G: 0, B: 0, A: 255}
+        case data.BannerYellow: return color.RGBA{R: 255, G: 255, B: 0, A: 255}
+        case data.BannerBrown: return color.RGBA{R: 0xdb, G: 0x7e, B: 0x1f, A: 255}
+    }
+
+    return color.RGBA{R: 0, G: 0, B: 0, A: 255}
+}
+
 func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []*citylib.City, centerX int, centerY int, fog [][]bool, counter uint64, crosshairs bool){
     if len(mapObject.miniMapPixels) != screen.Bounds().Dx() * screen.Bounds().Dy() * 4 {
         mapObject.miniMapPixels = make([]byte, screen.Bounds().Dx() * screen.Bounds().Dy() * 4)
@@ -398,7 +411,7 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []*citylib.City, 
             posY := city.Y - cameraY
 
             if posX >= 0 && posX < screen.Bounds().Dx() && posY >= 0 && posY < screen.Bounds().Dy() {
-                set(posX, posY, color.RGBA{R: 255, G: 255, B: 255, A: 255})
+                set(posX, posY, bannerColor(city.Banner))
             }
         }
     }
