@@ -321,7 +321,6 @@ func (wizard *WizardCustom) MagicLevel(kind data.MagicType) int {
 type NewWizardScreen struct {
     LbxCache *lbx.LbxCache
 
-    Slots *ebiten.Image
     LbxFonts []*font.LbxFont
     Font *font.Font
     AbilityFont *font.Font
@@ -867,7 +866,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
         screen.ErrorBottom = loadImage(45, 0)
 
         // screen.Background = loadImage(0, 0)
-        screen.Slots = loadImage(8, 0)
+        // screen.Slots = loadImage(8, 0)
         screen.NameBox = loadImage(40, 0)
 
         screen.OkReady = loadImage(42, 0)
