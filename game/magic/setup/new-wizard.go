@@ -331,7 +331,6 @@ type NewWizardScreen struct {
     ErrorBottom *ebiten.Image
     NameFont *font.Font
     NameFontBright *font.Font
-    PickOkSlot *ebiten.Image
     SelectFont *font.Font
     loaded sync.Once
     WizardSlots []wizardSlot
@@ -870,7 +869,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
         screen.OkReady = loadImage(42, 0)
         screen.OkNotReady = loadImage(43, 0)
 
-        screen.PickOkSlot = loadImage(51, 0)
+        // screen.PickOkSlot = loadImage(51, 0)
 
         screen.RaceBackground = loadImage(55, 0)
 
@@ -1771,7 +1770,8 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
 
                 options.GeoM.Reset()
                 options.GeoM.Translate(196, 180)
-                window.DrawImage(screen.PickOkSlot, &options)
+                pickOkSlot, _  := screen.ImageCache.GetImage("newgame.lbx", 51, 0)
+                window.DrawImage(pickOkSlot, &options)
 
                 titleX := 240
                 titleY := 5
