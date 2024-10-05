@@ -103,111 +103,15 @@ const (
 )
 
 type NewGameScreen struct {
-    /*
-    LbxFile *lbx.LbxFile
-    Background *ebiten.Image
-    Options *ebiten.Image
-    OkButtons []*ebiten.Image
-    CancelButtons []*ebiten.Image
-    DifficultyBlock *ebiten.Image
-    OpponentsBlock *ebiten.Image
-    LandSizeBlock *ebiten.Image
-    MagicBlock *ebiten.Image
-    loaded sync.Once
-    Font *font.Font
-    */
-
     Cache *lbx.LbxCache
     ImageCache util.ImageCache
 
     State NewGameState
 
     Settings NewGameSettings
-    // Active bool
 
     UI *uilib.UI
 }
-
-/*
-func (newGameScreen *NewGameScreen) Activate() {
-    newGameScreen.Active = true
-}
-
-func (newGameScreen *NewGameScreen) Deactivate() {
-    newGameScreen.Active = false
-}
-
-func (newGameScreen *NewGameScreen) IsActive() bool {
-    return newGameScreen.Active
-}
-*/
-
-/*
-func (newGameScreen *NewGameScreen) Load(cache *lbx.LbxCache) error {
-    var outError error = nil
-
-    newGameScreen.loaded.Do(func() {
-        fontLbx, err := cache.GetLbxFile("FONTS.LBX")
-        if err != nil {
-            outError = fmt.Errorf("Unable to read FONTS.LBX: %v", err)
-            return
-        }
-
-        fonts, err := font.ReadFonts(fontLbx, 0)
-        if err != nil {
-            outError = fmt.Errorf("Unable to read fonts from FONTS.LBX: %v", err)
-            return
-        }
-
-        newGameScreen.Font = font.MakeOptimizedFont(fonts[3])
-
-        newGameLbx, err := cache.GetLbxFile("NEWGAME.LBX")
-        if err != nil {
-            outError = fmt.Errorf("Unable to load NEWGAME.LBX: %v", err)
-            return
-        }
-
-        loadImage := func(index int, subIndex int) *ebiten.Image {
-            if outError != nil {
-                return nil
-            }
-
-            sprites, err := newGameLbx.ReadImages(index)
-            if err != nil {
-                outError = fmt.Errorf("Unable to read background image from NEWGAME.LBX: %v", err)
-                return nil
-            }
-
-            if len(sprites) <= subIndex {
-                outError = fmt.Errorf("Unable to read background image from NEWGAME.LBX: index %d out of range", subIndex)
-                return nil
-            }
-
-            return ebiten.NewImageFromImage(sprites[subIndex])
-        }
-
-        newGameScreen.Background = loadImage(0, 0)
-        newGameScreen.Options = loadImage(1, 0)
-
-        newGameScreen.OkButtons = make([]*ebiten.Image, 2)
-        newGameScreen.OkButtons[0] = loadImage(2, 0)
-        newGameScreen.OkButtons[1] = loadImage(2, 1)
-
-        newGameScreen.CancelButtons = make([]*ebiten.Image, 2)
-        newGameScreen.CancelButtons[0] = loadImage(3, 0)
-        newGameScreen.CancelButtons[1] = loadImage(3, 1)
-
-        newGameScreen.DifficultyBlock = loadImage(4, 0)
-        newGameScreen.OpponentsBlock = loadImage(5, 0)
-        newGameScreen.LandSizeBlock = loadImage(6, 0)
-        newGameScreen.MagicBlock = loadImage(7, 0)
-
-        newGameScreen.UI = newGameScreen.MakeUI()
-    })
-
-    return outError
-}
-*/
 
 func (newGameScreen *NewGameScreen) MakeUI() *uilib.UI {
     fontLbx, err := newGameScreen.Cache.GetLbxFile("FONTS.LBX")
