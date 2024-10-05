@@ -969,6 +969,14 @@ func createScenario12(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 4)
 
+    player.AddUnit(units.OverworldUnit{
+        Unit: units.MagicSpirit,
+        Plane: data.PlaneArcanus,
+        Banner: wizard.Banner,
+        X: x + 1,
+        Y: y + 1,
+    })
+
     node := game.Map.CreateNode(x, y+2, gamelib.MagicNodeNature, game.Plane, game.Settings.Magic, game.Settings.Difficulty)
     node.Empty = true
 

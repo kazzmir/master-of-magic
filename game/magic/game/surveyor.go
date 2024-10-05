@@ -11,6 +11,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
+    playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
 
     "github.com/hajimehoshi/ebiten/v2"
@@ -61,12 +62,19 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
     }()
 
     var cities []*citylib.City
+    var stacks []*playerlib.UnitStack
     var fog [][]bool
 
     for i, player := range game.Players {
         for _, city := range player.Cities {
             if city.Plane == game.Plane {
                 cities = append(cities, city)
+            }
+        }
+
+        for _, stack := range player.Stacks {
+            if stack.Plane() == game.Plane {
+                stacks = append(stacks, stack)
             }
         }
 
@@ -91,14 +99,13 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
     yellowFont := makeYellowFont(fonts)
     whiteFont := makeWhiteFont(fonts)
 
-    // just draw cities and land, but no units
     overworld := Overworld{
         CameraX: game.cameraX,
         CameraY: game.cameraY,
         Counter: game.Counter,
         Map: game.Map,
         Cities: cities,
-        Stacks: nil,
+        Stacks: stacks,
         SelectedStack: nil,
         ImageCache: &game.ImageCache,
         Fog: fog,
