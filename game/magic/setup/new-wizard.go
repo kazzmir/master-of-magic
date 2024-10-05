@@ -327,18 +327,12 @@ type NewWizardScreen struct {
     AbilityFontSelected *font.Font
     AbilityFontAvailable *font.Font
     ErrorFont *font.Font
-    ErrorTop *ebiten.Image
-    ErrorBottom *ebiten.Image
     NameFont *font.Font
     NameFontBright *font.Font
     SelectFont *font.Font
     loaded sync.Once
     WizardSlots []wizardSlot
     ImageCache util.ImageCache
-
-    SpellBackground1 *ebiten.Image
-    SpellBackground2 *ebiten.Image
-    SpellBackground3 *ebiten.Image
 
     RaceBackground *ebiten.Image
 
@@ -859,9 +853,6 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
             return ebiten.NewImageFromImage(sprites[0])
         }
 
-        screen.ErrorTop = loadImage(44, 0)
-        screen.ErrorBottom = loadImage(45, 0)
-
         // screen.Background = loadImage(0, 0)
         // screen.Slots = loadImage(8, 0)
         screen.NameBox = loadImage(40, 0)
@@ -873,9 +864,9 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
 
         screen.RaceBackground = loadImage(55, 0)
 
-        screen.SpellBackground1 = loadImage(48, 0)
-        screen.SpellBackground2 = loadImage(49, 0)
-        screen.SpellBackground3 = loadImage(50, 0)
+        // screen.SpellBackground1 = loadImage(48, 0)
+        // screen.SpellBackground2 = loadImage(49, 0)
+        // screen.SpellBackground3 = loadImage(50, 0)
 
         // screen.WindyBorder = loadImage(47, 0)
 
@@ -1651,7 +1642,9 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
             y := yTop
             checkMark, _ := screen.ImageCache.GetImage("newgame.lbx", 52, 0)
             margin := checkMark.Bounds().Dx() + 1
-            width := (screen.SpellBackground1.Bounds().Dx() - 2) / 2
+            spellBackground1, _ := screen.ImageCache.GetImage("newgame.lbx", 48, 0)
+
+            width := (spellBackground1.Bounds().Dx() - 2) / 2
             for i, spell := range spells.Spells {
                 useX := x
                 useY := y
@@ -1800,16 +1793,18 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
                     window.DrawImage(background, &options)
                 }
 
+                spellBackground1, _ := screen.ImageCache.GetImage("newgame.lbx", 48, 0)
                 if commonMax > 0 {
-                    showDescription(28, fmt.Sprintf("Common: %v", commonMax), screen.SpellBackground1)
+                    showDescription(28, fmt.Sprintf("Common: %v", commonMax), spellBackground1)
                 }
 
                 if uncommonMax > 0 {
-                    showDescription(28, fmt.Sprintf("Uncommon: %v", uncommonMax), screen.SpellBackground1)
+                    showDescription(28, fmt.Sprintf("Uncommon: %v", uncommonMax), spellBackground1)
                 }
 
                 if rareMax > 0 {
-                    showDescription(78, fmt.Sprintf("Rare: %v", rareMax), screen.SpellBackground2)
+                    spellBackground2, _ := screen.ImageCache.GetImage("newgame.lbx", 49, 0)
+                    showDescription(78, fmt.Sprintf("Rare: %v", rareMax), spellBackground2)
                 }
 
                 ui.IterateElementsByLayer(func (element *uilib.UIElement){
