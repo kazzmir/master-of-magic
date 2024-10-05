@@ -1000,38 +1000,6 @@ func JoinAbilities(abilities []WizardAbility) string {
     return out
 }
 
-/*
-func (screen *NewWizardScreen) DrawBooks(window *ebiten.Image, x float64, y float64, books []wizardBook){
-    offsetX := 0
-    index := 0
-
-    for _, book := range books {
-
-        for i := 0; i < book.Count; i++ {
-            // can't draw more books than we have
-            if index >= len(screen.BooksOrder) {
-                return
-            }
-
-            var img *ebiten.Image
-            switch book.Magic {
-                case LifeMagic: img = screen.LifeBooks[screen.BooksOrder[index]]
-                case SorceryMagic: img = screen.SorceryBooks[screen.BooksOrder[index]]
-                case NatureMagic: img = screen.NatureBooks[screen.BooksOrder[index]]
-                case DeathMagic: img = screen.DeathBooks[screen.BooksOrder[index]]
-                case ChaosMagic: img = screen.ChaosBooks[screen.BooksOrder[index]]
-            }
-
-            var options ebiten.DrawImageOptions
-            options.GeoM.Translate(x + float64(offsetX), y)
-            window.DrawImage(img, &options)
-            offsetX += img.Bounds().Dx() - 1
-            index += 1
-        }
-    }
-}
-*/
-
 func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
 
     imageCache := util.MakeImageCache(screen.LbxCache)
@@ -1387,7 +1355,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
 
             options.GeoM.Reset()
             options.GeoM.Translate(37, 135)
-            draw.DrawBooks(window, options, &screen.ImageCache, screen.CustomWizard.Books, screen.BooksOrder)
+            draw.DrawBooks(window, options, &imageCache, screen.CustomWizard.Books, screen.BooksOrder)
 
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
                 if element.Draw != nil {
@@ -1650,8 +1618,8 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
                 screen.Font.PrintCenter(window, nameX, nameY, 1, ebiten.ColorScale{}, screen.CustomWizard.Name)
 
                 options.GeoM.Reset()
-                options.GeoM.Translate(37, 135)
-                draw.DrawBooks(window, options, &screen.ImageCache, screen.CustomWizard.Books, screen.BooksOrder)
+                options.GeoM.Translate(36, 135)
+                draw.DrawBooks(window, options, &imageCache, screen.CustomWizard.Books, screen.BooksOrder)
 
                 // screen.DrawBooks(window, 37, 135, screen.CustomWizard.Books)
 
@@ -1910,7 +1878,7 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
             screen.Font.PrintCenter(window, nameX, nameY, 1, ebiten.ColorScale{}, screen.CustomWizard.Name)
 
             options.GeoM.Reset()
-            options.GeoM.Translate(37, 135)
+            options.GeoM.Translate(36, 135)
             draw.DrawBooks(window, options, &imageCache, screen.CustomWizard.Books, screen.BooksOrder)
 
             screen.SelectFont.PrintCenter(window, 245, 2, 1, ebiten.ColorScale{}, "Select Race")
@@ -1991,7 +1959,7 @@ func (screen *NewWizardScreen) MakeSelectBannerUI() *uilib.UI {
             screen.Font.PrintCenter(window, nameX, nameY, 1, ebiten.ColorScale{}, screen.CustomWizard.Name)
 
             options.GeoM.Reset()
-            options.GeoM.Translate(37, 135)
+            options.GeoM.Translate(36, 135)
             draw.DrawBooks(window, options, &imageCache, screen.CustomWizard.Books, screen.BooksOrder)
 
             options.GeoM.Reset()
