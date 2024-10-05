@@ -20,7 +20,6 @@ func NewEngine() (*Engine, error) {
     cache := lbx.AutoCache()
 
     screen := setup.MakeNewGameScreen(cache)
-    screen.Activate()
 
     return &Engine{
         LbxCache: cache,
