@@ -188,6 +188,8 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
                         case BonusCrysxCrystal: showBonus("Crysx Crystal", fmt.Sprintf("+%v power", bonus.PowerBonus()))
                     }
 
+                    // FIXME: show lair/node/tower
+
                     y = 160 - cityInfoText.TotalHeight
 
                     if resources.Enabled {
