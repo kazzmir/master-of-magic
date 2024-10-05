@@ -6,6 +6,7 @@ import (
     "fmt"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/fraction"
 )
 
 // terrain tiles are indicies 0-0x259 for arcanus, and 0x25A - 0x5f4 for myrror
@@ -79,13 +80,19 @@ const (
     Ocean
     Land
     River
-    // Shore
+    Shore
     Mountain
     Hill
     Grass
     Swamp
+    Forest
     Desert
     Tundra
+    Volcano
+    Lake
+    NatureNode
+    SorceryNode
+    ChaosNode
 )
 
 func (terrain TerrainType) String() string {
@@ -93,13 +100,17 @@ func (terrain TerrainType) String() string {
         case Ocean: return "ocean"
         case Land: return "land"
         case River: return "river"
-        // case Shore: return "shore"
+        case Shore: return "shore"
         case Mountain: return "mountain"
         case Hill: return "hill"
         case Grass: return "grass"
+        case Forest: return "forest"
         case Swamp: return "swamp"
         case Desert: return "desert"
         case Tundra: return "tundra"
+        case NatureNode: return "Nature Node"
+        case SorceryNode: return "Sorcery Node"
+        case ChaosNode: return "Chaos Node"
         case Unknown: return "unknown"
         default: return "error"
     }
@@ -154,46 +165,156 @@ func (tile Tile) IsMagic() bool {
     }
 }
 
-func (tile Tile) IsLand() bool {
+func (tile Tile) TerrainType() TerrainType {
     switch TerrainIndex(tile.Index) {
-        case IndexOcean1, IndexOcean2: return false
-        case IndexBugGrass: return true
-        case IndexLake: return false
-        case IndexGrass1, IndexForest1, IndexMountain1,
-             IndexDesert1, IndexSwamp1, IndexTundra1,
-             IndexSorcNode, IndexNatNode, IndexChaosNode,
-             IndexHills1, IndexGrass2, IndexGrass3,
-             IndexDesert2, IndexDesert3, IndexDesert4,
-             IndexSwamp2, IndexSwamp3, IndexVolcano,
-             IndexGrass4, IndexTundra2, IndexTundra3,
-             IndexForest2, IndexForest3, IndexRiverMStart,
-             IndexRiverMEnd:
-             return true
+        case IndexOcean1, IndexOcean2: return Ocean
+        case IndexBugGrass, IndexGrass1, IndexGrass2, IndexGrass3, IndexGrass4: return Grass
+        case IndexForest1, IndexForest2, IndexForest3: return Forest
+        case IndexMountain1: return Mountain
+        case IndexDesert1, IndexDesert2, IndexDesert3, IndexDesert4: return Desert
+        case IndexSwamp1, IndexSwamp2, IndexSwamp3: return Swamp
+        case IndexTundra1, IndexTundra2, IndexTundra3: return Tundra
+        case IndexSorcNode: return SorceryNode
+        case IndexNatNode: return NatureNode
+        case IndexChaosNode: return ChaosNode
+        case IndexHills1: return Hill
+        case IndexVolcano: return Volcano
+        case IndexLake, IndexLake1, IndexLake2, IndexLake3, IndexLake4: return Lake
+    }
 
-        case IndexLake1, IndexLake2, IndexLake3, IndexLake4: return false
+    if tile.Index >= IndexRiverMStart && tile.Index <= IndexRiverMEnd {
+        return River
     }
 
     if tile.Index >= IndexShore1_1st && tile.Index <= IndexShore1_end {
-        return false
+        return Shore
     }
 
     if tile.Index >= IndexShore2FStart && tile.Index <= IndexShore2FEnd {
-        return false
+        return Shore
     }
 
     if tile.Index >= IndexShore2Start && tile.Index <= IndexShore2End {
-        return false
+        return Shore
     }
 
     if tile.Index >= IndexShore3Start && tile.Index <= IndexShore3End {
-        return false
+        return Shore
     }
 
-    return true
+    return Unknown
+}
+
+func (tile Tile) Name() string {
+    switch tile.TerrainType() {
+        case Ocean: return "Ocean"
+        case Grass: return "Grasslands"
+        case Forest: return "Forest"
+        case Mountain: return "Mountain"
+        case Desert: return "Desert"
+        case Swamp: return "Swamp"
+        case Tundra: return "Tundra"
+        case SorceryNode: return "Sorcery Node"
+        case NatureNode: return "Nature Node"
+        case ChaosNode: return "Chaos Node"
+        case Hill: return "Hills"
+        case Volcano: return "Volcano"
+        case Lake: return "Lake"
+        case River: return "River"
+        case Shore: return "Shore"
+        default: return "Unknown"
+    }
+}
+
+func (tile Tile) FoodBonus() fraction.Fraction {
+    switch tile.TerrainType() {
+        case Ocean: return fraction.Zero()
+        case Grass: return fraction.Make(3, 2)
+        case Forest: return fraction.Make(1, 2)
+        case Mountain: return fraction.Zero()
+        case Desert: return fraction.Zero()
+        case Swamp: return fraction.Zero()
+        case Tundra: return fraction.Zero()
+        case SorceryNode: return fraction.FromInt(2)
+        case NatureNode: return fraction.Make(5, 2)
+        case ChaosNode: return fraction.Zero()
+        case Hill: return fraction.Make(1, 2)
+        case Volcano: return fraction.Zero()
+        case Lake: return fraction.Zero()
+        case River: return fraction.FromInt(2)
+        case Shore: return fraction.Make(1, 2)
+    }
+
+    return fraction.Zero()
+}
+
+// percent bonus increase, 3 = 3%
+func (tile Tile) GoldBonus() int {
+    // FIXME
+    switch tile.TerrainType() {
+        case Ocean: return 0
+        case Grass: return 0
+        case Forest: return 0
+        case Mountain: return 0
+        case Desert: return 0
+        case Swamp: return 0
+        case Tundra: return 0
+        case SorceryNode: return 0
+        case NatureNode: return 0
+        case ChaosNode: return 0
+        case Hill: return 0
+        case Volcano: return 0
+        case Lake: return 0
+        case River: return 0
+        case Shore: return 0
+    }
+    return 0
+}
+
+// percent bonus increase, 3 = 3%
+func (tile Tile) ProductionBonus() int {
+    switch tile.TerrainType() {
+        case Ocean: return 0
+        case Grass: return 0
+        case Forest: return 3
+        case Mountain: return 5
+        case Desert: return 3
+        case Swamp: return 0
+        case Tundra: return 0
+        case SorceryNode: return 0
+        case NatureNode: return 0
+        case ChaosNode: return 0
+        case Hill: return 3
+        case Volcano: return 0
+        case Lake: return 0
+        case River: return 0
+        case Shore: return 0
+    }
+
+    return 0
+}
+
+func (tile Tile) IsShore() bool {
+    return tile.TerrainType() == Shore
+}
+
+func (tile Tile) IsLand() bool {
+    switch tile.TerrainType() {
+        case Ocean, Shore, Lake: return false
+        case Land, River, Mountain,
+             Hill, Grass, Swamp, Forest,
+             Desert, Tundra, Volcano,
+             NatureNode, SorceryNode, ChaosNode: return true
+    }
+
+    return false
 }
 
 func (tile Tile) IsWater() bool {
-    return !tile.IsLand()
+    switch tile.TerrainType() {
+        case Ocean, Shore, Lake: return true
+        default: return false
+    }
 }
 
 // for every direction/terraintype pair, check if this tile has the same pair.

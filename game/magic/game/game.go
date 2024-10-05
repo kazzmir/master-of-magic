@@ -57,6 +57,9 @@ type GameEventMagicView struct {
 type GameEventArmyView struct {
 }
 
+type GameEventSurveyor struct {
+}
+
 type GameEventCityListView struct {
 }
 
@@ -311,6 +314,24 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
     }
 
     return game
+}
+
+func (game *Game) NearCity(point image.Point, squares int) bool {
+    for _, player := range game.Players {
+        for _, city := range player.Cities {
+            if city.Plane == game.Plane {
+                diff := image.Pt(city.X, city.Y).Sub(point)
+
+                total := int(math.Abs(float64(diff.X)) + math.Abs(float64(diff.Y)))
+
+                if total <= squares {
+                    return true
+                }
+            }
+        }
+    }
+
+    return false
 }
 
 func (game *Game) FindValidCityLocation() (int, int) {
@@ -1335,6 +1356,8 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                 switch event.(type) {
                     case *GameEventMagicView:
                         game.doMagicView(yield)
+                    case *GameEventSurveyor:
+                        game.doSurveyor(yield)
                     case *GameEventArmyView:
                         game.doArmyView(yield)
                     case *GameEventCityListView:
@@ -2011,7 +2034,12 @@ func (game *Game) MakeInfoUI(cornerX int, cornerY int) []*uilib.UIElement {
     advisors := []uilib.Selection{
         uilib.Selection{
             Name: "Surveyor",
-            Action: func(){},
+            Action: func(){
+                select {
+                    case game.Events<- &GameEventSurveyor{}:
+                    default:
+                }
+            },
             Hotkey: "(F1)",
         },
         uilib.Selection{
@@ -2073,6 +2101,88 @@ func (game *Game) ShowSpellBookCastUI(){
             // FIXME: do something
         }
     }))
+}
+
+func (game *Game) CatchmentArea(x int, y int) []image.Point {
+    var out []image.Point
+
+    for dx := -2; dx <= 2; dx++ {
+        for dy := -2; dy <= 2; dy++ {
+            // ignore corners
+            if int(math.Abs(float64(dx)) + math.Abs(float64(dy))) == 4 {
+                continue
+            }
+
+            out = append(out, image.Point{X: x + dx, Y: y + dy})
+        }
+    }
+
+    return out
+}
+
+func (game *Game) ComputeMaximumPopulation(x int, y int) int {
+    // find catchment area of x, y
+    // for each square, compute food production
+    // maximum pop is food production
+    catchment := game.CatchmentArea(x, y)
+
+    food := fraction.Zero()
+
+    for _, point := range catchment {
+        tile := game.Map.GetTile(point.X, point.Y)
+        food = food.Add(tile.FoodBonus())
+        bonus := game.Map.GetBonusTile(point.X, point.Y)
+        food = food.Add(fraction.FromInt(bonus.FoodBonus()))
+    }
+
+    maximum := int(food.ToFloat())
+    if maximum > 25 {
+        maximum = 25
+    }
+
+    return maximum
+}
+
+func (game *Game) CityGoldBonus(x int, y int) int {
+    gold := 0
+    tile := game.Map.GetTile(x, y)
+    if tile.TerrainType() == terrain.River {
+        gold += 20
+    }
+
+    // check tiles immediately touching the city
+    touchingShore := false
+    for dx := -1; dx <= 1; dx++ {
+        for dy := -1; dy <= 1; dy++ {
+            if dx == 0 && dy == 0 {
+                continue
+            }
+
+            tile := game.Map.GetTile(x + dx, y + dy)
+            if tile.TerrainType() == terrain.Shore {
+                touchingShore = true
+            }
+        }
+    }
+
+    if touchingShore {
+        gold += 10
+    }
+
+    return gold
+}
+
+func (game *Game) CityProductionBonus(x int, y int) int {
+    catchment := game.CatchmentArea(x, y)
+
+    production := 0
+
+    for _, point := range catchment {
+        tile := game.Map.GetTile(point.X, point.Y)
+        production += tile.ProductionBonus()
+    }
+
+    return production
 }
 
 func (game *Game) CreateOutpost(settlers *units.OverworldUnit, player *playerlib.Player) *citylib.City {

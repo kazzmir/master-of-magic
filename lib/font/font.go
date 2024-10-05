@@ -200,6 +200,10 @@ type WrappedText struct {
     Scale float64
 }
 
+func (text *WrappedText) Clear() {
+    text.Lines = nil
+}
+
 func (font *Font) RenderWrapped(image *ebiten.Image, x float64, y float64, wrapped WrappedText, colorScale ebiten.ColorScale, center bool) {
     yPos := y
     for _, line := range wrapped.Lines {

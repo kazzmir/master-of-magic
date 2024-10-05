@@ -916,6 +916,81 @@ func createScenario11(cache *lbx.LbxCache) *gamelib.Game {
     return game
 }
 
+func createScenario12(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 12")
+    wizard := setup.WizardCustom{
+        Name: "bob",
+        Banner: data.BannerRed,
+        Race: data.RaceTroll,
+        Abilities: []setup.WizardAbility{
+            setup.AbilityAlchemy,
+            setup.AbilitySageMaster,
+        },
+        Books: []data.WizardBook{
+            data.WizardBook{
+                Magic: data.LifeMagic,
+                Count: 3,
+            },
+            data.WizardBook{
+                Magic: data.SorceryMagic,
+                Count: 8,
+            },
+        },
+    }
+
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+        Magic: data.MagicSettingNormal,
+        Difficulty: data.DifficultyAverage,
+    })
+
+    game.Plane = data.PlaneArcanus
+
+    player := game.AddPlayer(wizard)
+
+    x, y := game.FindValidCityLocation()
+
+    city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.TaxRate, game.BuildingInfo)
+    city.Population = 6190
+    city.Plane = data.PlaneArcanus
+    city.Banner = wizard.Banner
+    city.ProducingBuilding = buildinglib.BuildingGranary
+    city.ProducingUnit = units.UnitNone
+    city.Race = wizard.Race
+    city.Farmers = 3
+    city.Workers = 3
+    city.Wall = false
+
+    city.ResetCitizens(nil)
+
+    player.AddCity(city)
+
+    player.Gold = 83
+    player.Mana = 26
+
+    player.LiftFog(x, y, 4)
+
+    player.AddUnit(units.OverworldUnit{
+        Unit: units.MagicSpirit,
+        Plane: data.PlaneArcanus,
+        Banner: wizard.Banner,
+        X: x + 1,
+        Y: y + 1,
+    })
+
+    node := game.Map.CreateNode(x, y+2, gamelib.MagicNodeNature, game.Plane, game.Settings.Magic, game.Settings.Difficulty)
+    node.Empty = true
+
+    game.Map.SetBonus(x-3, y-1, gamelib.BonusSilverOre)
+    game.Map.SetBonus(x-2, y-1, gamelib.BonusGem)
+    game.Map.SetBonus(x-1, y-1, gamelib.BonusWildGame)
+    game.Map.SetBonus(x, y-1, gamelib.BonusQuorkCrystal)
+    game.Map.SetBonus(x+1, y-1, gamelib.BonusIronOre)
+
+    game.Events <- &gamelib.GameEventSurveyor{}
+
+    return game
+}
+
 func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
@@ -933,6 +1008,7 @@ func NewEngine(scenario int) (*Engine, error) {
         case 9: game = createScenario9(cache)
         case 10: game = createScenario10(cache)
         case 11: game = createScenario11(cache)
+        case 12: game = createScenario12(cache)
         default: game = createScenario1(cache)
     }
 
