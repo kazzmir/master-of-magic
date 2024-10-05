@@ -590,7 +590,7 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *uilib.UI {
                     options.GeoM.Translate(36, 135)
                     draw.DrawBooks(window, options, &screen.ImageCache, screen.WizardSlots[screen.CurrentWizard].Books, screen.BooksOrder)
                     if screen.WizardSlots[screen.CurrentWizard].ExtraAbility != AbilityNone {
-                        screen.AbilityFont.Print(window, 12, 180, 1, ebiten.ColorScale{}, screen.WizardSlots[screen.CurrentWizard].ExtraAbility.String())
+                        screen.AbilityFontSelected.Print(window, 12, 180, 1, ebiten.ColorScale{}, screen.WizardSlots[screen.CurrentWizard].ExtraAbility.String())
                     }
                 }
             }
