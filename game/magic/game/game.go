@@ -2138,7 +2138,54 @@ func (game *Game) ComputeMaximumPopulation(x int, y int) int {
         food = food.Add(fraction.FromInt(bonus.FoodBonus()))
     }
 
-    return int(food.ToFloat())
+    maximum := int(food.ToFloat())
+    if maximum > 25 {
+        maximum = 25
+    }
+
+    return maximum
+}
+
+func (game *Game) CityGoldBonus(x int, y int) int {
+    gold := 0
+    tile := game.Map.GetTile(x, y)
+    if tile.TerrainType() == terrain.River {
+        gold += 20
+    }
+
+    // check tiles immediately touching the city
+    touchingShore := false
+    for dx := -1; dx <= 1; dx++ {
+        for dy := -1; dy <= 1; dy++ {
+            if dx == 0 && dy == 0 {
+                continue
+            }
+
+            tile := game.Map.GetTile(x + dx, y + dy)
+            if tile.TerrainType() == terrain.Shore {
+                touchingShore = true
+            }
+        }
+    }
+
+    if touchingShore {
+        gold += 10
+    }
+
+    return gold
+}
+
+func (game *Game) CityProductionBonus(x int, y int) int {
+    catchment := game.CatchmentArea(x, y)
+
+    production := 0
+
+    for _, point := range catchment {
+        tile := game.Map.GetTile(point.X, point.Y)
+        production += tile.ProductionBonus()
+    }
+
+    return production
 }
 
 func (game *Game) CreateOutpost(settlers *units.OverworldUnit, player *playerlib.Player) *citylib.City {
