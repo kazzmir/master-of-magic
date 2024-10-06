@@ -255,14 +255,14 @@ type Player struct {
     // how much casting skill remains in this turn
     RemainingCastingSkill int
 
+    ResearchingSpell spellbook.Spell
+    ResearchProgress int
+
     // current spell being cast
     CastingSpell spellbook.Spell
     // how much mana has been put towards the current spell. When this value equals
     // the spell's casting cost, the spell is cast
     CastingSpellProgress int
-
-    // amount of research put towards the current spell
-    SpellResearch int
 
     Wizard setup.WizardCustom
 

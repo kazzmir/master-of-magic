@@ -68,6 +68,15 @@ type GameEventNewOutpost struct {
     Stack *playerlib.UnitStack
 }
 
+type GameEventLearnedSpell struct {
+    Player *playerlib.Player
+    Spell spellbook.Spell
+}
+
+type GameEventResearchSpell struct {
+    Player *playerlib.Player
+}
+
 type GameEventLoadMenu struct {
 }
 
@@ -1376,6 +1385,14 @@ func (game *Game) doLoadMenu(yield coroutine.YieldFunc) {
     yield()
 }
 
+func (game *Game) doResearchSpell(yield coroutine.YieldFunc){
+    log.Printf("research a new spell")
+}
+
+func (game *Game) doLearnSpell(yield coroutine.YieldFunc, player *playerlib.Player, spell spellbook.Spell){
+    log.Printf("Learned new spell %v", spell)
+}
+
 func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
     // keep processing events until we don't receive one in the events channel
     for {
@@ -1396,6 +1413,12 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                     case *GameEventScroll:
                         scroll := event.(*GameEventScroll)
                         game.showScroll(yield, scroll.Title, scroll.Text)
+                    case *GameEventLearnedSpell:
+                        learnedSpell := event.(*GameEventLearnedSpell)
+                        game.doLearnSpell(yield, learnedSpell.Player, learnedSpell.Spell)
+                    case *GameEventResearchSpell:
+                        // researchSpell := event.(*GameEventResearchSpell)
+                        game.doResearchSpell(yield)
                     case *GameEventCastSpell:
                         castSpell := event.(*GameEventCastSpell)
                         game.doCastSpell(yield, castSpell.Player, castSpell.Spell)
@@ -2792,7 +2815,29 @@ func (game *Game) DoNextTurn(){
             }
         }
 
-        player.SpellResearch += int(player.SpellResearchPerTurn(power))
+        if player.ResearchingSpell.Valid() {
+            player.ResearchProgress += int(player.SpellResearchPerTurn(power))
+            if player.ResearchProgress >= player.ResearchingSpell.ResearchCost {
+                select {
+                    case game.Events<- &GameEventLearnedSpell{Player: player, Spell: player.ResearchingSpell}:
+                    default:
+                }
+
+                player.Spells.AddSpell(player.ResearchingSpell)
+                player.ResearchingSpell = spellbook.Spell{}
+                player.ResearchProgress = 0
+                select {
+                    case game.Events<- &GameEventResearchSpell{Player: player}:
+                    default:
+                }
+            }
+        } else if game.TurnNumber > 1 {
+            select {
+                case game.Events<- &GameEventResearchSpell{Player: player}:
+                default:
+            }
+        }
+
         player.CastingSkillPower += player.CastingSkillPerTurn(power)
 
         // reset casting skill for this turn
