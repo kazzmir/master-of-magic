@@ -1067,6 +1067,79 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     return game
 }
 
+func createScenario14(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 14")
+    wizard := setup.WizardCustom{
+        Name: "bob",
+        Banner: data.BannerRed,
+        Race: data.RaceTroll,
+        Base: data.WizardAriel,
+        Abilities: []setup.WizardAbility{
+            setup.AbilityAlchemy,
+            setup.AbilitySageMaster,
+        },
+        Books: []data.WizardBook{
+            data.WizardBook{
+                Magic: data.LifeMagic,
+                Count: 3,
+            },
+            data.WizardBook{
+                Magic: data.SorceryMagic,
+                Count: 8,
+            },
+        },
+    }
+
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+        Magic: data.MagicSettingNormal,
+        Difficulty: data.DifficultyAverage,
+    })
+
+    game.Plane = data.PlaneArcanus
+
+    player := game.AddPlayer(wizard)
+
+    player.CastingSkillPower += 500
+
+    allSpells, _ := spellbook.ReadSpellsFromCache(cache)
+
+    player.Spells.AddSpell(allSpells.FindByName("Earth Lore"))
+    player.Spells.AddSpell(allSpells.FindByName("Giant Strength"))
+    player.Spells.AddSpell(allSpells.FindByName("Ice Bolt"))
+    player.Spells.AddSpell(allSpells.FindByName("Enchant Item"))
+    // player.Spells.AddSpell(allSpells.FindByName("Magic Spirit"))
+    player.Spells.AddSpell(allSpells.FindByName("Dark Rituals"))
+
+    x, y := game.FindValidCityLocation()
+
+    city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.TaxRate, game.BuildingInfo)
+    city.Population = 6190
+    city.Plane = data.PlaneArcanus
+    city.Banner = wizard.Banner
+    city.ProducingBuilding = buildinglib.BuildingGranary
+    city.ProducingUnit = units.UnitNone
+    city.Race = wizard.Race
+    city.Farmers = 3
+    city.Workers = 3
+    city.Wall = false
+
+    city.ResetCitizens(nil)
+
+    player.AddCity(city)
+
+    player.Gold = 83
+    player.Mana = 50
+
+    player.LiftFog(x, y, 4)
+
+    game.Events <- &gamelib.GameEventLearnedSpell{
+        Player: player,
+        Spell: allSpells.FindByName("Magic Spirit"),
+    }
+
+    return game
+}
+
 func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
@@ -1086,6 +1159,7 @@ func NewEngine(scenario int) (*Engine, error) {
         case 11: game = createScenario11(cache)
         case 12: game = createScenario12(cache)
         case 13: game = createScenario13(cache)
+        case 14: game = createScenario14(cache)
         default: game = createScenario1(cache)
     }
 
