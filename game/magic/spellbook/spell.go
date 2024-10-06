@@ -482,6 +482,25 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
     flipLeftSide := 0
     flipRightSide := 1
 
+    if researchingSpell.Valid() {
+        currentPage := 0
+
+        loop:
+        for page, halfPage := range halfPages {
+            for _, spell := range halfPage.Spells.Spells {
+                if spell.Name == researchingSpell.Name {
+                    currentPage = page
+                    break loop
+                }
+            }
+        }
+
+        // force it to be even
+        currentPage -= currentPage % 2
+        showLeftPage = currentPage
+        showRightPage = currentPage + 1
+    }
+
     flipping := false
 
     quit := false
