@@ -220,6 +220,27 @@ func (game *Game) CenterCamera(x int, y int){
     }
 }
 
+/* initial casting skill power is computed as follows:
+ * skill = total number of magic books * 2
+ * power = (skill-1)^2 + skill
+ */
+func computeInitialCastingSkillPower(books []data.WizardBook) int {
+    total := 0
+    for _, book := range books {
+        total += book.Count
+    }
+
+    if total == 0 {
+        return 0
+    }
+
+    total *= 2
+
+    v := total - 1
+
+    return v * v + total
+}
+
 func (game *Game) AddPlayer(wizard setup.WizardCustom) *playerlib.Player{
     newPlayer := &playerlib.Player{
         TaxRate: fraction.FromInt(1),
@@ -232,6 +253,8 @@ func (game *Game) AddPlayer(wizard setup.WizardCustom) *playerlib.Player{
             Skill: 1.0/3,
         },
     }
+
+    newPlayer.CastingSkillPower = computeInitialCastingSkillPower(newPlayer.Wizard.Books)
 
     game.Players = append(game.Players, newPlayer)
     return newPlayer
@@ -2104,10 +2127,10 @@ func (game *Game) MakeInfoUI(cornerX int, cornerY int) []*uilib.UIElement {
 }
 
 func (game *Game) ShowSpellBookCastUI(){
-    game.HudUI.AddElements(spellbook.MakeSpellBookCastUI(game.HudUI, game.Cache, game.Players[0].Spells.OverlandSpells(), game.Players[0].CastingSkill, func (spell spellbook.Spell, picked bool){
+    player := game.Players[0]
+    game.HudUI.AddElements(spellbook.MakeSpellBookCastUI(game.HudUI, game.Cache, player.Spells.OverlandSpells(), player.ComputeCastingSkill(), player.CastingSpell, player.CastingSpellProgress, true, func (spell spellbook.Spell, picked bool){
         if picked {
-            log.Printf("Casting spell %v", spell.Name)
-            game.Events<- &GameEventCastSpell{Player: game.Players[0], Spell: spell}
+            player.CastingSpell = spell
         }
     }))
 }
@@ -2732,7 +2755,34 @@ func (game *Game) DoNextTurn(){
             player.Mana = 0
         }
 
+        if !player.CastingSpell.Invalid() {
+            // mana spent on the skill is the minimum of {player's mana, casting skill, remaining cost for spell}
+            manaSpent := player.Mana
+            if manaSpent > player.ComputeCastingSkill() {
+                manaSpent = player.ComputeCastingSkill()
+            }
+
+            remainingMana := player.CastingSpell.Cost(true) - player.CastingSpellProgress
+            if remainingMana < manaSpent {
+                manaSpent = remainingMana
+            }
+
+            player.CastingSpellProgress += manaSpent
+            player.Mana -= manaSpent
+
+            if player.CastingSpell.Cost(true) <= player.CastingSpellProgress {
+                select {
+                    case game.Events<- &GameEventCastSpell{Player: player, Spell: player.CastingSpell}:
+                    default:
+                        log.Printf("Error: unable to invoke cast spell because event queue is full")
+                }
+                player.CastingSpell = spellbook.Spell{}
+                player.CastingSpellProgress = 0
+            }
+        }
+
         player.SpellResearch += int(player.SpellResearchPerTurn(power))
+        player.CastingSkillPower += player.CastingSkillPerTurn(power)
 
         for _, city := range player.Cities {
             cityEvents := city.DoNextTurn(player.GetUnits(city.X, city.Y))

@@ -2,6 +2,7 @@ package player
 
 import (
     "slices"
+    "math"
 
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/units"
@@ -249,7 +250,14 @@ type Player struct {
 
     PowerDistribution PowerDistribution
 
-    CastingSkill int
+    // total power points put into the casting skill
+    CastingSkillPower int
+
+    // current spell being cast
+    CastingSpell spellbook.Spell
+    // how much mana has been put towards the current spell. When this value equals
+    // the spell's casting cost, the spell is cast
+    CastingSpellProgress int
 
     // amount of research put towards the current spell
     SpellResearch int
@@ -263,6 +271,29 @@ type Player struct {
     // counter for the next created unit owned by this player
     UnitId uint64
     SelectedStack *UnitStack
+}
+
+func (player *Player) ComputeCastingSkill() int {
+    if player.CastingSkillPower == 0 {
+        return 0
+    }
+
+    bonus := 0
+    if player.Wizard.AbilityEnabled(setup.AbilityArchmage) {
+        bonus = 10
+    }
+
+    return int((math.Sqrt(float64(4 * player.CastingSkillPower - 3)) + 1) / 2) + bonus
+}
+
+func (player *Player) CastingSkillPerTurn(power int) int {
+    bonus := 1.0
+
+    if player.Wizard.AbilityEnabled(setup.AbilityArchmage) {
+        bonus = 1.5
+    }
+
+    return int(float64(power) * player.PowerDistribution.Skill * bonus)
 }
 
 func (player *Player) SpellResearchPerTurn(power int) float64 {

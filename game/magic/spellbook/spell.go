@@ -646,7 +646,7 @@ func CastRightSideDistortions2(page *ebiten.Image) util.Distortion {
 // selected a spell or because they canceled the ui
 // if a spell is chosen then it will be passed in as the first argument to the callback along with true
 // if the ui is cancelled then the second argument will be false
-func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, castingSkill int, chosenCallback func(Spell, bool)) []*uilib.UIElement {
+func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, castingSkill int, currentSpell Spell, currentProgress int, overland bool, chosenCallback func(Spell, bool)) []*uilib.UIElement {
     var elements []*uilib.UIElement
 
     imageCache := util.MakeImageCache(cache)
@@ -723,7 +723,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
         for _, spell := range spells.Spells {
 
             // invalid spell?
-            if spell.Name == "" {
+            if spell.Invalid() {
                 continue
             }
 
@@ -731,7 +731,12 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
 
             textColorScale := spellOptions.ColorScale
 
-            if highlightedSpell.Name == spell.Name {
+            if currentSpell.Name == spell.Name {
+                v := math.Cos(float64(ui.Counter) / 5) * 64 + 128
+                textColorScale.SetR(float32(v))
+                textColorScale.SetG(float32(v))
+                textColorScale.SetB(float32(v))
+            } else if highlightedSpell.Name == spell.Name {
                 // spellOptions.ColorScale.Scale(1.5, 1, 1, 1)
                 r := math.Cos(float64(ui.Counter) / 5) * 128 + 128
                 textColorScale.SetR(float32(r))
@@ -739,12 +744,17 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
 
             spellX, spellY := spellOptions.GeoM.Apply(0, 0)
 
+            costRemaining := spell.Cost(overland)
+            if spell.Name == currentSpell.Name {
+                costRemaining -= currentProgress
+            }
+
             infoFont.Print(screen, spellX, spellY, 1, textColorScale, spell.Name)
-            infoFont.PrintRight(screen, spellX + 124, spellY, 1, textColorScale, fmt.Sprintf("%v MP", spell.CastCost))
+            infoFont.PrintRight(screen, spellX + 124, spellY, 1, textColorScale, fmt.Sprintf("%v MP", costRemaining))
             icon := getMagicIcon(spell)
 
             nameLength := infoFont.MeasureTextWidth(spell.Name, 1) + 1
-            mpLength := infoFont.MeasureTextWidth(fmt.Sprintf("%v MP", spell.CastCost), 1)
+            mpLength := infoFont.MeasureTextWidth(fmt.Sprintf("%v MP", costRemaining), 1)
 
             gibberishPart := gibberish.SubImage(image.Rect(0, 0, gibberish.Bounds().Dx(), gibberishHeight)).(*ebiten.Image)
 
@@ -759,7 +769,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
             part1Options.GeoM.Translate(nameLength, 0)
             screen.DrawImage(part1, &part1Options)
 
-            iconCount := spell.CastCost / int(math.Max(1, float64(castingSkill)))
+            iconCount := costRemaining / int(math.Max(1, float64(castingSkill)))
             if iconCount < 1 {
                 iconCount = 1
             }
@@ -788,7 +798,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
                 icon1Width += icon.Bounds().Dx() + 1
             }
 
-            if spell.CastCost < castingSkill {
+            if costRemaining < castingSkill {
                 x, y := iconOptions.GeoM.Apply(0, 0)
                 x += 2
                 infoFont.Print(screen, x, y, 1, spellOptions.ColorScale, "Instant")
@@ -845,8 +855,10 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
         return out
     }
 
+    // the spell the user is mousing over
     var highlightedSpell Spell
 
+    // invoke to shut down the ui and return a result
     var shutdown func(Spell, bool)
 
     var spellButtons []*uilib.UIElement
@@ -871,8 +883,23 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
                     }
                 },
                 LeftClick: func(this *uilib.UIElement){
-                    // log.Printf("Click on spell %v", spell)
-                    shutdown(spell, true)
+                    // if the user is already casting a spell then ask them if they want to abort that spell
+                    if currentSpell.Valid() {
+                        confirm := func(){
+                            // if the user clicked on the same spell being cast then select an invalid spell, which
+                            // is the same thing as not casting any spell
+                            if spell.Name == currentSpell.Name {
+                                shutdown(Spell{}, true)
+                            } else {
+                                shutdown(spell, true)
+                            }
+                        }
+                        message := fmt.Sprintf("Do you wish to abort your %v spell?", currentSpell.Name)
+                        ui.AddElements(uilib.MakeConfirmDialogWithLayer(ui, cache, &imageCache, 2, message, confirm, func(){}))
+                    } else {
+                        // log.Printf("Click on spell %v", spell)
+                        shutdown(spell, true)
+                    }
                 },
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                     // vector.StrokeRect(screen, float32(rect.Min.X), float32(rect.Min.Y), float32(rect.Max.X - rect.Min.X), float32(rect.Max.Y - rect.Min.Y), 1, color.RGBA{R: 255, G: 255, B: 255, A: 255}, false)
@@ -911,6 +938,21 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
     }
 
     currentPage := 0
+
+    if currentSpell.Valid() {
+        loop:
+        for page, halfPage := range spellPages {
+            for _, spell := range halfPage.Spells {
+                if spell.Name == currentSpell.Name {
+                    currentPage = page
+                    break loop
+                }
+            }
+        }
+
+        // force it to be even
+        currentPage -= currentPage % 2
+    }
 
     bookFlip, _ := imageCache.GetImages("book.lbx", 0)
     bookFlipIndex := uint64(0)
