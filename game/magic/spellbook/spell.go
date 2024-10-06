@@ -214,7 +214,7 @@ func RightSideFlipRightDistortions1(page *ebiten.Image) util.Distortion {
  * 2. show book and let user flip between pages. on the 'research spells' page, show currently
 *     researching spell as glowing text
  */
-func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spells, knownSpells Spells, researchSpells Spells, researchingSpell Spell, researchProgress int, researchPoints int, castingSkill int, learnedSpell Spell, pickResearchSpell bool, drawFunc *func(screen *ebiten.Image)) {
+func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spells, knownSpells Spells, researchSpells Spells, researchingSpell Spell, researchProgress int, researchPoints int, castingSkill int, learnedSpell Spell, pickResearchSpell bool, chosenSpell *Spell, drawFunc *func(screen *ebiten.Image)) {
     ui := &uilib.UI{
         Draw: func(ui *uilib.UI, screen *ebiten.Image){
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
@@ -419,12 +419,14 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
 
             titleFont.PrintCenter(pageImage, titleX, titleY, 1, options.ColorScale, page.Title)
 
-            x, y := options.GeoM.Apply(25, 35)
+            x, topY := options.GeoM.Apply(25, 35)
 
             for i, spell := range page.Spells.Spells {
                 if i >= 4 {
                     break
                 }
+
+                y := topY + float64(i * 35)
 
                 spellY := y
 
@@ -490,8 +492,6 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
                     wrapped := getSpellDescriptionAlienText(spell.Index)
                     spellTextAlienFont.RenderWrapped(pageImage, x, y + 10, wrapped, options.ColorScale, false)
                 }
-
-                y += 35
             }
         }
     }
@@ -545,13 +545,42 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
 
     quit := false
 
+    posX := 0
+    posY := 0
     elements = append(elements, &uilib.UIElement{
+        Rect: image.Rect(0, 0, data.ScreenWidth, data.ScreenHeight),
+        Inside: func (this *uilib.UIElement, x, y int){
+            posX = x
+            posY = y
+        },
+        LeftClick: func(this *uilib.UIElement){
+            if pickResearchSpell {
+                if posY >= 35 && posY < 35 + 35 * 4 {
+                    spellIndex := (posY - 35) / 35
+
+                    // left page
+                    if posX < 160 {
+                        if spellIndex >= 0 && spellIndex < len(researchPage1.Spells.Spells) {
+                            *chosenSpell = researchPage1.Spells.Spells[spellIndex]
+                            quit = true
+                        }
+                    } else {
+                        // right page
+                        if spellIndex >= 0 && spellIndex < len(researchPage2.Spells.Spells) {
+                            *chosenSpell = researchPage2.Spells.Spells[spellIndex]
+                            quit = true
+                        }
+                    }
+                }
+            } else {
+                getAlpha = ui.MakeFadeOut(fadeSpeed)
+                ui.AddDelay(fadeSpeed, func(){
+                    // ui.RemoveElements(elements)
+                    quit = true
+                })
+            }
+        },
         NotLeftClicked: func(this *uilib.UIElement){
-            getAlpha = ui.MakeFadeOut(fadeSpeed)
-            ui.AddDelay(fadeSpeed, func(){
-                ui.RemoveElements(elements)
-                quit = true
-            })
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             background, _ := imageCache.GetImage("scroll.lbx", 6, 0)

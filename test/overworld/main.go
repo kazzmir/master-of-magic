@@ -1115,6 +1115,14 @@ func createScenario14(cache *lbx.LbxCache) *gamelib.Game {
     player.KnownSpells.AddSpell(allSpells.FindByName("Dark Rituals"))
 
     player.ResearchCandidateSpells.AddSpell(allSpells.FindByName("Magic Spirit"))
+    player.ResearchCandidateSpells.AddSpell(allSpells.FindByName("Endurance"))
+    player.ResearchCandidateSpells.AddSpell(allSpells.FindByName("Hell Hounds"))
+    player.ResearchCandidateSpells.AddSpell(allSpells.FindByName("Healing"))
+    player.ResearchCandidateSpells.AddSpell(allSpells.FindByName("Corruption"))
+    player.ResearchCandidateSpells.AddSpell(allSpells.FindByName("Dispel Magic"))
+    player.ResearchCandidateSpells.AddSpell(allSpells.FindByName("Summoning Circle"))
+    player.ResearchCandidateSpells.AddSpell(allSpells.FindByName("Just Cause"))
+    player.ResearchCandidateSpells.AddSpell(allSpells.FindByName("Detect Magic"))
     // player.ResearchingSpell = allSpells.FindByName("Magic Spirit")
     // player.ResearchingSpell = allSpells.FindByName("Earth Lore")
     // player.ResearchProgress = 10
