@@ -646,7 +646,7 @@ func CastRightSideDistortions2(page *ebiten.Image) util.Distortion {
 // selected a spell or because they canceled the ui
 // if a spell is chosen then it will be passed in as the first argument to the callback along with true
 // if the ui is cancelled then the second argument will be false
-func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, castingSkill int, chosenCallback func(Spell, bool)) []*uilib.UIElement {
+func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, castingSkill int, currentSpell Spell, currentProgress int, overland bool, chosenCallback func(Spell, bool)) []*uilib.UIElement {
     var elements []*uilib.UIElement
 
     imageCache := util.MakeImageCache(cache)
@@ -739,12 +739,17 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
 
             spellX, spellY := spellOptions.GeoM.Apply(0, 0)
 
+            costRemaining := spell.Cost(overland)
+            if spell.Name == currentSpell.Name {
+                costRemaining -= currentProgress
+            }
+
             infoFont.Print(screen, spellX, spellY, 1, textColorScale, spell.Name)
-            infoFont.PrintRight(screen, spellX + 124, spellY, 1, textColorScale, fmt.Sprintf("%v MP", spell.CastCost))
+            infoFont.PrintRight(screen, spellX + 124, spellY, 1, textColorScale, fmt.Sprintf("%v MP", costRemaining))
             icon := getMagicIcon(spell)
 
             nameLength := infoFont.MeasureTextWidth(spell.Name, 1) + 1
-            mpLength := infoFont.MeasureTextWidth(fmt.Sprintf("%v MP", spell.CastCost), 1)
+            mpLength := infoFont.MeasureTextWidth(fmt.Sprintf("%v MP", costRemaining), 1)
 
             gibberishPart := gibberish.SubImage(image.Rect(0, 0, gibberish.Bounds().Dx(), gibberishHeight)).(*ebiten.Image)
 
@@ -759,7 +764,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
             part1Options.GeoM.Translate(nameLength, 0)
             screen.DrawImage(part1, &part1Options)
 
-            iconCount := spell.CastCost / int(math.Max(1, float64(castingSkill)))
+            iconCount := costRemaining / int(math.Max(1, float64(castingSkill)))
             if iconCount < 1 {
                 iconCount = 1
             }
@@ -788,7 +793,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
                 icon1Width += icon.Bounds().Dx() + 1
             }
 
-            if spell.CastCost < castingSkill {
+            if costRemaining < castingSkill {
                 x, y := iconOptions.GeoM.Apply(0, 0)
                 x += 2
                 infoFont.Print(screen, x, y, 1, spellOptions.ColorScale, "Instant")

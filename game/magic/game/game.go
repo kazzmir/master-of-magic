@@ -2127,9 +2127,10 @@ func (game *Game) MakeInfoUI(cornerX int, cornerY int) []*uilib.UIElement {
 }
 
 func (game *Game) ShowSpellBookCastUI(){
-    game.HudUI.AddElements(spellbook.MakeSpellBookCastUI(game.HudUI, game.Cache, game.Players[0].Spells.OverlandSpells(), game.Players[0].ComputeCastingSkill(), func (spell spellbook.Spell, picked bool){
+    player := game.Players[0]
+    game.HudUI.AddElements(spellbook.MakeSpellBookCastUI(game.HudUI, game.Cache, player.Spells.OverlandSpells(), player.ComputeCastingSkill(), player.CastingSpell, player.CastingSpellProgress, true, func (spell spellbook.Spell, picked bool){
         if picked {
-            game.Players[0].CastingSpell = spell
+            player.CastingSpell = spell
         }
     }))
 }
@@ -2755,6 +2756,7 @@ func (game *Game) DoNextTurn(){
         }
 
         if !player.CastingSpell.Invalid() {
+            // mana spent on the skill is the minimum of {player's mana, casting skill, remaining cost for spell}
             manaSpent := player.Mana
             if manaSpent > player.ComputeCastingSkill() {
                 manaSpent = player.ComputeCastingSkill()
