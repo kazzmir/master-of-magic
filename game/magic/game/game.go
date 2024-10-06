@@ -63,6 +63,9 @@ type GameEventSurveyor struct {
 type GameEventCityListView struct {
 }
 
+type GameEventApprenticeUI struct {
+}
+
 type GameEventNewOutpost struct {
     City *citylib.City
     Stack *playerlib.UnitStack
@@ -1400,6 +1403,8 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         game.doMagicView(yield)
                     case *GameEventSurveyor:
                         game.doSurveyor(yield)
+                    case *GameEventApprenticeUI:
+                        game.ShowApprenticeUI(yield)
                     case *GameEventArmyView:
                         game.doArmyView(yield)
                     case *GameEventCityListView:
@@ -2076,8 +2081,20 @@ func (game *Game) ShowTaxCollectorUI(cornerX int, cornerY int){
     game.HudUI.AddElements(uilib.MakeSelectionUI(game.HudUI, game.Cache, &game.ImageCache, cornerX, cornerY, "Tax Per Population", taxes))
 }
 
-func (game *Game) ShowApprenticeUI(){
-    game.HudUI.AddElements(spellbook.MakeSpellBookUI(game.HudUI, game.Cache))
+func (game *Game) ShowApprenticeUI(yield coroutine.YieldFunc){
+    oldDrawer := game.Drawer
+    defer func(){
+        game.Drawer = oldDrawer
+    }()
+
+    newDrawer := func (screen *ebiten.Image){
+    }
+
+    game.Drawer = func (screen *ebiten.Image, game *Game){
+        newDrawer(screen)
+    }
+
+    spellbook.ShowSpellBook(yield, game.Cache, &newDrawer)
 }
 
 // advisor ui
@@ -2101,7 +2118,10 @@ func (game *Game) MakeInfoUI(cornerX int, cornerY int) []*uilib.UIElement {
         uilib.Selection{
             Name: "Apprentice",
             Action: func(){
-                game.ShowApprenticeUI()
+                select {
+                    case game.Events<- &GameEventApprenticeUI{}:
+                    default:
+                }
             },
             Hotkey: "(F3)",
         },

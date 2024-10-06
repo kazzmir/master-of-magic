@@ -1132,10 +1132,12 @@ func createScenario14(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 4)
 
+    /*
     game.Events <- &gamelib.GameEventLearnedSpell{
         Player: player,
         Spell: allSpells.FindByName("Magic Spirit"),
     }
+    */
 
     return game
 }

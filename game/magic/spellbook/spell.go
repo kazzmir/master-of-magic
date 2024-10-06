@@ -9,6 +9,7 @@ import (
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
+    "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
@@ -195,7 +196,23 @@ func RightSideFlipRightDistortions1(page *ebiten.Image) util.Distortion {
     }
 }
 
-func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
+/* two modes:
+ * 1. when a new spell is learned, flip to the page where the spell would go and show the sparkle animation,
+ *    then flip to the 'research spells' page and let the user pick a new spell
+ * 2. show book and let user flip between pages. on the 'research spells' page, show currently
+*     researching spell as glowing text
+ */
+func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, drawFunc *func(screen *ebiten.Image)) {
+    ui := &uilib.UI{
+        Draw: func(ui *uilib.UI, screen *ebiten.Image){
+            ui.IterateElementsByLayer(func (element *uilib.UIElement){
+                if element.Draw != nil {
+                    element.Draw(element, screen)
+                }
+            })
+        },
+    }
+
     var elements []*uilib.UIElement
 
     imageCache := util.MakeImageCache(cache)
@@ -205,13 +222,13 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
     spells, err := ReadSpellsFromCache(cache)
     if err != nil {
         log.Printf("Unable to read spells: %v", err)
-        return nil
+        return
     }
 
     spellDescriptions, err := ReadSpellDescriptionsFromCache(cache)
     if err != nil {
         log.Printf("Unable to read spell descriptions: %v", err)
-        return nil
+        return
     }
 
     getAlpha := ui.MakeFadeIn(fadeSpeed)
@@ -225,13 +242,13 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
     fontLbx, err := cache.GetLbxFile("fonts.lbx")
     if err != nil {
         log.Printf("Unable to read fonts: %v", err)
-        return nil
+        return
     }
 
     fonts, err := font.ReadFonts(fontLbx, 0)
     if err != nil {
         log.Printf("Unable to read fonts: %v", err)
-        return nil
+        return
     }
 
     red := color.RGBA{R: 0x5a, G: 0, B: 0, A: 0xff}
@@ -388,12 +405,14 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
 
     flipping := false
 
+    quit := false
+
     elements = append(elements, &uilib.UIElement{
-        Layer: 1,
         NotLeftClicked: func(this *uilib.UIElement){
             getAlpha = ui.MakeFadeOut(fadeSpeed)
             ui.AddDelay(fadeSpeed, func(){
                 ui.RemoveElements(elements)
+                quit = true
             })
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
@@ -455,7 +474,6 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
     leftRect := image.Rect(15, 9, 15 + leftTurn.Bounds().Dx(), 9 + leftTurn.Bounds().Dy())
     elements = append(elements, &uilib.UIElement{
         Rect: leftRect,
-        Layer: 1,
         LeftClick: func(this *uilib.UIElement){
             if !flipping && hasPreviousPage(showLeftPage){
                 bookFlipIndex = ui.Counter
@@ -487,7 +505,6 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
     rightRect := image.Rect(289, 9, 295 + rightTurn.Bounds().Dx(), 5 + rightTurn.Bounds().Dy())
     elements = append(elements, &uilib.UIElement{
         Rect: rightRect,
-        Layer: 1,
         LeftClick: func(this *uilib.UIElement){
             if !flipping && hasNextPage(showRightPage){
                 bookFlipIndex = ui.Counter
@@ -515,7 +532,20 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
         },
     })
 
-    return elements
+    ui.SetElementsFromArray(elements)
+
+    *drawFunc = func(screen *ebiten.Image){
+        ui.Draw(ui, screen)
+    }
+
+    yield()
+
+    for !quit {
+        ui.StandardUpdate()
+        yield()
+    }
+
+    yield()
 }
 
 func CastLeftSideDistortions1(page *ebiten.Image) util.Distortion {
