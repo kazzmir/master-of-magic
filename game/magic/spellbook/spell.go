@@ -21,6 +21,7 @@ import (
 type Page struct {
     Title string
     Spells Spells
+    ForceRender bool
 }
 
 func computeHalfPages(spells Spells, max int) []Page {
@@ -339,6 +340,25 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
     // compute half pages
     halfPages := computeHalfPages(allSpells, 4)
 
+    researchPage1 := Page{
+        Title: "Research",
+        Spells: researchSpells.Sub(0, 4),
+        ForceRender: true,
+    }
+
+    researchPage2 := Page{
+        Title: "Spells",
+        Spells: researchSpells.Sub(4, 8),
+        ForceRender: true,
+    }
+
+    // insert an empty page so that the research pages are on their own
+    if len(halfPages) % 2 != 0 {
+        halfPages = append(halfPages, Page{})
+    }
+
+    halfPages = append(halfPages, researchPage1, researchPage2)
+
     // for debugging
     /*
     for i, halfPage := range halfPages {
@@ -374,7 +394,7 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
         pageImage := ebiten.NewImage(155, 170)
         pageImage.Fill(color.RGBA{R: 0, G: 0, B: 0, A: 0})
 
-        if len(pageSpells.Spells) > 0 {
+        if len(pageSpells.Spells) > 0 || halfPages[halfPage].ForceRender {
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(0, 0)
 

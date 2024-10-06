@@ -173,6 +173,22 @@ type Spells struct {
     Spells []Spell
 }
 
+func (spells *Spells) Sub(min int, max int) Spells {
+    if min < 0 {
+        min = 0
+    }
+
+    if max > len(spells.Spells) {
+        max = len(spells.Spells)
+    }
+
+    if min >= len(spells.Spells) {
+        return Spells{}
+    }
+
+    return SpellsFromArray(spells.Spells[min:max])
+}
+
 func (spells *Spells) AddSpell(spell Spell) {
     spells.Spells = append(spells.Spells, spell)
 }
