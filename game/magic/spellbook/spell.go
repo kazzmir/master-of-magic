@@ -18,8 +18,13 @@ import (
     "github.com/hajimehoshi/ebiten/v2/vector"
 )
 
-func computeHalfPages(spells Spells, max int) []Spells {
-    var halfPages []Spells
+type Page struct {
+    Title string
+    Spells Spells
+}
+
+func computeHalfPages(spells Spells, max int) []Page {
+    var halfPages []Page
 
     sections := []Section{SectionSummoning, SectionSpecial, SectionCitySpell, SectionEnchantment, SectionUnitSpell, SectionCombatSpell}
 
@@ -38,7 +43,10 @@ func computeHalfPages(spells Spells, max int) []Spells {
             }
 
             if len(pageSpells.Spells) > 0 {
-                halfPages = append(halfPages, pageSpells)
+                halfPages = append(halfPages, Page{
+                    Title: section.Name(),
+                    Spells: pageSpells,
+                })
             }
         }
     }
@@ -356,9 +364,11 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
             return image
         }
 
+        var sectionTitle string
         var pageSpells Spells
         if halfPage < len(halfPages) {
-            pageSpells = halfPages[halfPage]
+            pageSpells = halfPages[halfPage].Spells
+            sectionTitle = halfPages[halfPage].Title
         }
 
         pageImage := ebiten.NewImage(155, 170)
@@ -368,8 +378,8 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(0, 0)
 
-            section := pageSpells.Spells[0].Section
-            titleFont.PrintCenter(pageImage, 90, 11, 1, options.ColorScale, section.Name())
+            // section := pageSpells.Spells[0].Section
+            titleFont.PrintCenter(pageImage, 90, 11, 1, options.ColorScale, sectionTitle)
 
             x := float64(25)
             y := float64(35)
@@ -740,18 +750,18 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
 
     spellPages := computeHalfPages(spells, 6)
 
-    renderPage := func(screen *ebiten.Image, options ebiten.DrawImageOptions, spells Spells, highlightedSpell Spell){
-        section := spells.Spells[0].Section
+    renderPage := func(screen *ebiten.Image, options ebiten.DrawImageOptions, page Page, highlightedSpell Spell){
+        // section := spells.Spells[0].Section
 
         titleX, titleY := options.GeoM.Apply(60, 1)
 
-        titleFont.PrintCenter(screen, titleX, titleY, 1, options.ColorScale, section.Name())
+        titleFont.PrintCenter(screen, titleX, titleY, 1, options.ColorScale, page.Title)
         gibberish, _ := imageCache.GetImage("spells.lbx", 10, 0)
         gibberishHeight := 18
 
         options2 := options
         options2.GeoM.Translate(0, 15)
-        for _, spell := range spells.Spells {
+        for _, spell := range page.Spells.Spells {
 
             // invalid spell?
             if spell.Invalid() {
@@ -938,7 +948,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
             }
         }
 
-        leftSpells := spellPages[page].Spells
+        leftSpells := spellPages[page].Spells.Spells
 
         for i, spell := range leftSpells {
 
@@ -952,7 +962,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
         }
 
         if page + 1 < len(spellPages) {
-            rightSpells := spellPages[page+1].Spells
+            rightSpells := spellPages[page+1].Spells.Spells
 
             for i, spell := range rightSpells {
                 x1 := 159
@@ -973,7 +983,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
     if currentSpell.Valid() {
         loop:
         for page, halfPage := range spellPages {
-            for _, spell := range halfPage.Spells {
+            for _, spell := range halfPage.Spells.Spells {
                 if spell.Name == currentSpell.Name {
                     currentPage = page
                     break loop
