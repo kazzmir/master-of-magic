@@ -24,7 +24,7 @@ type Page struct {
     // true if this page should render a title even if the spells are empty
     ForceRender bool
     // true if the text for the spell should always use normal font rather than alien
-    AlwaysShow bool
+    IsResearch bool
 }
 
 func computeHalfPages(spells Spells, max int) []Page {
@@ -214,7 +214,7 @@ func RightSideFlipRightDistortions1(page *ebiten.Image) util.Distortion {
  * 2. show book and let user flip between pages. on the 'research spells' page, show currently
 *     researching spell as glowing text
  */
-func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spells, knownSpells Spells, researchSpells Spells, drawFunc *func(screen *ebiten.Image)) {
+func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spells, knownSpells Spells, researchSpells Spells, researchingSpell Spell, drawFunc *func(screen *ebiten.Image)) {
     ui := &uilib.UI{
         Draw: func(ui *uilib.UI, screen *ebiten.Image){
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
@@ -347,14 +347,14 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
         Title: "Research",
         Spells: researchSpells.Sub(0, 4),
         ForceRender: true,
-        AlwaysShow: true,
+        IsResearch: true,
     }
 
     researchPage2 := Page{
         Title: "Spells",
         Spells: researchSpells.Sub(4, 8),
         ForceRender: true,
-        AlwaysShow: true,
+        IsResearch: true,
     }
 
     // insert an empty page so that the research pages are on their own
@@ -382,7 +382,7 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
     // create images of each page
     halfPageCache := make(map[int]*ebiten.Image)
 
-    renderPage := func(page Page, pageImage *ebiten.Image, options ebiten.DrawImageOptions){
+    renderPage := func(page Page, showHighlight bool, pageImage *ebiten.Image, options ebiten.DrawImageOptions){
         if len(page.Spells.Spells) > 0 || page.ForceRender {
             // var options ebiten.DrawImageOptions
             // options.GeoM.Translate(0, 0)
@@ -399,10 +399,45 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
                     break
                 }
 
-                if page.AlwaysShow || knownSpell(spell) {
-                    spellTitleNormalFont.Print(pageImage, x, y, 1, options.ColorScale, spell.Name)
+                if page.IsResearch || knownSpell(spell) {
+                    scale := options.ColorScale
+
+                    if showHighlight && researchingSpell.Name == spell.Name {
+                        v := 1.5 + (math.Cos(float64(ui.Counter) / 7) * 64 + 64) / float64(64)
+                        scale.SetR(float32(v))
+                        scale.SetG(float32(v))
+                        scale.SetB(float32(v) * 1.8)
+                    }
+
+                    spellTitleNormalFont.Print(pageImage, x, y, 1, scale, spell.Name)
+                    y += float64(spellTitleNormalFont.Height())
+
+                    if page.IsResearch {
+                        turns := spell.ResearchCost / 10
+                        if turns < 1 {
+                            turns = 1
+                        }
+                        turnString := "turn"
+                        if turns > 1 {
+                            turnString = "turns"
+                        }
+                        spellTextNormalFont.Print(pageImage, x, y, 1, scale, fmt.Sprintf("Research Cost:%v (%v %v)", spell.ResearchCost, turns, turnString))
+                        y += float64(spellTextNormalFont.Height())
+                    } else {
+                        turns := spell.Cost(true) / 10
+                        if turns < 1 {
+                            turns = 1
+                        }
+                        turnString := "turn"
+                        if turns > 1 {
+                            turnString = "turns"
+                        }
+                        spellTextNormalFont.Print(pageImage, x, y, 1, scale, fmt.Sprintf("Casting cost:%v (%v %v)", spell.Cost(true), turns, turnString))
+                        y += float64(spellTextNormalFont.Height())
+                    }
+
                     wrapped := getSpellDescriptionNormalText(spell.Index)
-                    spellTextNormalFont.RenderWrapped(pageImage, x, y + 10, wrapped, options.ColorScale, false)
+                    spellTextNormalFont.RenderWrapped(pageImage, x, y, wrapped, scale, false)
                 } else {
                     spellTitleAlienFont.Print(pageImage, x, y, 1, options.ColorScale, spell.Name)
                     wrapped := getSpellDescriptionAlienText(spell.Index)
@@ -425,7 +460,7 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
         pageImage.Fill(color.RGBA{R: 0, G: 0, B: 0, A: 0})
 
         if halfPage < len(halfPages) {
-            renderPage(halfPages[halfPage], pageImage, ebiten.DrawImageOptions{})
+            renderPage(halfPages[halfPage], false, pageImage, ebiten.DrawImageOptions{})
         }
 
         halfPageCache[halfPage] = pageImage
@@ -460,20 +495,14 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
             screen.DrawImage(background, &options)
 
             if showLeftPage >= 0 {
-                renderPage(halfPages[showLeftPage], screen, options)
+                renderPage(halfPages[showLeftPage], true, screen, options)
             }
 
             if showRightPage < len(halfPages) {
-                /*
-                rightPageImage := getHalfPageImage(showRightPage)
-                rightOptions := options
-                rightOptions.GeoM.Translate(148, 0)
-                screen.DrawImage(rightPageImage, &rightOptions)
-                */
                 rightOptions := options
                 rightOptions.GeoM.Translate(148, 0)
                 rightPage := screen.SubImage(image.Rect(148, 0, screen.Bounds().Dx(), screen.Bounds().Dy())).(*ebiten.Image)
-                renderPage(halfPages[showRightPage], rightPage, rightOptions)
+                renderPage(halfPages[showRightPage], true, rightPage, rightOptions)
             }
 
             animationIndex := ui.Counter
