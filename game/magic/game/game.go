@@ -2771,7 +2771,11 @@ func (game *Game) DoNextTurn(){
             player.Mana -= manaSpent
 
             if player.CastingSpell.Cost(true) <= player.CastingSpellProgress {
-                game.Events<- &GameEventCastSpell{Player: player, Spell: player.CastingSpell}
+                select {
+                    case game.Events<- &GameEventCastSpell{Player: player, Spell: player.CastingSpell}:
+                    default:
+                        log.Printf("Error: unable to invoke cast spell because event queue is full")
+                }
                 player.CastingSpell = spellbook.Spell{}
                 player.CastingSpellProgress = 0
             }
