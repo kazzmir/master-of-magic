@@ -1415,6 +1415,17 @@ func (game *Game) doLearnSpell(yield coroutine.YieldFunc, player *playerlib.Play
         case data.WizardKali: wizardIndex = 13
     }
 
+    animalIndex := 14
+
+    // FIXME: base animal index on magic books?
+    switch player.Wizard.MostBooks() {
+        case data.NatureMagic: animalIndex = 14
+        case data.SorceryMagic: animalIndex = 15
+        case data.ChaosMagic: animalIndex = 16
+        case data.LifeMagic: animalIndex = 17
+        case data.DeathMagic: animalIndex = 18
+    }
+
     sparkleImages, _ := game.ImageCache.GetImages("wizlab.lbx", 21)
 
     sparkles := util.MakeAnimation(sparkleImages, true)
@@ -1438,16 +1449,28 @@ func (game *Game) doLearnSpell(yield coroutine.YieldFunc, player *playerlib.Play
         options.GeoM.Reset()
         options.GeoM.Translate(150, 130)
         screen.DrawImage(pulpit, &options)
+
+        options.GeoM.Reset()
+        options.GeoM.Translate(190, 157)
+        animalPic, _ := game.ImageCache.GetImage("wizlab.lbx", animalIndex, 0)
+        screen.DrawImage(animalPic, &options)
     }
 
     counter := uint64(0)
 
     fade = util.MakeFadeIn(7, &counter)
 
-    for counter = 0; counter < 1000; counter++ {
+    yield()
+
+    for counter = 0; counter < 100; counter++ {
         if counter % 5 == 0 {
             sparkles.Next()
         }
+
+        if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
+            break
+        }
+
         yield()
     }
 

@@ -236,6 +236,20 @@ type WizardCustom struct {
     Banner data.BannerType
 }
 
+func (wizard *WizardCustom) MostBooks() data.MagicType {
+    max := 0
+    kind := data.LifeMagic
+
+    for _, book := range wizard.Books {
+        if book.Count > max {
+            max = book.Count
+            kind = book.Magic
+        }
+    }
+
+    return kind
+}
+
 /* total number of all magic books combined
  */
 func (wizard *WizardCustom) TotalBooks() int {
