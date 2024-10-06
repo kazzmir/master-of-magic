@@ -21,7 +21,10 @@ import (
 type Page struct {
     Title string
     Spells Spells
+    // true if this page should render a title even if the spells are empty
     ForceRender bool
+    // true if the text for the spell should always use normal font rather than alien
+    AlwaysShow bool
 }
 
 func computeHalfPages(spells Spells, max int) []Page {
@@ -344,12 +347,14 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
         Title: "Research",
         Spells: researchSpells.Sub(0, 4),
         ForceRender: true,
+        AlwaysShow: true,
     }
 
     researchPage2 := Page{
         Title: "Spells",
         Spells: researchSpells.Sub(4, 8),
         ForceRender: true,
+        AlwaysShow: true,
     }
 
     // insert an empty page so that the research pages are on their own
@@ -394,7 +399,7 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
                     break
                 }
 
-                if knownSpell(spell) {
+                if page.AlwaysShow || knownSpell(spell) {
                     spellTitleNormalFont.Print(pageImage, x, y, 1, options.ColorScale, spell.Name)
                     wrapped := getSpellDescriptionNormalText(spell.Index)
                     spellTextNormalFont.RenderWrapped(pageImage, x, y + 10, wrapped, options.ColorScale, false)
