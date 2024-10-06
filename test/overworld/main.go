@@ -1103,7 +1103,7 @@ func createScenario14(cache *lbx.LbxCache) *gamelib.Game {
 
     allSpells, _ := spellbook.ReadSpellsFromCache(cache)
 
-    for _, name := range []string{"Earth Lore", "Giant Strength", "Ice Bolt", "Enchant Item", "Dark Rituals", "Spell Blast", "Time Stop", "Web"} {
+    for _, name := range []string{"Earth Lore", "Giant Strength", "Ice Bolt", "Enchant Item", "Dark Rituals", "Spell Blast", "Time Stop", "Web", "Magic Spirit"} {
         player.ResearchPoolSpells.AddSpell(allSpells.FindByName(name))
     }
 
@@ -1140,12 +1140,10 @@ func createScenario14(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 4)
 
-    /*
     game.Events <- &gamelib.GameEventLearnedSpell{
         Player: player,
         Spell: allSpells.FindByName("Magic Spirit"),
     }
-    */
 
     return game
 }

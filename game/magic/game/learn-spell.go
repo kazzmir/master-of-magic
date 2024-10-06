@@ -108,6 +108,21 @@ func (game *Game) wizlabAnimation(yield coroutine.YieldFunc, wizard setup.Wizard
     }
 }
 
-func (game *Game) doLearnSpell(yield coroutine.YieldFunc, player *playerlib.Player, spell spellbook.Spell){
+func (game *Game) doLearnSpell(yield coroutine.YieldFunc, player *playerlib.Player, learnedSpell spellbook.Spell){
     game.wizlabAnimation(yield, player.Wizard)
+
+    oldDrawer := game.Drawer
+    defer func(){
+        game.Drawer = oldDrawer
+    }()
+
+    newDrawer := func (screen *ebiten.Image){
+    }
+
+    game.Drawer = func (screen *ebiten.Image, game *Game){
+        newDrawer(screen)
+    }
+
+    power := game.ComputePower(player)
+    spellbook.ShowSpellBook(yield, game.Cache, player.ResearchPoolSpells, player.KnownSpells, player.ResearchCandidateSpells, spellbook.Spell{}, 0, int(player.SpellResearchPerTurn(power)), player.ComputeCastingSkill(), learnedSpell, &newDrawer)
 }

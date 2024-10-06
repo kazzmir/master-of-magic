@@ -33,10 +33,17 @@ func MakeRepeatAnimation(frames []*ebiten.Image, repeats int) *Animation {
     }
 }
 
-/* returns true if there are animations left, otherwise false */
+func (animation *Animation) Done() bool {
+    return animation.CurrentFrame == len(animation.Frames)
+}
+
+/* returns true if there are frames left, otherwise false */
 func (animation *Animation) Next() bool {
-    if animation.CurrentFrame < len(animation.Frames) - 1 {
+    if animation.CurrentFrame < len(animation.Frames) {
         animation.CurrentFrame += 1
+    }
+
+    if animation.CurrentFrame < len(animation.Frames) {
         return true
     } else if animation.Repeat == -1 || animation.Repeat > 0 {
         animation.CurrentFrame = 0
