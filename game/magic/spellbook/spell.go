@@ -723,7 +723,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
         for _, spell := range spells.Spells {
 
             // invalid spell?
-            if spell.Name == "" {
+            if spell.Invalid() {
                 continue
             }
 
@@ -731,7 +731,12 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
 
             textColorScale := spellOptions.ColorScale
 
-            if highlightedSpell.Name == spell.Name {
+            if currentSpell.Name == spell.Name {
+                v := math.Cos(float64(ui.Counter) / 5) * 64 + 128
+                textColorScale.SetR(float32(v))
+                textColorScale.SetG(float32(v))
+                textColorScale.SetB(float32(v))
+            } else if highlightedSpell.Name == spell.Name {
                 // spellOptions.ColorScale.Scale(1.5, 1, 1, 1)
                 r := math.Cos(float64(ui.Counter) / 5) * 128 + 128
                 textColorScale.SetR(float32(r))
