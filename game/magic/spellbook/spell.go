@@ -292,6 +292,23 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
         grey, grey, grey,
     }
 
+    white := color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}
+    whitePalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        white,
+        util.Lighten(white, -10),
+        util.Lighten(white, -20),
+        util.Lighten(white, -30),
+        util.Lighten(white, -40),
+        util.Lighten(white, -50),
+        white, white, white, white, white, white,
+        white, white, white, white, white, white,
+    }
+
+    chooseFont := font.MakeOptimizedFontWithPalette(fonts[5], whitePalette)
+
     greyLight := util.PremultiplyAlpha(color.RGBA{R: 35, G: 35, B: 35, A: 164})
     textPaletteLighter := color.Palette{
         color.RGBA{R: 0, G: 0, B: 0, A: 0},
@@ -584,6 +601,10 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
                         util.DrawDistortion(screen, bookFlip[index], rightSide, RightSideDistortions2(bookFlip[index]), options)
                     }
                 }
+            }
+
+            if pickResearchSpell {
+                chooseFont.PrintCenter(screen, 160, 180, 1, options.ColorScale, "Choose a new spell to research")
             }
 
         },

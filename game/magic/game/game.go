@@ -1388,11 +1388,6 @@ func (game *Game) doLoadMenu(yield coroutine.YieldFunc) {
     yield()
 }
 
-func (game *Game) doResearchSpell(yield coroutine.YieldFunc){
-    log.Printf("research a new spell")
-}
-
-
 func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
     // keep processing events until we don't receive one in the events channel
     for {
@@ -1419,8 +1414,8 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         learnedSpell := event.(*GameEventLearnedSpell)
                         game.doLearnSpell(yield, learnedSpell.Player, learnedSpell.Spell)
                     case *GameEventResearchSpell:
-                        // researchSpell := event.(*GameEventResearchSpell)
-                        game.doResearchSpell(yield)
+                        researchSpell := event.(*GameEventResearchSpell)
+                        game.ResearchNewSpell(yield, researchSpell.Player)
                     case *GameEventCastSpell:
                         castSpell := event.(*GameEventCastSpell)
                         game.doCastSpell(yield, castSpell.Player, castSpell.Spell)
@@ -2096,6 +2091,23 @@ func (game *Game) ShowApprenticeUI(yield coroutine.YieldFunc, player *playerlib.
 
     power := game.ComputePower(player)
     spellbook.ShowSpellBook(yield, game.Cache, player.ResearchPoolSpells, player.KnownSpells, player.ResearchCandidateSpells, player.ResearchingSpell, player.ResearchProgress, int(player.SpellResearchPerTurn(power)), player.ComputeCastingSkill(), spellbook.Spell{}, false, &newDrawer)
+}
+
+func (game *Game) ResearchNewSpell(yield coroutine.YieldFunc, player *playerlib.Player){
+    oldDrawer := game.Drawer
+    defer func(){
+        game.Drawer = oldDrawer
+    }()
+
+    newDrawer := func (screen *ebiten.Image){
+    }
+
+    game.Drawer = func (screen *ebiten.Image, game *Game){
+        newDrawer(screen)
+    }
+
+    power := game.ComputePower(player)
+    spellbook.ShowSpellBook(yield, game.Cache, player.ResearchPoolSpells, player.KnownSpells, player.ResearchCandidateSpells, spellbook.Spell{}, 0, int(player.SpellResearchPerTurn(power)), player.ComputeCastingSkill(), spellbook.Spell{}, true, &newDrawer)
 }
 
 // advisor ui
