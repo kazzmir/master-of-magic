@@ -252,6 +252,8 @@ type Player struct {
 
     // total power points put into the casting skill
     CastingSkillPower int
+    // how much casting skill remains in this turn
+    RemainingCastingSkill int
 
     // current spell being cast
     CastingSpell spellbook.Spell

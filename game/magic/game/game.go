@@ -2130,7 +2130,18 @@ func (game *Game) ShowSpellBookCastUI(){
     player := game.Players[0]
     game.HudUI.AddElements(spellbook.MakeSpellBookCastUI(game.HudUI, game.Cache, player.Spells.OverlandSpells(), player.ComputeCastingSkill(), player.CastingSpell, player.CastingSpellProgress, true, func (spell spellbook.Spell, picked bool){
         if picked {
-            player.CastingSpell = spell
+            castingCost := spell.Cost(true)
+
+            if castingCost <= player.Mana && castingCost <= player.RemainingCastingSkill {
+                player.Mana -= castingCost
+                player.RemainingCastingSkill -= castingCost
+                select {
+                    case game.Events<- &GameEventCastSpell{Player: player, Spell: spell}:
+                    default:
+                }
+            } else {
+                player.CastingSpell = spell
+            }
         }
     }))
 }
@@ -2758,8 +2769,8 @@ func (game *Game) DoNextTurn(){
         if !player.CastingSpell.Invalid() {
             // mana spent on the skill is the minimum of {player's mana, casting skill, remaining cost for spell}
             manaSpent := player.Mana
-            if manaSpent > player.ComputeCastingSkill() {
-                manaSpent = player.ComputeCastingSkill()
+            if manaSpent > player.RemainingCastingSkill {
+                manaSpent = player.RemainingCastingSkill
             }
 
             remainingMana := player.CastingSpell.Cost(true) - player.CastingSpellProgress
@@ -2783,6 +2794,9 @@ func (game *Game) DoNextTurn(){
 
         player.SpellResearch += int(player.SpellResearchPerTurn(power))
         player.CastingSkillPower += player.CastingSkillPerTurn(power)
+
+        // reset casting skill for this turn
+        player.RemainingCastingSkill = player.ComputeCastingSkill()
 
         for _, city := range player.Cities {
             cityEvents := city.DoNextTurn(player.GetUnits(city.X, city.Y))
