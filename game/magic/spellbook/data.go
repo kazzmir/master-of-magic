@@ -32,6 +32,26 @@ type Spell struct {
     Rarity SpellRarity
 }
 
+func (spell Spell) Invalid() bool {
+    return spell.Name == ""
+}
+
+// overland=true if casting in overland, otherwise casting in combat
+func (spell Spell) Cost(overland bool) int {
+    if overland {
+        switch spell.Eligibility {
+            case EligibilityBoth: return spell.CastCost * 5
+            case EligibilityOverlandOnly: return spell.CastCost
+            case EligibilityBoth2: return spell.CastCost * 5
+            case EligibilityOverlandOnlyFriendlyCity: return spell.CastCost * 5
+            case EligibilityBothSameCost: return spell.CastCost
+            case EligibilityOverlandWhileBanished: return spell.CastCost
+        }
+    }
+
+    return spell.CastCost
+}
+
 type EligibilityType int
 const (
     EligibilityCombatOnly EligibilityType = 0xff
