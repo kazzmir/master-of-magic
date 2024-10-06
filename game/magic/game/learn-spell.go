@@ -5,13 +5,14 @@ import (
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/util"
+    "github.com/kazzmir/master-of-magic/game/magic/setup"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
 
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
-func (game *Game) doLearnSpell(yield coroutine.YieldFunc, player *playerlib.Player, spell spellbook.Spell){
+func (game *Game) wizlabAnimation(yield coroutine.YieldFunc, wizard setup.WizardCustom){
     oldDrawer := game.Drawer
     defer func(){
         game.Drawer = oldDrawer
@@ -20,7 +21,7 @@ func (game *Game) doLearnSpell(yield coroutine.YieldFunc, player *playerlib.Play
     var fade util.AlphaFadeFunc
 
     wizardIndex := -1
-    switch player.Wizard.Base {
+    switch wizard.Base {
         case data.WizardMerlin: wizardIndex = 0
         case data.WizardRaven: wizardIndex = 1
         case data.WizardSharee: wizardIndex = 2
@@ -40,7 +41,7 @@ func (game *Game) doLearnSpell(yield coroutine.YieldFunc, player *playerlib.Play
     animalIndex := 14
 
     // FIXME: base animal index on magic books?
-    switch player.Wizard.MostBooks() {
+    switch wizard.MostBooks() {
         case data.NatureMagic: animalIndex = 14
         case data.SorceryMagic: animalIndex = 15
         case data.ChaosMagic: animalIndex = 16
@@ -84,7 +85,7 @@ func (game *Game) doLearnSpell(yield coroutine.YieldFunc, player *playerlib.Play
 
     yield()
 
-    for counter = 0; counter < 100; counter++ {
+    for counter = 0; counter < 10; counter++ {
         if counter % 5 == 0 {
             sparkles.Next()
         }
@@ -105,4 +106,8 @@ func (game *Game) doLearnSpell(yield coroutine.YieldFunc, player *playerlib.Play
         }
         yield()
     }
+}
+
+func (game *Game) doLearnSpell(yield coroutine.YieldFunc, player *playerlib.Player, spell spellbook.Spell){
+    game.wizlabAnimation(yield, player.Wizard)
 }
