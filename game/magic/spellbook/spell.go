@@ -586,26 +586,48 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
         },
     })
 
+    doLeftPageTurn := func(){
+        if !flipping && hasPreviousPage(showLeftPage){
+            bookFlipIndex = ui.Counter
+            bookFlipReverse = true
+
+            flipLeftSide = showLeftPage - 1
+            flipRightSide = showLeftPage
+            showLeftPage -= 2
+            flipping = true
+
+            ui.AddDelay(bookFlipSpeed * uint64(len(bookFlip)) - 1, func(){
+                showRightPage -= 2
+                flipping = false
+            })
+        }
+    }
+
+    doRightPageTurn := func(){
+        if !flipping && hasNextPage(showRightPage){
+            bookFlipIndex = ui.Counter
+            bookFlipReverse = false
+
+            flipLeftSide = showRightPage
+            flipRightSide = showRightPage + 1
+            showRightPage += 2
+
+            flipping = true
+
+            ui.AddDelay(bookFlipSpeed * uint64(len(bookFlip)) - 1, func(){
+                showLeftPage += 2
+                flipping = false
+            })
+        }
+    }
+
     // left page turn
     leftTurn, _ := imageCache.GetImage("scroll.lbx", 7, 0)
     leftRect := image.Rect(15, 9, 15 + leftTurn.Bounds().Dx(), 9 + leftTurn.Bounds().Dy())
     elements = append(elements, &uilib.UIElement{
         Rect: leftRect,
         LeftClick: func(this *uilib.UIElement){
-            if !flipping && hasPreviousPage(showLeftPage){
-                bookFlipIndex = ui.Counter
-                bookFlipReverse = true
-
-                flipLeftSide = showLeftPage - 1
-                flipRightSide = showLeftPage
-                showLeftPage -= 2
-                flipping = true
-
-                ui.AddDelay(bookFlipSpeed * uint64(len(bookFlip)) - 1, func(){
-                    showRightPage -= 2
-                    flipping = false
-                })
-            }
+            doLeftPageTurn()
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             if hasPreviousPage(showLeftPage){
@@ -623,21 +645,7 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
     elements = append(elements, &uilib.UIElement{
         Rect: rightRect,
         LeftClick: func(this *uilib.UIElement){
-            if !flipping && hasNextPage(showRightPage){
-                bookFlipIndex = ui.Counter
-                bookFlipReverse = false
-
-                flipLeftSide = showRightPage
-                flipRightSide = showRightPage + 1
-                showRightPage += 2
-
-                flipping = true
-
-                ui.AddDelay(bookFlipSpeed * uint64(len(bookFlip)) - 1, func(){
-                    showLeftPage += 2
-                    flipping = false
-                })
-            }
+            doRightPageTurn()
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             if hasNextPage(showRightPage){
