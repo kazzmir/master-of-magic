@@ -881,8 +881,23 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
                     }
                 },
                 LeftClick: func(this *uilib.UIElement){
-                    // log.Printf("Click on spell %v", spell)
-                    shutdown(spell, true)
+                    // if the user is already casting a spell then ask them if they want to abort that spell
+                    if currentSpell.Valid() {
+                        confirm := func(){
+                            // if the user clicked on the same spell being cast then select an invalid spell, which
+                            // is the same thing as not casting any spell
+                            if spell.Name == currentSpell.Name {
+                                shutdown(Spell{}, true)
+                            } else {
+                                shutdown(spell, true)
+                            }
+                        }
+                        message := fmt.Sprintf("Do you wish to abort your %v spell?", currentSpell.Name)
+                        ui.AddElements(uilib.MakeConfirmDialogWithLayer(ui, cache, &imageCache, 2, message, confirm, func(){}))
+                    } else {
+                        // log.Printf("Click on spell %v", spell)
+                        shutdown(spell, true)
+                    }
                 },
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                     // vector.StrokeRect(screen, float32(rect.Min.X), float32(rect.Min.Y), float32(rect.Max.X - rect.Min.X), float32(rect.Max.Y - rect.Min.Y), 1, color.RGBA{R: 255, G: 255, B: 255, A: 255}, false)

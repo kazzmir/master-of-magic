@@ -36,6 +36,10 @@ func (spell Spell) Invalid() bool {
     return spell.Name == ""
 }
 
+func (spell Spell) Valid() bool {
+    return spell.Name != ""
+}
+
 // overland=true if casting in overland, otherwise casting in combat
 func (spell Spell) Cost(overland bool) int {
     if overland {
