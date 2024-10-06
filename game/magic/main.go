@@ -109,6 +109,28 @@ func runMainMenu(yield coroutine.YieldFunc, game *MagicGame) mainview.MainScreen
     return menu.State
 }
 
+/* starting units are swordsmen and spearmen of the appropriate race
+ */
+func startingUnits(race data.Race) []units.Unit {
+    switch race {
+        case data.RaceLizard: return []units.Unit{units.LizardSwordsmen, units.LizardSpearmen}
+        case data.RaceNomad: return []units.Unit{units.NomadSwordsmen, units.NomadSpearmen}
+        case data.RaceOrc: return []units.Unit{units.OrcSwordsmen, units.OrcSpearmen}
+        case data.RaceTroll: return []units.Unit{units.TrollSwordsmen, units.TrollSpearmen}
+        case data.RaceBarbarian: return []units.Unit{units.BarbarianSwordsmen, units.BarbarianSpearmen}
+        case data.RaceBeastmen: return []units.Unit{units.BeastmenSwordsmen, units.BeastmenSpearmen}
+        case data.RaceDarkElf: return []units.Unit{units.DarkElfSwordsmen, units.DarkElfSpearmen}
+        case data.RaceDraconian: return []units.Unit{units.DraconianSwordsmen, units.DraconianSpearmen}
+        case data.RaceDwarf: return []units.Unit{units.DwarfSwordsmen, units.DwarfSwordsmen}
+        case data.RaceGnoll: return []units.Unit{units.GnollSwordsmen, units.GnollSpearmen}
+        case data.RaceHalfling: return []units.Unit{units.HalflingSwordsmen, units.HalflingSpearmen}
+        case data.RaceHighElf: return []units.Unit{units.HighElfSwordsmen, units.HighElfSpearmen}
+        case data.RaceHighMen: return []units.Unit{units.HighMenSwordsmen, units.HighMenSpearmen}
+        case data.RaceKlackon: return []units.Unit{units.KlackonSwordsmen, units.KlackonSpearmen}
+        default: return nil
+    }
+}
+
 func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup.NewGameSettings, wizard setup.WizardCustom) error {
     game := gamelib.MakeGame(magic.Cache, settings)
     game.Plane = data.PlaneArcanus
@@ -132,13 +154,15 @@ func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup
 
     player.AddCity(introCity)
 
-    player.AddUnit(units.OverworldUnit{
-        Unit: units.GreatDrake,
-        Plane: data.PlaneArcanus,
-        Banner: wizard.Banner,
-        X: cityX,
-        Y: cityY,
-    })
+    for _, unit := range startingUnits(player.Wizard.Race) {
+        player.AddUnit(units.OverworldUnit{
+            Unit: unit,
+            Plane: data.PlaneArcanus,
+            Banner: wizard.Banner,
+            X: cityX,
+            Y: cityY,
+        })
+    }
 
     player.LiftFog(cityX, cityY, 3)
 
