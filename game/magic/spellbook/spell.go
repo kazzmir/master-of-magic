@@ -855,8 +855,10 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
         return out
     }
 
+    // the spell the user is mousing over
     var highlightedSpell Spell
 
+    // invoke to shut down the ui and return a result
     var shutdown func(Spell, bool)
 
     var spellButtons []*uilib.UIElement
@@ -936,6 +938,21 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
     }
 
     currentPage := 0
+
+    if currentSpell.Valid() {
+        loop:
+        for page, halfPage := range spellPages {
+            for _, spell := range halfPage.Spells {
+                if spell.Name == currentSpell.Name {
+                    currentPage = page
+                    break loop
+                }
+            }
+        }
+
+        // force it to be even
+        currentPage -= currentPage % 2
+    }
 
     bookFlip, _ := imageCache.GetImages("book.lbx", 0)
     bookFlipIndex := uint64(0)
