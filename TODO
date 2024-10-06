@@ -1,7 +1,6 @@
 * combat: cast unit spells
 * select spell to research
 * select spell to cast
-* cast spell on overworld
 * banish animation for defeated wizard
 * create artifact screen
 * cartographer advisor
@@ -24,6 +23,7 @@
 * quake console
 * make overworld wrap horizontally
 * remap colors for some sprites, such as the flag in city tile sprites
+* implement overworld spells
 
 9/22/2024 * city view: separate surplus food/gold from subsistence food/gold
 9/22/2024 * overworld path finding to point on map
@@ -39,3 +39,4 @@
 9/30/2024 * compute power
 10/4/2024 * surveyor advisor
 10/4/2024 * refactor new wizard/new game to use image cache
+10/5/2024 * cast spell on overworld
