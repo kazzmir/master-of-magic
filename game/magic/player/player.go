@@ -246,7 +246,13 @@ type Player struct {
     Mana int
 
     // known spells
-    Spells spellbook.Spells
+    KnownSpells spellbook.Spells
+
+    // the full set of spells that can be known by the wizard
+    ResearchPoolSpells spellbook.Spells
+
+    // spells that can be researched
+    ResearchCandidateSpells spellbook.Spells
 
     PowerDistribution PowerDistribution
 
@@ -273,6 +279,17 @@ type Player struct {
     // counter for the next created unit owned by this player
     UnitId uint64
     SelectedStack *UnitStack
+}
+
+/* return the city that contains the summoning circle */
+func (player *Player) FindSummoningCity() *citylib.City {
+    for _, city := range player.Cities {
+        if city.HasSummoningCircle() {
+            return city
+        }
+    }
+
+    return nil
 }
 
 func (player *Player) ComputeCastingSkill() int {

@@ -1404,7 +1404,7 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                     case *GameEventSurveyor:
                         game.doSurveyor(yield)
                     case *GameEventApprenticeUI:
-                        game.ShowApprenticeUI(yield)
+                        game.ShowApprenticeUI(yield, game.Players[0])
                     case *GameEventArmyView:
                         game.doArmyView(yield)
                     case *GameEventCityListView:
@@ -2081,7 +2081,7 @@ func (game *Game) ShowTaxCollectorUI(cornerX int, cornerY int){
     game.HudUI.AddElements(uilib.MakeSelectionUI(game.HudUI, game.Cache, &game.ImageCache, cornerX, cornerY, "Tax Per Population", taxes))
 }
 
-func (game *Game) ShowApprenticeUI(yield coroutine.YieldFunc){
+func (game *Game) ShowApprenticeUI(yield coroutine.YieldFunc, player *playerlib.Player){
     oldDrawer := game.Drawer
     defer func(){
         game.Drawer = oldDrawer
@@ -2094,7 +2094,7 @@ func (game *Game) ShowApprenticeUI(yield coroutine.YieldFunc){
         newDrawer(screen)
     }
 
-    spellbook.ShowSpellBook(yield, game.Cache, &newDrawer)
+    spellbook.ShowSpellBook(yield, game.Cache, player.ResearchPoolSpells, player.KnownSpells, player.ResearchCandidateSpells, &newDrawer)
 }
 
 // advisor ui
@@ -2168,7 +2168,7 @@ func (game *Game) MakeInfoUI(cornerX int, cornerY int) []*uilib.UIElement {
 
 func (game *Game) ShowSpellBookCastUI(){
     player := game.Players[0]
-    game.HudUI.AddElements(spellbook.MakeSpellBookCastUI(game.HudUI, game.Cache, player.Spells.OverlandSpells(), player.ComputeCastingSkill(), player.CastingSpell, player.CastingSpellProgress, true, func (spell spellbook.Spell, picked bool){
+    game.HudUI.AddElements(spellbook.MakeSpellBookCastUI(game.HudUI, game.Cache, player.KnownSpells.OverlandSpells(), player.ComputeCastingSkill(), player.CastingSpell, player.CastingSpellProgress, true, func (spell spellbook.Spell, picked bool){
         if picked {
             castingCost := spell.Cost(true)
 
@@ -2840,7 +2840,9 @@ func (game *Game) DoNextTurn(){
                     default:
                 }
 
-                player.Spells.AddSpell(player.ResearchingSpell)
+                // FIXME: choose a new research candidate spell
+
+                player.KnownSpells.AddSpell(player.ResearchingSpell)
                 player.ResearchingSpell = spellbook.Spell{}
                 player.ResearchProgress = 0
                 select {

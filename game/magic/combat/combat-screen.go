@@ -1789,7 +1789,7 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
 
     // spell
     elements = append(elements, makeButton(1, 0, 0, func(){
-        spellUI := spellbook.MakeSpellBookCastUI(ui, combat.Cache, player.Spells, player.ComputeCastingSkill(), spellbook.Spell{}, 0, false, func (spell spellbook.Spell, picked bool){
+        spellUI := spellbook.MakeSpellBookCastUI(ui, combat.Cache, player.KnownSpells, player.ComputeCastingSkill(), spellbook.Spell{}, 0, false, func (spell spellbook.Spell, picked bool){
             if picked {
                 // player mana and skill should go down accordingly
                 combat.InvokeSpell(player, spell)

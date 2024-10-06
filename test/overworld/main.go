@@ -1027,12 +1027,12 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
 
     allSpells, _ := spellbook.ReadSpellsFromCache(cache)
 
-    player.Spells.AddSpell(allSpells.FindByName("Earth Lore"))
-    player.Spells.AddSpell(allSpells.FindByName("Giant Strength"))
-    player.Spells.AddSpell(allSpells.FindByName("Ice Bolt"))
-    player.Spells.AddSpell(allSpells.FindByName("Enchant Item"))
-    player.Spells.AddSpell(allSpells.FindByName("Magic Spirit"))
-    player.Spells.AddSpell(allSpells.FindByName("Dark Rituals"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Earth Lore"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Giant Strength"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Ice Bolt"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Enchant Item"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Magic Spirit"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Dark Rituals"))
 
     x, y := game.FindValidCityLocation()
 
@@ -1103,12 +1103,12 @@ func createScenario14(cache *lbx.LbxCache) *gamelib.Game {
 
     allSpells, _ := spellbook.ReadSpellsFromCache(cache)
 
-    player.Spells.AddSpell(allSpells.FindByName("Earth Lore"))
-    player.Spells.AddSpell(allSpells.FindByName("Giant Strength"))
-    player.Spells.AddSpell(allSpells.FindByName("Ice Bolt"))
-    player.Spells.AddSpell(allSpells.FindByName("Enchant Item"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Earth Lore"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Giant Strength"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Ice Bolt"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Enchant Item"))
     // player.Spells.AddSpell(allSpells.FindByName("Magic Spirit"))
-    player.Spells.AddSpell(allSpells.FindByName("Dark Rituals"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Dark Rituals"))
 
     x, y := game.FindValidCityLocation()
 

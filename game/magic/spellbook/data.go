@@ -187,6 +187,10 @@ func (spells *Spells) RemoveSpell(toRemove Spell){
     spells.Spells = out
 }
 
+func (spells *Spells) Contains(spell Spell) bool {
+    return spells.FindByName(spell.Name).Name == spell.Name
+}
+
 func (spells *Spells) FindByName(name string) Spell {
     for _, spell := range spells.Spells {
         if strings.ToLower(spell.Name) == strings.ToLower(name) {
