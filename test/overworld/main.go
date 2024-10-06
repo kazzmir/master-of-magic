@@ -1107,7 +1107,7 @@ func createScenario14(cache *lbx.LbxCache) *gamelib.Game {
         player.ResearchPoolSpells.AddSpell(allSpells.FindByName(name))
     }
 
-    player.KnownSpells.AddSpell(allSpells.FindByName("Earth Lore"))
+    // player.KnownSpells.AddSpell(allSpells.FindByName("Earth Lore"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Giant Strength"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Ice Bolt"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Enchant Item"))
@@ -1115,7 +1115,8 @@ func createScenario14(cache *lbx.LbxCache) *gamelib.Game {
     player.KnownSpells.AddSpell(allSpells.FindByName("Dark Rituals"))
 
     player.ResearchCandidateSpells.AddSpell(allSpells.FindByName("Magic Spirit"))
-    player.ResearchingSpell = allSpells.FindByName("Magic Spirit")
+    // player.ResearchingSpell = allSpells.FindByName("Magic Spirit")
+    player.ResearchingSpell = allSpells.FindByName("Earth Lore")
     player.ResearchProgress = 10
 
     x, y := game.FindValidCityLocation()
@@ -1142,6 +1143,7 @@ func createScenario14(cache *lbx.LbxCache) *gamelib.Game {
 
     game.Events <- &gamelib.GameEventLearnedSpell{
         Player: player,
+        // Spell: allSpells.FindByName("Earth Lore"),
         Spell: allSpells.FindByName("Magic Spirit"),
     }
 

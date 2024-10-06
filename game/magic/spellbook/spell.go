@@ -418,6 +418,13 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
                         scale.SetB(float32(v) * 1.8)
                     }
 
+                    if !flipping && learnedSpell.Name == spell.Name && !learnSpellAnimation.Done() {
+                        v := 1.5 + float64(ui.Counter) / 32
+                        scale.SetR(float32(v))
+                        scale.SetG(float32(v))
+                        scale.SetB(float32(v) * 1.8)
+                    }
+
                     spellTitleNormalFont.Print(pageImage, x, y, 1, scale, spell.Name)
                     y += float64(spellTitleNormalFont.Height())
 
@@ -453,6 +460,7 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
 
                     if !flipping && learnedSpell.Name == spell.Name && !learnSpellAnimation.Done() {
                         animationOptions := options
+                        animationOptions.GeoM.Reset()
                         animationOptions.GeoM.Translate(x, spellY - 2)
                         pageImage.DrawImage(learnSpellAnimation.Frame(), &animationOptions)
                     }
@@ -651,7 +659,7 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
 
     for !quit {
         ui.StandardUpdate()
-        if ui.Counter % 5 == 0 {
+        if ui.Counter % 4 == 0 {
             learnSpellAnimation.Next()
         }
         yield()

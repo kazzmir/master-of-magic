@@ -43,7 +43,7 @@ func (animation *Animation) Next() bool {
         animation.CurrentFrame += 1
     }
 
-    if animation.CurrentFrame < len(animation.Frames) {
+    if animation.CurrentFrame < len(animation.Frames) - 1 {
         return true
     } else if animation.Repeat == -1 || animation.Repeat > 0 {
         animation.CurrentFrame = 0
