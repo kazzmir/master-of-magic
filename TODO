@@ -1,10 +1,10 @@
 * combat: cast unit spells
 * select spell to research
-* select spell to cast
 * banish animation for defeated wizard
 * create artifact screen
 * cartographer advisor
 * city catchment area
+* draw units with experience/bonuses
 * combat: results from combat should be reflected in overworld units
 * combat: draw town sprites in combat scene
 * overworld units should render health and veteran status
@@ -40,3 +40,4 @@
 10/4/2024 * surveyor advisor
 10/4/2024 * refactor new wizard/new game to use image cache
 10/5/2024 * cast spell on overworld
+10/5/2024 * select spell to cast
