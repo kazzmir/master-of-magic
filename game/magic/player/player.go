@@ -398,6 +398,21 @@ func (player *Player) SetSelectedStack(stack *UnitStack){
     player.SelectedStack = stack
 }
 
+func (player *Player) LiftFogSquare(x int, y int, squares int){
+    // FIXME: make this a parameter
+    fog := player.ArcanusFog
+
+    for dx := -squares; dx <= squares; dx++ {
+        for dy := -squares; dy <= squares; dy++ {
+            if x + dx < 0 || x + dx >= len(fog) || y + dy < 0 || y + dy >= len(fog[0]) {
+                continue
+            }
+
+            fog[x + dx][y + dy] = true
+        }
+    }
+}
+
 /* make anything within the given radius viewable by the player */
 func (player *Player) LiftFog(x int, y int, radius int){
 

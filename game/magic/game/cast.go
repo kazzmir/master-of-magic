@@ -34,7 +34,7 @@ func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Playe
 
             game.doCastEarthLore(yield, player)
 
-            player.LiftFog(tileX, tileY, 5)
+            player.LiftFogSquare(tileX, tileY, 5)
     }
 }
 
