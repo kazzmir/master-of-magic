@@ -377,16 +377,18 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
     // create images of each page
     halfPageCache := make(map[int]*ebiten.Image)
 
-    renderPage := func(page Page, pageImage *ebiten.Image){
+    renderPage := func(page Page, pageImage *ebiten.Image, options ebiten.DrawImageOptions){
         if len(page.Spells.Spells) > 0 || page.ForceRender {
-            var options ebiten.DrawImageOptions
-            options.GeoM.Translate(0, 0)
+            // var options ebiten.DrawImageOptions
+            // options.GeoM.Translate(0, 0)
 
             // section := pageSpells.Spells[0].Section
-            titleFont.PrintCenter(pageImage, 90, 11, 1, options.ColorScale, page.Title)
+            titleX, titleY := options.GeoM.Apply(90, 11)
 
-            x := float64(25)
-            y := float64(35)
+            titleFont.PrintCenter(pageImage, titleX, titleY, 1, options.ColorScale, page.Title)
+
+            x, y := options.GeoM.Apply(25, 35)
+
             for i, spell := range page.Spells.Spells {
                 if i >= 4 {
                     break
@@ -418,7 +420,7 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
         pageImage.Fill(color.RGBA{R: 0, G: 0, B: 0, A: 0})
 
         if halfPage < len(halfPages) {
-            renderPage(halfPages[halfPage], pageImage)
+            renderPage(halfPages[halfPage], pageImage, ebiten.DrawImageOptions{})
         }
 
         halfPageCache[halfPage] = pageImage
@@ -453,15 +455,20 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
             screen.DrawImage(background, &options)
 
             if showLeftPage >= 0 {
-                leftPageImage := getHalfPageImage(showLeftPage)
-                screen.DrawImage(leftPageImage, &options)
+                renderPage(halfPages[showLeftPage], screen, options)
             }
 
             if showRightPage < len(halfPages) {
+                /*
                 rightPageImage := getHalfPageImage(showRightPage)
                 rightOptions := options
                 rightOptions.GeoM.Translate(148, 0)
                 screen.DrawImage(rightPageImage, &rightOptions)
+                */
+                rightOptions := options
+                rightOptions.GeoM.Translate(148, 0)
+                rightPage := screen.SubImage(image.Rect(148, 0, screen.Bounds().Dx(), screen.Bounds().Dy())).(*ebiten.Image)
+                renderPage(halfPages[showRightPage], rightPage, rightOptions)
             }
 
             animationIndex := ui.Counter
