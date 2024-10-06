@@ -1116,6 +1116,7 @@ func createScenario14(cache *lbx.LbxCache) *gamelib.Game {
 
     player.ResearchCandidateSpells.AddSpell(allSpells.FindByName("Magic Spirit"))
     player.ResearchingSpell = allSpells.FindByName("Magic Spirit")
+    player.ResearchProgress = 10
 
     x, y := game.FindValidCityLocation()
 

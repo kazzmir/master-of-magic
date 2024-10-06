@@ -214,7 +214,7 @@ func RightSideFlipRightDistortions1(page *ebiten.Image) util.Distortion {
  * 2. show book and let user flip between pages. on the 'research spells' page, show currently
 *     researching spell as glowing text
  */
-func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spells, knownSpells Spells, researchSpells Spells, researchingSpell Spell, drawFunc *func(screen *ebiten.Image)) {
+func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spells, knownSpells Spells, researchSpells Spells, researchingSpell Spell, researchProgress int, researchPoints int, drawFunc *func(screen *ebiten.Image)) {
     ui := &uilib.UI{
         Draw: func(ui *uilib.UI, screen *ebiten.Image){
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
@@ -223,6 +223,10 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
                 }
             })
         },
+    }
+
+    if researchPoints < 1 {
+        researchPoints = 1
     }
 
     var elements []*uilib.UIElement
@@ -413,7 +417,10 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
                     y += float64(spellTitleNormalFont.Height())
 
                     if page.IsResearch {
-                        turns := spell.ResearchCost / 10
+                        turns := spell.ResearchCost / researchPoints
+                        if spell.Name == researchingSpell.Name {
+                            turns = (spell.ResearchCost - researchProgress) / researchPoints
+                        }
                         if turns < 1 {
                             turns = 1
                         }
