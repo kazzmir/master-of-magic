@@ -1103,12 +1103,18 @@ func createScenario14(cache *lbx.LbxCache) *gamelib.Game {
 
     allSpells, _ := spellbook.ReadSpellsFromCache(cache)
 
+    for _, name := range []string{"Earth Lore", "Giant Strength", "Ice Bolt", "Enchant Item", "Dark Rituals", "Spell Blast", "Time Stop", "Web"} {
+        player.ResearchPoolSpells.AddSpell(allSpells.FindByName(name))
+    }
+
     player.KnownSpells.AddSpell(allSpells.FindByName("Earth Lore"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Giant Strength"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Ice Bolt"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Enchant Item"))
     // player.Spells.AddSpell(allSpells.FindByName("Magic Spirit"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Dark Rituals"))
+
+    player.ResearchCandidateSpells.AddSpell(allSpells.FindByName("Magic Spirit"))
 
     x, y := game.FindValidCityLocation()
 
