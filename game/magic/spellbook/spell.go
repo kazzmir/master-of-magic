@@ -377,33 +377,17 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
     // create images of each page
     halfPageCache := make(map[int]*ebiten.Image)
 
-    // lazily construct the page graphics, which consists of the section title and 4 spell descriptions
-    getHalfPageImage := func(halfPage int) *ebiten.Image {
-        image, ok := halfPageCache[halfPage]
-        if ok {
-            return image
-        }
-
-        var sectionTitle string
-        var pageSpells Spells
-        if halfPage < len(halfPages) {
-            pageSpells = halfPages[halfPage].Spells
-            sectionTitle = halfPages[halfPage].Title
-        }
-
-        pageImage := ebiten.NewImage(155, 170)
-        pageImage.Fill(color.RGBA{R: 0, G: 0, B: 0, A: 0})
-
-        if len(pageSpells.Spells) > 0 || halfPages[halfPage].ForceRender {
+    renderPage := func(page Page, pageImage *ebiten.Image){
+        if len(page.Spells.Spells) > 0 || page.ForceRender {
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(0, 0)
 
             // section := pageSpells.Spells[0].Section
-            titleFont.PrintCenter(pageImage, 90, 11, 1, options.ColorScale, sectionTitle)
+            titleFont.PrintCenter(pageImage, 90, 11, 1, options.ColorScale, page.Title)
 
             x := float64(25)
             y := float64(35)
-            for i, spell := range pageSpells.Spells {
+            for i, spell := range page.Spells.Spells {
                 if i >= 4 {
                     break
                 }
@@ -420,6 +404,21 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
 
                 y += 35
             }
+        }
+    }
+
+    // lazily construct the page graphics, which consists of the section title and 4 spell descriptions
+    getHalfPageImage := func(halfPage int) *ebiten.Image {
+        image, ok := halfPageCache[halfPage]
+        if ok {
+            return image
+        }
+
+        pageImage := ebiten.NewImage(155, 170)
+        pageImage.Fill(color.RGBA{R: 0, G: 0, B: 0, A: 0})
+
+        if halfPage < len(halfPages) {
+            renderPage(halfPages[halfPage], pageImage)
         }
 
         halfPageCache[halfPage] = pageImage
