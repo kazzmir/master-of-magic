@@ -253,6 +253,22 @@ func computeInitialCastingSkillPower(books []data.WizardBook) int {
     return v * v + total
 }
 
+func (game *Game) AllSpells() spellbook.Spells {
+    spellsLbx, err := game.Cache.GetLbxFile("spelldat.lbx")
+    if err != nil {
+        log.Printf("Could not open spelldat.lbx: %v", err)
+        return spellbook.Spells{}
+    }
+
+    spells, err := spellbook.ReadSpells(spellsLbx, 0)
+    if err != nil {
+        log.Printf("Could not read spells from spelldat.lbx: %v", err)
+        return spellbook.Spells{}
+    }
+
+    return spells
+}
+
 func (game *Game) AddPlayer(wizard setup.WizardCustom) *playerlib.Player{
     newPlayer := &playerlib.Player{
         TaxRate: fraction.FromInt(1),
@@ -266,9 +282,15 @@ func (game *Game) AddPlayer(wizard setup.WizardCustom) *playerlib.Player{
         },
     }
 
+    allSpells := game.AllSpells()
+
     // FIXME: add all the possible spells the player could learn
     newPlayer.ResearchPoolSpells = wizard.StartingSpells.Copy()
+    newPlayer.ResearchPoolSpells.AddSpell(allSpells.FindByName("Magic Spirit"))
+    newPlayer.ResearchPoolSpells.AddSpell(allSpells.FindByName("Spell of Return"))
     newPlayer.KnownSpells = wizard.StartingSpells.Copy()
+    newPlayer.KnownSpells.AddSpell(allSpells.FindByName("Magic Spirit"))
+    newPlayer.KnownSpells.AddSpell(allSpells.FindByName("Spell of Return"))
     newPlayer.CastingSkillPower = computeInitialCastingSkillPower(newPlayer.Wizard.Books)
 
     game.Players = append(game.Players, newPlayer)

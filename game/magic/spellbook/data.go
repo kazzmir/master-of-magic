@@ -196,6 +196,11 @@ func (spells *Spells) Sub(min int, max int) Spells {
 }
 
 func (spells *Spells) AddSpell(spell Spell) {
+    for _, check := range spells.Spells {
+        if check.Name == spell.Name {
+            return
+        }
+    }
     spells.Spells = append(spells.Spells, spell)
 }
 
