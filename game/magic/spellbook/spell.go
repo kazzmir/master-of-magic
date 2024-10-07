@@ -632,13 +632,23 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
             if pickResearchSpell {
                 if researchSpellIndex >= 0 && researchSpellIndex < len(researchPage1.Spells.Spells) {
                     *chosenSpell = researchPage1.Spells.Spells[researchSpellIndex]
-                    quit = true
+                    getAlpha = ui.MakeFadeOut(fadeSpeed)
+                    ui.AddDelay(fadeSpeed, func(){
+                        // ui.RemoveElements(elements)
+                        quit = true
+                    })
+
                 } else {
                     use := researchSpellIndex - 4
                     // right page
                     if use >= 0 && use < len(researchPage2.Spells.Spells) {
                         *chosenSpell = researchPage2.Spells.Spells[use]
-                        quit = true
+                        getAlpha = ui.MakeFadeOut(fadeSpeed)
+                        ui.AddDelay(fadeSpeed, func(){
+                            // ui.RemoveElements(elements)
+                            quit = true
+                        })
+
                     }
                 }
             }
