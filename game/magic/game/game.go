@@ -386,7 +386,7 @@ func (game *Game) AddPlayer(wizard setup.WizardCustom) *playerlib.Player{
     game.InitializeResearchableSpells(&allSpells, newPlayer)
     newPlayer.UpdateResearchCandidates()
 
-    log.Printf("Research spells: %v", newPlayer.ResearchPoolSpells)
+    // log.Printf("Research spells: %v", newPlayer.ResearchPoolSpells)
 
     game.Players = append(game.Players, newPlayer)
     return newPlayer
@@ -632,6 +632,8 @@ func (game *Game) doMagicView(yield coroutine.YieldFunc) {
     for magicScreen.Update() == magicview.MagicScreenStateRunning {
         yield()
     }
+
+    yield()
 
     game.Drawer = oldDrawer
 }

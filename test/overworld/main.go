@@ -1101,19 +1101,25 @@ func createScenario14(cache *lbx.LbxCache) *gamelib.Game {
 
     player.CastingSkillPower += 500
 
-    allSpells, _ := spellbook.ReadSpellsFromCache(cache)
+    // allSpells, _ := spellbook.ReadSpellsFromCache(cache)
 
+    /*
     for _, name := range []string{"Earth Lore", "Giant Strength", "Ice Bolt", "Enchant Item", "Dark Rituals", "Spell Blast", "Time Stop", "Web", "Magic Spirit"} {
         player.ResearchPoolSpells.AddSpell(allSpells.FindByName(name))
     }
+    */
+    // player.ResearchPoolSpells.AddAllSpells(allSpells)
 
     // player.KnownSpells.AddSpell(allSpells.FindByName("Earth Lore"))
+    /*
     player.KnownSpells.AddSpell(allSpells.FindByName("Giant Strength"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Ice Bolt"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Enchant Item"))
     // player.Spells.AddSpell(allSpells.FindByName("Magic Spirit"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Dark Rituals"))
+    */
 
+    /*
     player.ResearchCandidateSpells.AddSpell(allSpells.FindByName("Magic Spirit"))
     player.ResearchCandidateSpells.AddSpell(allSpells.FindByName("Endurance"))
     player.ResearchCandidateSpells.AddSpell(allSpells.FindByName("Hell Hounds"))
@@ -1123,6 +1129,8 @@ func createScenario14(cache *lbx.LbxCache) *gamelib.Game {
     player.ResearchCandidateSpells.AddSpell(allSpells.FindByName("Summoning Circle"))
     player.ResearchCandidateSpells.AddSpell(allSpells.FindByName("Just Cause"))
     player.ResearchCandidateSpells.AddSpell(allSpells.FindByName("Detect Magic"))
+    */
+
     // player.ResearchingSpell = allSpells.FindByName("Magic Spirit")
     // player.ResearchingSpell = allSpells.FindByName("Earth Lore")
     // player.ResearchProgress = 10
@@ -1149,11 +1157,13 @@ func createScenario14(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 4)
 
+    /*
     game.Events <- &gamelib.GameEventLearnedSpell{
         Player: player,
         // Spell: allSpells.FindByName("Earth Lore"),
         Spell: allSpells.FindByName("Magic Spirit"),
     }
+    */
 
     return game
 }

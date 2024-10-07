@@ -1,6 +1,7 @@
 package spellbook
 
 import (
+    "slices"
     "math/rand"
     "strings"
     "fmt"
@@ -310,6 +311,20 @@ func (spells Spells) GetSpellsByRarity(rarity SpellRarity) Spells {
     }
 
     return SpellsFromArray(out)
+}
+
+func (spells *Spells) SortByRarity(){
+    slices.SortFunc(spells.Spells, func(a Spell, b Spell) int {
+        if a.Rarity < b.Rarity {
+            return -1
+        }
+
+        if a.Rarity == b.Rarity {
+            return 0
+        }
+
+        return 1
+    })
 }
 
 func (spells *Spells) ShuffleSpells(){

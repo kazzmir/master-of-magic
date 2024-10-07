@@ -9,6 +9,8 @@ type Animation struct {
     Frames []*ebiten.Image
     CurrentFrame int
     Repeat int
+    // done is true once Next() has been called after the last frame
+    done bool
 }
 
 func MakeAnimation(frames []*ebiten.Image, loop bool) *Animation {
@@ -34,16 +36,13 @@ func MakeRepeatAnimation(frames []*ebiten.Image, repeats int) *Animation {
 }
 
 func (animation *Animation) Done() bool {
-    return animation.CurrentFrame == len(animation.Frames)
+    return animation.done
 }
 
 /* returns true if there are frames left, otherwise false */
 func (animation *Animation) Next() bool {
-    if animation.CurrentFrame < len(animation.Frames) {
-        animation.CurrentFrame += 1
-    }
-
     if animation.CurrentFrame < len(animation.Frames) - 1 {
+        animation.CurrentFrame += 1
         return true
     } else if animation.Repeat == -1 || animation.Repeat > 0 {
         animation.CurrentFrame = 0
@@ -52,6 +51,7 @@ func (animation *Animation) Next() bool {
         }
         return true
     } else {
+        animation.done = true
         return false
     }
 }

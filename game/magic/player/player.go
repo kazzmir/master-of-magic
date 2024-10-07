@@ -3,6 +3,7 @@ package player
 import (
     "slices"
     "math"
+    "math/rand/v2"
 
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/units"
@@ -297,7 +298,51 @@ func (player *Player) FindSummoningCity() *citylib.City {
  * lower rarity spells first.
  */
 func (player *Player) UpdateResearchCandidates() {
-    // FIXME
+    moreSpells := 8 - len(player.ResearchCandidateSpells.Spells)
+
+    // find the set of potential spells to add to the research candidates
+    allSpells := player.ResearchPoolSpells.Copy()
+    allSpells.RemoveSpells(player.KnownSpells)
+    allSpells.RemoveSpells(player.ResearchCandidateSpells)
+
+    realms := []data.MagicType{
+        data.LifeMagic, data.SorceryMagic, data.NatureMagic,
+        data.DeathMagic, data.ChaosMagic, data.ArcaneMagic,
+    }
+
+    chooseSpell := func (spells *spellbook.Spells) spellbook.Spell {
+        // for each realm (chosen randomly), try to find a spell to add to the research candidates
+        for _, realmIndex := range rand.Perm(len(realms)) {
+            rarities := []spellbook.SpellRarity{
+                spellbook.SpellRarityCommon, spellbook.SpellRarityUncommon,
+                spellbook.SpellRarityRare, spellbook.SpellRarityVeryRare,
+            }
+
+            for _, rarity := range rarities {
+                candidates := allSpells.GetSpellsByMagic(realms[realmIndex]).GetSpellsByRarity(rarity)
+
+                if len(candidates.Spells) > 0 {
+                    return candidates.Spells[rand.IntN(len(candidates.Spells))]
+                }
+            }
+        }
+
+        return spellbook.Spell{}
+    }
+
+    for i := 0; i < moreSpells; i++ {
+        if len(allSpells.Spells) > 0 {
+            spell := chooseSpell(&allSpells)
+            if spell.Valid() {
+                player.ResearchCandidateSpells.AddSpell(spell)
+                allSpells.RemoveSpell(spell)
+            }
+        }
+    }
+
+    player.ResearchCandidateSpells.SortByRarity()
+
+    // log.Printf("Research candidates: %v", player.ResearchCandidateSpells)
 }
 
 func (player *Player) ComputeCastingSkill() int {
