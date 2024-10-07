@@ -231,7 +231,7 @@ type WizardCustom struct {
     Base data.WizardBase
     Abilities []WizardAbility
     Books []data.WizardBook
-    Spells spellbook.Spells
+    StartingSpells spellbook.Spells
     Race data.Race
     Banner data.BannerType
 }
@@ -1475,19 +1475,19 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
 
         // assign common spells
         for _, index := range rand.Perm(len(commonSpells.Spells))[0:commonMax] {
-            screen.CustomWizard.Spells.AddSpell(commonSpells.Spells[index])
+            screen.CustomWizard.StartingSpells.AddSpell(commonSpells.Spells[index])
             commonPicks -= 1
         }
 
         // assign uncommon spells
         for _, index := range rand.Perm(len(uncommonSpells.Spells))[0:uncommonMax] {
-            screen.CustomWizard.Spells.AddSpell(uncommonSpells.Spells[index])
+            screen.CustomWizard.StartingSpells.AddSpell(uncommonSpells.Spells[index])
             uncommonPicks -= 1
         }
 
         // assign rare spells
         for _, index := range rand.Perm(len(rareSpells.Spells))[0:rareMax] {
-            screen.CustomWizard.Spells.AddSpell(rareSpells.Spells[index])
+            screen.CustomWizard.StartingSpells.AddSpell(rareSpells.Spells[index])
             rarePicks -= 1
         }
 
@@ -1515,11 +1515,11 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
                 elements = append(elements, &uilib.UIElement{
                     Rect: image.Rect(int(x), int(y), int(x) + width, int(y) + screen.AbilityFontAvailable.Height()),
                     LeftClick: func(this *uilib.UIElement){
-                        if screen.CustomWizard.Spells.HasSpell(spell) {
-                            screen.CustomWizard.Spells.RemoveSpell(spell)
+                        if screen.CustomWizard.StartingSpells.HasSpell(spell) {
+                            screen.CustomWizard.StartingSpells.RemoveSpell(spell)
                             *picks += 1
                         } else if *picks > 0 {
-                            screen.CustomWizard.Spells.AddSpell(spell)
+                            screen.CustomWizard.StartingSpells.AddSpell(spell)
                             *picks -= 1
                         } else {
                             screen.UI.AddElement(uilib.MakeErrorElement(screen.UI, screen.LbxCache, &imageCache, "You have no picks left in this area, to deselect click on a selected item"))
@@ -1534,7 +1534,7 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
                         screen.UI.AddElement(uilib.MakeHelpElement(screen.UI, screen.LbxCache, &imageCache, helpEntries[0]))
                     },
                     Draw: func(this *uilib.UIElement, window *ebiten.Image){
-                        if screen.CustomWizard.Spells.HasSpell(spell) {
+                        if screen.CustomWizard.StartingSpells.HasSpell(spell) {
                             var options ebiten.DrawImageOptions
                             options.GeoM.Translate(float64(useX), float64(useY))
                             window.DrawImage(checkMark, &options)

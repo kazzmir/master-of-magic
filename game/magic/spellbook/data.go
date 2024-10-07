@@ -173,6 +173,12 @@ type Spells struct {
     Spells []Spell
 }
 
+func (spells *Spells) Copy() Spells {
+    out := make([]Spell, len(spells.Spells))
+    copy(out, spells.Spells)
+    return SpellsFromArray(out)
+}
+
 func (spells *Spells) Sub(min int, max int) Spells {
     if min < 0 {
         min = 0

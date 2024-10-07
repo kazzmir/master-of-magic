@@ -266,6 +266,7 @@ func (game *Game) AddPlayer(wizard setup.WizardCustom) *playerlib.Player{
         },
     }
 
+    newPlayer.KnownSpells = wizard.StartingSpells.Copy()
     newPlayer.CastingSkillPower = computeInitialCastingSkillPower(newPlayer.Wizard.Books)
 
     game.Players = append(game.Players, newPlayer)
@@ -2106,8 +2107,10 @@ func (game *Game) ResearchNewSpell(yield coroutine.YieldFunc, player *playerlib.
         newDrawer(screen)
     }
 
-    power := game.ComputePower(player)
-    spellbook.ShowSpellBook(yield, game.Cache, player.ResearchPoolSpells, player.KnownSpells, player.ResearchCandidateSpells, spellbook.Spell{}, 0, int(player.SpellResearchPerTurn(power)), player.ComputeCastingSkill(), spellbook.Spell{}, true, &player.ResearchingSpell, &newDrawer)
+    if len(player.ResearchCandidateSpells.Spells) > 0 {
+        power := game.ComputePower(player)
+        spellbook.ShowSpellBook(yield, game.Cache, player.ResearchPoolSpells, player.KnownSpells, player.ResearchCandidateSpells, spellbook.Spell{}, 0, int(player.SpellResearchPerTurn(power)), player.ComputeCastingSkill(), spellbook.Spell{}, true, &player.ResearchingSpell, &newDrawer)
+    }
 }
 
 // advisor ui
