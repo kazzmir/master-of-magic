@@ -11,6 +11,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
+    citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     "github.com/hajimehoshi/ebiten/v2"
     // "github.com/hajimehoshi/ebiten/v2/vector"
@@ -665,9 +666,17 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player) *uilib.UI {
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             // util.DrawRect(screen, castingRect, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff})
-            smallerFont.Print(screen, 100, 176, 1, ebiten.ColorScale{}, fmt.Sprintf("Casting: %v", "None"))
-            smallerFont.Print(screen, 100, 183, 1, ebiten.ColorScale{}, fmt.Sprintf("Researching: %v", "Whatever"))
-            smallerFont.Print(screen, 100, 190, 1, ebiten.ColorScale{}, fmt.Sprintf("Summon To: %v", "Somewhere"))
+            smallerFont.Print(screen, 100, 176, 1, ebiten.ColorScale{}, fmt.Sprintf("Casting: %v", player.CastingSpell.Name))
+            smallerFont.Print(screen, 100, 183, 1, ebiten.ColorScale{}, fmt.Sprintf("Researching: %v", player.ResearchingSpell.Name))
+
+            summonCity := player.FindSummoningCity()
+            if summonCity == nil {
+                summonCity = &citylib.City{
+                    Name: "",
+                }
+            }
+
+            smallerFont.Print(screen, 100, 190, 1, ebiten.ColorScale{}, fmt.Sprintf("Summon To: %v", summonCity.Name))
         },
     })
 

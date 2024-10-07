@@ -3,6 +3,7 @@ package player
 import (
     "slices"
     "math"
+    "math/rand/v2"
 
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/units"
@@ -246,7 +247,13 @@ type Player struct {
     Mana int
 
     // known spells
-    Spells spellbook.Spells
+    KnownSpells spellbook.Spells
+
+    // the full set of spells that can be known by the wizard
+    ResearchPoolSpells spellbook.Spells
+
+    // spells that can be researched
+    ResearchCandidateSpells spellbook.Spells
 
     PowerDistribution PowerDistribution
 
@@ -255,14 +262,14 @@ type Player struct {
     // how much casting skill remains in this turn
     RemainingCastingSkill int
 
+    ResearchingSpell spellbook.Spell
+    ResearchProgress int
+
     // current spell being cast
     CastingSpell spellbook.Spell
     // how much mana has been put towards the current spell. When this value equals
     // the spell's casting cost, the spell is cast
     CastingSpellProgress int
-
-    // amount of research put towards the current spell
-    SpellResearch int
 
     Wizard setup.WizardCustom
 
@@ -273,6 +280,69 @@ type Player struct {
     // counter for the next created unit owned by this player
     UnitId uint64
     SelectedStack *UnitStack
+}
+
+/* return the city that contains the summoning circle */
+func (player *Player) FindSummoningCity() *citylib.City {
+    for _, city := range player.Cities {
+        if city.HasSummoningCircle() {
+            return city
+        }
+    }
+
+    return nil
+}
+
+/* fill up the research candidate spells so that there are at most 8.
+ * choose spells from the research pool that are not already known, but preferring
+ * lower rarity spells first.
+ */
+func (player *Player) UpdateResearchCandidates() {
+    moreSpells := 8 - len(player.ResearchCandidateSpells.Spells)
+
+    // find the set of potential spells to add to the research candidates
+    allSpells := player.ResearchPoolSpells.Copy()
+    allSpells.RemoveSpells(player.KnownSpells)
+    allSpells.RemoveSpells(player.ResearchCandidateSpells)
+
+    realms := []data.MagicType{
+        data.LifeMagic, data.SorceryMagic, data.NatureMagic,
+        data.DeathMagic, data.ChaosMagic, data.ArcaneMagic,
+    }
+
+    chooseSpell := func (spells *spellbook.Spells) spellbook.Spell {
+        // for each realm (chosen randomly), try to find a spell to add to the research candidates
+        for _, realmIndex := range rand.Perm(len(realms)) {
+            rarities := []spellbook.SpellRarity{
+                spellbook.SpellRarityCommon, spellbook.SpellRarityUncommon,
+                spellbook.SpellRarityRare, spellbook.SpellRarityVeryRare,
+            }
+
+            for _, rarity := range rarities {
+                candidates := allSpells.GetSpellsByMagic(realms[realmIndex]).GetSpellsByRarity(rarity)
+
+                if len(candidates.Spells) > 0 {
+                    return candidates.Spells[rand.IntN(len(candidates.Spells))]
+                }
+            }
+        }
+
+        return spellbook.Spell{}
+    }
+
+    for i := 0; i < moreSpells; i++ {
+        if len(allSpells.Spells) > 0 {
+            spell := chooseSpell(&allSpells)
+            if spell.Valid() {
+                player.ResearchCandidateSpells.AddSpell(spell)
+                allSpells.RemoveSpell(spell)
+            }
+        }
+    }
+
+    player.ResearchCandidateSpells.SortByRarity()
+
+    // log.Printf("Research candidates: %v", player.ResearchCandidateSpells)
 }
 
 func (player *Player) ComputeCastingSkill() int {
@@ -396,6 +466,21 @@ func (player *Player) GetFog(plane data.Plane) [][]bool {
 
 func (player *Player) SetSelectedStack(stack *UnitStack){
     player.SelectedStack = stack
+}
+
+func (player *Player) LiftFogSquare(x int, y int, squares int){
+    // FIXME: make this a parameter
+    fog := player.ArcanusFog
+
+    for dx := -squares; dx <= squares; dx++ {
+        for dy := -squares; dy <= squares; dy++ {
+            if x + dx < 0 || x + dx >= len(fog) || y + dy < 0 || y + dy >= len(fog[0]) {
+                continue
+            }
+
+            fog[x + dx][y + dy] = true
+        }
+    }
 }
 
 /* make anything within the given radius viewable by the player */

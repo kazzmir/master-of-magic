@@ -103,6 +103,10 @@ func (city *City) AddBuilding(building building.Building){
     city.Buildings.Insert(building)
 }
 
+func (city *City) HasSummoningCircle() bool {
+    return city.Buildings.Contains(building.BuildingSummoningCircle)
+}
+
 func (city *City) ProducingString() string {
     if city.ProducingBuilding != building.BuildingNone {
         return city.BuildingInfo.Name(city.ProducingBuilding)

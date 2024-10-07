@@ -63,9 +63,21 @@ type GameEventSurveyor struct {
 type GameEventCityListView struct {
 }
 
+type GameEventApprenticeUI struct {
+}
+
 type GameEventNewOutpost struct {
     City *citylib.City
     Stack *playerlib.UnitStack
+}
+
+type GameEventLearnedSpell struct {
+    Player *playerlib.Player
+    Spell spellbook.Spell
+}
+
+type GameEventResearchSpell struct {
+    Player *playerlib.Player
 }
 
 type GameEventLoadMenu struct {
@@ -241,6 +253,95 @@ func computeInitialCastingSkillPower(books []data.WizardBook) int {
     return v * v + total
 }
 
+func (game *Game) AllSpells() spellbook.Spells {
+    spells, err := spellbook.ReadSpellsFromCache(game.Cache)
+    if err != nil {
+        log.Printf("Could not read spells from cache: %v", err)
+        return spellbook.Spells{}
+    }
+
+    return spells
+}
+
+/* for each book type, there are X number of spells that can be researched per rarity type.
+ * for example, books=3 yields 6 common, 3 uncommon, 2 rare, 1 very rare
+ */
+func (game *Game) InitializeResearchableSpells(spells *spellbook.Spells, player *playerlib.Player){
+    commonCount := func(books int) int {
+        if books == 1 {
+            return 3
+        }
+
+        return int(math.Min(10, float64(3 + books)))
+    }
+
+    uncommonCount := func(books int) int {
+        if books <= 6 {
+            return books
+        }
+
+        if books == 7 {
+            return 8
+        }
+
+        if books == 8 {
+            return 10
+        }
+
+        return 10
+    }
+
+    rareCount := func(books int) int {
+        if books == 1 {
+            return 0
+        }
+
+        if books <= 8 {
+            return books - 1
+        }
+
+        return int(math.Min(10, float64(books)))
+    }
+
+    veryRareCount := func(books int) int {
+        if books <= 2 {
+            return 0
+        }
+
+        if books <= 10 {
+            return books - 2
+        }
+
+        return 10
+    }
+
+    type CountFunc func(int) int
+
+    rarityCount := make(map[spellbook.SpellRarity]CountFunc)
+    rarityCount[spellbook.SpellRarityCommon] = commonCount
+    rarityCount[spellbook.SpellRarityUncommon] = uncommonCount
+    rarityCount[spellbook.SpellRarityRare] = rareCount
+    rarityCount[spellbook.SpellRarityVeryRare] = veryRareCount
+
+    for _, book := range player.Wizard.Books {
+        realmSpells := spells.GetSpellsByMagic(book.Magic)
+
+        for rarity, countFunc := range rarityCount {
+            raritySpells := realmSpells.GetSpellsByRarity(rarity)
+
+            alreadyKnown := player.KnownSpells.GetSpellsByMagic(book.Magic).GetSpellsByRarity(rarity)
+
+            raritySpells.RemoveSpells(alreadyKnown)
+            raritySpells.ShuffleSpells()
+
+            // if the player can research 6 spells but already has 3 selected, then they can research 3 more
+            for i := 0; i < countFunc(book.Count) - len(alreadyKnown.Spells); i++ {
+                player.ResearchPoolSpells.AddSpell(raritySpells.Spells[i])
+            }
+        }
+    }
+}
+
 func (game *Game) AddPlayer(wizard setup.WizardCustom) *playerlib.Player{
     newPlayer := &playerlib.Player{
         TaxRate: fraction.FromInt(1),
@@ -254,7 +355,31 @@ func (game *Game) AddPlayer(wizard setup.WizardCustom) *playerlib.Player{
         },
     }
 
+    allSpells := game.AllSpells()
+
+    startingSpells := []string{"Magic Spirit", "Spell of Return"}
+    if wizard.AbilityEnabled(setup.AbilityArtificer) {
+        startingSpells = append(startingSpells, "Enchant Item", "Create Artifact")
+    }
+
+    newPlayer.ResearchPoolSpells = wizard.StartingSpells.Copy()
+    for _, spell := range startingSpells {
+        newPlayer.ResearchPoolSpells.AddSpell(allSpells.FindByName(spell))
+    }
+
+    // every wizard gets all arcane spells by default
+    newPlayer.ResearchPoolSpells.AddAllSpells(allSpells.GetSpellsByMagic(data.ArcaneMagic))
+
+    newPlayer.KnownSpells = wizard.StartingSpells.Copy()
+    for _, spell := range startingSpells {
+        newPlayer.KnownSpells.AddSpell(allSpells.FindByName(spell))
+    }
     newPlayer.CastingSkillPower = computeInitialCastingSkillPower(newPlayer.Wizard.Books)
+
+    game.InitializeResearchableSpells(&allSpells, newPlayer)
+    newPlayer.UpdateResearchCandidates()
+
+    // log.Printf("Research spells: %v", newPlayer.ResearchPoolSpells)
 
     game.Players = append(game.Players, newPlayer)
     return newPlayer
@@ -500,6 +625,8 @@ func (game *Game) doMagicView(yield coroutine.YieldFunc) {
     for magicScreen.Update() == magicview.MagicScreenStateRunning {
         yield()
     }
+
+    yield()
 
     game.Drawer = oldDrawer
 }
@@ -1386,6 +1513,8 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         game.doMagicView(yield)
                     case *GameEventSurveyor:
                         game.doSurveyor(yield)
+                    case *GameEventApprenticeUI:
+                        game.ShowApprenticeUI(yield, game.Players[0])
                     case *GameEventArmyView:
                         game.doArmyView(yield)
                     case *GameEventCityListView:
@@ -1396,6 +1525,12 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                     case *GameEventScroll:
                         scroll := event.(*GameEventScroll)
                         game.showScroll(yield, scroll.Title, scroll.Text)
+                    case *GameEventLearnedSpell:
+                        learnedSpell := event.(*GameEventLearnedSpell)
+                        game.doLearnSpell(yield, learnedSpell.Player, learnedSpell.Spell)
+                    case *GameEventResearchSpell:
+                        researchSpell := event.(*GameEventResearchSpell)
+                        game.ResearchNewSpell(yield, researchSpell.Player)
                     case *GameEventCastSpell:
                         castSpell := event.(*GameEventCastSpell)
                         game.doCastSpell(yield, castSpell.Player, castSpell.Spell)
@@ -2056,8 +2191,40 @@ func (game *Game) ShowTaxCollectorUI(cornerX int, cornerY int){
     game.HudUI.AddElements(uilib.MakeSelectionUI(game.HudUI, game.Cache, &game.ImageCache, cornerX, cornerY, "Tax Per Population", taxes))
 }
 
-func (game *Game) ShowApprenticeUI(){
-    game.HudUI.AddElements(spellbook.MakeSpellBookUI(game.HudUI, game.Cache))
+func (game *Game) ShowApprenticeUI(yield coroutine.YieldFunc, player *playerlib.Player){
+    oldDrawer := game.Drawer
+    defer func(){
+        game.Drawer = oldDrawer
+    }()
+
+    newDrawer := func (screen *ebiten.Image){
+    }
+
+    game.Drawer = func (screen *ebiten.Image, game *Game){
+        newDrawer(screen)
+    }
+
+    power := game.ComputePower(player)
+    spellbook.ShowSpellBook(yield, game.Cache, player.ResearchPoolSpells, player.KnownSpells, player.ResearchCandidateSpells, player.ResearchingSpell, player.ResearchProgress, int(player.SpellResearchPerTurn(power)), player.ComputeCastingSkill(), spellbook.Spell{}, false, nil, &newDrawer)
+}
+
+func (game *Game) ResearchNewSpell(yield coroutine.YieldFunc, player *playerlib.Player){
+    oldDrawer := game.Drawer
+    defer func(){
+        game.Drawer = oldDrawer
+    }()
+
+    newDrawer := func (screen *ebiten.Image){
+    }
+
+    game.Drawer = func (screen *ebiten.Image, game *Game){
+        newDrawer(screen)
+    }
+
+    if len(player.ResearchCandidateSpells.Spells) > 0 {
+        power := game.ComputePower(player)
+        spellbook.ShowSpellBook(yield, game.Cache, player.ResearchPoolSpells, player.KnownSpells, player.ResearchCandidateSpells, spellbook.Spell{}, 0, int(player.SpellResearchPerTurn(power)), player.ComputeCastingSkill(), spellbook.Spell{}, true, &player.ResearchingSpell, &newDrawer)
+    }
 }
 
 // advisor ui
@@ -2081,7 +2248,10 @@ func (game *Game) MakeInfoUI(cornerX int, cornerY int) []*uilib.UIElement {
         uilib.Selection{
             Name: "Apprentice",
             Action: func(){
-                game.ShowApprenticeUI()
+                select {
+                    case game.Events<- &GameEventApprenticeUI{}:
+                    default:
+                }
             },
             Hotkey: "(F3)",
         },
@@ -2128,7 +2298,7 @@ func (game *Game) MakeInfoUI(cornerX int, cornerY int) []*uilib.UIElement {
 
 func (game *Game) ShowSpellBookCastUI(){
     player := game.Players[0]
-    game.HudUI.AddElements(spellbook.MakeSpellBookCastUI(game.HudUI, game.Cache, player.Spells.OverlandSpells(), player.ComputeCastingSkill(), player.CastingSpell, player.CastingSpellProgress, true, func (spell spellbook.Spell, picked bool){
+    game.HudUI.AddElements(spellbook.MakeSpellBookCastUI(game.HudUI, game.Cache, player.KnownSpells.OverlandSpells(), player.ComputeCastingSkill(), player.CastingSpell, player.CastingSpellProgress, true, func (spell spellbook.Spell, picked bool){
         if picked {
             castingCost := spell.Cost(true)
 
@@ -2792,7 +2962,31 @@ func (game *Game) DoNextTurn(){
             }
         }
 
-        player.SpellResearch += int(player.SpellResearchPerTurn(power))
+        if player.ResearchingSpell.Valid() {
+            player.ResearchProgress += int(player.SpellResearchPerTurn(power))
+            if player.ResearchProgress >= player.ResearchingSpell.ResearchCost {
+                select {
+                    case game.Events<- &GameEventLearnedSpell{Player: player, Spell: player.ResearchingSpell}:
+                    default:
+                }
+
+                player.ResearchCandidateSpells.RemoveSpell(player.ResearchingSpell)
+                player.KnownSpells.AddSpell(player.ResearchingSpell)
+                player.UpdateResearchCandidates()
+                player.ResearchingSpell = spellbook.Spell{}
+                player.ResearchProgress = 0
+                select {
+                    case game.Events<- &GameEventResearchSpell{Player: player}:
+                    default:
+                }
+            }
+        } else if game.TurnNumber > 1 {
+            select {
+                case game.Events<- &GameEventResearchSpell{Player: player}:
+                default:
+            }
+        }
+
         player.CastingSkillPower += player.CastingSkillPerTurn(power)
 
         // reset casting skill for this turn

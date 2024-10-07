@@ -1027,12 +1027,12 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
 
     allSpells, _ := spellbook.ReadSpellsFromCache(cache)
 
-    player.Spells.AddSpell(allSpells.FindByName("Earth Lore"))
-    player.Spells.AddSpell(allSpells.FindByName("Giant Strength"))
-    player.Spells.AddSpell(allSpells.FindByName("Ice Bolt"))
-    player.Spells.AddSpell(allSpells.FindByName("Enchant Item"))
-    player.Spells.AddSpell(allSpells.FindByName("Magic Spirit"))
-    player.Spells.AddSpell(allSpells.FindByName("Dark Rituals"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Earth Lore"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Giant Strength"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Ice Bolt"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Enchant Item"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Magic Spirit"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Dark Rituals"))
 
     x, y := game.FindValidCityLocation()
 
@@ -1067,6 +1067,108 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     return game
 }
 
+func createScenario14(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 14")
+    wizard := setup.WizardCustom{
+        Name: "bob",
+        Banner: data.BannerRed,
+        Race: data.RaceTroll,
+        Base: data.WizardAriel,
+        Abilities: []setup.WizardAbility{
+            setup.AbilityAlchemy,
+            setup.AbilitySageMaster,
+        },
+        Books: []data.WizardBook{
+            data.WizardBook{
+                Magic: data.LifeMagic,
+                Count: 3,
+            },
+            data.WizardBook{
+                Magic: data.DeathMagic,
+                Count: 8,
+            },
+        },
+    }
+
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+        Magic: data.MagicSettingNormal,
+        Difficulty: data.DifficultyAverage,
+    })
+
+    game.Plane = data.PlaneArcanus
+
+    player := game.AddPlayer(wizard)
+
+    player.CastingSkillPower += 500
+
+    allSpells, _ := spellbook.ReadSpellsFromCache(cache)
+
+    /*
+    for _, name := range []string{"Earth Lore", "Giant Strength", "Ice Bolt", "Enchant Item", "Dark Rituals", "Spell Blast", "Time Stop", "Web", "Magic Spirit"} {
+        player.ResearchPoolSpells.AddSpell(allSpells.FindByName(name))
+    }
+    */
+    // player.ResearchPoolSpells.AddAllSpells(allSpells)
+
+    player.KnownSpells.AddSpell(allSpells.FindByName("Earth Lore"))
+
+    /*
+    player.KnownSpells.AddSpell(allSpells.FindByName("Giant Strength"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Ice Bolt"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Enchant Item"))
+    // player.Spells.AddSpell(allSpells.FindByName("Magic Spirit"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Dark Rituals"))
+    */
+
+    /*
+    player.ResearchCandidateSpells.AddSpell(allSpells.FindByName("Magic Spirit"))
+    player.ResearchCandidateSpells.AddSpell(allSpells.FindByName("Endurance"))
+    player.ResearchCandidateSpells.AddSpell(allSpells.FindByName("Hell Hounds"))
+    player.ResearchCandidateSpells.AddSpell(allSpells.FindByName("Healing"))
+    player.ResearchCandidateSpells.AddSpell(allSpells.FindByName("Corruption"))
+    player.ResearchCandidateSpells.AddSpell(allSpells.FindByName("Dispel Magic"))
+    player.ResearchCandidateSpells.AddSpell(allSpells.FindByName("Summoning Circle"))
+    player.ResearchCandidateSpells.AddSpell(allSpells.FindByName("Just Cause"))
+    player.ResearchCandidateSpells.AddSpell(allSpells.FindByName("Detect Magic"))
+    */
+
+    // player.ResearchingSpell = allSpells.FindByName("Magic Spirit")
+    // player.ResearchingSpell = allSpells.FindByName("Earth Lore")
+    // player.ResearchProgress = 10
+
+    x, y := game.FindValidCityLocation()
+
+    city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.TaxRate, game.BuildingInfo)
+    city.Population = 6190
+    city.Plane = data.PlaneArcanus
+    city.Banner = wizard.Banner
+    city.ProducingBuilding = buildinglib.BuildingGranary
+    city.ProducingUnit = units.UnitNone
+    city.Race = wizard.Race
+    city.Farmers = 3
+    city.Workers = 3
+    city.Wall = false
+
+    city.ResetCitizens(nil)
+
+    player.AddCity(city)
+
+    player.Gold = 83
+    player.Mana = 50
+
+    player.LiftFog(x, y, 4)
+
+    /*
+    game.Events <- &gamelib.GameEventLearnedSpell{
+        Player: player,
+        // Spell: allSpells.FindByName("Earth Lore"),
+        Spell: allSpells.FindByName("Magic Spirit"),
+    }
+    */
+
+    return game
+}
+
 func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
@@ -1086,6 +1188,7 @@ func NewEngine(scenario int) (*Engine, error) {
         case 11: game = createScenario11(cache)
         case 12: game = createScenario12(cache)
         case 13: game = createScenario13(cache)
+        case 14: game = createScenario14(cache)
         default: game = createScenario1(cache)
     }
 

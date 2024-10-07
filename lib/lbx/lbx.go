@@ -1278,6 +1278,15 @@ func GetPaletteOverrideMap(lbxFile *LbxFile, filename string) (map[int]color.Pal
         case "lose.lbx":
         case "splmastr.lbx":
         case "wizlab.lbx":
+            palette, err := lbxFile.GetPalette(19)
+            if err != nil {
+                return nil, err
+            }
+
+            paletteTransparent := clonePalette(palette)
+            paletteTransparent[0] = color.RGBA{R: 0, G: 0, B: 0, A: 0}
+
+            out[-1] = paletteTransparent
         case "vortex.lbx":
             // FIXME
 

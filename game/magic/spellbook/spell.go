@@ -9,6 +9,7 @@ import (
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
+    "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
@@ -17,8 +18,17 @@ import (
     "github.com/hajimehoshi/ebiten/v2/vector"
 )
 
-func computeHalfPages(spells Spells, max int) []Spells {
-    var halfPages []Spells
+type Page struct {
+    Title string
+    Spells Spells
+    // true if this page should render a title even if the spells are empty
+    ForceRender bool
+    // true if the text for the spell should always use normal font rather than alien
+    IsResearch bool
+}
+
+func computeHalfPages(spells Spells, max int) []Page {
+    var halfPages []Page
 
     sections := []Section{SectionSummoning, SectionSpecial, SectionCitySpell, SectionEnchantment, SectionUnitSpell, SectionCombatSpell}
 
@@ -37,7 +47,10 @@ func computeHalfPages(spells Spells, max int) []Spells {
             }
 
             if len(pageSpells.Spells) > 0 {
-                halfPages = append(halfPages, pageSpells)
+                halfPages = append(halfPages, Page{
+                    Title: section.Name(),
+                    Spells: pageSpells,
+                })
             }
         }
     }
@@ -195,23 +208,47 @@ func RightSideFlipRightDistortions1(page *ebiten.Image) util.Distortion {
     }
 }
 
-func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
+/* three modes:
+ * 1. when a new spell is learned, flip to the page where the spell would go and show the sparkle animation over the new spell
+ * 2. flip to the 'research spells' page and let the user pick a new spell
+ * 3. show book and let user flip between pages. on the 'research spells' page, show currently
+ *     researching spell as glowing text
+ *
+ * This function does all 3, which makes it kind of ugly and has too many parameters.
+ */
+func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spells, knownSpells Spells, researchSpells Spells, researchingSpell Spell, researchProgress int, researchPoints int, castingSkill int, learnedSpell Spell, pickResearchSpell bool, chosenSpell *Spell, drawFunc *func(screen *ebiten.Image)) {
+    ui := &uilib.UI{
+        Draw: func(ui *uilib.UI, screen *ebiten.Image){
+            ui.IterateElementsByLayer(func (element *uilib.UIElement){
+                if element.Draw != nil {
+                    element.Draw(element, screen)
+                }
+            })
+        },
+    }
+
+    if researchPoints < 1 {
+        researchPoints = 1
+    }
+
     var elements []*uilib.UIElement
 
     imageCache := util.MakeImageCache(cache)
 
     fadeSpeed := uint64(7)
 
+    /*
     spells, err := ReadSpellsFromCache(cache)
     if err != nil {
         log.Printf("Unable to read spells: %v", err)
-        return nil
+        return
     }
+    */
 
     spellDescriptions, err := ReadSpellDescriptionsFromCache(cache)
     if err != nil {
         log.Printf("Unable to read spell descriptions: %v", err)
-        return nil
+        return
     }
 
     getAlpha := ui.MakeFadeIn(fadeSpeed)
@@ -225,13 +262,13 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
     fontLbx, err := cache.GetLbxFile("fonts.lbx")
     if err != nil {
         log.Printf("Unable to read fonts: %v", err)
-        return nil
+        return
     }
 
     fonts, err := font.ReadFonts(fontLbx, 0)
     if err != nil {
         log.Printf("Unable to read fonts: %v", err)
-        return nil
+        return
     }
 
     red := color.RGBA{R: 0x5a, G: 0, B: 0, A: 0xff}
@@ -256,6 +293,23 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
         grey, grey, grey,
         grey, grey, grey,
     }
+
+    white := color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}
+    whitePalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        white,
+        util.Lighten(white, -10),
+        util.Lighten(white, -20),
+        util.Lighten(white, -30),
+        util.Lighten(white, -40),
+        util.Lighten(white, -50),
+        white, white, white, white, white, white,
+        white, white, white, white, white, white,
+    }
+
+    chooseFont := font.MakeOptimizedFontWithPalette(fonts[5], whitePalette)
 
     greyLight := util.PremultiplyAlpha(color.RGBA{R: 35, G: 35, B: 35, A: 164})
     textPaletteLighter := color.Palette{
@@ -306,12 +360,35 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
     }
 
     knownSpell := func(spell Spell) bool {
-        return true
-        // return spell.Index <= 2
+        return knownSpells.Contains(spell)
     }
 
     // compute half pages
-    halfPages := computeHalfPages(spells, 4)
+    var halfPages []Page
+    if !pickResearchSpell {
+        halfPages = computeHalfPages(allSpells, 4)
+    }
+
+    researchPage1 := Page{
+        Title: "Research",
+        Spells: researchSpells.Sub(0, 4),
+        ForceRender: true,
+        IsResearch: true,
+    }
+
+    researchPage2 := Page{
+        Title: "Spells",
+        Spells: researchSpells.Sub(4, 8),
+        ForceRender: true,
+        IsResearch: true,
+    }
+
+    // insert an empty page so that the research pages are on their own
+    if len(halfPages) % 2 != 0 {
+        halfPages = append(halfPages, Page{})
+    }
+
+    halfPages = append(halfPages, researchPage1, researchPage2)
 
     // for debugging
     /*
@@ -331,6 +408,96 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
     // create images of each page
     halfPageCache := make(map[int]*ebiten.Image)
 
+    learnSpellPics, _ := imageCache.GetImages("specfx.lbx", 49)
+    learnSpellAnimation := util.MakeAnimation(learnSpellPics, false)
+
+    renderPage := func(page Page, flipping bool, pageImage *ebiten.Image, options ebiten.DrawImageOptions){
+        if len(page.Spells.Spells) > 0 || page.ForceRender {
+            // var options ebiten.DrawImageOptions
+            // options.GeoM.Translate(0, 0)
+
+            // section := pageSpells.Spells[0].Section
+            titleX, titleY := options.GeoM.Apply(90, 11)
+
+            titleFont.PrintCenter(pageImage, titleX, titleY, 1, options.ColorScale, page.Title)
+
+            x, topY := options.GeoM.Apply(25, 35)
+
+            for i, spell := range page.Spells.Spells {
+                if i >= 4 {
+                    break
+                }
+
+                y := topY + float64(i * 35)
+
+                spellY := y
+
+                if page.IsResearch || knownSpell(spell) || learnedSpell.Name == spell.Name {
+                    scale := options.ColorScale
+
+                    if !flipping && researchingSpell.Name == spell.Name {
+                        v := 1.5 + (math.Cos(float64(ui.Counter) / 7) * 64 + 64) / float64(64)
+                        scale.SetR(float32(v))
+                        scale.SetG(float32(v))
+                        scale.SetB(float32(v) * 1.8)
+                    }
+
+                    if !flipping && learnedSpell.Name == spell.Name && !learnSpellAnimation.Done() {
+                        v := 1.5 + float64(ui.Counter) / 32
+                        scale.SetR(float32(v))
+                        scale.SetG(float32(v))
+                        scale.SetB(float32(v) * 1.8)
+                    }
+
+                    spellTitleNormalFont.Print(pageImage, x, y, 1, scale, spell.Name)
+                    y += float64(spellTitleNormalFont.Height())
+
+                    if page.IsResearch {
+                        turns := spell.ResearchCost / researchPoints
+                        if spell.Name == researchingSpell.Name {
+                            turns = (spell.ResearchCost - researchProgress) / researchPoints
+                        }
+                        if turns < 1 {
+                            turns = 1
+                        }
+                        turnString := "turn"
+                        if turns > 1 {
+                            turnString = "turns"
+                        }
+                        spellTextNormalFont.Print(pageImage, x, y, 1, scale, fmt.Sprintf("Research Cost:%v (%v %v)", spell.ResearchCost, turns, turnString))
+                        y += float64(spellTextNormalFont.Height())
+                    } else {
+                        turns := spell.Cost(true) / castingSkill
+                        if turns < 1 {
+                            turns = 1
+                        }
+                        turnString := "turn"
+                        if turns > 1 {
+                            turnString = "turns"
+                        }
+                        spellTextNormalFont.Print(pageImage, x, y, 1, scale, fmt.Sprintf("Casting cost:%v (%v %v)", spell.Cost(true), turns, turnString))
+                        y += float64(spellTextNormalFont.Height())
+                    }
+
+                    wrapped := getSpellDescriptionNormalText(spell.Index)
+                    spellTextNormalFont.RenderWrapped(pageImage, x, y, wrapped, scale, false)
+
+                    if !flipping && learnedSpell.Name == spell.Name && !learnSpellAnimation.Done() {
+                        animationOptions := options
+                        animationOptions.GeoM.Reset()
+                        animationOptions.GeoM.Translate(x, spellY - 2)
+                        pageImage.DrawImage(learnSpellAnimation.Frame(), &animationOptions)
+                    }
+
+                } else {
+                    spellTitleAlienFont.Print(pageImage, x, y, 1, options.ColorScale, spell.Name)
+                    wrapped := getSpellDescriptionAlienText(spell.Index)
+                    spellTextAlienFont.RenderWrapped(pageImage, x, y + 10, wrapped, options.ColorScale, false)
+                }
+            }
+        }
+    }
+
     // lazily construct the page graphics, which consists of the section title and 4 spell descriptions
     getHalfPageImage := func(halfPage int) *ebiten.Image {
         image, ok := halfPageCache[halfPage]
@@ -338,40 +505,11 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
             return image
         }
 
-        var pageSpells Spells
-        if halfPage < len(halfPages) {
-            pageSpells = halfPages[halfPage]
-        }
-
         pageImage := ebiten.NewImage(155, 170)
         pageImage.Fill(color.RGBA{R: 0, G: 0, B: 0, A: 0})
 
-        if len(pageSpells.Spells) > 0 {
-            var options ebiten.DrawImageOptions
-            options.GeoM.Translate(0, 0)
-
-            section := pageSpells.Spells[0].Section
-            titleFont.PrintCenter(pageImage, 90, 11, 1, options.ColorScale, section.Name())
-
-            x := float64(25)
-            y := float64(35)
-            for i, spell := range pageSpells.Spells {
-                if i >= 4 {
-                    break
-                }
-
-                if knownSpell(spell) {
-                    spellTitleNormalFont.Print(pageImage, x, y, 1, options.ColorScale, spell.Name)
-                    wrapped := getSpellDescriptionNormalText(spell.Index)
-                    spellTextNormalFont.RenderWrapped(pageImage, x, y + 10, wrapped, options.ColorScale, false)
-                } else {
-                    spellTitleAlienFont.Print(pageImage, x, y, 1, options.ColorScale, spell.Name)
-                    wrapped := getSpellDescriptionAlienText(spell.Index)
-                    spellTextAlienFont.RenderWrapped(pageImage, x, y + 10, wrapped, options.ColorScale, false)
-                }
-
-                y += 35
-            }
+        if halfPage < len(halfPages) {
+            renderPage(halfPages[halfPage], true, pageImage, ebiten.DrawImageOptions{})
         }
 
         halfPageCache[halfPage] = pageImage
@@ -386,15 +524,80 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
     flipLeftSide := 0
     flipRightSide := 1
 
+    openPage := func (findSpell Spell){
+        currentPage := 0
+
+        loop:
+        for page, halfPage := range halfPages {
+            for _, spell := range halfPage.Spells.Spells {
+                if spell.Name == findSpell.Name {
+                    currentPage = page
+                    break loop
+                }
+            }
+        }
+
+        // force it to be even
+        currentPage -= currentPage % 2
+        showLeftPage = currentPage
+        showRightPage = currentPage + 1
+    }
+
+    if researchingSpell.Valid() {
+        openPage(researchingSpell)
+    }
+
+    if learnedSpell.Valid() {
+        openPage(learnedSpell)
+    }
+
     flipping := false
 
+    quit := false
+
+    posX := 0
+    posY := 0
+
+    var rect image.Rectangle
+    if pickResearchSpell {
+        rect = image.Rect(0, 0, data.ScreenWidth, data.ScreenHeight)
+    }
+
     elements = append(elements, &uilib.UIElement{
-        Layer: 1,
+        Rect: rect,
+        Inside: func (this *uilib.UIElement, x, y int){
+            posX = x
+            posY = y
+        },
+        LeftClick: func(this *uilib.UIElement){
+            if pickResearchSpell {
+                if posY >= 35 && posY < 35 + 35 * 4 {
+                    spellIndex := (posY - 35) / 35
+
+                    // left page
+                    if posX < 160 {
+                        if spellIndex >= 0 && spellIndex < len(researchPage1.Spells.Spells) {
+                            *chosenSpell = researchPage1.Spells.Spells[spellIndex]
+                            quit = true
+                        }
+                    } else {
+                        // right page
+                        if spellIndex >= 0 && spellIndex < len(researchPage2.Spells.Spells) {
+                            *chosenSpell = researchPage2.Spells.Spells[spellIndex]
+                            quit = true
+                        }
+                    }
+                }
+            }
+        },
         NotLeftClicked: func(this *uilib.UIElement){
-            getAlpha = ui.MakeFadeOut(fadeSpeed)
-            ui.AddDelay(fadeSpeed, func(){
-                ui.RemoveElements(elements)
-            })
+            if !pickResearchSpell {
+                getAlpha = ui.MakeFadeOut(fadeSpeed)
+                ui.AddDelay(fadeSpeed, func(){
+                    // ui.RemoveElements(elements)
+                    quit = true
+                })
+            }
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             background, _ := imageCache.GetImage("scroll.lbx", 6, 0)
@@ -404,15 +607,14 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
             screen.DrawImage(background, &options)
 
             if showLeftPage >= 0 {
-                leftPageImage := getHalfPageImage(showLeftPage)
-                screen.DrawImage(leftPageImage, &options)
+                renderPage(halfPages[showLeftPage], false, screen, options)
             }
 
             if showRightPage < len(halfPages) {
-                rightPageImage := getHalfPageImage(showRightPage)
                 rightOptions := options
                 rightOptions.GeoM.Translate(148, 0)
-                screen.DrawImage(rightPageImage, &rightOptions)
+                rightPage := screen.SubImage(image.Rect(148, 0, screen.Bounds().Dx(), screen.Bounds().Dy())).(*ebiten.Image)
+                renderPage(halfPages[showRightPage], false, rightPage, rightOptions)
             }
 
             animationIndex := ui.Counter
@@ -447,30 +649,55 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
                 }
             }
 
+            if pickResearchSpell {
+                chooseFont.PrintCenter(screen, 160, 180, 1, options.ColorScale, "Choose a new spell to research")
+            }
+
         },
     })
+
+    doLeftPageTurn := func(){
+        if !flipping && hasPreviousPage(showLeftPage){
+            bookFlipIndex = ui.Counter
+            bookFlipReverse = true
+
+            flipLeftSide = showLeftPage - 1
+            flipRightSide = showLeftPage
+            showLeftPage -= 2
+            flipping = true
+
+            ui.AddDelay(bookFlipSpeed * uint64(len(bookFlip)) - 1, func(){
+                showRightPage -= 2
+                flipping = false
+            })
+        }
+    }
+
+    doRightPageTurn := func(){
+        if !flipping && hasNextPage(showRightPage){
+            bookFlipIndex = ui.Counter
+            bookFlipReverse = false
+
+            flipLeftSide = showRightPage
+            flipRightSide = showRightPage + 1
+            showRightPage += 2
+
+            flipping = true
+
+            ui.AddDelay(bookFlipSpeed * uint64(len(bookFlip)) - 1, func(){
+                showLeftPage += 2
+                flipping = false
+            })
+        }
+    }
 
     // left page turn
     leftTurn, _ := imageCache.GetImage("scroll.lbx", 7, 0)
     leftRect := image.Rect(15, 9, 15 + leftTurn.Bounds().Dx(), 9 + leftTurn.Bounds().Dy())
     elements = append(elements, &uilib.UIElement{
         Rect: leftRect,
-        Layer: 1,
         LeftClick: func(this *uilib.UIElement){
-            if !flipping && hasPreviousPage(showLeftPage){
-                bookFlipIndex = ui.Counter
-                bookFlipReverse = true
-
-                flipLeftSide = showLeftPage - 1
-                flipRightSide = showLeftPage
-                showLeftPage -= 2
-                flipping = true
-
-                ui.AddDelay(bookFlipSpeed * uint64(len(bookFlip)) - 1, func(){
-                    showRightPage -= 2
-                    flipping = false
-                })
-            }
+            doLeftPageTurn()
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             if hasPreviousPage(showLeftPage){
@@ -487,23 +714,8 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
     rightRect := image.Rect(289, 9, 295 + rightTurn.Bounds().Dx(), 5 + rightTurn.Bounds().Dy())
     elements = append(elements, &uilib.UIElement{
         Rect: rightRect,
-        Layer: 1,
         LeftClick: func(this *uilib.UIElement){
-            if !flipping && hasNextPage(showRightPage){
-                bookFlipIndex = ui.Counter
-                bookFlipReverse = false
-
-                flipLeftSide = showRightPage
-                flipRightSide = showRightPage + 1
-                showRightPage += 2
-
-                flipping = true
-
-                ui.AddDelay(bookFlipSpeed * uint64(len(bookFlip)) - 1, func(){
-                    showLeftPage += 2
-                    flipping = false
-                })
-            }
+            doRightPageTurn()
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             if hasNextPage(showRightPage){
@@ -515,7 +727,23 @@ func MakeSpellBookUI(ui *uilib.UI, cache *lbx.LbxCache) []*uilib.UIElement {
         },
     })
 
-    return elements
+    ui.SetElementsFromArray(elements)
+
+    *drawFunc = func(screen *ebiten.Image){
+        ui.Draw(ui, screen)
+    }
+
+    yield()
+
+    for !quit {
+        ui.StandardUpdate()
+        if ui.Counter % 4 == 0 {
+            learnSpellAnimation.Next()
+        }
+        yield()
+    }
+
+    yield()
 }
 
 func CastLeftSideDistortions1(page *ebiten.Image) util.Distortion {
@@ -709,18 +937,18 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
 
     spellPages := computeHalfPages(spells, 6)
 
-    renderPage := func(screen *ebiten.Image, options ebiten.DrawImageOptions, spells Spells, highlightedSpell Spell){
-        section := spells.Spells[0].Section
+    renderPage := func(screen *ebiten.Image, options ebiten.DrawImageOptions, page Page, highlightedSpell Spell){
+        // section := spells.Spells[0].Section
 
         titleX, titleY := options.GeoM.Apply(60, 1)
 
-        titleFont.PrintCenter(screen, titleX, titleY, 1, options.ColorScale, section.Name())
+        titleFont.PrintCenter(screen, titleX, titleY, 1, options.ColorScale, page.Title)
         gibberish, _ := imageCache.GetImage("spells.lbx", 10, 0)
         gibberishHeight := 18
 
         options2 := options
         options2.GeoM.Translate(0, 15)
-        for _, spell := range spells.Spells {
+        for _, spell := range page.Spells.Spells {
 
             // invalid spell?
             if spell.Invalid() {
@@ -907,7 +1135,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
             }
         }
 
-        leftSpells := spellPages[page].Spells
+        leftSpells := spellPages[page].Spells.Spells
 
         for i, spell := range leftSpells {
 
@@ -921,7 +1149,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
         }
 
         if page + 1 < len(spellPages) {
-            rightSpells := spellPages[page+1].Spells
+            rightSpells := spellPages[page+1].Spells.Spells
 
             for i, spell := range rightSpells {
                 x1 := 159
@@ -942,7 +1170,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
     if currentSpell.Valid() {
         loop:
         for page, halfPage := range spellPages {
-            for _, spell := range halfPage.Spells {
+            for _, spell := range halfPage.Spells.Spells {
                 if spell.Name == currentSpell.Name {
                     currentPage = page
                     break loop

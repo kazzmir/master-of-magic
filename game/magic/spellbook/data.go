@@ -1,6 +1,7 @@
 package spellbook
 
 import (
+    "slices"
     "math/rand"
     "strings"
     "fmt"
@@ -173,8 +174,53 @@ type Spells struct {
     Spells []Spell
 }
 
-func (spells *Spells) AddSpell(spell Spell) {
+func (spells *Spells) Copy() Spells {
+    out := make([]Spell, len(spells.Spells))
+    copy(out, spells.Spells)
+    return SpellsFromArray(out)
+}
+
+func (spells *Spells) Sub(min int, max int) Spells {
+    if min < 0 {
+        min = 0
+    }
+
+    if max > len(spells.Spells) {
+        max = len(spells.Spells)
+    }
+
+    if min >= len(spells.Spells) {
+        return Spells{}
+    }
+
+    return SpellsFromArray(spells.Spells[min:max])
+}
+
+func (spells *Spells) AddAllSpells(more Spells) {
+    for _, spell := range more.Spells {
+        spells.AddSpell(spell)
+    }
+}
+
+func (spells *Spells) RemoveSpells(toRemove Spells){
+    for _, spell := range toRemove.Spells {
+        spells.RemoveSpell(spell)
+    }
+}
+
+// returns true if the spell was added, false if it was not
+func (spells *Spells) AddSpell(spell Spell) bool {
+    if spell.Invalid(){
+        return false
+    }
+
+    for _, check := range spells.Spells {
+        if check.Name == spell.Name {
+            return false
+        }
+    }
     spells.Spells = append(spells.Spells, spell)
+    return true
 }
 
 func (spells *Spells) RemoveSpell(toRemove Spell){
@@ -185,6 +231,10 @@ func (spells *Spells) RemoveSpell(toRemove Spell){
         }
     }
     spells.Spells = out
+}
+
+func (spells *Spells) Contains(spell Spell) bool {
+    return spells.FindByName(spell.Name).Name == spell.Name
 }
 
 func (spells *Spells) FindByName(name string) Spell {
@@ -261,6 +311,20 @@ func (spells Spells) GetSpellsByRarity(rarity SpellRarity) Spells {
     }
 
     return SpellsFromArray(out)
+}
+
+func (spells *Spells) SortByRarity(){
+    slices.SortFunc(spells.Spells, func(a Spell, b Spell) int {
+        if a.Rarity < b.Rarity {
+            return -1
+        }
+
+        if a.Rarity == b.Rarity {
+            return 0
+        }
+
+        return 1
+    })
 }
 
 func (spells *Spells) ShuffleSpells(){
