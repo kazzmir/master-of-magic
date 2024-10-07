@@ -85,7 +85,7 @@ func (game *Game) wizlabAnimation(yield coroutine.YieldFunc, wizard setup.Wizard
 
     yield()
 
-    for counter = 0; counter < 10; counter++ {
+    for counter = 0; counter < 100; counter++ {
         if counter % 5 == 0 {
             sparkles.Next()
         }

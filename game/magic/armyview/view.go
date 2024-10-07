@@ -9,6 +9,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/game/magic/util"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
@@ -117,7 +118,12 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
             minimapRect := image.Rect(85, 163, 135, 197)
             minimapArea := screen.SubImage(minimapRect).(*ebiten.Image)
 
-            view.DrawMinimap(minimapArea, highlightedUnit.X, highlightedUnit.Y, view.Player.GetFog(highlightedUnit.Plane), this.Counter)
+            if highlightedUnit != nil {
+                view.DrawMinimap(minimapArea, highlightedUnit.X, highlightedUnit.Y, view.Player.GetFog(highlightedUnit.Plane), this.Counter)
+            } else {
+                // just choose random point
+                view.DrawMinimap(minimapArea, 10, 10, view.Player.GetFog(data.PlaneArcanus), this.Counter)
+            }
 
             // vector.DrawFilledRect(minimapArea, float32(minimapRect.Min.X), float32(minimapRect.Min.Y), float32(minimapRect.Bounds().Dx()), float32(minimapRect.Bounds().Dy()), util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0, B: 0, A: 128}), false)
         },
