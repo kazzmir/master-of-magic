@@ -530,6 +530,7 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *uilib.UI {
     clickFunc := func(wizard int){
         screen.CustomWizard.Name = screen.WizardSlots[wizard].Name
         screen.CustomWizard.Books = screen.WizardSlots[wizard].Books
+        screen.CustomWizard.Base = screen.WizardSlots[wizard].Base
         screen.CustomWizard.Abilities = make([]WizardAbility, 0)
         screen.CustomWizard.Portrait = screen.WizardSlots[wizard].Portrait
         if screen.WizardSlots[wizard].ExtraAbility != AbilityNone {
