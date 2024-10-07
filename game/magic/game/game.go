@@ -266,6 +266,8 @@ func (game *Game) AddPlayer(wizard setup.WizardCustom) *playerlib.Player{
         },
     }
 
+    // FIXME: add all the possible spells the player could learn
+    newPlayer.ResearchPoolSpells = wizard.StartingSpells.Copy()
     newPlayer.KnownSpells = wizard.StartingSpells.Copy()
     newPlayer.CastingSkillPower = computeInitialCastingSkillPower(newPlayer.Wizard.Books)
 
