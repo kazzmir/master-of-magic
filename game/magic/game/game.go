@@ -368,7 +368,6 @@ func (game *Game) AddPlayer(wizard setup.WizardCustom) *playerlib.Player{
         startingSpells = append(startingSpells, "Enchant Item", "Create Artifact")
     }
 
-    // FIXME: add all the possible spells the player could learn
     newPlayer.ResearchPoolSpells = wizard.StartingSpells.Copy()
     for _, spell := range startingSpells {
         newPlayer.ResearchPoolSpells.AddSpell(allSpells.FindByName(spell))
@@ -2976,8 +2975,6 @@ func (game *Game) DoNextTurn(){
                     case game.Events<- &GameEventLearnedSpell{Player: player, Spell: player.ResearchingSpell}:
                     default:
                 }
-
-                // FIXME: choose a new research candidate spell
 
                 player.ResearchCandidateSpells.RemoveSpell(player.ResearchingSpell)
                 player.KnownSpells.AddSpell(player.ResearchingSpell)
