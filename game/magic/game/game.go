@@ -284,13 +284,20 @@ func (game *Game) AddPlayer(wizard setup.WizardCustom) *playerlib.Player{
 
     allSpells := game.AllSpells()
 
+    startingSpells := []string{"Magic Spirit", "Spell of Return"}
+    if wizard.AbilityEnabled(setup.AbilityArtificer) {
+        startingSpells = append(startingSpells, "Enchant Item", "Create Artifact")
+    }
+
     // FIXME: add all the possible spells the player could learn
     newPlayer.ResearchPoolSpells = wizard.StartingSpells.Copy()
-    newPlayer.ResearchPoolSpells.AddSpell(allSpells.FindByName("Magic Spirit"))
-    newPlayer.ResearchPoolSpells.AddSpell(allSpells.FindByName("Spell of Return"))
+    for _, spell := range startingSpells {
+        newPlayer.ResearchPoolSpells.AddSpell(allSpells.FindByName(spell))
+    }
     newPlayer.KnownSpells = wizard.StartingSpells.Copy()
-    newPlayer.KnownSpells.AddSpell(allSpells.FindByName("Magic Spirit"))
-    newPlayer.KnownSpells.AddSpell(allSpells.FindByName("Spell of Return"))
+    for _, spell := range startingSpells {
+        newPlayer.KnownSpells.AddSpell(allSpells.FindByName(spell))
+    }
     newPlayer.CastingSkillPower = computeInitialCastingSkillPower(newPlayer.Wizard.Books)
 
     game.Players = append(game.Players, newPlayer)
