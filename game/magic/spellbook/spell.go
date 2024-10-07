@@ -411,6 +411,16 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
     learnSpellPics, _ := imageCache.GetImages("specfx.lbx", 49)
     learnSpellAnimation := util.MakeAnimation(learnSpellPics, false)
 
+    type HoverTime struct {
+        // the first time the user hovered over the area
+        On uint64
+        // the first time the user left the area
+        Off uint64
+    }
+
+    // map from spell number to its time, where number 0 means left page spell 0, and 4 means right page spell 0
+    hoverTime := make(map[string]HoverTime)
+
     renderPage := func(page Page, flipping bool, pageImage *ebiten.Image, options ebiten.DrawImageOptions){
         if len(page.Spells.Spells) > 0 || page.ForceRender {
             // var options ebiten.DrawImageOptions
@@ -435,18 +445,37 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
                 if page.IsResearch || knownSpell(spell) || learnedSpell.Name == spell.Name {
                     scale := options.ColorScale
 
-                    if !flipping && researchingSpell.Name == spell.Name {
-                        v := 1.5 + (math.Cos(float64(ui.Counter) / 7) * 64 + 64) / float64(64)
-                        scale.SetR(float32(v))
-                        scale.SetG(float32(v))
-                        scale.SetB(float32(v) * 1.8)
-                    }
+                    if !flipping {
 
-                    if !flipping && learnedSpell.Name == spell.Name && !learnSpellAnimation.Done() {
-                        v := 1.5 + float64(ui.Counter) / 32
-                        scale.SetR(float32(v))
-                        scale.SetG(float32(v))
-                        scale.SetB(float32(v) * 1.8)
+                        if researchingSpell.Name == spell.Name {
+                            v := 1.5 + (math.Cos(float64(ui.Counter) / 7) * 64 + 64) / float64(64)
+                            scale.SetR(float32(v))
+                            scale.SetG(float32(v))
+                            scale.SetB(float32(v) * 1.8)
+                        } else if learnedSpell.Name == spell.Name && !learnSpellAnimation.Done() {
+                            v := 1.5 + float64(ui.Counter) / 32
+                            scale.SetR(float32(v))
+                            scale.SetG(float32(v))
+                            scale.SetB(float32(v) * 1.8)
+                        } else if pickResearchSpell {
+                            hover, ok := hoverTime[spell.Name]
+                            if ok {
+                                max := float32(5)
+                                if hover.On > 0 {
+                                    v := float32(ui.Counter - hover.On) / 2
+                                    if v > max {
+                                        v = max
+                                    }
+                                    scale.SetR(v)
+                                } else if hover.Off > 0 {
+                                    v := max - float32(ui.Counter - hover.Off) / 3
+                                    if v > 0 {
+                                        scale.SetR(v)
+                                    }
+                                }
+                            }
+                        }
+
                     }
 
                     spellTitleNormalFont.Print(pageImage, x, y, 1, scale, spell.Name)
@@ -557,6 +586,7 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
 
     posX := 0
     posY := 0
+    researchSpellIndex := -1
 
     var rect image.Rectangle
     if pickResearchSpell {
@@ -565,27 +595,60 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
 
     elements = append(elements, &uilib.UIElement{
         Rect: rect,
-        Inside: func (this *uilib.UIElement, x, y int){
+        Inside: func (this *uilib.UIElement, x int, y int){
             posX = x
             posY = y
+
+            newIndex := -1
+
+            if posY >= 35 && posY < 35 + 35 * 4 {
+                newIndex = (posY - 35) / 35
+
+                if posX >= 160 {
+                    newIndex += 4
+                }
+            } else {
+                newIndex = -1
+            }
+
+            if pickResearchSpell && newIndex != researchSpellIndex {
+
+                indexToName := func(index int) string {
+                    if index >= 0 && index < len(researchPage1.Spells.Spells) {
+                        return researchPage1.Spells.Spells[index].Name
+                    } else if index >= 4 && index < len(researchPage2.Spells.Spells) + 4 {
+                        return researchPage2.Spells.Spells[index - 4].Name
+                    }
+
+                    return ""
+                }
+
+                hoverTime[indexToName(researchSpellIndex)] = HoverTime{Off: ui.Counter}
+                hoverTime[indexToName(newIndex)] = HoverTime{On: ui.Counter}
+                researchSpellIndex = newIndex
+            }
         },
         LeftClick: func(this *uilib.UIElement){
             if pickResearchSpell {
-                if posY >= 35 && posY < 35 + 35 * 4 {
-                    spellIndex := (posY - 35) / 35
+                if researchSpellIndex >= 0 && researchSpellIndex < len(researchPage1.Spells.Spells) {
+                    *chosenSpell = researchPage1.Spells.Spells[researchSpellIndex]
+                    getAlpha = ui.MakeFadeOut(fadeSpeed)
+                    ui.AddDelay(fadeSpeed, func(){
+                        // ui.RemoveElements(elements)
+                        quit = true
+                    })
 
-                    // left page
-                    if posX < 160 {
-                        if spellIndex >= 0 && spellIndex < len(researchPage1.Spells.Spells) {
-                            *chosenSpell = researchPage1.Spells.Spells[spellIndex]
+                } else {
+                    use := researchSpellIndex - 4
+                    // right page
+                    if use >= 0 && use < len(researchPage2.Spells.Spells) {
+                        *chosenSpell = researchPage2.Spells.Spells[use]
+                        getAlpha = ui.MakeFadeOut(fadeSpeed)
+                        ui.AddDelay(fadeSpeed, func(){
+                            // ui.RemoveElements(elements)
                             quit = true
-                        }
-                    } else {
-                        // right page
-                        if spellIndex >= 0 && spellIndex < len(researchPage2.Spells.Spells) {
-                            *chosenSpell = researchPage2.Spells.Spells[spellIndex]
-                            quit = true
-                        }
+                        })
+
                     }
                 }
             }
