@@ -208,11 +208,13 @@ func RightSideFlipRightDistortions1(page *ebiten.Image) util.Distortion {
     }
 }
 
-/* two modes:
- * 1. when a new spell is learned, flip to the page where the spell would go and show the sparkle animation,
- *    then flip to the 'research spells' page and let the user pick a new spell
- * 2. show book and let user flip between pages. on the 'research spells' page, show currently
-*     researching spell as glowing text
+/* three modes:
+ * 1. when a new spell is learned, flip to the page where the spell would go and show the sparkle animation over the new spell
+ * 2. flip to the 'research spells' page and let the user pick a new spell
+ * 3. show book and let user flip between pages. on the 'research spells' page, show currently
+ *     researching spell as glowing text
+ *
+ * This function does all 3, which makes it kind of ugly and has too many parameters.
  */
 func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spells, knownSpells Spells, researchSpells Spells, researchingSpell Spell, researchProgress int, researchPoints int, castingSkill int, learnedSpell Spell, pickResearchSpell bool, chosenSpell *Spell, drawFunc *func(screen *ebiten.Image)) {
     ui := &uilib.UI{
@@ -547,8 +549,14 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
 
     posX := 0
     posY := 0
+
+    var rect image.Rectangle
+    if pickResearchSpell {
+        rect = image.Rect(0, 0, data.ScreenWidth, data.ScreenHeight)
+    }
+
     elements = append(elements, &uilib.UIElement{
-        Rect: image.Rect(0, 0, data.ScreenWidth, data.ScreenHeight),
+        Rect: rect,
         Inside: func (this *uilib.UIElement, x, y int){
             posX = x
             posY = y
@@ -572,15 +580,16 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
                         }
                     }
                 }
-            } else {
+            }
+        },
+        NotLeftClicked: func(this *uilib.UIElement){
+            if !pickResearchSpell {
                 getAlpha = ui.MakeFadeOut(fadeSpeed)
                 ui.AddDelay(fadeSpeed, func(){
                     // ui.RemoveElements(elements)
                     quit = true
                 })
             }
-        },
-        NotLeftClicked: func(this *uilib.UIElement){
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             background, _ := imageCache.GetImage("scroll.lbx", 6, 0)
