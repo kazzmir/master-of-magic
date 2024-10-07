@@ -1101,7 +1101,7 @@ func createScenario14(cache *lbx.LbxCache) *gamelib.Game {
 
     player.CastingSkillPower += 500
 
-    // allSpells, _ := spellbook.ReadSpellsFromCache(cache)
+    allSpells, _ := spellbook.ReadSpellsFromCache(cache)
 
     /*
     for _, name := range []string{"Earth Lore", "Giant Strength", "Ice Bolt", "Enchant Item", "Dark Rituals", "Spell Blast", "Time Stop", "Web", "Magic Spirit"} {
@@ -1110,7 +1110,8 @@ func createScenario14(cache *lbx.LbxCache) *gamelib.Game {
     */
     // player.ResearchPoolSpells.AddAllSpells(allSpells)
 
-    // player.KnownSpells.AddSpell(allSpells.FindByName("Earth Lore"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Earth Lore"))
+
     /*
     player.KnownSpells.AddSpell(allSpells.FindByName("Giant Strength"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Ice Bolt"))

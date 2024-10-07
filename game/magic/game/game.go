@@ -254,15 +254,9 @@ func computeInitialCastingSkillPower(books []data.WizardBook) int {
 }
 
 func (game *Game) AllSpells() spellbook.Spells {
-    spellsLbx, err := game.Cache.GetLbxFile("spelldat.lbx")
+    spells, err := spellbook.ReadSpellsFromCache(game.Cache)
     if err != nil {
-        log.Printf("Could not open spelldat.lbx: %v", err)
-        return spellbook.Spells{}
-    }
-
-    spells, err := spellbook.ReadSpells(spellsLbx, 0)
-    if err != nil {
-        log.Printf("Could not read spells from spelldat.lbx: %v", err)
+        log.Printf("Could not read spells from cache: %v", err)
         return spellbook.Spells{}
     }
 
