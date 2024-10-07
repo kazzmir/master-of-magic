@@ -195,17 +195,31 @@ func (spells *Spells) Sub(min int, max int) Spells {
     return SpellsFromArray(spells.Spells[min:max])
 }
 
-func (spells *Spells) AddSpell(spell Spell) {
+func (spells *Spells) AddAllSpells(more Spells) {
+    for _, spell := range more.Spells {
+        spells.AddSpell(spell)
+    }
+}
+
+func (spells *Spells) RemoveSpells(toRemove Spells){
+    for _, spell := range toRemove.Spells {
+        spells.RemoveSpell(spell)
+    }
+}
+
+// returns true if the spell was added, false if it was not
+func (spells *Spells) AddSpell(spell Spell) bool {
     if spell.Invalid(){
-        return
+        return false
     }
 
     for _, check := range spells.Spells {
         if check.Name == spell.Name {
-            return
+            return false
         }
     }
     spells.Spells = append(spells.Spells, spell)
+    return true
 }
 
 func (spells *Spells) RemoveSpell(toRemove Spell){

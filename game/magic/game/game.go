@@ -269,6 +269,85 @@ func (game *Game) AllSpells() spellbook.Spells {
     return spells
 }
 
+/* for each book type, there are X number of spells that can be researched per rarity type.
+ * for example, books=3 yields 6 common, 3 uncommon, 2 rare, 1 very rare
+ */
+func (game *Game) InitializeResearchableSpells(spells *spellbook.Spells, player *playerlib.Player){
+    commonCount := func(books int) int {
+        if books == 1 {
+            return 3
+        }
+
+        return int(math.Min(10, float64(3 + books)))
+    }
+
+    uncommonCount := func(books int) int {
+        if books <= 6 {
+            return books
+        }
+
+        if books == 7 {
+            return 8
+        }
+
+        if books == 8 {
+            return 10
+        }
+
+        return 10
+    }
+
+    rareCount := func(books int) int {
+        if books == 1 {
+            return 0
+        }
+
+        if books <= 8 {
+            return books - 1
+        }
+
+        return int(math.Min(10, float64(books)))
+    }
+
+    veryRareCount := func(books int) int {
+        if books <= 2 {
+            return 0
+        }
+
+        if books <= 10 {
+            return books - 2
+        }
+
+        return 10
+    }
+
+    type CountFunc func(int) int
+
+    rarityCount := make(map[spellbook.SpellRarity]CountFunc)
+    rarityCount[spellbook.SpellRarityCommon] = commonCount
+    rarityCount[spellbook.SpellRarityUncommon] = uncommonCount
+    rarityCount[spellbook.SpellRarityRare] = rareCount
+    rarityCount[spellbook.SpellRarityVeryRare] = veryRareCount
+
+    for _, book := range player.Wizard.Books {
+        realmSpells := spells.GetSpellsByMagic(book.Magic)
+
+        for rarity, countFunc := range rarityCount {
+            raritySpells := realmSpells.GetSpellsByRarity(rarity)
+
+            alreadyKnown := player.KnownSpells.GetSpellsByMagic(book.Magic).GetSpellsByRarity(rarity)
+
+            raritySpells.RemoveSpells(alreadyKnown)
+            raritySpells.ShuffleSpells()
+
+            // if the player can research 6 spells but already has 3 selected, then they can research 3 more
+            for i := 0; i < countFunc(book.Count) - len(alreadyKnown.Spells); i++ {
+                player.ResearchPoolSpells.AddSpell(raritySpells.Spells[i])
+            }
+        }
+    }
+}
+
 func (game *Game) AddPlayer(wizard setup.WizardCustom) *playerlib.Player{
     newPlayer := &playerlib.Player{
         TaxRate: fraction.FromInt(1),
@@ -294,11 +373,20 @@ func (game *Game) AddPlayer(wizard setup.WizardCustom) *playerlib.Player{
     for _, spell := range startingSpells {
         newPlayer.ResearchPoolSpells.AddSpell(allSpells.FindByName(spell))
     }
+
+    // every wizard gets all arcane spells by default
+    newPlayer.ResearchPoolSpells.AddAllSpells(allSpells.GetSpellsByMagic(data.ArcaneMagic))
+
     newPlayer.KnownSpells = wizard.StartingSpells.Copy()
     for _, spell := range startingSpells {
         newPlayer.KnownSpells.AddSpell(allSpells.FindByName(spell))
     }
     newPlayer.CastingSkillPower = computeInitialCastingSkillPower(newPlayer.Wizard.Books)
+
+    game.InitializeResearchableSpells(&allSpells, newPlayer)
+    newPlayer.UpdateResearchCandidates()
+
+    log.Printf("Research spells: %v", newPlayer.ResearchPoolSpells)
 
     game.Players = append(game.Players, newPlayer)
     return newPlayer
@@ -2889,7 +2977,9 @@ func (game *Game) DoNextTurn(){
 
                 // FIXME: choose a new research candidate spell
 
+                player.ResearchCandidateSpells.RemoveSpell(player.ResearchingSpell)
                 player.KnownSpells.AddSpell(player.ResearchingSpell)
+                player.UpdateResearchCandidates()
                 player.ResearchingSpell = spellbook.Spell{}
                 player.ResearchProgress = 0
                 select {

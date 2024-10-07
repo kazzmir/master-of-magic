@@ -292,6 +292,14 @@ func (player *Player) FindSummoningCity() *citylib.City {
     return nil
 }
 
+/* fill up the research candidate spells so that there are at most 8.
+ * choose spells from the research pool that are not already known, but preferring
+ * lower rarity spells first.
+ */
+func (player *Player) UpdateResearchCandidates() {
+    // FIXME
+}
+
 func (player *Player) ComputeCastingSkill() int {
     if player.CastingSkillPower == 0 {
         return 0
