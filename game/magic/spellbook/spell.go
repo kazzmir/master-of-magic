@@ -411,6 +411,16 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
     learnSpellPics, _ := imageCache.GetImages("specfx.lbx", 49)
     learnSpellAnimation := util.MakeAnimation(learnSpellPics, false)
 
+    type HoverTime struct {
+        // the first time the user hovered over the area
+        On uint64
+        // the first time the user left the area
+        Off uint64
+    }
+
+    // map from spell number to its time, where number 0 means left page spell 0, and 4 means right page spell 0
+    // hoverTime := make(map[int]HoverTime)
+
     renderPage := func(page Page, flipping bool, pageImage *ebiten.Image, options ebiten.DrawImageOptions){
         if len(page.Spells.Spells) > 0 || page.ForceRender {
             // var options ebiten.DrawImageOptions
@@ -557,6 +567,7 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
 
     posX := 0
     posY := 0
+    researchSpellIndex := 0
 
     var rect image.Rectangle
     if pickResearchSpell {
@@ -568,24 +579,26 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
         Inside: func (this *uilib.UIElement, x, y int){
             posX = x
             posY = y
+
+            if posY >= 35 && posY < 35 + 35 * 4 {
+                researchSpellIndex = (posY - 35) / 35
+
+                if posX >= 160 {
+                    researchSpellIndex += 4
+                }
+            }
         },
         LeftClick: func(this *uilib.UIElement){
             if pickResearchSpell {
-                if posY >= 35 && posY < 35 + 35 * 4 {
-                    spellIndex := (posY - 35) / 35
-
-                    // left page
-                    if posX < 160 {
-                        if spellIndex >= 0 && spellIndex < len(researchPage1.Spells.Spells) {
-                            *chosenSpell = researchPage1.Spells.Spells[spellIndex]
-                            quit = true
-                        }
-                    } else {
-                        // right page
-                        if spellIndex >= 0 && spellIndex < len(researchPage2.Spells.Spells) {
-                            *chosenSpell = researchPage2.Spells.Spells[spellIndex]
-                            quit = true
-                        }
+                if researchSpellIndex >= 0 && researchSpellIndex < len(researchPage1.Spells.Spells) {
+                    *chosenSpell = researchPage1.Spells.Spells[researchSpellIndex]
+                    quit = true
+                } else {
+                    use := researchSpellIndex - 4
+                    // right page
+                    if use >= 0 && use < len(researchPage2.Spells.Spells) {
+                        *chosenSpell = researchPage2.Spells.Spells[use]
+                        quit = true
                     }
                 }
             }
