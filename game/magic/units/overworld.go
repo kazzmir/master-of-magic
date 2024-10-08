@@ -17,8 +17,12 @@ type OverworldUnit struct {
     Health int
 }
 
-func MakeOverworldUnitFromUnit(unit Unit, x int, y int, plane data.Plane, banner data.BannerType) OverworldUnit {
-    return OverworldUnit{
+func MakeOverworldUnit(unit Unit) *OverworldUnit {
+    return MakeOverworldUnitFromUnit(unit, 0, 0, data.PlaneArcanus, data.BannerBrown)
+}
+
+func MakeOverworldUnitFromUnit(unit Unit, x int, y int, plane data.Plane, banner data.BannerType) *OverworldUnit {
+    return &OverworldUnit{
         Unit: unit,
         Banner: banner,
         Plane: plane,

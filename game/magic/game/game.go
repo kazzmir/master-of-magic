@@ -1906,11 +1906,11 @@ func (game *Game) doMagicEncounter(yield coroutine.YieldFunc, player *playerlib.
     var enemies []*units.OverworldUnit
 
     for _, unit := range node.Guardians {
-        enemies = append(enemies, &units.OverworldUnit{Unit: unit})
+        enemies = append(enemies, units.MakeOverworldUnit(unit))
     }
 
     for _, unit := range node.Secondary {
-        enemies = append(enemies, &units.OverworldUnit{Unit: unit})
+        enemies = append(enemies, units.MakeOverworldUnit(unit))
     }
 
     result := game.doCombat(yield, player, stack, &defender, playerlib.MakeUnitStackFromUnits(enemies))
