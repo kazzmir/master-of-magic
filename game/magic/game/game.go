@@ -427,6 +427,7 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
 
     yellowPalette := color.Palette{
         color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
         orange,
         orange,
         orange,
@@ -439,6 +440,7 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
 
     red := color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}
     redPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
         color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
         red, red, red,
         red, red, red,
@@ -2904,14 +2906,29 @@ func (game *Game) MakeHudUI() *uilib.UI {
                     options.GeoM.Translate(240, 77)
                     screen.DrawImage(goldFood, &options)
 
+                    negativeScale := ebiten.ColorScale{}
+
+                    // v is in range 0.5-1
+                    v := (math.Cos(float64(game.Counter) / 7) + 1) / 4 + 0.5
+                    negativeScale.SetR(float32(v))
+
                     if goldPerTurn < 0 {
-                        game.InfoFontRed.PrintCenter(screen, 278, 103, 1, ebiten.ColorScale{}, fmt.Sprintf("%v Gold", goldPerTurn))
+                        game.InfoFontRed.PrintCenter(screen, 278, 103, 1, negativeScale, fmt.Sprintf("%v Gold", goldPerTurn))
                     } else {
                         game.InfoFontYellow.PrintCenter(screen, 278, 103, 1, ebiten.ColorScale{}, fmt.Sprintf("%v Gold", goldPerTurn))
                     }
 
-                    game.InfoFontYellow.PrintCenter(screen, 278, 135, 1, ebiten.ColorScale{}, fmt.Sprintf("%v Food", foodPerTurn))
-                    game.InfoFontYellow.PrintCenter(screen, 278, 167, 1, ebiten.ColorScale{}, fmt.Sprintf("%v Mana", manaPerTurn))
+                    if foodPerTurn < 0 {
+                        game.InfoFontRed.PrintCenter(screen, 278, 135, 1, negativeScale, fmt.Sprintf("%v Food", foodPerTurn))
+                    } else {
+                        game.InfoFontYellow.PrintCenter(screen, 278, 135, 1, ebiten.ColorScale{}, fmt.Sprintf("%v Food", foodPerTurn))
+                    }
+
+                    if manaPerTurn < 0 {
+                        game.InfoFontRed.PrintCenter(screen, 278, 167, 1, negativeScale, fmt.Sprintf("%v Mana", manaPerTurn))
+                    } else {
+                        game.InfoFontYellow.PrintCenter(screen, 278, 167, 1, ebiten.ColorScale{}, fmt.Sprintf("%v Mana", manaPerTurn))
+                    }
                 },
             })
         }
