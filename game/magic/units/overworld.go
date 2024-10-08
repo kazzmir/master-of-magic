@@ -14,6 +14,7 @@ type OverworldUnit struct {
     X int
     Y int
     Id uint64
+    Health int
 }
 
 func MakeOverworldUnitFromUnit(unit Unit, x int, y int, plane data.Plane, banner data.BannerType) OverworldUnit {
@@ -23,6 +24,7 @@ func MakeOverworldUnitFromUnit(unit Unit, x int, y int, plane data.Plane, banner
         Plane: plane,
         MovesLeft: fraction.FromInt(unit.MovementSpeed),
         Patrol: false,
+        Health: unit.GetMaxHealth(),
         X: x,
         Y: y,
     }

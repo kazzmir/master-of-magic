@@ -1934,7 +1934,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     }
 
     for _, unit := range attackerStack.Units() {
-        attackingArmy.AddUnit(unit.Unit)
+        attackingArmy.AddUnit(unit)
     }
 
     defendingArmy := combat.Army{
@@ -1942,7 +1942,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     }
 
     for _, unit := range defenderStack.Units() {
-        defendingArmy.AddUnit(unit.Unit)
+        defendingArmy.AddUnit(unit)
     }
 
     attackingArmy.LayoutUnits(combat.TeamAttacker)
