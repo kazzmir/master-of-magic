@@ -1577,6 +1577,13 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
     }
 }
 
+func (game *Game) RefreshUI() {
+    select {
+        case game.Events <- &GameEventRefreshUI{}:
+        default:
+    }
+}
+
 func (game *Game) Update(yield coroutine.YieldFunc) GameState {
     game.Counter += 1
 
@@ -1645,10 +1652,7 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                                         if len(inactiveUnits) > 0 {
                                             stack.RemoveUnits(inactiveUnits)
                                             player.AddStack(playerlib.MakeUnitStackFromUnits(inactiveUnits))
-                                            select {
-                                                case game.Events <- &GameEventRefreshUI{}:
-                                                default:
-                                            }
+                                            game.RefreshUI()
                                         }
 
                                         path := game.FindPath(oldX, oldY, newX, newY, stack, player.GetFog(game.Plane))
@@ -1685,10 +1689,7 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
 
                                         game.doMagicEncounter(yield, player, stack, node)
 
-                                        select {
-                                            case game.Events <- &GameEventRefreshUI{}:
-                                            default:
-                                        }
+                                        game.RefreshUI()
                                     }
 
                                     stopMoving = true
@@ -1707,10 +1708,7 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                                     if otherStack != nil {
                                         game.doCombat(yield, player, stack, otherPlayer, otherStack)
 
-                                        select {
-                                            case game.Events <- &GameEventRefreshUI{}:
-                                            default:
-                                        }
+                                        game.RefreshUI()
 
                                         stopMoving = true
                                         break quitMoving
@@ -1741,10 +1739,7 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                         if mergeStack != nil {
                             stack = player.MergeStacks(mergeStack, stack)
                             player.SelectedStack = stack
-                            select {
-                                case game.Events <- &GameEventRefreshUI{}:
-                                default:
-                            }
+                            game.RefreshUI()
                         }
 
                         // update unrest for new units in the city
@@ -1773,10 +1768,7 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                             for _, city := range player.Cities {
                                 if city.X == tileX && city.Y == tileY {
                                     game.doCityScreen(yield, city, player)
-                                    select {
-                                        case game.Events <- &GameEventRefreshUI{}:
-                                        default:
-                                    }
+                                    game.RefreshUI()
                                 }
                             }
                         }
@@ -2194,10 +2186,7 @@ func (game *Game) ShowTaxCollectorUI(cornerX int, cornerY int){
 
     update := func(rate fraction.Fraction){
         player.UpdateTaxRate(rate)
-        select {
-            case game.Events<- &GameEventRefreshUI{}:
-            default:
-        }
+        game.RefreshUI()
     }
 
     taxes := []uilib.Selection{
@@ -2465,10 +2454,7 @@ func (game *Game) CreateOutpost(settlers *units.OverworldUnit, player *playerlib
 
     player.RemoveUnit(settlers)
     player.SelectedStack = nil
-    select {
-        case game.Events<- &GameEventRefreshUI{}:
-        default:
-    }
+    game.RefreshUI()
     player.AddCity(newCity)
 
     stack := player.FindStack(newCity.X, newCity.Y)
@@ -2998,10 +2984,7 @@ func (game *Game) DoNextUnit(player *playerlib.Player){
     }
 
     // FIXME: only do this for human player
-    select {
-        case game.Events<- &GameEventRefreshUI{}:
-        default:
-    }
+    game.RefreshUI()
     // game.HudUI = game.MakeHudUI()
 }
 
@@ -3120,10 +3103,7 @@ func (game *Game) DoNextTurn(){
 
         game.CenterCamera(player.Cities[0].X, player.Cities[0].Y)
         game.DoNextUnit(player)
-        select {
-            case game.Events<- &GameEventRefreshUI{}:
-            default:
-        }
+        game.RefreshUI()
     }
 
     // FIXME: run other players/AI
