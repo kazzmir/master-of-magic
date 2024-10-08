@@ -1903,7 +1903,6 @@ func (game *Game) doMagicEncounter(yield coroutine.YieldFunc, player *playerlib.
         },
     }
 
-    // FIXME: units depend on node at x,y location
     var enemies []*units.OverworldUnit
 
     for _, unit := range node.Guardians {
@@ -1976,6 +1975,18 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
 
     ebiten.SetCursorMode(ebiten.CursorModeVisible)
     game.Drawer = oldDrawer
+
+    for _, unit := range attackingArmy.Units {
+        if unit.Unit.Health <= 0 {
+            attacker.RemoveUnit(unit.Unit)
+        }
+    }
+
+    for _, unit := range defendingArmy.Units {
+        if unit.Unit.Health <= 0 {
+            defender.RemoveUnit(unit.Unit)
+        }
+    }
 
     return state
 }
