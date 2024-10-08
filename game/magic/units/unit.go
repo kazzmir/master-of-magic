@@ -1877,8 +1877,16 @@ var HighMenSpearmen Unit = Unit{
     LbxFile: "units1.lbx",
     Name: "Spearmen",
     Index: 104,
+    CombatLbxFile: "figures7.lbx",
+    CombatIndex: 112,
     Race: data.RaceHighMen,
     UpkeepFood: 1,
+    MovementSpeed: 1,
+    MeleeAttackPower: 1,
+    Defense: 2,
+    Resistance: 4,
+    HitPoints: 1,
+    Count: 8,
 }
 
 var HighMenSwordsmen Unit = Unit{

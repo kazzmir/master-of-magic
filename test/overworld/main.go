@@ -1042,6 +1042,79 @@ func createScenario14(cache *lbx.LbxCache) *gamelib.Game {
     return game
 }
 
+// show units with low health in overland
+func createScenario15(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 15")
+
+    wizard := setup.WizardCustom{
+        Name: "bob",
+        Banner: data.BannerBlue,
+        Race: data.RaceTroll,
+        Abilities: []setup.WizardAbility{
+            setup.AbilityAlchemy,
+            setup.AbilitySageMaster,
+        },
+        Books: []data.WizardBook{
+            data.WizardBook{
+                Magic: data.LifeMagic,
+                Count: 3,
+            },
+            data.WizardBook{
+                Magic: data.SorceryMagic,
+                Count: 8,
+            },
+        },
+    }
+
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
+
+    game.Plane = data.PlaneArcanus
+
+    player := game.AddPlayer(wizard)
+
+    x, y := game.FindValidCityLocation()
+
+    city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.TaxRate, game.BuildingInfo)
+    city.Population = 6190
+    city.Plane = data.PlaneArcanus
+    city.Banner = wizard.Banner
+    city.ProducingBuilding = buildinglib.BuildingGranary
+    city.ProducingUnit = units.UnitNone
+    city.Race = wizard.Race
+    city.Farmers = 3
+    city.Workers = 3
+    city.Wall = false
+
+    city.ResetCitizens(nil)
+
+    player.AddCity(city)
+
+    player.Gold = 83
+    player.Mana = 26
+
+    // game.Map.Map.Terrain[3][6] = terrain.TileNatureForest.Index
+
+    player.LiftFog(x, y, 3)
+
+    spear1 := player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, x+1, y, data.PlaneArcanus, wizard.Banner))
+    spear1.Health /= 2
+
+    stack := player.FindStackByUnit(spear1)
+    player.SetSelectedStack(stack)
+
+    player.LiftFog(stack.X(), stack.Y(), 2)
+
+    enemy1 := game.AddPlayer(setup.WizardCustom{
+        Name: "dingus",
+        Banner: data.BannerRed,
+    })
+
+    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.Warlocks, x + 2, y + 2, data.PlaneArcanus, enemy1.Wizard.Banner))
+    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenBowmen, x + 2, y + 2, data.PlaneArcanus, enemy1.Wizard.Banner))
+
+    return game
+}
+
 func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
@@ -1062,6 +1135,7 @@ func NewEngine(scenario int) (*Engine, error) {
         case 12: game = createScenario12(cache)
         case 13: game = createScenario13(cache)
         case 14: game = createScenario14(cache)
+        case 15: game = createScenario15(cache)
         default: game = createScenario1(cache)
     }
 
