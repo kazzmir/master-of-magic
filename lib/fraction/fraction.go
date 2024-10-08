@@ -42,6 +42,9 @@ func FromInt(numerator int) Fraction {
 }
 
 func (fraction Fraction) ToFloat() float64 {
+    if fraction.Numerator == 0 {
+        return 0
+    }
     return float64(fraction.Numerator) / float64(fraction.Denominator)
 }
 

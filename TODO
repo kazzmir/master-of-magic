@@ -15,7 +15,6 @@
 * neutral towns/cities
 * game menu - implement save/load game
 * units disband if not enough food
-* buildings destroyed if not enough gold for upkeep
 * play midi music
 * font editor - choose colors for font palette
 * melee/defense/heart icons should have white border

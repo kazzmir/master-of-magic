@@ -57,6 +57,9 @@ type GameEventMagicView struct {
 type GameEventArmyView struct {
 }
 
+type GameEventRefreshUI struct {
+}
+
 type GameEventSurveyor struct {
 }
 
@@ -144,6 +147,7 @@ type Game struct {
     Settings setup.NewGameSettings
 
     InfoFontYellow *font.Font
+    InfoFontRed *font.Font
     Counter uint64
     Fog *ebiten.Image
     Drawer func (*ebiten.Image, *Game)
@@ -423,6 +427,7 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
 
     yellowPalette := color.Palette{
         color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
         orange,
         orange,
         orange,
@@ -432,6 +437,16 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
     }
 
     infoFontYellow := font.MakeOptimizedFontWithPalette(fonts[0], yellowPalette)
+
+    red := color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}
+    redPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        red, red, red,
+        red, red, red,
+    }
+
+    infoFontRed := font.MakeOptimizedFontWithPalette(fonts[0], redPalette)
 
     whitePalette := color.Palette{
         color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
@@ -456,6 +471,7 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         BookOrder: randomizeBookOrder(12),
         ImageCache: util.MakeImageCache(lbxCache),
         InfoFontYellow: infoFontYellow,
+        InfoFontRed: infoFontRed,
         WhiteFont: whiteFont,
         BuildingInfo: buildingInfo,
         TurnNumber: 1,
@@ -1511,6 +1527,8 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                 switch event.(type) {
                     case *GameEventMagicView:
                         game.doMagicView(yield)
+                    case *GameEventRefreshUI:
+                        game.HudUI = game.MakeHudUI()
                     case *GameEventSurveyor:
                         game.doSurveyor(yield)
                     case *GameEventApprenticeUI:
@@ -1627,7 +1645,10 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                                         if len(inactiveUnits) > 0 {
                                             stack.RemoveUnits(inactiveUnits)
                                             player.AddStack(playerlib.MakeUnitStackFromUnits(inactiveUnits))
-                                            game.HudUI = game.MakeHudUI()
+                                            select {
+                                                case game.Events <- &GameEventRefreshUI{}:
+                                                default:
+                                            }
                                         }
 
                                         path := game.FindPath(oldX, oldY, newX, newY, stack, player.GetFog(game.Plane))
@@ -1709,7 +1730,10 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                         if mergeStack != nil {
                             stack = player.MergeStacks(mergeStack, stack)
                             player.SelectedStack = stack
-                            game.HudUI = game.MakeHudUI()
+                            select {
+                                case game.Events <- &GameEventRefreshUI{}:
+                                default:
+                            }
                         }
 
                         // update unrest for new units in the city
@@ -1738,7 +1762,10 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                             for _, city := range player.Cities {
                                 if city.X == tileX && city.Y == tileY {
                                     game.doCityScreen(yield, city, player)
-                                    game.HudUI = game.MakeHudUI()
+                                    select {
+                                        case game.Events <- &GameEventRefreshUI{}:
+                                        default:
+                                    }
                                 }
                             }
                         }
@@ -2143,47 +2170,55 @@ func (game *Game) ShowTaxCollectorUI(cornerX int, cornerY int){
         return s
     }
 
+    update := func(rate fraction.Fraction){
+        player.UpdateTaxRate(rate)
+        select {
+            case game.Events<- &GameEventRefreshUI{}:
+            default:
+        }
+    }
+
     taxes := []uilib.Selection{
         uilib.Selection{
             Name: selected("0 gold, 0% unrest", player.TaxRate.IsZero()),
             Action: func(){
-                player.UpdateTaxRate(fraction.Zero())
+                update(fraction.Zero())
             },
         },
         uilib.Selection{
             Name: selected("0.5 gold, 10% unrest", player.TaxRate.Equals(fraction.Make(1, 2))),
             Action: func(){
-                player.UpdateTaxRate(fraction.Make(1, 2))
+                update(fraction.Make(1, 2))
             },
         },
         uilib.Selection{
             Name: selected("1 gold, 20% unrest", player.TaxRate.Equals(fraction.Make(1, 1))),
             Action: func(){
-                player.UpdateTaxRate(fraction.Make(1, 1))
+                update(fraction.Make(1, 1))
             },
         },
         uilib.Selection{
             Name: selected("1.5 gold, 30% unrest", player.TaxRate.Equals(fraction.Make(3, 2))),
             Action: func(){
-                player.UpdateTaxRate(fraction.Make(3, 2))
+                update(fraction.Make(3, 2))
             },
         },
         uilib.Selection{
             Name: selected("2 gold, 45% unrest", player.TaxRate.Equals(fraction.Make(2, 1))),
             Action: func(){
-                player.UpdateTaxRate(fraction.Make(2, 1))
+                update(fraction.Make(2, 1))
             },
         },
         uilib.Selection{
             Name: selected("2.5 gold, 60% unrest", player.TaxRate.Equals(fraction.Make(5, 2))),
             Action: func(){
-                player.UpdateTaxRate(fraction.Make(5, 2))
+                update(fraction.Make(5, 2))
             },
         },
         uilib.Selection{
             Name: selected("3 gold, 75% unrest", player.TaxRate.Equals(fraction.Make(3, 1))),
             Action: func(){
-                player.UpdateTaxRate(fraction.Make(3, 1))
+                update(fraction.Make(3, 1))
             },
         },
     }
@@ -2408,7 +2443,10 @@ func (game *Game) CreateOutpost(settlers *units.OverworldUnit, player *playerlib
 
     player.RemoveUnit(settlers)
     player.SelectedStack = nil
-    game.HudUI = game.MakeHudUI()
+    select {
+        case game.Events<- &GameEventRefreshUI{}:
+        default:
+    }
     player.AddCity(newCity)
 
     stack := player.FindStack(newCity.X, newCity.Y)
@@ -2868,9 +2906,29 @@ func (game *Game) MakeHudUI() *uilib.UI {
                     options.GeoM.Translate(240, 77)
                     screen.DrawImage(goldFood, &options)
 
-                    game.InfoFontYellow.PrintCenter(screen, 278, 103, 1, ebiten.ColorScale{}, fmt.Sprintf("%v Gold", goldPerTurn))
-                    game.InfoFontYellow.PrintCenter(screen, 278, 135, 1, ebiten.ColorScale{}, fmt.Sprintf("%v Food", foodPerTurn))
-                    game.InfoFontYellow.PrintCenter(screen, 278, 167, 1, ebiten.ColorScale{}, fmt.Sprintf("%v Mana", manaPerTurn))
+                    negativeScale := ebiten.ColorScale{}
+
+                    // v is in range 0.5-1
+                    v := (math.Cos(float64(game.Counter) / 7) + 1) / 4 + 0.5
+                    negativeScale.SetR(float32(v))
+
+                    if goldPerTurn < 0 {
+                        game.InfoFontRed.PrintCenter(screen, 278, 103, 1, negativeScale, fmt.Sprintf("%v Gold", goldPerTurn))
+                    } else {
+                        game.InfoFontYellow.PrintCenter(screen, 278, 103, 1, ebiten.ColorScale{}, fmt.Sprintf("%v Gold", goldPerTurn))
+                    }
+
+                    if foodPerTurn < 0 {
+                        game.InfoFontRed.PrintCenter(screen, 278, 135, 1, negativeScale, fmt.Sprintf("%v Food", foodPerTurn))
+                    } else {
+                        game.InfoFontYellow.PrintCenter(screen, 278, 135, 1, ebiten.ColorScale{}, fmt.Sprintf("%v Food", foodPerTurn))
+                    }
+
+                    if manaPerTurn < 0 {
+                        game.InfoFontRed.PrintCenter(screen, 278, 167, 1, negativeScale, fmt.Sprintf("%v Mana", manaPerTurn))
+                    } else {
+                        game.InfoFontYellow.PrintCenter(screen, 278, 167, 1, ebiten.ColorScale{}, fmt.Sprintf("%v Mana", manaPerTurn))
+                    }
                 },
             })
         }
@@ -2918,7 +2976,11 @@ func (game *Game) DoNextUnit(player *playerlib.Player){
     }
 
     // FIXME: only do this for human player
-    game.HudUI = game.MakeHudUI()
+    select {
+        case game.Events<- &GameEventRefreshUI{}:
+        default:
+    }
+    // game.HudUI = game.MakeHudUI()
 }
 
 func (game *Game) DoNextTurn(){
@@ -3039,7 +3101,10 @@ func (game *Game) DoNextTurn(){
 
         game.CenterCamera(player.Cities[0].X, player.Cities[0].Y)
         game.DoNextUnit(player)
-        game.HudUI = game.MakeHudUI()
+        select {
+            case game.Events<- &GameEventRefreshUI{}:
+            default:
+        }
     }
 
     // FIXME: run other players/AI
