@@ -147,6 +147,7 @@ type Game struct {
     Settings setup.NewGameSettings
 
     InfoFontYellow *font.Font
+    InfoFontRed *font.Font
     Counter uint64
     Fog *ebiten.Image
     Drawer func (*ebiten.Image, *Game)
@@ -436,6 +437,15 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
 
     infoFontYellow := font.MakeOptimizedFontWithPalette(fonts[0], yellowPalette)
 
+    red := color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}
+    redPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        red, red, red,
+        red, red, red,
+    }
+
+    infoFontRed := font.MakeOptimizedFontWithPalette(fonts[0], redPalette)
+
     whitePalette := color.Palette{
         color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
         color.White, color.White, color.White, color.White,
@@ -459,6 +469,7 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         BookOrder: randomizeBookOrder(12),
         ImageCache: util.MakeImageCache(lbxCache),
         InfoFontYellow: infoFontYellow,
+        InfoFontRed: infoFontRed,
         WhiteFont: whiteFont,
         BuildingInfo: buildingInfo,
         TurnNumber: 1,
@@ -2893,7 +2904,12 @@ func (game *Game) MakeHudUI() *uilib.UI {
                     options.GeoM.Translate(240, 77)
                     screen.DrawImage(goldFood, &options)
 
-                    game.InfoFontYellow.PrintCenter(screen, 278, 103, 1, ebiten.ColorScale{}, fmt.Sprintf("%v Gold", goldPerTurn))
+                    if goldPerTurn < 0 {
+                        game.InfoFontRed.PrintCenter(screen, 278, 103, 1, ebiten.ColorScale{}, fmt.Sprintf("%v Gold", goldPerTurn))
+                    } else {
+                        game.InfoFontYellow.PrintCenter(screen, 278, 103, 1, ebiten.ColorScale{}, fmt.Sprintf("%v Gold", goldPerTurn))
+                    }
+
                     game.InfoFontYellow.PrintCenter(screen, 278, 135, 1, ebiten.ColorScale{}, fmt.Sprintf("%v Food", foodPerTurn))
                     game.InfoFontYellow.PrintCenter(screen, 278, 167, 1, ebiten.ColorScale{}, fmt.Sprintf("%v Mana", manaPerTurn))
                 },
