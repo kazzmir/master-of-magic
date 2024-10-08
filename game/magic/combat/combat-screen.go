@@ -2706,6 +2706,11 @@ func (combat *CombatScreen) ShowUnitInfo(screen *ebiten.Image, unit *ArmyUnit){
     healthPercent := float64(unit.Unit.Health) / float64(unit.Unit.Unit.GetMaxHealth())
     healthLength := float64(healthWidth) * healthPercent
 
+    // always show at least one point of health
+    if healthLength < 1 {
+        healthLength = 1
+    }
+
     useColor := highHealth
     if healthPercent < 0.33 {
         useColor = lowHealth

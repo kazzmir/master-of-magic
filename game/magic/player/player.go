@@ -68,7 +68,7 @@ func (stack *UnitStack) IsEmpty() bool {
 }
 
 func (stack *UnitStack) Units() []*units.OverworldUnit {
-    return stack.units
+    return slices.Clone(stack.units)
 }
 
 func (stack *UnitStack) ActiveUnits() []*units.OverworldUnit {

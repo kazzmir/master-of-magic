@@ -1684,6 +1684,11 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                                         player.LiftFog(stack.X(), stack.Y(), 2)
 
                                         game.doMagicEncounter(yield, player, stack, node)
+
+                                        select {
+                                            case game.Events <- &GameEventRefreshUI{}:
+                                            default:
+                                        }
                                     }
 
                                     stopMoving = true
@@ -1701,6 +1706,12 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                                     otherStack := otherPlayer.FindStack(stack.X(), stack.Y())
                                     if otherStack != nil {
                                         game.doCombat(yield, player, stack, otherPlayer, otherStack)
+
+                                        select {
+                                            case game.Events <- &GameEventRefreshUI{}:
+                                            default:
+                                        }
+
                                         stopMoving = true
                                         break quitMoving
                                     }
@@ -1976,15 +1987,15 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     ebiten.SetCursorMode(ebiten.CursorModeVisible)
     game.Drawer = oldDrawer
 
-    for _, unit := range attackingArmy.Units {
-        if unit.Unit.Health <= 0 {
-            attacker.RemoveUnit(unit.Unit)
+    for _, unit := range attackerStack.Units() {
+        if unit.Health <= 0 {
+            attacker.RemoveUnit(unit)
         }
     }
 
-    for _, unit := range defendingArmy.Units {
-        if unit.Unit.Health <= 0 {
-            defender.RemoveUnit(unit.Unit)
+    for _, unit := range defenderStack.Units() {
+        if unit.Health <= 0 {
+            defender.RemoveUnit(unit)
         }
     }
 
