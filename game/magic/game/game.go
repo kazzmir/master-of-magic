@@ -57,6 +57,9 @@ type GameEventMagicView struct {
 type GameEventArmyView struct {
 }
 
+type GameEventRefreshUI struct {
+}
+
 type GameEventSurveyor struct {
 }
 
@@ -1511,6 +1514,8 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                 switch event.(type) {
                     case *GameEventMagicView:
                         game.doMagicView(yield)
+                    case *GameEventRefreshUI:
+                        game.HudUI = game.MakeHudUI()
                     case *GameEventSurveyor:
                         game.doSurveyor(yield)
                     case *GameEventApprenticeUI:
@@ -1627,7 +1632,10 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                                         if len(inactiveUnits) > 0 {
                                             stack.RemoveUnits(inactiveUnits)
                                             player.AddStack(playerlib.MakeUnitStackFromUnits(inactiveUnits))
-                                            game.HudUI = game.MakeHudUI()
+                                            select {
+                                                case game.Events <- &GameEventRefreshUI{}:
+                                                default:
+                                            }
                                         }
 
                                         path := game.FindPath(oldX, oldY, newX, newY, stack, player.GetFog(game.Plane))
@@ -1709,7 +1717,10 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                         if mergeStack != nil {
                             stack = player.MergeStacks(mergeStack, stack)
                             player.SelectedStack = stack
-                            game.HudUI = game.MakeHudUI()
+                            select {
+                                case game.Events <- &GameEventRefreshUI{}:
+                                default:
+                            }
                         }
 
                         // update unrest for new units in the city
@@ -1738,7 +1749,10 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                             for _, city := range player.Cities {
                                 if city.X == tileX && city.Y == tileY {
                                     game.doCityScreen(yield, city, player)
-                                    game.HudUI = game.MakeHudUI()
+                                    select {
+                                        case game.Events <- &GameEventRefreshUI{}:
+                                        default:
+                                    }
                                 }
                             }
                         }
@@ -2143,47 +2157,55 @@ func (game *Game) ShowTaxCollectorUI(cornerX int, cornerY int){
         return s
     }
 
+    update := func(rate fraction.Fraction){
+        player.UpdateTaxRate(rate)
+        select {
+            case game.Events<- &GameEventRefreshUI{}:
+            default:
+        }
+    }
+
     taxes := []uilib.Selection{
         uilib.Selection{
             Name: selected("0 gold, 0% unrest", player.TaxRate.IsZero()),
             Action: func(){
-                player.UpdateTaxRate(fraction.Zero())
+                update(fraction.Zero())
             },
         },
         uilib.Selection{
             Name: selected("0.5 gold, 10% unrest", player.TaxRate.Equals(fraction.Make(1, 2))),
             Action: func(){
-                player.UpdateTaxRate(fraction.Make(1, 2))
+                update(fraction.Make(1, 2))
             },
         },
         uilib.Selection{
             Name: selected("1 gold, 20% unrest", player.TaxRate.Equals(fraction.Make(1, 1))),
             Action: func(){
-                player.UpdateTaxRate(fraction.Make(1, 1))
+                update(fraction.Make(1, 1))
             },
         },
         uilib.Selection{
             Name: selected("1.5 gold, 30% unrest", player.TaxRate.Equals(fraction.Make(3, 2))),
             Action: func(){
-                player.UpdateTaxRate(fraction.Make(3, 2))
+                update(fraction.Make(3, 2))
             },
         },
         uilib.Selection{
             Name: selected("2 gold, 45% unrest", player.TaxRate.Equals(fraction.Make(2, 1))),
             Action: func(){
-                player.UpdateTaxRate(fraction.Make(2, 1))
+                update(fraction.Make(2, 1))
             },
         },
         uilib.Selection{
             Name: selected("2.5 gold, 60% unrest", player.TaxRate.Equals(fraction.Make(5, 2))),
             Action: func(){
-                player.UpdateTaxRate(fraction.Make(5, 2))
+                update(fraction.Make(5, 2))
             },
         },
         uilib.Selection{
             Name: selected("3 gold, 75% unrest", player.TaxRate.Equals(fraction.Make(3, 1))),
             Action: func(){
-                player.UpdateTaxRate(fraction.Make(3, 1))
+                update(fraction.Make(3, 1))
             },
         },
     }
@@ -2408,7 +2430,10 @@ func (game *Game) CreateOutpost(settlers *units.OverworldUnit, player *playerlib
 
     player.RemoveUnit(settlers)
     player.SelectedStack = nil
-    game.HudUI = game.MakeHudUI()
+    select {
+        case game.Events<- &GameEventRefreshUI{}:
+        default:
+    }
     player.AddCity(newCity)
 
     stack := player.FindStack(newCity.X, newCity.Y)
@@ -2918,7 +2943,11 @@ func (game *Game) DoNextUnit(player *playerlib.Player){
     }
 
     // FIXME: only do this for human player
-    game.HudUI = game.MakeHudUI()
+    select {
+        case game.Events<- &GameEventRefreshUI{}:
+        default:
+    }
+    // game.HudUI = game.MakeHudUI()
 }
 
 func (game *Game) DoNextTurn(){
@@ -3039,7 +3068,10 @@ func (game *Game) DoNextTurn(){
 
         game.CenterCamera(player.Cities[0].X, player.Cities[0].Y)
         game.DoNextUnit(player)
-        game.HudUI = game.MakeHudUI()
+        select {
+            case game.Events<- &GameEventRefreshUI{}:
+            default:
+        }
     }
 
     // FIXME: run other players/AI
