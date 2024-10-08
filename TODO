@@ -4,7 +4,6 @@
 * cartographer advisor
 * city catchment area
 * draw units with experience/bonuses
-* combat: results from combat should be reflected in overworld units
 * combat: draw town sprites in combat scene
 * overworld units should render health and veteran status
 * combat: ai controlled units
@@ -40,3 +39,4 @@
 10/5/2024 * cast spell on overworld
 10/5/2024 * select spell to cast
 10/6/2024 * select spell to research
+10.8/2024 * combat: results from combat should be reflected in overworld units
