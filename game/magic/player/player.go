@@ -68,7 +68,7 @@ func (stack *UnitStack) IsEmpty() bool {
 }
 
 func (stack *UnitStack) Units() []*units.OverworldUnit {
-    return stack.units
+    return slices.Clone(stack.units)
 }
 
 func (stack *UnitStack) ActiveUnits() []*units.OverworldUnit {
@@ -575,11 +575,10 @@ func (player *Player) AddStack(stack *UnitStack){
     player.Stacks = append(player.Stacks, stack)
 }
 
-func (player *Player) AddUnit(unit units.OverworldUnit) *units.OverworldUnit {
+func (player *Player) AddUnit(unit *units.OverworldUnit) *units.OverworldUnit {
     unit.Id = player.UnitId
     player.UnitId += 1
-    unit_ptr := &unit
-    player.Units = append(player.Units, unit_ptr)
+    player.Units = append(player.Units, unit)
 
     stack := player.FindStack(unit.X, unit.Y)
     if stack == nil {
@@ -588,7 +587,7 @@ func (player *Player) AddUnit(unit units.OverworldUnit) *units.OverworldUnit {
     } else {
     }
 
-    stack.AddUnit(unit_ptr)
+    stack.AddUnit(unit)
 
-    return unit_ptr
+    return unit
 }

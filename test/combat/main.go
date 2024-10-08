@@ -37,11 +37,13 @@ func createWarlockArmy(player *player.Player) combat.Army {
             },
             */
             &combat.ArmyUnit{
-                Unit: units.Warlocks,
+                Unit: &units.OverworldUnit{
+                    Unit: units.Warlocks,
+                    Health: units.Warlocks.GetMaxHealth(),
+                },
                 Facing: units.FacingDownRight,
                 X: 12,
                 Y: 10,
-                Health: units.Warlocks.GetMaxHealth(),
             },
             /*
             &combat.ArmyUnit{
@@ -69,7 +71,10 @@ func createWarlockArmyN(player *player.Player, count int) combat.Army {
     }
 
     for i := 0; i < count; i++ {
-        army.AddUnit(units.Warlocks)
+        army.AddUnit(&units.OverworldUnit{
+            Unit: units.Warlocks,
+            Health: units.Warlocks.GetMaxHealth(),
+        })
     }
 
     return army
@@ -81,7 +86,10 @@ func createHighMenBowmanArmyN(player *player.Player, count int) combat.Army {
     }
 
     for i := 0; i < count; i++ {
-        army.AddUnit(units.HighMenBowmen)
+        army.AddUnit(&units.OverworldUnit{
+            Unit: units.HighMenBowmen,
+            Health: units.HighMenBowmen.GetMaxHealth(),
+        })
     }
 
     return army
@@ -92,11 +100,13 @@ func createHighMenBowmanArmy(player *player.Player) combat.Army {
         Player: player,
         Units: []*combat.ArmyUnit{
             &combat.ArmyUnit{
-                Unit: units.HighMenBowmen,
+                Unit: &units.OverworldUnit{
+                    Unit: units.HighMenBowmen,
+                    Health: units.HighMenBowmen.GetMaxHealth(),
+                },
                 Facing: units.FacingDownRight,
                 X: 12,
                 Y: 10,
-                Health: units.HighMenBowmen.GetMaxHealth(),
             },
         },
     }
@@ -107,18 +117,22 @@ func createGreatDrakeArmy(player *player.Player) *combat.Army{
         Player: player,
         Units: []*combat.ArmyUnit{
             &combat.ArmyUnit{
-                Unit: units.GreatDrake,
+                Unit: &units.OverworldUnit{
+                    Unit: units.GreatDrake,
+                    Health: units.GreatDrake.GetMaxHealth(),
+                },
                 Facing: units.FacingUpLeft,
                 X: 10,
                 Y: 17,
-                Health: units.GreatDrake.GetMaxHealth(),
             },
             &combat.ArmyUnit{
-                Unit: units.GreatDrake,
+                Unit: &units.OverworldUnit{
+                    Unit: units.GreatDrake,
+                    Health: units.GreatDrake.GetMaxHealth(),
+                },
                 Facing: units.FacingUpLeft,
                 X: 9,
                 Y: 18,
-                Health: units.GreatDrake.GetMaxHealth(),
             },
         },
     }

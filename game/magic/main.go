@@ -155,13 +155,7 @@ func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup
     player.AddCity(introCity)
 
     for _, unit := range startingUnits(player.Wizard.Race) {
-        player.AddUnit(units.OverworldUnit{
-            Unit: unit,
-            Plane: data.PlaneArcanus,
-            Banner: wizard.Banner,
-            X: cityX,
-            Y: cityY,
-        })
+        player.AddUnit(units.MakeOverworldUnitFromUnit(unit, cityX, cityY, data.PlaneArcanus, wizard.Banner))
     }
 
     player.LiftFog(cityX, cityY, 3)

@@ -14,15 +14,21 @@ type OverworldUnit struct {
     X int
     Y int
     Id uint64
+    Health int
 }
 
-func MakeOverworldUnitFromUnit(unit Unit, x int, y int, plane data.Plane, banner data.BannerType) OverworldUnit {
-    return OverworldUnit{
+func MakeOverworldUnit(unit Unit) *OverworldUnit {
+    return MakeOverworldUnitFromUnit(unit, 0, 0, data.PlaneArcanus, data.BannerBrown)
+}
+
+func MakeOverworldUnitFromUnit(unit Unit, x int, y int, plane data.Plane, banner data.BannerType) *OverworldUnit {
+    return &OverworldUnit{
         Unit: unit,
         Banner: banner,
         Plane: plane,
         MovesLeft: fraction.FromInt(unit.MovementSpeed),
         Patrol: false,
+        Health: unit.GetMaxHealth(),
         X: x,
         Y: y,
     }

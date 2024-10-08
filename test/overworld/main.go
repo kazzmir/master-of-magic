@@ -82,32 +82,14 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 3)
 
-    drake := player.AddUnit(units.OverworldUnit{
-        Unit: units.GreatDrake,
-        Plane: data.PlaneArcanus,
-        Banner: wizard.Banner,
-        X: x + 1,
-        Y: y + 1,
-    })
+    drake := player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x + 1, y + 1, data.PlaneArcanus, wizard.Banner))
 
     for i := 0; i < 5; i++ {
-        fireElemental := player.AddUnit(units.OverworldUnit{
-            Unit: units.FireElemental,
-            Plane: data.PlaneArcanus,
-            Banner: wizard.Banner,
-            X: x + 1,
-            Y: y + 1,
-        })
+        fireElemental := player.AddUnit(units.MakeOverworldUnitFromUnit(units.FireElemental, x + 1, y + 1, data.PlaneArcanus, wizard.Banner))
         _ = fireElemental
     }
 
-    player.AddUnit(units.OverworldUnit{
-        Unit: units.HighMenSpearmen,
-        Plane: data.PlaneArcanus,
-        Banner: wizard.Banner,
-        X: 30,
-        Y: 30,
-    })
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, 30, 30, data.PlaneArcanus, wizard.Banner))
 
     stack := player.FindStackByUnit(drake)
     player.SetSelectedStack(stack)
@@ -119,21 +101,8 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
         Banner: data.BannerRed,
     })
 
-    enemy1.AddUnit(units.OverworldUnit{
-        Unit: units.Warlocks,
-        Plane: data.PlaneArcanus,
-        Banner: enemy1.Wizard.Banner,
-        X: x + 2,
-        Y: y + 2,
-    })
-
-    enemy1.AddUnit(units.OverworldUnit{
-        Unit: units.HighMenBowmen,
-        Plane: data.PlaneArcanus,
-        Banner: enemy1.Wizard.Banner,
-        X: x + 2,
-        Y: y + 2,
-    })
+    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.Warlocks, x + 2, y + 2, data.PlaneArcanus, enemy1.Wizard.Banner))
+    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenBowmen, x + 2, y + 2, data.PlaneArcanus, enemy1.Wizard.Banner))
 
     return game
 }
@@ -182,13 +151,7 @@ func createScenario2(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(4, 5, 3)
 
-    drake := player.AddUnit(units.OverworldUnit{
-        Unit: units.GreatDrake,
-        Plane: data.PlaneArcanus,
-        Banner: wizard.Banner,
-        X: 5,
-        Y: 5,
-    })
+    drake := player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, 5, 5, data.PlaneArcanus, wizard.Banner))
 
     stack := player.FindStackByUnit(drake)
     player.SetSelectedStack(stack)
@@ -251,21 +214,9 @@ func createScenario3(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 3)
 
-    player.AddUnit(units.OverworldUnit{
-        Unit: units.HighMenBowmen,
-        Plane: data.PlaneArcanus,
-        Banner: wizard.Banner,
-        X: x+1,
-        Y: y,
-    })
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenBowmen, x+1, y, data.PlaneArcanus, wizard.Banner))
 
-    settlers := player.AddUnit(units.OverworldUnit{
-        Unit: units.HighMenSettlers,
-        Plane: data.PlaneArcanus,
-        Banner: wizard.Banner,
-        X: x+1,
-        Y: y,
-    })
+    settlers := player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSettlers, x+1, y, data.PlaneArcanus, wizard.Banner))
 
     stack := player.FindStackByUnit(settlers)
     player.SetSelectedStack(stack)
@@ -280,7 +231,7 @@ func createScenario3(cache *lbx.LbxCache) *gamelib.Game {
     return game
 }
 
-// put starting city on a valid map tile
+// show new building event
 func createScenario4(cache *lbx.LbxCache) *gamelib.Game {
     log.Printf("Running scenario 4")
     wizard := setup.WizardCustom{
@@ -331,21 +282,9 @@ func createScenario4(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 3)
 
-    player.AddUnit(units.OverworldUnit{
-        Unit: units.HighMenBowmen,
-        Plane: data.PlaneArcanus,
-        Banner: wizard.Banner,
-        X: x+1,
-        Y: y,
-    })
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenBowmen, x+1, y, data.PlaneArcanus, wizard.Banner))
 
-    settlers := player.AddUnit(units.OverworldUnit{
-        Unit: units.HighMenSettlers,
-        Plane: data.PlaneArcanus,
-        Banner: wizard.Banner,
-        X: x+1,
-        Y: y,
-    })
+    settlers := player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSettlers, x+1, y, data.PlaneArcanus, wizard.Banner))
 
     stack := player.FindStackByUnit(settlers)
     player.SetSelectedStack(stack)
@@ -481,33 +420,15 @@ func createScenario6(cache *lbx.LbxCache) *gamelib.Game {
     _ = introCity
 
     for i := 0; i < 3; i++ {
-        player.AddUnit(units.OverworldUnit{
-            Unit: units.HighMenSpearmen,
-            Plane: data.PlaneArcanus,
-            Banner: wizard.Banner,
-            X: x + i,
-            Y: y + 1,
-        })
+        player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, x + i, y + 1, data.PlaneArcanus, wizard.Banner))
     }
 
     for i := 0; i < 3; i++ {
-        player.AddUnit(units.OverworldUnit{
-            Unit: units.GreatDrake,
-            Plane: data.PlaneArcanus,
-            Banner: wizard.Banner,
-            X: x + 3 + i,
-            Y: y + 1,
-        })
+        player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x + 3 + i, y + 1, data.PlaneArcanus, wizard.Banner))
     }
 
     for i := 0; i < 3; i++ {
-        player.AddUnit(units.OverworldUnit{
-            Unit: units.FireElemental,
-            Plane: data.PlaneArcanus,
-            Banner: wizard.Banner,
-            X: x + 6 + i,
-            Y: y + 1,
-        })
+        player.AddUnit(units.MakeOverworldUnitFromUnit(units.FireElemental, x + 6 + i, y + 1, data.PlaneArcanus, wizard.Banner))
     }
 
     x, y = game.FindValidCityLocation()
@@ -644,22 +565,10 @@ func createScenario8(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 3)
 
-    drake := player.AddUnit(units.OverworldUnit{
-        Unit: units.GreatDrake,
-        Plane: data.PlaneArcanus,
-        Banner: wizard.Banner,
-        X: x + 1,
-        Y: y + 1,
-    })
+    drake := player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x + 1, y + 1, data.PlaneArcanus, wizard.Banner))
 
     for i := 0; i < 1; i++ {
-        fireElemental := player.AddUnit(units.OverworldUnit{
-            Unit: units.FireElemental,
-            Plane: data.PlaneArcanus,
-            Banner: wizard.Banner,
-            X: x + 1,
-            Y: y + 1,
-        })
+        fireElemental := player.AddUnit(units.MakeOverworldUnitFromUnit(units.FireElemental, x + 1, y + 1, data.PlaneArcanus, wizard.Banner))
         _ = fireElemental
     }
 
@@ -671,6 +580,7 @@ func createScenario8(cache *lbx.LbxCache) *gamelib.Game {
     return game
 }
 
+// show summon unit animation
 func createScenario9(cache *lbx.LbxCache) *gamelib.Game {
     log.Printf("Running scenario 9")
     wizard := setup.WizardCustom{
@@ -726,22 +636,10 @@ func createScenario9(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 3)
 
-    drake := player.AddUnit(units.OverworldUnit{
-        Unit: units.GreatDrake,
-        Plane: data.PlaneArcanus,
-        Banner: wizard.Banner,
-        X: x + 1,
-        Y: y + 1,
-    })
+    drake := player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x + 1, y + 1, data.PlaneArcanus, wizard.Banner))
 
     for i := 0; i < 1; i++ {
-        fireElemental := player.AddUnit(units.OverworldUnit{
-            Unit: units.FireElemental,
-            Plane: data.PlaneArcanus,
-            Banner: wizard.Banner,
-            X: x + 1,
-            Y: y + 1,
-        })
+        fireElemental := player.AddUnit(units.MakeOverworldUnitFromUnit(units.FireElemental, x + 1, y + 1, data.PlaneArcanus, wizard.Banner))
         _ = fireElemental
     }
 
@@ -758,6 +656,7 @@ func createScenario9(cache *lbx.LbxCache) *gamelib.Game {
     return game
 }
 
+// show summon hero animation
 func createScenario10(cache *lbx.LbxCache) *gamelib.Game {
     log.Printf("Running scenario 10")
     wizard := setup.WizardCustom{
@@ -813,22 +712,10 @@ func createScenario10(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 3)
 
-    drake := player.AddUnit(units.OverworldUnit{
-        Unit: units.GreatDrake,
-        Plane: data.PlaneArcanus,
-        Banner: wizard.Banner,
-        X: x + 1,
-        Y: y + 1,
-    })
+    drake := player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x + 1, y + 1, data.PlaneArcanus, wizard.Banner))
 
     for i := 0; i < 1; i++ {
-        fireElemental := player.AddUnit(units.OverworldUnit{
-            Unit: units.FireElemental,
-            Plane: data.PlaneArcanus,
-            Banner: wizard.Banner,
-            X: x + 1,
-            Y: y + 1,
-        })
+        fireElemental := player.AddUnit(units.MakeOverworldUnitFromUnit(units.FireElemental, x + 1, y + 1, data.PlaneArcanus, wizard.Banner))
         _ = fireElemental
     }
 
@@ -845,6 +732,7 @@ func createScenario10(cache *lbx.LbxCache) *gamelib.Game {
     return game
 }
 
+// test meld ability
 func createScenario11(cache *lbx.LbxCache) *gamelib.Game {
     log.Printf("Running scenario 11")
     wizard := setup.WizardCustom{
@@ -901,13 +789,7 @@ func createScenario11(cache *lbx.LbxCache) *gamelib.Game {
     node := game.Map.CreateNode(x, y+2, gamelib.MagicNodeNature, game.Plane, game.Settings.Magic, game.Settings.Difficulty)
     node.Empty = true
 
-    spirit := player.AddUnit(units.OverworldUnit{
-        Unit: units.MagicSpirit,
-        Plane: data.PlaneArcanus,
-        Banner: wizard.Banner,
-        X: x + 1,
-        Y: y + 1,
-    })
+    spirit := player.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x + 1, y + 1, data.PlaneArcanus, wizard.Banner))
 
     stack := player.FindStackByUnit(spirit)
     player.SetSelectedStack(stack)
@@ -917,6 +799,7 @@ func createScenario11(cache *lbx.LbxCache) *gamelib.Game {
     return game
 }
 
+// show map tile bonuses
 func createScenario12(cache *lbx.LbxCache) *gamelib.Game {
     log.Printf("Running scenario 12")
     wizard := setup.WizardCustom{
@@ -970,13 +853,7 @@ func createScenario12(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 4)
 
-    player.AddUnit(units.OverworldUnit{
-        Unit: units.MagicSpirit,
-        Plane: data.PlaneArcanus,
-        Banner: wizard.Banner,
-        X: x + 1,
-        Y: y + 1,
-    })
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x + 1, y + 1, data.PlaneArcanus, wizard.Banner))
 
     node := game.Map.CreateNode(x, y+2, gamelib.MagicNodeNature, game.Plane, game.Settings.Magic, game.Settings.Difficulty)
     node.Empty = true
@@ -992,6 +869,7 @@ func createScenario12(cache *lbx.LbxCache) *gamelib.Game {
     return game
 }
 
+// overland cast
 func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     log.Printf("Running scenario 13")
     wizard := setup.WizardCustom{
@@ -1056,17 +934,12 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 4)
 
-    player.AddUnit(units.OverworldUnit{
-        Unit: units.MagicSpirit,
-        Plane: data.PlaneArcanus,
-        Banner: wizard.Banner,
-        X: x + 1,
-        Y: y + 1,
-    })
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x + 1, y + 1, data.PlaneArcanus, wizard.Banner))
 
     return game
 }
 
+// research a new spell
 func createScenario14(cache *lbx.LbxCache) *gamelib.Game {
     log.Printf("Running scenario 14")
     wizard := setup.WizardCustom{
@@ -1169,6 +1042,84 @@ func createScenario14(cache *lbx.LbxCache) *gamelib.Game {
     return game
 }
 
+// show units with low health in overland
+func createScenario15(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 15")
+
+    wizard := setup.WizardCustom{
+        Name: "bob",
+        Banner: data.BannerBlue,
+        Race: data.RaceTroll,
+        Abilities: []setup.WizardAbility{
+            setup.AbilityAlchemy,
+            setup.AbilitySageMaster,
+        },
+        Books: []data.WizardBook{
+            data.WizardBook{
+                Magic: data.LifeMagic,
+                Count: 3,
+            },
+            data.WizardBook{
+                Magic: data.SorceryMagic,
+                Count: 8,
+            },
+        },
+    }
+
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
+
+    game.Plane = data.PlaneArcanus
+
+    player := game.AddPlayer(wizard)
+
+    x, y := game.FindValidCityLocation()
+
+    city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.TaxRate, game.BuildingInfo)
+    city.Population = 6190
+    city.Plane = data.PlaneArcanus
+    city.Banner = wizard.Banner
+    city.ProducingBuilding = buildinglib.BuildingGranary
+    city.ProducingUnit = units.UnitNone
+    city.Race = wizard.Race
+    city.Farmers = 3
+    city.Workers = 3
+    city.Wall = false
+
+    city.ResetCitizens(nil)
+
+    player.AddCity(city)
+
+    player.Gold = 83
+    player.Mana = 26
+
+    // game.Map.Map.Terrain[3][6] = terrain.TileNatureForest.Index
+
+    player.LiftFog(x, y, 3)
+
+    spear1 := player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, x+1, y, data.PlaneArcanus, wizard.Banner))
+    spear2 := player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, x+1, y, data.PlaneArcanus, wizard.Banner))
+    spear3 := player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, x+1, y, data.PlaneArcanus, wizard.Banner))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, x+1, y, data.PlaneArcanus, wizard.Banner))
+    spear1.Health /= 2
+    spear2.Health /= 3
+    spear3.Health -= 1
+
+    stack := player.FindStackByUnit(spear1)
+    player.SetSelectedStack(stack)
+
+    player.LiftFog(stack.X(), stack.Y(), 2)
+
+    enemy1 := game.AddPlayer(setup.WizardCustom{
+        Name: "dingus",
+        Banner: data.BannerRed,
+    })
+
+    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.Warlocks, x + 2, y + 2, data.PlaneArcanus, enemy1.Wizard.Banner))
+    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenBowmen, x + 2, y + 2, data.PlaneArcanus, enemy1.Wizard.Banner))
+
+    return game
+}
+
 func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
@@ -1189,6 +1140,7 @@ func NewEngine(scenario int) (*Engine, error) {
         case 12: game = createScenario12(cache)
         case 13: game = createScenario13(cache)
         case 14: game = createScenario14(cache)
+        case 15: game = createScenario15(cache)
         default: game = createScenario1(cache)
     }
 
