@@ -3124,6 +3124,8 @@ func (game *Game) DoNextTurn(){
         }
 
         for _, stack := range player.Stacks {
+            stack.NaturalHeal()
+
             stack.ResetMoves()
             stack.EnableMovers()
         }

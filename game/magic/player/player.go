@@ -50,6 +50,12 @@ func (stack *UnitStack) ResetMoves(){
     }
 }
 
+func (stack *UnitStack) NaturalHeal(){
+    for _, unit := range stack.units {
+        unit.NaturalHeal()
+    }
+}
+
 func (stack *UnitStack) SetOffset(x float64, y float64) {
     stack.offsetX = x
     stack.offsetY = y
