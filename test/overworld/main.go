@@ -1030,6 +1030,7 @@ func createScenario14(cache *lbx.LbxCache) *gamelib.Game {
     player.Mana = 50
 
     player.LiftFog(x, y, 4)
+    game.CenterCamera(x, y)
 
     /*
     game.Events <- &gamelib.GameEventLearnedSpell{

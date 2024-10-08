@@ -108,6 +108,7 @@ type GameEventSummonHero struct {
 type GameEventNewBuilding struct {
     City *citylib.City
     Building buildinglib.Building
+    Player *playerlib.Player
 }
 
 type GameEventScroll struct {
@@ -1554,7 +1555,9 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         game.doCastSpell(yield, castSpell.Player, castSpell.Spell)
                     case *GameEventNewBuilding:
                         buildingEvent := event.(*GameEventNewBuilding)
+                        game.CenterCamera(buildingEvent.City.X, buildingEvent.City.Y)
                         game.showNewBuilding(yield, buildingEvent.City, buildingEvent.Building)
+                        game.doCityScreen(yield, buildingEvent.City, buildingEvent.Player)
                     case *GameEventCityName:
                         cityEvent := event.(*GameEventCityName)
                         city := cityEvent.City
@@ -3112,7 +3115,7 @@ func (game *Game) DoNextTurn(){
                         newBuilding := event.(*citylib.CityEventNewBuilding)
 
                         select {
-                            case game.Events<- &GameEventNewBuilding{City: city, Building: newBuilding.Building}:
+                            case game.Events<- &GameEventNewBuilding{City: city, Building: newBuilding.Building, Player: player}:
                             default:
                         }
 
@@ -3130,7 +3133,7 @@ func (game *Game) DoNextTurn(){
             stack.EnableMovers()
         }
 
-        game.CenterCamera(player.Cities[0].X, player.Cities[0].Y)
+        // game.CenterCamera(player.Cities[0].X, player.Cities[0].Y)
         game.DoNextUnit(player)
         game.RefreshUI()
     }
