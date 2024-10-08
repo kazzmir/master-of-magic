@@ -3032,11 +3032,8 @@ func (game *Game) DoNextTurn(){
                     default:
                 }
 
-                player.ResearchCandidateSpells.RemoveSpell(player.ResearchingSpell)
-                player.KnownSpells.AddSpell(player.ResearchingSpell)
-                player.UpdateResearchCandidates()
-                player.ResearchingSpell = spellbook.Spell{}
-                player.ResearchProgress = 0
+                player.LearnSpell(player.ResearchingSpell)
+
                 select {
                     case game.Events<- &GameEventResearchSpell{Player: player}:
                     default:

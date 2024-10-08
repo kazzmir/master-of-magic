@@ -293,6 +293,18 @@ func (player *Player) FindSummoningCity() *citylib.City {
     return nil
 }
 
+func (player *Player) LearnSpell(spell spellbook.Spell) {
+    player.ResearchCandidateSpells.RemoveSpell(spell)
+    player.KnownSpells.AddSpell(spell)
+    player.UpdateResearchCandidates()
+
+    // if the spell learned is the one being researched, then reset the research spell
+    if spell.Name == player.ResearchingSpell.Name {
+        player.ResearchingSpell = spellbook.Spell{}
+        player.ResearchProgress = 0
+    }
+}
+
 /* fill up the research candidate spells so that there are at most 8.
  * choose spells from the research pool that are not already known, but preferring
  * lower rarity spells first.
