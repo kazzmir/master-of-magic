@@ -467,6 +467,10 @@ type Army struct {
     Player *player.Player
 }
 
+func (army *Army) IsAI() bool {
+    return army.Player.IsAI()
+}
+
 /* must call LayoutUnits() some time after invoking AddUnit() to ensure
  * the units are laid out correctly
  */

@@ -347,12 +347,13 @@ func (game *Game) InitializeResearchableSpells(spells *spellbook.Spells, player 
     }
 }
 
-func (game *Game) AddPlayer(wizard setup.WizardCustom) *playerlib.Player{
+func (game *Game) AddPlayer(wizard setup.WizardCustom, human bool) *playerlib.Player{
     newPlayer := &playerlib.Player{
         TaxRate: fraction.FromInt(1),
         ArcanusFog: game.MakeFog(),
         MyrrorFog: game.MakeFog(),
         Wizard: wizard,
+        Human: human,
         PowerDistribution: playerlib.PowerDistribution{
             Mana: 1.0/3,
             Research: 1.0/3,

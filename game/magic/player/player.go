@@ -252,6 +252,8 @@ type Player struct {
     Gold int
     Mana int
 
+    Human bool
+
     // known spells
     KnownSpells spellbook.Spells
 
@@ -286,6 +288,14 @@ type Player struct {
     // counter for the next created unit owned by this player
     UnitId uint64
     SelectedStack *UnitStack
+}
+
+func (player *Player) IsAI() bool {
+    return !player.Human
+}
+
+func (player *Player) IsHuman() bool {
+    return player.Human
 }
 
 /* return the city that contains the summoning circle */
