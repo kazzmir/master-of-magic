@@ -1097,7 +1097,12 @@ func createScenario15(cache *lbx.LbxCache) *gamelib.Game {
     player.LiftFog(x, y, 3)
 
     spear1 := player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, x+1, y, data.PlaneArcanus, wizard.Banner))
+    spear2 := player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, x+1, y, data.PlaneArcanus, wizard.Banner))
+    spear3 := player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, x+1, y, data.PlaneArcanus, wizard.Banner))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, x+1, y, data.PlaneArcanus, wizard.Banner))
     spear1.Health /= 2
+    spear2.Health /= 3
+    spear3.Health -= 1
 
     stack := player.FindStackByUnit(spear1)
     player.SetSelectedStack(stack)

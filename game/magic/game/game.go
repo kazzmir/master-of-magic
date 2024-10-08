@@ -2656,6 +2656,33 @@ func (game *Game) MakeHudUI() *uilib.UI {
                     if err == nil {
                         screen.DrawImage(unitImage, &options)
                     }
+
+                    if unit.Health < unit.Unit.GetMaxHealth() {
+                        highHealth := color.RGBA{R: 0, G: 0xff, B: 0, A: 0xff}
+                        mediumHealth := color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff}
+                        lowHealth := color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}
+
+                        healthWidth := float64(10)
+                        healthPercent := float64(unit.Health) / float64(unit.Unit.GetMaxHealth())
+                        healthLength := healthWidth * healthPercent
+
+                        // always show at least one point of health
+                        if healthLength < 1 {
+                            healthLength = 1
+                        }
+
+                        useColor := highHealth
+                        if healthPercent < 0.33 {
+                            useColor = lowHealth
+                        } else if healthPercent < 0.66 {
+                            useColor = mediumHealth
+                        } else {
+                            useColor = highHealth
+                        }
+
+                        x, y := options.GeoM.Apply(4, 19)
+                        vector.StrokeLine(screen, float32(x), float32(y), float32(x + healthLength), float32(y), 1, useColor, false)
+                    }
                 },
             })
 
