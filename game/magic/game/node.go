@@ -3,7 +3,7 @@ package game
 import (
     "image"
     "log"
-    "math/rand"
+    "math/rand/v2"
 
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/data"
@@ -18,10 +18,10 @@ func makeZone(plane data.Plane) []image.Point {
     numPoints := 0
     if plane == data.PlaneArcanus {
         maxSize = 4
-        numPoints = 5 + rand.Intn(5)
+        numPoints = 5 + rand.IntN(5)
     } else if plane == data.PlaneMyrror {
         maxSize = 5
-        numPoints = 10 + rand.Intn(10)
+        numPoints = 10 + rand.IntN(10)
     }
 
     chosen := make(map[image.Point]bool)
@@ -59,11 +59,11 @@ func computeEncounterBudget(magicSetting data.MagicSetting, difficultySetting da
     // these formulas come from the master of magic wiki
     switch magicSetting {
         case data.MagicSettingWeak:
-            budget = (rand.Intn(11) + 4) * (zoneSize * zoneSize) / 2
+            budget = (rand.IntN(11) + 4) * (zoneSize * zoneSize) / 2
         case data.MagicSettingNormal:
-            budget = (rand.Intn(11) + 4) * (zoneSize * zoneSize)
+            budget = (rand.IntN(11) + 4) * (zoneSize * zoneSize)
         case data.MagicSettingPowerful:
-            budget = (rand.Intn(11) + 4) * (zoneSize * zoneSize) * 3 / 2
+            budget = (rand.IntN(11) + 4) * (zoneSize * zoneSize) * 3 / 2
     }
 
     bonus := float64(0)

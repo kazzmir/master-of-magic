@@ -3,7 +3,7 @@ package game
 import (
     "log"
     "math"
-    "math/rand"
+    "math/rand/v2"
     "image"
     "image/color"
 
@@ -181,7 +181,7 @@ func (node *ExtraMagicNode) Meld(meldingWizard *playerlib.Player, spirit units.U
 
         successful := true
         // 25% chance to meld if guardian spirit already melded it
-        if node.GuardianSpiritMeld && rand.Intn(4) != 0 {
+        if node.GuardianSpiritMeld && rand.IntN(4) != 0 {
             successful = false
         }
 

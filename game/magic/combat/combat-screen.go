@@ -4,7 +4,7 @@ import (
     "fmt"
     "log"
     "math"
-    "math/rand"
+    "math/rand/v2"
     "image"
     "image/color"
     "time"
@@ -131,7 +131,7 @@ func (unit *ArmyUnit) ComputeDefense(damage units.Damage) int {
 
     for figure := 0; figure < unit.Figures(); figure++ {
         for i := 0; i < unit.Unit.Defense; i++ {
-            if rand.Intn(100) < toDefend {
+            if rand.IntN(100) < toDefend {
                 defense += 1
             }
         }
@@ -182,7 +182,7 @@ func (unit *ArmyUnit) ComputeRangeDamage(tileDistance int) int {
     damage := 0
     for figure := 0; figure < unit.Figures(); figure++ {
         for i := 0; i < unit.Unit.RangedAttackPower; i++ {
-            if rand.Intn(100) < toHit {
+            if rand.IntN(100) < toHit {
                 damage += 1
             }
         }
@@ -195,7 +195,7 @@ func (unit *ArmyUnit) ComputeMeleeDamage() int {
     damage := 0
     for figure := 0; figure < unit.Figures(); figure++ {
         for i := 0; i < unit.Unit.MeleeAttackPower; i++ {
-            if rand.Intn(100) < unit.ToHitMelee() {
+            if rand.IntN(100) < unit.ToHitMelee() {
                 damage += 1
             }
         }
@@ -608,8 +608,8 @@ type CombatScreen struct {
 func makeTiles(width int, height int) [][]Tile {
 
     maybeExtraTile := func() int {
-        if rand.Intn(10) == 0 {
-            return rand.Intn(10)
+        if rand.IntN(10) == 0 {
+            return rand.IntN(10)
         }
         return -1
     }
@@ -619,7 +619,7 @@ func makeTiles(width int, height int) [][]Tile {
         tiles[y] = make([]Tile, width)
         for x := 0; x < len(tiles[y]); x++ {
             tiles[y][x] = Tile{
-                Index: rand.Intn(48),
+                Index: rand.IntN(48),
                 ExtraObject: maybeExtraTile(),
             }
         }
@@ -1494,8 +1494,8 @@ func (combat *CombatScreen) FindEmptyTile() (int, int, error) {
     distance := 3
     tries := 0
     for tries < 100 {
-        x := middleX + rand.Intn(distance) - distance/2
-        y := middleY + rand.Intn(distance) - distance/2
+        x := middleX + rand.IntN(distance) - distance/2
+        y := middleY + rand.IntN(distance) - distance/2
 
         if x >= 0 && x < len(combat.Tiles[0]) && y >= 0 && y < len(combat.Tiles) && combat.GetUnit(x, y) == nil {
             return x, y, nil

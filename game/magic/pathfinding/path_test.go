@@ -5,7 +5,7 @@ import (
     "strings"
     "image"
     "slices"
-    "math/rand"
+    "math/rand/v2"
 )
 
 func makeMap(data string) [][]float64 {
@@ -174,7 +174,7 @@ func makeRandomMap(rows int, columns int, value int) [][]float64 {
     for y := 0; y < rows; y++ {
         var row []float64
         for x := 0; x < columns; x++ {
-            row = append(row, float64(rand.Intn(value)))
+            row = append(row, float64(rand.IntN(value)))
         }
         out = append(out, row)
     }
@@ -194,8 +194,8 @@ func TestStress(test *testing.T){
     }
 
     for i := 0; i < 10; i++ {
-        start = image.Pt(rand.Intn(100), rand.Intn(100))
-        end = image.Pt(rand.Intn(100), rand.Intn(100))
+        start = image.Pt(rand.IntN(100), rand.IntN(100))
+        end = image.Pt(rand.IntN(100), rand.IntN(100))
         if start.Eq(end) {
             continue
         }

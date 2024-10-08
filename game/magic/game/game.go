@@ -3,7 +3,7 @@ package game
 import (
     "image/color"
     "image"
-    "math/rand"
+    "math/rand/v2"
     "log"
     "math"
     "fmt"
@@ -200,7 +200,7 @@ func computeUnitBuildPowers(stack *playerlib.UnitStack) UnitBuildPowers {
 func randomizeBookOrder(books int) []int {
     order := make([]int, books)
     for i := 0; i < books; i++ {
-        order[i] = rand.Intn(3)
+        order[i] = rand.IntN(3)
     }
     return order
 }
@@ -491,10 +491,10 @@ func (game *Game) FindValidCityLocation() (int, int) {
     continents := game.Map.Map.FindContinents()
 
     for i := 0; i < 10; i++ {
-        continentIndex := rand.Intn(len(continents))
+        continentIndex := rand.IntN(len(continents))
         continent := continents[continentIndex]
         if len(continent) > 100 {
-            index := rand.Intn(len(continent))
+            index := rand.IntN(len(continent))
             x := continent[index].X
             y := continent[index].Y
 

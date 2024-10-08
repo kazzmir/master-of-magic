@@ -3,7 +3,7 @@ package terrain
 import (
     "fmt"
     "image"
-    "math/rand"
+    "math/rand/v2"
     "math"
 )
 
@@ -120,7 +120,7 @@ func MakeMap(rows int, columns int) *Map {
 }
 
 func chooseRandomElement[T any](values []T) T {
-    index := rand.Intn(len(values))
+    index := rand.IntN(len(values))
     return values[index]
 }
 
@@ -246,17 +246,17 @@ func (map_ *Map) GenerateLandCellularAutomata(){
     // set some cells to be alive
     max := float64(len(cells) * len(cells[0])) * 0.6
     for i := 0; i < int(max); i++ {
-        x := rand.Intn(map_.Columns())
-        y := rand.Intn(map_.Rows())
+        x := rand.IntN(map_.Columns())
+        y := rand.IntN(map_.Rows())
 
-        cells[x][y] = rand.Intn(2) == 1
+        cells[x][y] = rand.IntN(2) == 1
     }
 
     for i := 0; i < cellRounds; i++ {
         // kill some cells randomly
         for z := 0; z < int(float64(len(cells[0]) * len(cells)) * 0.03); z++ {
-            x := rand.Intn(map_.Columns())
-            y := rand.Intn(map_.Rows())
+            x := rand.IntN(map_.Columns())
+            y := rand.IntN(map_.Rows())
 
             cells[x][y] = false
         }
@@ -319,7 +319,7 @@ func (map_ *Map) PlaceRandomTerrainTiles(){
             point := chooseRandomElement(continent)
 
             use := TileSorceryLake.Index
-            switch rand.Intn(2) {
+            switch rand.IntN(2) {
                 case 0: use = randomForest()
                 case 1: use = TileMountain1.Index
             }
@@ -331,7 +331,7 @@ func (map_ *Map) PlaceRandomTerrainTiles(){
             point := chooseRandomElement(continent)
 
             use := TileSorceryLake.Index
-            switch rand.Intn(4) {
+            switch rand.IntN(4) {
                 case 0: use = TileSorceryLake.Index
                 case 1: use = TileNatureForest.Index
                 case 2: use = TileChaosVolcano.Index

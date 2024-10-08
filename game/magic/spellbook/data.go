@@ -2,7 +2,7 @@ package spellbook
 
 import (
     "slices"
-    "math/rand"
+    "math/rand/v2"
     "strings"
     "fmt"
     "bytes"

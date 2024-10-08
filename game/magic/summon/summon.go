@@ -5,7 +5,7 @@ import (
     "log"
     "image"
     "image/color"
-    "math/rand"
+    "math/rand/v2"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
@@ -238,7 +238,7 @@ func MakeSummonHero(cache *lbx.LbxCache, wizard data.WizardBase, champion bool) 
 
     heroIndex := 45
 
-    if rand.Intn(2) == 0 {
+    if rand.IntN(2) == 0 {
         heroIndex = 44
     } else {
         heroIndex = 45

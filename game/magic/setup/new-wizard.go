@@ -3,7 +3,7 @@ package setup
 import (
     "fmt"
     "math"
-    "math/rand"
+    "math/rand/v2"
     "strings"
     "image"
     "image/color"
@@ -1999,7 +1999,7 @@ func (screen *NewWizardScreen) Draw(window *ebiten.Image) {
 func randomizeBookOrder(books int) []int {
     order := make([]int, books)
     for i := 0; i < books; i++ {
-        order[i] = rand.Intn(3)
+        order[i] = rand.IntN(3)
     }
     return order
 }

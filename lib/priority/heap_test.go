@@ -2,7 +2,7 @@ package priority
 
 import (
     "testing"
-    "math/rand"
+    "math/rand/v2"
 )
 
 func intCompare(a int, b int) int {
@@ -50,7 +50,7 @@ func TestInsert(test *testing.T){
     N := 1000
 
     for i := 0; i < N; i++ {
-        heap.Insert(rand.Intn(10000))
+        heap.Insert(rand.IntN(10000))
     }
 
     if heap.Size() != N {
