@@ -364,28 +364,8 @@ func computeMoves(x1 int, y1 int, x2 int, y2 int) fraction.Fraction {
 
 func (combat *CombatScreen) computePath(x1 int, y1 int, x2 int, y2 int) (pathfinding.Path, bool) {
 
-    // containsUnit := make(map[image.Point]bool)
-
     tileEmpty := func (x int, y int) bool {
         return combat.GetUnit(x, y) == nil
-
-        /*
-        // check if the tile is empty
-        where := image.Pt(x, y)
-        contains, ok := containsUnit[where]
-        if ok {
-            return !contains
-        } else {
-            unit := combat.GetUnit(x, y)
-            if unit == nil {
-                containsUnit[where] = false
-                return true
-            } else {
-                containsUnit[where] = true
-                return false
-            }
-        }
-        */
     }
 
     // FIXME: take into account mud, hills, other types of terrain obstacles
