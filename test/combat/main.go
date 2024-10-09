@@ -148,6 +148,7 @@ func NewEngine() (*Engine, error) {
             Name: "Lair",
             Banner: data.BannerBrown,
         },
+        Human: false,
     }
 
     // defendingArmy := createWarlockArmy(&defendingPlayer)
@@ -166,6 +167,7 @@ func NewEngine() (*Engine, error) {
             Banner: data.BannerGreen,
         },
         CastingSkillPower: 10,
+        Human: true,
     }
 
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Fireball"))

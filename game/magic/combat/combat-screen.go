@@ -2474,8 +2474,7 @@ func (combat *CombatScreen) UpdateAnimations(){
     }
 }
 
-func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUnit, x int, y int){
-    path, _ := combat.FindPath(mover, x, y)
+func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUnit, path pathfinding.Path){
 
     path = path[1:]
     mover.MovementTick = combat.Counter
@@ -2597,6 +2596,67 @@ func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUni
     }
 }
 
+func (combat *CombatScreen) IsAIControlled(unit *ArmyUnit) bool {
+    if unit.Team == TeamDefender {
+        return combat.DefendingArmy.Player.IsAI()
+    } else {
+        return combat.AttackingArmy.Player.IsAI()
+    }
+}
+
+func (combat *CombatScreen) GetArmy(unit *ArmyUnit) *Army {
+    if unit.Team == TeamDefender {
+        return combat.DefendingArmy
+    }
+
+    return combat.AttackingArmy
+}
+
+func (combat *CombatScreen) GetOtherArmy(unit *ArmyUnit) *Army {
+    if unit.Team == TeamDefender {
+        return combat.AttackingArmy
+    }
+
+    return combat.DefendingArmy
+}
+
+func (combat *CombatScreen) doAI(yield coroutine.YieldFunc) {
+    // aiArmy := combat.GetArmy(combat.SelectedUnit)
+    otherArmy := combat.GetOtherArmy(combat.SelectedUnit)
+
+    aiUnit := combat.SelectedUnit
+
+    // if the selected unit has ranged attacks, then try to use that
+    // otherwise, if in melee range of some enemy then attack them
+    // otherwise walk towards the enemy
+
+    // should filter by enemies that we can attack, so non-flyers do not move toward flyers
+    closestEnemy := slices.MinFunc(otherArmy.Units, func (a *ArmyUnit, b *ArmyUnit) int {
+        distanceA := computeTileDistance(aiUnit.X, aiUnit.Y, a.X, a.Y)
+        distanceB := computeTileDistance(aiUnit.X, aiUnit.Y, b.X, b.Y)
+
+        if distanceA < distanceB {
+            return -1
+        }
+
+        if distanceA > distanceB {
+            return 1
+        }
+
+        return 0
+    })
+
+    if closestEnemy != nil {
+        path, ok := combat.FindPath(aiUnit, closestEnemy.X, closestEnemy.Y)
+        if ok && len(path) > 2 {
+            // ignore path[0], thats where we are now. also ignore the last element, since we can't move onto the enemy
+            path = path[1:len(path) - 1]
+
+            combat.doMoveUnit(yield, aiUnit, path)
+        }
+    }
+}
+
 func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
     combat.Counter += 1
     combat.UI.StandardUpdate()
@@ -2616,6 +2676,13 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
 
     if len(combat.Projectiles) > 0 {
         combat.doProjectiles(yield)
+    }
+
+    if combat.SelectedUnit != nil && combat.IsAIControlled(combat.SelectedUnit) {
+        combat.doAI(yield)
+        combat.SelectedUnit.LastTurn = combat.CurrentTurn
+        combat.NextUnit()
+        return CombatStateRunning
     }
 
     if combat.UI.GetHighestLayerValue() > 0 || mouseY >= hudY {
@@ -2653,7 +2720,8 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
        mouseY < hudY {
 
         if combat.TileIsEmpty(combat.MouseTileX, combat.MouseTileY) && combat.CanMoveTo(combat.SelectedUnit, combat.MouseTileX, combat.MouseTileY){
-            combat.doMoveUnit(yield, combat.SelectedUnit, combat.MouseTileX, combat.MouseTileY)
+            path, _ := combat.FindPath(combat.SelectedUnit, combat.MouseTileX, combat.MouseTileY)
+            combat.doMoveUnit(yield, combat.SelectedUnit, path)
        } else {
 
            defender := combat.GetUnit(combat.MouseTileX, combat.MouseTileY)
