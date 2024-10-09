@@ -2460,6 +2460,10 @@ func (combat *CombatScreen) UpdateAnimations(){
 }
 
 func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUnit, path pathfinding.Path){
+    if len(path) == 0 {
+        return
+    }
+
     mover.MovementTick = combat.Counter
     mover.Moving = true
     mover.MoveX = float64(mover.X)
@@ -2614,28 +2618,41 @@ func (combat *CombatScreen) doAI(yield coroutine.YieldFunc) {
     // otherwise walk towards the enemy
 
     // should filter by enemies that we can attack, so non-flyers do not move toward flyers
-    closestEnemy := slices.MinFunc(otherArmy.Units, func (a *ArmyUnit, b *ArmyUnit) int {
+    candidates := slices.Clone(otherArmy.Units)
+    slices.SortFunc(candidates, func (a *ArmyUnit, b *ArmyUnit) int {
         distanceA := computeTileDistance(aiUnit.X, aiUnit.Y, a.X, a.Y)
         distanceB := computeTileDistance(aiUnit.X, aiUnit.Y, b.X, b.Y)
         return cmp.Compare(distanceA, distanceB)
     })
 
-    if closestEnemy != nil {
-
+    // find a path to some enemy
+    for _, closestEnemy := range candidates {
         // pretend that there is no unit at the tile. this is a sin of the highest order
         combat.Tiles[closestEnemy.Y][closestEnemy.X].Unit = nil
         path, ok := combat.computePath(aiUnit.X, aiUnit.Y, closestEnemy.X, closestEnemy.Y)
         combat.Tiles[closestEnemy.Y][closestEnemy.X].Unit = closestEnemy
         if ok && len(path) >= 2 {
             // ignore path[0], thats where we are now. also ignore the last element, since we can't move onto the enemy
-            path = path[1:]
 
             last := path[len(path)-1]
             if last.X == closestEnemy.X && last.Y == closestEnemy.Y {
                 path = path[:len(path)-1]
             }
 
-            combat.doMoveUnit(yield, aiUnit, path)
+            lastIndex := 0
+            for lastIndex < len(path) {
+                if aiUnit.CanFollowPath(path[0:lastIndex]) {
+                    lastIndex += 1
+                } else {
+                    lastIndex -= 1
+                    break
+                }
+            }
+
+            if lastIndex >= 1 && lastIndex < len(path) {
+                combat.doMoveUnit(yield, aiUnit, path[1:lastIndex])
+                break
+            }
         }
     }
 }
