@@ -27,35 +27,60 @@ const (
     ExperienceDemiGod
 )
 
-func (level NormalExperienceLevel) ExperienceRequired() int {
+func (level NormalExperienceLevel) ExperienceRequired(warlordRetort bool, crusade bool) int {
     switch level {
         case ExperienceRecruit: return 0
-        case ExperienceRegular: return 20
-        case ExperienceVeteran: return 60
-        case ExperienceElite: return 120
-        case ExperienceUltraElite: return 120
-        case ExperienceChampionNormal: return 120
+        case ExperienceRegular:
+            if warlordRetort || crusade {
+                return 0
+            }
+            return 20
+        case ExperienceVeteran:
+            if warlordRetort && crusade {
+                return 0
+            }
+            if warlordRetort || crusade {
+                return 20
+            }
+            return 60
+        case ExperienceElite:
+            if warlordRetort && crusade {
+                return 20
+            }
+            if warlordRetort || crusade {
+                return 60
+            }
+            return 120
+        case ExperienceUltraElite:
+            // needs at least one
+            if warlordRetort && crusade {
+                return 60
+            }
+            return 120
+        case ExperienceChampionNormal:
+            // needs both
+            return 120
     }
 
     return 0
 }
 
 func GetNormalExperienceLevel(experience int, warlordRetort bool, crusade bool) NormalExperienceLevel {
-    if experience < ExperienceRegular.ExperienceRequired() {
+    if experience < ExperienceRegular.ExperienceRequired(warlordRetort, crusade) {
         return ExperienceRecruit
     }
-    if experience < ExperienceVeteran.ExperienceRequired() {
+    if experience < ExperienceVeteran.ExperienceRequired(warlordRetort, crusade) {
         return ExperienceRegular
     }
-    if experience < ExperienceElite.ExperienceRequired() {
+    if experience < ExperienceElite.ExperienceRequired(warlordRetort, crusade) {
         return ExperienceVeteran
     }
 
-    if warlordRetort && crusade {
+    if warlordRetort && crusade && experience >= ExperienceChampionNormal.ExperienceRequired(warlordRetort, crusade) {
         return ExperienceChampionNormal
     }
 
-    if warlordRetort || crusade {
+    if (warlordRetort || crusade) && experience >= ExperienceUltraElite.ExperienceRequired(warlordRetort, crusade) {
         return ExperienceUltraElite
     }
 
@@ -78,7 +103,7 @@ func (level HeroExperienceLevel) ExperienceRequired() int {
     return 0
 }
 
-func GetHeroExperienceLevel(experience int) HeroExperienceLevel {
+func GetHeroExperienceLevel(experience int, warlordRetort bool, crusade bool) HeroExperienceLevel {
     levels := []HeroExperienceLevel{
         ExperienceHero, ExperienceMyrmidon, ExperienceCaptain,
         ExperienceCommander, ExperienceChampionHero, ExperienceLord,

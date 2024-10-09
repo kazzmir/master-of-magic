@@ -15,6 +15,8 @@ type OverworldUnit struct {
     Y int
     Id uint64
     Health int
+    // to get the level, use the conversion functions in experience.go
+    Experience int
 }
 
 func MakeOverworldUnit(unit Unit) *OverworldUnit {

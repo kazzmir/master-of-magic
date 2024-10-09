@@ -3130,8 +3130,13 @@ func (game *Game) DoNextTurn(){
         }
 
         for _, stack := range player.Stacks {
-            stack.NaturalHeal()
 
+            // every unit gains 1 experience at each turn
+            for _, unit := range stack.Units() {
+                unit.Experience += 1
+            }
+
+            stack.NaturalHeal()
             stack.ResetMoves()
             stack.EnableMovers()
         }
