@@ -464,10 +464,11 @@ func (combat *CombatScreen) CanMoveTo(unit *ArmyUnit, x int, y int) bool {
 type Army struct {
     Units []*ArmyUnit
     Player *player.Player
+    Auto bool
 }
 
 func (army *Army) IsAI() bool {
-    return army.Player.IsAI()
+    return army.Auto || army.Player.IsAI()
 }
 
 /* must call LayoutUnits() some time after invoking AddUnit() to ensure
@@ -1749,7 +1750,11 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
 
     // auto
     elements = append(elements, makeButton(4, 1, 1, func(){
-        // FIXME
+        if combat.AttackingArmy.Player == player {
+            combat.AttackingArmy.Auto = true
+        } else {
+            combat.DefendingArmy.Auto = true
+        }
     }))
 
     // flee
@@ -2610,9 +2615,9 @@ func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUni
 
 func (combat *CombatScreen) IsAIControlled(unit *ArmyUnit) bool {
     if unit.Team == TeamDefender {
-        return combat.DefendingArmy.Player.IsAI()
+        return combat.DefendingArmy.IsAI()
     } else {
-        return combat.AttackingArmy.Player.IsAI()
+        return combat.AttackingArmy.IsAI()
     }
 }
 

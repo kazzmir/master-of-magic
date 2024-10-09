@@ -152,7 +152,7 @@ func NewEngine() (*Engine, error) {
     }
 
     // defendingArmy := createWarlockArmy(&defendingPlayer)
-    defendingArmy := createHighMenBowmanArmyN(&defendingPlayer, 9)
+    defendingArmy := createHighMenBowmanArmyN(&defendingPlayer, 3)
     defendingArmy.LayoutUnits(combat.TeamDefender)
 
     allSpells, err := spellbook.ReadSpellsFromCache(cache)
@@ -209,7 +209,7 @@ func NewEngine() (*Engine, error) {
     attackingArmy := createWarlockArmyN(&attackingPlayer, 3)
     attackingArmy.LayoutUnits(combat.TeamAttacker)
 
-    combatScreen := combat.MakeCombatScreen(cache, &defendingArmy, attackingArmy, &defendingPlayer)
+    combatScreen := combat.MakeCombatScreen(cache, &defendingArmy, attackingArmy, &attackingPlayer)
 
     run := func(yield coroutine.YieldFunc) error {
         for combatScreen.Update(yield) == combat.CombatStateRunning {
