@@ -2557,7 +2557,13 @@ func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUni
 
     // attacking takes 50% of movement points
     // FIXME: in some cases an extra 0.5 movements points is lost, possibly due to counter attacks?
-    attacker.MovesLeft = attacker.MovesLeft.Subtract(fraction.FromInt(attacker.Unit.Unit.MovementSpeed).Divide(fraction.FromInt(2)))
+
+    pointsUsed := fraction.FromInt(attacker.Unit.Unit.MovementSpeed).Divide(fraction.FromInt(2))
+    if pointsUsed.LessThan(fraction.FromInt(1)) {
+        pointsUsed = fraction.FromInt(1)
+    }
+
+    attacker.MovesLeft = attacker.MovesLeft.Subtract(pointsUsed)
     if attacker.MovesLeft.LessThan(fraction.FromInt(0)) {
         attacker.MovesLeft = fraction.FromInt(0)
     }
@@ -2665,7 +2671,10 @@ func (combat *CombatScreen) doAI(yield coroutine.YieldFunc) {
 
         path := getPath(closestEnemy)
 
-        if len(path) >= 2 {
+        // a path of length 2 contains the position of the aiUnit and the position of the enemy, so they are right next to each other
+        if len(path) == 2 && combat.canMeleeAttack(aiUnit, closestEnemy) {
+            combat.doMelee(yield, aiUnit, closestEnemy)
+        } else if len(path) > 2 {
             // ignore path[0], thats where we are now. also ignore the last element, since we can't move onto the enemy
 
             last := path[len(path)-1]
@@ -2713,7 +2722,10 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
     }
 
     if combat.SelectedUnit != nil && combat.IsAIControlled(combat.SelectedUnit) {
-        combat.doAI(yield)
+        // keep making choices until the unit runs out of moves
+        for combat.SelectedUnit.MovesLeft.GreaterThan(fraction.FromInt(0)) {
+            combat.doAI(yield)
+        }
         combat.SelectedUnit.LastTurn = combat.CurrentTurn
         combat.NextUnit()
         return CombatStateRunning

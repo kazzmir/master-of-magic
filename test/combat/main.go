@@ -67,7 +67,7 @@ func createWarlockArmy(player *player.Player) combat.Army {
     }
 }
 
-func createWarlockArmyN(player *player.Player, count int) combat.Army {
+func createWarlockArmyN(player *player.Player, count int) *combat.Army {
     army := combat.Army{
         Player: player,
     }
@@ -79,7 +79,7 @@ func createWarlockArmyN(player *player.Player, count int) combat.Army {
         })
     }
 
-    return army
+    return &army
 }
 
 func createHighMenBowmanArmyN(player *player.Player, count int) combat.Army {
@@ -205,8 +205,8 @@ func NewEngine() (*Engine, error) {
     defendingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Air Elemental"))
     defendingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Fire Elemental"))
 
-    attackingArmy := createGreatDrakeArmy(&attackingPlayer)
-    // attackingArmy := createWarlockArmyN(&attackingPlayer, 9)
+    // attackingArmy := createGreatDrakeArmy(&attackingPlayer)
+    attackingArmy := createWarlockArmyN(&attackingPlayer, 3)
     attackingArmy.LayoutUnits(combat.TeamAttacker)
 
     combatScreen := combat.MakeCombatScreen(cache, &defendingArmy, attackingArmy, &defendingPlayer)
