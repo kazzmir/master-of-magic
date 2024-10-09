@@ -121,9 +121,6 @@ type ArmyUnit struct {
     MoveX float64
     MoveY float64
 
-    // the path the unit is currently following
-    MovementPath pathfinding.Path
-
     LastTurn int
 
     // ugly to need this, but this caches paths computed for the unit
@@ -2469,6 +2466,14 @@ func (combat *CombatScreen) ProcessEvents(yield coroutine.YieldFunc) {
     }
 }
 
+func (combat *CombatScreen) UpdateAnimations(){
+    for _, unit := range combat.OtherUnits {
+        if combat.Counter % 6 == 0 {
+            unit.Animation.Next()
+        }
+    }
+}
+
 func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
     combat.Counter += 1
     combat.UI.StandardUpdate()
@@ -2480,15 +2485,13 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
     combat.MouseTileX = int(math.Round(tileX))
     combat.MouseTileY = int(math.Round(tileY))
 
-    for _, unit := range combat.OtherUnits {
-        if combat.Counter % 6 == 0 {
-            unit.Animation.Next()
-        }
-    }
+
+    combat.UpdateAnimations()
 
     hudY := data.ScreenHeight - hudImage.Bounds().Dy()
 
     combat.ProcessEvents(yield)
+
 
     if len(combat.Projectiles) > 0 {
         combat.doProjectiles(yield)
@@ -2535,7 +2538,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
                 path, _ := combat.FindPath(combat.SelectedUnit, combat.MouseTileX, combat.MouseTileY)
 
                 combat.SelectedUnit.MovementTick = combat.Counter
-                combat.SelectedUnit.MovementPath = path[1:]
+                path = path[1:]
                 combat.SelectedUnit.Moving = true
                 combat.SelectedUnit.MoveX = float64(combat.SelectedUnit.X)
                 combat.SelectedUnit.MoveY = float64(combat.SelectedUnit.Y)
@@ -2566,8 +2569,11 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
                     }()
                 }
 
-                for len(combat.SelectedUnit.MovementPath) > 0 {
-                    targetX, targetY := combat.SelectedUnit.MovementPath[0].X, combat.SelectedUnit.MovementPath[0].Y
+                for len(path) > 0 {
+                    combat.UpdateAnimations()
+                    combat.Counter += 1
+
+                    targetX, targetY := path[0].X, path[0].Y
 
                     angle := math.Atan2(float64(targetY) - combat.SelectedUnit.MoveY, float64(targetX) - combat.SelectedUnit.MoveX)
 
@@ -2605,7 +2611,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
                         combat.SelectedUnit.MoveY = float64(targetY)
                         // new tile the unit landed on is now occupied
                         combat.Tiles[combat.SelectedUnit.Y][combat.SelectedUnit.X].Unit = combat.SelectedUnit
-                        combat.SelectedUnit.MovementPath = combat.SelectedUnit.MovementPath[1:]
+                        path = path[1:]
                     }
 
                     yield()
@@ -2667,6 +2673,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
 
                    for i := 0; i < 60; i++ {
                        combat.Counter += 1
+                       combat.UpdateAnimations()
 
                        if i == 20 {
                            combat.meleeAttack(combat.SelectedUnit, defender)
@@ -2678,58 +2685,6 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
            }
        }
     }
-
-    /*
-    if combat.SelectedUnit != nil && combat.SelectedUnit.Moving {
-        targetX, targetY := combat.SelectedUnit.MovementPath[0].X, combat.SelectedUnit.MovementPath[0].Y
-
-        angle := math.Atan2(float64(targetY) - combat.SelectedUnit.MoveY, float64(targetX) - combat.SelectedUnit.MoveX)
-
-        // rotate by 45 degrees to get the on screen facing angle
-        // have to negate the angle because the y axis is flipped (higher y values are lower on the screen)
-        useAngle := -(angle - math.Pi/4)
-
-        // log.Printf("Angle: %v from (%v,%v) to (%v,%v)", useAngle, combat.SelectedUnit.X, combat.SelectedUnit.Y, combat.SelectedUnit.TargetX, combat.SelectedUnit.TargetY)
-
-        combat.SelectedUnit.Facing = computeFacing(useAngle)
-
-        // speed := float64(combat.Counter - combat.SelectedUnit.MovementTick) / 4
-        speed := float64(0.08)
-        combat.SelectedUnit.MoveX += math.Cos(angle) * speed
-        combat.SelectedUnit.MoveY += math.Sin(angle) * speed
-
-        // log.Printf("Moving %v,%v -> %v,%v", combat.SelectedUnit.X, combat.SelectedUnit.Y, combat.SelectedUnit.MoveX, combat.SelectedUnit.MoveY)
-
-        // if math.Abs(combat.SelectedUnit.MoveX - float64(targetX)) < speed*2 && math.Abs(combat.SelectedUnit.MoveY - float64(targetY)) < 0.5 {
-        if distanceInRange(combat.SelectedUnit.MoveX, combat.SelectedUnit.MoveY, float64(targetX), float64(targetY), speed * 3) ||
-           // a stop gap to ensure the unit doesn't fly off the screen somehow
-           distanceAboveRange(float64(combat.SelectedUnit.X), float64(combat.SelectedUnit.Y), float64(targetX), float64(targetY), 2.5) {
-
-            // tile where the unit came from is now empty
-            combat.Tiles[combat.SelectedUnit.Y][combat.SelectedUnit.X].Unit = nil
-
-            combat.SelectedUnit.MovesLeft = combat.SelectedUnit.MovesLeft.Subtract(pathCost(image.Pt(combat.SelectedUnit.X, combat.SelectedUnit.Y), image.Pt(targetX, targetY)))
-            if combat.SelectedUnit.MovesLeft.LessThan(fraction.FromInt(0)) {
-                combat.SelectedUnit.MovesLeft = fraction.FromInt(0)
-            }
-
-            combat.SelectedUnit.X = targetX
-            combat.SelectedUnit.Y = targetY
-            combat.SelectedUnit.MoveX = float64(targetX)
-            combat.SelectedUnit.MoveY = float64(targetY)
-            // new tile the unit landed on is now occupied
-            combat.Tiles[combat.SelectedUnit.Y][combat.SelectedUnit.X].Unit = combat.SelectedUnit
-            combat.SelectedUnit.MovementPath = combat.SelectedUnit.MovementPath[1:]
-
-            if len(combat.SelectedUnit.MovementPath) == 0 {
-                combat.SelectedUnit.Moving = false
-                combat.SelectedUnit.DoneMovingFunc()
-                // reset path computations
-                combat.SelectedUnit.Paths = make(map[image.Point]pathfinding.Path)
-            }
-        }
-    }
-    */
 
     // the unit died or is out of moves
     if combat.SelectedUnit != nil && (combat.SelectedUnit.Unit.Health <= 0 || combat.SelectedUnit.MovesLeft.LessThanEqual(fraction.FromInt(0))) {
