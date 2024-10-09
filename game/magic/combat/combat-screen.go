@@ -2551,7 +2551,7 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
     mover.Paths = make(map[image.Point]pathfinding.Path)
 }
 
-func (combat *CombatScreen) doRangeAttack(attacker *ArmyUnit, defender *ArmyUnit){
+func (combat *CombatScreen) doRangeAttack(yield coroutine.YieldFunc, attacker *ArmyUnit, defender *ArmyUnit){
     attacker.MovesLeft = attacker.MovesLeft.Subtract(fraction.FromInt(10))
     if attacker.MovesLeft.LessThan(fraction.FromInt(0)) {
         attacker.MovesLeft = fraction.FromInt(0)
@@ -2568,6 +2568,8 @@ func (combat *CombatScreen) doRangeAttack(attacker *ArmyUnit, defender *ArmyUnit
     if err == nil {
         sound.Play()
     }
+
+    combat.doProjectiles(yield)
 }
 
 func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUnit, defender *ArmyUnit){
@@ -2650,7 +2652,7 @@ func (combat *CombatScreen) doAI(yield coroutine.YieldFunc, aiUnit *ArmyUnit) {
 
         for _, candidate := range candidates {
            if combat.withinArrowRange(aiUnit, candidate) && combat.canRangeAttack(aiUnit, candidate) {
-               combat.doRangeAttack(aiUnit, candidate)
+               combat.doRangeAttack(yield, aiUnit, candidate)
                return
            }
         }
@@ -2743,6 +2745,15 @@ func (combat *CombatScreen) doAI(yield coroutine.YieldFunc, aiUnit *ArmyUnit) {
 }
 
 func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
+    // defender wins in a tie
+    if len(combat.AttackingArmy.Units) == 0 {
+        return CombatStateDefenderWin
+    }
+
+    if len(combat.DefendingArmy.Units) == 0 {
+        return CombatStateAttackerWin
+    }
+
     combat.Counter += 1
     combat.UI.StandardUpdate()
 
@@ -2761,6 +2772,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
 
     if len(combat.Projectiles) > 0 {
         combat.doProjectiles(yield)
+        // FIXME: if current unit dies then reset selected unit
     }
 
     if combat.SelectedUnit != nil && combat.IsAIControlled(combat.SelectedUnit) {
@@ -2820,7 +2832,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
 
            // try a ranged attack first
            if defender != nil && combat.withinArrowRange(attacker, defender) && combat.canRangeAttack(attacker, defender) {
-               combat.doRangeAttack(attacker, defender)
+               combat.doRangeAttack(yield, attacker, defender)
            // then fall back to melee
            } else if defender != nil && defender.Team != attacker.Team && combat.withinMeleeRange(attacker, defender) && combat.canMeleeAttack(attacker, defender){
                combat.doMelee(yield, attacker, defender)
@@ -2836,15 +2848,6 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
     }
 
     // log.Printf("Mouse original %v,%v %v,%v -> %v,%v", mouseX, mouseY, tileX, tileY, combat.MouseTileX, combat.MouseTileY)
-
-    // defender wins in a tie
-    if len(combat.AttackingArmy.Units) == 0 {
-        return CombatStateDefenderWin
-    }
-
-    if len(combat.DefendingArmy.Units) == 0 {
-        return CombatStateAttackerWin
-    }
 
     return CombatStateRunning
 }
