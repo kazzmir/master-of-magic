@@ -15,6 +15,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/fraction"
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/lib/mouse"
+    "github.com/kazzmir/master-of-magic/lib/coroutine"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/game/magic/units"
@@ -37,6 +38,13 @@ const (
     CombatStateDefenderWin
     CombatStateDone
 )
+
+type CombatEvent interface {
+}
+
+type CombatEventSelectTile struct {
+    SelectTile func(int, int)
+}
 
 type Team int
 
@@ -596,9 +604,13 @@ type CombatScreen struct {
     MouseTileX int
     MouseTileY int
 
+    Events chan CombatEvent
+
     // if true then the player should select a tile to cast a spell on
-    DoSelectTile bool
+    /*
     SelectTile func(int, int)
+    */
+    DoSelectTile bool
 
     // if true then the player should select a unit to cast a spell on
     DoSelectUnit bool
@@ -743,6 +755,7 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
         TurnDefender: 0,
         AttackingArmy: attackingArmy,
         TurnAttacker: 0,
+        Events: make(chan CombatEvent, 1000),
         Tiles: makeTiles(30, 30),
         SelectedUnit: nil,
         DebugFont: debugFont,
@@ -1409,8 +1422,6 @@ func (combat *CombatScreen) DoTargetTileSpell(player *playerlib.Player, spell sp
         },
         LeftClickRelease: func(element *uilib.UIElement){
             cancelIndex = 0
-            combat.DoSelectTile = false
-            combat.SelectTile = func(x int, y int){}
             removeElements()
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
@@ -1424,19 +1435,23 @@ func (combat *CombatScreen) DoTargetTileSpell(player *playerlib.Player, spell sp
 
     combat.UI.AddElements(elements)
 
-    combat.DoSelectTile = true
-    combat.SelectTile = func(x int, y int){
-        sound, err := audio.LoadSound(combat.Cache, spell.Sound)
-        if err == nil {
-            sound.Play()
-        } else {
-            log.Printf("No such sound %v for %v: %v", spell.Sound, spell.Name, err)
-        }
+    event := &CombatEventSelectTile{
+        SelectTile: func(x int, y int){
+            sound, err := audio.LoadSound(combat.Cache, spell.Sound)
+            if err == nil {
+                sound.Play()
+            } else {
+                log.Printf("No such sound %v for %v: %v", spell.Sound, spell.Name, err)
+            }
 
-        removeElements()
-        onTarget(x, y)
+            removeElements()
+            onTarget(x, y)
+        },
+    }
 
-        combat.SelectTile = func(int, int){}
+    select {
+        case combat.Events <- event:
+        default:
     }
 }
 
@@ -2310,9 +2325,64 @@ func (combat *CombatScreen) RemoveUnit(unit *ArmyUnit){
     combat.Tiles[unit.Y][unit.X].Unit = nil
 }
 
-func (combat *CombatScreen) Update() CombatState {
-    combat.Counter += 1
+func (combat *CombatScreen) doSelectTile(yield coroutine.YieldFunc, selectTile func(int, int)) {
+    combat.DoSelectTile = true
+    defer func(){
+        combat.DoSelectTile = false
+    }()
 
+    hudImage, _ := combat.ImageCache.GetImage("cmbtfx.lbx", 28, 0)
+
+
+    hudY := data.ScreenHeight - hudImage.Bounds().Dy()
+
+    for {
+        combat.Counter += 1
+
+        for _, unit := range combat.OtherUnits {
+            if combat.Counter % 6 == 0 {
+                unit.Animation.Next()
+            }
+        }
+
+        combat.UI.StandardUpdate()
+        mouseX, mouseY := ebiten.CursorPosition()
+        tileX, tileY := combat.ScreenToTile.Apply(float64(mouseX), float64(mouseY))
+        combat.MouseTileX = int(math.Round(tileX))
+        combat.MouseTileY = int(math.Round(tileY))
+
+        if mouseY >= hudY {
+            combat.MouseState = CombatClickHud
+        } else {
+            combat.MouseState = CombatCast
+
+            if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) && mouseY < hudY {
+                selectTile(combat.MouseTileX, combat.MouseTileY)
+                break
+            }
+        }
+
+        yield()
+    }
+}
+
+func (combat *CombatScreen) ProcessEvents(yield coroutine.YieldFunc) {
+    for {
+        select {
+            case event := <-combat.Events:
+                switch event.(type) {
+                    case *CombatEventSelectTile:
+                        use := event.(*CombatEventSelectTile)
+                        combat.doSelectTile(yield, use.SelectTile)
+                }
+            default:
+                return
+        }
+    }
+}
+
+func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
+    combat.Counter += 1
     combat.UI.StandardUpdate()
 
     mouseX, mouseY := ebiten.CursorPosition()
@@ -2330,6 +2400,9 @@ func (combat *CombatScreen) Update() CombatState {
 
     hudY := data.ScreenHeight - hudImage.Bounds().Dy()
 
+    combat.ProcessEvents(yield)
+
+    /*
     if combat.DoSelectTile {
         combat.MouseState = CombatCast
 
@@ -2345,6 +2418,7 @@ func (combat *CombatScreen) Update() CombatState {
 
         return CombatStateRunning
     }
+    */
 
     if combat.DoSelectUnit {
         combat.MouseState = CombatCast

@@ -1965,8 +1965,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
 
     state := combat.CombatStateRunning
     for state == combat.CombatStateRunning {
-        state = combatScreen.Update()
-        yield()
+        state = combatScreen.Update(yield)
     }
 
     endScreen := combat.MakeCombatEndScreen(game.Cache, combatScreen, state == combat.CombatStateAttackerWin)

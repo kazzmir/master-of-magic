@@ -5,6 +5,7 @@ import (
     // "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/game/magic/combat"
     "github.com/kazzmir/master-of-magic/game/magic/units"
@@ -21,6 +22,7 @@ type Engine struct {
     LbxCache *lbx.LbxCache
     CombatScreen *combat.CombatScreen
     CombatEndScreen *combat.CombatEndScreen
+    Coroutine *coroutine.Coroutine
 }
 
 func createWarlockArmy(player *player.Player) combat.Army {
@@ -205,10 +207,21 @@ func NewEngine() (*Engine, error) {
     attackingArmy := createWarlockArmyN(&attackingPlayer, 9)
     attackingArmy.LayoutUnits(combat.TeamAttacker)
 
+    combatScreen := combat.MakeCombatScreen(cache, &defendingArmy, &attackingArmy, &defendingPlayer)
+
+    run := func(yield coroutine.YieldFunc) error {
+        for combatScreen.Update(yield) == combat.CombatStateRunning {
+            yield()
+        }
+
+        return ebiten.Termination
+    }
+
     return &Engine{
         LbxCache: cache,
-        CombatScreen: combat.MakeCombatScreen(cache, &defendingArmy, &attackingArmy, &defendingPlayer),
+        CombatScreen: combatScreen,
         CombatEndScreen: nil,
+        Coroutine: coroutine.MakeCoroutine(run),
     }, nil
 }
 
@@ -230,6 +243,10 @@ func (engine *Engine) Update() error {
                 return ebiten.Termination
         }
     } else {
+        if engine.Coroutine.Run() != nil {
+            return ebiten.Termination
+        }
+        /*
         switch engine.CombatScreen.Update() {
             case combat.CombatStateRunning:
             case combat.CombatStateAttackerWin:
@@ -241,6 +258,7 @@ func (engine *Engine) Update() error {
             case combat.CombatStateDone:
                 return ebiten.Termination
         }
+        */
     }
 
     return nil
