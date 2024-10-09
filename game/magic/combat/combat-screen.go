@@ -2106,6 +2106,13 @@ func (combat *CombatScreen) UpdateProjectiles() bool {
     return alive
 }
 
+func (combat *CombatScreen) doProjectiles(yield coroutine.YieldFunc) {
+    for combat.UpdateProjectiles() {
+        combat.Counter += 1
+        yield()
+    }
+}
+
 /* attacker is performing a physical melee attack against defender
  */
 func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
@@ -2487,59 +2494,20 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
 
     combat.ProcessEvents(yield)
 
+    if len(combat.Projectiles) > 0 {
+        combat.doProjectiles(yield)
+    }
+
     /*
-    if combat.DoSelectTile {
-        combat.MouseState = CombatCast
-
-        if mouseY >= hudY {
-            combat.MouseState = CombatClickHud
-            return CombatStateRunning
-        }
-
-        if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) && mouseY < hudY {
-            combat.SelectTile(combat.MouseTileX, combat.MouseTileY)
-            combat.DoSelectTile = false
-        }
-
-        return CombatStateRunning
-    }
-
-    if combat.DoSelectUnit {
-        combat.MouseState = CombatCast
-
-        if mouseY >= hudY {
-            combat.MouseState = CombatClickHud
-            return CombatStateRunning
-        }
-
-        unit := combat.GetUnit(combat.MouseTileX, combat.MouseTileY)
-        if unit == nil || (combat.SelectTeam != TeamEither && unit.Team != combat.SelectTeam) || !combat.CanTarget(unit){
-            combat.MouseState = CombatNotOk
-        }
-
-        if combat.CanTarget(unit) && inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) && mouseY < hudY {
-            // log.Printf("Click unit at %v,%v -> %v", combat.MouseTileX, combat.MouseTileY, unit)
-            if unit != nil && (combat.SelectTeam == TeamEither || unit.Team == combat.SelectTeam) {
-                combat.SelectTarget(unit)
-                combat.DoSelectUnit = false
-
-                // shouldn't need to set the mouse state here
-                combat.MouseState = CombatClickHud
-            }
-        }
-
-        return CombatStateRunning
-    }
-    */
-
     if combat.UpdateProjectiles() {
         combat.UI.Disable()
         return CombatStateRunning
     }
+    */
 
     combat.AttackHandler()
 
-    combat.UI.Enable()
+    // combat.UI.Enable()
 
     if combat.UI.GetHighestLayerValue() > 0 || mouseY >= hudY {
         combat.MouseState = CombatClickHud
