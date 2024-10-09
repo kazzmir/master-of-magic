@@ -2636,6 +2636,21 @@ func (combat *CombatScreen) doAI(yield coroutine.YieldFunc, aiUnit *ArmyUnit) {
     // aiArmy := combat.GetArmy(combat.SelectedUnit)
     otherArmy := combat.GetOtherArmy(aiUnit)
 
+    // try a ranged attack first
+    if aiUnit.RangedAttacks > 0 {
+        candidates := slices.Clone(otherArmy.Units)
+        slices.SortFunc(candidates, func (a *ArmyUnit, b *ArmyUnit) int {
+            return cmp.Compare(computeTileDistance(aiUnit.X, aiUnit.Y, a.X, a.Y), computeTileDistance(aiUnit.X, aiUnit.Y, b.X, b.Y))
+        })
+
+        for _, candidate := range candidates {
+           if combat.withinArrowRange(aiUnit, candidate) && combat.canRangeAttack(aiUnit, candidate) {
+               combat.doRangeAttack(aiUnit, candidate)
+               return
+           }
+        }
+    }
+
     aiUnit.Paths = make(map[image.Point]pathfinding.Path)
 
     // if the selected unit has ranged attacks, then try to use that
