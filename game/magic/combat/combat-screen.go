@@ -3,6 +3,7 @@ package combat
 import (
     "fmt"
     "log"
+    "cmp"
     "math"
     "math/rand/v2"
     "image"
@@ -363,9 +364,12 @@ func computeMoves(x1 int, y1 int, x2 int, y2 int) fraction.Fraction {
 
 func (combat *CombatScreen) computePath(x1 int, y1 int, x2 int, y2 int) (pathfinding.Path, bool) {
 
-    containsUnit := make(map[image.Point]bool)
+    // containsUnit := make(map[image.Point]bool)
 
     tileEmpty := func (x int, y int) bool {
+        return combat.GetUnit(x, y) == nil
+
+        /*
         // check if the tile is empty
         where := image.Pt(x, y)
         contains, ok := containsUnit[where]
@@ -381,6 +385,7 @@ func (combat *CombatScreen) computePath(x1 int, y1 int, x2 int, y2 int) (pathfin
                 return false
             }
         }
+        */
     }
 
     // FIXME: take into account mud, hills, other types of terrain obstacles
@@ -2475,8 +2480,6 @@ func (combat *CombatScreen) UpdateAnimations(){
 }
 
 func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUnit, path pathfinding.Path){
-
-    path = path[1:]
     mover.MovementTick = combat.Counter
     mover.Moving = true
     mover.MoveX = float64(mover.X)
@@ -2634,23 +2637,23 @@ func (combat *CombatScreen) doAI(yield coroutine.YieldFunc) {
     closestEnemy := slices.MinFunc(otherArmy.Units, func (a *ArmyUnit, b *ArmyUnit) int {
         distanceA := computeTileDistance(aiUnit.X, aiUnit.Y, a.X, a.Y)
         distanceB := computeTileDistance(aiUnit.X, aiUnit.Y, b.X, b.Y)
-
-        if distanceA < distanceB {
-            return -1
-        }
-
-        if distanceA > distanceB {
-            return 1
-        }
-
-        return 0
+        return cmp.Compare(distanceA, distanceB)
     })
 
     if closestEnemy != nil {
-        path, ok := combat.FindPath(aiUnit, closestEnemy.X, closestEnemy.Y)
-        if ok && len(path) > 2 {
+
+        // pretend that there is no unit at the tile. this is a sin of the highest order
+        combat.Tiles[closestEnemy.Y][closestEnemy.X].Unit = nil
+        path, ok := combat.computePath(aiUnit.X, aiUnit.Y, closestEnemy.X, closestEnemy.Y)
+        combat.Tiles[closestEnemy.Y][closestEnemy.X].Unit = closestEnemy
+        if ok && len(path) >= 2 {
             // ignore path[0], thats where we are now. also ignore the last element, since we can't move onto the enemy
-            path = path[1:len(path) - 1]
+            path = path[1:]
+
+            last := path[len(path)-1]
+            if last.X == closestEnemy.X && last.Y == closestEnemy.Y {
+                path = path[:len(path)-1]
+            }
 
             combat.doMoveUnit(yield, aiUnit, path)
         }
@@ -2721,6 +2724,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
 
         if combat.TileIsEmpty(combat.MouseTileX, combat.MouseTileY) && combat.CanMoveTo(combat.SelectedUnit, combat.MouseTileX, combat.MouseTileY){
             path, _ := combat.FindPath(combat.SelectedUnit, combat.MouseTileX, combat.MouseTileY)
+            path = path[1:]
             combat.doMoveUnit(yield, combat.SelectedUnit, path)
        } else {
 
