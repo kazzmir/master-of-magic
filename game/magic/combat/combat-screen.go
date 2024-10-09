@@ -105,7 +105,6 @@ type ArmyUnit struct {
     Unit *units.OverworldUnit
     Facing units.Facing
     Moving bool
-    DoneMovingFunc context.CancelFunc
     X int
     Y int
     // Health int
@@ -2527,46 +2526,95 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
     // also don't allow clicks into the game if the ui is showing some overlay
     if combat.UI.GetHighestLayerValue() == 0 &&
        inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) &&
-       mouseY < hudY &&
-       combat.SelectedUnit.Moving == false && combat.SelectedUnit.Attacking == false {
+       mouseY < hudY {
 
         if combat.TileIsEmpty(combat.MouseTileX, combat.MouseTileY) && combat.CanMoveTo(combat.SelectedUnit, combat.MouseTileX, combat.MouseTileY){
-            path, _ := combat.FindPath(combat.SelectedUnit, combat.MouseTileX, combat.MouseTileY)
-            // just be extremely sure that the last sound playing has stopped
-            if combat.SelectedUnit.DoneMovingFunc != nil {
-                combat.SelectedUnit.DoneMovingFunc()
-            }
-            combat.SelectedUnit.MovementTick = combat.Counter
-            combat.SelectedUnit.MovementPath = path[1:]
-            combat.SelectedUnit.Moving = true
-            combat.SelectedUnit.MoveX = float64(combat.SelectedUnit.X)
-            combat.SelectedUnit.MoveY = float64(combat.SelectedUnit.Y)
 
-            mover := combat.SelectedUnit
-            quit, cancel := context.WithCancel(context.Background())
-            mover.DoneMovingFunc = cancel
+            // defer scope
+            func (){
+                path, _ := combat.FindPath(combat.SelectedUnit, combat.MouseTileX, combat.MouseTileY)
 
-            sound, err := audio.LoadSound(combat.Cache, mover.Unit.Unit.MovementSound.LbxIndex())
-            if err == nil {
-                // keep playing movement sound in a loop until the unit stops moving
-                go func(){
-                    // defer sound.Pause()
-                    for quit.Err() == nil {
-                        err = sound.Rewind()
-                        if err != nil {
-                            log.Printf("Unable to rewind sound for %v: %v", mover.Unit.Unit.MovementSound, err)
-                        }
-                        sound.Play()
-                        for sound.IsPlaying() {
-                            select {
-                                case <-quit.Done():
-                                    return
-                                case <-time.After(10 * time.Millisecond):
+                combat.SelectedUnit.MovementTick = combat.Counter
+                combat.SelectedUnit.MovementPath = path[1:]
+                combat.SelectedUnit.Moving = true
+                combat.SelectedUnit.MoveX = float64(combat.SelectedUnit.X)
+                combat.SelectedUnit.MoveY = float64(combat.SelectedUnit.Y)
+
+                mover := combat.SelectedUnit
+                quit, cancel := context.WithCancel(context.Background())
+                defer cancel()
+
+                sound, err := audio.LoadSound(combat.Cache, mover.Unit.Unit.MovementSound.LbxIndex())
+                if err == nil {
+                    // keep playing movement sound in a loop until the unit stops moving
+                    go func(){
+                        // defer sound.Pause()
+                        for quit.Err() == nil {
+                            err = sound.Rewind()
+                            if err != nil {
+                                log.Printf("Unable to rewind sound for %v: %v", mover.Unit.Unit.MovementSound, err)
+                            }
+                            sound.Play()
+                            for sound.IsPlaying() {
+                                select {
+                                    case <-quit.Done():
+                                        return
+                                    case <-time.After(10 * time.Millisecond):
+                                }
                             }
                         }
+                    }()
+                }
+
+                for len(combat.SelectedUnit.MovementPath) > 0 {
+                    targetX, targetY := combat.SelectedUnit.MovementPath[0].X, combat.SelectedUnit.MovementPath[0].Y
+
+                    angle := math.Atan2(float64(targetY) - combat.SelectedUnit.MoveY, float64(targetX) - combat.SelectedUnit.MoveX)
+
+                    // rotate by 45 degrees to get the on screen facing angle
+                    // have to negate the angle because the y axis is flipped (higher y values are lower on the screen)
+                    useAngle := -(angle - math.Pi/4)
+
+                    // log.Printf("Angle: %v from (%v,%v) to (%v,%v)", useAngle, combat.SelectedUnit.X, combat.SelectedUnit.Y, combat.SelectedUnit.TargetX, combat.SelectedUnit.TargetY)
+
+                    combat.SelectedUnit.Facing = computeFacing(useAngle)
+
+                    // speed := float64(combat.Counter - combat.SelectedUnit.MovementTick) / 4
+                    speed := float64(0.08)
+                    combat.SelectedUnit.MoveX += math.Cos(angle) * speed
+                    combat.SelectedUnit.MoveY += math.Sin(angle) * speed
+
+                    // log.Printf("Moving %v,%v -> %v,%v", combat.SelectedUnit.X, combat.SelectedUnit.Y, combat.SelectedUnit.MoveX, combat.SelectedUnit.MoveY)
+
+                    // if math.Abs(combat.SelectedUnit.MoveX - float64(targetX)) < speed*2 && math.Abs(combat.SelectedUnit.MoveY - float64(targetY)) < 0.5 {
+                    if distanceInRange(combat.SelectedUnit.MoveX, combat.SelectedUnit.MoveY, float64(targetX), float64(targetY), speed * 3) ||
+                       // a stop gap to ensure the unit doesn't fly off the screen somehow
+                       distanceAboveRange(float64(combat.SelectedUnit.X), float64(combat.SelectedUnit.Y), float64(targetX), float64(targetY), 2.5) {
+
+                        // tile where the unit came from is now empty
+                        combat.Tiles[combat.SelectedUnit.Y][combat.SelectedUnit.X].Unit = nil
+
+                        combat.SelectedUnit.MovesLeft = combat.SelectedUnit.MovesLeft.Subtract(pathCost(image.Pt(combat.SelectedUnit.X, combat.SelectedUnit.Y), image.Pt(targetX, targetY)))
+                        if combat.SelectedUnit.MovesLeft.LessThan(fraction.FromInt(0)) {
+                            combat.SelectedUnit.MovesLeft = fraction.FromInt(0)
+                        }
+
+                        combat.SelectedUnit.X = targetX
+                        combat.SelectedUnit.Y = targetY
+                        combat.SelectedUnit.MoveX = float64(targetX)
+                        combat.SelectedUnit.MoveY = float64(targetY)
+                        // new tile the unit landed on is now occupied
+                        combat.Tiles[combat.SelectedUnit.Y][combat.SelectedUnit.X].Unit = combat.SelectedUnit
+                        combat.SelectedUnit.MovementPath = combat.SelectedUnit.MovementPath[1:]
                     }
-                }()
-            }
+
+                    yield()
+                }
+
+                combat.SelectedUnit.Moving = false
+                combat.SelectedUnit.Paths = make(map[image.Point]pathfinding.Path)
+            }()
+
        } else {
 
            defender := combat.GetUnit(combat.MouseTileX, combat.MouseTileY)
@@ -2583,6 +2631,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
 
                attacker.Facing = faceTowards(attacker.X, attacker.Y, defender.X, defender.Y)
 
+               // FIXME: could use a for/yield loop here to update projectiles
                combat.createRangeAttack(attacker, defender)
 
                sound, err := audio.LoadSound(combat.Cache, attacker.Unit.Unit.RangeAttackSound.LbxIndex())
@@ -2630,6 +2679,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
        }
     }
 
+    /*
     if combat.SelectedUnit != nil && combat.SelectedUnit.Moving {
         targetX, targetY := combat.SelectedUnit.MovementPath[0].X, combat.SelectedUnit.MovementPath[0].Y
 
@@ -2679,6 +2729,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
             }
         }
     }
+    */
 
     // the unit died or is out of moves
     if combat.SelectedUnit != nil && (combat.SelectedUnit.Unit.Health <= 0 || combat.SelectedUnit.MovesLeft.LessThanEqual(fraction.FromInt(0))) {
