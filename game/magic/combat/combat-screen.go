@@ -1712,10 +1712,10 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
         return &uilib.UIElement{
             Rect: rect,
             LeftClick: func(element *uilib.UIElement){
-                action()
                 index = 1
             },
             LeftClickRelease: func(element *uilib.UIElement){
+                action()
                 index = 0
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
@@ -2612,28 +2612,60 @@ func (combat *CombatScreen) doAI(yield coroutine.YieldFunc) {
     otherArmy := combat.GetOtherArmy(combat.SelectedUnit)
 
     aiUnit := combat.SelectedUnit
+    aiUnit.Paths = make(map[image.Point]pathfinding.Path)
 
     // if the selected unit has ranged attacks, then try to use that
     // otherwise, if in melee range of some enemy then attack them
     // otherwise walk towards the enemy
 
+    paths := make(map[*ArmyUnit]pathfinding.Path)
+
+    getPath := func (unit *ArmyUnit) pathfinding.Path {
+        path, found := paths[unit]
+        if !found {
+            combat.Tiles[unit.Y][unit.X].Unit = nil
+            var ok bool
+            path, ok = combat.computePath(aiUnit.X, aiUnit.Y, unit.X, unit.Y)
+            combat.Tiles[unit.Y][unit.X].Unit = unit
+            if ok {
+                paths[unit] = path
+            } else {
+                paths[unit] = nil
+            }
+        }
+
+        return path
+    }
+
+    filterReachable := func (units []*ArmyUnit) []*ArmyUnit {
+        var out []*ArmyUnit
+        for _, unit := range units {
+            path := getPath(unit)
+            if len(path) > 0 {
+                out = append(out, unit)
+            }
+        }
+        return out
+    }
+
     // should filter by enemies that we can attack, so non-flyers do not move toward flyers
-    candidates := slices.Clone(otherArmy.Units)
+    candidates := filterReachable(slices.Clone(otherArmy.Units))
+
     slices.SortFunc(candidates, func (a *ArmyUnit, b *ArmyUnit) int {
-        distanceA := computeTileDistance(aiUnit.X, aiUnit.Y, a.X, a.Y)
-        distanceB := computeTileDistance(aiUnit.X, aiUnit.Y, b.X, b.Y)
-        return cmp.Compare(distanceA, distanceB)
+        aPath := getPath(a)
+        bPath := getPath(b)
+
+        return cmp.Compare(len(aPath), len(bPath))
     })
 
-    aiUnit.Paths = make(map[image.Point]pathfinding.Path)
 
     // find a path to some enemy
     for _, closestEnemy := range candidates {
         // pretend that there is no unit at the tile. this is a sin of the highest order
-        combat.Tiles[closestEnemy.Y][closestEnemy.X].Unit = nil
-        path, ok := combat.computePath(aiUnit.X, aiUnit.Y, closestEnemy.X, closestEnemy.Y)
-        combat.Tiles[closestEnemy.Y][closestEnemy.X].Unit = closestEnemy
-        if ok && len(path) >= 2 {
+
+        path := getPath(closestEnemy)
+
+        if len(path) >= 2 {
             // ignore path[0], thats where we are now. also ignore the last element, since we can't move onto the enemy
 
             last := path[len(path)-1]
@@ -2725,7 +2757,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
             path, _ := combat.FindPath(combat.SelectedUnit, combat.MouseTileX, combat.MouseTileY)
             path = path[1:]
             combat.doMoveUnit(yield, combat.SelectedUnit, path)
-       } else {
+        } else {
 
            defender := combat.GetUnit(combat.MouseTileX, combat.MouseTileY)
            attacker := combat.SelectedUnit
