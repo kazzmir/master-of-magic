@@ -2560,6 +2560,43 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
     mover.Paths = make(map[image.Point]pathfinding.Path)
 }
 
+func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUnit, defender *ArmyUnit){
+    // create defer scope
+    attacker.Attacking = true
+    defender.Defending = true
+    defer func(){
+        attacker.Attacking = false
+        defender.Defending = false
+    }()
+
+    // attacking takes 50% of movement points
+    // FIXME: in some cases an extra 0.5 movements points is lost, possibly due to counter attacks?
+    attacker.MovesLeft = attacker.MovesLeft.Subtract(fraction.FromInt(attacker.Unit.Unit.MovementSpeed).Divide(fraction.FromInt(2)))
+    if attacker.MovesLeft.LessThan(fraction.FromInt(0)) {
+        attacker.MovesLeft = fraction.FromInt(0)
+    }
+
+    attacker.Facing = faceTowards(attacker.X, attacker.Y, defender.X, defender.Y)
+    defender.Facing = faceTowards(defender.X, defender.Y, attacker.X, attacker.Y)
+
+    // FIXME: sound is based on attacker type, and possibly defender type
+    sound, err := audio.LoadCombatSound(combat.Cache, attacker.Unit.Unit.AttackSound.LbxIndex())
+    if err == nil {
+        sound.Play()
+    }
+
+    for i := 0; i < 60; i++ {
+        combat.Counter += 1
+        combat.UpdateAnimations()
+
+        if i == 20 {
+            combat.meleeAttack(combat.SelectedUnit, defender)
+        }
+
+        yield()
+    }
+}
+
 func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
     combat.Counter += 1
     combat.UI.StandardUpdate()
@@ -2571,13 +2608,11 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
     combat.MouseTileX = int(math.Round(tileX))
     combat.MouseTileY = int(math.Round(tileY))
 
-
     combat.UpdateAnimations()
 
     hudY := data.ScreenHeight - hudImage.Bounds().Dy()
 
     combat.ProcessEvents(yield)
-
 
     if len(combat.Projectiles) > 0 {
         combat.doProjectiles(yield)
@@ -2644,42 +2679,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
                }
            // then fall back to melee
            } else if defender != nil && defender.Team != attacker.Team && combat.withinMeleeRange(attacker, defender) && combat.canMeleeAttack(attacker, defender){
-
-               // create defer scope
-               func (){
-                   attacker.Attacking = true
-                   defender.Defending = true
-                   defer func(){
-                       attacker.Attacking = false
-                       defender.Defending = false
-                   }()
-                   // attacking takes 50% of movement points
-                   // FIXME: in some cases an extra 0.5 movements points is lost, possibly due to counter attacks?
-                   attacker.MovesLeft = attacker.MovesLeft.Subtract(fraction.FromInt(attacker.Unit.Unit.MovementSpeed).Divide(fraction.FromInt(2)))
-                   if attacker.MovesLeft.LessThan(fraction.FromInt(0)) {
-                       attacker.MovesLeft = fraction.FromInt(0)
-                   }
-
-                   attacker.Facing = faceTowards(attacker.X, attacker.Y, defender.X, defender.Y)
-                   defender.Facing = faceTowards(defender.X, defender.Y, attacker.X, attacker.Y)
-
-                   // FIXME: sound is based on attacker type, and possibly defender type
-                   sound, err := audio.LoadCombatSound(combat.Cache, attacker.Unit.Unit.AttackSound.LbxIndex())
-                   if err == nil {
-                       sound.Play()
-                   }
-
-                   for i := 0; i < 60; i++ {
-                       combat.Counter += 1
-                       combat.UpdateAnimations()
-
-                       if i == 20 {
-                           combat.meleeAttack(combat.SelectedUnit, defender)
-                       }
-
-                       yield()
-                   }
-               }()
+               combat.doMelee(yield, attacker, defender)
            }
        }
     }
