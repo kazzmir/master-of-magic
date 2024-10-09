@@ -3,6 +3,7 @@ package combat
 import (
     "fmt"
     "log"
+    "cmp"
     "math"
     "math/rand/v2"
     "image"
@@ -15,6 +16,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/fraction"
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/lib/mouse"
+    "github.com/kazzmir/master-of-magic/lib/coroutine"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/game/magic/units"
@@ -37,6 +39,23 @@ const (
     CombatStateDefenderWin
     CombatStateDone
 )
+
+type CombatEvent interface {
+}
+
+type CombatEventSelectTile struct {
+    Selecter Team
+    Spell spellbook.Spell
+    SelectTile func(int, int)
+}
+
+type CombatEventSelectUnit struct {
+    Selecter Team
+    Spell spellbook.Spell
+    SelectTarget func(*ArmyUnit)
+    CanTarget func(*ArmyUnit) bool
+    SelectTeam Team
+}
 
 type Team int
 
@@ -87,7 +106,6 @@ type ArmyUnit struct {
     Unit *units.OverworldUnit
     Facing units.Facing
     Moving bool
-    DoneMovingFunc context.CancelFunc
     X int
     Y int
     // Health int
@@ -103,9 +121,6 @@ type ArmyUnit struct {
     MovementTick uint64
     MoveX float64
     MoveY float64
-
-    // the path the unit is currently following
-    MovementPath pathfinding.Path
 
     LastTurn int
 
@@ -349,24 +364,8 @@ func computeMoves(x1 int, y1 int, x2 int, y2 int) fraction.Fraction {
 
 func (combat *CombatScreen) computePath(x1 int, y1 int, x2 int, y2 int) (pathfinding.Path, bool) {
 
-    containsUnit := make(map[image.Point]bool)
-
     tileEmpty := func (x int, y int) bool {
-        // check if the tile is empty
-        where := image.Pt(x, y)
-        contains, ok := containsUnit[where]
-        if ok {
-            return !contains
-        } else {
-            unit := combat.GetUnit(x, y)
-            if unit == nil {
-                containsUnit[where] = false
-                return true
-            } else {
-                containsUnit[where] = true
-                return false
-            }
-        }
+        return combat.GetUnit(x, y) == nil
     }
 
     // FIXME: take into account mud, hills, other types of terrain obstacles
@@ -465,6 +464,11 @@ func (combat *CombatScreen) CanMoveTo(unit *ArmyUnit, x int, y int) bool {
 type Army struct {
     Units []*ArmyUnit
     Player *player.Player
+    Auto bool
+}
+
+func (army *Army) IsAI() bool {
+    return army.Auto || army.Player.IsAI()
 }
 
 /* must call LayoutUnits() some time after invoking AddUnit() to ensure
@@ -560,8 +564,6 @@ type CombatScreen struct {
 
     OtherUnits []*CombatUnit
 
-    AttackHandler func()
-
     MouseState MouseState
 
     Mouse *mouse.MouseData
@@ -592,17 +594,23 @@ type CombatScreen struct {
     MouseTileX int
     MouseTileY int
 
+    Events chan CombatEvent
+
     // if true then the player should select a tile to cast a spell on
-    DoSelectTile bool
+    /*
     SelectTile func(int, int)
+    */
+    DoSelectTile bool
 
     // if true then the player should select a unit to cast a spell on
     DoSelectUnit bool
     // which team to pick a unit from
-    SelectTeam Team
+    // SelectTeam Team
     // invoke this function on the unit that is selected
+    /*
     SelectTarget func(*ArmyUnit)
     CanTarget func(*ArmyUnit) bool
+    */
 }
 
 func makeTiles(width int, height int) [][]Tile {
@@ -734,11 +742,11 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
         Mouse: mouseData,
         Turn: TeamDefender,
         CurrentTurn: 0,
-        AttackHandler: func(){},
         DefendingArmy: defendingArmy,
         TurnDefender: 0,
         AttackingArmy: attackingArmy,
         TurnAttacker: 0,
+        Events: make(chan CombatEvent, 1000),
         Tiles: makeTiles(30, 30),
         SelectedUnit: nil,
         DebugFont: debugFont,
@@ -1292,6 +1300,11 @@ func (combat *CombatScreen) CreateDemon(player *playerlib.Player, x int, y int) 
 func (combat *CombatScreen) DoTargetUnitSpell(player *playerlib.Player, spell spellbook.Spell, targetKind Targeting, onTarget func(*ArmyUnit), canTarget func(*ArmyUnit) bool) {
     teamAttacked := TeamAttacker
 
+    selecter := TeamAttacker
+    if player == combat.DefendingArmy.Player {
+        selecter = TeamDefender
+    }
+
     if targetKind == TargetFriend {
         /* if the player is the defender and we are targeting a friend then the team should be the defenders */
         if combat.DefendingArmy.Player == player {
@@ -1308,67 +1321,26 @@ func (combat *CombatScreen) DoTargetUnitSpell(player *playerlib.Player, spell sp
 
     // log.Printf("Create sound for spell %v: %v", spell.Name, spell.Sound)
 
-    x := 250
-    if player == combat.DefendingArmy.Player {
-        x = 3
-    }
+    event := &CombatEventSelectUnit{
+        Selecter: selecter,
+        Spell: spell,
+        SelectTeam: teamAttacked,
+        CanTarget: canTarget,
+        SelectTarget: func(target *ArmyUnit){
+            sound, err := audio.LoadSound(combat.Cache, spell.Sound)
+            if err == nil {
+                sound.Play()
+            } else {
+                log.Printf("No such sound %v for %v: %v", spell.Sound, spell.Name, err)
+            }
 
-    y := 168
-
-    var elements []*uilib.UIElement
-
-    removeElements := func(){
-        combat.UI.RemoveElements(elements)
-    }
-
-    selectElement := &uilib.UIElement{
-        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            combat.WhiteFont.PrintWrap(screen, float64(x), float64(y), 75, 1, ebiten.ColorScale{}, fmt.Sprintf("Select a target for a %v spell.", spell.Name))
+            onTarget(target)
         },
     }
 
-    cancelImages, _ := combat.ImageCache.GetImages("compix.lbx", 22)
-    cancelRect := image.Rect(0, 0, cancelImages[0].Bounds().Dx(), cancelImages[0].Bounds().Dy()).Add(image.Point{x + 15, y + 15})
-    cancelIndex := 0
-    cancelElement := &uilib.UIElement{
-        Rect: cancelRect,
-        LeftClick: func(element *uilib.UIElement){
-            cancelIndex = 1
-        },
-        LeftClickRelease: func(element *uilib.UIElement){
-            cancelIndex = 0
-            combat.DoSelectUnit = false
-            combat.SelectTarget = func(target *ArmyUnit){}
-            combat.CanTarget = func(target *ArmyUnit) bool { return false }
-            removeElements()
-        },
-        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            var options ebiten.DrawImageOptions
-            options.GeoM.Translate(float64(cancelRect.Min.X), float64(cancelRect.Min.Y))
-            screen.DrawImage(cancelImages[cancelIndex], &options)
-        },
-    }
-
-    elements = append(elements, selectElement, cancelElement)
-
-    combat.UI.AddElements(elements)
-
-    combat.DoSelectUnit = true
-    combat.SelectTeam = teamAttacked
-    combat.CanTarget = canTarget
-    combat.SelectTarget = func(target *ArmyUnit){
-        sound, err := audio.LoadSound(combat.Cache, spell.Sound)
-        if err == nil {
-            sound.Play()
-        } else {
-            log.Printf("No such sound %v for %v: %v", spell.Sound, spell.Name, err)
-        }
-
-        removeElements()
-        onTarget(target)
-
-        combat.SelectTarget = func(*ArmyUnit){}
-        combat.CanTarget = func(*ArmyUnit) bool { return false }
+    select {
+        case combat.Events <- event:
+        default:
     }
 }
 
@@ -1376,63 +1348,29 @@ func (combat *CombatScreen) DoTargetUnitSpell(player *playerlib.Player, spell sp
 func (combat *CombatScreen) DoTargetTileSpell(player *playerlib.Player, spell spellbook.Spell, onTarget func(int, int)){
     // log.Printf("Create sound for spell %v: %v", spell.Name, spell.Sound)
 
-    x := 250
+    selecter := TeamAttacker
     if player == combat.DefendingArmy.Player {
-        x = 3
+        selecter = TeamDefender
     }
 
-    y := 168
+    event := &CombatEventSelectTile{
+        Selecter: selecter,
+        Spell: spell,
+        SelectTile: func(x int, y int){
+            sound, err := audio.LoadSound(combat.Cache, spell.Sound)
+            if err == nil {
+                sound.Play()
+            } else {
+                log.Printf("No such sound %v for %v: %v", spell.Sound, spell.Name, err)
+            }
 
-    var elements []*uilib.UIElement
-
-    removeElements := func(){
-        combat.UI.RemoveElements(elements)
-    }
-
-    selectElement := &uilib.UIElement{
-        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            combat.WhiteFont.PrintWrap(screen, float64(x), float64(y), 75, 1, ebiten.ColorScale{}, fmt.Sprintf("Select a target for a %v spell.", spell.Name))
+            onTarget(x, y)
         },
     }
 
-    cancelImages, _ := combat.ImageCache.GetImages("compix.lbx", 22)
-    cancelRect := image.Rect(0, 0, cancelImages[0].Bounds().Dx(), cancelImages[0].Bounds().Dy()).Add(image.Point{x + 15, y + 15})
-    cancelIndex := 0
-    cancelElement := &uilib.UIElement{
-        Rect: cancelRect,
-        LeftClick: func(element *uilib.UIElement){
-            cancelIndex = 1
-        },
-        LeftClickRelease: func(element *uilib.UIElement){
-            cancelIndex = 0
-            combat.DoSelectTile = false
-            combat.SelectTile = func(x int, y int){}
-            removeElements()
-        },
-        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            var options ebiten.DrawImageOptions
-            options.GeoM.Translate(float64(cancelRect.Min.X), float64(cancelRect.Min.Y))
-            screen.DrawImage(cancelImages[cancelIndex], &options)
-        },
-    }
-
-    elements = append(elements, selectElement, cancelElement)
-
-    combat.UI.AddElements(elements)
-
-    combat.DoSelectTile = true
-    combat.SelectTile = func(x int, y int){
-        sound, err := audio.LoadSound(combat.Cache, spell.Sound)
-        if err == nil {
-            sound.Play()
-        } else {
-            log.Printf("No such sound %v for %v: %v", spell.Sound, spell.Name, err)
-        }
-
-        removeElements()
-        onTarget(x, y)
-
-        combat.SelectTile = func(int, int){}
+    select {
+        case combat.Events <- event:
+        default:
     }
 }
 
@@ -1775,10 +1713,10 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
         return &uilib.UIElement{
             Rect: rect,
             LeftClick: func(element *uilib.UIElement){
-                action()
                 index = 1
             },
             LeftClickRelease: func(element *uilib.UIElement){
+                action()
                 index = 0
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
@@ -1812,7 +1750,11 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
 
     // auto
     elements = append(elements, makeButton(4, 1, 1, func(){
-        // FIXME
+        if combat.AttackingArmy.Player == player {
+            combat.AttackingArmy.Auto = true
+        } else {
+            combat.DefendingArmy.Auto = true
+        }
     }))
 
     // flee
@@ -2147,6 +2089,13 @@ func (combat *CombatScreen) UpdateProjectiles() bool {
     return alive
 }
 
+func (combat *CombatScreen) doProjectiles(yield coroutine.YieldFunc) {
+    for combat.UpdateProjectiles() {
+        combat.Counter += 1
+        yield()
+    }
+}
+
 /* attacker is performing a physical melee attack against defender
  */
 func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
@@ -2304,11 +2253,512 @@ func (combat *CombatScreen) RemoveUnit(unit *ArmyUnit){
     }
 
     combat.Tiles[unit.Y][unit.X].Unit = nil
+
+    if unit == combat.SelectedUnit {
+        combat.NextUnit()
+    }
 }
 
-func (combat *CombatScreen) Update() CombatState {
-    combat.Counter += 1
+func (combat *CombatScreen) doSelectTile(yield coroutine.YieldFunc, selecter Team, spell spellbook.Spell, selectTile func(int, int)) {
+    combat.DoSelectTile = true
+    defer func(){
+        combat.DoSelectTile = false
+    }()
 
+    hudImage, _ := combat.ImageCache.GetImage("cmbtfx.lbx", 28, 0)
+
+    hudY := data.ScreenHeight - hudImage.Bounds().Dy()
+
+    quit := false
+
+    x := 250
+    if selecter == TeamDefender {
+        x = 3
+    }
+
+    y := 168
+
+    var elements []*uilib.UIElement
+
+    removeElements := func(){
+        combat.UI.RemoveElements(elements)
+    }
+
+    defer removeElements()
+
+    selectElement := &uilib.UIElement{
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            combat.WhiteFont.PrintWrap(screen, float64(x), float64(y), 75, 1, ebiten.ColorScale{}, fmt.Sprintf("Select a target for a %v spell.", spell.Name))
+        },
+    }
+
+    cancelImages, _ := combat.ImageCache.GetImages("compix.lbx", 22)
+    cancelRect := image.Rect(0, 0, cancelImages[0].Bounds().Dx(), cancelImages[0].Bounds().Dy()).Add(image.Point{x + 15, y + 15})
+    cancelIndex := 0
+    cancelElement := &uilib.UIElement{
+        Rect: cancelRect,
+        LeftClick: func(element *uilib.UIElement){
+            cancelIndex = 1
+        },
+        LeftClickRelease: func(element *uilib.UIElement){
+            cancelIndex = 0
+            quit = true
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(cancelRect.Min.X), float64(cancelRect.Min.Y))
+            screen.DrawImage(cancelImages[cancelIndex], &options)
+        },
+    }
+
+    elements = append(elements, selectElement, cancelElement)
+
+    combat.UI.AddElements(elements)
+
+    for !quit {
+        combat.Counter += 1
+
+        for _, unit := range combat.OtherUnits {
+            if combat.Counter % 6 == 0 {
+                unit.Animation.Next()
+            }
+        }
+
+        combat.UI.StandardUpdate()
+        mouseX, mouseY := ebiten.CursorPosition()
+        tileX, tileY := combat.ScreenToTile.Apply(float64(mouseX), float64(mouseY))
+        combat.MouseTileX = int(math.Round(tileX))
+        combat.MouseTileY = int(math.Round(tileY))
+
+        if mouseY >= hudY {
+            combat.MouseState = CombatClickHud
+        } else {
+            combat.MouseState = CombatCast
+
+            if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) && mouseY < hudY {
+                selectTile(combat.MouseTileX, combat.MouseTileY)
+                break
+            }
+        }
+
+        yield()
+    }
+}
+
+func (combat *CombatScreen) doSelectUnit(yield coroutine.YieldFunc, selecter Team, spell spellbook.Spell, selectTarget func (*ArmyUnit), canTarget func (*ArmyUnit) bool, selectTeam Team) {
+    combat.DoSelectUnit = true
+    defer func(){
+        combat.DoSelectUnit = false
+    }()
+
+    hudImage, _ := combat.ImageCache.GetImage("cmbtfx.lbx", 28, 0)
+
+    hudY := data.ScreenHeight - hudImage.Bounds().Dy()
+
+    x := 250
+    if selecter == TeamDefender {
+        x = 3
+    }
+
+    y := 168
+
+    var elements []*uilib.UIElement
+
+    removeElements := func(){
+        combat.UI.RemoveElements(elements)
+    }
+
+    defer removeElements()
+
+    selectElement := &uilib.UIElement{
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            combat.WhiteFont.PrintWrap(screen, float64(x), float64(y), 75, 1, ebiten.ColorScale{}, fmt.Sprintf("Select a target for a %v spell.", spell.Name))
+        },
+    }
+
+    quit := false
+
+    cancelImages, _ := combat.ImageCache.GetImages("compix.lbx", 22)
+    cancelRect := image.Rect(0, 0, cancelImages[0].Bounds().Dx(), cancelImages[0].Bounds().Dy()).Add(image.Point{x + 15, y + 15})
+    cancelIndex := 0
+    cancelElement := &uilib.UIElement{
+        Rect: cancelRect,
+        LeftClick: func(element *uilib.UIElement){
+            cancelIndex = 1
+        },
+        LeftClickRelease: func(element *uilib.UIElement){
+            cancelIndex = 0
+            quit = true
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(cancelRect.Min.X), float64(cancelRect.Min.Y))
+            screen.DrawImage(cancelImages[cancelIndex], &options)
+        },
+    }
+
+    elements = append(elements, selectElement, cancelElement)
+
+    combat.UI.AddElements(elements)
+
+    for !quit {
+        combat.Counter += 1
+
+        for _, unit := range combat.OtherUnits {
+            if combat.Counter % 6 == 0 {
+                unit.Animation.Next()
+            }
+        }
+
+        combat.UI.StandardUpdate()
+        mouseX, mouseY := ebiten.CursorPosition()
+        tileX, tileY := combat.ScreenToTile.Apply(float64(mouseX), float64(mouseY))
+        combat.MouseTileX = int(math.Round(tileX))
+        combat.MouseTileY = int(math.Round(tileY))
+
+        combat.MouseState = CombatCast
+
+        if mouseY >= hudY {
+            combat.MouseState = CombatClickHud
+        } else {
+            unit := combat.GetUnit(combat.MouseTileX, combat.MouseTileY)
+            if unit == nil || (selectTeam != TeamEither && unit.Team != selectTeam) || !canTarget(unit){
+                combat.MouseState = CombatNotOk
+            }
+
+            if canTarget(unit) && inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) && mouseY < hudY {
+                // log.Printf("Click unit at %v,%v -> %v", combat.MouseTileX, combat.MouseTileY, unit)
+                if unit != nil && (selectTeam == TeamEither || unit.Team == selectTeam) {
+                    selectTarget(unit)
+
+                    // shouldn't need to set the mouse state here
+                    combat.MouseState = CombatClickHud
+                    return
+                }
+            }
+        }
+
+        yield()
+    }
+}
+
+func (combat *CombatScreen) ProcessEvents(yield coroutine.YieldFunc) {
+    for {
+        select {
+            case event := <-combat.Events:
+                switch event.(type) {
+                    case *CombatEventSelectTile:
+                        use := event.(*CombatEventSelectTile)
+                        combat.doSelectTile(yield, use.Selecter, use.Spell, use.SelectTile)
+                    case *CombatEventSelectUnit:
+                        use := event.(*CombatEventSelectUnit)
+                        combat.doSelectUnit(yield, use.Selecter, use.Spell, use.SelectTarget, use.CanTarget, use.SelectTeam)
+                }
+            default:
+                return
+        }
+    }
+}
+
+func (combat *CombatScreen) UpdateAnimations(){
+    for _, unit := range combat.OtherUnits {
+        if combat.Counter % 6 == 0 {
+            unit.Animation.Next()
+        }
+    }
+}
+
+func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUnit, path pathfinding.Path){
+    if len(path) == 0 {
+        return
+    }
+
+    mover.MovementTick = combat.Counter
+    mover.Moving = true
+    mover.MoveX = float64(mover.X)
+    mover.MoveY = float64(mover.Y)
+
+    quit, cancel := context.WithCancel(context.Background())
+    defer cancel()
+
+    sound, err := audio.LoadSound(combat.Cache, mover.Unit.Unit.MovementSound.LbxIndex())
+    if err == nil {
+        // keep playing movement sound in a loop until the unit stops moving
+        go func(){
+            // defer sound.Pause()
+            for quit.Err() == nil {
+                err = sound.Rewind()
+                if err != nil {
+                    log.Printf("Unable to rewind sound for %v: %v", mover.Unit.Unit.MovementSound, err)
+                }
+                sound.Play()
+                for sound.IsPlaying() {
+                    select {
+                    case <-quit.Done():
+                        return
+                    case <-time.After(10 * time.Millisecond):
+                    }
+                }
+            }
+        }()
+    }
+
+    for len(path) > 0 {
+        combat.UpdateAnimations()
+        combat.Counter += 1
+
+        targetX, targetY := path[0].X, path[0].Y
+
+        angle := math.Atan2(float64(targetY) - mover.MoveY, float64(targetX) - mover.MoveX)
+
+        // rotate by 45 degrees to get the on screen facing angle
+        // have to negate the angle because the y axis is flipped (higher y values are lower on the screen)
+        useAngle := -(angle - math.Pi/4)
+
+        // log.Printf("Angle: %v from (%v,%v) to (%v,%v)", useAngle, combat.SelectedUnit.X, combat.SelectedUnit.Y, combat.SelectedUnit.TargetX, combat.SelectedUnit.TargetY)
+
+        mover.Facing = computeFacing(useAngle)
+
+        // speed := float64(combat.Counter - combat.SelectedUnit.MovementTick) / 4
+        speed := float64(0.08)
+        mover.MoveX += math.Cos(angle) * speed
+        mover.MoveY += math.Sin(angle) * speed
+
+        // log.Printf("Moving %v,%v -> %v,%v", combat.SelectedUnit.X, combat.SelectedUnit.Y, combat.SelectedUnit.MoveX, combat.SelectedUnit.MoveY)
+
+        // if math.Abs(combat.SelectedUnit.MoveX - float64(targetX)) < speed*2 && math.Abs(combat.SelectedUnit.MoveY - float64(targetY)) < 0.5 {
+        if distanceInRange(mover.MoveX, mover.MoveY, float64(targetX), float64(targetY), speed * 3) ||
+        // a stop gap to ensure the unit doesn't fly off the screen somehow
+        distanceAboveRange(float64(mover.X), float64(mover.Y), float64(targetX), float64(targetY), 2.5) {
+
+            // tile where the unit came from is now empty
+            combat.Tiles[mover.Y][mover.X].Unit = nil
+
+            mover.MovesLeft = mover.MovesLeft.Subtract(pathCost(image.Pt(mover.X, mover.Y), image.Pt(targetX, targetY)))
+            if mover.MovesLeft.LessThan(fraction.FromInt(0)) {
+                mover.MovesLeft = fraction.FromInt(0)
+            }
+
+            mover.X = targetX
+            mover.Y = targetY
+            mover.MoveX = float64(targetX)
+            mover.MoveY = float64(targetY)
+            // new tile the unit landed on is now occupied
+            combat.Tiles[mover.Y][mover.X].Unit = mover
+            path = path[1:]
+        }
+
+        yield()
+    }
+
+    mover.Moving = false
+    mover.Paths = make(map[image.Point]pathfinding.Path)
+}
+
+func (combat *CombatScreen) doRangeAttack(yield coroutine.YieldFunc, attacker *ArmyUnit, defender *ArmyUnit){
+    attacker.MovesLeft = attacker.MovesLeft.Subtract(fraction.FromInt(10))
+    if attacker.MovesLeft.LessThan(fraction.FromInt(0)) {
+        attacker.MovesLeft = fraction.FromInt(0)
+    }
+
+    attacker.RangedAttacks -= 1
+
+    attacker.Facing = faceTowards(attacker.X, attacker.Y, defender.X, defender.Y)
+
+    // FIXME: could use a for/yield loop here to update projectiles
+    combat.createRangeAttack(attacker, defender)
+
+    sound, err := audio.LoadSound(combat.Cache, attacker.Unit.Unit.RangeAttackSound.LbxIndex())
+    if err == nil {
+        sound.Play()
+    }
+
+    combat.doProjectiles(yield)
+}
+
+func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUnit, defender *ArmyUnit){
+    // create defer scope
+    attacker.Attacking = true
+    defender.Defending = true
+    defer func(){
+        attacker.Attacking = false
+        defender.Defending = false
+    }()
+
+    // attacking takes 50% of movement points
+    // FIXME: in some cases an extra 0.5 movements points is lost, possibly due to counter attacks?
+
+    pointsUsed := fraction.FromInt(attacker.Unit.Unit.MovementSpeed).Divide(fraction.FromInt(2))
+    if pointsUsed.LessThan(fraction.FromInt(1)) {
+        pointsUsed = fraction.FromInt(1)
+    }
+
+    attacker.MovesLeft = attacker.MovesLeft.Subtract(pointsUsed)
+    if attacker.MovesLeft.LessThan(fraction.FromInt(0)) {
+        attacker.MovesLeft = fraction.FromInt(0)
+    }
+
+    attacker.Facing = faceTowards(attacker.X, attacker.Y, defender.X, defender.Y)
+    defender.Facing = faceTowards(defender.X, defender.Y, attacker.X, attacker.Y)
+
+    // FIXME: sound is based on attacker type, and possibly defender type
+    sound, err := audio.LoadCombatSound(combat.Cache, attacker.Unit.Unit.AttackSound.LbxIndex())
+    if err == nil {
+        sound.Play()
+    }
+
+    for i := 0; i < 60; i++ {
+        combat.Counter += 1
+        combat.UpdateAnimations()
+
+        if i == 20 {
+            combat.meleeAttack(combat.SelectedUnit, defender)
+        }
+
+        yield()
+    }
+}
+
+func (combat *CombatScreen) IsAIControlled(unit *ArmyUnit) bool {
+    if unit.Team == TeamDefender {
+        return combat.DefendingArmy.IsAI()
+    } else {
+        return combat.AttackingArmy.IsAI()
+    }
+}
+
+func (combat *CombatScreen) GetArmy(unit *ArmyUnit) *Army {
+    if unit.Team == TeamDefender {
+        return combat.DefendingArmy
+    }
+
+    return combat.AttackingArmy
+}
+
+func (combat *CombatScreen) GetOtherArmy(unit *ArmyUnit) *Army {
+    if unit.Team == TeamDefender {
+        return combat.AttackingArmy
+    }
+
+    return combat.DefendingArmy
+}
+
+func (combat *CombatScreen) doAI(yield coroutine.YieldFunc, aiUnit *ArmyUnit) {
+    // aiArmy := combat.GetArmy(combat.SelectedUnit)
+    otherArmy := combat.GetOtherArmy(aiUnit)
+
+    // try a ranged attack first
+    if aiUnit.RangedAttacks > 0 {
+        candidates := slices.Clone(otherArmy.Units)
+        slices.SortFunc(candidates, func (a *ArmyUnit, b *ArmyUnit) int {
+            return cmp.Compare(computeTileDistance(aiUnit.X, aiUnit.Y, a.X, a.Y), computeTileDistance(aiUnit.X, aiUnit.Y, b.X, b.Y))
+        })
+
+        for _, candidate := range candidates {
+           if combat.withinArrowRange(aiUnit, candidate) && combat.canRangeAttack(aiUnit, candidate) {
+               combat.doRangeAttack(yield, aiUnit, candidate)
+               return
+           }
+        }
+    }
+
+    aiUnit.Paths = make(map[image.Point]pathfinding.Path)
+
+    // if the selected unit has ranged attacks, then try to use that
+    // otherwise, if in melee range of some enemy then attack them
+    // otherwise walk towards the enemy
+
+    paths := make(map[*ArmyUnit]pathfinding.Path)
+
+    getPath := func (unit *ArmyUnit) pathfinding.Path {
+        path, found := paths[unit]
+        if !found {
+            combat.Tiles[unit.Y][unit.X].Unit = nil
+            var ok bool
+            path, ok = combat.computePath(aiUnit.X, aiUnit.Y, unit.X, unit.Y)
+            combat.Tiles[unit.Y][unit.X].Unit = unit
+            if ok {
+                paths[unit] = path
+            } else {
+                paths[unit] = nil
+            }
+        }
+
+        return path
+    }
+
+    filterReachable := func (units []*ArmyUnit) []*ArmyUnit {
+        var out []*ArmyUnit
+        for _, unit := range units {
+            path := getPath(unit)
+            if len(path) > 0 {
+                out = append(out, unit)
+            }
+        }
+        return out
+    }
+
+    // should filter by enemies that we can attack, so non-flyers do not move toward flyers
+    candidates := filterReachable(slices.Clone(otherArmy.Units))
+
+    slices.SortFunc(candidates, func (a *ArmyUnit, b *ArmyUnit) int {
+        aPath := getPath(a)
+        bPath := getPath(b)
+
+        return cmp.Compare(len(aPath), len(bPath))
+    })
+
+
+    // find a path to some enemy
+    for _, closestEnemy := range candidates {
+        // pretend that there is no unit at the tile. this is a sin of the highest order
+
+        path := getPath(closestEnemy)
+
+        // a path of length 2 contains the position of the aiUnit and the position of the enemy, so they are right next to each other
+        if len(path) == 2 && combat.canMeleeAttack(aiUnit, closestEnemy) {
+            combat.doMelee(yield, aiUnit, closestEnemy)
+            return
+        } else if len(path) > 2 {
+            // ignore path[0], thats where we are now. also ignore the last element, since we can't move onto the enemy
+
+            last := path[len(path)-1]
+            if last.X == closestEnemy.X && last.Y == closestEnemy.Y {
+                path = path[:len(path)-1]
+            }
+
+            lastIndex := 0
+            for lastIndex < len(path) {
+                if aiUnit.CanFollowPath(path[0:lastIndex]) {
+                    lastIndex += 1
+                } else {
+                    lastIndex -= 1
+                    break
+                }
+            }
+
+            if lastIndex >= 1 && lastIndex <= len(path) {
+                combat.doMoveUnit(yield, aiUnit, path[1:lastIndex])
+                return
+            }
+        }
+    }
+
+    // didn't make a choice, just exhaust moves left
+    aiUnit.MovesLeft = fraction.FromInt(0)
+}
+
+func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
+    // defender wins in a tie
+    if len(combat.AttackingArmy.Units) == 0 {
+        return CombatStateDefenderWin
+    }
+
+    if len(combat.DefendingArmy.Units) == 0 {
+        return CombatStateAttackerWin
+    }
+
+    combat.Counter += 1
     combat.UI.StandardUpdate()
 
     mouseX, mouseY := ebiten.CursorPosition()
@@ -2318,65 +2768,27 @@ func (combat *CombatScreen) Update() CombatState {
     combat.MouseTileX = int(math.Round(tileX))
     combat.MouseTileY = int(math.Round(tileY))
 
-    for _, unit := range combat.OtherUnits {
-        if combat.Counter % 6 == 0 {
-            unit.Animation.Next()
-        }
-    }
+    combat.UpdateAnimations()
 
     hudY := data.ScreenHeight - hudImage.Bounds().Dy()
 
-    if combat.DoSelectTile {
-        combat.MouseState = CombatCast
+    combat.ProcessEvents(yield)
 
-        if mouseY >= hudY {
-            combat.MouseState = CombatClickHud
-            return CombatStateRunning
-        }
-
-        if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) && mouseY < hudY {
-            combat.SelectTile(combat.MouseTileX, combat.MouseTileY)
-            combat.DoSelectTile = false
-        }
-
-        return CombatStateRunning
+    if len(combat.Projectiles) > 0 {
+        combat.doProjectiles(yield)
     }
 
-    if combat.DoSelectUnit {
-        combat.MouseState = CombatCast
+    if combat.SelectedUnit != nil && combat.IsAIControlled(combat.SelectedUnit) {
+        aiUnit := combat.SelectedUnit
 
-        if mouseY >= hudY {
-            combat.MouseState = CombatClickHud
-            return CombatStateRunning
+        // keep making choices until the unit runs out of moves
+        for aiUnit.MovesLeft.GreaterThan(fraction.FromInt(0)) {
+            combat.doAI(yield, aiUnit)
         }
-
-        unit := combat.GetUnit(combat.MouseTileX, combat.MouseTileY)
-        if unit == nil || (combat.SelectTeam != TeamEither && unit.Team != combat.SelectTeam) || !combat.CanTarget(unit){
-            combat.MouseState = CombatNotOk
-        }
-
-        if combat.CanTarget(unit) && inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) && mouseY < hudY {
-            // log.Printf("Click unit at %v,%v -> %v", combat.MouseTileX, combat.MouseTileY, unit)
-            if unit != nil && (combat.SelectTeam == TeamEither || unit.Team == combat.SelectTeam) {
-                combat.SelectTarget(unit)
-                combat.DoSelectUnit = false
-
-                // shouldn't need to set the mouse state here
-                combat.MouseState = CombatClickHud
-            }
-        }
-
+        aiUnit.LastTurn = combat.CurrentTurn
+        combat.NextUnit()
         return CombatStateRunning
     }
-
-    if combat.UpdateProjectiles() {
-        combat.UI.Disable()
-        return CombatStateRunning
-    }
-
-    combat.AttackHandler()
-
-    combat.UI.Enable()
 
     if combat.UI.GetHighestLayerValue() > 0 || mouseY >= hudY {
         combat.MouseState = CombatClickHud
@@ -2410,154 +2822,26 @@ func (combat *CombatScreen) Update() CombatState {
     // also don't allow clicks into the game if the ui is showing some overlay
     if combat.UI.GetHighestLayerValue() == 0 &&
        inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) &&
-       mouseY < hudY &&
-       combat.SelectedUnit.Moving == false && combat.SelectedUnit.Attacking == false {
+       mouseY < hudY {
 
         if combat.TileIsEmpty(combat.MouseTileX, combat.MouseTileY) && combat.CanMoveTo(combat.SelectedUnit, combat.MouseTileX, combat.MouseTileY){
             path, _ := combat.FindPath(combat.SelectedUnit, combat.MouseTileX, combat.MouseTileY)
-            // just be extremely sure that the last sound playing has stopped
-            if combat.SelectedUnit.DoneMovingFunc != nil {
-                combat.SelectedUnit.DoneMovingFunc()
-            }
-            combat.SelectedUnit.MovementTick = combat.Counter
-            combat.SelectedUnit.MovementPath = path[1:]
-            combat.SelectedUnit.Moving = true
-            combat.SelectedUnit.MoveX = float64(combat.SelectedUnit.X)
-            combat.SelectedUnit.MoveY = float64(combat.SelectedUnit.Y)
-
-            mover := combat.SelectedUnit
-            quit, cancel := context.WithCancel(context.Background())
-            mover.DoneMovingFunc = cancel
-
-            sound, err := audio.LoadSound(combat.Cache, mover.Unit.Unit.MovementSound.LbxIndex())
-            if err == nil {
-                // keep playing movement sound in a loop until the unit stops moving
-                go func(){
-                    // defer sound.Pause()
-                    for quit.Err() == nil {
-                        err = sound.Rewind()
-                        if err != nil {
-                            log.Printf("Unable to rewind sound for %v: %v", mover.Unit.Unit.MovementSound, err)
-                        }
-                        sound.Play()
-                        for sound.IsPlaying() {
-                            select {
-                                case <-quit.Done():
-                                    return
-                                case <-time.After(10 * time.Millisecond):
-                            }
-                        }
-                    }
-                }()
-            }
-       } else {
+            path = path[1:]
+            combat.doMoveUnit(yield, combat.SelectedUnit, path)
+        } else {
 
            defender := combat.GetUnit(combat.MouseTileX, combat.MouseTileY)
            attacker := combat.SelectedUnit
 
            // try a ranged attack first
            if defender != nil && combat.withinArrowRange(attacker, defender) && combat.canRangeAttack(attacker, defender) {
-               attacker.MovesLeft = attacker.MovesLeft.Subtract(fraction.FromInt(10))
-               if attacker.MovesLeft.LessThan(fraction.FromInt(0)) {
-                   attacker.MovesLeft = fraction.FromInt(0)
-               }
-
-               attacker.RangedAttacks -= 1
-
-               attacker.Facing = faceTowards(attacker.X, attacker.Y, defender.X, defender.Y)
-
-               combat.createRangeAttack(attacker, defender)
-
-               sound, err := audio.LoadSound(combat.Cache, attacker.Unit.Unit.RangeAttackSound.LbxIndex())
-               if err == nil {
-                   sound.Play()
-               }
+               combat.doRangeAttack(yield, attacker, defender)
            // then fall back to melee
            } else if defender != nil && defender.Team != attacker.Team && combat.withinMeleeRange(attacker, defender) && combat.canMeleeAttack(attacker, defender){
-               attacker.Attacking = true
-               // attacking takes 50% of movement points
-               // FIXME: in some cases an extra 0.5 movements points is lost, possibly due to counter attacks?
-               attacker.MovesLeft = attacker.MovesLeft.Subtract(fraction.FromInt(attacker.Unit.Unit.MovementSpeed).Divide(fraction.FromInt(2)))
-               if attacker.MovesLeft.LessThan(fraction.FromInt(0)) {
-                   attacker.MovesLeft = fraction.FromInt(0)
-               }
-
-               attacker.Facing = faceTowards(attacker.X, attacker.Y, defender.X, defender.Y)
-               defender.Facing = faceTowards(defender.X, defender.Y, attacker.X, attacker.Y)
-               defender.Defending = true
-
-               attackCounter := 60
-               combat.AttackHandler = func(){
-                   attackCounter -= 1
-
-                   if attackCounter == 20 {
-                       combat.meleeAttack(combat.SelectedUnit, defender)
-                   }
-
-                   if attackCounter <= 0 {
-                       attacker.Attacking = false
-                       defender.Defending = false
-                       combat.AttackHandler = func(){}
-                   }
-               }
-
-               // FIXME: sound is based on attacker type, and possibly defender type
-               sound, err := audio.LoadCombatSound(combat.Cache, attacker.Unit.Unit.AttackSound.LbxIndex())
-               if err == nil {
-                   sound.Play()
-               }
+               combat.doMelee(yield, attacker, defender)
+               attacker.Paths = make(map[image.Point]pathfinding.Path)
            }
        }
-    }
-
-    if combat.SelectedUnit != nil && combat.SelectedUnit.Moving {
-        targetX, targetY := combat.SelectedUnit.MovementPath[0].X, combat.SelectedUnit.MovementPath[0].Y
-
-        angle := math.Atan2(float64(targetY) - combat.SelectedUnit.MoveY, float64(targetX) - combat.SelectedUnit.MoveX)
-
-        // rotate by 45 degrees to get the on screen facing angle
-        // have to negate the angle because the y axis is flipped (higher y values are lower on the screen)
-        useAngle := -(angle - math.Pi/4)
-
-        // log.Printf("Angle: %v from (%v,%v) to (%v,%v)", useAngle, combat.SelectedUnit.X, combat.SelectedUnit.Y, combat.SelectedUnit.TargetX, combat.SelectedUnit.TargetY)
-
-        combat.SelectedUnit.Facing = computeFacing(useAngle)
-
-        // speed := float64(combat.Counter - combat.SelectedUnit.MovementTick) / 4
-        speed := float64(0.08)
-        combat.SelectedUnit.MoveX += math.Cos(angle) * speed
-        combat.SelectedUnit.MoveY += math.Sin(angle) * speed
-
-        // log.Printf("Moving %v,%v -> %v,%v", combat.SelectedUnit.X, combat.SelectedUnit.Y, combat.SelectedUnit.MoveX, combat.SelectedUnit.MoveY)
-
-        // if math.Abs(combat.SelectedUnit.MoveX - float64(targetX)) < speed*2 && math.Abs(combat.SelectedUnit.MoveY - float64(targetY)) < 0.5 {
-        if distanceInRange(combat.SelectedUnit.MoveX, combat.SelectedUnit.MoveY, float64(targetX), float64(targetY), speed * 3) ||
-           // a stop gap to ensure the unit doesn't fly off the screen somehow
-           distanceAboveRange(float64(combat.SelectedUnit.X), float64(combat.SelectedUnit.Y), float64(targetX), float64(targetY), 2.5) {
-
-            // tile where the unit came from is now empty
-            combat.Tiles[combat.SelectedUnit.Y][combat.SelectedUnit.X].Unit = nil
-
-            combat.SelectedUnit.MovesLeft = combat.SelectedUnit.MovesLeft.Subtract(pathCost(image.Pt(combat.SelectedUnit.X, combat.SelectedUnit.Y), image.Pt(targetX, targetY)))
-            if combat.SelectedUnit.MovesLeft.LessThan(fraction.FromInt(0)) {
-                combat.SelectedUnit.MovesLeft = fraction.FromInt(0)
-            }
-
-            combat.SelectedUnit.X = targetX
-            combat.SelectedUnit.Y = targetY
-            combat.SelectedUnit.MoveX = float64(targetX)
-            combat.SelectedUnit.MoveY = float64(targetY)
-            // new tile the unit landed on is now occupied
-            combat.Tiles[combat.SelectedUnit.Y][combat.SelectedUnit.X].Unit = combat.SelectedUnit
-            combat.SelectedUnit.MovementPath = combat.SelectedUnit.MovementPath[1:]
-
-            if len(combat.SelectedUnit.MovementPath) == 0 {
-                combat.SelectedUnit.Moving = false
-                combat.SelectedUnit.DoneMovingFunc()
-                // reset path computations
-                combat.SelectedUnit.Paths = make(map[image.Point]pathfinding.Path)
-            }
-        }
     }
 
     // the unit died or is out of moves
@@ -2567,15 +2851,6 @@ func (combat *CombatScreen) Update() CombatState {
     }
 
     // log.Printf("Mouse original %v,%v %v,%v -> %v,%v", mouseX, mouseY, tileX, tileY, combat.MouseTileX, combat.MouseTileY)
-
-    // defender wins in a tie
-    if len(combat.AttackingArmy.Units) == 0 {
-        return CombatStateDefenderWin
-    }
-
-    if len(combat.DefendingArmy.Units) == 0 {
-        return CombatStateAttackerWin
-    }
 
     return CombatStateRunning
 }

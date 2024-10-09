@@ -347,12 +347,13 @@ func (game *Game) InitializeResearchableSpells(spells *spellbook.Spells, player 
     }
 }
 
-func (game *Game) AddPlayer(wizard setup.WizardCustom) *playerlib.Player{
+func (game *Game) AddPlayer(wizard setup.WizardCustom, human bool) *playerlib.Player{
     newPlayer := &playerlib.Player{
         TaxRate: fraction.FromInt(1),
         ArcanusFog: game.MakeFog(),
         MyrrorFog: game.MakeFog(),
         Wizard: wizard,
+        Human: human,
         PowerDistribution: playerlib.PowerDistribution{
             Mana: 1.0/3,
             Research: 1.0/3,
@@ -1934,6 +1935,8 @@ func (game *Game) doMagicEncounter(yield coroutine.YieldFunc, player *playerlib.
 /* run the tactical combat screen. returns the combat state as a result (attackers win, defenders win, flee, etc)
  */
 func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player, attackerStack *playerlib.UnitStack, defender *playerlib.Player, defenderStack *playerlib.UnitStack) combat.CombatState {
+
+
     attackingArmy := combat.Army{
         Player: attacker,
     }
@@ -1964,7 +1967,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
 
     state := combat.CombatStateRunning
     for state == combat.CombatStateRunning {
-        state = combatScreen.Update()
+        state = combatScreen.Update(yield)
         yield()
     }
 

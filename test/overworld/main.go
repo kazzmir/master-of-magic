@@ -56,7 +56,7 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
 
     game.Plane = data.PlaneArcanus
 
-    player := game.AddPlayer(wizard)
+    player := game.AddPlayer(wizard, true)
 
     x, y := game.FindValidCityLocation()
 
@@ -89,7 +89,7 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
         _ = fireElemental
     }
 
-    player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, 30, 30, data.PlaneArcanus, wizard.Banner))
+    // player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, 30, 30, data.PlaneArcanus, wizard.Banner))
 
     stack := player.FindStackByUnit(drake)
     player.SetSelectedStack(stack)
@@ -99,10 +99,12 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
     enemy1 := game.AddPlayer(setup.WizardCustom{
         Name: "dingus",
         Banner: data.BannerRed,
-    })
+    }, false)
 
     enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.Warlocks, x + 2, y + 2, data.PlaneArcanus, enemy1.Wizard.Banner))
     enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenBowmen, x + 2, y + 2, data.PlaneArcanus, enemy1.Wizard.Banner))
+
+    game.CenterCamera(x, y)
 
     return game
 }
@@ -133,7 +135,7 @@ func createScenario2(cache *lbx.LbxCache) *gamelib.Game {
 
     game.Plane = data.PlaneArcanus
 
-    player := game.AddPlayer(wizard)
+    player := game.AddPlayer(wizard, true)
 
     introCity := citylib.MakeCity("Test City", 4, 5, data.RaceHighElf, player.TaxRate, game.BuildingInfo)
     introCity.Population = 6000
@@ -190,7 +192,7 @@ func createScenario3(cache *lbx.LbxCache) *gamelib.Game {
 
     game.Plane = data.PlaneArcanus
 
-    player := game.AddPlayer(wizard)
+    player := game.AddPlayer(wizard, true)
 
     x, y := game.FindValidCityLocation()
 
@@ -258,7 +260,7 @@ func createScenario4(cache *lbx.LbxCache) *gamelib.Game {
 
     game.Plane = data.PlaneArcanus
 
-    player := game.AddPlayer(wizard)
+    player := game.AddPlayer(wizard, true)
 
     x, y := game.FindValidCityLocation()
 
@@ -330,7 +332,7 @@ func createScenario5(cache *lbx.LbxCache) *gamelib.Game {
 
     game.Plane = data.PlaneArcanus
 
-    player := game.AddPlayer(wizard)
+    player := game.AddPlayer(wizard, true)
 
     x, y := game.FindValidCityLocation()
 
@@ -393,7 +395,7 @@ func createScenario6(cache *lbx.LbxCache) *gamelib.Game {
 
     game.Plane = data.PlaneArcanus
 
-    player := game.AddPlayer(wizard)
+    player := game.AddPlayer(wizard, true)
 
     x, y := game.FindValidCityLocation()
 
@@ -477,7 +479,7 @@ func createScenario7(cache *lbx.LbxCache) *gamelib.Game {
 
     game.Plane = data.PlaneArcanus
 
-    player := game.AddPlayer(wizard)
+    player := game.AddPlayer(wizard, true)
 
     for i := 0; i < 15; i++ {
         x, y := game.FindValidCityLocation()
@@ -535,7 +537,7 @@ func createScenario8(cache *lbx.LbxCache) *gamelib.Game {
 
     game.Plane = data.PlaneArcanus
 
-    player := game.AddPlayer(wizard)
+    player := game.AddPlayer(wizard, true)
 
     x, y := game.FindValidCityLocation()
 
@@ -610,7 +612,7 @@ func createScenario9(cache *lbx.LbxCache) *gamelib.Game {
 
     game.Plane = data.PlaneArcanus
 
-    player := game.AddPlayer(wizard)
+    player := game.AddPlayer(wizard, true)
 
     x, y := game.FindValidCityLocation()
 
@@ -686,7 +688,7 @@ func createScenario10(cache *lbx.LbxCache) *gamelib.Game {
 
     game.Plane = data.PlaneArcanus
 
-    player := game.AddPlayer(wizard)
+    player := game.AddPlayer(wizard, true)
 
     x, y := game.FindValidCityLocation()
 
@@ -762,7 +764,7 @@ func createScenario11(cache *lbx.LbxCache) *gamelib.Game {
 
     game.Plane = data.PlaneArcanus
 
-    player := game.AddPlayer(wizard)
+    player := game.AddPlayer(wizard, true)
 
     x, y := game.FindValidCityLocation()
 
@@ -829,7 +831,7 @@ func createScenario12(cache *lbx.LbxCache) *gamelib.Game {
 
     game.Plane = data.PlaneArcanus
 
-    player := game.AddPlayer(wizard)
+    player := game.AddPlayer(wizard, true)
 
     x, y := game.FindValidCityLocation()
 
@@ -899,7 +901,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
 
     game.Plane = data.PlaneArcanus
 
-    player := game.AddPlayer(wizard)
+    player := game.AddPlayer(wizard, true)
 
     player.CastingSkillPower += 500
 
@@ -970,7 +972,7 @@ func createScenario14(cache *lbx.LbxCache) *gamelib.Game {
 
     game.Plane = data.PlaneArcanus
 
-    player := game.AddPlayer(wizard)
+    player := game.AddPlayer(wizard, true)
 
     player.CastingSkillPower += 500
 
@@ -1071,7 +1073,7 @@ func createScenario15(cache *lbx.LbxCache) *gamelib.Game {
 
     game.Plane = data.PlaneArcanus
 
-    player := game.AddPlayer(wizard)
+    player := game.AddPlayer(wizard, true)
 
     x, y := game.FindValidCityLocation()
 
@@ -1113,7 +1115,7 @@ func createScenario15(cache *lbx.LbxCache) *gamelib.Game {
     enemy1 := game.AddPlayer(setup.WizardCustom{
         Name: "dingus",
         Banner: data.BannerRed,
-    })
+    }, false)
 
     enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.Warlocks, x + 2, y + 2, data.PlaneArcanus, enemy1.Wizard.Banner))
     enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenBowmen, x + 2, y + 2, data.PlaneArcanus, enemy1.Wizard.Banner))

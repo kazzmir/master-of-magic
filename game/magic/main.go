@@ -139,7 +139,7 @@ func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup
         game.Draw(screen)
     }
 
-    player := game.AddPlayer(wizard)
+    player := game.AddPlayer(wizard, true)
 
     cityX, cityY := game.FindValidCityLocation()
 

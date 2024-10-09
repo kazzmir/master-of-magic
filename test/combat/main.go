@@ -5,6 +5,7 @@ import (
     // "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/game/magic/combat"
     "github.com/kazzmir/master-of-magic/game/magic/units"
@@ -21,6 +22,7 @@ type Engine struct {
     LbxCache *lbx.LbxCache
     CombatScreen *combat.CombatScreen
     CombatEndScreen *combat.CombatEndScreen
+    Coroutine *coroutine.Coroutine
 }
 
 func createWarlockArmy(player *player.Player) combat.Army {
@@ -65,7 +67,7 @@ func createWarlockArmy(player *player.Player) combat.Army {
     }
 }
 
-func createWarlockArmyN(player *player.Player, count int) combat.Army {
+func createWarlockArmyN(player *player.Player, count int) *combat.Army {
     army := combat.Army{
         Player: player,
     }
@@ -77,7 +79,7 @@ func createWarlockArmyN(player *player.Player, count int) combat.Army {
         })
     }
 
-    return army
+    return &army
 }
 
 func createHighMenBowmanArmyN(player *player.Player, count int) combat.Army {
@@ -146,10 +148,11 @@ func NewEngine() (*Engine, error) {
             Name: "Lair",
             Banner: data.BannerBrown,
         },
+        Human: false,
     }
 
     // defendingArmy := createWarlockArmy(&defendingPlayer)
-    defendingArmy := createHighMenBowmanArmyN(&defendingPlayer, 9)
+    defendingArmy := createHighMenBowmanArmyN(&defendingPlayer, 3)
     defendingArmy.LayoutUnits(combat.TeamDefender)
 
     allSpells, err := spellbook.ReadSpellsFromCache(cache)
@@ -164,6 +167,7 @@ func NewEngine() (*Engine, error) {
             Banner: data.BannerGreen,
         },
         CastingSkillPower: 10,
+        Human: true,
     }
 
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Fireball"))
@@ -201,14 +205,25 @@ func NewEngine() (*Engine, error) {
     defendingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Air Elemental"))
     defendingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Fire Elemental"))
 
-    // attackingArmy := createGreatDrakeArmy(attackingPlayer)
-    attackingArmy := createWarlockArmyN(&attackingPlayer, 9)
+    // attackingArmy := createGreatDrakeArmy(&attackingPlayer)
+    attackingArmy := createWarlockArmyN(&attackingPlayer, 3)
     attackingArmy.LayoutUnits(combat.TeamAttacker)
+
+    combatScreen := combat.MakeCombatScreen(cache, &defendingArmy, attackingArmy, &attackingPlayer)
+
+    run := func(yield coroutine.YieldFunc) error {
+        for combatScreen.Update(yield) == combat.CombatStateRunning {
+            yield()
+        }
+
+        return ebiten.Termination
+    }
 
     return &Engine{
         LbxCache: cache,
-        CombatScreen: combat.MakeCombatScreen(cache, &defendingArmy, &attackingArmy, &defendingPlayer),
+        CombatScreen: combatScreen,
         CombatEndScreen: nil,
+        Coroutine: coroutine.MakeCoroutine(run),
     }, nil
 }
 
@@ -230,6 +245,10 @@ func (engine *Engine) Update() error {
                 return ebiten.Termination
         }
     } else {
+        if engine.Coroutine.Run() != nil {
+            return ebiten.Termination
+        }
+        /*
         switch engine.CombatScreen.Update() {
             case combat.CombatStateRunning:
             case combat.CombatStateAttackerWin:
@@ -241,6 +260,7 @@ func (engine *Engine) Update() error {
             case combat.CombatStateDone:
                 return ebiten.Termination
         }
+        */
     }
 
     return nil
