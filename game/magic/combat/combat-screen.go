@@ -582,8 +582,6 @@ type CombatScreen struct {
 
     OtherUnits []*CombatUnit
 
-    AttackHandler func()
-
     MouseState MouseState
 
     Mouse *mouse.MouseData
@@ -762,7 +760,6 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
         Mouse: mouseData,
         Turn: TeamDefender,
         CurrentTurn: 0,
-        AttackHandler: func(){},
         DefendingArmy: defendingArmy,
         TurnDefender: 0,
         AttackingArmy: attackingArmy,
@@ -2498,17 +2495,6 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
         combat.doProjectiles(yield)
     }
 
-    /*
-    if combat.UpdateProjectiles() {
-        combat.UI.Disable()
-        return CombatStateRunning
-    }
-    */
-
-    combat.AttackHandler()
-
-    // combat.UI.Enable()
-
     if combat.UI.GetHighestLayerValue() > 0 || mouseY >= hudY {
         combat.MouseState = CombatClickHud
     } else if combat.SelectedUnit != nil && combat.SelectedUnit.Moving {
@@ -2605,38 +2591,41 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
                }
            // then fall back to melee
            } else if defender != nil && defender.Team != attacker.Team && combat.withinMeleeRange(attacker, defender) && combat.canMeleeAttack(attacker, defender){
-               attacker.Attacking = true
-               // attacking takes 50% of movement points
-               // FIXME: in some cases an extra 0.5 movements points is lost, possibly due to counter attacks?
-               attacker.MovesLeft = attacker.MovesLeft.Subtract(fraction.FromInt(attacker.Unit.Unit.MovementSpeed).Divide(fraction.FromInt(2)))
-               if attacker.MovesLeft.LessThan(fraction.FromInt(0)) {
-                   attacker.MovesLeft = fraction.FromInt(0)
-               }
 
-               attacker.Facing = faceTowards(attacker.X, attacker.Y, defender.X, defender.Y)
-               defender.Facing = faceTowards(defender.X, defender.Y, attacker.X, attacker.Y)
-               defender.Defending = true
-
-               attackCounter := 60
-               combat.AttackHandler = func(){
-                   attackCounter -= 1
-
-                   if attackCounter == 20 {
-                       combat.meleeAttack(combat.SelectedUnit, defender)
-                   }
-
-                   if attackCounter <= 0 {
+               // create defer scope
+               func (){
+                   attacker.Attacking = true
+                   defender.Defending = true
+                   defer func(){
                        attacker.Attacking = false
                        defender.Defending = false
-                       combat.AttackHandler = func(){}
+                   }()
+                   // attacking takes 50% of movement points
+                   // FIXME: in some cases an extra 0.5 movements points is lost, possibly due to counter attacks?
+                   attacker.MovesLeft = attacker.MovesLeft.Subtract(fraction.FromInt(attacker.Unit.Unit.MovementSpeed).Divide(fraction.FromInt(2)))
+                   if attacker.MovesLeft.LessThan(fraction.FromInt(0)) {
+                       attacker.MovesLeft = fraction.FromInt(0)
                    }
-               }
 
-               // FIXME: sound is based on attacker type, and possibly defender type
-               sound, err := audio.LoadCombatSound(combat.Cache, attacker.Unit.Unit.AttackSound.LbxIndex())
-               if err == nil {
-                   sound.Play()
-               }
+                   attacker.Facing = faceTowards(attacker.X, attacker.Y, defender.X, defender.Y)
+                   defender.Facing = faceTowards(defender.X, defender.Y, attacker.X, attacker.Y)
+
+                   // FIXME: sound is based on attacker type, and possibly defender type
+                   sound, err := audio.LoadCombatSound(combat.Cache, attacker.Unit.Unit.AttackSound.LbxIndex())
+                   if err == nil {
+                       sound.Play()
+                   }
+
+                   for i := 0; i < 60; i++ {
+                       combat.Counter += 1
+
+                       if i == 20 {
+                           combat.meleeAttack(combat.SelectedUnit, defender)
+                       }
+
+                       yield()
+                   }
+               }()
            }
        }
     }

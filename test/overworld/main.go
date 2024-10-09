@@ -89,7 +89,7 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
         _ = fireElemental
     }
 
-    player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, 30, 30, data.PlaneArcanus, wizard.Banner))
+    // player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, 30, 30, data.PlaneArcanus, wizard.Banner))
 
     stack := player.FindStackByUnit(drake)
     player.SetSelectedStack(stack)
@@ -103,6 +103,8 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
 
     enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.Warlocks, x + 2, y + 2, data.PlaneArcanus, enemy1.Wizard.Banner))
     enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenBowmen, x + 2, y + 2, data.PlaneArcanus, enemy1.Wizard.Banner))
+
+    game.CenterCamera(x, y)
 
     return game
 }

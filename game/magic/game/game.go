@@ -1935,6 +1935,8 @@ func (game *Game) doMagicEncounter(yield coroutine.YieldFunc, player *playerlib.
 /* run the tactical combat screen. returns the combat state as a result (attackers win, defenders win, flee, etc)
  */
 func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player, attackerStack *playerlib.UnitStack, defender *playerlib.Player, defenderStack *playerlib.UnitStack) combat.CombatState {
+
+
     attackingArmy := combat.Army{
         Player: attacker,
     }
@@ -1966,6 +1968,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     state := combat.CombatStateRunning
     for state == combat.CombatStateRunning {
         state = combatScreen.Update(yield)
+        yield()
     }
 
     endScreen := combat.MakeCombatEndScreen(game.Cache, combatScreen, state == combat.CombatStateAttackerWin)

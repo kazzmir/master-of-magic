@@ -203,11 +203,11 @@ func NewEngine() (*Engine, error) {
     defendingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Air Elemental"))
     defendingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Fire Elemental"))
 
-    // attackingArmy := createGreatDrakeArmy(attackingPlayer)
-    attackingArmy := createWarlockArmyN(&attackingPlayer, 9)
+    attackingArmy := createGreatDrakeArmy(&attackingPlayer)
+    // attackingArmy := createWarlockArmyN(&attackingPlayer, 9)
     attackingArmy.LayoutUnits(combat.TeamAttacker)
 
-    combatScreen := combat.MakeCombatScreen(cache, &defendingArmy, &attackingArmy, &defendingPlayer)
+    combatScreen := combat.MakeCombatScreen(cache, &defendingArmy, attackingArmy, &defendingPlayer)
 
     run := func(yield coroutine.YieldFunc) error {
         for combatScreen.Update(yield) == combat.CombatStateRunning {
