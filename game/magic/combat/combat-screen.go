@@ -2535,15 +2535,15 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
 
             // defer scope
             func (){
-                path, _ := combat.FindPath(combat.SelectedUnit, combat.MouseTileX, combat.MouseTileY)
-
-                combat.SelectedUnit.MovementTick = combat.Counter
-                path = path[1:]
-                combat.SelectedUnit.Moving = true
-                combat.SelectedUnit.MoveX = float64(combat.SelectedUnit.X)
-                combat.SelectedUnit.MoveY = float64(combat.SelectedUnit.Y)
-
                 mover := combat.SelectedUnit
+                path, _ := combat.FindPath(mover, combat.MouseTileX, combat.MouseTileY)
+
+                path = path[1:]
+                mover.MovementTick = combat.Counter
+                mover.Moving = true
+                mover.MoveX = float64(mover.X)
+                mover.MoveY = float64(mover.Y)
+
                 quit, cancel := context.WithCancel(context.Background())
                 defer cancel()
 
@@ -2575,7 +2575,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
 
                     targetX, targetY := path[0].X, path[0].Y
 
-                    angle := math.Atan2(float64(targetY) - combat.SelectedUnit.MoveY, float64(targetX) - combat.SelectedUnit.MoveX)
+                    angle := math.Atan2(float64(targetY) - mover.MoveY, float64(targetX) - mover.MoveX)
 
                     // rotate by 45 degrees to get the on screen facing angle
                     // have to negate the angle because the y axis is flipped (higher y values are lower on the screen)
@@ -2583,42 +2583,42 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
 
                     // log.Printf("Angle: %v from (%v,%v) to (%v,%v)", useAngle, combat.SelectedUnit.X, combat.SelectedUnit.Y, combat.SelectedUnit.TargetX, combat.SelectedUnit.TargetY)
 
-                    combat.SelectedUnit.Facing = computeFacing(useAngle)
+                    mover.Facing = computeFacing(useAngle)
 
                     // speed := float64(combat.Counter - combat.SelectedUnit.MovementTick) / 4
                     speed := float64(0.08)
-                    combat.SelectedUnit.MoveX += math.Cos(angle) * speed
-                    combat.SelectedUnit.MoveY += math.Sin(angle) * speed
+                    mover.MoveX += math.Cos(angle) * speed
+                    mover.MoveY += math.Sin(angle) * speed
 
                     // log.Printf("Moving %v,%v -> %v,%v", combat.SelectedUnit.X, combat.SelectedUnit.Y, combat.SelectedUnit.MoveX, combat.SelectedUnit.MoveY)
 
                     // if math.Abs(combat.SelectedUnit.MoveX - float64(targetX)) < speed*2 && math.Abs(combat.SelectedUnit.MoveY - float64(targetY)) < 0.5 {
-                    if distanceInRange(combat.SelectedUnit.MoveX, combat.SelectedUnit.MoveY, float64(targetX), float64(targetY), speed * 3) ||
+                    if distanceInRange(mover.MoveX, mover.MoveY, float64(targetX), float64(targetY), speed * 3) ||
                        // a stop gap to ensure the unit doesn't fly off the screen somehow
-                       distanceAboveRange(float64(combat.SelectedUnit.X), float64(combat.SelectedUnit.Y), float64(targetX), float64(targetY), 2.5) {
+                       distanceAboveRange(float64(mover.X), float64(mover.Y), float64(targetX), float64(targetY), 2.5) {
 
                         // tile where the unit came from is now empty
-                        combat.Tiles[combat.SelectedUnit.Y][combat.SelectedUnit.X].Unit = nil
+                        combat.Tiles[mover.Y][mover.X].Unit = nil
 
-                        combat.SelectedUnit.MovesLeft = combat.SelectedUnit.MovesLeft.Subtract(pathCost(image.Pt(combat.SelectedUnit.X, combat.SelectedUnit.Y), image.Pt(targetX, targetY)))
-                        if combat.SelectedUnit.MovesLeft.LessThan(fraction.FromInt(0)) {
-                            combat.SelectedUnit.MovesLeft = fraction.FromInt(0)
+                        mover.MovesLeft = mover.MovesLeft.Subtract(pathCost(image.Pt(mover.X, mover.Y), image.Pt(targetX, targetY)))
+                        if mover.MovesLeft.LessThan(fraction.FromInt(0)) {
+                            mover.MovesLeft = fraction.FromInt(0)
                         }
 
-                        combat.SelectedUnit.X = targetX
-                        combat.SelectedUnit.Y = targetY
-                        combat.SelectedUnit.MoveX = float64(targetX)
-                        combat.SelectedUnit.MoveY = float64(targetY)
+                        mover.X = targetX
+                        mover.Y = targetY
+                        mover.MoveX = float64(targetX)
+                        mover.MoveY = float64(targetY)
                         // new tile the unit landed on is now occupied
-                        combat.Tiles[combat.SelectedUnit.Y][combat.SelectedUnit.X].Unit = combat.SelectedUnit
+                        combat.Tiles[mover.Y][mover.X].Unit = mover
                         path = path[1:]
                     }
 
                     yield()
                 }
 
-                combat.SelectedUnit.Moving = false
-                combat.SelectedUnit.Paths = make(map[image.Point]pathfinding.Path)
+                mover.Moving = false
+                mover.Paths = make(map[image.Point]pathfinding.Path)
             }()
 
        } else {
