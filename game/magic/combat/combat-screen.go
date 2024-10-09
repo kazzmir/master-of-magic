@@ -46,6 +46,14 @@ type CombatEventSelectTile struct {
     SelectTile func(int, int)
 }
 
+type CombatEventSelectUnit struct {
+    Selecter Team
+    Spell spellbook.Spell
+    SelectTarget func(*ArmyUnit)
+    CanTarget func(*ArmyUnit) bool
+    SelectTeam Team
+}
+
 type Team int
 
 const (
@@ -615,10 +623,12 @@ type CombatScreen struct {
     // if true then the player should select a unit to cast a spell on
     DoSelectUnit bool
     // which team to pick a unit from
-    SelectTeam Team
+    // SelectTeam Team
     // invoke this function on the unit that is selected
+    /*
     SelectTarget func(*ArmyUnit)
     CanTarget func(*ArmyUnit) bool
+    */
 }
 
 func makeTiles(width int, height int) [][]Tile {
@@ -1309,6 +1319,11 @@ func (combat *CombatScreen) CreateDemon(player *playerlib.Player, x int, y int) 
 func (combat *CombatScreen) DoTargetUnitSpell(player *playerlib.Player, spell spellbook.Spell, targetKind Targeting, onTarget func(*ArmyUnit), canTarget func(*ArmyUnit) bool) {
     teamAttacked := TeamAttacker
 
+    selecter := TeamAttacker
+    if player == combat.DefendingArmy.Player {
+        selecter = TeamDefender
+    }
+
     if targetKind == TargetFriend {
         /* if the player is the defender and we are targeting a friend then the team should be the defenders */
         if combat.DefendingArmy.Player == player {
@@ -1325,67 +1340,26 @@ func (combat *CombatScreen) DoTargetUnitSpell(player *playerlib.Player, spell sp
 
     // log.Printf("Create sound for spell %v: %v", spell.Name, spell.Sound)
 
-    x := 250
-    if player == combat.DefendingArmy.Player {
-        x = 3
-    }
+    event := &CombatEventSelectUnit{
+        Selecter: selecter,
+        Spell: spell,
+        SelectTeam: teamAttacked,
+        CanTarget: canTarget,
+        SelectTarget: func(target *ArmyUnit){
+            sound, err := audio.LoadSound(combat.Cache, spell.Sound)
+            if err == nil {
+                sound.Play()
+            } else {
+                log.Printf("No such sound %v for %v: %v", spell.Sound, spell.Name, err)
+            }
 
-    y := 168
-
-    var elements []*uilib.UIElement
-
-    removeElements := func(){
-        combat.UI.RemoveElements(elements)
-    }
-
-    selectElement := &uilib.UIElement{
-        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            combat.WhiteFont.PrintWrap(screen, float64(x), float64(y), 75, 1, ebiten.ColorScale{}, fmt.Sprintf("Select a target for a %v spell.", spell.Name))
+            onTarget(target)
         },
     }
 
-    cancelImages, _ := combat.ImageCache.GetImages("compix.lbx", 22)
-    cancelRect := image.Rect(0, 0, cancelImages[0].Bounds().Dx(), cancelImages[0].Bounds().Dy()).Add(image.Point{x + 15, y + 15})
-    cancelIndex := 0
-    cancelElement := &uilib.UIElement{
-        Rect: cancelRect,
-        LeftClick: func(element *uilib.UIElement){
-            cancelIndex = 1
-        },
-        LeftClickRelease: func(element *uilib.UIElement){
-            cancelIndex = 0
-            combat.DoSelectUnit = false
-            combat.SelectTarget = func(target *ArmyUnit){}
-            combat.CanTarget = func(target *ArmyUnit) bool { return false }
-            removeElements()
-        },
-        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            var options ebiten.DrawImageOptions
-            options.GeoM.Translate(float64(cancelRect.Min.X), float64(cancelRect.Min.Y))
-            screen.DrawImage(cancelImages[cancelIndex], &options)
-        },
-    }
-
-    elements = append(elements, selectElement, cancelElement)
-
-    combat.UI.AddElements(elements)
-
-    combat.DoSelectUnit = true
-    combat.SelectTeam = teamAttacked
-    combat.CanTarget = canTarget
-    combat.SelectTarget = func(target *ArmyUnit){
-        sound, err := audio.LoadSound(combat.Cache, spell.Sound)
-        if err == nil {
-            sound.Play()
-        } else {
-            log.Printf("No such sound %v for %v: %v", spell.Sound, spell.Name, err)
-        }
-
-        removeElements()
-        onTarget(target)
-
-        combat.SelectTarget = func(*ArmyUnit){}
-        combat.CanTarget = func(*ArmyUnit) bool { return false }
+    select {
+        case combat.Events <- event:
+        default:
     }
 }
 
@@ -2333,7 +2307,6 @@ func (combat *CombatScreen) doSelectTile(yield coroutine.YieldFunc, selectTile f
 
     hudImage, _ := combat.ImageCache.GetImage("cmbtfx.lbx", 28, 0)
 
-
     hudY := data.ScreenHeight - hudImage.Bounds().Dy()
 
     for {
@@ -2366,6 +2339,103 @@ func (combat *CombatScreen) doSelectTile(yield coroutine.YieldFunc, selectTile f
     }
 }
 
+func (combat *CombatScreen) doSelectUnit(yield coroutine.YieldFunc, selecter Team, spell spellbook.Spell, selectTarget func (*ArmyUnit), canTarget func (*ArmyUnit) bool, selectTeam Team) {
+    combat.DoSelectUnit = true
+    defer func(){
+        combat.DoSelectUnit = false
+    }()
+
+    hudImage, _ := combat.ImageCache.GetImage("cmbtfx.lbx", 28, 0)
+
+    hudY := data.ScreenHeight - hudImage.Bounds().Dy()
+
+    x := 250
+    if selecter == TeamDefender {
+        x = 3
+    }
+
+    y := 168
+
+    var elements []*uilib.UIElement
+
+    removeElements := func(){
+        combat.UI.RemoveElements(elements)
+    }
+
+    defer removeElements()
+
+    selectElement := &uilib.UIElement{
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            combat.WhiteFont.PrintWrap(screen, float64(x), float64(y), 75, 1, ebiten.ColorScale{}, fmt.Sprintf("Select a target for a %v spell.", spell.Name))
+        },
+    }
+
+    quit := false
+
+    cancelImages, _ := combat.ImageCache.GetImages("compix.lbx", 22)
+    cancelRect := image.Rect(0, 0, cancelImages[0].Bounds().Dx(), cancelImages[0].Bounds().Dy()).Add(image.Point{x + 15, y + 15})
+    cancelIndex := 0
+    cancelElement := &uilib.UIElement{
+        Rect: cancelRect,
+        LeftClick: func(element *uilib.UIElement){
+            cancelIndex = 1
+        },
+        LeftClickRelease: func(element *uilib.UIElement){
+            cancelIndex = 0
+            quit = true
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(cancelRect.Min.X), float64(cancelRect.Min.Y))
+            screen.DrawImage(cancelImages[cancelIndex], &options)
+        },
+    }
+
+    elements = append(elements, selectElement, cancelElement)
+
+    combat.UI.AddElements(elements)
+
+    for !quit {
+        combat.Counter += 1
+
+        for _, unit := range combat.OtherUnits {
+            if combat.Counter % 6 == 0 {
+                unit.Animation.Next()
+            }
+        }
+
+        combat.UI.StandardUpdate()
+        mouseX, mouseY := ebiten.CursorPosition()
+        tileX, tileY := combat.ScreenToTile.Apply(float64(mouseX), float64(mouseY))
+        combat.MouseTileX = int(math.Round(tileX))
+        combat.MouseTileY = int(math.Round(tileY))
+
+        combat.MouseState = CombatCast
+
+        if mouseY >= hudY {
+            combat.MouseState = CombatClickHud
+        } else {
+            unit := combat.GetUnit(combat.MouseTileX, combat.MouseTileY)
+            if unit == nil || (selectTeam != TeamEither && unit.Team != selectTeam) || !canTarget(unit){
+                combat.MouseState = CombatNotOk
+            }
+
+            if canTarget(unit) && inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) && mouseY < hudY {
+                // log.Printf("Click unit at %v,%v -> %v", combat.MouseTileX, combat.MouseTileY, unit)
+                if unit != nil && (selectTeam == TeamEither || unit.Team == selectTeam) {
+                    selectTarget(unit)
+
+                    // shouldn't need to set the mouse state here
+                    combat.MouseState = CombatClickHud
+                    return
+                }
+            }
+        }
+
+        yield()
+    }
+}
+
 func (combat *CombatScreen) ProcessEvents(yield coroutine.YieldFunc) {
     for {
         select {
@@ -2374,6 +2444,9 @@ func (combat *CombatScreen) ProcessEvents(yield coroutine.YieldFunc) {
                     case *CombatEventSelectTile:
                         use := event.(*CombatEventSelectTile)
                         combat.doSelectTile(yield, use.SelectTile)
+                    case *CombatEventSelectUnit:
+                        use := event.(*CombatEventSelectUnit)
+                        combat.doSelectUnit(yield, use.Selecter, use.Spell, use.SelectTarget, use.CanTarget, use.SelectTeam)
                 }
             default:
                 return
@@ -2418,7 +2491,6 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
 
         return CombatStateRunning
     }
-    */
 
     if combat.DoSelectUnit {
         combat.MouseState = CombatCast
@@ -2446,6 +2518,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
 
         return CombatStateRunning
     }
+    */
 
     if combat.UpdateProjectiles() {
         combat.UI.Disable()
