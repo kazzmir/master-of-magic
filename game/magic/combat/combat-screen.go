@@ -2546,6 +2546,25 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
     mover.Paths = make(map[image.Point]pathfinding.Path)
 }
 
+func (combat *CombatScreen) doRangeAttack(attacker *ArmyUnit, defender *ArmyUnit){
+    attacker.MovesLeft = attacker.MovesLeft.Subtract(fraction.FromInt(10))
+    if attacker.MovesLeft.LessThan(fraction.FromInt(0)) {
+        attacker.MovesLeft = fraction.FromInt(0)
+    }
+
+    attacker.RangedAttacks -= 1
+
+    attacker.Facing = faceTowards(attacker.X, attacker.Y, defender.X, defender.Y)
+
+    // FIXME: could use a for/yield loop here to update projectiles
+    combat.createRangeAttack(attacker, defender)
+
+    sound, err := audio.LoadSound(combat.Cache, attacker.Unit.Unit.RangeAttackSound.LbxIndex())
+    if err == nil {
+        sound.Play()
+    }
+}
+
 func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUnit, defender *ArmyUnit){
     // create defer scope
     attacker.Attacking = true
@@ -2778,22 +2797,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
 
            // try a ranged attack first
            if defender != nil && combat.withinArrowRange(attacker, defender) && combat.canRangeAttack(attacker, defender) {
-               attacker.MovesLeft = attacker.MovesLeft.Subtract(fraction.FromInt(10))
-               if attacker.MovesLeft.LessThan(fraction.FromInt(0)) {
-                   attacker.MovesLeft = fraction.FromInt(0)
-               }
-
-               attacker.RangedAttacks -= 1
-
-               attacker.Facing = faceTowards(attacker.X, attacker.Y, defender.X, defender.Y)
-
-               // FIXME: could use a for/yield loop here to update projectiles
-               combat.createRangeAttack(attacker, defender)
-
-               sound, err := audio.LoadSound(combat.Cache, attacker.Unit.Unit.RangeAttackSound.LbxIndex())
-               if err == nil {
-                   sound.Play()
-               }
+               combat.doRangeAttack(attacker, defender)
            // then fall back to melee
            } else if defender != nil && defender.Team != attacker.Team && combat.withinMeleeRange(attacker, defender) && combat.canMeleeAttack(attacker, defender){
                combat.doMelee(yield, attacker, defender)
