@@ -2474,6 +2474,92 @@ func (combat *CombatScreen) UpdateAnimations(){
     }
 }
 
+func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUnit, x int, y int){
+    path, _ := combat.FindPath(mover, x, y)
+
+    path = path[1:]
+    mover.MovementTick = combat.Counter
+    mover.Moving = true
+    mover.MoveX = float64(mover.X)
+    mover.MoveY = float64(mover.Y)
+
+    quit, cancel := context.WithCancel(context.Background())
+    defer cancel()
+
+    sound, err := audio.LoadSound(combat.Cache, mover.Unit.Unit.MovementSound.LbxIndex())
+    if err == nil {
+        // keep playing movement sound in a loop until the unit stops moving
+        go func(){
+            // defer sound.Pause()
+            for quit.Err() == nil {
+                err = sound.Rewind()
+                if err != nil {
+                    log.Printf("Unable to rewind sound for %v: %v", mover.Unit.Unit.MovementSound, err)
+                }
+                sound.Play()
+                for sound.IsPlaying() {
+                    select {
+                    case <-quit.Done():
+                        return
+                    case <-time.After(10 * time.Millisecond):
+                    }
+                }
+            }
+        }()
+    }
+
+    for len(path) > 0 {
+        combat.UpdateAnimations()
+        combat.Counter += 1
+
+        targetX, targetY := path[0].X, path[0].Y
+
+        angle := math.Atan2(float64(targetY) - mover.MoveY, float64(targetX) - mover.MoveX)
+
+        // rotate by 45 degrees to get the on screen facing angle
+        // have to negate the angle because the y axis is flipped (higher y values are lower on the screen)
+        useAngle := -(angle - math.Pi/4)
+
+        // log.Printf("Angle: %v from (%v,%v) to (%v,%v)", useAngle, combat.SelectedUnit.X, combat.SelectedUnit.Y, combat.SelectedUnit.TargetX, combat.SelectedUnit.TargetY)
+
+        mover.Facing = computeFacing(useAngle)
+
+        // speed := float64(combat.Counter - combat.SelectedUnit.MovementTick) / 4
+        speed := float64(0.08)
+        mover.MoveX += math.Cos(angle) * speed
+        mover.MoveY += math.Sin(angle) * speed
+
+        // log.Printf("Moving %v,%v -> %v,%v", combat.SelectedUnit.X, combat.SelectedUnit.Y, combat.SelectedUnit.MoveX, combat.SelectedUnit.MoveY)
+
+        // if math.Abs(combat.SelectedUnit.MoveX - float64(targetX)) < speed*2 && math.Abs(combat.SelectedUnit.MoveY - float64(targetY)) < 0.5 {
+        if distanceInRange(mover.MoveX, mover.MoveY, float64(targetX), float64(targetY), speed * 3) ||
+        // a stop gap to ensure the unit doesn't fly off the screen somehow
+        distanceAboveRange(float64(mover.X), float64(mover.Y), float64(targetX), float64(targetY), 2.5) {
+
+            // tile where the unit came from is now empty
+            combat.Tiles[mover.Y][mover.X].Unit = nil
+
+            mover.MovesLeft = mover.MovesLeft.Subtract(pathCost(image.Pt(mover.X, mover.Y), image.Pt(targetX, targetY)))
+            if mover.MovesLeft.LessThan(fraction.FromInt(0)) {
+                mover.MovesLeft = fraction.FromInt(0)
+            }
+
+            mover.X = targetX
+            mover.Y = targetY
+            mover.MoveX = float64(targetX)
+            mover.MoveY = float64(targetY)
+            // new tile the unit landed on is now occupied
+            combat.Tiles[mover.Y][mover.X].Unit = mover
+            path = path[1:]
+        }
+
+        yield()
+    }
+
+    mover.Moving = false
+    mover.Paths = make(map[image.Point]pathfinding.Path)
+}
+
 func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
     combat.Counter += 1
     combat.UI.StandardUpdate()
@@ -2532,95 +2618,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
        mouseY < hudY {
 
         if combat.TileIsEmpty(combat.MouseTileX, combat.MouseTileY) && combat.CanMoveTo(combat.SelectedUnit, combat.MouseTileX, combat.MouseTileY){
-
-            // defer scope
-            func (){
-                mover := combat.SelectedUnit
-                path, _ := combat.FindPath(mover, combat.MouseTileX, combat.MouseTileY)
-
-                path = path[1:]
-                mover.MovementTick = combat.Counter
-                mover.Moving = true
-                mover.MoveX = float64(mover.X)
-                mover.MoveY = float64(mover.Y)
-
-                quit, cancel := context.WithCancel(context.Background())
-                defer cancel()
-
-                sound, err := audio.LoadSound(combat.Cache, mover.Unit.Unit.MovementSound.LbxIndex())
-                if err == nil {
-                    // keep playing movement sound in a loop until the unit stops moving
-                    go func(){
-                        // defer sound.Pause()
-                        for quit.Err() == nil {
-                            err = sound.Rewind()
-                            if err != nil {
-                                log.Printf("Unable to rewind sound for %v: %v", mover.Unit.Unit.MovementSound, err)
-                            }
-                            sound.Play()
-                            for sound.IsPlaying() {
-                                select {
-                                    case <-quit.Done():
-                                        return
-                                    case <-time.After(10 * time.Millisecond):
-                                }
-                            }
-                        }
-                    }()
-                }
-
-                for len(path) > 0 {
-                    combat.UpdateAnimations()
-                    combat.Counter += 1
-
-                    targetX, targetY := path[0].X, path[0].Y
-
-                    angle := math.Atan2(float64(targetY) - mover.MoveY, float64(targetX) - mover.MoveX)
-
-                    // rotate by 45 degrees to get the on screen facing angle
-                    // have to negate the angle because the y axis is flipped (higher y values are lower on the screen)
-                    useAngle := -(angle - math.Pi/4)
-
-                    // log.Printf("Angle: %v from (%v,%v) to (%v,%v)", useAngle, combat.SelectedUnit.X, combat.SelectedUnit.Y, combat.SelectedUnit.TargetX, combat.SelectedUnit.TargetY)
-
-                    mover.Facing = computeFacing(useAngle)
-
-                    // speed := float64(combat.Counter - combat.SelectedUnit.MovementTick) / 4
-                    speed := float64(0.08)
-                    mover.MoveX += math.Cos(angle) * speed
-                    mover.MoveY += math.Sin(angle) * speed
-
-                    // log.Printf("Moving %v,%v -> %v,%v", combat.SelectedUnit.X, combat.SelectedUnit.Y, combat.SelectedUnit.MoveX, combat.SelectedUnit.MoveY)
-
-                    // if math.Abs(combat.SelectedUnit.MoveX - float64(targetX)) < speed*2 && math.Abs(combat.SelectedUnit.MoveY - float64(targetY)) < 0.5 {
-                    if distanceInRange(mover.MoveX, mover.MoveY, float64(targetX), float64(targetY), speed * 3) ||
-                       // a stop gap to ensure the unit doesn't fly off the screen somehow
-                       distanceAboveRange(float64(mover.X), float64(mover.Y), float64(targetX), float64(targetY), 2.5) {
-
-                        // tile where the unit came from is now empty
-                        combat.Tiles[mover.Y][mover.X].Unit = nil
-
-                        mover.MovesLeft = mover.MovesLeft.Subtract(pathCost(image.Pt(mover.X, mover.Y), image.Pt(targetX, targetY)))
-                        if mover.MovesLeft.LessThan(fraction.FromInt(0)) {
-                            mover.MovesLeft = fraction.FromInt(0)
-                        }
-
-                        mover.X = targetX
-                        mover.Y = targetY
-                        mover.MoveX = float64(targetX)
-                        mover.MoveY = float64(targetY)
-                        // new tile the unit landed on is now occupied
-                        combat.Tiles[mover.Y][mover.X].Unit = mover
-                        path = path[1:]
-                    }
-
-                    yield()
-                }
-
-                mover.Moving = false
-                mover.Paths = make(map[image.Point]pathfinding.Path)
-            }()
-
+            combat.doMoveUnit(yield, combat.SelectedUnit, combat.MouseTileX, combat.MouseTileY)
        } else {
 
            defender := combat.GetUnit(combat.MouseTileX, combat.MouseTileY)
