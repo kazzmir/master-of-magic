@@ -2613,11 +2613,10 @@ func (combat *CombatScreen) GetOtherArmy(unit *ArmyUnit) *Army {
     return combat.DefendingArmy
 }
 
-func (combat *CombatScreen) doAI(yield coroutine.YieldFunc) {
+func (combat *CombatScreen) doAI(yield coroutine.YieldFunc, aiUnit *ArmyUnit) {
     // aiArmy := combat.GetArmy(combat.SelectedUnit)
-    otherArmy := combat.GetOtherArmy(combat.SelectedUnit)
+    otherArmy := combat.GetOtherArmy(aiUnit)
 
-    aiUnit := combat.SelectedUnit
     aiUnit.Paths = make(map[image.Point]pathfinding.Path)
 
     // if the selected unit has ranged attacks, then try to use that
@@ -2674,6 +2673,7 @@ func (combat *CombatScreen) doAI(yield coroutine.YieldFunc) {
         // a path of length 2 contains the position of the aiUnit and the position of the enemy, so they are right next to each other
         if len(path) == 2 && combat.canMeleeAttack(aiUnit, closestEnemy) {
             combat.doMelee(yield, aiUnit, closestEnemy)
+            return
         } else if len(path) > 2 {
             // ignore path[0], thats where we are now. also ignore the last element, since we can't move onto the enemy
 
@@ -2722,11 +2722,13 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
     }
 
     if combat.SelectedUnit != nil && combat.IsAIControlled(combat.SelectedUnit) {
+        aiUnit := combat.SelectedUnit
+
         // keep making choices until the unit runs out of moves
-        for combat.SelectedUnit.MovesLeft.GreaterThan(fraction.FromInt(0)) {
-            combat.doAI(yield)
+        for aiUnit.MovesLeft.GreaterThan(fraction.FromInt(0)) {
+            combat.doAI(yield, aiUnit)
         }
-        combat.SelectedUnit.LastTurn = combat.CurrentTurn
+        aiUnit.LastTurn = combat.CurrentTurn
         combat.NextUnit()
         return CombatStateRunning
     }
