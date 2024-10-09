@@ -2625,6 +2625,8 @@ func (combat *CombatScreen) doAI(yield coroutine.YieldFunc) {
         return cmp.Compare(distanceA, distanceB)
     })
 
+    aiUnit.Paths = make(map[image.Point]pathfinding.Path)
+
     // find a path to some enemy
     for _, closestEnemy := range candidates {
         // pretend that there is no unit at the tile. this is a sin of the highest order
@@ -2649,7 +2651,7 @@ func (combat *CombatScreen) doAI(yield coroutine.YieldFunc) {
                 }
             }
 
-            if lastIndex >= 1 && lastIndex < len(path) {
+            if lastIndex >= 1 && lastIndex <= len(path) {
                 combat.doMoveUnit(yield, aiUnit, path[1:lastIndex])
                 break
             }
@@ -2749,6 +2751,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
            // then fall back to melee
            } else if defender != nil && defender.Team != attacker.Team && combat.withinMeleeRange(attacker, defender) && combat.canMeleeAttack(attacker, defender){
                combat.doMelee(yield, attacker, defender)
+               attacker.Paths = make(map[image.Point]pathfinding.Path)
            }
        }
     }
