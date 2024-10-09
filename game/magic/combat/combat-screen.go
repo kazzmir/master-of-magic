@@ -2253,6 +2253,10 @@ func (combat *CombatScreen) RemoveUnit(unit *ArmyUnit){
     }
 
     combat.Tiles[unit.Y][unit.X].Unit = nil
+
+    if unit == combat.SelectedUnit {
+        combat.NextUnit()
+    }
 }
 
 func (combat *CombatScreen) doSelectTile(yield coroutine.YieldFunc, selecter Team, spell spellbook.Spell, selectTile func(int, int)) {
@@ -2772,7 +2776,6 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
 
     if len(combat.Projectiles) > 0 {
         combat.doProjectiles(yield)
-        // FIXME: if current unit dies then reset selected unit
     }
 
     if combat.SelectedUnit != nil && combat.IsAIControlled(combat.SelectedUnit) {
