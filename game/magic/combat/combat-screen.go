@@ -566,6 +566,11 @@ type CombatScreen struct {
 
     MouseState MouseState
 
+    // track how many units were killed on each side, so experience
+    // can be given out after combat ends
+    DefeatedDefenders int
+    DefeatedAttackers int
+
     Mouse *mouse.MouseData
 
     Turn Team
@@ -2247,8 +2252,10 @@ func (combat *CombatScreen) createRangeAttack(attacker *ArmyUnit, defender *Army
 
 func (combat *CombatScreen) RemoveUnit(unit *ArmyUnit){
     if unit.Team == TeamDefender {
+        combat.DefeatedDefenders += 1
         combat.DefendingArmy.RemoveUnit(unit)
     } else {
+        combat.DefeatedAttackers += 1
         combat.AttackingArmy.RemoveUnit(unit)
     }
 

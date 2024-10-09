@@ -1982,6 +1982,16 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
         yield()
     }
 
+    if state == combat.CombatStateAttackerWin {
+        for _, unit := range attackerStack.Units() {
+            unit.Experience += combatScreen.DefeatedDefenders * 2
+        }
+    } else if state == combat.CombatStateDefenderWin {
+        for _, unit := range defenderStack.Units() {
+            unit.Experience += combatScreen.DefeatedAttackers * 2
+        }
+    }
+
     ebiten.SetCursorMode(ebiten.CursorModeVisible)
     game.Drawer = oldDrawer
 
