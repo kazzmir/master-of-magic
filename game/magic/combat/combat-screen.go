@@ -2728,10 +2728,13 @@ func (combat *CombatScreen) doAI(yield coroutine.YieldFunc, aiUnit *ArmyUnit) {
 
             if lastIndex >= 1 && lastIndex <= len(path) {
                 combat.doMoveUnit(yield, aiUnit, path[1:lastIndex])
-                break
+                return
             }
         }
     }
+
+    // didn't make a choice, just exhaust moves left
+    aiUnit.MovesLeft = fraction.FromInt(0)
 }
 
 func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
