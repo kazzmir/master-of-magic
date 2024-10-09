@@ -1984,11 +1984,15 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
 
     if state == combat.CombatStateAttackerWin {
         for _, unit := range attackerStack.Units() {
-            unit.Experience += combatScreen.DefeatedDefenders * 2
+            if unit.Unit.Race != data.RaceFantastic {
+                unit.Experience += combatScreen.DefeatedDefenders * 2
+            }
         }
     } else if state == combat.CombatStateDefenderWin {
         for _, unit := range defenderStack.Units() {
-            unit.Experience += combatScreen.DefeatedAttackers * 2
+            if unit.Unit.Race != data.RaceFantastic {
+                unit.Experience += combatScreen.DefeatedAttackers * 2
+            }
         }
     }
 
@@ -3143,7 +3147,9 @@ func (game *Game) DoNextTurn(){
 
             // every unit gains 1 experience at each turn
             for _, unit := range stack.Units() {
-                unit.Experience += 1
+                if unit.Unit.Race != data.RaceFantastic {
+                    unit.Experience += 1
+                }
             }
 
             stack.NaturalHeal()
