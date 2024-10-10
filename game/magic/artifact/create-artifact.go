@@ -108,8 +108,66 @@ type Artifact struct {
     Powers []Power
 }
 
-func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCache, powerFont *font.Font, powerGroups [][]Power) []*uilib.UIElement {
+func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCache, powerFont *font.Font, picLow int, picHigh int, powerGroups [][]Power) []*uilib.UIElement {
     var elements []*uilib.UIElement
+
+    currentPicture := picLow
+
+    elements = append(elements, &uilib.UIElement{
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(7, 6)
+            image, _ := imageCache.GetImage("items.lbx", currentPicture, 0)
+            screen.DrawImage(image, &options)
+        },
+    })
+
+    leftIndex := 0
+    leftImages, _ := imageCache.GetImages("spellscr.lbx", 35)
+    leftRect := util.ImageRect(5, 24, leftImages[leftIndex])
+    elements = append(elements, &uilib.UIElement{
+        Rect: leftRect,
+        LeftClick: func(element *uilib.UIElement){
+            leftIndex = 1
+        },
+        LeftClickRelease: func(element *uilib.UIElement){
+            leftIndex = 0
+            currentPicture = currentPicture - 1
+            if currentPicture < picLow {
+                currentPicture = picHigh
+            }
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(leftRect.Min.X), float64(leftRect.Min.Y))
+            image := leftImages[leftIndex]
+            screen.DrawImage(image, &options)
+        },
+    })
+
+    rightIndex := 0
+    rightImages, _ := imageCache.GetImages("spellscr.lbx", 36)
+    rightRect := util.ImageRect(17, 24, leftImages[rightIndex])
+    elements = append(elements, &uilib.UIElement{
+        Rect: rightRect,
+        LeftClick: func(element *uilib.UIElement){
+            rightIndex = 1
+        },
+        LeftClickRelease: func(element *uilib.UIElement){
+            rightIndex = 0
+            currentPicture = currentPicture + 1
+            if currentPicture > picHigh {
+                currentPicture = picLow
+            }
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(rightRect.Min.X), float64(rightRect.Min.Y))
+            image := rightImages[rightIndex]
+            screen.DrawImage(image, &options)
+        },
+    })
+
     x := 7
     y := 40
     selectCount := 0
@@ -233,11 +291,11 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, dr
     powers := make(map[ItemIndex][]*uilib.UIElement)
 
     // manually curry
-    makePowers := func(groups [][]Power) []*uilib.UIElement {
-        return makePowersFull(ui, cache, &imageCache, powerFont, groups)
+    makePowers := func(picLow int, picHigh int, groups [][]Power) []*uilib.UIElement {
+        return makePowersFull(ui, cache, &imageCache, powerFont, picLow, picHigh, groups)
     }
 
-    powers[ItemSword] = makePowers([][]Power{
+    powers[ItemSword] = makePowers(0, 8, [][]Power{
         []Power{
             &PowerAttack{Amount: 1},
             &PowerAttack{Amount: 2},
@@ -259,7 +317,7 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, dr
         },
     })
 
-    powers[ItemWand] = makePowers([][]Power{
+    powers[ItemWand] = makePowers(107, 115, [][]Power{
         []Power{
             &PowerAttack{Amount: 1},
             &PowerAttack{Amount: 2},
