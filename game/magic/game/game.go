@@ -29,6 +29,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/draw"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/set"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/lib/fraction"
@@ -36,6 +37,13 @@ import (
     "github.com/hajimehoshi/ebiten/v2/colorm"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
     "github.com/hajimehoshi/ebiten/v2/vector"
+)
+
+type Enchantment int
+
+const (
+    EnchantmentNone Enchantment = iota
+    EnchantmentCrusade
 )
 
 func (game *Game) GetFogImage() *ebiten.Image {
@@ -154,6 +162,8 @@ type Game struct {
     Drawer func (*ebiten.Image, *Game)
     State GameState
     Plane data.Plane
+
+    GlobalEnchantments *set.Set[Enchantment]
 
     TurnNumber uint64
 
@@ -472,6 +482,7 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         Settings: settings,
         BookOrder: randomizeBookOrder(12),
         ImageCache: util.MakeImageCache(lbxCache),
+        GlobalEnchantments: set.MakeSet[Enchantment](),
         InfoFontYellow: infoFontYellow,
         InfoFontRed: infoFontRed,
         WhiteFont: whiteFont,
@@ -1982,6 +1993,20 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
         yield()
     }
 
+    if state == combat.CombatStateAttackerWin {
+        for _, unit := range attackerStack.Units() {
+            if unit.Unit.Race != data.RaceFantastic {
+                unit.Experience += combatScreen.DefeatedDefenders * 2
+            }
+        }
+    } else if state == combat.CombatStateDefenderWin {
+        for _, unit := range defenderStack.Units() {
+            if unit.Unit.Race != data.RaceFantastic {
+                unit.Experience += combatScreen.DefeatedAttackers * 2
+            }
+        }
+    }
+
     ebiten.SetCursorMode(ebiten.CursorModeVisible)
     game.Drawer = oldDrawer
 
@@ -2689,6 +2714,49 @@ func (game *Game) MakeHudUI() *uilib.UI {
                         x, y := options.GeoM.Apply(4, 19)
                         vector.StrokeLine(screen, float32(x), float32(y), float32(x + healthLength), float32(y), 1, useColor, false)
                     }
+
+                    // draw experience badges
+                    if unit.Unit.Race == data.RaceHero {
+                    } else {
+                        silverBadge := 51
+                        goldBadge := 52
+                        // redBadge := 53
+
+                        count := 0
+                        index := 0
+                        switch units.GetNormalExperienceLevel(unit.Experience, player.Wizard.AbilityEnabled(setup.AbilityWarlord), game.GlobalEnchantments.Contains(EnchantmentCrusade)) {
+                            case units.ExperienceRecruit:
+                                // nothing
+                            case units.ExperienceRegular:
+                                // one white circle
+                                count = 1
+                                index = silverBadge
+                            case units.ExperienceVeteran:
+                                // two white circles
+                                count = 2
+                                index = silverBadge
+                            case units.ExperienceElite:
+                                // three white circles
+                                count = 3
+                                index = silverBadge
+                            case units.ExperienceUltraElite:
+                                // one yellow
+                                count = 1
+                                index = goldBadge
+                            case units.ExperienceChampionNormal:
+                                // two yellow
+                                count = 2
+                                index = goldBadge
+                        }
+
+                        badgeOptions := options
+                        badgeOptions.GeoM.Translate(1, 21)
+                        for i := 0; i < count; i++ {
+                            pic, _ := game.ImageCache.GetImage("main.lbx", index, 0)
+                            screen.DrawImage(pic, &badgeOptions)
+                            badgeOptions.GeoM.Translate(4, 0)
+                        }
+                    }
                 },
             })
 
@@ -3130,8 +3198,15 @@ func (game *Game) DoNextTurn(){
         }
 
         for _, stack := range player.Stacks {
-            stack.NaturalHeal()
 
+            // every unit gains 1 experience at each turn
+            for _, unit := range stack.Units() {
+                if unit.Unit.Race != data.RaceFantastic {
+                    unit.Experience += 1
+                }
+            }
+
+            stack.NaturalHeal()
             stack.ResetMoves()
             stack.EnableMovers()
         }
