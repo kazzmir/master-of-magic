@@ -91,11 +91,55 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, dr
         },
     }
 
+    ui.SetElementsFromArray(nil)
+
+    var selectedButton *uilib.UIElement
+
+    makeButton := func(x int, y int, unselected int, selected int) *uilib.UIElement {
+        index := 0
+        imageRect, _ := imageCache.GetImage("spellscr.lbx", unselected, 0)
+        rect := util.ImageRect(x, y, imageRect)
+        return &uilib.UIElement{
+            Rect: rect,
+            LeftClick: func(element *uilib.UIElement){
+                index = 1
+            },
+            LeftClickRelease: func(element *uilib.UIElement){
+                selectedButton = element
+                index = 0
+            },
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
+                use := unselected
+                if selectedButton == element {
+                    use = selected
+                }
+                image, _ := imageCache.GetImage("spellscr.lbx", use, index)
+                screen.DrawImage(image, &options)
+            },
+        }
+    }
+
+    unselectedImageStart := 14
+    selectedImageStart := 25
+    // to get dimensions
+    tmpImage, _ := imageCache.GetImage("spellscr.lbx", unselectedImageStart, 0)
+
+    // 10 item types
+    for i := 0; i < 10; i++ {
+        x := 156 + (i % 5) * (tmpImage.Bounds().Dx() + 2)
+        y := 3 + (i / 5) * (tmpImage.Bounds().Dy() + 2)
+
+        ui.AddElement(makeButton(x, y, unselectedImageStart + i, selectedImageStart + i))
+    }
+
     *draw = func(screen *ebiten.Image) {
         ui.Draw(ui, screen)
     }
 
     for !quit {
+        ui.StandardUpdate()
         yield()
     }
 
