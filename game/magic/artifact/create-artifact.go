@@ -3,6 +3,7 @@ package artifact
 import (
     "fmt"
     "image"
+    "image/color"
     "log"
 
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
@@ -129,7 +130,14 @@ func makePowers(imageCache *util.ImageCache, powerFont *font.Font, powers []Powe
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 // draw in bright yellow if selected
-                powerFont.Print(screen, float64(rect.Min.X), float64(rect.Min.Y), 1, ebiten.ColorScale{}, power.String())
+                scale := ebiten.ColorScale{}
+
+                if selected {
+                    scale.SetR(3)
+                    scale.SetG(3)
+                }
+
+                powerFont.Print(screen, float64(rect.Min.X), float64(rect.Min.Y), 1, scale, power.String())
             },
         })
 
@@ -152,7 +160,18 @@ func makePowerFont(cache *lbx.LbxCache) *font.Font {
         return nil
     }
 
-    return font.MakeOptimizedFont(fonts[3])
+    // solid := util.Lighten(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, -40)
+    solid := util.Lighten(color.RGBA{R: 0xca, G: 0x8a, B: 0x4a, A: 0xff}, -10)
+
+    palette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        solid, solid, solid,
+        solid, solid, solid,
+        solid, solid, solid,
+    }
+
+    return font.MakeOptimizedFontWithPalette(fonts[3], palette)
 }
 
 /* returns the artifact that was created and true,
@@ -270,7 +289,13 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, dr
         x := 156 + (i % 5) * (tmpImage.Bounds().Dx() + 2)
         y := 3 + (i / 5) * (tmpImage.Bounds().Dy() + 2)
 
-        ui.AddElement(makeButton(x, y, unselectedImageStart + i, selectedImageStart + i, ItemIndex(i)))
+        button := makeButton(x, y, unselectedImageStart + i, selectedImageStart + i, ItemIndex(i))
+        if selectedButton == nil {
+            selectedButton = button
+            updatePowers(ItemIndex(i))
+        }
+
+        ui.AddElement(button)
     }
 
     *draw = func(screen *ebiten.Image) {
