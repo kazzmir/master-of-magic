@@ -177,7 +177,7 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
         groupSelect := -1
 
         // goto the next column
-        if y + powerFont.Height() * len(group) > data.ScreenHeight - 10 {
+        if y + (powerFont.Height() + 1) * len(group) > data.ScreenHeight - 10 {
             y = 40
             x = 170
             printRight = true
@@ -229,7 +229,7 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
                 },
             })
 
-            y += powerFont.Height()
+            y += powerFont.Height() + 1
         }
 
         y += 5
@@ -448,6 +448,49 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, dr
         []Power{
             &PowerSpellSave{Amount: -1},
             &PowerSpellSave{Amount: -2},
+        },
+    })
+
+    powers[ItemMisc] = makePowers(72, 93, [][]Power{
+        []Power{
+            &PowerAttack{Amount: 1},
+            &PowerAttack{Amount: 2},
+            &PowerAttack{Amount: 3},
+            &PowerAttack{Amount: 4},
+        },
+        []Power{
+            &PowerDefense{Amount: 1},
+            &PowerDefense{Amount: 2},
+            &PowerDefense{Amount: 3},
+            &PowerDefense{Amount: 4},
+        },
+        []Power{
+            &PowerToHit{Amount: 1},
+            &PowerToHit{Amount: 2},
+        },
+        []Power{
+            &PowerMovement{Amount: 1},
+            &PowerMovement{Amount: 2},
+            &PowerMovement{Amount: 3},
+        },
+        []Power{
+            &PowerResistance{Amount: 1},
+            &PowerResistance{Amount: 2},
+            &PowerResistance{Amount: 3},
+            &PowerResistance{Amount: 4},
+            &PowerResistance{Amount: 5},
+            &PowerResistance{Amount: 6},
+        },
+        []Power{
+            &PowerSpellSkill{Amount: 5},
+            &PowerSpellSkill{Amount: 10},
+            &PowerSpellSkill{Amount: 15},
+        },
+        []Power{
+            &PowerSpellSave{Amount: -1},
+            &PowerSpellSave{Amount: -2},
+            &PowerSpellSave{Amount: -3},
+            &PowerSpellSave{Amount: -4},
         },
     })
 
