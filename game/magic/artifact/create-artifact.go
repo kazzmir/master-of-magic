@@ -9,6 +9,7 @@ import (
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/util"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
@@ -171,12 +172,25 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
     x := 7
     y := 40
     selectCount := 0
+    printRight := false
     for _, group := range powerGroups {
-
         groupSelect := -1
+
+        // goto the next column
+        if y + powerFont.Height() * len(group) > data.ScreenHeight - 10 {
+            y = 40
+            x = 170
+            printRight = true
+        }
+
+        groupRight := printRight
 
         for i, power := range group {
             rect := image.Rect(x, y, x + int(powerFont.MeasureTextWidth(power.String(), 1)), y + powerFont.Height())
+            if groupRight {
+                rect = image.Rect(x - int(powerFont.MeasureTextWidth(power.String(), 1)), y, x, y + powerFont.Height())
+            }
+
             elements = append(elements, &uilib.UIElement{
                 Rect: rect,
                 LeftClick: func(element *uilib.UIElement){
@@ -207,7 +221,11 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
                         scale.SetG(3)
                     }
 
-                    powerFont.Print(screen, float64(rect.Min.X), float64(rect.Min.Y), 1, scale, power.String())
+                    if groupRight {
+                        powerFont.PrintRight(screen, float64(rect.Max.X), float64(rect.Min.Y), 1, scale, power.String())
+                    } else {
+                        powerFont.Print(screen, float64(rect.Min.X), float64(rect.Min.Y), 1, scale, power.String())
+                    }
                 },
             })
 
