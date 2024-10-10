@@ -317,6 +317,46 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, dr
         },
     })
 
+    powers[ItemMace] = makePowers(9, 19, [][]Power{
+        []Power{
+            &PowerAttack{Amount: 1},
+            &PowerAttack{Amount: 2},
+            &PowerAttack{Amount: 3},
+            &PowerAttack{Amount: 4},
+        },
+        []Power{
+            &PowerDefense{Amount: 1},
+        },
+        []Power{
+            &PowerToHit{Amount: 1},
+            &PowerToHit{Amount: 2},
+            &PowerToHit{Amount: 3},
+        },
+        []Power{
+            &PowerSpellSkill{Amount: 5},
+            &PowerSpellSkill{Amount: 10},
+        },
+    })
+
+    powers[ItemAxe] = makePowers(20, 28, [][]Power{
+        []Power{
+            &PowerAttack{Amount: 1},
+            &PowerAttack{Amount: 2},
+            &PowerAttack{Amount: 3},
+            &PowerAttack{Amount: 4},
+            &PowerAttack{Amount: 5},
+            &PowerAttack{Amount: 6},
+        },
+        []Power{
+            &PowerToHit{Amount: 1},
+            &PowerToHit{Amount: 2},
+        },
+        []Power{
+            &PowerSpellSkill{Amount: 5},
+            &PowerSpellSkill{Amount: 10},
+        },
+    })
+
     powers[ItemWand] = makePowers(107, 115, [][]Power{
         []Power{
             &PowerAttack{Amount: 1},
