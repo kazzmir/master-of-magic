@@ -16,6 +16,7 @@ type UIDrawFunc func(element *UIElement, window *ebiten.Image)
 type UIKeyFunc func(key ebiten.Key)
 type UIGainFocusFunc func(*UIElement)
 type UILoseFocusFunc func(*UIElement)
+type UITextEntry func(*UIElement, []rune)
 
 type UILayer int
 
@@ -40,6 +41,10 @@ type UIElement struct {
     GainFocus UIGainFocusFunc
     // fires when some other element is left clicked
     LoseFocus UILoseFocusFunc
+    // fires when the user types some keys and this element is focused
+    TextEntry UITextEntry
+    // fires when a key is pressed and this element is focused
+    HandleKey UIKeyFunc
 
     Draw UIDrawFunc
     Layer UILayer
@@ -216,12 +221,17 @@ func (ui *UI) StandardUpdate() {
     }
     ui.Delays = keepDelays
 
-    if !ui.Disabled && ui.HandleKey != nil {
-        keys := make([]ebiten.Key, 0)
-        keys = inpututil.AppendJustPressedKeys(keys)
+    if !ui.Disabled {
+        keys := inpututil.AppendJustPressedKeys(nil)
 
         for _, key := range keys {
-            ui.HandleKey(key)
+            if ui.HandleKey != nil {
+                ui.HandleKey(key)
+            }
+
+            if ui.focusedElement != nil && ui.focusedElement.HandleKey != nil {
+                ui.focusedElement.HandleKey(key)
+            }
         }
     }
 
@@ -304,6 +314,11 @@ func (ui *UI) StandardUpdate() {
                 element.NotInside(element)
             }
         }
+    }
+
+    if ui.focusedElement != nil && ui.focusedElement.TextEntry != nil {
+        chars := ebiten.AppendInputChars(nil)
+        ui.focusedElement.TextEntry(ui.focusedElement, chars)
     }
 
     if !ui.Disabled && leftClick && !elementLeftClicked {

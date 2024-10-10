@@ -198,6 +198,20 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
         LoseFocus: func(element *uilib.UIElement){
             nameFocused = false
         },
+        TextEntry: func(element *uilib.UIElement, char []rune){
+            for _, r := range char {
+                if len(name) < 25 {
+                    name += string(r)
+                }
+            }
+        },
+        HandleKey: func(key ebiten.Key){
+            if key == ebiten.KeyBackspace {
+                if len(name) > 0 {
+                    name = name[0:len(name) - 1]
+                }
+            }
+        },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             scale := ebiten.ColorScale{}
             if nameFocused {
