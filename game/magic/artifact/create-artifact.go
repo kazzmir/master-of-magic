@@ -494,6 +494,81 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, dr
         },
     })
 
+    powers[ItemShield] = makePowers(62, 71, [][]Power{
+        []Power{
+            &PowerDefense{Amount: 1},
+            &PowerDefense{Amount: 2},
+            &PowerDefense{Amount: 3},
+            &PowerDefense{Amount: 4},
+            &PowerDefense{Amount: 5},
+            &PowerDefense{Amount: 6},
+        },
+        []Power{
+            &PowerMovement{Amount: 1},
+            &PowerMovement{Amount: 2},
+            &PowerMovement{Amount: 3},
+            &PowerMovement{Amount: 4},
+        },
+        []Power{
+            &PowerResistance{Amount: 1},
+            &PowerResistance{Amount: 2},
+            &PowerResistance{Amount: 3},
+            &PowerResistance{Amount: 4},
+            &PowerResistance{Amount: 5},
+            &PowerResistance{Amount: 6},
+        },
+    })
+
+    powers[ItemChain] = makePowers(47, 54, [][]Power{
+        []Power{
+            &PowerDefense{Amount: 1},
+            &PowerDefense{Amount: 2},
+            &PowerDefense{Amount: 3},
+            &PowerDefense{Amount: 4},
+            &PowerDefense{Amount: 5},
+            &PowerDefense{Amount: 6},
+        },
+        []Power{
+            &PowerMovement{Amount: 1},
+            &PowerMovement{Amount: 2},
+            &PowerMovement{Amount: 3},
+            &PowerMovement{Amount: 4},
+        },
+        []Power{
+            &PowerResistance{Amount: 1},
+            &PowerResistance{Amount: 2},
+            &PowerResistance{Amount: 3},
+            &PowerResistance{Amount: 4},
+            &PowerResistance{Amount: 5},
+            &PowerResistance{Amount: 6},
+        },
+    })
+
+    powers[ItemPlate] = makePowers(55, 61, [][]Power{
+        []Power{
+            &PowerDefense{Amount: 1},
+            &PowerDefense{Amount: 2},
+            &PowerDefense{Amount: 3},
+            &PowerDefense{Amount: 4},
+            &PowerDefense{Amount: 5},
+            &PowerDefense{Amount: 6},
+        },
+        []Power{
+            &PowerMovement{Amount: 1},
+            &PowerMovement{Amount: 2},
+            &PowerMovement{Amount: 3},
+            &PowerMovement{Amount: 4},
+        },
+        []Power{
+            &PowerResistance{Amount: 1},
+            &PowerResistance{Amount: 2},
+            &PowerResistance{Amount: 3},
+            &PowerResistance{Amount: 4},
+            &PowerResistance{Amount: 5},
+            &PowerResistance{Amount: 6},
+        },
+    })
+
     updatePowers := func(index ItemIndex){
         for _, elements := range powers {
             ui.RemoveElements(elements)
