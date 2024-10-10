@@ -108,40 +108,55 @@ type Artifact struct {
     Powers []Power
 }
 
-func makePowers(imageCache *util.ImageCache, powerFont *font.Font, powers []Power) []*uilib.UIElement {
+func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCache, powerFont *font.Font, powerGroups [][]Power) []*uilib.UIElement {
     var elements []*uilib.UIElement
     x := 7
     y := 40
     selectCount := 0
-    for _, power := range powers {
-        rect := image.Rect(x, y, x + int(powerFont.MeasureTextWidth(power.String(), 1)), y + powerFont.Height())
-        selected := false
-        elements = append(elements, &uilib.UIElement{
-            Rect: rect,
-            LeftClick: func(element *uilib.UIElement){
-                if selected {
-                    selectCount -= 1
-                    selected = false
-                } else {
-                    // FIXME: max of 4
-                    selectCount += 1
-                    selected = true
-                }
-            },
-            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                // draw in bright yellow if selected
-                scale := ebiten.ColorScale{}
+    for _, group := range powerGroups {
 
-                if selected {
-                    scale.SetR(3)
-                    scale.SetG(3)
-                }
+        groupSelect := -1
 
-                powerFont.Print(screen, float64(rect.Min.X), float64(rect.Min.Y), 1, scale, power.String())
-            },
-        })
+        for i, power := range group {
+            rect := image.Rect(x, y, x + int(powerFont.MeasureTextWidth(power.String(), 1)), y + powerFont.Height())
+            elements = append(elements, &uilib.UIElement{
+                Rect: rect,
+                LeftClick: func(element *uilib.UIElement){
+                    if groupSelect != -1 {
+                        if groupSelect == i {
+                            groupSelect = -1
+                            selectCount -= 1
+                        } else {
+                            // something was already selected in this group, so the count doesn't change
+                            groupSelect = i
+                        }
+                    } else {
+                        if selectCount < 4 {
+                            selectCount += 1
+                            groupSelect = i
+                        } else {
+                            ui.AddElement(uilib.MakeErrorElement(ui, cache, imageCache, "Only four powers may be enchanted into an item"))
+                        }
 
-        y += powerFont.Height()
+                    }
+                },
+                Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                    // draw in bright yellow if selected
+                    scale := ebiten.ColorScale{}
+
+                    if groupSelect == i {
+                        scale.SetR(3)
+                        scale.SetG(3)
+                    }
+
+                    powerFont.Print(screen, float64(rect.Min.X), float64(rect.Min.Y), 1, scale, power.String())
+                },
+            })
+
+            y += powerFont.Height()
+        }
+
+        y += 5
     }
 
     return elements
@@ -217,28 +232,49 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, dr
     // ui elements for powers that can be selected, based on what item is selected
     powers := make(map[ItemIndex][]*uilib.UIElement)
 
-    powers[ItemSword] = makePowers(&imageCache, powerFont, []Power{
-        &PowerAttack{Amount: 1},
-        &PowerAttack{Amount: 2},
-        &PowerAttack{Amount: 3},
-        &PowerDefense{Amount: 1},
-        &PowerDefense{Amount: 2},
-        &PowerDefense{Amount: 3},
-        &PowerToHit{Amount: 1},
-        &PowerToHit{Amount: 2},
-        &PowerToHit{Amount: 3},
-        &PowerSpellSkill{Amount: 5},
-        &PowerSpellSkill{Amount: 10},
+    // manually curry
+    makePowers := func(groups [][]Power) []*uilib.UIElement {
+        return makePowersFull(ui, cache, &imageCache, powerFont, groups)
+    }
+
+    powers[ItemSword] = makePowers([][]Power{
+        []Power{
+            &PowerAttack{Amount: 1},
+            &PowerAttack{Amount: 2},
+            &PowerAttack{Amount: 3},
+        },
+        []Power{
+            &PowerDefense{Amount: 1},
+            &PowerDefense{Amount: 2},
+            &PowerDefense{Amount: 3},
+        },
+        []Power{
+            &PowerToHit{Amount: 1},
+            &PowerToHit{Amount: 2},
+            &PowerToHit{Amount: 3},
+        },
+        []Power{
+            &PowerSpellSkill{Amount: 5},
+            &PowerSpellSkill{Amount: 10},
+        },
     })
 
-    powers[ItemWand] = makePowers(&imageCache, powerFont, []Power{
-        &PowerAttack{Amount: 1},
-        &PowerAttack{Amount: 2},
-        &PowerToHit{Amount: 1},
-        &PowerSpellSkill{Amount: 5},
-        &PowerSpellSkill{Amount: 10},
-        &PowerSpellSave{Amount: -1},
-        &PowerSpellSave{Amount: -2},
+    powers[ItemWand] = makePowers([][]Power{
+        []Power{
+            &PowerAttack{Amount: 1},
+            &PowerAttack{Amount: 2},
+        },
+        []Power{
+            &PowerToHit{Amount: 1},
+        },
+        []Power{
+            &PowerSpellSkill{Amount: 5},
+            &PowerSpellSkill{Amount: 10},
+        },
+        []Power{
+            &PowerSpellSave{Amount: -1},
+            &PowerSpellSave{Amount: -2},
+        },
     })
 
     updatePowers := func(index ItemIndex){
