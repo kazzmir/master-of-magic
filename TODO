@@ -3,7 +3,6 @@
 * create artifact screen
 * cartographer advisor
 * city catchment area
-* draw units with experience/bonuses
 * combat: draw town sprites in combat scene
 * overworld units should render health and veteran status
 * overworld: ai controlled wizards/empires
@@ -40,3 +39,4 @@
 10/6/2024 * select spell to research
 10/8/2024 * combat: results from combat should be reflected in overworld units
 10/9/2024 * combat: ai controlled units
+10/10/2024 * draw units with experience/bonuses
