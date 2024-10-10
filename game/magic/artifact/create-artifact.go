@@ -33,6 +33,23 @@ const (
     ArtifactTypePlate
 )
 
+func (a ArtifactType) Name() string {
+    switch a {
+        case ArtifactTypeSword: return "Sword"
+        case ArtifactTypeMace: return "Mace"
+        case ArtifactTypeAxe: return "Axe"
+        case ArtifactTypeBow: return "Bow"
+        case ArtifactTypeStaff: return "Staff"
+        case ArtifactTypeWand: return "Wand"
+        case ArtifactTypeMisc: return "Misc"
+        case ArtifactTypeShield: return "Shield"
+        case ArtifactTypeChain: return "Chain"
+        case ArtifactTypePlate: return "Plate"
+    }
+
+    return ""
+}
+
 type Power interface {
     String() string
 }
@@ -109,7 +126,7 @@ type Artifact struct {
     Powers []Power
 }
 
-func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCache, powerFont *font.Font, picLow int, picHigh int, powerGroups [][]Power) []*uilib.UIElement {
+func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCache, nameFont *font.Font, powerFont *font.Font, artifactType ArtifactType, picLow int, picHigh int, powerGroups [][]Power) []*uilib.UIElement {
     var elements []*uilib.UIElement
 
     currentPicture := picLow
@@ -166,6 +183,26 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
             options.GeoM.Translate(float64(rightRect.Min.X), float64(rightRect.Min.Y))
             image := rightImages[rightIndex]
             screen.DrawImage(image, &options)
+        },
+    })
+
+    // name field
+    nameRect := image.Rect(30, 12, 30 + 130, 12 + nameFont.Height() + 2)
+    nameFocused := false
+    name := artifactType.Name()
+    elements = append(elements, &uilib.UIElement{
+        Rect: nameRect,
+        LeftClick: func(element *uilib.UIElement){
+            nameFocused = true
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            scale := ebiten.ColorScale{}
+            if nameFocused {
+                scale.SetR(3)
+                scale.SetG(3)
+            }
+
+            nameFont.Print(screen, float64(nameRect.Min.X + 1), float64(nameRect.Min.Y + 1), 1, scale, name)
         },
     })
 
@@ -238,17 +275,17 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
     return elements
 }
 
-func makePowerFont(cache *lbx.LbxCache) *font.Font {
+func makeFonts(cache *lbx.LbxCache) (*font.Font, *font.Font) {
     fontLbx, err := cache.GetLbxFile("fonts.lbx")
     if err != nil {
         log.Printf("Unable to read fonts.lbx: %v", err)
-        return nil
+        return nil, nil
     }
 
     fonts, err := font.ReadFonts(fontLbx, 0)
     if err != nil {
         log.Printf("Unable to read fonts from fonts.lbx: %v", err)
-        return nil
+        return nil, nil
     }
 
     // solid := util.Lighten(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, -40)
@@ -262,7 +299,19 @@ func makePowerFont(cache *lbx.LbxCache) *font.Font {
         solid, solid, solid,
     }
 
-    return font.MakeOptimizedFontWithPalette(fonts[3], palette)
+    powerFont := font.MakeOptimizedFontWithPalette(fonts[3], palette)
+
+    grey := util.Lighten(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, -40)
+    greyPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        grey, grey, grey,
+        grey, grey, grey,
+    }
+
+    nameFont := font.MakeOptimizedFontWithPalette(fonts[1], greyPalette)
+
+    return powerFont, nameFont
 }
 
 /* returns the artifact that was created and true,
@@ -271,7 +320,7 @@ func makePowerFont(cache *lbx.LbxCache) *font.Font {
 func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, draw *func(*ebiten.Image)) (*Artifact, bool) {
     quit := false
 
-    powerFont := makePowerFont(cache)
+    powerFont, nameFont := makeFonts(cache)
 
     imageCache := util.MakeImageCache(cache)
 
@@ -291,29 +340,15 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, dr
 
     ui.SetElementsFromArray(nil)
 
-    type ItemIndex int
-    const (
-        ItemSword ItemIndex = iota
-        ItemMace
-        ItemAxe
-        ItemBow
-        ItemStaff
-        ItemWand
-        ItemMisc
-        ItemShield
-        ItemChain
-        ItemPlate
-    )
-
     // ui elements for powers that can be selected, based on what item is selected
-    powers := make(map[ItemIndex][]*uilib.UIElement)
+    powers := make(map[ArtifactType][]*uilib.UIElement)
 
     // manually curry
-    makePowers := func(picLow int, picHigh int, groups [][]Power) []*uilib.UIElement {
-        return makePowersFull(ui, cache, &imageCache, powerFont, picLow, picHigh, groups)
+    makePowers := func(picLow int, picHigh int, artifactType ArtifactType, groups [][]Power) []*uilib.UIElement {
+        return makePowersFull(ui, cache, &imageCache, nameFont, powerFont, artifactType, picLow, picHigh, groups)
     }
 
-    powers[ItemSword] = makePowers(0, 8, [][]Power{
+    powers[ArtifactTypeSword] = makePowers(0, 8, ArtifactTypeSword, [][]Power{
         []Power{
             &PowerAttack{Amount: 1},
             &PowerAttack{Amount: 2},
@@ -335,7 +370,7 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, dr
         },
     })
 
-    powers[ItemMace] = makePowers(9, 19, [][]Power{
+    powers[ArtifactTypeMace] = makePowers(9, 19, ArtifactTypeMace, [][]Power{
         []Power{
             &PowerAttack{Amount: 1},
             &PowerAttack{Amount: 2},
@@ -356,7 +391,7 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, dr
         },
     })
 
-    powers[ItemAxe] = makePowers(20, 28, [][]Power{
+    powers[ArtifactTypeAxe] = makePowers(20, 28, ArtifactTypeAxe, [][]Power{
         []Power{
             &PowerAttack{Amount: 1},
             &PowerAttack{Amount: 2},
@@ -375,7 +410,7 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, dr
         },
     })
 
-    powers[ItemBow] = makePowers(29, 37, [][]Power{
+    powers[ArtifactTypeBow] = makePowers(29, 37, ArtifactTypeBow, [][]Power{
         []Power{
             &PowerAttack{Amount: 1},
             &PowerAttack{Amount: 2},
@@ -400,7 +435,7 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, dr
         },
     })
 
-    powers[ItemStaff] = makePowers(38, 46, [][]Power{
+    powers[ArtifactTypeStaff] = makePowers(38, 46, ArtifactTypeStaff, [][]Power{
         []Power{
             &PowerAttack{Amount: 1},
             &PowerAttack{Amount: 2},
@@ -433,7 +468,7 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, dr
         },
     })
 
-    powers[ItemWand] = makePowers(107, 115, [][]Power{
+    powers[ArtifactTypeWand] = makePowers(107, 115, ArtifactTypeWand, [][]Power{
         []Power{
             &PowerAttack{Amount: 1},
             &PowerAttack{Amount: 2},
@@ -451,7 +486,7 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, dr
         },
     })
 
-    powers[ItemMisc] = makePowers(72, 93, [][]Power{
+    powers[ArtifactTypeMisc] = makePowers(72, 106, ArtifactTypeMisc, [][]Power{
         []Power{
             &PowerAttack{Amount: 1},
             &PowerAttack{Amount: 2},
@@ -494,7 +529,7 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, dr
         },
     })
 
-    powers[ItemShield] = makePowers(62, 71, [][]Power{
+    powers[ArtifactTypeShield] = makePowers(62, 71, ArtifactTypeShield, [][]Power{
         []Power{
             &PowerDefense{Amount: 1},
             &PowerDefense{Amount: 2},
@@ -519,7 +554,7 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, dr
         },
     })
 
-    powers[ItemChain] = makePowers(47, 54, [][]Power{
+    powers[ArtifactTypeChain] = makePowers(47, 54, ArtifactTypeChain, [][]Power{
         []Power{
             &PowerDefense{Amount: 1},
             &PowerDefense{Amount: 2},
@@ -544,7 +579,7 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, dr
         },
     })
 
-    powers[ItemPlate] = makePowers(55, 61, [][]Power{
+    powers[ArtifactTypePlate] = makePowers(55, 61, ArtifactTypePlate, [][]Power{
         []Power{
             &PowerDefense{Amount: 1},
             &PowerDefense{Amount: 2},
@@ -569,7 +604,7 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, dr
         },
     })
 
-    updatePowers := func(index ItemIndex){
+    updatePowers := func(index ArtifactType){
         for _, elements := range powers {
             ui.RemoveElements(elements)
         }
@@ -579,7 +614,7 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, dr
 
     var selectedButton *uilib.UIElement
 
-    makeButton := func(x int, y int, unselected int, selected int, item ItemIndex) *uilib.UIElement {
+    makeButton := func(x int, y int, unselected int, selected int, item ArtifactType) *uilib.UIElement {
         index := 0
         imageRect, _ := imageCache.GetImage("spellscr.lbx", unselected, 0)
         rect := util.ImageRect(x, y, imageRect)
@@ -617,10 +652,10 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, dr
         x := 156 + (i % 5) * (tmpImage.Bounds().Dx() + 2)
         y := 3 + (i / 5) * (tmpImage.Bounds().Dy() + 2)
 
-        button := makeButton(x, y, unselectedImageStart + i, selectedImageStart + i, ItemIndex(i))
+        button := makeButton(x, y, unselectedImageStart + i, selectedImageStart + i, ArtifactType(i+1))
         if selectedButton == nil {
             selectedButton = button
-            updatePowers(ItemIndex(i))
+            updatePowers(ArtifactType(i+1))
         }
 
         ui.AddElement(button)
