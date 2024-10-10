@@ -357,6 +357,64 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, dr
         },
     })
 
+    powers[ItemBow] = makePowers(29, 37, [][]Power{
+        []Power{
+            &PowerAttack{Amount: 1},
+            &PowerAttack{Amount: 2},
+            &PowerAttack{Amount: 3},
+            &PowerAttack{Amount: 4},
+            &PowerAttack{Amount: 5},
+            &PowerAttack{Amount: 6},
+        },
+        []Power{
+            &PowerDefense{Amount: 1},
+            &PowerDefense{Amount: 2},
+            &PowerDefense{Amount: 3},
+        },
+        []Power{
+            &PowerToHit{Amount: 1},
+            &PowerToHit{Amount: 2},
+            &PowerToHit{Amount: 3},
+        },
+        []Power{
+            &PowerSpellSkill{Amount: 5},
+            &PowerSpellSkill{Amount: 10},
+        },
+    })
+
+    powers[ItemStaff] = makePowers(38, 46, [][]Power{
+        []Power{
+            &PowerAttack{Amount: 1},
+            &PowerAttack{Amount: 2},
+            &PowerAttack{Amount: 3},
+            &PowerAttack{Amount: 4},
+            &PowerAttack{Amount: 5},
+            &PowerAttack{Amount: 6},
+        },
+        []Power{
+            &PowerDefense{Amount: 1},
+            &PowerDefense{Amount: 2},
+            &PowerDefense{Amount: 3},
+        },
+        []Power{
+            &PowerToHit{Amount: 1},
+            &PowerToHit{Amount: 2},
+            &PowerToHit{Amount: 3},
+        },
+        []Power{
+            &PowerSpellSkill{Amount: 5},
+            &PowerSpellSkill{Amount: 10},
+            &PowerSpellSkill{Amount: 15},
+            &PowerSpellSkill{Amount: 20},
+        },
+        []Power{
+            &PowerSpellSave{Amount: -1},
+            &PowerSpellSave{Amount: -2},
+            &PowerSpellSave{Amount: -3},
+            &PowerSpellSave{Amount: -4},
+        },
+    })
+
     powers[ItemWand] = makePowers(107, 115, [][]Power{
         []Power{
             &PowerAttack{Amount: 1},
