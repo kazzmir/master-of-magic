@@ -192,8 +192,11 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
     name := artifactType.Name()
     elements = append(elements, &uilib.UIElement{
         Rect: nameRect,
-        LeftClick: func(element *uilib.UIElement){
+        GainFocus: func(element *uilib.UIElement){
             nameFocused = true
+        },
+        LoseFocus: func(element *uilib.UIElement){
+            nameFocused = false
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             scale := ebiten.ColorScale{}

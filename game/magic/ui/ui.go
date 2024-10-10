@@ -14,6 +14,8 @@ type UINotInsideElementFunc func(element *UIElement)
 type UIClickElementFunc func(element *UIElement)
 type UIDrawFunc func(element *UIElement, window *ebiten.Image)
 type UIKeyFunc func(key ebiten.Key)
+type UIGainFocusFunc func(*UIElement)
+type UILoseFocusFunc func(*UIElement)
 
 type UILayer int
 
@@ -33,6 +35,12 @@ type UIElement struct {
     DoubleLeftClick UIClickElementFunc
     // fires when this element is right clicked
     RightClick UIClickElementFunc
+
+    // fires when this element is left clicked
+    GainFocus UIGainFocusFunc
+    // fires when some other element is left clicked
+    LoseFocus UILoseFocusFunc
+
     Draw UIDrawFunc
     Layer UILayer
 }
@@ -58,6 +66,8 @@ type UI struct {
     Draw func(*UI, *ebiten.Image)
     HandleKey UIKeyFunc
     Counter uint64
+
+    focusedElement *UIElement
 
     doubleClickCandidates []doubleClick
 
@@ -252,6 +262,17 @@ func (ui *UI) StandardUpdate() {
                     element.LeftClick(element)
                 }
                 ui.LeftClickedElements = append(ui.LeftClickedElements, element)
+
+                if ui.focusedElement != element {
+                    if ui.focusedElement != nil && ui.focusedElement.LoseFocus != nil {
+                        ui.focusedElement.LoseFocus(ui.focusedElement)
+                    }
+
+                    ui.focusedElement = element
+                    if element.GainFocus != nil {
+                        element.GainFocus(element)
+                    }
+                }
 
                 addDoubleClick := true
 
