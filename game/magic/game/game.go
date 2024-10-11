@@ -13,6 +13,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
+    "github.com/kazzmir/master-of-magic/game/magic/artifact"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     "github.com/kazzmir/master-of-magic/game/magic/combat"
     "github.com/kazzmir/master-of-magic/game/magic/unitview"
@@ -75,6 +76,9 @@ type GameEventCityListView struct {
 }
 
 type GameEventApprenticeUI struct {
+}
+
+type GameEventCastSpellBook struct {
 }
 
 type GameEventNewOutpost struct {
@@ -1499,6 +1503,8 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         game.ShowApprenticeUI(yield, game.Players[0])
                     case *GameEventArmyView:
                         game.doArmyView(yield)
+                    case *GameEventCastSpellBook:
+                        game.ShowSpellBookCastUI(yield, game.Players[0])
                     case *GameEventCityListView:
                         game.doCityListView(yield)
                     case *GameEventNewOutpost:
@@ -2324,10 +2330,34 @@ func (game *Game) MakeInfoUI(cornerX int, cornerY int) []*uilib.UIElement {
     return uilib.MakeSelectionUI(game.HudUI, game.Cache, &game.ImageCache, cornerX, cornerY, "Select An Advisor", advisors)
 }
 
-func (game *Game) ShowSpellBookCastUI(){
-    player := game.Players[0]
+func (game *Game) ShowSpellBookCastUI(yield coroutine.YieldFunc, player *playerlib.Player){
     game.HudUI.AddElements(spellbook.MakeSpellBookCastUI(game.HudUI, game.Cache, player.KnownSpells.OverlandSpells(), player.ComputeCastingSkill(), player.CastingSpell, player.CastingSpellProgress, true, func (spell spellbook.Spell, picked bool){
         if picked {
+            if spell.Name == "Create Artifact" || spell.Name == "Enchant Item" {
+
+                drawFunc := func(screen *ebiten.Image){}
+                oldDrawer := game.Drawer
+                defer func(){
+                    game.Drawer = oldDrawer
+                }()
+                game.Drawer = func(screen *ebiten.Image, game *Game){
+                    drawFunc(screen)
+                }
+
+                creation := artifact.CreationCreateArtifact
+                switch spell.Name {
+                    case "Create Artifact": creation = artifact.CreationCreateArtifact
+                    case "Enchant Item": creation = artifact.CreationEnchantItem
+                }
+
+                created, cancel := artifact.ShowCreateArtifactScreen(yield, game.Cache, creation, &drawFunc)
+                if cancel {
+                    return
+                }
+
+                log.Printf("Create artifact %v", created)
+            }
+
             castingCost := spell.Cost(true)
 
             if castingCost <= player.Mana && castingCost <= player.RemainingCastingSkill {
@@ -2562,7 +2592,10 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
     // spell button
     elements = append(elements, makeButton(2, 47, 4, false, func(){
-        game.ShowSpellBookCastUI()
+        select {
+            case game.Events <- &GameEventCastSpellBook{}:
+            default:
+        }
     }))
 
     // army button
