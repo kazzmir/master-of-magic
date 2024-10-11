@@ -1498,6 +1498,7 @@ func (game *Game) doVault(yield coroutine.YieldFunc) {
 
     testArtifact := artifact.Artifact{
         Name: "Sword",
+        Image: 5,
         Type: artifact.ArtifactTypeSword,
         Powers: []artifact.Power{
             &artifact.PowerAttack{
