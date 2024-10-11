@@ -248,7 +248,7 @@ func (artifact *Artifact) Cost() int {
     return base + powerCost + spellCost
 }
 
-func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCache, nameFont *font.Font, powerFont *font.Font, artifactType ArtifactType, picLow int, picHigh int, powerGroups [][]Power) []*uilib.UIElement {
+func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCache, nameFont *font.Font, powerFont *font.Font, artifactType ArtifactType, picLow int, picHigh int, powerGroups [][]Power, artifact *Artifact) []*uilib.UIElement {
     var elements []*uilib.UIElement
 
     currentPicture := picLow
@@ -311,7 +311,7 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
     // name field
     nameRect := image.Rect(30, 12, 30 + 130, 12 + nameFont.Height() + 2)
     nameFocused := false
-    name := artifactType.Name()
+    artifact.Name = artifactType.Name()
     nameColorSource := ebiten.NewImage(1, 1)
     nameColorSource.Fill(color.RGBA{R: 0xf3, G: 0xb3, B: 0x47, A: 0xff})
     elements = append(elements, &uilib.UIElement{
@@ -324,8 +324,8 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
         },
         TextEntry: func(element *uilib.UIElement, char []rune){
             for _, r := range char {
-                if len(name) < 25 {
-                    name += string(r)
+                if len(artifact.Name) < 25 {
+                    artifact.Name += string(r)
                 }
             }
         },
@@ -343,24 +343,24 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
                 }
 
                 if key == ebiten.KeyBackspace {
-                    if len(name) > 0 {
-                        name = name[0:len(name) - 1]
+                    if len(artifact.Name) > 0 {
+                        artifact.Name = artifact.Name[0:len(artifact.Name) - 1]
                     }
                 }
             }
 
             if ebiten.IsKeyPressed(ebiten.KeyControl) && w {
-                for len(name) > 0 && name[len(name) - 1] != ' ' {
-                    name = name[0:len(name) - 1]
+                for len(artifact.Name) > 0 && artifact.Name[len(artifact.Name) - 1] != ' ' {
+                    artifact.Name = artifact.Name[0:len(artifact.Name) - 1]
                 }
 
-                for len(name) > 0 && name[len(name) - 1] == ' ' {
-                    name = name[0:len(name) - 1]
+                for len(artifact.Name) > 0 && artifact.Name[len(artifact.Name) - 1] == ' ' {
+                    artifact.Name = artifact.Name[0:len(artifact.Name) - 1]
                 }
             }
 
             if ebiten.IsKeyPressed(ebiten.KeyControl) && u {
-                name = ""
+                artifact.Name = ""
             }
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
@@ -370,10 +370,10 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
                 scale.SetG(3)
             }
 
-            nameFont.Print(screen, float64(nameRect.Min.X + 1), float64(nameRect.Min.Y + 1), 1, scale, name)
+            nameFont.Print(screen, float64(nameRect.Min.X + 1), float64(nameRect.Min.Y + 1), 1, scale, artifact.Name)
 
             if nameFocused {
-                util.DrawTextCursor(screen, nameColorSource, float64(nameRect.Min.X) + 1 + nameFont.MeasureTextWidth(name, 1), float64(nameRect.Min.Y) + 1, ui.Counter)
+                util.DrawTextCursor(screen, nameColorSource, float64(nameRect.Min.X) + 1 + nameFont.MeasureTextWidth(artifact.Name, 1), float64(nameRect.Min.Y) + 1, ui.Counter)
             }
         },
     })
@@ -512,12 +512,24 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, dr
 
     ui.SetElementsFromArray(nil)
 
+    var currentArtifact *Artifact
+
+    type PowerArtifact struct {
+        Elements []*uilib.UIElement
+        Artifact *Artifact
+    }
+
     // ui elements for powers that can be selected, based on what item is selected
-    powers := make(map[ArtifactType][]*uilib.UIElement)
+    powers := make(map[ArtifactType]PowerArtifact)
 
     // manually curry
-    makePowers := func(picLow int, picHigh int, artifactType ArtifactType, groups [][]Power) []*uilib.UIElement {
-        return makePowersFull(ui, cache, &imageCache, nameFont, powerFont, artifactType, picLow, picHigh, groups)
+    makePowers := func(picLow int, picHigh int, artifactType ArtifactType, groups [][]Power) PowerArtifact {
+        var artifact Artifact
+        elements := makePowersFull(ui, cache, &imageCache, nameFont, powerFont, artifactType, picLow, picHigh, groups, &artifact)
+        return PowerArtifact{
+            Elements: elements,
+            Artifact: &artifact,
+        }
     }
 
     powers[ArtifactTypeSword] = makePowers(0, 8, ArtifactTypeSword, [][]Power{
@@ -777,11 +789,12 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, dr
     })
 
     updatePowers := func(index ArtifactType){
-        for _, elements := range powers {
-            ui.RemoveElements(elements)
+        for _, each := range powers {
+            ui.RemoveElements(each.Elements)
         }
 
-        ui.AddElements(powers[index])
+        ui.AddElements(powers[index].Elements)
+        currentArtifact = powers[index].Artifact
     }
 
     var selectedButton *uilib.UIElement
@@ -833,6 +846,12 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, dr
         ui.AddElement(button)
     }
 
+    ui.AddElement(&uilib.UIElement{
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            powerFont.Print(screen, 198, 185, 1, ebiten.ColorScale{}, fmt.Sprintf("Cost: %v", currentArtifact.Cost()))
+        },
+    })
+
     *draw = func(screen *ebiten.Image) {
         ui.Draw(ui, screen)
     }
@@ -842,5 +861,5 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, dr
         yield()
     }
 
-    return nil, false
+    return currentArtifact, false
 }
