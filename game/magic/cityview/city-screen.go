@@ -23,6 +23,7 @@ import (
 
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/hajimehoshi/ebiten/v2"
+    "github.com/hajimehoshi/ebiten/v2/colorm"
     "github.com/hajimehoshi/ebiten/v2/vector"
 )
 
@@ -697,17 +698,18 @@ func (cityScreen *CityScreen) MakeUI() *uilib.UI {
                     ui.AddElements(unitview.MakeUnitContextMenu(cityScreen.LbxCache, ui, useUnit))
                 },
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
-                    var options ebiten.DrawImageOptions
+                    var options colorm.DrawImageOptions
+                    var matrix colorm.ColorM
                     options.GeoM.Translate(float64(posX), float64(posY))
-                    screen.DrawImage(garrisonBackground, &options)
+                    colorm.DrawImage(screen, garrisonBackground, matrix, &options)
                     options.GeoM.Translate(1, 1)
 
                     // draw in grey scale if the unit is on patrol
                     if useUnit.Patrol {
-                        options.ColorM.ChangeHSV(0, 0, 1)
+                        matrix.ChangeHSV(0, 0, 1)
                     }
 
-                    screen.DrawImage(pic, &options)
+                    colorm.DrawImage(screen, pic, matrix, &options)
                 },
             })
 
