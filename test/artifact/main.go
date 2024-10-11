@@ -30,8 +30,12 @@ func NewEngine() (*Engine, error) {
     }
 
     run := func(yield coroutine.YieldFunc) error {
-        create, _ := artifact.ShowCreateArtifactScreen(yield, engine.Cache, &engine.Drawer)
-        log.Printf("Create artifact: %+v", create)
+        create, cancel := artifact.ShowCreateArtifactScreen(yield, engine.Cache, &engine.Drawer)
+        if !cancel {
+            log.Printf("Create artifact: %+v", create)
+        } else {
+            log.Printf("Aborted")
+        }
         return nil
     }
 

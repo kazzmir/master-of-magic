@@ -3,6 +3,7 @@ package artifact
 import (
     "fmt"
     "image"
+    "strings"
     "slices"
     "image/color"
     "log"
@@ -874,6 +875,7 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, dr
     })
 
     quit := false
+    canceled := false
 
     okButtons, _ := imageCache.GetImages("spellscr.lbx", 24)
     okIndex := 0
@@ -885,6 +887,25 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, dr
         },
         LeftClickRelease: func(element *uilib.UIElement){
             okIndex = 0
+
+            if strings.TrimSpace(currentArtifact.Name) == "" {
+                ui.AddElement(uilib.MakeErrorElement(ui, cache, &imageCache, "An item must have a name"))
+                return
+            }
+
+            if len(currentArtifact.Powers) == 0 {
+                yes := func(){
+                    quit = true
+                    canceled = true
+                }
+
+                no := func(){
+                }
+
+                ui.AddElements(uilib.MakeConfirmDialog(ui, cache, &imageCache, "This item has no powers. Do you wish to abort the enchantment?", yes, no))
+                return
+            }
+
             quit = true
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
@@ -904,5 +925,5 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, dr
         yield()
     }
 
-    return currentArtifact, false
+    return currentArtifact, canceled
 }
