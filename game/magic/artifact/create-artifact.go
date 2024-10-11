@@ -599,6 +599,87 @@ func getMacePowers(creationType CreationScreen) [][]Power {
     return nil
 }
 
+func getAxePowers(creationType CreationScreen) [][]Power {
+    switch creationType {
+        case CreationCreateArtifact: return [][]Power{
+            []Power{
+                &PowerAttack{Amount: 1},
+                &PowerAttack{Amount: 2},
+                &PowerAttack{Amount: 3},
+                &PowerAttack{Amount: 4},
+                &PowerAttack{Amount: 5},
+                &PowerAttack{Amount: 6},
+            },
+            []Power{
+                &PowerToHit{Amount: 1},
+                &PowerToHit{Amount: 2},
+            },
+            []Power{
+                &PowerSpellSkill{Amount: 5},
+                &PowerSpellSkill{Amount: 10},
+            },
+        }
+        case CreationEnchantItem: return [][]Power {
+            []Power{
+                &PowerAttack{Amount: 1},
+                &PowerAttack{Amount: 2},
+                &PowerAttack{Amount: 3},
+            },
+            []Power{
+                &PowerSpellSkill{Amount: 5},
+            },
+        }
+    }
+
+    return nil
+}
+
+func getBowPowers(creationType CreationScreen) [][]Power {
+    switch creationType {
+        case CreationCreateArtifact: return [][]Power{
+            []Power{
+                &PowerAttack{Amount: 1},
+                &PowerAttack{Amount: 2},
+                &PowerAttack{Amount: 3},
+                &PowerAttack{Amount: 4},
+                &PowerAttack{Amount: 5},
+                &PowerAttack{Amount: 6},
+            },
+            []Power{
+                &PowerDefense{Amount: 1},
+                &PowerDefense{Amount: 2},
+                &PowerDefense{Amount: 3},
+            },
+            []Power{
+                &PowerToHit{Amount: 1},
+                &PowerToHit{Amount: 2},
+                &PowerToHit{Amount: 3},
+            },
+            []Power{
+                &PowerSpellSkill{Amount: 5},
+                &PowerSpellSkill{Amount: 10},
+            },
+        }
+        case CreationEnchantItem: return [][]Power{
+            []Power{
+                &PowerAttack{Amount: 1},
+                &PowerAttack{Amount: 2},
+                &PowerAttack{Amount: 3},
+            },
+            []Power{
+                &PowerDefense{Amount: 1},
+                &PowerDefense{Amount: 2},
+                &PowerDefense{Amount: 3},
+            },
+            []Power{
+                &PowerSpellSkill{Amount: 5},
+            },
+        }
+    }
+
+    return nil
+}
+
 /* returns the artifact that was created and true,
  * otherwise false for cancelled
  */
@@ -648,50 +729,8 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, cr
 
     powers[ArtifactTypeMace] = makePowers(9, 19, ArtifactTypeMace, getMacePowers(creationType))
 
-    powers[ArtifactTypeAxe] = makePowers(20, 28, ArtifactTypeAxe, [][]Power{
-        []Power{
-            &PowerAttack{Amount: 1},
-            &PowerAttack{Amount: 2},
-            &PowerAttack{Amount: 3},
-            &PowerAttack{Amount: 4},
-            &PowerAttack{Amount: 5},
-            &PowerAttack{Amount: 6},
-        },
-        []Power{
-            &PowerToHit{Amount: 1},
-            &PowerToHit{Amount: 2},
-        },
-        []Power{
-            &PowerSpellSkill{Amount: 5},
-            &PowerSpellSkill{Amount: 10},
-        },
-    })
-
-    powers[ArtifactTypeBow] = makePowers(29, 37, ArtifactTypeBow, [][]Power{
-        []Power{
-            &PowerAttack{Amount: 1},
-            &PowerAttack{Amount: 2},
-            &PowerAttack{Amount: 3},
-            &PowerAttack{Amount: 4},
-            &PowerAttack{Amount: 5},
-            &PowerAttack{Amount: 6},
-        },
-        []Power{
-            &PowerDefense{Amount: 1},
-            &PowerDefense{Amount: 2},
-            &PowerDefense{Amount: 3},
-        },
-        []Power{
-            &PowerToHit{Amount: 1},
-            &PowerToHit{Amount: 2},
-            &PowerToHit{Amount: 3},
-        },
-        []Power{
-            &PowerSpellSkill{Amount: 5},
-            &PowerSpellSkill{Amount: 10},
-        },
-    })
-
+    powers[ArtifactTypeAxe] = makePowers(20, 28, ArtifactTypeAxe, getAxePowers(creationType))
+    powers[ArtifactTypeBow] = makePowers(29, 37, ArtifactTypeBow, getBowPowers(creationType))
     powers[ArtifactTypeStaff] = makePowers(38, 46, ArtifactTypeStaff, [][]Power{
         []Power{
             &PowerAttack{Amount: 1},
