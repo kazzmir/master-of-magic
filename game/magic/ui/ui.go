@@ -13,7 +13,7 @@ type UIInsideElementFunc func(element *UIElement, x int, y int)
 type UINotInsideElementFunc func(element *UIElement)
 type UIClickElementFunc func(element *UIElement)
 type UIDrawFunc func(element *UIElement, window *ebiten.Image)
-type UIKeyFunc func(key ebiten.Key)
+type UIKeyFunc func(key []ebiten.Key)
 type UIGainFocusFunc func(*UIElement)
 type UILoseFocusFunc func(*UIElement)
 type UITextEntry func(*UIElement, []rune)
@@ -44,7 +44,7 @@ type UIElement struct {
     // fires when the user types some keys and this element is focused
     TextEntry UITextEntry
     // fires when a key is pressed and this element is focused
-    HandleKey UIKeyFunc
+    HandleKeys UIKeyFunc
 
     Draw UIDrawFunc
     Layer UILayer
@@ -69,7 +69,7 @@ type UI struct {
     minLayer UILayer
     maxLayer UILayer
     Draw func(*UI, *ebiten.Image)
-    HandleKey UIKeyFunc
+    HandleKeys UIKeyFunc
     Counter uint64
 
     focusedElement *UIElement
@@ -223,14 +223,13 @@ func (ui *UI) StandardUpdate() {
 
     if !ui.Disabled {
         keys := inpututil.AppendJustPressedKeys(nil)
-
-        for _, key := range keys {
-            if ui.HandleKey != nil {
-                ui.HandleKey(key)
+        if len(keys) > 0 {
+            if ui.HandleKeys != nil {
+                ui.HandleKeys(keys)
             }
 
-            if ui.focusedElement != nil && ui.focusedElement.HandleKey != nil {
-                ui.focusedElement.HandleKey(key)
+            if ui.focusedElement != nil && ui.focusedElement.HandleKeys != nil {
+                ui.focusedElement.HandleKeys(keys)
             }
         }
     }

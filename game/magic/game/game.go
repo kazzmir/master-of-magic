@@ -2496,12 +2496,14 @@ func (game *Game) MakeHudUI() *uilib.UI {
                 }
             })
         },
-        HandleKey: func(key ebiten.Key){
-            switch key {
-                case ebiten.KeySpace:
-                    if game.Players[0].SelectedStack == nil {
-                        game.DoNextTurn()
-                    }
+        HandleKeys: func(keys []ebiten.Key){
+            for _, key := range keys {
+                switch key {
+                    case ebiten.KeySpace:
+                        if game.Players[0].SelectedStack == nil {
+                            game.DoNextTurn()
+                        }
+                }
             }
         },
     }

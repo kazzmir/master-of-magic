@@ -190,6 +190,8 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
     nameRect := image.Rect(30, 12, 30 + 130, 12 + nameFont.Height() + 2)
     nameFocused := false
     name := artifactType.Name()
+    nameColorSource := ebiten.NewImage(1, 1)
+    nameColorSource.Fill(color.RGBA{R: 0xf3, G: 0xb3, B: 0x47, A: 0xff})
     elements = append(elements, &uilib.UIElement{
         Rect: nameRect,
         GainFocus: func(element *uilib.UIElement){
@@ -205,11 +207,38 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
                 }
             }
         },
-        HandleKey: func(key ebiten.Key){
-            if key == ebiten.KeyBackspace {
-                if len(name) > 0 {
+        HandleKeys: func(keys []ebiten.Key){
+            u := false
+            w := false
+
+            for _, key := range keys {
+                if key == ebiten.KeyU {
+                    u = true
+                }
+
+                if key == ebiten.KeyW {
+                    w = true
+                }
+
+                if key == ebiten.KeyBackspace {
+                    if len(name) > 0 {
+                        name = name[0:len(name) - 1]
+                    }
+                }
+            }
+
+            if ebiten.IsKeyPressed(ebiten.KeyControl) && w {
+                for len(name) > 0 && name[len(name) - 1] != ' ' {
                     name = name[0:len(name) - 1]
                 }
+
+                for len(name) > 0 && name[len(name) - 1] == ' ' {
+                    name = name[0:len(name) - 1]
+                }
+            }
+
+            if ebiten.IsKeyPressed(ebiten.KeyControl) && u {
+                name = ""
             }
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
@@ -220,6 +249,10 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
             }
 
             nameFont.Print(screen, float64(nameRect.Min.X + 1), float64(nameRect.Min.Y + 1), 1, scale, name)
+
+            if nameFocused {
+                util.DrawTextCursor(screen, nameColorSource, float64(nameRect.Min.X) + 1 + nameFont.MeasureTextWidth(name, 1), float64(nameRect.Min.Y) + 1, ui.Counter)
+            }
         },
     })
 

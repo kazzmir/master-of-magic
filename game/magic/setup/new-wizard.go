@@ -373,24 +373,26 @@ func (screen *NewWizardScreen) MakeCustomNameUI() *uilib.UI {
 
     ui := &uilib.UI{
         Elements: make(map[uilib.UILayer][]*uilib.UIElement),
-        HandleKey: func(key ebiten.Key){
-            switch key {
-                case ebiten.KeyBackspace:
-                    length := len(screen.CustomWizard.Name)
-                    if length > 0 {
-                        length -= 1
-                    }
-                    screen.CustomWizard.Name = screen.CustomWizard.Name[0:length]
-                case ebiten.KeyEnter:
-                    screen.State = NewWizardScreenStateCustomBooks
-                    screen.UI = screen.MakeCustomWizardBooksUI()
-                case ebiten.KeySpace:
-                    screen.CustomWizard.Name += " "
-                default:
-                    str := strings.ToLower(key.String())
-                    if str != "" && validNameString(str) {
-                        screen.CustomWizard.Name += str
-                    }
+        HandleKeys: func(keys []ebiten.Key){
+            for _, key := range keys {
+                switch key {
+                    case ebiten.KeyBackspace:
+                        length := len(screen.CustomWizard.Name)
+                        if length > 0 {
+                            length -= 1
+                        }
+                        screen.CustomWizard.Name = screen.CustomWizard.Name[0:length]
+                    case ebiten.KeyEnter:
+                        screen.State = NewWizardScreenStateCustomBooks
+                        screen.UI = screen.MakeCustomWizardBooksUI()
+                    case ebiten.KeySpace:
+                        screen.CustomWizard.Name += " "
+                    default:
+                        str := strings.ToLower(key.String())
+                        if str != "" && validNameString(str) {
+                            screen.CustomWizard.Name += str
+                        }
+                }
             }
 
             if len(screen.CustomWizard.Name) > MaxNameLength {
