@@ -52,6 +52,13 @@ func (a ArtifactType) Name() string {
     return ""
 }
 
+// the screen can be invoked as either the 'Enchant Item' spell or 'Create Artifact'
+type CreationScreen int
+const (
+    CreationEnchantItem CreationScreen = iota
+    CreationCreateArtifact
+)
+
 type Power interface {
     String() string
     Cost() int
@@ -509,10 +516,93 @@ func makeFonts(cache *lbx.LbxCache) (*font.Font, *font.Font, *font.Font) {
     return powerFont, powerFontWhite, nameFont
 }
 
+func getSwordPowers(creationType CreationScreen) [][]Power {
+    switch creationType {
+        case CreationCreateArtifact: return [][]Power{
+            []Power{
+                &PowerAttack{Amount: 1},
+                &PowerAttack{Amount: 2},
+                &PowerAttack{Amount: 3},
+            },
+            []Power{
+                &PowerDefense{Amount: 1},
+                &PowerDefense{Amount: 2},
+                &PowerDefense{Amount: 3},
+            },
+            []Power{
+                &PowerToHit{Amount: 1},
+                &PowerToHit{Amount: 2},
+                &PowerToHit{Amount: 3},
+            },
+            []Power{
+                &PowerSpellSkill{Amount: 5},
+                &PowerSpellSkill{Amount: 10},
+            },
+        }
+        case CreationEnchantItem: return [][]Power {
+            []Power{
+                &PowerAttack{Amount: 1},
+                &PowerAttack{Amount: 2},
+                &PowerAttack{Amount: 3},
+            },
+            []Power{
+                &PowerDefense{Amount: 1},
+                &PowerDefense{Amount: 2},
+                &PowerDefense{Amount: 3},
+            },
+            []Power{
+                &PowerSpellSkill{Amount: 5},
+            },
+        }
+    }
+
+    return nil
+}
+
+func getMacePowers(creationType CreationScreen) [][]Power {
+    switch creationType {
+        case CreationCreateArtifact: return [][]Power{
+            []Power{
+                &PowerAttack{Amount: 1},
+                &PowerAttack{Amount: 2},
+                &PowerAttack{Amount: 3},
+                &PowerAttack{Amount: 4},
+            },
+            []Power{
+                &PowerDefense{Amount: 1},
+            },
+            []Power{
+                &PowerToHit{Amount: 1},
+                &PowerToHit{Amount: 2},
+                &PowerToHit{Amount: 3},
+            },
+            []Power{
+                &PowerSpellSkill{Amount: 5},
+                &PowerSpellSkill{Amount: 10},
+            },
+        }
+        case CreationEnchantItem: return [][]Power {
+            []Power{
+                &PowerAttack{Amount: 1},
+                &PowerAttack{Amount: 2},
+                &PowerAttack{Amount: 3},
+            },
+            []Power{
+                &PowerDefense{Amount: 1},
+            },
+            []Power{
+                &PowerSpellSkill{Amount: 5},
+            },
+        }
+    }
+
+    return nil
+}
+
 /* returns the artifact that was created and true,
  * otherwise false for cancelled
  */
-func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, draw *func(*ebiten.Image)) (*Artifact, bool) {
+func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, creationType CreationScreen, draw *func(*ebiten.Image)) (*Artifact, bool) {
     powerFont, powerFontWhite, nameFont := makeFonts(cache)
 
     imageCache := util.MakeImageCache(cache)
@@ -554,48 +644,9 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, dr
         }
     }
 
-    powers[ArtifactTypeSword] = makePowers(0, 8, ArtifactTypeSword, [][]Power{
-        []Power{
-            &PowerAttack{Amount: 1},
-            &PowerAttack{Amount: 2},
-            &PowerAttack{Amount: 3},
-        },
-        []Power{
-            &PowerDefense{Amount: 1},
-            &PowerDefense{Amount: 2},
-            &PowerDefense{Amount: 3},
-        },
-        []Power{
-            &PowerToHit{Amount: 1},
-            &PowerToHit{Amount: 2},
-            &PowerToHit{Amount: 3},
-        },
-        []Power{
-            &PowerSpellSkill{Amount: 5},
-            &PowerSpellSkill{Amount: 10},
-        },
-    })
+    powers[ArtifactTypeSword] = makePowers(0, 8, ArtifactTypeSword, getSwordPowers(creationType))
 
-    powers[ArtifactTypeMace] = makePowers(9, 19, ArtifactTypeMace, [][]Power{
-        []Power{
-            &PowerAttack{Amount: 1},
-            &PowerAttack{Amount: 2},
-            &PowerAttack{Amount: 3},
-            &PowerAttack{Amount: 4},
-        },
-        []Power{
-            &PowerDefense{Amount: 1},
-        },
-        []Power{
-            &PowerToHit{Amount: 1},
-            &PowerToHit{Amount: 2},
-            &PowerToHit{Amount: 3},
-        },
-        []Power{
-            &PowerSpellSkill{Amount: 5},
-            &PowerSpellSkill{Amount: 10},
-        },
-    })
+    powers[ArtifactTypeMace] = makePowers(9, 19, ArtifactTypeMace, getMacePowers(creationType))
 
     powers[ArtifactTypeAxe] = makePowers(20, 28, ArtifactTypeAxe, [][]Power{
         []Power{
