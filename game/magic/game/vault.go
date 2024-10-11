@@ -4,12 +4,14 @@ import (
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/artifact"
+    "github.com/kazzmir/master-of-magic/game/magic/hero"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
 
     "github.com/hajimehoshi/ebiten/v2"
 )
 
-func (game *Game) showVaultScreen() (func(coroutine.YieldFunc), func (*ebiten.Image)) {
+func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, heroes []*hero.Hero) (func(coroutine.YieldFunc), func (*ebiten.Image)) {
 
     imageCache := util.MakeImageCache(game.Cache)
 
@@ -19,6 +21,9 @@ func (game *Game) showVaultScreen() (func(coroutine.YieldFunc), func (*ebiten.Im
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(data.ScreenWidth / 2 - background.Bounds().Dx() / 2), 2)
             screen.DrawImage(background, &options)
+
+            if createdArtifact != nil {
+            }
         },
     }
 

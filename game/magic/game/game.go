@@ -1497,7 +1497,7 @@ func (game *Game) doVault(yield coroutine.YieldFunc) {
     }()
 
 
-    vaultLogic, vaultDrawer := game.showVaultScreen()
+    vaultLogic, vaultDrawer := game.showVaultScreen(nil, nil)
 
     game.Drawer = func (screen *ebiten.Image, game *Game){
         drawer(screen, game)
