@@ -63,11 +63,7 @@ func validateData(entries []fs.DirEntry) bool {
     return false
 }
 
-func maybeOpenZip(here fs.FS, entry fs.DirEntry) *LbxCache {
-    reader, err := here.Open(entry.Name())
-    if err != nil {
-        return nil
-    }
+func maybeOpenZip(reader io.Reader) *LbxCache {
 
     /*
     info, err := reader.Stat()
@@ -85,16 +81,10 @@ func maybeOpenZip(here fs.FS, entry fs.DirEntry) *LbxCache {
     zipper, err := zip.NewReader(byteReader, byteReader.Size())
     if err == nil {
         entries, err := fs.ReadDir(zipper, ".")
-
         if err == nil && validateData(entries) {
-            log.Printf("Found data in zip file %v", entry.Name())
             return MakeLbxCache(zipper)
         }
-    } else {
-        log.Printf("Unable to open zip file %v: %v", entry.Name(), err)
     }
-
-    reader.Close()
 
     return nil
 }
@@ -121,15 +111,38 @@ func searchFs(here fs.FS) *LbxCache {
             } else if strings.HasSuffix(strings.ToLower(entry.Name()), ".zip") {
                 // log.Printf("Check zip file '%v'", entry.Name())
 
-                cache := maybeOpenZip(here, entry)
-                if cache != nil {
-                    return cache
+                reader, err := here.Open(entry.Name())
+                if err == nil {
+                    cache := maybeOpenZip(reader)
+                    if cache != nil {
+                        log.Printf("Found data in zip file %v", entry.Name())
+                        reader.Close()
+                        return cache
+                    }
+
+                    reader.Close()
+                } else {
+                    log.Printf("Unable to open zip file %v: %v", entry.Name(), err)
                 }
             }
         }
     }
 
     return nil
+}
+
+func CacheFromPath(path string) *LbxCache {
+    if strings.HasSuffix(strings.ToLower(path), ".zip") {
+        reader, err := os.Open(path)
+        if err != nil {
+            log.Printf("Unable to open %v: %v", path, err)
+            return nil
+        }
+        defer reader.Close()
+        return maybeOpenZip(reader)
+    } else {
+        return searchFs(os.DirFS(path))
+    }
 }
 
 func AutoCache() *LbxCache {

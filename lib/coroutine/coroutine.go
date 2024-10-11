@@ -10,6 +10,7 @@ import (
 type Coroutine struct {
     yieldFrom chan struct{}
     yieldTo chan struct{}
+    errorOut *error
 }
 
 type YieldFunc func() error
@@ -22,10 +23,12 @@ func MakeCoroutine(user AcceptYieldFunc) *Coroutine {
     yieldTo := make(chan struct{})
     yieldFrom := make(chan struct{})
 
+    coroutineError := CoroutineFinished
+
     go func(){
         defer func(){ close(yieldTo) }()
         <-yieldFrom
-        user(func() error {
+        err := user(func() error {
             yieldTo <- struct{}{}
             _, ok := <-yieldFrom
 
@@ -35,20 +38,28 @@ func MakeCoroutine(user AcceptYieldFunc) *Coroutine {
 
             return nil
         })
+        if err != nil {
+            coroutineError = err
+        }
     }()
 
     return &Coroutine{
         yieldFrom: yieldFrom,
         yieldTo: yieldTo,
+        errorOut: &coroutineError,
     }
 }
 
+/* nil return means the coroutine is still running.
+ * CoroutineFinished means the coroutine has finished.
+ * any other non-nil error is an error from the user's function
+ */
 func (coro *Coroutine) Run() error {
     coro.yieldFrom <- struct{}{}
     _, ok := <-coro.yieldTo
     if !ok {
         close(coro.yieldFrom)
-        return CoroutineFinished
+        return *coro.errorOut
     }
     return nil
 }
