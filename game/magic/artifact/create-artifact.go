@@ -3,6 +3,7 @@ package artifact
 import (
     "fmt"
     "image"
+    "slices"
     "image/color"
     "log"
 
@@ -214,6 +215,16 @@ type Artifact struct {
     Powers []Power
 }
 
+func (artifact *Artifact) AddPower(power Power) {
+    artifact.Powers = append(artifact.Powers, power)
+}
+
+func (artifact *Artifact) RemovePower(remove Power) {
+    artifact.Powers = slices.DeleteFunc(artifact.Powers, func (power Power) bool {
+        return remove == power
+    })
+}
+
 func (artifact *Artifact) Cost() int {
     base := 0
     switch artifact.Type {
@@ -394,6 +405,7 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
 
         groupRight := printRight
 
+        var lastPower Power = nil
         for i, power := range group {
             rect := image.Rect(x, y, x + int(powerFont.MeasureTextWidth(power.String(), 1)), y + powerFont.Height())
             if groupRight {
@@ -407,14 +419,22 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
                         if groupSelect == i {
                             groupSelect = -1
                             selectCount -= 1
+
+                            artifact.RemovePower(power)
+                            lastPower = nil
                         } else {
                             // something was already selected in this group, so the count doesn't change
                             groupSelect = i
+                            artifact.RemovePower(lastPower)
+                            artifact.AddPower(power)
+                            lastPower = power
                         }
                     } else {
                         if selectCount < 4 {
                             selectCount += 1
                             groupSelect = i
+                            artifact.AddPower(power)
+                            lastPower = power
                         } else {
                             ui.AddElement(uilib.MakeErrorElement(ui, cache, imageCache, "Only four powers may be enchanted into an item"))
                         }
@@ -447,17 +467,17 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
     return elements
 }
 
-func makeFonts(cache *lbx.LbxCache) (*font.Font, *font.Font) {
+func makeFonts(cache *lbx.LbxCache) (*font.Font, *font.Font, *font.Font) {
     fontLbx, err := cache.GetLbxFile("fonts.lbx")
     if err != nil {
         log.Printf("Unable to read fonts.lbx: %v", err)
-        return nil, nil
+        return nil, nil, nil
     }
 
     fonts, err := font.ReadFonts(fontLbx, 0)
     if err != nil {
         log.Printf("Unable to read fonts from fonts.lbx: %v", err)
-        return nil, nil
+        return nil, nil, nil
     }
 
     // solid := util.Lighten(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, -40)
@@ -483,7 +503,9 @@ func makeFonts(cache *lbx.LbxCache) (*font.Font, *font.Font) {
 
     nameFont := font.MakeOptimizedFontWithPalette(fonts[1], greyPalette)
 
-    return powerFont, nameFont
+    powerFontWhite := font.MakeOptimizedFontWithPalette(fonts[3], greyPalette)
+
+    return powerFont, powerFontWhite, nameFont
 }
 
 /* returns the artifact that was created and true,
@@ -492,7 +514,7 @@ func makeFonts(cache *lbx.LbxCache) (*font.Font, *font.Font) {
 func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, draw *func(*ebiten.Image)) (*Artifact, bool) {
     quit := false
 
-    powerFont, nameFont := makeFonts(cache)
+    powerFont, powerFontWhite, nameFont := makeFonts(cache)
 
     imageCache := util.MakeImageCache(cache)
 
@@ -525,6 +547,7 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, dr
     // manually curry
     makePowers := func(picLow int, picHigh int, artifactType ArtifactType, groups [][]Power) PowerArtifact {
         var artifact Artifact
+        artifact.Type = artifactType
         elements := makePowersFull(ui, cache, &imageCache, nameFont, powerFont, artifactType, picLow, picHigh, groups, &artifact)
         return PowerArtifact{
             Elements: elements,
@@ -848,7 +871,7 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, dr
 
     ui.AddElement(&uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            powerFont.Print(screen, 198, 185, 1, ebiten.ColorScale{}, fmt.Sprintf("Cost: %v", currentArtifact.Cost()))
+            powerFontWhite.Print(screen, 198, 185, 1, ebiten.ColorScale{}, fmt.Sprintf("Cost: %v", currentArtifact.Cost()))
         },
     })
 
