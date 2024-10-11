@@ -1,6 +1,7 @@
 .PHONY: magic magic.wasm lbxdump wasm itch.io test
 
 magic:
+	go mod tidy
 	go build -o magic ./game/magic
 
 wasm: magic.wasm
