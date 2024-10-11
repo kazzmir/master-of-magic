@@ -52,10 +52,24 @@ func (a ArtifactType) Name() string {
 
 type Power interface {
     String() string
+    Cost() int
 }
 
 type PowerAttack struct {
     Amount int
+}
+
+func (p *PowerAttack) Cost() int {
+    switch p.Amount {
+        case 1: return 50
+        case 2: return 100
+        case 3: return 200
+        case 4: return 350
+        case 5: return 550
+        case 6: return 800
+    }
+
+    return 800
 }
 
 func (p *PowerAttack) String() string {
@@ -66,12 +80,35 @@ type PowerDefense struct {
     Amount int
 }
 
+func (p *PowerDefense) Cost() int {
+    switch p.Amount {
+        case 1: return 50
+        case 2: return 100
+        case 3: return 200
+        case 4: return 350
+        case 5: return 550
+        case 6: return 800
+    }
+
+    return 800
+}
+
 func (p *PowerDefense) String() string {
     return fmt.Sprintf("+%v Defense", p.Amount)
 }
 
 type PowerToHit struct {
     Amount int
+}
+
+func (p *PowerToHit) Cost() int {
+    switch p.Amount {
+        case 1: return 400
+        case 2: return 800
+        case 3: return 1200
+    }
+
+    return 1200
 }
 
 func (p *PowerToHit) String() string {
@@ -82,12 +119,34 @@ type PowerSpellSkill struct {
     Amount int
 }
 
+func (p *PowerSpellSkill) Cost() int {
+    switch p.Amount {
+        case 5: return 200
+        case 10: return 400
+        case 15: return 800
+        case 20: return 1600
+    }
+
+    return 1600
+}
+
 func (p *PowerSpellSkill) String() string {
     return fmt.Sprintf("+%v Spell Skill", p.Amount)
 }
 
 type PowerSpellSave struct {
     Amount int
+}
+
+func (p *PowerSpellSave) Cost() int {
+    switch p.Amount {
+        case -1: return 100
+        case -2: return 200
+        case -3: return 400
+        case -4: return 800
+    }
+
+    return 800
 }
 
 func (p *PowerSpellSave) String() string {
@@ -98,8 +157,32 @@ type PowerResistance struct {
     Amount int
 }
 
+func (p *PowerResistance) Cost() int {
+    switch p.Amount {
+        case 1: return 50
+        case 2: return 100
+        case 3: return 200
+        case 4: return 350
+        case 5: return 550
+        case 6: return 800
+    }
+
+    return 800
+}
+
 func (p *PowerResistance) String() string {
     return fmt.Sprintf("+%v Resistance", p.Amount)
+}
+
+func (p *PowerMovement) Cost() int {
+    switch p.Amount {
+        case 1: return 100
+        case 2: return 200
+        case 3: return 400
+        case 4: return 800
+    }
+
+    return 800
 }
 
 type PowerMovement struct {
@@ -115,6 +198,11 @@ type PowerSpellCharges struct {
     Charges int
 }
 
+func (p *PowerSpellCharges) Cost() int {
+    // FIXME: depends on the spell and the charges
+    return 0
+}
+
 func (p *PowerSpellCharges) String() string {
     return "Spell Charges"
 }
@@ -124,6 +212,40 @@ type Artifact struct {
     Image int
     Name string
     Powers []Power
+}
+
+func (artifact *Artifact) Cost() int {
+    base := 0
+    switch artifact.Type {
+        case ArtifactTypeSword: base = 100
+        case ArtifactTypeMace: base = 100
+        case ArtifactTypeAxe: base = 100
+        case ArtifactTypeBow: base = 100
+        case ArtifactTypeStaff: base = 300
+        case ArtifactTypeWand: base = 200
+        case ArtifactTypeMisc: base = 50
+        case ArtifactTypeShield: base = 100
+        case ArtifactTypeChain: base = 100
+        case ArtifactTypePlate: base = 300
+    }
+
+    powerCost := 0
+    spellCost := 0
+    for _, power := range artifact.Powers {
+        spell, isSpell := power.(*PowerSpellCharges)
+        if isSpell {
+            spellCost += spell.Cost()
+        } else {
+            powerCost += power.Cost()
+        }
+    }
+
+    // jewelry costs are 2x
+    if artifact.Type == ArtifactTypeMisc {
+        powerCost *= 2
+    }
+
+    return base + powerCost + spellCost
 }
 
 func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCache, nameFont *font.Font, powerFont *font.Font, artifactType ArtifactType, picLow int, picHigh int, powerGroups [][]Power) []*uilib.UIElement {
