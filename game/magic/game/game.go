@@ -2852,16 +2852,14 @@ func (game *Game) MakeHudUI() *uilib.UI {
         elements = append(elements, &uilib.UIElement{
             Rect: buildRect,
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                colorScale := ebiten.ColorScale{}
+                var options colorm.DrawImageOptions
+                var matrix colorm.ColorM
+                options.GeoM.Translate(float64(buildRect.Min.X), float64(buildRect.Min.Y))
 
                 if buildCounter > 0 {
-                    v := float32(1 + (math.Sin(float64(buildCounter / 4)) / 2 + 0.5) / 2)
-                    colorScale.Scale(v, v, v, 1)
+                    v := 1 + (math.Sin(float64(buildCounter / 4)) / 2 + 0.5) / 2
+                    matrix.Scale(v, v, v, 1)
                 }
-
-                var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(buildRect.Min.X), float64(buildRect.Min.Y))
-                options.ColorScale.ScaleWithColorScale(colorScale)
 
                 var use *ebiten.Image
                 use = inactiveBuild[0]
@@ -2871,7 +2869,6 @@ func (game *Game) MakeHudUI() *uilib.UI {
                 if player.SelectedStack != nil {
                     powers = computeUnitBuildPowers(player.SelectedStack)
                 }
-
 
                 if powers.CreateOutpost {
                     use = buildImages[buildIndex]
@@ -2885,11 +2882,11 @@ func (game *Game) MakeHudUI() *uilib.UI {
                     }
 
                     if !canMeld {
-                        options.ColorM.ChangeHSV(0, 0, 1)
+                        matrix.ChangeHSV(0, 0, 1)
                     }
                 }
 
-                screen.DrawImage(use, &options)
+                colorm.DrawImage(screen, use, matrix, &options)
             },
             Inside: func(this *uilib.UIElement, x int, y int){
                 buildCounter += 1

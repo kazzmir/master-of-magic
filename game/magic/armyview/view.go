@@ -15,6 +15,7 @@ import (
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
 
     "github.com/hajimehoshi/ebiten/v2"
+    "github.com/hajimehoshi/ebiten/v2/colorm"
     "github.com/hajimehoshi/ebiten/v2/vector"
 )
 
@@ -221,7 +222,8 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
                         highlightedUnit = unit
                     },
                     Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
-                        var options ebiten.DrawImageOptions
+                        var options colorm.DrawImageOptions
+                        var matrix colorm.ColorM
                         options.GeoM.Translate(elementX, elementY)
 
                         if highlightedUnit == unit {
@@ -230,10 +232,10 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
                         }
 
                         if unit.Patrol {
-                            options.ColorM.ChangeHSV(0, 0, 1)
+                            matrix.ChangeHSV(0, 0, 1)
                         }
 
-                        screen.DrawImage(pic, &options)
+                        colorm.DrawImage(screen, pic, matrix, &options)
                     },
                 })
                 x += pic.Bounds().Dx() + 1
