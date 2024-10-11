@@ -81,6 +81,9 @@ type GameEventApprenticeUI struct {
 type GameEventCastSpellBook struct {
 }
 
+type GameEventVault struct {
+}
+
 type GameEventNewOutpost struct {
     City *citylib.City
     Stack *playerlib.UnitStack
@@ -1487,6 +1490,23 @@ func (game *Game) doLoadMenu(yield coroutine.YieldFunc) {
     yield()
 }
 
+func (game *Game) doVault(yield coroutine.YieldFunc) {
+    drawer := game.Drawer
+    defer func(){
+        game.Drawer = drawer
+    }()
+
+
+    vaultLogic, vaultDrawer := game.showVaultScreen()
+
+    game.Drawer = func (screen *ebiten.Image, game *Game){
+        drawer(screen, game)
+        vaultDrawer(screen)
+    }
+
+    vaultLogic(yield)
+}
+
 func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
     // keep processing events until we don't receive one in the events channel
     for {
@@ -1510,6 +1530,8 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                     case *GameEventNewOutpost:
                         outpost := event.(*GameEventNewOutpost)
                         game.showOutpost(yield, outpost.City, outpost.Stack)
+                    case *GameEventVault:
+                        game.doVault(yield)
                     case *GameEventScroll:
                         scroll := event.(*GameEventScroll)
                         game.showScroll(yield, scroll.Title, scroll.Text)

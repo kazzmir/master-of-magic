@@ -939,6 +939,8 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
 
     player.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x + 1, y + 1, data.PlaneArcanus, wizard.Banner))
 
+    game.Events <- &gamelib.GameEventVault{}
+
     return game
 }
 
