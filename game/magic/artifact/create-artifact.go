@@ -775,6 +775,224 @@ func getWandPowers(creationType CreationScreen) [][]Power {
     return nil
 }
 
+func getMiscPowers(creationType CreationScreen) [][]Power {
+    switch creationType {
+        case CreationCreateArtifact: return [][]Power{
+            []Power{
+                &PowerAttack{Amount: 1},
+                &PowerAttack{Amount: 2},
+                &PowerAttack{Amount: 3},
+                &PowerAttack{Amount: 4},
+            },
+            []Power{
+                &PowerDefense{Amount: 1},
+                &PowerDefense{Amount: 2},
+                &PowerDefense{Amount: 3},
+                &PowerDefense{Amount: 4},
+            },
+            []Power{
+                &PowerToHit{Amount: 1},
+                &PowerToHit{Amount: 2},
+            },
+            []Power{
+                &PowerMovement{Amount: 1},
+                &PowerMovement{Amount: 2},
+                &PowerMovement{Amount: 3},
+            },
+            []Power{
+                &PowerResistance{Amount: 1},
+                &PowerResistance{Amount: 2},
+                &PowerResistance{Amount: 3},
+                &PowerResistance{Amount: 4},
+                &PowerResistance{Amount: 5},
+                &PowerResistance{Amount: 6},
+            },
+            []Power{
+                &PowerSpellSkill{Amount: 5},
+                &PowerSpellSkill{Amount: 10},
+                &PowerSpellSkill{Amount: 15},
+            },
+            []Power{
+                &PowerSpellSave{Amount: -1},
+                &PowerSpellSave{Amount: -2},
+                &PowerSpellSave{Amount: -3},
+                &PowerSpellSave{Amount: -4},
+            },
+        }
+        case CreationEnchantItem: return [][]Power{
+            []Power{
+                &PowerAttack{Amount: 1},
+                &PowerAttack{Amount: 2},
+                &PowerAttack{Amount: 3},
+            },
+            []Power{
+                &PowerDefense{Amount: 1},
+                &PowerDefense{Amount: 2},
+                &PowerDefense{Amount: 3},
+            },
+            []Power{
+                &PowerMovement{Amount: 1},
+                &PowerMovement{Amount: 2},
+            },
+            []Power{
+                &PowerResistance{Amount: 1},
+                &PowerResistance{Amount: 2},
+                &PowerResistance{Amount: 3},
+            },
+            []Power{
+                &PowerSpellSkill{Amount: 5},
+            },
+            []Power{
+                &PowerSpellSave{Amount: -1},
+                &PowerSpellSave{Amount: -2},
+            },
+        }
+    }
+
+    return nil
+}
+
+func getShieldPowers(creationType CreationScreen) [][]Power {
+    switch creationType {
+        case CreationCreateArtifact: return [][]Power{
+            []Power{
+                &PowerDefense{Amount: 1},
+                &PowerDefense{Amount: 2},
+                &PowerDefense{Amount: 3},
+                &PowerDefense{Amount: 4},
+                &PowerDefense{Amount: 5},
+                &PowerDefense{Amount: 6},
+            },
+            []Power{
+                &PowerMovement{Amount: 1},
+                &PowerMovement{Amount: 2},
+                &PowerMovement{Amount: 3},
+                &PowerMovement{Amount: 4},
+            },
+            []Power{
+                &PowerResistance{Amount: 1},
+                &PowerResistance{Amount: 2},
+                &PowerResistance{Amount: 3},
+                &PowerResistance{Amount: 4},
+                &PowerResistance{Amount: 5},
+                &PowerResistance{Amount: 6},
+            },
+        }
+        case CreationEnchantItem: return [][]Power{
+            []Power{
+                &PowerDefense{Amount: 1},
+                &PowerDefense{Amount: 2},
+                &PowerDefense{Amount: 3},
+            },
+            []Power{
+                &PowerMovement{Amount: 1},
+                &PowerMovement{Amount: 2},
+            },
+            []Power{
+                &PowerResistance{Amount: 1},
+                &PowerResistance{Amount: 2},
+                &PowerResistance{Amount: 3},
+            },
+        }
+    }
+
+    return nil
+}
+
+func getChainPowers(creationType CreationScreen) [][]Power {
+    switch creationType {
+        case CreationCreateArtifact: return [][]Power{
+            []Power{
+                &PowerDefense{Amount: 1},
+                &PowerDefense{Amount: 2},
+                &PowerDefense{Amount: 3},
+                &PowerDefense{Amount: 4},
+                &PowerDefense{Amount: 5},
+                &PowerDefense{Amount: 6},
+            },
+            []Power{
+                &PowerMovement{Amount: 1},
+                &PowerMovement{Amount: 2},
+                &PowerMovement{Amount: 3},
+                &PowerMovement{Amount: 4},
+            },
+            []Power{
+                &PowerResistance{Amount: 1},
+                &PowerResistance{Amount: 2},
+                &PowerResistance{Amount: 3},
+                &PowerResistance{Amount: 4},
+                &PowerResistance{Amount: 5},
+                &PowerResistance{Amount: 6},
+            },
+        }
+        case CreationEnchantItem: return [][]Power{
+            []Power{
+                &PowerDefense{Amount: 1},
+                &PowerDefense{Amount: 2},
+                &PowerDefense{Amount: 3},
+            },
+            []Power{
+                &PowerMovement{Amount: 1},
+                &PowerMovement{Amount: 2},
+            },
+            []Power{
+                &PowerResistance{Amount: 1},
+                &PowerResistance{Amount: 2},
+                &PowerResistance{Amount: 3},
+            },
+        }
+    }
+
+    return nil
+}
+
+func getPlatePowers(creationType CreationScreen) [][]Power {
+    switch creationType {
+        case CreationCreateArtifact: return [][]Power{
+            []Power{
+                &PowerDefense{Amount: 1},
+                &PowerDefense{Amount: 2},
+                &PowerDefense{Amount: 3},
+                &PowerDefense{Amount: 4},
+                &PowerDefense{Amount: 5},
+                &PowerDefense{Amount: 6},
+            },
+            []Power{
+                &PowerMovement{Amount: 1},
+                &PowerMovement{Amount: 2},
+                &PowerMovement{Amount: 3},
+                &PowerMovement{Amount: 4},
+            },
+            []Power{
+                &PowerResistance{Amount: 1},
+                &PowerResistance{Amount: 2},
+                &PowerResistance{Amount: 3},
+                &PowerResistance{Amount: 4},
+                &PowerResistance{Amount: 5},
+                &PowerResistance{Amount: 6},
+            },
+        }
+        case CreationEnchantItem: return [][]Power{
+            []Power{
+                &PowerDefense{Amount: 1},
+                &PowerDefense{Amount: 2},
+                &PowerDefense{Amount: 3},
+            },
+            []Power{
+                &PowerMovement{Amount: 1},
+                &PowerMovement{Amount: 2},
+            },
+            []Power{
+                &PowerResistance{Amount: 1},
+                &PowerResistance{Amount: 2},
+                &PowerResistance{Amount: 3},
+            },
+        }
+    }
+
+    return nil
+}
+
 /* returns the artifact that was created and true,
  * otherwise false for cancelled
  */
@@ -821,131 +1039,15 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, cr
     }
 
     powers[ArtifactTypeSword] = makePowers(0, 8, ArtifactTypeSword, getSwordPowers(creationType))
-
     powers[ArtifactTypeMace] = makePowers(9, 19, ArtifactTypeMace, getMacePowers(creationType))
-
     powers[ArtifactTypeAxe] = makePowers(20, 28, ArtifactTypeAxe, getAxePowers(creationType))
     powers[ArtifactTypeBow] = makePowers(29, 37, ArtifactTypeBow, getBowPowers(creationType))
     powers[ArtifactTypeStaff] = makePowers(38, 46, ArtifactTypeStaff, getStaffPowers(creationType))
     powers[ArtifactTypeWand] = makePowers(107, 115, ArtifactTypeWand, getWandPowers(creationType))
-    
-    powers[ArtifactTypeMisc] = makePowers(72, 106, ArtifactTypeMisc, [][]Power{
-        []Power{
-            &PowerAttack{Amount: 1},
-            &PowerAttack{Amount: 2},
-            &PowerAttack{Amount: 3},
-            &PowerAttack{Amount: 4},
-        },
-        []Power{
-            &PowerDefense{Amount: 1},
-            &PowerDefense{Amount: 2},
-            &PowerDefense{Amount: 3},
-            &PowerDefense{Amount: 4},
-        },
-        []Power{
-            &PowerToHit{Amount: 1},
-            &PowerToHit{Amount: 2},
-        },
-        []Power{
-            &PowerMovement{Amount: 1},
-            &PowerMovement{Amount: 2},
-            &PowerMovement{Amount: 3},
-        },
-        []Power{
-            &PowerResistance{Amount: 1},
-            &PowerResistance{Amount: 2},
-            &PowerResistance{Amount: 3},
-            &PowerResistance{Amount: 4},
-            &PowerResistance{Amount: 5},
-            &PowerResistance{Amount: 6},
-        },
-        []Power{
-            &PowerSpellSkill{Amount: 5},
-            &PowerSpellSkill{Amount: 10},
-            &PowerSpellSkill{Amount: 15},
-        },
-        []Power{
-            &PowerSpellSave{Amount: -1},
-            &PowerSpellSave{Amount: -2},
-            &PowerSpellSave{Amount: -3},
-            &PowerSpellSave{Amount: -4},
-        },
-    })
-
-    powers[ArtifactTypeShield] = makePowers(62, 71, ArtifactTypeShield, [][]Power{
-        []Power{
-            &PowerDefense{Amount: 1},
-            &PowerDefense{Amount: 2},
-            &PowerDefense{Amount: 3},
-            &PowerDefense{Amount: 4},
-            &PowerDefense{Amount: 5},
-            &PowerDefense{Amount: 6},
-        },
-        []Power{
-            &PowerMovement{Amount: 1},
-            &PowerMovement{Amount: 2},
-            &PowerMovement{Amount: 3},
-            &PowerMovement{Amount: 4},
-        },
-        []Power{
-            &PowerResistance{Amount: 1},
-            &PowerResistance{Amount: 2},
-            &PowerResistance{Amount: 3},
-            &PowerResistance{Amount: 4},
-            &PowerResistance{Amount: 5},
-            &PowerResistance{Amount: 6},
-        },
-    })
-
-    powers[ArtifactTypeChain] = makePowers(47, 54, ArtifactTypeChain, [][]Power{
-        []Power{
-            &PowerDefense{Amount: 1},
-            &PowerDefense{Amount: 2},
-            &PowerDefense{Amount: 3},
-            &PowerDefense{Amount: 4},
-            &PowerDefense{Amount: 5},
-            &PowerDefense{Amount: 6},
-        },
-        []Power{
-            &PowerMovement{Amount: 1},
-            &PowerMovement{Amount: 2},
-            &PowerMovement{Amount: 3},
-            &PowerMovement{Amount: 4},
-        },
-        []Power{
-            &PowerResistance{Amount: 1},
-            &PowerResistance{Amount: 2},
-            &PowerResistance{Amount: 3},
-            &PowerResistance{Amount: 4},
-            &PowerResistance{Amount: 5},
-            &PowerResistance{Amount: 6},
-        },
-    })
-
-    powers[ArtifactTypePlate] = makePowers(55, 61, ArtifactTypePlate, [][]Power{
-        []Power{
-            &PowerDefense{Amount: 1},
-            &PowerDefense{Amount: 2},
-            &PowerDefense{Amount: 3},
-            &PowerDefense{Amount: 4},
-            &PowerDefense{Amount: 5},
-            &PowerDefense{Amount: 6},
-        },
-        []Power{
-            &PowerMovement{Amount: 1},
-            &PowerMovement{Amount: 2},
-            &PowerMovement{Amount: 3},
-            &PowerMovement{Amount: 4},
-        },
-        []Power{
-            &PowerResistance{Amount: 1},
-            &PowerResistance{Amount: 2},
-            &PowerResistance{Amount: 3},
-            &PowerResistance{Amount: 4},
-            &PowerResistance{Amount: 5},
-            &PowerResistance{Amount: 6},
-        },
-    })
+    powers[ArtifactTypeMisc] = makePowers(72, 106, ArtifactTypeMisc, getMiscPowers(creationType))
+    powers[ArtifactTypeShield] = makePowers(62, 71, ArtifactTypeShield, getShieldPowers(creationType))
+    powers[ArtifactTypeChain] = makePowers(47, 54, ArtifactTypeChain, getChainPowers(creationType))
+    powers[ArtifactTypePlate] = makePowers(55, 61, ArtifactTypePlate, getPlatePowers(creationType))
 
     updatePowers := func(index ArtifactType){
         for _, each := range powers {
