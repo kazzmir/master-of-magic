@@ -1496,8 +1496,17 @@ func (game *Game) doVault(yield coroutine.YieldFunc) {
         game.Drawer = drawer
     }()
 
+    testArtifact := artifact.Artifact{
+        Name: "Sword",
+        Type: artifact.ArtifactTypeSword,
+        Powers: []artifact.Power{
+            &artifact.PowerAttack{
+                Amount: 2,
+            },
+        },
+    }
 
-    vaultLogic, vaultDrawer := game.showVaultScreen(nil, nil)
+    vaultLogic, vaultDrawer := game.showVaultScreen(&testArtifact, nil)
 
     game.Drawer = func (screen *ebiten.Image, game *Game){
         drawer(screen, game)

@@ -23,6 +23,9 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, heroes []*
             screen.DrawImage(background, &options)
 
             if createdArtifact != nil {
+                itemBackground, _ := imageCache.GetImage("itemisc.lbx", 25, 0)
+                options.GeoM.Translate(32, 48)
+                screen.DrawImage(itemBackground, &options)
             }
         },
     }
