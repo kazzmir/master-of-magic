@@ -30,7 +30,8 @@ func NewEngine() (*Engine, error) {
     }
 
     run := func(yield coroutine.YieldFunc) error {
-        artifact.ShowCreateArtifactScreen(yield, engine.Cache, &engine.Drawer)
+        create, _ := artifact.ShowCreateArtifactScreen(yield, engine.Cache, &engine.Drawer)
+        log.Printf("Create artifact: %+v", create)
         return nil
     }
 
@@ -50,7 +51,9 @@ func (engine *Engine) Update() error {
         }
     }
 
-    engine.Coroutine.Run()
+    if engine.Coroutine.Run() != nil {
+        return ebiten.Termination
+    }
 
     return nil
 }

@@ -512,8 +512,6 @@ func makeFonts(cache *lbx.LbxCache) (*font.Font, *font.Font, *font.Font) {
  * otherwise false for cancelled
  */
 func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, draw *func(*ebiten.Image)) (*Artifact, bool) {
-    quit := false
-
     powerFont, powerFontWhite, nameFont := makeFonts(cache)
 
     imageCache := util.MakeImageCache(cache)
@@ -872,6 +870,28 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, dr
     ui.AddElement(&uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             powerFontWhite.Print(screen, 198, 185, 1, ebiten.ColorScale{}, fmt.Sprintf("Cost: %v", currentArtifact.Cost()))
+        },
+    })
+
+    quit := false
+
+    okButtons, _ := imageCache.GetImages("spellscr.lbx", 24)
+    okIndex := 0
+    okRect := util.ImageRect(281, 180, okButtons[0])
+    ui.AddElement(&uilib.UIElement{
+        Rect: okRect,
+        LeftClick: func(element *uilib.UIElement){
+            okIndex = 1
+        },
+        LeftClickRelease: func(element *uilib.UIElement){
+            okIndex = 0
+            quit = true
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(okRect.Min.X), float64(okRect.Min.Y))
+            image := okButtons[okIndex]
+            screen.DrawImage(image, &options)
         },
     })
 
