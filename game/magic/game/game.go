@@ -1521,6 +1521,7 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         game.ResearchNewSpell(yield, researchSpell.Player)
                     case *GameEventCastSpell:
                         castSpell := event.(*GameEventCastSpell)
+                        // in cast.go
                         game.doCastSpell(yield, castSpell.Player, castSpell.Spell)
                     case *GameEventNewBuilding:
                         buildingEvent := event.(*GameEventNewBuilding)
@@ -2357,6 +2358,8 @@ func (game *Game) ShowSpellBookCastUI(yield coroutine.YieldFunc, player *playerl
 
                 log.Printf("Create artifact %v", created)
                 spell.OverrideCost = created.Cost()
+
+                player.CreateArtifact = created
             }
 
             castingCost := spell.Cost(true)

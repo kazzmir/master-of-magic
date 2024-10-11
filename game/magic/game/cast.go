@@ -11,6 +11,7 @@ import (
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
+    "github.com/kazzmir/master-of-magic/game/magic/summon"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
     // "github.com/kazzmir/master-of-magic/game/magic/data"
@@ -35,6 +36,29 @@ func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Playe
             game.doCastEarthLore(yield, player)
 
             player.LiftFogSquare(tileX, tileY, 5)
+        case "Create Artifact", "Enchant Item":
+            showSummon := summon.MakeSummonArtifact(game.Cache, player.Wizard.Base)
+
+            drawer := game.Drawer
+            defer func(){
+                game.Drawer = drawer
+            }()
+
+            game.Drawer = func(screen *ebiten.Image, game *Game){
+                drawer(screen, game)
+                showSummon.Draw(screen)
+            }
+
+            for showSummon.Update() != summon.SummonStateDone {
+                if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
+                    break
+                }
+                yield()
+            }
+
+            // FIXME: show vault with artifact
+
+            player.CreateArtifact = nil
     }
 }
 

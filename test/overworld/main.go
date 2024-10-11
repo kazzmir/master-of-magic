@@ -903,7 +903,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
 
     player := game.AddPlayer(wizard, true)
 
-    player.CastingSkillPower += 500
+    player.CastingSkillPower += 5000
 
     allSpells, _ := spellbook.ReadSpellsFromCache(cache)
 
@@ -933,7 +933,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     player.AddCity(city)
 
     player.Gold = 83
-    player.Mana = 50
+    player.Mana = 5000
 
     player.LiftFog(x, y, 4)
 
