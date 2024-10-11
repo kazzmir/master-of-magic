@@ -21,6 +21,7 @@ type Spell struct {
     Realm int
     Eligibility EligibilityType
     CastCost int
+    OverrideCost int
     ResearchCost int
     Sound int
     Summoned int
@@ -43,6 +44,12 @@ func (spell Spell) Valid() bool {
 
 // overland=true if casting in overland, otherwise casting in combat
 func (spell Spell) Cost(overland bool) int {
+
+    // for create artifact and spells that have variable cost
+    if spell.OverrideCost != 0 {
+        return spell.OverrideCost
+    }
+
     if overland {
         switch spell.Eligibility {
             case EligibilityBoth: return spell.CastCost * 5
