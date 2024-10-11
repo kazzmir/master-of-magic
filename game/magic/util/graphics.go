@@ -206,3 +206,56 @@ func MakePaletteRotateAnimation(lbxFile *lbx.LbxFile, index int, rotateIndexLow 
 
     return MakeAnimation(images, true)
 }
+
+func DrawTextCursor(screen *ebiten.Image, source *ebiten.Image, cursorX float64, y float64, counter uint64) {
+    width := float64(4)
+    height := float64(8)
+
+    yOffset := float64((counter/3) % 16) - 8
+
+    vertices := [4]ebiten.Vertex{
+        ebiten.Vertex{
+            DstX: float32(cursorX),
+            DstY: float32(y - yOffset),
+            SrcX: 0,
+            SrcY: 0,
+            ColorA: 1,
+            ColorB: 1 ,
+            ColorG: 1,
+            ColorR: 1,
+        },
+        ebiten.Vertex{
+            DstX: float32(cursorX + width),
+            DstY: float32(y - yOffset),
+            SrcX: 0,
+            SrcY: 0,
+            ColorA: 1,
+            ColorB: 1 ,
+            ColorG: 1,
+            ColorR: 1,
+        },
+        ebiten.Vertex{
+            DstX: float32(cursorX + width),
+            DstY: float32(y + height - yOffset),
+            SrcX: 0,
+            SrcY: 0,
+            ColorA: 0.1,
+            ColorB: 1 ,
+            ColorG: 1,
+            ColorR: 1,
+        },
+        ebiten.Vertex{
+            DstX: float32(cursorX),
+            DstY: float32(y + height - yOffset),
+            SrcX: 0,
+            SrcY: 0,
+            ColorA: 0.1,
+            ColorB: 1 ,
+            ColorG: 1,
+            ColorR: 1,
+        },
+    }
+
+    cursorArea := screen.SubImage(image.Rect(int(cursorX), int(y), int(cursorX + width), int(y + height))).(*ebiten.Image)
+    cursorArea.DrawTriangles(vertices[:], []uint16{0, 1, 2, 2, 3, 0}, source, nil)
+}
