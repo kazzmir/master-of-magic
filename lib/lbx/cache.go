@@ -136,6 +136,7 @@ func CacheFromPath(path string) *LbxCache {
         reader, err := os.Open(path)
         if err != nil {
             log.Printf("Unable to open %v: %v", path, err)
+            return nil
         }
         defer reader.Close()
         return maybeOpenZip(reader)

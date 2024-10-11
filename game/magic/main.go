@@ -2,7 +2,9 @@ package main
 
 import (
     "log"
-    _ "fmt"
+    "fmt"
+    "flag"
+    "errors"
     // "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -177,10 +179,20 @@ func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup
     return nil
 }
 
-func loadData(yield coroutine.YieldFunc, game *MagicGame) error {
+func loadData(yield coroutine.YieldFunc, game *MagicGame, dataPath string) error {
     game.Drawer = func(screen *ebiten.Image) {
         ebitenutil.DebugPrintAt(screen, "Drag and drop a zip file that contains", 10, 10)
         ebitenutil.DebugPrintAt(screen, "the master of magic data files", 10, 30)
+    }
+
+    if dataPath != "" {
+        cache := lbx.CacheFromPath(dataPath)
+        if cache == nil {
+            return fmt.Errorf("Could not load data from %v", dataPath)
+        }
+        log.Printf("Loaded data from %v", dataPath)
+        game.Cache = cache
+        return nil
     }
 
     var cache *lbx.LbxCache
@@ -200,9 +212,9 @@ func loadData(yield coroutine.YieldFunc, game *MagicGame) error {
     return nil
 }
 
-func runGame(yield coroutine.YieldFunc, game *MagicGame) error {
+func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string) error {
 
-    err := loadData(yield, game)
+    err := loadData(yield, game, dataPath)
     if err != nil {
         return err
     }
@@ -239,11 +251,11 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame) error {
     return ebiten.Termination
 }
 
-func NewMagicGame() (*MagicGame, error) {
+func NewMagicGame(dataPath string) (*MagicGame, error) {
     var game *MagicGame
 
     run := func(yield coroutine.YieldFunc) error {
-        return runGame(yield, game)
+        return runGame(yield, game, dataPath)
     }
 
     game = &MagicGame{
@@ -256,8 +268,13 @@ func NewMagicGame() (*MagicGame, error) {
 
 func (game *MagicGame) Update() error {
 
-    if game.MainCoroutine.Run() != nil {
-        return ebiten.Termination
+    err := game.MainCoroutine.Run()
+    if err != nil {
+        if errors.Is(err, coroutine.CoroutineFinished) {
+            return ebiten.Termination
+        }
+
+        return err
     }
 
     return nil
@@ -278,13 +295,17 @@ func (game *MagicGame) Draw(screen *ebiten.Image) {
 func main() {
     log.SetFlags(log.Ldate | log.Lshortfile | log.Lmicroseconds)
 
+    var dataPath string
+    flag.StringVar(&dataPath, "data", "", "path to master of magic lbx data files. Give either a directory or a zip file. Data is searched for in the current directory if not given.")
+    flag.Parse()
+
     ebiten.SetWindowSize(data.ScreenWidth * 5, data.ScreenHeight * 5)
     ebiten.SetWindowTitle("magic")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 
     audio.Initialize()
 
-    game, err := NewMagicGame()
+    game, err := NewMagicGame(dataPath)
     
     if err != nil {
         log.Printf("Error: unable to load game: %v", err)
