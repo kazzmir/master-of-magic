@@ -1504,6 +1504,15 @@ func (game *Game) doVault(yield coroutine.YieldFunc) {
             &artifact.PowerAttack{
                 Amount: 2,
             },
+            &artifact.PowerDefense{
+                Amount: 2,
+            },
+            &artifact.PowerMovement{
+                Amount: 3,
+            },
+            &artifact.PowerResistance{
+                Amount: 2,
+            },
         },
     }
 

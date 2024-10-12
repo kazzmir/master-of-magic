@@ -47,7 +47,7 @@ func makeFonts(cache *lbx.LbxCache) *VaultFonts {
     }
 
     itemName := font.MakeOptimizedFontWithPalette(fonts[4], namePalette)
-    powerFont := font.MakeOptimizedFont(fonts[2])
+    powerFont := font.MakeOptimizedFontWithPalette(fonts[2], namePalette)
 
     return &VaultFonts{
         ItemName: itemName,
@@ -80,6 +80,19 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, heroes []*
                 x, y := options.GeoM.Apply(float64(itemImage.Bounds().Max.X) + 3, 4)
 
                 fonts.ItemName.Print(screen, x, y, 1, ebiten.ColorScale{}, createdArtifact.Name)
+
+                dot, _ := imageCache.GetImage("itemisc.lbx", 26, 0)
+                savedGeom := options.GeoM
+                for i, power := range createdArtifact.Powers {
+                    options.GeoM = savedGeom
+                    options.GeoM.Translate(3, 26)
+                    options.GeoM.Translate(float64(i / 2 * 80), float64(i % 2 * 13))
+
+                    screen.DrawImage(dot, &options)
+
+                    x, y := options.GeoM.Apply(float64(dot.Bounds().Dx() + 1), 0)
+                    fonts.PowerFont.Print(screen, x, y, 1, ebiten.ColorScale{}, power.String())
+                }
             }
         },
     }
