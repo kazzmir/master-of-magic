@@ -14,6 +14,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/lbx"
 
     "github.com/hajimehoshi/ebiten/v2"
+    "github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
 type VaultFonts struct {
@@ -55,11 +56,56 @@ func makeFonts(cache *lbx.LbxCache) *VaultFonts {
     }
 }
 
-func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, heroes []*hero.Hero) (func(coroutine.YieldFunc), func (*ebiten.Image)) {
+func (game *Game) showItemPopup(item *artifact.Artifact, cache *lbx.LbxCache, imageCache *util.ImageCache, vaultFonts *VaultFonts) (func(coroutine.YieldFunc), func (*ebiten.Image)) {
+    if vaultFonts == nil {
+        vaultFonts = makeFonts(cache)
+    }
 
+    drawer := func (screen *ebiten.Image){
+        var options ebiten.DrawImageOptions
+        itemBackground, _ := imageCache.GetImage("itemisc.lbx", 25, 0)
+        options.GeoM.Translate(32, 48)
+        screen.DrawImage(itemBackground, &options)
+
+        itemImage, _ := imageCache.GetImage("items.lbx", item.Image, 0)
+        options.GeoM.Translate(10, 8)
+        screen.DrawImage(itemImage, &options)
+
+        x, y := options.GeoM.Apply(float64(itemImage.Bounds().Max.X) + 3, 4)
+
+        vaultFonts.ItemName.Print(screen, x, y, 1, ebiten.ColorScale{}, item.Name)
+
+        dot, _ := imageCache.GetImage("itemisc.lbx", 26, 0)
+        savedGeom := options.GeoM
+        for i, power := range item.Powers {
+            options.GeoM = savedGeom
+            options.GeoM.Translate(3, 26)
+            options.GeoM.Translate(float64(i / 2 * 80), float64(i % 2 * 13))
+
+            screen.DrawImage(dot, &options)
+
+            x, y := options.GeoM.Apply(float64(dot.Bounds().Dx() + 1), 0)
+            vaultFonts.PowerFont.Print(screen, x, y, 1, ebiten.ColorScale{}, power.String())
+        }
+    }
+
+    logic := func (yield coroutine.YieldFunc) {
+        quit := false
+        for !quit {
+            if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
+                quit = true
+            }
+            yield()
+        }
+    }
+
+    return logic, drawer
+}
+
+func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, heroes []*hero.Hero) (func(coroutine.YieldFunc), func (*ebiten.Image)) {
     imageCache := util.MakeImageCache(game.Cache)
 
-    fonts := makeFonts(game.Cache)
+    // fonts := makeFonts(game.Cache)
 
     ui := &uilib.UI{
         Draw: func(ui *uilib.UI, screen *ebiten.Image){
@@ -67,33 +113,6 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, heroes []*
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(data.ScreenWidth / 2 - background.Bounds().Dx() / 2), 2)
             screen.DrawImage(background, &options)
-
-            if createdArtifact != nil {
-                itemBackground, _ := imageCache.GetImage("itemisc.lbx", 25, 0)
-                options.GeoM.Translate(32, 48)
-                screen.DrawImage(itemBackground, &options)
-
-                itemImage, _ := imageCache.GetImage("items.lbx", createdArtifact.Image, 0)
-                options.GeoM.Translate(10, 8)
-                screen.DrawImage(itemImage, &options)
-
-                x, y := options.GeoM.Apply(float64(itemImage.Bounds().Max.X) + 3, 4)
-
-                fonts.ItemName.Print(screen, x, y, 1, ebiten.ColorScale{}, createdArtifact.Name)
-
-                dot, _ := imageCache.GetImage("itemisc.lbx", 26, 0)
-                savedGeom := options.GeoM
-                for i, power := range createdArtifact.Powers {
-                    options.GeoM = savedGeom
-                    options.GeoM.Translate(3, 26)
-                    options.GeoM.Translate(float64(i / 2 * 80), float64(i % 2 * 13))
-
-                    screen.DrawImage(dot, &options)
-
-                    x, y := options.GeoM.Apply(float64(dot.Bounds().Dx() + 1), 0)
-                    fonts.PowerFont.Print(screen, x, y, 1, ebiten.ColorScale{}, power.String())
-                }
-            }
         },
     }
 
@@ -105,6 +124,7 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, heroes []*
 
     logic := func (yield coroutine.YieldFunc) {
         for !quit {
+            ui.StandardUpdate()
             yield()
         }
     }

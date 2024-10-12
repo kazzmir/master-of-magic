@@ -1517,6 +1517,15 @@ func (game *Game) doVault(yield coroutine.YieldFunc) {
     }
 
     vaultLogic, vaultDrawer := game.showVaultScreen(&testArtifact, nil)
+    itemLogic, itemDrawer := game.showItemPopup(&testArtifact, game.Cache, &game.ImageCache, nil)
+
+    game.Drawer = func (screen *ebiten.Image, game *Game){
+        drawer(screen, game)
+        vaultDrawer(screen)
+        itemDrawer(screen)
+    }
+
+    itemLogic(yield)
 
     game.Drawer = func (screen *ebiten.Image, game *Game){
         drawer(screen, game)
