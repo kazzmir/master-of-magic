@@ -1497,7 +1497,7 @@ func (game *Game) doVault(yield coroutine.YieldFunc, newArtifact *artifact.Artif
         game.Drawer = drawer
     }()
 
-    vaultLogic, vaultDrawer := game.showVaultScreen(newArtifact, game.Players[0], nil)
+    vaultLogic, vaultDrawer := game.showVaultScreen(newArtifact, game.Players[0])
 
     if newArtifact != nil {
         itemLogic, itemDrawer := game.showItemPopup(newArtifact, game.Cache, &game.ImageCache, nil)

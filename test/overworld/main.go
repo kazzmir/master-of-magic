@@ -1271,6 +1271,26 @@ func createScenario17(cache *lbx.LbxCache) *gamelib.Game {
         Unit: units.MakeOverworldUnitFromUnit(units.HeroRakir, 1, 1, data.PlaneArcanus, wizard.Banner),
     }
 
+    player.Heroes[1] = &hero.Hero{
+        Unit: units.MakeOverworldUnitFromUnit(units.HeroTorin, 1, 1, data.PlaneArcanus, wizard.Banner),
+    }
+
+    player.Heroes[2] = &hero.Hero{
+        Unit: units.MakeOverworldUnitFromUnit(units.HeroWarrax, 1, 1, data.PlaneArcanus, wizard.Banner),
+    }
+
+    player.Heroes[3] = &hero.Hero{
+        Unit: units.MakeOverworldUnitFromUnit(units.HeroRavashack, 1, 1, data.PlaneArcanus, wizard.Banner),
+    }
+
+    player.Heroes[4] = &hero.Hero{
+        Unit: units.MakeOverworldUnitFromUnit(units.HeroSirHarold, 1, 1, data.PlaneArcanus, wizard.Banner),
+    }
+
+    player.Heroes[5] = &hero.Hero{
+        Unit: units.MakeOverworldUnitFromUnit(units.HeroAlorra, 1, 1, data.PlaneArcanus, wizard.Banner),
+    }
+
     player.VaultEquipment[0] = &artifact.Artifact{
         Name: "Baloney",
         Image: 7,

@@ -145,7 +145,7 @@ func (game *Game) showItemPopup(item *artifact.Artifact, cache *lbx.LbxCache, im
     return logic, drawer
 }
 
-func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *playerlib.Player, heroes []*herolib.Hero) (func(coroutine.YieldFunc), func (*ebiten.Image, bool)) {
+func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *playerlib.Player) (func(coroutine.YieldFunc), func (*ebiten.Image, bool)) {
     imageCache := util.MakeImageCache(game.Cache)
 
     fonts := makeFonts(game.Cache)
@@ -262,10 +262,12 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
     makeHero := func(index int, hero *herolib.Hero) *uilib.UIElement {
         // 3 on left, 3 on right
 
-        x1 := 20 + (index % 2) * 100
-        y1 := 2 + (index / 2) * 50
+        x1 := 34 + (index % 2) * 135
+        y1 := 16 + (index / 2) * 46
 
         profile, _ := imageCache.GetImage("portrait.lbx", hero.PortraitIndex(), 0)
+        // FIXME: there are 5 of these frame images, how are they selected?
+        frame, _ := imageCache.GetImage("portrait.lbx", 36, 0)
 
         rect := util.ImageRect(x1, y1, profile)
 
@@ -275,12 +277,15 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
                 screen.DrawImage(profile, &options)
+                screen.DrawImage(frame, &options)
             },
         }
     }
 
-    for i, hero := range heroes {
-        ui.AddElement(makeHero(i, hero))
+    for i, hero := range player.Heroes {
+        if hero != nil {
+            ui.AddElement(makeHero(i, hero))
+        }
     }
 
     quit := false
