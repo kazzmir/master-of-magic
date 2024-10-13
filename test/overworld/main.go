@@ -1266,7 +1266,7 @@ func createScenario17(cache *lbx.LbxCache) *gamelib.Game {
 
     player.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x + 1, y + 1, data.PlaneArcanus, wizard.Banner))
 
-    game.VaultEquipment[0] = &artifact.Artifact{
+    player.VaultEquipment[0] = &artifact.Artifact{
         Name: "Baloney",
         Image: 7,
         Type: artifact.ArtifactTypeSword,
@@ -1280,7 +1280,7 @@ func createScenario17(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game.VaultEquipment[1] = &artifact.Artifact{
+    player.VaultEquipment[1] = &artifact.Artifact{
         Name: "Pizza",
         Image: 31,
         Type: artifact.ArtifactTypeBow,

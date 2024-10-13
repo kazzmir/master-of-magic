@@ -2,6 +2,7 @@ package game
 
 import (
     "log"
+    "fmt"
     "image"
     "image/color"
 
@@ -10,6 +11,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
     "github.com/kazzmir/master-of-magic/game/magic/hero"
+    playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -132,7 +134,7 @@ func (game *Game) showItemPopup(item *artifact.Artifact, cache *lbx.LbxCache, im
     return logic, drawer
 }
 
-func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, heroes []*hero.Hero) (func(coroutine.YieldFunc), func (*ebiten.Image, bool)) {
+func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *playerlib.Player, heroes []*hero.Hero) (func(coroutine.YieldFunc), func (*ebiten.Image, bool)) {
     imageCache := util.MakeImageCache(game.Cache)
 
     // fonts := makeFonts(game.Cache)
@@ -190,19 +192,21 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, heroes []*
         return &uilib.UIElement{
             Rect: rect,
             LeftClick: func(element *uilib.UIElement){
-                selectedItem, game.VaultEquipment[index] = game.VaultEquipment[index], selectedItem
+                selectedItem, player.VaultEquipment[index] = player.VaultEquipment[index], selectedItem
             },
             RightClick: func(element *uilib.UIElement){
-                select {
-                    case showItem <- game.VaultEquipment[index]:
-                    default:
+                if player.VaultEquipment[index] != nil {
+                    select {
+                        case showItem <- player.VaultEquipment[index]:
+                        default:
+                    }
                 }
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                if game.VaultEquipment[index] != nil {
+                if player.VaultEquipment[index] != nil {
                     // util.DrawRect(screen, rect, color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff})
 
-                    equipmentImage, _ := imageCache.GetImage("items.lbx", game.VaultEquipment[index].Image, 0)
+                    equipmentImage, _ := imageCache.GetImage("items.lbx", player.VaultEquipment[index].Image, 0)
                     var options ebiten.DrawImageOptions
                     options.GeoM.Translate(float64(73 + index * 20), 173)
                     screen.DrawImage(equipmentImage, &options)
@@ -214,6 +218,30 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, heroes []*
     for i := 0; i < 4; i++ {
         ui.AddElement(makeEquipmentSlot(i))
     }
+
+    ui.AddElement(func () *uilib.UIElement {
+        rect := image.Rect(26, 158, 65, 190)
+        return &uilib.UIElement{
+            Rect: rect,
+            LeftClick: func(element *uilib.UIElement){
+                if selectedItem != nil {
+
+                    yes := func(){
+                        player.Mana += selectedItem.Cost() / 2
+                        selectedItem = nil
+                    }
+
+                    no := func(){
+                    }
+
+                    ui.AddElements(uilib.MakeConfirmDialog(ui, game.Cache, &imageCache, fmt.Sprintf("Do you want to destroy your %v and gain %v mana crystals?", selectedItem.Name, selectedItem.Cost() / 2), yes, no))
+                }
+            },
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                // util.DrawRect(screen, rect, color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff})
+            },
+        }
+    }())
 
     quit := false
 

@@ -266,6 +266,8 @@ type Player struct {
 
     PowerDistribution PowerDistribution
 
+    VaultEquipment [4]*artifact.Artifact
+
     // total power points put into the casting skill
     CastingSkillPower int
     // how much casting skill remains in this turn

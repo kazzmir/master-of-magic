@@ -175,8 +175,6 @@ type Game struct {
 
     TurnNumber uint64
 
-    VaultEquipment [4]*artifact.Artifact
-
     Events chan GameEvent
     BuildingInfo buildinglib.BuildingInfos
 
@@ -1499,7 +1497,7 @@ func (game *Game) doVault(yield coroutine.YieldFunc, newArtifact *artifact.Artif
         game.Drawer = drawer
     }()
 
-    vaultLogic, vaultDrawer := game.showVaultScreen(newArtifact, nil)
+    vaultLogic, vaultDrawer := game.showVaultScreen(newArtifact, game.Players[0], nil)
 
     if newArtifact != nil {
         itemLogic, itemDrawer := game.showItemPopup(newArtifact, game.Cache, &game.ImageCache, nil)
