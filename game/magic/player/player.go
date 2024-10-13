@@ -11,6 +11,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
+    "github.com/kazzmir/master-of-magic/game/magic/hero"
     "github.com/kazzmir/master-of-magic/lib/fraction"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
 )
@@ -266,6 +267,7 @@ type Player struct {
 
     PowerDistribution PowerDistribution
 
+    Heroes [6]*hero.Hero
     VaultEquipment [4]*artifact.Artifact
 
     // total power points put into the casting skill

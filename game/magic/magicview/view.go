@@ -56,26 +56,26 @@ func MakeMagicScreen(cache *lbx.LbxCache, player *playerlib.Player, power int) *
     return magic
 }
 
-func (magic *MagicScreen) MakeTransmuteElements(ui *uilib.UI, smallFont *font.Font, player *playerlib.Player, help *lbx.Help) []*uilib.UIElement {
+func MakeTransmuteElements(ui *uilib.UI, smallFont *font.Font, player *playerlib.Player, help *lbx.Help, cache *lbx.LbxCache, imageCache *util.ImageCache) []*uilib.UIElement {
     var elements []*uilib.UIElement
 
-    ok, _ := magic.ImageCache.GetImages("magic.lbx", 54)
+    ok, _ := imageCache.GetImages("magic.lbx", 54)
     okRect := image.Rect(176, 99, 176 + ok[0].Bounds().Dx(), 99 + ok[0].Bounds().Dy())
     okIndex := 0
 
-    arrowRight, _ := magic.ImageCache.GetImage("magic.lbx", 55, 0)
-    arrowLeft, _ := magic.ImageCache.GetImage("magic.lbx", 56, 0)
+    arrowRight, _ := imageCache.GetImage("magic.lbx", 55, 0)
+    arrowLeft, _ := imageCache.GetImage("magic.lbx", 56, 0)
 
     // if true, then convert power to gold, otherwise convert gold to power
     isRight := true
 
     arrowRect := image.Rect(146, 99, 146 + arrowRight.Bounds().Dx(), 99 + arrowRight.Bounds().Dy())
 
-    cancel, _ := magic.ImageCache.GetImages("magic.lbx", 53)
+    cancel, _ := imageCache.GetImages("magic.lbx", 53)
     cancelRect := image.Rect(93, 99, 93 + cancel[0].Bounds().Dx(), 99 + cancel[0].Bounds().Dy())
     cancelIndex := 0
 
-    powerToGold, _ := magic.ImageCache.GetImage("magic.lbx", 59, 0)
+    powerToGold, _ := imageCache.GetImage("magic.lbx", 59, 0)
 
     totalGold := player.Gold
     totalMana := player.Mana
@@ -83,8 +83,8 @@ func (magic *MagicScreen) MakeTransmuteElements(ui *uilib.UI, smallFont *font.Fo
     // FIXME: set to 1 if the wizard has AbilityAlchemy
     alchemyConversion := 0.5
 
-    conveyor, _ := magic.ImageCache.GetImage("magic.lbx", 57, 0)
-    cursor, _ := magic.ImageCache.GetImage("magic.lbx", 58, 0)
+    conveyor, _ := imageCache.GetImage("magic.lbx", 57, 0)
+    cursor, _ := imageCache.GetImage("magic.lbx", 58, 0)
 
     cursorPosition := 0
     changePercent := float64(0)
@@ -92,7 +92,7 @@ func (magic *MagicScreen) MakeTransmuteElements(ui *uilib.UI, smallFont *font.Fo
     elements = append(elements, &uilib.UIElement{
         Layer: 1,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            background, _ := magic.ImageCache.GetImage("magic.lbx", 52, 0)
+            background, _ := imageCache.GetImage("magic.lbx", 52, 0)
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(75, 60)
             screen.DrawImage(background, &options)
@@ -179,7 +179,7 @@ func (magic *MagicScreen) MakeTransmuteElements(ui *uilib.UI, smallFont *font.Fo
             RightClick: func(element *uilib.UIElement){
                 helpEntries := help.GetEntriesByName("Alchemy Ratio")
                 if helpEntries != nil {
-                    ui.AddElement(uilib.MakeHelpElementWithLayer(ui, magic.Cache, &magic.ImageCache, 2, helpEntries[0], helpEntries[1:]...))
+                    ui.AddElement(uilib.MakeHelpElementWithLayer(ui, cache, imageCache, 2, helpEntries[0], helpEntries[1:]...))
                 }
             },
             LeftClick: func(element *uilib.UIElement){
@@ -201,7 +201,7 @@ func (magic *MagicScreen) MakeTransmuteElements(ui *uilib.UI, smallFont *font.Fo
         RightClick: func(element *uilib.UIElement){
             helpEntries := help.GetEntriesByName("Alchemy Gold")
             if helpEntries != nil {
-                ui.AddElement(uilib.MakeHelpElementWithLayer(ui, magic.Cache, &magic.ImageCache, 2, helpEntries[0], helpEntries[1:]...))
+                ui.AddElement(uilib.MakeHelpElementWithLayer(ui, cache, imageCache, 2, helpEntries[0], helpEntries[1:]...))
             }
         },
     })
@@ -212,7 +212,7 @@ func (magic *MagicScreen) MakeTransmuteElements(ui *uilib.UI, smallFont *font.Fo
         RightClick: func(element *uilib.UIElement){
             helpEntries := help.GetEntriesByName("Alchemy Power")
             if helpEntries != nil {
-                ui.AddElement(uilib.MakeHelpElementWithLayer(ui, magic.Cache, &magic.ImageCache, 2, helpEntries[0], helpEntries[1:]...))
+                ui.AddElement(uilib.MakeHelpElementWithLayer(ui, cache, imageCache, 2, helpEntries[0], helpEntries[1:]...))
             }
         },
     })
@@ -231,7 +231,7 @@ func (magic *MagicScreen) MakeTransmuteElements(ui *uilib.UI, smallFont *font.Fo
         RightClick: func(element *uilib.UIElement){
             helpEntries := help.GetEntries(371)
             if helpEntries != nil {
-                ui.AddElement(uilib.MakeHelpElementWithLayer(ui, magic.Cache, &magic.ImageCache, 2, helpEntries[0], helpEntries[1:]...))
+                ui.AddElement(uilib.MakeHelpElementWithLayer(ui, cache, imageCache, 2, helpEntries[0], helpEntries[1:]...))
             }
         },
     })
@@ -246,7 +246,7 @@ func (magic *MagicScreen) MakeTransmuteElements(ui *uilib.UI, smallFont *font.Fo
         RightClick: func(element *uilib.UIElement){
             helpEntries := help.GetEntries(372)
             if helpEntries != nil {
-                ui.AddElement(uilib.MakeHelpElementWithLayer(ui, magic.Cache, &magic.ImageCache, 2, helpEntries[0], helpEntries[1:]...))
+                ui.AddElement(uilib.MakeHelpElementWithLayer(ui, cache, imageCache, 2, helpEntries[0], helpEntries[1:]...))
             }
         },
     })
@@ -260,13 +260,27 @@ func (magic *MagicScreen) MakeTransmuteElements(ui *uilib.UI, smallFont *font.Fo
         },
         LeftClickRelease: func(element *uilib.UIElement){
             okIndex = 0
-            // FIXME: do transmutation
             ui.RemoveElements(elements)
+
+            goldChange := 0
+            manaChange := 0
+
+            if isRight {
+                goldChange = int(float64(totalMana) * changePercent * alchemyConversion)
+                manaChange = -int(float64(totalMana) * changePercent)
+            } else {
+                goldChange = -int(float64(totalGold) * changePercent)
+                manaChange = int(float64(totalGold) * changePercent * alchemyConversion)
+            }
+
+            player.Gold += goldChange
+            player.Mana += manaChange
+
         },
         RightClick: func(element *uilib.UIElement){
             helpEntries := help.GetEntries(373)
             if helpEntries != nil {
-                ui.AddElement(uilib.MakeHelpElementWithLayer(ui, magic.Cache, &magic.ImageCache, 2, helpEntries[0], helpEntries[1:]...))
+                ui.AddElement(uilib.MakeHelpElementWithLayer(ui, cache, imageCache, 2, helpEntries[0], helpEntries[1:]...))
             }
         },
 
@@ -481,7 +495,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player) *uilib.UI {
     elements = append(elements, &uilib.UIElement{
         Rect: transmuteRect,
         LeftClick: func(element *uilib.UIElement){
-            transmuteElements := magic.MakeTransmuteElements(ui, transmuteFont, player, &help)
+            transmuteElements := MakeTransmuteElements(ui, transmuteFont, player, &help, magic.Cache, &magic.ImageCache)
             ui.AddElements(transmuteElements)
         },
         RightClick: func(element *uilib.UIElement){

@@ -10,7 +10,9 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
-    "github.com/kazzmir/master-of-magic/game/magic/hero"
+    "github.com/kazzmir/master-of-magic/game/magic/unitview"
+    "github.com/kazzmir/master-of-magic/game/magic/magicview"
+    herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/font"
@@ -25,6 +27,7 @@ type VaultFonts struct {
     ItemName *font.Font
     PowerFont *font.Font
     ResourceFont *font.Font
+    SmallFont *font.Font
 }
 
 func makeFonts(cache *lbx.LbxCache) *VaultFonts {
@@ -71,10 +74,21 @@ func makeFonts(cache *lbx.LbxCache) *VaultFonts {
 
     resourceFont := font.MakeOptimizedFontWithPalette(fonts[1], whitePalette)
 
+    translucentWhite := util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 80})
+    transmutePalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        translucentWhite, translucentWhite, translucentWhite,
+        translucentWhite, translucentWhite, translucentWhite,
+    }
+
+    transmuteFont := font.MakeOptimizedFontWithPalette(fonts[0], transmutePalette)
+
     return &VaultFonts{
         ItemName: itemName,
         PowerFont: powerFont,
         ResourceFont: resourceFont,
+        SmallFont: transmuteFont,
     }
 }
 
@@ -145,10 +159,22 @@ func (game *Game) showItemPopup(item *artifact.Artifact, cache *lbx.LbxCache, im
     return logic, drawer
 }
 
-func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *playerlib.Player, heroes []*hero.Hero) (func(coroutine.YieldFunc), func (*ebiten.Image, bool)) {
+func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *playerlib.Player) (func(coroutine.YieldFunc), func (*ebiten.Image, bool)) {
     imageCache := util.MakeImageCache(game.Cache)
 
     fonts := makeFonts(game.Cache)
+
+    helpLbx, err := game.Cache.GetLbxFile("help.lbx")
+    if err != nil {
+        log.Printf("Error: could not load help.lbx: %v", err)
+        return func(yield coroutine.YieldFunc){}, func (*ebiten.Image, bool){}
+    }
+
+    help, err := helpLbx.ReadHelp(2)
+    if err != nil {
+        log.Printf("Error: could not load help.lbx: %v", err)
+        return func(yield coroutine.YieldFunc){}, func (*ebiten.Image, bool){}
+    }
 
     // mouse should turn into createdArtifact picture
 
@@ -167,14 +193,14 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
             options.GeoM.Translate(float64(data.ScreenWidth / 2 - background.Bounds().Dx() / 2), 2)
             screen.DrawImage(background, &options)
 
+            fonts.ResourceFont.PrintRight(screen, 190, 166, 1, options.ColorScale, fmt.Sprintf("%v GP", player.Gold))
+            fonts.ResourceFont.PrintRight(screen, 233, 166, 1, options.ColorScale, fmt.Sprintf("%v MP", player.Mana))
+
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
                 if element.Draw != nil {
                     element.Draw(element, screen)
                 }
             })
-
-            fonts.ResourceFont.PrintRight(screen, 190, 166, 1, options.ColorScale, fmt.Sprintf("%v GP", player.Gold))
-            fonts.ResourceFont.PrintRight(screen, 233, 166, 1, options.ColorScale, fmt.Sprintf("%v MP", player.Mana))
 
             if drawMouse {
                 options.GeoM.Reset()
@@ -259,6 +285,83 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
         }
     }())
 
+    // returns elements for the hero portrait and the 3 item slots
+    makeHero := func(index int, hero *herolib.Hero) []*uilib.UIElement {
+        // 3 on left, 3 on right
+
+        x1 := 34 + (index % 2) * 135
+        y1 := 16 + (index / 2) * 46
+
+        profile, _ := imageCache.GetImage("portrait.lbx", hero.PortraitIndex(), 0)
+        // FIXME: there are 5 of these frame images, how are they selected?
+        frame, _ := imageCache.GetImage("portrait.lbx", 36, 0)
+
+        rect := util.ImageRect(x1, y1, profile)
+
+        var options ebiten.DrawImageOptions
+        var baseGeom ebiten.GeoM
+        baseGeom.Translate(float64(rect.Min.X), float64(rect.Min.Y))
+        options.GeoM = baseGeom
+
+        var elements []*uilib.UIElement
+
+        elements = append(elements, &uilib.UIElement{
+            Rect: rect,
+            RightClick: func(element *uilib.UIElement){
+                ui.AddElements(unitview.MakeUnitContextMenu(game.Cache, ui, hero.Unit))
+            },
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                screen.DrawImage(profile, &options)
+                screen.DrawImage(frame, &options)
+            },
+        })
+
+        for slotIndex, slot := range hero.Slots() {
+            slotOptions := options
+            slotOptions.GeoM = baseGeom
+            slotOptions.GeoM.Translate(float64(profile.Bounds().Dx()) + 8, 15)
+            pic, _ := imageCache.GetImage("itemisc.lbx", slot.ImageIndex(), 0)
+            slotOptions.GeoM.Translate(float64((pic.Bounds().Dx() + 11) * slotIndex), 0)
+
+            x, y := slotOptions.GeoM.Apply(0, 0)
+            rect := util.ImageRect(int(x), int(y), pic)
+
+            elements = append(elements, &uilib.UIElement{
+                Rect: rect,
+                RightClick: func(element *uilib.UIElement){
+                    if hero.Equipment[slotIndex] != nil {
+                        select {
+                            case showItem <- hero.Equipment[slotIndex]:
+                            default:
+                        }
+                    }
+                },
+                LeftClick: func(element *uilib.UIElement){
+                    // if the slot is incompatible with the selected item then do not allow a swap
+                    if selectedItem == nil || slot.CompatibleWith(selectedItem.Type) {
+                        selectedItem, hero.Equipment[slotIndex] = hero.Equipment[slotIndex], selectedItem
+                    }
+                },
+                Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                    if hero.Equipment[slotIndex] != nil {
+                        artifactPic, _ := imageCache.GetImage("items.lbx", hero.Equipment[slotIndex].Image, 0)
+                        screen.DrawImage(artifactPic, &slotOptions)
+                    } else {
+                        screen.DrawImage(pic, &slotOptions)
+                    }
+                },
+            })
+        }
+
+        return elements
+    }
+
+    for i, hero := range player.Heroes {
+        if hero != nil {
+            ui.AddElements(makeHero(i, hero))
+        }
+    }
+
     quit := false
 
     ui.AddElement(func () *uilib.UIElement {
@@ -301,7 +404,7 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
             },
             LeftClickRelease: func(element *uilib.UIElement){
                 index = 0
-                // FIXME: show alchemy ui
+                ui.AddElements(magicview.MakeTransmuteElements(ui, fonts.SmallFont, player, &help, game.Cache, &imageCache))
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 var options ebiten.DrawImageOptions

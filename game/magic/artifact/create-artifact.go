@@ -52,6 +52,49 @@ func (a ArtifactType) Name() string {
     return ""
 }
 
+type ArtifactSlot int
+const (
+    ArtifactSlotMeleeWeapon ArtifactSlot = iota
+    ArtifactSlotRangedWeapon
+    ArtifactSlotMagicWeapon
+    ArtifactSlotAnyWeapon
+    ArtifactSlotArmor
+    ArtifactSlotJewelry
+)
+
+// the index in itemisc.lbx for this slot
+func (slot ArtifactSlot) ImageIndex() int {
+    switch slot {
+        case ArtifactSlotMeleeWeapon: return 19
+        case ArtifactSlotRangedWeapon: return 20
+        case ArtifactSlotMagicWeapon: return 22
+        case ArtifactSlotAnyWeapon: return 21
+        case ArtifactSlotArmor: return 24
+        case ArtifactSlotJewelry: return 23
+    }
+
+    return -1
+}
+
+func (slot ArtifactSlot) CompatibleWith(kind ArtifactType) bool {
+    switch slot {
+        case ArtifactSlotMeleeWeapon:
+            return kind == ArtifactTypeSword || kind == ArtifactTypeMace || kind == ArtifactTypeAxe
+        case ArtifactSlotRangedWeapon:
+            return kind == ArtifactTypeSword || kind == ArtifactTypeMace || kind == ArtifactTypeAxe || kind == ArtifactTypeBow
+        case ArtifactSlotMagicWeapon:
+            return kind == ArtifactTypeStaff || kind == ArtifactTypeWand
+        case ArtifactSlotAnyWeapon:
+            return kind == ArtifactTypeStaff || kind == ArtifactTypeWand || kind == ArtifactTypeSword || kind == ArtifactTypeMace || kind == ArtifactTypeAxe
+        case ArtifactSlotArmor:
+            return kind == ArtifactTypeShield || kind == ArtifactTypeChain || kind == ArtifactTypePlate
+        case ArtifactSlotJewelry:
+            return kind == ArtifactTypeMisc
+    }
+
+    return false
+}
+
 // the screen can be invoked as either the 'Enchant Item' spell or 'Create Artifact'
 type CreationScreen int
 const (

@@ -14,6 +14,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
+    "github.com/kazzmir/master-of-magic/game/magic/hero"
     gamelib "github.com/kazzmir/master-of-magic/game/magic/game"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
@@ -1265,6 +1266,30 @@ func createScenario17(cache *lbx.LbxCache) *gamelib.Game {
     player.LiftFog(x, y, 4)
 
     player.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x + 1, y + 1, data.PlaneArcanus, wizard.Banner))
+
+    player.Heroes[0] = &hero.Hero{
+        Unit: units.MakeOverworldUnitFromUnit(units.HeroRakir, 1, 1, data.PlaneArcanus, wizard.Banner),
+    }
+
+    player.Heroes[1] = &hero.Hero{
+        Unit: units.MakeOverworldUnitFromUnit(units.HeroTorin, 1, 1, data.PlaneArcanus, wizard.Banner),
+    }
+
+    player.Heroes[2] = &hero.Hero{
+        Unit: units.MakeOverworldUnitFromUnit(units.HeroWarrax, 1, 1, data.PlaneArcanus, wizard.Banner),
+    }
+
+    player.Heroes[3] = &hero.Hero{
+        Unit: units.MakeOverworldUnitFromUnit(units.HeroRavashack, 1, 1, data.PlaneArcanus, wizard.Banner),
+    }
+
+    player.Heroes[4] = &hero.Hero{
+        Unit: units.MakeOverworldUnitFromUnit(units.HeroSirHarold, 1, 1, data.PlaneArcanus, wizard.Banner),
+    }
+
+    player.Heroes[5] = &hero.Hero{
+        Unit: units.MakeOverworldUnitFromUnit(units.HeroAlorra, 1, 1, data.PlaneArcanus, wizard.Banner),
+    }
 
     player.VaultEquipment[0] = &artifact.Artifact{
         Name: "Baloney",
