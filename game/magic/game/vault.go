@@ -303,6 +303,14 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
 
             elements = append(elements, &uilib.UIElement{
                 Rect: rect,
+                RightClick: func(element *uilib.UIElement){
+                    if hero.Equipment[slotIndex] != nil {
+                        select {
+                            case showItem <- hero.Equipment[slotIndex]:
+                            default:
+                        }
+                    }
+                },
                 LeftClick: func(element *uilib.UIElement){
                     // if the slot is incompatible with the selected item then do not allow a swap
                     if selectedItem == nil || slot.CompatibleWith(selectedItem.Type) {
