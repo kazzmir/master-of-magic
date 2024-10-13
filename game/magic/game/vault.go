@@ -170,6 +170,8 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, heroes []*
 
     ui.SetElementsFromArray(nil)
 
+    showItem := make(chan int, 10)
+
     // the 4 equipment slots
     makeEquipmentSlot := func(index int) *uilib.UIElement{
         width := 20
@@ -182,6 +184,12 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, heroes []*
             Rect: rect,
             LeftClick: func(element *uilib.UIElement){
                 selectedItem, game.VaultEquipment[index] = game.VaultEquipment[index], selectedItem
+            },
+            RightClick: func(element *uilib.UIElement){
+                select {
+                    case showItem <- index:
+                    default:
+                }
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 if game.VaultEquipment[index] != nil {
@@ -212,6 +220,28 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, heroes []*
         defer ebiten.SetCursorMode(ebiten.CursorModeVisible)
         for !quit {
             ui.StandardUpdate()
+
+            select {
+                case index := <-showItem:
+                    func (){
+                        itemLogic, itemDraw := game.showItemPopup(game.VaultEquipment[index], game.Cache, &imageCache, nil)
+
+                        drawer := game.Drawer
+                        defer func(){
+                            game.Drawer = drawer
+                        }()
+
+                        game.Drawer = func (screen *ebiten.Image, game *Game){
+                            drawer(screen, game)
+                            itemDraw(screen, drawMouse)
+                        }
+
+                        itemLogic(yield)
+                    }()
+
+                default:
+            }
+
             yield()
         }
     }
