@@ -1521,15 +1521,15 @@ func (game *Game) doVault(yield coroutine.YieldFunc) {
 
     game.Drawer = func (screen *ebiten.Image, game *Game){
         drawer(screen, game)
-        vaultDrawer(screen)
-        itemDrawer(screen)
+        vaultDrawer(screen, false)
+        itemDrawer(screen, true)
     }
 
     itemLogic(yield)
 
     game.Drawer = func (screen *ebiten.Image, game *Game){
         drawer(screen, game)
-        vaultDrawer(screen)
+        vaultDrawer(screen, true)
     }
 
     vaultLogic(yield)

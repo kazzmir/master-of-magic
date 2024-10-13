@@ -12,6 +12,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/mouse"
 
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -56,7 +57,7 @@ func makeFonts(cache *lbx.LbxCache) *VaultFonts {
     }
 }
 
-func (game *Game) showItemPopup(item *artifact.Artifact, cache *lbx.LbxCache, imageCache *util.ImageCache, vaultFonts *VaultFonts) (func(coroutine.YieldFunc), func (*ebiten.Image)) {
+func (game *Game) showItemPopup(item *artifact.Artifact, cache *lbx.LbxCache, imageCache *util.ImageCache, vaultFonts *VaultFonts) (func(coroutine.YieldFunc), func (*ebiten.Image, bool)) {
     if vaultFonts == nil {
         vaultFonts = makeFonts(cache)
     }
@@ -65,7 +66,9 @@ func (game *Game) showItemPopup(item *artifact.Artifact, cache *lbx.LbxCache, im
 
     getAlpha := util.MakeFadeIn(7, &counter)
 
-    drawer := func (screen *ebiten.Image){
+    mouseNormal, _ := mouse.GetMouseNormal(cache)
+
+    drawer := func (screen *ebiten.Image, drawMouse bool){
         var options ebiten.DrawImageOptions
         options.ColorScale.ScaleAlpha(getAlpha())
         itemBackground, _ := imageCache.GetImage("itemisc.lbx", 25, 0)
@@ -92,6 +95,13 @@ func (game *Game) showItemPopup(item *artifact.Artifact, cache *lbx.LbxCache, im
             x, y := options.GeoM.Apply(float64(dot.Bounds().Dx() + 1), 0)
             vaultFonts.PowerFont.Print(screen, x, y, 1, options.ColorScale, power.String())
         }
+
+        if drawMouse {
+            var mouseOptions ebiten.DrawImageOptions
+            mouseX, mouseY := ebiten.CursorPosition()
+            mouseOptions.GeoM.Translate(float64(mouseX), float64(mouseY))
+            screen.DrawImage(mouseNormal, &mouseOptions)
+        }
     }
 
     logic := func (yield coroutine.YieldFunc) {
@@ -114,10 +124,20 @@ func (game *Game) showItemPopup(item *artifact.Artifact, cache *lbx.LbxCache, im
     return logic, drawer
 }
 
-func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, heroes []*hero.Hero) (func(coroutine.YieldFunc), func (*ebiten.Image)) {
+func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, heroes []*hero.Hero) (func(coroutine.YieldFunc), func (*ebiten.Image, bool)) {
     imageCache := util.MakeImageCache(game.Cache)
 
     // fonts := makeFonts(game.Cache)
+
+    // mouse should turn into createdArtifact picture
+
+    mouseNormal, _ := mouse.GetMouseNormal(game.Cache)
+
+    selectedItem := createdArtifact
+
+    var artifactImage *ebiten.Image
+
+    drawMouse := false
 
     ui := &uilib.UI{
         Draw: func(ui *uilib.UI, screen *ebiten.Image){
@@ -125,16 +145,32 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, heroes []*
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(data.ScreenWidth / 2 - background.Bounds().Dx() / 2), 2)
             screen.DrawImage(background, &options)
+
+            if drawMouse {
+                options.GeoM.Reset()
+                mouseX, mouseY := ebiten.CursorPosition()
+                options.GeoM.Translate(float64(mouseX), float64(mouseY))
+
+                if selectedItem != nil {
+                    artifactImage, _ = imageCache.GetImage("items.lbx", selectedItem.Image, 0)
+                    screen.DrawImage(artifactImage, &options)
+                } else {
+                    screen.DrawImage(mouseNormal, &options)
+                }
+            }
         },
     }
 
     quit := false
 
-    drawer := func (screen *ebiten.Image){
+    drawer := func (screen *ebiten.Image, drawMouseX bool){
+        drawMouse = drawMouseX
         ui.Draw(ui, screen)
     }
 
     logic := func (yield coroutine.YieldFunc) {
+        ebiten.SetCursorMode(ebiten.CursorModeHidden)
+        defer ebiten.SetCursorMode(ebiten.CursorModeVisible)
         for !quit {
             ui.StandardUpdate()
             yield()
