@@ -268,15 +268,23 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
         return &uilib.UIElement{
             Rect: rect,
             LeftClick: func(element *uilib.UIElement){
-                index = 1
+                if selectedItem == nil {
+                    index = 1
+                }
             },
             LeftClickRelease: func(element *uilib.UIElement){
-                index = 0
-                quit = true
+                if selectedItem == nil {
+                    index = 0
+                    // can't quit the screen while holding an item
+                    quit = true
+                }
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
+                if selectedItem != nil {
+                    options.ColorScale.SetR(2)
+                }
                 screen.DrawImage(okImages[index], &options)
             },
         }
