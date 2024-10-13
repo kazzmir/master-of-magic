@@ -50,8 +50,12 @@ func (hero *Hero) GetProductionCost() int {
     return hero.Unit.GetProductionCost()
 }
 
+func (hero *Hero) GetBaseMeleeAttackPower() int {
+    return hero.Unit.GetMeleeAttackPower()
+}
+
 func (hero *Hero) GetMeleeAttackPower() int {
-    base := hero.Unit.GetMeleeAttackPower()
+    base := hero.GetBaseMeleeAttackPower()
 
     for _, equipment := range hero.Equipment {
         if equipment != nil {

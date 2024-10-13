@@ -24,6 +24,7 @@ type UnitView interface {
     GetUpkeepMana() int
     GetMovementSpeed() int
     GetProductionCost() int
+    GetBaseMeleeAttackPower() int
     GetMeleeAttackPower() int
     GetRangedAttackPower() int
     GetDefense() int

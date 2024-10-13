@@ -188,6 +188,10 @@ func (unit *Unit) GetProductionCost() int {
     return unit.ProductionCost
 }
 
+func (unit *Unit) GetBaseMeleeAttackPower() int {
+    return unit.GetMeleeAttackPower()
+}
+
 func (unit *Unit) GetMeleeAttackPower() int {
     return unit.MeleeAttackPower
 }

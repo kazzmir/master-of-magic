@@ -55,6 +55,10 @@ func (unit *OverworldUnit) GetProductionCost() int {
     return unit.Unit.GetProductionCost()
 }
 
+func (unit *OverworldUnit) GetBaseMeleeAttackPower() int {
+    return unit.GetMeleeAttackPower()
+}
+
 func (unit *OverworldUnit) GetMeleeAttackPower() int {
     return unit.Unit.GetMeleeAttackPower()
 }

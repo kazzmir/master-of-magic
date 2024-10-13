@@ -147,31 +147,45 @@ func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit
     descriptionFont.Print(screen, x, y, 1, defaultOptions.ColorScale, "Melee")
 
     // show rows of icons. the second row is offset a bit to the right and down
-    showNIcons := func(icon *ebiten.Image, count int, x, y float64) {
+    showNIcons := func(icon *ebiten.Image, count int, icon2 *ebiten.Image, count2 int, x, y float64) {
         var options ebiten.DrawImageOptions
+        options = defaultOptions
+        options.GeoM.Reset()
         options.GeoM.Translate(x, y)
         options.GeoM.Translate(width + 1, 0)
         saveGeoM := options.GeoM
-        for i := 0; i < count; i++ {
-            if i > 0 && i % 5 == 0 {
+
+        draw := func (index int, icon *ebiten.Image) {
+            if index > 0 && index % 5 == 0 {
                 options.GeoM.Translate(3, 0)
             }
 
-            if i > 0 && i % 15 == 0 {
+            if index > 0 && index % 15 == 0 {
                 options.GeoM = saveGeoM
-                options.GeoM.Translate(float64(3 * (i/15)), 2 * float64(i/15))
+                options.GeoM.Translate(float64(3 * (index/15)), 2 * float64(index/15))
             }
 
             screen.DrawImage(icon, &options)
             // FIXME: if a stat is given due to an ability/spell then render the icon in gold
             options.GeoM.Translate(float64(icon.Bounds().Dx() + 1), 0)
         }
+
+        index := 0
+        for index < count {
+            draw(index, icon)
+            index += 1
+        }
+
+        for index < (count + count2) {
+            draw(index, icon2)
+            index += 1
+        }
     }
 
-    weaponIcon, err := imageCache.GetImage("unitview.lbx", 13, 0)
-    if err == nil {
-        showNIcons(weaponIcon, unit.GetMeleeAttackPower(), x, y)
-    }
+    weaponIcon, _ := imageCache.GetImage("unitview.lbx", 13, 0)
+    extraMeleePower := unit.GetMeleeAttackPower() - unit.GetBaseMeleeAttackPower()
+    weaponGold, _ := imageCache.GetImage("unitview.lbx", 35, 0)
+    showNIcons(weaponIcon, unit.GetBaseMeleeAttackPower(), weaponGold, extraMeleePower, x, y)
 
     y += float64(descriptionFont.Height())
     descriptionFont.Print(screen, x, y, 1, defaultOptions.ColorScale, "Range")
@@ -179,7 +193,7 @@ func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit
     // FIXME: use the rock icon for sling, or the magic icon fire magic damage
     rangeBow, err := imageCache.GetImage("unitview.lbx", 18, 0)
     if err == nil {
-        showNIcons(rangeBow, unit.GetRangedAttackPower(), x, y)
+        showNIcons(rangeBow, unit.GetRangedAttackPower(), nil, 0, x, y)
     }
 
     y += float64(descriptionFont.Height())
@@ -187,7 +201,7 @@ func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit
 
     armorIcon, err := imageCache.GetImage("unitview.lbx", 22, 0)
     if err == nil {
-        showNIcons(armorIcon, unit.GetDefense(), x, y)
+        showNIcons(armorIcon, unit.GetDefense(), nil, 0, x, y)
     }
 
     y += float64(descriptionFont.Height())
@@ -195,7 +209,7 @@ func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit
 
     resistIcon, err := imageCache.GetImage("unitview.lbx", 27, 0)
     if err == nil {
-        showNIcons(resistIcon, unit.GetResistance(), x, y)
+        showNIcons(resistIcon, unit.GetResistance(), nil, 0, x, y)
     }
 
     y += float64(descriptionFont.Height())
@@ -203,7 +217,7 @@ func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit
 
     healthIcon, err := imageCache.GetImage("unitview.lbx", 23, 0)
     if err == nil {
-        showNIcons(healthIcon, unit.GetHitPoints(), x, y)
+        showNIcons(healthIcon, unit.GetHitPoints(), nil, 0, x, y)
     }
 }
 
