@@ -278,6 +278,13 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
                 options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
                 screen.DrawImage(profile, &options)
                 screen.DrawImage(frame, &options)
+
+                options.GeoM.Translate(float64(profile.Bounds().Dx()) + 8, 15)
+                for _, slot := range hero.Slots() {
+                    pic, _ := imageCache.GetImage("itemisc.lbx", slot.ImageIndex(), 0)
+                    screen.DrawImage(pic, &options)
+                    options.GeoM.Translate(float64(pic.Bounds().Dx()) + 11, 0)
+                }
             },
         }
     }

@@ -12,6 +12,115 @@ type Hero struct {
     Equipment [3]*artifact.Artifact
 }
 
+func (hero *Hero) Slots() [3]artifact.ArtifactSlot {
+    if hero.Unit.Unit.Equals(units.HeroTorin) {
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroFang) {
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroBShan) {
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroMorgana) {
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroWarrax) {
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroMysticX) {
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroBahgtru) {
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroDethStryke) {
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroSpyder) {
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroSirHarold) {
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroBrax) {
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroRavashack) {
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroGreyfairer) {
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroShalla) {
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroRoland) {
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroMalleus) {
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroMortu) {
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroGunther) {
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroRakir) {
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroJaer) {
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroTaki) {
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroYramrag) {
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroValana) {
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroElana) {
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroAerie) {
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroMarcus) {
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroReywind) {
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroAlorra) {
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroZaldron) {
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroShinBo) {
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroSerena) {
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroShuri) {
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroTheria) {
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroTumu) {
+    }
+
+    if hero.Unit.Unit.Equals(units.HeroAureus) {
+    }
+
+    return [3]artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotArmor}
+}
+
 func (hero *Hero) PortraitIndex() int {
     if hero.Unit.Unit.Equals(units.HeroTorin) {
         return 0
