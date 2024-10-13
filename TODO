@@ -6,6 +6,7 @@
 * overworld: ai controlled wizards/empires
 * draw units with experience/bonuses
 * myrror plane
+* hire hero events
 * filter buildings by race
 * roaming bands of neutral enemies
 * neutral towns/cities
@@ -41,3 +42,4 @@
 10/9/2024 * overworld units should render health and veteran status
 10/10/2024 * create artifact screen
 10/12/2024 * summon artifact and partial vault screen
+10/13/2024 * finish vault screen, add hero items
