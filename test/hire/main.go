@@ -10,6 +10,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/hero"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/units"
+    gamelib "github.com/kazzmir/master-of-magic/game/magic/game"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
 
     "github.com/hajimehoshi/ebiten/v2"
@@ -44,7 +45,7 @@ func NewEngine(scenario int) (*Engine, error) {
         Title: "The Beastmaster",
     }
 
-    ui.AddElements(hero.MakeHireScreenUI(cache, ui, rakir, func (hired bool){
+    ui.AddElements(gamelib.MakeHireScreenUI(cache, ui, rakir, func (hired bool){
         log.Printf("hired %v", hired)
     }))
 

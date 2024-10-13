@@ -10,7 +10,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
-    "github.com/kazzmir/master-of-magic/game/magic/hero"
+    herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/font"
@@ -145,7 +145,7 @@ func (game *Game) showItemPopup(item *artifact.Artifact, cache *lbx.LbxCache, im
     return logic, drawer
 }
 
-func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *playerlib.Player, heroes []*hero.Hero) (func(coroutine.YieldFunc), func (*ebiten.Image, bool)) {
+func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *playerlib.Player, heroes []*herolib.Hero) (func(coroutine.YieldFunc), func (*ebiten.Image, bool)) {
     imageCache := util.MakeImageCache(game.Cache)
 
     fonts := makeFonts(game.Cache)
@@ -258,6 +258,30 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
             },
         }
     }())
+
+    makeHero := func(index int, hero *herolib.Hero) *uilib.UIElement {
+        // 3 on left, 3 on right
+
+        x1 := 20 + (index % 2) * 100
+        y1 := 2 + (index / 2) * 50
+
+        profile, _ := imageCache.GetImage("portrait.lbx", hero.PortraitIndex(), 0)
+
+        rect := util.ImageRect(x1, y1, profile)
+
+        return &uilib.UIElement{
+            Rect: rect,
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
+                screen.DrawImage(profile, &options)
+            },
+        }
+    }
+
+    for i, hero := range heroes {
+        ui.AddElement(makeHero(i, hero))
+    }
 
     quit := false
 
