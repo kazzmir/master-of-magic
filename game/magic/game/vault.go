@@ -49,8 +49,15 @@ func makeFonts(cache *lbx.LbxCache) *VaultFonts {
         orange,
     }
 
+    // red1 := color.RGBA{R: 0xff, G: 0x00, B: 0x00, A: 0xff}
+    powerPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        util.Lighten(orange, 40),
+    }
+
     itemName := font.MakeOptimizedFontWithPalette(fonts[4], namePalette)
-    powerFont := font.MakeOptimizedFontWithPalette(fonts[2], namePalette)
+    powerFont := font.MakeOptimizedFontWithPalette(fonts[2], powerPalette)
 
     return &VaultFonts{
         ItemName: itemName,
@@ -170,7 +177,7 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, heroes []*
 
     ui.SetElementsFromArray(nil)
 
-    showItem := make(chan int, 10)
+    showItem := make(chan *artifact.Artifact, 10)
 
     // the 4 equipment slots
     makeEquipmentSlot := func(index int) *uilib.UIElement{
@@ -187,7 +194,7 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, heroes []*
             },
             RightClick: func(element *uilib.UIElement){
                 select {
-                    case showItem <- index:
+                    case showItem <- game.VaultEquipment[index]:
                     default:
                 }
             },
@@ -222,9 +229,9 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, heroes []*
             ui.StandardUpdate()
 
             select {
-                case index := <-showItem:
+                case item := <-showItem:
                     func (){
-                        itemLogic, itemDraw := game.showItemPopup(game.VaultEquipment[index], game.Cache, &imageCache, nil)
+                        itemLogic, itemDraw := game.showItemPopup(item, game.Cache, &imageCache, nil)
 
                         drawer := game.Drawer
                         defer func(){
