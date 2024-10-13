@@ -10,6 +10,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/game/magic/util"
+    "github.com/kazzmir/master-of-magic/game/magic/setup"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
@@ -80,8 +81,10 @@ func MakeTransmuteElements(ui *uilib.UI, smallFont *font.Font, player *playerlib
     totalGold := player.Gold
     totalMana := player.Mana
 
-    // FIXME: set to 1 if the wizard has AbilityAlchemy
     alchemyConversion := 0.5
+    if player.Wizard.AbilityEnabled(setup.AbilityAlchemy) {
+        alchemyConversion = 1
+    }
 
     conveyor, _ := imageCache.GetImage("magic.lbx", 57, 0)
     cursor, _ := imageCache.GetImage("magic.lbx", 58, 0)

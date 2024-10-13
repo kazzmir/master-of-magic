@@ -7,6 +7,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/game/magic/magicview"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
 
@@ -31,6 +32,11 @@ func NewEngine() (*Engine, error) {
             Skill: 1.0/3,
         },
     }
+
+    player.Gold = 234
+    player.Mana = 981
+
+    player.Wizard.ToggleAbility(setup.AbilityAlchemy, 2)
 
     magicScreen := magicview.MakeMagicScreen(cache, player, 100)
 
