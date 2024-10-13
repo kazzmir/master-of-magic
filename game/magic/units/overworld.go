@@ -19,6 +19,66 @@ type OverworldUnit struct {
     Experience int
 }
 
+func (unit *OverworldUnit) GetName() string {
+    return unit.Unit.GetName()
+}
+
+func (unit *OverworldUnit) GetCombatLbxFile() string {
+    return unit.Unit.GetCombatLbxFile()
+}
+
+func (unit *OverworldUnit) GetCombatIndex(facing Facing) int {
+    return unit.Unit.GetCombatIndex(facing)
+}
+
+func (unit *OverworldUnit) GetCount() int {
+    return unit.Unit.GetCount()
+}
+
+func (unit *OverworldUnit) GetUpkeepGold() int {
+    return unit.Unit.GetUpkeepGold()
+}
+
+func (unit *OverworldUnit) GetUpkeepFood() int {
+    return unit.Unit.GetUpkeepFood()
+}
+
+func (unit *OverworldUnit) GetUpkeepMana() int {
+    return unit.Unit.GetUpkeepMana()
+}
+
+func (unit *OverworldUnit) GetMovementSpeed() int {
+    return unit.Unit.GetMovementSpeed()
+}
+
+func (unit *OverworldUnit) GetProductionCost() int {
+    return unit.Unit.GetProductionCost()
+}
+
+func (unit *OverworldUnit) GetMeleeAttackPower() int {
+    return unit.Unit.GetMeleeAttackPower()
+}
+
+func (unit *OverworldUnit) GetRangedAttackPower() int {
+    return unit.Unit.GetRangedAttackPower()
+}
+
+func (unit *OverworldUnit) GetDefense() int {
+    return unit.Unit.GetDefense()
+}
+
+func (unit *OverworldUnit) GetResistance() int {
+    return unit.Unit.GetResistance()
+}
+
+func (unit *OverworldUnit) GetHitPoints() int {
+    return unit.Unit.GetMaxHealth()
+}
+
+func (unit *OverworldUnit) GetAbilities() []Ability {
+    return unit.Unit.GetAbilities()
+}
+
 func MakeOverworldUnit(unit Unit) *OverworldUnit {
     return MakeOverworldUnitFromUnit(unit, 0, 0, data.PlaneArcanus, data.BannerBrown)
 }

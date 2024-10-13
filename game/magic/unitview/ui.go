@@ -8,14 +8,28 @@ import (
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
-    // "github.com/kazzmir/master-of-magic/game/magic/units"
+    "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/util"
 
     "github.com/hajimehoshi/ebiten/v2"
 )
 
 type UnitView interface {
-    Name() string
+    GetName() string
+    GetCombatLbxFile() string
+    GetCombatIndex(units.Facing) int
+    GetCount() int
+    GetUpkeepGold() int
+    GetUpkeepFood() int
+    GetUpkeepMana() int
+    GetMovementSpeed() int
+    GetProductionCost() int
+    GetMeleeAttackPower() int
+    GetRangedAttackPower() int
+    GetDefense() int
+    GetResistance() int
+    GetHitPoints() int
+    GetAbilities() []units.Ability
 }
 
 func MakeUnitContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView) []*uilib.UIElement {
@@ -128,7 +142,7 @@ func MakeUnitContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView) []*ui
             no := func(){
             }
 
-            confirmElements = uilib.MakeConfirmDialogWithLayer(ui, cache, &imageCache, 2, fmt.Sprintf("Do you wish to disband the unit of %v?", unit.Name()), yes, no)
+            confirmElements = uilib.MakeConfirmDialogWithLayer(ui, cache, &imageCache, 2, fmt.Sprintf("Do you wish to disband the unit of %v?", unit.GetName()), yes, no)
 
             ui.AddElements(confirmElements)
         },
