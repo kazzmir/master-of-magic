@@ -11,6 +11,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
     "github.com/kazzmir/master-of-magic/game/magic/unitview"
+    "github.com/kazzmir/master-of-magic/game/magic/magicview"
     herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
@@ -26,6 +27,7 @@ type VaultFonts struct {
     ItemName *font.Font
     PowerFont *font.Font
     ResourceFont *font.Font
+    SmallFont *font.Font
 }
 
 func makeFonts(cache *lbx.LbxCache) *VaultFonts {
@@ -72,10 +74,21 @@ func makeFonts(cache *lbx.LbxCache) *VaultFonts {
 
     resourceFont := font.MakeOptimizedFontWithPalette(fonts[1], whitePalette)
 
+    translucentWhite := util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 80})
+    transmutePalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        translucentWhite, translucentWhite, translucentWhite,
+        translucentWhite, translucentWhite, translucentWhite,
+    }
+
+    transmuteFont := font.MakeOptimizedFontWithPalette(fonts[0], transmutePalette)
+
     return &VaultFonts{
         ItemName: itemName,
         PowerFont: powerFont,
         ResourceFont: resourceFont,
+        SmallFont: transmuteFont,
     }
 }
 
@@ -150,6 +163,18 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
     imageCache := util.MakeImageCache(game.Cache)
 
     fonts := makeFonts(game.Cache)
+
+    helpLbx, err := game.Cache.GetLbxFile("help.lbx")
+    if err != nil {
+        log.Printf("Error: could not load help.lbx: %v", err)
+        return func(yield coroutine.YieldFunc){}, func (*ebiten.Image, bool){}
+    }
+
+    help, err := helpLbx.ReadHelp(2)
+    if err != nil {
+        log.Printf("Error: could not load help.lbx: %v", err)
+        return func(yield coroutine.YieldFunc){}, func (*ebiten.Image, bool){}
+    }
 
     // mouse should turn into createdArtifact picture
 
@@ -379,7 +404,7 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
             },
             LeftClickRelease: func(element *uilib.UIElement){
                 index = 0
-                // FIXME: show alchemy ui
+                ui.AddElements(magicview.MakeTransmuteElements(ui, fonts.SmallFont, player, &help, game.Cache, &imageCache))
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 var options ebiten.DrawImageOptions
