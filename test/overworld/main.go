@@ -1268,6 +1268,7 @@ func createScenario17(cache *lbx.LbxCache) *gamelib.Game {
     player.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x + 1, y + 1, data.PlaneArcanus, wizard.Banner))
 
     player.Heroes[0] = &hero.Hero{
+        Title: "Beastmaster",
         Unit: units.MakeOverworldUnitFromUnit(units.HeroRakir, 1, 1, data.PlaneArcanus, wizard.Banner),
     }
 

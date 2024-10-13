@@ -1168,6 +1168,13 @@ var HeroRakir Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 4,
     Name: "Rakir",
+    Count: 1,
+    HitPoints: 7,
+    MeleeAttackPower: 5,
+    Defense: 4,
+    UpkeepGold: 2,
+    Resistance: 6,
+    MovementSpeed: 2,
     Race: data.RaceHero,
 }
 

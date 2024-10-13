@@ -51,7 +51,21 @@ func (hero *Hero) GetProductionCost() int {
 }
 
 func (hero *Hero) GetMeleeAttackPower() int {
-    return hero.Unit.GetMeleeAttackPower()
+    base := hero.Unit.GetMeleeAttackPower()
+
+    for _, equipment := range hero.Equipment {
+        if equipment != nil {
+
+            for _, power := range equipment.Powers {
+                attack, ok := power.(*artifact.PowerAttack)
+                if ok {
+                    base += attack.Amount
+                }
+            }
+        }
+    }
+
+    return base
 }
 
 func (hero *Hero) GetRangedAttackPower() int {
