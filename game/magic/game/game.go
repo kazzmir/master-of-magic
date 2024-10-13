@@ -607,7 +607,11 @@ func (game *Game) doArmyView(yield coroutine.YieldFunc) {
         game.Map.DrawMinimap(screen, cities, x, y, fog, counter, false)
     }
 
-    army := armyview.MakeArmyScreen(game.Cache, game.Players[0], drawMinimap)
+    showVault := func(){
+        game.doVault(yield, nil)
+    }
+
+    army := armyview.MakeArmyScreen(game.Cache, game.Players[0], drawMinimap, showVault)
 
     game.Drawer = func (screen *ebiten.Image, game *Game){
         army.Draw(screen)

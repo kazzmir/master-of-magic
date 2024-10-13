@@ -31,17 +31,19 @@ type ArmyScreen struct {
     ImageCache util.ImageCache
     Player *playerlib.Player
     State ArmyScreenState
+    ShowVault func()
     FirstRow int
     UI *uilib.UI
     DrawMinimap func(*ebiten.Image, int, int, [][]bool, uint64)
 }
 
-func MakeArmyScreen(cache *lbx.LbxCache, player *playerlib.Player, drawMinimap func(*ebiten.Image, int, int, [][]bool, uint64)) *ArmyScreen {
+func MakeArmyScreen(cache *lbx.LbxCache, player *playerlib.Player, drawMinimap func(*ebiten.Image, int, int, [][]bool, uint64), showVault func()) *ArmyScreen {
     view := &ArmyScreen{
         Cache: cache,
         ImageCache: util.MakeImageCache(cache),
         Player: player,
         State: ArmyScreenStateRunning,
+        ShowVault: showVault,
         DrawMinimap: drawMinimap,
         FirstRow: 0,
     }
@@ -159,7 +161,7 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
 
     itemButtons, _ := view.ImageCache.GetImages("armylist.lbx", 3)
     elements = append(elements, makeButton(273, 163, itemButtons[0], itemButtons[1], func(){
-        // FIXME: show item screen
+        view.ShowVault()
     }))
 
     okButtons, _ := view.ImageCache.GetImages("armylist.lbx", 4)
