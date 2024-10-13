@@ -14,7 +14,7 @@ import (
     // "github.com/hajimehoshi/ebiten/v2/vector"
 )
 
-func RenderCombatImage(screen *ebiten.Image, imageCache *util.ImageCache, unit *units.Unit, options ebiten.DrawImageOptions) {
+func RenderCombatImage(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitView, options ebiten.DrawImageOptions) {
     images, err := imageCache.GetImages(unit.CombatLbxFile, unit.GetCombatIndex(units.FacingRight))
     if err == nil && len(images) > 2 {
         use := images[2]
@@ -32,7 +32,7 @@ func RenderCombatImage(screen *ebiten.Image, imageCache *util.ImageCache, unit *
     }
 }
 
-func renderUpkeep(screen *ebiten.Image, imageCache *util.ImageCache, unit *units.Unit, options ebiten.DrawImageOptions) {
+func renderUpkeep(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitView, options ebiten.DrawImageOptions) {
     unitCostMoney := unit.UpkeepGold
     unitCostFood := unit.UpkeepFood
     unitCostMana := unit.UpkeepMana
@@ -62,7 +62,7 @@ func renderUpkeep(screen *ebiten.Image, imageCache *util.ImageCache, unit *units
     renderIcons(unitCostMana, smallMana, bigMana)
 }
 
-func RenderUnitInfoNormal(screen *ebiten.Image, imageCache *util.ImageCache, unit *units.Unit, extraTitle string, descriptionFont *font.Font, smallFont *font.Font, defaultOptions ebiten.DrawImageOptions) {
+func RenderUnitInfoNormal(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitView, extraTitle string, descriptionFont *font.Font, smallFont *font.Font, defaultOptions ebiten.DrawImageOptions) {
     x, y := defaultOptions.GeoM.Apply(0, 0)
 
     descriptionFont.Print(screen, x, y, 1, defaultOptions.ColorScale, unit.Name)
@@ -105,7 +105,7 @@ func RenderUnitInfoNormal(screen *ebiten.Image, imageCache *util.ImageCache, uni
     renderUpkeep(screen, imageCache, unit, options)
 }
 
-func RenderUnitInfoBuild(screen *ebiten.Image, imageCache *util.ImageCache, unit *units.Unit, descriptionFont *font.Font, smallFont *font.Font, defaultOptions ebiten.DrawImageOptions) {
+func RenderUnitInfoBuild(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitView, descriptionFont *font.Font, smallFont *font.Font, defaultOptions ebiten.DrawImageOptions) {
     x, y := defaultOptions.GeoM.Apply(0, 0)
 
     descriptionFont.Print(screen, x, y, 1, defaultOptions.ColorScale, unit.Name)
@@ -139,7 +139,7 @@ func RenderUnitInfoBuild(screen *ebiten.Image, imageCache *util.ImageCache, unit
     smallFont.Print(screen, x, y + 27, 1, defaultOptions.ColorScale, fmt.Sprintf("Cost %v(%v)", discountedCost, cost))
 }
 
-func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit *units.Unit, descriptionFont *font.Font, smallFont *font.Font, defaultOptions ebiten.DrawImageOptions) {
+func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitView, descriptionFont *font.Font, smallFont *font.Font, defaultOptions ebiten.DrawImageOptions) {
     width := descriptionFont.MeasureTextWidth("Armor", 1)
 
     x, y := defaultOptions.GeoM.Apply(0, 0)
@@ -207,7 +207,7 @@ func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit
     }
 }
 
-func RenderUnitAbilities(screen *ebiten.Image, imageCache *util.ImageCache, unit *units.Unit, mediumFont *font.Font, defaultOptions ebiten.DrawImageOptions) {
+func RenderUnitAbilities(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitView, mediumFont *font.Font, defaultOptions ebiten.DrawImageOptions) {
     // FIXME: handle more than 4 abilities by using more columns
     for _, ability := range unit.Abilities {
         pic, err := imageCache.GetImage(ability.LbxFile(), ability.LbxIndex(), 0)
