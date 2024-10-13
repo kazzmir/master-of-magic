@@ -1,6 +1,8 @@
 package hero
 
 import (
+    "fmt"
+
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
 )
@@ -10,6 +12,66 @@ type Hero struct {
     Title string
 
     Equipment [3]*artifact.Artifact
+}
+
+func (hero *Hero) GetName() string {
+    return fmt.Sprintf("%v the %v", hero.Unit.GetName(), hero.Title)
+}
+
+func (hero *Hero) GetCombatLbxFile() string {
+    return hero.Unit.GetCombatLbxFile()
+}
+
+func (hero *Hero) GetCombatIndex(facing units.Facing) int {
+    return hero.Unit.GetCombatIndex(facing)
+}
+
+func (hero *Hero) GetCount() int {
+    return 1
+}
+
+func (hero *Hero) GetUpkeepGold() int {
+    return hero.Unit.GetUpkeepGold()
+}
+
+func (hero *Hero) GetUpkeepFood() int {
+    return hero.Unit.GetUpkeepFood()
+}
+
+func (hero *Hero) GetUpkeepMana() int {
+    return hero.Unit.GetUpkeepMana()
+}
+
+func (hero *Hero) GetMovementSpeed() int {
+    return hero.Unit.GetMovementSpeed()
+}
+
+func (hero *Hero) GetProductionCost() int {
+    return hero.Unit.GetProductionCost()
+}
+
+func (hero *Hero) GetMeleeAttackPower() int {
+    return hero.Unit.GetMeleeAttackPower()
+}
+
+func (hero *Hero) GetRangedAttackPower() int {
+    return hero.Unit.GetRangedAttackPower()
+}
+
+func (hero *Hero) GetDefense() int {
+    return hero.Unit.GetDefense()
+}
+
+func (hero *Hero) GetResistance() int {
+    return hero.Unit.GetResistance()
+}
+
+func (hero *Hero) GetHitPoints() int {
+    return hero.Unit.GetHitPoints()
+}
+
+func (hero *Hero) GetAbilities() []units.Ability {
+    return hero.Unit.GetAbilities()
 }
 
 func (hero *Hero) Slots() [3]artifact.ArtifactSlot {

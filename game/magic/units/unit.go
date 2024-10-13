@@ -156,6 +156,62 @@ func (unit *Unit) Equals(other Unit) bool {
     return unit.LbxFile == other.LbxFile && unit.Index == other.Index
 }
 
+func (unit *Unit) GetName() string {
+    return unit.Name
+}
+
+func (unit *Unit) GetCombatLbxFile() string {
+    return unit.CombatLbxFile
+}
+
+func (unit *Unit) GetCount() int {
+    return unit.Count
+}
+
+func (unit *Unit) GetUpkeepGold() int {
+    return unit.UpkeepGold
+}
+
+func (unit *Unit) GetUpkeepFood() int {
+    return unit.UpkeepFood
+}
+
+func (unit *Unit) GetUpkeepMana() int {
+    return unit.UpkeepMana
+}
+
+func (unit *Unit) GetMovementSpeed() int {
+    return unit.MovementSpeed
+}
+
+func (unit *Unit) GetProductionCost() int {
+    return unit.ProductionCost
+}
+
+func (unit *Unit) GetMeleeAttackPower() int {
+    return unit.MeleeAttackPower
+}
+
+func (unit *Unit) GetRangedAttackPower() int {
+    return unit.RangedAttackPower
+}
+
+func (unit *Unit) GetDefense() int {
+    return unit.Defense
+}
+
+func (unit *Unit) GetResistance() int {
+    return unit.Resistance
+}
+
+func (unit *Unit) GetHitPoints() int {
+    return unit.HitPoints
+}
+
+func (unit *Unit) GetAbilities() []Ability {
+    return unit.Abilities
+}
+
 func (unit *Unit) HasAbility(ability Ability) bool {
     for _, check := range unit.Abilities {
         if check == ability {

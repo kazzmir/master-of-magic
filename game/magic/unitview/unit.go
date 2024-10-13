@@ -14,8 +14,8 @@ import (
     // "github.com/hajimehoshi/ebiten/v2/vector"
 )
 
-func RenderCombatImage(screen *ebiten.Image, imageCache *util.ImageCache, unit *units.Unit, options ebiten.DrawImageOptions) {
-    images, err := imageCache.GetImages(unit.CombatLbxFile, unit.GetCombatIndex(units.FacingRight))
+func RenderCombatImage(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitView, options ebiten.DrawImageOptions) {
+    images, err := imageCache.GetImages(unit.GetCombatLbxFile(), unit.GetCombatIndex(units.FacingRight))
     if err == nil && len(images) > 2 {
         use := images[2]
         // log.Printf("unitview.RenderCombatImage: %v", use.Bounds())
@@ -28,14 +28,14 @@ func RenderCombatImage(screen *ebiten.Image, imageCache *util.ImageCache, unit *
         */
 
         combat.RenderCombatTile(screen, imageCache, options)
-        combat.RenderCombatUnit(screen, use, options, unit.Count)
+        combat.RenderCombatUnit(screen, use, options, unit.GetCount())
     }
 }
 
-func renderUpkeep(screen *ebiten.Image, imageCache *util.ImageCache, unit *units.Unit, options ebiten.DrawImageOptions) {
-    unitCostMoney := unit.UpkeepGold
-    unitCostFood := unit.UpkeepFood
-    unitCostMana := unit.UpkeepMana
+func renderUpkeep(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitView, options ebiten.DrawImageOptions) {
+    unitCostMoney := unit.GetUpkeepGold()
+    unitCostFood := unit.GetUpkeepFood()
+    unitCostMana := unit.GetUpkeepMana()
 
     smallCoin, _ := imageCache.GetImage("backgrnd.lbx", 42, 0)
     smallFood, _ := imageCache.GetImage("backgrnd.lbx", 40, 0)
@@ -62,10 +62,10 @@ func renderUpkeep(screen *ebiten.Image, imageCache *util.ImageCache, unit *units
     renderIcons(unitCostMana, smallMana, bigMana)
 }
 
-func RenderUnitInfoNormal(screen *ebiten.Image, imageCache *util.ImageCache, unit *units.Unit, extraTitle string, descriptionFont *font.Font, smallFont *font.Font, defaultOptions ebiten.DrawImageOptions) {
+func RenderUnitInfoNormal(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitView, extraTitle string, descriptionFont *font.Font, smallFont *font.Font, defaultOptions ebiten.DrawImageOptions) {
     x, y := defaultOptions.GeoM.Apply(0, 0)
 
-    descriptionFont.Print(screen, x, y, 1, defaultOptions.ColorScale, unit.Name)
+    descriptionFont.Print(screen, x, y, 1, defaultOptions.ColorScale, unit.GetName())
 
     if extraTitle != "" {
         y += float64(descriptionFont.Height())
@@ -83,7 +83,7 @@ func RenderUnitInfoNormal(screen *ebiten.Image, imageCache *util.ImageCache, uni
     smallFont.Print(screen, x, y, 1, defaultOptions.ColorScale, "Moves")
     y += float64(smallFont.Height()) + 1
 
-    unitMoves := unit.MovementSpeed
+    unitMoves := unit.GetMovementSpeed()
 
     // FIXME: show wings if flying, or the water thing if can walk on water
     smallBoot, err := imageCache.GetImage("unitview.lbx", 24, 0)
@@ -105,14 +105,14 @@ func RenderUnitInfoNormal(screen *ebiten.Image, imageCache *util.ImageCache, uni
     renderUpkeep(screen, imageCache, unit, options)
 }
 
-func RenderUnitInfoBuild(screen *ebiten.Image, imageCache *util.ImageCache, unit *units.Unit, descriptionFont *font.Font, smallFont *font.Font, defaultOptions ebiten.DrawImageOptions) {
+func RenderUnitInfoBuild(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitView, descriptionFont *font.Font, smallFont *font.Font, defaultOptions ebiten.DrawImageOptions) {
     x, y := defaultOptions.GeoM.Apply(0, 0)
 
-    descriptionFont.Print(screen, x, y, 1, defaultOptions.ColorScale, unit.Name)
+    descriptionFont.Print(screen, x, y, 1, defaultOptions.ColorScale, unit.GetName())
 
     smallFont.Print(screen, x, y + 11, 1, defaultOptions.ColorScale, "Moves")
 
-    unitMoves := unit.MovementSpeed
+    unitMoves := unit.GetMovementSpeed()
 
     // FIXME: show wings if flying or the water thing if water walking
     smallBoot, err := imageCache.GetImage("unitview.lbx", 24, 0)
@@ -133,13 +133,13 @@ func RenderUnitInfoBuild(screen *ebiten.Image, imageCache *util.ImageCache, unit
     options.GeoM.Translate(smallFont.MeasureTextWidth("Upkeep ", 1), 18)
     renderUpkeep(screen, imageCache, unit, options)
 
-    cost := unit.ProductionCost
+    cost := unit.GetProductionCost()
     // FIXME: compute discounted cost based on the unit being built and the tiles surrounding the city
     discountedCost := cost
     smallFont.Print(screen, x, y + 27, 1, defaultOptions.ColorScale, fmt.Sprintf("Cost %v(%v)", discountedCost, cost))
 }
 
-func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit *units.Unit, descriptionFont *font.Font, smallFont *font.Font, defaultOptions ebiten.DrawImageOptions) {
+func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitView, descriptionFont *font.Font, smallFont *font.Font, defaultOptions ebiten.DrawImageOptions) {
     width := descriptionFont.MeasureTextWidth("Armor", 1)
 
     x, y := defaultOptions.GeoM.Apply(0, 0)
@@ -170,7 +170,7 @@ func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit
 
     weaponIcon, err := imageCache.GetImage("unitview.lbx", 13, 0)
     if err == nil {
-        showNIcons(weaponIcon, unit.MeleeAttackPower, x, y)
+        showNIcons(weaponIcon, unit.GetMeleeAttackPower(), x, y)
     }
 
     y += float64(descriptionFont.Height())
@@ -179,7 +179,7 @@ func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit
     // FIXME: use the rock icon for sling, or the magic icon fire magic damage
     rangeBow, err := imageCache.GetImage("unitview.lbx", 18, 0)
     if err == nil {
-        showNIcons(rangeBow, unit.RangedAttackPower, x, y)
+        showNIcons(rangeBow, unit.GetRangedAttackPower(), x, y)
     }
 
     y += float64(descriptionFont.Height())
@@ -187,7 +187,7 @@ func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit
 
     armorIcon, err := imageCache.GetImage("unitview.lbx", 22, 0)
     if err == nil {
-        showNIcons(armorIcon, unit.Defense, x, y)
+        showNIcons(armorIcon, unit.GetDefense(), x, y)
     }
 
     y += float64(descriptionFont.Height())
@@ -195,7 +195,7 @@ func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit
 
     resistIcon, err := imageCache.GetImage("unitview.lbx", 27, 0)
     if err == nil {
-        showNIcons(resistIcon, unit.Resistance, x, y)
+        showNIcons(resistIcon, unit.GetResistance(), x, y)
     }
 
     y += float64(descriptionFont.Height())
@@ -203,13 +203,13 @@ func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit
 
     healthIcon, err := imageCache.GetImage("unitview.lbx", 23, 0)
     if err == nil {
-        showNIcons(healthIcon, unit.HitPoints, x, y)
+        showNIcons(healthIcon, unit.GetHitPoints(), x, y)
     }
 }
 
-func RenderUnitAbilities(screen *ebiten.Image, imageCache *util.ImageCache, unit *units.Unit, mediumFont *font.Font, defaultOptions ebiten.DrawImageOptions) {
+func RenderUnitAbilities(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitView, mediumFont *font.Font, defaultOptions ebiten.DrawImageOptions) {
     // FIXME: handle more than 4 abilities by using more columns
-    for _, ability := range unit.Abilities {
+    for _, ability := range unit.GetAbilities() {
         pic, err := imageCache.GetImage(ability.LbxFile(), ability.LbxIndex(), 0)
         if err == nil {
             screen.DrawImage(pic, &defaultOptions)

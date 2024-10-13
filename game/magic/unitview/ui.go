@@ -14,7 +14,25 @@ import (
     "github.com/hajimehoshi/ebiten/v2"
 )
 
-func MakeUnitContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit *units.OverworldUnit) []*uilib.UIElement {
+type UnitView interface {
+    GetName() string
+    GetCombatLbxFile() string
+    GetCombatIndex(units.Facing) int
+    GetCount() int
+    GetUpkeepGold() int
+    GetUpkeepFood() int
+    GetUpkeepMana() int
+    GetMovementSpeed() int
+    GetProductionCost() int
+    GetMeleeAttackPower() int
+    GetRangedAttackPower() int
+    GetDefense() int
+    GetResistance() int
+    GetHitPoints() int
+    GetAbilities() []units.Ability
+}
+
+func MakeUnitContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView) []*uilib.UIElement {
     fontLbx, err := cache.GetLbxFile("fonts.lbx")
     if err != nil {
         log.Printf("Unable to read fonts.lbx: %v", err)
@@ -75,21 +93,21 @@ func MakeUnitContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit *units.Overworl
             screen.DrawImage(background, &options)
 
             options.GeoM.Translate(25, 30)
-            RenderCombatImage(screen, &imageCache, &unit.Unit, options)
+            RenderCombatImage(screen, &imageCache, unit, options)
 
             options.GeoM.Reset()
             options.GeoM.Translate(31, 6)
             options.GeoM.Translate(51, 8)
 
-            RenderUnitInfoNormal(screen, &imageCache, &unit.Unit, "", descriptionFont, smallFont, options)
+            RenderUnitInfoNormal(screen, &imageCache, unit, "", descriptionFont, smallFont, options)
 
             options.GeoM.Reset()
             options.GeoM.Translate(31, 6)
             options.GeoM.Translate(10, 50)
-            RenderUnitInfoStats(screen, &imageCache, &unit.Unit, descriptionFont, smallFont, options)
+            RenderUnitInfoStats(screen, &imageCache, unit, descriptionFont, smallFont, options)
 
             options.GeoM.Translate(0, 60)
-            RenderUnitAbilities(screen, &imageCache, &unit.Unit, mediumFont, options)
+            RenderUnitAbilities(screen, &imageCache, unit, mediumFont, options)
         },
     })
 
@@ -124,7 +142,7 @@ func MakeUnitContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit *units.Overworl
             no := func(){
             }
 
-            confirmElements = uilib.MakeConfirmDialogWithLayer(ui, cache, &imageCache, 2, fmt.Sprintf("Do you wish to disband the unit of %v?", unit.Unit.Name), yes, no)
+            confirmElements = uilib.MakeConfirmDialogWithLayer(ui, cache, &imageCache, 2, fmt.Sprintf("Do you wish to disband the unit of %v?", unit.GetName()), yes, no)
 
             ui.AddElements(confirmElements)
         },

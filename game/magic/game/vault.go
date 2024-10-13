@@ -308,7 +308,7 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
         elements = append(elements, &uilib.UIElement{
             Rect: rect,
             RightClick: func(element *uilib.UIElement){
-                ui.AddElements(unitview.MakeUnitContextMenu(game.Cache, ui, hero.Unit))
+                ui.AddElements(unitview.MakeUnitContextMenu(game.Cache, ui, hero))
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 screen.DrawImage(profile, &options)
