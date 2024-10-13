@@ -61,8 +61,13 @@ func (game *Game) showItemPopup(item *artifact.Artifact, cache *lbx.LbxCache, im
         vaultFonts = makeFonts(cache)
     }
 
+    counter := uint64(0)
+
+    getAlpha := util.MakeFadeIn(7, &counter)
+
     drawer := func (screen *ebiten.Image){
         var options ebiten.DrawImageOptions
+        options.ColorScale.ScaleAlpha(getAlpha())
         itemBackground, _ := imageCache.GetImage("itemisc.lbx", 25, 0)
         options.GeoM.Translate(32, 48)
         screen.DrawImage(itemBackground, &options)
@@ -73,7 +78,7 @@ func (game *Game) showItemPopup(item *artifact.Artifact, cache *lbx.LbxCache, im
 
         x, y := options.GeoM.Apply(float64(itemImage.Bounds().Max.X) + 3, 4)
 
-        vaultFonts.ItemName.Print(screen, x, y, 1, ebiten.ColorScale{}, item.Name)
+        vaultFonts.ItemName.Print(screen, x, y, 1, options.ColorScale, item.Name)
 
         dot, _ := imageCache.GetImage("itemisc.lbx", 26, 0)
         savedGeom := options.GeoM
@@ -85,16 +90,23 @@ func (game *Game) showItemPopup(item *artifact.Artifact, cache *lbx.LbxCache, im
             screen.DrawImage(dot, &options)
 
             x, y := options.GeoM.Apply(float64(dot.Bounds().Dx() + 1), 0)
-            vaultFonts.PowerFont.Print(screen, x, y, 1, ebiten.ColorScale{}, power.String())
+            vaultFonts.PowerFont.Print(screen, x, y, 1, options.ColorScale, power.String())
         }
     }
 
     logic := func (yield coroutine.YieldFunc) {
         quit := false
         for !quit {
+            counter += 1
             if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
                 quit = true
             }
+            yield()
+        }
+
+        getAlpha = util.MakeFadeOut(7, &counter)
+        for i := 0; i < 7; i++ {
+            counter += 1
             yield()
         }
     }
