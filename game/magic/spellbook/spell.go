@@ -1037,6 +1037,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
 
             costRemaining := spell.Cost(overland)
             if spell.Name == currentSpell.Name {
+                costRemaining = currentSpell.Cost(overland)
                 costRemaining -= currentProgress
             }
 

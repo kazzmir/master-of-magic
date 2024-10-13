@@ -11,6 +11,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/unitview"
     "github.com/kazzmir/master-of-magic/game/magic/util"
+    "github.com/kazzmir/master-of-magic/game/magic/artifact"
 
     "github.com/hajimehoshi/ebiten/v2"
 )
@@ -18,6 +19,8 @@ import (
 type Hero struct {
     Unit *units.OverworldUnit
     Title string
+
+    Equipment [3]*artifact.Artifact
 }
 
 func getHeroPortraitIndex(hero *Hero) int {

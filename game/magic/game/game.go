@@ -13,6 +13,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
+    "github.com/kazzmir/master-of-magic/game/magic/artifact"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     "github.com/kazzmir/master-of-magic/game/magic/combat"
     "github.com/kazzmir/master-of-magic/game/magic/unitview"
@@ -75,6 +76,13 @@ type GameEventCityListView struct {
 }
 
 type GameEventApprenticeUI struct {
+}
+
+type GameEventCastSpellBook struct {
+}
+
+type GameEventVault struct {
+    CreatedArtifact *artifact.Artifact
 }
 
 type GameEventNewOutpost struct {
@@ -1483,6 +1491,34 @@ func (game *Game) doLoadMenu(yield coroutine.YieldFunc) {
     yield()
 }
 
+func (game *Game) doVault(yield coroutine.YieldFunc, newArtifact *artifact.Artifact) {
+    drawer := game.Drawer
+    defer func(){
+        game.Drawer = drawer
+    }()
+
+    vaultLogic, vaultDrawer := game.showVaultScreen(newArtifact, game.Players[0], nil)
+
+    if newArtifact != nil {
+        itemLogic, itemDrawer := game.showItemPopup(newArtifact, game.Cache, &game.ImageCache, nil)
+
+        game.Drawer = func (screen *ebiten.Image, game *Game){
+            drawer(screen, game)
+            vaultDrawer(screen, false)
+            itemDrawer(screen, true)
+        }
+
+        itemLogic(yield)
+    }
+
+    game.Drawer = func (screen *ebiten.Image, game *Game){
+        drawer(screen, game)
+        vaultDrawer(screen, true)
+    }
+
+    vaultLogic(yield)
+}
+
 func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
     // keep processing events until we don't receive one in the events channel
     for {
@@ -1499,11 +1535,16 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         game.ShowApprenticeUI(yield, game.Players[0])
                     case *GameEventArmyView:
                         game.doArmyView(yield)
+                    case *GameEventCastSpellBook:
+                        game.ShowSpellBookCastUI(yield, game.Players[0])
                     case *GameEventCityListView:
                         game.doCityListView(yield)
                     case *GameEventNewOutpost:
                         outpost := event.(*GameEventNewOutpost)
                         game.showOutpost(yield, outpost.City, outpost.Stack)
+                    case *GameEventVault:
+                        vaultEvent := event.(*GameEventVault)
+                        game.doVault(yield, vaultEvent.CreatedArtifact)
                     case *GameEventScroll:
                         scroll := event.(*GameEventScroll)
                         game.showScroll(yield, scroll.Title, scroll.Text)
@@ -1515,6 +1556,7 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         game.ResearchNewSpell(yield, researchSpell.Player)
                     case *GameEventCastSpell:
                         castSpell := event.(*GameEventCastSpell)
+                        // in cast.go
                         game.doCastSpell(yield, castSpell.Player, castSpell.Spell)
                     case *GameEventNewBuilding:
                         buildingEvent := event.(*GameEventNewBuilding)
@@ -2324,10 +2366,37 @@ func (game *Game) MakeInfoUI(cornerX int, cornerY int) []*uilib.UIElement {
     return uilib.MakeSelectionUI(game.HudUI, game.Cache, &game.ImageCache, cornerX, cornerY, "Select An Advisor", advisors)
 }
 
-func (game *Game) ShowSpellBookCastUI(){
-    player := game.Players[0]
+func (game *Game) ShowSpellBookCastUI(yield coroutine.YieldFunc, player *playerlib.Player){
     game.HudUI.AddElements(spellbook.MakeSpellBookCastUI(game.HudUI, game.Cache, player.KnownSpells.OverlandSpells(), player.ComputeCastingSkill(), player.CastingSpell, player.CastingSpellProgress, true, func (spell spellbook.Spell, picked bool){
         if picked {
+            if spell.Name == "Create Artifact" || spell.Name == "Enchant Item" {
+
+                drawFunc := func(screen *ebiten.Image){}
+                oldDrawer := game.Drawer
+                defer func(){
+                    game.Drawer = oldDrawer
+                }()
+                game.Drawer = func(screen *ebiten.Image, game *Game){
+                    drawFunc(screen)
+                }
+
+                creation := artifact.CreationCreateArtifact
+                switch spell.Name {
+                    case "Create Artifact": creation = artifact.CreationCreateArtifact
+                    case "Enchant Item": creation = artifact.CreationEnchantItem
+                }
+
+                created, cancel := artifact.ShowCreateArtifactScreen(yield, game.Cache, creation, &drawFunc)
+                if cancel {
+                    return
+                }
+
+                log.Printf("Create artifact %v", created)
+                spell.OverrideCost = created.Cost()
+
+                player.CreateArtifact = created
+            }
+
             castingCost := spell.Cost(true)
 
             if castingCost <= player.Mana && castingCost <= player.RemainingCastingSkill {
@@ -2562,7 +2631,10 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
     // spell button
     elements = append(elements, makeButton(2, 47, 4, false, func(){
-        game.ShowSpellBookCastUI()
+        select {
+            case game.Events <- &GameEventCastSpellBook{}:
+            default:
+        }
     }))
 
     // army button

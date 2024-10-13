@@ -205,6 +205,14 @@ func (viewer *Viewer) Update() error {
                 if viewer.State == ViewStateTiles && viewer.ShiftCount % shiftSpeed == 1 {
                     press_right = true
                 }
+            case ebiten.KeyPageDown:
+                if viewer.State == ViewStateTiles {
+                    press_down = true
+                }
+            case ebiten.KeyPageUp:
+                if viewer.State == ViewStateTiles {
+                    press_up = true
+                }
             case ebiten.KeyShiftLeft:
                 shift_pressed = true
             case ebiten.KeySpace:

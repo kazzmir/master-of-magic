@@ -270,13 +270,13 @@ func (artifact *Artifact) Cost() int {
 func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCache, nameFont *font.Font, powerFont *font.Font, artifactType ArtifactType, picLow int, picHigh int, powerGroups [][]Power, artifact *Artifact) []*uilib.UIElement {
     var elements []*uilib.UIElement
 
-    currentPicture := picLow
+    artifact.Image = picLow
 
     elements = append(elements, &uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(7, 6)
-            image, _ := imageCache.GetImage("items.lbx", currentPicture, 0)
+            image, _ := imageCache.GetImage("items.lbx", artifact.Image, 0)
             screen.DrawImage(image, &options)
         },
     })
@@ -291,9 +291,9 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
         },
         LeftClickRelease: func(element *uilib.UIElement){
             leftIndex = 0
-            currentPicture = currentPicture - 1
-            if currentPicture < picLow {
-                currentPicture = picHigh
+            artifact.Image = artifact.Image - 1
+            if artifact.Image < picLow {
+                artifact.Image = picHigh
             }
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
@@ -314,9 +314,9 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
         },
         LeftClickRelease: func(element *uilib.UIElement){
             rightIndex = 0
-            currentPicture = currentPicture + 1
-            if currentPicture > picHigh {
-                currentPicture = picLow
+            artifact.Image = artifact.Image + 1
+            if artifact.Image > picHigh {
+                artifact.Image = picLow
             }
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){

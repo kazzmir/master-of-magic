@@ -10,6 +10,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
+    "github.com/kazzmir/master-of-magic/game/magic/artifact"
     "github.com/kazzmir/master-of-magic/lib/fraction"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
 )
@@ -265,6 +266,8 @@ type Player struct {
 
     PowerDistribution PowerDistribution
 
+    VaultEquipment [4]*artifact.Artifact
+
     // total power points put into the casting skill
     CastingSkillPower int
     // how much casting skill remains in this turn
@@ -278,6 +281,9 @@ type Player struct {
     // how much mana has been put towards the current spell. When this value equals
     // the spell's casting cost, the spell is cast
     CastingSpellProgress int
+
+    // the artifact currently being created by a spell cast of Create Artifact or Enchant Item
+    CreateArtifact *artifact.Artifact
 
     Wizard setup.WizardCustom
 

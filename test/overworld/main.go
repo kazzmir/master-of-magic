@@ -13,6 +13,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
+    "github.com/kazzmir/master-of-magic/game/magic/artifact"
     gamelib "github.com/kazzmir/master-of-magic/game/magic/game"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
@@ -903,7 +904,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
 
     player := game.AddPlayer(wizard, true)
 
-    player.CastingSkillPower += 500
+    player.CastingSkillPower += 5000
 
     allSpells, _ := spellbook.ReadSpellsFromCache(cache)
 
@@ -911,6 +912,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     player.KnownSpells.AddSpell(allSpells.FindByName("Giant Strength"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Ice Bolt"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Enchant Item"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Create Artifact"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Magic Spirit"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Dark Rituals"))
 
@@ -932,7 +934,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     player.AddCity(city)
 
     player.Gold = 83
-    player.Mana = 50
+    player.Mana = 5000
 
     player.LiftFog(x, y, 4)
 
@@ -1196,6 +1198,129 @@ func createScenario16(cache *lbx.LbxCache) *gamelib.Game {
     return game
 }
 
+// create a new artifact
+func createScenario17(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 17")
+    wizard := setup.WizardCustom{
+        Name: "bob",
+        Banner: data.BannerRed,
+        Race: data.RaceTroll,
+        Abilities: []setup.WizardAbility{
+            setup.AbilityAlchemy,
+            setup.AbilitySageMaster,
+        },
+        Books: []data.WizardBook{
+            data.WizardBook{
+                Magic: data.LifeMagic,
+                Count: 3,
+            },
+            data.WizardBook{
+                Magic: data.SorceryMagic,
+                Count: 8,
+            },
+        },
+    }
+
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+        Magic: data.MagicSettingNormal,
+        Difficulty: data.DifficultyAverage,
+    })
+
+    game.Plane = data.PlaneArcanus
+
+    player := game.AddPlayer(wizard, true)
+
+    player.CastingSkillPower += 5000
+
+    allSpells, _ := spellbook.ReadSpellsFromCache(cache)
+
+    player.KnownSpells.AddSpell(allSpells.FindByName("Earth Lore"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Giant Strength"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Ice Bolt"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Enchant Item"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Create Artifact"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Magic Spirit"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Dark Rituals"))
+
+    x, y := game.FindValidCityLocation()
+
+    city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.TaxRate, game.BuildingInfo)
+    city.Population = 6190
+    city.Plane = data.PlaneArcanus
+    city.Banner = wizard.Banner
+    city.ProducingBuilding = buildinglib.BuildingGranary
+    city.ProducingUnit = units.UnitNone
+    city.Race = wizard.Race
+    city.Farmers = 3
+    city.Workers = 3
+    city.Wall = false
+
+    city.ResetCitizens(nil)
+
+    player.AddCity(city)
+
+    player.Gold = 83
+    player.Mana = 5000
+
+    player.LiftFog(x, y, 4)
+
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x + 1, y + 1, data.PlaneArcanus, wizard.Banner))
+
+    player.VaultEquipment[0] = &artifact.Artifact{
+        Name: "Baloney",
+        Image: 7,
+        Type: artifact.ArtifactTypeSword,
+        Powers: []artifact.Power{
+            &artifact.PowerAttack{
+                Amount: 1,
+            },
+            &artifact.PowerDefense{
+                Amount: 2,
+            },
+        },
+    }
+
+    player.VaultEquipment[1] = &artifact.Artifact{
+        Name: "Pizza",
+        Image: 31,
+        Type: artifact.ArtifactTypeBow,
+        Powers: []artifact.Power{
+            &artifact.PowerAttack{
+                Amount: 1,
+            },
+            &artifact.PowerMovement{
+                Amount: 2,
+            },
+        },
+    }
+
+    testArtifact := artifact.Artifact{
+        Name: "Sword",
+        Image: 5,
+        Type: artifact.ArtifactTypeSword,
+        Powers: []artifact.Power{
+            &artifact.PowerAttack{
+                Amount: 2,
+            },
+            &artifact.PowerDefense{
+                Amount: 2,
+            },
+            &artifact.PowerMovement{
+                Amount: 3,
+            },
+            &artifact.PowerResistance{
+                Amount: 2,
+            },
+        },
+    }
+
+    game.Events <- &gamelib.GameEventVault{
+        CreatedArtifact: &testArtifact,
+    }
+
+    return game
+}
+
 func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
@@ -1218,6 +1343,7 @@ func NewEngine(scenario int) (*Engine, error) {
         case 14: game = createScenario14(cache)
         case 15: game = createScenario15(cache)
         case 16: game = createScenario16(cache)
+        case 17: game = createScenario17(cache)
         default: game = createScenario1(cache)
     }
 
