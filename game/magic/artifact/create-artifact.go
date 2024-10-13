@@ -76,6 +76,25 @@ func (slot ArtifactSlot) ImageIndex() int {
     return -1
 }
 
+func (slot ArtifactSlot) CompatibleWith(kind ArtifactType) bool {
+    switch slot {
+        case ArtifactSlotMeleeWeapon:
+            return kind == ArtifactTypeSword || kind == ArtifactTypeMace || kind == ArtifactTypeAxe
+        case ArtifactSlotRangedWeapon:
+            return kind == ArtifactTypeSword || kind == ArtifactTypeMace || kind == ArtifactTypeAxe || kind == ArtifactTypeBow
+        case ArtifactSlotMagicWeapon:
+            return kind == ArtifactTypeStaff || kind == ArtifactTypeWand
+        case ArtifactSlotAnyWeapon:
+            return kind == ArtifactTypeStaff || kind == ArtifactTypeWand || kind == ArtifactTypeSword || kind == ArtifactTypeMace || kind == ArtifactTypeAxe
+        case ArtifactSlotArmor:
+            return kind == ArtifactTypeShield || kind == ArtifactTypeChain || kind == ArtifactTypePlate
+        case ArtifactSlotJewelry:
+            return kind == ArtifactTypeMisc
+    }
+
+    return false
+}
+
 // the screen can be invoked as either the 'Enchant Item' spell or 'Create Artifact'
 type CreationScreen int
 const (

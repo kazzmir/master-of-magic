@@ -260,7 +260,8 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
         }
     }())
 
-    makeHero := func(index int, hero *herolib.Hero) *uilib.UIElement {
+    // returns elements for the hero portrait and the 3 item slots
+    makeHero := func(index int, hero *herolib.Hero) []*uilib.UIElement {
         // 3 on left, 3 on right
 
         x1 := 34 + (index % 2) * 135
@@ -272,30 +273,59 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
 
         rect := util.ImageRect(x1, y1, profile)
 
-        return &uilib.UIElement{
+        var options ebiten.DrawImageOptions
+        var baseGeom ebiten.GeoM
+        baseGeom.Translate(float64(rect.Min.X), float64(rect.Min.Y))
+        options.GeoM = baseGeom
+
+        var elements []*uilib.UIElement
+
+        elements = append(elements, &uilib.UIElement{
             Rect: rect,
             RightClick: func(element *uilib.UIElement){
                 ui.AddElements(unitview.MakeUnitContextMenu(game.Cache, ui, hero.Unit))
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
                 screen.DrawImage(profile, &options)
                 screen.DrawImage(frame, &options)
-
-                options.GeoM.Translate(float64(profile.Bounds().Dx()) + 8, 15)
-                for _, slot := range hero.Slots() {
-                    pic, _ := imageCache.GetImage("itemisc.lbx", slot.ImageIndex(), 0)
-                    screen.DrawImage(pic, &options)
-                    options.GeoM.Translate(float64(pic.Bounds().Dx()) + 11, 0)
-                }
             },
+        })
+
+        for slotIndex, slot := range hero.Slots() {
+            slotOptions := options
+            slotOptions.GeoM = baseGeom
+            slotOptions.GeoM.Translate(float64(profile.Bounds().Dx()) + 8, 15)
+            pic, _ := imageCache.GetImage("itemisc.lbx", slot.ImageIndex(), 0)
+            slotOptions.GeoM.Translate(float64((pic.Bounds().Dx() + 11) * slotIndex), 0)
+
+            x, y := slotOptions.GeoM.Apply(0, 0)
+            rect := util.ImageRect(int(x), int(y), pic)
+
+            elements = append(elements, &uilib.UIElement{
+                Rect: rect,
+                LeftClick: func(element *uilib.UIElement){
+                    // if the slot is incompatible with the selected item then do not allow a swap
+                    if selectedItem == nil || slot.CompatibleWith(selectedItem.Type) {
+                        selectedItem, hero.Equipment[slotIndex] = hero.Equipment[slotIndex], selectedItem
+                    }
+                },
+                Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                    if hero.Equipment[slotIndex] != nil {
+                        artifactPic, _ := imageCache.GetImage("items.lbx", hero.Equipment[slotIndex].Image, 0)
+                        screen.DrawImage(artifactPic, &slotOptions)
+                    } else {
+                        screen.DrawImage(pic, &slotOptions)
+                    }
+                },
+            })
         }
+
+        return elements
     }
 
     for i, hero := range player.Heroes {
         if hero != nil {
-            ui.AddElement(makeHero(i, hero))
+            ui.AddElements(makeHero(i, hero))
         }
     }
 
