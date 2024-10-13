@@ -10,6 +10,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
+    "github.com/kazzmir/master-of-magic/game/magic/unitview"
     herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
@@ -167,14 +168,14 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
             options.GeoM.Translate(float64(data.ScreenWidth / 2 - background.Bounds().Dx() / 2), 2)
             screen.DrawImage(background, &options)
 
+            fonts.ResourceFont.PrintRight(screen, 190, 166, 1, options.ColorScale, fmt.Sprintf("%v GP", player.Gold))
+            fonts.ResourceFont.PrintRight(screen, 233, 166, 1, options.ColorScale, fmt.Sprintf("%v MP", player.Mana))
+
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
                 if element.Draw != nil {
                     element.Draw(element, screen)
                 }
             })
-
-            fonts.ResourceFont.PrintRight(screen, 190, 166, 1, options.ColorScale, fmt.Sprintf("%v GP", player.Gold))
-            fonts.ResourceFont.PrintRight(screen, 233, 166, 1, options.ColorScale, fmt.Sprintf("%v MP", player.Mana))
 
             if drawMouse {
                 options.GeoM.Reset()
@@ -273,6 +274,9 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
 
         return &uilib.UIElement{
             Rect: rect,
+            RightClick: func(element *uilib.UIElement){
+                ui.AddElements(unitview.MakeUnitContextMenu(game.Cache, ui, hero.Unit))
+            },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
