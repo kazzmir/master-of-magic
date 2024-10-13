@@ -222,6 +222,22 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, heroes []*
         ui.Draw(ui, screen)
     }
 
+    showItemPopup := func (yield coroutine.YieldFunc, item *artifact.Artifact){
+        itemLogic, itemDraw := game.showItemPopup(item, game.Cache, &imageCache, nil)
+
+        drawer := game.Drawer
+        defer func(){
+            game.Drawer = drawer
+        }()
+
+        game.Drawer = func (screen *ebiten.Image, game *Game){
+            drawer(screen, game)
+            itemDraw(screen, drawMouse)
+        }
+
+        itemLogic(yield)
+    }
+
     logic := func (yield coroutine.YieldFunc) {
         ebiten.SetCursorMode(ebiten.CursorModeHidden)
         defer ebiten.SetCursorMode(ebiten.CursorModeVisible)
@@ -230,22 +246,7 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, heroes []*
 
             select {
                 case item := <-showItem:
-                    func (){
-                        itemLogic, itemDraw := game.showItemPopup(item, game.Cache, &imageCache, nil)
-
-                        drawer := game.Drawer
-                        defer func(){
-                            game.Drawer = drawer
-                        }()
-
-                        game.Drawer = func (screen *ebiten.Image, game *Game){
-                            drawer(screen, game)
-                            itemDraw(screen, drawMouse)
-                        }
-
-                        itemLogic(yield)
-                    }()
-
+                    showItemPopup(yield, item)
                 default:
             }
 
