@@ -24,6 +24,7 @@ import (
 type VaultFonts struct {
     ItemName *font.Font
     PowerFont *font.Font
+    ResourceFont *font.Font
 }
 
 func makeFonts(cache *lbx.LbxCache) *VaultFonts {
@@ -61,9 +62,19 @@ func makeFonts(cache *lbx.LbxCache) *VaultFonts {
     itemName := font.MakeOptimizedFontWithPalette(fonts[4], namePalette)
     powerFont := font.MakeOptimizedFontWithPalette(fonts[2], powerPalette)
 
+    white := color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}
+    whitePalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        white, white, white, white,
+    }
+
+    resourceFont := font.MakeOptimizedFontWithPalette(fonts[1], whitePalette)
+
     return &VaultFonts{
         ItemName: itemName,
         PowerFont: powerFont,
+        ResourceFont: resourceFont,
     }
 }
 
@@ -137,7 +148,7 @@ func (game *Game) showItemPopup(item *artifact.Artifact, cache *lbx.LbxCache, im
 func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *playerlib.Player, heroes []*hero.Hero) (func(coroutine.YieldFunc), func (*ebiten.Image, bool)) {
     imageCache := util.MakeImageCache(game.Cache)
 
-    // fonts := makeFonts(game.Cache)
+    fonts := makeFonts(game.Cache)
 
     // mouse should turn into createdArtifact picture
 
@@ -161,6 +172,9 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
                     element.Draw(element, screen)
                 }
             })
+
+            fonts.ResourceFont.PrintRight(screen, 190, 166, 1, options.ColorScale, fmt.Sprintf("%v GP", player.Gold))
+            fonts.ResourceFont.PrintRight(screen, 233, 166, 1, options.ColorScale, fmt.Sprintf("%v MP", player.Mana))
 
             if drawMouse {
                 options.GeoM.Reset()
@@ -226,15 +240,17 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
             LeftClick: func(element *uilib.UIElement){
                 if selectedItem != nil {
 
+                    gainedMana := selectedItem.Cost() / 2
+
                     yes := func(){
-                        player.Mana += selectedItem.Cost() / 2
+                        player.Mana += gainedMana
                         selectedItem = nil
                     }
 
                     no := func(){
                     }
 
-                    ui.AddElements(uilib.MakeConfirmDialog(ui, game.Cache, &imageCache, fmt.Sprintf("Do you want to destroy your %v and gain %v mana crystals?", selectedItem.Name, selectedItem.Cost() / 2), yes, no))
+                    ui.AddElements(uilib.MakeConfirmDialog(ui, game.Cache, &imageCache, fmt.Sprintf("Do you want to destroy your %v and gain %v mana crystals?", selectedItem.Name, gainedMana), yes, no))
                 }
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
@@ -251,7 +267,7 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
     }
 
     showItemPopup := func (yield coroutine.YieldFunc, item *artifact.Artifact){
-        itemLogic, itemDraw := game.showItemPopup(item, game.Cache, &imageCache, nil)
+        itemLogic, itemDraw := game.showItemPopup(item, game.Cache, &imageCache, fonts)
 
         drawer := game.Drawer
         defer func(){
