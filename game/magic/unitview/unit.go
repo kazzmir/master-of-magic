@@ -191,10 +191,9 @@ func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit
     descriptionFont.Print(screen, x, y, 1, defaultOptions.ColorScale, "Range")
 
     // FIXME: use the rock icon for sling, or the magic icon fire magic damage
-    rangeBow, err := imageCache.GetImage("unitview.lbx", 18, 0)
-    if err == nil {
-        showNIcons(rangeBow, unit.GetRangedAttackPower(), nil, 0, x, y)
-    }
+    rangeBow, _ := imageCache.GetImage("unitview.lbx", 18, 0)
+    rangeBowGold, _ := imageCache.GetImage("unitview.lbx", 40, 0)
+    showNIcons(rangeBow, unit.GetRangedAttackPower(), rangeBowGold, unit.GetRangedAttackPower() - unit.GetBaseRangedAttackPower(), x, y)
 
     y += float64(descriptionFont.Height())
     descriptionFont.Print(screen, x, float64(y), 1, defaultOptions.ColorScale, "Armor")

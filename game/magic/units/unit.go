@@ -196,6 +196,10 @@ func (unit *Unit) GetMeleeAttackPower() int {
     return unit.MeleeAttackPower
 }
 
+func (unit *Unit) GetBaseRangedAttackPower() int {
+    return unit.GetRangedAttackPower()
+}
+
 func (unit *Unit) GetRangedAttackPower() int {
     return unit.RangedAttackPower
 }

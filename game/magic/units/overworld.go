@@ -63,6 +63,10 @@ func (unit *OverworldUnit) GetMeleeAttackPower() int {
     return unit.Unit.GetMeleeAttackPower()
 }
 
+func (unit *OverworldUnit) GetBaseRangedAttackPower() int {
+    return unit.GetRangedAttackPower()
+}
+
 func (unit *OverworldUnit) GetRangedAttackPower() int {
     return unit.Unit.GetRangedAttackPower()
 }

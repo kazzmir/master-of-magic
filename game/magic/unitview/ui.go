@@ -26,6 +26,7 @@ type UnitView interface {
     GetProductionCost() int
     GetBaseMeleeAttackPower() int
     GetMeleeAttackPower() int
+    GetBaseRangedAttackPower() int
     GetRangedAttackPower() int
     GetDefense() int
     GetResistance() int

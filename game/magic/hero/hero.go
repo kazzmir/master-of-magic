@@ -57,23 +57,29 @@ func (hero *Hero) GetBaseMeleeAttackPower() int {
 func (hero *Hero) GetMeleeAttackPower() int {
     base := hero.GetBaseMeleeAttackPower()
 
-    for _, equipment := range hero.Equipment {
-        if equipment != nil {
-
-            for _, power := range equipment.Powers {
-                attack, ok := power.(*artifact.PowerAttack)
-                if ok {
-                    base += attack.Amount
-                }
-            }
+    for _, item := range hero.Equipment {
+        if item != nil {
+            base += item.MeleeBonus()
         }
     }
 
     return base
 }
 
-func (hero *Hero) GetRangedAttackPower() int {
+func (hero *Hero) GetBaseRangedAttackPower() int {
     return hero.Unit.GetRangedAttackPower()
+}
+
+func (hero *Hero) GetRangedAttackPower() int {
+    base := hero.Unit.GetRangedAttackPower()
+
+    for _, item := range hero.Equipment {
+        if item != nil {
+            base += item.RangedAttackBonus()
+        }
+    }
+
+    return base
 }
 
 func (hero *Hero) GetDefense() int {
