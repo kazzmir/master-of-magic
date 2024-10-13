@@ -2,6 +2,7 @@ package game
 
 import (
     "log"
+    "image"
     "image/color"
 
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
@@ -146,6 +147,12 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, heroes []*
             options.GeoM.Translate(float64(data.ScreenWidth / 2 - background.Bounds().Dx() / 2), 2)
             screen.DrawImage(background, &options)
 
+            ui.IterateElementsByLayer(func (element *uilib.UIElement){
+                if element.Draw != nil {
+                    element.Draw(element, screen)
+                }
+            })
+
             if drawMouse {
                 options.GeoM.Reset()
                 mouseX, mouseY := ebiten.CursorPosition()
@@ -159,6 +166,38 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, heroes []*
                 }
             }
         },
+    }
+
+    ui.SetElementsFromArray(nil)
+
+    // the 4 equipment slots
+    makeEquipmentSlot := func(index int) *uilib.UIElement{
+        width := 20
+        height := 17
+        x1 := 72 + index * width
+        y1 := 173
+        rect := image.Rect(x1, y1, x1 + width, y1 + height)
+
+        return &uilib.UIElement{
+            Rect: rect,
+            LeftClick: func(element *uilib.UIElement){
+                selectedItem, game.VaultEquipment[index] = game.VaultEquipment[index], selectedItem
+            },
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                if game.VaultEquipment[index] != nil {
+                    // util.DrawRect(screen, rect, color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff})
+
+                    equipmentImage, _ := imageCache.GetImage("items.lbx", game.VaultEquipment[index].Image, 0)
+                    var options ebiten.DrawImageOptions
+                    options.GeoM.Translate(float64(73 + index * 20), 173)
+                    screen.DrawImage(equipmentImage, &options)
+                }
+            },
+        }
+    }
+
+    for i := 0; i < 4; i++ {
+        ui.AddElement(makeEquipmentSlot(i))
     }
 
     quit := false

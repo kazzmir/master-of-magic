@@ -58,6 +58,11 @@ func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Playe
 
             // FIXME: show vault with artifact
 
+            select {
+                case game.Events <- &GameEventVault{CreatedArtifact: player.CreateArtifact}:
+                default:
+            }
+
             player.CreateArtifact = nil
     }
 }

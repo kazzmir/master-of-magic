@@ -82,6 +82,7 @@ type GameEventCastSpellBook struct {
 }
 
 type GameEventVault struct {
+    CreatedArtifact *artifact.Artifact
 }
 
 type GameEventNewOutpost struct {
@@ -173,6 +174,8 @@ type Game struct {
     GlobalEnchantments *set.Set[Enchantment]
 
     TurnNumber uint64
+
+    VaultEquipment [4]*artifact.Artifact
 
     Events chan GameEvent
     BuildingInfo buildinglib.BuildingInfos
@@ -1490,42 +1493,25 @@ func (game *Game) doLoadMenu(yield coroutine.YieldFunc) {
     yield()
 }
 
-func (game *Game) doVault(yield coroutine.YieldFunc) {
+func (game *Game) doVault(yield coroutine.YieldFunc, newArtifact *artifact.Artifact) {
     drawer := game.Drawer
     defer func(){
         game.Drawer = drawer
     }()
 
-    testArtifact := artifact.Artifact{
-        Name: "Sword",
-        Image: 5,
-        Type: artifact.ArtifactTypeSword,
-        Powers: []artifact.Power{
-            &artifact.PowerAttack{
-                Amount: 2,
-            },
-            &artifact.PowerDefense{
-                Amount: 2,
-            },
-            &artifact.PowerMovement{
-                Amount: 3,
-            },
-            &artifact.PowerResistance{
-                Amount: 2,
-            },
-        },
+    vaultLogic, vaultDrawer := game.showVaultScreen(newArtifact, nil)
+
+    if newArtifact != nil {
+        itemLogic, itemDrawer := game.showItemPopup(newArtifact, game.Cache, &game.ImageCache, nil)
+
+        game.Drawer = func (screen *ebiten.Image, game *Game){
+            drawer(screen, game)
+            vaultDrawer(screen, false)
+            itemDrawer(screen, true)
+        }
+
+        itemLogic(yield)
     }
-
-    vaultLogic, vaultDrawer := game.showVaultScreen(&testArtifact, nil)
-    itemLogic, itemDrawer := game.showItemPopup(&testArtifact, game.Cache, &game.ImageCache, nil)
-
-    game.Drawer = func (screen *ebiten.Image, game *Game){
-        drawer(screen, game)
-        vaultDrawer(screen, false)
-        itemDrawer(screen, true)
-    }
-
-    itemLogic(yield)
 
     game.Drawer = func (screen *ebiten.Image, game *Game){
         drawer(screen, game)
@@ -1559,7 +1545,8 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         outpost := event.(*GameEventNewOutpost)
                         game.showOutpost(yield, outpost.City, outpost.Stack)
                     case *GameEventVault:
-                        game.doVault(yield)
+                        vaultEvent := event.(*GameEventVault)
+                        game.doVault(yield, vaultEvent.CreatedArtifact)
                     case *GameEventScroll:
                         scroll := event.(*GameEventScroll)
                         game.showScroll(yield, scroll.Title, scroll.Text)
