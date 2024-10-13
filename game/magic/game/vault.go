@@ -261,6 +261,48 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
 
     quit := false
 
+    ui.AddElement(func () *uilib.UIElement {
+        okImages, _ := imageCache.GetImages("armylist.lbx", 8)
+        index := 0
+        rect := util.ImageRect(237, 177, okImages[index])
+        return &uilib.UIElement{
+            Rect: rect,
+            LeftClick: func(element *uilib.UIElement){
+                index = 1
+            },
+            LeftClickRelease: func(element *uilib.UIElement){
+                index = 0
+                quit = true
+            },
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
+                screen.DrawImage(okImages[index], &options)
+            },
+        }
+    }())
+
+    ui.AddElement(func () *uilib.UIElement {
+        images, _ := imageCache.GetImages("armylist.lbx", 7)
+        index := 0
+        rect := util.ImageRect(237, 157, images[index])
+        return &uilib.UIElement{
+            Rect: rect,
+            LeftClick: func(element *uilib.UIElement){
+                index = 1
+            },
+            LeftClickRelease: func(element *uilib.UIElement){
+                index = 0
+                // FIXME: show alchemy ui
+            },
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
+                screen.DrawImage(images[index], &options)
+            },
+        }
+    }())
+
     drawer := func (screen *ebiten.Image, drawMouseX bool){
         drawMouse = drawMouseX
         ui.Draw(ui, screen)
