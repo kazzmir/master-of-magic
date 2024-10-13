@@ -260,8 +260,22 @@ func MakeTransmuteElements(ui *uilib.UI, smallFont *font.Font, player *playerlib
         },
         LeftClickRelease: func(element *uilib.UIElement){
             okIndex = 0
-            // FIXME: do transmutation
             ui.RemoveElements(elements)
+
+            goldChange := 0
+            manaChange := 0
+
+            if isRight {
+                goldChange = int(float64(totalMana) * changePercent * alchemyConversion)
+                manaChange = -int(float64(totalMana) * changePercent)
+            } else {
+                goldChange = -int(float64(totalGold) * changePercent)
+                manaChange = int(float64(totalGold) * changePercent * alchemyConversion)
+            }
+
+            player.Gold += goldChange
+            player.Mana += manaChange
+
         },
         RightClick: func(element *uilib.UIElement){
             helpEntries := help.GetEntries(373)
