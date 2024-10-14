@@ -4,6 +4,7 @@ import (
     "log"
     "strconv"
     "os"
+    "math/rand/v2"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
@@ -22,19 +23,31 @@ type Engine struct {
     DrawScene func (*ebiten.Image)
 }
 
+func randomWizard() data.WizardBase {
+    choices := []data.WizardBase{
+        data.WizardMerlin, data.WizardRaven, data.WizardSharee,
+        data.WizardLoPan, data.WizardJafar, data.WizardOberic,
+        data.WizardRjak, data.WizardSssra, data.WizardTauron,
+        data.WizardFreya, data.WizardHorus, data.WizardAriel,
+        data.WizardTlaloc, data.WizardKali,
+    }
+
+    return choices[rand.IntN(len(choices))]
+}
+
 func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
     player1 := playerlib.Player{
         Wizard: setup.WizardCustom{
-            Base: data.WizardMerlin,
+            Base: randomWizard(),
             Name: "bob",
         },
     }
 
     player2 := playerlib.Player{
         Wizard: setup.WizardCustom{
-            Base: data.WizardKali,
+            Base: randomWizard(),
             Name: "Kali",
         },
     }
