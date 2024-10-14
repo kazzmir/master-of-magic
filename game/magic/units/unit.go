@@ -188,12 +188,24 @@ func (unit *Unit) GetProductionCost() int {
     return unit.ProductionCost
 }
 
+func (unit *Unit) GetBaseMeleeAttackPower() int {
+    return unit.GetMeleeAttackPower()
+}
+
 func (unit *Unit) GetMeleeAttackPower() int {
     return unit.MeleeAttackPower
 }
 
+func (unit *Unit) GetBaseRangedAttackPower() int {
+    return unit.GetRangedAttackPower()
+}
+
 func (unit *Unit) GetRangedAttackPower() int {
     return unit.RangedAttackPower
+}
+
+func (unit *Unit) GetBaseDefense() int {
+    return unit.Defense
 }
 
 func (unit *Unit) GetDefense() int {
@@ -204,7 +216,15 @@ func (unit *Unit) GetResistance() int {
     return unit.Resistance
 }
 
+func (unit *Unit) GetBaseResistance() int {
+    return unit.Resistance
+}
+
 func (unit *Unit) GetHitPoints() int {
+    return unit.HitPoints
+}
+
+func (unit *Unit) GetBaseHitPoints() int {
     return unit.HitPoints
 }
 
@@ -1168,6 +1188,13 @@ var HeroRakir Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 4,
     Name: "Rakir",
+    Count: 1,
+    HitPoints: 7,
+    MeleeAttackPower: 5,
+    Defense: 4,
+    UpkeepGold: 2,
+    Resistance: 6,
+    MovementSpeed: 2,
     Race: data.RaceHero,
 }
 

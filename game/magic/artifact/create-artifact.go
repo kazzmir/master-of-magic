@@ -105,10 +105,15 @@ const (
 type Power interface {
     String() string
     Cost() int
+    GetAmount() int
 }
 
 type PowerAttack struct {
     Amount int
+}
+
+func (p *PowerAttack) GetAmount() int {
+    return p.Amount
 }
 
 func (p *PowerAttack) Cost() int {
@@ -132,6 +137,10 @@ type PowerDefense struct {
     Amount int
 }
 
+func (p *PowerDefense) GetAmount() int {
+    return p.Amount
+}
+
 func (p *PowerDefense) Cost() int {
     switch p.Amount {
         case 1: return 50
@@ -153,6 +162,10 @@ type PowerToHit struct {
     Amount int
 }
 
+func (p *PowerToHit) GetAmount() int {
+    return p.Amount
+}
+
 func (p *PowerToHit) Cost() int {
     switch p.Amount {
         case 1: return 400
@@ -169,6 +182,10 @@ func (p *PowerToHit) String() string {
 
 type PowerSpellSkill struct {
     Amount int
+}
+
+func (p *PowerSpellSkill) GetAmount() int {
+    return p.Amount
 }
 
 func (p *PowerSpellSkill) Cost() int {
@@ -190,6 +207,10 @@ type PowerSpellSave struct {
     Amount int
 }
 
+func (p *PowerSpellSave) GetAmount() int {
+    return p.Amount
+}
+
 func (p *PowerSpellSave) Cost() int {
     switch p.Amount {
         case -1: return 100
@@ -207,6 +228,10 @@ func (p *PowerSpellSave) String() string {
 
 type PowerResistance struct {
     Amount int
+}
+
+func (p *PowerResistance) GetAmount() int {
+    return p.Amount
 }
 
 func (p *PowerResistance) Cost() int {
@@ -237,6 +262,10 @@ func (p *PowerMovement) Cost() int {
     return 800
 }
 
+func (p *PowerMovement) GetAmount() int {
+    return p.Amount
+}
+
 type PowerMovement struct {
     Amount int
 }
@@ -248,6 +277,10 @@ func (p *PowerMovement) String() string {
 type PowerSpellCharges struct {
     Spell spellbook.Spell
     Charges int
+}
+
+func (p *PowerSpellCharges) GetAmount() int {
+    return 0
 }
 
 func (p *PowerSpellCharges) Cost() int {
@@ -274,6 +307,52 @@ func (artifact *Artifact) RemovePower(remove Power) {
     artifact.Powers = slices.DeleteFunc(artifact.Powers, func (power Power) bool {
         return remove == power
     })
+}
+
+func addPowers[T Power](powers []Power) int {
+    amount := 0
+    for _, power := range powers {
+        convert, ok := power.(T)
+        if ok {
+            amount += convert.GetAmount()
+        }
+    }
+
+    return amount
+}
+
+func (artifact *Artifact) MeleeBonus() int {
+    switch artifact.Type {
+        case ArtifactTypeSword, ArtifactTypeMace, ArtifactTypeAxe, ArtifactTypeMisc:
+            return addPowers[*PowerAttack](artifact.Powers)
+        default:
+            return 0
+    }
+}
+
+func (artifact *Artifact) RangedAttackBonus() int {
+    switch artifact.Type {
+        case ArtifactTypeBow, ArtifactTypeMisc:
+            return addPowers[*PowerAttack](artifact.Powers)
+        default:
+            return 0
+    }
+}
+
+func (artifact *Artifact) DefenseBonus() int {
+    base := addPowers[*PowerDefense](artifact.Powers)
+    switch artifact.Type {
+        case ArtifactTypeChain:
+            base += 1
+        case ArtifactTypePlate:
+            base += 2
+    }
+
+    return base
+}
+
+func (artifact *Artifact) ResistanceBonus() int {
+    return addPowers[*PowerResistance](artifact.Powers)
 }
 
 func (artifact *Artifact) Cost() int {

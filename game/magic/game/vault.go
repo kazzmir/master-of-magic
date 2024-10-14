@@ -292,7 +292,8 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
         x1 := 34 + (index % 2) * 135
         y1 := 16 + (index / 2) * 46
 
-        profile, _ := imageCache.GetImage("portrait.lbx", hero.PortraitIndex(), 0)
+        portraitLbx, portraitIndex := hero.GetPortraitLbxInfo()
+        profile, _ := imageCache.GetImage(portraitLbx, portraitIndex, 0)
         // FIXME: there are 5 of these frame images, how are they selected?
         frame, _ := imageCache.GetImage("portrait.lbx", 36, 0)
 

@@ -24,12 +24,22 @@ type UnitView interface {
     GetUpkeepMana() int
     GetMovementSpeed() int
     GetProductionCost() int
+    GetBaseMeleeAttackPower() int
     GetMeleeAttackPower() int
+    GetBaseRangedAttackPower() int
     GetRangedAttackPower() int
+    GetBaseDefense() int
     GetDefense() int
     GetResistance() int
+    GetBaseResistance() int
     GetHitPoints() int
+    GetBaseHitPoints() int
     GetAbilities() []units.Ability
+}
+
+type PortraitUnit interface {
+    // returns the lbx file and index that the portrait is in
+    GetPortraitLbxInfo() (string, int)
 }
 
 func MakeUnitContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView) []*uilib.UIElement {
@@ -93,7 +103,18 @@ func MakeUnitContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView) []*ui
             screen.DrawImage(background, &options)
 
             options.GeoM.Translate(25, 30)
-            RenderCombatImage(screen, &imageCache, unit, options)
+            portaitUnit, ok := unit.(PortraitUnit)
+            if ok {
+                lbxFile, index := portaitUnit.GetPortraitLbxInfo()
+                portait, err := imageCache.GetImage(lbxFile, index, 0)
+                if err == nil {
+                    options.GeoM.Translate(0, -7)
+                    options.GeoM.Translate(float64(-portait.Bounds().Dx()/2), float64(-portait.Bounds().Dy()/2))
+                    screen.DrawImage(portait, &options)
+                }
+            } else {
+                RenderCombatImage(screen, &imageCache, unit, options)
+            }
 
             options.GeoM.Reset()
             options.GeoM.Translate(31, 6)

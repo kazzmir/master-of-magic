@@ -38,12 +38,9 @@ func NewEngine(scenario int) (*Engine, error) {
     }
     ui.SetElementsFromArray(nil)
 
-    rakir := &hero.Hero{
-        Unit: &units.OverworldUnit{
-            Unit: units.HeroRakir,
-        },
-        Title: "The Beastmaster",
-    }
+    rakir := hero.MakeHero(&units.OverworldUnit{
+                Unit: units.HeroRakir,
+            }, hero.HeroRakir, "Rakir")
 
     ui.AddElements(gamelib.MakeHireScreenUI(cache, ui, rakir, func (hired bool){
         log.Printf("hired %v", hired)
