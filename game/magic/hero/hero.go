@@ -82,8 +82,20 @@ func (hero *Hero) GetRangedAttackPower() int {
     return base
 }
 
-func (hero *Hero) GetDefense() int {
+func (hero *Hero) GetBaseDefense() int {
     return hero.Unit.GetDefense()
+}
+
+func (hero *Hero) GetDefense() int {
+    base := hero.Unit.GetDefense()
+
+    for _, item := range hero.Equipment {
+        if item != nil {
+            base += item.DefenseBonus()
+        }
+    }
+
+    return base
 }
 
 func (hero *Hero) GetResistance() int {

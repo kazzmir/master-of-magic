@@ -204,6 +204,10 @@ func (unit *Unit) GetRangedAttackPower() int {
     return unit.RangedAttackPower
 }
 
+func (unit *Unit) GetBaseDefense() int {
+    return unit.Defense
+}
+
 func (unit *Unit) GetDefense() int {
     return unit.Defense
 }

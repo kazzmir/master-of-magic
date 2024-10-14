@@ -339,6 +339,17 @@ func (artifact *Artifact) RangedAttackBonus() int {
     }
 }
 
+func (artifact *Artifact) DefenseBonus() int {
+    base := addPowers[*PowerDefense](artifact.Powers)
+    switch artifact.Type {
+        case ArtifactTypeChain:
+            base += 1
+        case ArtifactTypePlate:
+            base += 2
+    }
+
+    return base
+}
 
 func (artifact *Artifact) Cost() int {
     base := 0

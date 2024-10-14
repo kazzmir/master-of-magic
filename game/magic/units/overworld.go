@@ -71,6 +71,10 @@ func (unit *OverworldUnit) GetRangedAttackPower() int {
     return unit.Unit.GetRangedAttackPower()
 }
 
+func (unit *OverworldUnit) GetBaseDefense() int {
+    return unit.Unit.GetDefense()
+}
+
 func (unit *OverworldUnit) GetDefense() int {
     return unit.Unit.GetDefense()
 }

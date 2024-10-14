@@ -28,6 +28,7 @@ type UnitView interface {
     GetMeleeAttackPower() int
     GetBaseRangedAttackPower() int
     GetRangedAttackPower() int
+    GetBaseDefense() int
     GetDefense() int
     GetResistance() int
     GetHitPoints() int
