@@ -49,13 +49,15 @@ const (
 type Hero struct {
     Unit *units.OverworldUnit
     HeroType HeroType
+    Name string
 
     Equipment [3]*artifact.Artifact
 }
 
-func MakeHero(unit *units.OverworldUnit, heroType HeroType) *Hero {
+func MakeHero(unit *units.OverworldUnit, heroType HeroType, name string) *Hero {
     return &Hero{
         Unit: unit,
+        Name: name,
         HeroType: heroType,
     }
 }

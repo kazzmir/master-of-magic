@@ -40,7 +40,7 @@ func NewEngine(scenario int) (*Engine, error) {
 
     rakir := hero.MakeHero(&units.OverworldUnit{
                 Unit: units.HeroRakir,
-            }, hero.HeroRakir)
+            }, hero.HeroRakir, "Rakir")
 
     ui.AddElements(gamelib.MakeHireScreenUI(cache, ui, rakir, func (hired bool){
         log.Printf("hired %v", hired)
