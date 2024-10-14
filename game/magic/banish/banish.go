@@ -128,12 +128,37 @@ func ShowBanishAnimation(cache *lbx.LbxCache, attackingWizard *playerlib.Player,
 
     sprites := []*Sprite{&badGuy1Sprite, &wizardSprite, &badGuy2Sprite}
 
+    spell1Images, _ := imageCache.GetImages("conquest.lbx", 16)
+    spell2Images, _ := imageCache.GetImages("conquest.lbx", 17)
+    var spellAnimation *util.Animation
+    spellX := float64(0)
+    spellY := float64(0)
+
+    dissappear := false
+    dissappearImages, _ := imageCache.GetImages("conquest.lbx", getWizardDissappearImageIndex(defeatedWizard.Wizard.Base))
+    dissappearAnimation := util.MakeAnimation(dissappearImages, false)
+
+    wizardGone := false
+
     draw := func (screen *ebiten.Image){
         var options ebiten.DrawImageOptions
         screen.DrawImage(background, &options)
 
-        options.GeoM.Translate(70, 75)
-        screen.DrawImage(defeatedWizardImage, &options)
+        if !wizardGone {
+            if dissappear {
+                options.GeoM.Translate(67, 16)
+                screen.DrawImage(dissappearAnimation.Frame(), &options)
+            } else {
+                options.GeoM.Translate(70, 75)
+                screen.DrawImage(defeatedWizardImage, &options)
+            }
+        }
+
+        if spellAnimation != nil {
+            options.GeoM.Reset()
+            options.GeoM.Translate(spellX, spellY)
+            screen.DrawImage(spellAnimation.Frame(), &options)
+        }
 
         for _, sprite := range sprites {
             options.GeoM.Reset()
@@ -154,6 +179,8 @@ func ShowBanishAnimation(cache *lbx.LbxCache, attackingWizard *playerlib.Player,
     }
 
     logic := func (yield coroutine.YieldFunc) error {
+        animationSpeed := 6
+
         for i := 0; i < animationSteps; i++ {
             for _, sprite := range sprites {
                 sprite.NumSteps += 1
@@ -162,7 +189,69 @@ func ShowBanishAnimation(cache *lbx.LbxCache, attackingWizard *playerlib.Player,
             yield()
         }
 
+        spellAnimation = util.MakeAnimation(spell1Images, false)
+        spellX = 175
+        spellY = 64
+
+        for i := 0; i < 2000; i++ {
+            if i % animationSpeed == 0 {
+                spellAnimation.Next()
+            }
+            yield()
+
+            if spellAnimation.Done() {
+                break
+            }
+        }
+
+        spellAnimation = util.MakeAnimation(spell2Images, true)
+        spellX = 0
+        spellY = 0
+
+        for i := 0; i < 45; i++ {
+            if i % animationSpeed == 0 {
+                spellAnimation.Next()
+            }
+            yield()
+        }
+
+        spellAnimation = util.MakeAnimation(spell1Images[len(spell1Images)-2:len(spell1Images)], true)
+        spellX = 175
+        spellY = 64
+
+        dissappear = true
+        for i := 0; i < 2000; i++ {
+            if i % animationSpeed == 0 {
+                dissappearAnimation.Next()
+                spellAnimation.Next()
+            }
+            yield()
+
+            if dissappearAnimation.Done() {
+                break
+            }
+        }
+
+        wizardGone = true
+
+        spellAnimation = util.MakeReverseAnimation(spell1Images, false)
+        spellX = 175
+        spellY = 64
+
         for i := 0; i < 200; i++ {
+            if i % animationSpeed == 0 {
+                spellAnimation.Next()
+            }
+            yield()
+
+            if spellAnimation.Done() {
+                break
+            }
+        }
+
+        spellAnimation = nil
+
+        for i := 0; i < 60; i++ {
             yield()
         }
 
