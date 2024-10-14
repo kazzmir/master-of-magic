@@ -70,8 +70,6 @@ func MakeHireScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero, act
 
     getAlpha := ui.MakeFadeIn(fadeSpeed)
 
-    heroPortraitIndex := hero.PortraitIndex()
-
     elements = append(elements, &uilib.UIElement{
         Layer: 1,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
@@ -83,7 +81,8 @@ func MakeHireScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero, act
             screen.DrawImage(background, &options)
 
             options.GeoM.Translate(9, 7)
-            portrait, err := imageCache.GetImage("portrait.lbx", heroPortraitIndex, 0)
+            portraitLbx, portraitIndex := hero.GetPortraitLbxInfo()
+            portrait, err := imageCache.GetImage(portraitLbx, portraitIndex, 0)
             if err == nil {
                 screen.DrawImage(portrait, &options)
             }
@@ -95,16 +94,16 @@ func MakeHireScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero, act
             options.GeoM.Translate(31, 6)
             options.GeoM.Translate(51, 7)
 
-            unitview.RenderUnitInfoNormal(screen, &imageCache, &hero.Unit.Unit, hero.Title, descriptionFont, smallFont, options)
+            unitview.RenderUnitInfoNormal(screen, &imageCache, hero, hero.Title(), descriptionFont, smallFont, options)
 
             options.GeoM.Reset()
             options.GeoM.Translate(0, yTop)
             options.GeoM.Translate(31, 6)
             options.GeoM.Translate(10, 50)
-            unitview.RenderUnitInfoStats(screen, &imageCache, &hero.Unit.Unit, descriptionFont, smallFont, options)
+            unitview.RenderUnitInfoStats(screen, &imageCache, hero, descriptionFont, smallFont, options)
 
             options.GeoM.Translate(0, 60)
-            unitview.RenderUnitAbilities(screen, &imageCache, &hero.Unit.Unit, mediumFont, options)
+            unitview.RenderUnitAbilities(screen, &imageCache, hero, mediumFont, options)
         },
     })
 

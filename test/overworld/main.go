@@ -1267,30 +1267,12 @@ func createScenario17(cache *lbx.LbxCache) *gamelib.Game {
 
     player.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x + 1, y + 1, data.PlaneArcanus, wizard.Banner))
 
-    player.Heroes[0] = &hero.Hero{
-        Title: "Beastmaster",
-        Unit: units.MakeOverworldUnitFromUnit(units.HeroRakir, 1, 1, data.PlaneArcanus, wizard.Banner),
-    }
-
-    player.Heroes[1] = &hero.Hero{
-        Unit: units.MakeOverworldUnitFromUnit(units.HeroTorin, 1, 1, data.PlaneArcanus, wizard.Banner),
-    }
-
-    player.Heroes[2] = &hero.Hero{
-        Unit: units.MakeOverworldUnitFromUnit(units.HeroWarrax, 1, 1, data.PlaneArcanus, wizard.Banner),
-    }
-
-    player.Heroes[3] = &hero.Hero{
-        Unit: units.MakeOverworldUnitFromUnit(units.HeroRavashack, 1, 1, data.PlaneArcanus, wizard.Banner),
-    }
-
-    player.Heroes[4] = &hero.Hero{
-        Unit: units.MakeOverworldUnitFromUnit(units.HeroSirHarold, 1, 1, data.PlaneArcanus, wizard.Banner),
-    }
-
-    player.Heroes[5] = &hero.Hero{
-        Unit: units.MakeOverworldUnitFromUnit(units.HeroAlorra, 1, 1, data.PlaneArcanus, wizard.Banner),
-    }
+    player.Heroes[0] = hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroRakir, 1, 1, data.PlaneArcanus, wizard.Banner), hero.HeroRakir)
+    player.Heroes[1] = hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroTorin, 1, 1, data.PlaneArcanus, wizard.Banner), hero.HeroTorin)
+    player.Heroes[2] = hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroWarrax, 1, 1, data.PlaneArcanus, wizard.Banner), hero.HeroWarrax)
+    player.Heroes[3] = hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroRavashack, 1, 1, data.PlaneArcanus, wizard.Banner), hero.HeroRavashack)
+    player.Heroes[4] = hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroSirHarold, 1, 1, data.PlaneArcanus, wizard.Banner), hero.HeroSirHarold)
+    player.Heroes[5] = hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroAlorra, 1, 1, data.PlaneArcanus, wizard.Banner), hero.HeroAlorra)
 
     player.VaultEquipment[0] = &artifact.Artifact{
         Name: "Baloney",
