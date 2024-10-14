@@ -1212,7 +1212,7 @@ func ReadLbx(reader io.ReadSeeker) (LbxFile, error) {
  * return a mapping from lbx entry -> palette to be used for that entry, e.g.
  *   lbx.ReadImagesWithPalette(3, overrideMap[3])
  */
-func GetPaletteOverrideMap(lbxFile *LbxFile, filename string) (map[int]color.Palette, error) {
+func GetPaletteOverrideMap(cache *LbxCache, lbxFile *LbxFile, filename string) (map[int]color.Palette, error) {
     clean := strings.ToLower(filepath.Base(filename))
     out := make(map[int]color.Palette)
 
@@ -1275,6 +1275,18 @@ func GetPaletteOverrideMap(lbxFile *LbxFile, filename string) (map[int]color.Pal
             }
             out[-1] = palette
         case "conquest.lbx":
+            wizlab, err := cache.GetLbxFile("wizlab.lbx")
+            if err == nil {
+                palette, err := wizlab.GetPalette(19)
+                if err != nil {
+                    return nil, err
+                }
+                paletteTransparent := clonePalette(palette)
+                paletteTransparent[0] = color.RGBA{R: 0, G: 0, B: 0, A: 0}
+
+                out[-1] = paletteTransparent
+            }
+
         case "lose.lbx":
         case "splmastr.lbx":
         case "wizlab.lbx":

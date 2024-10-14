@@ -542,12 +542,14 @@ func MakeViewer(data []*LbxData) (*Viewer, error) {
 
     indexes := make(map[string]int)
 
+    cache := lbx.AutoCache()
+
     imageIndex := 0
     for _, lbxData := range data {
         indexes[lbxData.Name] = imageIndex
         imageIndex += lbxData.Lbx.TotalEntries()
 
-        customPaletteMap, err := lbx.GetPaletteOverrideMap(lbxData.Lbx, lbxData.Name)
+        customPaletteMap, err := lbx.GetPaletteOverrideMap(cache, lbxData.Lbx, lbxData.Name)
         if err != nil {
             return nil, err
         }

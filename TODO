@@ -1,5 +1,4 @@
 * combat: cast unit spells
-* banish animation for defeated wizard
 * cartographer advisor
 * city catchment area
 * combat: draw town sprites in combat scene
@@ -43,3 +42,4 @@
 10/10/2024 * create artifact screen
 10/12/2024 * summon artifact and partial vault screen
 10/13/2024 * finish vault screen, add hero items
+10/14/2024 * banish animation for defeated wizard
