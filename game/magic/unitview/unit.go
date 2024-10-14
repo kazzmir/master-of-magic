@@ -214,7 +214,8 @@ func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit
     descriptionFont.Print(screen, x, float64(y), 1, defaultOptions.ColorScale, "Hits")
 
     healthIcon, _ := imageCache.GetImage("unitview.lbx", 23, 0)
-    showNIcons(healthIcon, unit.GetHitPoints(), nil, 0, x, y)
+    healthIconGold, _ := imageCache.GetImage("unitview.lbx", 45, 0)
+    showNIcons(healthIcon, unit.GetBaseHitPoints(), healthIconGold, unit.GetHitPoints() - unit.GetBaseHitPoints(), x, y)
 }
 
 func RenderUnitAbilities(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitView, mediumFont *font.Font, defaultOptions ebiten.DrawImageOptions) {

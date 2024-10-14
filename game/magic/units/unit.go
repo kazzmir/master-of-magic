@@ -224,6 +224,10 @@ func (unit *Unit) GetHitPoints() int {
     return unit.HitPoints
 }
 
+func (unit *Unit) GetBaseHitPoints() int {
+    return unit.HitPoints
+}
+
 func (unit *Unit) GetAbilities() []Ability {
     return unit.Abilities
 }

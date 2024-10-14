@@ -118,6 +118,10 @@ func (hero *Hero) GetHitPoints() int {
     return hero.Unit.GetHitPoints()
 }
 
+func (hero *Hero) GetBaseHitPoints() int {
+    return hero.Unit.GetHitPoints()
+}
+
 func (hero *Hero) GetAbilities() []units.Ability {
     return hero.Unit.GetAbilities()
 }

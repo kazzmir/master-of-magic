@@ -33,6 +33,7 @@ type UnitView interface {
     GetResistance() int
     GetBaseResistance() int
     GetHitPoints() int
+    GetBaseHitPoints() int
     GetAbilities() []units.Ability
 }
 
