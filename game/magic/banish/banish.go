@@ -32,6 +32,28 @@ func getWizardDissappearImageIndex(wizard data.WizardBase) int {
     return -1
 }
 
+// the wizard with their hand raised, casting the spell
+func getWizardAttackImageIndex(wizard data.WizardBase) int {
+    switch wizard {
+        case data.WizardMerlin: return 0
+        case data.WizardRaven: return 1
+        case data.WizardSharee: return 2
+        case data.WizardLoPan: return 3
+        case data.WizardJafar: return 4
+        case data.WizardOberic: return 5
+        case data.WizardRjak: return 6
+        case data.WizardSssra: return 7
+        case data.WizardTauron: return 8
+        case data.WizardFreya: return 9
+        case data.WizardHorus: return 10
+        case data.WizardAriel: return 11
+        case data.WizardTlaloc: return 12
+        case data.WizardKali: return 13
+    }
+
+    return -1
+}
+
 // just standin' around
 func getWizardStandingImageIndex(wizard data.WizardBase) int {
     switch wizard {
@@ -62,15 +84,84 @@ func ShowBanishAnimation(cache *lbx.LbxCache, attackingWizard *playerlib.Player,
 
     defeatedWizardImage, _ := imageCache.GetImage("wizlab.lbx", getWizardStandingImageIndex(defeatedWizard.Wizard.Base), 0)
 
+    badGuy1, _ := imageCache.GetImage("conquest.lbx", 15, 0)
+    badGuy2, _ := imageCache.GetImage("conquest.lbx", 14, 0)
+
+    attackImage, _ := imageCache.GetImage("conquest.lbx", getWizardAttackImageIndex(attackingWizard.Wizard.Base), 0)
+
+    type Sprite struct {
+        StartX, StartY float64
+        DestX, DestY float64
+        Steps int
+        NumSteps int
+        Image *ebiten.Image
+    }
+
+    animationSteps := 30
+
+    badGuy1Sprite := Sprite{
+        StartX: 320,
+        StartY: 80,
+        DestX: 250,
+        DestY: 80,
+        Steps: animationSteps,
+        Image: badGuy1,
+    }
+
+    badGuy2Sprite := Sprite{
+        StartX: 180,
+        StartY: 200,
+        DestX: 100,
+        DestY: 130,
+        Steps: animationSteps,
+        Image: badGuy2,
+    }
+
+    wizardSprite := Sprite{
+        StartX: 320,
+        StartY: 200,
+        DestX: 200,
+        DestY: 60,
+        Steps: animationSteps,
+        Image: attackImage,
+    }
+
+    sprites := []*Sprite{&badGuy1Sprite, &wizardSprite, &badGuy2Sprite}
+
     draw := func (screen *ebiten.Image){
         var options ebiten.DrawImageOptions
         screen.DrawImage(background, &options)
 
         options.GeoM.Translate(70, 75)
         screen.DrawImage(defeatedWizardImage, &options)
+
+        for _, sprite := range sprites {
+            options.GeoM.Reset()
+
+            var x float64
+            var y float64
+            if sprite.NumSteps > sprite.Steps {
+                x = sprite.DestX
+                y = sprite.DestY
+            } else {
+                x = sprite.StartX + (sprite.DestX - sprite.StartX) * float64(sprite.NumSteps) / float64(sprite.Steps)
+                y = sprite.StartY + (sprite.DestY - sprite.StartY) * float64(sprite.NumSteps) / float64(sprite.Steps)
+            }
+
+            options.GeoM.Translate(x, y)
+            screen.DrawImage(sprite.Image, &options)
+        }
     }
 
     logic := func (yield coroutine.YieldFunc) error {
+        for i := 0; i < animationSteps; i++ {
+            for _, sprite := range sprites {
+                sprite.NumSteps += 1
+            }
+
+            yield()
+        }
+
         for i := 0; i < 200; i++ {
             yield()
         }
