@@ -83,6 +83,10 @@ func (unit *OverworldUnit) GetResistance() int {
     return unit.Unit.GetResistance()
 }
 
+func (unit *OverworldUnit) GetBaseResistance() int {
+    return unit.Unit.GetResistance()
+}
+
 func (unit *OverworldUnit) GetHitPoints() int {
     return unit.Unit.GetMaxHealth()
 }

@@ -216,6 +216,10 @@ func (unit *Unit) GetResistance() int {
     return unit.Resistance
 }
 
+func (unit *Unit) GetBaseResistance() int {
+    return unit.Resistance
+}
+
 func (unit *Unit) GetHitPoints() int {
     return unit.HitPoints
 }

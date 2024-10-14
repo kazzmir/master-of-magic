@@ -351,6 +351,10 @@ func (artifact *Artifact) DefenseBonus() int {
     return base
 }
 
+func (artifact *Artifact) ResistanceBonus() int {
+    return addPowers[*PowerResistance](artifact.Powers)
+}
+
 func (artifact *Artifact) Cost() int {
     base := 0
     switch artifact.Type {

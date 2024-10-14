@@ -182,10 +182,11 @@ func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit
         }
     }
 
+    // change the melee type depending on the unit attributes (hero uses magic sword), but
+    // mythril or admantanium is also possible
     weaponIcon, _ := imageCache.GetImage("unitview.lbx", 13, 0)
-    extraMeleePower := unit.GetMeleeAttackPower() - unit.GetBaseMeleeAttackPower()
     weaponGold, _ := imageCache.GetImage("unitview.lbx", 35, 0)
-    showNIcons(weaponIcon, unit.GetBaseMeleeAttackPower(), weaponGold, extraMeleePower, x, y)
+    showNIcons(weaponIcon, unit.GetBaseMeleeAttackPower(), weaponGold, unit.GetMeleeAttackPower() - unit.GetBaseMeleeAttackPower(), x, y)
 
     y += float64(descriptionFont.Height())
     descriptionFont.Print(screen, x, y, 1, defaultOptions.ColorScale, "Range")
@@ -193,30 +194,27 @@ func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit
     // FIXME: use the rock icon for sling, or the magic icon fire magic damage
     rangeBow, _ := imageCache.GetImage("unitview.lbx", 18, 0)
     rangeBowGold, _ := imageCache.GetImage("unitview.lbx", 40, 0)
-    showNIcons(rangeBow, unit.GetRangedAttackPower(), rangeBowGold, unit.GetRangedAttackPower() - unit.GetBaseRangedAttackPower(), x, y)
+    showNIcons(rangeBow, unit.GetBaseRangedAttackPower(), rangeBowGold, unit.GetRangedAttackPower() - unit.GetBaseRangedAttackPower(), x, y)
 
     y += float64(descriptionFont.Height())
     descriptionFont.Print(screen, x, float64(y), 1, defaultOptions.ColorScale, "Armor")
 
     armorIcon, _ := imageCache.GetImage("unitview.lbx", 22, 0)
     armorGold, _ := imageCache.GetImage("unitview.lbx", 44, 0)
-    showNIcons(armorIcon, unit.GetDefense(), armorGold, unit.GetDefense() - unit.GetBaseDefense(), x, y)
+    showNIcons(armorIcon, unit.GetBaseDefense(), armorGold, unit.GetDefense() - unit.GetBaseDefense(), x, y)
 
     y += float64(descriptionFont.Height())
     descriptionFont.Print(screen, x, float64(y), 1, defaultOptions.ColorScale, "Resist")
 
-    resistIcon, err := imageCache.GetImage("unitview.lbx", 27, 0)
-    if err == nil {
-        showNIcons(resistIcon, unit.GetResistance(), nil, 0, x, y)
-    }
+    resistIcon, _ := imageCache.GetImage("unitview.lbx", 27, 0)
+    resistGold, _ := imageCache.GetImage("unitview.lbx", 49, 0)
+    showNIcons(resistIcon, unit.GetResistance(), resistGold, unit.GetResistance() - unit.GetBaseResistance(), x, y)
 
     y += float64(descriptionFont.Height())
     descriptionFont.Print(screen, x, float64(y), 1, defaultOptions.ColorScale, "Hits")
 
-    healthIcon, err := imageCache.GetImage("unitview.lbx", 23, 0)
-    if err == nil {
-        showNIcons(healthIcon, unit.GetHitPoints(), nil, 0, x, y)
-    }
+    healthIcon, _ := imageCache.GetImage("unitview.lbx", 23, 0)
+    showNIcons(healthIcon, unit.GetHitPoints(), nil, 0, x, y)
 }
 
 func RenderUnitAbilities(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitView, mediumFont *font.Font, defaultOptions ebiten.DrawImageOptions) {

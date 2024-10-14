@@ -98,8 +98,20 @@ func (hero *Hero) GetDefense() int {
     return base
 }
 
-func (hero *Hero) GetResistance() int {
+func (hero *Hero) GetBaseResistance() int {
     return hero.Unit.GetResistance()
+}
+
+func (hero *Hero) GetResistance() int {
+    base := hero.Unit.GetResistance()
+
+    for _, item := range hero.Equipment {
+        if item != nil {
+            base += item.ResistanceBonus()
+        }
+    }
+
+    return base
 }
 
 func (hero *Hero) GetHitPoints() int {
