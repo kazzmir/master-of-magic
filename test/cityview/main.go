@@ -52,7 +52,7 @@ func NewEngine() (*Engine, error) {
     city.ResetCitizens(nil)
         // ProducingUnit: units.UnitNone,
 
-    var garrison []*units.OverworldUnit
+    var garrison []units.StackUnit
     for i := 0; i < 2; i++ {
         unit := units.MakeOverworldUnitFromUnit(units.GreatDrake, city.X, city.Y, city.Plane, city.Banner)
         player.AddUnit(unit)

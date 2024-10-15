@@ -19,6 +19,42 @@ type OverworldUnit struct {
     Experience int
 }
 
+func (unit *OverworldUnit) GetLbxFile() string {
+    return unit.Unit.LbxFile
+}
+
+func (unit *OverworldUnit) GetLbxIndex() int {
+    return unit.Unit.Index
+}
+
+func (unit *OverworldUnit) GetPatrol() bool {
+    return unit.Patrol
+}
+
+func (unit *OverworldUnit) SetPatrol(patrol bool) {
+    unit.Patrol = patrol
+}
+
+func (unit *OverworldUnit) GetPlane() data.Plane {
+    return unit.Plane
+}
+
+func (unit *OverworldUnit) GetRace() data.Race {
+    return unit.Unit.Race
+}
+
+func (unit *OverworldUnit) GetX() int {
+    return unit.X
+}
+
+func (unit *OverworldUnit) GetY() int {
+    return unit.Y
+}
+
+func (unit *OverworldUnit) SetId(id uint64) {
+    unit.Id = id
+}
+
 func (unit *OverworldUnit) GetMovesLeft() fraction.Fraction {
     return unit.MovesLeft
 }
@@ -29,6 +65,18 @@ func (unit *OverworldUnit) SetMovesLeft(moves fraction.Fraction) {
 
 func (unit *OverworldUnit) IsFlying() bool {
     return unit.Unit.Flying
+}
+
+func (unit *OverworldUnit) AddExperience(amount int) {
+    unit.Experience += amount
+}
+
+func (unit *OverworldUnit) GetExperience() int {
+    return unit.Experience
+}
+
+func (unit *OverworldUnit) GetRawUnit() Unit {
+    return unit.Unit
 }
 
 func (unit *OverworldUnit) AdjustHealth(amount int) {

@@ -1106,9 +1106,9 @@ func createScenario15(cache *lbx.LbxCache) *gamelib.Game {
     spear2 := player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, x+1, y, data.PlaneArcanus, wizard.Banner))
     spear3 := player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, x+1, y, data.PlaneArcanus, wizard.Banner))
     player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, x+1, y, data.PlaneArcanus, wizard.Banner))
-    spear1.Health /= 2
-    spear2.Health /= 3
-    spear3.Health -= 1
+    spear1.AdjustHealth(-spear1.GetHealth() / 2)
+    spear2.AdjustHealth(-spear2.GetHealth() / 3)
+    spear3.AdjustHealth(-1)
 
     stack := player.FindStackByUnit(spear1)
     player.SetSelectedStack(stack)
@@ -1185,11 +1185,10 @@ func createScenario16(cache *lbx.LbxCache) *gamelib.Game {
     spear3 := player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, x+1, y, data.PlaneArcanus, wizard.Banner))
     spear4 := player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, x+1, y, data.PlaneArcanus, wizard.Banner))
     spear5 := player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, x+1, y, data.PlaneArcanus, wizard.Banner))
-    spear1.Experience = 0
-    spear2.Experience = 30
-    spear3.Experience = 60
-    spear4.Experience = 100
-    spear5.Experience = 200
+    spear2.AddExperience(30)
+    spear3.AddExperience(60)
+    spear4.AddExperience(100)
+    spear5.AddExperience(200)
 
     stack := player.FindStackByUnit(spear1)
     player.SetSelectedStack(stack)
