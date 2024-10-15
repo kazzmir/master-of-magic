@@ -2,6 +2,8 @@ package main
 
 import (
     "log"
+    "strconv"
+    "os"
     // "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -39,10 +41,7 @@ func createWarlockArmy(player *player.Player) combat.Army {
             },
             */
             &combat.ArmyUnit{
-                Unit: &units.OverworldUnit{
-                    Unit: units.Warlocks,
-                    Health: units.Warlocks.GetMaxHealth(),
-                },
+                Unit: units.MakeOverworldUnitFromUnit(units.Warlocks, 1, 1, data.PlaneArcanus, player.Wizard.Banner),
                 Facing: units.FacingDownRight,
                 X: 12,
                 Y: 10,
@@ -73,10 +72,7 @@ func createWarlockArmyN(player *player.Player, count int) *combat.Army {
     }
 
     for i := 0; i < count; i++ {
-        army.AddUnit(&units.OverworldUnit{
-            Unit: units.Warlocks,
-            Health: units.Warlocks.GetMaxHealth(),
-        })
+        army.AddUnit(units.MakeOverworldUnitFromUnit(units.Warlocks, 1, 1, data.PlaneArcanus, player.Wizard.Banner))
     }
 
     return &army
@@ -88,10 +84,7 @@ func createHighMenBowmanArmyN(player *player.Player, count int) combat.Army {
     }
 
     for i := 0; i < count; i++ {
-        army.AddUnit(&units.OverworldUnit{
-            Unit: units.HighMenBowmen,
-            Health: units.HighMenBowmen.GetMaxHealth(),
-        })
+        army.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenBowmen, 1, 1, data.PlaneArcanus, player.Wizard.Banner))
     }
 
     return army
@@ -102,10 +95,7 @@ func createHighMenBowmanArmy(player *player.Player) combat.Army {
         Player: player,
         Units: []*combat.ArmyUnit{
             &combat.ArmyUnit{
-                Unit: &units.OverworldUnit{
-                    Unit: units.HighMenBowmen,
-                    Health: units.HighMenBowmen.GetMaxHealth(),
-                },
+                Unit: units.MakeOverworldUnitFromUnit(units.HighMenBowmen, 1, 1, data.PlaneArcanus, player.Wizard.Banner),
                 Facing: units.FacingDownRight,
                 X: 12,
                 Y: 10,
@@ -119,19 +109,13 @@ func createGreatDrakeArmy(player *player.Player) *combat.Army{
         Player: player,
         Units: []*combat.ArmyUnit{
             &combat.ArmyUnit{
-                Unit: &units.OverworldUnit{
-                    Unit: units.GreatDrake,
-                    Health: units.GreatDrake.GetMaxHealth(),
-                },
+                Unit: units.MakeOverworldUnitFromUnit(units.GreatDrake, 1, 1, data.PlaneArcanus, player.Wizard.Banner),
                 Facing: units.FacingUpLeft,
                 X: 10,
                 Y: 17,
             },
             &combat.ArmyUnit{
-                Unit: &units.OverworldUnit{
-                    Unit: units.GreatDrake,
-                    Health: units.GreatDrake.GetMaxHealth(),
-                },
+                Unit: units.MakeOverworldUnitFromUnit(units.GreatDrake, 1, 1, data.PlaneArcanus, player.Wizard.Banner),
                 Facing: units.FacingUpLeft,
                 X: 9,
                 Y: 18,
@@ -140,9 +124,25 @@ func createGreatDrakeArmy(player *player.Player) *combat.Army{
     }
 }
 
-func NewEngine() (*Engine, error) {
-    cache := lbx.AutoCache()
+func createSettlerArmy(player *player.Player, count int) *combat.Army{
+    var armyUnits []*combat.ArmyUnit
 
+    for i := 0; i < count; i++ {
+        armyUnits = append(armyUnits, &combat.ArmyUnit{
+            Unit: units.MakeOverworldUnitFromUnit(units.HighElfSettlers, 1, 1, data.PlaneArcanus, player.Wizard.Banner),
+            Facing: units.FacingUpLeft,
+            X: 10,
+            Y: 17,
+        })
+    }
+
+    return &combat.Army{
+        Player: player,
+        Units: armyUnits,
+    }
+}
+
+func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
     defendingPlayer := player.Player{
         Wizard: setup.WizardCustom{
             Name: "Lair",
@@ -209,7 +209,56 @@ func NewEngine() (*Engine, error) {
     attackingArmy := createWarlockArmyN(&attackingPlayer, 3)
     attackingArmy.LayoutUnits(combat.TeamAttacker)
 
-    combatScreen := combat.MakeCombatScreen(cache, &defendingArmy, attackingArmy, &attackingPlayer)
+    return combat.MakeCombatScreen(cache, &defendingArmy, attackingArmy, &attackingPlayer)
+}
+
+func makeScenario2(cache *lbx.LbxCache) *combat.CombatScreen {
+    defendingPlayer := player.Player{
+        Wizard: setup.WizardCustom{
+            Name: "Lair",
+            Banner: data.BannerBlue,
+        },
+        Human: false,
+    }
+
+    // defendingArmy := createWarlockArmy(&defendingPlayer)
+    defendingArmy := createSettlerArmy(&defendingPlayer, 3)
+    defendingArmy.LayoutUnits(combat.TeamDefender)
+
+    /*
+    allSpells, err := spellbook.ReadSpellsFromCache(cache)
+    if err != nil {
+        log.Printf("Unable to read spells: %v", err)
+        allSpells = spellbook.Spells{}
+    }
+    */
+
+    attackingPlayer := player.Player{
+        Wizard: setup.WizardCustom{
+            Name: "Merlin",
+            Banner: data.BannerRed,
+        },
+        CastingSkillPower: 10,
+        Human: true,
+    }
+
+    // attackingArmy := createGreatDrakeArmy(&attackingPlayer)
+    attackingArmy := createSettlerArmy(&attackingPlayer, 3)
+    attackingArmy.LayoutUnits(combat.TeamAttacker)
+
+    return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, &attackingPlayer)
+}
+
+func NewEngine(scenario int) (*Engine, error) {
+    cache := lbx.AutoCache()
+
+    var combatScreen *combat.CombatScreen
+
+    switch scenario {
+        case 1: combatScreen = makeScenario1(cache)
+        case 2: combatScreen = makeScenario2(cache)
+        default: combatScreen = makeScenario1(cache)
+    }
 
     run := func(yield coroutine.YieldFunc) error {
         for combatScreen.Update(yield) == combat.CombatStateRunning {
@@ -281,6 +330,11 @@ func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, scre
 func main(){
     log.SetFlags(log.Ldate | log.Lshortfile | log.Lmicroseconds)
 
+    scenario := 1
+    if len(os.Args) > 1 {
+        scenario, _ = strconv.Atoi(os.Args[1])
+    }
+
     ebiten.SetWindowSize(data.ScreenWidth * 3, data.ScreenHeight * 3)
     ebiten.SetWindowTitle("combat screen")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
@@ -288,7 +342,7 @@ func main(){
 
     audio.Initialize()
 
-    engine, err := NewEngine()
+    engine, err := NewEngine(scenario)
 
     if err != nil {
         log.Printf("Error: unable to load engine: %v", err)
