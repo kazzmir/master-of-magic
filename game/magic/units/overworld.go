@@ -19,6 +19,57 @@ type OverworldUnit struct {
     Experience int
 }
 
+func (unit *OverworldUnit) IsFlying() bool {
+    return unit.Unit.Flying
+}
+
+func (unit *OverworldUnit) AdjustHealth(amount int) {
+    unit.Health += amount
+    if unit.Health < 0 {
+        unit.Health = 0
+    }
+
+    if unit.Health > unit.Unit.GetMaxHealth() {
+        unit.Health = unit.Unit.GetMaxHealth()
+    }
+}
+
+func (unit *OverworldUnit) GetMovementSound() MovementSound {
+    return unit.Unit.MovementSound
+}
+
+func (unit *OverworldUnit) GetRangeAttackSound() RangeAttackSound {
+    return unit.Unit.RangeAttackSound
+}
+
+func (unit *OverworldUnit) GetAttackSound() AttackSound {
+    return unit.Unit.AttackSound
+}
+
+func (unit *OverworldUnit) GetCombatRangeIndex(facing Facing) int {
+    return unit.Unit.GetCombatRangeIndex(facing)
+}
+
+func (unit *OverworldUnit) GetHealth() int {
+    return unit.Health
+}
+
+func (unit *OverworldUnit) GetMaxHealth() int {
+    return unit.Unit.GetMaxHealth()
+}
+
+func (unit *OverworldUnit) GetRangedAttackDamageType() Damage {
+    return unit.Unit.RangedAttackDamageType
+}
+
+func (unit *OverworldUnit) GetRangedAttacks() int {
+    return unit.Unit.RangedAttacks
+}
+
+func (unit *OverworldUnit) HasAbility(ability Ability) bool {
+    return unit.Unit.HasAbility(ability)
+}
+
 func (unit *OverworldUnit) GetBanner() data.BannerType {
     return unit.Banner
 }
