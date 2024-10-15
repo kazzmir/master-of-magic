@@ -19,6 +19,14 @@ type OverworldUnit struct {
     Experience int
 }
 
+func (unit *OverworldUnit) GetMovesLeft() fraction.Fraction {
+    return unit.MovesLeft
+}
+
+func (unit *OverworldUnit) SetMovesLeft(moves fraction.Fraction) {
+    unit.MovesLeft = moves
+}
+
 func (unit *OverworldUnit) IsFlying() bool {
     return unit.Unit.Flying
 }
