@@ -102,8 +102,31 @@ type Tile struct {
     Unit *ArmyUnit
 }
 
+type CombatUnit interface {
+    HasAbility(units.Ability) bool
+    GetDefense() int
+    GetResistance() int
+    AdjustHealth(int)
+    GetRangedAttackDamageType() units.Damage
+    GetRangedAttackPower() int
+    GetMeleeAttackPower() int
+    GetMaxHealth() int
+    GetCount() int
+    GetHealth() int
+    GetRangedAttacks() int
+    GetCombatLbxFile() string
+    GetCombatIndex(units.Facing) int
+    GetCombatRangeIndex(units.Facing) int
+    GetMovementSound() units.MovementSound
+    GetRangeAttackSound() units.RangeAttackSound
+    GetAttackSound() units.AttackSound
+    GetName() string
+    GetMovementSpeed() int
+    IsFlying() bool
+}
+
 type ArmyUnit struct {
-    Unit *units.OverworldUnit
+    Unit CombatUnit
     Facing units.Facing
     Moving bool
     X int
@@ -135,17 +158,17 @@ func (unit *ArmyUnit) ComputeDefense(damage units.Damage) int {
 
     switch damage {
         case units.DamageRangedMagical:
-            if unit.Unit.Unit.HasAbility(units.AbilityMagicImmunity) {
+            if unit.Unit.HasAbility(units.AbilityMagicImmunity) {
                 toDefend = 50
             }
         case units.DamageRangedPhysical:
-            if unit.Unit.Unit.HasAbility(units.AbilityMissileImmunity) {
+            if unit.Unit.HasAbility(units.AbilityMissileImmunity) {
                 toDefend = 50
             }
     }
 
     for figure := 0; figure < unit.Figures(); figure++ {
-        for i := 0; i < unit.Unit.Unit.Defense; i++ {
+        for i := 0; i < unit.Unit.GetDefense(); i++ {
             if rand.IntN(100) < toDefend {
                 defense += 1
             }
@@ -157,17 +180,11 @@ func (unit *ArmyUnit) ComputeDefense(damage units.Damage) int {
 
 func (unit *ArmyUnit) TakeDamage(damage int) {
     // the first figure should take damage, and if it dies then the next unit takes damage, etc
-    unit.Unit.Health -= damage
-    if unit.Unit.Health <= 0 {
-        unit.Unit.Health = 0
-    }
+    unit.Unit.AdjustHealth(-damage)
 }
 
 func (unit *ArmyUnit) Heal(amount int){
-    unit.Unit.Health += amount
-    if unit.Unit.Health > unit.Unit.Unit.GetMaxHealth() {
-        unit.Unit.Health = unit.Unit.Unit.GetMaxHealth()
-    }
+    unit.Unit.AdjustHealth(amount)
 }
 
 // given the distance to the target in tiles, return the amount of range damage done
@@ -176,9 +193,9 @@ func (unit *ArmyUnit) ComputeRangeDamage(tileDistance int) int {
     toHit := unit.ToHitMelee()
 
     // magical attacks don't suffer a to-hit penalty
-    if unit.Unit.Unit.RangedAttackDamageType != units.DamageRangedMagical {
+    if unit.Unit.GetRangedAttackDamageType() != units.DamageRangedMagical {
 
-        if unit.Unit.Unit.HasAbility(units.AbilityLongRange) {
+        if unit.Unit.HasAbility(units.AbilityLongRange) {
             if tileDistance >= 3 {
                 toHit -= 10
             }
@@ -196,7 +213,7 @@ func (unit *ArmyUnit) ComputeRangeDamage(tileDistance int) int {
 
     damage := 0
     for figure := 0; figure < unit.Figures(); figure++ {
-        for i := 0; i < unit.Unit.Unit.RangedAttackPower; i++ {
+        for i := 0; i < unit.Unit.GetRangedAttackPower(); i++ {
             if rand.IntN(100) < toHit {
                 damage += 1
             }
@@ -209,7 +226,7 @@ func (unit *ArmyUnit) ComputeRangeDamage(tileDistance int) int {
 func (unit *ArmyUnit) ComputeMeleeDamage() int {
     damage := 0
     for figure := 0; figure < unit.Figures(); figure++ {
-        for i := 0; i < unit.Unit.Unit.MeleeAttackPower; i++ {
+        for i := 0; i < unit.Unit.GetMeleeAttackPower(); i++ {
             if rand.IntN(100) < unit.ToHitMelee() {
                 damage += 1
             }
@@ -234,8 +251,8 @@ func (unit *ArmyUnit) Figures() int {
     // health per figure = max health / figures
     // figures = health / health per figure
 
-    health_per_figure := float64(unit.Unit.Unit.GetMaxHealth()) / float64(unit.Unit.Unit.Count)
-    return int(math.Ceil(float64(unit.Unit.Health) / health_per_figure))
+    health_per_figure := float64(unit.Unit.GetMaxHealth()) / float64(unit.Unit.GetCount())
+    return int(math.Ceil(float64(unit.Unit.GetHealth()) / health_per_figure))
 }
 
 // cost to move one tile in one of the 8 directions
@@ -474,7 +491,7 @@ func (army *Army) IsAI() bool {
 /* must call LayoutUnits() some time after invoking AddUnit() to ensure
  * the units are laid out correctly
  */
-func (army *Army) AddUnit(unit *units.OverworldUnit){
+func (army *Army) AddUnit(unit CombatUnit){
     army.Units = append(army.Units, &ArmyUnit{
         Unit: unit,
         Facing: units.FacingDownRight,
@@ -526,7 +543,7 @@ func (army *Army) RemoveUnit(remove *ArmyUnit){
 }
 
 // represents a unit that is not part of the army, for things like magic vortex, for things like magic vortex
-type CombatUnit struct {
+type OtherUnit struct {
     X int
     Y int
     Animation *util.Animation
@@ -562,7 +579,7 @@ type CombatScreen struct {
     TurnAttacker int
     TurnDefender int
 
-    OtherUnits []*CombatUnit
+    OtherUnits []*OtherUnit
 
     MouseState MouseState
 
@@ -767,13 +784,13 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
 
     for _, unit := range defendingArmy.Units {
         unit.Team = TeamDefender
-        unit.RangedAttacks = unit.Unit.Unit.RangedAttacks
+        unit.RangedAttacks = unit.Unit.GetRangedAttacks()
         combat.Tiles[unit.Y][unit.X].Unit = unit
     }
 
     for _, unit := range attackingArmy.Units {
         unit.Team = TeamAttacker
-        unit.RangedAttacks = unit.Unit.Unit.RangedAttacks
+        unit.RangedAttacks = unit.Unit.GetRangedAttacks()
         combat.Tiles[unit.Y][unit.X].Unit = unit
     }
 
@@ -966,7 +983,7 @@ func (combat *CombatScreen) CreateIceBoltProjectile(target *ArmyUnit) {
     // FIXME: made up
     damage := func(unit *ArmyUnit) {
         unit.TakeDamage(3)
-        if unit.Unit.Health <= 0 {
+        if unit.Unit.GetHealth() <= 0 {
             combat.RemoveUnit(unit)
         }
     }
@@ -982,7 +999,7 @@ func (combat *CombatScreen) CreateFireBoltProjectile(target *ArmyUnit) {
     // FIXME: made up
     damage := func(unit *ArmyUnit) {
         unit.TakeDamage(3)
-        if unit.Unit.Health <= 0 {
+        if unit.Unit.GetHealth() <= 0 {
             combat.RemoveUnit(unit)
         }
     }
@@ -999,7 +1016,7 @@ func (combat *CombatScreen) CreateFireballProjectile(target *ArmyUnit) {
     // FIXME: made up
     damage := func(unit *ArmyUnit) {
         unit.TakeDamage(3)
-        if unit.Unit.Health <= 0 {
+        if unit.Unit.GetHealth() <= 0 {
             combat.RemoveUnit(unit)
         }
     }
@@ -1241,7 +1258,7 @@ func (combat *CombatScreen) CreateSummoningCircle(x int, y int) {
 func (combat *CombatScreen) CreateMagicVortex(x int, y int) {
     images, _ := combat.ImageCache.GetImages("cmbmagic.lbx", 120)
 
-    unit := &CombatUnit{
+    unit := &OtherUnit{
         X: x,
         Y: y,
         Animation: util.MakeAnimation(images, true),
@@ -1656,39 +1673,39 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
 
             if combat.SelectedUnit != nil {
 
-                rightImage, _ := combat.ImageCache.GetImage(combat.SelectedUnit.Unit.Unit.CombatLbxFile, combat.SelectedUnit.Unit.Unit.GetCombatIndex(units.FacingRight), 0)
+                rightImage, _ := combat.ImageCache.GetImage(combat.SelectedUnit.Unit.GetCombatLbxFile(), combat.SelectedUnit.Unit.GetCombatIndex(units.FacingRight), 0)
                 options.GeoM.Reset()
                 options.GeoM.Translate(89, 170)
                 screen.DrawImage(rightImage, &options)
 
-                combat.HudFont.Print(screen, 92, 167, 1, ebiten.ColorScale{}, combat.SelectedUnit.Unit.Unit.Name)
+                combat.HudFont.Print(screen, 92, 167, 1, ebiten.ColorScale{}, combat.SelectedUnit.Unit.GetName())
 
                 plainAttack, _ := combat.ImageCache.GetImage("compix.lbx", 29, 0)
                 options.GeoM.Reset()
                 options.GeoM.Translate(126, 173)
                 screen.DrawImage(plainAttack, &options)
-                combat.HudFont.PrintRight(screen, 126, 174, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", combat.SelectedUnit.Unit.Unit.MeleeAttackPower))
+                combat.HudFont.PrintRight(screen, 126, 174, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", combat.SelectedUnit.Unit.GetMeleeAttackPower()))
 
                 if combat.SelectedUnit.RangedAttacks > 0 {
                     y := float64(180)
-                    switch combat.SelectedUnit.Unit.Unit.RangedAttackDamageType {
+                    switch combat.SelectedUnit.Unit.GetRangedAttackDamageType() {
                         case units.DamageRangedPhysical:
                             arrow, _ := combat.ImageCache.GetImage("compix.lbx", 34, 0)
                             options.GeoM.Reset()
                             options.GeoM.Translate(126, y)
                             screen.DrawImage(arrow, &options)
-                            combat.HudFont.PrintRight(screen, 126, y+2, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", combat.SelectedUnit.Unit.Unit.RangedAttackPower))
+                            combat.HudFont.PrintRight(screen, 126, y+2, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", combat.SelectedUnit.Unit.GetRangedAttackPower()))
                         case units.DamageRangedMagical:
                             magic, _ := combat.ImageCache.GetImage("compix.lbx", 30, 0)
                             options.GeoM.Reset()
                             options.GeoM.Translate(126, y)
                             screen.DrawImage(magic, &options)
-                            combat.HudFont.PrintRight(screen, 126, y+2, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", combat.SelectedUnit.Unit.Unit.RangedAttackPower))
+                            combat.HudFont.PrintRight(screen, 126, y+2, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", combat.SelectedUnit.Unit.GetRangedAttackPower()))
                     }
                 }
 
                 var movementImage *ebiten.Image
-                if combat.SelectedUnit.Unit.Unit.Flying {
+                if combat.SelectedUnit.Unit.IsFlying() {
                     movementImage, _ = combat.ImageCache.GetImage("compix.lbx", 39, 0)
                 } else {
                     movementImage, _ = combat.ImageCache.GetImage("compix.lbx", 38, 0)
@@ -1809,7 +1826,7 @@ func betweenAngle(check float64, angle float64, spread float64) bool {
 
 func (combat *CombatScreen) TileIsEmpty(x int, y int) bool {
     unit := combat.GetUnit(x, y)
-    if unit != nil && unit.Unit.Health > 0 {
+    if unit != nil && unit.Unit.GetHealth() > 0 {
         return false
     }
     /*
@@ -1911,12 +1928,12 @@ func (combat *CombatScreen) NextTurn() {
 
     /* reset movement */
     for _, unit := range combat.DefendingArmy.Units {
-        unit.MovesLeft = fraction.FromInt(unit.Unit.Unit.MovementSpeed)
+        unit.MovesLeft = fraction.FromInt(unit.Unit.GetMovementSpeed())
         unit.Paths = make(map[image.Point]pathfinding.Path)
     }
 
     for _, unit := range combat.AttackingArmy.Units {
-        unit.MovesLeft = fraction.FromInt(unit.Unit.Unit.MovementSpeed)
+        unit.MovesLeft = fraction.FromInt(unit.Unit.GetMovementSpeed())
         unit.Paths = make(map[image.Point]pathfinding.Path)
     }
 }
@@ -2034,7 +2051,7 @@ func (combat *CombatScreen) canMeleeAttack(attacker *ArmyUnit, defender *ArmyUni
         return false
     }
 
-    if defender.Unit.Unit.Flying && !attacker.Unit.Unit.Flying {
+    if defender.Unit.IsFlying() && !attacker.Unit.IsFlying() {
         return false
     }
 
@@ -2133,11 +2150,11 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
     attacker.TakeDamage(defenderCounterDamage)
     defender.TakeDamage(attackerDamage)
 
-    if attacker.Unit.Health <= 0 {
+    if attacker.Unit.GetHealth() <= 0 {
         combat.RemoveUnit(attacker)
     }
 
-    if defender.Unit.Health <= 0 {
+    if defender.Unit.GetHealth() <= 0 {
         combat.RemoveUnit(defender)
     }
 }
@@ -2206,15 +2223,15 @@ func (combat *CombatScreen) createUnitToUnitProjectile(attacker *ArmyUnit, targe
 }
 
 func (combat *CombatScreen) createRangeAttack(attacker *ArmyUnit, defender *ArmyUnit){
-    index := attacker.Unit.Unit.GetCombatRangeIndex(attacker.Facing)
+    index := attacker.Unit.GetCombatRangeIndex(attacker.Facing)
     images, err := combat.ImageCache.GetImages("cmbmagic.lbx", index)
     if err != nil {
-        log.Printf("Unable to load attacker range images for %v index %v: %v", attacker.Unit.Unit.Name, index, err)
+        log.Printf("Unable to load attacker range images for %v index %v: %v", attacker.Unit.GetName(), index, err)
         return
     }
 
     if len(images) != 4 {
-        log.Printf("Invalid number of attack range animation images for %v: %v", attacker.Unit.Unit.Name, len(images))
+        log.Printf("Invalid number of attack range animation images for %v: %v", attacker.Unit.GetName(), len(images))
         return
     }
 
@@ -2224,14 +2241,14 @@ func (combat *CombatScreen) createRangeAttack(attacker *ArmyUnit, defender *Army
     tileDistance := computeTileDistance(attacker.X, attacker.Y, defender.X, defender.Y)
 
     effect := func (target *ArmyUnit){
-        if target.Unit.Health <= 0 {
+        if target.Unit.GetHealth() <= 0 {
             return
         }
 
         // FIXME: apply defenses for magic immunity or missle immunity
 
         damage := attacker.ComputeRangeDamage(tileDistance)
-        defense := target.ComputeDefense(attacker.Unit.Unit.RangedAttackDamageType)
+        defense := target.ComputeDefense(attacker.Unit.GetRangedAttackDamageType())
 
         // log.Printf("Ranged attack from %v: damage=%v defense=%v distance=%v", attacker.Unit.Name, damage, defense, tileDistance)
 
@@ -2240,7 +2257,7 @@ func (combat *CombatScreen) createRangeAttack(attacker *ArmyUnit, defender *Army
             damage = 0
         }
         target.TakeDamage(damage)
-        if target.Unit.Health <= 0 {
+        if target.Unit.GetHealth() <= 0 {
             combat.RemoveUnit(target)
         }
     }
@@ -2488,7 +2505,7 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
     quit, cancel := context.WithCancel(context.Background())
     defer cancel()
 
-    sound, err := audio.LoadSound(combat.Cache, mover.Unit.Unit.MovementSound.LbxIndex())
+    sound, err := audio.LoadSound(combat.Cache, mover.Unit.GetMovementSound().LbxIndex())
     if err == nil {
         // keep playing movement sound in a loop until the unit stops moving
         go func(){
@@ -2496,7 +2513,7 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
             for quit.Err() == nil {
                 err = sound.Rewind()
                 if err != nil {
-                    log.Printf("Unable to rewind sound for %v: %v", mover.Unit.Unit.MovementSound, err)
+                    log.Printf("Unable to rewind sound for %v: %v", mover.Unit.GetMovementSound(), err)
                 }
                 sound.Play()
                 for sound.IsPlaying() {
@@ -2575,7 +2592,7 @@ func (combat *CombatScreen) doRangeAttack(yield coroutine.YieldFunc, attacker *A
     // FIXME: could use a for/yield loop here to update projectiles
     combat.createRangeAttack(attacker, defender)
 
-    sound, err := audio.LoadSound(combat.Cache, attacker.Unit.Unit.RangeAttackSound.LbxIndex())
+    sound, err := audio.LoadSound(combat.Cache, attacker.Unit.GetRangeAttackSound().LbxIndex())
     if err == nil {
         sound.Play()
     }
@@ -2595,7 +2612,7 @@ func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUni
     // attacking takes 50% of movement points
     // FIXME: in some cases an extra 0.5 movements points is lost, possibly due to counter attacks?
 
-    pointsUsed := fraction.FromInt(attacker.Unit.Unit.MovementSpeed).Divide(fraction.FromInt(2))
+    pointsUsed := fraction.FromInt(attacker.Unit.GetMovementSpeed()).Divide(fraction.FromInt(2))
     if pointsUsed.LessThan(fraction.FromInt(1)) {
         pointsUsed = fraction.FromInt(1)
     }
@@ -2609,7 +2626,7 @@ func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUni
     defender.Facing = faceTowards(defender.X, defender.Y, attacker.X, attacker.Y)
 
     // FIXME: sound is based on attacker type, and possibly defender type
-    sound, err := audio.LoadCombatSound(combat.Cache, attacker.Unit.Unit.AttackSound.LbxIndex())
+    sound, err := audio.LoadCombatSound(combat.Cache, attacker.Unit.GetAttackSound().LbxIndex())
     if err == nil {
         sound.Play()
     }
@@ -2852,7 +2869,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
     }
 
     // the unit died or is out of moves
-    if combat.SelectedUnit != nil && (combat.SelectedUnit.Unit.Health <= 0 || combat.SelectedUnit.MovesLeft.LessThanEqual(fraction.FromInt(0))) {
+    if combat.SelectedUnit != nil && (combat.SelectedUnit.Unit.GetHealth() <= 0 || combat.SelectedUnit.MovesLeft.LessThanEqual(fraction.FromInt(0))) {
         combat.SelectedUnit.LastTurn = combat.CurrentTurn
         combat.NextUnit()
     }
@@ -2931,31 +2948,31 @@ func (combat *CombatScreen) ShowUnitInfo(screen *ebiten.Image, unit *ArmyUnit){
     height := 45
     vector.DrawFilledRect(screen, float32(x1), float32(y1), float32(width), float32(height), color.RGBA{R: 0, G: 0, B: 0, A: 100}, false)
     vector.StrokeRect(screen, float32(x1), float32(y1), float32(width), float32(height), 1, util.PremultiplyAlpha(color.RGBA{R: 0x27, G: 0x4e, B: 0xdc, A: 100}), false)
-    combat.InfoFont.PrintCenter(screen, float64(x1 + 35), float64(y1 + 2), 1, ebiten.ColorScale{}, fmt.Sprintf("%v", unit.Unit.Unit.Name))
+    combat.InfoFont.PrintCenter(screen, float64(x1 + 35), float64(y1 + 2), 1, ebiten.ColorScale{}, fmt.Sprintf("%v", unit.Unit.GetName()))
 
     meleeImage, _ := combat.ImageCache.GetImage("compix.lbx", 61, 0)
     var options ebiten.DrawImageOptions
     options.GeoM.Translate(float64(x1 + 14), float64(y1 + 10))
     screen.DrawImage(meleeImage, &options)
-    combat.InfoFont.PrintRight(screen, float64(x1 + 14), float64(y1 + 10 + 2), 1, ebiten.ColorScale{}, fmt.Sprintf("%v", unit.Unit.Unit.MeleeAttackPower))
+    combat.InfoFont.PrintRight(screen, float64(x1 + 14), float64(y1 + 10 + 2), 1, ebiten.ColorScale{}, fmt.Sprintf("%v", unit.Unit.GetMeleeAttackPower()))
 
-    switch unit.Unit.Unit.RangedAttackDamageType {
+    switch unit.Unit.GetRangedAttackDamageType() {
         case units.DamageRangedMagical:
             fire, _ := combat.ImageCache.GetImage("compix.lbx", 62, 0)
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(x1 + 14), float64(y1 + 18))
             screen.DrawImage(fire, &options)
-            combat.InfoFont.PrintRight(screen, float64(x1 + 14), float64(y1 + 18 + 2), 1, ebiten.ColorScale{}, fmt.Sprintf("%v", unit.Unit.Unit.RangedAttackPower))
+            combat.InfoFont.PrintRight(screen, float64(x1 + 14), float64(y1 + 18 + 2), 1, ebiten.ColorScale{}, fmt.Sprintf("%v", unit.Unit.GetRangedAttackPower()))
         case units.DamageRangedPhysical:
             arrow, _ := combat.ImageCache.GetImage("compix.lbx", 66, 0)
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(x1 + 14), float64(y1 + 18))
             screen.DrawImage(arrow, &options)
-            combat.InfoFont.PrintRight(screen, float64(x1 + 14), float64(y1 + 18 + 2), 1, ebiten.ColorScale{}, fmt.Sprintf("%v", unit.Unit.Unit.RangedAttackPower))
+            combat.InfoFont.PrintRight(screen, float64(x1 + 14), float64(y1 + 18 + 2), 1, ebiten.ColorScale{}, fmt.Sprintf("%v", unit.Unit.GetRangedAttackPower()))
     }
 
     movementImage, _ := combat.ImageCache.GetImage("compix.lbx", 72, 0)
-    if unit.Unit.Unit.Flying {
+    if unit.Unit.IsFlying() {
         movementImage, _ = combat.ImageCache.GetImage("compix.lbx", 73, 0)
     }
 
@@ -2968,13 +2985,13 @@ func (combat *CombatScreen) ShowUnitInfo(screen *ebiten.Image, unit *ArmyUnit){
     options.GeoM.Reset()
     options.GeoM.Translate(float64(x1 + 48), float64(y1 + 10))
     screen.DrawImage(armorImage, &options)
-    combat.InfoFont.PrintRight(screen, float64(x1 + 48), float64(y1 + 10 + 2), 1, ebiten.ColorScale{}, fmt.Sprintf("%v", unit.Unit.Unit.Defense))
+    combat.InfoFont.PrintRight(screen, float64(x1 + 48), float64(y1 + 10 + 2), 1, ebiten.ColorScale{}, fmt.Sprintf("%v", unit.Unit.GetDefense()))
 
     resistanceImage, _ := combat.ImageCache.GetImage("compix.lbx", 75, 0)
     options.GeoM.Reset()
     options.GeoM.Translate(float64(x1 + 48), float64(y1 + 18))
     screen.DrawImage(resistanceImage, &options)
-    combat.InfoFont.PrintRight(screen, float64(x1 + 48), float64(y1 + 18 + 2), 1, ebiten.ColorScale{}, fmt.Sprintf("%v", unit.Unit.Unit.Resistance))
+    combat.InfoFont.PrintRight(screen, float64(x1 + 48), float64(y1 + 18 + 2), 1, ebiten.ColorScale{}, fmt.Sprintf("%v", unit.Unit.GetResistance()))
 
     combat.InfoFont.PrintCenter(screen, float64(x1 + 14), float64(y1 + 37), 1, ebiten.ColorScale{}, "Hits")
 
@@ -2985,7 +3002,7 @@ func (combat *CombatScreen) ShowUnitInfo(screen *ebiten.Image, unit *ArmyUnit){
 
     vector.StrokeLine(screen, float32(x1 + 25), float32(y1 + 40), float32(x1 + 25 + healthWidth), float32(y1 + 40), 1, color.RGBA{R: 0, G: 0, B: 0, A: 0xff}, false)
 
-    healthPercent := float64(unit.Unit.Health) / float64(unit.Unit.Unit.GetMaxHealth())
+    healthPercent := float64(unit.Unit.GetHealth()) / float64(unit.Unit.GetMaxHealth())
     healthLength := float64(healthWidth) * healthPercent
 
     // always show at least one point of health
@@ -3081,7 +3098,7 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
     }
 
     renderUnit := func(unit *ArmyUnit){
-        combatImages, _ := combat.ImageCache.GetImages(unit.Unit.Unit.CombatLbxFile, unit.Unit.Unit.GetCombatIndex(unit.Facing))
+        combatImages, _ := combat.ImageCache.GetImages(unit.Unit.GetCombatLbxFile(), unit.Unit.GetCombatIndex(unit.Facing))
 
         if combatImages != nil {
             var unitOptions ebiten.DrawImageOptions
@@ -3098,7 +3115,7 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
             unitOptions.GeoM.Translate(float64(tile0.Bounds().Dx()/2), float64(tile0.Bounds().Dy()/2))
 
             index := uint64(0)
-            if unit.Unit.Unit.Flying || unit.Moving {
+            if unit.Unit.IsFlying() || unit.Moving {
                 index = animationIndex % (uint64(len(combatImages)) - 1)
             }
 
