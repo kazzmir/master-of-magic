@@ -198,6 +198,8 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
 
     highlightColor := util.PremultiplyAlpha(color.RGBA{R: 255, G: 255, B: 255, A: 90})
 
+    banner := view.Player.Wizard.Banner
+
     for i, stack := range view.Player.Stacks {
         if i < view.FirstRow {
             continue
@@ -212,7 +214,7 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
             if highlightedUnit == nil {
                 highlightedUnit = unit
             }
-            pic, _ := view.ImageCache.GetImage(unit.Unit.LbxFile, unit.Unit.Index, 0)
+            pic, _ := view.ImageCache.GetImageTransform(unit.Unit.LbxFile, unit.Unit.Index, 0, banner.String(), units.MakeUpdateUnitColorsFunc(banner))
             if pic != nil {
                 elements = append(elements, &uilib.UIElement{
                     Rect: util.ImageRect(int(elementX), int(elementY), pic),
