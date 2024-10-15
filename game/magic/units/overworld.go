@@ -242,7 +242,7 @@ func (unit *OverworldUnit) NaturalHeal() {
     }
 }
 
-func (unit *OverworldUnit) ResetMoves(){
+func (unit *OverworldUnit) ResetMoves() {
     unit.MovesLeft = fraction.FromInt(unit.Unit.MovementSpeed)
 }
 

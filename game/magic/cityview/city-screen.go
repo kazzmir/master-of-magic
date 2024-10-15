@@ -679,7 +679,7 @@ func (cityScreen *CityScreen) MakeUI() *uilib.UI {
             if err != nil {
                 return
             }
-            pic, err := cityScreen.ImageCache.GetImage(unit.GetLbxFile(), unit.GetLbxIndex(), 0)
+            pic, err := cityScreen.ImageCache.GetImageTransform(unit.GetLbxFile(), unit.GetLbxIndex(), 0, unit.GetBanner().String(), units.MakeUpdateUnitColorsFunc(unit.GetBanner()))
             if err != nil {
                 return
             }

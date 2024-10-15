@@ -6,6 +6,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
+    "github.com/kazzmir/master-of-magic/lib/fraction"
 )
 
 type HeroType int
@@ -124,6 +125,74 @@ func (hero *Hero) GetHealth() int {
 
 func (hero *Hero) GetMaxHealth() int {
     return hero.Unit.GetMaxHealth()
+}
+
+func (hero *Hero) AddExperience(amount int) {
+    hero.Unit.AddExperience(amount)
+}
+
+func (hero *Hero) GetExperience() int {
+    return hero.Unit.GetExperience()
+}
+
+func (hero *Hero) GetLbxFile() string {
+    return hero.Unit.GetLbxFile()
+}
+
+func (hero *Hero) GetLbxIndex() int {
+    return hero.Unit.GetLbxIndex()
+}
+
+func (hero *Hero) GetPatrol() bool {
+    return hero.Unit.GetPatrol()
+}
+
+func (hero *Hero) SetPatrol(patrol bool) {
+    hero.Unit.SetPatrol(patrol)
+}
+
+func (hero *Hero) GetPlane() data.Plane {
+    return hero.Unit.GetPlane()
+}
+
+func (hero *Hero) GetRace() data.Race {
+    return hero.Unit.GetRace()
+}
+
+func (hero *Hero) GetRawUnit() units.Unit {
+    return hero.Unit.GetRawUnit()
+}
+
+func (hero *Hero) GetX() int {
+    return hero.Unit.GetX()
+}
+
+func (hero *Hero) GetY() int {
+    return hero.Unit.GetY()
+}
+
+func (hero *Hero) Move(dx int, dy int, cost fraction.Fraction){
+    hero.Unit.Move(dx, dy, cost)
+}
+
+func (hero *Hero) NaturalHeal() {
+    hero.Unit.NaturalHeal()
+}
+
+func (hero *Hero) ResetMoves() {
+    hero.Unit.ResetMoves()
+}
+
+func (hero *Hero) SetId(id uint64) {
+    hero.Unit.SetId(id)
+}
+
+func (hero *Hero) GetMovesLeft() fraction.Fraction {
+    return hero.Unit.GetMovesLeft()
+}
+
+func (hero *Hero) SetMovesLeft(moves fraction.Fraction) {
+    hero.Unit.SetMovesLeft(moves)
 }
 
 func (hero *Hero) GetAttackSound() units.AttackSound {

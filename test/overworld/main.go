@@ -1423,6 +1423,7 @@ func NewEngine(scenario int) (*Engine, error) {
         case 15: game = createScenario15(cache)
         case 16: game = createScenario16(cache)
         case 17: game = createScenario17(cache)
+        case 18: game = createScenario18(cache)
         default: game = createScenario1(cache)
     }
 
