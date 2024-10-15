@@ -1187,6 +1187,8 @@ var HeroBShan Unit = Unit{
 var HeroRakir Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 4,
+    CombatLbxFile: "figures1.lbx",
+    CombatIndex: 32,
     Name: "Rakir",
     Count: 1,
     HitPoints: 7,
@@ -1369,6 +1371,17 @@ var HeroRavashack Unit = Unit{
 var HeroWarrax Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 33,
+    CombatLbxFile: "figures3.lbx",
+    CombatIndex: 24,
+    Name: "Warrax",
+    MovementSpeed: 2,
+    MeleeAttackPower: 8,
+    RangedAttackPower: 8,
+    RangedAttackDamageType: DamageRangedMagical,
+    Defense: 5,
+    Resistance: 9,
+    HitPoints: 8,
+    Count: 1,
     Race: data.RaceHero,
 }
 
