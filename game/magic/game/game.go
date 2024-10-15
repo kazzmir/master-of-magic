@@ -2034,7 +2034,6 @@ func (game *Game) GetMainImage(index int) (*ebiten.Image, error) {
 
 func GetUnitImage(unit units.Unit, imageCache *util.ImageCache, banner data.BannerType) (*ebiten.Image, error) {
     updateColors := func (original *image.Paletted) image.Image {
-
         var baseColor color.RGBA
 
         switch banner {
@@ -2048,6 +2047,7 @@ func GetUnitImage(unit units.Unit, imageCache *util.ImageCache, banner data.Bann
         }
 
         light := float64(10)
+        original.Palette = util.ClonePalette(original.Palette)
         for i := 0; i < 4; i++ {
             original.Palette[215 + i] = util.Lighten(baseColor, light)
             light -= 10

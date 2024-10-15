@@ -259,3 +259,9 @@ func DrawTextCursor(screen *ebiten.Image, source *ebiten.Image, cursorX float64,
     cursorArea := screen.SubImage(image.Rect(int(cursorX), int(y), int(cursorX + width), int(y + height))).(*ebiten.Image)
     cursorArea.DrawTriangles(vertices[:], []uint16{0, 1, 2, 2, 3, 0}, source, nil)
 }
+
+func ClonePalette(p color.Palette) color.Palette {
+    newPalette := make(color.Palette, len(p))
+    copy(newPalette, p)
+    return newPalette
+}
