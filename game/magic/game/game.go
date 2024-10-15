@@ -851,7 +851,7 @@ func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City,
     // bird: 53
     // snake: 54
     // beetle: 55
-    snake, _ := game.ImageCache.GetImageTransform("resource.lbx", 54, 0, util.AutoCrop)
+    snake, _ := game.ImageCache.GetImageTransform("resource.lbx", 54, 0, "crop", util.AutoCrop)
 
     wrappedText := bigFont.CreateWrappedText(180, 1, fmt.Sprintf("The %s of %s has completed the construction of a %s.", city.GetSize(), city.Name, game.BuildingInfo.Name(building)))
 
@@ -859,7 +859,7 @@ func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City,
 
     getAlpha := util.MakeFadeIn(7, &game.Counter)
 
-    buildingPics, err := game.ImageCache.GetImagesTransform("cityscap.lbx", buildinglib.GetBuildingIndex(building), util.AutoCrop)
+    buildingPics, err := game.ImageCache.GetImagesTransform("cityscap.lbx", buildinglib.GetBuildingIndex(building), "crop", util.AutoCrop)
 
     if err != nil {
         log.Printf("Error: Unable to get building picture for %v: %v", game.BuildingInfo.Name(building), err)
@@ -2053,8 +2053,8 @@ func GetCityNoWallImage(size citylib.CitySize, cache *util.ImageCache) (*ebiten.
         case citylib.CitySizeCapital: index = 4
     }
 
-    // the city image is a sub-frame of animation 20
-    return cache.GetImage("mapback.lbx", 20, index)
+    // the city image is a sub-frame of animation 21
+    return cache.GetImage("mapback.lbx", 21, index)
 }
 
 func GetCityWallImage(size citylib.CitySize, cache *util.ImageCache) (*ebiten.Image, error) {
@@ -2068,8 +2068,8 @@ func GetCityWallImage(size citylib.CitySize, cache *util.ImageCache) (*ebiten.Im
         case citylib.CitySizeCapital: index = 4
     }
 
-    // the city image is a sub-frame of animation 21
-    return cache.GetImage("mapback.lbx", 21, index)
+    // the city image is a sub-frame of animation 20
+    return cache.GetImage("mapback.lbx", 20, index)
 }
 
 func (game *Game) ShowGrandVizierUI(){
@@ -3487,11 +3487,14 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
     for _, city := range overworld.Cities {
         var cityPic *ebiten.Image
         var err error
+        cityPic, err = GetCityWallImage(city.GetSize(), overworld.ImageCache)
+        /*
         if city.Wall {
             cityPic, err = GetCityWallImage(city.GetSize(), overworld.ImageCache)
         } else {
             cityPic, err = GetCityNoWallImage(city.GetSize(), overworld.ImageCache)
         }
+        */
 
         if err == nil {
             var options ebiten.DrawImageOptions

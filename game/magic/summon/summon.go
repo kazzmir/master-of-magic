@@ -73,13 +73,13 @@ func makeSummon(cache *lbx.LbxCache, title string, wizard data.WizardBase, summo
         return img
     }
 
-    summonBack, _ := summon.ImageCache.GetImagesTransform("spellscr.lbx", 10, updateColors)
+    summonBack, _ := summon.ImageCache.GetImagesTransform("spellscr.lbx", 10, "colors", updateColors)
     summon.CircleBack = util.MakeAnimation(summonBack, true)
 
-    summonFront, _ := summon.ImageCache.GetImagesTransform("spellscr.lbx", 11, updateColors)
+    summonFront, _ := summon.ImageCache.GetImagesTransform("spellscr.lbx", 11, "colors", updateColors)
     summon.CircleFront = util.MakeAnimation(summonFront, true)
 
-    background, _ := summon.ImageCache.GetImageTransform("spellscr.lbx", 9, 0, updateColors)
+    background, _ := summon.ImageCache.GetImageTransform("spellscr.lbx", 9, 0, "colors", updateColors)
     summon.Background = background
 
     fontLbx, err := cache.GetLbxFile("fonts.lbx")
