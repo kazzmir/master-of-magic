@@ -9,6 +9,8 @@ import (
     "github.com/hajimehoshi/ebiten/v2"
 )
 
+type ImageTransformFunc func(*image.Paletted) image.Image
+
 type ImageCache struct {
     LbxCache *lbx.LbxCache
     // FIXME: have some limit on the number of entries, and remove old ones LRU-style
@@ -59,7 +61,7 @@ func (cache *ImageCache) Clear(){
     cache.Cache = make(map[string][]*ebiten.Image)
 }
 
-func (cache *ImageCache) GetImagesTransform(lbxPath string, index int, extra string, transform func(*image.Paletted) image.Image) ([]*ebiten.Image, error) {
+func (cache *ImageCache) GetImagesTransform(lbxPath string, index int, extra string, transform ImageTransformFunc) ([]*ebiten.Image, error) {
     lbxPath = strings.ToLower(lbxPath)
     key := fmt.Sprintf("%s:%s:%d", lbxPath, extra, index)
 
@@ -105,7 +107,7 @@ func (cache *ImageCache) GetImages(lbxPath string, index int) ([]*ebiten.Image, 
     })
 }
 
-func (cache *ImageCache) GetImageTransform(lbxFile string, spriteIndex int, animationIndex int, extra string, transform func(*image.Paletted) image.Image) (*ebiten.Image, error) {
+func (cache *ImageCache) GetImageTransform(lbxFile string, spriteIndex int, animationIndex int, extra string, transform ImageTransformFunc) (*ebiten.Image, error) {
     images, err := cache.GetImagesTransform(lbxFile, spriteIndex, extra, transform)
     if err != nil {
         return nil, err
