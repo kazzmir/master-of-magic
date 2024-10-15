@@ -19,6 +19,10 @@ type OverworldUnit struct {
     Experience int
 }
 
+func (unit *OverworldUnit) GetBanner() data.BannerType {
+    return unit.Banner
+}
+
 func (unit *OverworldUnit) GetName() string {
     return unit.Unit.GetName()
 }

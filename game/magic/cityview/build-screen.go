@@ -324,23 +324,24 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
 
     updateMainElementUnit := func(unit units.Unit){
         ui.RemoveElement(mainElement)
+        bannerUnit := units.MakeOverworldUnitFromUnit(unit, 0, 0, city.Plane, city.Banner)
         mainElement = &uilib.UIElement{
             Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(104, 28)
-                unitview.RenderCombatImage(screen, imageCache, &unit, options)
+                unitview.RenderCombatImage(screen, imageCache, bannerUnit, options)
 
                 options.GeoM.Reset()
                 options.GeoM.Translate(130, 7)
-                unitview.RenderUnitInfoBuild(screen, imageCache, &unit, descriptionFont, smallFont, options)
+                unitview.RenderUnitInfoBuild(screen, imageCache, bannerUnit, descriptionFont, smallFont, options)
 
                 options.GeoM.Reset()
                 options.GeoM.Translate(85, 48)
-                unitview.RenderUnitInfoStats(screen, imageCache, &unit, descriptionFont, smallFont, options)
+                unitview.RenderUnitInfoStats(screen, imageCache, bannerUnit, descriptionFont, smallFont, options)
 
                 options.GeoM.Reset()
                 options.GeoM.Translate(85, 108)
-                unitview.RenderUnitAbilities(screen, imageCache, &unit, mediumFont, options)
+                unitview.RenderUnitAbilities(screen, imageCache, bannerUnit, mediumFont, options)
             },
         }
         ui.AddElement(mainElement)

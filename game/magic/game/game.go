@@ -2500,7 +2500,7 @@ func (game *Game) CityProductionBonus(x int, y int) int {
 }
 
 func (game *Game) CreateOutpost(settlers *units.OverworldUnit, player *playerlib.Player) *citylib.City {
-    newCity := citylib.MakeCity("New City", settlers.X, settlers.Y, settlers.Unit.Race, player.TaxRate, game.BuildingInfo)
+    newCity := citylib.MakeCity("New City", settlers.X, settlers.Y, settlers.Unit.Race, settlers.GetBanner(), player.TaxRate, game.BuildingInfo)
     newCity.Plane = settlers.Plane
     newCity.Population = 1000
     newCity.Banner = player.Wizard.Banner

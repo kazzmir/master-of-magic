@@ -80,11 +80,12 @@ type City struct {
     BuildingInfo building.BuildingInfos
 }
 
-func MakeCity(name string, x int, y int,race data.Race, taxRate fraction.Fraction, buildingInfo building.BuildingInfos) *City {
+func MakeCity(name string, x int, y int, race data.Race, banner data.BannerType, taxRate fraction.Fraction, buildingInfo building.BuildingInfos) *City {
     city := City{
         Name: name,
         X: x,
         Y: y,
+        Banner: banner,
         Race: race,
         Buildings: set.MakeSet[building.Building](),
         TaxRate: taxRate,

@@ -4,6 +4,7 @@ import (
     "fmt"
 
     "github.com/kazzmir/master-of-magic/game/magic/units"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
 )
 
@@ -107,6 +108,10 @@ func (hero *Hero) GetPortraitLbxInfo() (string, int) {
     }
 
     return "", -1
+}
+
+func (hero *Hero) GetBanner() data.BannerType {
+    return hero.Unit.GetBanner()
 }
 
 func (hero *Hero) GetCombatLbxFile() string {
