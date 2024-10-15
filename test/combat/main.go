@@ -41,10 +41,7 @@ func createWarlockArmy(player *player.Player) combat.Army {
             },
             */
             &combat.ArmyUnit{
-                Unit: &units.OverworldUnit{
-                    Unit: units.Warlocks,
-                    Health: units.Warlocks.GetMaxHealth(),
-                },
+                Unit: units.MakeOverworldUnitFromUnit(units.Warlocks, 1, 1, data.PlaneArcanus, player.Wizard.Banner),
                 Facing: units.FacingDownRight,
                 X: 12,
                 Y: 10,
@@ -75,10 +72,7 @@ func createWarlockArmyN(player *player.Player, count int) *combat.Army {
     }
 
     for i := 0; i < count; i++ {
-        army.AddUnit(&units.OverworldUnit{
-            Unit: units.Warlocks,
-            Health: units.Warlocks.GetMaxHealth(),
-        })
+        army.AddUnit(units.MakeOverworldUnitFromUnit(units.Warlocks, 1, 1, data.PlaneArcanus, player.Wizard.Banner))
     }
 
     return &army
@@ -90,10 +84,7 @@ func createHighMenBowmanArmyN(player *player.Player, count int) combat.Army {
     }
 
     for i := 0; i < count; i++ {
-        army.AddUnit(&units.OverworldUnit{
-            Unit: units.HighMenBowmen,
-            Health: units.HighMenBowmen.GetMaxHealth(),
-        })
+        army.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenBowmen, 1, 1, data.PlaneArcanus, player.Wizard.Banner))
     }
 
     return army
@@ -104,10 +95,7 @@ func createHighMenBowmanArmy(player *player.Player) combat.Army {
         Player: player,
         Units: []*combat.ArmyUnit{
             &combat.ArmyUnit{
-                Unit: &units.OverworldUnit{
-                    Unit: units.HighMenBowmen,
-                    Health: units.HighMenBowmen.GetMaxHealth(),
-                },
+                Unit: units.MakeOverworldUnitFromUnit(units.HighMenBowmen, 1, 1, data.PlaneArcanus, player.Wizard.Banner),
                 Facing: units.FacingDownRight,
                 X: 12,
                 Y: 10,
@@ -121,19 +109,13 @@ func createGreatDrakeArmy(player *player.Player) *combat.Army{
         Player: player,
         Units: []*combat.ArmyUnit{
             &combat.ArmyUnit{
-                Unit: &units.OverworldUnit{
-                    Unit: units.GreatDrake,
-                    Health: units.GreatDrake.GetMaxHealth(),
-                },
+                Unit: units.MakeOverworldUnitFromUnit(units.GreatDrake, 1, 1, data.PlaneArcanus, player.Wizard.Banner),
                 Facing: units.FacingUpLeft,
                 X: 10,
                 Y: 17,
             },
             &combat.ArmyUnit{
-                Unit: &units.OverworldUnit{
-                    Unit: units.GreatDrake,
-                    Health: units.GreatDrake.GetMaxHealth(),
-                },
+                Unit: units.MakeOverworldUnitFromUnit(units.GreatDrake, 1, 1, data.PlaneArcanus, player.Wizard.Banner),
                 Facing: units.FacingUpLeft,
                 X: 9,
                 Y: 18,
