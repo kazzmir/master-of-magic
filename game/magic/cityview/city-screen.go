@@ -666,7 +666,7 @@ func (cityScreen *CityScreen) MakeUI() *uilib.UI {
 
     garrisonRow := 0
 
-    var garrison []*units.OverworldUnit
+    var garrison []units.StackUnit
 
     cityStack := cityScreen.Player.FindStack(cityScreen.City.X, cityScreen.City.Y)
     if cityStack != nil {
@@ -675,11 +675,11 @@ func (cityScreen *CityScreen) MakeUI() *uilib.UI {
 
     for _, unit := range garrison {
         func (){
-            garrisonBackground, err := units.GetUnitBackgroundImage(unit.Banner, &cityScreen.ImageCache)
+            garrisonBackground, err := units.GetUnitBackgroundImage(unit.GetBanner(), &cityScreen.ImageCache)
             if err != nil {
                 return
             }
-            pic, err := cityScreen.ImageCache.GetImage(unit.Unit.LbxFile, unit.Unit.Index, 0)
+            pic, err := cityScreen.ImageCache.GetImageTransform(unit.GetLbxFile(), unit.GetLbxIndex(), 0, unit.GetBanner().String(), units.MakeUpdateUnitColorsFunc(unit.GetBanner()))
             if err != nil {
                 return
             }
@@ -705,7 +705,7 @@ func (cityScreen *CityScreen) MakeUI() *uilib.UI {
                     options.GeoM.Translate(1, 1)
 
                     // draw in grey scale if the unit is on patrol
-                    if useUnit.Patrol {
+                    if useUnit.GetPatrol() {
                         matrix.ChangeHSV(0, 0, 1)
                     }
 

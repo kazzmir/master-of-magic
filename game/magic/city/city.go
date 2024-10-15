@@ -95,7 +95,7 @@ func MakeCity(name string, x int, y int, race data.Race, banner data.BannerType,
     return &city
 }
 
-func (city *City) UpdateTaxRate(taxRate fraction.Fraction, garrison []*units.OverworldUnit){
+func (city *City) UpdateTaxRate(taxRate fraction.Fraction, garrison []units.StackUnit){
     city.TaxRate = taxRate
     city.UpdateUnrest(garrison)
 }
@@ -174,7 +174,7 @@ func (city *City) NonRebels() int {
     return city.Citizens() - city.Rebels
 }
 
-func (city *City) ResetCitizens(garrison []*units.OverworldUnit) {
+func (city *City) ResetCitizens(garrison []units.StackUnit) {
     // try to leave farmers alone, but adjust them if necessary
     minimumFarmers := city.ComputeSubsistenceFarmers()
     if city.Farmers < minimumFarmers {
@@ -242,7 +242,7 @@ func (city *City) ComputePower() int {
     return power + religiousPower + int(citizenPower * float64(city.Citizens()))
 }
 
-func (city *City) UpdateUnrest(garrison []*units.OverworldUnit) {
+func (city *City) UpdateUnrest(garrison []units.StackUnit) {
     rebels := city.ComputeUnrest(garrison)
 
     if rebels > city.Rebels {
@@ -303,7 +303,7 @@ func oraclePacification(race data.Race) int {
     }
 }
 
-func (city *City) ComputeUnrest(garrison []*units.OverworldUnit) int {
+func (city *City) ComputeUnrest(garrison []units.StackUnit) int {
     unrestPercent := float64(0)
 
     // unrest percent from taxes
@@ -328,7 +328,7 @@ func (city *City) ComputeUnrest(garrison []*units.OverworldUnit) int {
     // supression from units
     garrisonSupression := float64(0)
     for _, unit := range garrison {
-        if unit.Unit.Race != data.RaceFantastic {
+        if unit.GetRace() != data.RaceFantastic {
             garrisonSupression += 1
         }
     }
@@ -561,7 +561,7 @@ func (city *City) WorkProductionRate() float32 {
 
 // do all the stuff needed per turn
 // increase population, add production, add food/money, etc
-func (city *City) DoNextTurn(garrison []*units.OverworldUnit) []CityEvent {
+func (city *City) DoNextTurn(garrison []units.StackUnit) []CityEvent {
     var cityEvents []CityEvent
 
     city.SoldBuilding = false

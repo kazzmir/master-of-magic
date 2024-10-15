@@ -1106,9 +1106,9 @@ func createScenario15(cache *lbx.LbxCache) *gamelib.Game {
     spear2 := player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, x+1, y, data.PlaneArcanus, wizard.Banner))
     spear3 := player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, x+1, y, data.PlaneArcanus, wizard.Banner))
     player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, x+1, y, data.PlaneArcanus, wizard.Banner))
-    spear1.Health /= 2
-    spear2.Health /= 3
-    spear3.Health -= 1
+    spear1.AdjustHealth(-spear1.GetHealth() / 2)
+    spear2.AdjustHealth(-spear2.GetHealth() / 3)
+    spear3.AdjustHealth(-1)
 
     stack := player.FindStackByUnit(spear1)
     player.SetSelectedStack(stack)
@@ -1185,11 +1185,10 @@ func createScenario16(cache *lbx.LbxCache) *gamelib.Game {
     spear3 := player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, x+1, y, data.PlaneArcanus, wizard.Banner))
     spear4 := player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, x+1, y, data.PlaneArcanus, wizard.Banner))
     spear5 := player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, x+1, y, data.PlaneArcanus, wizard.Banner))
-    spear1.Experience = 0
-    spear2.Experience = 30
-    spear3.Experience = 60
-    spear4.Experience = 100
-    spear5.Experience = 200
+    spear2.AddExperience(30)
+    spear3.AddExperience(60)
+    spear4.AddExperience(100)
+    spear5.AddExperience(200)
 
     stack := player.FindStackByUnit(spear1)
     player.SetSelectedStack(stack)
@@ -1329,6 +1328,78 @@ func createScenario17(cache *lbx.LbxCache) *gamelib.Game {
     return game
 }
 
+// show units with low health in overland
+func createScenario18(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 18")
+
+    wizard := setup.WizardCustom{
+        Name: "bob",
+        Banner: data.BannerBlue,
+        Race: data.RaceTroll,
+        Abilities: []setup.WizardAbility{
+            setup.AbilityAlchemy,
+            setup.AbilitySageMaster,
+        },
+        Books: []data.WizardBook{
+            data.WizardBook{
+                Magic: data.LifeMagic,
+                Count: 3,
+            },
+            data.WizardBook{
+                Magic: data.SorceryMagic,
+                Count: 8,
+            },
+        },
+    }
+
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
+
+    game.Plane = data.PlaneArcanus
+
+    player := game.AddPlayer(wizard, true)
+
+    x, y := game.FindValidCityLocation()
+
+    city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, player.TaxRate, game.BuildingInfo)
+    city.Population = 6190
+    city.Plane = data.PlaneArcanus
+    city.Banner = wizard.Banner
+    city.ProducingBuilding = buildinglib.BuildingGranary
+    city.ProducingUnit = units.UnitNone
+    city.Race = wizard.Race
+    city.Farmers = 3
+    city.Workers = 3
+    city.Wall = false
+
+    city.ResetCitizens(nil)
+
+    player.AddCity(city)
+
+    player.Gold = 83
+    player.Mana = 26
+
+    // game.Map.Map.Terrain[3][6] = terrain.TileNatureForest.Index
+
+    player.LiftFog(x, y, 3)
+
+    rakir := player.AddUnit(hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroRakir, x+1, y, data.PlaneArcanus, wizard.Banner), hero.HeroRakir, "bubba"))
+
+    stack := player.FindStackByUnit(rakir)
+    player.SetSelectedStack(stack)
+
+    player.LiftFog(stack.X(), stack.Y(), 2)
+
+    enemy1 := game.AddPlayer(setup.WizardCustom{
+        Name: "dingus",
+        Banner: data.BannerRed,
+    }, false)
+
+    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.Warlocks, x + 2, y + 2, data.PlaneArcanus, enemy1.Wizard.Banner))
+    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenBowmen, x + 2, y + 2, data.PlaneArcanus, enemy1.Wizard.Banner))
+
+    return game
+}
+
 func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
@@ -1352,6 +1423,7 @@ func NewEngine(scenario int) (*Engine, error) {
         case 15: game = createScenario15(cache)
         case 16: game = createScenario16(cache)
         case 17: game = createScenario17(cache)
+        case 18: game = createScenario18(cache)
         default: game = createScenario1(cache)
     }
 

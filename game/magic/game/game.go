@@ -202,15 +202,15 @@ func computeUnitBuildPowers(stack *playerlib.UnitStack) UnitBuildPowers {
     var powers UnitBuildPowers
 
     for _, check := range stack.ActiveUnits() {
-        if check.Unit.HasAbility(units.AbilityCreateOutpost) {
+        if check.HasAbility(units.AbilityCreateOutpost) {
             powers.CreateOutpost = true
         }
 
-        if check.Unit.HasAbility(units.AbilityMeld) {
+        if check.HasAbility(units.AbilityMeld) {
             powers.Meld = true
         }
 
-        if check.Unit.HasAbility(units.AbilityConstruction) {
+        if check.HasAbility(units.AbilityConstruction) {
             powers.BuildRoad = true
         }
     }
@@ -1130,7 +1130,7 @@ func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, sta
             stackOptions.GeoM.Translate(7, 55)
 
             for _, unit := range stack.Units() {
-                pic, _ := GetUnitImage(unit.Unit, &game.ImageCache, city.Banner)
+                pic, _ := GetUnitImage(unit, &game.ImageCache, city.Banner)
                 screen.DrawImage(pic, &stackOptions)
                 stackOptions.GeoM.Translate(float64(pic.Bounds().Dx()) + 1, 0)
             }
@@ -1918,7 +1918,7 @@ func (game *Game) doMagicEncounter(yield coroutine.YieldFunc, player *playerlib.
         },
     }
 
-    var enemies []*units.OverworldUnit
+    var enemies []units.StackUnit
 
     for _, unit := range node.Guardians {
         enemies = append(enemies, units.MakeOverworldUnit(unit))
@@ -1992,14 +1992,14 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
 
     if state == combat.CombatStateAttackerWin {
         for _, unit := range attackerStack.Units() {
-            if unit.Unit.Race != data.RaceFantastic {
-                unit.Experience += combatScreen.DefeatedDefenders * 2
+            if unit.GetRace() != data.RaceFantastic {
+                unit.AddExperience(combatScreen.DefeatedDefenders * 2)
             }
         }
     } else if state == combat.CombatStateDefenderWin {
         for _, unit := range defenderStack.Units() {
-            if unit.Unit.Race != data.RaceFantastic {
-                unit.Experience += combatScreen.DefeatedAttackers * 2
+            if unit.GetRace() != data.RaceFantastic {
+                unit.AddExperience(combatScreen.DefeatedAttackers * 2)
             }
         }
     }
@@ -2008,13 +2008,13 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     game.Drawer = oldDrawer
 
     for _, unit := range attackerStack.Units() {
-        if unit.Health <= 0 {
+        if unit.GetHealth() <= 0 {
             attacker.RemoveUnit(unit)
         }
     }
 
     for _, unit := range defenderStack.Units() {
-        if unit.Health <= 0 {
+        if unit.GetHealth() <= 0 {
             defender.RemoveUnit(unit)
         }
     }
@@ -2032,11 +2032,11 @@ func (game *Game) GetMainImage(index int) (*ebiten.Image, error) {
     return image, err
 }
 
-func GetUnitImage(unit units.Unit, imageCache *util.ImageCache, banner data.BannerType) (*ebiten.Image, error) {
-    image, err := imageCache.GetImageTransform(unit.LbxFile, unit.Index, 0, banner.String(), units.MakeUpdateUnitColorsFunc(banner))
+func GetUnitImage(unit units.StackUnit, imageCache *util.ImageCache, banner data.BannerType) (*ebiten.Image, error) {
+    image, err := imageCache.GetImageTransform(unit.GetLbxFile(), unit.GetLbxIndex(), 0, banner.String(), units.MakeUpdateUnitColorsFunc(banner))
 
     if err != nil {
-        log.Printf("Error: unit '%v' image in lbx file %v is missing: %v", unit.Name, unit.LbxFile, err)
+        log.Printf("Error: unit '%v' image in lbx file %v is missing: %v", unit.GetName(), unit.GetLbxFile(), err)
     }
 
     return image, err
@@ -2499,9 +2499,9 @@ func (game *Game) CityProductionBonus(x int, y int) int {
     return production
 }
 
-func (game *Game) CreateOutpost(settlers *units.OverworldUnit, player *playerlib.Player) *citylib.City {
-    newCity := citylib.MakeCity("New City", settlers.X, settlers.Y, settlers.Unit.Race, settlers.GetBanner(), player.TaxRate, game.BuildingInfo)
-    newCity.Plane = settlers.Plane
+func (game *Game) CreateOutpost(settlers units.StackUnit, player *playerlib.Player) *citylib.City {
+    newCity := citylib.MakeCity("New City", settlers.GetX(), settlers.GetY(), settlers.GetRace(), settlers.GetBanner(), player.TaxRate, game.BuildingInfo)
+    newCity.Plane = settlers.GetPlane()
     newCity.Population = 1000
     newCity.Banner = player.Wizard.Banner
     newCity.ProducingBuilding = buildinglib.BuildingHousing
@@ -2522,8 +2522,8 @@ func (game *Game) CreateOutpost(settlers *units.OverworldUnit, player *playerlib
     return newCity
 }
 
-func (game *Game) DoMeld(unit *units.OverworldUnit, player *playerlib.Player, node *ExtraMagicNode){
-    node.Meld(player, unit.Unit)
+func (game *Game) DoMeld(unit units.StackUnit, player *playerlib.Player, node *ExtraMagicNode){
+    node.Meld(player, unit.GetRawUnit())
     player.RemoveUnit(unit)
 }
 
@@ -2539,7 +2539,7 @@ func (game *Game) DoBuildAction(player *playerlib.Player){
             // search for the settlers (the only unit with the create outpost ability
             for _, settlers := range player.SelectedStack.ActiveUnits() {
                 // FIXME: check if this tile is valid to build an outpost on
-                if settlers.Unit.HasAbility(units.AbilityCreateOutpost) {
+                if settlers.HasAbility(units.AbilityCreateOutpost) {
                     game.CreateOutpost(settlers, player)
                     break
                 }
@@ -2547,7 +2547,7 @@ func (game *Game) DoBuildAction(player *playerlib.Player){
         } else if powers.Meld {
             node := game.Map.GetMagicNode(player.SelectedStack.X(), player.SelectedStack.Y())
             for _, melder := range player.SelectedStack.ActiveUnits() {
-                if melder.Unit.HasAbility(units.AbilityMeld) {
+                if melder.HasAbility(units.AbilityMeld) {
                     game.DoMeld(melder, player, node)
                     break
                 }
@@ -2707,23 +2707,23 @@ func (game *Game) MakeHudUI() *uilib.UI {
                     options.GeoM.Translate(1, 1)
 
                     if stack.IsActive(unit){
-                        unitBack, _ := units.GetUnitBackgroundImage(unit.Banner, &game.ImageCache)
+                        unitBack, _ := units.GetUnitBackgroundImage(unit.GetBanner(), &game.ImageCache)
                         screen.DrawImage(unitBack, &options)
                     }
 
                     options.GeoM.Translate(1, 1)
-                    unitImage, err := GetUnitImage(unit.Unit, &game.ImageCache, player.Wizard.Banner)
+                    unitImage, err := GetUnitImage(unit, &game.ImageCache, player.Wizard.Banner)
                     if err == nil {
                         screen.DrawImage(unitImage, &options)
                     }
 
-                    if unit.Health < unit.Unit.GetMaxHealth() {
+                    if unit.GetHealth() < unit.GetMaxHealth() {
                         highHealth := color.RGBA{R: 0, G: 0xff, B: 0, A: 0xff}
                         mediumHealth := color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff}
                         lowHealth := color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}
 
                         healthWidth := float64(10)
-                        healthPercent := float64(unit.Health) / float64(unit.Unit.GetMaxHealth())
+                        healthPercent := float64(unit.GetHealth()) / float64(unit.GetMaxHealth())
                         healthLength := healthWidth * healthPercent
 
                         // always show at least one point of health
@@ -2745,7 +2745,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                     }
 
                     // draw experience badges
-                    if unit.Unit.Race == data.RaceHero {
+                    if unit.GetRace() == data.RaceHero {
                     } else {
                         silverBadge := 51
                         goldBadge := 52
@@ -2753,7 +2753,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
                         count := 0
                         index := 0
-                        switch units.GetNormalExperienceLevel(unit.Experience, player.Wizard.AbilityEnabled(setup.AbilityWarlord), game.GlobalEnchantments.Contains(EnchantmentCrusade)) {
+                        switch units.GetNormalExperienceLevel(unit.GetExperience(), player.Wizard.AbilityEnabled(setup.AbilityWarlord), game.GlobalEnchantments.Contains(EnchantmentCrusade)) {
                             case units.ExperienceRecruit:
                                 // nothing
                             case units.ExperienceRegular:
@@ -2874,7 +2874,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                 player := game.Players[0]
                 if player.SelectedStack != nil {
                     for _, unit := range player.SelectedStack.ActiveUnits() {
-                        unit.Patrol = true
+                        unit.SetPatrol(true)
                     }
                 }
 
@@ -3227,8 +3227,8 @@ func (game *Game) DoNextTurn(){
 
             // every unit gains 1 experience at each turn
             for _, unit := range stack.Units() {
-                if unit.Unit.Race != data.RaceFantastic {
-                    unit.Experience += 1
+                if unit.GetRace() != data.RaceFantastic {
+                    unit.AddExperience(1)
                 }
             }
 
@@ -3522,12 +3522,12 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
             x, y := convertTileCoordinates(float64(stack.X()) + stack.OffsetX(), float64(stack.Y()) + stack.OffsetY())
             options.GeoM.Translate(x, y)
 
-            unitBack, err := units.GetUnitBackgroundImage(stack.Leader().Banner, overworld.ImageCache)
+            unitBack, err := units.GetUnitBackgroundImage(stack.Leader().GetBanner(), overworld.ImageCache)
             if err == nil {
                 screen.DrawImage(unitBack, &options)
             }
 
-            pic, err := GetUnitImage(stack.Leader().Unit, overworld.ImageCache, stack.Leader().Banner)
+            pic, err := GetUnitImage(stack.Leader(), overworld.ImageCache, stack.Leader().GetBanner())
             if err == nil {
                 options.GeoM.Translate(1, 1)
                 screen.DrawImage(pic, &options)

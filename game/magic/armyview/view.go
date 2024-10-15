@@ -54,7 +54,7 @@ func MakeArmyScreen(cache *lbx.LbxCache, player *playerlib.Player, drawMinimap f
 }
 
 func (view *ArmyScreen) MakeUI() *uilib.UI {
-    var highlightedUnit *units.OverworldUnit
+    var highlightedUnit units.StackUnit
 
     fontLbx, err := view.Cache.GetLbxFile("fonts.lbx")
     if err != nil {
@@ -108,21 +108,21 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
             bigFont.PrintCenter(screen, 160, 10, 1, options.ColorScale, fmt.Sprintf("The Armies Of %v", view.Player.Wizard.Name))
 
             if highlightedUnit != nil {
-                raceName := highlightedUnit.Unit.Race.String()
-                normalFont.PrintCenter(screen, 190, 162, 1, options.ColorScale, fmt.Sprintf("%v %v", raceName, highlightedUnit.Unit.Name))
+                raceName := highlightedUnit.GetRace().String()
+                normalFont.PrintCenter(screen, 190, 162, 1, options.ColorScale, fmt.Sprintf("%v %v", raceName, highlightedUnit.GetName()))
 
                 normalFont.PrintCenter(screen, 30, 162, 1, options.ColorScale, "UPKEEP")
 
-                normalFont.PrintCenter(screen, 45, 170, 1, options.ColorScale, fmt.Sprintf("%v", highlightedUnit.Unit.UpkeepGold))
-                normalFont.PrintCenter(screen, 45, 180, 1, options.ColorScale, fmt.Sprintf("%v", highlightedUnit.Unit.UpkeepMana))
-                normalFont.PrintCenter(screen, 45, 190, 1, options.ColorScale, fmt.Sprintf("%v", highlightedUnit.Unit.UpkeepFood))
+                normalFont.PrintCenter(screen, 45, 170, 1, options.ColorScale, fmt.Sprintf("%v", highlightedUnit.GetUpkeepGold()))
+                normalFont.PrintCenter(screen, 45, 180, 1, options.ColorScale, fmt.Sprintf("%v", highlightedUnit.GetUpkeepMana()))
+                normalFont.PrintCenter(screen, 45, 190, 1, options.ColorScale, fmt.Sprintf("%v", highlightedUnit.GetUpkeepFood()))
             }
 
             minimapRect := image.Rect(85, 163, 135, 197)
             minimapArea := screen.SubImage(minimapRect).(*ebiten.Image)
 
             if highlightedUnit != nil {
-                view.DrawMinimap(minimapArea, highlightedUnit.X, highlightedUnit.Y, view.Player.GetFog(highlightedUnit.Plane), this.Counter)
+                view.DrawMinimap(minimapArea, highlightedUnit.GetX(), highlightedUnit.GetY(), view.Player.GetFog(highlightedUnit.GetPlane()), this.Counter)
             } else {
                 // just choose random point
                 view.DrawMinimap(minimapArea, 10, 10, view.Player.GetFog(data.PlaneArcanus), this.Counter)
@@ -214,7 +214,7 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
             if highlightedUnit == nil {
                 highlightedUnit = unit
             }
-            pic, _ := view.ImageCache.GetImageTransform(unit.Unit.LbxFile, unit.Unit.Index, 0, banner.String(), units.MakeUpdateUnitColorsFunc(banner))
+            pic, _ := view.ImageCache.GetImageTransform(unit.GetLbxFile(), unit.GetLbxIndex(), 0, banner.String(), units.MakeUpdateUnitColorsFunc(banner))
             if pic != nil {
                 elements = append(elements, &uilib.UIElement{
                     Rect: util.ImageRect(int(elementX), int(elementY), pic),
@@ -235,7 +235,7 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
                             vector.DrawFilledRect(screen, float32(x), float32(y+1), float32(pic.Bounds().Dx()), float32(pic.Bounds().Dy())-1, highlightColor, false)
                         }
 
-                        if unit.Patrol {
+                        if unit.GetPatrol() {
                             matrix.ChangeHSV(0, 0, 1)
                         }
 
