@@ -147,10 +147,7 @@ func createSettlerArmy(player *player.Player, count int) *combat.Army{
 
     for i := 0; i < count; i++ {
         armyUnits = append(armyUnits, &combat.ArmyUnit{
-            Unit: &units.OverworldUnit{
-                Unit: units.HighElfSettlers,
-                Health: units.HighElfSettlers.GetMaxHealth(),
-            },
+            Unit: units.MakeOverworldUnitFromUnit(units.HighElfSettlers, 1, 1, data.PlaneArcanus, player.Wizard.Banner),
             Facing: units.FacingUpLeft,
             X: 10,
             Y: 17,

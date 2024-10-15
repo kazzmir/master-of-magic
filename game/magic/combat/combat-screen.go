@@ -107,6 +107,7 @@ type CombatUnit interface {
     GetDefense() int
     GetResistance() int
     AdjustHealth(int)
+    GetBanner() data.BannerType
     GetRangedAttackDamageType() units.Damage
     GetRangedAttackPower() int
     GetMeleeAttackPower() int
@@ -1673,7 +1674,7 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
 
             if combat.SelectedUnit != nil {
 
-                rightImage, _ := combat.ImageCache.GetImage(combat.SelectedUnit.Unit.GetCombatLbxFile(), combat.SelectedUnit.Unit.GetCombatIndex(units.FacingRight), 0)
+                rightImage, _ := combat.ImageCache.GetImageTransform(combat.SelectedUnit.Unit.GetCombatLbxFile(), combat.SelectedUnit.Unit.GetCombatIndex(units.FacingRight), 0, player.Wizard.Banner.String(), units.MakeUpdateUnitColorsFunc(player.Wizard.Banner))
                 options.GeoM.Reset()
                 options.GeoM.Translate(89, 170)
                 screen.DrawImage(rightImage, &options)
@@ -3098,7 +3099,8 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
     }
 
     renderUnit := func(unit *ArmyUnit){
-        combatImages, _ := combat.ImageCache.GetImages(unit.Unit.GetCombatLbxFile(), unit.Unit.GetCombatIndex(unit.Facing))
+        banner := unit.Unit.GetBanner()
+        combatImages, _ := combat.ImageCache.GetImagesTransform(unit.Unit.GetCombatLbxFile(), unit.Unit.GetCombatIndex(unit.Facing), banner.String(), units.MakeUpdateUnitColorsFunc(banner))
 
         if combatImages != nil {
             var unitOptions ebiten.DrawImageOptions
