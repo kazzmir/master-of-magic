@@ -1130,7 +1130,7 @@ func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, sta
             stackOptions.GeoM.Translate(7, 55)
 
             for _, unit := range stack.Units() {
-                pic, _ := GetUnitImage(unit.Unit, &game.ImageCache)
+                pic, _ := GetUnitImage(unit.Unit, &game.ImageCache, city.Banner)
                 screen.DrawImage(pic, &stackOptions)
                 stackOptions.GeoM.Translate(float64(pic.Bounds().Dx()) + 1, 0)
             }
@@ -2032,8 +2032,31 @@ func (game *Game) GetMainImage(index int) (*ebiten.Image, error) {
     return image, err
 }
 
-func GetUnitImage(unit units.Unit, imageCache *util.ImageCache) (*ebiten.Image, error) {
-    image, err := imageCache.GetImage(unit.LbxFile, unit.Index, 0)
+func GetUnitImage(unit units.Unit, imageCache *util.ImageCache, banner data.BannerType) (*ebiten.Image, error) {
+    updateColors := func (original *image.Paletted) image.Image {
+
+        var baseColor color.RGBA
+
+        switch banner {
+            case data.BannerBlue: baseColor = color.RGBA{R: 0x00, G: 0x00, B: 0xff, A: 0xff}
+            // don't really need to do anything for green because the base color is green
+            case data.BannerGreen: baseColor = color.RGBA{R: 0x00, G: 0xf0, B: 0x00, A: 0xff}
+            case data.BannerPurple: baseColor = color.RGBA{R: 0x8f, G: 0x30, B: 0xff, A: 0xff}
+            case data.BannerRed: baseColor = color.RGBA{R: 0xff, G: 0x00, B: 0x00, A: 0xff}
+            case data.BannerYellow: baseColor = color.RGBA{R: 0xff, G: 0xff, B: 0x00, A: 0xff}
+            case data.BannerBrown: baseColor = color.RGBA{R: 0xce, G: 0x65, B: 0x00, A: 0xff}
+        }
+
+        light := float64(10)
+        for i := 0; i < 4; i++ {
+            original.Palette[215 + i] = util.Lighten(baseColor, light)
+            light -= 10
+        }
+
+        return original
+    }
+
+    image, err := imageCache.GetImageTransform(unit.LbxFile, unit.Index, 0, banner.String(), updateColors)
 
     if err != nil {
         log.Printf("Error: unit '%v' image in lbx file %v is missing: %v", unit.Name, unit.LbxFile, err)
@@ -2712,7 +2735,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                     }
 
                     options.GeoM.Translate(1, 1)
-                    unitImage, err := GetUnitImage(unit.Unit, &game.ImageCache)
+                    unitImage, err := GetUnitImage(unit.Unit, &game.ImageCache, player.Wizard.Banner)
                     if err == nil {
                         screen.DrawImage(unitImage, &options)
                     }
@@ -3527,7 +3550,7 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
                 screen.DrawImage(unitBack, &options)
             }
 
-            pic, err := GetUnitImage(stack.Leader().Unit, overworld.ImageCache)
+            pic, err := GetUnitImage(stack.Leader().Unit, overworld.ImageCache, stack.Leader().Banner)
             if err == nil {
                 options.GeoM.Translate(1, 1)
                 screen.DrawImage(pic, &options)
