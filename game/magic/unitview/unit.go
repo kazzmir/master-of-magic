@@ -15,7 +15,7 @@ import (
 )
 
 func RenderCombatImage(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitView, options ebiten.DrawImageOptions) {
-    images, err := imageCache.GetImages(unit.GetCombatLbxFile(), unit.GetCombatIndex(units.FacingRight))
+    images, err := imageCache.GetImagesTransform(unit.GetCombatLbxFile(), unit.GetCombatIndex(units.FacingRight), unit.GetBanner().String(), units.MakeUpdateUnitColorsFunc(unit.GetBanner()))
     if err == nil && len(images) > 2 {
         use := images[2]
         // log.Printf("unitview.RenderCombatImage: %v", use.Bounds())

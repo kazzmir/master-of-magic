@@ -85,7 +85,7 @@ func MakeHelpElementWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.Imag
     var extraImage *ebiten.Image
     if help.Lbx != "" {
         // fmt.Printf("Load extra image from %v index %v\n", help.Lbx, help.LbxIndex)
-        use, err := imageCache.GetImageTransform(help.Lbx, help.LbxIndex, 0, util.AutoCrop)
+        use, err := imageCache.GetImageTransform(help.Lbx, help.LbxIndex, 0, "crop", util.AutoCrop)
         if err == nil && use != nil {
             extraImage = use
         }

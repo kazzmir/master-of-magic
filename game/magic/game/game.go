@@ -851,7 +851,7 @@ func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City,
     // bird: 53
     // snake: 54
     // beetle: 55
-    snake, _ := game.ImageCache.GetImageTransform("resource.lbx", 54, 0, util.AutoCrop)
+    snake, _ := game.ImageCache.GetImageTransform("resource.lbx", 54, 0, "crop", util.AutoCrop)
 
     wrappedText := bigFont.CreateWrappedText(180, 1, fmt.Sprintf("The %s of %s has completed the construction of a %s.", city.GetSize(), city.Name, game.BuildingInfo.Name(building)))
 
@@ -859,7 +859,7 @@ func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City,
 
     getAlpha := util.MakeFadeIn(7, &game.Counter)
 
-    buildingPics, err := game.ImageCache.GetImagesTransform("cityscap.lbx", buildinglib.GetBuildingIndex(building), util.AutoCrop)
+    buildingPics, err := game.ImageCache.GetImagesTransform("cityscap.lbx", buildinglib.GetBuildingIndex(building), "crop", util.AutoCrop)
 
     if err != nil {
         log.Printf("Error: Unable to get building picture for %v: %v", game.BuildingInfo.Name(building), err)
@@ -1130,7 +1130,7 @@ func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, sta
             stackOptions.GeoM.Translate(7, 55)
 
             for _, unit := range stack.Units() {
-                pic, _ := GetUnitImage(unit.Unit, &game.ImageCache)
+                pic, _ := GetUnitImage(unit.Unit, &game.ImageCache, city.Banner)
                 screen.DrawImage(pic, &stackOptions)
                 stackOptions.GeoM.Translate(float64(pic.Bounds().Dx()) + 1, 0)
             }
@@ -2032,8 +2032,8 @@ func (game *Game) GetMainImage(index int) (*ebiten.Image, error) {
     return image, err
 }
 
-func GetUnitImage(unit units.Unit, imageCache *util.ImageCache) (*ebiten.Image, error) {
-    image, err := imageCache.GetImage(unit.LbxFile, unit.Index, 0)
+func GetUnitImage(unit units.Unit, imageCache *util.ImageCache, banner data.BannerType) (*ebiten.Image, error) {
+    image, err := imageCache.GetImageTransform(unit.LbxFile, unit.Index, 0, banner.String(), units.MakeUpdateUnitColorsFunc(banner))
 
     if err != nil {
         log.Printf("Error: unit '%v' image in lbx file %v is missing: %v", unit.Name, unit.LbxFile, err)
@@ -2053,14 +2053,14 @@ func GetCityNoWallImage(size citylib.CitySize, cache *util.ImageCache) (*ebiten.
         case citylib.CitySizeCapital: index = 4
     }
 
-    // the city image is a sub-frame of animation 20
-    return cache.GetImage("mapback.lbx", 20, index)
+    // the city image is a sub-frame of animation 21
+    return cache.GetImage("mapback.lbx", 21, index)
 }
 
-func GetCityWallImage(size citylib.CitySize, cache *util.ImageCache) (*ebiten.Image, error) {
+func GetCityWallImage(city *citylib.City, cache *util.ImageCache) (*ebiten.Image, error) {
     var index int = 0
 
-    switch size {
+    switch city.GetSize() {
         case citylib.CitySizeHamlet: index = 0
         case citylib.CitySizeVillage: index = 1
         case citylib.CitySizeTown: index = 2
@@ -2068,8 +2068,8 @@ func GetCityWallImage(size citylib.CitySize, cache *util.ImageCache) (*ebiten.Im
         case citylib.CitySizeCapital: index = 4
     }
 
-    // the city image is a sub-frame of animation 21
-    return cache.GetImage("mapback.lbx", 21, index)
+    // the city image is a sub-frame of animation 20
+    return cache.GetImageTransform("mapback.lbx", 20, index, city.Banner.String(), units.MakeUpdateUnitColorsFunc(city.Banner))
 }
 
 func (game *Game) ShowGrandVizierUI(){
@@ -2500,7 +2500,7 @@ func (game *Game) CityProductionBonus(x int, y int) int {
 }
 
 func (game *Game) CreateOutpost(settlers *units.OverworldUnit, player *playerlib.Player) *citylib.City {
-    newCity := citylib.MakeCity("New City", settlers.X, settlers.Y, settlers.Unit.Race, player.TaxRate, game.BuildingInfo)
+    newCity := citylib.MakeCity("New City", settlers.X, settlers.Y, settlers.Unit.Race, settlers.GetBanner(), player.TaxRate, game.BuildingInfo)
     newCity.Plane = settlers.Plane
     newCity.Population = 1000
     newCity.Banner = player.Wizard.Banner
@@ -2712,7 +2712,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                     }
 
                     options.GeoM.Translate(1, 1)
-                    unitImage, err := GetUnitImage(unit.Unit, &game.ImageCache)
+                    unitImage, err := GetUnitImage(unit.Unit, &game.ImageCache, player.Wizard.Banner)
                     if err == nil {
                         screen.DrawImage(unitImage, &options)
                     }
@@ -3487,11 +3487,14 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
     for _, city := range overworld.Cities {
         var cityPic *ebiten.Image
         var err error
+        cityPic, err = GetCityWallImage(city, overworld.ImageCache)
+        /*
         if city.Wall {
             cityPic, err = GetCityWallImage(city.GetSize(), overworld.ImageCache)
         } else {
             cityPic, err = GetCityNoWallImage(city.GetSize(), overworld.ImageCache)
         }
+        */
 
         if err == nil {
             var options ebiten.DrawImageOptions
@@ -3524,7 +3527,7 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
                 screen.DrawImage(unitBack, &options)
             }
 
-            pic, err := GetUnitImage(stack.Leader().Unit, overworld.ImageCache)
+            pic, err := GetUnitImage(stack.Leader().Unit, overworld.ImageCache, stack.Leader().Banner)
             if err == nil {
                 options.GeoM.Translate(1, 1)
                 screen.DrawImage(pic, &options)

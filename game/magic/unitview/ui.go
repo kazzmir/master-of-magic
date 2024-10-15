@@ -10,12 +10,14 @@ import (
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/util"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
 
     "github.com/hajimehoshi/ebiten/v2"
 )
 
 type UnitView interface {
     GetName() string
+    GetBanner() data.BannerType
     GetCombatLbxFile() string
     GetCombatIndex(units.Facing) int
     GetCount() int
