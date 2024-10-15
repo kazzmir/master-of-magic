@@ -14,6 +14,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/player"
+    herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
 
     "github.com/hajimehoshi/ebiten/v2"
@@ -142,6 +143,23 @@ func createSettlerArmy(player *player.Player, count int) *combat.Army{
     }
 }
 
+func createHeroArmy(player *player.Player) *combat.Army{
+    var armyUnits []*combat.ArmyUnit
+
+    armyUnits = append(armyUnits, &combat.ArmyUnit{
+        Unit: herolib.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroRakir, 1, 1, data.PlaneArcanus, player.Wizard.Banner), herolib.HeroRakir, "bubba"),
+    })
+
+    armyUnits = append(armyUnits, &combat.ArmyUnit{
+        Unit: herolib.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroWarrax, 1, 1, data.PlaneArcanus, player.Wizard.Banner), herolib.HeroWarrax, "warby"),
+    })
+
+    return &combat.Army{
+        Player: player,
+        Units: armyUnits,
+    }
+}
+
 func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
     defendingPlayer := player.Player{
         Wizard: setup.WizardCustom{
@@ -249,6 +267,43 @@ func makeScenario2(cache *lbx.LbxCache) *combat.CombatScreen {
     return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, &attackingPlayer)
 }
 
+func makeScenario3(cache *lbx.LbxCache) *combat.CombatScreen {
+    defendingPlayer := player.Player{
+        Wizard: setup.WizardCustom{
+            Name: "Lair",
+            Banner: data.BannerBlue,
+        },
+        Human: false,
+    }
+
+    // defendingArmy := createWarlockArmy(&defendingPlayer)
+    defendingArmy := createSettlerArmy(&defendingPlayer, 3)
+    defendingArmy.LayoutUnits(combat.TeamDefender)
+
+    /*
+    allSpells, err := spellbook.ReadSpellsFromCache(cache)
+    if err != nil {
+        log.Printf("Unable to read spells: %v", err)
+        allSpells = spellbook.Spells{}
+    }
+    */
+
+    attackingPlayer := player.Player{
+        Wizard: setup.WizardCustom{
+            Name: "Merlin",
+            Banner: data.BannerRed,
+        },
+        CastingSkillPower: 10,
+        Human: true,
+    }
+
+    // attackingArmy := createGreatDrakeArmy(&attackingPlayer)
+    attackingArmy := createHeroArmy(&attackingPlayer)
+    attackingArmy.LayoutUnits(combat.TeamAttacker)
+
+    return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, &attackingPlayer)
+}
+
 func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
@@ -257,6 +312,7 @@ func NewEngine(scenario int) (*Engine, error) {
     switch scenario {
         case 1: combatScreen = makeScenario1(cache)
         case 2: combatScreen = makeScenario2(cache)
+        case 3: combatScreen = makeScenario3(cache)
         default: combatScreen = makeScenario1(cache)
     }
 

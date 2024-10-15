@@ -110,6 +110,50 @@ func (hero *Hero) GetPortraitLbxInfo() (string, int) {
     return "", -1
 }
 
+func (hero *Hero) AdjustHealth(amount int) {
+    hero.Unit.AdjustHealth(amount)
+}
+
+func (hero *Hero) GetCombatRangeIndex(facing units.Facing) int {
+    return hero.Unit.GetCombatRangeIndex(facing)
+}
+
+func (hero *Hero) GetHealth() int {
+    return hero.Unit.GetHealth()
+}
+
+func (hero *Hero) GetMaxHealth() int {
+    return hero.Unit.GetMaxHealth()
+}
+
+func (hero *Hero) GetAttackSound() units.AttackSound {
+    return hero.Unit.GetAttackSound()
+}
+
+func (hero *Hero) GetMovementSound() units.MovementSound {
+    return hero.Unit.GetMovementSound()
+}
+
+func (hero *Hero) GetRangeAttackSound() units.RangeAttackSound {
+    return hero.Unit.GetRangeAttackSound()
+}
+
+func (hero *Hero) GetRangedAttackDamageType() units.Damage {
+    return hero.Unit.GetRangedAttackDamageType()
+}
+
+func (hero *Hero) GetRangedAttacks() int {
+    return hero.Unit.GetRangedAttacks()
+}
+
+func (hero *Hero) HasAbility(ability units.Ability) bool {
+    return hero.Unit.HasAbility(ability)
+}
+
+func (hero *Hero) IsFlying() bool {
+    return hero.Unit.IsFlying()
+}
+
 func (hero *Hero) GetBanner() data.BannerType {
     return hero.Unit.GetBanner()
 }
