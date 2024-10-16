@@ -86,8 +86,8 @@ func (unit *OverworldUnit) AdjustHealth(amount int) {
         unit.Health = 0
     }
 
-    if unit.Health > unit.Unit.GetMaxHealth() {
-        unit.Health = unit.Unit.GetMaxHealth()
+    if unit.Health > unit.GetMaxHealth() {
+        unit.Health = unit.GetMaxHealth()
     }
 }
 
@@ -112,7 +112,7 @@ func (unit *OverworldUnit) GetHealth() int {
 }
 
 func (unit *OverworldUnit) GetMaxHealth() int {
-    return unit.Unit.GetMaxHealth()
+    return unit.GetHitPoints() * unit.GetCount()
 }
 
 func (unit *OverworldUnit) GetRangedAttackDamageType() Damage {
@@ -224,7 +224,19 @@ func (unit *OverworldUnit) GetDefense() int {
 }
 
 func (unit *OverworldUnit) GetResistance() int {
-    return unit.Unit.GetResistance()
+    base := unit.GetBaseResistance()
+
+    level := unit.GetExperienceLevel()
+    switch level {
+        case ExperienceRecruit:
+        case ExperienceRegular: base += 1
+        case ExperienceVeteran: base += 2
+        case ExperienceElite: base += 3
+        case ExperienceUltraElite: base += 4
+        case ExperienceChampionNormal: base += 5
+    }
+
+    return base
 }
 
 func (unit *OverworldUnit) GetBaseResistance() int {
@@ -232,7 +244,19 @@ func (unit *OverworldUnit) GetBaseResistance() int {
 }
 
 func (unit *OverworldUnit) GetHitPoints() int {
-    return unit.Unit.GetHitPoints()
+    base := unit.GetBaseHitPoints()
+
+    level := unit.GetExperienceLevel()
+    switch level {
+        case ExperienceRecruit:
+        case ExperienceRegular:
+        case ExperienceVeteran:
+        case ExperienceElite: base += 1
+        case ExperienceUltraElite: base += 1
+        case ExperienceChampionNormal: base += 2
+    }
+
+    return base
 }
 
 func (unit *OverworldUnit) GetBaseHitPoints() int {
@@ -265,7 +289,7 @@ func MakeOverworldUnitFromUnit(unit Unit, x int, y int, plane data.Plane, banner
  * FIXME: take bonuses into account (city garrison, healer ability, etc)
  */
 func (unit *OverworldUnit) NaturalHeal() {
-    maxHealth := unit.Unit.GetMaxHealth()
+    maxHealth := unit.GetMaxHealth()
     amount := float64(maxHealth) * 5 / 100
     if amount < 1 {
         amount = 1
