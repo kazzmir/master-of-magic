@@ -55,5 +55,6 @@ type StackUnit interface {
     AddExperience(int)
     GetExperience() int
     GetRawUnit() Unit
+    GetToHitMelee() int
 }
 

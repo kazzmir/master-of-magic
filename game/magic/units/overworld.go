@@ -17,6 +17,7 @@ type OverworldUnit struct {
     Health int
     // to get the level, use the conversion functions in experience.go
     Experience int
+    ExperienceInfo ExperienceInfo
 }
 
 func (unit *OverworldUnit) GetLbxFile() string {
@@ -85,8 +86,8 @@ func (unit *OverworldUnit) AdjustHealth(amount int) {
         unit.Health = 0
     }
 
-    if unit.Health > unit.Unit.GetMaxHealth() {
-        unit.Health = unit.Unit.GetMaxHealth()
+    if unit.Health > unit.GetMaxHealth() {
+        unit.Health = unit.GetMaxHealth()
     }
 }
 
@@ -111,7 +112,23 @@ func (unit *OverworldUnit) GetHealth() int {
 }
 
 func (unit *OverworldUnit) GetMaxHealth() int {
-    return unit.Unit.GetMaxHealth()
+    return unit.GetHitPoints() * unit.GetCount()
+}
+
+func (unit *OverworldUnit) GetToHitMelee() int {
+    base := 30
+
+    level := unit.GetExperienceLevel()
+    switch level {
+        case ExperienceRecruit:
+        case ExperienceRegular:
+        case ExperienceVeteran:
+        case ExperienceElite: base += 10
+        case ExperienceUltraElite: base += 20
+        case ExperienceChampionNormal: base += 30
+    }
+
+    return base
 }
 
 func (unit *OverworldUnit) GetRangedAttackDamageType() Damage {
@@ -167,15 +184,40 @@ func (unit *OverworldUnit) GetProductionCost() int {
 }
 
 func (unit *OverworldUnit) GetBaseMeleeAttackPower() int {
-    return unit.GetMeleeAttackPower()
-}
-
-func (unit *OverworldUnit) GetMeleeAttackPower() int {
     return unit.Unit.GetMeleeAttackPower()
 }
 
+func (unit *OverworldUnit) GetExperienceLevel() NormalExperienceLevel {
+    // fantastic creatures can never gain any levels
+    if unit.GetRace() == data.RaceFantastic {
+        return ExperienceRecruit
+    }
+
+    if unit.ExperienceInfo != nil {
+        return GetNormalExperienceLevel(unit.Experience, unit.ExperienceInfo.HasWarlord(), unit.ExperienceInfo.Crusade())
+    }
+
+    return ExperienceRecruit
+}
+
+func (unit *OverworldUnit) GetMeleeAttackPower() int {
+    power := unit.GetBaseMeleeAttackPower()
+
+    level := unit.GetExperienceLevel()
+    switch level {
+        case ExperienceRecruit:
+        case ExperienceRegular: power += 1
+        case ExperienceVeteran: power += 1
+        case ExperienceElite: power += 2
+        case ExperienceUltraElite: power += 2
+        case ExperienceChampionNormal: power += 3
+    }
+
+    return power
+}
+
 func (unit *OverworldUnit) GetBaseRangedAttackPower() int {
-    return unit.GetRangedAttackPower()
+    return unit.Unit.GetRangedAttackPower()
 }
 
 func (unit *OverworldUnit) GetRangedAttackPower() int {
@@ -187,11 +229,35 @@ func (unit *OverworldUnit) GetBaseDefense() int {
 }
 
 func (unit *OverworldUnit) GetDefense() int {
-    return unit.Unit.GetDefense()
+    defense := unit.GetBaseDefense()
+
+    level := unit.GetExperienceLevel()
+    switch level {
+        case ExperienceRecruit:
+        case ExperienceRegular:
+        case ExperienceVeteran: defense += 1
+        case ExperienceElite: defense += 1
+        case ExperienceUltraElite: defense += 2
+        case ExperienceChampionNormal: defense += 2
+    }
+
+    return defense
 }
 
 func (unit *OverworldUnit) GetResistance() int {
-    return unit.Unit.GetResistance()
+    base := unit.GetBaseResistance()
+
+    level := unit.GetExperienceLevel()
+    switch level {
+        case ExperienceRecruit:
+        case ExperienceRegular: base += 1
+        case ExperienceVeteran: base += 2
+        case ExperienceElite: base += 3
+        case ExperienceUltraElite: base += 4
+        case ExperienceChampionNormal: base += 5
+    }
+
+    return base
 }
 
 func (unit *OverworldUnit) GetBaseResistance() int {
@@ -199,7 +265,19 @@ func (unit *OverworldUnit) GetBaseResistance() int {
 }
 
 func (unit *OverworldUnit) GetHitPoints() int {
-    return unit.Unit.GetHitPoints()
+    base := unit.GetBaseHitPoints()
+
+    level := unit.GetExperienceLevel()
+    switch level {
+        case ExperienceRecruit:
+        case ExperienceRegular:
+        case ExperienceVeteran:
+        case ExperienceElite: base += 1
+        case ExperienceUltraElite: base += 1
+        case ExperienceChampionNormal: base += 2
+    }
+
+    return base
 }
 
 func (unit *OverworldUnit) GetBaseHitPoints() int {
@@ -211,10 +289,10 @@ func (unit *OverworldUnit) GetAbilities() []Ability {
 }
 
 func MakeOverworldUnit(unit Unit) *OverworldUnit {
-    return MakeOverworldUnitFromUnit(unit, 0, 0, data.PlaneArcanus, data.BannerBrown)
+    return MakeOverworldUnitFromUnit(unit, 0, 0, data.PlaneArcanus, data.BannerBrown, nil)
 }
 
-func MakeOverworldUnitFromUnit(unit Unit, x int, y int, plane data.Plane, banner data.BannerType) *OverworldUnit {
+func MakeOverworldUnitFromUnit(unit Unit, x int, y int, plane data.Plane, banner data.BannerType, experienceInfo ExperienceInfo) *OverworldUnit {
     return &OverworldUnit{
         Unit: unit,
         Banner: banner,
@@ -222,6 +300,7 @@ func MakeOverworldUnitFromUnit(unit Unit, x int, y int, plane data.Plane, banner
         MovesLeft: fraction.FromInt(unit.MovementSpeed),
         Patrol: false,
         Health: unit.GetMaxHealth(),
+        ExperienceInfo: experienceInfo,
         X: x,
         Y: y,
     }
@@ -231,7 +310,7 @@ func MakeOverworldUnitFromUnit(unit Unit, x int, y int, plane data.Plane, banner
  * FIXME: take bonuses into account (city garrison, healer ability, etc)
  */
 func (unit *OverworldUnit) NaturalHeal() {
-    maxHealth := unit.Unit.GetMaxHealth()
+    maxHealth := unit.GetMaxHealth()
     amount := float64(maxHealth) * 5 / 100
     if amount < 1 {
         amount = 1

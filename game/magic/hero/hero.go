@@ -135,6 +135,10 @@ func (hero *Hero) GetExperience() int {
     return hero.Unit.GetExperience()
 }
 
+func (hero *Hero) GetToHitMelee() int {
+    return hero.Unit.GetToHitMelee()
+}
+
 func (hero *Hero) GetLbxFile() string {
     return hero.Unit.GetLbxFile()
 }

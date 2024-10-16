@@ -96,6 +96,24 @@ func (player *Player) FindSummoningCity() *citylib.City {
     return nil
 }
 
+type playerExperience struct {
+    Player *Player
+}
+
+func (experience *playerExperience) HasWarlord() bool {
+    return experience.Player.Wizard.AbilityEnabled(setup.AbilityWarlord)
+}
+
+func (experience *playerExperience) Crusade() bool {
+    return false
+}
+
+func (player *Player) MakeExperienceInfo() units.ExperienceInfo {
+    return &playerExperience{
+        Player: player,
+    }
+}
+
 func (player *Player) LearnSpell(spell spellbook.Spell) {
     player.ResearchCandidateSpells.RemoveSpell(spell)
     player.KnownSpells.AddSpell(spell)

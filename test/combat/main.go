@@ -42,7 +42,7 @@ func createWarlockArmy(player *player.Player) combat.Army {
             },
             */
             &combat.ArmyUnit{
-                Unit: units.MakeOverworldUnitFromUnit(units.Warlocks, 1, 1, data.PlaneArcanus, player.Wizard.Banner),
+                Unit: units.MakeOverworldUnitFromUnit(units.Warlocks, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()),
                 Facing: units.FacingDownRight,
                 X: 12,
                 Y: 10,
@@ -73,7 +73,7 @@ func createWarlockArmyN(player *player.Player, count int) *combat.Army {
     }
 
     for i := 0; i < count; i++ {
-        army.AddUnit(units.MakeOverworldUnitFromUnit(units.Warlocks, 1, 1, data.PlaneArcanus, player.Wizard.Banner))
+        army.AddUnit(units.MakeOverworldUnitFromUnit(units.Warlocks, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()))
     }
 
     return &army
@@ -85,7 +85,7 @@ func createHighMenBowmanArmyN(player *player.Player, count int) combat.Army {
     }
 
     for i := 0; i < count; i++ {
-        army.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenBowmen, 1, 1, data.PlaneArcanus, player.Wizard.Banner))
+        army.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenBowmen, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()))
     }
 
     return army
@@ -96,7 +96,7 @@ func createHighMenBowmanArmy(player *player.Player) combat.Army {
         Player: player,
         Units: []*combat.ArmyUnit{
             &combat.ArmyUnit{
-                Unit: units.MakeOverworldUnitFromUnit(units.HighMenBowmen, 1, 1, data.PlaneArcanus, player.Wizard.Banner),
+                Unit: units.MakeOverworldUnitFromUnit(units.HighMenBowmen, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()),
                 Facing: units.FacingDownRight,
                 X: 12,
                 Y: 10,
@@ -110,13 +110,13 @@ func createGreatDrakeArmy(player *player.Player) *combat.Army{
         Player: player,
         Units: []*combat.ArmyUnit{
             &combat.ArmyUnit{
-                Unit: units.MakeOverworldUnitFromUnit(units.GreatDrake, 1, 1, data.PlaneArcanus, player.Wizard.Banner),
+                Unit: units.MakeOverworldUnitFromUnit(units.GreatDrake, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()),
                 Facing: units.FacingUpLeft,
                 X: 10,
                 Y: 17,
             },
             &combat.ArmyUnit{
-                Unit: units.MakeOverworldUnitFromUnit(units.GreatDrake, 1, 1, data.PlaneArcanus, player.Wizard.Banner),
+                Unit: units.MakeOverworldUnitFromUnit(units.GreatDrake, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()),
                 Facing: units.FacingUpLeft,
                 X: 9,
                 Y: 18,
@@ -130,7 +130,7 @@ func createSettlerArmy(player *player.Player, count int) *combat.Army{
 
     for i := 0; i < count; i++ {
         armyUnits = append(armyUnits, &combat.ArmyUnit{
-            Unit: units.MakeOverworldUnitFromUnit(units.HighElfSettlers, 1, 1, data.PlaneArcanus, player.Wizard.Banner),
+            Unit: units.MakeOverworldUnitFromUnit(units.HighElfSettlers, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()),
             Facing: units.FacingUpLeft,
             X: 10,
             Y: 17,
@@ -147,11 +147,11 @@ func createHeroArmy(player *player.Player) *combat.Army{
     var armyUnits []*combat.ArmyUnit
 
     armyUnits = append(armyUnits, &combat.ArmyUnit{
-        Unit: herolib.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroRakir, 1, 1, data.PlaneArcanus, player.Wizard.Banner), herolib.HeroRakir, "bubba"),
+        Unit: herolib.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroRakir, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()), herolib.HeroRakir, "bubba"),
     })
 
     armyUnits = append(armyUnits, &combat.ArmyUnit{
-        Unit: herolib.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroWarrax, 1, 1, data.PlaneArcanus, player.Wizard.Banner), herolib.HeroWarrax, "warby"),
+        Unit: herolib.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroWarrax, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()), herolib.HeroWarrax, "warby"),
     })
 
     return &combat.Army{
