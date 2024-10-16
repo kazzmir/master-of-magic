@@ -13,6 +13,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/hero"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     "github.com/kazzmir/master-of-magic/lib/fraction"
+    "github.com/kazzmir/master-of-magic/lib/set"
 )
 
 // in the magic screen, power is distributed across the 3 categories
@@ -43,6 +44,8 @@ type Player struct {
 
     // spells that can be researched
     ResearchCandidateSpells spellbook.Spells
+
+    GlobalEnchantments *set.Set[data.Enchantment]
 
     PowerDistribution PowerDistribution
 
@@ -77,6 +80,22 @@ type Player struct {
     SelectedStack *UnitStack
 }
 
+func MakePlayer(wizard setup.WizardCustom, human bool, arcanusFog [][]bool, myrrorFog [][]bool) *Player {
+    return &Player{
+        TaxRate: fraction.FromInt(1),
+        ArcanusFog: arcanusFog,
+        MyrrorFog: myrrorFog,
+        Wizard: wizard,
+        Human: human,
+        GlobalEnchantments: set.MakeSet[data.Enchantment](),
+        PowerDistribution: PowerDistribution{
+            Mana: 1.0/3,
+            Research: 1.0/3,
+            Skill: 1.0/3,
+        },
+    }
+}
+
 func (player *Player) IsAI() bool {
     return !player.Human
 }
@@ -105,7 +124,7 @@ func (experience *playerExperience) HasWarlord() bool {
 }
 
 func (experience *playerExperience) Crusade() bool {
-    return false
+    return experience.Player.GlobalEnchantments.Contains(data.EnchantmentCrusade)
 }
 
 func (player *Player) MakeExperienceInfo() units.ExperienceInfo {

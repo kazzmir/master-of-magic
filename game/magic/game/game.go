@@ -30,7 +30,6 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/draw"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     "github.com/kazzmir/master-of-magic/lib/lbx"
-    "github.com/kazzmir/master-of-magic/lib/set"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/lib/fraction"
@@ -38,13 +37,6 @@ import (
     "github.com/hajimehoshi/ebiten/v2/colorm"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
     "github.com/hajimehoshi/ebiten/v2/vector"
-)
-
-type Enchantment int
-
-const (
-    EnchantmentNone Enchantment = iota
-    EnchantmentCrusade
 )
 
 func (game *Game) GetFogImage() *ebiten.Image {
@@ -170,8 +162,6 @@ type Game struct {
     Drawer func (*ebiten.Image, *Game)
     State GameState
     Plane data.Plane
-
-    GlobalEnchantments *set.Set[Enchantment]
 
     TurnNumber uint64
 
@@ -366,18 +356,7 @@ func (game *Game) InitializeResearchableSpells(spells *spellbook.Spells, player 
 }
 
 func (game *Game) AddPlayer(wizard setup.WizardCustom, human bool) *playerlib.Player{
-    newPlayer := &playerlib.Player{
-        TaxRate: fraction.FromInt(1),
-        ArcanusFog: game.MakeFog(),
-        MyrrorFog: game.MakeFog(),
-        Wizard: wizard,
-        Human: human,
-        PowerDistribution: playerlib.PowerDistribution{
-            Mana: 1.0/3,
-            Research: 1.0/3,
-            Skill: 1.0/3,
-        },
-    }
+    newPlayer := playerlib.MakePlayer(wizard, human, game.MakeFog(), game.MakeFog())
 
     allSpells := game.AllSpells()
 
@@ -490,7 +469,6 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         Settings: settings,
         BookOrder: randomizeBookOrder(12),
         ImageCache: util.MakeImageCache(lbxCache),
-        GlobalEnchantments: set.MakeSet[Enchantment](),
         InfoFontYellow: infoFontYellow,
         InfoFontRed: infoFontRed,
         WhiteFont: whiteFont,
@@ -2752,7 +2730,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
                     // draw experience badges
                     if unit.GetRace() == data.RaceHero {
-                        switch units.GetHeroExperienceLevel(unit.GetExperience(), player.Wizard.AbilityEnabled(setup.AbilityWarlord), game.GlobalEnchantments.Contains(EnchantmentCrusade)) {
+                        switch units.GetHeroExperienceLevel(unit.GetExperience(), player.Wizard.AbilityEnabled(setup.AbilityWarlord), player.GlobalEnchantments.Contains(data.EnchantmentCrusade)) {
                             case units.ExperienceHero:
                             case units.ExperienceMyrmidon:
                                 count = 1
@@ -2781,7 +2759,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                         }
                     } else {
 
-                        switch units.GetNormalExperienceLevel(unit.GetExperience(), player.Wizard.AbilityEnabled(setup.AbilityWarlord), game.GlobalEnchantments.Contains(EnchantmentCrusade)) {
+                        switch units.GetNormalExperienceLevel(unit.GetExperience(), player.Wizard.AbilityEnabled(setup.AbilityWarlord), player.GlobalEnchantments.Contains(data.EnchantmentCrusade)) {
                             case units.ExperienceRecruit:
                                 // nothing
                             case units.ExperienceRegular:
