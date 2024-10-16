@@ -188,6 +188,11 @@ func (unit *OverworldUnit) GetBaseMeleeAttackPower() int {
 }
 
 func (unit *OverworldUnit) GetExperienceLevel() NormalExperienceLevel {
+    // fantastic creatures can never gain any levels
+    if unit.GetRace() == data.RaceFantastic {
+        return ExperienceRecruit
+    }
+
     if unit.ExperienceInfo != nil {
         return GetNormalExperienceLevel(unit.Experience, unit.ExperienceInfo.HasWarlord(), unit.ExperienceInfo.Crusade())
     }
