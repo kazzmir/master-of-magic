@@ -208,7 +208,19 @@ func (unit *OverworldUnit) GetBaseDefense() int {
 }
 
 func (unit *OverworldUnit) GetDefense() int {
-    return unit.Unit.GetDefense()
+    defense := unit.GetBaseDefense()
+
+    level := unit.GetExperienceLevel()
+    switch level {
+        case ExperienceRecruit:
+        case ExperienceRegular:
+        case ExperienceVeteran: defense += 1
+        case ExperienceElite: defense += 1
+        case ExperienceUltraElite: defense += 2
+        case ExperienceChampionNormal: defense += 2
+    }
+
+    return defense
 }
 
 func (unit *OverworldUnit) GetResistance() int {
