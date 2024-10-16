@@ -5,7 +5,6 @@
 * overworld: ai controlled wizards/empires
 * draw units with experience/bonuses
 * myrror plane
-* hire hero events
 * filter buildings by race
 * roaming bands of neutral enemies
 * neutral towns/cities
@@ -43,3 +42,4 @@
 10/13/2024 * finish vault screen, add hero items
 10/14/2024 * banish animation for defeated wizard
 10/14/2024 * remap colors for some sprites, such as the flag in city tile sprites
+10/16/2024 * hire hero events
