@@ -161,16 +161,13 @@ func createHeroArmy(player *player.Player) *combat.Army{
 }
 
 func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
-    defendingPlayer := player.Player{
-        Wizard: setup.WizardCustom{
+    defendingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Lair",
             Banner: data.BannerBrown,
-        },
-        Human: false,
-    }
+        }, false, nil, nil)
 
     // defendingArmy := createWarlockArmy(&defendingPlayer)
-    defendingArmy := createHighMenBowmanArmyN(&defendingPlayer, 3)
+    defendingArmy := createHighMenBowmanArmyN(defendingPlayer, 3)
     defendingArmy.LayoutUnits(combat.TeamDefender)
 
     allSpells, err := spellbook.ReadSpellsFromCache(cache)
@@ -179,14 +176,12 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
         allSpells = spellbook.Spells{}
     }
 
-    attackingPlayer := player.Player{
-        Wizard: setup.WizardCustom{
+    attackingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Merlin",
             Banner: data.BannerGreen,
-        },
-        CastingSkillPower: 10,
-        Human: true,
-    }
+        }, true, nil, nil)
+
+    attackingPlayer.CastingSkillPower = 10
 
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Fireball"))
 
@@ -224,23 +219,20 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
     defendingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Fire Elemental"))
 
     // attackingArmy := createGreatDrakeArmy(&attackingPlayer)
-    attackingArmy := createWarlockArmyN(&attackingPlayer, 3)
+    attackingArmy := createWarlockArmyN(attackingPlayer, 3)
     attackingArmy.LayoutUnits(combat.TeamAttacker)
 
-    return combat.MakeCombatScreen(cache, &defendingArmy, attackingArmy, &attackingPlayer)
+    return combat.MakeCombatScreen(cache, &defendingArmy, attackingArmy, attackingPlayer)
 }
 
 func makeScenario2(cache *lbx.LbxCache) *combat.CombatScreen {
-    defendingPlayer := player.Player{
-        Wizard: setup.WizardCustom{
+    defendingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Lair",
             Banner: data.BannerBlue,
-        },
-        Human: false,
-    }
+        }, false, nil, nil)
 
     // defendingArmy := createWarlockArmy(&defendingPlayer)
-    defendingArmy := createSettlerArmy(&defendingPlayer, 3)
+    defendingArmy := createSettlerArmy(defendingPlayer, 3)
     defendingArmy.LayoutUnits(combat.TeamDefender)
 
     /*
@@ -251,33 +243,28 @@ func makeScenario2(cache *lbx.LbxCache) *combat.CombatScreen {
     }
     */
 
-    attackingPlayer := player.Player{
-        Wizard: setup.WizardCustom{
+    attackingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Merlin",
             Banner: data.BannerRed,
-        },
-        CastingSkillPower: 10,
-        Human: true,
-    }
+        }, true, nil, nil)
+
+    attackingPlayer.CastingSkillPower = 10
 
     // attackingArmy := createGreatDrakeArmy(&attackingPlayer)
-    attackingArmy := createSettlerArmy(&attackingPlayer, 3)
+    attackingArmy := createSettlerArmy(attackingPlayer, 3)
     attackingArmy.LayoutUnits(combat.TeamAttacker)
 
-    return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, &attackingPlayer)
+    return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer)
 }
 
 func makeScenario3(cache *lbx.LbxCache) *combat.CombatScreen {
-    defendingPlayer := player.Player{
-        Wizard: setup.WizardCustom{
+    defendingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Lair",
             Banner: data.BannerBlue,
-        },
-        Human: false,
-    }
+        }, false, nil, nil)
 
     // defendingArmy := createWarlockArmy(&defendingPlayer)
-    defendingArmy := createSettlerArmy(&defendingPlayer, 3)
+    defendingArmy := createSettlerArmy(defendingPlayer, 3)
     defendingArmy.LayoutUnits(combat.TeamDefender)
 
     /*
@@ -288,20 +275,18 @@ func makeScenario3(cache *lbx.LbxCache) *combat.CombatScreen {
     }
     */
 
-    attackingPlayer := player.Player{
-        Wizard: setup.WizardCustom{
+    attackingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Merlin",
             Banner: data.BannerRed,
-        },
-        CastingSkillPower: 10,
-        Human: true,
-    }
+        }, true, nil, nil)
+
+    attackingPlayer.CastingSkillPower = 10
 
     // attackingArmy := createGreatDrakeArmy(&attackingPlayer)
-    attackingArmy := createHeroArmy(&attackingPlayer)
+    attackingArmy := createHeroArmy(attackingPlayer)
     attackingArmy.LayoutUnits(combat.TeamAttacker)
 
-    return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, &attackingPlayer)
+    return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer)
 }
 
 func NewEngine(scenario int) (*Engine, error) {
