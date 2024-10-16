@@ -19,6 +19,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/unitview"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
+    herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     "github.com/kazzmir/master-of-magic/game/magic/cityview"
     "github.com/kazzmir/master-of-magic/game/magic/armyview"
@@ -71,6 +72,12 @@ type GameEventApprenticeUI struct {
 }
 
 type GameEventCastSpellBook struct {
+}
+
+type GameEventHireHero struct {
+    Hero *herolib.Hero
+    Player *playerlib.Player
+    Cost int
 }
 
 type GameEventVault struct {
@@ -164,6 +171,8 @@ type Game struct {
     Plane data.Plane
 
     TurnNumber uint64
+
+    Heroes map[herolib.HeroType]*herolib.Hero
 
     Events chan GameEvent
     BuildingInfo buildinglib.BuildingInfos
@@ -388,6 +397,16 @@ func (game *Game) AddPlayer(wizard setup.WizardCustom, human bool) *playerlib.Pl
     return newPlayer
 }
 
+func createHeroes() map[herolib.HeroType]*herolib.Hero {
+    heroes := make(map[herolib.HeroType]*herolib.Hero)
+
+    for _, hero := range herolib.AllHeroTypes() {
+        heroes[hero] = herolib.MakeHeroSimple(hero)
+    }
+
+    return heroes
+}
+
 func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
 
     terrainLbx, err := lbxCache.GetLbxFile("terrain.lbx")
@@ -471,6 +490,7 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         ImageCache: util.MakeImageCache(lbxCache),
         InfoFontYellow: infoFontYellow,
         InfoFontRed: infoFontRed,
+        Heroes: createHeroes(),
         WhiteFont: whiteFont,
         BuildingInfo: buildingInfo,
         TurnNumber: 1,
@@ -1501,6 +1521,32 @@ func (game *Game) doVault(yield coroutine.YieldFunc, newArtifact *artifact.Artif
     vaultLogic(yield)
 }
 
+func (game *Game) doHireHero(yield coroutine.YieldFunc, cost int, hero *herolib.Hero, player *playerlib.Player) {
+    quit := false
+
+    result := func(hired bool) {
+        quit = true
+        if hired {
+            if player.AddHero(hero) {
+                player.Gold -= cost
+                hero.SetStatus(herolib.StatusEmployed)
+                select {
+                    case game.Events <- &GameEventRefreshUI{}:
+                    default:
+                }
+            }
+        }
+    }
+
+    game.HudUI.AddElements(MakeHireScreenUI(game.Cache, game.HudUI, hero, cost, result))
+
+    for !quit {
+        game.Counter += 1
+        game.HudUI.StandardUpdate()
+        yield()
+    }
+}
+
 func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
     // keep processing events until we don't receive one in the events channel
     for {
@@ -1511,6 +1557,9 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         game.doMagicView(yield)
                     case *GameEventRefreshUI:
                         game.HudUI = game.MakeHudUI()
+                    case *GameEventHireHero:
+                        hire := event.(*GameEventHireHero)
+                        game.doHireHero(yield, hire.Cost, hire.Hero, hire.Player)
                     case *GameEventSurveyor:
                         game.doSurveyor(yield)
                     case *GameEventApprenticeUI:
@@ -1584,7 +1633,6 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
     */
 
     game.ProcessEvents(yield)
-    
 
     switch game.State {
         case GameStateRunning:
@@ -3116,9 +3164,9 @@ func (game *Game) DoNextUnit(player *playerlib.Player){
         }
     }
 
-    // FIXME: only do this for human player
-    game.RefreshUI()
-    // game.HudUI = game.MakeHudUI()
+    if player.Human {
+        game.RefreshUI()
+    }
 }
 
 func (game *Game) DoNextTurn(){
