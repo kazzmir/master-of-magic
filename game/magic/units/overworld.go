@@ -17,6 +17,7 @@ type OverworldUnit struct {
     Health int
     // to get the level, use the conversion functions in experience.go
     Experience int
+    ExperienceInfo ExperienceInfo
 }
 
 func (unit *OverworldUnit) GetLbxFile() string {
@@ -167,15 +168,35 @@ func (unit *OverworldUnit) GetProductionCost() int {
 }
 
 func (unit *OverworldUnit) GetBaseMeleeAttackPower() int {
-    return unit.GetMeleeAttackPower()
-}
-
-func (unit *OverworldUnit) GetMeleeAttackPower() int {
     return unit.Unit.GetMeleeAttackPower()
 }
 
+func (unit *OverworldUnit) GetExperienceLevel() NormalExperienceLevel {
+    if unit.ExperienceInfo != nil {
+        return GetNormalExperienceLevel(unit.Experience, unit.ExperienceInfo.HasWarlord(), unit.ExperienceInfo.Crusade())
+    }
+
+    return ExperienceRecruit
+}
+
+func (unit *OverworldUnit) GetMeleeAttackPower() int {
+    power := unit.GetBaseMeleeAttackPower()
+
+    level := unit.GetExperienceLevel()
+    switch level {
+        case ExperienceRecruit:
+        case ExperienceRegular: power += 1
+        case ExperienceVeteran: power += 1
+        case ExperienceElite: power += 2
+        case ExperienceUltraElite: power += 2
+        case ExperienceChampionNormal: power += 3
+    }
+
+    return power
+}
+
 func (unit *OverworldUnit) GetBaseRangedAttackPower() int {
-    return unit.GetRangedAttackPower()
+    return unit.Unit.GetRangedAttackPower()
 }
 
 func (unit *OverworldUnit) GetRangedAttackPower() int {
@@ -211,10 +232,10 @@ func (unit *OverworldUnit) GetAbilities() []Ability {
 }
 
 func MakeOverworldUnit(unit Unit) *OverworldUnit {
-    return MakeOverworldUnitFromUnit(unit, 0, 0, data.PlaneArcanus, data.BannerBrown)
+    return MakeOverworldUnitFromUnit(unit, 0, 0, data.PlaneArcanus, data.BannerBrown, nil)
 }
 
-func MakeOverworldUnitFromUnit(unit Unit, x int, y int, plane data.Plane, banner data.BannerType) *OverworldUnit {
+func MakeOverworldUnitFromUnit(unit Unit, x int, y int, plane data.Plane, banner data.BannerType, experienceInfo ExperienceInfo) *OverworldUnit {
     return &OverworldUnit{
         Unit: unit,
         Banner: banner,
@@ -222,6 +243,7 @@ func MakeOverworldUnitFromUnit(unit Unit, x int, y int, plane data.Plane, banner
         MovesLeft: fraction.FromInt(unit.MovementSpeed),
         Patrol: false,
         Health: unit.GetMaxHealth(),
+        ExperienceInfo: experienceInfo,
         X: x,
         Y: y,
     }

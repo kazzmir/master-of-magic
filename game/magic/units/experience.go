@@ -1,5 +1,10 @@
 package units
 
+type ExperienceInfo interface {
+    HasWarlord() bool
+    Crusade() bool
+}
+
 type NormalExperienceLevel int
 
 const (
