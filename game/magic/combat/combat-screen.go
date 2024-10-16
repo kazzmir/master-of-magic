@@ -114,6 +114,7 @@ type CombatUnit interface {
     GetMaxHealth() int
     GetCount() int
     GetHealth() int
+    GetToHitMelee() int
     GetRangedAttacks() int
     GetCombatLbxFile() string
     GetCombatIndex(units.Facing) int
@@ -191,7 +192,7 @@ func (unit *ArmyUnit) Heal(amount int){
 // given the distance to the target in tiles, return the amount of range damage done
 func (unit *ArmyUnit) ComputeRangeDamage(tileDistance int) int {
 
-    toHit := unit.ToHitMelee()
+    toHit := unit.Unit.GetToHitMelee()
 
     // magical attacks don't suffer a to-hit penalty
     if unit.Unit.GetRangedAttackDamageType() != units.DamageRangedMagical {
@@ -228,18 +229,13 @@ func (unit *ArmyUnit) ComputeMeleeDamage() int {
     damage := 0
     for figure := 0; figure < unit.Figures(); figure++ {
         for i := 0; i < unit.Unit.GetMeleeAttackPower(); i++ {
-            if rand.IntN(100) < unit.ToHitMelee() {
+            if rand.IntN(100) < unit.Unit.GetToHitMelee() {
                 damage += 1
             }
         }
     }
 
     return damage
-}
-
-// tohit percent
-func (unit *ArmyUnit) ToHitMelee() int {
-    return 30
 }
 
 func (unit *ArmyUnit) ToDefend() int {

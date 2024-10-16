@@ -115,6 +115,22 @@ func (unit *OverworldUnit) GetMaxHealth() int {
     return unit.GetHitPoints() * unit.GetCount()
 }
 
+func (unit *OverworldUnit) GetToHitMelee() int {
+    base := 30
+
+    level := unit.GetExperienceLevel()
+    switch level {
+        case ExperienceRecruit:
+        case ExperienceRegular:
+        case ExperienceVeteran:
+        case ExperienceElite: base += 10
+        case ExperienceUltraElite: base += 20
+        case ExperienceChampionNormal: base += 30
+    }
+
+    return base
+}
+
 func (unit *OverworldUnit) GetRangedAttackDamageType() Damage {
     return unit.Unit.RangedAttackDamageType
 }
