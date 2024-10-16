@@ -40,13 +40,6 @@ import (
     "github.com/hajimehoshi/ebiten/v2/vector"
 )
 
-type Enchantment int
-
-const (
-    EnchantmentNone Enchantment = iota
-    EnchantmentCrusade
-)
-
 func (game *Game) GetFogImage() *ebiten.Image {
     if game.Fog != nil {
         return game.Fog
@@ -170,8 +163,6 @@ type Game struct {
     Drawer func (*ebiten.Image, *Game)
     State GameState
     Plane data.Plane
-
-    GlobalEnchantments *set.Set[Enchantment]
 
     TurnNumber uint64
 

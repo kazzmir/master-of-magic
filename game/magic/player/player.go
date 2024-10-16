@@ -44,6 +44,8 @@ type Player struct {
     // spells that can be researched
     ResearchCandidateSpells spellbook.Spells
 
+    GlobalEnchantments *set.Set[Enchantment]
+
     PowerDistribution PowerDistribution
 
     Heroes [6]*hero.Hero
