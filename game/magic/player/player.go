@@ -10,7 +10,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
-    "github.com/kazzmir/master-of-magic/game/magic/hero"
+    herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     "github.com/kazzmir/master-of-magic/lib/fraction"
     "github.com/kazzmir/master-of-magic/lib/set"
@@ -49,7 +49,7 @@ type Player struct {
 
     PowerDistribution PowerDistribution
 
-    Heroes [6]*hero.Hero
+    Heroes [6]*herolib.Hero
     VaultEquipment [4]*artifact.Artifact
 
     // total power points put into the casting skill
@@ -102,6 +102,38 @@ func (player *Player) IsAI() bool {
 
 func (player *Player) IsHuman() bool {
     return player.Human
+}
+
+/* returns true if the hero was actually added to the player
+ */
+func (player *Player) AddHero(hero *herolib.Hero) bool {
+    fortressCity := player.FindFortressCity()
+    if fortressCity == nil {
+        return false
+    }
+
+    for i := 0; i < len(player.Heroes); i++ {
+        if player.Heroes[i] == nil {
+            player.Heroes[i] = hero
+
+            hero.Unit = units.MakeOverworldUnitFromUnit(hero.GetRawUnit(), fortressCity.X, fortressCity.Y, fortressCity.Plane, player.Wizard.Banner, player.MakeExperienceInfo())
+            player.AddUnit(hero)
+            return true
+        }
+    }
+
+    return false
+}
+
+/* return the city that contains the summoning circle */
+func (player *Player) FindFortressCity() *citylib.City {
+    for _, city := range player.Cities {
+        if city.HasFortress() {
+            return city
+        }
+    }
+
+    return nil
 }
 
 /* return the city that contains the summoning circle */

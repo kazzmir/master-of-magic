@@ -163,6 +163,10 @@ func MakeHero(unit *units.OverworldUnit, heroType HeroType, name string) *Hero {
     }
 }
 
+func (hero *Hero) SetStatus(status HeroStatus) {
+    hero.Status = status
+}
+
 func (hero *Hero) GetName() string {
     return fmt.Sprintf("%v the %v", hero.Unit.GetName(), hero.Title())
 }

@@ -1522,7 +1522,11 @@ func (game *Game) doVault(yield coroutine.YieldFunc, newArtifact *artifact.Artif
 
 func (game *Game) doHireHero(yield coroutine.YieldFunc, hero *herolib.Hero, player *playerlib.Player) {
     result := func(hired bool) {
-        log.Printf("Hire %v: %v", hero.GetName(), hired)
+        if hired {
+            if player.AddHero(hero) {
+                hero.SetStatus(herolib.StatusEmployed)
+            }
+        }
     }
 
     game.HudUI.AddElements(MakeHireScreenUI(game.Cache, game.HudUI, hero, result))
