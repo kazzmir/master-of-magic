@@ -70,6 +70,13 @@ func (unit *OverworldUnit) IsFlying() bool {
 
 func (unit *OverworldUnit) AddExperience(amount int) {
     unit.Experience += amount
+
+    // normal units max out at 120 experience
+    if unit.GetRace() != data.RaceHero {
+        if unit.Experience > 120 {
+            unit.Experience = 120
+        }
+    }
 }
 
 func (unit *OverworldUnit) GetExperience() int {
