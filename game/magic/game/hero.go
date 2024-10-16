@@ -147,7 +147,11 @@ func MakeHireScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero, act
         },
         LeftClickRelease: func(this *uilib.UIElement){
             hireIndex = 0
-            action(true)
+            getAlpha = ui.MakeFadeOut(fadeSpeed)
+            ui.AddDelay(fadeSpeed, func(){
+                ui.RemoveElements(elements)
+                action(true)
+            })
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             var options ebiten.DrawImageOptions

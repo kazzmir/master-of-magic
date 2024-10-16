@@ -74,6 +74,11 @@ type GameEventApprenticeUI struct {
 type GameEventCastSpellBook struct {
 }
 
+type GameEventHireHero struct {
+    Hero *herolib.Hero
+    Player *playerlib.Player
+}
+
 type GameEventVault struct {
     CreatedArtifact *artifact.Artifact
 }
@@ -1515,6 +1520,20 @@ func (game *Game) doVault(yield coroutine.YieldFunc, newArtifact *artifact.Artif
     vaultLogic(yield)
 }
 
+func (game *Game) doHireHero(yield coroutine.YieldFunc, hero *herolib.Hero, player *playerlib.Player) {
+    result := func(hired bool) {
+        log.Printf("Hire %v: %v", hero.GetName(), hired)
+    }
+
+    game.HudUI.AddElements(MakeHireScreenUI(game.Cache, game.HudUI, hero, result))
+
+    for {
+        game.Counter += 1
+        game.HudUI.StandardUpdate()
+        yield()
+    }
+}
+
 func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
     // keep processing events until we don't receive one in the events channel
     for {
@@ -1525,6 +1544,9 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         game.doMagicView(yield)
                     case *GameEventRefreshUI:
                         game.HudUI = game.MakeHudUI()
+                    case *GameEventHireHero:
+                        hire := event.(*GameEventHireHero)
+                        game.doHireHero(yield, hire.Hero, hire.Player)
                     case *GameEventSurveyor:
                         game.doSurveyor(yield)
                     case *GameEventApprenticeUI:
@@ -1598,7 +1620,6 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
     */
 
     game.ProcessEvents(yield)
-    
 
     switch game.State {
         case GameStateRunning:
