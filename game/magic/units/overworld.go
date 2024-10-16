@@ -6,18 +6,18 @@ import (
 )
 
 type OverworldUnit struct {
+    ExperienceInfo ExperienceInfo
     Unit Unit
+    MovesLeft fraction.Fraction
     Banner data.BannerType
     Plane data.Plane
-    MovesLeft fraction.Fraction
-    Patrol bool
     X int
     Y int
     Id uint64
     Health int
+    Patrol bool
     // to get the level, use the conversion functions in experience.go
     Experience int
-    ExperienceInfo ExperienceInfo
 }
 
 func (unit *OverworldUnit) GetLbxFile() string {
