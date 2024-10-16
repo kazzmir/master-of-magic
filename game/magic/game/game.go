@@ -1521,17 +1521,24 @@ func (game *Game) doVault(yield coroutine.YieldFunc, newArtifact *artifact.Artif
 }
 
 func (game *Game) doHireHero(yield coroutine.YieldFunc, hero *herolib.Hero, player *playerlib.Player) {
+    quit := false
+
     result := func(hired bool) {
+        quit = true
         if hired {
             if player.AddHero(hero) {
                 hero.SetStatus(herolib.StatusEmployed)
+                select {
+                    case game.Events <- &GameEventRefreshUI{}:
+                    default:
+                }
             }
         }
     }
 
     game.HudUI.AddElements(MakeHireScreenUI(game.Cache, game.HudUI, hero, result))
 
-    for {
+    for !quit {
         game.Counter += 1
         game.HudUI.StandardUpdate()
         yield()
@@ -3155,9 +3162,9 @@ func (game *Game) DoNextUnit(player *playerlib.Player){
         }
     }
 
-    // FIXME: only do this for human player
-    game.RefreshUI()
-    // game.HudUI = game.MakeHudUI()
+    if player.Human {
+        game.RefreshUI()
+    }
 }
 
 func (game *Game) DoNextTurn(){
