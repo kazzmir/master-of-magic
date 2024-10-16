@@ -475,8 +475,8 @@ func (combat *CombatScreen) CanMoveTo(unit *ArmyUnit, x int, y int) bool {
 }
 
 type Army struct {
-    Units []*ArmyUnit
     Player *player.Player
+    Units []*ArmyUnit
     Auto bool
 }
 
@@ -540,62 +540,60 @@ func (army *Army) RemoveUnit(remove *ArmyUnit){
 
 // represents a unit that is not part of the army, for things like magic vortex, for things like magic vortex
 type OtherUnit struct {
+    Animation *util.Animation
     X int
     Y int
-    Animation *util.Animation
 }
 
 type ProjectileEffect func(*ArmyUnit)
 
 type Projectile struct {
+    Target *ArmyUnit
+    Animation *util.Animation
+    Explode *util.Animation
+    Effect ProjectileEffect
     X float64
     Y float64
     Speed float64
     Angle float64
-    Target *ArmyUnit
     TargetX float64
     TargetY float64
     Exploding bool
-    Animation *util.Animation
-    Explode *util.Animation
-    Effect ProjectileEffect
 }
 
 type CombatScreen struct {
+    ImageCache util.ImageCache
+    Events chan CombatEvent
     Cache *lbx.LbxCache
     SelectedUnit *ArmyUnit
     Mouse *mouse.MouseData
-    Counter uint64
-    ImageCache util.ImageCache
     DefendingArmy *Army
     AttackingArmy *Army
     AttackingWizardFont *font.Font
     DefendingWizardFont *font.Font
-    Tiles [][]Tile
     WhitePixel *ebiten.Image
-    OtherUnits []*OtherUnit
-    MouseState MouseState
     UI *uilib.UI
-    Projectiles []*Projectile
-
-    // order to draw tiles in such that they are drawn from the top of the screen to the bottom (painter's order)
-    TopDownOrder []image.Point
-
-    // when the user hovers over a unit, that unit should be shown in a little info box at the upper right
-    HighlightedUnit *ArmyUnit
-
     DebugFont *font.Font
     HudFont *font.Font
     InfoFont *font.Font
     WhiteFont *font.Font
+    // when the user hovers over a unit, that unit should be shown in a little info box at the upper right
+    HighlightedUnit *ArmyUnit
+    Tiles [][]Tile
+    OtherUnits []*OtherUnit
+    Projectiles []*Projectile
+    // order to draw tiles in such that they are drawn from the top of the screen to the bottom (painter's order)
+    TopDownOrder []image.Point
 
     Coordinates ebiten.GeoM
     ScreenToTile ebiten.GeoM
+    MouseState MouseState
+
+    Counter uint64
 
     TurnAttacker int
     TurnDefender int
 
-    Events chan CombatEvent
 
     // track how many units were killed on each side, so experience
     // can be given out after combat ends
