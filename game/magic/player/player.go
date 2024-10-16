@@ -422,6 +422,14 @@ func (player *Player) MergeStacks(stack1 *UnitStack, stack2 *UnitStack) *UnitSta
 }
 
 func (player *Player) RemoveUnit(unit units.StackUnit) {
+
+    for i := 0; i < len(player.Heroes); i++ {
+        if player.Heroes[i] == unit {
+            player.Heroes[i].Status = herolib.StatusDead
+            player.Heroes[i] = nil
+        }
+    }
+
     player.Units = slices.DeleteFunc(player.Units, func (u units.StackUnit) bool {
         return u == unit
     })
