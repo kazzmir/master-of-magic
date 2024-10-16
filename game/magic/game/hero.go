@@ -15,9 +15,7 @@ import (
     "github.com/hajimehoshi/ebiten/v2"
 )
 
-func MakeHireScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero, action func(bool)) []*uilib.UIElement {
-    goldToHire := 100
-
+func MakeHireScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero, goldToHire int, action func(bool)) []*uilib.UIElement {
     fontLbx, err := cache.GetLbxFile("fonts.lbx")
     if err != nil {
         log.Printf("Unable to read fonts.lbx: %v", err)

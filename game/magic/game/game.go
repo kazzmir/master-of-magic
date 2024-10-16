@@ -77,6 +77,7 @@ type GameEventCastSpellBook struct {
 type GameEventHireHero struct {
     Hero *herolib.Hero
     Player *playerlib.Player
+    Cost int
 }
 
 type GameEventVault struct {
@@ -1520,13 +1521,14 @@ func (game *Game) doVault(yield coroutine.YieldFunc, newArtifact *artifact.Artif
     vaultLogic(yield)
 }
 
-func (game *Game) doHireHero(yield coroutine.YieldFunc, hero *herolib.Hero, player *playerlib.Player) {
+func (game *Game) doHireHero(yield coroutine.YieldFunc, cost int, hero *herolib.Hero, player *playerlib.Player) {
     quit := false
 
     result := func(hired bool) {
         quit = true
         if hired {
             if player.AddHero(hero) {
+                player.Gold -= cost
                 hero.SetStatus(herolib.StatusEmployed)
                 select {
                     case game.Events <- &GameEventRefreshUI{}:
@@ -1536,7 +1538,7 @@ func (game *Game) doHireHero(yield coroutine.YieldFunc, hero *herolib.Hero, play
         }
     }
 
-    game.HudUI.AddElements(MakeHireScreenUI(game.Cache, game.HudUI, hero, result))
+    game.HudUI.AddElements(MakeHireScreenUI(game.Cache, game.HudUI, hero, cost, result))
 
     for !quit {
         game.Counter += 1
@@ -1557,7 +1559,7 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         game.HudUI = game.MakeHudUI()
                     case *GameEventHireHero:
                         hire := event.(*GameEventHireHero)
-                        game.doHireHero(yield, hire.Hero, hire.Player)
+                        game.doHireHero(yield, hire.Cost, hire.Hero, hire.Player)
                     case *GameEventSurveyor:
                         game.doSurveyor(yield)
                     case *GameEventApprenticeUI:

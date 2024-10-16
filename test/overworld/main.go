@@ -1449,7 +1449,7 @@ func createScenario19(cache *lbx.LbxCache) *gamelib.Game {
 
     player.AddCity(city)
 
-    player.Gold = 83
+    player.Gold = 683
     player.Mana = 26
 
     // game.Map.Map.Terrain[3][6] = terrain.TileNatureForest.Index
@@ -1468,6 +1468,7 @@ func createScenario19(cache *lbx.LbxCache) *gamelib.Game {
     game.Events <- &gamelib.GameEventHireHero{
         Player: player,
         Hero: game.Heroes[hero.HeroRakir],
+        Cost: 200,
     }
 
     return game
