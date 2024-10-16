@@ -394,13 +394,13 @@ func (hero *Hero) GetResistance() int {
     switch level {
         case units.ExperienceHero:
         case units.ExperienceMyrmidon: base += 1
-        case units.ExperienceCaptain: base += 1
-        case units.ExperienceCommander: base += 2
-        case units.ExperienceChampionHero: base += 2
-        case units.ExperienceLord: base += 3
-        case units.ExperienceGrandLord: base += 3
-        case units.ExperienceSuperHero: base += 4
-        case units.ExperienceDemiGod: base += 4
+        case units.ExperienceCaptain: base += 2
+        case units.ExperienceCommander: base += 3
+        case units.ExperienceChampionHero: base += 4
+        case units.ExperienceLord: base += 5
+        case units.ExperienceGrandLord: base += 6
+        case units.ExperienceSuperHero: base += 7
+        case units.ExperienceDemiGod: base += 8
     }
 
     return base
@@ -413,13 +413,13 @@ func (hero *Hero) GetHitPoints() int {
     switch level {
         case units.ExperienceHero:
         case units.ExperienceMyrmidon: base += 1
-        case units.ExperienceCaptain: base += 1
-        case units.ExperienceCommander: base += 2
-        case units.ExperienceChampionHero: base += 2
-        case units.ExperienceLord: base += 3
-        case units.ExperienceGrandLord: base += 3
-        case units.ExperienceSuperHero: base += 4
-        case units.ExperienceDemiGod: base += 4
+        case units.ExperienceCaptain: base += 2
+        case units.ExperienceCommander: base += 3
+        case units.ExperienceChampionHero: base += 4
+        case units.ExperienceLord: base += 5
+        case units.ExperienceGrandLord: base += 6
+        case units.ExperienceSuperHero: base += 7
+        case units.ExperienceDemiGod: base += 8
     }
 
     return base

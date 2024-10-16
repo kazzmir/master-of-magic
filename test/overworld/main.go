@@ -1383,7 +1383,7 @@ func createScenario18(cache *lbx.LbxCache) *gamelib.Game {
     player.LiftFog(x, y, 3)
 
     rakir := player.AddUnit(hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroRakir, x+1, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()), hero.HeroRakir, "bubba"))
-    rakir.AddExperience(1000)
+    rakir.AddExperience(500)
 
     stack := player.FindStackByUnit(rakir)
     player.SetSelectedStack(stack)

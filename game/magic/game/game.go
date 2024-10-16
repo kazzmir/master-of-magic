@@ -2744,15 +2744,43 @@ func (game *Game) MakeHudUI() *uilib.UI {
                         vector.StrokeLine(screen, float32(x), float32(y), float32(x + healthLength), float32(y), 1, useColor, false)
                     }
 
+                    silverBadge := 51
+                    goldBadge := 52
+                    redBadge := 53
+                    count := 0
+                    index := 0
+
                     // draw experience badges
                     if unit.GetRace() == data.RaceHero {
+                        switch units.GetHeroExperienceLevel(unit.GetExperience(), player.Wizard.AbilityEnabled(setup.AbilityWarlord), game.GlobalEnchantments.Contains(EnchantmentCrusade)) {
+                            case units.ExperienceHero:
+                            case units.ExperienceMyrmidon:
+                                count = 1
+                                index = silverBadge
+                            case units.ExperienceCaptain:
+                                count = 2
+                                index = silverBadge
+                            case units.ExperienceCommander:
+                                count = 3
+                                index = silverBadge
+                            case units.ExperienceChampionHero:
+                                count = 1
+                                index = goldBadge
+                            case units.ExperienceLord:
+                                count = 2
+                                index = goldBadge
+                            case units.ExperienceGrandLord:
+                                count = 3
+                                index = goldBadge
+                            case units.ExperienceSuperHero:
+                                count = 1
+                                index = redBadge
+                            case units.ExperienceDemiGod:
+                                count = 2
+                                index = redBadge
+                        }
                     } else {
-                        silverBadge := 51
-                        goldBadge := 52
-                        // redBadge := 53
 
-                        count := 0
-                        index := 0
                         switch units.GetNormalExperienceLevel(unit.GetExperience(), player.Wizard.AbilityEnabled(setup.AbilityWarlord), game.GlobalEnchantments.Contains(EnchantmentCrusade)) {
                             case units.ExperienceRecruit:
                                 // nothing
@@ -2777,14 +2805,14 @@ func (game *Game) MakeHudUI() *uilib.UI {
                                 count = 2
                                 index = goldBadge
                         }
+                    }
 
-                        badgeOptions := options
-                        badgeOptions.GeoM.Translate(1, 21)
-                        for i := 0; i < count; i++ {
-                            pic, _ := game.ImageCache.GetImage("main.lbx", index, 0)
-                            screen.DrawImage(pic, &badgeOptions)
-                            badgeOptions.GeoM.Translate(4, 0)
-                        }
+                    badgeOptions := options
+                    badgeOptions.GeoM.Translate(1, 21)
+                    for i := 0; i < count; i++ {
+                        pic, _ := game.ImageCache.GetImage("main.lbx", index, 0)
+                        screen.DrawImage(pic, &badgeOptions)
+                        badgeOptions.GeoM.Translate(4, 0)
                     }
                 },
             })
