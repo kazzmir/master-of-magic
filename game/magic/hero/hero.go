@@ -9,6 +9,13 @@ import (
     "github.com/kazzmir/master-of-magic/lib/fraction"
 )
 
+type HeroStatus int
+const (
+    StatusAvailable HeroStatus = iota
+    StatusEmployed
+    StatusDead
+)
+
 type HeroType int
 const (
     HeroTorin HeroType = iota
@@ -48,12 +55,103 @@ const (
     HeroAureus
 )
 
+func (heroType HeroType) GetUnit() units.Unit {
+    switch heroType {
+        case HeroTorin: return units.HeroTorin
+        case HeroFang: return units.HeroFang
+        case HeroBShan: return units.HeroBShan
+        case HeroMorgana: return units.HeroMorgana
+        case HeroWarrax: return units.HeroWarrax
+        case HeroMysticX: return units.HeroMysticX
+        case HeroBahgtru: return units.HeroBahgtru
+        case HeroDethStryke: return units.HeroDethStryke
+        case HeroSpyder: return units.HeroSpyder
+        case HeroSirHarold: return units.HeroSirHarold
+        case HeroBrax: return units.HeroBrax
+        case HeroRavashack: return units.HeroRavashack
+        case HeroGreyfairer: return units.HeroGreyfairer
+        case HeroShalla: return units.HeroShalla
+        case HeroRoland: return units.HeroRoland
+        case HeroMalleus: return units.HeroMalleus
+        case HeroMortu: return units.HeroMortu
+        case HeroGunther: return units.HeroGunther
+        case HeroRakir: return units.HeroRakir
+        case HeroJaer: return units.HeroJaer
+        case HeroTaki: return units.HeroTaki
+        case HeroYramrag: return units.HeroYramrag
+        case HeroValana: return units.HeroValana
+        case HeroElana: return units.HeroElana
+        case HeroAerie: return units.HeroAerie
+        case HeroMarcus: return units.HeroMarcus
+        case HeroReywind: return units.HeroReywind
+        case HeroAlorra: return units.HeroAlorra
+        case HeroZaldron: return units.HeroZaldron
+        case HeroShinBo: return units.HeroShinBo
+        case HeroSerena: return units.HeroSerena
+        case HeroShuri: return units.HeroShuri
+        case HeroTheria: return units.HeroTheria
+        case HeroTumu: return units.HeroTumu
+        case HeroAureus: return units.HeroAureus
+    }
+    return units.HeroRakir
+}
+
+func (heroType HeroType) DefaultName() string {
+    return heroType.GetUnit().Name
+}
+
+func AllHeroTypes() []HeroType {
+    return []HeroType{
+        HeroTorin,
+        HeroFang,
+        HeroBShan,
+        HeroMorgana,
+        HeroWarrax,
+        HeroMysticX,
+        HeroBahgtru,
+        HeroDethStryke,
+        HeroSpyder,
+        HeroSirHarold,
+        HeroBrax,
+        HeroRavashack,
+        HeroGreyfairer,
+        HeroShalla,
+        HeroRoland,
+        HeroMalleus,
+        HeroMortu,
+        HeroGunther,
+        HeroRakir,
+        HeroJaer,
+        HeroTaki,
+        HeroYramrag,
+        HeroValana,
+        HeroElana,
+        HeroAerie,
+        HeroMarcus,
+        HeroReywind,
+        HeroAlorra,
+        HeroZaldron,
+        HeroShinBo,
+        HeroSerena,
+        HeroShuri,
+        HeroTheria,
+        HeroTumu,
+        HeroAureus,
+    }
+}
+
 type Hero struct {
     Unit *units.OverworldUnit
     HeroType HeroType
     Name string
+    Status HeroStatus
 
     Equipment [3]*artifact.Artifact
+}
+
+func MakeHeroSimple(heroType HeroType) *Hero {
+    unit := units.MakeOverworldUnit(heroType.GetUnit())
+    return MakeHero(unit, heroType, heroType.DefaultName())
 }
 
 func MakeHero(unit *units.OverworldUnit, heroType HeroType, name string) *Hero {
@@ -61,6 +159,7 @@ func MakeHero(unit *units.OverworldUnit, heroType HeroType, name string) *Hero {
         Unit: unit,
         Name: name,
         HeroType: heroType,
+        Status: StatusAvailable,
     }
 }
 

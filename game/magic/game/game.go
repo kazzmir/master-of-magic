@@ -19,6 +19,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/unitview"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
+    herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     "github.com/kazzmir/master-of-magic/game/magic/cityview"
     "github.com/kazzmir/master-of-magic/game/magic/armyview"
@@ -164,6 +165,8 @@ type Game struct {
     Plane data.Plane
 
     TurnNumber uint64
+
+    Heroes map[herolib.HeroType]*herolib.Hero
 
     Events chan GameEvent
     BuildingInfo buildinglib.BuildingInfos
@@ -388,6 +391,16 @@ func (game *Game) AddPlayer(wizard setup.WizardCustom, human bool) *playerlib.Pl
     return newPlayer
 }
 
+func createHeroes() map[herolib.HeroType]*herolib.Hero {
+    heroes := make(map[herolib.HeroType]*herolib.Hero)
+
+    for _, hero := range herolib.AllHeroTypes() {
+        heroes[hero] = herolib.MakeHeroSimple(hero)
+    }
+
+    return heroes
+}
+
 func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
 
     terrainLbx, err := lbxCache.GetLbxFile("terrain.lbx")
@@ -471,6 +484,7 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         ImageCache: util.MakeImageCache(lbxCache),
         InfoFontYellow: infoFontYellow,
         InfoFontRed: infoFontRed,
+        Heroes: createHeroes(),
         WhiteFont: whiteFont,
         BuildingInfo: buildingInfo,
         TurnNumber: 1,
