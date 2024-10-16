@@ -51,9 +51,9 @@ type Segment struct {
 }
 
 type Distortion struct {
+    Segments []Segment
     Top image.Point
     Bottom image.Point
-    Segments []Segment
 }
 
 /* draw 'source' onto 'screen' with a distortion effect

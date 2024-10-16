@@ -44,16 +44,16 @@ type CombatEvent interface {
 }
 
 type CombatEventSelectTile struct {
-    Selecter Team
-    Spell spellbook.Spell
     SelectTile func(int, int)
+    Spell spellbook.Spell
+    Selecter Team
 }
 
 type CombatEventSelectUnit struct {
-    Selecter Team
-    Spell spellbook.Spell
     SelectTarget func(*ArmyUnit)
     CanTarget func(*ArmyUnit) bool
+    Spell spellbook.Spell
+    Selecter Team
     SelectTeam Team
 }
 
@@ -92,14 +92,13 @@ const (
 )
 
 type Tile struct {
+    // a unit standing on this tile, if any
+    Unit *ArmyUnit
     // index of grass/floor
     Index int
     // tree/rock on top, or -1 if nothing
     ExtraObject int
     Mud bool
-
-    // a unit standing on this tile, if any
-    Unit *ArmyUnit
 }
 
 type CombatUnit interface {
@@ -476,8 +475,8 @@ func (combat *CombatScreen) CanMoveTo(unit *ArmyUnit, x int, y int) bool {
 }
 
 type Army struct {
-    Units []*ArmyUnit
     Player *player.Player
+    Units []*ArmyUnit
     Auto bool
 }
 
@@ -541,79 +540,71 @@ func (army *Army) RemoveUnit(remove *ArmyUnit){
 
 // represents a unit that is not part of the army, for things like magic vortex, for things like magic vortex
 type OtherUnit struct {
+    Animation *util.Animation
     X int
     Y int
-    Animation *util.Animation
 }
 
 type ProjectileEffect func(*ArmyUnit)
 
 type Projectile struct {
+    Target *ArmyUnit
+    Animation *util.Animation
+    Explode *util.Animation
+    Effect ProjectileEffect
     X float64
     Y float64
     Speed float64
     Angle float64
-    Target *ArmyUnit
     TargetX float64
     TargetY float64
     Exploding bool
-    Animation *util.Animation
-    Explode *util.Animation
-    Effect ProjectileEffect
 }
 
 type CombatScreen struct {
-    Counter uint64
-    Cache *lbx.LbxCache
     ImageCache util.ImageCache
+    Events chan CombatEvent
+    Cache *lbx.LbxCache
+    SelectedUnit *ArmyUnit
+    Mouse *mouse.MouseData
     DefendingArmy *Army
     AttackingArmy *Army
+    AttackingWizardFont *font.Font
+    DefendingWizardFont *font.Font
+    WhitePixel *ebiten.Image
+    UI *uilib.UI
+    DebugFont *font.Font
+    HudFont *font.Font
+    InfoFont *font.Font
+    WhiteFont *font.Font
+    // when the user hovers over a unit, that unit should be shown in a little info box at the upper right
+    HighlightedUnit *ArmyUnit
     Tiles [][]Tile
+    OtherUnits []*OtherUnit
+    Projectiles []*Projectile
     // order to draw tiles in such that they are drawn from the top of the screen to the bottom (painter's order)
     TopDownOrder []image.Point
-    SelectedUnit *ArmyUnit
+
+    Coordinates ebiten.GeoM
+    ScreenToTile ebiten.GeoM
+    MouseState MouseState
+
+    Counter uint64
 
     TurnAttacker int
     TurnDefender int
 
-    OtherUnits []*OtherUnit
-
-    MouseState MouseState
 
     // track how many units were killed on each side, so experience
     // can be given out after combat ends
     DefeatedDefenders int
     DefeatedAttackers int
 
-    Mouse *mouse.MouseData
-
     Turn Team
     CurrentTurn int
 
-    UI *uilib.UI
-
-    Projectiles []*Projectile
-
-    DebugFont *font.Font
-    HudFont *font.Font
-    InfoFont *font.Font
-    WhiteFont *font.Font
-
-    // when the user hovers over a unit, that unit should be shown in a little info box at the upper right
-    HighlightedUnit *ArmyUnit
-
-    AttackingWizardFont *font.Font
-    DefendingWizardFont *font.Font
-
-    Coordinates ebiten.GeoM
-    ScreenToTile ebiten.GeoM
-
-    WhitePixel *ebiten.Image
-
     MouseTileX int
     MouseTileY int
-
-    Events chan CombatEvent
 
     // if true then the player should select a tile to cast a spell on
     /*
