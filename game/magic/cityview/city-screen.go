@@ -661,73 +661,85 @@ func (cityScreen *CityScreen) MakeUI() *uilib.UI {
         }
     }
 
-    garrisonX := 216
-    garrisonY := 103
-
-    garrisonRow := 0
-
-    var garrison []units.StackUnit
-
-    cityStack := cityScreen.Player.FindStack(cityScreen.City.X, cityScreen.City.Y)
-    if cityStack != nil {
-        garrison = cityStack.Units()
-    }
-
-    for _, unit := range garrison {
-        func (){
-            garrisonBackground, err := units.GetUnitBackgroundImage(unit.GetBanner(), &cityScreen.ImageCache)
-            if err != nil {
-                return
-            }
-            pic, err := cityScreen.ImageCache.GetImageTransform(unit.GetLbxFile(), unit.GetLbxIndex(), 0, unit.GetBanner().String(), units.MakeUpdateUnitColorsFunc(unit.GetBanner()))
-            if err != nil {
-                return
-            }
-
-            posX := garrisonX
-            posY := garrisonY
-            useUnit := unit
-
-            disband := func(){
-                // FIXME: implement disband
-            }
-
-            elements = append(elements, &uilib.UIElement{
-                Rect: util.ImageRect(posX, posY, garrisonBackground),
-                LeftClick: func(element *uilib.UIElement) {
-                    cityScreen.State = CityScreenStateDone
-                    cityScreen.Player.SelectedStack = cityScreen.Player.FindStackByUnit(useUnit)
-                },
-                RightClick: func(element *uilib.UIElement) {
-                    ui.AddElements(unitview.MakeUnitContextMenu(cityScreen.LbxCache, ui, useUnit, disband))
-                },
-                Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
-                    var options colorm.DrawImageOptions
-                    var matrix colorm.ColorM
-                    options.GeoM.Translate(float64(posX), float64(posY))
-                    colorm.DrawImage(screen, garrisonBackground, matrix, &options)
-                    options.GeoM.Translate(1, 1)
-
-                    // draw in grey scale if the unit is on patrol
-                    if useUnit.GetPatrol() {
-                        matrix.ChangeHSV(0, 0, 1)
-                    }
-
-                    colorm.DrawImage(screen, pic, matrix, &options)
-                },
-            })
-
-            garrisonX += pic.Bounds().Dx() + 1
-            garrisonRow += 1
-            if garrisonRow >= 5 {
-                garrisonRow = 0
-                garrisonX = 216
-                garrisonY += pic.Bounds().Dy() + 1
-            }
-        }()
-    }
-
     ui.SetElementsFromArray(elements)
+
+    var resetUnits func()
+
+    var garrisonUnits []*uilib.UIElement
+    resetUnits = func(){
+        ui.RemoveElements(garrisonUnits)
+        garrisonX := 216
+        garrisonY := 103
+
+        garrisonRow := 0
+
+        var garrison []units.StackUnit
+
+        cityStack := cityScreen.Player.FindStack(cityScreen.City.X, cityScreen.City.Y)
+        if cityStack != nil {
+            garrison = cityStack.Units()
+        }
+
+        for _, unit := range garrison {
+            func (){
+                garrisonBackground, err := units.GetUnitBackgroundImage(unit.GetBanner(), &cityScreen.ImageCache)
+                if err != nil {
+                    return
+                }
+                pic, err := cityScreen.ImageCache.GetImageTransform(unit.GetLbxFile(), unit.GetLbxIndex(), 0, unit.GetBanner().String(), units.MakeUpdateUnitColorsFunc(unit.GetBanner()))
+                if err != nil {
+                    return
+                }
+
+                posX := garrisonX
+                posY := garrisonY
+                useUnit := unit
+
+                disband := func(){
+                    cityScreen.Player.RemoveUnit(unit)
+                    resetUnits()
+                }
+
+                garrisonElement := &uilib.UIElement{
+                    Rect: util.ImageRect(posX, posY, garrisonBackground),
+                    LeftClick: func(element *uilib.UIElement) {
+                        cityScreen.State = CityScreenStateDone
+                        cityScreen.Player.SelectedStack = cityScreen.Player.FindStackByUnit(useUnit)
+                    },
+                    RightClick: func(element *uilib.UIElement) {
+                        ui.AddElements(unitview.MakeUnitContextMenu(cityScreen.LbxCache, ui, useUnit, disband))
+                    },
+                    Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+                        var options colorm.DrawImageOptions
+                        var matrix colorm.ColorM
+                        options.GeoM.Translate(float64(posX), float64(posY))
+                        colorm.DrawImage(screen, garrisonBackground, matrix, &options)
+                        options.GeoM.Translate(1, 1)
+
+                        // draw in grey scale if the unit is on patrol
+                        if useUnit.GetPatrol() {
+                            matrix.ChangeHSV(0, 0, 1)
+                        }
+
+                        colorm.DrawImage(screen, pic, matrix, &options)
+                    },
+                }
+
+                garrisonUnits = append(garrisonUnits, garrisonElement)
+                ui.AddElement(garrisonElement)
+
+                garrisonX += pic.Bounds().Dx() + 1
+                garrisonRow += 1
+                if garrisonRow >= 5 {
+                    garrisonRow = 0
+                    garrisonX = 216
+                    garrisonY += pic.Bounds().Dy() + 1
+                }
+            }()
+        }
+    }
+
+    resetUnits()
     setupWorkers()
 
     return ui

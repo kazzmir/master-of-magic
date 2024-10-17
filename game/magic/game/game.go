@@ -3573,7 +3573,7 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
     }
 
     for _, stack := range overworld.Stacks {
-        if stack != overworld.SelectedStack || overworld.ShowAnimation || overworld.Counter / 55 % 2 == 0 {
+        if stack.Leader() != nil && (stack != overworld.SelectedStack || overworld.ShowAnimation || overworld.Counter / 55 % 2 == 0) {
             var options ebiten.DrawImageOptions
             options.GeoM = geom
             x, y := convertTileCoordinates(float64(stack.X()) + stack.OffsetX(), float64(stack.Y()) + stack.OffsetY())

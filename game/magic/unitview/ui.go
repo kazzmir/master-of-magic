@@ -50,6 +50,11 @@ func UnitDisbandMessage(unit UnitView) string {
 }
 
 func MakeUnitContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, doDisband func()) []*uilib.UIElement {
+    maybeHero, ok := unit.(*herolib.Hero)
+    if ok {
+        return MakeHeroContextMenu(cache, ui, maybeHero, doDisband)
+    }
+
     return MakeGenericContextMenu(cache, ui, unit, UnitDisbandMessage(unit), doDisband)
 }
 
