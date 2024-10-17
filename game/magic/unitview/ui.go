@@ -44,7 +44,7 @@ type PortraitUnit interface {
     GetPortraitLbxInfo() (string, int)
 }
 
-func MakeUnitContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView) []*uilib.UIElement {
+func MakeUnitContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, doDisband func()) []*uilib.UIElement {
     fontLbx, err := cache.GetLbxFile("fonts.lbx")
     if err != nil {
         log.Printf("Unable to read fonts.lbx: %v", err)
@@ -159,7 +159,7 @@ func MakeUnitContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView) []*ui
 
             yes := func(){
                 ui.RemoveElements(elements)
-                // FIXME: disband unit
+                doDisband()
             }
 
             no := func(){

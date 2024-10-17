@@ -2715,6 +2715,9 @@ func (game *Game) MakeHudUI() *uilib.UI {
         for _, unit := range stack.Units() {
             // show a unit element for each unit in the stack
             // image index increases by 1 for each unit, indexes 24-32
+            disband := func(){
+                // FIXME: implement disband
+            }
             unitBackground, _ := game.ImageCache.GetImage("main.lbx", 24, 0)
             unitRect := util.ImageRect(unitX, unitY, unitBackground)
             elements = append(elements, &uilib.UIElement{
@@ -2723,7 +2726,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                     stack.ToggleActive(unit)
                 },
                 RightClick: func(this *uilib.UIElement){
-                    ui.AddElements(unitview.MakeUnitContextMenu(game.Cache, ui, unit))
+                    ui.AddElements(unitview.MakeUnitContextMenu(game.Cache, ui, unit, disband))
                 },
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                     var options ebiten.DrawImageOptions

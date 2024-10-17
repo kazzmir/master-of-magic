@@ -11,6 +11,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/units"
+    "github.com/kazzmir/master-of-magic/game/magic/unitview"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
 
@@ -101,12 +102,6 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
             var options ebiten.DrawImageOptions
             screen.DrawImage(background, &options)
 
-            this.IterateElementsByLayer(func (element *uilib.UIElement){
-                if element.Draw != nil {
-                    element.Draw(element, screen)
-                }
-            })
-
             bigFont.PrintCenter(screen, 160, 10, 1, options.ColorScale, fmt.Sprintf("The Armies Of %v", view.Player.Wizard.Name))
 
             if highlightedUnit != nil {
@@ -129,6 +124,12 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
                 // just choose random point
                 view.DrawMinimap(minimapArea, 10, 10, view.Player.GetFog(data.PlaneArcanus), this.Counter)
             }
+
+            this.IterateElementsByLayer(func (element *uilib.UIElement){
+                if element.Draw != nil {
+                    element.Draw(element, screen)
+                }
+            })
 
             // vector.DrawFilledRect(minimapArea, float32(minimapRect.Min.X), float32(minimapRect.Min.Y), float32(minimapRect.Bounds().Dx()), float32(minimapRect.Bounds().Dy()), util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0, B: 0, A: 128}), false)
         },
@@ -201,8 +202,14 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
 
         rect := util.ImageRect(x, y, pic)
 
+        disband := func(){
+        }
+
         heroElement := &uilib.UIElement{
             Rect: rect,
+            RightClick: func (this *uilib.UIElement){
+                ui.AddElements(unitview.MakeUnitContextMenu(view.Cache, ui, hero, disband))
+            },
             Draw: func(this *uilib.UIElement, screen *ebiten.Image){
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(float64(x), float64(y))
@@ -214,6 +221,11 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
 
                 smallerFont.PrintCenter(screen, nameX + 15, nameY + 6, 1, options.ColorScale, hero.ShortName())
             },
+        }
+
+        disband = func(){
+            ui.RemoveElement(heroElement)
+            view.Player.RemoveUnit(hero)
         }
 
         elements = append(elements, heroElement)

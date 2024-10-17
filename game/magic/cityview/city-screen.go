@@ -688,6 +688,10 @@ func (cityScreen *CityScreen) MakeUI() *uilib.UI {
             posY := garrisonY
             useUnit := unit
 
+            disband := func(){
+                // FIXME: implement disband
+            }
+
             elements = append(elements, &uilib.UIElement{
                 Rect: util.ImageRect(posX, posY, garrisonBackground),
                 LeftClick: func(element *uilib.UIElement) {
@@ -695,7 +699,7 @@ func (cityScreen *CityScreen) MakeUI() *uilib.UI {
                     cityScreen.Player.SelectedStack = cityScreen.Player.FindStackByUnit(useUnit)
                 },
                 RightClick: func(element *uilib.UIElement) {
-                    ui.AddElements(unitview.MakeUnitContextMenu(cityScreen.LbxCache, ui, useUnit))
+                    ui.AddElements(unitview.MakeUnitContextMenu(cityScreen.LbxCache, ui, useUnit, disband))
                 },
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
                     var options colorm.DrawImageOptions
