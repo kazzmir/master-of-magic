@@ -566,7 +566,7 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
                             artifact.AddPower(power)
                             lastPower = power
                         } else {
-                            ui.AddElement(uilib.MakeErrorElement(ui, cache, imageCache, "Only four powers may be enchanted into an item"))
+                            ui.AddElement(uilib.MakeErrorElement(ui, cache, imageCache, "Only four powers may be enchanted into an item", func(){}))
                         }
 
                     }
@@ -1250,7 +1250,7 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, cr
             okIndex = 0
 
             if strings.TrimSpace(currentArtifact.Name) == "" {
-                ui.AddElement(uilib.MakeErrorElement(ui, cache, &imageCache, "An item must have a name"))
+                ui.AddElement(uilib.MakeErrorElement(ui, cache, &imageCache, "An item must have a name", func(){}))
                 return
             }
 

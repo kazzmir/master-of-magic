@@ -412,7 +412,7 @@ func (cityScreen *CityScreen) MakeUI() *uilib.UI {
         LeftClick: func(element *uilib.UIElement) {
             if cityScreen.BuildingLook != buildinglib.BuildingNone && canSellBuilding(cityScreen.City, cityScreen.BuildingLook) {
                 if cityScreen.City.SoldBuilding {
-                    ui.AddElement(uilib.MakeErrorElement(cityScreen.UI, cityScreen.LbxCache, &cityScreen.ImageCache, "You can only sell back one building per turn."))
+                    ui.AddElement(uilib.MakeErrorElement(cityScreen.UI, cityScreen.LbxCache, &cityScreen.ImageCache, "You can only sell back one building per turn.", func(){}))
                 } else {
                     var confirmElements []*uilib.UIElement
 

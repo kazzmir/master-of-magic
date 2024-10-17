@@ -26,6 +26,9 @@ type CityEventNewUnit struct {
 type CityEventOutpostDestroyed struct {
 }
 
+type CityEventOutpostHamlet struct {
+}
+
 type CityEventNewBuilding struct {
     Building building.Building
 }
@@ -626,7 +629,7 @@ func (city *City) GrowOutpost() CityEvent {
         return &CityEventOutpostDestroyed{}
     } else if city.Population >= 1000 {
         city.Outpost = false
-        city.Population = 1000
+        return &CityEventOutpostHamlet{}
     }
 
     return nil

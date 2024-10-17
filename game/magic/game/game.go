@@ -74,6 +74,10 @@ type GameEventApprenticeUI struct {
 type GameEventCastSpellBook struct {
 }
 
+type GameEventNotice struct {
+    Message string
+}
+
 type GameEventHireHero struct {
     Hero *herolib.Hero
     Player *playerlib.Player
@@ -1549,6 +1553,19 @@ func (game *Game) doHireHero(yield coroutine.YieldFunc, cost int, hero *herolib.
     }
 }
 
+func (game *Game) doNotice(yield coroutine.YieldFunc, message string) {
+    quit := false
+    game.HudUI.AddElement(uilib.MakeErrorElement(game.HudUI, game.Cache, &game.ImageCache, message, func(){
+        quit = true
+    }))
+
+    for !quit {
+        game.Counter += 1
+        game.HudUI.StandardUpdate()
+        yield()
+    }
+}
+
 func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
     // keep processing events until we don't receive one in the events channel
     for {
@@ -1568,6 +1585,9 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         game.ShowApprenticeUI(yield, game.Players[0])
                     case *GameEventArmyView:
                         game.doArmyView(yield)
+                    case *GameEventNotice:
+                        notice := event.(*GameEventNotice)
+                        game.doNotice(yield, notice.Message)
                     case *GameEventCastSpellBook:
                         game.ShowSpellBookCastUI(yield, game.Players[0])
                     case *GameEventCityListView:
@@ -3291,6 +3311,11 @@ func (game *Game) DoNextTurn(){
                         }
                     case *citylib.CityEventOutpostDestroyed:
                         removeCities = append(removeCities, city)
+                    case *citylib.CityEventOutpostHamlet:
+                        select {
+                            case game.Events<- &GameEventNotice{Message: fmt.Sprintf("The outpost of %v has grown into a hamlet.", city.Name)}:
+                            default:
+                        }
                     case *citylib.CityEventNewUnit:
                         newUnit := event.(*citylib.CityEventNewUnit)
                         player.AddUnit(units.MakeOverworldUnitFromUnit(newUnit.Unit, city.X, city.Y, city.Plane, city.Banner, player.MakeExperienceInfo()))
