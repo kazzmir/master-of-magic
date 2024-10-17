@@ -222,7 +222,7 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
             heroElement := &uilib.UIElement{
                 Rect: rect,
                 RightClick: func (this *uilib.UIElement){
-                    ui.AddElements(unitview.MakeHeroContextMenu(view.Cache, ui, hero, disband))
+                    ui.AddElements(unitview.MakeUnitContextMenu(view.Cache, ui, hero, disband))
                 },
                 Draw: func(this *uilib.UIElement, screen *ebiten.Image){
                     var options ebiten.DrawImageOptions

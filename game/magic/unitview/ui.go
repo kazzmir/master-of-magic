@@ -52,13 +52,13 @@ func UnitDisbandMessage(unit UnitView) string {
 func MakeUnitContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, doDisband func()) []*uilib.UIElement {
     maybeHero, ok := unit.(*herolib.Hero)
     if ok {
-        return MakeHeroContextMenu(cache, ui, maybeHero, doDisband)
+        return makeHeroContextMenu(cache, ui, maybeHero, doDisband)
     }
 
     return MakeGenericContextMenu(cache, ui, unit, UnitDisbandMessage(unit), doDisband)
 }
 
-func MakeHeroContextMenu(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero, doDisband func()) []*uilib.UIElement {
+func makeHeroContextMenu(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero, doDisband func()) []*uilib.UIElement {
     return MakeGenericContextMenu(cache, ui, hero, fmt.Sprintf("Do you wish to dismiss %v?", hero.ShortName()), doDisband)
 }
 
