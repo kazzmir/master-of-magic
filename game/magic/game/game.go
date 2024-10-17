@@ -2189,6 +2189,8 @@ func (game *Game) ShowMirrorUI(){
         })
     }
 
+    wrappedAbilities := smallFont.CreateWrappedText(160, 1, setup.JoinAbilities(player.Wizard.Abilities))
+
     element = &uilib.UIElement{
         Layer: 1,
         LeftClick: func(this *uilib.UIElement){
@@ -2216,10 +2218,16 @@ func (game *Game) ShowMirrorUI(){
             options.GeoM.Translate(34, 55)
             draw.DrawBooks(screen, options, &imageCache, player.Wizard.Books, game.BookOrder)
 
-            smallFont.Print(screen, float64(cornerX + 13), float64(cornerY + 112), 1, options.ColorScale, setup.JoinAbilities(player.Wizard.Abilities))
+            smallFont.RenderWrapped(screen, float64(cornerX + 13), float64(cornerY + 112), wrappedAbilities, options.ColorScale, false)
 
             heroFont.PrintCenter(screen, float64(cornerX + 90), float64(cornerY + 131), 1, options.ColorScale, "Heroes")
-            // FIXME: draw hero portraits here
+
+            heroX := cornerX + 13
+            heroY := cornerY + 142
+            for _, hero := range player.AliveHeroes() {
+                smallFont.Print(screen, float64(heroX), float64(heroY), 1, options.ColorScale, hero.GetName())
+                heroY += smallFont.Height()
+            }
         },
     }
 
@@ -2715,6 +2723,9 @@ func (game *Game) MakeHudUI() *uilib.UI {
         for _, unit := range stack.Units() {
             // show a unit element for each unit in the stack
             // image index increases by 1 for each unit, indexes 24-32
+            disband := func(){
+                // FIXME: implement disband
+            }
             unitBackground, _ := game.ImageCache.GetImage("main.lbx", 24, 0)
             unitRect := util.ImageRect(unitX, unitY, unitBackground)
             elements = append(elements, &uilib.UIElement{
@@ -2723,7 +2734,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                     stack.ToggleActive(unit)
                 },
                 RightClick: func(this *uilib.UIElement){
-                    ui.AddElements(unitview.MakeUnitContextMenu(game.Cache, ui, unit))
+                    ui.AddElements(unitview.MakeUnitContextMenu(game.Cache, ui, unit, disband))
                 },
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                     var options ebiten.DrawImageOptions
@@ -3570,7 +3581,7 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
     }
 
     for _, stack := range overworld.Stacks {
-        if stack != overworld.SelectedStack || overworld.ShowAnimation || overworld.Counter / 55 % 2 == 0 {
+        if stack.Leader() != nil && (stack != overworld.SelectedStack || overworld.ShowAnimation || overworld.Counter / 55 % 2 == 0) {
             var options ebiten.DrawImageOptions
             options.GeoM = geom
             x, y := convertTileCoordinates(float64(stack.X()) + stack.OffsetX(), float64(stack.Y()) + stack.OffsetY())

@@ -1301,6 +1301,7 @@ func createScenario17(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
+    /*
     testArtifact := artifact.Artifact{
         Name: "Sword",
         Image: 5,
@@ -1324,6 +1325,7 @@ func createScenario17(cache *lbx.LbxCache) *gamelib.Game {
     game.Events <- &gamelib.GameEventVault{
         CreatedArtifact: &testArtifact,
     }
+    */
 
     return game
 }
@@ -1339,6 +1341,10 @@ func createScenario18(cache *lbx.LbxCache) *gamelib.Game {
         Abilities: []setup.WizardAbility{
             setup.AbilityAlchemy,
             setup.AbilitySageMaster,
+            setup.AbilityWarlord,
+            setup.AbilityChanneler,
+            setup.AbilityMyrran,
+            setup.AbilityFamous,
         },
         Books: []data.WizardBook{
             data.WizardBook{
@@ -1364,6 +1370,7 @@ func createScenario18(cache *lbx.LbxCache) *gamelib.Game {
     city.Population = 6190
     city.Plane = data.PlaneArcanus
     city.Banner = wizard.Banner
+    city.Buildings.Insert(buildinglib.BuildingFortress)
     city.ProducingBuilding = buildinglib.BuildingGranary
     city.ProducingUnit = units.UnitNone
     city.Race = wizard.Race
@@ -1382,7 +1389,8 @@ func createScenario18(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 3)
 
-    rakir := player.AddUnit(hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroRakir, x+1, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()), hero.HeroRakir, "bubba"))
+    rakir := hero.MakeHero(units.MakeOverworldUnit(units.HeroRakir), hero.HeroRakir, "bubba")
+    player.AddHero(rakir)
     rakir.AddExperience(500)
 
     stack := player.FindStackByUnit(rakir)

@@ -11,6 +11,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/units"
+    "github.com/kazzmir/master-of-magic/game/magic/unitview"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
 
@@ -77,6 +78,8 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
     }
     normalFont := font.MakeOptimizedFontWithPalette(fonts[1], normalPalette)
 
+    smallerFont := font.MakeOptimizedFontWithPalette(fonts[0], normalPalette)
+
     // red := color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}
 
     yellow := color.RGBA{R: 0xf9, G: 0xdb, B: 0x4c, A: 0xff}
@@ -98,12 +101,6 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
             background, _ := view.ImageCache.GetImage("armylist.lbx", 0, 0)
             var options ebiten.DrawImageOptions
             screen.DrawImage(background, &options)
-
-            this.IterateElementsByLayer(func (element *uilib.UIElement){
-                if element.Draw != nil {
-                    element.Draw(element, screen)
-                }
-            })
 
             bigFont.PrintCenter(screen, 160, 10, 1, options.ColorScale, fmt.Sprintf("The Armies Of %v", view.Player.Wizard.Name))
 
@@ -128,11 +125,17 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
                 view.DrawMinimap(minimapArea, 10, 10, view.Player.GetFog(data.PlaneArcanus), this.Counter)
             }
 
+            this.IterateElementsByLayer(func (element *uilib.UIElement){
+                if element.Draw != nil {
+                    element.Draw(element, screen)
+                }
+            })
+
             // vector.DrawFilledRect(minimapArea, float32(minimapRect.Min.X), float32(minimapRect.Min.Y), float32(minimapRect.Bounds().Dx()), float32(minimapRect.Bounds().Dy()), util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0, B: 0, A: 128}), false)
         },
     }
 
-    var elements []*uilib.UIElement
+    ui.SetElementsFromArray(nil)
 
     makeButton := func (x int, y int, normal *ebiten.Image, clickImage *ebiten.Image, action func()) *uilib.UIElement {
 
@@ -159,13 +162,16 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
         }
     }
 
+    var resetUnits func()
+
     itemButtons, _ := view.ImageCache.GetImages("armylist.lbx", 3)
-    elements = append(elements, makeButton(273, 163, itemButtons[0], itemButtons[1], func(){
+    ui.AddElement(makeButton(273, 163, itemButtons[0], itemButtons[1], func(){
         view.ShowVault()
+        resetUnits()
     }))
 
     okButtons, _ := view.ImageCache.GetImages("armylist.lbx", 4)
-    elements = append(elements, makeButton(273, 183, okButtons[0], okButtons[1], func(){
+    ui.AddElement(makeButton(273, 183, okButtons[0], okButtons[1], func(){
         view.State = ArmyScreenStateDone
     }))
 
@@ -184,13 +190,11 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
         }
     }
 
-    elements = append(elements, makeButton(60, 26, upArrows[0], upArrows[1], scrollUnitsUp))
-    elements = append(elements, makeButton(250, 26, upArrows[0], upArrows[1], scrollUnitsUp))
+    ui.AddElement(makeButton(60, 26, upArrows[0], upArrows[1], scrollUnitsUp))
+    ui.AddElement(makeButton(250, 26, upArrows[0], upArrows[1], scrollUnitsUp))
 
-    elements = append(elements, makeButton(60, 139, downArrows[0], downArrows[1], scrollUnitsDown))
-    elements = append(elements, makeButton(250, 139, downArrows[0], downArrows[1], scrollUnitsDown))
-
-    // FIXME: show 6 heroes, 3 on either side
+    ui.AddElement(makeButton(60, 139, downArrows[0], downArrows[1], scrollUnitsDown))
+    ui.AddElement(makeButton(250, 139, downArrows[0], downArrows[1], scrollUnitsDown))
 
     // row := view.FirstRow
     rowY := 25
@@ -200,62 +204,115 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
 
     banner := view.Player.Wizard.Banner
 
-    for i, stack := range view.Player.Stacks {
-        if i < view.FirstRow {
-            continue
-        }
+    var unitElements []*uilib.UIElement
+    resetUnits = func(){
+        ui.RemoveElements(unitElements)
 
-        x := 78
+        for i, hero := range view.Player.AliveHeroes() {
+            x := 12 + (i % 2) * 265
+            y := 5 + (i / 2) * 51
 
-        for _, unit := range stack.Units() {
-            elementX := float64(x)
-            elementY := float64(rowY)
+            portraitLbx, portraitIndex := hero.GetPortraitLbxInfo()
+            pic, _ := view.ImageCache.GetImage(portraitLbx, portraitIndex, 0)
 
-            if highlightedUnit == nil {
-                highlightedUnit = unit
+            rect := util.ImageRect(x, y, pic)
+
+            var disband func()
+
+            heroElement := &uilib.UIElement{
+                Rect: rect,
+                RightClick: func (this *uilib.UIElement){
+                    ui.AddElements(unitview.MakeUnitContextMenu(view.Cache, ui, hero, disband))
+                },
+                Draw: func(this *uilib.UIElement, screen *ebiten.Image){
+                    var options ebiten.DrawImageOptions
+                    options.GeoM.Translate(float64(x), float64(y))
+                    screen.DrawImage(pic, &options)
+
+                    options.GeoM.Translate(0, float64(pic.Bounds().Dy()))
+
+                    nameX, nameY := options.GeoM.Apply(0, 0)
+
+                    smallerFont.PrintCenter(screen, nameX + 15, nameY + 6, 1, options.ColorScale, hero.ShortName())
+                },
             }
-            pic, _ := view.ImageCache.GetImageTransform(unit.GetLbxFile(), unit.GetLbxIndex(), 0, banner.String(), units.MakeUpdateUnitColorsFunc(banner))
-            if pic != nil {
-                elements = append(elements, &uilib.UIElement{
-                    Rect: util.ImageRect(int(elementX), int(elementY), pic),
-                    LeftClick: func (this *uilib.UIElement){
-                        view.Player.SelectedStack = stack
-                        view.State = ArmyScreenStateDone
-                    },
-                    Inside: func (this *uilib.UIElement, x, y int){
-                        highlightedUnit = unit
-                    },
-                    Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
-                        var options colorm.DrawImageOptions
-                        var matrix colorm.ColorM
-                        options.GeoM.Translate(elementX, elementY)
 
-                        if highlightedUnit == unit {
-                            x, y := options.GeoM.Apply(0, 0)
-                            vector.DrawFilledRect(screen, float32(x), float32(y+1), float32(pic.Bounds().Dx()), float32(pic.Bounds().Dy())-1, highlightColor, false)
-                        }
-
-                        if unit.GetPatrol() {
-                            matrix.ChangeHSV(0, 0, 1)
-                        }
-
-                        colorm.DrawImage(screen, pic, matrix, &options)
-                    },
-                })
-                x += pic.Bounds().Dx() + 1
+            disband = func(){
+                ui.RemoveElement(heroElement)
+                view.Player.RemoveUnit(hero)
+                resetUnits()
             }
+
+            ui.AddElement(heroElement)
+            unitElements = append(unitElements, heroElement)
         }
 
-        // there are only 6 slots to show at a time
-        rowCount += 1
-        if rowCount >= 6 {
-            break
-        }
+        for i, stack := range view.Player.Stacks {
+            if i < view.FirstRow {
+                continue
+            }
 
-        rowY += 22
+            x := 78
+
+            for _, unit := range stack.Units() {
+                elementX := float64(x)
+                elementY := float64(rowY)
+
+                if highlightedUnit == nil {
+                    highlightedUnit = unit
+                }
+                pic, _ := view.ImageCache.GetImageTransform(unit.GetLbxFile(), unit.GetLbxIndex(), 0, banner.String(), units.MakeUpdateUnitColorsFunc(banner))
+                if pic != nil {
+                    element := &uilib.UIElement{
+                        Rect: util.ImageRect(int(elementX), int(elementY), pic),
+                        LeftClick: func (this *uilib.UIElement){
+                            view.Player.SelectedStack = stack
+                            view.State = ArmyScreenStateDone
+                        },
+                        RightClick: func (this *uilib.UIElement){
+                            disband := func(){
+                                view.Player.RemoveUnit(unit)
+                                resetUnits()
+                            }
+                            ui.AddElements(unitview.MakeUnitContextMenu(view.Cache, ui, unit, disband))
+                        },
+                        Inside: func (this *uilib.UIElement, x, y int){
+                            highlightedUnit = unit
+                        },
+                        Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
+                            var options colorm.DrawImageOptions
+                            var matrix colorm.ColorM
+                            options.GeoM.Translate(elementX, elementY)
+
+                            if highlightedUnit == unit {
+                                x, y := options.GeoM.Apply(0, 0)
+                                vector.DrawFilledRect(screen, float32(x), float32(y+1), float32(pic.Bounds().Dx()), float32(pic.Bounds().Dy())-1, highlightColor, false)
+                            }
+
+                            if unit.GetPatrol() {
+                                matrix.ChangeHSV(0, 0, 1)
+                            }
+
+                            colorm.DrawImage(screen, pic, matrix, &options)
+                        },
+                    }
+                    ui.AddElement(element)
+                    unitElements = append(unitElements, element)
+                    x += pic.Bounds().Dx() + 1
+                }
+            }
+
+            // there are only 6 slots to show at a time
+            rowCount += 1
+            if rowCount >= 6 {
+                break
+            }
+
+            rowY += 22
+        }
     }
 
-    ui.SetElementsFromArray(elements)
+    resetUnits()
 
     return ui
 }

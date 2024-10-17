@@ -125,6 +125,18 @@ func (player *Player) AddHero(hero *herolib.Hero) bool {
     return false
 }
 
+func (player *Player) AliveHeroes() []*herolib.Hero {
+    var heroes []*herolib.Hero
+
+    for _, hero := range player.Heroes {
+        if hero != nil && hero.Status != herolib.StatusDead {
+            heroes = append(heroes, hero)
+        }
+    }
+
+    return heroes
+}
+
 /* return the city that contains the summoning circle */
 func (player *Player) FindFortressCity() *citylib.City {
     for _, city := range player.Cities {
