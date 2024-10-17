@@ -8,6 +8,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
+    herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
@@ -44,7 +45,19 @@ type PortraitUnit interface {
     GetPortraitLbxInfo() (string, int)
 }
 
+func UnitDisbandMessage(unit UnitView) string {
+    return fmt.Sprintf("Do you wish to disband the unit of %v?", unit.GetName())
+}
+
 func MakeUnitContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, doDisband func()) []*uilib.UIElement {
+    return MakeGenericContextMenu(cache, ui, unit, UnitDisbandMessage(unit), doDisband)
+}
+
+func MakeHeroContextMenu(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero, doDisband func()) []*uilib.UIElement {
+    return MakeGenericContextMenu(cache, ui, hero, fmt.Sprintf("Do you wish to dismiss %v?", hero.ShortName()), doDisband)
+}
+
+func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, disbandMessage string, doDisband func()) []*uilib.UIElement {
     fontLbx, err := cache.GetLbxFile("fonts.lbx")
     if err != nil {
         log.Printf("Unable to read fonts.lbx: %v", err)
@@ -165,7 +178,7 @@ func MakeUnitContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, doDis
             no := func(){
             }
 
-            confirmElements = uilib.MakeConfirmDialogWithLayer(ui, cache, &imageCache, 2, fmt.Sprintf("Do you wish to disband the unit of %v?", unit.GetName()), yes, no)
+            confirmElements = uilib.MakeConfirmDialogWithLayer(ui, cache, &imageCache, 2, disbandMessage, yes, no)
 
             ui.AddElements(confirmElements)
         },
