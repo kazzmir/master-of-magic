@@ -135,7 +135,7 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
         },
     }
 
-    var elements []*uilib.UIElement
+    ui.SetElementsFromArray(nil)
 
     makeButton := func (x int, y int, normal *ebiten.Image, clickImage *ebiten.Image, action func()) *uilib.UIElement {
 
@@ -163,12 +163,12 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
     }
 
     itemButtons, _ := view.ImageCache.GetImages("armylist.lbx", 3)
-    elements = append(elements, makeButton(273, 163, itemButtons[0], itemButtons[1], func(){
+    ui.AddElement(makeButton(273, 163, itemButtons[0], itemButtons[1], func(){
         view.ShowVault()
     }))
 
     okButtons, _ := view.ImageCache.GetImages("armylist.lbx", 4)
-    elements = append(elements, makeButton(273, 183, okButtons[0], okButtons[1], func(){
+    ui.AddElement(makeButton(273, 183, okButtons[0], okButtons[1], func(){
         view.State = ArmyScreenStateDone
     }))
 
@@ -187,11 +187,11 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
         }
     }
 
-    elements = append(elements, makeButton(60, 26, upArrows[0], upArrows[1], scrollUnitsUp))
-    elements = append(elements, makeButton(250, 26, upArrows[0], upArrows[1], scrollUnitsUp))
+    ui.AddElement(makeButton(60, 26, upArrows[0], upArrows[1], scrollUnitsUp))
+    ui.AddElement(makeButton(250, 26, upArrows[0], upArrows[1], scrollUnitsUp))
 
-    elements = append(elements, makeButton(60, 139, downArrows[0], downArrows[1], scrollUnitsDown))
-    elements = append(elements, makeButton(250, 139, downArrows[0], downArrows[1], scrollUnitsDown))
+    ui.AddElement(makeButton(60, 139, downArrows[0], downArrows[1], scrollUnitsDown))
+    ui.AddElement(makeButton(250, 139, downArrows[0], downArrows[1], scrollUnitsDown))
 
     for i, hero := range view.Player.AliveHeroes() {
         x := 12 + (i % 2) * 265
@@ -228,7 +228,7 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
             view.Player.RemoveUnit(hero)
         }
 
-        elements = append(elements, heroElement)
+        ui.AddElement(heroElement)
     }
 
     // row := view.FirstRow
@@ -255,7 +255,7 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
             }
             pic, _ := view.ImageCache.GetImageTransform(unit.GetLbxFile(), unit.GetLbxIndex(), 0, banner.String(), units.MakeUpdateUnitColorsFunc(banner))
             if pic != nil {
-                elements = append(elements, &uilib.UIElement{
+                ui.AddElement(&uilib.UIElement{
                     Rect: util.ImageRect(int(elementX), int(elementY), pic),
                     LeftClick: func (this *uilib.UIElement){
                         view.Player.SelectedStack = stack
@@ -298,8 +298,6 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
 
         rowY += 22
     }
-
-    ui.SetElementsFromArray(elements)
 
     return ui
 }
