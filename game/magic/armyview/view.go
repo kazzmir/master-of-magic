@@ -77,6 +77,8 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
     }
     normalFont := font.MakeOptimizedFontWithPalette(fonts[1], normalPalette)
 
+    smallerFont := font.MakeOptimizedFontWithPalette(fonts[0], normalPalette)
+
     // red := color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}
 
     yellow := color.RGBA{R: 0xf9, G: 0xdb, B: 0x4c, A: 0xff}
@@ -190,7 +192,32 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
     elements = append(elements, makeButton(60, 139, downArrows[0], downArrows[1], scrollUnitsDown))
     elements = append(elements, makeButton(250, 139, downArrows[0], downArrows[1], scrollUnitsDown))
 
-    // FIXME: show 6 heroes, 3 on either side
+    for i, hero := range view.Player.AliveHeroes() {
+        x := 12 + (i % 2) * 265
+        y := 5 + (i / 2) * 51
+
+        portraitLbx, portraitIndex := hero.GetPortraitLbxInfo()
+        pic, _ := view.ImageCache.GetImage(portraitLbx, portraitIndex, 0)
+
+        rect := util.ImageRect(x, y, pic)
+
+        heroElement := &uilib.UIElement{
+            Rect: rect,
+            Draw: func(this *uilib.UIElement, screen *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(x), float64(y))
+                screen.DrawImage(pic, &options)
+
+                options.GeoM.Translate(0, float64(pic.Bounds().Dy()))
+
+                nameX, nameY := options.GeoM.Apply(0, 0)
+
+                smallerFont.PrintCenter(screen, nameX + 15, nameY + 6, 1, options.ColorScale, hero.ShortName())
+            },
+        }
+
+        elements = append(elements, heroElement)
+    }
 
     // row := view.FirstRow
     rowY := 25

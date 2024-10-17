@@ -1301,6 +1301,7 @@ func createScenario17(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
+    /*
     testArtifact := artifact.Artifact{
         Name: "Sword",
         Image: 5,
@@ -1324,6 +1325,7 @@ func createScenario17(cache *lbx.LbxCache) *gamelib.Game {
     game.Events <- &gamelib.GameEventVault{
         CreatedArtifact: &testArtifact,
     }
+    */
 
     return game
 }

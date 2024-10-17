@@ -171,6 +171,10 @@ func (hero *Hero) GetName() string {
     return fmt.Sprintf("%v the %v", hero.Unit.GetName(), hero.Title())
 }
 
+func (hero *Hero) ShortName() string {
+    return hero.Unit.GetName()
+}
+
 func (hero *Hero) GetPortraitLbxInfo() (string, int) {
     lbxFile := "portrait.lbx"
     switch hero.HeroType {

@@ -1163,24 +1163,28 @@ var Nagas Unit = Unit{
 var HeroBrax Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 0,
+    Name: "Brax",
     Race: data.RaceHero,
 }
 
 var HeroGunther Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 1,
+    Name: "Gunther",
     Race: data.RaceHero,
 }
 
 var HeroZaldron Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 2,
+    Name: "Zaldron",
     Race: data.RaceHero,
 }
 
 var HeroBShan Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 3,
+    Name: "B'Shan",
     Race: data.RaceHero,
 }
 
@@ -1203,168 +1207,196 @@ var HeroRakir Unit = Unit{
 var HeroValana Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 5,
+    Name: "Valana",
     Race: data.RaceHero,
 }
 
 var HeroBahgtru Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 6,
+    Name: "Bahgtru",
     Race: data.RaceHero,
 }
 
 var HeroSerena Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 7,
+    Name: "Serena",
     Race: data.RaceHero,
 }
 
 var HeroShuri Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 8,
+    Name: "Shuri",
     Race: data.RaceHero,
 }
 
 var HeroTheria Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 9,
+    Name: "Theria",
     Race: data.RaceHero,
 }
 
 var HeroGreyfairer Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 10,
+    Name: "Greyfairer",
     Race: data.RaceHero,
 }
 
 var HeroTaki Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 11,
+    Name: "Taki",
     Race: data.RaceHero,
 }
 
 var HeroReywind Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 12,
+    Name: "Reywind",
     Race: data.RaceHero,
 }
 
 var HeroMalleus Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 13,
+    Name: "Malleus",
     Race: data.RaceHero,
 }
 
 var HeroTumu Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 14,
+    Name: "Tumu",
     Race: data.RaceHero,
 }
 
 var HeroJaer Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 15,
+    Name: "Jaer",
     Race: data.RaceHero,
 }
 
 var HeroMarcus Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 16,
+    Name: "Marcus",
     Race: data.RaceHero,
 }
 
 var HeroFang Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 17,
+    Name: "Fang",
     Race: data.RaceHero,
 }
 
 var HeroMorgana Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 18,
+    Name: "Morgana",
     Race: data.RaceHero,
 }
 
 var HeroAureus Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 19,
+    Name: "Aureus",
     Race: data.RaceHero,
 }
 
 var HeroShinBo Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 20,
+    Name: "Shin Bo",
     Race: data.RaceHero,
 }
 
 var HeroSpyder Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 21,
+    Name: "Spyder",
     Race: data.RaceHero,
 }
 
 var HeroShalla Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 22,
+    Name: "Shalla",
     Race: data.RaceHero,
 }
 
 var HeroYramrag Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 23,
+    Name: "Yramrag",
     Race: data.RaceHero,
 }
 
 var HeroMysticX Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 24,
+    Name: "Mystic X",
     Race: data.RaceHero,
 }
 
 var HeroAerie Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 25,
+    Name: "Aerie",
     Race: data.RaceHero,
 }
 
 var HeroDethStryke Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 26,
+    Name: "Deth Stryke",
     Race: data.RaceHero,
 }
 
 var HeroElana Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 27,
+    Name: "Elana",
     Race: data.RaceHero,
 }
 
 var HeroRoland Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 28,
+    Name: "Roland",
     Race: data.RaceHero,
 }
 
 var HeroMortu Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 29,
+    Name: "Mortu",
     Race: data.RaceHero,
 }
 
 var HeroAlorra Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 30,
+    Name: "Alorra",
     Race: data.RaceHero,
 }
 
 var HeroSirHarold Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 31,
+    Name: "Sir Harold",
     Race: data.RaceHero,
 }
 
 var HeroRavashack Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 32,
+    Name: "Ravashack",
     Race: data.RaceHero,
 }
 
@@ -1388,6 +1420,7 @@ var HeroWarrax Unit = Unit{
 var HeroTorin Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 34,
+    Name: "Torin",
     Race: data.RaceHero,
 }
 
