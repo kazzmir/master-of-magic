@@ -614,14 +614,12 @@ func (city *City) GrowOutpost() CityEvent {
     for range 3 {
         if rand.Float64() < growChance {
             city.Population += 100
-            log.Printf("outpost grow")
         }
     }
 
     for range 2 {
         if rand.Float64() < shrinkChance {
             city.Population -= 100
-            log.Printf("outpost shrink")
         }
     }
 
