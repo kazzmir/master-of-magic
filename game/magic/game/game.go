@@ -2219,7 +2219,13 @@ func (game *Game) ShowMirrorUI(){
             smallFont.Print(screen, float64(cornerX + 13), float64(cornerY + 112), 1, options.ColorScale, setup.JoinAbilities(player.Wizard.Abilities))
 
             heroFont.PrintCenter(screen, float64(cornerX + 90), float64(cornerY + 131), 1, options.ColorScale, "Heroes")
-            // FIXME: draw hero portraits here
+
+            heroX := cornerX + 13
+            heroY := cornerY + 142
+            for _, hero := range player.AliveHeroes() {
+                smallFont.Print(screen, float64(heroX), float64(heroY), 1, options.ColorScale, hero.GetName())
+                heroY += smallFont.Height()
+            }
         },
     }
 
