@@ -1064,7 +1064,7 @@ func (game *Game) showScroll(yield coroutine.YieldFunc, title string, text strin
     }
 }
 
-func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, stack *playerlib.UnitStack){
+func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, stack *playerlib.UnitStack, rename bool){
     drawer := game.Drawer
     defer func(){
         game.Drawer = drawer
@@ -1104,7 +1104,7 @@ func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, sta
         options.GeoM.Translate(30, 50)
         screen.DrawImage(background, &options)
 
-        numHouses := 3
+        numHouses := city.GetOutpostHouses()
         maxHouses := 10
 
         houseOptions := options
@@ -1174,7 +1174,9 @@ func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, sta
         yield()
     }
 
-    city.Name = game.doInput(yield, "New Outpost", city.Name, 80, 100)
+    if rename {
+        city.Name = game.doInput(yield, "New Outpost", city.Name, 80, 100)
+    }
 }
 
 func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, stack *playerlib.UnitStack){
@@ -1572,7 +1574,7 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         game.doCityListView(yield)
                     case *GameEventNewOutpost:
                         outpost := event.(*GameEventNewOutpost)
-                        game.showOutpost(yield, outpost.City, outpost.Stack)
+                        game.showOutpost(yield, outpost.City, outpost.Stack, true)
                     case *GameEventVault:
                         vaultEvent := event.(*GameEventVault)
                         game.doVault(yield, vaultEvent.CreatedArtifact)
@@ -1805,7 +1807,11 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
 
                             for _, city := range player.Cities {
                                 if city.X == tileX && city.Y == tileY {
-                                    game.doCityScreen(yield, city, player)
+                                    if city.Outpost {
+                                        game.showOutpost(yield, city, player.FindStack(city.X, city.Y), false)
+                                    } else {
+                                        game.doCityScreen(yield, city, player)
+                                    }
                                     game.RefreshUI()
                                 }
                             }
@@ -2536,7 +2542,8 @@ func (game *Game) CityProductionBonus(x int, y int) int {
 func (game *Game) CreateOutpost(settlers units.StackUnit, player *playerlib.Player) *citylib.City {
     newCity := citylib.MakeCity("New City", settlers.GetX(), settlers.GetY(), settlers.GetRace(), settlers.GetBanner(), player.TaxRate, game.BuildingInfo)
     newCity.Plane = settlers.GetPlane()
-    newCity.Population = 1000
+    newCity.Population = 300
+    newCity.Outpost = true
     newCity.Banner = player.Wizard.Banner
     newCity.ProducingBuilding = buildinglib.BuildingHousing
     newCity.ProducingUnit = units.UnitNone

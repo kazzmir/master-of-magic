@@ -1,7 +1,9 @@
 package city
 
 import (
+    "log"
     "math"
+    "math/rand/v2"
 
     "github.com/kazzmir/master-of-magic/lib/set"
     "github.com/kazzmir/master-of-magic/lib/fraction"
@@ -19,6 +21,9 @@ type CityEventPopulationGrowth struct {
 
 type CityEventNewUnit struct {
     Unit units.Unit
+}
+
+type CityEventOutpostDestroyed struct {
 }
 
 type CityEventNewBuilding struct {
@@ -64,6 +69,7 @@ type City struct {
     Race data.Race
     X int
     Y int
+    Outpost bool
     Banner data.BannerType
     Buildings *set.Set[building.Building]
 
@@ -93,6 +99,11 @@ func MakeCity(name string, x int, y int, race data.Race, banner data.BannerType,
     }
 
     return &city
+}
+
+func (city *City) GetOutpostHouses() int {
+    // every 100 population is 1 house
+    return city.Population / 100
 }
 
 func (city *City) UpdateTaxRate(taxRate fraction.Fraction, garrison []units.StackUnit){
@@ -563,54 +574,120 @@ func (city *City) WorkProductionRate() float32 {
     return float32(workerRate * city.Workers) + 0.5 * float32(city.Farmers)
 }
 
+func (city *City) GrowOutpost() CityEvent {
+
+    growRaceBonus := float64(0.0)
+    growTerrainChance := 0.0
+    growSpellChance := 0.0
+
+    switch city.Race {
+        case data.RaceBarbarian: growRaceBonus = 15
+        case data.RaceGnoll: growRaceBonus = 5
+        case data.RaceHalfling: growRaceBonus = 15
+        case data.RaceHighElf: growRaceBonus = 5
+        case data.RaceHighMen: growRaceBonus = 10
+        case data.RaceKlackon: growRaceBonus = 5
+        case data.RaceLizard: growRaceBonus = 10
+        case data.RaceNomad: growRaceBonus = 10
+        case data.RaceOrc: growRaceBonus = 10
+        case data.RaceBeastmen: growRaceBonus = 5
+        case data.RaceDarkElf: growRaceBonus = 2
+        case data.RaceDraconian: growRaceBonus = 5
+        case data.RaceDwarf: growRaceBonus = 7
+        case data.RaceTroll: growRaceBonus = 3
+    }
+
+    // FIXME: take terrain into account
+    // FIXME: take global enchantments into account for growth
+
+    growChance := 0.01 * float64(city.MaximumCitySize()) + growRaceBonus / 100.0 + growTerrainChance + growSpellChance
+
+    shrinkSpellChance := 0.0
+
+    // FIXME: take global enchantments into account for shrinkage
+
+    shrinkChance := 0.05 + shrinkSpellChance
+
+    for range 3 {
+        if rand.Float64() < growChance {
+            city.Population += 100
+            log.Printf("outpost grow")
+        }
+    }
+
+    for range 2 {
+        if rand.Float64() < shrinkChance {
+            city.Population -= 100
+            log.Printf("outpost shrink")
+        }
+    }
+
+    if city.Population < 100 {
+        return &CityEventOutpostDestroyed{}
+    } else if city.Population >= 1000 {
+        city.Outpost = false
+        city.Population = 1000
+    }
+
+    return nil
+}
+
 // do all the stuff needed per turn
 // increase population, add production, add food/money, etc
 func (city *City) DoNextTurn(garrison []units.StackUnit) []CityEvent {
     var cityEvents []CityEvent
+    if city.Outpost {
+        event := city.GrowOutpost()
+        if event != nil {
+            cityEvents = append(cityEvents, event)
+        }
+    } else {
 
-    city.SoldBuilding = false
+        city.SoldBuilding = false
 
-    oldPopulation := city.Population
-    city.Population += city.PopulationGrowthRate()
-    if city.Population > city.MaximumCitySize() * 1000 {
-        city.Population = city.MaximumCitySize() * 1000
-    }
+        oldPopulation := city.Population
+        city.Population += city.PopulationGrowthRate()
+        if city.Population > city.MaximumCitySize() * 1000 {
+            city.Population = city.MaximumCitySize() * 1000
+        }
 
-    if math.Abs(float64(city.Population/1000 - oldPopulation/1000)) > 0 {
-        cityEvents = append(cityEvents, &CityEventPopulationGrowth{Size: (city.Population - oldPopulation)/1000})
-    }
+        if math.Abs(float64(city.Population/1000 - oldPopulation/1000)) > 0 {
+            cityEvents = append(cityEvents, &CityEventPopulationGrowth{Size: (city.Population - oldPopulation)/1000})
+        }
 
-    buildingCost := city.BuildingInfo.ProductionCost(city.ProducingBuilding)
+        buildingCost := city.BuildingInfo.ProductionCost(city.ProducingBuilding)
 
-    if buildingCost != 0 || !city.ProducingUnit.Equals(units.UnitNone) {
-        city.Production += city.WorkProductionRate()
+        if buildingCost != 0 || !city.ProducingUnit.Equals(units.UnitNone) {
+            city.Production += city.WorkProductionRate()
 
-        if buildingCost != 0 {
-            if city.Production >= float32(buildingCost) {
-                city.Buildings.Insert(city.ProducingBuilding)
-                cityEvents = append(cityEvents, &CityEventNewBuilding{Building: city.ProducingBuilding})
+            if buildingCost != 0 {
+                if city.Production >= float32(buildingCost) {
+                    city.Buildings.Insert(city.ProducingBuilding)
+                    cityEvents = append(cityEvents, &CityEventNewBuilding{Building: city.ProducingBuilding})
 
+                    city.Production = 0
+                    city.ProducingBuilding = building.BuildingHousing
+                }
+            } else if !city.ProducingUnit.Equals(units.UnitNone) && city.Production >= float32(city.ProducingUnit.ProductionCost) {
+                cityEvents = append(cityEvents, &CityEventNewUnit{Unit: city.ProducingUnit})
                 city.Production = 0
-                city.ProducingBuilding = building.BuildingHousing
-            }
-        } else if !city.ProducingUnit.Equals(units.UnitNone) && city.Production >= float32(city.ProducingUnit.ProductionCost) {
-            cityEvents = append(cityEvents, &CityEventNewUnit{Unit: city.ProducingUnit})
-            city.Production = 0
 
-            if city.ProducingUnit.IsSettlers() {
-                city.Population -= 1000
+                if city.ProducingUnit.IsSettlers() {
+                    city.Population -= 1000
+                }
             }
         }
-    }
 
-    /*
-    if city.Farmers < city.ComputeSubsistenceFarmers() {
-        city.Farmers = city.ComputeSubsistenceFarmers()
-        city.Workers = city.Citizens() - city.Rebels
-    }
-    */
+        /*
+        if city.Farmers < city.ComputeSubsistenceFarmers() {
+            city.Farmers = city.ComputeSubsistenceFarmers()
+            city.Workers = city.Citizens() - city.Rebels
+        }
+        */
 
-    city.ResetCitizens(garrison)
+        city.ResetCitizens(garrison)
+
+    }
 
     return cityEvents
 }
