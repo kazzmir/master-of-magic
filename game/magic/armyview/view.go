@@ -187,6 +187,9 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
         }
     }
 
+
+    var resetUnits func()
+
     ui.AddElement(makeButton(60, 26, upArrows[0], upArrows[1], scrollUnitsUp))
     ui.AddElement(makeButton(250, 26, upArrows[0], upArrows[1], scrollUnitsUp))
 
@@ -202,8 +205,7 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
 
         rect := util.ImageRect(x, y, pic)
 
-        disband := func(){
-        }
+        var disband func()
 
         heroElement := &uilib.UIElement{
             Rect: rect,
@@ -226,6 +228,7 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
         disband = func(){
             ui.RemoveElement(heroElement)
             view.Player.RemoveUnit(hero)
+            resetUnits()
         }
 
         ui.AddElement(heroElement)
@@ -239,65 +242,75 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
 
     banner := view.Player.Wizard.Banner
 
-    for i, stack := range view.Player.Stacks {
-        if i < view.FirstRow {
-            continue
-        }
-
-        x := 78
-
-        for _, unit := range stack.Units() {
-            elementX := float64(x)
-            elementY := float64(rowY)
-
-            if highlightedUnit == nil {
-                highlightedUnit = unit
+    var unitElements []*uilib.UIElement
+    resetUnits = func(){
+        ui.RemoveElements(unitElements)
+        for i, stack := range view.Player.Stacks {
+            if i < view.FirstRow {
+                continue
             }
-            pic, _ := view.ImageCache.GetImageTransform(unit.GetLbxFile(), unit.GetLbxIndex(), 0, banner.String(), units.MakeUpdateUnitColorsFunc(banner))
-            if pic != nil {
-                ui.AddElement(&uilib.UIElement{
-                    Rect: util.ImageRect(int(elementX), int(elementY), pic),
-                    LeftClick: func (this *uilib.UIElement){
-                        view.Player.SelectedStack = stack
-                        view.State = ArmyScreenStateDone
-                    },
-                    RightClick: func (this *uilib.UIElement){
-                        disband := func(){
-                        }
-                        ui.AddElements(unitview.MakeUnitContextMenu(view.Cache, ui, unit, disband))
-                    },
-                    Inside: func (this *uilib.UIElement, x, y int){
-                        highlightedUnit = unit
-                    },
-                    Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
-                        var options colorm.DrawImageOptions
-                        var matrix colorm.ColorM
-                        options.GeoM.Translate(elementX, elementY)
 
-                        if highlightedUnit == unit {
-                            x, y := options.GeoM.Apply(0, 0)
-                            vector.DrawFilledRect(screen, float32(x), float32(y+1), float32(pic.Bounds().Dx()), float32(pic.Bounds().Dy())-1, highlightColor, false)
-                        }
+            x := 78
 
-                        if unit.GetPatrol() {
-                            matrix.ChangeHSV(0, 0, 1)
-                        }
+            for _, unit := range stack.Units() {
+                elementX := float64(x)
+                elementY := float64(rowY)
 
-                        colorm.DrawImage(screen, pic, matrix, &options)
-                    },
-                })
-                x += pic.Bounds().Dx() + 1
+                if highlightedUnit == nil {
+                    highlightedUnit = unit
+                }
+                pic, _ := view.ImageCache.GetImageTransform(unit.GetLbxFile(), unit.GetLbxIndex(), 0, banner.String(), units.MakeUpdateUnitColorsFunc(banner))
+                if pic != nil {
+                    element := &uilib.UIElement{
+                        Rect: util.ImageRect(int(elementX), int(elementY), pic),
+                        LeftClick: func (this *uilib.UIElement){
+                            view.Player.SelectedStack = stack
+                            view.State = ArmyScreenStateDone
+                        },
+                        RightClick: func (this *uilib.UIElement){
+                            disband := func(){
+                                view.Player.RemoveUnit(unit)
+                                resetUnits()
+                            }
+                            ui.AddElements(unitview.MakeUnitContextMenu(view.Cache, ui, unit, disband))
+                        },
+                        Inside: func (this *uilib.UIElement, x, y int){
+                            highlightedUnit = unit
+                        },
+                        Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
+                            var options colorm.DrawImageOptions
+                            var matrix colorm.ColorM
+                            options.GeoM.Translate(elementX, elementY)
+
+                            if highlightedUnit == unit {
+                                x, y := options.GeoM.Apply(0, 0)
+                                vector.DrawFilledRect(screen, float32(x), float32(y+1), float32(pic.Bounds().Dx()), float32(pic.Bounds().Dy())-1, highlightColor, false)
+                            }
+
+                            if unit.GetPatrol() {
+                                matrix.ChangeHSV(0, 0, 1)
+                            }
+
+                            colorm.DrawImage(screen, pic, matrix, &options)
+                        },
+                    }
+                    ui.AddElement(element)
+                    unitElements = append(unitElements, element)
+                    x += pic.Bounds().Dx() + 1
+                }
             }
-        }
 
-        // there are only 6 slots to show at a time
-        rowCount += 1
-        if rowCount >= 6 {
-            break
-        }
+            // there are only 6 slots to show at a time
+            rowCount += 1
+            if rowCount >= 6 {
+                break
+            }
 
-        rowY += 22
+            rowY += 22
+        }
     }
+
+    resetUnits()
 
     return ui
 }
