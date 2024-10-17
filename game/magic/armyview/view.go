@@ -261,6 +261,11 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
                         view.Player.SelectedStack = stack
                         view.State = ArmyScreenStateDone
                     },
+                    RightClick: func (this *uilib.UIElement){
+                        disband := func(){
+                        }
+                        ui.AddElements(unitview.MakeUnitContextMenu(view.Cache, ui, unit, disband))
+                    },
                     Inside: func (this *uilib.UIElement, x, y int){
                         highlightedUnit = unit
                     },

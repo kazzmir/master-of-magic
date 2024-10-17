@@ -557,6 +557,7 @@ var WarMammoths Unit = Unit{
 var MagicSpirit Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 34,
+    Name: "Magic Spirit",
     Realm: data.ArcaneMagic,
     Abilities: []Ability{AbilityMeld, AbilityNonCorporeal},
     MovementSpeed: 1,
