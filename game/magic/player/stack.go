@@ -45,9 +45,9 @@ func (stack *UnitStack) ResetMoves(){
     }
 }
 
-func (stack *UnitStack) NaturalHeal(){
+func (stack *UnitStack) NaturalHeal(rate float64){
     for _, unit := range stack.units {
-        unit.NaturalHeal()
+        unit.NaturalHeal(rate)
     }
 }
 

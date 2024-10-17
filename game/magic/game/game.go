@@ -3255,6 +3255,8 @@ func (game *Game) DoNextTurn(){
         // reset casting skill for this turn
         player.RemainingCastingSkill = player.ComputeCastingSkill()
 
+        var removeCities []*citylib.City
+
         for _, city := range player.Cities {
             cityEvents := city.DoNextTurn(player.GetUnits(city.X, city.Y))
             for _, event := range cityEvents {
@@ -3287,7 +3289,8 @@ func (game *Game) DoNextTurn(){
                             case game.Events<- &GameEventNewBuilding{City: city, Building: newBuilding.Building, Player: player}:
                             default:
                         }
-
+                    case *citylib.CityEventOutpostDestroyed:
+                        removeCities = append(removeCities, city)
                     case *citylib.CityEventNewUnit:
                         newUnit := event.(*citylib.CityEventNewUnit)
                         player.AddUnit(units.MakeOverworldUnitFromUnit(newUnit.Unit, city.X, city.Y, city.Plane, city.Banner, player.MakeExperienceInfo()))
@@ -3304,9 +3307,33 @@ func (game *Game) DoNextTurn(){
                 }
             }
 
-            stack.NaturalHeal()
+            // base healing rate is 5%. in a town is 10%, with animists guild is 16.67%
+            rate := 0.05
+
+            city := player.FindCity(stack.X(), stack.Y())
+
+            if city != nil {
+                rate = 0.1
+                if city.Buildings.Contains(buildinglib.BuildingAnimistsGuild) {
+                    rate = 0.1667
+                }
+            }
+
+            // any healer in the same stack provides an additional 20% healing rate
+            for _, unit := range stack.Units() {
+                if unit.HasAbility(units.AbilityHealer) {
+                    rate += 0.2
+                    break
+                }
+            }
+
+            stack.NaturalHeal(rate)
             stack.ResetMoves()
             stack.EnableMovers()
+        }
+
+        for _, city := range removeCities {
+            player.RemoveCity(city)
         }
 
         // game.CenterCamera(player.Cities[0].X, player.Cities[0].Y)

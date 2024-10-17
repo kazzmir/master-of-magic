@@ -314,18 +314,13 @@ func MakeOverworldUnitFromUnit(unit Unit, x int, y int, plane data.Plane, banner
 }
 
 /* restore health points on the overworld
- * FIXME: take bonuses into account (city garrison, healer ability, etc)
  */
-func (unit *OverworldUnit) NaturalHeal() {
-    maxHealth := unit.GetMaxHealth()
-    amount := float64(maxHealth) * 5 / 100
+func (unit *OverworldUnit) NaturalHeal(rate float64) {
+    amount := float64(unit.GetMaxHealth()) * rate
     if amount < 1 {
         amount = 1
     }
-    unit.Health += int(amount)
-    if unit.Health >= maxHealth {
-        unit.Health = maxHealth
-    }
+    unit.AdjustHealth(int(amount))
 }
 
 func (unit *OverworldUnit) ResetMoves() {
