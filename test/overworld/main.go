@@ -1341,6 +1341,10 @@ func createScenario18(cache *lbx.LbxCache) *gamelib.Game {
         Abilities: []setup.WizardAbility{
             setup.AbilityAlchemy,
             setup.AbilitySageMaster,
+            setup.AbilityWarlord,
+            setup.AbilityChanneler,
+            setup.AbilityMyrran,
+            setup.AbilityFamous,
         },
         Books: []data.WizardBook{
             data.WizardBook{

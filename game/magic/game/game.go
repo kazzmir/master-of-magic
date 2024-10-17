@@ -2189,6 +2189,8 @@ func (game *Game) ShowMirrorUI(){
         })
     }
 
+    wrappedAbilities := smallFont.CreateWrappedText(160, 1, setup.JoinAbilities(player.Wizard.Abilities))
+
     element = &uilib.UIElement{
         Layer: 1,
         LeftClick: func(this *uilib.UIElement){
@@ -2216,7 +2218,7 @@ func (game *Game) ShowMirrorUI(){
             options.GeoM.Translate(34, 55)
             draw.DrawBooks(screen, options, &imageCache, player.Wizard.Books, game.BookOrder)
 
-            smallFont.Print(screen, float64(cornerX + 13), float64(cornerY + 112), 1, options.ColorScale, setup.JoinAbilities(player.Wizard.Abilities))
+            smallFont.RenderWrapped(screen, float64(cornerX + 13), float64(cornerY + 112), wrappedAbilities, options.ColorScale, false)
 
             heroFont.PrintCenter(screen, float64(cornerX + 90), float64(cornerY + 131), 1, options.ColorScale, "Heroes")
 
