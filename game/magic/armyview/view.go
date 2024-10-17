@@ -162,9 +162,12 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
         }
     }
 
+    var resetUnits func()
+
     itemButtons, _ := view.ImageCache.GetImages("armylist.lbx", 3)
     ui.AddElement(makeButton(273, 163, itemButtons[0], itemButtons[1], func(){
         view.ShowVault()
+        resetUnits()
     }))
 
     okButtons, _ := view.ImageCache.GetImages("armylist.lbx", 4)
@@ -187,52 +190,11 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
         }
     }
 
-
-    var resetUnits func()
-
     ui.AddElement(makeButton(60, 26, upArrows[0], upArrows[1], scrollUnitsUp))
     ui.AddElement(makeButton(250, 26, upArrows[0], upArrows[1], scrollUnitsUp))
 
     ui.AddElement(makeButton(60, 139, downArrows[0], downArrows[1], scrollUnitsDown))
     ui.AddElement(makeButton(250, 139, downArrows[0], downArrows[1], scrollUnitsDown))
-
-    for i, hero := range view.Player.AliveHeroes() {
-        x := 12 + (i % 2) * 265
-        y := 5 + (i / 2) * 51
-
-        portraitLbx, portraitIndex := hero.GetPortraitLbxInfo()
-        pic, _ := view.ImageCache.GetImage(portraitLbx, portraitIndex, 0)
-
-        rect := util.ImageRect(x, y, pic)
-
-        var disband func()
-
-        heroElement := &uilib.UIElement{
-            Rect: rect,
-            RightClick: func (this *uilib.UIElement){
-                ui.AddElements(unitview.MakeHeroContextMenu(view.Cache, ui, hero, disband))
-            },
-            Draw: func(this *uilib.UIElement, screen *ebiten.Image){
-                var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(x), float64(y))
-                screen.DrawImage(pic, &options)
-
-                options.GeoM.Translate(0, float64(pic.Bounds().Dy()))
-
-                nameX, nameY := options.GeoM.Apply(0, 0)
-
-                smallerFont.PrintCenter(screen, nameX + 15, nameY + 6, 1, options.ColorScale, hero.ShortName())
-            },
-        }
-
-        disband = func(){
-            ui.RemoveElement(heroElement)
-            view.Player.RemoveUnit(hero)
-            resetUnits()
-        }
-
-        ui.AddElement(heroElement)
-    }
 
     // row := view.FirstRow
     rowY := 25
@@ -245,6 +207,46 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
     var unitElements []*uilib.UIElement
     resetUnits = func(){
         ui.RemoveElements(unitElements)
+
+        for i, hero := range view.Player.AliveHeroes() {
+            x := 12 + (i % 2) * 265
+            y := 5 + (i / 2) * 51
+
+            portraitLbx, portraitIndex := hero.GetPortraitLbxInfo()
+            pic, _ := view.ImageCache.GetImage(portraitLbx, portraitIndex, 0)
+
+            rect := util.ImageRect(x, y, pic)
+
+            var disband func()
+
+            heroElement := &uilib.UIElement{
+                Rect: rect,
+                RightClick: func (this *uilib.UIElement){
+                    ui.AddElements(unitview.MakeHeroContextMenu(view.Cache, ui, hero, disband))
+                },
+                Draw: func(this *uilib.UIElement, screen *ebiten.Image){
+                    var options ebiten.DrawImageOptions
+                    options.GeoM.Translate(float64(x), float64(y))
+                    screen.DrawImage(pic, &options)
+
+                    options.GeoM.Translate(0, float64(pic.Bounds().Dy()))
+
+                    nameX, nameY := options.GeoM.Apply(0, 0)
+
+                    smallerFont.PrintCenter(screen, nameX + 15, nameY + 6, 1, options.ColorScale, hero.ShortName())
+                },
+            }
+
+            disband = func(){
+                ui.RemoveElement(heroElement)
+                view.Player.RemoveUnit(hero)
+                resetUnits()
+            }
+
+            ui.AddElement(heroElement)
+            unitElements = append(unitElements, heroElement)
+        }
+
         for i, stack := range view.Player.Stacks {
             if i < view.FirstRow {
                 continue

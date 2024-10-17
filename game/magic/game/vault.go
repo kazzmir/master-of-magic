@@ -307,7 +307,8 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
         var elements []*uilib.UIElement
 
         disband := func(){
-            // FIXME: implement disband
+            ui.RemoveElements(elements)
+            player.RemoveUnit(hero)
         }
 
         elements = append(elements, &uilib.UIElement{
