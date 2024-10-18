@@ -58,7 +58,7 @@ func runIntro(yield coroutine.YieldFunc, game *MagicGame) {
     for intro.Update() == introlib.IntroStateRunning {
         yield()
 
-        if inpututil.IsKeyJustPressed(ebiten.KeySpace) || inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
+        if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) || inpututil.IsKeyJustPressed(ebiten.KeySpace) || inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
             return
         }
     }
@@ -146,9 +146,13 @@ func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup
     cityX, cityY := game.FindValidCityLocation()
 
     introCity := citylib.MakeCity("City1", cityX, cityY, player.Wizard.Race, player.Wizard.Banner, player.TaxRate, game.BuildingInfo)
-    introCity.Population = 1000
+    introCity.Population = 4000
     introCity.Wall = false
     introCity.Plane = data.PlaneArcanus
+    introCity.Buildings.Insert(buildinglib.BuildingSmithy)
+    introCity.Buildings.Insert(buildinglib.BuildingBarracks)
+    introCity.Buildings.Insert(buildinglib.BuildingBuildersHall)
+    introCity.Buildings.Insert(buildinglib.BuildingFortress)
     introCity.ProducingBuilding = buildinglib.BuildingHousing
     introCity.ProducingUnit = units.UnitNone
 
