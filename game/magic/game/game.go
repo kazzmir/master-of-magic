@@ -1125,14 +1125,26 @@ func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, sta
         houseOptions := options
         houseOptions.GeoM.Translate(7, 31)
 
-        house, _ := game.ImageCache.GetImage("backgrnd.lbx", 34, 0)
+        fullHouseIndex := 34
+        emptyHouseIndex := 37
+
+        switch city.Race {
+            case data.RaceDarkElf, data.RaceHighElf:
+                fullHouseIndex = 35
+                emptyHouseIndex = 38
+            case data.RaceGnoll, data.RaceKlackon, data.RaceLizard, data.RaceTroll:
+                fullHouseIndex = 36
+                emptyHouseIndex = 39
+        }
+
+        house, _ := game.ImageCache.GetImage("backgrnd.lbx", fullHouseIndex, 0)
 
         for i := 0; i < numHouses; i++ {
             screen.DrawImage(house, &houseOptions)
             houseOptions.GeoM.Translate(float64(house.Bounds().Dx()) + 1, 0)
         }
 
-        emptyHouse, _ := game.ImageCache.GetImage("backgrnd.lbx", 37, 0)
+        emptyHouse, _ := game.ImageCache.GetImage("backgrnd.lbx", emptyHouseIndex, 0)
         for i := numHouses; i < maxHouses; i++ {
             screen.DrawImage(emptyHouse, &houseOptions)
             houseOptions.GeoM.Translate(float64(emptyHouse.Bounds().Dx()) + 1, 0)
@@ -1167,7 +1179,15 @@ func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, sta
         cityScapeBackground, _ := game.ImageCache.GetImage("cityscap.lbx", 0, 0)
         cityScape.DrawImage(cityScapeBackground, &cityScapeOptions)
 
-        cityHouse, _ := game.ImageCache.GetImage("cityscap.lbx", 25, 0)
+        // regular house
+        houseIndex := 25
+
+        switch city.Race {
+            case data.RaceDarkElf, data.RaceHighElf: houseIndex = 30
+            case data.RaceGnoll, data.RaceKlackon, data.RaceLizard, data.RaceTroll: houseIndex = 35
+        }
+
+        cityHouse, _ := game.ImageCache.GetImage("cityscap.lbx", houseIndex, 0)
         options2 := cityScapeOptions
         options2.GeoM.Translate(30, 20)
         cityScape.DrawImage(cityHouse, &options2)
