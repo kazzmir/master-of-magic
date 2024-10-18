@@ -3272,6 +3272,7 @@ func (game *Game) DoNextTurn(){
 
         // keep removing units until the upkeep value can be paid
         ok := false
+        resourceLoop:
         for len(player.Units) > 0 && !ok {
             ok = true
 
@@ -3279,27 +3280,37 @@ func (game *Game) DoNextTurn(){
 
             if goldIssue || foodIssue || manaIssue {
                 ok = false
+                disbanded := false
 
+                // try to disband one unit that is taking up resources
                 for i := len(player.Units) - 1; i >= 0; i++ {
                     unit := player.Units[i]
                     // disband the unit for the right reason
                     if goldIssue && unit.GetUpkeepGold() > 0 {
                         log.Printf("Disband %v due to lack of gold", unit)
                         player.RemoveUnit(unit)
+                        disbanded = true
                         break
                     }
 
                     if foodIssue && unit.GetUpkeepFood() > 0 {
                         log.Printf("Disband %v due to lack of food", unit)
                         player.RemoveUnit(unit)
+                        disbanded = true
                         break
                     }
 
                     if manaIssue && unit.GetUpkeepMana() > 0 {
                         log.Printf("Disband %v due to lack of mana", unit)
                         player.RemoveUnit(unit)
+                        disbanded = true
                         break
                     }
+                }
+
+                if !disbanded {
+                    // fail safe to make sure we exit the loop in case somehow a unit was not disbanded
+                    break resourceLoop
                 }
             }
         }
