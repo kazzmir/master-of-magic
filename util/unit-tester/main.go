@@ -51,6 +51,10 @@ func main(){
             missing = append(missing, "Race")
         }
 
+        if unit.Race != data.RaceHero && unit.Race != data.RaceFantastic && unit.ProductionCost == 0 {
+            missing = append(missing, "ProductionCost")
+        }
+
         if len(missing) > 0 {
             fmt.Printf("Unit %s %s is missing the following fields: %v\n", unit.Name, unit.Race, strings.Join(missing, ", "))
             missingTotal += 1

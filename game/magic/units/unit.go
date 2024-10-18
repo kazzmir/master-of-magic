@@ -115,6 +115,7 @@ type Unit struct {
     Name string
     Race data.Race
     Flying bool
+    Swimming bool
     Abilities []Ability
 
     // fantastic units belong to a specific magic realm
@@ -298,7 +299,18 @@ var LizardSpearmen Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 0,
     Name: "Spearmen",
+    CombatLbxFile: "figures9.lbx",
+    CombatIndex: 0,
     Race: data.RaceLizard,
+    UpkeepFood: 1,
+    ProductionCost: 10,
+    Count: 8,
+    MovementSpeed: 1,
+    Swimming: true,
+    MeleeAttackPower: 1,
+    Defense: 3,
+    Resistance: 4,
+    HitPoints: 2,
 }
 
 var LizardSwordsmen Unit = Unit{
@@ -337,7 +349,17 @@ var LizardSettlers Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 5,
     Name: "Settlers",
+    CombatLbxFile: "figures9.lbx",
+    CombatIndex: 40,
     MovementSpeed: 1,
+    Defense: 2,
+    Resistance: 4,
+    HitPoints: 20,
+    Count: 1,
+    ProductionCost: 120,
+    Swimming: true,
+    UpkeepGold: 3,
+    UpkeepFood: 1,
     Abilities: []Ability{AbilityCreateOutpost},
     Race: data.RaceLizard,
 }
