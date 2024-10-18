@@ -91,6 +91,8 @@ func (race Race) String() string {
         case RaceHighElf: return "High Elf"
         case RaceHighMen: return "High Men"
         case RaceKlackon: return "Klackon"
+        case RaceHero: return "hero"
+        case RaceFantastic: return "fantastic"
     }
 
     return "?"
