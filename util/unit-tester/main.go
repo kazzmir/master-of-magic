@@ -3,15 +3,25 @@ package main
 import (
     "fmt"
     "strings"
+    "os"
 
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/data"
 )
 
 func main(){
+    specifyRace := ""
+    if len(os.Args) > 1 {
+        specifyRace = os.Args[1]
+    }
+
     total := 0
     missingTotal := 0
     for _, unit := range units.AllUnits {
+        if specifyRace != "" && strings.ToLower(specifyRace) != strings.ToLower(unit.Race.String()) {
+            continue
+        }
+
         total += 1
         var missing []string
 
@@ -43,7 +53,7 @@ func main(){
             missing = append(missing, "Name")
         }
 
-        if unit.MeleeAttackPower == 0 && unit.RangedAttackPower == 0 {
+        if unit.Name != "Settlers" && unit.MeleeAttackPower == 0 && unit.RangedAttackPower == 0 {
             missing = append(missing, "MeleeAttackPower or RangedAttackPower")
         }
 
