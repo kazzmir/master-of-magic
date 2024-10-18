@@ -252,10 +252,6 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string) error 
                 }
         }
     }
-
-    game.Drawer = shutdown
-    yield()
-    return ebiten.Termination
 }
 
 func NewMagicGame(dataPath string) (*MagicGame, error) {
