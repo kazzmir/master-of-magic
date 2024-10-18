@@ -8,7 +8,6 @@
 * roaming bands of neutral enemies
 * neutral towns/cities
 * game menu - implement save/load game
-* units disband if not enough food
 * play midi music
 * font editor - choose colors for font palette
 * quake console
@@ -43,3 +42,4 @@
 10/16/2024 * hire hero events
 10/16/2024 * draw units with experience/bonuses
 10/17/2024 * melee/defense/heart icons should have white border
+10/18/2024 * units disband if not enough food/gold/mana
