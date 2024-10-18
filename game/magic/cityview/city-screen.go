@@ -965,14 +965,32 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
         var options ebiten.DrawImageOptions
         options.GeoM.Translate(x, y)
 
-        for i := 0; i < total / 10; i++ {
-            screen.DrawImage(large, &options)
-            options.GeoM.Translate(float64(large.Bounds().Dx() + 1), 0)
+        largeGap := large.Bounds().Dx()
+
+        if total / 10 > 3 {
+            largeGap -= 1
         }
 
-        for i := 0; i < total % 10; i++ {
+        if total / 10 > 6 {
+            largeGap -= 1
+        }
+
+        for range total / 10 {
+            screen.DrawImage(large, &options)
+            options.GeoM.Translate(float64(largeGap), 0)
+        }
+
+        smallGap := small.Bounds().Dx() + 1
+        if total % 10 >= 3 {
+            smallGap -= 1
+        }
+        if total % 10 >= 6 {
+            smallGap -= 1
+        }
+
+        for range total % 10 {
             screen.DrawImage(small, &options)
-            options.GeoM.Translate(float64(small.Bounds().Dx() + 1), 0)
+            options.GeoM.Translate(float64(smallGap), 0)
         }
 
         endX, _ := options.GeoM.Apply(0, 0)

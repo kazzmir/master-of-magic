@@ -9,6 +9,7 @@ import (
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
+    "github.com/kazzmir/master-of-magic/lib/fraction"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/units"
@@ -62,8 +63,8 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
 
     x, y := game.FindValidCityLocation()
 
-    city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, player.TaxRate, game.BuildingInfo)
-    city.Population = 6190
+    city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, fraction.Zero(), game.BuildingInfo)
+    city.Population = 16190
     city.Plane = data.PlaneArcanus
     city.Banner = wizard.Banner
     city.ProducingBuilding = buildinglib.BuildingGranary
