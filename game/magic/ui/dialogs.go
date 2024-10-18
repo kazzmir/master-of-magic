@@ -176,7 +176,7 @@ func MakeHelpElementWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.Imag
     return infoElement
 }
 
-func MakeErrorElement(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, message string) *UIElement {
+func MakeErrorElement(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, message string, clicked func()) *UIElement {
     errorX := 67
     errorY := 73
 
@@ -230,6 +230,7 @@ func MakeErrorElement(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, 
         Layer: 1,
         LeftClick: func(this *UIElement){
             ui.RemoveElement(this)
+            clicked()
         },
         Draw: func(this *UIElement, window *ebiten.Image){
             var options ebiten.DrawImageOptions

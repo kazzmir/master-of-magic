@@ -337,6 +337,8 @@ var LizardSettlers Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 5,
     Name: "Settlers",
+    MovementSpeed: 1,
+    Abilities: []Ability{AbilityCreateOutpost},
     Race: data.RaceLizard,
 }
 

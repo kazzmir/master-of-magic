@@ -1130,19 +1130,19 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
 
                     // user cannot hold both life and death magic
                     if bookMagic == data.LifeMagic && screen.CustomWizard.MagicLevel(data.DeathMagic) > 0 {
-                        screen.UI.AddElement(uilib.MakeErrorElement(screen.UI, screen.LbxCache, &imageCache, "You can not select both Life and Death magic"))
+                        screen.UI.AddElement(uilib.MakeErrorElement(screen.UI, screen.LbxCache, &imageCache, "You can not select both Life and Death magic", func(){}))
                         return
                     }
 
                     if bookMagic == data.DeathMagic && screen.CustomWizard.MagicLevel(data.LifeMagic) > 0 {
-                        screen.UI.AddElement(uilib.MakeErrorElement(screen.UI, screen.LbxCache, &imageCache, "You can not select both Life and Death magic"))
+                        screen.UI.AddElement(uilib.MakeErrorElement(screen.UI, screen.LbxCache, &imageCache, "You can not select both Life and Death magic", func(){}))
                         return
                     }
 
                     if level + 1 <= screen.CustomWizard.MagicLevel(bookMagic) {
                         screen.CustomWizard.SetMagicLevel(bookMagic, level+1)
                     } else if picksLeft() == 0 {
-                        screen.UI.AddElement(uilib.MakeErrorElement(screen.UI, screen.LbxCache, &imageCache, "You have already made all your picks"))
+                        screen.UI.AddElement(uilib.MakeErrorElement(screen.UI, screen.LbxCache, &imageCache, "You have already made all your picks", func(){}))
                     } else {
                         screen.CustomWizard.SetMagicLevel(bookMagic, level+1)
                         if picksLeft() < 0 {
@@ -1270,12 +1270,12 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
                 } else if isAbilityAvailable(ability.Ability) {
                     screen.CustomWizard.ToggleAbility(ability.Ability, picksLeft())
                 } else if picksLeft() == 0 {
-                    screen.UI.AddElement(uilib.MakeErrorElement(screen.UI, screen.LbxCache, &imageCache, "You have already made all your picks"))
+                    screen.UI.AddElement(uilib.MakeErrorElement(screen.UI, screen.LbxCache, &imageCache, "You have already made all your picks", func(){}))
                 } else {
                     if ability.Ability.SatisifiedDependencies(&screen.CustomWizard) {
-                        screen.UI.AddElement(uilib.MakeErrorElement(screen.UI, screen.LbxCache, &imageCache, fmt.Sprintf("You don't have enough picks left to make this selection. You need %v picks", 3 - picksLeft())))
+                        screen.UI.AddElement(uilib.MakeErrorElement(screen.UI, screen.LbxCache, &imageCache, fmt.Sprintf("You don't have enough picks left to make this selection. You need %v picks", 3 - picksLeft()), func(){}))
                     } else {
-                        screen.UI.AddElement(uilib.MakeErrorElement(screen.UI, screen.LbxCache, &imageCache, ability.Ability.DependencyExplanation()))
+                        screen.UI.AddElement(uilib.MakeErrorElement(screen.UI, screen.LbxCache, &imageCache, ability.Ability.DependencyExplanation(), func(){}))
                     }
                 }
             },
@@ -1321,7 +1321,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
                 screen.State = NewWizardScreenStateSelectSpells
                 screen.UI = screen.MakeSelectSpellsUI()
             } else {
-                screen.UI.AddElement(uilib.MakeErrorElement(screen.UI, screen.LbxCache, &imageCache, "You need to make all your picks before you can continue"))
+                screen.UI.AddElement(uilib.MakeErrorElement(screen.UI, screen.LbxCache, &imageCache, "You need to make all your picks before you can continue", func(){}))
             }
         },
         RightClick: func(this *uilib.UIElement){
@@ -1525,7 +1525,7 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
                             screen.CustomWizard.StartingSpells.AddSpell(spell)
                             *picks -= 1
                         } else {
-                            screen.UI.AddElement(uilib.MakeErrorElement(screen.UI, screen.LbxCache, &imageCache, "You have no picks left in this area, to deselect click on a selected item"))
+                            screen.UI.AddElement(uilib.MakeErrorElement(screen.UI, screen.LbxCache, &imageCache, "You have no picks left in this area, to deselect click on a selected item", func(){}))
                         }
                     },
                     RightClick: func(this *uilib.UIElement){
@@ -1583,7 +1583,7 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
                 if picksLeft() == 0 {
                     doNextMagicUI(magic)
                 } else {
-                    screen.UI.AddElement(uilib.MakeErrorElement(screen.UI, screen.LbxCache, &imageCache, "You need to make all your picks before you can continue"))
+                    screen.UI.AddElement(uilib.MakeErrorElement(screen.UI, screen.LbxCache, &imageCache, "You need to make all your picks before you can continue", func(){}))
                 }
             },
             RightClick: func(this *uilib.UIElement){
@@ -1840,7 +1840,7 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
                     screen.UI = screen.MakeSelectBannerUI()
                     screen.State = NewWizardScreenStateSelectBanner
                 } else {
-                    screen.UI.AddElement(uilib.MakeErrorElement(screen.UI, screen.LbxCache, &imageCache, "You can not select a Myrran race unless you have the Myrran special."))
+                    screen.UI.AddElement(uilib.MakeErrorElement(screen.UI, screen.LbxCache, &imageCache, "You can not select a Myrran race unless you have the Myrran special.", func(){}))
                 }
             },
             RightClick: func(this *uilib.UIElement){

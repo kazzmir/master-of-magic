@@ -74,6 +74,10 @@ type GameEventApprenticeUI struct {
 type GameEventCastSpellBook struct {
 }
 
+type GameEventNotice struct {
+    Message string
+}
+
 type GameEventHireHero struct {
     Hero *herolib.Hero
     Player *playerlib.Player
@@ -1064,7 +1068,7 @@ func (game *Game) showScroll(yield coroutine.YieldFunc, title string, text strin
     }
 }
 
-func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, stack *playerlib.UnitStack){
+func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, stack *playerlib.UnitStack, rename bool){
     drawer := game.Drawer
     defer func(){
         game.Drawer = drawer
@@ -1082,15 +1086,26 @@ func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, sta
         return
     }
 
-    yellow := color.RGBA{R: 0xea, G: 0xb6, B: 0x00, A: 0xff}
+    // red := color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}
+    yellow := util.Lighten(util.RotateHue(color.RGBA{R: 0xff, G: 0xff, B: 0x00, A: 0xff}, -0.60), 0)
     yellowPalette := color.Palette{
         color.RGBA{R: 0, G: 0, B: 0, A: 0},
         color.RGBA{R: 0, G: 0, B: 0, A: 0},
         color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        yellow, yellow, yellow,
-        yellow, yellow, yellow,
-        yellow, yellow, yellow,
-        yellow, yellow, yellow,
+        yellow,
+        util.Lighten(yellow, -20),
+        util.Lighten(yellow, -20),
+        util.Lighten(yellow, -15),
+        util.Lighten(yellow, -30),
+        util.Lighten(yellow, -10),
+        util.Lighten(yellow, -15),
+        util.Lighten(yellow, -10),
+        util.Lighten(yellow, -10),
+        util.Lighten(yellow, -35),
+        util.Lighten(yellow, -45),
+        yellow,
+        yellow,
+        yellow,
     }
 
     bigFont := font.MakeOptimizedFontWithPalette(fonts[5], yellowPalette)
@@ -1104,20 +1119,32 @@ func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, sta
         options.GeoM.Translate(30, 50)
         screen.DrawImage(background, &options)
 
-        numHouses := 3
+        numHouses := city.GetOutpostHouses()
         maxHouses := 10
 
         houseOptions := options
         houseOptions.GeoM.Translate(7, 31)
 
-        house, _ := game.ImageCache.GetImage("backgrnd.lbx", 34, 0)
+        fullHouseIndex := 34
+        emptyHouseIndex := 37
+
+        switch city.Race {
+            case data.RaceDarkElf, data.RaceHighElf:
+                fullHouseIndex = 35
+                emptyHouseIndex = 38
+            case data.RaceGnoll, data.RaceKlackon, data.RaceLizard, data.RaceTroll:
+                fullHouseIndex = 36
+                emptyHouseIndex = 39
+        }
+
+        house, _ := game.ImageCache.GetImage("backgrnd.lbx", fullHouseIndex, 0)
 
         for i := 0; i < numHouses; i++ {
             screen.DrawImage(house, &houseOptions)
             houseOptions.GeoM.Translate(float64(house.Bounds().Dx()) + 1, 0)
         }
 
-        emptyHouse, _ := game.ImageCache.GetImage("backgrnd.lbx", 37, 0)
+        emptyHouse, _ := game.ImageCache.GetImage("backgrnd.lbx", emptyHouseIndex, 0)
         for i := numHouses; i < maxHouses; i++ {
             screen.DrawImage(emptyHouse, &houseOptions)
             houseOptions.GeoM.Translate(float64(emptyHouse.Bounds().Dx()) + 1, 0)
@@ -1138,7 +1165,11 @@ func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, sta
         game.InfoFontYellow.Print(screen, x, y, 1, options.ColorScale, city.Race.String())
 
         x, y = options.GeoM.Apply(20, 5)
-        bigFont.Print(screen, x, y, 1, options.ColorScale, "New Outpost Founded")
+        if rename {
+            bigFont.Print(screen, x, y, 1, options.ColorScale, "New Outpost Founded")
+        } else {
+            bigFont.Print(screen, x, y, 1, options.ColorScale, fmt.Sprintf("Outpost Of %v", city.Name))
+        }
 
         cityScapeOptions := options
         cityScapeOptions.GeoM.Translate(185, 30)
@@ -1148,7 +1179,15 @@ func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, sta
         cityScapeBackground, _ := game.ImageCache.GetImage("cityscap.lbx", 0, 0)
         cityScape.DrawImage(cityScapeBackground, &cityScapeOptions)
 
-        cityHouse, _ := game.ImageCache.GetImage("cityscap.lbx", 25, 0)
+        // regular house
+        houseIndex := 25
+
+        switch city.Race {
+            case data.RaceDarkElf, data.RaceHighElf: houseIndex = 30
+            case data.RaceGnoll, data.RaceKlackon, data.RaceLizard, data.RaceTroll: houseIndex = 35
+        }
+
+        cityHouse, _ := game.ImageCache.GetImage("cityscap.lbx", houseIndex, 0)
         options2 := cityScapeOptions
         options2.GeoM.Translate(30, 20)
         cityScape.DrawImage(cityHouse, &options2)
@@ -1174,7 +1213,9 @@ func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, sta
         yield()
     }
 
-    city.Name = game.doInput(yield, "New Outpost", city.Name, 80, 100)
+    if rename {
+        city.Name = game.doInput(yield, "New Outpost", city.Name, 80, 100)
+    }
 }
 
 func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, stack *playerlib.UnitStack){
@@ -1547,6 +1588,19 @@ func (game *Game) doHireHero(yield coroutine.YieldFunc, cost int, hero *herolib.
     }
 }
 
+func (game *Game) doNotice(yield coroutine.YieldFunc, message string) {
+    quit := false
+    game.HudUI.AddElement(uilib.MakeErrorElement(game.HudUI, game.Cache, &game.ImageCache, message, func(){
+        quit = true
+    }))
+
+    for !quit {
+        game.Counter += 1
+        game.HudUI.StandardUpdate()
+        yield()
+    }
+}
+
 func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
     // keep processing events until we don't receive one in the events channel
     for {
@@ -1566,13 +1620,16 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         game.ShowApprenticeUI(yield, game.Players[0])
                     case *GameEventArmyView:
                         game.doArmyView(yield)
+                    case *GameEventNotice:
+                        notice := event.(*GameEventNotice)
+                        game.doNotice(yield, notice.Message)
                     case *GameEventCastSpellBook:
                         game.ShowSpellBookCastUI(yield, game.Players[0])
                     case *GameEventCityListView:
                         game.doCityListView(yield)
                     case *GameEventNewOutpost:
                         outpost := event.(*GameEventNewOutpost)
-                        game.showOutpost(yield, outpost.City, outpost.Stack)
+                        game.showOutpost(yield, outpost.City, outpost.Stack, true)
                     case *GameEventVault:
                         vaultEvent := event.(*GameEventVault)
                         game.doVault(yield, vaultEvent.CreatedArtifact)
@@ -1805,7 +1862,11 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
 
                             for _, city := range player.Cities {
                                 if city.X == tileX && city.Y == tileY {
-                                    game.doCityScreen(yield, city, player)
+                                    if city.Outpost {
+                                        game.showOutpost(yield, city, player.FindStack(city.X, city.Y), false)
+                                    } else {
+                                        game.doCityScreen(yield, city, player)
+                                    }
                                     game.RefreshUI()
                                 }
                             }
@@ -2536,7 +2597,8 @@ func (game *Game) CityProductionBonus(x int, y int) int {
 func (game *Game) CreateOutpost(settlers units.StackUnit, player *playerlib.Player) *citylib.City {
     newCity := citylib.MakeCity("New City", settlers.GetX(), settlers.GetY(), settlers.GetRace(), settlers.GetBanner(), player.TaxRate, game.BuildingInfo)
     newCity.Plane = settlers.GetPlane()
-    newCity.Population = 1000
+    newCity.Population = 300
+    newCity.Outpost = true
     newCity.Banner = player.Wizard.Banner
     newCity.ProducingBuilding = buildinglib.BuildingHousing
     newCity.ProducingUnit = units.UnitNone
@@ -3248,6 +3310,8 @@ func (game *Game) DoNextTurn(){
         // reset casting skill for this turn
         player.RemainingCastingSkill = player.ComputeCastingSkill()
 
+        var removeCities []*citylib.City
+
         for _, city := range player.Cities {
             cityEvents := city.DoNextTurn(player.GetUnits(city.X, city.Y))
             for _, event := range cityEvents {
@@ -3280,7 +3344,17 @@ func (game *Game) DoNextTurn(){
                             case game.Events<- &GameEventNewBuilding{City: city, Building: newBuilding.Building, Player: player}:
                             default:
                         }
-
+                    case *citylib.CityEventOutpostDestroyed:
+                        removeCities = append(removeCities, city)
+                        select {
+                            case game.Events<- &GameEventNotice{Message: fmt.Sprintf("The outpost of %v has been lost.", city.Name)}:
+                            default:
+                        }
+                    case *citylib.CityEventOutpostHamlet:
+                        select {
+                            case game.Events<- &GameEventNotice{Message: fmt.Sprintf("The outpost of %v has grown into a hamlet.", city.Name)}:
+                            default:
+                        }
                     case *citylib.CityEventNewUnit:
                         newUnit := event.(*citylib.CityEventNewUnit)
                         player.AddUnit(units.MakeOverworldUnitFromUnit(newUnit.Unit, city.X, city.Y, city.Plane, city.Banner, player.MakeExperienceInfo()))
@@ -3297,9 +3371,33 @@ func (game *Game) DoNextTurn(){
                 }
             }
 
-            stack.NaturalHeal()
+            // base healing rate is 5%. in a town is 10%, with animists guild is 16.67%
+            rate := 0.05
+
+            city := player.FindCity(stack.X(), stack.Y())
+
+            if city != nil {
+                rate = 0.1
+                if city.Buildings.Contains(buildinglib.BuildingAnimistsGuild) {
+                    rate = 0.1667
+                }
+            }
+
+            // any healer in the same stack provides an additional 20% healing rate
+            for _, unit := range stack.Units() {
+                if unit.HasAbility(units.AbilityHealer) {
+                    rate += 0.2
+                    break
+                }
+            }
+
+            stack.NaturalHeal(rate)
             stack.ResetMoves()
             stack.EnableMovers()
+        }
+
+        for _, city := range removeCities {
+            player.RemoveCity(city)
         }
 
         // game.CenterCamera(player.Cities[0].X, player.Cities[0].Y)
@@ -3549,9 +3647,12 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
         return outX, outY
     }
 
+    cityPositions := make(map[image.Point]struct{})
+
     for _, city := range overworld.Cities {
         var cityPic *ebiten.Image
         var err error
+        cityPositions[image.Point{city.X, city.Y}] = struct{}{}
         cityPic, err = GetCityWallImage(city, overworld.ImageCache)
         /*
         if city.Wall {
@@ -3581,7 +3682,21 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
     }
 
     for _, stack := range overworld.Stacks {
-        if stack.Leader() != nil && (stack != overworld.SelectedStack || overworld.ShowAnimation || overworld.Counter / 55 % 2 == 0) {
+        doDraw := false
+        if stack.Leader() == nil {
+            continue
+        }
+
+        location := image.Point{stack.X(), stack.Y()}
+        _, hasCity := cityPositions[location]
+
+        if stack == overworld.SelectedStack && (overworld.ShowAnimation || overworld.Counter / 55 % 2 == 0) {
+            doDraw = true
+        } else if stack != overworld.SelectedStack && !hasCity {
+            doDraw = true
+        }
+
+        if doDraw {
             var options ebiten.DrawImageOptions
             options.GeoM = geom
             x, y := convertTileCoordinates(float64(stack.X()) + stack.OffsetX(), float64(stack.Y()) + stack.OffsetY())

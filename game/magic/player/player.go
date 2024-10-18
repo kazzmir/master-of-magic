@@ -463,6 +463,12 @@ func (player *Player) AddCity(city *citylib.City) *citylib.City {
     return city
 }
 
+func (player *Player) RemoveCity(city *citylib.City) {
+    player.Cities = slices.DeleteFunc(player.Cities, func (c *citylib.City) bool {
+        return c == city
+    })
+}
+
 func (player *Player) AddStack(stack *UnitStack){
     player.Stacks = append(player.Stacks, stack)
 }

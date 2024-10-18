@@ -8,7 +8,7 @@ import (
 type StackUnit interface {
     SetId(id uint64)
     ResetMoves()
-    NaturalHeal()
+    NaturalHeal(rate float64)
     GetPatrol() bool
     SetPatrol(bool)
     IsFlying() bool

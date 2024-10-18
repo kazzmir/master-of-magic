@@ -301,8 +301,12 @@ func (hero *Hero) Move(dx int, dy int, cost fraction.Fraction){
     hero.Unit.Move(dx, dy, cost)
 }
 
-func (hero *Hero) NaturalHeal() {
-    hero.Unit.NaturalHeal()
+func (hero *Hero) NaturalHeal(rate float64) {
+    amount := float64(hero.GetMaxHealth()) * rate
+    if amount < 1 {
+        amount = 1
+    }
+    hero.AdjustHealth(int(amount))
 }
 
 func (hero *Hero) ResetMoves() {
