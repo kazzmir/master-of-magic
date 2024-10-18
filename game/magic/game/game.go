@@ -65,6 +65,9 @@ type GameEventRefreshUI struct {
 type GameEventSurveyor struct {
 }
 
+type GameEventNextTurn struct {
+}
+
 type GameEventCityListView struct {
 }
 
@@ -1601,6 +1604,50 @@ func (game *Game) doNotice(yield coroutine.YieldFunc, message string) {
     }
 }
 
+func (game *Game) doNextTurn(yield coroutine.YieldFunc) {
+    player := game.Players[0]
+    goldIssue, foodIssue, manaIssue := game.CheckDisband(player)
+
+    if goldIssue || foodIssue || manaIssue {
+
+        quit := false
+        doit := false
+
+        message := ""
+
+        if goldIssue {
+            message = "Some units do not have enough gold and will disband unless you make more gold. Do you wish to allow them to disband?"
+        } else if foodIssue {
+            message = "Some units do not have enough food and will die unless you allocate more farmers in a city. Do you wish to allow them to die?"
+        } else if manaIssue {
+            message = "Some units do not have enough mana and will disband unless you make more mana. Do you wish to allow them to disband?"
+        }
+
+        yes := func(){
+            quit = true
+            doit = true
+        }
+
+        no := func(){
+            quit = true
+        }
+
+        game.HudUI.AddElements(uilib.MakeConfirmDialog(game.HudUI, game.Cache, &game.ImageCache, message, yes, no))
+
+        for !quit {
+            game.Counter += 1
+            game.HudUI.StandardUpdate()
+            yield()
+        }
+
+        if !doit {
+            return
+        }
+    }
+
+    game.DoNextTurn()
+}
+
 func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
     // keep processing events until we don't receive one in the events channel
     for {
@@ -1614,6 +1661,8 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                     case *GameEventHireHero:
                         hire := event.(*GameEventHireHero)
                         game.doHireHero(yield, hire.Cost, hire.Hero, hire.Player)
+                    case *GameEventNextTurn:
+                        game.doNextTurn(yield)
                     case *GameEventSurveyor:
                         game.doSurveyor(yield)
                     case *GameEventApprenticeUI:
@@ -2674,7 +2723,10 @@ func (game *Game) MakeHudUI() *uilib.UI {
                 switch key {
                     case ebiten.KeySpace:
                         if game.Players[0].SelectedStack == nil {
-                            game.DoNextTurn()
+                            select {
+                                case game.Events <- &GameEventNextTurn{}:
+                                default:
+                            }
                         }
                 }
             }
@@ -3143,7 +3195,10 @@ func (game *Game) MakeHudUI() *uilib.UI {
         elements = append(elements, &uilib.UIElement{
             Rect: nextTurnRect,
             LeftClick: func(this *uilib.UIElement){
-                game.DoNextTurn()
+                select {
+                    case game.Events <- &GameEventNextTurn{}:
+                    default:
+                }
             },
             RightClick: func(this *uilib.UIElement){
                 helpEntries := game.Help.GetEntriesByName("Next Turn")
