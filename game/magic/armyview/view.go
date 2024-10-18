@@ -112,12 +112,12 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
                 raceName := highlightedUnit.GetRace().String()
                 normalFont.PrintCenter(screen, 190, 162, 1, options.ColorScale, fmt.Sprintf("%v %v", raceName, highlightedUnit.GetName()))
 
-                normalFont.PrintCenter(screen, 30, 162, 1, options.ColorScale, "UPKEEP")
-
-                normalFont.PrintCenter(screen, 45, 172, 1, options.ColorScale, fmt.Sprintf("%v", upkeepGold))
-                normalFont.PrintCenter(screen, 45, 182, 1, options.ColorScale, fmt.Sprintf("%v", upkeepMana))
-                normalFont.PrintCenter(screen, 45, 192, 1, options.ColorScale, fmt.Sprintf("%v", upkeepFood))
             }
+
+            normalFont.PrintCenter(screen, 30, 162, 1, options.ColorScale, "UPKEEP")
+            normalFont.PrintCenter(screen, 45, 172, 1, options.ColorScale, fmt.Sprintf("%v", upkeepGold))
+            normalFont.PrintCenter(screen, 45, 182, 1, options.ColorScale, fmt.Sprintf("%v", upkeepMana))
+            normalFont.PrintCenter(screen, 45, 192, 1, options.ColorScale, fmt.Sprintf("%v", upkeepFood))
 
             minimapRect := image.Rect(85, 163, 135, 197)
             minimapArea := screen.SubImage(minimapRect).(*ebiten.Image)
@@ -200,10 +200,6 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
     ui.AddElement(makeButton(60, 139, downArrows[0], downArrows[1], scrollUnitsDown))
     ui.AddElement(makeButton(250, 139, downArrows[0], downArrows[1], scrollUnitsDown))
 
-    // row := view.FirstRow
-    rowY := 25
-    rowCount := 0
-
     highlightColor := util.PremultiplyAlpha(color.RGBA{R: 255, G: 255, B: 255, A: 90})
 
     banner := view.Player.Wizard.Banner
@@ -211,6 +207,15 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
     var unitElements []*uilib.UIElement
     resetUnits = func(){
         ui.RemoveElements(unitElements)
+
+        // row := view.FirstRow
+        rowY := 25
+        rowCount := 0
+
+        // recompute upkeep values
+        upkeepGold = view.Player.TotalUnitUpkeepGold()
+        upkeepFood = view.Player.TotalUnitUpkeepFood()
+        upkeepMana = view.Player.TotalUnitUpkeepMana()
 
         for i, hero := range view.Player.AliveHeroes() {
             x := 12 + (i % 2) * 265
