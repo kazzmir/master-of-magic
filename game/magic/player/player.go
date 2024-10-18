@@ -179,6 +179,41 @@ func (player *Player) MakeExperienceInfo() units.ExperienceInfo {
     }
 }
 
+func (player *Player) TotalUnitUpkeepGold() int {
+    total := 0
+
+    for _, unit := range player.Units {
+        total += unit.GetUpkeepGold()
+    }
+
+    total -= player.Fame
+    if total < 0 {
+        total = 0
+    }
+
+    return total
+}
+
+func (player *Player) TotalUnitUpkeepFood() int {
+    total := 0
+
+    for _, unit := range player.Units {
+        total += unit.GetUpkeepFood()
+    }
+
+    return total
+}
+
+func (player *Player) TotalUnitUpkeepMana() int {
+    total := 0
+
+    for _, unit := range player.Units {
+        total += unit.GetUpkeepMana()
+    }
+
+    return total
+}
+
 func (player *Player) LearnSpell(spell spellbook.Spell) {
     player.ResearchCandidateSpells.RemoveSpell(spell)
     player.KnownSpells.AddSpell(spell)
@@ -285,9 +320,7 @@ func (player *Player) GoldPerTurn() int {
         gold += city.GoldSurplus()
     }
 
-    for _, unit := range player.Units {
-        gold -= unit.GetUpkeepGold()
-    }
+    gold -= player.TotalUnitUpkeepGold()
 
     return gold
 }
@@ -299,9 +332,7 @@ func (player *Player) FoodPerTurn() int {
         food += city.SurplusFood()
     }
 
-    for _, unit := range player.Units {
-        food -= unit.GetUpkeepFood()
-    }
+    food -= player.TotalUnitUpkeepFood()
 
     return food
 }
@@ -313,9 +344,7 @@ func (player *Player) ManaPerTurn(power int) int {
         mana += city.ManaSurplus()
     }
 
-    for _, unit := range player.Units {
-        mana -= unit.GetUpkeepMana()
-    }
+    mana -= player.TotalUnitUpkeepMana()
 
     manaFocusingBonus := float64(1)
 
@@ -439,7 +468,9 @@ func (player *Player) RemoveUnit(unit units.StackUnit) {
 
     for i := 0; i < len(player.Heroes); i++ {
         if player.Heroes[i] == unit {
-            player.Heroes[i].Status = herolib.StatusDead
+            if player.Heroes[i].Status == herolib.StatusEmployed {
+                player.Heroes[i].SetStatus(herolib.StatusAvailable)
+            }
             player.Heroes[i] = nil
         }
     }

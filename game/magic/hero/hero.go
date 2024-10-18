@@ -220,6 +220,10 @@ func (hero *Hero) GetPortraitLbxInfo() (string, int) {
 
 func (hero *Hero) AdjustHealth(amount int) {
     hero.Unit.AdjustHealth(amount)
+
+    if hero.GetHealth() <= 0 {
+        hero.SetStatus(StatusDead)
+    }
 }
 
 func (hero *Hero) GetCombatRangeIndex(facing units.Facing) int {
