@@ -228,6 +228,8 @@ func createScenario3(cache *lbx.LbxCache) *gamelib.Game {
     _ = introCity
     // game.Events <- gamelib.StartingCityEvent(introCity)
 
+    // game.Events <- &gamelib.GameEventNewOutpost{City: introCity, Stack: nil}
+
     player.LiftFog(x, y, 2)
 
     game.CenterCamera(x, y)

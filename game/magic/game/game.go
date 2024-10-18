@@ -1086,15 +1086,26 @@ func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, sta
         return
     }
 
-    yellow := color.RGBA{R: 0xea, G: 0xb6, B: 0x00, A: 0xff}
+    // red := color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}
+    yellow := util.Lighten(util.RotateHue(color.RGBA{R: 0xff, G: 0xff, B: 0x00, A: 0xff}, -0.60), 0)
     yellowPalette := color.Palette{
         color.RGBA{R: 0, G: 0, B: 0, A: 0},
         color.RGBA{R: 0, G: 0, B: 0, A: 0},
         color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        yellow, yellow, yellow,
-        yellow, yellow, yellow,
-        yellow, yellow, yellow,
-        yellow, yellow, yellow,
+        yellow,
+        util.Lighten(yellow, -20),
+        util.Lighten(yellow, -20),
+        util.Lighten(yellow, -15),
+        util.Lighten(yellow, -30),
+        util.Lighten(yellow, -10),
+        util.Lighten(yellow, -15),
+        util.Lighten(yellow, -10),
+        util.Lighten(yellow, -10),
+        util.Lighten(yellow, -35),
+        util.Lighten(yellow, -45),
+        yellow,
+        yellow,
+        yellow,
     }
 
     bigFont := font.MakeOptimizedFontWithPalette(fonts[5], yellowPalette)
