@@ -3242,6 +3242,12 @@ func (game *Game) DoNextUnit(player *playerlib.Player){
     }
 
     if player.Human {
+        if player.SelectedStack == nil {
+            fortressCity := player.FindFortressCity()
+            if fortressCity != nil {
+                game.CenterCamera(fortressCity.X, fortressCity.Y)
+            }
+        }
         game.RefreshUI()
     }
 }
@@ -3249,6 +3255,54 @@ func (game *Game) DoNextUnit(player *playerlib.Player){
 func (game *Game) DoNextTurn(){
     if len(game.Players) > 0 {
         player := game.Players[0]
+
+        // keep removing units until the upkeep value can be paid
+        ok := false
+        for len(player.Units) > 0 && !ok {
+            ok = true
+
+            upkeepGold := player.TotalUnitUpkeepGold()
+            if upkeepGold > player.Gold {
+                ok = false
+                for i := len(player.Units) - 1; i >= 0; i++ {
+                    unit := player.Units[i]
+                    if unit.GetUpkeepGold() > 0 {
+                        log.Printf("Disband %v due to lack of gold", unit)
+                        player.RemoveUnit(unit)
+                        break
+                    }
+                }
+            }
+
+            if player.FoodPerTurn() < 0 {
+                ok = false
+                for i := len(player.Units) - 1; i >= 0; i++ {
+                    unit := player.Units[i]
+                    if unit.GetUpkeepFood() > 0 {
+                        log.Printf("Disband %v due to lack of food", unit)
+                        player.RemoveUnit(unit)
+                        break
+                    }
+                }
+            }
+
+            upkeepMana := player.TotalUnitUpkeepMana()
+            if upkeepMana > player.Mana {
+                ok = false
+                for i := len(player.Units) - 1; i >= 0; i++ {
+                    unit := player.Units[i]
+                    if unit.GetUpkeepMana() > 0 {
+                        log.Printf("Disband %v due to lack of mana", unit)
+                        player.RemoveUnit(unit)
+                        break
+                    }
+                }
+            }
+        }
+
+        player.Gold -= player.TotalUnitUpkeepGold()
+        player.Mana -= player.TotalUnitUpkeepMana()
+
         power := game.ComputePower(player)
 
         player.Gold += player.GoldPerTurn()

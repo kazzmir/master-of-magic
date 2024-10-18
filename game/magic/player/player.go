@@ -474,7 +474,9 @@ func (player *Player) RemoveUnit(unit units.StackUnit) {
 
     for i := 0; i < len(player.Heroes); i++ {
         if player.Heroes[i] == unit {
-            player.Heroes[i].Status = herolib.StatusDead
+            if player.Heroes[i].Status == herolib.StatusEmployed {
+                player.Heroes[i].SetStatus(herolib.StatusAvailable)
+            }
             player.Heroes[i] = nil
         }
     }
