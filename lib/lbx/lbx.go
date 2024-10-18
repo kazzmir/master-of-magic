@@ -1299,6 +1299,12 @@ func GetPaletteOverrideMap(cache *LbxCache, lbxFile *LbxFile, filename string) (
             paletteTransparent[0] = color.RGBA{R: 0, G: 0, B: 0, A: 0}
 
             out[-1] = paletteTransparent
+        case "unitview.lbx":
+            palette, err := lbxFile.GetPalette(0)
+            if err != nil {
+                return nil, err
+            }
+            out[-1] = palette
         case "vortex.lbx":
             // FIXME
 

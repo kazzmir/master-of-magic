@@ -11,7 +11,6 @@
 * units disband if not enough food
 * play midi music
 * font editor - choose colors for font palette
-* melee/defense/heart icons should have white border
 * quake console
 * make overworld wrap horizontally
 * implement overworld spells
@@ -43,3 +42,4 @@
 10/14/2024 * remap colors for some sprites, such as the flag in city tile sprites
 10/16/2024 * hire hero events
 10/16/2024 * draw units with experience/bonuses
+10/17/2024 * melee/defense/heart icons should have white border
