@@ -2172,6 +2172,10 @@ func (game *Game) ShowGrandVizierUI(){
 }
 
 func (game *Game) ShowMirrorUI(){
+    if len(game.Players) == 0 {
+        return
+    }
+
     cornerX := 50
     cornerY := 1
 
@@ -2204,10 +2208,6 @@ func (game *Game) ShowMirrorUI(){
     getAlpha := game.HudUI.MakeFadeIn(7)
 
     var portrait *ebiten.Image
-
-    if len(game.Players) == 0 {
-        return
-    }
 
     player := game.Players[0]
 
@@ -2278,6 +2278,10 @@ func (game *Game) ShowMirrorUI(){
 
             options.GeoM.Translate(34, 55)
             draw.DrawBooks(screen, options, &imageCache, player.Wizard.Books, game.BookOrder)
+
+            if player.Fame > 0 {
+                heroFont.PrintCenter(screen, float64(cornerX + 90), float64(cornerY + 95), 1, options.ColorScale, fmt.Sprintf("%v Fame", player.Fame))
+            }
 
             smallFont.RenderWrapped(screen, float64(cornerX + 13), float64(cornerY + 112), wrappedAbilities, options.ColorScale, false)
 

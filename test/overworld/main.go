@@ -1366,6 +1366,8 @@ func createScenario18(cache *lbx.LbxCache) *gamelib.Game {
 
     player := game.AddPlayer(wizard, true)
 
+    player.Fame = 12
+
     x, y := game.FindValidCityLocation()
 
     city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, player.TaxRate, game.BuildingInfo)

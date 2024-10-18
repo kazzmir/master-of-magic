@@ -36,6 +36,8 @@ type Player struct {
 
     Human bool
 
+    Fame int
+
     // known spells
     KnownSpells spellbook.Spells
 
