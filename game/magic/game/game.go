@@ -3252,6 +3252,20 @@ func (game *Game) DoNextUnit(player *playerlib.Player){
     }
 }
 
+/* return a tuple of booleans where each boolean is true if the corresponding resource is not enough
+ * to support the units.
+ * (gold, food, mana)
+ *
+ * (false, false, false) means all units are supported.
+ */
+func (game *Game) CheckDisband(player *playerlib.Player) (bool, bool, bool) {
+    goldIssue := player.TotalUnitUpkeepGold() > player.Gold
+    foodIssue := player.FoodPerTurn() < 0
+    manaIssue := player.TotalUnitUpkeepMana() > player.Mana
+
+    return goldIssue, foodIssue, manaIssue
+}
+
 func (game *Game) DoNextTurn(){
     if len(game.Players) > 0 {
         player := game.Players[0]
@@ -3261,37 +3275,27 @@ func (game *Game) DoNextTurn(){
         for len(player.Units) > 0 && !ok {
             ok = true
 
-            upkeepGold := player.TotalUnitUpkeepGold()
-            if upkeepGold > player.Gold {
+            goldIssue, foodIssue, manaIssue := game.CheckDisband(player)
+
+            if goldIssue || foodIssue || manaIssue {
                 ok = false
+
                 for i := len(player.Units) - 1; i >= 0; i++ {
                     unit := player.Units[i]
-                    if unit.GetUpkeepGold() > 0 {
+                    // disband the unit for the right reason
+                    if goldIssue && unit.GetUpkeepGold() > 0 {
                         log.Printf("Disband %v due to lack of gold", unit)
                         player.RemoveUnit(unit)
                         break
                     }
-                }
-            }
 
-            if player.FoodPerTurn() < 0 {
-                ok = false
-                for i := len(player.Units) - 1; i >= 0; i++ {
-                    unit := player.Units[i]
-                    if unit.GetUpkeepFood() > 0 {
+                    if foodIssue && unit.GetUpkeepFood() > 0 {
                         log.Printf("Disband %v due to lack of food", unit)
                         player.RemoveUnit(unit)
                         break
                     }
-                }
-            }
 
-            upkeepMana := player.TotalUnitUpkeepMana()
-            if upkeepMana > player.Mana {
-                ok = false
-                for i := len(player.Units) - 1; i >= 0; i++ {
-                    unit := player.Units[i]
-                    if unit.GetUpkeepMana() > 0 {
+                    if manaIssue && unit.GetUpkeepMana() > 0 {
                         log.Printf("Disband %v due to lack of mana", unit)
                         player.RemoveUnit(unit)
                         break
