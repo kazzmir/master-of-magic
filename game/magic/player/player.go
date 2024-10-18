@@ -179,6 +179,41 @@ func (player *Player) MakeExperienceInfo() units.ExperienceInfo {
     }
 }
 
+func (player *Player) TotalUnitUpkeepGold() int {
+    total := 0
+
+    for _, unit := range player.Units {
+        total += unit.GetUpkeepGold()
+    }
+
+    total -= player.Fame
+    if total < 0 {
+        total = 0
+    }
+
+    return total
+}
+
+func (player *Player) TotalUnitUpkeepFood() int {
+    total := 0
+
+    for _, unit := range player.Units {
+        total += unit.GetUpkeepFood()
+    }
+
+    return total
+}
+
+func (player *Player) TotalUnitUpkeepMana() int {
+    total := 0
+
+    for _, unit := range player.Units {
+        total += unit.GetUpkeepMana()
+    }
+
+    return total
+}
+
 func (player *Player) LearnSpell(spell spellbook.Spell) {
     player.ResearchCandidateSpells.RemoveSpell(spell)
     player.KnownSpells.AddSpell(spell)

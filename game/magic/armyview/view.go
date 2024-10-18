@@ -96,6 +96,10 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
     upArrows, _ := view.ImageCache.GetImages("armylist.lbx", 1)
     downArrows, _ := view.ImageCache.GetImages("armylist.lbx", 2)
 
+    upkeepGold := view.Player.TotalUnitUpkeepGold()
+    upkeepFood := view.Player.TotalUnitUpkeepFood()
+    upkeepMana := view.Player.TotalUnitUpkeepMana()
+
     ui := &uilib.UI{
         Draw: func(this *uilib.UI, screen *ebiten.Image) {
             background, _ := view.ImageCache.GetImage("armylist.lbx", 0, 0)
@@ -110,9 +114,9 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
 
                 normalFont.PrintCenter(screen, 30, 162, 1, options.ColorScale, "UPKEEP")
 
-                normalFont.PrintCenter(screen, 45, 170, 1, options.ColorScale, fmt.Sprintf("%v", highlightedUnit.GetUpkeepGold()))
-                normalFont.PrintCenter(screen, 45, 180, 1, options.ColorScale, fmt.Sprintf("%v", highlightedUnit.GetUpkeepMana()))
-                normalFont.PrintCenter(screen, 45, 190, 1, options.ColorScale, fmt.Sprintf("%v", highlightedUnit.GetUpkeepFood()))
+                normalFont.PrintCenter(screen, 45, 172, 1, options.ColorScale, fmt.Sprintf("%v", upkeepGold))
+                normalFont.PrintCenter(screen, 45, 182, 1, options.ColorScale, fmt.Sprintf("%v", upkeepMana))
+                normalFont.PrintCenter(screen, 45, 192, 1, options.ColorScale, fmt.Sprintf("%v", upkeepFood))
             }
 
             minimapRect := image.Rect(85, 163, 135, 197)
