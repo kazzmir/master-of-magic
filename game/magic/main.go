@@ -228,26 +228,29 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string) error 
     }
 
     runIntro(yield, game)
-    state := runMainMenu(yield, game)
-    switch state {
-        case mainview.MainScreenStateQuit:
-            game.Drawer = shutdown
-            yield()
-            return ebiten.Termination
-        case mainview.MainScreenStateNewGame:
-            // yield so that clicks from the menu don't bleed into the next part
-            yield()
-            settings := runNewGame(yield, game)
-            yield()
-            wizard := runNewWizard(yield, game)
-            yield()
-            err := runGameInstance(yield, game, settings, wizard)
 
-            game.Drawer = shutdown
-            yield()
-            if err != nil {
-                return err
-            }
+    for {
+        state := runMainMenu(yield, game)
+        switch state {
+            case mainview.MainScreenStateQuit:
+                game.Drawer = shutdown
+                yield()
+                return ebiten.Termination
+            case mainview.MainScreenStateNewGame:
+                // yield so that clicks from the menu don't bleed into the next part
+                yield()
+                settings := runNewGame(yield, game)
+                yield()
+                wizard := runNewWizard(yield, game)
+                yield()
+                err := runGameInstance(yield, game, settings, wizard)
+
+                if err != nil {
+                    game.Drawer = shutdown
+                    yield()
+                    return err
+                }
+        }
     }
 
     game.Drawer = shutdown
