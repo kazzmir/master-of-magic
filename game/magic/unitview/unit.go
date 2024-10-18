@@ -139,7 +139,7 @@ func RenderUnitInfoBuild(screen *ebiten.Image, imageCache *util.ImageCache, unit
     smallFont.Print(screen, x, y + 27, 1, defaultOptions.ColorScale, fmt.Sprintf("Cost %v(%v)", discountedCost, cost))
 }
 
-func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitView, descriptionFont *font.Font, smallFont *font.Font, defaultOptions ebiten.DrawImageOptions) {
+func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitView, maxIconsPerLine int, descriptionFont *font.Font, smallFont *font.Font, defaultOptions ebiten.DrawImageOptions) {
     width := descriptionFont.MeasureTextWidth("Armor", 1)
 
     x, y := defaultOptions.GeoM.Apply(0, 0)
@@ -160,9 +160,9 @@ func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit
                 options.GeoM.Translate(3, 0)
             }
 
-            if index > 0 && index % 15 == 0 {
+            if index > 0 && index % maxIconsPerLine == 0 {
                 options.GeoM = saveGeoM
-                options.GeoM.Translate(float64(3 * (index/15)), 2 * float64(index/15))
+                options.GeoM.Translate(float64(3 * (index/maxIconsPerLine)), 2 * float64(index/maxIconsPerLine))
             }
 
             screen.DrawImage(icon, &options)

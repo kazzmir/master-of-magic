@@ -98,7 +98,7 @@ func MakeHireScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero, gol
             options.GeoM.Translate(0, yTop)
             options.GeoM.Translate(31, 6)
             options.GeoM.Translate(10, 50)
-            unitview.RenderUnitInfoStats(screen, &imageCache, hero, descriptionFont, smallFont, options)
+            unitview.RenderUnitInfoStats(screen, &imageCache, hero, 15, descriptionFont, smallFont, options)
 
             options.GeoM.Translate(0, 60)
             unitview.RenderUnitAbilities(screen, &imageCache, hero, mediumFont, options)
