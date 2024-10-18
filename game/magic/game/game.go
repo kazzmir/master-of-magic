@@ -3338,7 +3338,7 @@ func (game *Game) DoNextTurn(){
                 disbanded := false
 
                 // try to disband one unit that is taking up resources
-                for i := len(player.Units) - 1; i >= 0; i++ {
+                for i := len(player.Units) - 1; i >= 0; i-- {
                     unit := player.Units[i]
                     // disband the unit for the right reason
                     if goldIssue && unit.GetUpkeepGold() > 0 {

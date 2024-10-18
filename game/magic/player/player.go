@@ -320,9 +320,7 @@ func (player *Player) GoldPerTurn() int {
         gold += city.GoldSurplus()
     }
 
-    for _, unit := range player.Units {
-        gold -= unit.GetUpkeepGold()
-    }
+    gold -= player.TotalUnitUpkeepGold()
 
     return gold
 }
@@ -334,9 +332,7 @@ func (player *Player) FoodPerTurn() int {
         food += city.SurplusFood()
     }
 
-    for _, unit := range player.Units {
-        food -= unit.GetUpkeepFood()
-    }
+    food -= player.TotalUnitUpkeepFood()
 
     return food
 }
@@ -348,9 +344,7 @@ func (player *Player) ManaPerTurn(power int) int {
         mana += city.ManaSurplus()
     }
 
-    for _, unit := range player.Units {
-        mana -= unit.GetUpkeepMana()
-    }
+    mana -= player.TotalUnitUpkeepMana()
 
     manaFocusingBonus := float64(1)
 
