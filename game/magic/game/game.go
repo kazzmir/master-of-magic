@@ -3314,9 +3314,12 @@ func (game *Game) DoNextUnit(player *playerlib.Player){
  * (false, false, false) means all units are supported.
  */
 func (game *Game) CheckDisband(player *playerlib.Player) (bool, bool, bool) {
-    goldIssue := player.TotalUnitUpkeepGold() > player.Gold
+    goldIssue := player.GoldPerTurn() < 0 && player.GoldPerTurn() > player.Gold
     foodIssue := player.FoodPerTurn() < 0
-    manaIssue := player.TotalUnitUpkeepMana() > player.Mana
+
+    manaPerTurn := player.ManaPerTurn(game.ComputePower(player))
+
+    manaIssue := manaPerTurn < 0 && manaPerTurn > player.Mana
 
     return goldIssue, foodIssue, manaIssue
 }

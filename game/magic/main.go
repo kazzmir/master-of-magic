@@ -143,7 +143,7 @@ func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup
 
     player := game.AddPlayer(wizard, true)
 
-    player.Gold = 10
+    player.Gold = 0
 
     cityX, cityY := game.FindValidCityLocation()
 

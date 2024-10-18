@@ -322,6 +322,8 @@ func (player *Player) GoldPerTurn() int {
 
     gold -= player.TotalUnitUpkeepGold()
 
+    gold += player.FoodPerTurn() / 2
+
     return gold
 }
 
