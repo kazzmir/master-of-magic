@@ -1,7 +1,7 @@
 package city
 
 import (
-    "log"
+    _ "log"
     "math"
     "math/rand/v2"
 

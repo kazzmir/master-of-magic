@@ -1142,7 +1142,11 @@ func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, sta
         game.InfoFontYellow.Print(screen, x, y, 1, options.ColorScale, city.Race.String())
 
         x, y = options.GeoM.Apply(20, 5)
-        bigFont.Print(screen, x, y, 1, options.ColorScale, "New Outpost Founded")
+        if rename {
+            bigFont.Print(screen, x, y, 1, options.ColorScale, "New Outpost Founded")
+        } else {
+            bigFont.Print(screen, x, y, 1, options.ColorScale, fmt.Sprintf("Outpost Of %v", city.Name))
+        }
 
         cityScapeOptions := options
         cityScapeOptions.GeoM.Translate(185, 30)
@@ -3612,9 +3616,12 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
         return outX, outY
     }
 
+    cityPositions := make(map[image.Point]struct{})
+
     for _, city := range overworld.Cities {
         var cityPic *ebiten.Image
         var err error
+        cityPositions[image.Point{city.X, city.Y}] = struct{}{}
         cityPic, err = GetCityWallImage(city, overworld.ImageCache)
         /*
         if city.Wall {
@@ -3644,7 +3651,21 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
     }
 
     for _, stack := range overworld.Stacks {
-        if stack.Leader() != nil && (stack != overworld.SelectedStack || overworld.ShowAnimation || overworld.Counter / 55 % 2 == 0) {
+        doDraw := false
+        if stack.Leader() == nil {
+            continue
+        }
+
+        location := image.Point{stack.X(), stack.Y()}
+        _, hasCity := cityPositions[location]
+
+        if stack == overworld.SelectedStack && (overworld.ShowAnimation || overworld.Counter / 55 % 2 == 0) {
+            doDraw = true
+        } else if stack != overworld.SelectedStack && !hasCity {
+            doDraw = true
+        }
+
+        if doDraw {
             var options ebiten.DrawImageOptions
             options.GeoM = geom
             x, y := convertTileCoordinates(float64(stack.X()) + stack.OffsetX(), float64(stack.Y()) + stack.OffsetY())
