@@ -2267,16 +2267,41 @@ var HighMenSettlers Unit = Unit{
 var HighMenPikemen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 112,
+    CombatLbxFile: "figures8.lbx",
+    CombatIndex: 56,
     Name: "Pikemen",
+    ProductionCost: 80,
+    UpkeepGold: 2,
+    UpkeepFood: 1,
+    Count: 8,
+    MovementSpeed: 1,
+    MeleeAttackPower: 5,
+    Defense: 3,
+    Resistance: 5,
+    HitPoints: 1,
     RequiredBuildings: []building.Building{building.BuildingFightersGuild},
+    Abilities: []Ability{AbilityNegateFirstStrike, AbilityArmorPiercing},
     Race: data.RaceHighMen,
 }
 
 var Paladin Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 113,
+    CombatLbxFile: "figures8.lbx",
+    CombatIndex: 64,
     Name: "Paladins",
+    ProductionCost: 200,
+    UpkeepGold: 4,
+    UpkeepFood: 1,
+    Count: 4,
+    MovementSpeed: 2,
+    MeleeAttackPower: 6,
+    Defense: 5,
+    Resistance: 8,
+    HitPoints: 4,
     RequiredBuildings: []building.Building{building.BuildingArmorersGuild, building.BuildingCathedral},
+    // holy bonus 1x
+    Abilities: []Ability{AbilityMagicImmunity, AbilityHolyBonus, AbilityArmorPiercing, AbilityFirstStrike},
     Race: data.RaceHighMen,
 }
 
