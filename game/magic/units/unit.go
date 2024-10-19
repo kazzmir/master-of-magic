@@ -1963,7 +1963,18 @@ var WolfRiders Unit = Unit{
 var HalflingSpearmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 89,
+    CombatLbxFile: "figures6.lbx",
+    CombatIndex: 112,
     Name: "Spearmen",
+    ProductionCost: 15,
+    UpkeepFood: 1,
+    Count: 8,
+    MovementSpeed: 1,
+    MeleeAttackPower: 1,
+    Defense: 2,
+    Resistance: 6,
+    HitPoints: 1,
+    Abilities: []Ability{AbilityLucky},
     Race: data.RaceHalfling,
 }
 
@@ -1994,6 +2005,17 @@ var HalflingShamans Unit = Unit{
 var HalflingSettlers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 93,
+    CombatLbxFile: "figures7.lbx",
+    CombatIndex: 24,
+    ProductionCost: 90,
+    UpkeepGold: 2,
+    UpkeepFood: 1,
+    Count: 1,
+    MovementSpeed: 1,
+    Defense: 1,
+    Resistance: 6,
+    HitPoints: 10,
+    Abilities: []Ability{AbilityCreateOutpost, AbilityLucky},
     Name: "Settlers",
     Race: data.RaceHalfling,
 }
