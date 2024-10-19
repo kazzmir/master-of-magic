@@ -2019,7 +2019,8 @@ var HighElfSpearmen Unit = Unit{
     AttackSound: AttackSoundNormal,
     MovementSound: MovementSoundMarching,
     Resistance: 6,
-    Abilities: []Ability{AbilityForester},
+    // tohit +10%
+    Abilities: []Ability{AbilityForester, AbilityToHit},
     MovementSpeed: 1,
     Race: data.RaceHighElf,
     HitPoints: 1,
@@ -2028,25 +2029,64 @@ var HighElfSpearmen Unit = Unit{
 
 var HighElfSwordsmen Unit = Unit{
     LbxFile: "units1.lbx",
+    Index: 96,
+    CombatLbxFile: "figures7.lbx",
+    CombatIndex: 48,
     Name: "Swordsmen",
     RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSmithy},
-    Index: 96,
+    ProductionCost: 30,
+    UpkeepGold: 1,
+    UpkeepFood: 1,
+    Count: 6,
+    MovementSpeed: 1,
+    MeleeAttackPower: 3,
+    Defense: 2,
+    Resistance: 6,
+    HitPoints: 1,
+    // tohit +10%
+    Abilities: []Ability{AbilityLargeShield, AbilityToHit, AbilityForester},
     Race: data.RaceHighElf,
 }
 
 var HighElfHalberdiers Unit = Unit{
     LbxFile: "units1.lbx",
-    Name: "Halberdiers",
-    RequiredBuildings: []building.Building{building.BuildingArmory},
     Index: 97,
+    CombatLbxFile: "figures7.lbx",
+    CombatIndex: 56,
+    Name: "Halberdiers",
+    ProductionCost: 60,
+    UpkeepGold: 2,
+    UpkeepFood: 1,
+    Count: 6,
+    MovementSpeed: 1,
+    MeleeAttackPower: 4,
+    Defense: 3,
+    Resistance: 6,
+    HitPoints: 1,
+    RequiredBuildings: []building.Building{building.BuildingArmory},
+    // tohit +10%
+    Abilities: []Ability{AbilityForester, AbilityToHit},
     Race: data.RaceHighElf,
 }
 
 var HighElfCavalry Unit = Unit{
     LbxFile: "units1.lbx",
-    Name: "Cavalry",
-    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingStables},
     Index: 98,
+    CombatLbxFile: "figures7.lbx",
+    CombatIndex: 64,
+    Name: "Cavalry",
+    ProductionCost: 60,
+    UpkeepGold: 2,
+    UpkeepFood: 1,
+    Count: 4,
+    MovementSpeed: 2,
+    MeleeAttackPower: 4,
+    Defense: 2,
+    Resistance: 6,
+    HitPoints: 3,
+    RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingStables},
+    // tohit +10%
+    Abilities: []Ability{AbilityToHit, AbilityForester, AbilityFirstStrike},
     Race: data.RaceHighElf,
 }
 
@@ -2065,6 +2105,8 @@ var HighElfSettlers Unit = Unit{
     CombatIndex: 80,
     Count: 1,
     Index: 100,
+    UpkeepGold: 2,
+    UpkeepFood: 1,
     Race: data.RaceHighElf,
     ProductionCost: 90,
     MovementSpeed: 1,
@@ -2072,7 +2114,8 @@ var HighElfSettlers Unit = Unit{
     MeleeAttackPower: 1,
     HitPoints: 1,
     Defense: 1,
-    Abilities: []Ability{AbilityCreateOutpost},
+    // tohit +10%
+    Abilities: []Ability{AbilityCreateOutpost, AbilityToHit, AbilityForester},
 }
 
 var Longbowmen Unit = Unit{
