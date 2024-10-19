@@ -1799,7 +1799,21 @@ var Centaur Unit = Unit{
 var Manticore Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 55,
+    CombatLbxFile: "figures4.lbx",
+    CombatIndex: 80,
     Name: "Manticores",
+    ProductionCost: 160,
+    UpkeepGold: 4,
+    UpkeepFood: 1,
+    Count: 2,
+    Flying: true,
+    MovementSpeed: 2,
+    MeleeAttackPower: 5,
+    Defense: 3,
+    Resistance: 6,
+    HitPoints: 7,
+    // poison touch 6
+    Abilities: []Ability{AbilityScouting, AbilityPoisonTouch},
     RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingAnimistsGuild},
     Race: data.RaceBeastmen,
 }
@@ -1807,7 +1821,20 @@ var Manticore Unit = Unit{
 var Minotaur Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 56,
+    CombatLbxFile: "figures4.lbx",
+    CombatIndex: 88,
     Name: "Minotaurs",
+    ProductionCost: 200,
+    UpkeepGold: 4,
+    UpkeepFood: 1,
+    Count: 2,
+    MovementSpeed: 1,
+    MeleeAttackPower: 12,
+    Defense: 4,
+    Resistance: 7,
+    HitPoints: 12,
+    // tohit +20%
+    Abilities: []Ability{AbilityToHit, AbilityLargeShield},
     RequiredBuildings: []building.Building{building.BuildingArmorersGuild},
     Race: data.RaceBeastmen,
 }
