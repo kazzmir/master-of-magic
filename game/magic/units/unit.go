@@ -2204,7 +2204,17 @@ var Paladin Unit = Unit{
 var KlackonSpearmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 114,
+    CombatLbxFile: "figures8.lbx",
+    CombatIndex: 72,
     Name: "Spearmen",
+    ProductionCost: 20,
+    UpkeepFood: 1,
+    Count: 8,
+    MovementSpeed: 1,
+    MeleeAttackPower: 1,
+    Defense: 4,
+    Resistance: 5,
+    HitPoints: 1,
     Race: data.RaceKlackon,
 }
 
@@ -2212,7 +2222,19 @@ var KlackonSwordsmen Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 115,
     Name: "Swordsmen",
+    CombatLbxFile: "figures8.lbx",
+    CombatIndex: 80,
     RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSmithy},
+    ProductionCost: 40,
+    UpkeepGold: 1,
+    UpkeepFood: 1,
+    Count: 6,
+    MovementSpeed: 1,
+    MeleeAttackPower: 3,
+    Defense: 4,
+    Resistance: 5,
+    HitPoints: 1,
+    Abilities: []Ability{AbilityLargeShield},
     Race: data.RaceKlackon,
 }
 
@@ -2235,7 +2257,17 @@ var KlackonEngineer Unit = Unit{
 var KlackonSettlers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 118,
+    CombatLbxFile: "figures8.lbx",
+    CombatIndex: 104,
     Name: "Settlers",
+    UpkeepGold: 3,
+    UpkeepFood: 1,
+    Count: 1,
+    ProductionCost: 120,
+    MovementSpeed: 1,
+    Defense: 1,
+    Resistance: 5,
+    HitPoints: 20,
     Race: data.RaceKlackon,
 }
 
