@@ -1166,6 +1166,7 @@ func createScenario16(cache *lbx.LbxCache) *gamelib.Game {
     city.Plane = data.PlaneArcanus
     city.Banner = wizard.Banner
     city.Buildings.Insert(buildinglib.BuildingFortress)
+    city.Buildings.Insert(buildinglib.BuildingWizardsGuild)
     city.ProducingBuilding = buildinglib.BuildingGranary
     city.ProducingUnit = units.UnitNone
     city.Race = wizard.Race
