@@ -3373,9 +3373,6 @@ func (game *Game) DoNextTurn(){
             }
         }
 
-        player.Gold -= player.TotalUnitUpkeepGold()
-        player.Mana -= player.TotalUnitUpkeepMana()
-
         power := game.ComputePower(player)
 
         player.Gold += player.GoldPerTurn()
