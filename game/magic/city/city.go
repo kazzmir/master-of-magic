@@ -252,6 +252,8 @@ func (city *City) ComputePower() int {
                 if city.Plane == data.PlaneMyrror {
                     power += 5
                 }
+
+                power += city.WizardInfo.NumSpellbooks()
         }
     }
 
@@ -465,24 +467,6 @@ func (city *City) ManaCost() int {
 
     return mana
 
-}
-
-func (city *City) ManaSurplus() int {
-    return city.ManaProduction() - city.ManaCost()
-}
-
-func (city *City) ManaProduction() int {
-    mana := 0
-
-    for _, building := range city.Buildings.Values() {
-        mana += city.BuildingInfo.ManaProduction(building)
-
-        if building == buildinglib.BuildingFortress {
-            mana += city.WizardInfo.NumSpellbooks()
-        }
-    }
-
-    return mana
 }
 
 /* amount of food needed to feed the citizens

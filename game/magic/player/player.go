@@ -347,7 +347,7 @@ func (player *Player) ManaPerTurn(power int) int {
     mana := 0
 
     for _, city := range player.Cities {
-        mana += city.ManaSurplus()
+        mana -= city.ManaCost()
     }
 
     mana -= player.TotalUnitUpkeepMana()
