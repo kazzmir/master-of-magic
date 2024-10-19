@@ -429,6 +429,7 @@ var DragonTurtle Unit = Unit{
     CombatIndex: 48,
     RequiredBuildings: []building.Building{building.BuildingArmorersGuild, building.BuildingStables},
     Race: data.RaceLizard,
+    // fire breath 5
     Abilities: []Ability{AbilityFireBreath},
     ProductionCost: 100,
     UpkeepGold: 2,
@@ -821,7 +822,8 @@ var GreatDrake Unit = Unit{
     CombatIndex: 112,
     Name: "Great Drake",
     Race: data.RaceFantastic,
-    Abilities: []Ability{AbilityForester, AbilityDoomGaze},
+    // fire breath 30, tohit 30
+    Abilities: []Ability{AbilityFireBreath, AbilityToHit},
     Count: 1,
     Realm: data.ChaosMagic,
     HitPoints: 30,
@@ -2241,16 +2243,39 @@ var KlackonSwordsmen Unit = Unit{
 var KlackonHalberdiers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 116,
+    CombatLbxFile: "figures8.lbx",
+    CombatIndex: 88,
     Name: "Halberdiers",
     RequiredBuildings: []building.Building{building.BuildingArmory},
+    ProductionCost: 80,
+    UpkeepGold: 2,
+    UpkeepFood: 1,
+    Count: 6,
+    MovementSpeed: 1,
+    MeleeAttackPower: 4,
+    Defense: 5,
+    Resistance: 5,
+    HitPoints: 1,
     Race: data.RaceKlackon,
 }
 
 var KlackonEngineer Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 117,
+    CombatLbxFile: "figures8.lbx",
+    CombatIndex: 96,
     Name: "Engineer",
     RequiredBuildings: []building.Building{building.BuildingBuildersHall},
+    ProductionCost: 80,
+    UpkeepGold: 2,
+    UpkeepFood: 1,
+    Count: 6,
+    MovementSpeed: 1,
+    MeleeAttackPower: 1,
+    Defense: 1,
+    Resistance: 5,
+    HitPoints: 1,
+    Abilities: []Ability{AbilityConstruction, AbilityWallCrusher},
     Race: data.RaceKlackon,
 }
 
@@ -2274,8 +2299,21 @@ var KlackonSettlers Unit = Unit{
 var StagBeetle Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 119,
+    CombatLbxFile: "figures8.lbx",
+    CombatIndex: 112,
     Name: "Stag Beetle",
     RequiredBuildings: []building.Building{building.BuildingArmorersGuild, building.BuildingFantasticStable},
+    ProductionCost: 160,
+    UpkeepGold: 4,
+    UpkeepFood: 1,
+    Count: 1,
+    MovementSpeed: 2,
+    MeleeAttackPower: 15,
+    Defense: 7,
+    Resistance: 6,
+    HitPoints: 20,
+    // fire breath 5
+    Abilities: []Ability{AbilityFireBreath},
     Race: data.RaceKlackon,
 }
 
