@@ -3475,7 +3475,7 @@ func (game *Game) DoNextTurn(){
                     case *citylib.CityEventOutpostDestroyed:
                         removeCities = append(removeCities, city)
                         select {
-                            case game.Events<- &GameEventNotice{Message: fmt.Sprintf("The outpost of %v has been lost.", city.Name)}:
+                            case game.Events<- &GameEventNotice{Message: fmt.Sprintf("The outpost of %v has been deserted.", city.Name)}:
                             default:
                         }
                     case *citylib.CityEventOutpostHamlet:
