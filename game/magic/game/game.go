@@ -65,6 +65,9 @@ type GameEventRefreshUI struct {
 type GameEventSurveyor struct {
 }
 
+type GameEventNextTurn struct {
+}
+
 type GameEventCityListView struct {
 }
 
@@ -1601,6 +1604,50 @@ func (game *Game) doNotice(yield coroutine.YieldFunc, message string) {
     }
 }
 
+func (game *Game) doNextTurn(yield coroutine.YieldFunc) {
+    player := game.Players[0]
+    goldIssue, foodIssue, manaIssue := game.CheckDisband(player)
+
+    if goldIssue || foodIssue || manaIssue {
+
+        quit := false
+        doit := false
+
+        message := ""
+
+        if goldIssue {
+            message = "Some units do not have enough gold and will disband unless you make more gold. Do you wish to allow them to disband?"
+        } else if foodIssue {
+            message = "Some units do not have enough food and will die unless you allocate more farmers in a city. Do you wish to allow them to die?"
+        } else if manaIssue {
+            message = "Some units do not have enough mana and will disband unless you make more mana. Do you wish to allow them to disband?"
+        }
+
+        yes := func(){
+            quit = true
+            doit = true
+        }
+
+        no := func(){
+            quit = true
+        }
+
+        game.HudUI.AddElements(uilib.MakeConfirmDialog(game.HudUI, game.Cache, &game.ImageCache, message, yes, no))
+
+        for !quit {
+            game.Counter += 1
+            game.HudUI.StandardUpdate()
+            yield()
+        }
+
+        if !doit {
+            return
+        }
+    }
+
+    game.DoNextTurn()
+}
+
 func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
     // keep processing events until we don't receive one in the events channel
     for {
@@ -1614,6 +1661,8 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                     case *GameEventHireHero:
                         hire := event.(*GameEventHireHero)
                         game.doHireHero(yield, hire.Cost, hire.Hero, hire.Player)
+                    case *GameEventNextTurn:
+                        game.doNextTurn(yield)
                     case *GameEventSurveyor:
                         game.doSurveyor(yield)
                     case *GameEventApprenticeUI:
@@ -2599,7 +2648,7 @@ func (game *Game) CityProductionBonus(x int, y int) int {
 }
 
 func (game *Game) CreateOutpost(settlers units.StackUnit, player *playerlib.Player) *citylib.City {
-    newCity := citylib.MakeCity("New City", settlers.GetX(), settlers.GetY(), settlers.GetRace(), settlers.GetBanner(), player.TaxRate, game.BuildingInfo)
+    newCity := citylib.MakeCity("New City", settlers.GetX(), settlers.GetY(), settlers.GetRace(), settlers.GetBanner(), player.TaxRate, game.BuildingInfo, player)
     newCity.Plane = settlers.GetPlane()
     newCity.Population = 300
     newCity.Outpost = true
@@ -2674,7 +2723,10 @@ func (game *Game) MakeHudUI() *uilib.UI {
                 switch key {
                     case ebiten.KeySpace:
                         if game.Players[0].SelectedStack == nil {
-                            game.DoNextTurn()
+                            select {
+                                case game.Events <- &GameEventNextTurn{}:
+                                default:
+                            }
                         }
                 }
             }
@@ -3143,7 +3195,10 @@ func (game *Game) MakeHudUI() *uilib.UI {
         elements = append(elements, &uilib.UIElement{
             Rect: nextTurnRect,
             LeftClick: func(this *uilib.UIElement){
-                game.DoNextTurn()
+                select {
+                    case game.Events <- &GameEventNextTurn{}:
+                    default:
+                }
             },
             RightClick: func(this *uilib.UIElement){
                 helpEntries := game.Help.GetEntriesByName("Next Turn")
@@ -3242,13 +3297,82 @@ func (game *Game) DoNextUnit(player *playerlib.Player){
     }
 
     if player.Human {
+        if player.SelectedStack == nil {
+            fortressCity := player.FindFortressCity()
+            if fortressCity != nil {
+                game.CenterCamera(fortressCity.X, fortressCity.Y)
+            }
+        }
         game.RefreshUI()
     }
+}
+
+/* return a tuple of booleans where each boolean is true if the corresponding resource is not enough
+ * to support the units.
+ * (gold, food, mana)
+ *
+ * (false, false, false) means all units are supported.
+ */
+func (game *Game) CheckDisband(player *playerlib.Player) (bool, bool, bool) {
+    goldIssue := player.GoldPerTurn() < 0 && player.GoldPerTurn() > player.Gold
+    foodIssue := player.FoodPerTurn() < 0
+
+    manaPerTurn := player.ManaPerTurn(game.ComputePower(player))
+
+    manaIssue := manaPerTurn < 0 && manaPerTurn > player.Mana
+
+    return goldIssue, foodIssue, manaIssue
 }
 
 func (game *Game) DoNextTurn(){
     if len(game.Players) > 0 {
         player := game.Players[0]
+
+        // keep removing units until the upkeep value can be paid
+        ok := false
+        resourceLoop:
+        for len(player.Units) > 0 && !ok {
+            ok = true
+
+            goldIssue, foodIssue, manaIssue := game.CheckDisband(player)
+
+            if goldIssue || foodIssue || manaIssue {
+                ok = false
+                disbanded := false
+
+                // try to disband one unit that is taking up resources
+                for i := len(player.Units) - 1; i >= 0; i-- {
+                    unit := player.Units[i]
+                    // disband the unit for the right reason
+                    if goldIssue && unit.GetUpkeepGold() > 0 {
+                        log.Printf("Disband %v due to lack of gold", unit)
+                        player.RemoveUnit(unit)
+                        disbanded = true
+                        break
+                    }
+
+                    if foodIssue && unit.GetUpkeepFood() > 0 {
+                        log.Printf("Disband %v due to lack of food", unit)
+                        player.RemoveUnit(unit)
+                        disbanded = true
+                        break
+                    }
+
+                    if manaIssue && unit.GetUpkeepMana() > 0 {
+                        log.Printf("Disband %v due to lack of mana", unit)
+                        player.RemoveUnit(unit)
+                        disbanded = true
+                        break
+                    }
+                }
+
+                if !disbanded {
+                    // fail safe to make sure we exit the loop in case somehow a unit was not disbanded
+                    break resourceLoop
+                }
+            }
+        }
+
         power := game.ComputePower(player)
 
         player.Gold += player.GoldPerTurn()

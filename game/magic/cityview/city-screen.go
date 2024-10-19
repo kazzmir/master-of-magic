@@ -1021,8 +1021,12 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
     smallMagic, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 43, 0)
     bigMagic, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 91, 0)
 
-    magicX := drawIcons(cityScreen.City.ManaCost(), smallMagic, bigMagic, 6, 76)
-    drawIcons(cityScreen.City.ManaSurplus(), smallMagic, bigMagic, magicX + 6, 76)
+    drawIcons(cityScreen.City.ComputePower(), smallMagic, bigMagic, 6, 76)
+
+    smallResearch, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 44, 0)
+    bigResearch, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 92, 0)
+
+    drawIcons(cityScreen.City.ResearchProduction(), smallResearch, bigResearch, 6, 84)
 
     showWork := false
     workRequired := 0

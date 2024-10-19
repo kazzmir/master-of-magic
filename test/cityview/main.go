@@ -39,7 +39,7 @@ func NewEngine() (*Engine, error) {
 
     buildingInfo, _ := buildinglib.ReadBuildingInfo(cache)
 
-    city := citylib.MakeCity("Boston", 3, 8, data.RaceHighElf, player.Wizard.Banner, fraction.Make(1, 1), buildingInfo)
+    city := citylib.MakeCity("Boston", 3, 8, data.RaceHighElf, player.Wizard.Banner, fraction.Make(1, 1), buildingInfo, &player)
     city.Population = 12000
     city.Farmers = 4
     city.Workers = 2
