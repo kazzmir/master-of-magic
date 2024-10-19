@@ -2015,7 +2015,18 @@ var GnollSettlers Unit = Unit{
 var WolfRiders Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 88,
+    CombatLbxFile: "figures6.lbx",
+    CombatIndex: 104,
     Name: "Wolf Riders",
+    ProductionCost: 100,
+    UpkeepGold: 2,
+    UpkeepFood: 1,
+    Count: 4,
+    MovementSpeed: 3,
+    MeleeAttackPower: 7,
+    Defense: 3,
+    Resistance: 4,
+    HitPoints: 5,
     RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingStables},
     Race: data.RaceGnoll,
 }
