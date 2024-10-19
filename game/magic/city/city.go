@@ -9,7 +9,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/fraction"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/units"
-    "github.com/kazzmir/master-of-magic/game/magic/building"
+    buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
 )
 
 type CityEvent interface {
@@ -30,7 +30,7 @@ type CityEventOutpostHamlet struct {
 }
 
 type CityEventNewBuilding struct {
-    Building building.Building
+    Building buildinglib.Building
 }
 
 type CitySize int
@@ -61,6 +61,10 @@ func (citySize CitySize) String() string {
 
 const MAX_CITY_CITIZENS = 25
 
+type WizardInfo interface {
+    NumSpellbooks() int
+}
+
 type City struct {
     Population int
     Farmers int
@@ -74,7 +78,9 @@ type City struct {
     Y int
     Outpost bool
     Banner data.BannerType
-    Buildings *set.Set[building.Building]
+    Buildings *set.Set[buildinglib.Building]
+
+    WizardInfo WizardInfo
 
     TaxRate fraction.Fraction
 
@@ -83,22 +89,23 @@ type City struct {
 
     // how many hammers the city has produced towards the current project
     Production float32
-    ProducingBuilding building.Building
+    ProducingBuilding buildinglib.Building
     ProducingUnit units.Unit
 
-    BuildingInfo building.BuildingInfos
+    BuildingInfo buildinglib.BuildingInfos
 }
 
-func MakeCity(name string, x int, y int, race data.Race, banner data.BannerType, taxRate fraction.Fraction, buildingInfo building.BuildingInfos) *City {
+func MakeCity(name string, x int, y int, race data.Race, banner data.BannerType, taxRate fraction.Fraction, buildingInfo buildinglib.BuildingInfos, wizardInfo WizardInfo) *City {
     city := City{
         Name: name,
         X: x,
         Y: y,
         Banner: banner,
         Race: race,
-        Buildings: set.MakeSet[building.Building](),
+        Buildings: set.MakeSet[buildinglib.Building](),
         TaxRate: taxRate,
         BuildingInfo: buildingInfo,
+        WizardInfo: wizardInfo,
     }
 
     return &city
@@ -114,20 +121,20 @@ func (city *City) UpdateTaxRate(taxRate fraction.Fraction, garrison []units.Stac
     city.UpdateUnrest(garrison)
 }
 
-func (city *City) AddBuilding(building building.Building){
+func (city *City) AddBuilding(building buildinglib.Building){
     city.Buildings.Insert(building)
 }
 
 func (city *City) HasSummoningCircle() bool {
-    return city.Buildings.Contains(building.BuildingSummoningCircle)
+    return city.Buildings.Contains(buildinglib.BuildingSummoningCircle)
 }
 
 func (city *City) HasFortress() bool {
-    return city.Buildings.Contains(building.BuildingFortress)
+    return city.Buildings.Contains(buildinglib.BuildingFortress)
 }
 
 func (city *City) ProducingString() string {
-    if city.ProducingBuilding != building.BuildingNone {
+    if city.ProducingBuilding != buildinglib.BuildingNone {
         return city.BuildingInfo.Name(city.ProducingBuilding)
     }
 
@@ -139,9 +146,9 @@ func (city *City) ProducingString() string {
 }
 
 func (city *City) ProducingTurnsLeft() int {
-    if city.ProducingBuilding != building.BuildingNone {
+    if city.ProducingBuilding != buildinglib.BuildingNone {
         switch city.ProducingBuilding {
-            case building.BuildingHousing, building.BuildingTradeGoods: return 1
+            case buildinglib.BuildingHousing, buildinglib.BuildingTradeGoods: return 1
         }
 
         cost := city.BuildingInfo.ProductionCost(city.ProducingBuilding) - int(city.Production)
@@ -235,13 +242,13 @@ func (city *City) ComputePower() int {
 
     for _, buildingValue := range city.Buildings.Values() {
         switch buildingValue {
-            case building.BuildingShrine: religiousPower += 1
-            case building.BuildingTemple: religiousPower += 2
-            case building.BuildingParthenon: religiousPower += 3
-            case building.BuildingCathedral: religiousPower += 4
-            case building.BuildingAlchemistsGuild: power += 3
-            case building.BuildingWizardsGuild: power -= 3
-            case building.BuildingFortress:
+            case buildinglib.BuildingShrine: religiousPower += 1
+            case buildinglib.BuildingTemple: religiousPower += 2
+            case buildinglib.BuildingParthenon: religiousPower += 3
+            case buildinglib.BuildingCathedral: religiousPower += 4
+            case buildinglib.BuildingAlchemistsGuild: power += 3
+            case buildinglib.BuildingWizardsGuild: power -= 3
+            case buildinglib.BuildingFortress:
                 if city.Plane == data.PlaneMyrror {
                     power += 5
                 }
@@ -358,27 +365,27 @@ func (city *City) ComputeUnrest(garrison []units.StackUnit) int {
     // pacificationRetort = 1.5
 
     pacification := float64(0)
-    if city.Buildings.Contains(building.BuildingShrine) {
+    if city.Buildings.Contains(buildinglib.BuildingShrine) {
         pacification += 1 * pacificationRetort
     }
 
-    if city.Buildings.Contains(building.BuildingTemple) {
+    if city.Buildings.Contains(buildinglib.BuildingTemple) {
         pacification += float64(templePacification(city.Race)) * pacificationRetort
     }
 
-    if city.Buildings.Contains(building.BuildingParthenon) {
+    if city.Buildings.Contains(buildinglib.BuildingParthenon) {
         pacification += float64(parthenonPacification(city.Race)) * pacificationRetort
     }
 
-    if city.Buildings.Contains(building.BuildingCathedral) {
+    if city.Buildings.Contains(buildinglib.BuildingCathedral) {
         pacification += float64(cathedralPaclification(city.Race)) * pacificationRetort
     }
 
-    if city.Buildings.Contains(building.BuildingAnimistsGuild) {
+    if city.Buildings.Contains(buildinglib.BuildingAnimistsGuild) {
         pacification += float64(animistsGuildPacification(city.Race))
     }
 
-    if city.Buildings.Contains(building.BuildingOracle) {
+    if city.Buildings.Contains(buildinglib.BuildingOracle) {
         pacification += float64(oraclePacification(city.Race))
     }
 
@@ -396,11 +403,11 @@ func (city *City) MaximumCitySize() int {
 
     bonus := 0
 
-    if city.Buildings.Contains(building.BuildingGranary) {
+    if city.Buildings.Contains(buildinglib.BuildingGranary) {
         bonus += 1
     }
 
-    if city.Buildings.Contains(building.BuildingFarmersMarket) {
+    if city.Buildings.Contains(buildinglib.BuildingFarmersMarket) {
         bonus += 3
     }
 
@@ -428,11 +435,11 @@ func (city *City) PopulationGrowthRate() int {
         case data.RaceTroll: base -= 20
     }
 
-    if city.Buildings.Contains(building.BuildingGranary) {
+    if city.Buildings.Contains(buildinglib.BuildingGranary) {
         base += 20
     }
 
-    if city.Buildings.Contains(building.BuildingFarmersMarket) {
+    if city.Buildings.Contains(buildinglib.BuildingFarmersMarket) {
         base += 30
     }
 
@@ -469,6 +476,10 @@ func (city *City) ManaProduction() int {
 
     for _, building := range city.Buildings.Values() {
         mana += city.BuildingInfo.ManaProduction(building)
+
+        if building == buildinglib.BuildingFortress {
+            mana += city.WizardInfo.NumSpellbooks()
+        }
     }
 
     return mana
@@ -504,7 +515,7 @@ func (city *City) foodProductionRate(farmers int) int {
 
     baseRate := float32(rate * farmers)
 
-    if city.Buildings.Contains(building.BuildingForestersGuild) {
+    if city.Buildings.Contains(buildinglib.BuildingForestersGuild) {
         baseRate += 2
     }
 
@@ -517,11 +528,11 @@ func (city *City) foodProductionRate(farmers int) int {
 
     bonus := 0
 
-    if city.Buildings.Contains(building.BuildingGranary) {
+    if city.Buildings.Contains(buildinglib.BuildingGranary) {
         bonus += 2
     }
 
-    if city.Buildings.Contains(building.BuildingFarmersMarket) {
+    if city.Buildings.Contains(buildinglib.BuildingFarmersMarket) {
         bonus += 3
     }
 
@@ -545,7 +556,7 @@ func (city *City) GoldSurplus() int {
 
     bonus := float32(0)
 
-    if city.ProducingBuilding == building.BuildingTradeGoods {
+    if city.ProducingBuilding == buildinglib.BuildingTradeGoods {
         bonus = city.WorkProductionRate() / 2
     }
 
@@ -667,7 +678,7 @@ func (city *City) DoNextTurn(garrison []units.StackUnit) []CityEvent {
                     cityEvents = append(cityEvents, &CityEventNewBuilding{Building: city.ProducingBuilding})
 
                     city.Production = 0
-                    city.ProducingBuilding = building.BuildingHousing
+                    city.ProducingBuilding = buildinglib.BuildingHousing
                 }
             } else if !city.ProducingUnit.Equals(units.UnitNone) && city.Production >= float32(city.ProducingUnit.ProductionCost) {
                 cityEvents = append(cityEvents, &CityEventNewUnit{Unit: city.ProducingUnit})
@@ -693,11 +704,11 @@ func (city *City) DoNextTurn(garrison []units.StackUnit) []CityEvent {
     return cityEvents
 }
 
-func (city *City) AllowedBuildings(what building.Building) []building.Building {
+func (city *City) AllowedBuildings(what buildinglib.Building) []buildinglib.Building {
     return city.BuildingInfo.Allows(what)
 }
 
-func (city *City) AllowedUnits(what building.Building) []units.Unit {
+func (city *City) AllowedUnits(what buildinglib.Building) []units.Unit {
     var out []units.Unit
 
     for _, unit := range units.AllUnits {

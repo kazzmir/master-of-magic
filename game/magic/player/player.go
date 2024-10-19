@@ -106,6 +106,10 @@ func (player *Player) IsHuman() bool {
     return player.Human
 }
 
+func (player *Player) NumSpellbooks() int {
+    return player.Wizard.TotalBooks()
+}
+
 /* returns true if the hero was actually added to the player
  */
 func (player *Player) AddHero(hero *herolib.Hero) bool {
