@@ -1735,7 +1735,18 @@ var DarkElfPriests Unit = Unit{
 var DarkElfSettlers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 62,
+    CombatLbxFile: "figures5.lbx",
+    CombatIndex: 16,
     Name: "Settlers",
+    ProductionCost: 150,
+    UpkeepGold: 3,
+    UpkeepFood: 1,
+    Count: 1,
+    MovementSpeed: 1,
+    Defense: 1,
+    Resistance: 7,
+    HitPoints: 10,
+    Abilities: []Ability{AbilityCreateOutpost},
     Race: data.RaceDarkElf,
 }
 
