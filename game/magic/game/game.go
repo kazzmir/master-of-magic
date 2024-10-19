@@ -1574,10 +1574,7 @@ func (game *Game) doHireHero(yield coroutine.YieldFunc, cost int, hero *herolib.
             if player.AddHero(hero) {
                 player.Gold -= cost
                 hero.SetStatus(herolib.StatusEmployed)
-                select {
-                    case game.Events <- &GameEventRefreshUI{}:
-                    default:
-                }
+                game.RefreshUI()
             }
         }
     }
@@ -1894,7 +1891,7 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                             newCity.UpdateUnrest(stack.Units())
                         }
 
-                        if stack.OutOfMoves() {
+                        if stepsTaken > 0 && stack.OutOfMoves() {
                             game.DoNextUnit(player)
                         }
                     }
@@ -1911,13 +1908,18 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
 
                             game.CenterCamera(tileX, tileY)
 
-                            for _, city := range player.Cities {
-                                if city.X == tileX && city.Y == tileY {
-                                    if city.Outpost {
-                                        game.showOutpost(yield, city, player.FindStack(city.X, city.Y), false)
-                                    } else {
-                                        game.doCityScreen(yield, city, player)
-                                    }
+                            city := player.FindCity(tileX, tileY)
+                            if city != nil {
+                                if city.Outpost {
+                                    game.showOutpost(yield, city, player.FindStack(city.X, city.Y), false)
+                                } else {
+                                    game.doCityScreen(yield, city, player)
+                                }
+                                game.RefreshUI()
+                            } else {
+                                stack := player.FindStack(tileX, tileY)
+                                if stack != nil {
+                                    player.SelectedStack = stack
                                     game.RefreshUI()
                                 }
                             }
