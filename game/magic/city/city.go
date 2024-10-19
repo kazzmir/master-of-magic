@@ -247,7 +247,6 @@ func (city *City) ComputePower() int {
             case buildinglib.BuildingParthenon: religiousPower += 3
             case buildinglib.BuildingCathedral: religiousPower += 4
             case buildinglib.BuildingAlchemistsGuild: power += 3
-            case buildinglib.BuildingWizardsGuild: power -= 3
             case buildinglib.BuildingFortress:
                 if city.Plane == data.PlaneMyrror {
                     power += 5
