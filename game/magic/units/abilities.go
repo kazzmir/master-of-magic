@@ -50,6 +50,7 @@ const (
     AbilityStoningImmunity
     AbilityStoningTouch
     AbilitySummonDemons
+    AbilityToHit
     AbilityTeleporting
     AbilityThrown
     AbilityWallCrusher
