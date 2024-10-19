@@ -2844,8 +2844,13 @@ func (game *Game) MakeHudUI() *uilib.UI {
             // show a unit element for each unit in the stack
             // image index increases by 1 for each unit, indexes 24-32
             disband := func(){
-                // FIXME: implement disband
+                player.RemoveUnit(unit)
+                game.RefreshUI()
+                if player.SelectedStack == nil {
+                    game.DoNextUnit(player)
+                }
             }
+
             unitBackground, _ := game.ImageCache.GetImage("main.lbx", 24, 0)
             unitRect := util.ImageRect(unitX, unitY, unitBackground)
             elements = append(elements, &uilib.UIElement{

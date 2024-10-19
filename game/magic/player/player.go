@@ -493,6 +493,10 @@ func (player *Player) RemoveUnit(unit units.StackUnit) {
             player.Stacks = slices.DeleteFunc(player.Stacks, func (s *UnitStack) bool {
                 return s == stack
             })
+
+            if player.SelectedStack == stack {
+                player.SelectedStack = nil
+            }
         }
     }
 }
