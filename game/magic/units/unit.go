@@ -1839,6 +1839,18 @@ var DraconianEngineer Unit = Unit{
 var DraconianSettlers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 73,
+    CombatLbxFile: "figures5.lbx",
+    CombatIndex: 104,
+    ProductionCost: 150,
+    UpkeepGold: 3,
+    UpkeepFood: 1,
+    Count: 1,
+    Flying: true,
+    MovementSpeed: 1,
+    Defense: 2,
+    Resistance: 6,
+    HitPoints: 10,
+    Abilities: []Ability{AbilityCreateOutpost},
     Name: "Settlers",
     Race: data.RaceDraconian,
 }
