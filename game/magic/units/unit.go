@@ -1910,7 +1910,18 @@ var Golem Unit = Unit{
 var DwarfSettlers Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 82,
+    CombatLbxFile: "figures6.lbx",
+    CombatIndex: 56,
     Name: "Settlers",
+    ProductionCost: 150,
+    UpkeepGold: 3,
+    UpkeepFood: 1,
+    Count: 1,
+    MovementSpeed: 1,
+    Defense: 1,
+    Resistance: 8,
+    HitPoints: 30,
+    Abilities: []Ability{AbilityCreateOutpost},
     Race: data.RaceDwarf,
 }
 
