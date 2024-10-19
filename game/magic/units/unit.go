@@ -2478,6 +2478,8 @@ var HighMenBowmen Unit = Unit{
     Index: 106,
     Race: data.RaceHighMen,
     Name: "Bowmen",
+    UpkeepGold: 1,
+    UpkeepFood: 1,
     RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSawmill},
     ProductionCost: 30,
     Count: 6,
