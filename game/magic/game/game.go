@@ -1643,6 +1643,8 @@ func (game *Game) doNextTurn(yield coroutine.YieldFunc) {
         if !doit {
             return
         }
+        yield()
+
     }
 
     game.DoNextTurn()
@@ -3330,6 +3332,9 @@ func (game *Game) DoNextTurn(){
 
         // keep removing units until the upkeep value can be paid
         ok := false
+
+        var disbandedMessages []string
+
         resourceLoop:
         for len(player.Units) > 0 && !ok {
             ok = true
@@ -3346,6 +3351,7 @@ func (game *Game) DoNextTurn(){
                     // disband the unit for the right reason
                     if goldIssue && unit.GetUpkeepGold() > 0 {
                         log.Printf("Disband %v due to lack of gold", unit)
+                        disbandedMessages = append(disbandedMessages, fmt.Sprintf("%v disbanded due to lack of gold", unit.GetName()))
                         player.RemoveUnit(unit)
                         disbanded = true
                         break
@@ -3353,6 +3359,7 @@ func (game *Game) DoNextTurn(){
 
                     if foodIssue && unit.GetUpkeepFood() > 0 {
                         log.Printf("Disband %v due to lack of food", unit)
+                        disbandedMessages = append(disbandedMessages, fmt.Sprintf("%v disbanded due to lack of food", unit.GetName()))
                         player.RemoveUnit(unit)
                         disbanded = true
                         break
@@ -3360,6 +3367,7 @@ func (game *Game) DoNextTurn(){
 
                     if manaIssue && unit.GetUpkeepMana() > 0 {
                         log.Printf("Disband %v due to lack of mana", unit)
+                        disbandedMessages = append(disbandedMessages, fmt.Sprintf("%v disbanded due to lack of mana", unit.GetName()))
                         player.RemoveUnit(unit)
                         disbanded = true
                         break
@@ -3370,6 +3378,13 @@ func (game *Game) DoNextTurn(){
                     // fail safe to make sure we exit the loop in case somehow a unit was not disbanded
                     break resourceLoop
                 }
+            }
+        }
+
+        if len(disbandedMessages) > 0 {
+            select {
+                case game.Events<- &GameEventScroll{Title: "", Text: strings.Join(disbandedMessages, "\n")}:
+                default:
             }
         }
 

@@ -224,6 +224,8 @@ func (font *Font) CreateWrappedText(maxWidth float64, scale float64, text string
     var lines []string
     var yPos float64 = 0
 
+    text = string(bytes.ReplaceAll([]byte(text), []byte{'\n'}, []byte{NewLine}))
+
     textLines := bytes.Split([]byte(text), []byte{NewLine})
 
     for _, lineByte := range textLines {
