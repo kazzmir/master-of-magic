@@ -1432,6 +1432,19 @@ var Zombie Unit = Unit{
 var Unicorn Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 55,
+    CombatLbxFile: "figure12.lbx",
+    CombatIndex: 80,
+    Name: "Unicorns",
+    UpkeepMana: 5,
+    Count: 4,
+    MovementSpeed: 2,
+    MeleeAttackPower: 5,
+    Defense: 3,
+    Resistance: 7,
+    HitPoints: 6,
+    // tohit +20%
+    // resistance to all +2
+    Abilities: []Ability{AbilityToHit, AbilityTeleporting, AbilityPoisonImmunity, AbilityResistanceToAll},
     Race: data.RaceFantastic,
     Realm: data.LifeMagic,
 }
@@ -1439,7 +1452,19 @@ var Unicorn Unit = Unit{
 var GuardianSpirit Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 56,
+    CombatLbxFile: "figure12.lbx",
+    CombatIndex: 88,
+    Name: "Guardian Spirit",
+    UpkeepMana: 1,
+    Count: 1,
+    MovementSpeed: 1,
+    Swimming: true,
+    MeleeAttackPower: 10,
+    Defense: 4,
+    Resistance: 10,
+    HitPoints: 10,
     Race: data.RaceFantastic,
+    // resistance to all +1
     Abilities: []Ability{AbilityMeld, AbilityNonCorporeal, AbilityResistanceToAll},
     Realm: data.LifeMagic,
 }
@@ -1447,6 +1472,20 @@ var GuardianSpirit Unit = Unit{
 var Angel Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 57,
+    CombatLbxFile: "figure12.lbx",
+    CombatIndex: 96,
+    Name: "Angel",
+    UpkeepMana: 15,
+    Count: 1,
+    Flying: true,
+    MovementSpeed: 3,
+    MeleeAttackPower: 13,
+    Defense: 7,
+    Resistance: 8,
+    HitPoints: 15,
+    // tohit +20%
+    // holy bonus 1
+    Abilities: []Ability{AbilityToHit, AbilityIllusionsImmunity, AbilityHolyBonus, AbilityDispelEvil},
     Race: data.RaceFantastic,
     Realm: data.LifeMagic,
 }
@@ -1454,6 +1493,23 @@ var Angel Unit = Unit{
 var ArchAngel Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 58,
+    CombatLbxFile: "figure12.lbx",
+    CombatIndex: 104,
+    Name: "Arch Angel",
+    UpkeepMana: 20,
+    Count: 1,
+    Flying: true,
+    MovementSpeed: 4,
+    MeleeAttackPower: 15,
+    Defense: 10,
+    Resistance: 12,
+    HitPoints: 18,
+    // tohit +30%
+    // caster 40
+    // holy bonus 2
+    Abilities: []Ability{
+        AbilityToHit, AbilityCaster, AbilityIllusionsImmunity, AbilityHolyBonus,
+    },
     Race: data.RaceFantastic,
     Realm: data.LifeMagic,
 }
