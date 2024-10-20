@@ -2,6 +2,8 @@ package hero
 
 import (
     "fmt"
+    "slices"
+    "math/rand/v2"
 
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/data"
@@ -188,11 +190,26 @@ type Hero struct {
     Name string
     Status HeroStatus
 
+    // set at start of game
+    Abilities []units.Ability
+
     Equipment [3]*artifact.Artifact
+}
+
+type noInfo struct {
+}
+
+func (noInfo *noInfo) HasWarlord() bool {
+    return false
+}
+
+func (noInfo *noInfo) Crusade() bool {
+    return false
 }
 
 func MakeHeroSimple(heroType HeroType) *Hero {
     unit := units.MakeOverworldUnit(heroType.GetUnit())
+    unit.ExperienceInfo = &noInfo{}
     return MakeHero(unit, heroType, heroType.DefaultName())
 }
 
@@ -201,8 +218,57 @@ func MakeHero(unit *units.OverworldUnit, heroType HeroType, name string) *Hero {
         Unit: unit,
         Name: name,
         HeroType: heroType,
+        Abilities: slices.Clone(unit.GetAbilities()),
         Status: StatusAvailable,
     }
+}
+
+type abilityChoice int
+const (
+    abilityChoiceFighter abilityChoice = iota
+    abilityChoiceMage
+    abilityChoiceAny
+)
+
+func selectAbility(kind abilityChoice) units.Ability {
+    anyChoices := []units.Ability{
+        units.AbilityCharmed,
+        units.AbilityLucky,
+        units.AbilityNoble,
+        units.AbilitySage,
+    }
+
+    fighterChoices := []units.Ability{
+        units.AbilityAgility,
+        units.AbilityArmsmaster,
+        units.AbilityBlademaster,
+        units.AbilityConstitution,
+        units.AbilityLeadership,
+        units.AbilityLegendary,
+        units.AbilityMight,
+    }
+
+    mageChoices := []units.Ability{
+        units.AbilityArcanePower,
+        units.AbilityCaster,
+        units.AbilityPrayermaster,
+        units.AbilitySage,
+    }
+
+    var use []units.Ability
+    switch kind {
+        case abilityChoiceFighter:
+            use = append(fighterChoices, anyChoices...)
+        case abilityChoiceMage:
+            use = append(mageChoices, anyChoices...)
+        case abilityChoiceAny:
+            use = append(append(fighterChoices, mageChoices...), anyChoices...)
+    }
+
+    return use[rand.N(len(use))]
+}
+
+func (hero *Hero) SetExtraAbilities() {
 }
 
 func (hero *Hero) SetStatus(status HeroStatus) {
@@ -465,6 +531,10 @@ func (hero *Hero) GetExperienceLevel() units.HeroExperienceLevel {
     return units.ExperienceHero
 }
 
+func (hero *Hero) SetExperienceInfo(info units.ExperienceInfo) {
+    hero.Unit.ExperienceInfo = info
+}
+
 func (hero *Hero) GetBaseMeleeAttackPower() int {
     return hero.Unit.GetBaseMeleeAttackPower()
 }
@@ -609,7 +679,7 @@ func (hero *Hero) GetBaseHitPoints() int {
 }
 
 func (hero *Hero) GetAbilities() []units.Ability {
-    return hero.Unit.GetAbilities()
+    return hero.Abilities
 }
 
 func (hero *Hero) Title() string {

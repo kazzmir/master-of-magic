@@ -407,8 +407,10 @@ func (game *Game) AddPlayer(wizard setup.WizardCustom, human bool) *playerlib.Pl
 func createHeroes() map[herolib.HeroType]*herolib.Hero {
     heroes := make(map[herolib.HeroType]*herolib.Hero)
 
-    for _, hero := range herolib.AllHeroTypes() {
-        heroes[hero] = herolib.MakeHeroSimple(hero)
+    for _, heroType := range herolib.AllHeroTypes() {
+        hero := herolib.MakeHeroSimple(heroType)
+        hero.SetExtraAbilities()
+        heroes[heroType] = hero
     }
 
     return heroes
