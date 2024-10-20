@@ -70,6 +70,7 @@ const (
     AbilityConstitution
     AbilityLeadership
     AbilityLegendary
+    AbilitySuperLegendary
     AbilityLucky
     AbilityMight
     AbilityNoble
@@ -143,6 +144,7 @@ func (ability Ability) LbxFile() string {
         case AbilityConstitution: return ""
         case AbilityLeadership: return ""
         case AbilityLegendary: return ""
+        case AbilitySuperLegendary: return ""
         case AbilityLucky: return ""
         case AbilityMight: return ""
         case AbilityNoble: return ""
@@ -216,7 +218,8 @@ func (ability Ability) Name() string {
         case AbilityCharmed: return ""
         case AbilityConstitution: return ""
         case AbilityLeadership: return ""
-        case AbilityLegendary: return ""
+        case AbilityLegendary: return "Legendary"
+        case AbilitySuperLegendary: return "Super Legendary"
         case AbilityLucky: return ""
         case AbilityMight: return ""
         case AbilityNoble: return ""
