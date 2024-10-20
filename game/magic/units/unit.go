@@ -983,11 +983,19 @@ var WarMammoths Unit = Unit{
 var MagicSpirit Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 34,
+    CombatLbxFile: "figure11.lbx",
+    CombatIndex: 32,
     Name: "Magic Spirit",
     Realm: data.ArcaneMagic,
-    Abilities: []Ability{AbilityMeld, AbilityNonCorporeal},
+    UpkeepMana: 1,
     MovementSpeed: 1,
-    // FIXME: check on this
+    Swimming: true,
+    Count: 1,
+    MeleeAttackPower: 5,
+    Defense: 4,
+    Resistance: 8,
+    HitPoints: 10,
+    Abilities: []Ability{AbilityMeld, AbilityNonCorporeal},
     Race: data.RaceFantastic,
 }
 
@@ -997,6 +1005,7 @@ var HellHounds Unit = Unit{
     Name: "Hell Hounds",
     CombatLbxFile: "figure11.lbx",
     CombatIndex: 40,
+    UpkeepMana: 1,
     MovementSpeed: 2,
     Realm: data.ChaosMagic,
     MeleeAttackPower: 3,
@@ -1004,6 +1013,9 @@ var HellHounds Unit = Unit{
     Defense: 2,
     Resistance: 6,
     HitPoints: 4,
+    // fire breath 3
+    // to hit +10%
+    Abilities: []Ability{AbilityFireBreath, AbilityToHit},
     Race: data.RaceFantastic,
 }
 
@@ -1013,6 +1025,7 @@ var Gargoyle Unit = Unit{
     Name: "Gargoyles",
     CombatLbxFile: "figure11.lbx",
     CombatIndex: 48,
+    UpkeepMana: 5,
     Realm: data.ChaosMagic,
     MovementSpeed: 2,
     Flying: true,
@@ -1021,6 +1034,8 @@ var Gargoyle Unit = Unit{
     Defense: 8,
     Resistance: 7,
     HitPoints: 4,
+    // tohit +10%
+    Abilities: []Ability{AbilityToHit, AbilityPoisonImmunity, AbilityStoningImmunity},
     Race: data.RaceFantastic,
 }
 
@@ -1031,6 +1046,7 @@ var FireGiant Unit = Unit{
     CombatLbxFile: "figure11.lbx",
     CombatIndex: 56,
     MovementSpeed: 2,
+    UpkeepMana: 3,
     Realm: data.ChaosMagic,
     Count: 1,
     MeleeAttackPower: 10,
@@ -1040,6 +1056,8 @@ var FireGiant Unit = Unit{
     HitPoints: 15,
     Defense: 5,
     Resistance: 7,
+    // tohit +10%
+    Abilities: []Ability{AbilityToHit, AbilityMountaineer, AbilityWallCrusher, AbilityFireImmunity},
     Race: data.RaceFantastic,
 }
 
@@ -1057,6 +1075,7 @@ var FireElemental Unit = Unit{
     Defense: 4,
     Resistance: 6,
     HitPoints: 10,
+    Abilities: []Ability{AbilityFireImmunity, AbilityPoisonImmunity, AbilityStoningImmunity},
 }
 
 var ChaosSpawn Unit = Unit{
@@ -1067,12 +1086,18 @@ var ChaosSpawn Unit = Unit{
     CombatIndex: 72,
     Realm: data.ChaosMagic,
     MovementSpeed: 1,
+    UpkeepMana: 12,
     Flying: true,
     Count: 1,
     MeleeAttackPower: 1,
     Defense: 6,
     Resistance: 10,
     HitPoints: 15,
+    // poison touch 4
+    // doom gaze 4
+    // death gaze 4
+    // stoning gaze 4
+    Abilities: []Ability{AbilityCauseFear, AbilityPoisonTouch, AbilityDoomGaze, AbilityDeathGaze, AbilityStoningGaze},
     Race: data.RaceFantastic,
 }
 
@@ -1082,6 +1107,7 @@ var Chimeras Unit = Unit{
     CombatLbxFile: "figure11.lbx",
     CombatIndex: 80,
     Realm: data.ChaosMagic,
+    UpkeepMana: 10,
     MovementSpeed: 2,
     Flying: true,
     Count: 4,
@@ -1089,6 +1115,9 @@ var Chimeras Unit = Unit{
     Defense: 5,
     Resistance: 8,
     HitPoints: 8,
+    // tohit +10%
+    // firebreath 4
+    Abilities: []Ability{AbilityFireBreath, AbilityToHit},
     Race: data.RaceFantastic,
 }
 
@@ -1099,6 +1128,7 @@ var DoomBat Unit = Unit{
     CombatLbxFile: "figure11.lbx",
     CombatIndex: 88,
     MovementSpeed: 4,
+    UpkeepMana: 8,
     Realm: data.ChaosMagic,
     Flying: true,
     MeleeAttackPower: 10,
@@ -1106,6 +1136,8 @@ var DoomBat Unit = Unit{
     Resistance: 9,
     Count: 1,
     HitPoints: 20,
+    // tohit +10%
+    Abilities: []Ability{AbilityToHit, AbilityImmolation},
     Race: data.RaceFantastic,
 }
 
@@ -1117,6 +1149,7 @@ var Efreet Unit = Unit{
     CombatIndex: 96,
     MovementSpeed: 3,
     Realm: data.ChaosMagic,
+    UpkeepMana: 15,
     Flying: true,
     Count: 1,
     // caster 20
@@ -1126,6 +1159,9 @@ var Efreet Unit = Unit{
     Defense: 7,
     Resistance: 10,
     HitPoints: 12,
+    // tohit +20%
+    // caster 20
+    Abilities: []Ability{AbilityFireImmunity, AbilityToHit, AbilityCaster},
     Race: data.RaceFantastic,
 }
 
@@ -1136,6 +1172,7 @@ var Hydra Unit = Unit{
     Name: "Hydra",
     CombatLbxFile: "figure11.lbx",
     CombatIndex: 104,
+    UpkeepMana: 14,
     Count: 1,
     Realm: data.ChaosMagic,
     MovementSpeed: 1,
@@ -1143,6 +1180,9 @@ var Hydra Unit = Unit{
     Defense: 4,
     Resistance:11,
     HitPoints: 10,
+    // tohit +10%
+    // fire breath 5
+    Abilities: []Ability{AbilityRegeneration, AbilityToHit, AbilityFireBreath},
     Race: data.RaceFantastic,
 }
 
@@ -1171,6 +1211,17 @@ var GreatDrake Unit = Unit{
 var Skeleton Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 45,
+    CombatLbxFile: "figure12.lbx",
+    CombatIndex: 0,
+    Name: "Skeletons",
+    UpkeepMana: 1,
+    Count: 6,
+    MovementSpeed: 3,
+    MeleeAttackPower: 3,
+    Defense: 4,
+    Resistance: 5,
+    HitPoints: 1,
+    Abilities: []Ability{AbilityToHit, AbilityPoisonImmunity, AbilityMissileImmunity, AbilityIllusionsImmunity, AbilityColdImmunity, AbilityDeathImmunity},
     Race: data.RaceFantastic,
     Realm: data.DeathMagic,
 }
@@ -1178,6 +1229,19 @@ var Skeleton Unit = Unit{
 var Ghoul Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 46,
+    CombatLbxFile: "figure12.lbx",
+    CombatIndex: 8,
+    Name: "Ghouls",
+    UpkeepMana: 1,
+    Count: 4,
+    MovementSpeed: 1,
+    MeleeAttackPower: 4,
+    Defense: 3,
+    Resistance: 6,
+    HitPoints: 3,
+    // tohit +10%
+    // poison touch 1
+    Abilities: []Ability{AbilityToHit, AbilityCreateUndead, AbilityPoisonImmunity, AbilityIllusionsImmunity, AbilityColdImmunity, AbilityDeathImmunity, AbilityPoisonTouch},
     Realm: data.DeathMagic,
     Race: data.RaceFantastic,
 }
@@ -1185,6 +1249,18 @@ var Ghoul Unit = Unit{
 var NightStalker Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 47,
+    CombatLbxFile: "figure12.lbx",
+    CombatIndex: 16,
+    UpkeepMana: 1,
+    Count: 1,
+    MovementSpeed: 2,
+    MeleeAttackPower: 7,
+    Defense: 3,
+    Resistance: 8,
+    HitPoints: 10,
+    // tohit +10%
+    // death gaze 2
+    Abilities: []Ability{AbilityToHit, AbilityInvisibility, AbilityPoisonImmunity, AbilityIllusionsImmunity, AbilityColdImmunity, AbilityDeathImmunity, AbilityDeathGaze},
     Realm: data.DeathMagic,
     Race: data.RaceFantastic,
 }

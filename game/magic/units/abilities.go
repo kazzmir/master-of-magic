@@ -26,6 +26,7 @@ const (
     AbilityHolyBonus
     AbilityIllusion
     AbilityIllusionsImmunity
+    AbilityImmolation
     AbilityInvisibility
     AbilityLargeShield
     AbilityLifeSteal
