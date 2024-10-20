@@ -2398,20 +2398,53 @@ var HeroAerie Unit = Unit{
 var HeroDethStryke Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 26,
+    CombatLbxFile: "figures2.lbx",
+    CombatIndex: 88,
     Name: "Deth Stryke",
+    Count: 1,
+    UpkeepGold: 10,
+    MovementSpeed: 2,
+    MeleeAttackPower: 6,
+    Defense: 5,
+    Resistance: 6,
+    HitPoints: 10,
+    Abilities: []Ability{AbilityLeadership, AbilityLegendary, AbilityArmsmaster, AbilityConstitution, AbilityMight},
     Race: data.RaceHero,
 }
 
 var HeroElana Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 27,
+    CombatLbxFile: "figures2.lbx",
+    CombatIndex: 96,
+    Count: 1,
+    MovementSpeed: 2,
+    MeleeAttackPower: 2,
+    RangedAttackPower: 8,
+    RangedAttackDamageType: DamageRangedMagical,
+    Defense: 5,
+    Resistance: 6,
+    HitPoints: 5,
+    // caster 12.5
+    Abilities: []Ability{AbilityCaster, AbilityHealer, AbilityPurify, AbilityArcanePower, AbilitySuperPrayermaster, AbilityCharmed, AbilityNoble},
     Name: "Elana",
     Race: data.RaceHero,
+    Spells: []string{"Dispel Evil", "Healing", "Prayer", "Holy Word"},
 }
 
 var HeroRoland Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 28,
+    CombatLbxFile: "figures2.lbx",
+    CombatIndex: 104,
+    Count: 1,
+    UpkeepGold: 10,
+    MovementSpeed: 2,
+    MeleeAttackPower: 9,
+    Defense: 5,
+    Resistance: 6,
+    HitPoints: 8,
+    Abilities: []Ability{AbilityMissileImmunity, AbilityHealer, AbilityFirstStrike, AbilityArmorPiercing, AbilityLegendary, AbilitySuperMight, AbilityPrayermaster},
     Name: "Roland",
     Race: data.RaceHero,
 }
