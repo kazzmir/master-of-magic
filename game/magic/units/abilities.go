@@ -69,12 +69,18 @@ const (
     AbilityCharmed
     AbilityConstitution
     AbilityLeadership
+    AbilitySuperLeadership
     AbilityLegendary
+    AbilitySuperLegendary
     AbilityLucky
     AbilityMight
+    AbilitySuperMight
     AbilityNoble
     AbilityPrayermaster
+    AbilitySuperPrayermaster
     AbilitySage
+
+    AbilitySuperAgility
 )
 
 // the file that stores the icon for this ability
@@ -132,6 +138,7 @@ func (ability Ability) LbxFile() string {
         case AbilityWebSpell: return ""
         case AbilityWindWalking: return ""
         case AbilityAgility: return ""
+        case AbilitySuperAgility: return ""
         case AbilityArcanePower: return ""
         case AbilityArmsmaster: return ""
         case AbilityBlademaster: return ""
@@ -139,11 +146,15 @@ func (ability Ability) LbxFile() string {
         case AbilityCharmed: return ""
         case AbilityConstitution: return ""
         case AbilityLeadership: return ""
+        case AbilitySuperLeadership: return ""
         case AbilityLegendary: return ""
+        case AbilitySuperLegendary: return ""
         case AbilityLucky: return ""
         case AbilityMight: return ""
+        case AbilitySuperMight: return ""
         case AbilityNoble: return ""
         case AbilityPrayermaster: return ""
+        case AbilitySuperPrayermaster: return ""
         case AbilitySage: return ""
     }
 
@@ -204,19 +215,24 @@ func (ability Ability) Name() string {
         case AbilityWeaponImmunity: return ""
         case AbilityWebSpell: return ""
         case AbilityWindWalking: return ""
-        case AbilityAgility: return ""
+        case AbilityAgility: return "Agility"
+        case AbilitySuperAgility: return "Super Agility"
         case AbilityArcanePower: return ""
         case AbilityArmsmaster: return ""
         case AbilityBlademaster: return ""
         case AbilityCaster: return ""
         case AbilityCharmed: return ""
         case AbilityConstitution: return ""
-        case AbilityLeadership: return ""
-        case AbilityLegendary: return ""
+        case AbilityLeadership: return "Leadership"
+        case AbilitySuperLeadership: return "Super Leadership"
+        case AbilityLegendary: return "Legendary"
+        case AbilitySuperLegendary: return "Super Legendary"
         case AbilityLucky: return ""
-        case AbilityMight: return ""
+        case AbilityMight: return "Might"
+        case AbilitySuperMight: return "Super Might"
         case AbilityNoble: return ""
-        case AbilityPrayermaster: return ""
+        case AbilityPrayermaster: return "Prayermaster"
+        case AbilitySuperPrayermaster: return "Super Prayermaster"
         case AbilitySage: return ""
     }
 
@@ -279,6 +295,7 @@ func (ability Ability) LbxIndex() int {
         case AbilityWebSpell: return -1
         case AbilityWindWalking: return -1
         case AbilityAgility: return -1
+        case AbilitySuperAgility: return -1
         case AbilityArcanePower: return -1
         case AbilityArmsmaster: return -1
         case AbilityBlademaster: return -1
@@ -286,11 +303,15 @@ func (ability Ability) LbxIndex() int {
         case AbilityCharmed: return -1
         case AbilityConstitution: return -1
         case AbilityLeadership: return -1
+        case AbilitySuperLeadership: return -1
         case AbilityLegendary: return -1
+        case AbilitySuperLegendary: return -1
         case AbilityLucky: return -1
         case AbilityMight: return -1
+        case AbilitySuperMight: return -1
         case AbilityNoble: return -1
         case AbilityPrayermaster: return -1
+        case AbilitySuperPrayermaster: return -1
         case AbilitySage: return -1
     }
 

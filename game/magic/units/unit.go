@@ -148,9 +148,9 @@ type Unit struct {
     UpkeepGold int
     UpkeepFood int
     UpkeepMana int
-    // FIXME: add construction cost, building requirements to build this unit
-    //  upkeep cost, how many figures appear in the battlefield, movement speed,
-    //  attack power, ranged attack, defense, magic resistance, hit points, special power
+
+    // For heroes, the spells the unit can cast
+    Spells []string
 }
 
 func (unit *Unit) Equals(other Unit) bool {
@@ -1897,28 +1897,75 @@ var Nagas Unit = Unit{
 var HeroBrax Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 0,
+    CombatLbxFile: "figures1.lbx",
+    CombatIndex: 0,
+    UpkeepGold: 2,
     Name: "Brax",
+    Count: 1,
+    MovementSpeed: 2,
+    MeleeAttackPower: 5,
+    Defense: 4,
+    Resistance: 10,
+    HitPoints: 10,
+    Abilities: []Ability{AbilityMountaineer, AbilityConstitution},
     Race: data.RaceHero,
 }
 
 var HeroGunther Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 1,
+    CombatLbxFile: "figures1.lbx",
+    CombatIndex: 8,
+    Count: 1,
+    UpkeepGold: 2,
+    MovementSpeed: 2,
+    MeleeAttackPower: 5,
+    Defense: 3,
+    Resistance: 6,
+    HitPoints: 9,
     Name: "Gunther",
     Race: data.RaceHero,
+    // thrown 5
+    Abilities: []Ability{AbilityThrown, AbilityMight},
 }
 
 var HeroZaldron Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 2,
+    CombatLbxFile: "figures1.lbx",
+    CombatIndex: 16,
     Name: "Zaldron",
+    UpkeepGold: 2,
+    Count: 1,
+    MovementSpeed: 2,
+    MeleeAttackPower: 1,
+    RangedAttackPower: 6,
+    RangedAttackDamageType: DamageRangedMagical,
+    Defense: 4,
+    Resistance: 6,
+    HitPoints: 5,
+    // caster 7.5
+    Abilities: []Ability{AbilityCaster, AbilitySage},
     Race: data.RaceHero,
+    Spells: []string{"Dispel Magic True", "Counter Magic"},
 }
 
 var HeroBShan Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 3,
+    CombatLbxFile: "figures1.lbx",
+    CombatIndex: 24,
+    Count: 1,
     Name: "B'Shan",
+    MovementSpeed: 2,
+    MeleeAttackPower: 4,
+    RangedAttackPower: 4,
+    RangedAttacks: 8,
+    RangedAttackDamageType: DamageRangedPhysical,
+    Defense: 4,
+    Resistance: 6,
+    HitPoints: 6,
+    Abilities: []Ability{AbilityNoble},
     Race: data.RaceHero,
 }
 
@@ -1936,74 +1983,197 @@ var HeroRakir Unit = Unit{
     Resistance: 6,
     MovementSpeed: 2,
     Race: data.RaceHero,
+    // scouting 3
+    Abilities: []Ability{AbilityCaster, AbilityScouting, AbilityForester},
+    Spells: []string{"Resist Elements"},
 }
 
 var HeroValana Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 5,
+    CombatLbxFile: "figures1.lbx",
+    CombatIndex: 40,
     Name: "Valana",
+    Count: 1,
+    UpkeepGold: 2,
+    MeleeAttackPower: 4,
+    Defense: 5,
+    Resistance: 6,
+    HitPoints: 6,
+    MovementSpeed: 2,
+    Abilities: []Ability{AbilityCaster, AbilityLeadership},
     Race: data.RaceHero,
+    Spells: []string{"Confusion", "Vertigo"},
 }
 
 var HeroBahgtru Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 6,
+    CombatLbxFile: "figures1.lbx",
+    CombatIndex: 48,
+    Count: 1,
     Name: "Bahgtru",
+    UpkeepGold: 2,
+    MovementSpeed: 2,
+    MeleeAttackPower: 6,
+    Defense: 4,
+    Resistance: 6,
+    HitPoints: 8,
     Race: data.RaceHero,
+    // thrown 3
+    Abilities: []Ability{AbilityThrown, AbilityMountaineer},
 }
 
 var HeroSerena Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 7,
+    CombatLbxFile: "figures1.lbx",
+    CombatIndex: 56,
     Name: "Serena",
+    Count: 1,
+    UpkeepGold: 2,
+    MovementSpeed: 2,
+    MeleeAttackPower: 3,
+    RangedAttackPower: 6,
+    RangedAttackDamageType: DamageRangedMagical,
+    Defense: 5,
+    Resistance: 7,
+    HitPoints: 5,
+    // caster 7.5
+    Abilities: []Ability{AbilityHealer, AbilityCaster},
     Race: data.RaceHero,
 }
 
 var HeroShuri Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 8,
+    CombatLbxFile: "figures1.lbx",
+    CombatIndex: 64,
     Name: "Shuri",
+    Count: 1,
+    UpkeepGold: 2,
+    MovementSpeed: 2,
+    MeleeAttackPower: 5,
+    RangedAttackPower: 4,
+    RangedAttacks: 8,
+    RangedAttackDamageType: DamageRangedPhysical,
+    Defense: 3,
+    Resistance: 6,
+    HitPoints: 7,
+    Abilities: []Ability{AbilityPathfinding, AbilityBlademaster},
     Race: data.RaceHero,
 }
 
 var HeroTheria Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 9,
+    CombatLbxFile: "figures1.lbx",
+    CombatIndex: 72,
     Name: "Theria",
+    Count: 1,
+    UpkeepGold: 2,
+    MovementSpeed: 2,
+    MeleeAttackPower: 5,
+    Defense: 5,
+    Resistance: 6,
+    HitPoints: 7,
+    Abilities: []Ability{AbilityAgility, AbilityCharmed},
     Race: data.RaceHero,
 }
 
 var HeroGreyfairer Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 10,
+    CombatLbxFile: "figures1.lbx",
+    CombatIndex: 80,
+    UpkeepGold: 3,
     Name: "Greyfairer",
+    MovementSpeed: 2,
+    Count: 1,
+    MeleeAttackPower: 1,
+    RangedAttackPower: 8,
+    RangedAttackDamageType: DamageRangedMagical,
+    Defense: 5,
+    Resistance: 6,
+    HitPoints: 6,
+    // caster 7.5
+    // scouting 3
+    Abilities: []Ability{AbilityCaster, AbilityScouting, AbilityPurify},
     Race: data.RaceHero,
+    Spells: []string{"Ice Bolt", "Petrify", "Web"},
 }
 
 var HeroTaki Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 11,
+    CombatLbxFile: "figures1.lbx",
+    CombatIndex: 88,
     Name: "Taki",
+    UpkeepGold: 3,
+    MovementSpeed: 2,
+    Count: 1,
+    MeleeAttackPower: 6,
+    Defense: 5,
+    Resistance: 6,
+    HitPoints: 6,
+    Abilities: []Ability{AbilitySuperAgility},
     Race: data.RaceHero,
 }
 
 var HeroReywind Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 12,
+    CombatLbxFile: "figures1.lbx",
+    CombatIndex: 96,
+    UpkeepGold: 3,
+    MovementSpeed: 2,
+    MeleeAttackPower: 4,
+    RangedAttackPower: 4,
+    RangedAttackDamageType: DamageRangedMagical,
+    Defense: 4,
+    Resistance: 6,
+    HitPoints: 7,
+    Count: 1,
     Name: "Reywind",
+    Abilities: []Ability{AbilityCaster},
     Race: data.RaceHero,
+    Spells: []string{"Eldritch Weapon", "Shatter", "Flame Blade"},
 }
 
 var HeroMalleus Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 13,
+    CombatLbxFile: "figures1.lbx",
+    CombatIndex: 104,
+    UpkeepGold: 3,
+    Count: 1,
+    MovementSpeed: 2,
+    MeleeAttackPower: 1,
+    RangedAttackPower: 8,
+    RangedAttackDamageType: DamageRangedMagical,
+    Defense: 5,
+    Resistance: 10,
+    HitPoints: 5,
     Name: "Malleus",
+    Abilities: []Ability{AbilityCaster, AbilityMissileImmunity, AbilityArcanePower},
     Race: data.RaceHero,
+    Spells: []string{"Fire Bolt", "Fireball", "Fire Elemental", "Flame Strike"},
 }
 
 var HeroTumu Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 14,
+    CombatLbxFile: "figures1.lbx",
+    CombatIndex: 112,
+    Count: 1,
+    UpkeepGold: 3,
+    MovementSpeed: 2,
+    MeleeAttackPower: 3,
+    Defense: 5,
+    Resistance: 6,
+    HitPoints: 6,
+    // poison touch 5
+    Abilities: []Ability{AbilityPoisonTouch, AbilityBlademaster},
     Name: "Tumu",
     Race: data.RaceHero,
 }
@@ -2011,41 +2181,119 @@ var HeroTumu Unit = Unit{
 var HeroJaer Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 15,
+    CombatLbxFile: "figures2.lbx",
+    CombatIndex: 0,
+    Count: 1,
+    UpkeepGold: 4,
+    MovementSpeed: 2,
+    MeleeAttackPower: 1,
+    RangedAttackPower: 6,
+    RangedAttackDamageType: DamageRangedMagical,
+    Defense: 5,
+    Resistance: 6,
+    HitPoints: 5,
+    // caster 7.5
+    Abilities: []Ability{AbilityCaster, AbilityMissileImmunity, AbilityWindWalking},
     Name: "Jaer",
     Race: data.RaceHero,
+    Spells: []string{"Word of Recall", "Guardian Wind"},
 }
 
 var HeroMarcus Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 16,
+    CombatLbxFile: "figures2.lbx",
+    CombatIndex: 8,
     Name: "Marcus",
+    Count: 1,
+    UpkeepGold: 4,
+    MovementSpeed: 2,
+    MeleeAttackPower: 6,
+    RangedAttackPower: 5,
+    RangedAttacks: 8,
+    RangedAttackDamageType: DamageRangedPhysical,
+    Defense: 5,
+    Resistance: 6,
+    HitPoints: 8,
+    // caster 5
+    // scouting 2
+    Abilities: []Ability{AbilityCaster, AbilityScouting, AbilityPathfinding, AbilityMight},
     Race: data.RaceHero,
+    Spells: []string{"Resist Elements", "Stone Skin"},
 }
 
 var HeroFang Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 17,
+    CombatLbxFile: "figures2.lbx",
+    CombatIndex: 16,
     Name: "Fang",
+    Count: 1,
+    UpkeepGold: 4,
+    Flying: true,
+    MovementSpeed: 3,
+    MeleeAttackPower: 7,
+    Defense: 5,
+    Resistance: 6,
+    HitPoints: 8,
+    // fire breath 5
+    Abilities: []Ability{AbilityMight, AbilityFireBreath},
     Race: data.RaceHero,
 }
 
 var HeroMorgana Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 18,
+    CombatLbxFile: "figures2.lbx",
+    CombatIndex: 24,
     Name: "Morgana",
+    Count: 1,
+    UpkeepGold: 4,
+    MovementSpeed: 2,
+    MeleeAttackPower: 1,
+    RangedAttackPower: 8,
+    RangedAttackDamageType: DamageRangedMagical,
+    Defense: 5,
+    Resistance: 6,
+    HitPoints: 5,
+    Abilities: []Ability{AbilityCaster, AbilityMissileImmunity, AbilityCharmed},
     Race: data.RaceHero,
+    Spells: []string{"Darkness", "Mana Leak", "Black Prayer", "Possession"},
 }
 
 var HeroAureus Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 19,
+    CombatLbxFile: "figures2.lbx",
+    CombatIndex: 32,
     Name: "Aureus",
+    Count: 1,
+    UpkeepGold: 4,
+    MovementSpeed: 2,
+    MeleeAttackPower: 6,
+    RangedAttackPower: 6,
+    RangedAttackDamageType: DamageRangedMagical,
+    Defense: 6,
+    Resistance: 6,
+    HitPoints: 6,
+    // caster 5
+    Abilities: []Ability{AbilityCaster},
     Race: data.RaceHero,
 }
 
 var HeroShinBo Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 20,
+    CombatLbxFile: "figures2.lbx",
+    CombatIndex: 40,
+    Count: 1,
+    UpkeepGold: 6,
+    MovementSpeed: 2,
+    MeleeAttackPower: 6,
+    Defense: 5,
+    Resistance: 6,
+    HitPoints: 7,
+    Abilities: []Ability{AbilityInvisibility, AbilityBlademaster},
     Name: "Shin Bo",
     Race: data.RaceHero,
 }
@@ -2053,6 +2301,16 @@ var HeroShinBo Unit = Unit{
 var HeroSpyder Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 21,
+    CombatLbxFile: "figures2.lbx",
+    CombatIndex: 48,
+    Count: 1,
+    UpkeepGold: 6,
+    MovementSpeed: 2,
+    MeleeAttackPower: 7,
+    Defense: 5,
+    Resistance: 6,
+    HitPoints: 8,
+    Abilities: []Ability{AbilityLeadership, AbilitySuperLegendary},
     Name: "Spyder",
     Race: data.RaceHero,
 }
@@ -2060,6 +2318,17 @@ var HeroSpyder Unit = Unit{
 var HeroShalla Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 22,
+    CombatLbxFile: "figures2.lbx",
+    CombatIndex: 56,
+    Count: 1,
+    UpkeepGold: 6,
+    MovementSpeed: 2,
+    MeleeAttackPower: 7,
+    Defense: 4,
+    Resistance: 6,
+    HitPoints: 8,
+    // thrown 4
+    Abilities: []Ability{AbilityThrown, AbilityBlademaster, AbilityMight, AbilityCharmed},
     Name: "Shalla",
     Race: data.RaceHero,
 }
@@ -2067,41 +2336,115 @@ var HeroShalla Unit = Unit{
 var HeroYramrag Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 23,
+    CombatLbxFile: "figures2.lbx",
+    CombatIndex: 64,
     Name: "Yramrag",
+    Count: 1,
+    UpkeepGold: 6,
+    MovementSpeed: 2,
+    MeleeAttackPower: 1,
+    RangedAttackPower: 8,
+    RangedAttackDamageType: DamageRangedMagical,
+    Defense: 5,
+    Resistance: 10,
+    HitPoints: 5,
+    // caster 15
+    Abilities: []Ability{AbilityCaster, AbilityMissileImmunity},
     Race: data.RaceHero,
+    Spells: []string{"Lightning Bolt", "Warp Lightning", "Doom Bolt"},
 }
 
 var HeroMysticX Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 24,
+    CombatLbxFile: "figures2.lbx",
+    CombatIndex: 72,
     Name: "Mystic X",
+    UpkeepGold: 6,
+    MovementSpeed: 2,
+    Count: 1,
+    MeleeAttackPower: 5,
+    RangedAttackPower: 5,
+    RangedAttackDamageType: DamageRangedMagical,
+    Defense: 4,
+    Resistance: 10,
+    HitPoints: 8,
+    // caster 5
+    Abilities: []Ability{AbilityCaster},
     Race: data.RaceHero,
 }
 
 var HeroAerie Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 25,
+    CombatLbxFile: "figures2.lbx",
+    CombatIndex: 80,
     Name: "Aerie",
+    Count: 1,
+    MovementSpeed: 2,
+    UpkeepGold: 10,
+    MeleeAttackPower: 1,
+    RangedAttackPower: 5,
+    RangedAttackDamageType: DamageRangedMagical,
+    Defense: 4,
+    Resistance: 6,
+    HitPoints: 5,
+    // caster 10
+    Abilities: []Ability{AbilityCaster, AbilityMissileImmunity, AbilityIllusion},
     Race: data.RaceHero,
+    Spells: []string{"Psionic Blast", "Vertigo", "Mind Storm"},
 }
 
 var HeroDethStryke Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 26,
+    CombatLbxFile: "figures2.lbx",
+    CombatIndex: 88,
     Name: "Deth Stryke",
+    Count: 1,
+    UpkeepGold: 10,
+    MovementSpeed: 2,
+    MeleeAttackPower: 6,
+    Defense: 5,
+    Resistance: 6,
+    HitPoints: 10,
+    Abilities: []Ability{AbilityLeadership, AbilityLegendary, AbilityArmsmaster, AbilityConstitution, AbilityMight},
     Race: data.RaceHero,
 }
 
 var HeroElana Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 27,
+    CombatLbxFile: "figures2.lbx",
+    CombatIndex: 96,
+    Count: 1,
+    MovementSpeed: 2,
+    MeleeAttackPower: 2,
+    RangedAttackPower: 8,
+    RangedAttackDamageType: DamageRangedMagical,
+    Defense: 5,
+    Resistance: 6,
+    HitPoints: 5,
+    // caster 12.5
+    Abilities: []Ability{AbilityCaster, AbilityHealer, AbilityPurify, AbilityArcanePower, AbilitySuperPrayermaster, AbilityCharmed, AbilityNoble},
     Name: "Elana",
     Race: data.RaceHero,
+    Spells: []string{"Dispel Evil", "Healing", "Prayer", "Holy Word"},
 }
 
 var HeroRoland Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 28,
+    CombatLbxFile: "figures2.lbx",
+    CombatIndex: 104,
+    Count: 1,
+    UpkeepGold: 10,
+    MovementSpeed: 2,
+    MeleeAttackPower: 9,
+    Defense: 5,
+    Resistance: 6,
+    HitPoints: 8,
+    Abilities: []Ability{AbilityMissileImmunity, AbilityHealer, AbilityFirstStrike, AbilityArmorPiercing, AbilityLegendary, AbilitySuperMight, AbilityPrayermaster},
     Name: "Roland",
     Race: data.RaceHero,
 }
@@ -2109,6 +2452,16 @@ var HeroRoland Unit = Unit{
 var HeroMortu Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 29,
+    CombatLbxFile: "figures2.lbx",
+    CombatIndex: 112,
+    Count: 1,
+    UpkeepGold: 10,
+    MovementSpeed: 2,
+    MeleeAttackPower: 9,
+    Defense: 5,
+    Resistance: 6,
+    HitPoints: 10,
+    Abilities: []Ability{AbilityMagicImmunity, AbilityFirstStrike, AbilityArmorPiercing, AbilityLegendary, AbilityBlademaster, AbilityConstitution, AbilityMight},
     Name: "Mortu",
     Race: data.RaceHero,
 }
@@ -2116,13 +2469,37 @@ var HeroMortu Unit = Unit{
 var HeroAlorra Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 30,
+    CombatLbxFile: "figures3.lbx",
+    CombatIndex: 0,
+    Count: 1,
+    UpkeepGold: 10,
+    MovementSpeed: 2,
+    MeleeAttackPower: 5,
+    RangedAttackPower: 8,
+    RangedAttackDamageType: DamageRangedPhysical,
+    RangedAttacks: 8,
+    Defense: 6,
+    Resistance: 6,
+    HitPoints: 6,
+    // caster 5
+    Abilities: []Ability{AbilityCaster, AbilityForester, AbilityBlademaster},
     Name: "Alorra",
     Race: data.RaceHero,
+    Spells: []string{"Resist Magic", "Flight"},
 }
 
 var HeroSirHarold Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 31,
+    CombatLbxFile: "figures3.lbx",
+    CombatIndex: 8,
+    Count: 1,
+    MovementSpeed: 2,
+    MeleeAttackPower: 8,
+    Defense: 5,
+    Resistance: 6,
+    HitPoints: 9,
+    Abilities: []Ability{AbilitySuperLeadership, AbilitySuperLegendary, AbilityConstitution, AbilityNoble},
     Name: "Sir Harold",
     Race: data.RaceHero,
 }
@@ -2130,7 +2507,21 @@ var HeroSirHarold Unit = Unit{
 var HeroRavashack Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 32,
+    CombatLbxFile: "figures3.lbx",
+    CombatIndex: 16,
     Name: "Ravashack",
+    Count: 1,
+    UpkeepGold: 10,
+    MovementSpeed: 2,
+    MeleeAttackPower: 1,
+    RangedAttackPower: 7,
+    RangedAttackDamageType: DamageRangedMagical,
+    Defense: 5,
+    Resistance: 6,
+    HitPoints: 5,
+    // life steal 0
+    // caster 12.5
+    Abilities: []Ability{AbilityMissileImmunity, AbilityLifeSteal, AbilityCaster, AbilityArcanePower},
     Race: data.RaceHero,
 }
 
@@ -2140,6 +2531,7 @@ var HeroWarrax Unit = Unit{
     CombatLbxFile: "figures3.lbx",
     CombatIndex: 24,
     Name: "Warrax",
+    UpkeepGold: 10,
     MovementSpeed: 2,
     MeleeAttackPower: 8,
     RangedAttackPower: 8,
@@ -2148,14 +2540,28 @@ var HeroWarrax Unit = Unit{
     Resistance: 9,
     HitPoints: 8,
     Count: 1,
+    // caster 10
+    Abilities: []Ability{AbilityCaster, AbilityArmorPiercing, AbilityConstitution, AbilityArcanePower},
     Race: data.RaceHero,
 }
 
 var HeroTorin Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 34,
+    CombatLbxFile: "figures3.lbx",
+    CombatIndex: 32,
     Name: "Torin",
+    Count: 1,
+    UpkeepMana: 12,
+    MovementSpeed: 2,
+    MeleeAttackPower: 12,
+    Defense: 8,
+    Resistance: 12,
+    HitPoints: 12,
+    // caster 15
+    Abilities: []Ability{AbilityCaster, AbilityMagicImmunity, AbilityMissileImmunity, AbilitySuperLeadership, AbilityConstitution, AbilitySuperMight, AbilityPrayermaster},
     Race: data.RaceHero,
+    Spells: []string{"True Light", "Healing", "Holy Armor", "Lionheart"},
 }
 
 var Trireme Unit = Unit{
