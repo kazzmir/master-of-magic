@@ -146,7 +146,7 @@ func (unit *OverworldUnit) GetRangedAttacks() int {
     return unit.Unit.RangedAttacks
 }
 
-func (unit *OverworldUnit) HasAbility(ability Ability) bool {
+func (unit *OverworldUnit) HasAbility(ability AbilityType) bool {
     return unit.Unit.HasAbility(ability)
 }
 

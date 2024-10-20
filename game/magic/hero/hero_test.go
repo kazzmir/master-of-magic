@@ -1,7 +1,6 @@
 package hero
 
 import (
-    "slices"
     "testing"
     "github.com/kazzmir/master-of-magic/game/magic/units"
 )
@@ -18,7 +17,7 @@ func TestHero(test *testing.T){
     }
 
     taki := MakeHeroSimple(HeroTaki)
-    if !slices.Equal(taki.GetAbilities(), []units.Ability{units.AbilitySuperAgility}) {
+    if len(taki.GetAbilities()) != 1 && taki.GetAbilities()[0].Ability != units.AbilitySuperAgility {
         test.Errorf("taki should have the super agility ability but was %v", taki.GetAbilities())
     }
 

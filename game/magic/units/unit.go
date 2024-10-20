@@ -233,9 +233,9 @@ func (unit *Unit) GetAbilities() []Ability {
     return unit.Abilities
 }
 
-func (unit *Unit) HasAbility(ability Ability) bool {
+func (unit *Unit) HasAbility(ability AbilityType) bool {
     for _, check := range unit.Abilities {
-        if check.Ability == ability.Ability {
+        if check.Ability == ability {
             return true
         }
     }
@@ -244,7 +244,7 @@ func (unit *Unit) HasAbility(ability Ability) bool {
 }
 
 func (unit *Unit) IsSettlers() bool {
-    return unit.HasAbility(MakeAbility(AbilityCreateOutpost))
+    return unit.HasAbility(AbilityCreateOutpost)
 }
 
 /* maximum health is the number of figures * the number of hit points per figure
