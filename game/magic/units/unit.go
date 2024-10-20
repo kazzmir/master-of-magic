@@ -330,7 +330,7 @@ var LizardSwordsmen Unit = Unit{
     Defense: 3,
     Resistance: 4,
     HitPoints: 4,
-    Abilities: []Ability{AbilityLargeShield},
+    Abilities: []Ability{MakeAbility(AbilityLargeShield)},
     Race: data.RaceLizard,
 }
 
@@ -342,7 +342,7 @@ var LizardHalberdiers Unit = Unit{
     CombatIndex: 16,
     RequiredBuildings: []building.Building{building.BuildingArmory},
     Race: data.RaceLizard,
-    Abilities: []Ability{AbilityNegateFirstStrike},
+    Abilities: []Ability{MakeAbility(AbilityNegateFirstStrike)},
     ProductionCost: 40,
     UpkeepGold: 1,
     UpkeepFood: 1,
@@ -399,7 +399,7 @@ var LizardShamans Unit = Unit{
     Defense: 3,
     Resistance: 6,
     HitPoints: 2,
-    Abilities: []Ability{AbilityHealer, AbilityPurify},
+    Abilities: []Ability{MakeAbility(AbilityHealer), MakeAbility(AbilityPurify)},
 }
 
 var LizardSettlers Unit = Unit{
@@ -417,7 +417,7 @@ var LizardSettlers Unit = Unit{
     Swimming: true,
     UpkeepGold: 3,
     UpkeepFood: 1,
-    Abilities: []Ability{AbilityCreateOutpost},
+    Abilities: []Ability{MakeAbility(AbilityCreateOutpost)},
     Race: data.RaceLizard,
 }
 
@@ -429,8 +429,7 @@ var DragonTurtle Unit = Unit{
     CombatIndex: 48,
     RequiredBuildings: []building.Building{building.BuildingArmorersGuild, building.BuildingStables},
     Race: data.RaceLizard,
-    // fire breath 5
-    Abilities: []Ability{AbilityFireBreath},
+    Abilities: []Ability{MakeAbilityValue(AbilityFireBreath, 5)},
     ProductionCost: 100,
     UpkeepGold: 2,
     UpkeepFood: 1,
@@ -475,7 +474,7 @@ var NomadSwordsmen Unit = Unit{
     Defense: 2,
     Resistance: 4,
     HitPoints: 1,
-    Abilities: []Ability{AbilityLargeShield},
+    Abilities: []Ability{MakeAbility(AbilityLargeShield)},
     RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSmithy},
     Race: data.RaceNomad,
 }
@@ -521,8 +520,7 @@ var NomadPriest Unit = Unit{
     Defense: 4,
     Resistance: 7,
     HitPoints: 1,
-    // healing spell 1x
-    Abilities: []Ability{AbilityHealer, AbilityPurify, AbilityHealingSpell},
+    Abilities: []Ability{MakeAbility(AbilityHealer), MakeAbility(AbilityPurify), MakeAbilityValue(AbilityHealingSpell, 1)},
     RequiredBuildings: []building.Building{building.BuildingParthenon},
     Race: data.RaceNomad,
 }
@@ -544,7 +542,7 @@ var NomadSettlers Unit = Unit{
     Defense: 1,
     Resistance: 4,
     HitPoints: 10,
-    Abilities: []Ability{AbilityCreateOutpost},
+    Abilities: []Ability{MakeAbility(AbilityCreateOutpost)},
     Race: data.RaceNomad,
 }
 
@@ -585,7 +583,7 @@ var NomadPikemen Unit = Unit{
     Defense: 3,
     Resistance: 5,
     HitPoints: 1,
-    Abilities: []Ability{AbilityNegateFirstStrike, AbilityArmorPiercing},
+    Abilities: []Ability{MakeAbility(AbilityNegateFirstStrike), MakeAbility(AbilityArmorPiercing)},
     RequiredBuildings: []building.Building{building.BuildingFightersGuild},
     Race: data.RaceNomad,
 }
@@ -608,7 +606,7 @@ var NomadRangers Unit = Unit{
     Defense: 4,
     Resistance: 6,
     HitPoints: 2,
-    Abilities: []Ability{AbilityPathfinding},
+    Abilities: []Ability{MakeAbility(AbilityPathfinding)},
     RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingAnimistsGuild},
     Race: data.RaceNomad,
 }
@@ -629,7 +627,7 @@ var Griffin Unit = Unit{
     Defense: 5,
     Resistance: 7,
     HitPoints: 10,
-    Abilities: []Ability{AbilityArmorPiercing, AbilityFirstStrike},
+    Abilities: []Ability{MakeAbility(AbilityArmorPiercing), MakeAbility(AbilityFirstStrike)},
     RequiredBuildings: []building.Building{building.BuildingFantasticStable},
     Race: data.RaceNomad,
 }
@@ -666,7 +664,7 @@ var OrcSwordsmen Unit = Unit{
     Defense: 2,
     Resistance: 4,
     HitPoints: 1,
-    Abilities: []Ability{AbilityLargeShield},
+    Abilities: []Ability{MakeAbility(AbilityLargeShield)},
     RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSmithy},
     Race: data.RaceOrc,
 }
@@ -750,7 +748,7 @@ var OrcShamans Unit = Unit{
     Defense: 3,
     Resistance: 6,
     HitPoints: 1,
-    Abilities: []Ability{AbilityHealer, AbilityPurify},
+    Abilities: []Ability{MakeAbility(AbilityHealer), MakeAbility(AbilityPurify)},
     RequiredBuildings: []building.Building{building.BuildingShrine},
     Race: data.RaceOrc,
 }
@@ -774,8 +772,7 @@ var OrcMagicians Unit = Unit{
     Defense: 3,
     Resistance: 8,
     HitPoints: 1,
-    // fireball spell 1x
-    Abilities: []Ability{AbilityMissileImmunity, AbilityFireballSpell},
+    Abilities: []Ability{MakeAbility(AbilityMissileImmunity), MakeAbilityValue(AbilityFireballSpell, 1)},
     RequiredBuildings: []building.Building{building.BuildingWizardsGuild},
     Race: data.RaceOrc,
 }
@@ -795,7 +792,7 @@ var OrcEngineers Unit = Unit{
     Defense: 1,
     Resistance: 4,
     HitPoints: 1,
-    Abilities: []Ability{AbilityConstruction, AbilityWallCrusher},
+    Abilities: []Ability{MakeAbilityValue(AbilityConstruction), MakeAbilityValue(AbilityWallCrusher)},
     RequiredBuildings: []building.Building{building.BuildingBuildersHall},
     Race: data.RaceOrc,
 }
@@ -814,7 +811,7 @@ var OrcSettlers Unit = Unit{
     Defense: 1,
     Resistance: 4,
     HitPoints: 10,
-    Abilities: []Ability{AbilityCreateOutpost},
+    Abilities: []Ability{MakeAbilityValue(AbilityCreateOutpost)},
     Race: data.RaceOrc,
 }
 
@@ -834,8 +831,7 @@ var WyvernRiders Unit = Unit{
     Defense: 5,
     Resistance: 7,
     HitPoints: 10,
-    // poison touch 6
-    Abilities: []Ability{AbilityPoisonTouch},
+    Abilities: []Ability{MakeAbilityValue(AbilityPoisonTouch, 6)},
     RequiredBuildings: []building.Building{building.BuildingFantasticStable},
     Race: data.RaceOrc,
 }
@@ -854,7 +850,7 @@ var TrollSpearmen Unit = Unit{
     Defense: 2,
     Resistance: 7,
     HitPoints: 4,
-    Abilities: []Ability{AbilityRegeneration},
+    Abilities: []Ability{MakeAbility(AbilityRegeneration)},
     Race: data.RaceTroll,
 }
 
@@ -873,7 +869,7 @@ var TrollSwordsmen Unit = Unit{
     Defense: 2,
     Resistance: 7,
     HitPoints: 4,
-    Abilities: []Ability{AbilityLargeShield, AbilityRegeneration},
+    Abilities: []Ability{MakeAbility(AbilityLargeShield), MakeAbility(AbilityRegeneration)},
     RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSmithy},
     Race: data.RaceTroll,
 }
@@ -893,7 +889,7 @@ var TrollHalberdiers Unit = Unit{
     Defense: 3,
     Resistance: 7,
     HitPoints: 4,
-    Abilities: []Ability{AbilityNegateFirstStrike, AbilityRegeneration},
+    Abilities: []Ability{MakeAbility(AbilityNegateFirstStrike), MakeAbility(AbilityRegeneration)},
     RequiredBuildings: []building.Building{building.BuildingArmory},
     Race: data.RaceTroll,
 }
@@ -917,7 +913,7 @@ var TrollShamans Unit = Unit{
     Defense: 3,
     Resistance: 8,
     HitPoints: 4,
-    Abilities: []Ability{AbilityHealer, AbilityPurify, AbilityRegeneration},
+    Abilities: []Ability{MakeAbility(AbilityHealer), MakeAbility(AbilityPurify), MakeAbility(AbilityRegeneration)},
     RequiredBuildings: []building.Building{building.BuildingShrine},
     Race: data.RaceTroll,
 }
@@ -936,7 +932,7 @@ var TrollSettlers Unit = Unit{
     Defense: 1,
     Resistance: 7,
     HitPoints: 40,
-    Abilities: []Ability{AbilityCreateOutpost, AbilityRegeneration},
+    Abilities: []Ability{MakeAbility(AbilityCreateOutpost), MakeAbility(AbilityRegeneration)},
     Race: data.RaceTroll,
 }
 
@@ -955,7 +951,7 @@ var WarTrolls Unit = Unit{
     Defense: 4,
     Resistance: 8,
     HitPoints: 5,
-    Abilities: []Ability{AbilityRegeneration},
+    Abilities: []Ability{MakeAbility(AbilityRegeneration)},
     RequiredBuildings: []building.Building{building.BuildingFightersGuild},
     Race: data.RaceTroll,
 }
@@ -975,7 +971,7 @@ var WarMammoths Unit = Unit{
     Defense: 6,
     Resistance: 9,
     HitPoints: 12,
-    Abilities: []Ability{AbilityWallCrusher, AbilityFirstStrike},
+    Abilities: []Ability{MakeAbility(AbilityWallCrusher), MakeAbility(AbilityFirstStrike)},
     RequiredBuildings: []building.Building{building.BuildingArmorersGuild, building.BuildingStables},
     Race: data.RaceTroll,
 }
@@ -995,7 +991,7 @@ var MagicSpirit Unit = Unit{
     Defense: 4,
     Resistance: 8,
     HitPoints: 10,
-    Abilities: []Ability{AbilityMeld, AbilityNonCorporeal},
+    Abilities: []Ability{MakeAbility(AbilityMeld), MakeAbility(AbilityNonCorporeal)},
     Race: data.RaceFantastic,
 }
 
@@ -1013,9 +1009,7 @@ var HellHounds Unit = Unit{
     Defense: 2,
     Resistance: 6,
     HitPoints: 4,
-    // fire breath 3
-    // to hit +10%
-    Abilities: []Ability{AbilityFireBreath, AbilityToHit},
+    Abilities: []Ability{MakeAbilityValue(AbilityFireBreath, 3), MakeAbilityValue(AbilityToHit, 10)},
     Race: data.RaceFantastic,
 }
 
@@ -1034,8 +1028,7 @@ var Gargoyle Unit = Unit{
     Defense: 8,
     Resistance: 7,
     HitPoints: 4,
-    // tohit +10%
-    Abilities: []Ability{AbilityToHit, AbilityPoisonImmunity, AbilityStoningImmunity},
+    Abilities: []Ability{MakeAbilityValue(AbilityToHit, 10), MakeAbility(AbilityPoisonImmunity), MakeAbility(AbilityStoningImmunity)},
     Race: data.RaceFantastic,
 }
 
@@ -1056,8 +1049,7 @@ var FireGiant Unit = Unit{
     HitPoints: 15,
     Defense: 5,
     Resistance: 7,
-    // tohit +10%
-    Abilities: []Ability{AbilityToHit, AbilityMountaineer, AbilityWallCrusher, AbilityFireImmunity},
+    Abilities: []Ability{MakeAbilityValue(AbilityToHit, 10), MakeAbility(AbilityMountaineer), MakeAbility(AbilityWallCrusher), MakeAbility(AbilityFireImmunity)},
     Race: data.RaceFantastic,
 }
 
