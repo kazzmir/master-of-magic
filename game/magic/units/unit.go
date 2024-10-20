@@ -121,6 +121,9 @@ type Unit struct {
     // fantastic units belong to a specific magic realm
     Realm data.MagicType
 
+    // only for heroes
+    HiringCost int
+
     RequiredBuildings []building.Building
 
     RangedAttackDamageType Damage
@@ -1897,7 +1900,18 @@ var Nagas Unit = Unit{
 var HeroBrax Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 0,
+    CombatLbxFile: "figures1.lbx",
+    CombatIndex: 0,
+    HiringCost: 100,
+    UpkeepGold: 2,
     Name: "Brax",
+    MovementSpeed: 2,
+    Count: 1,
+    MeleeAttackPower: 5,
+    Defense: 4,
+    Resistance: 10,
+    HitPoints: 10,
+    Abilities: []Ability{AbilityMountaineer, AbilityConstitution},
     Race: data.RaceHero,
 }
 
