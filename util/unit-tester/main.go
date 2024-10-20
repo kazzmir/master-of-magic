@@ -69,10 +69,6 @@ func main(){
             missing = append(missing, "UpkeepFood")
         }
 
-        if unit.Race == data.RaceHero && unit.HiringCost == 0 {
-            missing = append(missing, "HiringCost")
-        }
-
         if len(missing) > 0 {
             fmt.Printf("Unit %s %s (%v:%v) is missing the following fields: %v\n", unit.Name, unit.Race, unit.LbxFile, unit.Index, strings.Join(missing, ", "))
             missingTotal += 1
