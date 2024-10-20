@@ -382,7 +382,11 @@ func (hero *Hero) AddAbility(ability units.Ability) bool {
     }
 
     if ability == units.AbilityCaster {
-        // FIXME: increase caster value by 2.5
+        if hero.HasAbility(units.AbilityCaster) {
+            // FIXME: increase caster value by 2.5
+        } else {
+            hero.Abilities = append(hero.Abilities, ability)
+        }
         return true
     }
 
