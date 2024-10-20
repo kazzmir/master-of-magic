@@ -70,7 +70,7 @@ func main(){
         }
 
         if len(missing) > 0 {
-            fmt.Printf("Unit %s %s is missing the following fields: %v\n", unit.Name, unit.Race, strings.Join(missing, ", "))
+            fmt.Printf("Unit %s %s (%v:%v) is missing the following fields: %v\n", unit.Name, unit.Race, unit.LbxFile, unit.Index, strings.Join(missing, ", "))
             missingTotal += 1
         }
     }

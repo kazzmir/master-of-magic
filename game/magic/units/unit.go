@@ -1104,6 +1104,7 @@ var ChaosSpawn Unit = Unit{
 var Chimeras Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 40,
+    Name: "Chimeras",
     CombatLbxFile: "figure11.lbx",
     CombatIndex: 80,
     Realm: data.ChaosMagic,
