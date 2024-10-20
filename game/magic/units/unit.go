@@ -235,7 +235,7 @@ func (unit *Unit) GetAbilities() []Ability {
 
 func (unit *Unit) HasAbility(ability Ability) bool {
     for _, check := range unit.Abilities {
-        if check == ability {
+        if check.Ability == ability.Ability {
             return true
         }
     }
@@ -244,7 +244,7 @@ func (unit *Unit) HasAbility(ability Ability) bool {
 }
 
 func (unit *Unit) IsSettlers() bool {
-    return unit.HasAbility(AbilityCreateOutpost)
+    return unit.HasAbility(MakeAbility(AbilityCreateOutpost))
 }
 
 /* maximum health is the number of figures * the number of hit points per figure
@@ -1885,7 +1885,11 @@ var StormGiant Unit = Unit{
     Resistance: 9,
     HitPoints: 20,
     // tohit +20%
-    Abilities: []Ability{AbilityToHit, AbilityWallCrusher, AbilityArmorPiercing},
+    Abilities: []Ability{
+        MakeAbilityValue(AbilityToHit, 20),
+        MakeAbility(AbilityWallCrusher),
+        MakeAbility(AbilityArmorPiercing),
+    },
     Race: data.RaceFantastic,
 }
 
@@ -1904,7 +1908,13 @@ var AirElemental Unit = Unit{
     Defense: 8,
     Resistance: 9,
     HitPoints: 10,
-    Abilities: []Ability{AbilityToHit, AbilityPoisonImmunity, AbilityStoningImmunity, AbilityWeaponImmunity, AbilityInvisibility},
+    Abilities: []Ability{
+        MakeAbilityValue(AbilityToHit, 10),
+        MakeAbility(AbilityPoisonImmunity),
+        MakeAbility(AbilityStoningImmunity),
+        MakeAbility(AbilityWeaponImmunity),
+        MakeAbility(AbilityInvisibility),
+    },
 }
 
 var Djinn Unit = Unit{
@@ -1924,9 +1934,12 @@ var Djinn Unit = Unit{
     Defense: 8,
     Resistance: 10,
     HitPoints: 20,
-    // caster 20
-    // tohit +30%
-    Abilities: []Ability{AbilityToHit, AbilityCaster, AbilityTeleporting, AbilityWindWalking},
+    Abilities: []Ability{
+        MakeAbilityValue(AbilityToHit, 30),
+        MakeAbilityValue(AbilityCaster, 20),
+        MakeAbility(AbilityTeleporting),
+        MakeAbility(AbilityWindWalking),
+    },
     Race: data.RaceFantastic,
 }
 
@@ -1946,7 +1959,12 @@ var SkyDrake Unit = Unit{
     Resistance: 14,
     HitPoints: 25,
     Race: data.RaceFantastic,
-    Abilities: []Ability{AbilityToHit, AbilityMagicImmunity, AbilityIllusionsImmunity},
+    Abilities: []Ability{
+        MakeAbilityValue(AbilityToHit, 30),
+        MakeAbilityValue(AbilityLightningBreath, 20),
+        MakeAbility(AbilityMagicImmunity),
+        MakeAbility(AbilityIllusionsImmunity),
+    },
 }
 
 var Nagas Unit = Unit{
@@ -1964,9 +1982,11 @@ var Nagas Unit = Unit{
     Resistance: 7,
     HitPoints: 6,
     Race: data.RaceFantastic,
-    // tohit +10%
-    // poison touch 4
-    Abilities: []Ability{AbilityToHit, AbilityPoisonTouch, AbilityFirstStrike},
+    Abilities: []Ability{
+        MakeAbilityValue(AbilityToHit, 10),
+        MakeAbilityValue(AbilityPoisonTouch, 4),
+        MakeAbility(AbilityFirstStrike),
+    },
 }
 
 var HeroBrax Unit = Unit{
@@ -1982,7 +2002,10 @@ var HeroBrax Unit = Unit{
     Defense: 4,
     Resistance: 10,
     HitPoints: 10,
-    Abilities: []Ability{AbilityMountaineer, AbilityConstitution},
+    Abilities: []Ability{
+        MakeAbility(AbilityMountaineer),
+        MakeAbility(AbilityConstitution),
+    },
     Race: data.RaceHero,
 }
 
@@ -2000,8 +2023,10 @@ var HeroGunther Unit = Unit{
     HitPoints: 9,
     Name: "Gunther",
     Race: data.RaceHero,
-    // thrown 5
-    Abilities: []Ability{AbilityThrown, AbilityMight},
+    Abilities: []Ability{
+        MakeAbilityValue(AbilityThrown, 5),
+        MakeAbility(AbilityMight),
+    },
 }
 
 var HeroZaldron Unit = Unit{
@@ -2019,8 +2044,10 @@ var HeroZaldron Unit = Unit{
     Defense: 4,
     Resistance: 6,
     HitPoints: 5,
-    // caster 7.5
-    Abilities: []Ability{AbilityCaster, AbilitySage},
+    Abilities: []Ability{
+        MakeAbilityValue(AbilityCaster, 7.5),
+        MakeAbility(AbilitySage),
+    },
     Race: data.RaceHero,
     Spells: []string{"Dispel Magic True", "Counter Magic"},
 }
@@ -2040,7 +2067,7 @@ var HeroBShan Unit = Unit{
     Defense: 4,
     Resistance: 6,
     HitPoints: 6,
-    Abilities: []Ability{AbilityNoble},
+    Abilities: []Ability{MakeAbility(AbilityNoble)},
     Race: data.RaceHero,
 }
 
@@ -2058,8 +2085,7 @@ var HeroRakir Unit = Unit{
     Resistance: 6,
     MovementSpeed: 2,
     Race: data.RaceHero,
-    // scouting 3
-    Abilities: []Ability{AbilityCaster, AbilityScouting, AbilityForester},
+    Abilities: []Ability{MakeAbilityValue(AbilityCaster, 5), MakeAbilityValue(AbilityScouting, 3), MakeAbility(AbilityForester)},
     Spells: []string{"Resist Elements"},
 }
 
@@ -2076,7 +2102,7 @@ var HeroValana Unit = Unit{
     Resistance: 6,
     HitPoints: 6,
     MovementSpeed: 2,
-    Abilities: []Ability{AbilityCaster, AbilityLeadership},
+    Abilities: []Ability{MakeAbilityValue(AbilityCaster, 5), MakeAbility(AbilityLeadership)},
     Race: data.RaceHero,
     Spells: []string{"Confusion", "Vertigo"},
 }
@@ -2095,8 +2121,7 @@ var HeroBahgtru Unit = Unit{
     Resistance: 6,
     HitPoints: 8,
     Race: data.RaceHero,
-    // thrown 3
-    Abilities: []Ability{AbilityThrown, AbilityMountaineer},
+    Abilities: []Ability{MakeAbilityValue(AbilityThrown, 3), MakeAbility(AbilityMountaineer)},
 }
 
 var HeroSerena Unit = Unit{
@@ -2114,8 +2139,7 @@ var HeroSerena Unit = Unit{
     Defense: 5,
     Resistance: 7,
     HitPoints: 5,
-    // caster 7.5
-    Abilities: []Ability{AbilityHealer, AbilityCaster},
+    Abilities: []Ability{MakeAbility(AbilityHealer), MakeAbilityValue(AbilityCaster, 7.5)},
     Race: data.RaceHero,
 }
 
@@ -2135,7 +2159,7 @@ var HeroShuri Unit = Unit{
     Defense: 3,
     Resistance: 6,
     HitPoints: 7,
-    Abilities: []Ability{AbilityPathfinding, AbilityBlademaster},
+    Abilities: []Ability{MakeAbility(AbilityPathfinding), MakeAbility(AbilityBlademaster)},
     Race: data.RaceHero,
 }
 
@@ -2152,7 +2176,7 @@ var HeroTheria Unit = Unit{
     Defense: 5,
     Resistance: 6,
     HitPoints: 7,
-    Abilities: []Ability{AbilityAgility, AbilityCharmed},
+    Abilities: []Ability{MakeAbility(AbilityAgility), MakeAbility(AbilityCharmed)},
     Race: data.RaceHero,
 }
 
@@ -2171,9 +2195,7 @@ var HeroGreyfairer Unit = Unit{
     Defense: 5,
     Resistance: 6,
     HitPoints: 6,
-    // caster 7.5
-    // scouting 3
-    Abilities: []Ability{AbilityCaster, AbilityScouting, AbilityPurify},
+    Abilities: []Ability{MakeAbilityValue(AbilityCaster, 7.5), MakeAbilityValue(AbilityScouting, 3), MakeAbility(AbilityPurify)},
     Race: data.RaceHero,
     Spells: []string{"Ice Bolt", "Petrify", "Web"},
 }
@@ -2191,7 +2213,7 @@ var HeroTaki Unit = Unit{
     Defense: 5,
     Resistance: 6,
     HitPoints: 6,
-    Abilities: []Ability{AbilitySuperAgility},
+    Abilities: []Ability{MakeAbility(AbilitySuperAgility)},
     Race: data.RaceHero,
 }
 
@@ -2210,7 +2232,7 @@ var HeroReywind Unit = Unit{
     HitPoints: 7,
     Count: 1,
     Name: "Reywind",
-    Abilities: []Ability{AbilityCaster},
+    Abilities: []Ability{MakeAbilityValue(AbilityCaster, 5)},
     Race: data.RaceHero,
     Spells: []string{"Eldritch Weapon", "Shatter", "Flame Blade"},
 }
@@ -2230,7 +2252,7 @@ var HeroMalleus Unit = Unit{
     Resistance: 10,
     HitPoints: 5,
     Name: "Malleus",
-    Abilities: []Ability{AbilityCaster, AbilityMissileImmunity, AbilityArcanePower},
+    Abilities: []Ability{MakeAbilityValue(AbilityCaster, 10), MakeAbility(AbilityMissileImmunity), MakeAbility(AbilityArcanePower)},
     Race: data.RaceHero,
     Spells: []string{"Fire Bolt", "Fireball", "Fire Elemental", "Flame Strike"},
 }
@@ -2247,8 +2269,7 @@ var HeroTumu Unit = Unit{
     Defense: 5,
     Resistance: 6,
     HitPoints: 6,
-    // poison touch 5
-    Abilities: []Ability{AbilityPoisonTouch, AbilityBlademaster},
+    Abilities: []Ability{MakeAbilityValue(AbilityPoisonTouch, 5), MakeAbility(AbilityBlademaster)},
     Name: "Tumu",
     Race: data.RaceHero,
 }
@@ -2267,8 +2288,7 @@ var HeroJaer Unit = Unit{
     Defense: 5,
     Resistance: 6,
     HitPoints: 5,
-    // caster 7.5
-    Abilities: []Ability{AbilityCaster, AbilityMissileImmunity, AbilityWindWalking},
+    Abilities: []Ability{MakeAbilityValue(AbilityCaster, 7.5), MakeAbility(AbilityMissileImmunity), MakeAbility(AbilityWindWalking)},
     Name: "Jaer",
     Race: data.RaceHero,
     Spells: []string{"Word of Recall", "Guardian Wind"},
@@ -2290,9 +2310,7 @@ var HeroMarcus Unit = Unit{
     Defense: 5,
     Resistance: 6,
     HitPoints: 8,
-    // caster 5
-    // scouting 2
-    Abilities: []Ability{AbilityCaster, AbilityScouting, AbilityPathfinding, AbilityMight},
+    Abilities: []Ability{MakeAbilityValue(AbilityCaster, 5), MakeAbilityValue(AbilityScouting, 2), MakeAbility(AbilityPathfinding), MakeAbility(AbilityMight)},
     Race: data.RaceHero,
     Spells: []string{"Resist Elements", "Stone Skin"},
 }
@@ -2311,8 +2329,7 @@ var HeroFang Unit = Unit{
     Defense: 5,
     Resistance: 6,
     HitPoints: 8,
-    // fire breath 5
-    Abilities: []Ability{AbilityMight, AbilityFireBreath},
+    Abilities: []Ability{MakeAbility(AbilityMight), MakeAbilityValue(AbilityFireBreath, 5)},
     Race: data.RaceHero,
 }
 
@@ -2331,7 +2348,7 @@ var HeroMorgana Unit = Unit{
     Defense: 5,
     Resistance: 6,
     HitPoints: 5,
-    Abilities: []Ability{AbilityCaster, AbilityMissileImmunity, AbilityCharmed},
+    Abilities: []Ability{MakeAbilityValue(AbilityCaster, 10), MakeAbility(AbilityMissileImmunity), MakeAbility(AbilityCharmed)},
     Race: data.RaceHero,
     Spells: []string{"Darkness", "Mana Leak", "Black Prayer", "Possession"},
 }
@@ -2351,8 +2368,7 @@ var HeroAureus Unit = Unit{
     Defense: 6,
     Resistance: 6,
     HitPoints: 6,
-    // caster 5
-    Abilities: []Ability{AbilityCaster},
+    Abilities: []Ability{MakeAbilityValue(AbilityCaster, 5)},
     Race: data.RaceHero,
 }
 
@@ -2368,7 +2384,7 @@ var HeroShinBo Unit = Unit{
     Defense: 5,
     Resistance: 6,
     HitPoints: 7,
-    Abilities: []Ability{AbilityInvisibility, AbilityBlademaster},
+    Abilities: []Ability{MakeAbility(AbilityInvisibility), MakeAbility(AbilityBlademaster)},
     Name: "Shin Bo",
     Race: data.RaceHero,
 }
@@ -2385,7 +2401,7 @@ var HeroSpyder Unit = Unit{
     Defense: 5,
     Resistance: 6,
     HitPoints: 8,
-    Abilities: []Ability{AbilityLeadership, AbilitySuperLegendary},
+    Abilities: []Ability{MakeAbility(AbilityLeadership), MakeAbility(AbilitySuperLegendary)},
     Name: "Spyder",
     Race: data.RaceHero,
 }
@@ -2402,8 +2418,12 @@ var HeroShalla Unit = Unit{
     Defense: 4,
     Resistance: 6,
     HitPoints: 8,
-    // thrown 4
-    Abilities: []Ability{AbilityThrown, AbilityBlademaster, AbilityMight, AbilityCharmed},
+    Abilities: []Ability{
+        MakeAbilityValue(AbilityThrown, 4),
+        MakeAbility(AbilityBlademaster),
+        MakeAbility(AbilityMight),
+        MakeAbility(AbilityCharmed),
+    },
     Name: "Shalla",
     Race: data.RaceHero,
 }
@@ -2423,8 +2443,7 @@ var HeroYramrag Unit = Unit{
     Defense: 5,
     Resistance: 10,
     HitPoints: 5,
-    // caster 15
-    Abilities: []Ability{AbilityCaster, AbilityMissileImmunity},
+    Abilities: []Ability{MakeAbilityValue(AbilityCaster, 15), MakeAbility(AbilityMissileImmunity)},
     Race: data.RaceHero,
     Spells: []string{"Lightning Bolt", "Warp Lightning", "Doom Bolt"},
 }
@@ -2444,8 +2463,7 @@ var HeroMysticX Unit = Unit{
     Defense: 4,
     Resistance: 10,
     HitPoints: 8,
-    // caster 5
-    Abilities: []Ability{AbilityCaster},
+    Abilities: []Ability{MakeAbilityValue(AbilityCaster, 5)},
     Race: data.RaceHero,
 }
 
@@ -2464,8 +2482,7 @@ var HeroAerie Unit = Unit{
     Defense: 4,
     Resistance: 6,
     HitPoints: 5,
-    // caster 10
-    Abilities: []Ability{AbilityCaster, AbilityMissileImmunity, AbilityIllusion},
+    Abilities: []Ability{MakeAbilityValue(AbilityCaster, 10), MakeAbility(AbilityMissileImmunity), MakeAbility(AbilityIllusion)},
     Race: data.RaceHero,
     Spells: []string{"Psionic Blast", "Vertigo", "Mind Storm"},
 }
@@ -2483,7 +2500,13 @@ var HeroDethStryke Unit = Unit{
     Defense: 5,
     Resistance: 6,
     HitPoints: 10,
-    Abilities: []Ability{AbilityLeadership, AbilityLegendary, AbilityArmsmaster, AbilityConstitution, AbilityMight},
+    Abilities: []Ability{
+        MakeAbility(AbilityLeadership),
+        MakeAbility(AbilityLegendary),
+        MakeAbility(AbilityArmsmaster),
+        MakeAbility(AbilityConstitution),
+        MakeAbility(AbilityMight),
+    },
     Race: data.RaceHero,
 }
 
@@ -2501,7 +2524,15 @@ var HeroElana Unit = Unit{
     Resistance: 6,
     HitPoints: 5,
     // caster 12.5
-    Abilities: []Ability{AbilityCaster, AbilityHealer, AbilityPurify, AbilityArcanePower, AbilitySuperPrayermaster, AbilityCharmed, AbilityNoble},
+    Abilities: []Ability{
+        MakeAbilityValue(AbilityCaster, 12.5),
+        MakeAbility(AbilityHealer),
+        MakeAbility(AbilityPurify),
+        MakeAbility(AbilityArcanePower),
+        MakeAbility(AbilitySuperPrayermaster),
+        MakeAbility(AbilityCharmed),
+        MakeAbility(AbilityNoble),
+    },
     Name: "Elana",
     Race: data.RaceHero,
     Spells: []string{"Dispel Evil", "Healing", "Prayer", "Holy Word"},
@@ -2519,7 +2550,15 @@ var HeroRoland Unit = Unit{
     Defense: 5,
     Resistance: 6,
     HitPoints: 8,
-    Abilities: []Ability{AbilityMissileImmunity, AbilityHealer, AbilityFirstStrike, AbilityArmorPiercing, AbilityLegendary, AbilitySuperMight, AbilityPrayermaster},
+    Abilities: []Ability{
+        MakeAbility(AbilityMissileImmunity),
+        MakeAbility(AbilityHealer),
+        MakeAbility(AbilityFirstStrike),
+        MakeAbility(AbilityArmorPiercing),
+        MakeAbility(AbilityLegendary),
+        MakeAbility(AbilitySuperMight),
+        MakeAbility(AbilityPrayermaster),
+    },
     Name: "Roland",
     Race: data.RaceHero,
 }
@@ -2536,7 +2575,15 @@ var HeroMortu Unit = Unit{
     Defense: 5,
     Resistance: 6,
     HitPoints: 10,
-    Abilities: []Ability{AbilityMagicImmunity, AbilityFirstStrike, AbilityArmorPiercing, AbilityLegendary, AbilityBlademaster, AbilityConstitution, AbilityMight},
+    Abilities: []Ability{
+        MakeAbility(AbilityMagicImmunity),
+        MakeAbility(AbilityFirstStrike),
+        MakeAbility(AbilityArmorPiercing),
+        MakeAbility(AbilityLegendary),
+        MakeAbility(AbilityBlademaster),
+        MakeAbility(AbilityConstitution),
+        MakeAbility(AbilityMight),
+    },
     Name: "Mortu",
     Race: data.RaceHero,
 }
@@ -2556,8 +2603,11 @@ var HeroAlorra Unit = Unit{
     Defense: 6,
     Resistance: 6,
     HitPoints: 6,
-    // caster 5
-    Abilities: []Ability{AbilityCaster, AbilityForester, AbilityBlademaster},
+    Abilities: []Ability{
+        MakeAbilityValue(AbilityCaster, 5),
+        MakeAbility(AbilityForester),
+        MakeAbility(AbilityBlademaster),
+    },
     Name: "Alorra",
     Race: data.RaceHero,
     Spells: []string{"Resist Magic", "Flight"},
@@ -2574,7 +2624,12 @@ var HeroSirHarold Unit = Unit{
     Defense: 5,
     Resistance: 6,
     HitPoints: 9,
-    Abilities: []Ability{AbilitySuperLeadership, AbilitySuperLegendary, AbilityConstitution, AbilityNoble},
+    Abilities: []Ability{
+        MakeAbility(AbilitySuperLeadership),
+        MakeAbility(AbilitySuperLegendary),
+        MakeAbility(AbilityConstitution),
+        MakeAbility(AbilityNoble),
+    },
     Name: "Sir Harold",
     Race: data.RaceHero,
 }
@@ -2739,7 +2794,7 @@ var Warship Unit = Unit{
     Defense: 5,
     Resistance: 7,
     HitPoints: 30,
-    Abilities: []Ability{MakeAbilityValue(AbilityTransport, 3), AbilityLongRange},
+    Abilities: []Ability{MakeAbilityValue(AbilityTransport, 3), MakeAbility(AbilityLongRange)},
     RequiredBuildings: []building.Building{building.BuildingMaritimeGuild},
     Race: data.RaceAll,
 }
@@ -3289,7 +3344,7 @@ var Warlocks Unit = Unit{
     Resistance: 9,
     HitPoints: 1,
     MovementSound: MovementSoundShuffle,
-    Abilities: []Ability{MakeAbilityValue(AbilityDoomBoltSpell, 1), MakeAbility(MissileImmunity)},
+    Abilities: []Ability{MakeAbilityValue(AbilityDoomBoltSpell, 1), MakeAbility(AbilityMissileImmunity)},
     RequiredBuildings: []building.Building{building.BuildingWizardsGuild},
     Race: data.RaceDarkElf,
 }
