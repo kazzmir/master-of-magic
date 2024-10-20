@@ -75,6 +75,8 @@ const (
     AbilityNoble
     AbilityPrayermaster
     AbilitySage
+
+    AbilitySuperAgility
 )
 
 // the file that stores the icon for this ability
@@ -132,6 +134,7 @@ func (ability Ability) LbxFile() string {
         case AbilityWebSpell: return ""
         case AbilityWindWalking: return ""
         case AbilityAgility: return ""
+        case AbilitySuperAgility: return ""
         case AbilityArcanePower: return ""
         case AbilityArmsmaster: return ""
         case AbilityBlademaster: return ""
@@ -204,7 +207,8 @@ func (ability Ability) Name() string {
         case AbilityWeaponImmunity: return ""
         case AbilityWebSpell: return ""
         case AbilityWindWalking: return ""
-        case AbilityAgility: return ""
+        case AbilityAgility: return "Agility"
+        case AbilitySuperAgility: return "Super Agility"
         case AbilityArcanePower: return ""
         case AbilityArmsmaster: return ""
         case AbilityBlademaster: return ""
@@ -279,6 +283,7 @@ func (ability Ability) LbxIndex() int {
         case AbilityWebSpell: return -1
         case AbilityWindWalking: return -1
         case AbilityAgility: return -1
+        case AbilitySuperAgility: return -1
         case AbilityArcanePower: return -1
         case AbilityArmsmaster: return -1
         case AbilityBlademaster: return -1

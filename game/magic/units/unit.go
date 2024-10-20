@@ -2084,14 +2084,39 @@ var HeroTheria Unit = Unit{
 var HeroGreyfairer Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 10,
+    CombatLbxFile: "figures1.lbx",
+    CombatIndex: 80,
+    UpkeepGold: 3,
     Name: "Greyfairer",
+    MovementSpeed: 2,
+    Count: 1,
+    MeleeAttackPower: 1,
+    RangedAttackPower: 8,
+    RangedAttackDamageType: DamageRangedMagical,
+    Defense: 5,
+    Resistance: 6,
+    HitPoints: 6,
+    // caster 7.5
+    // scouting 3
+    Abilities: []Ability{AbilityCaster, AbilityScouting, AbilityPurify},
     Race: data.RaceHero,
+    Spells: []string{"Ice Bolt", "Petrify", "Web"},
 }
 
 var HeroTaki Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 11,
+    CombatLbxFile: "figures1.lbx",
+    CombatIndex: 88,
     Name: "Taki",
+    UpkeepGold: 3,
+    MovementSpeed: 2,
+    Count: 1,
+    MeleeAttackPower: 6,
+    Defense: 5,
+    Resistance: 6,
+    HitPoints: 6,
+    Abilities: []Ability{AbilitySuperAgility},
     Race: data.RaceHero,
 }
 
