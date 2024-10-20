@@ -52,6 +52,7 @@ const (
     AbilityStoningTouch
     AbilitySummonDemons
     AbilityToHit
+    AbilityTransport
     AbilityTeleporting
     AbilityThrown
     AbilityWallCrusher

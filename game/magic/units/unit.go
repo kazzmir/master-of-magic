@@ -1521,12 +1521,14 @@ var WarBear Unit = Unit{
     CombatLbxFile: "figure15.lbx",
     CombatIndex: 0,
     Count: 2,
+    UpkeepMana: 2,
     Realm: data.NatureMagic,
     MeleeAttackPower: 7,
     Defense: 3,
     Resistance: 6,
     HitPoints: 8,
     MovementSpeed: 2,
+    Abilities: []Ability{AbilityForester},
     Race: data.RaceFantastic,
 }
 
@@ -1537,6 +1539,7 @@ var Sprite Unit = Unit{
     CombatLbxFile: "figure15.lbx",
     CombatIndex: 8,
     Count: 4,
+    UpkeepMana: 3,
     Realm: data.NatureMagic,
     MeleeAttackPower: 4,
     RangedAttacks: 4,
@@ -1548,6 +1551,8 @@ var Sprite Unit = Unit{
     Resistance: 8,
     HitPoints: 1,
     Flying: true,
+    // tohit +10%
+    Abilities: []Ability{AbilityToHit, AbilityForester},
     Race: data.RaceFantastic,
 }
 
@@ -1557,6 +1562,7 @@ var Cockatrice Unit = Unit{
     Name: "Cockatrice",
     CombatLbxFile: "figure13.lbx",
     CombatIndex: 8,
+    UpkeepMana: 8,
     Realm: data.NatureMagic,
     Count: 4,
     MovementSpeed: 2,
@@ -1565,6 +1571,9 @@ var Cockatrice Unit = Unit{
     Defense: 3,
     Resistance: 7,
     HitPoints: 3,
+    // tohit +10%
+    // stoning touch -3
+    Abilities: []Ability{AbilityToHit, AbilityStoningTouch},
     Race: data.RaceFantastic,
 }
 
@@ -1574,6 +1583,7 @@ var Basilisk Unit = Unit{
     Name: "Basilisk",
     CombatLbxFile: "figure13.lbx",
     CombatIndex: 16,
+    UpkeepMana: 7,
     Count: 1,
     Realm: data.NatureMagic,
     MovementSpeed: 2,
@@ -1581,6 +1591,9 @@ var Basilisk Unit = Unit{
     Defense: 4,
     Resistance: 7,
     HitPoints: 30,
+    // tohit +10%
+    // stoning gaze -1
+    Abilities: []Ability{AbilityToHit, AbilityStoningGaze},
     Race: data.RaceFantastic,
 }
 
@@ -1591,12 +1604,17 @@ var GiantSpider Unit = Unit{
     CombatLbxFile: "figure13.lbx",
     CombatIndex: 24,
     Realm: data.NatureMagic,
+    UpkeepMana: 4,
     Count: 2,
     MovementSpeed: 2,
     MeleeAttackPower: 4,
     Defense: 3,
     Resistance: 7,
     HitPoints: 10,
+    // tohit +10%
+    // web spell 1x
+    // poison touch 4
+    Abilities: []Ability{AbilityToHit, AbilityWebSpell, AbilityPoisonTouch},
     Race: data.RaceFantastic,
 }
 
@@ -1606,6 +1624,7 @@ var StoneGiant Unit = Unit{
     Name: "Stone Giant",
     CombatLbxFile: "figure13.lbx",
     CombatIndex: 32,
+    UpkeepMana: 9,
     Count: 1,
     Realm: data.NatureMagic,
     MovementSpeed: 2,
@@ -1616,6 +1635,8 @@ var StoneGiant Unit = Unit{
     Defense: 8,
     Resistance: 9,
     HitPoints: 20,
+    // tohit +20%
+    Abilities: []Ability{AbilityToHit, AbilityMountaineer, AbilityPoisonImmunity, AbilityStoningImmunity, AbilityWallCrusher},
     Race: data.RaceFantastic,
 }
 
@@ -1625,13 +1646,19 @@ var Colossus Unit = Unit{
     Name: "Colossus",
     CombatLbxFile: "figure13.lbx",
     CombatIndex: 40,
+    UpkeepMana: 17,
     Count: 1,
     Realm: data.NatureMagic,
     MovementSpeed: 2,
+    RangedAttackPower: 20,
+    RangedAttacks: 2,
+    RangedAttackDamageType: DamageRangedBoulder,
     MeleeAttackPower: 20,
     Defense: 10,
     Resistance: 15,
     HitPoints: 30,
+    // tohit +30%
+    Abilities: []Ability{AbilityToHit, AbilityPoisonImmunity, AbilityStoningImmunity, AbilityWallCrusher, AbilityFirstStrike},
     Race: data.RaceFantastic,
 }
 
@@ -1641,6 +1668,7 @@ var Gorgon Unit = Unit{
     Name: "Gorgons",
     CombatLbxFile: "figure13.lbx",
     CombatIndex: 48,
+    UpkeepMana: 15,
     Count: 2,
     MovementSpeed: 2,
     Realm: data.NatureMagic,
@@ -1649,6 +1677,9 @@ var Gorgon Unit = Unit{
     Defense: 7,
     Resistance: 9,
     HitPoints: 9,
+    // tohit +20%
+    // stoning gaze -2
+    Abilities: []Ability{AbilityToHit, AbilityStoningGaze},
     Race: data.RaceFantastic,
 }
 
@@ -1666,6 +1697,7 @@ var EarthElemental Unit = Unit{
     MovementSpeed: 1,
     Resistance: 8,
     HitPoints: 30,
+    Abilities: []Ability{AbilityToHit, AbilityPoisonImmunity, AbilityStoningImmunity, AbilityWallCrusher},
 }
 
 var Behemoth Unit = Unit{
@@ -1674,6 +1706,7 @@ var Behemoth Unit = Unit{
     Name: "Behemoth",
     CombatLbxFile: "figure13.lbx",
     CombatIndex: 64,
+    UpkeepMana: 15,
     Count: 1,
     Realm: data.NatureMagic,
     MovementSpeed: 2,
@@ -1682,6 +1715,8 @@ var Behemoth Unit = Unit{
     Resistance: 10,
     HitPoints: 45,
     Race: data.RaceFantastic,
+    // tohit +20%
+    Abilities: []Ability{AbilityToHit},
 }
 
 var GreatWyrm Unit = Unit{
@@ -1690,6 +1725,7 @@ var GreatWyrm Unit = Unit{
     Name: "Great Wyrm",
     CombatLbxFile: "figure13.lbx",
     CombatIndex: 72,
+    UpkeepMana: 20,
     Count: 1,
     Realm: data.NatureMagic,
     MovementSpeed: 3,
@@ -1697,12 +1733,27 @@ var GreatWyrm Unit = Unit{
     Defense: 12,
     Resistance: 12,
     HitPoints: 45,
+    // tohit +30%
+    // poison touch 15
+    Abilities: []Ability{AbilityToHit, AbilityMerging, AbilityPoisonTouch},
     Race: data.RaceFantastic,
 }
 
 var FloatingIsland Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 70,
+    CombatLbxFile: "figure13.lbx",
+    CombatIndex: 80,
+    Count: 1,
+    UpkeepMana: 5,
+    MovementSpeed: 2,
+    Name: "Floating Island",
+    Swimming: true,
+    Defense: 0,
+    Resistance: 10,
+    HitPoints: 45,
+    // transport 8
+    Abilities: []Ability{AbilityTransport, AbilityPoisonImmunity, AbilityDeathImmunity, AbilityStoningImmunity},
     Race: data.RaceFantastic,
     Realm: data.SorceryMagic,
 }
@@ -1720,6 +1771,8 @@ var PhantomBeast Unit = Unit{
     MovementSpeed: 2,
     Resistance: 8,
     HitPoints: 20,
+    // tohit +10%
+    Abilities: []Ability{AbilityToHit, AbilityPoisonImmunity, AbilityDeathImmunity, AbilityStoningImmunity, AbilityNonCorporeal, AbilityIllusion},
 }
 
 var PhantomWarrior Unit = Unit{
@@ -1734,6 +1787,7 @@ var PhantomWarrior Unit = Unit{
     MeleeAttackPower: 3,
     HitPoints: 1,
     Resistance: 6,
+    Abilities: []Ability{AbilityPoisonImmunity, AbilityDeathImmunity, AbilityStoningImmunity, AbilityNonCorporeal, AbilityIllusion},
     Race: data.RaceFantastic,
 }
 
@@ -1743,6 +1797,7 @@ var StormGiant Unit = Unit{
     Name: "Storm Giant",
     CombatLbxFile: "figure13.lbx",
     CombatIndex: 104,
+    UpkeepMana: 10,
     Count: 1,
     Realm: data.SorceryMagic,
     MovementSpeed: 2,
@@ -1753,6 +1808,8 @@ var StormGiant Unit = Unit{
     Defense: 7,
     Resistance: 9,
     HitPoints: 20,
+    // tohit +20%
+    Abilities: []Ability{AbilityToHit, AbilityWallCrusher, AbilityArmorPiercing},
     Race: data.RaceFantastic,
 }
 
@@ -1771,6 +1828,7 @@ var AirElemental Unit = Unit{
     Defense: 8,
     Resistance: 9,
     HitPoints: 10,
+    Abilities: []Ability{AbilityToHit, AbilityPoisonImmunity, AbilityStoningImmunity, AbilityWeaponImmunity, AbilityInvisibility},
 }
 
 var Djinn Unit = Unit{
@@ -1779,17 +1837,20 @@ var Djinn Unit = Unit{
     Name: "Djinn",
     CombatLbxFile: "figure14.lbx",
     CombatIndex: 0,
+    UpkeepMana: 17,
     Count: 1,
     Realm: data.SorceryMagic,
     MovementSpeed: 3,
     Flying: true,
     MeleeAttackPower: 15,
     RangedAttackPower: 8,
-    // caster 20
     RangedAttackDamageType: DamageRangedMagical,
     Defense: 8,
     Resistance: 10,
     HitPoints: 20,
+    // caster 20
+    // tohit +30%
+    Abilities: []Ability{AbilityToHit, AbilityCaster, AbilityTeleporting, AbilityWindWalking},
     Race: data.RaceFantastic,
 }
 
@@ -1800,6 +1861,7 @@ var SkyDrake Unit = Unit{
     Realm: data.SorceryMagic,
     CombatLbxFile: "figure14.lbx",
     CombatIndex: 8,
+    UpkeepMana: 25,
     Count: 1,
     MovementSpeed: 4,
     Flying: true,
@@ -1808,6 +1870,7 @@ var SkyDrake Unit = Unit{
     Resistance: 14,
     HitPoints: 25,
     Race: data.RaceFantastic,
+    Abilities: []Ability{AbilityToHit, AbilityMagicImmunity, AbilityIllusionsImmunity},
 }
 
 var Nagas Unit = Unit{
@@ -1816,6 +1879,7 @@ var Nagas Unit = Unit{
     Name: "Nagas",
     CombatLbxFile: "figure14.lbx",
     CombatIndex: 16,
+    UpkeepMana: 2,
     Realm: data.SorceryMagic,
     MovementSpeed: 1,
     Count: 2,
@@ -1824,6 +1888,9 @@ var Nagas Unit = Unit{
     Resistance: 7,
     HitPoints: 6,
     Race: data.RaceFantastic,
+    // tohit +10%
+    // poison touch 4
+    Abilities: []Ability{AbilityToHit, AbilityPoisonTouch, AbilityFirstStrike},
 }
 
 var HeroBrax Unit = Unit{
