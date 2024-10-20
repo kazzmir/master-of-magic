@@ -1944,8 +1944,10 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
     return game.State
 }
 
+/* show a view of the city
+ */
 func (game *Game) doCityScreen(yield coroutine.YieldFunc, city *citylib.City, player *playerlib.Player){
-    cityScreen := cityview.MakeCityScreen(game.Cache, city, game.Players[0])
+    cityScreen := cityview.MakeCityScreen(game.Cache, city, player)
 
     var cities []*citylib.City
     var stacks []*playerlib.UnitStack
@@ -2049,12 +2051,6 @@ func (game *Game) confirmEncounter(yield coroutine.YieldFunc, node *ExtraMagicNo
         if game.Counter % 6 == 0 {
             animation.Next()
         }
-        game.HudUI.StandardUpdate()
-        yield()
-    }
-
-    // FIXME: wait for confirm dialog box to fade out, but need a better way to know
-    for i := 0; i < 7; i++ {
         game.HudUI.StandardUpdate()
         yield()
     }
