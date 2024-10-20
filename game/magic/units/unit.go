@@ -3318,8 +3318,7 @@ var DraconianSwordsmen Unit = Unit{
     Defense: 3,
     Resistance: 6,
     HitPoints: 1,
-    // fire breath 1x
-    Abilities: []Ability{AbilityLargeShield, AbilityFireBreath},
+    Abilities: []Ability{MakeAbility(AbilityLargeShield), MakeAbilityValue(AbilityFireBreath, 1)},
     RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSmithy},
     Race: data.RaceDraconian,
 }
@@ -3340,8 +3339,7 @@ var DraconianHalberdiers Unit = Unit{
     Defense: 4,
     Resistance: 6,
     HitPoints: 1,
-    // fire breath 1x
-    Abilities: []Ability{AbilityFireBreath},
+    Abilities: []Ability{MakeAbilityValue(AbilityFireBreath, 1)},
     RequiredBuildings: []building.Building{building.BuildingArmory},
     Race: data.RaceDraconian,
 }
@@ -3389,7 +3387,7 @@ var DraconianShaman Unit = Unit{
     Defense: 4,
     Resistance: 8,
     HitPoints: 1,
-    Abilities: []Ability{AbilityHealer, AbilityPurify},
+    Abilities: []Ability{MakeAbility(AbilityHealer), MakeAbility(AbilityPurify)},
     RequiredBuildings: []building.Building{building.BuildingShrine},
     Race: data.RaceDraconian,
 }
@@ -3414,8 +3412,7 @@ var DraconianMagician Unit = Unit{
     Defense: 4,
     Resistance: 10,
     HitPoints: 1,
-    // fireball 1x
-    Abilities: []Ability{AbilityMissileImmunity, AbilityFireballSpell},
+    Abilities: []Ability{MakeAbility(AbilityMissileImmunity), MakeAbilityValue(AbilityFireballSpell, 1)},
     RequiredBuildings: []building.Building{building.BuildingWizardsGuild},
     Race: data.RaceDraconian,
 }
@@ -3445,7 +3442,7 @@ var DraconianSettlers Unit = Unit{
     Defense: 2,
     Resistance: 6,
     HitPoints: 10,
-    Abilities: []Ability{AbilityCreateOutpost},
+    Abilities: []Ability{MakeAbility(AbilityCreateOutpost)},
     Name: "Settlers",
     Race: data.RaceDraconian,
 }
@@ -3466,8 +3463,7 @@ var DoomDrake Unit = Unit{
     Defense: 3,
     Resistance: 9,
     HitPoints: 10,
-    // fire breath 6
-    Abilities: []Ability{AbilityScouting, AbilityFireBreath},
+    Abilities: []Ability{MakeAbility(AbilityScouting), MakeAbilityValue(AbilityFireBreath, 6)},
     RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingStables},
     Race: data.RaceDraconian,
 }
@@ -3491,7 +3487,7 @@ var AirShip Unit = Unit{
     Defense: 5,
     Resistance: 8,
     HitPoints: 20,
-    Abilities: []Ability{AbilityScouting, AbilityWallCrusher},
+    Abilities: []Ability{MakeAbility(AbilityScouting), MakeAbility(AbilityWallCrusher)},
     RequiredBuildings: []building.Building{building.BuildingShipYard},
     Race: data.RaceDraconian,
 }
@@ -3510,7 +3506,7 @@ var DwarfSwordsmen Unit = Unit{
     Defense: 2,
     Resistance: 8,
     HitPoints: 3,
-    Abilities: []Ability{AbilityLargeShield, AbilityMountaineer},
+    Abilities: []Ability{MakeAbility(AbilityLargeShield), MakeAbility(AbilityMountaineer)},
     RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSmithy},
     Race: data.RaceDwarf,
 }
@@ -3530,7 +3526,7 @@ var DwarfHalberdiers Unit = Unit{
     Defense: 3,
     Resistance: 8,
     HitPoints: 3,
-    Abilities: []Ability{AbilityMountaineer},
+    Abilities: []Ability{MakeAbility(AbilityMountaineer)},
     RequiredBuildings: []building.Building{building.BuildingArmory},
     Race: data.RaceDwarf,
 }
@@ -3550,7 +3546,7 @@ var DwarfEngineer Unit = Unit{
     Defense: 1,
     Resistance: 8,
     HitPoints: 3,
-    Abilities: []Ability{AbilityConstruction, AbilityWallCrusher, AbilityMountaineer},
+    Abilities: []Ability{MakeAbility(AbilityConstruction), MakeAbility(AbilityWallCrusher), MakeAbility(AbilityMountaineer)},
     RequiredBuildings: []building.Building{building.BuildingBuildersHall},
     Race: data.RaceDwarf,
 }
@@ -3570,7 +3566,7 @@ var Hammerhands Unit = Unit{
     Defense: 4,
     Resistance: 9,
     HitPoints: 4,
-    Abilities: []Ability{AbilityMountaineer},
+    Abilities: []Ability{MakeAbility(AbilityMountaineer)},
     RequiredBuildings: []building.Building{building.BuildingFightersGuild},
     Race: data.RaceDwarf,
 }
@@ -3611,7 +3607,7 @@ var Golem Unit = Unit{
     Defense: 8,
     Resistance: 15,
     HitPoints: 20,
-    Abilities: []Ability{AbilityPoisonImmunity, AbilityDeathImmunity},
+    Abilities: []Ability{MakeAbility(AbilityPoisonImmunity), MakeAbility(AbilityDeathImmunity)},
     RequiredBuildings: []building.Building{building.BuildingArmorersGuild},
     Race: data.RaceDwarf,
 }
@@ -3630,7 +3626,7 @@ var DwarfSettlers Unit = Unit{
     Defense: 1,
     Resistance: 8,
     HitPoints: 30,
-    Abilities: []Ability{AbilityCreateOutpost},
+    Abilities: []Ability{MakeAbility(AbilityCreateOutpost)},
     Race: data.RaceDwarf,
 }
 
@@ -3666,7 +3662,7 @@ var GnollSwordsmen Unit = Unit{
     Defense: 2,
     Resistance: 4,
     HitPoints: 1,
-    Abilities: []Ability{AbilityLargeShield},
+    Abilities: []Ability{MakeAbility(AbilityLargeShield)},
     RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSmithy},
     Race: data.RaceGnoll,
 }
@@ -3686,7 +3682,7 @@ var GnollHalberdiers Unit = Unit{
     Defense: 3,
     Resistance: 4,
     HitPoints: 1,
-    Abilities: []Ability{AbilityNegateFirstStrike},
+    Abilities: []Ability{MakeAbility(AbilityNegateFirstStrike)},
     RequiredBuildings: []building.Building{building.BuildingArmory},
     Race: data.RaceGnoll,
 }
@@ -3728,7 +3724,7 @@ var GnollSettlers Unit = Unit{
     Defense: 1,
     Resistance: 4,
     HitPoints: 10,
-    Abilities: []Ability{AbilityCreateOutpost},
+    Abilities: []Ability{MakeAbility(AbilityCreateOutpost)},
     Race: data.RaceGnoll,
 }
 
@@ -3765,7 +3761,7 @@ var HalflingSpearmen Unit = Unit{
     Defense: 2,
     Resistance: 6,
     HitPoints: 1,
-    Abilities: []Ability{AbilityLucky},
+    Abilities: []Ability{MakeAbility(AbilityLucky)},
     Race: data.RaceHalfling,
 }
 
@@ -3784,7 +3780,7 @@ var HalflingSwordsmen Unit = Unit{
     Defense: 2,
     Resistance: 6,
     HitPoints: 1,
-    Abilities: []Ability{AbilityLargeShield, AbilityLucky},
+    Abilities: []Ability{MakeAbility(AbilityLargeShield), MakeAbility(AbilityLucky)},
     RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSmithy},
     Race: data.RaceHalfling,
 }
@@ -3807,7 +3803,7 @@ var HalflingBowmen Unit = Unit{
     Defense: 1,
     Resistance: 6,
     HitPoints: 1,
-    Abilities: []Ability{AbilityLucky},
+    Abilities: []Ability{MakeAbility(AbilityLucky)},
     RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSawmill},
     Race: data.RaceHalfling,
 }
@@ -3831,7 +3827,7 @@ var HalflingShamans Unit = Unit{
     Defense: 3,
     Resistance: 8,
     HitPoints: 1,
-    Abilities: []Ability{AbilityHealer, AbilityPurify, AbilityLucky},
+    Abilities: []Ability{MakeAbility(AbilityHealer), MakeAbility(AbilityPurify), MakeAbility(AbilityLucky)},
     RequiredBuildings: []building.Building{building.BuildingShrine},
     Race: data.RaceHalfling,
 }
@@ -3849,7 +3845,7 @@ var HalflingSettlers Unit = Unit{
     Defense: 1,
     Resistance: 6,
     HitPoints: 10,
-    Abilities: []Ability{AbilityCreateOutpost, AbilityLucky},
+    Abilities: []Ability{MakeAbility(AbilityCreateOutpost), MakeAbility(AbilityLucky)},
     Name: "Settlers",
     Race: data.RaceHalfling,
 }
@@ -3872,7 +3868,7 @@ var Slingers Unit = Unit{
     Defense: 2,
     Resistance: 6,
     HitPoints: 1,
-    Abilities: []Ability{AbilityLucky},
+    Abilities: []Ability{MakeAbility(AbilityLucky)},
     RequiredBuildings: []building.Building{building.BuildingArmory},
     Race: data.RaceHalfling,
 }
@@ -3890,8 +3886,7 @@ var HighElfSpearmen Unit = Unit{
     AttackSound: AttackSoundNormal,
     MovementSound: MovementSoundMarching,
     Resistance: 6,
-    // tohit +10%
-    Abilities: []Ability{AbilityForester, AbilityToHit},
+    Abilities: []Ability{MakeAbility(AbilityForester), MakeAbilityValue(AbilityToHit, 10)},
     MovementSpeed: 1,
     Race: data.RaceHighElf,
     HitPoints: 1,
@@ -3914,8 +3909,7 @@ var HighElfSwordsmen Unit = Unit{
     Defense: 2,
     Resistance: 6,
     HitPoints: 1,
-    // tohit +10%
-    Abilities: []Ability{AbilityLargeShield, AbilityToHit, AbilityForester},
+    Abilities: []Ability{MakeAbility(AbilityLargeShield), MakeAbilityValue(AbilityToHit, 10), MakeAbility(AbilityForester)},
     Race: data.RaceHighElf,
 }
 
@@ -3935,8 +3929,7 @@ var HighElfHalberdiers Unit = Unit{
     Resistance: 6,
     HitPoints: 1,
     RequiredBuildings: []building.Building{building.BuildingArmory},
-    // tohit +10%
-    Abilities: []Ability{AbilityForester, AbilityToHit},
+    Abilities: []Ability{MakeAbility(AbilityForester), MakeAbilityValue(AbilityToHit, 10)},
     Race: data.RaceHighElf,
 }
 
@@ -3956,8 +3949,7 @@ var HighElfCavalry Unit = Unit{
     Resistance: 6,
     HitPoints: 3,
     RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingStables},
-    // tohit +10%
-    Abilities: []Ability{AbilityToHit, AbilityForester, AbilityFirstStrike},
+    Abilities: []Ability{MakeAbilityValue(AbilityToHit, 10), MakeAbility(AbilityForester), MakeAbility(AbilityFirstStrike)},
     Race: data.RaceHighElf,
 }
 
@@ -3979,8 +3971,12 @@ var HighElfMagician Unit = Unit{
     Defense: 3,
     Resistance: 10,
     HitPoints: 1,
-    // fireball 1x, tohit +10%
-    Abilities: []Ability{AbilityFireballSpell, AbilityMissileImmunity, AbilityForester, AbilityToHit},
+    Abilities: []Ability{
+        MakeAbilityValue(AbilityFireballSpell, 1),
+        MakeAbilityValue(AbilityToHit, 10),
+        MakeAbility(AbilityMissileImmunity),
+        MakeAbility(AbilityForester),
+    },
     RequiredBuildings: []building.Building{building.BuildingWizardsGuild},
     Race: data.RaceHighElf,
 }
@@ -4002,7 +3998,7 @@ var HighElfSettlers Unit = Unit{
     HitPoints: 1,
     Defense: 1,
     // tohit +10%
-    Abilities: []Ability{AbilityCreateOutpost, AbilityToHit, AbilityForester},
+    Abilities: []Ability{MakeAbility(AbilityCreateOutpost), MakeAbilityValue(AbilityToHit, 10), MakeAbility(AbilityForester)},
 }
 
 var Longbowmen Unit = Unit{
@@ -4023,8 +4019,7 @@ var Longbowmen Unit = Unit{
     Defense: 2,
     Resistance: 6,
     HitPoints: 1,
-    // tohit +10%
-    Abilities: []Ability{AbilityForester, AbilityToHit},
+    Abilities: []Ability{MakeAbility(AbilityForester), MakeAbilityValue(AbilityToHit, 10)},
     RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSawmill},
     Race: data.RaceHighElf,
 }
@@ -4044,8 +4039,7 @@ var ElvenLord Unit = Unit{
     Defense: 4,
     Resistance: 9,
     HitPoints: 3,
-    // tohit +20%
-    Abilities: []Ability{AbilityForester, AbilityToHit, AbilityArmorPiercing, AbilityFirstStrike},
+    Abilities: []Ability{MakeAbility(AbilityForester), MakeAbilityValue(AbilityToHit, 20), MakeAbility(AbilityArmorPiercing), MakeAbility(AbilityFirstStrike)},
     RequiredBuildings: []building.Building{building.BuildingArmorersGuild},
     Race: data.RaceHighElf,
 }
@@ -4106,7 +4100,7 @@ var HighMenSwordsmen Unit = Unit{
     Resistance: 4,
     HitPoints: 1,
     RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingSmithy},
-    Abilities: []Ability{AbilityLargeShield},
+    Abilities: []Ability{MakeAbility(AbilityLargeShield)},
     Race: data.RaceHighMen,
 }
 
@@ -4151,7 +4145,7 @@ var HighMenCavalry Unit = Unit{
     Resistance: 4,
     HitPoints: 3,
     RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingStables},
-    Abilities: []Ability{AbilityFirstStrike},
+    Abilities: []Ability{MakeAbility(AbilityFirstStrike)},
     Race: data.RaceHighMen,
 }
 
@@ -4173,8 +4167,7 @@ var HighMenPriest Unit = Unit{
     Defense: 4,
     Resistance: 7,
     HitPoints: 1,
-    // healing spell x1
-    Abilities: []Ability{AbilityHealer, AbilityPurify, AbilityHealingSpell},
+    Abilities: []Ability{MakeAbility(AbilityHealer), MakeAbility(AbilityPurify), MakeAbilityValue(AbilityHealingSpell, 1)},
     RequiredBuildings: []building.Building{building.BuildingParthenon},
     Race: data.RaceHighMen,
 }
@@ -4196,8 +4189,7 @@ var HighMenMagician Unit = Unit{
     Defense: 3,
     Resistance: 8,
     HitPoints: 1,
-    // fireball 1x
-    Abilities: []Ability{AbilityMissileImmunity, AbilityFireballSpell},
+    Abilities: []Ability{MakeAbility(AbilityMissileImmunity), MakeAbilityValue(AbilityFireballSpell, 1)},
     RequiredBuildings: []building.Building{building.BuildingWizardsGuild},
     Race: data.RaceHighMen,
 }
@@ -4218,7 +4210,7 @@ var HighMenEngineer Unit = Unit{
     HitPoints: 1,
     MovementSpeed: 1,
     RequiredBuildings: []building.Building{building.BuildingBuildersHall},
-    Abilities: []Ability{AbilityConstruction, AbilityWallCrusher},
+    Abilities: []Ability{MakeAbility(AbilityConstruction), MakeAbility(AbilityWallCrusher)},
     Race: data.RaceHighMen,
 }
 
@@ -4236,7 +4228,7 @@ var HighMenSettlers Unit = Unit{
     Defense: 1,
     Resistance: 4,
     HitPoints: 10,
-    Abilities: []Ability{AbilityCreateOutpost},
+    Abilities: []Ability{MakeAbility(AbilityCreateOutpost)},
     Race: data.RaceHighMen,
 }
 
@@ -4256,7 +4248,7 @@ var HighMenPikemen Unit = Unit{
     Resistance: 5,
     HitPoints: 1,
     RequiredBuildings: []building.Building{building.BuildingFightersGuild},
-    Abilities: []Ability{AbilityNegateFirstStrike, AbilityArmorPiercing},
+    Abilities: []Ability{MakeAbility(AbilityNegateFirstStrike), MakeAbility(AbilityArmorPiercing)},
     Race: data.RaceHighMen,
 }
 
@@ -4276,8 +4268,12 @@ var Paladin Unit = Unit{
     Resistance: 8,
     HitPoints: 4,
     RequiredBuildings: []building.Building{building.BuildingArmorersGuild, building.BuildingCathedral},
-    // holy bonus 1x
-    Abilities: []Ability{AbilityMagicImmunity, AbilityHolyBonus, AbilityArmorPiercing, AbilityFirstStrike},
+    Abilities: []Ability{
+        MakeAbility(AbilityMagicImmunity),
+        MakeAbilityValue(AbilityHolyBonus, 1),
+        MakeAbility(AbilityArmorPiercing),
+        MakeAbility(AbilityFirstStrike),
+    },
     Race: data.RaceHighMen,
 }
 
@@ -4314,7 +4310,7 @@ var KlackonSwordsmen Unit = Unit{
     Defense: 4,
     Resistance: 5,
     HitPoints: 1,
-    Abilities: []Ability{AbilityLargeShield},
+    Abilities: []Ability{MakeAbility(AbilityLargeShield)},
     Race: data.RaceKlackon,
 }
 
@@ -4353,7 +4349,7 @@ var KlackonEngineer Unit = Unit{
     Defense: 1,
     Resistance: 5,
     HitPoints: 1,
-    Abilities: []Ability{AbilityConstruction, AbilityWallCrusher},
+    Abilities: []Ability{MakeAbility(AbilityConstruction), MakeAbility(AbilityWallCrusher)},
     Race: data.RaceKlackon,
 }
 
@@ -4390,8 +4386,7 @@ var StagBeetle Unit = Unit{
     Defense: 7,
     Resistance: 6,
     HitPoints: 20,
-    // fire breath 5
-    Abilities: []Ability{AbilityFireBreath},
+    Abilities: []Ability{MakeAbilityValue(AbilityFireBreath, 5)},
     Race: data.RaceKlackon,
 }
 
