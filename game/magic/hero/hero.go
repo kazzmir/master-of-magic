@@ -2,6 +2,8 @@ package hero
 
 import (
     "fmt"
+    "slices"
+    "math/rand/v2"
 
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/data"
@@ -54,6 +56,132 @@ const (
     HeroTumu
     HeroAureus
 )
+
+func (heroType HeroType) GetRequiredFame() int {
+    switch heroType {
+        case HeroTorin: return 0
+        case HeroFang: return 10
+        case HeroBShan: return 0
+        case HeroMorgana: return 10
+        case HeroWarrax: return 40
+        case HeroMysticX: return 20
+        case HeroBahgtru: return 0
+        case HeroDethStryke: return 40
+        case HeroSpyder: return 20
+        case HeroSirHarold: return 40
+        case HeroBrax: return 0
+        case HeroRavashack: return 40
+        case HeroGreyfairer: return 5
+        case HeroShalla: return 20
+        case HeroRoland: return 40
+        case HeroMalleus: return 5
+        case HeroMortu: return 40
+        case HeroGunther: return 0
+        case HeroRakir: return 0
+        case HeroJaer: return 10
+        case HeroTaki: return 5
+        case HeroYramrag: return 20
+        case HeroValana: return 0
+        case HeroElana: return 40
+        case HeroAerie: return 40
+        case HeroMarcus: return 10
+        case HeroReywind: return 5
+        case HeroAlorra: return 40
+        case HeroZaldron: return 0
+        case HeroShinBo: return 20
+        case HeroSerena: return 0
+        case HeroShuri: return 0
+        case HeroTheria: return 0
+        case HeroTumu: return 5
+        case HeroAureus: return 10
+    }
+
+    return 0
+}
+
+func (heroType HeroType) RandomAbilityCount() int {
+    switch heroType {
+        case HeroTorin: return 2
+        case HeroFang: return 2
+        case HeroBShan: return 0
+        case HeroMorgana: return 2
+        case HeroWarrax: return 3
+        case HeroMysticX: return 5
+        case HeroBahgtru: return 1
+        case HeroDethStryke: return 1
+        case HeroSpyder: return 1
+        case HeroSirHarold: return 1
+        case HeroBrax: return 0
+        case HeroRavashack: return 2
+        case HeroGreyfairer: return 0
+        case HeroShalla: return 1
+        case HeroRoland: return 1
+        case HeroMalleus: return 1
+        case HeroMortu: return 1
+        case HeroGunther: return 0
+        case HeroRakir: return 0
+        case HeroJaer: return 1
+        case HeroTaki: return 1
+        case HeroYramrag: return 1
+        case HeroValana: return 0
+        case HeroElana: return 0
+        case HeroAerie: return 2
+        case HeroMarcus: return 0
+        case HeroReywind: return 1
+        case HeroAlorra: return 3
+        case HeroZaldron: return 0
+        case HeroShinBo: return 2
+        case HeroSerena: return 1
+        case HeroShuri: return 1
+        case HeroTheria: return 0
+        case HeroTumu: return 1
+        case HeroAureus: return 2
+    }
+
+    return 0
+}
+
+func (heroType HeroType) RandomAbilityType() abilityChoice {
+    switch heroType {
+        case HeroTorin: return abilityChoiceAny
+        case HeroFang: return abilityChoiceFighter
+        case HeroBShan: return abilityChoiceAny
+        case HeroMorgana: return abilityChoiceMage
+        case HeroWarrax: return abilityChoiceAny
+        case HeroMysticX: return abilityChoiceAny
+        case HeroBahgtru: return abilityChoiceFighter
+        case HeroDethStryke: return abilityChoiceFighter
+        case HeroSpyder: return abilityChoiceFighter
+        case HeroSirHarold: return abilityChoiceFighter
+        case HeroBrax: return abilityChoiceAny
+        case HeroRavashack: return abilityChoiceMage
+        case HeroGreyfairer: return abilityChoiceAny
+        case HeroShalla: return abilityChoiceFighter
+        case HeroRoland: return abilityChoiceFighter
+        case HeroMalleus: return abilityChoiceMage
+        case HeroMortu: return abilityChoiceFighter
+        case HeroGunther: return abilityChoiceAny
+        case HeroRakir: return abilityChoiceAny
+        case HeroJaer: return abilityChoiceMage
+        case HeroTaki: return abilityChoiceFighter
+        case HeroYramrag: return abilityChoiceMage
+        case HeroValana: return abilityChoiceAny
+        case HeroElana: return abilityChoiceAny
+        case HeroAerie: return abilityChoiceMage
+        case HeroMarcus: return abilityChoiceAny
+        case HeroReywind: return abilityChoiceAny
+        case HeroAlorra: return abilityChoiceAny
+        case HeroZaldron: return abilityChoiceAny
+        case HeroShinBo: return abilityChoiceFighter
+        case HeroSerena: return abilityChoiceMage
+        case HeroShuri: return abilityChoiceFighter
+        case HeroTheria: return abilityChoiceAny
+        case HeroTumu: return abilityChoiceFighter
+        case HeroAureus: return abilityChoiceAny
+    }
+
+    return abilityChoiceAny
+}
 
 func (heroType HeroType) GetUnit() units.Unit {
     switch heroType {
@@ -146,11 +274,26 @@ type Hero struct {
     Name string
     Status HeroStatus
 
+    // set at start of game
+    Abilities []units.Ability
+
     Equipment [3]*artifact.Artifact
+}
+
+type noInfo struct {
+}
+
+func (noInfo *noInfo) HasWarlord() bool {
+    return false
+}
+
+func (noInfo *noInfo) Crusade() bool {
+    return false
 }
 
 func MakeHeroSimple(heroType HeroType) *Hero {
     unit := units.MakeOverworldUnit(heroType.GetUnit())
+    unit.ExperienceInfo = &noInfo{}
     return MakeHero(unit, heroType, heroType.DefaultName())
 }
 
@@ -159,8 +302,125 @@ func MakeHero(unit *units.OverworldUnit, heroType HeroType, name string) *Hero {
         Unit: unit,
         Name: name,
         HeroType: heroType,
+        Abilities: slices.Clone(unit.GetAbilities()),
         Status: StatusAvailable,
     }
+}
+
+type abilityChoice int
+const (
+    abilityChoiceFighter abilityChoice = iota
+    abilityChoiceMage
+    abilityChoiceAny
+)
+
+func selectAbility(kind abilityChoice) units.Ability {
+    anyChoices := []units.Ability{
+        units.AbilityCharmed,
+        units.AbilityLucky,
+        units.AbilityNoble,
+    }
+
+    fighterChoices := []units.Ability{
+        units.AbilityAgility,
+        units.AbilityArmsmaster,
+        units.AbilityBlademaster,
+        units.AbilityConstitution,
+        units.AbilityLeadership,
+        units.AbilityLegendary,
+        units.AbilityMight,
+    }
+
+    mageChoices := []units.Ability{
+        units.AbilityArcanePower,
+        units.AbilityCaster,
+        units.AbilityPrayermaster,
+        units.AbilitySage,
+    }
+
+    var use []units.Ability
+    switch kind {
+        case abilityChoiceFighter:
+            use = append(fighterChoices, anyChoices...)
+        case abilityChoiceMage:
+            use = append(mageChoices, anyChoices...)
+        case abilityChoiceAny:
+            use = append(append(fighterChoices, mageChoices...), anyChoices...)
+    }
+
+    return use[rand.N(len(use))]
+}
+
+func superVersion(ability units.Ability) units.Ability {
+    switch ability {
+        case units.AbilityAgility: return units.AbilitySuperAgility
+        case units.AbilityArmsmaster: return units.AbilitySuperArmsmaster
+        case units.AbilityBlademaster: return units.AbilitySuperBlademaster
+        case units.AbilityConstitution: return units.AbilitySuperConstitution
+        case units.AbilityLeadership: return units.AbilitySuperLeadership
+        case units.AbilityLegendary: return units.AbilitySuperLegendary
+        case units.AbilityMight: return units.AbilitySuperMight
+        case units.AbilityArcanePower: return units.AbilitySuperArcanePower
+        case units.AbilityPrayermaster: return units.AbilitySuperPrayermaster
+        case units.AbilitySage: return units.AbilitySuperSage
+    }
+
+    return units.AbilityNone
+}
+
+// returns true if the ability is added. some abilities cannot be added in case the
+// hero already has a super version of that ability, or the limit of 1 is reached for others
+func (hero *Hero) AddAbility(ability units.Ability) bool {
+    limit1 := []units.Ability{units.AbilityCharmed, units.AbilityLucky, units.AbilityNoble}
+
+    if slices.Contains(limit1, ability) && hero.HasAbility(ability) {
+        return false
+    }
+
+    if hero.HasAbility(superVersion(ability)) {
+        return false
+    }
+
+    if ability == units.AbilityCaster {
+        if hero.HasAbility(units.AbilityCaster) {
+            // FIXME: increase caster value by 2.5
+        } else {
+            hero.Abilities = append(hero.Abilities, ability)
+        }
+        return true
+    }
+
+    // upgrade from regular ability to super version
+    if hero.HasAbility(ability) {
+        hero.Abilities = slices.DeleteFunc(hero.Abilities, func(a units.Ability) bool {
+            return a == ability
+        })
+
+        hero.Abilities = append(hero.Abilities, superVersion(ability))
+    } else {
+        hero.Abilities = append(hero.Abilities, ability)
+    }
+
+    return true
+}
+
+// add N random abilities
+func (hero *Hero) SetExtraAbilities() {
+    // totalLoops := 0
+    for range hero.HeroType.RandomAbilityCount() {
+
+        // this loop could run for a while, so possibly have some way to force ability selection
+        // to be determinstic rather than purely random (such as removing abilities that cannot be chosen)
+        for {
+            // totalLoops += 1
+            randomAbility := selectAbility(hero.HeroType.RandomAbilityType())
+            if hero.AddAbility(randomAbility) {
+                break
+            }
+        }
+    }
+
+    // fmt.Printf("Hero %v took %v loops: %v\n", hero.ShortName(), totalLoops, hero.GetAbilities())
 }
 
 func (hero *Hero) SetStatus(status HeroStatus) {
@@ -216,6 +476,32 @@ func (hero *Hero) GetPortraitLbxInfo() (string, int) {
     }
 
     return "", -1
+}
+
+func (hero *Hero) GetRequiredFame() int {
+    return hero.HeroType.GetRequiredFame()
+}
+
+// fee is halved if the hiring wizard is charismatic, handle that elsewhere
+func (hero *Hero) GetHireFee() int {
+    base := 100 + hero.HeroType.GetRequiredFame() * 10
+
+    levelInt := 1
+
+    level := hero.GetExperienceLevel()
+    switch level {
+        case units.ExperienceHero: levelInt = 1
+        case units.ExperienceMyrmidon: levelInt = 2
+        case units.ExperienceCaptain: levelInt = 3
+        case units.ExperienceCommander: levelInt = 4
+        case units.ExperienceChampionHero: levelInt = 5
+        case units.ExperienceLord: levelInt = 6
+        case units.ExperienceGrandLord: levelInt = 7
+        case units.ExperienceSuperHero: levelInt = 8
+        case units.ExperienceDemiGod: levelInt = 9
+    }
+
+    return base * (3 + levelInt) / 4
 }
 
 func (hero *Hero) AdjustHealth(amount int) {
@@ -350,7 +636,7 @@ func (hero *Hero) GetRangedAttacks() int {
 }
 
 func (hero *Hero) HasAbility(ability units.Ability) bool {
-    return hero.Unit.HasAbility(ability)
+    return slices.Contains(hero.Abilities, ability)
 }
 
 func (hero *Hero) IsFlying() bool {
@@ -399,6 +685,39 @@ func (hero *Hero) GetExperienceLevel() units.HeroExperienceLevel {
     }
 
     return units.ExperienceHero
+}
+
+func (hero *Hero) SetExperienceInfo(info units.ExperienceInfo) {
+    hero.Unit.ExperienceInfo = info
+}
+
+func (hero *Hero) ResetOwner() {
+    hero.SetExperienceInfo(&noInfo{})
+}
+
+// force hero to go up one level
+func (hero *Hero) GainLevel(maxLevel units.HeroExperienceLevel) {
+    if hero.GetExperienceLevel() >= maxLevel {
+        return
+    }
+
+    levels := []units.HeroExperienceLevel{
+        units.ExperienceHero, units.ExperienceMyrmidon,
+        units.ExperienceCaptain, units.ExperienceCommander,
+        units.ExperienceChampionHero, units.ExperienceLord,
+        units.ExperienceGrandLord, units.ExperienceSuperHero,
+        units.ExperienceDemiGod,
+    }
+
+    currentLevel := hero.GetExperienceLevel()
+
+    // add just enough experience to make it to the next level
+    for i := range len(levels) - 1 {
+        if currentLevel == levels[i] {
+            hero.AddExperience(levels[i + 1].ExperienceRequired(false, false) - hero.Unit.GetExperience())
+            break
+        }
+    }
 }
 
 func (hero *Hero) GetBaseMeleeAttackPower() int {
@@ -545,7 +864,7 @@ func (hero *Hero) GetBaseHitPoints() int {
 }
 
 func (hero *Hero) GetAbilities() []units.Ability {
-    return hero.Unit.GetAbilities()
+    return hero.Abilities
 }
 
 func (hero *Hero) Title() string {

@@ -498,11 +498,11 @@ func MakeLairConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *uti
             },
             LeftClickRelease: func(this *UIElement){
                 clicked = false
-                confirm()
 
                 getAlpha = ui.MakeFadeOut(fadeSpeed)
                 ui.AddDelay(fadeSpeed, func(){
                     ui.RemoveElements(elements)
+                    confirm()
                 })
             },
             Draw: func(this *UIElement, window *ebiten.Image){
@@ -533,11 +533,11 @@ func MakeLairConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *uti
             },
             LeftClickRelease: func(this *UIElement){
                 clicked = false
-                cancel()
 
                 getAlpha = ui.MakeFadeOut(fadeSpeed)
                 ui.AddDelay(fadeSpeed, func(){
                     ui.RemoveElements(elements)
+                    cancel()
                 })
             },
             Draw: func(this *UIElement, window *ebiten.Image){

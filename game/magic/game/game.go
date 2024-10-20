@@ -407,8 +407,10 @@ func (game *Game) AddPlayer(wizard setup.WizardCustom, human bool) *playerlib.Pl
 func createHeroes() map[herolib.HeroType]*herolib.Hero {
     heroes := make(map[herolib.HeroType]*herolib.Hero)
 
-    for _, hero := range herolib.AllHeroTypes() {
-        heroes[hero] = herolib.MakeHeroSimple(hero)
+    for _, heroType := range herolib.AllHeroTypes() {
+        hero := herolib.MakeHeroSimple(heroType)
+        hero.SetExtraAbilities()
+        heroes[heroType] = hero
     }
 
     return heroes
@@ -598,6 +600,9 @@ func (game *Game) doCityListView(yield coroutine.YieldFunc) {
     if showCity != nil {
         game.doCityScreen(yield, showCity, game.Players[0])
     }
+
+    // absorb last click
+    yield()
 }
 
 func (game *Game) doArmyView(yield coroutine.YieldFunc) {
@@ -1565,6 +1570,59 @@ func (game *Game) doVault(yield coroutine.YieldFunc, newArtifact *artifact.Artif
     vaultLogic(yield)
 }
 
+/* random chance to create a hire hero event
+ */
+func (game *Game) maybeHireHero(player *playerlib.Player) {
+    if len(player.AliveHeroes()) >= 6 {
+        return
+    }
+    // chance as an integer between 0-100
+
+    // every 25 fame increases chance by 1
+    // every hero reduces chance by a fraction (1 hero = halve chance. 2 heroes = 1/3 chance)
+    chance := (3 + player.Fame / 25) / ((len(player.AliveHeroes()) + 3) / 2)
+    if player.Wizard.AbilityEnabled(setup.AbilityFamous) {
+        chance *= 2
+    }
+
+    if chance > 10 {
+        chance = 10
+    }
+
+    if rand.N(100) < chance {
+        var heroCandidates []*herolib.Hero
+        for _, hero := range game.Heroes {
+            // torin can never be hired
+            if hero.HeroType == herolib.HeroTorin {
+                continue
+            }
+
+            if hero.Status == herolib.StatusAvailable {
+                if hero.GetRequiredFame() <= player.Fame {
+                    heroCandidates = append(heroCandidates, hero)
+                }
+            }
+        }
+
+        if len(heroCandidates) > 0 {
+            hero := heroCandidates[rand.N(len(heroCandidates))]
+
+            fee := hero.GetHireFee()
+            if fee > player.Gold {
+                // hero gains a level if the player can't afford to hire them
+                hero.GainLevel(units.ExperienceChampionHero)
+            } else {
+                select {
+                    case game.Events <- &GameEventHireHero{Cost: fee, Hero: hero, Player: player}:
+                    default:
+                }
+            }
+        }
+    }
+}
+
+/* show the hire hero popup, and if the user clicks 'hire' then add the hero to the player's list of heroes
+ */
 func (game *Game) doHireHero(yield coroutine.YieldFunc, cost int, hero *herolib.Hero, player *playerlib.Player) {
     quit := false
 
@@ -1576,6 +1634,8 @@ func (game *Game) doHireHero(yield coroutine.YieldFunc, cost int, hero *herolib.
                 hero.SetStatus(herolib.StatusEmployed)
                 game.RefreshUI()
             }
+        } else {
+            hero.GainLevel(units.ExperienceChampionHero)
         }
     }
 
@@ -1588,6 +1648,8 @@ func (game *Game) doHireHero(yield coroutine.YieldFunc, cost int, hero *herolib.
     }
 }
 
+/* show the given message in an error popup on the screen
+ */
 func (game *Game) doNotice(yield coroutine.YieldFunc, message string) {
     quit := false
     game.HudUI.AddElement(uilib.MakeErrorElement(game.HudUI, game.Cache, &game.ImageCache, message, func(){
@@ -1601,6 +1663,9 @@ func (game *Game) doNotice(yield coroutine.YieldFunc, message string) {
     }
 }
 
+/* player has clicked the 'next turn' button, so attempt to start the next turn
+ * but first do some checks on disbanding units to confirm the player really wants to end the turn.
+ */
 func (game *Game) doNextTurn(yield coroutine.YieldFunc) {
     player := game.Players[0]
     goldIssue, foodIssue, manaIssue := game.CheckDisband(player)
@@ -1728,6 +1793,186 @@ func (game *Game) RefreshUI() {
     }
 }
 
+func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Player) {
+    // log.Printf("Game.Update")
+    keys := make([]ebiten.Key, 0)
+    keys = inpututil.AppendJustPressedKeys(keys)
+
+    if player.SelectedStack != nil {
+        stack := player.SelectedStack
+        oldX := stack.X()
+        oldY := stack.Y()
+
+        if len(stack.CurrentPath) == 0 {
+
+            dx := 0
+            dy := 0
+
+            for _, key := range keys {
+                switch key {
+                    case ebiten.KeyUp: dy = -1
+                    case ebiten.KeyDown: dy = 1
+                    case ebiten.KeyLeft: dx = -1
+                    case ebiten.KeyRight: dx = 1
+                }
+            }
+
+            newX := stack.X() + dx
+            newY := stack.Y() + dy
+
+            leftClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)
+            if leftClick {
+                mouseX, mouseY := ebiten.CursorPosition()
+
+                // can only click into the area not hidden by the hud
+                if mouseX < 240 && mouseY > 18 {
+                    // log.Printf("Click at %v, %v", mouseX, mouseY)
+                    newX = game.cameraX + mouseX / game.Map.TileWidth()
+                    newY = game.cameraY + mouseY / game.Map.TileHeight()
+                }
+            }
+
+            if newX != oldX || newY != oldY {
+                activeUnits := stack.ActiveUnits()
+                if len(activeUnits) > 0 {
+                    if newY > 0 && newY < game.Map.Height() && newX > 0 && newX < game.Map.Width() {
+
+                        inactiveUnits := stack.InactiveUnits()
+                        if len(inactiveUnits) > 0 {
+                            stack.RemoveUnits(inactiveUnits)
+                            player.AddStack(playerlib.MakeUnitStackFromUnits(inactiveUnits))
+                            game.RefreshUI()
+                        }
+
+                        path := game.FindPath(oldX, oldY, newX, newY, stack, player.GetFog(game.Plane))
+                        if path == nil {
+                            game.blinkRed(yield)
+                        } else {
+                            stack.CurrentPath = path
+                        }
+                    }
+                }
+            }
+        }
+
+        stepsTaken := 0
+        stopMoving := false
+        var mergeStack *playerlib.UnitStack
+
+        quitMoving:
+        for i, step := range stack.CurrentPath {
+            if stack.OutOfMoves() {
+                break
+            }
+
+            terrainCost, canMove := game.ComputeTerrainCost(stack, step.X, step.Y)
+
+            if canMove {
+                node := game.Map.GetMagicNode(step.X, step.Y)
+                if node != nil && !node.Empty {
+                    if game.confirmEncounter(yield, node) {
+
+                        stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost)
+                        game.showMovement(yield, oldX, oldY, stack)
+                        player.LiftFog(stack.X(), stack.Y(), 2)
+
+                        game.doMagicEncounter(yield, player, stack, node)
+
+                        game.RefreshUI()
+                    }
+
+                    stopMoving = true
+                    break quitMoving
+                }
+
+                stepsTaken = i + 1
+                mergeStack = player.FindStack(step.X, step.Y)
+
+                stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost)
+                game.showMovement(yield, oldX, oldY, stack)
+                player.LiftFog(stack.X(), stack.Y(), 2)
+
+                for _, otherPlayer := range game.Players[1:] {
+                    otherStack := otherPlayer.FindStack(stack.X(), stack.Y())
+                    if otherStack != nil {
+                        game.doCombat(yield, player, stack, otherPlayer, otherStack)
+
+                        game.RefreshUI()
+
+                        stopMoving = true
+                        break quitMoving
+                    }
+                }
+
+                // some units in the stack might not have any moves left
+                beforeActive := len(stack.ActiveUnits())
+                stack.EnableMovers()
+                afterActive := len(stack.ActiveUnits())
+                if afterActive > 0 && afterActive != beforeActive {
+                    stopMoving = true
+                    break
+                }
+            } else {
+                // can't move, so abort the rest of the path
+                stopMoving = true
+                break
+            }
+        }
+
+        if stopMoving {
+            stack.CurrentPath = nil
+        } else if stepsTaken > 0 {
+            stack.CurrentPath = stack.CurrentPath[stepsTaken:]
+        }
+
+        if mergeStack != nil {
+            stack = player.MergeStacks(mergeStack, stack)
+            player.SelectedStack = stack
+            game.RefreshUI()
+        }
+
+        // update unrest for new units in the city
+        newCity := player.FindCity(stack.X(), stack.Y())
+        if newCity != nil {
+            newCity.UpdateUnrest(stack.Units())
+        }
+
+        if stepsTaken > 0 && stack.OutOfMoves() {
+            game.DoNextUnit(player)
+        }
+    }
+
+    rightClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight)
+    if rightClick {
+        mouseX, mouseY := ebiten.CursorPosition()
+
+        // can only click into the area not hidden by the hud
+        if mouseX < 240 && mouseY > 18 {
+            // log.Printf("Click at %v, %v", mouseX, mouseY)
+            tileX := game.cameraX + mouseX / game.Map.TileWidth()
+            tileY := game.cameraY + mouseY / game.Map.TileHeight()
+
+            game.CenterCamera(tileX, tileY)
+
+            city := player.FindCity(tileX, tileY)
+            if city != nil {
+                if city.Outpost {
+                    game.showOutpost(yield, city, player.FindStack(city.X, city.Y), false)
+                } else {
+                    game.doCityScreen(yield, city, player)
+                }
+                game.RefreshUI()
+            } else {
+                stack := player.FindStack(tileX, tileY)
+                if stack != nil {
+                    player.SelectedStack = stack
+                    game.RefreshUI()
+                }
+            }
+        }
+    }
+}
+
 func (game *Game) Update(yield coroutine.YieldFunc) GameState {
     game.Counter += 1
 
@@ -1745,186 +1990,9 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
 
             // kind of a hack to not allow player to interact with anything other than the current ui modal
             if game.HudUI.GetHighestLayerValue() == 0 {
-
-                // log.Printf("Game.Update")
-                keys := make([]ebiten.Key, 0)
-                keys = inpututil.AppendJustPressedKeys(keys)
-
                 if len(game.Players) > 0 {
                     player := game.Players[0]
-                    if player.SelectedStack != nil {
-                        stack := player.SelectedStack
-                        oldX := stack.X()
-                        oldY := stack.Y()
-
-                        if len(stack.CurrentPath) == 0 {
-
-                            dx := 0
-                            dy := 0
-
-                            for _, key := range keys {
-                                switch key {
-                                    case ebiten.KeyUp: dy = -1
-                                    case ebiten.KeyDown: dy = 1
-                                    case ebiten.KeyLeft: dx = -1
-                                    case ebiten.KeyRight: dx = 1
-                                }
-                            }
-
-                            newX := stack.X() + dx
-                            newY := stack.Y() + dy
-
-                            leftClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)
-                            if leftClick {
-                                mouseX, mouseY := ebiten.CursorPosition()
-
-                                // can only click into the area not hidden by the hud
-                                if mouseX < 240 && mouseY > 18 {
-                                    // log.Printf("Click at %v, %v", mouseX, mouseY)
-                                    newX = game.cameraX + mouseX / game.Map.TileWidth()
-                                    newY = game.cameraY + mouseY / game.Map.TileHeight()
-                                }
-                            }
-
-                            if newX != oldX || newY != oldY {
-                                activeUnits := stack.ActiveUnits()
-                                if len(activeUnits) > 0 {
-                                    if newY > 0 && newY < game.Map.Height() && newX > 0 && newX < game.Map.Width() {
-
-                                        inactiveUnits := stack.InactiveUnits()
-                                        if len(inactiveUnits) > 0 {
-                                            stack.RemoveUnits(inactiveUnits)
-                                            player.AddStack(playerlib.MakeUnitStackFromUnits(inactiveUnits))
-                                            game.RefreshUI()
-                                        }
-
-                                        path := game.FindPath(oldX, oldY, newX, newY, stack, player.GetFog(game.Plane))
-                                        if path == nil {
-                                            game.blinkRed(yield)
-                                        } else {
-                                            stack.CurrentPath = path
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        stepsTaken := 0
-                        stopMoving := false
-                        var mergeStack *playerlib.UnitStack
-
-                        quitMoving:
-                        for i, step := range stack.CurrentPath {
-                            if stack.OutOfMoves() {
-                                break
-                            }
-
-                            terrainCost, canMove := game.ComputeTerrainCost(stack, step.X, step.Y)
-
-                            if canMove {
-                                node := game.Map.GetMagicNode(step.X, step.Y)
-                                if node != nil && !node.Empty {
-                                    if game.confirmEncounter(yield, node) {
-
-                                        stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost)
-                                        game.showMovement(yield, oldX, oldY, stack)
-                                        player.LiftFog(stack.X(), stack.Y(), 2)
-
-                                        game.doMagicEncounter(yield, player, stack, node)
-
-                                        game.RefreshUI()
-                                    }
-
-                                    stopMoving = true
-                                    break quitMoving
-                                }
-
-                                stepsTaken = i + 1
-                                mergeStack = player.FindStack(step.X, step.Y)
-
-                                stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost)
-                                game.showMovement(yield, oldX, oldY, stack)
-                                player.LiftFog(stack.X(), stack.Y(), 2)
-
-                                for _, otherPlayer := range game.Players[1:] {
-                                    otherStack := otherPlayer.FindStack(stack.X(), stack.Y())
-                                    if otherStack != nil {
-                                        game.doCombat(yield, player, stack, otherPlayer, otherStack)
-
-                                        game.RefreshUI()
-
-                                        stopMoving = true
-                                        break quitMoving
-                                    }
-                                }
-
-                                // some units in the stack might not have any moves left
-                                beforeActive := len(stack.ActiveUnits())
-                                stack.EnableMovers()
-                                afterActive := len(stack.ActiveUnits())
-                                if afterActive > 0 && afterActive != beforeActive {
-                                    stopMoving = true
-                                    break
-                                }
-                            } else {
-                                // can't move, so abort the rest of the path
-                                stopMoving = true
-                                break
-                            }
-                        }
-
-                        if stopMoving {
-                            stack.CurrentPath = nil
-                        } else if stepsTaken > 0 {
-                            stack.CurrentPath = stack.CurrentPath[stepsTaken:]
-                        }
-
-                        if mergeStack != nil {
-                            stack = player.MergeStacks(mergeStack, stack)
-                            player.SelectedStack = stack
-                            game.RefreshUI()
-                        }
-
-                        // update unrest for new units in the city
-                        newCity := player.FindCity(stack.X(), stack.Y())
-                        if newCity != nil {
-                            newCity.UpdateUnrest(stack.Units())
-                        }
-
-                        if stepsTaken > 0 && stack.OutOfMoves() {
-                            game.DoNextUnit(player)
-                        }
-                    }
-
-                    rightClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight)
-                    if rightClick {
-                        mouseX, mouseY := ebiten.CursorPosition()
-
-                        // can only click into the area not hidden by the hud
-                        if mouseX < 240 && mouseY > 18 {
-                            // log.Printf("Click at %v, %v", mouseX, mouseY)
-                            tileX := game.cameraX + mouseX / game.Map.TileWidth()
-                            tileY := game.cameraY + mouseY / game.Map.TileHeight()
-
-                            game.CenterCamera(tileX, tileY)
-
-                            city := player.FindCity(tileX, tileY)
-                            if city != nil {
-                                if city.Outpost {
-                                    game.showOutpost(yield, city, player.FindStack(city.X, city.Y), false)
-                                } else {
-                                    game.doCityScreen(yield, city, player)
-                                }
-                                game.RefreshUI()
-                            } else {
-                                stack := player.FindStack(tileX, tileY)
-                                if stack != nil {
-                                    player.SelectedStack = stack
-                                    game.RefreshUI()
-                                }
-                            }
-                        }
-                    }
+                    game.doPlayerUpdate(yield, player)
                 }
             }
     }
@@ -1932,8 +2000,10 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
     return game.State
 }
 
+/* show a view of the city
+ */
 func (game *Game) doCityScreen(yield coroutine.YieldFunc, city *citylib.City, player *playerlib.Player){
-    cityScreen := cityview.MakeCityScreen(game.Cache, city, game.Players[0])
+    cityScreen := cityview.MakeCityScreen(game.Cache, city, player)
 
     var cities []*citylib.City
     var stacks []*playerlib.UnitStack
@@ -2037,12 +2107,6 @@ func (game *Game) confirmEncounter(yield coroutine.YieldFunc, node *ExtraMagicNo
         if game.Counter % 6 == 0 {
             animation.Next()
         }
-        game.HudUI.StandardUpdate()
-        yield()
-    }
-
-    // FIXME: wait for confirm dialog box to fade out, but need a better way to know
-    for i := 0; i < 7; i++ {
         game.HudUI.StandardUpdate()
         yield()
     }
@@ -3549,6 +3613,8 @@ func (game *Game) DoNextTurn(){
         for _, city := range removeCities {
             player.RemoveCity(city)
         }
+
+        game.maybeHireHero(player)
 
         // game.CenterCamera(player.Cities[0].X, player.Cities[0].Y)
         game.DoNextUnit(player)
