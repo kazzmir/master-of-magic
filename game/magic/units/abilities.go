@@ -26,6 +26,7 @@ const (
     AbilityHolyBonus
     AbilityIllusion
     AbilityIllusionsImmunity
+    AbilityImmolation
     AbilityInvisibility
     AbilityLargeShield
     AbilityLifeSteal
@@ -51,6 +52,7 @@ const (
     AbilityStoningTouch
     AbilitySummonDemons
     AbilityToHit
+    AbilityTransport
     AbilityTeleporting
     AbilityThrown
     AbilityWallCrusher

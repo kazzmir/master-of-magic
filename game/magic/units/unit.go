@@ -983,11 +983,19 @@ var WarMammoths Unit = Unit{
 var MagicSpirit Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 34,
+    CombatLbxFile: "figure11.lbx",
+    CombatIndex: 32,
     Name: "Magic Spirit",
     Realm: data.ArcaneMagic,
-    Abilities: []Ability{AbilityMeld, AbilityNonCorporeal},
+    UpkeepMana: 1,
     MovementSpeed: 1,
-    // FIXME: check on this
+    Swimming: true,
+    Count: 1,
+    MeleeAttackPower: 5,
+    Defense: 4,
+    Resistance: 8,
+    HitPoints: 10,
+    Abilities: []Ability{AbilityMeld, AbilityNonCorporeal},
     Race: data.RaceFantastic,
 }
 
@@ -997,6 +1005,7 @@ var HellHounds Unit = Unit{
     Name: "Hell Hounds",
     CombatLbxFile: "figure11.lbx",
     CombatIndex: 40,
+    UpkeepMana: 1,
     MovementSpeed: 2,
     Realm: data.ChaosMagic,
     MeleeAttackPower: 3,
@@ -1004,6 +1013,9 @@ var HellHounds Unit = Unit{
     Defense: 2,
     Resistance: 6,
     HitPoints: 4,
+    // fire breath 3
+    // to hit +10%
+    Abilities: []Ability{AbilityFireBreath, AbilityToHit},
     Race: data.RaceFantastic,
 }
 
@@ -1013,6 +1025,7 @@ var Gargoyle Unit = Unit{
     Name: "Gargoyles",
     CombatLbxFile: "figure11.lbx",
     CombatIndex: 48,
+    UpkeepMana: 5,
     Realm: data.ChaosMagic,
     MovementSpeed: 2,
     Flying: true,
@@ -1021,6 +1034,8 @@ var Gargoyle Unit = Unit{
     Defense: 8,
     Resistance: 7,
     HitPoints: 4,
+    // tohit +10%
+    Abilities: []Ability{AbilityToHit, AbilityPoisonImmunity, AbilityStoningImmunity},
     Race: data.RaceFantastic,
 }
 
@@ -1031,6 +1046,7 @@ var FireGiant Unit = Unit{
     CombatLbxFile: "figure11.lbx",
     CombatIndex: 56,
     MovementSpeed: 2,
+    UpkeepMana: 3,
     Realm: data.ChaosMagic,
     Count: 1,
     MeleeAttackPower: 10,
@@ -1040,6 +1056,8 @@ var FireGiant Unit = Unit{
     HitPoints: 15,
     Defense: 5,
     Resistance: 7,
+    // tohit +10%
+    Abilities: []Ability{AbilityToHit, AbilityMountaineer, AbilityWallCrusher, AbilityFireImmunity},
     Race: data.RaceFantastic,
 }
 
@@ -1057,6 +1075,7 @@ var FireElemental Unit = Unit{
     Defense: 4,
     Resistance: 6,
     HitPoints: 10,
+    Abilities: []Ability{AbilityFireImmunity, AbilityPoisonImmunity, AbilityStoningImmunity},
 }
 
 var ChaosSpawn Unit = Unit{
@@ -1067,21 +1086,29 @@ var ChaosSpawn Unit = Unit{
     CombatIndex: 72,
     Realm: data.ChaosMagic,
     MovementSpeed: 1,
+    UpkeepMana: 12,
     Flying: true,
     Count: 1,
     MeleeAttackPower: 1,
     Defense: 6,
     Resistance: 10,
     HitPoints: 15,
+    // poison touch 4
+    // doom gaze 4
+    // death gaze 4
+    // stoning gaze 4
+    Abilities: []Ability{AbilityCauseFear, AbilityPoisonTouch, AbilityDoomGaze, AbilityDeathGaze, AbilityStoningGaze},
     Race: data.RaceFantastic,
 }
 
 var Chimeras Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 40,
+    Name: "Chimeras",
     CombatLbxFile: "figure11.lbx",
     CombatIndex: 80,
     Realm: data.ChaosMagic,
+    UpkeepMana: 10,
     MovementSpeed: 2,
     Flying: true,
     Count: 4,
@@ -1089,6 +1116,9 @@ var Chimeras Unit = Unit{
     Defense: 5,
     Resistance: 8,
     HitPoints: 8,
+    // tohit +10%
+    // firebreath 4
+    Abilities: []Ability{AbilityFireBreath, AbilityToHit},
     Race: data.RaceFantastic,
 }
 
@@ -1099,6 +1129,7 @@ var DoomBat Unit = Unit{
     CombatLbxFile: "figure11.lbx",
     CombatIndex: 88,
     MovementSpeed: 4,
+    UpkeepMana: 8,
     Realm: data.ChaosMagic,
     Flying: true,
     MeleeAttackPower: 10,
@@ -1106,6 +1137,8 @@ var DoomBat Unit = Unit{
     Resistance: 9,
     Count: 1,
     HitPoints: 20,
+    // tohit +10%
+    Abilities: []Ability{AbilityToHit, AbilityImmolation},
     Race: data.RaceFantastic,
 }
 
@@ -1117,6 +1150,7 @@ var Efreet Unit = Unit{
     CombatIndex: 96,
     MovementSpeed: 3,
     Realm: data.ChaosMagic,
+    UpkeepMana: 15,
     Flying: true,
     Count: 1,
     // caster 20
@@ -1126,6 +1160,9 @@ var Efreet Unit = Unit{
     Defense: 7,
     Resistance: 10,
     HitPoints: 12,
+    // tohit +20%
+    // caster 20
+    Abilities: []Ability{AbilityFireImmunity, AbilityToHit, AbilityCaster},
     Race: data.RaceFantastic,
 }
 
@@ -1136,6 +1173,7 @@ var Hydra Unit = Unit{
     Name: "Hydra",
     CombatLbxFile: "figure11.lbx",
     CombatIndex: 104,
+    UpkeepMana: 14,
     Count: 1,
     Realm: data.ChaosMagic,
     MovementSpeed: 1,
@@ -1143,6 +1181,9 @@ var Hydra Unit = Unit{
     Defense: 4,
     Resistance:11,
     HitPoints: 10,
+    // tohit +10%
+    // fire breath 5
+    Abilities: []Ability{AbilityRegeneration, AbilityToHit, AbilityFireBreath},
     Race: data.RaceFantastic,
 }
 
@@ -1171,6 +1212,17 @@ var GreatDrake Unit = Unit{
 var Skeleton Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 45,
+    CombatLbxFile: "figure12.lbx",
+    CombatIndex: 0,
+    Name: "Skeletons",
+    UpkeepMana: 1,
+    Count: 6,
+    MovementSpeed: 3,
+    MeleeAttackPower: 3,
+    Defense: 4,
+    Resistance: 5,
+    HitPoints: 1,
+    Abilities: []Ability{AbilityToHit, AbilityPoisonImmunity, AbilityMissileImmunity, AbilityIllusionsImmunity, AbilityColdImmunity, AbilityDeathImmunity},
     Race: data.RaceFantastic,
     Realm: data.DeathMagic,
 }
@@ -1178,6 +1230,19 @@ var Skeleton Unit = Unit{
 var Ghoul Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 46,
+    CombatLbxFile: "figure12.lbx",
+    CombatIndex: 8,
+    Name: "Ghouls",
+    UpkeepMana: 1,
+    Count: 4,
+    MovementSpeed: 1,
+    MeleeAttackPower: 4,
+    Defense: 3,
+    Resistance: 6,
+    HitPoints: 3,
+    // tohit +10%
+    // poison touch 1
+    Abilities: []Ability{AbilityToHit, AbilityCreateUndead, AbilityPoisonImmunity, AbilityIllusionsImmunity, AbilityColdImmunity, AbilityDeathImmunity, AbilityPoisonTouch},
     Realm: data.DeathMagic,
     Race: data.RaceFantastic,
 }
@@ -1185,6 +1250,19 @@ var Ghoul Unit = Unit{
 var NightStalker Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 47,
+    Name: "Night Stalker",
+    CombatLbxFile: "figure12.lbx",
+    CombatIndex: 16,
+    UpkeepMana: 1,
+    Count: 1,
+    MovementSpeed: 2,
+    MeleeAttackPower: 7,
+    Defense: 3,
+    Resistance: 8,
+    HitPoints: 10,
+    // tohit +10%
+    // death gaze 2
+    Abilities: []Ability{AbilityToHit, AbilityInvisibility, AbilityPoisonImmunity, AbilityIllusionsImmunity, AbilityColdImmunity, AbilityDeathImmunity, AbilityDeathGaze},
     Realm: data.DeathMagic,
     Race: data.RaceFantastic,
 }
@@ -1192,6 +1270,18 @@ var NightStalker Unit = Unit{
 var WereWolf Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 48,
+    CombatLbxFile: "figure12.lbx",
+    CombatIndex: 24,
+    Name: "WereWolves",
+    UpkeepMana: 5,
+    Count: 6,
+    MovementSpeed: 2,
+    MeleeAttackPower: 5,
+    Defense: 1,
+    Resistance: 6,
+    HitPoints: 5,
+    // tohit +10%
+    Abilities: []Ability{AbilityRegeneration, AbilityToHit, AbilityPoisonImmunity, AbilityIllusionsImmunity, AbilityColdImmunity, AbilityDeathImmunity, AbilityWeaponImmunity},
     Realm: data.DeathMagic,
     Race: data.RaceFantastic,
 }
@@ -1199,6 +1289,7 @@ var WereWolf Unit = Unit{
 var Demon Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 49,
+    Name: "Demon",
     Race: data.RaceFantastic,
     CombatLbxFile: "figure12.lbx",
     CombatIndex: 32,
@@ -1210,11 +1301,27 @@ var Demon Unit = Unit{
     Defense: 6,
     Resistance: 7,
     HitPoints: 12,
+    // tohit +10%
+    Abilities: []Ability{AbilityToHit, AbilityPoisonImmunity, AbilityIllusionsImmunity, AbilityColdImmunity, AbilityDeathImmunity, AbilityWeaponImmunity, AbilityMissileImmunity},
 }
 
 var Wraith Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 50,
+    CombatLbxFile: "figure12.lbx",
+    CombatIndex: 40,
+    Name: "Wraiths",
+    UpkeepMana: 5,
+    Count: 4,
+    Flying: true,
+    MovementSpeed: 2,
+    MeleeAttackPower: 7,
+    Defense: 6,
+    Resistance: 8,
+    HitPoints: 8,
+    // tohit +20%
+    // life steal -3
+    Abilities: []Ability{AbilityToHit, AbilityPoisonImmunity, AbilityIllusionsImmunity, AbilityColdImmunity, AbilityDeathImmunity, AbilityWeaponImmunity, AbilityNonCorporeal, AbilityLifeSteal},
     Realm: data.DeathMagic,
     Race: data.RaceFantastic,
 }
@@ -1222,6 +1329,27 @@ var Wraith Unit = Unit{
 var ShadowDemon Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 51,
+    CombatLbxFile: "figure12.lbx",
+    CombatIndex: 48,
+    Name: "Shadow Demons",
+    UpkeepMana: 7,
+    Count: 4,
+    Flying: true,
+    MovementSpeed: 1,
+    MeleeAttackPower: 5,
+    RangedAttackPower: 4,
+    RangedAttacks: 8,
+    RangedAttackDamageType: DamageRangedMagical,
+    Defense: 4,
+    Resistance: 8,
+    HitPoints: 5,
+    // tohit +20%
+    Abilities: []Ability{
+        AbilityToHit, AbilityPlaneShift, AbilityNonCorporeal,
+        AbilityRegeneration,
+        AbilityPoisonImmunity, AbilityWeaponImmunity,
+        AbilityIllusionsImmunity, AbilityColdImmunity, AbilityDeathImmunity,
+    },
     Realm: data.DeathMagic,
     Race: data.RaceFantastic,
 }
@@ -1229,6 +1357,25 @@ var ShadowDemon Unit = Unit{
 var DeathKnight Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 52,
+    CombatLbxFile: "figure12.lbx",
+    CombatIndex: 56,
+    Name: "Death Knights",
+    UpkeepMana: 8,
+    Count: 4,
+    Flying: true,
+    MovementSpeed: 3,
+    MeleeAttackPower: 9,
+    Defense: 8,
+    Resistance: 10,
+    HitPoints: 8,
+    // tohit +30%
+    // life steal -4
+    Abilities: []Ability{
+        AbilityToHit, AbilityArmorPiercing, AbilityFirstStrike,
+        AbilityLifeSteal,
+        AbilityPoisonImmunity, AbilityWeaponImmunity,
+        AbilityIllusionsImmunity, AbilityColdImmunity, AbilityDeathImmunity,
+    },
     Realm: data.DeathMagic,
     Race: data.RaceFantastic,
 }
@@ -1236,6 +1383,29 @@ var DeathKnight Unit = Unit{
 var DemonLord Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 53,
+    CombatLbxFile: "figure12.lbx",
+    CombatIndex: 64,
+    Name: "Demon Lord",
+    UpkeepMana: 15,
+    Count: 1,
+    Flying: true,
+    MovementSpeed: 2,
+    MeleeAttackPower: 20,
+    RangedAttackPower: 10,
+    RangedAttacks: 8,
+    RangedAttackDamageType: DamageRangedMagical,
+    Defense: 10,
+    Resistance: 12,
+    HitPoints: 20,
+    // tohit +30%
+    // summon demons 3
+    // life steal -5
+    Abilities: []Ability{
+        AbilityToHit, AbilitySummonDemons,
+        AbilityPoisonImmunity, AbilityWeaponImmunity,
+        AbilityIllusionsImmunity, AbilityColdImmunity, AbilityDeathImmunity,
+        AbilityCauseFear, AbilityLifeSteal,
+    },
     Realm: data.DeathMagic,
     Race: data.RaceFantastic,
 }
@@ -1243,6 +1413,19 @@ var DemonLord Unit = Unit{
 var Zombie Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 54,
+    CombatLbxFile: "figure12.lbx",
+    CombatIndex: 72,
+    Name: "Zombies",
+    Count: 6,
+    MovementSpeed: 1,
+    MeleeAttackPower: 4,
+    Defense: 3,
+    Resistance: 3,
+    HitPoints: 3,
+    // tohit +10%
+    Abilities: []Ability{
+        AbilityToHit, AbilityPoisonImmunity, AbilityIllusionsImmunity, AbilityColdImmunity, AbilityDeathImmunity,
+    },
     Realm: data.DeathMagic,
     Race: data.RaceFantastic,
 }
@@ -1250,6 +1433,19 @@ var Zombie Unit = Unit{
 var Unicorn Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 55,
+    CombatLbxFile: "figure12.lbx",
+    CombatIndex: 80,
+    Name: "Unicorns",
+    UpkeepMana: 5,
+    Count: 4,
+    MovementSpeed: 2,
+    MeleeAttackPower: 5,
+    Defense: 3,
+    Resistance: 7,
+    HitPoints: 6,
+    // tohit +20%
+    // resistance to all +2
+    Abilities: []Ability{AbilityToHit, AbilityTeleporting, AbilityPoisonImmunity, AbilityResistanceToAll},
     Race: data.RaceFantastic,
     Realm: data.LifeMagic,
 }
@@ -1257,7 +1453,19 @@ var Unicorn Unit = Unit{
 var GuardianSpirit Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 56,
+    CombatLbxFile: "figure12.lbx",
+    CombatIndex: 88,
+    Name: "Guardian Spirit",
+    UpkeepMana: 1,
+    Count: 1,
+    MovementSpeed: 1,
+    Swimming: true,
+    MeleeAttackPower: 10,
+    Defense: 4,
+    Resistance: 10,
+    HitPoints: 10,
     Race: data.RaceFantastic,
+    // resistance to all +1
     Abilities: []Ability{AbilityMeld, AbilityNonCorporeal, AbilityResistanceToAll},
     Realm: data.LifeMagic,
 }
@@ -1265,6 +1473,20 @@ var GuardianSpirit Unit = Unit{
 var Angel Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 57,
+    CombatLbxFile: "figure12.lbx",
+    CombatIndex: 96,
+    Name: "Angel",
+    UpkeepMana: 15,
+    Count: 1,
+    Flying: true,
+    MovementSpeed: 3,
+    MeleeAttackPower: 13,
+    Defense: 7,
+    Resistance: 8,
+    HitPoints: 15,
+    // tohit +20%
+    // holy bonus 1
+    Abilities: []Ability{AbilityToHit, AbilityIllusionsImmunity, AbilityHolyBonus, AbilityDispelEvil},
     Race: data.RaceFantastic,
     Realm: data.LifeMagic,
 }
@@ -1272,6 +1494,23 @@ var Angel Unit = Unit{
 var ArchAngel Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 58,
+    CombatLbxFile: "figure12.lbx",
+    CombatIndex: 104,
+    Name: "Arch Angel",
+    UpkeepMana: 20,
+    Count: 1,
+    Flying: true,
+    MovementSpeed: 4,
+    MeleeAttackPower: 15,
+    Defense: 10,
+    Resistance: 12,
+    HitPoints: 18,
+    // tohit +30%
+    // caster 40
+    // holy bonus 2
+    Abilities: []Ability{
+        AbilityToHit, AbilityCaster, AbilityIllusionsImmunity, AbilityHolyBonus,
+    },
     Race: data.RaceFantastic,
     Realm: data.LifeMagic,
 }
@@ -1283,12 +1522,14 @@ var WarBear Unit = Unit{
     CombatLbxFile: "figure15.lbx",
     CombatIndex: 0,
     Count: 2,
+    UpkeepMana: 2,
     Realm: data.NatureMagic,
     MeleeAttackPower: 7,
     Defense: 3,
     Resistance: 6,
     HitPoints: 8,
     MovementSpeed: 2,
+    Abilities: []Ability{AbilityForester},
     Race: data.RaceFantastic,
 }
 
@@ -1299,6 +1540,7 @@ var Sprite Unit = Unit{
     CombatLbxFile: "figure15.lbx",
     CombatIndex: 8,
     Count: 4,
+    UpkeepMana: 3,
     Realm: data.NatureMagic,
     MeleeAttackPower: 4,
     RangedAttacks: 4,
@@ -1310,6 +1552,8 @@ var Sprite Unit = Unit{
     Resistance: 8,
     HitPoints: 1,
     Flying: true,
+    // tohit +10%
+    Abilities: []Ability{AbilityToHit, AbilityForester},
     Race: data.RaceFantastic,
 }
 
@@ -1319,6 +1563,7 @@ var Cockatrice Unit = Unit{
     Name: "Cockatrice",
     CombatLbxFile: "figure13.lbx",
     CombatIndex: 8,
+    UpkeepMana: 8,
     Realm: data.NatureMagic,
     Count: 4,
     MovementSpeed: 2,
@@ -1327,6 +1572,9 @@ var Cockatrice Unit = Unit{
     Defense: 3,
     Resistance: 7,
     HitPoints: 3,
+    // tohit +10%
+    // stoning touch -3
+    Abilities: []Ability{AbilityToHit, AbilityStoningTouch},
     Race: data.RaceFantastic,
 }
 
@@ -1336,6 +1584,7 @@ var Basilisk Unit = Unit{
     Name: "Basilisk",
     CombatLbxFile: "figure13.lbx",
     CombatIndex: 16,
+    UpkeepMana: 7,
     Count: 1,
     Realm: data.NatureMagic,
     MovementSpeed: 2,
@@ -1343,6 +1592,9 @@ var Basilisk Unit = Unit{
     Defense: 4,
     Resistance: 7,
     HitPoints: 30,
+    // tohit +10%
+    // stoning gaze -1
+    Abilities: []Ability{AbilityToHit, AbilityStoningGaze},
     Race: data.RaceFantastic,
 }
 
@@ -1353,12 +1605,17 @@ var GiantSpider Unit = Unit{
     CombatLbxFile: "figure13.lbx",
     CombatIndex: 24,
     Realm: data.NatureMagic,
+    UpkeepMana: 4,
     Count: 2,
     MovementSpeed: 2,
     MeleeAttackPower: 4,
     Defense: 3,
     Resistance: 7,
     HitPoints: 10,
+    // tohit +10%
+    // web spell 1x
+    // poison touch 4
+    Abilities: []Ability{AbilityToHit, AbilityWebSpell, AbilityPoisonTouch},
     Race: data.RaceFantastic,
 }
 
@@ -1368,6 +1625,7 @@ var StoneGiant Unit = Unit{
     Name: "Stone Giant",
     CombatLbxFile: "figure13.lbx",
     CombatIndex: 32,
+    UpkeepMana: 9,
     Count: 1,
     Realm: data.NatureMagic,
     MovementSpeed: 2,
@@ -1378,6 +1636,8 @@ var StoneGiant Unit = Unit{
     Defense: 8,
     Resistance: 9,
     HitPoints: 20,
+    // tohit +20%
+    Abilities: []Ability{AbilityToHit, AbilityMountaineer, AbilityPoisonImmunity, AbilityStoningImmunity, AbilityWallCrusher},
     Race: data.RaceFantastic,
 }
 
@@ -1387,13 +1647,19 @@ var Colossus Unit = Unit{
     Name: "Colossus",
     CombatLbxFile: "figure13.lbx",
     CombatIndex: 40,
+    UpkeepMana: 17,
     Count: 1,
     Realm: data.NatureMagic,
     MovementSpeed: 2,
+    RangedAttackPower: 20,
+    RangedAttacks: 2,
+    RangedAttackDamageType: DamageRangedBoulder,
     MeleeAttackPower: 20,
     Defense: 10,
     Resistance: 15,
     HitPoints: 30,
+    // tohit +30%
+    Abilities: []Ability{AbilityToHit, AbilityPoisonImmunity, AbilityStoningImmunity, AbilityWallCrusher, AbilityFirstStrike},
     Race: data.RaceFantastic,
 }
 
@@ -1403,6 +1669,7 @@ var Gorgon Unit = Unit{
     Name: "Gorgons",
     CombatLbxFile: "figure13.lbx",
     CombatIndex: 48,
+    UpkeepMana: 15,
     Count: 2,
     MovementSpeed: 2,
     Realm: data.NatureMagic,
@@ -1411,6 +1678,9 @@ var Gorgon Unit = Unit{
     Defense: 7,
     Resistance: 9,
     HitPoints: 9,
+    // tohit +20%
+    // stoning gaze -2
+    Abilities: []Ability{AbilityToHit, AbilityStoningGaze},
     Race: data.RaceFantastic,
 }
 
@@ -1428,6 +1698,7 @@ var EarthElemental Unit = Unit{
     MovementSpeed: 1,
     Resistance: 8,
     HitPoints: 30,
+    Abilities: []Ability{AbilityToHit, AbilityPoisonImmunity, AbilityStoningImmunity, AbilityWallCrusher},
 }
 
 var Behemoth Unit = Unit{
@@ -1436,6 +1707,7 @@ var Behemoth Unit = Unit{
     Name: "Behemoth",
     CombatLbxFile: "figure13.lbx",
     CombatIndex: 64,
+    UpkeepMana: 15,
     Count: 1,
     Realm: data.NatureMagic,
     MovementSpeed: 2,
@@ -1444,6 +1716,8 @@ var Behemoth Unit = Unit{
     Resistance: 10,
     HitPoints: 45,
     Race: data.RaceFantastic,
+    // tohit +20%
+    Abilities: []Ability{AbilityToHit},
 }
 
 var GreatWyrm Unit = Unit{
@@ -1452,6 +1726,7 @@ var GreatWyrm Unit = Unit{
     Name: "Great Wyrm",
     CombatLbxFile: "figure13.lbx",
     CombatIndex: 72,
+    UpkeepMana: 20,
     Count: 1,
     Realm: data.NatureMagic,
     MovementSpeed: 3,
@@ -1459,12 +1734,27 @@ var GreatWyrm Unit = Unit{
     Defense: 12,
     Resistance: 12,
     HitPoints: 45,
+    // tohit +30%
+    // poison touch 15
+    Abilities: []Ability{AbilityToHit, AbilityMerging, AbilityPoisonTouch},
     Race: data.RaceFantastic,
 }
 
 var FloatingIsland Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 70,
+    CombatLbxFile: "figure13.lbx",
+    CombatIndex: 80,
+    Count: 1,
+    UpkeepMana: 5,
+    MovementSpeed: 2,
+    Name: "Floating Island",
+    Swimming: true,
+    Defense: 0,
+    Resistance: 10,
+    HitPoints: 45,
+    // transport 8
+    Abilities: []Ability{AbilityTransport, AbilityPoisonImmunity, AbilityDeathImmunity, AbilityStoningImmunity},
     Race: data.RaceFantastic,
     Realm: data.SorceryMagic,
 }
@@ -1482,6 +1772,8 @@ var PhantomBeast Unit = Unit{
     MovementSpeed: 2,
     Resistance: 8,
     HitPoints: 20,
+    // tohit +10%
+    Abilities: []Ability{AbilityToHit, AbilityPoisonImmunity, AbilityDeathImmunity, AbilityStoningImmunity, AbilityNonCorporeal, AbilityIllusion},
 }
 
 var PhantomWarrior Unit = Unit{
@@ -1496,6 +1788,7 @@ var PhantomWarrior Unit = Unit{
     MeleeAttackPower: 3,
     HitPoints: 1,
     Resistance: 6,
+    Abilities: []Ability{AbilityPoisonImmunity, AbilityDeathImmunity, AbilityStoningImmunity, AbilityNonCorporeal, AbilityIllusion},
     Race: data.RaceFantastic,
 }
 
@@ -1505,6 +1798,7 @@ var StormGiant Unit = Unit{
     Name: "Storm Giant",
     CombatLbxFile: "figure13.lbx",
     CombatIndex: 104,
+    UpkeepMana: 10,
     Count: 1,
     Realm: data.SorceryMagic,
     MovementSpeed: 2,
@@ -1515,6 +1809,8 @@ var StormGiant Unit = Unit{
     Defense: 7,
     Resistance: 9,
     HitPoints: 20,
+    // tohit +20%
+    Abilities: []Ability{AbilityToHit, AbilityWallCrusher, AbilityArmorPiercing},
     Race: data.RaceFantastic,
 }
 
@@ -1533,6 +1829,7 @@ var AirElemental Unit = Unit{
     Defense: 8,
     Resistance: 9,
     HitPoints: 10,
+    Abilities: []Ability{AbilityToHit, AbilityPoisonImmunity, AbilityStoningImmunity, AbilityWeaponImmunity, AbilityInvisibility},
 }
 
 var Djinn Unit = Unit{
@@ -1541,17 +1838,20 @@ var Djinn Unit = Unit{
     Name: "Djinn",
     CombatLbxFile: "figure14.lbx",
     CombatIndex: 0,
+    UpkeepMana: 17,
     Count: 1,
     Realm: data.SorceryMagic,
     MovementSpeed: 3,
     Flying: true,
     MeleeAttackPower: 15,
     RangedAttackPower: 8,
-    // caster 20
     RangedAttackDamageType: DamageRangedMagical,
     Defense: 8,
     Resistance: 10,
     HitPoints: 20,
+    // caster 20
+    // tohit +30%
+    Abilities: []Ability{AbilityToHit, AbilityCaster, AbilityTeleporting, AbilityWindWalking},
     Race: data.RaceFantastic,
 }
 
@@ -1562,6 +1862,7 @@ var SkyDrake Unit = Unit{
     Realm: data.SorceryMagic,
     CombatLbxFile: "figure14.lbx",
     CombatIndex: 8,
+    UpkeepMana: 25,
     Count: 1,
     MovementSpeed: 4,
     Flying: true,
@@ -1570,6 +1871,7 @@ var SkyDrake Unit = Unit{
     Resistance: 14,
     HitPoints: 25,
     Race: data.RaceFantastic,
+    Abilities: []Ability{AbilityToHit, AbilityMagicImmunity, AbilityIllusionsImmunity},
 }
 
 var Nagas Unit = Unit{
@@ -1578,6 +1880,7 @@ var Nagas Unit = Unit{
     Name: "Nagas",
     CombatLbxFile: "figure14.lbx",
     CombatIndex: 16,
+    UpkeepMana: 2,
     Realm: data.SorceryMagic,
     MovementSpeed: 1,
     Count: 2,
@@ -1586,6 +1889,9 @@ var Nagas Unit = Unit{
     Resistance: 7,
     HitPoints: 6,
     Race: data.RaceFantastic,
+    // tohit +10%
+    // poison touch 4
+    Abilities: []Ability{AbilityToHit, AbilityPoisonTouch, AbilityFirstStrike},
 }
 
 var HeroBrax Unit = Unit{
