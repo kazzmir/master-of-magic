@@ -476,6 +476,7 @@ func (player *Player) RemoveUnit(unit units.StackUnit) {
         if player.Heroes[i] == unit {
             if player.Heroes[i].Status == herolib.StatusEmployed {
                 player.Heroes[i].SetStatus(herolib.StatusAvailable)
+                player.Heroes[i].ResetOwner()
             }
             player.Heroes[i] = nil
         }

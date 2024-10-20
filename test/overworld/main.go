@@ -1159,6 +1159,8 @@ func createScenario16(cache *lbx.LbxCache) *gamelib.Game {
 
     player := game.AddPlayer(wizard, true)
 
+    player.Fame = 40
+
     x, y := game.FindValidCityLocation()
 
     city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, fraction.Zero(), game.BuildingInfo, player)
@@ -1178,7 +1180,7 @@ func createScenario16(cache *lbx.LbxCache) *gamelib.Game {
 
     player.AddCity(city)
 
-    player.Gold = 83
+    player.Gold = 1283
     player.Mana = 26
 
     // game.Map.Map.Terrain[3][6] = terrain.TileNatureForest.Index

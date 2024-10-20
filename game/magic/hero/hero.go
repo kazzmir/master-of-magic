@@ -478,6 +478,10 @@ func (hero *Hero) GetPortraitLbxInfo() (string, int) {
     return "", -1
 }
 
+func (hero *Hero) GetRequiredFame() int {
+    return hero.HeroType.GetRequiredFame()
+}
+
 // fee is halved if the hiring wizard is charismatic, handle that elsewhere
 func (hero *Hero) GetHireFee() int {
     base := 100 + hero.HeroType.GetRequiredFame() * 10
@@ -685,6 +689,35 @@ func (hero *Hero) GetExperienceLevel() units.HeroExperienceLevel {
 
 func (hero *Hero) SetExperienceInfo(info units.ExperienceInfo) {
     hero.Unit.ExperienceInfo = info
+}
+
+func (hero *Hero) ResetOwner() {
+    hero.SetExperienceInfo(&noInfo{})
+}
+
+// force hero to go up one level
+func (hero *Hero) GainLevel(maxLevel units.HeroExperienceLevel) {
+    if hero.GetExperienceLevel() >= maxLevel {
+        return
+    }
+
+    levels := []units.HeroExperienceLevel{
+        units.ExperienceHero, units.ExperienceMyrmidon,
+        units.ExperienceCaptain, units.ExperienceCommander,
+        units.ExperienceChampionHero, units.ExperienceLord,
+        units.ExperienceGrandLord, units.ExperienceSuperHero,
+        units.ExperienceDemiGod,
+    }
+
+    currentLevel := hero.GetExperienceLevel()
+
+    // add just enough experience to make it to the next level
+    for i := range len(levels) - 1 {
+        if currentLevel == levels[i] {
+            hero.AddExperience(levels[i + 1].ExperienceRequired(false, false) - hero.Unit.GetExperience())
+            break
+        }
+    }
 }
 
 func (hero *Hero) GetBaseMeleeAttackPower() int {

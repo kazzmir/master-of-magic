@@ -1567,6 +1567,57 @@ func (game *Game) doVault(yield coroutine.YieldFunc, newArtifact *artifact.Artif
     vaultLogic(yield)
 }
 
+/* random chance to create a hire hero event
+ */
+func (game *Game) maybeHireHero(player *playerlib.Player) {
+    if len(player.AliveHeroes()) >= 6 {
+        return
+    }
+    // chance as an integer between 0-100
+
+    // every 25 fame increases chance by 1
+    // every hero reduces chance by a fraction (1 hero = halve chance. 2 heroes = 1/3 chance)
+    chance := (3 + player.Fame / 25) / ((len(player.AliveHeroes()) + 3) / 2)
+    if player.Wizard.AbilityEnabled(setup.AbilityFamous) {
+        chance *= 2
+    }
+
+    if chance > 10 {
+        chance = 10
+    }
+
+    if rand.N(100) < chance {
+        var heroCandidates []*herolib.Hero
+        for _, hero := range game.Heroes {
+            // torin can never be hired
+            if hero.HeroType == herolib.HeroTorin {
+                continue
+            }
+
+            if hero.Status == herolib.StatusAvailable {
+                if hero.GetRequiredFame() <= player.Fame {
+                    heroCandidates = append(heroCandidates, hero)
+                }
+            }
+        }
+
+        if len(heroCandidates) > 0 {
+            hero := heroCandidates[rand.N(len(heroCandidates))]
+
+            fee := hero.GetHireFee()
+            if fee > player.Gold {
+                // hero gains a level if the player can't afford to hire them
+                hero.GainLevel(units.ExperienceChampionHero)
+            } else {
+                select {
+                    case game.Events <- &GameEventHireHero{Cost: fee, Hero: hero, Player: player}:
+                    default:
+                }
+            }
+        }
+    }
+}
+
 /* show the hire hero popup, and if the user clicks 'hire' then add the hero to the player's list of heroes
  */
 func (game *Game) doHireHero(yield coroutine.YieldFunc, cost int, hero *herolib.Hero, player *playerlib.Player) {
@@ -1580,6 +1631,8 @@ func (game *Game) doHireHero(yield coroutine.YieldFunc, cost int, hero *herolib.
                 hero.SetStatus(herolib.StatusEmployed)
                 game.RefreshUI()
             }
+        } else {
+            hero.GainLevel(units.ExperienceChampionHero)
         }
     }
 
@@ -3557,6 +3610,8 @@ func (game *Game) DoNextTurn(){
         for _, city := range removeCities {
             player.RemoveCity(city)
         }
+
+        game.maybeHireHero(player)
 
         // game.CenterCamera(player.Cities[0].X, player.Cities[0].Y)
         game.DoNextUnit(player)
