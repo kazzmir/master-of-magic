@@ -13,6 +13,7 @@
 * quake console
 * make overworld wrap horizontally
 * implement overworld spells
+* show hero stats/abilities in context menu
 
 9/22/2024 * city view: separate surplus food/gold from subsistence food/gold
 9/22/2024 * overworld path finding to point on map
@@ -39,7 +40,7 @@
 10/13/2024 * finish vault screen, add hero items
 10/14/2024 * banish animation for defeated wizard
 10/14/2024 * remap colors for some sprites, such as the flag in city tile sprites
-10/16/2024 * hire hero events
 10/16/2024 * draw units with experience/bonuses
 10/17/2024 * melee/defense/heart icons should have white border
 10/18/2024 * units disband if not enough food/gold/mana
+10/20/2024 * hire hero events
