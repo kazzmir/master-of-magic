@@ -2161,25 +2161,70 @@ var HeroTorin Unit = Unit{
 var Trireme Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 35,
+    CombatLbxFile: "figures3.lbx",
+    CombatIndex: 40,
     Name: "Trireme",
+    ProductionCost: 60,
+    UpkeepGold: 2,
+    UpkeepFood: 1,
+    Count: 1,
+    Swimming: true,
+    MovementSpeed: 2,
+    MeleeAttackPower: 6,
+    Defense: 4,
+    Resistance: 4,
+    HitPoints: 10,
+    // transport 2
+    Abilities: []Ability{AbilityTransport},
     RequiredBuildings: []building.Building{building.BuildingShipwrightsGuild},
-    Race: data.RaceNone,
+    Race: data.RaceAll,
 }
 
 var Galley Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 36,
+    CombatLbxFile: "figures3.lbx",
+    CombatIndex: 48,
+    ProductionCost: 100,
+    UpkeepGold: 2,
+    UpkeepFood: 1,
     Name: "Galley",
+    Count: 1,
+    Swimming: true,
+    MovementSpeed: 3,
+    MeleeAttackPower: 8,
+    RangedAttackPower: 2,
+    RangedAttacks: 8,
+    RangedAttackDamageType: DamageRangedPhysical,
+    Defense: 4,
+    Resistance: 6,
+    HitPoints: 20,
     RequiredBuildings: []building.Building{building.BuildingShipYard},
-    Race: data.RaceNone,
+    // transport 5
+    Abilities: []Ability{AbilityTransport},
+    Race: data.RaceAll,
 }
 
 var Catapult Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 37,
+    CombatLbxFile: "figures3.lbx",
+    CombatIndex: 56,
     Name: "Catapult",
+    ProductionCost: 100,
+    UpkeepGold: 2,
+    UpkeepFood: 1,
+    Count: 1,
+    MovementSpeed: 1,
+    RangedAttackPower: 10,
+    RangedAttacks: 10,
+    RangedAttackDamageType: DamageRangedBoulder,
+    Defense: 2,
+    Resistance: 4,
+    HitPoints: 10,
     RequiredBuildings: []building.Building{building.BuildingMechaniciansGuild},
-    Race: data.RaceNone,
+    Abilities: []Ability{AbilityWallCrusher, AbilityLongRange},
+    Race: data.RaceAll,
 }
 
 var Warship Unit = Unit{
@@ -2187,7 +2232,7 @@ var Warship Unit = Unit{
     Index: 38,
     Name: "Warship",
     RequiredBuildings: []building.Building{building.BuildingMaritimeGuild},
-    Race: data.RaceNone,
+    Race: data.RaceAll,
 }
 
 var BarbarianSpearmen Unit = Unit{

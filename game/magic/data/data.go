@@ -46,6 +46,7 @@ const (
     RaceHighElf
     RaceHighMen
     RaceKlackon
+    RaceAll
 )
 
 func ArcanianRaces() []Race {
@@ -93,6 +94,7 @@ func (race Race) String() string {
         case RaceKlackon: return "Klackon"
         case RaceHero: return "hero"
         case RaceFantastic: return "fantastic"
+        case RaceAll: return "all"
     }
 
     return "?"
