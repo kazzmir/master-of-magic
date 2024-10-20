@@ -386,7 +386,7 @@ func (hero *Hero) AddAbility(ability units.AbilityType) bool {
             abilityReference := hero.GetAbilityReference(units.AbilityCaster)
             abilityReference.Value += 2.5
         } else {
-            hero.Abilities = append(hero.Abilities, units.MakeAbility(ability))
+            hero.Abilities = append(hero.Abilities, units.MakeAbilityValue(ability, 2.5))
         }
         return true
     }
@@ -634,6 +634,15 @@ func (hero *Hero) GetRangedAttackDamageType() units.Damage {
 
 func (hero *Hero) GetRangedAttacks() int {
     return hero.Unit.GetRangedAttacks()
+}
+
+func (hero *Hero) GetAbilityValue(ability units.AbilityType) float32 {
+    ref := hero.GetAbilityReference(ability)
+    if ref != nil {
+        return ref.Value
+    }
+
+    return 0
 }
 
 func (hero *Hero) GetAbilityReference(ability units.AbilityType) *units.Ability {
