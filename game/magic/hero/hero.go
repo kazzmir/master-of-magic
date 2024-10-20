@@ -55,6 +55,48 @@ const (
     HeroAureus
 )
 
+func (heroType HeroType) GetRequiredFame() int {
+    switch heroType {
+        case HeroTorin: return 0
+        case HeroFang: return 10
+        case HeroBShan: return 0
+        case HeroMorgana: return 10
+        case HeroWarrax: return 40
+        case HeroMysticX: return 20
+        case HeroBahgtru: return 0
+        case HeroDethStryke: return 40
+        case HeroSpyder: return 20
+        case HeroSirHarold: return 40
+        case HeroBrax: return 0
+        case HeroRavashack: return 40
+        case HeroGreyfairer: return 5
+        case HeroShalla: return 20
+        case HeroRoland: return 40
+        case HeroMalleus: return 5
+        case HeroMortu: return 40
+        case HeroGunther: return 0
+        case HeroRakir: return 0
+        case HeroJaer: return 10
+        case HeroTaki: return 5
+        case HeroYramrag: return 20
+        case HeroValana: return 0
+        case HeroElana: return 40
+        case HeroAerie: return 40
+        case HeroMarcus: return 10
+        case HeroReywind: return 5
+        case HeroAlorra: return 40
+        case HeroZaldron: return 0
+        case HeroShinBo: return 20
+        case HeroSerena: return 0
+        case HeroShuri: return 0
+        case HeroTheria: return 0
+        case HeroTumu: return 5
+        case HeroAureus: return 10
+    }
+
+    return 0
+}
+
 func (heroType HeroType) GetUnit() units.Unit {
     switch heroType {
         case HeroTorin: return units.HeroTorin
@@ -216,6 +258,28 @@ func (hero *Hero) GetPortraitLbxInfo() (string, int) {
     }
 
     return "", -1
+}
+
+// fee is halved if the hiring wizard is charismatic, handle that elsewhere
+func (hero *Hero) GetHireFee() int {
+    base := 100 + hero.HeroType.GetRequiredFame() * 10
+
+    levelInt := 1
+
+    level := hero.GetExperienceLevel()
+    switch level {
+        case units.ExperienceHero: levelInt = 1
+        case units.ExperienceMyrmidon: levelInt = 2
+        case units.ExperienceCaptain: levelInt = 3
+        case units.ExperienceCommander: levelInt = 4
+        case units.ExperienceChampionHero: levelInt = 5
+        case units.ExperienceLord: levelInt = 6
+        case units.ExperienceGrandLord: levelInt = 7
+        case units.ExperienceSuperHero: levelInt = 8
+        case units.ExperienceDemiGod: levelInt = 9
+    }
+
+    return base * (3 + levelInt) / 4
 }
 
 func (hero *Hero) AdjustHealth(amount int) {
