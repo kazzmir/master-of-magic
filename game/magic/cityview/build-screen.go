@@ -128,7 +128,7 @@ func combineStrings(all []string) string {
 func getPossibleUnits(city *citylib.City) []units.Unit {
     var out []units.Unit
     for _, unit := range units.AllUnits {
-        if unit.Race == data.RaceNone || unit.Race == city.Race {
+        if unit.Race == data.RaceAll || unit.Race == city.Race {
 
             canBuild := true
             for _, building := range unit.RequiredBuildings {

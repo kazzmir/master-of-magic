@@ -695,7 +695,7 @@ func (city *City) AllowedUnits(what buildinglib.Building) []units.Unit {
     var out []units.Unit
 
     for _, unit := range units.AllUnits {
-        if unit.Race == data.RaceNone || unit.Race == city.Race {
+        if unit.Race == data.RaceAll || unit.Race == city.Race {
             canBuild := false
 
             for _, required := range unit.RequiredBuildings {
