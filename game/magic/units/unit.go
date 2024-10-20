@@ -1356,6 +1356,25 @@ var ShadowDemon Unit = Unit{
 var DeathKnight Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 52,
+    CombatLbxFile: "figure12.lbx",
+    CombatIndex: 56,
+    Name: "Death Knights",
+    UpkeepMana: 8,
+    Count: 4,
+    Flying: true,
+    MovementSpeed: 3,
+    MeleeAttackPower: 9,
+    Defense: 8,
+    Resistance: 10,
+    HitPoints: 8,
+    // tohit +30%
+    // life steal -4
+    Abilities: []Ability{
+        AbilityToHit, AbilityArmorPiercing, AbilityFirstStrike,
+        AbilityLifeSteal,
+        AbilityPoisonImmunity, AbilityWeaponImmunity,
+        AbilityIllusionsImmunity, AbilityColdImmunity, AbilityDeathImmunity,
+    },
     Realm: data.DeathMagic,
     Race: data.RaceFantastic,
 }
@@ -1363,6 +1382,29 @@ var DeathKnight Unit = Unit{
 var DemonLord Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 53,
+    CombatLbxFile: "figure12.lbx",
+    CombatIndex: 64,
+    Name: "Demon Lord",
+    UpkeepMana: 15,
+    Count: 1,
+    Flying: true,
+    MovementSpeed: 2,
+    MeleeAttackPower: 20,
+    RangedAttackPower: 10,
+    RangedAttacks: 8,
+    RangedAttackDamageType: DamageRangedMagical,
+    Defense: 10,
+    Resistance: 12,
+    HitPoints: 20,
+    // tohit +30%
+    // summon demons 3
+    // life steal -5
+    Abilities: []Ability{
+        AbilityToHit, AbilitySummonDemons,
+        AbilityPoisonImmunity, AbilityWeaponImmunity,
+        AbilityIllusionsImmunity, AbilityColdImmunity, AbilityDeathImmunity,
+        AbilityCauseFear, AbilityLifeSteal,
+    },
     Realm: data.DeathMagic,
     Race: data.RaceFantastic,
 }
@@ -1370,6 +1412,19 @@ var DemonLord Unit = Unit{
 var Zombie Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 54,
+    CombatLbxFile: "figure12.lbx",
+    CombatIndex: 72,
+    Name: "Zombies",
+    Count: 6,
+    MovementSpeed: 1,
+    MeleeAttackPower: 4,
+    Defense: 3,
+    Resistance: 3,
+    HitPoints: 3,
+    // tohit +10%
+    Abilities: []Ability{
+        AbilityToHit, AbilityPoisonImmunity, AbilityIllusionsImmunity, AbilityColdImmunity, AbilityDeathImmunity,
+    },
     Realm: data.DeathMagic,
     Race: data.RaceFantastic,
 }
