@@ -600,6 +600,9 @@ func (game *Game) doCityListView(yield coroutine.YieldFunc) {
     if showCity != nil {
         game.doCityScreen(yield, showCity, game.Players[0])
     }
+
+    // absorb last click
+    yield()
 }
 
 func (game *Game) doArmyView(yield coroutine.YieldFunc) {
