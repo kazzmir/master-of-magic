@@ -2452,6 +2452,16 @@ var HeroRoland Unit = Unit{
 var HeroMortu Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 29,
+    CombatLbxFile: "figures2.lbx",
+    CombatIndex: 112,
+    Count: 1,
+    UpkeepGold: 10,
+    MovementSpeed: 2,
+    MeleeAttackPower: 9,
+    Defense: 5,
+    Resistance: 6,
+    HitPoints: 10,
+    Abilities: []Ability{AbilityMagicImmunity, AbilityFirstStrike, AbilityArmorPiercing, AbilityLegendary, AbilityBlademaster, AbilityConstitution, AbilityMight},
     Name: "Mortu",
     Race: data.RaceHero,
 }
@@ -2459,13 +2469,37 @@ var HeroMortu Unit = Unit{
 var HeroAlorra Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 30,
+    CombatLbxFile: "figures3.lbx",
+    CombatIndex: 0,
+    Count: 1,
+    UpkeepGold: 10,
+    MovementSpeed: 2,
+    MeleeAttackPower: 5,
+    RangedAttackPower: 8,
+    RangedAttackDamageType: DamageRangedPhysical,
+    RangedAttacks: 8,
+    Defense: 6,
+    Resistance: 6,
+    HitPoints: 6,
+    // caster 5
+    Abilities: []Ability{AbilityCaster, AbilityForester, AbilityBlademaster},
     Name: "Alorra",
     Race: data.RaceHero,
+    Spells: []string{"Resist Magic", "Flight"},
 }
 
 var HeroSirHarold Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 31,
+    CombatLbxFile: "figures3.lbx",
+    CombatIndex: 8,
+    Count: 1,
+    MovementSpeed: 2,
+    MeleeAttackPower: 8,
+    Defense: 5,
+    Resistance: 6,
+    HitPoints: 9,
+    Abilities: []Ability{AbilitySuperLeadership, AbilitySuperLegendary, AbilityConstitution, AbilityNoble},
     Name: "Sir Harold",
     Race: data.RaceHero,
 }
@@ -2473,7 +2507,21 @@ var HeroSirHarold Unit = Unit{
 var HeroRavashack Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 32,
+    CombatLbxFile: "figures3.lbx",
+    CombatIndex: 16,
     Name: "Ravashack",
+    Count: 1,
+    UpkeepGold: 10,
+    MovementSpeed: 2,
+    MeleeAttackPower: 1,
+    RangedAttackPower: 7,
+    RangedAttackDamageType: DamageRangedMagical,
+    Defense: 5,
+    Resistance: 6,
+    HitPoints: 5,
+    // life steal 0
+    // caster 12.5
+    Abilities: []Ability{AbilityMissileImmunity, AbilityLifeSteal, AbilityCaster, AbilityArcanePower},
     Race: data.RaceHero,
 }
 
@@ -2483,6 +2531,7 @@ var HeroWarrax Unit = Unit{
     CombatLbxFile: "figures3.lbx",
     CombatIndex: 24,
     Name: "Warrax",
+    UpkeepGold: 10,
     MovementSpeed: 2,
     MeleeAttackPower: 8,
     RangedAttackPower: 8,
@@ -2491,14 +2540,28 @@ var HeroWarrax Unit = Unit{
     Resistance: 9,
     HitPoints: 8,
     Count: 1,
+    // caster 10
+    Abilities: []Ability{AbilityCaster, AbilityArmorPiercing, AbilityConstitution, AbilityArcanePower},
     Race: data.RaceHero,
 }
 
 var HeroTorin Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 34,
+    CombatLbxFile: "figures3.lbx",
+    CombatIndex: 32,
     Name: "Torin",
+    Count: 1,
+    UpkeepMana: 12,
+    MovementSpeed: 2,
+    MeleeAttackPower: 12,
+    Defense: 8,
+    Resistance: 12,
+    HitPoints: 12,
+    // caster 15
+    Abilities: []Ability{AbilityCaster, AbilityMagicImmunity, AbilityMissileImmunity, AbilitySuperLeadership, AbilityConstitution, AbilitySuperMight, AbilityPrayermaster},
     Race: data.RaceHero,
+    Spells: []string{"True Light", "Healing", "Holy Armor", "Lionheart"},
 }
 
 var Trireme Unit = Unit{
