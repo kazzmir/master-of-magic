@@ -792,7 +792,7 @@ var OrcEngineers Unit = Unit{
     Defense: 1,
     Resistance: 4,
     HitPoints: 1,
-    Abilities: []Ability{MakeAbilityValue(AbilityConstruction), MakeAbilityValue(AbilityWallCrusher)},
+    Abilities: []Ability{MakeAbility(AbilityConstruction), MakeAbility(AbilityWallCrusher)},
     RequiredBuildings: []building.Building{building.BuildingBuildersHall},
     Race: data.RaceOrc,
 }
@@ -811,7 +811,7 @@ var OrcSettlers Unit = Unit{
     Defense: 1,
     Resistance: 4,
     HitPoints: 10,
-    Abilities: []Ability{MakeAbilityValue(AbilityCreateOutpost)},
+    Abilities: []Ability{MakeAbility(AbilityCreateOutpost)},
     Race: data.RaceOrc,
 }
 
@@ -1169,7 +1169,7 @@ var Hydra Unit = Unit{
     Defense: 4,
     Resistance:11,
     HitPoints: 10,
-    Abilities: []Ability{MakeAbility(AbilityRegeneration), MakeAbilityValue(ToHit, 10), MakeAbilityValue(AbilityFireBreath, 5)},
+    Abilities: []Ability{MakeAbility(AbilityRegeneration), MakeAbilityValue(AbilityToHit, 10), MakeAbilityValue(AbilityFireBreath, 5)},
     Race: data.RaceFantastic,
 }
 
@@ -1182,7 +1182,7 @@ var GreatDrake Unit = Unit{
     Race: data.RaceFantastic,
     Abilities: []Ability{
         MakeAbilityValue(AbilityFireBreath, 30),
-        MakeAbilityValue(AbilityToHit, 30)
+        MakeAbilityValue(AbilityToHit, 30),
     },
     Count: 1,
     Realm: data.ChaosMagic,
@@ -1403,13 +1403,13 @@ var DeathKnight Unit = Unit{
     Abilities: []Ability{
         MakeAbilityValue(AbilityToHit, 30),
         MakeAbilityValue(AbilityLifeSteal, -4),
-        AbilityArmorPiercing,
-        AbilityFirstStrike,
-        AbilityPoisonImmunity,
-        AbilityWeaponImmunity,
-        AbilityIllusionsImmunity,
-        AbilityColdImmunity,
-        AbilityDeathImmunity,
+        MakeAbility(AbilityArmorPiercing),
+        MakeAbility(AbilityFirstStrike),
+        MakeAbility(AbilityPoisonImmunity),
+        MakeAbility(AbilityWeaponImmunity),
+        MakeAbility(AbilityIllusionsImmunity),
+        MakeAbility(AbilityColdImmunity),
+        MakeAbility(AbilityDeathImmunity),
     },
     Realm: data.DeathMagic,
     Race: data.RaceFantastic,
@@ -1432,19 +1432,16 @@ var DemonLord Unit = Unit{
     Defense: 10,
     Resistance: 12,
     HitPoints: 20,
-    // tohit +30%
-    // summon demons 3
-    // life steal -5
     Abilities: []Ability{
         MakeAbilityValue(AbilityToHit, 30),
         MakeAbilityValue(AbilityLifeSteal, -5),
         MakeAbilityValue(AbilitySummonDemons, 3),
-        AbilityPoisonImmunity,
-        AbilityWeaponImmunity,
-        AbilityIllusionsImmunity,
-        AbilityColdImmunity,
-        AbilityDeathImmunity,
-        AbilityCauseFear,
+        MakeAbility(AbilityPoisonImmunity),
+        MakeAbility(AbilityWeaponImmunity),
+        MakeAbility(AbilityIllusionsImmunity),
+        MakeAbility(AbilityColdImmunity),
+        MakeAbility(AbilityDeathImmunity),
+        MakeAbility(AbilityCauseFear),
     },
     Realm: data.DeathMagic,
     Race: data.RaceFantastic,
@@ -1462,9 +1459,12 @@ var Zombie Unit = Unit{
     Defense: 3,
     Resistance: 3,
     HitPoints: 3,
-    // tohit +10%
     Abilities: []Ability{
-        AbilityToHit, AbilityPoisonImmunity, AbilityIllusionsImmunity, AbilityColdImmunity, AbilityDeathImmunity,
+        MakeAbilityValue(AbilityToHit, 10),
+        MakeAbility(AbilityPoisonImmunity),
+        MakeAbility(AbilityIllusionsImmunity),
+        MakeAbility(AbilityColdImmunity),
+        MakeAbility(AbilityDeathImmunity),
     },
     Realm: data.DeathMagic,
     Race: data.RaceFantastic,
@@ -1483,9 +1483,12 @@ var Unicorn Unit = Unit{
     Defense: 3,
     Resistance: 7,
     HitPoints: 6,
-    // tohit +20%
-    // resistance to all +2
-    Abilities: []Ability{AbilityToHit, AbilityTeleporting, AbilityPoisonImmunity, AbilityResistanceToAll},
+    Abilities: []Ability{
+        MakeAbilityValue(AbilityToHit, 20),
+        MakeAbilityValue(AbilityResistanceToAll, 2),
+        MakeAbility(AbilityTeleporting),
+        MakeAbility(AbilityPoisonImmunity),
+    },
     Race: data.RaceFantastic,
     Realm: data.LifeMagic,
 }
@@ -1505,8 +1508,11 @@ var GuardianSpirit Unit = Unit{
     Resistance: 10,
     HitPoints: 10,
     Race: data.RaceFantastic,
-    // resistance to all +1
-    Abilities: []Ability{AbilityMeld, AbilityNonCorporeal, AbilityResistanceToAll},
+    Abilities: []Ability{
+        MakeAbilityValue(AbilityResistanceToAll, 1),
+        MakeAbility(AbilityMeld),
+        MakeAbility(AbilityNonCorporeal),
+    },
     Realm: data.LifeMagic,
 }
 
@@ -1524,9 +1530,12 @@ var Angel Unit = Unit{
     Defense: 7,
     Resistance: 8,
     HitPoints: 15,
-    // tohit +20%
-    // holy bonus 1
-    Abilities: []Ability{AbilityToHit, AbilityIllusionsImmunity, AbilityHolyBonus, AbilityDispelEvil},
+    Abilities: []Ability{
+        MakeAbilityValue(AbilityToHit, 20),
+        MakeAbilityValue(AbilityHolyBonus, 1),
+        MakeAbility(AbilityIllusionsImmunity),
+        MakeAbility(AbilityDispelEvil),
+    },
     Race: data.RaceFantastic,
     Realm: data.LifeMagic,
 }
@@ -1545,11 +1554,11 @@ var ArchAngel Unit = Unit{
     Defense: 10,
     Resistance: 12,
     HitPoints: 18,
-    // tohit +30%
-    // caster 40
-    // holy bonus 2
     Abilities: []Ability{
-        AbilityToHit, AbilityCaster, AbilityIllusionsImmunity, AbilityHolyBonus,
+        MakeAbilityValue(AbilityToHit, 30),
+        MakeAbilityValue(AbilityCaster, 40),
+        MakeAbilityValue(AbilityHolyBonus, 2),
+        MakeAbility(AbilityIllusionsImmunity),
     },
     Race: data.RaceFantastic,
     Realm: data.LifeMagic,
@@ -1569,7 +1578,7 @@ var WarBear Unit = Unit{
     Resistance: 6,
     HitPoints: 8,
     MovementSpeed: 2,
-    Abilities: []Ability{AbilityForester},
+    Abilities: []Ability{MakeAbility(AbilityForester)},
     Race: data.RaceFantastic,
 }
 
@@ -1592,8 +1601,7 @@ var Sprite Unit = Unit{
     Resistance: 8,
     HitPoints: 1,
     Flying: true,
-    // tohit +10%
-    Abilities: []Ability{AbilityToHit, AbilityForester},
+    Abilities: []Ability{MakeAbilityValue(AbilityToHit, 10), MakeAbility(AbilityForester)},
     Race: data.RaceFantastic,
 }
 
@@ -1612,9 +1620,7 @@ var Cockatrice Unit = Unit{
     Defense: 3,
     Resistance: 7,
     HitPoints: 3,
-    // tohit +10%
-    // stoning touch -3
-    Abilities: []Ability{AbilityToHit, AbilityStoningTouch},
+    Abilities: []Ability{MakeAbilityValue(AbilityToHit, 10), MakeAbilityValue(AbilityStoningTouch, -3)},
     Race: data.RaceFantastic,
 }
 
@@ -1632,9 +1638,7 @@ var Basilisk Unit = Unit{
     Defense: 4,
     Resistance: 7,
     HitPoints: 30,
-    // tohit +10%
-    // stoning gaze -1
-    Abilities: []Ability{AbilityToHit, AbilityStoningGaze},
+    Abilities: []Ability{MakeAbilityValue(AbilityToHit, 10), MakeAbilityValue(AbilityStoningGaze, -1)},
     Race: data.RaceFantastic,
 }
 
@@ -1652,10 +1656,7 @@ var GiantSpider Unit = Unit{
     Defense: 3,
     Resistance: 7,
     HitPoints: 10,
-    // tohit +10%
-    // web spell 1x
-    // poison touch 4
-    Abilities: []Ability{AbilityToHit, AbilityWebSpell, AbilityPoisonTouch},
+    Abilities: []Ability{MakeAbilityValue(AbilityToHit, 10), MakeAbilityValue(AbilityWebSpell, 1), MakeAbilityValue(AbilityPoisonTouch, 4)},
     Race: data.RaceFantastic,
 }
 
@@ -1676,8 +1677,13 @@ var StoneGiant Unit = Unit{
     Defense: 8,
     Resistance: 9,
     HitPoints: 20,
-    // tohit +20%
-    Abilities: []Ability{AbilityToHit, AbilityMountaineer, AbilityPoisonImmunity, AbilityStoningImmunity, AbilityWallCrusher},
+    Abilities: []Ability{
+        MakeAbilityValue(AbilityToHit, 20),
+        MakeAbility(AbilityMountaineer),
+        MakeAbility(AbilityPoisonImmunity),
+        MakeAbility(AbilityStoningImmunity),
+        MakeAbility(AbilityWallCrusher),
+    },
     Race: data.RaceFantastic,
 }
 
@@ -1698,8 +1704,13 @@ var Colossus Unit = Unit{
     Defense: 10,
     Resistance: 15,
     HitPoints: 30,
-    // tohit +30%
-    Abilities: []Ability{AbilityToHit, AbilityPoisonImmunity, AbilityStoningImmunity, AbilityWallCrusher, AbilityFirstStrike},
+    Abilities: []Ability{
+        MakeAbilityValue(AbilityToHit, 30),
+        MakeAbility(AbilityPoisonImmunity),
+        MakeAbility(AbilityStoningImmunity),
+        MakeAbility(AbilityWallCrusher),
+        MakeAbility(AbilityFirstStrike),
+    },
     Race: data.RaceFantastic,
 }
 
@@ -1718,9 +1729,10 @@ var Gorgon Unit = Unit{
     Defense: 7,
     Resistance: 9,
     HitPoints: 9,
-    // tohit +20%
-    // stoning gaze -2
-    Abilities: []Ability{AbilityToHit, AbilityStoningGaze},
+    Abilities: []Ability{
+        MakeAbilityValue(AbilityToHit, 20),
+        MakeAbilityValue(AbilityStoningGaze, -2),
+    },
     Race: data.RaceFantastic,
 }
 
@@ -1738,7 +1750,12 @@ var EarthElemental Unit = Unit{
     MovementSpeed: 1,
     Resistance: 8,
     HitPoints: 30,
-    Abilities: []Ability{AbilityToHit, AbilityPoisonImmunity, AbilityStoningImmunity, AbilityWallCrusher},
+    Abilities: []Ability{
+        MakeAbilityValue(AbilityToHit, 10),
+        MakeAbility(AbilityPoisonImmunity),
+        MakeAbility(AbilityStoningImmunity),
+        MakeAbility(AbilityWallCrusher),
+    },
 }
 
 var Behemoth Unit = Unit{
@@ -1756,8 +1773,7 @@ var Behemoth Unit = Unit{
     Resistance: 10,
     HitPoints: 45,
     Race: data.RaceFantastic,
-    // tohit +20%
-    Abilities: []Ability{AbilityToHit},
+    Abilities: []Ability{MakeAbilityValue(AbilityToHit, 20)},
 }
 
 var GreatWyrm Unit = Unit{
@@ -1774,9 +1790,11 @@ var GreatWyrm Unit = Unit{
     Defense: 12,
     Resistance: 12,
     HitPoints: 45,
-    // tohit +30%
-    // poison touch 15
-    Abilities: []Ability{AbilityToHit, AbilityMerging, AbilityPoisonTouch},
+    Abilities: []Ability{
+        MakeAbilityValue(AbilityToHit, 30),
+        MakeAbilityValue(AbilityPoisonTouch, 15),
+        MakeAbility(AbilityMerging),
+    },
     Race: data.RaceFantastic,
 }
 
@@ -1793,8 +1811,12 @@ var FloatingIsland Unit = Unit{
     Defense: 0,
     Resistance: 10,
     HitPoints: 45,
-    // transport 8
-    Abilities: []Ability{AbilityTransport, AbilityPoisonImmunity, AbilityDeathImmunity, AbilityStoningImmunity},
+    Abilities: []Ability{
+        MakeAbilityValue(AbilityTransport, 8),
+        MakeAbility(AbilityPoisonImmunity),
+        MakeAbility(AbilityDeathImmunity),
+        MakeAbility(AbilityStoningImmunity),
+    },
     Race: data.RaceFantastic,
     Realm: data.SorceryMagic,
 }
@@ -1813,7 +1835,14 @@ var PhantomBeast Unit = Unit{
     Resistance: 8,
     HitPoints: 20,
     // tohit +10%
-    Abilities: []Ability{AbilityToHit, AbilityPoisonImmunity, AbilityDeathImmunity, AbilityStoningImmunity, AbilityNonCorporeal, AbilityIllusion},
+    Abilities: []Ability{
+        MakeAbilityValue(AbilityToHit, 10),
+        MakeAbility(AbilityPoisonImmunity),
+        MakeAbility(AbilityDeathImmunity),
+        MakeAbility(AbilityStoningImmunity),
+        MakeAbility(AbilityNonCorporeal),
+        MakeAbility(AbilityIllusion),
+    },
 }
 
 var PhantomWarrior Unit = Unit{
@@ -1828,7 +1857,13 @@ var PhantomWarrior Unit = Unit{
     MeleeAttackPower: 3,
     HitPoints: 1,
     Resistance: 6,
-    Abilities: []Ability{AbilityPoisonImmunity, AbilityDeathImmunity, AbilityStoningImmunity, AbilityNonCorporeal, AbilityIllusion},
+    Abilities: []Ability{
+        MakeAbility(AbilityPoisonImmunity),
+        MakeAbility(AbilityDeathImmunity),
+        MakeAbility(AbilityStoningImmunity),
+        MakeAbility(AbilityNonCorporeal),
+        MakeAbility(AbilityIllusion),
+    },
     Race: data.RaceFantastic,
 }
 
