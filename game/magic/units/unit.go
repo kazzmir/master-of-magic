@@ -1249,6 +1249,7 @@ var Ghoul Unit = Unit{
 var NightStalker Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 47,
+    Name: "Night Stalker",
     CombatLbxFile: "figure12.lbx",
     CombatIndex: 16,
     UpkeepMana: 1,
@@ -1268,6 +1269,18 @@ var NightStalker Unit = Unit{
 var WereWolf Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 48,
+    CombatLbxFile: "figure12.lbx",
+    CombatIndex: 24,
+    Name: "WereWolves",
+    UpkeepMana: 5,
+    Count: 6,
+    MovementSpeed: 2,
+    MeleeAttackPower: 5,
+    Defense: 1,
+    Resistance: 6,
+    HitPoints: 5,
+    // tohit +10%
+    Abilities: []Ability{AbilityRegeneration, AbilityToHit, AbilityPoisonImmunity, AbilityIllusionsImmunity, AbilityColdImmunity, AbilityDeathImmunity, AbilityWeaponImmunity},
     Realm: data.DeathMagic,
     Race: data.RaceFantastic,
 }
@@ -1275,6 +1288,7 @@ var WereWolf Unit = Unit{
 var Demon Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 49,
+    Name: "Demon",
     Race: data.RaceFantastic,
     CombatLbxFile: "figure12.lbx",
     CombatIndex: 32,
@@ -1286,11 +1300,27 @@ var Demon Unit = Unit{
     Defense: 6,
     Resistance: 7,
     HitPoints: 12,
+    // tohit +10%
+    Abilities: []Ability{AbilityToHit, AbilityPoisonImmunity, AbilityIllusionsImmunity, AbilityColdImmunity, AbilityDeathImmunity, AbilityWeaponImmunity, AbilityMissileImmunity},
 }
 
 var Wraith Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 50,
+    CombatLbxFile: "figure12.lbx",
+    CombatIndex: 40,
+    Name: "Wraiths",
+    UpkeepMana: 5,
+    Count: 4,
+    Flying: true,
+    MovementSpeed: 2,
+    MeleeAttackPower: 7,
+    Defense: 6,
+    Resistance: 8,
+    HitPoints: 8,
+    // tohit +20%
+    // life steal -3
+    Abilities: []Ability{AbilityToHit, AbilityPoisonImmunity, AbilityIllusionsImmunity, AbilityColdImmunity, AbilityDeathImmunity, AbilityWeaponImmunity, AbilityNonCorporeal, AbilityLifeSteal},
     Realm: data.DeathMagic,
     Race: data.RaceFantastic,
 }
@@ -1298,6 +1328,27 @@ var Wraith Unit = Unit{
 var ShadowDemon Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 51,
+    CombatLbxFile: "figure12.lbx",
+    CombatIndex: 48,
+    Name: "Shadow Demons",
+    UpkeepMana: 7,
+    Count: 4,
+    Flying: true,
+    MovementSpeed: 1,
+    MeleeAttackPower: 5,
+    RangedAttackPower: 4,
+    RangedAttacks: 8,
+    RangedAttackDamageType: DamageRangedMagical,
+    Defense: 4,
+    Resistance: 8,
+    HitPoints: 5,
+    // tohit +20%
+    Abilities: []Ability{
+        AbilityToHit, AbilityPlaneShift, AbilityNonCorporeal,
+        AbilityRegeneration,
+        AbilityPoisonImmunity, AbilityWeaponImmunity,
+        AbilityIllusionsImmunity, AbilityColdImmunity, AbilityDeathImmunity,
+    },
     Realm: data.DeathMagic,
     Race: data.RaceFantastic,
 }
