@@ -1,10 +1,14 @@
 package hero
 
 import (
-    "slices"
     "testing"
+    "math"
     "github.com/kazzmir/master-of-magic/game/magic/units"
 )
+
+func floatEqual(a, b float32) bool {
+    return math.Abs(float64(a - b)) < 0.0001
+}
 
 func TestHero(test *testing.T){
     zaldron := MakeHeroSimple(HeroZaldron)
@@ -18,7 +22,7 @@ func TestHero(test *testing.T){
     }
 
     taki := MakeHeroSimple(HeroTaki)
-    if !slices.Equal(taki.GetAbilities(), []units.Ability{units.AbilitySuperAgility}) {
+    if len(taki.GetAbilities()) != 1 && taki.GetAbilities()[0].Ability != units.AbilitySuperAgility {
         test.Errorf("taki should have the super agility ability but was %v", taki.GetAbilities())
     }
 
@@ -47,4 +51,25 @@ func TestHero(test *testing.T){
     if theria.AddAbility(units.AbilityNoble) {
         test.Errorf("Theria should not be able to add the Noble ability again")
     }
+
+    if int(theria.GetAbilityValue(units.AbilityCaster)) != 0 {
+        test.Errorf("Theria should not have the Caster ability")
+    }
+
+    if !theria.AddAbility(units.AbilityCaster) {
+        test.Errorf("Theria should be able to add the Caster ability")
+    }
+
+    if !floatEqual(theria.GetAbilityValue(units.AbilityCaster), 2.5) {
+        test.Errorf("Theria should have 2.5 Caster ability but was %v", theria.GetAbilityValue(units.AbilityCaster))
+    }
+
+    if !theria.AddAbility(units.AbilityCaster) {
+        test.Errorf("Theria should be able to add the Caster ability")
+    }
+
+    if !floatEqual(theria.GetAbilityValue(units.AbilityCaster), 5) {
+        test.Errorf("Theria should have 5 Caster ability")
+    }
+
 }

@@ -26,7 +26,7 @@ type StackUnit interface {
     Move(int, int, fraction.Fraction)
     GetLbxFile() string
     GetLbxIndex() int
-    HasAbility(Ability) bool
+    HasAbility(AbilityType) bool
     GetAbilities() []Ability
     GetBaseDefense() int
     GetDefense() int

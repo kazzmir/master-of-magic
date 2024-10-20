@@ -1,9 +1,24 @@
 package units
 
-type Ability int
+type AbilityType int
+
+type Ability struct {
+    Ability AbilityType
+    Value float32
+    // here to make this struct not ==
+    not_equal []int
+}
+
+func MakeAbility(ability AbilityType) Ability {
+    return Ability{Ability: ability}
+}
+
+func MakeAbilityValue(ability AbilityType, value float32) Ability {
+    return Ability{Ability: ability, Value: value}
+}
 
 const (
-    AbilityNone Ability = iota
+    AbilityNone AbilityType = iota
     // unit abilities
     AbilityArmorPiercing
     AbilityCauseFear
@@ -89,7 +104,7 @@ const (
 
 // the file that stores the icon for this ability
 func (ability Ability) LbxFile() string {
-    switch ability {
+    switch ability.Ability {
         case AbilityArmorPiercing: return ""
         case AbilityCauseFear: return ""
         case AbilityColdImmunity: return ""
@@ -171,7 +186,7 @@ func (ability Ability) String() string {
 }
 
 func (ability Ability) Name() string {
-    switch ability {
+    switch ability.Ability {
         case AbilityArmorPiercing: return ""
         case AbilityCauseFear: return ""
         case AbilityColdImmunity: return ""
@@ -254,7 +269,7 @@ func (ability Ability) Name() string {
 
 // the index in the lbx file for this icon
 func (ability Ability) LbxIndex() int {
-    switch ability {
+    switch ability.Ability {
         case AbilityArmorPiercing: return -1
         case AbilityCauseFear: return -1
         case AbilityColdImmunity: return -1

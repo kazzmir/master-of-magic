@@ -102,7 +102,7 @@ type Tile struct {
 }
 
 type CombatUnit interface {
-    HasAbility(units.Ability) bool
+    HasAbility(units.AbilityType) bool
     GetDefense() int
     GetResistance() int
     AdjustHealth(int)
