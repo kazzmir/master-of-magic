@@ -406,15 +406,21 @@ func (hero *Hero) AddAbility(ability units.Ability) bool {
 
 // add N random abilities
 func (hero *Hero) SetExtraAbilities() {
+    // totalLoops := 0
     for range hero.HeroType.RandomAbilityCount() {
 
+        // this loop could run for a while, so possibly have some way to force ability selection
+        // to be determinstic rather than purely random (such as removing abilities that cannot be chosen)
         for {
+            // totalLoops += 1
             randomAbility := selectAbility(hero.HeroType.RandomAbilityType())
             if hero.AddAbility(randomAbility) {
                 break
             }
         }
     }
+
+    // fmt.Printf("Hero %v took %v loops: %v\n", hero.ShortName(), totalLoops, hero.GetAbilities())
 }
 
 func (hero *Hero) SetStatus(status HeroStatus) {
@@ -626,7 +632,7 @@ func (hero *Hero) GetRangedAttacks() int {
 }
 
 func (hero *Hero) HasAbility(ability units.Ability) bool {
-    return hero.Unit.HasAbility(ability)
+    return slices.Contains(hero.Abilities, ability)
 }
 
 func (hero *Hero) IsFlying() bool {
