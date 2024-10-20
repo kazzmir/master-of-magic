@@ -62,12 +62,17 @@ const (
 
     // hero abilities
     AbilityAgility
+    AbilitySuperAgility
     AbilityArcanePower
+    AbilitySuperArcanePower
     AbilityArmsmaster
+    AbilitySuperArmsmaster
     AbilityBlademaster
+    AbilitySuperBlademaster
     AbilityCaster
     AbilityCharmed
     AbilityConstitution
+    AbilitySuperConstitution
     AbilityLeadership
     AbilitySuperLeadership
     AbilityLegendary
@@ -79,8 +84,7 @@ const (
     AbilityPrayermaster
     AbilitySuperPrayermaster
     AbilitySage
-
-    AbilitySuperAgility
+    AbilitySuperSage
 )
 
 // the file that stores the icon for this ability

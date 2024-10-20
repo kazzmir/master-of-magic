@@ -99,6 +99,90 @@ func (heroType HeroType) GetRequiredFame() int {
     return 0
 }
 
+func (heroType HeroType) RandomAbilityCount() int {
+    switch heroType {
+        case HeroTorin: return 2
+        case HeroFang: return 2
+        case HeroBShan: return 0
+        case HeroMorgana: return 2
+        case HeroWarrax: return 3
+        case HeroMysticX: return 5
+        case HeroBahgtru: return 1
+        case HeroDethStryke: return 1
+        case HeroSpyder: return 1
+        case HeroSirHarold: return 1
+        case HeroBrax: return 0
+        case HeroRavashack: return 2
+        case HeroGreyfairer: return 0
+        case HeroShalla: return 1
+        case HeroRoland: return 1
+        case HeroMalleus: return 1
+        case HeroMortu: return 1
+        case HeroGunther: return 0
+        case HeroRakir: return 0
+        case HeroJaer: return 1
+        case HeroTaki: return 1
+        case HeroYramrag: return 1
+        case HeroValana: return 0
+        case HeroElana: return 0
+        case HeroAerie: return 2
+        case HeroMarcus: return 0
+        case HeroReywind: return 1
+        case HeroAlorra: return 3
+        case HeroZaldron: return 0
+        case HeroShinBo: return 2
+        case HeroSerena: return 1
+        case HeroShuri: return 1
+        case HeroTheria: return 0
+        case HeroTumu: return 1
+        case HeroAureus: return 2
+    }
+
+    return 0
+}
+
+func (heroType HeroType) RandomAbilityType() abilityChoice {
+    switch heroType {
+        case HeroTorin: return abilityChoiceAny
+        case HeroFang: return abilityChoiceFighter
+        case HeroBShan: return abilityChoiceAny
+        case HeroMorgana: return abilityChoiceMage
+        case HeroWarrax: return abilityChoiceAny
+        case HeroMysticX: return abilityChoiceAny
+        case HeroBahgtru: return abilityChoiceFighter
+        case HeroDethStryke: return abilityChoiceFighter
+        case HeroSpyder: return abilityChoiceFighter
+        case HeroSirHarold: return abilityChoiceFighter
+        case HeroBrax: return abilityChoiceAny
+        case HeroRavashack: return abilityChoiceMage
+        case HeroGreyfairer: return abilityChoiceAny
+        case HeroShalla: return abilityChoiceFighter
+        case HeroRoland: return abilityChoiceFighter
+        case HeroMalleus: return abilityChoiceMage
+        case HeroMortu: return abilityChoiceFighter
+        case HeroGunther: return abilityChoiceAny
+        case HeroRakir: return abilityChoiceAny
+        case HeroJaer: return abilityChoiceMage
+        case HeroTaki: return abilityChoiceFighter
+        case HeroYramrag: return abilityChoiceMage
+        case HeroValana: return abilityChoiceAny
+        case HeroElana: return abilityChoiceAny
+        case HeroAerie: return abilityChoiceMage
+        case HeroMarcus: return abilityChoiceAny
+        case HeroReywind: return abilityChoiceAny
+        case HeroAlorra: return abilityChoiceAny
+        case HeroZaldron: return abilityChoiceAny
+        case HeroShinBo: return abilityChoiceFighter
+        case HeroSerena: return abilityChoiceMage
+        case HeroShuri: return abilityChoiceFighter
+        case HeroTheria: return abilityChoiceAny
+        case HeroTumu: return abilityChoiceFighter
+        case HeroAureus: return abilityChoiceAny
+    }
+
+    return abilityChoiceAny
+}
+
 func (heroType HeroType) GetUnit() units.Unit {
     switch heroType {
         case HeroTorin: return units.HeroTorin
@@ -235,7 +319,6 @@ func selectAbility(kind abilityChoice) units.Ability {
         units.AbilityCharmed,
         units.AbilityLucky,
         units.AbilityNoble,
-        units.AbilitySage,
     }
 
     fighterChoices := []units.Ability{
@@ -268,7 +351,66 @@ func selectAbility(kind abilityChoice) units.Ability {
     return use[rand.N(len(use))]
 }
 
+func superVersion(ability units.Ability) units.Ability {
+    switch ability {
+        case units.AbilityAgility: return units.AbilitySuperAgility
+        case units.AbilityArmsmaster: return units.AbilitySuperArmsmaster
+        case units.AbilityBlademaster: return units.AbilitySuperBlademaster
+        case units.AbilityConstitution: return units.AbilitySuperConstitution
+        case units.AbilityLeadership: return units.AbilitySuperLeadership
+        case units.AbilityLegendary: return units.AbilitySuperLegendary
+        case units.AbilityMight: return units.AbilitySuperMight
+        case units.AbilityArcanePower: return units.AbilitySuperArcanePower
+        case units.AbilityPrayermaster: return units.AbilitySuperPrayermaster
+        case units.AbilitySage: return units.AbilitySuperSage
+    }
+
+    return units.AbilityNone
+}
+
+// returns true if the ability is added. some abilities cannot be added in case the
+// hero already has a super version of that ability, or the limit of 1 is reached for others
+func (hero *Hero) AddAbility(ability units.Ability) bool {
+    limit1 := []units.Ability{units.AbilityCharmed, units.AbilityLucky, units.AbilityNoble}
+
+    if slices.Contains(limit1, ability) && hero.HasAbility(ability) {
+        return false
+    }
+
+    if hero.HasAbility(superVersion(ability)) {
+        return false
+    }
+
+    if ability == units.AbilityCaster {
+        // FIXME: increase caster value by 2.5
+        return true
+    }
+
+    // upgrade from regular ability to super version
+    if hero.HasAbility(ability) {
+        hero.Abilities = slices.DeleteFunc(hero.Abilities, func(a units.Ability) bool {
+            return a == ability
+        })
+
+        hero.Abilities = append(hero.Abilities, superVersion(ability))
+    } else {
+        hero.Abilities = append(hero.Abilities, ability)
+    }
+
+    return true
+}
+
+// add N random abilities
 func (hero *Hero) SetExtraAbilities() {
+    for range hero.HeroType.RandomAbilityCount() {
+
+        for {
+            randomAbility := selectAbility(hero.HeroType.RandomAbilityType())
+            if hero.AddAbility(randomAbility) {
+                break
+            }
+        }
+    }
 }
 
 func (hero *Hero) SetStatus(status HeroStatus) {
