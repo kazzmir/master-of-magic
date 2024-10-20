@@ -2123,15 +2123,41 @@ var HeroTaki Unit = Unit{
 var HeroReywind Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 12,
+    CombatLbxFile: "figures1.lbx",
+    CombatIndex: 96,
+    UpkeepGold: 3,
+    MovementSpeed: 2,
+    MeleeAttackPower: 4,
+    RangedAttackPower: 4,
+    RangedAttackDamageType: DamageRangedMagical,
+    Defense: 4,
+    Resistance: 6,
+    HitPoints: 7,
+    Count: 1,
     Name: "Reywind",
+    Abilities: []Ability{AbilityCaster},
     Race: data.RaceHero,
+    Spells: []string{"Eldritch Weapon", "Shatter", "Flame Blade"},
 }
 
 var HeroMalleus Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 13,
+    CombatLbxFile: "figures1.lbx",
+    CombatIndex: 104,
+    UpkeepGold: 3,
+    Count: 1,
+    MovementSpeed: 2,
+    MeleeAttackPower: 1,
+    RangedAttackPower: 8,
+    RangedAttackDamageType: DamageRangedMagical,
+    Defense: 5,
+    Resistance: 10,
+    HitPoints: 5,
     Name: "Malleus",
+    Abilities: []Ability{AbilityCaster, AbilityMissileImmunity, AbilityArcanePower},
     Race: data.RaceHero,
+    Spells: []string{"Fire Bolt", "Fireball", "Fire Elemental", "Flame Strike"},
 }
 
 var HeroTumu Unit = Unit{
