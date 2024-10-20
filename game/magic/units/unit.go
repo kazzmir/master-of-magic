@@ -2318,6 +2318,17 @@ var HeroSpyder Unit = Unit{
 var HeroShalla Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 22,
+    CombatLbxFile: "figures2.lbx",
+    CombatIndex: 56,
+    Count: 1,
+    UpkeepGold: 6,
+    MovementSpeed: 2,
+    MeleeAttackPower: 7,
+    Defense: 4,
+    Resistance: 6,
+    HitPoints: 8,
+    // thrown 4
+    Abilities: []Ability{AbilityThrown, AbilityBlademaster, AbilityMight, AbilityCharmed},
     Name: "Shalla",
     Race: data.RaceHero,
 }
@@ -2325,22 +2336,63 @@ var HeroShalla Unit = Unit{
 var HeroYramrag Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 23,
+    CombatLbxFile: "figures2.lbx",
+    CombatIndex: 64,
     Name: "Yramrag",
+    Count: 1,
+    UpkeepGold: 6,
+    MovementSpeed: 2,
+    MeleeAttackPower: 1,
+    RangedAttackPower: 8,
+    RangedAttackDamageType: DamageRangedMagical,
+    Defense: 5,
+    Resistance: 10,
+    HitPoints: 5,
+    // caster 15
+    Abilities: []Ability{AbilityCaster, AbilityMissileImmunity},
     Race: data.RaceHero,
+    Spells: []string{"Lightning Bolt", "Warp Lightning", "Doom Bolt"},
 }
 
 var HeroMysticX Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 24,
+    CombatLbxFile: "figures2.lbx",
+    CombatIndex: 72,
     Name: "Mystic X",
+    UpkeepGold: 6,
+    MovementSpeed: 2,
+    Count: 1,
+    MeleeAttackPower: 5,
+    RangedAttackPower: 5,
+    RangedAttackDamageType: DamageRangedMagical,
+    Defense: 4,
+    Resistance: 10,
+    HitPoints: 8,
+    // caster 5
+    Abilities: []Ability{AbilityCaster},
     Race: data.RaceHero,
 }
 
 var HeroAerie Unit = Unit{
     LbxFile: "units1.lbx",
     Index: 25,
+    CombatLbxFile: "figures2.lbx",
+    CombatIndex: 80,
     Name: "Aerie",
+    Count: 1,
+    MovementSpeed: 2,
+    UpkeepGold: 10,
+    MeleeAttackPower: 1,
+    RangedAttackPower: 5,
+    RangedAttackDamageType: DamageRangedMagical,
+    Defense: 4,
+    Resistance: 6,
+    HitPoints: 5,
+    // caster 10
+    Abilities: []Ability{AbilityCaster, AbilityMissileImmunity, AbilityIllusion},
     Race: data.RaceHero,
+    Spells: []string{"Psionic Blast", "Vertigo", "Mind Storm"},
 }
 
 var HeroDethStryke Unit = Unit{
