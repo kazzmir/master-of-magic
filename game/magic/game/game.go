@@ -1908,7 +1908,11 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                 for _, otherPlayer := range game.Players[1:] {
                     otherStack := otherPlayer.FindStack(stack.X(), stack.Y())
                     if otherStack != nil {
-                        game.doCombat(yield, player, stack, otherPlayer, otherStack)
+                        zone := combat.ZoneType{
+                            City: otherPlayer.FindCity(stack.X(), stack.Y()),
+                        }
+
+                        game.doCombat(yield, player, stack, otherPlayer, otherStack, zone)
 
                         game.RefreshUI()
 
@@ -2151,7 +2155,16 @@ func (game *Game) doMagicEncounter(yield coroutine.YieldFunc, player *playerlib.
         enemies = append(enemies, units.MakeOverworldUnit(unit))
     }
 
-    result := game.doCombat(yield, player, stack, &defender, playerlib.MakeUnitStackFromUnits(enemies))
+    zone := combat.ZoneType{
+    }
+
+    switch node.Kind {
+        case MagicNodeNature: zone.NatureNode = true
+        case MagicNodeSorcery: zone.SorceryNode = true
+        case MagicNodeChaos: zone.ChaosNode = true
+    }
+
+    result := game.doCombat(yield, player, stack, &defender, playerlib.MakeUnitStackFromUnits(enemies), zone)
     if result == combat.CombatStateAttackerWin {
         // node should have no guardians
         node.Empty = true
@@ -2190,7 +2203,7 @@ func (game *Game) GetCombatLandscape(x int, y int, plane data.Plane) combat.Comb
 
 /* run the tactical combat screen. returns the combat state as a result (attackers win, defenders win, flee, etc)
  */
-func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player, attackerStack *playerlib.UnitStack, defender *playerlib.Player, defenderStack *playerlib.UnitStack) combat.CombatState {
+func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player, attackerStack *playerlib.UnitStack, defender *playerlib.Player, defenderStack *playerlib.UnitStack, zone combat.ZoneType) combat.CombatState {
     defer mouse.Mouse.SetImage(game.MouseData.Normal)
 
     attackingArmy := combat.Army{
@@ -2214,7 +2227,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
 
     landscape := game.GetCombatLandscape(attackerStack.X(), attackerStack.Y(), attackerStack.Plane())
 
-    combatScreen := combat.MakeCombatScreen(game.Cache, &defendingArmy, &attackingArmy, attacker, landscape, attackerStack.Plane(), defender.FindCity(defenderStack.X(), defenderStack.Y()))
+    combatScreen := combat.MakeCombatScreen(game.Cache, &defendingArmy, &attackingArmy, attacker, landscape, attackerStack.Plane(), zone)
     oldDrawer := game.Drawer
 
     ebiten.SetCursorMode(ebiten.CursorModeHidden)

@@ -226,7 +226,7 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingArmy := createWarlockArmyN(attackingPlayer, 3)
     attackingArmy.LayoutUnits(combat.TeamAttacker)
 
-    return combat.MakeCombatScreen(cache, &defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneArcanus, nil)
+    return combat.MakeCombatScreen(cache, &defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{})
 }
 
 func makeScenario2(cache *lbx.LbxCache) *combat.CombatScreen {
@@ -258,7 +258,7 @@ func makeScenario2(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingArmy := createSettlerArmy(attackingPlayer, 3)
     attackingArmy.LayoutUnits(combat.TeamAttacker)
 
-    return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneArcanus, nil)
+    return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{})
 }
 
 func makeScenario3(cache *lbx.LbxCache) *combat.CombatScreen {
@@ -290,9 +290,10 @@ func makeScenario3(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingArmy := createHeroArmy(attackingPlayer)
     attackingArmy.LayoutUnits(combat.TeamAttacker)
 
-    return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneArcanus, nil)
+    return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{})
 }
 
+// fight in an unwalled city with a fortress
 func makeScenario4(cache *lbx.LbxCache) *combat.CombatScreen {
     defendingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Enemy",
@@ -326,7 +327,44 @@ func makeScenario4(cache *lbx.LbxCache) *combat.CombatScreen {
     city := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, attackingPlayer.Wizard.Banner, fraction.Zero(), nil, attackingPlayer)
     city.Buildings.Insert(buildinglib.BuildingFortress)
 
-    return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneMyrror, city)
+    return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneMyrror, combat.ZoneType{City: city})
+}
+
+// fight in a tower of wizardy
+func makeScenario5(cache *lbx.LbxCache) *combat.CombatScreen {
+    defendingPlayer := player.MakePlayer(setup.WizardCustom{
+            Name: "Enemy",
+            Banner: data.BannerBlue,
+        }, false, nil, nil)
+
+    // defendingArmy := createWarlockArmy(&defendingPlayer)
+    defendingArmy := createSettlerArmy(defendingPlayer, 3)
+    defendingArmy.LayoutUnits(combat.TeamDefender)
+
+    /*
+    allSpells, err := spellbook.ReadSpellsFromCache(cache)
+    if err != nil {
+        log.Printf("Unable to read spells: %v", err)
+        allSpells = spellbook.Spells{}
+    }
+    */
+
+    attackingPlayer := player.MakePlayer(setup.WizardCustom{
+            Name: "Merlin",
+            Banner: data.BannerRed,
+            Race: data.RaceHighMen,
+        }, true, nil, nil)
+
+    attackingPlayer.CastingSkillPower = 10
+
+    // attackingArmy := createGreatDrakeArmy(&attackingPlayer)
+    attackingArmy := createHeroArmy(attackingPlayer)
+    attackingArmy.LayoutUnits(combat.TeamAttacker)
+
+    city := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, attackingPlayer.Wizard.Banner, fraction.Zero(), nil, attackingPlayer)
+    city.Buildings.Insert(buildinglib.BuildingFortress)
+
+    return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneMyrror, combat.ZoneType{Tower: true})
 }
 
 func NewEngine(scenario int) (*Engine, error) {
@@ -339,6 +377,7 @@ func NewEngine(scenario int) (*Engine, error) {
         case 2: combatScreen = makeScenario2(cache)
         case 3: combatScreen = makeScenario3(cache)
         case 4: combatScreen = makeScenario4(cache)
+        case 5: combatScreen = makeScenario5(cache)
         default: combatScreen = makeScenario1(cache)
     }
 

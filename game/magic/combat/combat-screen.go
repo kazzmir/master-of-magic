@@ -59,6 +59,23 @@ type CombatEventSelectUnit struct {
     SelectTeam Team
 }
 
+type ZoneType struct {
+    // fighting in a city
+    City *citylib.City
+
+    AncientTemple bool
+    FallenTemple bool
+    Ruins bool
+    AbandonedKeep bool
+    Lair bool
+    Tower bool
+
+    // one of the three node types
+    ChaosNode bool
+    NatureNode bool
+    SorceryNode bool
+}
+
 type Team int
 
 const (
@@ -651,7 +668,7 @@ const (
 const TownCenterX = 12
 const TownCenterY = 9
 
-func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plane, city *citylib.City) [][]Tile {
+func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plane, zone ZoneType) [][]Tile {
 
     baseLbx := "cmbgrass.lbx"
 
@@ -708,7 +725,7 @@ func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plan
     }
 
     // defending city, so place city tiles around
-    if city != nil {
+    if zone.City != nil {
 
         // clear all space around the city
         for x := -2; x <= 2; x++ {
@@ -730,12 +747,18 @@ func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plan
             }
         }
 
-        if city.HasFortress() {
+        if zone.City.HasFortress() {
             tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
                 Lbx: "cmbtcity.lbx",
                 Index: 17,
                 Alignment: TileAlignBottom,
             }
+        }
+    } else if zone.Tower {
+        tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
+            Lbx: "cmbtcity.lbx",
+            Index: 20,
+            Alignment: TileAlignBottom,
         }
     }
 
@@ -765,7 +788,7 @@ func makePaletteFromBanner(banner data.BannerType) color.Palette {
     }
 }
 
-func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Army, player *playerlib.Player, landscape CombatLandscape, plane data.Plane, city *citylib.City) *CombatScreen {
+func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Army, player *playerlib.Player, landscape CombatLandscape, plane data.Plane, zone ZoneType) *CombatScreen {
     fontLbx, err := cache.GetLbxFile("fonts.lbx")
     if err != nil {
         log.Printf("Unable to read fonts.lbx: %v", err)
@@ -852,8 +875,8 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
         AttackingArmy: attackingArmy,
         TurnAttacker: 0,
         Events: make(chan CombatEvent, 1000),
-        Tiles: makeTiles(30, 30, landscape, plane, city),
-        DrawRoad: city != nil,
+        Tiles: makeTiles(30, 30, landscape, plane, zone),
+        DrawRoad: zone.City != nil,
         SelectedUnit: nil,
         DebugFont: debugFont,
         HudFont: hudFont,
