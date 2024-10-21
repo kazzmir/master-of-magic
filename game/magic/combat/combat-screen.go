@@ -18,6 +18,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/mouse"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
+    citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     globalMouse "github.com/kazzmir/master-of-magic/game/magic/mouse"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/game/magic/units"
@@ -92,13 +93,18 @@ const (
     CombatCast
 )
 
+type TileTop struct {
+    Lbx string
+    Index int
+}
+
 type Tile struct {
     // a unit standing on this tile, if any
     Unit *ArmyUnit
     // index of grass/floor
     Index int
     // tree/rock on top, or -1 if nothing
-    ExtraObject int
+    ExtraObject TileTop
     Mud bool
 }
 
@@ -171,7 +177,7 @@ func (unit *ArmyUnit) ComputeDefense(damage units.Damage) int {
 
     for figure := 0; figure < unit.Figures(); figure++ {
         for i := 0; i < unit.Unit.GetDefense(); i++ {
-            if rand.IntN(100) < toDefend {
+            if rand.N(100) < toDefend {
                 defense += 1
             }
         }
@@ -216,7 +222,7 @@ func (unit *ArmyUnit) ComputeRangeDamage(tileDistance int) int {
     damage := 0
     for figure := 0; figure < unit.Figures(); figure++ {
         for i := 0; i < unit.Unit.GetRangedAttackPower(); i++ {
-            if rand.IntN(100) < toHit {
+            if rand.N(100) < toHit {
                 damage += 1
             }
         }
@@ -229,7 +235,7 @@ func (unit *ArmyUnit) ComputeMeleeDamage() int {
     damage := 0
     for figure := 0; figure < unit.Figures(); figure++ {
         for i := 0; i < unit.Unit.GetMeleeAttackPower(); i++ {
-            if rand.IntN(100) < unit.Unit.GetToHitMelee() {
+            if rand.N(100) < unit.Unit.GetToHitMelee() {
                 damage += 1
             }
         }
@@ -624,13 +630,17 @@ type CombatScreen struct {
     */
 }
 
-func makeTiles(width int, height int) [][]Tile {
+func makeTiles(width int, height int, city *citylib.City) [][]Tile {
 
-    maybeExtraTile := func() int {
-        if rand.IntN(10) == 0 {
-            return rand.IntN(10)
+    maybeExtraTile := func() TileTop {
+        if rand.N(10) == 0 {
+            // trees/rocks
+            return TileTop{
+                Lbx: "cmbgrass.lbx",
+                Index: 48 + rand.N(10),
+            }
         }
-        return -1
+        return TileTop{Index: -1}
     }
 
     tiles := make([][]Tile, height)
@@ -638,11 +648,21 @@ func makeTiles(width int, height int) [][]Tile {
         tiles[y] = make([]Tile, width)
         for x := 0; x < len(tiles[y]); x++ {
             tiles[y][x] = Tile{
-                Index: rand.IntN(48),
+                Index: rand.N(48),
                 ExtraObject: maybeExtraTile(),
             }
         }
+    }
 
+    // defending city, so place city tiles around
+    if city != nil {
+        x := 9
+        y := 8
+
+        tiles[y][x].ExtraObject = TileTop{
+            Lbx: "cmbtcity.lbx",
+            Index: 2,
+        }
     }
 
     return tiles
@@ -671,7 +691,7 @@ func makePaletteFromBanner(banner data.BannerType) color.Palette {
     }
 }
 
-func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Army, player *playerlib.Player) *CombatScreen {
+func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Army, player *playerlib.Player, city *citylib.City) *CombatScreen {
     fontLbx, err := cache.GetLbxFile("fonts.lbx")
     if err != nil {
         log.Printf("Unable to read fonts.lbx: %v", err)
@@ -758,7 +778,7 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
         AttackingArmy: attackingArmy,
         TurnAttacker: 0,
         Events: make(chan CombatEvent, 1000),
-        Tiles: makeTiles(30, 30),
+        Tiles: makeTiles(30, 30, city),
         SelectedUnit: nil,
         DebugFont: debugFont,
         HudFont: hudFont,
@@ -1445,8 +1465,8 @@ func (combat *CombatScreen) FindEmptyTile() (int, int, error) {
     distance := 3
     tries := 0
     for tries < 100 {
-        x := middleX + rand.IntN(distance) - distance/2
-        y := middleY + rand.IntN(distance) - distance/2
+        x := middleX + rand.N(distance) - distance/2
+        y := middleY + rand.N(distance) - distance/2
 
         if x >= 0 && x < len(combat.Tiles[0]) && y >= 0 && y < len(combat.Tiles) && combat.GetUnit(x, y) == nil {
             return x, y, nil
@@ -3070,8 +3090,10 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
             screen.DrawImage(mudTiles[index], &options)
         }
 
-        if combat.Tiles[y][x].ExtraObject != -1 {
-            extraImage, _ := combat.ImageCache.GetImage("cmbgrass.lbx", 48 + combat.Tiles[y][x].ExtraObject, 0)
+        extra := combat.Tiles[y][x].ExtraObject
+        if extra.Index != -1 {
+            options.GeoM.Translate(0, -float64(tile0.Bounds().Dy())/2)
+            extraImage, _ := combat.ImageCache.GetImage(extra.Lbx, extra.Index, 0)
             screen.DrawImage(extraImage, &options)
         }
     }
