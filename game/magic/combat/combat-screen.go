@@ -93,9 +93,16 @@ const (
     CombatCast
 )
 
+type TileAlignment int
+const (
+    TileAlignMiddle TileAlignment = iota
+    TileAlignBottom
+)
+
 type TileTop struct {
     Lbx string
     Index int
+    Alignment TileAlignment
 }
 
 type Tile struct {
@@ -638,6 +645,7 @@ func makeTiles(width int, height int, city *citylib.City) [][]Tile {
             return TileTop{
                 Lbx: "cmbgrass.lbx",
                 Index: 48 + rand.N(10),
+                Alignment: TileAlignMiddle,
             }
         }
         return TileTop{Index: -1}
@@ -664,6 +672,7 @@ func makeTiles(width int, height int, city *citylib.City) [][]Tile {
             tiles[y][x].ExtraObject = TileTop{
                 Lbx: "cmbtcity.lbx",
                 Index: 2 + rand.N(5),
+                Alignment: TileAlignBottom,
             }
         }
     }
@@ -3095,9 +3104,19 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
 
         extra := combat.Tiles[y][x].ExtraObject
         if extra.Index != -1 {
-            options.GeoM.Translate(0, -float64(tile0.Bounds().Dy())/2)
-            extraImage, _ := combat.ImageCache.GetImage(extra.Lbx, extra.Index, 0)
+            extraImage, _ := combat.ImageCache.GetImageTransform(extra.Lbx, extra.Index, 0, "crop", util.AutoCrop)
+
+            switch extra.Alignment {
+                case TileAlignBottom:
+                    options.GeoM.Translate(0, float64(tile0.Bounds().Dy())/2)
+                    options.GeoM.Translate(-float64(extraImage.Bounds().Dy())/2, -float64(extraImage.Bounds().Dy()))
+                case TileAlignMiddle:
+                    options.GeoM.Translate(-float64(extraImage.Bounds().Dy())/2, -float64(extraImage.Bounds().Dy()/2))
+            }
+
             screen.DrawImage(extraImage, &options)
+
+            // vector.DrawFilledCircle(screen, float32(tx), float32(ty), 2, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, false)
         }
     }
 
