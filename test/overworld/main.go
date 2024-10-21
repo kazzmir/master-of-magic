@@ -18,6 +18,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
     "github.com/kazzmir/master-of-magic/game/magic/hero"
     "github.com/kazzmir/master-of-magic/game/magic/mouse"
+    "github.com/kazzmir/master-of-magic/game/magic/console"
     gamelib "github.com/kazzmir/master-of-magic/game/magic/game"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
@@ -32,6 +33,7 @@ type Engine struct {
     LbxCache *lbx.LbxCache
     Game *gamelib.Game
     Coroutine *coroutine.Coroutine
+    Console *console.Console
 }
 
 func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
@@ -1538,6 +1540,7 @@ func NewEngine(scenario int) (*Engine, error) {
         LbxCache: cache,
         Coroutine: coroutine.MakeCoroutine(run),
         Game: game,
+        Console: console.MakeConsole(),
     }, nil
 }
 
@@ -1550,6 +1553,17 @@ func (engine *Engine) Update() error {
         if key == ebiten.KeyEscape || key == ebiten.KeyCapsLock {
             return ebiten.Termination
         }
+    }
+
+    engine.Console.Update()
+
+    select {
+        case event := <-engine.Console.Events:
+            _, ok := event.(*console.ConsoleQuit)
+            if ok {
+                return ebiten.Termination
+            }
+        default:
     }
 
     /*
@@ -1567,6 +1581,7 @@ func (engine *Engine) Update() error {
 func (engine *Engine) Draw(screen *ebiten.Image) {
     engine.Game.Draw(screen)
     mouse.Mouse.Draw(screen)
+    engine.Console.Draw(screen)
 }
 
 func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
