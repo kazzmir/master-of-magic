@@ -98,6 +98,12 @@ func (console *Console) Update() {
                         }
                     }
                 }
+            case ebiten.KeyUp:
+                if console.State == ConsoleOpen {
+                    if len(console.Lines) > 0 {
+                        console.CurrentLine = console.Lines[len(console.Lines) - 1]
+                    }
+                }
         }
     }
 
