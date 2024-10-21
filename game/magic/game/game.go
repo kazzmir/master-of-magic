@@ -3381,12 +3381,14 @@ func (game *Game) DoNextUnit(player *playerlib.Player){
     }
 
     if player.Human {
+        /*
         if player.SelectedStack == nil {
             fortressCity := player.FindFortressCity()
             if fortressCity != nil {
                 game.CenterCamera(fortressCity.X, fortressCity.Y)
             }
         }
+        */
         game.RefreshUI()
     }
 }
