@@ -1566,8 +1566,8 @@ func (game *Game) doVault(yield coroutine.YieldFunc, newArtifact *artifact.Artif
 
         game.Drawer = func (screen *ebiten.Image, game *Game){
             drawer(screen, game)
-            vaultDrawer(screen, false)
-            itemDrawer(screen, true)
+            vaultDrawer(screen)
+            itemDrawer(screen)
         }
 
         itemLogic(yield)
@@ -1575,7 +1575,7 @@ func (game *Game) doVault(yield coroutine.YieldFunc, newArtifact *artifact.Artif
 
     game.Drawer = func (screen *ebiten.Image, game *Game){
         drawer(screen, game)
-        vaultDrawer(screen, true)
+        vaultDrawer(screen)
     }
 
     vaultLogic(yield)
