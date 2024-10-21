@@ -108,6 +108,7 @@ type TileTop struct {
 type Tile struct {
     // a unit standing on this tile, if any
     Unit *ArmyUnit
+    Lbx string
     // index of grass/floor
     Index int
     // tree/rock on top, or -1 if nothing
@@ -640,11 +641,15 @@ type CombatScreen struct {
 
 func makeTiles(width int, height int, city *citylib.City) [][]Tile {
 
+    baseLbx := "cmbgrass.lbx"
+
+    baseLbx = "cmbmount.lbx"
+
     maybeExtraTile := func() TileTop {
         if rand.N(10) == 0 {
             // trees/rocks
             return TileTop{
-                Lbx: "cmbgrass.lbx",
+                Lbx: baseLbx,
                 Index: 48 + rand.N(10),
                 Alignment: TileAlignMiddle,
             }
@@ -657,7 +662,9 @@ func makeTiles(width int, height int, city *citylib.City) [][]Tile {
         tiles[y] = make([]Tile, width)
         for x := 0; x < len(tiles[y]); x++ {
             tiles[y][x] = Tile{
-                Index: rand.N(48),
+                // Index: rand.N(48),
+                Lbx: baseLbx,
+                Index: rand.N(32),
                 ExtraObject: maybeExtraTile(),
             }
         }
@@ -665,6 +672,15 @@ func makeTiles(width int, height int, city *citylib.City) [][]Tile {
 
     // defending city, so place city tiles around
     if city != nil {
+
+        // clear all space around the city
+        for x := -2; x <= 2; x++ {
+            for y := -2; y <= 2; y++ {
+                mx := x + 12
+                my := y + 9
+                tiles[my][mx].ExtraObject.Index = -1
+            }
+        }
 
         for range 8 {
             x := 12 + rand.N(5) - 2
@@ -3093,7 +3109,7 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
         x := point.X
         y := point.Y
 
-        image, _ := combat.ImageCache.GetImage("cmbgrass.lbx", combat.Tiles[y][x].Index, 0)
+        image, _ := combat.ImageCache.GetImage(combat.Tiles[y][x].Lbx, combat.Tiles[y][x].Index, 0)
         options.GeoM.Reset()
         // tx,ty is the middle of the tile
         tx, ty := tilePosition(x, y)
@@ -3116,7 +3132,7 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
         options.GeoM.Translate(0, float64(tile0.Bounds().Dy())/2)
         screen.DrawImage(road, &options)
 
-        vector.DrawFilledCircle(screen, float32(tx), float32(ty), 2, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, false)
+        // vector.DrawFilledCircle(screen, float32(tx), float32(ty), 2, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, false)
     }
 
     // then draw extra stuff on top
