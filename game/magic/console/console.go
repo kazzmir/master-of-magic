@@ -23,12 +23,20 @@ const (
 
 const ConsoleHeight = 130
 
+type ConsoleEvent interface {
+}
+
+type ConsoleQuit struct {
+}
+
 type Console struct {
     CurrentLine string
     Lines []string
+    InputLines []string
     State ConsoleState
     PosY int
     Font *text.GoTextFaceSource
+    Events chan ConsoleEvent
 }
 
 func MakeConsole() *Console {
@@ -41,6 +49,16 @@ func MakeConsole() *Console {
     return &Console{
         Font: font,
         State: ConsoleClosed,
+        Events: make(chan ConsoleEvent, 10),
+    }
+}
+
+func (console *Console) Run(command string) {
+    if command == "quit" {
+        select {
+            case console.Events <- &ConsoleQuit{}:
+            default:
+        }
     }
 }
 
@@ -72,6 +90,10 @@ func (console *Console) Update() {
                 if console.State == ConsoleOpen {
                     if len(console.CurrentLine) > 0 {
                         console.Lines = append(console.Lines, console.CurrentLine)
+                        console.InputLines = append(console.InputLines, console.CurrentLine)
+
+                        console.Run(console.CurrentLine)
+
                         console.CurrentLine = ""
                     }
                 }
@@ -100,8 +122,8 @@ func (console *Console) Update() {
                 }
             case ebiten.KeyUp:
                 if console.State == ConsoleOpen {
-                    if len(console.Lines) > 0 {
-                        console.CurrentLine = console.Lines[len(console.Lines) - 1]
+                    if len(console.InputLines) > 0 {
+                        console.CurrentLine = console.InputLines[len(console.InputLines) - 1]
                     }
                 }
         }

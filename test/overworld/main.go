@@ -1557,6 +1557,15 @@ func (engine *Engine) Update() error {
 
     engine.Console.Update()
 
+    select {
+        case event := <-engine.Console.Events:
+            _, ok := event.(*console.ConsoleQuit)
+            if ok {
+                return ebiten.Termination
+            }
+        default:
+    }
+
     /*
     switch engine.Game.Update() {
         case gamelib.GameStateRunning:
