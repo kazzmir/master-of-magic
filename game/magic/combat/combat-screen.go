@@ -504,7 +504,7 @@ func (army *Army) AddUnit(unit CombatUnit){
 
 func (army *Army) LayoutUnits(team Team){
     x := 10
-    y := 9
+    y := 10
 
     facing := units.FacingDownRight
 
@@ -656,12 +656,15 @@ func makeTiles(width int, height int, city *citylib.City) [][]Tile {
 
     // defending city, so place city tiles around
     if city != nil {
-        x := 9
-        y := 8
 
-        tiles[y][x].ExtraObject = TileTop{
-            Lbx: "cmbtcity.lbx",
-            Index: 2,
+        for range 8 {
+            x := 12 + rand.N(5) - 2
+            y := 9 + rand.N(5) - 2
+
+            tiles[y][x].ExtraObject = TileTop{
+                Lbx: "cmbtcity.lbx",
+                Index: 2 + rand.N(5),
+            }
         }
     }
 
