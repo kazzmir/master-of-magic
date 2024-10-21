@@ -11,15 +11,31 @@ import (
     "github.com/hajimehoshi/ebiten/v2"
 )
 
+type ConsoleState int
+
+const (
+    ConsoleOpening ConsoleState = iota
+    ConsoleOpen
+    ConsoleClosing
+    ConsoleClosed
+)
+
+const ConsoleHeight = 130
+
 type Console struct {
-    Active bool
     CurrentLine string
+    State ConsoleState
+    PosY int
 }
 
 func MakeConsole() *Console {
     return &Console{
-        Active: false,
+        State: ConsoleClosed,
     }
+}
+
+func (console *Console) IsActive() bool {
+    return console.State == ConsoleOpen || console.State == ConsoleOpening
 }
 
 func (console *Console) Update() {
@@ -29,11 +45,32 @@ func (console *Console) Update() {
     for _, key := range keys {
         switch key {
         case ebiten.KeyBackquote:
-            console.Active = !console.Active
+            if console.State == ConsoleClosed || console.State == ConsoleClosing {
+                console.State = ConsoleOpening
+            } else if console.State == ConsoleOpen || console.State == ConsoleOpening {
+                console.State = ConsoleClosing
+            }
         }
     }
 
-    if console.Active {
+    const speed = 8
+
+    if console.State == ConsoleOpening || console.State == ConsoleOpen {
+        if console.PosY < ConsoleHeight {
+            console.PosY += speed
+            if console.PosY > ConsoleHeight {
+                console.PosY = ConsoleHeight
+            }
+        } else {
+            console.State = ConsoleOpen
+        }
+    } else {
+        if console.PosY > 0 {
+            console.PosY -= speed
+        }
+    }
+
+    if console.IsActive() {
         runes := make([]rune, 0)
         runes = ebiten.AppendInputChars(runes)
 
@@ -48,8 +85,8 @@ func (console *Console) Update() {
 }
 
 func (console *Console) Draw(screen *ebiten.Image) {
-    if console.Active {
-        rect := image.Rect(0, 0, screen.Bounds().Dx(), 160)
+    if console.PosY > 0 {
+        rect := image.Rect(0, 0, screen.Bounds().Dx(), console.PosY)
         backgroundColor := util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 120})
         vector.DrawFilledRect(screen, float32(rect.Min.X), float32(rect.Min.Y), float32(rect.Dx()), float32(rect.Dy()), backgroundColor, false)
     }
