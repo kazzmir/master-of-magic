@@ -1,6 +1,8 @@
 package units
 
 import (
+    "math/rand/v2"
+
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/building"
 )
@@ -4681,4 +4683,15 @@ var AllUnits []Unit = []Unit{
     KlackonHalberdiers,
     KlackonEngineer,
     StagBeetle,
+}
+
+func ChooseRandomUnit(race data.Race) Unit {
+    var units []Unit
+    for _, unit := range AllUnits {
+        if unit.Race == race && unit.Name != "Settlers" {
+            units = append(units, unit)
+        }
+    }
+
+    return units[rand.N(len(units))]
 }
