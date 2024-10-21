@@ -429,11 +429,11 @@ func (hero *Hero) SetStatus(status HeroStatus) {
 }
 
 func (hero *Hero) GetName() string {
-    return fmt.Sprintf("%v the %v", hero.Unit.GetName(), hero.Title())
+    return hero.Unit.GetName()
 }
 
-func (hero *Hero) ShortName() string {
-    return hero.Unit.GetName()
+func (hero *Hero) FullName() string {
+    return fmt.Sprintf("%v the %v", hero.Unit.GetName(), hero.Title())
 }
 
 func (hero *Hero) GetPortraitLbxInfo() (string, int) {

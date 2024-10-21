@@ -18,6 +18,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/mouse"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
+    citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     globalMouse "github.com/kazzmir/master-of-magic/game/magic/mouse"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/game/magic/units"
@@ -92,13 +93,26 @@ const (
     CombatCast
 )
 
+type TileAlignment int
+const (
+    TileAlignMiddle TileAlignment = iota
+    TileAlignBottom
+)
+
+type TileTop struct {
+    Lbx string
+    Index int
+    Alignment TileAlignment
+}
+
 type Tile struct {
     // a unit standing on this tile, if any
     Unit *ArmyUnit
+    Lbx string
     // index of grass/floor
     Index int
     // tree/rock on top, or -1 if nothing
-    ExtraObject int
+    ExtraObject TileTop
     Mud bool
 }
 
@@ -171,7 +185,7 @@ func (unit *ArmyUnit) ComputeDefense(damage units.Damage) int {
 
     for figure := 0; figure < unit.Figures(); figure++ {
         for i := 0; i < unit.Unit.GetDefense(); i++ {
-            if rand.IntN(100) < toDefend {
+            if rand.N(100) < toDefend {
                 defense += 1
             }
         }
@@ -216,7 +230,7 @@ func (unit *ArmyUnit) ComputeRangeDamage(tileDistance int) int {
     damage := 0
     for figure := 0; figure < unit.Figures(); figure++ {
         for i := 0; i < unit.Unit.GetRangedAttackPower(); i++ {
-            if rand.IntN(100) < toHit {
+            if rand.N(100) < toHit {
                 damage += 1
             }
         }
@@ -229,7 +243,7 @@ func (unit *ArmyUnit) ComputeMeleeDamage() int {
     damage := 0
     for figure := 0; figure < unit.Figures(); figure++ {
         for i := 0; i < unit.Unit.GetMeleeAttackPower(); i++ {
-            if rand.IntN(100) < unit.Unit.GetToHitMelee() {
+            if rand.N(100) < unit.Unit.GetToHitMelee() {
                 damage += 1
             }
         }
@@ -498,7 +512,7 @@ func (army *Army) AddUnit(unit CombatUnit){
 
 func (army *Army) LayoutUnits(team Team){
     x := 10
-    y := 9
+    y := 10
 
     facing := units.FacingDownRight
 
@@ -581,6 +595,7 @@ type CombatScreen struct {
     // when the user hovers over a unit, that unit should be shown in a little info box at the upper right
     HighlightedUnit *ArmyUnit
     Tiles [][]Tile
+    DrawRoad bool
     OtherUnits []*OtherUnit
     Projectiles []*Projectile
     // order to draw tiles in such that they are drawn from the top of the screen to the bottom (painter's order)
@@ -624,13 +639,56 @@ type CombatScreen struct {
     */
 }
 
-func makeTiles(width int, height int) [][]Tile {
+type CombatLandscape int
 
-    maybeExtraTile := func() int {
-        if rand.IntN(10) == 0 {
-            return rand.IntN(10)
+const (
+    CombatLandscapeGrass CombatLandscape = iota
+    CombatLandscapeDesert
+    CombatLandscapeMountain
+    CombatLandscapeTundra
+)
+
+func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plane, city *citylib.City) [][]Tile {
+
+    baseLbx := "cmbgrass.lbx"
+
+    switch landscape {
+        case CombatLandscapeGrass:
+            if plane == data.PlaneArcanus {
+                baseLbx = "cmbgrass.lbx"
+            } else {
+                baseLbx = "cmbgrasc.lbx"
+            }
+        case CombatLandscapeDesert:
+            if plane == data.PlaneArcanus {
+                baseLbx = "cmbdesrt.lbx"
+            } else {
+                baseLbx = "cmbdesrc.lbx"
+            }
+        case CombatLandscapeMountain:
+            if plane == data.PlaneArcanus {
+                baseLbx = "cmbmount.lbx"
+            } else {
+                baseLbx = "cmbmounc.lbx"
+            }
+        case CombatLandscapeTundra:
+            if plane == data.PlaneArcanus {
+                baseLbx = "cmbtundr.lbx"
+            } else {
+                baseLbx = "cmbtundc.lbx"
+            }
+    }
+
+    maybeExtraTile := func() TileTop {
+        if rand.N(10) == 0 {
+            // trees/rocks
+            return TileTop{
+                Lbx: baseLbx,
+                Index: 48 + rand.N(10),
+                Alignment: TileAlignMiddle,
+            }
         }
-        return -1
+        return TileTop{Index: -1}
     }
 
     tiles := make([][]Tile, height)
@@ -638,11 +696,36 @@ func makeTiles(width int, height int) [][]Tile {
         tiles[y] = make([]Tile, width)
         for x := 0; x < len(tiles[y]); x++ {
             tiles[y][x] = Tile{
-                Index: rand.IntN(48),
+                // Index: rand.N(48),
+                Lbx: baseLbx,
+                Index: rand.N(32),
                 ExtraObject: maybeExtraTile(),
             }
         }
+    }
 
+    // defending city, so place city tiles around
+    if city != nil {
+
+        // clear all space around the city
+        for x := -2; x <= 2; x++ {
+            for y := -2; y <= 2; y++ {
+                mx := x + 12
+                my := y + 9
+                tiles[my][mx].ExtraObject.Index = -1
+            }
+        }
+
+        for range 8 {
+            x := 12 + rand.N(5) - 2
+            y := 9 + rand.N(5) - 2
+
+            tiles[y][x].ExtraObject = TileTop{
+                Lbx: "cmbtcity.lbx",
+                Index: 2 + rand.N(5),
+                Alignment: TileAlignBottom,
+            }
+        }
     }
 
     return tiles
@@ -671,7 +754,7 @@ func makePaletteFromBanner(banner data.BannerType) color.Palette {
     }
 }
 
-func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Army, player *playerlib.Player) *CombatScreen {
+func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Army, player *playerlib.Player, landscape CombatLandscape, plane data.Plane, city *citylib.City) *CombatScreen {
     fontLbx, err := cache.GetLbxFile("fonts.lbx")
     if err != nil {
         log.Printf("Unable to read fonts.lbx: %v", err)
@@ -758,7 +841,8 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
         AttackingArmy: attackingArmy,
         TurnAttacker: 0,
         Events: make(chan CombatEvent, 1000),
-        Tiles: makeTiles(30, 30),
+        Tiles: makeTiles(30, 30, landscape, plane, city),
+        DrawRoad: city != nil,
         SelectedUnit: nil,
         DebugFont: debugFont,
         HudFont: hudFont,
@@ -1445,8 +1529,8 @@ func (combat *CombatScreen) FindEmptyTile() (int, int, error) {
     distance := 3
     tries := 0
     for tries < 100 {
-        x := middleX + rand.IntN(distance) - distance/2
-        y := middleY + rand.IntN(distance) - distance/2
+        x := middleX + rand.N(distance) - distance/2
+        y := middleY + rand.N(distance) - distance/2
 
         if x >= 0 && x < len(combat.Tiles[0]) && y >= 0 && y < len(combat.Tiles) && combat.GetUnit(x, y) == nil {
             return x, y, nil
@@ -3054,12 +3138,14 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
         return combat.Coordinates.Apply(float64(x), float64(y))
     }
 
+    // draw base land first
     for _, point := range combat.TopDownOrder {
         x := point.X
         y := point.Y
 
-        image, _ := combat.ImageCache.GetImage("cmbgrass.lbx", combat.Tiles[y][x].Index, 0)
+        image, _ := combat.ImageCache.GetImage(combat.Tiles[y][x].Lbx, combat.Tiles[y][x].Index, 0)
         options.GeoM.Reset()
+        // tx,ty is the middle of the tile
         tx, ty := tilePosition(x, y)
         options.GeoM.Translate(tx, ty)
         screen.DrawImage(image, &options)
@@ -3069,10 +3155,45 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
             index := animationIndex % uint64(len(mudTiles))
             screen.DrawImage(mudTiles[index], &options)
         }
+    }
 
-        if combat.Tiles[y][x].ExtraObject != -1 {
-            extraImage, _ := combat.ImageCache.GetImage("cmbgrass.lbx", 48 + combat.Tiles[y][x].ExtraObject, 0)
+    if combat.DrawRoad {
+        tx, ty := tilePosition(13, 5)
+
+        road, _ := combat.ImageCache.GetImageTransform("cmbtcity.lbx", 0, 0, "crop", util.AutoCrop)
+        options.GeoM.Reset()
+        options.GeoM.Translate(tx, ty)
+        options.GeoM.Translate(0, float64(tile0.Bounds().Dy())/2)
+        screen.DrawImage(road, &options)
+
+        // vector.DrawFilledCircle(screen, float32(tx), float32(ty), 2, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, false)
+    }
+
+    // then draw extra stuff on top
+    for _, point := range combat.TopDownOrder {
+        x := point.X
+        y := point.Y
+
+        extra := combat.Tiles[y][x].ExtraObject
+        if extra.Index != -1 {
+            options.GeoM.Reset()
+            // tx,ty is the middle of the tile
+            tx, ty := tilePosition(x, y)
+            options.GeoM.Translate(tx, ty)
+
+            extraImage, _ := combat.ImageCache.GetImageTransform(extra.Lbx, extra.Index, 0, "crop", util.AutoCrop)
+
+            switch extra.Alignment {
+                case TileAlignBottom:
+                    options.GeoM.Translate(0, float64(tile0.Bounds().Dy())/2)
+                    options.GeoM.Translate(-float64(extraImage.Bounds().Dy())/2, -float64(extraImage.Bounds().Dy()))
+                case TileAlignMiddle:
+                    options.GeoM.Translate(-float64(extraImage.Bounds().Dy())/2, -float64(extraImage.Bounds().Dy()/2))
+            }
+
             screen.DrawImage(extraImage, &options)
+
+            // vector.DrawFilledCircle(screen, float32(tx), float32(ty), 2, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, false)
         }
     }
 
