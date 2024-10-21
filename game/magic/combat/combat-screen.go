@@ -760,6 +760,37 @@ func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plan
             Index: 20,
             Alignment: TileAlignBottom,
         }
+    } else if zone.AbandonedKeep {
+        tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
+            Lbx: "cmbtcity.lbx",
+            Index: 22,
+            Alignment: TileAlignBottom,
+        }
+    } else if zone.AncientTemple {
+        tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
+            Lbx: "cmbtcity.lbx",
+            Index: 23,
+            Alignment: TileAlignBottom,
+        }
+    } else if zone.FallenTemple {
+        tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
+            Lbx: "cmbtcity.lbx",
+            // FIXME: check on this
+            Index: 21,
+            Alignment: TileAlignBottom,
+        }
+    } else if zone.Lair {
+        tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
+            Lbx: "cmbtcity.lbx",
+            Index: 19,
+            Alignment: TileAlignBottom,
+        }
+    } else if zone.Ruins {
+        tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
+            Lbx: "cmbtcity.lbx",
+            Index: 21,
+            Alignment: TileAlignBottom,
+        }
     }
 
     return tiles

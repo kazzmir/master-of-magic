@@ -364,7 +364,7 @@ func makeScenario5(cache *lbx.LbxCache) *combat.CombatScreen {
     city := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, attackingPlayer.Wizard.Banner, fraction.Zero(), nil, attackingPlayer)
     city.Buildings.Insert(buildinglib.BuildingFortress)
 
-    return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneMyrror, combat.ZoneType{Tower: true})
+    return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneMyrror, combat.ZoneType{FallenTemple: true})
 }
 
 func NewEngine(scenario int) (*Engine, error) {
