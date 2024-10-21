@@ -10,7 +10,6 @@
 * game menu - implement save/load game
 * play midi music
 * font editor - choose colors for font palette
-* quake console
 * make overworld wrap horizontally
 * implement overworld spells
 * show hero stats/abilities in context menu
@@ -44,3 +43,4 @@
 10/17/2024 * melee/defense/heart icons should have white border
 10/18/2024 * units disband if not enough food/gold/mana
 10/20/2024 * hire hero events
+10/20/2024 * quake console
