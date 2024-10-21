@@ -1493,6 +1493,103 @@ func createScenario19(cache *lbx.LbxCache) *gamelib.Game {
     return game
 }
 
+// enemy neutral town
+func createScenario20(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 20")
+
+    wizard := setup.WizardCustom{
+        Name: "bob",
+        Banner: data.BannerBlue,
+        Race: data.RaceTroll,
+        Abilities: []setup.WizardAbility{
+            setup.AbilityAlchemy,
+            setup.AbilitySageMaster,
+        },
+        Books: []data.WizardBook{
+            data.WizardBook{
+                Magic: data.LifeMagic,
+                Count: 3,
+            },
+            data.WizardBook{
+                Magic: data.SorceryMagic,
+                Count: 8,
+            },
+        },
+    }
+
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
+
+    game.Plane = data.PlaneArcanus
+
+    player := game.AddPlayer(wizard, true)
+
+    player.Fame = 5
+
+    x, y := game.FindValidCityLocation()
+
+    city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, fraction.Zero(), game.BuildingInfo, player)
+    city.Population = 10190
+    city.Plane = data.PlaneArcanus
+    city.Banner = wizard.Banner
+    city.Buildings.Insert(buildinglib.BuildingFortress)
+    city.Buildings.Insert(buildinglib.BuildingWizardsGuild)
+    city.ProducingBuilding = buildinglib.BuildingGranary
+    city.ProducingUnit = units.UnitNone
+    city.Race = wizard.Race
+    city.Farmers = city.Citizens() - 1
+    city.Workers = 0
+    city.Wall = false
+
+    city.ResetCitizens(nil)
+
+    player.AddCity(city)
+
+    player.Gold = 1283
+    player.Mana = 26
+
+    // game.Map.Map.Terrain[3][6] = terrain.TileNatureForest.Index
+
+    player.LiftFog(x, y, 3)
+
+    spear1 := player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, x+1, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
+    spear2 := player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, x+1, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
+    spear3 := player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, x+1, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
+    spear4 := player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, x+1, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
+    spear5 := player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, x+1, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
+    spear2.AddExperience(30)
+    spear3.AddExperience(60)
+    spear4.AddExperience(100)
+    spear5.AddExperience(200)
+
+    stack := player.FindStackByUnit(spear1)
+    player.SetSelectedStack(stack)
+
+    player.LiftFog(stack.X(), stack.Y(), 2)
+
+    enemyWizard := setup.WizardCustom{
+        Name: "enemy",
+        Banner: data.BannerBrown,
+        Race: data.RaceBarbarian,
+    }
+
+    enemy := game.AddPlayer(enemyWizard, false)
+
+    city2 := citylib.MakeCity("Test City", x, y-1, enemy.Wizard.Race, enemy.Wizard.Banner, fraction.Zero(), game.BuildingInfo, enemy)
+    city2.Population = 5000
+    city2.Plane = data.PlaneArcanus
+    city2.ProducingBuilding = buildinglib.BuildingHousing
+    city2.ProducingUnit = units.UnitNone
+    city2.Farmers = city2.Citizens() - 1
+    city2.Workers = 0
+    city2.Wall = false
+
+    city2.ResetCitizens(nil)
+
+    enemy.AddCity(city2)
+
+    return game
+}
+
 func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
@@ -1518,6 +1615,7 @@ func NewEngine(scenario int) (*Engine, error) {
         case 17: game = createScenario17(cache)
         case 18: game = createScenario18(cache)
         case 19: game = createScenario19(cache)
+        case 20: game = createScenario20(cache)
         default: game = createScenario1(cache)
     }
 

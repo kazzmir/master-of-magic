@@ -2002,10 +2002,16 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
             game.HudUI.StandardUpdate()
 
             // kind of a hack to not allow player to interact with anything other than the current ui modal
-            if game.HudUI.GetHighestLayerValue() == 0 {
-                if len(game.Players) > 0 {
-                    player := game.Players[0]
-                    game.doPlayerUpdate(yield, player)
+            if len(game.Players) > 0 && game.CurrentPlayer >= 0 {
+                player := game.Players[game.CurrentPlayer]
+
+                if player.Human {
+                    if game.HudUI.GetHighestLayerValue() == 0 {
+                        game.doPlayerUpdate(yield, player)
+                    }
+                } else {
+                    log.Printf("AI: next turn")
+                    game.DoNextTurn()
                 }
             }
     }
