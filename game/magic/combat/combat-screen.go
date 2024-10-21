@@ -648,6 +648,9 @@ const (
     CombatLandscapeTundra
 )
 
+const TownCenterX = 12
+const TownCenterY = 9
+
 func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plane, city *citylib.City) [][]Tile {
 
     baseLbx := "cmbgrass.lbx"
@@ -710,19 +713,27 @@ func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plan
         // clear all space around the city
         for x := -2; x <= 2; x++ {
             for y := -2; y <= 2; y++ {
-                mx := x + 12
-                my := y + 9
+                mx := x + TownCenterX
+                my := y + TownCenterY
                 tiles[my][mx].ExtraObject.Index = -1
             }
         }
 
         for range 8 {
-            x := 12 + rand.N(5) - 2
-            y := 9 + rand.N(5) - 2
+            x := TownCenterX + rand.N(5) - 2
+            y := TownCenterY + rand.N(5) - 2
 
             tiles[y][x].ExtraObject = TileTop{
                 Lbx: "cmbtcity.lbx",
                 Index: 2 + rand.N(5),
+                Alignment: TileAlignBottom,
+            }
+        }
+
+        if city.HasFortress() {
+            tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
+                Lbx: "cmbtcity.lbx",
+                Index: 17,
                 Alignment: TileAlignBottom,
             }
         }

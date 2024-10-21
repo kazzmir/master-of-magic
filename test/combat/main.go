@@ -18,6 +18,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/mouse"
     herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
+    buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
 
     "github.com/hajimehoshi/ebiten/v2"
@@ -323,6 +324,7 @@ func makeScenario4(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingArmy.LayoutUnits(combat.TeamAttacker)
 
     city := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, attackingPlayer.Wizard.Banner, fraction.Zero(), nil, attackingPlayer)
+    city.Buildings.Insert(buildinglib.BuildingFortress)
 
     return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneMyrror, city)
 }
