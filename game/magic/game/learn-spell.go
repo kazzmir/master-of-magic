@@ -6,6 +6,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
+    "github.com/kazzmir/master-of-magic/game/magic/mouse"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
 
     "github.com/hajimehoshi/ebiten/v2"
@@ -109,6 +110,9 @@ func (game *Game) wizlabAnimation(yield coroutine.YieldFunc, wizard setup.Wizard
 }
 
 func (game *Game) doLearnSpell(yield coroutine.YieldFunc, player *playerlib.Player, learnedSpell spellbook.Spell){
+    mouse.Mouse.Disable()
+    defer mouse.Mouse.Enable()
+
     game.wizlabAnimation(yield, player.Wizard)
 
     oldDrawer := game.Drawer

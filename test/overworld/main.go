@@ -10,12 +10,14 @@ import (
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/fraction"
+    mouselib "github.com/kazzmir/master-of-magic/lib/mouse"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
     "github.com/kazzmir/master-of-magic/game/magic/hero"
+    "github.com/kazzmir/master-of-magic/game/magic/mouse"
     gamelib "github.com/kazzmir/master-of-magic/game/magic/game"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
@@ -1529,6 +1531,11 @@ func NewEngine(scenario int) (*Engine, error) {
         return ebiten.Termination
     }
 
+    normalMouse, err := mouselib.GetMouseNormal(cache)
+    if err == nil {
+        mouse.Mouse.SetImage(normalMouse)
+    }
+
     return &Engine{
         LbxCache: cache,
         Coroutine: coroutine.MakeCoroutine(run),
@@ -1561,6 +1568,7 @@ func (engine *Engine) Update() error {
 
 func (engine *Engine) Draw(screen *ebiten.Image) {
     engine.Game.Draw(screen)
+    mouse.Mouse.Draw(screen)
 }
 
 func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
@@ -1590,9 +1598,10 @@ func main(){
         }
     }
 
-    engine, err := NewEngine(scenario)
-
     audio.Initialize()
+    mouse.Initialize()
+
+    engine, err := NewEngine(scenario)
 
     if err != nil {
         log.Printf("Error: unable to load engine: %v", err)
