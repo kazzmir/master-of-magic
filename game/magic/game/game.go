@@ -515,6 +515,7 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         WhiteFont: whiteFont,
         BuildingInfo: buildingInfo,
         TurnNumber: 1,
+        CurrentPlayer: -1,
     }
 
     game.HudUI = game.MakeHudUI()
@@ -3462,8 +3463,13 @@ func (game *Game) DisbandUnits(player *playerlib.Player) []string {
 }
 
 func (game *Game) DoNextTurn(){
+    game.CurrentPlayer += 1
+    if game.CurrentPlayer >= len(game.Players) {
+        game.CurrentPlayer = 0
+    }
+
     if len(game.Players) > 0 {
-        player := game.Players[0]
+        player := game.Players[game.CurrentPlayer]
 
         disbandedMessages := game.DisbandUnits(player)
 
