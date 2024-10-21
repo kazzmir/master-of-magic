@@ -2163,6 +2163,31 @@ func (game *Game) doMagicEncounter(yield coroutine.YieldFunc, player *playerlib.
     yield()
 }
 
+func (game *Game) GetCombatLandscape(x int, y int, plane data.Plane) combat.CombatLandscape {
+    // FIXME: take plane into account
+    tile := game.Map.GetTile(x, y)
+
+    switch tile.TerrainType() {
+        case terrain.Land, terrain.Hill, terrain.Grass,
+             terrain.Forest, terrain.River, terrain.Shore,
+             terrain.Swamp: return combat.CombatLandscapeGrass
+
+        case terrain.Desert: return combat.CombatLandscapeDesert
+        case terrain.Mountain: return combat.CombatLandscapeMountain
+        case terrain.Tundra: return combat.CombatLandscapeTundra
+
+        // FIXME: these cases are special
+        case terrain.Ocean: return combat.CombatLandscapeGrass
+        case terrain.Volcano: return combat.CombatLandscapeGrass
+        case terrain.Lake: return combat.CombatLandscapeGrass
+        case terrain.NatureNode: return combat.CombatLandscapeGrass
+        case terrain.SorceryNode: return combat.CombatLandscapeGrass
+        case terrain.ChaosNode: return combat.CombatLandscapeGrass
+    }
+
+    return combat.CombatLandscapeGrass
+}
+
 /* run the tactical combat screen. returns the combat state as a result (attackers win, defenders win, flee, etc)
  */
 func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player, attackerStack *playerlib.UnitStack, defender *playerlib.Player, defenderStack *playerlib.UnitStack) combat.CombatState {
@@ -2187,7 +2212,9 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     attackingArmy.LayoutUnits(combat.TeamAttacker)
     defendingArmy.LayoutUnits(combat.TeamDefender)
 
-    combatScreen := combat.MakeCombatScreen(game.Cache, &defendingArmy, &attackingArmy, attacker, defender.FindCity(defenderStack.X(), defenderStack.Y()))
+    landscape := game.GetCombatLandscape(attackerStack.X(), attackerStack.Y(), attackerStack.Plane())
+
+    combatScreen := combat.MakeCombatScreen(game.Cache, &defendingArmy, &attackingArmy, attacker, landscape, attackerStack.Plane(), defender.FindCity(defenderStack.X(), defenderStack.Y()))
     oldDrawer := game.Drawer
 
     ebiten.SetCursorMode(ebiten.CursorModeHidden)

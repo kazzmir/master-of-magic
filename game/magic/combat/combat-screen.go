@@ -639,11 +639,45 @@ type CombatScreen struct {
     */
 }
 
-func makeTiles(width int, height int, city *citylib.City) [][]Tile {
+type CombatLandscape int
+
+const (
+    CombatLandscapeGrass CombatLandscape = iota
+    CombatLandscapeDesert
+    CombatLandscapeMountain
+    CombatLandscapeTundra
+)
+
+func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plane, city *citylib.City) [][]Tile {
 
     baseLbx := "cmbgrass.lbx"
 
-    baseLbx = "cmbmount.lbx"
+    switch landscape {
+        case CombatLandscapeGrass:
+            if plane == data.PlaneArcanus {
+                baseLbx = "cmbgrass.lbx"
+            } else {
+                baseLbx = "cmbgrasc.lbx"
+            }
+        case CombatLandscapeDesert:
+            if plane == data.PlaneArcanus {
+                baseLbx = "cmbdesrt.lbx"
+            } else {
+                baseLbx = "cmbdesrc.lbx"
+            }
+        case CombatLandscapeMountain:
+            if plane == data.PlaneArcanus {
+                baseLbx = "cmbmount.lbx"
+            } else {
+                baseLbx = "cmbmounc.lbx"
+            }
+        case CombatLandscapeTundra:
+            if plane == data.PlaneArcanus {
+                baseLbx = "cmbtundr.lbx"
+            } else {
+                baseLbx = "cmbtundc.lbx"
+            }
+    }
 
     maybeExtraTile := func() TileTop {
         if rand.N(10) == 0 {
@@ -720,7 +754,7 @@ func makePaletteFromBanner(banner data.BannerType) color.Palette {
     }
 }
 
-func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Army, player *playerlib.Player, city *citylib.City) *CombatScreen {
+func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Army, player *playerlib.Player, landscape CombatLandscape, plane data.Plane, city *citylib.City) *CombatScreen {
     fontLbx, err := cache.GetLbxFile("fonts.lbx")
     if err != nil {
         log.Printf("Unable to read fonts.lbx: %v", err)
@@ -807,7 +841,7 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
         AttackingArmy: attackingArmy,
         TurnAttacker: 0,
         Events: make(chan CombatEvent, 1000),
-        Tiles: makeTiles(30, 30, city),
+        Tiles: makeTiles(30, 30, landscape, plane, city),
         DrawRoad: city != nil,
         SelectedUnit: nil,
         DebugFont: debugFont,
