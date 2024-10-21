@@ -594,6 +594,7 @@ type CombatScreen struct {
     // when the user hovers over a unit, that unit should be shown in a little info box at the upper right
     HighlightedUnit *ArmyUnit
     Tiles [][]Tile
+    DrawRoad bool
     OtherUnits []*OtherUnit
     Projectiles []*Projectile
     // order to draw tiles in such that they are drawn from the top of the screen to the bottom (painter's order)
@@ -791,6 +792,7 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
         TurnAttacker: 0,
         Events: make(chan CombatEvent, 1000),
         Tiles: makeTiles(30, 30, city),
+        DrawRoad: city != nil,
         SelectedUnit: nil,
         DebugFont: debugFont,
         HudFont: hudFont,
@@ -3086,6 +3088,7 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
         return combat.Coordinates.Apply(float64(x), float64(y))
     }
 
+    // draw base land first
     for _, point := range combat.TopDownOrder {
         x := point.X
         y := point.Y
@@ -3102,9 +3105,32 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
             index := animationIndex % uint64(len(mudTiles))
             screen.DrawImage(mudTiles[index], &options)
         }
+    }
+
+    if combat.DrawRoad {
+        tx, ty := tilePosition(13, 5)
+
+        road, _ := combat.ImageCache.GetImageTransform("cmbtcity.lbx", 0, 0, "crop", util.AutoCrop)
+        options.GeoM.Reset()
+        options.GeoM.Translate(tx, ty)
+        options.GeoM.Translate(0, float64(tile0.Bounds().Dy())/2)
+        screen.DrawImage(road, &options)
+
+        vector.DrawFilledCircle(screen, float32(tx), float32(ty), 2, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, false)
+    }
+
+    // then draw extra stuff on top
+    for _, point := range combat.TopDownOrder {
+        x := point.X
+        y := point.Y
 
         extra := combat.Tiles[y][x].ExtraObject
         if extra.Index != -1 {
+            options.GeoM.Reset()
+            // tx,ty is the middle of the tile
+            tx, ty := tilePosition(x, y)
+            options.GeoM.Translate(tx, ty)
+
             extraImage, _ := combat.ImageCache.GetImageTransform(extra.Lbx, extra.Index, 0, "crop", util.AutoCrop)
 
             switch extra.Alignment {
