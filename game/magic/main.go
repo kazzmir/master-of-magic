@@ -14,6 +14,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/units"
+    "github.com/kazzmir/master-of-magic/game/magic/mouse"
     "github.com/kazzmir/master-of-magic/game/magic/mainview"
     gamelib "github.com/kazzmir/master-of-magic/game/magic/game"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
@@ -294,6 +295,8 @@ func (game *MagicGame) Draw(screen *ebiten.Image) {
     if game.Drawer != nil {
         game.Drawer(screen)
     }
+
+    mouse.Mouse.Draw(screen)
 }
 
 func main() {
@@ -308,6 +311,7 @@ func main() {
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 
     audio.Initialize()
+    mouse.Initialize()
 
     game, err := NewMagicGame(dataPath)
     
