@@ -242,7 +242,7 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
 
                     nameX, nameY := options.GeoM.Apply(0, 0)
 
-                    smallerFont.PrintCenter(screen, nameX + 15, nameY + 6, 1, options.ColorScale, hero.ShortName())
+                    smallerFont.PrintCenter(screen, nameX + 15, nameY + 6, 1, options.ColorScale, hero.GetName())
                 },
             }
 

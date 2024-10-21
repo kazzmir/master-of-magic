@@ -3092,6 +3092,7 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
 
         image, _ := combat.ImageCache.GetImage("cmbgrass.lbx", combat.Tiles[y][x].Index, 0)
         options.GeoM.Reset()
+        // tx,ty is the middle of the tile
         tx, ty := tilePosition(x, y)
         options.GeoM.Translate(tx, ty)
         screen.DrawImage(image, &options)
