@@ -14,9 +14,7 @@ import (
 type ConsoleState int
 
 const (
-    ConsoleOpening ConsoleState = iota
-    ConsoleOpen
-    ConsoleClosing
+    ConsoleOpen ConsoleState = iota
     ConsoleClosed
 )
 
@@ -35,7 +33,7 @@ func MakeConsole() *Console {
 }
 
 func (console *Console) IsActive() bool {
-    return console.State == ConsoleOpen || console.State == ConsoleOpening
+    return console.State == ConsoleOpen
 }
 
 func (console *Console) Update() {
@@ -45,24 +43,22 @@ func (console *Console) Update() {
     for _, key := range keys {
         switch key {
         case ebiten.KeyBackquote:
-            if console.State == ConsoleClosed || console.State == ConsoleClosing {
-                console.State = ConsoleOpening
-            } else if console.State == ConsoleOpen || console.State == ConsoleOpening {
-                console.State = ConsoleClosing
+            if console.State == ConsoleClosed {
+                console.State = ConsoleOpen
+            } else if console.State == ConsoleOpen {
+                console.State = ConsoleClosed
             }
         }
     }
 
     const speed = 8
 
-    if console.State == ConsoleOpening || console.State == ConsoleOpen {
+    if console.State == ConsoleOpen {
         if console.PosY < ConsoleHeight {
             console.PosY += speed
             if console.PosY > ConsoleHeight {
                 console.PosY = ConsoleHeight
             }
-        } else {
-            console.State = ConsoleOpen
         }
     } else {
         if console.PosY > 0 {
