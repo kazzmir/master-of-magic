@@ -157,5 +157,4 @@ func (end *CombatEndScreen) Update() CombatEndScreenState {
 func (end *CombatEndScreen) Draw(screen *ebiten.Image) {
     end.CombatScreen.Draw(screen)
     end.UI.Draw(end.UI, screen)
-    end.CombatScreen.DrawMouse(screen)
 }

@@ -14,6 +14,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/player"
+    "github.com/kazzmir/master-of-magic/game/magic/mouse"
     herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
 
@@ -362,6 +363,8 @@ func (engine *Engine) Draw(screen *ebiten.Image) {
     } else {
         engine.CombatScreen.Draw(screen)
     }
+
+    mouse.Mouse.Draw(screen)
 }
 
 func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
@@ -382,6 +385,7 @@ func main(){
     ebiten.SetCursorMode(ebiten.CursorModeHidden)
 
     audio.Initialize()
+    mouse.Initialize()
 
     engine, err := NewEngine(scenario)
 

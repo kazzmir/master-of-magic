@@ -14,6 +14,8 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/units"
+    "github.com/kazzmir/master-of-magic/game/magic/mouse"
+    mouselib "github.com/kazzmir/master-of-magic/lib/mouse"
     "github.com/kazzmir/master-of-magic/game/magic/mainview"
     gamelib "github.com/kazzmir/master-of-magic/game/magic/game"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
@@ -45,6 +47,9 @@ type MagicGame struct {
 }
 
 func runIntro(yield coroutine.YieldFunc, game *MagicGame) {
+    mouse.Mouse.Disable()
+    defer mouse.Mouse.Enable()
+
     intro, err := introlib.MakeIntro(game.Cache, introlib.DefaultAnimationSpeed)
     if err != nil {
         log.Printf("Unable to run intro: %v", err)
@@ -214,6 +219,11 @@ func loadData(yield coroutine.YieldFunc, game *MagicGame, dataPath string) error
 
     game.Cache = cache
 
+    normalMouse, err := mouselib.GetMouseNormal(cache)
+    if err == nil {
+        mouse.Mouse.SetImage(normalMouse)
+    }
+
     return nil
 }
 
@@ -294,6 +304,8 @@ func (game *MagicGame) Draw(screen *ebiten.Image) {
     if game.Drawer != nil {
         game.Drawer(screen)
     }
+
+    mouse.Mouse.Draw(screen)
 }
 
 func main() {
@@ -308,6 +320,9 @@ func main() {
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 
     audio.Initialize()
+    mouse.Initialize()
+
+    ebiten.SetCursorMode(ebiten.CursorModeHidden)
 
     game, err := NewMagicGame(dataPath)
     

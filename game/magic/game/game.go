@@ -29,7 +29,9 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/summon"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/draw"
+    "github.com/kazzmir/master-of-magic/game/magic/mouse"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
+    mouselib "github.com/kazzmir/master-of-magic/lib/mouse"
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/font"
@@ -180,6 +182,8 @@ type Game struct {
     TurnNumber uint64
 
     Heroes map[herolib.HeroType]*herolib.Hero
+
+    MouseData *mouselib.MouseData
 
     Events chan GameEvent
     BuildingInfo buildinglib.BuildingInfos
@@ -488,9 +492,16 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         return nil
     }
 
+    mouseData, err := mouselib.MakeMouseData(lbxCache)
+    if err != nil {
+        log.Printf("Unable to read mouse data: %v", err)
+        return nil
+    }
+
     game := &Game{
         Cache: lbxCache,
         Help: help,
+        MouseData: mouseData,
         Events: make(chan GameEvent, 1000),
         Map: MakeMap(terrainData),
         State: GameStateRunning,
@@ -1555,8 +1566,8 @@ func (game *Game) doVault(yield coroutine.YieldFunc, newArtifact *artifact.Artif
 
         game.Drawer = func (screen *ebiten.Image, game *Game){
             drawer(screen, game)
-            vaultDrawer(screen, false)
-            itemDrawer(screen, true)
+            vaultDrawer(screen)
+            itemDrawer(screen)
         }
 
         itemLogic(yield)
@@ -1564,7 +1575,7 @@ func (game *Game) doVault(yield coroutine.YieldFunc, newArtifact *artifact.Artif
 
     game.Drawer = func (screen *ebiten.Image, game *Game){
         drawer(screen, game)
-        vaultDrawer(screen, true)
+        vaultDrawer(screen)
     }
 
     vaultLogic(yield)
@@ -2147,7 +2158,7 @@ func (game *Game) doMagicEncounter(yield coroutine.YieldFunc, player *playerlib.
 /* run the tactical combat screen. returns the combat state as a result (attackers win, defenders win, flee, etc)
  */
 func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player, attackerStack *playerlib.UnitStack, defender *playerlib.Player, defenderStack *playerlib.UnitStack) combat.CombatState {
-
+    defer mouse.Mouse.SetImage(game.MouseData.Normal)
 
     attackingArmy := combat.Army{
         Player: attacker,

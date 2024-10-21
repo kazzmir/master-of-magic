@@ -18,6 +18,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/mouse"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
+    globalMouse "github.com/kazzmir/master-of-magic/game/magic/mouse"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/util"
@@ -2760,6 +2761,25 @@ func (combat *CombatScreen) doAI(yield coroutine.YieldFunc, aiUnit *ArmyUnit) {
     aiUnit.MovesLeft = fraction.FromInt(0)
 }
 
+func (combat *CombatScreen) UpdateMouseState() {
+    switch combat.MouseState {
+        case CombatMoveOk:
+            globalMouse.Mouse.SetImage(combat.Mouse.Move)
+        case CombatClickHud:
+            globalMouse.Mouse.SetImage(combat.Mouse.Normal)
+        case CombatMeleeAttackOk:
+            // mouseOptions.GeoM.Translate(-1, -1)
+            globalMouse.Mouse.SetImage(combat.Mouse.Attack)
+        case CombatRangeAttackOk:
+            globalMouse.Mouse.SetImage(combat.Mouse.Arrow)
+        case CombatNotOk:
+            globalMouse.Mouse.SetImage(combat.Mouse.Error)
+        case CombatCast:
+            index := (combat.Counter / 8) % uint64(len(combat.Mouse.Cast))
+            globalMouse.Mouse.SetImage(combat.Mouse.Cast[index])
+    }
+}
+
 func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
     // defender wins in a tie
     if len(combat.AttackingArmy.Units) == 0 {
@@ -2772,6 +2792,8 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
 
     combat.Counter += 1
     combat.UI.StandardUpdate()
+
+    combat.UpdateMouseState()
 
     mouseX, mouseY := ebiten.CursorPosition()
     hudImage, _ := combat.ImageCache.GetImage("cmbtfx.lbx", 28, 0)
@@ -3197,9 +3219,10 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
         }
     }
 
-    combat.DrawMouse(screen)
+    // combat.DrawMouse(screen)
 }
 
+/*
 func (combat *CombatScreen) DrawMouse(screen *ebiten.Image){
     var mouseOptions ebiten.DrawImageOptions
     mouseX, mouseY := ebiten.CursorPosition()
@@ -3222,3 +3245,4 @@ func (combat *CombatScreen) DrawMouse(screen *ebiten.Image){
             screen.DrawImage(combat.Mouse.Cast[index], &mouseOptions)
     }
 }
+*/
