@@ -93,14 +93,18 @@ const (
     CityScreenStateDone
 )
 
-type CityScreen struct {
-    LbxCache *lbx.LbxCache
-    ImageCache util.ImageCache
+type Fonts struct {
     BigFont *font.Font
     DescriptionFont *font.Font
     ProducingFont *font.Font
     SmallFont *font.Font
     RubbleFont *font.Font
+}
+
+type CityScreen struct {
+    LbxCache *lbx.LbxCache
+    ImageCache util.ImageCache
+    Fonts *Fonts
     City *citylib.City
 
     UI *uilib.UI
@@ -113,6 +117,109 @@ type CityScreen struct {
 
     Counter uint64
     State CityScreenState
+}
+
+func makeFonts(cache *lbx.LbxCache) (*Fonts, error) {
+    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        return nil, err
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
+        return nil, err
+    }
+
+    yellowPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xfa, G: 0xe1, B: 0x16, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xef, B: 0x2f, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xef, B: 0x2f, A: 0xff},
+        color.RGBA{R: 0xe0, G: 0x8a, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xd2, G: 0x7f, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xd2, G: 0x7f, B: 0x0, A: 0xff},
+        color.RGBA{R: 0x99, G: 0x4f, B: 0x0, A: 0xff},
+        color.RGBA{R: 0x99, G: 0x4f, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0x99, G: 0x4f, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+    }
+
+    bigFont := font.MakeOptimizedFontWithPalette(fonts[5], yellowPalette)
+
+    brownPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0xe1, G: 0x8e, B: 0x32, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+    }
+
+    // fixme: make shadow font as well
+    descriptionFont := font.MakeOptimizedFontWithPalette(fonts[1], brownPalette)
+
+    whitePalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+    }
+
+    producingFont := font.MakeOptimizedFontWithPalette(fonts[1], whitePalette)
+
+    smallFontPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0x0},
+        color.RGBA{R: 128, G: 128, B: 128, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+    }
+
+    // FIXME: this font should have a black outline around all the glyphs
+    smallFont := font.MakeOptimizedFontWithPalette(fonts[1], smallFontPalette)
+
+    rubbleFontPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0x0},
+        color.RGBA{R: 128, G: 0, B: 0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+    }
+
+    // FIXME: this font should have a black outline around all the glyphs
+    rubbleFont := font.MakeOptimizedFontWithPalette(fonts[1], rubbleFontPalette)
+
+    return &Fonts{
+        BigFont: bigFont,
+        DescriptionFont: descriptionFont,
+        ProducingFont: producingFont,
+        SmallFont: smallFont,
+        RubbleFont: rubbleFont,
+    }, nil
 }
 
 func sortBuildings(buildings []buildinglib.Building) []buildinglib.Building {
@@ -198,99 +305,11 @@ func makeBuildingSlots(city *citylib.City) []BuildingSlot {
 
 func MakeCityScreen(cache *lbx.LbxCache, city *citylib.City, player *playerlib.Player) *CityScreen {
 
-    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    fonts, err := makeFonts(cache)
     if err != nil {
-        log.Printf("Unable to read fonts.lbx: %v", err)
+        log.Printf("Could not make fonts: %v", err)
         return nil
     }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
-        return nil
-    }
-
-    yellowPalette := color.Palette{
-            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-            color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-            color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-            color.RGBA{R: 0xfa, G: 0xe1, B: 0x16, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xef, B: 0x2f, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xef, B: 0x2f, A: 0xff},
-            color.RGBA{R: 0xe0, G: 0x8a, B: 0x0, A: 0xff},
-            color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-            color.RGBA{R: 0xd2, G: 0x7f, B: 0x0, A: 0xff},
-            color.RGBA{R: 0xd2, G: 0x7f, B: 0x0, A: 0xff},
-            color.RGBA{R: 0x99, G: 0x4f, B: 0x0, A: 0xff},
-            color.RGBA{R: 0x99, G: 0x4f, B: 0x0, A: 0xff},
-            color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-            color.RGBA{R: 0x99, G: 0x4f, B: 0x0, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        }
-
-    bigFont := font.MakeOptimizedFontWithPalette(fonts[5], yellowPalette)
-
-    brownPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0xe1, G: 0x8e, B: 0x32, A: 0xff},
-        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-    }
-
-    // fixme: make shadow font as well
-    descriptionFont := font.MakeOptimizedFontWithPalette(fonts[1], brownPalette)
-
-    whitePalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-    }
-
-    producingFont := font.MakeOptimizedFontWithPalette(fonts[1], whitePalette)
-
-    smallFontPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0x0},
-        color.RGBA{R: 128, G: 128, B: 128, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-    }
-
-    // FIXME: this font should have a black outline around all the glyphs
-    smallFont := font.MakeOptimizedFontWithPalette(fonts[1], smallFontPalette)
-
-    rubbleFontPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0x0},
-        color.RGBA{R: 128, G: 0, B: 0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-    }
-
-    // FIXME: this font should have a black outline around all the glyphs
-    rubbleFont := font.MakeOptimizedFontWithPalette(fonts[1], rubbleFontPalette)
 
     buildings := makeBuildingSlots(city)
 
@@ -298,11 +317,7 @@ func MakeCityScreen(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
         LbxCache: cache,
         ImageCache: util.MakeImageCache(cache),
         City: city,
-        BigFont: bigFont,
-        DescriptionFont: descriptionFont,
-        ProducingFont: producingFont,
-        SmallFont: smallFont,
-        RubbleFont: rubbleFont,
+        Fonts: fonts,
         Buildings: buildings,
         State: CityScreenStateRunning,
         Player: player,
@@ -863,30 +878,30 @@ func getRaceRebelIndex(race data.Race) int {
     return -1
 }
 
-func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *ebiten.Image, geom ebiten.GeoM, counter uint64)) {
-    animationCounter := cityScreen.Counter / 8
-
+func drawCityScape(screen *ebiten.Image, buildings []BuildingSlot, buildingLook buildinglib.Building, animationCounter uint64, imageCache *util.ImageCache, fonts *Fonts, buildingInfo buildinglib.BuildingInfos, player *playerlib.Player, baseGeoM ebiten.GeoM) {
     // 5 is grasslands
-    landBackground, err := cityScreen.ImageCache.GetImage("cityscap.lbx", 0, 4)
+    landBackground, err := imageCache.GetImage("cityscap.lbx", 0, 4)
     if err == nil {
         var options ebiten.DrawImageOptions
-        options.GeoM.Translate(4, 102)
+        options.GeoM = baseGeoM
         screen.DrawImage(landBackground, &options)
     }
 
-    hills1, err := cityScreen.ImageCache.GetImage("cityscap.lbx", 7, 0)
+    hills1, err := imageCache.GetImage("cityscap.lbx", 7, 0)
     if err == nil {
         var options ebiten.DrawImageOptions
-        options.GeoM.Translate(4, 101)
+        options.GeoM = baseGeoM
+        options.GeoM.Translate(0, -1)
         screen.DrawImage(hills1, &options)
     }
 
-    roadX := 4.0
-    roadY := 120.0
+    roadX := 0.0
+    roadY := 18.0
 
-    normalRoad, err := cityScreen.ImageCache.GetImage("cityscap.lbx", 5, 0)
+    normalRoad, err := imageCache.GetImage("cityscap.lbx", 5, 0)
     if err == nil {
         var options ebiten.DrawImageOptions
+        options.GeoM = baseGeoM
         options.GeoM.Translate(roadX, roadY)
         screen.DrawImage(normalRoad, &options)
     }
@@ -894,7 +909,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
     drawName := func(){
     }
 
-    for _, building := range cityScreen.Buildings {
+    for _, building := range buildings {
 
         index := GetBuildingIndex(building.Building)
 
@@ -904,29 +919,32 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
 
         x, y := building.Point.X, building.Point.Y
 
-        images, err := cityScreen.ImageCache.GetImages("cityscap.lbx", index)
+        images, err := imageCache.GetImages("cityscap.lbx", index)
         if err == nil {
             animationIndex := animationCounter % uint64(len(images))
             use := images[animationIndex]
             var options ebiten.DrawImageOptions
+            options.GeoM = baseGeoM
             // x,y position is the bottom left of the sprite
             options.GeoM.Translate(float64(x) + roadX, float64(y - use.Bounds().Dy()) + roadY)
             screen.DrawImage(use, &options)
 
-            if cityScreen.BuildingLook == building.Building {
+            if buildingLook == building.Building {
                 drawName = func(){
-                    useFont := cityScreen.SmallFont
-                    text := cityScreen.City.BuildingInfo.Name(building.Building)
+                    useFont := fonts.SmallFont
+                    text := buildingInfo.Name(building.Building)
                     if building.IsRubble {
                         text = "Destroyed " + text
-                        useFont = cityScreen.RubbleFont
+                        useFont = fonts.RubbleFont
                     }
 
                     if building.Building == buildinglib.BuildingFortress {
-                        text = fmt.Sprintf("%v's Fortress", cityScreen.Player.Wizard.Name)
+                        text = fmt.Sprintf("%v's Fortress", player.Wizard.Name)
                     }
 
-                    useFont.PrintCenter(screen, float64(x + 10) + roadX, float64(y + 1) + roadY, 1, ebiten.ColorScale{}, text)
+                    printX, printY := baseGeoM.Apply(float64(x + 10) + roadX, float64(y + 1) + roadY)
+
+                    useFont.PrintCenter(screen, printX, printY, 1, ebiten.ColorScale{}, text)
                 }
             }
         }
@@ -934,23 +952,38 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
 
     drawName()
 
-    river, err := cityScreen.ImageCache.GetImages("cityscap.lbx", 3)
+    river, err := imageCache.GetImages("cityscap.lbx", 3)
     if err == nil {
         var options ebiten.DrawImageOptions
-        options.GeoM.Translate(5, 100)
+        options.GeoM = baseGeoM
+        options.GeoM.Translate(1, -2)
         index := animationCounter % uint64(len(river))
         screen.DrawImage(river[index], &options)
     }
 
+    /*
+    x, y := baseGeoM.Apply(0, 0)
+    vector.DrawFilledCircle(screen, float32(x), float32(y), 2, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff}, false)
+    */
+}
+
+func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *ebiten.Image, geom ebiten.GeoM, counter uint64)) {
+    animationCounter := cityScreen.Counter / 8
+
+    var cityScapeGeoM ebiten.GeoM
+    cityScapeGeoM.Translate(4, 102)
+    // func drawCityScape(screen *ebiten.Image, buildings []BuildingSlot, buildingLook buildinglib.Building, animationCounter uint64, imageCache *util.ImageCache, fonts *Fonts, buildingInfo buildinglib.BuildingInfos, player *playerlib.Player, baseGeoM ebiten.GeoM) {
+    drawCityScape(screen, cityScreen.Buildings, cityScreen.BuildingLook, animationCounter, &cityScreen.ImageCache, cityScreen.Fonts, cityScreen.City.BuildingInfo, cityScreen.Player, cityScapeGeoM)
+   
     ui, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", 6, 0)
     if err == nil {
         var options ebiten.DrawImageOptions
         screen.DrawImage(ui, &options)
     }
 
-    cityScreen.BigFont.Print(screen, 20, 3, 1, ebiten.ColorScale{}, fmt.Sprintf("%v of %s", cityScreen.City.GetSize(), cityScreen.City.Name))
+    cityScreen.Fonts.BigFont.Print(screen, 20, 3, 1, ebiten.ColorScale{}, fmt.Sprintf("%v of %s", cityScreen.City.GetSize(), cityScreen.City.Name))
 
-    cityScreen.DescriptionFont.Print(screen, 6, 19, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", cityScreen.City.Race))
+    cityScreen.Fonts.DescriptionFont.Print(screen, 6, 19, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", cityScreen.City.Race))
 
     deltaNumber := func(n int) string {
         if n > 0 {
@@ -962,7 +995,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
         }
     }
 
-    cityScreen.DescriptionFont.PrintRight(screen, 210, 19, 1, ebiten.ColorScale{}, fmt.Sprintf("Population: %v (%v)", cityScreen.City.Population, deltaNumber(cityScreen.City.PopulationGrowthRate())))
+    cityScreen.Fonts.DescriptionFont.PrintRight(screen, 210, 19, 1, ebiten.ColorScale{}, fmt.Sprintf("Population: %v (%v)", cityScreen.City.Population, deltaNumber(cityScreen.City.PopulationGrowthRate())))
 
     drawIcons := func(total int, small *ebiten.Image, large *ebiten.Image, x float64, y float64) float64 {
         var options ebiten.DrawImageOptions
@@ -1044,7 +1077,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
             screen.DrawImage(producingPics[index], &options)
         }
 
-        cityScreen.ProducingFont.PrintCenter(screen, 237, 179, 1, ebiten.ColorScale{}, cityScreen.City.BuildingInfo.Name(cityScreen.City.ProducingBuilding))
+        cityScreen.Fonts.ProducingFont.PrintCenter(screen, 237, 179, 1, ebiten.ColorScale{}, cityScreen.City.BuildingInfo.Name(cityScreen.City.ProducingBuilding))
 
         // for all buildings besides trade goods and housing, show amount of work required to build
 
@@ -1062,7 +1095,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
                 case buildinglib.BuildingHousing: description = "Increases population growth rate."
             }
 
-            cityScreen.ProducingFont.PrintWrapCenter(screen, 285, 155, 60, 1, ebiten.ColorScale{}, description)
+            cityScreen.Fonts.ProducingFont.PrintWrapCenter(screen, 285, 155, 60, 1, ebiten.ColorScale{}, description)
         } else {
             showWork = true
             workRequired = cityScreen.City.BuildingInfo.ProductionCost(cityScreen.City.ProducingBuilding)
@@ -1076,7 +1109,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
             options.GeoM.Translate(238, 168)
             combat.RenderCombatTile(screen, &cityScreen.ImageCache, options)
             combat.RenderCombatUnit(screen, use, options, cityScreen.City.ProducingUnit.Count)
-            cityScreen.ProducingFont.PrintCenter(screen, 237, 179, 1, ebiten.ColorScale{}, cityScreen.City.ProducingUnit.Name)
+            cityScreen.Fonts.ProducingFont.PrintCenter(screen, 237, 179, 1, ebiten.ColorScale{}, cityScreen.City.ProducingUnit.Name)
         }
 
         showWork = true
@@ -1092,7 +1125,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
             turn = fmt.Sprintf("%v Turns", int(math.Ceil(turns)))
         }
 
-        cityScreen.DescriptionFont.PrintRight(screen, 318, 140, 1, ebiten.ColorScale{}, turn)
+        cityScreen.Fonts.DescriptionFont.PrintRight(screen, 318, 140, 1, ebiten.ColorScale{}, turn)
 
         workEmpty, err1 := cityScreen.ImageCache.GetImage("backgrnd.lbx", 11, 0)
         workFull, err2 := cityScreen.ImageCache.GetImage("backgrnd.lbx", 12, 0)
