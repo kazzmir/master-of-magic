@@ -982,7 +982,6 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
     }
 
     cityScreen.Fonts.BigFont.Print(screen, 20, 3, 1, ebiten.ColorScale{}, fmt.Sprintf("%v of %s", cityScreen.City.GetSize(), cityScreen.City.Name))
-
     cityScreen.Fonts.DescriptionFont.Print(screen, 6, 19, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", cityScreen.City.Race))
 
     deltaNumber := func(n int) string {
@@ -1220,6 +1219,14 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
         cityScapeGeoM.Translate(5, 102)
 
         drawCityScape(screen, buildings, buildingLook, counter / 8, &imageCache, fonts, city.BuildingInfo, player, cityScapeGeoM)
+
+        titleX, titleY := options.GeoM.Apply(20, 3)
+        fonts.BigFont.Print(screen, titleX, titleY, 1, ebiten.ColorScale{}, fmt.Sprintf("%v of %s", city.GetSize(), city.Name))
+        raceX, raceY := options.GeoM.Apply(6, 19)
+        fonts.DescriptionFont.Print(screen, raceX, raceY, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", city.Race))
+
+        unitsX, unitsY := options.GeoM.Apply(6, 43)
+        fonts.DescriptionFont.Print(screen, unitsX, unitsY, 1, ebiten.ColorScale{}, "Units")
     }
 
     logic := func(yield coroutine.YieldFunc, update func()){
