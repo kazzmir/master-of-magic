@@ -365,6 +365,116 @@ func (cityScreen *CityScreen) SellBuilding(building buildinglib.Building) {
     }
 }
 
+func makeCityScapeElement(cache *lbx.LbxCache, ui *uilib.UI, city *citylib.City, help *lbx.Help, imageCache *util.ImageCache, doSell func(buildinglib.Building), buildings []BuildingSlot, x1 int, y1 int, fonts *Fonts, player *playerlib.Player) *uilib.UIElement {
+    rawImageCache := make(map[int]image.Image)
+
+    getRawImage := func(index int) (image.Image, error) {
+        if pic, ok := rawImageCache[index]; ok {
+            return pic, nil
+        }
+
+        cityScapLbx, err := cache.GetLbxFile("cityscap.lbx")
+        if err != nil {
+            return nil, err
+        }
+        images, err := cityScapLbx.ReadImages(index)
+        if err != nil {
+            return nil, err
+        }
+
+        rawImageCache[index] = images[0]
+
+        return images[0], nil
+    }
+
+    roadX := 0.0
+    roadY := 18.0
+
+    buildingLook := buildinglib.BuildingNone
+    buildingView := image.Rect(x1, y1, x1 + 208, y1 + 195)
+    element := &uilib.UIElement{
+        Rect: buildingView,
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+            var geom ebiten.GeoM
+            geom.Translate(float64(x1), float64(y1))
+            drawCityScape(screen, buildings, buildingLook, ui.Counter / 8, imageCache, fonts, city.BuildingInfo, player, geom)
+            // vector.StrokeRect(screen, float32(buildingView.Min.X), float32(buildingView.Min.Y), float32(buildingView.Dx()), float32(buildingView.Dy()), 1, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff}, true)
+        },
+        RightClick: func(element *uilib.UIElement) {
+            if buildingLook != buildinglib.BuildingNone {
+                helpEntries := help.GetEntriesByName(city.BuildingInfo.Name(buildingLook))
+                if helpEntries != nil {
+                    ui.AddElement(uilib.MakeHelpElement(ui, cache, imageCache, helpEntries[0]))
+                }
+            }
+        },
+        LeftClick: func(element *uilib.UIElement) {
+            if buildingLook != buildinglib.BuildingNone && canSellBuilding(city, buildingLook) {
+                doSell(buildingLook)
+
+                /*
+                if city.SoldBuilding {
+                    ui.AddElement(uilib.MakeErrorElement(ui, cityScreen.LbxCache, imageCache, "You can only sell back one building per turn.", func(){}))
+                } else {
+                    var confirmElements []*uilib.UIElement
+
+                    yes := func(){
+                        cityScreen.SellBuilding(buildingLook)
+                    }
+
+                    no := func(){
+                    }
+
+                    confirmElements = uilib.MakeConfirmDialog(ui, cache, imageCache, fmt.Sprintf("Are you sure you want to sell back the %v for %v gold?", cityScreen.City.BuildingInfo.Name(buildingLook), sellAmount(cityScreen.City, buildingLook)), yes, no)
+                    ui.AddElements(confirmElements)
+                }
+                */
+            }
+        },
+        // if the user hovers over a building then show the name of the building
+        Inside: func(element *uilib.UIElement, x int, y int){
+            buildingLook = buildinglib.BuildingNone
+            // log.Printf("inside building view: %v, %v", x, y)
+
+            // go in reverse order so we select the one in front first
+            for i := len(buildings) - 1; i >= 0; i-- {
+                slot := buildings[i]
+
+                buildingName := city.BuildingInfo.Name(slot.Building)
+
+                if buildingName == "?" || buildingName == "" {
+                    continue
+                }
+
+                index := GetBuildingIndex(slot.Building)
+
+                pic, err := getRawImage(index)
+                if err == nil {
+                    x1 := int(roadX) + slot.Point.X
+                    y1 := int(roadY) + slot.Point.Y - pic.Bounds().Dy()
+                    x2 := x1 + pic.Bounds().Dx()
+                    y2 := y1 + pic.Bounds().Dy()
+
+                    // do pixel perfect detection
+                    if image.Pt(x, y).In(image.Rect(x1, y1, x2, y2)) {
+                        pixelX := x - x1
+                        pixelY := y - y1
+
+                        _, _, _, a := pic.At(pixelX, pixelY).RGBA()
+                        if a > 0 {
+                            buildingLook = slot.Building
+                            // log.Printf("look at building %v (%v,%v) in (%v,%v,%v,%v)", slot.Building, useX, useY, x1, y1, x2, y2)
+                            break
+                        }
+                    }
+                }
+            }
+        },
+    }
+
+    return element
+}
+
 func (cityScreen *CityScreen) MakeUI() *uilib.UI {
     ui := &uilib.UI{
         Draw: func(ui *uilib.UI, screen *ebiten.Image) {
@@ -1204,10 +1314,21 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
         return func(yield coroutine.YieldFunc, update func()){}, func(*ebiten.Image){}
     }
 
+    helpLbx, err := cache.GetLbxFile("help.lbx")
+    if err != nil {
+        log.Printf("Error with help: %v", err)
+        return func(yield coroutine.YieldFunc, update func()){}, func(*ebiten.Image){}
+    }
+
+    help, err := helpLbx.ReadHelp(2)
+    if err != nil {
+        log.Printf("Error with help: %v", err)
+        return func(yield coroutine.YieldFunc, update func()){}, func(*ebiten.Image){}
+    }
+
     counter := uint64(0)
 
     buildings := makeBuildingSlots(city)
-    buildingLook := buildinglib.BuildingNone
 
     background, _ := imageCache.GetImage("reload.lbx", 26, 0)
     var options ebiten.DrawImageOptions
@@ -1235,77 +1356,9 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
 
     ui.SetElementsFromArray(nil)
 
-    rawImageCache := make(map[int]image.Image)
-
-    getRawImage := func(index int) (image.Image, error) {
-        if pic, ok := rawImageCache[index]; ok {
-            return pic, nil
-        }
-
-        cityScapLbx, err := cache.GetLbxFile("cityscap.lbx")
-        if err != nil {
-            return nil, err
-        }
-        images, err := cityScapLbx.ReadImages(index)
-        if err != nil {
-            return nil, err
-        }
-
-        rawImageCache[index] = images[0]
-
-        return images[0], nil
-    }
-
     x1, y1 := options.GeoM.Apply(5, 102)
-    cityScapeRect := image.Rect(int(x1), int(y1), int(x1) + 205, int(y1 + 96))
-    cityScapeElement := &uilib.UIElement{
-        Rect: cityScapeRect,
-        Inside: func(element *uilib.UIElement, x int, y int){
-            buildingLook = buildinglib.BuildingNone
-            // log.Printf("inside building view: %v, %v", x, y)
-            roadX := 0.0
-            roadY := 18.0
 
-            // go in reverse order so we select the one in front first
-            for i := len(buildings) - 1; i >= 0; i-- {
-                slot := buildings[i]
-
-                buildingName := city.BuildingInfo.Name(slot.Building)
-
-                if buildingName == "?" || buildingName == "" {
-                    continue
-                }
-
-                index := GetBuildingIndex(slot.Building)
-
-                pic, err := getRawImage(index)
-                if err == nil {
-                    x1 := int(roadX) + slot.Point.X
-                    y1 := int(roadY) + slot.Point.Y - pic.Bounds().Dy()
-                    x2 := x1 + pic.Bounds().Dx()
-                    y2 := y1 + pic.Bounds().Dy()
-
-                    // do pixel perfect detection
-                    if image.Pt(x, y).In(image.Rect(x1, y1, x2, y2)) {
-                        pixelX := x - x1
-                        pixelY := y - y1
-
-                        _, _, _, a := pic.At(pixelX, pixelY).RGBA()
-                        if a > 0 {
-                            buildingLook = slot.Building
-                            // log.Printf("look at building %v (%v,%v) in (%v,%v,%v,%v)", slot.Building, useX, useY, x1, y1, x2, y2)
-                            break
-                        }
-                    }
-                }
-            }
-        },
-        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            cityScapeGeoM := options.GeoM
-            cityScapeGeoM.Translate(5, 102)
-            drawCityScape(screen, buildings, buildingLook, counter / 8, &imageCache, fonts, city.BuildingInfo, player, cityScapeGeoM)
-        },
-    }
+    cityScapeElement := makeCityScapeElement(cache, ui, city, &help, &imageCache, func(buildinglib.Building){}, buildings, int(x1), int(y1), fonts, player)
 
     ui.AddElement(cityScapeElement)
 
