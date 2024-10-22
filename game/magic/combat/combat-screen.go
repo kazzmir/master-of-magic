@@ -69,6 +69,7 @@ type ZoneType struct {
     AbandonedKeep bool
     Lair bool
     Tower bool
+    Dungeon bool
 
     // one of the three node types
     ChaosNode bool
@@ -785,7 +786,7 @@ func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plan
             Index: 19,
             Alignment: TileAlignBottom,
         }
-    } else if zone.Ruins {
+    } else if zone.Ruins || zone.Dungeon {
         tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
             Lbx: "cmbtcity.lbx",
             Index: 21,
