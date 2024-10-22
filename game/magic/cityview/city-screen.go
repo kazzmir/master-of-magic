@@ -1244,7 +1244,7 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
             fonts.DescriptionFont.Print(screen, raceX, raceY, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", city.Race))
 
             unitsX, unitsY := options.GeoM.Apply(6, 43)
-            fonts.DescriptionFont.Print(screen, unitsX, unitsY, 1, ebiten.ColorScale{}, fmt.Sprintf("Units %v", currentUnitName))
+            fonts.DescriptionFont.Print(screen, unitsX, unitsY, 1, ebiten.ColorScale{}, fmt.Sprintf("Units   %v", currentUnitName))
 
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
                 if element.Draw != nil {
@@ -1300,15 +1300,27 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
 
     stack := player.FindStack(city.X, city.Y)
     if stack != nil {
+        inside := 0
         for i, unit := range stack.Units() {
             x, y := options.GeoM.Apply(8, 52)
 
             x += float64(i % 6) * 20
             y += float64(i / 6) * 20
 
+            pic, _ := imageCache.GetImageTransform(unit.GetLbxFile(), unit.GetLbxIndex(), 0, unit.GetBanner().String(), units.MakeUpdateUnitColorsFunc(unit.GetBanner()))
+            rect := image.Rect(int(x), int(y), int(x) + pic.Bounds().Dx(), int(y) + pic.Bounds().Dy())
             ui.AddElement(&uilib.UIElement{
+                Rect: rect,
+                Inside: func(element *uilib.UIElement, x int, y int){
+                    currentUnitName = unit.GetName()
+                    inside = i
+                },
+                NotInside: func(element *uilib.UIElement){
+                    if inside == i {
+                        currentUnitName = ""
+                    }
+                },
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                    pic, _ := imageCache.GetImageTransform(unit.GetLbxFile(), unit.GetLbxIndex(), 0, unit.GetBanner().String(), units.MakeUpdateUnitColorsFunc(unit.GetBanner()))
                     var localOptions ebiten.DrawImageOptions
                     localOptions.GeoM.Translate(x, y)
                     screen.DrawImage(pic, &localOptions)
