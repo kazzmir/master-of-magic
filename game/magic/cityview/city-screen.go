@@ -365,7 +365,7 @@ func (cityScreen *CityScreen) SellBuilding(building buildinglib.Building) {
     }
 }
 
-func makeCityScapeElement(cache *lbx.LbxCache, ui *uilib.UI, city *citylib.City, help *lbx.Help, imageCache *util.ImageCache, doSell func(buildinglib.Building), buildings []BuildingSlot, x1 int, y1 int, fonts *Fonts, player *playerlib.Player) *uilib.UIElement {
+func makeCityScapeElement(cache *lbx.LbxCache, ui *uilib.UI, city *citylib.City, help *lbx.Help, imageCache *util.ImageCache, doSell func(buildinglib.Building), buildings []BuildingSlot, x1 int, y1 int, fonts *Fonts, player *playerlib.Player, getAlpha *util.AlphaFadeFunc) *uilib.UIElement {
     rawImageCache := make(map[int]image.Image)
 
     getRawImage := func(index int) (image.Image, error) {
@@ -397,7 +397,7 @@ func makeCityScapeElement(cache *lbx.LbxCache, ui *uilib.UI, city *citylib.City,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
             var geom ebiten.GeoM
             geom.Translate(float64(x1), float64(y1))
-            drawCityScape(screen, buildings, buildingLook, ui.Counter / 8, imageCache, fonts, city.BuildingInfo, player, geom)
+            drawCityScape(screen, buildings, buildingLook, ui.Counter / 8, imageCache, fonts, city.BuildingInfo, player, geom, (*getAlpha)())
             // vector.StrokeRect(screen, float32(buildingView.Min.X), float32(buildingView.Min.Y), float32(buildingView.Dx()), float32(buildingView.Dy()), 1, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff}, true)
         },
         RightClick: func(element *uilib.UIElement) {
@@ -498,7 +498,9 @@ func (cityScreen *CityScreen) MakeUI() *uilib.UI {
         }
     }
 
-    elements = append(elements, makeCityScapeElement(cityScreen.LbxCache, ui, cityScreen.City, &help, &cityScreen.ImageCache, sellBuilding, cityScreen.Buildings, 4, 102, cityScreen.Fonts, cityScreen.Player))
+    var getAlpha util.AlphaFadeFunc = func() float32 { return 1 }
+
+    elements = append(elements, makeCityScapeElement(cityScreen.LbxCache, ui, cityScreen.City, &help, &cityScreen.ImageCache, sellBuilding, cityScreen.Buildings, 4, 102, cityScreen.Fonts, cityScreen.Player, &getAlpha))
 
     // FIXME: show disabled buy button if the item is not buyable (not enough money, or the item is trade goods/housing)
     // buy button
@@ -889,12 +891,13 @@ func getRaceRebelIndex(race data.Race) int {
     return -1
 }
 
-func drawCityScape(screen *ebiten.Image, buildings []BuildingSlot, buildingLook buildinglib.Building, animationCounter uint64, imageCache *util.ImageCache, fonts *Fonts, buildingInfo buildinglib.BuildingInfos, player *playerlib.Player, baseGeoM ebiten.GeoM) {
+func drawCityScape(screen *ebiten.Image, buildings []BuildingSlot, buildingLook buildinglib.Building, animationCounter uint64, imageCache *util.ImageCache, fonts *Fonts, buildingInfo buildinglib.BuildingInfos, player *playerlib.Player, baseGeoM ebiten.GeoM, alphaScale float32) {
     // 5 is grasslands
     // FIXME: make the land type and sky configurable
     landBackground, err := imageCache.GetImage("cityscap.lbx", 0, 4)
     if err == nil {
         var options ebiten.DrawImageOptions
+        options.ColorScale.ScaleAlpha(alphaScale)
         options.GeoM = baseGeoM
         screen.DrawImage(landBackground, &options)
     }
@@ -902,6 +905,7 @@ func drawCityScape(screen *ebiten.Image, buildings []BuildingSlot, buildingLook 
     hills1, err := imageCache.GetImage("cityscap.lbx", 7, 0)
     if err == nil {
         var options ebiten.DrawImageOptions
+        options.ColorScale.ScaleAlpha(alphaScale)
         options.GeoM = baseGeoM
         options.GeoM.Translate(0, -1)
         screen.DrawImage(hills1, &options)
@@ -913,6 +917,7 @@ func drawCityScape(screen *ebiten.Image, buildings []BuildingSlot, buildingLook 
     normalRoad, err := imageCache.GetImage("cityscap.lbx", 5, 0)
     if err == nil {
         var options ebiten.DrawImageOptions
+        options.ColorScale.ScaleAlpha(alphaScale)
         options.GeoM = baseGeoM
         options.GeoM.Translate(roadX, roadY)
         screen.DrawImage(normalRoad, &options)
@@ -936,6 +941,7 @@ func drawCityScape(screen *ebiten.Image, buildings []BuildingSlot, buildingLook 
             animationIndex := animationCounter % uint64(len(images))
             use := images[animationIndex]
             var options ebiten.DrawImageOptions
+            options.ColorScale.ScaleAlpha(alphaScale)
             options.GeoM = baseGeoM
             // x,y position is the bottom left of the sprite
             options.GeoM.Translate(float64(x) + roadX, float64(y - use.Bounds().Dy()) + roadY)
@@ -956,7 +962,7 @@ func drawCityScape(screen *ebiten.Image, buildings []BuildingSlot, buildingLook 
 
                     printX, printY := baseGeoM.Apply(float64(x + 10) + roadX, float64(y + 1) + roadY)
 
-                    useFont.PrintCenter(screen, printX, printY, 1, ebiten.ColorScale{}, text)
+                    useFont.PrintCenter(screen, printX, printY, 1, options.ColorScale, text)
                 }
             }
         }
@@ -966,6 +972,7 @@ func drawCityScape(screen *ebiten.Image, buildings []BuildingSlot, buildingLook 
     river, err := imageCache.GetImages("cityscap.lbx", 3)
     if err == nil {
         var options ebiten.DrawImageOptions
+        options.ColorScale.ScaleAlpha(alphaScale)
         options.GeoM = baseGeoM
         options.GeoM.Translate(1, -2)
         index := animationCounter % uint64(len(river))
@@ -1224,27 +1231,30 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
         return func(yield coroutine.YieldFunc, update func()){}, func(*ebiten.Image){}
     }
 
-    counter := uint64(0)
-
     buildings := makeBuildingSlots(city)
 
     background, _ := imageCache.GetImage("reload.lbx", 26, 0)
     var options ebiten.DrawImageOptions
     options.GeoM.Translate(float64(data.ScreenWidth / 2 - background.Bounds().Dx() / 2), 0)
 
+    var getAlpha util.AlphaFadeFunc
+
     currentUnitName := ""
 
     ui := &uilib.UI{
         Draw: func(ui *uilib.UI, screen *ebiten.Image){
-            screen.DrawImage(background, &options)
+            useOptions := options
+            useOptions.ColorScale.ScaleAlpha(getAlpha())
+
+            screen.DrawImage(background, &useOptions)
 
             titleX, titleY := options.GeoM.Apply(20, 3)
-            fonts.BigFont.Print(screen, titleX, titleY, 1, ebiten.ColorScale{}, fmt.Sprintf("%v of %s", city.GetSize(), city.Name))
+            fonts.BigFont.Print(screen, titleX, titleY, 1, useOptions.ColorScale, fmt.Sprintf("%v of %s", city.GetSize(), city.Name))
             raceX, raceY := options.GeoM.Apply(6, 19)
-            fonts.DescriptionFont.Print(screen, raceX, raceY, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", city.Race))
+            fonts.DescriptionFont.Print(screen, raceX, raceY, 1, useOptions.ColorScale, fmt.Sprintf("%v", city.Race))
 
             unitsX, unitsY := options.GeoM.Apply(6, 43)
-            fonts.DescriptionFont.Print(screen, unitsX, unitsY, 1, ebiten.ColorScale{}, fmt.Sprintf("Units   %v", currentUnitName))
+            fonts.DescriptionFont.Print(screen, unitsX, unitsY, 1, useOptions.ColorScale, fmt.Sprintf("Units   %v", currentUnitName))
 
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
                 if element.Draw != nil {
@@ -1254,11 +1264,13 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
         },
     }
 
+    getAlpha = ui.MakeFadeIn(7)
+
     ui.SetElementsFromArray(nil)
 
     x1, y1 := options.GeoM.Apply(5, 102)
 
-    cityScapeElement := makeCityScapeElement(cache, ui, city, &help, &imageCache, func(buildinglib.Building){}, buildings, int(x1), int(y1), fonts, player)
+    cityScapeElement := makeCityScapeElement(cache, ui, city, &help, &imageCache, func(buildinglib.Building){}, buildings, int(x1), int(y1), fonts, player, &getAlpha)
 
     ui.AddElement(cityScapeElement)
 
@@ -1266,6 +1278,7 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
     ui.AddElement(&uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             localOptions := options
+            localOptions.ColorScale.ScaleAlpha(getAlpha())
             localOptions.GeoM.Translate(6, 27)
             farmer, _ := imageCache.GetImage("backgrnd.lbx", getRaceFarmerIndex(city.Race), 0)
             worker, _ := imageCache.GetImage("backgrnd.lbx", getRaceWorkerIndex(city.Race), 0)
@@ -1322,6 +1335,7 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
                 },
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                     var localOptions ebiten.DrawImageOptions
+                    localOptions.ColorScale.ScaleAlpha(getAlpha())
                     localOptions.GeoM.Translate(x, y)
                     screen.DrawImage(pic, &localOptions)
                 },
@@ -1329,18 +1343,25 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
         }
     }
 
+    // FIXME: show enchantments
+
     draw := func(screen *ebiten.Image){
         ui.Draw(ui, screen)
     }
 
     logic := func(yield coroutine.YieldFunc, update func()){
-        for {
-            counter += 1
+        countdown := 0
+        for countdown != 1 {
             update()
             ui.StandardUpdate()
 
-            if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-                return
+            if countdown == 0 && inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
+                countdown = 8
+                getAlpha = ui.MakeFadeOut(7)
+            }
+
+            if countdown > 1 {
+                countdown -= 1
             }
 
             yield()
