@@ -200,6 +200,7 @@ type Game struct {
     Map *Map
 
     Players []*playerlib.Player
+    CurrentPlayer int
 }
 
 type UnitBuildPowers struct {
@@ -514,6 +515,7 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         WhiteFont: whiteFont,
         BuildingInfo: buildingInfo,
         TurnNumber: 1,
+        CurrentPlayer: -1,
     }
 
     game.HudUI = game.MakeHudUI()
@@ -1906,7 +1908,11 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                 for _, otherPlayer := range game.Players[1:] {
                     otherStack := otherPlayer.FindStack(stack.X(), stack.Y())
                     if otherStack != nil {
-                        game.doCombat(yield, player, stack, otherPlayer, otherStack)
+                        zone := combat.ZoneType{
+                            City: otherPlayer.FindCity(stack.X(), stack.Y()),
+                        }
+
+                        game.doCombat(yield, player, stack, otherPlayer, otherStack, zone)
 
                         game.RefreshUI()
 
@@ -1978,6 +1984,19 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                 if stack != nil {
                     player.SelectedStack = stack
                     game.RefreshUI()
+                } else {
+
+                    for _, otherPlayer := range game.Players {
+                        if otherPlayer == player {
+                            continue
+                        }
+
+                        city := otherPlayer.FindCity(tileX, tileY)
+                        if city != nil {
+                            game.doEnemyCityView(yield, city, otherPlayer)
+                        }
+                    }
+
                 }
             }
         }
@@ -2000,15 +2019,41 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
             game.HudUI.StandardUpdate()
 
             // kind of a hack to not allow player to interact with anything other than the current ui modal
-            if game.HudUI.GetHighestLayerValue() == 0 {
-                if len(game.Players) > 0 {
-                    player := game.Players[0]
-                    game.doPlayerUpdate(yield, player)
+            if len(game.Players) > 0 && game.CurrentPlayer >= 0 {
+                player := game.Players[game.CurrentPlayer]
+
+                if player.Human {
+                    if game.HudUI.GetHighestLayerValue() == 0 {
+                        game.doPlayerUpdate(yield, player)
+                    }
+                } else {
+                    log.Printf("AI: next turn")
+                    game.DoNextTurn()
                 }
             }
     }
 
     return game.State
+}
+
+func (game *Game) doEnemyCityView(yield coroutine.YieldFunc, city *citylib.City, player *playerlib.Player){
+    drawer := game.Drawer
+    defer func(){
+        game.Drawer = drawer
+    }()
+
+    logic, draw := cityview.SimplifiedView(game.Cache, city, player)
+
+    game.Drawer = func(screen *ebiten.Image, game *Game){
+        drawer(screen, game)
+        draw(screen)
+    }
+
+    logic(yield, func(){
+        game.Counter += 1
+    })
+
+    yield()
 }
 
 /* show a view of the city
@@ -2143,7 +2188,16 @@ func (game *Game) doMagicEncounter(yield coroutine.YieldFunc, player *playerlib.
         enemies = append(enemies, units.MakeOverworldUnit(unit))
     }
 
-    result := game.doCombat(yield, player, stack, &defender, playerlib.MakeUnitStackFromUnits(enemies))
+    zone := combat.ZoneType{
+    }
+
+    switch node.Kind {
+        case MagicNodeNature: zone.NatureNode = true
+        case MagicNodeSorcery: zone.SorceryNode = true
+        case MagicNodeChaos: zone.ChaosNode = true
+    }
+
+    result := game.doCombat(yield, player, stack, &defender, playerlib.MakeUnitStackFromUnits(enemies), zone)
     if result == combat.CombatStateAttackerWin {
         // node should have no guardians
         node.Empty = true
@@ -2155,9 +2209,34 @@ func (game *Game) doMagicEncounter(yield coroutine.YieldFunc, player *playerlib.
     yield()
 }
 
+func (game *Game) GetCombatLandscape(x int, y int, plane data.Plane) combat.CombatLandscape {
+    // FIXME: take plane into account
+    tile := game.Map.GetTile(x, y)
+
+    switch tile.TerrainType() {
+        case terrain.Land, terrain.Hill, terrain.Grass,
+             terrain.Forest, terrain.River, terrain.Shore,
+             terrain.Swamp: return combat.CombatLandscapeGrass
+
+        case terrain.Desert: return combat.CombatLandscapeDesert
+        case terrain.Mountain: return combat.CombatLandscapeMountain
+        case terrain.Tundra: return combat.CombatLandscapeTundra
+
+        // FIXME: these cases are special
+        case terrain.Ocean: return combat.CombatLandscapeGrass
+        case terrain.Volcano: return combat.CombatLandscapeGrass
+        case terrain.Lake: return combat.CombatLandscapeGrass
+        case terrain.NatureNode: return combat.CombatLandscapeGrass
+        case terrain.SorceryNode: return combat.CombatLandscapeGrass
+        case terrain.ChaosNode: return combat.CombatLandscapeMountain
+    }
+
+    return combat.CombatLandscapeGrass
+}
+
 /* run the tactical combat screen. returns the combat state as a result (attackers win, defenders win, flee, etc)
  */
-func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player, attackerStack *playerlib.UnitStack, defender *playerlib.Player, defenderStack *playerlib.UnitStack) combat.CombatState {
+func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player, attackerStack *playerlib.UnitStack, defender *playerlib.Player, defenderStack *playerlib.UnitStack, zone combat.ZoneType) combat.CombatState {
     defer mouse.Mouse.SetImage(game.MouseData.Normal)
 
     attackingArmy := combat.Army{
@@ -2179,7 +2258,9 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     attackingArmy.LayoutUnits(combat.TeamAttacker)
     defendingArmy.LayoutUnits(combat.TeamDefender)
 
-    combatScreen := combat.MakeCombatScreen(game.Cache, &defendingArmy, &attackingArmy, attacker)
+    landscape := game.GetCombatLandscape(attackerStack.X(), attackerStack.Y(), attackerStack.Plane())
+
+    combatScreen := combat.MakeCombatScreen(game.Cache, &defendingArmy, &attackingArmy, attacker, landscape, attackerStack.Plane(), zone)
     oldDrawer := game.Drawer
 
     ebiten.SetCursorMode(ebiten.CursorModeHidden)
@@ -3096,14 +3177,11 @@ func (game *Game) MakeHudUI() *uilib.UI {
             LeftClickRelease: func(this *uilib.UIElement){
                 doneIndex = 0
 
-                if len(game.Players) > 0 {
-                    player := game.Players[0]
-                    if player.SelectedStack != nil {
-                        player.SelectedStack.ExhaustMoves()
-                    }
-
-                    game.DoNextUnit(player)
+                if player.SelectedStack != nil {
+                    player.SelectedStack.ExhaustMoves()
                 }
+
+                game.DoNextUnit(player)
             },
         })
 
@@ -3138,7 +3216,6 @@ func (game *Game) MakeHudUI() *uilib.UI {
             LeftClickRelease: func(this *uilib.UIElement){
                 patrolIndex = 0
 
-                player := game.Players[0]
                 if player.SelectedStack != nil {
                     for _, unit := range player.SelectedStack.ActiveUnits() {
                         unit.SetPatrol(true)
@@ -3410,60 +3487,70 @@ func (game *Game) CheckDisband(player *playerlib.Player) (bool, bool, bool) {
     return goldIssue, foodIssue, manaIssue
 }
 
-func (game *Game) DoNextTurn(){
-    if len(game.Players) > 0 {
-        player := game.Players[0]
+/* disband units due to lack of resources, return an array of messages about units that were lost
+ */
+func (game *Game) DisbandUnits(player *playerlib.Player) []string {
+    // keep removing units until the upkeep value can be paid
+    ok := false
+    var disbandedMessages []string
+    for len(player.Units) > 0 && !ok {
+        ok = true
 
-        // keep removing units until the upkeep value can be paid
-        ok := false
+        goldIssue, foodIssue, manaIssue := game.CheckDisband(player)
 
-        var disbandedMessages []string
+        if goldIssue || foodIssue || manaIssue {
+            ok = false
+            disbanded := false
 
-        resourceLoop:
-        for len(player.Units) > 0 && !ok {
-            ok = true
-
-            goldIssue, foodIssue, manaIssue := game.CheckDisband(player)
-
-            if goldIssue || foodIssue || manaIssue {
-                ok = false
-                disbanded := false
-
-                // try to disband one unit that is taking up resources
-                for i := len(player.Units) - 1; i >= 0; i-- {
-                    unit := player.Units[i]
-                    // disband the unit for the right reason
-                    if goldIssue && unit.GetUpkeepGold() > 0 {
-                        log.Printf("Disband %v due to lack of gold", unit)
-                        disbandedMessages = append(disbandedMessages, fmt.Sprintf("%v disbanded due to lack of gold", unit.GetName()))
-                        player.RemoveUnit(unit)
-                        disbanded = true
-                        break
-                    }
-
-                    if foodIssue && unit.GetUpkeepFood() > 0 {
-                        log.Printf("Disband %v due to lack of food", unit)
-                        disbandedMessages = append(disbandedMessages, fmt.Sprintf("%v disbanded due to lack of food", unit.GetName()))
-                        player.RemoveUnit(unit)
-                        disbanded = true
-                        break
-                    }
-
-                    if manaIssue && unit.GetUpkeepMana() > 0 {
-                        log.Printf("Disband %v due to lack of mana", unit)
-                        disbandedMessages = append(disbandedMessages, fmt.Sprintf("%v disbanded due to lack of mana", unit.GetName()))
-                        player.RemoveUnit(unit)
-                        disbanded = true
-                        break
-                    }
+            // try to disband one unit that is taking up resources
+            for i := len(player.Units) - 1; i >= 0; i-- {
+                unit := player.Units[i]
+                // disband the unit for the right reason
+                if goldIssue && unit.GetUpkeepGold() > 0 {
+                    log.Printf("Disband %v due to lack of gold", unit)
+                    disbandedMessages = append(disbandedMessages, fmt.Sprintf("%v disbanded due to lack of gold", unit.GetName()))
+                    player.RemoveUnit(unit)
+                    disbanded = true
+                    break
                 }
 
-                if !disbanded {
-                    // fail safe to make sure we exit the loop in case somehow a unit was not disbanded
-                    break resourceLoop
+                if foodIssue && unit.GetUpkeepFood() > 0 {
+                    log.Printf("Disband %v due to lack of food", unit)
+                    disbandedMessages = append(disbandedMessages, fmt.Sprintf("%v disbanded due to lack of food", unit.GetName()))
+                    player.RemoveUnit(unit)
+                    disbanded = true
+                    break
+                }
+
+                if manaIssue && unit.GetUpkeepMana() > 0 {
+                    log.Printf("Disband %v due to lack of mana", unit)
+                    disbandedMessages = append(disbandedMessages, fmt.Sprintf("%v disbanded due to lack of mana", unit.GetName()))
+                    player.RemoveUnit(unit)
+                    disbanded = true
+                    break
                 }
             }
+
+            if !disbanded {
+                // fail safe to make sure we exit the loop in case somehow a unit was not disbanded
+                break
+            }
         }
+    }
+
+    return disbandedMessages
+}
+
+func (game *Game) DoNextTurn(){
+    game.CurrentPlayer += 1
+    if game.CurrentPlayer >= len(game.Players) {
+        game.CurrentPlayer = 0
+    }
+
+    if len(game.Players) > 0 {
+        player := game.Players[game.CurrentPlayer]
+
+        disbandedMessages := game.DisbandUnits(player)
 
         if len(disbandedMessages) > 0 {
             select {

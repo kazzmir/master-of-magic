@@ -5,12 +5,14 @@ import (
     "fmt"
     "math"
     "math/rand/v2"
-    "sort"
+    "cmp"
+    "slices"
     "image"
     "image/color"
     "hash/fnv"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/combat"
@@ -23,6 +25,7 @@ import (
 
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/hajimehoshi/ebiten/v2"
+    "github.com/hajimehoshi/ebiten/v2/inpututil"
     "github.com/hajimehoshi/ebiten/v2/colorm"
     "github.com/hajimehoshi/ebiten/v2/vector"
 )
@@ -83,20 +86,6 @@ type BuildingSlot struct {
     Point image.Point
 }
 
-type BuildingSlotSort []BuildingSlot
-
-func (b BuildingSlotSort) Len() int {
-    return len(b)
-}
-
-func (b BuildingSlotSort) Less(i, j int) bool {
-    return b[i].Point.Y < b[j].Point.Y || (b[i].Point.Y == b[j].Point.Y && b[i].Point.X < b[j].Point.X)
-}
-
-func (b BuildingSlotSort) Swap(i, j int) {
-    b[i], b[j] = b[j], b[i]
-}
-
 type CityScreenState int
 
 const (
@@ -104,14 +93,18 @@ const (
     CityScreenStateDone
 )
 
-type CityScreen struct {
-    LbxCache *lbx.LbxCache
-    ImageCache util.ImageCache
+type Fonts struct {
     BigFont *font.Font
     DescriptionFont *font.Font
     ProducingFont *font.Font
     SmallFont *font.Font
     RubbleFont *font.Font
+}
+
+type CityScreen struct {
+    LbxCache *lbx.LbxCache
+    ImageCache util.ImageCache
+    Fonts *Fonts
     City *citylib.City
 
     UI *uilib.UI
@@ -120,67 +113,43 @@ type CityScreen struct {
     Buildings []BuildingSlot
     BuildScreen *BuildScreen
     // the building the user is currently hovering their mouse over
-    BuildingLook buildinglib.Building
+    // BuildingLook buildinglib.Building
 
     Counter uint64
     State CityScreenState
 }
 
-type BuildingNativeSort []buildinglib.Building
-func (b BuildingNativeSort) Len() int {
-    return len(b)
-}
-func (b BuildingNativeSort) Less(i, j int) bool {
-    return b[i] < b[j]
-}
-func (b BuildingNativeSort) Swap(i, j int) {
-    b[i], b[j] = b[j], b[i]
-}
-
-func sortBuildings(buildings []buildinglib.Building) []buildinglib.Building {
-    sort.Sort(BuildingNativeSort(buildings))
-    return buildings
-}
-
-func hash(str string) uint64 {
-    hasher := fnv.New64a()
-    hasher.Write([]byte(str))
-    return hasher.Sum64()
-}
-
-func MakeCityScreen(cache *lbx.LbxCache, city *citylib.City, player *playerlib.Player) *CityScreen {
-
+func makeFonts(cache *lbx.LbxCache) (*Fonts, error) {
     fontLbx, err := cache.GetLbxFile("fonts.lbx")
     if err != nil {
-        log.Printf("Unable to read fonts.lbx: %v", err)
-        return nil
+        return nil, err
     }
 
     fonts, err := font.ReadFonts(fontLbx, 0)
     if err != nil {
         log.Printf("Unable to read fonts from fonts.lbx: %v", err)
-        return nil
+        return nil, err
     }
 
     yellowPalette := color.Palette{
-            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-            color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-            color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-            color.RGBA{R: 0xfa, G: 0xe1, B: 0x16, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xef, B: 0x2f, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xef, B: 0x2f, A: 0xff},
-            color.RGBA{R: 0xe0, G: 0x8a, B: 0x0, A: 0xff},
-            color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-            color.RGBA{R: 0xd2, G: 0x7f, B: 0x0, A: 0xff},
-            color.RGBA{R: 0xd2, G: 0x7f, B: 0x0, A: 0xff},
-            color.RGBA{R: 0x99, G: 0x4f, B: 0x0, A: 0xff},
-            color.RGBA{R: 0x99, G: 0x4f, B: 0x0, A: 0xff},
-            color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-            color.RGBA{R: 0x99, G: 0x4f, B: 0x0, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        }
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xfa, G: 0xe1, B: 0x16, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xef, B: 0x2f, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xef, B: 0x2f, A: 0xff},
+        color.RGBA{R: 0xe0, G: 0x8a, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xd2, G: 0x7f, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xd2, G: 0x7f, B: 0x0, A: 0xff},
+        color.RGBA{R: 0x99, G: 0x4f, B: 0x0, A: 0xff},
+        color.RGBA{R: 0x99, G: 0x4f, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0x99, G: 0x4f, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+    }
 
     bigFont := font.MakeOptimizedFontWithPalette(fonts[5], yellowPalette)
 
@@ -244,6 +213,29 @@ func MakeCityScreen(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
     // FIXME: this font should have a black outline around all the glyphs
     rubbleFont := font.MakeOptimizedFontWithPalette(fonts[1], rubbleFontPalette)
 
+    return &Fonts{
+        BigFont: bigFont,
+        DescriptionFont: descriptionFont,
+        ProducingFont: producingFont,
+        SmallFont: smallFont,
+        RubbleFont: rubbleFont,
+    }, nil
+}
+
+func sortBuildings(buildings []buildinglib.Building) []buildinglib.Building {
+    slices.SortFunc(buildings, func(a buildinglib.Building, b buildinglib.Building) int {
+        return cmp.Compare(a, b)
+    })
+    return buildings
+}
+
+func hash(str string) uint64 {
+    hasher := fnv.New64a()
+    hasher.Write([]byte(str))
+    return hasher.Sum64()
+}
+
+func makeBuildingSlots(city *citylib.City) []BuildingSlot {
     // use a random seed based on the position and name of the city so that each game gets
     // a different city view, but within the same game the city view is consistent
     random := rand.New(rand.NewPCG(uint64(city.X), uint64(city.Y) + hash(city.Name)))
@@ -290,17 +282,42 @@ func MakeCityScreen(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
         buildings = append(buildings, BuildingSlot{Building: house, Point: image.Pt(x, y)})
     }
 
-    sort.Sort(BuildingSlotSort(buildings))
+    slices.SortFunc(buildings, func(a BuildingSlot, b BuildingSlot) int {
+        if a.Point.Y < b.Point.Y {
+            return -1
+        }
+
+        if a.Point.Y == b.Point.Y {
+            if a.Point.X < b.Point.X {
+                return -1
+            }
+
+            if a.Point.X == b.Point.X {
+                return 0
+            }
+        }
+
+        return 1
+    })
+
+    return buildings
+}
+
+func MakeCityScreen(cache *lbx.LbxCache, city *citylib.City, player *playerlib.Player) *CityScreen {
+
+    fonts, err := makeFonts(cache)
+    if err != nil {
+        log.Printf("Could not make fonts: %v", err)
+        return nil
+    }
+
+    buildings := makeBuildingSlots(city)
 
     cityScreen := &CityScreen{
         LbxCache: cache,
         ImageCache: util.MakeImageCache(cache),
         City: city,
-        BigFont: bigFont,
-        DescriptionFont: descriptionFont,
-        ProducingFont: producingFont,
-        SmallFont: smallFont,
-        RubbleFont: rubbleFont,
+        Fonts: fonts,
         Buildings: buildings,
         State: CityScreenStateRunning,
         Player: player,
@@ -348,6 +365,98 @@ func (cityScreen *CityScreen) SellBuilding(building buildinglib.Building) {
     }
 }
 
+func makeCityScapeElement(cache *lbx.LbxCache, ui *uilib.UI, city *citylib.City, help *lbx.Help, imageCache *util.ImageCache, doSell func(buildinglib.Building), buildings []BuildingSlot, x1 int, y1 int, fonts *Fonts, player *playerlib.Player, getAlpha *util.AlphaFadeFunc) *uilib.UIElement {
+    rawImageCache := make(map[int]image.Image)
+
+    getRawImage := func(index int) (image.Image, error) {
+        if pic, ok := rawImageCache[index]; ok {
+            return pic, nil
+        }
+
+        cityScapLbx, err := cache.GetLbxFile("cityscap.lbx")
+        if err != nil {
+            return nil, err
+        }
+        images, err := cityScapLbx.ReadImages(index)
+        if err != nil {
+            return nil, err
+        }
+
+        rawImageCache[index] = images[0]
+
+        return images[0], nil
+    }
+
+    roadX := 0.0
+    roadY := 18.0
+
+    buildingLook := buildinglib.BuildingNone
+    buildingView := image.Rect(x1, y1, x1 + 208, y1 + 195)
+    element := &uilib.UIElement{
+        Rect: buildingView,
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+            var geom ebiten.GeoM
+            geom.Translate(float64(x1), float64(y1))
+            drawCityScape(screen, buildings, buildingLook, ui.Counter / 8, imageCache, fonts, city.BuildingInfo, player, geom, (*getAlpha)())
+            // vector.StrokeRect(screen, float32(buildingView.Min.X), float32(buildingView.Min.Y), float32(buildingView.Dx()), float32(buildingView.Dy()), 1, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff}, true)
+        },
+        RightClick: func(element *uilib.UIElement) {
+            if buildingLook != buildinglib.BuildingNone {
+                helpEntries := help.GetEntriesByName(city.BuildingInfo.Name(buildingLook))
+                if helpEntries != nil {
+                    ui.AddElement(uilib.MakeHelpElement(ui, cache, imageCache, helpEntries[0]))
+                }
+            }
+        },
+        LeftClick: func(element *uilib.UIElement) {
+            if buildingLook != buildinglib.BuildingNone && canSellBuilding(city, buildingLook) {
+                doSell(buildingLook)
+            }
+        },
+        // if the user hovers over a building then show the name of the building
+        Inside: func(element *uilib.UIElement, x int, y int){
+            buildingLook = buildinglib.BuildingNone
+            // log.Printf("inside building view: %v, %v", x, y)
+
+            // go in reverse order so we select the one in front first
+            for i := len(buildings) - 1; i >= 0; i-- {
+                slot := buildings[i]
+
+                buildingName := city.BuildingInfo.Name(slot.Building)
+
+                if buildingName == "?" || buildingName == "" {
+                    continue
+                }
+
+                index := GetBuildingIndex(slot.Building)
+
+                pic, err := getRawImage(index)
+                if err == nil {
+                    x1 := int(roadX) + slot.Point.X
+                    y1 := int(roadY) + slot.Point.Y - pic.Bounds().Dy()
+                    x2 := x1 + pic.Bounds().Dx()
+                    y2 := y1 + pic.Bounds().Dy()
+
+                    // do pixel perfect detection
+                    if image.Pt(x, y).In(image.Rect(x1, y1, x2, y2)) {
+                        pixelX := x - x1
+                        pixelY := y - y1
+
+                        _, _, _, a := pic.At(pixelX, pixelY).RGBA()
+                        if a > 0 {
+                            buildingLook = slot.Building
+                            // log.Printf("look at building %v (%v,%v) in (%v,%v,%v,%v)", slot.Building, useX, useY, x1, y1, x2, y2)
+                            break
+                        }
+                    }
+                }
+            }
+        },
+    }
+
+    return element
+}
+
 func (cityScreen *CityScreen) MakeUI() *uilib.UI {
     ui := &uilib.UI{
         Draw: func(ui *uilib.UI, screen *ebiten.Image) {
@@ -371,106 +480,27 @@ func (cityScreen *CityScreen) MakeUI() *uilib.UI {
 
     var elements []*uilib.UIElement
 
-    roadX := 4
-    roadY := 120
+    sellBuilding := func (toSell buildinglib.Building) {
+        if cityScreen.City.SoldBuilding {
+            ui.AddElement(uilib.MakeErrorElement(ui, cityScreen.LbxCache, &cityScreen.ImageCache, "You can only sell back one building per turn.", func(){}))
+        } else {
+            var confirmElements []*uilib.UIElement
 
-    rawImageCache := make(map[int]image.Image)
+            yes := func(){
+                cityScreen.SellBuilding(toSell)
+            }
 
-    getRawImage := func(index int) (image.Image, error) {
-        if pic, ok := rawImageCache[index]; ok {
-            return pic, nil
+            no := func(){
+            }
+
+            confirmElements = uilib.MakeConfirmDialog(ui, cityScreen.LbxCache, &cityScreen.ImageCache, fmt.Sprintf("Are you sure you want to sell back the %v for %v gold?", cityScreen.City.BuildingInfo.Name(toSell), sellAmount(cityScreen.City, toSell)), yes, no)
+            ui.AddElements(confirmElements)
         }
-
-        cityScapLbx, err := cityScreen.LbxCache.GetLbxFile("cityscap.lbx")
-        if err != nil {
-            return nil, err
-        }
-        images, err := cityScapLbx.ReadImages(index)
-        if err != nil {
-            return nil, err
-        }
-
-        rawImageCache[index] = images[0]
-
-        return images[0], nil
     }
 
-    buildingView := image.Rect(5, 103, 208, 195)
-    elements = append(elements, &uilib.UIElement{
-        Rect: buildingView,
-        Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
-            // vector.StrokeRect(screen, float32(buildingView.Min.X), float32(buildingView.Min.Y), float32(buildingView.Dx()), float32(buildingView.Dy()), 1, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff}, true)
-        },
-        RightClick: func(element *uilib.UIElement) {
-            if cityScreen.BuildingLook != buildinglib.BuildingNone {
-                helpEntries := help.GetEntriesByName(cityScreen.City.BuildingInfo.Name(cityScreen.BuildingLook))
-                if helpEntries != nil {
-                    ui.AddElement(uilib.MakeHelpElement(ui, cityScreen.LbxCache, &cityScreen.ImageCache, helpEntries[0]))
-                }
-            }
-        },
-        LeftClick: func(element *uilib.UIElement) {
-            if cityScreen.BuildingLook != buildinglib.BuildingNone && canSellBuilding(cityScreen.City, cityScreen.BuildingLook) {
-                if cityScreen.City.SoldBuilding {
-                    ui.AddElement(uilib.MakeErrorElement(cityScreen.UI, cityScreen.LbxCache, &cityScreen.ImageCache, "You can only sell back one building per turn.", func(){}))
-                } else {
-                    var confirmElements []*uilib.UIElement
+    var getAlpha util.AlphaFadeFunc = func() float32 { return 1 }
 
-                    yes := func(){
-                        cityScreen.SellBuilding(cityScreen.BuildingLook)
-                    }
-
-                    no := func(){
-                    }
-
-                    confirmElements = uilib.MakeConfirmDialog(cityScreen.UI, cityScreen.LbxCache, &cityScreen.ImageCache, fmt.Sprintf("Are you sure you want to sell back the %v for %v gold?", cityScreen.City.BuildingInfo.Name(cityScreen.BuildingLook), sellAmount(cityScreen.City, cityScreen.BuildingLook)), yes, no)
-                    ui.AddElements(confirmElements)
-                }
-            }
-        },
-        // if the user hovers over a building then show the name of the building
-        Inside: func(element *uilib.UIElement, x int, y int){
-            cityScreen.BuildingLook = buildinglib.BuildingNone
-            // log.Printf("inside building view: %v, %v", x, y)
-
-            // go in reverse order so we select the one in front first
-            for i := len(cityScreen.Buildings) - 1; i >= 0; i-- {
-                slot := cityScreen.Buildings[i]
-
-                buildingName := cityScreen.City.BuildingInfo.Name(slot.Building)
-
-                if buildingName == "?" || buildingName == "" {
-                    continue
-                }
-
-                index := GetBuildingIndex(slot.Building)
-
-                pic, err := getRawImage(index)
-                if err == nil {
-                    x1 := roadX + slot.Point.X
-                    y1 := roadY + slot.Point.Y - pic.Bounds().Dy()
-                    x2 := x1 + pic.Bounds().Dx()
-                    y2 := y1 + pic.Bounds().Dy()
-
-                    useX := x + buildingView.Min.X
-                    useY := y + buildingView.Min.Y
-
-                    // do pixel perfect detection
-                    if image.Pt(useX, useY).In(image.Rect(x1, y1, x2, y2)) {
-                        pixelX := useX - x1
-                        pixelY := useY - y1
-
-                        _, _, _, a := pic.At(pixelX, pixelY).RGBA()
-                        if a > 0 {
-                            cityScreen.BuildingLook = slot.Building
-                            // log.Printf("look at building %v (%v,%v) in (%v,%v,%v,%v)", slot.Building, useX, useY, x1, y1, x2, y2)
-                            break
-                        }
-                    }
-                }
-            }
-        },
-    })
+    elements = append(elements, makeCityScapeElement(cityScreen.LbxCache, ui, cityScreen.City, &help, &cityScreen.ImageCache, sellBuilding, cityScreen.Buildings, 4, 102, cityScreen.Fonts, cityScreen.Player, &getAlpha))
 
     // FIXME: show disabled buy button if the item is not buyable (not enough money, or the item is trade goods/housing)
     // buy button
@@ -639,6 +669,7 @@ func (cityScreen *CityScreen) MakeUI() *uilib.UI {
 
             rebel, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", getRaceRebelIndex(cityScreen.City.Race), 0)
             if err == nil {
+                citizenX += 3
                 for i := 0; i < cityScreen.City.Rebels; i++ {
                     posX := citizenX
 
@@ -860,30 +891,34 @@ func getRaceRebelIndex(race data.Race) int {
     return -1
 }
 
-func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *ebiten.Image, geom ebiten.GeoM, counter uint64)) {
-    animationCounter := cityScreen.Counter / 8
-
+func drawCityScape(screen *ebiten.Image, buildings []BuildingSlot, buildingLook buildinglib.Building, animationCounter uint64, imageCache *util.ImageCache, fonts *Fonts, buildingInfo buildinglib.BuildingInfos, player *playerlib.Player, baseGeoM ebiten.GeoM, alphaScale float32) {
     // 5 is grasslands
-    landBackground, err := cityScreen.ImageCache.GetImage("cityscap.lbx", 0, 4)
+    // FIXME: make the land type and sky configurable
+    landBackground, err := imageCache.GetImage("cityscap.lbx", 0, 4)
     if err == nil {
         var options ebiten.DrawImageOptions
-        options.GeoM.Translate(4, 102)
+        options.ColorScale.ScaleAlpha(alphaScale)
+        options.GeoM = baseGeoM
         screen.DrawImage(landBackground, &options)
     }
 
-    hills1, err := cityScreen.ImageCache.GetImage("cityscap.lbx", 7, 0)
+    hills1, err := imageCache.GetImage("cityscap.lbx", 7, 0)
     if err == nil {
         var options ebiten.DrawImageOptions
-        options.GeoM.Translate(4, 101)
+        options.ColorScale.ScaleAlpha(alphaScale)
+        options.GeoM = baseGeoM
+        options.GeoM.Translate(0, -1)
         screen.DrawImage(hills1, &options)
     }
 
-    roadX := 4.0
-    roadY := 120.0
+    roadX := 0.0
+    roadY := 18.0
 
-    normalRoad, err := cityScreen.ImageCache.GetImage("cityscap.lbx", 5, 0)
+    normalRoad, err := imageCache.GetImage("cityscap.lbx", 5, 0)
     if err == nil {
         var options ebiten.DrawImageOptions
+        options.ColorScale.ScaleAlpha(alphaScale)
+        options.GeoM = baseGeoM
         options.GeoM.Translate(roadX, roadY)
         screen.DrawImage(normalRoad, &options)
     }
@@ -891,7 +926,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
     drawName := func(){
     }
 
-    for _, building := range cityScreen.Buildings {
+    for _, building := range buildings {
 
         index := GetBuildingIndex(building.Building)
 
@@ -901,43 +936,59 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
 
         x, y := building.Point.X, building.Point.Y
 
-        images, err := cityScreen.ImageCache.GetImages("cityscap.lbx", index)
+        images, err := imageCache.GetImages("cityscap.lbx", index)
         if err == nil {
             animationIndex := animationCounter % uint64(len(images))
             use := images[animationIndex]
             var options ebiten.DrawImageOptions
+            options.ColorScale.ScaleAlpha(alphaScale)
+            options.GeoM = baseGeoM
             // x,y position is the bottom left of the sprite
             options.GeoM.Translate(float64(x) + roadX, float64(y - use.Bounds().Dy()) + roadY)
             screen.DrawImage(use, &options)
 
-            if cityScreen.BuildingLook == building.Building {
+            if buildingLook == building.Building {
                 drawName = func(){
-                    useFont := cityScreen.SmallFont
-                    text := cityScreen.City.BuildingInfo.Name(building.Building)
+                    useFont := fonts.SmallFont
+                    text := buildingInfo.Name(building.Building)
                     if building.IsRubble {
                         text = "Destroyed " + text
-                        useFont = cityScreen.RubbleFont
+                        useFont = fonts.RubbleFont
                     }
 
                     if building.Building == buildinglib.BuildingFortress {
-                        text = fmt.Sprintf("%v's Fortress", cityScreen.Player.Wizard.Name)
+                        text = fmt.Sprintf("%v's Fortress", player.Wizard.Name)
                     }
 
-                    useFont.PrintCenter(screen, float64(x + 10) + roadX, float64(y + 1) + roadY, 1, ebiten.ColorScale{}, text)
+                    printX, printY := baseGeoM.Apply(float64(x + 10) + roadX, float64(y + 1) + roadY)
+
+                    useFont.PrintCenter(screen, printX, printY, 1, options.ColorScale, text)
                 }
             }
         }
     }
 
-    drawName()
-
-    river, err := cityScreen.ImageCache.GetImages("cityscap.lbx", 3)
+    // FIXME: make this configurable
+    river, err := imageCache.GetImages("cityscap.lbx", 3)
     if err == nil {
         var options ebiten.DrawImageOptions
-        options.GeoM.Translate(5, 100)
+        options.ColorScale.ScaleAlpha(alphaScale)
+        options.GeoM = baseGeoM
+        options.GeoM.Translate(1, -2)
         index := animationCounter % uint64(len(river))
         screen.DrawImage(river[index], &options)
     }
+
+    drawName()
+
+    /*
+    x, y := baseGeoM.Apply(0, 0)
+    vector.DrawFilledCircle(screen, float32(x), float32(y), 2, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff}, false)
+    */
+}
+
+func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *ebiten.Image, geom ebiten.GeoM, counter uint64)) {
+    animationCounter := cityScreen.Counter / 8
 
     ui, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", 6, 0)
     if err == nil {
@@ -945,9 +996,8 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
         screen.DrawImage(ui, &options)
     }
 
-    cityScreen.BigFont.Print(screen, 20, 3, 1, ebiten.ColorScale{}, fmt.Sprintf("%v of %s", cityScreen.City.GetSize(), cityScreen.City.Name))
-
-    cityScreen.DescriptionFont.Print(screen, 6, 19, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", cityScreen.City.Race))
+    cityScreen.Fonts.BigFont.Print(screen, 20, 3, 1, ebiten.ColorScale{}, fmt.Sprintf("%v of %s", cityScreen.City.GetSize(), cityScreen.City.Name))
+    cityScreen.Fonts.DescriptionFont.Print(screen, 6, 19, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", cityScreen.City.Race))
 
     deltaNumber := func(n int) string {
         if n > 0 {
@@ -959,7 +1009,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
         }
     }
 
-    cityScreen.DescriptionFont.PrintRight(screen, 210, 19, 1, ebiten.ColorScale{}, fmt.Sprintf("Population: %v (%v)", cityScreen.City.Population, deltaNumber(cityScreen.City.PopulationGrowthRate())))
+    cityScreen.Fonts.DescriptionFont.PrintRight(screen, 210, 19, 1, ebiten.ColorScale{}, fmt.Sprintf("Population: %v (%v)", cityScreen.City.Population, deltaNumber(cityScreen.City.PopulationGrowthRate())))
 
     drawIcons := func(total int, small *ebiten.Image, large *ebiten.Image, x float64, y float64) float64 {
         var options ebiten.DrawImageOptions
@@ -1041,7 +1091,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
             screen.DrawImage(producingPics[index], &options)
         }
 
-        cityScreen.ProducingFont.PrintCenter(screen, 237, 179, 1, ebiten.ColorScale{}, cityScreen.City.BuildingInfo.Name(cityScreen.City.ProducingBuilding))
+        cityScreen.Fonts.ProducingFont.PrintCenter(screen, 237, 179, 1, ebiten.ColorScale{}, cityScreen.City.BuildingInfo.Name(cityScreen.City.ProducingBuilding))
 
         // for all buildings besides trade goods and housing, show amount of work required to build
 
@@ -1059,7 +1109,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
                 case buildinglib.BuildingHousing: description = "Increases population growth rate."
             }
 
-            cityScreen.ProducingFont.PrintWrapCenter(screen, 285, 155, 60, 1, ebiten.ColorScale{}, description)
+            cityScreen.Fonts.ProducingFont.PrintWrapCenter(screen, 285, 155, 60, 1, ebiten.ColorScale{}, description)
         } else {
             showWork = true
             workRequired = cityScreen.City.BuildingInfo.ProductionCost(cityScreen.City.ProducingBuilding)
@@ -1073,7 +1123,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
             options.GeoM.Translate(238, 168)
             combat.RenderCombatTile(screen, &cityScreen.ImageCache, options)
             combat.RenderCombatUnit(screen, use, options, cityScreen.City.ProducingUnit.Count)
-            cityScreen.ProducingFont.PrintCenter(screen, 237, 179, 1, ebiten.ColorScale{}, cityScreen.City.ProducingUnit.Name)
+            cityScreen.Fonts.ProducingFont.PrintCenter(screen, 237, 179, 1, ebiten.ColorScale{}, cityScreen.City.ProducingUnit.Name)
         }
 
         showWork = true
@@ -1089,7 +1139,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
             turn = fmt.Sprintf("%v Turns", int(math.Ceil(turns)))
         }
 
-        cityScreen.DescriptionFont.PrintRight(screen, 318, 140, 1, ebiten.ColorScale{}, turn)
+        cityScreen.Fonts.DescriptionFont.PrintRight(screen, 318, 140, 1, ebiten.ColorScale{}, turn)
 
         workEmpty, err1 := cityScreen.ImageCache.GetImage("backgrnd.lbx", 11, 0)
         workFull, err2 := cityScreen.ImageCache.GetImage("backgrnd.lbx", 12, 0)
@@ -1158,4 +1208,165 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
         vector.DrawFilledRect(screen, 0, 0, float32(screen.Bounds().Dx()), float32(screen.Bounds().Dy()), color.RGBA{R: 0, G: 0, B: 0, A: 0x80}, true)
         cityScreen.BuildScreen.Draw(screen)
     }
+}
+
+func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.Player) (func(coroutine.YieldFunc, func()), func(*ebiten.Image)) {
+    imageCache := util.MakeImageCache(cache)
+
+    fonts, err := makeFonts(cache)
+    if err != nil {
+        log.Printf("Could not make fonts: %v", err)
+        return func(yield coroutine.YieldFunc, update func()){}, func(*ebiten.Image){}
+    }
+
+    helpLbx, err := cache.GetLbxFile("help.lbx")
+    if err != nil {
+        log.Printf("Error with help: %v", err)
+        return func(yield coroutine.YieldFunc, update func()){}, func(*ebiten.Image){}
+    }
+
+    help, err := helpLbx.ReadHelp(2)
+    if err != nil {
+        log.Printf("Error with help: %v", err)
+        return func(yield coroutine.YieldFunc, update func()){}, func(*ebiten.Image){}
+    }
+
+    buildings := makeBuildingSlots(city)
+
+    background, _ := imageCache.GetImage("reload.lbx", 26, 0)
+    var options ebiten.DrawImageOptions
+    options.GeoM.Translate(float64(data.ScreenWidth / 2 - background.Bounds().Dx() / 2), 0)
+
+    var getAlpha util.AlphaFadeFunc
+
+    currentUnitName := ""
+
+    ui := &uilib.UI{
+        Draw: func(ui *uilib.UI, screen *ebiten.Image){
+            useOptions := options
+            useOptions.ColorScale.ScaleAlpha(getAlpha())
+
+            screen.DrawImage(background, &useOptions)
+
+            titleX, titleY := options.GeoM.Apply(20, 3)
+            fonts.BigFont.Print(screen, titleX, titleY, 1, useOptions.ColorScale, fmt.Sprintf("%v of %s", city.GetSize(), city.Name))
+            raceX, raceY := options.GeoM.Apply(6, 19)
+            fonts.DescriptionFont.Print(screen, raceX, raceY, 1, useOptions.ColorScale, fmt.Sprintf("%v", city.Race))
+
+            unitsX, unitsY := options.GeoM.Apply(6, 43)
+            fonts.DescriptionFont.Print(screen, unitsX, unitsY, 1, useOptions.ColorScale, fmt.Sprintf("Units   %v", currentUnitName))
+
+            ui.IterateElementsByLayer(func (element *uilib.UIElement){
+                if element.Draw != nil {
+                    element.Draw(element, screen)
+                }
+            })
+        },
+    }
+
+    getAlpha = ui.MakeFadeIn(7)
+
+    ui.SetElementsFromArray(nil)
+
+    x1, y1 := options.GeoM.Apply(5, 102)
+
+    cityScapeElement := makeCityScapeElement(cache, ui, city, &help, &imageCache, func(buildinglib.Building){}, buildings, int(x1), int(y1), fonts, player, &getAlpha)
+
+    ui.AddElement(cityScapeElement)
+
+    // draw all farmers/workers/rebels
+    ui.AddElement(&uilib.UIElement{
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            localOptions := options
+            localOptions.ColorScale.ScaleAlpha(getAlpha())
+            localOptions.GeoM.Translate(6, 27)
+            farmer, _ := imageCache.GetImage("backgrnd.lbx", getRaceFarmerIndex(city.Race), 0)
+            worker, _ := imageCache.GetImage("backgrnd.lbx", getRaceWorkerIndex(city.Race), 0)
+            rebel, _ := imageCache.GetImage("backgrnd.lbx", getRaceRebelIndex(city.Race), 0)
+            subsistenceFarmers := city.ComputeSubsistenceFarmers()
+
+            for range subsistenceFarmers {
+                screen.DrawImage(farmer, &localOptions)
+                localOptions.GeoM.Translate(float64(farmer.Bounds().Dx()), 0)
+            }
+
+            localOptions.GeoM.Translate(3, 0)
+
+            for range city.Farmers - subsistenceFarmers {
+                screen.DrawImage(farmer, &localOptions)
+                localOptions.GeoM.Translate(float64(farmer.Bounds().Dx()), 0)
+            }
+
+            for range city.Workers {
+                screen.DrawImage(worker, &localOptions)
+                localOptions.GeoM.Translate(float64(worker.Bounds().Dx()), 0)
+            }
+
+            localOptions.GeoM.Translate(3, -2)
+
+            for range city.Rebels {
+                screen.DrawImage(rebel, &localOptions)
+                localOptions.GeoM.Translate(float64(rebel.Bounds().Dx()), 0)
+            }
+        },
+    })
+
+    stack := player.FindStack(city.X, city.Y)
+    if stack != nil {
+        inside := 0
+        for i, unit := range stack.Units() {
+            x, y := options.GeoM.Apply(8, 52)
+
+            x += float64(i % 6) * 20
+            y += float64(i / 6) * 20
+
+            pic, _ := imageCache.GetImageTransform(unit.GetLbxFile(), unit.GetLbxIndex(), 0, unit.GetBanner().String(), units.MakeUpdateUnitColorsFunc(unit.GetBanner()))
+            rect := image.Rect(int(x), int(y), int(x) + pic.Bounds().Dx(), int(y) + pic.Bounds().Dy())
+            ui.AddElement(&uilib.UIElement{
+                Rect: rect,
+                Inside: func(element *uilib.UIElement, x int, y int){
+                    currentUnitName = unit.GetName()
+                    inside = i
+                },
+                NotInside: func(element *uilib.UIElement){
+                    if inside == i {
+                        currentUnitName = ""
+                    }
+                },
+                Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                    var localOptions ebiten.DrawImageOptions
+                    localOptions.ColorScale.ScaleAlpha(getAlpha())
+                    localOptions.GeoM.Translate(x, y)
+                    screen.DrawImage(pic, &localOptions)
+                },
+            })
+        }
+    }
+
+    // FIXME: show enchantments
+
+    draw := func(screen *ebiten.Image){
+        ui.Draw(ui, screen)
+    }
+
+    logic := func(yield coroutine.YieldFunc, update func()){
+        countdown := 0
+        for countdown != 1 {
+            update()
+            ui.StandardUpdate()
+
+            if countdown == 0 && inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
+                countdown = 8
+                getAlpha = ui.MakeFadeOut(7)
+            }
+
+            if countdown > 1 {
+                countdown -= 1
+            }
+
+            yield()
+        }
+    }
+
+    return logic, draw
 }
