@@ -962,8 +962,6 @@ func drawCityScape(screen *ebiten.Image, buildings []BuildingSlot, buildingLook 
         }
     }
 
-    drawName()
-
     river, err := imageCache.GetImages("cityscap.lbx", 3)
     if err == nil {
         var options ebiten.DrawImageOptions
@@ -972,6 +970,8 @@ func drawCityScape(screen *ebiten.Image, buildings []BuildingSlot, buildingLook 
         index := animationCounter % uint64(len(river))
         screen.DrawImage(river[index], &options)
     }
+
+    drawName()
 
     /*
     x, y := baseGeoM.Apply(0, 0)
