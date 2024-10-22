@@ -1,7 +1,6 @@
 * combat: cast unit spells
 * cartographer advisor
 * city catchment area
-* combat: draw town sprites in combat scene
 * overworld: ai controlled wizards/empires
 * myrror plane
 * filter buildings by race
@@ -44,3 +43,4 @@
 10/18/2024 * units disband if not enough food/gold/mana
 10/20/2024 * hire hero events
 10/20/2024 * quake console
+10/22/2024 * combat: draw town sprites in combat scene
