@@ -1209,30 +1209,115 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
     buildings := makeBuildingSlots(city)
     buildingLook := buildinglib.BuildingNone
 
+    background, _ := imageCache.GetImage("reload.lbx", 26, 0)
+    var options ebiten.DrawImageOptions
+    options.GeoM.Translate(float64(data.ScreenWidth / 2 - background.Bounds().Dx() / 2), 0)
+
+    ui := &uilib.UI{
+        Draw: func(ui *uilib.UI, screen *ebiten.Image){
+            screen.DrawImage(background, &options)
+
+            titleX, titleY := options.GeoM.Apply(20, 3)
+            fonts.BigFont.Print(screen, titleX, titleY, 1, ebiten.ColorScale{}, fmt.Sprintf("%v of %s", city.GetSize(), city.Name))
+            raceX, raceY := options.GeoM.Apply(6, 19)
+            fonts.DescriptionFont.Print(screen, raceX, raceY, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", city.Race))
+
+            unitsX, unitsY := options.GeoM.Apply(6, 43)
+            fonts.DescriptionFont.Print(screen, unitsX, unitsY, 1, ebiten.ColorScale{}, "Units")
+
+            ui.IterateElementsByLayer(func (element *uilib.UIElement){
+                if element.Draw != nil {
+                    element.Draw(element, screen)
+                }
+            })
+        },
+    }
+
+    ui.SetElementsFromArray(nil)
+
+    rawImageCache := make(map[int]image.Image)
+
+    getRawImage := func(index int) (image.Image, error) {
+        if pic, ok := rawImageCache[index]; ok {
+            return pic, nil
+        }
+
+        cityScapLbx, err := cache.GetLbxFile("cityscap.lbx")
+        if err != nil {
+            return nil, err
+        }
+        images, err := cityScapLbx.ReadImages(index)
+        if err != nil {
+            return nil, err
+        }
+
+        rawImageCache[index] = images[0]
+
+        return images[0], nil
+    }
+
+    x1, y1 := options.GeoM.Apply(5, 102)
+    cityScapeRect := image.Rect(int(x1), int(y1), int(x1) + 205, int(y1 + 96))
+    cityScapeElement := &uilib.UIElement{
+        Rect: cityScapeRect,
+        Inside: func(element *uilib.UIElement, x int, y int){
+            buildingLook = buildinglib.BuildingNone
+            // log.Printf("inside building view: %v, %v", x, y)
+            roadX := 0.0
+            roadY := 18.0
+
+            // go in reverse order so we select the one in front first
+            for i := len(buildings) - 1; i >= 0; i-- {
+                slot := buildings[i]
+
+                buildingName := city.BuildingInfo.Name(slot.Building)
+
+                if buildingName == "?" || buildingName == "" {
+                    continue
+                }
+
+                index := GetBuildingIndex(slot.Building)
+
+                pic, err := getRawImage(index)
+                if err == nil {
+                    x1 := int(roadX) + slot.Point.X
+                    y1 := int(roadY) + slot.Point.Y - pic.Bounds().Dy()
+                    x2 := x1 + pic.Bounds().Dx()
+                    y2 := y1 + pic.Bounds().Dy()
+
+                    // do pixel perfect detection
+                    if image.Pt(x, y).In(image.Rect(x1, y1, x2, y2)) {
+                        pixelX := x - x1
+                        pixelY := y - y1
+
+                        _, _, _, a := pic.At(pixelX, pixelY).RGBA()
+                        if a > 0 {
+                            buildingLook = slot.Building
+                            // log.Printf("look at building %v (%v,%v) in (%v,%v,%v,%v)", slot.Building, useX, useY, x1, y1, x2, y2)
+                            break
+                        }
+                    }
+                }
+            }
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            cityScapeGeoM := options.GeoM
+            cityScapeGeoM.Translate(5, 102)
+            drawCityScape(screen, buildings, buildingLook, counter / 8, &imageCache, fonts, city.BuildingInfo, player, cityScapeGeoM)
+        },
+    }
+
+    ui.AddElement(cityScapeElement)
+
     draw := func(screen *ebiten.Image){
-        background, _ := imageCache.GetImage("reload.lbx", 26, 0)
-        var options ebiten.DrawImageOptions
-        options.GeoM.Translate(float64(data.ScreenWidth / 2 - background.Bounds().Dx() / 2), 0)
-        screen.DrawImage(background, &options)
-
-        cityScapeGeoM := options.GeoM
-        cityScapeGeoM.Translate(5, 102)
-
-        drawCityScape(screen, buildings, buildingLook, counter / 8, &imageCache, fonts, city.BuildingInfo, player, cityScapeGeoM)
-
-        titleX, titleY := options.GeoM.Apply(20, 3)
-        fonts.BigFont.Print(screen, titleX, titleY, 1, ebiten.ColorScale{}, fmt.Sprintf("%v of %s", city.GetSize(), city.Name))
-        raceX, raceY := options.GeoM.Apply(6, 19)
-        fonts.DescriptionFont.Print(screen, raceX, raceY, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", city.Race))
-
-        unitsX, unitsY := options.GeoM.Apply(6, 43)
-        fonts.DescriptionFont.Print(screen, unitsX, unitsY, 1, ebiten.ColorScale{}, "Units")
+        ui.Draw(ui, screen)
     }
 
     logic := func(yield coroutine.YieldFunc, update func()){
         for {
             counter += 1
             update()
+            ui.StandardUpdate()
 
             if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
                 return
