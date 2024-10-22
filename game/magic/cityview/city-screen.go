@@ -1199,15 +1199,32 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
 func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.Player) (func(coroutine.YieldFunc, func()), func(*ebiten.Image)) {
     imageCache := util.MakeImageCache(cache)
 
+    fonts, err := makeFonts(cache)
+    if err != nil {
+        log.Printf("Could not make fonts: %v", err)
+        return func(yield coroutine.YieldFunc, update func()){}, func(*ebiten.Image){}
+    }
+
+    counter := uint64(0)
+
+    buildings := makeBuildingSlots(city)
+    buildingLook := buildinglib.BuildingNone
+
     draw := func(screen *ebiten.Image){
         background, _ := imageCache.GetImage("reload.lbx", 26, 0)
         var options ebiten.DrawImageOptions
         options.GeoM.Translate(float64(data.ScreenWidth / 2 - background.Bounds().Dx() / 2), 0)
         screen.DrawImage(background, &options)
+
+        cityScapeGeoM := options.GeoM
+        cityScapeGeoM.Translate(5, 102)
+
+        drawCityScape(screen, buildings, buildingLook, counter / 8, &imageCache, fonts, city.BuildingInfo, player, cityScapeGeoM)
     }
 
     logic := func(yield coroutine.YieldFunc, update func()){
         for {
+            counter += 1
             update()
 
             if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
