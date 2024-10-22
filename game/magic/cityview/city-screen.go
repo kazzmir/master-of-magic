@@ -639,6 +639,7 @@ func (cityScreen *CityScreen) MakeUI() *uilib.UI {
 
             rebel, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", getRaceRebelIndex(cityScreen.City.Race), 0)
             if err == nil {
+                citizenX += 3
                 for i := 0; i < cityScreen.City.Rebels; i++ {
                     posX := citizenX
 

@@ -666,7 +666,7 @@ const (
     CombatLandscapeTundra
 )
 
-const TownCenterX = 12
+const TownCenterX = 11
 const TownCenterY = 9
 
 func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plane, zone ZoneType) [][]Tile {
@@ -790,6 +790,18 @@ func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plan
         tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
             Lbx: "cmbtcity.lbx",
             Index: 21,
+            Alignment: TileAlignBottom,
+        }
+    } else if zone.NatureNode {
+        tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
+            Lbx: "cmbtcity.lbx",
+            Index: 65,
+            Alignment: TileAlignBottom,
+        }
+    } else if zone.SorceryNode {
+        tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
+            Lbx: "cmbtcity.lbx",
+            Index: 66,
             Alignment: TileAlignBottom,
         }
     }
@@ -3224,7 +3236,7 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
     }
 
     if combat.DrawRoad {
-        tx, ty := tilePosition(13, 5)
+        tx, ty := tilePosition(TownCenterX+1, TownCenterY-4)
 
         road, _ := combat.ImageCache.GetImageTransform("cmbtcity.lbx", 0, 0, "crop", util.AutoCrop)
         options.GeoM.Reset()
@@ -3247,7 +3259,10 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
             tx, ty := tilePosition(x, y)
             options.GeoM.Translate(tx, ty)
 
-            extraImage, _ := combat.ImageCache.GetImageTransform(extra.Lbx, extra.Index, 0, "crop", util.AutoCrop)
+            extraImages, _ := combat.ImageCache.GetImagesTransform(extra.Lbx, extra.Index, "crop", util.AutoCrop)
+
+            index := animationIndex % uint64(len(extraImages))
+            extraImage := extraImages[index]
 
             switch extra.Alignment {
                 case TileAlignBottom:
