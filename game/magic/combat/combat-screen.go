@@ -117,7 +117,10 @@ const (
     TileAlignBottom
 )
 
+type TileDraw func(*ebiten.Image, *util.ImageCache, *ebiten.DrawImageOptions, uint64)
+
 type TileTop struct {
+    Drawer TileDraw
     Lbx string
     Index int
     Alignment TileAlignment
@@ -803,6 +806,18 @@ func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plan
             Lbx: "cmbtcity.lbx",
             Index: 66,
             Alignment: TileAlignBottom,
+        }
+    } else if zone.ChaosNode {
+        tiles[TownCenterY-1][TownCenterX].ExtraObject = TileTop{
+            Drawer: func(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64) {
+                base, _ := imageCache.GetImageTransform("chriver.lbx", 32, 0, "crop", util.AutoCrop)
+                screen.DrawImage(base, options)
+
+                top, _ := imageCache.GetImage("chriver.lbx", 24 + int((counter / 4) % 8), 0)
+                options.GeoM.Translate(16, -3)
+                screen.DrawImage(top, options)
+
+            },
         }
     }
 
@@ -3253,7 +3268,13 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
         y := point.Y
 
         extra := combat.Tiles[y][x].ExtraObject
-        if extra.Index != -1 {
+        if extra.Drawer != nil {
+            options.GeoM.Reset()
+            tx, ty := tilePosition(x, y)
+            options.GeoM.Translate(tx, ty)
+
+            extra.Drawer(screen, &combat.ImageCache, &options, combat.Counter)
+        } else if extra.Index != -1 {
             options.GeoM.Reset()
             // tx,ty is the middle of the tile
             tx, ty := tilePosition(x, y)

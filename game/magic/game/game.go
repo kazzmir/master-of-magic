@@ -2195,7 +2195,7 @@ func (game *Game) GetCombatLandscape(x int, y int, plane data.Plane) combat.Comb
         case terrain.Lake: return combat.CombatLandscapeGrass
         case terrain.NatureNode: return combat.CombatLandscapeGrass
         case terrain.SorceryNode: return combat.CombatLandscapeGrass
-        case terrain.ChaosNode: return combat.CombatLandscapeGrass
+        case terrain.ChaosNode: return combat.CombatLandscapeMountain
     }
 
     return combat.CombatLandscapeGrass
