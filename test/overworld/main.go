@@ -1569,23 +1569,27 @@ func createScenario20(cache *lbx.LbxCache) *gamelib.Game {
     enemyWizard := setup.WizardCustom{
         Name: "enemy",
         Banner: data.BannerBrown,
-        Race: data.RaceBarbarian,
+        Race: data.RaceDraconian,
     }
 
     enemy := game.AddPlayer(enemyWizard, false)
 
-    city2 := citylib.MakeCity("Test City", x, y-1, enemy.Wizard.Race, enemy.Wizard.Banner, fraction.Zero(), game.BuildingInfo, enemy)
-    city2.Population = 5000
+    city2 := citylib.MakeCity("Test City", x, y-1, enemy.Wizard.Race, enemy.Wizard.Banner, fraction.Make(1, 1), game.BuildingInfo, enemy)
+    city2.Population = 8000
     city2.Plane = data.PlaneArcanus
     city2.ProducingBuilding = buildinglib.BuildingHousing
     city2.ProducingUnit = units.UnitNone
     city2.Farmers = city2.Citizens() - 1
-    city2.Workers = 0
+    city2.Workers = 1
     city2.Wall = false
     city2.Buildings.Insert(buildinglib.BuildingSmithy)
     city2.Buildings.Insert(buildinglib.BuildingOracle)
 
     city2.ResetCitizens(nil)
+
+    city2.Farmers = 5
+    city2.Workers = 2
+    city2.Rebels = 1
 
     for range 3 {
         randomUnit := units.ChooseRandomUnit(enemy.Wizard.Race)

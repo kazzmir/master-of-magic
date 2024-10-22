@@ -962,6 +962,7 @@ func drawCityScape(screen *ebiten.Image, buildings []BuildingSlot, buildingLook 
         }
     }
 
+    // FIXME: make this configurable
     river, err := imageCache.GetImages("cityscap.lbx", 3)
     if err == nil {
         var options ebiten.DrawImageOptions
@@ -1258,6 +1259,42 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
     cityScapeElement := makeCityScapeElement(cache, ui, city, &help, &imageCache, func(buildinglib.Building){}, buildings, int(x1), int(y1), fonts, player)
 
     ui.AddElement(cityScapeElement)
+
+    // draw all farmers/workers/rebels
+    ui.AddElement(&uilib.UIElement{
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            localOptions := options
+            localOptions.GeoM.Translate(6, 27)
+            farmer, _ := imageCache.GetImage("backgrnd.lbx", getRaceFarmerIndex(city.Race), 0)
+            worker, _ := imageCache.GetImage("backgrnd.lbx", getRaceWorkerIndex(city.Race), 0)
+            rebel, _ := imageCache.GetImage("backgrnd.lbx", getRaceRebelIndex(city.Race), 0)
+            subsistenceFarmers := city.ComputeSubsistenceFarmers()
+
+            for range subsistenceFarmers {
+                screen.DrawImage(farmer, &localOptions)
+                localOptions.GeoM.Translate(float64(farmer.Bounds().Dx()), 0)
+            }
+
+            localOptions.GeoM.Translate(3, 0)
+
+            for range city.Farmers - subsistenceFarmers {
+                screen.DrawImage(farmer, &localOptions)
+                localOptions.GeoM.Translate(float64(farmer.Bounds().Dx()), 0)
+            }
+
+            for range city.Workers {
+                screen.DrawImage(worker, &localOptions)
+                localOptions.GeoM.Translate(float64(worker.Bounds().Dx()), 0)
+            }
+
+            localOptions.GeoM.Translate(3, -2)
+
+            for range city.Rebels {
+                screen.DrawImage(rebel, &localOptions)
+                localOptions.GeoM.Translate(float64(rebel.Bounds().Dx()), 0)
+            }
+        },
+    })
 
     draw := func(screen *ebiten.Image){
         ui.Draw(ui, screen)
