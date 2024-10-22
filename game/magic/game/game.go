@@ -1984,6 +1984,19 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                 if stack != nil {
                     player.SelectedStack = stack
                     game.RefreshUI()
+                } else {
+
+                    for _, otherPlayer := range game.Players {
+                        if otherPlayer == player {
+                            continue
+                        }
+
+                        city := otherPlayer.FindCity(tileX, tileY)
+                        if city != nil {
+                            game.doEnemyCityView(yield, city, otherPlayer)
+                        }
+                    }
+
                 }
             }
         }
@@ -2021,6 +2034,26 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
     }
 
     return game.State
+}
+
+func (game *Game) doEnemyCityView(yield coroutine.YieldFunc, city *citylib.City, player *playerlib.Player){
+    drawer := game.Drawer
+    defer func(){
+        game.Drawer = drawer
+    }()
+
+    logic, draw := cityview.SimplifiedView(game.Cache, city, player)
+
+    game.Drawer = func(screen *ebiten.Image, game *Game){
+        drawer(screen, game)
+        draw(screen)
+    }
+
+    logic(yield, func(){
+        game.Counter += 1
+    })
+
+    yield()
 }
 
 /* show a view of the city

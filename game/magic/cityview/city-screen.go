@@ -11,6 +11,7 @@ import (
     "hash/fnv"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/combat"
@@ -23,6 +24,7 @@ import (
 
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/hajimehoshi/ebiten/v2"
+    "github.com/hajimehoshi/ebiten/v2/inpututil"
     "github.com/hajimehoshi/ebiten/v2/colorm"
     "github.com/hajimehoshi/ebiten/v2/vector"
 )
@@ -1159,4 +1161,29 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
         vector.DrawFilledRect(screen, 0, 0, float32(screen.Bounds().Dx()), float32(screen.Bounds().Dy()), color.RGBA{R: 0, G: 0, B: 0, A: 0x80}, true)
         cityScreen.BuildScreen.Draw(screen)
     }
+}
+
+func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.Player) (func(coroutine.YieldFunc, func()), func(*ebiten.Image)) {
+    imageCache := util.MakeImageCache(cache)
+
+    draw := func(screen *ebiten.Image){
+        background, _ := imageCache.GetImage("reload.lbx", 26, 0)
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(float64(data.ScreenWidth / 2 - background.Bounds().Dx() / 2), 0)
+        screen.DrawImage(background, &options)
+    }
+
+    logic := func(yield coroutine.YieldFunc, update func()){
+        for {
+            update()
+
+            if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
+                return
+            }
+
+            yield()
+        }
+    }
+
+    return logic, draw
 }
