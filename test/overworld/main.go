@@ -1676,7 +1676,7 @@ func createScenario21(cache *lbx.LbxCache) *gamelib.Game {
     stack := player.FindStackByUnit(spear1)
     player.SetSelectedStack(stack)
 
-    player.LiftFog(stack.X(), stack.Y(), 2)
+    player.LiftFog(stack.X(), stack.Y(), 4)
 
     enemyWizard := setup.WizardCustom{
         Name: "enemy",
@@ -1688,7 +1688,7 @@ func createScenario21(cache *lbx.LbxCache) *gamelib.Game {
 
     enemy.AIBehavior = ai.MakeRaiderAI()
 
-    city2 := citylib.MakeCity("Test City", x+2, y+2, enemy.Wizard.Race, enemy.Wizard.Banner, fraction.Make(1, 1), game.BuildingInfo, enemy)
+    city2 := citylib.MakeCity("Test City", x+3, y+2, enemy.Wizard.Race, enemy.Wizard.Banner, fraction.Make(1, 1), game.BuildingInfo, enemy)
     city2.Population = 8000
     city2.Plane = data.PlaneArcanus
     city2.ProducingBuilding = buildinglib.BuildingHousing

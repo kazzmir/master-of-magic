@@ -188,6 +188,8 @@ type Game struct {
     Events chan GameEvent
     BuildingInfo buildinglib.BuildingInfos
 
+    MovingStack *playerlib.UnitStack
+
     BookOrder []int
 
     cameraX int
@@ -1262,6 +1264,8 @@ func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, st
 
     game.State = GameStateUnitMoving
 
+    game.MovingStack = stack
+
     boot, _ := game.ImageCache.GetImage("compix.lbx", 72, 0)
 
     game.Drawer = func (screen *ebiten.Image, game *Game){
@@ -1286,6 +1290,7 @@ func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, st
     }
 
     game.State = GameStateRunning
+    game.MovingStack = nil
 
     stack.SetOffset(0, 0)
     game.CenterCamera(stack.X(), stack.Y())
@@ -4017,6 +4022,7 @@ type Overworld struct {
     Cities []*citylib.City
     Stacks []*playerlib.UnitStack
     SelectedStack *playerlib.UnitStack
+    MovingStack *playerlib.UnitStack
     ImageCache *util.ImageCache
     Fog [][]bool
     ShowAnimation bool
@@ -4083,6 +4089,8 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
         _, hasCity := cityPositions[location]
 
         if stack == overworld.SelectedStack && (overworld.ShowAnimation || overworld.Counter / 55 % 2 == 0) {
+            doDraw = true
+        } else if stack == overworld.MovingStack {
             doDraw = true
         } else if stack != overworld.SelectedStack && !hasCity {
             doDraw = true
@@ -4160,6 +4168,7 @@ func (game *Game) DrawGame(screen *ebiten.Image){
         Cities: cities,
         Stacks: stacks,
         SelectedStack: selectedStack,
+        MovingStack: game.MovingStack,
         ImageCache: &game.ImageCache,
         Fog: fog,
         ShowAnimation: game.State == GameStateUnitMoving,
