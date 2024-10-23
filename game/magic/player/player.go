@@ -23,6 +23,10 @@ type PowerDistribution struct {
     Skill float64
 }
 
+type AIBehavior interface {
+    Update(*Player)
+}
+
 type Player struct {
     // matrix the same size as the map, where true means the player can see the tile
     // and false means the tile has not yet been discovered
@@ -50,6 +54,8 @@ type Player struct {
     GlobalEnchantments *set.Set[data.Enchantment]
 
     PowerDistribution PowerDistribution
+
+    AIBehavior AIBehavior
 
     Heroes [6]*herolib.Hero
     VaultEquipment [4]*artifact.Artifact
