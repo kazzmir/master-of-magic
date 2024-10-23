@@ -2033,8 +2033,33 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
 
                     if player.AIBehavior != nil {
                         decisions = player.AIBehavior.Update(player, game.GetEnemies(player), game)
-
                         log.Printf("AI Decisions: %v", decisions)
+
+                        for _, decision := range decisions {
+                            switch decision.(type) {
+                                case *playerlib.AIMoveStackDecision:
+                                    moveDecision := decision.(*playerlib.AIMoveStackDecision)
+                                    stack := moveDecision.Stack
+                                    to := moveDecision.Location
+                                    log.Printf("  moving stack %v to %v, %v", stack, to.X, to.Y)
+                                    terrainCost, _ := game.ComputeTerrainCost(stack, to.X, to.Y)
+                                    oldX := stack.X()
+                                    oldY := stack.Y()
+                                    stack.Move(to.X - stack.X(), to.Y - stack.Y(), terrainCost)
+                                    game.showMovement(yield, oldX, oldY, stack)
+
+                                    for _, enemy := range game.GetEnemies(player) {
+                                        enemyStack := enemy.FindStack(stack.X(), stack.Y())
+                                        if enemyStack != nil {
+                                            zone := combat.ZoneType{
+                                                City: enemy.FindCity(stack.X(), stack.Y()),
+                                            }
+                                            game.doCombat(yield, player, stack, enemy, enemyStack, zone)
+                                        }
+                                    }
+
+                            }
+                        }
                     }
 
                     if len(decisions) == 0 {

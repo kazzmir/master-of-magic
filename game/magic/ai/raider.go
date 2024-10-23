@@ -26,7 +26,7 @@ func (raider *RaiderAI) Update(player *playerlib.Player, enemies []*playerlib.Pl
     if len(player.Stacks) > 0 {
         stack := player.Stacks[0]
         _, moved := raider.MovedStacks[stack]
-        if !moved {
+        if !moved && !stack.OutOfMoves() {
             enemy1 := enemies[0]
             city1 := enemy1.Cities[0]
 
