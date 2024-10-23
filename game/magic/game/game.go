@@ -2027,13 +2027,35 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                         game.doPlayerUpdate(yield, player)
                     }
                 } else {
-                    log.Printf("AI: next turn")
-                    game.DoNextTurn()
+                    log.Printf("AI year %v: make decisions", game.TurnNumber)
+
+                    var decisions []playerlib.AIDecision
+
+                    if player.AIBehavior != nil {
+                        decisions = player.AIBehavior.Update(player, game.GetEnemies(player), game)
+
+                        log.Printf("AI Decisions: %v", decisions)
+                    }
+
+                    if len(decisions) == 0 {
+                        game.DoNextTurn()
+                    }
                 }
             }
     }
 
     return game.State
+}
+
+// get all alive players that are not the current player
+func (game *Game) GetEnemies(player *playerlib.Player) []*playerlib.Player {
+    var out []*playerlib.Player
+    for _, enemy := range game.Players {
+        if enemy != player && len(enemy.Cities) > 0 {
+            out = append(out, enemy)
+        }
+    }
+    return out
 }
 
 func (game *Game) doEnemyCityView(yield coroutine.YieldFunc, city *citylib.City, player *playerlib.Player){
@@ -3550,178 +3572,183 @@ func (game *Game) DoNextTurn(){
     if len(game.Players) > 0 {
         player := game.Players[game.CurrentPlayer]
 
-        disbandedMessages := game.DisbandUnits(player)
+        if player.Wizard.Banner != data.BannerBrown {
+            disbandedMessages := game.DisbandUnits(player)
 
-        if len(disbandedMessages) > 0 {
-            select {
-                case game.Events<- &GameEventScroll{Title: "", Text: strings.Join(disbandedMessages, "\n")}:
-                default:
-            }
-        }
-
-        power := game.ComputePower(player)
-
-        player.Gold += player.GoldPerTurn()
-        if player.Gold < 0 {
-            player.Gold = 0
-        }
-
-        player.Mana += player.ManaPerTurn(power)
-        if player.Mana < 0 {
-            player.Mana = 0
-        }
-
-        if !player.CastingSpell.Invalid() {
-            // mana spent on the skill is the minimum of {player's mana, casting skill, remaining cost for spell}
-            manaSpent := player.Mana
-            if manaSpent > player.RemainingCastingSkill {
-                manaSpent = player.RemainingCastingSkill
-            }
-
-            remainingMana := player.CastingSpell.Cost(true) - player.CastingSpellProgress
-            if remainingMana < manaSpent {
-                manaSpent = remainingMana
-            }
-
-            player.CastingSpellProgress += manaSpent
-            player.Mana -= manaSpent
-
-            if player.CastingSpell.Cost(true) <= player.CastingSpellProgress {
+            if len(disbandedMessages) > 0 {
                 select {
-                    case game.Events<- &GameEventCastSpell{Player: player, Spell: player.CastingSpell}:
-                    default:
-                        log.Printf("Error: unable to invoke cast spell because event queue is full")
-                }
-                player.CastingSpell = spellbook.Spell{}
-                player.CastingSpellProgress = 0
-            }
-        }
-
-        if player.ResearchingSpell.Valid() {
-            player.ResearchProgress += int(player.SpellResearchPerTurn(power))
-            if player.ResearchProgress >= player.ResearchingSpell.ResearchCost {
-                select {
-                    case game.Events<- &GameEventLearnedSpell{Player: player, Spell: player.ResearchingSpell}:
+                    case game.Events<- &GameEventScroll{Title: "", Text: strings.Join(disbandedMessages, "\n")}:
                     default:
                 }
+            }
 
-                player.LearnSpell(player.ResearchingSpell)
+            power := game.ComputePower(player)
 
+            player.Gold += player.GoldPerTurn()
+            if player.Gold < 0 {
+                player.Gold = 0
+            }
+
+            player.Mana += player.ManaPerTurn(power)
+            if player.Mana < 0 {
+                player.Mana = 0
+            }
+
+            if !player.CastingSpell.Invalid() {
+                // mana spent on the skill is the minimum of {player's mana, casting skill, remaining cost for spell}
+                manaSpent := player.Mana
+                if manaSpent > player.RemainingCastingSkill {
+                    manaSpent = player.RemainingCastingSkill
+                }
+
+                remainingMana := player.CastingSpell.Cost(true) - player.CastingSpellProgress
+                if remainingMana < manaSpent {
+                    manaSpent = remainingMana
+                }
+
+                player.CastingSpellProgress += manaSpent
+                player.Mana -= manaSpent
+
+                if player.CastingSpell.Cost(true) <= player.CastingSpellProgress {
+                    select {
+                        case game.Events<- &GameEventCastSpell{Player: player, Spell: player.CastingSpell}:
+                        default:
+                            log.Printf("Error: unable to invoke cast spell because event queue is full")
+                    }
+                    player.CastingSpell = spellbook.Spell{}
+                    player.CastingSpellProgress = 0
+                }
+            }
+
+            if player.ResearchingSpell.Valid() {
+                player.ResearchProgress += int(player.SpellResearchPerTurn(power))
+                if player.ResearchProgress >= player.ResearchingSpell.ResearchCost {
+                    select {
+                        case game.Events<- &GameEventLearnedSpell{Player: player, Spell: player.ResearchingSpell}:
+                        default:
+                    }
+
+                    player.LearnSpell(player.ResearchingSpell)
+
+                    select {
+                        case game.Events<- &GameEventResearchSpell{Player: player}:
+                        default:
+                    }
+                }
+            } else if game.TurnNumber > 1 {
                 select {
                     case game.Events<- &GameEventResearchSpell{Player: player}:
                     default:
                 }
             }
-        } else if game.TurnNumber > 1 {
-            select {
-                case game.Events<- &GameEventResearchSpell{Player: player}:
-                default:
-            }
-        }
 
-        player.CastingSkillPower += player.CastingSkillPerTurn(power)
+            player.CastingSkillPower += player.CastingSkillPerTurn(power)
 
-        // reset casting skill for this turn
-        player.RemainingCastingSkill = player.ComputeCastingSkill()
+            // reset casting skill for this turn
+            player.RemainingCastingSkill = player.ComputeCastingSkill()
 
-        var removeCities []*citylib.City
+            var removeCities []*citylib.City
 
-        for _, city := range player.Cities {
-            cityEvents := city.DoNextTurn(player.GetUnits(city.X, city.Y))
-            for _, event := range cityEvents {
-                switch event.(type) {
-                    case *citylib.CityEventPopulationGrowth:
-                        // growth := event.(*citylib.CityEventPopulationGrowth)
+            for _, city := range player.Cities {
+                cityEvents := city.DoNextTurn(player.GetUnits(city.X, city.Y))
+                for _, event := range cityEvents {
+                    switch event.(type) {
+                        case *citylib.CityEventPopulationGrowth:
+                            // growth := event.(*citylib.CityEventPopulationGrowth)
 
-                        scrollEvent := GameEventScroll{
-                            Title: "CITY GROWTH",
-                            // FIXME: 'has shrunk' if growth is negative?
-                            Text: fmt.Sprintf("%v has grown to a population of %v.", city.Name, city.Citizens()),
-                        }
+                            scrollEvent := GameEventScroll{
+                                Title: "CITY GROWTH",
+                                // FIXME: 'has shrunk' if growth is negative?
+                                Text: fmt.Sprintf("%v has grown to a population of %v.", city.Name, city.Citizens()),
+                            }
 
-                        select {
-                            case game.Events<- &scrollEvent:
-                            default:
-                        }
+                            select {
+                                case game.Events<- &scrollEvent:
+                                default:
+                            }
 
-                        /*
-                        if growth.Size > 0 {
-                            log.Printf("City grew by %v to %v", growth.Size, city.Citizens())
-                        } else {
-                            log.Printf("City shrunk by %v to %v", -growth.Size, city.Citizens())
-                        }
-                        */
-                    case *citylib.CityEventNewBuilding:
-                        newBuilding := event.(*citylib.CityEventNewBuilding)
+                            /*
+                            if growth.Size > 0 {
+                                log.Printf("City grew by %v to %v", growth.Size, city.Citizens())
+                            } else {
+                                log.Printf("City shrunk by %v to %v", -growth.Size, city.Citizens())
+                            }
+                            */
+                        case *citylib.CityEventNewBuilding:
+                            newBuilding := event.(*citylib.CityEventNewBuilding)
 
-                        select {
-                            case game.Events<- &GameEventNewBuilding{City: city, Building: newBuilding.Building, Player: player}:
-                            default:
-                        }
-                    case *citylib.CityEventOutpostDestroyed:
-                        removeCities = append(removeCities, city)
-                        select {
-                            case game.Events<- &GameEventNotice{Message: fmt.Sprintf("The outpost of %v has been deserted.", city.Name)}:
-                            default:
-                        }
-                    case *citylib.CityEventOutpostHamlet:
-                        select {
-                            case game.Events<- &GameEventNotice{Message: fmt.Sprintf("The outpost of %v has grown into a hamlet.", city.Name)}:
-                            default:
-                        }
-                    case *citylib.CityEventNewUnit:
-                        newUnit := event.(*citylib.CityEventNewUnit)
-                        player.AddUnit(units.MakeOverworldUnitFromUnit(newUnit.Unit, city.X, city.Y, city.Plane, city.Banner, player.MakeExperienceInfo()))
-                }
-            }
-        }
-
-        for _, stack := range player.Stacks {
-
-            // every unit gains 1 experience at each turn
-            for _, unit := range stack.Units() {
-                if unit.GetRace() != data.RaceFantastic {
-                    unit.AddExperience(1)
+                            select {
+                                case game.Events<- &GameEventNewBuilding{City: city, Building: newBuilding.Building, Player: player}:
+                                default:
+                            }
+                        case *citylib.CityEventOutpostDestroyed:
+                            removeCities = append(removeCities, city)
+                            select {
+                                case game.Events<- &GameEventNotice{Message: fmt.Sprintf("The outpost of %v has been deserted.", city.Name)}:
+                                default:
+                            }
+                        case *citylib.CityEventOutpostHamlet:
+                            select {
+                                case game.Events<- &GameEventNotice{Message: fmt.Sprintf("The outpost of %v has grown into a hamlet.", city.Name)}:
+                                default:
+                            }
+                        case *citylib.CityEventNewUnit:
+                            newUnit := event.(*citylib.CityEventNewUnit)
+                            player.AddUnit(units.MakeOverworldUnitFromUnit(newUnit.Unit, city.X, city.Y, city.Plane, city.Banner, player.MakeExperienceInfo()))
+                    }
                 }
             }
 
-            // base healing rate is 5%. in a town is 10%, with animists guild is 16.67%
-            rate := 0.05
+            for _, stack := range player.Stacks {
 
-            city := player.FindCity(stack.X(), stack.Y())
-
-            if city != nil {
-                rate = 0.1
-                if city.Buildings.Contains(buildinglib.BuildingAnimistsGuild) {
-                    rate = 0.1667
+                // every unit gains 1 experience at each turn
+                for _, unit := range stack.Units() {
+                    if unit.GetRace() != data.RaceFantastic {
+                        unit.AddExperience(1)
+                    }
                 }
+
+                // base healing rate is 5%. in a town is 10%, with animists guild is 16.67%
+                rate := 0.05
+
+                city := player.FindCity(stack.X(), stack.Y())
+
+                if city != nil {
+                    rate = 0.1
+                    if city.Buildings.Contains(buildinglib.BuildingAnimistsGuild) {
+                        rate = 0.1667
+                    }
+                }
+
+                // any healer in the same stack provides an additional 20% healing rate
+                for _, unit := range stack.Units() {
+                    if unit.HasAbility(units.AbilityHealer) {
+                        rate += 0.2
+                        break
+                    }
+                }
+
+                stack.NaturalHeal(rate)
+                stack.ResetMoves()
+                stack.EnableMovers()
             }
 
-            // any healer in the same stack provides an additional 20% healing rate
-            for _, unit := range stack.Units() {
-                if unit.HasAbility(units.AbilityHealer) {
-                    rate += 0.2
-                    break
-                }
+            for _, city := range removeCities {
+                player.RemoveCity(city)
             }
 
-            stack.NaturalHeal(rate)
-            stack.ResetMoves()
-            stack.EnableMovers()
+            game.maybeHireHero(player)
+
+            // game.CenterCamera(player.Cities[0].X, player.Cities[0].Y)
+            game.DoNextUnit(player)
+            game.RefreshUI()
         }
-
-        for _, city := range removeCities {
-            player.RemoveCity(city)
-        }
-
-        game.maybeHireHero(player)
-
-        // game.CenterCamera(player.Cities[0].X, player.Cities[0].Y)
-        game.DoNextUnit(player)
-        game.RefreshUI()
     }
 
     // FIXME: run other players/AI
+    if game.Players[game.CurrentPlayer].AIBehavior != nil {
+        game.Players[game.CurrentPlayer].AIBehavior.NewTurn()
+    }
 
     game.TurnNumber += 1
 }
