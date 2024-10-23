@@ -307,8 +307,11 @@ func createScenario4(cache *lbx.LbxCache) *gamelib.Game {
 
     game.CenterCamera(x, y)
 
+    introCity.Buildings.Insert(buildinglib.BuildingSmithy)
+
     game.Events <- &gamelib.GameEventNewBuilding{
         City: introCity,
+        Player: player,
         Building: buildinglib.BuildingSmithy,
     }
 
