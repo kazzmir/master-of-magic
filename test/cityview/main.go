@@ -73,7 +73,7 @@ func NewEngine() (*Engine, error) {
     city.AddBuilding(buildinglib.BuildingFortress)
     city.AddBuilding(buildinglib.BuildingShrine)
 
-    cityScreen := cityview.MakeCityScreen(cache, city, &player)
+    cityScreen := cityview.MakeCityScreen(cache, city, &player, buildinglib.BuildingShrine)
 
     terrainLbx, err := cache.GetLbxFile("terrain.lbx")
     if err != nil {

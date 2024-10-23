@@ -611,7 +611,7 @@ func (game *Game) doCityListView(yield coroutine.YieldFunc) {
     yield()
 
     if showCity != nil {
-        game.doCityScreen(yield, showCity, game.Players[0])
+        game.doCityScreen(yield, showCity, game.Players[0], buildinglib.BuildingNone)
     }
 
     // absorb last click
@@ -1776,7 +1776,7 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         buildingEvent := event.(*GameEventNewBuilding)
                         game.CenterCamera(buildingEvent.City.X, buildingEvent.City.Y)
                         game.showNewBuilding(yield, buildingEvent.City, buildingEvent.Building)
-                        game.doCityScreen(yield, buildingEvent.City, buildingEvent.Player)
+                        game.doCityScreen(yield, buildingEvent.City, buildingEvent.Player, buildingEvent.Building)
                     case *GameEventCityName:
                         cityEvent := event.(*GameEventCityName)
                         city := cityEvent.City
@@ -1976,7 +1976,7 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                 if city.Outpost {
                     game.showOutpost(yield, city, player.FindStack(city.X, city.Y), false)
                 } else {
-                    game.doCityScreen(yield, city, player)
+                    game.doCityScreen(yield, city, player, buildinglib.BuildingNone)
                 }
                 game.RefreshUI()
             } else {
@@ -2058,8 +2058,8 @@ func (game *Game) doEnemyCityView(yield coroutine.YieldFunc, city *citylib.City,
 
 /* show a view of the city
  */
-func (game *Game) doCityScreen(yield coroutine.YieldFunc, city *citylib.City, player *playerlib.Player){
-    cityScreen := cityview.MakeCityScreen(game.Cache, city, player)
+func (game *Game) doCityScreen(yield coroutine.YieldFunc, city *citylib.City, player *playerlib.Player, newBuilding buildinglib.Building){
+    cityScreen := cityview.MakeCityScreen(game.Cache, city, player, newBuilding)
 
     var cities []*citylib.City
     var stacks []*playerlib.UnitStack

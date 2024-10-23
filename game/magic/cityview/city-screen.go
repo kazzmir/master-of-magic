@@ -112,8 +112,9 @@ type CityScreen struct {
 
     Buildings []BuildingSlot
     BuildScreen *BuildScreen
-    // the building the user is currently hovering their mouse over
-    // BuildingLook buildinglib.Building
+
+    // the building that was just built
+    NewBuilding buildinglib.Building
 
     Counter uint64
     State CityScreenState
@@ -303,7 +304,7 @@ func makeBuildingSlots(city *citylib.City) []BuildingSlot {
     return buildings
 }
 
-func MakeCityScreen(cache *lbx.LbxCache, city *citylib.City, player *playerlib.Player) *CityScreen {
+func MakeCityScreen(cache *lbx.LbxCache, city *citylib.City, player *playerlib.Player, newBuilding buildinglib.Building) *CityScreen {
 
     fonts, err := makeFonts(cache)
     if err != nil {
@@ -319,6 +320,7 @@ func MakeCityScreen(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
         City: city,
         Fonts: fonts,
         Buildings: buildings,
+        NewBuilding: newBuilding,
         State: CityScreenStateRunning,
         Player: player,
     }
@@ -365,7 +367,7 @@ func (cityScreen *CityScreen) SellBuilding(building buildinglib.Building) {
     }
 }
 
-func makeCityScapeElement(cache *lbx.LbxCache, ui *uilib.UI, city *citylib.City, help *lbx.Help, imageCache *util.ImageCache, doSell func(buildinglib.Building), buildings []BuildingSlot, x1 int, y1 int, fonts *Fonts, player *playerlib.Player, getAlpha *util.AlphaFadeFunc) *uilib.UIElement {
+func makeCityScapeElement(cache *lbx.LbxCache, ui *uilib.UI, city *citylib.City, help *lbx.Help, imageCache *util.ImageCache, doSell func(buildinglib.Building), buildings []BuildingSlot, newBuilding buildinglib.Building, x1 int, y1 int, fonts *Fonts, player *playerlib.Player, getAlpha *util.AlphaFadeFunc) *uilib.UIElement {
     rawImageCache := make(map[int]image.Image)
 
     getRawImage := func(index int) (image.Image, error) {
@@ -397,7 +399,7 @@ func makeCityScapeElement(cache *lbx.LbxCache, ui *uilib.UI, city *citylib.City,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
             var geom ebiten.GeoM
             geom.Translate(float64(x1), float64(y1))
-            drawCityScape(screen, buildings, buildingLook, ui.Counter / 8, imageCache, fonts, city.BuildingInfo, player, geom, (*getAlpha)())
+            drawCityScape(screen, buildings, buildingLook, newBuilding, ui.Counter / 8, imageCache, fonts, city.BuildingInfo, player, geom, (*getAlpha)())
             // vector.StrokeRect(screen, float32(buildingView.Min.X), float32(buildingView.Min.Y), float32(buildingView.Dx()), float32(buildingView.Dy()), 1, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff}, true)
         },
         RightClick: func(element *uilib.UIElement) {
@@ -500,7 +502,7 @@ func (cityScreen *CityScreen) MakeUI() *uilib.UI {
 
     var getAlpha util.AlphaFadeFunc = func() float32 { return 1 }
 
-    elements = append(elements, makeCityScapeElement(cityScreen.LbxCache, ui, cityScreen.City, &help, &cityScreen.ImageCache, sellBuilding, cityScreen.Buildings, 4, 102, cityScreen.Fonts, cityScreen.Player, &getAlpha))
+    elements = append(elements, makeCityScapeElement(cityScreen.LbxCache, ui, cityScreen.City, &help, &cityScreen.ImageCache, sellBuilding, cityScreen.Buildings, cityScreen.NewBuilding, 4, 102, cityScreen.Fonts, cityScreen.Player, &getAlpha))
 
     // FIXME: show disabled buy button if the item is not buyable (not enough money, or the item is trade goods/housing)
     // buy button
@@ -891,7 +893,7 @@ func getRaceRebelIndex(race data.Race) int {
     return -1
 }
 
-func drawCityScape(screen *ebiten.Image, buildings []BuildingSlot, buildingLook buildinglib.Building, animationCounter uint64, imageCache *util.ImageCache, fonts *Fonts, buildingInfo buildinglib.BuildingInfos, player *playerlib.Player, baseGeoM ebiten.GeoM, alphaScale float32) {
+func drawCityScape(screen *ebiten.Image, buildings []BuildingSlot, buildingLook buildinglib.Building, newBuilding buildinglib.Building, animationCounter uint64, imageCache *util.ImageCache, fonts *Fonts, buildingInfo buildinglib.BuildingInfos, player *playerlib.Player, baseGeoM ebiten.GeoM, alphaScale float32) {
     // 5 is grasslands
     // FIXME: make the land type and sky configurable
     landBackground, err := imageCache.GetImage("cityscap.lbx", 0, 4)
@@ -941,7 +943,15 @@ func drawCityScape(screen *ebiten.Image, buildings []BuildingSlot, buildingLook 
             animationIndex := animationCounter % uint64(len(images))
             use := images[animationIndex]
             var options ebiten.DrawImageOptions
-            options.ColorScale.ScaleAlpha(alphaScale)
+
+            useAlpha := alphaScale
+            if newBuilding == building.Building {
+                if animationCounter < 10 {
+                    useAlpha *= float32(animationCounter) / 10
+                }
+            }
+
+            options.ColorScale.ScaleAlpha(useAlpha)
             options.GeoM = baseGeoM
             // x,y position is the bottom left of the sprite
             options.GeoM.Translate(float64(x) + roadX, float64(y - use.Bounds().Dy()) + roadY)
@@ -1270,7 +1280,7 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
 
     x1, y1 := options.GeoM.Apply(5, 102)
 
-    cityScapeElement := makeCityScapeElement(cache, ui, city, &help, &imageCache, func(buildinglib.Building){}, buildings, int(x1), int(y1), fonts, player, &getAlpha)
+    cityScapeElement := makeCityScapeElement(cache, ui, city, &help, &imageCache, func(buildinglib.Building){}, buildings, buildinglib.BuildingNone, int(x1), int(y1), fonts, player, &getAlpha)
 
     ui.AddElement(cityScapeElement)
 
