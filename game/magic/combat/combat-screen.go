@@ -623,8 +623,11 @@ type CombatScreen struct {
     TopDownOrder []image.Point
 
     Coordinates ebiten.GeoM
-    ScreenToTile ebiten.GeoM
+    // ScreenToTile ebiten.GeoM
     MouseState MouseState
+
+    CameraX float64
+    CameraY float64
 
     Counter uint64
 
@@ -909,9 +912,11 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
     coordinates.Scale(float64(tile0.Bounds().Dx()) * 3 / 4 - 2, float64(tile0.Bounds().Dy()) * 3 / 4 - 1)
     coordinates.Translate(-220, 80)
 
+    /*
     screenToTile := coordinates
     screenToTile.Translate(float64(tile0.Bounds().Dx())/2, float64(tile0.Bounds().Dy())/2)
     screenToTile.Invert()
+    */
 
     whitePixel := ebiten.NewImage(1, 1)
     whitePixel.Fill(color.RGBA{R: 255, G: 255, B: 255, A: 255})
@@ -929,6 +934,8 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
         ImageCache: imageCache,
         Mouse: mouseData,
         Turn: TeamDefender,
+        CameraX: 0,
+        CameraY: 0,
         CurrentTurn: 0,
         DefendingArmy: defendingArmy,
         TurnDefender: 0,
@@ -943,7 +950,7 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
         InfoFont: infoFont,
         WhiteFont: whiteFont,
         Coordinates: coordinates,
-        ScreenToTile: screenToTile,
+        // ScreenToTile: screenToTile,
         WhitePixel: whitePixel,
         AttackingWizardFont: attackingWizardFont,
         DefendingWizardFont: defendingWizardFont,
@@ -977,6 +984,16 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
     combat.SelectedUnit = combat.ChooseNextUnit(TeamDefender)
 
     return combat
+}
+
+func (combat *CombatScreen) ScreenToTile(x float64, y float64) (float64, float64) {
+    tile0, _ := combat.ImageCache.GetImage("cmbgrass.lbx", 0, 0)
+    screenToTile := combat.Coordinates
+    screenToTile.Translate(-combat.CameraX, -combat.CameraY)
+    screenToTile.Translate(float64(tile0.Bounds().Dx())/2, float64(tile0.Bounds().Dy())/2)
+    screenToTile.Invert()
+
+    return screenToTile.Apply(x, y)
 }
 
 func (combat *CombatScreen) computeTopDownOrder() []image.Point {
@@ -2517,7 +2534,7 @@ func (combat *CombatScreen) doSelectTile(yield coroutine.YieldFunc, selecter Tea
 
         combat.UI.StandardUpdate()
         mouseX, mouseY := ebiten.CursorPosition()
-        tileX, tileY := combat.ScreenToTile.Apply(float64(mouseX), float64(mouseY))
+        tileX, tileY := combat.ScreenToTile(float64(mouseX), float64(mouseY))
         combat.MouseTileX = int(math.Round(tileX))
         combat.MouseTileY = int(math.Round(tileY))
 
@@ -2603,7 +2620,7 @@ func (combat *CombatScreen) doSelectUnit(yield coroutine.YieldFunc, selecter Tea
 
         combat.UI.StandardUpdate()
         mouseX, mouseY := ebiten.CursorPosition()
-        tileX, tileY := combat.ScreenToTile.Apply(float64(mouseX), float64(mouseY))
+        tileX, tileY := combat.ScreenToTile(float64(mouseX), float64(mouseY))
         combat.MouseTileX = int(math.Round(tileX))
         combat.MouseTileY = int(math.Round(tileY))
 
@@ -2976,13 +2993,24 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
     mouseX, mouseY := ebiten.CursorPosition()
     hudImage, _ := combat.ImageCache.GetImage("cmbtfx.lbx", 28, 0)
 
-    tileX, tileY := combat.ScreenToTile.Apply(float64(mouseX), float64(mouseY))
+    tileX, tileY := combat.ScreenToTile(float64(mouseX), float64(mouseY))
     combat.MouseTileX = int(math.Round(tileX))
     combat.MouseTileY = int(math.Round(tileY))
 
     combat.UpdateAnimations()
 
     hudY := data.ScreenHeight - hudImage.Bounds().Dy()
+
+    var keys []ebiten.Key
+    keys = inpututil.AppendPressedKeys(keys)
+    for _, key := range keys {
+        switch key {
+            case ebiten.KeyDown: combat.CameraY += 1
+            case ebiten.KeyUp: combat.CameraY -= 1
+            case ebiten.KeyLeft: combat.CameraX -= 1
+            case ebiten.KeyRight: combat.CameraX += 1
+        }
+    }
 
     combat.ProcessEvents(yield)
 
@@ -3067,10 +3095,10 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
     return CombatStateRunning
 }
 
-func (combat *CombatScreen) DrawHighlightedTile(screen *ebiten.Image, x int, y int, minColor color.RGBA, maxColor color.RGBA){
+func (combat *CombatScreen) DrawHighlightedTile(screen *ebiten.Image, x int, y int, matrix *ebiten.GeoM, minColor color.RGBA, maxColor color.RGBA){
     tile0, _ := combat.ImageCache.GetImage("cmbgrass.lbx", 0, 0)
 
-    tx, ty := combat.Coordinates.Apply(float64(x), float64(y))
+    tx, ty := matrix.Apply(float64(x), float64(y))
     x1 := tx
     y1 := ty + float64(tile0.Bounds().Dy()/2)
 
@@ -3228,8 +3256,12 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
     log.Printf("(3,3) -> (%f, %f)", a, b)
     */
 
-    tilePosition := func(x int, y int) (float64, float64){
-        return combat.Coordinates.Apply(float64(x), float64(y))
+    useMatrix := combat.Coordinates
+
+    useMatrix.Translate(-combat.CameraX, -combat.CameraY)
+
+    tilePosition := func(x float64, y float64) (float64, float64){
+        return useMatrix.Apply(x, y)
     }
 
     // draw base land first
@@ -3240,7 +3272,7 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
         image, _ := combat.ImageCache.GetImage(combat.Tiles[y][x].Lbx, combat.Tiles[y][x].Index, 0)
         options.GeoM.Reset()
         // tx,ty is the middle of the tile
-        tx, ty := tilePosition(x, y)
+        tx, ty := tilePosition(float64(x), float64(y))
         options.GeoM.Translate(tx, ty)
         screen.DrawImage(image, &options)
 
@@ -3271,14 +3303,14 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
         extra := combat.Tiles[y][x].ExtraObject
         if extra.Drawer != nil {
             options.GeoM.Reset()
-            tx, ty := tilePosition(x, y)
+            tx, ty := tilePosition(float64(x), float64(y))
             options.GeoM.Translate(tx, ty)
 
             extra.Drawer(screen, &combat.ImageCache, &options, combat.Counter)
         } else if extra.Index != -1 {
             options.GeoM.Reset()
             // tx,ty is the middle of the tile
-            tx, ty := tilePosition(x, y)
+            tx, ty := tilePosition(float64(x), float64(y))
             options.GeoM.Translate(tx, ty)
 
             extraImages, _ := combat.ImageCache.GetImagesTransform(extra.Lbx, extra.Index, "crop", util.AutoCrop)
@@ -3300,7 +3332,7 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
         }
     }
 
-    combat.DrawHighlightedTile(screen, combat.MouseTileX, combat.MouseTileY, color.RGBA{R: 0, G: 0x67, B: 0x78, A: 255}, color.RGBA{R: 0, G: 0xef, B: 0xff, A: 255})
+    combat.DrawHighlightedTile(screen, combat.MouseTileX, combat.MouseTileY, &useMatrix, color.RGBA{R: 0, G: 0x67, B: 0x78, A: 255}, color.RGBA{R: 0, G: 0xef, B: 0xff, A: 255})
 
     if combat.SelectedUnit != nil {
         path, ok := combat.FindPath(combat.SelectedUnit, combat.MouseTileX, combat.MouseTileY)
@@ -3310,7 +3342,7 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
             for i := 1; i < len(path); i++ {
                 tileX, tileY := path[i].X, path[i].Y
 
-                tx, ty := tilePosition(tileX, tileY)
+                tx, ty := tilePosition(float64(tileX), float64(tileY))
                 tx += float64(tile0.Bounds().Dx())/2
                 ty += float64(tile0.Bounds().Dy())/2
                 movementImage, _ := combat.ImageCache.GetImage("compix.lbx", 72, 0)
@@ -3327,7 +3359,7 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
         maxColor := color.RGBA{R: 255, G: 0, B: 0, A: 255}
 
         if !combat.SelectedUnit.Moving {
-            combat.DrawHighlightedTile(screen, combat.SelectedUnit.X, combat.SelectedUnit.Y, minColor, maxColor)
+            combat.DrawHighlightedTile(screen, combat.SelectedUnit.X, combat.SelectedUnit.Y, &useMatrix, minColor, maxColor)
         }
     }
 
@@ -3342,10 +3374,11 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
             var ty float64
 
             if unit.Moving {
-                tx, ty = combat.Coordinates.Apply(unit.MoveX, unit.MoveY)
+                tx, ty = tilePosition(unit.MoveX, unit.MoveY)
             } else {
-                tx, ty = tilePosition(unit.X, unit.Y)
+                tx, ty = tilePosition(float64(unit.X), float64(unit.Y))
             }
+
             unitOptions.GeoM.Translate(tx, ty)
             unitOptions.GeoM.Translate(float64(tile0.Bounds().Dx()/2), float64(tile0.Bounds().Dy()/2))
 
@@ -3383,8 +3416,8 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
     }
 
     compareUnit := func(unitA *ArmyUnit, unitB *ArmyUnit) int {
-        ax, ay := combat.Coordinates.Apply(float64(unitA.X), float64(unitA.Y))
-        bx, by := combat.Coordinates.Apply(float64(unitB.X), float64(unitB.Y))
+        ax, ay := tilePosition(float64(unitA.X), float64(unitA.Y))
+        bx, by := tilePosition(float64(unitB.X), float64(unitB.Y))
 
         if ay < by {
             return -1
@@ -3414,7 +3447,7 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
 
     for _, unit := range combat.OtherUnits {
         var unitOptions ebiten.DrawImageOptions
-        tx, ty := tilePosition(unit.X, unit.Y)
+        tx, ty := tilePosition(float64(unit.X), float64(unit.Y))
         unitOptions.GeoM.Translate(tx, ty)
         unitOptions.GeoM.Translate(float64(tile0.Bounds().Dx()/2), float64(tile0.Bounds().Dy()/2))
 
@@ -3442,31 +3475,4 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
             screen.DrawImage(frame, &options)
         }
     }
-
-    // combat.DrawMouse(screen)
 }
-
-/*
-func (combat *CombatScreen) DrawMouse(screen *ebiten.Image){
-    var mouseOptions ebiten.DrawImageOptions
-    mouseX, mouseY := ebiten.CursorPosition()
-    mouseOptions.GeoM.Translate(float64(mouseX), float64(mouseY))
-    switch combat.MouseState {
-        case CombatMoveOk:
-            screen.DrawImage(combat.Mouse.Move, &mouseOptions)
-        case CombatClickHud:
-            screen.DrawImage(combat.Mouse.Normal, &mouseOptions)
-        case CombatMeleeAttackOk:
-            mouseOptions.GeoM.Translate(-1, -1)
-            screen.DrawImage(combat.Mouse.Attack, &mouseOptions)
-        case CombatRangeAttackOk:
-            screen.DrawImage(combat.Mouse.Arrow, &mouseOptions)
-        case CombatNotOk:
-            mouseOptions.GeoM.Translate(-1, -1)
-            screen.DrawImage(combat.Mouse.Error, &mouseOptions)
-        case CombatCast:
-            index := (combat.Counter / 8) % uint64(len(combat.Mouse.Cast))
-            screen.DrawImage(combat.Mouse.Cast[index], &mouseOptions)
-    }
-}
-*/
