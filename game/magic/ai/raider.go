@@ -87,12 +87,14 @@ func (raider *RaiderAI) CreateUnits(player *playerlib.Player) []playerlib.AIDeci
     if rand.N(10) == 0 {
         city := player.Cities[rand.N(len(player.Cities))]
 
-        decisions = append(decisions, &playerlib.AICreateUnitDecision{
-            Unit: units.ChooseRandomUnit(player.Wizard.Race),
-            X: city.X,
-            Y: city.Y,
-            Plane: city.Plane,
-        })
+        for range rand.N(3) + 1 {
+            decisions = append(decisions, &playerlib.AICreateUnitDecision{
+                Unit: units.ChooseRandomUnit(player.Wizard.Race),
+                X: city.X,
+                Y: city.Y,
+                Plane: city.Plane,
+            })
+        }
     }
 
     return decisions

@@ -2085,8 +2085,12 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                                 case *playerlib.AICreateUnitDecision:
                                     create := decision.(*playerlib.AICreateUnitDecision)
                                     log.Printf("ai creating %+v", create)
-                                    overworldUnit := units.MakeOverworldUnitFromUnit(create.Unit, create.X, create.Y, create.Plane, player.Wizard.Banner, player.MakeExperienceInfo())
-                                    player.AddUnit(overworldUnit)
+
+                                    existingStack := player.FindStack(create.X, create.Y)
+                                    if existingStack == nil || len(existingStack.Units()) < 9 {
+                                        overworldUnit := units.MakeOverworldUnitFromUnit(create.Unit, create.X, create.Y, create.Plane, player.Wizard.Banner, player.MakeExperienceInfo())
+                                        player.AddUnit(overworldUnit)
+                                    }
                             }
                         }
                     }
