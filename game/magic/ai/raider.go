@@ -8,6 +8,7 @@ import (
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/units"
 )
 
 type RaiderAI struct {
@@ -80,10 +81,28 @@ func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerli
     return decisions
 }
 
+func (raider *RaiderAI) CreateUnits(player *playerlib.Player) []playerlib.AIDecision {
+    var decisions []playerlib.AIDecision
+
+    if rand.N(10) == 0 {
+        city := player.Cities[rand.N(len(player.Cities))]
+
+        decisions = append(decisions, &playerlib.AICreateUnitDecision{
+            Unit: units.ChooseRandomUnit(player.Wizard.Race),
+            X: city.X,
+            Y: city.Y,
+            Plane: city.Plane,
+        })
+    }
+
+    return decisions
+}
+
 func (raider *RaiderAI) Update(player *playerlib.Player, enemies []*playerlib.Player, pathfinder playerlib.PathFinder) []playerlib.AIDecision {
     var decisions []playerlib.AIDecision
 
     decisions = append(decisions, raider.MoveStacks(player, enemies, pathfinder)...)
+    decisions = append(decisions, raider.CreateUnits(player)...)
 
     return decisions
 }

@@ -33,6 +33,13 @@ type AIMoveStackDecision struct {
     Location image.Point
 }
 
+type AICreateUnitDecision struct {
+    Unit units.Unit
+    X int
+    Y int
+    Plane data.Plane
+}
+
 type PathFinder interface {
     FindPath(oldX int, oldY int, newX int, newY int, stack *UnitStack, fog [][]bool) pathfinding.Path
 }

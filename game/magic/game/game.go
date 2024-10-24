@@ -2082,7 +2082,11 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                                             game.doCombat(yield, player, stack, enemy, enemyStack, zone)
                                         }
                                     }
-
+                                case *playerlib.AICreateUnitDecision:
+                                    create := decision.(*playerlib.AICreateUnitDecision)
+                                    log.Printf("ai creating %+v", create)
+                                    overworldUnit := units.MakeOverworldUnitFromUnit(create.Unit, create.X, create.Y, create.Plane, player.Wizard.Banner, player.MakeExperienceInfo())
+                                    player.AddUnit(overworldUnit)
                             }
                         }
                     }
