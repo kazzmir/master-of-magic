@@ -2318,7 +2318,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     combatScreen := combat.MakeCombatScreen(game.Cache, &defendingArmy, &attackingArmy, game.Players[0], landscape, attackerStack.Plane(), zone)
     oldDrawer := game.Drawer
 
-    ebiten.SetCursorMode(ebiten.CursorModeHidden)
+    // ebiten.SetCursorMode(ebiten.CursorModeHidden)
 
     game.Drawer = func (screen *ebiten.Image, game *Game){
         combatScreen.Draw(screen)
@@ -2355,7 +2355,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
         }
     }
 
-    ebiten.SetCursorMode(ebiten.CursorModeVisible)
+    // ebiten.SetCursorMode(ebiten.CursorModeVisible)
     game.Drawer = oldDrawer
 
     for _, unit := range attackerStack.Units() {
