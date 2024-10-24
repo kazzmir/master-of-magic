@@ -1,6 +1,7 @@
 package ai
 
 import (
+    _ "log"
     "image"
 
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"

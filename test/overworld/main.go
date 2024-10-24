@@ -1681,7 +1681,7 @@ func createScenario21(cache *lbx.LbxCache) *gamelib.Game {
     enemyWizard := setup.WizardCustom{
         Name: "enemy",
         Banner: data.BannerBrown,
-        Race: data.RaceDraconian,
+        Race: data.RaceHighMen,
     }
 
     enemy := game.AddPlayer(enemyWizard, false)
@@ -1704,6 +1704,8 @@ func createScenario21(cache *lbx.LbxCache) *gamelib.Game {
     city2.Farmers = 5
     city2.Workers = 2
     city2.Rebels = 1
+
+    enemy.LiftFog(city2.X, city2.Y, 4)
 
     for range 8 {
         randomUnit := units.ChooseRandomUnit(enemy.Wizard.Race)

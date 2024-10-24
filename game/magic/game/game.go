@@ -2054,6 +2054,7 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                                     oldY := stack.Y()
                                     stack.Move(to.X - stack.X(), to.Y - stack.Y(), terrainCost)
                                     game.showMovement(yield, oldX, oldY, stack)
+                                    player.LiftFog(stack.X(), stack.Y(), 2)
 
                                     for _, enemy := range game.GetEnemies(player) {
                                         enemyStack := enemy.FindStack(stack.X(), stack.Y())
@@ -3797,6 +3798,12 @@ func (game *Game) DoNextTurn(){
 
         if player.Wizard.Banner != data.BannerBrown {
             game.StartPlayerTurn(player)
+        } else {
+            // neutral enemies should reset their moves each turn
+            for _, stack := range player.Stacks {
+                stack.ResetMoves()
+                stack.EnableMovers()
+            }
         }
 
         if game.Players[game.CurrentPlayer].AIBehavior != nil {
