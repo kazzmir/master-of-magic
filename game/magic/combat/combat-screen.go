@@ -1025,10 +1025,9 @@ func (combat *CombatScreen) GetCameraMatrix() ebiten.GeoM {
 func (combat *CombatScreen) ScreenToTile(x float64, y float64) (float64, float64) {
     tile0, _ := combat.ImageCache.GetImage("cmbgrass.lbx", 0, 0)
     screenToTile := combat.GetCameraMatrix()
-    screenToTile.Translate(float64(tile0.Bounds().Dx())/2, float64(tile0.Bounds().Dy())/2)
     screenToTile.Invert()
 
-    return screenToTile.Apply(x, y)
+    return screenToTile.Apply(x - float64(tile0.Bounds().Dx()/3) * combat.CameraScale, y - float64(tile0.Bounds().Dy()/3) * combat.CameraScale)
 }
 
 func (combat *CombatScreen) computeTopDownOrder() []image.Point {
@@ -3047,19 +3046,20 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
     var keys []ebiten.Key
     keys = inpututil.AppendPressedKeys(keys)
     for _, key := range keys {
+        speed := 1.5
         switch key {
             case ebiten.KeyDown:
-                combat.Coordinates.Translate(0, -1)
+                combat.Coordinates.Translate(0, -speed)
                 // combat.CameraY += 1
             case ebiten.KeyUp:
-                combat.Coordinates.Translate(0, 1)
+                combat.Coordinates.Translate(0, speed)
                 // combat.CameraY -= 1
             case ebiten.KeyLeft:
                 // combat.CameraX -= 1
-                combat.Coordinates.Translate(1, 0)
+                combat.Coordinates.Translate(speed, 0)
             case ebiten.KeyRight:
                 // combat.CameraX += 1
-                combat.Coordinates.Translate(-1, 0)
+                combat.Coordinates.Translate(-speed, 0)
             case ebiten.KeyEqual:
                 combat.CameraScale *= 1 + 0.01
                 combat.Coordinates.Scale(1.01, 1.01)
@@ -3155,6 +3155,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
 func (combat *CombatScreen) DrawHighlightedTile(screen *ebiten.Image, x int, y int, matrix *ebiten.GeoM, minColor color.RGBA, maxColor color.RGBA){
     tile0, _ := combat.ImageCache.GetImage("cmbgrass.lbx", 0, 0)
 
+    /*
     tx, ty := matrix.Apply(float64(x), float64(y))
     x1 := tx
     y1 := ty + float64(tile0.Bounds().Dy()/2)
@@ -3167,6 +3168,30 @@ func (combat *CombatScreen) DrawHighlightedTile(screen *ebiten.Image, x int, y i
 
     x4 := tx + float64(tile0.Bounds().Dx()/2)
     y4 := ty + float64(tile0.Bounds().Dy())
+    */
+
+    var useMatrix ebiten.GeoM
+    tx, ty := matrix.Apply(float64(x), float64(y))
+    // useMatrix.Translate(tx, ty)
+    // useMatrix.Rotate(-math.Pi/4)
+    useMatrix.Scale(combat.CameraScale, combat.CameraScale)
+    // left
+    x1, y1 := useMatrix.Apply(0, float64(tile0.Bounds().Dy())/2)
+    // top
+    x2, y2 := useMatrix.Apply(float64(tile0.Bounds().Dx()/2), 0)
+    // right
+    x3, y3 := useMatrix.Apply(float64(tile0.Bounds().Dx()), float64(tile0.Bounds().Dy()/2))
+    // bottom
+    x4, y4 := useMatrix.Apply(float64(tile0.Bounds().Dx()/2), float64(tile0.Bounds().Dy()))
+
+    x1 += tx
+    x2 += tx
+    x3 += tx
+    x4 += tx
+    y1 += ty
+    y2 += ty
+    y3 += ty
+    y4 += ty
 
     gradient := (math.Sin(float64(combat.Counter)/6) + 1)
 
@@ -3344,6 +3369,7 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
 
         road, _ := combat.ImageCache.GetImageTransform("cmbtcity.lbx", 0, 0, "crop", util.AutoCrop)
         options.GeoM.Reset()
+        options.GeoM.Scale(combat.CameraScale, combat.CameraScale)
         options.GeoM.Translate(tx, ty)
         options.GeoM.Translate(0, float64(tile0.Bounds().Dy())/2)
         screen.DrawImage(road, &options)
@@ -3360,6 +3386,7 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
         if extra.Drawer != nil {
             options.GeoM.Reset()
             tx, ty := tilePosition(float64(x), float64(y))
+            options.GeoM.Scale(combat.CameraScale, combat.CameraScale)
             options.GeoM.Translate(tx, ty)
 
             extra.Drawer(screen, &combat.ImageCache, &options, combat.Counter)
@@ -3367,6 +3394,7 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
             options.GeoM.Reset()
             // tx,ty is the middle of the tile
             tx, ty := tilePosition(float64(x), float64(y))
+            options.GeoM.Scale(combat.CameraScale, combat.CameraScale)
             options.GeoM.Translate(tx, ty)
 
             extraImages, _ := combat.ImageCache.GetImagesTransform(extra.Lbx, extra.Index, "crop", util.AutoCrop)
@@ -3406,6 +3434,7 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
                 ty -= float64(movementImage.Bounds().Dy())/2
 
                 options.GeoM.Reset()
+                options.GeoM.Scale(combat.CameraScale, combat.CameraScale)
                 options.GeoM.Translate(tx, ty)
                 screen.DrawImage(movementImage, &options)
             }
@@ -3435,6 +3464,7 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
                 tx, ty = tilePosition(float64(unit.X), float64(unit.Y))
             }
 
+            // unitOptions.GeoM.Scale(combat.CameraScale, combat.CameraScale)
             unitOptions.GeoM.Translate(tx, ty)
             unitOptions.GeoM.Translate(float64(tile0.Bounds().Dx()/2), float64(tile0.Bounds().Dy()/2))
 
@@ -3504,6 +3534,7 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
     for _, unit := range combat.OtherUnits {
         var unitOptions ebiten.DrawImageOptions
         tx, ty := tilePosition(float64(unit.X), float64(unit.Y))
+        unitOptions.GeoM.Scale(combat.CameraScale, combat.CameraScale)
         unitOptions.GeoM.Translate(tx, ty)
         unitOptions.GeoM.Translate(float64(tile0.Bounds().Dx()/2), float64(tile0.Bounds().Dy()/2))
 
@@ -3527,6 +3558,7 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
         }
         if frame != nil {
             var options ebiten.DrawImageOptions
+            options.GeoM.Scale(combat.CameraScale, combat.CameraScale)
             options.GeoM.Translate(projectile.X, projectile.Y)
             screen.DrawImage(frame, &options)
         }
