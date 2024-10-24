@@ -1002,6 +1002,7 @@ func (combat *CombatScreen) GetCameraMatrix() ebiten.GeoM {
     coordinates.Scale(float64(tile0.Bounds().Dx()) * 3 / 4 - 2, float64(tile0.Bounds().Dy()) * 3 / 4 - 1)
     coordinates.Translate(-220, 80)
     coordinates.Translate(-combat.CameraX, -combat.CameraY)
+    coordinates.Scale(combat.CameraScale, combat.CameraScale)
 
     return coordinates
 }
@@ -3036,6 +3037,8 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
             case ebiten.KeyUp: combat.CameraY -= 1
             case ebiten.KeyLeft: combat.CameraX -= 1
             case ebiten.KeyRight: combat.CameraX += 1
+            case ebiten.KeyEqual: combat.CameraScale += 0.01
+            case ebiten.KeyMinus: combat.CameraScale -= 0.01
         }
     }
 
@@ -3298,6 +3301,7 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
         options.GeoM.Reset()
         // tx,ty is the middle of the tile
         tx, ty := tilePosition(float64(x), float64(y))
+        options.GeoM.Scale(combat.CameraScale, combat.CameraScale)
         options.GeoM.Translate(tx, ty)
         screen.DrawImage(image, &options)
 
