@@ -3070,6 +3070,11 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
         }
     }
 
+    _, wheelY := ebiten.Wheel()
+    wheelScale := 1 + float64(wheelY) / 10
+    combat.CameraScale *= wheelScale
+    combat.Coordinates.Scale(wheelScale, wheelScale)
+
     combat.ProcessEvents(yield)
 
     if len(combat.Projectiles) > 0 {
