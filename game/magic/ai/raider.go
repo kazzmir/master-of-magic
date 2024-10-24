@@ -31,12 +31,22 @@ func (raider *RaiderAI) Update(player *playerlib.Player, enemies []*playerlib.Pl
         for _, stack := range player.Stacks {
             _, moved := raider.MovedStacks[stack]
             if !moved && !stack.OutOfMoves() {
+                fog := player.GetFog(stack.Plane())
 
                 var currentPath pathfinding.Path
 
                 for _, enemy := range enemies {
                     for _, city := range enemy.Cities {
-                        path := pathfinder.FindPath(stack.X(), stack.Y(), city.X, city.Y, stack, player.GetFog(data.PlaneArcanus))
+                        if city.Plane != stack.Plane() {
+                            continue
+                        }
+
+                        // don't know about the city
+                        if !fog[city.X][city.Y] {
+                            continue
+                        }
+
+                        path := pathfinder.FindPath(stack.X(), stack.Y(), city.X, city.Y, stack, fog)
                         if path != nil {
                             if currentPath == nil {
                                 currentPath = path
