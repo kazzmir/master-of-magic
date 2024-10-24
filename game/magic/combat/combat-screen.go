@@ -3172,6 +3172,7 @@ func (combat *CombatScreen) DrawHighlightedTile(screen *ebiten.Image, x int, y i
     */
 
     var useMatrix ebiten.GeoM
+
     tx, ty := matrix.Apply(float64(x), float64(y))
     // useMatrix.Translate(tx, ty)
     // useMatrix.Rotate(-math.Pi/4)
@@ -3396,8 +3397,11 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
             options.GeoM.Reset()
             // tx,ty is the middle of the tile
             tx, ty := tilePosition(float64(x), float64(y))
-            options.GeoM.Scale(combat.CameraScale, combat.CameraScale)
-            options.GeoM.Translate(tx, ty)
+
+            var geom ebiten.GeoM
+
+            geom.Scale(combat.CameraScale, combat.CameraScale)
+            geom.Translate(tx, ty)
 
             extraImages, _ := combat.ImageCache.GetImagesTransform(extra.Lbx, extra.Index, "crop", util.AutoCrop)
 
@@ -3411,6 +3415,8 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
                 case TileAlignMiddle:
                     options.GeoM.Translate(-float64(extraImage.Bounds().Dy())/2, -float64(extraImage.Bounds().Dy()/2))
             }
+
+            options.GeoM.Concat(geom)
 
             screen.DrawImage(extraImage, &options)
 
