@@ -622,12 +622,13 @@ type CombatScreen struct {
     // order to draw tiles in such that they are drawn from the top of the screen to the bottom (painter's order)
     TopDownOrder []image.Point
 
-    Coordinates ebiten.GeoM
+    // Coordinates ebiten.GeoM
     // ScreenToTile ebiten.GeoM
     MouseState MouseState
 
     CameraX float64
     CameraY float64
+    CameraScale float64
 
     Counter uint64
 
@@ -901,6 +902,7 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
 
     imageCache := util.MakeImageCache(cache)
 
+    /*
     tile0, _ := imageCache.GetImage("cmbgrass.lbx", 0, 0)
 
     var coordinates ebiten.GeoM
@@ -911,6 +913,7 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
     // FIXME: this math is hacky, but it works for now
     coordinates.Scale(float64(tile0.Bounds().Dx()) * 3 / 4 - 2, float64(tile0.Bounds().Dy()) * 3 / 4 - 1)
     coordinates.Translate(-220, 80)
+    */
 
     /*
     screenToTile := coordinates
@@ -936,6 +939,7 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
         Turn: TeamDefender,
         CameraX: 0,
         CameraY: 0,
+        CameraScale: 1,
         CurrentTurn: 0,
         DefendingArmy: defendingArmy,
         TurnDefender: 0,
@@ -949,7 +953,7 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
         HudFont: hudFont,
         InfoFont: infoFont,
         WhiteFont: whiteFont,
-        Coordinates: coordinates,
+        // Coordinates: coordinates,
         // ScreenToTile: screenToTile,
         WhitePixel: whitePixel,
         AttackingWizardFont: attackingWizardFont,
@@ -986,10 +990,25 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
     return combat
 }
 
+func (combat *CombatScreen) GetCameraMatrix() ebiten.GeoM {
+    var coordinates ebiten.GeoM
+
+    tile0, _ := combat.ImageCache.GetImage("cmbgrass.lbx", 0, 0)
+
+    // the battlefield is rotated by 45 degrees
+    coordinates.Rotate(-math.Pi / 4)
+    // coordinates.Scale(float64(tile0.Bounds().Dx())/2, float64(tile0.Bounds().Dy())/2)
+    // FIXME: this math is hacky, but it works for now
+    coordinates.Scale(float64(tile0.Bounds().Dx()) * 3 / 4 - 2, float64(tile0.Bounds().Dy()) * 3 / 4 - 1)
+    coordinates.Translate(-220, 80)
+    coordinates.Translate(-combat.CameraX, -combat.CameraY)
+
+    return coordinates
+}
+
 func (combat *CombatScreen) ScreenToTile(x float64, y float64) (float64, float64) {
     tile0, _ := combat.ImageCache.GetImage("cmbgrass.lbx", 0, 0)
-    screenToTile := combat.Coordinates
-    screenToTile.Translate(-combat.CameraX, -combat.CameraY)
+    screenToTile := combat.GetCameraMatrix()
     screenToTile.Translate(float64(tile0.Bounds().Dx())/2, float64(tile0.Bounds().Dy())/2)
     screenToTile.Invert()
 
@@ -1004,9 +1023,11 @@ func (combat *CombatScreen) computeTopDownOrder() []image.Point {
         }
     }
 
+    matrix := combat.GetCameraMatrix()
+
     compare := func(a image.Point, b image.Point) int {
-        ax, ay := combat.Coordinates.Apply(float64(a.X), float64(a.Y))
-        bx, by := combat.Coordinates.Apply(float64(b.X), float64(b.Y))
+        ax, ay := matrix.Apply(float64(a.X), float64(a.Y))
+        bx, by := matrix.Apply(float64(b.X), float64(b.Y))
 
         if ay < by {
             return -1
@@ -1039,7 +1060,8 @@ func (combat *CombatScreen) AddProjectile(projectile *Projectile){
  */
 func (combat *CombatScreen) createSkyProjectile(target *ArmyUnit, images []*ebiten.Image, explodeImages []*ebiten.Image, effect ProjectileEffect) *Projectile {
     // find where on the screen the unit is
-    screenX, screenY := combat.Coordinates.Apply(float64(target.X), float64(target.Y))
+    matrix := combat.GetCameraMatrix()
+    screenX, screenY := matrix.Apply(float64(target.X), float64(target.Y))
     screenY -= 10
     screenX += 2
 
@@ -1073,7 +1095,8 @@ func (combat *CombatScreen) createSkyProjectile(target *ArmyUnit, images []*ebit
  */
 func (combat *CombatScreen) createVerticalSkyProjectile(target *ArmyUnit, images []*ebiten.Image, explodeImages []*ebiten.Image) *Projectile {
     // find where on the screen the unit is
-    screenX, screenY := combat.Coordinates.Apply(float64(target.X), float64(target.Y))
+    matrix := combat.GetCameraMatrix()
+    screenX, screenY := matrix.Apply(float64(target.X), float64(target.Y))
     screenY -= 10
     screenX += 2
 
@@ -1119,7 +1142,8 @@ const (
  */
 func (combat *CombatScreen) createUnitProjectile(target *ArmyUnit, images []*ebiten.Image, explodeImages []*ebiten.Image, position UnitPosition, effect ProjectileEffect) *Projectile {
     // find where on the screen the unit is
-    screenX, screenY := combat.Coordinates.Apply(float64(target.X), float64(target.Y))
+    matrix := combat.GetCameraMatrix()
+    screenX, screenY := matrix.Apply(float64(target.X), float64(target.Y))
 
     var useImage *ebiten.Image
     if len(images) > 0 {
@@ -1245,7 +1269,8 @@ func (combat *CombatScreen) CreateLightningBoltProjectile(target *ArmyUnit) {
     // loopImages := images
     explodeImages := images
 
-    screenX, screenY := combat.Coordinates.Apply(float64(target.X), float64(target.Y))
+    matrix := combat.GetCameraMatrix()
+    screenX, screenY := matrix.Apply(float64(target.X), float64(target.Y))
     screenY += 3
     screenX += 5
 
@@ -1272,7 +1297,8 @@ func (combat *CombatScreen) CreateWarpLightningProjectile(target *ArmyUnit) {
     // loopImages := images
     explodeImages := images
 
-    screenX, screenY := combat.Coordinates.Apply(float64(target.X), float64(target.Y))
+    matrix := combat.GetCameraMatrix()
+    screenX, screenY := matrix.Apply(float64(target.X), float64(target.Y))
     screenY += 13
     screenX += 3
 
@@ -2344,9 +2370,10 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
 }
 
 func (combat *CombatScreen) createUnitToUnitProjectile(attacker *ArmyUnit, target *ArmyUnit, offset image.Point, images []*ebiten.Image, explodeImages []*ebiten.Image, effect ProjectileEffect) *Projectile {
+    matrix := combat.GetCameraMatrix()
     // find where on the screen the unit is
-    screenX, screenY := combat.Coordinates.Apply(float64(attacker.X), float64(attacker.Y))
-    targetX, targetY := combat.Coordinates.Apply(float64(target.X), float64(target.Y))
+    screenX, screenY := matrix.Apply(float64(attacker.X), float64(attacker.Y))
+    targetX, targetY := matrix.Apply(float64(target.X), float64(target.Y))
 
     var useImage *ebiten.Image
     if len(images) > 0 {
@@ -3256,9 +3283,7 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
     log.Printf("(3,3) -> (%f, %f)", a, b)
     */
 
-    useMatrix := combat.Coordinates
-
-    useMatrix.Translate(-combat.CameraX, -combat.CameraY)
+    useMatrix := combat.GetCameraMatrix()
 
     tilePosition := func(x float64, y float64) (float64, float64){
         return useMatrix.Apply(x, y)
