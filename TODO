@@ -4,7 +4,6 @@
 * overworld: ai controlled wizards/empires
 * myrror plane
 * filter buildings by race
-* roaming bands of neutral enemies
 * neutral towns/cities
 * add lairs/dungeons/towers etc
 * game menu - implement save/load game
@@ -45,3 +44,4 @@
 10/20/2024 * hire hero events
 10/20/2024 * quake console
 10/22/2024 * combat: draw town sprites in combat scene
+10/24/2024 * roaming bands of neutral enemies

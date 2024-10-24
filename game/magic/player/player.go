@@ -4,12 +4,14 @@ import (
     "slices"
     "math"
     "math/rand/v2"
+    "image"
 
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
+    "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     "github.com/kazzmir/master-of-magic/lib/fraction"
@@ -21,6 +23,30 @@ type PowerDistribution struct {
     Mana float64
     Research float64
     Skill float64
+}
+
+type AIDecision interface {
+}
+
+type AIMoveStackDecision struct {
+    Stack *UnitStack
+    Location image.Point
+}
+
+type AICreateUnitDecision struct {
+    Unit units.Unit
+    X int
+    Y int
+    Plane data.Plane
+}
+
+type PathFinder interface {
+    FindPath(oldX int, oldY int, newX int, newY int, stack *UnitStack, fog [][]bool) pathfinding.Path
+}
+
+type AIBehavior interface {
+    Update(*Player, []*Player, PathFinder) []AIDecision
+    NewTurn()
 }
 
 type Player struct {
@@ -50,6 +76,8 @@ type Player struct {
     GlobalEnchantments *set.Set[data.Enchantment]
 
     PowerDistribution PowerDistribution
+
+    AIBehavior AIBehavior
 
     Heroes [6]*herolib.Hero
     VaultEquipment [4]*artifact.Artifact

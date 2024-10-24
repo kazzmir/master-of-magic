@@ -847,6 +847,7 @@ func makePaletteFromBanner(banner data.BannerType) color.Palette {
     }
 }
 
+// player is always the human player
 func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Army, player *playerlib.Player, landscape CombatLandscape, plane data.Plane, zone ZoneType) *CombatScreen {
     fontLbx, err := cache.GetLbxFile("fonts.lbx")
     if err != nil {
