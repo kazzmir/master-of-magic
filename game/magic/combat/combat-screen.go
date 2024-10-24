@@ -1023,11 +1023,12 @@ func (combat *CombatScreen) GetCameraMatrix() ebiten.GeoM {
 }
 
 func (combat *CombatScreen) ScreenToTile(x float64, y float64) (float64, float64) {
-    tile0, _ := combat.ImageCache.GetImage("cmbgrass.lbx", 0, 0)
+    // tile0, _ := combat.ImageCache.GetImage("cmbgrass.lbx", 0, 0)
     screenToTile := combat.GetCameraMatrix()
     screenToTile.Invert()
 
-    return screenToTile.Apply(x - float64(tile0.Bounds().Dx()/3) * combat.CameraScale, y - float64(tile0.Bounds().Dy()/3) * combat.CameraScale)
+    // return screenToTile.Apply(x - float64(tile0.Bounds().Dx()/3) * combat.CameraScale, y - float64(tile0.Bounds().Dy()/3) * combat.CameraScale)
+    return screenToTile.Apply(x, y)
 }
 
 func (combat *CombatScreen) computeTopDownOrder() []image.Point {
@@ -3176,13 +3177,13 @@ func (combat *CombatScreen) DrawHighlightedTile(screen *ebiten.Image, x int, y i
     // useMatrix.Rotate(-math.Pi/4)
     useMatrix.Scale(combat.CameraScale, combat.CameraScale)
     // left
-    x1, y1 := useMatrix.Apply(0, float64(tile0.Bounds().Dy())/2)
+    x1, y1 := useMatrix.Apply(-float64(tile0.Bounds().Dx()/2), 0)
     // top
-    x2, y2 := useMatrix.Apply(float64(tile0.Bounds().Dx()/2), 0)
+    x2, y2 := useMatrix.Apply(0, -float64(tile0.Bounds().Dy()/2))
     // right
-    x3, y3 := useMatrix.Apply(float64(tile0.Bounds().Dx()), float64(tile0.Bounds().Dy()/2))
+    x3, y3 := useMatrix.Apply(float64(tile0.Bounds().Dx()/2), 0)
     // bottom
-    x4, y4 := useMatrix.Apply(float64(tile0.Bounds().Dx()/2), float64(tile0.Bounds().Dy()))
+    x4, y4 := useMatrix.Apply(0, float64(tile0.Bounds().Dy()/2))
 
     x1 += tx
     x2 += tx
@@ -3362,6 +3363,8 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
             index := animationIndex % uint64(len(mudTiles))
             screen.DrawImage(mudTiles[index], &options)
         }
+
+        // vector.DrawFilledCircle(screen, float32(tx), float32(ty), 2, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, false)
     }
 
     if combat.DrawRoad {
@@ -3374,7 +3377,6 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
         options.GeoM.Translate(0, float64(tile0.Bounds().Dy())/2)
         screen.DrawImage(road, &options)
 
-        // vector.DrawFilledCircle(screen, float32(tx), float32(ty), 2, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, false)
     }
 
     // then draw extra stuff on top
@@ -3427,8 +3429,8 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
                 tileX, tileY := path[i].X, path[i].Y
 
                 tx, ty := tilePosition(float64(tileX), float64(tileY))
-                tx += float64(tile0.Bounds().Dx())/2
-                ty += float64(tile0.Bounds().Dy())/2
+                // tx += float64(tile0.Bounds().Dx())/2
+                // ty += float64(tile0.Bounds().Dy())/2
                 movementImage, _ := combat.ImageCache.GetImage("compix.lbx", 72, 0)
                 tx -= float64(movementImage.Bounds().Dx())/2
                 ty -= float64(movementImage.Bounds().Dy())/2
@@ -3464,9 +3466,17 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
                 tx, ty = tilePosition(float64(unit.X), float64(unit.Y))
             }
 
-            // unitOptions.GeoM.Scale(combat.CameraScale, combat.CameraScale)
+            /*
+            tx, ty := tilePosition(float64(x), float64(y))
+            options.GeoM.Scale(combat.CameraScale, combat.CameraScale)
+            options.GeoM.Translate(tx, ty)
+            */
+
+            unitOptions.GeoM.Scale(combat.CameraScale, combat.CameraScale)
             unitOptions.GeoM.Translate(tx, ty)
-            unitOptions.GeoM.Translate(float64(tile0.Bounds().Dx()/2), float64(tile0.Bounds().Dy()/2))
+            // unitOptions.GeoM.Translate(float64(tile0.Bounds().Dx()/2) * combat.CameraScale, 0)
+            // unitOptions.GeoM.Translate(float64(tile0.Bounds().Dx()/2), float64(tile0.Bounds().Dy()/2))
+            // unitOptions.GeoM.Translate(0, float64(tile0.Bounds().Dy()/2))
 
             index := uint64(0)
             if unit.Unit.IsFlying() || unit.Moving {
@@ -3487,6 +3497,14 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
                 unitOptions.ColorScale.Scale(float32(scaleValue), 1, 1, 1)
             }
 
+            /*
+            x, y := unitOptions.GeoM.Apply(0, 0)
+            vector.DrawFilledCircle(screen, float32(x), float32(y), 2, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, false)
+            x, y = unitOptions.GeoM.Apply(float64(tile0.Bounds().Dx()/2), 0)
+            vector.DrawFilledCircle(screen, float32(x), float32(y), 2, color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, false)
+            */
+
+            // _ = index
             RenderCombatUnit(screen, combatImages[index], unitOptions, unit.Figures())
         }
     }
