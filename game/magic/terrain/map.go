@@ -14,6 +14,16 @@ func (continent Continent) Size() int {
     return len(continent)
 }
 
+func (continent Continent) Contains(point image.Point) bool {
+    for _, check := range continent {
+        if check == point {
+            return true
+        }
+    }
+
+    return false
+}
+
 type Map struct {
     Terrain [][]int
 }

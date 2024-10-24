@@ -566,6 +566,23 @@ func (game *Game) FindValidCityLocation() (int, int) {
     return 0, 0
 }
 
+func (game *Game) FindValidCityLocationOnContinent(x int, y int) (int, int) {
+    continents := game.Map.Map.FindContinents()
+
+    for _, continent := range continents {
+        if continent.Contains(image.Pt(x, y)) {
+            for _, index := range rand.Perm(continent.Size()) {
+                tile := game.Map.GetTile(continent[index].X, continent[index].Y)
+                if tile.IsLand() && !tile.IsMagic() {
+                    return continent[index].X, continent[index].Y
+                }
+            }
+        }
+    }
+
+    return 0, 0
+}
+
 func (game *Game) AllCities() []*citylib.City {
     var out []*citylib.City
 

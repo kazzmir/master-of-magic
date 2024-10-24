@@ -1688,7 +1688,8 @@ func createScenario21(cache *lbx.LbxCache) *gamelib.Game {
 
     enemy.AIBehavior = ai.MakeRaiderAI()
 
-    x2, y2 := game.FindValidCityLocation()
+    x2, y2 := game.FindValidCityLocationOnContinent(city.X, city.Y)
+    log.Printf("enemy city at %v, %v", x2, y2)
     city2 := citylib.MakeCity("Test City", x2, y2, enemy.Wizard.Race, enemy.Wizard.Banner, fraction.Make(1, 1), game.BuildingInfo, enemy)
     city2.Population = 8000
     city2.Plane = data.PlaneArcanus
