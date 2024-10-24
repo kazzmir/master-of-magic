@@ -214,10 +214,22 @@ type Map struct {
     miniMapPixels []byte
 }
 
-func MakeMap(data *terrain.TerrainData) *Map {
+func getLandSize(size int) (int, int) {
+    switch size {
+        case 0: return 50, 50
+        case 1: return 100, 100
+        case 2: return 200, 150
+    }
+
+    return 100, 100
+}
+
+func MakeMap(data *terrain.TerrainData, landSize int) *Map {
+    landWidth, landHeight := getLandSize(landSize)
+
     return &Map{
         Data: data,
-        Map: terrain.GenerateLandCellularAutomata(100, 200, data),
+        Map: terrain.GenerateLandCellularAutomata(landWidth, landHeight, data),
         TileCache: make(map[int]*ebiten.Image),
         ExtraMap: make(map[image.Point]ExtraTile),
     }

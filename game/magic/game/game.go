@@ -506,7 +506,7 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         Help: help,
         MouseData: mouseData,
         Events: make(chan GameEvent, 1000),
-        Map: MakeMap(terrainData),
+        Map: MakeMap(terrainData, settings.LandSize),
         State: GameStateRunning,
         Settings: settings,
         BookOrder: randomizeBookOrder(12),
