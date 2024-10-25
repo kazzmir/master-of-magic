@@ -3,6 +3,7 @@ package unitview
 import (
     "log"
     "fmt"
+    "image"
     "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -228,6 +229,44 @@ func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, di
             okDismissFont.PrintCenter(screen, x, y - 5, 1, options.ColorScale, "Ok")
         },
     })
+
+    return elements
+}
+
+// list of units that shows up when you right click on an enemy unit stack
+func MakeSmallListView(cache *lbx.LbxCache, ui *uilib.UI, stack []UnitView, title string) []*uilib.UIElement {
+    imageCache := util.MakeImageCache(cache)
+
+    // title bar + 1 for each unit
+    height := 20 + 20 * len(stack)
+
+    background, _ := imageCache.GetImage("unitview.lbx", 28, 0)
+
+    posX := 30
+    posY := data.ScreenHeight / 2 - height / 2
+
+    var elements []*uilib.UIElement
+
+    getAlpha := ui.MakeFadeIn(7)
+
+    rect := image.Rect(0, 0, background.Bounds().Dx(), height).Add(image.Pt(posX, posY))
+    element := &uilib.UIElement{
+        Rect: rect,
+        LeftClick: func(this *uilib.UIElement){
+            getAlpha = ui.MakeFadeOut(7)
+            ui.AddDelay(7, func(){
+                ui.RemoveElements(elements)
+            })
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(posX), float64(posY))
+            options.ColorScale.ScaleAlpha(getAlpha())
+            screen.DrawImage(background, &options)
+        },
+    }
+
+    elements = append(elements, element)
 
     return elements
 }
