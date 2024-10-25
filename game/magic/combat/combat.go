@@ -87,15 +87,20 @@ func RenderCombatUnit(screen *ebiten.Image, use *ebiten.Image, options ebiten.Dr
 
     geoM := options.GeoM
     for _, point := range combatPoints(count) {
-        options.GeoM = geoM
+        options.GeoM.Reset()
         options.GeoM.Translate(float64(point.X), float64(point.Y))
+        options.GeoM.Translate(-float64(use.Bounds().Dx() / 2), -float64(use.Bounds().Dy()) + groundHeight)
+
+        options.GeoM.Concat(geoM)
 
         /*
         x, y := options.GeoM.Apply(0, 0)
         vector.DrawFilledCircle(screen, float32(x), float32(y), 1, color.RGBA{255, 0, 0, 255}, true)
         */
 
-        options.GeoM.Translate(-float64(use.Bounds().Dx() / 2), -float64(use.Bounds().Dy()) + groundHeight)
+        _ = point
+        _ = groundHeight
+        // options.GeoM.Translate(-float64(use.Bounds().Dx() / 2), -float64(use.Bounds().Dy()) + groundHeight)
         // options.GeoM.Translate(-13, -22)
         screen.DrawImage(use, &options)
     }
