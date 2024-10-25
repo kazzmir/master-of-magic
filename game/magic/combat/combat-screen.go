@@ -3077,6 +3077,10 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
                     combat.CameraScale *= 1.0 - 0.01
                     combat.Coordinates.Scale(0.99, 0.99)
                 }
+            case ebiten.KeySpace:
+                normalized := 1 / combat.CameraScale
+                combat.CameraScale *= normalized
+                combat.Coordinates.Scale(normalized, normalized)
         }
     }
 
