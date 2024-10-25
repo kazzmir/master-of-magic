@@ -1159,7 +1159,8 @@ const (
 func (combat *CombatScreen) createUnitProjectile(target *ArmyUnit, images []*ebiten.Image, explodeImages []*ebiten.Image, position UnitPosition, effect ProjectileEffect) *Projectile {
     // find where on the screen the unit is
     matrix := combat.GetCameraMatrix()
-    screenX, screenY := matrix.Apply(float64(target.X), float64(target.Y))
+
+    var geom1 ebiten.GeoM
 
     var useImage *ebiten.Image
     if len(images) > 0 {
@@ -1170,15 +1171,18 @@ func (combat *CombatScreen) createUnitProjectile(target *ArmyUnit, images []*ebi
 
     switch position {
         case UnitPositionMiddle:
-            screenY += 3
-            screenY -= float64(useImage.Bounds().Dy()/2)
-            screenX += 14
-            screenX -= float64(useImage.Bounds().Dx()/2)
+            // geom1.Translate(14, 3)
+            geom1.Translate(-float64(useImage.Bounds().Dx()/2), -float64(useImage.Bounds().Dy()/2))
         case UnitPositionUnder:
-            screenY += 15
-            screenY -= float64(useImage.Bounds().Dy())
+            geom1.Translate(0, 9)
+            geom1.Translate(-float64(useImage.Bounds().Dx()/2), -float64(useImage.Bounds().Dy()))
     }
 
+    geom1.Scale(combat.CameraScale, combat.CameraScale)
+    tx, ty := matrix.Apply(float64(target.X), float64(target.Y))
+    geom1.Translate(tx, ty)
+
+    screenX, screenY := geom1.Apply(0, 0)
 
     // log.Printf("Create fireball projectile at %v,%v -> %v,%v", x, y, screenX, screenY)
 
@@ -3119,7 +3123,9 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
     }
 
     // if there is no unit at the tile position then the highlighted unit will be nil
-    combat.HighlightedUnit = combat.GetUnit(combat.MouseTileX, combat.MouseTileY)
+    if combat.UI.GetHighestLayerValue() == 0 {
+        combat.HighlightedUnit = combat.GetUnit(combat.MouseTileX, combat.MouseTileY)
+    }
 
     // dont allow clicks into the hud area
     // also don't allow clicks into the game if the ui is showing some overlay
