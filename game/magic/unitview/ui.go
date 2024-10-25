@@ -22,6 +22,8 @@ type UnitView interface {
     GetBanner() data.BannerType
     GetCombatLbxFile() string
     GetCombatIndex(units.Facing) int
+    GetLbxFile() string
+    GetLbxIndex() int
     GetCount() int
     GetUpkeepGold() int
     GetUpkeepFood() int
@@ -238,7 +240,7 @@ func MakeSmallListView(cache *lbx.LbxCache, ui *uilib.UI, stack []UnitView, titl
     imageCache := util.MakeImageCache(cache)
 
     titleHeight := 22
-    unitHeight := 20
+    unitHeight := 19
 
     // title bar + 1 for each unit
     height := titleHeight + unitHeight * len(stack)
@@ -278,6 +280,31 @@ func MakeSmallListView(cache *lbx.LbxCache, ui *uilib.UI, stack []UnitView, titl
 
             options.GeoM.Translate(0, float64(background.Bounds().Dy()))
             screen.DrawImage(bottom, &options)
+
+            options.GeoM.Reset()
+            options.GeoM.Translate(float64(posX), float64(posY + titleHeight))
+
+            var unitOptions ebiten.DrawImageOptions
+            for _, unit := range stack {
+                banner := unit.GetBanner()
+                unitBack, err := units.GetUnitBackgroundImage(unit.GetBanner(), &imageCache)
+                if err != nil {
+                    continue
+                }
+
+                unitImage, err := imageCache.GetImageTransform(unit.GetLbxFile(), unit.GetLbxIndex(), 0, banner.String(), units.MakeUpdateUnitColorsFunc(banner))
+                if err != nil {
+                    continue
+                }
+
+                unitOptions = options
+                unitOptions.GeoM.Translate(8, 2)
+                screen.DrawImage(unitBack, &unitOptions)
+                unitOptions.GeoM.Translate(1, 1)
+                screen.DrawImage(unitImage, &unitOptions)
+
+                options.GeoM.Translate(0, float64(unitHeight))
+            }
         },
     }
 
