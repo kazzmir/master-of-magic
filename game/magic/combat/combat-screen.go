@@ -3068,11 +3068,15 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
                 // combat.CameraX += 1
                 combat.Coordinates.Translate(-speed, 0)
             case ebiten.KeyEqual:
-                combat.CameraScale *= 1 + 0.01
-                combat.Coordinates.Scale(1.01, 1.01)
+                if combat.CameraScale < 3 {
+                    combat.CameraScale *= 1 + 0.01
+                    combat.Coordinates.Scale(1.01, 1.01)
+                }
             case ebiten.KeyMinus:
-                combat.CameraScale *= 1.0 - 0.01
-                combat.Coordinates.Scale(0.99, 0.99)
+                if combat.CameraScale > 0.5 {
+                    combat.CameraScale *= 1.0 - 0.01
+                    combat.Coordinates.Scale(0.99, 0.99)
+                }
         }
     }
 
