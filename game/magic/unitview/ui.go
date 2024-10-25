@@ -303,6 +303,11 @@ func MakeSmallListView(cache *lbx.LbxCache, ui *uilib.UI, stack []UnitView, titl
                 unitOptions.GeoM.Translate(1, 1)
                 screen.DrawImage(unitImage, &unitOptions)
 
+                unitOptions.GeoM.Translate(132, 4)
+                // FIXME: palette might come from the background, unitview.lbx:28
+                meleeImage, _ := imageCache.GetImage("unitview.lbx", 13, 0)
+                screen.DrawImage(meleeImage, &unitOptions)
+
                 options.GeoM.Translate(0, float64(unitHeight))
             }
         },
