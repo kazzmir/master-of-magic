@@ -626,8 +626,6 @@ type CombatScreen struct {
     // ScreenToTile ebiten.GeoM
     MouseState MouseState
 
-    CameraX float64
-    CameraY float64
     CameraScale float64
 
     Counter uint64
@@ -947,10 +945,6 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
         ImageCache: imageCache,
         Mouse: mouseData,
         Turn: TeamDefender,
-        /*
-        CameraX: 0,
-        CameraY: 0,
-        */
         CameraScale: 1,
         CurrentTurn: 0,
         DefendingArmy: defendingArmy,
@@ -1003,22 +997,6 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
 }
 
 func (combat *CombatScreen) GetCameraMatrix() ebiten.GeoM {
-    /*
-    var coordinates ebiten.GeoM
-
-    tile0, _ := combat.ImageCache.GetImage("cmbgrass.lbx", 0, 0)
-
-    // the battlefield is rotated by 45 degrees
-    coordinates.Rotate(-math.Pi / 4)
-    // coordinates.Scale(float64(tile0.Bounds().Dx())/2, float64(tile0.Bounds().Dy())/2)
-    // FIXME: this math is hacky, but it works for now
-    coordinates.Scale(float64(tile0.Bounds().Dx()) * 3 / 4 - 2, float64(tile0.Bounds().Dy()) * 3 / 4 - 1)
-    coordinates.Translate(-220, 80)
-    coordinates.Translate(-combat.CameraX, -combat.CameraY)
-    coordinates.Scale(combat.CameraScale, combat.CameraScale)
-
-    return coordinates
-    */
     return combat.Coordinates
 }
 
@@ -3057,15 +3035,11 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
         switch key {
             case ebiten.KeyDown:
                 combat.Coordinates.Translate(0, -speed)
-                // combat.CameraY += 1
             case ebiten.KeyUp:
                 combat.Coordinates.Translate(0, speed)
-                // combat.CameraY -= 1
             case ebiten.KeyLeft:
-                // combat.CameraX -= 1
                 combat.Coordinates.Translate(speed, 0)
             case ebiten.KeyRight:
-                // combat.CameraX += 1
                 combat.Coordinates.Translate(-speed, 0)
             case ebiten.KeyEqual:
                 if combat.CameraScale < 3 {
