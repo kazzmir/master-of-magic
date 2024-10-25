@@ -2402,6 +2402,8 @@ func (combat *CombatScreen) createUnitToUnitProjectile(attacker *ArmyUnit, targe
         useImage = explodeImages[0]
     }
 
+    // FIXME: these coordinates should be incorporated into a geom
+
     screenY += 3
     screenY -= float64(useImage.Bounds().Dy()/2)
     screenX += 14
@@ -3073,6 +3075,8 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
                 combat.Coordinates.Scale(0.99, 0.99)
         }
     }
+
+    // FIXME: handle right-click drag to move the camera
 
     _, wheelY := ebiten.Wheel()
     wheelScale := 1 + float64(wheelY) / 10
