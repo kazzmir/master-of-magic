@@ -3153,27 +3153,12 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
 func (combat *CombatScreen) DrawHighlightedTile(screen *ebiten.Image, x int, y int, matrix *ebiten.GeoM, minColor color.RGBA, maxColor color.RGBA){
     tile0, _ := combat.ImageCache.GetImage("cmbgrass.lbx", 0, 0)
 
-    /*
-    tx, ty := matrix.Apply(float64(x), float64(y))
-    x1 := tx
-    y1 := ty + float64(tile0.Bounds().Dy()/2)
-
-    x2 := tx + float64(tile0.Bounds().Dx()/2)
-    y2 := ty
-
-    x3 := tx + float64(tile0.Bounds().Dx())
-    y3 := ty + float64(tile0.Bounds().Dy()/2)
-
-    x4 := tx + float64(tile0.Bounds().Dx()/2)
-    y4 := ty + float64(tile0.Bounds().Dy())
-    */
-
     var useMatrix ebiten.GeoM
 
     tx, ty := matrix.Apply(float64(x), float64(y))
-    // useMatrix.Translate(tx, ty)
-    // useMatrix.Rotate(-math.Pi/4)
     useMatrix.Scale(combat.CameraScale, combat.CameraScale)
+    useMatrix.Translate(tx, ty)
+
     // left
     x1, y1 := useMatrix.Apply(-float64(tile0.Bounds().Dx()/2), 0)
     // top
@@ -3182,15 +3167,6 @@ func (combat *CombatScreen) DrawHighlightedTile(screen *ebiten.Image, x int, y i
     x3, y3 := useMatrix.Apply(float64(tile0.Bounds().Dx()/2), 0)
     // bottom
     x4, y4 := useMatrix.Apply(0, float64(tile0.Bounds().Dy()/2))
-
-    x1 += tx
-    x2 += tx
-    x3 += tx
-    x4 += tx
-    y1 += ty
-    y2 += ty
-    y3 += ty
-    y4 += ty
 
     gradient := (math.Sin(float64(combat.Counter)/6) + 1)
 
