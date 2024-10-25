@@ -900,25 +900,6 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
 
     imageCache := util.MakeImageCache(cache)
 
-    /*
-    tile0, _ := imageCache.GetImage("cmbgrass.lbx", 0, 0)
-
-    var coordinates ebiten.GeoM
-
-    // the battlefield is rotated by 45 degrees
-    coordinates.Rotate(-math.Pi / 4)
-    // coordinates.Scale(float64(tile0.Bounds().Dx())/2, float64(tile0.Bounds().Dy())/2)
-    // FIXME: this math is hacky, but it works for now
-    coordinates.Scale(float64(tile0.Bounds().Dx()) * 3 / 4 - 2, float64(tile0.Bounds().Dy()) * 3 / 4 - 1)
-    coordinates.Translate(-220, 80)
-    */
-
-    /*
-    screenToTile := coordinates
-    screenToTile.Translate(float64(tile0.Bounds().Dx())/2, float64(tile0.Bounds().Dy())/2)
-    screenToTile.Invert()
-    */
-
     whitePixel := ebiten.NewImage(1, 1)
     whitePixel.Fill(color.RGBA{R: 255, G: 255, B: 255, A: 255})
 
