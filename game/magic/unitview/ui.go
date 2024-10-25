@@ -237,19 +237,25 @@ func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, di
 func MakeSmallListView(cache *lbx.LbxCache, ui *uilib.UI, stack []UnitView, title string, clicked func()) []*uilib.UIElement {
     imageCache := util.MakeImageCache(cache)
 
-    // title bar + 1 for each unit
-    height := 20 + 20 * len(stack)
+    titleHeight := 22
+    unitHeight := 20
 
-    background, _ := imageCache.GetImage("unitview.lbx", 28, 0)
+    // title bar + 1 for each unit
+    height := titleHeight + unitHeight * len(stack)
+
+    fullBackground, _ := imageCache.GetImage("unitview.lbx", 28, 0)
+
+    background := fullBackground.SubImage(image.Rect(0, 0, fullBackground.Bounds().Dx(), height)).(*ebiten.Image)
+    bottom, _ := imageCache.GetImage("unitview.lbx", 29, 0)
 
     posX := 30
-    posY := data.ScreenHeight / 2 - height / 2
+    posY := data.ScreenHeight / 2 - background.Bounds().Dy() / 2
 
     var elements []*uilib.UIElement
 
     getAlpha := ui.MakeFadeIn(7)
 
-    rect := image.Rect(0, 0, background.Bounds().Dx(), height).Add(image.Pt(posX, posY))
+    rect := util.ImageRect(posX, posY, background)
     element := &uilib.UIElement{
         Rect: rect,
         LeftClick: func(this *uilib.UIElement){
@@ -264,6 +270,14 @@ func MakeSmallListView(cache *lbx.LbxCache, ui *uilib.UI, stack []UnitView, titl
             options.GeoM.Translate(float64(posX), float64(posY))
             options.ColorScale.ScaleAlpha(getAlpha())
             screen.DrawImage(background, &options)
+
+            /*
+            util.DrawRect(screen, image.Rect(posX, posY, posX+1, posY + titleHeight), color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff})
+            util.DrawRect(screen, image.Rect(posX, posY + titleHeight, posX+1, posY + titleHeight + unitHeight), color.RGBA{R: 0, G: 0xff, B: 0, A: 0xff})
+            */
+
+            options.GeoM.Translate(0, float64(background.Bounds().Dy()))
+            screen.DrawImage(bottom, &options)
         },
     }
 
