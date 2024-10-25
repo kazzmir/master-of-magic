@@ -234,7 +234,7 @@ func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, di
 }
 
 // list of units that shows up when you right click on an enemy unit stack
-func MakeSmallListView(cache *lbx.LbxCache, ui *uilib.UI, stack []UnitView, title string) []*uilib.UIElement {
+func MakeSmallListView(cache *lbx.LbxCache, ui *uilib.UI, stack []UnitView, title string, clicked func()) []*uilib.UIElement {
     imageCache := util.MakeImageCache(cache)
 
     // title bar + 1 for each unit
@@ -256,6 +256,7 @@ func MakeSmallListView(cache *lbx.LbxCache, ui *uilib.UI, stack []UnitView, titl
             getAlpha = ui.MakeFadeOut(7)
             ui.AddDelay(7, func(){
                 ui.RemoveElements(elements)
+                clicked()
             })
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
