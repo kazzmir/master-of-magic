@@ -257,6 +257,18 @@ func MakeSmallListView(cache *lbx.LbxCache, ui *uilib.UI, stack []UnitView, titl
 
     getAlpha := ui.MakeFadeIn(7)
 
+    // cut the border off
+    cut1PixelFunc := func (input *image.Paletted) image.Image {
+        bounds := input.Bounds()
+        return input.SubImage(image.Rect(bounds.Min.X+1, bounds.Min.Y+1, bounds.Max.X-1, bounds.Max.Y-1))
+    }
+
+    meleeImage, _ := imageCache.GetImageTransform("unitview.lbx", 13, 0, "cut1", cut1PixelFunc)
+    rangeImage, _ := imageCache.GetImageTransform("unitview.lbx", 14, 0, "cut1", cut1PixelFunc)
+    defenseImage, _ := imageCache.GetImageTransform("unitview.lbx", 22, 0, "cut1", cut1PixelFunc)
+    healthImage, _ := imageCache.GetImageTransform("unitview.lbx", 23, 0, "cut1", cut1PixelFunc)
+    moveImage, _ := imageCache.GetImageTransform("unitview.lbx", 24, 0, "cut1", cut1PixelFunc)
+
     rect := util.ImageRect(posX, posY, background)
     element := &uilib.UIElement{
         Rect: rect,
@@ -303,10 +315,20 @@ func MakeSmallListView(cache *lbx.LbxCache, ui *uilib.UI, stack []UnitView, titl
                 unitOptions.GeoM.Translate(1, 1)
                 screen.DrawImage(unitImage, &unitOptions)
 
-                unitOptions.GeoM.Translate(132, 4)
-                // FIXME: palette might come from the background, unitview.lbx:28
-                meleeImage, _ := imageCache.GetImage("unitview.lbx", 13, 0)
+                unitOptions.GeoM.Translate(133, 5)
                 screen.DrawImage(meleeImage, &unitOptions)
+
+                unitOptions.GeoM.Translate(20, 0)
+                screen.DrawImage(rangeImage, &unitOptions)
+
+                unitOptions.GeoM.Translate(20, 0)
+                screen.DrawImage(defenseImage, &unitOptions)
+
+                unitOptions.GeoM.Translate(20, 0)
+                screen.DrawImage(healthImage, &unitOptions)
+
+                unitOptions.GeoM.Translate(20, 0)
+                screen.DrawImage(moveImage, &unitOptions)
 
                 options.GeoM.Translate(0, float64(unitHeight))
             }
