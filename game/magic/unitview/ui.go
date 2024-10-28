@@ -254,17 +254,11 @@ func MakeSmallListView(cache *lbx.LbxCache, ui *uilib.UI, stack []UnitView, titl
         return nil
     }
 
+    black := color.RGBA{R: 0, G: 0, B: 0, A: 0xff}
     descriptionPalette := color.Palette{
         color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 90}),
-        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}),
-        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 200}),
-        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 200}),
-        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 200}),
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        black, black, black, black,
+        black, black, black, black,
     }
 
     // descriptionFont := font.MakeOptimizedFontWithPalette(fonts[4], descriptionPalette)
@@ -347,12 +341,18 @@ func MakeSmallListView(cache *lbx.LbxCache, ui *uilib.UI, stack []UnitView, titl
                 screen.DrawImage(unitImage, &unitOptions)
 
                 unitOptions.GeoM.Translate(133, 5)
+                x, y = unitOptions.GeoM.Apply(0, 1)
+                smallFont.PrintRight(screen, x, y, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", unit.GetMeleeAttackPower()))
                 screen.DrawImage(meleeImage, &unitOptions)
 
                 unitOptions.GeoM.Translate(20, 0)
+                x, y = unitOptions.GeoM.Apply(0, 1)
+                smallFont.PrintRight(screen, x, y, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", unit.GetRangedAttackPower()))
                 screen.DrawImage(rangeImage, &unitOptions)
 
                 unitOptions.GeoM.Translate(20, 0)
+                x, y = unitOptions.GeoM.Apply(0, 1)
+                smallFont.PrintRight(screen, x, y, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", unit.GetDefense()))
                 screen.DrawImage(defenseImage, &unitOptions)
 
                 unitOptions.GeoM.Translate(20, 0)
