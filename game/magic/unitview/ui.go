@@ -261,9 +261,22 @@ func MakeSmallListView(cache *lbx.LbxCache, ui *uilib.UI, stack []UnitView, titl
         black, black, black, black,
     }
 
+    brightPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 90}),
+        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}),
+        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 200}),
+        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 200}),
+        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 200}),
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+    }
+
     // descriptionFont := font.MakeOptimizedFontWithPalette(fonts[4], descriptionPalette)
     smallFont := font.MakeOptimizedFontWithPalette(fonts[1], descriptionPalette)
-    // mediumFont := font.MakeOptimizedFontWithPalette(fonts[2], descriptionPalette)
+    mediumFont := font.MakeOptimizedFontWithPalette(fonts[2], brightPalette)
 
     // title bar + 1 for each unit
     height := titleHeight + unitHeight * len(stack)
@@ -339,6 +352,9 @@ func MakeSmallListView(cache *lbx.LbxCache, ui *uilib.UI, stack []UnitView, titl
                 screen.DrawImage(unitBack, &unitOptions)
                 unitOptions.GeoM.Translate(1, 1)
                 screen.DrawImage(unitImage, &unitOptions)
+
+                x, y = unitOptions.GeoM.Apply(float64(unitBack.Bounds().Dx() + 2), 5)
+                mediumFont.Print(screen, x, y, 1, ebiten.ColorScale{}, unit.GetName())
 
                 unitOptions.GeoM.Translate(133, 5)
                 x, y = unitOptions.GeoM.Apply(0, 1)
