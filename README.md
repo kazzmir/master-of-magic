@@ -15,6 +15,9 @@ https://kazzmir.itch.io/magic
 
 # Build:
 
+Extra packages needed for ebiten
+https://ebitengine.org/en/documents/install.html
+
 ```
 $ go mod tidy
 $ go build -o magic ./game/magic
