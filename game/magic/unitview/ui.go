@@ -321,6 +321,9 @@ func MakeSmallListView(cache *lbx.LbxCache, ui *uilib.UI, stack []UnitView, titl
             options.ColorScale.ScaleAlpha(getAlpha())
             screen.DrawImage(background, &options)
 
+            titleX, titleY := options.GeoM.Apply(float64(background.Bounds().Dx() / 2), 8)
+            mediumFont.PrintCenter(screen, titleX, titleY, 1, options.ColorScale, "Raiders")
+
             /*
             util.DrawRect(screen, image.Rect(posX, posY, posX+1, posY + titleHeight), color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff})
             util.DrawRect(screen, image.Rect(posX, posY + titleHeight, posX+1, posY + titleHeight + unitHeight), color.RGBA{R: 0, G: 0xff, B: 0, A: 0xff})
@@ -354,31 +357,32 @@ func MakeSmallListView(cache *lbx.LbxCache, ui *uilib.UI, stack []UnitView, titl
                 screen.DrawImage(unitImage, &unitOptions)
 
                 x, y = unitOptions.GeoM.Apply(float64(unitBack.Bounds().Dx() + 2), 5)
-                mediumFont.Print(screen, x, y, 1, ebiten.ColorScale{}, unit.GetName())
+                mediumFont.Print(screen, x, y, 1, options.ColorScale, unit.GetName())
 
                 unitOptions.GeoM.Translate(133, 5)
                 x, y = unitOptions.GeoM.Apply(0, 1)
-                smallFont.PrintRight(screen, x, y, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", unit.GetMeleeAttackPower()))
+                smallFont.PrintRight(screen, x, y, 1, options.ColorScale, fmt.Sprintf("%v", unit.GetMeleeAttackPower()))
                 screen.DrawImage(meleeImage, &unitOptions)
 
                 unitOptions.GeoM.Translate(20, 0)
                 x, y = unitOptions.GeoM.Apply(0, 1)
-                smallFont.PrintRight(screen, x, y, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", unit.GetRangedAttackPower()))
+                smallFont.PrintRight(screen, x, y, 1, options.ColorScale, fmt.Sprintf("%v", unit.GetRangedAttackPower()))
                 screen.DrawImage(rangeImage, &unitOptions)
 
                 unitOptions.GeoM.Translate(20, 0)
                 x, y = unitOptions.GeoM.Apply(0, 1)
-                smallFont.PrintRight(screen, x, y, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", unit.GetDefense()))
+                smallFont.PrintRight(screen, x, y, 1, options.ColorScale, fmt.Sprintf("%v", unit.GetDefense()))
                 screen.DrawImage(defenseImage, &unitOptions)
 
                 unitOptions.GeoM.Translate(20, 0)
                 x, y = unitOptions.GeoM.Apply(0, 1)
-                smallFont.PrintRight(screen, x, y, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", unit.GetHitPoints()))
+                smallFont.PrintRight(screen, x, y, 1, options.ColorScale, fmt.Sprintf("%v", unit.GetHitPoints()))
+
                 screen.DrawImage(healthImage, &unitOptions)
 
                 unitOptions.GeoM.Translate(20, 0)
                 x, y = unitOptions.GeoM.Apply(0, 1)
-                smallFont.PrintRight(screen, x, y, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", unit.GetMovementSpeed()))
+                smallFont.PrintRight(screen, x, y, 1, options.ColorScale, fmt.Sprintf("%v", unit.GetMovementSpeed()))
 
                 screen.DrawImage(moveImage, &unitOptions)
 
