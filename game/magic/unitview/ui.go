@@ -242,6 +242,35 @@ func MakeSmallListView(cache *lbx.LbxCache, ui *uilib.UI, stack []UnitView, titl
     titleHeight := 22
     unitHeight := 19
 
+    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        log.Printf("Unable to read fonts.lbx: %v", err)
+        return nil
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
+        return nil
+    }
+
+    descriptionPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 90}),
+        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}),
+        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 200}),
+        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 200}),
+        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 200}),
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+    }
+
+    // descriptionFont := font.MakeOptimizedFontWithPalette(fonts[4], descriptionPalette)
+    smallFont := font.MakeOptimizedFontWithPalette(fonts[1], descriptionPalette)
+    // mediumFont := font.MakeOptimizedFontWithPalette(fonts[2], descriptionPalette)
+
     // title bar + 1 for each unit
     height := titleHeight + unitHeight * len(stack)
 
@@ -328,6 +357,10 @@ func MakeSmallListView(cache *lbx.LbxCache, ui *uilib.UI, stack []UnitView, titl
                 screen.DrawImage(healthImage, &unitOptions)
 
                 unitOptions.GeoM.Translate(20, 0)
+
+                x, y := unitOptions.GeoM.Apply(0, 1)
+                smallFont.PrintRight(screen, x, y, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", unit.GetMovementSpeed()))
+
                 screen.DrawImage(moveImage, &unitOptions)
 
                 options.GeoM.Translate(0, float64(unitHeight))
