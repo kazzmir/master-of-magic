@@ -374,10 +374,6 @@ func (player *Player) FoodPerTurn() int {
 func (player *Player) ManaPerTurn(power int) int {
     mana := 0
 
-    for _, city := range player.Cities {
-        mana -= city.ManaCost()
-    }
-
     mana -= player.TotalUnitUpkeepMana()
 
     manaFocusingBonus := float64(1)

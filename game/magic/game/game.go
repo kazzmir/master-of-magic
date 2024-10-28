@@ -693,6 +693,10 @@ func (game *Game) ComputePower(player *playerlib.Player) int {
         power += float64(len(node.Zone)) * magicBonus
     }
 
+    if power < 0 {
+        power = 0
+    }
+
     return int(power)
 }
 
