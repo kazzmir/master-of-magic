@@ -34,6 +34,7 @@ type UnitView interface {
     GetMeleeAttackPower() int
     GetBaseRangedAttackPower() int
     GetRangedAttackPower() int
+    GetRangedAttackDamageType() units.Damage
     GetBaseDefense() int
     GetDefense() int
     GetResistance() int
@@ -300,7 +301,9 @@ func MakeSmallListView(cache *lbx.LbxCache, ui *uilib.UI, stack []UnitView, titl
     }
 
     meleeImage, _ := imageCache.GetImageTransform("unitview.lbx", 13, 0, "cut1", cut1PixelFunc)
-    rangeImage, _ := imageCache.GetImageTransform("unitview.lbx", 14, 0, "cut1", cut1PixelFunc)
+    rangeMagicImage, _ := imageCache.GetImageTransform("unitview.lbx", 14, 0, "cut1", cut1PixelFunc)
+    rangeBowImage, _ := imageCache.GetImageTransform("unitview.lbx", 18, 0, "cut1", cut1PixelFunc)
+    rangeBoulderImage, _ := imageCache.GetImageTransform("unitview.lbx", 19, 0, "cut1", cut1PixelFunc)
     defenseImage, _ := imageCache.GetImageTransform("unitview.lbx", 22, 0, "cut1", cut1PixelFunc)
     healthImage, _ := imageCache.GetImageTransform("unitview.lbx", 23, 0, "cut1", cut1PixelFunc)
     moveImage, _ := imageCache.GetImageTransform("unitview.lbx", 24, 0, "cut1", cut1PixelFunc)
@@ -362,12 +365,21 @@ func MakeSmallListView(cache *lbx.LbxCache, ui *uilib.UI, stack []UnitView, titl
                 unitOptions.GeoM.Translate(133, 5)
                 x, y = unitOptions.GeoM.Apply(0, 1)
                 smallFont.PrintRight(screen, x, y, 1, options.ColorScale, fmt.Sprintf("%v", unit.GetMeleeAttackPower()))
+                // FIXME: show mythril/adamantium weapons?
                 screen.DrawImage(meleeImage, &unitOptions)
 
                 unitOptions.GeoM.Translate(20, 0)
                 x, y = unitOptions.GeoM.Apply(0, 1)
                 smallFont.PrintRight(screen, x, y, 1, options.ColorScale, fmt.Sprintf("%v", unit.GetRangedAttackPower()))
-                screen.DrawImage(rangeImage, &unitOptions)
+                switch unit.GetRangedAttackDamageType() {
+                    case units.DamageNone: // nothing
+                    case units.DamageRangedMagical:
+                        screen.DrawImage(rangeMagicImage, &unitOptions)
+                    case units.DamageRangedPhysical:
+                        screen.DrawImage(rangeBowImage, &unitOptions)
+                    case units.DamageRangedBoulder:
+                        screen.DrawImage(rangeBoulderImage, &unitOptions)
+                }
 
                 unitOptions.GeoM.Translate(20, 0)
                 x, y = unitOptions.GeoM.Apply(0, 1)

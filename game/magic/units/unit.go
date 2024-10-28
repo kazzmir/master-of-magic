@@ -207,6 +207,10 @@ func (unit *Unit) GetRangedAttackPower() int {
     return unit.RangedAttackPower
 }
 
+func (unit *Unit) GetRangedAttackDamageType() Damage {
+    return unit.RangedAttackDamageType
+}
+
 func (unit *Unit) GetBaseDefense() int {
     return unit.Defense
 }
