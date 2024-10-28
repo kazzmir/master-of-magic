@@ -338,6 +338,8 @@ func MakeSmallListView(cache *lbx.LbxCache, ui *uilib.UI, stack []UnitView, titl
                     continue
                 }
 
+                var x, y float64
+
                 unitOptions = options
                 unitOptions.GeoM.Translate(8, 2)
                 screen.DrawImage(unitBack, &unitOptions)
@@ -354,11 +356,12 @@ func MakeSmallListView(cache *lbx.LbxCache, ui *uilib.UI, stack []UnitView, titl
                 screen.DrawImage(defenseImage, &unitOptions)
 
                 unitOptions.GeoM.Translate(20, 0)
+                x, y = unitOptions.GeoM.Apply(0, 1)
+                smallFont.PrintRight(screen, x, y, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", unit.GetHitPoints()))
                 screen.DrawImage(healthImage, &unitOptions)
 
                 unitOptions.GeoM.Translate(20, 0)
-
-                x, y := unitOptions.GeoM.Apply(0, 1)
+                x, y = unitOptions.GeoM.Apply(0, 1)
                 smallFont.PrintRight(screen, x, y, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", unit.GetMovementSpeed()))
 
                 screen.DrawImage(moveImage, &unitOptions)
