@@ -2032,7 +2032,7 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                                 unitViewElements = append(unitViewElements, unit)
                             }
 
-                            game.HudUI.AddElements(unitview.MakeSmallListView(game.Cache, game.HudUI, unitViewElements, "Raiders", clicked))
+                            game.HudUI.AddElements(unitview.MakeSmallListView(game.Cache, game.HudUI, unitViewElements, otherPlayer.Wizard.Name, clicked))
                             for !quit {
                                 game.Counter += 1
                                 game.HudUI.StandardUpdate()

@@ -1414,8 +1414,8 @@ func createScenario18(cache *lbx.LbxCache) *gamelib.Game {
     player.LiftFog(stack.X(), stack.Y(), 2)
 
     enemy1 := game.AddPlayer(setup.WizardCustom{
-        Name: "dingus",
-        Banner: data.BannerRed,
+        Name: "herby",
+        Banner: data.BannerBlue,
     }, false)
 
     enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.Warlocks, x + 2, y + 2, data.PlaneArcanus, enemy1.Wizard.Banner, nil))

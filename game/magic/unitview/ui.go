@@ -236,6 +236,30 @@ func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, di
     return elements
 }
 
+// FIXME: this was copied from combat/combat-screen.go
+func makePaletteFromBanner(banner data.BannerType) color.Palette {
+    var topColor color.RGBA
+
+    switch banner {
+        case data.BannerGreen: topColor = color.RGBA{R: 0x20, G: 0x80, B: 0x2c, A: 0xff}
+        case data.BannerBlue: topColor = color.RGBA{R: 0x15, G: 0x1d, B: 0x9d, A: 0xff}
+        case data.BannerRed: topColor = color.RGBA{R: 0x9d, G: 0x15, B: 0x15, A: 0xff}
+        case data.BannerPurple: topColor = color.RGBA{R: 0x6d, G: 0x15, B: 0x9d, A: 0xff}
+        case data.BannerYellow: topColor = color.RGBA{R: 0x9d, G: 0x9d, B: 0x15, A: 0xff}
+        case data.BannerBrown: topColor = color.RGBA{R: 0x82, G: 0x60, B: 0x12, A: 0xff}
+    }
+
+    // red := color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}
+
+    solidColor := util.Lighten(topColor, 80)
+    return color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        solidColor, solidColor, solidColor, solidColor,
+        solidColor, solidColor, solidColor, solidColor,
+    }
+}
+
 // list of units that shows up when you right click on an enemy unit stack
 func MakeSmallListView(cache *lbx.LbxCache, ui *uilib.UI, stack []UnitView, title string, clicked func()) []*uilib.UIElement {
     imageCache := util.MakeImageCache(cache)
@@ -275,7 +299,7 @@ func MakeSmallListView(cache *lbx.LbxCache, ui *uilib.UI, stack []UnitView, titl
         color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
     }
 
-    // descriptionFont := font.MakeOptimizedFontWithPalette(fonts[4], descriptionPalette)
+    titleFont := font.MakeOptimizedFontWithPalette(fonts[4], makePaletteFromBanner(stack[0].GetBanner()))
     smallFont := font.MakeOptimizedFontWithPalette(fonts[1], descriptionPalette)
     mediumFont := font.MakeOptimizedFontWithPalette(fonts[2], brightPalette)
 
@@ -325,7 +349,7 @@ func MakeSmallListView(cache *lbx.LbxCache, ui *uilib.UI, stack []UnitView, titl
             screen.DrawImage(background, &options)
 
             titleX, titleY := options.GeoM.Apply(float64(background.Bounds().Dx() / 2), 8)
-            mediumFont.PrintCenter(screen, titleX, titleY, 1, options.ColorScale, "Raiders")
+            titleFont.PrintCenter(screen, titleX, titleY, 1, options.ColorScale, title)
 
             /*
             util.DrawRect(screen, image.Rect(posX, posY, posX+1, posY + titleHeight), color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff})
