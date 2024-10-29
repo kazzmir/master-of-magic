@@ -1208,12 +1208,21 @@ func (cityScreen *CityScreen) MakeResourceDialog(title string, smallIcon *ebiten
     return infoElement
 }
 
+func (cityScreen *CityScreen) WorkProducers() []ResourceUsage {
+    var usage []ResourceUsage
+
+    return usage
+}
+
 func (cityScreen *CityScreen) CreateResourceIcons(ui *uilib.UI) []*uilib.UIElement {
     foodRequired := cityScreen.City.RequiredFood()
     foodSurplus := cityScreen.City.SurplusFood()
 
     smallFood, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 40, 0)
     bigFood, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 88, 0)
+
+    smallHammer, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 41, 0)
+    bigHammer, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 89, 0)
 
     var elements []*uilib.UIElement
 
@@ -1230,10 +1239,27 @@ func (cityScreen *CityScreen) CreateResourceIcons(ui *uilib.UI) []*uilib.UIEleme
             options.GeoM = cityScreen.drawIcons(foodRequired, smallFood, bigFood, options, screen)
             options.GeoM.Translate(5, 0)
             cityScreen.drawIcons(foodSurplus, smallFood, bigFood, options, screen)
-
-            util.DrawRect(screen, foodRect, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff})
         },
     })
+
+    production := cityScreen.City.WorkProductionRate()
+    workRect := image.Rect(6, 60, 6 + 9 * bigHammer.Bounds().Dx(), 60 + bigHammer.Bounds().Dy())
+    elements = append(elements, &uilib.UIElement{
+        Rect: workRect,
+        LeftClick: func(element *uilib.UIElement) {
+            workProducers := cityScreen.WorkProducers()
+            ui.AddElement(cityScreen.MakeResourceDialog("Production", smallHammer, bigHammer, ui, workProducers))
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(workRect.Min.X), float64(workRect.Min.Y))
+            cityScreen.drawIcons(int(production), smallHammer, bigHammer, options, screen)
+        },
+    })
+
+    // gold
+    // power
+    // research
 
     return elements
 }
@@ -1308,12 +1334,12 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
     foodX := drawIcons(foodRequired, smallFood, bigFood, 6, 52)
     foodX += 5
     drawIcons(foodSurplus, smallFood, bigFood, foodX, 52)
-    */
 
     smallHammer, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 41, 0)
     bigHammer, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 89, 0)
 
     drawIcons(int(cityScreen.City.WorkProductionRate()), smallHammer, bigHammer, 6, 60)
+    */
 
     smallCoin, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 42, 0)
     bigCoin, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 90, 0)
