@@ -542,7 +542,7 @@ func (city *City) GoldSurplus() int {
     return int(citizenIncome + bonus) - upkeepCosts
 }
 
-func (city *City) WorkProductionRate() float32 {
+func (city *City) ProductionWorkers() float32 {
     workerRate := 2
 
     switch city.Race {
@@ -562,7 +562,15 @@ func (city *City) WorkProductionRate() float32 {
         case data.RaceTroll: workerRate = 3
     }
 
-    return float32(workerRate * city.Workers) + 0.5 * float32(city.Farmers)
+    return float32(workerRate * city.Workers)
+}
+
+func (city *City) ProductionFarmers() float32 {
+    return 0.5 * float32(city.Farmers)
+}
+
+func (city *City) WorkProductionRate() float32 {
+    return  city.ProductionWorkers() + city.ProductionFarmers()
 }
 
 func (city *City) GrowOutpost() CityEvent {

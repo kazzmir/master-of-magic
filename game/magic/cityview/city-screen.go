@@ -596,6 +596,13 @@ func (cityScreen *CityScreen) MakeUI() *uilib.UI {
         })
     }
 
+    var resourceIcons []*uilib.UIElement
+    resetResourceIcons := func(){
+        ui.RemoveElements(resourceIcons)
+        resourceIcons = cityScreen.CreateResourceIcons(ui)
+        ui.AddElements(resourceIcons)
+    }
+
     farmer, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", getRaceFarmerIndex(cityScreen.City.Race), 0)
     var setupWorkers func()
     if err == nil {
@@ -694,6 +701,8 @@ func (cityScreen *CityScreen) MakeUI() *uilib.UI {
             }
 
             ui.AddElements(workerElements)
+
+            resetResourceIcons()
         }
     } else {
         setupWorkers = func(){
@@ -702,7 +711,7 @@ func (cityScreen *CityScreen) MakeUI() *uilib.UI {
 
     ui.SetElementsFromArray(elements)
 
-    ui.AddElements(cityScreen.CreateResourceIcons(ui))
+    ui.AddElements(resourceIcons)
 
     var resetUnits func()
 
@@ -1210,6 +1219,20 @@ func (cityScreen *CityScreen) MakeResourceDialog(title string, smallIcon *ebiten
 
 func (cityScreen *CityScreen) WorkProducers() []ResourceUsage {
     var usage []ResourceUsage
+
+    if cityScreen.City.ProductionWorkers() > 0 {
+        usage = append(usage, ResourceUsage{
+            Count: int(cityScreen.City.ProductionWorkers()),
+            Name: "Workers",
+        })
+    }
+
+    if cityScreen.City.ProductionFarmers() > 0 {
+        usage = append(usage, ResourceUsage{
+            Count: int(cityScreen.City.ProductionFarmers()),
+            Name: "Farmers",
+        })
+    }
 
     return usage
 }
