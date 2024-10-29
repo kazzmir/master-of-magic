@@ -86,6 +86,12 @@ type BuildingSlot struct {
     Point image.Point
 }
 
+// represents how much of a resource is being used/produced, such as '2 granary' for 'the granary produces 2 food'
+type ResourceUsage struct {
+    Count int // can be negative
+    Name string
+}
+
 type CityScreenState int
 
 const (
@@ -999,6 +1005,155 @@ func drawCityScape(screen *ebiten.Image, buildings []BuildingSlot, buildingLook 
     */
 }
 
+func (cityScreen *CityScreen) FoodProducers() []ResourceUsage {
+    var usages []ResourceUsage
+
+    usages = append(usages, ResourceUsage{
+        Count: cityScreen.City.FarmerFoodProduction(cityScreen.City.Farmers),
+        Name: "Farmers",
+    })
+
+    buildings := cityScreen.City.Buildings.Values()
+    for _, building := range sortBuildings(buildings) {
+        value := 0
+        switch building {
+            case buildinglib.BuildingForestersGuild: value = 2
+            case buildinglib.BuildingGranary: value = 2
+            case buildinglib.BuildingFarmersMarket: value = 3
+        }
+
+        if value > 0 {
+            usages = append(usages, ResourceUsage{
+                Count: value,
+                Name: cityScreen.City.BuildingInfo.Name(building),
+            })
+        }
+    }
+
+    return usages
+}
+
+// copied heavily from ui/dialogs.go:MakeHelpElementWithLayer
+func (cityScreen *CityScreen) MakeResourceDialog(title string, smallIcon *ebiten.Image, bigIcon *ebiten.Image, ui *uilib.UI, resources []ResourceUsage) *uilib.UIElement {
+    helpTop, err := cityScreen.ImageCache.GetImage("help.lbx", 0, 0)
+    if err != nil {
+        return nil
+    }
+
+    fontLbx, err := cityScreen.LbxCache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        return nil
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        return nil
+    }
+
+    const fadeSpeed = 7
+
+    getAlpha := ui.MakeFadeIn(fadeSpeed)
+
+    helpPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0x5e, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+    }
+
+    helpFont := font.MakeOptimizedFontWithPalette(fonts[1], helpPalette)
+
+    titleRed := color.RGBA{R: 0x50, G: 0x00, B: 0x0e, A: 0xff}
+    titlePalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        titleRed,
+        titleRed,
+        titleRed,
+        titleRed,
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+    }
+
+    helpTitleFont := font.MakeOptimizedFontWithPalette(fonts[4], titlePalette)
+
+    infoX := 55
+    // infoY := 30
+    infoWidth := helpTop.Bounds().Dx()
+    // infoHeight := screen.HelpTop.Bounds().Dy()
+    infoLeftMargin := 18
+    infoTopMargin := 26
+    infoBodyMargin := 3
+    maxInfoWidth := infoWidth - infoLeftMargin - infoBodyMargin - 14
+
+    // fmt.Printf("Help text: %v\n", []byte(help.Text))
+
+    helpTextY := infoTopMargin
+    titleYAdjust := 0
+    helpTextY += helpTitleFont.Height() + 1
+
+    textHeight := len(resources) * (helpFont.Height() + 1)
+
+    bottom := helpTextY + textHeight
+
+    // only draw as much of the top scroll as there are lines of text
+    topImage := helpTop.SubImage(image.Rect(0, 0, helpTop.Bounds().Dx(), int(bottom))).(*ebiten.Image)
+    helpBottom, err := cityScreen.ImageCache.GetImage("help.lbx", 1, 0)
+    if err != nil {
+        return nil
+    }
+
+    infoY := (data.ScreenHeight - bottom - helpBottom.Bounds().Dy()) / 2
+
+    infoElement := &uilib.UIElement{
+        // Rect: image.Rect(infoX, infoY, infoX + infoWidth, infoY + infoHeight),
+        Rect: image.Rect(0, 0, data.ScreenWidth, data.ScreenHeight),
+        Draw: func (infoThis *uilib.UIElement, window *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(infoX), float64(infoY))
+            options.ColorScale.ScaleAlpha(getAlpha())
+            window.DrawImage(topImage, &options)
+
+            options.GeoM.Reset()
+            options.GeoM.Translate(float64(infoX), float64(bottom + infoY))
+            options.ColorScale.ScaleAlpha(getAlpha())
+            window.DrawImage(helpBottom, &options)
+
+            // for debugging
+            // vector.StrokeRect(window, float32(infoX), float32(infoY), float32(infoWidth), float32(infoHeight), 1, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, true)
+            // vector.StrokeRect(window, float32(infoX + infoLeftMargin), float32(infoY + infoTopMargin), float32(maxInfoWidth), float32(screen.HelpTitleFont.Height() + 20 + 1), 1, color.RGBA{R: 0, G: 0xff, B: 0, A: 0xff}, false)
+
+            titleX := infoX + infoLeftMargin + maxInfoWidth / 2
+
+            helpTitleFont.PrintCenter(window, float64(titleX), float64(infoY + infoTopMargin + titleYAdjust), 1, options.ColorScale, title)
+
+            yPos := infoY + infoTopMargin + helpTitleFont.Height() + 1
+            xPos := infoX + infoLeftMargin
+
+            for _, usage := range resources {
+                helpFont.Print(window, float64(xPos), float64(yPos), 1, options.ColorScale, fmt.Sprintf("%v: %v", usage.Name, usage.Count))
+                yPos += helpFont.Height() + 1
+            }
+
+        },
+        LeftClick: func(infoThis *uilib.UIElement){
+            getAlpha = ui.MakeFadeOut(fadeSpeed)
+            ui.AddDelay(fadeSpeed, func(){
+                ui.RemoveElement(infoThis)
+            })
+        },
+        Layer: 1,
+    }
+
+    return infoElement
+}
+
 func (cityScreen *CityScreen) CreateResourceIcons(ui *uilib.UI) []*uilib.UIElement {
     foodRequired := cityScreen.City.RequiredFood()
     foodSurplus := cityScreen.City.SurplusFood()
@@ -1044,6 +1199,8 @@ func (cityScreen *CityScreen) CreateResourceIcons(ui *uilib.UI) []*uilib.UIEleme
     elements = append(elements, &uilib.UIElement{
         Rect: foodRect,
         LeftClick: func(element *uilib.UIElement) {
+            foodProducers := cityScreen.FoodProducers()
+            ui.AddElement(cityScreen.MakeResourceDialog("Food", smallFood, bigFood, ui, foodProducers))
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
             var options ebiten.DrawImageOptions

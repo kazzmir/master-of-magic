@@ -479,14 +479,18 @@ func (city *City) FoodProductionRate() int {
     return city.foodProductionRate(city.Farmers)
 }
 
-func (city *City) foodProductionRate(farmers int) int {
+func (city *City) FarmerFoodProduction(farmers int) int {
     rate := 2
 
     switch city.Race {
         case data.RaceHalfling: rate = 3
     }
 
-    baseRate := float32(rate * farmers)
+    return rate * farmers
+}
+
+func (city *City) foodProductionRate(farmers int) int {
+    baseRate := float32(city.FarmerFoodProduction(farmers))
 
     if city.Buildings.Contains(buildinglib.BuildingForestersGuild) {
         baseRate += 2
