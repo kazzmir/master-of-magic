@@ -49,6 +49,8 @@ func NewEngine() (*Engine, error) {
     city.Banner = data.BannerBlue
     city.Buildings.Insert(buildinglib.BuildingGranary)
     city.Buildings.Insert(buildinglib.BuildingFarmersMarket)
+    city.Buildings.Insert(buildinglib.BuildingMinersGuild)
+    city.Buildings.Insert(buildinglib.BuildingMechaniciansGuild)
     // ProducingBuilding: citylib.BuildingBarracks,
     city.ProducingUnit = units.HighElfSpearmen
     city.ResetCitizens(nil)

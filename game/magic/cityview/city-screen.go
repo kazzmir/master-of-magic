@@ -1197,7 +1197,7 @@ func (cityScreen *CityScreen) MakeResourceDialog(title string, smallIcon *ebiten
             for _, usage := range resources {
                 cityScreen.drawIcons(usage.Count, smallIcon, bigIcon, options, window)
 
-                x, y := options.GeoM.Apply(widestResources + 3, 0)
+                x, y := options.GeoM.Apply(widestResources + 5, 0)
 
                 helpFont.Print(window, x, y, 1, options.ColorScale, fmt.Sprintf("%v (%v)", usage.Name, usage.Count))
                 yPos += helpFont.Height() + 1
@@ -1231,6 +1231,20 @@ func (cityScreen *CityScreen) WorkProducers() []ResourceUsage {
         usage = append(usage, ResourceUsage{
             Count: int(cityScreen.City.ProductionFarmers()),
             Name: "Farmers",
+        })
+    }
+
+    if cityScreen.City.ProductionMinersGuild() > 0 {
+        usage = append(usage, ResourceUsage{
+            Count: int(cityScreen.City.ProductionMinersGuild()),
+            Name: "Miner's Guild",
+        })
+    }
+
+    if cityScreen.City.ProductionMechaniciansGuild() > 0 {
+        usage = append(usage, ResourceUsage{
+            Count: int(cityScreen.City.ProductionMechaniciansGuild()),
+            Name: "Mechanician's Guild",
         })
     }
 
