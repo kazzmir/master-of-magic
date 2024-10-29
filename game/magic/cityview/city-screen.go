@@ -1033,6 +1033,43 @@ func (cityScreen *CityScreen) FoodProducers() []ResourceUsage {
     return usages
 }
 
+// pass screen=nil to compute how wide the icons are without drawing them
+func (cityScreen *CityScreen) drawIcons(total int, small *ebiten.Image, large *ebiten.Image, options ebiten.DrawImageOptions, screen *ebiten.Image) ebiten.GeoM {
+    largeGap := large.Bounds().Dx()
+
+    if total / 10 > 3 {
+        largeGap -= 1
+    }
+
+    if total / 10 > 6 {
+        largeGap -= 1
+    }
+
+    for range total / 10 {
+        if screen != nil {
+            screen.DrawImage(large, &options)
+        }
+        options.GeoM.Translate(float64(largeGap), 0)
+    }
+
+    smallGap := small.Bounds().Dx() + 1
+    if total % 10 >= 3 {
+        smallGap -= 1
+    }
+    if total % 10 >= 6 {
+        smallGap -= 1
+    }
+
+    for range total % 10 {
+        if screen != nil {
+            screen.DrawImage(small, &options)
+        }
+        options.GeoM.Translate(float64(smallGap), 0)
+    }
+
+    return options.GeoM
+}
+
 // copied heavily from ui/dialogs.go:MakeHelpElementWithLayer
 func (cityScreen *CityScreen) MakeResourceDialog(title string, smallIcon *ebiten.Image, bigIcon *ebiten.Image, ui *uilib.UI, resources []ResourceUsage) *uilib.UIElement {
     helpTop, err := cityScreen.ImageCache.GetImage("help.lbx", 0, 0)
@@ -1111,6 +1148,16 @@ func (cityScreen *CityScreen) MakeResourceDialog(title string, smallIcon *ebiten
 
     infoY := (data.ScreenHeight - bottom - helpBottom.Bounds().Dy()) / 2
 
+    widestResources := float64(0)
+    for _, usage := range resources {
+        var options ebiten.DrawImageOptions
+        geom := cityScreen.drawIcons(usage.Count, smallIcon, bigIcon, options, nil)
+        x, _ := geom.Apply(0, 0)
+        if x > widestResources {
+            widestResources = x
+        }
+    }
+
     infoElement := &uilib.UIElement{
         // Rect: image.Rect(infoX, infoY, infoX + infoWidth, infoY + infoHeight),
         Rect: image.Rect(0, 0, data.ScreenWidth, data.ScreenHeight),
@@ -1136,9 +1183,16 @@ func (cityScreen *CityScreen) MakeResourceDialog(title string, smallIcon *ebiten
             yPos := infoY + infoTopMargin + helpTitleFont.Height() + 1
             xPos := infoX + infoLeftMargin
 
+            options.GeoM.Reset()
+            options.GeoM.Translate(float64(xPos), float64(yPos))
             for _, usage := range resources {
-                helpFont.Print(window, float64(xPos), float64(yPos), 1, options.ColorScale, fmt.Sprintf("%v: %v", usage.Name, usage.Count))
+                cityScreen.drawIcons(usage.Count, smallIcon, bigIcon, options, window)
+
+                x, y := options.GeoM.Apply(widestResources + 3, 0)
+
+                helpFont.Print(window, x, y, 1, options.ColorScale, fmt.Sprintf("%v (%v)", usage.Name, usage.Count))
                 yPos += helpFont.Height() + 1
+                options.GeoM.Translate(0, float64(helpFont.Height() + 1))
             }
 
         },
@@ -1163,38 +1217,6 @@ func (cityScreen *CityScreen) CreateResourceIcons(ui *uilib.UI) []*uilib.UIEleme
 
     var elements []*uilib.UIElement
 
-    drawIcons := func(total int, small *ebiten.Image, large *ebiten.Image, options ebiten.DrawImageOptions, screen *ebiten.Image) ebiten.GeoM {
-        largeGap := large.Bounds().Dx()
-
-        if total / 10 > 3 {
-            largeGap -= 1
-        }
-
-        if total / 10 > 6 {
-            largeGap -= 1
-        }
-
-        for range total / 10 {
-            screen.DrawImage(large, &options)
-            options.GeoM.Translate(float64(largeGap), 0)
-        }
-
-        smallGap := small.Bounds().Dx() + 1
-        if total % 10 >= 3 {
-            smallGap -= 1
-        }
-        if total % 10 >= 6 {
-            smallGap -= 1
-        }
-
-        for range total % 10 {
-            screen.DrawImage(small, &options)
-            options.GeoM.Translate(float64(smallGap), 0)
-        }
-
-        return options.GeoM
-    }
-
     foodRect := image.Rect(6, 52, 6 + 9 * bigFood.Bounds().Dx(), 52 + bigFood.Bounds().Dy())
     elements = append(elements, &uilib.UIElement{
         Rect: foodRect,
@@ -1205,9 +1227,9 @@ func (cityScreen *CityScreen) CreateResourceIcons(ui *uilib.UI) []*uilib.UIEleme
         Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(foodRect.Min.X), float64(foodRect.Min.Y))
-            options.GeoM = drawIcons(foodRequired, smallFood, bigFood, options, screen)
+            options.GeoM = cityScreen.drawIcons(foodRequired, smallFood, bigFood, options, screen)
             options.GeoM.Translate(5, 0)
-            drawIcons(foodSurplus, smallFood, bigFood, options, screen)
+            cityScreen.drawIcons(foodSurplus, smallFood, bigFood, options, screen)
 
             util.DrawRect(screen, foodRect, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff})
         },
