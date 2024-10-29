@@ -587,8 +587,12 @@ func (city *City) ProductionMechaniciansGuild() float32 {
     return 0
 }
 
+func (city *City) ProductionTerrain() float32 {
+    return 0
+}
+
 func (city *City) WorkProductionRate() float32 {
-    return city.ProductionWorkers() + city.ProductionFarmers() + city.ProductionMinersGuild() + city.ProductionMechaniciansGuild()
+    return city.ProductionWorkers() + city.ProductionFarmers() + city.ProductionMinersGuild() + city.ProductionMechaniciansGuild() + city.ProductionTerrain()
 }
 
 func (city *City) GrowOutpost() CityEvent {

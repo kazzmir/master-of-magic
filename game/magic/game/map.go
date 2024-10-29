@@ -32,78 +32,26 @@ type ExtraTile interface {
 type ExtraRoad struct {
 }
 
-type BonusType int
-const (
-    BonusNone BonusType = iota
-    BonusWildGame
-    BonusNightshade
-    BonusSilverOre
-    BonusGoldOre
-    BonusIronOre
-    BonusCoal
-    BonusMithrilOre
-    BonusAdamantiumOre
-    BonusGem
-    BonusQuorkCrystal
-    BonusCrysxCrystal
-)
-
 // wild game, gold ore, mithril, etc
 type ExtraBonus struct {
-    Bonus BonusType
-}
-
-func (bonus BonusType) FoodBonus() int {
-    if bonus == BonusWildGame {
-        return 2
-    }
-
-    return 0
-}
-
-func (bonus BonusType) GoldBonus() int {
-    switch bonus {
-        case BonusSilverOre: return 2
-        case BonusGoldOre: return 3
-        case BonusGem: return 5
-        default: return 0
-    }
-}
-
-func (bonus BonusType) PowerBonus() int {
-    switch bonus {
-        case BonusMithrilOre: return 1
-        case BonusAdamantiumOre: return 2
-        case BonusQuorkCrystal: return 3
-        case BonusCrysxCrystal: return 5
-        default: return 0
-    }
-}
-
-// returns a percent that unit costs are reduced by, 10 -> -10%
-func (bonus BonusType) UnitReductionBonus() int {
-    switch bonus {
-        case BonusIronOre: return 5
-        case BonusCoal: return 10
-        default: return 0
-    }
+    Bonus data.BonusType
 }
 
 func (bonus *ExtraBonus) DrawLayer1(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64, tileWidth int, tileHeight int){
     index := -1
 
     switch bonus.Bonus {
-        case BonusWildGame: index = 92
-        case BonusNightshade: index = 91
-        case BonusSilverOre: index = 80
-        case BonusGoldOre: index = 81
-        case BonusIronOre: index = 78
-        case BonusCoal: index = 79
-        case BonusMithrilOre: index = 83
-        case BonusAdamantiumOre: index = 84
-        case BonusGem: index = 82
-        case BonusQuorkCrystal: index = 85
-        case BonusCrysxCrystal: index = 86
+        case data.BonusWildGame: index = 92
+        case data.BonusNightshade: index = 91
+        case data.BonusSilverOre: index = 80
+        case data.BonusGoldOre: index = 81
+        case data.BonusIronOre: index = 78
+        case data.BonusCoal: index = 79
+        case data.BonusMithrilOre: index = 83
+        case data.BonusAdamantiumOre: index = 84
+        case data.BonusGem: index = 82
+        case data.BonusQuorkCrystal: index = 85
+        case data.BonusCrysxCrystal: index = 86
     }
 
     if index == -1 {
@@ -249,18 +197,18 @@ func (mapObject *Map) GetMeldedNodes(player *playerlib.Player) []*ExtraMagicNode
     return out
 }
 
-func (mapObject *Map) SetBonus(x int, y int, bonus BonusType) {
+func (mapObject *Map) SetBonus(x int, y int, bonus data.BonusType) {
     mapObject.ExtraMap[image.Pt(x, y)] = &ExtraBonus{Bonus: bonus}
 }
 
-func (mapObject *Map) GetBonusTile(x int, y int) BonusType {
+func (mapObject *Map) GetBonusTile(x int, y int) data.BonusType {
     if extra, ok := mapObject.ExtraMap[image.Pt(x, y)]; ok {
         if bonus, ok := extra.(*ExtraBonus); ok {
             return bonus.Bonus
         }
     }
 
-    return BonusNone
+    return data.BonusNone
 }
 
 func (mapObject *Map) CreateNode(x int, y int, node MagicNode, plane data.Plane, magicSetting data.MagicSetting, difficulty data.DifficultySetting) *ExtraMagicNode {

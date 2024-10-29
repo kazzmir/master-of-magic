@@ -873,11 +873,11 @@ func createScenario12(cache *lbx.LbxCache) *gamelib.Game {
     node := game.Map.CreateNode(x, y+2, gamelib.MagicNodeNature, game.Plane, game.Settings.Magic, game.Settings.Difficulty)
     node.Empty = true
 
-    game.Map.SetBonus(x-3, y-1, gamelib.BonusSilverOre)
-    game.Map.SetBonus(x-2, y-1, gamelib.BonusGem)
-    game.Map.SetBonus(x-1, y-1, gamelib.BonusWildGame)
-    game.Map.SetBonus(x, y-1, gamelib.BonusQuorkCrystal)
-    game.Map.SetBonus(x+1, y-1, gamelib.BonusIronOre)
+    game.Map.SetBonus(x-3, y-1, data.BonusSilverOre)
+    game.Map.SetBonus(x-2, y-1, data.BonusGem)
+    game.Map.SetBonus(x-1, y-1, data.BonusWildGame)
+    game.Map.SetBonus(x, y-1, data.BonusQuorkCrystal)
+    game.Map.SetBonus(x+1, y-1, data.BonusIronOre)
 
     game.Events <- &gamelib.GameEventSurveyor{}
 

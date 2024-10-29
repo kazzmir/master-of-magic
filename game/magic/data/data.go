@@ -173,3 +173,55 @@ const (
     DifficultyExtreme
     DifficultyImpossible
 )
+
+type BonusType int
+const (
+    BonusNone BonusType = iota
+    BonusWildGame
+    BonusNightshade
+    BonusSilverOre
+    BonusGoldOre
+    BonusIronOre
+    BonusCoal
+    BonusMithrilOre
+    BonusAdamantiumOre
+    BonusGem
+    BonusQuorkCrystal
+    BonusCrysxCrystal
+)
+
+func (bonus BonusType) FoodBonus() int {
+    if bonus == BonusWildGame {
+        return 2
+    }
+
+    return 0
+}
+
+func (bonus BonusType) GoldBonus() int {
+    switch bonus {
+        case BonusSilverOre: return 2
+        case BonusGoldOre: return 3
+        case BonusGem: return 5
+        default: return 0
+    }
+}
+
+func (bonus BonusType) PowerBonus() int {
+    switch bonus {
+        case BonusMithrilOre: return 1
+        case BonusAdamantiumOre: return 2
+        case BonusQuorkCrystal: return 3
+        case BonusCrysxCrystal: return 5
+        default: return 0
+    }
+}
+
+// returns a percent that unit costs are reduced by, 10 -> -10%
+func (bonus BonusType) UnitReductionBonus() int {
+    switch bonus {
+        case BonusIronOre: return 5
+        case BonusCoal: return 10
+        default: return 0
+    }
+}
