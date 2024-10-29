@@ -696,6 +696,8 @@ func (cityScreen *CityScreen) MakeUI() *uilib.UI {
 
     ui.SetElementsFromArray(elements)
 
+    ui.AddElements(cityScreen.CreateResourceIcons(ui))
+
     var resetUnits func()
 
     var garrisonUnits []*uilib.UIElement
@@ -997,6 +999,66 @@ func drawCityScape(screen *ebiten.Image, buildings []BuildingSlot, buildingLook 
     */
 }
 
+func (cityScreen *CityScreen) CreateResourceIcons(ui *uilib.UI) []*uilib.UIElement {
+    foodRequired := cityScreen.City.RequiredFood()
+    foodSurplus := cityScreen.City.SurplusFood()
+
+    smallFood, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 40, 0)
+    bigFood, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 88, 0)
+
+    var elements []*uilib.UIElement
+
+    drawIcons := func(total int, small *ebiten.Image, large *ebiten.Image, options ebiten.DrawImageOptions, screen *ebiten.Image) ebiten.GeoM {
+        largeGap := large.Bounds().Dx()
+
+        if total / 10 > 3 {
+            largeGap -= 1
+        }
+
+        if total / 10 > 6 {
+            largeGap -= 1
+        }
+
+        for range total / 10 {
+            screen.DrawImage(large, &options)
+            options.GeoM.Translate(float64(largeGap), 0)
+        }
+
+        smallGap := small.Bounds().Dx() + 1
+        if total % 10 >= 3 {
+            smallGap -= 1
+        }
+        if total % 10 >= 6 {
+            smallGap -= 1
+        }
+
+        for range total % 10 {
+            screen.DrawImage(small, &options)
+            options.GeoM.Translate(float64(smallGap), 0)
+        }
+
+        return options.GeoM
+    }
+
+    foodRect := image.Rect(6, 52, 6 + 9 * bigFood.Bounds().Dx(), 52 + bigFood.Bounds().Dy())
+    elements = append(elements, &uilib.UIElement{
+        Rect: foodRect,
+        LeftClick: func(element *uilib.UIElement) {
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(foodRect.Min.X), float64(foodRect.Min.Y))
+            options.GeoM = drawIcons(foodRequired, smallFood, bigFood, options, screen)
+            options.GeoM.Translate(5, 0)
+            drawIcons(foodSurplus, smallFood, bigFood, options, screen)
+
+            util.DrawRect(screen, foodRect, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff})
+        },
+    })
+
+    return elements
+}
+
 func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *ebiten.Image, geom ebiten.GeoM, counter uint64)) {
     animationCounter := cityScreen.Counter / 8
 
@@ -1057,6 +1119,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
         return endX
     }
 
+    /*
     foodRequired := cityScreen.City.RequiredFood()
     foodSurplus := cityScreen.City.SurplusFood()
 
@@ -1066,6 +1129,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
     foodX := drawIcons(foodRequired, smallFood, bigFood, 6, 52)
     foodX += 5
     drawIcons(foodSurplus, smallFood, bigFood, foodX, 52)
+    */
 
     smallHammer, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 41, 0)
     bigHammer, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 89, 0)
