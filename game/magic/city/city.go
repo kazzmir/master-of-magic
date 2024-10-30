@@ -528,18 +528,64 @@ func (city *City) ComputeUpkeep() int {
     return costs
 }
 
-func (city *City) GoldSurplus() int {
-    citizenIncome := float32(city.NonRebels()) * float32(city.TaxRate.ToFloat())
+func (city *City) GoldTaxation() int {
+    return int(float32(city.NonRebels()) * float32(city.TaxRate.ToFloat()))
+}
 
-    bonus := float32(0)
-
+func (city *City) GoldTradeGoods() int {
     if city.ProducingBuilding == buildinglib.BuildingTradeGoods {
-        bonus = city.WorkProductionRate() / 2
+        return int(city.WorkProductionRate() / 2)
     }
+
+    return 0
+}
+
+func (city *City) GoldMinerals() int {
+    // FIXME: check catchment area for minerals
+    return 0
+}
+
+func (city *City) GoldMarketplace() int {
+    if city.Buildings.Contains(buildinglib.BuildingMarketplace) {
+        return (city.GoldTaxation() + city.GoldMinerals()) / 2
+    }
+
+    return 0
+}
+
+func (city *City) GoldBank() int {
+    if city.Buildings.Contains(buildinglib.BuildingBank) {
+        return (city.GoldTaxation() + city.GoldMinerals()) / 2
+    }
+
+    return 0
+}
+
+func (city *City) GoldMerchantsGuild() int {
+    if city.Buildings.Contains(buildinglib.BuildingMerchantsGuild) {
+        return city.GoldTaxation() + city.GoldMinerals()
+    }
+
+    return 0
+}
+
+func (city *City) GoldSurplus() int {
+    income := city.GoldTaxation()
+    income += city.GoldTradeGoods()
+    income += city.GoldMinerals()
+    income += city.GoldMarketplace()
+    income += city.GoldBank()
+    income += city.GoldMerchantsGuild()
 
     upkeepCosts := city.ComputeUpkeep()
 
-    return int(citizenIncome + bonus) - upkeepCosts
+    out := income - upkeepCosts
+
+    if out < 0 {
+        out = 0
+    }
+
+    return out
 }
 
 func (city *City) ProductionWorkers() float32 {

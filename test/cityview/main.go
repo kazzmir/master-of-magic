@@ -39,7 +39,7 @@ func NewEngine() (*Engine, error) {
 
     buildingInfo, _ := buildinglib.ReadBuildingInfo(cache)
 
-    city := citylib.MakeCity("Boston", 3, 8, data.RaceHighElf, player.Wizard.Banner, fraction.Make(1, 1), buildingInfo, &player)
+    city := citylib.MakeCity("Boston", 3, 8, data.RaceHighElf, player.Wizard.Banner, fraction.Make(2, 1), buildingInfo, &player)
     city.Population = 12000
     city.Farmers = 4
     city.Workers = 2
@@ -49,21 +49,22 @@ func NewEngine() (*Engine, error) {
     city.Banner = data.BannerBlue
     city.Buildings.Insert(buildinglib.BuildingGranary)
     city.Buildings.Insert(buildinglib.BuildingFarmersMarket)
+    city.Buildings.Insert(buildinglib.BuildingMarketplace)
     city.Buildings.Insert(buildinglib.BuildingMinersGuild)
     city.Buildings.Insert(buildinglib.BuildingMechaniciansGuild)
-    // ProducingBuilding: citylib.BuildingBarracks,
-    city.ProducingUnit = units.HighElfSpearmen
+    city.ProducingBuilding = buildinglib.BuildingHousing
+    // city.ProducingUnit = units.HighElfSpearmen
     city.ResetCitizens(nil)
         // ProducingUnit: units.UnitNone,
 
     var garrison []units.StackUnit
     for i := 0; i < 2; i++ {
-        unit := units.MakeOverworldUnitFromUnit(units.GreatDrake, city.X, city.Y, city.Plane, city.Banner, player.MakeExperienceInfo())
+        unit := units.MakeOverworldUnitFromUnit(units.HighElfSpearmen, city.X, city.Y, city.Plane, city.Banner, player.MakeExperienceInfo())
         player.AddUnit(unit)
         garrison = append(garrison, unit)
     }
     for i := 0; i < 4; i++ {
-        unit := units.MakeOverworldUnitFromUnit(units.FireElemental, city.X, city.Y, city.Plane, city.Banner, player.MakeExperienceInfo())
+        unit := units.MakeOverworldUnitFromUnit(units.HighElfSwordsmen, city.X, city.Y, city.Plane, city.Banner, player.MakeExperienceInfo())
         player.AddUnit(unit)
         garrison = append(garrison, unit)
     }
@@ -76,6 +77,7 @@ func NewEngine() (*Engine, error) {
     city.AddBuilding(buildinglib.BuildingOracle)
     city.AddBuilding(buildinglib.BuildingFortress)
     city.AddBuilding(buildinglib.BuildingShrine)
+    city.AddBuilding(buildinglib.BuildingTemple)
 
     cityScreen := cityview.MakeCityScreen(cache, city, &player, buildinglib.BuildingShrine)
 
