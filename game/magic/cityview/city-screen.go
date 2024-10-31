@@ -1555,39 +1555,6 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
 
     cityScreen.Fonts.DescriptionFont.PrintRight(screen, 210, 19, 1, ebiten.ColorScale{}, fmt.Sprintf("Population: %v (%v)", cityScreen.City.Population, deltaNumber(cityScreen.City.PopulationGrowthRate())))
 
-    /*
-    foodRequired := cityScreen.City.RequiredFood()
-    foodSurplus := cityScreen.City.SurplusFood()
-
-    smallFood, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 40, 0)
-    bigFood, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 88, 0)
-
-    foodX := drawIcons(foodRequired, smallFood, bigFood, 6, 52)
-    foodX += 5
-    drawIcons(foodSurplus, smallFood, bigFood, foodX, 52)
-
-    smallHammer, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 41, 0)
-    bigHammer, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 89, 0)
-
-    drawIcons(int(cityScreen.City.WorkProductionRate()), smallHammer, bigHammer, 6, 60)
-
-    smallCoin, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 42, 0)
-    bigCoin, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 90, 0)
-
-    coinX := drawIcons(cityScreen.City.ComputeUpkeep(), smallCoin, bigCoin, 6, 68)
-    drawIcons(cityScreen.City.GoldSurplus(), smallCoin, bigCoin, coinX + 6, 68)
-
-    smallMagic, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 43, 0)
-    bigMagic, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 91, 0)
-
-    drawIcons(cityScreen.City.ComputePower(), smallMagic, bigMagic, 6, 76)
-
-    smallResearch, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 44, 0)
-    bigResearch, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 92, 0)
-
-    drawIcons(cityScreen.City.ResearchProduction(), smallResearch, bigResearch, 6, 84)
-    */
-
     showWork := false
     workRequired := 0
 
