@@ -693,6 +693,10 @@ func (game *Game) ComputePower(player *playerlib.Player) int {
         power += float64(len(node.Zone)) * magicBonus
     }
 
+    if power < 0 {
+        power = 0
+    }
+
     return int(power)
 }
 
@@ -2908,7 +2912,7 @@ func (game *Game) CityProductionBonus(x int, y int) int {
 }
 
 func (game *Game) CreateOutpost(settlers units.StackUnit, player *playerlib.Player) *citylib.City {
-    newCity := citylib.MakeCity("New City", settlers.GetX(), settlers.GetY(), settlers.GetRace(), settlers.GetBanner(), player.TaxRate, game.BuildingInfo, player)
+    newCity := citylib.MakeCity("New City", settlers.GetX(), settlers.GetY(), settlers.GetRace(), settlers.GetBanner(), player.TaxRate, game.BuildingInfo)
     newCity.Plane = settlers.GetPlane()
     newCity.Population = 300
     newCity.Outpost = true

@@ -86,6 +86,12 @@ type BuildingSlot struct {
     Point image.Point
 }
 
+// represents how much of a resource is being used/produced, such as '2 granary' for 'the granary produces 2 food'
+type ResourceUsage struct {
+    Count int // can be negative
+    Name string
+}
+
 type CityScreenState int
 
 const (
@@ -114,7 +120,7 @@ type CityScreen struct {
     BuildScreen *BuildScreen
 
     // the building that was just built
-    NewBuilding buildinglib.Building
+    // NewBuilding buildinglib.Building
 
     Counter uint64
     State CityScreenState
@@ -320,12 +326,11 @@ func MakeCityScreen(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
         City: city,
         Fonts: fonts,
         Buildings: buildings,
-        NewBuilding: newBuilding,
         State: CityScreenStateRunning,
         Player: player,
     }
 
-    cityScreen.UI = cityScreen.MakeUI()
+    cityScreen.UI = cityScreen.MakeUI(newBuilding)
 
     return cityScreen
 }
@@ -459,7 +464,7 @@ func makeCityScapeElement(cache *lbx.LbxCache, ui *uilib.UI, city *citylib.City,
     return element
 }
 
-func (cityScreen *CityScreen) MakeUI() *uilib.UI {
+func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI {
     ui := &uilib.UI{
         Draw: func(ui *uilib.UI, screen *ebiten.Image) {
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
@@ -502,7 +507,7 @@ func (cityScreen *CityScreen) MakeUI() *uilib.UI {
 
     var getAlpha util.AlphaFadeFunc = func() float32 { return 1 }
 
-    elements = append(elements, makeCityScapeElement(cityScreen.LbxCache, ui, cityScreen.City, &help, &cityScreen.ImageCache, sellBuilding, cityScreen.Buildings, cityScreen.NewBuilding, 4, 102, cityScreen.Fonts, cityScreen.Player, &getAlpha))
+    elements = append(elements, makeCityScapeElement(cityScreen.LbxCache, ui, cityScreen.City, &help, &cityScreen.ImageCache, sellBuilding, cityScreen.Buildings, newBuilding, 4, 102, cityScreen.Fonts, cityScreen.Player, &getAlpha))
 
     // FIXME: show disabled buy button if the item is not buyable (not enough money, or the item is trade goods/housing)
     // buy button
@@ -588,6 +593,13 @@ func (cityScreen *CityScreen) MakeUI() *uilib.UI {
                 screen.DrawImage(okButton, &options)
             },
         })
+    }
+
+    var resourceIcons []*uilib.UIElement
+    resetResourceIcons := func(){
+        ui.RemoveElements(resourceIcons)
+        resourceIcons = cityScreen.CreateResourceIcons(ui)
+        ui.AddElements(resourceIcons)
     }
 
     farmer, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", getRaceFarmerIndex(cityScreen.City.Race), 0)
@@ -688,6 +700,8 @@ func (cityScreen *CityScreen) MakeUI() *uilib.UI {
             }
 
             ui.AddElements(workerElements)
+
+            resetResourceIcons()
         }
     } else {
         setupWorkers = func(){
@@ -695,6 +709,8 @@ func (cityScreen *CityScreen) MakeUI() *uilib.UI {
     }
 
     ui.SetElementsFromArray(elements)
+
+    ui.AddElements(resourceIcons)
 
     var resetUnits func()
 
@@ -786,10 +802,12 @@ func (cityScreen *CityScreen) Update() CityScreenState {
             case BuildScreenRunning:
             case BuildScreenCanceled:
                 cityScreen.BuildScreen = nil
+                cityScreen.UI = cityScreen.MakeUI(buildinglib.BuildingNone)
             case BuildScreenOk:
                 cityScreen.City.ProducingBuilding = cityScreen.BuildScreen.ProducingBuilding
                 cityScreen.City.ProducingUnit = cityScreen.BuildScreen.ProducingUnit
                 cityScreen.BuildScreen = nil
+                cityScreen.UI = cityScreen.MakeUI(buildinglib.BuildingNone)
         }
     } else {
         cityScreen.UI.StandardUpdate()
@@ -997,6 +1015,522 @@ func drawCityScape(screen *ebiten.Image, buildings []BuildingSlot, buildingLook 
     */
 }
 
+func (cityScreen *CityScreen) FoodProducers() []ResourceUsage {
+    var usages []ResourceUsage
+
+    usages = append(usages, ResourceUsage{
+        Count: cityScreen.City.FarmerFoodProduction(cityScreen.City.Farmers),
+        Name: "Farmers",
+    })
+
+    buildings := cityScreen.City.Buildings.Values()
+    for _, building := range sortBuildings(buildings) {
+        value := 0
+        switch building {
+            case buildinglib.BuildingForestersGuild: value = 2
+            case buildinglib.BuildingGranary: value = 2
+            case buildinglib.BuildingFarmersMarket: value = 3
+        }
+
+        if value > 0 {
+            usages = append(usages, ResourceUsage{
+                Count: value,
+                Name: cityScreen.City.BuildingInfo.Name(building),
+            })
+        }
+    }
+
+    return usages
+}
+
+// pass screen=nil to compute how wide the icons are without drawing them
+func (cityScreen *CityScreen) drawIcons(total int, small *ebiten.Image, large *ebiten.Image, options ebiten.DrawImageOptions, screen *ebiten.Image) ebiten.GeoM {
+    largeGap := large.Bounds().Dx()
+
+    if total / 10 > 3 {
+        largeGap -= 1
+    }
+
+    if total / 10 > 6 {
+        largeGap -= 1
+    }
+
+    for range total / 10 {
+        if screen != nil {
+            screen.DrawImage(large, &options)
+        }
+        options.GeoM.Translate(float64(largeGap), 0)
+    }
+
+    smallGap := small.Bounds().Dx() + 1
+    if total % 10 > 3 {
+        smallGap -= 1
+    }
+    if total % 10 >= 6 {
+        smallGap -= 1
+    }
+
+    for range total % 10 {
+        if screen != nil {
+            screen.DrawImage(small, &options)
+        }
+        options.GeoM.Translate(float64(smallGap), 0)
+    }
+
+    return options.GeoM
+}
+
+// copied heavily from ui/dialogs.go:MakeHelpElementWithLayer
+func (cityScreen *CityScreen) MakeResourceDialog(title string, smallIcon *ebiten.Image, bigIcon *ebiten.Image, ui *uilib.UI, resources []ResourceUsage) *uilib.UIElement {
+    helpTop, err := cityScreen.ImageCache.GetImage("help.lbx", 0, 0)
+    if err != nil {
+        return nil
+    }
+
+    fontLbx, err := cityScreen.LbxCache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        return nil
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        return nil
+    }
+
+    const fadeSpeed = 7
+
+    getAlpha := ui.MakeFadeIn(fadeSpeed)
+
+    helpPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0x5e, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+    }
+
+    helpFont := font.MakeOptimizedFontWithPalette(fonts[1], helpPalette)
+
+    titleRed := color.RGBA{R: 0x50, G: 0x00, B: 0x0e, A: 0xff}
+    titlePalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        titleRed,
+        titleRed,
+        titleRed,
+        titleRed,
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+    }
+
+    helpTitleFont := font.MakeOptimizedFontWithPalette(fonts[4], titlePalette)
+
+    infoX := 55
+    // infoY := 30
+    infoWidth := helpTop.Bounds().Dx()
+    // infoHeight := screen.HelpTop.Bounds().Dy()
+    infoLeftMargin := 18
+    infoTopMargin := 26
+    infoBodyMargin := 3
+    maxInfoWidth := infoWidth - infoLeftMargin - infoBodyMargin - 14
+
+    // fmt.Printf("Help text: %v\n", []byte(help.Text))
+
+    helpTextY := infoTopMargin
+    titleYAdjust := 0
+    helpTextY += helpTitleFont.Height() + 1
+
+    textHeight := len(resources) * (helpFont.Height() + 1)
+
+    bottom := helpTextY + textHeight
+
+    // only draw as much of the top scroll as there are lines of text
+    topImage := helpTop.SubImage(image.Rect(0, 0, helpTop.Bounds().Dx(), int(bottom))).(*ebiten.Image)
+    helpBottom, err := cityScreen.ImageCache.GetImage("help.lbx", 1, 0)
+    if err != nil {
+        return nil
+    }
+
+    infoY := (data.ScreenHeight - bottom - helpBottom.Bounds().Dy()) / 2
+
+    widestResources := float64(0)
+    for _, usage := range resources {
+        var options ebiten.DrawImageOptions
+        geom := cityScreen.drawIcons(int(math.Abs(float64(usage.Count))), smallIcon, bigIcon, options, nil)
+        x, _ := geom.Apply(0, 0)
+        if x > widestResources {
+            widestResources = x
+        }
+    }
+
+    infoElement := &uilib.UIElement{
+        // Rect: image.Rect(infoX, infoY, infoX + infoWidth, infoY + infoHeight),
+        Rect: image.Rect(0, 0, data.ScreenWidth, data.ScreenHeight),
+        Draw: func (infoThis *uilib.UIElement, window *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(infoX), float64(infoY))
+            options.ColorScale.ScaleAlpha(getAlpha())
+            window.DrawImage(topImage, &options)
+
+            options.GeoM.Reset()
+            options.GeoM.Translate(float64(infoX), float64(bottom + infoY))
+            options.ColorScale.ScaleAlpha(getAlpha())
+            window.DrawImage(helpBottom, &options)
+
+            // for debugging
+            // vector.StrokeRect(window, float32(infoX), float32(infoY), float32(infoWidth), float32(infoHeight), 1, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, true)
+            // vector.StrokeRect(window, float32(infoX + infoLeftMargin), float32(infoY + infoTopMargin), float32(maxInfoWidth), float32(screen.HelpTitleFont.Height() + 20 + 1), 1, color.RGBA{R: 0, G: 0xff, B: 0, A: 0xff}, false)
+
+            titleX := infoX + infoLeftMargin + maxInfoWidth / 2
+
+            helpTitleFont.PrintCenter(window, float64(titleX), float64(infoY + infoTopMargin + titleYAdjust), 1, options.ColorScale, title)
+
+            yPos := infoY + infoTopMargin + helpTitleFont.Height() + 1
+            xPos := infoX + infoLeftMargin
+
+            options.GeoM.Reset()
+            options.GeoM.Translate(float64(xPos), float64(yPos))
+
+            for _, usage := range resources {
+                if usage.Count < 0 {
+                    x, y := options.GeoM.Apply(0, 1)
+                    helpFont.PrintRight(window, x, y, 1, options.ColorScale, "-")
+                }
+
+                cityScreen.drawIcons(int(math.Abs(float64(usage.Count))), smallIcon, bigIcon, options, window)
+
+                x, y := options.GeoM.Apply(widestResources + 5, 0)
+
+                helpFont.Print(window, x, y, 1, options.ColorScale, fmt.Sprintf("%v (%v)", usage.Name, usage.Count))
+                yPos += helpFont.Height() + 1
+                options.GeoM.Translate(0, float64(helpFont.Height() + 1))
+            }
+
+        },
+        LeftClick: func(infoThis *uilib.UIElement){
+            getAlpha = ui.MakeFadeOut(fadeSpeed)
+            ui.AddDelay(fadeSpeed, func(){
+                ui.RemoveElement(infoThis)
+            })
+        },
+        Layer: 1,
+    }
+
+    return infoElement
+}
+
+func (cityScreen *CityScreen) WorkProducers() []ResourceUsage {
+    var usage []ResourceUsage
+
+    if cityScreen.City.ProductionWorkers() > 0 {
+        usage = append(usage, ResourceUsage{
+            Count: int(cityScreen.City.ProductionWorkers()),
+            Name: "Workers",
+        })
+    }
+
+    if cityScreen.City.ProductionFarmers() > 0 {
+        usage = append(usage, ResourceUsage{
+            Count: int(cityScreen.City.ProductionFarmers()),
+            Name: "Farmers",
+        })
+    }
+
+    if cityScreen.City.ProductionMinersGuild() > 0 {
+        usage = append(usage, ResourceUsage{
+            Count: int(cityScreen.City.ProductionMinersGuild()),
+            Name: "Miner's Guild",
+        })
+    }
+
+    if cityScreen.City.ProductionMechaniciansGuild() > 0 {
+        usage = append(usage, ResourceUsage{
+            Count: int(cityScreen.City.ProductionMechaniciansGuild()),
+            Name: "Mechanician's Guild",
+        })
+    }
+
+    return usage
+}
+
+func (cityScreen *CityScreen) BuildingMaintenanceResources() []ResourceUsage {
+    var usage []ResourceUsage
+
+    for _, building := range cityScreen.City.Buildings.Values() {
+        if building == buildinglib.BuildingFortress || building == buildinglib.BuildingSummoningCircle {
+            continue
+        }
+
+        maintenance := cityScreen.City.BuildingInfo.UpkeepCost(building)
+        usage = append(usage, ResourceUsage{
+            Count: maintenance,
+            Name: cityScreen.City.BuildingInfo.Name(building),
+        })
+    }
+
+    return usage
+}
+
+func (cityScreen *CityScreen) GoldProducers() []ResourceUsage {
+    var usage []ResourceUsage
+
+    if cityScreen.City.GoldTaxation() > 0 {
+        usage = append(usage, ResourceUsage{
+            Count: int(cityScreen.City.GoldTaxation()),
+            Name: "Taxes",
+        })
+    }
+
+    // FIXME: add tiles (road/river/ocean)
+
+    if cityScreen.City.GoldTradeGoods() > 0 {
+        usage = append(usage, ResourceUsage{
+            Count: int(cityScreen.City.GoldTradeGoods()),
+            Name: "Trade Goods",
+        })
+    }
+
+    if cityScreen.City.GoldMinerals() > 0 {
+        usage = append(usage, ResourceUsage{
+            Count: int(cityScreen.City.GoldMinerals()),
+            Name: "Minerals",
+        })
+    }
+
+    if cityScreen.City.GoldMarketplace() > 0 {
+        usage = append(usage, ResourceUsage{
+            Count: int(cityScreen.City.GoldMarketplace()),
+            Name: "Marketplace",
+        })
+    }
+
+    if cityScreen.City.GoldBank() > 0 {
+        usage = append(usage, ResourceUsage{
+            Count: int(cityScreen.City.GoldBank()),
+            Name: "Bank",
+        })
+    }
+
+
+    if cityScreen.City.GoldMerchantsGuild() > 0 {
+        usage = append(usage, ResourceUsage{
+            Count: int(cityScreen.City.GoldMerchantsGuild()),
+            Name: "Merchant's Guild",
+        })
+    }
+
+    return usage
+}
+
+func (cityScreen *CityScreen) PowerProducers() []ResourceUsage {
+    var usage []ResourceUsage
+
+    if cityScreen.City.PowerCitizens() > 0 {
+        usage = append(usage, ResourceUsage{
+            Count: int(cityScreen.City.PowerCitizens()),
+            Name: "Townsfolk",
+        })
+    }
+
+    if cityScreen.City.Buildings.Contains(buildinglib.BuildingShrine) {
+        usage = append(usage, ResourceUsage{
+            Count: 1,
+            Name: "Shrine",
+        })
+    }
+
+    if cityScreen.City.Buildings.Contains(buildinglib.BuildingTemple) {
+        usage = append(usage, ResourceUsage{
+            Count: 2,
+            Name: "Temple",
+        })
+    }
+
+    if cityScreen.City.Buildings.Contains(buildinglib.BuildingParthenon) {
+        usage = append(usage, ResourceUsage{
+            Count: 3,
+            Name: "Parthenon",
+        })
+    }
+
+    if cityScreen.City.Buildings.Contains(buildinglib.BuildingCathedral) {
+        usage = append(usage, ResourceUsage{
+            Count: 4,
+            Name: "Cathedral",
+        })
+    }
+
+    if cityScreen.City.Buildings.Contains(buildinglib.BuildingAlchemistsGuild) {
+        usage = append(usage, ResourceUsage{
+            Count: 3,
+            Name: "Alchemist's Guild",
+        })
+    }
+
+    if cityScreen.City.Buildings.Contains(buildinglib.BuildingWizardsGuild) {
+        usage = append(usage, ResourceUsage{
+            Count: -3,
+            Name: "Wizard's Guild",
+        })
+    }
+
+    if cityScreen.City.Buildings.Contains(buildinglib.BuildingFortress) && cityScreen.City.Plane == data.PlaneMyrror {
+        usage = append(usage, ResourceUsage{
+            Count: 5,
+            Name: "Fortress",
+        })
+    }
+
+    // FIXME: add tiles (adamantium mine) and miner's guild
+
+    return usage
+}
+
+func (cityScreen *CityScreen) ResearchProducers() []ResourceUsage {
+    var usage []ResourceUsage
+
+    for _, building := range sortBuildings(cityScreen.City.Buildings.Values()) {
+        research := cityScreen.City.BuildingInfo.ResearchProduction(building)
+
+        if research > 0 {
+            usage = append(usage, ResourceUsage{
+                Count: research,
+                Name: cityScreen.City.BuildingInfo.Name(building),
+            })
+        }
+    }
+
+    return usage
+}
+
+func (cityScreen *CityScreen) CreateResourceIcons(ui *uilib.UI) []*uilib.UIElement {
+    foodRequired := cityScreen.City.RequiredFood()
+    foodSurplus := cityScreen.City.SurplusFood()
+
+    smallFood, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 40, 0)
+    bigFood, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 88, 0)
+
+    smallHammer, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 41, 0)
+    bigHammer, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 89, 0)
+
+    smallCoin, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 42, 0)
+    bigCoin, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 90, 0)
+
+    smallMagic, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 43, 0)
+    bigMagic, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 91, 0)
+
+    smallResearch, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 44, 0)
+    bigResearch, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 92, 0)
+
+    var elements []*uilib.UIElement
+
+    foodRect := image.Rect(6, 52, 6 + 9 * bigFood.Bounds().Dx(), 52 + bigFood.Bounds().Dy())
+    elements = append(elements, &uilib.UIElement{
+        Rect: foodRect,
+        LeftClick: func(element *uilib.UIElement) {
+            foodProducers := cityScreen.FoodProducers()
+            ui.AddElement(cityScreen.MakeResourceDialog("Food", smallFood, bigFood, ui, foodProducers))
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(foodRect.Min.X), float64(foodRect.Min.Y))
+            options.GeoM = cityScreen.drawIcons(foodRequired, smallFood, bigFood, options, screen)
+            options.GeoM.Translate(5, 0)
+            cityScreen.drawIcons(foodSurplus, smallFood, bigFood, options, screen)
+        },
+    })
+
+    production := cityScreen.City.WorkProductionRate()
+    workRect := image.Rect(6, 60, 6 + 9 * bigHammer.Bounds().Dx(), 60 + bigHammer.Bounds().Dy())
+    elements = append(elements, &uilib.UIElement{
+        Rect: workRect,
+        LeftClick: func(element *uilib.UIElement) {
+            workProducers := cityScreen.WorkProducers()
+            ui.AddElement(cityScreen.MakeResourceDialog("Production", smallHammer, bigHammer, ui, workProducers))
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(workRect.Min.X), float64(workRect.Min.Y))
+            cityScreen.drawIcons(int(production), smallHammer, bigHammer, options, screen)
+        },
+    })
+
+    var goldUpkeepOptions ebiten.DrawImageOptions
+    goldGeom := cityScreen.drawIcons(cityScreen.City.ComputeUpkeep(), smallCoin, bigCoin, goldUpkeepOptions, nil)
+
+    x, _ := goldGeom.Apply(0, 0)
+
+    // FIXME: if income - upkeep < 0 then show greyed out icons for gold
+
+    goldMaintenanceRect := image.Rect(6, 68, 6 + int(x), 68 + bigCoin.Bounds().Dy())
+    elements = append(elements, &uilib.UIElement{
+        Rect: goldMaintenanceRect,
+        LeftClick: func(element *uilib.UIElement) {
+            maintenance := cityScreen.BuildingMaintenanceResources()
+            ui.AddElement(cityScreen.MakeResourceDialog("Building Maintenance", smallCoin, bigCoin, ui, maintenance))
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(goldMaintenanceRect.Min.X), float64(goldMaintenanceRect.Min.Y))
+            cityScreen.drawIcons(cityScreen.City.ComputeUpkeep(), smallCoin, bigCoin, options, screen)
+
+            // util.DrawRect(screen, goldMaintenanceRect, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff})
+        },
+    })
+
+    goldGeom = cityScreen.drawIcons(cityScreen.City.GoldSurplus(), smallCoin, bigCoin, goldUpkeepOptions, nil)
+    x, _ = goldGeom.Apply(0, 0)
+    goldSurplusRect := image.Rect(goldMaintenanceRect.Max.X + 6, 68, goldMaintenanceRect.Max.X + 6 + int(x), 68 + bigCoin.Bounds().Dy())
+    elements = append(elements, &uilib.UIElement{
+        Rect: goldSurplusRect,
+        LeftClick: func(element *uilib.UIElement) {
+            gold := cityScreen.GoldProducers()
+            ui.AddElement(cityScreen.MakeResourceDialog("Gold", smallCoin, bigCoin, ui, gold))
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(goldSurplusRect.Min.X), float64(goldSurplusRect.Min.Y))
+            cityScreen.drawIcons(cityScreen.City.GoldSurplus(), smallCoin, bigCoin, options, screen)
+            // util.DrawRect(screen, goldSurplusRect, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff})
+        },
+    })
+
+    powerRect := image.Rect(6, 76, 6 + 9 * bigMagic.Bounds().Dx(), 76 + bigMagic.Bounds().Dy())
+    elements = append(elements, &uilib.UIElement{
+        Rect: powerRect,
+        LeftClick: func(element *uilib.UIElement) {
+            power := cityScreen.PowerProducers()
+            ui.AddElement(cityScreen.MakeResourceDialog("Power", smallMagic, bigMagic, ui, power))
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(powerRect.Min.X), float64(powerRect.Min.Y))
+            cityScreen.drawIcons(cityScreen.City.ComputePower(), smallMagic, bigMagic, options, screen)
+        },
+    })
+
+    researchRect := image.Rect(6, 84, 6 + 9 * bigResearch.Bounds().Dx(), 84 + bigResearch.Bounds().Dy())
+    elements = append(elements, &uilib.UIElement{
+        Rect: researchRect,
+        LeftClick: func(element *uilib.UIElement) {
+            research := cityScreen.ResearchProducers()
+            ui.AddElement(cityScreen.MakeResourceDialog("Spell Research", smallResearch, bigResearch, ui, research))
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(researchRect.Min.X), float64(researchRect.Min.Y))
+            cityScreen.drawIcons(cityScreen.City.ResearchProduction(), smallResearch, bigResearch, options, screen)
+        },
+    })
+
+    return elements
+}
+
 func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *ebiten.Image, geom ebiten.GeoM, counter uint64)) {
     animationCounter := cityScreen.Counter / 8
 
@@ -1020,73 +1554,6 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
     }
 
     cityScreen.Fonts.DescriptionFont.PrintRight(screen, 210, 19, 1, ebiten.ColorScale{}, fmt.Sprintf("Population: %v (%v)", cityScreen.City.Population, deltaNumber(cityScreen.City.PopulationGrowthRate())))
-
-    drawIcons := func(total int, small *ebiten.Image, large *ebiten.Image, x float64, y float64) float64 {
-        var options ebiten.DrawImageOptions
-        options.GeoM.Translate(x, y)
-
-        largeGap := large.Bounds().Dx()
-
-        if total / 10 > 3 {
-            largeGap -= 1
-        }
-
-        if total / 10 > 6 {
-            largeGap -= 1
-        }
-
-        for range total / 10 {
-            screen.DrawImage(large, &options)
-            options.GeoM.Translate(float64(largeGap), 0)
-        }
-
-        smallGap := small.Bounds().Dx() + 1
-        if total % 10 >= 3 {
-            smallGap -= 1
-        }
-        if total % 10 >= 6 {
-            smallGap -= 1
-        }
-
-        for range total % 10 {
-            screen.DrawImage(small, &options)
-            options.GeoM.Translate(float64(smallGap), 0)
-        }
-
-        endX, _ := options.GeoM.Apply(0, 0)
-        return endX
-    }
-
-    foodRequired := cityScreen.City.RequiredFood()
-    foodSurplus := cityScreen.City.SurplusFood()
-
-    smallFood, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 40, 0)
-    bigFood, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 88, 0)
-
-    foodX := drawIcons(foodRequired, smallFood, bigFood, 6, 52)
-    foodX += 5
-    drawIcons(foodSurplus, smallFood, bigFood, foodX, 52)
-
-    smallHammer, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 41, 0)
-    bigHammer, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 89, 0)
-
-    drawIcons(int(cityScreen.City.WorkProductionRate()), smallHammer, bigHammer, 6, 60)
-
-    smallCoin, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 42, 0)
-    bigCoin, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 90, 0)
-
-    coinX := drawIcons(cityScreen.City.ComputeUpkeep(), smallCoin, bigCoin, 6, 68)
-    drawIcons(cityScreen.City.GoldSurplus(), smallCoin, bigCoin, coinX + 6, 68)
-
-    smallMagic, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 43, 0)
-    bigMagic, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 91, 0)
-
-    drawIcons(cityScreen.City.ComputePower(), smallMagic, bigMagic, 6, 76)
-
-    smallResearch, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 44, 0)
-    bigResearch, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 92, 0)
-
-    drawIcons(cityScreen.City.ResearchProduction(), smallResearch, bigResearch, 6, 84)
 
     showWork := false
     workRequired := 0

@@ -61,10 +61,6 @@ func (citySize CitySize) String() string {
 
 const MAX_CITY_CITIZENS = 25
 
-type WizardInfo interface {
-    NumSpellbooks() int
-}
-
 type City struct {
     Population int
     Farmers int
@@ -80,8 +76,6 @@ type City struct {
     Banner data.BannerType
     Buildings *set.Set[buildinglib.Building]
 
-    WizardInfo WizardInfo
-
     TaxRate fraction.Fraction
 
     // reset every turn, keeps track of whether the player sold a building
@@ -95,7 +89,7 @@ type City struct {
     BuildingInfo buildinglib.BuildingInfos
 }
 
-func MakeCity(name string, x int, y int, race data.Race, banner data.BannerType, taxRate fraction.Fraction, buildingInfo buildinglib.BuildingInfos, wizardInfo WizardInfo) *City {
+func MakeCity(name string, x int, y int, race data.Race, banner data.BannerType, taxRate fraction.Fraction, buildingInfo buildinglib.BuildingInfos) *City {
     city := City{
         Name: name,
         X: x,
@@ -105,7 +99,6 @@ func MakeCity(name string, x int, y int, race data.Race, banner data.BannerType,
         Buildings: set.MakeSet[buildinglib.Building](),
         TaxRate: taxRate,
         BuildingInfo: buildingInfo,
-        WizardInfo: wizardInfo,
     }
 
     return &city
@@ -233,6 +226,16 @@ func (city *City) ComputeSubsistenceFarmers() int {
     return maxFarmers
 }
 
+func (city *City) PowerCitizens() int {
+    citizenPower := float64(0)
+    if city.Race == data.RaceDraconian || city.Race == data.RaceHighElf || city.Race == data.RaceBeastmen {
+        citizenPower = 0.5
+    } else if city.Race == data.RaceDarkElf {
+        citizenPower = 1
+    }
+    return int(citizenPower * float64(city.Citizens()))
+}
+
 /* power production from buildings and citizens
  */
 func (city *City) ComputePower() int {
@@ -247,25 +250,17 @@ func (city *City) ComputePower() int {
             case buildinglib.BuildingParthenon: religiousPower += 3
             case buildinglib.BuildingCathedral: religiousPower += 4
             case buildinglib.BuildingAlchemistsGuild: power += 3
+            case buildinglib.BuildingWizardsGuild: power -= 3
             case buildinglib.BuildingFortress:
                 if city.Plane == data.PlaneMyrror {
                     power += 5
                 }
-
-                power += city.WizardInfo.NumSpellbooks()
         }
     }
 
     // FIXME: take enchantments and bonuses for religious power into account
 
-    citizenPower := float64(0)
-    if city.Race == data.RaceDraconian || city.Race == data.RaceHighElf || city.Race == data.RaceBeastmen {
-        citizenPower = 0.5
-    } else if city.Race == data.RaceDarkElf {
-        citizenPower = 1
-    }
-
-    return power + religiousPower + int(citizenPower * float64(city.Citizens()))
+    return power + religiousPower + city.PowerCitizens()
 }
 
 func (city *City) UpdateUnrest(garrison []units.StackUnit) {
@@ -457,17 +452,6 @@ func (city *City) ResearchProduction() int {
     return research
 }
 
-func (city *City) ManaCost() int {
-    mana := 0
-
-    for _, building := range city.Buildings.Values() {
-        mana += city.BuildingInfo.ManaCost(building)
-    }
-
-    return mana
-
-}
-
 /* amount of food needed to feed the citizens
  */
 func (city *City) RequiredFood() int {
@@ -489,14 +473,18 @@ func (city *City) FoodProductionRate() int {
     return city.foodProductionRate(city.Farmers)
 }
 
-func (city *City) foodProductionRate(farmers int) int {
+func (city *City) FarmerFoodProduction(farmers int) int {
     rate := 2
 
     switch city.Race {
         case data.RaceHalfling: rate = 3
     }
 
-    baseRate := float32(rate * farmers)
+    return rate * farmers
+}
+
+func (city *City) foodProductionRate(farmers int) int {
+    baseRate := float32(city.FarmerFoodProduction(farmers))
 
     if city.Buildings.Contains(buildinglib.BuildingForestersGuild) {
         baseRate += 2
@@ -534,21 +522,67 @@ func (city *City) ComputeUpkeep() int {
     return costs
 }
 
-func (city *City) GoldSurplus() int {
-    citizenIncome := float32(city.NonRebels()) * float32(city.TaxRate.ToFloat())
+func (city *City) GoldTaxation() int {
+    return int(float32(city.NonRebels()) * float32(city.TaxRate.ToFloat()))
+}
 
-    bonus := float32(0)
-
+func (city *City) GoldTradeGoods() int {
     if city.ProducingBuilding == buildinglib.BuildingTradeGoods {
-        bonus = city.WorkProductionRate() / 2
+        return int(city.WorkProductionRate() / 2)
     }
+
+    return 0
+}
+
+func (city *City) GoldMinerals() int {
+    // FIXME: check catchment area for minerals
+    return 0
+}
+
+func (city *City) GoldMarketplace() int {
+    if city.Buildings.Contains(buildinglib.BuildingMarketplace) {
+        return (city.GoldTaxation() + city.GoldMinerals()) / 2
+    }
+
+    return 0
+}
+
+func (city *City) GoldBank() int {
+    if city.Buildings.Contains(buildinglib.BuildingBank) {
+        return (city.GoldTaxation() + city.GoldMinerals()) / 2
+    }
+
+    return 0
+}
+
+func (city *City) GoldMerchantsGuild() int {
+    if city.Buildings.Contains(buildinglib.BuildingMerchantsGuild) {
+        return city.GoldTaxation() + city.GoldMinerals()
+    }
+
+    return 0
+}
+
+func (city *City) GoldSurplus() int {
+    income := city.GoldTaxation()
+    income += city.GoldTradeGoods()
+    income += city.GoldMinerals()
+    income += city.GoldMarketplace()
+    income += city.GoldBank()
+    income += city.GoldMerchantsGuild()
 
     upkeepCosts := city.ComputeUpkeep()
 
-    return int(citizenIncome + bonus) - upkeepCosts
+    out := income - upkeepCosts
+
+    if out < 0 {
+        out = 0
+    }
+
+    return out
 }
 
-func (city *City) WorkProductionRate() float32 {
+func (city *City) ProductionWorkers() float32 {
     workerRate := 2
 
     switch city.Race {
@@ -568,7 +602,37 @@ func (city *City) WorkProductionRate() float32 {
         case data.RaceTroll: workerRate = 3
     }
 
-    return float32(workerRate * city.Workers) + 0.5 * float32(city.Farmers)
+    return float32(workerRate * city.Workers)
+}
+
+func (city *City) ProductionFarmers() float32 {
+    return 0.5 * float32(city.Farmers)
+}
+
+func (city *City) ProductionMinersGuild() float32 {
+    if city.Buildings.Contains(buildinglib.BuildingMinersGuild) {
+        citizenRate := city.ProductionWorkers() + city.ProductionFarmers()
+        return citizenRate * 0.5
+    }
+
+    return 0
+}
+
+func (city *City) ProductionMechaniciansGuild() float32 {
+    if city.Buildings.Contains(buildinglib.BuildingMechaniciansGuild) {
+        citizenRate := city.ProductionWorkers() + city.ProductionFarmers()
+        return citizenRate * 0.5
+    }
+
+    return 0
+}
+
+func (city *City) ProductionTerrain() float32 {
+    return 0
+}
+
+func (city *City) WorkProductionRate() float32 {
+    return city.ProductionWorkers() + city.ProductionFarmers() + city.ProductionMinersGuild() + city.ProductionMechaniciansGuild() + city.ProductionTerrain()
 }
 
 func (city *City) GrowOutpost() CityEvent {
