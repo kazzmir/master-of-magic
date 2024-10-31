@@ -68,6 +68,7 @@ func NewEngine() (*Engine, error) {
     city.Buildings.Insert(buildinglib.BuildingFarmersMarket)
     city.Buildings.Insert(buildinglib.BuildingMarketplace)
     city.Buildings.Insert(buildinglib.BuildingMinersGuild)
+    city.Buildings.Insert(buildinglib.BuildingSawmill)
     city.Buildings.Insert(buildinglib.BuildingMechaniciansGuild)
     city.ProducingBuilding = buildinglib.BuildingHousing
     // city.ProducingUnit = units.HighElfSpearmen

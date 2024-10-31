@@ -1227,40 +1227,21 @@ func (cityScreen *CityScreen) MakeResourceDialog(title string, smallIcon *ebiten
 func (cityScreen *CityScreen) WorkProducers() []ResourceUsage {
     var usage []ResourceUsage
 
-    if int(cityScreen.City.ProductionWorkers()) > 0 {
-        usage = append(usage, ResourceUsage{
-            Count: int(cityScreen.City.ProductionWorkers()),
-            Name: "Workers",
-        })
+    add := func(count int, name string){
+        if count > 0 {
+            usage = append(usage, ResourceUsage{
+                Count: count,
+                Name: name,
+            })
+        }
     }
 
-    if int(cityScreen.City.ProductionFarmers()) > 0 {
-        usage = append(usage, ResourceUsage{
-            Count: int(cityScreen.City.ProductionFarmers()),
-            Name: "Farmers",
-        })
-    }
-
-    if int(cityScreen.City.ProductionTerrain()) > 0 {
-        usage = append(usage, ResourceUsage{
-            Count: int(cityScreen.City.ProductionTerrain()),
-            Name: "Terrain",
-        })
-    }
-
-    if int(cityScreen.City.ProductionMinersGuild()) > 0 {
-        usage = append(usage, ResourceUsage{
-            Count: int(cityScreen.City.ProductionMinersGuild()),
-            Name: "Miner's Guild",
-        })
-    }
-
-    if int(cityScreen.City.ProductionMechaniciansGuild()) > 0 {
-        usage = append(usage, ResourceUsage{
-            Count: int(cityScreen.City.ProductionMechaniciansGuild()),
-            Name: "Mechanician's Guild",
-        })
-    }
+    add(int(cityScreen.City.Workers), "Workers")
+    add(int(cityScreen.City.ProductionFarmers()), "Farmers")
+    add(int(cityScreen.City.ProductionTerrain()), "Terrain")
+    add(int(cityScreen.City.ProductionSawmill()), "Sawmill")
+    add(int(cityScreen.City.ProductionMinersGuild()), "Miner's Guild")
+    add(int(cityScreen.City.ProductionMechaniciansGuild()), "Mechanician's Guild")
 
     return usage
 }

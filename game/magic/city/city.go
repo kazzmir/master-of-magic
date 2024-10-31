@@ -636,22 +636,24 @@ func (city *City) ProductionFarmers() float32 {
     return 0.5 * float32(city.Farmers)
 }
 
-func (city *City) ProductionMinersGuild() float32 {
-    if city.Buildings.Contains(buildinglib.BuildingMinersGuild) {
-        citizenRate := city.ProductionWorkers() + city.ProductionFarmers()
-        return citizenRate * 0.5
+func (city *City) productionBuildingBonus(building buildinglib.Building, percent float32) float32 {
+    if city.Buildings.Contains(building) {
+        return percent * (city.ProductionWorkers() + city.ProductionFarmers())
     }
 
     return 0
 }
 
-func (city *City) ProductionMechaniciansGuild() float32 {
-    if city.Buildings.Contains(buildinglib.BuildingMechaniciansGuild) {
-        citizenRate := city.ProductionWorkers() + city.ProductionFarmers()
-        return citizenRate * 0.5
-    }
+func (city *City) ProductionMinersGuild() float32 {
+    return city.productionBuildingBonus(buildinglib.BuildingMinersGuild, 0.5)
+}
 
-    return 0
+func (city *City) ProductionSawmill() float32 {
+    return city.productionBuildingBonus(buildinglib.BuildingSawmill, 0.25)
+}
+
+func (city *City) ProductionMechaniciansGuild() float32 {
+    return city.productionBuildingBonus(buildinglib.BuildingMechaniciansGuild, 0.5)
 }
 
 func (city *City) ProductionTerrain() float32 {
@@ -669,7 +671,12 @@ func (city *City) ProductionTerrain() float32 {
 }
 
 func (city *City) WorkProductionRate() float32 {
-    return city.ProductionWorkers() + city.ProductionFarmers() + city.ProductionMinersGuild() + city.ProductionMechaniciansGuild() + city.ProductionTerrain()
+    return city.ProductionWorkers() +
+           city.ProductionFarmers() +
+           city.ProductionMinersGuild() +
+           city.ProductionMechaniciansGuild() +
+           city.ProductionTerrain() +
+           city.ProductionSawmill()
 }
 
 func (city *City) GrowOutpost() CityEvent {
