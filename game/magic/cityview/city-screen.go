@@ -1268,50 +1268,22 @@ func (cityScreen *CityScreen) BuildingMaintenanceResources() []ResourceUsage {
 func (cityScreen *CityScreen) GoldProducers() []ResourceUsage {
     var usage []ResourceUsage
 
-    if cityScreen.City.GoldTaxation() > 0 {
-        usage = append(usage, ResourceUsage{
-            Count: int(cityScreen.City.GoldTaxation()),
-            Name: "Taxes",
-        })
+    add := func(count int, name string){
+        if count > 0 {
+            usage = append(usage, ResourceUsage{
+                Count: count,
+                Name: name,
+            })
+        }
     }
 
     // FIXME: add tiles (road/river/ocean)
-
-    if cityScreen.City.GoldTradeGoods() > 0 {
-        usage = append(usage, ResourceUsage{
-            Count: int(cityScreen.City.GoldTradeGoods()),
-            Name: "Trade Goods",
-        })
-    }
-
-    if cityScreen.City.GoldMinerals() > 0 {
-        usage = append(usage, ResourceUsage{
-            Count: int(cityScreen.City.GoldMinerals()),
-            Name: "Minerals",
-        })
-    }
-
-    if cityScreen.City.GoldMarketplace() > 0 {
-        usage = append(usage, ResourceUsage{
-            Count: int(cityScreen.City.GoldMarketplace()),
-            Name: "Marketplace",
-        })
-    }
-
-    if cityScreen.City.GoldBank() > 0 {
-        usage = append(usage, ResourceUsage{
-            Count: int(cityScreen.City.GoldBank()),
-            Name: "Bank",
-        })
-    }
-
-
-    if cityScreen.City.GoldMerchantsGuild() > 0 {
-        usage = append(usage, ResourceUsage{
-            Count: int(cityScreen.City.GoldMerchantsGuild()),
-            Name: "Merchant's Guild",
-        })
-    }
+    add(int(cityScreen.City.GoldTaxation()), "Taxes")
+    add(int(cityScreen.City.GoldTradeGoods()), "Trade Goods")
+    add(int(cityScreen.City.GoldMinerals()), "Minerals")
+    add(int(cityScreen.City.GoldMarketplace()), "Marketplace")
+    add(int(cityScreen.City.GoldBank()), "Bank")
+    add(int(cityScreen.City.GoldMerchantsGuild()), "Merchant's Guild")
 
     return usage
 }
