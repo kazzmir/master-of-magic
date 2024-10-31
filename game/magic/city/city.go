@@ -4,11 +4,13 @@ import (
     _ "log"
     "math"
     "math/rand/v2"
+    "image"
 
     "github.com/kazzmir/master-of-magic/lib/set"
     "github.com/kazzmir/master-of-magic/lib/fraction"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/units"
+    "github.com/kazzmir/master-of-magic/game/magic/terrain"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
 )
 
@@ -59,6 +61,10 @@ func (citySize CitySize) String() string {
     return "Unknown"
 }
 
+type CatchmentProvider interface {
+    GetCatchmentArea(x int, y int) map[image.Point]terrain.Tile
+}
+
 const MAX_CITY_CITIZENS = 25
 
 type City struct {
@@ -76,6 +82,8 @@ type City struct {
     Banner data.BannerType
     Buildings *set.Set[buildinglib.Building]
 
+    CatchmentProvider CatchmentProvider
+
     TaxRate fraction.Fraction
 
     // reset every turn, keeps track of whether the player sold a building
@@ -89,7 +97,7 @@ type City struct {
     BuildingInfo buildinglib.BuildingInfos
 }
 
-func MakeCity(name string, x int, y int, race data.Race, banner data.BannerType, taxRate fraction.Fraction, buildingInfo buildinglib.BuildingInfos) *City {
+func MakeCity(name string, x int, y int, race data.Race, banner data.BannerType, taxRate fraction.Fraction, buildingInfo buildinglib.BuildingInfos, catchmentProvider CatchmentProvider) *City {
     city := City{
         Name: name,
         X: x,
@@ -98,6 +106,7 @@ func MakeCity(name string, x int, y int, race data.Race, banner data.BannerType,
         Race: race,
         Buildings: set.MakeSet[buildinglib.Building](),
         TaxRate: taxRate,
+        CatchmentProvider: catchmentProvider,
         BuildingInfo: buildingInfo,
     }
 

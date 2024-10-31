@@ -7,7 +7,7 @@ import (
 )
 
 func TestBasicCity(test *testing.T){
-    city := MakeCity("Test City", 10, 10, data.RaceHighMen, data.BannerBlue, fraction.Make(3, 2), nil)
+    city := MakeCity("Test City", 10, 10, data.RaceHighMen, data.BannerBlue, fraction.Make(3, 2), nil, nil)
     city.Population = 6000
     city.Farmers = 6
     city.Workers = 0

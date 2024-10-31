@@ -278,6 +278,11 @@ func (mapObject *Map) GetTileImage(tileX int, tileY int, animationCounter uint64
     return gpuImage, nil
 }
 
+func (mapObject *Map) GetCatchmentArea(x int, y int) map[image.Point]terrain.Tile {
+    // FIXME
+    return nil
+}
+
 func (mapObject *Map) TilesPerRow(screenWidth int) int {
     return int(math.Ceil(float64(screenWidth) / float64(mapObject.TileWidth())))
 }
