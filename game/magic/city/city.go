@@ -61,10 +61,6 @@ func (citySize CitySize) String() string {
 
 const MAX_CITY_CITIZENS = 25
 
-type WizardInfo interface {
-    NumSpellbooks() int
-}
-
 type City struct {
     Population int
     Farmers int
@@ -80,8 +76,6 @@ type City struct {
     Banner data.BannerType
     Buildings *set.Set[buildinglib.Building]
 
-    WizardInfo WizardInfo
-
     TaxRate fraction.Fraction
 
     // reset every turn, keeps track of whether the player sold a building
@@ -95,7 +89,7 @@ type City struct {
     BuildingInfo buildinglib.BuildingInfos
 }
 
-func MakeCity(name string, x int, y int, race data.Race, banner data.BannerType, taxRate fraction.Fraction, buildingInfo buildinglib.BuildingInfos, wizardInfo WizardInfo) *City {
+func MakeCity(name string, x int, y int, race data.Race, banner data.BannerType, taxRate fraction.Fraction, buildingInfo buildinglib.BuildingInfos) *City {
     city := City{
         Name: name,
         X: x,
@@ -105,7 +99,6 @@ func MakeCity(name string, x int, y int, race data.Race, banner data.BannerType,
         Buildings: set.MakeSet[buildinglib.Building](),
         TaxRate: taxRate,
         BuildingInfo: buildingInfo,
-        WizardInfo: wizardInfo,
     }
 
     return &city
@@ -233,6 +226,16 @@ func (city *City) ComputeSubsistenceFarmers() int {
     return maxFarmers
 }
 
+func (city *City) PowerCitizens() int {
+    citizenPower := float64(0)
+    if city.Race == data.RaceDraconian || city.Race == data.RaceHighElf || city.Race == data.RaceBeastmen {
+        citizenPower = 0.5
+    } else if city.Race == data.RaceDarkElf {
+        citizenPower = 1
+    }
+    return int(citizenPower * float64(city.Citizens()))
+}
+
 /* power production from buildings and citizens
  */
 func (city *City) ComputePower() int {
@@ -252,21 +255,12 @@ func (city *City) ComputePower() int {
                 if city.Plane == data.PlaneMyrror {
                     power += 5
                 }
-
-                power += city.WizardInfo.NumSpellbooks()
         }
     }
 
     // FIXME: take enchantments and bonuses for religious power into account
 
-    citizenPower := float64(0)
-    if city.Race == data.RaceDraconian || city.Race == data.RaceHighElf || city.Race == data.RaceBeastmen {
-        citizenPower = 0.5
-    } else if city.Race == data.RaceDarkElf {
-        citizenPower = 1
-    }
-
-    return power + religiousPower + int(citizenPower * float64(city.Citizens()))
+    return power + religiousPower + city.PowerCitizens()
 }
 
 func (city *City) UpdateUnrest(garrison []units.StackUnit) {

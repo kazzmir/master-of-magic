@@ -1161,7 +1161,7 @@ func (cityScreen *CityScreen) MakeResourceDialog(title string, smallIcon *ebiten
     widestResources := float64(0)
     for _, usage := range resources {
         var options ebiten.DrawImageOptions
-        geom := cityScreen.drawIcons(usage.Count, smallIcon, bigIcon, options, nil)
+        geom := cityScreen.drawIcons(int(math.Abs(float64(usage.Count))), smallIcon, bigIcon, options, nil)
         x, _ := geom.Apply(0, 0)
         if x > widestResources {
             widestResources = x
@@ -1195,8 +1195,14 @@ func (cityScreen *CityScreen) MakeResourceDialog(title string, smallIcon *ebiten
 
             options.GeoM.Reset()
             options.GeoM.Translate(float64(xPos), float64(yPos))
+
             for _, usage := range resources {
-                cityScreen.drawIcons(usage.Count, smallIcon, bigIcon, options, window)
+                if usage.Count < 0 {
+                    x, y := options.GeoM.Apply(0, 1)
+                    helpFont.PrintRight(window, x, y, 1, options.ColorScale, "-")
+                }
+
+                cityScreen.drawIcons(int(math.Abs(float64(usage.Count))), smallIcon, bigIcon, options, window)
 
                 x, y := options.GeoM.Apply(widestResources + 5, 0)
 
@@ -1321,6 +1327,70 @@ func (cityScreen *CityScreen) GoldProducers() []ResourceUsage {
     return usage
 }
 
+func (cityScreen *CityScreen) PowerProducers() []ResourceUsage {
+    var usage []ResourceUsage
+
+    if cityScreen.City.PowerCitizens() > 0 {
+        usage = append(usage, ResourceUsage{
+            Count: int(cityScreen.City.PowerCitizens()),
+            Name: "Townsfolk",
+        })
+    }
+
+    if cityScreen.City.Buildings.Contains(buildinglib.BuildingShrine) {
+        usage = append(usage, ResourceUsage{
+            Count: 1,
+            Name: "Shrine",
+        })
+    }
+
+    if cityScreen.City.Buildings.Contains(buildinglib.BuildingTemple) {
+        usage = append(usage, ResourceUsage{
+            Count: 2,
+            Name: "Temple",
+        })
+    }
+
+    if cityScreen.City.Buildings.Contains(buildinglib.BuildingParthenon) {
+        usage = append(usage, ResourceUsage{
+            Count: 3,
+            Name: "Parthenon",
+        })
+    }
+
+    if cityScreen.City.Buildings.Contains(buildinglib.BuildingCathedral) {
+        usage = append(usage, ResourceUsage{
+            Count: 4,
+            Name: "Cathedral",
+        })
+    }
+
+    if cityScreen.City.Buildings.Contains(buildinglib.BuildingAlchemistsGuild) {
+        usage = append(usage, ResourceUsage{
+            Count: 3,
+            Name: "Alchemist's Guild",
+        })
+    }
+
+    if cityScreen.City.Buildings.Contains(buildinglib.BuildingWizardsGuild) {
+        usage = append(usage, ResourceUsage{
+            Count: -3,
+            Name: "Wizard's Guild",
+        })
+    }
+
+    if cityScreen.City.Buildings.Contains(buildinglib.BuildingFortress) && cityScreen.City.Plane == data.PlaneMyrror {
+        usage = append(usage, ResourceUsage{
+            Count: 5,
+            Name: "Fortress",
+        })
+    }
+
+    // FIXME: add tiles (adamantium mine) and miner's guild
+
+    return usage
+}
+
 func (cityScreen *CityScreen) CreateResourceIcons(ui *uilib.UI) []*uilib.UIElement {
     foodRequired := cityScreen.City.RequiredFood()
     foodSurplus := cityScreen.City.SurplusFood()
@@ -1333,6 +1403,9 @@ func (cityScreen *CityScreen) CreateResourceIcons(ui *uilib.UI) []*uilib.UIEleme
 
     smallCoin, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 42, 0)
     bigCoin, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 90, 0)
+
+    smallMagic, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 43, 0)
+    bigMagic, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 91, 0)
 
     var elements []*uilib.UIElement
 
@@ -1372,6 +1445,8 @@ func (cityScreen *CityScreen) CreateResourceIcons(ui *uilib.UI) []*uilib.UIEleme
 
     x, _ := goldGeom.Apply(0, 0)
 
+    // FIXME: if income - upkeep < 0 then show greyed out icons for gold
+
     goldMaintenanceRect := image.Rect(6, 68, 6 + int(x), 68 + bigCoin.Bounds().Dy())
     elements = append(elements, &uilib.UIElement{
         Rect: goldMaintenanceRect,
@@ -1401,11 +1476,24 @@ func (cityScreen *CityScreen) CreateResourceIcons(ui *uilib.UI) []*uilib.UIEleme
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(goldSurplusRect.Min.X), float64(goldSurplusRect.Min.Y))
             cityScreen.drawIcons(cityScreen.City.GoldSurplus(), smallCoin, bigCoin, options, screen)
-            util.DrawRect(screen, goldSurplusRect, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff})
+            // util.DrawRect(screen, goldSurplusRect, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff})
         },
     })
 
-    // power
+    powerRect := image.Rect(6, 76, 6 + 9 * bigMagic.Bounds().Dx(), 76 + bigMagic.Bounds().Dy())
+    elements = append(elements, &uilib.UIElement{
+        Rect: powerRect,
+        LeftClick: func(element *uilib.UIElement) {
+            power := cityScreen.PowerProducers()
+            ui.AddElement(cityScreen.MakeResourceDialog("Power", smallMagic, bigMagic, ui, power))
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(powerRect.Min.X), float64(powerRect.Min.Y))
+            cityScreen.drawIcons(cityScreen.City.ComputePower(), smallMagic, bigMagic, options, screen)
+        },
+    })
+
     // research
 
     return elements
@@ -1492,12 +1580,12 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
 
     coinX := drawIcons(cityScreen.City.ComputeUpkeep(), smallCoin, bigCoin, 6, 68)
     drawIcons(cityScreen.City.GoldSurplus(), smallCoin, bigCoin, coinX + 6, 68)
-    */
 
     smallMagic, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 43, 0)
     bigMagic, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 91, 0)
 
     drawIcons(cityScreen.City.ComputePower(), smallMagic, bigMagic, 6, 76)
+    */
 
     smallResearch, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 44, 0)
     bigResearch, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 92, 0)

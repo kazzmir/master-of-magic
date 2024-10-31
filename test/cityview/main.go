@@ -39,7 +39,7 @@ func NewEngine() (*Engine, error) {
 
     buildingInfo, _ := buildinglib.ReadBuildingInfo(cache)
 
-    city := citylib.MakeCity("Boston", 3, 8, data.RaceHighElf, player.Wizard.Banner, fraction.Make(2, 1), buildingInfo, &player)
+    city := citylib.MakeCity("Boston", 3, 8, data.RaceHighElf, player.Wizard.Banner, fraction.Make(2, 1), buildingInfo)
     city.Population = 12000
     city.Farmers = 4
     city.Workers = 2
@@ -71,7 +71,7 @@ func NewEngine() (*Engine, error) {
 
     city.UpdateUnrest(garrison)
 
-    // city.AddBuilding(buildinglib.BuildingWizardsGuild)
+    city.AddBuilding(buildinglib.BuildingWizardsGuild)
     city.AddBuilding(buildinglib.BuildingSmithy)
     city.AddBuilding(buildinglib.BuildingSummoningCircle)
     city.AddBuilding(buildinglib.BuildingOracle)
