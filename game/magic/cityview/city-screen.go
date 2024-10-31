@@ -120,7 +120,7 @@ type CityScreen struct {
     BuildScreen *BuildScreen
 
     // the building that was just built
-    NewBuilding buildinglib.Building
+    // NewBuilding buildinglib.Building
 
     Counter uint64
     State CityScreenState
@@ -326,15 +326,11 @@ func MakeCityScreen(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
         City: city,
         Fonts: fonts,
         Buildings: buildings,
-        NewBuilding: newBuilding,
         State: CityScreenStateRunning,
         Player: player,
     }
 
-    cityScreen.UI = cityScreen.MakeUI()
-    // a bit of a hack, but once the new building fades in we don't want to recreate the ui
-    // to show the new building again, so we just reset the new building back to none
-    cityScreen.NewBuilding = buildinglib.BuildingNone
+    cityScreen.UI = cityScreen.MakeUI(newBuilding)
 
     return cityScreen
 }
@@ -468,7 +464,7 @@ func makeCityScapeElement(cache *lbx.LbxCache, ui *uilib.UI, city *citylib.City,
     return element
 }
 
-func (cityScreen *CityScreen) MakeUI() *uilib.UI {
+func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI {
     ui := &uilib.UI{
         Draw: func(ui *uilib.UI, screen *ebiten.Image) {
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
@@ -511,7 +507,7 @@ func (cityScreen *CityScreen) MakeUI() *uilib.UI {
 
     var getAlpha util.AlphaFadeFunc = func() float32 { return 1 }
 
-    elements = append(elements, makeCityScapeElement(cityScreen.LbxCache, ui, cityScreen.City, &help, &cityScreen.ImageCache, sellBuilding, cityScreen.Buildings, cityScreen.NewBuilding, 4, 102, cityScreen.Fonts, cityScreen.Player, &getAlpha))
+    elements = append(elements, makeCityScapeElement(cityScreen.LbxCache, ui, cityScreen.City, &help, &cityScreen.ImageCache, sellBuilding, cityScreen.Buildings, newBuilding, 4, 102, cityScreen.Fonts, cityScreen.Player, &getAlpha))
 
     // FIXME: show disabled buy button if the item is not buyable (not enough money, or the item is trade goods/housing)
     // buy button
@@ -806,12 +802,12 @@ func (cityScreen *CityScreen) Update() CityScreenState {
             case BuildScreenRunning:
             case BuildScreenCanceled:
                 cityScreen.BuildScreen = nil
-                cityScreen.UI = cityScreen.MakeUI()
+                cityScreen.UI = cityScreen.MakeUI(buildinglib.BuildingNone)
             case BuildScreenOk:
                 cityScreen.City.ProducingBuilding = cityScreen.BuildScreen.ProducingBuilding
                 cityScreen.City.ProducingUnit = cityScreen.BuildScreen.ProducingUnit
                 cityScreen.BuildScreen = nil
-                cityScreen.UI = cityScreen.MakeUI()
+                cityScreen.UI = cityScreen.MakeUI(buildinglib.BuildingNone)
         }
     } else {
         cityScreen.UI.StandardUpdate()
