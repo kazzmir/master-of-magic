@@ -1291,7 +1291,7 @@ func (cityScreen *CityScreen) GoldProducers() []ResourceUsage {
 func (cityScreen *CityScreen) PowerProducers() []ResourceUsage {
     var usage []ResourceUsage
 
-    if cityScreen.City.PowerCitizens() > 0 {
+    if int(cityScreen.City.PowerCitizens()) > 0 {
         usage = append(usage, ResourceUsage{
             Count: int(cityScreen.City.PowerCitizens()),
             Name: "Townsfolk",
