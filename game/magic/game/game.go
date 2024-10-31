@@ -3456,10 +3456,16 @@ func (game *Game) MakeHudUI() *uilib.UI {
     } else {
         // next turn
         nextTurnImage, _ := game.ImageCache.GetImage("main.lbx", 35, 0)
+        nextTurnImageClicked, _ := game.ImageCache.GetImage("main.lbx", 58, 0)
         nextTurnRect := image.Rect(240, 174, 240 + nextTurnImage.Bounds().Dx(), 174 + nextTurnImage.Bounds().Dy())
+        nextTurnClicked := false
         elements = append(elements, &uilib.UIElement{
             Rect: nextTurnRect,
             LeftClick: func(this *uilib.UIElement){
+                nextTurnClicked = true
+            },
+            LeftClickRelease: func(this *uilib.UIElement){
+                nextTurnClicked = false
                 select {
                     case game.Events <- &GameEventNextTurn{}:
                     default:
@@ -3475,6 +3481,10 @@ func (game *Game) MakeHudUI() *uilib.UI {
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(240, 174)
                 screen.DrawImage(nextTurnImage, &options)
+                if nextTurnClicked {
+                    options.GeoM.Translate(6, 5)
+                    screen.DrawImage(nextTurnImageClicked, &options)
+                }
             },
         })
 
