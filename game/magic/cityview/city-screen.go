@@ -1240,6 +1240,7 @@ func (cityScreen *CityScreen) WorkProducers() []ResourceUsage {
     add(int(cityScreen.City.ProductionFarmers()), "Farmers")
     add(int(cityScreen.City.ProductionTerrain()), "Terrain")
     add(int(cityScreen.City.ProductionSawmill()), "Sawmill")
+    add(int(cityScreen.City.ProductionForestersGuild()), "Forester's Guild")
     add(int(cityScreen.City.ProductionMinersGuild()), "Miner's Guild")
     add(int(cityScreen.City.ProductionMechaniciansGuild()), "Mechanician's Guild")
 

@@ -652,6 +652,10 @@ func (city *City) ProductionSawmill() float32 {
     return city.productionBuildingBonus(buildinglib.BuildingSawmill, 0.25)
 }
 
+func (city *City) ProductionForestersGuild() float32 {
+    return city.productionBuildingBonus(buildinglib.BuildingForestersGuild, 0.25)
+}
+
 func (city *City) ProductionMechaniciansGuild() float32 {
     return city.productionBuildingBonus(buildinglib.BuildingMechaniciansGuild, 0.5)
 }
@@ -676,7 +680,8 @@ func (city *City) WorkProductionRate() float32 {
            city.ProductionMinersGuild() +
            city.ProductionMechaniciansGuild() +
            city.ProductionTerrain() +
-           city.ProductionSawmill()
+           city.ProductionSawmill() +
+           city.ProductionForestersGuild()
 }
 
 func (city *City) GrowOutpost() CityEvent {
