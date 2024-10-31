@@ -279,8 +279,26 @@ func (mapObject *Map) GetTileImage(tileX int, tileY int, animationCounter uint64
 }
 
 func (mapObject *Map) GetCatchmentArea(x int, y int) map[image.Point]terrain.Tile {
-    // FIXME
-    return nil
+
+    area := make(map[image.Point]terrain.Tile)
+
+    for dx := -2; dx <= 2; dx++ {
+        for dy := -2; dy <= 2; dy++ {
+            if int(math.Abs(float64(dx)) + math.Abs(float64(dy))) == 4 {
+                continue
+            }
+
+            tileX := x + dx
+            tileY := y + dy
+
+            tile := mapObject.GetTile(tileX, tileY)
+            if tile.Index != -1 {
+                area[image.Pt(tileX, tileY)] = tile
+            }
+        }
+    }
+
+    return area
 }
 
 func (mapObject *Map) TilesPerRow(screenWidth int) int {

@@ -474,8 +474,26 @@ func (city *City) SurplusFood() int {
 /* compute amount of available food on tiles in catchment area
  */
 func (city *City) BaseFoodLevel() int {
-    // TODO
-    return 20
+    catchment := city.CatchmentProvider.GetCatchmentArea(city.X, city.Y)
+    food := fraction.Zero()
+
+    for _, tile := range catchment {
+        switch tile.TerrainType() {
+            case terrain.Ocean, terrain.Mountain, terrain.Desert, terrain.Tundra, terrain.Volcano: // nothing
+            case terrain.Grass: food = food.Add(fraction.Make(3, 2))
+            case terrain.Forest, terrain.Hill, terrain.Shore, terrain.Swamp: food = food.Add(fraction.Make(1, 2))
+            case terrain.SorceryNode, terrain.River: food = food.Add(fraction.FromInt(2))
+            case terrain.NatureNode: food = food.Add(fraction.Make(5, 2))
+            case terrain.ChaosNode: // nothing
+            case terrain.Lake:
+                switch tile.Index {
+                    case terrain.IndexLake1, terrain.IndexLake2, terrain.IndexLake3, terrain.IndexLake4:
+                        food = food.Add(fraction.Make(3, 2))
+                }
+        }
+    }
+
+    return int(food.ToFloat())
 }
 
 func (city *City) FoodProductionRate() int {
