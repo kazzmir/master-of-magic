@@ -1391,6 +1391,23 @@ func (cityScreen *CityScreen) PowerProducers() []ResourceUsage {
     return usage
 }
 
+func (cityScreen *CityScreen) ResearchProducers() []ResourceUsage {
+    var usage []ResourceUsage
+
+    for _, building := range sortBuildings(cityScreen.City.Buildings.Values()) {
+        research := cityScreen.City.BuildingInfo.ResearchProduction(building)
+
+        if research > 0 {
+            usage = append(usage, ResourceUsage{
+                Count: research,
+                Name: cityScreen.City.BuildingInfo.Name(building),
+            })
+        }
+    }
+
+    return usage
+}
+
 func (cityScreen *CityScreen) CreateResourceIcons(ui *uilib.UI) []*uilib.UIElement {
     foodRequired := cityScreen.City.RequiredFood()
     foodSurplus := cityScreen.City.SurplusFood()
@@ -1406,6 +1423,9 @@ func (cityScreen *CityScreen) CreateResourceIcons(ui *uilib.UI) []*uilib.UIEleme
 
     smallMagic, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 43, 0)
     bigMagic, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 91, 0)
+
+    smallResearch, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 44, 0)
+    bigResearch, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 92, 0)
 
     var elements []*uilib.UIElement
 
@@ -1494,7 +1514,19 @@ func (cityScreen *CityScreen) CreateResourceIcons(ui *uilib.UI) []*uilib.UIEleme
         },
     })
 
-    // research
+    researchRect := image.Rect(6, 84, 6 + 9 * bigResearch.Bounds().Dx(), 84 + bigResearch.Bounds().Dy())
+    elements = append(elements, &uilib.UIElement{
+        Rect: researchRect,
+        LeftClick: func(element *uilib.UIElement) {
+            research := cityScreen.ResearchProducers()
+            ui.AddElement(cityScreen.MakeResourceDialog("Spell Research", smallResearch, bigResearch, ui, research))
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(researchRect.Min.X), float64(researchRect.Min.Y))
+            cityScreen.drawIcons(cityScreen.City.ResearchProduction(), smallResearch, bigResearch, options, screen)
+        },
+    })
 
     return elements
 }
@@ -1523,42 +1555,6 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
 
     cityScreen.Fonts.DescriptionFont.PrintRight(screen, 210, 19, 1, ebiten.ColorScale{}, fmt.Sprintf("Population: %v (%v)", cityScreen.City.Population, deltaNumber(cityScreen.City.PopulationGrowthRate())))
 
-    drawIcons := func(total int, small *ebiten.Image, large *ebiten.Image, x float64, y float64) float64 {
-        var options ebiten.DrawImageOptions
-        options.GeoM.Translate(x, y)
-
-        largeGap := large.Bounds().Dx()
-
-        if total / 10 > 3 {
-            largeGap -= 1
-        }
-
-        if total / 10 > 6 {
-            largeGap -= 1
-        }
-
-        for range total / 10 {
-            screen.DrawImage(large, &options)
-            options.GeoM.Translate(float64(largeGap), 0)
-        }
-
-        smallGap := small.Bounds().Dx() + 1
-        if total % 10 >= 3 {
-            smallGap -= 1
-        }
-        if total % 10 >= 6 {
-            smallGap -= 1
-        }
-
-        for range total % 10 {
-            screen.DrawImage(small, &options)
-            options.GeoM.Translate(float64(smallGap), 0)
-        }
-
-        endX, _ := options.GeoM.Apply(0, 0)
-        return endX
-    }
-
     /*
     foodRequired := cityScreen.City.RequiredFood()
     foodSurplus := cityScreen.City.SurplusFood()
@@ -1585,12 +1581,12 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
     bigMagic, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 91, 0)
 
     drawIcons(cityScreen.City.ComputePower(), smallMagic, bigMagic, 6, 76)
-    */
 
     smallResearch, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 44, 0)
     bigResearch, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 92, 0)
 
     drawIcons(cityScreen.City.ResearchProduction(), smallResearch, bigResearch, 6, 84)
+    */
 
     showWork := false
     workRequired := 0
