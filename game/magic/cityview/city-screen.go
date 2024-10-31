@@ -1227,28 +1227,35 @@ func (cityScreen *CityScreen) MakeResourceDialog(title string, smallIcon *ebiten
 func (cityScreen *CityScreen) WorkProducers() []ResourceUsage {
     var usage []ResourceUsage
 
-    if cityScreen.City.ProductionWorkers() > 0 {
+    if int(cityScreen.City.ProductionWorkers()) > 0 {
         usage = append(usage, ResourceUsage{
             Count: int(cityScreen.City.ProductionWorkers()),
             Name: "Workers",
         })
     }
 
-    if cityScreen.City.ProductionFarmers() > 0 {
+    if int(cityScreen.City.ProductionFarmers()) > 0 {
         usage = append(usage, ResourceUsage{
             Count: int(cityScreen.City.ProductionFarmers()),
             Name: "Farmers",
         })
     }
 
-    if cityScreen.City.ProductionMinersGuild() > 0 {
+    if int(cityScreen.City.ProductionTerrain()) > 0 {
+        usage = append(usage, ResourceUsage{
+            Count: int(cityScreen.City.ProductionTerrain()),
+            Name: "Terrain",
+        })
+    }
+
+    if int(cityScreen.City.ProductionMinersGuild()) > 0 {
         usage = append(usage, ResourceUsage{
             Count: int(cityScreen.City.ProductionMinersGuild()),
             Name: "Miner's Guild",
         })
     }
 
-    if cityScreen.City.ProductionMechaniciansGuild() > 0 {
+    if int(cityScreen.City.ProductionMechaniciansGuild()) > 0 {
         usage = append(usage, ResourceUsage{
             Count: int(cityScreen.City.ProductionMechaniciansGuild()),
             Name: "Mechanician's Guild",

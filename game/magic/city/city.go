@@ -655,7 +655,17 @@ func (city *City) ProductionMechaniciansGuild() float32 {
 }
 
 func (city *City) ProductionTerrain() float32 {
-    return 0
+    catchment := city.CatchmentProvider.GetCatchmentArea(city.X, city.Y)
+    production := float32(0)
+
+    for _, tile := range catchment {
+        switch tile.TerrainType() {
+            case terrain.Mountain, terrain.ChaosNode: production += 0.05
+            case terrain.Desert, terrain.Forest, terrain.Hill, terrain.NatureNode: production += 0.03
+        }
+    }
+
+    return production * (city.ProductionWorkers() + city.ProductionFarmers())
 }
 
 func (city *City) WorkProductionRate() float32 {
