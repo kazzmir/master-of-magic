@@ -2966,6 +2966,7 @@ func (game *Game) DoBuildAction(player *playerlib.Player){
                 // FIXME: check if this tile is valid to build an outpost on
                 if settlers.HasAbility(units.AbilityCreateOutpost) {
                     game.CreateOutpost(settlers, player)
+                    game.RefreshUI()
                     break
                 }
             }
