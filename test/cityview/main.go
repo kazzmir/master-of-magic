@@ -13,6 +13,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
     "github.com/kazzmir/master-of-magic/game/magic/game"
+    "github.com/kazzmir/master-of-magic/game/magic/maplib"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/units"
@@ -25,7 +26,7 @@ type Engine struct {
     LbxCache *lbx.LbxCache
     CityScreen *cityview.CityScreen
     ImageCache util.ImageCache
-    Map *game.Map
+    Map *maplib.Map
 }
 
 func NewEngine() (*Engine, error) {
@@ -50,7 +51,7 @@ func NewEngine() (*Engine, error) {
     }
 
 
-    gameMap := game.Map{
+    gameMap := maplib.Map{
         Data: terrainData,
         Map: terrain.GenerateLandCellularAutomata(20, 20, terrainData),
         TileCache: make(map[int]*ebiten.Image),

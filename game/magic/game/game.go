@@ -30,6 +30,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/draw"
     "github.com/kazzmir/master-of-magic/game/magic/mouse"
+    "github.com/kazzmir/master-of-magic/game/magic/maplib"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     mouselib "github.com/kazzmir/master-of-magic/lib/mouse"
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -199,7 +200,7 @@ type Game struct {
     Help lbx.Help
 
     // FIXME: need one map for arcanus and one for myrran
-    Map *Map
+    Map *maplib.Map
 
     Players []*playerlib.Player
     CurrentPlayer int
@@ -506,7 +507,7 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         Help: help,
         MouseData: mouseData,
         Events: make(chan GameEvent, 1000),
-        Map: MakeMap(terrainData, settings.LandSize),
+        Map: maplib.MakeMap(terrainData, settings.LandSize),
         State: GameStateRunning,
         Settings: settings,
         BookOrder: randomizeBookOrder(12),
@@ -2216,7 +2217,7 @@ func (game *Game) doCityScreen(yield coroutine.YieldFunc, city *citylib.City, pl
     game.Drawer = oldDrawer
 }
 
-func (game *Game) confirmEncounter(yield coroutine.YieldFunc, node *ExtraMagicNode) bool {
+func (game *Game) confirmEncounter(yield coroutine.YieldFunc, node *maplib.ExtraMagicNode) bool {
     quit := false
 
     result := false
@@ -2239,13 +2240,13 @@ func (game *Game) confirmEncounter(yield coroutine.YieldFunc, node *ExtraMagicNo
     nodeName := "nature"
 
     switch node.Kind {
-        case MagicNodeChaos:
+        case maplib.MagicNodeChaos:
             lairIndex = 10
             nodeName = "chaos"
-        case MagicNodeNature:
+        case maplib.MagicNodeNature:
             lairIndex = 11
             nodeName = "nature"
-        case MagicNodeSorcery:
+        case maplib.MagicNodeSorcery:
             lairIndex = 12
             nodeName = "sorcery"
     }
@@ -2274,7 +2275,7 @@ func (game *Game) confirmEncounter(yield coroutine.YieldFunc, node *ExtraMagicNo
     return result
 }
 
-func (game *Game) doMagicEncounter(yield coroutine.YieldFunc, player *playerlib.Player, stack *playerlib.UnitStack, node *ExtraMagicNode){
+func (game *Game) doMagicEncounter(yield coroutine.YieldFunc, player *playerlib.Player, stack *playerlib.UnitStack, node *maplib.ExtraMagicNode){
 
     defender := playerlib.Player{
         Wizard: setup.WizardCustom{
@@ -2296,9 +2297,9 @@ func (game *Game) doMagicEncounter(yield coroutine.YieldFunc, player *playerlib.
     }
 
     switch node.Kind {
-        case MagicNodeNature: zone.NatureNode = true
-        case MagicNodeSorcery: zone.SorceryNode = true
-        case MagicNodeChaos: zone.ChaosNode = true
+        case maplib.MagicNodeNature: zone.NatureNode = true
+        case maplib.MagicNodeSorcery: zone.SorceryNode = true
+        case maplib.MagicNodeChaos: zone.ChaosNode = true
     }
 
     result := game.doCombat(yield, player, stack, &defender, playerlib.MakeUnitStackFromUnits(enemies), zone)
@@ -2935,7 +2936,7 @@ func (game *Game) CreateOutpost(settlers units.StackUnit, player *playerlib.Play
     return newCity
 }
 
-func (game *Game) DoMeld(unit units.StackUnit, player *playerlib.Player, node *ExtraMagicNode){
+func (game *Game) DoMeld(unit units.StackUnit, player *playerlib.Player, node *maplib.ExtraMagicNode){
     node.Meld(player, unit.GetRawUnit())
     player.RemoveUnit(unit)
 }
@@ -4084,7 +4085,7 @@ type Overworld struct {
     CameraX int
     CameraY int
     Counter uint64
-    Map *Map
+    Map *maplib.Map
     Cities []*citylib.City
     Stacks []*playerlib.UnitStack
     SelectedStack *playerlib.UnitStack

@@ -20,6 +20,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/mouse"
     "github.com/kazzmir/master-of-magic/game/magic/console"
     "github.com/kazzmir/master-of-magic/game/magic/ai"
+    "github.com/kazzmir/master-of-magic/game/magic/maplib"
     gamelib "github.com/kazzmir/master-of-magic/game/magic/game"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
@@ -554,9 +555,9 @@ func createScenario8(cache *lbx.LbxCache) *gamelib.Game {
 
     x, y := game.FindValidCityLocation()
 
-    game.Map.CreateNode(x, y+1, gamelib.MagicNodeNature, game.Plane, game.Settings.Magic, game.Settings.Difficulty)
-    game.Map.CreateNode(x+1, y, gamelib.MagicNodeChaos, game.Plane, game.Settings.Magic, game.Settings.Difficulty)
-    game.Map.CreateNode(x+2, y+1, gamelib.MagicNodeSorcery, game.Plane, game.Settings.Magic, game.Settings.Difficulty)
+    game.Map.CreateNode(x, y+1, maplib.MagicNodeNature, game.Plane, game.Settings.Magic, game.Settings.Difficulty)
+    game.Map.CreateNode(x+1, y, maplib.MagicNodeChaos, game.Plane, game.Settings.Magic, game.Settings.Difficulty)
+    game.Map.CreateNode(x+2, y+1, maplib.MagicNodeSorcery, game.Plane, game.Settings.Magic, game.Settings.Difficulty)
 
     city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.Map)
     city.Population = 6190
@@ -801,7 +802,7 @@ func createScenario11(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 3)
 
-    node := game.Map.CreateNode(x, y+2, gamelib.MagicNodeNature, game.Plane, game.Settings.Magic, game.Settings.Difficulty)
+    node := game.Map.CreateNode(x, y+2, maplib.MagicNodeNature, game.Plane, game.Settings.Magic, game.Settings.Difficulty)
     node.Empty = true
 
     spirit := player.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, nil))
@@ -870,7 +871,7 @@ func createScenario12(cache *lbx.LbxCache) *gamelib.Game {
 
     player.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, nil))
 
-    node := game.Map.CreateNode(x, y+2, gamelib.MagicNodeNature, game.Plane, game.Settings.Magic, game.Settings.Difficulty)
+    node := game.Map.CreateNode(x, y+2, maplib.MagicNodeNature, game.Plane, game.Settings.Magic, game.Settings.Difficulty)
     node.Empty = true
 
     game.Map.SetBonus(x-3, y-1, data.BonusSilverOre)
