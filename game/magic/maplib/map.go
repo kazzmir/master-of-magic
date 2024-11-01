@@ -10,12 +10,20 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
-    citylib "github.com/kazzmir/master-of-magic/game/magic/city"
-    playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     "github.com/kazzmir/master-of-magic/game/magic/units"
 
     "github.com/hajimehoshi/ebiten/v2"
 )
+
+type MiniMapCity interface {
+    GetX() int
+    GetY() int
+    GetBanner() data.BannerType
+}
+
+type Melder interface {
+    GetBanner() data.BannerType
+}
 
 type MagicNode int
 const (
@@ -77,7 +85,7 @@ type ExtraMagicNode struct {
     Zone []image.Point
 
     // if this node is melded, then this player receives the power
-    MeldingWizard *playerlib.Player
+    MeldingWizard Melder
     // true if melded by a guardian spirit, otherwise false if melded by a magic spirit
     GuardianSpiritMeld bool
 
@@ -92,7 +100,7 @@ func (node *ExtraMagicNode) DrawLayer2(screen *ebiten.Image, imageCache *util.Im
 
     if node.Empty && node.MeldingWizard != nil {
         index := 63
-        switch node.MeldingWizard.Wizard.Banner {
+        switch node.MeldingWizard.GetBanner() {
             case data.BannerBlue: index = 63
             case data.BannerGreen: index = 64
             case data.BannerPurple: index = 65
@@ -111,7 +119,7 @@ func (node *ExtraMagicNode) DrawLayer2(screen *ebiten.Image, imageCache *util.Im
     }
 }
 
-func (node *ExtraMagicNode) Meld(meldingWizard *playerlib.Player, spirit units.Unit) bool {
+func (node *ExtraMagicNode) Meld(meldingWizard Melder, spirit units.Unit) bool {
     if node.MeldingWizard == nil {
         node.MeldingWizard = meldingWizard
         if spirit.Equals(units.GuardianSpirit) {
@@ -146,6 +154,17 @@ func (node *ExtraMagicNode) Meld(meldingWizard *playerlib.Player, spirit units.U
 
         return false
     }
+}
+
+type FullTile struct {
+    Extra ExtraTile
+    Tile terrain.Tile
+    X int
+    Y int
+}
+
+func (tile *FullTile) Valid() bool {
+    return tile.Tile.Index != -1
 }
 
 type Map struct {
@@ -183,12 +202,12 @@ func MakeMap(data *terrain.TerrainData, landSize int) *Map {
     }
 }
 
-func (mapObject *Map) GetMeldedNodes(player *playerlib.Player) []*ExtraMagicNode {
+func (mapObject *Map) GetMeldedNodes(melder Melder) []*ExtraMagicNode {
     var out []*ExtraMagicNode
 
     for _, extra := range mapObject.ExtraMap {
         if node, ok := extra.(*ExtraMagicNode); ok {
-            if node.MeldingWizard == player {
+            if node.MeldingWizard == melder {
                 out = append(out, node)
             }
         }
@@ -254,12 +273,26 @@ func (mapObject *Map) TileHeight() int {
     return mapObject.Data.TileHeight()
 }
 
-func (mapObject *Map) GetTile(tileX int, tileY int) terrain.Tile {
+func (mapObject *Map) GetTile(tileX int, tileY int) FullTile {
     if tileX >= 0 && tileX < mapObject.Map.Columns() && tileY >= 0 && tileY < mapObject.Map.Rows() {
-        return mapObject.Data.Tiles[mapObject.Map.Terrain[tileX][tileY]].Tile
+        tile := mapObject.Data.Tiles[mapObject.Map.Terrain[tileX][tileY]].Tile
+
+        extra, ok := mapObject.ExtraMap[image.Pt(tileX, tileY)]
+        if !ok {
+            extra = nil
+        }
+
+        return FullTile{
+            Tile: tile,
+            X: tileX,
+            Y: tileY,
+            Extra: extra,
+        }
     }
 
-    return terrain.Tile{Index: -1}
+    return FullTile{
+        Tile: terrain.Tile{Index: -1},
+    }
 }
 
 func (mapObject *Map) GetTileImage(tileX int, tileY int, animationCounter uint64) (*ebiten.Image, error) {
@@ -278,9 +311,9 @@ func (mapObject *Map) GetTileImage(tileX int, tileY int, animationCounter uint64
     return gpuImage, nil
 }
 
-func (mapObject *Map) GetCatchmentArea(x int, y int) map[image.Point]terrain.Tile {
+func (mapObject *Map) GetCatchmentArea(x int, y int) map[image.Point]FullTile {
 
-    area := make(map[image.Point]terrain.Tile)
+    area := make(map[image.Point]FullTile)
 
     for dx := -2; dx <= 2; dx++ {
         for dy := -2; dy <= 2; dy++ {
@@ -292,7 +325,7 @@ func (mapObject *Map) GetCatchmentArea(x int, y int) map[image.Point]terrain.Til
             tileY := y + dy
 
             tile := mapObject.GetTile(tileX, tileY)
-            if tile.Index != -1 {
+            if tile.Valid() {
                 area[image.Pt(tileX, tileY)] = tile
             }
         }
@@ -322,7 +355,7 @@ func bannerColor(banner data.BannerType) color.RGBA {
     return color.RGBA{R: 0, G: 0, B: 0, A: 255}
 }
 
-func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []*citylib.City, centerX int, centerY int, fog [][]bool, counter uint64, crosshairs bool){
+func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []MiniMapCity, centerX int, centerY int, fog [][]bool, counter uint64, crosshairs bool){
     if len(mapObject.miniMapPixels) != screen.Bounds().Dx() * screen.Bounds().Dy() * 4 {
         mapObject.miniMapPixels = make([]byte, screen.Bounds().Dx() * screen.Bounds().Dy() * 4)
     }
@@ -389,12 +422,12 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []*citylib.City, 
     }
 
     for _, city := range cities {
-        if fog[city.X][city.Y] {
-            posX := city.X - cameraX
-            posY := city.Y - cameraY
+        if fog[city.GetX()][city.GetY()] {
+            posX := city.GetX() - cameraX
+            posY := city.GetY() - cameraY
 
             if posX >= 0 && posX < screen.Bounds().Dx() && posY >= 0 && posY < screen.Bounds().Dy() {
-                set(posX, posY, bannerColor(city.Banner))
+                set(posX, posY, bannerColor(city.GetBanner()))
             }
         }
     }

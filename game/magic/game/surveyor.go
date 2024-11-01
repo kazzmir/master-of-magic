@@ -157,16 +157,16 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
                 if fog[selectedPoint.X][selectedPoint.Y] {
                     tile := game.Map.GetTile(selectedPoint.X, selectedPoint.Y)
                     y := float64(93)
-                    yellowFont.PrintCenter(screen, 280, y, 1, ebiten.ColorScale{}, tile.Name())
+                    yellowFont.PrintCenter(screen, 280, y, 1, ebiten.ColorScale{}, tile.Tile.Name())
                     y += float64(yellowFont.Height())
 
-                    foodBonus := tile.FoodBonus()
+                    foodBonus := tile.Tile.FoodBonus()
                     if !foodBonus.IsZero() {
                         whiteFont.PrintCenter(screen, 280, y, 1, ebiten.ColorScale{}, fmt.Sprintf("%v food", foodBonus.NormalString()))
                         y += float64(whiteFont.Height())
                     }
 
-                    productionBonus := tile.ProductionBonus()
+                    productionBonus := tile.Tile.ProductionBonus()
                     if productionBonus != 0 {
                         whiteFont.PrintCenter(screen, 280, y, 1, ebiten.ColorScale{}, fmt.Sprintf("+%v%% production", productionBonus))
                         y += float64(whiteFont.Height())
@@ -346,7 +346,7 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
 
                 tile := game.Map.GetTile(newX, newY)
 
-                if !tile.IsLand() {
+                if !tile.Tile.IsLand() {
                     text = "Cannot build cities on water."
                 } else if game.NearCity(newPoint, 3) {
                     text = "Cities cannot be built less than 3 squares from any other city."

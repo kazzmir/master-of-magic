@@ -11,6 +11,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
+    "github.com/kazzmir/master-of-magic/game/magic/maplib"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
 )
 
@@ -62,7 +63,7 @@ func (citySize CitySize) String() string {
 }
 
 type CatchmentProvider interface {
-    GetCatchmentArea(x int, y int) map[image.Point]terrain.Tile
+    GetCatchmentArea(x int, y int) map[image.Point]maplib.FullTile
 }
 
 const MAX_CITY_CITIZENS = 25
@@ -111,6 +112,18 @@ func MakeCity(name string, x int, y int, race data.Race, banner data.BannerType,
     }
 
     return &city
+}
+
+func (city *City) GetX() int {
+    return city.X
+}
+
+func (city *City) GetY() int {
+    return city.Y
+}
+
+func (city *City) GetBanner() data.BannerType {
+    return city.Banner
 }
 
 func (city *City) GetOutpostHouses() int {
@@ -478,7 +491,7 @@ func (city *City) BaseFoodLevel() int {
     food := fraction.Zero()
 
     for _, tile := range catchment {
-        switch tile.TerrainType() {
+        switch tile.Tile.TerrainType() {
             case terrain.Ocean, terrain.Mountain, terrain.Desert, terrain.Tundra, terrain.Volcano: // nothing
             case terrain.Grass: food = food.Add(fraction.Make(3, 2))
             case terrain.Forest, terrain.Hill, terrain.Shore, terrain.Swamp: food = food.Add(fraction.Make(1, 2))
@@ -486,7 +499,7 @@ func (city *City) BaseFoodLevel() int {
             case terrain.NatureNode: food = food.Add(fraction.Make(5, 2))
             case terrain.ChaosNode: // nothing
             case terrain.Lake:
-                switch tile.Index {
+                switch tile.Tile.Index {
                     case terrain.IndexLake1, terrain.IndexLake2, terrain.IndexLake3, terrain.IndexLake4:
                         food = food.Add(fraction.Make(3, 2))
                 }
@@ -672,7 +685,7 @@ func (city *City) ProductionTerrain() float32 {
     production := float32(0)
 
     for _, tile := range catchment {
-        switch tile.TerrainType() {
+        switch tile.Tile.TerrainType() {
             case terrain.Mountain, terrain.ChaosNode: production += 0.05
             case terrain.Desert, terrain.Forest, terrain.Hill, terrain.NatureNode: production += 0.03
         }
