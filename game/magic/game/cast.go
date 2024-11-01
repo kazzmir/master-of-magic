@@ -8,6 +8,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/font"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
+    "github.com/kazzmir/master-of-magic/game/magic/maplib"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
@@ -76,6 +77,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
     }()
 
     var cities []*citylib.City
+    var citiesMiniMap []maplib.MiniMapCity
     var stacks []*playerlib.UnitStack
     var fog [][]bool
 
@@ -83,6 +85,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
         for _, city := range player.Cities {
             if city.Plane == game.Plane {
                 cities = append(cities, city)
+                citiesMiniMap = append(citiesMiniMap, city)
             }
         }
 
@@ -119,6 +122,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
         Counter: game.Counter,
         Map: game.Map,
         Cities: cities,
+        CitiesMiniMap: citiesMiniMap,
         Stacks: stacks,
         SelectedStack: nil,
         ImageCache: &game.ImageCache,

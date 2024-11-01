@@ -4,11 +4,14 @@ import (
     _ "log"
     "math"
     "math/rand/v2"
+    "image"
 
     "github.com/kazzmir/master-of-magic/lib/set"
     "github.com/kazzmir/master-of-magic/lib/fraction"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/units"
+    "github.com/kazzmir/master-of-magic/game/magic/terrain"
+    "github.com/kazzmir/master-of-magic/game/magic/maplib"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
 )
 
@@ -59,6 +62,10 @@ func (citySize CitySize) String() string {
     return "Unknown"
 }
 
+type CatchmentProvider interface {
+    GetCatchmentArea(x int, y int) map[image.Point]maplib.FullTile
+}
+
 const MAX_CITY_CITIZENS = 25
 
 type City struct {
@@ -76,6 +83,8 @@ type City struct {
     Banner data.BannerType
     Buildings *set.Set[buildinglib.Building]
 
+    CatchmentProvider CatchmentProvider
+
     TaxRate fraction.Fraction
 
     // reset every turn, keeps track of whether the player sold a building
@@ -89,7 +98,7 @@ type City struct {
     BuildingInfo buildinglib.BuildingInfos
 }
 
-func MakeCity(name string, x int, y int, race data.Race, banner data.BannerType, taxRate fraction.Fraction, buildingInfo buildinglib.BuildingInfos) *City {
+func MakeCity(name string, x int, y int, race data.Race, banner data.BannerType, taxRate fraction.Fraction, buildingInfo buildinglib.BuildingInfos, catchmentProvider CatchmentProvider) *City {
     city := City{
         Name: name,
         X: x,
@@ -98,10 +107,23 @@ func MakeCity(name string, x int, y int, race data.Race, banner data.BannerType,
         Race: race,
         Buildings: set.MakeSet[buildinglib.Building](),
         TaxRate: taxRate,
+        CatchmentProvider: catchmentProvider,
         BuildingInfo: buildingInfo,
     }
 
     return &city
+}
+
+func (city *City) GetX() int {
+    return city.X
+}
+
+func (city *City) GetY() int {
+    return city.Y
+}
+
+func (city *City) GetBanner() data.BannerType {
+    return city.Banner
 }
 
 func (city *City) GetOutpostHouses() int {
@@ -236,6 +258,31 @@ func (city *City) PowerCitizens() int {
     return int(citizenPower * float64(city.Citizens()))
 }
 
+func (city *City) PowerMinerals() int {
+    catchment := city.CatchmentProvider.GetCatchmentArea(city.X, city.Y)
+
+    extra := 0
+    for _, tile := range catchment {
+        bonus := tile.GetBonus()
+        switch bonus {
+            case data.BonusMithrilOre: extra += 1
+            case data.BonusAdamantiumOre: extra += 2
+            case data.BonusQuorkCrystal: extra += 3
+            case data.BonusCrysxCrystal: extra += 5
+        }
+    }
+
+    if city.Race == data.RaceDwarf {
+        extra *= 2
+    }
+
+    if city.Buildings.Contains(buildinglib.BuildingMinersGuild) {
+        extra = int(float64(extra) * 1.5)
+    }
+
+    return extra
+}
+
 /* power production from buildings and citizens
  */
 func (city *City) ComputePower() int {
@@ -260,7 +307,7 @@ func (city *City) ComputePower() int {
 
     // FIXME: take enchantments and bonuses for religious power into account
 
-    return power + religiousPower + city.PowerCitizens()
+    return power + religiousPower + city.PowerCitizens() + city.PowerMinerals()
 }
 
 func (city *City) UpdateUnrest(garrison []units.StackUnit) {
@@ -465,12 +512,41 @@ func (city *City) SurplusFood() int {
 /* compute amount of available food on tiles in catchment area
  */
 func (city *City) BaseFoodLevel() int {
-    // TODO
-    return 20
+    catchment := city.CatchmentProvider.GetCatchmentArea(city.X, city.Y)
+    food := fraction.Zero()
+
+    for _, tile := range catchment {
+        switch tile.Tile.TerrainType() {
+            case terrain.Ocean, terrain.Mountain, terrain.Desert, terrain.Tundra, terrain.Volcano: // nothing
+            case terrain.Grass: food = food.Add(fraction.Make(3, 2))
+            case terrain.Forest, terrain.Hill, terrain.Shore, terrain.Swamp: food = food.Add(fraction.Make(1, 2))
+            case terrain.SorceryNode, terrain.River: food = food.Add(fraction.FromInt(2))
+            case terrain.NatureNode: food = food.Add(fraction.Make(5, 2))
+            case terrain.ChaosNode: // nothing
+            case terrain.Lake:
+                switch tile.Tile.Index {
+                    case terrain.IndexLake1, terrain.IndexLake2, terrain.IndexLake3, terrain.IndexLake4:
+                        food = food.Add(fraction.Make(3, 2))
+                }
+        }
+
+        if tile.HasWildGame() {
+            food = food.Add(fraction.FromInt(2))
+        }
+    }
+
+    return int(food.ToFloat())
 }
 
 func (city *City) FoodProductionRate() int {
-    return city.foodProductionRate(city.Farmers)
+    base := city.foodProductionRate(city.Farmers)
+
+    // foresters guild doesn't contribute to the food needed to support the town, instead the food is added to the global surplus
+    if city.Buildings.Contains(buildinglib.BuildingForestersGuild) {
+        base += 2
+    }
+
+    return base
 }
 
 func (city *City) FarmerFoodProduction(farmers int) int {
@@ -535,8 +611,28 @@ func (city *City) GoldTradeGoods() int {
 }
 
 func (city *City) GoldMinerals() int {
-    // FIXME: check catchment area for minerals
-    return 0
+    catchment := city.CatchmentProvider.GetCatchmentArea(city.X, city.Y)
+
+    extra := 0
+
+    for _, tile := range catchment {
+        bonus := tile.GetBonus()
+        switch bonus {
+            case data.BonusSilverOre: extra += 2
+            case data.BonusGoldOre: extra += 3
+            case data.BonusGem: extra += 5
+        }
+    }
+
+    if city.Race == data.RaceDwarf {
+        extra *= 2
+    }
+
+    if city.Buildings.Contains(buildinglib.BuildingMinersGuild) {
+        extra = int(float64(extra) * 1.5)
+    }
+
+    return extra
 }
 
 func (city *City) GoldMarketplace() int {
@@ -609,30 +705,66 @@ func (city *City) ProductionFarmers() float32 {
     return 0.5 * float32(city.Farmers)
 }
 
-func (city *City) ProductionMinersGuild() float32 {
-    if city.Buildings.Contains(buildinglib.BuildingMinersGuild) {
-        citizenRate := city.ProductionWorkers() + city.ProductionFarmers()
-        return citizenRate * 0.5
+func (city *City) productionBuildingBonus(building buildinglib.Building, percent float32) float32 {
+    if city.Buildings.Contains(building) {
+        return percent * (city.ProductionWorkers() + city.ProductionFarmers())
     }
 
     return 0
+}
+
+func (city *City) ProductionMinersGuild() float32 {
+    return city.productionBuildingBonus(buildinglib.BuildingMinersGuild, 0.5)
+}
+
+func (city *City) ProductionSawmill() float32 {
+    return city.productionBuildingBonus(buildinglib.BuildingSawmill, 0.25)
+}
+
+func (city *City) ProductionForestersGuild() float32 {
+    return city.productionBuildingBonus(buildinglib.BuildingForestersGuild, 0.25)
 }
 
 func (city *City) ProductionMechaniciansGuild() float32 {
-    if city.Buildings.Contains(buildinglib.BuildingMechaniciansGuild) {
-        citizenRate := city.ProductionWorkers() + city.ProductionFarmers()
-        return citizenRate * 0.5
-    }
-
-    return 0
+    return city.productionBuildingBonus(buildinglib.BuildingMechaniciansGuild, 0.5)
 }
 
 func (city *City) ProductionTerrain() float32 {
-    return 0
+    catchment := city.CatchmentProvider.GetCatchmentArea(city.X, city.Y)
+    production := float32(0)
+    mineralProduction := float32(0)
+
+    for _, tile := range catchment {
+        switch tile.Tile.TerrainType() {
+            case terrain.Mountain, terrain.ChaosNode: production += 0.05
+            case terrain.Desert, terrain.Forest, terrain.Hill, terrain.NatureNode: production += 0.03
+        }
+
+        switch tile.GetBonus() {
+            case data.BonusIronOre: mineralProduction += 0.05
+            case data.BonusCoal: mineralProduction += 0.1
+        }
+    }
+
+    if city.Race == data.RaceDwarf {
+        mineralProduction *= 2
+    }
+
+    if city.Buildings.Contains(buildinglib.BuildingMinersGuild) {
+        mineralProduction *= 2
+    }
+
+    return (production + mineralProduction) * (city.ProductionWorkers() + city.ProductionFarmers())
 }
 
 func (city *City) WorkProductionRate() float32 {
-    return city.ProductionWorkers() + city.ProductionFarmers() + city.ProductionMinersGuild() + city.ProductionMechaniciansGuild() + city.ProductionTerrain()
+    return city.ProductionWorkers() +
+           city.ProductionFarmers() +
+           city.ProductionMinersGuild() +
+           city.ProductionMechaniciansGuild() +
+           city.ProductionTerrain() +
+           city.ProductionSawmill() +
+           city.ProductionForestersGuild()
 }
 
 func (city *City) GrowOutpost() CityEvent {

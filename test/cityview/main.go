@@ -13,6 +13,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
     "github.com/kazzmir/master-of-magic/game/magic/game"
+    "github.com/kazzmir/master-of-magic/game/magic/maplib"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/units"
@@ -25,7 +26,7 @@ type Engine struct {
     LbxCache *lbx.LbxCache
     CityScreen *cityview.CityScreen
     ImageCache util.ImageCache
-    Map game.Map
+    Map *maplib.Map
 }
 
 func NewEngine() (*Engine, error) {
@@ -39,7 +40,24 @@ func NewEngine() (*Engine, error) {
 
     buildingInfo, _ := buildinglib.ReadBuildingInfo(cache)
 
-    city := citylib.MakeCity("Boston", 3, 8, data.RaceHighElf, player.Wizard.Banner, fraction.Make(2, 1), buildingInfo)
+    terrainLbx, err := cache.GetLbxFile("terrain.lbx")
+    if err != nil {
+        return nil, err
+    }
+
+    terrainData, err := terrain.ReadTerrainData(terrainLbx)
+    if err != nil {
+        return nil, err
+    }
+
+
+    gameMap := maplib.Map{
+        Data: terrainData,
+        Map: terrain.GenerateLandCellularAutomata(20, 20, terrainData),
+        TileCache: make(map[int]*ebiten.Image),
+    }
+
+    city := citylib.MakeCity("Boston", 3, 8, data.RaceHighElf, player.Wizard.Banner, fraction.Make(2, 1), buildingInfo, &gameMap)
     city.Population = 12000
     city.Farmers = 4
     city.Workers = 2
@@ -51,6 +69,7 @@ func NewEngine() (*Engine, error) {
     city.Buildings.Insert(buildinglib.BuildingFarmersMarket)
     city.Buildings.Insert(buildinglib.BuildingMarketplace)
     city.Buildings.Insert(buildinglib.BuildingMinersGuild)
+    city.Buildings.Insert(buildinglib.BuildingSawmill)
     city.Buildings.Insert(buildinglib.BuildingMechaniciansGuild)
     city.ProducingBuilding = buildinglib.BuildingHousing
     // city.ProducingUnit = units.HighElfSpearmen
@@ -81,25 +100,11 @@ func NewEngine() (*Engine, error) {
 
     cityScreen := cityview.MakeCityScreen(cache, city, &player, buildinglib.BuildingShrine)
 
-    terrainLbx, err := cache.GetLbxFile("terrain.lbx")
-    if err != nil {
-        return nil, err
-    }
-
-    terrainData, err := terrain.ReadTerrainData(terrainLbx)
-    if err != nil {
-        return nil, err
-    }
-
     return &Engine{
         LbxCache: cache,
         CityScreen: cityScreen,
         ImageCache: util.MakeImageCache(cache),
-        Map: game.Map{
-            Data: terrainData,
-            Map: terrain.GenerateLandCellularAutomata(20, 20, terrainData),
-            TileCache: make(map[int]*ebiten.Image),
-        },
+        Map: &gameMap,
     }, nil
 }
 
@@ -131,7 +136,7 @@ func (engine *Engine) Draw(screen *ebiten.Image) {
         overworld := game.Overworld{
             CameraX: cameraX,
             CameraY: cameraY,
-            Map: &engine.Map,
+            Map: engine.Map,
             Cities: []*citylib.City{engine.CityScreen.City},
             Stacks: []*playerlib.UnitStack{},
             SelectedStack: nil,
@@ -143,7 +148,7 @@ func (engine *Engine) Draw(screen *ebiten.Image) {
         }
 
         overworld.DrawOverworld(where, geom)
-    })
+    }, engine.Map.TileWidth(), engine.Map.TileHeight())
 }
 
 func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {

@@ -150,7 +150,7 @@ func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup
 
     cityX, cityY := game.FindValidCityLocation()
 
-    introCity := citylib.MakeCity("City1", cityX, cityY, player.Wizard.Race, player.Wizard.Banner, player.TaxRate, game.BuildingInfo)
+    introCity := citylib.MakeCity("City1", cityX, cityY, player.Wizard.Race, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.Map)
     introCity.Population = 4000
     introCity.Wall = false
     introCity.Plane = data.PlaneArcanus

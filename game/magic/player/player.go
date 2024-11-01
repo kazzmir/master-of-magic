@@ -134,6 +134,10 @@ func (player *Player) IsHuman() bool {
     return player.Human
 }
 
+func (player *Player) GetBanner() data.BannerType {
+    return player.Wizard.Banner
+}
+
 /* returns true if the hero was actually added to the player
  */
 func (player *Player) AddHero(hero *herolib.Hero) bool {

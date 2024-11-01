@@ -798,6 +798,9 @@ func (cityScreen *CityScreen) Update() CityScreenState {
     cityScreen.Counter += 1
 
     if cityScreen.BuildScreen != nil {
+        // allow city scape ui to update animations
+        cityScreen.UI.Counter += 1
+
         switch cityScreen.BuildScreen.Update() {
             case BuildScreenRunning:
             case BuildScreenCanceled:
@@ -1227,33 +1230,22 @@ func (cityScreen *CityScreen) MakeResourceDialog(title string, smallIcon *ebiten
 func (cityScreen *CityScreen) WorkProducers() []ResourceUsage {
     var usage []ResourceUsage
 
-    if cityScreen.City.ProductionWorkers() > 0 {
-        usage = append(usage, ResourceUsage{
-            Count: int(cityScreen.City.ProductionWorkers()),
-            Name: "Workers",
-        })
+    add := func(count int, name string){
+        if count > 0 {
+            usage = append(usage, ResourceUsage{
+                Count: count,
+                Name: name,
+            })
+        }
     }
 
-    if cityScreen.City.ProductionFarmers() > 0 {
-        usage = append(usage, ResourceUsage{
-            Count: int(cityScreen.City.ProductionFarmers()),
-            Name: "Farmers",
-        })
-    }
-
-    if cityScreen.City.ProductionMinersGuild() > 0 {
-        usage = append(usage, ResourceUsage{
-            Count: int(cityScreen.City.ProductionMinersGuild()),
-            Name: "Miner's Guild",
-        })
-    }
-
-    if cityScreen.City.ProductionMechaniciansGuild() > 0 {
-        usage = append(usage, ResourceUsage{
-            Count: int(cityScreen.City.ProductionMechaniciansGuild()),
-            Name: "Mechanician's Guild",
-        })
-    }
+    add(int(cityScreen.City.Workers), "Workers")
+    add(int(cityScreen.City.ProductionFarmers()), "Farmers")
+    add(int(cityScreen.City.ProductionTerrain()), "Terrain")
+    add(int(cityScreen.City.ProductionSawmill()), "Sawmill")
+    add(int(cityScreen.City.ProductionForestersGuild()), "Forester's Guild")
+    add(int(cityScreen.City.ProductionMinersGuild()), "Miner's Guild")
+    add(int(cityScreen.City.ProductionMechaniciansGuild()), "Mechanician's Guild")
 
     return usage
 }
@@ -1279,50 +1271,22 @@ func (cityScreen *CityScreen) BuildingMaintenanceResources() []ResourceUsage {
 func (cityScreen *CityScreen) GoldProducers() []ResourceUsage {
     var usage []ResourceUsage
 
-    if cityScreen.City.GoldTaxation() > 0 {
-        usage = append(usage, ResourceUsage{
-            Count: int(cityScreen.City.GoldTaxation()),
-            Name: "Taxes",
-        })
+    add := func(count int, name string){
+        if count > 0 {
+            usage = append(usage, ResourceUsage{
+                Count: count,
+                Name: name,
+            })
+        }
     }
 
     // FIXME: add tiles (road/river/ocean)
-
-    if cityScreen.City.GoldTradeGoods() > 0 {
-        usage = append(usage, ResourceUsage{
-            Count: int(cityScreen.City.GoldTradeGoods()),
-            Name: "Trade Goods",
-        })
-    }
-
-    if cityScreen.City.GoldMinerals() > 0 {
-        usage = append(usage, ResourceUsage{
-            Count: int(cityScreen.City.GoldMinerals()),
-            Name: "Minerals",
-        })
-    }
-
-    if cityScreen.City.GoldMarketplace() > 0 {
-        usage = append(usage, ResourceUsage{
-            Count: int(cityScreen.City.GoldMarketplace()),
-            Name: "Marketplace",
-        })
-    }
-
-    if cityScreen.City.GoldBank() > 0 {
-        usage = append(usage, ResourceUsage{
-            Count: int(cityScreen.City.GoldBank()),
-            Name: "Bank",
-        })
-    }
-
-
-    if cityScreen.City.GoldMerchantsGuild() > 0 {
-        usage = append(usage, ResourceUsage{
-            Count: int(cityScreen.City.GoldMerchantsGuild()),
-            Name: "Merchant's Guild",
-        })
-    }
+    add(int(cityScreen.City.GoldTaxation()), "Taxes")
+    add(int(cityScreen.City.GoldTradeGoods()), "Trade Goods")
+    add(int(cityScreen.City.GoldMinerals()), "Minerals")
+    add(int(cityScreen.City.GoldMarketplace()), "Marketplace")
+    add(int(cityScreen.City.GoldBank()), "Bank")
+    add(int(cityScreen.City.GoldMerchantsGuild()), "Merchant's Guild")
 
     return usage
 }
@@ -1330,7 +1294,7 @@ func (cityScreen *CityScreen) GoldProducers() []ResourceUsage {
 func (cityScreen *CityScreen) PowerProducers() []ResourceUsage {
     var usage []ResourceUsage
 
-    if cityScreen.City.PowerCitizens() > 0 {
+    if int(cityScreen.City.PowerCitizens()) > 0 {
         usage = append(usage, ResourceUsage{
             Count: int(cityScreen.City.PowerCitizens()),
             Name: "Townsfolk",
@@ -1383,6 +1347,13 @@ func (cityScreen *CityScreen) PowerProducers() []ResourceUsage {
         usage = append(usage, ResourceUsage{
             Count: 5,
             Name: "Fortress",
+        })
+    }
+
+    if int(cityScreen.City.PowerMinerals()) > 0 {
+        usage = append(usage, ResourceUsage{
+            Count: int(cityScreen.City.PowerMinerals()),
+            Name: "Minerals",
         })
     }
 
@@ -1531,7 +1502,7 @@ func (cityScreen *CityScreen) CreateResourceIcons(ui *uilib.UI) []*uilib.UIEleme
     return elements
 }
 
-func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *ebiten.Image, geom ebiten.GeoM, counter uint64)) {
+func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *ebiten.Image, geom ebiten.GeoM, counter uint64), tileWidth int, tileHeight int) {
     animationCounter := cityScreen.Counter / 8
 
     ui, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", 6, 0)
@@ -1676,7 +1647,17 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
     var mapGeom ebiten.GeoM
     mapGeom.Translate(float64(mapX), float64(mapY))
     mapView(mapPart, mapGeom, cityScreen.Counter)
-    // FIXME: draw black translucent squares on the corner of the map to show the catchment area
+
+    // darken the 4 corners of the small map view
+    drawDarkTile := func(x int, y int){
+        x1, y1 := mapGeom.Apply(float64(x * tileWidth), float64(y * tileHeight))
+        vector.DrawFilledRect(mapPart, float32(x1), float32(y1), float32(tileWidth), float32(tileHeight), color.RGBA{R: 0, G: 0, B: 0, A: 0x80}, false)
+    }
+
+    drawDarkTile(0, 0)
+    drawDarkTile(4, 0)
+    drawDarkTile(0, 4)
+    drawDarkTile(4, 4)
 
     cityScreen.UI.Draw(cityScreen.UI, screen)
 
@@ -1687,6 +1668,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
     }
 }
 
+// when right clicking on an enemy city, this just shows the population, garrison, and city scape for that city
 func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.Player) (func(coroutine.YieldFunc, func()), func(*ebiten.Image)) {
     imageCache := util.MakeImageCache(cache)
 

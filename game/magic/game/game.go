@@ -30,6 +30,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/draw"
     "github.com/kazzmir/master-of-magic/game/magic/mouse"
+    "github.com/kazzmir/master-of-magic/game/magic/maplib"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     mouselib "github.com/kazzmir/master-of-magic/lib/mouse"
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -199,7 +200,7 @@ type Game struct {
     Help lbx.Help
 
     // FIXME: need one map for arcanus and one for myrran
-    Map *Map
+    Map *maplib.Map
 
     Players []*playerlib.Player
     CurrentPlayer int
@@ -506,7 +507,7 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         Help: help,
         MouseData: mouseData,
         Events: make(chan GameEvent, 1000),
-        Map: MakeMap(terrainData, settings.LandSize),
+        Map: maplib.MakeMap(terrainData, settings.LandSize),
         State: GameStateRunning,
         Settings: settings,
         BookOrder: randomizeBookOrder(12),
@@ -573,7 +574,7 @@ func (game *Game) FindValidCityLocationOnContinent(x int, y int) (int, int) {
         if continent.Contains(image.Pt(x, y)) {
             for _, index := range rand.Perm(continent.Size()) {
                 tile := game.Map.GetTile(continent[index].X, continent[index].Y)
-                if tile.IsLand() && !tile.IsMagic() {
+                if tile.Tile.IsLand() && !tile.Tile.IsMagic() {
                     return continent[index].X, continent[index].Y
                 }
             }
@@ -603,8 +604,13 @@ func (game *Game) doCityListView(yield coroutine.YieldFunc) {
 
     cities := game.AllCities()
 
+    citiesMiniMap := make([]maplib.MiniMapCity, 0, len(cities))
+    for _, city := range cities {
+        citiesMiniMap = append(citiesMiniMap, city)
+    }
+
     drawMinimap := func (screen *ebiten.Image, x int, y int, fog [][]bool, counter uint64){
-        game.Map.DrawMinimap(screen, cities, x, y, fog, counter, false)
+        game.Map.DrawMinimap(screen, citiesMiniMap, x, y, fog, counter, false)
     }
 
     var showCity *citylib.City
@@ -645,8 +651,13 @@ func (game *Game) doArmyView(yield coroutine.YieldFunc) {
 
     cities := game.AllCities()
 
+    citiesMiniMap := make([]maplib.MiniMapCity, 0, len(cities))
+    for _, city := range cities {
+        citiesMiniMap = append(citiesMiniMap, city)
+    }
+
     drawMinimap := func (screen *ebiten.Image, x int, y int, fog [][]bool, counter uint64){
-        game.Map.DrawMinimap(screen, cities, x, y, fog, counter, false)
+        game.Map.DrawMinimap(screen, citiesMiniMap, x, y, fog, counter, false)
     }
 
     showVault := func(){
@@ -1329,7 +1340,7 @@ func (game *Game) ComputeTerrainCost(stack *playerlib.UnitStack, x int, y int) (
     tileTo := game.Map.GetTile(x, y)
 
     // can't move from land to ocean unless all units are flyers
-    if tileFrom.IsLand() && !tileTo.IsLand() {
+    if tileFrom.Tile.IsLand() && !tileTo.Tile.IsLand() {
         if !stack.AllFlyers() {
             return fraction.Zero(), false
         }
@@ -1415,7 +1426,7 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
         }
 
         // can't move from land to ocean unless all units are flyers
-        if tileFrom.IsLand() && !tileTo.IsLand() {
+        if tileFrom.Tile.IsLand() && !tileTo.Tile.IsLand() {
             if !stack.AllFlyers() {
                 return pathfinding.Infinity
             }
@@ -2205,7 +2216,7 @@ func (game *Game) doCityScreen(yield coroutine.YieldFunc, city *citylib.City, pl
     game.Drawer = func(screen *ebiten.Image, game *Game){
         cityScreen.Draw(screen, func (mapView *ebiten.Image, geom ebiten.GeoM, counter uint64){
             overworld.DrawOverworld(mapView, geom)
-        })
+        }, game.Map.TileWidth(), game.Map.TileHeight())
     }
 
     for cityScreen.Update() == cityview.CityScreenStateRunning {
@@ -2216,7 +2227,7 @@ func (game *Game) doCityScreen(yield coroutine.YieldFunc, city *citylib.City, pl
     game.Drawer = oldDrawer
 }
 
-func (game *Game) confirmEncounter(yield coroutine.YieldFunc, node *ExtraMagicNode) bool {
+func (game *Game) confirmEncounter(yield coroutine.YieldFunc, node *maplib.ExtraMagicNode) bool {
     quit := false
 
     result := false
@@ -2239,13 +2250,13 @@ func (game *Game) confirmEncounter(yield coroutine.YieldFunc, node *ExtraMagicNo
     nodeName := "nature"
 
     switch node.Kind {
-        case MagicNodeChaos:
+        case maplib.MagicNodeChaos:
             lairIndex = 10
             nodeName = "chaos"
-        case MagicNodeNature:
+        case maplib.MagicNodeNature:
             lairIndex = 11
             nodeName = "nature"
-        case MagicNodeSorcery:
+        case maplib.MagicNodeSorcery:
             lairIndex = 12
             nodeName = "sorcery"
     }
@@ -2274,7 +2285,7 @@ func (game *Game) confirmEncounter(yield coroutine.YieldFunc, node *ExtraMagicNo
     return result
 }
 
-func (game *Game) doMagicEncounter(yield coroutine.YieldFunc, player *playerlib.Player, stack *playerlib.UnitStack, node *ExtraMagicNode){
+func (game *Game) doMagicEncounter(yield coroutine.YieldFunc, player *playerlib.Player, stack *playerlib.UnitStack, node *maplib.ExtraMagicNode){
 
     defender := playerlib.Player{
         Wizard: setup.WizardCustom{
@@ -2296,9 +2307,9 @@ func (game *Game) doMagicEncounter(yield coroutine.YieldFunc, player *playerlib.
     }
 
     switch node.Kind {
-        case MagicNodeNature: zone.NatureNode = true
-        case MagicNodeSorcery: zone.SorceryNode = true
-        case MagicNodeChaos: zone.ChaosNode = true
+        case maplib.MagicNodeNature: zone.NatureNode = true
+        case maplib.MagicNodeSorcery: zone.SorceryNode = true
+        case maplib.MagicNodeChaos: zone.ChaosNode = true
     }
 
     result := game.doCombat(yield, player, stack, &defender, playerlib.MakeUnitStackFromUnits(enemies), zone)
@@ -2317,7 +2328,7 @@ func (game *Game) GetCombatLandscape(x int, y int, plane data.Plane) combat.Comb
     // FIXME: take plane into account
     tile := game.Map.GetTile(x, y)
 
-    switch tile.TerrainType() {
+    switch tile.Tile.TerrainType() {
         case terrain.Land, terrain.Hill, terrain.Grass,
              terrain.Forest, terrain.River, terrain.Shore,
              terrain.Swamp: return combat.CombatLandscapeGrass
@@ -2856,7 +2867,8 @@ func (game *Game) ComputeMaximumPopulation(x int, y int) int {
 
     for _, point := range catchment {
         tile := game.Map.GetTile(point.X, point.Y)
-        food = food.Add(tile.FoodBonus())
+        food = food.Add(tile.Tile.FoodBonus())
+        // FIXME: get bonus directly from tile.Extra
         bonus := game.Map.GetBonusTile(point.X, point.Y)
         food = food.Add(fraction.FromInt(bonus.FoodBonus()))
     }
@@ -2872,7 +2884,7 @@ func (game *Game) ComputeMaximumPopulation(x int, y int) int {
 func (game *Game) CityGoldBonus(x int, y int) int {
     gold := 0
     tile := game.Map.GetTile(x, y)
-    if tile.TerrainType() == terrain.River {
+    if tile.Tile.TerrainType() == terrain.River {
         gold += 20
     }
 
@@ -2885,7 +2897,7 @@ func (game *Game) CityGoldBonus(x int, y int) int {
             }
 
             tile := game.Map.GetTile(x + dx, y + dy)
-            if tile.TerrainType() == terrain.Shore {
+            if tile.Tile.TerrainType() == terrain.Shore {
                 touchingShore = true
             }
         }
@@ -2905,14 +2917,14 @@ func (game *Game) CityProductionBonus(x int, y int) int {
 
     for _, point := range catchment {
         tile := game.Map.GetTile(point.X, point.Y)
-        production += tile.ProductionBonus()
+        production += tile.Tile.ProductionBonus()
     }
 
     return production
 }
 
 func (game *Game) CreateOutpost(settlers units.StackUnit, player *playerlib.Player) *citylib.City {
-    newCity := citylib.MakeCity("New City", settlers.GetX(), settlers.GetY(), settlers.GetRace(), settlers.GetBanner(), player.TaxRate, game.BuildingInfo)
+    newCity := citylib.MakeCity("New City", settlers.GetX(), settlers.GetY(), settlers.GetRace(), settlers.GetBanner(), player.TaxRate, game.BuildingInfo, game.Map)
     newCity.Plane = settlers.GetPlane()
     newCity.Population = 300
     newCity.Outpost = true
@@ -2935,7 +2947,7 @@ func (game *Game) CreateOutpost(settlers units.StackUnit, player *playerlib.Play
     return newCity
 }
 
-func (game *Game) DoMeld(unit units.StackUnit, player *playerlib.Player, node *ExtraMagicNode){
+func (game *Game) DoMeld(unit units.StackUnit, player *playerlib.Player, node *maplib.ExtraMagicNode){
     node.Meld(player, unit.GetRawUnit())
     player.RemoveUnit(unit)
 }
@@ -2954,6 +2966,7 @@ func (game *Game) DoBuildAction(player *playerlib.Player){
                 // FIXME: check if this tile is valid to build an outpost on
                 if settlers.HasAbility(units.AbilityCreateOutpost) {
                     game.CreateOutpost(settlers, player)
+                    game.RefreshUI()
                     break
                 }
             }
@@ -2962,6 +2975,7 @@ func (game *Game) DoBuildAction(player *playerlib.Player){
             for _, melder := range player.SelectedStack.ActiveUnits() {
                 if melder.HasAbility(units.AbilityMeld) {
                     game.DoMeld(melder, player, node)
+                    game.RefreshUI()
                     break
                 }
             }
@@ -4084,8 +4098,9 @@ type Overworld struct {
     CameraX int
     CameraY int
     Counter uint64
-    Map *Map
+    Map *maplib.Map
     Cities []*citylib.City
+    CitiesMiniMap []maplib.MiniMapCity
     Stacks []*playerlib.UnitStack
     SelectedStack *playerlib.UnitStack
     MovingStack *playerlib.UnitStack
@@ -4096,7 +4111,7 @@ type Overworld struct {
 }
 
 func (overworld *Overworld) DrawMinimap(screen *ebiten.Image){
-    overworld.Map.DrawMinimap(screen, overworld.Cities, overworld.CameraX + 5, overworld.CameraY + 5, overworld.Fog, overworld.Counter, true)
+    overworld.Map.DrawMinimap(screen, overworld.CitiesMiniMap, overworld.CameraX + 5, overworld.CameraY + 5, overworld.Fog, overworld.Counter, true)
 }
 
 func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM){
@@ -4195,6 +4210,7 @@ func (game *Game) Draw(screen *ebiten.Image){
 func (game *Game) DrawGame(screen *ebiten.Image){
 
     var cities []*citylib.City
+    var citiesMiniMap []maplib.MiniMapCity
     var stacks []*playerlib.UnitStack
     var selectedStack *playerlib.UnitStack
     var fog [][]bool
@@ -4203,6 +4219,7 @@ func (game *Game) DrawGame(screen *ebiten.Image){
         for _, city := range player.Cities {
             if city.Plane == game.Plane {
                 cities = append(cities, city)
+                citiesMiniMap = append(citiesMiniMap, city)
             }
         }
 
@@ -4232,6 +4249,7 @@ func (game *Game) DrawGame(screen *ebiten.Image){
         Counter: game.Counter,
         Map: game.Map,
         Cities: cities,
+        CitiesMiniMap: citiesMiniMap,
         Stacks: stacks,
         SelectedStack: selectedStack,
         MovingStack: game.MovingStack,
