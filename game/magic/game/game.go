@@ -2205,7 +2205,7 @@ func (game *Game) doCityScreen(yield coroutine.YieldFunc, city *citylib.City, pl
     game.Drawer = func(screen *ebiten.Image, game *Game){
         cityScreen.Draw(screen, func (mapView *ebiten.Image, geom ebiten.GeoM, counter uint64){
             overworld.DrawOverworld(mapView, geom)
-        })
+        }, game.Map.TileWidth(), game.Map.TileHeight())
     }
 
     for cityScreen.Update() == cityview.CityScreenStateRunning {

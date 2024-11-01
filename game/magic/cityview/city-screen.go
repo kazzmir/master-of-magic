@@ -1492,7 +1492,7 @@ func (cityScreen *CityScreen) CreateResourceIcons(ui *uilib.UI) []*uilib.UIEleme
     return elements
 }
 
-func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *ebiten.Image, geom ebiten.GeoM, counter uint64)) {
+func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *ebiten.Image, geom ebiten.GeoM, counter uint64), tileWidth int, tileHeight int) {
     animationCounter := cityScreen.Counter / 8
 
     ui, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", 6, 0)
@@ -1637,7 +1637,16 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
     var mapGeom ebiten.GeoM
     mapGeom.Translate(float64(mapX), float64(mapY))
     mapView(mapPart, mapGeom, cityScreen.Counter)
-    // FIXME: draw black translucent squares on the corner of the map to show the catchment area
+
+    drawDarkTile := func(x int, y int){
+        x1, y1 := mapGeom.Apply(float64(x * tileWidth), float64(y * tileHeight))
+        vector.DrawFilledRect(mapPart, float32(x1), float32(y1), float32(tileWidth), float32(tileHeight), color.RGBA{R: 0, G: 0, B: 0, A: 0x80}, false)
+    }
+
+    drawDarkTile(0, 0)
+    drawDarkTile(4, 0)
+    drawDarkTile(0, 4)
+    drawDarkTile(4, 4)
 
     cityScreen.UI.Draw(cityScreen.UI, screen)
 
@@ -1648,6 +1657,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
     }
 }
 
+// when right clicking on an enemy city, this just shows the population, garrison, and city scape for that city
 func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.Player) (func(coroutine.YieldFunc, func()), func(*ebiten.Image)) {
     imageCache := util.MakeImageCache(cache)
 

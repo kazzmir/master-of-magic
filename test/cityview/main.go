@@ -147,7 +147,7 @@ func (engine *Engine) Draw(screen *ebiten.Image) {
         }
 
         overworld.DrawOverworld(where, geom)
-    })
+    }, engine.Map.TileWidth(), engine.Map.TileHeight())
 }
 
 func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {

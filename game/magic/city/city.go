@@ -497,7 +497,14 @@ func (city *City) BaseFoodLevel() int {
 }
 
 func (city *City) FoodProductionRate() int {
-    return city.foodProductionRate(city.Farmers)
+    base := city.foodProductionRate(city.Farmers)
+
+    // foresters guild doesn't contribute to the food needed to support the town, instead the food is added to the global surplus
+    if city.Buildings.Contains(buildinglib.BuildingForestersGuild) {
+        base += 2
+    }
+
+    return base
 }
 
 func (city *City) FarmerFoodProduction(farmers int) int {
