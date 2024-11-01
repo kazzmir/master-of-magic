@@ -798,6 +798,9 @@ func (cityScreen *CityScreen) Update() CityScreenState {
     cityScreen.Counter += 1
 
     if cityScreen.BuildScreen != nil {
+        // allow city scape ui to update animations
+        cityScreen.UI.Counter += 1
+
         switch cityScreen.BuildScreen.Update() {
             case BuildScreenRunning:
             case BuildScreenCanceled:
@@ -1638,6 +1641,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
     mapGeom.Translate(float64(mapX), float64(mapY))
     mapView(mapPart, mapGeom, cityScreen.Counter)
 
+    // darken the 4 corners of the small map view
     drawDarkTile := func(x int, y int){
         x1, y1 := mapGeom.Apply(float64(x * tileWidth), float64(y * tileHeight))
         vector.DrawFilledRect(mapPart, float32(x1), float32(y1), float32(tileWidth), float32(tileHeight), color.RGBA{R: 0, G: 0, B: 0, A: 0x80}, false)
