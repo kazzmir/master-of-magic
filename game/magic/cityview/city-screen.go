@@ -1350,6 +1350,13 @@ func (cityScreen *CityScreen) PowerProducers() []ResourceUsage {
         })
     }
 
+    if int(cityScreen.City.PowerMinerals()) > 0 {
+        usage = append(usage, ResourceUsage{
+            Count: int(cityScreen.City.PowerMinerals()),
+            Name: "Minerals",
+        })
+    }
+
     // FIXME: add tiles (adamantium mine) and miner's guild
 
     return usage

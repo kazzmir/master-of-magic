@@ -258,6 +258,31 @@ func (city *City) PowerCitizens() int {
     return int(citizenPower * float64(city.Citizens()))
 }
 
+func (city *City) PowerMinerals() int {
+    catchment := city.CatchmentProvider.GetCatchmentArea(city.X, city.Y)
+
+    extra := 0
+    for _, tile := range catchment {
+        bonus := tile.GetBonus()
+        switch bonus {
+            case data.BonusMithrilOre: extra += 1
+            case data.BonusAdamantiumOre: extra += 2
+            case data.BonusQuorkCrystal: extra += 3
+            case data.BonusCrysxCrystal: extra += 5
+        }
+    }
+
+    if city.Race == data.RaceDwarf {
+        extra *= 2
+    }
+
+    if city.Buildings.Contains(buildinglib.BuildingMinersGuild) {
+        extra = int(float64(extra) * 1.5)
+    }
+
+    return extra
+}
+
 /* power production from buildings and citizens
  */
 func (city *City) ComputePower() int {
@@ -282,7 +307,7 @@ func (city *City) ComputePower() int {
 
     // FIXME: take enchantments and bonuses for religious power into account
 
-    return power + religiousPower + city.PowerCitizens()
+    return power + religiousPower + city.PowerCitizens() + city.PowerMinerals()
 }
 
 func (city *City) UpdateUnrest(garrison []units.StackUnit) {
@@ -599,6 +624,14 @@ func (city *City) GoldMinerals() int {
         }
     }
 
+    if city.Race == data.RaceDwarf {
+        extra *= 2
+    }
+
+    if city.Buildings.Contains(buildinglib.BuildingMinersGuild) {
+        extra = int(float64(extra) * 1.5)
+    }
+
     return extra
 }
 
@@ -699,15 +732,29 @@ func (city *City) ProductionMechaniciansGuild() float32 {
 func (city *City) ProductionTerrain() float32 {
     catchment := city.CatchmentProvider.GetCatchmentArea(city.X, city.Y)
     production := float32(0)
+    mineralProduction := float32(0)
 
     for _, tile := range catchment {
         switch tile.Tile.TerrainType() {
             case terrain.Mountain, terrain.ChaosNode: production += 0.05
             case terrain.Desert, terrain.Forest, terrain.Hill, terrain.NatureNode: production += 0.03
         }
+
+        switch tile.GetBonus() {
+            case data.BonusIronOre: mineralProduction += 0.05
+            case data.BonusCoal: mineralProduction += 0.1
+        }
     }
 
-    return production * (city.ProductionWorkers() + city.ProductionFarmers())
+    if city.Race == data.RaceDwarf {
+        mineralProduction *= 2
+    }
+
+    if city.Buildings.Contains(buildinglib.BuildingMinersGuild) {
+        mineralProduction *= 2
+    }
+
+    return (production + mineralProduction) * (city.ProductionWorkers() + city.ProductionFarmers())
 }
 
 func (city *City) WorkProductionRate() float32 {
