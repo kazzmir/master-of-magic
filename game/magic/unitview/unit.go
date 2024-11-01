@@ -65,20 +65,21 @@ func renderUpkeep(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitVi
 func RenderUnitInfoNormal(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitView, extraTitle string, descriptionFont *font.Font, smallFont *font.Font, defaultOptions ebiten.DrawImageOptions) {
     x, y := defaultOptions.GeoM.Apply(0, 0)
 
-    descriptionFont.Print(screen, x, y, 1, defaultOptions.ColorScale, unit.GetName())
-
     if extraTitle != "" {
+        descriptionFont.Print(screen, x, y, 1, defaultOptions.ColorScale, unit.GetName())
         y += float64(descriptionFont.Height())
         defaultOptions.GeoM.Translate(0, float64(descriptionFont.Height()))
         descriptionFont.Print(screen, x, y, 1, defaultOptions.ColorScale, extraTitle)
 
         y += float64(descriptionFont.Height())
         defaultOptions.GeoM.Translate(0, float64(descriptionFont.Height()))
-
     } else {
-        y += 15
-        defaultOptions.GeoM.Translate(0, 14)
+        descriptionFont.Print(screen, x, y+2, 1, defaultOptions.ColorScale, unit.GetName())
+        y += 17
+        defaultOptions.GeoM.Translate(0, 16)
     }
+
+    defaultOptions.GeoM.Translate(0, -1)
 
     smallFont.Print(screen, x, y, 1, defaultOptions.ColorScale, "Moves")
     y += float64(smallFont.Height()) + 1
