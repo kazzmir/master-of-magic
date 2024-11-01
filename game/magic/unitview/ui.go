@@ -19,6 +19,7 @@ import (
 
 type UnitView interface {
     GetName() string
+    GetTitle() string // for heroes. normal units will not have a title
     GetBanner() data.BannerType
     GetCombatLbxFile() string
     GetCombatIndex(units.Facing) int

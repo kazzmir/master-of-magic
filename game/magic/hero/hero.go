@@ -433,7 +433,7 @@ func (hero *Hero) GetName() string {
 }
 
 func (hero *Hero) FullName() string {
-    return fmt.Sprintf("%v the %v", hero.Unit.GetName(), hero.Title())
+    return fmt.Sprintf("%v the %v", hero.Unit.GetName(), hero.GetTitle())
 }
 
 func (hero *Hero) GetPortraitLbxInfo() (string, int) {
@@ -902,7 +902,7 @@ func (hero *Hero) GetAbilities() []units.Ability {
     return hero.Abilities
 }
 
-func (hero *Hero) Title() string {
+func (hero *Hero) GetTitle() string {
     switch hero.HeroType {
         case HeroTorin: return "Chosen"
         case HeroFang: return "Draconian"

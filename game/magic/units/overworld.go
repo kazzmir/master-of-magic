@@ -24,6 +24,10 @@ func (unit *OverworldUnit) GetLbxFile() string {
     return unit.Unit.LbxFile
 }
 
+func (unit *OverworldUnit) GetTitle() string {
+    return ""
+}
+
 func (unit *OverworldUnit) GetLbxIndex() int {
     return unit.Unit.Index
 }

@@ -13,6 +13,7 @@ type StackUnit interface {
     SetPatrol(bool)
     IsFlying() bool
     GetName() string
+    GetTitle() string
     GetPlane() data.Plane
     GetMovesLeft() fraction.Fraction
     SetMovesLeft(fraction.Fraction)
