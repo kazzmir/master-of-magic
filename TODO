@@ -1,6 +1,5 @@
 * combat: cast unit spells
 * cartographer advisor
-* city catchment area
 * overworld: ai controlled wizards/empires
 * myrror plane
 * filter buildings by race
@@ -45,3 +44,4 @@
 10/20/2024 * quake console
 10/22/2024 * combat: draw town sprites in combat scene
 10/24/2024 * roaming bands of neutral enemies
+10/31/2024 * city catchment area
