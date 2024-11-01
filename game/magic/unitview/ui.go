@@ -153,7 +153,7 @@ func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, di
             RenderUnitInfoStats(screen, &imageCache, unit, 15, descriptionFont, smallFont, options)
 
             options.GeoM.Translate(0, 60)
-            RenderUnitAbilities(screen, &imageCache, unit, mediumFont, options)
+            RenderUnitAbilities(screen, &imageCache, unit, mediumFont, options, false)
         },
     })
 

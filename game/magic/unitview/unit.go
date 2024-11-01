@@ -219,7 +219,7 @@ func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit
     showNIcons(healthIcon, unit.GetBaseHitPoints(), healthIconGold, unit.GetHitPoints() - unit.GetBaseHitPoints(), x, y)
 }
 
-func RenderUnitAbilities(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitView, mediumFont *font.Font, defaultOptions ebiten.DrawImageOptions) {
+func RenderUnitAbilities(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitView, mediumFont *font.Font, defaultOptions ebiten.DrawImageOptions, pureAbilities bool) {
     // FIXME: handle more than 4 abilities by using more columns
     for _, ability := range unit.GetAbilities() {
         pic, err := imageCache.GetImage(ability.LbxFile(), ability.LbxIndex(), 0)
