@@ -2,12 +2,32 @@ package city
 
 import (
     "testing"
+    "image"
+
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/terrain"
+    "github.com/kazzmir/master-of-magic/game/magic/maplib"
     "github.com/kazzmir/master-of-magic/lib/fraction"
 )
 
+type Catchment struct {
+}
+
+func (catchment *Catchment) GetCatchmentArea(x int, y int) map[image.Point]maplib.FullTile {
+    out := make(map[image.Point]maplib.FullTile)
+    for x := -2; x <= 2; x++ {
+        for y := -2; y <= 2; y++ {
+            out[image.Point{x, y}] = maplib.FullTile{
+                Tile: terrain.TileGrasslands1,
+            }
+        }
+    }
+
+    return out
+}
+
 func TestBasicCity(test *testing.T){
-    city := MakeCity("Test City", 10, 10, data.RaceHighMen, data.BannerBlue, fraction.Make(3, 2), nil, nil)
+    city := MakeCity("Test City", 10, 10, data.RaceHighMen, data.BannerBlue, fraction.Make(3, 2), nil, &Catchment{})
     city.Population = 6000
     city.Farmers = 6
     city.Workers = 0
