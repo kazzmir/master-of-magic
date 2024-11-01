@@ -180,7 +180,7 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
                         whiteFont.PrintWrapCenter(screen, 280, y, float64(cancelBackground.Bounds().Dx() - 5), 1, ebiten.ColorScale{}, bonus)
                     }
 
-                    bonus := game.Map.GetBonusTile(selectedPoint.X, selectedPoint.Y)
+                    bonus := tile.GetBonus()
                     switch bonus {
                         case data.BonusNone: // nothing
                         case data.BonusGoldOre: showBonus("Gold Ore", fmt.Sprintf("+%v gold", bonus.GoldBonus()))

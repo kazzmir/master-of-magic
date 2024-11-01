@@ -167,6 +167,30 @@ func (tile *FullTile) Valid() bool {
     return tile.Tile.Index != -1
 }
 
+func (tile *FullTile) GetBonus() data.BonusType {
+    if tile.Extra == nil {
+        return data.BonusNone
+    }
+
+    if bonus, ok := tile.Extra.(*ExtraBonus); ok {
+        return bonus.Bonus
+    }
+
+    return data.BonusNone
+}
+
+func (tile *FullTile) HasWildGame() bool {
+    if tile.Extra == nil {
+        return false
+    }
+
+    if bonus, ok := tile.Extra.(*ExtraBonus); ok {
+        return bonus.Bonus == data.BonusWildGame
+    }
+
+    return false
+}
+
 type Map struct {
     Map *terrain.Map
 

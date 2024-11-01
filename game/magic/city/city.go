@@ -504,6 +504,10 @@ func (city *City) BaseFoodLevel() int {
                         food = food.Add(fraction.Make(3, 2))
                 }
         }
+
+        if tile.HasWildGame() {
+            food = food.Add(fraction.FromInt(2))
+        }
     }
 
     return int(food.ToFloat())
@@ -582,8 +586,20 @@ func (city *City) GoldTradeGoods() int {
 }
 
 func (city *City) GoldMinerals() int {
-    // FIXME: check catchment area for minerals
-    return 0
+    catchment := city.CatchmentProvider.GetCatchmentArea(city.X, city.Y)
+
+    extra := 0
+
+    for _, tile := range catchment {
+        bonus := tile.GetBonus()
+        switch bonus {
+            case data.BonusSilverOre: extra += 2
+            case data.BonusGoldOre: extra += 3
+            case data.BonusGem: extra += 5
+        }
+    }
+
+    return extra
 }
 
 func (city *City) GoldMarketplace() int {
