@@ -2974,6 +2974,7 @@ func (game *Game) DoBuildAction(player *playerlib.Player){
             for _, melder := range player.SelectedStack.ActiveUnits() {
                 if melder.HasAbility(units.AbilityMeld) {
                     game.DoMeld(melder, player, node)
+                    game.RefreshUI()
                     break
                 }
             }
