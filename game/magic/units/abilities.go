@@ -247,7 +247,7 @@ func (ability Ability) Name() string {
         case AbilitySuperArmsmaster: return "Super Armsmaster"
         case AbilityBlademaster: return "Blademaster"
         case AbilitySuperBlademaster: return "Super Blademaster"
-        case AbilityCaster: return "Caster"
+        case AbilityCaster: return fmt.Sprintf("Caster %v mp", ability.Value)
         case AbilityCharmed: return "Charmed"
         case AbilityConstitution: return "Constitution"
         case AbilitySuperConstitution: return "Super Constitution"

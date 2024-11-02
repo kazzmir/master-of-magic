@@ -271,5 +271,55 @@ func MakeUnitAbilitiesElements(imageCache *util.ImageCache, unit UnitView, mediu
         },
     })
 
+    upImages, _ := imageCache.GetImages("unitview.lbx", 3)
+    downImages, _ := imageCache.GetImages("unitview.lbx", 4)
+
+    abilityCount := len(unit.GetAbilities())
+    if !pureAbilities {
+        // 1 for experience
+        abilityCount += 1
+        // 3 more for items
+    }
+
+    if abilityCount > 4 {
+        pageUpRect := util.ImageRect(x + 195, y, upImages[0])
+        pageUpIndex := 0
+        elements = append(elements, &uilib.UIElement{
+            Rect: pageUpRect,
+            Layer: layer,
+            LeftClick: func(element *uilib.UIElement){
+                pageUpIndex = 1
+            },
+            LeftClickRelease: func(element *uilib.UIElement){
+                pageUpIndex = 0
+                page -= 1
+            },
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(pageUpRect.Min.X), float64(pageUpRect.Min.Y))
+                screen.DrawImage(upImages[pageUpIndex], &options)
+            },
+        })
+
+        pageDownRect := util.ImageRect(x + 195, y + 60, downImages[0])
+        pageDownIndex := 0
+        elements = append(elements, &uilib.UIElement{
+            Rect: pageDownRect,
+            Layer: layer,
+            LeftClick: func(element *uilib.UIElement){
+                pageDownIndex = 1
+            },
+            LeftClickRelease: func(element *uilib.UIElement){
+                pageDownIndex = 0
+                page += 1
+            },
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(pageDownRect.Min.X), float64(pageDownRect.Min.Y))
+                screen.DrawImage(downImages[pageDownIndex], &options)
+            },
+        })
+    }
+
     return elements
 }
