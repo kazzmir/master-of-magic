@@ -341,7 +341,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
 
                 options.GeoM.Reset()
                 options.GeoM.Translate(85, 108)
-                unitview.RenderUnitAbilities(screen, imageCache, bannerUnit, mediumFont, options, true)
+                unitview.RenderUnitAbilities(screen, imageCache, bannerUnit, mediumFont, options, true, 0)
             },
         }
         ui.AddElement(mainElement)

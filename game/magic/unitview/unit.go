@@ -2,7 +2,7 @@ package unitview
 
 import (
     // "image/color"
-    // "log"
+    "log"
     "fmt"
 
     "github.com/kazzmir/master-of-magic/game/magic/combat"
@@ -69,7 +69,7 @@ func RenderUnitInfoNormal(screen *ebiten.Image, imageCache *util.ImageCache, uni
         descriptionFont.Print(screen, x, y, 1, defaultOptions.ColorScale, unit.GetName())
         y += float64(descriptionFont.Height())
         defaultOptions.GeoM.Translate(0, float64(descriptionFont.Height()))
-        descriptionFont.Print(screen, x, y, 1, defaultOptions.ColorScale, extraTitle)
+        descriptionFont.Print(screen, x, y, 1, defaultOptions.ColorScale, "The " + extraTitle)
 
         y += float64(descriptionFont.Height())
         defaultOptions.GeoM.Translate(0, float64(descriptionFont.Height()))
@@ -219,15 +219,34 @@ func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit
     showNIcons(healthIcon, unit.GetBaseHitPoints(), healthIconGold, unit.GetHitPoints() - unit.GetBaseHitPoints(), x, y)
 }
 
-func RenderUnitAbilities(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitView, mediumFont *font.Font, defaultOptions ebiten.DrawImageOptions, pureAbilities bool) {
+func RenderUnitAbilities(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitView, mediumFont *font.Font, defaultOptions ebiten.DrawImageOptions, pureAbilities bool, page uint32) {
+    var renders []func() float64
+
+    if !pureAbilities {
+    }
+
     // FIXME: handle more than 4 abilities by using more columns
     for _, ability := range unit.GetAbilities() {
-        pic, err := imageCache.GetImage(ability.LbxFile(), ability.LbxIndex(), 0)
-        if err == nil {
-            screen.DrawImage(pic, &defaultOptions)
-            x, y := defaultOptions.GeoM.Apply(0, 0)
-            mediumFont.Print(screen, x + float64(pic.Bounds().Dx() + 2), float64(y) + 5, 1, defaultOptions.ColorScale, ability.Name())
-            defaultOptions.GeoM.Translate(0, float64(pic.Bounds().Dy() + 1))
-        }
+        renders = append(renders, func() float64 {
+            pic, err := imageCache.GetImage(ability.LbxFile(), ability.LbxIndex(), 0)
+            if err == nil {
+                screen.DrawImage(pic, &defaultOptions)
+                x, y := defaultOptions.GeoM.Apply(0, 0)
+                mediumFont.Print(screen, x + float64(pic.Bounds().Dx() + 2), float64(y) + 5, 1, defaultOptions.ColorScale, ability.Name())
+                return float64(pic.Bounds().Dy() + 1)
+            } else {
+                log.Printf("Error: unable to render ability %v", ability)
+            }
+
+            return 0
+        })
+    }
+
+    pages := len(renders) / 4
+    page = page % uint32(pages)
+
+    for i := int(page) * 4; i < len(renders) && i < (int(page) + 1) * 4; i++ {
+        height := renders[i]()
+        defaultOptions.GeoM.Translate(0, height)
     }
 }

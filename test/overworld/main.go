@@ -1405,13 +1405,19 @@ func createScenario18(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 3)
 
+    /*
     rakir := hero.MakeHero(units.MakeOverworldUnit(units.HeroRakir), hero.HeroRakir, "bubba")
     player.AddHero(rakir)
     rakir.AddExperience(528)
+    */
+    mysticX := hero.MakeHero(units.MakeOverworldUnit(units.HeroMysticX), hero.HeroMysticX, "bubba")
+    player.AddHero(mysticX)
+    mysticX.SetExtraAbilities()
+    mysticX.AddExperience(528)
 
     player.AddUnit(units.MakeOverworldUnitFromUnit(units.Warlocks, x, y, data.PlaneArcanus, player.GetBanner(), nil))
 
-    stack := player.FindStackByUnit(rakir)
+    stack := player.FindStackByUnit(mysticX)
     player.SetSelectedStack(stack)
 
     player.LiftFog(stack.X(), stack.Y(), 2)

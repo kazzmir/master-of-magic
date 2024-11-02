@@ -156,25 +156,20 @@ func (ability Ability) LbxFile() string {
         case AbilityWeaponImmunity: return ""
         case AbilityWebSpell: return ""
         case AbilityWindWalking: return ""
-        case AbilityAgility: return ""
-        case AbilitySuperAgility: return ""
-        case AbilityArcanePower: return ""
-        case AbilityArmsmaster: return ""
-        case AbilityBlademaster: return ""
-        case AbilityCaster: return ""
-        case AbilityCharmed: return ""
-        case AbilityConstitution: return ""
-        case AbilityLeadership: return ""
-        case AbilitySuperLeadership: return ""
-        case AbilityLegendary: return ""
-        case AbilitySuperLegendary: return ""
-        case AbilityLucky: return ""
-        case AbilityMight: return ""
-        case AbilitySuperMight: return ""
-        case AbilityNoble: return ""
-        case AbilityPrayermaster: return ""
-        case AbilitySuperPrayermaster: return ""
-        case AbilitySage: return ""
+        case AbilityAgility, AbilitySuperAgility: return "special2.lbx"
+        case AbilityArcanePower, AbilitySuperArcanePower: return "special.lbx"
+        case AbilityArmsmaster, AbilitySuperArmsmaster: return "special.lbx"
+        case AbilityBlademaster: return "special.lbx"
+        case AbilityCaster: return "special.lbx"
+        case AbilityCharmed: return "special.lbx"
+        case AbilityConstitution, AbilitySuperConstitution: return "special.lbx"
+        case AbilityLeadership, AbilitySuperLeadership: return "special.lbx"
+        case AbilityLegendary, AbilitySuperLegendary: return "special.lbx"
+        case AbilityLucky: return "special.lbx"
+        case AbilityMight, AbilitySuperMight: return "special.lbx"
+        case AbilityNoble: return "special.lbx"
+        case AbilityPrayermaster, AbilitySuperPrayermaster: return "special.lbx"
+        case AbilitySage, AbilitySuperSage: return "special.lbx"
     }
 
     return ""
@@ -321,25 +316,20 @@ func (ability Ability) LbxIndex() int {
         case AbilityWeaponImmunity: return -1
         case AbilityWebSpell: return -1
         case AbilityWindWalking: return -1
-        case AbilityAgility: return -1
-        case AbilitySuperAgility: return -1
-        case AbilityArcanePower: return -1
-        case AbilityArmsmaster: return -1
-        case AbilityBlademaster: return -1
-        case AbilityCaster: return -1
-        case AbilityCharmed: return -1
-        case AbilityConstitution: return -1
-        case AbilityLeadership: return -1
-        case AbilitySuperLeadership: return -1
-        case AbilityLegendary: return -1
-        case AbilitySuperLegendary: return -1
-        case AbilityLucky: return -1
-        case AbilityMight: return -1
-        case AbilitySuperMight: return -1
-        case AbilityNoble: return -1
-        case AbilityPrayermaster: return -1
-        case AbilitySuperPrayermaster: return -1
-        case AbilitySage: return -1
+        case AbilityAgility, AbilitySuperAgility: return 32
+        case AbilityArcanePower, AbilitySuperArcanePower: return 54
+        case AbilityArmsmaster, AbilitySuperArmsmaster: return 46
+        case AbilityBlademaster: return 47
+        case AbilityCaster: return 55
+        case AbilityCharmed: return 59
+        case AbilityConstitution, AbilitySuperConstitution: return 50
+        case AbilityLeadership, AbilitySuperLeadership: return 43
+        case AbilityLegendary, AbilitySuperLegendary: return 45
+        case AbilityLucky: return 58
+        case AbilityMight, AbilitySuperMight: return 52
+        case AbilityNoble: return 60
+        case AbilityPrayermaster, AbilitySuperPrayermaster: return 57
+        case AbilitySage, AbilitySuperSage: return 61
     }
 
     return -1
