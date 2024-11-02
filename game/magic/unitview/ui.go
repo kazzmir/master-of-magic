@@ -152,10 +152,14 @@ func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, di
             options.GeoM.Translate(10, 50)
             RenderUnitInfoStats(screen, &imageCache, unit, 15, descriptionFont, smallFont, options)
 
+            /*
             options.GeoM.Translate(0, 60)
             RenderUnitAbilities(screen, &imageCache, unit, mediumFont, options, false, 0)
+            */
         },
     })
+
+    elements = append(elements, MakeUnitAbilitiesElements(&imageCache, unit, mediumFont, 40, 114, 1, false)...)
 
     elements = append(elements, &uilib.UIElement{
         Layer: 1,

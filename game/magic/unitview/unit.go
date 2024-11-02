@@ -4,10 +4,12 @@ import (
     // "image/color"
     "log"
     "fmt"
+    "math"
 
     "github.com/kazzmir/master-of-magic/game/magic/combat"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/util"
+    uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     "github.com/kazzmir/master-of-magic/lib/font"
 
     "github.com/hajimehoshi/ebiten/v2"
@@ -219,7 +221,7 @@ func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit
     showNIcons(healthIcon, unit.GetBaseHitPoints(), healthIconGold, unit.GetHitPoints() - unit.GetBaseHitPoints(), x, y)
 }
 
-func RenderUnitAbilities(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitView, mediumFont *font.Font, defaultOptions ebiten.DrawImageOptions, pureAbilities bool, page uint32) {
+func renderUnitAbilities(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitView, mediumFont *font.Font, defaultOptions ebiten.DrawImageOptions, pureAbilities bool, page uint32) {
     var renders []func() float64
 
     if !pureAbilities {
@@ -235,18 +237,39 @@ func RenderUnitAbilities(screen *ebiten.Image, imageCache *util.ImageCache, unit
                 mediumFont.Print(screen, x + float64(pic.Bounds().Dx() + 2), float64(y) + 5, 1, defaultOptions.ColorScale, ability.Name())
                 return float64(pic.Bounds().Dy() + 1)
             } else {
-                log.Printf("Error: unable to render ability %v", ability)
+                log.Printf("Error: unable to render ability %#v %v", ability, ability.Name())
             }
 
             return 0
         })
     }
 
-    pages := len(renders) / 4
-    page = page % uint32(pages)
+    if len(renders) == 0 {
+        return
+    }
+
+    pages := uint32(math.Ceil(float64(len(renders)) / 4))
+    page = page % pages
 
     for i := int(page) * 4; i < len(renders) && i < (int(page) + 1) * 4; i++ {
         height := renders[i]()
         defaultOptions.GeoM.Translate(0, height)
     }
+}
+
+func MakeUnitAbilitiesElements(imageCache *util.ImageCache, unit UnitView, mediumFont *font.Font, x int, y int, layer uilib.UILayer, pureAbilities bool) []*uilib.UIElement {
+    var elements []*uilib.UIElement
+
+    page := uint32(0)
+
+    elements = append(elements, &uilib.UIElement{
+        Layer: layer,
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(x), float64(y))
+            renderUnitAbilities(screen, imageCache, unit, mediumFont, options, pureAbilities, page)
+        },
+    })
+
+    return elements
 }

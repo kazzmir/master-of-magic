@@ -1,5 +1,9 @@
 package units
 
+import (
+    "fmt"
+)
+
 type AbilityType int
 
 type Ability struct {
@@ -116,7 +120,7 @@ func (ability Ability) LbxFile() string {
         case AbilityDispelEvil: return ""
         case AbilityDoomBoltSpell: return ""
         case AbilityDoomGaze: return "special.lbx"
-        case AbilityFireballSpell: return ""
+        case AbilityFireballSpell: return "special.lbx"
         case AbilityFireBreath: return ""
         case AbilityFireImmunity: return ""
         case AbilityFirstStrike: return ""
@@ -134,7 +138,7 @@ func (ability Ability) LbxFile() string {
         case AbilityMagicImmunity: return ""
         case AbilityMeld: return ""
         case AbilityMerging: return ""
-        case AbilityMissileImmunity: return ""
+        case AbilityMissileImmunity: return "special.lbx"
         case AbilityMountaineer: return ""
         case AbilityNegateFirstStrike: return ""
         case AbilityNonCorporeal: return ""
@@ -145,13 +149,14 @@ func (ability Ability) LbxFile() string {
         case AbilityPurify: return ""
         case AbilityRegeneration: return ""
         case AbilityResistanceToAll: return ""
-        case AbilityScouting: return ""
+        case AbilityScouting: return "special.lbx"
         case AbilityStoningGaze: return ""
         case AbilityStoningImmunity: return ""
         case AbilityStoningTouch: return ""
         case AbilitySummonDemons: return ""
         case AbilityTeleporting: return ""
-        case AbilityThrown: return ""
+        case AbilityThrown: return "special2.lbx"
+        case AbilityToHit: return "special2.lbx"
         case AbilityWallCrusher: return ""
         case AbilityWeaponImmunity: return ""
         case AbilityWebSpell: return ""
@@ -193,8 +198,8 @@ func (ability Ability) Name() string {
         case AbilityDispelEvil: return ""
         case AbilityDoomBoltSpell: return "Doom Bolt Spell"
         case AbilityDoomGaze: return "Doom Gaze"
-        case AbilityFireballSpell: return ""
-        case AbilityFireBreath: return ""
+        case AbilityFireballSpell: return fmt.Sprintf("Fireball Spell x%v", ability.Value)
+        case AbilityFireBreath: return fmt.Sprintf("Fire Breath %v", ability.Value)
         case AbilityFireImmunity: return ""
         case AbilityFirstStrike: return ""
         case AbilityForester: return "Forester"
@@ -222,13 +227,14 @@ func (ability Ability) Name() string {
         case AbilityPurify: return "Purify"
         case AbilityRegeneration: return "Regeneration"
         case AbilityResistanceToAll: return ""
-        case AbilityScouting: return ""
+        case AbilityScouting: return "Scouting"
         case AbilityStoningGaze: return ""
         case AbilityStoningImmunity: return ""
         case AbilityStoningTouch: return ""
         case AbilitySummonDemons: return ""
         case AbilityTeleporting: return ""
-        case AbilityThrown: return ""
+        case AbilityThrown: return "Thrown"
+        case AbilityToHit: return fmt.Sprintf("+%v To Hit", ability.Value/10)
         case AbilityWallCrusher: return ""
         case AbilityWeaponImmunity: return ""
         case AbilityWebSpell: return ""
@@ -276,7 +282,7 @@ func (ability Ability) LbxIndex() int {
         case AbilityDispelEvil: return -1
         case AbilityDoomBoltSpell: return -1
         case AbilityDoomGaze: return 26
-        case AbilityFireballSpell: return -1
+        case AbilityFireballSpell: return 39
         case AbilityFireBreath: return -1
         case AbilityFireImmunity: return -1
         case AbilityFirstStrike: return -1
@@ -294,7 +300,7 @@ func (ability Ability) LbxIndex() int {
         case AbilityMagicImmunity: return -1
         case AbilityMeld: return -1
         case AbilityMerging: return -1
-        case AbilityMissileImmunity: return -1
+        case AbilityMissileImmunity: return 9
         case AbilityMountaineer: return -1
         case AbilityNegateFirstStrike: return -1
         case AbilityNonCorporeal: return -1
@@ -305,13 +311,14 @@ func (ability Ability) LbxIndex() int {
         case AbilityPurify: return -1
         case AbilityRegeneration: return -1
         case AbilityResistanceToAll: return -1
-        case AbilityScouting: return -1
+        case AbilityScouting: return 37
         case AbilityStoningGaze: return -1
         case AbilityStoningImmunity: return -1
         case AbilityStoningTouch: return -1
         case AbilitySummonDemons: return -1
         case AbilityTeleporting: return -1
-        case AbilityThrown: return -1
+        case AbilityThrown: return 19
+        case AbilityToHit: return 14
         case AbilityWallCrusher: return -1
         case AbilityWeaponImmunity: return -1
         case AbilityWebSpell: return -1

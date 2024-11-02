@@ -100,10 +100,14 @@ func MakeHireScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero, gol
             options.GeoM.Translate(10, 50)
             unitview.RenderUnitInfoStats(screen, &imageCache, hero, 15, descriptionFont, smallFont, options)
 
+            /*
             options.GeoM.Translate(0, 60)
             unitview.RenderUnitAbilities(screen, &imageCache, hero, mediumFont, options, true, 0)
+            */
         },
     })
+
+    elements = append(elements, unitview.MakeUnitAbilitiesElements(&imageCache, hero, mediumFont, 40, 124, 1, true)...)
 
     elements = append(elements, &uilib.UIElement{
         Layer: 1,
