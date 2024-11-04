@@ -5,6 +5,7 @@ import (
     "log"
     "fmt"
     "math"
+    "slices"
 
     "github.com/kazzmir/master-of-magic/game/magic/combat"
     "github.com/kazzmir/master-of-magic/game/magic/units"
@@ -236,10 +237,28 @@ func renderUnitAbilities(screen *ebiten.Image, imageCache *util.ImageCache, unit
             return float64(pic.Bounds().Dy() + 1)
         })
 
+        artifacts := slices.Clone(unit.GetArtifacts())
+
         for _, slot := range unit.GetArtifactSlots() {
             renders = append(renders, func() float64 {
+                for i := 0; i < len(artifacts); i++ {
+                    if artifacts[i] == nil {
+                        continue
+                    }
+
+                    if slot.CompatibleWith(artifacts[i].Type) {
+
+                        artifactPic, _ := imageCache.GetImage("items.lbx", artifacts[i].Image, 0)
+                        screen.DrawImage(artifactPic, &defaultOptions)
+
+                        artifacts = slices.Delete(artifacts, i, i+1)
+                        return float64(artifactPic.Bounds().Dy() + 1)
+                    }
+                }
+
                 pic, _ := imageCache.GetImage("itemisc.lbx", slot.ImageIndex() + 8, 0)
                 screen.DrawImage(pic, &defaultOptions)
+
                 return float64(pic.Bounds().Dy() + 1)
             })
         }
