@@ -311,7 +311,7 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
             },
         })
 
-        for slotIndex, slot := range hero.Slots() {
+        for slotIndex, slot := range hero.GetArtifactSlots() {
             slotOptions := options
             slotOptions.GeoM = baseGeom
             slotOptions.GeoM.Translate(float64(profile.Bounds().Dx()) + 8, 15)

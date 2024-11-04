@@ -2,6 +2,7 @@ package units
 
 import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/artifact"
     "github.com/kazzmir/master-of-magic/lib/fraction"
 )
 
@@ -58,5 +59,7 @@ type StackUnit interface {
     GetExperienceData() ExperienceData
     GetRawUnit() Unit
     GetToHitMelee() int
+    GetArtifactSlots() []artifact.ArtifactSlot
+    GetArtifacts() []*artifact.Artifact
 }
 

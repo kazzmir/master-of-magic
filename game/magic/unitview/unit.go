@@ -235,6 +235,15 @@ func renderUnitAbilities(screen *ebiten.Image, imageCache *util.ImageCache, unit
             mediumFont.Print(screen, x + float64(pic.Bounds().Dx() + 2), float64(y) + 5, 1, defaultOptions.ColorScale, fmt.Sprintf("%v (%v ep)", data.Name(), unit.GetExperience()))
             return float64(pic.Bounds().Dy() + 1)
         })
+
+        for _, slot := range unit.GetArtifactSlots() {
+            renders = append(renders, func() float64 {
+                pic, _ := imageCache.GetImage("itemisc.lbx", slot.ImageIndex() + 8, 0)
+                screen.DrawImage(pic, &defaultOptions)
+                return float64(pic.Bounds().Dy() + 1)
+            })
+        }
+
     }
 
     // FIXME: handle more than 4 abilities by using more columns
@@ -290,6 +299,7 @@ func MakeUnitAbilitiesElements(imageCache *util.ImageCache, unit UnitView, mediu
         // 1 for experience
         abilityCount += 1
         // 3 more for items
+        abilityCount += len(unit.GetArtifactSlots())
     }
 
     if abilityCount > 4 {

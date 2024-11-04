@@ -11,6 +11,7 @@ import (
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
     "github.com/kazzmir/master-of-magic/game/magic/units"
+    "github.com/kazzmir/master-of-magic/game/magic/artifact"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
 
@@ -45,6 +46,8 @@ type UnitView interface {
     GetHitPoints() int
     GetBaseHitPoints() int
     GetAbilities() []units.Ability
+    GetArtifactSlots() []artifact.ArtifactSlot
+    GetArtifacts() []*artifact.Artifact
 }
 
 type PortraitUnit interface {

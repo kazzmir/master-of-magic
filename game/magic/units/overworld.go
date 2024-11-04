@@ -2,6 +2,7 @@ package units
 
 import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/artifact"
     "github.com/kazzmir/master-of-magic/lib/fraction"
 )
 
@@ -358,4 +359,12 @@ func (unit *OverworldUnit) Move(dx int, dy int, cost fraction.Fraction){
     if unit.Y < 0 {
         unit.Y = 0
     }
+}
+
+func (unit *OverworldUnit) GetArtifactSlots() []artifact.ArtifactSlot {
+    return nil
+}
+
+func (unit *OverworldUnit) GetArtifacts() []*artifact.Artifact {
+    return nil
 }
