@@ -5,6 +5,11 @@ type ExperienceInfo interface {
     Crusade() bool
 }
 
+type ExperienceData interface {
+    ToInt() int
+    Name() string
+}
+
 type NormalExperienceLevel int
 
 const (
@@ -31,6 +36,23 @@ const (
     ExperienceSuperHero
     ExperienceDemiGod
 )
+
+func (level *NormalExperienceLevel) ToInt() int {
+    return int(*level)
+}
+
+func (level *NormalExperienceLevel) Name() string {
+    switch *level {
+        case ExperienceRecruit: return "Recruit"
+        case ExperienceRegular: return "Regular"
+        case ExperienceVeteran: return "Veteran"
+        case ExperienceElite: return "Elite"
+        case ExperienceUltraElite: return "Ultra Elite"
+        case ExperienceChampionNormal: return "Champion"
+    }
+
+    return ""
+}
 
 func (level NormalExperienceLevel) ExperienceRequired(warlordRetort bool, crusade bool) int {
     switch level {
@@ -175,4 +197,24 @@ func GetHeroExperienceLevel(experience int, warlordRetort bool, crusade bool) He
     }
 
     return levels[len(levels) - 1]
+}
+
+func (hero *HeroExperienceLevel) ToInt() int {
+    return int(*hero)
+}
+
+func (hero *HeroExperienceLevel) Name() string {
+    switch *hero {
+        case ExperienceHero: return "Hero"
+        case ExperienceMyrmidon: return "Myrmidon"
+        case ExperienceCaptain: return "Captain"
+        case ExperienceCommander: return "Commander"
+        case ExperienceChampionHero: return "Champion"
+        case ExperienceLord: return "Lord"
+        case ExperienceGrandLord: return "Grand Lord"
+        case ExperienceSuperHero: return "Super Hero"
+        case ExperienceDemiGod: return "Demigod"
+    }
+
+    return ""
 }

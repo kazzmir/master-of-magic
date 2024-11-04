@@ -225,6 +225,16 @@ func renderUnitAbilities(screen *ebiten.Image, imageCache *util.ImageCache, unit
     var renders []func() float64
 
     if !pureAbilities {
+        // experience badge
+        renders = append(renders, func() float64 {
+            data := unit.GetExperienceData()
+            experienceIndex := 102 + data.ToInt()
+            pic, _ := imageCache.GetImage("special.lbx", experienceIndex, 0)
+            screen.DrawImage(pic, &defaultOptions)
+            x, y := defaultOptions.GeoM.Apply(0, 0)
+            mediumFont.Print(screen, x + float64(pic.Bounds().Dx() + 2), float64(y) + 5, 1, defaultOptions.ColorScale, fmt.Sprintf("%v (%v ep)", data.Name(), unit.GetExperience()))
+            return float64(pic.Bounds().Dy() + 1)
+        })
     }
 
     // FIXME: handle more than 4 abilities by using more columns
@@ -257,7 +267,7 @@ func renderUnitAbilities(screen *ebiten.Image, imageCache *util.ImageCache, unit
     }
 }
 
-func MakeUnitAbilitiesElements(imageCache *util.ImageCache, unit UnitView, mediumFont *font.Font, x int, y int, layer uilib.UILayer, pureAbilities bool) []*uilib.UIElement {
+func MakeUnitAbilitiesElements(imageCache *util.ImageCache, unit UnitView, mediumFont *font.Font, x int, y int, layer uilib.UILayer, getAlpha *util.AlphaFadeFunc, pureAbilities bool) []*uilib.UIElement {
     var elements []*uilib.UIElement
 
     page := uint32(0)
@@ -266,6 +276,7 @@ func MakeUnitAbilitiesElements(imageCache *util.ImageCache, unit UnitView, mediu
         Layer: layer,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
             var options ebiten.DrawImageOptions
+            options.ColorScale.ScaleAlpha((*getAlpha)())
             options.GeoM.Translate(float64(x), float64(y))
             renderUnitAbilities(screen, imageCache, unit, mediumFont, options, pureAbilities, page)
         },

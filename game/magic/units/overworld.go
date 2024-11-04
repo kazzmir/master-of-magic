@@ -87,6 +87,11 @@ func (unit *OverworldUnit) GetExperience() int {
     return unit.Experience
 }
 
+func (unit *OverworldUnit) GetExperienceData() ExperienceData {
+    level := unit.GetExperienceLevel()
+    return &level
+}
+
 func (unit *OverworldUnit) GetRawUnit() Unit {
     return unit.Unit
 }

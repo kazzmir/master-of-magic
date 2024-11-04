@@ -55,6 +55,7 @@ type StackUnit interface {
     GetRangedAttacks() int
     AddExperience(int)
     GetExperience() int
+    GetExperienceData() ExperienceData
     GetRawUnit() Unit
     GetToHitMelee() int
 }

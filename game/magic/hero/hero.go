@@ -701,6 +701,11 @@ func (hero *Hero) GetProductionCost() int {
     return hero.Unit.GetProductionCost()
 }
 
+func (hero *Hero) GetExperienceData() units.ExperienceData {
+    level := hero.GetExperienceLevel()
+    return &level
+}
+
 func (hero *Hero) GetExperienceLevel() units.HeroExperienceLevel {
     if hero.Unit.ExperienceInfo != nil {
         return units.GetHeroExperienceLevel(hero.Unit.Experience, hero.Unit.ExperienceInfo.HasWarlord(), hero.Unit.ExperienceInfo.Crusade())
