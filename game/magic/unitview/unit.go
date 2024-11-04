@@ -239,6 +239,8 @@ func renderUnitAbilities(screen *ebiten.Image, imageCache *util.ImageCache, unit
 
         artifacts := slices.Clone(unit.GetArtifacts())
 
+        background, _ := imageCache.GetImage("special.lbx", 3, 0)
+
         for _, slot := range unit.GetArtifactSlots() {
             renders = append(renders, func() float64 {
                 for i := 0; i < len(artifacts); i++ {
@@ -247,6 +249,7 @@ func renderUnitAbilities(screen *ebiten.Image, imageCache *util.ImageCache, unit
                     }
 
                     if slot.CompatibleWith(artifacts[i].Type) {
+                        screen.DrawImage(background, &defaultOptions)
 
                         artifactPic, _ := imageCache.GetImage("items.lbx", artifacts[i].Image, 0)
                         screen.DrawImage(artifactPic, &defaultOptions)
