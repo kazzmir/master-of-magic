@@ -4,7 +4,6 @@
 * myrror plane
 * filter buildings by race
 * neutral towns/cities
-* add lairs/dungeons/towers etc
 * game menu - implement save/load game
 * play midi music
 * font editor - choose colors for font palette
@@ -45,3 +44,4 @@
 10/24/2024 * roaming bands of neutral enemies
 10/31/2024 * city catchment area
 11/5/2024 * show hero stats/abilities in context menu
+??? * add lairs/dungeons/towers etc
