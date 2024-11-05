@@ -1,5 +1,9 @@
 package units
 
+import (
+    "fmt"
+)
+
 type AbilityType int
 
 type Ability struct {
@@ -15,6 +19,23 @@ func MakeAbility(ability AbilityType) Ability {
 
 func MakeAbilityValue(ability AbilityType, value float32) Ability {
     return Ability{Ability: ability, Value: value}
+}
+
+func romanNumeral(value int) string {
+    switch value {
+        case 1: return "I"
+        case 2: return "II"
+        case 3: return "III"
+        case 4: return "IV"
+        case 5: return "V"
+        case 6: return "VI"
+        case 7: return "VII"
+        case 8: return "VIII"
+        case 9: return "IX"
+        case 10: return "X"
+    }
+
+    return fmt.Sprintf("%v", value)
 }
 
 const (
@@ -114,9 +135,9 @@ func (ability Ability) LbxFile() string {
         case AbilityDeathGaze: return ""
         case AbilityDeathImmunity: return ""
         case AbilityDispelEvil: return ""
-        case AbilityDoomBoltSpell: return ""
+        case AbilityDoomBoltSpell: return "special.lbx"
         case AbilityDoomGaze: return "special.lbx"
-        case AbilityFireballSpell: return ""
+        case AbilityFireballSpell: return "special.lbx"
         case AbilityFireBreath: return ""
         case AbilityFireImmunity: return ""
         case AbilityFirstStrike: return ""
@@ -134,7 +155,7 @@ func (ability Ability) LbxFile() string {
         case AbilityMagicImmunity: return ""
         case AbilityMeld: return ""
         case AbilityMerging: return ""
-        case AbilityMissileImmunity: return ""
+        case AbilityMissileImmunity: return "special.lbx"
         case AbilityMountaineer: return ""
         case AbilityNegateFirstStrike: return ""
         case AbilityNonCorporeal: return ""
@@ -145,36 +166,32 @@ func (ability Ability) LbxFile() string {
         case AbilityPurify: return ""
         case AbilityRegeneration: return ""
         case AbilityResistanceToAll: return ""
-        case AbilityScouting: return ""
+        case AbilityScouting: return "special.lbx"
         case AbilityStoningGaze: return ""
         case AbilityStoningImmunity: return ""
         case AbilityStoningTouch: return ""
         case AbilitySummonDemons: return ""
         case AbilityTeleporting: return ""
-        case AbilityThrown: return ""
+        case AbilityThrown: return "special2.lbx"
+        case AbilityToHit: return "special2.lbx"
         case AbilityWallCrusher: return ""
         case AbilityWeaponImmunity: return ""
         case AbilityWebSpell: return ""
         case AbilityWindWalking: return ""
-        case AbilityAgility: return ""
-        case AbilitySuperAgility: return ""
-        case AbilityArcanePower: return ""
-        case AbilityArmsmaster: return ""
-        case AbilityBlademaster: return ""
-        case AbilityCaster: return ""
-        case AbilityCharmed: return ""
-        case AbilityConstitution: return ""
-        case AbilityLeadership: return ""
-        case AbilitySuperLeadership: return ""
-        case AbilityLegendary: return ""
-        case AbilitySuperLegendary: return ""
-        case AbilityLucky: return ""
-        case AbilityMight: return ""
-        case AbilitySuperMight: return ""
-        case AbilityNoble: return ""
-        case AbilityPrayermaster: return ""
-        case AbilitySuperPrayermaster: return ""
-        case AbilitySage: return ""
+        case AbilityAgility, AbilitySuperAgility: return "special2.lbx"
+        case AbilityArcanePower, AbilitySuperArcanePower: return "special.lbx"
+        case AbilityArmsmaster, AbilitySuperArmsmaster: return "special.lbx"
+        case AbilityBlademaster, AbilitySuperBlademaster: return "special.lbx"
+        case AbilityCaster: return "special.lbx"
+        case AbilityCharmed: return "special.lbx"
+        case AbilityConstitution, AbilitySuperConstitution: return "special.lbx"
+        case AbilityLeadership, AbilitySuperLeadership: return "special.lbx"
+        case AbilityLegendary, AbilitySuperLegendary: return "special.lbx"
+        case AbilityLucky: return "special.lbx"
+        case AbilityMight, AbilitySuperMight: return "special.lbx"
+        case AbilityNoble: return "special.lbx"
+        case AbilityPrayermaster, AbilitySuperPrayermaster: return "special.lbx"
+        case AbilitySage, AbilitySuperSage: return "special.lbx"
     }
 
     return ""
@@ -198,8 +215,8 @@ func (ability Ability) Name() string {
         case AbilityDispelEvil: return ""
         case AbilityDoomBoltSpell: return "Doom Bolt Spell"
         case AbilityDoomGaze: return "Doom Gaze"
-        case AbilityFireballSpell: return ""
-        case AbilityFireBreath: return ""
+        case AbilityFireballSpell: return fmt.Sprintf("Fireball Spell x%v", ability.Value)
+        case AbilityFireBreath: return fmt.Sprintf("Fire Breath %v", ability.Value)
         case AbilityFireImmunity: return ""
         case AbilityFirstStrike: return ""
         case AbilityForester: return "Forester"
@@ -227,13 +244,14 @@ func (ability Ability) Name() string {
         case AbilityPurify: return "Purify"
         case AbilityRegeneration: return "Regeneration"
         case AbilityResistanceToAll: return ""
-        case AbilityScouting: return ""
+        case AbilityScouting: return fmt.Sprintf("Scouting %v", romanNumeral(int(ability.Value)))
         case AbilityStoningGaze: return ""
         case AbilityStoningImmunity: return ""
         case AbilityStoningTouch: return ""
         case AbilitySummonDemons: return ""
         case AbilityTeleporting: return ""
-        case AbilityThrown: return ""
+        case AbilityThrown: return "Thrown"
+        case AbilityToHit: return fmt.Sprintf("+%v To Hit", ability.Value/10)
         case AbilityWallCrusher: return ""
         case AbilityWeaponImmunity: return ""
         case AbilityWebSpell: return ""
@@ -246,7 +264,7 @@ func (ability Ability) Name() string {
         case AbilitySuperArmsmaster: return "Super Armsmaster"
         case AbilityBlademaster: return "Blademaster"
         case AbilitySuperBlademaster: return "Super Blademaster"
-        case AbilityCaster: return "Caster"
+        case AbilityCaster: return fmt.Sprintf("Caster %v mp", ability.Value)
         case AbilityCharmed: return "Charmed"
         case AbilityConstitution: return "Constitution"
         case AbilitySuperConstitution: return "Super Constitution"
@@ -279,9 +297,9 @@ func (ability Ability) LbxIndex() int {
         case AbilityDeathGaze: return -1
         case AbilityDeathImmunity: return -1
         case AbilityDispelEvil: return -1
-        case AbilityDoomBoltSpell: return -1
+        case AbilityDoomBoltSpell: return 41
         case AbilityDoomGaze: return 26
-        case AbilityFireballSpell: return -1
+        case AbilityFireballSpell: return 39
         case AbilityFireBreath: return -1
         case AbilityFireImmunity: return -1
         case AbilityFirstStrike: return -1
@@ -299,7 +317,7 @@ func (ability Ability) LbxIndex() int {
         case AbilityMagicImmunity: return -1
         case AbilityMeld: return -1
         case AbilityMerging: return -1
-        case AbilityMissileImmunity: return -1
+        case AbilityMissileImmunity: return 9
         case AbilityMountaineer: return -1
         case AbilityNegateFirstStrike: return -1
         case AbilityNonCorporeal: return -1
@@ -310,36 +328,32 @@ func (ability Ability) LbxIndex() int {
         case AbilityPurify: return -1
         case AbilityRegeneration: return -1
         case AbilityResistanceToAll: return -1
-        case AbilityScouting: return -1
+        case AbilityScouting: return 37
         case AbilityStoningGaze: return -1
         case AbilityStoningImmunity: return -1
         case AbilityStoningTouch: return -1
         case AbilitySummonDemons: return -1
         case AbilityTeleporting: return -1
-        case AbilityThrown: return -1
+        case AbilityThrown: return 19
+        case AbilityToHit: return 14
         case AbilityWallCrusher: return -1
         case AbilityWeaponImmunity: return -1
         case AbilityWebSpell: return -1
         case AbilityWindWalking: return -1
-        case AbilityAgility: return -1
-        case AbilitySuperAgility: return -1
-        case AbilityArcanePower: return -1
-        case AbilityArmsmaster: return -1
-        case AbilityBlademaster: return -1
-        case AbilityCaster: return -1
-        case AbilityCharmed: return -1
-        case AbilityConstitution: return -1
-        case AbilityLeadership: return -1
-        case AbilitySuperLeadership: return -1
-        case AbilityLegendary: return -1
-        case AbilitySuperLegendary: return -1
-        case AbilityLucky: return -1
-        case AbilityMight: return -1
-        case AbilitySuperMight: return -1
-        case AbilityNoble: return -1
-        case AbilityPrayermaster: return -1
-        case AbilitySuperPrayermaster: return -1
-        case AbilitySage: return -1
+        case AbilityAgility, AbilitySuperAgility: return 32
+        case AbilityArcanePower, AbilitySuperArcanePower: return 54
+        case AbilityArmsmaster, AbilitySuperArmsmaster: return 46
+        case AbilityBlademaster, AbilitySuperBlademaster: return 47
+        case AbilityCaster: return 55
+        case AbilityCharmed: return 59
+        case AbilityConstitution, AbilitySuperConstitution: return 50
+        case AbilityLeadership, AbilitySuperLeadership: return 43
+        case AbilityLegendary, AbilitySuperLegendary: return 45
+        case AbilityLucky: return 58
+        case AbilityMight, AbilitySuperMight: return 52
+        case AbilityNoble: return 60
+        case AbilityPrayermaster, AbilitySuperPrayermaster: return 57
+        case AbilitySage, AbilitySuperSage: return 61
     }
 
     return -1

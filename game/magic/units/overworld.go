@@ -2,6 +2,7 @@ package units
 
 import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/artifact"
     "github.com/kazzmir/master-of-magic/lib/fraction"
 )
 
@@ -22,6 +23,10 @@ type OverworldUnit struct {
 
 func (unit *OverworldUnit) GetLbxFile() string {
     return unit.Unit.LbxFile
+}
+
+func (unit *OverworldUnit) GetTitle() string {
+    return ""
 }
 
 func (unit *OverworldUnit) GetLbxIndex() int {
@@ -81,6 +86,11 @@ func (unit *OverworldUnit) AddExperience(amount int) {
 
 func (unit *OverworldUnit) GetExperience() int {
     return unit.Experience
+}
+
+func (unit *OverworldUnit) GetExperienceData() ExperienceData {
+    level := unit.GetExperienceLevel()
+    return &level
 }
 
 func (unit *OverworldUnit) GetRawUnit() Unit {
@@ -349,4 +359,12 @@ func (unit *OverworldUnit) Move(dx int, dy int, cost fraction.Fraction){
     if unit.Y < 0 {
         unit.Y = 0
     }
+}
+
+func (unit *OverworldUnit) GetArtifactSlots() []artifact.ArtifactSlot {
+    return nil
+}
+
+func (unit *OverworldUnit) GetArtifacts() []*artifact.Artifact {
+    return nil
 }

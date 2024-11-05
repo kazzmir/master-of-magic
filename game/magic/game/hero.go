@@ -92,7 +92,7 @@ func MakeHireScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero, gol
             options.GeoM.Translate(31, 6)
             options.GeoM.Translate(51, 7)
 
-            unitview.RenderUnitInfoNormal(screen, &imageCache, hero, hero.Title(), descriptionFont, smallFont, options)
+            unitview.RenderUnitInfoNormal(screen, &imageCache, hero, hero.GetTitle(), descriptionFont, smallFont, options)
 
             options.GeoM.Reset()
             options.GeoM.Translate(0, yTop)
@@ -100,10 +100,14 @@ func MakeHireScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero, gol
             options.GeoM.Translate(10, 50)
             unitview.RenderUnitInfoStats(screen, &imageCache, hero, 15, descriptionFont, smallFont, options)
 
+            /*
             options.GeoM.Translate(0, 60)
-            unitview.RenderUnitAbilities(screen, &imageCache, hero, mediumFont, options)
+            unitview.RenderUnitAbilities(screen, &imageCache, hero, mediumFont, options, true, 0)
+            */
         },
     })
+
+    elements = append(elements, unitview.MakeUnitAbilitiesElements(&imageCache, hero, mediumFont, 40, 124, 1, &getAlpha, true)...)
 
     elements = append(elements, &uilib.UIElement{
         Layer: 1,

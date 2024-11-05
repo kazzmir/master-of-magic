@@ -1383,14 +1383,14 @@ func createScenario18(cache *lbx.LbxCache) *gamelib.Game {
     x, y := game.FindValidCityLocation()
 
     city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.Map)
-    city.Population = 6190
+    city.Population = 8190
     city.Plane = data.PlaneArcanus
     city.Banner = wizard.Banner
     city.Buildings.Insert(buildinglib.BuildingFortress)
     city.ProducingBuilding = buildinglib.BuildingGranary
     city.ProducingUnit = units.UnitNone
     city.Race = wizard.Race
-    city.Farmers = 3
+    city.Farmers = 5
     city.Workers = 3
     city.Wall = false
 
@@ -1405,11 +1405,19 @@ func createScenario18(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 3)
 
+    /*
     rakir := hero.MakeHero(units.MakeOverworldUnit(units.HeroRakir), hero.HeroRakir, "bubba")
     player.AddHero(rakir)
-    rakir.AddExperience(500)
+    rakir.AddExperience(528)
+    */
+    mysticX := hero.MakeHero(units.MakeOverworldUnit(units.HeroMysticX), hero.HeroMysticX, "bubba")
+    player.AddHero(mysticX)
+    mysticX.SetExtraAbilities()
+    mysticX.AddExperience(528)
 
-    stack := player.FindStackByUnit(rakir)
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.Warlocks, x, y, data.PlaneArcanus, player.GetBanner(), nil))
+
+    stack := player.FindStackByUnit(mysticX)
     player.SetSelectedStack(stack)
 
     player.LiftFog(stack.X(), stack.Y(), 2)

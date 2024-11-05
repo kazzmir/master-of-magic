@@ -2,12 +2,15 @@ package unitview
 
 import (
     // "image/color"
-    // "log"
+    "log"
     "fmt"
+    "math"
+    "slices"
 
     "github.com/kazzmir/master-of-magic/game/magic/combat"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/util"
+    uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     "github.com/kazzmir/master-of-magic/lib/font"
 
     "github.com/hajimehoshi/ebiten/v2"
@@ -65,20 +68,21 @@ func renderUpkeep(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitVi
 func RenderUnitInfoNormal(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitView, extraTitle string, descriptionFont *font.Font, smallFont *font.Font, defaultOptions ebiten.DrawImageOptions) {
     x, y := defaultOptions.GeoM.Apply(0, 0)
 
-    descriptionFont.Print(screen, x, y, 1, defaultOptions.ColorScale, unit.GetName())
-
     if extraTitle != "" {
+        descriptionFont.Print(screen, x, y, 1, defaultOptions.ColorScale, unit.GetName())
         y += float64(descriptionFont.Height())
         defaultOptions.GeoM.Translate(0, float64(descriptionFont.Height()))
-        descriptionFont.Print(screen, x, y, 1, defaultOptions.ColorScale, extraTitle)
+        descriptionFont.Print(screen, x, y, 1, defaultOptions.ColorScale, "The " + extraTitle)
 
         y += float64(descriptionFont.Height())
         defaultOptions.GeoM.Translate(0, float64(descriptionFont.Height()))
-
     } else {
-        y += 15
-        defaultOptions.GeoM.Translate(0, 14)
+        descriptionFont.Print(screen, x, y+2, 1, defaultOptions.ColorScale, unit.GetName())
+        y += 17
+        defaultOptions.GeoM.Translate(0, 16)
     }
+
+    defaultOptions.GeoM.Translate(0, -1)
 
     smallFont.Print(screen, x, y, 1, defaultOptions.ColorScale, "Moves")
     y += float64(smallFont.Height()) + 1
@@ -218,15 +222,147 @@ func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit
     showNIcons(healthIcon, unit.GetBaseHitPoints(), healthIconGold, unit.GetHitPoints() - unit.GetBaseHitPoints(), x, y)
 }
 
-func RenderUnitAbilities(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitView, mediumFont *font.Font, defaultOptions ebiten.DrawImageOptions) {
-    // FIXME: handle more than 4 abilities by using more columns
-    for _, ability := range unit.GetAbilities() {
-        pic, err := imageCache.GetImage(ability.LbxFile(), ability.LbxIndex(), 0)
-        if err == nil {
+func renderUnitAbilities(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitView, mediumFont *font.Font, defaultOptions ebiten.DrawImageOptions, pureAbilities bool, page uint32) {
+    var renders []func() float64
+
+    if !pureAbilities {
+        // experience badge
+        renders = append(renders, func() float64 {
+            data := unit.GetExperienceData()
+            experienceIndex := 102 + data.ToInt()
+            pic, _ := imageCache.GetImage("special.lbx", experienceIndex, 0)
             screen.DrawImage(pic, &defaultOptions)
             x, y := defaultOptions.GeoM.Apply(0, 0)
-            mediumFont.Print(screen, x + float64(pic.Bounds().Dx() + 2), float64(y) + 5, 1, defaultOptions.ColorScale, ability.Name())
-            defaultOptions.GeoM.Translate(0, float64(pic.Bounds().Dy() + 1))
+            mediumFont.Print(screen, x + float64(pic.Bounds().Dx() + 2), float64(y) + 5, 1, defaultOptions.ColorScale, fmt.Sprintf("%v (%v ep)", data.Name(), unit.GetExperience()))
+            return float64(pic.Bounds().Dy() + 1)
+        })
+
+        artifacts := slices.Clone(unit.GetArtifacts())
+
+        background, _ := imageCache.GetImage("special.lbx", 3, 0)
+
+        for _, slot := range unit.GetArtifactSlots() {
+            renders = append(renders, func() float64 {
+                for i := 0; i < len(artifacts); i++ {
+                    if artifacts[i] == nil {
+                        continue
+                    }
+
+                    if slot.CompatibleWith(artifacts[i].Type) {
+                        screen.DrawImage(background, &defaultOptions)
+
+                        artifactPic, _ := imageCache.GetImage("items.lbx", artifacts[i].Image, 0)
+                        screen.DrawImage(artifactPic, &defaultOptions)
+
+                        artifacts = slices.Delete(artifacts, i, i+1)
+                        return float64(artifactPic.Bounds().Dy() + 1)
+                    }
+                }
+
+                pic, _ := imageCache.GetImage("itemisc.lbx", slot.ImageIndex() + 8, 0)
+                screen.DrawImage(pic, &defaultOptions)
+
+                return float64(pic.Bounds().Dy() + 1)
+            })
         }
+
     }
+
+    // FIXME: handle more than 4 abilities by using more columns
+    for _, ability := range unit.GetAbilities() {
+        renders = append(renders, func() float64 {
+            pic, err := imageCache.GetImage(ability.LbxFile(), ability.LbxIndex(), 0)
+            if err == nil {
+                screen.DrawImage(pic, &defaultOptions)
+                x, y := defaultOptions.GeoM.Apply(0, 0)
+                mediumFont.Print(screen, x + float64(pic.Bounds().Dx() + 2), float64(y) + 5, 1, defaultOptions.ColorScale, ability.Name())
+                return float64(pic.Bounds().Dy() + 1)
+            } else {
+                log.Printf("Error: unable to render ability %#v %v", ability, ability.Name())
+            }
+
+            return 0
+        })
+    }
+
+    if len(renders) == 0 {
+        return
+    }
+
+    pages := uint32(math.Ceil(float64(len(renders)) / 4))
+    page = page % pages
+
+    for i := int(page) * 4; i < len(renders) && i < (int(page) + 1) * 4; i++ {
+        height := renders[i]()
+        defaultOptions.GeoM.Translate(0, height)
+    }
+}
+
+func MakeUnitAbilitiesElements(imageCache *util.ImageCache, unit UnitView, mediumFont *font.Font, x int, y int, layer uilib.UILayer, getAlpha *util.AlphaFadeFunc, pureAbilities bool) []*uilib.UIElement {
+    var elements []*uilib.UIElement
+
+    page := uint32(0)
+
+    elements = append(elements, &uilib.UIElement{
+        Layer: layer,
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+            var options ebiten.DrawImageOptions
+            options.ColorScale.ScaleAlpha((*getAlpha)())
+            options.GeoM.Translate(float64(x), float64(y))
+            renderUnitAbilities(screen, imageCache, unit, mediumFont, options, pureAbilities, page)
+        },
+    })
+
+    upImages, _ := imageCache.GetImages("unitview.lbx", 3)
+    downImages, _ := imageCache.GetImages("unitview.lbx", 4)
+
+    abilityCount := len(unit.GetAbilities())
+    if !pureAbilities {
+        // 1 for experience
+        abilityCount += 1
+        // 3 more for items
+        abilityCount += len(unit.GetArtifactSlots())
+    }
+
+    if abilityCount > 4 {
+        pageUpRect := util.ImageRect(x + 195, y, upImages[0])
+        pageUpIndex := 0
+        elements = append(elements, &uilib.UIElement{
+            Rect: pageUpRect,
+            Layer: layer,
+            LeftClick: func(element *uilib.UIElement){
+                pageUpIndex = 1
+            },
+            LeftClickRelease: func(element *uilib.UIElement){
+                pageUpIndex = 0
+                page -= 1
+            },
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(pageUpRect.Min.X), float64(pageUpRect.Min.Y))
+                screen.DrawImage(upImages[pageUpIndex], &options)
+            },
+        })
+
+        pageDownRect := util.ImageRect(x + 195, y + 60, downImages[0])
+        pageDownIndex := 0
+        elements = append(elements, &uilib.UIElement{
+            Rect: pageDownRect,
+            Layer: layer,
+            LeftClick: func(element *uilib.UIElement){
+                pageDownIndex = 1
+            },
+            LeftClickRelease: func(element *uilib.UIElement){
+                pageDownIndex = 0
+                page += 1
+            },
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(pageDownRect.Min.X), float64(pageDownRect.Min.Y))
+                screen.DrawImage(downImages[pageDownIndex], &options)
+            },
+        })
+    }
+
+    return elements
 }

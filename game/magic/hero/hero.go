@@ -433,7 +433,7 @@ func (hero *Hero) GetName() string {
 }
 
 func (hero *Hero) FullName() string {
-    return fmt.Sprintf("%v the %v", hero.Unit.GetName(), hero.Title())
+    return fmt.Sprintf("%v the %v", hero.Unit.GetName(), hero.GetTitle())
 }
 
 func (hero *Hero) GetPortraitLbxInfo() (string, int) {
@@ -701,6 +701,11 @@ func (hero *Hero) GetProductionCost() int {
     return hero.Unit.GetProductionCost()
 }
 
+func (hero *Hero) GetExperienceData() units.ExperienceData {
+    level := hero.GetExperienceLevel()
+    return &level
+}
+
 func (hero *Hero) GetExperienceLevel() units.HeroExperienceLevel {
     if hero.Unit.ExperienceInfo != nil {
         return units.GetHeroExperienceLevel(hero.Unit.Experience, hero.Unit.ExperienceInfo.HasWarlord(), hero.Unit.ExperienceInfo.Crusade())
@@ -743,17 +748,7 @@ func (hero *Hero) GainLevel(maxLevel units.HeroExperienceLevel) {
 }
 
 func (hero *Hero) GetBaseMeleeAttackPower() int {
-    return hero.Unit.GetBaseMeleeAttackPower()
-}
-
-func (hero *Hero) GetMeleeAttackPower() int {
-    base := hero.GetBaseMeleeAttackPower()
-
-    for _, item := range hero.Equipment {
-        if item != nil {
-            base += item.MeleeBonus()
-        }
-    }
+    base := hero.Unit.GetBaseMeleeAttackPower()
 
     level := hero.GetExperienceLevel()
     switch level {
@@ -771,8 +766,38 @@ func (hero *Hero) GetMeleeAttackPower() int {
     return base
 }
 
+func (hero *Hero) GetMeleeAttackPower() int {
+    base := hero.GetBaseMeleeAttackPower()
+
+    for _, item := range hero.Equipment {
+        if item != nil {
+            base += item.MeleeBonus()
+        }
+    }
+
+    return base
+}
+
 func (hero *Hero) GetBaseRangedAttackPower() int {
-    return hero.Unit.GetBaseRangedAttackPower()
+    base := hero.Unit.GetBaseRangedAttackPower()
+    if base == 0 {
+        return 0
+    }
+
+    level := hero.GetExperienceLevel()
+    switch level {
+        case units.ExperienceHero:
+        case units.ExperienceMyrmidon: base += 1
+        case units.ExperienceCaptain: base += 2
+        case units.ExperienceCommander: base += 3
+        case units.ExperienceChampionHero: base += 4
+        case units.ExperienceLord: base += 5
+        case units.ExperienceGrandLord: base += 6
+        case units.ExperienceSuperHero: base += 7
+        case units.ExperienceDemiGod: base += 8
+    }
+
+    return base
 }
 
 func (hero *Hero) GetRangedAttackPower() int {
@@ -788,34 +813,11 @@ func (hero *Hero) GetRangedAttackPower() int {
         }
     }
 
-    level := hero.GetExperienceLevel()
-    switch level {
-        case units.ExperienceHero:
-        case units.ExperienceMyrmidon: base += 1
-        case units.ExperienceCaptain: base += 2
-        case units.ExperienceCommander: base += 3
-        case units.ExperienceChampionHero: base += 4
-        case units.ExperienceLord: base += 5
-        case units.ExperienceGrandLord: base += 6
-        case units.ExperienceSuperHero: base += 7
-        case units.ExperienceDemiGod: base += 8
-    }
-
     return base
 }
 
 func (hero *Hero) GetBaseDefense() int {
-    return hero.Unit.GetBaseDefense()
-}
-
-func (hero *Hero) GetDefense() int {
     base := hero.Unit.GetBaseDefense()
-
-    for _, item := range hero.Equipment {
-        if item != nil {
-            base += item.DefenseBonus()
-        }
-    }
 
     level := hero.GetExperienceLevel()
     switch level {
@@ -833,18 +835,20 @@ func (hero *Hero) GetDefense() int {
     return base
 }
 
-func (hero *Hero) GetBaseResistance() int {
-    return hero.Unit.GetBaseResistance()
-}
-
-func (hero *Hero) GetResistance() int {
-    base := hero.Unit.GetBaseResistance()
+func (hero *Hero) GetDefense() int {
+    base := hero.Unit.GetBaseDefense()
 
     for _, item := range hero.Equipment {
         if item != nil {
-            base += item.ResistanceBonus()
+            base += item.DefenseBonus()
         }
     }
+
+    return base
+}
+
+func (hero *Hero) GetBaseResistance() int {
+    base := hero.Unit.GetBaseResistance()
 
     level := hero.GetExperienceLevel()
     switch level {
@@ -862,7 +866,25 @@ func (hero *Hero) GetResistance() int {
     return base
 }
 
+func (hero *Hero) GetResistance() int {
+    base := hero.Unit.GetBaseResistance()
+
+    for _, item := range hero.Equipment {
+        if item != nil {
+            base += item.ResistanceBonus()
+        }
+    }
+
+    return base
+}
+
 func (hero *Hero) GetHitPoints() int {
+    base := hero.Unit.GetBaseHitPoints()
+
+    return base
+}
+
+func (hero *Hero) GetBaseHitPoints() int {
     base := hero.Unit.GetBaseHitPoints()
 
     level := hero.GetExperienceLevel()
@@ -881,15 +903,11 @@ func (hero *Hero) GetHitPoints() int {
     return base
 }
 
-func (hero *Hero) GetBaseHitPoints() int {
-    return hero.Unit.GetBaseHitPoints()
-}
-
 func (hero *Hero) GetAbilities() []units.Ability {
     return hero.Abilities
 }
 
-func (hero *Hero) Title() string {
+func (hero *Hero) GetTitle() string {
     switch hero.HeroType {
         case HeroTorin: return "Chosen"
         case HeroFang: return "Draconian"
@@ -931,146 +949,150 @@ func (hero *Hero) Title() string {
     return ""
 }
 
-func (hero *Hero) Slots() [3]artifact.ArtifactSlot {
+func (hero *Hero) GetArtifacts() []*artifact.Artifact {
+    return hero.Equipment[:]
+}
+
+func (hero *Hero) GetArtifactSlots() []artifact.ArtifactSlot {
     if hero.Unit.Unit.Equals(units.HeroTorin) {
-        return [3]artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
+        return []artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
     }
 
     if hero.Unit.Unit.Equals(units.HeroFang) {
-        return [3]artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
+        return []artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
     }
 
     if hero.Unit.Unit.Equals(units.HeroBShan) {
-        return [3]artifact.ArtifactSlot{artifact.ArtifactSlotRangedWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
+        return []artifact.ArtifactSlot{artifact.ArtifactSlotRangedWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
     }
 
     if hero.Unit.Unit.Equals(units.HeroMorgana) {
-        return [3]artifact.ArtifactSlot{artifact.ArtifactSlotMagicWeapon, artifact.ArtifactSlotJewelry, artifact.ArtifactSlotJewelry}
+        return []artifact.ArtifactSlot{artifact.ArtifactSlotMagicWeapon, artifact.ArtifactSlotJewelry, artifact.ArtifactSlotJewelry}
     }
 
     if hero.Unit.Unit.Equals(units.HeroWarrax) {
-        return [3]artifact.ArtifactSlot{artifact.ArtifactSlotAnyWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
+        return []artifact.ArtifactSlot{artifact.ArtifactSlotAnyWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
     }
 
     if hero.Unit.Unit.Equals(units.HeroMysticX) {
-        return [3]artifact.ArtifactSlot{artifact.ArtifactSlotAnyWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
+        return []artifact.ArtifactSlot{artifact.ArtifactSlotAnyWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
     }
 
     if hero.Unit.Unit.Equals(units.HeroBahgtru) {
-        return [3]artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
+        return []artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
     }
 
     if hero.Unit.Unit.Equals(units.HeroDethStryke) {
-        return [3]artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
+        return []artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
     }
 
     if hero.Unit.Unit.Equals(units.HeroSpyder) {
-        return [3]artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
+        return []artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
     }
 
     if hero.Unit.Unit.Equals(units.HeroSirHarold) {
-        return [3]artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
+        return []artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
     }
 
     if hero.Unit.Unit.Equals(units.HeroBrax) {
-        return [3]artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
+        return []artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
     }
 
     if hero.Unit.Unit.Equals(units.HeroRavashack) {
-        return [3]artifact.ArtifactSlot{artifact.ArtifactSlotMagicWeapon, artifact.ArtifactSlotJewelry, artifact.ArtifactSlotJewelry}
+        return []artifact.ArtifactSlot{artifact.ArtifactSlotMagicWeapon, artifact.ArtifactSlotJewelry, artifact.ArtifactSlotJewelry}
     }
 
     if hero.Unit.Unit.Equals(units.HeroGreyfairer) {
-        return [3]artifact.ArtifactSlot{artifact.ArtifactSlotMagicWeapon, artifact.ArtifactSlotJewelry, artifact.ArtifactSlotJewelry}
+        return []artifact.ArtifactSlot{artifact.ArtifactSlotMagicWeapon, artifact.ArtifactSlotJewelry, artifact.ArtifactSlotJewelry}
     }
 
     if hero.Unit.Unit.Equals(units.HeroShalla) {
-        return [3]artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
+        return []artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
     }
 
     if hero.Unit.Unit.Equals(units.HeroRoland) {
-        return [3]artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
+        return []artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
     }
 
     if hero.Unit.Unit.Equals(units.HeroMalleus) {
-        return [3]artifact.ArtifactSlot{artifact.ArtifactSlotMagicWeapon, artifact.ArtifactSlotJewelry, artifact.ArtifactSlotJewelry}
+        return []artifact.ArtifactSlot{artifact.ArtifactSlotMagicWeapon, artifact.ArtifactSlotJewelry, artifact.ArtifactSlotJewelry}
     }
 
     if hero.Unit.Unit.Equals(units.HeroMortu) {
-        return [3]artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
+        return []artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
     }
 
     if hero.Unit.Unit.Equals(units.HeroGunther) {
-        return [3]artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
+        return []artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
     }
 
     if hero.Unit.Unit.Equals(units.HeroRakir) {
-        return [3]artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
+        return []artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
     }
 
     if hero.Unit.Unit.Equals(units.HeroJaer) {
-        return [3]artifact.ArtifactSlot{artifact.ArtifactSlotMagicWeapon, artifact.ArtifactSlotJewelry, artifact.ArtifactSlotJewelry}
+        return []artifact.ArtifactSlot{artifact.ArtifactSlotMagicWeapon, artifact.ArtifactSlotJewelry, artifact.ArtifactSlotJewelry}
     }
 
     if hero.Unit.Unit.Equals(units.HeroTaki) {
-        return [3]artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
+        return []artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
     }
 
     if hero.Unit.Unit.Equals(units.HeroYramrag) {
-        return [3]artifact.ArtifactSlot{artifact.ArtifactSlotMagicWeapon, artifact.ArtifactSlotJewelry, artifact.ArtifactSlotJewelry}
+        return []artifact.ArtifactSlot{artifact.ArtifactSlotMagicWeapon, artifact.ArtifactSlotJewelry, artifact.ArtifactSlotJewelry}
     }
 
     if hero.Unit.Unit.Equals(units.HeroValana) {
-        return [3]artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
+        return []artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
     }
 
     if hero.Unit.Unit.Equals(units.HeroElana) {
-        return [3]artifact.ArtifactSlot{artifact.ArtifactSlotMagicWeapon, artifact.ArtifactSlotJewelry, artifact.ArtifactSlotJewelry}
+        return []artifact.ArtifactSlot{artifact.ArtifactSlotMagicWeapon, artifact.ArtifactSlotJewelry, artifact.ArtifactSlotJewelry}
     }
 
     if hero.Unit.Unit.Equals(units.HeroAerie) {
-        return [3]artifact.ArtifactSlot{artifact.ArtifactSlotMagicWeapon, artifact.ArtifactSlotJewelry, artifact.ArtifactSlotJewelry}
+        return []artifact.ArtifactSlot{artifact.ArtifactSlotMagicWeapon, artifact.ArtifactSlotJewelry, artifact.ArtifactSlotJewelry}
     }
 
     if hero.Unit.Unit.Equals(units.HeroMarcus) {
-        return [3]artifact.ArtifactSlot{artifact.ArtifactSlotRangedWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
+        return []artifact.ArtifactSlot{artifact.ArtifactSlotRangedWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
     }
 
     if hero.Unit.Unit.Equals(units.HeroReywind) {
-        return [3]artifact.ArtifactSlot{artifact.ArtifactSlotAnyWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
+        return []artifact.ArtifactSlot{artifact.ArtifactSlotAnyWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
     }
 
     if hero.Unit.Unit.Equals(units.HeroAlorra) {
-        return [3]artifact.ArtifactSlot{artifact.ArtifactSlotRangedWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
+        return []artifact.ArtifactSlot{artifact.ArtifactSlotRangedWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
     }
 
     if hero.Unit.Unit.Equals(units.HeroZaldron) {
-        return [3]artifact.ArtifactSlot{artifact.ArtifactSlotMagicWeapon, artifact.ArtifactSlotJewelry, artifact.ArtifactSlotJewelry}
+        return []artifact.ArtifactSlot{artifact.ArtifactSlotMagicWeapon, artifact.ArtifactSlotJewelry, artifact.ArtifactSlotJewelry}
     }
 
     if hero.Unit.Unit.Equals(units.HeroShinBo) {
-        return [3]artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
+        return []artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
     }
 
     if hero.Unit.Unit.Equals(units.HeroSerena) {
-        return [3]artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
+        return []artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
     }
 
     if hero.Unit.Unit.Equals(units.HeroShuri) {
-        return [3]artifact.ArtifactSlot{artifact.ArtifactSlotRangedWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
+        return []artifact.ArtifactSlot{artifact.ArtifactSlotRangedWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
     }
 
     if hero.Unit.Unit.Equals(units.HeroTheria) {
-        return [3]artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
+        return []artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
     }
 
     if hero.Unit.Unit.Equals(units.HeroTumu) {
-        return [3]artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
+        return []artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
     }
 
     if hero.Unit.Unit.Equals(units.HeroAureus) {
-        return [3]artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
+        return []artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
     }
 
-    return [3]artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotArmor}
+    return []artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotArmor}
 }

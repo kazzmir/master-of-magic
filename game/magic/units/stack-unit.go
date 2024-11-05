@@ -2,6 +2,7 @@ package units
 
 import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/artifact"
     "github.com/kazzmir/master-of-magic/lib/fraction"
 )
 
@@ -13,6 +14,7 @@ type StackUnit interface {
     SetPatrol(bool)
     IsFlying() bool
     GetName() string
+    GetTitle() string
     GetPlane() data.Plane
     GetMovesLeft() fraction.Fraction
     SetMovesLeft(fraction.Fraction)
@@ -54,7 +56,10 @@ type StackUnit interface {
     GetRangedAttacks() int
     AddExperience(int)
     GetExperience() int
+    GetExperienceData() ExperienceData
     GetRawUnit() Unit
     GetToHitMelee() int
+    GetArtifactSlots() []artifact.ArtifactSlot
+    GetArtifacts() []*artifact.Artifact
 }
 

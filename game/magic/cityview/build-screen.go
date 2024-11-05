@@ -236,10 +236,9 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
         },
     }
 
-    mainElement := &uilib.UIElement{
-    }
+    var mainElements []*uilib.UIElement
 
-    elements = append(elements, mainElement)
+    // elements = append(elements, mainElement)
 
     buildingInfo, err := imageCache.GetImage("unitview.lbx", 31, 0)
 
@@ -262,8 +261,9 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
 
         allowsWrapped := mediumFont.CreateWrappedText(100, 1, allows)
 
-        ui.RemoveElement(mainElement)
-        mainElement = &uilib.UIElement{
+        ui.RemoveElements(mainElements)
+        mainElements = nil
+        mainElements = append(mainElements, &uilib.UIElement{
             Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
                 images, err := imageCache.GetImages("cityscap.lbx", GetBuildingIndex(building))
                 if err == nil {
@@ -318,14 +318,15 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
                 }
                 */
             },
-        }
-        ui.AddElement(mainElement)
+        })
+        ui.AddElements(mainElements)
     }
 
     updateMainElementUnit := func(unit units.Unit){
-        ui.RemoveElement(mainElement)
+        ui.RemoveElements(mainElements)
+        mainElements = nil
         bannerUnit := units.MakeOverworldUnitFromUnit(unit, 0, 0, city.Plane, city.Banner, nil)
-        mainElement = &uilib.UIElement{
+        mainElements = append(mainElements, &uilib.UIElement{
             Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(104, 28)
@@ -339,12 +340,18 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
                 options.GeoM.Translate(85, 48)
                 unitview.RenderUnitInfoStats(screen, imageCache, bannerUnit, 10, descriptionFont, smallFont, options)
 
+                /*
                 options.GeoM.Reset()
                 options.GeoM.Translate(85, 108)
-                unitview.RenderUnitAbilities(screen, imageCache, bannerUnit, mediumFont, options)
+                unitview.RenderUnitAbilities(screen, imageCache, bannerUnit, mediumFont, options, true)
+                */
             },
+        })
+        var getAlpha util.AlphaFadeFunc = func () float32 {
+            return 1
         }
-        ui.AddElement(mainElement)
+        mainElements = append(mainElements, unitview.MakeUnitAbilitiesElements(imageCache, bannerUnit, mediumFont, 85, 108, 0, &getAlpha, true)...)
+        ui.AddElements(mainElements)
     }
 
     if err == nil {

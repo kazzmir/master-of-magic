@@ -11,6 +11,7 @@ import (
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
     "github.com/kazzmir/master-of-magic/game/magic/units"
+    "github.com/kazzmir/master-of-magic/game/magic/artifact"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
 
@@ -19,6 +20,7 @@ import (
 
 type UnitView interface {
     GetName() string
+    GetTitle() string // for heroes. normal units will not have a title
     GetBanner() data.BannerType
     GetCombatLbxFile() string
     GetCombatIndex(units.Facing) int
@@ -30,6 +32,8 @@ type UnitView interface {
     GetUpkeepMana() int
     GetMovementSpeed() int
     GetProductionCost() int
+    GetExperience() int
+    GetExperienceData() units.ExperienceData
     GetBaseMeleeAttackPower() int
     GetMeleeAttackPower() int
     GetBaseRangedAttackPower() int
@@ -42,6 +46,8 @@ type UnitView interface {
     GetHitPoints() int
     GetBaseHitPoints() int
     GetAbilities() []units.Ability
+    GetArtifactSlots() []artifact.ArtifactSlot
+    GetArtifacts() []*artifact.Artifact
 }
 
 type PortraitUnit interface {
@@ -142,19 +148,23 @@ func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, di
 
             options.GeoM.Reset()
             options.GeoM.Translate(31, 6)
-            options.GeoM.Translate(51, 8)
+            options.GeoM.Translate(51, 6)
 
-            RenderUnitInfoNormal(screen, &imageCache, unit, "", descriptionFont, smallFont, options)
+            RenderUnitInfoNormal(screen, &imageCache, unit, unit.GetTitle(), descriptionFont, smallFont, options)
 
             options.GeoM.Reset()
             options.GeoM.Translate(31, 6)
             options.GeoM.Translate(10, 50)
             RenderUnitInfoStats(screen, &imageCache, unit, 15, descriptionFont, smallFont, options)
 
+            /*
             options.GeoM.Translate(0, 60)
-            RenderUnitAbilities(screen, &imageCache, unit, mediumFont, options)
+            RenderUnitAbilities(screen, &imageCache, unit, mediumFont, options, false, 0)
+            */
         },
     })
+
+    elements = append(elements, MakeUnitAbilitiesElements(&imageCache, unit, mediumFont, 40, 114, 1, &getAlpha, false)...)
 
     elements = append(elements, &uilib.UIElement{
         Layer: 1,
