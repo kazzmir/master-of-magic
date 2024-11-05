@@ -164,7 +164,7 @@ func (ability Ability) LbxFile() string {
         case AbilityAgility, AbilitySuperAgility: return "special2.lbx"
         case AbilityArcanePower, AbilitySuperArcanePower: return "special.lbx"
         case AbilityArmsmaster, AbilitySuperArmsmaster: return "special.lbx"
-        case AbilityBlademaster: return "special.lbx"
+        case AbilityBlademaster, AbilitySuperBlademaster: return "special.lbx"
         case AbilityCaster: return "special.lbx"
         case AbilityCharmed: return "special.lbx"
         case AbilityConstitution, AbilitySuperConstitution: return "special.lbx"
@@ -326,7 +326,7 @@ func (ability Ability) LbxIndex() int {
         case AbilityAgility, AbilitySuperAgility: return 32
         case AbilityArcanePower, AbilitySuperArcanePower: return 54
         case AbilityArmsmaster, AbilitySuperArmsmaster: return 46
-        case AbilityBlademaster: return 47
+        case AbilityBlademaster, AbilitySuperBlademaster: return 47
         case AbilityCaster: return 55
         case AbilityCharmed: return 59
         case AbilityConstitution, AbilitySuperConstitution: return 50
