@@ -21,6 +21,23 @@ func MakeAbilityValue(ability AbilityType, value float32) Ability {
     return Ability{Ability: ability, Value: value}
 }
 
+func romanNumeral(value int) string {
+    switch value {
+        case 1: return "I"
+        case 2: return "II"
+        case 3: return "III"
+        case 4: return "IV"
+        case 5: return "V"
+        case 6: return "VI"
+        case 7: return "VII"
+        case 8: return "VIII"
+        case 9: return "IX"
+        case 10: return "X"
+    }
+
+    return fmt.Sprintf("%v", value)
+}
+
 const (
     AbilityNone AbilityType = iota
     // unit abilities
@@ -118,7 +135,7 @@ func (ability Ability) LbxFile() string {
         case AbilityDeathGaze: return ""
         case AbilityDeathImmunity: return ""
         case AbilityDispelEvil: return ""
-        case AbilityDoomBoltSpell: return ""
+        case AbilityDoomBoltSpell: return "special.lbx"
         case AbilityDoomGaze: return "special.lbx"
         case AbilityFireballSpell: return "special.lbx"
         case AbilityFireBreath: return ""
@@ -227,7 +244,7 @@ func (ability Ability) Name() string {
         case AbilityPurify: return "Purify"
         case AbilityRegeneration: return "Regeneration"
         case AbilityResistanceToAll: return ""
-        case AbilityScouting: return "Scouting"
+        case AbilityScouting: return fmt.Sprintf("Scouting %v", romanNumeral(int(ability.Value)))
         case AbilityStoningGaze: return ""
         case AbilityStoningImmunity: return ""
         case AbilityStoningTouch: return ""
@@ -280,7 +297,7 @@ func (ability Ability) LbxIndex() int {
         case AbilityDeathGaze: return -1
         case AbilityDeathImmunity: return -1
         case AbilityDispelEvil: return -1
-        case AbilityDoomBoltSpell: return -1
+        case AbilityDoomBoltSpell: return 41
         case AbilityDoomGaze: return 26
         case AbilityFireballSpell: return 39
         case AbilityFireBreath: return -1
