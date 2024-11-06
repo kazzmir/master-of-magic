@@ -163,22 +163,31 @@ func makeEncounter(encounterType EncounterType, difficulty data.DifficultySettin
 
     budget = int(float64(budget) * (1.0 + bonus))
 
-    switch encounterType {
-        case EncounterTypeLair:
-            switch chooseValue(map[string]int{"chaos": 40, "death": 40, "nature": 20}) {
-                case "chaos":
-                    guardians, secondary = computeChaosNodeEnemies(budget)
-                case "death":
-                    guardians, secondary = computeDeathNodeEnemies(budget)
-                case "nature":
-                    guardians, secondary = computeNatureNodeEnemies(budget)
-            }
-        case EncounterTypePlaneTower:
-        case EncounterTypeAncientTemple:
-        case EncounterTypeFallenTemple:
-        case EncounterTypeRuins:
-        case EncounterTypeAbandonedKeep:
-        case EncounterTypeDungeon:
+    chooseRealm := func() string {
+        switch encounterType {
+            case EncounterTypeLair: return chooseValue(map[string]int{"chaos": 40, "death": 40, "nature": 20})
+            case EncounterTypePlaneTower: return chooseValue(map[string]int{"chaos": 10, "death": 20, "nature": 10, "life": 10, "sorcery": 10})
+            case EncounterTypeAncientTemple: return chooseValue(map[string]int{"death": 75, "life": 25})
+            case EncounterTypeFallenTemple: return chooseValue(map[string]int{"death": 75, "life": 25})
+            case EncounterTypeRuins: return chooseValue(map[string]int{"death": 75, "life": 25})
+            case EncounterTypeAbandonedKeep: return chooseValue(map[string]int{"chaos": 40, "death": 40, "nature": 20})
+            case EncounterTypeDungeon: return chooseValue(map[string]int{"chaos": 40, "death": 40, "nature": 20})
+        }
+
+        return ""
+    }
+
+    switch chooseRealm() {
+        case "chaos":
+            guardians, secondary = computeChaosNodeEnemies(budget)
+        case "death":
+            guardians, secondary = computeDeathNodeEnemies(budget)
+        case "nature":
+            guardians, secondary = computeNatureNodeEnemies(budget)
+        case "life":
+            guardians, secondary = computeLifeNodeEnemies(budget)
+        case "sorcery":
+            guardians, secondary = computeSorceryNodeEnemies(budget)
     }
 
     return &ExtraEncounter{
@@ -403,7 +412,7 @@ func (mapObject *Map) CreateEncounter(x int, y int, encounterType EncounterType,
     return true
 }
 
-func (mapObject *Map) CreateEncounterRandom(x int, y int, plane data.Plane, difficulty data.DifficultySetting) bool {
+func (mapObject *Map) CreateEncounterRandom(x int, y int, difficulty data.DifficultySetting, plane data.Plane) bool {
     return mapObject.CreateEncounter(x, y, randomEncounterType(), difficulty, rand.N(2) == 0, plane)
 }
 
