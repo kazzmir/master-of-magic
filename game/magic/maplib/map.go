@@ -412,6 +412,16 @@ func (mapObject *Map) CreateNode(x int, y int, node MagicNode, plane data.Plane,
     return out
 }
 
+func (mapObject *Map) GetLair(x int, y int) *ExtraEncounter {
+    if extra, ok := mapObject.ExtraMap[image.Pt(x, y)]; ok {
+        if encounter, ok := extra.(*ExtraEncounter); ok {
+            return encounter
+        }
+    }
+
+    return nil
+}
+
 func (mapObject *Map) GetMagicNode(x int, y int) *ExtraMagicNode {
     if extra, ok := mapObject.ExtraMap[image.Pt(x, y)]; ok {
         if node, ok := extra.(*ExtraMagicNode); ok {
