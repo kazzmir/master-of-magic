@@ -298,6 +298,38 @@ func computeDeathNodeEnemies(budget int) ([]units.Unit, []units.Unit) {
     return chooseGuardianAndSecondary(enemyCosts, makeUnit, budget)
 }
 
+func computeLifeNodeEnemies(budget int) ([]units.Unit, []units.Unit) {
+    type Enemy int
+    const (
+        None Enemy = iota
+        GuardianSpirit
+        Unicorns
+        Angel
+        ArchAngel
+    )
+
+    makeUnit := func(enemy Enemy) units.Unit {
+        switch enemy {
+            case GuardianSpirit: return units.GuardianSpirit
+            case Unicorns: return units.Unicorn
+            case Angel: return units.Angel
+            case ArchAngel: return units.ArchAngel
+        }
+
+        return units.UnitNone
+    }
+
+    enemyCosts := map[Enemy]int{
+        None: 0,
+        GuardianSpirit: 75,
+        Unicorns: 250,
+        Angel: 550,
+        ArchAngel: 950,
+    }
+
+    return chooseGuardianAndSecondary(enemyCosts, makeUnit, budget)
+}
+
 func computeChaosNodeEnemies(budget int) ([]units.Unit, []units.Unit) {
     type Enemy int
     const (
