@@ -1922,7 +1922,7 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
             if canMove {
                 node := game.Map.GetMagicNode(step.X, step.Y)
                 if node != nil && !node.Empty {
-                    if game.confirmEncounter(yield, node) {
+                    if game.confirmMagicNodeEncounter(yield, node) {
 
                         stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost)
                         game.showMovement(yield, oldX, oldY, stack)
@@ -2243,20 +2243,7 @@ func (game *Game) doCityScreen(yield coroutine.YieldFunc, city *citylib.City, pl
     game.Drawer = oldDrawer
 }
 
-func (game *Game) confirmEncounter(yield coroutine.YieldFunc, node *maplib.ExtraMagicNode) bool {
-    quit := false
-
-    result := false
-
-    yes := func(){
-        quit = true
-        result = true
-    }
-
-    no := func(){
-        quit = true
-    }
-
+func (game *Game) confirmMagicNodeEncounter(yield coroutine.YieldFunc, node *maplib.ExtraMagicNode) bool {
     reloadLbx, err := game.Cache.GetLbxFile("reload.lbx")
     if err != nil {
         return false
@@ -2287,7 +2274,24 @@ func (game *Game) confirmEncounter(yield coroutine.YieldFunc, node *maplib.Extra
 
     animation := util.MakePaletteRotateAnimation(reloadLbx, lairIndex, rotateIndexLow, rotateIndexHigh)
 
-    game.HudUI.AddElements(uilib.MakeLairConfirmDialogWithLayer(game.HudUI, game.Cache, &game.ImageCache, animation, 1, fmt.Sprintf("You have found a %v node. Scouts have spotted %v within the %v node. Do you wish to enter?", nodeName, guardianName, nodeName), yes, no))
+    return game.confirmEncounter(yield, fmt.Sprintf("You have found a %v node. Scouts have spotted %v within the %v node. Do you wish to enter?", nodeName, guardianName, nodeName), animation)
+}
+
+func (game *Game) confirmEncounter(yield coroutine.YieldFunc, message string, animation *util.Animation) bool {
+    quit := false
+
+    result := false
+
+    yes := func(){
+        quit = true
+        result = true
+    }
+
+    no := func(){
+        quit = true
+    }
+
+    game.HudUI.AddElements(uilib.MakeLairConfirmDialogWithLayer(game.HudUI, game.Cache, &game.ImageCache, animation, 1, message, yes, no))
 
     yield()
     for !quit {
@@ -2303,19 +2307,6 @@ func (game *Game) confirmEncounter(yield coroutine.YieldFunc, node *maplib.Extra
 }
 
 func (game *Game) confirmLairEncounter(yield coroutine.YieldFunc, encounter *maplib.ExtraEncounter) bool {
-    quit := false
-
-    result := false
-
-    yes := func(){
-        quit = true
-        result = true
-    }
-
-    no := func(){
-        quit = true
-    }
-
     lairIndex := 13
     encounterName := ""
 
@@ -2332,16 +2323,7 @@ func (game *Game) confirmLairEncounter(yield coroutine.YieldFunc, encounter *map
 
     pic, _ := game.ImageCache.GetImage("reload.lbx", lairIndex, 0)
 
-    game.HudUI.AddElements(uilib.MakeLairConfirmDialogWithLayer(game.HudUI, game.Cache, &game.ImageCache, util.MakeAnimation([]*ebiten.Image{pic}, true), 1, fmt.Sprintf("You have found a %v. Scouts have spotted %v within the %v. Do you wish to enter?", encounterName, guardianName, encounterName), yes, no))
-
-    yield()
-    for !quit {
-        game.Counter += 1
-        game.HudUI.StandardUpdate()
-        yield()
-    }
-
-    return result
+    return game.confirmEncounter(yield, fmt.Sprintf("You have found a %v. Scouts have spotted %v within the %v. Do you wish to enter?", encounterName, guardianName, encounterName), util.MakeAnimation([]*ebiten.Image{pic}, true))
 }
 
 func (game *Game) doLairEncounter(yield coroutine.YieldFunc, player *playerlib.Player, stack *playerlib.UnitStack, encounter *maplib.ExtraEncounter){

@@ -1765,7 +1765,7 @@ func createScenario22(cache *lbx.LbxCache) *gamelib.Game {
 
     x, y := game.FindValidCityLocation()
 
-    game.Map.CreateEncounter(x, y+1, maplib.EncounterTypeLair, false, game.Plane)
+    game.Map.CreateEncounter(x, y+1, maplib.EncounterTypeLair, game.Settings.Difficulty, false, game.Plane)
 
     city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.Map)
     city.Population = 6190

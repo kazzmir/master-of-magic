@@ -132,7 +132,7 @@ func chooseValue(choices map[string]int) string {
     return ""
 }
 
-func makeEncounter(encounterType EncounterType, weakStrength bool, plane data.Plane) *ExtraEncounter {
+func makeEncounter(encounterType EncounterType, difficulty data.DifficultySetting, weakStrength bool, plane data.Plane) *ExtraEncounter {
     var guardians []units.Unit
     var secondary []units.Unit
 
@@ -150,6 +150,18 @@ func makeEncounter(encounterType EncounterType, weakStrength bool, plane data.Pl
             budget = (rand.N(90) + 1) * 50 + 250
         }
     }
+
+    bonus := float64(0)
+    switch difficulty {
+        case data.DifficultyIntro: bonus = -0.75
+        case data.DifficultyEasy: bonus = -0.5
+        case data.DifficultyAverage: bonus = -0.25
+        case data.DifficultyHard: bonus = 0
+        case data.DifficultyExtreme: bonus = 0.25
+        case data.DifficultyImpossible: bonus = 0.50
+    }
+
+    budget = int(float64(budget) * (1.0 + bonus))
 
     switch encounterType {
         case EncounterTypeLair:
@@ -381,18 +393,18 @@ func (mapObject *Map) GetBonusTile(x int, y int) data.BonusType {
     return data.BonusNone
 }
 
-func (mapObject *Map) CreateEncounter(x int, y int, encounterType EncounterType, weakStrength bool, plane data.Plane) bool {
+func (mapObject *Map) CreateEncounter(x int, y int, encounterType EncounterType, difficulty data.DifficultySetting, weakStrength bool, plane data.Plane) bool {
     _, ok := mapObject.ExtraMap[image.Pt(x, y)]
     if ok {
         return false
     }
 
-    mapObject.ExtraMap[image.Pt(x, y)] = makeEncounter(encounterType, weakStrength, plane)
+    mapObject.ExtraMap[image.Pt(x, y)] = makeEncounter(encounterType, difficulty, weakStrength, plane)
     return true
 }
 
-func (mapObject *Map) CreateEncounterRandom(x int, y int, plane data.Plane) bool {
-    return mapObject.CreateEncounter(x, y, randomEncounterType(), rand.N(2) == 0, plane)
+func (mapObject *Map) CreateEncounterRandom(x int, y int, plane data.Plane, difficulty data.DifficultySetting) bool {
+    return mapObject.CreateEncounter(x, y, randomEncounterType(), difficulty, rand.N(2) == 0, plane)
 }
 
 func (mapObject *Map) CreateNode(x int, y int, node MagicNode, plane data.Plane, magicSetting data.MagicSetting, difficulty data.DifficultySetting) *ExtraMagicNode {
