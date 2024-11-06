@@ -2309,11 +2309,41 @@ func (game *Game) confirmEncounter(yield coroutine.YieldFunc, message string, an
 func (game *Game) confirmLairEncounter(yield coroutine.YieldFunc, encounter *maplib.ExtraEncounter) bool {
     lairIndex := 13
     encounterName := ""
+    article := ""
 
     switch encounter.Type {
         case maplib.EncounterTypeLair:
-            lairIndex = 13
+            lairIndex = 17
             encounterName = "monster lair"
+            article = "a"
+        case maplib.EncounterTypeCave:
+            lairIndex = 17
+            encounterName = "mysterious cave"
+            article = "a"
+        case maplib.EncounterTypePlaneTower:
+            lairIndex = 9
+            encounterName = "tower"
+            article = "a"
+        case maplib.EncounterTypeAncientTemple:
+            lairIndex = 15
+            encounterName = "ancient temple"
+            article = "a"
+        case maplib.EncounterTypeFallenTemple:
+            lairIndex = 19
+            encounterName = "fallen temple"
+            article = "a"
+        case maplib.EncounterTypeRuins:
+            lairIndex = 18
+            encounterName = "ruins"
+            article = "some"
+        case maplib.EncounterTypeAbandonedKeep:
+            lairIndex = 16
+            encounterName = "abandoned keep"
+            article = "an"
+        case maplib.EncounterTypeDungeon:
+            lairIndex = 14
+            encounterName = "dungeon"
+            article = "a"
     }
 
     guardianName := ""
@@ -2323,7 +2353,7 @@ func (game *Game) confirmLairEncounter(yield coroutine.YieldFunc, encounter *map
 
     pic, _ := game.ImageCache.GetImage("reload.lbx", lairIndex, 0)
 
-    return game.confirmEncounter(yield, fmt.Sprintf("You have found a %v. Scouts have spotted %v within the %v. Do you wish to enter?", encounterName, guardianName, encounterName), util.MakeAnimation([]*ebiten.Image{pic}, true))
+    return game.confirmEncounter(yield, fmt.Sprintf("You have found %v %v. Scouts have spotted %v within the %v. Do you wish to enter?", article, encounterName, guardianName, encounterName), util.MakeAnimation([]*ebiten.Image{pic}, true))
 }
 
 func (game *Game) doLairEncounter(yield coroutine.YieldFunc, player *playerlib.Player, stack *playerlib.UnitStack, encounter *maplib.ExtraEncounter){
@@ -2343,7 +2373,13 @@ func (game *Game) doLairEncounter(yield coroutine.YieldFunc, player *playerlib.P
     }
 
     switch encounter.Type {
-        case maplib.EncounterTypeLair: zone.Lair = true
+        case maplib.EncounterTypeLair, maplib.EncounterTypeCave: zone.Lair = true
+        case maplib.EncounterTypePlaneTower: zone.Tower = true
+        case maplib.EncounterTypeAncientTemple: zone.AncientTemple = true
+        case maplib.EncounterTypeFallenTemple: zone.FallenTemple = true
+        case maplib.EncounterTypeRuins: zone.Ruins = true
+        case maplib.EncounterTypeAbandonedKeep: zone.AbandonedKeep = true
+        case maplib.EncounterTypeDungeon: zone.Dungeon = true
     }
 
     result := game.doCombat(yield, player, stack, &defender, playerlib.MakeUnitStackFromUnits(enemies), zone)

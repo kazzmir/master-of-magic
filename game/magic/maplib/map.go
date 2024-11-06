@@ -81,6 +81,7 @@ type EncounterType int
 const (
     // lair, plane tower, ancient temple, fallen temple, ruins, abandoned keep, dungeon
     EncounterTypeLair EncounterType = iota
+    EncounterTypeCave
     EncounterTypePlaneTower
     EncounterTypePlaneTowerOpen
     EncounterTypeAncientTemple
@@ -93,6 +94,7 @@ const (
 func randomEncounterType() EncounterType {
     all := []EncounterType{
         EncounterTypeLair,
+        EncounterTypeCave,
         EncounterTypePlaneTower,
         EncounterTypeAncientTemple,
         EncounterTypeFallenTemple,
@@ -166,6 +168,7 @@ func makeEncounter(encounterType EncounterType, difficulty data.DifficultySettin
     chooseRealm := func() string {
         switch encounterType {
             case EncounterTypeLair: return chooseValue(map[string]int{"chaos": 40, "death": 40, "nature": 20})
+            case EncounterTypeCave: return chooseValue(map[string]int{"chaos": 40, "death": 40, "nature": 20})
             case EncounterTypePlaneTower: return chooseValue(map[string]int{"chaos": 10, "death": 20, "nature": 10, "life": 10, "sorcery": 10})
             case EncounterTypeAncientTemple: return chooseValue(map[string]int{"death": 75, "life": 25})
             case EncounterTypeFallenTemple: return chooseValue(map[string]int{"death": 75, "life": 25})
@@ -200,7 +203,7 @@ func (extra *ExtraEncounter) DrawLayer1(screen *ebiten.Image, imageCache *util.I
     index := -1
 
     switch extra.Type {
-        case EncounterTypeLair: index = 71
+        case EncounterTypeLair, EncounterTypeCave: index = 71
         case EncounterTypePlaneTower: index = 69
         case EncounterTypePlaneTowerOpen: index = 70
         case EncounterTypeAncientTemple: index = 72
