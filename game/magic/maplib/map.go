@@ -76,6 +76,157 @@ func (bonus *ExtraBonus) DrawLayer2(screen *ebiten.Image, imageCache *util.Image
     // nothing
 }
 
+type EncounterType int
+
+const (
+    // lair, plane tower, ancient temple, fallen temple, ruins, abandoned keep, dungeon
+    EncounterTypeLair EncounterType = iota
+    EncounterTypeCave
+    EncounterTypePlaneTower
+    EncounterTypePlaneTowerOpen
+    EncounterTypeAncientTemple
+    EncounterTypeFallenTemple
+    EncounterTypeRuins
+    EncounterTypeAbandonedKeep
+    EncounterTypeDungeon
+)
+
+func randomEncounterType() EncounterType {
+    all := []EncounterType{
+        EncounterTypeLair,
+        EncounterTypeCave,
+        EncounterTypePlaneTower,
+        EncounterTypeAncientTemple,
+        EncounterTypeFallenTemple,
+        EncounterTypeRuins,
+        EncounterTypeAbandonedKeep,
+        EncounterTypeDungeon,
+    }
+
+    return all[rand.N(len(all))]
+}
+
+// lair, plane tower, etc
+type ExtraEncounter struct {
+    Type EncounterType
+    Units []units.Unit
+}
+
+// choices is a map from a name to the chance of choosing that name, where all the int values should add up to 100
+// an individual int is a percentage chance to choose the given key
+// for example, choices might be the map {"a": 30, "b": 30, "c": 40}
+// which means that a and b should both have a 30% chance of being picked, and c has a 40% chance of being picked
+func chooseValue(choices map[string]int) string {
+    total := 0
+    for _, value := range choices {
+        total += value
+    }
+
+    pick := rand.N(total)
+    for key, value := range choices {
+        if pick < value {
+            return key
+        }
+
+        pick -= value
+    }
+
+    return ""
+}
+
+func makeEncounter(encounterType EncounterType, difficulty data.DifficultySetting, weakStrength bool, plane data.Plane) *ExtraEncounter {
+    var guardians []units.Unit
+    var secondary []units.Unit
+
+    budget := 0
+    if weakStrength {
+        if plane == data.PlaneArcanus {
+            budget = (rand.N(20) + 1) * 30
+        } else {
+            budget = (rand.N(30) + 1) * 30
+        }
+    } else {
+        if plane == data.PlaneArcanus {
+            budget = (rand.N(80) + 1) * 50 + 250
+        } else {
+            budget = (rand.N(90) + 1) * 50 + 250
+        }
+    }
+
+    bonus := float64(0)
+    switch difficulty {
+        case data.DifficultyIntro: bonus = -0.75
+        case data.DifficultyEasy: bonus = -0.5
+        case data.DifficultyAverage: bonus = -0.25
+        case data.DifficultyHard: bonus = 0
+        case data.DifficultyExtreme: bonus = 0.25
+        case data.DifficultyImpossible: bonus = 0.50
+    }
+
+    budget = int(float64(budget) * (1.0 + bonus))
+
+    chooseRealm := func() string {
+        switch encounterType {
+            case EncounterTypeLair: return chooseValue(map[string]int{"chaos": 40, "death": 40, "nature": 20})
+            case EncounterTypeCave: return chooseValue(map[string]int{"chaos": 40, "death": 40, "nature": 20})
+            case EncounterTypePlaneTower: return chooseValue(map[string]int{"chaos": 10, "death": 20, "nature": 10, "life": 10, "sorcery": 10})
+            case EncounterTypeAncientTemple: return chooseValue(map[string]int{"death": 75, "life": 25})
+            case EncounterTypeFallenTemple: return chooseValue(map[string]int{"death": 75, "life": 25})
+            case EncounterTypeRuins: return chooseValue(map[string]int{"death": 75, "life": 25})
+            case EncounterTypeAbandonedKeep: return chooseValue(map[string]int{"chaos": 40, "death": 40, "nature": 20})
+            case EncounterTypeDungeon: return chooseValue(map[string]int{"chaos": 40, "death": 40, "nature": 20})
+        }
+
+        return ""
+    }
+
+    switch chooseRealm() {
+        case "chaos":
+            guardians, secondary = computeChaosNodeEnemies(budget)
+        case "death":
+            guardians, secondary = computeDeathNodeEnemies(budget)
+        case "nature":
+            guardians, secondary = computeNatureNodeEnemies(budget)
+        case "life":
+            guardians, secondary = computeLifeNodeEnemies(budget)
+        case "sorcery":
+            guardians, secondary = computeSorceryNodeEnemies(budget)
+    }
+
+    return &ExtraEncounter{
+        Type: encounterType,
+        Units: append(guardians, secondary...),
+    }
+}
+
+func (extra *ExtraEncounter) DrawLayer1(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64, tileWidth int, tileHeight int){
+    index := -1
+
+    switch extra.Type {
+        case EncounterTypeLair, EncounterTypeCave: index = 71
+        case EncounterTypePlaneTower: index = 69
+        case EncounterTypePlaneTowerOpen: index = 70
+        case EncounterTypeAncientTemple: index = 72
+        case EncounterTypeFallenTemple: index = 75
+        case EncounterTypeRuins: index = 74
+        case EncounterTypeAbandonedKeep: index = 73
+        case EncounterTypeDungeon: index = 74
+    }
+
+    if index == -1 {
+        return
+    }
+
+    pic, err := imageCache.GetImage("mapback.lbx", index, 0)
+    if err == nil {
+        screen.DrawImage(pic, options)
+    }
+}
+
+func (extra *ExtraEncounter) DrawLayer2(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64, tileWidth int, tileHeight int){
+    // nuthin'
+}
+
 type ExtraMagicNode struct {
     Kind MagicNode
     Empty bool
@@ -254,6 +405,20 @@ func (mapObject *Map) GetBonusTile(x int, y int) data.BonusType {
     return data.BonusNone
 }
 
+func (mapObject *Map) CreateEncounter(x int, y int, encounterType EncounterType, difficulty data.DifficultySetting, weakStrength bool, plane data.Plane) bool {
+    _, ok := mapObject.ExtraMap[image.Pt(x, y)]
+    if ok {
+        return false
+    }
+
+    mapObject.ExtraMap[image.Pt(x, y)] = makeEncounter(encounterType, difficulty, weakStrength, plane)
+    return true
+}
+
+func (mapObject *Map) CreateEncounterRandom(x int, y int, difficulty data.DifficultySetting, plane data.Plane) bool {
+    return mapObject.CreateEncounter(x, y, randomEncounterType(), difficulty, rand.N(2) == 0, plane)
+}
+
 func (mapObject *Map) CreateNode(x int, y int, node MagicNode, plane data.Plane, magicSetting data.MagicSetting, difficulty data.DifficultySetting) *ExtraMagicNode {
     tileType := 0
     switch node {
@@ -269,6 +434,16 @@ func (mapObject *Map) CreateNode(x int, y int, node MagicNode, plane data.Plane,
     mapObject.ExtraMap[image.Pt(x, y)] = out
 
     return out
+}
+
+func (mapObject *Map) GetLair(x int, y int) *ExtraEncounter {
+    if extra, ok := mapObject.ExtraMap[image.Pt(x, y)]; ok {
+        if encounter, ok := extra.(*ExtraEncounter); ok {
+            return encounter
+        }
+    }
+
+    return nil
 }
 
 func (mapObject *Map) GetMagicNode(x int, y int) *ExtraMagicNode {

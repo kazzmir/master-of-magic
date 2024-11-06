@@ -1922,13 +1922,29 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
             if canMove {
                 node := game.Map.GetMagicNode(step.X, step.Y)
                 if node != nil && !node.Empty {
-                    if game.confirmEncounter(yield, node) {
+                    if game.confirmMagicNodeEncounter(yield, node) {
 
                         stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost)
                         game.showMovement(yield, oldX, oldY, stack)
                         player.LiftFog(stack.X(), stack.Y(), 2)
 
                         game.doMagicEncounter(yield, player, stack, node)
+
+                        game.RefreshUI()
+                    }
+
+                    stopMoving = true
+                    break quitMoving
+                }
+
+                lair := game.Map.GetLair(step.X, step.Y)
+                if lair != nil {
+                    if game.confirmLairEncounter(yield, lair) {
+                        stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost)
+                        game.showMovement(yield, oldX, oldY, stack)
+                        player.LiftFog(stack.X(), stack.Y(), 2)
+
+                        game.doLairEncounter(yield, player, stack, lair)
 
                         game.RefreshUI()
                     }
@@ -2227,20 +2243,7 @@ func (game *Game) doCityScreen(yield coroutine.YieldFunc, city *citylib.City, pl
     game.Drawer = oldDrawer
 }
 
-func (game *Game) confirmEncounter(yield coroutine.YieldFunc, node *maplib.ExtraMagicNode) bool {
-    quit := false
-
-    result := false
-
-    yes := func(){
-        quit = true
-        result = true
-    }
-
-    no := func(){
-        quit = true
-    }
-
+func (game *Game) confirmMagicNodeEncounter(yield coroutine.YieldFunc, node *maplib.ExtraMagicNode) bool {
     reloadLbx, err := game.Cache.GetLbxFile("reload.lbx")
     if err != nil {
         return false
@@ -2271,8 +2274,26 @@ func (game *Game) confirmEncounter(yield coroutine.YieldFunc, node *maplib.Extra
 
     animation := util.MakePaletteRotateAnimation(reloadLbx, lairIndex, rotateIndexLow, rotateIndexHigh)
 
-    game.HudUI.AddElements(uilib.MakeLairConfirmDialogWithLayer(game.HudUI, game.Cache, &game.ImageCache, animation, 1, fmt.Sprintf("You have found a %v node. Scouts have spotted %v within the %v node. Do you wish to enter?", nodeName, guardianName, nodeName), yes, no))
+    return game.confirmEncounter(yield, fmt.Sprintf("You have found a %v node. Scouts have spotted %v within the %v node. Do you wish to enter?", nodeName, guardianName, nodeName), animation)
+}
 
+func (game *Game) confirmEncounter(yield coroutine.YieldFunc, message string, animation *util.Animation) bool {
+    quit := false
+
+    result := false
+
+    yes := func(){
+        quit = true
+        result = true
+    }
+
+    no := func(){
+        quit = true
+    }
+
+    game.HudUI.AddElements(uilib.MakeLairConfirmDialogWithLayer(game.HudUI, game.Cache, &game.ImageCache, animation, 1, message, yes, no))
+
+    yield()
     for !quit {
         game.Counter += 1
         if game.Counter % 6 == 0 {
@@ -2283,6 +2304,93 @@ func (game *Game) confirmEncounter(yield coroutine.YieldFunc, node *maplib.Extra
     }
 
     return result
+}
+
+func (game *Game) confirmLairEncounter(yield coroutine.YieldFunc, encounter *maplib.ExtraEncounter) bool {
+    lairIndex := 13
+    encounterName := ""
+    article := ""
+
+    switch encounter.Type {
+        case maplib.EncounterTypeLair:
+            lairIndex = 17
+            encounterName = "monster lair"
+            article = "a"
+        case maplib.EncounterTypeCave:
+            lairIndex = 17
+            encounterName = "mysterious cave"
+            article = "a"
+        case maplib.EncounterTypePlaneTower:
+            lairIndex = 9
+            encounterName = "tower"
+            article = "a"
+        case maplib.EncounterTypeAncientTemple:
+            lairIndex = 15
+            encounterName = "ancient temple"
+            article = "a"
+        case maplib.EncounterTypeFallenTemple:
+            lairIndex = 19
+            encounterName = "fallen temple"
+            article = "a"
+        case maplib.EncounterTypeRuins:
+            lairIndex = 18
+            encounterName = "ruins"
+            article = "some"
+        case maplib.EncounterTypeAbandonedKeep:
+            lairIndex = 16
+            encounterName = "abandoned keep"
+            article = "an"
+        case maplib.EncounterTypeDungeon:
+            lairIndex = 14
+            encounterName = "dungeon"
+            article = "a"
+    }
+
+    guardianName := ""
+    if len(encounter.Units) > 0 {
+        guardianName = encounter.Units[0].Name
+    }
+
+    pic, _ := game.ImageCache.GetImage("reload.lbx", lairIndex, 0)
+
+    return game.confirmEncounter(yield, fmt.Sprintf("You have found %v %v. Scouts have spotted %v within the %v. Do you wish to enter?", article, encounterName, guardianName, encounterName), util.MakeAnimation([]*ebiten.Image{pic}, true))
+}
+
+func (game *Game) doLairEncounter(yield coroutine.YieldFunc, player *playerlib.Player, stack *playerlib.UnitStack, encounter *maplib.ExtraEncounter){
+    defender := playerlib.Player{
+        Wizard: setup.WizardCustom{
+            Name: "Node",
+        },
+    }
+
+    var enemies []units.StackUnit
+
+    for _, unit := range encounter.Units {
+        enemies = append(enemies, units.MakeOverworldUnit(unit))
+    }
+
+    zone := combat.ZoneType{
+    }
+
+    switch encounter.Type {
+        case maplib.EncounterTypeLair, maplib.EncounterTypeCave: zone.Lair = true
+        case maplib.EncounterTypePlaneTower: zone.Tower = true
+        case maplib.EncounterTypeAncientTemple: zone.AncientTemple = true
+        case maplib.EncounterTypeFallenTemple: zone.FallenTemple = true
+        case maplib.EncounterTypeRuins: zone.Ruins = true
+        case maplib.EncounterTypeAbandonedKeep: zone.AbandonedKeep = true
+        case maplib.EncounterTypeDungeon: zone.Dungeon = true
+    }
+
+    result := game.doCombat(yield, player, stack, &defender, playerlib.MakeUnitStackFromUnits(enemies), zone)
+    if result == combat.CombatStateAttackerWin {
+        // FIXME: give treasure
+    } else {
+        // FIXME: remove killed defenders
+    }
+
+    // absorb extra clicks
+    yield()
 }
 
 func (game *Game) doMagicEncounter(yield coroutine.YieldFunc, player *playerlib.Player, stack *playerlib.UnitStack, node *maplib.ExtraMagicNode){
