@@ -154,7 +154,7 @@ func chooseGuardianAndSecondary[E comparable](enemyCosts map[E]int, makeUnit fun
 
 /* returns guardian units and secondary units
  */
-func computeNatureNodeEnemies(magicSetting data.MagicSetting, difficultySetting data.DifficultySetting, zoneSize int) ([]units.Unit, []units.Unit) {
+func computeNatureNodeEnemies(budget int) ([]units.Unit, []units.Unit) {
     type Enemy int
     const (
         None Enemy = iota
@@ -204,10 +204,10 @@ func computeNatureNodeEnemies(magicSetting data.MagicSetting, difficultySetting 
         GreatWyrm: 1000,
     }
 
-    return chooseGuardianAndSecondary(enemyCosts, makeUnit, computeEncounterBudget(magicSetting, difficultySetting, zoneSize))
+    return chooseGuardianAndSecondary(enemyCosts, makeUnit, budget)
 }
 
-func computeSorceryNodeEnemies(magicSetting data.MagicSetting, difficultySetting data.DifficultySetting, zoneSize int) ([]units.Unit, []units.Unit) {
+func computeSorceryNodeEnemies(budget int) ([]units.Unit, []units.Unit) {
     type Enemy int
     const (
         None Enemy = iota
@@ -245,10 +245,10 @@ func computeSorceryNodeEnemies(magicSetting data.MagicSetting, difficultySetting
         SkyDrake: 1000,
     }
 
-    return chooseGuardianAndSecondary(enemyCosts, makeUnit, computeEncounterBudget(magicSetting, difficultySetting, zoneSize))
+    return chooseGuardianAndSecondary(enemyCosts, makeUnit, budget)
 }
 
-func computeChaosNodeEnemies(magicSetting data.MagicSetting, difficultySetting data.DifficultySetting, zoneSize int) ([]units.Unit, []units.Unit) {
+func computeChaosNodeEnemies(budget int) ([]units.Unit, []units.Unit) {
     type Enemy int
     const (
         None Enemy = iota
@@ -295,7 +295,7 @@ func computeChaosNodeEnemies(magicSetting data.MagicSetting, difficultySetting d
         GreatDrake: 900,
     }
 
-    return chooseGuardianAndSecondary(enemyCosts, makeUnit, computeEncounterBudget(magicSetting, difficultySetting, zoneSize))
+    return chooseGuardianAndSecondary(enemyCosts, makeUnit, budget)
 }
 
 func MakeMagicNode(kind MagicNode, magicSetting data.MagicSetting, difficulty data.DifficultySetting, plane data.Plane) *ExtraMagicNode {
@@ -303,15 +303,17 @@ func MakeMagicNode(kind MagicNode, magicSetting data.MagicSetting, difficulty da
     var guardians []units.Unit
     var secondary []units.Unit
 
+    budget := computeEncounterBudget(magicSetting, difficulty, len(zone))
+
     switch kind {
         case MagicNodeNature:
-            guardians, secondary = computeNatureNodeEnemies(magicSetting, difficulty, len(zone))
+            guardians, secondary = computeNatureNodeEnemies(budget)
             log.Printf("Created nature node guardians: %v secondary: %v", guardians, secondary)
         case MagicNodeSorcery:
-            guardians, secondary = computeSorceryNodeEnemies(magicSetting, difficulty, len(zone))
+            guardians, secondary = computeSorceryNodeEnemies(budget)
             log.Printf("Created sorcery node guardians: %v secondary: %v", guardians, secondary)
         case MagicNodeChaos:
-            guardians, secondary = computeChaosNodeEnemies(magicSetting, difficulty, len(zone))
+            guardians, secondary = computeChaosNodeEnemies(budget)
             log.Printf("Created chaos node guardians: %v secondary: %v", guardians, secondary)
     }
 

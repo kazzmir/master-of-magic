@@ -76,6 +76,25 @@ func (bonus *ExtraBonus) DrawLayer2(screen *ebiten.Image, imageCache *util.Image
     // nothing
 }
 
+type EncounterType int
+
+const (
+    // lair, plane tower, ancient temple, fallen temple, ruins, abandoned keep, dungeon
+    EncounterTypeLair EncounterType = iota
+    EncounterTypePlaneTower
+    EncounterTypeAncientTemple
+    EncounterTypeFallenTemple
+    EncounterTypeRuins
+    EncounterTypeAbandonedKeep
+    EncounterTypeDungeon
+)
+
+// lair, plane tower, etc
+type ExtraEncounter struct {
+    Type EncounterType
+    Units []units.Unit
+}
+
 type ExtraMagicNode struct {
     Kind MagicNode
     Empty bool
