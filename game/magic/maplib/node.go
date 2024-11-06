@@ -248,6 +248,56 @@ func computeSorceryNodeEnemies(budget int) ([]units.Unit, []units.Unit) {
     return chooseGuardianAndSecondary(enemyCosts, makeUnit, budget)
 }
 
+func computeDeathNodeEnemies(budget int) ([]units.Unit, []units.Unit) {
+    type Enemy int
+    const (
+        None Enemy = iota
+        Skeletons
+        Zombies
+        Ghouls
+        Demons
+        NightStalker
+        Werewolves
+        ShadowDemons
+        Wraiths
+        DeathKnight
+        DemonLord
+    )
+
+    makeUnit := func(enemy Enemy) units.Unit {
+        switch enemy {
+            case Skeletons: return units.Skeleton
+            case Zombies: return units.Zombie
+            case Ghouls: return units.Ghoul
+            case Demons: return units.Demon
+            case NightStalker: return units.NightStalker
+            case Werewolves: return units.WereWolf
+            case ShadowDemons: return units.ShadowDemon
+            case Wraiths: return units.Wraith
+            case DeathKnight: return units.DeathKnight
+            case DemonLord: return units.DemonLord
+        }
+
+        return units.UnitNone
+    }
+
+    enemyCosts := map[Enemy]int{
+        None: 0,
+        Skeletons: 25,
+        Zombies: 30,
+        Ghouls: 80,
+        Demons: 125,
+        NightStalker: 200,
+        Werewolves: 250,
+        ShadowDemons: 325,
+        Wraiths: 500,
+        DeathKnight: 600,
+        DemonLord: 900,
+    }
+
+    return chooseGuardianAndSecondary(enemyCosts, makeUnit, budget)
+}
+
 func computeChaosNodeEnemies(budget int) ([]units.Unit, []units.Unit) {
     type Enemy int
     const (
