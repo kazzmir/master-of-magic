@@ -199,9 +199,11 @@ func countNeighbors(cells [][]bool, x int, y int) int {
     for dx := -1; dx <= 1; dx++ {
         nx := x + dx
 
-        if nx < 0 || nx >= len(cells) {
-            continue
+        for nx < 0 {
+            nx += len(cells)
         }
+
+        nx = nx % len(cells)
 
         for dy := -1; dy <= 1; dy++ {
 
