@@ -30,7 +30,7 @@ func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Playe
                 return
             }
 
-            tileX := game.cameraX + screenX / game.CurrentMap().TileWidth()
+            tileX := game.CurrentMap().WrapX(game.cameraX + screenX / game.CurrentMap().TileWidth())
             tileY := game.cameraY + screenY / game.CurrentMap().TileHeight()
             game.CenterCamera(tileX, tileY)
 
