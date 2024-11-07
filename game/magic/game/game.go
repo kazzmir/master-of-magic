@@ -2243,11 +2243,13 @@ func (game *Game) doCityScreen(yield coroutine.YieldFunc, city *citylib.City, pl
         }
     }
 
+    mapUse := game.GetMap(city.Plane)
+
     overworld := Overworld{
         CameraX: city.X - 2,
         CameraY: city.Y - 2,
         Counter: 0,
-        Map: game.CurrentMap(),
+        Map: mapUse,
         Cities: cities,
         Stacks: stacks,
         SelectedStack: nil,
@@ -2261,7 +2263,7 @@ func (game *Game) doCityScreen(yield coroutine.YieldFunc, city *citylib.City, pl
     game.Drawer = func(screen *ebiten.Image, game *Game){
         cityScreen.Draw(screen, func (mapView *ebiten.Image, geom ebiten.GeoM, counter uint64){
             overworld.DrawOverworld(mapView, geom)
-        }, game.CurrentMap().TileWidth(), game.CurrentMap().TileHeight())
+        }, mapUse.TileWidth(), mapUse.TileHeight())
     }
 
     for cityScreen.Update() == cityview.CityScreenStateRunning {
@@ -3717,6 +3719,7 @@ func (game *Game) DoNextUnit(player *playerlib.Player){
         if stack.HasMoves() && len(stack.ActiveUnits()) > 0 {
             player.SelectedStack = stack
             stack.EnableMovers()
+            game.Plane = stack.Plane()
             game.CenterCamera(stack.X(), stack.Y())
             break
         }
