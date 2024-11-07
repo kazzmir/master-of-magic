@@ -9,7 +9,9 @@ import (
     "github.com/kazzmir/master-of-magic/lib/fraction"
 )
 
-// terrain tiles are indicies 0-0x259 for arcanus, and 0x25A - 0x5f4 for myrror
+// terrain tiles are indicies 0-0x259 for arcanus, and 0x2fA - 0x5f4 for myrror
+
+const MyrrorStart = 0x2FA
 
 type TerrainIndex int
 
@@ -405,8 +407,8 @@ func expand4(value uint8) uint8 {
 }
 
 func getTile(index int) Tile {
-    if index >= 0x2fa {
-        index -= 0x2fa
+    if index >= MyrrorStart {
+        index -= MyrrorStart
     }
 
     if index >= len(allTiles) {
@@ -1320,11 +1322,11 @@ type TerrainTile struct {
 }
 
 func (tile *TerrainTile) IsMyrror() bool {
-    return tile.TileIndex >= 0x25A
+    return tile.TileIndex >= MyrrorStart
 }
 
 func (tile *TerrainTile) IsArcanus() bool {
-    return tile.TileIndex < 0x25A
+    return tile.TileIndex < MyrrorStart
 }
 
 func (tile *TerrainTile) ContainsImageIndex(index int) bool {
