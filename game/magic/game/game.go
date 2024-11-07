@@ -1954,7 +1954,7 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
 
                         stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost)
                         game.showMovement(yield, oldX, oldY, stack)
-                        player.LiftFog(stack.X(), stack.Y(), 2)
+                        player.LiftFog(stack.X(), stack.Y(), 2, stack.Plane())
 
                         game.doMagicEncounter(yield, player, stack, node)
 
@@ -1970,7 +1970,7 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                     if game.confirmLairEncounter(yield, lair) {
                         stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost)
                         game.showMovement(yield, oldX, oldY, stack)
-                        player.LiftFog(stack.X(), stack.Y(), 2)
+                        player.LiftFog(stack.X(), stack.Y(), 2, stack.Plane())
 
                         game.doLairEncounter(yield, player, stack, lair)
 
@@ -1986,7 +1986,7 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
 
                 stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost)
                 game.showMovement(yield, oldX, oldY, stack)
-                player.LiftFog(stack.X(), stack.Y(), 2)
+                player.LiftFog(stack.X(), stack.Y(), 2, stack.Plane())
 
                 for _, otherPlayer := range game.Players[1:] {
                     otherStack := otherPlayer.FindStack(stack.X(), stack.Y())
@@ -2151,7 +2151,7 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                                     oldY := stack.Y()
                                     stack.Move(to.X - stack.X(), to.Y - stack.Y(), terrainCost)
                                     game.showMovement(yield, oldX, oldY, stack)
-                                    player.LiftFog(stack.X(), stack.Y(), 2)
+                                    player.LiftFog(stack.X(), stack.Y(), 2, stack.Plane())
 
                                     for _, enemy := range game.GetEnemies(player) {
                                         enemyStack := enemy.FindStack(stack.X(), stack.Y())
@@ -3241,7 +3241,12 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
     // plane button
     elements = append(elements, makeButton(7, 270, 4, false, func(){
-        // TODO
+        switch game.Plane {
+            case data.PlaneArcanus: game.Plane = data.PlaneMyrror
+            case data.PlaneMyrror: game.Plane = data.PlaneArcanus
+        }
+
+        game.RefreshUI()
     }))
 
     if len(game.Players) > 0 && game.Players[0].SelectedStack != nil {

@@ -425,9 +425,8 @@ func (player *Player) SetSelectedStack(stack *UnitStack){
     player.SelectedStack = stack
 }
 
-func (player *Player) LiftFogSquare(x int, y int, squares int){
-    // FIXME: make this a parameter
-    fog := player.ArcanusFog
+func (player *Player) LiftFogSquare(x int, y int, squares int, plane data.Plane){
+    fog := player.GetFog(plane)
 
     for dx := -squares; dx <= squares; dx++ {
         for dy := -squares; dy <= squares; dy++ {
@@ -441,10 +440,8 @@ func (player *Player) LiftFogSquare(x int, y int, squares int){
 }
 
 /* make anything within the given radius viewable by the player */
-func (player *Player) LiftFog(x int, y int, radius int){
-
-    // FIXME: make this a parameter
-    fog := player.ArcanusFog
+func (player *Player) LiftFog(x int, y int, radius int, plane data.Plane){
+    fog := player.GetFog(plane)
 
     for dx := -radius; dx <= radius; dx++ {
         for dy := -radius; dy <= radius; dy++ {

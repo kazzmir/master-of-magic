@@ -36,7 +36,7 @@ func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Playe
 
             game.doCastEarthLore(yield, player)
 
-            player.LiftFogSquare(tileX, tileY, 5)
+            player.LiftFogSquare(tileX, tileY, 5, game.Plane)
         case "Create Artifact", "Enchant Item":
             showSummon := summon.MakeSummonArtifact(game.Cache, player.Wizard.Base)
 
