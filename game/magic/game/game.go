@@ -273,9 +273,11 @@ func (game *Game) CenterCamera(x int, y int){
     game.cameraX = x - 5
     game.cameraY = y - 5
 
+    /*
     if game.cameraX < 0 {
         game.cameraX = 0
     }
+    */
 
     if game.cameraY < 0 {
         game.cameraY = 0
@@ -2050,7 +2052,7 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
         // can only click into the area not hidden by the hud
         if mouseX < 240 && mouseY > 18 {
             // log.Printf("Click at %v, %v", mouseX, mouseY)
-            tileX := game.cameraX + mouseX / mapUse.TileWidth()
+            tileX := game.CurrentMap().WrapX(game.cameraX + mouseX / mapUse.TileWidth())
             tileY := game.cameraY + mouseY / mapUse.TileHeight()
 
             game.CenterCamera(tileX, tileY)
@@ -4081,16 +4083,17 @@ func (overworld *Overworld) DrawFog(screen *ebiten.Image, geom ebiten.GeoM){
     }
     */
 
+    checkFog := func(x int, y int) bool {
+        x = overworld.Map.WrapX(x)
+        if x < 0 || x >= len(fog) || y >= len(fog[x]) || y < 0{
+            return false
+        }
+
+        return !fog[x][y]
+    }
+
     fogN := func(x int, y int) bool {
-        if y == 0 {
-            return false
-        }
-
-        if x >= len(fog) || y - 1 >= len(fog[x]) {
-            return false
-        }
-
-        return !fog[x][y - 1]
+        return checkFog(x, y - 1)
     }
 
     /*
@@ -4104,15 +4107,7 @@ func (overworld *Overworld) DrawFog(screen *ebiten.Image, geom ebiten.GeoM){
     */
 
     fogE := func(x int, y int) bool {
-        if x == len(fog) - 1 {
-            return false
-        }
-
-        if x + 1 >= len(fog) || y >= len(fog[x + 1]) {
-            return false
-        }
-
-        return !fog[x + 1][y]
+        return checkFog(x+1, y)
     }
 
     /*
@@ -4126,15 +4121,7 @@ func (overworld *Overworld) DrawFog(screen *ebiten.Image, geom ebiten.GeoM){
     */
 
     fogS := func(x int, y int) bool {
-        if y == len(fog[0]) - 1 {
-            return false
-        }
-
-        if x >= len(fog) || y + 1 >= len(fog[x]) {
-            return false
-        }
-
-        return !fog[x][y + 1]
+        return checkFog(x, y + 1)
     }
 
     /*
@@ -4148,21 +4135,13 @@ func (overworld *Overworld) DrawFog(screen *ebiten.Image, geom ebiten.GeoM){
     */
 
     fogW := func(x int, y int) bool {
-        if x == 0 {
-            return false
-        }
-
-        if x - 1 < 0 || y >= len(fog[x - 1]) {
-            return false
-        }
-
-        return !fog[x - 1][y]
+        return checkFog(x - 1, y)
     }
 
     for x := 0; x < tilesPerRow; x++ {
         for y := 0; y < tilesPerColumn; y++ {
 
-            tileX := x + overworld.CameraX
+            tileX := overworld.Map.WrapX(x + overworld.CameraX)
             tileY := y + overworld.CameraY
 
             options.GeoM = geom
@@ -4262,12 +4241,12 @@ func (overworld *Overworld) DrawMinimap(screen *ebiten.Image){
 func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM){
     overworld.Map.DrawLayer1(overworld.CameraX, overworld.CameraY, overworld.Counter / 8, overworld.ImageCache, screen, geom)
 
-    tileWidth := float64(overworld.Map.TileWidth())
-    tileHeight := float64(overworld.Map.TileHeight())
+    tileWidth := overworld.Map.TileWidth()
+    tileHeight := overworld.Map.TileHeight()
 
-    convertTileCoordinates := func(x float64, y float64) (float64, float64) {
-        outX := (x - float64(overworld.CameraX)) * tileWidth
-        outY := (y - float64(overworld.CameraY)) * tileHeight
+    convertTileCoordinates := func(x int, y int) (int, int) {
+        outX := overworld.Map.WrapX(x - overworld.CameraX) * tileWidth
+        outY := (y - overworld.CameraY) * tileHeight
         return outX, outY
     }
 
@@ -4288,11 +4267,11 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
 
         if err == nil {
             var options ebiten.DrawImageOptions
-            x, y := convertTileCoordinates(float64(city.X), float64(city.Y))
+            x, y := convertTileCoordinates(city.X, city.Y)
             options.GeoM = geom
             // draw the city in the center of the tile
             // first compute center of tile
-            options.GeoM.Translate(x + tileWidth / 2.0, y + tileHeight / 2.0)
+            options.GeoM.Translate(float64(x + tileWidth / 2.0), float64(y + tileHeight / 2.0))
             // then move the city image so that the center of the image is at the center of the tile
             options.GeoM.Translate(float64(-cityPic.Bounds().Dx()) / 2.0, float64(-cityPic.Bounds().Dy()) / 2.0)
             screen.DrawImage(cityPic, &options)
@@ -4325,8 +4304,8 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
         if doDraw {
             var options ebiten.DrawImageOptions
             options.GeoM = geom
-            x, y := convertTileCoordinates(float64(stack.X()) + stack.OffsetX(), float64(stack.Y()) + stack.OffsetY())
-            options.GeoM.Translate(x, y)
+            x, y := convertTileCoordinates(stack.X(), stack.Y())
+            options.GeoM.Translate(float64(x) + stack.OffsetX() * float64(tileWidth), float64(y) + stack.OffsetY() * float64(tileHeight))
 
             unitBack, err := units.GetUnitBackgroundImage(stack.Leader().GetBanner(), overworld.ImageCache)
             if err == nil {

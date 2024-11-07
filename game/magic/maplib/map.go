@@ -475,7 +475,17 @@ func (mapObject *Map) TileHeight() int {
     return mapObject.Data.TileHeight()
 }
 
+func (mapObject *Map) WrapX(x int) int {
+    for x < 0 {
+        x += mapObject.Map.Columns()
+    }
+
+    return x % mapObject.Map.Columns()
+}
+
 func (mapObject *Map) GetTile(tileX int, tileY int) FullTile {
+    tileX = mapObject.WrapX(tileX)
+
     if tileX >= 0 && tileX < mapObject.Map.Columns() && tileY >= 0 && tileY < mapObject.Map.Rows() {
         tile := mapObject.Data.Tiles[mapObject.Map.Terrain[tileX][tileY]].Tile
 
@@ -567,16 +577,22 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []MiniMapCity, ce
     cameraX := centerX - screen.Bounds().Dx() / 2
     cameraY := centerY - screen.Bounds().Dy() / 2
 
+    /*
     if cameraX < 0 {
         cameraX = 0
     }
+    */
+
     if cameraY < 0 {
         cameraY = 0
     }
 
+    /*
     if cameraX > mapObject.Map.Columns() - screen.Bounds().Dx() {
         cameraX = mapObject.Map.Columns() - screen.Bounds().Dx()
     }
+    */
+
     if cameraY > mapObject.Map.Rows() - screen.Bounds().Dy() {
         cameraY = mapObject.Map.Rows() - screen.Bounds().Dy()
     }
@@ -603,7 +619,7 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []MiniMapCity, ce
     for x := 0; x < screen.Bounds().Dx(); x++ {
         for y := 0; y < screen.Bounds().Dy(); y++ {
 
-            tileX := x + cameraX
+            tileX := mapObject.WrapX(x + cameraX)
             tileY := y + cameraY
 
             if tileX < 0 || tileX >= mapObject.Map.Columns() || tileY < 0 || tileY >= mapObject.Map.Rows() || !fog[tileX][tileY] {
@@ -625,7 +641,7 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []MiniMapCity, ce
 
     for _, city := range cities {
         if fog[city.GetX()][city.GetY()] {
-            posX := city.GetX() - cameraX
+            posX := mapObject.WrapX(city.GetX() - cameraX)
             posY := city.GetY() - cameraY
 
             if posX >= 0 && posX < screen.Bounds().Dx() && posY >= 0 && posY < screen.Bounds().Dy() {
@@ -669,8 +685,11 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []MiniMapCity, ce
         }
 
         for _, point := range points {
-            if point.X >= 0 && point.Y >= 0 && point.X < screen.Bounds().Dx() && point.Y < screen.Bounds().Dy(){
-                set(point.X, point.Y, cursorColor)
+            x := mapObject.WrapX(point.X)
+            y := point.Y
+
+            if x >= 0 && y >= 0 && x < screen.Bounds().Dx() && y < screen.Bounds().Dy(){
+                set(x, y, cursorColor)
             }
         }
     }
@@ -691,9 +710,11 @@ func (mapObject *Map) DrawLayer1(cameraX int, cameraY int, animationCounter uint
     // draw all tiles first
     for x := 0; x < tilesPerRow; x++ {
         for y := 0; y < tilesPerColumn; y++ {
-
-            tileX := cameraX + x
+            tileX := mapObject.WrapX(cameraX + x)
             tileY := cameraY + y
+
+            // for debugging
+            // util.DrawRect(screen, image.Rect(x * tileWidth, y * tileHeight, (x + 1) * tileWidth, (y + 1) * tileHeight), color.RGBA{R: 255, G: 0, B: 0, A: 255})
 
             if tileX < 0 || tileX >= mapObject.Map.Columns() || tileY < 0 || tileY >= mapObject.Map.Rows() {
                 continue
@@ -711,7 +732,7 @@ func (mapObject *Map) DrawLayer1(cameraX int, cameraY int, animationCounter uint
                     extra.DrawLayer1(screen, imageCache, &options, animationCounter, tileWidth, tileHeight)
                 }
             } else {
-                log.Printf("Unable to render tilte at %d, %d: %v", tileX, tileY, err)
+                log.Printf("Unable to render tile at %d, %d: %v", tileX, tileY, err)
             }
         }
     }
@@ -731,7 +752,7 @@ func (mapObject *Map) DrawLayer2(cameraX int, cameraY int, animationCounter uint
     for x := 0; x < tilesPerRow; x++ {
         for y := 0; y < tilesPerColumn; y++ {
 
-            tileX := cameraX + x
+            tileX := mapObject.WrapX(cameraX + x)
             tileY := cameraY + y
 
             if tileX < 0 || tileX >= mapObject.Map.Columns() || tileY < 0 || tileY >= mapObject.Map.Rows() {
