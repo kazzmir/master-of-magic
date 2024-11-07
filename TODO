@@ -1,7 +1,6 @@
 * combat: cast unit spells
 * cartographer advisor
 * overworld: ai controlled wizards/empires
-* myrror plane
 * filter buildings by race
 * neutral towns/cities
 * game menu - implement save/load game
@@ -46,3 +45,4 @@
 10/31/2024 * city catchment area
 11/5/2024 * show hero stats/abilities in context menu
 11/6/2024 * add lairs/dungeons/towers etc
+??? * myrror plane
