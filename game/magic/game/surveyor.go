@@ -104,7 +104,7 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
         CameraX: game.cameraX,
         CameraY: game.cameraY,
         Counter: game.Counter,
-        Map: game.Map,
+        Map: game.CurrentMap(),
         Cities: cities,
         Stacks: stacks,
         SelectedStack: nil,
@@ -153,9 +153,9 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
 
             surveyorFont.PrintCenter(screen, 280, 81, 1, ebiten.ColorScale{}, "Surveyor")
 
-            if selectedPoint.X >= 0 && selectedPoint.X < game.Map.Width() && selectedPoint.Y >= 0 && selectedPoint.Y < game.Map.Height() {
+            if selectedPoint.X >= 0 && selectedPoint.X < game.CurrentMap().Width() && selectedPoint.Y >= 0 && selectedPoint.Y < game.CurrentMap().Height() {
                 if fog[selectedPoint.X][selectedPoint.Y] {
-                    tile := game.Map.GetTile(selectedPoint.X, selectedPoint.Y)
+                    tile := game.CurrentMap().GetTile(selectedPoint.X, selectedPoint.Y)
                     y := float64(93)
                     yellowFont.PrintCenter(screen, 280, y, 1, ebiten.ColorScale{}, tile.Tile.Name())
                     y += float64(yellowFont.Height())
@@ -319,8 +319,8 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
 
         // within the viewable area
         if x < 240 && y > 18 {
-            newX := game.cameraX + x / game.Map.TileWidth()
-            newY := game.cameraY + y / game.Map.TileHeight()
+            newX := game.cameraX + x / game.CurrentMap().TileWidth()
+            newY := game.cameraY + y / game.CurrentMap().TileHeight()
             newPoint := image.Pt(newX, newY)
 
             // right click should move the camera
@@ -333,8 +333,8 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
                 if moveCamera.Y < 0 {
                     moveCamera.Y = 0
                 }
-                if moveCamera.Y >= game.Map.Height() - 11 {
-                    moveCamera.Y = game.Map.Height() - 11
+                if moveCamera.Y >= game.CurrentMap().Height() - 11 {
+                    moveCamera.Y = game.CurrentMap().Height() - 11
                 }
             }
 
@@ -344,7 +344,7 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
 
                 text := ""
 
-                tile := game.Map.GetTile(newX, newY)
+                tile := game.CurrentMap().GetTile(newX, newY)
 
                 if !tile.Tile.IsLand() {
                     text = "Cannot build cities on water."
@@ -354,9 +354,9 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
                     text = "City Resources"
                     resources.Enabled = true
                     // FIXME: compute proper values for these
-                    resources.MaximumPopulation = game.ComputeMaximumPopulation(newX, newY)
-                    resources.ProductionBonus = game.CityProductionBonus(newX, newY)
-                    resources.GoldBonus = game.CityGoldBonus(newX, newY)
+                    resources.MaximumPopulation = game.ComputeMaximumPopulation(newX, newY, game.Plane)
+                    resources.ProductionBonus = game.CityProductionBonus(newX, newY, game.Plane)
+                    resources.GoldBonus = game.CityGoldBonus(newX, newY, game.Plane)
                 }
 
                 cityInfoText = yellowFont.CreateWrappedText(float64(cancelBackground.Bounds().Dx()) - 9, 1, text)

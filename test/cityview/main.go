@@ -53,7 +53,7 @@ func NewEngine() (*Engine, error) {
 
     gameMap := maplib.Map{
         Data: terrainData,
-        Map: terrain.GenerateLandCellularAutomata(20, 20, terrainData),
+        Map: terrain.GenerateLandCellularAutomata(20, 20, terrainData, data.PlaneArcanus),
         TileCache: make(map[int]*ebiten.Image),
     }
 

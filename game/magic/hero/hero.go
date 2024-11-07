@@ -572,6 +572,10 @@ func (hero *Hero) GetPlane() data.Plane {
     return hero.Unit.GetPlane()
 }
 
+func (hero *Hero) SetPlane(plane data.Plane) {
+    hero.Unit.SetPlane(plane)
+}
+
 func (hero *Hero) GetRace() data.Race {
     return hero.Unit.GetRace()
 }

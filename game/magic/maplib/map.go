@@ -315,7 +315,7 @@ type FullTile struct {
 }
 
 func (tile *FullTile) Valid() bool {
-    return tile.Tile.Index != -1
+    return tile.Tile.Valid()
 }
 
 func (tile *FullTile) GetBonus() data.BonusType {
@@ -345,6 +345,8 @@ func (tile *FullTile) HasWildGame() bool {
 type Map struct {
     Map *terrain.Map
 
+    Plane data.Plane
+
     // contains information about map squares that contain extra features on top
     // such as a road, enchantment, encounter place (plane tower, lair, etc)
     ExtraMap map[image.Point]ExtraTile
@@ -366,12 +368,13 @@ func getLandSize(size int) (int, int) {
     return 100, 100
 }
 
-func MakeMap(data *terrain.TerrainData, landSize int) *Map {
+func MakeMap(data *terrain.TerrainData, landSize int, plane data.Plane) *Map {
     landWidth, landHeight := getLandSize(landSize)
 
     return &Map{
         Data: data,
-        Map: terrain.GenerateLandCellularAutomata(landWidth, landHeight, data),
+        Map: terrain.GenerateLandCellularAutomata(landWidth, landHeight, data, plane),
+        Plane: plane,
         TileCache: make(map[int]*ebiten.Image),
         ExtraMap: make(map[image.Point]ExtraTile),
     }
@@ -422,9 +425,9 @@ func (mapObject *Map) CreateEncounterRandom(x int, y int, difficulty data.Diffic
 func (mapObject *Map) CreateNode(x int, y int, node MagicNode, plane data.Plane, magicSetting data.MagicSetting, difficulty data.DifficultySetting) *ExtraMagicNode {
     tileType := 0
     switch node {
-        case MagicNodeNature: tileType = terrain.TileNatureForest.Index
-        case MagicNodeSorcery: tileType = terrain.TileSorceryLake.Index
-        case MagicNodeChaos: tileType = terrain.TileChaosVolcano.Index
+        case MagicNodeNature: tileType = terrain.TileNatureForest.Index(plane)
+        case MagicNodeSorcery: tileType = terrain.TileSorceryLake.Index(plane)
+        case MagicNodeChaos: tileType = terrain.TileChaosVolcano.Index(plane)
     }
 
     mapObject.Map.Terrain[x][y] = tileType
@@ -490,7 +493,7 @@ func (mapObject *Map) GetTile(tileX int, tileY int) FullTile {
     }
 
     return FullTile{
-        Tile: terrain.Tile{Index: -1},
+        Tile: terrain.InvalidTile(),
     }
 }
 
@@ -611,8 +614,8 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []MiniMapCity, ce
             var use color.RGBA
 
             switch mapObject.Map.Terrain[tileX][tileY] {
-                case terrain.TileLand.Index: use = color.RGBA{R: 0, G: 255, B: 0, A: 255}
-                case terrain.TileOcean.Index: use = color.RGBA{R: 0, G: 0, B: 255, A: 255}
+                case terrain.TileLand.Index(mapObject.Plane): use = color.RGBA{R: 0, G: 255, B: 0, A: 255}
+                case terrain.TileOcean.Index(mapObject.Plane): use = color.RGBA{R: 0, G: 0, B: 255, A: 255}
                 default: use = color.RGBA{R: 64, G: 64, B: 64, A: 255}
             }
 

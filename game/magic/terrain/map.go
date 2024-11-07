@@ -5,6 +5,8 @@ import (
     "image"
     "math/rand/v2"
     "math"
+
+    "github.com/kazzmir/master-of-magic/game/magic/data"
 )
 
 // a continent is a list of points that are indices into the Terrain matrix
@@ -58,7 +60,7 @@ func (map_ *Map) FloodWalk(x int, y int, f FloodFunc){
     walk(x, y)
 }
 
-func (map_ *Map) FindContinents() []Continent {
+func (map_ *Map) FindContinents(plane data.Plane) []Continent {
 
     seen := makeCells(map_.Rows(), map_.Columns())
 
@@ -91,7 +93,7 @@ func (map_ *Map) FindContinents() []Continent {
                     ny := y + dy
 
                     if nx >= 0 && nx < columns && ny >= 0 && ny < rows {
-                        if map_.Terrain[nx][ny] == TileLand.Index {
+                        if map_.Terrain[nx][ny] == TileLand.Index(plane) {
                             *continent = append(*continent, image.Pt(nx, ny))
                             // searchTiles(nx, ny, continent)
                             search = append(search, image.Pt(nx, ny))
@@ -106,7 +108,7 @@ func (map_ *Map) FindContinents() []Continent {
 
     for x := 0; x < map_.Columns(); x++ {
         for y := 0; y < map_.Rows(); y++ {
-            if map_.Terrain[x][y] == TileLand.Index && seen[x][y] == false {
+            if map_.Terrain[x][y] == TileLand.Index(plane) && seen[x][y] == false {
                 var continent Continent
                 continent = append(continent, image.Pt(x, y))
                 searchTiles(x, y, &continent)
@@ -222,7 +224,7 @@ func countNeighbors(cells [][]bool, x int, y int) int {
     return count
 }
 
-func (map_ *Map) GenerateLandCellularAutomata(){
+func (map_ *Map) GenerateLandCellularAutomata(plane data.Plane){
     cells := makeCells(map_.Rows(), map_.Columns())
     tmpCells := makeCells(map_.Rows(), map_.Columns())
 
@@ -278,46 +280,46 @@ func (map_ *Map) GenerateLandCellularAutomata(){
     for x := 0; x < map_.Columns(); x++ {
         for y := 0; y < map_.Rows(); y++ {
             if cells[x][y] {
-                map_.Terrain[x][y] = TileLand.Index
+                map_.Terrain[x][y] = TileLand.Index(plane)
             } else {
-                map_.Terrain[x][y] = TileOcean.Index
+                map_.Terrain[x][y] = TileOcean.Index(plane)
             }
         }
     }
 }
 
-func GenerateLandCellularAutomata(rows int, columns int, data *TerrainData) *Map {
+func GenerateLandCellularAutomata(rows int, columns int, data *TerrainData, plane data.Plane) *Map {
     // run a cellular automata simulation for a few rounds to generate
     // land and ocean tiles. then call ResolveTiles() to clean up the edges
     map_ := MakeMap(rows, columns)
-    map_.GenerateLandCellularAutomata()
+    map_.GenerateLandCellularAutomata(plane)
 
-    map_.RemoveSmallIslands(100)
+    map_.RemoveSmallIslands(100, plane)
 
     /*
     continents := editor.Map.FindContinents()
     log.Printf("Continents: %v\n", len(continents))
     */
 
-    map_.PlaceRandomTerrainTiles()
+    map_.PlaceRandomTerrainTiles(plane)
 
     // start := time.Now()
-    map_.ResolveTiles(data)
+    map_.ResolveTiles(data, plane)
     return map_
     // end := time.Now()
     // log.Printf("Resolve tiles took %v", end.Sub(start))
 }
 
 // put down other tiles like forests, mountains, special nodes, etc
-func (map_ *Map) PlaceRandomTerrainTiles(){
+func (map_ *Map) PlaceRandomTerrainTiles(plane data.Plane){
 
-    continents := map_.FindContinents()
+    continents := map_.FindContinents(plane)
 
     randomForest := func() int {
         choices := []int{
-            TileForest1.Index,
-            TileForest2.Index,
-            TileForest3.Index,
+            TileForest1.Index(plane),
+            TileForest2.Index(plane),
+            TileForest3.Index(plane),
         }
 
         return chooseRandomElement(choices)
@@ -328,10 +330,10 @@ func (map_ *Map) PlaceRandomTerrainTiles(){
         for i := 0; i < int(math.Sqrt(float64(continent.Size()))) / 4; i++ {
             point := chooseRandomElement(continent)
 
-            use := TileSorceryLake.Index
+            use := TileSorceryLake.Index(plane)
             switch rand.IntN(2) {
                 case 0: use = randomForest()
-                case 1: use = TileMountain1.Index
+                case 1: use = TileMountain1.Index(plane)
             }
 
             map_.Terrain[point.X][point.Y] = use
@@ -340,12 +342,12 @@ func (map_ *Map) PlaceRandomTerrainTiles(){
         for i := 0; i < int(math.Sqrt(float64(continent.Size()))) / 8; i++ {
             point := chooseRandomElement(continent)
 
-            use := TileSorceryLake.Index
+            use := TileSorceryLake.Index(plane)
             switch rand.IntN(4) {
-                case 0: use = TileSorceryLake.Index
-                case 1: use = TileNatureForest.Index
-                case 2: use = TileChaosVolcano.Index
-                case 3: use = TileLake.Index
+                case 0: use = TileSorceryLake.Index(plane)
+                case 1: use = TileNatureForest.Index(plane)
+                case 2: use = TileChaosVolcano.Index(plane)
+                case 3: use = TileLake.Index(plane)
             }
 
             map_.Terrain[point.X][point.Y] = use
@@ -354,20 +356,20 @@ func (map_ *Map) PlaceRandomTerrainTiles(){
 }
 
 // remove land masses that contain less squares than 'area'
-func (map_ *Map) RemoveSmallIslands(area int){
-    continents := map_.FindContinents()
+func (map_ *Map) RemoveSmallIslands(area int, plane data.Plane){
+    continents := map_.FindContinents(plane)
 
     for _, continent := range continents {
         if continent.Size() < area {
             for _, point := range continent {
-                map_.Terrain[point.X][point.Y] = TileOcean.Index
+                map_.Terrain[point.X][point.Y] = TileOcean.Index(plane)
             }
         }
     }
 }
 
 // given a position in the terrain matrix, find a tile that fits all the neighbors of the tile
-func (map_ *Map) ResolveTile(x int, y int, data *TerrainData) (int, error) {
+func (map_ *Map) ResolveTile(x int, y int, data *TerrainData, plane data.Plane) (int, error) {
 
     matching := make(map[Direction]TerrainType)
 
@@ -416,7 +418,7 @@ func (map_ *Map) ResolveTile(x int, y int, data *TerrainData) (int, error) {
         return map_.Terrain[x][y], nil
     }
 
-    tile := data.FindMatchingTile(matching)
+    tile := data.FindMatchingTile(matching, plane)
     if tile == -1 {
         return -1, fmt.Errorf("no matching tile for %v", matching)
     }
@@ -427,7 +429,7 @@ func (map_ *Map) ResolveTile(x int, y int, data *TerrainData) (int, error) {
     // return editor.removeMyrror(tiles)[0], nil
 }
 
-func (map_ *Map) ResolveTiles(data *TerrainData){
+func (map_ *Map) ResolveTiles(data *TerrainData, plane data.Plane){
     // go through every tile and try to resolve it, keep doing this in a loop until there are no more tiles to resolve
 
     var unresolved []image.Point
@@ -444,7 +446,7 @@ func (map_ *Map) ResolveTiles(data *TerrainData){
 
         for _, index := range rand.Perm(len(unresolved)) {
             point := unresolved[index]
-            choice, err := map_.ResolveTile(point.X, point.Y, data)
+            choice, err := map_.ResolveTile(point.X, point.Y, data, plane)
             if err != nil {
                 more = append(more, point)
             } else if choice != map_.Terrain[point.X][point.Y] {

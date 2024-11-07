@@ -30,13 +30,13 @@ func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Playe
                 return
             }
 
-            tileX := game.cameraX + screenX / game.Map.TileWidth()
-            tileY := game.cameraY + screenY / game.Map.TileHeight()
+            tileX := game.cameraX + screenX / game.CurrentMap().TileWidth()
+            tileY := game.cameraY + screenY / game.CurrentMap().TileHeight()
             game.CenterCamera(tileX, tileY)
 
             game.doCastEarthLore(yield, player)
 
-            player.LiftFogSquare(tileX, tileY, 5)
+            player.LiftFogSquare(tileX, tileY, 5, game.Plane)
         case "Create Artifact", "Enchant Item":
             showSummon := summon.MakeSummonArtifact(game.Cache, player.Wizard.Base)
 
@@ -120,7 +120,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
         CameraX: game.cameraX,
         CameraY: game.cameraY,
         Counter: game.Counter,
-        Map: game.Map,
+        Map: game.CurrentMap(),
         Cities: cities,
         CitiesMiniMap: citiesMiniMap,
         Stacks: stacks,
@@ -259,8 +259,8 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
 
         // within the viewable area
         if x < 240 && y > 18 {
-            newX := game.cameraX + x / game.Map.TileWidth()
-            newY := game.cameraY + y / game.Map.TileHeight()
+            newX := game.cameraX + x / game.CurrentMap().TileWidth()
+            newY := game.cameraY + y / game.CurrentMap().TileHeight()
             newPoint := image.Pt(newX, newY)
 
             // right click should move the camera
@@ -273,8 +273,8 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                 if moveCamera.Y < 0 {
                     moveCamera.Y = 0
                 }
-                if moveCamera.Y >= game.Map.Height() - 11 {
-                    moveCamera.Y = game.Map.Height() - 11
+                if moveCamera.Y >= game.CurrentMap().Height() - 11 {
+                    moveCamera.Y = game.CurrentMap().Height() - 11
                 }
             }
 

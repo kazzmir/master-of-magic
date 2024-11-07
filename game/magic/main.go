@@ -139,8 +139,14 @@ func startingUnits(race data.Race) []units.Unit {
 }
 
 func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup.NewGameSettings, wizard setup.WizardCustom) error {
+
+    startingPlane := data.PlaneArcanus
+    if wizard.AbilityEnabled(setup.AbilityMyrran) {
+        startingPlane = data.PlaneMyrror
+    }
+
     game := gamelib.MakeGame(magic.Cache, settings)
-    game.Plane = data.PlaneArcanus
+    game.Plane = startingPlane
 
     magic.Drawer = func(screen *ebiten.Image) {
         game.Draw(screen)
@@ -150,10 +156,10 @@ func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup
 
     cityX, cityY := game.FindValidCityLocation()
 
-    introCity := citylib.MakeCity("City1", cityX, cityY, player.Wizard.Race, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.Map)
+    introCity := citylib.MakeCity("City1", cityX, cityY, player.Wizard.Race, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.GetMap(startingPlane))
     introCity.Population = 4000
     introCity.Wall = false
-    introCity.Plane = data.PlaneArcanus
+    introCity.Plane = startingPlane
     introCity.Buildings.Insert(buildinglib.BuildingSmithy)
     introCity.Buildings.Insert(buildinglib.BuildingBarracks)
     introCity.Buildings.Insert(buildinglib.BuildingBuildersHall)
@@ -167,10 +173,10 @@ func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup
     player.AddCity(introCity)
 
     for _, unit := range startingUnits(player.Wizard.Race) {
-        player.AddUnit(units.MakeOverworldUnitFromUnit(unit, cityX, cityY, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
+        player.AddUnit(units.MakeOverworldUnitFromUnit(unit, cityX, cityY, startingPlane, wizard.Banner, player.MakeExperienceInfo()))
     }
 
-    player.LiftFog(cityX, cityY, 3)
+    player.LiftFog(cityX, cityY, 3, introCity.Plane)
 
     game.Events <- gamelib.StartingCityEvent(introCity)
 
