@@ -524,7 +524,7 @@ func (city *City) BaseFoodLevel() int {
             case terrain.NatureNode: food = food.Add(fraction.Make(5, 2))
             case terrain.ChaosNode: // nothing
             case terrain.Lake:
-                switch tile.Tile.Index {
+                switch tile.Tile.Index(city.Plane) {
                     case terrain.IndexLake1, terrain.IndexLake2, terrain.IndexLake3, terrain.IndexLake4:
                         food = food.Add(fraction.Make(3, 2))
                 }

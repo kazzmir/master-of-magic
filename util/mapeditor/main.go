@@ -11,6 +11,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/util/common"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
 
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -102,6 +103,8 @@ func (editor *Editor) GenerateLand1() {
 func (editor *Editor) Update() error {
     editor.Counter += 1
 
+    plane := data.PlaneArcanus
+
     var keys []ebiten.Key
 
     canScroll := editor.Counter % 2 == 0
@@ -150,7 +153,7 @@ func (editor *Editor) Update() error {
         switch key {
             case ebiten.KeyG:
                 start := time.Now()
-                editor.Map = terrain.GenerateLandCellularAutomata(editor.Map.Rows(), editor.Map.Columns(), editor.Data)
+                editor.Map = terrain.GenerateLandCellularAutomata(editor.Map.Rows(), editor.Map.Columns(), editor.Data, plane)
                 end := time.Now()
                 log.Printf("Generate land took %v", end.Sub(start))
             case ebiten.KeyS:
@@ -188,10 +191,10 @@ func (editor *Editor) Update() error {
 
     if leftClick {
         if x >= 0 && x < editor.Map.Columns() && y >= 0 && y < editor.Map.Rows() {
-            use := terrain.TileLand.Index
+            use := terrain.TileLand.Index(plane)
 
             if leftShift {
-                use = terrain.TileOcean.Index
+                use = terrain.TileOcean.Index(plane)
             }
 
             editor.Map.Terrain[x][y] = use

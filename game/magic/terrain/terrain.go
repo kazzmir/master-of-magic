@@ -5,6 +5,7 @@ import (
     "image"
     "fmt"
 
+    "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/fraction"
 )
@@ -156,19 +157,39 @@ func (compatability Compatability) String() string {
 
 type Tile struct {
     // index into the TerrainTile array
-    Index int
+    index int
     Compatabilities map[Direction]TerrainType
 }
 
+func InvalidTile() Tile {
+    return Tile{
+        index: -1,
+        Compatabilities: make(map[Direction]TerrainType),
+    }
+}
+
+func (tile Tile) Valid() bool {
+    return tile.index != -1
+}
+
+func (tile Tile) Index(plane data.Plane) int {
+    switch plane {
+        case data.PlaneArcanus: return tile.index
+        case data.PlaneMyrror: return tile.index + MyrrorStart
+    }
+
+    return tile.index
+}
+
 func (tile Tile) IsMagic() bool {
-    switch TerrainIndex(tile.Index) {
+    switch TerrainIndex(tile.index) {
         case IndexSorcNode, IndexNatNode, IndexChaosNode: return true
         default: return false
     }
 }
 
 func (tile Tile) TerrainType() TerrainType {
-    switch TerrainIndex(tile.Index) {
+    switch TerrainIndex(tile.index) {
         case IndexOcean1, IndexOcean2: return Ocean
         case IndexBugGrass, IndexGrass1, IndexGrass2, IndexGrass3, IndexGrass4: return Grass
         case IndexForest1, IndexForest2, IndexForest3: return Forest
@@ -184,23 +205,23 @@ func (tile Tile) TerrainType() TerrainType {
         case IndexLake, IndexLake1, IndexLake2, IndexLake3, IndexLake4: return Lake
     }
 
-    if tile.Index >= IndexRiverMStart && tile.Index <= IndexRiverMEnd {
+    if tile.index >= IndexRiverMStart && tile.index <= IndexRiverMEnd {
         return River
     }
 
-    if tile.Index >= IndexShore1_1st && tile.Index <= IndexShore1_end {
+    if tile.index >= IndexShore1_1st && tile.index <= IndexShore1_end {
         return Shore
     }
 
-    if tile.Index >= IndexShore2FStart && tile.Index <= IndexShore2FEnd {
+    if tile.index >= IndexShore2FStart && tile.index <= IndexShore2FEnd {
         return Shore
     }
 
-    if tile.Index >= IndexShore2Start && tile.Index <= IndexShore2End {
+    if tile.index >= IndexShore2Start && tile.index <= IndexShore2End {
         return Shore
     }
 
-    if tile.Index >= IndexShore3Start && tile.Index <= IndexShore3End {
+    if tile.index >= IndexShore3Start && tile.index <= IndexShore3End {
         return Shore
     }
 
@@ -342,7 +363,7 @@ func (tile *Tile) GetDirection(direction Direction) TerrainType {
 }
 
 func (tile Tile) String() string {
-    return fmt.Sprintf("Tile{Index: %d, Compatabilities: %v}", tile.Index, tile.Compatabilities)
+    return fmt.Sprintf("Tile{Index: %d, Compatabilities: %v}", tile.index, tile.Compatabilities)
 }
 
 var allTiles []Tile
@@ -382,7 +403,7 @@ func makeTile(index int, compatabilities []Compatability) Tile {
     }
 
     tile := Tile{
-        Index: index,
+        index: index,
         Compatabilities: all,
     }
 

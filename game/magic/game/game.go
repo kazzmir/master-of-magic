@@ -507,7 +507,7 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         Help: help,
         MouseData: mouseData,
         Events: make(chan GameEvent, 1000),
-        Map: maplib.MakeMap(terrainData, settings.LandSize),
+        Map: maplib.MakeMap(terrainData, settings.LandSize, data.PlaneArcanus),
         State: GameStateRunning,
         Settings: settings,
         BookOrder: randomizeBookOrder(12),
@@ -548,7 +548,7 @@ func (game *Game) NearCity(point image.Point, squares int) bool {
 }
 
 func (game *Game) FindValidCityLocation() (int, int) {
-    continents := game.Map.Map.FindContinents()
+    continents := game.Map.Map.FindContinents(game.Map.Plane)
 
     for i := 0; i < 10; i++ {
         continentIndex := rand.IntN(len(continents))
@@ -558,7 +558,7 @@ func (game *Game) FindValidCityLocation() (int, int) {
             x := continent[index].X
             y := continent[index].Y
 
-            if game.Map.Map.Terrain[x][y] == terrain.TileLand.Index {
+            if game.Map.Map.Terrain[x][y] == terrain.TileLand.Index(game.Map.Plane) {
                 return x, y
             }
         }
@@ -568,7 +568,7 @@ func (game *Game) FindValidCityLocation() (int, int) {
 }
 
 func (game *Game) FindValidCityLocationOnContinent(x int, y int) (int, int) {
-    continents := game.Map.Map.FindContinents()
+    continents := game.Map.Map.FindContinents(game.Map.Plane)
 
     for _, continent := range continents {
         if continent.Contains(image.Pt(x, y)) {
