@@ -158,7 +158,7 @@ func (editor *Editor) Update() error {
                 log.Printf("Generate land took %v", end.Sub(start))
             case ebiten.KeyS:
                 start := time.Now()
-                editor.Map.ResolveTiles(editor.Data)
+                editor.Map.ResolveTiles(editor.Data, plane)
                 end := time.Now()
                 log.Printf("Resolve tiles took %v", end.Sub(start))
             case ebiten.KeyTab:
@@ -201,7 +201,7 @@ func (editor *Editor) Update() error {
         }
     } else if rightClick {
         if x >= 0 && x < editor.Map.Columns() && y >= 0 && y < editor.Map.Rows() {
-            resolved, err := editor.Map.ResolveTile(x, y, editor.Data)
+            resolved, err := editor.Map.ResolveTile(x, y, editor.Data, plane)
             if err == nil {
                 editor.Map.Terrain[x][y] = resolved
             } else {

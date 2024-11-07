@@ -1310,10 +1310,10 @@ func (data *TerrainData) TileHeight() int {
 }
 
 // returns an array of tile indicies that match the given map
-func (data *TerrainData) FindMatchingAllTiles(match map[Direction]TerrainType) []int {
+func (data *TerrainData) FindMatchingAllTiles(match map[Direction]TerrainType, plane data.Plane) []int {
     var out []int
     for i, tile := range data.Tiles {
-        if tile.Tile.Matches(match) {
+        if tile.IsPlane(plane) && tile.Tile.Matches(match) {
             out = append(out, i)
         }
     }
@@ -1321,9 +1321,9 @@ func (data *TerrainData) FindMatchingAllTiles(match map[Direction]TerrainType) [
     return out
 }
 
-func (data *TerrainData) FindMatchingTile(match map[Direction]TerrainType) int {
+func (data *TerrainData) FindMatchingTile(match map[Direction]TerrainType, plane data.Plane) int {
     for i, tile := range data.Tiles {
-        if tile.Tile.Matches(match) {
+        if tile.IsPlane(plane) && tile.Tile.Matches(match) {
             return i
         }
     }
@@ -1340,6 +1340,18 @@ type TerrainTile struct {
     // for animated tiles this will be length 4
     Images []image.Image
     Tile Tile
+}
+
+func (tile *TerrainTile) IsPlane(plane data.Plane) bool {
+    if tile.IsMyrror() && plane == data.PlaneMyrror {
+        return true
+    }
+
+    if tile.IsArcanus() && plane == data.PlaneArcanus {
+        return true
+    }
+
+    return false
 }
 
 func (tile *TerrainTile) IsMyrror() bool {

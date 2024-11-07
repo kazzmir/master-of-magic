@@ -304,7 +304,7 @@ func GenerateLandCellularAutomata(rows int, columns int, data *TerrainData, plan
     map_.PlaceRandomTerrainTiles(plane)
 
     // start := time.Now()
-    map_.ResolveTiles(data)
+    map_.ResolveTiles(data, plane)
     return map_
     // end := time.Now()
     // log.Printf("Resolve tiles took %v", end.Sub(start))
@@ -369,7 +369,7 @@ func (map_ *Map) RemoveSmallIslands(area int, plane data.Plane){
 }
 
 // given a position in the terrain matrix, find a tile that fits all the neighbors of the tile
-func (map_ *Map) ResolveTile(x int, y int, data *TerrainData) (int, error) {
+func (map_ *Map) ResolveTile(x int, y int, data *TerrainData, plane data.Plane) (int, error) {
 
     matching := make(map[Direction]TerrainType)
 
@@ -418,7 +418,7 @@ func (map_ *Map) ResolveTile(x int, y int, data *TerrainData) (int, error) {
         return map_.Terrain[x][y], nil
     }
 
-    tile := data.FindMatchingTile(matching)
+    tile := data.FindMatchingTile(matching, plane)
     if tile == -1 {
         return -1, fmt.Errorf("no matching tile for %v", matching)
     }
@@ -429,7 +429,7 @@ func (map_ *Map) ResolveTile(x int, y int, data *TerrainData) (int, error) {
     // return editor.removeMyrror(tiles)[0], nil
 }
 
-func (map_ *Map) ResolveTiles(data *TerrainData){
+func (map_ *Map) ResolveTiles(data *TerrainData, plane data.Plane){
     // go through every tile and try to resolve it, keep doing this in a loop until there are no more tiles to resolve
 
     var unresolved []image.Point
@@ -446,7 +446,7 @@ func (map_ *Map) ResolveTiles(data *TerrainData){
 
         for _, index := range rand.Perm(len(unresolved)) {
             point := unresolved[index]
-            choice, err := map_.ResolveTile(point.X, point.Y, data)
+            choice, err := map_.ResolveTile(point.X, point.Y, data, plane)
             if err != nil {
                 more = append(more, point)
             } else if choice != map_.Terrain[point.X][point.Y] {
