@@ -16,6 +16,7 @@ type StackUnit interface {
     GetName() string
     GetTitle() string
     GetPlane() data.Plane
+    SetPlane(data.Plane)
     GetMovesLeft() fraction.Fraction
     SetMovesLeft(fraction.Fraction)
     GetRace() data.Race

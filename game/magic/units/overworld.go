@@ -45,6 +45,10 @@ func (unit *OverworldUnit) GetPlane() data.Plane {
     return unit.Plane
 }
 
+func (unit *OverworldUnit) SetPlane(plane data.Plane) {
+    unit.Plane = plane
+}
+
 func (unit *OverworldUnit) GetRace() data.Race {
     return unit.Unit.Race
 }

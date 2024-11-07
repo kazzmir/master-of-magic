@@ -150,6 +150,12 @@ func (stack *UnitStack) ContainsUnit(unit units.StackUnit) bool {
     return slices.Contains(stack.units, unit)
 }
 
+func (stack *UnitStack) SetPlane(plane data.Plane) {
+    for _, unit := range stack.units {
+        unit.SetPlane(plane)
+    }
+}
+
 func (stack *UnitStack) Plane() data.Plane {
     if len(stack.units) > 0 {
         return stack.units[0].GetPlane()
