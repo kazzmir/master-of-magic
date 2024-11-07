@@ -48,7 +48,7 @@ func (game *Game) GetFogImage() *ebiten.Image {
         return game.Fog
     }
 
-    game.Fog = ebiten.NewImage(game.Map.TileWidth(), game.Map.TileHeight())
+    game.Fog = ebiten.NewImage(game.CurrentMap().TileWidth(), game.CurrentMap().TileHeight())
     game.Fog.Fill(color.RGBA{R: 0, G: 0, B: 0, A: 0xff})
     return game.Fog
 }
@@ -199,11 +199,28 @@ type Game struct {
     HudUI *uilib.UI
     Help lbx.Help
 
-    // FIXME: need one map for arcanus and one for myrran
-    Map *maplib.Map
+    ArcanusMap *maplib.Map
+    MyrrorMap *maplib.Map
 
     Players []*playerlib.Player
     CurrentPlayer int
+}
+
+func (game *Game) GetMap(plane data.Plane) *maplib.Map {
+    switch plane {
+        case data.PlaneArcanus: return game.ArcanusMap
+        case data.PlaneMyrror: return game.MyrrorMap
+    }
+
+    return nil
+}
+
+func (game *Game) CurrentMap() *maplib.Map {
+    if game.Plane == data.PlaneArcanus {
+        return game.ArcanusMap
+    }
+
+    return game.MyrrorMap
 }
 
 type UnitBuildPowers struct {
@@ -244,9 +261,9 @@ func randomizeBookOrder(books int) []int {
 
 // a true value in fog means the tile is visible, false means not visible
 func (game *Game) MakeFog() [][]bool {
-    fog := make([][]bool, game.Map.Width())
-    for x := 0; x < game.Map.Width(); x++ {
-        fog[x] = make([]bool, game.Map.Height())
+    fog := make([][]bool, game.CurrentMap().Width())
+    for x := 0; x < game.CurrentMap().Width(); x++ {
+        fog[x] = make([]bool, game.CurrentMap().Height())
     }
 
     return fog
@@ -264,8 +281,8 @@ func (game *Game) CenterCamera(x int, y int){
         game.cameraY = 0
     }
 
-    if game.cameraY >= game.Map.Height() - 11 {
-        game.cameraY = game.Map.Height() - 11
+    if game.cameraY >= game.CurrentMap().Height() - 11 {
+        game.cameraY = game.CurrentMap().Height() - 11
     }
 }
 
@@ -507,7 +524,9 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         Help: help,
         MouseData: mouseData,
         Events: make(chan GameEvent, 1000),
-        Map: maplib.MakeMap(terrainData, settings.LandSize, data.PlaneMyrror),
+        ArcanusMap: maplib.MakeMap(terrainData, settings.LandSize, data.PlaneArcanus),
+        MyrrorMap: maplib.MakeMap(terrainData, settings.LandSize, data.PlaneMyrror),
+        Plane: data.PlaneArcanus,
         State: GameStateRunning,
         Settings: settings,
         BookOrder: randomizeBookOrder(12),
@@ -548,7 +567,8 @@ func (game *Game) NearCity(point image.Point, squares int) bool {
 }
 
 func (game *Game) FindValidCityLocation() (int, int) {
-    continents := game.Map.Map.FindContinents(game.Map.Plane)
+    mapUse := game.CurrentMap()
+    continents := mapUse.Map.FindContinents(mapUse.Plane)
 
     for i := 0; i < 10; i++ {
         continentIndex := rand.IntN(len(continents))
@@ -558,7 +578,7 @@ func (game *Game) FindValidCityLocation() (int, int) {
             x := continent[index].X
             y := continent[index].Y
 
-            if game.Map.Map.Terrain[x][y] == terrain.TileLand.Index(game.Map.Plane) {
+            if mapUse.Map.Terrain[x][y] == terrain.TileLand.Index(mapUse.Plane) {
                 return x, y
             }
         }
@@ -568,12 +588,13 @@ func (game *Game) FindValidCityLocation() (int, int) {
 }
 
 func (game *Game) FindValidCityLocationOnContinent(x int, y int) (int, int) {
-    continents := game.Map.Map.FindContinents(game.Map.Plane)
+    mapUse := game.CurrentMap()
+    continents := mapUse.Map.FindContinents(mapUse.Plane)
 
     for _, continent := range continents {
         if continent.Contains(image.Pt(x, y)) {
             for _, index := range rand.Perm(continent.Size()) {
-                tile := game.Map.GetTile(continent[index].X, continent[index].Y)
+                tile := mapUse.GetTile(continent[index].X, continent[index].Y)
                 if tile.Tile.IsLand() && !tile.Tile.IsMagic() {
                     return continent[index].X, continent[index].Y
                 }
@@ -610,7 +631,7 @@ func (game *Game) doCityListView(yield coroutine.YieldFunc) {
     }
 
     drawMinimap := func (screen *ebiten.Image, x int, y int, fog [][]bool, counter uint64){
-        game.Map.DrawMinimap(screen, citiesMiniMap, x, y, fog, counter, false)
+        game.CurrentMap().DrawMinimap(screen, citiesMiniMap, x, y, fog, counter, false)
     }
 
     var showCity *citylib.City
@@ -657,7 +678,7 @@ func (game *Game) doArmyView(yield coroutine.YieldFunc) {
     }
 
     drawMinimap := func (screen *ebiten.Image, x int, y int, fog [][]bool, counter uint64){
-        game.Map.DrawMinimap(screen, citiesMiniMap, x, y, fog, counter, false)
+        game.CurrentMap().DrawMinimap(screen, citiesMiniMap, x, y, fog, counter, false)
     }
 
     showVault := func(){
@@ -700,7 +721,11 @@ func (game *Game) ComputePower(player *playerlib.Player) int {
         case data.MagicSettingPowerful: magicBonus = 1.5
     }
 
-    for _, node := range game.Map.GetMeldedNodes(player) {
+    for _, node := range game.ArcanusMap.GetMeldedNodes(player) {
+        power += float64(len(node.Zone)) * magicBonus
+    }
+
+    for _, node := range game.MyrrorMap.GetMeldedNodes(player) {
         power += float64(len(node.Zone)) * magicBonus
     }
 
@@ -1282,8 +1307,8 @@ func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, st
     // the number of frames it takes to move a unit one tile
     frames := 10
 
-    tileWidth := float64(game.Map.TileWidth())
-    tileHeight := float64(game.Map.TileHeight())
+    tileWidth := float64(game.CurrentMap().TileWidth())
+    tileHeight := float64(game.CurrentMap().TileHeight())
 
     convertTileCoordinates := func(x float64, y float64) (float64, float64) {
         outX := (x - float64(game.cameraX)) * tileWidth
@@ -1331,13 +1356,13 @@ func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, st
 /* return the cost to move from the current position the stack is on to the new given coordinates.
  * also return true/false if the move is even possible
  */
-func (game *Game) ComputeTerrainCost(stack *playerlib.UnitStack, x int, y int) (fraction.Fraction, bool) {
+func (game *Game) ComputeTerrainCost(stack *playerlib.UnitStack, x int, y int, mapUse *maplib.Map) (fraction.Fraction, bool) {
     if stack.OutOfMoves() {
         return fraction.Zero(), false
     }
 
-    tileFrom := game.Map.GetTile(stack.X(), stack.Y())
-    tileTo := game.Map.GetTile(x, y)
+    tileFrom := mapUse.GetTile(stack.X(), stack.Y())
+    tileTo := mapUse.GetTile(x, y)
 
     // can't move from land to ocean unless all units are flyers
     if tileFrom.Tile.IsLand() && !tileTo.Tile.IsLand() {
@@ -1400,17 +1425,19 @@ func (game *Game) blinkRed(yield coroutine.YieldFunc) {
 
 func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *playerlib.UnitStack, fog [][]bool) pathfinding.Path {
 
+    useMap := game.GetMap(stack.Plane())
+
     tileCost := func (x1 int, y1 int, x2 int, y2 int) float64 {
-        if x1 < 0 || x1 >= game.Map.Width() || y1 < 0 || y1 >= game.Map.Height() {
+        if x1 < 0 || x1 >= useMap.Width() || y1 < 0 || y1 >= useMap.Height() {
             return pathfinding.Infinity
         }
 
-        if x2 < 0 || x2 >= game.Map.Width() || y2 < 0 || y2 >= game.Map.Height() {
+        if x2 < 0 || x2 >= useMap.Width() || y2 < 0 || y2 >= useMap.Height() {
             return pathfinding.Infinity
         }
 
-        tileFrom := game.Map.GetTile(x1, y1)
-        tileTo := game.Map.GetTile(x2, y2)
+        tileFrom := useMap.GetTile(x1, y1)
+        tileTo := useMap.GetTile(x2, y2)
 
         // FIXME: consider terrain type, roads, and unit abilities
 
@@ -1449,12 +1476,12 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
         }
 
         // down left
-        if x > 0 && y < game.Map.Height() - 1 {
+        if x > 0 && y < useMap.Height() - 1 {
             out = append(out, image.Pt(x - 1, y + 1))
         }
 
         // up right
-        if x < game.Map.Width() - 1 && y > 0 {
+        if x < useMap.Width() - 1 && y > 0 {
             out = append(out, image.Pt(x + 1, y - 1))
         }
 
@@ -1464,17 +1491,17 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
         }
 
         // right
-        if x < game.Map.Width() - 1 {
+        if x < useMap.Width() - 1 {
             out = append(out, image.Pt(x + 1, y))
         }
 
         // down right
-        if x < game.Map.Width() - 1 && y < game.Map.Height() - 1 {
+        if x < useMap.Width() - 1 && y < useMap.Height() - 1 {
             out = append(out, image.Pt(x + 1, y + 1))
         }
 
         // down
-        if y < game.Map.Height() - 1 {
+        if y < useMap.Height() - 1 {
             out = append(out, image.Pt(x, y + 1))
         }
 
@@ -1852,6 +1879,7 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
 
     if player.SelectedStack != nil {
         stack := player.SelectedStack
+        mapUse := game.GetMap(stack.Plane())
         oldX := stack.X()
         oldY := stack.Y()
 
@@ -1879,15 +1907,15 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                 // can only click into the area not hidden by the hud
                 if mouseX < 240 && mouseY > 18 {
                     // log.Printf("Click at %v, %v", mouseX, mouseY)
-                    newX = game.cameraX + mouseX / game.Map.TileWidth()
-                    newY = game.cameraY + mouseY / game.Map.TileHeight()
+                    newX = game.cameraX + mouseX / mapUse.TileWidth()
+                    newY = game.cameraY + mouseY / mapUse.TileHeight()
                 }
             }
 
             if newX != oldX || newY != oldY {
                 activeUnits := stack.ActiveUnits()
                 if len(activeUnits) > 0 {
-                    if newY > 0 && newY < game.Map.Height() && newX > 0 && newX < game.Map.Width() {
+                    if newY > 0 && newY < mapUse.Height() && newX > 0 && newX < mapUse.Width() {
 
                         inactiveUnits := stack.InactiveUnits()
                         if len(inactiveUnits) > 0 {
@@ -1917,10 +1945,10 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                 break
             }
 
-            terrainCost, canMove := game.ComputeTerrainCost(stack, step.X, step.Y)
+            terrainCost, canMove := game.ComputeTerrainCost(stack, step.X, step.Y, mapUse)
 
             if canMove {
-                node := game.Map.GetMagicNode(step.X, step.Y)
+                node := mapUse.GetMagicNode(step.X, step.Y)
                 if node != nil && !node.Empty {
                     if game.confirmMagicNodeEncounter(yield, node) {
 
@@ -1937,7 +1965,7 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                     break quitMoving
                 }
 
-                lair := game.Map.GetLair(step.X, step.Y)
+                lair := mapUse.GetLair(step.X, step.Y)
                 if lair != nil {
                     if game.confirmLairEncounter(yield, lair) {
                         stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost)
@@ -2016,13 +2044,14 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
 
     rightClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight)
     if rightClick {
+        mapUse := game.CurrentMap()
         mouseX, mouseY := ebiten.CursorPosition()
 
         // can only click into the area not hidden by the hud
         if mouseX < 240 && mouseY > 18 {
             // log.Printf("Click at %v, %v", mouseX, mouseY)
-            tileX := game.cameraX + mouseX / game.Map.TileWidth()
-            tileY := game.cameraY + mouseY / game.Map.TileHeight()
+            tileX := game.cameraX + mouseX / mapUse.TileWidth()
+            tileY := game.cameraY + mouseY / mapUse.TileHeight()
 
             game.CenterCamera(tileX, tileY)
 
@@ -2117,7 +2146,7 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                                     stack := moveDecision.Stack
                                     to := moveDecision.Location
                                     log.Printf("  moving stack %v to %v, %v", stack, to.X, to.Y)
-                                    terrainCost, _ := game.ComputeTerrainCost(stack, to.X, to.Y)
+                                    terrainCost, _ := game.ComputeTerrainCost(stack, to.X, to.Y, game.GetMap(stack.Plane()))
                                     oldX := stack.X()
                                     oldY := stack.Y()
                                     stack.Move(to.X - stack.X(), to.Y - stack.Y(), terrainCost)
@@ -2218,7 +2247,7 @@ func (game *Game) doCityScreen(yield coroutine.YieldFunc, city *citylib.City, pl
         CameraX: city.X - 2,
         CameraY: city.Y - 2,
         Counter: 0,
-        Map: game.Map,
+        Map: game.CurrentMap(),
         Cities: cities,
         Stacks: stacks,
         SelectedStack: nil,
@@ -2232,7 +2261,7 @@ func (game *Game) doCityScreen(yield coroutine.YieldFunc, city *citylib.City, pl
     game.Drawer = func(screen *ebiten.Image, game *Game){
         cityScreen.Draw(screen, func (mapView *ebiten.Image, geom ebiten.GeoM, counter uint64){
             overworld.DrawOverworld(mapView, geom)
-        }, game.Map.TileWidth(), game.Map.TileHeight())
+        }, game.CurrentMap().TileWidth(), game.CurrentMap().TileHeight())
     }
 
     for cityScreen.Update() == cityview.CityScreenStateRunning {
@@ -2433,8 +2462,7 @@ func (game *Game) doMagicEncounter(yield coroutine.YieldFunc, player *playerlib.
 }
 
 func (game *Game) GetCombatLandscape(x int, y int, plane data.Plane) combat.CombatLandscape {
-    // FIXME: take plane into account
-    tile := game.Map.GetTile(x, y)
+    tile := game.GetMap(plane).GetTile(x, y)
 
     switch tile.Tile.TerrainType() {
         case terrain.Land, terrain.Hill, terrain.Grass,
@@ -2483,6 +2511,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
 
     landscape := game.GetCombatLandscape(attackerStack.X(), attackerStack.Y(), attackerStack.Plane())
 
+    // FIXME: take plane into account for the landscape/terrain
     combatScreen := combat.MakeCombatScreen(game.Cache, &defendingArmy, &attackingArmy, game.Players[0], landscape, attackerStack.Plane(), zone)
     oldDrawer := game.Drawer
 
@@ -2965,7 +2994,7 @@ func (game *Game) CatchmentArea(x int, y int) []image.Point {
     return out
 }
 
-func (game *Game) ComputeMaximumPopulation(x int, y int) int {
+func (game *Game) ComputeMaximumPopulation(x int, y int, plane data.Plane) int {
     // find catchment area of x, y
     // for each square, compute food production
     // maximum pop is food production
@@ -2974,10 +3003,10 @@ func (game *Game) ComputeMaximumPopulation(x int, y int) int {
     food := fraction.Zero()
 
     for _, point := range catchment {
-        tile := game.Map.GetTile(point.X, point.Y)
+        tile := game.GetMap(plane).GetTile(point.X, point.Y)
         food = food.Add(tile.Tile.FoodBonus())
         // FIXME: get bonus directly from tile.Extra
-        bonus := game.Map.GetBonusTile(point.X, point.Y)
+        bonus := game.GetMap(plane).GetBonusTile(point.X, point.Y)
         food = food.Add(fraction.FromInt(bonus.FoodBonus()))
     }
 
@@ -2989,9 +3018,9 @@ func (game *Game) ComputeMaximumPopulation(x int, y int) int {
     return maximum
 }
 
-func (game *Game) CityGoldBonus(x int, y int) int {
+func (game *Game) CityGoldBonus(x int, y int, plane data.Plane) int {
     gold := 0
-    tile := game.Map.GetTile(x, y)
+    tile := game.GetMap(plane).GetTile(x, y)
     if tile.Tile.TerrainType() == terrain.River {
         gold += 20
     }
@@ -3004,7 +3033,7 @@ func (game *Game) CityGoldBonus(x int, y int) int {
                 continue
             }
 
-            tile := game.Map.GetTile(x + dx, y + dy)
+            tile := game.GetMap(plane).GetTile(x + dx, y + dy)
             if tile.Tile.TerrainType() == terrain.Shore {
                 touchingShore = true
             }
@@ -3018,13 +3047,13 @@ func (game *Game) CityGoldBonus(x int, y int) int {
     return gold
 }
 
-func (game *Game) CityProductionBonus(x int, y int) int {
+func (game *Game) CityProductionBonus(x int, y int, plane data.Plane) int {
     catchment := game.CatchmentArea(x, y)
 
     production := 0
 
     for _, point := range catchment {
-        tile := game.Map.GetTile(point.X, point.Y)
+        tile := game.GetMap(plane).GetTile(point.X, point.Y)
         production += tile.Tile.ProductionBonus()
     }
 
@@ -3032,7 +3061,7 @@ func (game *Game) CityProductionBonus(x int, y int) int {
 }
 
 func (game *Game) CreateOutpost(settlers units.StackUnit, player *playerlib.Player) *citylib.City {
-    newCity := citylib.MakeCity("New City", settlers.GetX(), settlers.GetY(), settlers.GetRace(), settlers.GetBanner(), player.TaxRate, game.BuildingInfo, game.Map)
+    newCity := citylib.MakeCity("New City", settlers.GetX(), settlers.GetY(), settlers.GetRace(), settlers.GetBanner(), player.TaxRate, game.BuildingInfo, game.GetMap(settlers.GetPlane()))
     newCity.Plane = settlers.GetPlane()
     newCity.Population = 300
     newCity.Outpost = true
@@ -3079,7 +3108,7 @@ func (game *Game) DoBuildAction(player *playerlib.Player){
                 }
             }
         } else if powers.Meld {
-            node := game.Map.GetMagicNode(player.SelectedStack.X(), player.SelectedStack.Y())
+            node := game.GetMap(player.SelectedStack.Plane()).GetMagicNode(player.SelectedStack.X(), player.SelectedStack.Y())
             for _, melder := range player.SelectedStack.ActiveUnits() {
                 if melder.HasAbility(units.AbilityMeld) {
                     game.DoMeld(melder, player, node)
@@ -3522,7 +3551,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                     use = meldImages[buildIndex]
 
                     canMeld := false
-                    node := game.Map.GetMagicNode(player.SelectedStack.X(), player.SelectedStack.Y())
+                    node := game.GetMap(player.SelectedStack.Plane()).GetMagicNode(player.SelectedStack.X(), player.SelectedStack.Y())
                     if node != nil && node.Empty {
                         canMeld = true
                     }
@@ -3552,7 +3581,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                     buildIndex = 1
                 } else if powers.Meld {
                     canMeld := false
-                    node := game.Map.GetMagicNode(player.SelectedStack.X(), player.SelectedStack.Y())
+                    node := game.GetMap(player.SelectedStack.Plane()).GetMagicNode(player.SelectedStack.X(), player.SelectedStack.Y())
                     if node != nil && node.Empty {
                         canMeld = true
                     }
@@ -4355,7 +4384,7 @@ func (game *Game) DrawGame(screen *ebiten.Image){
         CameraX: game.cameraX,
         CameraY: game.cameraY,
         Counter: game.Counter,
-        Map: game.Map,
+        Map: game.CurrentMap(),
         Cities: cities,
         CitiesMiniMap: citiesMiniMap,
         Stacks: stacks,
