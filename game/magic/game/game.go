@@ -3398,6 +3398,22 @@ func (game *Game) MakeHudUI() *uilib.UI {
                         screen.DrawImage(pic, &badgeOptions)
                         badgeOptions.GeoM.Translate(4, 0)
                     }
+
+                    weaponOptions := options
+                    weaponOptions.GeoM.Translate(12, 18)
+                    var weapon *ebiten.Image
+                    switch unit.GetWeaponBonus() {
+                        case data.WeaponMagic:
+                            weapon, _ = game.ImageCache.GetImage("main.lbx", 54, 0)
+                        case data.WeaponMythril:
+                            weapon, _ = game.ImageCache.GetImage("main.lbx", 55, 0)
+                        case data.WeaponAdamantium:
+                            weapon, _ = game.ImageCache.GetImage("main.lbx", 56, 0)
+                    }
+
+                    if weapon != nil {
+                        screen.DrawImage(weapon, &weaponOptions)
+                    }
                 },
             })
 
@@ -3957,7 +3973,12 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
                 }
             case *citylib.CityEventNewUnit:
                 newUnit := event.(*citylib.CityEventNewUnit)
-                player.AddUnit(units.MakeOverworldUnitFromUnit(newUnit.Unit, city.X, city.Y, city.Plane, city.Banner, player.MakeExperienceInfo()))
+                overworldUnit := units.MakeOverworldUnitFromUnit(newUnit.Unit, city.X, city.Y, city.Plane, city.Banner, player.MakeExperienceInfo())
+                // only normal units get weapon bonuses
+                if overworldUnit.GetRace() != data.RaceFantastic {
+                    overworldUnit.SetWeaponBonus(newUnit.WeaponBonus)
+                }
+                player.AddUnit(overworldUnit)
             }
         }
     }

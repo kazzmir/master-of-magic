@@ -10,6 +10,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/combat"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/util"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     "github.com/kazzmir/master-of-magic/lib/font"
 
@@ -190,6 +191,19 @@ func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit
     // mythril or admantanium is also possible
     weaponIcon, _ := imageCache.GetImage("unitview.lbx", 13, 0)
     weaponGold, _ := imageCache.GetImage("unitview.lbx", 35, 0)
+
+    switch unit.GetWeaponBonus() {
+        case data.WeaponMagic:
+            weaponIcon, _ = imageCache.GetImage("unitview.lbx", 16, 0)
+            weaponGold, _ = imageCache.GetImage("unitview.lbx", 38, 0)
+        case data.WeaponMythril:
+            weaponIcon, _ = imageCache.GetImage("unitview.lbx", 15, 0)
+            weaponGold, _ = imageCache.GetImage("unitview.lbx", 37, 0)
+        case data.WeaponAdamantium:
+            weaponIcon, _ = imageCache.GetImage("unitview.lbx", 17, 0)
+            weaponGold, _ = imageCache.GetImage("unitview.lbx", 39, 0)
+    }
+
     showNIcons(weaponIcon, unit.GetBaseMeleeAttackPower(), weaponGold, unit.GetMeleeAttackPower() - unit.GetBaseMeleeAttackPower(), x, y)
 
     y += float64(descriptionFont.Height())

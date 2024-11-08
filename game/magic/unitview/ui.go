@@ -32,6 +32,7 @@ type UnitView interface {
     GetUpkeepMana() int
     GetMovementSpeed() int
     GetProductionCost() int
+    GetWeaponBonus() data.WeaponBonus
     GetExperience() int
     GetExperienceData() units.ExperienceData
     GetBaseMeleeAttackPower() int

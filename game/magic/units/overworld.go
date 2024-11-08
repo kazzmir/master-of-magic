@@ -19,6 +19,7 @@ type OverworldUnit struct {
     Patrol bool
     // to get the level, use the conversion functions in experience.go
     Experience int
+    WeaponBonus data.WeaponBonus
 }
 
 func (unit *OverworldUnit) GetLbxFile() string {
@@ -39,6 +40,14 @@ func (unit *OverworldUnit) GetPatrol() bool {
 
 func (unit *OverworldUnit) SetPatrol(patrol bool) {
     unit.Patrol = patrol
+}
+
+func (unit *OverworldUnit) SetWeaponBonus(bonus data.WeaponBonus) {
+    unit.WeaponBonus = bonus
+}
+
+func (unit *OverworldUnit) GetWeaponBonus() data.WeaponBonus {
+    return unit.WeaponBonus
 }
 
 func (unit *OverworldUnit) GetPlane() data.Plane {
@@ -149,6 +158,12 @@ func (unit *OverworldUnit) GetToHitMelee() int {
         case ExperienceChampionNormal: base += 30
     }
 
+    switch unit.WeaponBonus {
+        case data.WeaponMagic: base += 10
+        case data.WeaponMythril: base += 10
+        case data.WeaponAdamantium: base += 10
+    }
+
     return base
 }
 
@@ -238,7 +253,14 @@ func (unit *OverworldUnit) GetExperienceLevel() NormalExperienceLevel {
 }
 
 func (unit *OverworldUnit) GetMeleeAttackPower() int {
-    return unit.GetBaseMeleeAttackPower()
+    base := unit.GetBaseMeleeAttackPower()
+
+    switch unit.WeaponBonus {
+        case data.WeaponMythril: base += 1
+        case data.WeaponAdamantium: base += 2
+    }
+
+    return base
 }
 
 func (unit *OverworldUnit) GetBaseRangedAttackPower() int {
@@ -262,7 +284,16 @@ func (unit *OverworldUnit) GetBaseRangedAttackPower() int {
 }
 
 func (unit *OverworldUnit) GetRangedAttackPower() int {
-    return unit.GetBaseRangedAttackPower()
+    base := unit.GetBaseRangedAttackPower()
+
+    if unit.GetRangedAttackDamageType() == DamageRangedPhysical || unit.GetRangedAttackDamageType() == DamageRangedBoulder {
+        switch unit.WeaponBonus {
+            case data.WeaponMythril: base += 1
+            case data.WeaponAdamantium: base += 2
+        }
+    }
+
+    return base
 }
 
 func (unit *OverworldUnit) GetBaseDefense() int {
@@ -282,7 +313,14 @@ func (unit *OverworldUnit) GetBaseDefense() int {
 }
 
 func (unit *OverworldUnit) GetDefense() int {
-    return unit.GetBaseDefense()
+    base := unit.GetBaseDefense()
+
+    switch unit.WeaponBonus {
+        case data.WeaponMythril: base += 1
+        case data.WeaponAdamantium: base += 2
+    }
+
+    return base
 }
 
 func (unit *OverworldUnit) GetResistance() int {

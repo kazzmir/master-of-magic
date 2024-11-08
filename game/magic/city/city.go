@@ -24,6 +24,7 @@ type CityEventPopulationGrowth struct {
 
 type CityEventNewUnit struct {
     Unit units.Unit
+    WeaponBonus data.WeaponBonus
 }
 
 type CityEventOutpostDestroyed struct {
@@ -823,6 +824,31 @@ func (city *City) GrowOutpost() CityEvent {
     return nil
 }
 
+// if the city contains an alchemist's guild then new units get one of the following bonuses
+//  * magic weapon
+//  * mythril weapon (if mythril ore in catchment area)
+//  * adamantium weapon (if adamantium ore in catchment area)
+func (city *City) GetWeaponBonus() data.WeaponBonus {
+    if city.Buildings.Contains(buildinglib.BuildingAlchemistsGuild) {
+
+        catchment := city.CatchmentProvider.GetCatchmentArea(city.X, city.Y)
+
+        for _, tile := range catchment {
+            if tile.GetBonus() == data.BonusMithrilOre {
+                return data.WeaponMythril
+            }
+
+            if tile.GetBonus() == data.BonusAdamantiumOre {
+                return data.WeaponAdamantium
+            }
+        }
+
+        return data.WeaponMagic
+    }
+
+    return data.WeaponNone
+}
+
 // do all the stuff needed per turn
 // increase population, add production, add food/money, etc
 func (city *City) DoNextTurn(garrison []units.StackUnit) []CityEvent {
@@ -860,7 +886,7 @@ func (city *City) DoNextTurn(garrison []units.StackUnit) []CityEvent {
                     city.ProducingBuilding = buildinglib.BuildingHousing
                 }
             } else if !city.ProducingUnit.Equals(units.UnitNone) && city.Production >= float32(city.ProducingUnit.ProductionCost) {
-                cityEvents = append(cityEvents, &CityEventNewUnit{Unit: city.ProducingUnit})
+                cityEvents = append(cityEvents, &CityEventNewUnit{Unit: city.ProducingUnit, WeaponBonus: city.GetWeaponBonus()})
                 city.Production = 0
 
                 if city.ProducingUnit.IsSettlers() {
