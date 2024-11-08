@@ -158,6 +158,12 @@ func (unit *OverworldUnit) GetToHitMelee() int {
         case ExperienceChampionNormal: base += 30
     }
 
+    switch unit.WeaponBonus {
+        case data.WeaponMagic: base += 10
+        case data.WeaponMythril: base += 10
+        case data.WeaponAdamantium: base += 10
+    }
+
     return base
 }
 
@@ -278,7 +284,16 @@ func (unit *OverworldUnit) GetBaseRangedAttackPower() int {
 }
 
 func (unit *OverworldUnit) GetRangedAttackPower() int {
-    return unit.GetBaseRangedAttackPower()
+    base := unit.GetBaseRangedAttackPower()
+
+    if unit.GetRangedAttackDamageType() == DamageRangedPhysical || unit.GetRangedAttackDamageType() == DamageRangedBoulder {
+        switch unit.WeaponBonus {
+            case data.WeaponMythril: base += 1
+            case data.WeaponAdamantium: base += 2
+        }
+    }
+
+    return base
 }
 
 func (unit *OverworldUnit) GetBaseDefense() int {
@@ -298,7 +313,14 @@ func (unit *OverworldUnit) GetBaseDefense() int {
 }
 
 func (unit *OverworldUnit) GetDefense() int {
-    return unit.GetBaseDefense()
+    base := unit.GetBaseDefense()
+
+    switch unit.WeaponBonus {
+        case data.WeaponMythril: base += 1
+        case data.WeaponAdamantium: base += 2
+    }
+
+    return base
 }
 
 func (unit *OverworldUnit) GetResistance() int {
