@@ -205,7 +205,19 @@ func (unit *OverworldUnit) GetProductionCost() int {
 }
 
 func (unit *OverworldUnit) GetBaseMeleeAttackPower() int {
-    return unit.Unit.GetMeleeAttackPower()
+    power := unit.Unit.GetMeleeAttackPower()
+
+    level := unit.GetExperienceLevel()
+    switch level {
+        case ExperienceRecruit:
+        case ExperienceRegular: power += 1
+        case ExperienceVeteran: power += 1
+        case ExperienceElite: power += 2
+        case ExperienceUltraElite: power += 2
+        case ExperienceChampionNormal: power += 3
+    }
+
+    return power
 }
 
 func (unit *OverworldUnit) GetExperienceLevel() NormalExperienceLevel {
@@ -222,19 +234,7 @@ func (unit *OverworldUnit) GetExperienceLevel() NormalExperienceLevel {
 }
 
 func (unit *OverworldUnit) GetMeleeAttackPower() int {
-    power := unit.GetBaseMeleeAttackPower()
-
-    level := unit.GetExperienceLevel()
-    switch level {
-        case ExperienceRecruit:
-        case ExperienceRegular: power += 1
-        case ExperienceVeteran: power += 1
-        case ExperienceElite: power += 2
-        case ExperienceUltraElite: power += 2
-        case ExperienceChampionNormal: power += 3
-    }
-
-    return power
+    return unit.GetBaseMeleeAttackPower()
 }
 
 func (unit *OverworldUnit) GetBaseRangedAttackPower() int {
@@ -246,11 +246,7 @@ func (unit *OverworldUnit) GetRangedAttackPower() int {
 }
 
 func (unit *OverworldUnit) GetBaseDefense() int {
-    return unit.Unit.GetDefense()
-}
-
-func (unit *OverworldUnit) GetDefense() int {
-    defense := unit.GetBaseDefense()
+    defense := unit.Unit.GetDefense()
 
     level := unit.GetExperienceLevel()
     switch level {
@@ -265,8 +261,16 @@ func (unit *OverworldUnit) GetDefense() int {
     return defense
 }
 
+func (unit *OverworldUnit) GetDefense() int {
+    return unit.GetBaseDefense()
+}
+
 func (unit *OverworldUnit) GetResistance() int {
-    base := unit.GetBaseResistance()
+    return unit.GetBaseResistance()
+}
+
+func (unit *OverworldUnit) GetBaseResistance() int {
+    base := unit.Unit.GetResistance()
 
     level := unit.GetExperienceLevel()
     switch level {
@@ -281,12 +285,12 @@ func (unit *OverworldUnit) GetResistance() int {
     return base
 }
 
-func (unit *OverworldUnit) GetBaseResistance() int {
-    return unit.Unit.GetResistance()
+func (unit *OverworldUnit) GetHitPoints() int {
+    return unit.GetBaseHitPoints()
 }
 
-func (unit *OverworldUnit) GetHitPoints() int {
-    base := unit.GetBaseHitPoints()
+func (unit *OverworldUnit) GetBaseHitPoints() int {
+    base := unit.Unit.GetHitPoints()
 
     level := unit.GetExperienceLevel()
     switch level {
@@ -299,10 +303,6 @@ func (unit *OverworldUnit) GetHitPoints() int {
     }
 
     return base
-}
-
-func (unit *OverworldUnit) GetBaseHitPoints() int {
-    return unit.Unit.GetHitPoints()
 }
 
 func (unit *OverworldUnit) GetAbilities() []Ability {
