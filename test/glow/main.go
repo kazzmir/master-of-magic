@@ -3,6 +3,7 @@ package main
 import (
     "log"
     "image/color"
+    "math"
 
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/shaders"
@@ -72,7 +73,7 @@ func (engine *Engine) Draw(screen *ebiten.Image){
     options.Uniforms["Color1"] = toFloatArray(color.RGBA{R: 200, G: 0, B: 0, A: 255})
     options.Uniforms["Color2"] = toFloatArray(color.RGBA{R: 255, G: 0, B: 0, A: 255})
     options.Uniforms["Color3"] = toFloatArray(color.RGBA{R: 220, G: 40, B: 40, A: 255})
-    options.Uniforms["Time"] = float32(engine.Counter) / 10.0
+    options.Uniforms["Time"] = float32(math.Abs(float64(engine.Counter/10)))
     regularOptions.GeoM = options.GeoM
     screen.DrawImage(lizardUnit, &regularOptions)
     screen.DrawRectShader(lizardUnit.Bounds().Dx(), lizardUnit.Bounds().Dy(), shader, &options)
@@ -80,6 +81,8 @@ func (engine *Engine) Draw(screen *ebiten.Image){
     lizardFigure, _ := engine.ImageCache.GetImage("figures9.lbx", 1, 0)
     options.GeoM.Translate(50, 0)
     options.Images[0] = lizardFigure
+    regularOptions.GeoM = options.GeoM
+    screen.DrawImage(lizardFigure, &regularOptions)
     screen.DrawRectShader(lizardFigure.Bounds().Dx(), lizardFigure.Bounds().Dy(), shader, &options)
 }
 

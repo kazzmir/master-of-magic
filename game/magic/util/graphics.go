@@ -1,10 +1,12 @@
 package util
 
 import (
-    // "log"
+    "log"
     "image"
     "image/color"
+    "math"
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/game/magic/shaders"
 
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/colorm"
@@ -29,6 +31,35 @@ func DrawRect(screen *ebiten.Image, rect image.Rectangle, color_ color.Color){
 
 func ImageRect(x int, y int, img *ebiten.Image) image.Rectangle {
     return image.Rect(x, y, x + img.Bounds().Dx(), y + img.Bounds().Dy())
+}
+
+func toFloatArray(color color.Color) []float32 {
+    r, g, b, a := color.RGBA()
+    var max float32 = 65535.0
+    return []float32{float32(r) / max, float32(g) / max, float32(b) / max, float32(a) / max}
+}
+
+func DrawOutline(screen *ebiten.Image, imageCache *ImageCache, pic *ebiten.Image, x float64, y float64, time uint64, baseColor color.Color) {
+    color1 := baseColor
+    color2 := Lighten(baseColor, 20)
+    color3 := Lighten(baseColor, 40)
+
+    shader, err := imageCache.GetShader(shaders.ShaderEdgeGlow)
+
+    if err != nil {
+        log.Printf("Error: unable to get edge glow shader: %v", err)
+        return
+    }
+
+    var options ebiten.DrawRectShaderOptions
+    options.GeoM.Translate(x, y)
+    options.Images[0] = pic
+    options.Uniforms = make(map[string]interface{})
+    options.Uniforms["Color1"] = toFloatArray(color1)
+    options.Uniforms["Color2"] = toFloatArray(color2)
+    options.Uniforms["Color3"] = toFloatArray(color3)
+    options.Uniforms["Time"] = float32(math.Abs(float64(time)))
+    screen.DrawRectShader(pic.Bounds().Dx(), pic.Bounds().Dy(), shader, &options)
 }
 
 func drawDistortedImage(destination *ebiten.Image, source *ebiten.Image, vertices [4]ebiten.Vertex){
