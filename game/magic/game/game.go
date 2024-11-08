@@ -3958,7 +3958,10 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
             case *citylib.CityEventNewUnit:
                 newUnit := event.(*citylib.CityEventNewUnit)
                 overworldUnit := units.MakeOverworldUnitFromUnit(newUnit.Unit, city.X, city.Y, city.Plane, city.Banner, player.MakeExperienceInfo())
-                overworldUnit.SetWeaponBonus(newUnit.WeaponBonus)
+                // only normal units get weapon bonuses
+                if overworldUnit.GetRace() != data.RaceFantastic {
+                    overworldUnit.SetWeaponBonus(newUnit.WeaponBonus)
+                }
                 player.AddUnit(overworldUnit)
             }
         }
