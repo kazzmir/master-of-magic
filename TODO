@@ -8,6 +8,7 @@
 * implement overworld spells
 * handle touch events similar to the mouse
 * glowing effect for enchanted units
+* corrupted tiles and purify
 * upscale screen by 2x
 
 9/22/2024 * city view: separate surplus food/gold from subsistence food/gold
