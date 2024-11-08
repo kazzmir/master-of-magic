@@ -425,16 +425,30 @@ func (player *Player) SetSelectedStack(stack *UnitStack){
     player.SelectedStack = stack
 }
 
+func (player *Player) WrapX(x int) int {
+    fog := player.ArcanusFog
+    maximum := len(fog)
+
+    for x < 0 {
+        x += maximum
+    }
+
+    return x % maximum
+}
+
 func (player *Player) LiftFogSquare(x int, y int, squares int, plane data.Plane){
     fog := player.GetFog(plane)
 
     for dx := -squares; dx <= squares; dx++ {
         for dy := -squares; dy <= squares; dy++ {
-            if x + dx < 0 || x + dx >= len(fog) || y + dy < 0 || y + dy >= len(fog[0]) {
+            mx := player.WrapX(x + dx)
+            my := y + dy
+
+            if mx < 0 || mx >= len(fog) || my < 0 || my >= len(fog[0]) {
                 continue
             }
 
-            fog[x + dx][y + dy] = true
+            fog[mx][my] = true
         }
     }
 }
@@ -445,12 +459,15 @@ func (player *Player) LiftFog(x int, y int, radius int, plane data.Plane){
 
     for dx := -radius; dx <= radius; dx++ {
         for dy := -radius; dy <= radius; dy++ {
-            if x + dx < 0 || x + dx >= len(fog) || y + dy < 0 || y + dy >= len(fog[0]) {
+            mx := player.WrapX(x + dx)
+            my := y + dy
+
+            if mx < 0 || mx >= len(fog) || my < 0 || my >= len(fog[0]) {
                 continue
             }
 
             if dx * dx + dy * dy <= radius * radius {
-                fog[x + dx][y + dy] = true
+                fog[mx][my] = true
             }
         }
     }

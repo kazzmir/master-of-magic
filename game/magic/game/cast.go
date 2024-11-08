@@ -267,12 +267,10 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
             rightClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight)
             if rightClick {
                 moveCamera = newPoint.Add(image.Pt(-5, -5))
-                if moveCamera.X < 0 {
-                    moveCamera.X = 0
-                }
                 if moveCamera.Y < 0 {
                     moveCamera.Y = 0
                 }
+
                 if moveCamera.Y >= game.CurrentMap().Height() - 11 {
                     moveCamera.Y = game.CurrentMap().Height() - 11
                 }
