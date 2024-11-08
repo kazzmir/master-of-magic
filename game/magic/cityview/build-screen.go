@@ -87,6 +87,8 @@ func allowedByRace(building buildinglib.Building, race data.Race) bool {
              buildinglib.BuildingFarmersMarket,
              buildinglib.BuildingBuildersHall,
              buildinglib.BuildingCityWalls,
+             buildinglib.BuildingTradeGoods,
+             buildinglib.BuildingHousing,
              buildinglib.BuildingFightersGuild:
                 return true
         case buildinglib.BuildingArmorersGuild:
