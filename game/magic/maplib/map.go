@@ -616,9 +616,16 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []MiniMapCity, ce
 
     black := color.RGBA{R: 0, G: 0, B: 0, A: 255}
 
+    cityLocations := make(map[image.Point]color.RGBA)
+
+    for _, city := range cities {
+        if fog[city.GetX()][city.GetY()] {
+            cityLocations[image.Pt(city.GetX(), city.GetY())] = bannerColor(city.GetBanner())
+        }
+    }
+
     for x := 0; x < screen.Bounds().Dx(); x++ {
         for y := 0; y < screen.Bounds().Dy(); y++ {
-
             tileX := mapObject.WrapX(x + cameraX)
             tileY := y + cameraY
 
@@ -635,18 +642,11 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []MiniMapCity, ce
                 default: use = color.RGBA{R: 64, G: 64, B: 64, A: 255}
             }
 
-            set(x, y, use)
-        }
-    }
-
-    for _, city := range cities {
-        if fog[city.GetX()][city.GetY()] {
-            posX := mapObject.WrapX(city.GetX() - cameraX)
-            posY := city.GetY() - cameraY
-
-            if posX >= 0 && posX < screen.Bounds().Dx() && posY >= 0 && posY < screen.Bounds().Dy() {
-                set(posX, posY, bannerColor(city.GetBanner()))
+            if cityColor, ok := cityLocations[image.Pt(tileX, tileY)]; ok {
+                use = cityColor
             }
+
+            set(x, y, use)
         }
     }
 
