@@ -247,7 +247,14 @@ func (unit *OverworldUnit) GetExperienceLevel() NormalExperienceLevel {
 }
 
 func (unit *OverworldUnit) GetMeleeAttackPower() int {
-    return unit.GetBaseMeleeAttackPower()
+    base := unit.GetBaseMeleeAttackPower()
+
+    switch unit.WeaponBonus {
+        case data.WeaponMythril: base += 1
+        case data.WeaponAdamantium: base += 2
+    }
+
+    return base
 }
 
 func (unit *OverworldUnit) GetBaseRangedAttackPower() int {
