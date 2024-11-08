@@ -5,6 +5,7 @@ import (
     "image/color"
 
     "github.com/kazzmir/master-of-magic/game/magic/util"
+    "github.com/kazzmir/master-of-magic/game/magic/shaders"
     "github.com/kazzmir/master-of-magic/lib/lbx"
 
     "github.com/hajimehoshi/ebiten/v2"
@@ -46,14 +47,29 @@ func (engine *Engine) Update() error {
     return nil
 }
 
+func toFloatArray(color color.Color) []float32 {
+    r, g, b, a := color.RGBA()
+    var max float32 = 65535.0
+    return []float32{float32(r) / max, float32(g) / max, float32(b) / max, float32(a) / max}
+}
+
 func (engine *Engine) Draw(screen *ebiten.Image){
     screen.Fill(color.RGBA{R: 60, G: 60, B: 120, A: 255})
 
     lizardUnit, _ := engine.ImageCache.GetImage("units2.lbx", 0, 0)
 
-    var options ebiten.DrawImageOptions
+    shader, err := engine.ImageCache.GetShader(shaders.ShaderEdgeGlow)
+    if err != nil {
+        log.Printf("Unable to get shader: %v", err)
+        return
+    }
+
+    var options ebiten.DrawRectShaderOptions
     options.GeoM.Translate(20, 20)
-    screen.DrawImage(lizardUnit, &options)
+    options.Images[0] = lizardUnit
+    options.Uniforms = make(map[string]interface{})
+    options.Uniforms["Color"] = toFloatArray(color.RGBA{R: 255, G: 0, B: 0, A: 255})
+    screen.DrawRectShader(lizardUnit.Bounds().Dx(), lizardUnit.Bounds().Dy(), shader, &options)
 }
 
 func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {

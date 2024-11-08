@@ -38,6 +38,15 @@ func Fragment(destPosition vec4, srcPosition vec2, color vec4) vec4 {
     current := imageSrc0At(srcPosition)
 
     average := nearbyAlpha(srcPosition)
+
+    if current.a != 0 {
+        return current
+    }
+
+    if average < 0.1 {
+        return vec4(0, 0, 0, 0)
+    }
+
     // value := vec4(0, 0, 0, 0)
 
     /* try to make pixels near an edge somewhat visible. the pixel is near an edge if
