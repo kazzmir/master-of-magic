@@ -75,14 +75,21 @@ func (buildScreen *BuildScreen) Ok() {
     buildScreen.State = BuildScreenOk
 }
 
+func allowedByRace(building buildinglib.Building, race data.Race) bool {
+    return true
+}
+
 /* return the buildings that can be built, based on what the city already has
  */
 func computePossibleBuildings(city *citylib.City) []buildinglib.Building {
-    // FIXME: take race into account
     var possibleBuildings []buildinglib.Building
 
     for _, building := range buildinglib.Buildings() {
         if city.Buildings.Contains(building) {
+            continue
+        }
+
+        if !allowedByRace(building, city.Race) {
             continue
         }
 
