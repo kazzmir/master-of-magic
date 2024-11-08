@@ -225,3 +225,11 @@ func (bonus BonusType) UnitReductionBonus() int {
         default: return 0
     }
 }
+
+type WeaponBonus int
+const (
+    WeaponNone WeaponBonus = iota
+    WeaponMagic
+    WeaponMythril
+    WeaponAdamantium
+)

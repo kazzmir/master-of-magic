@@ -19,6 +19,7 @@ type OverworldUnit struct {
     Patrol bool
     // to get the level, use the conversion functions in experience.go
     Experience int
+    WeaponBonus data.WeaponBonus
 }
 
 func (unit *OverworldUnit) GetLbxFile() string {
