@@ -6,6 +6,7 @@
 * play midi music
 * font editor - choose colors for font palette
 * implement overworld spells
+* handle touch events similar to the mouse
 * upscale screen by 2x
 
 9/22/2024 * city view: separate surplus food/gold from subsistence food/gold
