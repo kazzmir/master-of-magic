@@ -85,6 +85,8 @@ func allowedByRace(building buildinglib.Building, race data.Race) bool {
              buildinglib.BuildingMarketplace,
              buildinglib.BuildingGranary,
              buildinglib.BuildingFarmersMarket,
+             buildinglib.BuildingBuildersHall,
+             buildinglib.BuildingCityWalls,
              buildinglib.BuildingFightersGuild:
                 return true
         case buildinglib.BuildingArmorersGuild:
@@ -121,8 +123,6 @@ func allowedByRace(building buildinglib.Building, race data.Race) bool {
                    race == data.RaceNomad ||
                    race == data.RaceOrc ||
                    race == data.RaceDarkElf
-        case buildinglib.BuildingShipwrightsGuild:
-            return race != data.RaceLizard
         case buildinglib.BuildingShipYard:
             return race == data.RaceBarbarian ||
                    race == data.RaceGnoll ||
@@ -136,7 +136,9 @@ func allowedByRace(building buildinglib.Building, race data.Race) bool {
             return race == data.RaceBarbarian ||
                    race == data.RaceHighMen ||
                    race == data.RaceOrc
-        case buildinglib.BuildingSawmill:
+        case buildinglib.BuildingSawmill,
+             buildinglib.BuildingShipwrightsGuild,
+             buildinglib.BuildingForestersGuild:
             return race != data.RaceLizard
         case buildinglib.BuildingSagesGuild,
              buildinglib.BuildingAlchemistsGuild:
@@ -204,6 +206,19 @@ func allowedByRace(building buildinglib.Building, race data.Race) bool {
                    race == data.RaceOrc ||
                    race == data.RaceDarkElf ||
                    race == data.RaceDraconian
+        case buildinglib.BuildingMechaniciansGuild:
+            return race == data.RaceHighElf ||
+                   race == data.RaceHighMen ||
+                   race == data.RaceNomad ||
+                   race == data.RaceOrc ||
+                   race == data.RaceBeastmen ||
+                   race == data.RaceDarkElf
+        case buildinglib.BuildingMinersGuild:
+            if race == data.RaceLizard || race == data.RaceTroll {
+                return false
+            }
+
+            return true
     }
 
     return false
