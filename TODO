@@ -7,7 +7,7 @@
 * font editor - choose colors for font palette
 * implement overworld spells
 * handle touch events similar to the mouse
-* magic weapons for regular units
+* glowing effect for enchanted units
 * upscale screen by 2x
 
 9/22/2024 * city view: separate surplus food/gold from subsistence food/gold
@@ -48,3 +48,4 @@
 11/7/2024 * myrror plane
 11/7/2024 * make overworld wrap horizontally
 11/7/2024 * filter buildings by race
+??? * magic weapons for regular units
