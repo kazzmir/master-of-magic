@@ -207,6 +207,10 @@ func (unit *OverworldUnit) GetProductionCost() int {
 func (unit *OverworldUnit) GetBaseMeleeAttackPower() int {
     power := unit.Unit.GetMeleeAttackPower()
 
+    if power == 0 {
+        return 0
+    }
+
     level := unit.GetExperienceLevel()
     switch level {
         case ExperienceRecruit:
@@ -238,11 +242,27 @@ func (unit *OverworldUnit) GetMeleeAttackPower() int {
 }
 
 func (unit *OverworldUnit) GetBaseRangedAttackPower() int {
-    return unit.Unit.GetRangedAttackPower()
+    base := unit.Unit.GetRangedAttackPower()
+
+    if base == 0 {
+        return 0
+    }
+
+    level := unit.GetExperienceLevel()
+    switch level {
+        case ExperienceRecruit:
+        case ExperienceRegular: base += 1
+        case ExperienceVeteran: base += 1
+        case ExperienceElite: base += 2
+        case ExperienceUltraElite: base += 2
+        case ExperienceChampionNormal: base += 3
+    }
+
+    return base
 }
 
 func (unit *OverworldUnit) GetRangedAttackPower() int {
-    return unit.Unit.GetRangedAttackPower()
+    return unit.GetBaseRangedAttackPower()
 }
 
 func (unit *OverworldUnit) GetBaseDefense() int {
