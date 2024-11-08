@@ -111,6 +111,26 @@ func allowedByRace(building buildinglib.Building, race data.Race) bool {
                    race == data.RaceDarkElf ||
                    race == data.RaceDraconian ||
                    race == data.RaceTroll
+        case buildinglib.BuildingFantasticStable:
+            return race == data.RaceHighElf ||
+                   race == data.RaceNomad ||
+                   race == data.RaceOrc ||
+                   race == data.RaceDarkElf
+        case buildinglib.BuildingShipwrightsGuild:
+            return race != data.RaceLizard
+        case buildinglib.BuildingShipYard:
+            return race == data.RaceBarbarian ||
+                   race == data.RaceGnoll ||
+                   race == data.RaceHighElf ||
+                   race == data.RaceHighMen ||
+                   race == data.RaceNomad ||
+                   race == data.RaceOrc ||
+                   race == data.RaceDarkElf ||
+                   race == data.RaceDraconian
+        case buildinglib.BuildingMaritimeGuild:
+            return race == data.RaceBarbarian ||
+                   race == data.RaceHighMen ||
+                   race == data.RaceOrc
     }
 
     return false
