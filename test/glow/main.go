@@ -73,6 +73,11 @@ func (engine *Engine) Draw(screen *ebiten.Image){
     options.Uniforms["Color3"] = toFloatArray(color.RGBA{R: 220, G: 40, B: 40, A: 255})
     options.Uniforms["Time"] = float32(engine.Counter) / 10.0
     screen.DrawRectShader(lizardUnit.Bounds().Dx(), lizardUnit.Bounds().Dy(), shader, &options)
+
+    lizardFigure, _ := engine.ImageCache.GetImage("figures9.lbx", 1, 0)
+    options.GeoM.Translate(50, 0)
+    options.Images[0] = lizardFigure
+    screen.DrawRectShader(lizardFigure.Bounds().Dx(), lizardFigure.Bounds().Dy(), shader, &options)
 }
 
 func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
