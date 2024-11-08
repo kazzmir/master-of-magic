@@ -376,6 +376,12 @@ func (map_ *Map) ResolveTile(x int, y int, data *TerrainData, plane data.Plane) 
     matching := make(map[Direction]TerrainType)
 
     getDirection := func(x int, y int, direction Direction) TerrainType {
+        for x < 0 {
+            x += map_.Columns()
+        }
+
+        x = x % map_.Columns()
+
         index := map_.Terrain[x][y]
         if index < 0 || index >= len(data.Tiles) {
             fmt.Printf("Error: invalid index in terrain %v at %v,%v\n", index, x, y)
@@ -384,21 +390,17 @@ func (map_ *Map) ResolveTile(x int, y int, data *TerrainData, plane data.Plane) 
         return data.Tiles[index].Tile.GetDirection(direction)
     }
 
-    if x > 0 {
-        matching[West] = getDirection(x-1, y, East)
-    }
+    matching[West] = getDirection(x-1, y, East)
 
-    if x > 0 && y > 0 {
+    if y > 0 {
         matching[NorthWest] = getDirection(x-1, y-1, SouthEast)
     }
 
-    if x > 0 && y < map_.Rows() - 1 {
+    if y < map_.Rows() - 1 {
         matching[SouthWest] = getDirection(x-1, y+1, NorthEast)
     }
 
-    if x < map_.Columns() - 1 {
-        matching[East] = getDirection(x+1, y, West)
-    }
+    matching[East] = getDirection(x+1, y, West)
 
     if y > 0 {
         matching[North] = getDirection(x, y-1, South)
@@ -408,11 +410,11 @@ func (map_ *Map) ResolveTile(x int, y int, data *TerrainData, plane data.Plane) 
         matching[South] = getDirection(x, y+1, North)
     }
 
-    if x < map_.Columns() - 1 && y > 0 {
+    if y > 0 {
         matching[NorthEast] = getDirection(x+1, y-1, SouthWest)
     }
 
-    if x < map_.Columns() - 1 && y < map_.Rows() - 1 {
+    if y < map_.Rows() - 1 {
         matching[SouthEast] = getDirection(x+1, y+1, NorthWest)
     }
 
