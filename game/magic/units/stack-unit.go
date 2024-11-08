@@ -24,6 +24,8 @@ type StackUnit interface {
     GetUpkeepFood() int
     GetUpkeepMana() int
     GetBanner() data.BannerType
+    SetWeaponBonus(data.WeaponBonus)
+    GetWeaponBonus() data.WeaponBonus
     GetX() int
     GetY() int
     Move(int, int, fraction.Fraction)

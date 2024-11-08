@@ -513,6 +513,13 @@ func (hero *Hero) AdjustHealth(amount int) {
     }
 }
 
+func (hero *Hero) SetWeaponBonus(bonus data.WeaponBonus) {
+}
+
+func (hero *Hero) GetWeaponBonus() data.WeaponBonus {
+    return data.WeaponNone
+}
+
 func (hero *Hero) GetCombatRangeIndex(facing units.Facing) int {
     return hero.Unit.GetCombatRangeIndex(facing)
 }

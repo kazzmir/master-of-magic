@@ -1576,6 +1576,10 @@ func createScenario20(cache *lbx.LbxCache) *gamelib.Game {
     spear4.AddExperience(100)
     spear5.AddExperience(200)
 
+    spear2.SetWeaponBonus(data.WeaponMagic)
+    spear3.SetWeaponBonus(data.WeaponMythril)
+    spear4.SetWeaponBonus(data.WeaponAdamantium)
+
     stack := player.FindStackByUnit(spear1)
     player.SetSelectedStack(stack)
 

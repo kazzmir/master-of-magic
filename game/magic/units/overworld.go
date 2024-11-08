@@ -42,6 +42,14 @@ func (unit *OverworldUnit) SetPatrol(patrol bool) {
     unit.Patrol = patrol
 }
 
+func (unit *OverworldUnit) SetWeaponBonus(bonus data.WeaponBonus) {
+    unit.WeaponBonus = bonus
+}
+
+func (unit *OverworldUnit) GetWeaponBonus() data.WeaponBonus {
+    return unit.WeaponBonus
+}
+
 func (unit *OverworldUnit) GetPlane() data.Plane {
     return unit.Plane
 }

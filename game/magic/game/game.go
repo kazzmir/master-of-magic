@@ -3957,7 +3957,9 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
                 }
             case *citylib.CityEventNewUnit:
                 newUnit := event.(*citylib.CityEventNewUnit)
-                player.AddUnit(units.MakeOverworldUnitFromUnit(newUnit.Unit, city.X, city.Y, city.Plane, city.Banner, player.MakeExperienceInfo()))
+                overworldUnit := units.MakeOverworldUnitFromUnit(newUnit.Unit, city.X, city.Y, city.Plane, city.Banner, player.MakeExperienceInfo())
+                overworldUnit.SetWeaponBonus(newUnit.WeaponBonus)
+                player.AddUnit(overworldUnit)
             }
         }
     }
