@@ -76,7 +76,44 @@ func (buildScreen *BuildScreen) Ok() {
 }
 
 func allowedByRace(building buildinglib.Building, race data.Race) bool {
-    return true
+    switch building {
+        case buildinglib.BuildingBarracks,
+             buildinglib.BuildingArmory,
+             buildinglib.BuildingSmithy,
+             buildinglib.BuildingFightersGuild:
+                return true
+        case buildinglib.BuildingArmorersGuild:
+            if race == data.RaceGnoll || race == data.RaceHalfling {
+                return false
+            }
+            return true
+        case buildinglib.BuildingStables:
+            // not halfling or dwarf
+            if race == data.RaceHalfling || race == data.RaceDwarf {
+                return false
+            }
+
+            return true
+        case buildinglib.BuildingWarCollege:
+            return race == data.RaceHighElf ||
+                   race == data.RaceHighMen ||
+                   race == data.RaceNomad ||
+                   race == data.RaceOrc ||
+                   race == data.RaceBeastmen ||
+                   race == data.RaceDarkElf ||
+                   race == data.RaceDraconian
+        case buildinglib.BuildingAnimistsGuild:
+            return race == data.RaceHighElf ||
+                   race == data.RaceHighMen ||
+                   race == data.RaceNomad ||
+                   race == data.RaceOrc ||
+                   race == data.RaceBeastmen ||
+                   race == data.RaceDarkElf ||
+                   race == data.RaceDraconian ||
+                   race == data.RaceTroll
+    }
+
+    return false
 }
 
 /* return the buildings that can be built, based on what the city already has
