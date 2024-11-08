@@ -7,7 +7,6 @@
 * font editor - choose colors for font palette
 * implement overworld spells
 * handle touch events similar to the mouse
-* glowing effect for enchanted units
 * corrupted tiles and purify
 * upscale screen by 2x
 
@@ -50,3 +49,4 @@
 11/7/2024 * make overworld wrap horizontally
 11/7/2024 * filter buildings by race
 11/8/2024 * magic weapons for regular units
+??? * glowing effect for enchanted units
