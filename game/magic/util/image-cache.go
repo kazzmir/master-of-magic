@@ -6,6 +6,7 @@ import (
     "image"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/game/magic/shaders"
     "github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -15,12 +16,15 @@ type ImageCache struct {
     LbxCache *lbx.LbxCache
     // FIXME: have some limit on the number of entries, and remove old ones LRU-style
     Cache map[string][]*ebiten.Image
+
+    ShaderCache map[shaders.Shader]*ebiten.Shader
 }
 
 func MakeImageCache(lbxCache *lbx.LbxCache) ImageCache {
     return ImageCache{
         LbxCache: lbxCache,
         Cache:    make(map[string][]*ebiten.Image),
+        ShaderCache: make(map[shaders.Shader]*ebiten.Shader),
     }
 }
 
@@ -55,10 +59,33 @@ func AutoCrop(img *image.Paletted) image.Image {
     return img.SubImage(image.Rect(minX, minY, maxX, maxY))
 }
 
+func (cache *ImageCache) GetShader(shader shaders.Shader) (*ebiten.Shader, error) {
+    out, ok := cache.ShaderCache[shader]
+    if ok {
+        return out, nil
+    }
+
+    var err error
+    switch shader {
+        case shaders.ShaderEdgeGlow:
+            out, err = shaders.LoadEdgeGlowShader()
+            if err != nil {
+                return nil, err
+            }
+    }
+
+    if out == nil {
+        return nil, fmt.Errorf("unknown shader: %v", shader)
+    }
+
+    cache.ShaderCache[shader] = out
+    return out, nil
+}
 
 /* remove all entries from the cache */
 func (cache *ImageCache) Clear(){
     cache.Cache = make(map[string][]*ebiten.Image)
+    cache.ShaderCache = make(map[shaders.Shader]*ebiten.Shader)
 }
 
 func (cache *ImageCache) GetImagesTransform(lbxPath string, index int, extra string, transform ImageTransformFunc) ([]*ebiten.Image, error) {
