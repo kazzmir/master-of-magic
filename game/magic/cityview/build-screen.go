@@ -80,6 +80,8 @@ func allowedByRace(building buildinglib.Building, race data.Race) bool {
         case buildinglib.BuildingBarracks,
              buildinglib.BuildingArmory,
              buildinglib.BuildingSmithy,
+             buildinglib.BuildingLibrary,
+             buildinglib.BuildingShrine,
              buildinglib.BuildingFightersGuild:
                 return true
         case buildinglib.BuildingArmorersGuild:
@@ -131,6 +133,51 @@ func allowedByRace(building buildinglib.Building, race data.Race) bool {
             return race == data.RaceBarbarian ||
                    race == data.RaceHighMen ||
                    race == data.RaceOrc
+        case buildinglib.BuildingSawmill:
+            return race != data.RaceLizard
+        case buildinglib.BuildingSagesGuild,
+             buildinglib.BuildingAlchemistsGuild:
+            if race == data.RaceGnoll ||
+               race == data.RaceKlackon ||
+               race == data.RaceLizard ||
+               race == data.RaceTroll {
+                   return false
+            }
+
+            return true
+        case buildinglib.BuildingOracle:
+            return race == data.RaceHighMen ||
+                   race == data.RaceNomad ||
+                   race == data.RaceOrc ||
+                   race == data.RaceBeastmen ||
+                   race == data.RaceDarkElf
+        case buildinglib.BuildingUniversity:
+            return race == data.RaceHighElf ||
+                   race == data.RaceHighMen ||
+                   race == data.RaceNomad ||
+                   race == data.RaceOrc ||
+                   race == data.RaceBeastmen ||
+                   race == data.RaceDarkElf ||
+                   race == data.RaceDraconian
+        case buildinglib.BuildingWizardsGuild:
+            return race == data.RaceHighElf ||
+                   race == data.RaceHighMen ||
+                   race == data.RaceOrc ||
+                   race == data.RaceBeastmen ||
+                   race == data.RaceDarkElf ||
+                   race == data.RaceDraconian
+        case buildinglib.BuildingTemple:
+            return race != data.RaceKlackon
+        case buildinglib.BuildingParthenon:
+            return race == data.RaceBarbarian ||
+                   race == data.RaceHalfling ||
+                   race == data.RaceHighMen ||
+                   race == data.RaceNomad ||
+                   race == data.RaceOrc ||
+                   race == data.RaceBeastmen ||
+                   race == data.RaceDarkElf ||
+                   race == data.RaceDraconian ||
+                   race == data.RaceTroll
     }
 
     return false
