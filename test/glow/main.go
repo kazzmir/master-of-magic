@@ -84,6 +84,12 @@ func (engine *Engine) Draw(screen *ebiten.Image){
     regularOptions.GeoM = options.GeoM
     screen.DrawImage(lizardFigure, &regularOptions)
     screen.DrawRectShader(lizardFigure.Bounds().Dx(), lizardFigure.Bounds().Dy(), shader, &options)
+
+    regularOptions.GeoM.Reset()
+    regularOptions.GeoM.Translate(20, 60)
+    screen.DrawImage(lizardUnit, &regularOptions)
+    x, y := regularOptions.GeoM.Apply(0, 0)
+    util.DrawOutline(screen, engine.ImageCache, lizardUnit, x, y, engine.Counter/10, color.RGBA{R: 180, G: 0, B: 0, A: 255})
 }
 
 func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
