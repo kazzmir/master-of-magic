@@ -41,7 +41,7 @@ func Fragment(destPosition vec4, srcPosition vec2, color vec4) vec4 {
     current := imageSrc0At(srcPosition)
 
     if current.a != 0 {
-        return current
+        return vec4(0, 0, 0, 0)
     }
 
     average := nearbyAlpha(srcPosition)
