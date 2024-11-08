@@ -31,23 +31,33 @@ func nearbyAlpha(src vec2) float {
     return (left.a + right.a + up_left.a + up.a + up_right.a + down_left.a + down.a + down_right.a) / 8
 }
 
-var Color vec4
+var Color1 vec4
+var Color2 vec4
+var Color3 vec4
+var Time float
 
 func Fragment(destPosition vec4, srcPosition vec2, color vec4) vec4 {
 
     current := imageSrc0At(srcPosition)
 
-    average := nearbyAlpha(srcPosition)
-
     if current.a != 0 {
         return current
     }
+
+    average := nearbyAlpha(srcPosition)
 
     if average < 0.1 {
         return vec4(0, 0, 0, 0)
     }
 
+    var colors [3]vec4
+    colors[0] = Color1
+    colors[1] = Color2
+    colors[2] = Color3
+
     // value := vec4(0, 0, 0, 0)
+
+    index := int(srcPosition.x + srcPosition.y + Time) % 3
 
     /* try to make pixels near an edge somewhat visible. the pixel is near an edge if
      *   the alpha value of the pixel is close to 0
@@ -56,11 +66,11 @@ func Fragment(destPosition vec4, srcPosition vec2, color vec4) vec4 {
     // how bright to make pixels near an edge
     antialias := 0.4
     val1 := step(0.2, average)
-    partial_color := Color * vec4(1, 1, 1, val1 * antialias) * vec4(1, 1, 1, step(0.9, 1-current.a))
+    partial_color := colors[index] * vec4(1, 1, 1, val1 * antialias) * vec4(1, 1, 1, step(0.9, 1-current.a))
     // partial_color := vec4(0)
 
     /* a pixel is near an edge if the average alpha of nearby pixels is somewhat low */
-    out_color := Color * vec4(step(0.1, 1-average)) * vec4(current.a)
+    out_color := colors[index] * vec4(step(0.1, 1-average)) * vec4(current.a)
     // out_color := vec4(0)
     return out_color + partial_color
 

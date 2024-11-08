@@ -68,7 +68,10 @@ func (engine *Engine) Draw(screen *ebiten.Image){
     options.GeoM.Translate(20, 20)
     options.Images[0] = lizardUnit
     options.Uniforms = make(map[string]interface{})
-    options.Uniforms["Color"] = toFloatArray(color.RGBA{R: 255, G: 0, B: 0, A: 255})
+    options.Uniforms["Color1"] = toFloatArray(color.RGBA{R: 200, G: 0, B: 0, A: 255})
+    options.Uniforms["Color2"] = toFloatArray(color.RGBA{R: 255, G: 0, B: 0, A: 255})
+    options.Uniforms["Color3"] = toFloatArray(color.RGBA{R: 220, G: 40, B: 40, A: 255})
+    options.Uniforms["Time"] = float32(engine.Counter) / 10.0
     screen.DrawRectShader(lizardUnit.Bounds().Dx(), lizardUnit.Bounds().Dy(), shader, &options)
 }
 
