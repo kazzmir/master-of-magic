@@ -1142,7 +1142,7 @@ func (combat *CombatScreen) createUnitProjectile(target *ArmyUnit, images []*ebi
     tx, ty := matrix.Apply(float64(target.X), float64(target.Y))
     geom1.Translate(tx, ty)
 
-    screenX, screenY := geom1.Apply(0, 0)
+    screenX, screenY := geom1.Apply(float64(useImage.Bounds().Dx())/2, float64(useImage.Bounds().Dy())/2)
 
     // log.Printf("Create fireball projectile at %v,%v -> %v,%v", x, y, screenX, screenY)
 
@@ -1251,10 +1251,9 @@ func (combat *CombatScreen) CreateLightningBoltProjectile(target *ArmyUnit) {
 
     matrix := combat.GetCameraMatrix()
     screenX, screenY := matrix.Apply(float64(target.X), float64(target.Y))
-    screenY += 3
-    screenX += 5
 
-    screenY -= float64(images[0].Bounds().Dy())
+    screenY -= float64(images[0].Bounds().Dy())/2
+    screenX += float64(images[0].Bounds().Dx())/2
 
     projectile := &Projectile{
         X: screenX,
