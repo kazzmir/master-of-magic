@@ -207,6 +207,18 @@ func (ui *UI) SetElementsFromArray(elements []*UIElement){
     ui.Elements = out
 }
 
+func (ui *UI) FocusElement(element *UIElement){
+    if ui.focusedElement != nil && ui.focusedElement.LoseFocus != nil {
+        ui.focusedElement.LoseFocus(ui.focusedElement)
+    }
+
+    ui.focusedElement = element
+
+    if element.GainFocus != nil {
+        element.GainFocus(element)
+    }
+}
+
 func (ui *UI) StandardUpdate() {
     ui.Counter += 1
 
