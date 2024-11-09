@@ -240,6 +240,19 @@ func (ui *UI) StandardUpdate() {
 
     mouseX, mouseY := ebiten.CursorPosition()
 
+    touchIds := inpututil.AppendJustPressedTouchIDs(nil)
+    if len(touchIds) > 0 {
+        touchId := touchIds[0]
+        leftClick = true
+        mouseX, mouseY = ebiten.TouchPosition(touchId)
+        // log.Printf("Touches %v", touchIds)
+    }
+
+    if inpututil.IsTouchJustReleased(0) {
+        leftClickReleased = true
+        mouseX, mouseY = ebiten.TouchPosition(0)
+    }
+
     if leftClickReleased {
         for _, element := range ui.LeftClickedElements {
             if element.LeftClickRelease != nil {
