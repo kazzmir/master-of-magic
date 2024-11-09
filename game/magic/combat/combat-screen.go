@@ -2272,7 +2272,7 @@ func (combat *CombatScreen) UpdateProjectiles() bool {
     var projectilesOut []*Projectile
     for _, projectile := range combat.Projectiles {
         keep := false
-        if projectile.Exploding || distanceInRange(projectile.X, projectile.Y, projectile.TargetX, projectile.TargetY, 5) {
+        if projectile.Exploding || distanceInRange(projectile.X, projectile.Y, projectile.TargetX, projectile.TargetY, 4) {
             projectile.Exploding = true
             keep = true
             if combat.Counter % animationSpeed == 0 && !projectile.Explode.Next() {
@@ -3539,6 +3539,7 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
         if frame != nil {
             var options ebiten.DrawImageOptions
             options.GeoM.Scale(combat.CameraScale, combat.CameraScale)
+            options.GeoM.Translate(float64(-frame.Bounds().Dx()/2), float64(-frame.Bounds().Dy())/2)
             options.GeoM.Translate(projectile.X, projectile.Y)
             screen.DrawImage(frame, &options)
         }
