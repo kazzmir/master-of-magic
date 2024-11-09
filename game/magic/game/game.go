@@ -4335,15 +4335,23 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
             x, y := convertTileCoordinates(stack.X(), stack.Y())
             options.GeoM.Translate(float64(x) + stack.OffsetX() * float64(tileWidth), float64(y) + stack.OffsetY() * float64(tileHeight))
 
-            unitBack, err := units.GetUnitBackgroundImage(stack.Leader().GetBanner(), overworld.ImageCache)
+            leader := stack.Leader()
+
+            unitBack, err := units.GetUnitBackgroundImage(leader.GetBanner(), overworld.ImageCache)
             if err == nil {
                 screen.DrawImage(unitBack, &options)
             }
 
-            pic, err := GetUnitImage(stack.Leader(), overworld.ImageCache, stack.Leader().GetBanner())
+            pic, err := GetUnitImage(leader, overworld.ImageCache, leader.GetBanner())
             if err == nil {
                 options.GeoM.Translate(1, 1)
                 screen.DrawImage(pic, &options)
+
+                enchantment := util.First(leader.GetEnchantments(), data.UnitEnchantmentNone)
+                if enchantment != data.UnitEnchantmentNone {
+                    x, y := options.GeoM.Apply(0, 0)
+                    util.DrawOutline(screen, overworld.ImageCache, pic, x, y, overworld.Counter/10, enchantment.Color())
+                }
             }
         }
     }
