@@ -1416,7 +1416,8 @@ func createScenario18(cache *lbx.LbxCache) *gamelib.Game {
     mysticX.SetExtraAbilities()
     mysticX.AddExperience(528)
 
-    player.AddUnit(units.MakeOverworldUnitFromUnit(units.Warlocks, x, y, data.PlaneArcanus, player.GetBanner(), nil))
+    warlock := player.AddUnit(units.MakeOverworldUnitFromUnit(units.Warlocks, x, y, data.PlaneArcanus, player.GetBanner(), nil))
+    warlock.AddEnchantment(data.UnitEnchantmentGiantStrength)
 
     stack := player.FindStackByUnit(mysticX)
     player.SetSelectedStack(stack)

@@ -57,7 +57,7 @@ func Fragment(destPosition vec4, srcPosition vec2, color vec4) vec4 {
 
     // value := vec4(0, 0, 0, 0)
 
-    index := int(srcPosition.x + srcPosition.y + Time) % 3
+    index := int(srcPosition.x + srcPosition.y*1.5 + Time) % 3
 
     /* try to make pixels near an edge somewhat visible. the pixel is near an edge if
      *   the alpha value of the pixel is close to 0

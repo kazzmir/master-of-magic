@@ -3299,6 +3299,13 @@ func (game *Game) MakeHudUI() *uilib.UI {
                     unitImage, err := GetUnitImage(unit, &game.ImageCache, player.Wizard.Banner)
                     if err == nil {
                         screen.DrawImage(unitImage, &options)
+
+                        // draw the first enchantment on the unit
+                        for _, enchantment := range unit.GetEnchantments() {
+                            x, y := options.GeoM.Apply(0, 0)
+                            util.DrawOutline(screen, &game.ImageCache, unitImage, x, y, game.Counter/10, enchantment.Color())
+                            break
+                        }
                     }
 
                     if unit.GetHealth() < unit.GetMaxHealth() {

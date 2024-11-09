@@ -23,6 +23,9 @@ type StackUnit interface {
     GetUpkeepGold() int
     GetUpkeepFood() int
     GetUpkeepMana() int
+    GetEnchantments() []data.UnitEnchantment
+    AddEnchantment(data.UnitEnchantment)
+    RemoveEnchantment(data.UnitEnchantment)
     GetBanner() data.BannerType
     SetWeaponBonus(data.WeaponBonus)
     GetWeaponBonus() data.WeaponBonus

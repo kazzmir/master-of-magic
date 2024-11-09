@@ -41,8 +41,8 @@ func toFloatArray(color color.Color) []float32 {
 
 func DrawOutline(screen *ebiten.Image, imageCache *ImageCache, pic *ebiten.Image, x float64, y float64, time uint64, baseColor color.Color) {
     color1 := baseColor
-    color2 := Lighten(baseColor, 50)
-    color3 := Lighten(baseColor, 120)
+    color2 := Lighten(baseColor, 30)
+    color3 := Lighten(baseColor, 50)
 
     shader, err := imageCache.GetShader(shaders.ShaderEdgeGlow)
 
@@ -151,7 +151,7 @@ func DrawDistortion(screen *ebiten.Image, page *ebiten.Image, source *ebiten.Ima
 
 func Lighten(c color.Color, amount float64) color.Color {
     var change colorm.ColorM
-    change.ChangeHSV(0, 1, 1 + amount/100)
+    change.ChangeHSV(0, 1 - amount/100, 1 + amount/100)
     return change.Apply(c)
 }
 

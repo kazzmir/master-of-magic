@@ -1,5 +1,9 @@
 package data
 
+import (
+    "image/color"
+)
+
 type Enchantment int
 
 const (
@@ -29,3 +33,18 @@ const (
     EnchantmentEvilOmens
     EnchantmentZombieMastery
 )
+
+type UnitEnchantment int
+
+const (
+    UnitEnchantmentNone UnitEnchantment = iota
+    UnitEnchantmentGiantStrength
+)
+
+func (enchantment UnitEnchantment) Color() color.Color {
+    switch enchantment {
+        case UnitEnchantmentGiantStrength: return color.RGBA{R: 0, G: 180, B: 0, A: 255}
+    }
+
+    return color.RGBA{R: 0, G: 0, B: 0, A: 0}
+}
