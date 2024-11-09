@@ -1,0 +1,80 @@
+//kage:unit pixels
+
+package main
+
+func imageColorAtPixel(pixelCoords vec2) vec4 {
+    sizeInPixels := imageSrcTextureSize()
+    offsetInTexels, _ := imageSrcRegionOnTexture()
+    adjustedTexelCoords := pixelCoords/sizeInPixels + offsetInTexels
+    return imageSrc0At(adjustedTexelCoords)
+}
+
+// Helper function to access an image's color at the given coordinates
+// from the unit interval (e.g. top-left is (0, 0), center is (0.5, 0.5),
+// bottom-right is (1.0, 1.0)).
+func imageColorAtUnit(unitCoords vec2) vec4 {
+    offsetInTexels, sizeInTexels := imageSrcRegionOnTexture()
+    adjustedTexelCoords := unitCoords*sizeInTexels + offsetInTexels
+    return imageSrc0At(adjustedTexelCoords)
+}
+
+func nearbyAlpha(src vec2) float {
+    left := imageSrc0At(src - vec2(1, 0))
+    right := imageSrc0At(src + vec2(1, 0))
+    up_left := imageSrc0At(src - vec2(1, 1))
+    up := imageSrc0At(src - vec2(0, 1))
+    up_right := imageSrc0At(src + vec2(1, 1))
+    down_left := imageSrc0At(src + vec2(-1, 1))
+    down := imageSrc0At(src + vec2(0, 1))
+    down_right := imageSrc0At(src + vec2(1, 1))
+
+    return (left.a + right.a + up_left.a + up.a + up_right.a + down_left.a + down.a + down_right.a) / 8
+}
+
+var Color1 vec4
+var Color2 vec4
+var Color3 vec4
+var Time float
+
+func Fragment(destPosition vec4, srcPosition vec2, color vec4) vec4 {
+
+    current := imageSrc0At(srcPosition)
+
+    if current.a != 0 {
+        return vec4(0, 0, 0, 0)
+    }
+
+    average := nearbyAlpha(srcPosition)
+
+    if average < 0.1 {
+        return vec4(0, 0, 0, 0)
+    }
+
+    var colors [3]vec4
+    colors[0] = Color1
+    colors[1] = Color2
+    colors[2] = Color3
+
+    // value := vec4(0, 0, 0, 0)
+
+    index := int(srcPosition.x + srcPosition.y*1.5 + Time) % 3
+
+    /* try to make pixels near an edge somewhat visible. the pixel is near an edge if
+     *   the alpha value of the pixel is close to 0
+     *   the average alpha value of nearby pixels is small but non-zero
+     */
+    // how bright to make pixels near an edge
+    antialias := 0.4
+    val1 := step(0.2, average)
+    partial_color := colors[index] * vec4(1, 1, 1, val1 * antialias) * vec4(1, 1, 1, step(0.9, 1-current.a))
+    // partial_color := vec4(0)
+
+    /* a pixel is near an edge if the average alpha of nearby pixels is somewhat low */
+    out_color := colors[index] * vec4(step(0.1, 1-average)) * vec4(current.a)
+    // out_color := vec4(0)
+    return out_color + partial_color
+
+    // red := vec4(abs(sin(Red) / 3), 0, 0, 0)
+    // return imageSrc0UnsafeAt(srcPosition) + red
+    // return red.rgba
+}

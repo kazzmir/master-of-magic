@@ -1,6 +1,9 @@
 package units
 
 import (
+    "slices"
+    "cmp"
+
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
     "github.com/kazzmir/master-of-magic/lib/fraction"
@@ -20,6 +23,26 @@ type OverworldUnit struct {
     // to get the level, use the conversion functions in experience.go
     Experience int
     WeaponBonus data.WeaponBonus
+
+    Enchantments []data.UnitEnchantment
+}
+
+func (unit *OverworldUnit) AddEnchantment(enchantment data.UnitEnchantment) {
+    unit.Enchantments = append(unit.Enchantments, enchantment)
+    // keep list sorted
+    slices.SortFunc(unit.Enchantments, func(a, b data.UnitEnchantment) int {
+        return cmp.Compare(int(a), int(b))
+    })
+}
+
+func (unit *OverworldUnit) RemoveEnchantment(toRemove data.UnitEnchantment) {
+    unit.Enchantments = slices.DeleteFunc(unit.Enchantments, func(enchantment data.UnitEnchantment) bool {
+        return enchantment == toRemove
+    })
+}
+
+func (unit *OverworldUnit) GetEnchantments() []data.UnitEnchantment {
+    return unit.Enchantments
 }
 
 func (unit *OverworldUnit) GetLbxFile() string {

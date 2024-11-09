@@ -303,6 +303,13 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
                             }
 
                             colorm.DrawImage(screen, pic, matrix, &options)
+
+                            enchantment := util.First(unit.GetEnchantments(), data.UnitEnchantmentNone)
+                            if enchantment != data.UnitEnchantmentNone {
+                                x, y := options.GeoM.Apply(0, 0)
+                                util.DrawOutline(screen, &view.ImageCache, pic, x, y, ui.Counter/10, enchantment.Color())
+                            }
+
                         },
                     }
                     ui.AddElement(element)

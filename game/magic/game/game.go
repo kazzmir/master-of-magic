@@ -1430,6 +1430,9 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
     useMap := game.GetMap(stack.Plane())
 
     tileCost := func (x1 int, y1 int, x2 int, y2 int) float64 {
+        x1 = useMap.WrapX(x1)
+        x2 = useMap.WrapX(x2)
+
         if x1 < 0 || x1 >= useMap.Width() || y1 < 0 || y1 >= useMap.Height() {
             return pathfinding.Infinity
         }
@@ -1465,25 +1468,23 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
     }
 
     neighbors := func (x int, y int) []image.Point {
-        var out []image.Point
+        out := make([]image.Point, 0, 8)
 
         // up left
-        if x > 0 && y > 0 {
+        if y > 0 {
             out = append(out, image.Pt(x - 1, y - 1))
         }
 
         // left
-        if x > 0 {
-            out = append(out, image.Pt(x - 1, y))
-        }
+        out = append(out, image.Pt(x - 1, y))
 
         // down left
-        if x > 0 && y < useMap.Height() - 1 {
+        if y < useMap.Height() - 1 {
             out = append(out, image.Pt(x - 1, y + 1))
         }
 
         // up right
-        if x < useMap.Width() - 1 && y > 0 {
+        if y > 0 {
             out = append(out, image.Pt(x + 1, y - 1))
         }
 
@@ -1493,12 +1494,10 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
         }
 
         // right
-        if x < useMap.Width() - 1 {
-            out = append(out, image.Pt(x + 1, y))
-        }
+        out = append(out, image.Pt(x + 1, y))
 
         // down right
-        if x < useMap.Width() - 1 && y < useMap.Height() - 1 {
+        if y < useMap.Height() - 1 {
             out = append(out, image.Pt(x + 1, y + 1))
         }
 
@@ -3299,6 +3298,13 @@ func (game *Game) MakeHudUI() *uilib.UI {
                     unitImage, err := GetUnitImage(unit, &game.ImageCache, player.Wizard.Banner)
                     if err == nil {
                         screen.DrawImage(unitImage, &options)
+
+                        // draw the first enchantment on the unit
+                        for _, enchantment := range unit.GetEnchantments() {
+                            x, y := options.GeoM.Apply(0, 0)
+                            util.DrawOutline(screen, &game.ImageCache, unitImage, x, y, game.Counter/10, enchantment.Color())
+                            break
+                        }
                     }
 
                     if unit.GetHealth() < unit.GetMaxHealth() {
@@ -4328,15 +4334,23 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
             x, y := convertTileCoordinates(stack.X(), stack.Y())
             options.GeoM.Translate(float64(x) + stack.OffsetX() * float64(tileWidth), float64(y) + stack.OffsetY() * float64(tileHeight))
 
-            unitBack, err := units.GetUnitBackgroundImage(stack.Leader().GetBanner(), overworld.ImageCache)
+            leader := stack.Leader()
+
+            unitBack, err := units.GetUnitBackgroundImage(leader.GetBanner(), overworld.ImageCache)
             if err == nil {
                 screen.DrawImage(unitBack, &options)
             }
 
-            pic, err := GetUnitImage(stack.Leader(), overworld.ImageCache, stack.Leader().GetBanner())
+            pic, err := GetUnitImage(leader, overworld.ImageCache, leader.GetBanner())
             if err == nil {
                 options.GeoM.Translate(1, 1)
                 screen.DrawImage(pic, &options)
+
+                enchantment := util.First(leader.GetEnchantments(), data.UnitEnchantmentNone)
+                if enchantment != data.UnitEnchantmentNone {
+                    x, y := options.GeoM.Apply(0, 0)
+                    util.DrawOutline(screen, overworld.ImageCache, pic, x, y, overworld.Counter/10, enchantment.Color())
+                }
             }
         }
     }

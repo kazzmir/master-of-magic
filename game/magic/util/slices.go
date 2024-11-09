@@ -22,3 +22,11 @@ func RotateSlice[T any](slice []T, forward bool){
         slice[0] = v
     }
 }
+
+func First[T any](slice []T, default_ T) T {
+    if len(slice) == 0 {
+        return default_
+    }
+
+    return slice[0]
+}

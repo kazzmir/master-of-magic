@@ -540,6 +540,18 @@ func (hero *Hero) GetExperience() int {
     return hero.Unit.GetExperience()
 }
 
+func (hero *Hero) GetEnchantments() []data.UnitEnchantment {
+    return hero.Unit.GetEnchantments()
+}
+
+func (hero *Hero) AddEnchantment(enchantment data.UnitEnchantment) {
+    hero.Unit.AddEnchantment(enchantment)
+}
+
+func (hero *Hero) RemoveEnchantment(enchantment data.UnitEnchantment) {
+    hero.Unit.RemoveEnchantment(enchantment)
+}
+
 func (hero *Hero) GetToHitMelee() int {
     base := 30
 

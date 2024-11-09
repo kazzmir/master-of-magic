@@ -1570,7 +1570,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
 
             options.GeoM.Translate(238, 168)
             combat.RenderCombatTile(screen, &cityScreen.ImageCache, options)
-            combat.RenderCombatUnit(screen, use, options, cityScreen.City.ProducingUnit.Count)
+            combat.RenderCombatUnit(screen, use, options, cityScreen.City.ProducingUnit.Count, data.UnitEnchantmentNone, 0, nil)
             cityScreen.Fonts.ProducingFont.PrintCenter(screen, 237, 179, 1, ebiten.ColorScale{}, cityScreen.City.ProducingUnit.Name)
         }
 

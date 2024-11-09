@@ -32,6 +32,7 @@ type UnitView interface {
     GetUpkeepMana() int
     GetMovementSpeed() int
     GetProductionCost() int
+    GetEnchantments() []data.UnitEnchantment
     GetWeaponBonus() data.WeaponBonus
     GetExperience() int
     GetExperienceData() units.ExperienceData
@@ -144,7 +145,7 @@ func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, di
                     screen.DrawImage(portait, &options)
                 }
             } else {
-                RenderCombatImage(screen, &imageCache, unit, options)
+                RenderCombatImage(screen, &imageCache, unit, options, ui.Counter)
             }
 
             options.GeoM.Reset()
