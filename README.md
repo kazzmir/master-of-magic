@@ -33,7 +33,7 @@ Put the master of magic lbx files in one of the following places
 - in any subdirectory of the directory the game executable is in
 - in a zip file in the same directory as the game executable
 - in a zip file in any subdirectory of the directory the game executable is in
-- in a zip file and replace data/data.zip, then rebuild the game. This embeds the data into the executable
+- in a zip file and replace data/data/data.zip, then rebuild the game. This embeds the data into the executable. You can also put the unzipped lbx files in data/data/
 ```
 $ ./magic
 ```

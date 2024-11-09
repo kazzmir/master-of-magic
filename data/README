@@ -1,0 +1,3 @@
+Put the data files into data/ to embed them into the executable.
+
+The data files can be the full set of LBX files, or a zip file containing all the LBX files.

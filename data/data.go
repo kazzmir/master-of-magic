@@ -1,8 +1,8 @@
 package data
 
 import (
-    _ "embed"
+    "embed"
 )
 
-//go:embed data.zip
-var DataZip []byte
+//go:embed data/*
+var Data embed.FS
