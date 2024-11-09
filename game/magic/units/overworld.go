@@ -2,6 +2,7 @@ package units
 
 import (
     "slices"
+    "cmp"
 
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
@@ -28,6 +29,10 @@ type OverworldUnit struct {
 
 func (unit *OverworldUnit) AddEnchantment(enchantment data.UnitEnchantment) {
     unit.Enchantments = append(unit.Enchantments, enchantment)
+    // keep list sorted
+    slices.SortFunc(unit.Enchantments, func(a, b data.UnitEnchantment) int {
+        return cmp.Compare(int(a), int(b))
+    })
 }
 
 func (unit *OverworldUnit) RemoveEnchantment(toRemove data.UnitEnchantment) {
