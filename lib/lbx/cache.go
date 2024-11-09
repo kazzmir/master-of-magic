@@ -163,17 +163,6 @@ func AutoCache() *LbxCache {
     // 4. check all the directories in the current working directory to see if any of them contain lbx files
     // 5. look at all zip files in the current working directory to see if any of the zip files contain lbx files
 
-    /*
-    byteReader := bytes.NewReader(data.DataZip)
-    zipReader, err := zip.NewReader(byteReader, int64(len(data.DataZip)))
-    if err == nil {
-        entries, err := fs.ReadDir(zipReader, ".")
-        if err == nil && validateData(entries) {
-            log.Printf("Found data in embedded zip")
-            return MakeLbxCache(zipReader)
-        }
-    }
-    */
     embeddedCache := searchFs(data.Data, 2, "embedded")
     if embeddedCache != nil {
         return embeddedCache
