@@ -77,7 +77,11 @@ func createWarlockArmyN(player *player.Player, count int) *combat.Army {
     }
 
     for i := 0; i < count; i++ {
-        army.AddUnit(units.MakeOverworldUnitFromUnit(units.Warlocks, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()))
+        warlock := units.MakeOverworldUnitFromUnit(units.Warlocks, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo())
+        if i == 0 {
+            warlock.AddEnchantment(data.UnitEnchantmentGiantStrength)
+        }
+        army.AddUnit(warlock)
     }
 
     return &army
