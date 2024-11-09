@@ -89,7 +89,11 @@ func maybeOpenZip(reader io.Reader) *LbxCache {
     return nil
 }
 
-func searchFs(here fs.FS, context string) *LbxCache {
+func searchFs(here fs.FS, levels int, context string) *LbxCache {
+    if levels == 0 {
+        return nil
+    }
+
     entries, err := fs.ReadDir(here, ".")
     if err == nil {
         if validateData(entries){
@@ -108,6 +112,12 @@ func searchFs(here fs.FS, context string) *LbxCache {
                         return MakeLbxCache(check)
                     }
                 }
+
+                subdir := searchFs(check, levels - 1, context)
+                if subdir != nil {
+                    return subdir
+                }
+
             } else if strings.HasSuffix(strings.ToLower(entry.Name()), ".zip") {
                 // log.Printf("Check zip file '%v'", entry.Name())
 
@@ -141,7 +151,7 @@ func CacheFromPath(path string) *LbxCache {
         defer reader.Close()
         return maybeOpenZip(reader)
     } else {
-        return searchFs(os.DirFS(path), "filesystem")
+        return searchFs(os.DirFS(path), 2, "filesystem")
     }
 }
 
@@ -164,20 +174,20 @@ func AutoCache() *LbxCache {
         }
     }
     */
-    embeddedCache := searchFs(data.Data, "embedded")
+    embeddedCache := searchFs(data.Data, 2, "embedded")
     if embeddedCache != nil {
         return embeddedCache
     }
 
     droppedFiles := ebiten.DroppedFiles()
     if droppedFiles != nil {
-        cache := searchFs(droppedFiles, "dropped")
+        cache := searchFs(droppedFiles, 2, "dropped")
         if cache != nil {
             return cache
         }
     }
 
-    cache := searchFs(os.DirFS("."), "filesystem")
+    cache := searchFs(os.DirFS("."), 2, "filesystem")
     if cache != nil {
         return cache
     }
