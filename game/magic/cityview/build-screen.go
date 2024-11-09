@@ -484,7 +484,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
             Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(104, 28)
-                unitview.RenderCombatImage(screen, imageCache, bannerUnit, options)
+                unitview.RenderCombatImage(screen, imageCache, bannerUnit, options, 0)
 
                 options.GeoM.Reset()
                 options.GeoM.Translate(130, 7)

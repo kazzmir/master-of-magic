@@ -147,6 +147,7 @@ type CombatUnit interface {
     GetRangedAttackPower() int
     GetMeleeAttackPower() int
     GetMaxHealth() int
+    GetEnchantments() []data.UnitEnchantment
     GetCount() int
     GetHealth() int
     GetToHitMelee() int
@@ -3465,7 +3466,8 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
             */
 
             // _ = index
-            RenderCombatUnit(screen, combatImages[index], unitOptions, unit.Figures())
+            enchantment := util.First(unit.Unit.GetEnchantments(), data.UnitEnchantmentNone)
+            RenderCombatUnit(screen, combatImages[index], unitOptions, unit.Figures(), enchantment, combat.Counter, &combat.ImageCache)
         }
     }
 

@@ -18,7 +18,7 @@ import (
     // "github.com/hajimehoshi/ebiten/v2/vector"
 )
 
-func RenderCombatImage(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitView, options ebiten.DrawImageOptions) {
+func RenderCombatImage(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitView, options ebiten.DrawImageOptions, counter uint64) {
     images, err := imageCache.GetImagesTransform(unit.GetCombatLbxFile(), unit.GetCombatIndex(units.FacingRight), unit.GetBanner().String(), units.MakeUpdateUnitColorsFunc(unit.GetBanner()))
     if err == nil && len(images) > 2 {
         use := images[2]
@@ -32,7 +32,9 @@ func RenderCombatImage(screen *ebiten.Image, imageCache *util.ImageCache, unit U
         */
 
         combat.RenderCombatTile(screen, imageCache, options)
-        combat.RenderCombatUnit(screen, use, options, unit.GetCount())
+
+        enchantment := util.First(unit.GetEnchantments(), data.UnitEnchantmentNone)
+        combat.RenderCombatUnit(screen, use, options, unit.GetCount(), enchantment, counter, imageCache)
     }
 }
 
