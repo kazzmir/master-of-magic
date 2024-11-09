@@ -48,6 +48,40 @@ var sorceryColor = color.RGBA{R: 0, G: 0, B: 180, A: 255}
 var deathColor = color.RGBA{R: 0x62, G: 0x11, B: 0xba, A: 255}
 var lifeColor = color.RGBA{R: 180, G: 180, B: 180, A: 255}
 
+/*
+Bless	Life
+Endurance	Life
+Heroism	Life
+Holy Armor	Life
+Holy Weapon	Life
+Invulnerability	Life
+Planar Travel	Life
+Righteousness	Life
+True Sight	Life
+Elemental Armor	Nature
+Iron Skin	Nature
+Path Finding	Nature
+Regeneration	Nature
+Resist Elements	Nature
+Stone Skin	Nature
+Water Walking	Nature
+Flight	Sorcery
+Guardian Wind	Sorcery
+Haste	Sorcery
+Invisibility	Sorcery
+Magic Immunity	Sorcery
+Resist Magic	Sorcery
+Spell Lock	Sorcery
+Wind Walking	Sorcery
+Eldritch Weapon	Chaos
+Flame Blade	Chaos
+Immolation	Chaos
+Berserk	Death
+Black Channels	Death
+Cloak of Fear	Death
+Wraith Form	Death
+ */
+
 func (enchantment UnitEnchantment) Color() color.Color {
     switch enchantment {
         case UnitEnchantmentGiantStrength: return natureColor
