@@ -281,7 +281,23 @@ func renderUnitAbilities(screen *ebiten.Image, imageCache *util.ImageCache, unit
                 return float64(pic.Bounds().Dy() + 1)
             })
         }
+    }
 
+    // FIXME: clicking on an enchantment should let the user cancel it
+    for _, enchantment := range unit.GetEnchantments() {
+        renders = append(renders, func() float64 {
+            pic, err := imageCache.GetImage(enchantment.LbxFile(), enchantment.LbxIndex(), 0)
+            if err == nil {
+                screen.DrawImage(pic, &defaultOptions)
+                x, y := defaultOptions.GeoM.Apply(0, 0)
+                mediumFont.Print(screen, x + float64(pic.Bounds().Dx() + 2), float64(y) + 5, 1, defaultOptions.ColorScale, enchantment.Name())
+                return float64(pic.Bounds().Dy() + 1)
+            } else {
+                log.Printf("Error: unable to render ability %#v %v", enchantment, enchantment.Name())
+            }
+
+            return 0
+        })
     }
 
     // FIXME: handle more than 4 abilities by using more columns
@@ -339,6 +355,8 @@ func MakeUnitAbilitiesElements(imageCache *util.ImageCache, unit UnitView, mediu
         // 3 more for items
         abilityCount += len(unit.GetArtifactSlots())
     }
+
+    abilityCount += len(unit.GetEnchantments())
 
     if abilityCount > 4 {
         pageUpRect := util.ImageRect(x + 195, y, upImages[0])

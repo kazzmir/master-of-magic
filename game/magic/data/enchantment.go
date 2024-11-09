@@ -48,3 +48,27 @@ func (enchantment UnitEnchantment) Color() color.Color {
 
     return color.RGBA{R: 0, G: 0, B: 0, A: 0}
 }
+
+func (enchantment UnitEnchantment) Name() string {
+    switch enchantment {
+        case UnitEnchantmentGiantStrength: return "Giant Strength"
+    }
+
+    return ""
+}
+
+func (enchantment UnitEnchantment) LbxFile() string {
+    switch enchantment {
+        case UnitEnchantmentGiantStrength: return "special.lbx"
+    }
+
+    return ""
+}
+
+func (enchantment UnitEnchantment) LbxIndex() int {
+    switch enchantment {
+        case UnitEnchantmentGiantStrength: return 65
+    }
+
+    return -1
+}
