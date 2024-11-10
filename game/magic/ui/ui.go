@@ -19,7 +19,7 @@ type UIKeyFunc func(key []ebiten.Key)
 type UIGainFocusFunc func(*UIElement)
 type UILoseFocusFunc func(*UIElement)
 type UITextEntry func(*UIElement, []rune)
-type UITextEntry2 func(*UIElement, string)
+type UITextEntry2 func(*UIElement, string) string
 
 type UILayer int
 
@@ -219,10 +219,10 @@ func (ui *UI) UnfocusElement(){
     if ui.focusedElement != nil {
         if ui.focusedElement.LoseFocus != nil {
             ui.focusedElement.LoseFocus(ui.focusedElement)
-
-            ui.focusedElement = nil
-            ui.textField.Blur()
         }
+
+        ui.focusedElement = nil
+        ui.textField.Blur()
     }
 }
 
@@ -388,6 +388,8 @@ func (ui *UI) StandardUpdate() {
                     log.Printf("input error %v", err)
                 }
 
+                doEnter := false
+
                 if !handled {
                     if inpututil.IsKeyJustPressed(ebiten.KeyBackspace) {
                         // ui.focusedElement.HandleKeys([]ebiten.Key{ebiten.KeyBackspace})
@@ -397,27 +399,29 @@ func (ui *UI) StandardUpdate() {
                             ui.textField.SetTextAndSelection(text[0:len(text)-1], start - 1, start - 1)
                         }
                     } else if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
-                        ui.focusedElement.HandleKeys([]ebiten.Key{ebiten.KeyEnter})
+                        doEnter = true
                     }
                 }
 
-                sawNewline := false
                 for strings.Contains(ui.textField.Text(), "\n") {
                     start, _ := ui.textField.Selection()
                     text := ui.textField.TextForRendering()
                     ui.textField.SetTextAndSelection(text[0:len(text)-1], start - 1, start - 1)
-                    sawNewline = true
+                    doEnter = true
                 }
 
-                ui.focusedElement.TextEntry2(ui.focusedElement, ui.textField.TextForRendering())
+                out := ui.focusedElement.TextEntry2(ui.focusedElement, ui.textField.TextForRendering())
+                if out != ui.textField.TextForRendering() {
+                    ui.textField.SetTextAndSelection(out, len(out), len(out))
+                }
 
-                if sawNewline {
+                if doEnter {
                     ui.focusedElement.HandleKeys([]ebiten.Key{ebiten.KeyEnter})
                 }
             }
         }
 
-        if !handled && ui.focusedElement.TextEntry != nil {
+        if !handled && ui.focusedElement != nil && ui.focusedElement.TextEntry != nil {
             chars := ebiten.AppendInputChars(nil)
             ui.focusedElement.TextEntry(ui.focusedElement, chars)
         }
