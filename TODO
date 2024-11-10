@@ -6,7 +6,6 @@
 * play midi music
 * font editor - choose colors for font palette
 * implement overworld spells
-* handle touch events similar to the mouse
 * corrupted tiles and purify
 * upscale screen by 2x
 
@@ -50,3 +49,4 @@
 11/7/2024 * filter buildings by race
 11/8/2024 * magic weapons for regular units
 11/8/2024 * glowing effect for enchanted units
+11/9/2024 * handle touch events similar to the mouse
