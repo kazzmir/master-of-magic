@@ -423,7 +423,6 @@ func (screen *NewWizardScreen) MakeCustomNameUI() *uilib.UI {
         },
         HandleKeys: func(keys []ebiten.Key){
             for _, key := range keys {
-                log.Printf("handle key %v", key)
                 switch key {
                     case ebiten.KeyBackspace:
                         length := len(screen.CustomWizard.Name)
@@ -453,7 +452,7 @@ func (screen *NewWizardScreen) MakeCustomNameUI() *uilib.UI {
     }
 
     ui.AddElement(nameElement)
-    // ui.FocusElement(nameElement)
+    ui.FocusElement(nameElement)
 
     return ui
 }
