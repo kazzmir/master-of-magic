@@ -12,13 +12,13 @@ import (
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
+    "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     "github.com/kazzmir/master-of-magic/game/magic/summon"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
     // "github.com/kazzmir/master-of-magic/game/magic/data"
 
     "github.com/hajimehoshi/ebiten/v2"
-    "github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
 func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Player, spell spellbook.Spell) {
@@ -51,7 +51,7 @@ func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Playe
             }
 
             for showSummon.Update() != summon.SummonStateDone {
-                if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
+                if inputmanager.LeftClick() {
                     break
                 }
                 yield()
@@ -238,7 +238,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
 
         ui.StandardUpdate()
 
-        x, y := ebiten.CursorPosition()
+        x, y := inputmanager.MousePosition()
 
         if overworld.Counter % 5 == 0 && (moveCamera.X != game.cameraX || moveCamera.Y != game.cameraY) {
             if moveCamera.X < game.cameraX {
@@ -264,7 +264,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
             newPoint := image.Pt(newX, newY)
 
             // right click should move the camera
-            rightClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight)
+            rightClick := inputmanager.RightClick()
             if rightClick {
                 moveCamera = newPoint.Add(image.Pt(-5, -5))
                 if moveCamera.Y < 0 {
@@ -276,7 +276,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                 }
             }
 
-            if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
+            if inputmanager.LeftClick() {
                 return x, y, false
             }
         }

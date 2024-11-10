@@ -4,7 +4,6 @@ import (
     "fmt"
     "math"
     "math/rand/v2"
-    "strings"
     "image"
     "image/color"
     "log"
@@ -373,32 +372,6 @@ func (screen *NewWizardScreen) MakeCustomNameUI() *uilib.UI {
 
     ui := &uilib.UI{
         Elements: make(map[uilib.UILayer][]*uilib.UIElement),
-        HandleKeys: func(keys []ebiten.Key){
-            for _, key := range keys {
-                switch key {
-                    case ebiten.KeyBackspace:
-                        length := len(screen.CustomWizard.Name)
-                        if length > 0 {
-                            length -= 1
-                        }
-                        screen.CustomWizard.Name = screen.CustomWizard.Name[0:length]
-                    case ebiten.KeyEnter:
-                        screen.State = NewWizardScreenStateCustomBooks
-                        screen.UI = screen.MakeCustomWizardBooksUI()
-                    case ebiten.KeySpace:
-                        screen.CustomWizard.Name += " "
-                    default:
-                        str := strings.ToLower(key.String())
-                        if str != "" && validNameString(str) {
-                            screen.CustomWizard.Name += str
-                        }
-                }
-            }
-
-            if len(screen.CustomWizard.Name) > MaxNameLength {
-                screen.CustomWizard.Name = screen.CustomWizard.Name[0:MaxNameLength]
-            }
-        },
         Draw: func(this *uilib.UI, window *ebiten.Image){
             var options ebiten.DrawImageOptions
             background, _ := screen.ImageCache.GetImage("newgame.lbx", 0, 0)
@@ -426,6 +399,65 @@ func (screen *NewWizardScreen) MakeCustomNameUI() *uilib.UI {
             return
         },
     }
+
+    nameRect := image.Rect(184, 20, 184 + 128, 60)
+
+    nameElement := &uilib.UIElement{
+        Rect: nameRect,
+        /*
+        TextEntry: func(this *uilib.UIElement, text []rune){
+            str := string(text)
+            if str != "" && validNameString(str) {
+                screen.CustomWizard.Name += str
+                if len(screen.CustomWizard.Name) > MaxNameLength {
+                    screen.CustomWizard.Name = screen.CustomWizard.Name[0:MaxNameLength]
+                }
+            }
+        },
+        */
+        LeftClick: func(this *uilib.UIElement){
+        },
+        TextEntry: func(this *uilib.UIElement, text string) string {
+            // log.Printf("set name to '%v'", text)
+            screen.CustomWizard.Name = text
+
+            if len(screen.CustomWizard.Name) > MaxNameLength {
+                screen.CustomWizard.Name = screen.CustomWizard.Name[0:MaxNameLength]
+            }
+
+            return screen.CustomWizard.Name
+        },
+        HandleKeys: func(keys []ebiten.Key){
+            for _, key := range keys {
+                switch key {
+                    case ebiten.KeyBackspace:
+                        length := len(screen.CustomWizard.Name)
+                        if length > 0 {
+                            length -= 1
+                        }
+                        screen.CustomWizard.Name = screen.CustomWizard.Name[0:length]
+                    case ebiten.KeyEnter:
+                        if len(screen.CustomWizard.Name) > 0 {
+                            screen.State = NewWizardScreenStateCustomBooks
+                            ui.UnfocusElement()
+                            screen.UI = screen.MakeCustomWizardBooksUI()
+                        }
+                        /*
+                    case ebiten.KeySpace:
+                        screen.CustomWizard.Name += " "
+                    default:
+                        str := strings.ToLower(key.String())
+                        if str != "" && validNameString(str) {
+                            screen.CustomWizard.Name += str
+                        }
+                        */
+                }
+            }
+        },
+    }
+
+    ui.AddElement(nameElement)
+    ui.FocusElement(nameElement, screen.CustomWizard.Name)
 
     return ui
 }

@@ -11,12 +11,12 @@ import (
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
 
     "github.com/hajimehoshi/ebiten/v2"
-    "github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
 func makeSurveyorFont(fonts []*font.LbxFont) *font.Font {
@@ -298,7 +298,7 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
 
         ui.StandardUpdate()
 
-        x, y := ebiten.CursorPosition()
+        x, y := inputmanager.MousePosition()
 
         if overworld.Counter % 5 == 0 && (moveCamera.X != game.cameraX || moveCamera.Y != game.cameraY) {
             if moveCamera.X < game.cameraX {
@@ -324,7 +324,7 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
             newPoint := image.Pt(newX, newY)
 
             // right click should move the camera
-            rightClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight)
+            rightClick := inputmanager.RightClick()
             if rightClick {
                 moveCamera = selectedPoint.Add(image.Pt(-5, -5))
                 if moveCamera.X < 0 {

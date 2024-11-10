@@ -1,12 +1,14 @@
 package ui
 
 import (
-    // "log"
+    "log"
     "image"
     "slices"
+    "strings"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
+    "github.com/hajimehoshi/ebiten/v2/exp/textinput"
 )
 
 type UIInsideElementFunc func(element *UIElement, x int, y int)
@@ -16,7 +18,7 @@ type UIDrawFunc func(element *UIElement, window *ebiten.Image)
 type UIKeyFunc func(key []ebiten.Key)
 type UIGainFocusFunc func(*UIElement)
 type UILoseFocusFunc func(*UIElement)
-type UITextEntry func(*UIElement, []rune)
+type UITextEntry func(*UIElement, string) string
 
 type UILayer int
 
@@ -73,6 +75,12 @@ type UI struct {
     Counter uint64
 
     focusedElement *UIElement
+    lastTouchX int
+    lastTouchY int
+    touchRightClick bool
+    touchStartTime uint64
+
+    textField textinput.Field
 
     doubleClickCandidates []doubleClick
 
@@ -186,6 +194,8 @@ func (ui *UI) GetHighestLayer() []*UIElement {
         }
     }
 
+    log.Printf("Warning: no elements in UI")
+
     return nil
 }
 
@@ -205,6 +215,36 @@ func (ui *UI) SetElementsFromArray(elements []*UIElement){
     }
 
     ui.Elements = out
+}
+
+func (ui *UI) UnfocusElement(){
+    if ui.focusedElement != nil {
+        if ui.focusedElement.LoseFocus != nil {
+            ui.focusedElement.LoseFocus(ui.focusedElement)
+        }
+
+        ui.focusedElement = nil
+        ui.textField.Blur()
+    }
+}
+
+func (ui *UI) FocusElement(element *UIElement, text string){
+    if ui.focusedElement != nil && ui.focusedElement != element && ui.focusedElement.LoseFocus != nil {
+        ui.focusedElement.LoseFocus(ui.focusedElement)
+    }
+
+    ui.focusedElement = element
+
+    if ui.focusedElement.TextEntry != nil {
+        ui.textField.Focus()
+        ui.textField.SetTextAndSelection(text, len(text), len(text))
+    }
+
+    /*
+    if element.GainFocus != nil {
+        element.GainFocus(element)
+    }
+    */
 }
 
 func (ui *UI) StandardUpdate() {
@@ -228,7 +268,7 @@ func (ui *UI) StandardUpdate() {
                 ui.HandleKeys(keys)
             }
 
-            if ui.focusedElement != nil && ui.focusedElement.HandleKeys != nil {
+            if ui.focusedElement != nil && ui.focusedElement.TextEntry == nil && ui.focusedElement.HandleKeys != nil {
                 ui.focusedElement.HandleKeys(keys)
             }
         }
@@ -239,6 +279,49 @@ func (ui *UI) StandardUpdate() {
     rightClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight)
 
     mouseX, mouseY := ebiten.CursorPosition()
+
+    /*
+    touchIds := inpututil.AppendJustPressedTouchIDs(nil)
+    if len(touchIds) > 0 {
+        touchId := touchIds[0]
+        mouseX, mouseY = ebiten.TouchPosition(touchId)
+        leftClick = true
+    }
+    */
+
+    pressedTouchIds := inpututil.AppendJustPressedTouchIDs(nil)
+    if len(pressedTouchIds) > 0 {
+        touchId := pressedTouchIds[0]
+        ui.lastTouchX, ui.lastTouchY = ebiten.TouchPosition(touchId)
+        ui.touchStartTime = ui.Counter
+    }
+
+    touchIds := inpututil.AppendJustReleasedTouchIDs(nil)
+    if len(touchIds) > 0 {
+        // touchId := touchIds[0]
+
+        duration := ui.Counter - ui.touchStartTime
+
+        // log.Printf("Touch %v duration %v", touchId, duration)
+
+        if duration < 40 {
+            leftClick = true
+            leftClickReleased = true
+        } else {
+            rightClick = true
+        }
+
+        mouseX, mouseY = ui.lastTouchX, ui.lastTouchY
+        // log.Printf("Touch %v %v %v", touchId, mouseX, mouseY)
+        // log.Printf("Touches %v", touchIds)
+    }
+
+    /*
+    if inpututil.IsTouchJustReleased(0) {
+        leftClickReleased = true
+        mouseX, mouseY = ebiten.TouchPosition(0)
+    }
+    */
 
     if leftClickReleased {
         for _, element := range ui.LeftClickedElements {
@@ -270,14 +353,27 @@ func (ui *UI) StandardUpdate() {
                 if element.LeftClick != nil {
                     element.LeftClick(element)
                 }
-                ui.LeftClickedElements = append(ui.LeftClickedElements, element)
+
+                // might release the click on the same tick, due to touch input
+                if leftClickReleased {
+                    if element.LeftClickRelease != nil {
+                        element.LeftClickRelease(element)
+                    }
+                } else {
+                    ui.LeftClickedElements = append(ui.LeftClickedElements, element)
+                }
 
                 if ui.focusedElement != element {
                     if ui.focusedElement != nil && ui.focusedElement.LoseFocus != nil {
                         ui.focusedElement.LoseFocus(ui.focusedElement)
+                        ui.textField.Blur()
                     }
 
                     ui.focusedElement = element
+                    if ui.focusedElement.TextEntry != nil {
+                        ui.textField.Focus()
+                    }
+
                     if element.GainFocus != nil {
                         element.GainFocus(element)
                     }
@@ -315,9 +411,70 @@ func (ui *UI) StandardUpdate() {
         }
     }
 
-    if ui.focusedElement != nil && ui.focusedElement.TextEntry != nil {
-        chars := ebiten.AppendInputChars(nil)
-        ui.focusedElement.TextEntry(ui.focusedElement, chars)
+    if ui.focusedElement != nil {
+        var err error
+        handled := false
+
+        if ui.focusedElement.TextEntry != nil {
+            if !ui.textField.IsFocused() {
+                ui.textField.Focus()
+            }
+            // log.Printf("text field is focused %v", ui.textField.IsFocused())
+            if ui.textField.IsFocused() {
+                /*
+                start, end := ui.textField.Selection()
+                if start != 0 || end != 0 {
+                    // log.Printf("selection %v %v", start, end)
+                    // ui.textField.SetTextAndSelection(ui.textField.Text(), end, end)
+                }
+                */
+
+                bounds := ui.focusedElement.Rect.Bounds()
+                handled, err = ui.textField.HandleInput(bounds.Min.X, bounds.Max.Y + 1)
+                // log.Printf("Handle input %v", err)
+                if err != nil {
+                    log.Printf("input error %v", err)
+                }
+
+                doEnter := false
+
+                if !handled {
+                    if inpututil.IsKeyJustPressed(ebiten.KeyBackspace) {
+                        // ui.focusedElement.HandleKeys([]ebiten.Key{ebiten.KeyBackspace})
+                        start, _ := ui.textField.Selection()
+                        if start > 0 {
+                            text := ui.textField.TextForRendering()
+                            ui.textField.SetTextAndSelection(text[0:len(text)-1], start - 1, start - 1)
+                        }
+                    } else if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
+                        doEnter = true
+                    }
+                }
+
+                for strings.Contains(ui.textField.Text(), "\n") {
+                    start, _ := ui.textField.Selection()
+                    text := ui.textField.TextForRendering()
+                    ui.textField.SetTextAndSelection(text[0:len(text)-1], start - 1, start - 1)
+                    doEnter = true
+                }
+
+                out := ui.focusedElement.TextEntry(ui.focusedElement, ui.textField.TextForRendering())
+                if out != ui.textField.TextForRendering() {
+                    ui.textField.SetTextAndSelection(out, len(out), len(out))
+                }
+
+                if doEnter {
+                    ui.focusedElement.HandleKeys([]ebiten.Key{ebiten.KeyEnter})
+                }
+            }
+        }
+
+        /*
+        if !handled && ui.focusedElement != nil && ui.focusedElement.TextEntry != nil {
+            chars := ebiten.AppendInputChars(nil)
+            ui.focusedElement.TextEntry(ui.focusedElement, chars)
+        }
+        */
     }
 
     if !ui.Disabled && leftClick && !elementLeftClicked {

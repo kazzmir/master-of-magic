@@ -11,6 +11,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/fraction"
     mouselib "github.com/kazzmir/master-of-magic/lib/mouse"
+    "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/units"
@@ -1876,6 +1877,8 @@ func (engine *Engine) Update() error {
             return ebiten.Termination
         }
     }
+
+    inputmanager.Update()
 
     engine.Console.Update()
 
