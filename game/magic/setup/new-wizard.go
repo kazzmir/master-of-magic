@@ -432,6 +432,7 @@ func (screen *NewWizardScreen) MakeCustomNameUI() *uilib.UI {
                         screen.CustomWizard.Name = screen.CustomWizard.Name[0:length]
                     case ebiten.KeyEnter:
                         screen.State = NewWizardScreenStateCustomBooks
+                        ui.UnfocusElement()
                         screen.UI = screen.MakeCustomWizardBooksUI()
                         /*
                     case ebiten.KeySpace:
@@ -452,7 +453,7 @@ func (screen *NewWizardScreen) MakeCustomNameUI() *uilib.UI {
     }
 
     ui.AddElement(nameElement)
-    ui.FocusElement(nameElement)
+    ui.FocusElement(nameElement, screen.CustomWizard.Name)
 
     return ui
 }

@@ -215,13 +215,25 @@ func (ui *UI) SetElementsFromArray(elements []*UIElement){
     ui.Elements = out
 }
 
-func (ui *UI) FocusElement(element *UIElement){
+func (ui *UI) UnfocusElement(){
+    if ui.focusedElement != nil {
+        if ui.focusedElement.LoseFocus != nil {
+            ui.focusedElement.LoseFocus(ui.focusedElement)
+
+            ui.focusedElement = nil
+            ui.textField.Blur()
+        }
+    }
+}
+
+func (ui *UI) FocusElement(element *UIElement, text string){
     if ui.focusedElement != nil && ui.focusedElement.LoseFocus != nil {
         ui.focusedElement.LoseFocus(ui.focusedElement)
     }
 
     ui.focusedElement = element
     ui.textField.Focus()
+    ui.textField.SetTextAndSelection(text, len(text), len(text))
 
     if element.GainFocus != nil {
         element.GainFocus(element)
