@@ -64,10 +64,9 @@ func runIntro(yield coroutine.YieldFunc, game *MagicGame) {
     for intro.Update() == introlib.IntroStateRunning {
         yield()
 
-        if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) ||
+        if inputmanager.LeftClick() ||
            inpututil.IsKeyJustPressed(ebiten.KeySpace) ||
-           inpututil.IsKeyJustPressed(ebiten.KeyEnter) ||
-           len(inpututil.AppendJustPressedTouchIDs(nil)) > 0 {
+           inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
             return
         }
     }
