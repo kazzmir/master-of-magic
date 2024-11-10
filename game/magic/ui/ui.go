@@ -18,8 +18,7 @@ type UIDrawFunc func(element *UIElement, window *ebiten.Image)
 type UIKeyFunc func(key []ebiten.Key)
 type UIGainFocusFunc func(*UIElement)
 type UILoseFocusFunc func(*UIElement)
-type UITextEntry func(*UIElement, []rune)
-type UITextEntry2 func(*UIElement, string) string
+type UITextEntry func(*UIElement, string) string
 
 type UILayer int
 
@@ -45,8 +44,7 @@ type UIElement struct {
     // fires when some other element is left clicked
     LoseFocus UILoseFocusFunc
     // fires when the user types some keys and this element is focused
-    // TextEntry UITextEntry
-    TextEntry2 UITextEntry2
+    TextEntry UITextEntry
     // fires when a key is pressed and this element is focused
     HandleKeys UIKeyFunc
 
@@ -237,7 +235,7 @@ func (ui *UI) FocusElement(element *UIElement, text string){
 
     ui.focusedElement = element
 
-    if ui.focusedElement.TextEntry2 != nil {
+    if ui.focusedElement.TextEntry != nil {
         ui.textField.Focus()
         ui.textField.SetTextAndSelection(text, len(text), len(text))
     }
@@ -270,7 +268,7 @@ func (ui *UI) StandardUpdate() {
                 ui.HandleKeys(keys)
             }
 
-            if ui.focusedElement != nil && ui.focusedElement.TextEntry2 == nil && ui.focusedElement.HandleKeys != nil {
+            if ui.focusedElement != nil && ui.focusedElement.TextEntry == nil && ui.focusedElement.HandleKeys != nil {
                 ui.focusedElement.HandleKeys(keys)
             }
         }
@@ -372,7 +370,7 @@ func (ui *UI) StandardUpdate() {
                     }
 
                     ui.focusedElement = element
-                    if ui.focusedElement.TextEntry2 != nil {
+                    if ui.focusedElement.TextEntry != nil {
                         ui.textField.Focus()
                     }
 
@@ -417,7 +415,7 @@ func (ui *UI) StandardUpdate() {
         var err error
         handled := false
 
-        if ui.focusedElement.TextEntry2 != nil {
+        if ui.focusedElement.TextEntry != nil {
             if !ui.textField.IsFocused() {
                 ui.textField.Focus()
             }
@@ -460,7 +458,7 @@ func (ui *UI) StandardUpdate() {
                     doEnter = true
                 }
 
-                out := ui.focusedElement.TextEntry2(ui.focusedElement, ui.textField.TextForRendering())
+                out := ui.focusedElement.TextEntry(ui.focusedElement, ui.textField.TextForRendering())
                 if out != ui.textField.TextForRendering() {
                     ui.textField.SetTextAndSelection(out, len(out), len(out))
                 }

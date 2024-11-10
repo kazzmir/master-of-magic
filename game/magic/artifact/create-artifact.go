@@ -465,7 +465,7 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
         LoseFocus: func(element *uilib.UIElement){
             nameFocused = false
         },
-        TextEntry2: func(element *uilib.UIElement, text string) string {
+        TextEntry: func(element *uilib.UIElement, text string) string {
             /*
             for _, r := range char {
                 if len(artifact.Name) < 25 {

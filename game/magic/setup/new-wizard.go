@@ -417,7 +417,7 @@ func (screen *NewWizardScreen) MakeCustomNameUI() *uilib.UI {
         */
         LeftClick: func(this *uilib.UIElement){
         },
-        TextEntry2: func(this *uilib.UIElement, text string) string {
+        TextEntry: func(this *uilib.UIElement, text string) string {
             // log.Printf("set name to '%v'", text)
             screen.CustomWizard.Name = text
 
