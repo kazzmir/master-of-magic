@@ -402,39 +402,6 @@ func (screen *NewWizardScreen) MakeCustomNameUI() *uilib.UI {
 
     nameRect := image.Rect(184, 20, 184 + 128, 60)
 
-    /*
-    readText := func(textChannel chan textinput.State, stop context.Context, stopCancel context.CancelFunc, quit func()) {
-        go func(){
-            defer quit()
-
-            for {
-                select {
-                    case <-stop.Done():
-                        return
-                    case state, ok := <-textChannel:
-                        log.Printf("got text input state: %v ok=%v", state, ok)
-                        if !ok {
-                            log.Printf("stop text input")
-                            stopCancel()
-                            return
-                        }
-                        screen.CustomWizard.Name += state.Text
-                }
-            }
-        }()
-    }
-
-    textChannel, quit := textinput.Start(nameRect.Min.X, nameRect.Max.Y)
-    stop, stopCancel := context.WithCancel(context.Background())
-
-    if textChannel != nil {
-        log.Printf("start text input")
-        readText(textChannel, stop, stopCancel, quit)
-    } else {
-        log.Printf("unable to start text input")
-    }
-    */
-
     nameElement := &uilib.UIElement{
         Rect: nameRect,
         /*
@@ -449,18 +416,6 @@ func (screen *NewWizardScreen) MakeCustomNameUI() *uilib.UI {
         },
         */
         LeftClick: func(this *uilib.UIElement){
-            /*
-            if quit != nil {
-                quit()
-            }
-            textChannel, quit = textinput.Start(nameRect.Min.X, nameRect.Max.Y)
-            if textChannel != nil {
-                log.Printf("start text input")
-                readText(textChannel, stop, stopCancel, quit)
-            } else {
-                log.Printf("unable to start text input")
-            }
-            */
         },
         TextEntry2: func(this *uilib.UIElement, text string){
             // log.Printf("set name to '%v'", text)
@@ -478,12 +433,6 @@ func (screen *NewWizardScreen) MakeCustomNameUI() *uilib.UI {
                         screen.CustomWizard.Name = screen.CustomWizard.Name[0:length]
                     case ebiten.KeyEnter:
                         screen.State = NewWizardScreenStateCustomBooks
-                        /*
-                        if quit != nil {
-                            quit()
-                        }
-                        stopCancel()
-                        */
                         screen.UI = screen.MakeCustomWizardBooksUI()
                         /*
                     case ebiten.KeySpace:
