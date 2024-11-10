@@ -77,6 +77,10 @@ type UI struct {
     Counter uint64
 
     focusedElement *UIElement
+    lastTouchX int
+    lastTouchY int
+    touchRightClick bool
+    touchStartTime uint64
 
     textField textinput.Field
 
@@ -273,18 +277,48 @@ func (ui *UI) StandardUpdate() {
 
     mouseX, mouseY := ebiten.CursorPosition()
 
+    /*
     touchIds := inpututil.AppendJustPressedTouchIDs(nil)
     if len(touchIds) > 0 {
         touchId := touchIds[0]
-        leftClick = true
         mouseX, mouseY = ebiten.TouchPosition(touchId)
+        leftClick = true
+    }
+    */
+
+    pressedTouchIds := inpututil.AppendJustPressedTouchIDs(nil)
+    if len(pressedTouchIds) > 0 {
+        touchId := pressedTouchIds[0]
+        ui.lastTouchX, ui.lastTouchY = ebiten.TouchPosition(touchId)
+        ui.touchStartTime = ui.Counter
+    }
+
+    touchIds := inpututil.AppendJustReleasedTouchIDs(nil)
+    if len(touchIds) > 0 {
+        // touchId := touchIds[0]
+
+        duration := ui.Counter - ui.touchStartTime
+
+        // log.Printf("Touch %v duration %v", touchId, duration)
+
+        if duration < 40 {
+            leftClick = true
+            leftClickReleased = true
+        } else {
+            rightClick = true
+        }
+
+        mouseX, mouseY = ui.lastTouchX, ui.lastTouchY
+        // log.Printf("Touch %v %v %v", touchId, mouseX, mouseY)
         // log.Printf("Touches %v", touchIds)
     }
 
+    /*
     if inpututil.IsTouchJustReleased(0) {
         leftClickReleased = true
         mouseX, mouseY = ebiten.TouchPosition(0)
     }
+    */
 
     if leftClickReleased {
         for _, element := range ui.LeftClickedElements {
@@ -316,7 +350,15 @@ func (ui *UI) StandardUpdate() {
                 if element.LeftClick != nil {
                     element.LeftClick(element)
                 }
-                ui.LeftClickedElements = append(ui.LeftClickedElements, element)
+
+                // might release the click on the same tick, due to touch input
+                if leftClickReleased {
+                    if element.LeftClickRelease != nil {
+                        element.LeftClickRelease(element)
+                    }
+                } else {
+                    ui.LeftClickedElements = append(ui.LeftClickedElements, element)
+                }
 
                 if ui.focusedElement != element {
                     if ui.focusedElement != nil && ui.focusedElement.LoseFocus != nil {
