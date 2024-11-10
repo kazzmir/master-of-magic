@@ -814,85 +814,73 @@ func (game *Game) doInput(yield coroutine.YieldFunc, title string, name string, 
     source := ebiten.NewImage(1, 1)
     source.Fill(color.RGBA{R: 0xcf, G: 0xef, B: 0xf9, A: 0xff})
 
+    ui := &uilib.UI{
+        Draw: func(ui *uilib.UI, screen *ebiten.Image){
+            ui.IterateElementsByLayer(func (element *uilib.UIElement){
+                if element.Draw != nil {
+                    element.Draw(element, screen)
+                }
+            })
+        },
+    }
+    ui.SetElementsFromArray(nil)
+
     game.Drawer = func (screen *ebiten.Image, game *Game){
         oldDrawer(screen, game)
 
-        background, _ := game.ImageCache.GetImage("backgrnd.lbx", 33, 0)
-        var options ebiten.DrawImageOptions
-        options.GeoM.Translate(float64(topX), float64(topY))
-        screen.DrawImage(background, &options)
-
-        x, y := options.GeoM.Apply(13, 20)
-
-        nameFont.Print(screen, x, y, 1, options.ColorScale, name)
-
-        tx, ty := options.GeoM.Apply(9, 6)
-        titleFont.Print(screen, tx, ty, 1, options.ColorScale, title)
-
-        // draw cursor
-        cursorX := x + nameFont.MeasureTextWidth(name, 1)
-
-        util.DrawTextCursor(screen, source, cursorX, y, game.Counter)
+        ui.Draw(ui, screen)
     }
 
-    repeats := make(map[ebiten.Key]uint64)
+    input := &uilib.UIElement{
+        TextEntry: func(element *uilib.UIElement, text string) string {
+            name = text
 
-    doInput := func(){
-        keys := make([]ebiten.Key, 0)
-        keys = inpututil.AppendJustReleasedKeys(keys)
-        for _, key := range keys {
-            delete(repeats, key)
-        }
-
-        runes := make([]rune, 0)
-        runes = ebiten.AppendInputChars(runes)
-        for _, r := range runes {
-            if validNameString(string(r)) && nameFont.MeasureTextWidth(name + string(r), 1) < maxLength {
-                name += string(r)
-            }
-        }
-
-        keys = make([]ebiten.Key, 0)
-        keys = inpututil.AppendPressedKeys(keys)
-        for _, key := range keys {
-            repeat, ok := repeats[key]
-            if !ok {
-                repeats[key] = game.Counter
-                repeat = game.Counter
+            for len(name) > 0 && nameFont.MeasureTextWidth(name, 1) > maxLength {
+                name = name[:len(name)-1]
             }
 
-            diff := game.Counter - repeat
-            // log.Printf("repeat %v diff=%v", key, diff)
-            if diff == 0 {
-                // use = true
-            } else if diff < 15 {
-                continue
-            } else if diff % 5 == 0 {
-                // use = true
-            } else {
-                continue
+            return name
+        },
+        HandleKeys: func(keys []ebiten.Key) {
+            for _, key := range keys {
+                switch key {
+                    case ebiten.KeyEnter:
+                        if len(name) > 0 {
+                            quit = true
+                        }
+                    case ebiten.KeyBackspace:
+                        if len(name) > 0 {
+                            name = name[:len(name) - 1]
+                        }
+                }
             }
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            background, _ := game.ImageCache.GetImage("backgrnd.lbx", 33, 0)
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(topX), float64(topY))
+            screen.DrawImage(background, &options)
 
-            switch key {
-                case ebiten.KeyEnter:
-                    if len(name) > 0 {
-                        quit = true
-                    }
-                case ebiten.KeySpace:
-                    if nameFont.MeasureTextWidth(name + " ", 1) < maxLength {
-                        name += " "
-                    }
-                case ebiten.KeyBackspace:
-                    if len(name) > 0 {
-                        name = name[:len(name) - 1]
-                    }
-            }
-        }
+            x, y := options.GeoM.Apply(13, 20)
+
+            nameFont.Print(screen, x, y, 1, options.ColorScale, name)
+
+            tx, ty := options.GeoM.Apply(9, 6)
+            titleFont.Print(screen, tx, ty, 1, options.ColorScale, title)
+
+            // draw cursor
+            cursorX := x + nameFont.MeasureTextWidth(name, 1)
+
+            util.DrawTextCursor(screen, source, cursorX, y, game.Counter)
+        },
     }
+
+    ui.AddElement(input)
+    ui.FocusElement(input, name)
 
     for !quit {
         game.Counter += 1
-        doInput()
+        ui.StandardUpdate()
         yield()
     }
 
