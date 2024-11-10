@@ -455,20 +455,30 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
     artifact.Name = artifactType.Name()
     nameColorSource := ebiten.NewImage(1, 1)
     nameColorSource.Fill(color.RGBA{R: 0xf3, G: 0xb3, B: 0x47, A: 0xff})
-    elements = append(elements, &uilib.UIElement{
+
+    nameEntry := &uilib.UIElement{
         Rect: nameRect,
         GainFocus: func(element *uilib.UIElement){
             nameFocused = true
+            ui.FocusElement(element, artifact.Name)
         },
         LoseFocus: func(element *uilib.UIElement){
             nameFocused = false
         },
-        TextEntry: func(element *uilib.UIElement, char []rune){
+        TextEntry2: func(element *uilib.UIElement, text string) string {
+            /*
             for _, r := range char {
                 if len(artifact.Name) < 25 {
                     artifact.Name += string(r)
                 }
             }
+            */
+            artifact.Name = text
+            if len(artifact.Name) > 25 {
+                artifact.Name = artifact.Name[0:25]
+            }
+
+            return artifact.Name
         },
         HandleKeys: func(keys []ebiten.Key){
             u := false
@@ -517,7 +527,9 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
                 util.DrawTextCursor(screen, nameColorSource, float64(nameRect.Min.X) + 1 + nameFont.MeasureTextWidth(artifact.Name, 1), float64(nameRect.Min.Y) + 1, ui.Counter)
             }
         },
-    })
+    }
+
+    elements = append(elements, nameEntry)
 
     x := 7
     y := 40
@@ -1285,6 +1297,8 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, cr
         ui.StandardUpdate()
         yield()
     }
+
+    ui.UnfocusElement()
 
     return currentArtifact, canceled
 }

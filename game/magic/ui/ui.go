@@ -45,7 +45,7 @@ type UIElement struct {
     // fires when some other element is left clicked
     LoseFocus UILoseFocusFunc
     // fires when the user types some keys and this element is focused
-    TextEntry UITextEntry
+    // TextEntry UITextEntry
     TextEntry2 UITextEntry2
     // fires when a key is pressed and this element is focused
     HandleKeys UIKeyFunc
@@ -231,17 +231,22 @@ func (ui *UI) UnfocusElement(){
 }
 
 func (ui *UI) FocusElement(element *UIElement, text string){
-    if ui.focusedElement != nil && ui.focusedElement.LoseFocus != nil {
+    if ui.focusedElement != nil && ui.focusedElement != element && ui.focusedElement.LoseFocus != nil {
         ui.focusedElement.LoseFocus(ui.focusedElement)
     }
 
     ui.focusedElement = element
-    ui.textField.Focus()
-    ui.textField.SetTextAndSelection(text, len(text), len(text))
 
+    if ui.focusedElement.TextEntry2 != nil {
+        ui.textField.Focus()
+        ui.textField.SetTextAndSelection(text, len(text), len(text))
+    }
+
+    /*
     if element.GainFocus != nil {
         element.GainFocus(element)
     }
+    */
 }
 
 func (ui *UI) StandardUpdate() {
@@ -363,10 +368,13 @@ func (ui *UI) StandardUpdate() {
                 if ui.focusedElement != element {
                     if ui.focusedElement != nil && ui.focusedElement.LoseFocus != nil {
                         ui.focusedElement.LoseFocus(ui.focusedElement)
+                        ui.textField.Blur()
                     }
 
                     ui.focusedElement = element
-                    ui.textField.Focus()
+                    if ui.focusedElement.TextEntry2 != nil {
+                        ui.textField.Focus()
+                    }
 
                     if element.GainFocus != nil {
                         element.GainFocus(element)
@@ -463,10 +471,12 @@ func (ui *UI) StandardUpdate() {
             }
         }
 
+        /*
         if !handled && ui.focusedElement != nil && ui.focusedElement.TextEntry != nil {
             chars := ebiten.AppendInputChars(nil)
             ui.focusedElement.TextEntry(ui.focusedElement, chars)
         }
+        */
     }
 
     if !ui.Disabled && leftClick && !elementLeftClicked {
