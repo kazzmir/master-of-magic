@@ -1,12 +1,14 @@
 package ui
 
 import (
-    // "log"
+    "log"
     "image"
     "slices"
+    "strings"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
+    "github.com/hajimehoshi/ebiten/v2/exp/textinput"
 )
 
 type UIInsideElementFunc func(element *UIElement, x int, y int)
@@ -17,6 +19,7 @@ type UIKeyFunc func(key []ebiten.Key)
 type UIGainFocusFunc func(*UIElement)
 type UILoseFocusFunc func(*UIElement)
 type UITextEntry func(*UIElement, []rune)
+type UITextEntry2 func(*UIElement, string)
 
 type UILayer int
 
@@ -43,6 +46,7 @@ type UIElement struct {
     LoseFocus UILoseFocusFunc
     // fires when the user types some keys and this element is focused
     TextEntry UITextEntry
+    TextEntry2 UITextEntry2
     // fires when a key is pressed and this element is focused
     HandleKeys UIKeyFunc
 
@@ -73,6 +77,8 @@ type UI struct {
     Counter uint64
 
     focusedElement *UIElement
+
+    textField textinput.Field
 
     doubleClickCandidates []doubleClick
 
@@ -186,6 +192,8 @@ func (ui *UI) GetHighestLayer() []*UIElement {
         }
     }
 
+    log.Printf("Warning: no elements in UI")
+
     return nil
 }
 
@@ -213,6 +221,7 @@ func (ui *UI) FocusElement(element *UIElement){
     }
 
     ui.focusedElement = element
+    ui.textField.Focus()
 
     if element.GainFocus != nil {
         element.GainFocus(element)
@@ -240,7 +249,7 @@ func (ui *UI) StandardUpdate() {
                 ui.HandleKeys(keys)
             }
 
-            if ui.focusedElement != nil && ui.focusedElement.HandleKeys != nil {
+            if ui.focusedElement != nil && ui.focusedElement.TextEntry2 == nil && ui.focusedElement.HandleKeys != nil {
                 ui.focusedElement.HandleKeys(keys)
             }
         }
@@ -303,6 +312,8 @@ func (ui *UI) StandardUpdate() {
                     }
 
                     ui.focusedElement = element
+                    ui.textField.Focus()
+
                     if element.GainFocus != nil {
                         element.GainFocus(element)
                     }
@@ -340,9 +351,65 @@ func (ui *UI) StandardUpdate() {
         }
     }
 
-    if ui.focusedElement != nil && ui.focusedElement.TextEntry != nil {
-        chars := ebiten.AppendInputChars(nil)
-        ui.focusedElement.TextEntry(ui.focusedElement, chars)
+    if ui.focusedElement != nil {
+        var err error
+        handled := false
+
+        if ui.focusedElement.TextEntry2 != nil {
+            if !ui.textField.IsFocused() {
+                ui.textField.Focus()
+            }
+            // log.Printf("text field is focused %v", ui.textField.IsFocused())
+            if ui.textField.IsFocused() {
+                /*
+                start, end := ui.textField.Selection()
+                if start != 0 || end != 0 {
+                    // log.Printf("selection %v %v", start, end)
+                    // ui.textField.SetTextAndSelection(ui.textField.Text(), end, end)
+                }
+                */
+
+                bounds := ui.focusedElement.Rect.Bounds()
+                handled, err = ui.textField.HandleInput(bounds.Min.X, bounds.Max.Y + 1)
+                // log.Printf("Handle input %v", err)
+                if err != nil {
+                    log.Printf("input error %v", err)
+                }
+
+                if !handled {
+                    if inpututil.IsKeyJustPressed(ebiten.KeyBackspace) {
+                        log.Printf("backspace")
+                        // ui.focusedElement.HandleKeys([]ebiten.Key{ebiten.KeyBackspace})
+                        start, _ := ui.textField.Selection()
+                        if start > 0 {
+                            text := ui.textField.TextForRendering()
+                            ui.textField.SetTextAndSelection(text[0:len(text)-1], start - 1, start - 1)
+                        }
+                    } else if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
+                        ui.focusedElement.HandleKeys([]ebiten.Key{ebiten.KeyEnter})
+                    }
+                }
+
+                sawNewline := false
+                for strings.Contains(ui.textField.Text(), "\n") {
+                    start, _ := ui.textField.Selection()
+                    text := ui.textField.TextForRendering()
+                    ui.textField.SetTextAndSelection(text[0:len(text)-1], start - 1, start - 1)
+                    sawNewline = true
+                }
+
+                ui.focusedElement.TextEntry2(ui.focusedElement, ui.textField.TextForRendering())
+
+                if sawNewline {
+                    ui.focusedElement.HandleKeys([]ebiten.Key{ebiten.KeyEnter})
+                }
+            }
+        }
+
+        if !handled && ui.focusedElement.TextEntry != nil {
+            chars := ebiten.AppendInputChars(nil)
+            ui.focusedElement.TextEntry(ui.focusedElement, chars)
+        }
     }
 
     if !ui.Disabled && leftClick && !elementLeftClicked {
