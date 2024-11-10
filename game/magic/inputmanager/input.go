@@ -38,7 +38,9 @@ func (manager *InputManager) Update() {
     manager.leftClickReleased = false
     manager.rightClick = false
 
-    manager.mouseX, manager.mouseY = ebiten.CursorPosition()
+    if manager.lastTouchX == 0 && manager.lastTouchY == 0 {
+        manager.mouseX, manager.mouseY = ebiten.CursorPosition()
+    }
 
     if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
         manager.leftClick = true

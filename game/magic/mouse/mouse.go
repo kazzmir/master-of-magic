@@ -1,6 +1,7 @@
 package mouse
 
 import (
+    "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     "github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -32,7 +33,7 @@ func (mouse *GlobalMouse) SetImage(image *ebiten.Image) {
 
 func (mouse *GlobalMouse) Draw(screen *ebiten.Image) {
     if mouse != nil && mouse.Enabled && mouse.CurrentMouse != nil {
-        x, y := ebiten.CursorPosition()
+        x, y := inputmanager.MousePosition()
         var options ebiten.DrawImageOptions
         options.GeoM.Translate(float64(x), float64(y))
         screen.DrawImage(mouse.CurrentMouse, &options)
