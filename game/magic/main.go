@@ -11,6 +11,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     introlib "github.com/kazzmir/master-of-magic/game/magic/intro"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
+    "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/units"
@@ -290,6 +291,7 @@ func NewMagicGame(dataPath string) (*MagicGame, error) {
 }
 
 func (game *MagicGame) Update() error {
+    inputmanager.Update()
 
     err := game.MainCoroutine.Run()
     if err != nil {

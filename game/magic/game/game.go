@@ -31,6 +31,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/draw"
     "github.com/kazzmir/master-of-magic/game/magic/mouse"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
+    "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     mouselib "github.com/kazzmir/master-of-magic/lib/mouse"
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -986,7 +987,7 @@ func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City,
         if quit {
             quitCounter += 1
         } else {
-            if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) || inpututil.IsKeyJustPressed(ebiten.KeySpace) || inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
+            if inputmanager.LeftClick() || inpututil.IsKeyJustPressed(ebiten.KeySpace) || inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
                 quit = true
                 getAlpha = util.MakeFadeOut(7, &game.Counter)
             }
@@ -1100,7 +1101,7 @@ func (game *Game) showScroll(yield coroutine.YieldFunc, title string, text strin
     for !quit {
         game.Counter += 1
 
-        if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) || inpututil.IsKeyJustPressed(ebiten.KeySpace) || inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
+        if inputmanager.LeftClick() || inpututil.IsKeyJustPressed(ebiten.KeySpace) || inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
             quit = true
         }
 
@@ -1276,7 +1277,7 @@ func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, sta
 
     quit := false
     for !quit {
-        if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
+        if inputmanager.LeftClick() {
             quit = true
         }
 
@@ -1517,7 +1518,7 @@ func (game *Game) doSummon(yield coroutine.YieldFunc, summonObject *summon.Summo
     }
 
     for summonObject.Update() == summon.SummonStateRunning {
-        leftClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)
+        leftClick := inputmanager.LeftClick()
         if leftClick {
             break
         }
@@ -1889,9 +1890,9 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
             newX := stack.X() + dx
             newY := stack.Y() + dy
 
-            leftClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)
+            leftClick := inputmanager.LeftClick()
             if leftClick {
-                mouseX, mouseY := ebiten.CursorPosition()
+                mouseX, mouseY := inputmanager.MousePosition()
 
                 // can only click into the area not hidden by the hud
                 if mouseX < 240 && mouseY > 18 {
@@ -2031,10 +2032,10 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
         }
     }
 
-    rightClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight)
+    rightClick := inputmanager.RightClick()
     if rightClick {
         mapUse := game.CurrentMap()
-        mouseX, mouseY := ebiten.CursorPosition()
+        mouseX, mouseY := inputmanager.MousePosition()
 
         // can only click into the area not hidden by the hud
         if mouseX < 240 && mouseY > 18 {

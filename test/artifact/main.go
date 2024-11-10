@@ -4,6 +4,7 @@ import (
     "log"
 
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
+    "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
 
@@ -46,6 +47,7 @@ func NewEngine() (*Engine, error) {
 
 func (engine *Engine) Update() error {
     engine.Counter += 1
+    inputmanager.Update()
     keys := make([]ebiten.Key, 0)
     keys = inpututil.AppendJustPressedKeys(keys)
 
