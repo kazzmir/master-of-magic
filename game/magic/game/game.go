@@ -1905,7 +1905,7 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
             if newX != oldX || newY != oldY {
                 activeUnits := stack.ActiveUnits()
                 if len(activeUnits) > 0 {
-                    if newY > 0 && newY < mapUse.Height() && newX > 0 && newX < mapUse.Width() {
+                    if newY > 0 && newY < mapUse.Height() {
 
                         inactiveUnits := stack.InactiveUnits()
                         if len(inactiveUnits) > 0 {
