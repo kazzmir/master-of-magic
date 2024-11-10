@@ -21,6 +21,7 @@ import (
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     globalMouse "github.com/kazzmir/master-of-magic/game/magic/mouse"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
+    "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
@@ -2541,7 +2542,7 @@ func (combat *CombatScreen) doSelectTile(yield coroutine.YieldFunc, selecter Tea
         }
 
         combat.UI.StandardUpdate()
-        mouseX, mouseY := ebiten.CursorPosition()
+        mouseX, mouseY := inputmanager.MousePosition()
         tileX, tileY := combat.ScreenToTile(float64(mouseX), float64(mouseY))
         combat.MouseTileX = int(math.Round(tileX))
         combat.MouseTileY = int(math.Round(tileY))
@@ -2551,7 +2552,7 @@ func (combat *CombatScreen) doSelectTile(yield coroutine.YieldFunc, selecter Tea
         } else {
             combat.MouseState = CombatCast
 
-            if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) && mouseY < hudY {
+            if inputmanager.LeftClick() && mouseY < hudY {
                 selectTile(combat.MouseTileX, combat.MouseTileY)
                 break
             }
@@ -2627,7 +2628,7 @@ func (combat *CombatScreen) doSelectUnit(yield coroutine.YieldFunc, selecter Tea
         }
 
         combat.UI.StandardUpdate()
-        mouseX, mouseY := ebiten.CursorPosition()
+        mouseX, mouseY := inputmanager.MousePosition()
         tileX, tileY := combat.ScreenToTile(float64(mouseX), float64(mouseY))
         combat.MouseTileX = int(math.Round(tileX))
         combat.MouseTileY = int(math.Round(tileY))
@@ -2642,7 +2643,7 @@ func (combat *CombatScreen) doSelectUnit(yield coroutine.YieldFunc, selecter Tea
                 combat.MouseState = CombatNotOk
             }
 
-            if canTarget(unit) && inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) && mouseY < hudY {
+            if canTarget(unit) && inputmanager.LeftClick() && mouseY < hudY {
                 // log.Printf("Click unit at %v,%v -> %v", combat.MouseTileX, combat.MouseTileY, unit)
                 if unit != nil && (selectTeam == TeamEither || unit.Team == selectTeam) {
                     selectTarget(unit)
@@ -2998,7 +2999,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
 
     combat.UpdateMouseState()
 
-    mouseX, mouseY := ebiten.CursorPosition()
+    mouseX, mouseY := inputmanager.MousePosition()
     hudImage, _ := combat.ImageCache.GetImage("cmbtfx.lbx", 28, 0)
 
     tileX, tileY := combat.ScreenToTile(float64(mouseX), float64(mouseY))
@@ -3097,7 +3098,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
     // dont allow clicks into the hud area
     // also don't allow clicks into the game if the ui is showing some overlay
     if combat.UI.GetHighestLayerValue() == 0 &&
-       inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) &&
+       inputmanager.LeftClick() &&
        mouseY < hudY {
 
         if combat.TileIsEmpty(combat.MouseTileX, combat.MouseTileY) && combat.CanMoveTo(combat.SelectedUnit, combat.MouseTileX, combat.MouseTileY){

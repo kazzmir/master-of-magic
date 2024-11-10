@@ -10,6 +10,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/fraction"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
+    "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     "github.com/kazzmir/master-of-magic/game/magic/combat"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/data"
@@ -411,6 +412,8 @@ func (engine *Engine) Update() error {
             return ebiten.Termination
         }
     }
+
+    inputmanager.Update()
 
     if engine.CombatEndScreen != nil {
         switch engine.CombatEndScreen.Update() {
