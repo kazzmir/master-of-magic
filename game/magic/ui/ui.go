@@ -378,7 +378,6 @@ func (ui *UI) StandardUpdate() {
 
                 if !handled {
                     if inpututil.IsKeyJustPressed(ebiten.KeyBackspace) {
-                        log.Printf("backspace")
                         // ui.focusedElement.HandleKeys([]ebiten.Key{ebiten.KeyBackspace})
                         start, _ := ui.textField.Selection()
                         if start > 0 {
