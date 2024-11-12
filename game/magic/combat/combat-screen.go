@@ -159,7 +159,7 @@ type CombatUnit interface {
     GetMovementSound() units.MovementSound
     GetRangeAttackSound() units.RangeAttackSound
     GetAttackSound() units.AttackSound
-    GetSpells() spellbook.Spells
+    GetSpells(*lbx.LbxCache) spellbook.Spells
     GetName() string
     GetMovementSpeed() int
     IsFlying() bool
@@ -1942,15 +1942,48 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
 
     // spell
     elements = append(elements, makeButton(1, 0, 0, func(){
+        doPlayerSpell := func(){
+            spellUI := spellbook.MakeSpellBookCastUI(ui, combat.Cache, player.KnownSpells, player.ComputeCastingSkill(), spellbook.Spell{}, 0, false, func (spell spellbook.Spell, picked bool){
+                if picked {
+                    // player mana and skill should go down accordingly
+                    combat.InvokeSpell(player, spell)
+                }
+            })
+            ui.AddElements(spellUI)
+        }
 
+        playerOnly := true
+        if combat.SelectedUnit != nil {
+            unitSpells := combat.SelectedUnit.Unit.GetSpells(combat.Cache)
+            if len(unitSpells.Spells) > 0 {
+                playerOnly = false
+                selections := []uilib.Selection{
+                    uilib.Selection{
+                        Name: player.Wizard.Name,
+                        Action: doPlayerSpell,
+                    },
+                    uilib.Selection{
+                        Name: combat.SelectedUnit.Unit.GetName(),
+                        Action: func(){
+                            // what is casting skill based on for a unit?
+                            spellUI := spellbook.MakeSpellBookCastUI(ui, combat.Cache, unitSpells, 200, spellbook.Spell{}, 0, false, func (spell spellbook.Spell, picked bool){
+                                if picked {
+                                    // player mana and skill should go down accordingly
+                                    combat.InvokeSpell(player, spell)
+                                }
+                            })
+                            ui.AddElements(spellUI)
+                        },
+                    },
+                }
 
-        spellUI := spellbook.MakeSpellBookCastUI(ui, combat.Cache, player.KnownSpells, player.ComputeCastingSkill(), spellbook.Spell{}, 0, false, func (spell spellbook.Spell, picked bool){
-            if picked {
-                // player mana and skill should go down accordingly
-                combat.InvokeSpell(player, spell)
+                ui.AddElements(uilib.MakeSelectionUI(ui, combat.Cache, &combat.ImageCache, 100, 50, "Caster", selections))
             }
-        })
-        ui.AddElements(spellUI)
+        }
+
+        if playerOnly {
+            doPlayerSpell()
+        }
     }))
 
     // wait

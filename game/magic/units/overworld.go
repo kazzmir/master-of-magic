@@ -8,6 +8,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
     "github.com/kazzmir/master-of-magic/lib/fraction"
+    "github.com/kazzmir/master-of-magic/lib/lbx"
 )
 
 type OverworldUnit struct {
@@ -455,6 +456,15 @@ func (unit *OverworldUnit) GetArtifacts() []*artifact.Artifact {
     return nil
 }
 
-func (unit *OverworldUnit) GetSpells() spellbook.Spells {
-    return spellbook.Spells{}
+func (unit *OverworldUnit) GetSpells(cache *lbx.LbxCache) spellbook.Spells {
+    allSpells, err := spellbook.ReadSpellsFromCache(cache)
+    if err != nil {
+        return spellbook.Spells{}
+    }
+
+    spells := spellbook.Spells{}
+
+    spells.AddSpell(allSpells.FindByName("Doom Bolt"))
+
+    return spells
 }

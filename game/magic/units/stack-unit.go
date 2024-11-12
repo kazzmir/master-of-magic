@@ -5,6 +5,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/lib/fraction"
+    "github.com/kazzmir/master-of-magic/lib/lbx"
 )
 
 type StackUnit interface {
@@ -68,6 +69,6 @@ type StackUnit interface {
     GetToHitMelee() int
     GetArtifactSlots() []artifact.ArtifactSlot
     GetArtifacts() []*artifact.Artifact
-    GetSpells() spellbook.Spells
+    GetSpells(*lbx.LbxCache) spellbook.Spells
 }
 
