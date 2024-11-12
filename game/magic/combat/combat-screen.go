@@ -143,6 +143,7 @@ type CombatUnit interface {
     GetDefense() int
     GetResistance() int
     AdjustHealth(int)
+    GetAbilities() []units.Ability
     GetBanner() data.BannerType
     GetRangedAttackDamageType() units.Damage
     GetRangedAttackPower() int
@@ -159,7 +160,6 @@ type CombatUnit interface {
     GetMovementSound() units.MovementSound
     GetRangeAttackSound() units.RangeAttackSound
     GetAttackSound() units.AttackSound
-    GetSpells(*lbx.LbxCache) spellbook.Spells
     GetName() string
     GetMovementSpeed() int
     IsFlying() bool
@@ -173,6 +173,8 @@ type ArmyUnit struct {
     Y int
     // Health int
     MovesLeft fraction.Fraction
+
+    Spells spellbook.Spells
 
     Team Team
 
@@ -225,6 +227,15 @@ func (unit *ArmyUnit) TakeDamage(damage int) {
 
 func (unit *ArmyUnit) Heal(amount int){
     unit.Unit.AdjustHealth(amount)
+}
+
+func (unit *ArmyUnit) InitializeSpells(allSpells spellbook.Spells) {
+    for _, ability := range unit.Unit.GetAbilities() {
+        switch ability.Ability {
+            case units.AbilityDoomBoltSpell:
+                unit.Spells.AddSpell(allSpells.FindByName("Doom Bolt"))
+        }
+    }
 }
 
 // given the distance to the target in tiles, return the amount of range damage done
@@ -950,15 +961,23 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
         DefendingWizardFont: defendingWizardFont,
     }
 
+    allSpells, err := spellbook.ReadSpellsFromCache(cache)
+    if err != nil {
+        log.Printf("Error: unable to read spells: %v", err)
+        allSpells = spellbook.Spells{}
+    }
+
     for _, unit := range defendingArmy.Units {
         unit.Team = TeamDefender
         unit.RangedAttacks = unit.Unit.GetRangedAttacks()
+        unit.InitializeSpells(allSpells)
         combat.Tiles[unit.Y][unit.X].Unit = unit
     }
 
     for _, unit := range attackingArmy.Units {
         unit.Team = TeamAttacker
         unit.RangedAttacks = unit.Unit.GetRangedAttacks()
+        unit.InitializeSpells(allSpells)
         combat.Tiles[unit.Y][unit.X].Unit = unit
     }
 
@@ -1954,7 +1973,7 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
 
         playerOnly := true
         if combat.SelectedUnit != nil {
-            unitSpells := combat.SelectedUnit.Unit.GetSpells(combat.Cache)
+            unitSpells := combat.SelectedUnit.Spells
             if len(unitSpells.Spells) > 0 {
                 playerOnly = false
                 selections := []uilib.Selection{
