@@ -5,6 +5,7 @@ import (
     "cmp"
 
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
     "github.com/kazzmir/master-of-magic/lib/fraction"
 )
@@ -452,4 +453,8 @@ func (unit *OverworldUnit) GetArtifactSlots() []artifact.ArtifactSlot {
 
 func (unit *OverworldUnit) GetArtifacts() []*artifact.Artifact {
     return nil
+}
+
+func (unit *OverworldUnit) GetSpells() spellbook.Spells {
+    return spellbook.Spells{}
 }

@@ -8,6 +8,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
+    "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/lib/fraction"
 )
 
@@ -928,6 +929,10 @@ func (hero *Hero) GetBaseHitPoints() int {
 
 func (hero *Hero) GetAbilities() []units.Ability {
     return hero.Abilities
+}
+
+func (hero *Hero) GetSpells() spellbook.Spells {
+    return spellbook.Spells{}
 }
 
 func (hero *Hero) GetTitle() string {
