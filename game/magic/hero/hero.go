@@ -552,6 +552,10 @@ func (hero *Hero) RemoveEnchantment(enchantment data.UnitEnchantment) {
     hero.Unit.RemoveEnchantment(enchantment)
 }
 
+func (hero *Hero) GetKnownSpells() []string {
+    return nil
+}
+
 func (hero *Hero) GetToHitMelee() int {
     base := 30
 

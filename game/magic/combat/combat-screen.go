@@ -156,6 +156,7 @@ type CombatUnit interface {
     GetCount() int
     GetHealth() int
     GetToHitMelee() int
+    GetKnownSpells() []string
     GetRangedAttacks() int
     GetCombatLbxFile() string
     GetCombatIndex(units.Facing) int
@@ -266,8 +267,19 @@ func (unit *ArmyUnit) InitializeSpells(allSpells spellbook.Spells) {
                 doomBolt := allSpells.FindByName("Doom Bolt")
                 unit.Spells.AddSpell(doomBolt)
                 unit.CastingSkill += float32(doomBolt.CastCost)
+            case units.AbilityCaster:
+                unit.CastingSkill = ability.Value
         }
     }
+
+    // for units that are casters
+    for _, knownSpell := range unit.Unit.GetKnownSpells() {
+        spell := allSpells.FindByName(knownSpell)
+        if spell.Valid() {
+            unit.Spells.AddSpell(spell)
+        }
+    }
+
 }
 
 // given the distance to the target in tiles, return the amount of range damage done

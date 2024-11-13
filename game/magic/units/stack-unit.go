@@ -34,6 +34,7 @@ type StackUnit interface {
     Move(int, int, fraction.Fraction)
     GetLbxFile() string
     GetLbxIndex() int
+    GetKnownSpells() []string
     HasAbility(AbilityType) bool
     GetAbilities() []Ability
     GetBaseDefense() int
