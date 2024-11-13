@@ -1994,9 +1994,14 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                             ui.AddElements(spellUI)
                         },
                     },
+                    uilib.Selection{
+                        Name: "Cancel",
+                        Action: func(){
+                        },
+                    },
                 }
 
-                ui.AddElements(uilib.MakeSelectionUI(ui, combat.Cache, &combat.ImageCache, 100, 50, "Caster", selections))
+                ui.AddElements(uilib.MakeSelectionUI(ui, combat.Cache, &combat.ImageCache, 100, 50, "Who Will Cast", selections))
             }
         }
 
