@@ -1122,7 +1122,7 @@ func (combat *CombatScreen) createSkyProjectile(target *ArmyUnit, images []*ebit
 
 /* a projectile that shoots down from the sky vertically
  */
-func (combat *CombatScreen) createVerticalSkyProjectile(target *ArmyUnit, images []*ebiten.Image, explodeImages []*ebiten.Image) *Projectile {
+func (combat *CombatScreen) createVerticalSkyProjectile(target *ArmyUnit, images []*ebiten.Image, explodeImages []*ebiten.Image, effect ProjectileEffect) *Projectile {
     // find where on the screen the unit is
     matrix := combat.GetCameraMatrix()
     screenX, screenY := matrix.Apply(float64(target.X), float64(target.Y))
@@ -1149,6 +1149,7 @@ func (combat *CombatScreen) createVerticalSkyProjectile(target *ArmyUnit, images
         TargetY: screenY,
         Animation: util.MakeAnimation(images, true),
         Explode: util.MakeAnimation(explodeImages, false),
+        Effect: effect,
     }
 
     return projectile
@@ -1294,7 +1295,14 @@ func (combat *CombatScreen) CreateDoomBoltProjectile(target *ArmyUnit) {
     loopImages := images[0:3]
     explodeImages := images[3:]
 
-    combat.Projectiles = append(combat.Projectiles, combat.createVerticalSkyProjectile(target, loopImages, explodeImages))
+    effect := func(unit *ArmyUnit) {
+        unit.TakeDamage(10)
+        if unit.Unit.GetHealth() <= 0 {
+            combat.RemoveUnit(unit)
+        }
+    }
+
+    combat.Projectiles = append(combat.Projectiles, combat.createVerticalSkyProjectile(target, loopImages, explodeImages, effect))
 }
 
 func (combat *CombatScreen) CreateLightningBoltProjectile(target *ArmyUnit) {
