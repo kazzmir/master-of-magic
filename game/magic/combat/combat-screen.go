@@ -1984,6 +1984,13 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                     uilib.Selection{
                         Name: combat.SelectedUnit.Unit.GetName(),
                         Action: func(){
+
+                            // just invoke the one spell
+                            if len(unitSpells.Spells) == 1 {
+                                combat.InvokeSpell(player, unitSpells.Spells[0])
+                                return
+                            }
+
                             // what is casting skill based on for a unit?
                             spellUI := spellbook.MakeSpellBookCastUI(ui, combat.Cache, unitSpells, 200, spellbook.Spell{}, 0, false, func (spell spellbook.Spell, picked bool){
                                 if picked {
