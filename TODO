@@ -7,6 +7,7 @@
 * corrupted tiles and purify
 * build roads
 * upscale screen by 2x
+* better map generation
 
 9/22/2024 * city view: separate surplus food/gold from subsistence food/gold
 9/22/2024 * overworld path finding to point on map
