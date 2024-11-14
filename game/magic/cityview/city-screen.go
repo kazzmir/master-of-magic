@@ -554,7 +554,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
             Rect: image.Rect(changeX, changeY, changeX + changeButton.Bounds().Dx(), changeY + changeButton.Bounds().Dy()),
             LeftClick: func(element *uilib.UIElement) {
                 if cityScreen.BuildScreen == nil {
-                    cityScreen.BuildScreen = MakeBuildScreen(cityScreen.LbxCache, cityScreen.City, cityScreen.City.ProducingBuilding, cityScreen.City.ProducingUnit)
+                    cityScreen.BuildScreen = MakeBuildScreen(cityScreen.LbxCache, cityScreen.City)
                 }
             },
             RightClick: func(element *uilib.UIElement) {

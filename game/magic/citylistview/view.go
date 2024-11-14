@@ -14,6 +14,7 @@ import (
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
+    "github.com/kazzmir/master-of-magic/game/magic/cityview"
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/vector"
 )
@@ -31,6 +32,8 @@ type CityListScreen struct {
     ImageCache util.ImageCache
     UI *uilib.UI
     State CityListScreenState
+    CurrentBuildScreen *cityview.BuildScreen
+    BuildScreenUpdate func()
     DrawMinimap func(*ebiten.Image, int, int, [][]bool, uint64)
     DoSelectCity func(*citylib.City)
     FirstRow int
@@ -153,6 +156,14 @@ func (view *CityListScreen) MakeUI() *uilib.UI {
                 view.DoSelectCity(city)
                 view.State = CityListScreenStateDone
             },
+            RightClick: func(element *uilib.UIElement){
+                buildScreen := cityview.MakeBuildScreen(view.Cache, city)
+                view.CurrentBuildScreen = buildScreen
+                view.BuildScreenUpdate = func(){
+                    city.ProducingBuilding = buildScreen.ProducingBuilding
+                    city.ProducingUnit = buildScreen.ProducingUnit
+                }
+            },
             Inside: func(element *uilib.UIElement, x int, y int){
                 highlightedCity = city
             },
@@ -245,10 +256,24 @@ func (view *CityListScreen) MakeUI() *uilib.UI {
 }
 
 func (view *CityListScreen) Update() CityListScreenState {
-    view.UI.StandardUpdate()
+    if view.CurrentBuildScreen != nil {
+        switch view.CurrentBuildScreen.Update() {
+            case cityview.BuildScreenRunning:
+            case cityview.BuildScreenOk:
+                view.BuildScreenUpdate()
+                view.CurrentBuildScreen = nil
+            case cityview.BuildScreenCanceled:
+                view.CurrentBuildScreen = nil
+        }
+    } else {
+        view.UI.StandardUpdate()
+    }
     return view.State
 }
 
 func (view *CityListScreen) Draw(screen *ebiten.Image) {
     view.UI.Draw(view.UI, screen)
+    if view.CurrentBuildScreen != nil {
+        view.CurrentBuildScreen.Draw(screen)
+    }
 }
