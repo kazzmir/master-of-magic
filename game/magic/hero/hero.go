@@ -553,6 +553,25 @@ func (hero *Hero) RemoveEnchantment(enchantment data.UnitEnchantment) {
 }
 
 func (hero *Hero) GetKnownSpells() []string {
+    switch hero.HeroType {
+        case HeroAerie: return []string{"Psionic Blast", "Vertigo", "Mind Storm"}
+        case HeroAlorra: return []string{"Resist Magic", "Flight"}
+        case HeroElana: return []string{"Dispel Evil", "Healing", "Prayer", "Holy Word"}
+        case HeroGreyfairer: return []string{"Ice Bolt", "Petrify", "Web"}
+        case HeroJaer: return []string{"Guardian Wind", "Word of Recall"}
+        case HeroMalleus: return []string{"Fire Bolt", "Fireball", "Flame Strike", "Fire Elemental"}
+        case HeroMarcus: return []string{"Resist Elements", "Stone Skin"}
+        case HeroMorgana: return []string{"Darkness", "Possession", "Black Prayer", "Mana Leak"}
+        case HeroRakir: return []string{"Resist Elements"}
+        case HeroRavashack: return []string{"Weakness", "Black Sleep", "Animate Dead", "Wrack"}
+        case HeroReywind: return []string{"Flame Blade", "Shatter", "Eldritch Weapon"}
+        case HeroSerena: return []string{"Healing"}
+        case HeroTorin: return []string{"Healing", "Holy Armor", "Lionheart"}
+        case HeroValana: return []string{"Confusion", "Vertigo"}
+        case HeroYramrag: return []string{"Lightning Bolt", "Doom Bolt", "Warp Lightning"}
+        case HeroZaldron: return []string{"Counter Magic", "Dispel Magic True"}
+    }
+
     return nil
 }
 
