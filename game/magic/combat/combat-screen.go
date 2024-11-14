@@ -52,6 +52,9 @@ type CombatEventSelectTile struct {
     Selecter Team
 }
 
+type CombatEventNextUnit struct {
+}
+
 type CombatEventSelectUnit struct {
     SelectTarget func(*ArmyUnit)
     CanTarget func(*ArmyUnit) bool
@@ -143,6 +146,7 @@ type CombatUnit interface {
     GetDefense() int
     GetResistance() int
     AdjustHealth(int)
+    GetAbilities() []units.Ability
     GetBanner() data.BannerType
     GetRangedAttackDamageType() units.Damage
     GetRangedAttackPower() int
@@ -152,6 +156,7 @@ type CombatUnit interface {
     GetCount() int
     GetHealth() int
     GetToHitMelee() int
+    GetKnownSpells() []string
     GetRangedAttacks() int
     GetCombatLbxFile() string
     GetCombatIndex(units.Facing) int
@@ -162,6 +167,7 @@ type CombatUnit interface {
     GetName() string
     GetMovementSpeed() int
     IsFlying() bool
+    IsHero() bool
 }
 
 type ArmyUnit struct {
@@ -172,6 +178,10 @@ type ArmyUnit struct {
     Y int
     // Health int
     MovesLeft fraction.Fraction
+
+    Spells spellbook.Spells
+    CastingSkill float32
+    Casted bool
 
     Team Team
 
@@ -188,6 +198,30 @@ type ArmyUnit struct {
 
     // ugly to need this, but this caches paths computed for the unit
     Paths map[image.Point]pathfinding.Path
+}
+
+func (unit *ArmyUnit) CanCast() bool {
+    if len(unit.Spells.Spells) == 0 {
+        return false
+    }
+
+    if unit.Casted {
+        return false
+    }
+
+    for _, spell := range unit.Spells.Spells {
+        if int(unit.CastingSkill) >= spell.CastCost {
+            return true
+        }
+    }
+
+    return false
+}
+
+func (unit *ArmyUnit) ResetTurnData() {
+    unit.MovesLeft = fraction.FromInt(unit.Unit.GetMovementSpeed())
+    unit.Paths = make(map[image.Point]pathfinding.Path)
+    unit.Casted = false
 }
 
 func (unit *ArmyUnit) ComputeDefense(damage units.Damage) int {
@@ -224,6 +258,34 @@ func (unit *ArmyUnit) TakeDamage(damage int) {
 
 func (unit *ArmyUnit) Heal(amount int){
     unit.Unit.AdjustHealth(amount)
+}
+
+func (unit *ArmyUnit) InitializeSpells(allSpells spellbook.Spells, player *playerlib.Player) {
+    unit.CastingSkill = 0
+    for _, ability := range unit.Unit.GetAbilities() {
+        switch ability.Ability {
+            case units.AbilityDoomBoltSpell:
+                doomBolt := allSpells.FindByName("Doom Bolt")
+                unit.Spells.AddSpell(doomBolt)
+                unit.CastingSkill += float32(doomBolt.CastCost)
+            case units.AbilityCaster:
+                unit.CastingSkill = ability.Value
+        }
+    }
+
+    // for units that are casters
+    for _, knownSpell := range unit.Unit.GetKnownSpells() {
+        spell := allSpells.FindByName(knownSpell)
+        if spell.Valid() {
+            unit.Spells.AddSpell(spell)
+        } else {
+            log.Printf("Error: unable to find spell %v for %v", knownSpell, unit.Unit.GetName())
+        }
+    }
+
+    if unit.Unit.IsHero() {
+        unit.Spells.AddAllSpells(player.KnownSpells)
+    }
 }
 
 // given the distance to the target in tiles, return the amount of range damage done
@@ -949,15 +1011,23 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
         DefendingWizardFont: defendingWizardFont,
     }
 
+    allSpells, err := spellbook.ReadSpellsFromCache(cache)
+    if err != nil {
+        log.Printf("Error: unable to read spells: %v", err)
+        allSpells = spellbook.Spells{}
+    }
+
     for _, unit := range defendingArmy.Units {
         unit.Team = TeamDefender
         unit.RangedAttacks = unit.Unit.GetRangedAttacks()
+        unit.InitializeSpells(allSpells, defendingArmy.Player)
         combat.Tiles[unit.Y][unit.X].Unit = unit
     }
 
     for _, unit := range attackingArmy.Units {
         unit.Team = TeamAttacker
         unit.RangedAttacks = unit.Unit.GetRangedAttacks()
+        unit.InitializeSpells(allSpells, attackingArmy.Player)
         combat.Tiles[unit.Y][unit.X].Unit = unit
     }
 
@@ -1070,7 +1140,7 @@ func (combat *CombatScreen) createSkyProjectile(target *ArmyUnit, images []*ebit
 
 /* a projectile that shoots down from the sky vertically
  */
-func (combat *CombatScreen) createVerticalSkyProjectile(target *ArmyUnit, images []*ebiten.Image, explodeImages []*ebiten.Image) *Projectile {
+func (combat *CombatScreen) createVerticalSkyProjectile(target *ArmyUnit, images []*ebiten.Image, explodeImages []*ebiten.Image, effect ProjectileEffect) *Projectile {
     // find where on the screen the unit is
     matrix := combat.GetCameraMatrix()
     screenX, screenY := matrix.Apply(float64(target.X), float64(target.Y))
@@ -1097,6 +1167,7 @@ func (combat *CombatScreen) createVerticalSkyProjectile(target *ArmyUnit, images
         TargetY: screenY,
         Animation: util.MakeAnimation(images, true),
         Explode: util.MakeAnimation(explodeImages, false),
+        Effect: effect,
     }
 
     return projectile
@@ -1242,7 +1313,14 @@ func (combat *CombatScreen) CreateDoomBoltProjectile(target *ArmyUnit) {
     loopImages := images[0:3]
     explodeImages := images[3:]
 
-    combat.Projectiles = append(combat.Projectiles, combat.createVerticalSkyProjectile(target, loopImages, explodeImages))
+    effect := func(unit *ArmyUnit) {
+        unit.TakeDamage(10)
+        if unit.Unit.GetHealth() <= 0 {
+            combat.RemoveUnit(unit)
+        }
+    }
+
+    combat.Projectiles = append(combat.Projectiles, combat.createVerticalSkyProjectile(target, loopImages, explodeImages, effect))
 }
 
 func (combat *CombatScreen) CreateLightningBoltProjectile(target *ArmyUnit) {
@@ -1662,21 +1740,24 @@ func (combat *CombatScreen) FindEmptyTile() (int, int, error) {
     return -1, -1, fmt.Errorf("unable to find a free tile")
 }
 
-func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellbook.Spell){
+func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellbook.Spell, successCallback func()){
     targetAny := func (target *ArmyUnit) bool { return true }
 
     switch spell.Name {
         case "Fireball":
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateFireballProjectile(target)
+                successCallback()
             }, targetAny)
         case "Ice Bolt":
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateIceBoltProjectile(target)
+                successCallback()
             }, targetAny)
         case "Star Fires":
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateStarFiresProjectile(target)
+                successCallback()
             }, func (target *ArmyUnit) bool {
                 // FIXME: can only target fantastic creatures that are death or chaos
                 return true
@@ -1684,34 +1765,42 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
         case "Psionic Blast":
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreatePsionicBlastProjectile(target)
+                successCallback()
             }, targetAny)
         case "Doom Bolt":
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateDoomBoltProjectile(target)
+                successCallback()
             }, targetAny)
         case "Fire Bolt":
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateFireBoltProjectile(target)
+                successCallback()
             }, targetAny)
         case "Lightning Bolt":
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateLightningBoltProjectile(target)
+                successCallback()
             }, targetAny)
         case "Warp Lightning":
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateWarpLightningProjectile(target)
+                successCallback()
             }, targetAny)
         case "Flame Strike":
             combat.DoAllUnitsSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateFlameStrikeProjectile(target)
+                successCallback()
             }, targetAny)
         case "Life Drain":
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateLifeDrainProjectile(target)
+                successCallback()
             }, targetAny)
         case "Dispel Evil":
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateDispelEvilProjectile(target)
+                successCallback()
             }, func (target *ArmyUnit) bool {
                 // FIXME: can only target units that are death or chaos
                 return true
@@ -1719,6 +1808,7 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
         case "Healing":
             combat.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 combat.CreateHealingProjectile(target)
+                successCallback()
             }, func (target *ArmyUnit) bool {
                 // FIXME: can only target units that are not death
                 return true
@@ -1726,6 +1816,7 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
         case "Holy Word":
             combat.DoAllUnitsSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateHolyWordProjectile(target)
+                successCallback()
             }, func (target *ArmyUnit) bool {
                 // FIXME: can only target fantastic units, chaos channeled and undead
                 return true
@@ -1733,6 +1824,7 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
         case "Recall Hero":
             combat.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 combat.CreateRecallHeroProjectile(target)
+                successCallback()
             }, func (target *ArmyUnit) bool {
                 // FIXME: can only target heros
                 return true
@@ -1740,22 +1832,27 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
         case "Mass Healing":
             combat.DoAllUnitsSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 combat.CreateHealingProjectile(target)
+                successCallback()
             }, targetAny)
         case "Cracks Call":
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateCracksCallProjectile(target)
+                successCallback()
             }, targetAny)
         case "Earth to Mud":
             combat.DoTargetTileSpell(player, spell, func (x int, y int){
                 combat.CreateEarthToMud(x, y)
+                successCallback()
             })
         case "Web":
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateWebProjectile(target)
+                successCallback()
             }, targetAny)
         case "Banish":
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateBanishProjectile(target)
+                successCallback()
             }, func (target *ArmyUnit) bool {
                 // FIXME: must be a fantastic unit
                 return true
@@ -1763,27 +1860,33 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
         case "Dispel Magic True":
             combat.DoTargetUnitSpell(player, spell, TargetEither, func(target *ArmyUnit){
                 combat.CreateDispelMagicProjectile(target)
+                successCallback()
             }, targetAny)
         case "Word of Recall":
             combat.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 combat.CreateWordOfRecallProjectile(target)
+                successCallback()
             }, targetAny)
         case "Disintegrate":
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateDisintegrateProjectile(target)
+                successCallback()
             }, targetAny)
         case "Disrupt":
             // FIXME: can only target city walls
             combat.DoTargetTileSpell(player, spell, func (x int, y int){
                 combat.CreateDisruptProjectile(x, y)
+                successCallback()
             })
         case "Magic Vortex":
             combat.DoTargetTileSpell(player, spell, func (x int, y int){
                 combat.CreateMagicVortex(x, y)
+                successCallback()
             })
         case "Warp Wood":
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateWarpWoodProjectile(target)
+                successCallback()
             }, func (target *ArmyUnit) bool {
                 // FIXME: can be cast on a normal unit or hero that has a ranged missle attack
                 return true
@@ -1791,30 +1894,37 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
         case "Death Spell":
             combat.DoAllUnitsSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateDeathSpellProjectile(target)
+                successCallback()
             }, targetAny)
         case "Word of Death":
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateWordOfDeathProjectile(target)
+                successCallback()
             }, targetAny)
         case "Phantom Warriors":
             combat.DoSummoningSpell(player, spell, func(x int, y int){
                 combat.CreatePhantomWarriors(player, x, y)
+                successCallback()
             })
         case "Phantom Beast":
             combat.DoSummoningSpell(player, spell, func(x int, y int){
                 combat.CreatePhantomBeast(player, x, y)
+                successCallback()
             })
         case "Earth Elemental":
             combat.DoSummoningSpell(player, spell, func(x int, y int){
                 combat.CreateEarthElemental(player, x, y)
+                successCallback()
             })
         case "Air Elemental":
             combat.DoSummoningSpell(player, spell, func(x int, y int){
                 combat.CreateAirElemental(player, x, y)
+                successCallback()
             })
         case "Fire Elemental":
             combat.DoSummoningSpell(player, spell, func(x int, y int){
                 combat.CreateFireElemental(player, x, y)
+                successCallback()
             })
         case "Summon Demon":
             // FIXME: the tile should be near the middle of the map
@@ -1822,6 +1932,7 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
             if err == nil {
                 combat.CreateSummoningCircle(x, y)
                 combat.CreateDemon(player, x, y)
+                successCallback()
             }
 
             /*
@@ -1941,13 +2052,74 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
 
     // spell
     elements = append(elements, makeButton(1, 0, 0, func(){
-        spellUI := spellbook.MakeSpellBookCastUI(ui, combat.Cache, player.KnownSpells, player.ComputeCastingSkill(), spellbook.Spell{}, 0, false, func (spell spellbook.Spell, picked bool){
-            if picked {
-                // player mana and skill should go down accordingly
-                combat.InvokeSpell(player, spell)
+        doPlayerSpell := func(){
+            spellUI := spellbook.MakeSpellBookCastUI(ui, combat.Cache, player.KnownSpells, player.ComputeCastingSkill(), spellbook.Spell{}, 0, false, func (spell spellbook.Spell, picked bool){
+                if picked {
+                    // player mana and skill should go down accordingly
+                    combat.InvokeSpell(player, spell, func(){})
+                }
+            })
+            ui.AddElements(spellUI)
+        }
+
+        playerOnly := true
+        if combat.SelectedUnit != nil {
+            // FIXME: if player is out of mana then just select unit spell?
+
+            unitSpells := combat.SelectedUnit.Spells
+            if combat.SelectedUnit.CanCast() {
+                playerOnly = false
+                selections := []uilib.Selection{
+                    uilib.Selection{
+                        Name: player.Wizard.Name,
+                        Action: doPlayerSpell,
+                    },
+                    uilib.Selection{
+                        Name: combat.SelectedUnit.Unit.GetName(),
+                        Action: func(){
+
+                            doCast := func(spell spellbook.Spell){
+                                combat.SelectedUnit.CastingSkill -= float32(spell.CastCost)
+                                combat.SelectedUnit.Casted = true
+                                combat.InvokeSpell(player, spell, func(){
+                                    combat.SelectedUnit.MovesLeft = fraction.FromInt(0)
+                                    select {
+                                        case combat.Events <- &CombatEventNextUnit{}:
+                                        default:
+                                    }
+                                })
+                            }
+
+                            // just invoke the one spell
+                            if len(unitSpells.Spells) == 1 {
+                                spell := unitSpells.Spells[0]
+                                doCast(spell)
+                                return
+                            }
+
+                            // what is casting skill based on for a unit?
+                            spellUI := spellbook.MakeSpellBookCastUI(ui, combat.Cache, unitSpells, int(combat.SelectedUnit.CastingSkill), spellbook.Spell{}, 0, false, func (spell spellbook.Spell, picked bool){
+                                if picked {
+                                    doCast(spell)
+                                }
+                            })
+                            ui.AddElements(spellUI)
+                        },
+                    },
+                    uilib.Selection{
+                        Name: "Cancel",
+                        Action: func(){
+                        },
+                    },
+                }
+
+                ui.AddElements(uilib.MakeSelectionUI(ui, combat.Cache, &combat.ImageCache, 100, 50, "Who Will Cast", selections))
             }
-        })
-        ui.AddElements(spellUI)
+        }
+
+        if playerOnly {
+            doPlayerSpell()
+        }
     }))
 
     // wait
@@ -2118,13 +2290,11 @@ func (combat *CombatScreen) NextTurn() {
 
     /* reset movement */
     for _, unit := range combat.DefendingArmy.Units {
-        unit.MovesLeft = fraction.FromInt(unit.Unit.GetMovementSpeed())
-        unit.Paths = make(map[image.Point]pathfinding.Path)
+        unit.ResetTurnData()
     }
 
     for _, unit := range combat.AttackingArmy.Units {
-        unit.MovesLeft = fraction.FromInt(unit.Unit.GetMovementSpeed())
-        unit.Paths = make(map[image.Point]pathfinding.Path)
+        unit.ResetTurnData()
     }
 }
 
@@ -2670,6 +2840,8 @@ func (combat *CombatScreen) ProcessEvents(yield coroutine.YieldFunc) {
                     case *CombatEventSelectUnit:
                         use := event.(*CombatEventSelectUnit)
                         combat.doSelectUnit(yield, use.Selecter, use.Spell, use.SelectTarget, use.CanTarget, use.SelectTeam)
+                    case *CombatEventNextUnit:
+                        combat.NextUnit()
                 }
             default:
                 return

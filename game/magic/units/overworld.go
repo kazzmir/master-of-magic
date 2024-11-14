@@ -65,12 +65,20 @@ func (unit *OverworldUnit) SetPatrol(patrol bool) {
     unit.Patrol = patrol
 }
 
+func (unit *OverworldUnit) GetKnownSpells() []string {
+    return unit.Unit.KnownSpells
+}
+
 func (unit *OverworldUnit) SetWeaponBonus(bonus data.WeaponBonus) {
     unit.WeaponBonus = bonus
 }
 
 func (unit *OverworldUnit) GetWeaponBonus() data.WeaponBonus {
     return unit.WeaponBonus
+}
+
+func (unit *OverworldUnit) IsHero() bool {
+    return false
 }
 
 func (unit *OverworldUnit) GetPlane() data.Plane {

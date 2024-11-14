@@ -250,16 +250,20 @@ func (ui *UI) FocusElement(element *UIElement, text string){
 func (ui *UI) StandardUpdate() {
     ui.Counter += 1
 
-    var keepDelays []UIDelay
-
-    for _, delay := range ui.Delays {
-        if ui.Counter <= delay.Time {
-            keepDelays = append(keepDelays, delay)
-        } else {
-            delay.Func()
+    if len(ui.Delays) > 0 {
+        var keepDelays []UIDelay
+        // invoking a delay might cause another delay to be added
+        oldDelays := slices.Clone(ui.Delays)
+        ui.Delays = nil
+        for _, delay := range oldDelays {
+            if ui.Counter <= delay.Time {
+                keepDelays = append(keepDelays, delay)
+            } else {
+                delay.Func()
+            }
         }
+        ui.Delays = append(ui.Delays, keepDelays...)
     }
-    ui.Delays = keepDelays
 
     if !ui.Disabled {
         keys := inpututil.AppendJustPressedKeys(nil)

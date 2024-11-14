@@ -563,7 +563,7 @@ type Selection struct {
     Hotkey string
 }
 
-func MakeSelectionUI(ui *UI, lbxCache *lbx.LbxCache, imageCache *util.ImageCache, cornerX int, cornerY int, selectionTitle string,choices []Selection) []*UIElement {
+func MakeSelectionUI(ui *UI, lbxCache *lbx.LbxCache, imageCache *util.ImageCache, cornerX int, cornerY int, selectionTitle string, choices []Selection) []*UIElement {
     var elements []*UIElement
 
     fontLbx, err := lbxCache.GetLbxFile("fonts.lbx")
@@ -612,7 +612,7 @@ func MakeSelectionUI(ui *UI, lbxCache *lbx.LbxCache, imageCache *util.ImageCache
     left, _ := imageCache.GetImage("resource.lbx", 5, 0)
     top, _ := imageCache.GetImage("resource.lbx", 7, 0)
 
-    requiredWidth := float64(0)
+    requiredWidth := buttonFont.MeasureTextWidth(selectionTitle, 1) + 2
 
     for _, choice := range choices {
         width := buttonFont.MeasureTextWidth(choice.Name, 1) + 2

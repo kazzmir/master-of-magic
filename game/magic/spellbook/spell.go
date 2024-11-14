@@ -1033,12 +1033,21 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
                 textColorScale.SetR(float32(r))
             }
 
+            // if spell is too expensive in combat then it is not castable
+            if !overland && spell.Cost(overland) > castingSkill {
+                textColorScale.SetR(60)
+                textColorScale.SetG(60)
+                textColorScale.SetB(60)
+            }
+
             spellX, spellY := spellOptions.GeoM.Apply(0, 0)
 
             costRemaining := spell.Cost(overland)
-            if spell.Name == currentSpell.Name {
-                costRemaining = currentSpell.Cost(overland)
-                costRemaining -= currentProgress
+            if overland {
+                if spell.Name == currentSpell.Name {
+                    costRemaining = currentSpell.Cost(overland)
+                    costRemaining -= currentProgress
+                }
             }
 
             infoFont.Print(screen, spellX, spellY, 1, textColorScale, spell.Name)
@@ -1061,9 +1070,19 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
             part1Options.GeoM.Translate(nameLength, 0)
             screen.DrawImage(part1, &part1Options)
 
-            iconCount := costRemaining / int(math.Max(1, float64(castingSkill)))
-            if iconCount < 1 {
-                iconCount = 1
+            iconCount := 0
+
+            // casting on the overland shows N icons where N is the number of turns it takes to cast the spell
+            if overland {
+                iconCount = costRemaining / int(math.Max(1, float64(castingSkill)))
+                if iconCount < 1 {
+                    iconCount = 1
+                }
+            } else {
+                // in combat the number of icons is how many times the spell can be cast given the casting cost of the spell
+                // and the casting skill of the user
+
+                iconCount = castingSkill / spell.Cost(false)
             }
 
             iconOptions := spellOptions
@@ -1090,7 +1109,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
                 icon1Width += icon.Bounds().Dx() + 1
             }
 
-            if costRemaining < castingSkill {
+            if overland && costRemaining < castingSkill {
                 x, y := iconOptions.GeoM.Apply(0, 0)
                 x += 2
                 infoFont.Print(screen, x, y, 1, spellOptions.ColorScale, "Instant")
@@ -1175,8 +1194,12 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
                     }
                 },
                 LeftClick: func(this *uilib.UIElement){
+                    if !overland && spell.Cost(overland) > castingSkill {
+                        return
+                    }
+
                     // if the user is already casting a spell then ask them if they want to abort that spell
-                    if currentSpell.Valid() {
+                    if overland && currentSpell.Valid() {
                         confirm := func(){
                             // if the user clicked on the same spell being cast then select an invalid spell, which
                             // is the same thing as not casting any spell

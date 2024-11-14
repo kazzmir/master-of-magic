@@ -31,9 +31,11 @@ type StackUnit interface {
     GetWeaponBonus() data.WeaponBonus
     GetX() int
     GetY() int
+    IsHero() bool
     Move(int, int, fraction.Fraction)
     GetLbxFile() string
     GetLbxIndex() int
+    GetKnownSpells() []string
     HasAbility(AbilityType) bool
     GetAbilities() []Ability
     GetBaseDefense() int

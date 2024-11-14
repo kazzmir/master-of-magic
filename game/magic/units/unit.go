@@ -134,6 +134,8 @@ type Unit struct {
     // first sprite index in cmbmagic.lbx for the range attack
     RangeAttackIndex int
 
+    KnownSpells []string
+
     // number of figures that are drawn in a single combat tile
     Count int
 
@@ -1150,6 +1152,18 @@ var Efreet Unit = Unit{
     UpkeepMana: 15,
     Flying: true,
     Count: 1,
+    // all chaos spells
+    KnownSpells: []string{
+        "Fire Bolt",
+        "Warp Wood",
+        "Lightning Bolt",
+        "Shatter",
+        "Eldritch Weapon",
+        "Disrupt",
+        "Fireball",
+        "Warp Creature",
+        "Fire Elemental",
+    },
     MeleeAttackPower: 9,
     RangedAttackPower: 9,
     RangedAttackDamageType: DamageRangedMagical,
@@ -1560,6 +1574,22 @@ var ArchAngel Unit = Unit{
     Defense: 10,
     Resistance: 12,
     HitPoints: 18,
+    KnownSpells: []string{
+        "Bless",
+        "Star Fires",
+        "Holy Weapon",
+        "Healing",
+        "Holy Armor",
+        "Heroism",
+        "True Light",
+        "True Sight",
+        "Dispel Evil",
+        "Prayer",
+        "Raise Dead",
+        "Invulnerability",
+        "Lionheart",
+        "Righteousness",
+    },
     Abilities: []Ability{
         MakeAbilityValue(AbilityToHit, 30),
         MakeAbilityValue(AbilityCaster, 40),
@@ -1940,6 +1970,18 @@ var Djinn Unit = Unit{
     Defense: 8,
     Resistance: 10,
     HitPoints: 20,
+    KnownSpells: []string{
+        "Resist Magic",
+        "Guardian Wind",
+        "Phantom Warriors",
+        "Counter Magic",
+        "Dispel Magic True",
+        "Psionic Blast",
+        "Confusion",
+        "Spell Lock",
+        "Word of Recall",
+        "Banish",
+    },
     Abilities: []Ability{
         MakeAbilityValue(AbilityToHit, 30),
         MakeAbilityValue(AbilityCaster, 20),

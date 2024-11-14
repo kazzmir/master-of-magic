@@ -1,4 +1,3 @@
-* combat: cast unit spells
 * cartographer advisor
 * overworld: ai controlled wizards/empires
 * neutral towns/cities
@@ -7,6 +6,7 @@
 * font editor - choose colors for font palette
 * implement overworld spells
 * corrupted tiles and purify
+* build roads
 * upscale screen by 2x
 
 9/22/2024 * city view: separate surplus food/gold from subsistence food/gold
@@ -50,3 +50,4 @@
 11/8/2024 * magic weapons for regular units
 11/8/2024 * glowing effect for enchanted units
 11/9/2024 * handle touch events similar to the mouse
+11/13/2024 * combat: cast unit spells
