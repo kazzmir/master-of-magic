@@ -66,7 +66,7 @@ func (unit *OverworldUnit) SetPatrol(patrol bool) {
 }
 
 func (unit *OverworldUnit) GetKnownSpells() []string {
-    return nil
+    return unit.Unit.KnownSpells
 }
 
 func (unit *OverworldUnit) SetWeaponBonus(bonus data.WeaponBonus) {

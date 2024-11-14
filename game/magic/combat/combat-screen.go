@@ -279,7 +279,6 @@ func (unit *ArmyUnit) InitializeSpells(allSpells spellbook.Spells) {
             unit.Spells.AddSpell(spell)
         }
     }
-
 }
 
 // given the distance to the target in tiles, return the amount of range damage done
