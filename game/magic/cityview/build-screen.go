@@ -38,7 +38,7 @@ type BuildScreen struct {
     ProducingUnit units.Unit
 }
 
-func MakeBuildScreen(cache *lbx.LbxCache, city *citylib.City, producingBuilding buildinglib.Building, producingUnit units.Unit) *BuildScreen {
+func MakeBuildScreen(cache *lbx.LbxCache, city *citylib.City) *BuildScreen {
     imageCache := util.MakeImageCache(cache)
 
     var buildScreen *BuildScreen
@@ -56,8 +56,8 @@ func MakeBuildScreen(cache *lbx.LbxCache, city *citylib.City, producingBuilding 
         ImageCache: &imageCache,
         City: city,
         State: BuildScreenRunning,
-        ProducingBuilding: producingBuilding,
-        ProducingUnit: producingUnit,
+        ProducingBuilding: city.ProducingBuilding,
+        ProducingUnit: city.ProducingUnit,
     }
 
     ui := makeBuildUI(cache, &imageCache, city, buildScreen, doCancel, doOk)
