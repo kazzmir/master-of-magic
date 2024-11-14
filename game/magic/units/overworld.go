@@ -77,6 +77,10 @@ func (unit *OverworldUnit) GetWeaponBonus() data.WeaponBonus {
     return unit.WeaponBonus
 }
 
+func (unit *OverworldUnit) IsHero() bool {
+    return false
+}
+
 func (unit *OverworldUnit) GetPlane() data.Plane {
     return unit.Plane
 }

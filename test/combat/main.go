@@ -173,7 +173,7 @@ func createHeroArmy(player *player.Player) *combat.Army{
     })
 
     armyUnits = append(armyUnits, &combat.ArmyUnit{
-        Unit: herolib.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroWarrax, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()), herolib.HeroWarrax, "warby"),
+        Unit: herolib.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroTorin, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()), herolib.HeroTorin, "warby"),
     })
 
     return &combat.Army{
@@ -322,13 +322,11 @@ func makeScenario4(cache *lbx.LbxCache) *combat.CombatScreen {
     defendingArmy := createSettlerArmy(defendingPlayer, 3)
     defendingArmy.LayoutUnits(combat.TeamDefender)
 
-    /*
     allSpells, err := spellbook.ReadSpellsFromCache(cache)
     if err != nil {
         log.Printf("Unable to read spells: %v", err)
         allSpells = spellbook.Spells{}
     }
-    */
 
     attackingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Merlin",
@@ -337,6 +335,8 @@ func makeScenario4(cache *lbx.LbxCache) *combat.CombatScreen {
         }, true, nil, nil)
 
     attackingPlayer.CastingSkillPower = 10
+
+    attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Fireball"))
 
     // attackingArmy := createGreatDrakeArmy(&attackingPlayer)
     attackingArmy := createHeroArmy(attackingPlayer)

@@ -552,6 +552,10 @@ func (hero *Hero) RemoveEnchantment(enchantment data.UnitEnchantment) {
     hero.Unit.RemoveEnchantment(enchantment)
 }
 
+func (hero *Hero) IsHero() bool {
+    return true
+}
+
 func (hero *Hero) GetKnownSpells() []string {
     switch hero.HeroType {
         case HeroAerie: return []string{"Psionic Blast", "Vertigo", "Mind Storm"}

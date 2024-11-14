@@ -167,6 +167,7 @@ type CombatUnit interface {
     GetName() string
     GetMovementSpeed() int
     IsFlying() bool
+    IsHero() bool
 }
 
 type ArmyUnit struct {
@@ -259,7 +260,7 @@ func (unit *ArmyUnit) Heal(amount int){
     unit.Unit.AdjustHealth(amount)
 }
 
-func (unit *ArmyUnit) InitializeSpells(allSpells spellbook.Spells) {
+func (unit *ArmyUnit) InitializeSpells(allSpells spellbook.Spells, player *playerlib.Player) {
     unit.CastingSkill = 0
     for _, ability := range unit.Unit.GetAbilities() {
         switch ability.Ability {
@@ -277,7 +278,13 @@ func (unit *ArmyUnit) InitializeSpells(allSpells spellbook.Spells) {
         spell := allSpells.FindByName(knownSpell)
         if spell.Valid() {
             unit.Spells.AddSpell(spell)
+        } else {
+            log.Printf("Error: unable to find spell %v for %v", knownSpell, unit.Unit.GetName())
         }
+    }
+
+    if unit.Unit.IsHero() {
+        unit.Spells.AddAllSpells(player.KnownSpells)
     }
 }
 
@@ -1013,14 +1020,14 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
     for _, unit := range defendingArmy.Units {
         unit.Team = TeamDefender
         unit.RangedAttacks = unit.Unit.GetRangedAttacks()
-        unit.InitializeSpells(allSpells)
+        unit.InitializeSpells(allSpells, defendingArmy.Player)
         combat.Tiles[unit.Y][unit.X].Unit = unit
     }
 
     for _, unit := range attackingArmy.Units {
         unit.Team = TeamAttacker
         unit.RangedAttacks = unit.Unit.GetRangedAttacks()
-        unit.InitializeSpells(allSpells)
+        unit.InitializeSpells(allSpells, attackingArmy.Player)
         combat.Tiles[unit.Y][unit.X].Unit = unit
     }
 
