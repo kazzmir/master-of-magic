@@ -1,5 +1,4 @@
 * cartographer advisor
-* overworld: ai controlled wizards/empires
 * neutral towns/cities
 * game menu - implement save/load game
 * play midi music
@@ -51,3 +50,4 @@
 11/8/2024 * glowing effect for enchanted units
 11/9/2024 * handle touch events similar to the mouse
 11/13/2024 * combat: cast unit spells
+??? * overworld: ai controlled wizards/empires
