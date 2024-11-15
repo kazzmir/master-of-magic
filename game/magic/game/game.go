@@ -1855,6 +1855,14 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
     }
 }
 
+func (game *Game) ChooseWizard() setup.WizardCustom {
+    // pick a new wizard with an unused wizard base and banner color, and race
+    // if on myrror then select a myrran race
+
+    return setup.WizardCustom{
+    }
+}
+
 func (game *Game) RefreshUI() {
     select {
         case game.Events <- &GameEventRefreshUI{}:
