@@ -1859,6 +1859,10 @@ func (game *Game) ChooseWizard() setup.WizardCustom {
     // pick a new wizard with an unused wizard base and banner color, and race
     // if on myrror then select a myrran race
 
+    base := chooseBase()
+    race := chooseRace()
+    banner := chooseBanner()
+
     return setup.WizardCustom{
     }
 }
