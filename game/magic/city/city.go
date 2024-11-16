@@ -829,21 +829,29 @@ func (city *City) GrowOutpost() CityEvent {
 //  * mythril weapon (if mythril ore in catchment area)
 //  * adamantium weapon (if adamantium ore in catchment area)
 func (city *City) GetWeaponBonus() data.WeaponBonus {
-    if city.Buildings.Contains(buildinglib.BuildingAlchemistsGuild) {
+    hasMythril := false
+    hasAdamantium := false
 
+    if city.Buildings.Contains(buildinglib.BuildingAlchemistsGuild) {
         catchment := city.CatchmentProvider.GetCatchmentArea(city.X, city.Y)
 
         for _, tile := range catchment {
             if tile.GetBonus() == data.BonusMithrilOre {
-                return data.WeaponMythril
+                hasMythril = true
             }
 
             if tile.GetBonus() == data.BonusAdamantiumOre {
-                return data.WeaponAdamantium
+                hasAdamantium = true
             }
         }
 
-        return data.WeaponMagic
+        if hasAdamantium {
+            return data.WeaponAdamantium
+        } else if hasMythril {
+            return data.WeaponMythril
+        } else {
+            return data.WeaponMagic
+        }
     }
 
     return data.WeaponNone
