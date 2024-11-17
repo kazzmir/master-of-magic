@@ -28,7 +28,7 @@ type wizardSlot struct {
     Background *ebiten.Image
     Base data.WizardBase
     // the portrait of the wizard shown when the user's cursor is on top of their name
-    Portrait *ebiten.Image
+    Portrait int
     Books []data.WizardBook
     ExtraAbility WizardAbility
 }
@@ -226,7 +226,7 @@ func (state NewWizardScreenState) String() string {
 type WizardCustom struct {
     Name string
     // FIXME: remove portrait
-    Portrait *ebiten.Image
+    Portrait int
     Base data.WizardBase
     Abilities []WizardAbility
     Books []data.WizardBook
@@ -378,7 +378,8 @@ func (screen *NewWizardScreen) MakeCustomNameUI() *uilib.UI {
             window.DrawImage(background, &options)
 
             options.GeoM.Translate(portraitX, portraitY)
-            window.DrawImage(screen.CustomWizard.Portrait, &options)
+            portrait, _ := screen.ImageCache.GetImage("wizards.lbx", screen.CustomWizard.Portrait, 0)
+            window.DrawImage(portrait, &options)
             screen.Font.PrintCenter(window, nameX, nameY, 1, ebiten.ColorScale{}, screen.CustomWizard.Name)
             screen.SelectFont.PrintCenter(window, 245, 2, 1, ebiten.ColorScale{}, "Wizard's Name")
 
@@ -497,10 +498,11 @@ func (screen *NewWizardScreen) MakeCustomPictureUI() *uilib.UI {
                 element.Draw(element, window)
             })
 
-            if screen.CustomWizard.Portrait != nil {
+            portrait, _ := screen.ImageCache.GetImage("wizards.lbx", screen.CustomWizard.Portrait, 0)
+            if portrait != nil {
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(portraitX, portraitY)
-                window.DrawImage(screen.CustomWizard.Portrait, &options)
+                window.DrawImage(portrait, &options)
             }
         },
     }
@@ -625,7 +627,7 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *uilib.UI {
                 const nameX = 75
                 const nameY = 120
 
-                portrait := screen.WizardSlots[screen.CurrentWizard].Portrait
+                portrait, _ := screen.ImageCache.GetImage("wizards.lbx", screen.WizardSlots[screen.CurrentWizard].Portrait, 0)
                 if portrait != nil {
                     var options ebiten.DrawImageOptions
                     options.GeoM.Translate(portraitX, portraitY)
@@ -833,16 +835,11 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
         return pic
     }
 
-    loadWizardPortrait := func(index int) *ebiten.Image {
-        portrait, _ := screen.ImageCache.GetImage("wizards.lbx", index, 0)
-        return portrait
-    }
-
     screen.WizardSlots = []wizardSlot{
         wizardSlot{
             Name: "Merlin",
             Background: loadImage(9),
-            Portrait: loadWizardPortrait(0),
+            Portrait: 0,
             Base: data.WizardMerlin,
             Books: []data.WizardBook{
                 data.WizardBook{Magic: data.LifeMagic, Count: 5},
@@ -853,7 +850,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
         wizardSlot{
             Name: "Raven",
             Background: loadImage(10),
-            Portrait: loadWizardPortrait(1),
+            Portrait: 1,
             Base: data.WizardRaven,
             Books: []data.WizardBook{
                 data.WizardBook{Magic: data.SorceryMagic, Count: 6},
@@ -864,7 +861,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
         wizardSlot{
             Name: "Sharee",
             Background: loadImage(11),
-            Portrait: loadWizardPortrait(2),
+            Portrait: 2,
             Base: data.WizardSharee,
             Books: []data.WizardBook{
                 data.WizardBook{Magic: data.DeathMagic, Count: 5},
@@ -875,7 +872,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
         wizardSlot{
             Name: "Lo Pan",
             Background: loadImage(12),
-            Portrait: loadWizardPortrait(3),
+            Portrait: 3,
             Base: data.WizardLoPan,
             Books: []data.WizardBook{
                 data.WizardBook{Magic: data.SorceryMagic, Count: 5},
@@ -886,7 +883,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
         wizardSlot{
             Name: "Jafar",
             Background: loadImage(13),
-            Portrait: loadWizardPortrait(4),
+            Portrait: 4,
             Base: data.WizardJafar,
             Books: []data.WizardBook{
                 data.WizardBook{Magic: data.SorceryMagic, Count: 10},
@@ -896,7 +893,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
         wizardSlot{
             Name: "Oberic",
             Background: loadImage(14),
-            Portrait: loadWizardPortrait(5),
+            Portrait: 5,
             Base: data.WizardOberic,
             Books: []data.WizardBook{
                 data.WizardBook{Magic: data.NatureMagic, Count: 5},
@@ -907,7 +904,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
         wizardSlot{
             Name: "Rjak",
             Background: loadImage(15),
-            Portrait: loadWizardPortrait(6),
+            Portrait: 6,
             Base: data.WizardRjak,
             Books: []data.WizardBook{
                 data.WizardBook{Magic: data.DeathMagic, Count: 9},
@@ -917,7 +914,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
         wizardSlot{
             Name: "Sss'ra",
             Background: loadImage(16),
-            Portrait: loadWizardPortrait(7),
+            Portrait: 7,
             Base: data.WizardSssra,
             Books: []data.WizardBook{
                 data.WizardBook{Magic: data.LifeMagic, Count: 4},
@@ -928,7 +925,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
         wizardSlot{
             Name: "Tauron",
             Background: loadImage(17),
-            Portrait: loadWizardPortrait(8),
+            Portrait: 8,
             Base: data.WizardTauron,
             Books: []data.WizardBook{
                 data.WizardBook{Magic: data.ChaosMagic, Count: 10},
@@ -938,7 +935,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
         wizardSlot{
             Name: "Freya",
             Background: loadImage(18),
-            Portrait: loadWizardPortrait(9),
+            Portrait: 9,
             Base: data.WizardFreya,
             Books: []data.WizardBook{
                 data.WizardBook{Magic: data.NatureMagic, Count: 10},
@@ -948,7 +945,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
         wizardSlot{
             Name: "Horus",
             Background: loadImage(19),
-            Portrait: loadWizardPortrait(10),
+            Portrait: 10,
             Base: data.WizardHorus,
             Books: []data.WizardBook{
                 data.WizardBook{Magic: data.LifeMagic, Count: 5},
@@ -959,7 +956,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
         wizardSlot{
             Name: "Ariel",
             Background: loadImage(20),
-            Portrait: loadWizardPortrait(11),
+            Portrait: 11,
             Base: data.WizardAriel,
             Books: []data.WizardBook{
                 data.WizardBook{Magic: data.LifeMagic, Count: 10},
@@ -969,7 +966,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
         wizardSlot{
             Name: "Tlaloc",
             Background: loadImage(21),
-            Portrait: loadWizardPortrait(12),
+            Portrait: 12,
             Base: data.WizardTlaloc,
             Books: []data.WizardBook{
                 data.WizardBook{Magic: data.NatureMagic, Count: 4},
@@ -980,7 +977,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
         wizardSlot{
             Name: "Kali",
             Background: loadImage(22),
-            Portrait: loadWizardPortrait(13),
+            Portrait: 13,
             Base: data.WizardKali,
             Books: []data.WizardBook{
                 data.WizardBook{Magic: data.SorceryMagic, Count: 5},
@@ -992,7 +989,6 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
             Name: "Custom",
             Background: loadImage(23),
             Books: nil,
-            Portrait: nil,
         },
     }
 
@@ -1388,7 +1384,8 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
             window.DrawImage(customWizardBooks, &options)
 
             options.GeoM.Translate(portraitX, portraitY)
-            window.DrawImage(screen.CustomWizard.Portrait, &options)
+            portrait, _ := screen.ImageCache.GetImage("wizards.lbx", screen.CustomWizard.Portrait, 0)
+            window.DrawImage(portrait, &options)
             screen.Font.PrintCenter(window, nameX, nameY, 1, ebiten.ColorScale{}, screen.CustomWizard.Name)
 
             options.GeoM.Reset()
@@ -1652,7 +1649,8 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
                 window.DrawImage(background, &options)
 
                 options.GeoM.Translate(portraitX, portraitY)
-                window.DrawImage(screen.CustomWizard.Portrait, &options)
+                portrait, _ := screen.ImageCache.GetImage("wizards.lbx", screen.CustomWizard.Portrait, 0)
+                window.DrawImage(portrait, &options)
                 screen.Font.PrintCenter(window, nameX, nameY, 1, ebiten.ColorScale{}, screen.CustomWizard.Name)
 
                 options.GeoM.Reset()
@@ -1912,7 +1910,8 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
             window.DrawImage(background, &options)
 
             options.GeoM.Translate(portraitX, portraitY)
-            window.DrawImage(screen.CustomWizard.Portrait, &options)
+            portrait, _ := screen.ImageCache.GetImage("wizards.lbx", screen.CustomWizard.Portrait, 0)
+            window.DrawImage(portrait, &options)
             screen.Font.PrintCenter(window, nameX, nameY, 1, ebiten.ColorScale{}, screen.CustomWizard.Name)
 
             options.GeoM.Reset()
@@ -1993,7 +1992,8 @@ func (screen *NewWizardScreen) MakeSelectBannerUI() *uilib.UI {
             window.DrawImage(background, &options)
 
             options.GeoM.Translate(portraitX, portraitY)
-            window.DrawImage(screen.CustomWizard.Portrait, &options)
+            portrait, _ := screen.ImageCache.GetImage("wizards.lbx", screen.CustomWizard.Portrait, 0)
+            window.DrawImage(portrait, &options)
             screen.Font.PrintCenter(window, nameX, nameY, 1, ebiten.ColorScale{}, screen.CustomWizard.Name)
 
             options.GeoM.Reset()
