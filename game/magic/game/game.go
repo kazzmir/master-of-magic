@@ -8,6 +8,7 @@ import (
     "math"
     "fmt"
     "strings"
+    "slices"
 
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/units"
@@ -1859,27 +1860,74 @@ func (game *Game) ChooseWizard() setup.WizardCustom {
     // pick a new wizard with an unused wizard base and banner color, and race
     // if on myrror then select a myrran race
 
-    chooseBase := func() data.WizardBase {
-        // choices := make([]setup.WizardBase, 0)
-        return data.WizardMerlin
+    chooseBase := func() setup.WizardSlot {
+        choices := slices.Clone(setup.DefaultWizardSlots())
+        choices = slices.DeleteFunc(choices, func (wizard setup.WizardSlot) bool {
+            for _, player := range game.Players {
+                if player.Wizard.Base == wizard.Base {
+                    return true
+                }
+            }
+
+            return false
+        })
+
+        return choices[rand.N(len(choices))]
     }
 
-    chooseRace := func() data.Race {
-        return data.RaceLizard
+    chooseRace := func(myrror bool) data.Race {
+        var choices []data.Race
+        if myrror {
+            choices = slices.Clone(data.MyrranRaces())
+        } else {
+            choices = slices.Clone(data.ArcanianRaces())
+        }
+
+        choices = slices.DeleteFunc(choices, func (race data.Race) bool {
+            for _, player := range game.Players {
+                if player.Wizard.Race == race {
+                    return true
+                }
+            }
+
+            return false
+        })
+
+        return choices[rand.N(len(choices))]
     }
 
     chooseBanner := func() data.BannerType {
-        return data.BannerRed
+        choices := []data.BannerType{data.BannerGreen, data.BannerBlue, data.BannerRed, data.BannerPurple, data.BannerYellow}
+        choices = slices.DeleteFunc(choices, func (banner data.BannerType) bool {
+            for _, player := range game.Players {
+                if player.Wizard.Banner == banner {
+                    return true
+                }
+            }
+
+            return false
+        })
+        return choices[rand.N(len(choices))]
     }
 
-    base := chooseBase()
-    race := chooseRace()
+    wizard := chooseBase()
+    race := chooseRace(wizard.ExtraAbility == setup.AbilityMyrran)
     banner := chooseBanner()
 
+    var abilities []setup.WizardAbility
+    if wizard.ExtraAbility != setup.AbilityNone {
+        abilities = []setup.WizardAbility{wizard.ExtraAbility}
+    }
+
+    // StartingSpells spellbook.Spells
+
     return setup.WizardCustom{
-        Base: base,
+        Name: wizard.Name,
+        Base: wizard.Base,
         Race: race,
+        Books: slices.Clone(wizard.Books),
         Banner: banner,
+        Abilities: abilities,
     }
 }
 
