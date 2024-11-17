@@ -1856,11 +1856,13 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
     }
 }
 
-func (game *Game) ChooseWizard() setup.WizardCustom {
+/* returns a wizard definition and true if successful, otherwise false if no more wizards can be created
+ */
+func (game *Game) ChooseWizard() (setup.WizardCustom, bool) {
     // pick a new wizard with an unused wizard base and banner color, and race
     // if on myrror then select a myrran race
 
-    chooseBase := func() setup.WizardSlot {
+    chooseBase := func() (setup.WizardSlot, bool) {
         choices := slices.Clone(setup.DefaultWizardSlots())
         choices = slices.DeleteFunc(choices, func (wizard setup.WizardSlot) bool {
             for _, player := range game.Players {
@@ -1872,10 +1874,14 @@ func (game *Game) ChooseWizard() setup.WizardCustom {
             return false
         })
 
-        return choices[rand.N(len(choices))]
+        if len(choices) == 0 {
+            return setup.WizardSlot{}, false
+        }
+
+        return choices[rand.N(len(choices))], true
     }
 
-    chooseRace := func(myrror bool) data.Race {
+    chooseRace := func(myrror bool) (data.Race, bool) {
         var choices []data.Race
         if myrror {
             choices = slices.Clone(data.MyrranRaces())
@@ -1893,10 +1899,14 @@ func (game *Game) ChooseWizard() setup.WizardCustom {
             return false
         })
 
-        return choices[rand.N(len(choices))]
+        if len(choices) == 0 {
+            return data.RaceNone, false
+        }
+
+        return choices[rand.N(len(choices))], true
     }
 
-    chooseBanner := func() data.BannerType {
+    chooseBanner := func() (data.BannerType, bool) {
         choices := []data.BannerType{data.BannerGreen, data.BannerBlue, data.BannerRed, data.BannerPurple, data.BannerYellow}
         choices = slices.DeleteFunc(choices, func (banner data.BannerType) bool {
             for _, player := range game.Players {
@@ -1907,12 +1917,29 @@ func (game *Game) ChooseWizard() setup.WizardCustom {
 
             return false
         })
-        return choices[rand.N(len(choices))]
+
+        if len(choices) == 0 {
+            return data.BannerGreen, false
+        }
+
+        return choices[rand.N(len(choices))], true
     }
 
-    wizard := chooseBase()
-    race := chooseRace(wizard.ExtraAbility == setup.AbilityMyrran)
-    banner := chooseBanner()
+    wizard, ok := chooseBase()
+
+    if !ok {
+        return setup.WizardCustom{}, false
+    }
+
+    race, ok := chooseRace(wizard.ExtraAbility == setup.AbilityMyrran)
+    if !ok {
+        return setup.WizardCustom{}, false
+    }
+
+    banner, ok := chooseBanner()
+    if !ok {
+        return setup.WizardCustom{}, false
+    }
 
     var abilities []setup.WizardAbility
     if wizard.ExtraAbility != setup.AbilityNone {
@@ -1929,7 +1956,7 @@ func (game *Game) ChooseWizard() setup.WizardCustom {
     }
 
     customWizard.StartingSpells.AddAllSpells(setup.GetStartingSpells(&customWizard, game.AllSpells()))
-    return customWizard
+    return customWizard, true
 }
 
 func (game *Game) RefreshUI() {

@@ -1887,7 +1887,7 @@ func createScenario23(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(stack.X(), stack.Y(), 20, data.PlaneArcanus)
 
-    enemyWizard := game.ChooseWizard()
+    enemyWizard, _ := game.ChooseWizard()
 
     enemy := game.AddPlayer(enemyWizard, false)
 
