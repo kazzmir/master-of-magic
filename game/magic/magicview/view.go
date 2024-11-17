@@ -6,6 +6,7 @@ import (
     "image"
     "image/color"
     "math"
+    "math/rand/v2"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
@@ -293,6 +294,15 @@ func MakeTransmuteElements(ui *uilib.UI, smallFont *font.Font, player *playerlib
     return elements
 }
 
+// FIXME: move this into player
+func randomizeBookOrder(books int) []int {
+    order := make([]int, books)
+    for i := 0; i < books; i++ {
+        order[i] = rand.IntN(3)
+    }
+    return order
+}
+
 func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.Player) *uilib.UI {
 
     fontLbx, err := magic.Cache.GetLbxFile("fonts.lbx")
@@ -376,13 +386,21 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
                 image.Pt(255, 4),
             }
 
+        gemUnknown, _ := magic.ImageCache.GetImage("magic.lbx", 6, 0)
         position := gemPositions[i]
+        rect := util.ImageRect(position.X, position.Y, gemUnknown)
         elements = append(elements, &uilib.UIElement{
+            Rect: rect,
             LeftClick: func(element *uilib.UIElement){
                 // show diplomatic dialogue screen
             },
             RightClick: func(element *uilib.UIElement){
                 // show mirror ui with extra enemy info: relations, treaties, personality, objective
+
+                if i < len(enemies) {
+                    mirrorElement := mirror.MakeMirrorUI(magic.Cache, enemies[i], ui, randomizeBookOrder(20))
+                    ui.AddElement(mirrorElement)
+                }
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 var options ebiten.DrawImageOptions
@@ -396,7 +414,6 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
                         screen.DrawImage(portrait, &options)
                     }
                 } else {
-                    gemUnknown, _ := magic.ImageCache.GetImage("magic.lbx", 6, 0)
                     screen.DrawImage(gemUnknown, &options)
                 }
             },
