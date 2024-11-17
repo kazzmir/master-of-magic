@@ -38,7 +38,7 @@ func NewEngine() (*Engine, error) {
 
     player.Wizard.ToggleAbility(setup.AbilityAlchemy, 2)
 
-    magicScreen := magicview.MakeMagicScreen(cache, player, 100)
+    magicScreen := magicview.MakeMagicScreen(cache, player, nil, 100)
 
     return &Engine{
         LbxCache: cache,

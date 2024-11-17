@@ -39,7 +39,7 @@ type MagicScreen struct {
     SkillLocked bool
 }
 
-func MakeMagicScreen(cache *lbx.LbxCache, player *playerlib.Player, power int) *MagicScreen {
+func MakeMagicScreen(cache *lbx.LbxCache, player *playerlib.Player, enemies []*playerlib.Player, power int) *MagicScreen {
     magic := &MagicScreen{
         Cache: cache,
         ImageCache: util.MakeImageCache(cache),
@@ -52,7 +52,7 @@ func MakeMagicScreen(cache *lbx.LbxCache, player *playerlib.Player, power int) *
         SkillLocked: false,
     }
 
-    magic.UI = magic.MakeUI(player)
+    magic.UI = magic.MakeUI(player, enemies)
 
     return magic
 }
@@ -292,7 +292,7 @@ func MakeTransmuteElements(ui *uilib.UI, smallFont *font.Font, player *playerlib
     return elements
 }
 
-func (magic *MagicScreen) MakeUI(player *playerlib.Player) *uilib.UI {
+func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.Player) *uilib.UI {
 
     fontLbx, err := magic.Cache.GetLbxFile("fonts.lbx")
     if err != nil {

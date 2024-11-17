@@ -740,10 +740,23 @@ func (game *Game) ComputePower(player *playerlib.Player) int {
     return int(power)
 }
 
+// enemy wizards, but not including the raider ai
+func (game *Game) GetEnemyWizards() []*playerlib.Player {
+    var out []*playerlib.Player
+
+    for _, player := range game.Players {
+        if !player.Human && player.Wizard.Banner != data.BannerBrown {
+            out = append(out, player)
+        }
+    }
+
+    return out
+}
+
 func (game *Game) doMagicView(yield coroutine.YieldFunc) {
 
     oldDrawer := game.Drawer
-    magicScreen := magicview.MakeMagicScreen(game.Cache, game.Players[0], game.ComputePower(game.Players[0]))
+    magicScreen := magicview.MakeMagicScreen(game.Cache, game.Players[0], game.GetEnemyWizards(), game.ComputePower(game.Players[0]))
 
     game.Drawer = func (screen *ebiten.Image, game *Game){
         magicScreen.Draw(screen)
