@@ -38,7 +38,16 @@ func NewEngine() (*Engine, error) {
 
     player.Wizard.ToggleAbility(setup.AbilityAlchemy, 2)
 
-    magicScreen := magicview.MakeMagicScreen(cache, player, nil, 100)
+    enemy1 := &playerlib.Player{
+        Human: false,
+        Wizard: setup.WizardCustom{
+            Base: data.WizardMerlin,
+            Name: "Merlin",
+            Banner: data.BannerPurple,
+        },
+    }
+
+    magicScreen := magicview.MakeMagicScreen(cache, player, []*playerlib.Player{enemy1}, 100)
 
     return &Engine{
         LbxCache: cache,
