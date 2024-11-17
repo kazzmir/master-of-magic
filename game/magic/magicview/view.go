@@ -9,9 +9,9 @@ import (
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
-    "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
+    "github.com/kazzmir/master-of-magic/game/magic/mirror"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
@@ -376,49 +376,25 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
                 image.Pt(255, 4),
             }
 
-        wizardPortrait := func (wizard *setup.WizardCustom) *ebiten.Image {
-            bannerIndex := 0
-            switch player.Wizard.Banner {
-                case data.BannerBlue: bannerIndex = 0
-                case data.BannerGreen: bannerIndex = 1
-                case data.BannerPurple: bannerIndex = 2
-                case data.BannerRed: bannerIndex = 3
-                case data.BannerYellow: bannerIndex = 4
-            }
-
-            wizardIndex := 0
-
-            switch player.Wizard.Base {
-                case data.WizardMerlin: wizardIndex = 0
-                case data.WizardRaven: wizardIndex = 5
-                case data.WizardSharee: wizardIndex = 10
-                case data.WizardLoPan: wizardIndex = 15
-                case data.WizardJafar: wizardIndex = 20
-                case data.WizardOberic: wizardIndex = 25
-                case data.WizardRjak: wizardIndex = 30
-                case data.WizardSssra: wizardIndex = 35
-                case data.WizardTauron: wizardIndex = 40
-                case data.WizardFreya: wizardIndex = 45
-                case data.WizardHorus: wizardIndex = 50
-                case data.WizardAriel: wizardIndex = 55
-                case data.WizardTlaloc: wizardIndex = 60
-                case data.WizardKali: wizardIndex = 65
-            }
-
-            portrait, _ := magic.ImageCache.GetImage("lilwiz.lbx", wizardIndex + bannerIndex, 0)
-            return portrait
-        }
-
         position := gemPositions[i]
         elements = append(elements, &uilib.UIElement{
+            LeftClick: func(element *uilib.UIElement){
+                // show diplomatic dialogue screen
+            },
+            RightClick: func(element *uilib.UIElement){
+                // show mirror ui with extra enemy info: relations, treaties, personality, objective
+            },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(float64(position.X), float64(position.Y))
 
                 if i < len(enemies) {
                     enemy := enemies[i]
-                    portrait := wizardPortrait(&enemy.Wizard)
-                    screen.DrawImage(portrait, &options)
+                    portraitIndex := mirror.GetWizardPortraitIndex(enemy.Wizard.Base, enemy.Wizard.Banner)
+                    portrait, _ := magic.ImageCache.GetImage("lilwiz.lbx", portraitIndex, 0)
+                    if portrait != nil {
+                        screen.DrawImage(portrait, &options)
+                    }
                 } else {
                     gemUnknown, _ := magic.ImageCache.GetImage("magic.lbx", 6, 0)
                     screen.DrawImage(gemUnknown, &options)
