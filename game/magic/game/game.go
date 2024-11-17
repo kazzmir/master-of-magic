@@ -1919,9 +1919,7 @@ func (game *Game) ChooseWizard() setup.WizardCustom {
         abilities = []setup.WizardAbility{wizard.ExtraAbility}
     }
 
-    // StartingSpells spellbook.Spells
-
-    return setup.WizardCustom{
+    customWizard := setup.WizardCustom{
         Name: wizard.Name,
         Base: wizard.Base,
         Race: race,
@@ -1929,6 +1927,9 @@ func (game *Game) ChooseWizard() setup.WizardCustom {
         Banner: banner,
         Abilities: abilities,
     }
+
+    customWizard.StartingSpells.AddAllSpells(setup.GetStartingSpells(&customWizard, game.AllSpells()))
+    return customWizard
 }
 
 func (game *Game) RefreshUI() {
