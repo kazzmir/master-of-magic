@@ -732,8 +732,8 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *uilib.UI {
             screen.CustomWizard.Abilities = append(screen.CustomWizard.Abilities, screen.WizardSlots[wizard].ExtraAbility)
         }
 
-        screen.State = NewWizardScreenStateSelectSpells
-        screen.UI = screen.MakeSelectSpellsUI()
+        screen.State = NewWizardScreenStateSelectRace
+        screen.UI = screen.MakeSelectRaceUI()
     }
 
     insideFunc := func(wizard int){
