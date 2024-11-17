@@ -1859,11 +1859,27 @@ func (game *Game) ChooseWizard() setup.WizardCustom {
     // pick a new wizard with an unused wizard base and banner color, and race
     // if on myrror then select a myrran race
 
+    chooseBase := func() data.WizardBase {
+        // choices := make([]setup.WizardBase, 0)
+        return data.WizardMerlin
+    }
+
+    chooseRace := func() data.Race {
+        return data.RaceLizard
+    }
+
+    chooseBanner := func() data.BannerType {
+        return data.BannerRed
+    }
+
     base := chooseBase()
     race := chooseRace()
     banner := chooseBanner()
 
     return setup.WizardCustom{
+        Base: base,
+        Race: race,
+        Banner: banner,
     }
 }
 
