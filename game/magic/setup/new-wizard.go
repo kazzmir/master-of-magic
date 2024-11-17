@@ -22,7 +22,7 @@ import (
 
 const MaxPicks = 11
 
-type wizardSlot struct {
+type WizardSlot struct {
     Name string
     // the block that the wizard's name is printed on in the ui
     Background int
@@ -223,6 +223,165 @@ func (state NewWizardScreenState) String() string {
     return "?"
 }
 
+func DefaultWizardSlots() []WizardSlot {
+    return []WizardSlot{
+        WizardSlot{
+            Name: "Merlin",
+            Background: 9,
+            Portrait: 0,
+            Base: data.WizardMerlin,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.LifeMagic, Count: 5},
+                data.WizardBook{Magic: data.NatureMagic, Count: 5},
+            },
+            ExtraAbility: AbilitySageMaster,
+        },
+        WizardSlot{
+            Name: "Raven",
+            Background: 10,
+            Portrait: 1,
+            Base: data.WizardRaven,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.SorceryMagic, Count: 6},
+                data.WizardBook{Magic: data.NatureMagic, Count: 5},
+            },
+            ExtraAbility: AbilityNone,
+        },
+        WizardSlot{
+            Name: "Sharee",
+            Background: 11,
+            Portrait: 2,
+            Base: data.WizardSharee,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.DeathMagic, Count: 5},
+                data.WizardBook{Magic: data.ChaosMagic, Count: 5},
+            },
+            ExtraAbility: AbilityConjurer,
+        },
+        WizardSlot{
+            Name: "Lo Pan",
+            Background: 12,
+            Portrait: 3,
+            Base: data.WizardLoPan,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.SorceryMagic, Count: 5},
+                data.WizardBook{Magic: data.ChaosMagic, Count: 5},
+            },
+            ExtraAbility: AbilityChanneler,
+        },
+        WizardSlot{
+            Name: "Jafar",
+            Background: 13,
+            Portrait: 4,
+            Base: data.WizardJafar,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.SorceryMagic, Count: 10},
+            },
+            ExtraAbility: AbilityAlchemy,
+        },
+        WizardSlot{
+            Name: "Oberic",
+            Background: 14,
+            Portrait: 5,
+            Base: data.WizardOberic,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.NatureMagic, Count: 5},
+                data.WizardBook{Magic: data.ChaosMagic, Count: 5},
+            },
+            ExtraAbility: AbilityManaFocusing,
+        },
+        WizardSlot{
+            Name: "Rjak",
+            Background: 15,
+            Portrait: 6,
+            Base: data.WizardRjak,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.DeathMagic, Count: 9},
+            },
+            ExtraAbility: AbilityInfernalPower,
+        },
+        WizardSlot{
+            Name: "Sss'ra",
+            Background: 16,
+            Portrait: 7,
+            Base: data.WizardSssra,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.LifeMagic, Count: 4},
+                data.WizardBook{Magic: data.ChaosMagic, Count: 4},
+            },
+            ExtraAbility: AbilityMyrran,
+        },
+        WizardSlot{
+            Name: "Tauron",
+            Background: 17,
+            Portrait: 8,
+            Base: data.WizardTauron,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.ChaosMagic, Count: 10},
+            },
+            ExtraAbility: AbilityChaosMastery,
+        },
+        WizardSlot{
+            Name: "Freya",
+            Background: 18,
+            Portrait: 9,
+            Base: data.WizardFreya,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.NatureMagic, Count: 10},
+            },
+            ExtraAbility: AbilityNatureMastery,
+        },
+        WizardSlot{
+            Name: "Horus",
+            Background: 19,
+            Portrait: 10,
+            Base: data.WizardHorus,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.LifeMagic, Count: 5},
+                data.WizardBook{Magic: data.SorceryMagic, Count: 5},
+            },
+            ExtraAbility: AbilityArchmage,
+        },
+        WizardSlot{
+            Name: "Ariel",
+            Background: 20,
+            Portrait: 11,
+            Base: data.WizardAriel,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.LifeMagic, Count: 10},
+            },
+            ExtraAbility: AbilityCharismatic,
+        },
+        WizardSlot{
+            Name: "Tlaloc",
+            Background: 21,
+            Portrait: 12,
+            Base: data.WizardTlaloc,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.NatureMagic, Count: 4},
+                data.WizardBook{Magic: data.DeathMagic, Count: 5},
+            },
+            ExtraAbility: AbilityWarlord,
+        },
+        WizardSlot{
+            Name: "Kali",
+            Background: 22,
+            Portrait: 13,
+            Base: data.WizardKali,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.SorceryMagic, Count: 5},
+                data.WizardBook{Magic: data.DeathMagic, Count: 5},
+            },
+            ExtraAbility: AbilityArtificer,
+        },
+        WizardSlot{
+            Name: "Custom",
+            Background: 23,
+            Books: nil,
+        },
+    }
+}
+
 type WizardCustom struct {
     Name string
     // FIXME: remove portrait
@@ -342,7 +501,7 @@ type NewWizardScreen struct {
     NameFont *font.Font
     NameFontBright *font.Font
     SelectFont *font.Font
-    WizardSlots []wizardSlot
+    WizardSlots []WizardSlot
     ImageCache util.ImageCache
 
     Spells spellbook.Spells
@@ -804,6 +963,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
     screen.LbxFonts = fonts
 
     screen.Font = font.MakeOptimizedFont(fonts[4])
+    screen.WizardSlots = DefaultWizardSlots()
 
     // FIXME: load with a yellowish palette
     screen.SelectFont = font.MakeOptimizedFontWithPalette(fonts[5], selectYellowPalette)
@@ -830,162 +990,6 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
 
     screen.ErrorFont = font.MakeOptimizedFontWithPalette(fonts[4], yellowFade)
 
-    screen.WizardSlots = []wizardSlot{
-        wizardSlot{
-            Name: "Merlin",
-            Background: 9,
-            Portrait: 0,
-            Base: data.WizardMerlin,
-            Books: []data.WizardBook{
-                data.WizardBook{Magic: data.LifeMagic, Count: 5},
-                data.WizardBook{Magic: data.NatureMagic, Count: 5},
-            },
-            ExtraAbility: AbilitySageMaster,
-        },
-        wizardSlot{
-            Name: "Raven",
-            Background: 10,
-            Portrait: 1,
-            Base: data.WizardRaven,
-            Books: []data.WizardBook{
-                data.WizardBook{Magic: data.SorceryMagic, Count: 6},
-                data.WizardBook{Magic: data.NatureMagic, Count: 5},
-            },
-            ExtraAbility: AbilityNone,
-        },
-        wizardSlot{
-            Name: "Sharee",
-            Background: 11,
-            Portrait: 2,
-            Base: data.WizardSharee,
-            Books: []data.WizardBook{
-                data.WizardBook{Magic: data.DeathMagic, Count: 5},
-                data.WizardBook{Magic: data.ChaosMagic, Count: 5},
-            },
-            ExtraAbility: AbilityConjurer,
-        },
-        wizardSlot{
-            Name: "Lo Pan",
-            Background: 12,
-            Portrait: 3,
-            Base: data.WizardLoPan,
-            Books: []data.WizardBook{
-                data.WizardBook{Magic: data.SorceryMagic, Count: 5},
-                data.WizardBook{Magic: data.ChaosMagic, Count: 5},
-            },
-            ExtraAbility: AbilityChanneler,
-        },
-        wizardSlot{
-            Name: "Jafar",
-            Background: 13,
-            Portrait: 4,
-            Base: data.WizardJafar,
-            Books: []data.WizardBook{
-                data.WizardBook{Magic: data.SorceryMagic, Count: 10},
-            },
-            ExtraAbility: AbilityAlchemy,
-        },
-        wizardSlot{
-            Name: "Oberic",
-            Background: 14,
-            Portrait: 5,
-            Base: data.WizardOberic,
-            Books: []data.WizardBook{
-                data.WizardBook{Magic: data.NatureMagic, Count: 5},
-                data.WizardBook{Magic: data.ChaosMagic, Count: 5},
-            },
-            ExtraAbility: AbilityManaFocusing,
-        },
-        wizardSlot{
-            Name: "Rjak",
-            Background: 15,
-            Portrait: 6,
-            Base: data.WizardRjak,
-            Books: []data.WizardBook{
-                data.WizardBook{Magic: data.DeathMagic, Count: 9},
-            },
-            ExtraAbility: AbilityInfernalPower,
-        },
-        wizardSlot{
-            Name: "Sss'ra",
-            Background: 16,
-            Portrait: 7,
-            Base: data.WizardSssra,
-            Books: []data.WizardBook{
-                data.WizardBook{Magic: data.LifeMagic, Count: 4},
-                data.WizardBook{Magic: data.ChaosMagic, Count: 4},
-            },
-            ExtraAbility: AbilityMyrran,
-        },
-        wizardSlot{
-            Name: "Tauron",
-            Background: 17,
-            Portrait: 8,
-            Base: data.WizardTauron,
-            Books: []data.WizardBook{
-                data.WizardBook{Magic: data.ChaosMagic, Count: 10},
-            },
-            ExtraAbility: AbilityChaosMastery,
-        },
-        wizardSlot{
-            Name: "Freya",
-            Background: 18,
-            Portrait: 9,
-            Base: data.WizardFreya,
-            Books: []data.WizardBook{
-                data.WizardBook{Magic: data.NatureMagic, Count: 10},
-            },
-            ExtraAbility: AbilityNatureMastery,
-        },
-        wizardSlot{
-            Name: "Horus",
-            Background: 19,
-            Portrait: 10,
-            Base: data.WizardHorus,
-            Books: []data.WizardBook{
-                data.WizardBook{Magic: data.LifeMagic, Count: 5},
-                data.WizardBook{Magic: data.SorceryMagic, Count: 5},
-            },
-            ExtraAbility: AbilityArchmage,
-        },
-        wizardSlot{
-            Name: "Ariel",
-            Background: 20,
-            Portrait: 11,
-            Base: data.WizardAriel,
-            Books: []data.WizardBook{
-                data.WizardBook{Magic: data.LifeMagic, Count: 10},
-            },
-            ExtraAbility: AbilityCharismatic,
-        },
-        wizardSlot{
-            Name: "Tlaloc",
-            Background: 21,
-            Portrait: 12,
-            Base: data.WizardTlaloc,
-            Books: []data.WizardBook{
-                data.WizardBook{Magic: data.NatureMagic, Count: 4},
-                data.WizardBook{Magic: data.DeathMagic, Count: 5},
-            },
-            ExtraAbility: AbilityWarlord,
-        },
-        wizardSlot{
-            Name: "Kali",
-            Background: 22,
-            Portrait: 13,
-            Base: data.WizardKali,
-            Books: []data.WizardBook{
-                data.WizardBook{Magic: data.SorceryMagic, Count: 5},
-                data.WizardBook{Magic: data.DeathMagic, Count: 5},
-            },
-            ExtraAbility: AbilityArtificer,
-        },
-        wizardSlot{
-            Name: "Custom",
-            Background: 23,
-            Books: nil,
-        },
-    }
 
     if screen.State == NewWizardScreenStateSelectWizard {
         screen.UI = screen.MakeSelectWizardUI()
