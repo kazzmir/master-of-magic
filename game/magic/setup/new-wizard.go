@@ -1408,27 +1408,18 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
 
 }
 
-func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
+// a struct that stores how many spells the user can choose from each rarity
+type ChooseSpellInfo struct {
+    CommonMax int
+    UncommonMax int
+    RareMax int
 
-    // for each book of magic the user has create a spell ui that allows the user to select
-    // some set of spells, so if the user has 4 nature and 4 chaos, then the user would see
-    // 2 separate UI's, one for nature and one for chaos
+    CommonSpells spellbook.Spells
+    UncommonSpells spellbook.Spells
+    RareSpells spellbook.Spells
+}
 
-    // 2 picks = 1 common
-    // 3 picks = 2 common
-    // 4 picks = 3 common
-    // 5 picks = 4 common
-    // 6 picks = 5 common
-    // 7 picks = 6 common
-    // 8 picks = 7 common
-    // 9 picks = 8 common
-    // 10 picks = 9 common
-    // 11 picks = 2 uncommon, 1 rare
-
-    imageCache := util.MakeImageCache(screen.LbxCache)
-
-    magicOrder := []data.MagicType{data.LifeMagic, data.DeathMagic, data.ChaosMagic, data.NatureMagic, data.SorceryMagic}
-
+func MakeChooseSpellInfo(allSpells spellbook.Spells, magic data.MagicType, books int) ChooseSpellInfo {
     computeCommon := func(books int) int {
         if books == 0 || books == 11 {
             return 0
@@ -1457,6 +1448,80 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
         return 0
     }
 
+    chooseSpells := func(rarity spellbook.SpellRarity) spellbook.Spells {
+        return allSpells.GetSpellsByMagic(magic).GetSpellsByRarity(rarity)
+    }
+
+    commonMax := computeCommon(books)
+    uncommonMax := computeUncommon(books)
+    rareMax := computeRare(books)
+
+    commonSpells := chooseSpells(spellbook.SpellRarityCommon)
+    uncommonSpells := chooseSpells(spellbook.SpellRarityUncommon)
+    rareSpells := chooseSpells(spellbook.SpellRarityRare)
+
+    return ChooseSpellInfo{
+        CommonMax: commonMax,
+        UncommonMax: uncommonMax,
+        RareMax: rareMax,
+
+        CommonSpells: commonSpells,
+        UncommonSpells: uncommonSpells,
+        RareSpells: rareSpells,
+    }
+}
+
+func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
+
+    // for each book of magic the user has create a spell ui that allows the user to select
+    // some set of spells, so if the user has 4 nature and 4 chaos, then the user would see
+    // 2 separate UI's, one for nature and one for chaos
+
+    // 2 picks = 1 common
+    // 3 picks = 2 common
+    // 4 picks = 3 common
+    // 5 picks = 4 common
+    // 6 picks = 5 common
+    // 7 picks = 6 common
+    // 8 picks = 7 common
+    // 9 picks = 8 common
+    // 10 picks = 9 common
+    // 11 picks = 2 uncommon, 1 rare
+
+    imageCache := util.MakeImageCache(screen.LbxCache)
+
+    magicOrder := []data.MagicType{data.LifeMagic, data.DeathMagic, data.ChaosMagic, data.NatureMagic, data.SorceryMagic}
+
+    /*
+    computeCommon := func(books int) int {
+        if books == 0 || books == 11 {
+            return 0
+        }
+
+        if books < 11 {
+            return books - 1
+        }
+
+        return 0
+    }
+
+    computeUncommon := func(books int) int {
+        if books == 11 {
+            return 2
+        }
+
+        return 0
+    }
+
+    computeRare := func(books int) int {
+        if books == 11 {
+            return 1
+        }
+
+        return 0
+    }
+    */
+
     // an all black palette
     black := color.RGBA{R: 0, G: 0, B: 0, A: 0xff}
     blackPalette := color.Palette{
@@ -1484,41 +1549,47 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
     blackFont := font.MakeOptimizedFontWithPalette(screen.LbxFonts[4], blackPalette)
     shadowDescriptionFont := font.MakeOptimizedFontWithPalette(screen.LbxFonts[3], blackPalette)
 
+    /*
     chooseSpells := func(magic data.MagicType, rarity spellbook.SpellRarity) spellbook.Spells {
         return screen.Spells.GetSpellsByMagic(magic).GetSpellsByRarity(rarity)
     }
+    */
 
     var doNextMagicUI func (magic data.MagicType)
 
     makeUIForMagic := func (magic data.MagicType) *uilib.UI {
+        /*
         commonMax := computeCommon(screen.CustomWizard.MagicLevel(magic))
         uncommonMax := computeUncommon(screen.CustomWizard.MagicLevel(magic))
         rareMax := computeRare(screen.CustomWizard.MagicLevel(magic))
-
-        // number of remaining picks in each rarity category
-        commonPicks := commonMax
-        uncommonPicks := uncommonMax
-        rarePicks := rareMax
-
         commonSpells := chooseSpells(magic, spellbook.SpellRarityCommon)
         uncommonSpells := chooseSpells(magic, spellbook.SpellRarityUncommon)
         rareSpells := chooseSpells(magic, spellbook.SpellRarityRare)
+        */
+
+        spellInfo := MakeChooseSpellInfo(screen.Spells, magic, screen.CustomWizard.MagicLevel(magic))
+
+        // number of remaining picks in each rarity category
+        commonPicks := spellInfo.CommonMax
+        uncommonPicks := spellInfo.UncommonMax
+        rarePicks := spellInfo.RareMax
+
 
         // assign common spells
-        for _, index := range rand.Perm(len(commonSpells.Spells))[0:commonMax] {
-            screen.CustomWizard.StartingSpells.AddSpell(commonSpells.Spells[index])
+        for _, index := range rand.Perm(len(spellInfo.CommonSpells.Spells))[0:spellInfo.CommonMax] {
+            screen.CustomWizard.StartingSpells.AddSpell(spellInfo.CommonSpells.Spells[index])
             commonPicks -= 1
         }
 
         // assign uncommon spells
-        for _, index := range rand.Perm(len(uncommonSpells.Spells))[0:uncommonMax] {
-            screen.CustomWizard.StartingSpells.AddSpell(uncommonSpells.Spells[index])
+        for _, index := range rand.Perm(len(spellInfo.UncommonSpells.Spells))[0:spellInfo.UncommonMax] {
+            screen.CustomWizard.StartingSpells.AddSpell(spellInfo.UncommonSpells.Spells[index])
             uncommonPicks -= 1
         }
 
         // assign rare spells
-        for _, index := range rand.Perm(len(rareSpells.Spells))[0:rareMax] {
-            screen.CustomWizard.StartingSpells.AddSpell(rareSpells.Spells[index])
+        for _, index := range rand.Perm(len(spellInfo.RareSpells.Spells))[0:spellInfo.RareMax] {
+            screen.CustomWizard.StartingSpells.AddSpell(spellInfo.RareSpells.Spells[index])
             rarePicks -= 1
         }
 
@@ -1584,22 +1655,22 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
             }
         }
 
-        if commonMax > 0 {
+        if spellInfo.CommonMax > 0 {
             x := 169
             top := 28 + descriptionFont.Height() + 3
-            createSpellElements(commonSpells, x, top, &commonPicks)
+            createSpellElements(spellInfo.CommonSpells, x, top, &commonPicks)
         }
 
-        if uncommonMax > 0 {
+        if spellInfo.UncommonMax > 0 {
             x := 169
             top := 28 + descriptionFont.Height() + 3
-            createSpellElements(uncommonSpells, x, top, &uncommonPicks)
+            createSpellElements(spellInfo.UncommonSpells, x, top, &uncommonPicks)
         }
 
-        if rareMax > 0 {
+        if spellInfo.RareMax > 0 {
             x := 169
             top := 78 + descriptionFont.Height() + 3
-            createSpellElements(rareSpells, x, top, &rarePicks)
+            createSpellElements(spellInfo.RareSpells, x, top, &rarePicks)
         }
 
         // ok button
@@ -1691,17 +1762,17 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
                 }
 
                 spellBackground1, _ := screen.ImageCache.GetImage("newgame.lbx", 48, 0)
-                if commonMax > 0 {
-                    showDescription(28, fmt.Sprintf("Common: %v", commonMax), spellBackground1)
+                if spellInfo.CommonMax > 0 {
+                    showDescription(28, fmt.Sprintf("Common: %v", spellInfo.CommonMax), spellBackground1)
                 }
 
-                if uncommonMax > 0 {
-                    showDescription(28, fmt.Sprintf("Uncommon: %v", uncommonMax), spellBackground1)
+                if spellInfo.UncommonMax > 0 {
+                    showDescription(28, fmt.Sprintf("Uncommon: %v", spellInfo.UncommonMax), spellBackground1)
                 }
 
-                if rareMax > 0 {
+                if spellInfo.RareMax > 0 {
                     spellBackground2, _ := screen.ImageCache.GetImage("newgame.lbx", 49, 0)
-                    showDescription(78, fmt.Sprintf("Rare: %v", rareMax), spellBackground2)
+                    showDescription(78, fmt.Sprintf("Rare: %v", spellInfo.RareMax), spellBackground2)
                 }
 
                 ui.IterateElementsByLayer(func (element *uilib.UIElement){
