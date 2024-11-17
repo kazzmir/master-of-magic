@@ -732,6 +732,8 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *uilib.UI {
             screen.CustomWizard.Abilities = append(screen.CustomWizard.Abilities, screen.WizardSlots[wizard].ExtraAbility)
         }
 
+        screen.CustomWizard.StartingSpells.AddAllSpells(GetStartingSpells(&screen.CustomWizard, screen.Spells))
+
         screen.State = NewWizardScreenStateSelectRace
         screen.UI = screen.MakeSelectRaceUI()
     }
@@ -1469,6 +1471,36 @@ func MakeChooseSpellInfo(allSpells spellbook.Spells, magic data.MagicType, books
         UncommonSpells: uncommonSpells,
         RareSpells: rareSpells,
     }
+}
+
+func GetStartingSpells(wizard *WizardCustom, allSpells spellbook.Spells) spellbook.Spells {
+    var spellsOut spellbook.Spells
+    magicOrder := []data.MagicType{data.LifeMagic, data.DeathMagic, data.ChaosMagic, data.NatureMagic, data.SorceryMagic}
+
+    for _, magic := range magicOrder {
+        spellInfo := MakeChooseSpellInfo(allSpells, magic, wizard.MagicLevel(magic))
+
+        if wizard.MagicLevel(magic) == 11 {
+            spellsOut.AddAllSpells(spellInfo.CommonSpells)
+        }
+
+        // assign common spells
+        for _, index := range rand.Perm(len(spellInfo.CommonSpells.Spells))[0:spellInfo.CommonMax] {
+            spellsOut.AddSpell(spellInfo.CommonSpells.Spells[index])
+        }
+
+        // assign uncommon spells
+        for _, index := range rand.Perm(len(spellInfo.UncommonSpells.Spells))[0:spellInfo.UncommonMax] {
+            spellsOut.AddSpell(spellInfo.UncommonSpells.Spells[index])
+        }
+
+        // assign rare spells
+        for _, index := range rand.Perm(len(spellInfo.RareSpells.Spells))[0:spellInfo.RareMax] {
+            spellsOut.AddSpell(spellInfo.RareSpells.Spells[index])
+        }
+    }
+
+    return spellsOut
 }
 
 func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
