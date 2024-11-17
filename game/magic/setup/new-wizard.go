@@ -1492,36 +1492,6 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
 
     magicOrder := []data.MagicType{data.LifeMagic, data.DeathMagic, data.ChaosMagic, data.NatureMagic, data.SorceryMagic}
 
-    /*
-    computeCommon := func(books int) int {
-        if books == 0 || books == 11 {
-            return 0
-        }
-
-        if books < 11 {
-            return books - 1
-        }
-
-        return 0
-    }
-
-    computeUncommon := func(books int) int {
-        if books == 11 {
-            return 2
-        }
-
-        return 0
-    }
-
-    computeRare := func(books int) int {
-        if books == 11 {
-            return 1
-        }
-
-        return 0
-    }
-    */
-
     // an all black palette
     black := color.RGBA{R: 0, G: 0, B: 0, A: 0xff}
     blackPalette := color.Palette{
@@ -1549,31 +1519,20 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
     blackFont := font.MakeOptimizedFontWithPalette(screen.LbxFonts[4], blackPalette)
     shadowDescriptionFont := font.MakeOptimizedFontWithPalette(screen.LbxFonts[3], blackPalette)
 
-    /*
-    chooseSpells := func(magic data.MagicType, rarity spellbook.SpellRarity) spellbook.Spells {
-        return screen.Spells.GetSpellsByMagic(magic).GetSpellsByRarity(rarity)
-    }
-    */
-
     var doNextMagicUI func (magic data.MagicType)
 
     makeUIForMagic := func (magic data.MagicType) *uilib.UI {
-        /*
-        commonMax := computeCommon(screen.CustomWizard.MagicLevel(magic))
-        uncommonMax := computeUncommon(screen.CustomWizard.MagicLevel(magic))
-        rareMax := computeRare(screen.CustomWizard.MagicLevel(magic))
-        commonSpells := chooseSpells(magic, spellbook.SpellRarityCommon)
-        uncommonSpells := chooseSpells(magic, spellbook.SpellRarityUncommon)
-        rareSpells := chooseSpells(magic, spellbook.SpellRarityRare)
-        */
-
         spellInfo := MakeChooseSpellInfo(screen.Spells, magic, screen.CustomWizard.MagicLevel(magic))
+
+        // if the wizard has all 11 books then they start with knowing all common spells
+        if screen.CustomWizard.MagicLevel(magic) == 11 {
+            screen.CustomWizard.StartingSpells.AddAllSpells(spellInfo.CommonSpells)
+        }
 
         // number of remaining picks in each rarity category
         commonPicks := spellInfo.CommonMax
         uncommonPicks := spellInfo.UncommonMax
         rarePicks := spellInfo.RareMax
-
 
         // assign common spells
         for _, index := range rand.Perm(len(spellInfo.CommonSpells.Spells))[0:spellInfo.CommonMax] {
@@ -1726,8 +1685,6 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
                 options.GeoM.Reset()
                 options.GeoM.Translate(36, 135)
                 draw.DrawBooks(window, options, &imageCache, screen.CustomWizard.Books, screen.BooksOrder)
-
-                // screen.DrawBooks(window, 37, 135, screen.CustomWizard.Books)
 
                 options.GeoM.Reset()
                 options.GeoM.Translate(196, 180)
