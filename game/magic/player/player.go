@@ -61,6 +61,7 @@ type Player struct {
     Mana int
 
     Human bool
+    Defeated bool
 
     Fame int
 

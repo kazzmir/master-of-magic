@@ -386,6 +386,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
                 image.Pt(255, 4),
             }
 
+        gemDefeated, _ := magic.ImageCache.GetImage("magic.lbx", 51, 0)
         gemUnknown, _ := magic.ImageCache.GetImage("magic.lbx", 6, 0)
         position := gemPositions[i]
         rect := util.ImageRect(position.X, position.Y, gemUnknown)
@@ -397,7 +398,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
             RightClick: func(element *uilib.UIElement){
                 // show mirror ui with extra enemy info: relations, treaties, personality, objective
 
-                if i < len(enemies) {
+                if i < len(enemies) && !enemies[i].Defeated {
                     mirrorElement := mirror.MakeMirrorUI(magic.Cache, enemies[i], ui, randomizeBookOrder(20))
                     ui.AddElement(mirrorElement)
                 }
@@ -408,10 +409,15 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
 
                 if i < len(enemies) {
                     enemy := enemies[i]
-                    portraitIndex := mirror.GetWizardPortraitIndex(enemy.Wizard.Base, enemy.Wizard.Banner)
-                    portrait, _ := magic.ImageCache.GetImage("lilwiz.lbx", portraitIndex, 0)
-                    if portrait != nil {
-                        screen.DrawImage(portrait, &options)
+
+                    if enemy.Defeated {
+                        screen.DrawImage(gemDefeated, &options)
+                    } else {
+                        portraitIndex := mirror.GetWizardPortraitIndex(enemy.Wizard.Base, enemy.Wizard.Banner)
+                        portrait, _ := magic.ImageCache.GetImage("lilwiz.lbx", portraitIndex, 0)
+                        if portrait != nil {
+                            screen.DrawImage(portrait, &options)
+                        }
                     }
                 } else {
                     screen.DrawImage(gemUnknown, &options)
