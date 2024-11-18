@@ -49,6 +49,10 @@ type AIBehavior interface {
     NewTurn()
 }
 
+type Relationship struct {
+    Treaty data.TreatyType
+}
+
 type Player struct {
     // matrix the same size as the map, where true means the player can see the tile
     // and false means the tile has not yet been discovered
@@ -83,6 +87,9 @@ type Player struct {
     PowerDistribution PowerDistribution
 
     AIBehavior AIBehavior
+
+    // relations with other players (treaties, etc)
+    PlayerRelations map[*Player]*Relationship
 
     Heroes [6]*herolib.Hero
     VaultEquipment [4]*artifact.Artifact
@@ -122,6 +129,7 @@ func MakePlayer(wizard setup.WizardCustom, human bool, arcanusFog [][]bool, myrr
         MyrrorFog: myrrorFog,
         Wizard: wizard,
         Human: human,
+        PlayerRelations: make(map[*Player]*Relationship),
         GlobalEnchantments: set.MakeSet[data.Enchantment](),
         BookOrderSeed1: rand.Uint64(),
         BookOrderSeed2: rand.Uint64(),
@@ -131,6 +139,19 @@ func MakePlayer(wizard setup.WizardCustom, human bool, arcanusFog [][]bool, myrr
             Skill: 1.0/3,
         },
     }
+}
+
+// this player should now be aware of the other player
+func (player *Player) AwarePlayer(other *Player) {
+    _, ok := player.PlayerRelations[other]
+    if !ok {
+        player.PlayerRelations[other] = &Relationship{
+        }
+    }
+}
+
+func (player *Player) WarWithPlayer(other *Player) {
+    player.PlayerRelations[other].Treaty = data.TreatyWar
 }
 
 func (player *Player) IsAI() bool {

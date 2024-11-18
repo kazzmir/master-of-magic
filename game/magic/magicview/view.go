@@ -7,9 +7,11 @@ import (
     "image/color"
     "math"
     "math/rand/v2"
+    "slices"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/mirror"
@@ -386,6 +388,35 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
                 image.Pt(255, 4),
             }
 
+        // the treaty icon is the scroll/peace/war icon between the wizard being rendered and another wizard
+        // each enemy wizard can have a treaty with any other wizard
+        getTreatyIcon := func (otherPlayer *playerlib.Player, treaty data.TreatyType) *ebiten.Image {
+            if treaty == data.TreatyNone {
+                return nil
+            }
+
+            // only show treaties for other wizards that the main player already knows about
+            if slices.Contains(enemies, otherPlayer) {
+                base := 0
+                // show the treaty icon in the color of the other player
+                switch otherPlayer.GetBanner() {
+                    case data.BannerBlue: base = 60
+                    case data.BannerGreen: base = 63
+                    case data.BannerPurple: base = 66
+                    case data.BannerRed: base = 69
+                    case data.BannerYellow: base = 72
+                }
+
+                switch treaty {
+                    case data.TreatyPact: img, _ := magic.ImageCache.GetImage("magic.lbx", base + 0, 0); return img
+                    case data.TreatyAlliance: img, _ := magic.ImageCache.GetImage("magic.lbx", base + 1, 0); return img
+                    case data.TreatyWar: img, _ := magic.ImageCache.GetImage("magic.lbx", base + 2, 0); return img
+                }
+            }
+
+            return nil
+        }
+
         gemDefeated, _ := magic.ImageCache.GetImage("magic.lbx", 51, 0)
         gemUnknown, _ := magic.ImageCache.GetImage("magic.lbx", 6, 0)
         position := gemPositions[i]
@@ -424,6 +455,33 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
                 }
             },
         })
+
+        if i < len(enemies) {
+            enemy := enemies[i]
+            if !enemy.Defeated {
+                positionStart := gemPositions[i]
+                positionStart.X += gemUnknown.Bounds().Dx() + 2
+                for otherPlayer, relationship := range enemy.PlayerRelations {
+                    treatyIcon := getTreatyIcon(otherPlayer, relationship.Treaty)
+                    if treatyIcon != nil {
+                        usePosition := positionStart
+                        elements = append(elements, &uilib.UIElement{
+                            RightClick: func(element *uilib.UIElement){
+                                // show help for 'TREATIES'
+                            },
+                            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                                var options ebiten.DrawImageOptions
+                                options.GeoM.Translate(float64(usePosition.X), float64(usePosition.Y))
+                                screen.DrawImage(treatyIcon, &options)
+                            },
+                        })
+
+                        positionStart.Y += treatyIcon.Bounds().Dy() + 2
+                    }
+                }
+            }
+        }
+
     }
 
     distribute := func(amount float64, update *float64, other1 *float64, other1Locked bool, other2 *float64, other2Locked bool){

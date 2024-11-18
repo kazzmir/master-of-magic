@@ -1891,6 +1891,11 @@ func createScenario23(cache *lbx.LbxCache) *gamelib.Game {
 
     enemy := game.AddPlayer(enemyWizard, false)
 
+    enemy.AwarePlayer(player)
+    player.AwarePlayer(enemy)
+
+    enemy.WarWithPlayer(player)
+
     enemy.AIBehavior = ai.MakeRaiderAI()
 
     x2, y2 := game.FindValidCityLocationOnContinent(city.X, city.Y)

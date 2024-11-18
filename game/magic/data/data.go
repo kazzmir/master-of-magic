@@ -233,3 +233,11 @@ const (
     WeaponMythril
     WeaponAdamantium
 )
+
+type TreatyType int
+const (
+    TreatyNone TreatyType = iota
+    TreatyPact
+    TreatyAlliance
+    TreatyWar
+)
