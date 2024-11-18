@@ -65,6 +65,10 @@ type Player struct {
 
     Fame int
 
+    // used to seed the random number generator for generating the order of how magic books are drawn
+    BookOrderSeed1 uint64
+    BookOrderSeed2 uint64
+
     // known spells
     KnownSpells spellbook.Spells
 
@@ -119,6 +123,8 @@ func MakePlayer(wizard setup.WizardCustom, human bool, arcanusFog [][]bool, myrr
         Wizard: wizard,
         Human: human,
         GlobalEnchantments: set.MakeSet[data.Enchantment](),
+        BookOrderSeed1: rand.Uint64(),
+        BookOrderSeed2: rand.Uint64(),
         PowerDistribution: PowerDistribution{
             Mana: 1.0/3,
             Research: 1.0/3,

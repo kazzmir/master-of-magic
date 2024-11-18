@@ -4,6 +4,7 @@ import (
     "log"
     "fmt"
     "image/color"
+    "math/rand/v2"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
@@ -49,7 +50,7 @@ func GetWizardPortraitIndex(base data.WizardBase, banner data.BannerType) int {
     return wizardIndex + bannerIndex
 }
 
-func MakeMirrorUI(cache *lbx.LbxCache, player *playerlib.Player, ui *uilib.UI, bookOrder []int) *uilib.UIElement {
+func MakeMirrorUI(cache *lbx.LbxCache, player *playerlib.Player, ui *uilib.UI) *uilib.UIElement {
     cornerX := 50
     cornerY := 1
 
@@ -121,7 +122,8 @@ func MakeMirrorUI(cache *lbx.LbxCache, player *playerlib.Player, ui *uilib.UI, b
             smallFont.PrintRight(screen, float64(cornerX + 170), float64(cornerY + 75), 1, options.ColorScale, fmt.Sprintf("%v MP", player.Mana))
 
             options.GeoM.Translate(34, 55)
-            draw.DrawBooks(screen, options, &imageCache, player.Wizard.Books, bookOrder)
+            newRand := rand.New(rand.NewPCG(player.BookOrderSeed1, player.BookOrderSeed2))
+            draw.DrawBooks(screen, options, &imageCache, player.Wizard.Books, newRand)
 
             if player.Fame > 0 {
                 heroFont.PrintCenter(screen, float64(cornerX + 90), float64(cornerY + 95), 1, options.ColorScale, fmt.Sprintf("%v Fame", player.Fame))

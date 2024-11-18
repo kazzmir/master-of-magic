@@ -193,8 +193,6 @@ type Game struct {
 
     MovingStack *playerlib.UnitStack
 
-    BookOrder []int
-
     cameraX int
     cameraY int
 
@@ -249,16 +247,6 @@ func computeUnitBuildPowers(stack *playerlib.UnitStack) UnitBuildPowers {
     }
 
     return powers
-}
-
-// create an array of N integers where each integer is some value between 0 and 2
-// these values correlate to the index of the book image to draw under the wizard portrait
-func randomizeBookOrder(books int) []int {
-    order := make([]int, books)
-    for i := 0; i < books; i++ {
-        order[i] = rand.IntN(3)
-    }
-    return order
 }
 
 // a true value in fog means the tile is visible, false means not visible
@@ -533,7 +521,6 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         Plane: data.PlaneArcanus,
         State: GameStateRunning,
         Settings: settings,
-        BookOrder: randomizeBookOrder(12),
         ImageCache: util.MakeImageCache(lbxCache),
         InfoFontYellow: infoFontYellow,
         InfoFontRed: infoFontRed,
@@ -2903,7 +2890,7 @@ func (game *Game) MakeInfoUI(cornerX int, cornerY int) []*uilib.UIElement {
             Name: "Mirror",
             Action: func(){
                 if len(game.Players) > 0 {
-                    game.HudUI.AddElement(mirror.MakeMirrorUI(game.Cache, game.Players[0], game.HudUI, game.BookOrder))
+                    game.HudUI.AddElement(mirror.MakeMirrorUI(game.Cache, game.Players[0], game.HudUI))
                 }
             },
             Hotkey: "(F9)",

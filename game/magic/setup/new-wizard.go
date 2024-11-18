@@ -510,7 +510,8 @@ type NewWizardScreen struct {
 
     UI *uilib.UI
 
-    BooksOrder []int
+    BooksOrderSeed1 uint64
+    BooksOrderSeed2 uint64
 
     State NewWizardScreenState
 
@@ -798,7 +799,7 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *uilib.UI {
                     // screen.DrawBooks(window, 36, 135, screen.WizardSlots[screen.CurrentWizard].Books)
                     options.GeoM.Reset()
                     options.GeoM.Translate(36, 135)
-                    draw.DrawBooks(window, options, &screen.ImageCache, screen.WizardSlots[screen.CurrentWizard].Books, screen.BooksOrder)
+                    draw.DrawBooks(window, options, &screen.ImageCache, screen.WizardSlots[screen.CurrentWizard].Books, screen.BooksOrderRandom())
                     if screen.WizardSlots[screen.CurrentWizard].ExtraAbility != AbilityNone {
                         screen.AbilityFontSelected.Print(window, 12, 180, 1, ebiten.ColorScale{}, screen.WizardSlots[screen.CurrentWizard].ExtraAbility.String())
                     }
@@ -810,6 +811,10 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *uilib.UI {
     ui.SetElementsFromArray(elements)
 
     return ui
+}
+
+func (screen *NewWizardScreen) BooksOrderRandom() *rand.Rand {
+    return rand.New(rand.NewPCG(screen.BooksOrderSeed1, screen.BooksOrderSeed2))
 }
 
 func (screen *NewWizardScreen) IsActive() bool {
@@ -1391,7 +1396,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
 
             options.GeoM.Reset()
             options.GeoM.Translate(37, 135)
-            draw.DrawBooks(window, options, &imageCache, screen.CustomWizard.Books, screen.BooksOrder)
+            draw.DrawBooks(window, options, &imageCache, screen.CustomWizard.Books, screen.BooksOrderRandom())
 
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
                 if element.Draw != nil {
@@ -1716,7 +1721,7 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
 
                 options.GeoM.Reset()
                 options.GeoM.Translate(36, 135)
-                draw.DrawBooks(window, options, &imageCache, screen.CustomWizard.Books, screen.BooksOrder)
+                draw.DrawBooks(window, options, &imageCache, screen.CustomWizard.Books, screen.BooksOrderRandom())
 
                 options.GeoM.Reset()
                 options.GeoM.Translate(196, 180)
@@ -1975,7 +1980,7 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
 
             options.GeoM.Reset()
             options.GeoM.Translate(36, 135)
-            draw.DrawBooks(window, options, &imageCache, screen.CustomWizard.Books, screen.BooksOrder)
+            draw.DrawBooks(window, options, &imageCache, screen.CustomWizard.Books, screen.BooksOrderRandom())
 
             screen.SelectFont.PrintCenter(window, 245, 2, 1, ebiten.ColorScale{}, "Select Race")
 
@@ -2057,7 +2062,7 @@ func (screen *NewWizardScreen) MakeSelectBannerUI() *uilib.UI {
 
             options.GeoM.Reset()
             options.GeoM.Translate(36, 135)
-            draw.DrawBooks(window, options, &imageCache, screen.CustomWizard.Books, screen.BooksOrder)
+            draw.DrawBooks(window, options, &imageCache, screen.CustomWizard.Books, screen.BooksOrderRandom())
 
             options.GeoM.Reset()
             options.GeoM.Translate(158, 0)
@@ -2087,22 +2092,11 @@ func (screen *NewWizardScreen) Draw(window *ebiten.Image) {
     }
 }
 
-// create an array of N integers where each integer is some value between 0 and 2
-// these values correlate to the index of the book image to draw under the wizard portrait
-func randomizeBookOrder(books int) []int {
-    order := make([]int, books)
-    for i := 0; i < books; i++ {
-        order[i] = rand.IntN(3)
-    }
-    return order
-}
-
 func MakeNewWizardScreen(cache *lbx.LbxCache) *NewWizardScreen {
     out := &NewWizardScreen{
         LbxCache: cache,
         ImageCache: util.MakeImageCache(cache),
         CurrentWizard: 0,
-        BooksOrder: randomizeBookOrder(12),
         State: NewWizardScreenStateSelectWizard,
     }
 
