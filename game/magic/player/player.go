@@ -164,6 +164,14 @@ func (player *Player) WarWithPlayer(other *Player) {
     player.PlayerRelations[other].Treaty = data.TreatyWar
 }
 
+func (player *Player) PactWithPlayer(other *Player) {
+    player.PlayerRelations[other].Treaty = data.TreatyPact
+}
+
+func (player *Player) AllianceWithPlayer(other *Player) {
+    player.PlayerRelations[other].Treaty = data.TreatyAlliance
+}
+
 func (player *Player) IsAI() bool {
     return !player.Human
 }
