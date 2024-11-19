@@ -1,6 +1,8 @@
 package diplomacy
 
 import (
+    "math/rand/v2"
+
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/game/magic/util"
@@ -16,8 +18,24 @@ func ShowDiplomacyScreen(cache *lbx.LbxCache, player *playerlib.Player, enemy *p
 
     quit := false
 
+    // the fade in animation
+    images, _ := imageCache.GetImages("diplomac.lbx", 38)
+    wizardAnimation := util.MakeAnimation(images, false)
+
+    var counter uint64
     logic := func (yield coroutine.YieldFunc) {
         for !quit {
+            counter += 1
+            if counter % 7 == 0 {
+                wizardAnimation.Next()
+            }
+
+            if rand.N(100) == 0 {
+                // talking
+                images, _ := imageCache.GetImages("diplomac.lbx", 24)
+                wizardAnimation = util.MakeAnimation(images, false)
+            }
+
             yield()
         }
     }
@@ -38,6 +56,11 @@ func ShowDiplomacyScreen(cache *lbx.LbxCache, player *playerlib.Player, enemy *p
 
         options.GeoM.Translate(170, 0)
         screen.DrawImage(rightEye, &options)
+
+        // FIXME: only draw a cutout of the frame where the mirror part is
+        options.GeoM.Reset()
+        options.GeoM.Translate(106, 11)
+        screen.DrawImage(wizardAnimation.Frame(), &options)
     }
 
     return logic, draw
