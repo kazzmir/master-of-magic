@@ -396,7 +396,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
             }
 
             // only show treaties for other wizards that the main player already knows about
-            if slices.Contains(enemies, otherPlayer) {
+            if otherPlayer == player || slices.Contains(enemies, otherPlayer) {
                 base := 0
                 // show the treaty icon in the color of the other player
                 switch otherPlayer.GetBanner() {
@@ -461,6 +461,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
             if !enemy.Defeated {
                 positionStart := gemPositions[i]
                 positionStart.X += gemUnknown.Bounds().Dx() + 2
+                positionStart.Y -= 2
                 for otherPlayer, relationship := range enemy.PlayerRelations {
                     treatyIcon := getTreatyIcon(otherPlayer, relationship.Treaty)
                     if treatyIcon != nil {

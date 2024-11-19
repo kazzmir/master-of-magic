@@ -1286,7 +1286,9 @@ func GetPaletteOverrideMap(cache *LbxCache, lbxFile *LbxFile, filename string) (
 
                 out[-1] = paletteTransparent
             }
-
+        case "magic.lbx":
+            palette, _ := lbxFile.GetPalette(0)
+            out[-1] = palette
         case "lose.lbx":
         case "splmastr.lbx":
         case "wizlab.lbx":

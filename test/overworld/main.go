@@ -1895,6 +1895,7 @@ func createScenario23(cache *lbx.LbxCache) *gamelib.Game {
     player.AwarePlayer(enemy)
 
     enemy.WarWithPlayer(player)
+    player.WarWithPlayer(enemy)
 
     enemy.AIBehavior = ai.MakeRaiderAI()
 

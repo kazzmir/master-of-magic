@@ -141,6 +141,16 @@ func MakePlayer(wizard setup.WizardCustom, human bool, arcanusFog [][]bool, myrr
     }
 }
 
+func (player *Player) GetKnownPlayers() []*Player {
+    var out []*Player
+
+    for other, _ := range player.PlayerRelations {
+        out = append(out, other)
+    }
+
+    return out
+}
+
 // this player should now be aware of the other player
 func (player *Player) AwarePlayer(other *Player) {
     _, ok := player.PlayerRelations[other]
