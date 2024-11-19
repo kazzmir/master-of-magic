@@ -466,9 +466,14 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
                     treatyIcon := getTreatyIcon(otherPlayer, relationship.Treaty)
                     if treatyIcon != nil {
                         usePosition := positionStart
+                        rect := util.ImageRect(usePosition.X, usePosition.Y, treatyIcon)
                         elements = append(elements, &uilib.UIElement{
+                            Rect: rect,
                             RightClick: func(element *uilib.UIElement){
-                                // show help for 'TREATIES'
+                                helpEntries := help.GetEntriesByName("TREATIES")
+                                if helpEntries != nil {
+                                    ui.AddElement(uilib.MakeHelpElement(ui, magic.Cache, &magic.ImageCache, helpEntries[0], helpEntries[1:]...))
+                                }
                             },
                             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                                 var options ebiten.DrawImageOptions
