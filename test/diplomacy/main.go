@@ -40,7 +40,7 @@ func NewEngine() (*Engine, error) {
     enemy1 := &playerlib.Player{
         Human: false,
         Wizard: setup.WizardCustom{
-            Base: data.WizardMerlin,
+            Base: data.WizardTauron,
             Name: "Merlin",
             Banner: data.BannerPurple,
         },
