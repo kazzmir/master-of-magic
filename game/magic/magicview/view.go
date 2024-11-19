@@ -477,7 +477,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
                             },
                         })
 
-                        positionStart.Y += treatyIcon.Bounds().Dy() + 2
+                        positionStart.Y += treatyIcon.Bounds().Dy() + 1
                     }
                 }
             }

@@ -161,14 +161,17 @@ func (player *Player) AwarePlayer(other *Player) {
 }
 
 func (player *Player) WarWithPlayer(other *Player) {
+    player.AwarePlayer(other)
     player.PlayerRelations[other].Treaty = data.TreatyWar
 }
 
 func (player *Player) PactWithPlayer(other *Player) {
+    player.AwarePlayer(other)
     player.PlayerRelations[other].Treaty = data.TreatyPact
 }
 
 func (player *Player) AllianceWithPlayer(other *Player) {
+    player.AwarePlayer(other)
     player.PlayerRelations[other].Treaty = data.TreatyAlliance
 }
 
