@@ -2,10 +2,13 @@ package diplomacy
 
 import (
     "image"
+    "log"
+    "image/color"
     "math/rand/v2"
 
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
@@ -17,6 +20,45 @@ import (
 func ShowDiplomacyScreen(cache *lbx.LbxCache, player *playerlib.Player, enemy *playerlib.Player) (func (coroutine.YieldFunc), func (*ebiten.Image)) {
 
     imageCache := util.MakeImageCache(cache)
+
+    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        log.Printf("Unable to read fonts.lbx: %v", err)
+        return nil, nil
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
+        return nil, nil
+    }
+
+    solid := util.Lighten(color.RGBA{R: 0xca, G: 0x8a, B: 0x4a, A: 0xff}, -10)
+
+    yellowGradient := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        solid,
+        util.Lighten(solid, 10),
+        util.Lighten(solid, 20),
+        util.Lighten(solid, 40),
+        util.Lighten(solid, 30),
+        util.Lighten(solid, 30),
+        solid,
+        solid,
+        solid,
+    }
+
+    solidOrange := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        solid, solid, solid,
+        solid, solid, solid,
+        solid, solid, solid,
+    }
+
+    bigFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowGradient)
+    normalFont := font.MakeOptimizedFontWithPalette(fonts[1], solidOrange)
 
     quit := false
 
@@ -116,6 +158,9 @@ func ShowDiplomacyScreen(cache *lbx.LbxCache, player *playerlib.Player, enemy *p
         options.GeoM.Reset()
         options.GeoM.Translate(106, 11)
         screen.DrawImage(wizardAnimation.Frame(), &options)
+
+        bigFont.Print(screen, 60, 140, 1, ebiten.ColorScale{}, "How may I serve you:")
+        normalFont.Print(screen, 70, 160, 1, ebiten.ColorScale{}, "Good bye")
     }
 
     return logic, draw
