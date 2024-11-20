@@ -68,17 +68,28 @@ func ShowDiplomacyScreen(cache *lbx.LbxCache, player *playerlib.Player, enemy *p
 
     var counter uint64
     logic := func (yield coroutine.YieldFunc) {
+        animating := true
+
         for !quit {
             counter += 1
             if counter % 7 == 0 {
+                if animating && wizardAnimation.Done() {
+                    // 0 = happy, 1 = angry, 2 = neutral
+                    moodIndex := 0
+                    mood, _ := imageCache.GetImageTransform("moodwiz.lbx", animationIndex, moodIndex, "cutout", makeCutoutMask)
+                    wizardAnimation = util.MakeAnimation([]*ebiten.Image{mood}, false)
+                    animating = false
+                }
+
                 wizardAnimation.Next()
             }
 
-            if rand.N(100) == 0 {
-            // if counter == 60 && rand.N(1) == 0 {
+            // if rand.N(100) == 0 {
+            if counter == 80 && rand.N(1) == 0 {
                 // talking
                 images, _ := imageCache.GetImagesTransform("diplomac.lbx", 24 + animationIndex, "cutout", makeCutoutMask)
                 wizardAnimation = util.MakeAnimation(images, false)
+                animating = true
             }
 
             yield()
