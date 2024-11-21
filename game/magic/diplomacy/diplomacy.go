@@ -1,8 +1,8 @@
 package diplomacy
 
 import (
-    "image"
     "log"
+    "image"
     "image/color"
     "math/rand/v2"
 
@@ -12,8 +12,65 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
+    uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
+
     "github.com/hajimehoshi/ebiten/v2"
 )
+
+type TalkItem struct {
+    Text string
+    Action func()
+}
+
+type Talk struct {
+    UI *uilib.UI
+    Font *font.Font
+    Items []TalkItem
+    Elements []*uilib.UIElement
+}
+
+func (talk *Talk) AddItem(item string, action func()){
+    talk.Items = append(talk.Items, TalkItem{
+        Text: item,
+        Action: action,
+    })
+
+    posY := 150
+    for range len(talk.Elements) {
+        posY += talk.Font.Height() + 1
+    }
+
+    textWidth := talk.Font.MeasureTextWidth(item, 1)
+
+    rect := image.Rect(70, posY, 70 + int(textWidth), posY + talk.Font.Height())
+
+    highlight := false
+
+    newElement := &uilib.UIElement{
+        Rect: rect,
+        LeftClick: func(element *uilib.UIElement){
+            action()
+        },
+        Inside: func(element *uilib.UIElement, x int, y int){
+            highlight = true
+        },
+        NotInside: func(element *uilib.UIElement){
+            highlight = false
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            scale := ebiten.ColorScale{}
+            if highlight {
+                scale.SetR(2)
+                scale.SetG(2)
+                scale.SetB(2)
+            }
+            talk.Font.Print(screen, 70, float64(posY), 1, scale, item)
+        },
+    }
+
+    talk.Elements = append(talk.Elements, newElement)
+    talk.UI.AddElement(newElement)
+}
 
 /* player is talking to enemy
  */
@@ -58,6 +115,7 @@ func ShowDiplomacyScreen(cache *lbx.LbxCache, player *playerlib.Player, enemy *p
     }
 
     bigFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowGradient)
+    _ = bigFont
     normalFont := font.MakeOptimizedFontWithPalette(fonts[1], solidOrange)
 
     quit := false
@@ -108,11 +166,36 @@ func ShowDiplomacyScreen(cache *lbx.LbxCache, player *playerlib.Player, enemy *p
         return imageOut
     }
 
+    ui := &uilib.UI{
+        Draw: func (ui *uilib.UI, screen *ebiten.Image){
+            ui.IterateElementsByLayer(func (element *uilib.UIElement){
+                if element.Draw != nil {
+                    element.Draw(element, screen)
+                }
+            })
+        },
+    }
+
+    ui.SetElementsFromArray(nil)
+
+    talk := Talk{
+        UI: ui,
+        Font: normalFont,
+    }
+
+    talk.AddItem("How can I serve you", func(){
+    })
+
+    talk.AddItem("Goodbye", func(){
+        quit = true
+    })
+
     var counter uint64
     logic := func (yield coroutine.YieldFunc) {
         animating := true
 
         for !quit {
+            ui.StandardUpdate()
             counter += 1
             if counter % 7 == 0 {
                 if animating && wizardAnimation.Done() {
@@ -159,8 +242,12 @@ func ShowDiplomacyScreen(cache *lbx.LbxCache, player *playerlib.Player, enemy *p
         options.GeoM.Translate(106, 11)
         screen.DrawImage(wizardAnimation.Frame(), &options)
 
+        ui.Draw(ui, screen)
+
+        /*
         bigFont.Print(screen, 60, 140, 1, ebiten.ColorScale{}, "How may I serve you:")
         normalFont.Print(screen, 70, 160, 1, ebiten.ColorScale{}, "Good bye")
+        */
     }
 
     return logic, draw
