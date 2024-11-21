@@ -29,6 +29,12 @@ type Talk struct {
     Elements []*uilib.UIElement
 }
 
+func (talk *Talk) Clear() {
+    talk.Items = nil
+    talk.UI.RemoveElements(talk.Elements)
+    talk.Elements = nil
+}
+
 func (talk *Talk) AddItem(item string, action func()){
     talk.Items = append(talk.Items, TalkItem{
         Text: item,
@@ -183,12 +189,26 @@ func ShowDiplomacyScreen(cache *lbx.LbxCache, player *playerlib.Player, enemy *p
         Font: normalFont,
     }
 
-    talk.AddItem("How can I serve you", func(){
-    })
+    var talkMain func()
 
-    talk.AddItem("Goodbye", func(){
-        quit = true
-    })
+    talkSpells := func(){
+        talk.Clear()
+
+        talk.AddItem("Give spell Resist Elements", func(){})
+        talk.AddItem("Back", talkMain)
+    }
+
+    talkMain = func(){
+        talk.Clear()
+
+        talk.AddItem("Trade spells", talkSpells)
+
+        talk.AddItem("Goodbye", func(){
+            quit = true
+        })
+    }
+
+    talkMain()
 
     var counter uint64
     logic := func (yield coroutine.YieldFunc) {
