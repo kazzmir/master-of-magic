@@ -2,9 +2,10 @@ package diplomacy
 
 import (
     "log"
+    "fmt"
     "image"
     "image/color"
-    "math/rand/v2"
+    // "math/rand/v2"
 
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -15,6 +16,7 @@ import (
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
 
     "github.com/hajimehoshi/ebiten/v2"
+    "github.com/hajimehoshi/ebiten/v2/vector"
 )
 
 type TalkItem struct {
@@ -25,8 +27,22 @@ type TalkItem struct {
 type Talk struct {
     UI *uilib.UI
     Font *font.Font
+    TitleFont *font.Font
     Items []TalkItem
     Elements []*uilib.UIElement
+}
+
+func (talk *Talk) SetTitle(title string) {
+    wrap := talk.TitleFont.CreateWrappedText(220, 1, title)
+
+    newElement := &uilib.UIElement{
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            talk.TitleFont.RenderWrapped(screen, 50, 140, wrap, ebiten.ColorScale{}, false)
+        },
+    }
+
+    talk.Elements = append(talk.Elements, newElement)
+    talk.UI.AddElement(newElement)
 }
 
 func (talk *Talk) Clear() {
@@ -35,7 +51,7 @@ func (talk *Talk) Clear() {
     talk.Elements = nil
 }
 
-func (talk *Talk) AddItem(item string, action func()){
+func (talk *Talk) AddItem(item string, available bool, action func()){
     talk.Items = append(talk.Items, TalkItem{
         Text: item,
         Action: action,
@@ -55,21 +71,40 @@ func (talk *Talk) AddItem(item string, action func()){
     newElement := &uilib.UIElement{
         Rect: rect,
         LeftClick: func(element *uilib.UIElement){
-            action()
+            if available {
+                action()
+            }
         },
         Inside: func(element *uilib.UIElement, x int, y int){
-            highlight = true
+            if available {
+                highlight = true
+            }
         },
         NotInside: func(element *uilib.UIElement){
-            highlight = false
+            if available {
+                highlight = false
+            }
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             scale := ebiten.ColorScale{}
+
+            // FIXME: if this option is not available then show the text in grey scale
+
+            if !available {
+                scale.SetR(0.5)
+                scale.SetG(0.5)
+                scale.SetB(0.5)
+            }
+
             if highlight {
                 scale.SetR(2)
                 scale.SetG(2)
                 scale.SetB(2)
+
+                vector.DrawFilledRect(screen, float32(rect.Min.X), float32(rect.Min.Y), 220, float32(talk.Font.Height()), color.RGBA{R: 0x00, G: 0x00, B: 0x00, A: 50}, false)
+
             }
+
             talk.Font.Print(screen, 70, float64(posY), 1, scale, item)
         },
     }
@@ -172,6 +207,10 @@ func ShowDiplomacyScreen(cache *lbx.LbxCache, player *playerlib.Player, enemy *p
         return imageOut
     }
 
+    var talkMain func()
+
+    clickedOnce := false
+
     ui := &uilib.UI{
         Draw: func (ui *uilib.UI, screen *ebiten.Image){
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
@@ -180,6 +219,12 @@ func ShowDiplomacyScreen(cache *lbx.LbxCache, player *playerlib.Player, enemy *p
                 }
             })
         },
+        LeftClick: func(){
+            if !clickedOnce {
+                talkMain()
+                clickedOnce = true
+            }
+        },
     }
 
     ui.SetElementsFromArray(nil)
@@ -187,28 +232,50 @@ func ShowDiplomacyScreen(cache *lbx.LbxCache, player *playerlib.Player, enemy *p
     talk := Talk{
         UI: ui,
         Font: normalFont,
+        TitleFont: bigFont,
     }
 
-    var talkMain func()
+    doTalk := true
+
+    var talkTribute func()
 
     talkSpells := func(){
+        doTalk = true
         talk.Clear()
 
-        talk.AddItem("Give spell Resist Elements", func(){})
-        talk.AddItem("Back", talkMain)
+        talk.SetTitle("What spell do you wish to exchange?")
+
+        talk.AddItem("Give spell Resist Elements", true, func(){})
+        talk.AddItem("Back", true, talkMain)
     }
 
     talkMain = func(){
+        doTalk = true
         talk.Clear()
 
-        talk.AddItem("Trade spells", talkSpells)
+        talk.SetTitle("How may I serve you:")
 
-        talk.AddItem("Goodbye", func(){
+        talk.AddItem("Propose Treaty", true, func(){})
+        talk.AddItem("Threaten/Break Treaty", false, func(){})
+        talk.AddItem("Offer Tribute", true, talkTribute)
+        talk.AddItem("Exchange spells", true, talkSpells)
+
+        talk.AddItem("Good Bye", true, func(){
             quit = true
         })
     }
 
-    talkMain()
+    talkTribute = func(){
+        doTalk = true
+        talk.Clear()
+        talk.SetTitle("What do you offer as tribute?")
+        talk.AddItem("25 gold", true, func(){})
+        talk.AddItem("Spells", true, func(){})
+        talk.AddItem("Forget It", true, talkMain)
+    }
+
+    talk.Clear()
+    talk.SetTitle(fmt.Sprintf("Hail, mighty %v. I bear greetings and words of wisdom.", player.Wizard.Name))
 
     var counter uint64
     logic := func (yield coroutine.YieldFunc) {
@@ -230,7 +297,8 @@ func ShowDiplomacyScreen(cache *lbx.LbxCache, player *playerlib.Player, enemy *p
             }
 
             // if rand.N(100) == 0 {
-            if counter == 80 && rand.N(1) == 0 {
+            if doTalk {
+                doTalk = false
                 // talking
                 images, _ := imageCache.GetImagesTransform("diplomac.lbx", 24 + animationIndex, "cutout", makeCutoutMask)
                 wizardAnimation = util.MakeAnimation(images, false)
