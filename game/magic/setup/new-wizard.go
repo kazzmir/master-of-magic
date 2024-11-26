@@ -22,13 +22,13 @@ import (
 
 const MaxPicks = 11
 
-type wizardSlot struct {
+type WizardSlot struct {
     Name string
     // the block that the wizard's name is printed on in the ui
-    Background *ebiten.Image
+    Background int
     Base data.WizardBase
     // the portrait of the wizard shown when the user's cursor is on top of their name
-    Portrait *ebiten.Image
+    Portrait int
     Books []data.WizardBook
     ExtraAbility WizardAbility
 }
@@ -223,10 +223,169 @@ func (state NewWizardScreenState) String() string {
     return "?"
 }
 
+func DefaultWizardSlots() []WizardSlot {
+    return []WizardSlot{
+        WizardSlot{
+            Name: "Merlin",
+            Background: 9,
+            Portrait: 0,
+            Base: data.WizardMerlin,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.LifeMagic, Count: 5},
+                data.WizardBook{Magic: data.NatureMagic, Count: 5},
+            },
+            ExtraAbility: AbilitySageMaster,
+        },
+        WizardSlot{
+            Name: "Raven",
+            Background: 10,
+            Portrait: 1,
+            Base: data.WizardRaven,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.SorceryMagic, Count: 6},
+                data.WizardBook{Magic: data.NatureMagic, Count: 5},
+            },
+            ExtraAbility: AbilityNone,
+        },
+        WizardSlot{
+            Name: "Sharee",
+            Background: 11,
+            Portrait: 2,
+            Base: data.WizardSharee,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.DeathMagic, Count: 5},
+                data.WizardBook{Magic: data.ChaosMagic, Count: 5},
+            },
+            ExtraAbility: AbilityConjurer,
+        },
+        WizardSlot{
+            Name: "Lo Pan",
+            Background: 12,
+            Portrait: 3,
+            Base: data.WizardLoPan,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.SorceryMagic, Count: 5},
+                data.WizardBook{Magic: data.ChaosMagic, Count: 5},
+            },
+            ExtraAbility: AbilityChanneler,
+        },
+        WizardSlot{
+            Name: "Jafar",
+            Background: 13,
+            Portrait: 4,
+            Base: data.WizardJafar,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.SorceryMagic, Count: 10},
+            },
+            ExtraAbility: AbilityAlchemy,
+        },
+        WizardSlot{
+            Name: "Oberic",
+            Background: 14,
+            Portrait: 5,
+            Base: data.WizardOberic,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.NatureMagic, Count: 5},
+                data.WizardBook{Magic: data.ChaosMagic, Count: 5},
+            },
+            ExtraAbility: AbilityManaFocusing,
+        },
+        WizardSlot{
+            Name: "Rjak",
+            Background: 15,
+            Portrait: 6,
+            Base: data.WizardRjak,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.DeathMagic, Count: 9},
+            },
+            ExtraAbility: AbilityInfernalPower,
+        },
+        WizardSlot{
+            Name: "Sss'ra",
+            Background: 16,
+            Portrait: 7,
+            Base: data.WizardSssra,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.LifeMagic, Count: 4},
+                data.WizardBook{Magic: data.ChaosMagic, Count: 4},
+            },
+            ExtraAbility: AbilityMyrran,
+        },
+        WizardSlot{
+            Name: "Tauron",
+            Background: 17,
+            Portrait: 8,
+            Base: data.WizardTauron,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.ChaosMagic, Count: 10},
+            },
+            ExtraAbility: AbilityChaosMastery,
+        },
+        WizardSlot{
+            Name: "Freya",
+            Background: 18,
+            Portrait: 9,
+            Base: data.WizardFreya,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.NatureMagic, Count: 10},
+            },
+            ExtraAbility: AbilityNatureMastery,
+        },
+        WizardSlot{
+            Name: "Horus",
+            Background: 19,
+            Portrait: 10,
+            Base: data.WizardHorus,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.LifeMagic, Count: 5},
+                data.WizardBook{Magic: data.SorceryMagic, Count: 5},
+            },
+            ExtraAbility: AbilityArchmage,
+        },
+        WizardSlot{
+            Name: "Ariel",
+            Background: 20,
+            Portrait: 11,
+            Base: data.WizardAriel,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.LifeMagic, Count: 10},
+            },
+            ExtraAbility: AbilityCharismatic,
+        },
+        WizardSlot{
+            Name: "Tlaloc",
+            Background: 21,
+            Portrait: 12,
+            Base: data.WizardTlaloc,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.NatureMagic, Count: 4},
+                data.WizardBook{Magic: data.DeathMagic, Count: 5},
+            },
+            ExtraAbility: AbilityWarlord,
+        },
+        WizardSlot{
+            Name: "Kali",
+            Background: 22,
+            Portrait: 13,
+            Base: data.WizardKali,
+            Books: []data.WizardBook{
+                data.WizardBook{Magic: data.SorceryMagic, Count: 5},
+                data.WizardBook{Magic: data.DeathMagic, Count: 5},
+            },
+            ExtraAbility: AbilityArtificer,
+        },
+        WizardSlot{
+            Name: "Custom",
+            Background: 23,
+            Books: nil,
+        },
+    }
+}
+
 type WizardCustom struct {
     Name string
     // FIXME: remove portrait
-    Portrait *ebiten.Image
+    Portrait int
     Base data.WizardBase
     Abilities []WizardAbility
     Books []data.WizardBook
@@ -342,7 +501,7 @@ type NewWizardScreen struct {
     NameFont *font.Font
     NameFontBright *font.Font
     SelectFont *font.Font
-    WizardSlots []wizardSlot
+    WizardSlots []WizardSlot
     ImageCache util.ImageCache
 
     Spells spellbook.Spells
@@ -351,7 +510,8 @@ type NewWizardScreen struct {
 
     UI *uilib.UI
 
-    BooksOrder []int
+    BooksOrderSeed1 uint64
+    BooksOrderSeed2 uint64
 
     State NewWizardScreenState
 
@@ -378,7 +538,8 @@ func (screen *NewWizardScreen) MakeCustomNameUI() *uilib.UI {
             window.DrawImage(background, &options)
 
             options.GeoM.Translate(portraitX, portraitY)
-            window.DrawImage(screen.CustomWizard.Portrait, &options)
+            portrait, _ := screen.ImageCache.GetImage("wizards.lbx", screen.CustomWizard.Portrait, 0)
+            window.DrawImage(portrait, &options)
             screen.Font.PrintCenter(window, nameX, nameY, 1, ebiten.ColorScale{}, screen.CustomWizard.Name)
             screen.SelectFont.PrintCenter(window, 245, 2, 1, ebiten.ColorScale{}, "Wizard's Name")
 
@@ -497,10 +658,11 @@ func (screen *NewWizardScreen) MakeCustomPictureUI() *uilib.UI {
                 element.Draw(element, window)
             })
 
-            if screen.CustomWizard.Portrait != nil {
+            portrait, _ := screen.ImageCache.GetImage("wizards.lbx", screen.CustomWizard.Portrait, 0)
+            if portrait != nil {
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(portraitX, portraitY)
-                window.DrawImage(screen.CustomWizard.Portrait, &options)
+                window.DrawImage(portrait, &options)
             }
         },
     }
@@ -523,7 +685,7 @@ func (screen *NewWizardScreen) MakeWizardUIElements(clickFunc func(wizard int), 
     for column := 0; column < 2; column += 1 {
         for row := 0; row < 7; row++ {
             wizard := counter
-            background := screen.WizardSlots[counter].Background
+            background, _ := screen.ImageCache.GetImage("newgame.lbx", screen.WizardSlots[counter].Background, 0)
             name := screen.WizardSlots[counter].Name
             counter += 1
 
@@ -571,8 +733,10 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *uilib.UI {
             screen.CustomWizard.Abilities = append(screen.CustomWizard.Abilities, screen.WizardSlots[wizard].ExtraAbility)
         }
 
-        screen.State = NewWizardScreenStateSelectSpells
-        screen.UI = screen.MakeSelectSpellsUI()
+        screen.CustomWizard.StartingSpells.AddAllSpells(GetStartingSpells(&screen.CustomWizard, screen.Spells))
+
+        screen.State = NewWizardScreenStateSelectRace
+        screen.UI = screen.MakeSelectRaceUI()
     }
 
     insideFunc := func(wizard int){
@@ -583,7 +747,7 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *uilib.UI {
 
     // custom element
     elements = append(elements, (func () *uilib.UIElement {
-        background := screen.WizardSlots[len(elements)].Background
+        background, _ := screen.ImageCache.GetImage("newgame.lbx", screen.WizardSlots[len(elements)].Background, 0)
         x1 := left + columnSpace
         y1 := top + 7 * space
         x2 := x1 + background.Bounds().Dx()
@@ -625,7 +789,7 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *uilib.UI {
                 const nameX = 75
                 const nameY = 120
 
-                portrait := screen.WizardSlots[screen.CurrentWizard].Portrait
+                portrait, _ := screen.ImageCache.GetImage("wizards.lbx", screen.WizardSlots[screen.CurrentWizard].Portrait, 0)
                 if portrait != nil {
                     var options ebiten.DrawImageOptions
                     options.GeoM.Translate(portraitX, portraitY)
@@ -635,7 +799,7 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *uilib.UI {
                     // screen.DrawBooks(window, 36, 135, screen.WizardSlots[screen.CurrentWizard].Books)
                     options.GeoM.Reset()
                     options.GeoM.Translate(36, 135)
-                    draw.DrawBooks(window, options, &screen.ImageCache, screen.WizardSlots[screen.CurrentWizard].Books, screen.BooksOrder)
+                    draw.DrawBooks(window, options, &screen.ImageCache, screen.WizardSlots[screen.CurrentWizard].Books, screen.BooksOrderRandom())
                     if screen.WizardSlots[screen.CurrentWizard].ExtraAbility != AbilityNone {
                         screen.AbilityFontSelected.Print(window, 12, 180, 1, ebiten.ColorScale{}, screen.WizardSlots[screen.CurrentWizard].ExtraAbility.String())
                     }
@@ -647,6 +811,10 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *uilib.UI {
     ui.SetElementsFromArray(elements)
 
     return ui
+}
+
+func (screen *NewWizardScreen) BooksOrderRandom() *rand.Rand {
+    return rand.New(rand.NewPCG(screen.BooksOrderSeed1, screen.BooksOrderSeed2))
 }
 
 func (screen *NewWizardScreen) IsActive() bool {
@@ -802,6 +970,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
     screen.LbxFonts = fonts
 
     screen.Font = font.MakeOptimizedFont(fonts[4])
+    screen.WizardSlots = DefaultWizardSlots()
 
     // FIXME: load with a yellowish palette
     screen.SelectFont = font.MakeOptimizedFontWithPalette(fonts[5], selectYellowPalette)
@@ -828,173 +997,6 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
 
     screen.ErrorFont = font.MakeOptimizedFontWithPalette(fonts[4], yellowFade)
 
-    loadImage := func(index int) *ebiten.Image {
-        pic, _ := screen.ImageCache.GetImage("newgame.lbx", index, 0)
-        return pic
-    }
-
-    loadWizardPortrait := func(index int) *ebiten.Image {
-        portrait, _ := screen.ImageCache.GetImage("wizards.lbx", index, 0)
-        return portrait
-    }
-
-    screen.WizardSlots = []wizardSlot{
-        wizardSlot{
-            Name: "Merlin",
-            Background: loadImage(9),
-            Portrait: loadWizardPortrait(0),
-            Base: data.WizardMerlin,
-            Books: []data.WizardBook{
-                data.WizardBook{Magic: data.LifeMagic, Count: 5},
-                data.WizardBook{Magic: data.NatureMagic, Count: 5},
-            },
-            ExtraAbility: AbilitySageMaster,
-        },
-        wizardSlot{
-            Name: "Raven",
-            Background: loadImage(10),
-            Portrait: loadWizardPortrait(1),
-            Base: data.WizardRaven,
-            Books: []data.WizardBook{
-                data.WizardBook{Magic: data.SorceryMagic, Count: 6},
-                data.WizardBook{Magic: data.NatureMagic, Count: 5},
-            },
-            ExtraAbility: AbilityNone,
-        },
-        wizardSlot{
-            Name: "Sharee",
-            Background: loadImage(11),
-            Portrait: loadWizardPortrait(2),
-            Base: data.WizardSharee,
-            Books: []data.WizardBook{
-                data.WizardBook{Magic: data.DeathMagic, Count: 5},
-                data.WizardBook{Magic: data.ChaosMagic, Count: 5},
-            },
-            ExtraAbility: AbilityConjurer,
-        },
-        wizardSlot{
-            Name: "Lo Pan",
-            Background: loadImage(12),
-            Portrait: loadWizardPortrait(3),
-            Base: data.WizardLoPan,
-            Books: []data.WizardBook{
-                data.WizardBook{Magic: data.SorceryMagic, Count: 5},
-                data.WizardBook{Magic: data.ChaosMagic, Count: 5},
-            },
-            ExtraAbility: AbilityChanneler,
-        },
-        wizardSlot{
-            Name: "Jafar",
-            Background: loadImage(13),
-            Portrait: loadWizardPortrait(4),
-            Base: data.WizardJafar,
-            Books: []data.WizardBook{
-                data.WizardBook{Magic: data.SorceryMagic, Count: 10},
-            },
-            ExtraAbility: AbilityAlchemy,
-        },
-        wizardSlot{
-            Name: "Oberic",
-            Background: loadImage(14),
-            Portrait: loadWizardPortrait(5),
-            Base: data.WizardOberic,
-            Books: []data.WizardBook{
-                data.WizardBook{Magic: data.NatureMagic, Count: 5},
-                data.WizardBook{Magic: data.ChaosMagic, Count: 5},
-            },
-            ExtraAbility: AbilityManaFocusing,
-        },
-        wizardSlot{
-            Name: "Rjak",
-            Background: loadImage(15),
-            Portrait: loadWizardPortrait(6),
-            Base: data.WizardRjak,
-            Books: []data.WizardBook{
-                data.WizardBook{Magic: data.DeathMagic, Count: 9},
-            },
-            ExtraAbility: AbilityInfernalPower,
-        },
-        wizardSlot{
-            Name: "Sss'ra",
-            Background: loadImage(16),
-            Portrait: loadWizardPortrait(7),
-            Base: data.WizardSssra,
-            Books: []data.WizardBook{
-                data.WizardBook{Magic: data.LifeMagic, Count: 4},
-                data.WizardBook{Magic: data.ChaosMagic, Count: 4},
-            },
-            ExtraAbility: AbilityMyrran,
-        },
-        wizardSlot{
-            Name: "Tauron",
-            Background: loadImage(17),
-            Portrait: loadWizardPortrait(8),
-            Base: data.WizardTauron,
-            Books: []data.WizardBook{
-                data.WizardBook{Magic: data.ChaosMagic, Count: 10},
-            },
-            ExtraAbility: AbilityChaosMastery,
-        },
-        wizardSlot{
-            Name: "Freya",
-            Background: loadImage(18),
-            Portrait: loadWizardPortrait(9),
-            Base: data.WizardFreya,
-            Books: []data.WizardBook{
-                data.WizardBook{Magic: data.NatureMagic, Count: 10},
-            },
-            ExtraAbility: AbilityNatureMastery,
-        },
-        wizardSlot{
-            Name: "Horus",
-            Background: loadImage(19),
-            Portrait: loadWizardPortrait(10),
-            Base: data.WizardHorus,
-            Books: []data.WizardBook{
-                data.WizardBook{Magic: data.LifeMagic, Count: 5},
-                data.WizardBook{Magic: data.SorceryMagic, Count: 5},
-            },
-            ExtraAbility: AbilityArchmage,
-        },
-        wizardSlot{
-            Name: "Ariel",
-            Background: loadImage(20),
-            Portrait: loadWizardPortrait(11),
-            Base: data.WizardAriel,
-            Books: []data.WizardBook{
-                data.WizardBook{Magic: data.LifeMagic, Count: 10},
-            },
-            ExtraAbility: AbilityCharismatic,
-        },
-        wizardSlot{
-            Name: "Tlaloc",
-            Background: loadImage(21),
-            Portrait: loadWizardPortrait(12),
-            Base: data.WizardTlaloc,
-            Books: []data.WizardBook{
-                data.WizardBook{Magic: data.NatureMagic, Count: 4},
-                data.WizardBook{Magic: data.DeathMagic, Count: 5},
-            },
-            ExtraAbility: AbilityWarlord,
-        },
-        wizardSlot{
-            Name: "Kali",
-            Background: loadImage(22),
-            Portrait: loadWizardPortrait(13),
-            Base: data.WizardKali,
-            Books: []data.WizardBook{
-                data.WizardBook{Magic: data.SorceryMagic, Count: 5},
-                data.WizardBook{Magic: data.DeathMagic, Count: 5},
-            },
-            ExtraAbility: AbilityArtificer,
-        },
-        wizardSlot{
-            Name: "Custom",
-            Background: loadImage(23),
-            Books: nil,
-            Portrait: nil,
-        },
-    }
 
     if screen.State == NewWizardScreenStateSelectWizard {
         screen.UI = screen.MakeSelectWizardUI()
@@ -1388,12 +1390,13 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
             window.DrawImage(customWizardBooks, &options)
 
             options.GeoM.Translate(portraitX, portraitY)
-            window.DrawImage(screen.CustomWizard.Portrait, &options)
+            portrait, _ := screen.ImageCache.GetImage("wizards.lbx", screen.CustomWizard.Portrait, 0)
+            window.DrawImage(portrait, &options)
             screen.Font.PrintCenter(window, nameX, nameY, 1, ebiten.ColorScale{}, screen.CustomWizard.Name)
 
             options.GeoM.Reset()
             options.GeoM.Translate(37, 135)
-            draw.DrawBooks(window, options, &imageCache, screen.CustomWizard.Books, screen.BooksOrder)
+            draw.DrawBooks(window, options, &imageCache, screen.CustomWizard.Books, screen.BooksOrderRandom())
 
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
                 if element.Draw != nil {
@@ -1412,27 +1415,18 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
 
 }
 
-func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
+// a struct that stores how many spells the user can choose from each rarity
+type ChooseSpellInfo struct {
+    CommonMax int
+    UncommonMax int
+    RareMax int
 
-    // for each book of magic the user has create a spell ui that allows the user to select
-    // some set of spells, so if the user has 4 nature and 4 chaos, then the user would see
-    // 2 separate UI's, one for nature and one for chaos
+    CommonSpells spellbook.Spells
+    UncommonSpells spellbook.Spells
+    RareSpells spellbook.Spells
+}
 
-    // 2 picks = 1 common
-    // 3 picks = 2 common
-    // 4 picks = 3 common
-    // 5 picks = 4 common
-    // 6 picks = 5 common
-    // 7 picks = 6 common
-    // 8 picks = 7 common
-    // 9 picks = 8 common
-    // 10 picks = 9 common
-    // 11 picks = 2 uncommon, 1 rare
-
-    imageCache := util.MakeImageCache(screen.LbxCache)
-
-    magicOrder := []data.MagicType{data.LifeMagic, data.DeathMagic, data.ChaosMagic, data.NatureMagic, data.SorceryMagic}
-
+func MakeChooseSpellInfo(allSpells spellbook.Spells, magic data.MagicType, books int) ChooseSpellInfo {
     computeCommon := func(books int) int {
         if books == 0 || books == 11 {
             return 0
@@ -1461,6 +1455,80 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
         return 0
     }
 
+    chooseSpells := func(rarity spellbook.SpellRarity) spellbook.Spells {
+        return allSpells.GetSpellsByMagic(magic).GetSpellsByRarity(rarity)
+    }
+
+    commonMax := computeCommon(books)
+    uncommonMax := computeUncommon(books)
+    rareMax := computeRare(books)
+
+    commonSpells := chooseSpells(spellbook.SpellRarityCommon)
+    uncommonSpells := chooseSpells(spellbook.SpellRarityUncommon)
+    rareSpells := chooseSpells(spellbook.SpellRarityRare)
+
+    return ChooseSpellInfo{
+        CommonMax: commonMax,
+        UncommonMax: uncommonMax,
+        RareMax: rareMax,
+
+        CommonSpells: commonSpells,
+        UncommonSpells: uncommonSpells,
+        RareSpells: rareSpells,
+    }
+}
+
+func GetStartingSpells(wizard *WizardCustom, allSpells spellbook.Spells) spellbook.Spells {
+    var spellsOut spellbook.Spells
+    magicOrder := []data.MagicType{data.LifeMagic, data.DeathMagic, data.ChaosMagic, data.NatureMagic, data.SorceryMagic}
+
+    for _, magic := range magicOrder {
+        spellInfo := MakeChooseSpellInfo(allSpells, magic, wizard.MagicLevel(magic))
+
+        if wizard.MagicLevel(magic) == 11 {
+            spellsOut.AddAllSpells(spellInfo.CommonSpells)
+        }
+
+        // assign common spells
+        for _, index := range rand.Perm(len(spellInfo.CommonSpells.Spells))[0:spellInfo.CommonMax] {
+            spellsOut.AddSpell(spellInfo.CommonSpells.Spells[index])
+        }
+
+        // assign uncommon spells
+        for _, index := range rand.Perm(len(spellInfo.UncommonSpells.Spells))[0:spellInfo.UncommonMax] {
+            spellsOut.AddSpell(spellInfo.UncommonSpells.Spells[index])
+        }
+
+        // assign rare spells
+        for _, index := range rand.Perm(len(spellInfo.RareSpells.Spells))[0:spellInfo.RareMax] {
+            spellsOut.AddSpell(spellInfo.RareSpells.Spells[index])
+        }
+    }
+
+    return spellsOut
+}
+
+func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
+
+    // for each book of magic the user has create a spell ui that allows the user to select
+    // some set of spells, so if the user has 4 nature and 4 chaos, then the user would see
+    // 2 separate UI's, one for nature and one for chaos
+
+    // 2 picks = 1 common
+    // 3 picks = 2 common
+    // 4 picks = 3 common
+    // 5 picks = 4 common
+    // 6 picks = 5 common
+    // 7 picks = 6 common
+    // 8 picks = 7 common
+    // 9 picks = 8 common
+    // 10 picks = 9 common
+    // 11 picks = 2 uncommon, 1 rare
+
+    imageCache := util.MakeImageCache(screen.LbxCache)
+
+    magicOrder := []data.MagicType{data.LifeMagic, data.DeathMagic, data.ChaosMagic, data.NatureMagic, data.SorceryMagic}
+
     // an all black palette
     black := color.RGBA{R: 0, G: 0, B: 0, A: 0xff}
     blackPalette := color.Palette{
@@ -1488,41 +1556,36 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
     blackFont := font.MakeOptimizedFontWithPalette(screen.LbxFonts[4], blackPalette)
     shadowDescriptionFont := font.MakeOptimizedFontWithPalette(screen.LbxFonts[3], blackPalette)
 
-    chooseSpells := func(magic data.MagicType, rarity spellbook.SpellRarity) spellbook.Spells {
-        return screen.Spells.GetSpellsByMagic(magic).GetSpellsByRarity(rarity)
-    }
-
     var doNextMagicUI func (magic data.MagicType)
 
     makeUIForMagic := func (magic data.MagicType) *uilib.UI {
-        commonMax := computeCommon(screen.CustomWizard.MagicLevel(magic))
-        uncommonMax := computeUncommon(screen.CustomWizard.MagicLevel(magic))
-        rareMax := computeRare(screen.CustomWizard.MagicLevel(magic))
+        spellInfo := MakeChooseSpellInfo(screen.Spells, magic, screen.CustomWizard.MagicLevel(magic))
+
+        // if the wizard has all 11 books then they start with knowing all common spells
+        if screen.CustomWizard.MagicLevel(magic) == 11 {
+            screen.CustomWizard.StartingSpells.AddAllSpells(spellInfo.CommonSpells)
+        }
 
         // number of remaining picks in each rarity category
-        commonPicks := commonMax
-        uncommonPicks := uncommonMax
-        rarePicks := rareMax
-
-        commonSpells := chooseSpells(magic, spellbook.SpellRarityCommon)
-        uncommonSpells := chooseSpells(magic, spellbook.SpellRarityUncommon)
-        rareSpells := chooseSpells(magic, spellbook.SpellRarityRare)
+        commonPicks := spellInfo.CommonMax
+        uncommonPicks := spellInfo.UncommonMax
+        rarePicks := spellInfo.RareMax
 
         // assign common spells
-        for _, index := range rand.Perm(len(commonSpells.Spells))[0:commonMax] {
-            screen.CustomWizard.StartingSpells.AddSpell(commonSpells.Spells[index])
+        for _, index := range rand.Perm(len(spellInfo.CommonSpells.Spells))[0:spellInfo.CommonMax] {
+            screen.CustomWizard.StartingSpells.AddSpell(spellInfo.CommonSpells.Spells[index])
             commonPicks -= 1
         }
 
         // assign uncommon spells
-        for _, index := range rand.Perm(len(uncommonSpells.Spells))[0:uncommonMax] {
-            screen.CustomWizard.StartingSpells.AddSpell(uncommonSpells.Spells[index])
+        for _, index := range rand.Perm(len(spellInfo.UncommonSpells.Spells))[0:spellInfo.UncommonMax] {
+            screen.CustomWizard.StartingSpells.AddSpell(spellInfo.UncommonSpells.Spells[index])
             uncommonPicks -= 1
         }
 
         // assign rare spells
-        for _, index := range rand.Perm(len(rareSpells.Spells))[0:rareMax] {
-            screen.CustomWizard.StartingSpells.AddSpell(rareSpells.Spells[index])
+        for _, index := range rand.Perm(len(spellInfo.RareSpells.Spells))[0:spellInfo.RareMax] {
+            screen.CustomWizard.StartingSpells.AddSpell(spellInfo.RareSpells.Spells[index])
             rarePicks -= 1
         }
 
@@ -1588,22 +1651,22 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
             }
         }
 
-        if commonMax > 0 {
+        if spellInfo.CommonMax > 0 {
             x := 169
             top := 28 + descriptionFont.Height() + 3
-            createSpellElements(commonSpells, x, top, &commonPicks)
+            createSpellElements(spellInfo.CommonSpells, x, top, &commonPicks)
         }
 
-        if uncommonMax > 0 {
+        if spellInfo.UncommonMax > 0 {
             x := 169
             top := 28 + descriptionFont.Height() + 3
-            createSpellElements(uncommonSpells, x, top, &uncommonPicks)
+            createSpellElements(spellInfo.UncommonSpells, x, top, &uncommonPicks)
         }
 
-        if rareMax > 0 {
+        if spellInfo.RareMax > 0 {
             x := 169
             top := 78 + descriptionFont.Height() + 3
-            createSpellElements(rareSpells, x, top, &rarePicks)
+            createSpellElements(spellInfo.RareSpells, x, top, &rarePicks)
         }
 
         // ok button
@@ -1652,14 +1715,13 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
                 window.DrawImage(background, &options)
 
                 options.GeoM.Translate(portraitX, portraitY)
-                window.DrawImage(screen.CustomWizard.Portrait, &options)
+                portrait, _ := screen.ImageCache.GetImage("wizards.lbx", screen.CustomWizard.Portrait, 0)
+                window.DrawImage(portrait, &options)
                 screen.Font.PrintCenter(window, nameX, nameY, 1, ebiten.ColorScale{}, screen.CustomWizard.Name)
 
                 options.GeoM.Reset()
                 options.GeoM.Translate(36, 135)
-                draw.DrawBooks(window, options, &imageCache, screen.CustomWizard.Books, screen.BooksOrder)
-
-                // screen.DrawBooks(window, 37, 135, screen.CustomWizard.Books)
+                draw.DrawBooks(window, options, &imageCache, screen.CustomWizard.Books, screen.BooksOrderRandom())
 
                 options.GeoM.Reset()
                 options.GeoM.Translate(196, 180)
@@ -1694,17 +1756,17 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
                 }
 
                 spellBackground1, _ := screen.ImageCache.GetImage("newgame.lbx", 48, 0)
-                if commonMax > 0 {
-                    showDescription(28, fmt.Sprintf("Common: %v", commonMax), spellBackground1)
+                if spellInfo.CommonMax > 0 {
+                    showDescription(28, fmt.Sprintf("Common: %v", spellInfo.CommonMax), spellBackground1)
                 }
 
-                if uncommonMax > 0 {
-                    showDescription(28, fmt.Sprintf("Uncommon: %v", uncommonMax), spellBackground1)
+                if spellInfo.UncommonMax > 0 {
+                    showDescription(28, fmt.Sprintf("Uncommon: %v", spellInfo.UncommonMax), spellBackground1)
                 }
 
-                if rareMax > 0 {
+                if spellInfo.RareMax > 0 {
                     spellBackground2, _ := screen.ImageCache.GetImage("newgame.lbx", 49, 0)
-                    showDescription(78, fmt.Sprintf("Rare: %v", rareMax), spellBackground2)
+                    showDescription(78, fmt.Sprintf("Rare: %v", spellInfo.RareMax), spellBackground2)
                 }
 
                 ui.IterateElementsByLayer(func (element *uilib.UIElement){
@@ -1912,12 +1974,13 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
             window.DrawImage(background, &options)
 
             options.GeoM.Translate(portraitX, portraitY)
-            window.DrawImage(screen.CustomWizard.Portrait, &options)
+            portrait, _ := screen.ImageCache.GetImage("wizards.lbx", screen.CustomWizard.Portrait, 0)
+            window.DrawImage(portrait, &options)
             screen.Font.PrintCenter(window, nameX, nameY, 1, ebiten.ColorScale{}, screen.CustomWizard.Name)
 
             options.GeoM.Reset()
             options.GeoM.Translate(36, 135)
-            draw.DrawBooks(window, options, &imageCache, screen.CustomWizard.Books, screen.BooksOrder)
+            draw.DrawBooks(window, options, &imageCache, screen.CustomWizard.Books, screen.BooksOrderRandom())
 
             screen.SelectFont.PrintCenter(window, 245, 2, 1, ebiten.ColorScale{}, "Select Race")
 
@@ -1993,12 +2056,13 @@ func (screen *NewWizardScreen) MakeSelectBannerUI() *uilib.UI {
             window.DrawImage(background, &options)
 
             options.GeoM.Translate(portraitX, portraitY)
-            window.DrawImage(screen.CustomWizard.Portrait, &options)
+            portrait, _ := screen.ImageCache.GetImage("wizards.lbx", screen.CustomWizard.Portrait, 0)
+            window.DrawImage(portrait, &options)
             screen.Font.PrintCenter(window, nameX, nameY, 1, ebiten.ColorScale{}, screen.CustomWizard.Name)
 
             options.GeoM.Reset()
             options.GeoM.Translate(36, 135)
-            draw.DrawBooks(window, options, &imageCache, screen.CustomWizard.Books, screen.BooksOrder)
+            draw.DrawBooks(window, options, &imageCache, screen.CustomWizard.Books, screen.BooksOrderRandom())
 
             options.GeoM.Reset()
             options.GeoM.Translate(158, 0)
@@ -2028,22 +2092,11 @@ func (screen *NewWizardScreen) Draw(window *ebiten.Image) {
     }
 }
 
-// create an array of N integers where each integer is some value between 0 and 2
-// these values correlate to the index of the book image to draw under the wizard portrait
-func randomizeBookOrder(books int) []int {
-    order := make([]int, books)
-    for i := 0; i < books; i++ {
-        order[i] = rand.IntN(3)
-    }
-    return order
-}
-
 func MakeNewWizardScreen(cache *lbx.LbxCache) *NewWizardScreen {
     out := &NewWizardScreen{
         LbxCache: cache,
         ImageCache: util.MakeImageCache(cache),
         CurrentWizard: 0,
-        BooksOrder: randomizeBookOrder(12),
         State: NewWizardScreenStateSelectWizard,
     }
 

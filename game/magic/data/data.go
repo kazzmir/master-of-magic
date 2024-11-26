@@ -233,3 +233,22 @@ const (
     WeaponMythril
     WeaponAdamantium
 )
+
+type TreatyType int
+const (
+    TreatyNone TreatyType = iota
+    TreatyPact
+    TreatyAlliance
+    TreatyWar
+)
+
+func (treaty TreatyType) String() string {
+    switch treaty {
+        case TreatyNone: return "none"
+        case TreatyPact: return "pact"
+        case TreatyAlliance: return "alliance"
+        case TreatyWar: return "war"
+    }
+
+    return ""
+}

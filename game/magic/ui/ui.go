@@ -84,6 +84,9 @@ type UI struct {
 
     doubleClickCandidates []doubleClick
 
+    // fires when the left mouse button is clicked, even if no element is clicked
+    LeftClick func()
+
     LeftClickedElements []*UIElement
 
     Delays []UIDelay
@@ -487,5 +490,9 @@ func (ui *UI) StandardUpdate() {
                 element.NotLeftClicked(element)
             }
         }
+    }
+
+    if leftClick && ui.LeftClick != nil {
+        ui.LeftClick()
     }
 }

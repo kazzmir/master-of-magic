@@ -1,12 +1,14 @@
 package draw
 
 import (
+    "math/rand/v2"
+
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/hajimehoshi/ebiten/v2"
 )
 
-func DrawBooks(screen *ebiten.Image, options ebiten.DrawImageOptions, imageCache *util.ImageCache, books []data.WizardBook, bookOrder []int){
+func DrawBooks(screen *ebiten.Image, options ebiten.DrawImageOptions, imageCache *util.ImageCache, books []data.WizardBook, random *rand.Rand){
     index := 0
 
     var lifeBooks [3]*ebiten.Image
@@ -31,18 +33,16 @@ func DrawBooks(screen *ebiten.Image, options ebiten.DrawImageOptions, imageCache
     for _, book := range books {
 
         for i := 0; i < book.Count; i++ {
-            // can't draw more books than we have
-            if index >= len(bookOrder) {
-                return
-            }
+
+            element := random.IntN(3)
 
             var img *ebiten.Image
             switch book.Magic {
-                case data.LifeMagic: img = lifeBooks[bookOrder[index]]
-                case data.SorceryMagic: img = sorceryBooks[bookOrder[index]]
-                case data.NatureMagic: img = natureBooks[bookOrder[index]]
-                case data.DeathMagic: img = deathBooks[bookOrder[index]]
-                case data.ChaosMagic: img = chaosBooks[bookOrder[index]]
+                case data.LifeMagic: img = lifeBooks[element]
+                case data.SorceryMagic: img = sorceryBooks[element]
+                case data.NatureMagic: img = natureBooks[element]
+                case data.DeathMagic: img = deathBooks[element]
+                case data.ChaosMagic: img = chaosBooks[element]
             }
 
             // var options ebiten.DrawImageOptions

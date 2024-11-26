@@ -6,11 +6,15 @@ import (
     "image"
     "image/color"
     "math"
+    "math/rand/v2"
+    "slices"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
+    "github.com/kazzmir/master-of-magic/game/magic/mirror"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
@@ -39,7 +43,7 @@ type MagicScreen struct {
     SkillLocked bool
 }
 
-func MakeMagicScreen(cache *lbx.LbxCache, player *playerlib.Player, power int) *MagicScreen {
+func MakeMagicScreen(cache *lbx.LbxCache, player *playerlib.Player, enemies []*playerlib.Player, power int) *MagicScreen {
     magic := &MagicScreen{
         Cache: cache,
         ImageCache: util.MakeImageCache(cache),
@@ -52,7 +56,7 @@ func MakeMagicScreen(cache *lbx.LbxCache, player *playerlib.Player, power int) *
         SkillLocked: false,
     }
 
-    magic.UI = magic.MakeUI(player)
+    magic.UI = magic.MakeUI(player, enemies)
 
     return magic
 }
@@ -292,7 +296,16 @@ func MakeTransmuteElements(ui *uilib.UI, smallFont *font.Font, player *playerlib
     return elements
 }
 
-func (magic *MagicScreen) MakeUI(player *playerlib.Player) *uilib.UI {
+// FIXME: move this into player
+func randomizeBookOrder(books int) []int {
+    order := make([]int, books)
+    for i := 0; i < books; i++ {
+        order[i] = rand.IntN(3)
+    }
+    return order
+}
+
+func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.Player) *uilib.UI {
 
     fontLbx, err := magic.Cache.GetLbxFile("fonts.lbx")
     if err != nil {
@@ -347,23 +360,6 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                 screen.DrawImage(background, &options)
             }
 
-            gemPositions := []image.Point{
-                image.Pt(24, 4),
-                image.Pt(101, 4),
-                image.Pt(178, 4),
-                image.Pt(255, 4),
-            }
-
-            for _, position := range gemPositions {
-                // FIXME: the gem color is based on what the banner color of the known wizard is
-                gemUnknown, err := magic.ImageCache.GetImage("magic.lbx", 6, 0)
-                if err == nil {
-                    var options ebiten.DrawImageOptions
-                    options.GeoM.Translate(float64(position.X), float64(position.Y))
-                    screen.DrawImage(gemUnknown, &options)
-                }
-            }
-
             mana := int(math.Round(player.PowerDistribution.Mana * float64(magic.Power)))
             research := int(math.Round(player.PowerDistribution.Research * float64(magic.Power)))
             skill := magic.Power - (mana + research)
@@ -381,6 +377,118 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player) *uilib.UI {
     }
 
     var elements []*uilib.UIElement
+
+    // gems with wizard info
+    for i := range 4 {
+
+        gemPositions := []image.Point{
+                image.Pt(24, 4),
+                image.Pt(101, 4),
+                image.Pt(178, 4),
+                image.Pt(255, 4),
+            }
+
+        // the treaty icon is the scroll/peace/war icon between the wizard being rendered and another wizard
+        // each enemy wizard can have a treaty with any other wizard
+        getTreatyIcon := func (otherPlayer *playerlib.Player, treaty data.TreatyType) *ebiten.Image {
+            if treaty == data.TreatyNone {
+                return nil
+            }
+
+            // only show treaties for other wizards that the main player already knows about
+            if otherPlayer == player || slices.Contains(enemies, otherPlayer) {
+                base := 0
+                // show the treaty icon in the color of the other player
+                switch otherPlayer.GetBanner() {
+                    case data.BannerBlue: base = 60
+                    case data.BannerGreen: base = 63
+                    case data.BannerPurple: base = 66
+                    case data.BannerRed: base = 69
+                    case data.BannerYellow: base = 72
+                }
+
+                switch treaty {
+                    case data.TreatyPact: img, _ := magic.ImageCache.GetImage("magic.lbx", base + 0, 0); return img
+                    case data.TreatyAlliance: img, _ := magic.ImageCache.GetImage("magic.lbx", base + 1, 0); return img
+                    case data.TreatyWar: img, _ := magic.ImageCache.GetImage("magic.lbx", base + 2, 0); return img
+                }
+            }
+
+            return nil
+        }
+
+        gemDefeated, _ := magic.ImageCache.GetImage("magic.lbx", 51, 0)
+        gemUnknown, _ := magic.ImageCache.GetImage("magic.lbx", 6, 0)
+        position := gemPositions[i]
+        rect := util.ImageRect(position.X, position.Y, gemUnknown)
+        elements = append(elements, &uilib.UIElement{
+            Rect: rect,
+            LeftClick: func(element *uilib.UIElement){
+                // show diplomatic dialogue screen
+            },
+            RightClick: func(element *uilib.UIElement){
+                // show mirror ui with extra enemy info: relations, treaties, personality, objective
+
+                if i < len(enemies) && !enemies[i].Defeated {
+                    mirrorElement := mirror.MakeMirrorUI(magic.Cache, enemies[i], ui)
+                    ui.AddElement(mirrorElement)
+                }
+            },
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(position.X), float64(position.Y))
+
+                if i < len(enemies) {
+                    enemy := enemies[i]
+
+                    if enemy.Defeated {
+                        screen.DrawImage(gemDefeated, &options)
+                    } else {
+                        portraitIndex := mirror.GetWizardPortraitIndex(enemy.Wizard.Base, enemy.Wizard.Banner)
+                        portrait, _ := magic.ImageCache.GetImage("lilwiz.lbx", portraitIndex, 0)
+                        if portrait != nil {
+                            screen.DrawImage(portrait, &options)
+                        }
+                    }
+                } else {
+                    screen.DrawImage(gemUnknown, &options)
+                }
+            },
+        })
+
+        if i < len(enemies) {
+            enemy := enemies[i]
+            if !enemy.Defeated {
+                positionStart := gemPositions[i]
+                positionStart.X += gemUnknown.Bounds().Dx() + 2
+                positionStart.Y -= 2
+                for otherPlayer, relationship := range enemy.PlayerRelations {
+                    treatyIcon := getTreatyIcon(otherPlayer, relationship.Treaty)
+                    if treatyIcon != nil {
+                        usePosition := positionStart
+                        rect := util.ImageRect(usePosition.X, usePosition.Y, treatyIcon)
+                        elements = append(elements, &uilib.UIElement{
+                            Rect: rect,
+                            RightClick: func(element *uilib.UIElement){
+                                helpEntries := help.GetEntriesByName("TREATIES")
+                                if helpEntries != nil {
+                                    ui.AddElement(uilib.MakeHelpElement(ui, magic.Cache, &magic.ImageCache, helpEntries[0], helpEntries[1:]...))
+                                }
+                            },
+                            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                                var options ebiten.DrawImageOptions
+                                options.GeoM.Translate(float64(usePosition.X), float64(usePosition.Y))
+                                screen.DrawImage(treatyIcon, &options)
+                            },
+                        })
+
+                        positionStart.Y += treatyIcon.Bounds().Dy() + 1
+                    }
+                }
+            }
+        }
+
+    }
 
     distribute := func(amount float64, update *float64, other1 *float64, other1Locked bool, other2 *float64, other2Locked bool){
         if other1Locked && other2Locked {

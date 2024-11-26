@@ -2,13 +2,12 @@ package main
 
 import (
     "log"
-    // "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
-    "github.com/kazzmir/master-of-magic/game/magic/magicview"
+    "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
-    "github.com/kazzmir/master-of-magic/game/magic/util"
+    "github.com/kazzmir/master-of-magic/game/magic/diplomacy"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
 
     "github.com/hajimehoshi/ebiten/v2"
@@ -17,8 +16,8 @@ import (
 
 type Engine struct {
     LbxCache *lbx.LbxCache
-    MagicScreen *magicview.MagicScreen
-    ImageCache util.ImageCache
+    DiplomacyDraw func(*ebiten.Image)
+    Coroutine *coroutine.Coroutine
 }
 
 func NewEngine() (*Engine, error) {
@@ -41,18 +40,23 @@ func NewEngine() (*Engine, error) {
     enemy1 := &playerlib.Player{
         Human: false,
         Wizard: setup.WizardCustom{
-            Base: data.WizardMerlin,
+            Base: data.WizardTauron,
             Name: "Merlin",
             Banner: data.BannerPurple,
         },
     }
 
-    magicScreen := magicview.MakeMagicScreen(cache, player, []*playerlib.Player{enemy1}, 100)
+    logic, draw := diplomacy.ShowDiplomacyScreen(cache, player, enemy1)
+
+    run := func(yield coroutine.YieldFunc) error {
+        logic(yield)
+        return ebiten.Termination
+    }
 
     return &Engine{
         LbxCache: cache,
-        MagicScreen: magicScreen,
-        ImageCache: util.MakeImageCache(cache),
+        Coroutine: coroutine.MakeCoroutine(run),
+        DiplomacyDraw: draw,
     }, nil
 }
 
@@ -67,17 +71,15 @@ func (engine *Engine) Update() error {
         }
     }
 
-    switch engine.MagicScreen.Update() {
-        case magicview.MagicScreenStateRunning:
-        case magicview.MagicScreenStateDone:
-            return ebiten.Termination
+    if engine.Coroutine.Run() != nil {
+        return ebiten.Termination
     }
 
     return nil
 }
 
 func (engine *Engine) Draw(screen *ebiten.Image) {
-    engine.MagicScreen.Draw(screen)
+    engine.DiplomacyDraw(screen)
 }
 
 func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
@@ -88,7 +90,7 @@ func main(){
     log.SetFlags(log.Ldate | log.Lshortfile | log.Lmicroseconds)
 
     ebiten.SetWindowSize(data.ScreenWidth * 5, data.ScreenHeight * 5)
-    ebiten.SetWindowTitle("magic view")
+    ebiten.SetWindowTitle("diplomacy")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 
     engine, err := NewEngine()

@@ -49,6 +49,10 @@ type AIBehavior interface {
     NewTurn()
 }
 
+type Relationship struct {
+    Treaty data.TreatyType
+}
+
 type Player struct {
     // matrix the same size as the map, where true means the player can see the tile
     // and false means the tile has not yet been discovered
@@ -61,8 +65,13 @@ type Player struct {
     Mana int
 
     Human bool
+    Defeated bool
 
     Fame int
+
+    // used to seed the random number generator for generating the order of how magic books are drawn
+    BookOrderSeed1 uint64
+    BookOrderSeed2 uint64
 
     // known spells
     KnownSpells spellbook.Spells
@@ -78,6 +87,9 @@ type Player struct {
     PowerDistribution PowerDistribution
 
     AIBehavior AIBehavior
+
+    // relations with other players (treaties, etc)
+    PlayerRelations map[*Player]*Relationship
 
     Heroes [6]*herolib.Hero
     VaultEquipment [4]*artifact.Artifact
@@ -117,13 +129,50 @@ func MakePlayer(wizard setup.WizardCustom, human bool, arcanusFog [][]bool, myrr
         MyrrorFog: myrrorFog,
         Wizard: wizard,
         Human: human,
+        PlayerRelations: make(map[*Player]*Relationship),
         GlobalEnchantments: set.MakeSet[data.Enchantment](),
+        BookOrderSeed1: rand.Uint64(),
+        BookOrderSeed2: rand.Uint64(),
         PowerDistribution: PowerDistribution{
             Mana: 1.0/3,
             Research: 1.0/3,
             Skill: 1.0/3,
         },
     }
+}
+
+func (player *Player) GetKnownPlayers() []*Player {
+    var out []*Player
+
+    for other, _ := range player.PlayerRelations {
+        out = append(out, other)
+    }
+
+    return out
+}
+
+// this player should now be aware of the other player
+func (player *Player) AwarePlayer(other *Player) {
+    _, ok := player.PlayerRelations[other]
+    if !ok {
+        player.PlayerRelations[other] = &Relationship{
+        }
+    }
+}
+
+func (player *Player) WarWithPlayer(other *Player) {
+    player.AwarePlayer(other)
+    player.PlayerRelations[other].Treaty = data.TreatyWar
+}
+
+func (player *Player) PactWithPlayer(other *Player) {
+    player.AwarePlayer(other)
+    player.PlayerRelations[other].Treaty = data.TreatyPact
+}
+
+func (player *Player) AllianceWithPlayer(other *Player) {
+    player.AwarePlayer(other)
+    player.PlayerRelations[other].Treaty = data.TreatyAlliance
 }
 
 func (player *Player) IsAI() bool {
