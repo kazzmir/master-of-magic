@@ -35,18 +35,15 @@ type Engine struct {
     Cache *lbx.LbxCache
     Mode EngineMode
     UI *ebitenui.UI
-
-    Hovers map[*widget.Widget]HoverData
-    StopHovers []func()
+    UIUpdateFunc func()
 }
 
 func MakeEngine(cache *lbx.LbxCache) *Engine {
     engine := Engine{
         Cache: cache,
-        Hovers: make(map[*widget.Widget]HoverData),
     }
 
-    engine.UI = engine.MakeUI()
+    engine.UI, engine.UIUpdateFunc = engine.MakeUI()
 
     return &engine
 }
@@ -62,24 +59,7 @@ func (engine *Engine) Update() error {
     }
 
     engine.UI.Update()
-
-    for _, stopHover := range engine.StopHovers {
-        stopHover()
-    }
-
-    engine.StopHovers = nil
-
-    if input.UIHovered {
-        x, y := ebiten.CursorPosition()
-        find := engine.UI.Container.WidgetAt(x, y)
-        if find != nil {
-            useWidget := find.GetWidget()
-            if hoverData, ok := engine.Hovers[useWidget]; ok {
-                hoverData.OnHover()
-                engine.StopHovers = append(engine.StopHovers, hoverData.OnUnhover)
-            }
-        }
-    }
+    engine.UIUpdateFunc()
 
     return nil
 }
@@ -99,8 +79,10 @@ func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, scre
     return 0, 0
 }
 
-func (engine *Engine) MakeUI() *ebitenui.UI {
+func (engine *Engine) MakeUI() (*ebitenui.UI, func()) {
     face, _ := loadFont(18)
+
+    hovers := make(map[*widget.Widget]HoverData)
 
     rootContainer := widget.NewContainer(widget.ContainerOpts.Layout(widget.NewRowLayout(widget.RowLayoutOpts.Direction(widget.DirectionVertical))))
 
@@ -109,7 +91,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         widget.TextOpts.WidgetOpts(widget.WidgetOpts.TrackHover(true)),
     )
 
-    engine.Hovers[label1.GetWidget()] = HoverData{
+    hovers[label1.GetWidget()] = HoverData{
         OnHover: func(){
             label1.Color = color.RGBA{R: 255, G: 0, B: 0, A: 255}
         },
@@ -126,7 +108,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
     )
     rootContainer.AddChild(label2)
 
-    engine.Hovers[label2.GetWidget()] = HoverData{
+    hovers[label2.GetWidget()] = HoverData{
         OnHover: func(){
             label2.Color = color.RGBA{R: 0, G: 255, B: 0, A: 255}
         },
@@ -139,7 +121,30 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         Container: rootContainer,
     }
 
-    return &ui
+    var stopHovers []func()
+
+    // called every tick in Update()
+    updateFunc := func(){
+        for _, stopHover := range stopHovers {
+            stopHover()
+        }
+
+        stopHovers = nil
+
+        if input.UIHovered {
+            x, y := ebiten.CursorPosition()
+            find := ui.Container.WidgetAt(x, y)
+            if find != nil {
+                useWidget := find.GetWidget()
+                if hoverData, ok := hovers[useWidget]; ok {
+                    hoverData.OnHover()
+                    stopHovers = append(stopHovers, hoverData.OnUnhover)
+                }
+            }
+        }
+    }
+
+    return &ui, updateFunc
 }
 
 func loadFont(size float64) (text.Face, error) {
