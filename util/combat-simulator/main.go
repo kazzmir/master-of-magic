@@ -15,6 +15,7 @@ import (
     "github.com/ebitenui/ebitenui"
     "github.com/ebitenui/ebitenui/input"
     "github.com/ebitenui/ebitenui/widget"
+    ui_image "github.com/ebitenui/ebitenui/image"
 )
 
 const EngineWidth = 800
@@ -116,6 +117,61 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, func()) {
             label2.Color = color.White
         },
     }
+
+    fakeImage := ui_image.NewNineSliceColor(color.NRGBA{R: 255, G: 0, B: 0, A: 255})
+
+    unitList1 := widget.NewListComboButton(
+        widget.ListComboButtonOpts.SelectComboButtonOpts(
+            widget.SelectComboButtonOpts.ComboButtonOpts(
+                widget.ComboButtonOpts.MaxContentHeight(200),
+                widget.ComboButtonOpts.ButtonOpts(
+                    widget.ButtonOpts.Image(&widget.ButtonImage{
+                        Idle: fakeImage,
+                        Hover: fakeImage,
+                        Pressed: fakeImage,
+                    }),
+                    widget.ButtonOpts.Text("Select Unit", face, &widget.ButtonTextColor{
+                        Idle: color.White,
+                        Disabled: color.White,
+                    }),
+                ),
+            ),
+        ),
+        widget.ListComboButtonOpts.EntryLabelFunc(
+            func (e any) string {
+                return "Button " + e.(string)
+            },
+            func (e any) string {
+                return "List " + e.(string)
+            },
+        ),
+        widget.ListComboButtonOpts.ListOpts(
+            widget.ListOpts.EntryFontFace(face),
+            widget.ListOpts.Entries([]any{"x", "y", "z", "a", "b"}),
+            widget.ListOpts.EntryColor(&widget.ListEntryColor{
+                Selected: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
+                Unselected: color.NRGBA{R: 0, G: 255, B: 0, A: 255},
+            }),
+            widget.ListOpts.SliderOpts(
+                widget.SliderOpts.Images(&widget.SliderTrackImage{
+                    Idle: fakeImage,
+                    Hover: fakeImage,
+                }, &widget.ButtonImage{
+                    Idle: fakeImage,
+                    Hover: fakeImage,
+                    Pressed: fakeImage,
+                }),
+            ),
+            widget.ListOpts.ScrollContainerOpts(
+                widget.ScrollContainerOpts.Image(&widget.ScrollContainerImage{
+                    Idle: fakeImage,
+                    Disabled: fakeImage,
+                    Mask: fakeImage,
+                }),
+            ),
+        ),
+    )
+    rootContainer.AddChild(unitList1)
 
     ui := ebitenui.UI{
         Container: rootContainer,
