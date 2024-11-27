@@ -13,6 +13,7 @@ import (
     "github.com/hajimehoshi/ebiten/v2/text/v2"
 
     "github.com/ebitenui/ebitenui"
+    "github.com/ebitenui/ebitenui/input"
     "github.com/ebitenui/ebitenui/widget"
 )
 
@@ -25,15 +26,24 @@ const (
     EngineModeCombat
 )
 
+type HoverData struct {
+    OnHover func()
+    OnUnhover func()
+}
+
 type Engine struct {
     Cache *lbx.LbxCache
     Mode EngineMode
     UI *ebitenui.UI
+
+    Hovers map[*widget.Widget]HoverData
+    StopHovers []func()
 }
 
 func MakeEngine(cache *lbx.LbxCache) *Engine {
     engine := Engine{
         Cache: cache,
+        Hovers: make(map[*widget.Widget]HoverData),
     }
 
     engine.UI = engine.MakeUI()
@@ -52,6 +62,24 @@ func (engine *Engine) Update() error {
     }
 
     engine.UI.Update()
+
+    for _, stopHover := range engine.StopHovers {
+        stopHover()
+    }
+
+    engine.StopHovers = nil
+
+    if input.UIHovered {
+        x, y := ebiten.CursorPosition()
+        find := engine.UI.Container.WidgetAt(x, y)
+        if find != nil {
+            useWidget := find.GetWidget()
+            if hoverData, ok := engine.Hovers[useWidget]; ok {
+                hoverData.OnHover()
+                engine.StopHovers = append(engine.StopHovers, hoverData.OnUnhover)
+            }
+        }
+    }
 
     return nil
 }
@@ -76,12 +104,36 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
     rootContainer := widget.NewContainer(widget.ContainerOpts.Layout(widget.NewRowLayout(widget.RowLayoutOpts.Direction(widget.DirectionVertical))))
 
-    label1 := widget.NewText(widget.TextOpts.Text("Hello!", face, color.White))
+    label1 := widget.NewText(
+        widget.TextOpts.Text("Hello!", face, color.White),
+        widget.TextOpts.WidgetOpts(widget.WidgetOpts.TrackHover(true)),
+    )
+
+    engine.Hovers[label1.GetWidget()] = HoverData{
+        OnHover: func(){
+            label1.Color = color.RGBA{R: 255, G: 0, B: 0, A: 255}
+        },
+        OnUnhover: func(){
+            label1.Color = color.White
+        },
+    }
 
     rootContainer.AddChild(label1)
 
-    label2 := widget.NewText(widget.TextOpts.Text("Everyone!", face, color.White))
+    label2 := widget.NewText(
+        widget.TextOpts.Text("Everyone!", face, color.White),
+        widget.TextOpts.WidgetOpts(widget.WidgetOpts.TrackHover(true)),
+    )
     rootContainer.AddChild(label2)
+
+    engine.Hovers[label2.GetWidget()] = HoverData{
+        OnHover: func(){
+            label2.Color = color.RGBA{R: 0, G: 255, B: 0, A: 255}
+        },
+        OnUnhover: func(){
+            label2.Color = color.White
+        },
+    }
 
     ui := ebitenui.UI{
         Container: rootContainer,
