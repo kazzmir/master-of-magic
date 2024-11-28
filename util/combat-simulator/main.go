@@ -2,6 +2,7 @@ package main
 
 import (
     "log"
+    "fmt"
     "image/color"
     "errors"
 
@@ -27,8 +28,8 @@ import (
     ui_image "github.com/ebitenui/ebitenui/image"
 )
 
-const EngineWidth = 800
-const EngineHeight = 600
+const EngineWidth = 1024
+const EngineHeight = 768
 
 type EngineMode int
 const (
@@ -156,7 +157,12 @@ func (engine *Engine) EnterCombat() {
 func (engine *Engine) MakeUI() *ebitenui.UI {
     face, _ := loadFont(18)
 
-    rootContainer := widget.NewContainer(widget.ContainerOpts.Layout(widget.NewRowLayout(widget.RowLayoutOpts.Direction(widget.DirectionVertical))))
+    rootContainer := widget.NewContainer(
+        widget.ContainerOpts.Layout(widget.NewRowLayout(
+            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+            widget.RowLayoutOpts.Spacing(10),
+        )),
+    )
 
     var label1 *widget.Text
 
@@ -230,23 +236,22 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
     )
     rootContainer.AddChild(unitList1)
 
-    unitsHighMenTab := widget.NewTabBookTab(
-        "High Men",
-        widget.ContainerOpts.Layout(widget.NewRowLayout(widget.RowLayoutOpts.Direction(widget.DirectionVertical))),
-    )
+    var raceTabs []*widget.TabBookTab
 
-    unitsHighMenTab.AddChild(widget.NewText(
-        widget.TextOpts.Text("Bowmen", face, color.White),
-    ))
+    for _, race := range append(data.ArcanianRaces(), data.MyrranRaces()...) {
+        tab := widget.NewTabBookTab(
+            race.String(),
+            widget.ContainerOpts.Layout(widget.NewRowLayout(widget.RowLayoutOpts.Direction(widget.DirectionVertical))),
+        )
 
-    unitsKlackonTab := widget.NewTabBookTab(
-        "Klackon",
-        widget.ContainerOpts.Layout(widget.NewRowLayout(widget.RowLayoutOpts.Direction(widget.DirectionVertical))),
-    )
+        for _, unit := range units.UnitsByRace(race) {
+            tab.AddChild(widget.NewText(
+                widget.TextOpts.Text(fmt.Sprintf("%v %v", race.String(), unit.Name), face, color.White),
+            ))
+        }
 
-    unitsKlackonTab.AddChild(widget.NewText(
-        widget.TextOpts.Text("Stag Beetle", face, color.White),
-    ))
+        raceTabs = append(raceTabs, tab)
+    }
 
     unitsTabs := widget.NewTabBook(
         widget.TabBookOpts.TabButtonImage(&widget.ButtonImage{
@@ -255,7 +260,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             Pressed: buttonImage,
         }),
         widget.TabBookOpts.TabButtonText(face, &widget.ButtonTextColor{Idle: color.White, Disabled: color.White}),
-        widget.TabBookOpts.Tabs(unitsHighMenTab, unitsKlackonTab),
+        widget.TabBookOpts.Tabs(raceTabs...),
     )
 
     rootContainer.AddChild(unitsTabs)

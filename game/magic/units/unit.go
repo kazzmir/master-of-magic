@@ -4731,6 +4731,18 @@ var AllUnits []Unit = []Unit{
     StagBeetle,
 }
 
+func UnitsByRace(race data.Race) []Unit {
+    var units []Unit
+
+    for _, unit := range AllUnits {
+        if unit.Race == race {
+            units = append(units, unit)
+        }
+    }
+
+    return units
+}
+
 func ChooseRandomUnit(race data.Race) Unit {
     var units []Unit
     for _, unit := range AllUnits {
