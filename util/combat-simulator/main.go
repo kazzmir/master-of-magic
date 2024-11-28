@@ -48,6 +48,7 @@ type Engine struct {
     UI *ebitenui.UI
     Combat *combat.CombatScreen
     Coroutine *coroutine.Coroutine
+    Counter uint64
 }
 
 func MakeEngine(cache *lbx.LbxCache) *Engine {
@@ -63,6 +64,8 @@ func MakeEngine(cache *lbx.LbxCache) *Engine {
 var CombatDoneErr = errors.New("combat done")
 
 func (engine *Engine) Update() error {
+    engine.Counter += 1
+
     keys := inpututil.AppendJustPressedKeys(nil)
 
     for _, key := range keys {
@@ -237,6 +240,10 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
     )
     rootContainer.AddChild(unitList1)
 
+    type ListItem struct {
+        Name string
+    }
+
     defendingArmyList := widget.NewList(
         widget.ListOpts.EntryFontFace(face),
         widget.ListOpts.SliderOpts(
@@ -252,13 +259,13 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
         widget.ListOpts.EntryLabelFunc(
             func (e any) string {
-                return e.(string)
+                return e.(*ListItem).Name
             },
         ),
 
         widget.ListOpts.EntrySelectedHandler(func(args *widget.ListEntrySelectedEventArgs) {
-			entry := args.Entry.(string)
-			fmt.Println("Entry Selected: ", entry)
+			entry := args.Entry.(*ListItem)
+			fmt.Println("Entry Selected: ", entry.Name)
 		}),
 
         widget.ListOpts.EntryColor(&widget.ListEntryColor{
@@ -285,6 +292,8 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             widget.ContainerOpts.Layout(widget.NewRowLayout(widget.RowLayoutOpts.Direction(widget.DirectionVertical))),
         )
 
+        clickTimer := make(map[string]uint64)
+
         unitList := widget.NewList(
             widget.ListOpts.EntryFontFace(face),
             widget.ListOpts.SliderOpts(
@@ -306,8 +315,16 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
             widget.ListOpts.EntrySelectedHandler(func(args *widget.ListEntrySelectedEventArgs) {
                 entry := args.Entry.(string)
-                fmt.Println("Entry Selected: ", entry)
-                defendingArmyList.AddEntry(entry)
+
+                lastTime, ok := clickTimer[entry]
+                // log.Printf("Entry %v lastTime %v counter %v ok %v", entry, lastTime, engine.Counter, ok)
+                if ok && engine.Counter - lastTime < 30 {
+                    // log.Printf("  adding %v to defending army", entry)
+                    defendingArmyList.AddEntry(&ListItem{Name: entry})
+                    clickTimer[entry] = engine.Counter + 30
+                } else {
+                    clickTimer[entry] = engine.Counter
+                }
             }),
 
             widget.ListOpts.EntryColor(&widget.ListEntryColor{
@@ -322,6 +339,8 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
                     Mask: fakeImage,
                 }),
             ),
+
+            widget.ListOpts.AllowReselect(),
         )
 
         tab.AddChild(unitList)
