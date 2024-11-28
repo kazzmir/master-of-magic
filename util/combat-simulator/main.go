@@ -13,7 +13,7 @@ import (
     "github.com/hajimehoshi/ebiten/v2/text/v2"
 
     "github.com/ebitenui/ebitenui"
-    "github.com/ebitenui/ebitenui/input"
+    // "github.com/ebitenui/ebitenui/input"
     "github.com/ebitenui/ebitenui/widget"
     ui_image "github.com/ebitenui/ebitenui/image"
 )
@@ -36,7 +36,6 @@ type Engine struct {
     Cache *lbx.LbxCache
     Mode EngineMode
     UI *ebitenui.UI
-    UIUpdateFunc func()
 }
 
 func MakeEngine(cache *lbx.LbxCache) *Engine {
@@ -44,7 +43,7 @@ func MakeEngine(cache *lbx.LbxCache) *Engine {
         Cache: cache,
     }
 
-    engine.UI, engine.UIUpdateFunc = engine.MakeUI()
+    engine.UI = engine.MakeUI()
 
     return &engine
 }
@@ -62,7 +61,6 @@ func (engine *Engine) Update() error {
     switch engine.Mode {
         case EngineModeMenu:
             engine.UI.Update()
-            engine.UIUpdateFunc()
         case EngineModeCombat:
     }
 
@@ -92,43 +90,40 @@ func (engine *Engine) EnterCombat() {
     engine.Mode = EngineModeCombat
 }
 
-func (engine *Engine) MakeUI() (*ebitenui.UI, func()) {
+func (engine *Engine) MakeUI() *ebitenui.UI {
     face, _ := loadFont(18)
-
-    hovers := make(map[*widget.Widget]HoverData)
 
     rootContainer := widget.NewContainer(widget.ContainerOpts.Layout(widget.NewRowLayout(widget.RowLayoutOpts.Direction(widget.DirectionVertical))))
 
-    label1 := widget.NewText(
-        widget.TextOpts.Text("Hello!", face, color.White),
-        widget.TextOpts.WidgetOpts(widget.WidgetOpts.TrackHover(true)),
-    )
+    var label1 *widget.Text
 
-    hovers[label1.GetWidget()] = HoverData{
-        OnHover: func(){
-            label1.Color = color.RGBA{R: 255, G: 0, B: 0, A: 255}
-        },
-        OnUnhover: func(){
-            label1.Color = color.White
-        },
-    }
+    label1 = widget.NewText(
+        widget.TextOpts.Text("Hello!", face, color.White),
+        widget.TextOpts.WidgetOpts(
+            widget.WidgetOpts.CursorEnterHandler(func(args *widget.WidgetCursorEnterEventArgs) {
+                label1.Color = color.RGBA{R: 255, G: 0, B: 0, A: 255}
+            }),
+            widget.WidgetOpts.CursorExitHandler(func(args *widget.WidgetCursorExitEventArgs) {
+                label1.Color = color.White
+            }),
+        ),
+    )
 
     rootContainer.AddChild(label1)
 
-    label2 := widget.NewText(
+    var label2 *widget.Text
+    label2 = widget.NewText(
         widget.TextOpts.Text("Everyone!", face, color.White),
-        widget.TextOpts.WidgetOpts(widget.WidgetOpts.TrackHover(true)),
+        widget.TextOpts.WidgetOpts(
+            widget.WidgetOpts.CursorEnterHandler(func(args *widget.WidgetCursorEnterEventArgs) {
+                label2.Color = color.RGBA{R: 0, G: 255, B: 0, A: 255}
+            }),
+            widget.WidgetOpts.CursorExitHandler(func(args *widget.WidgetCursorExitEventArgs) {
+                label2.Color = color.White
+            }),
+        ),
     )
     rootContainer.AddChild(label2)
-
-    hovers[label2.GetWidget()] = HoverData{
-        OnHover: func(){
-            label2.Color = color.RGBA{R: 0, G: 255, B: 0, A: 255}
-        },
-        OnUnhover: func(){
-            label2.Color = color.White
-        },
-    }
 
     fakeImage := ui_image.NewNineSliceColor(color.NRGBA{R: 255, G: 0, B: 0, A: 255})
     buttonImage := ui_image.NewNineSliceColor(color.NRGBA{R: 150, G: 150, B: 0, A: 255})
@@ -206,30 +201,7 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, func()) {
         Container: rootContainer,
     }
 
-    var stopHovers []func()
-
-    // called every tick in Update()
-    updateFunc := func(){
-        for _, stopHover := range stopHovers {
-            stopHover()
-        }
-
-        stopHovers = nil
-
-        if input.UIHovered {
-            x, y := ebiten.CursorPosition()
-            find := ui.Container.WidgetAt(x, y)
-            if find != nil {
-                useWidget := find.GetWidget()
-                if hoverData, ok := hovers[useWidget]; ok {
-                    hoverData.OnHover()
-                    stopHovers = append(stopHovers, hoverData.OnUnhover)
-                }
-            }
-        }
-    }
-
-    return &ui, updateFunc
+    return &ui
 }
 
 func loadFont(size float64) (text.Face, error) {
