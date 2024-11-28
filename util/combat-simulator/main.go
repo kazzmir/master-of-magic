@@ -3,9 +3,18 @@ package main
 import (
     "log"
     "image/color"
+    "errors"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/combat"
+    "github.com/kazzmir/master-of-magic/game/magic/units"
+    "github.com/kazzmir/master-of-magic/game/magic/setup"
+    "github.com/kazzmir/master-of-magic/game/magic/mouse"
+    "github.com/kazzmir/master-of-magic/game/magic/audio"
+    "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
+    playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     "github.com/kazzmir/master-of-magic/util/common"
 
     "github.com/hajimehoshi/ebiten/v2"
@@ -36,6 +45,8 @@ type Engine struct {
     Cache *lbx.LbxCache
     Mode EngineMode
     UI *ebitenui.UI
+    Combat *combat.CombatScreen
+    Coroutine *coroutine.Coroutine
 }
 
 func MakeEngine(cache *lbx.LbxCache) *Engine {
@@ -47,6 +58,8 @@ func MakeEngine(cache *lbx.LbxCache) *Engine {
 
     return &engine
 }
+
+var CombatDoneErr = errors.New("combat done")
 
 func (engine *Engine) Update() error {
     keys := inpututil.AppendJustPressedKeys(nil)
@@ -62,6 +75,13 @@ func (engine *Engine) Update() error {
         case EngineModeMenu:
             engine.UI.Update()
         case EngineModeCombat:
+            inputmanager.Update()
+            err := engine.Coroutine.Run()
+            if errors.Is(err, CombatDoneErr) {
+                engine.Combat = nil
+                engine.Coroutine = nil
+                engine.Mode = EngineModeMenu
+            }
     }
 
     return nil
@@ -72,6 +92,8 @@ func (engine *Engine) Draw(screen *ebiten.Image) {
         case EngineModeMenu:
             engine.UI.Draw(screen)
         case EngineModeCombat:
+            engine.Combat.Draw(screen)
+            mouse.Mouse.Draw(screen)
     }
 }
 
@@ -88,6 +110,47 @@ func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, scre
 
 func (engine *Engine) EnterCombat() {
     engine.Mode = EngineModeCombat
+
+    cpuPlayer := playerlib.MakePlayer(setup.WizardCustom{
+        Name: "CPU",
+        Banner: data.BannerRed,
+    }, false, nil, nil)
+
+    humanPlayer := playerlib.MakePlayer(setup.WizardCustom{
+        Name: "Human",
+        Banner: data.BannerGreen,
+    }, true, nil, nil)
+
+    defendingArmy := combat.Army{
+        Player: cpuPlayer,
+    }
+    warlock := units.MakeOverworldUnitFromUnit(units.Warlocks, 1, 1, data.PlaneArcanus, cpuPlayer.Wizard.Banner, cpuPlayer.MakeExperienceInfo())
+    defendingArmy.AddUnit(warlock)
+
+    defendingArmy.LayoutUnits(combat.TeamDefender)
+
+    attackingArmy := combat.Army{
+        Player: humanPlayer,
+    }
+
+    for range 2 {
+        attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenBowmen, 1, 1, data.PlaneArcanus, humanPlayer.Wizard.Banner, humanPlayer.MakeExperienceInfo()))
+    }
+
+    attackingArmy.LayoutUnits(combat.TeamAttacker)
+
+    combatScreen := combat.MakeCombatScreen(engine.Cache, &defendingArmy, &attackingArmy, humanPlayer, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{})
+    engine.Combat = combatScreen
+
+    run := func(yield coroutine.YieldFunc) error {
+        for combatScreen.Update(yield) == combat.CombatStateRunning {
+            yield()
+        }
+
+        return CombatDoneErr
+    }
+
+    engine.Coroutine = coroutine.MakeCoroutine(run)
 }
 
 func (engine *Engine) MakeUI() *ebitenui.UI {
@@ -221,8 +284,12 @@ func loadFont(size float64) (text.Face, error) {
 func main(){
     cache := lbx.AutoCache()
 
+    audio.Initialize()
+    mouse.Initialize()
+
     engine := MakeEngine(cache)
     ebiten.SetWindowSize(800, 600)
+    ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 
     err := ebiten.RunGame(engine)
     if err != nil {
