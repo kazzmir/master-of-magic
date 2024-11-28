@@ -59,14 +59,22 @@ func (engine *Engine) Update() error {
         }
     }
 
-    engine.UI.Update()
-    engine.UIUpdateFunc()
+    switch engine.Mode {
+        case EngineModeMenu:
+            engine.UI.Update()
+            engine.UIUpdateFunc()
+        case EngineModeCombat:
+    }
 
     return nil
 }
 
 func (engine *Engine) Draw(screen *ebiten.Image) {
-    engine.UI.Draw(screen)
+    switch engine.Mode {
+        case EngineModeMenu:
+            engine.UI.Draw(screen)
+        case EngineModeCombat:
+    }
 }
 
 func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
@@ -78,6 +86,10 @@ func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, scre
     }
 
     return 0, 0
+}
+
+func (engine *Engine) EnterCombat() {
+    engine.Mode = EngineModeCombat
 }
 
 func (engine *Engine) MakeUI() (*ebitenui.UI, func()) {
@@ -119,6 +131,7 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, func()) {
     }
 
     fakeImage := ui_image.NewNineSliceColor(color.NRGBA{R: 255, G: 0, B: 0, A: 255})
+    buttonImage := ui_image.NewNineSliceColor(color.NRGBA{R: 150, G: 150, B: 0, A: 255})
 
     unitList1 := widget.NewListComboButton(
         widget.ListComboButtonOpts.SelectComboButtonOpts(
@@ -126,9 +139,9 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, func()) {
                 widget.ComboButtonOpts.MaxContentHeight(200),
                 widget.ComboButtonOpts.ButtonOpts(
                     widget.ButtonOpts.Image(&widget.ButtonImage{
-                        Idle: fakeImage,
-                        Hover: fakeImage,
-                        Pressed: fakeImage,
+                        Idle: buttonImage,
+                        Hover: buttonImage,
+                        Pressed: buttonImage,
                     }),
                     widget.ButtonOpts.Text("Select Unit", face, &widget.ButtonTextColor{
                         Idle: color.White,
@@ -172,6 +185,22 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, func()) {
         ),
     )
     rootContainer.AddChild(unitList1)
+
+    rootContainer.AddChild(widget.NewButton(
+        widget.ButtonOpts.Image(&widget.ButtonImage{
+            Idle: buttonImage,
+            Hover: buttonImage,
+            Pressed: buttonImage,
+        }),
+        widget.ButtonOpts.Text("Enter Combat!", face, &widget.ButtonTextColor{
+            Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
+            Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+            Pressed: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
+        }),
+        widget.ButtonOpts.PressedHandler(func (args *widget.ButtonPressedEventArgs) {
+            engine.EnterCombat()
+        }),
+    ))
 
     ui := ebitenui.UI{
         Container: rootContainer,
