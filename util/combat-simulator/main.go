@@ -237,6 +237,44 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
     )
     rootContainer.AddChild(unitList1)
 
+    defendingArmyList := widget.NewList(
+        widget.ListOpts.EntryFontFace(face),
+        widget.ListOpts.SliderOpts(
+            widget.SliderOpts.Images(&widget.SliderTrackImage{
+                Idle: fakeImage,
+                Hover: fakeImage,
+            }, &widget.ButtonImage{
+                Idle: fakeImage,
+                Hover: fakeImage,
+                Pressed: fakeImage,
+            }),
+        ),
+
+        widget.ListOpts.EntryLabelFunc(
+            func (e any) string {
+                return e.(string)
+            },
+        ),
+
+        widget.ListOpts.EntrySelectedHandler(func(args *widget.ListEntrySelectedEventArgs) {
+			entry := args.Entry.(string)
+			fmt.Println("Entry Selected: ", entry)
+		}),
+
+        widget.ListOpts.EntryColor(&widget.ListEntryColor{
+            Selected: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
+            Unselected: color.NRGBA{R: 0, G: 255, B: 0, A: 255},
+        }),
+
+        widget.ListOpts.ScrollContainerOpts(
+            widget.ScrollContainerOpts.Image(&widget.ScrollContainerImage{
+                Idle: fakeImage,
+                Disabled: fakeImage,
+                Mask: fakeImage,
+            }),
+        ),
+    )
+
     var raceTabs []*widget.TabBookTab
 
     allRaces := append(append(data.ArcanianRaces(), data.MyrranRaces()...), data.RaceFantastic)
@@ -247,10 +285,49 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             widget.ContainerOpts.Layout(widget.NewRowLayout(widget.RowLayoutOpts.Direction(widget.DirectionVertical))),
         )
 
+        unitList := widget.NewList(
+            widget.ListOpts.EntryFontFace(face),
+            widget.ListOpts.SliderOpts(
+                widget.SliderOpts.Images(&widget.SliderTrackImage{
+                    Idle: fakeImage,
+                    Hover: fakeImage,
+                }, &widget.ButtonImage{
+                    Idle: fakeImage,
+                    Hover: fakeImage,
+                    Pressed: fakeImage,
+                }),
+            ),
+
+            widget.ListOpts.EntryLabelFunc(
+                func (e any) string {
+                    return e.(string)
+                },
+            ),
+
+            widget.ListOpts.EntrySelectedHandler(func(args *widget.ListEntrySelectedEventArgs) {
+                entry := args.Entry.(string)
+                fmt.Println("Entry Selected: ", entry)
+                defendingArmyList.AddEntry(entry)
+            }),
+
+            widget.ListOpts.EntryColor(&widget.ListEntryColor{
+                Selected: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
+                Unselected: color.NRGBA{R: 128, G: 128, B: 128, A: 255},
+            }),
+
+            widget.ListOpts.ScrollContainerOpts(
+                widget.ScrollContainerOpts.Image(&widget.ScrollContainerImage{
+                    Idle: fakeImage,
+                    Disabled: fakeImage,
+                    Mask: fakeImage,
+                }),
+            ),
+        )
+
+        tab.AddChild(unitList)
+
         for _, unit := range units.UnitsByRace(race) {
-            tab.AddChild(widget.NewText(
-                widget.TextOpts.Text(fmt.Sprintf("%v %v", race.String(), unit.Name), face, color.White),
-            ))
+            unitList.AddEntry(fmt.Sprintf("%v %v", race.String(), unit.Name))
         }
 
         raceTabs = append(raceTabs, tab)
@@ -270,6 +347,12 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
     )
 
     rootContainer.AddChild(unitsTabs)
+
+    rootContainer.AddChild(widget.NewText(
+        widget.TextOpts.Text("Defending Army", face, color.NRGBA{R: 255, G: 0, B: 0, A: 255}),
+    ))
+
+    rootContainer.AddChild(defendingArmyList)
 
     rootContainer.AddChild(widget.NewButton(
         widget.ButtonOpts.Image(&widget.ButtonImage{
