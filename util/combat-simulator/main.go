@@ -112,7 +112,7 @@ func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, scre
     return 0, 0
 }
 
-func (engine *Engine) EnterCombat() {
+func (engine *Engine) EnterCombat(defenderUnits []units.Unit) {
     engine.Mode = EngineModeCombat
 
     cpuPlayer := playerlib.MakePlayer(setup.WizardCustom{
@@ -128,8 +128,12 @@ func (engine *Engine) EnterCombat() {
     defendingArmy := combat.Army{
         Player: cpuPlayer,
     }
-    warlock := units.MakeOverworldUnitFromUnit(units.Warlocks, 1, 1, data.PlaneArcanus, cpuPlayer.Wizard.Banner, cpuPlayer.MakeExperienceInfo())
-    defendingArmy.AddUnit(warlock)
+    for _, unit := range defenderUnits {
+        made := units.MakeOverworldUnitFromUnit(unit, 1, 1, data.PlaneArcanus, cpuPlayer.Wizard.Banner, cpuPlayer.MakeExperienceInfo())
+        defendingArmy.AddUnit(made)
+    }
+    // warlock := units.MakeOverworldUnitFromUnit(units.Warlocks, 1, 1, data.PlaneArcanus, cpuPlayer.Wizard.Banner, cpuPlayer.MakeExperienceInfo())
+    // defendingArmy.AddUnit(warlock)
 
     defendingArmy.LayoutUnits(combat.TeamDefender)
 
@@ -240,8 +244,9 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
     )
     rootContainer.AddChild(unitList1)
 
-    type ListItem struct {
-        Name string
+    type UnitItem struct {
+        Race data.Race
+        Unit units.Unit
     }
 
     defendingArmyList := widget.NewList(
@@ -259,13 +264,16 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
         widget.ListOpts.EntryLabelFunc(
             func (e any) string {
-                return e.(*ListItem).Name
+                item := e.(*UnitItem)
+                return fmt.Sprintf("%v %v", item.Race, item.Unit.Name)
             },
         ),
 
         widget.ListOpts.EntrySelectedHandler(func(args *widget.ListEntrySelectedEventArgs) {
+            /*
 			entry := args.Entry.(*ListItem)
 			fmt.Println("Entry Selected: ", entry.Name)
+            */
 		}),
 
         widget.ListOpts.EntryColor(&widget.ListEntryColor{
@@ -309,21 +317,22 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
             widget.ListOpts.EntryLabelFunc(
                 func (e any) string {
-                    return e.(string)
+                    item := e.(*UnitItem)
+                    return fmt.Sprintf("%v %v", item.Race, item.Unit.Name)
                 },
             ),
 
             widget.ListOpts.EntrySelectedHandler(func(args *widget.ListEntrySelectedEventArgs) {
-                entry := args.Entry.(string)
+                entry := args.Entry.(*UnitItem)
 
-                lastTime, ok := clickTimer[entry]
+                lastTime, ok := clickTimer[entry.Unit.Name]
                 // log.Printf("Entry %v lastTime %v counter %v ok %v", entry, lastTime, engine.Counter, ok)
                 if ok && engine.Counter - lastTime < 30 {
                     // log.Printf("  adding %v to defending army", entry)
-                    defendingArmyList.AddEntry(&ListItem{Name: entry})
-                    clickTimer[entry] = engine.Counter + 30
+                    defendingArmyList.AddEntry(entry)
+                    clickTimer[entry.Unit.Name] = engine.Counter + 30
                 } else {
-                    clickTimer[entry] = engine.Counter
+                    clickTimer[entry.Unit.Name] = engine.Counter
                 }
             }),
 
@@ -346,7 +355,10 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         tab.AddChild(unitList)
 
         for _, unit := range units.UnitsByRace(race) {
-            unitList.AddEntry(fmt.Sprintf("%v %v", race.String(), unit.Name))
+            unitList.AddEntry(&UnitItem{
+                Race: race,
+                Unit: unit,
+            })
         }
 
         raceTabs = append(raceTabs, tab)
@@ -385,7 +397,13 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             Pressed: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
         }),
         widget.ButtonOpts.PressedHandler(func (args *widget.ButtonPressedEventArgs) {
-            engine.EnterCombat()
+            var defenders []units.Unit
+
+            for _, entry := range defendingArmyList.Entries() {
+                defenders = append(defenders, entry.(*UnitItem).Unit)
+            }
+
+            engine.EnterCombat(defenders)
         }),
     ))
 
