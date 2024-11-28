@@ -182,6 +182,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
     fakeImage := ui_image.NewNineSliceColor(color.NRGBA{R: 255, G: 0, B: 0, A: 255})
     buttonImage := ui_image.NewNineSliceColor(color.NRGBA{R: 150, G: 150, B: 0, A: 255})
+    buttonImageIdle := ui_image.NewNineSliceColor(color.NRGBA{R: 80, G: 80, B: 0, A: 255})
 
     unitList1 := widget.NewListComboButton(
         widget.ListComboButtonOpts.SelectComboButtonOpts(
@@ -238,7 +239,9 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
     var raceTabs []*widget.TabBookTab
 
-    for _, race := range append(data.ArcanianRaces(), data.MyrranRaces()...) {
+    allRaces := append(append(data.ArcanianRaces(), data.MyrranRaces()...), data.RaceFantastic)
+
+    for _, race := range allRaces {
         tab := widget.NewTabBookTab(
             race.String(),
             widget.ContainerOpts.Layout(widget.NewRowLayout(widget.RowLayoutOpts.Direction(widget.DirectionVertical))),
@@ -253,13 +256,16 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         raceTabs = append(raceTabs, tab)
     }
 
+    greyish := color.NRGBA{R: 128, G: 128, B: 128, A: 255}
+
     unitsTabs := widget.NewTabBook(
         widget.TabBookOpts.TabButtonImage(&widget.ButtonImage{
-            Idle: buttonImage,
+            Idle: buttonImageIdle,
             Hover: buttonImage,
             Pressed: buttonImage,
         }),
-        widget.TabBookOpts.TabButtonText(face, &widget.ButtonTextColor{Idle: color.White, Disabled: color.White}),
+        widget.TabBookOpts.TabButtonSpacing(3),
+        widget.TabBookOpts.TabButtonText(face, &widget.ButtonTextColor{Idle: color.White, Disabled: greyish}),
         widget.TabBookOpts.Tabs(raceTabs...),
     )
 
@@ -309,7 +315,7 @@ func main(){
     mouse.Initialize()
 
     engine := MakeEngine(cache)
-    ebiten.SetWindowSize(800, 600)
+    ebiten.SetWindowSize(1024, 768)
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 
     err := ebiten.RunGame(engine)
