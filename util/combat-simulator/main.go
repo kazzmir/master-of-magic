@@ -161,7 +161,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
     var label1 *widget.Text
 
     label1 = widget.NewText(
-        widget.TextOpts.Text("Hello!", face, color.White),
+        widget.TextOpts.Text("Master of Magic Combat Simulator", face, color.White),
         widget.TextOpts.WidgetOpts(
             widget.WidgetOpts.CursorEnterHandler(func(args *widget.WidgetCursorEnterEventArgs) {
                 label1.Color = color.RGBA{R: 255, G: 0, B: 0, A: 255}
@@ -173,20 +173,6 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
     )
 
     rootContainer.AddChild(label1)
-
-    var label2 *widget.Text
-    label2 = widget.NewText(
-        widget.TextOpts.Text("Everyone!", face, color.White),
-        widget.TextOpts.WidgetOpts(
-            widget.WidgetOpts.CursorEnterHandler(func(args *widget.WidgetCursorEnterEventArgs) {
-                label2.Color = color.RGBA{R: 0, G: 255, B: 0, A: 255}
-            }),
-            widget.WidgetOpts.CursorExitHandler(func(args *widget.WidgetCursorExitEventArgs) {
-                label2.Color = color.White
-            }),
-        ),
-    )
-    rootContainer.AddChild(label2)
 
     fakeImage := ui_image.NewNineSliceColor(color.NRGBA{R: 255, G: 0, B: 0, A: 255})
     buttonImage := ui_image.NewNineSliceColor(color.NRGBA{R: 150, G: 150, B: 0, A: 255})
@@ -243,6 +229,36 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         ),
     )
     rootContainer.AddChild(unitList1)
+
+    unitsHighMenTab := widget.NewTabBookTab(
+        "High Men",
+        widget.ContainerOpts.Layout(widget.NewRowLayout(widget.RowLayoutOpts.Direction(widget.DirectionVertical))),
+    )
+
+    unitsHighMenTab.AddChild(widget.NewText(
+        widget.TextOpts.Text("Bowmen", face, color.White),
+    ))
+
+    unitsKlackonTab := widget.NewTabBookTab(
+        "Klackon",
+        widget.ContainerOpts.Layout(widget.NewRowLayout(widget.RowLayoutOpts.Direction(widget.DirectionVertical))),
+    )
+
+    unitsKlackonTab.AddChild(widget.NewText(
+        widget.TextOpts.Text("Stag Beetle", face, color.White),
+    ))
+
+    unitsTabs := widget.NewTabBook(
+        widget.TabBookOpts.TabButtonImage(&widget.ButtonImage{
+            Idle: buttonImage,
+            Hover: buttonImage,
+            Pressed: buttonImage,
+        }),
+        widget.TabBookOpts.TabButtonText(face, &widget.ButtonTextColor{Idle: color.White, Disabled: color.White}),
+        widget.TabBookOpts.Tabs(unitsHighMenTab, unitsKlackonTab),
+    )
+
+    rootContainer.AddChild(unitsTabs)
 
     rootContainer.AddChild(widget.NewButton(
         widget.ButtonOpts.Image(&widget.ButtonImage{
