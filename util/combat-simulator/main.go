@@ -109,7 +109,7 @@ func (engine *Engine) Draw(screen *ebiten.Image) {
 func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
     switch engine.Mode {
         case EngineModeMenu:
-            return EngineWidth, EngineHeight
+            return outsideWidth, outsideHeight
         case EngineModeCombat:
             return data.ScreenWidth, data.ScreenHeight
     }
@@ -205,7 +205,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
     rootContainer.AddChild(label1)
 
-    fakeImage := ui_image.NewNineSliceColor(color.NRGBA{R: 0, G: 0, B: 0, A: 255})
+    fakeImage := ui_image.NewNineSliceColor(color.NRGBA{R: 32, G: 32, B: 32, A: 255})
     buttonImage := ui_image.NewNineSliceColor(color.NRGBA{R: 150, G: 150, B: 0, A: 255})
     buttonImageIdle := ui_image.NewNineSliceColor(color.NRGBA{R: 80, G: 80, B: 0, A: 255})
 
@@ -269,14 +269,19 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
     defendingArmyList := widget.NewList(
         widget.ListOpts.EntryFontFace(face),
+
+        widget.ListOpts.ContainerOpts(widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+            MaxHeight: 300,
+        }))),
+
         widget.ListOpts.SliderOpts(
             widget.SliderOpts.Images(&widget.SliderTrackImage{
                 Idle: fakeImage,
                 Hover: fakeImage,
             }, &widget.ButtonImage{
-                Idle: fakeImage,
-                Hover: fakeImage,
-                Pressed: fakeImage,
+                Idle: ui_image.NewNineSliceColor(color.NRGBA{R: 128, G: 0, B: 0, A: 255}),
+                Hover: ui_image.NewNineSliceColor(color.NRGBA{R: 160, G: 0, B: 0, A: 255}),
+                Pressed: ui_image.NewNineSliceColor(color.NRGBA{R: 160, G: 0, B: 0, A: 255}),
             }),
         ),
 
