@@ -175,6 +175,21 @@ func (engine *Engine) EnterCombat(defenderUnits []units.Unit, attackerUnits []un
 }
 
 func (engine *Engine) MakeUI() *ebitenui.UI {
+    makeRow := func(spacing int, children ...widget.PreferredSizeLocateableWidget) *widget.Container {
+        container := widget.NewContainer(
+            widget.ContainerOpts.Layout(widget.NewRowLayout(
+                widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
+                widget.RowLayoutOpts.Spacing(spacing),
+            )),
+        )
+
+        for _, child := range children {
+            container.AddChild(child)
+        }
+
+        return container
+    }
+
     face, _ := loadFont(18)
 
     backgroundImageRaw, _, err := ebitenutil.NewImageFromFileSystem(assets, "assets/box.png")
@@ -356,26 +371,50 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             })
         }
 
-        tab.AddChild(widget.NewButton(
-            widget.ButtonOpts.Image(&widget.ButtonImage{
-                Idle: buttonImage,
-                Hover: buttonImage,
-                Pressed: buttonImage,
-            }),
-            widget.ButtonOpts.Text("Add", face, &widget.ButtonTextColor{
-                Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
-                Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
-                Pressed: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
-            }),
-            widget.ButtonOpts.PressedHandler(func (args *widget.ButtonPressedEventArgs) {
-                entry := unitList.SelectedEntry()
-                if entry != nil {
-                    entry := entry.(*UnitItem)
-                    newItem := *entry
+        tab.AddChild(makeRow(5,
+            widget.NewButton(
+                widget.ButtonOpts.Image(&widget.ButtonImage{
+                    Idle: buttonImage,
+                    Hover: buttonImage,
+                    Pressed: buttonImage,
+                }),
+                widget.ButtonOpts.Text("Add", face, &widget.ButtonTextColor{
+                    Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
+                    Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+                    Pressed: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
+                }),
+                widget.ButtonOpts.PressedHandler(func (args *widget.ButtonPressedEventArgs) {
+                    entry := unitList.SelectedEntry()
+                    if entry != nil {
+                        entry := entry.(*UnitItem)
+                        newItem := *entry
+                        armyList.AddEntry(&newItem)
+                        armyCount.Label = fmt.Sprintf("%v", len(armyList.Entries()))
+                    }
+                }),
+            ),
+            widget.NewButton(
+                widget.ButtonOpts.Image(&widget.ButtonImage{
+                    Idle: buttonImage,
+                    Hover: buttonImage,
+                    Pressed: buttonImage,
+                }),
+                widget.ButtonOpts.Text("Add Random", face, &widget.ButtonTextColor{
+                    Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
+                    Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+                    Pressed: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
+                }),
+                widget.ButtonOpts.PressedHandler(func (args *widget.ButtonPressedEventArgs) {
+                    choices := units.UnitsByRace(race)
+                    use := choices[rand.N(len(choices))]
+                    newItem := UnitItem{
+                        Race: race,
+                        Unit: use,
+                    }
                     armyList.AddEntry(&newItem)
                     armyCount.Label = fmt.Sprintf("%v", len(armyList.Entries()))
-                }
-            }),
+                }),
+            ),
         ))
 
         raceTabs = append(raceTabs, tab)
@@ -526,21 +565,6 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
     }
 
     widget.NewRadioGroup(widget.RadioGroupOpts.Elements(armyRadioElements...))
-
-    makeRow := func(spacing int, children ...widget.PreferredSizeLocateableWidget) *widget.Container {
-        container := widget.NewContainer(
-            widget.ContainerOpts.Layout(widget.NewRowLayout(
-                widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
-                widget.RowLayoutOpts.Spacing(spacing),
-            )),
-        )
-
-        for _, child := range children {
-            container.AddChild(child)
-        }
-
-        return container
-    }
 
     rootContainer.AddChild(makeRow(10, armyButtons[0], armyButtons[1]))
 
