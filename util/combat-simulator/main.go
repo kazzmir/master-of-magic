@@ -431,9 +431,15 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
     }
 
     defendingArmyList := makeArmyList()
+    defendingArmyName := widget.NewText(
+        widget.TextOpts.Text("Defending Army", face, color.NRGBA{R: 255, G: 0, B: 0, A: 255}),
+    )
 
     attackingArmyCount := widget.NewText(widget.TextOpts.Text("0", face, color.NRGBA{R: 255, G: 255, B: 255, A: 255}))
     attackingArmyList := makeArmyList()
+    attackingArmyName := widget.NewText(
+        widget.TextOpts.Text("Attacking Army", face, color.NRGBA{R: 255, G: 255, B: 255, A: 255}),
+    )
 
     armyList = defendingArmyList
     armyCount = defendingArmyCount
@@ -467,6 +473,8 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         widget.ButtonOpts.PressedHandler(func (args *widget.ButtonPressedEventArgs) {
             armyList = defendingArmyList
             armyCount = defendingArmyCount
+            defendingArmyName.Color = color.NRGBA{R: 255, G: 0, B: 0, A: 255}
+            attackingArmyName.Color = color.NRGBA{R: 255, G: 255, B: 255, A: 255}
         }),
     ))
 
@@ -483,6 +491,8 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         widget.ButtonOpts.PressedHandler(func (args *widget.ButtonPressedEventArgs) {
             armyList = attackingArmyList
             armyCount = attackingArmyCount
+            attackingArmyName.Color = color.NRGBA{R: 255, G: 0, B: 0, A: 255}
+            defendingArmyName.Color = color.NRGBA{R: 255, G: 255, B: 255, A: 255}
         }),
     ))
 
@@ -523,11 +533,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         )),
     )
 
-    defendingArmyContainer.AddChild(makeRow(4, widget.NewText(
-            widget.TextOpts.Text("Defending Army", face, color.NRGBA{R: 255, G: 0, B: 0, A: 255}),
-        ),
-        defendingArmyCount,
-    ))
+    defendingArmyContainer.AddChild(makeRow(4, defendingArmyName, defendingArmyCount))
 
     defendingArmyContainer.AddChild(defendingArmyList)
     defendingArmyContainer.AddChild(widget.NewButton(
@@ -554,11 +560,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         )),
     )
 
-    attackingArmyContainer.AddChild(makeRow(4, widget.NewText(
-            widget.TextOpts.Text("Attacking Army", face, color.NRGBA{R: 255, G: 0, B: 0, A: 255}),
-        ),
-        attackingArmyCount,
-    ))
+    attackingArmyContainer.AddChild(makeRow(4, attackingArmyName, attackingArmyCount))
 
     attackingArmyContainer.AddChild(attackingArmyList)
     attackingArmyContainer.AddChild(widget.NewButton(
