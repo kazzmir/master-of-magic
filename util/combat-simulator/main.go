@@ -453,11 +453,51 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
     rootContainer.AddChild(unitsTabs)
 
-    makeRow := func(children ...widget.PreferredSizeLocateableWidget) *widget.Container {
+    var armyButtons []*widget.Button
+    armyButtons = append(armyButtons, widget.NewButton(
+        widget.ButtonOpts.Image(&widget.ButtonImage{
+            Idle: buttonImage,
+            Hover: buttonImage,
+            Pressed: buttonImage,
+        }),
+        widget.ButtonOpts.Text("Defending Army", face, &widget.ButtonTextColor{
+            Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
+            Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+        }),
+        widget.ButtonOpts.PressedHandler(func (args *widget.ButtonPressedEventArgs) {
+            armyList = defendingArmyList
+            armyCount = defendingArmyCount
+        }),
+    ))
+
+    armyButtons = append(armyButtons, widget.NewButton(
+        widget.ButtonOpts.Image(&widget.ButtonImage{
+            Idle: buttonImage,
+            Hover: buttonImage,
+            Pressed: buttonImage,
+        }),
+        widget.ButtonOpts.Text("Attacking Army", face, &widget.ButtonTextColor{
+            Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
+            Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+        }),
+        widget.ButtonOpts.PressedHandler(func (args *widget.ButtonPressedEventArgs) {
+            armyList = attackingArmyList
+            armyCount = attackingArmyCount
+        }),
+    ))
+
+    var armyRadioElements []widget.RadioGroupElement
+    for _, button := range armyButtons {
+        armyRadioElements = append(armyRadioElements, button)
+    }
+
+    widget.NewRadioGroup(widget.RadioGroupOpts.Elements(armyRadioElements...))
+
+    makeRow := func(spacing int, children ...widget.PreferredSizeLocateableWidget) *widget.Container {
         container := widget.NewContainer(
             widget.ContainerOpts.Layout(widget.NewRowLayout(
                 widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
-                widget.RowLayoutOpts.Spacing(3),
+                widget.RowLayoutOpts.Spacing(spacing),
             )),
         )
 
@@ -467,6 +507,8 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
         return container
     }
+
+    rootContainer.AddChild(makeRow(10, armyButtons[0], armyButtons[1]))
 
     armyContainer := widget.NewContainer(
         widget.ContainerOpts.Layout(widget.NewRowLayout(
@@ -481,7 +523,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         )),
     )
 
-    defendingArmyContainer.AddChild(makeRow(widget.NewText(
+    defendingArmyContainer.AddChild(makeRow(4, widget.NewText(
             widget.TextOpts.Text("Defending Army", face, color.NRGBA{R: 255, G: 0, B: 0, A: 255}),
         ),
         defendingArmyCount,
@@ -512,7 +554,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         )),
     )
 
-    attackingArmyContainer.AddChild(makeRow(widget.NewText(
+    attackingArmyContainer.AddChild(makeRow(4, widget.NewText(
             widget.TextOpts.Text("Attacking Army", face, color.NRGBA{R: 255, G: 0, B: 0, A: 255}),
         ),
         attackingArmyCount,
