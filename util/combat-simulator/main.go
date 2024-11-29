@@ -1,6 +1,7 @@
 package main
 
 import (
+    "embed"
     "log"
     "fmt"
     "image/color"
@@ -19,6 +20,7 @@ import (
     "github.com/kazzmir/master-of-magic/util/common"
 
     "github.com/hajimehoshi/ebiten/v2"
+    "github.com/hajimehoshi/ebiten/v2/ebitenutil"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
     "github.com/hajimehoshi/ebiten/v2/text/v2"
 
@@ -27,6 +29,9 @@ import (
     "github.com/ebitenui/ebitenui/widget"
     ui_image "github.com/ebitenui/ebitenui/image"
 )
+
+//go:embed assets/*
+var assets embed.FS
 
 const EngineWidth = 1024
 const EngineHeight = 768
@@ -164,11 +169,24 @@ func (engine *Engine) EnterCombat(defenderUnits []units.Unit) {
 func (engine *Engine) MakeUI() *ebitenui.UI {
     face, _ := loadFont(18)
 
+    backgroundImageRaw, _, err := ebitenutil.NewImageFromFileSystem(assets, "assets/box.png")
+    if err != nil {
+        log.Printf("Could not load box.png: %v", err)
+        return nil
+    }
+
+    backgroundImageNine := ui_image.NewNineSliceSimple(backgroundImageRaw, 1, 39)
+
+    _ = backgroundImageNine
+
     rootContainer := widget.NewContainer(
         widget.ContainerOpts.Layout(widget.NewRowLayout(
             widget.RowLayoutOpts.Direction(widget.DirectionVertical),
             widget.RowLayoutOpts.Spacing(10),
+            widget.RowLayoutOpts.Padding(widget.Insets{Top: 10, Left: 10, Right: 10}),
         )),
+        widget.ContainerOpts.BackgroundImage(ui_image.NewNineSliceColor(color.NRGBA{R: 32, G: 32, B: 32, A: 255})),
+        // widget.ContainerOpts.BackgroundImage(backgroundImageNine),
     )
 
     var label1 *widget.Text
@@ -187,7 +205,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
     rootContainer.AddChild(label1)
 
-    fakeImage := ui_image.NewNineSliceColor(color.NRGBA{R: 255, G: 0, B: 0, A: 255})
+    fakeImage := ui_image.NewNineSliceColor(color.NRGBA{R: 0, G: 0, B: 0, A: 255})
     buttonImage := ui_image.NewNineSliceColor(color.NRGBA{R: 150, G: 150, B: 0, A: 255})
     buttonImageIdle := ui_image.NewNineSliceColor(color.NRGBA{R: 80, G: 80, B: 0, A: 255})
 
@@ -283,7 +301,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
         widget.ListOpts.ScrollContainerOpts(
             widget.ScrollContainerOpts.Image(&widget.ScrollContainerImage{
-                Idle: fakeImage,
+                Idle: ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 64, B: 64, A: 255}),
                 Disabled: fakeImage,
                 Mask: fakeImage,
             }),
@@ -329,7 +347,8 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
                 // log.Printf("Entry %v lastTime %v counter %v ok %v", entry, lastTime, engine.Counter, ok)
                 if ok && engine.Counter - lastTime < 30 {
                     // log.Printf("  adding %v to defending army", entry)
-                    defendingArmyList.AddEntry(entry)
+                    newItem := *entry
+                    defendingArmyList.AddEntry(&newItem)
                     clickTimer[entry.Unit.Name] = engine.Counter + 30
                 } else {
                     clickTimer[entry.Unit.Name] = engine.Counter
