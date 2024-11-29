@@ -279,6 +279,107 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         Unit units.Unit
     }
 
+    var armyList *widget.List
+    var armyCount *widget.Text
+
+    var raceTabs []*widget.TabBookTab
+
+    allRaces := append(append(data.ArcanianRaces(), data.MyrranRaces()...), data.RaceFantastic)
+
+    for _, race := range allRaces {
+        tab := widget.NewTabBookTab(
+            race.String(),
+            widget.ContainerOpts.Layout(widget.NewRowLayout(widget.RowLayoutOpts.Direction(widget.DirectionVertical))),
+        )
+
+        clickTimer := make(map[string]uint64)
+
+        unitList := widget.NewList(
+            widget.ListOpts.EntryFontFace(face),
+            widget.ListOpts.SliderOpts(
+                widget.SliderOpts.Images(&widget.SliderTrackImage{
+                    Idle: fakeImage,
+                    Hover: fakeImage,
+                }, &widget.ButtonImage{
+                    Idle: fakeImage,
+                    Hover: fakeImage,
+                    Pressed: fakeImage,
+                }),
+            ),
+
+            widget.ListOpts.EntryLabelFunc(
+                func (e any) string {
+                    item := e.(*UnitItem)
+                    return fmt.Sprintf("%v %v", item.Race, item.Unit.Name)
+                },
+            ),
+
+            widget.ListOpts.EntrySelectedHandler(func(args *widget.ListEntrySelectedEventArgs) {
+                entry := args.Entry.(*UnitItem)
+
+                lastTime, ok := clickTimer[entry.Unit.Name]
+                // log.Printf("Entry %v lastTime %v counter %v ok %v", entry, lastTime, engine.Counter, ok)
+                if ok && engine.Counter - lastTime < 30 {
+                    // log.Printf("  adding %v to defending army", entry)
+                    newItem := *entry
+                    armyList.AddEntry(&newItem)
+                    armyCount.Label = fmt.Sprintf("%v", len(armyList.Entries()))
+                    clickTimer[entry.Unit.Name] = engine.Counter + 30
+                } else {
+                    clickTimer[entry.Unit.Name] = engine.Counter
+                }
+            }),
+
+            widget.ListOpts.EntryColor(&widget.ListEntryColor{
+                Selected: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
+                Unselected: color.NRGBA{R: 128, G: 128, B: 128, A: 255},
+            }),
+
+            widget.ListOpts.ScrollContainerOpts(
+                widget.ScrollContainerOpts.Image(&widget.ScrollContainerImage{
+                    Idle: fakeImage,
+                    Disabled: fakeImage,
+                    Mask: fakeImage,
+                }),
+            ),
+
+            widget.ListOpts.AllowReselect(),
+        )
+
+        tab.AddChild(unitList)
+
+        for _, unit := range units.UnitsByRace(race) {
+            unitList.AddEntry(&UnitItem{
+                Race: race,
+                Unit: unit,
+            })
+        }
+
+        tab.AddChild(widget.NewButton(
+            widget.ButtonOpts.Image(&widget.ButtonImage{
+                Idle: buttonImage,
+                Hover: buttonImage,
+                Pressed: buttonImage,
+            }),
+            widget.ButtonOpts.Text("Add", face, &widget.ButtonTextColor{
+                Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
+                Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+                Pressed: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
+            }),
+            widget.ButtonOpts.PressedHandler(func (args *widget.ButtonPressedEventArgs) {
+                entry := unitList.SelectedEntry()
+                if entry != nil {
+                    entry := entry.(*UnitItem)
+                    newItem := *entry
+                    armyList.AddEntry(&newItem)
+                    armyCount.Label = fmt.Sprintf("%v", len(armyList.Entries()))
+                }
+            }),
+        ))
+
+        raceTabs = append(raceTabs, tab)
+    }
+
     defendingArmyCount := widget.NewText(widget.TextOpts.Text("0", face, color.NRGBA{R: 255, G: 255, B: 255, A: 255}))
 
     defendingArmyList := widget.NewList(
@@ -327,103 +428,8 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         ),
     )
 
-    var raceTabs []*widget.TabBookTab
-
-    allRaces := append(append(data.ArcanianRaces(), data.MyrranRaces()...), data.RaceFantastic)
-
-    for _, race := range allRaces {
-        tab := widget.NewTabBookTab(
-            race.String(),
-            widget.ContainerOpts.Layout(widget.NewRowLayout(widget.RowLayoutOpts.Direction(widget.DirectionVertical))),
-        )
-
-        clickTimer := make(map[string]uint64)
-
-        unitList := widget.NewList(
-            widget.ListOpts.EntryFontFace(face),
-            widget.ListOpts.SliderOpts(
-                widget.SliderOpts.Images(&widget.SliderTrackImage{
-                    Idle: fakeImage,
-                    Hover: fakeImage,
-                }, &widget.ButtonImage{
-                    Idle: fakeImage,
-                    Hover: fakeImage,
-                    Pressed: fakeImage,
-                }),
-            ),
-
-            widget.ListOpts.EntryLabelFunc(
-                func (e any) string {
-                    item := e.(*UnitItem)
-                    return fmt.Sprintf("%v %v", item.Race, item.Unit.Name)
-                },
-            ),
-
-            widget.ListOpts.EntrySelectedHandler(func(args *widget.ListEntrySelectedEventArgs) {
-                entry := args.Entry.(*UnitItem)
-
-                lastTime, ok := clickTimer[entry.Unit.Name]
-                // log.Printf("Entry %v lastTime %v counter %v ok %v", entry, lastTime, engine.Counter, ok)
-                if ok && engine.Counter - lastTime < 30 {
-                    // log.Printf("  adding %v to defending army", entry)
-                    newItem := *entry
-                    defendingArmyList.AddEntry(&newItem)
-                    defendingArmyCount.Label = fmt.Sprintf("%v", len(defendingArmyList.Entries()))
-                    clickTimer[entry.Unit.Name] = engine.Counter + 30
-                } else {
-                    clickTimer[entry.Unit.Name] = engine.Counter
-                }
-            }),
-
-            widget.ListOpts.EntryColor(&widget.ListEntryColor{
-                Selected: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
-                Unselected: color.NRGBA{R: 128, G: 128, B: 128, A: 255},
-            }),
-
-            widget.ListOpts.ScrollContainerOpts(
-                widget.ScrollContainerOpts.Image(&widget.ScrollContainerImage{
-                    Idle: fakeImage,
-                    Disabled: fakeImage,
-                    Mask: fakeImage,
-                }),
-            ),
-
-            widget.ListOpts.AllowReselect(),
-        )
-
-        tab.AddChild(unitList)
-
-        for _, unit := range units.UnitsByRace(race) {
-            unitList.AddEntry(&UnitItem{
-                Race: race,
-                Unit: unit,
-            })
-        }
-
-        tab.AddChild(widget.NewButton(
-            widget.ButtonOpts.Image(&widget.ButtonImage{
-                Idle: buttonImage,
-                Hover: buttonImage,
-                Pressed: buttonImage,
-            }),
-            widget.ButtonOpts.Text("Add", face, &widget.ButtonTextColor{
-                Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
-                Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
-                Pressed: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
-            }),
-            widget.ButtonOpts.PressedHandler(func (args *widget.ButtonPressedEventArgs) {
-                entry := unitList.SelectedEntry()
-                if entry != nil {
-                    entry := entry.(*UnitItem)
-                    newItem := *entry
-                    defendingArmyList.AddEntry(&newItem)
-                    defendingArmyCount.Label = fmt.Sprintf("%v", len(defendingArmyList.Entries()))
-                }
-            }),
-        ))
-
-        raceTabs = append(raceTabs, tab)
-    }
+    armyList = defendingArmyList
+    armyCount = defendingArmyCount
 
     greyish := color.NRGBA{R: 128, G: 128, B: 128, A: 255}
 
@@ -532,7 +538,7 @@ func main(){
     mouse.Initialize()
 
     engine := MakeEngine(cache)
-    ebiten.SetWindowSize(1024, 768)
+    ebiten.SetWindowSize(1200, 768)
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 
     err := ebiten.RunGame(engine)
