@@ -6,6 +6,7 @@ import (
     "fmt"
     "image/color"
     "errors"
+    "math/rand/v2"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
@@ -458,6 +459,29 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
     )
 
     rootContainer.AddChild(unitsTabs)
+
+    rootContainer.AddChild(widget.NewButton(
+        widget.ButtonOpts.Image(&widget.ButtonImage{
+            Idle: buttonImage,
+            Hover: buttonImage,
+            Pressed: buttonImage,
+        }),
+        widget.ButtonOpts.Text("Add Random Unit", face, &widget.ButtonTextColor{
+            Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
+            Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+            Pressed: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
+        }),
+        widget.ButtonOpts.PressedHandler(func (args *widget.ButtonPressedEventArgs) {
+            unit := units.AllUnits[rand.N(len(units.AllUnits))]
+            newItem := UnitItem{
+                Race: unit.Race,
+                Unit: unit,
+            }
+
+            armyList.AddEntry(&newItem)
+            armyCount.Label = fmt.Sprintf("%v", len(armyList.Entries()))
+        }),
+    ))
 
     var armyButtons []*widget.Button
     armyButtons = append(armyButtons, widget.NewButton(
