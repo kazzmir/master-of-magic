@@ -215,7 +215,8 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
     rootContainer.AddChild(label1)
 
     fakeImage := ui_image.NewNineSliceColor(color.NRGBA{R: 32, G: 32, B: 32, A: 255})
-    buttonImage := ui_image.NewNineSliceColor(color.NRGBA{R: 150, G: 150, B: 0, A: 255})
+    buttonImage := ui_image.NewNineSliceColor(color.NRGBA{R: 0, G: 0, B: 128, A: 255})
+    // buttonImageHover := ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 64, B: 64, A: 255})
     // buttonImageIdle := ui_image.NewNineSliceColor(color.NRGBA{R: 80, G: 80, B: 0, A: 255})
 
     /*
@@ -461,6 +462,22 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
     ))
 
     rootContainer.AddChild(defendingArmyList)
+
+    rootContainer.AddChild(widget.NewButton(
+        widget.ButtonOpts.Image(&widget.ButtonImage{
+            Idle: buttonImage,
+            Hover: buttonImage,
+            Pressed: buttonImage,
+        }),
+        widget.ButtonOpts.Text("Clear Defending Army", face, &widget.ButtonTextColor{
+            Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
+            Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+        }),
+        widget.ButtonOpts.PressedHandler(func (args *widget.ButtonPressedEventArgs) {
+            defendingArmyList.SetEntries(nil)
+            defendingArmyCount.Label = "0"
+        }),
+    ))
 
     rootContainer.AddChild(widget.NewButton(
         widget.ButtonOpts.Image(&widget.ButtonImage{
