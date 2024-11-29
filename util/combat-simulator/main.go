@@ -267,6 +267,8 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         Unit units.Unit
     }
 
+    defendingArmyCount := widget.NewText(widget.TextOpts.Text("0", face, color.NRGBA{R: 255, G: 255, B: 255, A: 255}))
+
     defendingArmyList := widget.NewList(
         widget.ListOpts.EntryFontFace(face),
 
@@ -354,6 +356,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
                     // log.Printf("  adding %v to defending army", entry)
                     newItem := *entry
                     defendingArmyList.AddEntry(&newItem)
+                    defendingArmyCount.Label = fmt.Sprintf("%v", len(defendingArmyList.Entries()))
                     clickTimer[entry.Unit.Name] = engine.Counter + 30
                 } else {
                     clickTimer[entry.Unit.Name] = engine.Counter
@@ -403,8 +406,25 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
     rootContainer.AddChild(unitsTabs)
 
-    rootContainer.AddChild(widget.NewText(
-        widget.TextOpts.Text("Defending Army", face, color.NRGBA{R: 255, G: 0, B: 0, A: 255}),
+    makeRow := func(children ...widget.PreferredSizeLocateableWidget) *widget.Container {
+        container := widget.NewContainer(
+            widget.ContainerOpts.Layout(widget.NewRowLayout(
+                widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
+                widget.RowLayoutOpts.Spacing(3),
+            )),
+        )
+
+        for _, child := range children {
+            container.AddChild(child)
+        }
+
+        return container
+    }
+
+    rootContainer.AddChild(makeRow(widget.NewText(
+            widget.TextOpts.Text("Defending Army", face, color.NRGBA{R: 255, G: 0, B: 0, A: 255}),
+        ),
+        defendingArmyCount,
     ))
 
     rootContainer.AddChild(defendingArmyList)
