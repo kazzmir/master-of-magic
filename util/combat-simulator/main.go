@@ -117,7 +117,7 @@ func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, scre
     return 0, 0
 }
 
-func (engine *Engine) EnterCombat(defenderUnits []units.Unit) {
+func (engine *Engine) EnterCombat(defenderUnits []units.Unit, attackerUnits []units.Unit) {
     engine.Mode = EngineModeCombat
 
     cpuPlayer := playerlib.MakePlayer(setup.WizardCustom{
@@ -146,8 +146,15 @@ func (engine *Engine) EnterCombat(defenderUnits []units.Unit) {
         Player: humanPlayer,
     }
 
+    /*
     for range 2 {
         attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenBowmen, 1, 1, data.PlaneArcanus, humanPlayer.Wizard.Banner, humanPlayer.MakeExperienceInfo()))
+    }
+    */
+
+    for _, unit := range attackerUnits {
+        made := units.MakeOverworldUnitFromUnit(unit, 1, 1, data.PlaneArcanus, humanPlayer.Wizard.Banner, humanPlayer.MakeExperienceInfo())
+        attackingArmy.AddUnit(made)
     }
 
     attackingArmy.LayoutUnits(combat.TeamAttacker)
@@ -179,13 +186,15 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
     _ = backgroundImageNine
 
+    backgroundImage := ui_image.NewNineSliceColor(color.NRGBA{R: 32, G: 32, B: 32, A: 255})
+
     rootContainer := widget.NewContainer(
         widget.ContainerOpts.Layout(widget.NewRowLayout(
             widget.RowLayoutOpts.Direction(widget.DirectionVertical),
             widget.RowLayoutOpts.Spacing(10),
             widget.RowLayoutOpts.Padding(widget.Insets{Top: 10, Left: 10, Right: 10}),
         )),
-        widget.ContainerOpts.BackgroundImage(ui_image.NewNineSliceColor(color.NRGBA{R: 32, G: 32, B: 32, A: 255})),
+        widget.ContainerOpts.BackgroundImage(backgroundImage),
         // widget.ContainerOpts.BackgroundImage(backgroundImageNine),
     )
 
@@ -207,8 +216,9 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
     fakeImage := ui_image.NewNineSliceColor(color.NRGBA{R: 32, G: 32, B: 32, A: 255})
     buttonImage := ui_image.NewNineSliceColor(color.NRGBA{R: 150, G: 150, B: 0, A: 255})
-    buttonImageIdle := ui_image.NewNineSliceColor(color.NRGBA{R: 80, G: 80, B: 0, A: 255})
+    // buttonImageIdle := ui_image.NewNineSliceColor(color.NRGBA{R: 80, G: 80, B: 0, A: 255})
 
+    /*
     unitList1 := widget.NewListComboButton(
         widget.ListComboButtonOpts.SelectComboButtonOpts(
             widget.SelectComboButtonOpts.ComboButtonOpts(
@@ -261,6 +271,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         ),
     )
     rootContainer.AddChild(unitList1)
+    */
 
     type UnitItem struct {
         Race data.Race
@@ -388,6 +399,28 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             })
         }
 
+        tab.AddChild(widget.NewButton(
+            widget.ButtonOpts.Image(&widget.ButtonImage{
+                Idle: buttonImage,
+                Hover: buttonImage,
+                Pressed: buttonImage,
+            }),
+            widget.ButtonOpts.Text("Add", face, &widget.ButtonTextColor{
+                Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
+                Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+                Pressed: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
+            }),
+            widget.ButtonOpts.PressedHandler(func (args *widget.ButtonPressedEventArgs) {
+                entry := unitList.SelectedEntry()
+                if entry != nil {
+                    entry := entry.(*UnitItem)
+                    newItem := *entry
+                    defendingArmyList.AddEntry(&newItem)
+                    defendingArmyCount.Label = fmt.Sprintf("%v", len(defendingArmyList.Entries()))
+                }
+            }),
+        ))
+
         raceTabs = append(raceTabs, tab)
     }
 
@@ -395,9 +428,9 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
     unitsTabs := widget.NewTabBook(
         widget.TabBookOpts.TabButtonImage(&widget.ButtonImage{
-            Idle: buttonImageIdle,
-            Hover: buttonImage,
-            Pressed: buttonImage,
+            Idle: backgroundImage,
+            Hover: ui_image.NewNineSliceColor(color.NRGBA{R: 128, G: 128, B: 128, A: 255}),
+            Pressed: ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 64, B: 64, A: 255}),
         }),
         widget.TabBookOpts.TabButtonSpacing(3),
         widget.TabBookOpts.TabButtonText(face, &widget.ButtonTextColor{Idle: color.White, Disabled: greyish}),
@@ -447,7 +480,10 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
                 defenders = append(defenders, entry.(*UnitItem).Unit)
             }
 
-            engine.EnterCombat(defenders)
+            // FIXME: get attackers from the attacker list
+            attackers := []units.Unit{units.HighMenBowmen, units.HighMenBowmen}
+
+            engine.EnterCombat(defenders, attackers)
         }),
     ))
 
