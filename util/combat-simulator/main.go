@@ -382,51 +382,58 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
     defendingArmyCount := widget.NewText(widget.TextOpts.Text("0", face, color.NRGBA{R: 255, G: 255, B: 255, A: 255}))
 
-    defendingArmyList := widget.NewList(
-        widget.ListOpts.EntryFontFace(face),
+    makeArmyList := func() *widget.List {
+        return widget.NewList(
+            widget.ListOpts.EntryFontFace(face),
 
-        widget.ListOpts.ContainerOpts(widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{
-            MaxHeight: 300,
-        }))),
+            widget.ListOpts.ContainerOpts(widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+                MaxHeight: 300,
+            }))),
 
-        widget.ListOpts.SliderOpts(
-            widget.SliderOpts.Images(&widget.SliderTrackImage{
-                Idle: fakeImage,
-                Hover: fakeImage,
-            }, &widget.ButtonImage{
-                Idle: ui_image.NewNineSliceColor(color.NRGBA{R: 128, G: 0, B: 0, A: 255}),
-                Hover: ui_image.NewNineSliceColor(color.NRGBA{R: 160, G: 0, B: 0, A: 255}),
-                Pressed: ui_image.NewNineSliceColor(color.NRGBA{R: 160, G: 0, B: 0, A: 255}),
+            widget.ListOpts.SliderOpts(
+                widget.SliderOpts.Images(&widget.SliderTrackImage{
+                    Idle: fakeImage,
+                    Hover: fakeImage,
+                }, &widget.ButtonImage{
+                    Idle: ui_image.NewNineSliceColor(color.NRGBA{R: 128, G: 0, B: 0, A: 255}),
+                    Hover: ui_image.NewNineSliceColor(color.NRGBA{R: 160, G: 0, B: 0, A: 255}),
+                    Pressed: ui_image.NewNineSliceColor(color.NRGBA{R: 160, G: 0, B: 0, A: 255}),
+                }),
+            ),
+
+            widget.ListOpts.EntryLabelFunc(
+                func (e any) string {
+                    item := e.(*UnitItem)
+                    return fmt.Sprintf("%v %v", item.Race, item.Unit.Name)
+                },
+            ),
+
+            widget.ListOpts.EntrySelectedHandler(func(args *widget.ListEntrySelectedEventArgs) {
+                /*
+                entry := args.Entry.(*ListItem)
+                fmt.Println("Entry Selected: ", entry.Name)
+                */
             }),
-        ),
 
-        widget.ListOpts.EntryLabelFunc(
-            func (e any) string {
-                item := e.(*UnitItem)
-                return fmt.Sprintf("%v %v", item.Race, item.Unit.Name)
-            },
-        ),
-
-        widget.ListOpts.EntrySelectedHandler(func(args *widget.ListEntrySelectedEventArgs) {
-            /*
-			entry := args.Entry.(*ListItem)
-			fmt.Println("Entry Selected: ", entry.Name)
-            */
-		}),
-
-        widget.ListOpts.EntryColor(&widget.ListEntryColor{
-            Selected: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
-            Unselected: color.NRGBA{R: 0, G: 255, B: 0, A: 255},
-        }),
-
-        widget.ListOpts.ScrollContainerOpts(
-            widget.ScrollContainerOpts.Image(&widget.ScrollContainerImage{
-                Idle: ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 64, B: 64, A: 255}),
-                Disabled: fakeImage,
-                Mask: fakeImage,
+            widget.ListOpts.EntryColor(&widget.ListEntryColor{
+                Selected: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
+                Unselected: color.NRGBA{R: 0, G: 255, B: 0, A: 255},
             }),
-        ),
-    )
+
+            widget.ListOpts.ScrollContainerOpts(
+                widget.ScrollContainerOpts.Image(&widget.ScrollContainerImage{
+                    Idle: ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 64, B: 64, A: 255}),
+                    Disabled: fakeImage,
+                    Mask: fakeImage,
+                }),
+            ),
+        )
+    }
+
+    defendingArmyList := makeArmyList()
+
+    attackingArmyCount := widget.NewText(widget.TextOpts.Text("0", face, color.NRGBA{R: 255, G: 255, B: 255, A: 255}))
+    attackingArmyList := makeArmyList()
 
     armyList = defendingArmyList
     armyCount = defendingArmyCount
@@ -461,15 +468,27 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         return container
     }
 
-    rootContainer.AddChild(makeRow(widget.NewText(
+    armyContainer := widget.NewContainer(
+        widget.ContainerOpts.Layout(widget.NewRowLayout(
+            widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
+            widget.RowLayoutOpts.Spacing(30),
+        )),
+    )
+
+    defendingArmyContainer := widget.NewContainer(
+        widget.ContainerOpts.Layout(widget.NewRowLayout(
+            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+        )),
+    )
+
+    defendingArmyContainer.AddChild(makeRow(widget.NewText(
             widget.TextOpts.Text("Defending Army", face, color.NRGBA{R: 255, G: 0, B: 0, A: 255}),
         ),
         defendingArmyCount,
     ))
 
-    rootContainer.AddChild(defendingArmyList)
-
-    rootContainer.AddChild(widget.NewButton(
+    defendingArmyContainer.AddChild(defendingArmyList)
+    defendingArmyContainer.AddChild(widget.NewButton(
         widget.ButtonOpts.Image(&widget.ButtonImage{
             Idle: buttonImage,
             Hover: buttonImage,
@@ -484,6 +503,41 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             defendingArmyCount.Label = "0"
         }),
     ))
+
+    armyContainer.AddChild(defendingArmyContainer)
+
+    attackingArmyContainer := widget.NewContainer(
+        widget.ContainerOpts.Layout(widget.NewRowLayout(
+            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+        )),
+    )
+
+    attackingArmyContainer.AddChild(makeRow(widget.NewText(
+            widget.TextOpts.Text("Attacking Army", face, color.NRGBA{R: 255, G: 0, B: 0, A: 255}),
+        ),
+        attackingArmyCount,
+    ))
+
+    attackingArmyContainer.AddChild(attackingArmyList)
+    attackingArmyContainer.AddChild(widget.NewButton(
+        widget.ButtonOpts.Image(&widget.ButtonImage{
+            Idle: buttonImage,
+            Hover: buttonImage,
+            Pressed: buttonImage,
+        }),
+        widget.ButtonOpts.Text("Clear Attacking Army", face, &widget.ButtonTextColor{
+            Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
+            Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+        }),
+        widget.ButtonOpts.PressedHandler(func (args *widget.ButtonPressedEventArgs) {
+            attackingArmyList.SetEntries(nil)
+            attackingArmyCount.Label = "0"
+        }),
+    ))
+
+    armyContainer.AddChild(attackingArmyContainer)
+
+    rootContainer.AddChild(armyContainer)
 
     rootContainer.AddChild(widget.NewButton(
         widget.ButtonOpts.Image(&widget.ButtonImage{
@@ -503,10 +557,15 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
                 defenders = append(defenders, entry.(*UnitItem).Unit)
             }
 
-            // FIXME: get attackers from the attacker list
-            attackers := []units.Unit{units.HighMenBowmen, units.HighMenBowmen}
+            var attackers []units.Unit
 
-            engine.EnterCombat(defenders, attackers)
+            for _, entry := range attackingArmyList.Entries() {
+                attackers = append(attackers, entry.(*UnitItem).Unit)
+            }
+
+            if len(defenders) > 0 && len(attackers) > 0 {
+                engine.EnterCombat(defenders, attackers)
+            }
         }),
     ))
 
