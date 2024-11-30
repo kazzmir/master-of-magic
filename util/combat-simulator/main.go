@@ -23,6 +23,8 @@ import (
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/ebitenutil"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
+    "github.com/hajimehoshi/ebiten/v2/vector"
+    "github.com/hajimehoshi/ebiten/v2/colorm"
     "github.com/hajimehoshi/ebiten/v2/text/v2"
 
     "github.com/ebitenui/ebitenui"
@@ -33,9 +35,6 @@ import (
 
 //go:embed assets/*
 var assets embed.FS
-
-const EngineWidth = 1024
-const EngineHeight = 768
 
 type EngineMode int
 const (
@@ -68,6 +67,19 @@ func MakeEngine(cache *lbx.LbxCache) *Engine {
 }
 
 var CombatDoneErr = errors.New("combat done")
+
+func makeRoundedButtonImage(width int, height int, border int, col color.Color) *ebiten.Image {
+    img := ebiten.NewImage(width, height)
+
+    vector.DrawFilledRect(img, float32(border), 0, float32(width - border * 2), float32(height), col, true)
+    vector.DrawFilledRect(img, 0, float32(border), float32(width), float32(height - border * 2), col, true)
+    vector.DrawFilledCircle(img, float32(border), float32(border), float32(border), col, true)
+    vector.DrawFilledCircle(img, float32(width-border), float32(border), float32(border), col, true)
+    vector.DrawFilledCircle(img, float32(border), float32(height-border), float32(border), col, true)
+    vector.DrawFilledCircle(img, float32(width-border), float32(height-border), float32(border), col, true)
+
+    return img
+}
 
 func (engine *Engine) Update() error {
     engine.Counter += 1
@@ -190,7 +202,30 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         return container
     }
 
-    face, _ := loadFont(20)
+    makeNineImage := func (img *ebiten.Image, border int) *ui_image.NineSlice {
+        width := img.Bounds().Dx()
+        return ui_image.NewNineSliceSimple(img, border, width - border * 2)
+    }
+
+    lighten := func (c color.Color, amount float64) color.Color {
+        var change colorm.ColorM
+        change.ChangeHSV(0, 1 - amount/100, 1 + amount/100)
+        return change.Apply(c)
+    }
+
+    makeNineRoundedButtonImage := func(width int, height int, border int, col color.Color) *widget.ButtonImage {
+        return &widget.ButtonImage{
+            Idle: makeNineImage(makeRoundedButtonImage(width, height, border, col), border),
+            Hover: makeNineImage(makeRoundedButtonImage(width, height, border, lighten(col, 50)), border),
+            Pressed: makeNineImage(makeRoundedButtonImage(width, height, border, lighten(col, 20)), border),
+        }
+    }
+
+    tabImageNine := makeNineImage(makeRoundedButtonImage(80, 80, 10, color.NRGBA{R: 64, G: 64, B: 64, A: 255}), 10)
+    tabImageHoverNine := makeNineImage(makeRoundedButtonImage(80, 80, 10, color.NRGBA{R: 128, G: 128, B: 128, A: 255}), 10)
+    tabImagePressedNine := makeNineImage(makeRoundedButtonImage(80, 80, 10, color.NRGBA{R: 96, G: 96, B: 96, A: 255}), 10)
+
+    face, _ := loadFont(19)
 
     backgroundImageRaw, _, err := ebitenutil.NewImageFromFileSystem(assets, "assets/box.png")
     if err != nil {
@@ -379,11 +414,8 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
         tab.AddChild(makeRow(5,
             widget.NewButton(
-                widget.ButtonOpts.Image(&widget.ButtonImage{
-                    Idle: buttonImage,
-                    Hover: buttonImage,
-                    Pressed: buttonImage,
-                }),
+                widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+                widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x52, G: 0x78, B: 0xc3, A: 0xff})),
                 widget.ButtonOpts.Text("Add", face, &widget.ButtonTextColor{
                     Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
                     Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
@@ -400,11 +432,8 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
                 }),
             ),
             widget.NewButton(
-                widget.ButtonOpts.Image(&widget.ButtonImage{
-                    Idle: buttonImage,
-                    Hover: buttonImage,
-                    Pressed: buttonImage,
-                }),
+                widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+                widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x52, G: 0x78, B: 0xc3, A: 0xff})),
                 widget.ButtonOpts.Text("Add Random", face, &widget.ButtonTextColor{
                     Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
                     Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
@@ -453,6 +482,11 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             widget.ListOpts.EntryLabelFunc(
                 func (e any) string {
                     item := e.(*UnitItem)
+
+                    if item.Race == data.RaceFantastic || item.Race == data.RaceAll {
+                        return item.Unit.Name
+                    }
+
                     return fmt.Sprintf("%v %v", item.Race, item.Unit.Name)
                 },
             ),
@@ -497,23 +531,21 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
     unitsTabs := widget.NewTabBook(
         widget.TabBookOpts.TabButtonImage(&widget.ButtonImage{
-            Idle: backgroundImage,
-            Hover: ui_image.NewNineSliceColor(color.NRGBA{R: 128, G: 128, B: 128, A: 255}),
-            Pressed: ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 64, B: 64, A: 255}),
+            Idle: tabImageNine,
+            Hover: tabImageHoverNine,
+            Pressed: tabImagePressedNine,
         }),
         widget.TabBookOpts.TabButtonSpacing(3),
         widget.TabBookOpts.TabButtonText(face, &widget.ButtonTextColor{Idle: color.White, Disabled: greyish}),
         widget.TabBookOpts.Tabs(raceTabs...),
+        widget.TabBookOpts.TabButtonOpts(widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5})),
     )
 
     rootContainer.AddChild(unitsTabs)
 
     rootContainer.AddChild(widget.NewButton(
-        widget.ButtonOpts.Image(&widget.ButtonImage{
-            Idle: buttonImage,
-            Hover: buttonImage,
-            Pressed: buttonImage,
-        }),
+        widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+        widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x52, G: 0x78, B: 0xc3, A: 0xff})),
         widget.ButtonOpts.Text("Add Random Unit", face, &widget.ButtonTextColor{
             Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
             Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
@@ -594,11 +626,8 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
     defendingArmyContainer.AddChild(defendingArmyList)
     defendingArmyContainer.AddChild(widget.NewButton(
-        widget.ButtonOpts.Image(&widget.ButtonImage{
-            Idle: buttonImage,
-            Hover: buttonImage,
-            Pressed: buttonImage,
-        }),
+        widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+        widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x52, G: 0x78, B: 0xc3, A: 0xff})),
         widget.ButtonOpts.Text("Clear Defending Army", face, &widget.ButtonTextColor{
             Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
             Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
@@ -621,11 +650,8 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
     attackingArmyContainer.AddChild(attackingArmyList)
     attackingArmyContainer.AddChild(widget.NewButton(
-        widget.ButtonOpts.Image(&widget.ButtonImage{
-            Idle: buttonImage,
-            Hover: buttonImage,
-            Pressed: buttonImage,
-        }),
+        widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+        widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x52, G: 0x78, B: 0xc3, A: 0xff})),
         widget.ButtonOpts.Text("Clear Attacking Army", face, &widget.ButtonTextColor{
             Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
             Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
@@ -641,11 +667,8 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
     rootContainer.AddChild(armyContainer)
 
     rootContainer.AddChild(widget.NewButton(
-        widget.ButtonOpts.Image(&widget.ButtonImage{
-            Idle: buttonImage,
-            Hover: buttonImage,
-            Pressed: buttonImage,
-        }),
+        widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+        widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x52, G: 0x78, B: 0xc3, A: 0xff})),
         widget.ButtonOpts.Text("Enter Combat!", face, &widget.ButtonTextColor{
             Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
             Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
@@ -698,7 +721,7 @@ func main(){
     mouse.Initialize()
 
     engine := MakeEngine(cache)
-    ebiten.SetWindowSize(1200, 768)
+    ebiten.SetWindowSize(1250, 768)
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 
     err := ebiten.RunGame(engine)
