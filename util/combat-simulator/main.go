@@ -525,14 +525,14 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
             widget.ListOpts.SliderOpts(
                 widget.SliderOpts.Images(&widget.SliderTrackImage{
-                    Idle: fakeImage,
-                    Hover: fakeImage,
-                }, &widget.ButtonImage{
-                    Idle: ui_image.NewNineSliceColor(color.NRGBA{R: 128, G: 0, B: 0, A: 255}),
-                    Hover: ui_image.NewNineSliceColor(color.NRGBA{R: 160, G: 0, B: 0, A: 255}),
-                    Pressed: ui_image.NewNineSliceColor(color.NRGBA{R: 160, G: 0, B: 0, A: 255}),
-                }),
+                        Idle: makeNineImage(makeRoundedButtonImage(20, 20, 5, color.NRGBA{R: 128, G: 128, B: 128, A: 255}), 5),
+                        Hover: makeNineImage(makeRoundedButtonImage(20, 20, 5, color.NRGBA{R: 128, G: 128, B: 128, A: 255}), 5),
+                    },
+                    makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0xad, G: 0x8d, B: 0x55, A: 0xff}),
+                ),
             ),
+
+            widget.ListOpts.HideHorizontalSlider(),
 
             widget.ListOpts.EntryLabelFunc(
                 func (e any) string {
