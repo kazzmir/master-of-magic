@@ -6,6 +6,8 @@ import (
     "fmt"
     "image"
     "image/color"
+    "slices"
+    "cmp"
     "errors"
     "math/rand/v2"
 
@@ -456,7 +458,9 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
         tab.AddChild(makeRow(5, unitGraphic, unitList))
 
-        for _, unit := range units.UnitsByRace(race) {
+        for _, unit := range slices.SortedFunc(slices.Values(units.UnitsByRace(race)), func (a units.Unit, b units.Unit) int {
+            return cmp.Compare(a.Name, b.Name)
+        }) {
             unitList.AddEntry(&UnitItem{
                 Race: race,
                 Unit: unit,
