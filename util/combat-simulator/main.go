@@ -242,7 +242,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
     rootContainer := widget.NewContainer(
         widget.ContainerOpts.Layout(widget.NewRowLayout(
             widget.RowLayoutOpts.Direction(widget.DirectionVertical),
-            widget.RowLayoutOpts.Spacing(10),
+            widget.RowLayoutOpts.Spacing(12),
             widget.RowLayoutOpts.Padding(widget.Insets{Top: 10, Left: 10, Right: 10}),
         )),
         widget.ContainerOpts.BackgroundImage(backgroundImage),
@@ -340,7 +340,10 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
     for _, race := range allRaces {
         tab := widget.NewTabBookTab(
             race.String(),
-            widget.ContainerOpts.Layout(widget.NewRowLayout(widget.RowLayoutOpts.Direction(widget.DirectionVertical))),
+            widget.ContainerOpts.Layout(widget.NewRowLayout(
+                widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+                widget.RowLayoutOpts.Spacing(5),
+            )),
         )
 
         clickTimer := make(map[string]uint64)
@@ -348,15 +351,23 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         unitList := widget.NewList(
             widget.ListOpts.EntryFontFace(face),
             widget.ListOpts.SliderOpts(
-                widget.SliderOpts.Images(&widget.SliderTrackImage{
-                    Idle: fakeImage,
-                    Hover: fakeImage,
-                }, &widget.ButtonImage{
-                    Idle: fakeImage,
-                    Hover: fakeImage,
-                    Pressed: fakeImage,
-                }),
+                widget.SliderOpts.Images(
+                    &widget.SliderTrackImage{
+                        Idle: makeNineImage(makeRoundedButtonImage(20, 20, 5, color.NRGBA{R: 128, G: 128, B: 128, A: 255}), 5),
+                        Hover: makeNineImage(makeRoundedButtonImage(20, 20, 5, color.NRGBA{R: 128, G: 128, B: 128, A: 255}), 5),
+                    },
+                    makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0xad, G: 0x8d, B: 0x55, A: 0xff}),
+                ),
             ),
+
+            widget.ListOpts.HideHorizontalSlider(),
+
+            widget.ListOpts.ContainerOpts(widget.ContainerOpts.WidgetOpts(
+                widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+                    MaxHeight: 200,
+                }),
+                widget.WidgetOpts.MinSize(0, 200),
+            )),
 
             /*
             widget.ListOpts.ContainerOpts(widget.ContainerOpts.BackgroundImage(
@@ -721,7 +732,7 @@ func main(){
     mouse.Initialize()
 
     engine := MakeEngine(cache)
-    ebiten.SetWindowSize(1250, 768)
+    ebiten.SetWindowSize(1250, 800)
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 
     err := ebiten.RunGame(engine)
