@@ -297,9 +297,6 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
     rootContainer.AddChild(label1)
 
     fakeImage := ui_image.NewNineSliceColor(color.NRGBA{R: 32, G: 32, B: 32, A: 255})
-    buttonImage := ui_image.NewNineSliceColor(color.NRGBA{R: 0, G: 0, B: 128, A: 255})
-    // buttonImageHover := ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 64, B: 64, A: 255})
-    // buttonImageIdle := ui_image.NewNineSliceColor(color.NRGBA{R: 80, G: 80, B: 0, A: 255})
 
     /*
     unitList1 := widget.NewListComboButton(
@@ -620,11 +617,8 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
     var armyButtons []*widget.Button
     armyButtons = append(armyButtons, widget.NewButton(
-        widget.ButtonOpts.Image(&widget.ButtonImage{
-            Idle: buttonImage,
-            Hover: buttonImage,
-            Pressed: buttonImage,
-        }),
+        widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x52, G: 0x78, B: 0xc3, A: 0xff})),
+        widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
         widget.ButtonOpts.Text("Defending Army", face, &widget.ButtonTextColor{
             Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
             Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
@@ -638,11 +632,8 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
     ))
 
     armyButtons = append(armyButtons, widget.NewButton(
-        widget.ButtonOpts.Image(&widget.ButtonImage{
-            Idle: buttonImage,
-            Hover: buttonImage,
-            Pressed: buttonImage,
-        }),
+        widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x52, G: 0x78, B: 0xc3, A: 0xff})),
+        widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
         widget.ButtonOpts.Text("Attacking Army", face, &widget.ButtonTextColor{
             Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
             Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
@@ -721,14 +712,24 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
     rootContainer.AddChild(armyContainer)
 
+    combatPicture, _ := imageCache.GetImageTransform("special.lbx", 29, 0, "enlarge", enlargeTransform(2))
     rootContainer.AddChild(widget.NewButton(
         widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
         widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x52, G: 0x78, B: 0xc3, A: 0xff})),
+        widget.ButtonOpts.TextAndImage("Enter Combat!", face, &widget.ButtonImageImage{Idle: combatPicture, Disabled: combatPicture}, &widget.ButtonTextColor{
+            Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
+            Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+            Pressed: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
+        }),
+
+        /*
         widget.ButtonOpts.Text("Enter Combat!", face, &widget.ButtonTextColor{
             Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
             Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
             Pressed: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
         }),
+        widget.ButtonOpts.Graphic(combatPicture),
+        */
         widget.ButtonOpts.PressedHandler(func (args *widget.ButtonPressedEventArgs) {
             var defenders []units.Unit
 
