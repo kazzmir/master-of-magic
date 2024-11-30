@@ -4,6 +4,7 @@ import (
     "embed"
     "log"
     "fmt"
+    "image"
     "image/color"
     "errors"
     "math/rand/v2"
@@ -17,6 +18,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/mouse"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
+    "github.com/kazzmir/master-of-magic/game/magic/util"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     "github.com/kazzmir/master-of-magic/util/common"
 
@@ -186,7 +188,34 @@ func (engine *Engine) EnterCombat(defenderUnits []units.Unit, attackerUnits []un
     engine.Coroutine = coroutine.MakeCoroutine(run)
 }
 
+func enlargeTransform(factor int) util.ImageTransformFunc {
+    var f util.ImageTransformFunc
+
+    f = func (original *image.Paletted) image.Image {
+        newImage := image.NewPaletted(image.Rect(0, 0, original.Bounds().Dx() * factor, original.Bounds().Dy() * factor), original.Palette)
+
+        for y := 0; y < original.Bounds().Dy(); y++ {
+            for x := 0; x < original.Bounds().Dx(); x++ {
+                colorIndex := original.ColorIndexAt(x, y)
+
+                for dy := 0; dy < factor; dy++ {
+                    for dx := 0; dx < factor; dx++ {
+                        newImage.SetColorIndex(x * factor + dx, y * factor + dy, colorIndex)
+                    }
+                }
+            }
+        }
+
+        return newImage
+    }
+
+    return f
+}
+
 func (engine *Engine) MakeUI() *ebitenui.UI {
+
+    imageCache := util.MakeImageCache(engine.Cache)
+
     makeRow := func(spacing int, children ...widget.PreferredSizeLocateableWidget) *widget.Container {
         container := widget.NewContainer(
             widget.ContainerOpts.Layout(widget.NewRowLayout(
@@ -348,6 +377,15 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
         clickTimer := make(map[string]uint64)
 
+        unitGraphic := widget.NewGraphic()
+
+        updateGraphic := func (unit units.Unit) {
+            unitImage, err := imageCache.GetImageTransform(unit.CombatLbxFile, unit.CombatIndex + 2, 0, "enlarge", enlargeTransform(4))
+            if err == nil {
+                unitGraphic.Image = unitImage
+            }
+        }
+
         unitList := widget.NewList(
             widget.ListOpts.EntryFontFace(face),
             widget.ListOpts.SliderOpts(
@@ -385,6 +423,8 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             widget.ListOpts.EntrySelectedHandler(func(args *widget.ListEntrySelectedEventArgs) {
                 entry := args.Entry.(*UnitItem)
 
+                updateGraphic(entry.Unit)
+
                 lastTime, ok := clickTimer[entry.Unit.Name]
                 // log.Printf("Entry %v lastTime %v counter %v ok %v", entry, lastTime, engine.Counter, ok)
                 if ok && engine.Counter - lastTime < 30 {
@@ -414,7 +454,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             widget.ListOpts.AllowReselect(),
         )
 
-        tab.AddChild(unitList)
+        tab.AddChild(makeRow(5, unitGraphic, unitList))
 
         for _, unit := range units.UnitsByRace(race) {
             unitList.AddEntry(&UnitItem{
