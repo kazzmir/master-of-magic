@@ -190,7 +190,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         return container
     }
 
-    face, _ := loadFont(18)
+    face, _ := loadFont(20)
 
     backgroundImageRaw, _, err := ebitenutil.NewImageFromFileSystem(assets, "assets/box.png")
     if err != nil {
@@ -323,6 +323,12 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
                 }),
             ),
 
+            /*
+            widget.ListOpts.ContainerOpts(widget.ContainerOpts.BackgroundImage(
+                ui_image.NewNineSliceColor(color.NRGBA{R: 128, G: 64, B: 64, A: 255}),
+            )),
+            */
+
             widget.ListOpts.EntryLabelFunc(
                 func (e any) string {
                     item := e.(*UnitItem)
@@ -426,9 +432,12 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         return widget.NewList(
             widget.ListOpts.EntryFontFace(face),
 
-            widget.ListOpts.ContainerOpts(widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{
-                MaxHeight: 300,
-            }))),
+            widget.ListOpts.ContainerOpts(widget.ContainerOpts.WidgetOpts(
+                widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+                    MaxHeight: 300,
+                }),
+                widget.WidgetOpts.MinSize(0, 300),
+            )),
 
             widget.ListOpts.SliderOpts(
                 widget.SliderOpts.Images(&widget.SliderTrackImage{
