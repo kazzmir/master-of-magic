@@ -467,6 +467,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         }
 
         tab.AddChild(makeRow(5,
+            space,
             widget.NewButton(
                 widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
                 widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x52, G: 0x78, B: 0xc3, A: 0xff})),
@@ -580,6 +581,77 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
     armyList = defendingArmyList
     armyCount = defendingArmyCount
+
+    raceRows := widget.NewContainer(
+        widget.ContainerOpts.Layout(widget.NewRowLayout(
+            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+            widget.RowLayoutOpts.Spacing(5),
+        )),
+    )
+
+    makeRaceButton := func (race data.Race) *widget.Button {
+        raceLbx := "backgrnd.lbx"
+        raceIndex := 44
+
+        switch race {
+            case data.RaceHero:
+            case data.RaceFantastic:
+
+            case data.RaceLizard:
+                raceLbx = "backgrnd.lbx"
+                raceIndex = 55
+            case data.RaceNomad:
+            case data.RaceOrc:
+            case data.RaceTroll:
+            case data.RaceBarbarian:
+            case data.RaceBeastmen:
+            case data.RaceDarkElf:
+            case data.RaceDraconian:
+            case data.RaceDwarf:
+            case data.RaceGnoll:
+            case data.RaceHalfling:
+            case data.RaceHighElf:
+            case data.RaceHighMen:
+            case data.RaceKlackon:
+        }
+
+        raceImage, _ := imageCache.GetImageTransform(raceLbx, raceIndex, 0, "enlarge", enlargeTransform(2))
+
+        return widget.NewButton(
+            widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+            widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x52, G: 0x78, B: 0xc3, A: 0xff})),
+            widget.ButtonOpts.TextAndImage(race.String(), face, &widget.ButtonImageImage{Idle: raceImage, Disabled: raceImage}, &widget.ButtonTextColor{
+                Idle: color.White,
+                Hover: color.White,
+                Pressed: color.White,
+            }),
+            widget.ButtonOpts.PressedHandler(func (args *widget.ButtonPressedEventArgs) {
+                // set list of units to the one for this race
+            }),
+        )
+    }
+
+    var raceButtons []*widget.Button
+    for _, race := range allRaces {
+        raceButtons = append(raceButtons, makeRaceButton(race))
+    }
+
+    buttonsPerRow := 8
+    for i := 0; i < len(raceButtons); i += buttonsPerRow {
+        max := i + buttonsPerRow
+        if max >= len(raceButtons) {
+            max = len(raceButtons)
+        }
+
+        var widgets []widget.PreferredSizeLocateableWidget
+        for j := i; j < max; j++ {
+            widgets = append(widgets, raceButtons[j])
+        }
+
+        raceRows.AddChild(makeRow(5, widgets...))
+    }
+
+    rootContainer.AddChild(raceRows)
 
     greyish := color.NRGBA{R: 128, G: 128, B: 128, A: 255}
 
