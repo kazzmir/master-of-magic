@@ -453,7 +453,9 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             widget.ListOpts.AllowReselect(),
         )
 
-        tab.AddChild(makeRow(5, unitGraphic, unitList))
+        space := widget.NewGraphic(widget.GraphicOpts.Image(ebiten.NewImage(60, 30)))
+
+        tab.AddChild(makeRow(5, space, unitGraphic, unitList))
 
         for _, unit := range slices.SortedFunc(slices.Values(units.UnitsByRace(race)), func (a units.Unit, b units.Unit) int {
             return cmp.Compare(a.Name, b.Name)
