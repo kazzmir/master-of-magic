@@ -671,17 +671,34 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
     defendingArmyContainer.AddChild(makeRow(4, defendingArmyName, defendingArmyCount))
 
     defendingArmyContainer.AddChild(defendingArmyList)
-    defendingArmyContainer.AddChild(widget.NewButton(
-        widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
-        widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x52, G: 0x78, B: 0xc3, A: 0xff})),
-        widget.ButtonOpts.Text("Clear Defending Army", face, &widget.ButtonTextColor{
-            Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
-            Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
-        }),
-        widget.ButtonOpts.PressedHandler(func (args *widget.ButtonPressedEventArgs) {
-            defendingArmyList.SetEntries(nil)
-            defendingArmyCount.Label = "0"
-        }),
+    defendingArmyContainer.AddChild(makeRow(4,
+        widget.NewButton(
+            widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+            widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x52, G: 0x78, B: 0xc3, A: 0xff})),
+            widget.ButtonOpts.Text("Clear Defending Army", face, &widget.ButtonTextColor{
+                Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
+                Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+            }),
+            widget.ButtonOpts.PressedHandler(func (args *widget.ButtonPressedEventArgs) {
+                defendingArmyList.SetEntries(nil)
+                defendingArmyCount.Label = "0"
+            }),
+        ),
+        widget.NewButton(
+            widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+            widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x52, G: 0x78, B: 0xc3, A: 0xff})),
+            widget.ButtonOpts.Text("Remove Unit", face, &widget.ButtonTextColor{
+                Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
+                Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+            }),
+            widget.ButtonOpts.PressedHandler(func (args *widget.ButtonPressedEventArgs) {
+                selected := defendingArmyList.SelectedEntry()
+                if selected != nil {
+                    defendingArmyList.RemoveEntry(selected)
+                    defendingArmyCount.Label = fmt.Sprintf("%v", len(defendingArmyList.Entries()))
+                }
+            }),
+        ),
     ))
 
     armyContainer.AddChild(defendingArmyContainer)
@@ -695,17 +712,34 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
     attackingArmyContainer.AddChild(makeRow(4, attackingArmyName, attackingArmyCount))
 
     attackingArmyContainer.AddChild(attackingArmyList)
-    attackingArmyContainer.AddChild(widget.NewButton(
-        widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
-        widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x52, G: 0x78, B: 0xc3, A: 0xff})),
-        widget.ButtonOpts.Text("Clear Attacking Army", face, &widget.ButtonTextColor{
-            Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
-            Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
-        }),
-        widget.ButtonOpts.PressedHandler(func (args *widget.ButtonPressedEventArgs) {
-            attackingArmyList.SetEntries(nil)
-            attackingArmyCount.Label = "0"
-        }),
+    attackingArmyContainer.AddChild(makeRow(4,
+        widget.NewButton(
+            widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+            widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x52, G: 0x78, B: 0xc3, A: 0xff})),
+            widget.ButtonOpts.Text("Clear Attacking Army", face, &widget.ButtonTextColor{
+                Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
+                Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+            }),
+            widget.ButtonOpts.PressedHandler(func (args *widget.ButtonPressedEventArgs) {
+                attackingArmyList.SetEntries(nil)
+                attackingArmyCount.Label = "0"
+            }),
+        ),
+        widget.NewButton(
+            widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+            widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x52, G: 0x78, B: 0xc3, A: 0xff})),
+            widget.ButtonOpts.Text("Remove Unit", face, &widget.ButtonTextColor{
+                Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
+                Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+            }),
+            widget.ButtonOpts.PressedHandler(func (args *widget.ButtonPressedEventArgs) {
+                selected := attackingArmyList.SelectedEntry()
+                if selected != nil {
+                    attackingArmyList.RemoveEntry(selected)
+                    attackingArmyCount.Label = fmt.Sprintf("%v", len(attackingArmyList.Entries()))
+                }
+            }),
+        ),
     ))
 
     armyContainer.AddChild(attackingArmyContainer)
