@@ -363,7 +363,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
     var raceTabs []*widget.TabBookTab
 
-    allRaces := append(append(data.ArcanianRaces(), data.MyrranRaces()...), data.RaceFantastic)
+    allRaces := append(append(data.ArcanianRaces(), data.MyrranRaces()...), []data.Race{data.RaceFantastic, data.RaceHero}...)
 
     for _, race := range allRaces {
         tab := widget.NewTabBookTab(
@@ -813,7 +813,7 @@ func main(){
     mouse.Initialize()
 
     engine := MakeEngine(cache)
-    ebiten.SetWindowSize(1250, 800)
+    ebiten.SetWindowSize(1300, 800)
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 
     err := ebiten.RunGame(engine)
