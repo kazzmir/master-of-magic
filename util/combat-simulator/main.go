@@ -263,9 +263,11 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         }
     }
 
+    /*
     tabImageNine := makeNineImage(makeRoundedButtonImage(80, 80, 10, color.NRGBA{R: 64, G: 64, B: 64, A: 255}), 10)
     tabImageHoverNine := makeNineImage(makeRoundedButtonImage(80, 80, 10, color.NRGBA{R: 128, G: 128, B: 128, A: 255}), 10)
     tabImagePressedNine := makeNineImage(makeRoundedButtonImage(80, 80, 10, color.NRGBA{R: 96, G: 96, B: 96, A: 255}), 10)
+    */
 
     face, _ := loadFont(19)
 
@@ -372,11 +374,79 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
     var armyList *widget.List
     var armyCount *widget.Text
 
-    var raceTabs []*widget.TabBookTab
+    // var raceTabs []*widget.TabBookTab
 
     allRaces := append(append(data.ArcanianRaces(), data.MyrranRaces()...), []data.Race{data.RaceFantastic, data.RaceHero}...)
 
+    unitListContainer := widget.NewContainer(
+        widget.ContainerOpts.Layout(widget.NewRowLayout(
+            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+            widget.RowLayoutOpts.Spacing(5),
+        )),
+    )
+
+    var raceButtons []*widget.Button
+
+    makeRaceButton := func (race data.Race, update func()) *widget.Button {
+        raceLbx := "backgrnd.lbx"
+        raceIndex := 44
+
+        switch race {
+            case data.RaceHero:
+                raceLbx = "figures1.lbx"
+                raceIndex = 2
+            case data.RaceFantastic:
+                raceLbx = "figure11.lbx"
+                raceIndex = 115
+            case data.RaceLizard:
+                raceIndex = 55
+            case data.RaceNomad:
+                raceIndex = 56
+            case data.RaceOrc:
+                raceIndex = 57
+            case data.RaceTroll:
+                raceIndex = 58
+            case data.RaceBarbarian:
+                raceIndex = 45
+            case data.RaceBeastmen:
+                raceIndex = 46
+            case data.RaceDarkElf:
+                raceIndex = 47
+            case data.RaceDraconian:
+                raceIndex = 48
+            case data.RaceDwarf:
+                raceIndex = 49
+            case data.RaceGnoll:
+                raceIndex = 50
+            case data.RaceHalfling:
+                raceIndex = 51
+            case data.RaceHighElf:
+                raceIndex = 52
+            case data.RaceHighMen:
+                raceIndex = 53
+            case data.RaceKlackon:
+                raceIndex = 54
+        }
+
+        raceImage, _ := imageCache.GetImageTransform(raceLbx, raceIndex, 0, "enlarge", enlargeTransform(2))
+        rescaled := scaleImage(raceImage, 30)
+
+        return widget.NewButton(
+            widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+            widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x52, G: 0x78, B: 0xc3, A: 0xff})),
+            widget.ButtonOpts.TextAndImage(race.String(), face, &widget.ButtonImageImage{Idle: rescaled, Disabled: raceImage}, &widget.ButtonTextColor{
+                Idle: color.White,
+                Hover: color.White,
+                Pressed: color.White,
+            }),
+            widget.ButtonOpts.PressedHandler(func (args *widget.ButtonPressedEventArgs) {
+                update()
+            }),
+        )
+    }
+
     for _, race := range allRaces {
+        /*
         tab := widget.NewTabBookTab(
             race.String(),
             widget.ContainerOpts.Layout(widget.NewRowLayout(
@@ -384,6 +454,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
                 widget.RowLayoutOpts.Spacing(5),
             )),
         )
+        */
 
         clickTimer := make(map[string]uint64)
 
@@ -466,7 +537,9 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
         space := widget.NewGraphic(widget.GraphicOpts.Image(ebiten.NewImage(60, 30)))
 
-        tab.AddChild(makeRow(5, space, unitGraphic, unitList))
+        raceRow := makeRow(5, space, unitGraphic, unitList)
+
+        // tab.AddChild(makeRow(5, space, unitGraphic, unitList))
 
         for _, unit := range slices.SortedFunc(slices.Values(units.UnitsByRace(race)), func (a units.Unit, b units.Unit) int {
             return cmp.Compare(a.Name, b.Name)
@@ -477,7 +550,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             })
         }
 
-        tab.AddChild(makeRow(5,
+        moreButtonsRow := makeRow(5,
             space,
             widget.NewButton(
                 widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
@@ -516,9 +589,17 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
                     armyCount.Label = fmt.Sprintf("%v", len(armyList.Entries()))
                 }),
             ),
-        ))
+        )
 
-        raceTabs = append(raceTabs, tab)
+        // raceTabs = append(raceTabs, tab)
+
+        update := func(){
+            unitListContainer.RemoveChildren()
+            unitListContainer.AddChild(raceRow)
+            unitListContainer.AddChild(moreButtonsRow)
+        }
+
+        raceButtons = append(raceButtons, makeRaceButton(race, update))
     }
 
     defendingArmyCount := widget.NewText(widget.TextOpts.Text("0", face, color.NRGBA{R: 255, G: 255, B: 255, A: 255}))
@@ -600,69 +681,6 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         )),
     )
 
-    makeRaceButton := func (race data.Race) *widget.Button {
-        raceLbx := "backgrnd.lbx"
-        raceIndex := 44
-
-        switch race {
-            case data.RaceHero:
-                raceLbx = "figures1.lbx"
-                raceIndex = 2
-            case data.RaceFantastic:
-                raceLbx = "figure11.lbx"
-                raceIndex = 115
-            case data.RaceLizard:
-                raceIndex = 55
-            case data.RaceNomad:
-                raceIndex = 56
-            case data.RaceOrc:
-                raceIndex = 57
-            case data.RaceTroll:
-                raceIndex = 58
-            case data.RaceBarbarian:
-                raceIndex = 45
-            case data.RaceBeastmen:
-                raceIndex = 46
-            case data.RaceDarkElf:
-                raceIndex = 47
-            case data.RaceDraconian:
-                raceIndex = 48
-            case data.RaceDwarf:
-                raceIndex = 49
-            case data.RaceGnoll:
-                raceIndex = 50
-            case data.RaceHalfling:
-                raceIndex = 51
-            case data.RaceHighElf:
-                raceIndex = 52
-            case data.RaceHighMen:
-                raceIndex = 53
-            case data.RaceKlackon:
-                raceIndex = 54
-        }
-
-        raceImage, _ := imageCache.GetImageTransform(raceLbx, raceIndex, 0, "enlarge", enlargeTransform(2))
-        rescaled := scaleImage(raceImage, 30)
-
-        return widget.NewButton(
-            widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
-            widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x52, G: 0x78, B: 0xc3, A: 0xff})),
-            widget.ButtonOpts.TextAndImage(race.String(), face, &widget.ButtonImageImage{Idle: rescaled, Disabled: raceImage}, &widget.ButtonTextColor{
-                Idle: color.White,
-                Hover: color.White,
-                Pressed: color.White,
-            }),
-            widget.ButtonOpts.PressedHandler(func (args *widget.ButtonPressedEventArgs) {
-                // set list of units to the one for this race
-            }),
-        )
-    }
-
-    var raceButtons []*widget.Button
-    for _, race := range allRaces {
-        raceButtons = append(raceButtons, makeRaceButton(race))
-    }
-
     buttonsPerRow := 8
     for i := 0; i < len(raceButtons); i += buttonsPerRow {
         max := i + buttonsPerRow
@@ -678,10 +696,15 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         raceRows.AddChild(makeRow(5, widgets...))
     }
 
+    raceButtons[0].Click()
+
     rootContainer.AddChild(raceRows)
 
-    greyish := color.NRGBA{R: 128, G: 128, B: 128, A: 255}
+    // greyish := color.NRGBA{R: 128, G: 128, B: 128, A: 255}
 
+    rootContainer.AddChild(unitListContainer)
+
+    /*
     unitsTabs := widget.NewTabBook(
         widget.TabBookOpts.TabButtonImage(&widget.ButtonImage{
             Idle: tabImageNine,
@@ -695,6 +718,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
     )
 
     rootContainer.AddChild(unitsTabs)
+    */
 
     rootContainer.AddChild(widget.NewButton(
         widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
@@ -912,7 +936,7 @@ func main(){
     mouse.Initialize()
 
     engine := MakeEngine(cache)
-    ebiten.SetWindowSize(1300, 800)
+    ebiten.SetWindowSize(1200, 850)
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 
     err := ebiten.RunGame(engine)
