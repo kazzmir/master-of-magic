@@ -420,7 +420,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
                 raceIndex = 54
         }
 
-        raceImage, _ := imageCache.GetImageTransform(raceLbx, raceIndex, 0, "enlarge", enlargeTransform(2))
+        raceImage, _ := imageCache.GetImageTransform(raceLbx, raceIndex, 0, "race-button-enlarge", enlargeTransform(2))
         rescaled := scaleImage(raceImage, 30)
 
         return widget.NewButton(
@@ -443,7 +443,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         unitGraphic := widget.NewGraphic()
 
         updateGraphic := func (unit units.Unit) {
-            unitImage, err := imageCache.GetImageTransform(unit.CombatLbxFile, unit.CombatIndex + 2, 0, "enlarge", enlargeTransform(4))
+            unitImage, err := imageCache.GetImageTransform(unit.CombatLbxFile, unit.CombatIndex + 2, 0, "race-enlarge", enlargeTransform(4))
             if err == nil {
                 unitGraphic.Image = unitImage
             }
@@ -836,7 +836,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
     rootContainer.AddChild(armyContainer)
 
-    combatPicture, _ := imageCache.GetImageTransform("special.lbx", 29, 0, "enlarge", enlargeTransform(2))
+    combatPicture, _ := imageCache.GetImageTransform("special.lbx", 29, 0, "combat-enlarge", enlargeTransform(2))
     rootContainer.AddChild(widget.NewButton(
         widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
         widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x52, G: 0x78, B: 0xc3, A: 0xff})),
