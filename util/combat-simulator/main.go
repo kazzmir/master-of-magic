@@ -263,12 +263,6 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         }
     }
 
-    /*
-    tabImageNine := makeNineImage(makeRoundedButtonImage(80, 80, 10, color.NRGBA{R: 64, G: 64, B: 64, A: 255}), 10)
-    tabImageHoverNine := makeNineImage(makeRoundedButtonImage(80, 80, 10, color.NRGBA{R: 128, G: 128, B: 128, A: 255}), 10)
-    tabImagePressedNine := makeNineImage(makeRoundedButtonImage(80, 80, 10, color.NRGBA{R: 96, G: 96, B: 96, A: 255}), 10)
-    */
-
     face, _ := loadFont(19)
 
     backgroundImageRaw, _, err := ebitenutil.NewImageFromFileSystem(assets, "assets/box.png")
@@ -374,8 +368,6 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
     var armyList *widget.List
     var armyCount *widget.Text
 
-    // var raceTabs []*widget.TabBookTab
-
     allRaces := append(append(data.ArcanianRaces(), data.MyrranRaces()...), []data.Race{data.RaceFantastic, data.RaceHero}...)
 
     unitListContainer := widget.NewContainer(
@@ -439,23 +431,13 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
                 Hover: color.White,
                 Pressed: color.White,
             }),
-            widget.ButtonOpts.PressedHandler(func (args *widget.ButtonPressedEventArgs) {
+            widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
                 update()
             }),
         )
     }
 
     for _, race := range allRaces {
-        /*
-        tab := widget.NewTabBookTab(
-            race.String(),
-            widget.ContainerOpts.Layout(widget.NewRowLayout(
-                widget.RowLayoutOpts.Direction(widget.DirectionVertical),
-                widget.RowLayoutOpts.Spacing(5),
-            )),
-        )
-        */
-
         clickTimer := make(map[string]uint64)
 
         unitGraphic := widget.NewGraphic()
@@ -497,6 +479,9 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             widget.ListOpts.EntryLabelFunc(
                 func (e any) string {
                     item := e.(*UnitItem)
+                    if item.Race == data.RaceFantastic || item.Race == data.RaceHero {
+                        return item.Unit.Name
+                    }
                     return fmt.Sprintf("%v %v", item.Race, item.Unit.Name)
                 },
             ),
@@ -560,7 +545,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
                     Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
                     Pressed: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
                 }),
-                widget.ButtonOpts.PressedHandler(func (args *widget.ButtonPressedEventArgs) {
+                widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
                     entry := unitList.SelectedEntry()
                     if entry != nil {
                         entry := entry.(*UnitItem)
@@ -578,7 +563,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
                     Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
                     Pressed: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
                 }),
-                widget.ButtonOpts.PressedHandler(func (args *widget.ButtonPressedEventArgs) {
+                widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
                     choices := units.UnitsByRace(race)
                     use := choices[rand.N(len(choices))]
                     newItem := UnitItem{
@@ -590,8 +575,6 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
                 }),
             ),
         )
-
-        // raceTabs = append(raceTabs, tab)
 
         update := func(){
             unitListContainer.RemoveChildren()
@@ -700,25 +683,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
     rootContainer.AddChild(raceRows)
 
-    // greyish := color.NRGBA{R: 128, G: 128, B: 128, A: 255}
-
     rootContainer.AddChild(unitListContainer)
-
-    /*
-    unitsTabs := widget.NewTabBook(
-        widget.TabBookOpts.TabButtonImage(&widget.ButtonImage{
-            Idle: tabImageNine,
-            Hover: tabImageHoverNine,
-            Pressed: tabImagePressedNine,
-        }),
-        widget.TabBookOpts.TabButtonSpacing(3),
-        widget.TabBookOpts.TabButtonText(face, &widget.ButtonTextColor{Idle: color.White, Disabled: greyish}),
-        widget.TabBookOpts.Tabs(raceTabs...),
-        widget.TabBookOpts.TabButtonOpts(widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5})),
-    )
-
-    rootContainer.AddChild(unitsTabs)
-    */
 
     rootContainer.AddChild(widget.NewButton(
         widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
@@ -728,7 +693,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
             Pressed: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
         }),
-        widget.ButtonOpts.PressedHandler(func (args *widget.ButtonPressedEventArgs) {
+        widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
             unit := units.AllUnits[rand.N(len(units.AllUnits))]
             newItem := UnitItem{
                 Race: unit.Race,
@@ -748,7 +713,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
             Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
         }),
-        widget.ButtonOpts.PressedHandler(func (args *widget.ButtonPressedEventArgs) {
+        widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
             armyList = defendingArmyList
             armyCount = defendingArmyCount
             defendingArmyName.Color = color.NRGBA{R: 255, G: 0, B: 0, A: 255}
@@ -763,7 +728,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
             Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
         }),
-        widget.ButtonOpts.PressedHandler(func (args *widget.ButtonPressedEventArgs) {
+        widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
             armyList = attackingArmyList
             armyCount = attackingArmyCount
             attackingArmyName.Color = color.NRGBA{R: 255, G: 0, B: 0, A: 255}
@@ -804,7 +769,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
                 Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
                 Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
             }),
-            widget.ButtonOpts.PressedHandler(func (args *widget.ButtonPressedEventArgs) {
+            widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
                 defendingArmyList.SetEntries(nil)
                 defendingArmyCount.Label = "0"
             }),
@@ -816,7 +781,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
                 Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
                 Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
             }),
-            widget.ButtonOpts.PressedHandler(func (args *widget.ButtonPressedEventArgs) {
+            widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
                 selected := defendingArmyList.SelectedEntry()
                 if selected != nil {
                     defendingArmyList.RemoveEntry(selected)
@@ -845,7 +810,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
                 Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
                 Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
             }),
-            widget.ButtonOpts.PressedHandler(func (args *widget.ButtonPressedEventArgs) {
+            widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
                 attackingArmyList.SetEntries(nil)
                 attackingArmyCount.Label = "0"
             }),
@@ -857,7 +822,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
                 Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
                 Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
             }),
-            widget.ButtonOpts.PressedHandler(func (args *widget.ButtonPressedEventArgs) {
+            widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
                 selected := attackingArmyList.SelectedEntry()
                 if selected != nil {
                     attackingArmyList.RemoveEntry(selected)
@@ -889,7 +854,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         }),
         widget.ButtonOpts.Graphic(combatPicture),
         */
-        widget.ButtonOpts.PressedHandler(func (args *widget.ButtonPressedEventArgs) {
+        widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
             var defenders []units.Unit
 
             for _, entry := range defendingArmyList.Entries() {
@@ -936,7 +901,7 @@ func main(){
     mouse.Initialize()
 
     engine := MakeEngine(cache)
-    ebiten.SetWindowSize(1200, 850)
+    ebiten.SetWindowSize(1200, 900)
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 
     err := ebiten.RunGame(engine)
