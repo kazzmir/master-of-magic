@@ -214,6 +214,17 @@ func enlargeTransform(factor int) util.ImageTransformFunc {
     return f
 }
 
+func scaleImage(img *ebiten.Image, newHeight int) *ebiten.Image {
+    scale := float64(newHeight) / float64(img.Bounds().Dy())
+    newWidth := int(float64(img.Bounds().Dx()) * scale)
+
+    newImage := ebiten.NewImage(newWidth, newHeight)
+    var options ebiten.DrawImageOptions
+    options.GeoM.Scale(scale, scale)
+    newImage.DrawImage(img, &options)
+    return newImage
+}
+
 func (engine *Engine) MakeUI() *ebitenui.UI {
 
     imageCache := util.MakeImageCache(engine.Cache)
@@ -595,32 +606,48 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
         switch race {
             case data.RaceHero:
+                raceLbx = "figures1.lbx"
+                raceIndex = 2
             case data.RaceFantastic:
-
+                raceLbx = "figure11.lbx"
+                raceIndex = 115
             case data.RaceLizard:
-                raceLbx = "backgrnd.lbx"
                 raceIndex = 55
             case data.RaceNomad:
+                raceIndex = 56
             case data.RaceOrc:
+                raceIndex = 57
             case data.RaceTroll:
+                raceIndex = 58
             case data.RaceBarbarian:
+                raceIndex = 45
             case data.RaceBeastmen:
+                raceIndex = 46
             case data.RaceDarkElf:
+                raceIndex = 47
             case data.RaceDraconian:
+                raceIndex = 48
             case data.RaceDwarf:
+                raceIndex = 49
             case data.RaceGnoll:
+                raceIndex = 50
             case data.RaceHalfling:
+                raceIndex = 51
             case data.RaceHighElf:
+                raceIndex = 52
             case data.RaceHighMen:
+                raceIndex = 53
             case data.RaceKlackon:
+                raceIndex = 54
         }
 
         raceImage, _ := imageCache.GetImageTransform(raceLbx, raceIndex, 0, "enlarge", enlargeTransform(2))
+        rescaled := scaleImage(raceImage, 30)
 
         return widget.NewButton(
             widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
             widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x52, G: 0x78, B: 0xc3, A: 0xff})),
-            widget.ButtonOpts.TextAndImage(race.String(), face, &widget.ButtonImageImage{Idle: raceImage, Disabled: raceImage}, &widget.ButtonTextColor{
+            widget.ButtonOpts.TextAndImage(race.String(), face, &widget.ButtonImageImage{Idle: rescaled, Disabled: raceImage}, &widget.ButtonTextColor{
                 Idle: color.White,
                 Hover: color.White,
                 Pressed: color.White,
