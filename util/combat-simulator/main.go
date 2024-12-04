@@ -44,6 +44,7 @@ type EngineMode int
 const (
     EngineModeMenu EngineMode = iota
     EngineModeCombat
+    EngineModeBugReport
 )
 
 type HoverData struct {
@@ -55,7 +56,9 @@ type Engine struct {
     Cache *lbx.LbxCache
     Mode EngineMode
     UI *ebitenui.UI
+    BugUI *ebitenui.UI
     Combat *combat.CombatScreen
+    LastCombatScreen *ebiten.Image
     Coroutine *coroutine.Coroutine
     Counter uint64
 }
@@ -63,6 +66,7 @@ type Engine struct {
 func MakeEngine(cache *lbx.LbxCache) *Engine {
     engine := Engine{
         Cache: cache,
+        LastCombatScreen: ebiten.NewImage(data.ScreenWidth, data.ScreenHeight),
     }
 
     engine.UI = engine.MakeUI()
@@ -93,13 +97,24 @@ func (engine *Engine) Update() error {
     for _, key := range keys {
         switch key {
             case ebiten.KeyEscape, ebiten.KeyCapsLock:
-                return ebiten.Termination
+                switch engine.Mode {
+                    case EngineModeMenu:
+                        return ebiten.Termination
+                    case EngineModeCombat:
+                        engine.Mode = EngineModeBugReport
+                        engine.BugUI = engine.MakeBugUI()
+                        engine.Combat.Draw(engine.LastCombatScreen)
+                    case EngineModeBugReport:
+                        engine.Mode = EngineModeCombat
+                }
         }
     }
 
     switch engine.Mode {
         case EngineModeMenu:
             engine.UI.Update()
+        case EngineModeBugReport:
+            engine.BugUI.Update()
         case EngineModeCombat:
             inputmanager.Update()
             err := engine.Coroutine.Run()
@@ -117,6 +132,14 @@ func (engine *Engine) Draw(screen *ebiten.Image) {
     switch engine.Mode {
         case EngineModeMenu:
             engine.UI.Draw(screen)
+        case EngineModeBugReport:
+            var options ebiten.DrawImageOptions
+            // fixme: do aspect ratio scaling
+            xScale := float64(screen.Bounds().Dx()) / float64(engine.LastCombatScreen.Bounds().Dx())
+            yScale := float64(screen.Bounds().Dy()) / float64(engine.LastCombatScreen.Bounds().Dy())
+            options.GeoM.Scale(xScale, yScale)
+            screen.DrawImage(engine.LastCombatScreen, &options)
+            engine.BugUI.Draw(screen)
         case EngineModeCombat:
             engine.Combat.Draw(screen)
             mouse.Mouse.Draw(screen)
@@ -125,13 +148,13 @@ func (engine *Engine) Draw(screen *ebiten.Image) {
 
 func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
     switch engine.Mode {
-        case EngineModeMenu:
+        case EngineModeMenu, EngineModeBugReport:
             return outsideWidth, outsideHeight
         case EngineModeCombat:
             return data.ScreenWidth, data.ScreenHeight
     }
 
-    return 0, 0
+    return outsideWidth, outsideHeight
 }
 
 func (engine *Engine) EnterCombat(defenderUnits []units.Unit, attackerUnits []units.Unit) {
@@ -223,6 +246,33 @@ func scaleImage(img *ebiten.Image, newHeight int) *ebiten.Image {
     options.GeoM.Scale(scale, scale)
     newImage.DrawImage(img, &options)
     return newImage
+}
+
+func (engine *Engine) MakeBugUI() *ebitenui.UI {
+    face, _ := loadFont(19)
+
+    backgroundImage := ui_image.NewNineSliceColor(color.NRGBA{R: 32, G: 32, B: 32, A: 64})
+
+    rootContainer := widget.NewContainer(
+        widget.ContainerOpts.Layout(widget.NewRowLayout(
+            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+            widget.RowLayoutOpts.Spacing(12),
+            widget.RowLayoutOpts.Padding(widget.Insets{Top: 10, Left: 10, Right: 10}),
+        )),
+        widget.ContainerOpts.BackgroundImage(backgroundImage),
+        // widget.ContainerOpts.BackgroundImage(backgroundImageNine),
+    )
+
+    rootContainer.AddChild(widget.NewText(
+        widget.TextOpts.Text("Report a bug", face, color.White),
+    ))
+
+    ui := ebitenui.UI{
+        Container: rootContainer,
+    }
+
+    return &ui
+
 }
 
 func (engine *Engine) MakeUI() *ebitenui.UI {
