@@ -96,6 +96,14 @@ func padding(n int) widget.Insets {
     return widget.Insets{Top: n, Bottom: n, Left: n, Right: n}
 }
 
+func space(size int) *widget.Container {
+    return widget.NewContainer(
+        widget.ContainerOpts.WidgetOpts(
+            widget.WidgetOpts.MinSize(size, size),
+        ),
+    )
+}
+
 func lighten(c color.Color, amount float64) color.Color {
     var change colorm.ColorM
     change.ChangeHSV(0, 1 - amount/100, 1 + amount/100)
@@ -329,6 +337,8 @@ func (engine *Engine) MakeBugUI() *ebitenui.UI {
         }),
     ))
 
+    rootContainer.AddChild(space(30))
+
     rootContainer.AddChild(widget.NewText(
         widget.TextOpts.Text("Report a bug", face, color.White),
     ))
@@ -361,6 +371,19 @@ func (engine *Engine) MakeBugUI() *ebitenui.UI {
     ))
 
     rootContainer.AddChild(inputContainer)
+
+    rootContainer.AddChild(widget.NewButton(
+        widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+        widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x52, G: 0x78, B: 0xc3, A: 0xff})),
+        widget.ButtonOpts.Text("Send bug report", face, &widget.ButtonTextColor{
+            Idle: color.White,
+            Hover: color.White,
+            Pressed: color.White,
+        }),
+        widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
+            log.Printf("Sending bug report")
+        }),
+    ))
 
     /*
     rootContainer.AddChild(widget.NewTextArea(
