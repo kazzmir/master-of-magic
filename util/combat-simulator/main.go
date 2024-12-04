@@ -229,6 +229,10 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
     imageCache := util.MakeImageCache(engine.Cache)
 
+    padding := func (n int) widget.Insets {
+        return widget.Insets{Top: n, Bottom: n, Left: n, Right: n}
+    }
+
     makeRow := func(spacing int, children ...widget.PreferredSizeLocateableWidget) *widget.Container {
         container := widget.NewContainer(
             widget.ContainerOpts.Layout(widget.NewRowLayout(
@@ -253,6 +257,13 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         var change colorm.ColorM
         change.ChangeHSV(0, 1 - amount/100, 1 + amount/100)
         return change.Apply(c)
+    }
+
+    makeBorderOutline := func (col color.Color) *ui_image.NineSlice {
+        img := ebiten.NewImage(20, 20)
+        vector.StrokeRect(img, 0, 0, 18, 18, 1, col, true)
+        vector.StrokeLine(img, 19, 0, 19, 19, 1, lighten(col, -80), true)
+        return makeNineImage(img, 3)
     }
 
     makeNineRoundedButtonImage := func(width int, height int, border int, col color.Color) *widget.ButtonImage {
@@ -511,7 +522,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
             widget.ListOpts.ScrollContainerOpts(
                 widget.ScrollContainerOpts.Image(&widget.ScrollContainerImage{
-                    Idle: fakeImage,
+                    Idle: ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 64, B: 64, A: 255}),
                     Disabled: fakeImage,
                     Mask: fakeImage,
                 }),
@@ -681,9 +692,22 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
     raceButtons[0].Click()
 
-    rootContainer.AddChild(raceRows)
+    allContainer := widget.NewContainer(
+        widget.ContainerOpts.Layout(widget.NewRowLayout(
+            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+            widget.RowLayoutOpts.Spacing(5),
+            widget.RowLayoutOpts.Padding(padding(5)),
+        )),
+        widget.ContainerOpts.BackgroundImage(
+            // makeNineImage(makeRoundedButtonImage(40, 40, 5, color.NRGBA{R: 64, G: 64, B: 64, A: 0xff}), 5),
+            makeBorderOutline(color.NRGBA{R: 255, G: 255, B: 255, A: 255}),
+        ),
+    )
 
-    rootContainer.AddChild(unitListContainer)
+    allContainer.AddChild(raceRows)
+    allContainer.AddChild(unitListContainer)
+
+    rootContainer.AddChild(allContainer)
 
     rootContainer.AddChild(widget.NewButton(
         widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
