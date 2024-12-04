@@ -10,6 +10,7 @@ import (
     "cmp"
     "errors"
     "math/rand/v2"
+    "encoding/json"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
@@ -47,9 +48,36 @@ const (
     EngineModeBugReport
 )
 
-type HoverData struct {
-    OnHover func()
-    OnUnhover func()
+type CombatDescription struct {
+    DefenderUnits []units.Unit
+    AttackerUnits []units.Unit
+}
+
+func (description *CombatDescription) String() string {
+    out := make(map[string]any)
+
+    defenders := make([]string, 0)
+
+    for _, unit := range description.DefenderUnits {
+        defenders = append(defenders, unit.String())
+    }
+
+    out["defenders"] = defenders
+
+    attackers := make([]string, 0)
+    for _, unit := range description.AttackerUnits {
+        attackers = append(attackers, unit.String())
+    }
+
+    out["attackers"] = attackers
+
+    jsonString, err := json.MarshalIndent(out, "", "  ")
+    if err != nil {
+        log.Printf("Error with json: %v", err)
+        return fmt.Sprintf("Error: %v", err)
+    }
+
+    return string(jsonString)
 }
 
 type Engine struct {
@@ -60,6 +88,7 @@ type Engine struct {
     Combat *combat.CombatScreen
     LastCombatScreen *ebiten.Image
     Coroutine *coroutine.Coroutine
+    CombatDescription CombatDescription
     Counter uint64
 }
 
@@ -207,7 +236,8 @@ func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, scre
     return outsideWidth, outsideHeight
 }
 
-func (engine *Engine) EnterCombat(defenderUnits []units.Unit, attackerUnits []units.Unit) {
+func (engine *Engine) EnterCombat(combatDescription CombatDescription) {
+    // defenderUnits []units.Unit, attackerUnits []units.Unit
     engine.Mode = EngineModeCombat
 
     cpuPlayer := playerlib.MakePlayer(setup.WizardCustom{
@@ -223,7 +253,7 @@ func (engine *Engine) EnterCombat(defenderUnits []units.Unit, attackerUnits []un
     defendingArmy := combat.Army{
         Player: cpuPlayer,
     }
-    for _, unit := range defenderUnits {
+    for _, unit := range combatDescription.DefenderUnits {
         made := units.MakeOverworldUnitFromUnit(unit, 1, 1, data.PlaneArcanus, cpuPlayer.Wizard.Banner, cpuPlayer.MakeExperienceInfo())
         defendingArmy.AddUnit(made)
     }
@@ -242,7 +272,7 @@ func (engine *Engine) EnterCombat(defenderUnits []units.Unit, attackerUnits []un
     }
     */
 
-    for _, unit := range attackerUnits {
+    for _, unit := range combatDescription.AttackerUnits {
         made := units.MakeOverworldUnitFromUnit(unit, 1, 1, data.PlaneArcanus, humanPlayer.Wizard.Banner, humanPlayer.MakeExperienceInfo())
         attackingArmy.AddUnit(made)
     }
@@ -385,9 +415,10 @@ func (engine *Engine) MakeBugUI() *ebitenui.UI {
         }),
     ))
 
-    /*
+    rootContainer.AddChild(space(10))
+
     rootContainer.AddChild(widget.NewTextArea(
-        widget.TextAreaOpts.Text("Please describe the bug you encountered"),
+        widget.TextAreaOpts.Text(engine.CombatDescription.String()),
         widget.TextAreaOpts.FontFace(face),
         widget.TextAreaOpts.FontColor(color.White),
         widget.TextAreaOpts.ContainerOpts(
@@ -395,7 +426,7 @@ func (engine *Engine) MakeBugUI() *ebitenui.UI {
                 widget.WidgetOpts.LayoutData(widget.RowLayoutData{
                     MaxHeight: 200,
                 }),
-                widget.WidgetOpts.MinSize(0, 200),
+                widget.WidgetOpts.MinSize(200, 200),
             ),
         ),
         widget.TextAreaOpts.ScrollContainerOpts(
@@ -416,7 +447,6 @@ func (engine *Engine) MakeBugUI() *ebitenui.UI {
             }),
         ),
     ))
-    */
 
     ui := ebitenui.UI{
         Container: rootContainer,
@@ -1063,7 +1093,10 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             }
 
             if len(defenders) > 0 && len(attackers) > 0 {
-                engine.EnterCombat(defenders, attackers)
+                engine.EnterCombat(CombatDescription{
+                    DefenderUnits: defenders,
+                    AttackerUnits: attackers,
+                })
             }
         }),
     ))
