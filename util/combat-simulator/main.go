@@ -59,14 +59,14 @@ func (description *CombatDescription) String() string {
     defenders := make([]string, 0)
 
     for _, unit := range description.DefenderUnits {
-        defenders = append(defenders, unit.String())
+        defenders = append(defenders, fmt.Sprintf("%v %v", unit.Race, unit.Name))
     }
 
     out["defenders"] = defenders
 
     attackers := make([]string, 0)
     for _, unit := range description.AttackerUnits {
-        attackers = append(attackers, unit.String())
+        attackers = append(attackers, fmt.Sprintf("%v %v", unit.Race, unit.Name))
     }
 
     out["attackers"] = attackers
@@ -100,8 +100,10 @@ func MakeEngine(cache *lbx.LbxCache) *Engine {
 
     engine.UI = engine.MakeUI()
 
+    /*
     engine.BugUI = engine.MakeBugUI()
     engine.Mode = EngineModeBugReport
+    */
 
     return &engine
 }
@@ -239,6 +241,7 @@ func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, scre
 func (engine *Engine) EnterCombat(combatDescription CombatDescription) {
     // defenderUnits []units.Unit, attackerUnits []units.Unit
     engine.Mode = EngineModeCombat
+    engine.CombatDescription = combatDescription
 
     cpuPlayer := playerlib.MakePlayer(setup.WizardCustom{
         Name: "CPU",
@@ -424,9 +427,9 @@ func (engine *Engine) MakeBugUI() *ebitenui.UI {
         widget.TextAreaOpts.ContainerOpts(
             widget.ContainerOpts.WidgetOpts(
                 widget.WidgetOpts.LayoutData(widget.RowLayoutData{
-                    MaxHeight: 200,
+                    MaxHeight: 400,
                 }),
-                widget.WidgetOpts.MinSize(200, 200),
+                widget.WidgetOpts.MinSize(400, 400),
             ),
         ),
         widget.TextAreaOpts.ScrollContainerOpts(
