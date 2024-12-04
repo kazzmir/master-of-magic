@@ -71,6 +71,9 @@ func MakeEngine(cache *lbx.LbxCache) *Engine {
 
     engine.UI = engine.MakeUI()
 
+    engine.BugUI = engine.MakeBugUI()
+    engine.Mode = EngineModeBugReport
+
     return &engine
 }
 
@@ -87,6 +90,10 @@ func makeRoundedButtonImage(width int, height int, border int, col color.Color) 
     vector.DrawFilledCircle(img, float32(width-border), float32(height-border), float32(border), col, true)
 
     return img
+}
+
+func padding(n int) widget.Insets {
+    return widget.Insets{Top: n, Bottom: n, Left: n, Right: n}
 }
 
 func lighten(c color.Color, amount float64) color.Color {
@@ -106,6 +113,13 @@ func makeNineRoundedButtonImage(width int, height int, border int, col color.Col
         Hover: makeNineImage(makeRoundedButtonImage(width, height, border, lighten(col, 50)), border),
         Pressed: makeNineImage(makeRoundedButtonImage(width, height, border, lighten(col, 20)), border),
     }
+}
+
+func makeBorderOutline(col color.Color) *ui_image.NineSlice {
+    img := ebiten.NewImage(20, 20)
+    vector.StrokeRect(img, 0, 0, 18, 18, 1, col, true)
+    vector.StrokeLine(img, 19, 0, 19, 19, 1, lighten(col, -80), true)
+    return makeNineImage(img, 3)
 }
 
 func (engine *Engine) Update() error {
@@ -279,13 +293,13 @@ func scaleImage(img *ebiten.Image, newHeight int) *ebiten.Image {
 func (engine *Engine) MakeBugUI() *ebitenui.UI {
     face, _ := loadFont(19)
 
-    backgroundImage := ui_image.NewNineSliceColor(color.NRGBA{R: 32, G: 32, B: 32, A: 64})
+    backgroundImage := ui_image.NewNineSliceColor(color.NRGBA{R: 32, G: 32, B: 32, A: 128})
 
     rootContainer := widget.NewContainer(
         widget.ContainerOpts.Layout(widget.NewRowLayout(
             widget.RowLayoutOpts.Direction(widget.DirectionVertical),
             widget.RowLayoutOpts.Spacing(12),
-            widget.RowLayoutOpts.Padding(widget.Insets{Top: 10, Left: 10, Right: 10}),
+            widget.RowLayoutOpts.Padding(padding(5)),
         )),
         widget.ContainerOpts.BackgroundImage(backgroundImage),
         // widget.ContainerOpts.BackgroundImage(backgroundImageNine),
@@ -315,6 +329,68 @@ func (engine *Engine) MakeBugUI() *ebitenui.UI {
         widget.TextOpts.Text("Report a bug", face, color.White),
     ))
 
+    inputContainer := widget.NewContainer(
+        widget.ContainerOpts.Layout(widget.NewRowLayout(
+            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+            widget.RowLayoutOpts.Spacing(12),
+            widget.RowLayoutOpts.Padding(padding(5)),
+        )),
+        widget.ContainerOpts.BackgroundImage(makeBorderOutline(color.White)),
+    )
+
+    inputContainer.AddChild(widget.NewTextInput(
+        widget.TextInputOpts.Color(&widget.TextInputColor{
+            Idle: color.White,
+            Disabled: color.White,
+            Caret: color.White,
+            DisabledCaret: color.White,
+        }),
+        widget.TextInputOpts.CaretOpts(
+            widget.CaretOpts.Color(color.White),
+            widget.CaretOpts.Size(face, 3),
+        ),
+        widget.TextInputOpts.Face(face),
+        widget.TextInputOpts.Placeholder("Type here"),
+        widget.TextInputOpts.WidgetOpts(
+            widget.WidgetOpts.MinSize(800, 0),
+        ),
+    ))
+
+    rootContainer.AddChild(inputContainer)
+
+    /*
+    rootContainer.AddChild(widget.NewTextArea(
+        widget.TextAreaOpts.Text("Please describe the bug you encountered"),
+        widget.TextAreaOpts.FontFace(face),
+        widget.TextAreaOpts.FontColor(color.White),
+        widget.TextAreaOpts.ContainerOpts(
+            widget.ContainerOpts.WidgetOpts(
+                widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+                    MaxHeight: 200,
+                }),
+                widget.WidgetOpts.MinSize(0, 200),
+            ),
+        ),
+        widget.TextAreaOpts.ScrollContainerOpts(
+            widget.ScrollContainerOpts.Image(&widget.ScrollContainerImage{
+                Idle: backgroundImage,
+                Disabled: backgroundImage,
+                Mask: backgroundImage,
+            }),
+        ),
+        widget.TextAreaOpts.SliderOpts(
+            widget.SliderOpts.Images(&widget.SliderTrackImage{
+                Idle: backgroundImage,
+                Hover: backgroundImage,
+            }, &widget.ButtonImage{
+                Idle: backgroundImage,
+                Hover: backgroundImage,
+                Pressed: backgroundImage,
+            }),
+        ),
+    ))
+    */
+
     ui := ebitenui.UI{
         Container: rootContainer,
     }
@@ -326,10 +402,6 @@ func (engine *Engine) MakeBugUI() *ebitenui.UI {
 func (engine *Engine) MakeUI() *ebitenui.UI {
 
     imageCache := util.MakeImageCache(engine.Cache)
-
-    padding := func (n int) widget.Insets {
-        return widget.Insets{Top: n, Bottom: n, Left: n, Right: n}
-    }
 
     makeRow := func(spacing int, children ...widget.PreferredSizeLocateableWidget) *widget.Container {
         container := widget.NewContainer(
@@ -344,13 +416,6 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         }
 
         return container
-    }
-
-    makeBorderOutline := func (col color.Color) *ui_image.NineSlice {
-        img := ebiten.NewImage(20, 20)
-        vector.StrokeRect(img, 0, 0, 18, 18, 1, col, true)
-        vector.StrokeLine(img, 19, 0, 19, 19, 1, lighten(col, -80), true)
-        return makeNineImage(img, 3)
     }
 
     face, _ := loadFont(19)
