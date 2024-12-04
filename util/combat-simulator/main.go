@@ -305,10 +305,14 @@ func (engine *Engine) MakeBugUI() *ebitenui.UI {
         // widget.ContainerOpts.BackgroundImage(backgroundImageNine),
     )
 
+    rootContainer.AddChild(widget.NewText(
+        widget.TextOpts.Text("Press ESC to return to combat", face, color.White),
+    ))
+
     rootContainer.AddChild(widget.NewButton(
         widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
         widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x52, G: 0x78, B: 0xc3, A: 0xff})),
-        widget.ButtonOpts.Text("Exit Combat", face, &widget.ButtonTextColor{
+        widget.ButtonOpts.Text("Exit to Main Menu", face, &widget.ButtonTextColor{
             Idle: color.White,
             Hover: color.White,
             Pressed: color.White,
