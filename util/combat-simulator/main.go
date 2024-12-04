@@ -89,6 +89,25 @@ func makeRoundedButtonImage(width int, height int, border int, col color.Color) 
     return img
 }
 
+func lighten(c color.Color, amount float64) color.Color {
+    var change colorm.ColorM
+    change.ChangeHSV(0, 1 - amount/100, 1 + amount/100)
+    return change.Apply(c)
+}
+
+func makeNineImage(img *ebiten.Image, border int) *ui_image.NineSlice {
+    width := img.Bounds().Dx()
+    return ui_image.NewNineSliceSimple(img, border, width - border * 2)
+}
+
+func makeNineRoundedButtonImage(width int, height int, border int, col color.Color) *widget.ButtonImage {
+    return &widget.ButtonImage{
+        Idle: makeNineImage(makeRoundedButtonImage(width, height, border, col), border),
+        Hover: makeNineImage(makeRoundedButtonImage(width, height, border, lighten(col, 50)), border),
+        Pressed: makeNineImage(makeRoundedButtonImage(width, height, border, lighten(col, 20)), border),
+    }
+}
+
 func (engine *Engine) Update() error {
     engine.Counter += 1
 
@@ -137,7 +156,16 @@ func (engine *Engine) Draw(screen *ebiten.Image) {
             // fixme: do aspect ratio scaling
             xScale := float64(screen.Bounds().Dx()) / float64(engine.LastCombatScreen.Bounds().Dx())
             yScale := float64(screen.Bounds().Dy()) / float64(engine.LastCombatScreen.Bounds().Dy())
-            options.GeoM.Scale(xScale, yScale)
+            scale := xScale
+            if yScale < xScale {
+                scale = yScale
+            }
+            options.GeoM.Scale(scale, scale)
+            if xScale < yScale {
+                options.GeoM.Translate(0, (float64(screen.Bounds().Dy()) - float64(engine.LastCombatScreen.Bounds().Dy()) * scale) / 2)
+            } else {
+                options.GeoM.Translate((float64(screen.Bounds().Dx()) - float64(engine.LastCombatScreen.Bounds().Dx()) * scale) / 2, 0)
+            }
             screen.DrawImage(engine.LastCombatScreen, &options)
             engine.BugUI.Draw(screen)
         case EngineModeCombat:
@@ -263,6 +291,26 @@ func (engine *Engine) MakeBugUI() *ebitenui.UI {
         // widget.ContainerOpts.BackgroundImage(backgroundImageNine),
     )
 
+    rootContainer.AddChild(widget.NewButton(
+        widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+        widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x52, G: 0x78, B: 0xc3, A: 0xff})),
+        widget.ButtonOpts.Text("Exit Combat", face, &widget.ButtonTextColor{
+            Idle: color.White,
+            Hover: color.White,
+            Pressed: color.White,
+        }),
+        /*
+        widget.ButtonOpts.TextAndImage("Exit Combat", face, &widget.ButtonImageImage{Idle: rescaled, Disabled: raceImage}, &widget.ButtonTextColor{
+            Idle: color.White,
+            Hover: color.White,
+            Pressed: color.White,
+        }),
+        */
+        widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
+            engine.Mode = EngineModeMenu
+        }),
+    ))
+
     rootContainer.AddChild(widget.NewText(
         widget.TextOpts.Text("Report a bug", face, color.White),
     ))
@@ -298,30 +346,11 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         return container
     }
 
-    makeNineImage := func (img *ebiten.Image, border int) *ui_image.NineSlice {
-        width := img.Bounds().Dx()
-        return ui_image.NewNineSliceSimple(img, border, width - border * 2)
-    }
-
-    lighten := func (c color.Color, amount float64) color.Color {
-        var change colorm.ColorM
-        change.ChangeHSV(0, 1 - amount/100, 1 + amount/100)
-        return change.Apply(c)
-    }
-
     makeBorderOutline := func (col color.Color) *ui_image.NineSlice {
         img := ebiten.NewImage(20, 20)
         vector.StrokeRect(img, 0, 0, 18, 18, 1, col, true)
         vector.StrokeLine(img, 19, 0, 19, 19, 1, lighten(col, -80), true)
         return makeNineImage(img, 3)
-    }
-
-    makeNineRoundedButtonImage := func(width int, height int, border int, col color.Color) *widget.ButtonImage {
-        return &widget.ButtonImage{
-            Idle: makeNineImage(makeRoundedButtonImage(width, height, border, col), border),
-            Hover: makeNineImage(makeRoundedButtonImage(width, height, border, lighten(col, 50)), border),
-            Pressed: makeNineImage(makeRoundedButtonImage(width, height, border, lighten(col, 20)), border),
-        }
     }
 
     face, _ := loadFont(19)
