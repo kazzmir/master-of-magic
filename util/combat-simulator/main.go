@@ -58,6 +58,7 @@ func loadKey() (string, error) {
 }
 
 const ReportServer = "https://magic.jonrafkind.com/report"
+// const ReportServer = "http://localhost:5000/report"
 
 type EngineMode int
 const (
@@ -458,8 +459,16 @@ func (engine *Engine) MakeBugUI() *ebitenui.UI {
         info := strings.TrimSpace(bugText.GetText())
         extraInfo := engine.CombatDescription.String()
 
+        if len(info) > 1000 {
+            info = info[:1000]
+        }
+
+        if len(extraInfo) > 5000 {
+            extraInfo = extraInfo[:5000]
+        }
+
         go func(){
-            err := sendReport("Master of magic combat simulator bug report:" + info + "\n" + extraInfo)
+            err := sendReport("Master of magic combat simulator bug report:\n" + info + "\n\n" + extraInfo)
             if err != nil {
                 log.Printf("Error sending report: %v", err)
             }
