@@ -9,8 +9,11 @@ import (
     "slices"
     "cmp"
     "errors"
+    "strings"
     "math/rand/v2"
     "encoding/json"
+    "net/http"
+    "time"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
@@ -35,11 +38,26 @@ import (
     "github.com/ebitenui/ebitenui"
     // "github.com/ebitenui/ebitenui/input"
     "github.com/ebitenui/ebitenui/widget"
+    "github.com/ebitenui/ebitenui/event"
     ui_image "github.com/ebitenui/ebitenui/image"
 )
 
 //go:embed assets/*
 var assets embed.FS
+
+//go:embed key/*
+var key embed.FS
+
+func loadKey() (string, error) {
+    keyFile, err := key.ReadFile("key/key.txt")
+    if err != nil {
+        return "", err
+    }
+
+    return strings.TrimSpace(string(keyFile)), nil
+}
+
+const ReportServer = "https://magic.jonrafkind.com/report"
 
 type EngineMode int
 const (
@@ -78,6 +96,39 @@ func (description *CombatDescription) String() string {
     }
 
     return string(jsonString)
+}
+
+func sendReport(report string) error {
+    client := &http.Client{
+        Timeout: time.Second * 10,
+    }
+
+    reportKey, err := loadKey()
+    if err != nil {
+        return err
+    }
+
+    request, err := http.NewRequest("POST", ReportServer, strings.NewReader(report))
+    if err != nil {
+        return err
+    }
+
+    request.Header.Set("Content-Type", "text/plain")
+    request.Header.Set("X-Report-Key", reportKey)
+
+    response, err := client.Do(request)
+    if err != nil {
+        return err
+    }
+
+    defer response.Body.Close()
+
+    if response.StatusCode != 200 {
+        return fmt.Errorf("server returned status %v", response.StatusCode)
+    } else {
+        log.Printf("Bug report successfully sent")
+        return nil
+    }
 }
 
 type Engine struct {
@@ -385,7 +436,7 @@ func (engine *Engine) MakeBugUI() *ebitenui.UI {
         widget.ContainerOpts.BackgroundImage(makeBorderOutline(color.White)),
     )
 
-    inputContainer.AddChild(widget.NewTextInput(
+    bugText := widget.NewTextInput(
         widget.TextInputOpts.Color(&widget.TextInputColor{
             Idle: color.White,
             Disabled: color.White,
@@ -401,7 +452,21 @@ func (engine *Engine) MakeBugUI() *ebitenui.UI {
         widget.TextInputOpts.WidgetOpts(
             widget.WidgetOpts.MinSize(800, 0),
         ),
-    ))
+    )
+
+    doSendBugReport := func() {
+        info := strings.TrimSpace(bugText.GetText())
+        extraInfo := engine.CombatDescription.String()
+
+        go func(){
+            err := sendReport("Master of magic combat simulator bug report:" + info + "\n" + extraInfo)
+            if err != nil {
+                log.Printf("Error sending report: %v", err)
+            }
+        }()
+    }
+
+    inputContainer.AddChild(bugText)
 
     rootContainer.AddChild(inputContainer)
 
@@ -414,7 +479,26 @@ func (engine *Engine) MakeBugUI() *ebitenui.UI {
             Pressed: color.White,
         }),
         widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
+            if strings.TrimSpace(bugText.GetText()) == "" {
+                return
+            }
+
             log.Printf("Sending bug report")
+            // reset event state to remove previous click handlers (the one running right now)
+            args.Button.ClickedEvent = &event.Event{}
+            args.Button.Text().Label = "Sent!"
+            width := 40
+            height := 40
+            border := 3
+            col := lighten(color.NRGBA{R: 0x52, G: 0x78, B: 0xc3, A: 0xff}, -30)
+            nine := makeNineImage(makeRoundedButtonImage(width, height, border, col), border)
+            args.Button.Image = &widget.ButtonImage{
+                Idle: nine,
+                Hover: nine,
+                Pressed: nine,
+            }
+
+            doSendBugReport()
         }),
     ))
 
