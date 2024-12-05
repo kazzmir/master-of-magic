@@ -418,12 +418,16 @@ func (engine *Engine) MakeBugUI() *ebitenui.UI {
         }),
     ))
 
-    rootContainer.AddChild(space(10))
+    rootContainer.AddChild(space(30))
 
+    rootContainer.AddChild(widget.NewText(
+        widget.TextOpts.Text("Combat Description", face, color.White),
+    ))
     rootContainer.AddChild(widget.NewTextArea(
         widget.TextAreaOpts.Text(engine.CombatDescription.String()),
         widget.TextAreaOpts.FontFace(face),
         widget.TextAreaOpts.FontColor(color.White),
+        widget.TextAreaOpts.ShowVerticalScrollbar(),
         widget.TextAreaOpts.ContainerOpts(
             widget.ContainerOpts.WidgetOpts(
                 widget.WidgetOpts.LayoutData(widget.RowLayoutData{
@@ -441,13 +445,11 @@ func (engine *Engine) MakeBugUI() *ebitenui.UI {
         ),
         widget.TextAreaOpts.SliderOpts(
             widget.SliderOpts.Images(&widget.SliderTrackImage{
-                Idle: backgroundImage,
-                Hover: backgroundImage,
-            }, &widget.ButtonImage{
-                Idle: backgroundImage,
-                Hover: backgroundImage,
-                Pressed: backgroundImage,
-            }),
+                    Idle: makeNineImage(makeRoundedButtonImage(20, 20, 5, color.NRGBA{R: 128, G: 128, B: 128, A: 255}), 5),
+                    Hover: makeNineImage(makeRoundedButtonImage(20, 20, 5, color.NRGBA{R: 128, G: 128, B: 128, A: 255}), 5),
+                },
+                makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0xad, G: 0x8d, B: 0x55, A: 0xff}),
+            ),
         ),
     ))
 
