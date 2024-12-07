@@ -6,16 +6,46 @@ import (
     "fmt"
     "time"
     "crypto/tls"
+    "embed"
+    "strings"
 
     "golang.org/x/crypto/acme/autocert"
     // "golang.org/x/crypto/acme"
 )
 
-func runServer(certManager *autocert.Manager){
+//go:embed key/*
+var keys embed.FS
+
+func loadKey() (string, error) {
+    keyBytes, err := keys.ReadFile("key/key.txt")
+    if err != nil {
+        return "", err
+    }
+    return strings.TrimSpace(string(keyBytes)), nil
+}
+
+func runServer(certManager *autocert.Manager) error {
     log.Printf("HTTPS server listening on :5000")
+
+    key, err := loadKey()
+    if err != nil {
+        return err
+    }
 
     mux := http.NewServeMux()
     mux.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
+        fmt.Fprintf(writer, "OK")
+    })
+
+    mux.HandleFunc("POST /report", func(writer http.ResponseWriter, request *http.Request) {
+        apiKey := request.Header.Get("X-Report-Key")
+        if apiKey != key {
+            http.Error(writer, "Unauthorized", http.StatusUnauthorized)
+            return
+        }
+
+        log.Printf("Received report from %s", request.RemoteAddr)
+
         fmt.Fprintf(writer, "OK")
     })
 
@@ -30,7 +60,7 @@ func runServer(certManager *autocert.Manager){
         },
     }
 
-    log.Fatal(server.ListenAndServeTLS("", ""))
+    return server.ListenAndServeTLS("", "")
 }
 
 func main(){
@@ -49,5 +79,8 @@ func main(){
     // lets encrypt stuff listens on http
     go http.ListenAndServe(":5001", certManager.HTTPHandler(nil))
 
-    runServer(&certManager)
+    err := runServer(&certManager)
+    if err != nil {
+        log.Fatalf("Error running server: %v", err)
+    }
 }
