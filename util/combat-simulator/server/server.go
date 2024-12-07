@@ -4,11 +4,34 @@ import (
     "log"
     "net/http"
     "fmt"
+    "time"
     "crypto/tls"
 
     "golang.org/x/crypto/acme/autocert"
     // "golang.org/x/crypto/acme"
 )
+
+func runServer(certManager *autocert.Manager){
+    log.Printf("HTTPS server listening on :5000")
+
+    mux := http.NewServeMux()
+    mux.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
+        fmt.Fprintf(writer, "OK")
+    })
+
+    server := &http.Server{
+        Addr: ":5000",
+        Handler: mux,
+        ReadTimeout: 10 * time.Second,
+        WriteTimeout: 10 * time.Second,
+        TLSConfig: &tls.Config{
+            GetCertificate: certManager.GetCertificate,
+            MinVersion: tls.VersionTLS12,
+        },
+    }
+
+    log.Fatal(server.ListenAndServeTLS("", ""))
+}
 
 func main(){
     log.Printf("Server starting")
@@ -22,19 +45,9 @@ func main(){
         Cache: autocert.DirCache("certs"),
     }
 
-    http.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
-        fmt.Fprintf(writer, "Hello, World!")
-    })
-
-    server := &http.Server{
-        Addr: ":5000",
-        TLSConfig: &tls.Config{
-            GetCertificate: certManager.GetCertificate,
-            MinVersion: tls.VersionTLS12,
-        },
-    }
-
+    log.Printf("HTTP server listening on :5001")
+    // lets encrypt stuff listens on http
     go http.ListenAndServe(":5001", certManager.HTTPHandler(nil))
 
-    log.Fatal(server.ListenAndServeTLS("", ""))
+    runServer(&certManager)
 }
