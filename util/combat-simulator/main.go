@@ -215,6 +215,21 @@ func makeBorderOutline(col color.Color) *ui_image.NineSlice {
     return makeNineImage(img, 3)
 }
 
+func makeRow(spacing int, children ...widget.PreferredSizeLocateableWidget) *widget.Container {
+    container := widget.NewContainer(
+        widget.ContainerOpts.Layout(widget.NewRowLayout(
+            widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
+            widget.RowLayoutOpts.Spacing(spacing),
+        )),
+    )
+
+    for _, child := range children {
+        container.AddChild(child)
+    }
+
+    return container
+}
+
 func (engine *Engine) Update() error {
     engine.Counter += 1
 
@@ -414,24 +429,39 @@ func (engine *Engine) MakeBugUI() *ebitenui.UI {
         widget.TextOpts.Text("Press ESC to return to combat", face, color.White),
     ))
 
-    rootContainer.AddChild(widget.NewButton(
-        widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
-        widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x52, G: 0x78, B: 0xc3, A: 0xff})),
-        widget.ButtonOpts.Text("Exit to Main Menu", face, &widget.ButtonTextColor{
-            Idle: color.White,
-            Hover: color.White,
-            Pressed: color.White,
-        }),
-        /*
-        widget.ButtonOpts.TextAndImage("Exit Combat", face, &widget.ButtonImageImage{Idle: rescaled, Disabled: raceImage}, &widget.ButtonTextColor{
-            Idle: color.White,
-            Hover: color.White,
-            Pressed: color.White,
-        }),
-        */
-        widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
-            engine.Mode = EngineModeMenu
-        }),
+    rootContainer.AddChild(makeRow(5,
+        widget.NewButton(
+            widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+            widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x2d, G: 0xbf, B: 0x5a, A: 0xff})),
+            widget.ButtonOpts.Text("Back to combat", face, &widget.ButtonTextColor{
+                Idle: color.White,
+                Hover: color.White,
+                Pressed: color.White,
+            }),
+            widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
+                engine.Mode = EngineModeCombat
+            }),
+        ),
+
+        widget.NewButton(
+            widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+            widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0xab, G: 0x3e, B: 0x2e, A: 0xff})),
+            widget.ButtonOpts.Text("Exit to Main Menu", face, &widget.ButtonTextColor{
+                Idle: color.White,
+                Hover: color.White,
+                Pressed: color.White,
+            }),
+            /*
+            widget.ButtonOpts.TextAndImage("Exit Combat", face, &widget.ButtonImageImage{Idle: rescaled, Disabled: raceImage}, &widget.ButtonTextColor{
+                Idle: color.White,
+                Hover: color.White,
+                Pressed: color.White,
+            }),
+            */
+            widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
+                engine.Mode = EngineModeMenu
+            }),
+        ),
     ))
 
     rootContainer.AddChild(space(30))
@@ -579,23 +609,7 @@ func (engine *Engine) MakeBugUI() *ebitenui.UI {
 }
 
 func (engine *Engine) MakeUI() *ebitenui.UI {
-
     imageCache := util.MakeImageCache(engine.Cache)
-
-    makeRow := func(spacing int, children ...widget.PreferredSizeLocateableWidget) *widget.Container {
-        container := widget.NewContainer(
-            widget.ContainerOpts.Layout(widget.NewRowLayout(
-                widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
-                widget.RowLayoutOpts.Spacing(spacing),
-            )),
-        )
-
-        for _, child := range children {
-            container.AddChild(child)
-        }
-
-        return container
-    }
 
     face, _ := loadFont(19)
 
@@ -1034,7 +1048,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
     rootContainer.AddChild(widget.NewButton(
         widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
-        widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x52, G: 0x78, B: 0xc3, A: 0xff})),
+        widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0xbc, G: 0x84, B: 0x2f, A: 0xff})),
         widget.ButtonOpts.Text("Add Random Unit", face, &widget.ButtonTextColor{
             Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
             Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
@@ -1186,7 +1200,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
     combatPicture, _ := imageCache.GetImageTransform("special.lbx", 29, 0, "combat-enlarge", enlargeTransform(2))
     rootContainer.AddChild(widget.NewButton(
         widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
-        widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x52, G: 0x78, B: 0xc3, A: 0xff})),
+        widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x2d, G: 0xbf, B: 0x5a, A: 0xff})),
         widget.ButtonOpts.TextAndImage("Enter Combat!", face, &widget.ButtonImageImage{Idle: combatPicture, Disabled: combatPicture}, &widget.ButtonTextColor{
             Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
             Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
