@@ -14,6 +14,9 @@ import (
 
     "golang.org/x/crypto/acme/autocert"
     // "golang.org/x/crypto/acme"
+
+    "github.com/sendgrid/sendgrid-go"
+    "github.com/sendgrid/sendgrid-go/helpers/mail"
 )
 
 //go:embed key/*
@@ -25,6 +28,46 @@ func loadKey() (string, error) {
         return "", err
     }
     return strings.TrimSpace(string(keyBytes)), nil
+}
+
+func loadSendGridKey() (string, error) {
+    keyBytes, err := keys.ReadFile("key/sendgrid")
+    if err != nil {
+        return "", err
+    }
+    return strings.TrimSpace(string(keyBytes)), nil
+}
+
+// send an email to me with the report
+func doSendEmail(report string) {
+    apiKey, err := loadSendGridKey()
+    if err != nil {
+        log.Printf("Unable to send email: %v", err)
+        return
+    }
+
+    fromAddress := "magic@jonrafkind.com"
+    toAddress := "jon@rafkind.com"
+
+    from := mail.NewEmail("Magic", fromAddress)
+    to := mail.NewEmail("Me", toAddress)
+
+    subject := "Magic Combat Simulator Bug Report"
+
+    // replace \n with <br>
+    replaceNewline := func(s string) string {
+        return strings.ReplaceAll(s, "\n", "<br>")
+    }
+
+    message := mail.NewSingleEmail(from, subject, to, report, replaceNewline(report))
+    client := sendgrid.NewSendClient(apiKey)
+    response, err := client.Send(message)
+    if err != nil {
+        log.Printf("Unable to send email: %v", err)
+        return
+    } else {
+        log.Printf("Email sent: %v", response)
+    }
 }
 
 func runServer(certManager *autocert.Manager) error {
@@ -61,6 +104,11 @@ func runServer(certManager *autocert.Manager) error {
         _, err := io.CopyN(&buffer, request.Body, 1 << 16)
         if err == nil || errors.Is(err, io.EOF) {
             log.Printf("Report: %v", buffer.String())
+
+            go func() {
+                doSendEmail(buffer.String())
+            }()
+
         }
 
         writer.Header().Set("Access-Control-Allow-Origin", "*")
