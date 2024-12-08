@@ -142,12 +142,14 @@ type Engine struct {
     Coroutine *coroutine.Coroutine
     CombatDescription CombatDescription
     Counter uint64
+    UIUpdates chan func()
 }
 
 func MakeEngine(cache *lbx.LbxCache) *Engine {
     engine := Engine{
         Cache: cache,
         LastCombatScreen: ebiten.NewImage(data.ScreenWidth, data.ScreenHeight),
+        UIUpdates: make(chan func(), 10000),
     }
 
     engine.UI = engine.MakeUI()
@@ -231,6 +233,16 @@ func (engine *Engine) Update() error {
                     case EngineModeBugReport:
                         engine.Mode = EngineModeCombat
                 }
+        }
+    }
+
+    done := false
+    for !done {
+        select {
+            case update := <-engine.UIUpdates:
+                update()
+            default:
+                done = true
         }
     }
 
@@ -455,7 +467,7 @@ func (engine *Engine) MakeBugUI() *ebitenui.UI {
         ),
     )
 
-    doSendBugReport := func() {
+    doSendBugReport := func(callback func(error)) {
         info := strings.TrimSpace(bugText.GetText())
         extraInfo := engine.CombatDescription.String()
 
@@ -472,6 +484,8 @@ func (engine *Engine) MakeBugUI() *ebitenui.UI {
             if err != nil {
                 log.Printf("Error sending report: %v", err)
             }
+
+            callback(err)
         }()
     }
 
@@ -495,7 +509,7 @@ func (engine *Engine) MakeBugUI() *ebitenui.UI {
             log.Printf("Sending bug report")
             // reset event state to remove previous click handlers (the one running right now)
             args.Button.ClickedEvent = &event.Event{}
-            args.Button.Text().Label = "Sent!"
+            args.Button.Text().Label = "Sending..."
             width := 40
             height := 40
             border := 3
@@ -507,7 +521,17 @@ func (engine *Engine) MakeBugUI() *ebitenui.UI {
                 Pressed: nine,
             }
 
-            doSendBugReport()
+            doSendBugReport(func (err error){
+                if err == nil {
+                    engine.UIUpdates <- func(){
+                        args.Button.Text().Label = "Sent successfully!"
+                    }
+                } else {
+                    engine.UIUpdates <- func(){
+                        args.Button.Text().Label = "Failed to send!"
+                    }
+                }
+            })
         }),
     ))
 
