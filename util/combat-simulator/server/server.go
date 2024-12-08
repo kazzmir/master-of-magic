@@ -2,6 +2,9 @@ package main
 
 import (
     "log"
+    "io"
+    "errors"
+    "bytes"
     "net/http"
     "fmt"
     "time"
@@ -37,6 +40,14 @@ func runServer(certManager *autocert.Manager) error {
         fmt.Fprintf(writer, "OK")
     })
 
+    mux.HandleFunc("OPTIONS /report", func(writer http.ResponseWriter, request *http.Request) {
+        writer.Header().Set("Access-Control-Allow-Origin", "*")
+        writer.Header().Set("Access-Control-Allow-Methods", "POST")
+        writer.Header().Set("Access-Control-Allow-Headers", "X-Report-Key")
+        writer.Header().Set("Access-Control-Max-Age", "86400")
+        writer.WriteHeader(http.StatusOK)
+    })
+
     mux.HandleFunc("POST /report", func(writer http.ResponseWriter, request *http.Request) {
         apiKey := request.Header.Get("X-Report-Key")
         if apiKey != key {
@@ -46,6 +57,16 @@ func runServer(certManager *autocert.Manager) error {
 
         log.Printf("Received report from %s", request.RemoteAddr)
 
+        var buffer bytes.Buffer
+        _, err := io.CopyN(&buffer, request.Body, 1 << 16)
+        if err == nil || errors.Is(err, io.EOF) {
+            log.Printf("Report: %v", buffer.String())
+        }
+
+        writer.Header().Set("Access-Control-Allow-Origin", "*")
+        writer.Header().Set("Access-Control-Allow-Methods", "POST")
+        writer.Header().Set("Access-Control-Allow-Headers", "X-Report-Key")
+        writer.Header().Set("Access-Control-Max-Age", "86400")
         fmt.Fprintf(writer, "OK")
     })
 
