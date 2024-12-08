@@ -1,0 +1,16 @@
+[Unit]
+Description=Magic Report Server
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=1
+ExecStart=/opt/magic/server
+WorkingDirectory=/opt/magic
+User=nobody
+Group=nogroup
+
+[Install]
+WantedBy=multi-user.target
