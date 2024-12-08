@@ -1208,43 +1208,62 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
     rootContainer.AddChild(armyContainer)
 
     combatPicture, _ := imageCache.GetImageTransform("special.lbx", 29, 0, "combat-enlarge", enlargeTransform(2))
-    rootContainer.AddChild(widget.NewButton(
-        widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
-        widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x2d, G: 0xbf, B: 0x5a, A: 0xff})),
-        widget.ButtonOpts.TextAndImage("Enter Combat!", face, &widget.ButtonImageImage{Idle: combatPicture, Disabled: combatPicture}, &widget.ButtonTextColor{
-            Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
-            Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
-            Pressed: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
-        }),
+    randomCombatPicture, _ := imageCache.GetImageTransform("special.lbx", 32, 0, "combat-enlarge", enlargeTransform(2))
+    rootContainer.AddChild(makeRow(5,
+        widget.NewButton(
+            widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+            widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x2d, G: 0xbf, B: 0x5a, A: 0xff})),
+            widget.ButtonOpts.TextAndImage("Enter Combat!", face, &widget.ButtonImageImage{Idle: combatPicture, Disabled: combatPicture}, &widget.ButtonTextColor{
+                Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
+                Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+                Pressed: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
+            }),
 
-        /*
-        widget.ButtonOpts.Text("Enter Combat!", face, &widget.ButtonTextColor{
-            Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
-            Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
-            Pressed: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
-        }),
-        widget.ButtonOpts.Graphic(combatPicture),
-        */
-        widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
-            var defenders []units.Unit
+            widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
+                var defenders []units.Unit
 
-            for _, entry := range defendingArmyList.Entries() {
-                defenders = append(defenders, entry.(*UnitItem).Unit)
-            }
+                for _, entry := range defendingArmyList.Entries() {
+                    defenders = append(defenders, entry.(*UnitItem).Unit)
+                }
 
-            var attackers []units.Unit
+                var attackers []units.Unit
 
-            for _, entry := range attackingArmyList.Entries() {
-                attackers = append(attackers, entry.(*UnitItem).Unit)
-            }
+                for _, entry := range attackingArmyList.Entries() {
+                    attackers = append(attackers, entry.(*UnitItem).Unit)
+                }
 
-            if len(defenders) > 0 && len(attackers) > 0 {
+                if len(defenders) > 0 && len(attackers) > 0 {
+                    engine.EnterCombat(CombatDescription{
+                        DefenderUnits: defenders,
+                        AttackerUnits: attackers,
+                    })
+                }
+            }),
+        ),
+        widget.NewButton(
+            widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+            widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0xc9, G: 0x25, B: 0xcd, A: 0xff})),
+            widget.ButtonOpts.TextAndImage("Random Combat!", face, &widget.ButtonImageImage{Idle: randomCombatPicture, Disabled: randomCombatPicture}, &widget.ButtonTextColor{
+                Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
+                Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+                Pressed: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
+            }),
+
+            widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
+                var defenders []units.Unit
+                var attackers []units.Unit
+
+                for range 3 {
+                    defenders = append(defenders, units.AllUnits[rand.N(len(units.AllUnits))])
+                    attackers = append(attackers, units.AllUnits[rand.N(len(units.AllUnits))])
+                }
+
                 engine.EnterCombat(CombatDescription{
                     DefenderUnits: defenders,
                     AttackerUnits: attackers,
                 })
-            }
-        }),
+            }),
+        ),
     ))
 
     ui := ebitenui.UI{
