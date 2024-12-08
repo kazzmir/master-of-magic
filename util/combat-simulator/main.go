@@ -1116,7 +1116,12 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
     defendingArmyContainer := widget.NewContainer(
         widget.ContainerOpts.Layout(widget.NewRowLayout(
             widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+            widget.RowLayoutOpts.Spacing(5),
+            widget.RowLayoutOpts.Padding(padding(5)),
         )),
+        widget.ContainerOpts.BackgroundImage(
+            makeBorderOutline(color.NRGBA{R: 255, G: 255, B: 255, A: 255}),
+        ),
     )
 
     defendingArmyContainer.AddChild(makeRow(4, defendingArmyName, defendingArmyCount))
@@ -1157,7 +1162,12 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
     attackingArmyContainer := widget.NewContainer(
         widget.ContainerOpts.Layout(widget.NewRowLayout(
             widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+            widget.RowLayoutOpts.Spacing(5),
+            widget.RowLayoutOpts.Padding(padding(5)),
         )),
+        widget.ContainerOpts.BackgroundImage(
+            makeBorderOutline(color.NRGBA{R: 255, G: 255, B: 255, A: 255}),
+        ),
     )
 
     attackingArmyContainer.AddChild(makeRow(4, attackingArmyName, attackingArmyCount))
