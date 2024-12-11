@@ -14,6 +14,7 @@ import (
     "encoding/json"
     "net/http"
     "time"
+    "os"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
@@ -70,6 +71,63 @@ const (
 type CombatDescription struct {
     DefenderUnits []units.Unit
     AttackerUnits []units.Unit
+}
+
+func (description *CombatDescription) Save(filename string) error {
+    return os.WriteFile(filename, []byte(description.String()), 0644)
+}
+
+func UnitFromName(name string) (units.Unit, error) {
+    allRaces := append(append(data.ArcanianRaces(), data.MyrranRaces()...), []data.Race{data.RaceFantastic, data.RaceHero}...)
+
+    for _, race := range allRaces {
+        if strings.HasPrefix(name, race.String()) {
+            name = strings.TrimSpace(name[len(race.String()):])
+            choices := units.UnitsByRace(race)
+            for _, unit := range choices {
+                if unit.Name == name {
+                    return unit, nil
+                }
+            }
+        }
+    }
+
+    return units.Unit{}, fmt.Errorf("unit not found: %v", name)
+}
+
+func LoadCombatDescription(filename string) (*CombatDescription, error) {
+    data, err := os.ReadFile(filename)
+    if err != nil {
+        return nil, err
+    }
+    output := make(map[string]any)
+    err = json.Unmarshal([]byte(data), &output)
+    if err != nil {
+        return nil, err
+    }
+
+    defenders := make([]units.Unit, 0)
+    for _, name := range output["defenders"].([]any) {
+        unit, err := UnitFromName(name.(string))
+        if err != nil {
+            return nil, err
+        }
+        defenders = append(defenders, unit)
+    }
+
+    attackers := make([]units.Unit, 0)
+    for _, name := range output["attackers"].([]any) {
+        unit, err := UnitFromName(name.(string))
+        if err != nil {
+            return nil, err
+        }
+        attackers = append(attackers, unit)
+    }
+
+    return &CombatDescription{
+        DefenderUnits: defenders,
+        AttackerUnits: attackers,
+    }, nil
 }
 
 func (description *CombatDescription) String() string {
@@ -1277,6 +1335,35 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             }),
 
             widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
+                var defenders []units.Unit
+
+                for _, entry := range defendingArmyList.Entries() {
+                    defenders = append(defenders, entry.(*UnitItem).Unit)
+                }
+
+                var attackers []units.Unit
+
+                for _, entry := range attackingArmyList.Entries() {
+                    attackers = append(attackers, entry.(*UnitItem).Unit)
+                }
+
+                filename := "combat-config.json"
+
+                if len(defenders) > 0 && len(attackers) > 0 {
+                    description := CombatDescription{
+                        DefenderUnits: defenders,
+                        AttackerUnits: attackers,
+                    }
+
+                    err := description.Save(filename)
+
+                    if err != nil {
+                        log.Printf("Error saving configuration: %v", err)
+                    } else {
+                        log.Printf("Saved configuration to %v", filename)
+                    }
+                }
+
             }),
         ),
         widget.NewButton(
@@ -1289,6 +1376,33 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             }),
 
             widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
+                description, err := LoadCombatDescription("combat-config.json")
+                if err == nil {
+                    defendingArmyList.SetEntries(nil)
+                    attackingArmyList.SetEntries(nil)
+
+                    for _, unit := range description.DefenderUnits {
+                        newItem := UnitItem{
+                            Race: unit.Race,
+                            Unit: unit,
+                        }
+
+                        defendingArmyList.AddEntry(&newItem)
+                    }
+                    defendingArmyCount.Label = fmt.Sprintf("%v", len(description.DefenderUnits))
+
+                    for _, unit := range description.AttackerUnits {
+                        newItem := UnitItem{
+                            Race: unit.Race,
+                            Unit: unit,
+                        }
+
+                        attackingArmyList.AddEntry(&newItem)
+                    }
+                    attackingArmyCount.Label = fmt.Sprintf("%v", len(description.AttackerUnits))
+                } else {
+                    log.Printf("Unable to load configuration: %v", err)
+                }
             }),
         ),
     ))
