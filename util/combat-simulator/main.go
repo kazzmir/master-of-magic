@@ -1070,7 +1070,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
     armyButtons = append(armyButtons, widget.NewButton(
         widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x52, G: 0x78, B: 0xc3, A: 0xff})),
         widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
-        widget.ButtonOpts.Text("Defending Army", face, &widget.ButtonTextColor{
+        widget.ButtonOpts.Text("Select Defending Army", face, &widget.ButtonTextColor{
             Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
             Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
         }),
@@ -1085,7 +1085,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
     armyButtons = append(armyButtons, widget.NewButton(
         widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x52, G: 0x78, B: 0xc3, A: 0xff})),
         widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
-        widget.ButtonOpts.Text("Attacking Army", face, &widget.ButtonTextColor{
+        widget.ButtonOpts.Text("Select Attacking Army", face, &widget.ButtonTextColor{
             Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
             Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
         }),
@@ -1143,7 +1143,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         widget.NewButton(
             widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
             widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x52, G: 0x78, B: 0xc3, A: 0xff})),
-            widget.ButtonOpts.Text("Remove Unit", face, &widget.ButtonTextColor{
+            widget.ButtonOpts.Text("Remove Selected Unit", face, &widget.ButtonTextColor{
                 Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
                 Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
             }),
@@ -1189,7 +1189,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         widget.NewButton(
             widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
             widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x52, G: 0x78, B: 0xc3, A: 0xff})),
-            widget.ButtonOpts.Text("Remove Unit", face, &widget.ButtonTextColor{
+            widget.ButtonOpts.Text("Remove Selected Unit", face, &widget.ButtonTextColor{
                 Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
                 Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
             }),
@@ -1209,6 +1209,8 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
     combatPicture, _ := imageCache.GetImageTransform("special.lbx", 29, 0, "combat-enlarge", enlargeTransform(2))
     randomCombatPicture, _ := imageCache.GetImageTransform("special.lbx", 32, 0, "combat-enlarge", enlargeTransform(2))
+    savePicture, _ := imageCache.GetImageTransform("compix.lbx", 11, 0, "save-enlarge", enlargeTransform(2))
+    loadPicture, _ := imageCache.GetImageTransform("compix.lbx", 13, 0, "save-enlarge", enlargeTransform(2))
     rootContainer.AddChild(makeRow(5,
         widget.NewButton(
             widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
@@ -1262,6 +1264,31 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
                     DefenderUnits: defenders,
                     AttackerUnits: attackers,
                 })
+            }),
+        ),
+        space(30),
+        widget.NewButton(
+            widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+            widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x29, G: 0x9d, B: 0x39, A: 0xff})),
+            widget.ButtonOpts.TextAndImage("Save Configuration", face, &widget.ButtonImageImage{Idle: savePicture, Disabled: savePicture}, &widget.ButtonTextColor{
+                Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
+                Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+                Pressed: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
+            }),
+
+            widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
+            }),
+        ),
+        widget.NewButton(
+            widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+            widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x29, G: 0x9d, B: 0x7a, A: 0xff})),
+            widget.ButtonOpts.TextAndImage("Load Configuration", face, &widget.ButtonImageImage{Idle: loadPicture, Disabled: loadPicture}, &widget.ButtonTextColor{
+                Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
+                Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+                Pressed: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
+            }),
+
+            widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
             }),
         ),
     ))
