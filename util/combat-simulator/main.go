@@ -1347,6 +1347,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
                     attackers = append(attackers, entry.(*UnitItem).Unit)
                 }
 
+                // FIXME: use a file picker widget to select the filename
                 filename := "combat-config.json"
 
                 if len(defenders) > 0 && len(attackers) > 0 {
@@ -1376,6 +1377,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             }),
 
             widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
+                // FIXME: use a file picker widget to select the filename
                 description, err := LoadCombatDescription("combat-config.json")
                 if err == nil {
                     defendingArmyList.SetEntries(nil)
