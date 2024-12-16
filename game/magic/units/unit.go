@@ -2510,6 +2510,10 @@ var HeroYramrag Unit = Unit{
     MeleeAttackPower: 1,
     RangedAttackPower: 8,
     RangedAttackDamageType: DamageRangedMagical,
+    MovementSound: MovementSoundHorse,
+    AttackSound: AttackSoundNormal,
+    RangeAttackIndex: 72, // FIXME
+    RangeAttackSound: RangeAttackSoundFireball, // FIXME
     Defense: 5,
     Resistance: 10,
     HitPoints: 5,
@@ -3872,6 +3876,10 @@ var GnollBowmen Unit = Unit{
     UpkeepGold: 1,
     UpkeepFood: 1,
     Count: 6,
+    MovementSound: MovementSoundMarching,
+    AttackSound: AttackSoundNormal,
+    RangeAttackSound: RangeAttackSoundArrow,
+    RangeAttackIndex: 8,
     MovementSpeed: 1,
     MeleeAttackPower: 3,
     RangedAttackPower: 1,
