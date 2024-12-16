@@ -880,6 +880,8 @@ var TrollSwordsmen Unit = Unit{
     UpkeepGold: 2,
     UpkeepFood: 1,
     Count: 4,
+    MovementSound: MovementSoundMarching,
+    AttackSound: AttackSoundNormal,
     MovementSpeed: 1,
     MeleeAttackPower: 5,
     Defense: 2,
@@ -2331,6 +2333,8 @@ var HeroTumu Unit = Unit{
     Count: 1,
     UpkeepGold: 3,
     MovementSpeed: 2,
+    MovementSound: MovementSoundHorse,
+    AttackSound: AttackSoundNormal,
     MeleeAttackPower: 3,
     Defense: 5,
     Resistance: 6,
@@ -3234,8 +3238,8 @@ var Minotaur Unit = Unit{
     Count: 2,
     MovementSpeed: 1,
     MeleeAttackPower: 12,
-    AttackSound: AttackSoundNormal,
-    MovementSound: MovementSoundShuffle,
+    AttackSound: AttackSoundNormal, // FIXME
+    MovementSound: MovementSoundShuffle, // FIXME
     Defense: 4,
     Resistance: 7,
     HitPoints: 12,
