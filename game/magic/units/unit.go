@@ -2865,6 +2865,10 @@ var Warship Unit = Unit{
     Count: 1,
     MovementSpeed: 4,
     Swimming: true,
+    MovementSound: MovementSoundNone, // FIXME
+    AttackSound: AttackSoundNormal, // FIXME
+    RangeAttackIndex: 32, // FIXME
+    RangeAttackSound: RangeAttackSoundSling, // FIXME
     MeleeAttackPower: 10,
     RangedAttackPower: 10,
     RangedAttacks: 99,
@@ -4589,6 +4593,8 @@ var StagBeetle Unit = Unit{
     UpkeepFood: 1,
     Count: 1,
     MovementSpeed: 2,
+    MovementSound: MovementSoundBigSteps,
+    AttackSound: AttackSoundNormal,
     MeleeAttackPower: 15,
     Defense: 7,
     Resistance: 6,
