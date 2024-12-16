@@ -425,6 +425,8 @@ var LizardSettlers Unit = Unit{
     Swimming: true,
     UpkeepGold: 3,
     UpkeepFood: 1,
+    AttackSound: AttackSoundNormal,
+    MovementSound: MovementSoundShuffle,
     Abilities: []Ability{MakeAbility(AbilityCreateOutpost)},
     Race: data.RaceLizard,
 }
@@ -550,6 +552,8 @@ var NomadSettlers Unit = Unit{
     Defense: 1,
     Resistance: 4,
     HitPoints: 10,
+    AttackSound: AttackSoundNormal,
+    MovementSound: MovementSoundShuffle,
     Abilities: []Ability{MakeAbility(AbilityCreateOutpost)},
     Race: data.RaceNomad,
 }
@@ -819,6 +823,8 @@ var OrcSettlers Unit = Unit{
     Defense: 1,
     Resistance: 4,
     HitPoints: 10,
+    AttackSound: AttackSoundNormal,
+    MovementSound: MovementSoundShuffle,
     Abilities: []Ability{MakeAbility(AbilityCreateOutpost)},
     Race: data.RaceOrc,
 }
@@ -940,6 +946,8 @@ var TrollSettlers Unit = Unit{
     Defense: 1,
     Resistance: 7,
     HitPoints: 40,
+    AttackSound: AttackSoundNormal,
+    MovementSound: MovementSoundShuffle,
     Abilities: []Ability{MakeAbility(AbilityCreateOutpost), MakeAbility(AbilityRegeneration)},
     Race: data.RaceTroll,
 }
@@ -2965,6 +2973,8 @@ var BarbarianSettlers Unit = Unit{
     Defense: 1,
     Resistance: 5,
     HitPoints: 10,
+    AttackSound: AttackSoundNormal,
+    MovementSound: MovementSoundShuffle,
     Abilities: []Ability{MakeAbility(AbilityCreateOutpost)},
     Race: data.RaceBarbarian,
 }
@@ -3060,6 +3070,9 @@ var BeastmenBowmen Unit = Unit{
     RangedAttackPower: 1,
     RangedAttacks: 8,
     RangedAttackDamageType: DamageRangedPhysical,
+    RangeAttackIndex: 8,
+    AttackSound: AttackSoundNormal,
+    RangeAttackSound: RangeAttackSoundArrow,
     Defense: 1,
     Resistance: 5,
     HitPoints: 2,
@@ -3149,6 +3162,8 @@ var BeastmenSettlers Unit = Unit{
     Defense: 1,
     Resistance: 5,
     HitPoints: 20,
+    AttackSound: AttackSoundNormal,
+    MovementSound: MovementSoundShuffle,
     Abilities: []Ability{MakeAbility(AbilityCreateOutpost)},
     Name: "Settlers",
     Race: data.RaceBeastmen,
@@ -3347,6 +3362,8 @@ var DarkElfSettlers Unit = Unit{
     Defense: 1,
     Resistance: 7,
     HitPoints: 10,
+    AttackSound: AttackSoundNormal,
+    MovementSound: MovementSoundShuffle,
     Abilities: []Ability{MakeAbility(AbilityCreateOutpost)},
     Race: data.RaceDarkElf,
 }
@@ -3580,6 +3597,8 @@ var DraconianSettlers Unit = Unit{
     Defense: 2,
     Resistance: 6,
     HitPoints: 10,
+    AttackSound: AttackSoundNormal,
+    MovementSound: MovementSoundFly,
     Abilities: []Ability{MakeAbility(AbilityCreateOutpost)},
     Name: "Settlers",
     Race: data.RaceDraconian,
@@ -3764,6 +3783,8 @@ var DwarfSettlers Unit = Unit{
     Defense: 1,
     Resistance: 8,
     HitPoints: 30,
+    AttackSound: AttackSoundNormal,
+    MovementSound: MovementSoundShuffle,
     Abilities: []Ability{MakeAbility(AbilityCreateOutpost)},
     Race: data.RaceDwarf,
 }
@@ -3862,6 +3883,8 @@ var GnollSettlers Unit = Unit{
     Defense: 1,
     Resistance: 4,
     HitPoints: 10,
+    AttackSound: AttackSoundNormal,
+    MovementSound: MovementSoundShuffle,
     Abilities: []Ability{MakeAbility(AbilityCreateOutpost)},
     Race: data.RaceGnoll,
 }
@@ -3983,6 +4006,8 @@ var HalflingSettlers Unit = Unit{
     Defense: 1,
     Resistance: 6,
     HitPoints: 10,
+    AttackSound: AttackSoundNormal,
+    MovementSound: MovementSoundShuffle,
     Abilities: []Ability{MakeAbility(AbilityCreateOutpost), MakeAbility(AbilityLucky)},
     Name: "Settlers",
     Race: data.RaceHalfling,
@@ -4135,6 +4160,8 @@ var HighElfSettlers Unit = Unit{
     MeleeAttackPower: 1,
     HitPoints: 1,
     Defense: 1,
+    AttackSound: AttackSoundNormal,
+    MovementSound: MovementSoundShuffle,
     // tohit +10%
     Abilities: []Ability{MakeAbility(AbilityCreateOutpost), MakeAbilityValue(AbilityToHit, 10), MakeAbility(AbilityForester)},
 }
@@ -4366,6 +4393,8 @@ var HighMenSettlers Unit = Unit{
     Defense: 1,
     Resistance: 4,
     HitPoints: 10,
+    AttackSound: AttackSoundNormal,
+    MovementSound: MovementSoundShuffle,
     Abilities: []Ability{MakeAbility(AbilityCreateOutpost)},
     Race: data.RaceHighMen,
 }
@@ -4505,6 +4534,8 @@ var KlackonSettlers Unit = Unit{
     Defense: 1,
     Resistance: 5,
     HitPoints: 20,
+    AttackSound: AttackSoundNormal,
+    MovementSound: MovementSoundShuffle,
     Race: data.RaceKlackon,
 }
 
