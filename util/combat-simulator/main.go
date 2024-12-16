@@ -14,6 +14,7 @@ import (
     "encoding/json"
     "net/http"
     "time"
+    "os"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
@@ -70,6 +71,63 @@ const (
 type CombatDescription struct {
     DefenderUnits []units.Unit
     AttackerUnits []units.Unit
+}
+
+func (description *CombatDescription) Save(filename string) error {
+    return os.WriteFile(filename, []byte(description.String()), 0644)
+}
+
+func UnitFromName(name string) (units.Unit, error) {
+    allRaces := append(append(data.ArcanianRaces(), data.MyrranRaces()...), []data.Race{data.RaceFantastic, data.RaceHero}...)
+
+    for _, race := range allRaces {
+        if strings.HasPrefix(name, race.String()) {
+            name = strings.TrimSpace(name[len(race.String()):])
+            choices := units.UnitsByRace(race)
+            for _, unit := range choices {
+                if unit.Name == name {
+                    return unit, nil
+                }
+            }
+        }
+    }
+
+    return units.Unit{}, fmt.Errorf("unit not found: %v", name)
+}
+
+func LoadCombatDescription(filename string) (*CombatDescription, error) {
+    data, err := os.ReadFile(filename)
+    if err != nil {
+        return nil, err
+    }
+    output := make(map[string]any)
+    err = json.Unmarshal([]byte(data), &output)
+    if err != nil {
+        return nil, err
+    }
+
+    defenders := make([]units.Unit, 0)
+    for _, name := range output["defenders"].([]any) {
+        unit, err := UnitFromName(name.(string))
+        if err != nil {
+            return nil, err
+        }
+        defenders = append(defenders, unit)
+    }
+
+    attackers := make([]units.Unit, 0)
+    for _, name := range output["attackers"].([]any) {
+        unit, err := UnitFromName(name.(string))
+        if err != nil {
+            return nil, err
+        }
+        attackers = append(attackers, unit)
+    }
+
+    return &CombatDescription{
+        DefenderUnits: defenders,
+        AttackerUnits: attackers,
+    }, nil
 }
 
 func (description *CombatDescription) String() string {
@@ -1070,7 +1128,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
     armyButtons = append(armyButtons, widget.NewButton(
         widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x52, G: 0x78, B: 0xc3, A: 0xff})),
         widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
-        widget.ButtonOpts.Text("Defending Army", face, &widget.ButtonTextColor{
+        widget.ButtonOpts.Text("Select Defending Army", face, &widget.ButtonTextColor{
             Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
             Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
         }),
@@ -1085,7 +1143,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
     armyButtons = append(armyButtons, widget.NewButton(
         widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x52, G: 0x78, B: 0xc3, A: 0xff})),
         widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
-        widget.ButtonOpts.Text("Attacking Army", face, &widget.ButtonTextColor{
+        widget.ButtonOpts.Text("Select Attacking Army", face, &widget.ButtonTextColor{
             Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
             Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
         }),
@@ -1143,7 +1201,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         widget.NewButton(
             widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
             widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x52, G: 0x78, B: 0xc3, A: 0xff})),
-            widget.ButtonOpts.Text("Remove Unit", face, &widget.ButtonTextColor{
+            widget.ButtonOpts.Text("Remove Selected Unit", face, &widget.ButtonTextColor{
                 Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
                 Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
             }),
@@ -1189,7 +1247,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         widget.NewButton(
             widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
             widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x52, G: 0x78, B: 0xc3, A: 0xff})),
-            widget.ButtonOpts.Text("Remove Unit", face, &widget.ButtonTextColor{
+            widget.ButtonOpts.Text("Remove Selected Unit", face, &widget.ButtonTextColor{
                 Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
                 Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
             }),
@@ -1209,6 +1267,8 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
     combatPicture, _ := imageCache.GetImageTransform("special.lbx", 29, 0, "combat-enlarge", enlargeTransform(2))
     randomCombatPicture, _ := imageCache.GetImageTransform("special.lbx", 32, 0, "combat-enlarge", enlargeTransform(2))
+    savePicture, _ := imageCache.GetImageTransform("compix.lbx", 11, 0, "save-enlarge", enlargeTransform(2))
+    loadPicture, _ := imageCache.GetImageTransform("compix.lbx", 13, 0, "save-enlarge", enlargeTransform(2))
     rootContainer.AddChild(makeRow(5,
         widget.NewButton(
             widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
@@ -1262,6 +1322,89 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
                     DefenderUnits: defenders,
                     AttackerUnits: attackers,
                 })
+            }),
+        ),
+        space(30),
+        widget.NewButton(
+            widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+            widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x29, G: 0x9d, B: 0x39, A: 0xff})),
+            widget.ButtonOpts.TextAndImage("Save Configuration", face, &widget.ButtonImageImage{Idle: savePicture, Disabled: savePicture}, &widget.ButtonTextColor{
+                Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
+                Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+                Pressed: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
+            }),
+
+            widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
+                var defenders []units.Unit
+
+                for _, entry := range defendingArmyList.Entries() {
+                    defenders = append(defenders, entry.(*UnitItem).Unit)
+                }
+
+                var attackers []units.Unit
+
+                for _, entry := range attackingArmyList.Entries() {
+                    attackers = append(attackers, entry.(*UnitItem).Unit)
+                }
+
+                // FIXME: use a file picker widget to select the filename
+                filename := "combat-config.json"
+
+                if len(defenders) > 0 && len(attackers) > 0 {
+                    description := CombatDescription{
+                        DefenderUnits: defenders,
+                        AttackerUnits: attackers,
+                    }
+
+                    err := description.Save(filename)
+
+                    if err != nil {
+                        log.Printf("Error saving configuration: %v", err)
+                    } else {
+                        log.Printf("Saved configuration to %v", filename)
+                    }
+                }
+
+            }),
+        ),
+        widget.NewButton(
+            widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+            widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x29, G: 0x9d, B: 0x7a, A: 0xff})),
+            widget.ButtonOpts.TextAndImage("Load Configuration", face, &widget.ButtonImageImage{Idle: loadPicture, Disabled: loadPicture}, &widget.ButtonTextColor{
+                Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
+                Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+                Pressed: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
+            }),
+
+            widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
+                // FIXME: use a file picker widget to select the filename
+                description, err := LoadCombatDescription("combat-config.json")
+                if err == nil {
+                    defendingArmyList.SetEntries(nil)
+                    attackingArmyList.SetEntries(nil)
+
+                    for _, unit := range description.DefenderUnits {
+                        newItem := UnitItem{
+                            Race: unit.Race,
+                            Unit: unit,
+                        }
+
+                        defendingArmyList.AddEntry(&newItem)
+                    }
+                    defendingArmyCount.Label = fmt.Sprintf("%v", len(description.DefenderUnits))
+
+                    for _, unit := range description.AttackerUnits {
+                        newItem := UnitItem{
+                            Race: unit.Race,
+                            Unit: unit,
+                        }
+
+                        attackingArmyList.AddEntry(&newItem)
+                    }
+                    attackingArmyCount.Label = fmt.Sprintf("%v", len(description.AttackerUnits))
+                } else {
+                    log.Printf("Unable to load configuration: %v", err)
+                }
             }),
         ),
     ))
