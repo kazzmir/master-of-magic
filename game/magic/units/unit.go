@@ -34,6 +34,7 @@ type RangeAttackSound int
 const (
     RangeAttackSoundNone RangeAttackSound = iota
     RangeAttackSoundFireball
+    RangeAttackSoundMagic
     RangeAttackSoundArrow
     RangeAttackSoundSling
     RangeAttackSoundLaunch // for catapult or other similar things
@@ -46,6 +47,7 @@ func (sound RangeAttackSound) LbxIndex() int {
         case RangeAttackSoundArrow: return 17
         case RangeAttackSoundSling: return 18
         case RangeAttackSoundLaunch: return 15
+        case RangeAttackSoundMagic: return 24
     }
 
     return -1
@@ -1797,6 +1799,8 @@ var EarthElemental Unit = Unit{
     Realm: data.NatureMagic,
     Name: "Earth Elemental",
     Count: 1,
+    MovementSound: MovementSoundBigSteps,
+    AttackSound: AttackSoundMonster2,
     MeleeAttackPower: 25,
     Defense: 4,
     MovementSpeed: 1,
@@ -3330,6 +3334,10 @@ var DarkElfCavalry Unit = Unit{
     UpkeepGold: 2,
     UpkeepFood: 1,
     Count: 4,
+    MovementSound: MovementSoundHorse,
+    AttackSound: AttackSoundNormal,
+    RangeAttackSound: RangeAttackSoundMagic,
+    RangeAttackIndex: 80,
     MovementSpeed: 2,
     MeleeAttackPower: 4,
     // chaos
