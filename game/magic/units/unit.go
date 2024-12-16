@@ -636,6 +636,8 @@ var Griffin Unit = Unit{
     Flying: true,
     MovementSpeed: 2,
     MeleeAttackPower: 9,
+    MovementSound: MovementSoundFly,
+    AttackSound: AttackSoundNormal, // FIXME
     Defense: 5,
     Resistance: 7,
     HitPoints: 10,
@@ -1122,6 +1124,8 @@ var Chimeras Unit = Unit{
     MovementSpeed: 2,
     Flying: true,
     Count: 4,
+    MovementSound: MovementSoundFly,
+    AttackSound: AttackSoundMonster2,
     MeleeAttackPower: 7,
     Defense: 5,
     Resistance: 8,
@@ -2099,6 +2103,10 @@ var HeroZaldron Unit = Unit{
     MeleeAttackPower: 1,
     RangedAttackPower: 6,
     RangedAttackDamageType: DamageRangedMagical,
+    MovementSound: MovementSoundHorse,
+    AttackSound: AttackSoundNormal,
+    RangeAttackIndex: 72, // FIXME
+    RangeAttackSound: RangeAttackSoundFireball, // FIXME
     Defense: 4,
     Resistance: 6,
     HitPoints: 5,
