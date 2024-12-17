@@ -34,6 +34,7 @@ type RangeAttackSound int
 const (
     RangeAttackSoundNone RangeAttackSound = iota
     RangeAttackSoundFireball
+    RangeAttackSoundMagic
     RangeAttackSoundArrow
     RangeAttackSoundSling
     RangeAttackSoundLaunch // for catapult or other similar things
@@ -46,6 +47,7 @@ func (sound RangeAttackSound) LbxIndex() int {
         case RangeAttackSoundArrow: return 17
         case RangeAttackSoundSling: return 18
         case RangeAttackSoundLaunch: return 15
+        case RangeAttackSoundMagic: return 24
     }
 
     return -1
@@ -425,6 +427,8 @@ var LizardSettlers Unit = Unit{
     Swimming: true,
     UpkeepGold: 3,
     UpkeepFood: 1,
+    AttackSound: AttackSoundNormal,
+    MovementSound: MovementSoundShuffle,
     Abilities: []Ability{MakeAbility(AbilityCreateOutpost)},
     Race: data.RaceLizard,
 }
@@ -550,6 +554,8 @@ var NomadSettlers Unit = Unit{
     Defense: 1,
     Resistance: 4,
     HitPoints: 10,
+    AttackSound: AttackSoundNormal,
+    MovementSound: MovementSoundShuffle,
     Abilities: []Ability{MakeAbility(AbilityCreateOutpost)},
     Race: data.RaceNomad,
 }
@@ -632,6 +638,8 @@ var Griffin Unit = Unit{
     Flying: true,
     MovementSpeed: 2,
     MeleeAttackPower: 9,
+    MovementSound: MovementSoundFly,
+    AttackSound: AttackSoundNormal, // FIXME
     Defense: 5,
     Resistance: 7,
     HitPoints: 10,
@@ -819,6 +827,8 @@ var OrcSettlers Unit = Unit{
     Defense: 1,
     Resistance: 4,
     HitPoints: 10,
+    AttackSound: AttackSoundNormal,
+    MovementSound: MovementSoundShuffle,
     Abilities: []Ability{MakeAbility(AbilityCreateOutpost)},
     Race: data.RaceOrc,
 }
@@ -872,6 +882,8 @@ var TrollSwordsmen Unit = Unit{
     UpkeepGold: 2,
     UpkeepFood: 1,
     Count: 4,
+    MovementSound: MovementSoundMarching,
+    AttackSound: AttackSoundNormal,
     MovementSpeed: 1,
     MeleeAttackPower: 5,
     Defense: 2,
@@ -940,6 +952,8 @@ var TrollSettlers Unit = Unit{
     Defense: 1,
     Resistance: 7,
     HitPoints: 40,
+    AttackSound: AttackSoundNormal,
+    MovementSound: MovementSoundShuffle,
     Abilities: []Ability{MakeAbility(AbilityCreateOutpost), MakeAbility(AbilityRegeneration)},
     Race: data.RaceTroll,
 }
@@ -1114,6 +1128,8 @@ var Chimeras Unit = Unit{
     MovementSpeed: 2,
     Flying: true,
     Count: 4,
+    MovementSound: MovementSoundFly,
+    AttackSound: AttackSoundMonster2,
     MeleeAttackPower: 7,
     Defense: 5,
     Resistance: 8,
@@ -1500,6 +1516,8 @@ var Unicorn Unit = Unit{
     Count: 4,
     MovementSpeed: 2,
     MeleeAttackPower: 5,
+    MovementSound: MovementSoundHorse,
+    AttackSound: AttackSoundNormal,
     Defense: 3,
     Resistance: 7,
     HitPoints: 6,
@@ -1781,6 +1799,8 @@ var EarthElemental Unit = Unit{
     Realm: data.NatureMagic,
     Name: "Earth Elemental",
     Count: 1,
+    MovementSound: MovementSoundBigSteps,
+    AttackSound: AttackSoundMonster2,
     MeleeAttackPower: 25,
     Defense: 4,
     MovementSpeed: 1,
@@ -2089,6 +2109,10 @@ var HeroZaldron Unit = Unit{
     MeleeAttackPower: 1,
     RangedAttackPower: 6,
     RangedAttackDamageType: DamageRangedMagical,
+    MovementSound: MovementSoundHorse,
+    AttackSound: AttackSoundNormal,
+    RangeAttackIndex: 72, // FIXME
+    RangeAttackSound: RangeAttackSoundFireball, // FIXME
     Defense: 4,
     Resistance: 6,
     HitPoints: 5,
@@ -2313,6 +2337,8 @@ var HeroTumu Unit = Unit{
     Count: 1,
     UpkeepGold: 3,
     MovementSpeed: 2,
+    MovementSound: MovementSoundHorse,
+    AttackSound: AttackSoundNormal,
     MeleeAttackPower: 3,
     Defense: 5,
     Resistance: 6,
@@ -2488,6 +2514,10 @@ var HeroYramrag Unit = Unit{
     MeleeAttackPower: 1,
     RangedAttackPower: 8,
     RangedAttackDamageType: DamageRangedMagical,
+    MovementSound: MovementSoundHorse,
+    AttackSound: AttackSoundNormal,
+    RangeAttackIndex: 72, // FIXME
+    RangeAttackSound: RangeAttackSoundFireball, // FIXME
     Defense: 5,
     Resistance: 10,
     HitPoints: 5,
@@ -2835,6 +2865,10 @@ var Warship Unit = Unit{
     Count: 1,
     MovementSpeed: 4,
     Swimming: true,
+    MovementSound: MovementSoundNone, // FIXME
+    AttackSound: AttackSoundNormal, // FIXME
+    RangeAttackIndex: 32, // FIXME
+    RangeAttackSound: RangeAttackSoundSling, // FIXME
     MeleeAttackPower: 10,
     RangedAttackPower: 10,
     RangedAttacks: 99,
@@ -2965,6 +2999,8 @@ var BarbarianSettlers Unit = Unit{
     Defense: 1,
     Resistance: 5,
     HitPoints: 10,
+    AttackSound: AttackSoundNormal,
+    MovementSound: MovementSoundShuffle,
     Abilities: []Ability{MakeAbility(AbilityCreateOutpost)},
     Race: data.RaceBarbarian,
 }
@@ -3060,6 +3096,9 @@ var BeastmenBowmen Unit = Unit{
     RangedAttackPower: 1,
     RangedAttacks: 8,
     RangedAttackDamageType: DamageRangedPhysical,
+    RangeAttackIndex: 8,
+    AttackSound: AttackSoundNormal,
+    RangeAttackSound: RangeAttackSoundArrow,
     Defense: 1,
     Resistance: 5,
     HitPoints: 2,
@@ -3149,6 +3188,8 @@ var BeastmenSettlers Unit = Unit{
     Defense: 1,
     Resistance: 5,
     HitPoints: 20,
+    AttackSound: AttackSoundNormal,
+    MovementSound: MovementSoundShuffle,
     Abilities: []Ability{MakeAbility(AbilityCreateOutpost)},
     Name: "Settlers",
     Race: data.RaceBeastmen,
@@ -3209,6 +3250,8 @@ var Minotaur Unit = Unit{
     Count: 2,
     MovementSpeed: 1,
     MeleeAttackPower: 12,
+    AttackSound: AttackSoundNormal, // FIXME
+    MovementSound: MovementSoundShuffle, // FIXME
     Defense: 4,
     Resistance: 7,
     HitPoints: 12,
@@ -3295,6 +3338,10 @@ var DarkElfCavalry Unit = Unit{
     UpkeepGold: 2,
     UpkeepFood: 1,
     Count: 4,
+    MovementSound: MovementSoundHorse,
+    AttackSound: AttackSoundNormal,
+    RangeAttackSound: RangeAttackSoundMagic,
+    RangeAttackIndex: 80,
     MovementSpeed: 2,
     MeleeAttackPower: 4,
     // chaos
@@ -3347,6 +3394,8 @@ var DarkElfSettlers Unit = Unit{
     Defense: 1,
     Resistance: 7,
     HitPoints: 10,
+    AttackSound: AttackSoundNormal,
+    MovementSound: MovementSoundShuffle,
     Abilities: []Ability{MakeAbility(AbilityCreateOutpost)},
     Race: data.RaceDarkElf,
 }
@@ -3580,6 +3629,8 @@ var DraconianSettlers Unit = Unit{
     Defense: 2,
     Resistance: 6,
     HitPoints: 10,
+    AttackSound: AttackSoundNormal,
+    MovementSound: MovementSoundFly,
     Abilities: []Ability{MakeAbility(AbilityCreateOutpost)},
     Name: "Settlers",
     Race: data.RaceDraconian,
@@ -3764,6 +3815,8 @@ var DwarfSettlers Unit = Unit{
     Defense: 1,
     Resistance: 8,
     HitPoints: 30,
+    AttackSound: AttackSoundNormal,
+    MovementSound: MovementSoundShuffle,
     Abilities: []Ability{MakeAbility(AbilityCreateOutpost)},
     Race: data.RaceDwarf,
 }
@@ -3835,6 +3888,10 @@ var GnollBowmen Unit = Unit{
     UpkeepGold: 1,
     UpkeepFood: 1,
     Count: 6,
+    MovementSound: MovementSoundMarching,
+    AttackSound: AttackSoundNormal,
+    RangeAttackSound: RangeAttackSoundArrow,
+    RangeAttackIndex: 8,
     MovementSpeed: 1,
     MeleeAttackPower: 3,
     RangedAttackPower: 1,
@@ -3862,6 +3919,8 @@ var GnollSettlers Unit = Unit{
     Defense: 1,
     Resistance: 4,
     HitPoints: 10,
+    AttackSound: AttackSoundNormal,
+    MovementSound: MovementSoundShuffle,
     Abilities: []Ability{MakeAbility(AbilityCreateOutpost)},
     Race: data.RaceGnoll,
 }
@@ -3983,6 +4042,8 @@ var HalflingSettlers Unit = Unit{
     Defense: 1,
     Resistance: 6,
     HitPoints: 10,
+    AttackSound: AttackSoundNormal,
+    MovementSound: MovementSoundShuffle,
     Abilities: []Ability{MakeAbility(AbilityCreateOutpost), MakeAbility(AbilityLucky)},
     Name: "Settlers",
     Race: data.RaceHalfling,
@@ -4135,6 +4196,8 @@ var HighElfSettlers Unit = Unit{
     MeleeAttackPower: 1,
     HitPoints: 1,
     Defense: 1,
+    AttackSound: AttackSoundNormal,
+    MovementSound: MovementSoundShuffle,
     // tohit +10%
     Abilities: []Ability{MakeAbility(AbilityCreateOutpost), MakeAbilityValue(AbilityToHit, 10), MakeAbility(AbilityForester)},
 }
@@ -4154,6 +4217,10 @@ var Longbowmen Unit = Unit{
     RangedAttackPower: 3,
     RangedAttacks: 8,
     RangedAttackDamageType: DamageRangedPhysical,
+    RangeAttackIndex: 8,
+    MovementSound: MovementSoundMarching,
+    AttackSound: AttackSoundNormal,
+    RangeAttackSound: RangeAttackSoundArrow,
     Defense: 2,
     Resistance: 6,
     HitPoints: 1,
@@ -4366,6 +4433,8 @@ var HighMenSettlers Unit = Unit{
     Defense: 1,
     Resistance: 4,
     HitPoints: 10,
+    AttackSound: AttackSoundNormal,
+    MovementSound: MovementSoundShuffle,
     Abilities: []Ability{MakeAbility(AbilityCreateOutpost)},
     Race: data.RaceHighMen,
 }
@@ -4382,6 +4451,8 @@ var HighMenPikemen Unit = Unit{
     Count: 8,
     MovementSpeed: 1,
     MeleeAttackPower: 5,
+    AttackSound: AttackSoundNormal,
+    MovementSound: MovementSoundMarching,
     Defense: 3,
     Resistance: 5,
     HitPoints: 1,
@@ -4505,6 +4576,8 @@ var KlackonSettlers Unit = Unit{
     Defense: 1,
     Resistance: 5,
     HitPoints: 20,
+    AttackSound: AttackSoundNormal,
+    MovementSound: MovementSoundShuffle,
     Race: data.RaceKlackon,
 }
 
@@ -4520,6 +4593,8 @@ var StagBeetle Unit = Unit{
     UpkeepFood: 1,
     Count: 1,
     MovementSpeed: 2,
+    MovementSound: MovementSoundBigSteps,
+    AttackSound: AttackSoundNormal,
     MeleeAttackPower: 15,
     Defense: 7,
     Resistance: 6,

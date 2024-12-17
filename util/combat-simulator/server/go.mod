@@ -4,7 +4,7 @@ go 1.23.0
 
 require (
 	github.com/sendgrid/sendgrid-go v3.16.0+incompatible
-	golang.org/x/crypto v0.30.0
+	golang.org/x/crypto v0.31.0
 )
 
 require (
