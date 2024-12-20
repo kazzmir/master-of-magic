@@ -3554,6 +3554,8 @@ var DraconianHalberdiers Unit = Unit{
     UpkeepFood: 1,
     Count: 6,
     Flying: true,
+    MovementSound: MovementSoundFly,
+    AttackSound: AttackSoundNormal,
     MovementSpeed: 2,
     MeleeAttackPower: 4,
     Defense: 4,
