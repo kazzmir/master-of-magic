@@ -2951,6 +2951,8 @@ var BarbarianCavalry Unit = Unit{
     UpkeepGold: 2,
     UpkeepFood: 1,
     Count: 4,
+    MovementSound: MovementSoundHorse,
+    AttackSound: AttackSoundNormal,
     MovementSpeed: 2,
     MeleeAttackPower: 4,
     Defense: 2,
