@@ -35,6 +35,7 @@ const (
     RangeAttackSoundNone RangeAttackSound = iota
     RangeAttackSoundFireball
     RangeAttackSoundMagic
+    RangeAttackSoundMagic2
     RangeAttackSoundArrow
     RangeAttackSoundSling
     RangeAttackSoundLaunch // for catapult or other similar things
@@ -48,6 +49,7 @@ func (sound RangeAttackSound) LbxIndex() int {
         case RangeAttackSoundSling: return 18
         case RangeAttackSoundLaunch: return 15
         case RangeAttackSoundMagic: return 24
+        case RangeAttackSoundMagic2: return 25
     }
 
     return -1
@@ -3342,6 +3344,10 @@ var DarkElfHalberdiers Unit = Unit{
     UpkeepGold: 2,
     UpkeepFood: 1,
     Count: 6,
+    MovementSound: MovementSoundMarching,
+    AttackSound: AttackSoundNormal,
+    RangeAttackSound: RangeAttackSoundMagic2,
+    RangeAttackIndex: 80,
     MovementSpeed: 1,
     MeleeAttackPower: 4,
     // chaos
@@ -3367,7 +3373,7 @@ var DarkElfCavalry Unit = Unit{
     Count: 4,
     MovementSound: MovementSoundHorse,
     AttackSound: AttackSoundNormal,
-    RangeAttackSound: RangeAttackSoundMagic,
+    RangeAttackSound: RangeAttackSoundMagic2,
     RangeAttackIndex: 80,
     MovementSpeed: 2,
     MeleeAttackPower: 4,
@@ -4021,6 +4027,10 @@ var HalflingBowmen Unit = Unit{
     UpkeepGold: 1,
     UpkeepFood: 1,
     Count: 6,
+    MovementSound: MovementSoundMarching,
+    AttackSound: AttackSoundNormal,
+    RangeAttackSound: RangeAttackSoundArrow,
+    RangeAttackIndex: 8,
     MovementSpeed: 1,
     MeleeAttackPower: 1,
     RangedAttackPower: 1,
