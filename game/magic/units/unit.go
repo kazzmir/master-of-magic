@@ -1267,6 +1267,8 @@ var Ghoul Unit = Unit{
     Name: "Ghouls",
     UpkeepMana: 1,
     Count: 4,
+    MovementSound: MovementSoundShuffle,
+    AttackSound: AttackSoundNormal,
     MovementSpeed: 1,
     MeleeAttackPower: 4,
     Defense: 3,
