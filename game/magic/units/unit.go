@@ -1753,6 +1753,10 @@ var Colossus Unit = Unit{
     UpkeepMana: 17,
     Count: 1,
     Realm: data.NatureMagic,
+    MovementSound: MovementSoundBigSteps,
+    AttackSound: AttackSoundMonster2,
+    RangeAttackSound: RangeAttackSoundLaunch,
+    RangeAttackIndex: 32,
     MovementSpeed: 2,
     RangedAttackPower: 20,
     RangedAttacks: 2,
@@ -2879,7 +2883,7 @@ var Warship Unit = Unit{
     MovementSound: MovementSoundNone, // FIXME
     AttackSound: AttackSoundNormal, // FIXME
     RangeAttackIndex: 32, // FIXME
-    RangeAttackSound: RangeAttackSoundSling, // FIXME
+    RangeAttackSound: RangeAttackSoundLaunch, // FIXME
     MeleeAttackPower: 10,
     RangedAttackPower: 10,
     RangedAttacks: 99,
