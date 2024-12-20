@@ -1966,6 +1966,8 @@ var AirElemental Unit = Unit{
     Count: 1,
     Realm: data.SorceryMagic,
     Flying: true,
+    MovementSound: MovementSoundFly,
+    AttackSound: AttackSoundMonster2,
     MovementSpeed: 5,
     MeleeAttackPower: 15,
     Defense: 8,
@@ -2812,6 +2814,8 @@ var Trireme Unit = Unit{
     UpkeepFood: 1,
     Count: 1,
     Swimming: true,
+    MovementSound: MovementSoundNone, // FIXME
+    AttackSound: AttackSoundNormal, // FIXME
     MovementSpeed: 2,
     MeleeAttackPower: 6,
     Defense: 4,
