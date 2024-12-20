@@ -4250,6 +4250,8 @@ var ElvenLord Unit = Unit{
     UpkeepGold: 4,
     UpkeepFood: 1,
     Count: 4,
+    MovementSound: MovementSoundHorse,
+    AttackSound: AttackSoundNormal,
     MovementSpeed: 2,
     MeleeAttackPower: 5,
     Defense: 4,
