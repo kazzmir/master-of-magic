@@ -1084,6 +1084,7 @@ var FireElemental Unit = Unit{
     Realm: data.ChaosMagic,
     Name: "Fire Elemental",
     Count: 1,
+    AttackSound: AttackSoundMonsterVsNormal, // FIXME
     MovementSpeed: 1,
     MeleeAttackPower: 12,
     Defense: 4,
@@ -1668,6 +1669,8 @@ var Cockatrice Unit = Unit{
     UpkeepMana: 8,
     Realm: data.NatureMagic,
     Count: 4,
+    MovementSound: MovementSoundFly,
+    AttackSound: AttackSoundMonster2, // FIXME
     MovementSpeed: 2,
     Flying: true,
     MeleeAttackPower: 4,
