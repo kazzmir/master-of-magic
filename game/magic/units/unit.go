@@ -4576,6 +4576,8 @@ var KlackonEngineer Unit = Unit{
     UpkeepGold: 2,
     UpkeepFood: 1,
     Count: 6,
+    MovementSound: MovementSoundShuffle,
+    AttackSound: AttackSoundNormal,
     MovementSpeed: 1,
     MeleeAttackPower: 1,
     Defense: 1,
