@@ -1165,7 +1165,25 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
     widget.NewRadioGroup(widget.RadioGroupOpts.Elements(armyRadioElements...))
 
-    rootContainer.AddChild(makeRow(10, armyButtons[0], armyButtons[1]))
+    swapArmies := widget.NewButton(
+        widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x5a, G: 0xbc, B: 0x3c, A: 0xff})),
+        widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+        widget.ButtonOpts.Text("Swap armies", face, &widget.ButtonTextColor{
+            Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
+            Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+        }),
+        widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
+            defenders := defendingArmyList.Entries()
+            attackers := attackingArmyList.Entries()
+
+            defendingArmyList.SetEntries(attackers)
+            defendingArmyCount.Label = fmt.Sprintf("%v", len(defendingArmyList.Entries()))
+            attackingArmyList.SetEntries(defenders)
+            attackingArmyCount.Label = fmt.Sprintf("%v", len(attackingArmyList.Entries()))
+        }),
+    )
+
+    rootContainer.AddChild(makeRow(10, armyButtons[0], armyButtons[1], swapArmies))
 
     armyContainer := widget.NewContainer(
         widget.ContainerOpts.Layout(widget.NewRowLayout(
