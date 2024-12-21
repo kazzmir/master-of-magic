@@ -9,6 +9,7 @@
 * upscale screen by 2x
 * better map generation
 * overworld: ai controlled wizards/empires
+* combat: implement boulder ranged attacks
 
 9/22/2024 * city view: separate surplus food/gold from subsistence food/gold
 9/22/2024 * overworld path finding to point on map

@@ -78,7 +78,7 @@ func (description *CombatDescription) Save(filename string) error {
 }
 
 func UnitFromName(name string) (units.Unit, error) {
-    allRaces := append(append(data.ArcanianRaces(), data.MyrranRaces()...), []data.Race{data.RaceFantastic, data.RaceHero}...)
+    allRaces := append(append(data.ArcanianRaces(), data.MyrranRaces()...), []data.Race{data.RaceFantastic, data.RaceHero, data.RaceAll}...)
 
     for _, race := range allRaces {
         if strings.HasPrefix(name, race.String()) {
@@ -774,7 +774,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
     var armyList *widget.List
     var armyCount *widget.Text
 
-    allRaces := append(append(data.ArcanianRaces(), data.MyrranRaces()...), []data.Race{data.RaceFantastic, data.RaceHero}...)
+    allRaces := append(append(data.ArcanianRaces(), data.MyrranRaces()...), []data.Race{data.RaceFantastic, data.RaceHero, data.RaceAll}...)
 
     unitListContainer := widget.NewContainer(
         widget.ContainerOpts.Layout(widget.NewRowLayout(
@@ -793,6 +793,9 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             case data.RaceHero:
                 raceLbx = "figures1.lbx"
                 raceIndex = 2
+            case data.RaceAll:
+                raceLbx = "figures3.lbx"
+                raceIndex = 42
             case data.RaceFantastic:
                 raceLbx = "figure11.lbx"
                 raceIndex = 115
@@ -885,7 +888,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             widget.ListOpts.EntryLabelFunc(
                 func (e any) string {
                     item := e.(*UnitItem)
-                    if item.Race == data.RaceFantastic || item.Race == data.RaceHero {
+                    if item.Race == data.RaceFantastic || item.Race == data.RaceHero || item.Race == data.RaceAll {
                         return item.Unit.Name
                     }
                     return fmt.Sprintf("%v %v", item.Race, item.Unit.Name)
@@ -1070,7 +1073,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         )),
     )
 
-    buttonsPerRow := 8
+    buttonsPerRow := 9
     for i := 0; i < len(raceButtons); i += buttonsPerRow {
         max := i + buttonsPerRow
         if max >= len(raceButtons) {
@@ -1162,7 +1165,25 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
     widget.NewRadioGroup(widget.RadioGroupOpts.Elements(armyRadioElements...))
 
-    rootContainer.AddChild(makeRow(10, armyButtons[0], armyButtons[1]))
+    swapArmies := widget.NewButton(
+        widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x5a, G: 0xbc, B: 0x3c, A: 0xff})),
+        widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+        widget.ButtonOpts.Text("Swap armies", face, &widget.ButtonTextColor{
+            Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
+            Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+        }),
+        widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
+            defenders := defendingArmyList.Entries()
+            attackers := attackingArmyList.Entries()
+
+            defendingArmyList.SetEntries(attackers)
+            defendingArmyCount.Label = fmt.Sprintf("%v", len(defendingArmyList.Entries()))
+            attackingArmyList.SetEntries(defenders)
+            attackingArmyCount.Label = fmt.Sprintf("%v", len(attackingArmyList.Entries()))
+        }),
+    )
+
+    rootContainer.AddChild(makeRow(10, armyButtons[0], armyButtons[1], swapArmies))
 
     armyContainer := widget.NewContainer(
         widget.ContainerOpts.Layout(widget.NewRowLayout(
