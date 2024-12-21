@@ -94,7 +94,7 @@ func (race Race) String() string {
         case RaceKlackon: return "Klackon"
         case RaceHero: return "Hero"
         case RaceFantastic: return "Fantastic"
-        case RaceAll: return "all"
+        case RaceAll: return "All"
     }
 
     return "?"

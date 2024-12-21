@@ -2884,6 +2884,7 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
                 for sound.IsPlaying() {
                     select {
                     case <-quit.Done():
+                        sound.Pause()
                         return
                     case <-time.After(10 * time.Millisecond):
                     }
@@ -2909,7 +2910,7 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
         mover.Facing = computeFacing(useAngle)
 
         // speed := float64(combat.Counter - combat.SelectedUnit.MovementTick) / 4
-        speed := float64(0.08)
+        speed := float64(0.04)
         mover.MoveX += math.Cos(angle) * speed
         mover.MoveY += math.Sin(angle) * speed
 

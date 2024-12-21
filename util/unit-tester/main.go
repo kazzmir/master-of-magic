@@ -33,6 +33,24 @@ func main(){
             missing = append(missing, "MovementSpeed")
         }
 
+        if unit.MovementSound == units.MovementSoundNone {
+            missing = append(missing, "MovementSound")
+        }
+
+        if unit.AttackSound == units.AttackSoundNone {
+            missing = append(missing, "AttackSound")
+        }
+
+        if unit.RangedAttackPower > 0 {
+            if unit.RangeAttackSound == units.RangeAttackSoundNone {
+                missing = append(missing, "RangeAttackSound")
+            }
+
+            if unit.RangeAttackIndex == 0 {
+                missing = append(missing, "RangeAttackIndex")
+            }
+        }
+
         if unit.Defense == 0 {
             missing = append(missing, "Defense")
         }
