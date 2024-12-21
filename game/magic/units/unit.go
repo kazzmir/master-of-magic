@@ -83,11 +83,13 @@ const (
     MovementSoundBigSteps2
     MovementSoundMerge
     MovementSoundShuffle
+    MovementSoundBoat
+    MovementSoundSilent
 )
 
 func (sound MovementSound) LbxIndex() int {
     switch sound {
-        case MovementSoundNone: return -1
+        case MovementSoundNone, MovementSoundBoat, MovementSoundSilent: return -1
         case MovementSoundMarching: return 5
         case MovementSoundHorse: return 6
         case MovementSoundFly: return 7
@@ -2829,6 +2831,10 @@ var HeroRavashack Unit = Unit{
     Name: "Ravashack",
     Count: 1,
     UpkeepGold: 10,
+    MovementSound: MovementSoundHorse,
+    AttackSound: AttackSoundNormal,
+    RangeAttackSound: RangeAttackSoundMagic,
+    RangeAttackIndex: 72,
     MovementSpeed: 2,
     MeleeAttackPower: 1,
     RangedAttackPower: 7,
@@ -2852,6 +2858,10 @@ var HeroWarrax Unit = Unit{
     CombatIndex: 24,
     Name: "Warrax",
     UpkeepGold: 10,
+    MovementSound: MovementSoundHorse,
+    AttackSound: AttackSoundNormal,
+    RangeAttackSound: RangeAttackSoundFireball,
+    RangeAttackIndex: 16,
     MovementSpeed: 2,
     MeleeAttackPower: 8,
     RangedAttackPower: 8,
@@ -2877,6 +2887,8 @@ var HeroTorin Unit = Unit{
     Name: "Torin",
     Count: 1,
     UpkeepMana: 12,
+    MovementSound: MovementSoundHorse,
+    AttackSound: AttackSoundNormal,
     MovementSpeed: 2,
     MeleeAttackPower: 12,
     Defense: 8,
@@ -2906,7 +2918,7 @@ var Trireme Unit = Unit{
     UpkeepFood: 1,
     Count: 1,
     Swimming: true,
-    MovementSound: MovementSoundNone, // FIXME
+    MovementSound: MovementSoundBoat, // FIXME
     AttackSound: AttackSoundNormal, // FIXME
     MovementSpeed: 2,
     MeleeAttackPower: 6,
@@ -2929,6 +2941,10 @@ var Galley Unit = Unit{
     Name: "Galley",
     Count: 1,
     Swimming: true,
+    MovementSound: MovementSoundBoat,
+    AttackSound: AttackSoundNormal, // FIXME
+    RangeAttackSound: RangeAttackSoundArrow,
+    RangeAttackIndex: 8,
     MovementSpeed: 3,
     MeleeAttackPower: 8,
     RangedAttackPower: 2,
@@ -2980,7 +2996,7 @@ var Warship Unit = Unit{
     Count: 1,
     MovementSpeed: 4,
     Swimming: true,
-    MovementSound: MovementSoundNone, // FIXME
+    MovementSound: MovementSoundBoat,
     AttackSound: AttackSoundNormal, // FIXME
     RangeAttackIndex: 32, // FIXME
     RangeAttackSound: RangeAttackSoundLaunch, // FIXME
@@ -3005,6 +3021,8 @@ var BarbarianSpearmen Unit = Unit{
     ProductionCost: 15,
     UpkeepFood: 1,
     Count: 8,
+    MovementSound: MovementSoundMarching,
+    AttackSound: AttackSoundNormal,
     MovementSpeed: 1,
     MeleeAttackPower: 1,
     Defense: 2,
@@ -3024,6 +3042,8 @@ var BarbarianSwordsmen Unit = Unit{
     UpkeepGold: 1,
     UpkeepFood: 1,
     Count: 6,
+    MovementSound: MovementSoundMarching,
+    AttackSound: AttackSoundNormal,
     MovementSpeed: 1,
     MeleeAttackPower: 3,
     Defense: 2,
@@ -3044,6 +3064,10 @@ var BarbarianBowmen Unit = Unit{
     UpkeepGold: 1,
     UpkeepFood: 1,
     Count: 6,
+    MovementSound: MovementSoundMarching,
+    AttackSound: AttackSoundNormal,
+    RangeAttackSound: RangeAttackSoundArrow,
+    RangeAttackIndex: 8,
     MovementSpeed: 1,
     MeleeAttackPower: 1,
     RangedAttackPower: 1,
@@ -3088,6 +3112,10 @@ var BarbarianShaman Unit = Unit{
     UpkeepGold: 1,
     UpkeepFood: 1,
     Count: 4,
+    MovementSound: MovementSoundShuffle,
+    AttackSound: AttackSoundNormal,
+    RangeAttackSound: RangeAttackSoundMagic,
+    RangeAttackIndex: 88,
     MovementSpeed: 1,
     MeleeAttackPower: 2,
     // nature
@@ -3132,6 +3160,8 @@ var Berserkers Unit = Unit{
     UpkeepGold: 3,
     UpkeepFood: 1,
     Count: 6,
+    MovementSound: MovementSoundMarching,
+    AttackSound: AttackSoundNormal,
     MovementSpeed: 1,
     MeleeAttackPower: 7,
     Defense: 3,
@@ -3150,6 +3180,8 @@ var BeastmenSpearmen Unit = Unit{
     ProductionCost: 20,
     UpkeepFood: 1,
     Count: 8,
+    MovementSound: MovementSoundMarching,
+    AttackSound: AttackSoundNormal,
     MovementSpeed: 1,
     MeleeAttackPower: 2,
     Defense: 2,
@@ -3190,6 +3222,8 @@ var BeastmenHalberdiers Unit = Unit{
     UpkeepGold: 2,
     UpkeepFood: 1,
     Count: 6,
+    MovementSound: MovementSoundMarching,
+    AttackSound: AttackSoundNormal,
     MovementSpeed: 1,
     MeleeAttackPower: 5,
     Defense: 3,
@@ -3210,6 +3244,7 @@ var BeastmenBowmen Unit = Unit{
     UpkeepGold: 2,
     UpkeepFood: 1,
     Count: 6,
+    MovementSound: MovementSoundMarching,
     MovementSpeed: 1,
     MeleeAttackPower: 2,
     RangedAttackPower: 1,
@@ -3235,6 +3270,10 @@ var BeastmenPriest Unit = Unit{
     UpkeepGold: 3,
     UpkeepFood: 1,
     Count: 4,
+    MovementSound: MovementSoundShuffle,
+    AttackSound: AttackSoundNormal,
+    RangeAttackSound: RangeAttackSoundMagic,
+    RangeAttackIndex: 88,
     MovementSpeed: 1,
     MeleeAttackPower: 4,
     // nature
@@ -3259,6 +3298,10 @@ var BeastmenMagician Unit = Unit{
     UpkeepGold: 4,
     UpkeepFood: 1,
     Count: 4,
+    MovementSound: MovementSoundShuffle,
+    AttackSound: AttackSoundNormal,
+    RangeAttackSound: RangeAttackSoundMagic,
+    RangeAttackIndex: 72,
     MovementSpeed: 1,
     MeleeAttackPower: 2,
     // chaos
@@ -3283,6 +3326,8 @@ var BeastmenEngineer Unit = Unit{
     UpkeepGold: 2,
     UpkeepFood: 1,
     Count: 6,
+    MovementSound: MovementSoundShuffle,
+    AttackSound: AttackSoundNormal,
     MovementSpeed: 1,
     MeleeAttackPower: 2,
     Defense: 1,
@@ -3324,6 +3369,10 @@ var Centaur Unit = Unit{
     UpkeepGold: 2,
     UpkeepFood: 1,
     Count: 4,
+    MovementSound: MovementSoundHorse,
+    AttackSound: AttackSoundNormal,
+    RangeAttackSound: RangeAttackSoundArrow,
+    RangeAttackIndex: 8,
     MovementSpeed: 2,
     MeleeAttackPower: 3,
     RangedAttackPower: 2,
@@ -3347,6 +3396,8 @@ var Manticore Unit = Unit{
     UpkeepFood: 1,
     Count: 2,
     Flying: true,
+    MovementSound: MovementSoundFly2,
+    AttackSound: AttackSoundNormal,
     MovementSpeed: 2,
     MeleeAttackPower: 5,
     Defense: 3,
@@ -3545,7 +3596,7 @@ var Nightblades Unit = Unit{
     UpkeepGold: 3,
     UpkeepFood: 1,
     Count: 6,
-    MovementSound: MovementSoundNone,
+    MovementSound: MovementSoundSilent,
     AttackSound: AttackSoundNormal,
     MovementSpeed: 1,
     MeleeAttackPower: 4,
