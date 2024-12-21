@@ -78,7 +78,9 @@ const (
     MovementSoundMarching
     MovementSoundHorse
     MovementSoundFly
+    MovementSoundFly2
     MovementSoundBigSteps
+    MovementSoundBigSteps2
     MovementSoundMerge
     MovementSoundShuffle
 )
@@ -89,7 +91,9 @@ func (sound MovementSound) LbxIndex() int {
         case MovementSoundMarching: return 5
         case MovementSoundHorse: return 6
         case MovementSoundFly: return 7
+        case MovementSoundFly2: return 8
         case MovementSoundBigSteps: return 10
+        case MovementSoundBigSteps2: return 13
         case MovementSoundMerge: return 12
         case MovementSoundShuffle: return 9
     }
@@ -742,6 +746,8 @@ var OrcCavalry Unit = Unit{
     UpkeepGold: 1,
     UpkeepFood: 1,
     Count: 4,
+    MovementSound: MovementSoundHorse,
+    AttackSound: AttackSoundNormal,
     MovementSpeed: 2,
     MeleeAttackPower: 4,
     Defense: 2,
@@ -994,6 +1000,8 @@ var WarMammoths Unit = Unit{
     UpkeepGold: 5,
     UpkeepFood: 1,
     Count: 2,
+    MovementSound: MovementSoundBigSteps2,
+    AttackSound: AttackSoundNormal,
     MovementSpeed: 2,
     MeleeAttackPower: 10,
     Defense: 6,
@@ -1598,6 +1606,8 @@ var ArchAngel Unit = Unit{
     UpkeepMana: 20,
     Count: 1,
     Flying: true,
+    MovementSound: MovementSoundFly2,
+    AttackSound: AttackSoundNormal,
     MovementSpeed: 4,
     MeleeAttackPower: 15,
     Defense: 10,
@@ -2499,6 +2509,8 @@ var HeroSpyder Unit = Unit{
     CombatIndex: 48,
     Count: 1,
     UpkeepGold: 6,
+    MovementSound: MovementSoundHorse,
+    AttackSound: AttackSoundNormal,
     MovementSpeed: 2,
     MeleeAttackPower: 7,
     Defense: 5,
@@ -3915,6 +3927,8 @@ var GnollHalberdiers Unit = Unit{
     UpkeepGold: 1,
     UpkeepFood: 1,
     Count: 6,
+    MovementSound: MovementSoundMarching,
+    AttackSound: AttackSoundNormal,
     MovementSpeed: 1,
     MeleeAttackPower: 6,
     Defense: 3,
@@ -4603,6 +4617,8 @@ var KlackonHalberdiers Unit = Unit{
     UpkeepGold: 2,
     UpkeepFood: 1,
     Count: 6,
+    MovementSound: MovementSoundMarching,
+    AttackSound: AttackSoundNormal,
     MovementSpeed: 1,
     MeleeAttackPower: 4,
     Defense: 5,
