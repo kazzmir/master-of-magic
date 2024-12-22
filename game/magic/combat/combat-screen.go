@@ -661,6 +661,12 @@ type Projectile struct {
     Exploding bool
 }
 
+type CombatLogEvent struct {
+    Turn int
+    Text string
+    AbsoluteTime time.Time
+}
+
 type CombatScreen struct {
     ImageCache util.ImageCache
     Events chan CombatEvent
@@ -724,6 +730,8 @@ type CombatScreen struct {
     SelectTarget func(*ArmyUnit)
     CanTarget func(*ArmyUnit) bool
     */
+
+    Log []CombatLogEvent
 }
 
 type CombatLandscape int
@@ -1062,6 +1070,14 @@ func (combat *CombatScreen) ScreenToTile(x float64, y float64) (float64, float64
     return screenToTile.Apply(x, y)
 }
 
+func (combat *CombatScreen) AddLogEvent(text string) {
+    combat.Log = append(combat.Log, CombatLogEvent{
+        Turn: combat.CurrentTurn,
+        Text: text,
+        AbsoluteTime: time.Now(),
+    })
+}
+
 func (combat *CombatScreen) computeTopDownOrder() []image.Point {
     var points []image.Point
     for y := 0; y < len(combat.Tiles); y++ {
@@ -1259,7 +1275,9 @@ func (combat *CombatScreen) CreateFireBoltProjectile(target *ArmyUnit) {
     // FIXME: made up
     damage := func(unit *ArmyUnit) {
         unit.TakeDamage(3)
+        combat.AddLogEvent(fmt.Sprintf("Firebolt hits %v for 3 damage", unit.Unit.GetName()))
         if unit.Unit.GetHealth() <= 0 {
+            combat.AddLogEvent(fmt.Sprintf("%v is killed", unit.Unit.GetName()))
             combat.RemoveUnit(unit)
         }
     }
@@ -2056,7 +2074,9 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
             spellUI := spellbook.MakeSpellBookCastUI(ui, combat.Cache, player.KnownSpells, player.ComputeCastingSkill(), spellbook.Spell{}, 0, false, func (spell spellbook.Spell, picked bool){
                 if picked {
                     // player mana and skill should go down accordingly
-                    combat.InvokeSpell(player, spell, func(){})
+                    combat.InvokeSpell(player, spell, func(){
+                        combat.AddLogEvent(fmt.Sprintf("%v casts %v", player.Wizard.Name, spell.Name))
+                    })
                 }
             })
             ui.AddElements(spellUI)
@@ -2077,12 +2097,14 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                     uilib.Selection{
                         Name: combat.SelectedUnit.Unit.GetName(),
                         Action: func(){
+                            caster := combat.SelectedUnit
 
                             doCast := func(spell spellbook.Spell){
-                                combat.SelectedUnit.CastingSkill -= float32(spell.CastCost)
-                                combat.SelectedUnit.Casted = true
+                                caster.CastingSkill -= float32(spell.CastCost)
+                                caster.Casted = true
                                 combat.InvokeSpell(player, spell, func(){
-                                    combat.SelectedUnit.MovesLeft = fraction.FromInt(0)
+                                    combat.AddLogEvent(fmt.Sprintf("%v casts %v", caster.Unit.GetName(), spell.Name))
+                                    caster.MovesLeft = fraction.FromInt(0)
                                     select {
                                         case combat.Events <- &CombatEventNextUnit{}:
                                         default:
@@ -2098,7 +2120,7 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                             }
 
                             // what is casting skill based on for a unit?
-                            spellUI := spellbook.MakeSpellBookCastUI(ui, combat.Cache, unitSpells, int(combat.SelectedUnit.CastingSkill), spellbook.Spell{}, 0, false, func (spell spellbook.Spell, picked bool){
+                            spellUI := spellbook.MakeSpellBookCastUI(ui, combat.Cache, unitSpells, int(caster.CastingSkill), spellbook.Spell{}, 0, false, func (spell spellbook.Spell, picked bool){
                                 if picked {
                                     doCast(spell)
                                 }
@@ -2504,6 +2526,9 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
         defenderCounterDamage = 0
     }
 
+    combat.AddLogEvent(fmt.Sprintf("Attacker damage roll %v, defender defended %v, attacker damage to defender %v", originalAttackerDamage, originalAttackerDamage - attackerDamage, attackerDamage))
+    combat.AddLogEvent(fmt.Sprintf("Defender counter damage roll %v, attacker defended %v, defender damage to attacker %v", originalDefenderCounterDamage, originalDefenderCounterDamage - defenderCounterDamage, defenderCounterDamage))
+
     log.Printf("Attacker damage roll %v, defender defended %v, attacker damage to defender %v", originalAttackerDamage, originalAttackerDamage - attackerDamage, attackerDamage)
     log.Printf("Defender counter damage roll %v, attacker defended %v, defender damage to attacker %v", originalDefenderCounterDamage, originalDefenderCounterDamage - defenderCounterDamage, defenderCounterDamage)
 
@@ -2511,10 +2536,12 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
     defender.TakeDamage(attackerDamage)
 
     if attacker.Unit.GetHealth() <= 0 {
+        combat.AddLogEvent(fmt.Sprintf("%v is killed", attacker.Unit.GetName()))
         combat.RemoveUnit(attacker)
     }
 
     if defender.Unit.GetHealth() <= 0 {
+        combat.AddLogEvent(fmt.Sprintf("%v is killed", defender.Unit.GetName()))
         combat.RemoveUnit(defender)
     }
 }
@@ -2894,10 +2921,9 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
     }
 
     for len(path) > 0 {
-        combat.UpdateAnimations()
-        combat.Counter += 1
-
         targetX, targetY := path[0].X, path[0].Y
+
+        combat.AddLogEvent(fmt.Sprintf("Moving %v %v,%v -> %v,%v", mover.Unit.GetName(), mover.X, mover.Y, targetX, targetY))
 
         angle := math.Atan2(float64(targetY) - mover.MoveY, float64(targetX) - mover.MoveX)
 
@@ -2911,34 +2937,41 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
 
         // speed := float64(combat.Counter - combat.SelectedUnit.MovementTick) / 4
         speed := float64(0.04)
-        mover.MoveX += math.Cos(angle) * speed
-        mover.MoveY += math.Sin(angle) * speed
 
-        // log.Printf("Moving %v,%v -> %v,%v", combat.SelectedUnit.X, combat.SelectedUnit.Y, combat.SelectedUnit.MoveX, combat.SelectedUnit.MoveY)
+        reached := false
+        for !reached {
+            combat.UpdateAnimations()
+            combat.Counter += 1
+            mover.MoveX += math.Cos(angle) * speed
+            mover.MoveY += math.Sin(angle) * speed
 
-        // if math.Abs(combat.SelectedUnit.MoveX - float64(targetX)) < speed*2 && math.Abs(combat.SelectedUnit.MoveY - float64(targetY)) < 0.5 {
-        if distanceInRange(mover.MoveX, mover.MoveY, float64(targetX), float64(targetY), speed * 3) ||
-        // a stop gap to ensure the unit doesn't fly off the screen somehow
-        distanceAboveRange(float64(mover.X), float64(mover.Y), float64(targetX), float64(targetY), 2.5) {
+            // log.Printf("Moving %v,%v -> %v,%v", combat.SelectedUnit.X, combat.SelectedUnit.Y, combat.SelectedUnit.MoveX, combat.SelectedUnit.MoveY)
 
-            // tile where the unit came from is now empty
-            combat.Tiles[mover.Y][mover.X].Unit = nil
+            // if math.Abs(combat.SelectedUnit.MoveX - float64(targetX)) < speed*2 && math.Abs(combat.SelectedUnit.MoveY - float64(targetY)) < 0.5 {
+            if distanceInRange(mover.MoveX, mover.MoveY, float64(targetX), float64(targetY), speed * 3) ||
+            // a stop gap to ensure the unit doesn't fly off the screen somehow
+            distanceAboveRange(float64(mover.X), float64(mover.Y), float64(targetX), float64(targetY), 2.5) {
 
-            mover.MovesLeft = mover.MovesLeft.Subtract(pathCost(image.Pt(mover.X, mover.Y), image.Pt(targetX, targetY)))
-            if mover.MovesLeft.LessThan(fraction.FromInt(0)) {
-                mover.MovesLeft = fraction.FromInt(0)
+                // tile where the unit came from is now empty
+                combat.Tiles[mover.Y][mover.X].Unit = nil
+
+                mover.MovesLeft = mover.MovesLeft.Subtract(pathCost(image.Pt(mover.X, mover.Y), image.Pt(targetX, targetY)))
+                if mover.MovesLeft.LessThan(fraction.FromInt(0)) {
+                    mover.MovesLeft = fraction.FromInt(0)
+                }
+
+                mover.X = targetX
+                mover.Y = targetY
+                mover.MoveX = float64(targetX)
+                mover.MoveY = float64(targetY)
+                // new tile the unit landed on is now occupied
+                combat.Tiles[mover.Y][mover.X].Unit = mover
+                path = path[1:]
+                reached = true
             }
 
-            mover.X = targetX
-            mover.Y = targetY
-            mover.MoveX = float64(targetX)
-            mover.MoveY = float64(targetY)
-            // new tile the unit landed on is now occupied
-            combat.Tiles[mover.Y][mover.X].Unit = mover
-            path = path[1:]
+            yield()
         }
-
-        yield()
     }
 
     mover.Moving = false
@@ -2967,7 +3000,6 @@ func (combat *CombatScreen) doRangeAttack(yield coroutine.YieldFunc, attacker *A
 }
 
 func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUnit, defender *ArmyUnit){
-    // create defer scope
     attacker.Attacking = true
     defender.Defending = true
     defer func(){
@@ -2997,10 +3029,13 @@ func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUni
         sound.Play()
     }
 
+    combat.AddLogEvent(fmt.Sprintf("%v attacks %v", attacker.Unit.GetName(), defender.Unit.GetName()))
+
     for i := 0; i < 60; i++ {
         combat.Counter += 1
         combat.UpdateAnimations()
 
+        // delay the actual melee computation to give time for the sound to play
         if i == 20 {
             combat.meleeAttack(combat.SelectedUnit, defender)
         }
@@ -3160,10 +3195,12 @@ func (combat *CombatScreen) UpdateMouseState() {
 func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
     // defender wins in a tie
     if len(combat.AttackingArmy.Units) == 0 {
+        combat.AddLogEvent("Defender wins!")
         return CombatStateDefenderWin
     }
 
     if len(combat.DefendingArmy.Units) == 0 {
+        combat.AddLogEvent("Attacker wins!")
         return CombatStateAttackerWin
     }
 
