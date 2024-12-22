@@ -3029,10 +3029,13 @@ func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUni
         sound.Play()
     }
 
+    combat.AddLogEvent(fmt.Sprintf("%v attacks %v", attacker.Unit.GetName(), defender.Unit.GetName()))
+
     for i := 0; i < 60; i++ {
         combat.Counter += 1
         combat.UpdateAnimations()
 
+        // delay the actual melee computation to give time for the sound to play
         if i == 20 {
             combat.meleeAttack(combat.SelectedUnit, defender)
         }
