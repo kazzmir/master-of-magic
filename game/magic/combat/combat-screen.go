@@ -2682,6 +2682,36 @@ func (combat *CombatScreen) doImmolationAttack(attacker *ArmyUnit, defender *Arm
     }
 }
 
+func (combat *CombatScreen) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit) {
+    if attacker.Unit.HasAbility(units.AbilityPoisonTouch) && !defender.Unit.HasAbility(units.AbilityPoisonImmunity) {
+        damage := 0
+        for range int(attacker.Unit.GetAbilityValue(units.AbilityPoisonTouch)) {
+            if rand.N(10) + 1 > defender.Unit.GetResistance() {
+                damage += 1
+            }
+        }
+
+        defender.TakeDamage(damage)
+
+        combat.AddLogEvent(fmt.Sprintf("%v is poisoned for %v damage. HP now %v", defender.Unit.GetName(), damage, defender.Unit.GetHealth()))
+    }
+
+    if attacker.Unit.HasAbility(units.AbilityLifeSteal) {
+        if !defender.Unit.HasAbility(units.AbilityDeathImmunity) && !defender.Unit.HasAbility(units.AbilityMagicImmunity) {
+            modifier := int(attacker.Unit.GetAbilityValue(units.AbilityLifeSteal))
+            damage := rand.N(10) + 1 - (defender.Unit.GetResistance() + modifier)
+            if damage > 0 {
+                defender.TakeDamage(damage)
+                attacker.Heal(damage)
+                combat.AddLogEvent(fmt.Sprintf("%v steals %v life from %v. HP now %v", attacker.Unit.GetName(), damage, defender.Unit.GetName(), defender.Unit.GetHealth()))
+            }
+        }
+    }
+
+    if attacker.Unit.HasAbility(units.AbilityVampiric) {
+    }
+}
+
 /* attacker is performing a physical melee attack against defender
  */
 func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
@@ -2700,23 +2730,27 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                     _, ok := combat.doThrowAttack(attacker, defender)
                     if ok {
                         combat.doImmolationAttack(attacker, defender)
+                        combat.doTouchAttack(attacker, defender)
                     }
 
                     _, ok = combat.doBreathAttack(attacker, defender)
 
                     if ok {
                         combat.doImmolationAttack(attacker, defender)
+                        combat.doTouchAttack(attacker, defender)
                     }
                 }
 
                 _, hit := combat.doGazeAttack(attacker, defender)
                 if hit {
                     combat.doImmolationAttack(attacker, defender)
+                    combat.doTouchAttack(attacker, defender)
                 }
             case 1:
                 _, hit := combat.doGazeAttack(defender, attacker)
                 if hit {
                     combat.doImmolationAttack(defender, attacker)
+                    combat.doTouchAttack(defender, attacker)
                 }
             case 2:
                 // wall of fire
@@ -2727,6 +2761,7 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                     attackerDamage, hit := attacker.ComputeMeleeDamage()
                     if hit {
                         combat.doImmolationAttack(attacker, defender)
+                        combat.doTouchAttack(attacker, defender)
                     }
 
                     defenderHurt := defender.ApplyDamage(attackerDamage, units.DamageMeleePhysical, false)
@@ -2739,6 +2774,7 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                     attackerDamage, hit := attacker.ComputeMeleeDamage()
                     if hit {
                         combat.doImmolationAttack(attacker, defender)
+                        combat.doTouchAttack(attacker, defender)
                     }
 
                     defenderHurt := defender.ApplyDamage(attackerDamage, units.DamageMeleePhysical, false)
@@ -2748,6 +2784,7 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                 defenderDamage, hit := defender.ComputeMeleeDamage()
                 if hit {
                     combat.doImmolationAttack(defender, attacker)
+                    combat.doTouchAttack(defender, attacker)
                 }
                 attackerHurt := attacker.ApplyDamage(defenderDamage, units.DamageMeleePhysical, false)
                 combat.AddLogEvent(fmt.Sprintf("Defender damage roll %v, attacker took %v damage. HP now %v", defenderDamage, attackerHurt, attacker.Unit.GetHealth()))
@@ -2756,6 +2793,7 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                     defenderDamage, hit := defender.ComputeMeleeDamage()
                     if hit {
                         combat.doImmolationAttack(defender, attacker)
+                        combat.doTouchAttack(defender, attacker)
                     }
                     attackerHurt := attacker.ApplyDamage(defenderDamage, units.DamageMeleePhysical, false)
                     combat.AddLogEvent(fmt.Sprintf("Defender damage roll %v, attacker took %v damage. HP now %v", defenderDamage, attackerHurt, attacker.Unit.GetHealth()))

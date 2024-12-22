@@ -121,6 +121,9 @@ const (
     AbilitySuperPrayermaster
     AbilitySage
     AbilitySuperSage
+
+    // artifact abilities
+    AbilityVampiric
 )
 
 // the file that stores the icon for this ability
@@ -149,7 +152,7 @@ func (ability Ability) LbxFile() string {
         case AbilityIllusionsImmunity: return ""
         case AbilityInvisibility: return ""
         case AbilityLargeShield: return ""
-        case AbilityLifeSteal: return ""
+        case AbilityLifeSteal, AbilityVampiric: return "special.lbx"
         case AbilityLightningBreath: return ""
         case AbilityLongRange: return ""
         case AbilityMagicImmunity: return ""
@@ -215,8 +218,8 @@ func (ability Ability) Name() string {
         case AbilityDispelEvil: return ""
         case AbilityDoomBoltSpell: return "Doom Bolt Spell"
         case AbilityDoomGaze: return "Doom Gaze"
-        case AbilityFireballSpell: return fmt.Sprintf("Fireball Spell x%v", ability.Value)
-        case AbilityFireBreath: return fmt.Sprintf("Fire Breath %v", ability.Value)
+        case AbilityFireballSpell: return fmt.Sprintf("Fireball Spell x%v", int(ability.Value))
+        case AbilityFireBreath: return fmt.Sprintf("Fire Breath %v", int(ability.Value))
         case AbilityFireImmunity: return ""
         case AbilityFirstStrike: return ""
         case AbilityForester: return "Forester"
@@ -227,7 +230,8 @@ func (ability Ability) Name() string {
         case AbilityIllusionsImmunity: return ""
         case AbilityInvisibility: return ""
         case AbilityLargeShield: return ""
-        case AbilityLifeSteal: return ""
+        case AbilityLifeSteal: return fmt.Sprintf("Life Steal %v", int(ability.Value))
+        case AbilityVampiric: return "Vampiric"
         case AbilityLightningBreath: return ""
         case AbilityLongRange: return ""
         case AbilityMagicImmunity: return ""
@@ -311,7 +315,7 @@ func (ability Ability) LbxIndex() int {
         case AbilityIllusionsImmunity: return -1
         case AbilityInvisibility: return -1
         case AbilityLargeShield: return -1
-        case AbilityLifeSteal: return -1
+        case AbilityLifeSteal, AbilityVampiric: return 31
         case AbilityLightningBreath: return -1
         case AbilityLongRange: return -1
         case AbilityMagicImmunity: return -1
