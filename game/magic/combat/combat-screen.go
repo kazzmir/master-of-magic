@@ -153,6 +153,7 @@ type CombatUnit interface {
     GetRangedAttackPower() int
     GetMeleeAttackPower() int
     GetMaxHealth() int
+    GetHitPoints() int
     GetEnchantments() []data.UnitEnchantment
     GetCount() int
     GetHealth() int
@@ -2528,6 +2529,57 @@ func (combat *CombatScreen) doProjectiles(yield coroutine.YieldFunc) {
     }
 }
 
+func (combat *CombatScreen) doGazeAttack(attacker *ArmyUnit, defender *ArmyUnit) int {
+    // FIXME: take into account the attack strength of the unit, and modifiers from spells/magic nodes
+
+    damage := 0
+    if attacker.Unit.HasAbility(units.AbilityStoningGaze) {
+        if !defender.Unit.HasAbility(units.AbilityStoningImmunity) && !defender.Unit.HasAbility(units.AbilityMagicImmunity) {
+            resistance := int(attacker.Unit.GetAbilityValue(units.AbilityStoningGaze))
+
+            stoneDamage := 0
+
+            for range defender.Figures() {
+                if rand.N(10) + 1 > defender.Unit.GetResistance() - resistance {
+                    stoneDamage += defender.Unit.GetHitPoints()
+                }
+            }
+
+            // FIXME: this should be irreversable damage
+            damage += stoneDamage
+
+            combat.AddLogEvent(fmt.Sprintf("%v uses stone gaze on %v for %v damage", attacker.Unit.GetName(), defender.Unit.GetName(), stoneDamage))
+        }
+    }
+
+    if attacker.Unit.HasAbility(units.AbilityDeathGaze) {
+        if !defender.Unit.HasAbility(units.AbilityDeathImmunity) && !defender.Unit.HasAbility(units.AbilityMagicImmunity) {
+            resistance := int(attacker.Unit.GetAbilityValue(units.AbilityStoningGaze))
+
+            deathDamage := 0
+
+            for range defender.Figures() {
+                if rand.N(10) + 1 > defender.Unit.GetResistance() - resistance {
+                    deathDamage += defender.Unit.GetHitPoints()
+                }
+            }
+
+            damage += deathDamage
+
+            combat.AddLogEvent(fmt.Sprintf("%v uses death gaze on %v for %v damage", attacker.Unit.GetName(), defender.Unit.GetName(), deathDamage))
+        }
+    }
+
+    if attacker.Unit.HasAbility(units.AbilityDoomGaze) {
+        doomDamage := int(attacker.Unit.GetAbilityValue(units.AbilityDoomGaze))
+        damage += doomDamage
+        combat.AddLogEvent(fmt.Sprintf("%v uses doom gaze on %v for %v damage", attacker.Unit.GetName(), defender.Unit.GetName(), doomDamage))
+    }
+
+    defender.TakeDamage(damage)
+    return damage
+}
+
 /* attacker is performing a physical melee attack against defender
  */
 func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
@@ -2540,13 +2592,6 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
         for range attacker.Figures() {
             if rand.N(100) < attacker.Unit.GetToHitMelee() {
                 damage += defender.ApplyDamage(strength, units.DamageMeleePhysical)
-                /*
-                defense := defender.ComputeDefense(units.DamageMeleePhysical)
-                total := strength - defense
-                if total > 0 {
-                    damage += total
-                }
-                */
             }
         }
 
@@ -2558,6 +2603,22 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
             combat.RemoveUnit(defender)
             return
         }
+    }
+
+    combat.doGazeAttack(attacker, defender)
+
+    if defender.Unit.GetHealth() <= 0 {
+        combat.AddLogEvent(fmt.Sprintf("%v is killed", defender.Unit.GetName()))
+        combat.RemoveUnit(defender)
+        return
+    }
+
+    combat.doGazeAttack(defender, attacker)
+
+    if attacker.Unit.GetHealth() <= 0 {
+        combat.AddLogEvent(fmt.Sprintf("%v is killed", attacker.Unit.GetName()))
+        combat.RemoveUnit(attacker)
+        return
     }
 
     attackerDamage := attacker.ComputeMeleeDamage()
