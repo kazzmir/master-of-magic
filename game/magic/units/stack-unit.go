@@ -25,6 +25,7 @@ type StackUnit interface {
     GetUpkeepMana() int
     GetEnchantments() []data.UnitEnchantment
     AddEnchantment(data.UnitEnchantment)
+    HasEnchantment(data.UnitEnchantment) bool
     RemoveEnchantment(data.UnitEnchantment)
     GetBanner() data.BannerType
     SetWeaponBonus(data.WeaponBonus)

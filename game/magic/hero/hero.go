@@ -544,6 +544,10 @@ func (hero *Hero) GetEnchantments() []data.UnitEnchantment {
     return hero.Unit.GetEnchantments()
 }
 
+func (hero *Hero) HasEnchantment(enchantment data.UnitEnchantment) bool {
+    return hero.Unit.HasEnchantment(enchantment)
+}
+
 func (hero *Hero) AddEnchantment(enchantment data.UnitEnchantment) {
     hero.Unit.AddEnchantment(enchantment)
 }
@@ -705,7 +709,21 @@ func (hero *Hero) GetAbilityReference(ability units.AbilityType) *units.Ability 
     return nil
 }
 
+func (hero *Hero) HasShield() bool {
+    for _, item := range hero.Equipment {
+        if item.Type == artifact.ArtifactTypeShield {
+            return true
+        }
+    }
+
+    return false
+}
+
 func (hero *Hero) HasAbility(ability units.AbilityType) bool {
+    if ability == units.AbilityLargeShield {
+        return hero.HasShield()
+    }
+
     return slices.ContainsFunc(hero.Abilities, func (a units.Ability) bool {
         return a.Ability == ability
     })

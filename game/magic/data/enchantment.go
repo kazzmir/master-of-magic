@@ -40,6 +40,8 @@ const (
     UnitEnchantmentNone UnitEnchantment = iota
     UnitEnchantmentGiantStrength
     UnitEnchantmentLionHeart
+    UnitEnchantmentHaste
+    UnitEnchantmentImmolation
 )
 
 var natureColor = color.RGBA{R: 0, G: 180, B: 0, A: 255}
@@ -67,7 +69,6 @@ Stone Skin	Nature
 Water Walking	Nature
 Flight	Sorcery
 Guardian Wind	Sorcery
-Haste	Sorcery
 Invisibility	Sorcery
 Magic Immunity	Sorcery
 Resist Magic	Sorcery
@@ -75,7 +76,6 @@ Spell Lock	Sorcery
 Wind Walking	Sorcery
 Eldritch Weapon	Chaos
 Flame Blade	Chaos
-Immolation	Chaos
 Berserk	Death
 Black Channels	Death
 Cloak of Fear	Death
@@ -86,6 +86,8 @@ func (enchantment UnitEnchantment) Color() color.Color {
     switch enchantment {
         case UnitEnchantmentGiantStrength: return natureColor
         case UnitEnchantmentLionHeart: return lifeColor
+        case UnitEnchantmentHaste: return sorceryColor
+        case UnitEnchantmentImmolation: return chaosColor
     }
 
     return color.RGBA{R: 0, G: 0, B: 0, A: 0}
@@ -95,6 +97,8 @@ func (enchantment UnitEnchantment) Name() string {
     switch enchantment {
         case UnitEnchantmentGiantStrength: return "Giant Strength"
         case UnitEnchantmentLionHeart: return "Lion Heart"
+        case UnitEnchantmentHaste: return "Haste"
+        case UnitEnchantmentImmolation: return "Immolation"
     }
 
     return ""
@@ -104,6 +108,8 @@ func (enchantment UnitEnchantment) LbxFile() string {
     switch enchantment {
         case UnitEnchantmentGiantStrength: return "special.lbx"
         case UnitEnchantmentLionHeart: return "special.lbx"
+        case UnitEnchantmentHaste: return "special.lbx"
+        case UnitEnchantmentImmolation: return "special.lbx"
     }
 
     return ""
@@ -113,6 +119,8 @@ func (enchantment UnitEnchantment) LbxIndex() int {
     switch enchantment {
         case UnitEnchantmentGiantStrength: return 65
         case UnitEnchantmentLionHeart: return 89
+        case UnitEnchantmentHaste: return 77
+        case UnitEnchantmentImmolation: return 32
     }
 
     return -1

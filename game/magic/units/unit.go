@@ -16,6 +16,7 @@ const (
     DamageMeleePhysical
     DamageFire
     DamageCold
+    DamageThrown
 )
 
 type AttackSound int
