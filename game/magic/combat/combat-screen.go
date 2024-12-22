@@ -230,6 +230,7 @@ func (unit *ArmyUnit) ComputeDefense(damage units.Damage, armorPiercing bool) in
     defense := 0
 
     toDefend := unit.ToDefend()
+    defenseRolls := unit.Unit.GetDefense()
 
     if armorPiercing {
         toDefend /= 2
@@ -238,15 +239,21 @@ func (unit *ArmyUnit) ComputeDefense(damage units.Damage, armorPiercing bool) in
     switch damage {
         case units.DamageRangedMagical:
             if unit.Unit.HasAbility(units.AbilityMagicImmunity) {
-                toDefend = 50
+                defenseRolls = 50
             }
         case units.DamageRangedPhysical:
             if unit.Unit.HasAbility(units.AbilityMissileImmunity) {
-                toDefend = 50
+                defenseRolls = 50
+            }
+        case units.DamageFire:
+            if unit.Unit.HasAbility(units.AbilityMagicImmunity) || unit.Unit.HasAbility(units.AbilityFireImmunity) {
+                defenseRolls = 50
             }
     }
 
-    for i := 0; i < unit.Unit.GetDefense(); i++ {
+    // log.Printf("Unit %v has %v defense", unit.Unit.GetName(), defenseRolls)
+
+    for range defenseRolls {
         if rand.N(100) < toDefend {
             defense += 1
         }
@@ -341,8 +348,8 @@ func (unit *ArmyUnit) ComputeRangeDamage(tileDistance int) int {
     }
 
     damage := 0
-    for figure := 0; figure < unit.Figures(); figure++ {
-        for i := 0; i < unit.Unit.GetRangedAttackPower(); i++ {
+    for range unit.Figures() {
+        for range unit.Unit.GetRangedAttackPower() {
             if rand.N(100) < toHit {
                 damage += 1
             }
@@ -354,8 +361,8 @@ func (unit *ArmyUnit) ComputeRangeDamage(tileDistance int) int {
 
 func (unit *ArmyUnit) ComputeMeleeDamage() int {
     damage := 0
-    for figure := 0; figure < unit.Figures(); figure++ {
-        for i := 0; i < unit.Unit.GetMeleeAttackPower(); i++ {
+    for range unit.Figures() {
+        for range unit.Unit.GetMeleeAttackPower() {
             if rand.N(100) < unit.Unit.GetToHitMelee() {
                 damage += 1
             }
@@ -2004,7 +2011,7 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
             hudImage, _ := combat.ImageCache.GetImage("cmbtfx.lbx", 28, 0)
             options.GeoM.Reset()
             options.GeoM.Translate(0, float64(data.ScreenHeight - hudImage.Bounds().Dy()))
-            for i := 0; i < 4; i++ {
+            for range 4 {
                 screen.DrawImage(hudImage, &options)
                 options.GeoM.Translate(float64(hudImage.Bounds().Dx()), 0)
             }
@@ -2352,7 +2359,7 @@ func (combat *CombatScreen) NextTurn() {
 func (combat *CombatScreen) NextUnit() {
 
     var nextChoice *ArmyUnit
-    for i := 0; i < 2; i++ {
+    for range 2 {
         // find a unit on the same team
         nextChoice = combat.ChooseNextUnit(combat.Turn)
         if nextChoice == nil {
@@ -2540,7 +2547,7 @@ func (combat *CombatScreen) doBreathAttack(attacker *ArmyUnit, defender *ArmyUni
 
     if attacker.Unit.HasAbility(units.AbilityFireBreath) {
         strength := int(attacker.Unit.GetAbilityValue(units.AbilityFireBreath))
-        fireDamage := defender.ApplyDamage(strength, units.DamageRangedMagical, false)
+        fireDamage := defender.ApplyDamage(strength, units.DamageFire, false)
         combat.AddLogEvent(fmt.Sprintf("%v uses fire breath on %v for %v damage", attacker.Unit.GetName(), defender.Unit.GetName(), fireDamage))
         damage += fireDamage
     }
@@ -3191,7 +3198,7 @@ func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUni
 
     combat.AddLogEvent(fmt.Sprintf("%v attacks %v", attacker.Unit.GetName(), defender.Unit.GetName()))
 
-    for i := 0; i < 60; i++ {
+    for i := range 60 {
         combat.Counter += 1
         combat.UpdateAnimations()
 
