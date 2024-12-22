@@ -661,6 +661,12 @@ type Projectile struct {
     Exploding bool
 }
 
+type CombatLogEvent struct {
+    Turn uint64
+    Text string
+    AbsoluteTime time.Time
+}
+
 type CombatScreen struct {
     ImageCache util.ImageCache
     Events chan CombatEvent
@@ -724,6 +730,8 @@ type CombatScreen struct {
     SelectTarget func(*ArmyUnit)
     CanTarget func(*ArmyUnit) bool
     */
+
+    Log []CombatLogEvent
 }
 
 type CombatLandscape int
