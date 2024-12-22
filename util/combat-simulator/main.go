@@ -427,6 +427,10 @@ func (engine *Engine) EnterCombat(combatDescription CombatDescription) {
             yield()
         }
 
+        for _, entry := range combatScreen.Log {
+            log.Printf("%+v", entry)
+        }
+
         return CombatDoneErr
     }
 
