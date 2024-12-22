@@ -251,6 +251,16 @@ func (unit *Unit) GetAbilities() []Ability {
     return unit.Abilities
 }
 
+func (unit *Unit) GetAbilityValue(ability AbilityType) float32 {
+    for _, check := range unit.Abilities {
+        if check.Ability == ability {
+            return check.Value
+        }
+    }
+
+    return 0
+}
+
 func (unit *Unit) HasAbility(ability AbilityType) bool {
     for _, check := range unit.Abilities {
         if check.Ability == ability {

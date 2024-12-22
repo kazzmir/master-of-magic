@@ -35,6 +35,10 @@ func (unit *OverworldUnit) AddEnchantment(enchantment data.UnitEnchantment) {
     })
 }
 
+func (unit *OverworldUnit) GetAbilityValue(ability AbilityType) float32 {
+    return unit.Unit.GetAbilityValue(ability)
+}
+
 func (unit *OverworldUnit) RemoveEnchantment(toRemove data.UnitEnchantment) {
     unit.Enchantments = slices.DeleteFunc(unit.Enchantments, func(enchantment data.UnitEnchantment) bool {
         return enchantment == toRemove

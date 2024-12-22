@@ -143,6 +143,7 @@ type Tile struct {
 
 type CombatUnit interface {
     HasAbility(units.AbilityType) bool
+    GetAbilityValue(units.AbilityType) float32
     GetDefense() int
     GetResistance() int
     AdjustHealth(int)
@@ -240,11 +241,9 @@ func (unit *ArmyUnit) ComputeDefense(damage units.Damage) int {
             }
     }
 
-    for figure := 0; figure < unit.Figures(); figure++ {
-        for i := 0; i < unit.Unit.GetDefense(); i++ {
-            if rand.N(100) < toDefend {
-                defense += 1
-            }
+    for i := 0; i < unit.Unit.GetDefense(); i++ {
+        if rand.N(100) < toDefend {
+            defense += 1
         }
     }
 
@@ -258,6 +257,30 @@ func (unit *ArmyUnit) TakeDamage(damage int) {
 
 func (unit *ArmyUnit) Heal(amount int){
     unit.Unit.AdjustHealth(amount)
+}
+
+func (unit *ArmyUnit) ApplyDamage(damage int, damageType units.Damage) int {
+    taken := 0
+    for damage > 0 && unit.Unit.GetHealth() > 0 {
+        // compute defense, apply damage to lead figure. if lead figure dies, apply damage to next figure
+        defense := unit.ComputeDefense(damageType)
+        damage -= defense
+        if damage > 0 {
+            health_per_figure := unit.Unit.GetMaxHealth() / unit.Unit.GetCount()
+            healthLeft := unit.Unit.GetHealth() % unit.Figures()
+            if healthLeft == 0 {
+                healthLeft = health_per_figure
+            }
+
+            take := min(healthLeft, damage)
+            unit.TakeDamage(take)
+            damage -= take
+
+            taken += take
+        }
+    }
+
+    return taken
 }
 
 func (unit *ArmyUnit) InitializeSpells(allSpells spellbook.Spells, player *playerlib.Player) {
@@ -1071,6 +1094,7 @@ func (combat *CombatScreen) ScreenToTile(x float64, y float64) (float64, float64
 }
 
 func (combat *CombatScreen) AddLogEvent(text string) {
+    log.Printf(text)
     combat.Log = append(combat.Log, CombatLogEvent{
         Turn: combat.CurrentTurn,
         Text: text,
@@ -2434,6 +2458,10 @@ func (combat *CombatScreen) canMeleeAttack(attacker *ArmyUnit, defender *ArmyUni
     }
 
     if defender.Unit.IsFlying() && !attacker.Unit.IsFlying() {
+        // a unit with Thrown can attack a flying unit
+        if attacker.Unit.HasAbility(units.AbilityThrown) {
+            return true
+        }
         return false
     }
 
@@ -2506,12 +2534,39 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
     // for each figure in attacker, choose a random number from 1-100, if lower than the ToHit percent then
     // add 1 damage point. do this random roll for however much the melee attack power is
 
+    if attacker.Unit.HasAbility(units.AbilityThrown) {
+        strength := int(attacker.Unit.GetAbilityValue(units.AbilityThrown))
+        damage := 0
+        for range attacker.Figures() {
+            if rand.N(100) < attacker.Unit.GetToHitMelee() {
+                damage += defender.ApplyDamage(strength, units.DamageMeleePhysical)
+                /*
+                defense := defender.ComputeDefense(units.DamageMeleePhysical)
+                total := strength - defense
+                if total > 0 {
+                    damage += total
+                }
+                */
+            }
+        }
+
+        combat.AddLogEvent(fmt.Sprintf("%v throws %v at %v. HP now %v", attacker.Unit.GetName(), damage, defender.Unit.GetName(), defender.Unit.GetHealth()))
+        // defender.TakeDamage(damage)
+
+        if defender.Unit.GetHealth() <= 0 {
+            combat.AddLogEvent(fmt.Sprintf("%v is killed", defender.Unit.GetName()))
+            combat.RemoveUnit(defender)
+            return
+        }
+    }
+
     attackerDamage := attacker.ComputeMeleeDamage()
     defenderCounterDamage := defender.ComputeMeleeDamage()
 
     originalAttackerDamage := attackerDamage
     originalDefenderCounterDamage := defenderCounterDamage
 
+    /*
     defenderDefense := defender.ComputeDefense(units.DamageMeleePhysical)
     attackerDefense := attacker.ComputeDefense(units.DamageMeleePhysical)
 
@@ -2525,15 +2580,21 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
     if defenderCounterDamage < 0 {
         defenderCounterDamage = 0
     }
+    */
 
-    combat.AddLogEvent(fmt.Sprintf("Attacker damage roll %v, defender defended %v, attacker damage to defender %v", originalAttackerDamage, originalAttackerDamage - attackerDamage, attackerDamage))
-    combat.AddLogEvent(fmt.Sprintf("Defender counter damage roll %v, attacker defended %v, defender damage to attacker %v", originalDefenderCounterDamage, originalDefenderCounterDamage - defenderCounterDamage, defenderCounterDamage))
+    defenderHurt := defender.ApplyDamage(attackerDamage, units.DamageMeleePhysical)
+    attackerHurt := attacker.ApplyDamage(defenderCounterDamage, units.DamageMeleePhysical)
 
-    log.Printf("Attacker damage roll %v, defender defended %v, attacker damage to defender %v", originalAttackerDamage, originalAttackerDamage - attackerDamage, attackerDamage)
-    log.Printf("Defender counter damage roll %v, attacker defended %v, defender damage to attacker %v", originalDefenderCounterDamage, originalDefenderCounterDamage - defenderCounterDamage, defenderCounterDamage)
+    combat.AddLogEvent(fmt.Sprintf("Attacker damage roll %v, defender took %v damage. HP now %v", originalAttackerDamage, defenderHurt, defender.Unit.GetHealth()))
+    combat.AddLogEvent(fmt.Sprintf("Defender counter damage roll %v, attacker took %v damage. HP now %v", originalDefenderCounterDamage, attackerHurt, attacker.Unit.GetHealth()))
 
+    // log.Printf("Attacker damage roll %v, defender defended %v, attacker damage to defender %v", originalAttackerDamage, originalAttackerDamage - attackerDamage, attackerDamage)
+    // log.Printf("Defender counter damage roll %v, attacker defended %v, defender damage to attacker %v", originalDefenderCounterDamage, originalDefenderCounterDamage - defenderCounterDamage, defenderCounterDamage)
+
+    /*
     attacker.TakeDamage(defenderCounterDamage)
     defender.TakeDamage(attackerDamage)
+    */
 
     if attacker.Unit.GetHealth() <= 0 {
         combat.AddLogEvent(fmt.Sprintf("%v is killed", attacker.Unit.GetName()))
@@ -2638,15 +2699,19 @@ func (combat *CombatScreen) createRangeAttack(attacker *ArmyUnit, defender *Army
         // FIXME: apply defenses for magic immunity or missle immunity
 
         damage := attacker.ComputeRangeDamage(tileDistance)
-        defense := target.ComputeDefense(attacker.Unit.GetRangedAttackDamageType())
+        // defense := target.ComputeDefense(attacker.Unit.GetRangedAttackDamageType())
+
+        target.ApplyDamage(damage, attacker.Unit.GetRangedAttackDamageType())
 
         // log.Printf("Ranged attack from %v: damage=%v defense=%v distance=%v", attacker.Unit.Name, damage, defense, tileDistance)
 
+        /*
         damage -= defense
         if damage < 0 {
             damage = 0
         }
         target.TakeDamage(damage)
+        */
         if target.Unit.GetHealth() <= 0 {
             combat.RemoveUnit(target)
         }
