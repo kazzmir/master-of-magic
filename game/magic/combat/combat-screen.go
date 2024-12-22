@@ -3325,9 +3325,8 @@ func (combat *CombatScreen) doAI(yield coroutine.YieldFunc, aiUnit *ArmyUnit) {
 
             lastIndex := 0
             for lastIndex < len(path) {
-                if aiUnit.CanFollowPath(path[0:lastIndex]) {
-                    lastIndex += 1
-                } else {
+                lastIndex += 1
+                if !aiUnit.CanFollowPath(path[0:lastIndex]) {
                     lastIndex -= 1
                     break
                 }
