@@ -662,7 +662,7 @@ type Projectile struct {
 }
 
 type CombatLogEvent struct {
-    Turn uint64
+    Turn int
     Text string
     AbsoluteTime time.Time
 }
@@ -1070,6 +1070,14 @@ func (combat *CombatScreen) ScreenToTile(x float64, y float64) (float64, float64
     return screenToTile.Apply(x, y)
 }
 
+func (combat *CombatScreen) AddLogEvent(text string) {
+    combat.Log = append(combat.Log, CombatLogEvent{
+        Turn: combat.CurrentTurn,
+        Text: text,
+        AbsoluteTime: time.Now(),
+    })
+}
+
 func (combat *CombatScreen) computeTopDownOrder() []image.Point {
     var points []image.Point
     for y := 0; y < len(combat.Tiles); y++ {
@@ -1267,7 +1275,9 @@ func (combat *CombatScreen) CreateFireBoltProjectile(target *ArmyUnit) {
     // FIXME: made up
     damage := func(unit *ArmyUnit) {
         unit.TakeDamage(3)
+        combat.AddLogEvent(fmt.Sprintf("Firebolt hits %v for 3 damage", unit.Unit.GetName()))
         if unit.Unit.GetHealth() <= 0 {
+            combat.AddLogEvent(fmt.Sprintf("%v is killed", unit.Unit.GetName()))
             combat.RemoveUnit(unit)
         }
     }
@@ -2512,6 +2522,9 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
         defenderCounterDamage = 0
     }
 
+    combat.AddLogEvent(fmt.Sprintf("Attacker damage roll %v, defender defended %v, attacker damage to defender %v", originalAttackerDamage, originalAttackerDamage - attackerDamage, attackerDamage))
+    combat.AddLogEvent(fmt.Sprintf("Defender counter damage roll %v, attacker defended %v, defender damage to attacker %v", originalDefenderCounterDamage, originalDefenderCounterDamage - defenderCounterDamage, defenderCounterDamage))
+
     log.Printf("Attacker damage roll %v, defender defended %v, attacker damage to defender %v", originalAttackerDamage, originalAttackerDamage - attackerDamage, attackerDamage)
     log.Printf("Defender counter damage roll %v, attacker defended %v, defender damage to attacker %v", originalDefenderCounterDamage, originalDefenderCounterDamage - defenderCounterDamage, defenderCounterDamage)
 
@@ -2519,10 +2532,12 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
     defender.TakeDamage(attackerDamage)
 
     if attacker.Unit.GetHealth() <= 0 {
+        combat.AddLogEvent(fmt.Sprintf("%v is killed", attacker.Unit.GetName()))
         combat.RemoveUnit(attacker)
     }
 
     if defender.Unit.GetHealth() <= 0 {
+        combat.AddLogEvent(fmt.Sprintf("%v is killed", defender.Unit.GetName()))
         combat.RemoveUnit(defender)
     }
 }
@@ -2907,6 +2922,8 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
 
         targetX, targetY := path[0].X, path[0].Y
 
+        combat.AddLogEvent(fmt.Sprintf("Moving %v %v,%v -> %v,%v", mover.Unit.GetName(), mover.X, mover.Y, targetX, targetY))
+
         angle := math.Atan2(float64(targetY) - mover.MoveY, float64(targetX) - mover.MoveX)
 
         // rotate by 45 degrees to get the on screen facing angle
@@ -2975,7 +2992,6 @@ func (combat *CombatScreen) doRangeAttack(yield coroutine.YieldFunc, attacker *A
 }
 
 func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUnit, defender *ArmyUnit){
-    // create defer scope
     attacker.Attacking = true
     defender.Defending = true
     defer func(){
