@@ -249,6 +249,10 @@ func (unit *ArmyUnit) ComputeDefense(damage units.Damage, armorPiercing bool) in
             if unit.Unit.HasAbility(units.AbilityMagicImmunity) || unit.Unit.HasAbility(units.AbilityFireImmunity) {
                 defenseRolls = 50
             }
+        case units.DamageCold:
+            if unit.Unit.HasAbility(units.AbilityMagicImmunity) || unit.Unit.HasAbility(units.AbilityColdImmunity) {
+                defenseRolls = 50
+            }
     }
 
     // log.Printf("Unit %v has %v defense", unit.Unit.GetName(), defenseRolls)
