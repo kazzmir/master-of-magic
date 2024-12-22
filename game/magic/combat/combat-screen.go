@@ -226,10 +226,14 @@ func (unit *ArmyUnit) ResetTurnData() {
     unit.Casted = false
 }
 
-func (unit *ArmyUnit) ComputeDefense(damage units.Damage) int {
+func (unit *ArmyUnit) ComputeDefense(damage units.Damage, armorPiercing bool) int {
     defense := 0
 
     toDefend := unit.ToDefend()
+
+    if armorPiercing {
+        toDefend /= 2
+    }
 
     switch damage {
         case units.DamageRangedMagical:
@@ -260,11 +264,11 @@ func (unit *ArmyUnit) Heal(amount int){
     unit.Unit.AdjustHealth(amount)
 }
 
-func (unit *ArmyUnit) ApplyDamage(damage int, damageType units.Damage) int {
+func (unit *ArmyUnit) ApplyDamage(damage int, damageType units.Damage, armorPiercing bool) int {
     taken := 0
     for damage > 0 && unit.Unit.GetHealth() > 0 {
         // compute defense, apply damage to lead figure. if lead figure dies, apply damage to next figure
-        defense := unit.ComputeDefense(damageType)
+        defense := unit.ComputeDefense(damageType, armorPiercing)
         damage -= defense
         if damage > 0 {
             health_per_figure := unit.Unit.GetMaxHealth() / unit.Unit.GetCount()
@@ -2460,7 +2464,9 @@ func (combat *CombatScreen) canMeleeAttack(attacker *ArmyUnit, defender *ArmyUni
 
     if defender.Unit.IsFlying() && !attacker.Unit.IsFlying() {
         // a unit with Thrown can attack a flying unit
-        if attacker.Unit.HasAbility(units.AbilityThrown) {
+        if attacker.Unit.HasAbility(units.AbilityThrown) ||
+           attacker.Unit.HasAbility(units.AbilityFireBreath) ||
+           attacker.Unit.HasAbility(units.AbilityLightningBreath) {
             return true
         }
         return false
@@ -2529,6 +2535,26 @@ func (combat *CombatScreen) doProjectiles(yield coroutine.YieldFunc) {
     }
 }
 
+func (combat *CombatScreen) doBreathAttack(attacker *ArmyUnit, defender *ArmyUnit) int {
+    damage := 0
+
+    if attacker.Unit.HasAbility(units.AbilityFireBreath) {
+        strength := int(attacker.Unit.GetAbilityValue(units.AbilityFireBreath))
+        fireDamage := defender.ApplyDamage(strength, units.DamageRangedMagical, false)
+        combat.AddLogEvent(fmt.Sprintf("%v uses fire breath on %v for %v damage", attacker.Unit.GetName(), defender.Unit.GetName(), fireDamage))
+        damage += fireDamage
+    }
+
+    if attacker.Unit.HasAbility(units.AbilityLightningBreath) {
+        strength := int(attacker.Unit.GetAbilityValue(units.AbilityLightningBreath))
+        lightningDamage := defender.ApplyDamage(strength, units.DamageRangedMagical, true)
+        combat.AddLogEvent(fmt.Sprintf("%v uses lightning breath on %v for %v damage", attacker.Unit.GetName(), defender.Unit.GetName(), lightningDamage))
+        damage += lightningDamage
+    }
+
+    return damage
+}
+
 func (combat *CombatScreen) doGazeAttack(attacker *ArmyUnit, defender *ArmyUnit) int {
     // FIXME: take into account the attack strength of the unit, and modifiers from spells/magic nodes
 
@@ -2591,7 +2617,7 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
         damage := 0
         for range attacker.Figures() {
             if rand.N(100) < attacker.Unit.GetToHitMelee() {
-                damage += defender.ApplyDamage(strength, units.DamageMeleePhysical)
+                damage += defender.ApplyDamage(strength, units.DamageMeleePhysical, false)
             }
         }
 
@@ -2603,6 +2629,14 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
             combat.RemoveUnit(defender)
             return
         }
+    }
+
+    combat.doBreathAttack(attacker, defender)
+
+    if defender.Unit.GetHealth() <= 0 {
+        combat.AddLogEvent(fmt.Sprintf("%v is killed", defender.Unit.GetName()))
+        combat.RemoveUnit(defender)
+        return
     }
 
     combat.doGazeAttack(attacker, defender)
@@ -2643,8 +2677,8 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
     }
     */
 
-    defenderHurt := defender.ApplyDamage(attackerDamage, units.DamageMeleePhysical)
-    attackerHurt := attacker.ApplyDamage(defenderCounterDamage, units.DamageMeleePhysical)
+    defenderHurt := defender.ApplyDamage(attackerDamage, units.DamageMeleePhysical, false)
+    attackerHurt := attacker.ApplyDamage(defenderCounterDamage, units.DamageMeleePhysical, false)
 
     combat.AddLogEvent(fmt.Sprintf("Attacker damage roll %v, defender took %v damage. HP now %v", originalAttackerDamage, defenderHurt, defender.Unit.GetHealth()))
     combat.AddLogEvent(fmt.Sprintf("Defender counter damage roll %v, attacker took %v damage. HP now %v", originalDefenderCounterDamage, attackerHurt, attacker.Unit.GetHealth()))
@@ -2762,7 +2796,7 @@ func (combat *CombatScreen) createRangeAttack(attacker *ArmyUnit, defender *Army
         damage := attacker.ComputeRangeDamage(tileDistance)
         // defense := target.ComputeDefense(attacker.Unit.GetRangedAttackDamageType())
 
-        target.ApplyDamage(damage, attacker.Unit.GetRangedAttackDamageType())
+        target.ApplyDamage(damage, attacker.Unit.GetRangedAttackDamageType(), false)
 
         // log.Printf("Ranged attack from %v: damage=%v defense=%v distance=%v", attacker.Unit.Name, damage, defense, tileDistance)
 
