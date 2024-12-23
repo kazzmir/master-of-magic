@@ -125,6 +125,7 @@ const (
     // artifact abilities
     AbilityVampiric
     AbilityStoning
+    AbilityHolyAvenger
 )
 
 // the file that stores the icon for this ability
@@ -138,7 +139,8 @@ func (ability Ability) LbxFile() string {
         case AbilityCreateUndead: return ""
         case AbilityDeathGaze: return ""
         case AbilityDeathImmunity: return ""
-        case AbilityDispelEvil: return ""
+        case AbilityDispelEvil: return "special2.lbx"
+        case AbilityHolyAvenger: return "itemisc.lbx"
         case AbilityDoomBoltSpell: return "special.lbx"
         case AbilityDoomGaze: return "special.lbx"
         case AbilityFireballSpell: return "special.lbx"
@@ -216,7 +218,8 @@ func (ability Ability) Name() string {
         case AbilityCreateUndead: return ""
         case AbilityDeathGaze: return ""
         case AbilityDeathImmunity: return ""
-        case AbilityDispelEvil: return ""
+        case AbilityDispelEvil: return "Dispel Evil"
+        case AbilityHolyAvenger: return "Holy Avenger"
         case AbilityDoomBoltSpell: return "Doom Bolt Spell"
         case AbilityDoomGaze: return "Doom Gaze"
         case AbilityFireballSpell: return fmt.Sprintf("Fireball Spell x%v", int(ability.Value))
@@ -302,7 +305,8 @@ func (ability Ability) LbxIndex() int {
         case AbilityCreateUndead: return -1
         case AbilityDeathGaze: return -1
         case AbilityDeathImmunity: return -1
-        case AbilityDispelEvil: return -1
+        case AbilityDispelEvil: return 22
+        case AbilityHolyAvenger: return 33
         case AbilityDoomBoltSpell: return 41
         case AbilityDoomGaze: return 26
         case AbilityFireballSpell: return 39

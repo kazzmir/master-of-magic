@@ -171,6 +171,9 @@ type CombatUnit interface {
     GetMovementSpeed() int
     IsFlying() bool
     IsHero() bool
+    IsUndead() bool
+    GetRace() data.Race
+    GetRealm() data.MagicType
 }
 
 type ArmyUnit struct {
@@ -2761,10 +2764,57 @@ func (combat *CombatScreen) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit
             }
 
             defender.TakeDamage(damage)
+
+            combat.AddLogEvent(fmt.Sprintf("%v turns %v to stone for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.Unit.GetHealth()))
         }
     }
 
     // dispel evil, holy avenger
+
+    if attacker.Unit.HasAbility(data.AbilityDispelEvil) || attacker.Unit.HasAbility(data.AbilityHolyAvenger) {
+        immune := true
+
+        if defender.Unit.GetRace() == data.RaceFantastic {
+            if defender.Unit.GetRealm() == data.ChaosMagic || defender.Unit.GetRealm() == data.DeathMagic {
+                immune = false
+            }
+        }
+
+        if defender.Unit.IsUndead() {
+            immune = false
+        }
+
+        if defender.Unit.HasAbility(data.AbilityMagicImmunity) {
+            immune = true
+        }
+
+        if !immune {
+            damage := 0
+
+            defenderResistance := defender.Unit.GetResistance()
+            if defender.Unit.IsUndead() {
+                defenderResistance -= 9
+            } else {
+                defenderResistance -= 4
+            }
+
+            if defender.Unit.HasEnchantment(data.UnitEnchantmentResistMagic) {
+                defenderResistance += 5
+            }
+
+            for range attacker.Figures() {
+                if rand.N(10) + 1 > defenderResistance {
+                    damage += defender.Unit.GetHitPoints()
+                }
+            }
+
+            if damage > 0 {
+                defender.TakeDamage(damage)
+                combat.AddLogEvent(fmt.Sprintf("%v dispels evil from %v for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.Unit.GetHealth()))
+            }
+        }
+    }
+
     // death touch
     // destruction
 }

@@ -513,6 +513,14 @@ func (hero *Hero) AdjustHealth(amount int) {
     }
 }
 
+func (hero *Hero) IsUndead() bool {
+    return false
+}
+
+func (hero *Hero) GetRealm() data.MagicType {
+    return data.MagicNone
+}
+
 func (hero *Hero) SetWeaponBonus(bonus data.WeaponBonus) {
 }
 

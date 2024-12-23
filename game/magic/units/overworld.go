@@ -23,6 +23,7 @@ type OverworldUnit struct {
     // to get the level, use the conversion functions in experience.go
     Experience int
     WeaponBonus data.WeaponBonus
+    Undead bool
 
     Enchantments []data.UnitEnchantment
 }
@@ -37,6 +38,10 @@ func (unit *OverworldUnit) AddEnchantment(enchantment data.UnitEnchantment) {
 
 func (unit *OverworldUnit) HasEnchantment(enchantment data.UnitEnchantment) bool {
     return slices.Contains(unit.Enchantments, enchantment)
+}
+
+func (unit *OverworldUnit) IsUndead() bool {
+    return unit.Undead
 }
 
 func (unit *OverworldUnit) GetAbilityValue(ability data.AbilityType) float32 {
@@ -99,6 +104,10 @@ func (unit *OverworldUnit) SetPlane(plane data.Plane) {
 
 func (unit *OverworldUnit) GetRace() data.Race {
     return unit.Unit.Race
+}
+
+func (unit *OverworldUnit) GetRealm() data.MagicType {
+    return unit.Unit.Realm
 }
 
 func (unit *OverworldUnit) GetX() int {
