@@ -3776,6 +3776,15 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
     // FIXME: handle right-click drag to move the camera
 
     _, wheelY := ebiten.Wheel()
+
+    // on browsers, wheelY tends to be a very large number, which results in crazy zoom levels
+    // So just check if wheelY is positive or negative and use a zoom of 1/-1
+    if wheelY > 0 {
+        wheelY = 1
+    } else if wheelY < 0 {
+        wheelY = -1
+    }
+
     wheelScale := 1 + float64(wheelY) / 10
     combat.CameraScale *= wheelScale
     combat.Coordinates.Scale(wheelScale, wheelScale)
