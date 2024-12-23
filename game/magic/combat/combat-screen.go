@@ -206,6 +206,25 @@ type ArmyUnit struct {
     Paths map[image.Point]pathfinding.Path
 }
 
+func (unit *ArmyUnit) GetResistances(enchantments... data.UnitEnchantment) int {
+    resistance := 0
+
+    for _, enchantment := range enchantments {
+
+        if unit.Unit.HasEnchantment(enchantment) {
+            switch enchantment {
+                case data.UnitEnchantmentBless: resistance += 3
+                case data.UnitEnchantmentElementalArmor: resistance += 10
+                case data.UnitEnchantmentRighteousness: resistance += 30
+                case data.UnitEnchantmentResistMagic: resistance += 5
+                case data.UnitEnchantmentResistElements: resistance += 3
+            }
+        }
+    }
+
+    return resistance
+}
+
 func (unit *ArmyUnit) CanCast() bool {
     if len(unit.Spells.Spells) == 0 {
         return false
@@ -2704,19 +2723,7 @@ func (combat *CombatScreen) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit
             modifier := int(attacker.Unit.GetAbilityValue(data.AbilityLifeSteal))
             // if vampiric, modifier will just be 0
             damage := 0
-            defenderResistance := defender.Unit.GetResistance()
-
-            if defender.Unit.HasEnchantment(data.UnitEnchantmentResistMagic) {
-                defenderResistance += 5
-            }
-
-            if defender.Unit.HasEnchantment(data.UnitEnchantmentBless) {
-                defenderResistance += 3
-            }
-
-            if defender.Unit.HasEnchantment(data.UnitEnchantmentRighteousness) {
-                defenderResistance += 30
-            }
+            defenderResistance := defender.Unit.GetResistance() + defender.GetResistances(data.UnitEnchantmentResistMagic, data.UnitEnchantmentBless, data.UnitEnchantmentRighteousness)
 
             for range attacker.Figures() {
                 more := rand.N(10) + 1 - (defenderResistance + modifier)
@@ -2741,20 +2748,9 @@ func (combat *CombatScreen) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit
         if !defender.Unit.HasAbility(data.AbilityStoningImmunity) && !defender.Unit.HasAbility(data.AbilityMagicImmunity) {
             damage := 0
 
-            defenderResistance := defender.Unit.GetResistance()
+            defenderResistance := defender.Unit.GetResistance() + defender.GetResistances(data.UnitEnchantmentElementalArmor, data.UnitEnchantmentResistElements, data.UnitEnchantmentResistMagic)
+
             modifier := int(attacker.Unit.GetAbilityValue(data.AbilityStoningTouch))
-
-            if defender.Unit.HasEnchantment(data.UnitEnchantmentElementalArmor) {
-                defenderResistance += 10
-            }
-
-            if defender.Unit.HasEnchantment(data.UnitEnchantmentResistElements) {
-                defenderResistance += 3
-            }
-
-            if defender.Unit.HasEnchantment(data.UnitEnchantmentResistMagic) {
-                defenderResistance += 5
-            }
 
             // for each failed resistance roll, the defender takes damage equal to one figure's hit points
             for range attacker.Figures() {
@@ -2796,9 +2792,7 @@ func (combat *CombatScreen) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit
                 defenderResistance -= 4
             }
 
-            if defender.Unit.HasEnchantment(data.UnitEnchantmentResistMagic) {
-                defenderResistance += 5
-            }
+            defenderResistance += defender.GetResistances(data.UnitEnchantmentResistMagic)
 
             for range attacker.Figures() {
                 if rand.N(10) + 1 > defenderResistance {
@@ -2811,25 +2805,11 @@ func (combat *CombatScreen) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit
         }
     }
 
-    // death touch
-
     if attacker.Unit.HasAbility(data.AbilityDeathTouch) {
         if !defender.Unit.HasAbility(data.AbilityDeathImmunity) && !defender.Unit.HasAbility(data.AbilityMagicImmunity) {
             damage := 0
-            defenderResistance := defender.Unit.GetResistance()
+            defenderResistance := defender.Unit.GetResistance() + defender.GetResistances(data.UnitEnchantmentResistMagic, data.UnitEnchantmentBless, data.UnitEnchantmentRighteousness)
             modifier := 3
-
-            if defender.Unit.HasEnchantment(data.UnitEnchantmentResistMagic) {
-                defenderResistance += 5
-            }
-
-            if defender.Unit.HasEnchantment(data.UnitEnchantmentBless) {
-                defenderResistance += 3
-            }
-
-            if defender.Unit.HasEnchantment(data.UnitEnchantmentRighteousness) {
-                defenderResistance += 30
-            }
 
             for range attacker.Figures() {
                 if rand.N(10) + 1 > defenderResistance - modifier {
@@ -2843,7 +2823,24 @@ func (combat *CombatScreen) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit
         }
     }
 
-    // destruction
+    if attacker.Unit.HasAbility(data.AbilityDestruction) {
+        if !defender.Unit.HasAbility(data.AbilityMagicImmunity) {
+            defenderResistance := defender.Unit.GetResistance() + defender.GetResistances(
+                data.UnitEnchantmentResistMagic, data.UnitEnchantmentBless,
+                data.UnitEnchantmentRighteousness, data.UnitEnchantmentElementalArmor,
+                data.UnitEnchantmentResistElements)
+
+            damage := 0
+            for range attacker.Figures() {
+                if rand.N(10) + 1 > defenderResistance {
+                    damage += defender.Unit.GetHitPoints()
+                }
+            }
+
+            defender.TakeDamage(damage)
+            combat.AddLogEvent(fmt.Sprintf("%v uses destruction on %v for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.Unit.GetHealth()))
+        }
+    }
 }
 
 /* attacker is performing a physical melee attack against defender
