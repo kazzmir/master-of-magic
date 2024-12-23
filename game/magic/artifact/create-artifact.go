@@ -10,6 +10,7 @@ import (
 
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
+    "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
@@ -297,6 +298,15 @@ type Artifact struct {
     Image int
     Name string
     Powers []Power
+}
+
+func (artifact *Artifact) HasAbility(ability units.Ability) bool {
+    switch ability {
+        case units.AbilityLargeShield: return artifact.Type == ArtifactTypeShield
+        // TODO: handle more enchantments on the artifact, such as vampiric
+    }
+
+    return false
 }
 
 func (artifact *Artifact) AddPower(power Power) {

@@ -2699,8 +2699,19 @@ func (combat *CombatScreen) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit
     if attacker.Unit.HasAbility(units.AbilityLifeSteal) {
         if !defender.Unit.HasAbility(units.AbilityDeathImmunity) && !defender.Unit.HasAbility(units.AbilityMagicImmunity) {
             modifier := int(attacker.Unit.GetAbilityValue(units.AbilityLifeSteal))
-            damage := rand.N(10) + 1 - (defender.Unit.GetResistance() + modifier)
+            damage := 0
+            for range attacker.Figures() {
+                more := rand.N(10) + 1 - (defender.Unit.GetResistance() + modifier)
+                if more > 0 {
+                    damage += more
+                }
+            }
+
             if damage > 0 {
+                // cannot steal more life than the target has
+                damage = min(damage, defender.Unit.GetHealth())
+
+                // FIXME: if the unit dies they can become undead
                 defender.TakeDamage(damage)
                 attacker.Heal(damage)
                 combat.AddLogEvent(fmt.Sprintf("%v steals %v life from %v. HP now %v", attacker.Unit.GetName(), damage, defender.Unit.GetName(), defender.Unit.GetHealth()))
@@ -2709,6 +2720,25 @@ func (combat *CombatScreen) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit
     }
 
     if attacker.Unit.HasAbility(units.AbilityVampiric) {
+        if !defender.Unit.HasAbility(units.AbilityDeathImmunity) && !defender.Unit.HasAbility(units.AbilityMagicImmunity) {
+            damage := 0
+            for range attacker.Figures() {
+                more := rand.N(10) + 1 - (defender.Unit.GetResistance())
+                if more > 0 {
+                    damage += more
+                }
+            }
+
+            if damage > 0 {
+                // cannot steal more life than the target has
+                damage = min(damage, defender.Unit.GetHealth())
+
+                // FIXME: if the unit dies they can become undead
+                defender.TakeDamage(damage)
+                attacker.Heal(damage)
+                combat.AddLogEvent(fmt.Sprintf("%v steals %v life from %v. HP now %v", attacker.Unit.GetName(), damage, defender.Unit.GetName(), defender.Unit.GetHealth()))
+            }
+        }
     }
 }
 

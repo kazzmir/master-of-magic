@@ -709,19 +709,11 @@ func (hero *Hero) GetAbilityReference(ability units.AbilityType) *units.Ability 
     return nil
 }
 
-func (hero *Hero) HasShield() bool {
+func (hero *Hero) HasAbility(ability units.AbilityType) bool {
     for _, item := range hero.Equipment {
-        if item.Type == artifact.ArtifactTypeShield {
+        if item != nil && item.HasAbility(ability) {
             return true
         }
-    }
-
-    return false
-}
-
-func (hero *Hero) HasAbility(ability units.AbilityType) bool {
-    if ability == units.AbilityLargeShield {
-        return hero.HasShield()
     }
 
     return slices.ContainsFunc(hero.Abilities, func (a units.Ability) bool {
