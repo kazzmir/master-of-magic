@@ -54,3 +54,4 @@
 11/8/2024 * glowing effect for enchanted units
 11/9/2024 * handle touch events similar to the mouse
 11/13/2024 * combat: cast unit spells
+12/22/2024 * implement most of melee combat mechanics (gaze, throw, breath)
