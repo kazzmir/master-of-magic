@@ -1,4 +1,4 @@
-package units
+package data
 
 import (
     "fmt"
@@ -121,6 +121,10 @@ const (
     AbilitySuperPrayermaster
     AbilitySage
     AbilitySuperSage
+
+    // artifact abilities
+    AbilityVampiric
+    AbilityStoning
 )
 
 // the file that stores the icon for this ability
@@ -149,7 +153,7 @@ func (ability Ability) LbxFile() string {
         case AbilityIllusionsImmunity: return ""
         case AbilityInvisibility: return ""
         case AbilityLargeShield: return ""
-        case AbilityLifeSteal: return ""
+        case AbilityLifeSteal, AbilityVampiric: return "special.lbx"
         case AbilityLightningBreath: return ""
         case AbilityLongRange: return ""
         case AbilityMagicImmunity: return ""
@@ -161,15 +165,15 @@ func (ability Ability) LbxFile() string {
         case AbilityNonCorporeal: return ""
         case AbilityPathfinding: return ""
         case AbilityPlaneShift: return ""
-        case AbilityPoisonImmunity: return ""
-        case AbilityPoisonTouch: return ""
+        case AbilityPoisonImmunity: return "special.lbx"
+        case AbilityPoisonTouch: return "special.lbx"
         case AbilityPurify: return ""
         case AbilityRegeneration: return ""
         case AbilityResistanceToAll: return ""
         case AbilityScouting: return "special.lbx"
         case AbilityStoningGaze: return ""
         case AbilityStoningImmunity: return ""
-        case AbilityStoningTouch: return ""
+        case AbilityStoningTouch, AbilityStoning: return "special.lbx"
         case AbilitySummonDemons: return ""
         case AbilityTeleporting: return ""
         case AbilityThrown: return "special2.lbx"
@@ -215,8 +219,8 @@ func (ability Ability) Name() string {
         case AbilityDispelEvil: return ""
         case AbilityDoomBoltSpell: return "Doom Bolt Spell"
         case AbilityDoomGaze: return "Doom Gaze"
-        case AbilityFireballSpell: return fmt.Sprintf("Fireball Spell x%v", ability.Value)
-        case AbilityFireBreath: return fmt.Sprintf("Fire Breath %v", ability.Value)
+        case AbilityFireballSpell: return fmt.Sprintf("Fireball Spell x%v", int(ability.Value))
+        case AbilityFireBreath: return fmt.Sprintf("Fire Breath %v", int(ability.Value))
         case AbilityFireImmunity: return ""
         case AbilityFirstStrike: return ""
         case AbilityForester: return "Forester"
@@ -227,7 +231,8 @@ func (ability Ability) Name() string {
         case AbilityIllusionsImmunity: return ""
         case AbilityInvisibility: return ""
         case AbilityLargeShield: return ""
-        case AbilityLifeSteal: return ""
+        case AbilityLifeSteal: return fmt.Sprintf("Life Steal %v", int(ability.Value))
+        case AbilityVampiric: return "Vampiric"
         case AbilityLightningBreath: return ""
         case AbilityLongRange: return ""
         case AbilityMagicImmunity: return ""
@@ -247,7 +252,8 @@ func (ability Ability) Name() string {
         case AbilityScouting: return fmt.Sprintf("Scouting %v", romanNumeral(int(ability.Value)))
         case AbilityStoningGaze: return ""
         case AbilityStoningImmunity: return ""
-        case AbilityStoningTouch: return ""
+        case AbilityStoningTouch: return fmt.Sprintf("Stoning Touch %v", int(ability.Value))
+        case AbilityStoning: return "Stoning"
         case AbilitySummonDemons: return ""
         case AbilityTeleporting: return ""
         case AbilityThrown: return "Thrown"
@@ -311,7 +317,7 @@ func (ability Ability) LbxIndex() int {
         case AbilityIllusionsImmunity: return -1
         case AbilityInvisibility: return -1
         case AbilityLargeShield: return -1
-        case AbilityLifeSteal: return -1
+        case AbilityLifeSteal, AbilityVampiric: return 31
         case AbilityLightningBreath: return -1
         case AbilityLongRange: return -1
         case AbilityMagicImmunity: return -1
@@ -323,15 +329,15 @@ func (ability Ability) LbxIndex() int {
         case AbilityNonCorporeal: return -1
         case AbilityPathfinding: return -1
         case AbilityPlaneShift: return -1
-        case AbilityPoisonImmunity: return -1
-        case AbilityPoisonTouch: return -1
+        case AbilityPoisonImmunity: return 5
+        case AbilityPoisonTouch: return 30
         case AbilityPurify: return -1
         case AbilityRegeneration: return -1
         case AbilityResistanceToAll: return -1
         case AbilityScouting: return 37
         case AbilityStoningGaze: return -1
         case AbilityStoningImmunity: return -1
-        case AbilityStoningTouch: return -1
+        case AbilityStoningTouch, AbilityStoning: return 27
         case AbilitySummonDemons: return -1
         case AbilityTeleporting: return -1
         case AbilityThrown: return 19

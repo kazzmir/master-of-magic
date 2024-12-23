@@ -233,15 +233,15 @@ func computeUnitBuildPowers(stack *playerlib.UnitStack) UnitBuildPowers {
     var powers UnitBuildPowers
 
     for _, check := range stack.ActiveUnits() {
-        if check.HasAbility(units.AbilityCreateOutpost) {
+        if check.HasAbility(data.AbilityCreateOutpost) {
             powers.CreateOutpost = true
         }
 
-        if check.HasAbility(units.AbilityMeld) {
+        if check.HasAbility(data.AbilityMeld) {
             powers.Meld = true
         }
 
-        if check.HasAbility(units.AbilityConstruction) {
+        if check.HasAbility(data.AbilityConstruction) {
             powers.BuildRoad = true
         }
     }
@@ -3071,7 +3071,7 @@ func (game *Game) DoBuildAction(player *playerlib.Player){
             // search for the settlers (the only unit with the create outpost ability
             for _, settlers := range player.SelectedStack.ActiveUnits() {
                 // FIXME: check if this tile is valid to build an outpost on
-                if settlers.HasAbility(units.AbilityCreateOutpost) {
+                if settlers.HasAbility(data.AbilityCreateOutpost) {
                     game.CreateOutpost(settlers, player)
                     game.RefreshUI()
                     break
@@ -3080,7 +3080,7 @@ func (game *Game) DoBuildAction(player *playerlib.Player){
         } else if powers.Meld {
             node := game.GetMap(player.SelectedStack.Plane()).GetMagicNode(player.SelectedStack.X(), player.SelectedStack.Y())
             for _, melder := range player.SelectedStack.ActiveUnits() {
-                if melder.HasAbility(units.AbilityMeld) {
+                if melder.HasAbility(data.AbilityMeld) {
                     game.DoMeld(melder, player, node)
                     game.RefreshUI()
                     break
@@ -3979,7 +3979,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
 
         // any healer in the same stack provides an additional 20% healing rate
         for _, unit := range stack.Units() {
-            if unit.HasAbility(units.AbilityHealer) {
+            if unit.HasAbility(data.AbilityHealer) {
                 rate += 0.2
                 break
             }

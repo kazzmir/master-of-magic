@@ -47,7 +47,7 @@ type UnitView interface {
     GetBaseResistance() int
     GetHitPoints() int
     GetBaseHitPoints() int
-    GetAbilities() []units.Ability
+    GetAbilities() []data.Ability
     GetArtifactSlots() []artifact.ArtifactSlot
     GetArtifacts() []*artifact.Artifact
 }

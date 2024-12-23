@@ -299,6 +299,15 @@ type Artifact struct {
     Powers []Power
 }
 
+func (artifact *Artifact) HasAbility(ability data.AbilityType) bool {
+    switch ability {
+        case data.AbilityLargeShield: return artifact.Type == ArtifactTypeShield
+        // TODO: handle more enchantments on the artifact, such as vampiric
+    }
+
+    return false
+}
+
 func (artifact *Artifact) AddPower(power Power) {
     artifact.Powers = append(artifact.Powers, power)
 }
