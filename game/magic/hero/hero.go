@@ -513,6 +513,35 @@ func (hero *Hero) AdjustHealth(amount int) {
     }
 }
 
+func (hero *Hero) HasItem(itemType artifact.ArtifactType) bool {
+    for _, item := range hero.Equipment {
+        if item != nil && item.Type == itemType {
+            return true
+        }
+    }
+
+    return false
+}
+
+func (hero *Hero) CanTouchAttack(damage units.Damage) bool {
+    switch damage {
+        case units.DamageMeleePhysical:
+            return hero.HasItem(artifact.ArtifactTypeSword) || hero.HasItem(artifact.ArtifactTypeAxe) || hero.HasItem(artifact.ArtifactTypeMace)
+        case units.DamageRangedMagical, units.DamageRangedPhysical:
+            return hero.HasItem(artifact.ArtifactTypeBow) || hero.HasItem(artifact.ArtifactTypeStaff) || hero.HasItem(artifact.ArtifactTypeWand)
+    }
+
+    return false
+}
+
+func (hero *Hero) IsUndead() bool {
+    return false
+}
+
+func (hero *Hero) GetRealm() data.MagicType {
+    return data.MagicNone
+}
+
 func (hero *Hero) SetWeaponBonus(bonus data.WeaponBonus) {
 }
 

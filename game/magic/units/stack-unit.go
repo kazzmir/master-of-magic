@@ -20,6 +20,7 @@ type StackUnit interface {
     GetMovesLeft() fraction.Fraction
     SetMovesLeft(fraction.Fraction)
     GetRace() data.Race
+    GetRealm() data.MagicType
     GetUpkeepGold() int
     GetUpkeepFood() int
     GetUpkeepMana() int
@@ -27,6 +28,7 @@ type StackUnit interface {
     AddEnchantment(data.UnitEnchantment)
     HasEnchantment(data.UnitEnchantment) bool
     RemoveEnchantment(data.UnitEnchantment)
+    IsUndead() bool
     GetBanner() data.BannerType
     SetWeaponBonus(data.WeaponBonus)
     GetWeaponBonus() data.WeaponBonus
@@ -69,6 +71,7 @@ type StackUnit interface {
     GetExperienceData() ExperienceData
     GetRawUnit() Unit
     GetToHitMelee() int
+    CanTouchAttack(Damage) bool
     GetArtifactSlots() []artifact.ArtifactSlot
     GetArtifacts() []*artifact.Artifact
 }

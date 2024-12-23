@@ -169,8 +169,12 @@ type CombatUnit interface {
     GetAttackSound() units.AttackSound
     GetName() string
     GetMovementSpeed() int
+    CanTouchAttack(units.Damage) bool
     IsFlying() bool
     IsHero() bool
+    IsUndead() bool
+    GetRace() data.Race
+    GetRealm() data.MagicType
 }
 
 type ArmyUnit struct {
@@ -201,6 +205,25 @@ type ArmyUnit struct {
 
     // ugly to need this, but this caches paths computed for the unit
     Paths map[image.Point]pathfinding.Path
+}
+
+func (unit *ArmyUnit) GetResistances(enchantments... data.UnitEnchantment) int {
+    resistance := 0
+
+    for _, enchantment := range enchantments {
+
+        if unit.Unit.HasEnchantment(enchantment) {
+            switch enchantment {
+                case data.UnitEnchantmentBless: resistance += 3
+                case data.UnitEnchantmentElementalArmor: resistance += 10
+                case data.UnitEnchantmentRighteousness: resistance += 30
+                case data.UnitEnchantmentResistMagic: resistance += 5
+                case data.UnitEnchantmentResistElements: resistance += 3
+            }
+        }
+    }
+
+    return resistance
 }
 
 func (unit *ArmyUnit) CanCast() bool {
@@ -2701,19 +2724,7 @@ func (combat *CombatScreen) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit
             modifier := int(attacker.Unit.GetAbilityValue(data.AbilityLifeSteal))
             // if vampiric, modifier will just be 0
             damage := 0
-            defenderResistance := defender.Unit.GetResistance()
-
-            if defender.Unit.HasEnchantment(data.UnitEnchantmentResistMagic) {
-                defenderResistance += 5
-            }
-
-            if defender.Unit.HasEnchantment(data.UnitEnchantmentBless) {
-                defenderResistance += 3
-            }
-
-            if defender.Unit.HasEnchantment(data.UnitEnchantmentRighteousness) {
-                defenderResistance += 30
-            }
+            defenderResistance := defender.Unit.GetResistance() + defender.GetResistances(data.UnitEnchantmentResistMagic, data.UnitEnchantmentBless, data.UnitEnchantmentRighteousness)
 
             for range attacker.Figures() {
                 more := rand.N(10) + 1 - (defenderResistance + modifier)
@@ -2738,20 +2749,9 @@ func (combat *CombatScreen) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit
         if !defender.Unit.HasAbility(data.AbilityStoningImmunity) && !defender.Unit.HasAbility(data.AbilityMagicImmunity) {
             damage := 0
 
-            defenderResistance := defender.Unit.GetResistance()
+            defenderResistance := defender.Unit.GetResistance() + defender.GetResistances(data.UnitEnchantmentElementalArmor, data.UnitEnchantmentResistElements, data.UnitEnchantmentResistMagic)
+
             modifier := int(attacker.Unit.GetAbilityValue(data.AbilityStoningTouch))
-
-            if defender.Unit.HasEnchantment(data.UnitEnchantmentElementalArmor) {
-                defenderResistance += 10
-            }
-
-            if defender.Unit.HasEnchantment(data.UnitEnchantmentResistElements) {
-                defenderResistance += 3
-            }
-
-            if defender.Unit.HasEnchantment(data.UnitEnchantmentResistMagic) {
-                defenderResistance += 5
-            }
 
             // for each failed resistance roll, the defender takes damage equal to one figure's hit points
             for range attacker.Figures() {
@@ -2761,12 +2761,87 @@ func (combat *CombatScreen) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit
             }
 
             defender.TakeDamage(damage)
+
+            combat.AddLogEvent(fmt.Sprintf("%v turns %v to stone for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.Unit.GetHealth()))
         }
     }
 
-    // dispel evil, holy avenger
-    // death touch
-    // destruction
+    if attacker.Unit.HasAbility(data.AbilityDispelEvil) || attacker.Unit.HasAbility(data.AbilityHolyAvenger) {
+        immune := true
+
+        if defender.Unit.GetRace() == data.RaceFantastic {
+            if defender.Unit.GetRealm() == data.ChaosMagic || defender.Unit.GetRealm() == data.DeathMagic {
+                immune = false
+            }
+        }
+
+        if defender.Unit.IsUndead() {
+            immune = false
+        }
+
+        if defender.Unit.HasAbility(data.AbilityMagicImmunity) {
+            immune = true
+        }
+
+        if !immune {
+            damage := 0
+
+            defenderResistance := defender.Unit.GetResistance()
+            if defender.Unit.IsUndead() {
+                defenderResistance -= 9
+            } else {
+                defenderResistance -= 4
+            }
+
+            defenderResistance += defender.GetResistances(data.UnitEnchantmentResistMagic)
+
+            for range attacker.Figures() {
+                if rand.N(10) + 1 > defenderResistance {
+                    damage += defender.Unit.GetHitPoints()
+                }
+            }
+
+            defender.TakeDamage(damage)
+            combat.AddLogEvent(fmt.Sprintf("%v dispels evil from %v for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.Unit.GetHealth()))
+        }
+    }
+
+    if attacker.Unit.HasAbility(data.AbilityDeathTouch) {
+        if !defender.Unit.HasAbility(data.AbilityDeathImmunity) && !defender.Unit.HasAbility(data.AbilityMagicImmunity) {
+            damage := 0
+            defenderResistance := defender.Unit.GetResistance() + defender.GetResistances(data.UnitEnchantmentResistMagic, data.UnitEnchantmentBless, data.UnitEnchantmentRighteousness)
+            modifier := 3
+
+            for range attacker.Figures() {
+                if rand.N(10) + 1 > defenderResistance - modifier {
+                    damage += defender.Unit.GetHitPoints()
+                }
+            }
+
+            defender.TakeDamage(damage)
+
+            combat.AddLogEvent(fmt.Sprintf("%v uses death touch on %v for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.Unit.GetHealth()))
+        }
+    }
+
+    if attacker.Unit.HasAbility(data.AbilityDestruction) {
+        if !defender.Unit.HasAbility(data.AbilityMagicImmunity) {
+            defenderResistance := defender.Unit.GetResistance() + defender.GetResistances(
+                data.UnitEnchantmentResistMagic, data.UnitEnchantmentBless,
+                data.UnitEnchantmentRighteousness, data.UnitEnchantmentElementalArmor,
+                data.UnitEnchantmentResistElements)
+
+            damage := 0
+            for range attacker.Figures() {
+                if rand.N(10) + 1 > defenderResistance {
+                    damage += defender.Unit.GetHitPoints()
+                }
+            }
+
+            defender.TakeDamage(damage)
+            combat.AddLogEvent(fmt.Sprintf("%v uses destruction on %v for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.Unit.GetHealth()))
+        }
+    }
 }
 
 /* attacker is performing a physical melee attack against defender
@@ -2787,27 +2862,35 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                     _, ok := combat.doThrowAttack(attacker, defender)
                     if ok {
                         combat.doImmolationAttack(attacker, defender)
-                        combat.doTouchAttack(attacker, defender)
+                        if attacker.Unit.CanTouchAttack(units.DamageMeleePhysical) {
+                            combat.doTouchAttack(attacker, defender)
+                        }
                     }
 
                     _, ok = combat.doBreathAttack(attacker, defender)
 
                     if ok {
                         combat.doImmolationAttack(attacker, defender)
-                        combat.doTouchAttack(attacker, defender)
+                        if attacker.Unit.CanTouchAttack(units.DamageMeleePhysical) {
+                            combat.doTouchAttack(attacker, defender)
+                        }
                     }
                 }
 
                 _, hit := combat.doGazeAttack(attacker, defender)
                 if hit {
                     combat.doImmolationAttack(attacker, defender)
-                    combat.doTouchAttack(attacker, defender)
+                    if attacker.Unit.CanTouchAttack(units.DamageMeleePhysical) {
+                        combat.doTouchAttack(attacker, defender)
+                    }
                 }
             case 1:
                 _, hit := combat.doGazeAttack(defender, attacker)
                 if hit {
                     combat.doImmolationAttack(defender, attacker)
-                    combat.doTouchAttack(defender, attacker)
+                    if defender.Unit.CanTouchAttack(units.DamageMeleePhysical) {
+                        combat.doTouchAttack(defender, attacker)
+                    }
                 }
             case 2:
                 // wall of fire
@@ -2818,8 +2901,9 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                     attackerDamage, hit := attacker.ComputeMeleeDamage()
                     if hit {
                         combat.doImmolationAttack(attacker, defender)
-                        // FIXME: don't do a touch attack if the attacker is a hero and has a bow/staff/wand
-                        combat.doTouchAttack(attacker, defender)
+                        if attacker.Unit.CanTouchAttack(units.DamageMeleePhysical) {
+                            combat.doTouchAttack(attacker, defender)
+                        }
                     }
 
                     defenderHurt := defender.ApplyDamage(attackerDamage, units.DamageMeleePhysical, false)
@@ -2832,8 +2916,9 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                     attackerDamage, hit := attacker.ComputeMeleeDamage()
                     if hit {
                         combat.doImmolationAttack(attacker, defender)
-                        // FIXME: don't do a touch attack if the attacker is a hero and has a bow/staff/wand
-                        combat.doTouchAttack(attacker, defender)
+                        if attacker.Unit.CanTouchAttack(units.DamageMeleePhysical) {
+                            combat.doTouchAttack(attacker, defender)
+                        }
                     }
 
                     defenderHurt := defender.ApplyDamage(attackerDamage, units.DamageMeleePhysical, false)
@@ -2843,8 +2928,9 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                 defenderDamage, hit := defender.ComputeMeleeDamage()
                 if hit {
                     combat.doImmolationAttack(defender, attacker)
-                    // FIXME: don't do a touch attack if the defender is a hero and has a bow/staff/wand
-                    combat.doTouchAttack(defender, attacker)
+                    if defender.Unit.CanTouchAttack(units.DamageMeleePhysical) {
+                        combat.doTouchAttack(defender, attacker)
+                    }
                 }
                 attackerHurt := attacker.ApplyDamage(defenderDamage, units.DamageMeleePhysical, false)
                 combat.AddLogEvent(fmt.Sprintf("Defender damage roll %v, attacker took %v damage. HP now %v", defenderDamage, attackerHurt, attacker.Unit.GetHealth()))
@@ -2853,8 +2939,9 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                     defenderDamage, hit := defender.ComputeMeleeDamage()
                     if hit {
                         combat.doImmolationAttack(defender, attacker)
-                        // FIXME: don't do a touch attack if the defender is a hero and has a bow/staff/wand
-                        combat.doTouchAttack(defender, attacker)
+                        if defender.Unit.CanTouchAttack(units.DamageMeleePhysical) {
+                            combat.doTouchAttack(defender, attacker)
+                        }
                     }
                     attackerHurt := attacker.ApplyDamage(defenderDamage, units.DamageMeleePhysical, false)
                     combat.AddLogEvent(fmt.Sprintf("Defender damage roll %v, attacker took %v damage. HP now %v", defenderDamage, attackerHurt, attacker.Unit.GetHealth()))
@@ -3070,6 +3157,10 @@ func (combat *CombatScreen) createRangeAttack(attacker *ArmyUnit, defender *Army
         // defense := target.ComputeDefense(attacker.Unit.GetRangedAttackDamageType())
 
         target.ApplyDamage(damage, attacker.Unit.GetRangedAttackDamageType(), false)
+
+        if attacker.Unit.CanTouchAttack(attacker.Unit.GetRangedAttackDamageType()) {
+            combat.doTouchAttack(attacker, target)
+        }
 
         // log.Printf("Ranged attack from %v: damage=%v defense=%v distance=%v", attacker.Unit.Name, damage, defense, tileDistance)
 
