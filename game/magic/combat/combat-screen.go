@@ -2769,8 +2769,6 @@ func (combat *CombatScreen) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit
         }
     }
 
-    // dispel evil, holy avenger
-
     if attacker.Unit.HasAbility(data.AbilityDispelEvil) || attacker.Unit.HasAbility(data.AbilityHolyAvenger) {
         immune := true
 
@@ -2808,14 +2806,43 @@ func (combat *CombatScreen) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit
                 }
             }
 
-            if damage > 0 {
-                defender.TakeDamage(damage)
-                combat.AddLogEvent(fmt.Sprintf("%v dispels evil from %v for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.Unit.GetHealth()))
-            }
+            defender.TakeDamage(damage)
+            combat.AddLogEvent(fmt.Sprintf("%v dispels evil from %v for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.Unit.GetHealth()))
         }
     }
 
     // death touch
+
+    if attacker.Unit.HasAbility(data.AbilityDeathTouch) {
+        if !defender.Unit.HasAbility(data.AbilityDeathImmunity) && !defender.Unit.HasAbility(data.AbilityMagicImmunity) {
+            damage := 0
+            defenderResistance := defender.Unit.GetResistance()
+            modifier := 3
+
+            if defender.Unit.HasEnchantment(data.UnitEnchantmentResistMagic) {
+                defenderResistance += 5
+            }
+
+            if defender.Unit.HasEnchantment(data.UnitEnchantmentBless) {
+                defenderResistance += 3
+            }
+
+            if defender.Unit.HasEnchantment(data.UnitEnchantmentRighteousness) {
+                defenderResistance += 30
+            }
+
+            for range attacker.Figures() {
+                if rand.N(10) + 1 > defenderResistance - modifier {
+                    damage += defender.Unit.GetHitPoints()
+                }
+            }
+
+            defender.TakeDamage(damage)
+
+            combat.AddLogEvent(fmt.Sprintf("%v uses death touch on %v for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.Unit.GetHealth()))
+        }
+    }
+
     // destruction
 }
 
