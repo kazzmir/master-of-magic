@@ -2740,6 +2740,36 @@ func (combat *CombatScreen) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit
             }
         }
     }
+
+    if attacker.Unit.HasAbility(data.AbilityStoningTouch) || attacker.Unit.HasAbility(data.AbilityStoning) {
+        if !defender.Unit.HasAbility(data.AbilityStoningImmunity) && !defender.Unit.HasAbility(data.AbilityMagicImmunity) {
+            damage := 0
+
+            defenderResistance := defender.Unit.GetResistance()
+            modifier := int(attacker.Unit.GetAbilityValue(data.AbilityStoningTouch))
+
+            if defender.Unit.HasEnchantment(data.UnitEnchantmentElementalArmor) {
+                defenderResistance += 10
+            }
+
+            if defender.Unit.HasEnchantment(data.UnitEnchantmentResistElements) {
+                defenderResistance += 3
+            }
+
+            if defender.Unit.HasEnchantment(data.UnitEnchantmentResistMagic) {
+                defenderResistance += 5
+            }
+
+            // for each failed resistance roll, the defender takes damage equal to one figure's hit points
+            for range attacker.Figures() {
+                if rand.N(10) + 1 > defenderResistance - modifier {
+                    damage += defender.Unit.GetHitPoints()
+                }
+            }
+
+            defender.TakeDamage(damage)
+        }
+    }
 }
 
 /* attacker is performing a physical melee attack against defender
@@ -2791,6 +2821,7 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                     attackerDamage, hit := attacker.ComputeMeleeDamage()
                     if hit {
                         combat.doImmolationAttack(attacker, defender)
+                        // FIXME: don't do a touch attack if the attacker is a hero and has a bow/staff/wand
                         combat.doTouchAttack(attacker, defender)
                     }
 
@@ -2804,6 +2835,7 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                     attackerDamage, hit := attacker.ComputeMeleeDamage()
                     if hit {
                         combat.doImmolationAttack(attacker, defender)
+                        // FIXME: don't do a touch attack if the attacker is a hero and has a bow/staff/wand
                         combat.doTouchAttack(attacker, defender)
                     }
 
@@ -2814,6 +2846,7 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                 defenderDamage, hit := defender.ComputeMeleeDamage()
                 if hit {
                     combat.doImmolationAttack(defender, attacker)
+                    // FIXME: don't do a touch attack if the defender is a hero and has a bow/staff/wand
                     combat.doTouchAttack(defender, attacker)
                 }
                 attackerHurt := attacker.ApplyDamage(defenderDamage, units.DamageMeleePhysical, false)
@@ -2823,6 +2856,7 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                     defenderDamage, hit := defender.ComputeMeleeDamage()
                     if hit {
                         combat.doImmolationAttack(defender, attacker)
+                        // FIXME: don't do a touch attack if the defender is a hero and has a bow/staff/wand
                         combat.doTouchAttack(defender, attacker)
                     }
                     attackerHurt := attacker.ApplyDamage(defenderDamage, units.DamageMeleePhysical, false)

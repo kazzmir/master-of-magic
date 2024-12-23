@@ -42,6 +42,9 @@ const (
     UnitEnchantmentLionHeart
     UnitEnchantmentHaste
     UnitEnchantmentImmolation
+    UnitEnchantmentResistElements
+    UnitEnchantmentResistMagic
+    UnitEnchantmentElementalArmor
 )
 
 var natureColor = color.RGBA{R: 0, G: 180, B: 0, A: 255}
@@ -60,18 +63,15 @@ Invulnerability	Life
 Planar Travel	Life
 Righteousness	Life
 True Sight	Life
-Elemental Armor	Nature
 Iron Skin	Nature
 Path Finding	Nature
 Regeneration	Nature
-Resist Elements	Nature
 Stone Skin	Nature
 Water Walking	Nature
 Flight	Sorcery
 Guardian Wind	Sorcery
 Invisibility	Sorcery
 Magic Immunity	Sorcery
-Resist Magic	Sorcery
 Spell Lock	Sorcery
 Wind Walking	Sorcery
 Eldritch Weapon	Chaos
@@ -88,6 +88,9 @@ func (enchantment UnitEnchantment) Color() color.Color {
         case UnitEnchantmentLionHeart: return lifeColor
         case UnitEnchantmentHaste: return sorceryColor
         case UnitEnchantmentImmolation: return chaosColor
+        case UnitEnchantmentResistElements: return natureColor
+        case UnitEnchantmentResistMagic: return sorceryColor
+        case UnitEnchantmentElementalArmor: return natureColor
     }
 
     return color.RGBA{R: 0, G: 0, B: 0, A: 0}
@@ -99,6 +102,9 @@ func (enchantment UnitEnchantment) Name() string {
         case UnitEnchantmentLionHeart: return "Lion Heart"
         case UnitEnchantmentHaste: return "Haste"
         case UnitEnchantmentImmolation: return "Immolation"
+        case UnitEnchantmentResistElements: return "Resist Elements"
+        case UnitEnchantmentResistMagic: return "Resist Magic"
+        case UnitEnchantmentElementalArmor: return "Elemental Armor"
     }
 
     return ""
@@ -110,6 +116,9 @@ func (enchantment UnitEnchantment) LbxFile() string {
         case UnitEnchantmentLionHeart: return "special.lbx"
         case UnitEnchantmentHaste: return "special.lbx"
         case UnitEnchantmentImmolation: return "special.lbx"
+        case UnitEnchantmentResistElements: return "special.lbx"
+        case UnitEnchantmentResistMagic: return "special.lbx"
+        case UnitEnchantmentElementalArmor: return "special.lbx"
     }
 
     return ""
@@ -121,6 +130,9 @@ func (enchantment UnitEnchantment) LbxIndex() int {
         case UnitEnchantmentLionHeart: return 89
         case UnitEnchantmentHaste: return 77
         case UnitEnchantmentImmolation: return 32
+        case UnitEnchantmentResistElements: return 72
+        case UnitEnchantmentResistMagic: return 81
+        case UnitEnchantmentElementalArmor: return 73
     }
 
     return -1

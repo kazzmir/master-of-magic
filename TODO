@@ -10,6 +10,7 @@
 * better map generation
 * overworld: ai controlled wizards/empires
 * combat: implement boulder ranged attacks
+* parse itemdata.lbx to get pre-made items
 
 9/22/2024 * city view: separate surplus food/gold from subsistence food/gold
 9/22/2024 * overworld path finding to point on map

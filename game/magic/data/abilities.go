@@ -124,6 +124,7 @@ const (
 
     // artifact abilities
     AbilityVampiric
+    AbilityStoning
 )
 
 // the file that stores the icon for this ability
@@ -164,15 +165,15 @@ func (ability Ability) LbxFile() string {
         case AbilityNonCorporeal: return ""
         case AbilityPathfinding: return ""
         case AbilityPlaneShift: return ""
-        case AbilityPoisonImmunity: return ""
-        case AbilityPoisonTouch: return ""
+        case AbilityPoisonImmunity: return "special.lbx"
+        case AbilityPoisonTouch: return "special.lbx"
         case AbilityPurify: return ""
         case AbilityRegeneration: return ""
         case AbilityResistanceToAll: return ""
         case AbilityScouting: return "special.lbx"
         case AbilityStoningGaze: return ""
         case AbilityStoningImmunity: return ""
-        case AbilityStoningTouch: return ""
+        case AbilityStoningTouch, AbilityStoning: return "special.lbx"
         case AbilitySummonDemons: return ""
         case AbilityTeleporting: return ""
         case AbilityThrown: return "special2.lbx"
@@ -251,7 +252,8 @@ func (ability Ability) Name() string {
         case AbilityScouting: return fmt.Sprintf("Scouting %v", romanNumeral(int(ability.Value)))
         case AbilityStoningGaze: return ""
         case AbilityStoningImmunity: return ""
-        case AbilityStoningTouch: return ""
+        case AbilityStoningTouch: return fmt.Sprintf("Stoning Touch %v", int(ability.Value))
+        case AbilityStoning: return "Stoning"
         case AbilitySummonDemons: return ""
         case AbilityTeleporting: return ""
         case AbilityThrown: return "Thrown"
@@ -327,15 +329,15 @@ func (ability Ability) LbxIndex() int {
         case AbilityNonCorporeal: return -1
         case AbilityPathfinding: return -1
         case AbilityPlaneShift: return -1
-        case AbilityPoisonImmunity: return -1
-        case AbilityPoisonTouch: return -1
+        case AbilityPoisonImmunity: return 5
+        case AbilityPoisonTouch: return 30
         case AbilityPurify: return -1
         case AbilityRegeneration: return -1
         case AbilityResistanceToAll: return -1
         case AbilityScouting: return 37
         case AbilityStoningGaze: return -1
         case AbilityStoningImmunity: return -1
-        case AbilityStoningTouch: return -1
+        case AbilityStoningTouch, AbilityStoning: return 27
         case AbilitySummonDemons: return -1
         case AbilityTeleporting: return -1
         case AbilityThrown: return 19
