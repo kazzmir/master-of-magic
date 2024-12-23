@@ -2696,34 +2696,27 @@ func (combat *CombatScreen) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit
         combat.AddLogEvent(fmt.Sprintf("%v is poisoned for %v damage. HP now %v", defender.Unit.GetName(), damage, defender.Unit.GetHealth()))
     }
 
-    if attacker.Unit.HasAbility(data.AbilityLifeSteal) {
+    if attacker.Unit.HasAbility(data.AbilityLifeSteal) || attacker.Unit.HasAbility(data.AbilityVampiric) {
         if !defender.Unit.HasAbility(data.AbilityDeathImmunity) && !defender.Unit.HasAbility(data.AbilityMagicImmunity) {
             modifier := int(attacker.Unit.GetAbilityValue(data.AbilityLifeSteal))
+            // if vampiric, modifier will just be 0
             damage := 0
-            for range attacker.Figures() {
-                more := rand.N(10) + 1 - (defender.Unit.GetResistance() + modifier)
-                if more > 0 {
-                    damage += more
-                }
+            defenderResistance := defender.Unit.GetResistance()
+
+            if defender.Unit.HasEnchantment(data.UnitEnchantmentResistMagic) {
+                defenderResistance += 5
             }
 
-            if damage > 0 {
-                // cannot steal more life than the target has
-                damage = min(damage, defender.Unit.GetHealth())
-
-                // FIXME: if the unit dies they can become undead
-                defender.TakeDamage(damage)
-                attacker.Heal(damage)
-                combat.AddLogEvent(fmt.Sprintf("%v steals %v life from %v. HP now %v", attacker.Unit.GetName(), damage, defender.Unit.GetName(), defender.Unit.GetHealth()))
+            if defender.Unit.HasEnchantment(data.UnitEnchantmentBless) {
+                defenderResistance += 3
             }
-        }
-    }
 
-    if attacker.Unit.HasAbility(data.AbilityVampiric) {
-        if !defender.Unit.HasAbility(data.AbilityDeathImmunity) && !defender.Unit.HasAbility(data.AbilityMagicImmunity) {
-            damage := 0
+            if defender.Unit.HasEnchantment(data.UnitEnchantmentRighteousness) {
+                defenderResistance += 30
+            }
+
             for range attacker.Figures() {
-                more := rand.N(10) + 1 - (defender.Unit.GetResistance())
+                more := rand.N(10) + 1 - (defenderResistance + modifier)
                 if more > 0 {
                     damage += more
                 }
@@ -2770,6 +2763,10 @@ func (combat *CombatScreen) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit
             defender.TakeDamage(damage)
         }
     }
+
+    // dispel evil, holy avenger
+    // death touch
+    // destruction
 }
 
 /* attacker is performing a physical melee attack against defender

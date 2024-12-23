@@ -45,6 +45,8 @@ const (
     UnitEnchantmentResistElements
     UnitEnchantmentResistMagic
     UnitEnchantmentElementalArmor
+    UnitEnchantmentBless
+    UnitEnchantmentRighteousness
 )
 
 var natureColor = color.RGBA{R: 0, G: 180, B: 0, A: 255}
@@ -54,14 +56,12 @@ var deathColor = color.RGBA{R: 0x62, G: 0x11, B: 0xba, A: 255}
 var lifeColor = color.RGBA{R: 180, G: 180, B: 180, A: 255}
 
 /*
-Bless	Life
 Endurance	Life
 Heroism	Life
 Holy Armor	Life
 Holy Weapon	Life
 Invulnerability	Life
 Planar Travel	Life
-Righteousness	Life
 True Sight	Life
 Iron Skin	Nature
 Path Finding	Nature
@@ -91,6 +91,8 @@ func (enchantment UnitEnchantment) Color() color.Color {
         case UnitEnchantmentResistElements: return natureColor
         case UnitEnchantmentResistMagic: return sorceryColor
         case UnitEnchantmentElementalArmor: return natureColor
+        case UnitEnchantmentBless: return lifeColor
+        case UnitEnchantmentRighteousness: return lifeColor
     }
 
     return color.RGBA{R: 0, G: 0, B: 0, A: 0}
@@ -105,6 +107,8 @@ func (enchantment UnitEnchantment) Name() string {
         case UnitEnchantmentResistElements: return "Resist Elements"
         case UnitEnchantmentResistMagic: return "Resist Magic"
         case UnitEnchantmentElementalArmor: return "Elemental Armor"
+        case UnitEnchantmentBless: return "Bless"
+        case UnitEnchantmentRighteousness: return "Righteousness"
     }
 
     return ""
@@ -119,6 +123,8 @@ func (enchantment UnitEnchantment) LbxFile() string {
         case UnitEnchantmentResistElements: return "special.lbx"
         case UnitEnchantmentResistMagic: return "special.lbx"
         case UnitEnchantmentElementalArmor: return "special.lbx"
+        case UnitEnchantmentBless: return "special.lbx"
+        case UnitEnchantmentRighteousness: return "special.lbx"
     }
 
     return ""
@@ -133,6 +139,8 @@ func (enchantment UnitEnchantment) LbxIndex() int {
         case UnitEnchantmentResistElements: return 72
         case UnitEnchantmentResistMagic: return 81
         case UnitEnchantmentElementalArmor: return 73
+        case UnitEnchantmentBless: return 88
+        case UnitEnchantmentRighteousness: return 93
     }
 
     return -1
