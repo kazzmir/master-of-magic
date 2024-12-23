@@ -275,7 +275,7 @@ type Hero struct {
     Status HeroStatus
 
     // set at start of game
-    Abilities []units.Ability
+    Abilities []data.Ability
 
     Equipment [3]*artifact.Artifact
 }
@@ -314,31 +314,31 @@ const (
     abilityChoiceAny
 )
 
-func selectAbility(kind abilityChoice) units.AbilityType {
-    anyChoices := []units.AbilityType{
-        units.AbilityCharmed,
-        units.AbilityLucky,
-        units.AbilityNoble,
+func selectAbility(kind abilityChoice) data.AbilityType {
+    anyChoices := []data.AbilityType{
+        data.AbilityCharmed,
+        data.AbilityLucky,
+        data.AbilityNoble,
     }
 
-    fighterChoices := []units.AbilityType{
-        units.AbilityAgility,
-        units.AbilityArmsmaster,
-        units.AbilityBlademaster,
-        units.AbilityConstitution,
-        units.AbilityLeadership,
-        units.AbilityLegendary,
-        units.AbilityMight,
+    fighterChoices := []data.AbilityType{
+        data.AbilityAgility,
+        data.AbilityArmsmaster,
+        data.AbilityBlademaster,
+        data.AbilityConstitution,
+        data.AbilityLeadership,
+        data.AbilityLegendary,
+        data.AbilityMight,
     }
 
-    mageChoices := []units.AbilityType{
-        units.AbilityArcanePower,
-        units.AbilityCaster,
-        units.AbilityPrayermaster,
-        units.AbilitySage,
+    mageChoices := []data.AbilityType{
+        data.AbilityArcanePower,
+        data.AbilityCaster,
+        data.AbilityPrayermaster,
+        data.AbilitySage,
     }
 
-    var use []units.AbilityType
+    var use []data.AbilityType
     switch kind {
         case abilityChoiceFighter:
             use = append(fighterChoices, anyChoices...)
@@ -351,27 +351,27 @@ func selectAbility(kind abilityChoice) units.AbilityType {
     return use[rand.N(len(use))]
 }
 
-func superVersion(ability units.AbilityType) units.AbilityType {
+func superVersion(ability data.AbilityType) data.AbilityType {
     switch ability {
-        case units.AbilityAgility: return units.AbilitySuperAgility
-        case units.AbilityArmsmaster: return units.AbilitySuperArmsmaster
-        case units.AbilityBlademaster: return units.AbilitySuperBlademaster
-        case units.AbilityConstitution: return units.AbilitySuperConstitution
-        case units.AbilityLeadership: return units.AbilitySuperLeadership
-        case units.AbilityLegendary: return units.AbilitySuperLegendary
-        case units.AbilityMight: return units.AbilitySuperMight
-        case units.AbilityArcanePower: return units.AbilitySuperArcanePower
-        case units.AbilityPrayermaster: return units.AbilitySuperPrayermaster
-        case units.AbilitySage: return units.AbilitySuperSage
+        case data.AbilityAgility: return data.AbilitySuperAgility
+        case data.AbilityArmsmaster: return data.AbilitySuperArmsmaster
+        case data.AbilityBlademaster: return data.AbilitySuperBlademaster
+        case data.AbilityConstitution: return data.AbilitySuperConstitution
+        case data.AbilityLeadership: return data.AbilitySuperLeadership
+        case data.AbilityLegendary: return data.AbilitySuperLegendary
+        case data.AbilityMight: return data.AbilitySuperMight
+        case data.AbilityArcanePower: return data.AbilitySuperArcanePower
+        case data.AbilityPrayermaster: return data.AbilitySuperPrayermaster
+        case data.AbilitySage: return data.AbilitySuperSage
     }
 
-    return units.AbilityNone
+    return data.AbilityNone
 }
 
 // returns true if the ability is added. some abilities cannot be added in case the
 // hero already has a super version of that ability, or the limit of 1 is reached for others
-func (hero *Hero) AddAbility(ability units.AbilityType) bool {
-    limit1 := []units.AbilityType{units.AbilityCharmed, units.AbilityLucky, units.AbilityNoble}
+func (hero *Hero) AddAbility(ability data.AbilityType) bool {
+    limit1 := []data.AbilityType{data.AbilityCharmed, data.AbilityLucky, data.AbilityNoble}
 
     if slices.Contains(limit1, ability) && hero.HasAbility(ability) {
         return false
@@ -381,25 +381,25 @@ func (hero *Hero) AddAbility(ability units.AbilityType) bool {
         return false
     }
 
-    if ability == units.AbilityCaster {
-        if hero.HasAbility(units.AbilityCaster) {
-            abilityReference := hero.GetAbilityReference(units.AbilityCaster)
+    if ability == data.AbilityCaster {
+        if hero.HasAbility(data.AbilityCaster) {
+            abilityReference := hero.GetAbilityReference(data.AbilityCaster)
             abilityReference.Value += 2.5
         } else {
-            hero.Abilities = append(hero.Abilities, units.MakeAbilityValue(ability, 2.5))
+            hero.Abilities = append(hero.Abilities, data.MakeAbilityValue(ability, 2.5))
         }
         return true
     }
 
     // upgrade from regular ability to super version
     if hero.HasAbility(ability) {
-        hero.Abilities = slices.DeleteFunc(hero.Abilities, func(a units.Ability) bool {
+        hero.Abilities = slices.DeleteFunc(hero.Abilities, func(a data.Ability) bool {
             return a.Ability == ability
         })
 
-        hero.Abilities = append(hero.Abilities, units.MakeAbility(superVersion(ability)))
+        hero.Abilities = append(hero.Abilities, data.MakeAbility(superVersion(ability)))
     } else {
-        hero.Abilities = append(hero.Abilities, units.MakeAbility(ability))
+        hero.Abilities = append(hero.Abilities, data.MakeAbility(ability))
     }
 
     return true
@@ -690,7 +690,7 @@ func (hero *Hero) GetRangedAttacks() int {
     return hero.Unit.GetRangedAttacks()
 }
 
-func (hero *Hero) GetAbilityValue(ability units.AbilityType) float32 {
+func (hero *Hero) GetAbilityValue(ability data.AbilityType) float32 {
     ref := hero.GetAbilityReference(ability)
     if ref != nil {
         return ref.Value
@@ -699,7 +699,7 @@ func (hero *Hero) GetAbilityValue(ability units.AbilityType) float32 {
     return 0
 }
 
-func (hero *Hero) GetAbilityReference(ability units.AbilityType) *units.Ability {
+func (hero *Hero) GetAbilityReference(ability data.AbilityType) *data.Ability {
     for i := range len(hero.Abilities) {
         if hero.Abilities[i].Ability == ability {
             return &hero.Abilities[i]
@@ -709,14 +709,14 @@ func (hero *Hero) GetAbilityReference(ability units.AbilityType) *units.Ability 
     return nil
 }
 
-func (hero *Hero) HasAbility(ability units.AbilityType) bool {
+func (hero *Hero) HasAbility(ability data.AbilityType) bool {
     for _, item := range hero.Equipment {
         if item != nil && item.HasAbility(ability) {
             return true
         }
     }
 
-    return slices.ContainsFunc(hero.Abilities, func (a units.Ability) bool {
+    return slices.ContainsFunc(hero.Abilities, func (a data.Ability) bool {
         return a.Ability == ability
     })
 }
@@ -963,7 +963,7 @@ func (hero *Hero) GetBaseHitPoints() int {
     return base
 }
 
-func (hero *Hero) GetAbilities() []units.Ability {
+func (hero *Hero) GetAbilities() []data.Ability {
     return hero.Abilities
 }
 

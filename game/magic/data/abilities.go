@@ -1,4 +1,4 @@
-package units
+package data
 
 import (
     "fmt"

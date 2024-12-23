@@ -39,7 +39,7 @@ func (unit *OverworldUnit) HasEnchantment(enchantment data.UnitEnchantment) bool
     return slices.Contains(unit.Enchantments, enchantment)
 }
 
-func (unit *OverworldUnit) GetAbilityValue(ability AbilityType) float32 {
+func (unit *OverworldUnit) GetAbilityValue(ability data.AbilityType) float32 {
     return unit.Unit.GetAbilityValue(ability)
 }
 
@@ -214,7 +214,7 @@ func (unit *OverworldUnit) GetRangedAttacks() int {
     return unit.Unit.RangedAttacks
 }
 
-func (unit *OverworldUnit) HasAbility(ability AbilityType) bool {
+func (unit *OverworldUnit) HasAbility(ability data.AbilityType) bool {
     return unit.Unit.HasAbility(ability)
 }
 
@@ -402,7 +402,7 @@ func (unit *OverworldUnit) GetBaseHitPoints() int {
     return base
 }
 
-func (unit *OverworldUnit) GetAbilities() []Ability {
+func (unit *OverworldUnit) GetAbilities() []data.Ability {
     return unit.Unit.GetAbilities()
 }
 
