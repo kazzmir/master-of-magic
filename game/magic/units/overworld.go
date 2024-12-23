@@ -82,6 +82,10 @@ func (unit *OverworldUnit) GetKnownSpells() []string {
     return unit.Unit.KnownSpells
 }
 
+func (unit *OverworldUnit) CanTouchAttack(damage Damage) bool {
+    return true
+}
+
 func (unit *OverworldUnit) SetWeaponBonus(bonus data.WeaponBonus) {
     unit.WeaponBonus = bonus
 }

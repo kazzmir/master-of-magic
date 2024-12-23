@@ -71,6 +71,7 @@ type StackUnit interface {
     GetExperienceData() ExperienceData
     GetRawUnit() Unit
     GetToHitMelee() int
+    CanTouchAttack(Damage) bool
     GetArtifactSlots() []artifact.ArtifactSlot
     GetArtifacts() []*artifact.Artifact
 }

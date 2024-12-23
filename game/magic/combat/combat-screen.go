@@ -169,6 +169,7 @@ type CombatUnit interface {
     GetAttackSound() units.AttackSound
     GetName() string
     GetMovementSpeed() int
+    CanTouchAttack(units.Damage) bool
     IsFlying() bool
     IsHero() bool
     IsUndead() bool
@@ -2861,27 +2862,35 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                     _, ok := combat.doThrowAttack(attacker, defender)
                     if ok {
                         combat.doImmolationAttack(attacker, defender)
-                        combat.doTouchAttack(attacker, defender)
+                        if attacker.Unit.CanTouchAttack(units.DamageMeleePhysical) {
+                            combat.doTouchAttack(attacker, defender)
+                        }
                     }
 
                     _, ok = combat.doBreathAttack(attacker, defender)
 
                     if ok {
                         combat.doImmolationAttack(attacker, defender)
-                        combat.doTouchAttack(attacker, defender)
+                        if attacker.Unit.CanTouchAttack(units.DamageMeleePhysical) {
+                            combat.doTouchAttack(attacker, defender)
+                        }
                     }
                 }
 
                 _, hit := combat.doGazeAttack(attacker, defender)
                 if hit {
                     combat.doImmolationAttack(attacker, defender)
-                    combat.doTouchAttack(attacker, defender)
+                    if attacker.Unit.CanTouchAttack(units.DamageMeleePhysical) {
+                        combat.doTouchAttack(attacker, defender)
+                    }
                 }
             case 1:
                 _, hit := combat.doGazeAttack(defender, attacker)
                 if hit {
                     combat.doImmolationAttack(defender, attacker)
-                    combat.doTouchAttack(defender, attacker)
+                    if defender.Unit.CanTouchAttack(units.DamageMeleePhysical) {
+                        combat.doTouchAttack(defender, attacker)
+                    }
                 }
             case 2:
                 // wall of fire
@@ -2892,8 +2901,9 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                     attackerDamage, hit := attacker.ComputeMeleeDamage()
                     if hit {
                         combat.doImmolationAttack(attacker, defender)
-                        // FIXME: don't do a touch attack if the attacker is a hero and has a bow/staff/wand
-                        combat.doTouchAttack(attacker, defender)
+                        if attacker.Unit.CanTouchAttack(units.DamageMeleePhysical) {
+                            combat.doTouchAttack(attacker, defender)
+                        }
                     }
 
                     defenderHurt := defender.ApplyDamage(attackerDamage, units.DamageMeleePhysical, false)
@@ -2906,8 +2916,9 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                     attackerDamage, hit := attacker.ComputeMeleeDamage()
                     if hit {
                         combat.doImmolationAttack(attacker, defender)
-                        // FIXME: don't do a touch attack if the attacker is a hero and has a bow/staff/wand
-                        combat.doTouchAttack(attacker, defender)
+                        if attacker.Unit.CanTouchAttack(units.DamageMeleePhysical) {
+                            combat.doTouchAttack(attacker, defender)
+                        }
                     }
 
                     defenderHurt := defender.ApplyDamage(attackerDamage, units.DamageMeleePhysical, false)
@@ -2917,8 +2928,9 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                 defenderDamage, hit := defender.ComputeMeleeDamage()
                 if hit {
                     combat.doImmolationAttack(defender, attacker)
-                    // FIXME: don't do a touch attack if the defender is a hero and has a bow/staff/wand
-                    combat.doTouchAttack(defender, attacker)
+                    if defender.Unit.CanTouchAttack(units.DamageMeleePhysical) {
+                        combat.doTouchAttack(defender, attacker)
+                    }
                 }
                 attackerHurt := attacker.ApplyDamage(defenderDamage, units.DamageMeleePhysical, false)
                 combat.AddLogEvent(fmt.Sprintf("Defender damage roll %v, attacker took %v damage. HP now %v", defenderDamage, attackerHurt, attacker.Unit.GetHealth()))
@@ -2927,8 +2939,9 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                     defenderDamage, hit := defender.ComputeMeleeDamage()
                     if hit {
                         combat.doImmolationAttack(defender, attacker)
-                        // FIXME: don't do a touch attack if the defender is a hero and has a bow/staff/wand
-                        combat.doTouchAttack(defender, attacker)
+                        if defender.Unit.CanTouchAttack(units.DamageMeleePhysical) {
+                            combat.doTouchAttack(defender, attacker)
+                        }
                     }
                     attackerHurt := attacker.ApplyDamage(defenderDamage, units.DamageMeleePhysical, false)
                     combat.AddLogEvent(fmt.Sprintf("Defender damage roll %v, attacker took %v damage. HP now %v", defenderDamage, attackerHurt, attacker.Unit.GetHealth()))
@@ -3144,6 +3157,10 @@ func (combat *CombatScreen) createRangeAttack(attacker *ArmyUnit, defender *Army
         // defense := target.ComputeDefense(attacker.Unit.GetRangedAttackDamageType())
 
         target.ApplyDamage(damage, attacker.Unit.GetRangedAttackDamageType(), false)
+
+        if attacker.Unit.CanTouchAttack(attacker.Unit.GetRangedAttackDamageType()) {
+            combat.doTouchAttack(attacker, target)
+        }
 
         // log.Printf("Ranged attack from %v: damage=%v defense=%v distance=%v", attacker.Unit.Name, damage, defense, tileDistance)
 
