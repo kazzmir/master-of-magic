@@ -37,12 +37,21 @@ func (observer *CombatObservers) RemoveObserver(remove CombatObserver) {
 }
 
 func (observer *CombatObservers) UnitKilled(unit *ArmyUnit) {
+    for _, notify := range observer.Observers {
+        notify.UnitKilled(unit)
+    }
 }
 
 func (observer *CombatObservers) MeleeAttack(attacker *ArmyUnit, defender *ArmyUnit, damageRoll int, defenderDamage int) {
+    for _, notify := range observer.Observers {
+        notify.MeleeAttack(attacker, defender, damageRoll, defenderDamage)
+    }
 }
 
 func (observer *CombatObservers) CauseFear(attacker *ArmyUnit, defender *ArmyUnit, fear int) {
+    for _, notify := range observer.Observers {
+        notify.CauseFear(attacker, defender, fear)
+    }
 }
 
 func (observer *CombatObservers) ImmolationAttack(attacker *ArmyUnit, defender *ArmyUnit, damage int) {
@@ -116,4 +125,3 @@ func (observer *CombatObservers) DestructionAttack(attacker *ArmyUnit, defender 
         notify.DestructionAttack(attacker, defender, damage)
     }
 }
-

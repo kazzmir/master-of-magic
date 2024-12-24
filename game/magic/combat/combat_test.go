@@ -1,10 +1,12 @@
 package combat
 
 import (
+    // "log"
     "testing"
     "math"
 
     "github.com/kazzmir/master-of-magic/game/magic/units"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
 )
 
 func TestAngle(test *testing.T){
@@ -49,4 +51,98 @@ func BenchmarkAngle(bench *testing.B){
     }
 
     tmp(final)
+}
+
+type TestObserver struct {
+    Melee func(attacker *ArmyUnit, defender *ArmyUnit, damageRoll int, defenderDamage int)
+}
+
+func (observer *TestObserver) PoisonTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, damage int){
+}
+
+func (observer *TestObserver) LifeStealTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, damage int){
+}
+
+func (observer *TestObserver) StoningTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, damage int){
+}
+
+func (observer *TestObserver) DispelEvilTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, damage int){
+}
+
+func (observer *TestObserver) DeathTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, damage int){
+}
+
+func (observer *TestObserver) DestructionAttack(attacker *ArmyUnit, defender *ArmyUnit, damage int){
+}
+
+func (observer *TestObserver) StoneGazeAttack(attacker *ArmyUnit, defender *ArmyUnit, damage int){
+}
+
+func (observer *TestObserver) DeathGazeAttack(attacker *ArmyUnit, defender *ArmyUnit, damage int){
+}
+
+func (observer *TestObserver) DoomGazeAttack(attacker *ArmyUnit, defender *ArmyUnit, damage int){
+}
+
+func (observer *TestObserver) FireBreathAttack(attacker *ArmyUnit, defender *ArmyUnit, damage int){
+}
+
+func (observer *TestObserver) LightningBreathAttack(attacker *ArmyUnit, defender *ArmyUnit, damage int){
+}
+
+func (observer *TestObserver) ImmolationAttack(attacker *ArmyUnit, defender *ArmyUnit, damage int){
+}
+
+func (observer *TestObserver) MeleeAttack(attacker *ArmyUnit, defender *ArmyUnit, damageRoll int, defenderDamage int){
+    if observer.Melee != nil {
+        observer.Melee(attacker, defender, damageRoll, defenderDamage)
+    }
+}
+
+func (observer *TestObserver) CauseFear(attacker *ArmyUnit, defender *ArmyUnit, fear int){
+}
+
+func (observer *TestObserver) UnitKilled(unit *ArmyUnit){
+}
+
+func TestBasicCombat(test *testing.T){
+    defendingArmy := &Army{
+    }
+
+    attackingArmy := &Army{
+    }
+
+    defender := units.MakeOverworldUnit(units.LizardSpearmen)
+    attacker := units.MakeOverworldUnit(units.LizardSpearmen)
+
+    defendingArmy.AddUnit(defender)
+    attackingArmy.AddUnit(attacker)
+
+    combat := &CombatScreen{
+        SelectedUnit: nil,
+        Tiles: makeTiles(5, 5, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}),
+        Turn: TeamDefender,
+        DefendingArmy: defendingArmy,
+        AttackingArmy: attackingArmy,
+    }
+
+    attackerMelee := false
+    defenderMelee := false
+
+    observer := &TestObserver{
+        Melee: func(meleeAttacker *ArmyUnit, meleeDefender *ArmyUnit, damageRoll int, defenderDamage int){
+            if attackingArmy.Units[0] == meleeAttacker {
+                attackerMelee = true
+            } else if defendingArmy.Units[0] == meleeAttacker {
+                defenderMelee = true
+            }
+        },
+    }
+    combat.Observer.AddObserver(observer)
+
+    combat.meleeAttack(defendingArmy.Units[0], attackingArmy.Units[0])
+
+    if !attackerMelee || !defenderMelee {
+        test.Errorf("Error: attacker and defender should have both attacked")
+    }
 }
