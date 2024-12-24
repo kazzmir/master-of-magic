@@ -796,27 +796,77 @@ type CombatObserver interface {
     DispelEvilTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, damage int)
     DeathTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, damage int)
     DestructionAttack(attacker *ArmyUnit, defender *ArmyUnit, damage int)
+    StoneGazeAttack(attacker *ArmyUnit, defender *ArmyUnit, damage int)
+    DeathGazeAttack(attacker *ArmyUnit, defender *ArmyUnit, damage int)
+    DoomGazeAttack(attacker *ArmyUnit, defender *ArmyUnit, damage int)
 }
 
 type CombatObservers struct {
+    Observers []CombatObserver
+}
+
+func (observer *CombatObservers) AddObserver(add CombatObserver) {
+    observer.Observers = append(observer.Observers, add)
+}
+
+func (observer *CombatObservers) RemoveObserver(remove CombatObserver) {
+    observer.Observers = slices.DeleteFunc(observer.Observers, func (check CombatObserver) bool {
+        return check == remove
+    })
+}
+
+func (observer *CombatObservers) StoneGazeAttack(attacker *ArmyUnit, defender *ArmyUnit, damage int) {
+    for _, notify := range observer.Observers {
+        notify.StoneGazeAttack(attacker, defender, damage)
+    }
+}
+
+func (observer *CombatObservers) DeathGazeAttack(attacker *ArmyUnit, defender *ArmyUnit, damage int) {
+    for _, notify := range observer.Observers {
+        notify.DeathGazeAttack(attacker, defender, damage)
+    }
+}
+
+func (observer *CombatObservers) DoomGazeAttack(attacker *ArmyUnit, defender *ArmyUnit, damage int) {
+    for _, notify := range observer.Observers {
+        notify.DoomGazeAttack(attacker, defender, damage)
+    }
 }
 
 func (observer *CombatObservers) PoisonTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, damage int) {
+    for _, notify := range observer.Observers {
+        notify.PoisonTouchAttack(attacker, defender, damage)
+    }
 }
 
 func (observer *CombatObservers) LifeStealTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, damage int) {
+    for _, notify := range observer.Observers {
+        notify.LifeStealTouchAttack(attacker, defender, damage)
+    }
 }
 
 func (observer *CombatObservers) StoningTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, damage int) {
+    for _, notify := range observer.Observers {
+        notify.StoningTouchAttack(attacker, defender, damage)
+    }
 }
 
 func (observer *CombatObservers) DispelEvilTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, damage int) {
+    for _, notify := range observer.Observers {
+        notify.DispelEvilTouchAttack(attacker, defender, damage)
+    }
 }
 
 func (observer *CombatObservers) DeathTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, damage int) {
+    for _, notify := range observer.Observers {
+        notify.DeathTouchAttack(attacker, defender, damage)
+    }
 }
 
 func (observer *CombatObservers) DestructionAttack(attacker *ArmyUnit, defender *ArmyUnit, damage int) {
+    for _, notify := range observer.Observers {
+        notify.DestructionAttack(attacker, defender, damage)
+    }
 }
 
 type CombatScreen struct {
@@ -2708,6 +2758,8 @@ func (combat *CombatScreen) doGazeAttack(attacker *ArmyUnit, defender *ArmyUnit)
             damage += stoneDamage
             hit = true
 
+            combat.Observer.StoneGazeAttack(attacker, defender, stoneDamage)
+
             combat.AddLogEvent(fmt.Sprintf("%v uses stone gaze on %v for %v damage", attacker.Unit.GetName(), defender.Unit.GetName(), stoneDamage))
         }
     }
@@ -2727,6 +2779,8 @@ func (combat *CombatScreen) doGazeAttack(attacker *ArmyUnit, defender *ArmyUnit)
             damage += deathDamage
             hit = true
 
+            combat.Observer.DeathGazeAttack(attacker, defender, deathDamage)
+
             combat.AddLogEvent(fmt.Sprintf("%v uses death gaze on %v for %v damage", attacker.Unit.GetName(), defender.Unit.GetName(), deathDamage))
         }
     }
@@ -2735,6 +2789,7 @@ func (combat *CombatScreen) doGazeAttack(attacker *ArmyUnit, defender *ArmyUnit)
         doomDamage := int(attacker.Unit.GetAbilityValue(data.AbilityDoomGaze))
         damage += doomDamage
         hit = true
+        combat.Observer.DoomGazeAttack(attacker, defender, doomDamage)
         combat.AddLogEvent(fmt.Sprintf("%v uses doom gaze on %v for %v damage", attacker.Unit.GetName(), defender.Unit.GetName(), doomDamage))
     }
 
