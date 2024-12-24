@@ -2912,7 +2912,26 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
             case 5:
                 // attacker fear attack
             case 6:
-                if attacker.Unit.HasEnchantment(data.UnitEnchantmentHaste) || !attacker.Unit.HasAbility(data.AbilityFirstStrike){
+                didFirstStrike := attacker.Unit.HasAbility(data.AbilityFirstStrike) && !defender.Unit.HasAbility(data.AbilityNegateFirstStrike)
+
+                attacks := 1
+
+                if didFirstStrike {
+                    if attacker.Unit.HasEnchantment(data.UnitEnchantmentHaste) {
+                        attacks = 1
+                    } else {
+                        // already melee attacked and doesn't have haste, so no more melee attacks
+                        attacks = 0
+                    }
+                } else {
+                    // didn't do first strike for whatever reason (either the attacker doesn't have the ability or the defender negated it)
+                    if attacker.Unit.HasEnchantment(data.UnitEnchantmentHaste) {
+                        attacks = 2
+                    }
+                }
+
+                // attacker has not melee attacked yet, so let them do it now, or they have haste so they can attack again
+                for range attacks {
                     attackerDamage, hit := attacker.ComputeMeleeDamage()
                     if hit {
                         combat.doImmolationAttack(attacker, defender)
@@ -2925,17 +2944,13 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                     combat.AddLogEvent(fmt.Sprintf("Attacker damage roll %v, defender took %v damage. HP now %v", attackerDamage, defenderHurt, defender.Unit.GetHealth()))
                 }
 
-                defenderDamage, hit := defender.ComputeMeleeDamage()
-                if hit {
-                    combat.doImmolationAttack(defender, attacker)
-                    if defender.Unit.CanTouchAttack(units.DamageMeleePhysical) {
-                        combat.doTouchAttack(defender, attacker)
-                    }
-                }
-                attackerHurt := attacker.ApplyDamage(defenderDamage, units.DamageMeleePhysical, false)
-                combat.AddLogEvent(fmt.Sprintf("Defender damage roll %v, attacker took %v damage. HP now %v", defenderDamage, attackerHurt, attacker.Unit.GetHealth()))
-            case 7:
+                counters := 1
                 if defender.Unit.HasEnchantment(data.UnitEnchantmentHaste) {
+                    counters = 2
+                }
+
+                // defender does counter-attack
+                for range counters {
                     defenderDamage, hit := defender.ComputeMeleeDamage()
                     if hit {
                         combat.doImmolationAttack(defender, attacker)
@@ -2946,10 +2961,10 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                     attackerHurt := attacker.ApplyDamage(defenderDamage, units.DamageMeleePhysical, false)
                     combat.AddLogEvent(fmt.Sprintf("Defender damage roll %v, attacker took %v damage. HP now %v", defenderDamage, attackerHurt, attacker.Unit.GetHealth()))
                 }
-        }
+            }
     }
 
-    for round := range 8 {
+    for round := range 7 {
         doRound(round)
         end := false
         if defender.Unit.GetHealth() <= 0 {
@@ -2968,98 +2983,6 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
             break
         }
     }
-
-    /*
-    attacks := 1
-    if attacker.Unit.HasEnchantment(data.UnitEnchantmentHaste) {
-        attacks = 2
-    }
-
-    for range attacks {
-        _, ok := combat.doThrowAttack(attacker, defender)
-        if ok {
-            combat.doImmolationAttack(attacker, defender)
-        }
-
-        if defender.Unit.GetHealth() <= 0 {
-            combat.AddLogEvent(fmt.Sprintf("%v is killed", defender.Unit.GetName()))
-            combat.RemoveUnit(defender)
-            return
-        }
-
-        _, ok = combat.doBreathAttack(attacker, defender)
-
-        if ok {
-            combat.doImmolationAttack(attacker, defender)
-        }
-
-        if defender.Unit.GetHealth() <= 0 {
-            combat.AddLogEvent(fmt.Sprintf("%v is killed", defender.Unit.GetName()))
-            combat.RemoveUnit(defender)
-            return
-        }
-    }
-
-    combat.doGazeAttack(attacker, defender)
-
-    if defender.Unit.GetHealth() <= 0 {
-        combat.AddLogEvent(fmt.Sprintf("%v is killed", defender.Unit.GetName()))
-        combat.RemoveUnit(defender)
-        return
-    }
-
-    combat.doGazeAttack(defender, attacker)
-
-    if attacker.Unit.GetHealth() <= 0 {
-        combat.AddLogEvent(fmt.Sprintf("%v is killed", attacker.Unit.GetName()))
-        combat.RemoveUnit(attacker)
-        return
-    }
-
-    // defender immolation/touch attack
-
-    // wall of fire
-
-    // defender fear attack
-
-    if attacker.Unit.HasAbility(data.AbilityFirstStrike) && !defender.Unit.HasAbility(data.AbilityNegateFirstStrike) {
-        attackerDamage, hit := attacker.ComputeMeleeDamage()
-        if hit {
-            combat.doImmolationAttack(attacker, defender)
-        }
-        defenderHurt := defender.ApplyDamage(attackerDamage, units.DamageMeleePhysical, false)
-        combat.AddLogEvent(fmt.Sprintf("Attacker damage roll %v, defender took %v damage. HP now %v", originalAttackerDamage, defenderHurt, defender.Unit.GetHealth()))
-
-        if defender.Unit.GetHealth() <= 0 {
-            combat.AddLogEvent(fmt.Sprintf("%v is killed", defender.Unit.GetName()))
-            combat.RemoveUnit(defender)
-            return
-        }
-
-    } else {
-        attackerDamage := attacker.ComputeMeleeDamage()
-        defenderCounterDamage := defender.ComputeMeleeDamage()
-
-        originalAttackerDamage := attackerDamage
-        originalDefenderCounterDamage := defenderCounterDamage
-
-        defenderHurt := defender.ApplyDamage(attackerDamage, units.DamageMeleePhysical, false)
-        attackerHurt := attacker.ApplyDamage(defenderCounterDamage, units.DamageMeleePhysical, false)
-
-        combat.AddLogEvent(fmt.Sprintf("Attacker damage roll %v, defender took %v damage. HP now %v", originalAttackerDamage, defenderHurt, defender.Unit.GetHealth()))
-        combat.AddLogEvent(fmt.Sprintf("Defender counter damage roll %v, attacker took %v damage. HP now %v", originalDefenderCounterDamage, attackerHurt, attacker.Unit.GetHealth()))
-    }
-
-    if attacker.Unit.GetHealth() <= 0 {
-        combat.AddLogEvent(fmt.Sprintf("%v is killed", attacker.Unit.GetName()))
-        combat.RemoveUnit(attacker)
-    }
-
-    if defender.Unit.GetHealth() <= 0 {
-        combat.AddLogEvent(fmt.Sprintf("%v is killed", defender.Unit.GetName()))
-        combat.RemoveUnit(defender)
-    }
-    */
 }
 
 func (combat *CombatScreen) createUnitToUnitProjectile(attacker *ArmyUnit, target *ArmyUnit, offset image.Point, images []*ebiten.Image, explodeImages []*ebiten.Image, effect ProjectileEffect) *Projectile {
