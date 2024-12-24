@@ -789,6 +789,36 @@ type CombatLogEvent struct {
     AbsoluteTime time.Time
 }
 
+type CombatObserver interface {
+    PoisonTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, damage int)
+    LifeStealTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, damage int)
+    StoningTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, damage int)
+    DispelEvilTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, damage int)
+    DeathTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, damage int)
+    DestructionAttack(attacker *ArmyUnit, defender *ArmyUnit, damage int)
+}
+
+type CombatObservers struct {
+}
+
+func (observer *CombatObservers) PoisonTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, damage int) {
+}
+
+func (observer *CombatObservers) LifeStealTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, damage int) {
+}
+
+func (observer *CombatObservers) StoningTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, damage int) {
+}
+
+func (observer *CombatObservers) DispelEvilTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, damage int) {
+}
+
+func (observer *CombatObservers) DeathTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, damage int) {
+}
+
+func (observer *CombatObservers) DestructionAttack(attacker *ArmyUnit, defender *ArmyUnit, damage int) {
+}
+
 type CombatScreen struct {
     ImageCache util.ImageCache
     Events chan CombatEvent
@@ -854,6 +884,11 @@ type CombatScreen struct {
     */
 
     Log []CombatLogEvent
+    Observer CombatObservers
+}
+
+func (combat *CombatScreen) GetObserver() CombatObserver {
+    return &combat.Observer
 }
 
 type CombatLandscape int
@@ -2744,6 +2779,8 @@ func (combat *CombatScreen) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit
 
         defender.TakeDamage(damage)
 
+        combat.Observer.PoisonTouchAttack(attacker, defender, damage)
+
         combat.AddLogEvent(fmt.Sprintf("%v is poisoned for %v damage. HP now %v", defender.Unit.GetName(), damage, defender.Unit.GetHealth()))
     }
 
@@ -2769,6 +2806,8 @@ func (combat *CombatScreen) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit
                 defender.TakeDamage(damage)
                 attacker.Heal(damage)
                 combat.AddLogEvent(fmt.Sprintf("%v steals %v life from %v. HP now %v", attacker.Unit.GetName(), damage, defender.Unit.GetName(), defender.Unit.GetHealth()))
+
+                combat.Observer.LifeStealTouchAttack(attacker, defender, damage)
             }
         }
     }
@@ -2791,6 +2830,8 @@ func (combat *CombatScreen) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit
             defender.TakeDamage(damage)
 
             combat.AddLogEvent(fmt.Sprintf("%v turns %v to stone for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.Unit.GetHealth()))
+
+            combat.Observer.StoningTouchAttack(attacker, defender, damage)
         }
     }
 
@@ -2831,6 +2872,8 @@ func (combat *CombatScreen) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit
 
             defender.TakeDamage(damage)
             combat.AddLogEvent(fmt.Sprintf("%v dispels evil from %v for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.Unit.GetHealth()))
+
+            combat.Observer.DispelEvilTouchAttack(attacker, defender, damage)
         }
     }
 
@@ -2849,6 +2892,8 @@ func (combat *CombatScreen) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit
             defender.TakeDamage(damage)
 
             combat.AddLogEvent(fmt.Sprintf("%v uses death touch on %v for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.Unit.GetHealth()))
+
+            combat.Observer.DeathTouchAttack(attacker, defender, damage)
         }
     }
 
@@ -2868,6 +2913,8 @@ func (combat *CombatScreen) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit
 
             defender.TakeDamage(damage)
             combat.AddLogEvent(fmt.Sprintf("%v uses destruction on %v for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.Unit.GetHealth()))
+
+            combat.Observer.DestructionAttack(attacker, defender, damage)
         }
     }
 }
