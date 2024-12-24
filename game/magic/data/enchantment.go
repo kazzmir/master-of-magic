@@ -47,6 +47,7 @@ const (
     UnitEnchantmentElementalArmor
     UnitEnchantmentBless
     UnitEnchantmentRighteousness
+    UnitEnchantmentCloakOfFear
 )
 
 var natureColor = color.RGBA{R: 0, G: 180, B: 0, A: 255}
@@ -78,7 +79,6 @@ Eldritch Weapon	Chaos
 Flame Blade	Chaos
 Berserk	Death
 Black Channels	Death
-Cloak of Fear	Death
 Wraith Form	Death
  */
 
@@ -93,6 +93,7 @@ func (enchantment UnitEnchantment) Color() color.Color {
         case UnitEnchantmentElementalArmor: return natureColor
         case UnitEnchantmentBless: return lifeColor
         case UnitEnchantmentRighteousness: return lifeColor
+        case UnitEnchantmentCloakOfFear: return deathColor
     }
 
     return color.RGBA{R: 0, G: 0, B: 0, A: 0}
@@ -109,6 +110,7 @@ func (enchantment UnitEnchantment) Name() string {
         case UnitEnchantmentElementalArmor: return "Elemental Armor"
         case UnitEnchantmentBless: return "Bless"
         case UnitEnchantmentRighteousness: return "Righteousness"
+        case UnitEnchantmentCloakOfFear: return "Cloak of Fear"
     }
 
     return ""
@@ -125,6 +127,7 @@ func (enchantment UnitEnchantment) LbxFile() string {
         case UnitEnchantmentElementalArmor: return "special.lbx"
         case UnitEnchantmentBless: return "special.lbx"
         case UnitEnchantmentRighteousness: return "special.lbx"
+        case UnitEnchantmentCloakOfFear: return "special2.lbx"
     }
 
     return ""
@@ -141,6 +144,7 @@ func (enchantment UnitEnchantment) LbxIndex() int {
         case UnitEnchantmentElementalArmor: return 73
         case UnitEnchantmentBless: return 88
         case UnitEnchantmentRighteousness: return 93
+        case UnitEnchantmentCloakOfFear: return 21
     }
 
     return -1

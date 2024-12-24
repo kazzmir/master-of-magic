@@ -134,7 +134,7 @@ const (
 func (ability Ability) LbxFile() string {
     switch ability.Ability {
         case AbilityArmorPiercing: return ""
-        case AbilityCauseFear: return ""
+        case AbilityCauseFear: return "special2.lbx"
         case AbilityColdImmunity: return ""
         case AbilityConstruction: return ""
         case AbilityCreateOutpost: return "special.lbx"
@@ -215,7 +215,7 @@ func (ability Ability) String() string {
 func (ability Ability) Name() string {
     switch ability.Ability {
         case AbilityArmorPiercing: return ""
-        case AbilityCauseFear: return ""
+        case AbilityCauseFear: return "Cause Fear"
         case AbilityColdImmunity: return ""
         case AbilityConstruction: return ""
         case AbilityCreateOutpost: return "Create Outpost"
@@ -304,7 +304,7 @@ func (ability Ability) Name() string {
 func (ability Ability) LbxIndex() int {
     switch ability.Ability {
         case AbilityArmorPiercing: return -1
-        case AbilityCauseFear: return -1
+        case AbilityCauseFear: return 21
         case AbilityColdImmunity: return -1
         case AbilityConstruction: return -1
         case AbilityCreateOutpost: return 17
