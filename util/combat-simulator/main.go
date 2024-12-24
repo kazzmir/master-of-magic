@@ -393,24 +393,17 @@ func (engine *Engine) EnterCombat(combatDescription CombatDescription) {
     defendingArmy := combat.Army{
         Player: cpuPlayer,
     }
+
     for _, unit := range combatDescription.DefenderUnits {
         made := units.MakeOverworldUnitFromUnit(unit, 1, 1, data.PlaneArcanus, cpuPlayer.Wizard.Banner, cpuPlayer.MakeExperienceInfo())
         defendingArmy.AddUnit(made)
     }
-    // warlock := units.MakeOverworldUnitFromUnit(units.Warlocks, 1, 1, data.PlaneArcanus, cpuPlayer.Wizard.Banner, cpuPlayer.MakeExperienceInfo())
-    // defendingArmy.AddUnit(warlock)
 
     defendingArmy.LayoutUnits(combat.TeamDefender)
 
     attackingArmy := combat.Army{
         Player: humanPlayer,
     }
-
-    /*
-    for range 2 {
-        attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenBowmen, 1, 1, data.PlaneArcanus, humanPlayer.Wizard.Banner, humanPlayer.MakeExperienceInfo()))
-    }
-    */
 
     for _, unit := range combatDescription.AttackerUnits {
         made := units.MakeOverworldUnitFromUnit(unit, 1, 1, data.PlaneArcanus, humanPlayer.Wizard.Banner, humanPlayer.MakeExperienceInfo())
