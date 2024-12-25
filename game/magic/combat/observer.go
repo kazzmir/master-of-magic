@@ -5,6 +5,7 @@ import (
 )
 
 type CombatObserver interface {
+    ThrowAttack(attacker *ArmyUnit, defender *ArmyUnit, damage int)
     PoisonTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, damage int)
     LifeStealTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, damage int)
     StoningTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, damage int)
@@ -39,6 +40,12 @@ func (observer *CombatObservers) RemoveObserver(remove CombatObserver) {
 func (observer *CombatObservers) UnitKilled(unit *ArmyUnit) {
     for _, notify := range observer.Observers {
         notify.UnitKilled(unit)
+    }
+}
+
+func (observer *CombatObservers) ThrowAttack(attacker *ArmyUnit, defender *ArmyUnit, damage int) {
+    for _, notify := range observer.Observers {
+        notify.ThrowAttack(attacker, defender, damage)
     }
 }
 

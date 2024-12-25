@@ -2729,6 +2729,7 @@ func (combat *CombatScreen) doThrowAttack(attacker *ArmyUnit, defender *ArmyUnit
             }
         }
 
+        combat.Observer.ThrowAttack(attacker, defender, damage)
         combat.AddLogEvent(fmt.Sprintf("%v throws %v at %v. HP now %v", attacker.Unit.GetName(), damage, defender.Unit.GetName(), defender.Unit.GetHealth()))
 
         return damage, true

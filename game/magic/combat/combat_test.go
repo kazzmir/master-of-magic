@@ -55,6 +55,13 @@ func BenchmarkAngle(bench *testing.B){
 
 type TestObserver struct {
     Melee func(attacker *ArmyUnit, defender *ArmyUnit, damageRoll int, defenderDamage int)
+    Throw func(attacker *ArmyUnit, defender *ArmyUnit, defenderDamage int)
+}
+
+func (observer *TestObserver) ThrowAttack(attacker *ArmyUnit, defender *ArmyUnit, damage int){
+    if observer.Throw != nil {
+        observer.Throw(attacker, defender, damage)
+    }
 }
 
 func (observer *TestObserver) PoisonTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, damage int){
@@ -303,5 +310,70 @@ func TestFirstStrikeNegate(test *testing.T){
 
     if defenderMelee != 1 {
         test.Errorf("Error: defender should have attacked once")
+    }
+}
+
+// first strike is negated, so units attack each other at the same time
+func TestThrowAttack(test *testing.T){
+    defendingArmy := &Army{
+    }
+
+    attackingArmy := &Army{
+    }
+
+    attackerUnit := units.LizardSpearmen
+    attackerUnit.Abilities = append(attackerUnit.Abilities, data.MakeAbilityValue(data.AbilityThrown, 10000), data.MakeAbilityValue(data.AbilityToHit, 100))
+    // ensure attacker can kill the defender in one hit
+    attackerUnit.MeleeAttackPower = 10000
+
+    defenderUnit := units.LizardSpearmen
+
+    defender := units.MakeOverworldUnit(defenderUnit)
+    attacker := units.MakeOverworldUnit(attackerUnit)
+
+    defendingArmy.AddUnit(defender)
+    attackingArmy.AddUnit(attacker)
+
+    combat := &CombatScreen{
+        SelectedUnit: nil,
+        Tiles: makeTiles(5, 5, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}),
+        Turn: TeamDefender,
+        DefendingArmy: defendingArmy,
+        AttackingArmy: attackingArmy,
+    }
+
+    attackerMelee := 0
+    defenderMelee := 0
+    attackerThrow := 0
+
+    observer := &TestObserver{
+        Throw: func(throwAttacker *ArmyUnit, throwDefender *ArmyUnit, damage int){
+            if throwAttacker == attackingArmy.Units[0] {
+                attackerThrow += 1
+            }
+        },
+        Melee: func(meleeAttacker *ArmyUnit, meleeDefender *ArmyUnit, damageRoll int, defenderDamage int){
+            if attackingArmy.Units[0] == meleeAttacker {
+                attackerMelee += 1
+            } else if defendingArmy.Units[0] == meleeAttacker {
+                defenderMelee += 1
+            }
+        },
+    }
+    combat.Observer.AddObserver(observer)
+
+    // attacker should get to attack twice
+    combat.meleeAttack(attackingArmy.Units[0], defendingArmy.Units[0])
+
+    if attackerThrow != 1 {
+        test.Errorf("Error: attacker should have thrown once")
+    }
+
+    if attackerMelee != 0 {
+        test.Errorf("Error: attacker should have not attacked")
+    }
+
+    if defenderMelee != 0 {
+        test.Errorf("Error: defender should have not attacked")
     }
 }

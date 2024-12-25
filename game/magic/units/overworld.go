@@ -198,7 +198,7 @@ func (unit *OverworldUnit) GetMaxHealth() int {
 }
 
 func (unit *OverworldUnit) GetToHitMelee() int {
-    base := 30
+    base := 30 + int(unit.GetAbilityValue(data.AbilityToHit))
 
     level := unit.GetExperienceLevel()
     switch level {
