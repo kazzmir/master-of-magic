@@ -249,3 +249,59 @@ func TestFirstStrike(test *testing.T){
         test.Errorf("Error: defender should have been killed before attacking")
     }
 }
+
+// first strike is negated, so units attack each other at the same time
+func TestFirstStrikeNegate(test *testing.T){
+    defendingArmy := &Army{
+    }
+
+    attackingArmy := &Army{
+    }
+
+    attackerUnit := units.LizardSpearmen
+    attackerUnit.Abilities = append(attackerUnit.Abilities, data.MakeAbility(data.AbilityFirstStrike))
+    // ensure attacker can kill the defender in one hit
+    attackerUnit.MeleeAttackPower = 10000
+
+    defenderUnit := units.LizardSpearmen
+    defenderUnit.Abilities = append(defenderUnit.Abilities, data.MakeAbility(data.AbilityNegateFirstStrike))
+
+    defender := units.MakeOverworldUnit(defenderUnit)
+    attacker := units.MakeOverworldUnit(attackerUnit)
+
+    defendingArmy.AddUnit(defender)
+    attackingArmy.AddUnit(attacker)
+
+    combat := &CombatScreen{
+        SelectedUnit: nil,
+        Tiles: makeTiles(5, 5, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}),
+        Turn: TeamDefender,
+        DefendingArmy: defendingArmy,
+        AttackingArmy: attackingArmy,
+    }
+
+    attackerMelee := 0
+    defenderMelee := 0
+
+    observer := &TestObserver{
+        Melee: func(meleeAttacker *ArmyUnit, meleeDefender *ArmyUnit, damageRoll int, defenderDamage int){
+            if attackingArmy.Units[0] == meleeAttacker {
+                attackerMelee += 1
+            } else if defendingArmy.Units[0] == meleeAttacker {
+                defenderMelee += 1
+            }
+        },
+    }
+    combat.Observer.AddObserver(observer)
+
+    // attacker should get to attack twice
+    combat.meleeAttack(attackingArmy.Units[0], defendingArmy.Units[0])
+
+    if attackerMelee != 1 {
+        test.Errorf("Error: attacker should have attacked once")
+    }
+
+    if defenderMelee != 1 {
+        test.Errorf("Error: defender should have attacked once")
+    }
+}
