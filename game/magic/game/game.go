@@ -2637,13 +2637,13 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     if state == combat.CombatStateAttackerWin {
         for _, unit := range attackerStack.Units() {
             if unit.GetRace() != data.RaceFantastic {
-                unit.AddExperience(combatScreen.DefeatedDefenders * 2)
+                unit.AddExperience(combatScreen.Model.DefeatedDefenders * 2)
             }
         }
     } else if state == combat.CombatStateDefenderWin {
         for _, unit := range defenderStack.Units() {
             if unit.GetRace() != data.RaceFantastic {
-                unit.AddExperience(combatScreen.DefeatedAttackers * 2)
+                unit.AddExperience(combatScreen.Model.DefeatedAttackers * 2)
             }
         }
     }

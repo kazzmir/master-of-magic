@@ -597,16 +597,125 @@ func computeMoves(x1 int, y1 int, x2 int, y2 int) fraction.Fraction {
     return movesNeeded
 }
 
-func (combat *CombatScreen) computePath(x1 int, y1 int, x2 int, y2 int) (pathfinding.Path, bool) {
+type CombatModel struct {
+    SelectedUnit *ArmyUnit
+    DefendingArmy *Army
+    AttackingArmy *Army
+    Tiles [][]Tile
+    // when the user hovers over a unit, that unit should be shown in a little info box at the upper right
+    HighlightedUnit *ArmyUnit
+    OtherUnits []*OtherUnit
+    Projectiles []*Projectile
+
+    Counter uint64
+
+    TurnAttacker int
+    TurnDefender int
+
+    // track how many units were killed on each side, so experience
+    // can be given out after combat ends
+    DefeatedDefenders int
+    DefeatedAttackers int
+
+    Turn Team
+    CurrentTurn int
+
+    Log []CombatLogEvent
+    Observer CombatObservers
+}
+
+func MakeCombatModel(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Army, landscape CombatLandscape, plane data.Plane, zone ZoneType) *CombatModel {
+    model := &CombatModel{
+        Turn: TeamDefender,
+        SelectedUnit: nil,
+        Tiles: makeTiles(30, 30, landscape, plane, zone),
+        TurnAttacker: 0,
+        TurnDefender: 0,
+        AttackingArmy: attackingArmy,
+        DefendingArmy: defendingArmy,
+        CurrentTurn: 0,
+    }
+
+    allSpells, err := spellbook.ReadSpellsFromCache(cache)
+    if err != nil {
+        log.Printf("Error: unable to read spells: %v", err)
+        allSpells = spellbook.Spells{}
+    }
+
+    for _, unit := range defendingArmy.Units {
+        unit.Team = TeamDefender
+        unit.RangedAttacks = unit.Unit.GetRangedAttacks()
+        unit.InitializeSpells(allSpells, defendingArmy.Player)
+        model.Tiles[unit.Y][unit.X].Unit = unit
+    }
+
+    for _, unit := range attackingArmy.Units {
+        unit.Team = TeamAttacker
+        unit.RangedAttacks = unit.Unit.GetRangedAttacks()
+        unit.InitializeSpells(allSpells, attackingArmy.Player)
+        model.Tiles[unit.Y][unit.X].Unit = unit
+    }
+
+    model.NextTurn()
+    model.SelectedUnit = model.ChooseNextUnit(TeamDefender)
+
+    return model
+}
+
+/* choose a unit from the given team such that
+ * the unit's LastTurn is less than the current turn
+ */
+func (model *CombatModel) ChooseNextUnit(team Team) *ArmyUnit {
+
+    switch team {
+        case TeamAttacker:
+            for i := 0; i < len(model.AttackingArmy.Units); i++ {
+                model.TurnAttacker = (model.TurnAttacker + 1) % len(model.AttackingArmy.Units)
+                unit := model.AttackingArmy.Units[model.TurnAttacker]
+                if unit.LastTurn < model.CurrentTurn {
+                    unit.Paths = make(map[image.Point]pathfinding.Path)
+                    return unit
+                }
+            }
+            return nil
+        case TeamDefender:
+            for i := 0; i < len(model.DefendingArmy.Units); i++ {
+                model.TurnDefender = (model.TurnDefender + 1) % len(model.DefendingArmy.Units)
+                unit := model.DefendingArmy.Units[model.TurnDefender]
+                if unit.LastTurn < model.CurrentTurn {
+                    unit.Paths = make(map[image.Point]pathfinding.Path)
+                    return unit
+                }
+            }
+            return nil
+    }
+
+    return nil
+}
+
+func (model *CombatModel) NextTurn() {
+    model.CurrentTurn += 1
+
+    /* reset movement */
+    for _, unit := range model.DefendingArmy.Units {
+        unit.ResetTurnData()
+    }
+
+    for _, unit := range model.AttackingArmy.Units {
+        unit.ResetTurnData()
+    }
+}
+
+func (model *CombatModel) computePath(x1 int, y1 int, x2 int, y2 int) (pathfinding.Path, bool) {
 
     tileEmpty := func (x int, y int) bool {
-        return combat.GetUnit(x, y) == nil
+        return model.GetUnit(x, y) == nil
     }
 
     // FIXME: take into account mud, hills, other types of terrain obstacles
     tileCost := func (x1 int, y1 int, x2 int, y2 int) float64 {
 
-        if x2 < 0 || y2 < 0 || y2 >= len(combat.Tiles) || x2 >= len(combat.Tiles[y2]) {
+        if x2 < 0 || y2 < 0 || y2 >= len(model.Tiles) || x2 >= len(model.Tiles[y2]) {
             return pathfinding.Infinity
         }
 
@@ -649,7 +758,7 @@ func (combat *CombatScreen) computePath(x1 int, y1 int, x2 int, y2 int) (pathfin
                 x := cx + dx
                 y := cy + dy
 
-                if x >= 0 && y >= 0 && y < len(combat.Tiles) && x < len(combat.Tiles[y]) {
+                if x >= 0 && y >= 0 && y < len(model.Tiles) && x < len(model.Tiles[y]) {
                     // ignore non-empty tiles entirely
                     if tileEmpty(x, y) {
                         out = append(out, image.Pt(x, y))
@@ -666,14 +775,14 @@ func (combat *CombatScreen) computePath(x1 int, y1 int, x2 int, y2 int) (pathfin
 /* return a valid path that the given unit can take to reach tile position x, y
  * this caches the path such that the next call to FindPath() will return the same path without computing it
  */
-func (combat *CombatScreen) FindPath(unit *ArmyUnit, x int, y int) (pathfinding.Path, bool) {
+func (model *CombatModel) FindPath(unit *ArmyUnit, x int, y int) (pathfinding.Path, bool) {
     end := image.Pt(x, y)
     path, ok := unit.Paths[end]
     if ok {
         return path, len(path) > 0
     }
 
-    path, ok = combat.computePath(unit.X, unit.Y, x, y)
+    path, ok = model.computePath(unit.X, unit.Y, x, y)
     if !ok {
         unit.Paths[end] = nil
         // log.Printf("No such path from %v,%v -> %v,%v", unit.X, unit.Y, x, y)
@@ -691,8 +800,30 @@ func (combat *CombatScreen) FindPath(unit *ArmyUnit, x int, y int) (pathfinding.
     return path, canMove
 }
 
-func (combat *CombatScreen) CanMoveTo(unit *ArmyUnit, x int, y int) bool {
-    _, ok := combat.FindPath(unit, x, y)
+func (model *CombatModel) GetUnit(x int, y int) *ArmyUnit {
+    if x >= 0 && y >= 0 && y < len(model.Tiles) && x < len(model.Tiles[0]) {
+        return model.Tiles[y][x].Unit
+    }
+
+    /*
+    for _, unit := range combat.DefendingArmy.Units {
+        if unit.Health > 0 && unit.X == x && unit.Y == y {
+            return unit
+        }
+    }
+
+    for _, unit := range combat.AttackingArmy.Units {
+        if unit.Health > 0 && unit.X == x && unit.Y == y {
+            return unit
+        }
+    }
+    */
+
+    return nil
+}
+
+func (model *CombatModel) CanMoveTo(unit *ArmyUnit, x int, y int) bool {
+    _, ok := model.FindPath(unit, x, y)
     return ok
 }
 
@@ -790,13 +921,10 @@ type CombatLogEvent struct {
 }
 
 type CombatScreen struct {
-    ImageCache util.ImageCache
     Events chan CombatEvent
+    ImageCache util.ImageCache
     Cache *lbx.LbxCache
-    SelectedUnit *ArmyUnit
     Mouse *mouse.MouseData
-    DefendingArmy *Army
-    AttackingArmy *Army
     AttackingWizardFont *font.Font
     DefendingWizardFont *font.Font
     WhitePixel *ebiten.Image
@@ -805,12 +933,7 @@ type CombatScreen struct {
     HudFont *font.Font
     InfoFont *font.Font
     WhiteFont *font.Font
-    // when the user hovers over a unit, that unit should be shown in a little info box at the upper right
-    HighlightedUnit *ArmyUnit
-    Tiles [][]Tile
     DrawRoad bool
-    OtherUnits []*OtherUnit
-    Projectiles []*Projectile
     // order to draw tiles in such that they are drawn from the top of the screen to the bottom (painter's order)
     TopDownOrder []image.Point
 
@@ -819,20 +942,6 @@ type CombatScreen struct {
     MouseState MouseState
 
     CameraScale float64
-
-    Counter uint64
-
-    TurnAttacker int
-    TurnDefender int
-
-
-    // track how many units were killed on each side, so experience
-    // can be given out after combat ends
-    DefeatedDefenders int
-    DefeatedAttackers int
-
-    Turn Team
-    CurrentTurn int
 
     MouseTileX int
     MouseTileY int
@@ -853,12 +962,11 @@ type CombatScreen struct {
     CanTarget func(*ArmyUnit) bool
     */
 
-    Log []CombatLogEvent
-    Observer CombatObservers
+    Model *CombatModel
 }
 
-func (combat *CombatScreen) GetObserver() CombatObserver {
-    return &combat.Observer
+func (model *CombatModel) GetObserver() CombatObserver {
+    return &model.Observer
 }
 
 type CombatLandscape int
@@ -1121,20 +1229,12 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
     coordinates.Translate(-220, 80)
 
     combat := &CombatScreen{
+        Events: make(chan CombatEvent, 1000),
         Cache: cache,
         ImageCache: imageCache,
         Mouse: mouseData,
-        Turn: TeamDefender,
         CameraScale: 1,
-        CurrentTurn: 0,
-        DefendingArmy: defendingArmy,
-        TurnDefender: 0,
-        AttackingArmy: attackingArmy,
-        TurnAttacker: 0,
-        Events: make(chan CombatEvent, 1000),
-        Tiles: makeTiles(30, 30, landscape, plane, zone),
         DrawRoad: zone.City != nil,
-        SelectedUnit: nil,
         DebugFont: debugFont,
         HudFont: hudFont,
         InfoFont: infoFont,
@@ -1144,26 +1244,8 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
         WhitePixel: whitePixel,
         AttackingWizardFont: attackingWizardFont,
         DefendingWizardFont: defendingWizardFont,
-    }
 
-    allSpells, err := spellbook.ReadSpellsFromCache(cache)
-    if err != nil {
-        log.Printf("Error: unable to read spells: %v", err)
-        allSpells = spellbook.Spells{}
-    }
-
-    for _, unit := range defendingArmy.Units {
-        unit.Team = TeamDefender
-        unit.RangedAttacks = unit.Unit.GetRangedAttacks()
-        unit.InitializeSpells(allSpells, defendingArmy.Player)
-        combat.Tiles[unit.Y][unit.X].Unit = unit
-    }
-
-    for _, unit := range attackingArmy.Units {
-        unit.Team = TeamAttacker
-        unit.RangedAttacks = unit.Unit.GetRangedAttacks()
-        unit.InitializeSpells(allSpells, attackingArmy.Player)
-        combat.Tiles[unit.Y][unit.X].Unit = unit
+        Model: MakeCombatModel(cache, defendingArmy, attackingArmy, landscape, plane, zone),
     }
 
     combat.TopDownOrder = combat.computeTopDownOrder()
@@ -1178,8 +1260,6 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
     */
 
     combat.UI = combat.MakeUI(player)
-    combat.NextTurn()
-    combat.SelectedUnit = combat.ChooseNextUnit(TeamDefender)
 
     return combat
 }
@@ -1197,10 +1277,10 @@ func (combat *CombatScreen) ScreenToTile(x float64, y float64) (float64, float64
     return screenToTile.Apply(x, y)
 }
 
-func (combat *CombatScreen) AddLogEvent(text string) {
+func (model *CombatModel) AddLogEvent(text string) {
     log.Printf(text)
-    combat.Log = append(combat.Log, CombatLogEvent{
-        Turn: combat.CurrentTurn,
+    model.Log = append(model.Log, CombatLogEvent{
+        Turn: model.CurrentTurn,
         Text: text,
         AbsoluteTime: time.Now(),
     })
@@ -1208,8 +1288,8 @@ func (combat *CombatScreen) AddLogEvent(text string) {
 
 func (combat *CombatScreen) computeTopDownOrder() []image.Point {
     var points []image.Point
-    for y := 0; y < len(combat.Tiles); y++ {
-        for x := 0; x < len(combat.Tiles[y]); x++ {
+    for y := 0; y < len(combat.Model.Tiles); y++ {
+        for x := 0; x < len(combat.Model.Tiles[y]); x++ {
             points = append(points, image.Pt(x, y))
         }
     }
@@ -1243,8 +1323,8 @@ func (combat *CombatScreen) computeTopDownOrder() []image.Point {
     return points
 }
 
-func (combat *CombatScreen) AddProjectile(projectile *Projectile){
-    combat.Projectiles = append(combat.Projectiles, projectile)
+func (model *CombatModel) AddProjectile(projectile *Projectile){
+    model.Projectiles = append(model.Projectiles, projectile)
 }
 
 /* a projectile that shoots down from the sky at an angle
@@ -1388,11 +1468,11 @@ func (combat *CombatScreen) CreateIceBoltProjectile(target *ArmyUnit) {
     damage := func(unit *ArmyUnit) {
         unit.TakeDamage(3)
         if unit.Unit.GetHealth() <= 0 {
-            combat.RemoveUnit(unit)
+            combat.Model.RemoveUnit(unit)
         }
     }
 
-    combat.Projectiles = append(combat.Projectiles, combat.createSkyProjectile(target, loopImages, explodeImages, damage))
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createSkyProjectile(target, loopImages, explodeImages, damage))
 }
 
 func (combat *CombatScreen) CreateFireBoltProjectile(target *ArmyUnit) {
@@ -1403,14 +1483,14 @@ func (combat *CombatScreen) CreateFireBoltProjectile(target *ArmyUnit) {
     // FIXME: made up
     damage := func(unit *ArmyUnit) {
         unit.TakeDamage(3)
-        combat.AddLogEvent(fmt.Sprintf("Firebolt hits %v for 3 damage", unit.Unit.GetName()))
+        combat.Model.AddLogEvent(fmt.Sprintf("Firebolt hits %v for 3 damage", unit.Unit.GetName()))
         if unit.Unit.GetHealth() <= 0 {
-            combat.AddLogEvent(fmt.Sprintf("%v is killed", unit.Unit.GetName()))
-            combat.RemoveUnit(unit)
+            combat.Model.AddLogEvent(fmt.Sprintf("%v is killed", unit.Unit.GetName()))
+            combat.Model.RemoveUnit(unit)
         }
     }
 
-    combat.Projectiles = append(combat.Projectiles, combat.createSkyProjectile(target, loopImages, explodeImages, damage))
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createSkyProjectile(target, loopImages, explodeImages, damage))
 }
 
 func (combat *CombatScreen) CreateFireballProjectile(target *ArmyUnit) {
@@ -1423,11 +1503,11 @@ func (combat *CombatScreen) CreateFireballProjectile(target *ArmyUnit) {
     damage := func(unit *ArmyUnit) {
         unit.TakeDamage(3)
         if unit.Unit.GetHealth() <= 0 {
-            combat.RemoveUnit(unit)
+            combat.Model.RemoveUnit(unit)
         }
     }
 
-    combat.Projectiles = append(combat.Projectiles, combat.createSkyProjectile(target, loopImages, explodeImages, damage))
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createSkyProjectile(target, loopImages, explodeImages, damage))
 }
 
 func (combat *CombatScreen) CreateStarFiresProjectile(target *ArmyUnit) {
@@ -1435,7 +1515,7 @@ func (combat *CombatScreen) CreateStarFiresProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
 }
 
 func (combat *CombatScreen) CreateDispelEvilProjectile(target *ArmyUnit) {
@@ -1443,7 +1523,7 @@ func (combat *CombatScreen) CreateDispelEvilProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
 }
 
 func (combat *CombatScreen) CreatePsionicBlastProjectile(target *ArmyUnit) {
@@ -1451,7 +1531,7 @@ func (combat *CombatScreen) CreatePsionicBlastProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
 }
 
 func (combat *CombatScreen) CreateDoomBoltProjectile(target *ArmyUnit) {
@@ -1462,11 +1542,11 @@ func (combat *CombatScreen) CreateDoomBoltProjectile(target *ArmyUnit) {
     effect := func(unit *ArmyUnit) {
         unit.TakeDamage(10)
         if unit.Unit.GetHealth() <= 0 {
-            combat.RemoveUnit(unit)
+            combat.Model.RemoveUnit(unit)
         }
     }
 
-    combat.Projectiles = append(combat.Projectiles, combat.createVerticalSkyProjectile(target, loopImages, explodeImages, effect))
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createVerticalSkyProjectile(target, loopImages, explodeImages, effect))
 }
 
 func (combat *CombatScreen) CreateLightningBoltProjectile(target *ArmyUnit) {
@@ -1493,7 +1573,7 @@ func (combat *CombatScreen) CreateLightningBoltProjectile(target *ArmyUnit) {
         Exploding: true,
     }
 
-    combat.Projectiles = append(combat.Projectiles, projectile)
+    combat.Model.Projectiles = append(combat.Model.Projectiles, projectile)
 }
 
 func (combat *CombatScreen) CreateWarpLightningProjectile(target *ArmyUnit) {
@@ -1521,7 +1601,7 @@ func (combat *CombatScreen) CreateWarpLightningProjectile(target *ArmyUnit) {
         Exploding: true,
     }
 
-    combat.Projectiles = append(combat.Projectiles, projectile)
+    combat.Model.Projectiles = append(combat.Model.Projectiles, projectile)
 }
 
 func (combat *CombatScreen) CreateLifeDrainProjectile(target *ArmyUnit) {
@@ -1529,7 +1609,7 @@ func (combat *CombatScreen) CreateLifeDrainProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
 }
 
 func (combat *CombatScreen) CreateFlameStrikeProjectile(target *ArmyUnit) {
@@ -1537,7 +1617,7 @@ func (combat *CombatScreen) CreateFlameStrikeProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
 }
 
 func (combat *CombatScreen) CreateRecallHeroProjectile(target *ArmyUnit) {
@@ -1545,7 +1625,7 @@ func (combat *CombatScreen) CreateRecallHeroProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
 }
 
 func (combat *CombatScreen) CreateHealingProjectile(target *ArmyUnit) {
@@ -1558,7 +1638,7 @@ func (combat *CombatScreen) CreateHealingProjectile(target *ArmyUnit) {
         unit.Heal(5)
     }
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, heal))
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, heal))
 }
 
 func (combat *CombatScreen) CreateHolyWordProjectile(target *ArmyUnit) {
@@ -1567,7 +1647,7 @@ func (combat *CombatScreen) CreateHolyWordProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
 }
 
 func (combat *CombatScreen) CreateWebProjectile(target *ArmyUnit) {
@@ -1575,7 +1655,7 @@ func (combat *CombatScreen) CreateWebProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
 }
 
 func (combat *CombatScreen) CreateDeathSpellProjectile(target *ArmyUnit) {
@@ -1583,7 +1663,7 @@ func (combat *CombatScreen) CreateDeathSpellProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
 }
 
 func (combat *CombatScreen) CreateWordOfDeathProjectile(target *ArmyUnit) {
@@ -1591,7 +1671,7 @@ func (combat *CombatScreen) CreateWordOfDeathProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
 }
 
 func (combat *CombatScreen) CreateWarpWoodProjectile(target *ArmyUnit) {
@@ -1599,7 +1679,7 @@ func (combat *CombatScreen) CreateWarpWoodProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
 }
 
 func (combat *CombatScreen) CreateDisintegrateProjectile(target *ArmyUnit) {
@@ -1607,7 +1687,7 @@ func (combat *CombatScreen) CreateDisintegrateProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
 }
 
 func (combat *CombatScreen) CreateWordOfRecallProjectile(target *ArmyUnit) {
@@ -1615,7 +1695,7 @@ func (combat *CombatScreen) CreateWordOfRecallProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
 }
 
 func (combat *CombatScreen) CreateDispelMagicProjectile(target *ArmyUnit) {
@@ -1623,7 +1703,7 @@ func (combat *CombatScreen) CreateDispelMagicProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
 }
 
 func (combat *CombatScreen) CreateCracksCallProjectile(target *ArmyUnit) {
@@ -1631,7 +1711,7 @@ func (combat *CombatScreen) CreateCracksCallProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionUnder, func (*ArmyUnit){}))
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionUnder, func (*ArmyUnit){}))
 }
 
 func (combat *CombatScreen) CreateBanishProjectile(target *ArmyUnit) {
@@ -1639,7 +1719,7 @@ func (combat *CombatScreen) CreateBanishProjectile(target *ArmyUnit) {
     var loopImages []*ebiten.Image
     explodeImages := images
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionUnder, func (*ArmyUnit){}))
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionUnder, func (*ArmyUnit){}))
 }
 
 func (combat *CombatScreen) CreateDisruptProjectile(x int, y int) {
@@ -1653,7 +1733,7 @@ func (combat *CombatScreen) CreateDisruptProjectile(x int, y int) {
         Y: y,
     }
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(&fakeTarget, loopImages, explodeImages, UnitPositionUnder, func (*ArmyUnit){}))
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(&fakeTarget, loopImages, explodeImages, UnitPositionUnder, func (*ArmyUnit){}))
 }
 
 func (combat *CombatScreen) CreateSummoningCircle(x int, y int) {
@@ -1666,7 +1746,7 @@ func (combat *CombatScreen) CreateSummoningCircle(x int, y int) {
         Y: y,
     }
 
-    combat.Projectiles = append(combat.Projectiles, combat.createUnitProjectile(&fakeTarget, loopImages, explodeImages, UnitPositionUnder, func (*ArmyUnit){}))
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(&fakeTarget, loopImages, explodeImages, UnitPositionUnder, func (*ArmyUnit){}))
 }
 
 func (combat *CombatScreen) CreateMagicVortex(x int, y int) {
@@ -1678,10 +1758,10 @@ func (combat *CombatScreen) CreateMagicVortex(x int, y int) {
         Animation: util.MakeAnimation(images, true),
     }
 
-    combat.OtherUnits = append(combat.OtherUnits, unit)
+    combat.Model.OtherUnits = append(combat.Model.OtherUnits, unit)
 }
 
-func (combat *CombatScreen) addNewUnit(player *playerlib.Player, x int, y int, unit units.Unit, facing units.Facing) {
+func (model *CombatModel) addNewUnit(player *playerlib.Player, x int, y int, unit units.Unit, facing units.Facing) {
     newUnit := ArmyUnit{
         Unit: &units.OverworldUnit{
             Unit: unit,
@@ -1692,43 +1772,43 @@ func (combat *CombatScreen) addNewUnit(player *playerlib.Player, x int, y int, u
         X: x,
         Y: y,
         MovesLeft: fraction.FromInt(unit.MovementSpeed),
-        LastTurn: combat.CurrentTurn-1,
+        LastTurn: model.CurrentTurn-1,
     }
 
-    combat.Tiles[y][x].Unit = &newUnit
+    model.Tiles[y][x].Unit = &newUnit
 
-    if player == combat.DefendingArmy.Player {
+    if player == model.DefendingArmy.Player {
         newUnit.Team = TeamDefender
-        combat.DefendingArmy.Units = append(combat.DefendingArmy.Units, &newUnit)
+        model.DefendingArmy.Units = append(model.DefendingArmy.Units, &newUnit)
     } else {
         newUnit.Team = TeamAttacker
-        combat.AttackingArmy.Units = append(combat.AttackingArmy.Units, &newUnit)
+        model.AttackingArmy.Units = append(model.AttackingArmy.Units, &newUnit)
     }
 }
 
 func (combat *CombatScreen) CreatePhantomWarriors(player *playerlib.Player, x int, y int) {
     // FIXME: compute facing based on player
-    combat.addNewUnit(player, x, y, units.PhantomWarrior, units.FacingDown)
+    combat.Model.addNewUnit(player, x, y, units.PhantomWarrior, units.FacingDown)
 }
 
 func (combat *CombatScreen) CreatePhantomBeast(player *playerlib.Player, x int, y int) {
-    combat.addNewUnit(player, x, y, units.PhantomBeast, units.FacingDown)
+    combat.Model.addNewUnit(player, x, y, units.PhantomBeast, units.FacingDown)
 }
 
 func (combat *CombatScreen) CreateEarthElemental(player *playerlib.Player, x int, y int) {
-    combat.addNewUnit(player, x, y, units.EarthElemental, units.FacingDown)
+    combat.Model.addNewUnit(player, x, y, units.EarthElemental, units.FacingDown)
 }
 
 func (combat *CombatScreen) CreateAirElemental(player *playerlib.Player, x int, y int) {
-    combat.addNewUnit(player, x, y, units.AirElemental, units.FacingDown)
+    combat.Model.addNewUnit(player, x, y, units.AirElemental, units.FacingDown)
 }
 
 func (combat *CombatScreen) CreateFireElemental(player *playerlib.Player, x int, y int) {
-    combat.addNewUnit(player, x, y, units.FireElemental, units.FacingDown)
+    combat.Model.addNewUnit(player, x, y, units.FireElemental, units.FacingDown)
 }
 
 func (combat *CombatScreen) CreateDemon(player *playerlib.Player, x int, y int) {
-    combat.addNewUnit(player, x, y, units.Demon, units.FacingDown)
+    combat.Model.addNewUnit(player, x, y, units.Demon, units.FacingDown)
 }
 
 /* let the user select a target, then cast the spell on that target
@@ -1737,18 +1817,18 @@ func (combat *CombatScreen) DoTargetUnitSpell(player *playerlib.Player, spell sp
     teamAttacked := TeamAttacker
 
     selecter := TeamAttacker
-    if player == combat.DefendingArmy.Player {
+    if player == combat.Model.DefendingArmy.Player {
         selecter = TeamDefender
     }
 
     if targetKind == TargetFriend {
         /* if the player is the defender and we are targeting a friend then the team should be the defenders */
-        if combat.DefendingArmy.Player == player {
+        if combat.Model.DefendingArmy.Player == player {
             teamAttacked = TeamDefender
         }
     } else if targetKind == TargetEnemy {
         /* if the player is the attacker and we are targeting an enemy then the team should be the defenders */
-        if combat.AttackingArmy.Player == player {
+        if combat.Model.AttackingArmy.Player == player {
             teamAttacked = TeamDefender
         }
     } else if targetKind == TargetEither {
@@ -1785,7 +1865,7 @@ func (combat *CombatScreen) DoTargetTileSpell(player *playerlib.Player, spell sp
     // log.Printf("Create sound for spell %v: %v", spell.Name, spell.Sound)
 
     selecter := TeamAttacker
-    if player == combat.DefendingArmy.Player {
+    if player == combat.Model.DefendingArmy.Player {
         selecter = TeamDefender
     }
 
@@ -1824,14 +1904,14 @@ func (combat *CombatScreen) DoSummoningSpell(player *playerlib.Player, spell spe
 func (combat *CombatScreen) DoAllUnitsSpell(player *playerlib.Player, spell spellbook.Spell, targetKind Targeting, onTarget func(*ArmyUnit), canTarget func(*ArmyUnit) bool) {
     var units []*ArmyUnit
 
-    if player == combat.DefendingArmy.Player && targetKind == TargetEnemy {
-        units = combat.AttackingArmy.Units
-    } else if player == combat.AttackingArmy.Player && targetKind == TargetEnemy {
-        units = combat.DefendingArmy.Units
-    } else if player == combat.DefendingArmy.Player && targetKind == TargetFriend {
-        units = combat.DefendingArmy.Units
-    } else if player == combat.AttackingArmy.Player && targetKind == TargetFriend {
-        units = combat.AttackingArmy.Units
+    if player == combat.Model.DefendingArmy.Player && targetKind == TargetEnemy {
+        units = combat.Model.AttackingArmy.Units
+    } else if player == combat.Model.AttackingArmy.Player && targetKind == TargetEnemy {
+        units = combat.Model.DefendingArmy.Units
+    } else if player == combat.Model.DefendingArmy.Player && targetKind == TargetFriend {
+        units = combat.Model.DefendingArmy.Units
+    } else if player == combat.Model.AttackingArmy.Player && targetKind == TargetFriend {
+        units = combat.Model.AttackingArmy.Units
     }
 
     sound, err := audio.LoadSound(combat.Cache, spell.Sound)
@@ -1850,22 +1930,22 @@ func (combat *CombatScreen) DoAllUnitsSpell(player *playerlib.Player, spell spel
 
 /* makes a 5x5 square of tiles have mud on them
  */
-func (combat *CombatScreen) CreateEarthToMud(centerX int, centerY int){
+func (model *CombatModel) CreateEarthToMud(centerX int, centerY int){
     // log.Printf("Create earth to mud at %v, %v", centerX, centerY)
 
     for x := centerX - 2; x <= centerX + 2; x++ {
         for y := centerY - 2; y <= centerY + 2; y++ {
-            if x >= 0 && x < len(combat.Tiles[0]) && y >= 0 && y < len(combat.Tiles) {
-                combat.Tiles[y][x].Mud = true
+            if x >= 0 && x < len(model.Tiles[0]) && y >= 0 && y < len(model.Tiles) {
+                model.Tiles[y][x].Mud = true
             }
         }
     }
 }
 
-func (combat *CombatScreen) FindEmptyTile() (int, int, error) {
+func (model *CombatModel) FindEmptyTile() (int, int, error) {
 
-    middleX := len(combat.Tiles[0]) / 2
-    middleY := len(combat.Tiles) / 2
+    middleX := len(model.Tiles[0]) / 2
+    middleY := len(model.Tiles) / 2
 
     distance := 3
     tries := 0
@@ -1873,13 +1953,13 @@ func (combat *CombatScreen) FindEmptyTile() (int, int, error) {
         x := middleX + rand.N(distance) - distance/2
         y := middleY + rand.N(distance) - distance/2
 
-        if x >= 0 && x < len(combat.Tiles[0]) && y >= 0 && y < len(combat.Tiles) && combat.GetUnit(x, y) == nil {
+        if x >= 0 && x < len(model.Tiles[0]) && y >= 0 && y < len(model.Tiles) && model.GetUnit(x, y) == nil {
             return x, y, nil
         }
 
         distance += 1
-        if distance > len(combat.Tiles) * 2 {
-            distance = len(combat.Tiles) * 2
+        if distance > len(model.Tiles) * 2 {
+            distance = len(model.Tiles) * 2
         }
     }
 
@@ -1987,7 +2067,7 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
             }, targetAny)
         case "Earth to Mud":
             combat.DoTargetTileSpell(player, spell, func (x int, y int){
-                combat.CreateEarthToMud(x, y)
+                combat.Model.CreateEarthToMud(x, y)
                 successCallback()
             })
         case "Web":
@@ -2074,7 +2154,7 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
             })
         case "Summon Demon":
             // FIXME: the tile should be near the middle of the map
-            x, y, err := combat.FindEmptyTile()
+            x, y, err := combat.Model.FindEmptyTile()
             if err == nil {
                 combat.CreateSummoningCircle(x, y)
                 combat.CreateDemon(player, x, y)
@@ -2094,6 +2174,12 @@ Animate Dead - need picture
     }
 }
 
+
+func (model *CombatModel) DoneTurn() {
+    model.SelectedUnit.LastTurn = model.CurrentTurn
+    model.NextUnit()
+}
+
 func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
     var elements []*uilib.UIElement
 
@@ -2108,51 +2194,51 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                 options.GeoM.Translate(float64(hudImage.Bounds().Dx()), 0)
             }
 
-            if combat.AttackingArmy.Player == player && (combat.DoSelectUnit || combat.DoSelectTile) {
+            if combat.Model.AttackingArmy.Player == player && (combat.DoSelectUnit || combat.DoSelectTile) {
             } else {
-                combat.AttackingWizardFont.Print(screen, 265, 170, 1, ebiten.ColorScale{}, combat.AttackingArmy.Player.Wizard.Name)
+                combat.AttackingWizardFont.Print(screen, 265, 170, 1, ebiten.ColorScale{}, combat.Model.AttackingArmy.Player.Wizard.Name)
             }
 
-            if combat.DefendingArmy.Player == player && (combat.DoSelectUnit || combat.DoSelectTile) {
+            if combat.Model.DefendingArmy.Player == player && (combat.DoSelectUnit || combat.DoSelectTile) {
             } else {
-                combat.DefendingWizardFont.Print(screen, 30, 170, 1, ebiten.ColorScale{}, combat.DefendingArmy.Player.Wizard.Name)
+                combat.DefendingWizardFont.Print(screen, 30, 170, 1, ebiten.ColorScale{}, combat.Model.DefendingArmy.Player.Wizard.Name)
             }
 
-            if combat.SelectedUnit != nil {
+            if combat.Model.SelectedUnit != nil {
 
-                rightImage, _ := combat.ImageCache.GetImageTransform(combat.SelectedUnit.Unit.GetCombatLbxFile(), combat.SelectedUnit.Unit.GetCombatIndex(units.FacingRight), 0, player.Wizard.Banner.String(), units.MakeUpdateUnitColorsFunc(player.Wizard.Banner))
+                rightImage, _ := combat.ImageCache.GetImageTransform(combat.Model.SelectedUnit.Unit.GetCombatLbxFile(), combat.Model.SelectedUnit.Unit.GetCombatIndex(units.FacingRight), 0, player.Wizard.Banner.String(), units.MakeUpdateUnitColorsFunc(player.Wizard.Banner))
                 options.GeoM.Reset()
                 options.GeoM.Translate(89, 170)
                 screen.DrawImage(rightImage, &options)
 
-                combat.HudFont.Print(screen, 92, 167, 1, ebiten.ColorScale{}, combat.SelectedUnit.Unit.GetName())
+                combat.HudFont.Print(screen, 92, 167, 1, ebiten.ColorScale{}, combat.Model.SelectedUnit.Unit.GetName())
 
                 plainAttack, _ := combat.ImageCache.GetImage("compix.lbx", 29, 0)
                 options.GeoM.Reset()
                 options.GeoM.Translate(126, 173)
                 screen.DrawImage(plainAttack, &options)
-                combat.HudFont.PrintRight(screen, 126, 174, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", combat.SelectedUnit.Unit.GetMeleeAttackPower()))
+                combat.HudFont.PrintRight(screen, 126, 174, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", combat.Model.SelectedUnit.Unit.GetMeleeAttackPower()))
 
-                if combat.SelectedUnit.RangedAttacks > 0 {
+                if combat.Model.SelectedUnit.RangedAttacks > 0 {
                     y := float64(180)
-                    switch combat.SelectedUnit.Unit.GetRangedAttackDamageType() {
+                    switch combat.Model.SelectedUnit.Unit.GetRangedAttackDamageType() {
                         case units.DamageRangedPhysical:
                             arrow, _ := combat.ImageCache.GetImage("compix.lbx", 34, 0)
                             options.GeoM.Reset()
                             options.GeoM.Translate(126, y)
                             screen.DrawImage(arrow, &options)
-                            combat.HudFont.PrintRight(screen, 126, y+2, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", combat.SelectedUnit.Unit.GetRangedAttackPower()))
+                            combat.HudFont.PrintRight(screen, 126, y+2, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", combat.Model.SelectedUnit.Unit.GetRangedAttackPower()))
                         case units.DamageRangedMagical:
                             magic, _ := combat.ImageCache.GetImage("compix.lbx", 30, 0)
                             options.GeoM.Reset()
                             options.GeoM.Translate(126, y)
                             screen.DrawImage(magic, &options)
-                            combat.HudFont.PrintRight(screen, 126, y+2, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", combat.SelectedUnit.Unit.GetRangedAttackPower()))
+                            combat.HudFont.PrintRight(screen, 126, y+2, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", combat.Model.SelectedUnit.Unit.GetRangedAttackPower()))
                     }
                 }
 
                 var movementImage *ebiten.Image
-                if combat.SelectedUnit.Unit.IsFlying() {
+                if combat.Model.SelectedUnit.Unit.IsFlying() {
                     movementImage, _ = combat.ImageCache.GetImage("compix.lbx", 39, 0)
                 } else {
                     movementImage, _ = combat.ImageCache.GetImage("compix.lbx", 38, 0)
@@ -2161,7 +2247,7 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                 options.GeoM.Reset()
                 options.GeoM.Translate(126, 188)
                 screen.DrawImage(movementImage, &options)
-                combat.HudFont.PrintRight(screen, 126, 190, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", combat.SelectedUnit.MovesLeft.ToFloat()))
+                combat.HudFont.PrintRight(screen, 126, 190, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", combat.Model.SelectedUnit.MovesLeft.ToFloat()))
             }
 
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
@@ -2203,7 +2289,7 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                 if picked {
                     // player mana and skill should go down accordingly
                     combat.InvokeSpell(player, spell, func(){
-                        combat.AddLogEvent(fmt.Sprintf("%v casts %v", player.Wizard.Name, spell.Name))
+                        combat.Model.AddLogEvent(fmt.Sprintf("%v casts %v", player.Wizard.Name, spell.Name))
                     })
                 }
             })
@@ -2211,11 +2297,11 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
         }
 
         playerOnly := true
-        if combat.SelectedUnit != nil {
+        if combat.Model.SelectedUnit != nil {
             // FIXME: if player is out of mana then just select unit spell?
 
-            unitSpells := combat.SelectedUnit.Spells
-            if combat.SelectedUnit.CanCast() {
+            unitSpells := combat.Model.SelectedUnit.Spells
+            if combat.Model.SelectedUnit.CanCast() {
                 playerOnly = false
                 selections := []uilib.Selection{
                     uilib.Selection{
@@ -2223,15 +2309,15 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                         Action: doPlayerSpell,
                     },
                     uilib.Selection{
-                        Name: combat.SelectedUnit.Unit.GetName(),
+                        Name: combat.Model.SelectedUnit.Unit.GetName(),
                         Action: func(){
-                            caster := combat.SelectedUnit
+                            caster := combat.Model.SelectedUnit
 
                             doCast := func(spell spellbook.Spell){
                                 caster.CastingSkill -= float32(spell.CastCost)
                                 caster.Casted = true
                                 combat.InvokeSpell(player, spell, func(){
-                                    combat.AddLogEvent(fmt.Sprintf("%v casts %v", caster.Unit.GetName(), spell.Name))
+                                    combat.Model.AddLogEvent(fmt.Sprintf("%v casts %v", caster.Unit.GetName(), spell.Name))
                                     caster.MovesLeft = fraction.FromInt(0)
                                     select {
                                         case combat.Events <- &CombatEventNextUnit{}:
@@ -2274,7 +2360,7 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
 
     // wait
     elements = append(elements, makeButton(2, 1, 0, func(){
-        combat.NextUnit()
+        combat.Model.NextUnit()
     }))
 
     // info
@@ -2284,23 +2370,22 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
 
     // auto
     elements = append(elements, makeButton(4, 1, 1, func(){
-        if combat.AttackingArmy.Player == player {
-            combat.AttackingArmy.Auto = true
+        if combat.Model.AttackingArmy.Player == player {
+            combat.Model.AttackingArmy.Auto = true
         } else {
-            combat.DefendingArmy.Auto = true
+            combat.Model.DefendingArmy.Auto = true
         }
     }))
 
     // flee
     elements = append(elements, makeButton(21, 0, 2, func(){
         // FIXME: choose the right side
-        combat.AttackingArmy.Units = nil
+        combat.Model.AttackingArmy.Units = nil
     }))
 
     // done
     elements = append(elements, makeButton(3, 1, 2, func(){
-        combat.SelectedUnit.LastTurn = combat.CurrentTurn
-        combat.NextUnit()
+        combat.Model.DoneTurn()
     }))
 
     ui.SetElementsFromArray(elements)
@@ -2337,7 +2422,7 @@ func betweenAngle(check float64, angle float64, spread float64) bool {
 }
 
 func (combat *CombatScreen) TileIsEmpty(x int, y int) bool {
-    unit := combat.GetUnit(x, y)
+    unit := combat.Model.GetUnit(x, y)
     if unit != nil && unit.Unit.GetHealth() > 0 {
         return false
     }
@@ -2404,66 +2489,23 @@ func computeFacing(angle float64) units.Facing {
     return units.FacingRight
 }
 
-/* choose a unit from the given team such that
- * the unit's LastTurn is less than the current turn
- */
-func (combat *CombatScreen) ChooseNextUnit(team Team) *ArmyUnit {
 
-    switch team {
-        case TeamAttacker:
-            for i := 0; i < len(combat.AttackingArmy.Units); i++ {
-                combat.TurnAttacker = (combat.TurnAttacker + 1) % len(combat.AttackingArmy.Units)
-                unit := combat.AttackingArmy.Units[combat.TurnAttacker]
-                if unit.LastTurn < combat.CurrentTurn {
-                    unit.Paths = make(map[image.Point]pathfinding.Path)
-                    return unit
-                }
-            }
-            return nil
-        case TeamDefender:
-            for i := 0; i < len(combat.DefendingArmy.Units); i++ {
-                combat.TurnDefender = (combat.TurnDefender + 1) % len(combat.DefendingArmy.Units)
-                unit := combat.DefendingArmy.Units[combat.TurnDefender]
-                if unit.LastTurn < combat.CurrentTurn {
-                    unit.Paths = make(map[image.Point]pathfinding.Path)
-                    return unit
-                }
-            }
-            return nil
-    }
-
-    return nil
-}
-
-func (combat *CombatScreen) NextTurn() {
-    combat.CurrentTurn += 1
-
-    /* reset movement */
-    for _, unit := range combat.DefendingArmy.Units {
-        unit.ResetTurnData()
-    }
-
-    for _, unit := range combat.AttackingArmy.Units {
-        unit.ResetTurnData()
-    }
-}
-
-func (combat *CombatScreen) NextUnit() {
+func (model *CombatModel) NextUnit() {
 
     var nextChoice *ArmyUnit
     for range 2 {
         // find a unit on the same team
-        nextChoice = combat.ChooseNextUnit(combat.Turn)
+        nextChoice = model.ChooseNextUnit(model.Turn)
         if nextChoice == nil {
             // if there are no available units then the team must be out of moves, so try the next team
-            combat.Turn = oppositeTeam(combat.Turn)
-            nextChoice = combat.ChooseNextUnit(combat.Turn)
+            model.Turn = oppositeTeam(model.Turn)
+            nextChoice = model.ChooseNextUnit(model.Turn)
 
             if nextChoice == nil {
                 // if the other team still has nothing available then the entire turn has finished
                 // so go to the next turn and try again
-                combat.NextTurn()
-                combat.SelectedUnit = nil
+                model.NextTurn()
+                model.SelectedUnit = nil
             }
         }
 
@@ -2473,38 +2515,18 @@ func (combat *CombatScreen) NextUnit() {
         }
     }
 
-    combat.SelectedUnit = nextChoice
+    model.SelectedUnit = nextChoice
 }
 
-func (combat *CombatScreen) GetUnit(x int, y int) *ArmyUnit {
-    if x >= 0 && y >= 0 && y < len(combat.Tiles) && x < len(combat.Tiles[0]) {
-        return combat.Tiles[y][x].Unit
-    }
-
-    /*
-    for _, unit := range combat.DefendingArmy.Units {
-        if unit.Health > 0 && unit.X == x && unit.Y == y {
-            return unit
-        }
-    }
-
-    for _, unit := range combat.AttackingArmy.Units {
-        if unit.Health > 0 && unit.X == x && unit.Y == y {
-            return unit
-        }
-    }
-    */
-
-    return nil
-}
-
+/*
 func (combat *CombatScreen) ContainsOppositeArmy(x int, y int, team Team) bool {
-    unit := combat.GetUnit(x, y)
+    unit := combat.Model.GetUnit(x, y)
     if unit == nil {
         return false
     }
     return unit.Team != team
 }
+*/
 
 func faceTowards(x1 int, y1 int, x2 int, y2 int) units.Facing {
     angle := math.Atan2(float64(y2 - y1), float64(x2 - x1))
@@ -2590,18 +2612,18 @@ func distanceAboveRange(x1 float64, y1 float64, x2 float64, y2 float64, r float6
     return xDiff * xDiff + yDiff * yDiff >= r*r
 }
 
-func (combat *CombatScreen) UpdateProjectiles() bool {
+func (model *CombatModel) UpdateProjectiles() bool {
     animationSpeed := uint64(5)
 
-    alive := len(combat.Projectiles) > 0
+    alive := len(model.Projectiles) > 0
 
     var projectilesOut []*Projectile
-    for _, projectile := range combat.Projectiles {
+    for _, projectile := range model.Projectiles {
         keep := false
         if projectile.Exploding || distanceInRange(projectile.X, projectile.Y, projectile.TargetX, projectile.TargetY, 4) {
             projectile.Exploding = true
             keep = true
-            if combat.Counter % animationSpeed == 0 && !projectile.Explode.Next() {
+            if model.Counter % animationSpeed == 0 && !projectile.Explode.Next() {
                 keep = false
 
                 if projectile.Target != nil && projectile.Effect != nil {
@@ -2611,7 +2633,7 @@ func (combat *CombatScreen) UpdateProjectiles() bool {
         } else {
             projectile.X += math.Cos(projectile.Angle) * projectile.Speed
             projectile.Y += math.Sin(projectile.Angle) * projectile.Speed
-            if combat.Counter % animationSpeed == 0 {
+            if model.Counter % animationSpeed == 0 {
                 projectile.Animation.Next()
             }
             keep = true
@@ -2622,19 +2644,19 @@ func (combat *CombatScreen) UpdateProjectiles() bool {
         }
     }
 
-    combat.Projectiles = projectilesOut
+    model.Projectiles = projectilesOut
 
     return alive
 }
 
 func (combat *CombatScreen) doProjectiles(yield coroutine.YieldFunc) {
-    for combat.UpdateProjectiles() {
-        combat.Counter += 1
+    for combat.Model.UpdateProjectiles() {
+        combat.Model.Counter += 1
         yield()
     }
 }
 
-func (combat *CombatScreen) doBreathAttack(attacker *ArmyUnit, defender *ArmyUnit) ([]func(), bool) {
+func (model *CombatModel) doBreathAttack(attacker *ArmyUnit, defender *ArmyUnit) ([]func(), bool) {
     damage := []func(){}
     hit := false
 
@@ -2644,9 +2666,9 @@ func (combat *CombatScreen) doBreathAttack(attacker *ArmyUnit, defender *ArmyUni
 
         damage = append(damage, func(){
             fireDamage := defender.ApplyDamage(strength, units.DamageFire, false)
-            combat.AddLogEvent(fmt.Sprintf("%v uses fire breath on %v for %v damage", attacker.Unit.GetName(), defender.Unit.GetName(), fireDamage))
+            model.AddLogEvent(fmt.Sprintf("%v uses fire breath on %v for %v damage", attacker.Unit.GetName(), defender.Unit.GetName(), fireDamage))
             // damage += fireDamage
-            combat.Observer.FireBreathAttack(attacker, defender, fireDamage)
+            model.Observer.FireBreathAttack(attacker, defender, fireDamage)
         })
     }
 
@@ -2656,16 +2678,16 @@ func (combat *CombatScreen) doBreathAttack(attacker *ArmyUnit, defender *ArmyUni
 
         damage = append(damage, func(){
             lightningDamage := defender.ApplyDamage(strength, units.DamageRangedMagical, true)
-            combat.AddLogEvent(fmt.Sprintf("%v uses lightning breath on %v for %v damage", attacker.Unit.GetName(), defender.Unit.GetName(), lightningDamage))
+            model.AddLogEvent(fmt.Sprintf("%v uses lightning breath on %v for %v damage", attacker.Unit.GetName(), defender.Unit.GetName(), lightningDamage))
             // damage += lightningDamage
-            combat.Observer.LightningBreathAttack(attacker, defender, lightningDamage)
+            model.Observer.LightningBreathAttack(attacker, defender, lightningDamage)
         })
     }
 
     return damage, hit
 }
 
-func (combat *CombatScreen) doGazeAttack(attacker *ArmyUnit, defender *ArmyUnit) (int, bool) {
+func (model *CombatModel) doGazeAttack(attacker *ArmyUnit, defender *ArmyUnit) (int, bool) {
     // FIXME: take into account the attack strength of the unit, and modifiers from spells/magic nodes
 
     damage := 0
@@ -2686,9 +2708,9 @@ func (combat *CombatScreen) doGazeAttack(attacker *ArmyUnit, defender *ArmyUnit)
             damage += stoneDamage
             hit = true
 
-            combat.Observer.StoneGazeAttack(attacker, defender, stoneDamage)
+            model.Observer.StoneGazeAttack(attacker, defender, stoneDamage)
 
-            combat.AddLogEvent(fmt.Sprintf("%v uses stone gaze on %v for %v damage", attacker.Unit.GetName(), defender.Unit.GetName(), stoneDamage))
+            model.AddLogEvent(fmt.Sprintf("%v uses stone gaze on %v for %v damage", attacker.Unit.GetName(), defender.Unit.GetName(), stoneDamage))
         }
     }
 
@@ -2707,9 +2729,9 @@ func (combat *CombatScreen) doGazeAttack(attacker *ArmyUnit, defender *ArmyUnit)
             damage += deathDamage
             hit = true
 
-            combat.Observer.DeathGazeAttack(attacker, defender, deathDamage)
+            model.Observer.DeathGazeAttack(attacker, defender, deathDamage)
 
-            combat.AddLogEvent(fmt.Sprintf("%v uses death gaze on %v for %v damage", attacker.Unit.GetName(), defender.Unit.GetName(), deathDamage))
+            model.AddLogEvent(fmt.Sprintf("%v uses death gaze on %v for %v damage", attacker.Unit.GetName(), defender.Unit.GetName(), deathDamage))
         }
     }
 
@@ -2717,14 +2739,14 @@ func (combat *CombatScreen) doGazeAttack(attacker *ArmyUnit, defender *ArmyUnit)
         doomDamage := int(attacker.Unit.GetAbilityValue(data.AbilityDoomGaze))
         damage += doomDamage
         hit = true
-        combat.Observer.DoomGazeAttack(attacker, defender, doomDamage)
-        combat.AddLogEvent(fmt.Sprintf("%v uses doom gaze on %v for %v damage", attacker.Unit.GetName(), defender.Unit.GetName(), doomDamage))
+        model.Observer.DoomGazeAttack(attacker, defender, doomDamage)
+        model.AddLogEvent(fmt.Sprintf("%v uses doom gaze on %v for %v damage", attacker.Unit.GetName(), defender.Unit.GetName(), doomDamage))
     }
 
     return damage, hit
 }
 
-func (combat *CombatScreen) doThrowAttack(attacker *ArmyUnit, defender *ArmyUnit) (int, bool) {
+func (model *CombatModel) doThrowAttack(attacker *ArmyUnit, defender *ArmyUnit) (int, bool) {
     if attacker.Unit.HasAbility(data.AbilityThrown) {
         strength := int(attacker.Unit.GetAbilityValue(data.AbilityThrown))
         damage := 0
@@ -2741,17 +2763,17 @@ func (combat *CombatScreen) doThrowAttack(attacker *ArmyUnit, defender *ArmyUnit
     return 0, false
 }
 
-func (combat *CombatScreen) immolationDamage(attacker *ArmyUnit, defender *ArmyUnit) int {
+func (model *CombatModel) immolationDamage(attacker *ArmyUnit, defender *ArmyUnit) int {
     if attacker.Unit.HasAbility(data.AbilityImmolation) || attacker.Unit.HasEnchantment(data.UnitEnchantmentImmolation) {
         damage := 4 * defender.Figures()
-        combat.Observer.ImmolationAttack(attacker, defender, damage)
+        model.Observer.ImmolationAttack(attacker, defender, damage)
         return damage
     }
 
     return 0
 }
 
-func (combat *CombatScreen) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, fearFigure int) []func() {
+func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, fearFigure int) []func() {
     damageFuncs := []func(){}
 
     if attacker.Unit.HasAbility(data.AbilityPoisonTouch) && !defender.Unit.HasAbility(data.AbilityPoisonImmunity) {
@@ -2764,8 +2786,8 @@ func (combat *CombatScreen) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit
 
         damageFuncs = append(damageFuncs, func(){
             defender.TakeDamage(damage)
-            combat.Observer.PoisonTouchAttack(attacker, defender, damage)
-            combat.AddLogEvent(fmt.Sprintf("%v is poisoned for %v damage. HP now %v", defender.Unit.GetName(), damage, defender.Unit.GetHealth()))
+            model.Observer.PoisonTouchAttack(attacker, defender, damage)
+            model.AddLogEvent(fmt.Sprintf("%v is poisoned for %v damage. HP now %v", defender.Unit.GetName(), damage, defender.Unit.GetHealth()))
         })
     }
 
@@ -2791,9 +2813,9 @@ func (combat *CombatScreen) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit
                     // FIXME: if the unit dies they can become undead
                     defender.TakeDamage(damage)
                     attacker.Heal(damage)
-                    combat.AddLogEvent(fmt.Sprintf("%v steals %v life from %v. HP now %v", attacker.Unit.GetName(), damage, defender.Unit.GetName(), defender.Unit.GetHealth()))
+                    model.AddLogEvent(fmt.Sprintf("%v steals %v life from %v. HP now %v", attacker.Unit.GetName(), damage, defender.Unit.GetName(), defender.Unit.GetHealth()))
 
-                    combat.Observer.LifeStealTouchAttack(attacker, defender, damage)
+                    model.Observer.LifeStealTouchAttack(attacker, defender, damage)
                 })
             }
         }
@@ -2817,9 +2839,9 @@ func (combat *CombatScreen) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit
             damageFuncs = append(damageFuncs, func(){
                 defender.TakeDamage(damage)
 
-                combat.AddLogEvent(fmt.Sprintf("%v turns %v to stone for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.Unit.GetHealth()))
+                model.AddLogEvent(fmt.Sprintf("%v turns %v to stone for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.Unit.GetHealth()))
 
-                combat.Observer.StoningTouchAttack(attacker, defender, damage)
+                model.Observer.StoningTouchAttack(attacker, defender, damage)
             })
         }
     }
@@ -2861,9 +2883,9 @@ func (combat *CombatScreen) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit
 
             damageFuncs = append(damageFuncs, func(){
                 defender.TakeDamage(damage)
-                combat.AddLogEvent(fmt.Sprintf("%v dispels evil from %v for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.Unit.GetHealth()))
+                model.AddLogEvent(fmt.Sprintf("%v dispels evil from %v for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.Unit.GetHealth()))
 
-                combat.Observer.DispelEvilTouchAttack(attacker, defender, damage)
+                model.Observer.DispelEvilTouchAttack(attacker, defender, damage)
             })
         }
     }
@@ -2883,9 +2905,9 @@ func (combat *CombatScreen) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit
             damageFuncs = append(damageFuncs, func(){
                 defender.TakeDamage(damage)
 
-                combat.AddLogEvent(fmt.Sprintf("%v uses death touch on %v for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.Unit.GetHealth()))
+                model.AddLogEvent(fmt.Sprintf("%v uses death touch on %v for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.Unit.GetHealth()))
 
-                combat.Observer.DeathTouchAttack(attacker, defender, damage)
+                model.Observer.DeathTouchAttack(attacker, defender, damage)
             })
         }
     }
@@ -2906,9 +2928,9 @@ func (combat *CombatScreen) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit
 
             damageFuncs = append(damageFuncs, func(){
                 defender.TakeDamage(damage)
-                combat.AddLogEvent(fmt.Sprintf("%v uses destruction on %v for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.Unit.GetHealth()))
+                model.AddLogEvent(fmt.Sprintf("%v uses destruction on %v for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.Unit.GetHealth()))
 
-                combat.Observer.DestructionAttack(attacker, defender, damage)
+                model.Observer.DestructionAttack(attacker, defender, damage)
             })
         }
     }
@@ -2916,21 +2938,21 @@ func (combat *CombatScreen) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit
     return damageFuncs
 }
 
-func (combat *CombatScreen) ApplyImmolationDamage(attacker *ArmyUnit, defender *ArmyUnit, immolationDamage int) {
+func (model *CombatModel) ApplyImmolationDamage(attacker *ArmyUnit, defender *ArmyUnit, immolationDamage int) {
     if immolationDamage > 0 {
         hurt := defender.ApplyDamage(immolationDamage, units.DamageFire, false)
-        combat.AddLogEvent(fmt.Sprintf("%v is immolated for %v damage. HP now %v", defender.Unit.GetName(), hurt, defender.Unit.GetHealth()))
+        model.AddLogEvent(fmt.Sprintf("%v is immolated for %v damage. HP now %v", defender.Unit.GetName(), hurt, defender.Unit.GetHealth()))
     }
 }
 
-func (combat *CombatScreen) ApplyMeleeDamage(attacker *ArmyUnit, defender *ArmyUnit, damage int) {
+func (model *CombatModel) ApplyMeleeDamage(attacker *ArmyUnit, defender *ArmyUnit, damage int) {
     hurt := defender.ApplyDamage(damage, units.DamageMeleePhysical, false)
-    combat.AddLogEvent(fmt.Sprintf("%v damage roll %v, %v took %v damage. HP now %v", attacker.Unit.GetName(), damage, defender.Unit.GetName(), hurt, defender.Unit.GetHealth()))
+    model.AddLogEvent(fmt.Sprintf("%v damage roll %v, %v took %v damage. HP now %v", attacker.Unit.GetName(), damage, defender.Unit.GetName(), hurt, defender.Unit.GetHealth()))
 }
 
 /* attacker is performing a physical melee attack against defender
  */
-func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
+func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
     // for each figure in attacker, choose a random number from 1-100, if lower than the ToHit percent then
     // add 1 damage point. do this random roll for however much the melee attack power is
 
@@ -2952,41 +2974,41 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                 damageFuncs := []func(){}
 
                 for range attacks {
-                    damage, throwHit := combat.doThrowAttack(attacker, defender)
+                    damage, throwHit := model.doThrowAttack(attacker, defender)
                     if throwHit {
                         throwDamage += damage
-                        immolationDamage += combat.immolationDamage(attacker, defender)
+                        immolationDamage += model.immolationDamage(attacker, defender)
                         if attacker.Unit.CanTouchAttack(units.DamageMeleePhysical) {
-                            damageFuncs = append(damageFuncs, combat.doTouchAttack(attacker, defender, 0)...)
+                            damageFuncs = append(damageFuncs, model.doTouchAttack(attacker, defender, 0)...)
                         }
                     }
 
-                    breathFuncs, breathHit := combat.doBreathAttack(attacker, defender)
+                    breathFuncs, breathHit := model.doBreathAttack(attacker, defender)
                     damageFuncs = append(damageFuncs, breathFuncs...)
 
                     if breathHit {
-                        immolationDamage += combat.immolationDamage(attacker, defender)
+                        immolationDamage += model.immolationDamage(attacker, defender)
                         if attacker.Unit.CanTouchAttack(units.DamageMeleePhysical) {
-                            damageFuncs = append(damageFuncs, combat.doTouchAttack(attacker, defender, 0)...)
+                            damageFuncs = append(damageFuncs, model.doTouchAttack(attacker, defender, 0)...)
                         }
                     }
                 }
 
-                gazeDamage, hit := combat.doGazeAttack(attacker, defender)
+                gazeDamage, hit := model.doGazeAttack(attacker, defender)
                 if hit {
-                    immolationDamage += combat.immolationDamage(attacker, defender)
+                    immolationDamage += model.immolationDamage(attacker, defender)
                     if attacker.Unit.CanTouchAttack(units.DamageMeleePhysical) {
-                        damageFuncs = append(damageFuncs, combat.doTouchAttack(attacker, defender, 0)...)
+                        damageFuncs = append(damageFuncs, model.doTouchAttack(attacker, defender, 0)...)
                     }
                 }
 
                 if throwDamage > 0 {
                     damage := defender.ApplyDamage(throwDamage, units.DamageThrown, false)
-                    combat.Observer.ThrowAttack(attacker, defender, damage)
-                    combat.AddLogEvent(fmt.Sprintf("%v throws %v at %v. HP now %v", attacker.Unit.GetName(), damage, defender.Unit.GetName(), defender.Unit.GetHealth()))
+                    model.Observer.ThrowAttack(attacker, defender, damage)
+                    model.AddLogEvent(fmt.Sprintf("%v throws %v at %v. HP now %v", attacker.Unit.GetName(), damage, defender.Unit.GetName(), defender.Unit.GetHealth()))
                 }
 
-                combat.ApplyImmolationDamage(attacker, defender, immolationDamage)
+                model.ApplyImmolationDamage(attacker, defender, immolationDamage)
                 for _, f := range damageFuncs {
                     f()
                 }
@@ -2997,15 +3019,15 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                 immolationDamage := 0
                 damageFuncs := []func(){}
 
-                gazeDamage, hit := combat.doGazeAttack(defender, attacker)
+                gazeDamage, hit := model.doGazeAttack(defender, attacker)
                 if hit {
-                    immolationDamage += combat.immolationDamage(defender, attacker)
+                    immolationDamage += model.immolationDamage(defender, attacker)
                     if defender.Unit.CanTouchAttack(units.DamageMeleePhysical) {
-                        damageFuncs = append(damageFuncs, combat.doTouchAttack(defender, attacker, 0)...)
+                        damageFuncs = append(damageFuncs, model.doTouchAttack(defender, attacker, 0)...)
                     }
                 }
 
-                combat.ApplyImmolationDamage(defender, attacker, immolationDamage)
+                model.ApplyImmolationDamage(defender, attacker, immolationDamage)
                 for _, f := range damageFuncs {
                     f()
                 }
@@ -3016,8 +3038,8 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
             case 3:
                 if defender.Unit.HasAbility(data.AbilityCauseFear) || defender.Unit.HasEnchantment(data.UnitEnchantmentCloakOfFear) {
                     attackerFear = attacker.CauseFear()
-                    combat.AddLogEvent(fmt.Sprintf("%v causes fear in %v for %v figures", defender.Unit.GetName(), attacker.Unit.GetName(), attackerFear))
-                    combat.Observer.CauseFear(defender, attacker, attackerFear)
+                    model.AddLogEvent(fmt.Sprintf("%v causes fear in %v for %v figures", defender.Unit.GetName(), attacker.Unit.GetName(), attackerFear))
+                    model.Observer.CauseFear(defender, attacker, attackerFear)
                 }
             case 4:
                 if attacker.Unit.HasAbility(data.AbilityFirstStrike) && !defender.Unit.HasAbility(data.AbilityNegateFirstStrike) {
@@ -3028,14 +3050,14 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                     damageFuncs := []func(){}
 
                     if hit {
-                        combat.Observer.MeleeAttack(attacker, defender, attackerDamage)
-                        immolationDamage += combat.immolationDamage(attacker, defender)
+                        model.Observer.MeleeAttack(attacker, defender, attackerDamage)
+                        immolationDamage += model.immolationDamage(attacker, defender)
                         if attacker.Unit.CanTouchAttack(units.DamageMeleePhysical) {
-                            damageFuncs = append(damageFuncs, combat.doTouchAttack(attacker, defender, attackerFear)...)
+                            damageFuncs = append(damageFuncs, model.doTouchAttack(attacker, defender, attackerFear)...)
                         }
 
-                        combat.ApplyMeleeDamage(attacker, defender, attackerDamage)
-                        combat.ApplyImmolationDamage(attacker, defender, immolationDamage)
+                        model.ApplyMeleeDamage(attacker, defender, attackerDamage)
+                        model.ApplyImmolationDamage(attacker, defender, immolationDamage)
                         for _, f := range damageFuncs {
                             f()
                         }
@@ -3045,8 +3067,8 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                 // attacker fear attack
                 if attacker.Unit.HasAbility(data.AbilityCauseFear) || attacker.Unit.HasEnchantment(data.UnitEnchantmentCloakOfFear) {
                     defenderFear = defender.CauseFear()
-                    combat.AddLogEvent(fmt.Sprintf("%v causes fear in %v for %v figures", attacker.Unit.GetName(), defender.Unit.GetName(), defenderFear))
-                    combat.Observer.CauseFear(attacker, defender, defenderFear)
+                    model.AddLogEvent(fmt.Sprintf("%v causes fear in %v for %v figures", attacker.Unit.GetName(), defender.Unit.GetName(), defenderFear))
+                    model.Observer.CauseFear(attacker, defender, defenderFear)
                 }
             case 6:
                 didFirstStrike := attacker.Unit.HasAbility(data.AbilityFirstStrike) && !defender.Unit.HasAbility(data.AbilityNegateFirstStrike)
@@ -3077,11 +3099,11 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                     attackerDamage, hit := attacker.ComputeMeleeDamage(attackerFear)
 
                     if hit {
-                        combat.Observer.MeleeAttack(attacker, defender, attackerDamage)
+                        model.Observer.MeleeAttack(attacker, defender, attackerDamage)
                         defenderMeleeDamage += attackerDamage
-                        defenderImmolationDamage += combat.immolationDamage(attacker, defender)
+                        defenderImmolationDamage += model.immolationDamage(attacker, defender)
                         if attacker.Unit.CanTouchAttack(units.DamageMeleePhysical) {
-                            damageFuncs = append(damageFuncs, combat.doTouchAttack(attacker, defender, attackerFear)...)
+                            damageFuncs = append(damageFuncs, model.doTouchAttack(attacker, defender, attackerFear)...)
                         }
                     }
                 }
@@ -3099,20 +3121,20 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                     defenderDamage, hit := defender.ComputeMeleeDamage(defenderFear)
 
                     if hit {
-                        combat.Observer.MeleeAttack(defender, attacker, defenderDamage)
+                        model.Observer.MeleeAttack(defender, attacker, defenderDamage)
                         attackerMeleeDamage += defenderDamage
-                        attackerImmolationDamage += combat.immolationDamage(defender, attacker)
+                        attackerImmolationDamage += model.immolationDamage(defender, attacker)
                         if defender.Unit.CanTouchAttack(units.DamageMeleePhysical) {
-                            damageFuncs = append(damageFuncs, combat.doTouchAttack(defender, attacker, defenderFear)...)
+                            damageFuncs = append(damageFuncs, model.doTouchAttack(defender, attacker, defenderFear)...)
                         }
                     }
                 }
 
-                combat.ApplyImmolationDamage(attacker, defender, defenderImmolationDamage)
-                combat.ApplyMeleeDamage(attacker, defender, defenderMeleeDamage)
+                model.ApplyImmolationDamage(attacker, defender, defenderImmolationDamage)
+                model.ApplyMeleeDamage(attacker, defender, defenderMeleeDamage)
 
-                combat.ApplyImmolationDamage(defender, attacker, attackerImmolationDamage)
-                combat.ApplyMeleeDamage(defender, attacker, attackerMeleeDamage)
+                model.ApplyImmolationDamage(defender, attacker, attackerImmolationDamage)
+                model.ApplyMeleeDamage(defender, attacker, attackerMeleeDamage)
 
                 for _, f := range damageFuncs {
                     f()
@@ -3124,17 +3146,17 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
         doRound(round)
         end := false
         if defender.Unit.GetHealth() <= 0 {
-            combat.AddLogEvent(fmt.Sprintf("%v is killed", defender.Unit.GetName()))
-            combat.RemoveUnit(defender)
+            model.AddLogEvent(fmt.Sprintf("%v is killed", defender.Unit.GetName()))
+            model.RemoveUnit(defender)
             end = true
-            combat.Observer.UnitKilled(defender)
+            model.Observer.UnitKilled(defender)
         }
 
         if attacker.Unit.GetHealth() <= 0 {
-            combat.AddLogEvent(fmt.Sprintf("%v is killed", attacker.Unit.GetName()))
-            combat.RemoveUnit(attacker)
+            model.AddLogEvent(fmt.Sprintf("%v is killed", attacker.Unit.GetName()))
+            model.RemoveUnit(attacker)
             end = true
-            combat.Observer.UnitKilled(attacker)
+            model.Observer.UnitKilled(attacker)
         }
 
         if end {
@@ -3240,7 +3262,7 @@ func (combat *CombatScreen) createRangeAttack(attacker *ArmyUnit, defender *Army
         target.ApplyDamage(damage, attacker.Unit.GetRangedAttackDamageType(), false)
 
         if attacker.Unit.CanTouchAttack(attacker.Unit.GetRangedAttackDamageType()) {
-            combat.doTouchAttack(attacker, target, 0)
+            combat.Model.doTouchAttack(attacker, target, 0)
         }
 
         // log.Printf("Ranged attack from %v: damage=%v defense=%v distance=%v", attacker.Unit.Name, damage, defense, tileDistance)
@@ -3253,28 +3275,28 @@ func (combat *CombatScreen) createRangeAttack(attacker *ArmyUnit, defender *Army
         target.TakeDamage(damage)
         */
         if target.Unit.GetHealth() <= 0 {
-            combat.RemoveUnit(target)
+            combat.Model.RemoveUnit(target)
         }
     }
 
     for _, offset := range combatPoints(attacker.Figures()) {
-        combat.Projectiles = append(combat.Projectiles, combat.createUnitToUnitProjectile(attacker, defender, offset, animation, explode, effect))
+        combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitToUnitProjectile(attacker, defender, offset, animation, explode, effect))
     }
 }
 
-func (combat *CombatScreen) RemoveUnit(unit *ArmyUnit){
+func (model *CombatModel) RemoveUnit(unit *ArmyUnit){
     if unit.Team == TeamDefender {
-        combat.DefeatedDefenders += 1
-        combat.DefendingArmy.RemoveUnit(unit)
+        model.DefeatedDefenders += 1
+        model.DefendingArmy.RemoveUnit(unit)
     } else {
-        combat.DefeatedAttackers += 1
-        combat.AttackingArmy.RemoveUnit(unit)
+        model.DefeatedAttackers += 1
+        model.AttackingArmy.RemoveUnit(unit)
     }
 
-    combat.Tiles[unit.Y][unit.X].Unit = nil
+    model.Tiles[unit.Y][unit.X].Unit = nil
 
-    if unit == combat.SelectedUnit {
-        combat.NextUnit()
+    if unit == model.SelectedUnit {
+        model.NextUnit()
     }
 }
 
@@ -3335,10 +3357,10 @@ func (combat *CombatScreen) doSelectTile(yield coroutine.YieldFunc, selecter Tea
     combat.UI.AddElements(elements)
 
     for !quit {
-        combat.Counter += 1
+        combat.Model.Counter += 1
 
-        for _, unit := range combat.OtherUnits {
-            if combat.Counter % 6 == 0 {
+        for _, unit := range combat.Model.OtherUnits {
+            if combat.Model.Counter % 6 == 0 {
                 unit.Animation.Next()
             }
         }
@@ -3421,10 +3443,10 @@ func (combat *CombatScreen) doSelectUnit(yield coroutine.YieldFunc, selecter Tea
     combat.UI.AddElements(elements)
 
     for !quit {
-        combat.Counter += 1
+        combat.Model.Counter += 1
 
-        for _, unit := range combat.OtherUnits {
-            if combat.Counter % 6 == 0 {
+        for _, unit := range combat.Model.OtherUnits {
+            if combat.Model.Counter % 6 == 0 {
                 unit.Animation.Next()
             }
         }
@@ -3440,7 +3462,7 @@ func (combat *CombatScreen) doSelectUnit(yield coroutine.YieldFunc, selecter Tea
         if mouseY >= hudY {
             combat.MouseState = CombatClickHud
         } else {
-            unit := combat.GetUnit(combat.MouseTileX, combat.MouseTileY)
+            unit := combat.Model.GetUnit(combat.MouseTileX, combat.MouseTileY)
             if unit == nil || (selectTeam != TeamEither && unit.Team != selectTeam) || !canTarget(unit){
                 combat.MouseState = CombatNotOk
             }
@@ -3473,7 +3495,7 @@ func (combat *CombatScreen) ProcessEvents(yield coroutine.YieldFunc) {
                         use := event.(*CombatEventSelectUnit)
                         combat.doSelectUnit(yield, use.Selecter, use.Spell, use.SelectTarget, use.CanTarget, use.SelectTeam)
                     case *CombatEventNextUnit:
-                        combat.NextUnit()
+                        combat.Model.NextUnit()
                 }
             default:
                 return
@@ -3482,8 +3504,8 @@ func (combat *CombatScreen) ProcessEvents(yield coroutine.YieldFunc) {
 }
 
 func (combat *CombatScreen) UpdateAnimations(){
-    for _, unit := range combat.OtherUnits {
-        if combat.Counter % 6 == 0 {
+    for _, unit := range combat.Model.OtherUnits {
+        if combat.Model.Counter % 6 == 0 {
             unit.Animation.Next()
         }
     }
@@ -3494,7 +3516,7 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
         return
     }
 
-    mover.MovementTick = combat.Counter
+    mover.MovementTick = combat.Model.Counter
     mover.Moving = true
     mover.MoveX = float64(mover.X)
     mover.MoveY = float64(mover.Y)
@@ -3528,7 +3550,7 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
     for len(path) > 0 {
         targetX, targetY := path[0].X, path[0].Y
 
-        combat.AddLogEvent(fmt.Sprintf("Moving %v %v,%v -> %v,%v", mover.Unit.GetName(), mover.X, mover.Y, targetX, targetY))
+        combat.Model.AddLogEvent(fmt.Sprintf("Moving %v %v,%v -> %v,%v", mover.Unit.GetName(), mover.X, mover.Y, targetX, targetY))
 
         angle := math.Atan2(float64(targetY) - mover.MoveY, float64(targetX) - mover.MoveX)
 
@@ -3546,7 +3568,7 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
         reached := false
         for !reached {
             combat.UpdateAnimations()
-            combat.Counter += 1
+            combat.Model.Counter += 1
             mover.MoveX += math.Cos(angle) * speed
             mover.MoveY += math.Sin(angle) * speed
 
@@ -3558,7 +3580,7 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
             distanceAboveRange(float64(mover.X), float64(mover.Y), float64(targetX), float64(targetY), 2.5) {
 
                 // tile where the unit came from is now empty
-                combat.Tiles[mover.Y][mover.X].Unit = nil
+                combat.Model.Tiles[mover.Y][mover.X].Unit = nil
 
                 mover.MovesLeft = mover.MovesLeft.Subtract(pathCost(image.Pt(mover.X, mover.Y), image.Pt(targetX, targetY)))
                 if mover.MovesLeft.LessThan(fraction.FromInt(0)) {
@@ -3570,7 +3592,7 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
                 mover.MoveX = float64(targetX)
                 mover.MoveY = float64(targetY)
                 // new tile the unit landed on is now occupied
-                combat.Tiles[mover.Y][mover.X].Unit = mover
+                combat.Model.Tiles[mover.Y][mover.X].Unit = mover
                 path = path[1:]
                 reached = true
             }
@@ -3634,48 +3656,48 @@ func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUni
         sound.Play()
     }
 
-    combat.AddLogEvent(fmt.Sprintf("%v attacks %v", attacker.Unit.GetName(), defender.Unit.GetName()))
+    combat.Model.AddLogEvent(fmt.Sprintf("%v attacks %v", attacker.Unit.GetName(), defender.Unit.GetName()))
 
     for i := range 60 {
-        combat.Counter += 1
+        combat.Model.Counter += 1
         combat.UpdateAnimations()
 
         // delay the actual melee computation to give time for the sound to play
         if i == 20 {
-            combat.meleeAttack(combat.SelectedUnit, defender)
+            combat.Model.meleeAttack(combat.Model.SelectedUnit, defender)
         }
 
         yield()
     }
 }
 
-func (combat *CombatScreen) IsAIControlled(unit *ArmyUnit) bool {
+func (model *CombatModel) IsAIControlled(unit *ArmyUnit) bool {
     if unit.Team == TeamDefender {
-        return combat.DefendingArmy.IsAI()
+        return model.DefendingArmy.IsAI()
     } else {
-        return combat.AttackingArmy.IsAI()
+        return model.AttackingArmy.IsAI()
     }
 }
 
-func (combat *CombatScreen) GetArmy(unit *ArmyUnit) *Army {
+func (model *CombatModel) GetArmy(unit *ArmyUnit) *Army {
     if unit.Team == TeamDefender {
-        return combat.DefendingArmy
+        return model.DefendingArmy
     }
 
-    return combat.AttackingArmy
+    return model.AttackingArmy
 }
 
-func (combat *CombatScreen) GetOtherArmy(unit *ArmyUnit) *Army {
+func (model *CombatModel) GetOtherArmy(unit *ArmyUnit) *Army {
     if unit.Team == TeamDefender {
-        return combat.AttackingArmy
+        return model.AttackingArmy
     }
 
-    return combat.DefendingArmy
+    return model.DefendingArmy
 }
 
 func (combat *CombatScreen) doAI(yield coroutine.YieldFunc, aiUnit *ArmyUnit) {
     // aiArmy := combat.GetArmy(combat.SelectedUnit)
-    otherArmy := combat.GetOtherArmy(aiUnit)
+    otherArmy := combat.Model.GetOtherArmy(aiUnit)
 
     // try a ranged attack first
     if aiUnit.RangedAttacks > 0 {
@@ -3703,10 +3725,10 @@ func (combat *CombatScreen) doAI(yield coroutine.YieldFunc, aiUnit *ArmyUnit) {
     getPath := func (unit *ArmyUnit) pathfinding.Path {
         path, found := paths[unit]
         if !found {
-            combat.Tiles[unit.Y][unit.X].Unit = nil
+            combat.Model.Tiles[unit.Y][unit.X].Unit = nil
             var ok bool
-            path, ok = combat.computePath(aiUnit.X, aiUnit.Y, unit.X, unit.Y)
-            combat.Tiles[unit.Y][unit.X].Unit = unit
+            path, ok = combat.Model.computePath(aiUnit.X, aiUnit.Y, unit.X, unit.Y)
+            combat.Model.Tiles[unit.Y][unit.X].Unit = unit
             if ok {
                 paths[unit] = path
             } else {
@@ -3791,24 +3813,24 @@ func (combat *CombatScreen) UpdateMouseState() {
         case CombatNotOk:
             globalMouse.Mouse.SetImage(combat.Mouse.Error)
         case CombatCast:
-            index := (combat.Counter / 8) % uint64(len(combat.Mouse.Cast))
+            index := (combat.Model.Counter / 8) % uint64(len(combat.Mouse.Cast))
             globalMouse.Mouse.SetImage(combat.Mouse.Cast[index])
     }
 }
 
 func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
     // defender wins in a tie
-    if len(combat.AttackingArmy.Units) == 0 {
-        combat.AddLogEvent("Defender wins!")
+    if len(combat.Model.AttackingArmy.Units) == 0 {
+        combat.Model.AddLogEvent("Defender wins!")
         return CombatStateDefenderWin
     }
 
-    if len(combat.DefendingArmy.Units) == 0 {
-        combat.AddLogEvent("Attacker wins!")
+    if len(combat.Model.DefendingArmy.Units) == 0 {
+        combat.Model.AddLogEvent("Attacker wins!")
         return CombatStateAttackerWin
     }
 
-    combat.Counter += 1
+    combat.Model.Counter += 1
     combat.UI.StandardUpdate()
 
     combat.UpdateMouseState()
@@ -3872,30 +3894,30 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
 
     combat.ProcessEvents(yield)
 
-    if len(combat.Projectiles) > 0 {
+    if len(combat.Model.Projectiles) > 0 {
         combat.doProjectiles(yield)
     }
 
-    if combat.SelectedUnit != nil && combat.IsAIControlled(combat.SelectedUnit) {
-        aiUnit := combat.SelectedUnit
+    if combat.Model.SelectedUnit != nil && combat.Model.IsAIControlled(combat.Model.SelectedUnit) {
+        aiUnit := combat.Model.SelectedUnit
 
         // keep making choices until the unit runs out of moves
         for aiUnit.MovesLeft.GreaterThan(fraction.FromInt(0)) {
             combat.doAI(yield, aiUnit)
         }
-        aiUnit.LastTurn = combat.CurrentTurn
-        combat.NextUnit()
+        aiUnit.LastTurn = combat.Model.CurrentTurn
+        combat.Model.NextUnit()
         return CombatStateRunning
     }
 
     if combat.UI.GetHighestLayerValue() > 0 || mouseY >= hudY {
         combat.MouseState = CombatClickHud
-    } else if combat.SelectedUnit != nil && combat.SelectedUnit.Moving {
+    } else if combat.Model.SelectedUnit != nil && combat.Model.SelectedUnit.Moving {
         combat.MouseState = CombatClickHud
-    } else if combat.SelectedUnit != nil {
-        who := combat.GetUnit(combat.MouseTileX, combat.MouseTileY)
+    } else if combat.Model.SelectedUnit != nil {
+        who := combat.Model.GetUnit(combat.MouseTileX, combat.MouseTileY)
         if who == nil {
-            if combat.CanMoveTo(combat.SelectedUnit, combat.MouseTileX, combat.MouseTileY) {
+            if combat.Model.CanMoveTo(combat.Model.SelectedUnit, combat.MouseTileX, combat.MouseTileY) {
                 combat.MouseState = CombatMoveOk
             } else {
                 combat.MouseState = CombatNotOk
@@ -3903,9 +3925,9 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
         } else {
             newState := CombatNotOk
             // prioritize range attack over melee
-            if combat.canRangeAttack(combat.SelectedUnit, who) && combat.withinArrowRange(combat.SelectedUnit, who) {
+            if combat.canRangeAttack(combat.Model.SelectedUnit, who) && combat.withinArrowRange(combat.Model.SelectedUnit, who) {
                 newState = CombatRangeAttackOk
-            } else if combat.canMeleeAttack(combat.SelectedUnit, who) && combat.withinMeleeRange(combat.SelectedUnit, who) {
+            } else if combat.canMeleeAttack(combat.Model.SelectedUnit, who) && combat.withinMeleeRange(combat.Model.SelectedUnit, who) {
                 newState = CombatMeleeAttackOk
             }
 
@@ -3915,7 +3937,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
 
     // if there is no unit at the tile position then the highlighted unit will be nil
     if combat.UI.GetHighestLayerValue() == 0 {
-        combat.HighlightedUnit = combat.GetUnit(combat.MouseTileX, combat.MouseTileY)
+        combat.Model.HighlightedUnit = combat.Model.GetUnit(combat.MouseTileX, combat.MouseTileY)
     }
 
     // dont allow clicks into the hud area
@@ -3924,14 +3946,14 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
        inputmanager.LeftClick() &&
        mouseY < hudY {
 
-        if combat.TileIsEmpty(combat.MouseTileX, combat.MouseTileY) && combat.CanMoveTo(combat.SelectedUnit, combat.MouseTileX, combat.MouseTileY){
-            path, _ := combat.FindPath(combat.SelectedUnit, combat.MouseTileX, combat.MouseTileY)
+        if combat.TileIsEmpty(combat.MouseTileX, combat.MouseTileY) && combat.Model.CanMoveTo(combat.Model.SelectedUnit, combat.MouseTileX, combat.MouseTileY){
+            path, _ := combat.Model.FindPath(combat.Model.SelectedUnit, combat.MouseTileX, combat.MouseTileY)
             path = path[1:]
-            combat.doMoveUnit(yield, combat.SelectedUnit, path)
+            combat.doMoveUnit(yield, combat.Model.SelectedUnit, path)
         } else {
 
-           defender := combat.GetUnit(combat.MouseTileX, combat.MouseTileY)
-           attacker := combat.SelectedUnit
+           defender := combat.Model.GetUnit(combat.MouseTileX, combat.MouseTileY)
+           attacker := combat.Model.SelectedUnit
 
            // try a ranged attack first
            if defender != nil && combat.withinArrowRange(attacker, defender) && combat.canRangeAttack(attacker, defender) {
@@ -3945,9 +3967,8 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
     }
 
     // the unit died or is out of moves
-    if combat.SelectedUnit != nil && (combat.SelectedUnit.Unit.GetHealth() <= 0 || combat.SelectedUnit.MovesLeft.LessThanEqual(fraction.FromInt(0))) {
-        combat.SelectedUnit.LastTurn = combat.CurrentTurn
-        combat.NextUnit()
+    if combat.Model.SelectedUnit != nil && (combat.Model.SelectedUnit.Unit.GetHealth() <= 0 || combat.Model.SelectedUnit.MovesLeft.LessThanEqual(fraction.FromInt(0))) {
+        combat.Model.DoneTurn()
     }
 
     // log.Printf("Mouse original %v,%v %v,%v -> %v,%v", mouseX, mouseY, tileX, tileY, combat.MouseTileX, combat.MouseTileY)
@@ -3973,7 +3994,7 @@ func (combat *CombatScreen) DrawHighlightedTile(screen *ebiten.Image, x int, y i
     // bottom
     x4, y4 := useMatrix.Apply(0, float64(tile0.Bounds().Dy()/2))
 
-    gradient := (math.Sin(float64(combat.Counter)/6) + 1)
+    gradient := (math.Sin(float64(combat.Model.Counter)/6) + 1)
 
     lerp := func(minC uint8, maxC uint8) uint8 {
         out := float64(minC) + gradient * float64(maxC - minC)/2
@@ -4102,7 +4123,7 @@ func (combat *CombatScreen) ShowUnitInfo(screen *ebiten.Image, unit *ArmyUnit){
 
 func (combat *CombatScreen) Draw(screen *ebiten.Image){
 
-    animationIndex := combat.Counter / 8
+    animationIndex := combat.Model.Counter / 8
 
     var options ebiten.DrawImageOptions
 
@@ -4129,7 +4150,7 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
         x := point.X
         y := point.Y
 
-        image, _ := combat.ImageCache.GetImage(combat.Tiles[y][x].Lbx, combat.Tiles[y][x].Index, 0)
+        image, _ := combat.ImageCache.GetImage(combat.Model.Tiles[y][x].Lbx, combat.Model.Tiles[y][x].Index, 0)
         options.GeoM.Reset()
         // tx,ty is the middle of the tile
         tx, ty := tilePosition(float64(x), float64(y))
@@ -4137,7 +4158,7 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
         options.GeoM.Translate(tx, ty)
         screen.DrawImage(image, &options)
 
-        if combat.Tiles[y][x].Mud {
+        if combat.Model.Tiles[y][x].Mud {
             mudTiles, _ := combat.ImageCache.GetImages("cmbtcity.lbx", 118)
             index := animationIndex % uint64(len(mudTiles))
             screen.DrawImage(mudTiles[index], &options)
@@ -4163,14 +4184,14 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
         x := point.X
         y := point.Y
 
-        extra := combat.Tiles[y][x].ExtraObject
+        extra := combat.Model.Tiles[y][x].ExtraObject
         if extra.Drawer != nil {
             options.GeoM.Reset()
             tx, ty := tilePosition(float64(x), float64(y))
             options.GeoM.Scale(combat.CameraScale, combat.CameraScale)
             options.GeoM.Translate(tx, ty)
 
-            extra.Drawer(screen, &combat.ImageCache, &options, combat.Counter)
+            extra.Drawer(screen, &combat.ImageCache, &options, combat.Model.Counter)
         } else if extra.Index != -1 {
             options.GeoM.Reset()
             // tx,ty is the middle of the tile
@@ -4204,8 +4225,8 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
 
     combat.DrawHighlightedTile(screen, combat.MouseTileX, combat.MouseTileY, &useMatrix, color.RGBA{R: 0, G: 0x67, B: 0x78, A: 255}, color.RGBA{R: 0, G: 0xef, B: 0xff, A: 255})
 
-    if combat.SelectedUnit != nil {
-        path, ok := combat.FindPath(combat.SelectedUnit, combat.MouseTileX, combat.MouseTileY)
+    if combat.Model.SelectedUnit != nil {
+        path, ok := combat.Model.FindPath(combat.Model.SelectedUnit, combat.MouseTileX, combat.MouseTileY)
         if ok {
             var options ebiten.DrawImageOptions
             options.ColorScale.ScaleAlpha(0.8)
@@ -4229,8 +4250,8 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
         minColor := color.RGBA{R: 32, G: 0, B: 0, A: 255}
         maxColor := color.RGBA{R: 255, G: 0, B: 0, A: 255}
 
-        if !combat.SelectedUnit.Moving {
-            combat.DrawHighlightedTile(screen, combat.SelectedUnit.X, combat.SelectedUnit.Y, &useMatrix, minColor, maxColor)
+        if !combat.Model.SelectedUnit.Moving {
+            combat.DrawHighlightedTile(screen, combat.Model.SelectedUnit.X, combat.Model.SelectedUnit.Y, &useMatrix, minColor, maxColor)
         }
     }
 
@@ -4271,13 +4292,13 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
                 index = 2 + animationIndex % 2
             }
 
-            if combat.SelectedUnit == unit {
-                scaleValue := 1.5 + math.Sin(float64(combat.Counter)/6)/2
+            if combat.Model.SelectedUnit == unit {
+                scaleValue := 1.5 + math.Sin(float64(combat.Model.Counter)/6)/2
                 unitOptions.ColorScale.Scale(float32(scaleValue), float32(scaleValue), 1, 1)
             }
 
-            if combat.HighlightedUnit == unit {
-                scaleValue := 1.5 + math.Sin(float64(combat.Counter)/6)/2
+            if combat.Model.HighlightedUnit == unit {
+                scaleValue := 1.5 + math.Sin(float64(combat.Model.Counter)/6)/2
                 unitOptions.ColorScale.Scale(float32(scaleValue), 1, 1, 1)
             }
 
@@ -4290,17 +4311,17 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
 
             // _ = index
             enchantment := util.First(unit.Unit.GetEnchantments(), data.UnitEnchantmentNone)
-            RenderCombatUnit(screen, combatImages[index], unitOptions, unit.Figures(), enchantment, combat.Counter, &combat.ImageCache)
+            RenderCombatUnit(screen, combatImages[index], unitOptions, unit.Figures(), enchantment, combat.Model.Counter, &combat.ImageCache)
         }
     }
 
     // sort units in top down order before drawing them
-    allUnits := make([]*ArmyUnit, 0, len(combat.DefendingArmy.Units) + len(combat.AttackingArmy.Units))
-    for _, unit := range combat.DefendingArmy.Units {
+    allUnits := make([]*ArmyUnit, 0, len(combat.Model.DefendingArmy.Units) + len(combat.Model.AttackingArmy.Units))
+    for _, unit := range combat.Model.DefendingArmy.Units {
         allUnits = append(allUnits, unit)
     }
 
-    for _, unit := range combat.AttackingArmy.Units {
+    for _, unit := range combat.Model.AttackingArmy.Units {
         allUnits = append(allUnits, unit)
     }
 
@@ -4334,7 +4355,7 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
         renderUnit(unit)
     }
 
-    for _, unit := range combat.OtherUnits {
+    for _, unit := range combat.Model.OtherUnits {
         var unitOptions ebiten.DrawImageOptions
         tx, ty := tilePosition(float64(unit.X), float64(unit.Y))
         unitOptions.GeoM.Scale(combat.CameraScale, combat.CameraScale)
@@ -4348,11 +4369,11 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
 
     combat.UI.Draw(combat.UI, screen)
 
-    if combat.HighlightedUnit != nil {
-        combat.ShowUnitInfo(screen, combat.HighlightedUnit)
+    if combat.Model.HighlightedUnit != nil {
+        combat.ShowUnitInfo(screen, combat.Model.HighlightedUnit)
     }
 
-    for _, projectile := range combat.Projectiles {
+    for _, projectile := range combat.Model.Projectiles {
         var frame *ebiten.Image
         if projectile.Exploding {
             frame = projectile.Explode.Frame()
