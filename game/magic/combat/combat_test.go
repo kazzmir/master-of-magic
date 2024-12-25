@@ -105,7 +105,7 @@ func (observer *TestObserver) CauseFear(attacker *ArmyUnit, defender *ArmyUnit, 
 func (observer *TestObserver) UnitKilled(unit *ArmyUnit){
 }
 
-func TestBasicCombat(test *testing.T){
+func TestBasicMelee(test *testing.T){
     defendingArmy := &Army{
     }
 
@@ -141,14 +141,14 @@ func TestBasicCombat(test *testing.T){
     combat.Observer.AddObserver(observer)
 
     // even if both units kill each other, they both get to attack
-    combat.meleeAttack(defendingArmy.Units[0], attackingArmy.Units[0])
+    combat.meleeAttack(attackingArmy.Units[0], defendingArmy.Units[0])
 
     if !attackerMelee || !defenderMelee {
         test.Errorf("Error: attacker and defender should have both attacked")
     }
 }
 
-func TestBasicHaste(test *testing.T){
+func TestAttackerHaste(test *testing.T){
     defendingArmy := &Army{
     }
 
@@ -186,7 +186,7 @@ func TestBasicHaste(test *testing.T){
     combat.Observer.AddObserver(observer)
 
     // attacker should get to attack twice
-    combat.meleeAttack(defendingArmy.Units[0], attackingArmy.Units[0])
+    combat.meleeAttack(attackingArmy.Units[0], defendingArmy.Units[0])
 
     if attackerMelee != 2 {
         test.Errorf("Error: attacker should have attacked twice")
@@ -194,5 +194,58 @@ func TestBasicHaste(test *testing.T){
 
     if defenderMelee != 1 {
         test.Errorf("Error: defender should have attacked once")
+    }
+}
+
+// attacker should melee first and cause enough damage to kill the defender
+func TestFirstStrike(test *testing.T){
+    defendingArmy := &Army{
+    }
+
+    attackingArmy := &Army{
+    }
+
+    attackerUnit := units.LizardSpearmen
+    attackerUnit.Abilities = append(attackerUnit.Abilities, data.MakeAbility(data.AbilityFirstStrike))
+    // ensure attacker can kill the defender in one hit
+    attackerUnit.MeleeAttackPower = 10000
+
+    defender := units.MakeOverworldUnit(units.LizardSpearmen)
+    attacker := units.MakeOverworldUnit(attackerUnit)
+
+    defendingArmy.AddUnit(defender)
+    attackingArmy.AddUnit(attacker)
+
+    combat := &CombatScreen{
+        SelectedUnit: nil,
+        Tiles: makeTiles(5, 5, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}),
+        Turn: TeamDefender,
+        DefendingArmy: defendingArmy,
+        AttackingArmy: attackingArmy,
+    }
+
+    attackerMelee := 0
+    defenderMelee := 0
+
+    observer := &TestObserver{
+        Melee: func(meleeAttacker *ArmyUnit, meleeDefender *ArmyUnit, damageRoll int, defenderDamage int){
+            if attackingArmy.Units[0] == meleeAttacker {
+                attackerMelee += 1
+            } else if defendingArmy.Units[0] == meleeAttacker {
+                defenderMelee += 1
+            }
+        },
+    }
+    combat.Observer.AddObserver(observer)
+
+    // attacker should get to attack twice
+    combat.meleeAttack(attackingArmy.Units[0], defendingArmy.Units[0])
+
+    if attackerMelee != 1 {
+        test.Errorf("Error: attacker should have attacked once")
+    }
+
+    if defenderMelee != 0 {
+        test.Errorf("Error: defender should have been killed before attacking")
     }
 }
