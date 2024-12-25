@@ -2740,7 +2740,9 @@ func (combat *CombatScreen) doThrowAttack(attacker *ArmyUnit, defender *ArmyUnit
 
 func (combat *CombatScreen) immolationDamage(attacker *ArmyUnit, defender *ArmyUnit) int {
     if attacker.Unit.HasAbility(data.AbilityImmolation) || attacker.Unit.HasEnchantment(data.UnitEnchantmentImmolation) {
-        return 4 * defender.Figures()
+        damage := 4 * defender.Figures()
+        combat.Observer.ImmolationAttack(attacker, defender, damage)
+        return damage
     }
 
     return 0
@@ -2901,8 +2903,12 @@ func (combat *CombatScreen) ApplyImmolationDamage(attacker *ArmyUnit, defender *
     if immolationDamage > 0 {
         hurt := defender.ApplyDamage(immolationDamage, units.DamageFire, false)
         combat.AddLogEvent(fmt.Sprintf("%v is immolated for %v damage. HP now %v", defender.Unit.GetName(), hurt, defender.Unit.GetHealth()))
-        combat.Observer.ImmolationAttack(attacker, defender, hurt)
     }
+}
+
+func (combat *CombatScreen) ApplyMeleeDamage(attacker *ArmyUnit, defender *ArmyUnit, damage int) {
+    hurt := defender.ApplyDamage(damage, units.DamageMeleePhysical, false)
+    combat.AddLogEvent(fmt.Sprintf("Attacker damage roll %v, defender took %v damage. HP now %v", damage, hurt, defender.Unit.GetHealth()))
 }
 
 /* attacker is performing a physical melee attack against defender
@@ -2984,7 +2990,7 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
 
                     if hit {
                         defenderHurt := defender.ApplyDamage(attackerDamage, units.DamageMeleePhysical, false)
-                        combat.Observer.MeleeAttack(attacker, defender, attackerDamage, defenderHurt)
+                        combat.Observer.MeleeAttack(attacker, defender, attackerDamage)
                         immolationDamage += combat.immolationDamage(attacker, defender)
                         if attacker.Unit.CanTouchAttack(units.DamageMeleePhysical) {
                             combat.doTouchAttack(attacker, defender, attackerFear)
@@ -3021,19 +3027,19 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                 }
 
                 defenderImmolationDamage := 0
+                defenderMeleeDamage := 0
 
                 // attacker has not melee attacked yet, so let them do it now, or they have haste so they can attack again
                 for range attacks {
                     attackerDamage, hit := attacker.ComputeMeleeDamage(attackerFear)
 
                     if hit {
-                        defenderHurt := defender.ApplyDamage(attackerDamage, units.DamageMeleePhysical, false)
-                        combat.Observer.MeleeAttack(attacker, defender, attackerDamage, defenderHurt)
+                        combat.Observer.MeleeAttack(attacker, defender, attackerDamage)
+                        defenderMeleeDamage += attackerDamage
                         defenderImmolationDamage += combat.immolationDamage(attacker, defender)
                         if attacker.Unit.CanTouchAttack(units.DamageMeleePhysical) {
                             combat.doTouchAttack(attacker, defender, attackerFear)
                         }
-                        combat.AddLogEvent(fmt.Sprintf("Attacker damage roll %v, defender took %v damage. HP now %v", attackerDamage, defenderHurt, defender.Unit.GetHealth()))
                     }
                 }
 
@@ -3043,24 +3049,27 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                 }
 
                 attackerImmolationDamage := 0
+                attackerMeleeDamage := 0
 
                 // defender does counter-attack
                 for range counters {
                     defenderDamage, hit := defender.ComputeMeleeDamage(defenderFear)
 
                     if hit {
-                        attackerHurt := attacker.ApplyDamage(defenderDamage, units.DamageMeleePhysical, false)
-                        combat.Observer.MeleeAttack(defender, attacker, defenderDamage, attackerHurt)
+                        combat.Observer.MeleeAttack(defender, attacker, defenderDamage)
+                        attackerMeleeDamage += defenderDamage
                         attackerImmolationDamage += combat.immolationDamage(defender, attacker)
                         if defender.Unit.CanTouchAttack(units.DamageMeleePhysical) {
                             combat.doTouchAttack(defender, attacker, defenderFear)
                         }
-                        combat.AddLogEvent(fmt.Sprintf("Defender damage roll %v, attacker took %v damage. HP now %v", defenderDamage, attackerHurt, attacker.Unit.GetHealth()))
                     }
                 }
 
                 combat.ApplyImmolationDamage(attacker, defender, defenderImmolationDamage)
+                combat.ApplyMeleeDamage(attacker, defender, defenderMeleeDamage)
+
                 combat.ApplyImmolationDamage(defender, attacker, attackerImmolationDamage)
+                combat.ApplyMeleeDamage(defender, attacker, attackerMeleeDamage)
             }
     }
 

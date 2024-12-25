@@ -18,7 +18,7 @@ type CombatObserver interface {
     FireBreathAttack(attacker *ArmyUnit, defender *ArmyUnit, damage int)
     LightningBreathAttack(attacker *ArmyUnit, defender *ArmyUnit, damage int)
     ImmolationAttack(attacker *ArmyUnit, defender *ArmyUnit, damage int)
-    MeleeAttack(attacker *ArmyUnit, defender *ArmyUnit, damageRoll int, defenderDamage int)
+    MeleeAttack(attacker *ArmyUnit, defender *ArmyUnit, damageRoll int)
     CauseFear(attacker *ArmyUnit, defender *ArmyUnit, fear int)
     UnitKilled(unit *ArmyUnit)
 }
@@ -49,9 +49,9 @@ func (observer *CombatObservers) ThrowAttack(attacker *ArmyUnit, defender *ArmyU
     }
 }
 
-func (observer *CombatObservers) MeleeAttack(attacker *ArmyUnit, defender *ArmyUnit, damageRoll int, defenderDamage int) {
+func (observer *CombatObservers) MeleeAttack(attacker *ArmyUnit, defender *ArmyUnit, damageRoll int) {
     for _, notify := range observer.Observers {
-        notify.MeleeAttack(attacker, defender, damageRoll, defenderDamage)
+        notify.MeleeAttack(attacker, defender, damageRoll)
     }
 }
 
