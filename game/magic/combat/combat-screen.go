@@ -854,6 +854,11 @@ type CombatScreen struct {
     */
 
     Log []CombatLogEvent
+    Observer CombatObservers
+}
+
+func (combat *CombatScreen) GetObserver() CombatObserver {
+    return &combat.Observer
 }
 
 type CombatLandscape int
@@ -2629,24 +2634,32 @@ func (combat *CombatScreen) doProjectiles(yield coroutine.YieldFunc) {
     }
 }
 
-func (combat *CombatScreen) doBreathAttack(attacker *ArmyUnit, defender *ArmyUnit) (int, bool) {
-    damage := 0
+func (combat *CombatScreen) doBreathAttack(attacker *ArmyUnit, defender *ArmyUnit) ([]func(), bool) {
+    damage := []func(){}
     hit := false
 
     if attacker.Unit.HasAbility(data.AbilityFireBreath) {
         strength := int(attacker.Unit.GetAbilityValue(data.AbilityFireBreath))
-        fireDamage := defender.ApplyDamage(strength, units.DamageFire, false)
-        combat.AddLogEvent(fmt.Sprintf("%v uses fire breath on %v for %v damage", attacker.Unit.GetName(), defender.Unit.GetName(), fireDamage))
-        damage += fireDamage
         hit = true
+
+        damage = append(damage, func(){
+            fireDamage := defender.ApplyDamage(strength, units.DamageFire, false)
+            combat.AddLogEvent(fmt.Sprintf("%v uses fire breath on %v for %v damage", attacker.Unit.GetName(), defender.Unit.GetName(), fireDamage))
+            // damage += fireDamage
+            combat.Observer.FireBreathAttack(attacker, defender, fireDamage)
+        })
     }
 
     if attacker.Unit.HasAbility(data.AbilityLightningBreath) {
         strength := int(attacker.Unit.GetAbilityValue(data.AbilityLightningBreath))
-        lightningDamage := defender.ApplyDamage(strength, units.DamageRangedMagical, true)
-        combat.AddLogEvent(fmt.Sprintf("%v uses lightning breath on %v for %v damage", attacker.Unit.GetName(), defender.Unit.GetName(), lightningDamage))
-        damage += lightningDamage
         hit = true
+
+        damage = append(damage, func(){
+            lightningDamage := defender.ApplyDamage(strength, units.DamageRangedMagical, true)
+            combat.AddLogEvent(fmt.Sprintf("%v uses lightning breath on %v for %v damage", attacker.Unit.GetName(), defender.Unit.GetName(), lightningDamage))
+            // damage += lightningDamage
+            combat.Observer.LightningBreathAttack(attacker, defender, lightningDamage)
+        })
     }
 
     return damage, hit
@@ -2673,6 +2686,8 @@ func (combat *CombatScreen) doGazeAttack(attacker *ArmyUnit, defender *ArmyUnit)
             damage += stoneDamage
             hit = true
 
+            combat.Observer.StoneGazeAttack(attacker, defender, stoneDamage)
+
             combat.AddLogEvent(fmt.Sprintf("%v uses stone gaze on %v for %v damage", attacker.Unit.GetName(), defender.Unit.GetName(), stoneDamage))
         }
     }
@@ -2692,6 +2707,8 @@ func (combat *CombatScreen) doGazeAttack(attacker *ArmyUnit, defender *ArmyUnit)
             damage += deathDamage
             hit = true
 
+            combat.Observer.DeathGazeAttack(attacker, defender, deathDamage)
+
             combat.AddLogEvent(fmt.Sprintf("%v uses death gaze on %v for %v damage", attacker.Unit.GetName(), defender.Unit.GetName(), deathDamage))
         }
     }
@@ -2700,10 +2717,10 @@ func (combat *CombatScreen) doGazeAttack(attacker *ArmyUnit, defender *ArmyUnit)
         doomDamage := int(attacker.Unit.GetAbilityValue(data.AbilityDoomGaze))
         damage += doomDamage
         hit = true
+        combat.Observer.DoomGazeAttack(attacker, defender, doomDamage)
         combat.AddLogEvent(fmt.Sprintf("%v uses doom gaze on %v for %v damage", attacker.Unit.GetName(), defender.Unit.GetName(), doomDamage))
     }
 
-    defender.TakeDamage(damage)
     return damage, hit
 }
 
@@ -2713,11 +2730,10 @@ func (combat *CombatScreen) doThrowAttack(attacker *ArmyUnit, defender *ArmyUnit
         damage := 0
         for range attacker.Figures() {
             if rand.N(100) < attacker.Unit.GetToHitMelee() {
-                damage += defender.ApplyDamage(strength, units.DamageThrown, false)
+                // damage += defender.ApplyDamage(strength, units.DamageThrown, false)
+                damage += strength
             }
         }
-
-        combat.AddLogEvent(fmt.Sprintf("%v throws %v at %v. HP now %v", attacker.Unit.GetName(), damage, defender.Unit.GetName(), defender.Unit.GetHealth()))
 
         return damage, true
     }
@@ -2725,15 +2741,19 @@ func (combat *CombatScreen) doThrowAttack(attacker *ArmyUnit, defender *ArmyUnit
     return 0, false
 }
 
-func (combat *CombatScreen) doImmolationAttack(attacker *ArmyUnit, defender *ArmyUnit) {
+func (combat *CombatScreen) immolationDamage(attacker *ArmyUnit, defender *ArmyUnit) int {
     if attacker.Unit.HasAbility(data.AbilityImmolation) || attacker.Unit.HasEnchantment(data.UnitEnchantmentImmolation) {
         damage := 4 * defender.Figures()
-        hurt := defender.ApplyDamage(damage, units.DamageFire, false)
-        combat.AddLogEvent(fmt.Sprintf("%v is immolated for %v damage. HP now %v", defender.Unit.GetName(), hurt, defender.Unit.GetHealth()))
+        combat.Observer.ImmolationAttack(attacker, defender, damage)
+        return damage
     }
+
+    return 0
 }
 
-func (combat *CombatScreen) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, fearFigure int) {
+func (combat *CombatScreen) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, fearFigure int) []func() {
+    damageFuncs := []func(){}
+
     if attacker.Unit.HasAbility(data.AbilityPoisonTouch) && !defender.Unit.HasAbility(data.AbilityPoisonImmunity) {
         damage := 0
         for range int(attacker.Unit.GetAbilityValue(data.AbilityPoisonTouch)) {
@@ -2742,9 +2762,11 @@ func (combat *CombatScreen) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit
             }
         }
 
-        defender.TakeDamage(damage)
-
-        combat.AddLogEvent(fmt.Sprintf("%v is poisoned for %v damage. HP now %v", defender.Unit.GetName(), damage, defender.Unit.GetHealth()))
+        damageFuncs = append(damageFuncs, func(){
+            defender.TakeDamage(damage)
+            combat.Observer.PoisonTouchAttack(attacker, defender, damage)
+            combat.AddLogEvent(fmt.Sprintf("%v is poisoned for %v damage. HP now %v", defender.Unit.GetName(), damage, defender.Unit.GetHealth()))
+        })
     }
 
     if attacker.Unit.HasAbility(data.AbilityLifeSteal) || attacker.Unit.HasAbility(data.AbilityVampiric) {
@@ -2765,10 +2787,14 @@ func (combat *CombatScreen) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit
                 // cannot steal more life than the target has
                 damage = min(damage, defender.Unit.GetHealth())
 
-                // FIXME: if the unit dies they can become undead
-                defender.TakeDamage(damage)
-                attacker.Heal(damage)
-                combat.AddLogEvent(fmt.Sprintf("%v steals %v life from %v. HP now %v", attacker.Unit.GetName(), damage, defender.Unit.GetName(), defender.Unit.GetHealth()))
+                damageFuncs = append(damageFuncs, func(){
+                    // FIXME: if the unit dies they can become undead
+                    defender.TakeDamage(damage)
+                    attacker.Heal(damage)
+                    combat.AddLogEvent(fmt.Sprintf("%v steals %v life from %v. HP now %v", attacker.Unit.GetName(), damage, defender.Unit.GetName(), defender.Unit.GetHealth()))
+
+                    combat.Observer.LifeStealTouchAttack(attacker, defender, damage)
+                })
             }
         }
     }
@@ -2788,9 +2814,13 @@ func (combat *CombatScreen) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit
                 }
             }
 
-            defender.TakeDamage(damage)
+            damageFuncs = append(damageFuncs, func(){
+                defender.TakeDamage(damage)
 
-            combat.AddLogEvent(fmt.Sprintf("%v turns %v to stone for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.Unit.GetHealth()))
+                combat.AddLogEvent(fmt.Sprintf("%v turns %v to stone for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.Unit.GetHealth()))
+
+                combat.Observer.StoningTouchAttack(attacker, defender, damage)
+            })
         }
     }
 
@@ -2829,8 +2859,12 @@ func (combat *CombatScreen) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit
                 }
             }
 
-            defender.TakeDamage(damage)
-            combat.AddLogEvent(fmt.Sprintf("%v dispels evil from %v for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.Unit.GetHealth()))
+            damageFuncs = append(damageFuncs, func(){
+                defender.TakeDamage(damage)
+                combat.AddLogEvent(fmt.Sprintf("%v dispels evil from %v for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.Unit.GetHealth()))
+
+                combat.Observer.DispelEvilTouchAttack(attacker, defender, damage)
+            })
         }
     }
 
@@ -2846,9 +2880,13 @@ func (combat *CombatScreen) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit
                 }
             }
 
-            defender.TakeDamage(damage)
+            damageFuncs = append(damageFuncs, func(){
+                defender.TakeDamage(damage)
 
-            combat.AddLogEvent(fmt.Sprintf("%v uses death touch on %v for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.Unit.GetHealth()))
+                combat.AddLogEvent(fmt.Sprintf("%v uses death touch on %v for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.Unit.GetHealth()))
+
+                combat.Observer.DeathTouchAttack(attacker, defender, damage)
+            })
         }
     }
 
@@ -2866,10 +2904,28 @@ func (combat *CombatScreen) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit
                 }
             }
 
-            defender.TakeDamage(damage)
-            combat.AddLogEvent(fmt.Sprintf("%v uses destruction on %v for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.Unit.GetHealth()))
+            damageFuncs = append(damageFuncs, func(){
+                defender.TakeDamage(damage)
+                combat.AddLogEvent(fmt.Sprintf("%v uses destruction on %v for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.Unit.GetHealth()))
+
+                combat.Observer.DestructionAttack(attacker, defender, damage)
+            })
         }
     }
+
+    return damageFuncs
+}
+
+func (combat *CombatScreen) ApplyImmolationDamage(attacker *ArmyUnit, defender *ArmyUnit, immolationDamage int) {
+    if immolationDamage > 0 {
+        hurt := defender.ApplyDamage(immolationDamage, units.DamageFire, false)
+        combat.AddLogEvent(fmt.Sprintf("%v is immolated for %v damage. HP now %v", defender.Unit.GetName(), hurt, defender.Unit.GetHealth()))
+    }
+}
+
+func (combat *CombatScreen) ApplyMeleeDamage(attacker *ArmyUnit, defender *ArmyUnit, damage int) {
+    hurt := defender.ApplyDamage(damage, units.DamageMeleePhysical, false)
+    combat.AddLogEvent(fmt.Sprintf("%v damage roll %v, %v took %v damage. HP now %v", attacker.Unit.GetName(), damage, defender.Unit.GetName(), hurt, defender.Unit.GetHealth()))
 }
 
 /* attacker is performing a physical melee attack against defender
@@ -2891,65 +2947,106 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                     attacks = 2
                 }
 
+                immolationDamage := 0
+                throwDamage := 0
+                damageFuncs := []func(){}
+
                 for range attacks {
-                    _, ok := combat.doThrowAttack(attacker, defender)
-                    if ok {
-                        combat.doImmolationAttack(attacker, defender)
+                    damage, throwHit := combat.doThrowAttack(attacker, defender)
+                    if throwHit {
+                        throwDamage += damage
+                        immolationDamage += combat.immolationDamage(attacker, defender)
                         if attacker.Unit.CanTouchAttack(units.DamageMeleePhysical) {
-                            combat.doTouchAttack(attacker, defender, 0)
+                            damageFuncs = append(damageFuncs, combat.doTouchAttack(attacker, defender, 0)...)
                         }
                     }
 
-                    _, ok = combat.doBreathAttack(attacker, defender)
+                    breathFuncs, breathHit := combat.doBreathAttack(attacker, defender)
+                    damageFuncs = append(damageFuncs, breathFuncs...)
 
-                    if ok {
-                        combat.doImmolationAttack(attacker, defender)
+                    if breathHit {
+                        immolationDamage += combat.immolationDamage(attacker, defender)
                         if attacker.Unit.CanTouchAttack(units.DamageMeleePhysical) {
-                            combat.doTouchAttack(attacker, defender, 0)
+                            damageFuncs = append(damageFuncs, combat.doTouchAttack(attacker, defender, 0)...)
                         }
                     }
                 }
 
-                _, hit := combat.doGazeAttack(attacker, defender)
+                gazeDamage, hit := combat.doGazeAttack(attacker, defender)
                 if hit {
-                    combat.doImmolationAttack(attacker, defender)
+                    immolationDamage += combat.immolationDamage(attacker, defender)
                     if attacker.Unit.CanTouchAttack(units.DamageMeleePhysical) {
-                        combat.doTouchAttack(attacker, defender, 0)
+                        damageFuncs = append(damageFuncs, combat.doTouchAttack(attacker, defender, 0)...)
                     }
                 }
+
+                if throwDamage > 0 {
+                    damage := defender.ApplyDamage(throwDamage, units.DamageThrown, false)
+                    combat.Observer.ThrowAttack(attacker, defender, damage)
+                    combat.AddLogEvent(fmt.Sprintf("%v throws %v at %v. HP now %v", attacker.Unit.GetName(), damage, defender.Unit.GetName(), defender.Unit.GetHealth()))
+                }
+
+                combat.ApplyImmolationDamage(attacker, defender, immolationDamage)
+                for _, f := range damageFuncs {
+                    f()
+                }
+
+                defender.TakeDamage(gazeDamage)
+
             case 1:
-                _, hit := combat.doGazeAttack(defender, attacker)
+                immolationDamage := 0
+                damageFuncs := []func(){}
+
+                gazeDamage, hit := combat.doGazeAttack(defender, attacker)
                 if hit {
-                    combat.doImmolationAttack(defender, attacker)
+                    immolationDamage += combat.immolationDamage(defender, attacker)
                     if defender.Unit.CanTouchAttack(units.DamageMeleePhysical) {
-                        combat.doTouchAttack(defender, attacker, 0)
+                        damageFuncs = append(damageFuncs, combat.doTouchAttack(defender, attacker, 0)...)
                     }
                 }
+
+                combat.ApplyImmolationDamage(defender, attacker, immolationDamage)
+                for _, f := range damageFuncs {
+                    f()
+                }
+                attacker.TakeDamage(gazeDamage)
+
             case 2:
                 // wall of fire
             case 3:
                 if defender.Unit.HasAbility(data.AbilityCauseFear) || defender.Unit.HasEnchantment(data.UnitEnchantmentCloakOfFear) {
                     attackerFear = attacker.CauseFear()
                     combat.AddLogEvent(fmt.Sprintf("%v causes fear in %v for %v figures", defender.Unit.GetName(), attacker.Unit.GetName(), attackerFear))
+                    combat.Observer.CauseFear(defender, attacker, attackerFear)
                 }
             case 4:
                 if attacker.Unit.HasAbility(data.AbilityFirstStrike) && !defender.Unit.HasAbility(data.AbilityNegateFirstStrike) {
                     attackerDamage, hit := attacker.ComputeMeleeDamage(attackerFear)
+
+                    immolationDamage := 0
+
+                    damageFuncs := []func(){}
+
                     if hit {
-                        combat.doImmolationAttack(attacker, defender)
+                        combat.Observer.MeleeAttack(attacker, defender, attackerDamage)
+                        immolationDamage += combat.immolationDamage(attacker, defender)
                         if attacker.Unit.CanTouchAttack(units.DamageMeleePhysical) {
-                            combat.doTouchAttack(attacker, defender, attackerFear)
+                            damageFuncs = append(damageFuncs, combat.doTouchAttack(attacker, defender, attackerFear)...)
+                        }
+
+                        combat.ApplyMeleeDamage(attacker, defender, attackerDamage)
+                        combat.ApplyImmolationDamage(attacker, defender, immolationDamage)
+                        for _, f := range damageFuncs {
+                            f()
                         }
                     }
-
-                    defenderHurt := defender.ApplyDamage(attackerDamage, units.DamageMeleePhysical, false)
-                    combat.AddLogEvent(fmt.Sprintf("Attacker damage roll %v, defender took %v damage. HP now %v", attackerDamage, defenderHurt, defender.Unit.GetHealth()))
                 }
             case 5:
                 // attacker fear attack
                 if attacker.Unit.HasAbility(data.AbilityCauseFear) || attacker.Unit.HasEnchantment(data.UnitEnchantmentCloakOfFear) {
                     defenderFear = defender.CauseFear()
                     combat.AddLogEvent(fmt.Sprintf("%v causes fear in %v for %v figures", attacker.Unit.GetName(), defender.Unit.GetName(), defenderFear))
+                    combat.Observer.CauseFear(attacker, defender, defenderFear)
                 }
             case 6:
                 didFirstStrike := attacker.Unit.HasAbility(data.AbilityFirstStrike) && !defender.Unit.HasAbility(data.AbilityNegateFirstStrike)
@@ -2970,18 +3067,23 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                     }
                 }
 
+                defenderImmolationDamage := 0
+                defenderMeleeDamage := 0
+
+                damageFuncs := []func(){}
+
                 // attacker has not melee attacked yet, so let them do it now, or they have haste so they can attack again
                 for range attacks {
                     attackerDamage, hit := attacker.ComputeMeleeDamage(attackerFear)
+
                     if hit {
-                        combat.doImmolationAttack(attacker, defender)
+                        combat.Observer.MeleeAttack(attacker, defender, attackerDamage)
+                        defenderMeleeDamage += attackerDamage
+                        defenderImmolationDamage += combat.immolationDamage(attacker, defender)
                         if attacker.Unit.CanTouchAttack(units.DamageMeleePhysical) {
-                            combat.doTouchAttack(attacker, defender, attackerFear)
+                            damageFuncs = append(damageFuncs, combat.doTouchAttack(attacker, defender, attackerFear)...)
                         }
                     }
-
-                    defenderHurt := defender.ApplyDamage(attackerDamage, units.DamageMeleePhysical, false)
-                    combat.AddLogEvent(fmt.Sprintf("Attacker damage roll %v, defender took %v damage. HP now %v", attackerDamage, defenderHurt, defender.Unit.GetHealth()))
                 }
 
                 counters := 1
@@ -2989,17 +3091,31 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                     counters = 2
                 }
 
+                attackerImmolationDamage := 0
+                attackerMeleeDamage := 0
+
                 // defender does counter-attack
                 for range counters {
                     defenderDamage, hit := defender.ComputeMeleeDamage(defenderFear)
+
                     if hit {
-                        combat.doImmolationAttack(defender, attacker)
+                        combat.Observer.MeleeAttack(defender, attacker, defenderDamage)
+                        attackerMeleeDamage += defenderDamage
+                        attackerImmolationDamage += combat.immolationDamage(defender, attacker)
                         if defender.Unit.CanTouchAttack(units.DamageMeleePhysical) {
-                            combat.doTouchAttack(defender, attacker, defenderFear)
+                            damageFuncs = append(damageFuncs, combat.doTouchAttack(defender, attacker, defenderFear)...)
                         }
                     }
-                    attackerHurt := attacker.ApplyDamage(defenderDamage, units.DamageMeleePhysical, false)
-                    combat.AddLogEvent(fmt.Sprintf("Defender damage roll %v, attacker took %v damage. HP now %v", defenderDamage, attackerHurt, attacker.Unit.GetHealth()))
+                }
+
+                combat.ApplyImmolationDamage(attacker, defender, defenderImmolationDamage)
+                combat.ApplyMeleeDamage(attacker, defender, defenderMeleeDamage)
+
+                combat.ApplyImmolationDamage(defender, attacker, attackerImmolationDamage)
+                combat.ApplyMeleeDamage(defender, attacker, attackerMeleeDamage)
+
+                for _, f := range damageFuncs {
+                    f()
                 }
             }
     }
@@ -3011,12 +3127,14 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
             combat.AddLogEvent(fmt.Sprintf("%v is killed", defender.Unit.GetName()))
             combat.RemoveUnit(defender)
             end = true
+            combat.Observer.UnitKilled(defender)
         }
 
         if attacker.Unit.GetHealth() <= 0 {
             combat.AddLogEvent(fmt.Sprintf("%v is killed", attacker.Unit.GetName()))
             combat.RemoveUnit(attacker)
             end = true
+            combat.Observer.UnitKilled(attacker)
         }
 
         if end {
