@@ -2963,17 +2963,16 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
             case 4:
                 if attacker.Unit.HasAbility(data.AbilityFirstStrike) && !defender.Unit.HasAbility(data.AbilityNegateFirstStrike) {
                     attackerDamage, hit := attacker.ComputeMeleeDamage(attackerFear)
-                    defenderHurt := defender.ApplyDamage(attackerDamage, units.DamageMeleePhysical, false)
-                    combat.Observer.MeleeAttack(attacker, defender, attackerDamage, defenderHurt)
 
                     if hit {
+                        defenderHurt := defender.ApplyDamage(attackerDamage, units.DamageMeleePhysical, false)
+                        combat.Observer.MeleeAttack(attacker, defender, attackerDamage, defenderHurt)
                         combat.doImmolationAttack(attacker, defender)
                         if attacker.Unit.CanTouchAttack(units.DamageMeleePhysical) {
                             combat.doTouchAttack(attacker, defender, attackerFear)
                         }
+                        combat.AddLogEvent(fmt.Sprintf("Attacker damage roll %v, defender took %v damage. HP now %v", attackerDamage, defenderHurt, defender.Unit.GetHealth()))
                     }
-
-                    combat.AddLogEvent(fmt.Sprintf("Attacker damage roll %v, defender took %v damage. HP now %v", attackerDamage, defenderHurt, defender.Unit.GetHealth()))
                 }
             case 5:
                 // attacker fear attack
@@ -3004,17 +3003,16 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                 // attacker has not melee attacked yet, so let them do it now, or they have haste so they can attack again
                 for range attacks {
                     attackerDamage, hit := attacker.ComputeMeleeDamage(attackerFear)
-                    defenderHurt := defender.ApplyDamage(attackerDamage, units.DamageMeleePhysical, false)
-                    combat.Observer.MeleeAttack(attacker, defender, attackerDamage, defenderHurt)
 
                     if hit {
+                        defenderHurt := defender.ApplyDamage(attackerDamage, units.DamageMeleePhysical, false)
+                        combat.Observer.MeleeAttack(attacker, defender, attackerDamage, defenderHurt)
                         combat.doImmolationAttack(attacker, defender)
                         if attacker.Unit.CanTouchAttack(units.DamageMeleePhysical) {
                             combat.doTouchAttack(attacker, defender, attackerFear)
                         }
+                        combat.AddLogEvent(fmt.Sprintf("Attacker damage roll %v, defender took %v damage. HP now %v", attackerDamage, defenderHurt, defender.Unit.GetHealth()))
                     }
-
-                    combat.AddLogEvent(fmt.Sprintf("Attacker damage roll %v, defender took %v damage. HP now %v", attackerDamage, defenderHurt, defender.Unit.GetHealth()))
                 }
 
                 counters := 1
@@ -3025,17 +3023,16 @@ func (combat *CombatScreen) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                 // defender does counter-attack
                 for range counters {
                     defenderDamage, hit := defender.ComputeMeleeDamage(defenderFear)
-                    attackerHurt := attacker.ApplyDamage(defenderDamage, units.DamageMeleePhysical, false)
-
-                    combat.Observer.MeleeAttack(defender, attacker, defenderDamage, attackerHurt)
 
                     if hit {
+                        attackerHurt := attacker.ApplyDamage(defenderDamage, units.DamageMeleePhysical, false)
+                        combat.Observer.MeleeAttack(defender, attacker, defenderDamage, attackerHurt)
                         combat.doImmolationAttack(defender, attacker)
                         if defender.Unit.CanTouchAttack(units.DamageMeleePhysical) {
                             combat.doTouchAttack(defender, attacker, defenderFear)
                         }
+                        combat.AddLogEvent(fmt.Sprintf("Defender damage roll %v, attacker took %v damage. HP now %v", defenderDamage, attackerHurt, attacker.Unit.GetHealth()))
                     }
-                    combat.AddLogEvent(fmt.Sprintf("Defender damage roll %v, attacker took %v damage. HP now %v", defenderDamage, attackerHurt, attacker.Unit.GetHealth()))
                 }
             }
     }

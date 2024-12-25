@@ -57,6 +57,7 @@ type TestObserver struct {
     Melee func(attacker *ArmyUnit, defender *ArmyUnit, damageRoll int, defenderDamage int)
     Throw func(attacker *ArmyUnit, defender *ArmyUnit, defenderDamage int)
     PoisonTouch func(attacker *ArmyUnit, defender *ArmyUnit, damage int)
+    Fear func(attacker *ArmyUnit, defender *ArmyUnit, fear int)
 }
 
 func (observer *TestObserver) ThrowAttack(attacker *ArmyUnit, defender *ArmyUnit, damage int){
@@ -111,6 +112,9 @@ func (observer *TestObserver) MeleeAttack(attacker *ArmyUnit, defender *ArmyUnit
 }
 
 func (observer *TestObserver) CauseFear(attacker *ArmyUnit, defender *ArmyUnit, fear int){
+    if observer.Fear != nil {
+        observer.Fear(attacker, defender, fear)
+    }
 }
 
 func (observer *TestObserver) UnitKilled(unit *ArmyUnit){
@@ -449,6 +453,69 @@ func TestThrownTouchAttack(test *testing.T){
 
     if attackerMelee != 0 {
         test.Errorf("Error: attacker should have not attacked")
+    }
+
+    if defenderMelee != 0 {
+        test.Errorf("Error: defender should have not attacked")
+    }
+}
+
+// attacker causes fear in defender, so defender does not attack
+func TestFear(test *testing.T){
+    defendingArmy := &Army{
+    }
+
+    attackingArmy := &Army{
+    }
+
+    attackerUnit := units.LizardSpearmen
+    attackerUnit.Abilities = append(attackerUnit.Abilities, data.MakeAbility(data.AbilityCauseFear))
+
+    defenderUnit := units.LizardSwordsmen
+    // ensure all units become afraid
+    defenderUnit.Resistance = -100
+
+    defender := units.MakeOverworldUnit(defenderUnit)
+    attacker := units.MakeOverworldUnit(attackerUnit)
+
+    defendingArmy.AddUnit(defender)
+    attackingArmy.AddUnit(attacker)
+
+    combat := &CombatScreen{
+        SelectedUnit: nil,
+        Tiles: makeTiles(5, 5, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}),
+        Turn: TeamDefender,
+        DefendingArmy: defendingArmy,
+        AttackingArmy: attackingArmy,
+    }
+
+    attackerMelee := 0
+    defenderMelee := 0
+
+    observer := &TestObserver{
+        Melee: func(meleeAttacker *ArmyUnit, meleeDefender *ArmyUnit, damageRoll int, defenderDamage int){
+            if attackingArmy.Units[0] == meleeAttacker {
+                attackerMelee += 1
+            } else if defendingArmy.Units[0] == meleeAttacker {
+                defenderMelee += 1
+            }
+        },
+        Fear: func(fearAttacker *ArmyUnit, fearDefender *ArmyUnit, fear int){
+            if fearAttacker != attackingArmy.Units[0] {
+                test.Errorf("Error: attacker should have caused fear")
+            }
+
+            if fear != fearDefender.Figures() {
+                test.Errorf("Error: fear should be equal to defender figures")
+            }
+        },
+    }
+    combat.Observer.AddObserver(observer)
+
+    combat.meleeAttack(attackingArmy.Units[0], defendingArmy.Units[0])
+
+    if attackerMelee != 1 {
+        test.Errorf("Error: attacker should have attacked once")
     }
 
     if defenderMelee != 0 {
