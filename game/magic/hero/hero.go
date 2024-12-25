@@ -613,6 +613,7 @@ func (hero *Hero) GetKnownSpells() []string {
 }
 
 func (hero *Hero) GetToHitMelee() int {
+    // FIXME: add in equipment tohit bonuses
     base := 30
 
     level := hero.GetExperienceLevel()
