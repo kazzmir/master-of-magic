@@ -178,6 +178,8 @@ type CombatScreen struct {
 
     CameraScale float64
 
+    Counter uint64
+
     MouseTileX int
     MouseTileY int
 
@@ -1733,8 +1735,8 @@ func distanceAboveRange(x1 float64, y1 float64, x2 float64, y2 float64, r float6
 }
 
 func (combat *CombatScreen) doProjectiles(yield coroutine.YieldFunc) {
-    for combat.Model.UpdateProjectiles() {
-        combat.Model.Counter += 1
+    for combat.Model.UpdateProjectiles(combat.Counter) {
+        combat.Counter += 1
         yield()
     }
 }
@@ -1915,10 +1917,10 @@ func (combat *CombatScreen) doSelectTile(yield coroutine.YieldFunc, selecter Tea
     combat.UI.AddElements(elements)
 
     for !quit {
-        combat.Model.Counter += 1
+        combat.Counter += 1
 
         for _, unit := range combat.Model.OtherUnits {
-            if combat.Model.Counter % 6 == 0 {
+            if combat.Counter % 6 == 0 {
                 unit.Animation.Next()
             }
         }
@@ -2001,10 +2003,10 @@ func (combat *CombatScreen) doSelectUnit(yield coroutine.YieldFunc, selecter Tea
     combat.UI.AddElements(elements)
 
     for !quit {
-        combat.Model.Counter += 1
+        combat.Counter += 1
 
         for _, unit := range combat.Model.OtherUnits {
-            if combat.Model.Counter % 6 == 0 {
+            if combat.Counter % 6 == 0 {
                 unit.Animation.Next()
             }
         }
@@ -2063,7 +2065,7 @@ func (combat *CombatScreen) ProcessEvents(yield coroutine.YieldFunc) {
 
 func (combat *CombatScreen) UpdateAnimations(){
     for _, unit := range combat.Model.OtherUnits {
-        if combat.Model.Counter % 6 == 0 {
+        if combat.Counter % 6 == 0 {
             unit.Animation.Next()
         }
     }
@@ -2074,7 +2076,7 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
         return
     }
 
-    mover.MovementTick = combat.Model.Counter
+    mover.MovementTick = combat.Counter
     mover.Moving = true
     mover.MoveX = float64(mover.X)
     mover.MoveY = float64(mover.Y)
@@ -2126,7 +2128,7 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
         reached := false
         for !reached {
             combat.UpdateAnimations()
-            combat.Model.Counter += 1
+            combat.Counter += 1
             mover.MoveX += math.Cos(angle) * speed
             mover.MoveY += math.Sin(angle) * speed
 
@@ -2217,7 +2219,7 @@ func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUni
     combat.Model.AddLogEvent(fmt.Sprintf("%v attacks %v", attacker.Unit.GetName(), defender.Unit.GetName()))
 
     for i := range 60 {
-        combat.Model.Counter += 1
+        combat.Counter += 1
         combat.UpdateAnimations()
 
         // delay the actual melee computation to give time for the sound to play
@@ -2347,7 +2349,7 @@ func (combat *CombatScreen) UpdateMouseState() {
         case CombatNotOk:
             globalMouse.Mouse.SetImage(combat.Mouse.Error)
         case CombatCast:
-            index := (combat.Model.Counter / 8) % uint64(len(combat.Mouse.Cast))
+            index := (combat.Counter / 8) % uint64(len(combat.Mouse.Cast))
             globalMouse.Mouse.SetImage(combat.Mouse.Cast[index])
     }
 }
@@ -2364,7 +2366,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
         return CombatStateAttackerWin
     }
 
-    combat.Model.Counter += 1
+    combat.Counter += 1
     combat.UI.StandardUpdate()
 
     combat.UpdateMouseState()
@@ -2528,7 +2530,7 @@ func (combat *CombatScreen) DrawHighlightedTile(screen *ebiten.Image, x int, y i
     // bottom
     x4, y4 := useMatrix.Apply(0, float64(tile0.Bounds().Dy()/2))
 
-    gradient := (math.Sin(float64(combat.Model.Counter)/6) + 1)
+    gradient := (math.Sin(float64(combat.Counter)/6) + 1)
 
     lerp := func(minC uint8, maxC uint8) uint8 {
         out := float64(minC) + gradient * float64(maxC - minC)/2
@@ -2657,7 +2659,7 @@ func (combat *CombatScreen) ShowUnitInfo(screen *ebiten.Image, unit *ArmyUnit){
 
 func (combat *CombatScreen) Draw(screen *ebiten.Image){
 
-    animationIndex := combat.Model.Counter / 8
+    animationIndex := combat.Counter / 8
 
     var options ebiten.DrawImageOptions
 
@@ -2725,7 +2727,7 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
             options.GeoM.Scale(combat.CameraScale, combat.CameraScale)
             options.GeoM.Translate(tx, ty)
 
-            extra.Drawer(screen, &combat.ImageCache, &options, combat.Model.Counter)
+            extra.Drawer(screen, &combat.ImageCache, &options, combat.Counter)
         } else if extra.Index != -1 {
             options.GeoM.Reset()
             // tx,ty is the middle of the tile
@@ -2827,12 +2829,12 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
             }
 
             if combat.Model.SelectedUnit == unit {
-                scaleValue := 1.5 + math.Sin(float64(combat.Model.Counter)/6)/2
+                scaleValue := 1.5 + math.Sin(float64(combat.Counter)/6)/2
                 unitOptions.ColorScale.Scale(float32(scaleValue), float32(scaleValue), 1, 1)
             }
 
             if combat.Model.HighlightedUnit == unit {
-                scaleValue := 1.5 + math.Sin(float64(combat.Model.Counter)/6)/2
+                scaleValue := 1.5 + math.Sin(float64(combat.Counter)/6)/2
                 unitOptions.ColorScale.Scale(float32(scaleValue), 1, 1, 1)
             }
 
@@ -2845,7 +2847,7 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
 
             // _ = index
             enchantment := util.First(unit.Unit.GetEnchantments(), data.UnitEnchantmentNone)
-            RenderCombatUnit(screen, combatImages[index], unitOptions, unit.Figures(), enchantment, combat.Model.Counter, &combat.ImageCache)
+            RenderCombatUnit(screen, combatImages[index], unitOptions, unit.Figures(), enchantment, combat.Counter, &combat.ImageCache)
         }
     }
 

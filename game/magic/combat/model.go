@@ -531,8 +531,6 @@ type CombatModel struct {
     OtherUnits []*OtherUnit
     Projectiles []*Projectile
 
-    Counter uint64
-
     TurnAttacker int
     TurnDefender int
 
@@ -898,7 +896,7 @@ func (model *CombatModel) NextUnit() {
     model.SelectedUnit = nextChoice
 }
 
-func (model *CombatModel) UpdateProjectiles() bool {
+func (model *CombatModel) UpdateProjectiles(counter uint64) bool {
     animationSpeed := uint64(5)
 
     alive := len(model.Projectiles) > 0
@@ -909,7 +907,7 @@ func (model *CombatModel) UpdateProjectiles() bool {
         if projectile.Exploding || distanceInRange(projectile.X, projectile.Y, projectile.TargetX, projectile.TargetY, 4) {
             projectile.Exploding = true
             keep = true
-            if model.Counter % animationSpeed == 0 && !projectile.Explode.Next() {
+            if counter % animationSpeed == 0 && !projectile.Explode.Next() {
                 keep = false
 
                 if projectile.Target != nil && projectile.Effect != nil {
@@ -919,7 +917,7 @@ func (model *CombatModel) UpdateProjectiles() bool {
         } else {
             projectile.X += math.Cos(projectile.Angle) * projectile.Speed
             projectile.Y += math.Sin(projectile.Angle) * projectile.Speed
-            if model.Counter % animationSpeed == 0 {
+            if counter % animationSpeed == 0 {
                 projectile.Animation.Next()
             }
             keep = true
