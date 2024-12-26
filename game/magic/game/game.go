@@ -7,7 +7,9 @@ import (
     "log"
     "math"
     "fmt"
+    "regexp"
     "strings"
+    "strconv"
     "slices"
 
     "github.com/kazzmir/master-of-magic/game/magic/setup"
@@ -634,17 +636,31 @@ func (game *Game) SuggestCityName(race data.Race) (string) {
         existingNames = append(existingNames, city.Name)
     }
 
+    // try to find a unused city name
     entriesPerRace := len(predefinedNames) / 14
-    for i := 0; i < entriesPerRace; i++ {
+    for _, i := range rand.Perm(entriesPerRace) {
         name := predefinedNames[entriesPerRace * raceIndex + i]
         if !slices.Contains(existingNames, name) {
             return name
         }
     }
     
-    for _, name := range predefinedNames {
-        if !slices.Contains(existingNames, name) {
-            return name
+    // try to find a used city name without any number
+    expression := regexp.MustCompile(`(.*) (\d+)$`)
+    var matches []string
+    for _, i := range rand.Perm(entriesPerRace) {
+        name := predefinedNames[entriesPerRace * raceIndex + i]
+        matches = expression.FindStringSubmatch(name)
+        if len(matches) == 0 {
+            return fmt.Sprintf("%s 1", name)
+        }
+    }
+
+    // use the last city name with a number and increment it
+    if len(matches) == 3 {
+        number, err := strconv.Atoi(matches[2])
+        if err == nil {
+            return fmt.Sprintf("%s %d", matches[1], number + 1)
         }
     }
 
