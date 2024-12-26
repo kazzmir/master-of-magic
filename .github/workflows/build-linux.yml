@@ -17,6 +17,8 @@ jobs:
         run: |
           sudo apt-get -y update
           sudo apt-get -y install libasound2-dev xorg-dev
+          # for running the tests
+          sudo apt-get -y install xvfb
 
       - name: Install go dependencies
         run: |
@@ -27,7 +29,7 @@ jobs:
         run: go vet ./...
 
       - name: Test
-        run: go test ./lib/...
+        run: xvfb-run go test ./lib/... ./game/...
 
       - name: Build
         run: go build ./game/magic
