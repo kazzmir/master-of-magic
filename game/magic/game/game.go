@@ -596,6 +596,61 @@ func (game *Game) FindValidCityLocationOnContinent(x int, y int) (int, int) {
     return 0, 0
 }
 
+func (game *Game) SuggestCityName(race data.Race) (string) {
+    allCities := game.AllCities()
+    fallback := fmt.Sprintf("City %d", len(allCities)+1)
+
+    predefinedNames, err := citylib.ReadCityNames(game.Cache)
+    if err != nil {
+        log.Printf("Unable to read predefined city names: %v", err)
+        return fallback
+    }
+
+    if len(predefinedNames) % 14 != 0 {
+        log.Printf("Predefined city names not dividable by number of races")
+        return fallback
+    }
+
+    raceIndex := 0
+    switch race {
+        case data.RaceBarbarian: raceIndex = 0
+        case data.RaceBeastmen: raceIndex = 1
+        case data.RaceDarkElf: raceIndex = 2
+        case data.RaceDraconian: raceIndex = 3
+        case data.RaceDwarf: raceIndex = 4
+        case data.RaceGnoll: raceIndex = 5
+        case data.RaceHalfling: raceIndex = 6
+        case data.RaceHighElf: raceIndex = 7
+        case data.RaceHighMen: raceIndex = 8
+        case data.RaceKlackon: raceIndex = 9
+        case data.RaceLizard: raceIndex = 10
+        case data.RaceNomad: raceIndex = 11
+        case data.RaceOrc: raceIndex = 12
+        case data.RaceTroll: raceIndex = 13
+    }
+
+    var existingNames []string
+    for _, city := range allCities {
+        existingNames = append(existingNames, city.Name)
+    }
+
+    entriesPerRace := len(predefinedNames) / 14
+    for i := 0; i < entriesPerRace; i++ {
+        name := predefinedNames[entriesPerRace * raceIndex + i]
+        if !slices.Contains(existingNames, name) {
+            return name
+        }
+    }
+    
+    for _, name := range predefinedNames {
+        if !slices.Contains(existingNames, name) {
+            return name
+        }
+    }
+
+    return fallback
+}
+
 func (game *Game) AllCities() []*citylib.City {
     var out []*citylib.City
 
@@ -3031,7 +3086,9 @@ func (game *Game) CityProductionBonus(x int, y int, plane data.Plane) int {
 }
 
 func (game *Game) CreateOutpost(settlers units.StackUnit, player *playerlib.Player) *citylib.City {
-    newCity := citylib.MakeCity("New City", settlers.GetX(), settlers.GetY(), settlers.GetRace(), settlers.GetBanner(), player.TaxRate, game.BuildingInfo, game.GetMap(settlers.GetPlane()))
+    cityName := game.SuggestCityName(settlers.GetRace())
+
+    newCity := citylib.MakeCity(cityName, settlers.GetX(), settlers.GetY(), settlers.GetRace(), settlers.GetBanner(), player.TaxRate, game.BuildingInfo, game.GetMap(settlers.GetPlane()))
     newCity.Plane = settlers.GetPlane()
     newCity.Population = 300
     newCity.Outpost = true

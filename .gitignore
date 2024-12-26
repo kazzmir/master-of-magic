@@ -1,0 +1,12 @@
+# macOS system files
+.DS_Store
+
+# Visual Studio Code editor settings
+.vscode/
+
+# Data files
+data/data/
+
+# Executables
+magic
+lbxdump
