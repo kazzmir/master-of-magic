@@ -1481,4 +1481,3 @@ func (model *CombatModel) GetOtherArmy(unit *ArmyUnit) *Army {
 
     return model.DefendingArmy
 }
-
