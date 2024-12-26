@@ -420,7 +420,7 @@ func (engine *Engine) EnterCombat(combatDescription CombatDescription) {
             yield()
         }
 
-        for _, entry := range combatScreen.Log {
+        for _, entry := range combatScreen.Model.Log {
             log.Printf("%+v", entry)
         }
 

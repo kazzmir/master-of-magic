@@ -133,7 +133,7 @@ func TestBasicMelee(test *testing.T){
     defendingArmy.AddUnit(defender)
     attackingArmy.AddUnit(attacker)
 
-    combat := &CombatScreen{
+    combat := &CombatModel{
         SelectedUnit: nil,
         Tiles: makeTiles(5, 5, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}),
         Turn: TeamDefender,
@@ -178,7 +178,7 @@ func TestAttackerHaste(test *testing.T){
 
     attacker.AddEnchantment(data.UnitEnchantmentHaste)
 
-    combat := &CombatScreen{
+    combat := &CombatModel{
         SelectedUnit: nil,
         Tiles: makeTiles(5, 5, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}),
         Turn: TeamDefender,
@@ -231,7 +231,7 @@ func TestFirstStrike(test *testing.T){
     defendingArmy.AddUnit(defender)
     attackingArmy.AddUnit(attacker)
 
-    combat := &CombatScreen{
+    combat := &CombatModel{
         SelectedUnit: nil,
         Tiles: makeTiles(5, 5, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}),
         Turn: TeamDefender,
@@ -287,7 +287,7 @@ func TestFirstStrikeNegate(test *testing.T){
     defendingArmy.AddUnit(defender)
     attackingArmy.AddUnit(attacker)
 
-    combat := &CombatScreen{
+    combat := &CombatModel{
         SelectedUnit: nil,
         Tiles: makeTiles(5, 5, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}),
         Turn: TeamDefender,
@@ -340,7 +340,7 @@ func TestThrowAttack(test *testing.T){
     defendingArmy.AddUnit(defender)
     attackingArmy.AddUnit(attacker)
 
-    combat := &CombatScreen{
+    combat := &CombatModel{
         SelectedUnit: nil,
         Tiles: makeTiles(5, 5, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}),
         Turn: TeamDefender,
@@ -407,7 +407,7 @@ func TestThrownTouchAttack(test *testing.T){
     defendingArmy.AddUnit(defender)
     attackingArmy.AddUnit(attacker)
 
-    combat := &CombatScreen{
+    combat := &CombatModel{
         SelectedUnit: nil,
         Tiles: makeTiles(5, 5, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}),
         Turn: TeamDefender,
@@ -481,7 +481,7 @@ func TestFear(test *testing.T){
     defendingArmy.AddUnit(defender)
     attackingArmy.AddUnit(attacker)
 
-    combat := &CombatScreen{
+    combat := &CombatModel{
         SelectedUnit: nil,
         Tiles: makeTiles(5, 5, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}),
         Turn: TeamDefender,
