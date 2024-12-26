@@ -8,5 +8,5 @@
 data/data/
 
 # Executables
-magic
-lbxdump
+./magic
+./lbxdump

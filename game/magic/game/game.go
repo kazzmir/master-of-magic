@@ -7,9 +7,7 @@ import (
     "log"
     "math"
     "fmt"
-    "regexp"
     "strings"
-    "strconv"
     "slices"
 
     "github.com/kazzmir/master-of-magic/game/magic/setup"
@@ -598,6 +596,33 @@ func (game *Game) FindValidCityLocationOnContinent(x int, y int) (int, int) {
     return 0, 0
 }
 
+// given a list of allNames 'A', 'B', 'C', 'A 1', 'B 1', and a list of choices 'A', 'B', 'C'
+// choose the next name that is not in allNames but possibly with some monotonically increasing counter
+// In the above example we would choose 'C 1'
+func chooseCityName(allNames []string, choices []string) string {
+
+    // try to find a unused city name
+    for _, i := range rand.Perm(len(choices)) {
+        name := choices[i]
+        if !slices.Contains(allNames, name) {
+            return name
+        }
+    }
+
+    // find a name by appending some number to a predefined choice
+    suffix := 1
+    for {
+        for _, i := range rand.Perm(len(choices)) {
+            name := fmt.Sprintf("%s %v", choices[i], suffix)
+            if !slices.Contains(allNames, name) {
+                return name
+            }
+        }
+
+        suffix += 1
+    }
+}
+
 func (game *Game) SuggestCityName(race data.Race) (string) {
     allCities := game.AllCities()
     fallback := fmt.Sprintf("City %d", len(allCities)+1)
@@ -636,35 +661,10 @@ func (game *Game) SuggestCityName(race data.Race) (string) {
         existingNames = append(existingNames, city.Name)
     }
 
-    // try to find a unused city name
     entriesPerRace := len(predefinedNames) / 14
-    for _, i := range rand.Perm(entriesPerRace) {
-        name := predefinedNames[entriesPerRace * raceIndex + i]
-        if !slices.Contains(existingNames, name) {
-            return name
-        }
-    }
-    
-    // try to find a used city name without any number
-    expression := regexp.MustCompile(`(.*) (\d+)$`)
-    var matches []string
-    for _, i := range rand.Perm(entriesPerRace) {
-        name := predefinedNames[entriesPerRace * raceIndex + i]
-        matches = expression.FindStringSubmatch(name)
-        if len(matches) == 0 {
-            return fmt.Sprintf("%s 1", name)
-        }
-    }
+    choices := predefinedNames[raceIndex * entriesPerRace: (raceIndex + 1) * entriesPerRace]
 
-    // use the last city name with a number and increment it
-    if len(matches) == 3 {
-        number, err := strconv.Atoi(matches[2])
-        if err == nil {
-            return fmt.Sprintf("%s %d", matches[1], number + 1)
-        }
-    }
-
-    return fallback
+    return chooseCityName(existingNames, choices)
 }
 
 func (game *Game) AllCities() []*citylib.City {
