@@ -2624,6 +2624,8 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
                 drawFire(choose(east), 2, -4)
             }
         }
+
+        // FIXME: draw wall of darkness, similar to fire. lbx citywall.lbx 50-63
     }
 
     combat.DrawHighlightedTile(screen, combat.MouseTileX, combat.MouseTileY, &useMatrix, color.RGBA{R: 0, G: 0x67, B: 0x78, A: 255}, color.RGBA{R: 0, G: 0xef, B: 0xff, A: 255})

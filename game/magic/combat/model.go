@@ -112,6 +112,14 @@ const (
     FireSideWest
 )
 
+type DarknessSide int
+const (
+    DarknessSideSouth DarknessSide = iota
+    DarknessSideEast
+    DarknessSideNorth
+    DarknessSideWest
+)
+
 type Tile struct {
     // a unit standing on this tile, if any
     Unit *ArmyUnit
@@ -123,6 +131,8 @@ type Tile struct {
     Mud bool
     // whether to show fire on this tile
     Fire *set.Set[FireSide]
+    // whether to show wall of darkness on this tile
+    Darkness *set.Set[DarknessSide]
 }
 
 type CombatLandscape int
@@ -314,21 +324,6 @@ func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plan
         }
         tile.Fire.Insert(FireSideSouth)
     }
-
-    /*
-    testSet := set.MakeSet[FireSide]()
-    tiles[TownCenterY][TownCenterX].Fire = testSet
-    testSet.Insert(FireSideNorth)
-    testSet.Insert(FireSideSouth)
-    testSet.Insert(FireSideEast)
-    testSet.Insert(FireSideWest)
-
-    tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
-        Lbx: "cmbdesrc.lbx",
-        Index: 50,
-        Alignment: TileAlignMiddle,
-    }
-    */
 
     return tiles
 }
