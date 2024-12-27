@@ -2593,6 +2593,18 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
 
             // vector.DrawFilledCircle(screen, float32(tx), float32(ty), 2, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, false)
         }
+
+        switch combat.Model.Tiles[y][x].Fire {
+            case FireSideSouth:
+                options.GeoM.Reset()
+                tx, ty := tilePosition(float64(x), float64(y))
+                options.GeoM.Scale(combat.CameraScale, combat.CameraScale)
+                options.GeoM.Translate(tx, ty)
+                fireImages, _ := combat.ImageCache.GetImages("citywall.lbx", 47)
+                use := animationIndex % uint64(len(fireImages))
+
+                screen.DrawImage(fireImages[use], &options)
+        }
     }
 
     combat.DrawHighlightedTile(screen, combat.MouseTileX, combat.MouseTileY, &useMatrix, color.RGBA{R: 0, G: 0x67, B: 0x78, A: 255}, color.RGBA{R: 0, G: 0xef, B: 0xff, A: 255})
