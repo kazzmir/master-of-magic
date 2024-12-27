@@ -2607,35 +2607,60 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
                 return choices[(x + y) % len(choices)]
             }
 
+            var geom ebiten.GeoM
+            geom.Scale(combat.CameraScale, combat.CameraScale)
+            tx, ty := tilePosition(float64(x), float64(y))
+            geom.Translate(tx, ty)
+
             drawFire := func(index int, dx float64, dy float64){
                 options.GeoM.Reset()
-                tx, ty := tilePosition(float64(x), float64(y))
-                options.GeoM.Scale(combat.CameraScale, combat.CameraScale)
-                options.GeoM.Translate(tx, ty)
+                // options.GeoM.Scale(combat.CameraScale, combat.CameraScale)
+                // options.GeoM.Translate(tx, ty)
                 options.GeoM.Translate(dx, dy)
 
                 images, _ := combat.ImageCache.GetImages("citywall.lbx", index)
                 use := animationIndex % uint64(len(images))
                 drawImage := images[use]
                 options.GeoM.Translate(-float64(drawImage.Bounds().Dy())/2, -float64(drawImage.Bounds().Dy()/2))
+
+                options.GeoM.Concat(geom)
+
                 screen.DrawImage(drawImage, &options)
             }
 
+            drewNorth := false
+            drewSouth := false
+            drewEast := false
+            drewWest := false
+
             // draw the same fire animation for a given x,y tile, but choose a different fire
             // animation for other tiles
-            if fire.Contains(FireSideSouth) {
+
+            if fire.Contains(FireSideNorth) && fire.Contains(FireSideWest) {
+                drawFire(36, -1, -8)
+                drewNorth = true
+                drewWest = true
+            }
+
+            if fire.Contains(FireSideSouth) && fire.Contains(FireSideEast) {
+                drawFire(45, -2, -3)
+                drewSouth = true
+                drewEast = true
+            }
+
+            if !drewSouth && fire.Contains(FireSideSouth) {
                 drawFire(choose(south), -4, -4)
             }
 
-            if fire.Contains(FireSideWest) {
+            if !drewWest && fire.Contains(FireSideWest) {
                 drawFire(choose(west), -3, -6)
             }
 
-            if fire.Contains(FireSideNorth) {
+            if !drewNorth && fire.Contains(FireSideNorth) {
                 drawFire(choose(north), 2, -6)
             }
 
-            if fire.Contains(FireSideEast) {
+            if !drewEast && fire.Contains(FireSideEast) {
                 drawFire(choose(east), 2, -4)
             }
         }
