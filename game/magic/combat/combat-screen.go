@@ -1900,6 +1900,7 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
         }()
     }
 
+    // FIXME: move some of this code into model.go
     for len(path) > 0 {
         targetX, targetY := path[0].X, path[0].Y
 
@@ -1944,6 +1945,10 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
                 mover.Y = targetY
                 mover.MoveX = float64(targetX)
                 mover.MoveY = float64(targetY)
+
+                // FIXME: if the mover walked from outside a wall of fire to inside the wall of fire
+                // then the mover should take WallOfFire damage, model.ApplyWallOfFireDamage(mover, 5)
+
                 // new tile the unit landed on is now occupied
                 combat.Model.Tiles[mover.Y][mover.X].Unit = mover
                 path = path[1:]
