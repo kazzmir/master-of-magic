@@ -60,6 +60,15 @@ func pathCost(from image.Point, to image.Point) fraction.Fraction {
     return fraction.Make(xDiff + yDiff, 1)
 }
 
+type FireSide int
+const (
+    FireSideNone FireSide = iota
+    FireSideSouth
+    FireSideEast
+    FireSideNorth
+    FireSideWest
+)
+
 type Tile struct {
     // a unit standing on this tile, if any
     Unit *ArmyUnit
@@ -69,6 +78,8 @@ type Tile struct {
     // tree/rock on top, or -1 if nothing
     ExtraObject TileTop
     Mud bool
+    // whether to show fire on this tile
+    Fire FireSide
 }
 
 type CombatUnit interface {
