@@ -167,6 +167,14 @@ func (city *City) ProducingString() string {
     return ""
 }
 
+func (city *City) AddEnchantment(enchantment data.CityEnchantment) {
+    city.Enchantments.Insert(enchantment)
+}
+
+func (city *City) RemoveEnchantment(enchantment data.CityEnchantment) {
+    city.Enchantments.Remove(enchantment)
+}
+
 func (city *City) HasWallOfFire() bool {
     return city.Enchantments.Contains(data.CityEnchantmentWallOfFire)
 }

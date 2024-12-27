@@ -233,6 +233,13 @@ func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plan
                 Alignment: TileAlignBottom,
             }
         }
+
+        if zone.City.HasWallOfFire() {
+            createWallOfFire(tiles, TownCenterX, TownCenterY, 3)
+        }
+
+        // FIXME: use HasWallOfDarkness()
+
     } else if zone.Tower {
         tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
             Lbx: "cmbtcity.lbx",
@@ -296,6 +303,7 @@ func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plan
         }
     }
 
+    /*
     // hack for now
     for x := -3; x < 3; x++ {
         tile := &tiles[TownCenterY][TownCenterX+x]
@@ -324,8 +332,42 @@ func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plan
         }
         tile.Fire.Insert(FireSideSouth)
     }
+    */
 
     return tiles
+}
+
+// update the Fire set on the tiles centered around x/y with a length of sideLength
+func createWallOfFire(tiles [][]Tile, centerX int, centerY int, sideLength int) {
+    for x := -sideLength; x <= sideLength; x++ {
+        tile := &tiles[centerY][centerX+x]
+        if tile.Fire == nil {
+            tile.Fire = set.MakeSet[FireSide]()
+        }
+        tile.Fire.Insert(FireSideWest)
+
+        tile = &tiles[centerY+sideLength/2][centerX+x]
+        if tile.Fire == nil {
+            tile.Fire = set.MakeSet[FireSide]()
+        }
+        tile.Fire.Insert(FireSideEast)
+    }
+
+    /*
+    for y := -3; y < 3; y++ {
+        tile := &tiles[TownCenterY+y+3][TownCenterX+2]
+        if tile.Fire == nil {
+            tile.Fire = set.MakeSet[FireSide]()
+        }
+        tile.Fire.Insert(FireSideNorth)
+
+        tile = &tiles[TownCenterY+y+3][TownCenterX-3]
+        if tile.Fire == nil {
+            tile.Fire = set.MakeSet[FireSide]()
+        }
+        tile.Fire.Insert(FireSideSouth)
+    }
+    */
 }
 
 type CombatUnit interface {
