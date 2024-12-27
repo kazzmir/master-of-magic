@@ -235,7 +235,7 @@ func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plan
         }
 
         if zone.City.HasWallOfFire() {
-            createWallOfFire(tiles, TownCenterX, TownCenterY, 3)
+            createWallOfFire(tiles, TownCenterX, TownCenterY, 4)
         }
 
         // FIXME: use HasWallOfDarkness()
@@ -303,44 +303,13 @@ func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plan
         }
     }
 
-    /*
-    // hack for now
-    for x := -3; x < 3; x++ {
-        tile := &tiles[TownCenterY][TownCenterX+x]
-        if tile.Fire == nil {
-            tile.Fire = set.MakeSet[FireSide]()
-        }
-        tile.Fire.Insert(FireSideWest)
-
-        tile = &tiles[TownCenterY+5][TownCenterX+x]
-        if tile.Fire == nil {
-            tile.Fire = set.MakeSet[FireSide]()
-        }
-        tile.Fire.Insert(FireSideEast)
-    }
-
-    for y := -3; y < 3; y++ {
-        tile := &tiles[TownCenterY+y+3][TownCenterX+2]
-        if tile.Fire == nil {
-            tile.Fire = set.MakeSet[FireSide]()
-        }
-        tile.Fire.Insert(FireSideNorth)
-
-        tile = &tiles[TownCenterY+y+3][TownCenterX-3]
-        if tile.Fire == nil {
-            tile.Fire = set.MakeSet[FireSide]()
-        }
-        tile.Fire.Insert(FireSideSouth)
-    }
-    */
-
     return tiles
 }
 
 // update the Fire set on the tiles centered around x/y with a length of sideLength
 func createWallOfFire(tiles [][]Tile, centerX int, centerY int, sideLength int) {
-    for x := -sideLength; x <= sideLength; x++ {
-        tile := &tiles[centerY][centerX+x]
+    for x := -sideLength/2; x <= sideLength/2; x++ {
+        tile := &tiles[centerY-sideLength/2][centerX+x]
         if tile.Fire == nil {
             tile.Fire = set.MakeSet[FireSide]()
         }
@@ -353,21 +322,19 @@ func createWallOfFire(tiles [][]Tile, centerX int, centerY int, sideLength int) 
         tile.Fire.Insert(FireSideEast)
     }
 
-    /*
-    for y := -3; y < 3; y++ {
-        tile := &tiles[TownCenterY+y+3][TownCenterX+2]
+    for y := -sideLength/2; y <= sideLength/2; y++ {
+        tile := &tiles[centerY+y][centerX+sideLength/2]
         if tile.Fire == nil {
             tile.Fire = set.MakeSet[FireSide]()
         }
         tile.Fire.Insert(FireSideNorth)
 
-        tile = &tiles[TownCenterY+y+3][TownCenterX-3]
+        tile = &tiles[centerY+y][centerX-sideLength/2]
         if tile.Fire == nil {
             tile.Fire = set.MakeSet[FireSide]()
         }
         tile.Fire.Insert(FireSideSouth)
     }
-    */
 }
 
 type CombatUnit interface {
