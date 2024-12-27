@@ -1162,6 +1162,17 @@ func (model *CombatModel) NextUnit() {
     model.SelectedUnit = nextChoice
 }
 
+// return true if x,y is within the bounds of the enclosed wall of fire space
+func (model *CombatModel) InsideWallOfFire(x int, y int) bool {
+    if x < 0 || y < 0 || y >= len(model.Tiles) || x >= len(model.Tiles[0]) {
+        return false
+    }
+
+    // FIXME
+
+    return false
+}
+
 func (model *CombatModel) UpdateProjectiles(counter uint64) bool {
     animationSpeed := uint64(5)
 
@@ -1493,6 +1504,13 @@ func (model *CombatModel) ApplyMeleeDamage(attacker *ArmyUnit, defender *ArmyUni
     model.AddLogEvent(fmt.Sprintf("%v damage roll %v, %v took %v damage. HP now %v", attacker.Unit.GetName(), damage, defender.Unit.GetName(), hurt, defender.Unit.GetHealth()))
 }
 
+// nearly the same as immolation damage except that excess damage to one figure does not spill over to another figure
+func (model *CombatModel) ApplyWallOfFireDamage(defender *ArmyUnit, damage int) {
+    // FIXME: pass some flag to ApplyDamage to avoid spillover damage from one figure to the next
+    // hurt := defender.ApplyDamage(damage, units.DamageFire, false)
+    // model.AddLogEvent(fmt.Sprintf("%v is burned for %v damage. HP now %v", defender.Unit.GetName(), hurt, defender.Unit.GetHealth()))
+}
+
 /* attacker is performing a physical melee attack against defender
  */
 func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
@@ -1577,7 +1595,19 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                 attacker.TakeDamage(gazeDamage)
 
             case 2:
-                // wall of fire
+
+                // if attacker is outside the wall of fire and the defender is inside, then both side take immolation damage
+                // if either side is flying then they do not take damage
+                if model.InsideWallOfFire(defender.X, defender.Y) && !model.InsideWallOfFire(attacker.X, attacker.Y) {
+                    if !attacker.Unit.IsFlying() {
+                        model.ApplyWallOfFireDamage(attacker, 5)
+                    }
+
+                    if !defender.Unit.IsFlying() {
+                        model.ApplyWallOfFireDamage(defender, 5)
+                    }
+                }
+
             case 3:
                 if defender.Unit.HasAbility(data.AbilityCauseFear) || defender.Unit.HasEnchantment(data.UnitEnchantmentCloakOfFear) {
                     attackerFear = attacker.CauseFear()
