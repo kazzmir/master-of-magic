@@ -243,6 +243,7 @@ func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plan
         }
     }
 
+    // hack for now
     tiles[TownCenterY][TownCenterX].Fire = FireSideSouth
 
     return tiles
