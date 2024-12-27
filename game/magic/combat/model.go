@@ -244,6 +244,35 @@ func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plan
     }
 
     // hack for now
+    for x := -3; x < 3; x++ {
+        tile := &tiles[TownCenterY][TownCenterX+x]
+        if tile.Fire == nil {
+            tile.Fire = set.MakeSet[FireSide]()
+        }
+        tile.Fire.Insert(FireSideWest)
+
+        tile = &tiles[TownCenterY+5][TownCenterX+x]
+        if tile.Fire == nil {
+            tile.Fire = set.MakeSet[FireSide]()
+        }
+        tile.Fire.Insert(FireSideEast)
+    }
+
+    for y := -3; y < 3; y++ {
+        tile := &tiles[TownCenterY+y+3][TownCenterX+2]
+        if tile.Fire == nil {
+            tile.Fire = set.MakeSet[FireSide]()
+        }
+        tile.Fire.Insert(FireSideNorth)
+
+        tile = &tiles[TownCenterY+y+3][TownCenterX-3]
+        if tile.Fire == nil {
+            tile.Fire = set.MakeSet[FireSide]()
+        }
+        tile.Fire.Insert(FireSideSouth)
+    }
+
+    /*
     testSet := set.MakeSet[FireSide]()
     tiles[TownCenterY][TownCenterX].Fire = testSet
     testSet.Insert(FireSideNorth)
@@ -256,6 +285,7 @@ func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plan
         Index: 50,
         Alignment: TileAlignMiddle,
     }
+    */
 
     return tiles
 }

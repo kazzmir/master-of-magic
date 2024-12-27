@@ -2599,7 +2599,7 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
             // lbx indices for fire
             west := []int{37, 38, 39}
             north := []int{40, 41, 42}
-            south := []int{43, 44, 45, 48}
+            south := []int{43, 44, 48}
             east := []int{46, 47, 49}
 
             choose := func(choices []int) int {
@@ -2636,6 +2636,9 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
             // draw the same fire animation for a given x,y tile, but choose a different fire
             // animation for other tiles
 
+            // these values are based on a clockwise 45-degree rotation, but the actual
+            // combat screen is a counter-clockwise 45-degree rotation.
+            // it doesn't matter, as long as the fire animations are consistent
             if fire.Contains(FireSideNorth) && fire.Contains(FireSideWest) {
                 drawFire(36, -1, -8)
                 drewNorth = true
