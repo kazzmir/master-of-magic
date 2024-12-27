@@ -17,9 +17,52 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
+    citylib "github.com/kazzmir/master-of-magic/game/magic/city"
 
     "github.com/hajimehoshi/ebiten/v2"
 )
+
+type ZoneType struct {
+    // fighting in a city
+    City *citylib.City
+
+    AncientTemple bool
+    FallenTemple bool
+    Ruins bool
+    AbandonedKeep bool
+    Lair bool
+    Tower bool
+    Dungeon bool
+
+    // one of the three node types
+    ChaosNode bool
+    NatureNode bool
+    SorceryNode bool
+}
+
+type Team int
+
+const (
+    TeamAttacker Team = iota
+    TeamDefender
+    TeamEither
+)
+
+func (team Team) String() string {
+    switch team {
+        case TeamAttacker: return "Attacker"
+        case TeamDefender: return "Defender"
+        case TeamEither: return "Either"
+    }
+    return "Unknown"
+}
+
+func oppositeTeam(a Team) Team {
+    if a == TeamAttacker {
+        return TeamDefender
+    }
+    return TeamAttacker
+}
 
 type TileAlignment int
 const (
