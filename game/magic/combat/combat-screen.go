@@ -2594,16 +2594,50 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
             // vector.DrawFilledCircle(screen, float32(tx), float32(ty), 2, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, false)
         }
 
-        switch combat.Model.Tiles[y][x].Fire {
-            case FireSideSouth:
+        fire := combat.Model.Tiles[y][x].Fire
+        if fire != nil {
+            // lbx indices for fire
+            west := []int{37, 38, 39}
+            north := []int{40, 41, 42}
+            south := []int{43, 44, 45, 48}
+            east := []int{46, 47, 49}
+
+            choose := func(choices []int) int {
+                // return a deterministic value based on x,y
+                return choices[(x + y) % len(choices)]
+            }
+
+            drawFire := func(index int, dx float64, dy float64){
                 options.GeoM.Reset()
                 tx, ty := tilePosition(float64(x), float64(y))
                 options.GeoM.Scale(combat.CameraScale, combat.CameraScale)
                 options.GeoM.Translate(tx, ty)
-                fireImages, _ := combat.ImageCache.GetImages("citywall.lbx", 47)
-                use := animationIndex % uint64(len(fireImages))
+                options.GeoM.Translate(dx, dy)
 
-                screen.DrawImage(fireImages[use], &options)
+                images, _ := combat.ImageCache.GetImages("citywall.lbx", index)
+                use := animationIndex % uint64(len(images))
+                drawImage := images[use]
+                options.GeoM.Translate(-float64(drawImage.Bounds().Dy())/2, -float64(drawImage.Bounds().Dy()/2))
+                screen.DrawImage(drawImage, &options)
+            }
+
+            // draw the same fire animation for a given x,y tile, but choose a different fire
+            // animation for other tiles
+            if fire.Contains(FireSideSouth) {
+                drawFire(choose(south), -4, -4)
+            }
+
+            if fire.Contains(FireSideWest) {
+                drawFire(choose(west), -3, -6)
+            }
+
+            if fire.Contains(FireSideNorth) {
+                drawFire(choose(north), 2, -6)
+            }
+
+            if fire.Contains(FireSideEast) {
+                drawFire(choose(east), 2, -4)
+            }
         }
     }
 

@@ -10,6 +10,7 @@ import (
 
     "github.com/kazzmir/master-of-magic/lib/fraction"
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/set"
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
@@ -62,8 +63,7 @@ func pathCost(from image.Point, to image.Point) fraction.Fraction {
 
 type FireSide int
 const (
-    FireSideNone FireSide = iota
-    FireSideSouth
+    FireSideSouth FireSide = iota
     FireSideEast
     FireSideNorth
     FireSideWest
@@ -79,7 +79,7 @@ type Tile struct {
     ExtraObject TileTop
     Mud bool
     // whether to show fire on this tile
-    Fire FireSide
+    Fire *set.Set[FireSide]
 }
 
 type CombatLandscape int
@@ -244,7 +244,18 @@ func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plan
     }
 
     // hack for now
-    tiles[TownCenterY][TownCenterX].Fire = FireSideSouth
+    testSet := set.MakeSet[FireSide]()
+    tiles[TownCenterY][TownCenterX].Fire = testSet
+    testSet.Insert(FireSideNorth)
+    testSet.Insert(FireSideSouth)
+    testSet.Insert(FireSideEast)
+    testSet.Insert(FireSideWest)
+
+    tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
+        Lbx: "cmbdesrc.lbx",
+        Index: 50,
+        Alignment: TileAlignMiddle,
+    }
 
     return tiles
 }
