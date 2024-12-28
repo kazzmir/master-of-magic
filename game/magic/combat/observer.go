@@ -20,6 +20,7 @@ type CombatObserver interface {
     ImmolationAttack(attacker *ArmyUnit, defender *ArmyUnit, damage int)
     MeleeAttack(attacker *ArmyUnit, defender *ArmyUnit, damageRoll int)
     CauseFear(attacker *ArmyUnit, defender *ArmyUnit, fear int)
+    WallOfFire(defender *ArmyUnit, damage int)
     UnitKilled(unit *ArmyUnit)
 }
 
@@ -40,6 +41,12 @@ func (observer *CombatObservers) RemoveObserver(remove CombatObserver) {
 func (observer *CombatObservers) UnitKilled(unit *ArmyUnit) {
     for _, notify := range observer.Observers {
         notify.UnitKilled(unit)
+    }
+}
+
+func (observer *CombatObservers) WallOfFire(defender *ArmyUnit, damage int) {
+    for _, notify := range observer.Observers {
+        notify.WallOfFire(defender, damage)
     }
 }
 

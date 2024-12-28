@@ -10,15 +10,59 @@ import (
 
     "github.com/kazzmir/master-of-magic/lib/fraction"
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/set"
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
+    citylib "github.com/kazzmir/master-of-magic/game/magic/city"
 
     "github.com/hajimehoshi/ebiten/v2"
 )
+
+type ZoneType struct {
+    // fighting in a city
+    City *citylib.City
+
+    AncientTemple bool
+    FallenTemple bool
+    Ruins bool
+    AbandonedKeep bool
+    Lair bool
+    Tower bool
+    Dungeon bool
+
+    // one of the three node types
+    ChaosNode bool
+    NatureNode bool
+    SorceryNode bool
+}
+
+type Team int
+
+const (
+    TeamAttacker Team = iota
+    TeamDefender
+    TeamEither
+)
+
+func (team Team) String() string {
+    switch team {
+        case TeamAttacker: return "Attacker"
+        case TeamDefender: return "Defender"
+        case TeamEither: return "Either"
+    }
+    return "Unknown"
+}
+
+func oppositeTeam(a Team) Team {
+    if a == TeamAttacker {
+        return TeamDefender
+    }
+    return TeamAttacker
+}
 
 type TileAlignment int
 const (
@@ -60,6 +104,22 @@ func pathCost(from image.Point, to image.Point) fraction.Fraction {
     return fraction.Make(xDiff + yDiff, 1)
 }
 
+type FireSide int
+const (
+    FireSideSouth FireSide = iota
+    FireSideEast
+    FireSideNorth
+    FireSideWest
+)
+
+type DarknessSide int
+const (
+    DarknessSideSouth DarknessSide = iota
+    DarknessSideEast
+    DarknessSideNorth
+    DarknessSideWest
+)
+
 type Tile struct {
     // a unit standing on this tile, if any
     Unit *ArmyUnit
@@ -69,6 +129,223 @@ type Tile struct {
     // tree/rock on top, or -1 if nothing
     ExtraObject TileTop
     Mud bool
+    // whether to show fire on this tile
+    Fire *set.Set[FireSide]
+    // whether to show wall of darkness on this tile
+    Darkness *set.Set[DarknessSide]
+
+    // true if this tile is inside the wall of fire/darkness
+    InsideFire bool
+    InsideDarkness bool
+}
+
+type CombatLandscape int
+
+const (
+    CombatLandscapeGrass CombatLandscape = iota
+    CombatLandscapeDesert
+    CombatLandscapeMountain
+    CombatLandscapeTundra
+)
+
+const TownCenterX = 11
+const TownCenterY = 9
+
+func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plane, zone ZoneType) [][]Tile {
+
+    baseLbx := "cmbgrass.lbx"
+
+    switch landscape {
+        case CombatLandscapeGrass:
+            if plane == data.PlaneArcanus {
+                baseLbx = "cmbgrass.lbx"
+            } else {
+                baseLbx = "cmbgrasc.lbx"
+            }
+        case CombatLandscapeDesert:
+            if plane == data.PlaneArcanus {
+                baseLbx = "cmbdesrt.lbx"
+            } else {
+                baseLbx = "cmbdesrc.lbx"
+            }
+        case CombatLandscapeMountain:
+            if plane == data.PlaneArcanus {
+                baseLbx = "cmbmount.lbx"
+            } else {
+                baseLbx = "cmbmounc.lbx"
+            }
+        case CombatLandscapeTundra:
+            if plane == data.PlaneArcanus {
+                baseLbx = "cmbtundr.lbx"
+            } else {
+                baseLbx = "cmbtundc.lbx"
+            }
+    }
+
+    maybeExtraTile := func() TileTop {
+        if rand.N(10) == 0 {
+            // trees/rocks
+            return TileTop{
+                Lbx: baseLbx,
+                Index: 48 + rand.N(10),
+                Alignment: TileAlignMiddle,
+            }
+        }
+        return TileTop{Index: -1}
+    }
+
+    tiles := make([][]Tile, height)
+    for y := 0; y < len(tiles); y++ {
+        tiles[y] = make([]Tile, width)
+        for x := 0; x < len(tiles[y]); x++ {
+            tiles[y][x] = Tile{
+                // Index: rand.N(48),
+                Lbx: baseLbx,
+                Index: rand.N(32),
+                ExtraObject: maybeExtraTile(),
+            }
+        }
+    }
+
+    // defending city, so place city tiles around
+    if zone.City != nil {
+
+        // clear all space around the city
+        for x := -2; x <= 2; x++ {
+            for y := -2; y <= 2; y++ {
+                mx := x + TownCenterX
+                my := y + TownCenterY
+                tiles[my][mx].ExtraObject.Index = -1
+            }
+        }
+
+        for range 8 {
+            x := TownCenterX + rand.N(5) - 2
+            y := TownCenterY + rand.N(5) - 2
+
+            tiles[y][x].ExtraObject = TileTop{
+                Lbx: "cmbtcity.lbx",
+                Index: 2 + rand.N(5),
+                Alignment: TileAlignBottom,
+            }
+        }
+
+        if zone.City.HasFortress() {
+            tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
+                Lbx: "cmbtcity.lbx",
+                Index: 17,
+                Alignment: TileAlignBottom,
+            }
+        }
+
+        if zone.City.HasWallOfFire() {
+            createWallOfFire(tiles, TownCenterX, TownCenterY, 4)
+        }
+
+        // FIXME: use HasWallOfDarkness()
+
+    } else if zone.Tower {
+        tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
+            Lbx: "cmbtcity.lbx",
+            Index: 20,
+            Alignment: TileAlignBottom,
+        }
+    } else if zone.AbandonedKeep {
+        tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
+            Lbx: "cmbtcity.lbx",
+            Index: 22,
+            Alignment: TileAlignBottom,
+        }
+    } else if zone.AncientTemple {
+        tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
+            Lbx: "cmbtcity.lbx",
+            Index: 23,
+            Alignment: TileAlignBottom,
+        }
+    } else if zone.FallenTemple {
+        tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
+            Lbx: "cmbtcity.lbx",
+            // FIXME: check on this
+            Index: 21,
+            Alignment: TileAlignBottom,
+        }
+    } else if zone.Lair {
+        tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
+            Lbx: "cmbtcity.lbx",
+            Index: 19,
+            Alignment: TileAlignBottom,
+        }
+    } else if zone.Ruins || zone.Dungeon {
+        tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
+            Lbx: "cmbtcity.lbx",
+            Index: 21,
+            Alignment: TileAlignBottom,
+        }
+    } else if zone.NatureNode {
+        tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
+            Lbx: "cmbtcity.lbx",
+            Index: 65,
+            Alignment: TileAlignBottom,
+        }
+    } else if zone.SorceryNode {
+        tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
+            Lbx: "cmbtcity.lbx",
+            Index: 66,
+            Alignment: TileAlignBottom,
+        }
+    } else if zone.ChaosNode {
+        tiles[TownCenterY-1][TownCenterX].ExtraObject = TileTop{
+            Drawer: func(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64) {
+                base, _ := imageCache.GetImageTransform("chriver.lbx", 32, 0, "crop", util.AutoCrop)
+                screen.DrawImage(base, options)
+
+                top, _ := imageCache.GetImage("chriver.lbx", 24 + int((counter / 4) % 8), 0)
+                options.GeoM.Translate(16, -3)
+                screen.DrawImage(top, options)
+
+            },
+        }
+    }
+
+    return tiles
+}
+
+// update the Fire set on the tiles centered around x/y with a length of sideLength
+func createWallOfFire(tiles [][]Tile, centerX int, centerY int, sideLength int) {
+    for x := -sideLength/2; x <= sideLength/2; x++ {
+        tile := &tiles[centerY-sideLength/2][centerX+x]
+        if tile.Fire == nil {
+            tile.Fire = set.MakeSet[FireSide]()
+        }
+        tile.Fire.Insert(FireSideWest)
+
+        tile = &tiles[centerY+sideLength/2][centerX+x]
+        if tile.Fire == nil {
+            tile.Fire = set.MakeSet[FireSide]()
+        }
+        tile.Fire.Insert(FireSideEast)
+    }
+
+    for y := -sideLength/2; y <= sideLength/2; y++ {
+        tile := &tiles[centerY+y][centerX+sideLength/2]
+        if tile.Fire == nil {
+            tile.Fire = set.MakeSet[FireSide]()
+        }
+        tile.Fire.Insert(FireSideNorth)
+
+        tile = &tiles[centerY+y][centerX-sideLength/2]
+        if tile.Fire == nil {
+            tile.Fire = set.MakeSet[FireSide]()
+        }
+        tile.Fire.Insert(FireSideSouth)
+    }
+
+    for x := -sideLength/2; x <= sideLength/2; x++ {
+        for y := -sideLength/2; y <= sideLength/2; y++ {
+            tile := &tiles[centerY+y][centerX+x]
+            tile.InsideFire = true
+        }
+    }
 }
 
 type CombatUnit interface {
@@ -130,6 +407,7 @@ type ArmyUnit struct {
     MovementTick uint64
     MoveX float64
     MoveY float64
+    CurrentPath pathfinding.Path
 
     LastTurn int
 
@@ -228,6 +506,22 @@ func (unit *ArmyUnit) ComputeDefense(damage units.Damage, armorPiercing bool) in
             if unit.Unit.HasAbility(data.AbilityMissileImmunity) {
                 hasImmunity = true
             }
+        case units.DamageImmolation:
+            if unit.Unit.HasAbility(data.AbilityLargeShield) {
+                defenseRolls += 2
+            }
+
+            if unit.Unit.HasAbility(data.AbilityMagicImmunity) || unit.Unit.HasEnchantment(data.UnitEnchantmentRighteousness) {
+                // always completely immune to immolation
+                return 1000
+            }
+
+            if unit.Unit.HasAbility(data.AbilityFireImmunity) {
+                hasImmunity = true
+            }
+
+            defenseRolls += unit.GetResistances(data.UnitEnchantmentResistElements, data.UnitEnchantmentBless, data.UnitEnchantmentElementalArmor)
+
         case units.DamageFire:
             if unit.Unit.HasAbility(data.AbilityLargeShield) {
                 defenseRolls += 2
@@ -280,6 +574,36 @@ func (unit *ArmyUnit) Heal(amount int){
     unit.Unit.AdjustHealth(amount)
 }
 
+// apply damage to each individual figure such that each figure gets to individually block damage.
+// this could potentially allow a damage of 5 to destroy a unit with 4 figures of 1HP each
+func (unit *ArmyUnit) ApplyAreaDamage(attackStrength int, damageType units.Damage) int {
+    totalDamage := 0
+    health_per_figure := unit.Unit.GetMaxHealth() / unit.Unit.GetCount()
+
+    for range unit.Figures() {
+        damage := 0
+        // FIXME: should this toHit be based on the unit's toHitMelee?
+        toHit := 30
+        for range attackStrength {
+            if rand.N(100) < toHit {
+                damage += 1
+            }
+        }
+
+        defense := unit.ComputeDefense(damageType, false)
+        // can't do more damage than a single figure has HP
+        figureDamage := min(damage - defense, health_per_figure)
+        if figureDamage > 0 {
+            totalDamage += figureDamage
+        }
+    }
+
+    totalDamage = min(totalDamage, unit.Unit.GetHealth())
+    unit.TakeDamage(totalDamage)
+    return totalDamage
+}
+
+// apply damage to lead figure, and if it dies then keep applying remaining damage to the next figure
 func (unit *ArmyUnit) ApplyDamage(damage int, damageType units.Damage, armorPiercing bool) int {
     taken := 0
     for damage > 0 && unit.Unit.GetHealth() > 0 {
@@ -896,6 +1220,15 @@ func (model *CombatModel) NextUnit() {
     model.SelectedUnit = nextChoice
 }
 
+// return true if x,y is within the bounds of the enclosed wall of fire space
+func (model *CombatModel) InsideWallOfFire(x int, y int) bool {
+    if x < 0 || y < 0 || y >= len(model.Tiles) || x >= len(model.Tiles[0]) {
+        return false
+    }
+
+    return model.Tiles[y][x].InsideFire
+}
+
 func (model *CombatModel) UpdateProjectiles(counter uint64) bool {
     animationSpeed := uint64(5)
 
@@ -1042,7 +1375,7 @@ func (model *CombatModel) doThrowAttack(attacker *ArmyUnit, defender *ArmyUnit) 
 
 func (model *CombatModel) immolationDamage(attacker *ArmyUnit, defender *ArmyUnit) int {
     if attacker.Unit.HasAbility(data.AbilityImmolation) || attacker.Unit.HasEnchantment(data.UnitEnchantmentImmolation) {
-        damage := 4 * defender.Figures()
+        damage := 4
         model.Observer.ImmolationAttack(attacker, defender, damage)
         return damage
     }
@@ -1215,9 +1548,9 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
     return damageFuncs
 }
 
-func (model *CombatModel) ApplyImmolationDamage(attacker *ArmyUnit, defender *ArmyUnit, immolationDamage int) {
+func (model *CombatModel) ApplyImmolationDamage(defender *ArmyUnit, immolationDamage int) {
     if immolationDamage > 0 {
-        hurt := defender.ApplyDamage(immolationDamage, units.DamageFire, false)
+        hurt := defender.ApplyAreaDamage(immolationDamage, units.DamageImmolation)
         model.AddLogEvent(fmt.Sprintf("%v is immolated for %v damage. HP now %v", defender.Unit.GetName(), hurt, defender.Unit.GetHealth()))
     }
 }
@@ -1225,6 +1558,11 @@ func (model *CombatModel) ApplyImmolationDamage(attacker *ArmyUnit, defender *Ar
 func (model *CombatModel) ApplyMeleeDamage(attacker *ArmyUnit, defender *ArmyUnit, damage int) {
     hurt := defender.ApplyDamage(damage, units.DamageMeleePhysical, false)
     model.AddLogEvent(fmt.Sprintf("%v damage roll %v, %v took %v damage. HP now %v", attacker.Unit.GetName(), damage, defender.Unit.GetName(), hurt, defender.Unit.GetHealth()))
+}
+
+func (model *CombatModel) ApplyWallOfFireDamage(defender *ArmyUnit) {
+    model.ApplyImmolationDamage(defender, 5)
+    model.Observer.WallOfFire(defender, 5)
 }
 
 /* attacker is performing a physical melee attack against defender
@@ -1285,7 +1623,7 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                     model.AddLogEvent(fmt.Sprintf("%v throws %v at %v. HP now %v", attacker.Unit.GetName(), damage, defender.Unit.GetName(), defender.Unit.GetHealth()))
                 }
 
-                model.ApplyImmolationDamage(attacker, defender, immolationDamage)
+                model.ApplyImmolationDamage(defender, immolationDamage)
                 for _, f := range damageFuncs {
                     f()
                 }
@@ -1304,14 +1642,27 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                     }
                 }
 
-                model.ApplyImmolationDamage(defender, attacker, immolationDamage)
+                model.ApplyImmolationDamage(attacker, immolationDamage)
                 for _, f := range damageFuncs {
                     f()
                 }
                 attacker.TakeDamage(gazeDamage)
 
             case 2:
-                // wall of fire
+
+                // if attacker is outside the wall of fire and the defender is inside, then both side take immolation damage.
+                // if either side is flying then they do not take damage.
+                // for this to be false, either both are inside the wall of fire, or both are outside.
+                if model.InsideWallOfFire(defender.X, defender.Y) != model.InsideWallOfFire(attacker.X, attacker.Y) {
+                    if !attacker.Unit.IsFlying() {
+                        model.ApplyWallOfFireDamage(attacker)
+                    }
+
+                    if !defender.Unit.IsFlying() {
+                        model.ApplyWallOfFireDamage(defender)
+                    }
+                }
+
             case 3:
                 if defender.Unit.HasAbility(data.AbilityCauseFear) || defender.Unit.HasEnchantment(data.UnitEnchantmentCloakOfFear) {
                     attackerFear = attacker.CauseFear()
@@ -1334,7 +1685,7 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                         }
 
                         model.ApplyMeleeDamage(attacker, defender, attackerDamage)
-                        model.ApplyImmolationDamage(attacker, defender, immolationDamage)
+                        model.ApplyImmolationDamage(defender, immolationDamage)
                         for _, f := range damageFuncs {
                             f()
                         }
@@ -1407,10 +1758,10 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                     }
                 }
 
-                model.ApplyImmolationDamage(attacker, defender, defenderImmolationDamage)
+                model.ApplyImmolationDamage(defender, defenderImmolationDamage)
                 model.ApplyMeleeDamage(attacker, defender, defenderMeleeDamage)
 
-                model.ApplyImmolationDamage(defender, attacker, attackerImmolationDamage)
+                model.ApplyImmolationDamage(attacker, attackerImmolationDamage)
                 model.ApplyMeleeDamage(defender, attacker, attackerMeleeDamage)
 
                 for _, f := range damageFuncs {

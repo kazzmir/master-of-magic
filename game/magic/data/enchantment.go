@@ -4,6 +4,7 @@ import (
     "image/color"
 )
 
+// global overland enchantments
 type Enchantment int
 
 const (
@@ -34,6 +35,7 @@ const (
     EnchantmentZombieMastery
 )
 
+// unit enchantments
 type UnitEnchantment int
 
 const (
@@ -149,3 +151,28 @@ func (enchantment UnitEnchantment) LbxIndex() int {
 
     return -1
 }
+
+// city enchantments (also called Town Enchantments)
+type CityEnchantment int
+const (
+    CityEnchantmentNone CityEnchantment = iota
+    CityEnchantmentWallOfFire
+)
+
+/*
+Altar of Battle	￼Life
+Astral Gate	￼Life
+Consecration	￼Life
+Heavenly Light	￼Life
+Inspirations	￼Life
+Prosperity	￼Life
+Stream of Life	￼Life
+Earth Gate	￼Nature
+Gaia's Blessing	￼Nature
+Nature's Eye	￼Nature
+Flying Fortress	￼Sorcery
+Spell Ward	￼Sorcery
+Cloud of Shadow	￼Death
+Dark Rituals	￼Death
+Wall of Darkness Death
+ */
