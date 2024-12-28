@@ -1490,6 +1490,16 @@ func (combat *CombatScreen) canRangeAttack(attacker *ArmyUnit, defender *ArmyUni
     // FIXME: check if defender has magic immunity and attacker is using magical attacks
     // FIXME: check if defender has invisible, and attacker doesn't have illusions immunity
 
+    if combat.Model.InsideWallOfDarkness(defender.X, defender.Y) && !combat.Model.InsideWallOfDarkness(attacker.X, attacker.Y) {
+        // attacker can't target a defender inside a wall of darkness, unless the attacker has True Sight or Illusions Immunity
+
+        if attacker.Unit.HasEnchantment(data.UnitEnchantmentTrueSight) || attacker.Unit.HasAbility(data.AbilityIllusionsImmunity) {
+            return true
+        }
+
+        return false
+    }
+
     return true
 }
 
