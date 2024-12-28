@@ -88,6 +88,18 @@ func createWarlockArmyN(player *player.Player, count int) *combat.Army {
     return &army
 }
 
+func createLizardmenArmy(player *player.Player) *combat.Army {
+    army := combat.Army{
+        Player: player,
+    }
+
+    for range 3 {
+        army.AddUnit(units.MakeOverworldUnitFromUnit(units.LizardSwordsmen, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()))
+    }
+
+    return &army
+}
+
 func createHighMenBowmanArmyN(player *player.Player, count int) combat.Army {
     army := combat.Army{
         Player: player,
@@ -316,10 +328,11 @@ func makeScenario4(cache *lbx.LbxCache) *combat.CombatScreen {
     defendingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Enemy",
             Banner: data.BannerBlue,
-        }, false, nil, nil)
+        }, true, nil, nil)
 
     // defendingArmy := createWarlockArmy(&defendingPlayer)
-    defendingArmy := createSettlerArmy(defendingPlayer, 3)
+    // defendingArmy := createSettlerArmy(defendingPlayer, 3)
+    defendingArmy := createLizardmenArmy(defendingPlayer)
     defendingArmy.LayoutUnits(combat.TeamDefender)
 
     allSpells, err := spellbook.ReadSpellsFromCache(cache)
@@ -332,7 +345,7 @@ func makeScenario4(cache *lbx.LbxCache) *combat.CombatScreen {
             Name: "Merlin",
             Banner: data.BannerRed,
             Race: data.RaceHighMen,
-        }, true, nil, nil)
+        }, false, nil, nil)
 
     attackingPlayer.CastingSkillPower = 10
 
@@ -347,7 +360,7 @@ func makeScenario4(cache *lbx.LbxCache) *combat.CombatScreen {
 
     city.AddEnchantment(data.CityEnchantmentWallOfFire)
 
-    return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneMyrror, combat.ZoneType{City: city})
+    return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, defendingPlayer, combat.CombatLandscapeGrass, data.PlaneMyrror, combat.ZoneType{City: city})
 }
 
 // fight in a tower of wizardy

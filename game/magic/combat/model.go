@@ -1516,8 +1516,8 @@ func (model *CombatModel) ApplyMeleeDamage(attacker *ArmyUnit, defender *ArmyUni
 // nearly the same as immolation damage except that excess damage to one figure does not spill over to another figure
 func (model *CombatModel) ApplyWallOfFireDamage(defender *ArmyUnit, damage int) {
     // FIXME: pass some flag to ApplyDamage to avoid spillover damage from one figure to the next
-    // hurt := defender.ApplyDamage(damage, units.DamageFire, false)
-    // model.AddLogEvent(fmt.Sprintf("%v is burned for %v damage. HP now %v", defender.Unit.GetName(), hurt, defender.Unit.GetHealth()))
+    hurt := defender.ApplyDamage(damage, units.DamageFire, false)
+    model.AddLogEvent(fmt.Sprintf("%v is burned for %v damage. HP now %v", defender.Unit.GetName(), hurt, defender.Unit.GetHealth()))
 }
 
 /* attacker is performing a physical melee attack against defender
@@ -1605,9 +1605,10 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
 
             case 2:
 
-                // if attacker is outside the wall of fire and the defender is inside, then both side take immolation damage
-                // if either side is flying then they do not take damage
-                if model.InsideWallOfFire(defender.X, defender.Y) && !model.InsideWallOfFire(attacker.X, attacker.Y) {
+                // if attacker is outside the wall of fire and the defender is inside, then both side take immolation damage.
+                // if either side is flying then they do not take damage.
+                // for this to be false, either both are inside the wall of fire, or both are outside.
+                if model.InsideWallOfFire(defender.X, defender.Y) != model.InsideWallOfFire(attacker.X, attacker.Y) {
                     if !attacker.Unit.IsFlying() {
                         model.ApplyWallOfFireDamage(attacker, 5)
                     }
