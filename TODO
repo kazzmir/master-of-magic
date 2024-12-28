@@ -12,7 +12,6 @@
 * overworld: ai controlled wizards/empires
 * combat: implement boulder ranged attacks
 * parse itemdata.lbx to get pre-made items
-* combat: implement wall of darkness
 
 9/22/2024 * city view: separate surplus food/gold from subsistence food/gold
 9/22/2024 * overworld path finding to point on map
@@ -58,3 +57,4 @@
 11/13/2024 * combat: cast unit spells
 12/22/2024 * implement most of melee combat mechanics (gaze, throw, breath)
 12/27/2024 * combat: wall of fire
+12/28/2024 * combat: implement wall of darkness
