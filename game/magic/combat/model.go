@@ -1650,7 +1650,7 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
 
             case 2:
 
-                // if attacker is outside the wall of fire and the defender is inside, then both side take immolation damage.
+                // if attacker is outside the wall of fire and the defender is inside (or vice-versa), then both side take immolation damage.
                 // if either side is flying then they do not take damage.
                 // for this to be false, either both are inside the wall of fire, or both are outside.
                 if model.InsideWallOfFire(defender.X, defender.Y) != model.InsideWallOfFire(attacker.X, attacker.Y) {
