@@ -157,6 +157,7 @@ type CityEnchantment int
 const (
     CityEnchantmentNone CityEnchantment = iota
     CityEnchantmentWallOfFire
+    CityEnchantmentWallOfDarkness
 )
 
 /*
@@ -174,5 +175,4 @@ Flying Fortress	￼Sorcery
 Spell Ward	￼Sorcery
 Cloud of Shadow	￼Death
 Dark Rituals	￼Death
-Wall of Darkness Death
  */

@@ -242,6 +242,10 @@ func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plan
             createWallOfFire(tiles, TownCenterX, TownCenterY, 4)
         }
 
+        if zone.City.HasWallOfDarkness() {
+            createWallOfDarkness(tiles, TownCenterX, TownCenterY, 4)
+        }
+
         // FIXME: use HasWallOfDarkness()
 
     } else if zone.Tower {
@@ -344,6 +348,43 @@ func createWallOfFire(tiles [][]Tile, centerX int, centerY int, sideLength int) 
         for y := -sideLength/2; y <= sideLength/2; y++ {
             tile := &tiles[centerY+y][centerX+x]
             tile.InsideFire = true
+        }
+    }
+}
+
+func createWallOfDarkness(tiles [][]Tile, centerX int, centerY int, sideLength int) {
+    for x := -sideLength/2; x <= sideLength/2; x++ {
+        tile := &tiles[centerY-sideLength/2][centerX+x]
+        if tile.Darkness == nil {
+            tile.Darkness = set.MakeSet[DarknessSide]()
+        }
+        tile.Darkness.Insert(DarknessSideWest)
+
+        tile = &tiles[centerY+sideLength/2][centerX+x]
+        if tile.Darkness == nil {
+            tile.Darkness = set.MakeSet[DarknessSide]()
+        }
+        tile.Darkness.Insert(DarknessSideEast)
+    }
+
+    for y := -sideLength/2; y <= sideLength/2; y++ {
+        tile := &tiles[centerY+y][centerX+sideLength/2]
+        if tile.Darkness == nil {
+            tile.Darkness = set.MakeSet[DarknessSide]()
+        }
+        tile.Darkness.Insert(DarknessSideNorth)
+
+        tile = &tiles[centerY+y][centerX-sideLength/2]
+        if tile.Darkness == nil {
+            tile.Darkness = set.MakeSet[DarknessSide]()
+        }
+        tile.Darkness.Insert(DarknessSideSouth)
+    }
+
+    for x := -sideLength/2; x <= sideLength/2; x++ {
+        for y := -sideLength/2; y <= sideLength/2; y++ {
+            tile := &tiles[centerY+y][centerX+x]
+            tile.InsideDarkness = true
         }
     }
 }
@@ -1227,6 +1268,14 @@ func (model *CombatModel) InsideWallOfFire(x int, y int) bool {
     }
 
     return model.Tiles[y][x].InsideFire
+}
+
+func (model *CombatModel) InsideWallOfDarkness(x int, y int) bool {
+    if x < 0 || y < 0 || y >= len(model.Tiles) || x >= len(model.Tiles[0]) {
+        return false
+    }
+
+    return model.Tiles[y][x].InsideDarkness
 }
 
 func (model *CombatModel) UpdateProjectiles(counter uint64) bool {
