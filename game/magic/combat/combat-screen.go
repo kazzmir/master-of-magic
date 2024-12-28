@@ -2581,6 +2581,11 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
             // vector.DrawFilledCircle(screen, float32(tx), float32(ty), 2, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, false)
         }
 
+        choose := func(choices []int) int {
+            // return a deterministic value based on x,y
+            return choices[(x + y) % len(choices)]
+        }
+
         fire := combat.Model.Tiles[y][x].Fire
         if fire != nil {
             // lbx indices for fire
@@ -2588,11 +2593,6 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
             north := []int{40, 41, 42}
             south := []int{43, 44, 48}
             east := []int{46, 47, 49}
-
-            choose := func(choices []int) int {
-                // return a deterministic value based on x,y
-                return choices[(x + y) % len(choices)]
-            }
 
             var geom ebiten.GeoM
             geom.Scale(combat.CameraScale, combat.CameraScale)
@@ -2655,7 +2655,74 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
             }
         }
 
-        // FIXME: draw wall of darkness, similar to fire. lbx citywall.lbx 50-63
+        darkness := combat.Model.Tiles[y][x].Darkness
+        if darkness != nil {
+            // lbx indices for fire
+            west := []int{51, 52, 53}
+            north := []int{54, 55, 56}
+            south := []int{57, 58, 62}
+            east := []int{60, 61, 63}
+
+            var geom ebiten.GeoM
+            geom.Scale(combat.CameraScale, combat.CameraScale)
+            tx, ty := tilePosition(float64(x), float64(y))
+            geom.Translate(tx, ty)
+
+            drawDark := func(index int, dx float64, dy float64){
+                options.GeoM.Reset()
+                // options.GeoM.Scale(combat.CameraScale, combat.CameraScale)
+                // options.GeoM.Translate(tx, ty)
+                options.GeoM.Translate(dx, dy)
+
+                images, _ := combat.ImageCache.GetImages("citywall.lbx", index)
+                use := animationIndex % uint64(len(images))
+                drawImage := images[use]
+                options.GeoM.Translate(-float64(drawImage.Bounds().Dy())/2, -float64(drawImage.Bounds().Dy()/2))
+
+                options.GeoM.Concat(geom)
+
+                screen.DrawImage(drawImage, &options)
+            }
+
+            drewNorth := false
+            drewSouth := false
+            drewEast := false
+            drewWest := false
+
+            // draw the same fire animation for a given x,y tile, but choose a different fire
+            // animation for other tiles
+
+            // these values are based on a clockwise 45-degree rotation, but the actual
+            // combat screen is a counter-clockwise 45-degree rotation.
+            // it doesn't matter, as long as the fire animations are consistent
+            if darkness.Contains(DarknessSideNorth) && darkness.Contains(DarknessSideWest) {
+                drawDark(50, -1, -8)
+                drewNorth = true
+                drewWest = true
+            }
+
+            if darkness.Contains(DarknessSideSouth) && darkness.Contains(DarknessSideEast) {
+                drawDark(59, -2, -3)
+                drewSouth = true
+                drewEast = true
+            }
+
+            if !drewSouth && darkness.Contains(DarknessSideSouth) {
+                drawDark(choose(south), -4, -4)
+            }
+
+            if !drewWest && darkness.Contains(DarknessSideWest) {
+                drawDark(choose(west), -3, -6)
+            }
+
+            if !drewNorth && darkness.Contains(DarknessSideNorth) {
+                drawDark(choose(north), 2, -6)
+            }
+
+            if !drewEast && darkness.Contains(DarknessSideEast) {
+                drawDark(choose(east), 2, -4)
+            }
+        }
     }
 
     combat.DrawHighlightedTile(screen, combat.MouseTileX, combat.MouseTileY, &useMatrix, color.RGBA{R: 0, G: 0x67, B: 0x78, A: 255}, color.RGBA{R: 0, G: 0xef, B: 0xff, A: 255})
