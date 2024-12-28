@@ -8,5 +8,7 @@
 data/data/
 
 # Executables
-./magic
-./lbxdump
+lbxdump
+lbxviewer
+magic
+mapeditor

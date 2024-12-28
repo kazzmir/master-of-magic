@@ -123,11 +123,34 @@ const (
     AbilitySuperSage
 
     // artifact abilities
-    AbilityVampiric
-    AbilityStoning
-    AbilityHolyAvenger
+    AbilityBless
+    AbilityChaos
+    AbilityCloakOfFear
+    AbilityDeath
     AbilityDeathTouch
     AbilityDestruction
+    AbilityElementalArmor
+    AbilityEndurance
+    AbilityFlaming
+    AbilityFlight
+    AbilityGiantStrength
+    AbilityGuardianWind
+    AbilityHaste
+    AbilityHolyAvenger
+    AbilityInvulnerability
+    AbilityLightning
+    AbilityLionHeart
+    AbilityPhantasmal
+    AbilityPlanarTravel
+    AbilityPowerDrain
+    AbilityResistElements
+    AbilityResistMagic
+    AbilityRighteousness
+    AbilityStoning
+    AbilityTrueSight
+    AbilityVampiric
+    AbilityWaterWalking
+    AbilityWraithform
 )
 
 // the file that stores the icon for this ability
