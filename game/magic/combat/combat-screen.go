@@ -1902,6 +1902,7 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
 
     // FIXME: move some of this code into model.go
     for len(path) > 0 {
+        mover.CurrentPath = path
         targetX, targetY := path[0].X, path[0].Y
 
         combat.Model.AddLogEvent(fmt.Sprintf("Moving %v %v,%v -> %v,%v", mover.Unit.GetName(), mover.X, mover.Y, targetX, targetY))
@@ -1923,6 +1924,12 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
         for !reached {
             combat.UpdateAnimations()
             combat.Counter += 1
+
+            mouseX, mouseY := inputmanager.MousePosition()
+            tileX, tileY := combat.ScreenToTile(float64(mouseX), float64(mouseY))
+            combat.MouseTileX = int(math.Round(tileX))
+            combat.MouseTileY = int(math.Round(tileY))
+
             mover.MoveX += math.Cos(angle) * speed
             mover.MoveY += math.Sin(angle) * speed
 
@@ -1960,6 +1967,7 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
     }
 
     mover.Moving = false
+    mover.CurrentPath = nil
     mover.Paths = make(map[image.Point]pathfinding.Path)
 }
 
@@ -2645,11 +2653,23 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
     combat.DrawHighlightedTile(screen, combat.MouseTileX, combat.MouseTileY, &useMatrix, color.RGBA{R: 0, G: 0x67, B: 0x78, A: 255}, color.RGBA{R: 0, G: 0xef, B: 0xff, A: 255})
 
     if combat.Model.SelectedUnit != nil {
-        path, ok := combat.Model.FindPath(combat.Model.SelectedUnit, combat.MouseTileX, combat.MouseTileY)
+        var path pathfinding.Path
+        ok := false
+
+        if combat.Model.SelectedUnit.Moving {
+            path = combat.Model.SelectedUnit.CurrentPath
+            ok = true
+        } else {
+            path, ok = combat.Model.FindPath(combat.Model.SelectedUnit, combat.MouseTileX, combat.MouseTileY)
+            if ok {
+                path = path[1:]
+            }
+        }
+
         if ok {
             var options ebiten.DrawImageOptions
             options.ColorScale.ScaleAlpha(0.8)
-            for i := 1; i < len(path); i++ {
+            for i := 0; i < len(path); i++ {
                 tileX, tileY := path[i].X, path[i].Y
 
                 tx, ty := tilePosition(float64(tileX), float64(tileY))
@@ -2666,10 +2686,10 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
             }
         }
 
-        minColor := color.RGBA{R: 32, G: 0, B: 0, A: 255}
-        maxColor := color.RGBA{R: 255, G: 0, B: 0, A: 255}
-
         if !combat.Model.SelectedUnit.Moving {
+            minColor := color.RGBA{R: 32, G: 0, B: 0, A: 255}
+            maxColor := color.RGBA{R: 255, G: 0, B: 0, A: 255}
+
             combat.DrawHighlightedTile(screen, combat.Model.SelectedUnit.X, combat.Model.SelectedUnit.Y, &useMatrix, minColor, maxColor)
         }
     }

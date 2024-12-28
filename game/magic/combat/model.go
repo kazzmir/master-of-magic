@@ -407,6 +407,7 @@ type ArmyUnit struct {
     MovementTick uint64
     MoveX float64
     MoveY float64
+    CurrentPath pathfinding.Path
 
     LastTurn int
 
