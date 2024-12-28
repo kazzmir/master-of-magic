@@ -133,6 +133,10 @@ type Tile struct {
     Fire *set.Set[FireSide]
     // whether to show wall of darkness on this tile
     Darkness *set.Set[DarknessSide]
+
+    // true if this tile is inside the wall of fire/darkness
+    InsideFire bool
+    InsideDarkness bool
 }
 
 type CombatLandscape int
@@ -334,6 +338,13 @@ func createWallOfFire(tiles [][]Tile, centerX int, centerY int, sideLength int) 
             tile.Fire = set.MakeSet[FireSide]()
         }
         tile.Fire.Insert(FireSideSouth)
+    }
+
+    for x := -sideLength/2; x <= sideLength/2; x++ {
+        for y := -sideLength/2; y <= sideLength/2; y++ {
+            tile := &tiles[centerY+y][centerX+x]
+            tile.InsideFire = true
+        }
     }
 }
 
@@ -1168,9 +1179,7 @@ func (model *CombatModel) InsideWallOfFire(x int, y int) bool {
         return false
     }
 
-    // FIXME
-
-    return false
+    return model.Tiles[y][x].InsideFire
 }
 
 func (model *CombatModel) UpdateProjectiles(counter uint64) bool {

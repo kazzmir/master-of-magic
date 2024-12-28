@@ -2123,8 +2123,17 @@ func (combat *CombatScreen) doAI(yield coroutine.YieldFunc, aiUnit *ArmyUnit) {
             }
 
             if lastIndex >= 1 && lastIndex <= len(path) {
-                combat.doMoveUnit(yield, aiUnit, path[1:lastIndex])
-                return
+
+                move := true
+                // if the unit is inside the wall of fire but the target is outside, then don't move
+                if aiUnit.Team == TeamDefender && combat.Model.InsideWallOfFire(aiUnit.X, aiUnit.Y) && !combat.Model.InsideWallOfFire(path[lastIndex].X, path[lastIndex].Y) {
+                    move = false
+                }
+
+                if move {
+                    combat.doMoveUnit(yield, aiUnit, path[1:lastIndex])
+                    return
+                }
             }
         }
     }
