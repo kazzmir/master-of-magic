@@ -117,6 +117,9 @@ func (observer *TestObserver) CauseFear(attacker *ArmyUnit, defender *ArmyUnit, 
     }
 }
 
+func (observer *TestObserver) WallOfFire(unit *ArmyUnit, damage int){
+}
+
 func (observer *TestObserver) UnitKilled(unit *ArmyUnit){
 }
 
