@@ -1948,6 +1948,17 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
                     mover.MovesLeft = fraction.FromInt(0)
                 }
 
+                // unit moves from outside the wall of fire to inside
+                if !mover.Unit.IsFlying() && combat.Model.InsideWallOfFire(targetX, targetY) && !combat.Model.InsideWallOfFire(mover.X, mover.Y) {
+                    combat.Model.ApplyWallOfFireDamage(mover)
+
+                    if mover.Unit.GetHealth() <= 0 {
+                        // this feels dangerous to do here but it seems to work
+                        combat.Model.RemoveUnit(mover)
+                        return
+                    }
+                }
+
                 mover.X = targetX
                 mover.Y = targetY
                 mover.MoveX = float64(targetX)

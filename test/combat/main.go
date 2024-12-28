@@ -194,6 +194,21 @@ func createHeroArmy(player *player.Player) *combat.Army{
     }
 }
 
+func createWeakArmy(player *player.Player) *combat.Army {
+    var armyUnits []*combat.ArmyUnit
+
+    for range 2 {
+        armyUnits = append(armyUnits, &combat.ArmyUnit{
+            Unit: units.MakeOverworldUnitFromUnit(units.HighElfSpearmen, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()),
+        })
+    }
+
+    return &combat.Army{
+        Player: player,
+        Units: armyUnits,
+    }
+}
+
 func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
     defendingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Lair",
@@ -352,7 +367,8 @@ func makeScenario4(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Fireball"))
 
     // attackingArmy := createGreatDrakeArmy(&attackingPlayer)
-    attackingArmy := createHeroArmy(attackingPlayer)
+    attackingArmy := createWeakArmy(attackingPlayer)
+    // attackingArmy := createHeroArmy(attackingPlayer)
     attackingArmy.LayoutUnits(combat.TeamAttacker)
 
     city := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, attackingPlayer.Wizard.Banner, fraction.Zero(), nil, nil)
