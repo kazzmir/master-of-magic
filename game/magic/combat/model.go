@@ -510,11 +510,16 @@ func (unit *ArmyUnit) ComputeDefense(damage units.Damage, armorPiercing bool) in
                 defenseRolls += 2
             }
 
-            if unit.Unit.HasAbility(data.AbilityFireImmunity) || unit.Unit.HasAbility(data.AbilityMagicImmunity) {
+            if unit.Unit.HasAbility(data.AbilityMagicImmunity) || unit.Unit.HasEnchantment(data.UnitEnchantmentRighteousness) {
+                // always completely immune to immolation
+                return 1000
+            }
+
+            if unit.Unit.HasAbility(data.AbilityFireImmunity) {
                 hasImmunity = true
             }
 
-            defenseRolls += unit.GetResistances(data.UnitEnchantmentResistElements, data.UnitEnchantmentBless, data.UnitEnchantmentRighteousness)
+            defenseRolls += unit.GetResistances(data.UnitEnchantmentResistElements, data.UnitEnchantmentBless, data.UnitEnchantmentElementalArmor)
 
         case units.DamageFire:
             if unit.Unit.HasAbility(data.AbilityLargeShield) {
@@ -570,10 +575,20 @@ func (unit *ArmyUnit) Heal(amount int){
 
 // apply damage to each individual figure such that each figure gets to individually block damage.
 // this could potentially allow a damage of 5 to destroy a unit with 4 figures of 1HP each
-func (unit *ArmyUnit) ApplyAreaDamage(damage int, damageType units.Damage) int {
+func (unit *ArmyUnit) ApplyAreaDamage(attackStrength int, damageType units.Damage) int {
     totalDamage := 0
     health_per_figure := unit.Unit.GetMaxHealth() / unit.Unit.GetCount()
+
     for range unit.Figures() {
+        damage := 0
+        // FIXME: should this toHit be based on the unit's toHitMelee?
+        toHit := 30
+        for range attackStrength {
+            if rand.N(100) < toHit {
+                damage += 1
+            }
+        }
+
         defense := unit.ComputeDefense(damageType, false)
         // can't do more damage than a single figure has HP
         figureDamage := min(damage - defense, health_per_figure)
