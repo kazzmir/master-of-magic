@@ -117,6 +117,9 @@ func (observer *TestObserver) CauseFear(attacker *ArmyUnit, defender *ArmyUnit, 
     }
 }
 
+func (observer *TestObserver) WallOfFire(unit *ArmyUnit, damage int){
+}
+
 func (observer *TestObserver) UnitKilled(unit *ArmyUnit){
 }
 
@@ -135,7 +138,7 @@ func TestBasicMelee(test *testing.T){
 
     combat := &CombatModel{
         SelectedUnit: nil,
-        Tiles: makeTiles(5, 5, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}),
+        Tiles: makeTiles(30, 30, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}),
         Turn: TeamDefender,
         DefendingArmy: defendingArmy,
         AttackingArmy: attackingArmy,
@@ -180,7 +183,7 @@ func TestAttackerHaste(test *testing.T){
 
     combat := &CombatModel{
         SelectedUnit: nil,
-        Tiles: makeTiles(5, 5, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}),
+        Tiles: makeTiles(30, 30, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}),
         Turn: TeamDefender,
         DefendingArmy: defendingArmy,
         AttackingArmy: attackingArmy,
@@ -233,7 +236,7 @@ func TestFirstStrike(test *testing.T){
 
     combat := &CombatModel{
         SelectedUnit: nil,
-        Tiles: makeTiles(5, 5, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}),
+        Tiles: makeTiles(30, 30, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}),
         Turn: TeamDefender,
         DefendingArmy: defendingArmy,
         AttackingArmy: attackingArmy,
@@ -289,7 +292,7 @@ func TestFirstStrikeNegate(test *testing.T){
 
     combat := &CombatModel{
         SelectedUnit: nil,
-        Tiles: makeTiles(5, 5, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}),
+        Tiles: makeTiles(30, 30, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}),
         Turn: TeamDefender,
         DefendingArmy: defendingArmy,
         AttackingArmy: attackingArmy,
@@ -342,7 +345,7 @@ func TestThrowAttack(test *testing.T){
 
     combat := &CombatModel{
         SelectedUnit: nil,
-        Tiles: makeTiles(5, 5, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}),
+        Tiles: makeTiles(30, 30, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}),
         Turn: TeamDefender,
         DefendingArmy: defendingArmy,
         AttackingArmy: attackingArmy,
@@ -409,7 +412,7 @@ func TestThrownTouchAttack(test *testing.T){
 
     combat := &CombatModel{
         SelectedUnit: nil,
-        Tiles: makeTiles(5, 5, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}),
+        Tiles: makeTiles(30, 30, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}),
         Turn: TeamDefender,
         DefendingArmy: defendingArmy,
         AttackingArmy: attackingArmy,
@@ -483,7 +486,7 @@ func TestFear(test *testing.T){
 
     combat := &CombatModel{
         SelectedUnit: nil,
-        Tiles: makeTiles(5, 5, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}),
+        Tiles: makeTiles(30, 30, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}),
         Turn: TeamDefender,
         DefendingArmy: defendingArmy,
         AttackingArmy: attackingArmy,

@@ -16,6 +16,7 @@ const (
     DamageMeleePhysical
     DamageFire
     DamageCold
+    DamageImmolation
     DamageThrown
 )
 

@@ -87,6 +87,8 @@ type City struct {
     Banner data.BannerType
     Buildings *set.Set[buildinglib.Building]
 
+    Enchantments *set.Set[data.CityEnchantment]
+
     CatchmentProvider CatchmentProvider
 
     TaxRate fraction.Fraction
@@ -110,6 +112,7 @@ func MakeCity(name string, x int, y int, race data.Race, banner data.BannerType,
         Banner: banner,
         Race: race,
         Buildings: set.MakeSet[buildinglib.Building](),
+        Enchantments: set.MakeSet[data.CityEnchantment](),
         TaxRate: taxRate,
         CatchmentProvider: catchmentProvider,
         BuildingInfo: buildingInfo,
@@ -162,6 +165,18 @@ func (city *City) ProducingString() string {
     }
 
     return ""
+}
+
+func (city *City) AddEnchantment(enchantment data.CityEnchantment) {
+    city.Enchantments.Insert(enchantment)
+}
+
+func (city *City) RemoveEnchantment(enchantment data.CityEnchantment) {
+    city.Enchantments.Remove(enchantment)
+}
+
+func (city *City) HasWallOfFire() bool {
+    return city.Enchantments.Contains(data.CityEnchantmentWallOfFire)
 }
 
 func (city *City) ProducingTurnsLeft() int {

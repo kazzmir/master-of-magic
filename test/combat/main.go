@@ -88,6 +88,18 @@ func createWarlockArmyN(player *player.Player, count int) *combat.Army {
     return &army
 }
 
+func createLizardmenArmy(player *player.Player) *combat.Army {
+    army := combat.Army{
+        Player: player,
+    }
+
+    for range 3 {
+        army.AddUnit(units.MakeOverworldUnitFromUnit(units.LizardSwordsmen, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()))
+    }
+
+    return &army
+}
+
 func createHighMenBowmanArmyN(player *player.Player, count int) combat.Army {
     army := combat.Army{
         Player: player,
@@ -175,6 +187,21 @@ func createHeroArmy(player *player.Player) *combat.Army{
     armyUnits = append(armyUnits, &combat.ArmyUnit{
         Unit: herolib.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroTorin, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()), herolib.HeroTorin, "warby"),
     })
+
+    return &combat.Army{
+        Player: player,
+        Units: armyUnits,
+    }
+}
+
+func createWeakArmy(player *player.Player) *combat.Army {
+    var armyUnits []*combat.ArmyUnit
+
+    for range 2 {
+        armyUnits = append(armyUnits, &combat.ArmyUnit{
+            Unit: units.MakeOverworldUnitFromUnit(units.HighElfSpearmen, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()),
+        })
+    }
 
     return &combat.Army{
         Player: player,
@@ -316,10 +343,11 @@ func makeScenario4(cache *lbx.LbxCache) *combat.CombatScreen {
     defendingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Enemy",
             Banner: data.BannerBlue,
-        }, false, nil, nil)
+        }, true, nil, nil)
 
     // defendingArmy := createWarlockArmy(&defendingPlayer)
-    defendingArmy := createSettlerArmy(defendingPlayer, 3)
+    // defendingArmy := createSettlerArmy(defendingPlayer, 3)
+    defendingArmy := createLizardmenArmy(defendingPlayer)
     defendingArmy.LayoutUnits(combat.TeamDefender)
 
     allSpells, err := spellbook.ReadSpellsFromCache(cache)
@@ -332,20 +360,23 @@ func makeScenario4(cache *lbx.LbxCache) *combat.CombatScreen {
             Name: "Merlin",
             Banner: data.BannerRed,
             Race: data.RaceHighMen,
-        }, true, nil, nil)
+        }, false, nil, nil)
 
     attackingPlayer.CastingSkillPower = 10
 
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Fireball"))
 
     // attackingArmy := createGreatDrakeArmy(&attackingPlayer)
-    attackingArmy := createHeroArmy(attackingPlayer)
+    attackingArmy := createWeakArmy(attackingPlayer)
+    // attackingArmy := createHeroArmy(attackingPlayer)
     attackingArmy.LayoutUnits(combat.TeamAttacker)
 
     city := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, attackingPlayer.Wizard.Banner, fraction.Zero(), nil, nil)
     city.Buildings.Insert(buildinglib.BuildingFortress)
 
-    return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneMyrror, combat.ZoneType{City: city})
+    city.AddEnchantment(data.CityEnchantmentWallOfFire)
+
+    return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, defendingPlayer, combat.CombatLandscapeGrass, data.PlaneMyrror, combat.ZoneType{City: city})
 }
 
 // fight in a tower of wizardy

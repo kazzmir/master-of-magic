@@ -18,7 +18,6 @@ import (
     "github.com/kazzmir/master-of-magic/lib/mouse"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
-    citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     globalMouse "github.com/kazzmir/master-of-magic/game/magic/mouse"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
@@ -60,48 +59,6 @@ type CombatEventSelectUnit struct {
     Spell spellbook.Spell
     Selecter Team
     SelectTeam Team
-}
-
-type ZoneType struct {
-    // fighting in a city
-    City *citylib.City
-
-    AncientTemple bool
-    FallenTemple bool
-    Ruins bool
-    AbandonedKeep bool
-    Lair bool
-    Tower bool
-    Dungeon bool
-
-    // one of the three node types
-    ChaosNode bool
-    NatureNode bool
-    SorceryNode bool
-}
-
-type Team int
-
-const (
-    TeamAttacker Team = iota
-    TeamDefender
-    TeamEither
-)
-
-func (team Team) String() string {
-    switch team {
-        case TeamAttacker: return "Attacker"
-        case TeamDefender: return "Defender"
-        case TeamEither: return "Either"
-    }
-    return "Unknown"
-}
-
-func oppositeTeam(a Team) Team {
-    if a == TeamAttacker {
-        return TeamDefender
-    }
-    return TeamAttacker
 }
 
 type MouseState int
@@ -200,170 +157,6 @@ type CombatScreen struct {
     */
 
     Model *CombatModel
-}
-
-type CombatLandscape int
-
-const (
-    CombatLandscapeGrass CombatLandscape = iota
-    CombatLandscapeDesert
-    CombatLandscapeMountain
-    CombatLandscapeTundra
-)
-
-const TownCenterX = 11
-const TownCenterY = 9
-
-func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plane, zone ZoneType) [][]Tile {
-
-    baseLbx := "cmbgrass.lbx"
-
-    switch landscape {
-        case CombatLandscapeGrass:
-            if plane == data.PlaneArcanus {
-                baseLbx = "cmbgrass.lbx"
-            } else {
-                baseLbx = "cmbgrasc.lbx"
-            }
-        case CombatLandscapeDesert:
-            if plane == data.PlaneArcanus {
-                baseLbx = "cmbdesrt.lbx"
-            } else {
-                baseLbx = "cmbdesrc.lbx"
-            }
-        case CombatLandscapeMountain:
-            if plane == data.PlaneArcanus {
-                baseLbx = "cmbmount.lbx"
-            } else {
-                baseLbx = "cmbmounc.lbx"
-            }
-        case CombatLandscapeTundra:
-            if plane == data.PlaneArcanus {
-                baseLbx = "cmbtundr.lbx"
-            } else {
-                baseLbx = "cmbtundc.lbx"
-            }
-    }
-
-    maybeExtraTile := func() TileTop {
-        if rand.N(10) == 0 {
-            // trees/rocks
-            return TileTop{
-                Lbx: baseLbx,
-                Index: 48 + rand.N(10),
-                Alignment: TileAlignMiddle,
-            }
-        }
-        return TileTop{Index: -1}
-    }
-
-    tiles := make([][]Tile, height)
-    for y := 0; y < len(tiles); y++ {
-        tiles[y] = make([]Tile, width)
-        for x := 0; x < len(tiles[y]); x++ {
-            tiles[y][x] = Tile{
-                // Index: rand.N(48),
-                Lbx: baseLbx,
-                Index: rand.N(32),
-                ExtraObject: maybeExtraTile(),
-            }
-        }
-    }
-
-    // defending city, so place city tiles around
-    if zone.City != nil {
-
-        // clear all space around the city
-        for x := -2; x <= 2; x++ {
-            for y := -2; y <= 2; y++ {
-                mx := x + TownCenterX
-                my := y + TownCenterY
-                tiles[my][mx].ExtraObject.Index = -1
-            }
-        }
-
-        for range 8 {
-            x := TownCenterX + rand.N(5) - 2
-            y := TownCenterY + rand.N(5) - 2
-
-            tiles[y][x].ExtraObject = TileTop{
-                Lbx: "cmbtcity.lbx",
-                Index: 2 + rand.N(5),
-                Alignment: TileAlignBottom,
-            }
-        }
-
-        if zone.City.HasFortress() {
-            tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
-                Lbx: "cmbtcity.lbx",
-                Index: 17,
-                Alignment: TileAlignBottom,
-            }
-        }
-    } else if zone.Tower {
-        tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
-            Lbx: "cmbtcity.lbx",
-            Index: 20,
-            Alignment: TileAlignBottom,
-        }
-    } else if zone.AbandonedKeep {
-        tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
-            Lbx: "cmbtcity.lbx",
-            Index: 22,
-            Alignment: TileAlignBottom,
-        }
-    } else if zone.AncientTemple {
-        tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
-            Lbx: "cmbtcity.lbx",
-            Index: 23,
-            Alignment: TileAlignBottom,
-        }
-    } else if zone.FallenTemple {
-        tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
-            Lbx: "cmbtcity.lbx",
-            // FIXME: check on this
-            Index: 21,
-            Alignment: TileAlignBottom,
-        }
-    } else if zone.Lair {
-        tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
-            Lbx: "cmbtcity.lbx",
-            Index: 19,
-            Alignment: TileAlignBottom,
-        }
-    } else if zone.Ruins || zone.Dungeon {
-        tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
-            Lbx: "cmbtcity.lbx",
-            Index: 21,
-            Alignment: TileAlignBottom,
-        }
-    } else if zone.NatureNode {
-        tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
-            Lbx: "cmbtcity.lbx",
-            Index: 65,
-            Alignment: TileAlignBottom,
-        }
-    } else if zone.SorceryNode {
-        tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
-            Lbx: "cmbtcity.lbx",
-            Index: 66,
-            Alignment: TileAlignBottom,
-        }
-    } else if zone.ChaosNode {
-        tiles[TownCenterY-1][TownCenterX].ExtraObject = TileTop{
-            Drawer: func(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64) {
-                base, _ := imageCache.GetImageTransform("chriver.lbx", 32, 0, "crop", util.AutoCrop)
-                screen.DrawImage(base, options)
-
-                top, _ := imageCache.GetImage("chriver.lbx", 24 + int((counter / 4) % 8), 0)
-                options.GeoM.Translate(16, -3)
-                screen.DrawImage(top, options)
-
-            },
-        }
-    }
-
-    return tiles
 }
 
 func makePaletteFromBanner(banner data.BannerType) color.Palette {
@@ -2107,7 +1900,9 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
         }()
     }
 
+    // FIXME: move some of this code into model.go
     for len(path) > 0 {
+        mover.CurrentPath = path
         targetX, targetY := path[0].X, path[0].Y
 
         combat.Model.AddLogEvent(fmt.Sprintf("Moving %v %v,%v -> %v,%v", mover.Unit.GetName(), mover.X, mover.Y, targetX, targetY))
@@ -2129,6 +1924,12 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
         for !reached {
             combat.UpdateAnimations()
             combat.Counter += 1
+
+            mouseX, mouseY := inputmanager.MousePosition()
+            tileX, tileY := combat.ScreenToTile(float64(mouseX), float64(mouseY))
+            combat.MouseTileX = int(math.Round(tileX))
+            combat.MouseTileY = int(math.Round(tileY))
+
             mover.MoveX += math.Cos(angle) * speed
             mover.MoveY += math.Sin(angle) * speed
 
@@ -2147,10 +1948,25 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
                     mover.MovesLeft = fraction.FromInt(0)
                 }
 
+                // unit moves from outside the wall of fire to inside
+                if !mover.Unit.IsFlying() && combat.Model.InsideWallOfFire(targetX, targetY) && !combat.Model.InsideWallOfFire(mover.X, mover.Y) {
+                    combat.Model.ApplyWallOfFireDamage(mover)
+
+                    if mover.Unit.GetHealth() <= 0 {
+                        // this feels dangerous to do here but it seems to work
+                        combat.Model.RemoveUnit(mover)
+                        return
+                    }
+                }
+
                 mover.X = targetX
                 mover.Y = targetY
                 mover.MoveX = float64(targetX)
                 mover.MoveY = float64(targetY)
+
+                // FIXME: if the mover walked from outside a wall of fire to inside the wall of fire
+                // then the mover should take WallOfFire damage, model.ApplyWallOfFireDamage(mover, 5)
+
                 // new tile the unit landed on is now occupied
                 combat.Model.Tiles[mover.Y][mover.X].Unit = mover
                 path = path[1:]
@@ -2162,6 +1978,7 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
     }
 
     mover.Moving = false
+    mover.CurrentPath = nil
     mover.Paths = make(map[image.Point]pathfinding.Path)
 }
 
@@ -2325,8 +2142,17 @@ func (combat *CombatScreen) doAI(yield coroutine.YieldFunc, aiUnit *ArmyUnit) {
             }
 
             if lastIndex >= 1 && lastIndex <= len(path) {
-                combat.doMoveUnit(yield, aiUnit, path[1:lastIndex])
-                return
+
+                move := true
+                // if the unit is inside the wall of fire but the target is outside, then don't move
+                if aiUnit.Team == TeamDefender && combat.Model.InsideWallOfFire(aiUnit.X, aiUnit.Y) && !combat.Model.InsideWallOfFire(path[lastIndex].X, path[lastIndex].Y) {
+                    move = false
+                }
+
+                if move {
+                    combat.doMoveUnit(yield, aiUnit, path[1:lastIndex])
+                    return
+                }
             }
         }
     }
@@ -2757,16 +2583,104 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
 
             // vector.DrawFilledCircle(screen, float32(tx), float32(ty), 2, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, false)
         }
+
+        fire := combat.Model.Tiles[y][x].Fire
+        if fire != nil {
+            // lbx indices for fire
+            west := []int{37, 38, 39}
+            north := []int{40, 41, 42}
+            south := []int{43, 44, 48}
+            east := []int{46, 47, 49}
+
+            choose := func(choices []int) int {
+                // return a deterministic value based on x,y
+                return choices[(x + y) % len(choices)]
+            }
+
+            var geom ebiten.GeoM
+            geom.Scale(combat.CameraScale, combat.CameraScale)
+            tx, ty := tilePosition(float64(x), float64(y))
+            geom.Translate(tx, ty)
+
+            drawFire := func(index int, dx float64, dy float64){
+                options.GeoM.Reset()
+                // options.GeoM.Scale(combat.CameraScale, combat.CameraScale)
+                // options.GeoM.Translate(tx, ty)
+                options.GeoM.Translate(dx, dy)
+
+                images, _ := combat.ImageCache.GetImages("citywall.lbx", index)
+                use := animationIndex % uint64(len(images))
+                drawImage := images[use]
+                options.GeoM.Translate(-float64(drawImage.Bounds().Dy())/2, -float64(drawImage.Bounds().Dy()/2))
+
+                options.GeoM.Concat(geom)
+
+                screen.DrawImage(drawImage, &options)
+            }
+
+            drewNorth := false
+            drewSouth := false
+            drewEast := false
+            drewWest := false
+
+            // draw the same fire animation for a given x,y tile, but choose a different fire
+            // animation for other tiles
+
+            // these values are based on a clockwise 45-degree rotation, but the actual
+            // combat screen is a counter-clockwise 45-degree rotation.
+            // it doesn't matter, as long as the fire animations are consistent
+            if fire.Contains(FireSideNorth) && fire.Contains(FireSideWest) {
+                drawFire(36, -1, -8)
+                drewNorth = true
+                drewWest = true
+            }
+
+            if fire.Contains(FireSideSouth) && fire.Contains(FireSideEast) {
+                drawFire(45, -2, -3)
+                drewSouth = true
+                drewEast = true
+            }
+
+            if !drewSouth && fire.Contains(FireSideSouth) {
+                drawFire(choose(south), -4, -4)
+            }
+
+            if !drewWest && fire.Contains(FireSideWest) {
+                drawFire(choose(west), -3, -6)
+            }
+
+            if !drewNorth && fire.Contains(FireSideNorth) {
+                drawFire(choose(north), 2, -6)
+            }
+
+            if !drewEast && fire.Contains(FireSideEast) {
+                drawFire(choose(east), 2, -4)
+            }
+        }
+
+        // FIXME: draw wall of darkness, similar to fire. lbx citywall.lbx 50-63
     }
 
     combat.DrawHighlightedTile(screen, combat.MouseTileX, combat.MouseTileY, &useMatrix, color.RGBA{R: 0, G: 0x67, B: 0x78, A: 255}, color.RGBA{R: 0, G: 0xef, B: 0xff, A: 255})
 
     if combat.Model.SelectedUnit != nil {
-        path, ok := combat.Model.FindPath(combat.Model.SelectedUnit, combat.MouseTileX, combat.MouseTileY)
+        var path pathfinding.Path
+        ok := false
+
+        if combat.Model.SelectedUnit.Moving {
+            path = combat.Model.SelectedUnit.CurrentPath
+            ok = true
+        } else {
+            path, ok = combat.Model.FindPath(combat.Model.SelectedUnit, combat.MouseTileX, combat.MouseTileY)
+            if ok {
+                path = path[1:]
+            }
+        }
+
         if ok {
             var options ebiten.DrawImageOptions
             options.ColorScale.ScaleAlpha(0.8)
-            for i := 1; i < len(path); i++ {
+            for i := 0; i < len(path); i++ {
                 tileX, tileY := path[i].X, path[i].Y
 
                 tx, ty := tilePosition(float64(tileX), float64(tileY))
@@ -2783,10 +2697,10 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
             }
         }
 
-        minColor := color.RGBA{R: 32, G: 0, B: 0, A: 255}
-        maxColor := color.RGBA{R: 255, G: 0, B: 0, A: 255}
-
         if !combat.Model.SelectedUnit.Moving {
+            minColor := color.RGBA{R: 32, G: 0, B: 0, A: 255}
+            maxColor := color.RGBA{R: 255, G: 0, B: 0, A: 255}
+
             combat.DrawHighlightedTile(screen, combat.Model.SelectedUnit.X, combat.Model.SelectedUnit.Y, &useMatrix, minColor, maxColor)
         }
     }
