@@ -2149,10 +2149,13 @@ func (combat *CombatScreen) doAI(yield coroutine.YieldFunc, aiUnit *ArmyUnit) {
             }
 
             if lastIndex >= 1 && lastIndex <= len(path) {
-
                 move := true
-                // if the unit is inside the wall of fire but the target is outside, then don't move
-                if aiUnit.Team == TeamDefender && combat.Model.InsideWallOfFire(aiUnit.X, aiUnit.Y) && !combat.Model.InsideWallOfFire(path[lastIndex].X, path[lastIndex].Y) {
+
+                aiInWall := combat.Model.InsideAnyWall(aiUnit.X, aiUnit.Y)
+                enemyInWall := combat.Model.InsideAnyWall(path[lastIndex].X, path[lastIndex].Y)
+
+                // if the unit is inside a wall (fire/darkness/brick) but the target is outside, then don't move
+                if aiUnit.Team == TeamDefender && aiInWall && !enemyInWall {
                     move = false
                 }
 

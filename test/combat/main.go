@@ -375,7 +375,7 @@ func makeScenario4(cache *lbx.LbxCache) *combat.CombatScreen {
     city := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, attackingPlayer.Wizard.Banner, fraction.Zero(), nil, nil)
     city.Buildings.Insert(buildinglib.BuildingFortress)
 
-    // city.Wall = true
+    city.Wall = true
     // city.AddEnchantment(data.CityEnchantmentWallOfFire)
     city.AddEnchantment(data.CityEnchantmentWallOfDarkness)
 

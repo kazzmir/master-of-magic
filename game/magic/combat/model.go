@@ -1321,6 +1321,18 @@ func (model *CombatModel) InsideWallOfDarkness(x int, y int) bool {
     return model.Tiles[y][x].InsideDarkness
 }
 
+func (model *CombatModel) InsideCityWall(x int, y int) bool {
+    if x < 0 || y < 0 || y >= len(model.Tiles) || x >= len(model.Tiles[0]) {
+        return false
+    }
+
+    return model.Tiles[y][x].InsideWall
+}
+
+func (model *CombatModel) InsideAnyWall(x int, y int) bool {
+    return model.InsideWallOfFire(x, y) || model.InsideWallOfDarkness(x, y) || model.InsideCityWall(x, y)
+}
+
 func (model *CombatModel) UpdateProjectiles(counter uint64) bool {
     animationSpeed := uint64(5)
 
