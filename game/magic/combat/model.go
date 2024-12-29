@@ -120,6 +120,16 @@ const (
     DarknessSideWest
 )
 
+type WallKind int
+const (
+    WallKindNone WallKind = iota
+    WallKindNorth
+    WallKindEast
+    WallKindSouth
+    WallKindWest
+    WallKindGate
+)
+
 type Tile struct {
     // a unit standing on this tile, if any
     Unit *ArmyUnit
@@ -134,9 +144,12 @@ type Tile struct {
     // whether to show wall of darkness on this tile
     Darkness *set.Set[DarknessSide]
 
+    Wall *set.Set[WallKind]
+
     // true if this tile is inside the wall of fire/darkness
     InsideFire bool
     InsideDarkness bool
+    InsideWall bool
 }
 
 type CombatLandscape int
