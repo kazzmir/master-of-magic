@@ -2843,6 +2843,14 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
                 drawWall(gate, -2, -4)
             }
         }
+
+        slices.SortFunc(wallDrawOrder, func(a, b DrawWallOrder) int {
+            return cmp.Compare(a.Order, b.Order)
+        })
+
+        for _, draw := range wallDrawOrder {
+            draw.Draw()
+        }
     }
 
     combat.DrawHighlightedTile(screen, combat.MouseTileX, combat.MouseTileY, &useMatrix, color.RGBA{R: 0, G: 0x67, B: 0x78, A: 255}, color.RGBA{R: 0, G: 0xef, B: 0xff, A: 255})
