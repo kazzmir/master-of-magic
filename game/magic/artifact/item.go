@@ -389,7 +389,7 @@ func (artifact *Artifact) Cost() int {
 }
 
 
-func ReadItems(cache *lbx.LbxCache) ([]Artifact, error) {
+func ReadArtifacts(cache *lbx.LbxCache) ([]Artifact, error) {
 	itemData, err := cache.GetLbxFile("itemdata.lbx")
 	if err != nil {
 		return nil, fmt.Errorf("unable to read itemdata.lbx: %v", err)

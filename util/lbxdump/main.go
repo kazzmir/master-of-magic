@@ -15,6 +15,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
+    "github.com/kazzmir/master-of-magic/game/magic/artifact"
 )
 
 func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int, rawDump bool) error {
@@ -70,6 +71,20 @@ func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int, rawDump bool) 
 
         for i, spell := range spells.Spells {
             fmt.Printf("Spell %v: %+v\n", i, spell)
+        }
+
+    } else if lbxName == "itemdata.lbx" && !rawDump {
+        files := make(map[string]*lbx.LbxFile)
+        files["itemdata.lbx"] = &file
+        cache := lbx.MakeCacheFromLbxFiles(files)
+        artifacts, err := artifact.ReadArtifacts(cache)
+
+        if err != nil {
+            return err
+        }
+
+        for _, use := range artifacts {
+            fmt.Printf("Artifact: %+v\n", use)
         }
 
     } else if lbxName == "help.lbx" && !rawDump {
