@@ -179,6 +179,10 @@ func (city *City) HasWallOfFire() bool {
     return city.Enchantments.Contains(data.CityEnchantmentWallOfFire)
 }
 
+func (city *City) HasWallOfDarkness() bool {
+    return city.Enchantments.Contains(data.CityEnchantmentWallOfDarkness)
+}
+
 func (city *City) ProducingTurnsLeft() int {
     if city.ProducingBuilding != buildinglib.BuildingNone {
         switch city.ProducingBuilding {

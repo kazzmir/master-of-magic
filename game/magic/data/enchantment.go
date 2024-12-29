@@ -50,6 +50,7 @@ const (
     UnitEnchantmentBless
     UnitEnchantmentRighteousness
     UnitEnchantmentCloakOfFear
+    UnitEnchantmentTrueSight
 )
 
 var natureColor = color.RGBA{R: 0, G: 180, B: 0, A: 255}
@@ -65,7 +66,6 @@ Holy Armor	Life
 Holy Weapon	Life
 Invulnerability	Life
 Planar Travel	Life
-True Sight	Life
 Iron Skin	Nature
 Path Finding	Nature
 Regeneration	Nature
@@ -96,6 +96,7 @@ func (enchantment UnitEnchantment) Color() color.Color {
         case UnitEnchantmentBless: return lifeColor
         case UnitEnchantmentRighteousness: return lifeColor
         case UnitEnchantmentCloakOfFear: return deathColor
+        case UnitEnchantmentTrueSight: return lifeColor
     }
 
     return color.RGBA{R: 0, G: 0, B: 0, A: 0}
@@ -113,6 +114,7 @@ func (enchantment UnitEnchantment) Name() string {
         case UnitEnchantmentBless: return "Bless"
         case UnitEnchantmentRighteousness: return "Righteousness"
         case UnitEnchantmentCloakOfFear: return "Cloak of Fear"
+        case UnitEnchantmentTrueSight: return "True Sight"
     }
 
     return ""
@@ -130,6 +132,7 @@ func (enchantment UnitEnchantment) LbxFile() string {
         case UnitEnchantmentBless: return "special.lbx"
         case UnitEnchantmentRighteousness: return "special.lbx"
         case UnitEnchantmentCloakOfFear: return "special2.lbx"
+        case UnitEnchantmentTrueSight: return "special.lbx"
     }
 
     return ""
@@ -147,6 +150,7 @@ func (enchantment UnitEnchantment) LbxIndex() int {
         case UnitEnchantmentBless: return 88
         case UnitEnchantmentRighteousness: return 93
         case UnitEnchantmentCloakOfFear: return 21
+        case UnitEnchantmentTrueSight: return 85
     }
 
     return -1
@@ -157,6 +161,7 @@ type CityEnchantment int
 const (
     CityEnchantmentNone CityEnchantment = iota
     CityEnchantmentWallOfFire
+    CityEnchantmentWallOfDarkness
 )
 
 /*
@@ -174,5 +179,4 @@ Flying Fortress	￼Sorcery
 Spell Ward	￼Sorcery
 Cloud of Shadow	￼Death
 Dark Rituals	￼Death
-Wall of Darkness Death
  */

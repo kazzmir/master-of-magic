@@ -33,8 +33,8 @@ type Engine struct {
     Coroutine *coroutine.Coroutine
 }
 
-func createWarlockArmy(player *player.Player) combat.Army {
-    return combat.Army{
+func createWarlockArmy(player *player.Player) *combat.Army {
+    return &combat.Army{
         Player: player,
         Units: []*combat.ArmyUnit{
             /*
@@ -112,8 +112,8 @@ func createHighMenBowmanArmyN(player *player.Player, count int) combat.Army {
     return army
 }
 
-func createHighMenBowmanArmy(player *player.Player) combat.Army {
-    return combat.Army{
+func createHighMenBowmanArmy(player *player.Player) *combat.Army {
+    return &combat.Army{
         Player: player,
         Units: []*combat.ArmyUnit{
             &combat.ArmyUnit{
@@ -345,9 +345,9 @@ func makeScenario4(cache *lbx.LbxCache) *combat.CombatScreen {
             Banner: data.BannerBlue,
         }, true, nil, nil)
 
-    // defendingArmy := createWarlockArmy(&defendingPlayer)
+    defendingArmy := createWarlockArmy(defendingPlayer)
     // defendingArmy := createSettlerArmy(defendingPlayer, 3)
-    defendingArmy := createLizardmenArmy(defendingPlayer)
+    // defendingArmy := createLizardmenArmy(defendingPlayer)
     defendingArmy.LayoutUnits(combat.TeamDefender)
 
     allSpells, err := spellbook.ReadSpellsFromCache(cache)
@@ -367,14 +367,16 @@ func makeScenario4(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Fireball"))
 
     // attackingArmy := createGreatDrakeArmy(&attackingPlayer)
-    attackingArmy := createWeakArmy(attackingPlayer)
+    // attackingArmy := createWeakArmy(attackingPlayer)
+    attackingArmy := createHighMenBowmanArmy(attackingPlayer)
     // attackingArmy := createHeroArmy(attackingPlayer)
     attackingArmy.LayoutUnits(combat.TeamAttacker)
 
     city := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, attackingPlayer.Wizard.Banner, fraction.Zero(), nil, nil)
     city.Buildings.Insert(buildinglib.BuildingFortress)
 
-    city.AddEnchantment(data.CityEnchantmentWallOfFire)
+    // city.AddEnchantment(data.CityEnchantmentWallOfFire)
+    city.AddEnchantment(data.CityEnchantmentWallOfDarkness)
 
     return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, defendingPlayer, combat.CombatLandscapeGrass, data.PlaneMyrror, combat.ZoneType{City: city})
 }
