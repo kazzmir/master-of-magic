@@ -267,7 +267,7 @@ func (ability Ability) Name() string {
         case AbilityVampiric: return "Vampiric"
         case AbilityLightningBreath: return ""
         case AbilityLongRange: return ""
-        case AbilityMagicImmunity: return ""
+        case AbilityMagicImmunity: return "Magic Immunity"
         case AbilityMeld: return "Meld"
         case AbilityMerging: return "Merging"
         case AbilityMissileImmunity: return "Missile Immunity"
