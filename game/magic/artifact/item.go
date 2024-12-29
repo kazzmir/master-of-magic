@@ -287,7 +287,12 @@ type Artifact struct {
 func (artifact *Artifact) HasAbility(ability data.AbilityType) bool {
     switch ability {
         case data.AbilityLargeShield: return artifact.Type == ArtifactTypeShield
-        // TODO: handle more enchantments on the artifact, such as vampiric
+    }
+
+    for _, check := range artifact.Abilities {
+        if check.Ability == ability {
+            return true
+        }
     }
 
     return false
