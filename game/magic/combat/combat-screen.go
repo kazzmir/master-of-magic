@@ -2599,17 +2599,33 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
             return choices[(x + y) % len(choices)]
         }
 
+        type Order int
+        const (
+            Order0 Order = iota
+            Order1
+            Order2
+        )
+
         // if the tile has fire on the west or north then draw it first, but if the fire is on
         // south or east then draw it last
         // north: fire 0, darkness 1, wall 2
         // south: wall 0, darkness 1, fire 2
         type DrawWallOrder struct {
-            Order int
+            Order Order
             Draw func()
         }
 
         // add things to the list of things to draw, then sort, then draw all by invoking Draw() on each element
         wallDrawOrder := []DrawWallOrder{}
+
+        addDrawWall := func(order Order, draw func(int, float64, float64), index int, dx float64, dy float64){
+            wallDrawOrder = append(wallDrawOrder, DrawWallOrder{
+                Order: order,
+                Draw: func(){
+                    draw(index, dx, dy)
+                },
+            })
+        }
 
         fire := combat.Model.Tiles[y][x].Fire
         if fire != nil {
@@ -2652,31 +2668,31 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
             // combat screen is a counter-clockwise 45-degree rotation.
             // it doesn't matter, as long as the fire animations are consistent
             if fire.Contains(FireSideNorth) && fire.Contains(FireSideWest) {
-                drawFire(36, -1, -8)
+                addDrawWall(Order0, drawFire, 36, -1, -8)
                 drewNorth = true
                 drewWest = true
             }
 
             if fire.Contains(FireSideSouth) && fire.Contains(FireSideEast) {
-                drawFire(45, -2, -3)
+                addDrawWall(Order2, drawFire, 45, -2, -3)
                 drewSouth = true
                 drewEast = true
             }
 
             if !drewSouth && fire.Contains(FireSideSouth) {
-                drawFire(choose(south), -4, -4)
+                addDrawWall(Order2, drawFire, choose(south), -4, -4)
             }
 
             if !drewWest && fire.Contains(FireSideWest) {
-                drawFire(choose(west), -3, -6)
+                addDrawWall(Order0, drawFire, choose(west), -3, -6)
             }
 
             if !drewNorth && fire.Contains(FireSideNorth) {
-                drawFire(choose(north), 2, -6)
+                addDrawWall(Order0, drawFire, choose(north), 2, -6)
             }
 
             if !drewEast && fire.Contains(FireSideEast) {
-                drawFire(choose(east), 2, -4)
+                addDrawWall(Order2, drawFire, choose(east), 2, -4)
             }
         }
 
@@ -2800,47 +2816,47 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
             // combat screen is a counter-clockwise 45-degree rotation.
             // it doesn't matter, as long as the fire animations are consistent
             if wall.Contains(WallKindNorth) && wall.Contains(WallKindWest) {
-                drawWall(northWest, -1, -8)
+                addDrawWall(Order2, drawWall, northWest, -1, -8)
                 drewNorth = true
                 drewWest = true
             }
 
             if wall.Contains(WallKindSouth) && wall.Contains(WallKindEast) {
-                drawWall(southEast, -2, -3)
+                addDrawWall(Order0, drawWall, southEast, -2, -3)
                 drewSouth = true
                 drewEast = true
             }
 
             if wall.Contains(WallKindSouth) && wall.Contains(WallKindWest) {
-                drawWall(southWest, -2, -3)
+                addDrawWall(Order0, drawWall, southWest, -2, -3)
                 drewSouth = true
                 drewWest = true
             }
 
             if wall.Contains(WallKindNorth) && wall.Contains(WallKindEast) {
-                drawWall(northEast, -2, -3)
+                addDrawWall(Order2, drawWall, northEast, -2, -3)
                 drewNorth = true
                 drewEast = true
             }
 
             if !drewSouth && wall.Contains(WallKindSouth) {
-                drawWall(choose(south), -4, -4)
+                addDrawWall(Order0, drawWall, choose(south), -4, -4)
             }
 
             if !drewWest && wall.Contains(WallKindWest) {
-                drawWall(choose(west), -3, -6)
+                addDrawWall(Order2, drawWall, choose(west), -3, -6)
             }
 
             if !drewNorth && wall.Contains(WallKindNorth) {
-                drawWall(choose(north), 2, -6)
+                addDrawWall(Order2, drawWall, choose(north), 2, -6)
             }
 
             if !drewEast && wall.Contains(WallKindEast) {
-                drawWall(choose(east), 2, -4)
+                addDrawWall(Order0, drawWall, choose(east), 2, -4)
             }
 
             if wall.Contains(WallKindGate) {
-                drawWall(gate, -2, -4)
+                addDrawWall(Order0, drawWall, gate, -2, -4)
             }
         }
 
