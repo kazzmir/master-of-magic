@@ -377,7 +377,7 @@ func makeScenario4(cache *lbx.LbxCache) *combat.CombatScreen {
 
     city.Wall = true
     city.AddEnchantment(data.CityEnchantmentWallOfFire)
-    // city.AddEnchantment(data.CityEnchantmentWallOfDarkness)
+    city.AddEnchantment(data.CityEnchantmentWallOfDarkness)
 
     return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, defendingPlayer, combat.CombatLandscapeGrass, data.PlaneMyrror, combat.ZoneType{City: city})
 }

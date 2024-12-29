@@ -2737,31 +2737,31 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
             // combat screen is a counter-clockwise 45-degree rotation.
             // it doesn't matter, as long as the fire animations are consistent
             if darkness.Contains(DarknessSideNorth) && darkness.Contains(DarknessSideWest) {
-                drawDark(50, -1, -8)
+                addDrawWall(Order1, drawDark, 50, -1, -8)
                 drewNorth = true
                 drewWest = true
             }
 
             if darkness.Contains(DarknessSideSouth) && darkness.Contains(DarknessSideEast) {
-                drawDark(59, -2, -3)
+                addDrawWall(Order1, drawDark, 59, -2, -3)
                 drewSouth = true
                 drewEast = true
             }
 
             if !drewSouth && darkness.Contains(DarknessSideSouth) {
-                drawDark(choose(south), -4, -4)
+                addDrawWall(Order1, drawDark, choose(south), -4, -4)
             }
 
             if !drewWest && darkness.Contains(DarknessSideWest) {
-                drawDark(choose(west), -3, -6)
+                addDrawWall(Order1, drawDark, choose(west), -3, -6)
             }
 
             if !drewNorth && darkness.Contains(DarknessSideNorth) {
-                drawDark(choose(north), 2, -6)
+                addDrawWall(Order1, drawDark, choose(north), 2, -6)
             }
 
             if !drewEast && darkness.Contains(DarknessSideEast) {
-                drawDark(choose(east), 2, -4)
+                addDrawWall(Order1, drawDark, choose(east), 2, -4)
             }
         }
 
@@ -2828,7 +2828,7 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
             }
 
             if wall.Contains(WallKindSouth) && wall.Contains(WallKindWest) {
-                addDrawWall(Order0, drawWall, southWest, -2, -3)
+                addDrawWall(Order2, drawWall, southWest, -2, -3)
                 drewSouth = true
                 drewWest = true
             }
