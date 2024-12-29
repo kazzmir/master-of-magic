@@ -181,7 +181,7 @@ func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup
         player.AddUnit(units.MakeOverworldUnitFromUnit(unit, cityX, cityY, startingPlane, wizard.Banner, player.MakeExperienceInfo()))
     }
 
-    player.LiftFog(cityX, cityY, 3, introCity.Plane)
+    player.LiftFog(cityX, cityY, 2, introCity.Plane)
 
     game.Events <- gamelib.StartingCityEvent(introCity)
 
