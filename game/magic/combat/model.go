@@ -259,7 +259,9 @@ func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plan
             createWallOfDarkness(tiles, TownCenterX, TownCenterY, 4)
         }
 
-        // FIXME: use HasWallOfDarkness()
+        if zone.City.Wall {
+            createCityWall(tiles, TownCenterX, TownCenterY, 4)
+        }
 
     } else if zone.Tower {
         tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
@@ -327,79 +329,107 @@ func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plan
     return tiles
 }
 
-// update the Fire set on the tiles centered around x/y with a length of sideLength
-func createWallOfFire(tiles [][]Tile, centerX int, centerY int, sideLength int) {
-    for x := -sideLength/2; x <= sideLength/2; x++ {
-        tile := &tiles[centerY-sideLength/2][centerX+x]
-        if tile.Fire == nil {
-            tile.Fire = set.MakeSet[FireSide]()
-        }
-        tile.Fire.Insert(FireSideWest)
+type CardinalDirection int
+const (
+    DirectionNorth CardinalDirection = iota
+    DirectionEast
+    DirectionSouth
+    DirectionWest
+)
 
-        tile = &tiles[centerY+sideLength/2][centerX+x]
-        if tile.Fire == nil {
-            tile.Fire = set.MakeSet[FireSide]()
-        }
-        tile.Fire.Insert(FireSideEast)
+func createWallArea(centerX int, centerY int, sideLength int, set func(int, int, CardinalDirection), inside func(int, int)) {
+    minX := centerX - sideLength/2
+    maxX := minX + sideLength - 1
+    minY := centerY - sideLength/2
+    maxY := minY + sideLength - 1
+
+    for x := minX; x <= maxX; x++ {
+        set(x, minY, DirectionWest)
+        set(x, maxY, DirectionEast)
     }
 
-    for y := -sideLength/2; y <= sideLength/2; y++ {
-        tile := &tiles[centerY+y][centerX+sideLength/2]
-        if tile.Fire == nil {
-            tile.Fire = set.MakeSet[FireSide]()
-        }
-        tile.Fire.Insert(FireSideNorth)
-
-        tile = &tiles[centerY+y][centerX-sideLength/2]
-        if tile.Fire == nil {
-            tile.Fire = set.MakeSet[FireSide]()
-        }
-        tile.Fire.Insert(FireSideSouth)
+    for y := minY; y <= maxY; y++ {
+        set(minX, y, DirectionSouth)
+        set(maxX, y, DirectionNorth)
     }
 
-    for x := -sideLength/2; x <= sideLength/2; x++ {
-        for y := -sideLength/2; y <= sideLength/2; y++ {
-            tile := &tiles[centerY+y][centerX+x]
-            tile.InsideFire = true
+    for x := minX; x <= maxX; x++ {
+        for y := minY; y <= maxY; y++ {
+            inside(x, y)
         }
     }
 }
 
+// update the Fire set on the tiles centered around x/y with a length of sideLength
+func createWallOfFire(tiles [][]Tile, centerX int, centerY int, sideLength int) {
+    set := func(x int, y int, direction CardinalDirection) {
+        tile := &tiles[y][x]
+        if tile.Fire == nil {
+            tile.Fire = set.MakeSet[FireSide]()
+        }
+
+        switch direction {
+            case DirectionNorth: tile.Fire.Insert(FireSideNorth)
+            case DirectionEast: tile.Fire.Insert(FireSideEast)
+            case DirectionSouth: tile.Fire.Insert(FireSideSouth)
+            case DirectionWest: tile.Fire.Insert(FireSideWest)
+        }
+    }
+
+    inside := func(x int, y int) {
+        tile := &tiles[y][x]
+        tile.InsideFire = true
+    }
+
+    createWallArea(centerX, centerY, sideLength, set, inside)
+}
+
+func createCityWall(tiles [][]Tile, centerX int, centerY int, sideLength int) {
+    set := func(x int, y int, direction CardinalDirection) {
+        tile := &tiles[y][x]
+        if tile.Wall == nil {
+            tile.Wall = set.MakeSet[WallKind]()
+        }
+
+        switch direction {
+            case DirectionNorth: tile.Wall.Insert(WallKindNorth)
+            case DirectionEast: tile.Wall.Insert(WallKindEast)
+            case DirectionSouth: tile.Wall.Insert(WallKindSouth)
+            case DirectionWest: tile.Wall.Insert(WallKindWest)
+        }
+    }
+
+    inside := func(x int, y int) {
+        tile := &tiles[y][x]
+        tile.InsideWall = true
+    }
+
+    createWallArea(centerX, centerY, sideLength, set, inside)
+
+    // set gate tile
+}
+
 func createWallOfDarkness(tiles [][]Tile, centerX int, centerY int, sideLength int) {
-    for x := -sideLength/2; x <= sideLength/2; x++ {
-        tile := &tiles[centerY-sideLength/2][centerX+x]
+    set := func(x int, y int, direction CardinalDirection) {
+        tile := &tiles[y][x]
         if tile.Darkness == nil {
             tile.Darkness = set.MakeSet[DarknessSide]()
         }
-        tile.Darkness.Insert(DarknessSideWest)
 
-        tile = &tiles[centerY+sideLength/2][centerX+x]
-        if tile.Darkness == nil {
-            tile.Darkness = set.MakeSet[DarknessSide]()
+        switch direction {
+            case DirectionNorth: tile.Darkness.Insert(DarknessSideNorth)
+            case DirectionEast: tile.Darkness.Insert(DarknessSideEast)
+            case DirectionSouth: tile.Darkness.Insert(DarknessSideSouth)
+            case DirectionWest: tile.Darkness.Insert(DarknessSideWest)
         }
-        tile.Darkness.Insert(DarknessSideEast)
     }
 
-    for y := -sideLength/2; y <= sideLength/2; y++ {
-        tile := &tiles[centerY+y][centerX+sideLength/2]
-        if tile.Darkness == nil {
-            tile.Darkness = set.MakeSet[DarknessSide]()
-        }
-        tile.Darkness.Insert(DarknessSideNorth)
-
-        tile = &tiles[centerY+y][centerX-sideLength/2]
-        if tile.Darkness == nil {
-            tile.Darkness = set.MakeSet[DarknessSide]()
-        }
-        tile.Darkness.Insert(DarknessSideSouth)
+    inside := func(x int, y int) {
+        tile := &tiles[y][x]
+        tile.InsideDarkness = true
     }
 
-    for x := -sideLength/2; x <= sideLength/2; x++ {
-        for y := -sideLength/2; y <= sideLength/2; y++ {
-            tile := &tiles[centerY+y][centerX+x]
-            tile.InsideDarkness = true
-        }
-    }
+    createWallArea(centerX, centerY, sideLength, set, inside)
 }
 
 type CombatUnit interface {

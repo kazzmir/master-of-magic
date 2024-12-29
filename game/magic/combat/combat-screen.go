@@ -2733,6 +2733,101 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
                 drawDark(choose(east), 2, -4)
             }
         }
+
+        wall := combat.Model.Tiles[y][x].Wall
+        if wall != nil {
+            // starting index for the wall. there are 3 types of wall: normal, dark, and grass/ivy covered
+            wallBase := []int{0, 12, 24}
+            currentWall := 0
+
+            // lbx indices for fire, relative to wallBase
+            west := []int{1, 2}
+            north := []int{4, 5}
+            south := []int{7, 8}
+            east := []int{10}
+            gate := 11
+            northWest := 0
+            southWest := 3
+            northEast := 6
+            southEast := 9
+
+            var geom ebiten.GeoM
+            geom.Scale(combat.CameraScale, combat.CameraScale)
+            tx, ty := tilePosition(float64(x), float64(y))
+            geom.Translate(tx, ty)
+
+            drawWall := func(index int, dx float64, dy float64){
+                options.GeoM.Reset()
+                // options.GeoM.Scale(combat.CameraScale, combat.CameraScale)
+                // options.GeoM.Translate(tx, ty)
+                options.GeoM.Translate(dx, dy)
+
+                // FIXME: a destroyed wall should use index 1 (last argument)
+                drawImage, _ := combat.ImageCache.GetImage("citywall.lbx", wallBase[currentWall] + index, 0)
+                // use := animationIndex % uint64(len(images))
+                // drawImage := images[use]
+                options.GeoM.Translate(-float64(drawImage.Bounds().Dy())/2, -float64(drawImage.Bounds().Dy()/2))
+
+                options.GeoM.Concat(geom)
+
+                screen.DrawImage(drawImage, &options)
+            }
+
+            drewNorth := false
+            drewSouth := false
+            drewEast := false
+            drewWest := false
+
+            // draw the same fire animation for a given x,y tile, but choose a different fire
+            // animation for other tiles
+
+            // these values are based on a clockwise 45-degree rotation, but the actual
+            // combat screen is a counter-clockwise 45-degree rotation.
+            // it doesn't matter, as long as the fire animations are consistent
+            if wall.Contains(WallKindNorth) && wall.Contains(WallKindWest) {
+                drawWall(northWest, -1, -8)
+                drewNorth = true
+                drewWest = true
+            }
+
+            if wall.Contains(WallKindSouth) && wall.Contains(WallKindEast) {
+                drawWall(southEast, -2, -3)
+                drewSouth = true
+                drewEast = true
+            }
+
+            if wall.Contains(WallKindSouth) && wall.Contains(WallKindWest) {
+                drawWall(southWest, -2, -3)
+                drewSouth = true
+                drewWest = true
+            }
+
+            if wall.Contains(WallKindNorth) && wall.Contains(WallKindEast) {
+                drawWall(northEast, -2, -3)
+                drewNorth = true
+                drewEast = true
+            }
+
+            if !drewSouth && wall.Contains(WallKindSouth) {
+                drawWall(choose(south), -4, -4)
+            }
+
+            if !drewWest && wall.Contains(WallKindWest) {
+                drawWall(choose(west), -3, -6)
+            }
+
+            if !drewNorth && wall.Contains(WallKindNorth) {
+                drawWall(choose(north), 2, -6)
+            }
+
+            if !drewEast && wall.Contains(WallKindEast) {
+                drawWall(choose(east), 2, -4)
+            }
+
+            if wall.Contains(WallKindGate) {
+                drawWall(gate, -2, -4)
+            }
+        }
     }
 
     combat.DrawHighlightedTile(screen, combat.MouseTileX, combat.MouseTileY, &useMatrix, color.RGBA{R: 0, G: 0x67, B: 0x78, A: 255}, color.RGBA{R: 0, G: 0xef, B: 0xff, A: 255})
