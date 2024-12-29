@@ -2599,6 +2599,18 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
             return choices[(x + y) % len(choices)]
         }
 
+        // if the tile has fire on the west or north then draw it first, but if the fire is on
+        // south or east then draw it last
+        // north: fire 0, darkness 1, wall 2
+        // south: wall 0, darkness 1, fire 2
+        type DrawWallOrder struct {
+            Order int
+            Draw func()
+        }
+
+        // add things to the list of things to draw, then sort, then draw all by invoking Draw() on each element
+        wallDrawOrder := []DrawWallOrder{}
+
         fire := combat.Model.Tiles[y][x].Fire
         if fire != nil {
             // lbx indices for fire
