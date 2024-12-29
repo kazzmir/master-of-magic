@@ -515,7 +515,8 @@ func (player *Player) LiftFog(x int, y int, radius int, plane data.Plane){
                 continue
             }
 
-            if dx * dx + dy * dy <= radius * radius {
+            // dx^2 + dy^2 <= (radius + 0.5)^2
+            if 4 * (dx * dx + dy * dy) <= 4 * radius * radius + 4 * radius + 1 {
                 fog[mx][my] = true
             }
         }
