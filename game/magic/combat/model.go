@@ -407,6 +407,11 @@ func createCityWall(tiles [][]Tile, centerX int, centerY int, sideLength int) {
     createWallArea(centerX, centerY, sideLength, set, inside)
 
     // set gate tile
+
+    minY := centerY - sideLength/2
+    maxY := minY + sideLength - 1
+    tiles[maxY][centerX-1].Wall.Clear()
+    tiles[maxY][centerX-1].Wall.Insert(WallKindGate)
 }
 
 func createWallOfDarkness(tiles [][]Tile, centerX int, centerY int, sideLength int) {
@@ -1070,7 +1075,7 @@ func (model *CombatModel) NextTurn() {
     }
 }
 
-func (model *CombatModel) computePath(x1 int, y1 int, x2 int, y2 int) (pathfinding.Path, bool) {
+func (model *CombatModel) computePath(x1 int, y1 int, x2 int, y2 int, flying bool) (pathfinding.Path, bool) {
 
     tileEmpty := func (x int, y int) bool {
         return model.GetUnit(x, y) == nil
@@ -1123,8 +1128,19 @@ func (model *CombatModel) computePath(x1 int, y1 int, x2 int, y2 int) (pathfindi
                 y := cy + dy
 
                 if x >= 0 && y >= 0 && y < len(model.Tiles) && x < len(model.Tiles[y]) {
+
+                    canMove := tileEmpty(x, y)
+
+                    // can't move through a city wall
+                    if !flying && model.InsideCityWall(cx, cy) != model.InsideCityWall(x, y) {
+                        // FIXME: handle destroyed walls here
+                        if !model.IsCityWallGate(x, y) {
+                            canMove = false
+                        }
+                    }
+
                     // ignore non-empty tiles entirely
-                    if tileEmpty(x, y) {
+                    if canMove {
                         out = append(out, image.Pt(x, y))
                     }
                 }
@@ -1146,7 +1162,7 @@ func (model *CombatModel) FindPath(unit *ArmyUnit, x int, y int) (pathfinding.Pa
         return path, len(path) > 0
     }
 
-    path, ok = model.computePath(unit.X, unit.Y, x, y)
+    path, ok = model.computePath(unit.X, unit.Y, x, y, unit.Unit.IsFlying())
     if !ok {
         unit.Paths[end] = nil
         // log.Printf("No such path from %v,%v -> %v,%v", unit.X, unit.Y, x, y)
@@ -1327,6 +1343,20 @@ func (model *CombatModel) InsideCityWall(x int, y int) bool {
     }
 
     return model.Tiles[y][x].InsideWall
+}
+
+func (model *CombatModel) IsCityWallGate(x int, y int) bool {
+    if x < 0 || y < 0 || y >= len(model.Tiles) || x >= len(model.Tiles[0]) {
+        return false
+    }
+
+    wall := model.Tiles[y][x].Wall
+
+    if wall != nil && wall.Contains(WallKindGate) {
+        return true
+    }
+
+    return false
 }
 
 func (model *CombatModel) InsideAnyWall(x int, y int) bool {

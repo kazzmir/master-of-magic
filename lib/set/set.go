@@ -14,6 +14,10 @@ func (set *Set[T]) Insert(v T){
     set.data[v] = true
 }
 
+func (set *Set[T]) Clear() {
+    set.data = make(map[T]bool)
+}
+
 func (set *Set[T]) Contains(v T) bool {
     _, ok := set.data[v]
     return ok

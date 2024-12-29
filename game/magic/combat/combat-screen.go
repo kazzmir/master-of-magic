@@ -2087,7 +2087,7 @@ func (combat *CombatScreen) doAI(yield coroutine.YieldFunc, aiUnit *ArmyUnit) {
         if !found {
             combat.Model.Tiles[unit.Y][unit.X].Unit = nil
             var ok bool
-            path, ok = combat.Model.computePath(aiUnit.X, aiUnit.Y, unit.X, unit.Y)
+            path, ok = combat.Model.computePath(aiUnit.X, aiUnit.Y, unit.X, unit.Y, unit.Unit.IsFlying())
             combat.Model.Tiles[unit.Y][unit.X].Unit = unit
             if ok {
                 paths[unit] = path
@@ -2151,12 +2151,14 @@ func (combat *CombatScreen) doAI(yield coroutine.YieldFunc, aiUnit *ArmyUnit) {
             if lastIndex >= 1 && lastIndex <= len(path) {
                 move := true
 
-                aiInWall := combat.Model.InsideAnyWall(aiUnit.X, aiUnit.Y)
-                enemyInWall := combat.Model.InsideAnyWall(path[lastIndex].X, path[lastIndex].Y)
+                if lastIndex < len(path) {
+                    aiInWall := combat.Model.InsideAnyWall(aiUnit.X, aiUnit.Y)
+                    enemyInWall := combat.Model.InsideAnyWall(path[lastIndex].X, path[lastIndex].Y)
 
-                // if the unit is inside a wall (fire/darkness/brick) but the target is outside, then don't move
-                if aiUnit.Team == TeamDefender && aiInWall && !enemyInWall {
-                    move = false
+                    // if the unit is inside a wall (fire/darkness/brick) but the target is outside, then don't move
+                    if aiUnit.Team == TeamDefender && aiInWall && !enemyInWall {
+                        move = false
+                    }
                 }
 
                 if move {
