@@ -12,6 +12,8 @@
 * overworld: ai controlled wizards/empires
 * combat: implement boulder ranged attacks
 * parse itemdata.lbx to get pre-made items
+* overworld: zoom in/out
+* combat: implement city walls
 
 9/22/2024 * city view: separate surplus food/gold from subsistence food/gold
 9/22/2024 * overworld path finding to point on map
