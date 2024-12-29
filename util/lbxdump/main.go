@@ -189,6 +189,9 @@ func main(){
         return
     }
 
+    // FIXME: unify the arguments so that --raw can be given for the case that an lbx file is given
+    // or for a zip file
+
     if len(os.Args) == 2 {
         path := os.Args[1]
         fmt.Printf("Opening %v as an lbx file\n", path)
@@ -200,7 +203,7 @@ func main(){
         }
         onlyIndex := -1
         rawDump := true
-        err = dumpLbx(file, strings.ToLower(path), onlyIndex, rawDump)
+        err = dumpLbx(file, strings.ToLower(filepath.Base(path)), onlyIndex, rawDump)
         if err != nil {
             log.Printf("Error dumping lbx file: %v\n", err)
         }
