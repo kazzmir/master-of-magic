@@ -20,6 +20,27 @@ type LbxCache struct {
     Base fs.FS
 }
 
+type nilFS struct {}
+
+func (n *nilFS) Open(name string) (fs.File, error) {
+    return nil, &fs.PathError{
+        Op: "open",
+        Path: name,
+        Err: fs.ErrNotExist,
+    }
+}
+
+func MakeCacheFromLbxFiles(lbxFiles map[string]*LbxFile) *LbxCache {
+    useMap := make(map[string]*LbxFile)
+    for name, file := range lbxFiles {
+        useMap[strings.ToUpper(name)] = file
+    }
+    return &LbxCache{
+        Base: &nilFS{},
+        lbxFiles: useMap,
+    }
+}
+
 func MakeLbxCache(base fs.FS) *LbxCache {
     return &LbxCache{
         Base: base,

@@ -13,6 +13,12 @@ import (
     "path/filepath"
 )
 
+func ReadByte(reader io.Reader) (byte, error) {
+    var value byte
+    err := binary.Read(reader, binary.BigEndian, &value)
+    return value, err
+}
+
 func ReadUint16(reader io.Reader) (uint16, error) {
     var value uint16
     err := binary.Read(reader, binary.LittleEndian, &value)
@@ -25,14 +31,14 @@ func ReadUint16Big(reader io.Reader) (uint16, error) {
     return value, err
 }
 
-func readUint32(reader io.Reader) (uint32, error) {
+func ReadUint32(reader io.Reader) (uint32, error) {
     var value uint32
     err := binary.Read(reader, binary.LittleEndian, &value)
     return value, err
 }
 
 func readInt32(reader io.Reader) (int32, error) {
-    v, err := readUint32(reader)
+    v, err := ReadUint32(reader)
     return int32(v), err
 }
 
@@ -1009,7 +1015,7 @@ func (lbx *LbxFile) ReadImagesWithPalette(entry int, palette color.Palette, forc
 
     var offsets []uint32
     for i := 0; i < int(bitmapCount) + 1; i++ {
-        offset, err := readUint32(reader)
+        offset, err := ReadUint32(reader)
         if err != nil {
             return nil, err
         }
@@ -1135,7 +1141,7 @@ func ReadLbx(reader io.ReadSeeker) (LbxFile, error) {
         return LbxFile{}, err
     }
 
-    signature, err := readUint32(reader)
+    signature, err := ReadUint32(reader)
     if err != nil {
         return LbxFile{}, err
     }
@@ -1154,7 +1160,7 @@ func ReadLbx(reader io.ReadSeeker) (LbxFile, error) {
     var offsets []uint32
 
     for i := 0; i < int(numFiles); i++ {
-        offset, err := readUint32(reader)
+        offset, err := ReadUint32(reader)
         if err != nil {
             return LbxFile{}, err
         }
@@ -1165,7 +1171,7 @@ func ReadLbx(reader io.ReadSeeker) (LbxFile, error) {
     }
 
     // the last 4 bytes are the size of the file
-    readUint32(reader)
+    ReadUint32(reader)
 
     currentPosition, _ := reader.Seek(0, io.SeekCurrent)
 
