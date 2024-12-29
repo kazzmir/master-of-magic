@@ -4120,6 +4120,10 @@ func (overworld *Overworld) DrawFog(screen *ebiten.Image, geom ebiten.GeoM){
     FogEdge_N_W := fogImage(7)
     FogEdge_N := fogImage(8)
     FogEdge_W := fogImage(11)
+	FogCorner_NE := fogImage(10)
+	FogCorner_SW := fogImage(13)
+	FogCorner_SE := fogImage(6)
+	FogCorner_NW := fogImage(12)
 
     tileWidth := overworld.Map.TileWidth()
     tileHeight := overworld.Map.TileHeight()
@@ -4144,7 +4148,7 @@ func (overworld *Overworld) DrawFog(screen *ebiten.Image, geom ebiten.GeoM){
     }
 
     fogE := func(x int, y int) bool {
-        return checkFog(x+1, y)
+        return checkFog(x + 1, y)
     }
 
     fogS := func(x int, y int) bool {
@@ -4154,6 +4158,23 @@ func (overworld *Overworld) DrawFog(screen *ebiten.Image, geom ebiten.GeoM){
     fogW := func(x int, y int) bool {
         return checkFog(x - 1, y)
     }
+
+    fogNE := func(x int, y int) bool {
+        return checkFog(x + 1, y - 1)
+    }
+
+    fogSE := func(x int, y int) bool {
+        return checkFog(x + 1, y + 1)
+    }
+
+    fogNW := func(x int, y int) bool {
+        return checkFog(x - 1, y - 1)
+    }
+
+    fogSW := func(x int, y int) bool {
+        return checkFog(x - 1, y + 1)
+    }
+
 
     for x := 0; x < tilesPerRow; x++ {
         for y := 0; y < tilesPerColumn; y++ {
@@ -4169,6 +4190,10 @@ func (overworld *Overworld) DrawFog(screen *ebiten.Image, geom ebiten.GeoM){
                 e := fogE(tileX, tileY)
                 s := fogS(tileX, tileY)
                 w := fogW(tileX, tileY)
+                ne := fogNE(tileX, tileY)
+                se := fogSE(tileX, tileY)
+                nw := fogNW(tileX, tileY)
+                sw := fogSW(tileX, tileY)
 
                 if n && e {
                     screen.DrawImage(FogEdge_N_E, &options)
@@ -4176,22 +4201,30 @@ func (overworld *Overworld) DrawFog(screen *ebiten.Image, geom ebiten.GeoM){
                     screen.DrawImage(FogEdge_N, &options)
                 } else if e {
                     screen.DrawImage(FogEdge_E, &options)
+                } else if ne {
+                    screen.DrawImage(FogCorner_NE, &options)
                 }
 
                 if s && e {
                     screen.DrawImage(FogEdge_S_E, &options)
                 } else if s {
                     screen.DrawImage(FogEdge_S, &options)
+                } else if se {
+                    screen.DrawImage(FogCorner_SE, &options)
                 }
 
                 if n && w {
                     screen.DrawImage(FogEdge_N_W, &options)
-                } else if w && !s {
+                } else if w {
                     screen.DrawImage(FogEdge_W, &options)
+                } else if nw {
+                    screen.DrawImage(FogCorner_NW, &options)
                 }
 
                 if s && w {
                     screen.DrawImage(FogEdge_S_W, &options)
+                } else if sw {
+                    screen.DrawImage(FogCorner_SW, &options)
                 }
             } else {
                 if overworld.FogBlack != nil {
