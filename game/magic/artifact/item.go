@@ -26,6 +26,10 @@ const (
     ArtifactTypePlate
 )
 
+func (a ArtifactType) String() string {
+    return a.Name()
+}
+
 func (a ArtifactType) Name() string {
     switch a {
         case ArtifactTypeSword: return "Sword"
