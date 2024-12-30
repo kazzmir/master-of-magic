@@ -51,7 +51,7 @@ func (game *Game) GetFogImage() *ebiten.Image {
     }
 
     game.Fog = ebiten.NewImage(game.CurrentMap().TileWidth(), game.CurrentMap().TileHeight())
-    game.Fog.Fill(color.RGBA{R: 0, G: 0, B: 0, A: 0xff})
+    game.Fog.Fill(color.RGBA{R: 8, G: 4, B: 4, A: 0xff})
     return game.Fog
 }
 
