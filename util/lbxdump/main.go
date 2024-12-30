@@ -23,7 +23,7 @@ func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int, rawDump bool) 
     if err != nil {
         return err
     }
-    
+
     fmt.Printf("Number of files: %v\n", len(file.Data))
     // fmt.Printf("Signature: 0x%x\n", signature)
 
@@ -187,7 +187,7 @@ func main(){
     var zipName string
     var onlyIndex int
     var rawDump bool
-    
+
     flag.StringVar(&zipName, "zip", "", "Path to the zip file (optional)")
     flag.IntVar(&onlyIndex, "index", -1, "Only the file with the given index (optional)")
     flag.BoolVar(&rawDump, "raw", false, "Dump the files as binary (optional)")
