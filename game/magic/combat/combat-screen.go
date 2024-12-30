@@ -2087,7 +2087,7 @@ func (combat *CombatScreen) doAI(yield coroutine.YieldFunc, aiUnit *ArmyUnit) {
         if !found {
             combat.Model.Tiles[unit.Y][unit.X].Unit = nil
             var ok bool
-            path, ok = combat.Model.computePath(aiUnit.X, aiUnit.Y, unit.X, unit.Y, unit.Unit.IsFlying())
+            path, ok = combat.Model.computePath(aiUnit.X, aiUnit.Y, unit.X, unit.Y, unit.CanTraverseWall())
             combat.Model.Tiles[unit.Y][unit.X].Unit = unit
             if ok {
                 paths[unit] = path
@@ -2101,7 +2101,22 @@ func (combat *CombatScreen) doAI(yield coroutine.YieldFunc, aiUnit *ArmyUnit) {
 
     filterReachable := func (units []*ArmyUnit) []*ArmyUnit {
         var out []*ArmyUnit
+
+        aiInWall := combat.Model.InsideAnyWall(aiUnit.X, aiUnit.Y)
+
         for _, unit := range units {
+            // skip enemies that we can't melee anyway
+            if !combat.canMeleeAttack(aiUnit, unit) {
+                continue
+            }
+
+            enemyInWall := combat.Model.InsideAnyWall(unit.X, unit.Y)
+
+            // if the unit is inside a wall (fire/darkness/brick) but the target is outside, then don't move
+            if aiUnit.Team == TeamDefender && aiInWall && !enemyInWall {
+                continue
+            }
+
             path := getPath(unit)
             if len(path) > 0 {
                 out = append(out, unit)
@@ -2149,22 +2164,8 @@ func (combat *CombatScreen) doAI(yield coroutine.YieldFunc, aiUnit *ArmyUnit) {
             }
 
             if lastIndex >= 1 && lastIndex <= len(path) {
-                move := true
-
-                if lastIndex < len(path) {
-                    aiInWall := combat.Model.InsideAnyWall(aiUnit.X, aiUnit.Y)
-                    enemyInWall := combat.Model.InsideAnyWall(path[lastIndex].X, path[lastIndex].Y)
-
-                    // if the unit is inside a wall (fire/darkness/brick) but the target is outside, then don't move
-                    if aiUnit.Team == TeamDefender && aiInWall && !enemyInWall {
-                        move = false
-                    }
-                }
-
-                if move {
-                    combat.doMoveUnit(yield, aiUnit, path[1:lastIndex])
-                    return
-                }
+                combat.doMoveUnit(yield, aiUnit, path[1:lastIndex])
+                return
             }
         }
     }

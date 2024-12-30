@@ -504,6 +504,11 @@ type ArmyUnit struct {
     Paths map[image.Point]pathfinding.Path
 }
 
+// true if this unit can move through a tile with a wall tile
+func (unit *ArmyUnit) CanTraverseWall() bool {
+    return unit.Unit.IsFlying() || unit.Unit.HasAbility(data.AbilityMerging) || unit.Unit.HasAbility(data.AbilityTeleporting)
+}
+
 func (unit *ArmyUnit) CanFollowPath(path pathfinding.Path) bool {
     movesLeft := unit.MovesLeft
 
@@ -1075,7 +1080,7 @@ func (model *CombatModel) NextTurn() {
     }
 }
 
-func (model *CombatModel) computePath(x1 int, y1 int, x2 int, y2 int, flying bool) (pathfinding.Path, bool) {
+func (model *CombatModel) computePath(x1 int, y1 int, x2 int, y2 int, canTraverseWall bool) (pathfinding.Path, bool) {
 
     tileEmpty := func (x int, y int) bool {
         return model.GetUnit(x, y) == nil
@@ -1132,7 +1137,7 @@ func (model *CombatModel) computePath(x1 int, y1 int, x2 int, y2 int, flying boo
                     canMove := tileEmpty(x, y)
 
                     // can't move through a city wall
-                    if !flying && model.InsideCityWall(cx, cy) != model.InsideCityWall(x, y) {
+                    if canMove && !canTraverseWall && model.InsideCityWall(cx, cy) != model.InsideCityWall(x, y) {
                         // FIXME: handle destroyed walls here
                         if !model.IsCityWallGate(x, y) {
                             canMove = false
@@ -1162,7 +1167,7 @@ func (model *CombatModel) FindPath(unit *ArmyUnit, x int, y int) (pathfinding.Pa
         return path, len(path) > 0
     }
 
-    path, ok = model.computePath(unit.X, unit.Y, x, y, unit.Unit.IsFlying())
+    path, ok = model.computePath(unit.X, unit.Y, x, y, unit.CanTraverseWall())
     if !ok {
         unit.Paths[end] = nil
         // log.Printf("No such path from %v,%v -> %v,%v", unit.X, unit.Y, x, y)

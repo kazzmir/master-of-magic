@@ -343,11 +343,11 @@ func makeScenario4(cache *lbx.LbxCache) *combat.CombatScreen {
     defendingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Enemy",
             Banner: data.BannerBlue,
-        }, true, nil, nil)
+        }, false, nil, nil)
 
-    defendingArmy := createWarlockArmy(defendingPlayer)
+    // defendingArmy := createWarlockArmy(defendingPlayer)
     // defendingArmy := createSettlerArmy(defendingPlayer, 3)
-    // defendingArmy := createLizardmenArmy(defendingPlayer)
+    defendingArmy := createLizardmenArmy(defendingPlayer)
     defendingArmy.LayoutUnits(combat.TeamDefender)
 
     allSpells, err := spellbook.ReadSpellsFromCache(cache)
@@ -360,15 +360,15 @@ func makeScenario4(cache *lbx.LbxCache) *combat.CombatScreen {
             Name: "Merlin",
             Banner: data.BannerRed,
             Race: data.RaceHighMen,
-        }, false, nil, nil)
+        }, true, nil, nil)
 
     attackingPlayer.CastingSkillPower = 10
 
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Fireball"))
 
-    // attackingArmy := createGreatDrakeArmy(&attackingPlayer)
+    attackingArmy := createGreatDrakeArmy(attackingPlayer)
     // attackingArmy := createWeakArmy(attackingPlayer)
-    attackingArmy := createHighMenBowmanArmy(attackingPlayer)
+    // attackingArmy := createHighMenBowmanArmy(attackingPlayer)
     // attackingArmy := createHeroArmy(attackingPlayer)
     attackingArmy.LayoutUnits(combat.TeamAttacker)
 
@@ -379,7 +379,7 @@ func makeScenario4(cache *lbx.LbxCache) *combat.CombatScreen {
     // city.AddEnchantment(data.CityEnchantmentWallOfFire)
     // city.AddEnchantment(data.CityEnchantmentWallOfDarkness)
 
-    return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, defendingPlayer, combat.CombatLandscapeGrass, data.PlaneMyrror, combat.ZoneType{City: city})
+    return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneMyrror, combat.ZoneType{City: city})
 }
 
 // fight in a tower of wizardy
