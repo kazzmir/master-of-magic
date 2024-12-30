@@ -7,10 +7,10 @@ import (
     "log"
     "image/png"
     "path/filepath"
-    "strconv"
     "bytes"
     "strings"
     "archive/zip"
+    "flag"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
@@ -23,7 +23,7 @@ func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int, rawDump bool) 
     if err != nil {
         return err
     }
-    
+
     fmt.Printf("Number of files: %v\n", len(file.Data))
     // fmt.Printf("Signature: 0x%x\n", signature)
 
@@ -184,16 +184,33 @@ func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int, rawDump bool) 
 func main(){
     log.SetFlags(log.Ldate | log.Lshortfile | log.Lmicroseconds)
 
-    if len(os.Args) < 2 {
-        fmt.Println("Give an lbx file, or a zip file and the name of an lbx file inside it")
+    var zipName string
+    var onlyIndex int
+    var rawDump bool
+
+    flag.StringVar(&zipName, "zip", "", "Path to the zip file (optional)")
+    flag.IntVar(&onlyIndex, "index", -1, "Only the file with the given index (optional)")
+    flag.BoolVar(&rawDump, "raw", false, "Dump the files as binary (optional)")
+    flag.Usage = func() {
+        fmt.Fprintf(os.Stderr, "Usage: %v [options] filename\n\n", os.Args[0])
+        fmt.Fprintln(os.Stderr, "Options:")
+        flag.PrintDefaults()
+        fmt.Fprintln(os.Stderr, "\nExample:")
+        fmt.Fprintln(os.Stderr, "  ", os.Args[0], "--zip data.zip --index 0 --raw")
+    }
+
+    flag.Parse()
+
+    positionalArgs := flag.Args()
+
+    if len(positionalArgs) != 1 {
+        flag.Usage()
         return
     }
 
-    // FIXME: unify the arguments so that --raw can be given for the case that an lbx file is given
-    // or for a zip file
+    path := positionalArgs[0]
 
-    if len(os.Args) == 2 {
-        path := os.Args[1]
+    if zipName == "" {
         fmt.Printf("Opening %v as an lbx file\n", path)
 
         file, err := os.Open(path)
@@ -201,28 +218,25 @@ func main(){
             log.Printf("Error opening %v: %v\n", path, err)
             return
         }
-        onlyIndex := -1
-        rawDump := true
+
         err = dumpLbx(file, strings.ToLower(filepath.Base(path)), onlyIndex, rawDump)
         if err != nil {
             log.Printf("Error dumping lbx file: %v\n", err)
         }
-    } else if len(os.Args) >= 3 {
-        zipFile, err := zip.OpenReader(os.Args[1])
+    } else {
+        zipFile, err := zip.OpenReader(zipName)
         if err != nil {
             fmt.Printf("Error opening zip file: %s\n", err)
             return
         }
         defer zipFile.Close()
 
-        searchName := os.Args[2]
-
         var matches []string
         for _, file := range zipFile.File {
             // fmt.Printf("Entry: %s\n", file.Name)
 
             lower := strings.ToLower(file.Name)
-            check := strings.ToLower(searchName)
+            check := strings.ToLower(path)
 
             // exact match
             if lower == check {
@@ -236,32 +250,16 @@ func main(){
         }
 
         if len(matches) == 0 {
-            fmt.Printf("No such entry with name '%v'\n", searchName)
+            fmt.Printf("No such entry with name '%v'\n", path)
             return
         }
 
         if len(matches) > 1 {
-            fmt.Printf("More than one match found for '%v'\n", searchName)
+            fmt.Printf("More than one match found for '%v'\n", path)
             for _, name := range matches {
                 fmt.Printf("  %v\n", name)
             }
             return
-        }
-
-        rawDump := false
-        onlyIndex := -1
-        if len(os.Args) >= 4 {
-            arg := os.Args[3]
-            switch arg {
-                case "raw", "--raw", "-raw":
-                    rawDump = true
-                default:
-                    onlyIndex, err = strconv.Atoi(arg)
-                    if err != nil {
-                        fmt.Printf("Expected index to be an integer: %v\n", arg)
-                        onlyIndex = -1
-                    }
-            }
         }
 
         match := matches[0]
@@ -284,10 +282,6 @@ func main(){
                 }
             }
         }
-
-    } else {
-        fmt.Println("Too many arguments")
-        return
     }
 
 }
