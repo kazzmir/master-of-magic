@@ -25,7 +25,7 @@ const (
     CreationCreateArtifact
 )
 
-func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCache, nameFont *font.Font, powerFont *font.Font, artifactType ArtifactType, picLow int, picHigh int, powerGroups [][]Power, artifact *Artifact) []*uilib.UIElement {
+func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCache, nameFont *font.Font, powerFont *font.Font, artifactType ArtifactType, picLow int, picHigh int, powerGroups [][]Power, artifact *Artifact, customName *string) []*uilib.UIElement {
     var elements []*uilib.UIElement
 
     artifact.Image = picLow
@@ -102,19 +102,17 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
             nameFocused = false
         },
         TextEntry: func(element *uilib.UIElement, text string) string {
-            /*
-            for _, r := range char {
-                if len(artifact.Name) < 25 {
-                    artifact.Name += string(r)
-                }
-            }
-            */
-            artifact.Name = text
-            if len(artifact.Name) > 25 {
-                artifact.Name = artifact.Name[0:25]
+            newName := text
+            if len(newName) > 25 {
+                newName = newName[0:25]
             }
 
-            return artifact.Name
+            if artifact.Name != newName {
+                artifact.Name = newName
+                *customName = newName
+            }
+
+            return newName
         },
         HandleKeys: func(keys []ebiten.Key){
             u := false
@@ -788,6 +786,7 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, cr
     ui.SetElementsFromArray(nil)
 
     var currentArtifact *Artifact
+    var customName string
 
     type PowerArtifact struct {
         Elements []*uilib.UIElement
@@ -801,7 +800,7 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, cr
     makePowers := func(picLow int, picHigh int, artifactType ArtifactType, groups [][]Power) PowerArtifact {
         var artifact Artifact
         artifact.Type = artifactType
-        elements := makePowersFull(ui, cache, &imageCache, nameFont, powerFont, artifactType, picLow, picHigh, groups, &artifact)
+        elements := makePowersFull(ui, cache, &imageCache, nameFont, powerFont, artifactType, picLow, picHigh, groups, &artifact, &customName)
         return PowerArtifact{
             Elements: elements,
             Artifact: &artifact,
@@ -826,6 +825,9 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, cr
 
         ui.AddElements(powers[index].Elements)
         currentArtifact = powers[index].Artifact
+        if customName != "" {
+            currentArtifact.Name = customName
+        }
     }
 
     var selectedButton *uilib.UIElement
