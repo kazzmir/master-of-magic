@@ -120,6 +120,16 @@ const (
     DarknessSideWest
 )
 
+type WallKind int
+const (
+    WallKindNone WallKind = iota
+    WallKindNorth
+    WallKindEast
+    WallKindSouth
+    WallKindWest
+    WallKindGate
+)
+
 type Tile struct {
     // a unit standing on this tile, if any
     Unit *ArmyUnit
@@ -134,9 +144,12 @@ type Tile struct {
     // whether to show wall of darkness on this tile
     Darkness *set.Set[DarknessSide]
 
+    Wall *set.Set[WallKind]
+
     // true if this tile is inside the wall of fire/darkness
     InsideFire bool
     InsideDarkness bool
+    InsideWall bool
 }
 
 type CombatLandscape int
@@ -149,7 +162,7 @@ const (
 )
 
 const TownCenterX = 11
-const TownCenterY = 9
+const TownCenterY = 10
 
 func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plane, zone ZoneType) [][]Tile {
 
@@ -210,9 +223,17 @@ func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plan
     // defending city, so place city tiles around
     if zone.City != nil {
 
+        townSquare := image.Rect(TownCenterX - 2, TownCenterY - 2, TownCenterX + 1, TownCenterY + 1)
+
+        randTownSquare := func() (int, int) {
+            x := rand.N(townSquare.Dx())
+            y := rand.N(townSquare.Dy())
+            return townSquare.Min.X + x, townSquare.Min.Y + y
+        }
+
         // clear all space around the city
-        for x := -2; x <= 2; x++ {
-            for y := -2; y <= 2; y++ {
+        for x := townSquare.Min.X; x <= townSquare.Max.X; x++ {
+            for y := -townSquare.Min.Y; y <= townSquare.Max.Y; y++ {
                 mx := x + TownCenterX
                 my := y + TownCenterY
                 tiles[my][mx].ExtraObject.Index = -1
@@ -220,8 +241,7 @@ func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plan
         }
 
         for range 8 {
-            x := TownCenterX + rand.N(5) - 2
-            y := TownCenterY + rand.N(5) - 2
+            x, y := randTownSquare()
 
             tiles[y][x].ExtraObject = TileTop{
                 Lbx: "cmbtcity.lbx",
@@ -246,7 +266,9 @@ func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plan
             createWallOfDarkness(tiles, TownCenterX, TownCenterY, 4)
         }
 
-        // FIXME: use HasWallOfDarkness()
+        if zone.City.Wall {
+            createCityWall(tiles, TownCenterX, TownCenterY, 4)
+        }
 
     } else if zone.Tower {
         tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
@@ -314,79 +336,112 @@ func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plan
     return tiles
 }
 
-// update the Fire set on the tiles centered around x/y with a length of sideLength
-func createWallOfFire(tiles [][]Tile, centerX int, centerY int, sideLength int) {
-    for x := -sideLength/2; x <= sideLength/2; x++ {
-        tile := &tiles[centerY-sideLength/2][centerX+x]
-        if tile.Fire == nil {
-            tile.Fire = set.MakeSet[FireSide]()
-        }
-        tile.Fire.Insert(FireSideWest)
+type CardinalDirection int
+const (
+    DirectionNorth CardinalDirection = iota
+    DirectionEast
+    DirectionSouth
+    DirectionWest
+)
 
-        tile = &tiles[centerY+sideLength/2][centerX+x]
-        if tile.Fire == nil {
-            tile.Fire = set.MakeSet[FireSide]()
-        }
-        tile.Fire.Insert(FireSideEast)
+func createWallArea(centerX int, centerY int, sideLength int, set func(int, int, CardinalDirection), inside func(int, int)) {
+    minX := centerX - sideLength/2
+    maxX := minX + sideLength - 1
+    minY := centerY - sideLength/2
+    maxY := minY + sideLength - 1
+
+    for x := minX; x <= maxX; x++ {
+        set(x, minY, DirectionWest)
+        set(x, maxY, DirectionEast)
     }
 
-    for y := -sideLength/2; y <= sideLength/2; y++ {
-        tile := &tiles[centerY+y][centerX+sideLength/2]
-        if tile.Fire == nil {
-            tile.Fire = set.MakeSet[FireSide]()
-        }
-        tile.Fire.Insert(FireSideNorth)
-
-        tile = &tiles[centerY+y][centerX-sideLength/2]
-        if tile.Fire == nil {
-            tile.Fire = set.MakeSet[FireSide]()
-        }
-        tile.Fire.Insert(FireSideSouth)
+    for y := minY; y <= maxY; y++ {
+        set(minX, y, DirectionSouth)
+        set(maxX, y, DirectionNorth)
     }
 
-    for x := -sideLength/2; x <= sideLength/2; x++ {
-        for y := -sideLength/2; y <= sideLength/2; y++ {
-            tile := &tiles[centerY+y][centerX+x]
-            tile.InsideFire = true
+    for x := minX; x <= maxX; x++ {
+        for y := minY; y <= maxY; y++ {
+            inside(x, y)
         }
     }
 }
 
+// update the Fire set on the tiles centered around x/y with a length of sideLength
+func createWallOfFire(tiles [][]Tile, centerX int, centerY int, sideLength int) {
+    set := func(x int, y int, direction CardinalDirection) {
+        tile := &tiles[y][x]
+        if tile.Fire == nil {
+            tile.Fire = set.MakeSet[FireSide]()
+        }
+
+        switch direction {
+            case DirectionNorth: tile.Fire.Insert(FireSideNorth)
+            case DirectionEast: tile.Fire.Insert(FireSideEast)
+            case DirectionSouth: tile.Fire.Insert(FireSideSouth)
+            case DirectionWest: tile.Fire.Insert(FireSideWest)
+        }
+    }
+
+    inside := func(x int, y int) {
+        tile := &tiles[y][x]
+        tile.InsideFire = true
+    }
+
+    createWallArea(centerX, centerY, sideLength, set, inside)
+}
+
+func createCityWall(tiles [][]Tile, centerX int, centerY int, sideLength int) {
+    set := func(x int, y int, direction CardinalDirection) {
+        tile := &tiles[y][x]
+        if tile.Wall == nil {
+            tile.Wall = set.MakeSet[WallKind]()
+        }
+
+        switch direction {
+            case DirectionNorth: tile.Wall.Insert(WallKindNorth)
+            case DirectionEast: tile.Wall.Insert(WallKindEast)
+            case DirectionSouth: tile.Wall.Insert(WallKindSouth)
+            case DirectionWest: tile.Wall.Insert(WallKindWest)
+        }
+    }
+
+    inside := func(x int, y int) {
+        tile := &tiles[y][x]
+        tile.InsideWall = true
+    }
+
+    createWallArea(centerX, centerY, sideLength, set, inside)
+
+    // set gate tile
+
+    minY := centerY - sideLength/2
+    maxY := minY + sideLength - 1
+    tiles[maxY][centerX-1].Wall.Clear()
+    tiles[maxY][centerX-1].Wall.Insert(WallKindGate)
+}
+
 func createWallOfDarkness(tiles [][]Tile, centerX int, centerY int, sideLength int) {
-    for x := -sideLength/2; x <= sideLength/2; x++ {
-        tile := &tiles[centerY-sideLength/2][centerX+x]
+    set := func(x int, y int, direction CardinalDirection) {
+        tile := &tiles[y][x]
         if tile.Darkness == nil {
             tile.Darkness = set.MakeSet[DarknessSide]()
         }
-        tile.Darkness.Insert(DarknessSideWest)
 
-        tile = &tiles[centerY+sideLength/2][centerX+x]
-        if tile.Darkness == nil {
-            tile.Darkness = set.MakeSet[DarknessSide]()
+        switch direction {
+            case DirectionNorth: tile.Darkness.Insert(DarknessSideNorth)
+            case DirectionEast: tile.Darkness.Insert(DarknessSideEast)
+            case DirectionSouth: tile.Darkness.Insert(DarknessSideSouth)
+            case DirectionWest: tile.Darkness.Insert(DarknessSideWest)
         }
-        tile.Darkness.Insert(DarknessSideEast)
     }
 
-    for y := -sideLength/2; y <= sideLength/2; y++ {
-        tile := &tiles[centerY+y][centerX+sideLength/2]
-        if tile.Darkness == nil {
-            tile.Darkness = set.MakeSet[DarknessSide]()
-        }
-        tile.Darkness.Insert(DarknessSideNorth)
-
-        tile = &tiles[centerY+y][centerX-sideLength/2]
-        if tile.Darkness == nil {
-            tile.Darkness = set.MakeSet[DarknessSide]()
-        }
-        tile.Darkness.Insert(DarknessSideSouth)
+    inside := func(x int, y int) {
+        tile := &tiles[y][x]
+        tile.InsideDarkness = true
     }
 
-    for x := -sideLength/2; x <= sideLength/2; x++ {
-        for y := -sideLength/2; y <= sideLength/2; y++ {
-            tile := &tiles[centerY+y][centerX+x]
-            tile.InsideDarkness = true
-        }
-    }
+    createWallArea(centerX, centerY, sideLength, set, inside)
 }
 
 type CombatUnit interface {
@@ -454,6 +509,11 @@ type ArmyUnit struct {
 
     // ugly to need this, but this caches paths computed for the unit
     Paths map[image.Point]pathfinding.Path
+}
+
+// true if this unit can move through a tile with a wall tile
+func (unit *ArmyUnit) CanTraverseWall() bool {
+    return unit.Unit.IsFlying() || unit.Unit.HasAbility(data.AbilityMerging) || unit.Unit.HasAbility(data.AbilityTeleporting)
 }
 
 func (unit *ArmyUnit) CanFollowPath(path pathfinding.Path) bool {
@@ -524,7 +584,7 @@ func (unit *ArmyUnit) ResetTurnData() {
     unit.Casted = false
 }
 
-func (unit *ArmyUnit) ComputeDefense(damage units.Damage, armorPiercing bool) int {
+func (unit *ArmyUnit) ComputeDefense(damage units.Damage, armorPiercing bool, wallDefense int) int {
     toDefend := unit.ToDefend()
     defenseRolls := unit.Unit.GetDefense()
 
@@ -589,6 +649,14 @@ func (unit *ArmyUnit) ComputeDefense(damage units.Damage, armorPiercing bool) in
         defenseRolls /= 2
     }
 
+    // after armor piercing, wall defense is applied
+    switch damage {
+        case units.DamageRangedMagical,
+             units.DamageRangedPhysical,
+             units.DamageMeleePhysical:
+            defenseRolls += wallDefense
+    }
+
     if hasImmunity {
         defenseRolls = 50
     }
@@ -617,7 +685,7 @@ func (unit *ArmyUnit) Heal(amount int){
 
 // apply damage to each individual figure such that each figure gets to individually block damage.
 // this could potentially allow a damage of 5 to destroy a unit with 4 figures of 1HP each
-func (unit *ArmyUnit) ApplyAreaDamage(attackStrength int, damageType units.Damage) int {
+func (unit *ArmyUnit) ApplyAreaDamage(attackStrength int, damageType units.Damage, wallDefense int) int {
     totalDamage := 0
     health_per_figure := unit.Unit.GetMaxHealth() / unit.Unit.GetCount()
 
@@ -631,7 +699,7 @@ func (unit *ArmyUnit) ApplyAreaDamage(attackStrength int, damageType units.Damag
             }
         }
 
-        defense := unit.ComputeDefense(damageType, false)
+        defense := unit.ComputeDefense(damageType, false, wallDefense)
         // can't do more damage than a single figure has HP
         figureDamage := min(damage - defense, health_per_figure)
         if figureDamage > 0 {
@@ -645,11 +713,11 @@ func (unit *ArmyUnit) ApplyAreaDamage(attackStrength int, damageType units.Damag
 }
 
 // apply damage to lead figure, and if it dies then keep applying remaining damage to the next figure
-func (unit *ArmyUnit) ApplyDamage(damage int, damageType units.Damage, armorPiercing bool) int {
+func (unit *ArmyUnit) ApplyDamage(damage int, damageType units.Damage, armorPiercing bool, wallDefense int) int {
     taken := 0
     for damage > 0 && unit.Unit.GetHealth() > 0 {
         // compute defense, apply damage to lead figure. if lead figure dies, apply damage to next figure
-        defense := unit.ComputeDefense(damageType, armorPiercing)
+        defense := unit.ComputeDefense(damageType, armorPiercing, wallDefense)
         damage -= defense
         if damage > 0 {
             health_per_figure := unit.Unit.GetMaxHealth() / unit.Unit.GetCount()
@@ -815,13 +883,13 @@ func (army *Army) AddUnit(unit CombatUnit){
 }
 
 func (army *Army) LayoutUnits(team Team){
-    x := 10
+    x := TownCenterX - 2
     y := 10
 
     facing := units.FacingDownRight
 
     if team == TeamAttacker {
-        x = 10
+        x = TownCenterX - 2
         y = 17
         facing = units.FacingUpLeft
     }
@@ -909,6 +977,9 @@ type CombatModel struct {
 
     Log []CombatLogEvent
     Observer CombatObservers
+
+    // cached location of city wall gate
+    CityWallGate image.Point
 }
 
 func MakeCombatModel(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Army, landscape CombatLandscape, plane data.Plane, zone ZoneType) *CombatModel {
@@ -1027,7 +1098,7 @@ func (model *CombatModel) NextTurn() {
     }
 }
 
-func (model *CombatModel) computePath(x1 int, y1 int, x2 int, y2 int) (pathfinding.Path, bool) {
+func (model *CombatModel) computePath(x1 int, y1 int, x2 int, y2 int, canTraverseWall bool) (pathfinding.Path, bool) {
 
     tileEmpty := func (x int, y int) bool {
         return model.GetUnit(x, y) == nil
@@ -1080,8 +1151,24 @@ func (model *CombatModel) computePath(x1 int, y1 int, x2 int, y2 int) (pathfindi
                 y := cy + dy
 
                 if x >= 0 && y >= 0 && y < len(model.Tiles) && x < len(model.Tiles[y]) {
+
+                    canMove := tileEmpty(x, y)
+
+                    // towers are impassable to all units
+                    if canMove && model.ContainsWallTower(x, y) {
+                        canMove = false
+                    }
+
+                    // can't move through a city wall
+                    if canMove && !canTraverseWall && model.InsideCityWall(cx, cy) != model.InsideCityWall(x, y) {
+                        // FIXME: handle destroyed walls here
+                        if !model.IsCityWallGate(x, y) {
+                            canMove = false
+                        }
+                    }
+
                     // ignore non-empty tiles entirely
-                    if tileEmpty(x, y) {
+                    if canMove {
                         out = append(out, image.Pt(x, y))
                     }
                 }
@@ -1103,7 +1190,7 @@ func (model *CombatModel) FindPath(unit *ArmyUnit, x int, y int) (pathfinding.Pa
         return path, len(path) > 0
     }
 
-    path, ok = model.computePath(unit.X, unit.Y, x, y)
+    path, ok = model.computePath(unit.X, unit.Y, x, y, unit.CanTraverseWall())
     if !ok {
         unit.Paths[end] = nil
         // log.Printf("No such path from %v,%v -> %v,%v", unit.X, unit.Y, x, y)
@@ -1278,6 +1365,64 @@ func (model *CombatModel) InsideWallOfDarkness(x int, y int) bool {
     return model.Tiles[y][x].InsideDarkness
 }
 
+func (model *CombatModel) InsideCityWall(x int, y int) bool {
+    if x < 0 || y < 0 || y >= len(model.Tiles) || x >= len(model.Tiles[0]) {
+        return false
+    }
+
+    return model.Tiles[y][x].InsideWall
+}
+
+// a wall tower is a wall with two sides
+func (model *CombatModel) ContainsWallTower(x int, y int) bool {
+    if x < 0 || y < 0 || y >= len(model.Tiles) || x >= len(model.Tiles[0]) {
+        return false
+    }
+
+    wall := model.Tiles[y][x].Wall
+    if wall != nil && wall.Size() == 2 {
+        return true
+    }
+
+    return false
+}
+
+func (model *CombatModel) IsCityWallGate(x int, y int) bool {
+    if x < 0 || y < 0 || y >= len(model.Tiles) || x >= len(model.Tiles[0]) {
+        return false
+    }
+
+    wall := model.Tiles[y][x].Wall
+
+    if wall != nil && wall.Contains(WallKindGate) {
+        return true
+    }
+
+    return false
+}
+
+func (model *CombatModel) GetCityGateCoordinates() (int, int) {
+
+    if !model.CityWallGate.Eq(image.Point{}) {
+        return model.CityWallGate.X, model.CityWallGate.Y
+    }
+
+    for y := 0; y < len(model.Tiles); y++ {
+        for x := 0; x < len(model.Tiles[y]); x++ {
+            if model.IsCityWallGate(x, y) {
+                model.CityWallGate = image.Pt(x, y)
+                return x, y
+            }
+        }
+    }
+
+    return -1, -1
+}
+
+func (model *CombatModel) InsideAnyWall(x int, y int) bool {
+    return model.InsideWallOfFire(x, y) || model.InsideWallOfDarkness(x, y) || model.InsideCityWall(x, y)
+}
+
 func (model *CombatModel) UpdateProjectiles(counter uint64) bool {
     animationSpeed := uint64(5)
 
@@ -1324,7 +1469,7 @@ func (model *CombatModel) doBreathAttack(attacker *ArmyUnit, defender *ArmyUnit)
         hit = true
 
         damage = append(damage, func(){
-            fireDamage := defender.ApplyDamage(strength, units.DamageFire, false)
+            fireDamage := defender.ApplyDamage(strength, units.DamageFire, false, 0)
             model.AddLogEvent(fmt.Sprintf("%v uses fire breath on %v for %v damage", attacker.Unit.GetName(), defender.Unit.GetName(), fireDamage))
             // damage += fireDamage
             model.Observer.FireBreathAttack(attacker, defender, fireDamage)
@@ -1336,7 +1481,7 @@ func (model *CombatModel) doBreathAttack(attacker *ArmyUnit, defender *ArmyUnit)
         hit = true
 
         damage = append(damage, func(){
-            lightningDamage := defender.ApplyDamage(strength, units.DamageRangedMagical, true)
+            lightningDamage := defender.ApplyDamage(strength, units.DamageRangedMagical, true, 0)
             model.AddLogEvent(fmt.Sprintf("%v uses lightning breath on %v for %v damage", attacker.Unit.GetName(), defender.Unit.GetName(), lightningDamage))
             // damage += lightningDamage
             model.Observer.LightningBreathAttack(attacker, defender, lightningDamage)
@@ -1597,21 +1742,143 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
     return damageFuncs
 }
 
+// if defender is in city wall but attacker is outside, then defense is
+//  1 if defender is not adjacent a wall
+//  3 if defender is adjacent to a wall
+func (model *CombatModel) ComputeWallDefense(attacker *ArmyUnit, defender *ArmyUnit) int {
+    if model.InsideCityWall(defender.X, defender.Y) && !model.InsideCityWall(attacker.X, attacker.Y) {
+
+        wall := model.Tiles[defender.Y][defender.X].Wall
+        if wall != nil {
+            if wall.Contains(WallKindGate) {
+                return 1
+            }
+
+            return 3
+        }
+
+        return 1
+    }
+
+    return 0
+}
+
 func (model *CombatModel) ApplyImmolationDamage(defender *ArmyUnit, immolationDamage int) {
     if immolationDamage > 0 {
-        hurt := defender.ApplyAreaDamage(immolationDamage, units.DamageImmolation)
+        hurt := defender.ApplyAreaDamage(immolationDamage, units.DamageImmolation, 0)
         model.AddLogEvent(fmt.Sprintf("%v is immolated for %v damage. HP now %v", defender.Unit.GetName(), hurt, defender.Unit.GetHealth()))
     }
 }
 
 func (model *CombatModel) ApplyMeleeDamage(attacker *ArmyUnit, defender *ArmyUnit, damage int) {
-    hurt := defender.ApplyDamage(damage, units.DamageMeleePhysical, false)
+    hurt := defender.ApplyDamage(damage, units.DamageMeleePhysical, false, model.ComputeWallDefense(attacker, defender))
     model.AddLogEvent(fmt.Sprintf("%v damage roll %v, %v took %v damage. HP now %v", attacker.Unit.GetName(), damage, defender.Unit.GetName(), hurt, defender.Unit.GetHealth()))
 }
 
 func (model *CombatModel) ApplyWallOfFireDamage(defender *ArmyUnit) {
     model.ApplyImmolationDamage(defender, 5)
     model.Observer.WallOfFire(defender, 5)
+}
+
+func (model *CombatModel) canMeleeAttack(attacker *ArmyUnit, defender *ArmyUnit) bool {
+    if attacker.MovesLeft.LessThanEqual(fraction.FromInt(0)) {
+        return false
+    }
+
+    containsWall := func(x int, y int) bool {
+        wall := model.Tiles[y][x].Wall
+        return wall != nil && !wall.Contains(WallKindGate)
+    }
+
+    // cannot attack through a wall
+    if model.InsideCityWall(attacker.X, attacker.Y) != model.InsideCityWall(defender.X, defender.Y) {
+        // if the attacker normally cannot move through the wall, then they can only attack if either the attacker or defender
+        // is adjacent to the gate
+        if !attacker.CanTraverseWall() {
+            var insideWall *ArmyUnit
+            var outsideWall *ArmyUnit
+
+            if model.InsideCityWall(attacker.X, attacker.Y) {
+                insideWall = attacker
+                outsideWall = defender
+            } else {
+                insideWall = defender
+                outsideWall = attacker
+            }
+
+            // north
+            if outsideWall.X == insideWall.X && outsideWall.Y + 1 == insideWall.Y {
+                if containsWall(outsideWall.X, outsideWall.Y + 1) {
+                    return false
+                }
+            }
+
+            // north east
+            if outsideWall.X + 1 == insideWall.X && outsideWall.Y + 1 == insideWall.Y {
+                if containsWall(attacker.X, attacker.Y + 1) || model.ContainsWallTower(insideWall.X, insideWall.Y) {
+                    return false
+                }
+            }
+
+            // east
+            if outsideWall.X + 1 == insideWall.X && outsideWall.Y == insideWall.Y {
+                if containsWall(outsideWall.X + 1, outsideWall.Y) {
+                    return false
+                }
+            }
+
+            // south east
+            if outsideWall.X + 1 == insideWall.X && outsideWall.Y - 1 == insideWall.Y {
+                if containsWall(outsideWall.X, outsideWall.Y - 1) || model.ContainsWallTower(insideWall.X, insideWall.Y) {
+                    return false
+                }
+            }
+
+            // south
+            if outsideWall.X == insideWall.X && outsideWall.Y - 1 == insideWall.Y {
+                if containsWall(outsideWall.X, outsideWall.Y - 1) {
+                    return false
+                }
+            }
+
+            // south west
+            if outsideWall.X - 1 == insideWall.X && outsideWall.Y - 1 == insideWall.Y {
+                if containsWall(outsideWall.X, outsideWall.Y - 1) || model.ContainsWallTower(insideWall.X, insideWall.Y) {
+                    return false
+                }
+            }
+
+            // west
+            if outsideWall.X - 1 == insideWall.X && outsideWall.Y == insideWall.Y {
+                if containsWall(outsideWall.X - 1, outsideWall.Y) {
+                    return false
+                }
+            }
+
+            // north west
+            if outsideWall.X - 1 == insideWall.X && outsideWall.Y + 1 == insideWall.Y {
+                if containsWall(outsideWall.X, outsideWall.Y + 1) || model.ContainsWallTower(insideWall.X, insideWall.Y) {
+                    return false
+                }
+            }
+        }
+    }
+
+    if defender.Unit.IsFlying() && !attacker.Unit.IsFlying() {
+        // a unit with Thrown can attack a flying unit
+        if attacker.Unit.HasAbility(data.AbilityThrown) ||
+           attacker.Unit.HasAbility(data.AbilityFireBreath) ||
+           attacker.Unit.HasAbility(data.AbilityLightningBreath) {
+            return true
+        }
+        return false
+    }
+
+    if attacker.Team == defender.Team {
+        return false
+    }
+
+    return true
 }
 
 /* attacker is performing a physical melee attack against defender
@@ -1667,7 +1934,7 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                 }
 
                 if throwDamage > 0 {
-                    damage := defender.ApplyDamage(throwDamage, units.DamageThrown, false)
+                    damage := defender.ApplyDamage(throwDamage, units.DamageThrown, false, 0)
                     model.Observer.ThrowAttack(attacker, defender, damage)
                     model.AddLogEvent(fmt.Sprintf("%v throws %v at %v. HP now %v", attacker.Unit.GetName(), damage, defender.Unit.GetName(), defender.Unit.GetHealth()))
                 }

@@ -1503,28 +1503,6 @@ func (combat *CombatScreen) canRangeAttack(attacker *ArmyUnit, defender *ArmyUni
     return true
 }
 
-func (combat *CombatScreen) canMeleeAttack(attacker *ArmyUnit, defender *ArmyUnit) bool {
-    if attacker.MovesLeft.LessThanEqual(fraction.FromInt(0)) {
-        return false
-    }
-
-    if defender.Unit.IsFlying() && !attacker.Unit.IsFlying() {
-        // a unit with Thrown can attack a flying unit
-        if attacker.Unit.HasAbility(data.AbilityThrown) ||
-           attacker.Unit.HasAbility(data.AbilityFireBreath) ||
-           attacker.Unit.HasAbility(data.AbilityLightningBreath) {
-            return true
-        }
-        return false
-    }
-
-    if attacker.Team == defender.Team {
-        return false
-    }
-
-    return true
-}
-
 func distanceInRange(x1 float64, y1 float64, x2 float64, y2 float64, r float64) bool {
     xDiff := x2 - x1
     yDiff := y2 - y1
@@ -1638,7 +1616,7 @@ func (combat *CombatScreen) createRangeAttack(attacker *ArmyUnit, defender *Army
         damage := attacker.ComputeRangeDamage(tileDistance)
         // defense := target.ComputeDefense(attacker.Unit.GetRangedAttackDamageType())
 
-        target.ApplyDamage(damage, attacker.Unit.GetRangedAttackDamageType(), false)
+        target.ApplyDamage(damage, attacker.Unit.GetRangedAttackDamageType(), false, combat.Model.ComputeWallDefense(attacker, defender))
 
         if attacker.Unit.CanTouchAttack(attacker.Unit.GetRangedAttackDamageType()) {
             combat.Model.doTouchAttack(attacker, target, 0)
@@ -2074,6 +2052,13 @@ func (combat *CombatScreen) doAI(yield coroutine.YieldFunc, aiUnit *ArmyUnit) {
         }
     }
 
+    for _, unit := range otherArmy.Units {
+        if combat.withinMeleeRange(aiUnit, unit) && combat.Model.canMeleeAttack(aiUnit, unit) {
+            combat.doMelee(yield, aiUnit, unit)
+            return
+        }
+    }
+
     aiUnit.Paths = make(map[image.Point]pathfinding.Path)
 
     // if the selected unit has ranged attacks, then try to use that
@@ -2087,7 +2072,7 @@ func (combat *CombatScreen) doAI(yield coroutine.YieldFunc, aiUnit *ArmyUnit) {
         if !found {
             combat.Model.Tiles[unit.Y][unit.X].Unit = nil
             var ok bool
-            path, ok = combat.Model.computePath(aiUnit.X, aiUnit.Y, unit.X, unit.Y)
+            path, ok = combat.Model.computePath(aiUnit.X, aiUnit.Y, unit.X, unit.Y, unit.CanTraverseWall())
             combat.Model.Tiles[unit.Y][unit.X].Unit = unit
             if ok {
                 paths[unit] = path
@@ -2101,7 +2086,22 @@ func (combat *CombatScreen) doAI(yield coroutine.YieldFunc, aiUnit *ArmyUnit) {
 
     filterReachable := func (units []*ArmyUnit) []*ArmyUnit {
         var out []*ArmyUnit
+
+        aiInWall := combat.Model.InsideAnyWall(aiUnit.X, aiUnit.Y)
+
         for _, unit := range units {
+            // skip enemies that we can't melee anyway
+            if !combat.Model.canMeleeAttack(aiUnit, unit) {
+                continue
+            }
+
+            enemyInWall := combat.Model.InsideAnyWall(unit.X, unit.Y)
+
+            // if the unit is inside a wall (fire/darkness/brick) but the target is outside, then don't move
+            if aiUnit.Team == TeamDefender && aiInWall && !enemyInWall {
+                continue
+            }
+
             path := getPath(unit)
             if len(path) > 0 {
                 out = append(out, unit)
@@ -2128,7 +2128,7 @@ func (combat *CombatScreen) doAI(yield coroutine.YieldFunc, aiUnit *ArmyUnit) {
         path := getPath(closestEnemy)
 
         // a path of length 2 contains the position of the aiUnit and the position of the enemy, so they are right next to each other
-        if len(path) == 2 && combat.canMeleeAttack(aiUnit, closestEnemy) {
+        if len(path) == 2 && combat.Model.canMeleeAttack(aiUnit, closestEnemy) {
             combat.doMelee(yield, aiUnit, closestEnemy)
             return
         } else if len(path) > 2 {
@@ -2149,17 +2149,21 @@ func (combat *CombatScreen) doAI(yield coroutine.YieldFunc, aiUnit *ArmyUnit) {
             }
 
             if lastIndex >= 1 && lastIndex <= len(path) {
+                combat.doMoveUnit(yield, aiUnit, path[1:lastIndex])
+                return
+            }
+        }
+    }
 
-                move := true
-                // if the unit is inside the wall of fire but the target is outside, then don't move
-                if aiUnit.Team == TeamDefender && combat.Model.InsideWallOfFire(aiUnit.X, aiUnit.Y) && !combat.Model.InsideWallOfFire(path[lastIndex].X, path[lastIndex].Y) {
-                    move = false
-                }
-
-                if move {
-                    combat.doMoveUnit(yield, aiUnit, path[1:lastIndex])
-                    return
-                }
+    // no enemy to move towards, then possibly move towards gate
+    if aiUnit.Team == TeamDefender && combat.Model.InsideCityWall(aiUnit.X, aiUnit.Y) {
+        // if inside a city wall, then move towards the gate
+        gateX, gateY := combat.Model.GetCityGateCoordinates()
+        if gateX != -1 && gateY != -1 {
+            path, ok := combat.Model.computePath(aiUnit.X, aiUnit.Y, gateX, gateY, aiUnit.CanTraverseWall())
+            if ok && len(path) > 1 && aiUnit.CanFollowPath(path) {
+                combat.doMoveUnit(yield, aiUnit, path[1:])
+                return
             }
         }
     }
@@ -2296,7 +2300,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
             // prioritize range attack over melee
             if combat.canRangeAttack(combat.Model.SelectedUnit, who) && combat.withinArrowRange(combat.Model.SelectedUnit, who) {
                 newState = CombatRangeAttackOk
-            } else if combat.canMeleeAttack(combat.Model.SelectedUnit, who) && combat.withinMeleeRange(combat.Model.SelectedUnit, who) {
+            } else if combat.Model.canMeleeAttack(combat.Model.SelectedUnit, who) && combat.withinMeleeRange(combat.Model.SelectedUnit, who) {
                 newState = CombatMeleeAttackOk
             }
 
@@ -2328,7 +2332,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
            if defender != nil && combat.withinArrowRange(attacker, defender) && combat.canRangeAttack(attacker, defender) {
                combat.doRangeAttack(yield, attacker, defender)
            // then fall back to melee
-           } else if defender != nil && defender.Team != attacker.Team && combat.withinMeleeRange(attacker, defender) && combat.canMeleeAttack(attacker, defender){
+           } else if defender != nil && defender.Team != attacker.Team && combat.withinMeleeRange(attacker, defender) && combat.Model.canMeleeAttack(attacker, defender){
                combat.doMelee(yield, attacker, defender)
                attacker.Paths = make(map[image.Point]pathfinding.Path)
            }
@@ -2490,6 +2494,282 @@ func (combat *CombatScreen) ShowUnitInfo(screen *ebiten.Image, unit *ArmyUnit){
     vector.StrokeLine(screen, float32(x1 + 25), float32(y1 + 40), float32(x1 + 25) + float32(healthLength), float32(y1 + 40), 1, useColor, false)
 }
 
+func (combat *CombatScreen) DrawWall(screen *ebiten.Image, x int, y int, tilePosition func(float64, float64) (float64, float64), animationIndex uint64){
+    tile := &combat.Model.Tiles[y][x]
+    if tile.Fire == nil && tile.Darkness == nil && tile.Wall == nil {
+        return
+    }
+
+    var options ebiten.DrawImageOptions
+
+    choose := func(choices []int) int {
+        // return a deterministic value based on x,y
+        return choices[(x + y) % len(choices)]
+    }
+
+    type Order int
+    const (
+        Order0 Order = iota
+        Order1
+        Order2
+        Order3
+        Order4
+    )
+
+    // if the tile has fire on the west or north then draw it first, but if the fire is on
+    // south or east then draw it last
+    // north: fire 0, darkness 1, wall 2
+    // south: wall 0, darkness 1, fire 2
+    type DrawWallOrder struct {
+        Order Order
+        Draw func()
+    }
+
+    // add things to the list of things to draw, then sort, then draw all by invoking Draw() on each element
+    wallDrawOrder := []DrawWallOrder{}
+
+    addDrawWall := func(order Order, draw func(int, float64, float64), index int, dx float64, dy float64){
+        wallDrawOrder = append(wallDrawOrder, DrawWallOrder{
+            Order: order,
+            Draw: func(){
+                draw(index, dx, dy)
+            },
+        })
+    }
+
+    var geom ebiten.GeoM
+    geom.Scale(combat.CameraScale, combat.CameraScale)
+    tx, ty := tilePosition(float64(x), float64(y))
+    geom.Translate(tx, ty)
+
+    drawAnimatedWall := func(index int, dx float64, dy float64){
+        options.GeoM.Reset()
+        // options.GeoM.Scale(combat.CameraScale, combat.CameraScale)
+        // options.GeoM.Translate(tx, ty)
+        options.GeoM.Translate(dx, dy)
+
+        images, _ := combat.ImageCache.GetImages("citywall.lbx", index)
+        use := animationIndex % uint64(len(images))
+        drawImage := images[use]
+        options.GeoM.Translate(-float64(drawImage.Bounds().Dy())/2, -float64(drawImage.Bounds().Dy()/2))
+
+        options.GeoM.Concat(geom)
+
+        screen.DrawImage(drawImage, &options)
+    }
+
+    // lbx indices for fire
+    fireWest := []int{37, 38, 39}
+    fireNorth := []int{40, 41, 42}
+    fireSouth := []int{43, 44, 48}
+    fireEast := []int{46, 47, 49}
+
+    fire := tile.Fire
+    if fire != nil {
+        drewNorth := false
+        drewSouth := false
+        drewEast := false
+        drewWest := false
+
+        // draw the same fire animation for a given x,y tile, but choose a different fire
+        // animation for other tiles
+
+        // these values are based on a clockwise 45-degree rotation, but the actual
+        // combat screen is a counter-clockwise 45-degree rotation.
+        // it doesn't matter, as long as the fire animations are consistent
+        if fire.Contains(FireSideNorth) && fire.Contains(FireSideWest) {
+            addDrawWall(Order0, drawAnimatedWall, 36, -1, -8)
+            drewNorth = true
+            drewWest = true
+        }
+
+        if fire.Contains(FireSideSouth) && fire.Contains(FireSideEast) {
+            addDrawWall(Order2, drawAnimatedWall, 45, -2, -3)
+            drewSouth = true
+            drewEast = true
+        }
+
+        if !drewSouth && fire.Contains(FireSideSouth) {
+            addDrawWall(Order2, drawAnimatedWall, choose(fireSouth), -4, -4)
+        }
+
+        if !drewWest && fire.Contains(FireSideWest) {
+            addDrawWall(Order0, drawAnimatedWall, choose(fireWest), -3, -6)
+        }
+
+        if !drewNorth && fire.Contains(FireSideNorth) {
+            addDrawWall(Order0, drawAnimatedWall, choose(fireNorth), 2, -6)
+        }
+
+        if !drewEast && fire.Contains(FireSideEast) {
+            addDrawWall(Order2, drawAnimatedWall, choose(fireEast), 2, -4)
+        }
+    }
+
+    darknessWest := []int{51, 52, 53}
+    darknessNorth := []int{54, 55, 56}
+    darknessSouth := []int{57, 58, 62}
+    darknessEast := []int{60, 61, 63}
+
+    darkness := tile.Darkness
+    if darkness != nil {
+        // lbx indices for fire
+
+        drewNorth := false
+        drewSouth := false
+        drewEast := false
+        drewWest := false
+
+        // draw the same fire animation for a given x,y tile, but choose a different fire
+        // animation for other tiles
+
+        // these values are based on a clockwise 45-degree rotation, but the actual
+        // combat screen is a counter-clockwise 45-degree rotation.
+        // it doesn't matter, as long as the fire animations are consistent
+        if darkness.Contains(DarknessSideNorth) && darkness.Contains(DarknessSideWest) {
+            addDrawWall(Order1, drawAnimatedWall, 50, -1, -8)
+            drewNorth = true
+            drewWest = true
+        }
+
+        if darkness.Contains(DarknessSideSouth) && darkness.Contains(DarknessSideEast) {
+            addDrawWall(Order1, drawAnimatedWall, 59, -2, -3)
+            drewSouth = true
+            drewEast = true
+        }
+
+        if !drewSouth && darkness.Contains(DarknessSideSouth) {
+            addDrawWall(Order1, drawAnimatedWall, choose(darknessSouth), -4, -4)
+        }
+
+        if !drewWest && darkness.Contains(DarknessSideWest) {
+            addDrawWall(Order1, drawAnimatedWall, choose(darknessWest), -3, -6)
+        }
+
+        if !drewNorth && darkness.Contains(DarknessSideNorth) {
+            addDrawWall(Order1, drawAnimatedWall, choose(darknessNorth), 2, -6)
+        }
+
+        if !drewEast && darkness.Contains(DarknessSideEast) {
+            addDrawWall(Order1, drawAnimatedWall, choose(darknessEast), 2, -4)
+        }
+    }
+
+    wall := tile.Wall
+    if wall != nil {
+        // starting index for the wall. there are 3 types of wall: normal, dark, and grass/ivy covered
+        wallBase := []int{0, 12, 24}
+        currentWall := 0
+
+        // lbx indices for fire, relative to wallBase
+        west := []int{1, 2}
+        north := []int{4, 5}
+        south := []int{7, 8}
+        east := []int{10}
+        gate := 11
+        northWest := 0
+        southWest := 3
+        northEast := 6
+        southEast := 9
+
+        drawWall := func(index int, dx float64, dy float64){
+            options.GeoM.Reset()
+            // options.GeoM.Scale(combat.CameraScale, combat.CameraScale)
+            // options.GeoM.Translate(tx, ty)
+            options.GeoM.Translate(dx, dy)
+
+            // FIXME: a destroyed wall should use index 1 (last argument)
+            drawImage, _ := combat.ImageCache.GetImage("citywall.lbx", wallBase[currentWall] + index, 0)
+            // use := animationIndex % uint64(len(images))
+            // drawImage := images[use]
+            options.GeoM.Translate(-float64(drawImage.Bounds().Dy())/2, -float64(drawImage.Bounds().Dy()/2))
+
+            options.GeoM.Concat(geom)
+
+            screen.DrawImage(drawImage, &options)
+        }
+
+        drewNorth := false
+        drewSouth := false
+        drewEast := false
+        drewWest := false
+
+        // draw the same fire animation for a given x,y tile, but choose a different fire
+        // animation for other tiles
+
+        // these values are based on a clockwise 45-degree rotation, but the actual
+        // combat screen is a counter-clockwise 45-degree rotation.
+        // it doesn't matter, as long as the fire animations are consistent
+        if wall.Contains(WallKindNorth) && wall.Contains(WallKindWest) {
+            addDrawWall(Order2, drawWall, northWest, -1, -8)
+            drewNorth = true
+            drewWest = true
+        }
+
+        if wall.Contains(WallKindSouth) && wall.Contains(WallKindEast) {
+            addDrawWall(Order0, drawWall, southEast, -2, -3)
+            drewSouth = true
+            drewEast = true
+        }
+
+        if wall.Contains(WallKindSouth) && wall.Contains(WallKindWest) {
+            addDrawWall(Order2, drawWall, southWest, -2, -3)
+            drewSouth = true
+            drewWest = true
+
+            if tile.Darkness != nil && tile.Darkness.Contains(DarknessSideSouth) {
+                addDrawWall(Order3, drawAnimatedWall, choose(darknessSouth), -4, -4)
+            }
+
+            if tile.Fire != nil && tile.Fire.Contains(FireSideSouth) {
+                addDrawWall(Order4, drawAnimatedWall, choose(fireSouth), -4, -4)
+            }
+        }
+
+        if wall.Contains(WallKindNorth) && wall.Contains(WallKindEast) {
+            addDrawWall(Order2, drawWall, northEast, -2, -3)
+            drewNorth = true
+            drewEast = true
+
+            if tile.Darkness != nil && tile.Darkness.Contains(DarknessSideEast) {
+                addDrawWall(Order3, drawAnimatedWall, choose(darknessEast), 2, -4)
+            }
+
+            if tile.Fire != nil && tile.Fire.Contains(FireSideEast) {
+                addDrawWall(Order4, drawAnimatedWall, choose(fireEast), 2, -4)
+            }
+        }
+
+        if !drewSouth && wall.Contains(WallKindSouth) {
+            addDrawWall(Order0, drawWall, choose(south), -4, -4)
+        }
+
+        if !drewWest && wall.Contains(WallKindWest) {
+            addDrawWall(Order2, drawWall, choose(west), -3, -6)
+        }
+
+        if !drewNorth && wall.Contains(WallKindNorth) {
+            addDrawWall(Order2, drawWall, choose(north), 2, -6)
+        }
+
+        if !drewEast && wall.Contains(WallKindEast) {
+            addDrawWall(Order0, drawWall, choose(east), 2, -4)
+        }
+
+        if wall.Contains(WallKindGate) {
+            addDrawWall(Order0, drawWall, gate, -2, -4)
+        }
+    }
+
+    slices.SortFunc(wallDrawOrder, func(a, b DrawWallOrder) int {
+        return cmp.Compare(a.Order, b.Order)
+    })
+
+    for _, draw := range wallDrawOrder {
+        draw.Draw()
+    }
+}
+
 func (combat *CombatScreen) Draw(screen *ebiten.Image){
 
     animationIndex := combat.Counter / 8
@@ -2591,148 +2871,7 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
             // vector.DrawFilledCircle(screen, float32(tx), float32(ty), 2, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, false)
         }
 
-        choose := func(choices []int) int {
-            // return a deterministic value based on x,y
-            return choices[(x + y) % len(choices)]
-        }
-
-        fire := combat.Model.Tiles[y][x].Fire
-        if fire != nil {
-            // lbx indices for fire
-            west := []int{37, 38, 39}
-            north := []int{40, 41, 42}
-            south := []int{43, 44, 48}
-            east := []int{46, 47, 49}
-
-            var geom ebiten.GeoM
-            geom.Scale(combat.CameraScale, combat.CameraScale)
-            tx, ty := tilePosition(float64(x), float64(y))
-            geom.Translate(tx, ty)
-
-            drawFire := func(index int, dx float64, dy float64){
-                options.GeoM.Reset()
-                // options.GeoM.Scale(combat.CameraScale, combat.CameraScale)
-                // options.GeoM.Translate(tx, ty)
-                options.GeoM.Translate(dx, dy)
-
-                images, _ := combat.ImageCache.GetImages("citywall.lbx", index)
-                use := animationIndex % uint64(len(images))
-                drawImage := images[use]
-                options.GeoM.Translate(-float64(drawImage.Bounds().Dy())/2, -float64(drawImage.Bounds().Dy()/2))
-
-                options.GeoM.Concat(geom)
-
-                screen.DrawImage(drawImage, &options)
-            }
-
-            drewNorth := false
-            drewSouth := false
-            drewEast := false
-            drewWest := false
-
-            // draw the same fire animation for a given x,y tile, but choose a different fire
-            // animation for other tiles
-
-            // these values are based on a clockwise 45-degree rotation, but the actual
-            // combat screen is a counter-clockwise 45-degree rotation.
-            // it doesn't matter, as long as the fire animations are consistent
-            if fire.Contains(FireSideNorth) && fire.Contains(FireSideWest) {
-                drawFire(36, -1, -8)
-                drewNorth = true
-                drewWest = true
-            }
-
-            if fire.Contains(FireSideSouth) && fire.Contains(FireSideEast) {
-                drawFire(45, -2, -3)
-                drewSouth = true
-                drewEast = true
-            }
-
-            if !drewSouth && fire.Contains(FireSideSouth) {
-                drawFire(choose(south), -4, -4)
-            }
-
-            if !drewWest && fire.Contains(FireSideWest) {
-                drawFire(choose(west), -3, -6)
-            }
-
-            if !drewNorth && fire.Contains(FireSideNorth) {
-                drawFire(choose(north), 2, -6)
-            }
-
-            if !drewEast && fire.Contains(FireSideEast) {
-                drawFire(choose(east), 2, -4)
-            }
-        }
-
-        darkness := combat.Model.Tiles[y][x].Darkness
-        if darkness != nil {
-            // lbx indices for fire
-            west := []int{51, 52, 53}
-            north := []int{54, 55, 56}
-            south := []int{57, 58, 62}
-            east := []int{60, 61, 63}
-
-            var geom ebiten.GeoM
-            geom.Scale(combat.CameraScale, combat.CameraScale)
-            tx, ty := tilePosition(float64(x), float64(y))
-            geom.Translate(tx, ty)
-
-            drawDark := func(index int, dx float64, dy float64){
-                options.GeoM.Reset()
-                // options.GeoM.Scale(combat.CameraScale, combat.CameraScale)
-                // options.GeoM.Translate(tx, ty)
-                options.GeoM.Translate(dx, dy)
-
-                images, _ := combat.ImageCache.GetImages("citywall.lbx", index)
-                use := animationIndex % uint64(len(images))
-                drawImage := images[use]
-                options.GeoM.Translate(-float64(drawImage.Bounds().Dy())/2, -float64(drawImage.Bounds().Dy()/2))
-
-                options.GeoM.Concat(geom)
-
-                screen.DrawImage(drawImage, &options)
-            }
-
-            drewNorth := false
-            drewSouth := false
-            drewEast := false
-            drewWest := false
-
-            // draw the same fire animation for a given x,y tile, but choose a different fire
-            // animation for other tiles
-
-            // these values are based on a clockwise 45-degree rotation, but the actual
-            // combat screen is a counter-clockwise 45-degree rotation.
-            // it doesn't matter, as long as the fire animations are consistent
-            if darkness.Contains(DarknessSideNorth) && darkness.Contains(DarknessSideWest) {
-                drawDark(50, -1, -8)
-                drewNorth = true
-                drewWest = true
-            }
-
-            if darkness.Contains(DarknessSideSouth) && darkness.Contains(DarknessSideEast) {
-                drawDark(59, -2, -3)
-                drewSouth = true
-                drewEast = true
-            }
-
-            if !drewSouth && darkness.Contains(DarknessSideSouth) {
-                drawDark(choose(south), -4, -4)
-            }
-
-            if !drewWest && darkness.Contains(DarknessSideWest) {
-                drawDark(choose(west), -3, -6)
-            }
-
-            if !drewNorth && darkness.Contains(DarknessSideNorth) {
-                drawDark(choose(north), 2, -6)
-            }
-
-            if !drewEast && darkness.Contains(DarknessSideEast) {
-                drawDark(choose(east), 2, -4)
-            }
-        }
+        combat.DrawWall(screen, x, y, tilePosition, animationIndex)
     }
 
     combat.DrawHighlightedTile(screen, combat.MouseTileX, combat.MouseTileY, &useMatrix, color.RGBA{R: 0, G: 0x67, B: 0x78, A: 255}, color.RGBA{R: 0, G: 0xef, B: 0xff, A: 255})
