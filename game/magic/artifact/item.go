@@ -312,6 +312,17 @@ func (artifact *Artifact) RemovePower(remove Power) {
     })
 }
 
+func hasPower[T Power](powers []Power) bool {
+    for _, power := range powers {
+        _, ok := power.(T)
+        if ok {
+            return true
+        }
+    }
+
+    return false
+}
+
 func addPowers[T Power](powers []Power) int {
     amount := 0
     for _, power := range powers {
@@ -342,6 +353,15 @@ func (artifact *Artifact) RangedAttackBonus() int {
     }
 }
 
+func (artifact *Artifact) MagicAttackBonus() int {
+    switch artifact.Type {
+        case ArtifactTypeWand, ArtifactTypeStaff, ArtifactTypeMisc:
+            return addPowers[*PowerAttack](artifact.Powers)
+        default:
+            return 0
+    }
+}
+
 func (artifact *Artifact) DefenseBonus() int {
     base := addPowers[*PowerDefense](artifact.Powers)
     switch artifact.Type {
@@ -354,8 +374,48 @@ func (artifact *Artifact) DefenseBonus() int {
     return base
 }
 
+func (artifact *Artifact) HasDefensePower() bool {
+    return hasPower[*PowerDefense](artifact.Powers)
+}
+
+func (artifact *Artifact) HasSpellSavePower() bool {
+    return hasPower[*PowerSpellSave](artifact.Powers)
+}
+
+func (artifact *Artifact) HasSpellSkillPower() bool {
+    return hasPower[*PowerSpellSkill](artifact.Powers)
+}
+
+func (artifact *Artifact) HasResistancePower() bool {
+    return hasPower[*PowerResistance](artifact.Powers)
+}
+
+func (artifact *Artifact) HasMovementPower() bool {
+    return hasPower[*PowerMovement](artifact.Powers)
+}
+
+func (artifact *Artifact) HasToHitPower() bool {
+    return hasPower[*PowerToHit](artifact.Powers)
+}
+
+func (artifact *Artifact) ToHitBonus() int {
+    return addPowers[*PowerToHit](artifact.Powers)
+}
+
+func (artifact *Artifact) SpellSkillBonus() int {
+    return addPowers[*PowerSpellSkill](artifact.Powers)
+}
+
+func (artifact *Artifact) SpellSaveBonus() int {
+    return addPowers[*PowerSpellSave](artifact.Powers)
+}
+
 func (artifact *Artifact) ResistanceBonus() int {
     return addPowers[*PowerResistance](artifact.Powers)
+}
+
+func (artifact *Artifact) MovementBonus() int {
+    return addPowers[*PowerMovement](artifact.Powers)
 }
 
 func (artifact *Artifact) Cost() int {
