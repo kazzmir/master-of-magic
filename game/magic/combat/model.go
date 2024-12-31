@@ -1136,6 +1136,11 @@ func (model *CombatModel) computePath(x1 int, y1 int, x2 int, y2 int, canTravers
 
                     canMove := tileEmpty(x, y)
 
+                    // towers are impassable to all units
+                    if canMove && model.ContainsWallTower(x, y) {
+                        canMove = false
+                    }
+
                     // can't move through a city wall
                     if canMove && !canTraverseWall && model.InsideCityWall(cx, cy) != model.InsideCityWall(x, y) {
                         // FIXME: handle destroyed walls here
@@ -1348,6 +1353,20 @@ func (model *CombatModel) InsideCityWall(x int, y int) bool {
     }
 
     return model.Tiles[y][x].InsideWall
+}
+
+// a wall tower is a wall with two sides
+func (model *CombatModel) ContainsWallTower(x int, y int) bool {
+    if x < 0 || y < 0 || y >= len(model.Tiles) || x >= len(model.Tiles[0]) {
+        return false
+    }
+
+    wall := model.Tiles[y][x].Wall
+    if wall != nil && wall.Size() == 2 {
+        return true
+    }
+
+    return false
 }
 
 func (model *CombatModel) IsCityWallGate(x int, y int) bool {
