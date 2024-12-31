@@ -167,6 +167,11 @@ const (
     GameStateQuit
 )
 
+const ZoomMin = 1
+const ZoomMax = 200
+const ZoomDefault = 100
+const ZoomStep = 100
+
 type Game struct {
     Cache *lbx.LbxCache
     ImageCache util.ImageCache
@@ -204,6 +209,9 @@ type Game struct {
 
     Players []*playerlib.Player
     CurrentPlayer int
+
+    // 1 - 200
+    OverlandZoom int
 }
 
 func (game *Game) GetMap(plane data.Plane) *maplib.Map {
@@ -529,6 +537,7 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         BuildingInfo: buildingInfo,
         TurnNumber: 1,
         CurrentPlayer: -1,
+        OverlandZoom: ZoomDefault,
     }
 
     game.HudUI = game.MakeHudUI()
@@ -2041,6 +2050,19 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
     // log.Printf("Game.Update")
     keys := make([]ebiten.Key, 0)
     keys = inpututil.AppendJustPressedKeys(keys)
+
+    _, wheelY := ebiten.Wheel()
+    if wheelY > 0 {
+        wheelY = 1
+    } else if wheelY < 0 {
+        wheelY = -1
+    }
+
+    if wheelY > 0 {
+        game.OverlandZoom = min(game.OverlandZoom + 1, ZoomMax)
+    } else if wheelY < 0 {
+        game.OverlandZoom = max(game.OverlandZoom - 1, ZoomMin)
+    }
 
     if player.SelectedStack != nil {
         stack := player.SelectedStack
@@ -4250,6 +4272,7 @@ type Overworld struct {
     Fog [][]bool
     ShowAnimation bool
     FogBlack *ebiten.Image
+    Zoom float64
 }
 
 func (overworld *Overworld) DrawMinimap(screen *ebiten.Image){
@@ -4407,6 +4430,7 @@ func (game *Game) DrawGame(screen *ebiten.Image){
         Fog: fog,
         ShowAnimation: game.State == GameStateUnitMoving,
         FogBlack: game.GetFogImage(),
+        Zoom: float64(game.OverlandZoom) / float64(ZoomStep),
     }
 
     overworld.DrawOverworld(screen, ebiten.GeoM{})
