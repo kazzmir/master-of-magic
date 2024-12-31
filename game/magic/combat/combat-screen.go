@@ -2052,6 +2052,13 @@ func (combat *CombatScreen) doAI(yield coroutine.YieldFunc, aiUnit *ArmyUnit) {
         }
     }
 
+    for _, unit := range otherArmy.Units {
+        if combat.withinMeleeRange(aiUnit, unit) && combat.Model.canMeleeAttack(aiUnit, unit) {
+            combat.doMelee(yield, aiUnit, unit)
+            return
+        }
+    }
+
     aiUnit.Paths = make(map[image.Point]pathfinding.Path)
 
     // if the selected unit has ranged attacks, then try to use that
