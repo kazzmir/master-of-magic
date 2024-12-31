@@ -60,11 +60,11 @@ func getName(artifact *Artifact, customName string) string {
     switch {
         // TODO: Spell Charges: " of {Spell Name} x4"
         // TODO: Ability: " of {Ability Name}" (probably ability with the highest cost)
-        case artifact.SpellSaveBonus() != 0: postfix = " of Power"
-        case artifact.SpellSkillBonus() != 0: postfix = " of Wizardry"
-        case artifact.ResistanceBonus() != 0: postfix = " of Protection"
-        case artifact.MovementBonus() != 0: postfix = " of Speed"
-        case artifact.ToHitBonus() != 0: postfix = " of Accuracy"
+        case artifact.HasSpellSavePower(): postfix = " of Power"
+        case artifact.HasSpellSkillPower(): postfix = " of Wizardry"
+        case artifact.HasResistancePower(): postfix = " of Protection"
+        case artifact.HasMovementPower(): postfix = " of Speed"
+        case artifact.HasToHitPower(): postfix = " of Accuracy"
         case artifact.HasDefensePower(): postfix = " of Defense"
     }
 

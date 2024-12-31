@@ -378,6 +378,26 @@ func (artifact *Artifact) HasDefensePower() bool {
     return hasPower[*PowerDefense](artifact.Powers)
 }
 
+func (artifact *Artifact) HasSpellSavePower() bool {
+    return hasPower[*PowerSpellSave](artifact.Powers)
+}
+
+func (artifact *Artifact) HasSpellSkillPower() bool {
+    return hasPower[*PowerSpellSkill](artifact.Powers)
+}
+
+func (artifact *Artifact) HasResistancePower() bool {
+    return hasPower[*PowerResistance](artifact.Powers)
+}
+
+func (artifact *Artifact) HasMovementPower() bool {
+    return hasPower[*PowerMovement](artifact.Powers)
+}
+
+func (artifact *Artifact) HasToHitPower() bool {
+    return hasPower[*PowerToHit](artifact.Powers)
+}
+
 func (artifact *Artifact) ToHitBonus() int {
     return addPowers[*PowerToHit](artifact.Powers)
 }
