@@ -2155,6 +2155,19 @@ func (combat *CombatScreen) doAI(yield coroutine.YieldFunc, aiUnit *ArmyUnit) {
         }
     }
 
+    // no enemy to move towards, then possibly move towards gate
+    if aiUnit.Team == TeamDefender && combat.Model.InsideCityWall(aiUnit.X, aiUnit.Y) {
+        // if inside a city wall, then move towards the gate
+        gateX, gateY := combat.Model.GetCityGateCoordinates()
+        if gateX != -1 && gateY != -1 {
+            path, ok := combat.Model.computePath(aiUnit.X, aiUnit.Y, gateX, gateY, aiUnit.CanTraverseWall())
+            if ok && len(path) > 1 && aiUnit.CanFollowPath(path) {
+                combat.doMoveUnit(yield, aiUnit, path[1:])
+                return
+            }
+        }
+    }
+
     // didn't make a choice, just exhaust moves left
     aiUnit.MovesLeft = fraction.FromInt(0)
 }

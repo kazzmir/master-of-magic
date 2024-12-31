@@ -366,10 +366,10 @@ func makeScenario4(cache *lbx.LbxCache) *combat.CombatScreen {
 
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Fireball"))
 
-    // attackingArmy := createGreatDrakeArmy(attackingPlayer)
+    attackingArmy := createGreatDrakeArmy(attackingPlayer)
     // attackingArmy := createWeakArmy(attackingPlayer)
     // attackingArmy := createHighMenBowmanArmy(attackingPlayer)
-    attackingArmy := createHeroArmy(attackingPlayer)
+    // attackingArmy := createHeroArmy(attackingPlayer)
     attackingArmy.LayoutUnits(combat.TeamAttacker)
 
     city := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, attackingPlayer.Wizard.Banner, fraction.Zero(), nil, nil)

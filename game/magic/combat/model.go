@@ -977,6 +977,9 @@ type CombatModel struct {
 
     Log []CombatLogEvent
     Observer CombatObservers
+
+    // cached location of city wall gate
+    CityWallGate image.Point
 }
 
 func MakeCombatModel(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Army, landscape CombatLandscape, plane data.Plane, zone ZoneType) *CombatModel {
@@ -1396,6 +1399,24 @@ func (model *CombatModel) IsCityWallGate(x int, y int) bool {
     }
 
     return false
+}
+
+func (model *CombatModel) GetCityGateCoordinates() (int, int) {
+
+    if !model.CityWallGate.Eq(image.Point{}) {
+        return model.CityWallGate.X, model.CityWallGate.Y
+    }
+
+    for y := 0; y < len(model.Tiles); y++ {
+        for x := 0; x < len(model.Tiles[y]); x++ {
+            if model.IsCityWallGate(x, y) {
+                model.CityWallGate = image.Pt(x, y)
+                return x, y
+            }
+        }
+    }
+
+    return -1, -1
 }
 
 func (model *CombatModel) InsideAnyWall(x int, y int) bool {
