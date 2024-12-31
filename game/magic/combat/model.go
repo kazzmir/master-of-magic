@@ -577,7 +577,7 @@ func (unit *ArmyUnit) ResetTurnData() {
     unit.Casted = false
 }
 
-func (unit *ArmyUnit) ComputeDefense(damage units.Damage, armorPiercing bool) int {
+func (unit *ArmyUnit) ComputeDefense(damage units.Damage, armorPiercing bool, wallDefense int) int {
     toDefend := unit.ToDefend()
     defenseRolls := unit.Unit.GetDefense()
 
@@ -642,6 +642,14 @@ func (unit *ArmyUnit) ComputeDefense(damage units.Damage, armorPiercing bool) in
         defenseRolls /= 2
     }
 
+    // after armor piercing, wall defense is applied
+    switch damage {
+        case units.DamageRangedMagical,
+             units.DamageRangedPhysical,
+             units.DamageMeleePhysical:
+            defenseRolls += wallDefense
+    }
+
     if hasImmunity {
         defenseRolls = 50
     }
@@ -670,7 +678,7 @@ func (unit *ArmyUnit) Heal(amount int){
 
 // apply damage to each individual figure such that each figure gets to individually block damage.
 // this could potentially allow a damage of 5 to destroy a unit with 4 figures of 1HP each
-func (unit *ArmyUnit) ApplyAreaDamage(attackStrength int, damageType units.Damage) int {
+func (unit *ArmyUnit) ApplyAreaDamage(attackStrength int, damageType units.Damage, wallDefense int) int {
     totalDamage := 0
     health_per_figure := unit.Unit.GetMaxHealth() / unit.Unit.GetCount()
 
@@ -684,7 +692,7 @@ func (unit *ArmyUnit) ApplyAreaDamage(attackStrength int, damageType units.Damag
             }
         }
 
-        defense := unit.ComputeDefense(damageType, false)
+        defense := unit.ComputeDefense(damageType, false, wallDefense)
         // can't do more damage than a single figure has HP
         figureDamage := min(damage - defense, health_per_figure)
         if figureDamage > 0 {
@@ -698,11 +706,11 @@ func (unit *ArmyUnit) ApplyAreaDamage(attackStrength int, damageType units.Damag
 }
 
 // apply damage to lead figure, and if it dies then keep applying remaining damage to the next figure
-func (unit *ArmyUnit) ApplyDamage(damage int, damageType units.Damage, armorPiercing bool) int {
+func (unit *ArmyUnit) ApplyDamage(damage int, damageType units.Damage, armorPiercing bool, wallDefense int) int {
     taken := 0
     for damage > 0 && unit.Unit.GetHealth() > 0 {
         // compute defense, apply damage to lead figure. if lead figure dies, apply damage to next figure
-        defense := unit.ComputeDefense(damageType, armorPiercing)
+        defense := unit.ComputeDefense(damageType, armorPiercing, wallDefense)
         damage -= defense
         if damage > 0 {
             health_per_figure := unit.Unit.GetMaxHealth() / unit.Unit.GetCount()
@@ -1433,7 +1441,7 @@ func (model *CombatModel) doBreathAttack(attacker *ArmyUnit, defender *ArmyUnit)
         hit = true
 
         damage = append(damage, func(){
-            fireDamage := defender.ApplyDamage(strength, units.DamageFire, false)
+            fireDamage := defender.ApplyDamage(strength, units.DamageFire, false, 0)
             model.AddLogEvent(fmt.Sprintf("%v uses fire breath on %v for %v damage", attacker.Unit.GetName(), defender.Unit.GetName(), fireDamage))
             // damage += fireDamage
             model.Observer.FireBreathAttack(attacker, defender, fireDamage)
@@ -1445,7 +1453,7 @@ func (model *CombatModel) doBreathAttack(attacker *ArmyUnit, defender *ArmyUnit)
         hit = true
 
         damage = append(damage, func(){
-            lightningDamage := defender.ApplyDamage(strength, units.DamageRangedMagical, true)
+            lightningDamage := defender.ApplyDamage(strength, units.DamageRangedMagical, true, 0)
             model.AddLogEvent(fmt.Sprintf("%v uses lightning breath on %v for %v damage", attacker.Unit.GetName(), defender.Unit.GetName(), lightningDamage))
             // damage += lightningDamage
             model.Observer.LightningBreathAttack(attacker, defender, lightningDamage)
@@ -1706,15 +1714,36 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
     return damageFuncs
 }
 
+// if defender is in city wall but attacker is outside, then defense is
+//  1 if defender is not adjacent a wall
+//  3 if defender is adjacent to a wall
+func (model *CombatModel) ComputeWallDefense(attacker *ArmyUnit, defender *ArmyUnit) int {
+    if model.InsideCityWall(defender.X, defender.Y) && !model.InsideCityWall(attacker.X, attacker.Y) {
+
+        wall := model.Tiles[defender.Y][defender.X].Wall
+        if wall != nil {
+            if wall.Contains(WallKindGate) {
+                return 1
+            }
+
+            return 3
+        }
+
+        return 1
+    }
+
+    return 0
+}
+
 func (model *CombatModel) ApplyImmolationDamage(defender *ArmyUnit, immolationDamage int) {
     if immolationDamage > 0 {
-        hurt := defender.ApplyAreaDamage(immolationDamage, units.DamageImmolation)
+        hurt := defender.ApplyAreaDamage(immolationDamage, units.DamageImmolation, 0)
         model.AddLogEvent(fmt.Sprintf("%v is immolated for %v damage. HP now %v", defender.Unit.GetName(), hurt, defender.Unit.GetHealth()))
     }
 }
 
 func (model *CombatModel) ApplyMeleeDamage(attacker *ArmyUnit, defender *ArmyUnit, damage int) {
-    hurt := defender.ApplyDamage(damage, units.DamageMeleePhysical, false)
+    hurt := defender.ApplyDamage(damage, units.DamageMeleePhysical, false, model.ComputeWallDefense(attacker, defender))
     model.AddLogEvent(fmt.Sprintf("%v damage roll %v, %v took %v damage. HP now %v", attacker.Unit.GetName(), damage, defender.Unit.GetName(), hurt, defender.Unit.GetHealth()))
 }
 
@@ -1776,7 +1805,7 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                 }
 
                 if throwDamage > 0 {
-                    damage := defender.ApplyDamage(throwDamage, units.DamageThrown, false)
+                    damage := defender.ApplyDamage(throwDamage, units.DamageThrown, false, 0)
                     model.Observer.ThrowAttack(attacker, defender, damage)
                     model.AddLogEvent(fmt.Sprintf("%v throws %v at %v. HP now %v", attacker.Unit.GetName(), damage, defender.Unit.GetName(), defender.Unit.GetHealth()))
                 }

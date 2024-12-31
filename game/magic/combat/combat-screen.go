@@ -1638,7 +1638,7 @@ func (combat *CombatScreen) createRangeAttack(attacker *ArmyUnit, defender *Army
         damage := attacker.ComputeRangeDamage(tileDistance)
         // defense := target.ComputeDefense(attacker.Unit.GetRangedAttackDamageType())
 
-        target.ApplyDamage(damage, attacker.Unit.GetRangedAttackDamageType(), false)
+        target.ApplyDamage(damage, attacker.Unit.GetRangedAttackDamageType(), false, combat.Model.ComputeWallDefense(attacker, defender))
 
         if attacker.Unit.CanTouchAttack(attacker.Unit.GetRangedAttackDamageType()) {
             combat.Model.doTouchAttack(attacker, target, 0)
