@@ -25,6 +25,52 @@ const (
     CreationCreateArtifact
 )
 
+func getName(artifact *Artifact, customName string) string {
+    if customName != "" {
+        return customName
+    }
+
+    base := artifact.Type.Name()
+    if artifact.Type == ArtifactTypeMisc {
+        switch {
+            case artifact.Image >= 101: base = "Orb"
+            case artifact.Image >= 94: base = "Helm"
+            case artifact.Image >= 90: base = "Gauntlet"
+            case artifact.Image >= 84: base = "Cloak"
+            case artifact.Image >= 78: base = "Ring"
+            default: base = "Amulet"
+        }
+    }
+
+    // attack is added as "+X" prefix
+    prefix := ""
+    attack := artifact.MeleeBonus()
+    if attack == 0 {
+        attack = artifact.RangedAttackBonus()
+    }
+    if attack == 0 {
+        attack = artifact.MagicAttackBonus()
+    }
+    if attack != 0 {
+        prefix = fmt.Sprintf("+%v ", attack)
+    }
+
+    // other powers are added as "of X" postfix (only one)
+    postfix := ""
+    switch {
+        // TODO: Spell Charges: " of {Spell Name} x4"
+        // TODO: Ability: " of {Ability Name}" (probably ability with the highest cost)
+        case artifact.SpellSaveBonus() != 0: postfix = " of Power"
+        case artifact.SpellSkillBonus() != 0: postfix = " of Wizardry"
+        case artifact.ResistanceBonus() != 0: postfix = " of Protection"
+        case artifact.MovementBonus() != 0: postfix = " of Speed"
+        case artifact.ToHitBonus() != 0: postfix = " of Accuracy"
+        case artifact.DefenseBonus() != 0: postfix = " of Defense"
+    }
+
+    return prefix + base + postfix
+}
+
 func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCache, nameFont *font.Font, powerFont *font.Font, artifactType ArtifactType, picLow int, picHigh int, powerGroups [][]Power, artifact *Artifact, customName *string) []*uilib.UIElement {
     var elements []*uilib.UIElement
 
@@ -53,6 +99,7 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
             if artifact.Image < picLow {
                 artifact.Image = picHigh
             }
+            artifact.Name = getName(artifact, *customName)
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             var options ebiten.DrawImageOptions
@@ -76,6 +123,7 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
             if artifact.Image > picHigh {
                 artifact.Image = picLow
             }
+            artifact.Name = getName(artifact, *customName)
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             var options ebiten.DrawImageOptions
@@ -88,7 +136,7 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
     // name field
     nameRect := image.Rect(30, 12, 30 + 130, 12 + nameFont.Height() + 2)
     nameFocused := false
-    artifact.Name = artifactType.Name()
+    artifact.Name = getName(artifact, *customName)
     nameColorSource := ebiten.NewImage(1, 1)
     nameColorSource.Fill(color.RGBA{R: 0xf3, G: 0xb3, B: 0x47, A: 0xff})
 
@@ -195,14 +243,15 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
                         if groupSelect == i {
                             groupSelect = -1
                             selectCount -= 1
-
                             artifact.RemovePower(power)
+                            artifact.Name = getName(artifact, *customName)
                             lastPower = nil
                         } else {
                             // something was already selected in this group, so the count doesn't change
                             groupSelect = i
                             artifact.RemovePower(lastPower)
                             artifact.AddPower(power)
+                            artifact.Name = getName(artifact, *customName)
                             lastPower = power
                         }
                     } else {
@@ -210,6 +259,7 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
                             selectCount += 1
                             groupSelect = i
                             artifact.AddPower(power)
+                            artifact.Name = getName(artifact, *customName)
                             lastPower = power
                         } else {
                             ui.AddElement(uilib.MakeErrorElement(ui, cache, imageCache, "Only four powers may be enchanted into an item", func(){}))
@@ -825,9 +875,7 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, cr
 
         ui.AddElements(powers[index].Elements)
         currentArtifact = powers[index].Artifact
-        if customName != "" {
-            currentArtifact.Name = customName
-        }
+        currentArtifact.Name = getName(currentArtifact, customName)
     }
 
     var selectedButton *uilib.UIElement

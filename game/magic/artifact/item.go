@@ -342,6 +342,15 @@ func (artifact *Artifact) RangedAttackBonus() int {
     }
 }
 
+func (artifact *Artifact) MagicAttackBonus() int {
+    switch artifact.Type {
+        case ArtifactTypeWand, ArtifactTypeStaff, ArtifactTypeMisc:
+            return addPowers[*PowerAttack](artifact.Powers)
+        default:
+            return 0
+    }
+}
+
 func (artifact *Artifact) DefenseBonus() int {
     base := addPowers[*PowerDefense](artifact.Powers)
     switch artifact.Type {
@@ -354,8 +363,24 @@ func (artifact *Artifact) DefenseBonus() int {
     return base
 }
 
+func (artifact *Artifact) ToHitBonus() int {
+    return addPowers[*PowerToHit](artifact.Powers)
+}
+
+func (artifact *Artifact) SpellSkillBonus() int {
+    return addPowers[*PowerSpellSkill](artifact.Powers)
+}
+
+func (artifact *Artifact) SpellSaveBonus() int {
+    return addPowers[*PowerSpellSave](artifact.Powers)
+}
+
 func (artifact *Artifact) ResistanceBonus() int {
     return addPowers[*PowerResistance](artifact.Powers)
+}
+
+func (artifact *Artifact) MovementBonus() int {
+    return addPowers[*PowerMovement](artifact.Powers)
 }
 
 func (artifact *Artifact) Cost() int {
