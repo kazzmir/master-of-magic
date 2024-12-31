@@ -1752,6 +1752,28 @@ func (model *CombatModel) ApplyWallOfFireDamage(defender *ArmyUnit) {
     model.Observer.WallOfFire(defender, 5)
 }
 
+func (model *CombatModel) canMeleeAttack(attacker *ArmyUnit, defender *ArmyUnit) bool {
+    if attacker.MovesLeft.LessThanEqual(fraction.FromInt(0)) {
+        return false
+    }
+
+    if defender.Unit.IsFlying() && !attacker.Unit.IsFlying() {
+        // a unit with Thrown can attack a flying unit
+        if attacker.Unit.HasAbility(data.AbilityThrown) ||
+           attacker.Unit.HasAbility(data.AbilityFireBreath) ||
+           attacker.Unit.HasAbility(data.AbilityLightningBreath) {
+            return true
+        }
+        return false
+    }
+
+    if attacker.Team == defender.Team {
+        return false
+    }
+
+    return true
+}
+
 /* attacker is performing a physical melee attack against defender
  */
 func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
