@@ -65,7 +65,7 @@ func getName(artifact *Artifact, customName string) string {
         case artifact.ResistanceBonus() != 0: postfix = " of Protection"
         case artifact.MovementBonus() != 0: postfix = " of Speed"
         case artifact.ToHitBonus() != 0: postfix = " of Accuracy"
-        case artifact.DefenseBonus() != 0: postfix = " of Defense"
+        case artifact.HasDefensePower(): postfix = " of Defense"
     }
 
     return prefix + base + postfix

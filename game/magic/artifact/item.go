@@ -312,6 +312,17 @@ func (artifact *Artifact) RemovePower(remove Power) {
     })
 }
 
+func hasPower[T Power](powers []Power) bool {
+    for _, power := range powers {
+        _, ok := power.(T)
+        if ok {
+            return true
+        }
+    }
+
+    return false
+}
+
 func addPowers[T Power](powers []Power) int {
     amount := 0
     for _, power := range powers {
@@ -361,6 +372,10 @@ func (artifact *Artifact) DefenseBonus() int {
     }
 
     return base
+}
+
+func (artifact *Artifact) HasDefensePower() bool {
+    return hasPower[*PowerDefense](artifact.Powers)
 }
 
 func (artifact *Artifact) ToHitBonus() int {
