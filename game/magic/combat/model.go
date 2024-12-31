@@ -162,7 +162,7 @@ const (
 )
 
 const TownCenterX = 11
-const TownCenterY = 9
+const TownCenterY = 10
 
 func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plane, zone ZoneType) [][]Tile {
 
@@ -223,9 +223,17 @@ func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plan
     // defending city, so place city tiles around
     if zone.City != nil {
 
+        townSquare := image.Rect(TownCenterX - 2, TownCenterY - 2, TownCenterX + 1, TownCenterY + 1)
+
+        randTownSquare := func() (int, int) {
+            x := rand.N(townSquare.Dx())
+            y := rand.N(townSquare.Dy())
+            return townSquare.Min.X + x, townSquare.Min.Y + y
+        }
+
         // clear all space around the city
-        for x := -2; x <= 2; x++ {
-            for y := -2; y <= 2; y++ {
+        for x := townSquare.Min.X; x <= townSquare.Max.X; x++ {
+            for y := -townSquare.Min.Y; y <= townSquare.Max.Y; y++ {
                 mx := x + TownCenterX
                 my := y + TownCenterY
                 tiles[my][mx].ExtraObject.Index = -1
@@ -233,8 +241,7 @@ func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plan
         }
 
         for range 8 {
-            x := TownCenterX + rand.N(5) - 2
-            y := TownCenterY + rand.N(5) - 2
+            x, y := randTownSquare()
 
             tiles[y][x].ExtraObject = TileTop{
                 Lbx: "cmbtcity.lbx",
@@ -876,13 +883,13 @@ func (army *Army) AddUnit(unit CombatUnit){
 }
 
 func (army *Army) LayoutUnits(team Team){
-    x := 10
+    x := TownCenterX - 2
     y := 10
 
     facing := units.FacingDownRight
 
     if team == TeamAttacker {
-        x = 10
+        x = TownCenterX - 2
         y = 17
         facing = units.FacingUpLeft
     }
