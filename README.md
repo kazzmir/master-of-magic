@@ -13,6 +13,9 @@
 Play a wasm build of this game
 https://kazzmir.itch.io/magic
 
+Also try the combat simulator, which lets you test different battle situations
+https://kazzmir.itch.io/magic-combat-simulator
+
 # Build:
 
 Extra packages needed for ebiten
