@@ -567,7 +567,7 @@ func bannerColor(banner data.BannerType) color.RGBA {
     return color.RGBA{R: 0, G: 0, B: 0, A: 255}
 }
 
-func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []MiniMapCity, centerX int, centerY int, fog [][]bool, counter uint64, crosshairs bool){
+func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []MiniMapCity, centerX int, centerY int, zoom float64, fog [][]bool, counter uint64, crosshairs bool){
     if len(mapObject.miniMapPixels) != screen.Bounds().Dx() * screen.Bounds().Dy() * 4 {
         mapObject.miniMapPixels = make([]byte, screen.Bounds().Dx() * screen.Bounds().Dy() * 4)
     }
@@ -657,7 +657,7 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []MiniMapCity, ce
         }
         cursorColor := util.PremultiplyAlpha(color.RGBA{R: 255, G: 255, B: byte(cursorColorBlue), A: 180})
 
-        cursorRadius := 5
+        cursorRadius := int(5.0 / zoom)
         x1 := centerX - cursorRadius - cameraX
         y1 := centerY - cursorRadius - cameraY
         x2 := centerX + cursorRadius - cameraX

@@ -268,8 +268,8 @@ func (game *Game) MakeFog() [][]bool {
 }
 
 func (game *Game) CenterCamera(x int, y int){
-    game.cameraX = x - 5
-    game.cameraY = y - 5
+    game.cameraX = x - int(5.0 / (float64(game.OverlandZoom) / ZoomStep))
+    game.cameraY = y - int(5.0 / (float64(game.OverlandZoom) / ZoomStep))
 
     /*
     if game.cameraX < 0 {
@@ -702,7 +702,7 @@ func (game *Game) doCityListView(yield coroutine.YieldFunc) {
     }
 
     drawMinimap := func (screen *ebiten.Image, x int, y int, fog [][]bool, counter uint64){
-        game.CurrentMap().DrawMinimap(screen, citiesMiniMap, x, y, fog, counter, false)
+        game.CurrentMap().DrawMinimap(screen, citiesMiniMap, x, y, 1, fog, counter, false)
     }
 
     var showCity *citylib.City
@@ -749,7 +749,7 @@ func (game *Game) doArmyView(yield coroutine.YieldFunc) {
     }
 
     drawMinimap := func (screen *ebiten.Image, x int, y int, fog [][]bool, counter uint64){
-        game.CurrentMap().DrawMinimap(screen, citiesMiniMap, x, y, fog, counter, false)
+        game.CurrentMap().DrawMinimap(screen, citiesMiniMap, x, y, 1, fog, counter, false)
     }
 
     showVault := func(){
@@ -2237,8 +2237,8 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
         // can only click into the area not hidden by the hud
         if mouseX < 240 && mouseY > 18 {
             // log.Printf("Click at %v, %v", mouseX, mouseY)
-            tileX := game.CurrentMap().WrapX(game.cameraX + mouseX / mapUse.TileWidth())
-            tileY := game.cameraY + mouseY / mapUse.TileHeight()
+            tileX := game.CurrentMap().WrapX(game.cameraX + int(float64(mouseX) / float64(mapUse.TileWidth()) / (float64(game.OverlandZoom) / float64(ZoomStep))))
+            tileY := game.cameraY + int(float64(mouseY) / float64(mapUse.TileHeight()) / (float64(game.OverlandZoom) / float64(ZoomStep)))
 
             game.CenterCamera(tileX, tileY)
 
@@ -4276,7 +4276,7 @@ type Overworld struct {
 }
 
 func (overworld *Overworld) DrawMinimap(screen *ebiten.Image){
-    overworld.Map.DrawMinimap(screen, overworld.CitiesMiniMap, overworld.CameraX + 5, overworld.CameraY + 5, overworld.Fog, overworld.Counter, true)
+    overworld.Map.DrawMinimap(screen, overworld.CitiesMiniMap, overworld.CameraX + 5, overworld.CameraY + 5, overworld.Zoom, overworld.Fog, overworld.Counter, true)
 }
 
 func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM){
