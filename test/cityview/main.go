@@ -145,6 +145,7 @@ func (engine *Engine) Draw(screen *ebiten.Image) {
             Fog: nil,
             ShowAnimation: false,
             FogBlack: nil,
+            Zoom: 1,
         }
 
         overworld.DrawOverworld(where, geom)

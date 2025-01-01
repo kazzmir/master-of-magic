@@ -112,7 +112,7 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
         Fog: fog,
         ShowAnimation: game.State == GameStateUnitMoving,
         FogBlack: game.GetFogImage(),
-        Zoom: float64(game.OverlandZoom) / float64(ZoomStep),
+        Zoom: game.GetZoom(),
     }
 
     selectedPoint := image.Pt(-1, -1)

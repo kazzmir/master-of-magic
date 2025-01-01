@@ -268,8 +268,8 @@ func (game *Game) MakeFog() [][]bool {
 }
 
 func (game *Game) CenterCamera(x int, y int){
-    game.cameraX = x - int(5.0 / (float64(game.OverlandZoom) / ZoomStep))
-    game.cameraY = y - int(5.0 / (float64(game.OverlandZoom) / ZoomStep))
+    game.cameraX = x - int(5.0 / game.GetZoom())
+    game.cameraY = y - int(5.0 / game.GetZoom())
 
     /*
     if game.cameraX < 0 {
@@ -2237,8 +2237,8 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
         // can only click into the area not hidden by the hud
         if mouseX < 240 && mouseY > 18 {
             // log.Printf("Click at %v, %v", mouseX, mouseY)
-            tileX := game.CurrentMap().WrapX(game.cameraX + int(float64(mouseX) / float64(mapUse.TileWidth()) / (float64(game.OverlandZoom) / float64(ZoomStep))))
-            tileY := game.cameraY + int(float64(mouseY) / float64(mapUse.TileHeight()) / (float64(game.OverlandZoom) / float64(ZoomStep)))
+            tileX := game.CurrentMap().WrapX(game.cameraX + int(float64(mouseX) / float64(mapUse.TileWidth()) / game.GetZoom()))
+            tileY := game.cameraY + int(float64(mouseY) / float64(mapUse.TileHeight()) / game.GetZoom())
 
             game.CenterCamera(tileX, tileY)
 
@@ -2444,6 +2444,7 @@ func (game *Game) doCityScreen(yield coroutine.YieldFunc, city *citylib.City, pl
         Fog: fog,
         ShowAnimation: false,
         FogBlack: game.GetFogImage(),
+        Zoom: 1,
     }
 
     oldDrawer := game.Drawer
@@ -2459,6 +2460,10 @@ func (game *Game) doCityScreen(yield coroutine.YieldFunc, city *citylib.City, pl
     }
 
     game.Drawer = oldDrawer
+}
+
+func (game *Game) GetZoom() float64 {
+    return float64(game.OverlandZoom) / float64(ZoomStep)
 }
 
 func (game *Game) confirmMagicNodeEncounter(yield coroutine.YieldFunc, node *maplib.ExtraMagicNode) bool {
@@ -4435,7 +4440,7 @@ func (game *Game) DrawGame(screen *ebiten.Image){
         Fog: fog,
         ShowAnimation: game.State == GameStateUnitMoving,
         FogBlack: game.GetFogImage(),
-        Zoom: float64(game.OverlandZoom) / float64(ZoomStep),
+        Zoom: game.GetZoom(),
     }
 
     overworld.DrawOverworld(screen, ebiten.GeoM{})
