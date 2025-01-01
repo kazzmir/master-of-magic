@@ -733,10 +733,10 @@ func (mapObject *Map) DrawLayer1(cameraX int, cameraY int, animationCounter uint
                 options.GeoM.Concat(geom)
 
                 screenX, screenY := options.GeoM.Apply(0, 0)
-                if screenX > float64(screen.Bounds().Dx()) {
+                if screenX > float64(screen.Bounds().Max.X) {
                     break x_loop
                 }
-                if screenY > float64(screen.Bounds().Dy()) {
+                if screenY > float64(screen.Bounds().Max.Y) {
                     break y_loop
                 }
 
