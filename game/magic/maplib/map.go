@@ -708,8 +708,8 @@ func (mapObject *Map) DrawLayer1(cameraX int, cameraY int, animationCounter uint
     var options ebiten.DrawImageOptions
 
     // draw all tiles first
-    for x := 0; x < tilesPerRow; x++ {
-        for y := 0; y < tilesPerColumn; y++ {
+    for x := 0; x < tilesPerRow * 2; x++ {
+        for y := 0; y < tilesPerColumn * 2; y++ {
             tileX := mapObject.WrapX(cameraX + x)
             tileY := cameraY + y
 
@@ -722,9 +722,11 @@ func (mapObject *Map) DrawLayer1(cameraX int, cameraY int, animationCounter uint
 
             tileImage, err := mapObject.GetTileImage(tileX, tileY, animationCounter)
             if err == nil {
-                options.GeoM = geom
+                options.GeoM.Reset()
+                // options.GeoM = geom
                 // options.GeoM.Reset()
                 options.GeoM.Translate(float64(x * tileWidth), float64(y * tileHeight))
+                options.GeoM.Concat(geom)
                 screen.DrawImage(tileImage, &options)
 
                 extra, ok := mapObject.ExtraMap[image.Pt(tileX, tileY)]

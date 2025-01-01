@@ -167,10 +167,10 @@ const (
     GameStateQuit
 )
 
-const ZoomMin = 1
-const ZoomMax = 200
-const ZoomDefault = 100
-const ZoomStep = 100
+const ZoomMin = 3
+const ZoomMax = 20
+const ZoomDefault = 10
+const ZoomStep = 10
 
 type Game struct {
     Cache *lbx.LbxCache
@@ -4280,6 +4280,9 @@ func (overworld *Overworld) DrawMinimap(screen *ebiten.Image){
 }
 
 func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM){
+
+    geom.Scale(overworld.Zoom, overworld.Zoom)
+
     overworld.Map.DrawLayer1(overworld.CameraX, overworld.CameraY, overworld.Counter / 8, overworld.ImageCache, screen, geom)
 
     tileWidth := overworld.Map.TileWidth()
@@ -4309,12 +4312,13 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
         if err == nil {
             var options ebiten.DrawImageOptions
             x, y := convertTileCoordinates(city.X, city.Y)
-            options.GeoM = geom
+            // options.GeoM = geom
             // draw the city in the center of the tile
             // first compute center of tile
             options.GeoM.Translate(float64(x + tileWidth / 2.0), float64(y + tileHeight / 2.0))
             // then move the city image so that the center of the image is at the center of the tile
             options.GeoM.Translate(float64(-cityPic.Bounds().Dx()) / 2.0, float64(-cityPic.Bounds().Dy()) / 2.0)
+            options.GeoM.Concat(geom)
             screen.DrawImage(cityPic, &options)
 
             /*
@@ -4344,9 +4348,10 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
 
         if doDraw {
             var options ebiten.DrawImageOptions
-            options.GeoM = geom
+            // options.GeoM = geom
             x, y := convertTileCoordinates(stack.X(), stack.Y())
             options.GeoM.Translate(float64(x) + stack.OffsetX() * float64(tileWidth), float64(y) + stack.OffsetY() * float64(tileHeight))
+            options.GeoM.Concat(geom)
 
             leader := stack.Leader()
 

@@ -90,7 +90,7 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
 
     // game.Map.Map.Terrain[3][6] = terrain.TileNatureForest.Index
 
-    player.LiftFog(x, y, 3, data.PlaneArcanus)
+    player.LiftFog(x, y, 30, data.PlaneArcanus)
 
     drake := player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, nil))
 
