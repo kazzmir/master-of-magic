@@ -241,7 +241,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
             overworld.Counter += 1
         }
 
-        game.doInputZoom()
+        zoomed := game.doInputZoom()
         overworld.Zoom = game.GetZoom()
         ui.StandardUpdate()
 
@@ -273,7 +273,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
 
             // right click should move the camera
             rightClick := inputmanager.RightClick()
-            if rightClick {
+            if rightClick || zoomed {
                 moveCamera = newPoint.Add(image.Pt(-5, -5))
                 if moveCamera.Y < 0 {
                     moveCamera.Y = 0

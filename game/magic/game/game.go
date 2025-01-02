@@ -2057,7 +2057,7 @@ func (game *Game) RealToTile(inX float64, inY float64) (int, int) {
     return outX, outY
 }
 
-func (game *Game) doInputZoom() {
+func (game *Game) doInputZoom() bool {
     _, wheelY := ebiten.Wheel()
     if wheelY > 0 {
         wheelY = 1
@@ -2067,9 +2067,13 @@ func (game *Game) doInputZoom() {
 
     if wheelY > 0 {
         game.OverlandZoom = min(game.OverlandZoom + 1, ZoomMax)
+        return true
     } else if wheelY < 0 {
         game.OverlandZoom = max(game.OverlandZoom - 1, ZoomMin)
+        return true
     }
+
+    return false
 }
 
 func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Player) {
@@ -2077,7 +2081,7 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
     keys := make([]ebiten.Key, 0)
     keys = inpututil.AppendJustPressedKeys(keys)
 
-    game.doInputZoom()
+    zoomed := game.doInputZoom()
 
     if player.SelectedStack != nil {
         stack := player.SelectedStack
@@ -2246,7 +2250,7 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
     }
 
     rightClick := inputmanager.RightClick()
-    if rightClick {
+    if rightClick || zoomed {
         // mapUse := game.CurrentMap()
         mouseX, mouseY := inputmanager.MousePosition()
 
@@ -2260,52 +2264,54 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
 
             game.CenterCamera(tileX, tileY)
 
-            city := player.FindCity(tileX, tileY)
-            if city != nil {
-                if city.Outpost {
-                    game.showOutpost(yield, city, player.FindStack(city.X, city.Y), false)
-                } else {
-                    game.doCityScreen(yield, city, player, buildinglib.BuildingNone)
-                }
-                game.RefreshUI()
-            } else {
-                stack := player.FindStack(tileX, tileY)
-                if stack != nil {
-                    player.SelectedStack = stack
+            if rightClick {
+                city := player.FindCity(tileX, tileY)
+                if city != nil {
+                    if city.Outpost {
+                        game.showOutpost(yield, city, player.FindStack(city.X, city.Y), false)
+                    } else {
+                        game.doCityScreen(yield, city, player, buildinglib.BuildingNone)
+                    }
                     game.RefreshUI()
                 } else {
+                    stack := player.FindStack(tileX, tileY)
+                    if stack != nil {
+                        player.SelectedStack = stack
+                        game.RefreshUI()
+                    } else {
 
-                    for _, otherPlayer := range game.Players {
-                        if otherPlayer == player {
-                            continue
-                        }
-
-                        city := otherPlayer.FindCity(tileX, tileY)
-                        if city != nil {
-                            game.doEnemyCityView(yield, city, otherPlayer)
-                        }
-
-                        enemyStack := otherPlayer.FindStack(tileX, tileY)
-                        if enemyStack != nil {
-                            quit := false
-                            clicked := func(){
-                                quit = true
+                        for _, otherPlayer := range game.Players {
+                            if otherPlayer == player {
+                                continue
                             }
 
-                            var unitViewElements []unitview.UnitView
-                            for _, unit := range enemyStack.Units() {
-                                unitViewElements = append(unitViewElements, unit)
+                            city := otherPlayer.FindCity(tileX, tileY)
+                            if city != nil {
+                                game.doEnemyCityView(yield, city, otherPlayer)
                             }
 
-                            game.HudUI.AddElements(unitview.MakeSmallListView(game.Cache, game.HudUI, unitViewElements, otherPlayer.Wizard.Name, clicked))
-                            for !quit {
-                                game.Counter += 1
-                                game.HudUI.StandardUpdate()
-                                yield()
+                            enemyStack := otherPlayer.FindStack(tileX, tileY)
+                            if enemyStack != nil {
+                                quit := false
+                                clicked := func(){
+                                    quit = true
+                                }
+
+                                var unitViewElements []unitview.UnitView
+                                for _, unit := range enemyStack.Units() {
+                                    unitViewElements = append(unitViewElements, unit)
+                                }
+
+                                game.HudUI.AddElements(unitview.MakeSmallListView(game.Cache, game.HudUI, unitViewElements, otherPlayer.Wizard.Name, clicked))
+                                for !quit {
+                                    game.Counter += 1
+                                    game.HudUI.StandardUpdate()
+                                    yield()
+                                }
                             }
                         }
+
                     }
-
                 }
             }
         }

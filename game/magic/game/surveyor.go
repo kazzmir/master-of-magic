@@ -298,7 +298,7 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
         if game.GetZoom() >= 0.9 {
             overworld.Counter += 1
         }
-        game.doInputZoom()
+        zoomed := game.doInputZoom()
 
         overworld.Zoom = game.GetZoom()
 
@@ -333,7 +333,7 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
 
             // right click should move the camera
             rightClick := inputmanager.RightClick()
-            if rightClick {
+            if rightClick || zoomed {
                 moveCamera = selectedPoint.Add(image.Pt(-5, -5))
                 if moveCamera.X < 0 {
                     moveCamera.X = 0
