@@ -1397,6 +1397,8 @@ func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, st
 
     boot, _ := game.ImageCache.GetImage("compix.lbx", 72, 0)
 
+    zoom := game.GetZoom()
+
     game.Drawer = func (screen *ebiten.Image, game *Game){
         drawer(screen, game)
 
@@ -1407,6 +1409,7 @@ func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, st
             options.GeoM.Translate(x, y)
             options.GeoM.Translate(float64(tileWidth) / 2, float64(tileHeight) / 2)
             options.GeoM.Translate(float64(boot.Bounds().Dx()) / -2, float64(boot.Bounds().Dy()) / -2)
+            options.GeoM.Scale(zoom, zoom)
             screen.DrawImage(boot, &options)
         }
 
@@ -2046,6 +2049,14 @@ func (game *Game) RefreshUI() {
     }
 }
 
+// convert real screen coordinates to tile coordinates
+func (game *Game) RealToTile(inX float64, inY float64) (int, int) {
+    outX := int(inX / float64(game.CurrentMap().TileWidth()) / game.GetZoom())
+    outY := int(inY / float64(game.CurrentMap().TileHeight()) / game.GetZoom())
+
+    return outX, outY
+}
+
 func (game *Game) doInputZoom() {
     _, wheelY := ebiten.Wheel()
     if wheelY > 0 {
@@ -2098,8 +2109,9 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                 // can only click into the area not hidden by the hud
                 if mouseX < 240 && mouseY > 18 {
                     // log.Printf("Click at %v, %v", mouseX, mouseY)
-                    newX = game.cameraX + mouseX / mapUse.TileWidth()
-                    newY = game.cameraY + mouseY / mapUse.TileHeight()
+                    realX, realY := game.RealToTile(float64(mouseX), float64(mouseY))
+                    newX = game.cameraX + realX
+                    newY = game.cameraY + realY
                 }
             }
 
@@ -2235,14 +2247,16 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
 
     rightClick := inputmanager.RightClick()
     if rightClick {
-        mapUse := game.CurrentMap()
+        // mapUse := game.CurrentMap()
         mouseX, mouseY := inputmanager.MousePosition()
 
         // can only click into the area not hidden by the hud
         if mouseX < 240 && mouseY > 18 {
             // log.Printf("Click at %v, %v", mouseX, mouseY)
-            tileX := game.CurrentMap().WrapX(game.cameraX + int(float64(mouseX) / float64(mapUse.TileWidth()) / game.GetZoom()))
-            tileY := game.cameraY + int(float64(mouseY) / float64(mapUse.TileHeight()) / game.GetZoom())
+            realX, realY := game.RealToTile(float64(mouseX), float64(mouseY))
+
+            tileX := game.CurrentMap().WrapX(game.cameraX + realX)
+            tileY := game.cameraY + realY
 
             game.CenterCamera(tileX, tileY)
 

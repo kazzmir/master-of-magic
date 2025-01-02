@@ -323,8 +323,10 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
 
         // within the viewable area
         if x < 240 && y > 18 {
-            newX := game.cameraX + int(float64(x) / float64(game.CurrentMap().TileWidth()) / game.GetZoom())
-            newY := game.cameraY + int(float64(y) / float64(game.CurrentMap().TileHeight()) / game.GetZoom())
+            realX, realY := game.RealToTile(float64(x), float64(y))
+
+            newX := game.cameraX + realX
+            newY := game.cameraY + realY
             newPoint := image.Pt(newX, newY)
 
             // right click should move the camera
