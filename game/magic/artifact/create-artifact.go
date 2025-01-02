@@ -302,7 +302,7 @@ func getName(artifact *Artifact, customName string) string {
     return prefix + base + postfix
 }
 
-func calculateCost(artifact *Artifact, costs map[Power]int, ) int {
+func calculateCost(artifact *Artifact, costs map[Power]int) int {
     base := 0
     switch artifact.Type {
         case ArtifactTypeSword: base = 100
