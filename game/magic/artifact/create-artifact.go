@@ -182,6 +182,9 @@ func ReadPowers(cache *lbx.LbxCache) ([]Power, map[Power]int, map[Power]set.Set[
         if err != nil {
             return nil, nil, nil, fmt.Errorf("read error: %v", err)
         }
+        if string(name) == "+6 Defense" {
+            amount = 6
+        }
 
         // Abilities
         abilitiesValue, err := lbx.ReadUint32(reader)
