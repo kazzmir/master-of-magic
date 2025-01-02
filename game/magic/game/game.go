@@ -168,7 +168,7 @@ const (
 )
 
 const ZoomMin = 3
-const ZoomMax = 20
+const ZoomMax = 10
 const ZoomDefault = 10
 const ZoomStep = 10
 
