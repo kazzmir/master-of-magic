@@ -261,7 +261,7 @@ func (ability Ability) Name() string {
         case AbilityHolyBonus: return ""
         case AbilityIllusion: return ""
         case AbilityIllusionsImmunity: return ""
-        case AbilityInvisibility: return ""
+        case AbilityInvisibility: return "Invisibility"
         case AbilityLargeShield: return ""
         case AbilityLifeSteal: return fmt.Sprintf("Life Steal %v", int(ability.Value))
         case AbilityVampiric: return "Vampiric"
@@ -274,7 +274,7 @@ func (ability Ability) Name() string {
         case AbilityMountaineer: return "Mountaineer"
         case AbilityNegateFirstStrike: return ""
         case AbilityNonCorporeal: return ""
-        case AbilityPathfinding: return ""
+        case AbilityPathfinding: return "Pathfinding"
         case AbilityPlaneShift: return "Plane Shift"
         case AbilityPoisonImmunity: return "Poison Immunity"
         case AbilityPoisonTouch: return "Poison Touch"

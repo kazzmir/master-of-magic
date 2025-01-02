@@ -2997,7 +2997,7 @@ func (game *Game) ShowSpellBookCastUI(yield coroutine.YieldFunc, player *playerl
                 }
 
                 log.Printf("Create artifact %v", created)
-                spell.OverrideCost = created.Cost()
+                spell.OverrideCost = created.Cost
 
                 player.CreateArtifact = created
             }

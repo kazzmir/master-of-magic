@@ -87,6 +87,20 @@ func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int, rawDump bool) 
             fmt.Printf("Artifact: %+v\n", use)
         }
 
+    } else if lbxName == "itempow.lbx" && !rawDump {
+        files := make(map[string]*lbx.LbxFile)
+        files["itempow.lbx"] = &file
+        cache := lbx.MakeCacheFromLbxFiles(files)
+        artifacts, costs, compatibilities, err := artifact.ReadPowers(cache)
+
+        if err != nil {
+            return err
+        }
+
+        for _, artifact := range artifacts {
+            fmt.Printf("Power: %+v Cost: %v Artifact Types: %+v\n", artifact, costs[artifact], compatibilities[artifact])
+        }
+
     } else if lbxName == "help.lbx" && !rawDump {
         // uint16 number of entries
         // uint16 size of each entry

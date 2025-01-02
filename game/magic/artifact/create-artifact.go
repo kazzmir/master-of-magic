@@ -6,7 +6,9 @@ import (
     "strings"
     "image/color"
     "log"
+    "bytes"
 
+    "github.com/kazzmir/master-of-magic/lib/set"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
@@ -24,6 +26,232 @@ const (
     CreationEnchantItem CreationScreen = iota
     CreationCreateArtifact
 )
+
+const CreationScreenCostThreshold = 200  // TODO: validate this again with abilities
+
+func ReadPowers(cache *lbx.LbxCache) ([]Power, map[Power]int, map[Power]set.Set[ArtifactType], error) {
+    itemData, err := cache.GetLbxFile("itempow.lbx")
+    if err != nil {
+        return nil, nil, nil, fmt.Errorf("unable to read itempow.lbx: %v", err)
+    }
+
+    reader, err := itemData.GetReader(0)
+    if err != nil {
+        return nil, nil, nil, fmt.Errorf("unable to read entry 0 in itempow.lbx: %v", err)
+    }
+
+    numEntries, err := lbx.ReadUint16(reader)
+    if err != nil {
+        return nil, nil, nil, fmt.Errorf("read error: %v", err)
+    }
+
+    entrySize, err := lbx.ReadUint16(reader)
+    if err != nil {
+        return nil, nil, nil, fmt.Errorf("read error: %v", err)
+    }
+    if entrySize != 30 {
+        return nil, nil, nil, fmt.Errorf("unsupported itempow.lbx")
+    }
+
+    artifactTypeMap := map[uint16]ArtifactType{
+        1 << 0: ArtifactTypeSword,
+        1 << 1: ArtifactTypeMace,
+        1 << 2: ArtifactTypeAxe,
+        1 << 3: ArtifactTypeBow,
+        1 << 4: ArtifactTypeStaff,
+        1 << 5: ArtifactTypeWand,
+        1 << 6: ArtifactTypeMisc,
+        1 << 7: ArtifactTypeShield,
+        1 << 8: ArtifactTypeChain,
+        1 << 9: ArtifactTypePlate,
+    }
+
+    powerTypeMap := map[byte]PowerType{
+        0: PowerTypeAttack,
+        1: PowerTypeToHit,
+        2: PowerTypeDefense,
+        3: PowerTypeSpellSkill,
+        4: PowerTypeSpellSave,
+        5: PowerTypeMovement,
+        6: PowerTypeResistance,
+        7: PowerTypeNone, // TODO: mutually exlusive abilities 1 (Resists Elements or Elemental Armor)
+        8: PowerTypeNone, // TODO: mutually exlusive abilities 2 (Resist Magic or Magic Immunity)
+        9: PowerTypeNone, // TODO: all other abilitites
+    }
+
+    magicTypeMap := map[byte]data.MagicType{
+        0: data.NatureMagic,
+        1: data.SorceryMagic,
+        2: data.ChaosMagic,
+        3: data.LifeMagic,
+        4: data.DeathMagic,
+    }
+
+    abilityMap := map[uint32]data.Ability{
+        1 << 0:  data.MakeAbility(data.AbilityVampiric),
+        1 << 1:  data.MakeAbility(data.AbilityGuardianWind),
+        1 << 2:  data.MakeAbility(data.AbilityLightning),
+        1 << 3:  data.MakeAbility(data.AbilityCloakOfFear),
+        1 << 4:  data.MakeAbility(data.AbilityDestruction),
+        1 << 5:  data.MakeAbility(data.AbilityWraithform),
+        1 << 6:  data.MakeAbility(data.AbilityRegeneration),
+        1 << 7:  data.MakeAbility(data.AbilityPathfinding),
+        1 << 8:  data.MakeAbility(data.AbilityWaterWalking),
+        1 << 9:  data.MakeAbility(data.AbilityResistElements),
+        1 << 10: data.MakeAbility(data.AbilityElementalArmor),
+        1 << 11: data.MakeAbility(data.AbilityChaos),
+        1 << 12: data.MakeAbility(data.AbilityStoning),
+        1 << 13: data.MakeAbility(data.AbilityEndurance),
+        1 << 14: data.MakeAbility(data.AbilityHaste),
+        1 << 15: data.MakeAbility(data.AbilityInvisibility),
+        1 << 16: data.MakeAbility(data.AbilityDeath),
+        1 << 17: data.MakeAbility(data.AbilityFlight),
+        1 << 18: data.MakeAbility(data.AbilityResistMagic),
+        1 << 19: data.MakeAbility(data.AbilityMagicImmunity),
+        1 << 20: data.MakeAbility(data.AbilityFlaming),
+        1 << 21: data.MakeAbility(data.AbilityHolyAvenger),
+        1 << 22: data.MakeAbility(data.AbilityTrueSight),
+        1 << 23: data.MakeAbility(data.AbilityPhantasmal),
+        1 << 24: data.MakeAbility(data.AbilityPowerDrain),
+        1 << 25: data.MakeAbility(data.AbilityBless),
+        1 << 26: data.MakeAbility(data.AbilityLionHeart),
+        1 << 27: data.MakeAbility(data.AbilityGiantStrength),
+        1 << 28: data.MakeAbility(data.AbilityPlanarTravel),
+        1 << 29: data.MakeAbility(data.AbilityMerging),
+        1 << 30: data.MakeAbility(data.AbilityRighteousness),
+        1 << 31: data.MakeAbility(data.AbilityInvulnerability),
+    }
+
+    var powers []Power
+    costs := make(map[Power]int)
+    compatibilities := make(map[Power]set.Set[ArtifactType])
+
+    for i := 0; i < int(numEntries); i++ {
+        // Name
+        name := make([]byte, 18)
+        n, err := reader.Read(name)
+        if err != nil || n != int(18) {
+            return nil, nil, nil, fmt.Errorf("unable to read item name %v: %v", i, err)
+        }
+        name = bytes.Trim(name, " \x00")
+
+        // Artifact types
+        artifactTypeValue, err := lbx.ReadUint16(reader)
+        if err != nil {
+            return nil, nil, nil, fmt.Errorf("read error: %v", err)
+        }
+        if artifactTypeValue == 0 {
+            continue  // there seems to be empty entries
+        }
+
+        artifactTypes := set.MakeSet[ArtifactType]()
+        for mask, artifactType := range artifactTypeMap {
+            if artifactTypeValue & mask != 0 {
+                artifactTypes.Insert(artifactType)
+            }
+        }
+
+        // Cost
+        cost, err := lbx.ReadUint16(reader)
+        if err != nil {
+            return nil, nil, nil, fmt.Errorf("read error: %v", err)
+        }
+
+        // Power type
+        powerTypeValue, err := lbx.ReadByte(reader)
+        if err != nil {
+            return nil, nil, nil, fmt.Errorf("read error: %v", err)
+        }
+        powerType, exists := powerTypeMap[powerTypeValue]
+        if !exists {
+            return nil, nil, nil, fmt.Errorf("Invalid power type %v", powerTypeValue)
+        }
+
+        // Magic type
+        magicTypeValue, err := lbx.ReadByte(reader)
+        if err != nil {
+            return nil, nil, nil, fmt.Errorf("read error: %v", err)
+        }
+        magicType, exists := magicTypeMap[magicTypeValue]
+        if !exists {
+            return nil, nil, nil, fmt.Errorf("Invalid magic type %v", magicTypeValue)
+        }
+
+        // Amount
+        amount, err := lbx.ReadUint16(reader)
+        if err != nil {
+            return nil, nil, nil, fmt.Errorf("read error: %v", err)
+        }
+
+        // Abilities
+        abilitiesValue, err := lbx.ReadUint32(reader)
+        if err != nil {
+            return nil, nil, nil, fmt.Errorf("read error: %v", err)
+        }
+
+        var ability data.Ability
+        for mask, current := range abilityMap {
+            if abilitiesValue&mask != 0 {
+                ability = current
+            }
+        }
+        _ = ability
+
+        // Create power
+        if amount == 0 {
+            continue // Spell Charges
+        }
+        if powerType != PowerTypeNone {
+            power := Power{
+                Type: powerType,
+                Name: string(name),
+                Amount: int(amount),
+            }
+            powers = append(powers, power)
+            costs[power] = int(cost)
+            compatibilities[power] = *artifactTypes
+        }
+        // TODO: add abilties (currently PowerTypeNone) with requirements (magicType / amount = books needed)
+        _ = magicType
+    }
+    return powers, costs, compatibilities, nil
+}
+
+func groupPowers(powers []Power, costs map[Power]int, compatibilities map[Power]set.Set[ArtifactType], artifactType ArtifactType, creationType CreationScreen) [][]Power {
+    grouped := make(map[PowerType][]Power)
+    for _, power := range powers {
+		artifactTypes := compatibilities[power]
+		cost := costs[power]
+        allowed := artifactTypes.Contains(artifactType)
+        if creationType == CreationEnchantItem {
+            allowed = allowed && cost <= CreationScreenCostThreshold
+        }
+
+        if allowed {
+            grouped[power.Type] = append(grouped[power.Type], power)
+        }
+    }
+
+    order := []PowerType{
+        PowerTypeAttack,
+        PowerTypeDefense,
+        PowerTypeToHit,
+        PowerTypeMovement,
+        PowerTypeResistance,
+        PowerTypeSpellSkill,
+        PowerTypeSpellSave,
+    }
+
+    var result [][]Power
+    for _, powerType := range order {
+        if grouped[powerType] != nil {
+            result = append(result, grouped[powerType])
+        }
+    }
+
+    return result
+}
+
 
 func getName(artifact *Artifact, customName string) string {
     if customName != "" {
@@ -71,9 +299,44 @@ func getName(artifact *Artifact, customName string) string {
     return prefix + base + postfix
 }
 
-func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCache, nameFont *font.Font, powerFont *font.Font, artifactType ArtifactType, picLow int, picHigh int, powerGroups [][]Power, artifact *Artifact, customName *string) []*uilib.UIElement {
+func calculateCost(artifact *Artifact, costs map[Power]int, ) int {
+    base := 0
+    switch artifact.Type {
+        case ArtifactTypeSword: base = 100
+        case ArtifactTypeMace: base = 100
+        case ArtifactTypeAxe: base = 100
+        case ArtifactTypeBow: base = 100
+        case ArtifactTypeStaff: base = 300
+        case ArtifactTypeWand: base = 200
+        case ArtifactTypeMisc: base = 50
+        case ArtifactTypeShield: base = 100
+        case ArtifactTypeChain: base = 100
+        case ArtifactTypePlate: base = 300
+    }
+
+    powerCost := 0
+    spellCost := 0
+    for _, power := range artifact.Powers {
+        if power.Type == PowerTypeSpellCharges {
+            spellCost += power.Amount * power.Spell.Cost(false) // TODO: overland?
+        } else {
+            powerCost += costs[power]
+        }
+    }
+
+    // jewelry costs are 2x
+    if artifact.Type == ArtifactTypeMisc {
+        powerCost *= 2
+    }
+
+    // TODO: Artificer only pay half the full
+    return base + powerCost + spellCost
+}
+
+func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCache, nameFont *font.Font, powerFont *font.Font, picLow int, picHigh int, powerGroups [][]Power, costs map[Power]int, artifact *Artifact, customName *string) []*uilib.UIElement {
     var elements []*uilib.UIElement
 
+    // image
     artifact.Image = picLow
 
     elements = append(elements, &uilib.UIElement{
@@ -213,6 +476,7 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
 
     elements = append(elements, nameEntry)
 
+    // powers
     x := 7
     y := 40
     selectCount := 0
@@ -229,11 +493,11 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
 
         groupRight := printRight
 
-        var lastPower Power = nil
+        var lastPower *Power = nil
         for i, power := range group {
-            rect := image.Rect(x, y, x + int(powerFont.MeasureTextWidth(power.String(), 1)), y + powerFont.Height())
+            rect := image.Rect(x, y, x + int(powerFont.MeasureTextWidth(power.Name, 1)), y + powerFont.Height())
             if groupRight {
-                rect = image.Rect(x - int(powerFont.MeasureTextWidth(power.String(), 1)), y, x, y + powerFont.Height())
+                rect = image.Rect(x - int(powerFont.MeasureTextWidth(power.Name, 1)), y, x, y + powerFont.Height())
             }
 
             elements = append(elements, &uilib.UIElement{
@@ -245,14 +509,16 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
                             selectCount -= 1
                             artifact.RemovePower(power)
                             artifact.Name = getName(artifact, *customName)
+                            artifact.Cost = calculateCost(artifact, costs)
                             lastPower = nil
                         } else {
                             // something was already selected in this group, so the count doesn't change
                             groupSelect = i
-                            artifact.RemovePower(lastPower)
+                            artifact.RemovePower(*lastPower)
                             artifact.AddPower(power)
                             artifact.Name = getName(artifact, *customName)
-                            lastPower = power
+                            artifact.Cost = calculateCost(artifact, costs)
+                            lastPower = &power
                         }
                     } else {
                         if selectCount < 4 {
@@ -260,7 +526,8 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
                             groupSelect = i
                             artifact.AddPower(power)
                             artifact.Name = getName(artifact, *customName)
-                            lastPower = power
+                            artifact.Cost = calculateCost(artifact, costs)
+                            lastPower = &power
                         } else {
                             ui.AddElement(uilib.MakeErrorElement(ui, cache, imageCache, "Only four powers may be enchanted into an item", func(){}))
                         }
@@ -277,9 +544,9 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
                     }
 
                     if groupRight {
-                        powerFont.PrintRight(screen, float64(rect.Max.X), float64(rect.Min.Y), 1, scale, power.String())
+                        powerFont.PrintRight(screen, float64(rect.Max.X), float64(rect.Min.Y), 1, scale, power.Name)
                     } else {
-                        powerFont.Print(screen, float64(rect.Min.X), float64(rect.Min.Y), 1, scale, power.String())
+                        powerFont.Print(screen, float64(rect.Min.X), float64(rect.Min.Y), 1, scale, power.Name)
                     }
                 },
             })
@@ -334,483 +601,6 @@ func makeFonts(cache *lbx.LbxCache) (*font.Font, *font.Font, *font.Font) {
     return powerFont, powerFontWhite, nameFont
 }
 
-func getSwordPowers(creationType CreationScreen) [][]Power {
-    switch creationType {
-        case CreationCreateArtifact: return [][]Power{
-            []Power{
-                &PowerAttack{Amount: 1},
-                &PowerAttack{Amount: 2},
-                &PowerAttack{Amount: 3},
-            },
-            []Power{
-                &PowerDefense{Amount: 1},
-                &PowerDefense{Amount: 2},
-                &PowerDefense{Amount: 3},
-            },
-            []Power{
-                &PowerToHit{Amount: 1},
-                &PowerToHit{Amount: 2},
-                &PowerToHit{Amount: 3},
-            },
-            []Power{
-                &PowerSpellSkill{Amount: 5},
-                &PowerSpellSkill{Amount: 10},
-            },
-        }
-        case CreationEnchantItem: return [][]Power {
-            []Power{
-                &PowerAttack{Amount: 1},
-                &PowerAttack{Amount: 2},
-                &PowerAttack{Amount: 3},
-            },
-            []Power{
-                &PowerDefense{Amount: 1},
-                &PowerDefense{Amount: 2},
-                &PowerDefense{Amount: 3},
-            },
-            []Power{
-                &PowerSpellSkill{Amount: 5},
-            },
-        }
-    }
-
-    return nil
-}
-
-func getMacePowers(creationType CreationScreen) [][]Power {
-    switch creationType {
-        case CreationCreateArtifact: return [][]Power{
-            []Power{
-                &PowerAttack{Amount: 1},
-                &PowerAttack{Amount: 2},
-                &PowerAttack{Amount: 3},
-                &PowerAttack{Amount: 4},
-            },
-            []Power{
-                &PowerDefense{Amount: 1},
-            },
-            []Power{
-                &PowerToHit{Amount: 1},
-                &PowerToHit{Amount: 2},
-                &PowerToHit{Amount: 3},
-            },
-            []Power{
-                &PowerSpellSkill{Amount: 5},
-                &PowerSpellSkill{Amount: 10},
-            },
-        }
-        case CreationEnchantItem: return [][]Power {
-            []Power{
-                &PowerAttack{Amount: 1},
-                &PowerAttack{Amount: 2},
-                &PowerAttack{Amount: 3},
-            },
-            []Power{
-                &PowerDefense{Amount: 1},
-            },
-            []Power{
-                &PowerSpellSkill{Amount: 5},
-            },
-        }
-    }
-
-    return nil
-}
-
-func getAxePowers(creationType CreationScreen) [][]Power {
-    switch creationType {
-        case CreationCreateArtifact: return [][]Power{
-            []Power{
-                &PowerAttack{Amount: 1},
-                &PowerAttack{Amount: 2},
-                &PowerAttack{Amount: 3},
-                &PowerAttack{Amount: 4},
-                &PowerAttack{Amount: 5},
-                &PowerAttack{Amount: 6},
-            },
-            []Power{
-                &PowerToHit{Amount: 1},
-                &PowerToHit{Amount: 2},
-            },
-            []Power{
-                &PowerSpellSkill{Amount: 5},
-                &PowerSpellSkill{Amount: 10},
-            },
-        }
-        case CreationEnchantItem: return [][]Power {
-            []Power{
-                &PowerAttack{Amount: 1},
-                &PowerAttack{Amount: 2},
-                &PowerAttack{Amount: 3},
-            },
-            []Power{
-                &PowerSpellSkill{Amount: 5},
-            },
-        }
-    }
-
-    return nil
-}
-
-func getBowPowers(creationType CreationScreen) [][]Power {
-    switch creationType {
-        case CreationCreateArtifact: return [][]Power{
-            []Power{
-                &PowerAttack{Amount: 1},
-                &PowerAttack{Amount: 2},
-                &PowerAttack{Amount: 3},
-                &PowerAttack{Amount: 4},
-                &PowerAttack{Amount: 5},
-                &PowerAttack{Amount: 6},
-            },
-            []Power{
-                &PowerDefense{Amount: 1},
-                &PowerDefense{Amount: 2},
-                &PowerDefense{Amount: 3},
-            },
-            []Power{
-                &PowerToHit{Amount: 1},
-                &PowerToHit{Amount: 2},
-                &PowerToHit{Amount: 3},
-            },
-            []Power{
-                &PowerSpellSkill{Amount: 5},
-                &PowerSpellSkill{Amount: 10},
-            },
-        }
-        case CreationEnchantItem: return [][]Power{
-            []Power{
-                &PowerAttack{Amount: 1},
-                &PowerAttack{Amount: 2},
-                &PowerAttack{Amount: 3},
-            },
-            []Power{
-                &PowerDefense{Amount: 1},
-                &PowerDefense{Amount: 2},
-                &PowerDefense{Amount: 3},
-            },
-            []Power{
-                &PowerSpellSkill{Amount: 5},
-            },
-        }
-    }
-
-    return nil
-}
-
-func getStaffPowers(creationType CreationScreen) [][]Power {
-    switch creationType {
-        case CreationCreateArtifact: return [][]Power{
-            []Power{
-                &PowerAttack{Amount: 1},
-                &PowerAttack{Amount: 2},
-                &PowerAttack{Amount: 3},
-                &PowerAttack{Amount: 4},
-                &PowerAttack{Amount: 5},
-                &PowerAttack{Amount: 6},
-            },
-            []Power{
-                &PowerDefense{Amount: 1},
-                &PowerDefense{Amount: 2},
-                &PowerDefense{Amount: 3},
-            },
-            []Power{
-                &PowerToHit{Amount: 1},
-                &PowerToHit{Amount: 2},
-                &PowerToHit{Amount: 3},
-            },
-            []Power{
-                &PowerSpellSkill{Amount: 5},
-                &PowerSpellSkill{Amount: 10},
-                &PowerSpellSkill{Amount: 15},
-                &PowerSpellSkill{Amount: 20},
-            },
-            []Power{
-                &PowerSpellSave{Amount: -1},
-                &PowerSpellSave{Amount: -2},
-                &PowerSpellSave{Amount: -3},
-                &PowerSpellSave{Amount: -4},
-            },
-        }
-        case CreationEnchantItem: return [][]Power{
-            []Power{
-                &PowerAttack{Amount: 1},
-                &PowerAttack{Amount: 2},
-                &PowerAttack{Amount: 3},
-            },
-            []Power{
-                &PowerDefense{Amount: 1},
-                &PowerDefense{Amount: 2},
-                &PowerDefense{Amount: 3},
-            },
-            []Power{
-                &PowerSpellSkill{Amount: 5},
-            },
-            []Power{
-                &PowerSpellSave{Amount: -1},
-                &PowerSpellSave{Amount: -2},
-            },
-        }
-    }
-
-    return nil
-}
-
-func getWandPowers(creationType CreationScreen) [][]Power {
-    switch creationType {
-        case CreationCreateArtifact: return [][]Power{
-            []Power{
-                &PowerAttack{Amount: 1},
-                &PowerAttack{Amount: 2},
-            },
-            []Power{
-                &PowerToHit{Amount: 1},
-            },
-            []Power{
-                &PowerSpellSkill{Amount: 5},
-                &PowerSpellSkill{Amount: 10},
-            },
-            []Power{
-                &PowerSpellSave{Amount: -1},
-                &PowerSpellSave{Amount: -2},
-            },
-        }
-        case CreationEnchantItem: return [][]Power{
-            []Power{
-                &PowerAttack{Amount: 1},
-                &PowerAttack{Amount: 2},
-            },
-            []Power{
-                &PowerSpellSkill{Amount: 5},
-            },
-            []Power{
-                &PowerSpellSave{Amount: -1},
-                &PowerSpellSave{Amount: -2},
-            },
-        }
-    }
-
-    return nil
-}
-
-func getMiscPowers(creationType CreationScreen) [][]Power {
-    switch creationType {
-        case CreationCreateArtifact: return [][]Power{
-            []Power{
-                &PowerAttack{Amount: 1},
-                &PowerAttack{Amount: 2},
-                &PowerAttack{Amount: 3},
-                &PowerAttack{Amount: 4},
-            },
-            []Power{
-                &PowerDefense{Amount: 1},
-                &PowerDefense{Amount: 2},
-                &PowerDefense{Amount: 3},
-                &PowerDefense{Amount: 4},
-            },
-            []Power{
-                &PowerToHit{Amount: 1},
-                &PowerToHit{Amount: 2},
-            },
-            []Power{
-                &PowerMovement{Amount: 1},
-                &PowerMovement{Amount: 2},
-                &PowerMovement{Amount: 3},
-            },
-            []Power{
-                &PowerResistance{Amount: 1},
-                &PowerResistance{Amount: 2},
-                &PowerResistance{Amount: 3},
-                &PowerResistance{Amount: 4},
-                &PowerResistance{Amount: 5},
-                &PowerResistance{Amount: 6},
-            },
-            []Power{
-                &PowerSpellSkill{Amount: 5},
-                &PowerSpellSkill{Amount: 10},
-                &PowerSpellSkill{Amount: 15},
-            },
-            []Power{
-                &PowerSpellSave{Amount: -1},
-                &PowerSpellSave{Amount: -2},
-                &PowerSpellSave{Amount: -3},
-                &PowerSpellSave{Amount: -4},
-            },
-        }
-        case CreationEnchantItem: return [][]Power{
-            []Power{
-                &PowerAttack{Amount: 1},
-                &PowerAttack{Amount: 2},
-                &PowerAttack{Amount: 3},
-            },
-            []Power{
-                &PowerDefense{Amount: 1},
-                &PowerDefense{Amount: 2},
-                &PowerDefense{Amount: 3},
-            },
-            []Power{
-                &PowerMovement{Amount: 1},
-                &PowerMovement{Amount: 2},
-            },
-            []Power{
-                &PowerResistance{Amount: 1},
-                &PowerResistance{Amount: 2},
-                &PowerResistance{Amount: 3},
-            },
-            []Power{
-                &PowerSpellSkill{Amount: 5},
-            },
-            []Power{
-                &PowerSpellSave{Amount: -1},
-                &PowerSpellSave{Amount: -2},
-            },
-        }
-    }
-
-    return nil
-}
-
-func getShieldPowers(creationType CreationScreen) [][]Power {
-    switch creationType {
-        case CreationCreateArtifact: return [][]Power{
-            []Power{
-                &PowerDefense{Amount: 1},
-                &PowerDefense{Amount: 2},
-                &PowerDefense{Amount: 3},
-                &PowerDefense{Amount: 4},
-                &PowerDefense{Amount: 5},
-                &PowerDefense{Amount: 6},
-            },
-            []Power{
-                &PowerMovement{Amount: 1},
-                &PowerMovement{Amount: 2},
-                &PowerMovement{Amount: 3},
-                &PowerMovement{Amount: 4},
-            },
-            []Power{
-                &PowerResistance{Amount: 1},
-                &PowerResistance{Amount: 2},
-                &PowerResistance{Amount: 3},
-                &PowerResistance{Amount: 4},
-                &PowerResistance{Amount: 5},
-                &PowerResistance{Amount: 6},
-            },
-        }
-        case CreationEnchantItem: return [][]Power{
-            []Power{
-                &PowerDefense{Amount: 1},
-                &PowerDefense{Amount: 2},
-                &PowerDefense{Amount: 3},
-            },
-            []Power{
-                &PowerMovement{Amount: 1},
-                &PowerMovement{Amount: 2},
-            },
-            []Power{
-                &PowerResistance{Amount: 1},
-                &PowerResistance{Amount: 2},
-                &PowerResistance{Amount: 3},
-            },
-        }
-    }
-
-    return nil
-}
-
-func getChainPowers(creationType CreationScreen) [][]Power {
-    switch creationType {
-        case CreationCreateArtifact: return [][]Power{
-            []Power{
-                &PowerDefense{Amount: 1},
-                &PowerDefense{Amount: 2},
-                &PowerDefense{Amount: 3},
-                &PowerDefense{Amount: 4},
-                &PowerDefense{Amount: 5},
-                &PowerDefense{Amount: 6},
-            },
-            []Power{
-                &PowerMovement{Amount: 1},
-                &PowerMovement{Amount: 2},
-                &PowerMovement{Amount: 3},
-                &PowerMovement{Amount: 4},
-            },
-            []Power{
-                &PowerResistance{Amount: 1},
-                &PowerResistance{Amount: 2},
-                &PowerResistance{Amount: 3},
-                &PowerResistance{Amount: 4},
-                &PowerResistance{Amount: 5},
-                &PowerResistance{Amount: 6},
-            },
-        }
-        case CreationEnchantItem: return [][]Power{
-            []Power{
-                &PowerDefense{Amount: 1},
-                &PowerDefense{Amount: 2},
-                &PowerDefense{Amount: 3},
-            },
-            []Power{
-                &PowerMovement{Amount: 1},
-                &PowerMovement{Amount: 2},
-            },
-            []Power{
-                &PowerResistance{Amount: 1},
-                &PowerResistance{Amount: 2},
-                &PowerResistance{Amount: 3},
-            },
-        }
-    }
-
-    return nil
-}
-
-func getPlatePowers(creationType CreationScreen) [][]Power {
-    switch creationType {
-        case CreationCreateArtifact: return [][]Power{
-            []Power{
-                &PowerDefense{Amount: 1},
-                &PowerDefense{Amount: 2},
-                &PowerDefense{Amount: 3},
-                &PowerDefense{Amount: 4},
-                &PowerDefense{Amount: 5},
-                &PowerDefense{Amount: 6},
-            },
-            []Power{
-                &PowerMovement{Amount: 1},
-                &PowerMovement{Amount: 2},
-                &PowerMovement{Amount: 3},
-                &PowerMovement{Amount: 4},
-            },
-            []Power{
-                &PowerResistance{Amount: 1},
-                &PowerResistance{Amount: 2},
-                &PowerResistance{Amount: 3},
-                &PowerResistance{Amount: 4},
-                &PowerResistance{Amount: 5},
-                &PowerResistance{Amount: 6},
-            },
-        }
-        case CreationEnchantItem: return [][]Power{
-            []Power{
-                &PowerDefense{Amount: 1},
-                &PowerDefense{Amount: 2},
-                &PowerDefense{Amount: 3},
-            },
-            []Power{
-                &PowerMovement{Amount: 1},
-                &PowerMovement{Amount: 2},
-            },
-            []Power{
-                &PowerResistance{Amount: 1},
-                &PowerResistance{Amount: 2},
-                &PowerResistance{Amount: 3},
-            },
-        }
-    }
-
-    return nil
-}
-
 /* returns the artifact that was created and true,
  * otherwise false for cancelled
  */
@@ -847,26 +637,32 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, cr
     powers := make(map[ArtifactType]PowerArtifact)
 
     // manually curry
-    makePowers := func(picLow int, picHigh int, artifactType ArtifactType, groups [][]Power) PowerArtifact {
+    makePowers := func(picLow int, picHigh int, artifactType ArtifactType, powers []Power, costs map[Power]int, compatibilities map[Power]set.Set[ArtifactType]) PowerArtifact {
         var artifact Artifact
         artifact.Type = artifactType
-        elements := makePowersFull(ui, cache, &imageCache, nameFont, powerFont, artifactType, picLow, picHigh, groups, &artifact, &customName)
+        groups := groupPowers(powers, costs, compatibilities, artifactType, creationType)
+        elements := makePowersFull(ui, cache, &imageCache, nameFont, powerFont, picLow, picHigh, groups, costs, &artifact, &customName)
         return PowerArtifact{
             Elements: elements,
             Artifact: &artifact,
         }
     }
 
-    powers[ArtifactTypeSword] = makePowers(0, 8, ArtifactTypeSword, getSwordPowers(creationType))
-    powers[ArtifactTypeMace] = makePowers(9, 19, ArtifactTypeMace, getMacePowers(creationType))
-    powers[ArtifactTypeAxe] = makePowers(20, 28, ArtifactTypeAxe, getAxePowers(creationType))
-    powers[ArtifactTypeBow] = makePowers(29, 37, ArtifactTypeBow, getBowPowers(creationType))
-    powers[ArtifactTypeStaff] = makePowers(38, 46, ArtifactTypeStaff, getStaffPowers(creationType))
-    powers[ArtifactTypeWand] = makePowers(107, 115, ArtifactTypeWand, getWandPowers(creationType))
-    powers[ArtifactTypeMisc] = makePowers(72, 106, ArtifactTypeMisc, getMiscPowers(creationType))
-    powers[ArtifactTypeShield] = makePowers(62, 71, ArtifactTypeShield, getShieldPowers(creationType))
-    powers[ArtifactTypeChain] = makePowers(47, 54, ArtifactTypeChain, getChainPowers(creationType))
-    powers[ArtifactTypePlate] = makePowers(55, 61, ArtifactTypePlate, getPlatePowers(creationType))
+    powerEntries, costs, compatibilities, error := ReadPowers(cache)
+    if error != nil {
+        return nil, true
+    }
+
+    powers[ArtifactTypeSword] = makePowers(0, 8, ArtifactTypeSword, powerEntries, costs, compatibilities)
+    powers[ArtifactTypeMace] = makePowers(9, 19, ArtifactTypeMace, powerEntries, costs, compatibilities)
+    powers[ArtifactTypeAxe] = makePowers(20, 28, ArtifactTypeAxe, powerEntries, costs, compatibilities)
+    powers[ArtifactTypeBow] = makePowers(29, 37, ArtifactTypeBow, powerEntries, costs, compatibilities)
+    powers[ArtifactTypeStaff] = makePowers(38, 46, ArtifactTypeStaff, powerEntries, costs, compatibilities)
+    powers[ArtifactTypeWand] = makePowers(107, 115, ArtifactTypeWand, powerEntries, costs, compatibilities)
+    powers[ArtifactTypeMisc] = makePowers(72, 106, ArtifactTypeMisc, powerEntries, costs, compatibilities)
+    powers[ArtifactTypeShield] = makePowers(62, 71, ArtifactTypeShield, powerEntries, costs, compatibilities)
+    powers[ArtifactTypeChain] = makePowers(47, 54, ArtifactTypeChain, powerEntries, costs, compatibilities)
+    powers[ArtifactTypePlate] = makePowers(55, 61, ArtifactTypePlate,  powerEntries, costs, compatibilities)
 
     updatePowers := func(index ArtifactType){
         for _, each := range powers {
@@ -876,6 +672,7 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, cr
         ui.AddElements(powers[index].Elements)
         currentArtifact = powers[index].Artifact
         currentArtifact.Name = getName(currentArtifact, customName)
+        currentArtifact.Cost = calculateCost(currentArtifact, costs)
     }
 
     var selectedButton *uilib.UIElement
@@ -929,7 +726,7 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, cr
 
     ui.AddElement(&uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            powerFontWhite.Print(screen, 198, 185, 1, ebiten.ColorScale{}, fmt.Sprintf("Cost: %v", currentArtifact.Cost()))
+            powerFontWhite.Print(screen, 198, 185, 1, ebiten.ColorScale{}, fmt.Sprintf("Cost: %v", currentArtifact.Cost))
         },
     })
 
