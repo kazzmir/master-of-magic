@@ -758,14 +758,29 @@ func (mapObject *Map) DrawLayer2(cameraX int, cameraY int, animationCounter uint
     tileWidth := mapObject.TileWidth()
     tileHeight := mapObject.TileHeight()
 
+    /*
     tilesPerRow := mapObject.TilesPerRow(screen.Bounds().Dx())
     tilesPerColumn := mapObject.TilesPerColumn(screen.Bounds().Dy())
+    */
 
     var options ebiten.DrawImageOptions
 
     // then draw all extra nodes on top
-    for x := 0; x < tilesPerRow; x++ {
-        for y := 0; y < tilesPerColumn; y++ {
+    x_loop:
+    for x := 0; x < mapObject.Map.Columns(); x++ {
+        y_loop:
+        for y := 0; y < mapObject.Map.Rows(); y++ {
+            options.GeoM.Reset()
+            options.GeoM.Translate(float64(x * tileWidth), float64(y * tileHeight))
+            options.GeoM.Concat(geom)
+
+            posX, posY := options.GeoM.Apply(0, 0)
+            if int(posX) > screen.Bounds().Max.X {
+                break x_loop
+            }
+            if int(posY) > screen.Bounds().Max.Y {
+                break y_loop
+            }
 
             tileX := mapObject.WrapX(cameraX + x)
             tileY := cameraY + y
@@ -776,8 +791,6 @@ func (mapObject *Map) DrawLayer2(cameraX int, cameraY int, animationCounter uint
 
             extra, ok := mapObject.ExtraMap[image.Pt(tileX, tileY)]
             if ok {
-                options.GeoM = geom
-                options.GeoM.Translate(float64(x * tileWidth), float64(y * tileHeight))
                 extra.DrawLayer2(screen, imageCache, &options, animationCounter, tileWidth, tileHeight)
             }
         }

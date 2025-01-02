@@ -2046,11 +2046,7 @@ func (game *Game) RefreshUI() {
     }
 }
 
-func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Player) {
-    // log.Printf("Game.Update")
-    keys := make([]ebiten.Key, 0)
-    keys = inpututil.AppendJustPressedKeys(keys)
-
+func (game *Game) doInputZoom() {
     _, wheelY := ebiten.Wheel()
     if wheelY > 0 {
         wheelY = 1
@@ -2063,6 +2059,14 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
     } else if wheelY < 0 {
         game.OverlandZoom = max(game.OverlandZoom - 1, ZoomMin)
     }
+}
+
+func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Player) {
+    // log.Printf("Game.Update")
+    keys := make([]ebiten.Key, 0)
+    keys = inpututil.AppendJustPressedKeys(keys)
+
+    game.doInputZoom()
 
     if player.SelectedStack != nil {
         stack := player.SelectedStack

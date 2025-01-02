@@ -296,6 +296,9 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
     moveCamera := image.Pt(game.cameraX, game.cameraY)
     for !quit {
         overworld.Counter += 1
+        game.doInputZoom()
+
+        overworld.Zoom = game.GetZoom()
 
         ui.StandardUpdate()
 
@@ -320,8 +323,8 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
 
         // within the viewable area
         if x < 240 && y > 18 {
-            newX := game.cameraX + x / game.CurrentMap().TileWidth()
-            newY := game.cameraY + y / game.CurrentMap().TileHeight()
+            newX := game.cameraX + int(float64(x) / float64(game.CurrentMap().TileWidth()) / game.GetZoom())
+            newY := game.cameraY + int(float64(y) / float64(game.CurrentMap().TileHeight()) / game.GetZoom())
             newPoint := image.Pt(newX, newY)
 
             // right click should move the camera
