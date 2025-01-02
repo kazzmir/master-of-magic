@@ -220,8 +220,8 @@ func ReadPowers(cache *lbx.LbxCache) ([]Power, map[Power]int, map[Power]set.Set[
 func groupPowers(powers []Power, costs map[Power]int, compatibilities map[Power]set.Set[ArtifactType], artifactType ArtifactType, creationType CreationScreen) [][]Power {
     grouped := make(map[PowerType][]Power)
     for _, power := range powers {
-		artifactTypes := compatibilities[power]
-		cost := costs[power]
+        artifactTypes := compatibilities[power]
+        cost := costs[power]
         allowed := artifactTypes.Contains(artifactType)
         if creationType == CreationEnchantItem {
             allowed = allowed && cost <= CreationScreenCostThreshold

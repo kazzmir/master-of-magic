@@ -129,7 +129,7 @@ type Artifact struct {
     Type ArtifactType
     Image int
     Name string
-	Cost int
+    Cost int
     Powers []Power
     Abilities []data.Ability
 }
