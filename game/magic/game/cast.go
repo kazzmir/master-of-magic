@@ -30,8 +30,10 @@ func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Playe
                 return
             }
 
-            tileX := game.CurrentMap().WrapX(game.cameraX + screenX / game.CurrentMap().TileWidth())
-            tileY := game.cameraY + screenY / game.CurrentMap().TileHeight()
+            realX, realY := game.RealToTile(float64(screenX), float64(screenY))
+
+            tileX := game.CurrentMap().WrapX(game.cameraX + realX)
+            tileY := game.cameraY + realY
             game.CenterCamera(tileX, tileY)
 
             game.doCastEarthLore(yield, player)
@@ -129,6 +131,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
         Fog: fog,
         ShowAnimation: game.State == GameStateUnitMoving,
         FogBlack: game.GetFogImage(),
+        Zoom: game.GetZoom(),
     }
 
     cancelBackground, _ := game.ImageCache.GetImage("main.lbx", 47, 0)
@@ -236,6 +239,8 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
     for !quit {
         overworld.Counter += 1
 
+        game.doInputZoom()
+        overworld.Zoom = game.GetZoom()
         ui.StandardUpdate()
 
         x, y := inputmanager.MousePosition()
@@ -259,8 +264,9 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
 
         // within the viewable area
         if x < 240 && y > 18 {
-            newX := game.cameraX + x / game.CurrentMap().TileWidth()
-            newY := game.cameraY + y / game.CurrentMap().TileHeight()
+            realX, realY := game.RealToTile(float64(x), float64(y))
+            newX := game.cameraX + realX
+            newY := game.cameraY + realY
             newPoint := image.Pt(newX, newY)
 
             // right click should move the camera
