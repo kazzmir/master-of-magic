@@ -4460,10 +4460,15 @@ func (game *Game) DrawGame(screen *ebiten.Image){
         }
     }
 
+    useCounter := game.Counter
+    if game.GetZoom() < 0.9 {
+        useCounter = 1
+    }
+
     overworld := Overworld{
         CameraX: game.cameraX,
         CameraY: game.cameraY,
-        Counter: game.Counter,
+        Counter: useCounter,
         Map: game.CurrentMap(),
         Cities: cities,
         CitiesMiniMap: citiesMiniMap,

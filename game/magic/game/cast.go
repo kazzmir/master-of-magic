@@ -237,7 +237,9 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
 
     moveCamera := image.Pt(game.cameraX, game.cameraY)
     for !quit {
-        overworld.Counter += 1
+        if game.GetZoom() > 0.9 {
+            overworld.Counter += 1
+        }
 
         game.doInputZoom()
         overworld.Zoom = game.GetZoom()
