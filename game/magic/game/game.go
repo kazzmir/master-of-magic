@@ -4155,8 +4155,10 @@ func (overworld *Overworld) DrawFog(screen *ebiten.Image, geom ebiten.GeoM){
     tileWidth := overworld.Map.TileWidth()
     tileHeight := overworld.Map.TileHeight()
 
+    /*
     tilesPerRow := overworld.Map.TilesPerRow(screen.Bounds().Dx())
     tilesPerColumn := overworld.Map.TilesPerColumn(screen.Bounds().Dy())
+    */
     var options ebiten.DrawImageOptions
 
     fog := overworld.Fog
@@ -4203,14 +4205,28 @@ func (overworld *Overworld) DrawFog(screen *ebiten.Image, geom ebiten.GeoM){
     }
 
 
-    for x := 0; x < tilesPerRow; x++ {
-        for y := 0; y < tilesPerColumn; y++ {
+    x_loop:
+    for x := 0; x < overworld.Map.Width(); x++ {
+
+        y_loop:
+        for y := 0; y < overworld.Map.Height(); y++ {
 
             tileX := overworld.Map.WrapX(x + overworld.CameraX)
             tileY := y + overworld.CameraY
 
-            options.GeoM = geom
+            options.GeoM.Reset()
+            // options.GeoM = geom
             options.GeoM.Translate(float64(x * tileWidth), float64(y * tileHeight))
+            options.GeoM.Concat(geom)
+
+            posX, posY := options.GeoM.Apply(0, 0)
+            if int(posX) > screen.Bounds().Max.X {
+                break x_loop
+            }
+
+            if int(posY) > screen.Bounds().Max.Y {
+                break y_loop
+            }
 
             if tileX >= 0 && tileY >= 0 && tileX < len(fog) && tileY < len(fog[tileX]) && fog[tileX][tileY] {
                 n := fogN(tileX, tileY)
