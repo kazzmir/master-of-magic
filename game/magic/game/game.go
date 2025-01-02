@@ -210,8 +210,8 @@ type Game struct {
     Players []*playerlib.Player
     CurrentPlayer int
 
-    // 1 - 200
     OverlandZoom int
+    AnimatedZoom float64
 }
 
 func (game *Game) GetMap(plane data.Plane) *maplib.Map {
@@ -538,6 +538,7 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         TurnNumber: 1,
         CurrentPlayer: -1,
         OverlandZoom: ZoomDefault,
+        AnimatedZoom: 0,
     }
 
     game.HudUI = game.MakeHudUI()
@@ -2057,23 +2058,78 @@ func (game *Game) RealToTile(inX float64, inY float64) (int, int) {
     return outX, outY
 }
 
-func (game *Game) doInputZoom() bool {
-    _, wheelY := ebiten.Wheel()
-    if wheelY > 0 {
-        wheelY = 1
-    } else if wheelY < 0 {
-        wheelY = -1
-    }
+func (game *Game) doInputZoom(yield coroutine.YieldFunc) bool {
+    inputLoop:
+    for {
+        _, wheelY := ebiten.Wheel()
+        if wheelY > 0 {
+            wheelY = 1
+        } else if wheelY < 0 {
+            wheelY = -1
+        }
 
-    if wheelY > 0 {
-        game.OverlandZoom = min(game.OverlandZoom + 1, ZoomMax)
-        return true
-    } else if wheelY < 0 {
-        game.OverlandZoom = max(game.OverlandZoom - 1, ZoomMin)
-        return true
-    }
+        // zoomSpeed := 5
+        zoomSpeed2 := 6
 
-    return false
+        if wheelY > 0 {
+            oldZoom := game.OverlandZoom
+            game.OverlandZoom = min(game.OverlandZoom + 1, ZoomMax)
+            game.AnimatedZoom = float64(oldZoom - game.OverlandZoom)
+
+            if oldZoom != game.OverlandZoom {
+                /*
+                for i := range zoomSpeed {
+                    game.AnimatedZoom = float64(i) / float64(zoomSpeed) - 1.0
+                    yield()
+                }
+                */
+
+                for i := 0; i < 90; i += zoomSpeed2 {
+                    game.AnimatedZoom = math.Sin(float64(i) * math.Pi / 180.0) - 1.0
+                    yield()
+
+                    _, wheelY := ebiten.Wheel()
+                    if wheelY > 0 || wheelY < 0 {
+                        continue inputLoop
+                    }
+
+                }
+
+                game.AnimatedZoom = 0
+            }
+
+            return true
+        } else if wheelY < 0 {
+            oldZoom := game.OverlandZoom
+            game.OverlandZoom = max(game.OverlandZoom - 1, ZoomMin)
+            game.AnimatedZoom = float64(oldZoom - game.OverlandZoom)
+
+            if oldZoom != game.OverlandZoom {
+                /*
+                for i := range zoomSpeed {
+                    game.AnimatedZoom = 1.0 - float64(i) / float64(zoomSpeed)
+                    yield()
+                }
+                */
+
+                for i := 0; i < 90; i += zoomSpeed2 {
+                    game.AnimatedZoom = 1.0 - math.Sin(float64(i) * math.Pi / 180.0)
+                    yield()
+
+                    _, wheelY := ebiten.Wheel()
+                    if wheelY > 0 || wheelY < 0 {
+                        continue inputLoop
+                    }
+                }
+
+                game.AnimatedZoom = 0
+            }
+
+            return true
+        }
+
+        return false
+    }
 }
 
 func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Player) {
@@ -2081,7 +2137,8 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
     keys := make([]ebiten.Key, 0)
     keys = inpututil.AppendJustPressedKeys(keys)
 
-    zoomed := game.doInputZoom()
+    zoomed := game.doInputZoom(yield)
+    _ = zoomed
 
     if player.SelectedStack != nil {
         stack := player.SelectedStack
@@ -2250,7 +2307,7 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
     }
 
     rightClick := inputmanager.RightClick()
-    if rightClick || zoomed {
+    if rightClick /*|| zoomed*/ {
         // mapUse := game.CurrentMap()
         mouseX, mouseY := inputmanager.MousePosition()
 
@@ -2318,6 +2375,19 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
     }
 }
 
+/*
+func (game *Game) UpdateZoom() {
+    epsilon := 0.1
+    if game.AnimatedZoom >= epsilon {
+        game.AnimatedZoom -= epsilon
+    } else if game.AnimatedZoom <= -epsilon {
+        game.AnimatedZoom += epsilon
+    } else {
+        game.AnimatedZoom = 0
+    }
+}
+*/
+
 func (game *Game) Update(yield coroutine.YieldFunc) GameState {
     game.Counter += 1
 
@@ -2326,6 +2396,8 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
         log.Printf("TPS: %v FPS: %v", ebiten.ActualTPS(), ebiten.ActualFPS())
     }
     */
+
+    // game.UpdateZoom()
 
     game.ProcessEvents(yield)
 
@@ -2488,6 +2560,10 @@ func (game *Game) doCityScreen(yield coroutine.YieldFunc, city *citylib.City, pl
 
 func (game *Game) GetZoom() float64 {
     return float64(game.OverlandZoom) / float64(ZoomStep)
+}
+
+func (game *Game) GetAnimatedZoom() float64 {
+    return ((float64(game.OverlandZoom) + game.AnimatedZoom) / float64(ZoomStep))
 }
 
 func (game *Game) confirmMagicNodeEncounter(yield coroutine.YieldFunc, node *maplib.ExtraMagicNode) bool {
@@ -4485,7 +4561,7 @@ func (game *Game) DrawGame(screen *ebiten.Image){
         Fog: fog,
         ShowAnimation: game.State == GameStateUnitMoving,
         FogBlack: game.GetFogImage(),
-        Zoom: game.GetZoom(),
+        Zoom: game.GetAnimatedZoom(),
     }
 
     overworld.DrawOverworld(screen, ebiten.GeoM{})

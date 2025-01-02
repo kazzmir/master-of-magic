@@ -222,6 +222,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
     })
 
     game.Drawer = func(screen *ebiten.Image, game *Game){
+        overworld.Zoom = game.GetAnimatedZoom()
         overworld.DrawOverworld(screen, ebiten.GeoM{})
 
         var miniGeom ebiten.GeoM
@@ -235,19 +236,21 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
         ui.Draw(ui, screen)
     }
 
+    var moveCounter uint64
     moveCamera := image.Pt(game.cameraX, game.cameraY)
     for !quit {
+        moveCounter += 1
         if game.GetZoom() > 0.9 {
             overworld.Counter += 1
         }
 
-        zoomed := game.doInputZoom()
-        overworld.Zoom = game.GetZoom()
+        zoomed := game.doInputZoom(yield)
+        _ = zoomed
         ui.StandardUpdate()
 
         x, y := inputmanager.MousePosition()
 
-        if overworld.Counter % 5 == 0 && (moveCamera.X != game.cameraX || moveCamera.Y != game.cameraY) {
+        if moveCounter % 5 == 0 && (moveCamera.X != game.cameraX || moveCamera.Y != game.cameraY) {
             if moveCamera.X < game.cameraX {
                 game.cameraX -= 1
             } else if moveCamera.X > game.cameraX {
@@ -273,7 +276,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
 
             // right click should move the camera
             rightClick := inputmanager.RightClick()
-            if rightClick || zoomed {
+            if rightClick /*|| zoomed */ {
                 moveCamera = newPoint.Add(image.Pt(-5, -5))
                 if moveCamera.Y < 0 {
                     moveCamera.Y = 0
