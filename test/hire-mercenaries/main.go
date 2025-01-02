@@ -7,7 +7,6 @@ import (
     "os"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
-    "github.com/kazzmir/master-of-magic/game/magic/hero"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     gamelib "github.com/kazzmir/master-of-magic/game/magic/game"
@@ -38,11 +37,10 @@ func NewEngine(scenario int) (*Engine, error) {
     }
     ui.SetElementsFromArray(nil)
 
-    rakir := hero.MakeHero(&units.OverworldUnit{
-                Unit: units.HeroRakir,
-            }, hero.HeroRakir, "Rakir")
+    unit := units.MakeOverworldUnitFromUnit(units.HalflingSpearmen, 0, 0, data.PlaneArcanus, data.BannerGreen, &units.NoExperienceInfo{})
+    unit.Experience = 60
 
-    ui.AddElements(gamelib.MakeHireScreenUI(cache, ui, rakir, 100, func (hired bool){
+    ui.AddElements(gamelib.MakeHireMercenariesScreenUI(cache, ui, unit, 2, 100, func (hired bool){
         log.Printf("hired %v", hired)
     }))
 
