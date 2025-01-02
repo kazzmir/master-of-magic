@@ -1295,13 +1295,18 @@ func createScenario17(cache *lbx.LbxCache) *gamelib.Game {
         Image: 7,
         Type: artifact.ArtifactTypeSword,
         Powers: []artifact.Power{
-            &artifact.PowerAttack{
+            {
+                Type: artifact.PowerTypeAttack,
                 Amount: 1,
+                Name: "+1 Attack",
             },
-            &artifact.PowerDefense{
+            {
+                Type: artifact.PowerTypeDefense,
                 Amount: 2,
+                Name: "+2 Defense",
             },
         },
+        Cost: 250,
     }
 
     player.VaultEquipment[1] = &artifact.Artifact{
@@ -1309,33 +1314,53 @@ func createScenario17(cache *lbx.LbxCache) *gamelib.Game {
         Image: 31,
         Type: artifact.ArtifactTypeBow,
         Powers: []artifact.Power{
-            &artifact.PowerAttack{
+            {
+                Type: artifact.PowerTypeAttack,
                 Amount: 1,
+                Name: "+1 Attack",
             },
-            &artifact.PowerMovement{
+            {
+                Type: artifact.PowerTypeMovement,
                 Amount: 2,
+                Name: "+2 Movement",
             },
         },
+        Cost: 300,
     }
+
+    artifacts, err := artifact.ReadArtifacts(cache)
+    if err != nil {
+		log.Fatalf("Error reading artifacts")
+    }
+    player.VaultEquipment[1] = &artifacts[1]
 
     testArtifact := artifact.Artifact{
         Name: "Sword",
         Image: 5,
         Type: artifact.ArtifactTypeSword,
         Powers: []artifact.Power{
-            &artifact.PowerAttack{
+            {
+                Type: artifact.PowerTypeAttack,
                 Amount: 2,
+                Name: "+2 Attack",
             },
-            &artifact.PowerDefense{
+            {
+                Type: artifact.PowerTypeDefense,
                 Amount: 2,
+                Name: "+2 Defense",
             },
-            &artifact.PowerMovement{
+            {
+                Type: artifact.PowerTypeMovement,
                 Amount: 3,
+                Name: "+3 Movement",
             },
-            &artifact.PowerResistance{
+            {
+                Type: artifact.PowerTypeResistance,
                 Amount: 2,
+                Name: "+2 Resistance",
             },
         },
+        Cost: 1000,
     }
 
     game.Events <- &gamelib.GameEventVault{

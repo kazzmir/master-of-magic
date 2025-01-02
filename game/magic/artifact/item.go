@@ -90,200 +90,46 @@ func (slot ArtifactSlot) CompatibleWith(kind ArtifactType) bool {
     return false
 }
 
-type Power interface {
-    String() string
-    Cost() int
-    GetAmount() int
-}
+type PowerType int
+const (
+    PowerTypeNone PowerType = iota
+    PowerTypeAttack
+    PowerTypeDefense
+    PowerTypeToHit
+    PowerTypeSpellSkill
+    PowerTypeSpellSave
+    PowerTypeMovement
+    PowerTypeResistance
+    PowerTypeSpellCharges
+)
 
-type PowerAttack struct {
-    Amount int
-}
-
-func (p *PowerAttack) GetAmount() int {
-    return p.Amount
-}
-
-func (p *PowerAttack) Cost() int {
-    switch p.Amount {
-        case 1: return 50
-        case 2: return 100
-        case 3: return 200
-        case 4: return 350
-        case 5: return 550
-        case 6: return 800
+func (section PowerType) String() string {
+    switch section {
+        case PowerTypeAttack: return "Attack"
+        case PowerTypeDefense: return "Defense"
+        case PowerTypeToHit: return "To Hit"
+        case PowerTypeSpellSkill: return "Spell Skill"
+        case PowerTypeSpellSave: return "Spell Save"
+        case PowerTypeMovement: return "Movement"
+        case PowerTypeResistance: return "Resistance"
+        case PowerTypeSpellCharges: return "Spell Charges"
     }
 
-    return 800
+    return "unknown"
 }
 
-func (p *PowerAttack) String() string {
-    return fmt.Sprintf("+%v Attack", p.Amount)
-}
-
-type PowerDefense struct {
+type Power struct {
+    Type PowerType
     Amount int
-}
-
-func (p *PowerDefense) GetAmount() int {
-    return p.Amount
-}
-
-func (p *PowerDefense) Cost() int {
-    switch p.Amount {
-        case 1: return 50
-        case 2: return 100
-        case 3: return 200
-        case 4: return 350
-        case 5: return 550
-        case 6: return 800
-    }
-
-    return 800
-}
-
-func (p *PowerDefense) String() string {
-    return fmt.Sprintf("+%v Defense", p.Amount)
-}
-
-type PowerToHit struct {
-    Amount int
-}
-
-func (p *PowerToHit) GetAmount() int {
-    return p.Amount
-}
-
-func (p *PowerToHit) Cost() int {
-    switch p.Amount {
-        case 1: return 400
-        case 2: return 800
-        case 3: return 1200
-    }
-
-    return 1200
-}
-
-func (p *PowerToHit) String() string {
-    return fmt.Sprintf("+%v To Hit", p.Amount)
-}
-
-type PowerSpellSkill struct {
-    Amount int
-}
-
-func (p *PowerSpellSkill) GetAmount() int {
-    return p.Amount
-}
-
-func (p *PowerSpellSkill) Cost() int {
-    switch p.Amount {
-        case 5: return 200
-        case 10: return 400
-        case 15: return 800
-        case 20: return 1600
-    }
-
-    return 1600
-}
-
-func (p *PowerSpellSkill) String() string {
-    return fmt.Sprintf("+%v Spell Skill", p.Amount)
-}
-
-type PowerSpellSave struct {
-    Amount int
-}
-
-func (p *PowerSpellSave) GetAmount() int {
-    return p.Amount
-}
-
-func (p *PowerSpellSave) Cost() int {
-    switch p.Amount {
-        case -1: return 100
-        case -2: return 200
-        case -3: return 400
-        case -4: return 800
-    }
-
-    return 800
-}
-
-func (p *PowerSpellSave) String() string {
-    return fmt.Sprintf("%v Spell Save", p.Amount)
-}
-
-type PowerResistance struct {
-    Amount int
-}
-
-func (p *PowerResistance) GetAmount() int {
-    return p.Amount
-}
-
-func (p *PowerResistance) Cost() int {
-    switch p.Amount {
-        case 1: return 50
-        case 2: return 100
-        case 3: return 200
-        case 4: return 350
-        case 5: return 550
-        case 6: return 800
-    }
-
-    return 800
-}
-
-func (p *PowerResistance) String() string {
-    return fmt.Sprintf("+%v Resistance", p.Amount)
-}
-
-func (p *PowerMovement) Cost() int {
-    switch p.Amount {
-        case 1: return 100
-        case 2: return 200
-        case 3: return 400
-        case 4: return 800
-    }
-
-    return 800
-}
-
-func (p *PowerMovement) GetAmount() int {
-    return p.Amount
-}
-
-type PowerMovement struct {
-    Amount int
-}
-
-func (p *PowerMovement) String() string {
-    return fmt.Sprintf("+%v Movement", p.Amount)
-}
-
-type PowerSpellCharges struct {
+    Name string
     Spell spellbook.Spell
-    Charges int
-}
-
-func (p *PowerSpellCharges) GetAmount() int {
-    return 0
-}
-
-func (p *PowerSpellCharges) Cost() int {
-    // FIXME: depends on the spell and the charges
-    return 0
-}
-
-func (p *PowerSpellCharges) String() string {
-    return "Spell Charges"
 }
 
 type Artifact struct {
     Type ArtifactType
     Image int
     Name string
+    Cost int
     Powers []Power
     Abilities []data.Ability
 }
@@ -312,10 +158,9 @@ func (artifact *Artifact) RemovePower(remove Power) {
     })
 }
 
-func hasPower[T Power](powers []Power) bool {
+func hasPower(powerType PowerType, powers []Power) bool {
     for _, power := range powers {
-        _, ok := power.(T)
-        if ok {
+        if power.Type == powerType {
             return true
         }
     }
@@ -323,12 +168,11 @@ func hasPower[T Power](powers []Power) bool {
     return false
 }
 
-func addPowers[T Power](powers []Power) int {
+func addPowers(powerType PowerType, powers []Power) int {
     amount := 0
     for _, power := range powers {
-        convert, ok := power.(T)
-        if ok {
-            amount += convert.GetAmount()
+        if power.Type == powerType {
+            amount += power.Amount
         }
     }
 
@@ -338,7 +182,7 @@ func addPowers[T Power](powers []Power) int {
 func (artifact *Artifact) MeleeBonus() int {
     switch artifact.Type {
         case ArtifactTypeSword, ArtifactTypeMace, ArtifactTypeAxe, ArtifactTypeMisc:
-            return addPowers[*PowerAttack](artifact.Powers)
+            return addPowers(PowerTypeAttack, artifact.Powers)
         default:
             return 0
     }
@@ -347,7 +191,7 @@ func (artifact *Artifact) MeleeBonus() int {
 func (artifact *Artifact) RangedAttackBonus() int {
     switch artifact.Type {
         case ArtifactTypeBow, ArtifactTypeMisc:
-            return addPowers[*PowerAttack](artifact.Powers)
+            return addPowers(PowerTypeAttack, artifact.Powers)
         default:
             return 0
     }
@@ -356,14 +200,14 @@ func (artifact *Artifact) RangedAttackBonus() int {
 func (artifact *Artifact) MagicAttackBonus() int {
     switch artifact.Type {
         case ArtifactTypeWand, ArtifactTypeStaff, ArtifactTypeMisc:
-            return addPowers[*PowerAttack](artifact.Powers)
+            return addPowers(PowerTypeAttack, artifact.Powers)
         default:
             return 0
     }
 }
 
 func (artifact *Artifact) DefenseBonus() int {
-    base := addPowers[*PowerDefense](artifact.Powers)
+    base := addPowers(PowerTypeDefense, artifact.Powers)
     switch artifact.Type {
         case ArtifactTypeChain:
             base += 1
@@ -375,83 +219,48 @@ func (artifact *Artifact) DefenseBonus() int {
 }
 
 func (artifact *Artifact) HasDefensePower() bool {
-    return hasPower[*PowerDefense](artifact.Powers)
+    return hasPower(PowerTypeDefense, artifact.Powers)
 }
 
 func (artifact *Artifact) HasSpellSavePower() bool {
-    return hasPower[*PowerSpellSave](artifact.Powers)
+    return hasPower(PowerTypeSpellSave, artifact.Powers)
 }
 
 func (artifact *Artifact) HasSpellSkillPower() bool {
-    return hasPower[*PowerSpellSkill](artifact.Powers)
+    return hasPower(PowerTypeSpellSkill, artifact.Powers)
 }
 
 func (artifact *Artifact) HasResistancePower() bool {
-    return hasPower[*PowerResistance](artifact.Powers)
+    return hasPower(PowerTypeResistance, artifact.Powers)
 }
 
 func (artifact *Artifact) HasMovementPower() bool {
-    return hasPower[*PowerMovement](artifact.Powers)
+    return hasPower(PowerTypeMovement, artifact.Powers)
 }
 
 func (artifact *Artifact) HasToHitPower() bool {
-    return hasPower[*PowerToHit](artifact.Powers)
+    return hasPower(PowerTypeToHit, artifact.Powers)
 }
 
 func (artifact *Artifact) ToHitBonus() int {
-    return addPowers[*PowerToHit](artifact.Powers)
+    return addPowers(PowerTypeToHit, artifact.Powers)
 }
 
 func (artifact *Artifact) SpellSkillBonus() int {
-    return addPowers[*PowerSpellSkill](artifact.Powers)
+    return addPowers(PowerTypeSpellSkill, artifact.Powers)
 }
 
 func (artifact *Artifact) SpellSaveBonus() int {
-    return addPowers[*PowerSpellSave](artifact.Powers)
+    return addPowers(PowerTypeSpellSave, artifact.Powers)
 }
 
 func (artifact *Artifact) ResistanceBonus() int {
-    return addPowers[*PowerResistance](artifact.Powers)
+    return addPowers(PowerTypeResistance, artifact.Powers)
 }
 
 func (artifact *Artifact) MovementBonus() int {
-    return addPowers[*PowerMovement](artifact.Powers)
+    return addPowers(PowerTypeMovement, artifact.Powers)
 }
-
-func (artifact *Artifact) Cost() int {
-    base := 0
-    switch artifact.Type {
-        case ArtifactTypeSword: base = 100
-        case ArtifactTypeMace: base = 100
-        case ArtifactTypeAxe: base = 100
-        case ArtifactTypeBow: base = 100
-        case ArtifactTypeStaff: base = 300
-        case ArtifactTypeWand: base = 200
-        case ArtifactTypeMisc: base = 50
-        case ArtifactTypeShield: base = 100
-        case ArtifactTypeChain: base = 100
-        case ArtifactTypePlate: base = 300
-    }
-
-    powerCost := 0
-    spellCost := 0
-    for _, power := range artifact.Powers {
-        spell, isSpell := power.(*PowerSpellCharges)
-        if isSpell {
-            spellCost += spell.Cost()
-        } else {
-            powerCost += power.Cost()
-        }
-    }
-
-    // jewelry costs are 2x
-    if artifact.Type == ArtifactTypeMisc {
-        powerCost *= 2
-    }
-
-    return base + powerCost + spellCost
-}
-
 
 func ReadArtifacts(cache *lbx.LbxCache) ([]Artifact, error) {
     itemData, err := cache.GetLbxFile("itemdata.lbx")
@@ -576,7 +385,7 @@ func ReadArtifacts(cache *lbx.LbxCache) ([]Artifact, error) {
         }
 
         // Cost
-        _, err = lbx.ReadUint16(reader) // TODO: manaCost
+        cost, err := lbx.ReadUint16(reader)
         if err != nil {
             return nil, fmt.Errorf("read error: %v", err)
         }
@@ -588,7 +397,7 @@ func ReadArtifacts(cache *lbx.LbxCache) ([]Artifact, error) {
             return nil, fmt.Errorf("read error: %v", err)
         }
         if attack != 0 {
-            powers = append(powers, &PowerAttack{Amount: int(attack)})
+            powers = append(powers, Power{Type: PowerTypeAttack, Amount: int(attack), Name: fmt.Sprintf("+%v Attack", attack)})
         }
 
         toHit, err := lbx.ReadByte(reader)
@@ -596,7 +405,7 @@ func ReadArtifacts(cache *lbx.LbxCache) ([]Artifact, error) {
             return nil, fmt.Errorf("read error: %v", err)
         }
         if toHit != 0 {
-            powers = append(powers, &PowerToHit{Amount: int(toHit)})
+            powers = append(powers, Power{Type: PowerTypeToHit, Amount: int(toHit), Name: fmt.Sprintf("+%v To Hit", toHit)})
         }
 
         defense, err := lbx.ReadByte(reader)
@@ -604,7 +413,7 @@ func ReadArtifacts(cache *lbx.LbxCache) ([]Artifact, error) {
             return nil, fmt.Errorf("read error: %v", err)
         }
         if defense != 0 {
-            powers = append(powers, &PowerDefense{Amount: int(defense)})
+            powers = append(powers, Power{Type: PowerTypeDefense, Amount: int(defense), Name: fmt.Sprintf("+%v Defense", defense)})
         }
 
         movement, err := lbx.ReadByte(reader)
@@ -612,7 +421,7 @@ func ReadArtifacts(cache *lbx.LbxCache) ([]Artifact, error) {
             return nil, fmt.Errorf("read error: %v", err)
         }
         if movement != 0 {
-            powers = append(powers, &PowerMovement{Amount: int(movement)})
+            powers = append(powers, Power{Type: PowerTypeMovement, Amount: int(movement), Name: fmt.Sprintf("+%v Movement", movement)})
         }
 
         resistance, err := lbx.ReadByte(reader)
@@ -620,7 +429,7 @@ func ReadArtifacts(cache *lbx.LbxCache) ([]Artifact, error) {
             return nil, fmt.Errorf("read error: %v", err)
         }
         if resistance != 0 {
-            powers = append(powers, &PowerResistance{Amount: int(resistance)})
+            powers = append(powers, Power{Type: PowerTypeResistance, Amount: int(resistance), Name: fmt.Sprintf("+%v Resistance", resistance)})
         }
 
         spellSkill, err := lbx.ReadByte(reader)
@@ -628,7 +437,7 @@ func ReadArtifacts(cache *lbx.LbxCache) ([]Artifact, error) {
             return nil, fmt.Errorf("read error: %v", err)
         }
         if spellSkill != 0 {
-            powers = append(powers, &PowerSpellSkill{Amount: int(spellSkill)})
+            powers = append(powers, Power{Type: PowerTypeSpellSkill, Amount: int(spellSkill), Name: fmt.Sprintf("+%v Spell Skill", spellSkill)})
         }
 
         spellSave, err := lbx.ReadByte(reader)
@@ -636,7 +445,7 @@ func ReadArtifacts(cache *lbx.LbxCache) ([]Artifact, error) {
             return nil, fmt.Errorf("read error: %v", err)
         }
         if spellSave != 0 {
-            powers = append(powers, &PowerSpellSave{Amount: int(spellSave)})
+            powers = append(powers, Power{Type: PowerTypeSpellSave, Amount: int(spellSave), Name: fmt.Sprintf("+%v Spell Save", spellSave)})
         }
 
         // Spells
@@ -711,6 +520,7 @@ func ReadArtifacts(cache *lbx.LbxCache) ([]Artifact, error) {
         artifact := Artifact{
             Name: string(name),
             Image: int(image),
+            Cost: int(cost),
             // Slot: slot,
             Type: artifactType,
             Powers: powers,

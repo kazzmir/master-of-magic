@@ -126,7 +126,7 @@ func (game *Game) showItemPopup(item *artifact.Artifact, cache *lbx.LbxCache, im
             screen.DrawImage(dot, &options)
 
             x, y := options.GeoM.Apply(float64(dot.Bounds().Dx() + 1), 0)
-            vaultFonts.PowerFont.Print(screen, x, y, 1, options.ColorScale, power.String())
+            vaultFonts.PowerFont.Print(screen, x, y, 1, options.ColorScale, power.Name)
         }
     }
 
@@ -254,7 +254,8 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
             LeftClick: func(element *uilib.UIElement){
                 if selectedItem != nil {
 
-                    gainedMana := selectedItem.Cost() / 2
+                    // TODO: Artificer get the full amount
+                    gainedMana := selectedItem.Cost / 2
 
                     yes := func(){
                         player.Mana += gainedMana
