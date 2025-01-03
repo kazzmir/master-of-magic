@@ -1818,14 +1818,14 @@ func (game *Game) doHireHero(yield coroutine.YieldFunc, cost int, hero *herolib.
     }
 
     // unit type
-    playerActiveOnArcanus := false
-    playerActiveOnMyrror := false
+    presentOnArcanus := false
+    presentOnMyrror := false
     for _, city := range player.Cities {
         if city.Plane == data.PlaneArcanus {
-            playerActiveOnArcanus = true
+            presentOnArcanus = true
         }
         if city.Plane == data.PlaneMyrror {
-            playerActiveOnMyrror = true
+            presentOnMyrror = true
         }
     }
 
@@ -1843,24 +1843,24 @@ func (game *Game) doHireHero(yield coroutine.YieldFunc, cost int, hero *herolib.
             continue
         }
 
-        isFromKnownPlane := false
-        if playerActiveOnArcanus {
+        isFromPresentPlane := false
+        if presentOnArcanus {
             for _, race := range data.ArcanianRaces() {
                 if unit.Race == race {
-                    isFromKnownPlane = true
+                    isFromPresentPlane = true
                     break
                 }
             }
         }
-        if !isFromKnownPlane && playerActiveOnMyrror {
+        if !isFromPresentPlane && presentOnMyrror {
             for _, race := range data.MyrranRaces() {
                 if unit.Race == race {
-                    isFromKnownPlane = true
+                    isFromPresentPlane = true
                     break
                 }
             }
         }
-        if !isFromKnownPlane {
+        if !isFromPresentPlane {
             continue
         }
 
