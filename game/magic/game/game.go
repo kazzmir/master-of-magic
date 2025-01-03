@@ -198,6 +198,8 @@ type Game struct {
 
     Heroes map[herolib.HeroType]*herolib.Hero
 
+    ArtifactPool map[string]*artifact.Artifact
+
     MouseData *mouselib.MouseData
 
     Events chan GameEvent
@@ -445,6 +447,21 @@ func createHeroes() map[herolib.HeroType]*herolib.Hero {
     return heroes
 }
 
+func createArtifactPool(lbxCache *lbx.LbxCache) map[string]*artifact.Artifact {
+    artifacts, err := artifact.ReadArtifacts(lbxCache)
+    if err != nil {
+        log.Printf("Error reading artifacts")
+        return nil
+    }
+
+    pool := make(map[string]*artifact.Artifact)
+    for _, artifact := range artifacts {
+        pool[artifact.Name] = &artifact
+    }
+
+    return pool
+}
+
 func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
 
     terrainLbx, err := lbxCache.GetLbxFile("terrain.lbx")
@@ -537,6 +554,7 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         InfoFontYellow: infoFontYellow,
         InfoFontRed: infoFontRed,
         Heroes: createHeroes(),
+        ArtifactPool: createArtifactPool(lbxCache),
         WhiteFont: whiteFont,
         BuildingInfo: buildingInfo,
         TurnNumber: 1,
@@ -1966,13 +1984,11 @@ func (game *Game) doHireMercenaries(yield coroutine.YieldFunc, cost int, units [
         return
     }
 
-    // TODO: Requirements (merchant has level 12 in all realms)
     var artifactCandidates []*artifact.Artifact
-    artifacts := []artifact.Artifact{} // TODO: game.Artifacts?
-    for _, artifact := range artifacts {
-        // TODO: Check availability
+    for _, artifact := range game.ArtifactPool {
         // TODO: Check requirements (merchant has level 12 in all realms)
-        artifactCandidates = append(artifactCandidates, &artifact)
+
+        artifactCandidates = append(artifactCandidates, artifact)
     }
     if len(artifactCandidates) == 0 {
         return
@@ -1995,14 +2011,15 @@ func (game *Game) doHireMercenaries(yield coroutine.YieldFunc, cost int, units [
     }
 }
 
-/* show the merchant popup, and if the user clicks 'buy' then add the artifact to the player's vault
+/* show the merchant popup, and if the user clicks 'buy' then add the artifact to the player's vault and remove it from the pool
  */
- func (game *Game) doMerchant(yield coroutine.YieldFunc, cost int, artifact *artifact.Artifact, player *playerlib.Player) {
+ func (game *Game) doMerchant(yield coroutine.YieldFunc, cost int, artifact *artifact.Artifact) {
     quit := false
 
     result := func(bought bool) {
         quit = true
         if bought {
+            delete(game.ArtifactPool, artifact.Name)
             game.doVault(yield, artifact)
         }
     }
@@ -2103,7 +2120,7 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                     case *GameEventMerchant:
                         merchant := event.(*GameEventMerchant)
                         if merchant.Player.Human {
-                            game.doMerchant(yield, merchant.Cost, merchant.Artifact, merchant.Player)
+                            game.doMerchant(yield, merchant.Cost, merchant.Artifact)
                         }
                     case *GameEventNextTurn:
                         game.doNextTurn(yield)

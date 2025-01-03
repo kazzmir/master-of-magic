@@ -1328,11 +1328,7 @@ func createScenario17(cache *lbx.LbxCache) *gamelib.Game {
         Cost: 300,
     }
 
-    artifacts, err := artifact.ReadArtifacts(cache)
-    if err != nil {
-		log.Fatalf("Error reading artifacts")
-    }
-    player.VaultEquipment[1] = &artifacts[1]
+    player.VaultEquipment[1] = game.ArtifactPool["Pummel Mace"]
 
     testArtifact := artifact.Artifact{
         Name: "Sword",
@@ -2118,39 +2114,12 @@ func createScenario25(cache *lbx.LbxCache) *gamelib.Game {
     }, false)
     enemy.AddUnit(units.MakeOverworldUnitFromUnit(units.KlackonSpearmen, x + 1, y + 1, data.PlaneArcanus, enemy.Wizard.Banner, nil))
 
-    artifact := &artifact.Artifact{
-        Name: "Excalibur",
-        Image: 7,
-        Type: artifact.ArtifactTypeSword,
-        Powers: []artifact.Power{
-            {
-                Type: artifact.PowerTypeAttack,
-                Amount: 1,
-                Name: "+3 Attack",
-            },
-            {
-                Type: artifact.PowerTypeDefense,
-                Amount: 2,
-                Name: "+2 Defense",
-            },
-            {
-                Type: artifact.PowerTypeSpellSkill,
-                Amount: 2,
-                Name: "+2 Spell Skill",
-            },
-            {
-                Type: artifact.PowerTypeSpellSave,
-                Amount: 2,
-                Name: "+2 Spell Save",
-            },
-        },
-        Cost: 250,
-    }
+    artifact := game.ArtifactPool["Pummel Mace"]
 
     game.Events <- &gamelib.GameEventMerchant{
         Player: player,
         Artifact: artifact,
-        Cost: 1000,
+        Cost: artifact.Cost,
     }
 
     return game
