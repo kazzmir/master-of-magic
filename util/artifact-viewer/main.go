@@ -117,9 +117,9 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
         widget.ListOpts.ContainerOpts(widget.ContainerOpts.WidgetOpts(
             widget.WidgetOpts.LayoutData(widget.RowLayoutData{
-                MaxHeight: 300,
+                MaxHeight: 850,
             }),
-            widget.WidgetOpts.MinSize(0, 300),
+            widget.WidgetOpts.MinSize(0, 850),
         )),
 
         widget.ListOpts.SliderOpts(
@@ -196,7 +196,7 @@ func (engine *Engine) Draw(screen *ebiten.Image) {
 }
 
 func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
-    return 1200, 900
+    return outsideWidth, outsideHeight
 }
 
 func main(){
