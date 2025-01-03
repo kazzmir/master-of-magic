@@ -3,6 +3,7 @@ package main
 import (
     "log"
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/game/magic/artifact"
 
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -10,12 +11,22 @@ import (
 
 type Engine struct {
     cache *lbx.LbxCache
+    Artifacts []artifact.Artifact
 }
 
-func MakeEngine(cache *lbx.LbxCache) *Engine {
+func MakeEngine(cache *lbx.LbxCache) (*Engine, error) {
+    artifacts, err := artifact.ReadArtifacts(cache)
+
+    if err != nil {
+        return nil, err
+    }
+
+    log.Printf("Loaded %d artifacts", len(artifacts))
+
     return &Engine{
         cache: cache,
-    }
+        Artifacts: artifacts,
+    }, nil
 }
 
 func (engine *Engine) Update() error {
@@ -41,11 +52,14 @@ func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, scre
 func main(){
     cache := lbx.AutoCache()
 
-    engine := MakeEngine(cache)
+    engine, err := MakeEngine(cache)
+    if err != nil {
+        log.Fatalf("Error: %v", err)
+    }
     ebiten.SetWindowSize(1200, 900)
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 
-    err := ebiten.RunGame(engine)
+    err = ebiten.RunGame(engine)
     if err != nil {
         log.Printf("Error: %v", err)
     }
