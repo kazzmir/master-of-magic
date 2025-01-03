@@ -72,6 +72,12 @@ type CatchmentProvider interface {
 
 const MAX_CITY_CITIZENS = 25
 
+type Enchantment struct {
+    Enchantment data.CityEnchantment
+    // this keeps track of the owning wizard by implicitly associating a banner to the wizard that cast it
+    Owner data.BannerType
+}
+
 type City struct {
     Population int
     Farmers int
@@ -87,7 +93,7 @@ type City struct {
     Banner data.BannerType
     Buildings *set.Set[buildinglib.Building]
 
-    Enchantments *set.Set[data.CityEnchantment]
+    Enchantments *set.Set[Enchantment]
 
     CatchmentProvider CatchmentProvider
 
@@ -112,7 +118,7 @@ func MakeCity(name string, x int, y int, race data.Race, banner data.BannerType,
         Banner: banner,
         Race: race,
         Buildings: set.MakeSet[buildinglib.Building](),
-        Enchantments: set.MakeSet[data.CityEnchantment](),
+        Enchantments: set.MakeSet[Enchantment](),
         TaxRate: taxRate,
         CatchmentProvider: catchmentProvider,
         BuildingInfo: buildingInfo,
@@ -167,20 +173,38 @@ func (city *City) ProducingString() string {
     return ""
 }
 
-func (city *City) AddEnchantment(enchantment data.CityEnchantment) {
-    city.Enchantments.Insert(enchantment)
+func (city *City) AddEnchantment(enchantment data.CityEnchantment, owner data.BannerType) {
+    city.Enchantments.Insert(Enchantment{
+        Enchantment: enchantment,
+        Owner: owner,
+    })
 }
 
-func (city *City) RemoveEnchantment(enchantment data.CityEnchantment) {
-    city.Enchantments.Remove(enchantment)
+func (city *City) RemoveEnchantment(enchantment data.CityEnchantment, owner data.BannerType) {
+    city.Enchantments.Remove(Enchantment{
+        Enchantment: enchantment,
+        Owner: owner,
+    })
 }
 
 func (city *City) HasWallOfFire() bool {
-    return city.Enchantments.Contains(data.CityEnchantmentWallOfFire)
+    for _, enchantment := range city.Enchantments.Values() {
+        if enchantment.Enchantment == data.CityEnchantmentWallOfFire {
+            return true
+        }
+    }
+
+    return false
 }
 
 func (city *City) HasWallOfDarkness() bool {
-    return city.Enchantments.Contains(data.CityEnchantmentWallOfDarkness)
+    for _, enchantment := range city.Enchantments.Values() {
+        if enchantment.Enchantment == data.CityEnchantmentWallOfDarkness {
+            return true
+        }
+    }
+
+    return false
 }
 
 func (city *City) ProducingTurnsLeft() int {
