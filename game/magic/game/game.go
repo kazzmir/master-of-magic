@@ -1389,8 +1389,8 @@ func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, st
     tileHeight := float64(game.CurrentMap().TileHeight())
 
     convertTileCoordinates := func(x float64, y float64) (float64, float64) {
-        outX := (x - float64(game.cameraX)) * tileWidth
-        outY := (y - float64(game.cameraY)) * tileHeight
+        outX := (x) * tileWidth
+        outY := (y) * tileHeight
         return outX, outY
     }
 
@@ -1403,7 +1403,13 @@ func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, st
 
     boot, _ := game.ImageCache.GetImage("compix.lbx", 72, 0)
 
-    zoom := game.GetZoom()
+    var geom ebiten.GeoM
+
+    cameraX := float64(game.cameraX) - 6.0 / game.GetAnimatedZoom()
+    cameraY := float64(game.cameraY) - 5.5 / game.GetAnimatedZoom()
+
+    geom.Translate(-cameraX * float64(tileWidth), -cameraY * float64(tileHeight))
+    geom.Scale(game.GetAnimatedZoom(), game.GetAnimatedZoom())
 
     game.Drawer = func (screen *ebiten.Image, game *Game){
         drawer(screen, game)
@@ -1415,7 +1421,7 @@ func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, st
             options.GeoM.Translate(x, y)
             options.GeoM.Translate(float64(tileWidth) / 2, float64(tileHeight) / 2)
             options.GeoM.Translate(float64(boot.Bounds().Dx()) / -2, float64(boot.Bounds().Dy()) / -2)
-            options.GeoM.Scale(zoom, zoom)
+            options.GeoM.Concat(geom)
             screen.DrawImage(boot, &options)
         }
 
