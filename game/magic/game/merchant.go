@@ -74,6 +74,7 @@ func MakeMerchantScreenUI(cache *lbx.LbxCache, ui *uilib.UI, artifact *artifact.
         Layer: 1,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             colorScale := ebiten.ColorScale{}
+            colorScale.ScaleAlpha(getAlpha())
             text := fmt.Sprintf("A merchant arrives and offers a magic %v for sale. The price is only %v gold pieces.", artifact.Name, goldToBuy)
             lightFont.PrintWrap(screen, 56, 8, 180, 1, colorScale, text)
         },

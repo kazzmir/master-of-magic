@@ -1986,7 +1986,16 @@ func (game *Game) doHireMercenaries(yield coroutine.YieldFunc, cost int, units [
 
     var artifactCandidates []*artifact.Artifact
     for _, artifact := range game.ArtifactPool {
-        // TODO: Check requirements (merchant has level 12 in all realms)
+        requirementsMet := true
+        for _, requirement := range artifact.Requirements {
+            if requirement.Amount > 12 {
+                requirementsMet = false
+                break
+            }
+        }
+        if !requirementsMet {
+            continue
+        }
 
         artifactCandidates = append(artifactCandidates, artifact)
     }
@@ -4325,6 +4334,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
 
     game.maybeHireHero(player)
     game.maybeHireMercenaries(player)
+    game.maybeBuyFromMerchant(player)
 
     // game.CenterCamera(player.Cities[0].X, player.Cities[0].Y)
     game.DoNextUnit(player)
