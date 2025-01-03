@@ -643,7 +643,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
                     no := func(){
                     }
 
-                    confirmElements := uilib.MakeConfirmDialog(ui, cityScreen.LbxCache, &cityScreen.ImageCache, fmt.Sprintf("Are you sure you want to cancel %v?", enchantment.Enchantment.Name()), yes, no)
+                    confirmElements := uilib.MakeConfirmDialog(ui, cityScreen.LbxCache, &cityScreen.ImageCache, fmt.Sprintf("Do you wish to turn off the %v spell?", enchantment.Enchantment.Name()), yes, no)
                     ui.AddElements(confirmElements)
                 } else {
                     ui.AddElement(uilib.MakeErrorElement(ui, cityScreen.LbxCache, &cityScreen.ImageCache, "You cannot cancel another wizard's enchantment.", func(){}))
