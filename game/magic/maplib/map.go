@@ -567,7 +567,7 @@ func bannerColor(banner data.BannerType) color.RGBA {
     return color.RGBA{R: 0, G: 0, B: 0, A: 255}
 }
 
-func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []MiniMapCity, centerX int, centerY int, fog [][]bool, counter uint64, crosshairs bool){
+func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []MiniMapCity, centerX int, centerY int, zoom float64, fog [][]bool, counter uint64, crosshairs bool){
     if len(mapObject.miniMapPixels) != screen.Bounds().Dx() * screen.Bounds().Dy() * 4 {
         mapObject.miniMapPixels = make([]byte, screen.Bounds().Dx() * screen.Bounds().Dy() * 4)
     }
@@ -657,7 +657,7 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []MiniMapCity, ce
         }
         cursorColor := util.PremultiplyAlpha(color.RGBA{R: 255, G: 255, B: byte(cursorColorBlue), A: 180})
 
-        cursorRadius := 5
+        cursorRadius := int(5.0 / zoom)
         x1 := centerX - cursorRadius - cameraX
         y1 := centerY - cursorRadius - cameraY
         x2 := centerX + cursorRadius - cameraX
@@ -702,16 +702,24 @@ func (mapObject *Map) DrawLayer1(cameraX int, cameraY int, animationCounter uint
     tileWidth := mapObject.TileWidth()
     tileHeight := mapObject.TileHeight()
 
+    /*
     tilesPerRow := mapObject.TilesPerRow(screen.Bounds().Dx())
     tilesPerColumn := mapObject.TilesPerColumn(screen.Bounds().Dy())
+    */
 
     var options ebiten.DrawImageOptions
 
     // draw all tiles first
-    for x := 0; x < tilesPerRow; x++ {
-        for y := 0; y < tilesPerColumn; y++ {
+    x_loop:
+    for x := -mapObject.Map.Columns(); x < mapObject.Map.Columns() * 2; x++ {
+        y_loop:
+        for y := 0; y < mapObject.Map.Rows(); y++ {
+            /*
             tileX := mapObject.WrapX(cameraX + x)
             tileY := cameraY + y
+            */
+            tileX := mapObject.WrapX(x)
+            tileY := y
 
             // for debugging
             // util.DrawRect(screen, image.Rect(x * tileWidth, y * tileHeight, (x + 1) * tileWidth, (y + 1) * tileHeight), color.RGBA{R: 255, G: 0, B: 0, A: 255})
@@ -722,9 +730,20 @@ func (mapObject *Map) DrawLayer1(cameraX int, cameraY int, animationCounter uint
 
             tileImage, err := mapObject.GetTileImage(tileX, tileY, animationCounter)
             if err == nil {
-                options.GeoM = geom
+                options.GeoM.Reset()
+                // options.GeoM = geom
                 // options.GeoM.Reset()
                 options.GeoM.Translate(float64(x * tileWidth), float64(y * tileHeight))
+                options.GeoM.Concat(geom)
+
+                screenX, screenY := options.GeoM.Apply(0, 0)
+                if screenX > float64(screen.Bounds().Max.X) {
+                    break x_loop
+                }
+                if screenY > float64(screen.Bounds().Max.Y) {
+                    break y_loop
+                }
+
                 screen.DrawImage(tileImage, &options)
 
                 extra, ok := mapObject.ExtraMap[image.Pt(tileX, tileY)]
@@ -743,17 +762,32 @@ func (mapObject *Map) DrawLayer2(cameraX int, cameraY int, animationCounter uint
     tileWidth := mapObject.TileWidth()
     tileHeight := mapObject.TileHeight()
 
+    /*
     tilesPerRow := mapObject.TilesPerRow(screen.Bounds().Dx())
     tilesPerColumn := mapObject.TilesPerColumn(screen.Bounds().Dy())
+    */
 
     var options ebiten.DrawImageOptions
 
     // then draw all extra nodes on top
-    for x := 0; x < tilesPerRow; x++ {
-        for y := 0; y < tilesPerColumn; y++ {
+    x_loop:
+    for x := 0; x < mapObject.Map.Columns(); x++ {
+        y_loop:
+        for y := 0; y < mapObject.Map.Rows(); y++ {
+            options.GeoM.Reset()
+            options.GeoM.Translate(float64(x * tileWidth), float64(y * tileHeight))
+            options.GeoM.Concat(geom)
 
-            tileX := mapObject.WrapX(cameraX + x)
-            tileY := cameraY + y
+            posX, posY := options.GeoM.Apply(0, 0)
+            if int(posX) > screen.Bounds().Max.X {
+                break x_loop
+            }
+            if int(posY) > screen.Bounds().Max.Y {
+                break y_loop
+            }
+
+            tileX := mapObject.WrapX(x)
+            tileY := y
 
             if tileX < 0 || tileX >= mapObject.Map.Columns() || tileY < 0 || tileY >= mapObject.Map.Rows() {
                 continue
@@ -761,8 +795,6 @@ func (mapObject *Map) DrawLayer2(cameraX int, cameraY int, animationCounter uint
 
             extra, ok := mapObject.ExtraMap[image.Pt(tileX, tileY)]
             if ok {
-                options.GeoM = geom
-                options.GeoM.Translate(float64(x * tileWidth), float64(y * tileHeight))
                 extra.DrawLayer2(screen, imageCache, &options, animationCounter, tileWidth, tileHeight)
             }
         }

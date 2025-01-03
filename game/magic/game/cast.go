@@ -30,8 +30,12 @@ func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Playe
                 return
             }
 
-            tileX := game.CurrentMap().WrapX(game.cameraX + screenX / game.CurrentMap().TileWidth())
-            tileY := game.cameraY + screenY / game.CurrentMap().TileHeight()
+            tileX, tileY := game.ScreenToTile(float64(screenX), float64(screenY))
+
+            /*
+            tileX := game.CurrentMap().WrapX(game.cameraX + realX)
+            tileY := game.cameraY + realY
+            */
             game.CenterCamera(tileX, tileY)
 
             game.doCastEarthLore(yield, player)
@@ -117,8 +121,8 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
     whiteFont := makeWhiteFont(fonts)
 
     overworld := Overworld{
-        CameraX: game.cameraX,
-        CameraY: game.cameraY,
+        CameraX: float64(game.cameraX),
+        CameraY: float64(game.cameraY),
         Counter: game.Counter,
         Map: game.CurrentMap(),
         Cities: cities,
@@ -129,6 +133,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
         Fog: fog,
         ShowAnimation: game.State == GameStateUnitMoving,
         FogBlack: game.GetFogImage(),
+        Zoom: game.GetZoom(),
     }
 
     cancelBackground, _ := game.ImageCache.GetImage("main.lbx", 47, 0)
@@ -219,6 +224,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
     })
 
     game.Drawer = func(screen *ebiten.Image, game *Game){
+        overworld.Zoom = game.GetAnimatedZoom()
         overworld.DrawOverworld(screen, ebiten.GeoM{})
 
         var miniGeom ebiten.GeoM
@@ -232,15 +238,21 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
         ui.Draw(ui, screen)
     }
 
+    var moveCounter uint64
     moveCamera := image.Pt(game.cameraX, game.cameraY)
     for !quit {
-        overworld.Counter += 1
+        moveCounter += 1
+        if game.GetZoom() > 0.9 {
+            overworld.Counter += 1
+        }
 
+        zoomed := game.doInputZoom(yield)
+        _ = zoomed
         ui.StandardUpdate()
 
         x, y := inputmanager.MousePosition()
 
-        if overworld.Counter % 5 == 0 && (moveCamera.X != game.cameraX || moveCamera.Y != game.cameraY) {
+        if moveCounter % 5 == 0 && (moveCamera.X != game.cameraX || moveCamera.Y != game.cameraY) {
             if moveCamera.X < game.cameraX {
                 game.cameraX -= 1
             } else if moveCamera.X > game.cameraX {
@@ -253,19 +265,22 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                 game.cameraY += 1
             }
 
-            overworld.CameraX = game.cameraX
-            overworld.CameraY = game.cameraY
+            overworld.CameraX = float64(game.cameraX)
+            overworld.CameraY = float64(game.cameraY)
         }
 
         // within the viewable area
         if x < 240 && y > 18 {
-            newX := game.cameraX + x / game.CurrentMap().TileWidth()
-            newY := game.cameraY + y / game.CurrentMap().TileHeight()
+            newX, newY := game.ScreenToTile(float64(x), float64(y))
+            /*
+            newX := game.cameraX + realX
+            newY := game.cameraY + realY
+            */
             newPoint := image.Pt(newX, newY)
 
             // right click should move the camera
             rightClick := inputmanager.RightClick()
-            if rightClick {
+            if rightClick /*|| zoomed */ {
                 moveCamera = newPoint.Add(image.Pt(-5, -5))
                 if moveCamera.Y < 0 {
                     moveCamera.Y = 0

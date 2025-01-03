@@ -173,6 +173,11 @@ const (
     GameStateQuit
 )
 
+const ZoomMin = 3
+const ZoomMax = 10
+const ZoomDefault = 10
+const ZoomStep = 10
+
 type Game struct {
     Cache *lbx.LbxCache
     ImageCache util.ImageCache
@@ -210,6 +215,9 @@ type Game struct {
 
     Players []*playerlib.Player
     CurrentPlayer int
+
+    OverlandZoom int
+    AnimatedZoom float64
 }
 
 func (game *Game) GetMap(plane data.Plane) *maplib.Map {
@@ -266,8 +274,13 @@ func (game *Game) MakeFog() [][]bool {
 }
 
 func (game *Game) CenterCamera(x int, y int){
-    game.cameraX = x - 5
-    game.cameraY = y - 5
+    /*
+    game.cameraX = x - int(5.0 / game.GetZoom())
+    game.cameraY = y - int(5.0 / game.GetZoom())
+    */
+
+    game.cameraX = x
+    game.cameraY = y
 
     /*
     if game.cameraX < 0 {
@@ -535,6 +548,8 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         BuildingInfo: buildingInfo,
         TurnNumber: 1,
         CurrentPlayer: -1,
+        OverlandZoom: ZoomDefault,
+        AnimatedZoom: 0,
     }
 
     game.HudUI = game.MakeHudUI()
@@ -699,7 +714,7 @@ func (game *Game) doCityListView(yield coroutine.YieldFunc) {
     }
 
     drawMinimap := func (screen *ebiten.Image, x int, y int, fog [][]bool, counter uint64){
-        game.CurrentMap().DrawMinimap(screen, citiesMiniMap, x, y, fog, counter, false)
+        game.CurrentMap().DrawMinimap(screen, citiesMiniMap, x, y, 1, fog, counter, false)
     }
 
     var showCity *citylib.City
@@ -746,7 +761,7 @@ func (game *Game) doArmyView(yield coroutine.YieldFunc) {
     }
 
     drawMinimap := func (screen *ebiten.Image, x int, y int, fog [][]bool, counter uint64){
-        game.CurrentMap().DrawMinimap(screen, citiesMiniMap, x, y, fog, counter, false)
+        game.CurrentMap().DrawMinimap(screen, citiesMiniMap, x, y, 1, fog, counter, false)
     }
 
     showVault := func(){
@@ -1380,8 +1395,8 @@ func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, st
     tileHeight := float64(game.CurrentMap().TileHeight())
 
     convertTileCoordinates := func(x float64, y float64) (float64, float64) {
-        outX := (x - float64(game.cameraX)) * tileWidth
-        outY := (y - float64(game.cameraY)) * tileHeight
+        outX := (x) * tileWidth
+        outY := (y) * tileHeight
         return outX, outY
     }
 
@@ -1394,6 +1409,14 @@ func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, st
 
     boot, _ := game.ImageCache.GetImage("compix.lbx", 72, 0)
 
+    var geom ebiten.GeoM
+
+    cameraX := float64(game.cameraX) - 6.0 / game.GetAnimatedZoom()
+    cameraY := float64(game.cameraY) - 5.5 / game.GetAnimatedZoom()
+
+    geom.Translate(-cameraX * float64(tileWidth), -cameraY * float64(tileHeight))
+    geom.Scale(game.GetAnimatedZoom(), game.GetAnimatedZoom())
+
     game.Drawer = func (screen *ebiten.Image, game *Game){
         drawer(screen, game)
 
@@ -1404,6 +1427,7 @@ func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, st
             options.GeoM.Translate(x, y)
             options.GeoM.Translate(float64(tileWidth) / 2, float64(tileHeight) / 2)
             options.GeoM.Translate(float64(boot.Bounds().Dx()) / -2, float64(boot.Bounds().Dy()) / -2)
+            options.GeoM.Concat(geom)
             screen.DrawImage(boot, &options)
         }
 
@@ -2200,10 +2224,98 @@ func (game *Game) RefreshUI() {
     }
 }
 
+// convert real screen coordinates to tile coordinates
+func (game *Game) ScreenToTile(inX float64, inY float64) (int, int) {
+    realX := int(inX / float64(game.CurrentMap().TileWidth()) / game.GetZoom())
+    realY := int(inY / float64(game.CurrentMap().TileHeight()) / game.GetZoom())
+
+    tileX := game.CurrentMap().WrapX(game.cameraX + realX - int(240 / float64(game.CurrentMap().TileWidth()) / game.GetZoom() / 2))
+    tileY := game.cameraY + realY - int(math.Round(float64(data.ScreenHeight) / float64(game.CurrentMap().TileHeight()) / game.GetZoom() / 2))
+
+    return tileX, tileY
+}
+
+func (game *Game) doInputZoom(yield coroutine.YieldFunc) bool {
+    inputLoop:
+    for {
+        _, wheelY := ebiten.Wheel()
+        if wheelY > 0 {
+            wheelY = 1
+        } else if wheelY < 0 {
+            wheelY = -1
+        }
+
+        // zoomSpeed := 5
+        zoomSpeed2 := 7
+
+        if wheelY > 0 {
+            oldZoom := game.OverlandZoom
+            game.OverlandZoom = min(game.OverlandZoom + 1, ZoomMax)
+            game.AnimatedZoom = float64(oldZoom - game.OverlandZoom)
+
+            if oldZoom != game.OverlandZoom {
+                /*
+                for i := range zoomSpeed {
+                    game.AnimatedZoom = float64(i) / float64(zoomSpeed) - 1.0
+                    yield()
+                }
+                */
+
+                for i := 0; i < 90; i += zoomSpeed2 {
+                    game.AnimatedZoom = math.Sin(float64(i) * math.Pi / 180.0) - 1
+                    yield()
+
+                    _, wheelY := ebiten.Wheel()
+                    if wheelY > 0 || wheelY < 0 {
+                        continue inputLoop
+                    }
+
+                }
+
+                game.AnimatedZoom = 0
+            }
+
+            return true
+        } else if wheelY < 0 {
+            oldZoom := game.OverlandZoom
+            game.OverlandZoom = max(game.OverlandZoom - 1, ZoomMin)
+            game.AnimatedZoom = float64(oldZoom - game.OverlandZoom)
+
+            if oldZoom != game.OverlandZoom {
+                /*
+                for i := range zoomSpeed {
+                    game.AnimatedZoom = 1.0 - float64(i) / float64(zoomSpeed)
+                    yield()
+                }
+                */
+
+                for i := 0; i < 90; i += zoomSpeed2 {
+                    game.AnimatedZoom = 1.0 - math.Sin(float64(i) * math.Pi / 180.0)
+                    yield()
+
+                    _, wheelY := ebiten.Wheel()
+                    if wheelY > 0 || wheelY < 0 {
+                        continue inputLoop
+                    }
+                }
+
+                game.AnimatedZoom = 0
+            }
+
+            return true
+        }
+
+        return false
+    }
+}
+
 func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Player) {
     // log.Printf("Game.Update")
     keys := make([]ebiten.Key, 0)
     keys = inpututil.AppendJustPressedKeys(keys)
+
+    zoomed := game.doInputZoom(yield)
+    _ = zoomed
 
     if player.SelectedStack != nil {
         stack := player.SelectedStack
@@ -2235,8 +2347,12 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                 // can only click into the area not hidden by the hud
                 if mouseX < 240 && mouseY > 18 {
                     // log.Printf("Click at %v, %v", mouseX, mouseY)
-                    newX = game.cameraX + mouseX / mapUse.TileWidth()
-                    newY = game.cameraY + mouseY / mapUse.TileHeight()
+                    /*
+                    realX, realY := game.RealToTile(float64(mouseX), float64(mouseY))
+                    newX = game.cameraX + realX
+                    newY = game.cameraY + realY
+                    */
+                    newX, newY = game.ScreenToTile(float64(mouseX), float64(mouseY))
                 }
             }
 
@@ -2371,42 +2487,54 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
     }
 
     rightClick := inputmanager.RightClick()
-    if rightClick {
-        mapUse := game.CurrentMap()
+    if rightClick /*|| zoomed*/ {
+        // mapUse := game.CurrentMap()
         mouseX, mouseY := inputmanager.MousePosition()
 
         // can only click into the area not hidden by the hud
         if mouseX < 240 && mouseY > 18 {
             // log.Printf("Click at %v, %v", mouseX, mouseY)
-            tileX := game.CurrentMap().WrapX(game.cameraX + mouseX / mapUse.TileWidth())
-            tileY := game.cameraY + mouseY / mapUse.TileHeight()
+            // realX, realY := game.RealToTile(float64(mouseX), float64(mouseY))
+            tileX, tileY := game.ScreenToTile(float64(mouseX), float64(mouseY))
+
+            // log.Printf("camera %v, %v, right click at %v, %v", game.cameraX, game.cameraY, realX, realY)
+
+            // log.Printf("height %v tile height %v", data.ScreenHeight, game.CurrentMap().TileHeight())
+
+            /*
+            tileX := game.CurrentMap().WrapX(game.cameraX + realX - int(240 / float64(game.CurrentMap().TileWidth()) / game.GetZoom() / 2))
+            tileY := game.cameraY + realY - int(math.Round(float64(data.ScreenHeight) / float64(game.CurrentMap().TileHeight()) / game.GetZoom() / 2))
+            */
+
+            log.Printf("Click at %v, %v", tileX, tileY)
 
             game.CenterCamera(tileX, tileY)
 
-            city := player.FindCity(tileX, tileY)
-            if city != nil {
-                if city.Outpost {
-                    game.showOutpost(yield, city, player.FindStack(city.X, city.Y), false)
-                } else {
-                    game.doCityScreen(yield, city, player, buildinglib.BuildingNone)
-                }
-                game.RefreshUI()
-            } else {
-                stack := player.FindStack(tileX, tileY)
-                if stack != nil {
-                    player.SelectedStack = stack
+            if rightClick {
+                city := player.FindCity(tileX, tileY)
+                if city != nil {
+                    if city.Outpost {
+                        game.showOutpost(yield, city, player.FindStack(city.X, city.Y), false)
+                    } else {
+                        game.doCityScreen(yield, city, player, buildinglib.BuildingNone)
+                    }
                     game.RefreshUI()
                 } else {
+                    stack := player.FindStack(tileX, tileY)
+                    if stack != nil {
+                        player.SelectedStack = stack
+                        game.RefreshUI()
+                    } else {
+                        for _, otherPlayer := range game.Players {
+                            if otherPlayer == player {
+                                continue
+                            }
 
-                    for _, otherPlayer := range game.Players {
-                        if otherPlayer == player {
-                            continue
-                        }
+                            city := otherPlayer.FindCity(tileX, tileY)
+                            if city != nil {
+                                game.doEnemyCityView(yield, city, otherPlayer)
+                            }
 
-                        city := otherPlayer.FindCity(tileX, tileY)
-                        if city != nil {
-                            game.doEnemyCityView(yield, city, otherPlayer)
-                        } else {
                             enemyStack := otherPlayer.FindStack(tileX, tileY)
                             if enemyStack != nil {
                                 quit := false
@@ -2427,13 +2555,26 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                                 }
                             }
                         }
-                    }
 
+                    }
                 }
             }
         }
     }
 }
+
+/*
+func (game *Game) UpdateZoom() {
+    epsilon := 0.1
+    if game.AnimatedZoom >= epsilon {
+        game.AnimatedZoom -= epsilon
+    } else if game.AnimatedZoom <= -epsilon {
+        game.AnimatedZoom += epsilon
+    } else {
+        game.AnimatedZoom = 0
+    }
+}
+*/
 
 func (game *Game) Update(yield coroutine.YieldFunc) GameState {
     game.Counter += 1
@@ -2443,6 +2584,8 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
         log.Printf("TPS: %v FPS: %v", ebiten.ActualTPS(), ebiten.ActualFPS())
     }
     */
+
+    // game.UpdateZoom()
 
     game.ProcessEvents(yield)
 
@@ -2574,8 +2717,8 @@ func (game *Game) doCityScreen(yield coroutine.YieldFunc, city *citylib.City, pl
     mapUse := game.GetMap(city.Plane)
 
     overworld := Overworld{
-        CameraX: city.X - 2,
-        CameraY: city.Y - 2,
+        CameraX: float64(city.X - 2),
+        CameraY: float64(city.Y - 2),
         Counter: 0,
         Map: mapUse,
         Cities: cities,
@@ -2585,6 +2728,7 @@ func (game *Game) doCityScreen(yield coroutine.YieldFunc, city *citylib.City, pl
         Fog: fog,
         ShowAnimation: false,
         FogBlack: game.GetFogImage(),
+        Zoom: 1,
     }
 
     oldDrawer := game.Drawer
@@ -2600,6 +2744,14 @@ func (game *Game) doCityScreen(yield coroutine.YieldFunc, city *citylib.City, pl
     }
 
     game.Drawer = oldDrawer
+}
+
+func (game *Game) GetZoom() float64 {
+    return float64(game.OverlandZoom) / float64(ZoomStep)
+}
+
+func (game *Game) GetAnimatedZoom() float64 {
+    return ((float64(game.OverlandZoom) + game.AnimatedZoom) / float64(ZoomStep))
 }
 
 func (game *Game) confirmMagicNodeEncounter(yield coroutine.YieldFunc, node *maplib.ExtraMagicNode) bool {
@@ -4292,8 +4444,10 @@ func (overworld *Overworld) DrawFog(screen *ebiten.Image, geom ebiten.GeoM){
     tileWidth := overworld.Map.TileWidth()
     tileHeight := overworld.Map.TileHeight()
 
+    /*
     tilesPerRow := overworld.Map.TilesPerRow(screen.Bounds().Dx())
     tilesPerColumn := overworld.Map.TilesPerColumn(screen.Bounds().Dy())
+    */
     var options ebiten.DrawImageOptions
 
     fog := overworld.Fog
@@ -4340,14 +4494,28 @@ func (overworld *Overworld) DrawFog(screen *ebiten.Image, geom ebiten.GeoM){
     }
 
 
-    for x := 0; x < tilesPerRow; x++ {
-        for y := 0; y < tilesPerColumn; y++ {
+    x_loop:
+    for x := 0; x < overworld.Map.Width(); x++ {
 
-            tileX := overworld.Map.WrapX(x + overworld.CameraX)
-            tileY := y + overworld.CameraY
+        y_loop:
+        for y := 0; y < overworld.Map.Height(); y++ {
 
-            options.GeoM = geom
+            tileX := overworld.Map.WrapX(x + int(overworld.CameraX))
+            tileY := y + int(overworld.CameraY)
+
+            options.GeoM.Reset()
+            // options.GeoM = geom
             options.GeoM.Translate(float64(x * tileWidth), float64(y * tileHeight))
+            options.GeoM.Concat(geom)
+
+            posX, posY := options.GeoM.Apply(0, 0)
+            if int(posX) > screen.Bounds().Max.X {
+                break x_loop
+            }
+
+            if int(posY) > screen.Bounds().Max.Y {
+                break y_loop
+            }
 
             if tileX >= 0 && tileY >= 0 && tileX < len(fog) && tileY < len(fog[tileX]) && fog[tileX][tileY] {
                 n := fogN(tileX, tileY)
@@ -4401,8 +4569,8 @@ func (overworld *Overworld) DrawFog(screen *ebiten.Image, geom ebiten.GeoM){
 }
 
 type Overworld struct {
-    CameraX int
-    CameraY int
+    CameraX float64
+    CameraY float64
     Counter uint64
     Map *maplib.Map
     Cities []*citylib.City
@@ -4414,21 +4582,35 @@ type Overworld struct {
     Fog [][]bool
     ShowAnimation bool
     FogBlack *ebiten.Image
+    Zoom float64
 }
 
 func (overworld *Overworld) DrawMinimap(screen *ebiten.Image){
-    overworld.Map.DrawMinimap(screen, overworld.CitiesMiniMap, overworld.CameraX + 5, overworld.CameraY + 5, overworld.Fog, overworld.Counter, true)
+    overworld.Map.DrawMinimap(screen, overworld.CitiesMiniMap, int(overworld.CameraX + 5), int(overworld.CameraY + 5), overworld.Zoom, overworld.Fog, overworld.Counter, true)
 }
 
 func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM){
-    overworld.Map.DrawLayer1(overworld.CameraX, overworld.CameraY, overworld.Counter / 8, overworld.ImageCache, screen, geom)
+
+    // log.Printf("Overworld camera %v, %v", overworld.CameraX, overworld.CameraY)
+
+    /*
+    deltaX := overworld.CameraX - float64(int(overworld.CameraX))
+    deltaY := overworld.CameraY - float64(int(overworld.CameraY))
+    */
 
     tileWidth := overworld.Map.TileWidth()
     tileHeight := overworld.Map.TileHeight()
 
+    // geom.Translate((1-deltaX) * float64(tileWidth), (1-deltaY) * float64(tileHeight))
+    geom.Translate(-overworld.CameraX * float64(tileWidth), -overworld.CameraY * float64(tileHeight))
+    geom.Scale(overworld.Zoom, overworld.Zoom)
+    // geom.Translate(0, 18)
+
+    overworld.Map.DrawLayer1(int(overworld.CameraX), int(overworld.CameraY), overworld.Counter / 8, overworld.ImageCache, screen, geom)
+
     convertTileCoordinates := func(x int, y int) (int, int) {
-        outX := overworld.Map.WrapX(x - overworld.CameraX) * tileWidth
-        outY := (y - overworld.CameraY) * tileHeight
+        outX := overworld.Map.WrapX(x) * tileWidth
+        outY := y * tileHeight
         return outX, outY
     }
 
@@ -4450,18 +4632,19 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
         if err == nil {
             var options ebiten.DrawImageOptions
             x, y := convertTileCoordinates(city.X, city.Y)
-            options.GeoM = geom
+            // options.GeoM = geom
             // draw the city in the center of the tile
             // first compute center of tile
             options.GeoM.Translate(float64(x + tileWidth / 2.0), float64(y + tileHeight / 2.0))
             // then move the city image so that the center of the image is at the center of the tile
             options.GeoM.Translate(float64(-cityPic.Bounds().Dx()) / 2.0, float64(-cityPic.Bounds().Dy()) / 2.0)
+            options.GeoM.Concat(geom)
             screen.DrawImage(cityPic, &options)
 
             /*
             tx, ty := options.GeoM.Apply(float64(0), float64(0))
             vector.StrokeRect(screen, float32(tx), float32(ty), float32(cityPic.Bounds().Dx()), float32(cityPic.Bounds().Dy()), 1, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, true)
-            vector.DrawFilledCircle(screen, float32(x) + float32(tileWidth) / 2, float32(y) + float32(tileHeight) / 2, 2, color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, true)
+            vector.DrawFilledCircle(screen, float32(tx) + float32(tileWidth) / 2, float32(ty) + float32(tileHeight) / 2, 2, color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, true)
             */
         }
     }
@@ -4485,9 +4668,10 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
 
         if doDraw {
             var options ebiten.DrawImageOptions
-            options.GeoM = geom
+            // options.GeoM = geom
             x, y := convertTileCoordinates(stack.X(), stack.Y())
             options.GeoM.Translate(float64(x) + stack.OffsetX() * float64(tileWidth), float64(y) + stack.OffsetY() * float64(tileHeight))
+            options.GeoM.Concat(geom)
 
             leader := stack.Leader()
 
@@ -4510,10 +4694,10 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
         }
     }
 
-    overworld.Map.DrawLayer2(overworld.CameraX, overworld.CameraY, overworld.Counter / 8, overworld.ImageCache, screen, geom)
+    overworld.Map.DrawLayer2(int(overworld.CameraX), int(overworld.CameraY), overworld.Counter / 8, overworld.ImageCache, screen, geom)
 
     if overworld.Fog != nil {
-        overworld.DrawFog(screen, geom)
+        // overworld.DrawFog(screen, geom)
     }
 }
 
@@ -4557,10 +4741,15 @@ func (game *Game) DrawGame(screen *ebiten.Image){
         }
     }
 
+    useCounter := game.Counter
+    if game.GetZoom() < 0.9 {
+        useCounter = 1
+    }
+
     overworld := Overworld{
-        CameraX: game.cameraX,
-        CameraY: game.cameraY,
-        Counter: game.Counter,
+        CameraX: float64(game.cameraX) - 6.0 / game.GetAnimatedZoom(),
+        CameraY: float64(game.cameraY) - 5.5 / game.GetAnimatedZoom(),
+        Counter: useCounter,
         Map: game.CurrentMap(),
         Cities: cities,
         CitiesMiniMap: citiesMiniMap,
@@ -4571,6 +4760,7 @@ func (game *Game) DrawGame(screen *ebiten.Image){
         Fog: fog,
         ShowAnimation: game.State == GameStateUnitMoving,
         FogBlack: game.GetFogImage(),
+        Zoom: game.GetAnimatedZoom(),
     }
 
     overworld.DrawOverworld(screen, ebiten.GeoM{})
