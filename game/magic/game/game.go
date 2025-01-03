@@ -2525,7 +2525,6 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                         player.SelectedStack = stack
                         game.RefreshUI()
                     } else {
-
                         for _, otherPlayer := range game.Players {
                             if otherPlayer == player {
                                 continue
