@@ -623,7 +623,9 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
         })
     }
 
-    for i, enchantment := range cityScreen.City.Enchantments.Values() {
+    for i, enchantment := range slices.SortedFunc(slices.Values(cityScreen.City.Enchantments.Values()), func (a citylib.Enchantment, b citylib.Enchantment) int {
+        return cmp.Compare(a.Enchantment.Name(), b.Enchantment.Name())
+    }) {
         useFont := cityScreen.Fonts.BannerFonts[enchantment.Owner]
         x := 140
         y := 51 + i * useFont.Height()
