@@ -104,30 +104,8 @@ func (game *Game) showItemPopup(item *artifact.Artifact, cache *lbx.LbxCache, im
     drawer := func (screen *ebiten.Image){
         var options ebiten.DrawImageOptions
         options.ColorScale.ScaleAlpha(getAlpha())
-        itemBackground, _ := imageCache.GetImage("itemisc.lbx", 25, 0)
-        options.GeoM.Translate(32, 48)
-        screen.DrawImage(itemBackground, &options)
-
-        itemImage, _ := imageCache.GetImage("items.lbx", item.Image, 0)
-        options.GeoM.Translate(10, 8)
-        screen.DrawImage(itemImage, &options)
-
-        x, y := options.GeoM.Apply(float64(itemImage.Bounds().Max.X) + 3, 4)
-
-        vaultFonts.ItemName.Print(screen, x, y, 1, options.ColorScale, item.Name)
-
-        dot, _ := imageCache.GetImage("itemisc.lbx", 26, 0)
-        savedGeom := options.GeoM
-        for i, power := range item.Powers {
-            options.GeoM = savedGeom
-            options.GeoM.Translate(3, 26)
-            options.GeoM.Translate(float64(i / 2 * 80), float64(i % 2 * 13))
-
-            screen.DrawImage(dot, &options)
-
-            x, y := options.GeoM.Apply(float64(dot.Bounds().Dx() + 1), 0)
-            vaultFonts.PowerFont.Print(screen, x, y, 1, options.ColorScale, power.Name)
-        }
+        options.GeoM.Translate(48, 48)
+        artifact.RenderArtifactBox(screen, imageCache, *item, vaultFonts.ItemName, options)
     }
 
     logic := func (yield coroutine.YieldFunc) {

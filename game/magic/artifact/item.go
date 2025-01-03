@@ -125,6 +125,11 @@ type Power struct {
     Spell spellbook.Spell
 }
 
+type Requirement struct {
+    MagicType data.MagicType
+    Amount int
+}
+
 type Artifact struct {
     Type ArtifactType
     Image int
@@ -132,6 +137,7 @@ type Artifact struct {
     Cost int
     Powers []Power
     Abilities []data.Ability
+    Requirements []Requirement
 }
 
 func (artifact *Artifact) HasAbility(ability data.AbilityType) bool {
@@ -369,8 +375,6 @@ func ReadArtifacts(cache *lbx.LbxCache) ([]Artifact, error) {
         if !exists {
             return nil, fmt.Errorf("Invalid slot type %v", slotValue)
         }
-
-        // TODO: use this somehow? seems unnecessary
         _ = slot
 
         // Type
@@ -486,29 +490,45 @@ func ReadArtifacts(cache *lbx.LbxCache) ([]Artifact, error) {
         }
 
         // Requirements
-        _, err = lbx.ReadByte(reader) // TODO: natureRanksNeeded
+        var requirements []Requirement
+        natureRanksNeeded, err := lbx.ReadByte(reader)
         if err != nil {
             return nil, fmt.Errorf("read error: %v", err)
         }
+        if natureRanksNeeded != 0 {
+            requirements = append(requirements, Requirement{MagicType: data.NatureMagic, Amount: int(natureRanksNeeded)})
+        }
 
-        _, err = lbx.ReadByte(reader) // TODO: sorceryRanksNeeded
+        sorceryRanksNeeded, err := lbx.ReadByte(reader)
         if err != nil {
             return nil, fmt.Errorf("read error: %v", err)
         }
+        if sorceryRanksNeeded != 0 {
+            requirements = append(requirements, Requirement{MagicType: data.SorceryMagic, Amount: int(sorceryRanksNeeded)})
+        }
 
-        _, err = lbx.ReadByte(reader) // TODO: chaosRanksNeeded
+        chaosRanksNeeded, err := lbx.ReadByte(reader)
         if err != nil {
             return nil, fmt.Errorf("read error: %v", err)
         }
+        if chaosRanksNeeded != 0 {
+            requirements = append(requirements, Requirement{MagicType: data.ChaosMagic, Amount: int(chaosRanksNeeded)})
+        }
 
-        _, err = lbx.ReadByte(reader) // TODO: lifeRanksNeeded
+        lifeRanksNeeded, err := lbx.ReadByte(reader)
         if err != nil {
             return nil, fmt.Errorf("read error: %v", err)
         }
+        if lifeRanksNeeded != 0 {
+            requirements = append(requirements, Requirement{MagicType: data.LifeMagic, Amount: int(lifeRanksNeeded)})
+        }
 
-        _, err = lbx.ReadByte(reader) // TODO: deathRanksNeeded
+        deathRanksNeeded, err := lbx.ReadByte(reader)
         if err != nil {
             return nil, fmt.Errorf("read error: %v", err)
+        }
+        if deathRanksNeeded != 0 {
+            requirements = append(requirements, Requirement{MagicType: data.DeathMagic, Amount: int(deathRanksNeeded)})
         }
 
         // The last byte seems to be some sort of flag
@@ -521,10 +541,10 @@ func ReadArtifacts(cache *lbx.LbxCache) ([]Artifact, error) {
             Name: string(name),
             Image: int(image),
             Cost: int(cost),
-            // Slot: slot,
             Type: artifactType,
             Powers: powers,
             Abilities: abilities,
+            Requirements: requirements,
         }
         out = append(out, artifact)
     }
