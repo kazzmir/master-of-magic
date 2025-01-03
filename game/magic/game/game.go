@@ -1919,6 +1919,10 @@ func (game *Game) doHireHero(yield coroutine.YieldFunc, cost int, hero *herolib.
 /* show the hire mercenaries popup, and if the user clicks 'hire' then add the units to the player's list of units
  */
 func (game *Game) doHireMercenaries(yield coroutine.YieldFunc, cost int, units []*units.OverworldUnit, player *playerlib.Player) {
+    if len(units) < 1 {
+        return
+    }
+
     quit := false
 
     result := func(hired bool) {
