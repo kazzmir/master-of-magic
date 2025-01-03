@@ -187,9 +187,9 @@ func (city *City) RemoveEnchantment(enchantment data.CityEnchantment, owner data
     })
 }
 
-func (city *City) HasWallOfFire() bool {
+func (city *City) HasEnchantment(check data.CityEnchantment) bool {
     for _, enchantment := range city.Enchantments.Values() {
-        if enchantment.Enchantment == data.CityEnchantmentWallOfFire {
+        if enchantment.Enchantment == check {
             return true
         }
     }
@@ -197,14 +197,12 @@ func (city *City) HasWallOfFire() bool {
     return false
 }
 
-func (city *City) HasWallOfDarkness() bool {
-    for _, enchantment := range city.Enchantments.Values() {
-        if enchantment.Enchantment == data.CityEnchantmentWallOfDarkness {
-            return true
-        }
-    }
+func (city *City) HasWallOfFire() bool {
+    return city.HasEnchantment(data.CityEnchantmentWallOfFire)
+}
 
-    return false
+func (city *City) HasWallOfDarkness() bool {
+    return city.HasEnchantment(data.CityEnchantmentWallOfDarkness)
 }
 
 func (city *City) ProducingTurnsLeft() int {

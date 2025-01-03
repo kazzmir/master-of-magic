@@ -105,6 +105,7 @@ type Fonts struct {
     ProducingFont *font.Font
     SmallFont *font.Font
     RubbleFont *font.Font
+    BannerFonts map[data.BannerType]*font.Font
 }
 
 type CityScreen struct {
@@ -220,12 +221,39 @@ func makeFonts(cache *lbx.LbxCache) (*Fonts, error) {
     // FIXME: this font should have a black outline around all the glyphs
     rubbleFont := font.MakeOptimizedFontWithPalette(fonts[1], rubbleFontPalette)
 
+    makeBannerPalette := func(banner data.BannerType) color.Palette {
+        var bannerColor color.RGBA
+
+        switch banner {
+            case data.BannerBlue: bannerColor = color.RGBA{R: 0x00, G: 0x00, B: 0xff, A: 0xff}
+            case data.BannerGreen: bannerColor = color.RGBA{R: 0x00, G: 0xf0, B: 0x00, A: 0xff}
+            case data.BannerPurple: bannerColor = color.RGBA{R: 0x8f, G: 0x30, B: 0xff, A: 0xff}
+            case data.BannerRed: bannerColor = color.RGBA{R: 0xff, G: 0x00, B: 0x00, A: 0xff}
+            case data.BannerYellow: bannerColor = color.RGBA{R: 0xff, G: 0xff, B: 0x00, A: 0xff}
+        }
+
+        return color.Palette{
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0x0},
+            color.RGBA{R: 0, G: 0, B: 0, A: 0x0},
+            bannerColor, bannerColor, bannerColor,
+            bannerColor, bannerColor, bannerColor,
+            bannerColor, bannerColor, bannerColor,
+        }
+    }
+
+    bannerFonts := make(map[data.BannerType]*font.Font)
+
+    for _, banner := range []data.BannerType{data.BannerGreen, data.BannerBlue, data.BannerRed, data.BannerPurple, data.BannerYellow} {
+        bannerFonts[banner] = font.MakeOptimizedFontWithPalette(fonts[0], makeBannerPalette(banner))
+    }
+
     return &Fonts{
         BigFont: bigFont,
         DescriptionFont: descriptionFont,
         ProducingFont: producingFont,
         SmallFont: smallFont,
         RubbleFont: rubbleFont,
+        BannerFonts: bannerFonts,
     }, nil
 }
 
@@ -591,6 +619,17 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(float64(okX), float64(okY))
                 screen.DrawImage(okButton, &options)
+            },
+        })
+    }
+
+    for i, enchantment := range cityScreen.City.Enchantments.Values() {
+        useFont := cityScreen.Fonts.BannerFonts[enchantment.Owner]
+        x := float64(140)
+        y := float64(51 + i * useFont.Height())
+        elements = append(elements, &uilib.UIElement{
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                useFont.Print(screen, x, y, 1, ebiten.ColorScale{}, enchantment.Enchantment.Name())
             },
         })
     }
@@ -1802,7 +1841,18 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
         }
     }
 
-    // FIXME: show enchantments
+    /*
+    for i, enchantment := range city.Enchantments.Values() {
+        log.Printf("Enchantment: %v", enchantment)
+        useFont := fonts.DescriptionFont
+        x, y := options.GeoM.Apply(60, float64(40 + i * useFont.Height()))
+        ui.AddElement(&uilib.UIElement{
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                fonts.DescriptionFont.Print(screen, x, y, 1, ebiten.ColorScale{}, enchantment.Enchantment.Name())
+            },
+        })
+    }
+    */
 
     draw := func(screen *ebiten.Image){
         ui.Draw(ui, screen)
