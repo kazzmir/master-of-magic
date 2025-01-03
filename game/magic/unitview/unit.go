@@ -68,11 +68,16 @@ func renderUpkeep(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitVi
     renderIcons(unitCostMana, smallMana, bigMana)
 }
 
-func RenderUnitInfoNormal(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitView, extraTitle string, descriptionFont *font.Font, smallFont *font.Font, defaultOptions ebiten.DrawImageOptions) {
+func RenderUnitInfoNormal(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitView, extraTitle string, namePrefix string, descriptionFont *font.Font, smallFont *font.Font, defaultOptions ebiten.DrawImageOptions) {
     x, y := defaultOptions.GeoM.Apply(0, 0)
 
+    name := unit.GetName()
+    if namePrefix != "" {
+        name = fmt.Sprintf("%v %v", namePrefix, name)
+    }
+
     if extraTitle != "" {
-        descriptionFont.Print(screen, x, y, 1, defaultOptions.ColorScale, unit.GetName())
+        descriptionFont.Print(screen, x, y, 1, defaultOptions.ColorScale, name)
         y += float64(descriptionFont.Height())
         defaultOptions.GeoM.Translate(0, float64(descriptionFont.Height()))
         descriptionFont.Print(screen, x, y, 1, defaultOptions.ColorScale, "The " + extraTitle)
@@ -80,7 +85,7 @@ func RenderUnitInfoNormal(screen *ebiten.Image, imageCache *util.ImageCache, uni
         y += float64(descriptionFont.Height())
         defaultOptions.GeoM.Translate(0, float64(descriptionFont.Height()))
     } else {
-        descriptionFont.Print(screen, x, y+2, 1, defaultOptions.ColorScale, unit.GetName())
+        descriptionFont.Print(screen, x, y+2, 1, defaultOptions.ColorScale, name)
         y += 17
         defaultOptions.GeoM.Translate(0, 16)
     }

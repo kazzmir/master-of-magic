@@ -1,21 +1,21 @@
 package game
 
 import (
-    "log"
     "fmt"
     "image/color"
+    "log"
 
-    "github.com/kazzmir/master-of-magic/lib/font"
-    "github.com/kazzmir/master-of-magic/lib/lbx"
+    uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
+    "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/unitview"
     "github.com/kazzmir/master-of-magic/game/magic/util"
-    herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
-    uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
+    "github.com/kazzmir/master-of-magic/lib/font"
+    "github.com/kazzmir/master-of-magic/lib/lbx"
 
     "github.com/hajimehoshi/ebiten/v2"
 )
 
-func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero, goldToHire int, action func(bool)) []*uilib.UIElement {
+func MakeHireMercenariesScreenUI(cache *lbx.LbxCache, ui *uilib.UI, unit *units.OverworldUnit, count int, goldToHire int, action func(bool)) []*uilib.UIElement {
     fontLbx, err := cache.GetLbxFile("fonts.lbx")
     if err != nil {
         log.Printf("Unable to read fonts.lbx: %v", err)
@@ -78,36 +78,24 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
             options.ColorScale.ScaleAlpha(getAlpha())
             screen.DrawImage(background, &options)
 
-            options.GeoM.Translate(9, 7)
-            portraitLbx, portraitIndex := hero.GetPortraitLbxInfo()
-            portrait, err := imageCache.GetImage(portraitLbx, portraitIndex, 0)
-            if err == nil {
-                screen.DrawImage(portrait, &options)
-            }
-
-            // unitview.RenderCombatImage(screen, &imageCache, &hero.Unit.Unit, options)
+            options.GeoM.Translate(24, 28)
+            unitview.RenderCombatImage(screen, &imageCache, unit, options, 0)
 
             options.GeoM.Reset()
             options.GeoM.Translate(0, yTop)
             options.GeoM.Translate(31, 6)
             options.GeoM.Translate(51, 7)
-
-            unitview.RenderUnitInfoNormal(screen, &imageCache, hero, hero.GetTitle(), "", descriptionFont, smallFont, options)
+            unitview.RenderUnitInfoNormal(screen, &imageCache, unit, "", unit.Unit.Race.String(), descriptionFont, smallFont, options)
 
             options.GeoM.Reset()
             options.GeoM.Translate(0, yTop)
             options.GeoM.Translate(31, 6)
             options.GeoM.Translate(10, 50)
-            unitview.RenderUnitInfoStats(screen, &imageCache, hero, 15, descriptionFont, smallFont, options)
-
-            /*
-            options.GeoM.Translate(0, 60)
-            unitview.RenderUnitAbilities(screen, &imageCache, hero, mediumFont, options, true, 0)
-            */
+            unitview.RenderUnitInfoStats(screen, &imageCache, unit, 15, descriptionFont, smallFont, options)
         },
     })
 
-    elements = append(elements, unitview.MakeUnitAbilitiesElements(&imageCache, hero, mediumFont, 40, 124, 1, &getAlpha, true)...)
+    elements = append(elements, unitview.MakeUnitAbilitiesElements(&imageCache, unit, mediumFont, 40, 124, 1, &getAlpha, false)...)
 
     elements = append(elements, &uilib.UIElement{
         Layer: 1,
@@ -122,7 +110,7 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
     })
 
     buttonBackgrounds, _ := imageCache.GetImages("backgrnd.lbx", 24)
-    // hire button
+
     hireRect := util.ImageRect(257, 149 + int(yTop), buttonBackgrounds[0])
     hireIndex := 0
     elements = append(elements, &uilib.UIElement{
@@ -130,22 +118,6 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
         Rect: hireRect,
         LeftClick: func(this *uilib.UIElement){
             hireIndex = 1
-
-            /*
-            var confirmElements []*uilib.UIElement
-
-            yes := func(){
-                ui.RemoveElements(elements)
-                // FIXME: disband unit
-            }
-
-            no := func(){
-            }
-
-            confirmElements = uilib.MakeConfirmDialogWithLayer(ui, cache, &imageCache, 2, fmt.Sprintf("Do you wish to disband the unit of %v?", unit.Unit.Name), yes, no)
-
-            ui.AddElements(confirmElements)
-            */
         },
         LeftClickRelease: func(this *uilib.UIElement){
             hireIndex = 0
@@ -204,7 +176,11 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
             options.ColorScale.ScaleAlpha(getAlpha())
             screen.DrawImage(banner, &options)
 
-            okDismissFont.PrintCenter(screen, 135, 6, 1, options.ColorScale, fmt.Sprintf("Hero for Hire: %v gold", goldToHire))
+            message := fmt.Sprintf("Mercenaries for Hire: %v gold", goldToHire)
+            if count > 1 {
+                message = fmt.Sprintf("%v Mercenaries for Hire: %v gold", count, goldToHire)
+            }
+            okDismissFont.PrintCenter(screen, 135, 6, 1, options.ColorScale, message)
         },
     })
 
