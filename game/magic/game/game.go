@@ -92,6 +92,12 @@ type GameEventHireHero struct {
     Cost int
 }
 
+type GameEventHireMercenaries struct {
+    Units []*units.OverworldUnit
+    Player *playerlib.Player
+    Cost int
+}
+
 type GameEventVault struct {
     CreatedArtifact *artifact.Artifact
 }
@@ -1778,7 +1784,159 @@ func (game *Game) doHireHero(yield coroutine.YieldFunc, cost int, hero *herolib.
         }
     }
 
-    game.HudUI.AddElements(MakeHireScreenUI(game.Cache, game.HudUI, hero, cost, result))
+    game.HudUI.AddElements(MakeHireHeroScreenUI(game.Cache, game.HudUI, hero, cost, result))
+
+    for !quit {
+        game.Counter += 1
+        game.HudUI.StandardUpdate()
+        yield()
+    }
+}
+
+/* random chance to create a hire mercenaries event
+ */
+ func (game *Game) maybeHireMercenaries(player *playerlib.Player) {
+    if game.TurnNumber <= 30 {
+        return
+    }
+
+    fortressCity := player.FindFortressCity()
+    if fortressCity == nil {
+        return  // player is being banished
+    }
+
+    // chance to create an event
+    chance := 1 + player.Fame / 20
+    if player.Wizard.AbilityEnabled(setup.AbilityFamous) {
+        chance *= 2
+    }
+    if chance > 10 {
+        chance = 10
+    }
+    if rand.N(100) >= 10 {
+        return
+    }
+
+    // unit type
+    presentOnArcanus := false
+    presentOnMyrror := false
+    for _, city := range player.Cities {
+        if city.Plane == data.PlaneArcanus {
+            presentOnArcanus = true
+        }
+        if city.Plane == data.PlaneMyrror {
+            presentOnMyrror = true
+        }
+    }
+
+    var unitCandidates []*units.Unit
+    for _, unit := range units.AllUnits {
+        if unit.Race == data.RaceFantastic || unit.Race == data.RaceHero {
+            continue
+        }
+
+        if unit.IsSettlers() {
+            continue
+        }
+
+        if unit.Name == "Trireme" || unit.Name == "Galley" || unit.Name == "Warship" {
+            continue
+        }
+
+        isFromPresentPlane := false
+        if presentOnArcanus {
+            for _, race := range data.ArcanianRaces() {
+                if unit.Race == race {
+                    isFromPresentPlane = true
+                    break
+                }
+            }
+        }
+        if !isFromPresentPlane && presentOnMyrror {
+            for _, race := range data.MyrranRaces() {
+                if unit.Race == race {
+                    isFromPresentPlane = true
+                    break
+                }
+            }
+        }
+        if !isFromPresentPlane {
+            continue
+        }
+
+        unitCandidates = append(unitCandidates, &unit)
+    }
+    if len(unitCandidates) == 0 {
+        return
+    }
+
+    unit := unitCandidates[rand.IntN(len(unitCandidates))]
+
+    // number of units
+    count := 1
+    countRoll := rand.N(100) + player.Fame
+    switch {
+        case countRoll > 90: count = 3
+        case countRoll > 60: count = 2
+    }
+
+    // experience
+    level := 1
+    experience := 20
+    experienceRoll := rand.N(100) + player.Fame
+    switch {
+        case experienceRoll > 90:
+            level = 3
+            experience = 120
+        case experienceRoll > 60:
+            level = 2
+            experience = 60
+    }
+
+    // cost
+    cost := count * unit.ProductionCost * (level + 3) / 2
+    if player.Wizard.AbilityEnabled(setup.AbilityCharismatic) {
+        cost /= 2
+    }
+    if player.Gold < cost {
+        return
+    }
+
+    // create units
+    var overworldUnits []*units.OverworldUnit
+    for i := 0; i < count; i++ {
+        overworldUnit := units.MakeOverworldUnitFromUnit(*unit, fortressCity.X, fortressCity.Y, fortressCity.Plane, player.Wizard.Banner, player.MakeExperienceInfo())
+        overworldUnit.Experience = experience
+        overworldUnits = append(overworldUnits, overworldUnit)
+    }
+
+    select {
+        case game.Events <- &GameEventHireMercenaries{Cost: cost, Units: overworldUnits, Player: player}:
+        default:
+    }
+}
+
+/* show the hire mercenaries popup, and if the user clicks 'hire' then add the units to the player's list of units
+ */
+func (game *Game) doHireMercenaries(yield coroutine.YieldFunc, cost int, units []*units.OverworldUnit, player *playerlib.Player) {
+    if len(units) < 1 {
+        return
+    }
+
+    quit := false
+
+    result := func(hired bool) {
+        quit = true
+        if hired {
+            for _, unit := range units {
+                player.AddUnit(unit)
+            }
+            player.Gold -= cost
+            game.RefreshUI()
+        }
+    }
+
+    game.HudUI.AddElements(MakeHireMercenariesScreenUI(game.Cache, game.HudUI, units[0], len(units), cost, result))
 
     for !quit {
         game.Counter += 1
@@ -1865,6 +2023,11 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         hire := event.(*GameEventHireHero)
                         if hire.Player.Human {
                             game.doHireHero(yield, hire.Cost, hire.Hero, hire.Player)
+                        }
+                    case *GameEventHireMercenaries:
+                        hire := event.(*GameEventHireMercenaries)
+                        if hire.Player.Human {
+                            game.doHireMercenaries(yield, hire.Cost, hire.Units, hire.Player)
                         }
                     case *GameEventNextTurn:
                         game.doNextTurn(yield)
@@ -4068,6 +4231,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
     }
 
     game.maybeHireHero(player)
+    game.maybeHireMercenaries(player)
 
     // game.CenterCamera(player.Cities[0].X, player.Cities[0].Y)
     game.DoNextUnit(player)
