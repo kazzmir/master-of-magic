@@ -101,8 +101,8 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
     whiteFont := makeWhiteFont(fonts)
 
     overworld := Overworld{
-        CameraX: game.cameraX,
-        CameraY: game.cameraY,
+        CameraX: float64(game.cameraX),
+        CameraY: float64(game.cameraY),
         Counter: game.Counter,
         Map: game.CurrentMap(),
         Cities: cities,
@@ -322,16 +322,18 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
                 game.cameraY += 1
             }
 
-            overworld.CameraX = game.cameraX
-            overworld.CameraY = game.cameraY
+            overworld.CameraX = float64(game.cameraX)
+            overworld.CameraY = float64(game.cameraY)
         }
 
         // within the viewable area
         if x < 240 && y > 18 {
-            realX, realY := game.RealToTile(float64(x), float64(y))
+            newX, newY := game.ScreenToTile(float64(x), float64(y))
 
+            /*
             newX := game.cameraX + realX
             newY := game.cameraY + realY
+            */
             newPoint := image.Pt(newX, newY)
 
             // right click should move the camera

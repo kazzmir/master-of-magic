@@ -70,6 +70,11 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
 
     x, y := game.FindValidCityLocation()
 
+    /*
+    x = 20
+    y = 20
+    */
+
     city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, fraction.Zero(), game.BuildingInfo, game.CurrentMap())
     city.Population = 16190
     city.Plane = data.PlaneArcanus
@@ -89,6 +94,8 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
     player.Mana = 26
 
     // game.Map.Map.Terrain[3][6] = terrain.TileNatureForest.Index
+
+    // log.Printf("City at %v, %v", x, y)
 
     player.LiftFog(x, y, 30, data.PlaneArcanus)
 

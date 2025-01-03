@@ -711,11 +711,15 @@ func (mapObject *Map) DrawLayer1(cameraX int, cameraY int, animationCounter uint
 
     // draw all tiles first
     x_loop:
-    for x := 0; x < mapObject.Map.Columns(); x++ {
+    for x := -mapObject.Map.Columns(); x < mapObject.Map.Columns() * 2; x++ {
         y_loop:
         for y := 0; y < mapObject.Map.Rows(); y++ {
+            /*
             tileX := mapObject.WrapX(cameraX + x)
             tileY := cameraY + y
+            */
+            tileX := mapObject.WrapX(x)
+            tileY := y
 
             // for debugging
             // util.DrawRect(screen, image.Rect(x * tileWidth, y * tileHeight, (x + 1) * tileWidth, (y + 1) * tileHeight), color.RGBA{R: 255, G: 0, B: 0, A: 255})
@@ -782,8 +786,8 @@ func (mapObject *Map) DrawLayer2(cameraX int, cameraY int, animationCounter uint
                 break y_loop
             }
 
-            tileX := mapObject.WrapX(cameraX + x)
-            tileY := cameraY + y
+            tileX := mapObject.WrapX(x)
+            tileY := y
 
             if tileX < 0 || tileX >= mapObject.Map.Columns() || tileY < 0 || tileY >= mapObject.Map.Rows() {
                 continue

@@ -134,8 +134,8 @@ func (engine *Engine) Draw(screen *ebiten.Image) {
 
     engine.CityScreen.Draw(screen, func (where *ebiten.Image, geom ebiten.GeoM, counter uint64) {
         overworld := game.Overworld{
-            CameraX: cameraX,
-            CameraY: cameraY,
+            CameraX: float64(cameraX),
+            CameraY: float64(cameraY),
             Map: engine.Map,
             Cities: []*citylib.City{engine.CityScreen.City},
             Stacks: []*playerlib.UnitStack{},

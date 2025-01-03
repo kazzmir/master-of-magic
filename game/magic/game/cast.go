@@ -30,10 +30,12 @@ func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Playe
                 return
             }
 
-            realX, realY := game.RealToTile(float64(screenX), float64(screenY))
+            tileX, tileY := game.ScreenToTile(float64(screenX), float64(screenY))
 
+            /*
             tileX := game.CurrentMap().WrapX(game.cameraX + realX)
             tileY := game.cameraY + realY
+            */
             game.CenterCamera(tileX, tileY)
 
             game.doCastEarthLore(yield, player)
@@ -119,8 +121,8 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
     whiteFont := makeWhiteFont(fonts)
 
     overworld := Overworld{
-        CameraX: game.cameraX,
-        CameraY: game.cameraY,
+        CameraX: float64(game.cameraX),
+        CameraY: float64(game.cameraY),
         Counter: game.Counter,
         Map: game.CurrentMap(),
         Cities: cities,
@@ -263,15 +265,17 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                 game.cameraY += 1
             }
 
-            overworld.CameraX = game.cameraX
-            overworld.CameraY = game.cameraY
+            overworld.CameraX = float64(game.cameraX)
+            overworld.CameraY = float64(game.cameraY)
         }
 
         // within the viewable area
         if x < 240 && y > 18 {
-            realX, realY := game.RealToTile(float64(x), float64(y))
+            newX, newY := game.ScreenToTile(float64(x), float64(y))
+            /*
             newX := game.cameraX + realX
             newY := game.cameraY + realY
+            */
             newPoint := image.Pt(newX, newY)
 
             // right click should move the camera
