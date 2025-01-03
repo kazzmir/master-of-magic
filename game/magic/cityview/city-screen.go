@@ -1864,18 +1864,23 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
         }
     }
 
-    /*
-    for i, enchantment := range city.Enchantments.Values() {
-        log.Printf("Enchantment: %v", enchantment)
-        useFont := fonts.DescriptionFont
-        x, y := options.GeoM.Apply(60, float64(40 + i * useFont.Height()))
+    for i, enchantment := range slices.SortedFunc(slices.Values(city.Enchantments.Values()), func (a citylib.Enchantment, b citylib.Enchantment) int {
+        return cmp.Compare(a.Enchantment.Name(), b.Enchantment.Name())
+    }) {
+        useFont := fonts.BannerFonts[enchantment.Owner]
+        // failsafe, but should never happen
+        if useFont == nil {
+            continue
+        }
+        x, y := options.GeoM.Apply(142, float64(51 + i * useFont.Height()))
         ui.AddElement(&uilib.UIElement{
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                fonts.DescriptionFont.Print(screen, x, y, 1, ebiten.ColorScale{}, enchantment.Enchantment.Name())
+                var scale ebiten.ColorScale
+                scale.ScaleAlpha(getAlpha())
+                useFont.Print(screen, x, y, 1, scale, enchantment.Enchantment.Name())
             },
         })
     }
-    */
 
     draw := func(screen *ebiten.Image){
         ui.Draw(ui, screen)
