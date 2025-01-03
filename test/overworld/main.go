@@ -1632,6 +1632,8 @@ func createScenario20(cache *lbx.LbxCache) *gamelib.Game {
     city2.Buildings.Insert(buildinglib.BuildingSmithy)
     city2.Buildings.Insert(buildinglib.BuildingOracle)
 
+    city2.AddEnchantment(data.CityEnchantmentWallOfFire, enemy.GetBanner())
+
     city2.ResetCitizens(nil)
 
     city2.Farmers = 5
