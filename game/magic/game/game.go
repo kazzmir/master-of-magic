@@ -1894,7 +1894,7 @@ func (game *Game) doHireHero(yield coroutine.YieldFunc, cost int, hero *herolib.
     }
 
     // cost
-    cost := unit.ProductionCost * (level + 3) / 2
+    cost := count * unit.ProductionCost * (level + 3) / 2
     if player.Wizard.AbilityEnabled(setup.AbilityCharismatic) {
         cost /= 2
     }
