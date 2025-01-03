@@ -150,7 +150,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
     itemInfo := widget.NewContainer(
         widget.ContainerOpts.Layout(widget.NewRowLayout(
             widget.RowLayoutOpts.Direction(widget.DirectionVertical),
-            widget.RowLayoutOpts.Spacing(12),
+            widget.RowLayoutOpts.Spacing(4),
             widget.RowLayoutOpts.Padding(padding(5)),
         )),
         widget.ContainerOpts.BackgroundImage(makeNineImage(makeRoundedButtonImage(20, 20, 5, color.NRGBA{R: 128, G: 128, B: 128, A: 255}), 5)),
@@ -176,6 +176,9 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
         itemInfo.AddChild(graphic)
         itemInfo.AddChild(widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Type: %v", useArtifact.Type), face, color.NRGBA{R: 255, G: 255, B: 255, A: 255})))
+        for _, power := range useArtifact.Powers {
+            itemInfo.AddChild(widget.NewText(widget.TextOpts.Text(power.Name, face, color.NRGBA{R: 255, G: 255, B: 255, A: 255})))
+        }
     }
 
     fakeImage := ui_image.NewNineSliceColor(color.NRGBA{R: 32, G: 32, B: 32, A: 255})
