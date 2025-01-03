@@ -1,14 +1,13 @@
-package artifactview
+package artifact
 
 import (
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/game/magic/util"
-    "github.com/kazzmir/master-of-magic/game/magic/artifact"
 
     "github.com/hajimehoshi/ebiten/v2"
 )
 
-func RenderArtifactBox(screen *ebiten.Image, imageCache *util.ImageCache, artifact artifact.Artifact, font *font.Font, options ebiten.DrawImageOptions) {
+func RenderArtifactBox(screen *ebiten.Image, imageCache *util.ImageCache, artifact Artifact, font *font.Font, options ebiten.DrawImageOptions) {
     itemBackground, _ := imageCache.GetImage("itemisc.lbx", 25, 0)
     screen.DrawImage(itemBackground, &options)
 

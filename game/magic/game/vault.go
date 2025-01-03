@@ -10,7 +10,6 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
-    "github.com/kazzmir/master-of-magic/game/magic/artifactview"
     "github.com/kazzmir/master-of-magic/game/magic/unitview"
     "github.com/kazzmir/master-of-magic/game/magic/magicview"
     "github.com/kazzmir/master-of-magic/game/magic/mouse"
@@ -106,7 +105,7 @@ func (game *Game) showItemPopup(item *artifact.Artifact, cache *lbx.LbxCache, im
         var options ebiten.DrawImageOptions
         options.ColorScale.ScaleAlpha(getAlpha())
         options.GeoM.Translate(48, 48)
-        artifactview.RenderArtifactBox(screen, imageCache, *item, vaultFonts.ItemName, options)
+        artifact.RenderArtifactBox(screen, imageCache, *item, vaultFonts.ItemName, options)
     }
 
     logic := func (yield coroutine.YieldFunc) {

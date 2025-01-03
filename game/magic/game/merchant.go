@@ -9,13 +9,12 @@ import (
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
-    "github.com/kazzmir/master-of-magic/game/magic/artifactview"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
 
     "github.com/hajimehoshi/ebiten/v2"
 )
 
-func MakeMerchantScreenUI(cache *lbx.LbxCache, ui *uilib.UI, artifact *artifact.Artifact, goldToBuy int, action func(bool)) []*uilib.UIElement {
+func MakeMerchantScreenUI(cache *lbx.LbxCache, ui *uilib.UI, artifactToBuy *artifact.Artifact, goldToBuy int, action func(bool)) []*uilib.UIElement {
     fontLbx, err := cache.GetLbxFile("fonts.lbx")
     if err != nil {
         log.Printf("Unable to read fonts.lbx: %v", err)
@@ -75,7 +74,7 @@ func MakeMerchantScreenUI(cache *lbx.LbxCache, ui *uilib.UI, artifact *artifact.
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             colorScale := ebiten.ColorScale{}
             colorScale.ScaleAlpha(getAlpha())
-            text := fmt.Sprintf("A merchant arrives and offers a magic %v for sale. The price is only %v gold pieces.", artifact.Name, goldToBuy)
+            text := fmt.Sprintf("A merchant arrives and offers a magic %v for sale. The price is only %v gold pieces.", artifactToBuy.Name, goldToBuy)
             lightFont.PrintWrap(screen, 56, 8, 180, 1, colorScale, text)
         },
     })
@@ -86,7 +85,7 @@ func MakeMerchantScreenUI(cache *lbx.LbxCache, ui *uilib.UI, artifact *artifact.
             var options ebiten.DrawImageOptions
             options.ColorScale.ScaleAlpha(getAlpha())
             options.GeoM.Translate(14, 65)
-            artifactview.RenderArtifactBox(screen, &imageCache, *artifact, darkFont, options)
+            artifact.RenderArtifactBox(screen, &imageCache, *artifactToBuy, darkFont, options)
         },
     })
 
