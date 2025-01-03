@@ -164,6 +164,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
         itemInfo.RemoveChildren()
         itemInfo.AddChild(widget.NewText(widget.TextOpts.Text(useArtifact.Name, face, color.NRGBA{R: 255, G: 255, B: 255, A: 255})))
+        itemInfo.AddChild(widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Cost: %v", useArtifact.Cost), face, color.NRGBA{R: 255, G: 255, B: 255, A: 255})))
 
         graphic := widget.NewGraphic()
         itemImage, err := imageCache.GetImageTransform("items.lbx", useArtifact.Image, 0, "enlarge", enlargeTransform(4))
@@ -178,6 +179,10 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         itemInfo.AddChild(widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Type: %v", useArtifact.Type), face, color.NRGBA{R: 255, G: 255, B: 255, A: 255})))
         for _, power := range useArtifact.Powers {
             itemInfo.AddChild(widget.NewText(widget.TextOpts.Text(power.Name, face, color.NRGBA{R: 255, G: 255, B: 255, A: 255})))
+        }
+
+        for _, ability := range useArtifact.Abilities {
+            itemInfo.AddChild(widget.NewText(widget.TextOpts.Text(ability.Name(), face, color.NRGBA{R: 255, G: 255, B: 255, A: 255})))
         }
     }
 
