@@ -105,6 +105,7 @@ type Fonts struct {
     ProducingFont *font.Font
     SmallFont *font.Font
     RubbleFont *font.Font
+    BannerFonts map[data.BannerType]*font.Font
 }
 
 type CityScreen struct {
@@ -220,12 +221,39 @@ func makeFonts(cache *lbx.LbxCache) (*Fonts, error) {
     // FIXME: this font should have a black outline around all the glyphs
     rubbleFont := font.MakeOptimizedFontWithPalette(fonts[1], rubbleFontPalette)
 
+    makeBannerPalette := func(banner data.BannerType) color.Palette {
+        var bannerColor color.RGBA
+
+        switch banner {
+            case data.BannerBlue: bannerColor = color.RGBA{R: 0x00, G: 0x00, B: 0xff, A: 0xff}
+            case data.BannerGreen: bannerColor = color.RGBA{R: 0x00, G: 0xf0, B: 0x00, A: 0xff}
+            case data.BannerPurple: bannerColor = color.RGBA{R: 0x8f, G: 0x30, B: 0xff, A: 0xff}
+            case data.BannerRed: bannerColor = color.RGBA{R: 0xff, G: 0x00, B: 0x00, A: 0xff}
+            case data.BannerYellow: bannerColor = color.RGBA{R: 0xff, G: 0xff, B: 0x00, A: 0xff}
+        }
+
+        return color.Palette{
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0x0},
+            color.RGBA{R: 0, G: 0, B: 0, A: 0x0},
+            bannerColor, bannerColor, bannerColor,
+            bannerColor, bannerColor, bannerColor,
+            bannerColor, bannerColor, bannerColor,
+        }
+    }
+
+    bannerFonts := make(map[data.BannerType]*font.Font)
+
+    for _, banner := range []data.BannerType{data.BannerGreen, data.BannerBlue, data.BannerRed, data.BannerPurple, data.BannerYellow} {
+        bannerFonts[banner] = font.MakeOptimizedFontWithPalette(fonts[0], makeBannerPalette(banner))
+    }
+
     return &Fonts{
         BigFont: bigFont,
         DescriptionFont: descriptionFont,
         ProducingFont: producingFont,
         SmallFont: smallFont,
         RubbleFont: rubbleFont,
+        BannerFonts: bannerFonts,
     }, nil
 }
 
@@ -594,6 +622,40 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
             },
         })
     }
+
+    // FIXME: what happens where there are too many enchantments such that the text goes beyond the enchantment ui box?
+    for i, enchantment := range slices.SortedFunc(slices.Values(cityScreen.City.Enchantments.Values()), func (a citylib.Enchantment, b citylib.Enchantment) int {
+        return cmp.Compare(a.Enchantment.Name(), b.Enchantment.Name())
+    }) {
+        useFont := cityScreen.Fonts.BannerFonts[enchantment.Owner]
+        x := 140
+        y := 51 + i * useFont.Height()
+        rect := image.Rect(x, y, x + int(useFont.MeasureTextWidth(enchantment.Enchantment.Name(), 1)), y + useFont.Height())
+        elements = append(elements, &uilib.UIElement{
+            Rect: rect,
+            LeftClickRelease: func(element *uilib.UIElement) {
+                if enchantment.Owner == cityScreen.Player.GetBanner() {
+                    yes := func(){
+                        cityScreen.City.RemoveEnchantment(enchantment.Enchantment, enchantment.Owner)
+                        cityScreen.UI = cityScreen.MakeUI(buildinglib.BuildingNone)
+                    }
+
+                    no := func(){
+                    }
+
+                    confirmElements := uilib.MakeConfirmDialog(ui, cityScreen.LbxCache, &cityScreen.ImageCache, fmt.Sprintf("Do you wish to turn off the %v spell?", enchantment.Enchantment.Name()), yes, no)
+                    ui.AddElements(confirmElements)
+                } else {
+                    ui.AddElement(uilib.MakeErrorElement(ui, cityScreen.LbxCache, &cityScreen.ImageCache, "You cannot cancel another wizard's enchantment.", func(){}))
+                }
+            },
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                useFont.Print(screen, float64(rect.Min.X), float64(rect.Min.Y), 1, ebiten.ColorScale{}, enchantment.Enchantment.Name())
+            },
+        })
+    }
+
+    // FIXME: show Nightshade as a city enchantment if a nightshade tile is in the city catchment area and an appropriate building exists
 
     var resourceIcons []*uilib.UIElement
     resetResourceIcons := func(){
@@ -1802,7 +1864,23 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
         }
     }
 
-    // FIXME: show enchantments
+    for i, enchantment := range slices.SortedFunc(slices.Values(city.Enchantments.Values()), func (a citylib.Enchantment, b citylib.Enchantment) int {
+        return cmp.Compare(a.Enchantment.Name(), b.Enchantment.Name())
+    }) {
+        useFont := fonts.BannerFonts[enchantment.Owner]
+        // failsafe, but should never happen
+        if useFont == nil {
+            continue
+        }
+        x, y := options.GeoM.Apply(142, float64(51 + i * useFont.Height()))
+        ui.AddElement(&uilib.UIElement{
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                var scale ebiten.ColorScale
+                scale.ScaleAlpha(getAlpha())
+                useFont.Print(screen, x, y, 1, scale, enchantment.Enchantment.Name())
+            },
+        })
+    }
 
     draw := func(screen *ebiten.Image){
         ui.Draw(ui, screen)
