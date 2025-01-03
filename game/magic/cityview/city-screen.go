@@ -623,6 +623,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
         })
     }
 
+    // FIXME: what happens where there are too many enchantments such that the text goes beyond the enchantment ui box?
     for i, enchantment := range slices.SortedFunc(slices.Values(cityScreen.City.Enchantments.Values()), func (a citylib.Enchantment, b citylib.Enchantment) int {
         return cmp.Compare(a.Enchantment.Name(), b.Enchantment.Name())
     }) {
@@ -653,6 +654,8 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
             },
         })
     }
+
+    // FIXME: show Nightshade as a city enchantment if a nightshade tile is in the city catchment area and an appropriate building exists
 
     var resourceIcons []*uilib.UIElement
     resetResourceIcons := func(){
