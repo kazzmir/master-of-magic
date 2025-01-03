@@ -35,6 +35,7 @@ func NewEngine() (*Engine, error) {
     player := playerlib.Player{
         Wizard: setup.WizardCustom{
             Name: "Billy",
+            Banner: data.BannerRed,
         },
     }
 

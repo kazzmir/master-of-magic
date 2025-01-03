@@ -625,11 +625,29 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
 
     for i, enchantment := range cityScreen.City.Enchantments.Values() {
         useFont := cityScreen.Fonts.BannerFonts[enchantment.Owner]
-        x := float64(140)
-        y := float64(51 + i * useFont.Height())
+        x := 140
+        y := 51 + i * useFont.Height()
+        rect := image.Rect(x, y, x + int(useFont.MeasureTextWidth(enchantment.Enchantment.Name(), 1)), y + useFont.Height())
         elements = append(elements, &uilib.UIElement{
+            Rect: rect,
+            LeftClickRelease: func(element *uilib.UIElement) {
+                if enchantment.Owner == cityScreen.Player.GetBanner() {
+                    yes := func(){
+                        cityScreen.City.RemoveEnchantment(enchantment.Enchantment, enchantment.Owner)
+                        cityScreen.UI = cityScreen.MakeUI(buildinglib.BuildingNone)
+                    }
+
+                    no := func(){
+                    }
+
+                    confirmElements := uilib.MakeConfirmDialog(ui, cityScreen.LbxCache, &cityScreen.ImageCache, fmt.Sprintf("Are you sure you want to cancel %v?", enchantment.Enchantment.Name()), yes, no)
+                    ui.AddElements(confirmElements)
+                } else {
+                    ui.AddElement(uilib.MakeErrorElement(ui, cityScreen.LbxCache, &cityScreen.ImageCache, "You cannot cancel another wizard's enchantment.", func(){}))
+                }
+            },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                useFont.Print(screen, x, y, 1, ebiten.ColorScale{}, enchantment.Enchantment.Name())
+                useFont.Print(screen, float64(rect.Min.X), float64(rect.Min.Y), 1, ebiten.ColorScale{}, enchantment.Enchantment.Name())
             },
         })
     }
