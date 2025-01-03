@@ -3,12 +3,14 @@ package main
 import (
     "fmt"
     "log"
+    "image"
     "image/color"
     "cmp"
     "slices"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
+    "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/util/common"
 
     "github.com/hajimehoshi/ebiten/v2"
@@ -21,6 +23,30 @@ import (
     "github.com/ebitenui/ebitenui/widget"
     ui_image "github.com/ebitenui/ebitenui/image"
 )
+
+func enlargeTransform(factor int) util.ImageTransformFunc {
+    var f util.ImageTransformFunc
+
+    f = func (original *image.Paletted) image.Image {
+        newImage := image.NewPaletted(image.Rect(0, 0, original.Bounds().Dx() * factor, original.Bounds().Dy() * factor), original.Palette)
+
+        for y := 0; y < original.Bounds().Dy(); y++ {
+            for x := 0; x < original.Bounds().Dx(); x++ {
+                colorIndex := original.ColorIndexAt(x, y)
+
+                for dy := 0; dy < factor; dy++ {
+                    for dx := 0; dx < factor; dx++ {
+                        newImage.SetColorIndex(x * factor + dx, y * factor + dy, colorIndex)
+                    }
+                }
+            }
+        }
+
+        return newImage
+    }
+
+    return f
+}
 
 type Engine struct {
     cache *lbx.LbxCache
@@ -107,6 +133,7 @@ func (engine *Engine) GetArtifact(name string) (artifact.Artifact, bool) {
 }
 
 func (engine *Engine) MakeUI() *ebitenui.UI {
+    imageCache := util.MakeImageCache(engine.cache)
     face, _ := loadFont(19)
     backgroundImage := ui_image.NewNineSliceColor(color.NRGBA{R: 32, G: 32, B: 32, A: 128})
 
@@ -137,6 +164,17 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
         itemInfo.RemoveChildren()
         itemInfo.AddChild(widget.NewText(widget.TextOpts.Text(useArtifact.Name, face, color.NRGBA{R: 255, G: 255, B: 255, A: 255})))
+
+        graphic := widget.NewGraphic()
+        itemImage, err := imageCache.GetImageTransform("items.lbx", useArtifact.Image, 0, "enlarge", enlargeTransform(4))
+
+        if err == nil {
+            graphic.Image = itemImage
+        } else {
+            log.Printf("Unable to load artifact image for %v: %v", name, err)
+        }
+
+        itemInfo.AddChild(graphic)
         itemInfo.AddChild(widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Type: %v", useArtifact.Type), face, color.NRGBA{R: 255, G: 255, B: 255, A: 255})))
     }
 
