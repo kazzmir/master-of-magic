@@ -280,20 +280,9 @@ type Hero struct {
     Equipment [3]*artifact.Artifact
 }
 
-type noInfo struct {
-}
-
-func (noInfo *noInfo) HasWarlord() bool {
-    return false
-}
-
-func (noInfo *noInfo) Crusade() bool {
-    return false
-}
-
 func MakeHeroSimple(heroType HeroType) *Hero {
     unit := units.MakeOverworldUnit(heroType.GetUnit())
-    unit.ExperienceInfo = &noInfo{}
+    unit.ExperienceInfo = &units.NoExperienceInfo{}
     return MakeHero(unit, heroType, heroType.DefaultName())
 }
 
@@ -809,7 +798,7 @@ func (hero *Hero) SetExperienceInfo(info units.ExperienceInfo) {
 }
 
 func (hero *Hero) ResetOwner() {
-    hero.SetExperienceInfo(&noInfo{})
+    hero.SetExperienceInfo(&units.NoExperienceInfo{})
 }
 
 // force hero to go up one level

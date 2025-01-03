@@ -5,6 +5,17 @@ type ExperienceInfo interface {
     Crusade() bool
 }
 
+type NoExperienceInfo struct {
+}
+
+func (noInfo *NoExperienceInfo) HasWarlord() bool {
+    return false
+}
+
+func (noInfo *NoExperienceInfo) Crusade() bool {
+    return false
+}
+
 type ExperienceData interface {
     ToInt() int
     Name() string
