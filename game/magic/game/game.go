@@ -98,6 +98,12 @@ type GameEventHireMercenaries struct {
     Cost int
 }
 
+type GameEventMerchant struct {
+    Artifact *artifact.Artifact
+    Player *playerlib.Player
+    Cost int
+}
+
 type GameEventVault struct {
     CreatedArtifact *artifact.Artifact
 }
@@ -1945,6 +1951,71 @@ func (game *Game) doHireMercenaries(yield coroutine.YieldFunc, cost int, units [
     }
 }
 
+/* random chance to create a merchant event
+ */
+ func (game *Game) maybeBuyFromMerchant(player *playerlib.Player) {
+    // chance to create an event
+    chance := 2 + player.Fame / 25
+    if player.Wizard.AbilityEnabled(setup.AbilityFamous) {
+        chance *= 2
+    }
+    if chance > 10 {
+        chance = 10
+    }
+    if rand.N(100) >= 10 {
+        return
+    }
+
+    // TODO: Requirements (merchant has level 12 in all realms)
+    var artifactCandidates []*artifact.Artifact
+    artifacts := []artifact.Artifact{} // TODO: game.Artifacts?
+    for _, artifact := range artifacts {
+        // TODO: Check availability
+        // TODO: Check requirements (merchant has level 12 in all realms)
+        artifactCandidates = append(artifactCandidates, &artifact)
+    }
+    if len(artifactCandidates) == 0 {
+        return
+    }
+
+    artifact := artifactCandidates[rand.IntN(len(artifactCandidates))]
+
+    // cost
+    cost := artifact.Cost
+    if player.Wizard.AbilityEnabled(setup.AbilityCharismatic) {
+        cost /= 2
+    }
+    if player.Gold < cost {
+        return
+    }
+
+    select {
+        case game.Events <- &GameEventMerchant{Cost: cost, Artifact: artifact, Player: player}:
+        default:
+    }
+}
+
+/* show the merchant popup, and if the user clicks 'buy' then add the artifact to the player's vault
+ */
+ func (game *Game) doMerchant(yield coroutine.YieldFunc, cost int, artifact *artifact.Artifact, player *playerlib.Player) {
+    quit := false
+
+    result := func(bought bool) {
+        quit = true
+        if bought {
+            game.doVault(yield, artifact)
+        }
+    }
+
+    game.HudUI.AddElements(MakeMerchantScreenUI(game.Cache, game.HudUI, artifact, cost, result))
+
+    for !quit {
+        game.Counter += 1
+        game.HudUI.StandardUpdate()
+        yield()
+    }
+}
+
 /* show the given message in an error popup on the screen
  */
 func (game *Game) doNotice(yield coroutine.YieldFunc, message string) {
@@ -2028,6 +2099,11 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         hire := event.(*GameEventHireMercenaries)
                         if hire.Player.Human {
                             game.doHireMercenaries(yield, hire.Cost, hire.Units, hire.Player)
+                        }
+                    case *GameEventMerchant:
+                        merchant := event.(*GameEventMerchant)
+                        if merchant.Player.Human {
+                            game.doMerchant(yield, merchant.Cost, merchant.Artifact, merchant.Player)
                         }
                     case *GameEventNextTurn:
                         game.doNextTurn(yield)

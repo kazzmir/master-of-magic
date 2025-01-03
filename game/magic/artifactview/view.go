@@ -10,7 +10,6 @@ import (
 
 func RenderArtifactBox(screen *ebiten.Image, imageCache *util.ImageCache, artifact artifact.Artifact, font *font.Font, options ebiten.DrawImageOptions) {
     itemBackground, _ := imageCache.GetImage("itemisc.lbx", 25, 0)
-    // options.GeoM.Translate(14, 65)
     screen.DrawImage(itemBackground, &options)
 
     itemImage, _ := imageCache.GetImage("items.lbx", artifact.Image, 0)
