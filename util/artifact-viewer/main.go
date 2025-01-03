@@ -1,6 +1,7 @@
 package main
 
 import (
+    "fmt"
     "log"
     "image/color"
     "cmp"
@@ -96,19 +97,48 @@ func loadFont(size float64) (text.Face, error) {
     }, nil
 }
 
+func (engine *Engine) GetArtifact(name string) (artifact.Artifact, bool) {
+    for _, artifact := range engine.Artifacts {
+        if artifact.Name == name {
+            return artifact, true
+        }
+    }
+    return artifact.Artifact{}, false
+}
+
 func (engine *Engine) MakeUI() *ebitenui.UI {
     face, _ := loadFont(19)
     backgroundImage := ui_image.NewNineSliceColor(color.NRGBA{R: 32, G: 32, B: 32, A: 128})
 
     rootContainer := widget.NewContainer(
         widget.ContainerOpts.Layout(widget.NewRowLayout(
-            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+            widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
             widget.RowLayoutOpts.Spacing(12),
             widget.RowLayoutOpts.Padding(padding(5)),
         )),
         widget.ContainerOpts.BackgroundImage(backgroundImage),
         // widget.ContainerOpts.BackgroundImage(backgroundImageNine),
     )
+
+    itemInfo := widget.NewContainer(
+        widget.ContainerOpts.Layout(widget.NewRowLayout(
+            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+            widget.RowLayoutOpts.Spacing(12),
+            widget.RowLayoutOpts.Padding(padding(5)),
+        )),
+        widget.ContainerOpts.BackgroundImage(makeNineImage(makeRoundedButtonImage(20, 20, 5, color.NRGBA{R: 128, G: 128, B: 128, A: 255}), 5)),
+    )
+
+    updateItemInfo := func (name string) {
+        useArtifact, ok := engine.GetArtifact(name)
+        if !ok {
+            return
+        }
+
+        itemInfo.RemoveChildren()
+        itemInfo.AddChild(widget.NewText(widget.TextOpts.Text(useArtifact.Name, face, color.NRGBA{R: 255, G: 255, B: 255, A: 255})))
+        itemInfo.AddChild(widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Type: %v", useArtifact.Type), face, color.NRGBA{R: 255, G: 255, B: 255, A: 255})))
+    }
 
     fakeImage := ui_image.NewNineSliceColor(color.NRGBA{R: 32, G: 32, B: 32, A: 255})
 
@@ -141,10 +171,9 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         ),
 
         widget.ListOpts.EntrySelectedHandler(func(args *widget.ListEntrySelectedEventArgs) {
-            /*
-            entry := args.Entry.(*ListItem)
-            fmt.Println("Entry Selected: ", entry.Name)
-            */
+            entry := args.Entry.(string)
+            log.Printf("Entry Selected: %v", entry)
+            updateItemInfo(entry)
         }),
 
         widget.ListOpts.EntryColor(&widget.ListEntryColor{
@@ -167,7 +196,10 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         artifactList.AddEntry(artifact.Name)
     }
 
+    itemInfo.AddChild(widget.NewText(widget.TextOpts.Text("Item", face, color.NRGBA{R: 255, G: 255, B: 255, A: 255})))
+
     rootContainer.AddChild(artifactList)
+    rootContainer.AddChild(itemInfo)
 
     ui := ebitenui.UI{
         Container: rootContainer,
