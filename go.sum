@@ -4,8 +4,8 @@ github.com/ebitengine/gomobile v0.0.0-20241016134836-cc2e38a7c0ee h1:YoNt0DHeZ92
 github.com/ebitengine/gomobile v0.0.0-20241016134836-cc2e38a7c0ee/go.mod h1:ZDIonJlTRW7gahIn5dEXZtN4cM8Qwtlduob8cOCflmg=
 github.com/ebitengine/hideconsole v1.0.0 h1:5J4U0kXF+pv/DhiXt5/lTz0eO5ogJ1iXb8Yj1yReDqE=
 github.com/ebitengine/hideconsole v1.0.0/go.mod h1:hTTBTvVYWKBuxPr7peweneWdkUwEuHuB3C1R/ielR1A=
-github.com/ebitengine/oto/v3 v3.3.1 h1:d4McwGQuXOT0GL7bA5g9ZnaUEIEjQvG3hafzMy+T3qE=
-github.com/ebitengine/oto/v3 v3.3.1/go.mod h1:MZeb/lwoC4DCOdiTIxYezrURTw7EvK/yF863+tmBI+U=
+github.com/ebitengine/oto/v3 v3.3.2 h1:VTWBsKX9eb+dXzaF4jEwQbs4yWIdXukJ0K40KgkpYlg=
+github.com/ebitengine/oto/v3 v3.3.2/go.mod h1:MZeb/lwoC4DCOdiTIxYezrURTw7EvK/yF863+tmBI+U=
 github.com/ebitengine/purego v0.8.1 h1:sdRKd6plj7KYW33EH5As6YKfe8m9zbN9JMrOjNVF/BE=
 github.com/ebitengine/purego v0.8.1/go.mod h1:iIjxzd6CiRiOG0UyXP+V1+jWqUXVjPKLAI0mRfJZTmQ=
 github.com/ebitenui/ebitenui v0.6.0 h1:3p4vqhEwY8VC1Sq9+jt2eXza/KNhNwLPNzAhCkCiDs0=
@@ -16,8 +16,8 @@ github.com/go-text/typesetting-utils v0.0.0-20241103174707-87a29e9e6066 h1:qCuYC
 github.com/go-text/typesetting-utils v0.0.0-20241103174707-87a29e9e6066/go.mod h1:DDxDdQEnB70R8owOx3LVpEFvpMK9eeH1o2r0yZhFI9o=
 github.com/hajimehoshi/bitmapfont/v3 v3.2.0 h1:0DISQM/rseKIJhdF29AkhvdzIULqNIIlXAGWit4ez1Q=
 github.com/hajimehoshi/bitmapfont/v3 v3.2.0/go.mod h1:8gLqGatKVu0pwcNCJguW3Igg9WQqVXF0zg/RvrGQWyg=
-github.com/hajimehoshi/ebiten/v2 v2.8.5 h1:w1/3XxjEwIo+amtQCOnCrwGzu4e6dr0ewu83JUKoxrM=
-github.com/hajimehoshi/ebiten/v2 v2.8.5/go.mod h1:SXx/whkvpfsavGo6lvZykprerakl+8Uo1X8d2U5aAnA=
+github.com/hajimehoshi/ebiten/v2 v2.8.6 h1:Dkd/sYI0TYyZRCE7GVxV59XC+WCi2BbGAbIBjXeVC1U=
+github.com/hajimehoshi/ebiten/v2 v2.8.6/go.mod h1:cCQ3np7rdmaJa1ZnvslraVlpxNb3wCjEnAP1LHNyXNA=
 github.com/jezek/xgb v1.1.1 h1:bE/r8ZZtSv7l9gk6nU0mYx51aXrvnyb44892TwSaqS4=
 github.com/jezek/xgb v1.1.1/go.mod h1:nrhwO0FX/enq75I7Y7G8iN1ubpSGZEiA3v9e9GyRFlk=
 github.com/matryer/is v1.4.1 h1:55ehd8zaGABKLXQUe2awZ99BD/PTc2ls+KV/dXphgEQ=
@@ -32,8 +32,8 @@ github.com/stretchr/testify v1.9.0 h1:HtqpIVDClZ4nwg75+f6Lvsy/wHu+3BoSGCbBAcpTsT
 github.com/stretchr/testify v1.9.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
 gitlab.com/gomidi/midi/v2 v2.2.19 h1:/Ktpf21SIOX61gg8PJ7wYLSsD+dOU1e3z3tlO9OS+Zs=
 gitlab.com/gomidi/midi/v2 v2.2.19/go.mod h1:ENtYaJPOwb2N+y7ihv/L7R4GtWjbknouhIIkMrJ5C0g=
-golang.org/x/exp v0.0.0-20241217172543-b2144cdd0a67 h1:1UoZQm6f0P/ZO0w1Ri+f+ifG/gXhegadRdwBIXEFWDo=
-golang.org/x/exp v0.0.0-20241217172543-b2144cdd0a67/go.mod h1:qj5a5QZpwLU2NLQudwIN5koi3beDhSAlJwa67PuM98c=
+golang.org/x/exp v0.0.0-20250103183323-7d7fa50e5329 h1:9kj3STMvgqy3YA4VQXBrN7925ICMxD5wzMRcgA30588=
+golang.org/x/exp v0.0.0-20250103183323-7d7fa50e5329/go.mod h1:qj5a5QZpwLU2NLQudwIN5koi3beDhSAlJwa67PuM98c=
 golang.org/x/image v0.23.0 h1:HseQ7c2OpPKTPVzNjG5fwJsOTCiiwS4QdsYi5XU6H68=
 golang.org/x/image v0.23.0/go.mod h1:wJJBTdLfCCf3tiHa1fNxpZmUI4mmoZvwMCPP0ddoNKY=
 golang.org/x/sync v0.10.0 h1:3NQrjDixjgGwUOCaF8w2+VYHv0Ve/vGYSbdkTa98gmQ=
