@@ -17,7 +17,6 @@ import (
 )
 
 func PlayEnchantmentSound(cache *lbx.LbxCache) {
-    // FIXME: play soundfx.lbx audio 30
     sound, err := audio.LoadSound(cache, 30)
     if err != nil {
         log.Printf("Error loading city enchantment sound: %v", err)
