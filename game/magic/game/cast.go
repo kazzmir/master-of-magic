@@ -9,7 +9,9 @@ import (
     "github.com/kazzmir/master-of-magic/lib/font"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
+    "github.com/kazzmir/master-of-magic/game/magic/cityview"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
@@ -21,17 +23,31 @@ import (
     "github.com/hajimehoshi/ebiten/v2"
 )
 
+type LocationType int
+const (
+    LocationTypeAny LocationType = iota
+    LocationTypeFriendlyCity
+    LocationTypeEnemyCity
+    LocationTypeFriendlyUnit
+    LocationTypeEnemyUnit
+)
+
+func (game *Game) ScreenToTile(x int, y int) (int, int) {
+    tileX := game.CurrentMap().WrapX(game.cameraX + x / game.CurrentMap().TileWidth())
+    tileY := game.cameraY + y / game.CurrentMap().TileHeight()
+
+    return tileX, tileY
+}
+
 func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Player, spell spellbook.Spell) {
     switch spell.Name {
         case "Earth Lore":
-            screenX, screenY, cancel := game.selectLocationForSpell(yield, spell)
+            tileX, tileY, cancel := game.selectLocationForSpell(yield, spell, player, LocationTypeAny)
 
             if cancel {
                 return
             }
 
-            tileX := game.CurrentMap().WrapX(game.cameraX + screenX / game.CurrentMap().TileWidth())
-            tileY := game.cameraY + screenY / game.CurrentMap().TileHeight()
             game.CenterCamera(tileX, tileY)
 
             game.doCastEarthLore(yield, player)
@@ -57,20 +73,63 @@ func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Playe
                 yield()
             }
 
-            // FIXME: show vault with artifact
-
             select {
                 case game.Events <- &GameEventVault{CreatedArtifact: player.CreateArtifact}:
                 default:
             }
 
             player.CreateArtifact = nil
+        case "Wall of Fire":
+            tileX, tileY, cancel := game.selectLocationForSpell(yield, spell, player, LocationTypeFriendlyCity)
+
+            if cancel {
+                return
+            }
+
+            game.CenterCamera(tileX, tileY)
+            chosenCity := player.FindCity(tileX, tileY)
+            if chosenCity == nil {
+                return
+            }
+
+            chosenCity.AddEnchantment(data.CityEnchantmentWallOfFire, player.GetBanner())
+
+            yield()
+            cityview.PlayEnchantmentSound(game.Cache)
+            game.showCityEnchantment(yield, chosenCity, player, spell.Name)
     }
+}
+
+func (game *Game) showCityEnchantment(yield coroutine.YieldFunc, city *citylib.City, player *playerlib.Player, spellName string) {
+    ui, quit, err := cityview.MakeEnchantmentView(game.Cache, city, player, spellName)
+    if err != nil {
+        log.Printf("Error making enchantment view: %v", err)
+        return
+    }
+
+    oldDrawer := game.Drawer
+    defer func(){
+        game.Drawer = oldDrawer
+    }()
+
+    game.Drawer = func(screen *ebiten.Image, game *Game){
+        oldDrawer(screen, game)
+        ui.Draw(ui, screen)
+    }
+
+    for quit.Err() == nil {
+        game.Counter += 1
+        ui.StandardUpdate()
+        yield()
+    }
+
+    // absorb left click
+    yield()
 }
 
 /* return x,y and true/false, where true means cancelled, and false means something was selected */
 // FIXME: this copies a lot of code from the surveyor, try to combine the two with shared functions/code
-func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellbook.Spell) (int, int, bool) {
+func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellbook.Spell, player *playerlib.Player, locationType LocationType) (int, int, bool) {
     oldDrawer := game.Drawer
     defer func(){
         game.Drawer = oldDrawer
@@ -277,7 +336,25 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
             }
 
             if inputmanager.LeftClick() {
-                return x, y, false
+                tileX, tileY := game.ScreenToTile(x, y)
+
+                switch locationType {
+                    case LocationTypeAny: return tileX, tileY, false
+                    case LocationTypeFriendlyCity:
+                        city := player.FindCity(tileX, tileY)
+                        if city != nil {
+                            return tileX, tileY, false
+                        }
+
+                    case LocationTypeEnemyCity:
+                        // TODO
+
+                    case LocationTypeFriendlyUnit:
+                        // TODO
+
+                    case LocationTypeEnemyUnit:
+                        // TODO
+                }
             }
         }
 
@@ -307,10 +384,6 @@ func (game *Game) doCastEarthLore(yield coroutine.YieldFunc, player *playerlib.P
         options.GeoM.Translate(float64(x - animation.Frame().Bounds().Dx() / 2), float64(y - animation.Frame().Bounds().Dy() / 2))
         screen.DrawImage(animation.Frame(), &options)
     }
-
-    // FIXME: play earth lore sound
-    // probably soundfx.lbx sound 28
-    // newsound.fx 18
 
     sound, err := audio.LoadNewSound(game.Cache, 18)
     if err == nil {
