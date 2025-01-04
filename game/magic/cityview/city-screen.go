@@ -105,6 +105,7 @@ type Fonts struct {
     ProducingFont *font.Font
     SmallFont *font.Font
     RubbleFont *font.Font
+    CastFont *font.Font
     BannerFonts map[data.BannerType]*font.Font
 }
 
@@ -160,6 +161,20 @@ func makeFonts(cache *lbx.LbxCache) (*Fonts, error) {
     }
 
     bigFont := font.MakeOptimizedFontWithPalette(fonts[5], yellowPalette)
+
+    // red := color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff}
+    yellow := color.RGBA{R: 0xef, G: 0xce, B: 0x4e, A: 0xff}
+    fadePalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        util.RotateHue(yellow, -0.6),
+        // color.RGBA{R: 0xd5, G: 0x88, B: 0x25, A: 0xff},
+        util.RotateHue(yellow, -0.3),
+        util.RotateHue(yellow, -0.1),
+        yellow,
+    }
+
+    castFont := font.MakeOptimizedFontWithPalette(fonts[4], fadePalette)
 
     brownPalette := color.Palette{
         color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
@@ -254,6 +269,7 @@ func makeFonts(cache *lbx.LbxCache) (*Fonts, error) {
         SmallFont: smallFont,
         RubbleFont: rubbleFont,
         BannerFonts: bannerFonts,
+        CastFont: castFont,
     }, nil
 }
 

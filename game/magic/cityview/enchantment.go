@@ -40,6 +40,9 @@ func MakeEnchantmentView(cache *lbx.LbxCache, city *citylib.City, player *player
 
             fonts.BigFont.PrintCenter(screen, titleX, titleY, 1, ebiten.ColorScale{}, fmt.Sprintf("%v of %s", city.GetSize(), city.Name))
 
+            descriptionX, descriptionY := options.GeoM.Apply(float64(background.Bounds().Dx()) / 2, float64(background.Bounds().Dy() - fonts.CastFont.Height() - 2))
+            fonts.CastFont.PrintCenter(screen, descriptionX, descriptionY, 1, ebiten.ColorScale{}, fmt.Sprintf("You cast %v", spellName))
+
             geom2 := geom
             geom2.Translate(5, 28)
             drawCityScape(screen, buildingSlots, buildinglib.BuildingNone, buildinglib.BuildingNone, ui.Counter / 8, &imageCache, fonts, city.BuildingInfo, player, geom2, 1.0)
