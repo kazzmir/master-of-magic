@@ -33,7 +33,6 @@ type CacheData struct {
 // LRU cache
 type ImageCache struct {
     Images map[string]CacheData
-    MaxSize int
 }
 
 func (cache *ImageCache) GetImage(key string, raw *image.Paletted, time uint64) *ebiten.Image {
@@ -47,68 +46,27 @@ func (cache *ImageCache) GetImage(key string, raw *image.Paletted, time uint64) 
     return data.Image
 }
 
+// scan through entire cache and remove keys that haven't been accessed in 60 seconds
 func (cache *ImageCache) Cleanup(currentTime uint64){
-    // maxExtra := 5
+    var toRemove []string
 
-    // if len(cache.Images) > cache.MaxSize {
-        // maxExtra := len(cache.Images) - cache.MaxSize
-        // var oldestKey string
-        // var oldestTime uint64
+    for key, data := range cache.Images {
 
-        type removeKey struct {
-            Time uint64
-            Key string
+        if data.Time + 60 < currentTime {
+            toRemove = append(toRemove, key)
         }
+    }
 
-        var toRemove []string
-
-        for key, data := range cache.Images {
-            /*
-            if oldestTime == 0 || data.Time < oldestTime {
-                oldestTime = data.Time
-                oldestKey = key
-            }
-            */
-
-            if data.Time + 60 < currentTime {
-                toRemove = append(toRemove, key)
-            }
-
-            /*
-            added := false
-
-            if len(toRemove) > 0 && data.Time < toRemove[len(toRemove)-1].Time {
-                for i := 0; i < len(toRemove); i++ {
-                    if data.Time < toRemove[i].Time {
-                        toRemove = slices.Insert(toRemove, i, removeKey{Time: data.Time, Key: key})
-                        added = true
-                        break
-                    }
-                }
-            }
-
-            if !added && len(toRemove) < maxExtra {
-                toRemove = append(toRemove, removeKey{Time: data.Time, Key: key})
-            }
-
-            if len(toRemove) > maxExtra {
-                toRemove = toRemove[:maxExtra]
-            }
-            */
-        }
-
-        log.Printf("Evicting %v keys", len(toRemove))
-        for _, key := range toRemove {
-            // log.Printf("Cache eviction: %v", key.Key)
-            delete(cache.Images, key)
-        }
-    // }
+    // log.Printf("Evicting %v keys", len(toRemove))
+    for _, key := range toRemove {
+        // log.Printf("Cache eviction: %v", key.Key)
+        delete(cache.Images, key)
+    }
 }
 
-func MakeImageCache(size int) ImageCache {
+func MakeImageCache() ImageCache {
     return ImageCache{
         Images: make(map[string]CacheData),
-        MaxSize: size,
     }
 }
 
@@ -543,7 +501,7 @@ func MakeViewer(data []*LbxData) (*Viewer, error) {
         AnimationFrame: -1,
         AnimationCount: 0,
         State: ViewStateTiles,
-        ImageCache: MakeImageCache(300),
+        ImageCache: MakeImageCache(),
     }
 
     maxLoad := make(chan bool, 4)
