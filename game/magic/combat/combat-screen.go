@@ -1192,6 +1192,8 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                 options.GeoM.Translate(126, 188)
                 screen.DrawImage(movementImage, &options)
                 combat.HudFont.PrintRight(screen, 126, 190, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", combat.Model.SelectedUnit.MovesLeft.ToFloat()))
+
+                combat.DrawHealthBar(screen, 120, 198, combat.Model.SelectedUnit)
             }
 
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
@@ -2467,12 +2469,21 @@ func (combat *CombatScreen) ShowUnitInfo(screen *ebiten.Image, unit *ArmyUnit){
 
     combat.InfoFont.PrintCenter(screen, float64(x1 + 14), float64(y1 + 37), 1, ebiten.ColorScale{}, "Hits")
 
+    combat.DrawHealthBar(screen, x1 + 25, y1 + 40, unit)
+
+}
+
+// draw a horizontal bar that represents the health of the unit
+// mostly green if healthy (>66% health)
+// yellow if between 33% to 66% health
+// otherwise red
+func (combat *CombatScreen) DrawHealthBar(screen *ebiten.Image, x int, y int, unit *ArmyUnit){
     highHealth := color.RGBA{R: 0, G: 0xff, B: 0, A: 0xff}
     mediumHealth := color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff}
     lowHealth := color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}
     healthWidth := 15
 
-    vector.StrokeLine(screen, float32(x1 + 25), float32(y1 + 40), float32(x1 + 25 + healthWidth), float32(y1 + 40), 1, color.RGBA{R: 0, G: 0, B: 0, A: 0xff}, false)
+    vector.StrokeLine(screen, float32(x), float32(y), float32(x + healthWidth), float32(y), 1, color.RGBA{R: 0, G: 0, B: 0, A: 0xff}, false)
 
     healthPercent := float64(unit.Unit.GetHealth()) / float64(unit.Unit.GetMaxHealth())
     healthLength := float64(healthWidth) * healthPercent
@@ -2491,7 +2502,7 @@ func (combat *CombatScreen) ShowUnitInfo(screen *ebiten.Image, unit *ArmyUnit){
         useColor = highHealth
     }
 
-    vector.StrokeLine(screen, float32(x1 + 25), float32(y1 + 40), float32(x1 + 25) + float32(healthLength), float32(y1 + 40), 1, useColor, false)
+    vector.StrokeLine(screen, float32(x), float32(y), float32(x) + float32(healthLength), float32(y), 1, useColor, false)
 }
 
 func (combat *CombatScreen) DrawWall(screen *ebiten.Image, x int, y int, tilePosition func(float64, float64) (float64, float64), animationIndex uint64){
