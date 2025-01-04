@@ -65,6 +65,7 @@ func MakeMerchantScreenUI(cache *lbx.LbxCache, ui *uilib.UI, artifactToBuy *arti
             background, _ := imageCache.GetImage("hire.lbx", 2, 0)
             var options ebiten.DrawImageOptions
             options.ColorScale.ScaleAlpha(getAlpha())
+            options.GeoM.Translate(4, 15)
             screen.DrawImage(background, &options)
         },
     })
@@ -75,7 +76,7 @@ func MakeMerchantScreenUI(cache *lbx.LbxCache, ui *uilib.UI, artifactToBuy *arti
             colorScale := ebiten.ColorScale{}
             colorScale.ScaleAlpha(getAlpha())
             text := fmt.Sprintf("A merchant arrives and offers a magic %v for sale. The price is only %v gold pieces.", artifactToBuy.Name, goldToBuy)
-            lightFont.PrintWrap(screen, 56, 8, 180, 1, colorScale, text)
+            lightFont.PrintWrap(screen, 60, 23, 180, 1, colorScale, text)
         },
     })
 
@@ -84,13 +85,13 @@ func MakeMerchantScreenUI(cache *lbx.LbxCache, ui *uilib.UI, artifactToBuy *arti
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             var options ebiten.DrawImageOptions
             options.ColorScale.ScaleAlpha(getAlpha())
-            options.GeoM.Translate(14, 65)
+            options.GeoM.Translate(18, 80)
             artifact.RenderArtifactBox(screen, &imageCache, *artifactToBuy, darkFont, options)
         },
     })
 
     buttonBackgrounds, _ := imageCache.GetImages("backgrnd.lbx", 24)
-    buyRect := util.ImageRect(252, 121, buttonBackgrounds[0])
+    buyRect := util.ImageRect(256, 136, buttonBackgrounds[0])
     buyIndex := 0
     elements = append(elements, &uilib.UIElement{
         Layer: 1,
@@ -118,7 +119,7 @@ func MakeMerchantScreenUI(cache *lbx.LbxCache, ui *uilib.UI, artifactToBuy *arti
         },
     })
 
-    rejectRect := util.ImageRect(252, 140, buttonBackgrounds[0])
+    rejectRect := util.ImageRect(256, 155, buttonBackgrounds[0])
     rejectIndex := 0
     elements = append(elements, &uilib.UIElement{
         Layer: 1,
