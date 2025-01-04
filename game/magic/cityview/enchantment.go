@@ -13,6 +13,7 @@ import (
     "github.com/hajimehoshi/ebiten/v2"
 )
 
+// FIXME: play soundfx.lbx audio 30
 func MakeEnchantmentView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.Player, spellName string) (*uilib.UI, error) {
     imageCache := util.MakeImageCache(cache)
 
