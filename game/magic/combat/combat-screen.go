@@ -1192,6 +1192,8 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                 options.GeoM.Translate(126, 188)
                 screen.DrawImage(movementImage, &options)
                 combat.HudFont.PrintRight(screen, 126, 190, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", combat.Model.SelectedUnit.MovesLeft.ToFloat()))
+
+                combat.DrawHealthBar(screen, 120, 198, combat.Model.SelectedUnit)
             }
 
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
