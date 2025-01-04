@@ -155,7 +155,7 @@ func Lighten(c color.Color, amount float64) color.Color {
     return change.Apply(c)
 }
 
-func RotateHue(c color.RGBA, radian float64) color.Color {
+func RotateHue(c color.Color, radian float64) color.Color {
     var rotate colorm.ColorM
     rotate.ChangeHSV(radian, 1, 1)
     return rotate.Apply(c)
