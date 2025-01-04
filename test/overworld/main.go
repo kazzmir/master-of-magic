@@ -918,7 +918,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
 
     player := game.AddPlayer(wizard, true)
 
-    player.CastingSkillPower += 5000
+    player.CastingSkillPower += 50000
 
     allSpells, _ := spellbook.ReadSpellsFromCache(cache)
 
@@ -929,6 +929,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     player.KnownSpells.AddSpell(allSpells.FindByName("Create Artifact"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Magic Spirit"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Dark Rituals"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Wall of Fire"))
 
     x, y := game.FindValidCityLocation()
 
