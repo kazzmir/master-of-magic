@@ -40,26 +40,31 @@ func MakeEnchantmentView(cache *lbx.LbxCache, city *citylib.City, player *player
 
     // getAlpha := ui.MakeFadeIn(fadeSpeed)
 
+    var getAlpha util.AlphaFadeFunc
+
     ui := &uilib.UI{
         Draw: func(ui *uilib.UI, screen *ebiten.Image) {
             var options ebiten.DrawImageOptions
 
+            options.ColorScale.ScaleAlpha(getAlpha())
             options.GeoM = geom
 
             screen.DrawImage(background, &options)
 
             titleX, titleY := options.GeoM.Apply(float64(background.Bounds().Dx()) / 2, 7)
 
-            fonts.BigFont.PrintCenter(screen, titleX, titleY, 1, ebiten.ColorScale{}, fmt.Sprintf("%v of %s", city.GetSize(), city.Name))
+            fonts.BigFont.PrintCenter(screen, titleX, titleY, 1, options.ColorScale, fmt.Sprintf("%v of %s", city.GetSize(), city.Name))
 
             descriptionX, descriptionY := options.GeoM.Apply(float64(background.Bounds().Dx()) / 2, float64(background.Bounds().Dy() - fonts.CastFont.Height() - 2))
-            fonts.CastFont.PrintCenter(screen, descriptionX, descriptionY, 1, ebiten.ColorScale{}, fmt.Sprintf("You cast %v", spellName))
+            fonts.CastFont.PrintCenter(screen, descriptionX, descriptionY, 1, options.ColorScale, fmt.Sprintf("You cast %v", spellName))
 
             geom2 := geom
             geom2.Translate(5, 28)
-            drawCityScape(screen, buildingSlots, buildinglib.BuildingNone, buildinglib.BuildingNone, ui.Counter / 8, &imageCache, fonts, city.BuildingInfo, player, city.Enchantments.Values(), geom2, 1.0)
+            drawCityScape(screen, buildingSlots, buildinglib.BuildingNone, buildinglib.BuildingNone, ui.Counter / 8, &imageCache, fonts, city.BuildingInfo, player, city.Enchantments.Values(), geom2, getAlpha())
         },
     }
+
+    getAlpha = ui.MakeFadeIn(7)
 
     ui.SetElementsFromArray(nil)
 
