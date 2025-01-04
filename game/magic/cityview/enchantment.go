@@ -1,6 +1,8 @@
 package cityview
 
 import (
+    "fmt"
+
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
@@ -33,6 +35,10 @@ func MakeEnchantmentView(cache *lbx.LbxCache, city *citylib.City, player *player
             options.GeoM = geom
 
             screen.DrawImage(background, &options)
+
+            titleX, titleY := options.GeoM.Apply(float64(background.Bounds().Dx()) / 2, 7)
+
+            fonts.BigFont.PrintCenter(screen, titleX, titleY, 1, ebiten.ColorScale{}, fmt.Sprintf("%v of %s", city.GetSize(), city.Name))
 
             geom2 := geom
             geom2.Translate(5, 28)
