@@ -925,7 +925,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
 
     player := game.AddPlayer(wizard, true)
 
-    player.CastingSkillPower += 5000
+    player.CastingSkillPower += 50000
 
     allSpells, _ := spellbook.ReadSpellsFromCache(cache)
 
@@ -936,6 +936,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     player.KnownSpells.AddSpell(allSpells.FindByName("Create Artifact"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Magic Spirit"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Dark Rituals"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Wall of Fire"))
 
     x, y := game.FindValidCityLocation()
 
@@ -1335,11 +1336,7 @@ func createScenario17(cache *lbx.LbxCache) *gamelib.Game {
         Cost: 300,
     }
 
-    artifacts, err := artifact.ReadArtifacts(cache)
-    if err != nil {
-		log.Fatalf("Error reading artifacts")
-    }
-    player.VaultEquipment[1] = &artifacts[1]
+    player.VaultEquipment[1] = game.ArtifactPool["Pummel Mace"]
 
     testArtifact := artifact.Artifact{
         Name: "Sword",
@@ -2072,6 +2069,73 @@ func createScenario24(cache *lbx.LbxCache) *gamelib.Game {
     return game
 }
 
+// merchant
+func createScenario25(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 25")
+    wizard := setup.WizardCustom{
+        Name: "bob",
+        Banner: data.BannerBlue,
+        Race: data.RaceTroll,
+        Abilities: []setup.WizardAbility{
+            setup.AbilityAlchemy,
+            setup.AbilitySageMaster,
+        },
+        Books: []data.WizardBook{
+            {
+                Magic: data.LifeMagic,
+                Count: 3,
+            },
+            {
+                Magic: data.SorceryMagic,
+                Count: 8,
+            },
+        },
+    }
+
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
+    game.Plane = data.PlaneArcanus
+
+    x, y := game.FindValidCityLocation()
+    game.CenterCamera(x, y)
+
+    player := game.AddPlayer(wizard, true)
+    player.Gold = 15772
+    player.Mana = 26
+    player.LiftFog(x, y, 3, data.PlaneArcanus)
+
+    city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.CurrentMap())
+    city.Population = 6190
+    city.Plane = data.PlaneArcanus
+    city.Banner = wizard.Banner
+    city.Buildings.Insert(buildinglib.BuildingFortress)
+    city.ProducingBuilding = buildinglib.BuildingGranary
+    city.ProducingUnit = units.UnitNone
+    city.Race = wizard.Race
+    city.Farmers = 5
+    city.Workers = 1
+    city.Wall = false
+    city.ResetCitizens(nil)
+    player.AddCity(city)
+
+    player.AddHero(hero.MakeHero(units.MakeOverworldUnit(units.HeroGunther), hero.HeroGunther, "Gunther"))
+
+    enemy := game.AddPlayer(setup.WizardCustom{
+        Name: "dingus",
+        Banner: data.BannerRed,
+    }, false)
+    enemy.AddUnit(units.MakeOverworldUnitFromUnit(units.KlackonSpearmen, x + 1, y + 1, data.PlaneArcanus, enemy.Wizard.Banner, nil))
+
+    artifact := game.ArtifactPool["Pummel Mace"]
+
+    game.Events <- &gamelib.GameEventMerchant{
+        Player: player,
+        Artifact: artifact,
+        Cost: artifact.Cost,
+    }
+
+    return game
+}
+
 func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
@@ -2102,6 +2166,7 @@ func NewEngine(scenario int) (*Engine, error) {
         case 22: game = createScenario22(cache)
         case 23: game = createScenario23(cache)
         case 24: game = createScenario24(cache)
+        case 25: game = createScenario25(cache)
         default: game = createScenario1(cache)
     }
 

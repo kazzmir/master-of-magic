@@ -98,6 +98,12 @@ type GameEventHireMercenaries struct {
     Cost int
 }
 
+type GameEventMerchant struct {
+    Artifact *artifact.Artifact
+    Player *playerlib.Player
+    Cost int
+}
+
 type GameEventVault struct {
     CreatedArtifact *artifact.Artifact
 }
@@ -196,6 +202,8 @@ type Game struct {
     TurnNumber uint64
 
     Heroes map[herolib.HeroType]*herolib.Hero
+
+    ArtifactPool map[string]*artifact.Artifact
 
     MouseData *mouselib.MouseData
 
@@ -452,6 +460,21 @@ func createHeroes() map[herolib.HeroType]*herolib.Hero {
     return heroes
 }
 
+func createArtifactPool(lbxCache *lbx.LbxCache) map[string]*artifact.Artifact {
+    artifacts, err := artifact.ReadArtifacts(lbxCache)
+    if err != nil {
+        log.Printf("Error reading artifacts")
+        return nil
+    }
+
+    pool := make(map[string]*artifact.Artifact)
+    for _, artifact := range artifacts {
+        pool[artifact.Name] = &artifact
+    }
+
+    return pool
+}
+
 func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
 
     terrainLbx, err := lbxCache.GetLbxFile("terrain.lbx")
@@ -544,6 +567,7 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         InfoFontYellow: infoFontYellow,
         InfoFontRed: infoFontRed,
         Heroes: createHeroes(),
+        ArtifactPool: createArtifactPool(lbxCache),
         WhiteFont: whiteFont,
         BuildingInfo: buildingInfo,
         TurnNumber: 1,
@@ -1969,6 +1993,79 @@ func (game *Game) doHireMercenaries(yield coroutine.YieldFunc, cost int, units [
     }
 }
 
+/* random chance to create a merchant event
+ */
+ func (game *Game) maybeBuyFromMerchant(player *playerlib.Player) {
+    // chance to create an event
+    chance := 2 + player.Fame / 25
+    if player.Wizard.AbilityEnabled(setup.AbilityFamous) {
+        chance *= 2
+    }
+    if chance > 10 {
+        chance = 10
+    }
+    if rand.N(100) >= 10 {
+        return
+    }
+
+    var artifactCandidates []*artifact.Artifact
+    for _, artifact := range game.ArtifactPool {
+        requirementsMet := true
+        for _, requirement := range artifact.Requirements {
+            if requirement.Amount > 12 {
+                requirementsMet = false
+                break
+            }
+        }
+        if !requirementsMet {
+            continue
+        }
+
+        artifactCandidates = append(artifactCandidates, artifact)
+    }
+    if len(artifactCandidates) == 0 {
+        return
+    }
+
+    artifact := artifactCandidates[rand.IntN(len(artifactCandidates))]
+
+    // cost
+    cost := artifact.Cost
+    if player.Wizard.AbilityEnabled(setup.AbilityCharismatic) {
+        cost /= 2
+    }
+    if player.Gold < cost {
+        return
+    }
+
+    select {
+        case game.Events <- &GameEventMerchant{Cost: cost, Artifact: artifact, Player: player}:
+        default:
+    }
+}
+
+/* show the merchant popup, and if the user clicks 'buy' then add the artifact to the player's vault and remove it from the pool
+ */
+ func (game *Game) doMerchant(yield coroutine.YieldFunc, cost int, artifact *artifact.Artifact) {
+    quit := false
+
+    result := func(bought bool) {
+        quit = true
+        if bought {
+            delete(game.ArtifactPool, artifact.Name)
+            game.doVault(yield, artifact)
+        }
+    }
+
+    game.HudUI.AddElements(MakeMerchantScreenUI(game.Cache, game.HudUI, artifact, cost, result))
+
+    for !quit {
+        game.Counter += 1
+        game.HudUI.StandardUpdate()
+        yield()
+    }
+}
+
 /* show the given message in an error popup on the screen
  */
 func (game *Game) doNotice(yield coroutine.YieldFunc, message string) {
@@ -2052,6 +2149,11 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         hire := event.(*GameEventHireMercenaries)
                         if hire.Player.Human {
                             game.doHireMercenaries(yield, hire.Cost, hire.Units, hire.Player)
+                        }
+                    case *GameEventMerchant:
+                        merchant := event.(*GameEventMerchant)
+                        if merchant.Player.Human {
+                            game.doMerchant(yield, merchant.Cost, merchant.Artifact)
                         }
                     case *GameEventNextTurn:
                         game.doNextTurn(yield)
@@ -4384,6 +4486,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
 
     game.maybeHireHero(player)
     game.maybeHireMercenaries(player)
+    game.maybeBuyFromMerchant(player)
 
     // game.CenterCamera(player.Cities[0].X, player.Cities[0].Y)
     game.DoNextUnit(player)

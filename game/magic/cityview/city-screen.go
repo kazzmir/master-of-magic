@@ -105,6 +105,7 @@ type Fonts struct {
     ProducingFont *font.Font
     SmallFont *font.Font
     RubbleFont *font.Font
+    CastFont *font.Font
     BannerFonts map[data.BannerType]*font.Font
 }
 
@@ -160,6 +161,20 @@ func makeFonts(cache *lbx.LbxCache) (*Fonts, error) {
     }
 
     bigFont := font.MakeOptimizedFontWithPalette(fonts[5], yellowPalette)
+
+    // FIXME: this palette isn't exactly right. It should be a yellow-orange fade. Probably it exists somewhere else in the codebase
+    yellow := color.RGBA{R: 0xef, G: 0xce, B: 0x4e, A: 0xff}
+    fadePalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        util.RotateHue(yellow, -0.6),
+        // color.RGBA{R: 0xd5, G: 0x88, B: 0x25, A: 0xff},
+        util.RotateHue(yellow, -0.3),
+        util.RotateHue(yellow, -0.1),
+        yellow,
+    }
+
+    castFont := font.MakeOptimizedFontWithPalette(fonts[4], fadePalette)
 
     brownPalette := color.Palette{
         color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
@@ -254,6 +269,7 @@ func makeFonts(cache *lbx.LbxCache) (*Fonts, error) {
         SmallFont: smallFont,
         RubbleFont: rubbleFont,
         BannerFonts: bannerFonts,
+        CastFont: castFont,
     }, nil
 }
 
@@ -432,7 +448,7 @@ func makeCityScapeElement(cache *lbx.LbxCache, ui *uilib.UI, city *citylib.City,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
             var geom ebiten.GeoM
             geom.Translate(float64(x1), float64(y1))
-            drawCityScape(screen, buildings, buildingLook, newBuilding, ui.Counter / 8, imageCache, fonts, city.BuildingInfo, player, geom, (*getAlpha)())
+            drawCityScape(screen, buildings, buildingLook, newBuilding, ui.Counter / 8, imageCache, fonts, city.BuildingInfo, player, city.Enchantments.Values(), geom, (*getAlpha)())
             // vector.StrokeRect(screen, float32(buildingView.Min.X), float32(buildingView.Min.Y), float32(buildingView.Dx()), float32(buildingView.Dy()), 1, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff}, true)
         },
         RightClick: func(element *uilib.UIElement) {
@@ -976,7 +992,7 @@ func getRaceRebelIndex(race data.Race) int {
     return -1
 }
 
-func drawCityScape(screen *ebiten.Image, buildings []BuildingSlot, buildingLook buildinglib.Building, newBuilding buildinglib.Building, animationCounter uint64, imageCache *util.ImageCache, fonts *Fonts, buildingInfo buildinglib.BuildingInfos, player *playerlib.Player, baseGeoM ebiten.GeoM, alphaScale float32) {
+func drawCityScape(screen *ebiten.Image, buildings []BuildingSlot, buildingLook buildinglib.Building, newBuilding buildinglib.Building, animationCounter uint64, imageCache *util.ImageCache, fonts *Fonts, buildingInfo buildinglib.BuildingInfos, player *playerlib.Player, enchantments []citylib.Enchantment, baseGeoM ebiten.GeoM, alphaScale float32) {
     // 5 is grasslands
     // FIXME: make the land type and sky configurable
     landBackground, err := imageCache.GetImage("cityscap.lbx", 0, 4)
@@ -1070,6 +1086,29 @@ func drawCityScape(screen *ebiten.Image, buildings []BuildingSlot, buildingLook 
         options.GeoM.Translate(1, -2)
         index := animationCounter % uint64(len(river))
         screen.DrawImage(river[index], &options)
+    }
+
+    for _, enchantment := range slices.SortedFunc(slices.Values(enchantments), func (a citylib.Enchantment, b citylib.Enchantment) int {
+        return cmp.Compare(a.Enchantment.Name(), b.Enchantment.Name())
+    }) {
+        switch enchantment.Enchantment {
+            case data.CityEnchantmentWallOfFire:
+                var options ebiten.DrawImageOptions
+                options.ColorScale.ScaleAlpha(alphaScale)
+                options.GeoM = baseGeoM
+                options.GeoM.Translate(0, 85)
+                images, _ := imageCache.GetImages("cityscap.lbx", 77)
+                index := animationCounter % uint64(len(images))
+                screen.DrawImage(images[index], &options)
+            case data.CityEnchantmentWallOfDarkness:
+                var options ebiten.DrawImageOptions
+                options.ColorScale.ScaleAlpha(alphaScale)
+                options.GeoM = baseGeoM
+                options.GeoM.Translate(0, 85)
+                images, _ := imageCache.GetImages("cityscap.lbx", 79)
+                index := animationCounter % uint64(len(images))
+                screen.DrawImage(images[index], &options)
+        }
     }
 
     drawName()
