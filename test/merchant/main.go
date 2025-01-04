@@ -60,7 +60,7 @@ func NewEngine(scenario int) (*Engine, error) {
             {
                 Type: artifact.PowerTypeSpellSave,
                 Amount: 2,
-                Name: "+2 Spell Save",
+                Name: "-2 Spell Save",
             },
         },
         Cost: 250,
