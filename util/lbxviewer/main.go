@@ -6,7 +6,7 @@ import (
     "fmt"
     "sync"
     "math"
-    "slices"
+    // "slices"
 
     "image/color"
     "image"
@@ -47,11 +47,11 @@ func (cache *ImageCache) GetImage(key string, raw *image.Paletted, time uint64) 
     return data.Image
 }
 
-func (cache *ImageCache) Cleanup(){
+func (cache *ImageCache) Cleanup(currentTime uint64){
     // maxExtra := 5
 
-    if len(cache.Images) > cache.MaxSize {
-        maxExtra := len(cache.Images) - cache.MaxSize
+    // if len(cache.Images) > cache.MaxSize {
+        // maxExtra := len(cache.Images) - cache.MaxSize
         // var oldestKey string
         // var oldestTime uint64
 
@@ -60,7 +60,7 @@ func (cache *ImageCache) Cleanup(){
             Key string
         }
 
-        var toRemove []removeKey
+        var toRemove []string
 
         for key, data := range cache.Images {
             /*
@@ -70,6 +70,11 @@ func (cache *ImageCache) Cleanup(){
             }
             */
 
+            if data.Time + 60 < currentTime {
+                toRemove = append(toRemove, key)
+            }
+
+            /*
             added := false
 
             if len(toRemove) > 0 && data.Time < toRemove[len(toRemove)-1].Time {
@@ -89,14 +94,15 @@ func (cache *ImageCache) Cleanup(){
             if len(toRemove) > maxExtra {
                 toRemove = toRemove[:maxExtra]
             }
+            */
         }
 
-        // log.Printf("Evicting %v keys", len(toRemove))
+        log.Printf("Evicting %v keys", len(toRemove))
         for _, key := range toRemove {
             // log.Printf("Cache eviction: %v", key.Key)
-            delete(cache.Images, key.Key)
+            delete(cache.Images, key)
         }
-    }
+    // }
 }
 
 func MakeImageCache(size int) ImageCache {
@@ -159,7 +165,9 @@ func (viewer *Viewer) tilesPerRow() int {
 }
 
 func (viewer *Viewer) Update() error {
-    viewer.ImageCache.Cleanup()
+    if viewer.Time % 60 == 0 {
+        viewer.ImageCache.Cleanup(viewer.Time)
+    }
     viewer.Time += 1
     keys := make([]ebiten.Key, 0)
     keys = inpututil.AppendPressedKeys(keys)
