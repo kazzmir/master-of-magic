@@ -164,6 +164,15 @@ const (
     CityEnchantmentWallOfDarkness
 )
 
+func (enchantment CityEnchantment) Name() string {
+    switch enchantment {
+        case CityEnchantmentWallOfFire: return "Wall of Fire"
+        case CityEnchantmentWallOfDarkness: return "Wall of Darkness"
+    }
+
+    return ""
+}
+
 /*
 Altar of Battle	￼Life
 Astral Gate	￼Life

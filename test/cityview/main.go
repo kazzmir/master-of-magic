@@ -35,6 +35,7 @@ func NewEngine() (*Engine, error) {
     player := playerlib.Player{
         Wizard: setup.WizardCustom{
             Name: "Billy",
+            Banner: data.BannerRed,
         },
     }
 
@@ -75,6 +76,9 @@ func NewEngine() (*Engine, error) {
     // city.ProducingUnit = units.HighElfSpearmen
     city.ResetCitizens(nil)
         // ProducingUnit: units.UnitNone,
+
+    city.AddEnchantment(data.CityEnchantmentWallOfFire, data.BannerRed)
+    city.AddEnchantment(data.CityEnchantmentWallOfDarkness, data.BannerGreen)
 
     var garrison []units.StackUnit
     for i := 0; i < 2; i++ {

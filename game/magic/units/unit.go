@@ -1191,7 +1191,7 @@ var FireElemental Unit = Unit{
     Name: "Fire Elemental",
     Count: 1,
     AttackSound: AttackSoundMonsterVsNormal, // FIXME
-    MovementSound: MovementSoundSilent,
+    MovementSound: MovementSoundFly2,
     MovementSpeed: 1,
     MeleeAttackPower: 12,
     Defense: 4,
