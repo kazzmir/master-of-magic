@@ -20,9 +20,6 @@ import (
     "github.com/hajimehoshi/ebiten/v2/text/v2"
 )
 
-const ScreenWidth = 1024
-const ScreenHeight = 768
-
 type LbxData struct {
     Lbx *lbx.LbxFile
     Name string
@@ -148,13 +145,16 @@ type Viewer struct {
     ShiftCount int
     Time uint64
     ImageCache ImageCache
+
+    ScreenWidth int
+    ScreenHeight int
 }
 
-const TileWidth = 50
-const TileHeight = 50
+const TileWidth = 60
+const TileHeight = 60
 
-func tilesPerRow() int {
-    width := ScreenWidth - 1
+func (viewer *Viewer) tilesPerRow() int {
+    width := viewer.ScreenWidth - 1
     return width / TileWidth
 }
 
@@ -313,7 +313,7 @@ func (viewer *Viewer) Update() error {
     }
 
     if press_up {
-        position := viewer.CurrentTile - tilesPerRow()
+        position := viewer.CurrentTile - viewer.tilesPerRow()
         if position >= 0 {
             viewer.CurrentTile = position
             viewer.CurrentImage = 0
@@ -321,15 +321,15 @@ func (viewer *Viewer) Update() error {
     }
 
     if press_down {
-        position := viewer.CurrentTile + tilesPerRow()
+        position := viewer.CurrentTile + viewer.tilesPerRow()
         if position < len(viewer.Images) {
             viewer.CurrentTile = position
             viewer.CurrentImage = 0
         }
     }
 
-    tilesPerRow := (ScreenWidth - 1) / TileWidth
-    tilesPerColumn := (ScreenHeight - 100) / TileHeight - 1
+    tilesPerRow := (viewer.ScreenWidth - 1) / TileWidth
+    tilesPerColumn := (viewer.ScreenHeight - 100) / TileHeight - 1
 
     if viewer.CurrentTile > (viewer.StartingRow + tilesPerColumn) * tilesPerRow {
         viewer.StartingRow = viewer.CurrentTile / tilesPerRow - tilesPerColumn
@@ -355,7 +355,10 @@ func (viewer *Viewer) Update() error {
 }
 
 func (viewer *Viewer) Layout(outsideWidth int, outsideHeight int) (int, int) {
-    return ScreenWidth, ScreenHeight
+    viewer.ScreenWidth = outsideWidth
+    viewer.ScreenHeight = outsideHeight
+    return outsideWidth, outsideHeight
+    // return ScreenWidth, ScreenHeight
 }
 
 func aspectScale(width, height, maxWidth, maxHeight int) (float64, float64) {
@@ -399,7 +402,7 @@ func (viewer *Viewer) Draw(screen *ebiten.Image) {
     y := startY
 
     for i, image := range viewer.Images {
-        if i < viewer.StartingRow * tilesPerRow() {
+        if i < viewer.StartingRow * viewer.tilesPerRow() {
             continue
         }
         if image.IsLoaded() && len(image.Images) > 0 {
@@ -424,11 +427,11 @@ func (viewer *Viewer) Draw(screen *ebiten.Image) {
         }
 
         x += TileWidth
-        if x + TileWidth >= ScreenWidth {
+        if x + TileWidth >= viewer.ScreenWidth {
             x = 1
             y += TileHeight
 
-            if y >= ScreenHeight {
+            if y >= viewer.ScreenHeight {
                 break
             }
         }
@@ -436,9 +439,9 @@ func (viewer *Viewer) Draw(screen *ebiten.Image) {
 
     if viewer.State == ViewStateImage {
         if len(viewer.Images[viewer.CurrentTile].Images) > 0 {
-            vector.DrawFilledRect(screen, 0, float32(startY), float32(ScreenWidth), float32(ScreenHeight - startY), color.RGBA{0, 0, 0, 92}, false)
-            middleX := ScreenWidth / 2
-            middleY := ScreenHeight / 2
+            vector.DrawFilledRect(screen, 0, float32(startY), float32(viewer.ScreenWidth), float32(viewer.ScreenHeight - startY), color.RGBA{0, 0, 0, 92}, false)
+            middleX := viewer.ScreenWidth / 2
+            middleY := viewer.ScreenHeight / 2
 
             tile := viewer.Images[viewer.CurrentTile]
 
@@ -663,7 +666,7 @@ func main() {
         return
     }
 
-    ebiten.SetWindowSize(ScreenWidth, ScreenHeight)
+    ebiten.SetWindowSize(1100, 1000)
     ebiten.SetWindowTitle("lbx viewer")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 
