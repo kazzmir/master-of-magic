@@ -1088,15 +1088,26 @@ func drawCityScape(screen *ebiten.Image, buildings []BuildingSlot, buildingLook 
         screen.DrawImage(river[index], &options)
     }
 
-    for _, enchantment := range enchantments {
-        if enchantment.Enchantment == data.CityEnchantmentWallOfFire {
-            var options ebiten.DrawImageOptions
-            options.ColorScale.ScaleAlpha(alphaScale)
-            options.GeoM = baseGeoM
-            options.GeoM.Translate(0, 85)
-            images, _ := imageCache.GetImages("cityscap.lbx", 77)
-            index := animationCounter % uint64(len(images))
-            screen.DrawImage(images[index], &options)
+    for _, enchantment := range slices.SortedFunc(slices.Values(enchantments), func (a citylib.Enchantment, b citylib.Enchantment) int {
+        return cmp.Compare(a.Enchantment.Name(), b.Enchantment.Name())
+    }) {
+        switch enchantment.Enchantment {
+            case data.CityEnchantmentWallOfFire:
+                var options ebiten.DrawImageOptions
+                options.ColorScale.ScaleAlpha(alphaScale)
+                options.GeoM = baseGeoM
+                options.GeoM.Translate(0, 85)
+                images, _ := imageCache.GetImages("cityscap.lbx", 77)
+                index := animationCounter % uint64(len(images))
+                screen.DrawImage(images[index], &options)
+            case data.CityEnchantmentWallOfDarkness:
+                var options ebiten.DrawImageOptions
+                options.ColorScale.ScaleAlpha(alphaScale)
+                options.GeoM = baseGeoM
+                options.GeoM.Translate(0, 85)
+                images, _ := imageCache.GetImages("cityscap.lbx", 79)
+                index := animationCounter % uint64(len(images))
+                screen.DrawImage(images[index], &options)
         }
     }
 
