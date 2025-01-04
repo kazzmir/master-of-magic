@@ -45,7 +45,7 @@ func MakeEnchantmentView(cache *lbx.LbxCache, city *citylib.City, player *player
 
             geom2 := geom
             geom2.Translate(5, 28)
-            drawCityScape(screen, buildingSlots, buildinglib.BuildingNone, buildinglib.BuildingNone, ui.Counter / 8, &imageCache, fonts, city.BuildingInfo, player, geom2, 1.0)
+            drawCityScape(screen, buildingSlots, buildinglib.BuildingNone, buildinglib.BuildingNone, ui.Counter / 8, &imageCache, fonts, city.BuildingInfo, player, city.Enchantments.Values(), geom2, 1.0)
         },
     }
 

@@ -448,7 +448,7 @@ func makeCityScapeElement(cache *lbx.LbxCache, ui *uilib.UI, city *citylib.City,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
             var geom ebiten.GeoM
             geom.Translate(float64(x1), float64(y1))
-            drawCityScape(screen, buildings, buildingLook, newBuilding, ui.Counter / 8, imageCache, fonts, city.BuildingInfo, player, geom, (*getAlpha)())
+            drawCityScape(screen, buildings, buildingLook, newBuilding, ui.Counter / 8, imageCache, fonts, city.BuildingInfo, player, city.Enchantments.Values(), geom, (*getAlpha)())
             // vector.StrokeRect(screen, float32(buildingView.Min.X), float32(buildingView.Min.Y), float32(buildingView.Dx()), float32(buildingView.Dy()), 1, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff}, true)
         },
         RightClick: func(element *uilib.UIElement) {
@@ -992,7 +992,7 @@ func getRaceRebelIndex(race data.Race) int {
     return -1
 }
 
-func drawCityScape(screen *ebiten.Image, buildings []BuildingSlot, buildingLook buildinglib.Building, newBuilding buildinglib.Building, animationCounter uint64, imageCache *util.ImageCache, fonts *Fonts, buildingInfo buildinglib.BuildingInfos, player *playerlib.Player, baseGeoM ebiten.GeoM, alphaScale float32) {
+func drawCityScape(screen *ebiten.Image, buildings []BuildingSlot, buildingLook buildinglib.Building, newBuilding buildinglib.Building, animationCounter uint64, imageCache *util.ImageCache, fonts *Fonts, buildingInfo buildinglib.BuildingInfos, player *playerlib.Player, enchantments []citylib.Enchantment, baseGeoM ebiten.GeoM, alphaScale float32) {
     // 5 is grasslands
     // FIXME: make the land type and sky configurable
     landBackground, err := imageCache.GetImage("cityscap.lbx", 0, 4)
@@ -1086,6 +1086,18 @@ func drawCityScape(screen *ebiten.Image, buildings []BuildingSlot, buildingLook 
         options.GeoM.Translate(1, -2)
         index := animationCounter % uint64(len(river))
         screen.DrawImage(river[index], &options)
+    }
+
+    for _, enchantment := range enchantments {
+        if enchantment.Enchantment == data.CityEnchantmentWallOfFire {
+            var options ebiten.DrawImageOptions
+            options.ColorScale.ScaleAlpha(alphaScale)
+            options.GeoM = baseGeoM
+            options.GeoM.Translate(0, 85)
+            images, _ := imageCache.GetImages("cityscap.lbx", 77)
+            index := animationCounter % uint64(len(images))
+            screen.DrawImage(images[index], &options)
+        }
     }
 
     drawName()
