@@ -3,6 +3,7 @@ package cityview
 import (
     "fmt"
     "log"
+    "context"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/game/magic/util"
@@ -25,24 +26,33 @@ func PlayEnchantmentSound(cache *lbx.LbxCache) {
     }
 }
 
-func MakeEnchantmentView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.Player, spellName string) (*uilib.UI, error) {
+func MakeEnchantmentView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.Player, spellName string) (*uilib.UI, context.Context, error) {
     imageCache := util.MakeImageCache(cache)
 
     background, _ := imageCache.GetImage("spellscr.lbx", 73, 0)
     buildingSlots := makeBuildingSlots(city)
     fonts, err := makeFonts(cache)
     if err != nil {
-        return nil, err
+        return nil, context.Background(), err
     }
 
     geom := ebiten.GeoM{}
     geom.Translate(30, 30)
 
-    // getAlpha := ui.MakeFadeIn(fadeSpeed)
-
     var getAlpha util.AlphaFadeFunc
+    fadeSpeed := uint64(7)
 
-    ui := &uilib.UI{
+    quit, cancel := context.WithCancel(context.Background())
+
+    var ui *uilib.UI
+
+    ui = &uilib.UI{
+        LeftClick: func() {
+            getAlpha = ui.MakeFadeOut(fadeSpeed)
+            ui.AddDelay(fadeSpeed, func(){
+                cancel()
+            })
+        },
         Draw: func(ui *uilib.UI, screen *ebiten.Image) {
             var options ebiten.DrawImageOptions
 
@@ -64,7 +74,7 @@ func MakeEnchantmentView(cache *lbx.LbxCache, city *citylib.City, player *player
         },
     }
 
-    getAlpha = ui.MakeFadeIn(7)
+    getAlpha = ui.MakeFadeIn(fadeSpeed)
 
     ui.SetElementsFromArray(nil)
 
@@ -72,5 +82,5 @@ func MakeEnchantmentView(cache *lbx.LbxCache, city *citylib.City, player *player
     ui.AddElement(&uilib.UIElement{
     })
 
-    return ui, nil
+    return ui, quit, nil
 }

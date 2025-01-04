@@ -2,6 +2,7 @@ package main
 
 import (
     "log"
+    "context"
 
     "github.com/kazzmir/master-of-magic/lib/fraction"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
@@ -27,6 +28,7 @@ const ScreenHeight = 200
 type Engine struct {
     Counter uint64
     UI *uilib.UI
+    Quit context.Context
     Cache *lbx.LbxCache
 }
 
@@ -38,21 +40,21 @@ func NewEngine() (*Engine, error) {
     }
 
     var err error
-    engine.UI, err = engine.MakeUI()
+    engine.UI, engine.Quit, err = engine.MakeUI()
     return engine, err
 }
 
-func (engine *Engine) MakeUI() (*uilib.UI, error) {
+func (engine *Engine) MakeUI() (*uilib.UI, context.Context, error) {
     buildingInfo, _ := buildinglib.ReadBuildingInfo(engine.Cache)
 
     terrainLbx, err := engine.Cache.GetLbxFile("terrain.lbx")
     if err != nil {
-        return nil, err
+        return nil, context.Background(), err
     }
 
     terrainData, err := terrain.ReadTerrainData(terrainLbx)
     if err != nil {
-        return nil, err
+        return nil, context.Background(), err
     }
 
     gameMap := maplib.Map{
@@ -144,6 +146,10 @@ func (engine *Engine) Update() error {
     }
 
     engine.UI.StandardUpdate()
+
+    if engine.Quit.Err() != nil {
+        return ebiten.Termination
+    }
 
     return nil
 }
