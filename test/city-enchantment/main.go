@@ -8,6 +8,7 @@ import (
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
+    "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
@@ -85,6 +86,8 @@ func (engine *Engine) MakeUI() (*uilib.UI, error) {
 
     city.AddEnchantment(data.CityEnchantmentWallOfFire, data.BannerRed)
 
+    cityview.PlayEnchantmentSound(engine.Cache)
+
     return cityview.MakeEnchantmentView(engine.Cache, city, player, "Wall of Fire")
 
     /*
@@ -159,6 +162,8 @@ func main(){
     ebiten.SetWindowSize(ScreenWidth * 5, ScreenHeight * 5)
     ebiten.SetWindowTitle("city enchantment")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
+
+    audio.Initialize()
 
     engine, err := NewEngine()
 
