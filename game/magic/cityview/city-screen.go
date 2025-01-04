@@ -162,7 +162,7 @@ func makeFonts(cache *lbx.LbxCache) (*Fonts, error) {
 
     bigFont := font.MakeOptimizedFontWithPalette(fonts[5], yellowPalette)
 
-    // red := color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff}
+    // FIXME: this palette isn't exactly right. It should be a yellow-orange fade. Probably it exists somewhere else in the codebase
     yellow := color.RGBA{R: 0xef, G: 0xce, B: 0x4e, A: 0xff}
     fadePalette := color.Palette{
         color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
