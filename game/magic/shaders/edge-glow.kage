@@ -23,7 +23,7 @@ func nearbyAlpha(src vec2) float {
     right := imageSrc0At(src + vec2(1, 0))
     up_left := imageSrc0At(src - vec2(1, 1))
     up := imageSrc0At(src - vec2(0, 1))
-    up_right := imageSrc0At(src + vec2(1, 1))
+    up_right := imageSrc0At(src + vec2(1, -1))
     down_left := imageSrc0At(src + vec2(-1, 1))
     down := imageSrc0At(src + vec2(0, 1))
     down_right := imageSrc0At(src + vec2(1, 1))
