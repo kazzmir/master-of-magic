@@ -192,6 +192,15 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
 
     cancelBackground, _ := game.ImageCache.GetImage("main.lbx", 47, 0)
 
+    var selectMessage string
+
+    switch locationType {
+        case LocationTypeAny: selectMessage = fmt.Sprintf("Select a space as the target for an %v spell.", spell.Name)
+        case LocationTypeFriendlyCity: selectMessage = fmt.Sprintf("Select a friendly city to cast %v on.", spell.Name)
+        default:
+            selectMessage = fmt.Sprintf("unhandled location type %v", locationType)
+    }
+
     ui := &uilib.UI{
         Draw: func(ui *uilib.UI, screen *ebiten.Image){
             var options ebiten.DrawImageOptions
@@ -217,7 +226,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
 
             castingFont.PrintCenter(screen, 280, 81, 1, ebiten.ColorScale{}, "Casting")
 
-            whiteFont.PrintWrapCenter(screen, 280, 120, float64(cancelBackground.Bounds().Dx() - 5), 1, ebiten.ColorScale{}, fmt.Sprintf("Select a space as the target for an %v spell.", spell.Name))
+            whiteFont.PrintWrapCenter(screen, 280, 120, float64(cancelBackground.Bounds().Dx() - 5), 1, ebiten.ColorScale{}, selectMessage)
         },
     }
 
