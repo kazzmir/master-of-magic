@@ -275,6 +275,9 @@ func renderUnitAbilities(screen *ebiten.Image, imageCache *util.ImageCache, unit
                         artifactPic, _ := imageCache.GetImage("items.lbx", artifacts[i].Image, 0)
                         screen.DrawImage(artifactPic, &defaultOptions)
 
+                        x, y := defaultOptions.GeoM.Apply(0, 0)
+                        mediumFont.Print(screen, x + float64(artifactPic.Bounds().Dx() + 2), float64(y) + 5, 1, defaultOptions.ColorScale, artifacts[i].Name)
+
                         artifacts = slices.Delete(artifacts, i, i+1)
                         return float64(artifactPic.Bounds().Dy() + 1)
                     }
