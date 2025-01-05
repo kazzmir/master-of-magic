@@ -229,6 +229,10 @@ func (camera *Camera) Move(dx int, dy int) {
 func (camera *Camera) Center(x int, y int) {
     camera.X = x
     camera.Y = y
+
+    if camera.Y < 0 {
+        camera.Y = 0
+    }
 }
 
 func MakeCamera() Camera {
@@ -2432,12 +2436,7 @@ func (game *Game) ScreenToTile(inX float64, inY float64) (int, int) {
 func (game *Game) doInputZoom(yield coroutine.YieldFunc) bool {
     inputLoop:
     for {
-        _, wheelY := ebiten.Wheel()
-        if wheelY > 0 {
-            wheelY = 1
-        } else if wheelY < 0 {
-            wheelY = -1
-        }
+        _, wheelY := inputmanager.Wheel()
 
         // zoomSpeed := 5
         zoomSpeed2 := 7
@@ -2504,6 +2503,14 @@ func (game *Game) doInputZoom(yield coroutine.YieldFunc) bool {
 }
 
 func (game *Game) doMoveCamera(yield coroutine.YieldFunc, x int, y int) {
+    if y < 0 {
+        y = 0
+    }
+
+    if y > game.CurrentMap().Height() {
+        y = game.CurrentMap().Height()
+    }
+
     dx := x - game.Camera.GetX()
     dy := y - game.Camera.GetY()
     length := math.Sqrt(float64(dx * dx + dy * dy))

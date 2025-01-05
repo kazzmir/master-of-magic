@@ -119,3 +119,22 @@ func MousePosition() (int, int) {
 
     return theInputManager.mouseX, theInputManager.mouseY
 }
+
+// return normalized wheel values, which are always -1,0,1 for both x and y, no matter how far the wheel has moved
+func Wheel() (float64, float64) {
+    x, y := ebiten.Wheel()
+    if x > 0 {
+        x = 1
+    }
+    if x < 0 {
+        x = -1
+    }
+    if y > 0 {
+        y = 1
+    }
+    if y < 0 {
+        y = -1
+    }
+
+    return x, y
+}
