@@ -2111,14 +2111,17 @@ func (game *Game) doNextTurn(yield coroutine.YieldFunc) {
 }
 
 func (game *Game) AddExperience(player *playerlib.Player, unit units.StackUnit, amount int) {
-    if unit.IsHero() {
-        level_before := units.GetHeroExperienceLevel(unit.GetExperience(), player.Wizard.AbilityEnabled(setup.AbilityWarlord), player.GlobalEnchantments.Contains(data.EnchantmentCrusade))
+    if player.Human && unit.IsHero() {
+        warlord := player.Wizard.AbilityEnabled(setup.AbilityWarlord)
+        crusade := player.GlobalEnchantments.Contains(data.EnchantmentCrusade)
+
+        level_before := units.GetHeroExperienceLevel(unit.GetExperience(), warlord, crusade)
 
         unit.AddExperience(amount)
 
-        level_after := units.GetHeroExperienceLevel(unit.GetExperience(), player.Wizard.AbilityEnabled(setup.AbilityWarlord), player.GlobalEnchantments.Contains(data.EnchantmentCrusade))
+        level_after := units.GetHeroExperienceLevel(unit.GetExperience(), warlord, crusade)
 
-        if player.Human && (level_before != level_after) {
+        if level_before != level_after {
             hero := unit.(*herolib.Hero)
             game.Events <- &GameEventHeroLevelUp{
                 Hero: hero,
