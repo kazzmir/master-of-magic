@@ -13,6 +13,7 @@
 * combat: town damage, destroy buildings/people after a battle
 * combat: implement flying fortress
 * add edge glow to enchanted items
+* hero: ability progress (https://masterofmagic.fandom.com/wiki/Experience_Level#Ability_Improvement_Tables_-_Heroes)
 
 9/22/2024 * city view: separate surplus food/gold from subsistence food/gold
 9/22/2024 * overworld path finding to point on map

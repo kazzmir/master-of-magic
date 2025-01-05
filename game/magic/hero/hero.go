@@ -551,7 +551,9 @@ func (hero *Hero) GetMaxHealth() int {
 }
 
 func (hero *Hero) AddExperience(amount int) {
-    hero.Unit.AddExperience(amount)
+    if hero.Status != StatusDead {
+        hero.Unit.AddExperience(amount)
+    }
 }
 
 func (hero *Hero) GetExperience() int {
@@ -827,22 +829,23 @@ func (hero *Hero) GainLevel(maxLevel units.HeroExperienceLevel) {
 }
 
 func (hero *Hero) GetBaseMeleeAttackPower() int {
-    base := hero.Unit.GetBaseMeleeAttackPower()
-
     level := hero.GetExperienceLevel()
-    switch level {
-        case units.ExperienceHero:
-        case units.ExperienceMyrmidon: base += 1
-        case units.ExperienceCaptain: base += 2
-        case units.ExperienceCommander: base += 3
-        case units.ExperienceChampionHero: base += 4
-        case units.ExperienceLord: base += 5
-        case units.ExperienceGrandLord: base += 6
-        case units.ExperienceSuperHero: base += 7
-        case units.ExperienceDemiGod: base += 8
-    }
+    return hero.Unit.GetBaseMeleeAttackPower() + hero.getBaseMeleeAttackPowerProgression(level)
+}
 
-    return base
+func (hero *Hero) getBaseMeleeAttackPowerProgression(level units.HeroExperienceLevel) int {
+    switch level {
+        case units.ExperienceHero: return 0
+        case units.ExperienceMyrmidon: return 1
+        case units.ExperienceCaptain: return 2
+        case units.ExperienceCommander: return 3
+        case units.ExperienceChampionHero: return 4
+        case units.ExperienceLord: return 5
+        case units.ExperienceGrandLord: return 6
+        case units.ExperienceSuperHero: return 7
+        case units.ExperienceDemiGod: return 8
+    }
+    return 0
 }
 
 func (hero *Hero) GetMeleeAttackPower() int {
@@ -858,25 +861,23 @@ func (hero *Hero) GetMeleeAttackPower() int {
 }
 
 func (hero *Hero) GetBaseRangedAttackPower() int {
-    base := hero.Unit.GetBaseRangedAttackPower()
-    if base == 0 {
-        return 0
-    }
-
     level := hero.GetExperienceLevel()
-    switch level {
-        case units.ExperienceHero:
-        case units.ExperienceMyrmidon: base += 1
-        case units.ExperienceCaptain: base += 2
-        case units.ExperienceCommander: base += 3
-        case units.ExperienceChampionHero: base += 4
-        case units.ExperienceLord: base += 5
-        case units.ExperienceGrandLord: base += 6
-        case units.ExperienceSuperHero: base += 7
-        case units.ExperienceDemiGod: base += 8
-    }
+    return hero.Unit.GetBaseRangedAttackPower() + hero.getBaseRangedAttackPowerProgression(level)
+}
 
-    return base
+func (hero *Hero) getBaseRangedAttackPowerProgression(level units.HeroExperienceLevel) int {
+    switch level {
+        case units.ExperienceHero: return 0
+        case units.ExperienceMyrmidon: return 1
+        case units.ExperienceCaptain: return 2
+        case units.ExperienceCommander: return 3
+        case units.ExperienceChampionHero: return 4
+        case units.ExperienceLord: return 5
+        case units.ExperienceGrandLord: return 6
+        case units.ExperienceSuperHero: return 7
+        case units.ExperienceDemiGod: return 8
+    }
+    return 0
 }
 
 func (hero *Hero) GetRangedAttackPower() int {
@@ -896,22 +897,23 @@ func (hero *Hero) GetRangedAttackPower() int {
 }
 
 func (hero *Hero) GetBaseDefense() int {
-    base := hero.Unit.GetBaseDefense()
-
     level := hero.GetExperienceLevel()
-    switch level {
-        case units.ExperienceHero:
-        case units.ExperienceMyrmidon: base += 1
-        case units.ExperienceCaptain: base += 1
-        case units.ExperienceCommander: base += 2
-        case units.ExperienceChampionHero: base += 2
-        case units.ExperienceLord: base += 3
-        case units.ExperienceGrandLord: base += 3
-        case units.ExperienceSuperHero: base += 4
-        case units.ExperienceDemiGod: base += 4
-    }
+    return hero.Unit.GetBaseDefense() + hero.getBaseDefenseProgression(level)
+}
 
-    return base
+func (hero *Hero) getBaseDefenseProgression(level units.HeroExperienceLevel) int {
+    switch level {
+        case units.ExperienceHero: return 0
+        case units.ExperienceMyrmidon: return 1
+        case units.ExperienceCaptain: return 1
+        case units.ExperienceCommander: return 2
+        case units.ExperienceChampionHero: return 2
+        case units.ExperienceLord: return 3
+        case units.ExperienceGrandLord: return 3
+        case units.ExperienceSuperHero: return 4
+        case units.ExperienceDemiGod: return 4
+    }
+    return 0
 }
 
 func (hero *Hero) GetDefense() int {
@@ -927,22 +929,23 @@ func (hero *Hero) GetDefense() int {
 }
 
 func (hero *Hero) GetBaseResistance() int {
-    base := hero.Unit.GetBaseResistance()
-
     level := hero.GetExperienceLevel()
-    switch level {
-        case units.ExperienceHero:
-        case units.ExperienceMyrmidon: base += 1
-        case units.ExperienceCaptain: base += 2
-        case units.ExperienceCommander: base += 3
-        case units.ExperienceChampionHero: base += 4
-        case units.ExperienceLord: base += 5
-        case units.ExperienceGrandLord: base += 6
-        case units.ExperienceSuperHero: base += 7
-        case units.ExperienceDemiGod: base += 8
-    }
+    return hero.Unit.GetBaseResistance() + hero.getBaseResistanceProgression(level)
+}
 
-    return base
+func (hero *Hero) getBaseResistanceProgression(level units.HeroExperienceLevel) int {
+    switch level {
+        case units.ExperienceHero: return 0
+        case units.ExperienceMyrmidon: return 1
+        case units.ExperienceCaptain: return 2
+        case units.ExperienceCommander: return 3
+        case units.ExperienceChampionHero: return 4
+        case units.ExperienceLord: return 5
+        case units.ExperienceGrandLord: return 6
+        case units.ExperienceSuperHero: return 7
+        case units.ExperienceDemiGod: return 8
+    }
+    return 0
 }
 
 func (hero *Hero) GetResistance() int {
@@ -964,22 +967,55 @@ func (hero *Hero) GetHitPoints() int {
 }
 
 func (hero *Hero) GetBaseHitPoints() int {
-    base := hero.Unit.GetBaseHitPoints()
+    level := hero.GetExperienceLevel()
+    return hero.Unit.GetBaseHitPoints() + hero.getBaseHitPointsProgression(level)
+}
+
+func (hero *Hero) getBaseHitPointsProgression(level units.HeroExperienceLevel) int {
+    switch level {
+        case units.ExperienceHero: return 0
+        case units.ExperienceMyrmidon: return 1
+        case units.ExperienceCaptain: return 2
+        case units.ExperienceCommander: return 3
+        case units.ExperienceChampionHero: return 4
+        case units.ExperienceLord: return 5
+        case units.ExperienceGrandLord: return 6
+        case units.ExperienceSuperHero: return 7
+        case units.ExperienceDemiGod: return 8
+    }
+    return 0
+}
+
+func (hero *Hero) GetBaseProgression() []string {
+    var improvements []string;
 
     level := hero.GetExperienceLevel()
-    switch level {
-        case units.ExperienceHero:
-        case units.ExperienceMyrmidon: base += 1
-        case units.ExperienceCaptain: base += 2
-        case units.ExperienceCommander: base += 3
-        case units.ExperienceChampionHero: base += 4
-        case units.ExperienceLord: base += 5
-        case units.ExperienceGrandLord: base += 6
-        case units.ExperienceSuperHero: base += 7
-        case units.ExperienceDemiGod: base += 8
+    if level <= units.ExperienceHero {
+        return improvements
     }
 
-    return base
+    hitPoints := hero.getBaseHitPointsProgression(level) - hero.getBaseHitPointsProgression(level - 1)
+    if hitPoints > 0 {
+        improvements = append(improvements, fmt.Sprintf("+%v Hit Points", hitPoints))
+    }
+
+    resistance := hero.getBaseResistanceProgression(level) - hero.getBaseResistanceProgression(level - 1)
+    if resistance > 0 {
+        improvements = append(improvements, fmt.Sprintf("+%v Resistance", resistance))
+    }
+
+    meleeAttack := hero.getBaseMeleeAttackPowerProgression(level) - hero.getBaseMeleeAttackPowerProgression(level - 1)
+    rangedAttack := hero.getBaseRangedAttackPowerProgression(level) - hero.getBaseRangedAttackPowerProgression(level - 1)
+    if meleeAttack > 0 || rangedAttack > 0{
+        improvements = append(improvements, fmt.Sprintf("+%v Attack", min(meleeAttack, rangedAttack)))
+    }
+
+    defense := hero.getBaseDefenseProgression(level) - hero.getBaseDefenseProgression(level - 1)
+    if defense > 0 {
+        improvements = append(improvements, fmt.Sprintf("+%v Defense", defense))
+    }
+
+    return improvements
 }
 
 func (hero *Hero) GetAbilities() []data.Ability {
