@@ -1,7 +1,7 @@
 package data
 
-const ScreenWidth = 320
-const ScreenHeight = 200
+const ScreenWidth = 2 *320
+const ScreenHeight = 2 * 200
 
 type BannerType int
 const (

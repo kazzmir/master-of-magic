@@ -3501,7 +3501,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
     var elements []*uilib.UIElement
 
     // game button
-    elements = append(elements, makeButton(1, 7, 4, false, func(){
+    elements = append(elements, makeButton(1, 2*7, 2*4, false, func(){
         select {
             case game.Events <- &GameEventLoadMenu{}:
             default:
@@ -3509,7 +3509,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
     }))
 
     // spell button
-    elements = append(elements, makeButton(2, 47, 4, false, func(){
+    elements = append(elements, makeButton(2, 2*47, 2*4, false, func(){
         select {
             case game.Events <- &GameEventCastSpellBook{}:
             default:
@@ -3517,7 +3517,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
     }))
 
     // army button
-    elements = append(elements, makeButton(3, 89, 4, false, func(){
+    elements = append(elements, makeButton(3, 2*89, 2*4, false, func(){
         select {
             case game.Events<- &GameEventArmyView{}:
             default:
@@ -3525,7 +3525,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
     }))
 
     // cities button
-    elements = append(elements, makeButton(4, 140, 4, false, func(){
+    elements = append(elements, makeButton(4, 2*140, 2*4, false, func(){
         select {
             case game.Events<- &GameEventCityListView{}:
             default:
@@ -3533,7 +3533,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
     }))
 
     // magic button
-    elements = append(elements, makeButton(5, 184, 4, false, func(){
+    elements = append(elements, makeButton(5, 2*184, 2*4, false, func(){
         select {
             case game.Events<- &GameEventMagicView{}:
             default:
@@ -3541,12 +3541,12 @@ func (game *Game) MakeHudUI() *uilib.UI {
     }))
 
     // info button
-    elements = append(elements, makeButton(6, 226, 4, true, func(){
+    elements = append(elements, makeButton(6, 2*226, 2*4, true, func(){
         ui.AddElements(game.MakeInfoUI(60, 25))
     }))
 
     // plane button
-    elements = append(elements, makeButton(7, 270, 4, false, func(){
+    elements = append(elements, makeButton(7, 2*270, 2*4, false, func(){
         switch game.Plane {
             case data.PlaneArcanus: game.Plane = data.PlaneMyrror
             case data.PlaneMyrror: game.Plane = data.PlaneArcanus
@@ -3559,8 +3559,8 @@ func (game *Game) MakeHudUI() *uilib.UI {
         player := game.Players[0]
         stack := player.SelectedStack
 
-        unitX1 := 246
-        unitY1 := 79
+        unitX1 := 2*246
+        unitY1 := 2*79
 
         unitX := unitX1
         unitY := unitY1
@@ -3739,7 +3739,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
         doneImages, _ := game.ImageCache.GetImages("main.lbx", 8)
         doneIndex := 0
-        doneRect := util.ImageRect(246, 176, doneImages[0])
+        doneRect := util.ImageRect(2*246, 2*176, doneImages[0])
         doneCounter := uint64(0)
         elements = append(elements, &uilib.UIElement{
             Rect: doneRect,
@@ -3778,7 +3778,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
         patrolImages, _ := game.ImageCache.GetImages("main.lbx", 9)
         patrolIndex := 0
-        patrolRect := util.ImageRect(280, 176, patrolImages[0])
+        patrolRect := util.ImageRect(2*280, 2*176, patrolImages[0])
         patrolCounter := uint64(0)
         elements = append(elements, &uilib.UIElement{
             Rect: patrolRect,
@@ -3821,7 +3821,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
         waitImages, _ := game.ImageCache.GetImages("main.lbx", 10)
         waitIndex := 0
-        waitRect := util.ImageRect(246, 186, waitImages[0])
+        waitRect := util.ImageRect(2*246, 2*186, waitImages[0])
         waitCounter := uint64(0)
         elements = append(elements, &uilib.UIElement{
             Rect: waitRect,
@@ -3858,7 +3858,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
         buildImages, _ := game.ImageCache.GetImages("main.lbx", 11)
         meldImages, _ := game.ImageCache.GetImages("main.lbx", 49)
         buildIndex := 0
-        buildRect := util.ImageRect(280, 186, buildImages[0])
+        buildRect := util.ImageRect(2*280, 2*186, buildImages[0])
         buildCounter := uint64(0)
         elements = append(elements, &uilib.UIElement{
             Rect: buildRect,
@@ -3944,7 +3944,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
         // next turn
         nextTurnImage, _ := game.ImageCache.GetImage("main.lbx", 35, 0)
         nextTurnImageClicked, _ := game.ImageCache.GetImage("main.lbx", 58, 0)
-        nextTurnRect := image.Rect(240, 174, 240 + nextTurnImage.Bounds().Dx(), 174 + nextTurnImage.Bounds().Dy())
+        nextTurnRect := image.Rect(2*240, 2*174, 240 + nextTurnImage.Bounds().Dx(), 174 + nextTurnImage.Bounds().Dy())
         nextTurnClicked := false
         elements = append(elements, &uilib.UIElement{
             Rect: nextTurnRect,
@@ -3966,7 +3966,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 var options ebiten.DrawImageOptions
-                options.GeoM.Translate(240, 174)
+                options.GeoM.Translate(2*240, 2*174)
                 screen.DrawImage(nextTurnImage, &options)
                 if nextTurnClicked {
                     options.GeoM.Translate(6, 5)
@@ -3986,7 +3986,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                     goldFood, _ := game.ImageCache.GetImage("main.lbx", 34, 0)
                     var options ebiten.DrawImageOptions
-                    options.GeoM.Translate(240, 77)
+                    options.GeoM.Translate(2*240, 2*77)
                     screen.DrawImage(goldFood, &options)
 
                     negativeScale := ebiten.ColorScale{}
@@ -3996,21 +3996,21 @@ func (game *Game) MakeHudUI() *uilib.UI {
                     negativeScale.SetR(float32(v))
 
                     if goldPerTurn < 0 {
-                        game.InfoFontRed.PrintCenter(screen, 278, 103, 1, negativeScale, fmt.Sprintf("%v Gold", goldPerTurn))
+                        game.InfoFontRed.PrintCenter(screen, 2*278, 2*103, 1, negativeScale, fmt.Sprintf("%v Gold", goldPerTurn))
                     } else {
-                        game.InfoFontYellow.PrintCenter(screen, 278, 103, 1, ebiten.ColorScale{}, fmt.Sprintf("%v Gold", goldPerTurn))
+                        game.InfoFontYellow.PrintCenter(screen, 2*278, 2*103, 1, ebiten.ColorScale{}, fmt.Sprintf("%v Gold", goldPerTurn))
                     }
 
                     if foodPerTurn < 0 {
-                        game.InfoFontRed.PrintCenter(screen, 278, 135, 1, negativeScale, fmt.Sprintf("%v Food", foodPerTurn))
+                        game.InfoFontRed.PrintCenter(screen, 2*278, 2*135, 1, negativeScale, fmt.Sprintf("%v Food", foodPerTurn))
                     } else {
-                        game.InfoFontYellow.PrintCenter(screen, 278, 135, 1, ebiten.ColorScale{}, fmt.Sprintf("%v Food", foodPerTurn))
+                        game.InfoFontYellow.PrintCenter(screen, 2*278, 2*135, 1, ebiten.ColorScale{}, fmt.Sprintf("%v Food", foodPerTurn))
                     }
 
                     if manaPerTurn < 0 {
-                        game.InfoFontRed.PrintCenter(screen, 278, 167, 1, negativeScale, fmt.Sprintf("%v Mana", manaPerTurn))
+                        game.InfoFontRed.PrintCenter(screen, 2*278, 2*167, 1, negativeScale, fmt.Sprintf("%v Mana", manaPerTurn))
                     } else {
-                        game.InfoFontYellow.PrintCenter(screen, 278, 167, 1, ebiten.ColorScale{}, fmt.Sprintf("%v Mana", manaPerTurn))
+                        game.InfoFontYellow.PrintCenter(screen, 2*278, 2*167, 1, ebiten.ColorScale{}, fmt.Sprintf("%v Mana", manaPerTurn))
                     }
                 },
             })
@@ -4019,13 +4019,13 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
     elements = append(elements, &uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            game.WhiteFont.PrintRight(screen, 276, 68, 1, ebiten.ColorScale{}, fmt.Sprintf("%v GP", game.Players[0].Gold))
+            game.WhiteFont.PrintRight(screen, 2*276, 2*68, 1, ebiten.ColorScale{}, fmt.Sprintf("%v GP", game.Players[0].Gold))
         },
     })
 
     elements = append(elements, &uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            game.WhiteFont.PrintRight(screen, 313, 68, 1, ebiten.ColorScale{}, fmt.Sprintf("%v MP", game.Players[0].Mana))
+            game.WhiteFont.PrintRight(screen, 2*313, 2*68, 1, ebiten.ColorScale{}, fmt.Sprintf("%v MP", game.Players[0].Mana))
         },
     })
 
@@ -4681,9 +4681,9 @@ func (game *Game) DrawGame(screen *ebiten.Image){
     var miniGeom ebiten.GeoM
     miniGeom.Translate(250, 20)
     mx, my := miniGeom.Apply(0, 0)
-    miniWidth := 60
-    miniHeight := 31
-    mini := screen.SubImage(image.Rect(int(mx), int(my), int(mx) + miniWidth, int(my) + miniHeight)).(*ebiten.Image)
+    miniWidth := 2*60
+    miniHeight := 2*31
+    mini := screen.SubImage(image.Rect(2*int(mx), 2*int(my), 2*int(mx) + miniWidth, 2*int(my) + miniHeight)).(*ebiten.Image)
     overworld.DrawMinimap(mini)
 
     game.HudUI.Draw(game.HudUI, screen)

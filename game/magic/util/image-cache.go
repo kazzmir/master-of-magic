@@ -4,6 +4,7 @@ import (
     "fmt"
     "strings"
     "image"
+    "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/game/magic/shaders"
@@ -18,6 +19,53 @@ type ImageCache struct {
     Cache map[string][]*ebiten.Image
 
     ShaderCache map[shaders.Shader]*ebiten.Shader
+}
+
+func getColor(image *image.Paletted, x int, y int) color.Color {
+    bounds := image.Bounds()
+    if x >= bounds.Min.X && x < bounds.Max.X && y >= bounds.Min.Y && y < bounds.Max.Y {
+        return image.At(x, y)
+    }
+    return color.Transparent
+}
+
+func scaleImage(img *image.Paletted) *image.Paletted {
+    bounds := img.Bounds()
+    scaledImage := image.NewPaletted(image.Rect(0, 0, 2 * bounds.Dx(), 2 * bounds.Dy()), img.Palette)
+    smooth := true // use Scale2x by Andrea Mazzoleni
+
+    for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+        for x := bounds.Min.X; x < bounds.Max.X; x++ {
+            B := getColor(img, x, y-1)
+            D := getColor(img, x-1, y)
+            E := getColor(img, x, y)
+            F := getColor(img, x+1, y)
+            H := getColor(img, x, y+1)
+
+            E0, E1, E2, E3 := E, E, E, E
+            if smooth && B != H && D != F {
+                if D == B {
+                    E0 = D
+                }
+                if B == F {
+                    E1 = F
+                }
+                if D == H {
+                    E2 = D
+                }
+                if H == F {
+                    E3 = F
+                }
+            }
+
+            scaledImage.Set(x*2, y*2, E0)
+            scaledImage.Set(x*2+1, y*2, E1)
+            scaledImage.Set(x*2, y*2+1, E2)
+            scaledImage.Set(x*2+1, y*2+1, E3)
+        }
+    }
+
+    return scaledImage
 }
 
 func MakeImageCache(lbxCache *lbx.LbxCache) ImageCache {
@@ -120,7 +168,7 @@ func (cache *ImageCache) GetImagesTransform(lbxPath string, index int, extra str
 
     var out []*ebiten.Image
     for i := 0; i < len(sprites); i++ {
-        out = append(out, ebiten.NewImageFromImage(transform(sprites[i])))
+        out = append(out, ebiten.NewImageFromImage(transform(scaleImage(sprites[i]))))
     }
 
     cache.Cache[key] = out
