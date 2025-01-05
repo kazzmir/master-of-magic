@@ -169,8 +169,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
     whiteFont := makeWhiteFont(fonts)
 
     overworld := Overworld{
-        CameraX: float64(game.Camera.GetX()),
-        CameraY: float64(game.Camera.GetY()),
+        Camera: game.Camera,
         Counter: game.Counter,
         Map: game.CurrentMap(),
         Cities: cities,
@@ -181,7 +180,6 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
         Fog: fog,
         ShowAnimation: game.State == GameStateUnitMoving,
         FogBlack: game.GetFogImage(),
-        Zoom: game.GetZoom(),
     }
 
     cancelBackground, _ := game.ImageCache.GetImage("main.lbx", 47, 0)
@@ -281,7 +279,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
     })
 
     game.Drawer = func(screen *ebiten.Image, game *Game){
-        overworld.Zoom = game.GetAnimatedZoom()
+        overworld.Camera = game.Camera
         overworld.DrawOverworld(screen, ebiten.GeoM{})
 
         var miniGeom ebiten.GeoM
@@ -299,7 +297,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
     moveCamera := image.Pt(game.Camera.GetX(), game.Camera.GetY())
     for !quit {
         moveCounter += 1
-        if game.GetZoom() > 0.9 {
+        if game.Camera.GetZoom() > 0.9 {
             overworld.Counter += 1
         }
 
@@ -322,8 +320,10 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                 game.Camera.Move(0, 1)
             }
 
+            /*
             overworld.CameraX = float64(game.Camera.GetX())
             overworld.CameraY = float64(game.Camera.GetY())
+            */
         }
 
         // within the viewable area

@@ -101,8 +101,7 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
     whiteFont := makeWhiteFont(fonts)
 
     overworld := Overworld{
-        CameraX: float64(game.Camera.GetX()),
-        CameraY: float64(game.Camera.GetY()),
+        Camera: game.Camera,
         Counter: game.Counter,
         Map: game.CurrentMap(),
         Cities: cities,
@@ -112,7 +111,6 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
         Fog: fog,
         ShowAnimation: game.State == GameStateUnitMoving,
         FogBlack: game.GetFogImage(),
-        Zoom: game.GetZoom(),
     }
 
     selectedPoint := image.Pt(-1, -1)
@@ -280,7 +278,7 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
     })
 
     game.Drawer = func(screen *ebiten.Image, game *Game){
-        overworld.Zoom = game.GetAnimatedZoom()
+        overworld.Camera = game.Camera
 
         overworld.DrawOverworld(screen, ebiten.GeoM{})
 
@@ -299,7 +297,7 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
     moveCamera := image.Pt(game.Camera.GetX(), game.Camera.GetY())
     for !quit {
         moveCounter += 1
-        if game.GetZoom() >= 0.9 {
+        if game.Camera.GetZoom() >= 0.9 {
             overworld.Counter += 1
         }
         zoomed := game.doInputZoom(yield)
@@ -322,8 +320,10 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
                 game.Camera.Move(0, 1)
             }
 
+            /*
             overworld.CameraX = float64(game.Camera.GetX())
             overworld.CameraY = float64(game.Camera.GetY())
+            */
         }
 
         // within the viewable area
