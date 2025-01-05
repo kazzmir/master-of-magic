@@ -184,6 +184,56 @@ const ZoomMax = 10
 const ZoomDefault = 10
 const ZoomStep = 10
 
+type Camera struct {
+    // tile coordinates
+    X int
+    Y int
+    // fractional tile coordinates
+    DX float64
+    DY float64
+
+    Zoom int
+    AnimatedZoom float64
+}
+
+func (camera *Camera) SetOffset(x float64, y float64) {
+    camera.DX = x
+    camera.DY = y
+}
+
+func (camera *Camera) GetOffsetX() float64 {
+    return float64(camera.X) + camera.DX
+}
+
+func (camera *Camera) GetOffsetY() float64 {
+    return float64(camera.Y) + camera.DY
+}
+
+func (camera *Camera) GetX() int {
+    return camera.X
+}
+
+func (camera *Camera) GetY() int {
+    return camera.Y
+}
+
+func (camera *Camera) Move(dx int, dy int) {
+    camera.X += dx
+    camera.Y += dy
+}
+
+func (camera *Camera) Center(x int, y int) {
+    camera.X = x
+    camera.Y = y
+}
+
+func MakeCamera() Camera {
+    return Camera{
+        Zoom: ZoomDefault,
+        AnimatedZoom: 0,
+    }
+}
+
 type Game struct {
     Cache *lbx.LbxCache
     ImageCache util.ImageCache
@@ -212,11 +262,13 @@ type Game struct {
 
     MovingStack *playerlib.UnitStack
 
+    /*
     cameraX int
     cameraY int
 
     cameraDX float64
     cameraDY float64
+    */
 
     HudUI *uilib.UI
     Help lbx.Help
@@ -229,6 +281,8 @@ type Game struct {
 
     OverlandZoom int
     AnimatedZoom float64
+
+    Camera Camera
 }
 
 func (game *Game) GetMap(plane data.Plane) *maplib.Map {
@@ -284,14 +338,16 @@ func (game *Game) MakeFog() [][]bool {
     return fog
 }
 
-func (game *Game) CenterCamera(x int, y int){
+func (game *Game) CenterCamera2(x int, y int){
     /*
     game.cameraX = x - int(5.0 / game.GetZoom())
     game.cameraY = y - int(5.0 / game.GetZoom())
     */
 
+    /*
     game.cameraX = x
     game.cameraY = y
+    */
 
     /*
     if game.cameraX < 0 {
@@ -299,6 +355,7 @@ func (game *Game) CenterCamera(x int, y int){
     }
     */
 
+    /*
     if game.cameraY < 0 {
         game.cameraY = 0
     }
@@ -306,6 +363,7 @@ func (game *Game) CenterCamera(x int, y int){
     if game.cameraY >= game.CurrentMap().Height() - 11 {
         game.cameraY = game.CurrentMap().Height() - 11
     }
+    */
 }
 
 /* initial casting skill power is computed as follows:
@@ -577,6 +635,7 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         CurrentPlayer: -1,
         OverlandZoom: ZoomDefault,
         AnimatedZoom: 0,
+        Camera: MakeCamera(),
     }
 
     game.HudUI = game.MakeHudUI()
@@ -750,7 +809,7 @@ func (game *Game) doCityListView(yield coroutine.YieldFunc) {
         if city.Citizens() >= 1 {
             showCity = city
         }
-        game.CenterCamera(city.X, city.Y)
+        game.Camera.Center(city.X, city.Y)
     }
 
     view := citylistview.MakeCityListScreen(game.Cache, game.Players[0], drawMinimap, selectCity)
@@ -1438,8 +1497,8 @@ func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, st
 
     var geom ebiten.GeoM
 
-    cameraX := float64(game.cameraX) - 6.0 / game.GetAnimatedZoom()
-    cameraY := float64(game.cameraY) - 5.5 / game.GetAnimatedZoom()
+    cameraX := float64(game.Camera.GetX()) - 6.0 / game.GetAnimatedZoom()
+    cameraY := float64(game.Camera.GetY()) - 5.5 / game.GetAnimatedZoom()
 
     geom.Translate(-cameraX * float64(tileWidth), -cameraY * float64(tileHeight))
     geom.Scale(game.GetAnimatedZoom(), game.GetAnimatedZoom())
@@ -1470,7 +1529,7 @@ func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, st
     game.MovingStack = nil
 
     stack.SetOffset(0, 0)
-    game.CenterCamera(stack.X(), stack.Y())
+    game.Camera.Center(stack.X(), stack.Y())
 }
 
 /* return the cost to move from the current position the stack is on to the new given coordinates.
@@ -2194,7 +2253,7 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         game.doCastSpell(yield, castSpell.Player, castSpell.Spell)
                     case *GameEventNewBuilding:
                         buildingEvent := event.(*GameEventNewBuilding)
-                        game.CenterCamera(buildingEvent.City.X, buildingEvent.City.Y)
+                        game.Camera.Center(buildingEvent.City.X, buildingEvent.City.Y)
                         game.showNewBuilding(yield, buildingEvent.City, buildingEvent.Building)
                         game.doCityScreen(yield, buildingEvent.City, buildingEvent.Player, buildingEvent.Building)
                     case *GameEventCityName:
@@ -2334,8 +2393,9 @@ func (game *Game) ScreenToTile(inX float64, inY float64) (int, int) {
     realX := int(inX / float64(game.CurrentMap().TileWidth()) / game.GetZoom())
     realY := int(inY / float64(game.CurrentMap().TileHeight()) / game.GetZoom())
 
-    tileX := game.CurrentMap().WrapX(game.cameraX + realX - int(240 / float64(game.CurrentMap().TileWidth()) / game.GetZoom() / 2))
-    tileY := game.cameraY + realY - int(math.Round(float64(data.ScreenHeight) / float64(game.CurrentMap().TileHeight()) / game.GetZoom() / 2))
+    // tileX := game.CurrentMap().WrapX(game.cameraX + realX - int(240 / float64(game.CurrentMap().TileWidth()) / game.GetZoom() / 2))
+    tileX := game.Camera.GetX() + realX - int(240 / float64(game.CurrentMap().TileWidth()) / game.GetZoom() / 2)
+    tileY := game.Camera.GetY() + realY - int(math.Round(float64(data.ScreenHeight) / float64(game.CurrentMap().TileHeight()) / game.GetZoom() / 2))
 
     return tileX, tileY
 }
@@ -2415,25 +2475,25 @@ func (game *Game) doInputZoom(yield coroutine.YieldFunc) bool {
 }
 
 func (game *Game) doMoveCamera(yield coroutine.YieldFunc, x int, y int) {
-
-    dx := x - game.cameraX
-    dy := y - game.cameraY
+    dx := x - game.Camera.GetX()
+    dy := y - game.Camera.GetY()
     length := math.Sqrt(float64(dx * dx + dy * dy))
 
     angle := math.Atan2(float64(dy), float64(dx))
+    angle_cos := math.Cos(angle)
+    angle_sin := math.Sin(angle)
 
     speed := 10
 
     for i := range speed {
         value := float64(i) / float64(speed) * math.Pi / 2
-        game.cameraDX = math.Cos(angle) * length * math.Sin(value)
-        game.cameraDY = math.Sin(angle) * length * math.Sin(value)
+        magnitude := length * math.Sin(value)
+        game.Camera.SetOffset(angle_cos * magnitude, angle_sin * magnitude)
         yield()
     }
 
-    game.cameraDX = 0
-    game.cameraDY = 0
-    game.CenterCamera(x, y)
+    game.Camera.SetOffset(0, 0)
+    game.Camera.Center(game.CurrentMap().WrapX(x), y)
 }
 
 func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Player) {
@@ -2480,6 +2540,7 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                     newY = game.cameraY + realY
                     */
                     newX, newY = game.ScreenToTile(float64(mouseX), float64(mouseY))
+                    newX = game.CurrentMap().WrapX(newX)
                 }
             }
 
@@ -2636,6 +2697,7 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
             log.Printf("Click at %v, %v", tileX, tileY)
 
             game.doMoveCamera(yield, tileX, tileY)
+            tileX = game.CurrentMap().WrapX(tileX)
 
             if rightClick {
                 city := player.FindCity(tileX, tileY)
@@ -4231,7 +4293,7 @@ func (game *Game) DoNextUnit(player *playerlib.Player){
             player.SelectedStack = stack
             stack.EnableMovers()
             game.Plane = stack.Plane()
-            game.CenterCamera(stack.X(), stack.Y())
+            game.Camera.Center(stack.X(), stack.Y())
             break
         }
     }
@@ -4875,8 +4937,8 @@ func (game *Game) DrawGame(screen *ebiten.Image){
     }
 
     overworld := Overworld{
-        CameraX: (float64(game.cameraX) + game.cameraDX) - 6.0 / game.GetAnimatedZoom(),
-        CameraY: (float64(game.cameraY) + game.cameraDY) - 5.5 / game.GetAnimatedZoom(),
+        CameraX: game.Camera.GetOffsetX() - 6.0 / game.GetAnimatedZoom(),
+        CameraY: game.Camera.GetOffsetY() - 5.5 / game.GetAnimatedZoom(),
         Counter: useCounter,
         Map: game.CurrentMap(),
         Cities: cities,

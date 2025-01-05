@@ -101,8 +101,8 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
     whiteFont := makeWhiteFont(fonts)
 
     overworld := Overworld{
-        CameraX: float64(game.cameraX),
-        CameraY: float64(game.cameraY),
+        CameraX: float64(game.Camera.GetX()),
+        CameraY: float64(game.Camera.GetY()),
         Counter: game.Counter,
         Map: game.CurrentMap(),
         Cities: cities,
@@ -296,7 +296,7 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
     }
 
     var moveCounter uint64
-    moveCamera := image.Pt(game.cameraX, game.cameraY)
+    moveCamera := image.Pt(game.Camera.GetX(), game.Camera.GetY())
     for !quit {
         moveCounter += 1
         if game.GetZoom() >= 0.9 {
@@ -309,21 +309,21 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
 
         x, y := inputmanager.MousePosition()
 
-        if moveCounter % 5 == 0 && (moveCamera.X != game.cameraX || moveCamera.Y != game.cameraY) {
-            if moveCamera.X < game.cameraX {
-                game.cameraX -= 1
-            } else if moveCamera.X > game.cameraX {
-                game.cameraX += 1
+        if moveCounter % 5 == 0 && (moveCamera.X != game.Camera.GetX() || moveCamera.Y != game.Camera.GetY()) {
+            if moveCamera.X < game.Camera.GetX() {
+                game.Camera.Move(-1, 0)
+            } else if moveCamera.X > game.Camera.GetX() {
+                game.Camera.Move(1, 0)
             }
 
-            if moveCamera.Y < game.cameraY {
-                game.cameraY -= 1
-            } else if moveCamera.Y > game.cameraY {
-                game.cameraY += 1
+            if moveCamera.Y < game.Camera.GetY() {
+                game.Camera.Move(0, -1)
+            } else if moveCamera.Y > game.Camera.GetY() {
+                game.Camera.Move(0, 1)
             }
 
-            overworld.CameraX = float64(game.cameraX)
-            overworld.CameraY = float64(game.cameraY)
+            overworld.CameraX = float64(game.Camera.GetX())
+            overworld.CameraY = float64(game.Camera.GetY())
         }
 
         // within the viewable area
