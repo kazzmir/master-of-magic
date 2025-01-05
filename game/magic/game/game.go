@@ -2118,7 +2118,7 @@ func (game *Game) AddExperience(player *playerlib.Player, unit units.StackUnit, 
 
         level_after := units.GetHeroExperienceLevel(unit.GetExperience(), player.Wizard.AbilityEnabled(setup.AbilityWarlord), player.GlobalEnchantments.Contains(data.EnchantmentCrusade))
 
-        if level_before != level_after {
+        if player.Human && (level_before != level_after) {
             hero := unit.(*herolib.Hero)
             game.Events <- &GameEventHeroLevelUp{
                 Hero: hero,
