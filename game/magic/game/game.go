@@ -215,6 +215,9 @@ type Game struct {
     cameraX int
     cameraY int
 
+    cameraDX float64
+    cameraDY float64
+
     HudUI *uilib.UI
     Help lbx.Help
 
@@ -2411,6 +2414,28 @@ func (game *Game) doInputZoom(yield coroutine.YieldFunc) bool {
     }
 }
 
+func (game *Game) doMoveCamera(yield coroutine.YieldFunc, x int, y int) {
+
+    dx := x - game.cameraX
+    dy := y - game.cameraY
+    length := math.Sqrt(float64(dx * dx + dy * dy))
+
+    angle := math.Atan2(float64(dy), float64(dx))
+
+    speed := 10
+
+    for i := range speed {
+        value := float64(i) / float64(speed) * math.Pi / 2
+        game.cameraDX = math.Cos(angle) * length * math.Sin(value)
+        game.cameraDY = math.Sin(angle) * length * math.Sin(value)
+        yield()
+    }
+
+    game.cameraDX = 0
+    game.cameraDY = 0
+    game.CenterCamera(x, y)
+}
+
 func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Player) {
     // log.Printf("Game.Update")
     keys := make([]ebiten.Key, 0)
@@ -2610,7 +2635,7 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
 
             log.Printf("Click at %v, %v", tileX, tileY)
 
-            game.CenterCamera(tileX, tileY)
+            game.doMoveCamera(yield, tileX, tileY)
 
             if rightClick {
                 city := player.FindCity(tileX, tileY)
@@ -4850,8 +4875,8 @@ func (game *Game) DrawGame(screen *ebiten.Image){
     }
 
     overworld := Overworld{
-        CameraX: float64(game.cameraX) - 6.0 / game.GetAnimatedZoom(),
-        CameraY: float64(game.cameraY) - 5.5 / game.GetAnimatedZoom(),
+        CameraX: (float64(game.cameraX) + game.cameraDX) - 6.0 / game.GetAnimatedZoom(),
+        CameraY: (float64(game.cameraY) + game.cameraDY) - 5.5 / game.GetAnimatedZoom(),
         Counter: useCounter,
         Map: game.CurrentMap(),
         Cities: cities,
