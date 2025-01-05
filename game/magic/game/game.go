@@ -163,6 +163,10 @@ type GameEventCityName struct {
     Y int
 }
 
+type GameEventHeroLevelUp struct {
+    Hero *herolib.Hero
+}
+
 func StartingCityEvent(city *citylib.City) *GameEventCityName {
     return &GameEventCityName{
         Title: "New Starting City",
@@ -1819,7 +1823,7 @@ func (game *Game) doHireHero(yield coroutine.YieldFunc, cost int, hero *herolib.
 
 /* random chance to create a hire mercenaries event
  */
- func (game *Game) maybeHireMercenaries(player *playerlib.Player) {
+func (game *Game) maybeHireMercenaries(player *playerlib.Player) {
     if game.TurnNumber <= 30 {
         return
     }
@@ -1971,7 +1975,7 @@ func (game *Game) doHireMercenaries(yield coroutine.YieldFunc, cost int, units [
 
 /* random chance to create a merchant event
  */
- func (game *Game) maybeBuyFromMerchant(player *playerlib.Player) {
+func (game *Game) maybeBuyFromMerchant(player *playerlib.Player) {
     // chance to create an event
     chance := 2 + player.Fame / 25
     if player.Wizard.AbilityEnabled(setup.AbilityFamous) {
@@ -2106,6 +2110,25 @@ func (game *Game) doNextTurn(yield coroutine.YieldFunc) {
     game.DoNextTurn()
 }
 
+func (game *Game) AddExperience(player *playerlib.Player, unit units.StackUnit, amount int) {
+    if unit.IsHero() {
+        level_before := units.GetHeroExperienceLevel(unit.GetExperience(), player.Wizard.AbilityEnabled(setup.AbilityWarlord), player.GlobalEnchantments.Contains(data.EnchantmentCrusade))
+
+        unit.AddExperience(amount)
+
+        level_after := units.GetHeroExperienceLevel(unit.GetExperience(), player.Wizard.AbilityEnabled(setup.AbilityWarlord), player.GlobalEnchantments.Contains(data.EnchantmentCrusade))
+
+        if level_before != level_after {
+            hero := unit.(*herolib.Hero)
+            game.Events <- &GameEventHeroLevelUp{
+                Hero: hero,
+            }
+        }
+    } else {
+        unit.AddExperience(amount)
+    }
+}
+
 func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
     // keep processing events until we don't receive one in the events channel
     for {
@@ -2185,6 +2208,9 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         game.doSummon(yield, summon.MakeSummonHero(game.Cache, summonHero.Wizard, summonHero.Champion))
                     case *GameEventLoadMenu:
                         game.doLoadMenu(yield)
+                    case *GameEventHeroLevelUp:
+                        levelEvent := event.(*GameEventHeroLevelUp)
+                        game.showHeroLevelUpPopup(yield, levelEvent.Hero)
                 }
             default:
                 return
@@ -2973,13 +2999,13 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     if state == combat.CombatStateAttackerWin {
         for _, unit := range attackerStack.Units() {
             if unit.GetRace() != data.RaceFantastic {
-                unit.AddExperience(combatScreen.Model.DefeatedDefenders * 2)
+                game.AddExperience(attacker, unit, combatScreen.Model.DefeatedDefenders * 2)
             }
         }
     } else if state == combat.CombatStateDefenderWin {
         for _, unit := range defenderStack.Units() {
             if unit.GetRace() != data.RaceFantastic {
-                unit.AddExperience(combatScreen.Model.DefeatedAttackers * 2)
+                game.AddExperience(defender, unit, combatScreen.Model.DefeatedAttackers * 2)
             }
         }
     }
@@ -4299,7 +4325,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
         // every unit gains 1 experience at each turn
         for _, unit := range stack.Units() {
             if unit.GetRace() != data.RaceFantastic {
-                unit.AddExperience(1)
+                game.AddExperience(player, unit, 1)
             }
         }
 

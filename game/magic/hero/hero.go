@@ -967,6 +967,7 @@ func (hero *Hero) GetBaseHitPoints() int {
     base := hero.Unit.GetBaseHitPoints()
 
     level := hero.GetExperienceLevel()
+    // FIXME: shouldn't this be 10% starting from captain? see https://masterofmagic.fandom.com/wiki/Experience_Level#Attribute_Improvement_Table_-_Heroes
     switch level {
         case units.ExperienceHero:
         case units.ExperienceMyrmidon: base += 1
