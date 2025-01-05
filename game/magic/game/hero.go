@@ -285,14 +285,8 @@ func (game *Game) showHeroLevelUpPopup(yield coroutine.YieldFunc, hero *herolib.
         // text
         titleFont.Print(screen, left + 48, top + 10, 1, options.ColorScale, fmt.Sprintf("%v has made a level.", hero.Name))
 
-        // stats improvements
-        // FIXME: use logic from hero.GetBaseHitPoints
-        // FIXME: use logic from hero.GetBaseResistance
-        // FIXME: use logic from hero.GetBaseMeleeAttackPower() or hero.GetBaseRangedAttackPower()
-        // FIXME: use logic from hero.GetBaseDefense()
-        // FIXME: define hero.GetBaseImprovements
-        stats := []string{"+1 Hit Points", "+1 Resistance", "+1 Attack", "+1 Defense"}
-        for index, stat := range stats {
+        // stats progression
+        for index, progression := range hero.GetBaseProgression() {
             xOffset := 95 * float64(index / 2)
             yOffset := 10 * float64(index % 2)
 
@@ -300,7 +294,7 @@ func (game *Game) showHeroLevelUpPopup(yield coroutine.YieldFunc, hero *herolib.
             options.GeoM.Translate(left + 48 + xOffset, top + 25 + yOffset)
             screen.DrawImage(dot, &options)
 
-            smallFont.Print(screen, left + 55 + xOffset, top + 24 + yOffset, 1, options.ColorScale, stat)
+            smallFont.Print(screen, left + 55 + xOffset, top + 24 + yOffset, 1, options.ColorScale, progression)
         }
 
         // level
