@@ -972,8 +972,6 @@ func (hero *Hero) GetBaseHitPoints() int {
 }
 
 func (hero *Hero) getBaseHitPointsProgression(level units.HeroExperienceLevel) int {
-    // FIXME: shouldn't this be 10% starting from captain?
-    //        see https://masterofmagic.fandom.com/wiki/Experience_Level#Attribute_Improvement_Table_-_Heroes
     switch level {
         case units.ExperienceHero: return 0
         case units.ExperienceMyrmidon: return 1
