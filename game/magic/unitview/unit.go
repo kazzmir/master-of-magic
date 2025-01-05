@@ -243,19 +243,27 @@ func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit
     showNIcons(healthIcon, unit.GetBaseHitPoints(), healthIconGold, unit.GetHitPoints() - unit.GetBaseHitPoints(), x, y)
 }
 
+func RenderExperienceBadge(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitView, font *font.Font, defaultOptions ebiten.DrawImageOptions, showExperience bool) (float64) {
+    data := unit.GetExperienceData()
+    experienceIndex := 102 + data.ToInt()
+    pic, _ := imageCache.GetImage("special.lbx", experienceIndex, 0)
+    screen.DrawImage(pic, &defaultOptions)
+    x, y := defaultOptions.GeoM.Apply(0, 0)
+    text := data.Name()
+    if showExperience {
+        text = fmt.Sprintf("%v (%v ep)", data.Name(), unit.GetExperience())
+    }
+    font.Print(screen, x + float64(pic.Bounds().Dx() + 2), float64(y) + 5, 1, defaultOptions.ColorScale, text)
+    return float64(pic.Bounds().Dy() + 1)
+}
+
 func renderUnitAbilities(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitView, mediumFont *font.Font, defaultOptions ebiten.DrawImageOptions, pureAbilities bool, page uint32) {
     var renders []func() float64
 
     if !pureAbilities {
         // experience badge
         renders = append(renders, func() float64 {
-            data := unit.GetExperienceData()
-            experienceIndex := 102 + data.ToInt()
-            pic, _ := imageCache.GetImage("special.lbx", experienceIndex, 0)
-            screen.DrawImage(pic, &defaultOptions)
-            x, y := defaultOptions.GeoM.Apply(0, 0)
-            mediumFont.Print(screen, x + float64(pic.Bounds().Dx() + 2), float64(y) + 5, 1, defaultOptions.ColorScale, fmt.Sprintf("%v (%v ep)", data.Name(), unit.GetExperience()))
-            return float64(pic.Bounds().Dy() + 1)
+            return RenderExperienceBadge(screen, imageCache, unit, mediumFont, defaultOptions, true)
         })
 
         artifacts := slices.Clone(unit.GetArtifacts())
