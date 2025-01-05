@@ -2163,7 +2163,7 @@ func createScenario26(cache *lbx.LbxCache) *gamelib.Game {
     game.Plane = data.PlaneArcanus
 
     x, y := game.FindValidCityLocation()
-    game.CenterCamera(x, y)
+    game.Camera.Center(x, y)
 
     player := game.AddPlayer(wizard, true)
     player.Gold = 15772
