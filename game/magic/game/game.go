@@ -4789,23 +4789,13 @@ func (overworld *Overworld) DrawMinimap(screen *ebiten.Image){
 }
 
 func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM){
-
-    // log.Printf("Overworld camera %v, %v", overworld.CameraX, overworld.CameraY)
-
-    /*
-    deltaX := overworld.CameraX - float64(int(overworld.CameraX))
-    deltaY := overworld.CameraY - float64(int(overworld.CameraY))
-    */
-
     tileWidth := overworld.Map.TileWidth()
     tileHeight := overworld.Map.TileHeight()
 
-    // geom.Translate((1-deltaX) * float64(tileWidth), (1-deltaY) * float64(tileHeight))
     geom.Translate(-overworld.Camera.GetZoomedX() * float64(tileWidth), -overworld.Camera.GetZoomedY() * float64(tileHeight))
     geom.Scale(overworld.Camera.GetAnimatedZoom(), overworld.Camera.GetAnimatedZoom())
-    // geom.Translate(0, 18)
 
-    overworld.Map.DrawLayer1(int(overworld.Camera.GetZoomedX()), int(overworld.Camera.GetZoomedY()), overworld.Counter / 8, overworld.ImageCache, screen, geom)
+    overworld.Map.DrawLayer1(overworld.Camera, overworld.Counter / 8, overworld.ImageCache, screen, geom)
 
     convertTileCoordinates := func(x int, y int) (int, int) {
         outX := x * tileWidth
@@ -4982,10 +4972,6 @@ func (game *Game) DrawGame(screen *ebiten.Image){
 
     overworld := Overworld{
         Camera: game.Camera,
-        /*
-        CameraX: game.Camera.GetOffsetX() - 6.0 / game.GetAnimatedZoom(),
-        CameraY: game.Camera.GetOffsetY() - 5.5 / game.GetAnimatedZoom(),
-        */
         Counter: useCounter,
         Map: game.CurrentMap(),
         Cities: cities,
