@@ -213,8 +213,6 @@ func createScenario3(cache *lbx.LbxCache) *gamelib.Game {
 
     x, y := game.FindValidCityLocation()
 
-    log.Printf("City at %v, %v", x, y)
-
     introCity := citylib.MakeCity("Test City", x, y, player.Wizard.Race, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.CurrentMap())
     introCity.Population = 6000
     introCity.Plane = data.PlaneArcanus
