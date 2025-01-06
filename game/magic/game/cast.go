@@ -32,13 +32,6 @@ const (
     LocationTypeEnemyUnit
 )
 
-func (game *Game) ScreenToTile(x int, y int) (int, int) {
-    tileX := game.CurrentMap().WrapX(game.cameraX + x / game.CurrentMap().TileWidth())
-    tileY := game.cameraY + y / game.CurrentMap().TileHeight()
-
-    return tileX, tileY
-}
-
 func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Player, spell spellbook.Spell) {
     switch spell.Name {
         case "Earth Lore":
@@ -48,7 +41,7 @@ func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Playe
                 return
             }
 
-            game.CenterCamera(tileX, tileY)
+            game.Camera.Center(tileX, tileY)
 
             game.doCastEarthLore(yield, player)
 
@@ -86,7 +79,7 @@ func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Playe
                 return
             }
 
-            game.CenterCamera(tileX, tileY)
+            game.Camera.Center(tileX, tileY)
             chosenCity := player.FindCity(tileX, tileY)
             if chosenCity == nil {
                 return
@@ -176,8 +169,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
     whiteFont := makeWhiteFont(fonts)
 
     overworld := Overworld{
-        CameraX: game.cameraX,
-        CameraY: game.cameraY,
+        Camera: game.Camera,
         Counter: game.Counter,
         Map: game.CurrentMap(),
         Cities: cities,
@@ -287,6 +279,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
     })
 
     game.Drawer = func(screen *ebiten.Image, game *Game){
+        overworld.Camera = game.Camera
         overworld.DrawOverworld(screen, ebiten.GeoM{})
 
         var miniGeom ebiten.GeoM
@@ -300,53 +293,28 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
         ui.Draw(ui, screen)
     }
 
-    moveCamera := image.Pt(game.cameraX, game.cameraY)
     for !quit {
-        overworld.Counter += 1
+        if game.Camera.GetZoom() > 0.9 {
+            overworld.Counter += 1
+        }
 
+        zoomed := game.doInputZoom(yield)
+        _ = zoomed
         ui.StandardUpdate()
 
         x, y := inputmanager.MousePosition()
 
-        if overworld.Counter % 5 == 0 && (moveCamera.X != game.cameraX || moveCamera.Y != game.cameraY) {
-            if moveCamera.X < game.cameraX {
-                game.cameraX -= 1
-            } else if moveCamera.X > game.cameraX {
-                game.cameraX += 1
-            }
-
-            if moveCamera.Y < game.cameraY {
-                game.cameraY -= 1
-            } else if moveCamera.Y > game.cameraY {
-                game.cameraY += 1
-            }
-
-            overworld.CameraX = game.cameraX
-            overworld.CameraY = game.cameraY
-        }
-
         // within the viewable area
         if x < 240 && y > 18 {
-            newX := game.cameraX + x / game.CurrentMap().TileWidth()
-            newY := game.cameraY + y / game.CurrentMap().TileHeight()
-            newPoint := image.Pt(newX, newY)
-
+            tileX, tileY := game.ScreenToTile(float64(x), float64(y))
+            
             // right click should move the camera
             rightClick := inputmanager.RightClick()
-            if rightClick {
-                moveCamera = newPoint.Add(image.Pt(-5, -5))
-                if moveCamera.Y < 0 {
-                    moveCamera.Y = 0
-                }
-
-                if moveCamera.Y >= game.CurrentMap().Height() - 11 {
-                    moveCamera.Y = game.CurrentMap().Height() - 11
-                }
+            if rightClick /*|| zoomed */ {
+                game.doMoveCamera(yield, tileX, tileY)
             }
 
             if inputmanager.LeftClick() {
-                tileX, tileY := game.ScreenToTile(x, y)
-
                 switch locationType {
                     case LocationTypeAny: return tileX, tileY, false
                     case LocationTypeFriendlyCity:
