@@ -16,6 +16,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
     "github.com/kazzmir/master-of-magic/game/magic/mirror"
+    "github.com/kazzmir/master-of-magic/game/magic/camera"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     "github.com/kazzmir/master-of-magic/game/magic/combat"
     "github.com/kazzmir/master-of-magic/game/magic/unitview"
@@ -183,88 +184,6 @@ const (
     GameStateQuit
 )
 
-const ZoomMin = 3
-const ZoomMax = 10
-const ZoomDefault = 10
-const ZoomStep = 10
-
-type Camera struct {
-    // tile coordinates
-    X int
-    Y int
-    // fractional tile coordinates
-    DX float64
-    DY float64
-
-    Zoom int
-    AnimatedZoom float64
-}
-
-func (camera *Camera) SetOffset(x float64, y float64) {
-    camera.DX = x
-    camera.DY = y
-}
-
-func (camera *Camera) GetOffsetX() float64 {
-    return float64(camera.X) + camera.DX
-}
-
-func (camera *Camera) GetOffsetY() float64 {
-    return float64(camera.Y) + camera.DY
-}
-
-func (camera *Camera) GetZoom() float64 {
-    return camera.GetAnimatedZoom()
-    // return float64(camera.Zoom) / float64(ZoomStep)
-}
-
-func (camera *Camera) GetAnimatedZoom() float64 {
-    return ((float64(camera.Zoom) + camera.AnimatedZoom) / float64(ZoomStep))
-}
-
-func (camera *Camera) GetZoomedX() float64 {
-    return camera.GetOffsetX() - 6.0 / camera.GetAnimatedZoom()
-}
-
-func (camera *Camera) GetZoomedY() float64 {
-    return camera.GetOffsetY() - 5.0 / camera.GetAnimatedZoom()
-}
-
-func (camera *Camera) GetX() int {
-    return camera.X
-}
-
-func (camera *Camera) GetY() int {
-    return camera.Y
-}
-
-func (camera *Camera) Move(dx int, dy int) {
-    camera.X += dx
-    camera.Y += dy
-}
-
-func (camera *Camera) Center(x int, y int) {
-    camera.X = x
-    camera.Y = y
-
-    if camera.Y < 0 {
-        camera.Y = 0
-    }
-}
-
-func MakeCamera() Camera {
-    return MakeCameraAt(0, 0)
-}
-
-func MakeCameraAt(x int, y int) Camera {
-    return Camera{
-        X: x,
-        Y: y,
-        Zoom: ZoomDefault,
-        AnimatedZoom: 0,
-    }
-}
-
 type Game struct {
     Cache *lbx.LbxCache
     ImageCache util.ImageCache
@@ -293,14 +212,6 @@ type Game struct {
 
     MovingStack *playerlib.UnitStack
 
-    /*
-    cameraX int
-    cameraY int
-
-    cameraDX float64
-    cameraDY float64
-    */
-
     HudUI *uilib.UI
     Help lbx.Help
 
@@ -315,7 +226,7 @@ type Game struct {
     AnimatedZoom float64
     */
 
-    Camera Camera
+    Camera camera.Camera
 }
 
 func (game *Game) GetMap(plane data.Plane) *maplib.Map {
@@ -666,7 +577,7 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         BuildingInfo: buildingInfo,
         TurnNumber: 1,
         CurrentPlayer: -1,
-        Camera: MakeCamera(),
+        Camera: camera.MakeCamera(),
     }
 
     game.HudUI = game.MakeHudUI()
@@ -2492,6 +2403,8 @@ func (game *Game) ScreenToTile(inX float64, inY float64) (int, int) {
 }
 
 func (game *Game) doInputZoom(yield coroutine.YieldFunc) bool {
+    // FIXME: move most of this code to the camera module
+
     inputLoop:
     for {
         _, wheelY := inputmanager.Wheel()
@@ -2501,7 +2414,7 @@ func (game *Game) doInputZoom(yield coroutine.YieldFunc) bool {
 
         if wheelY > 0 {
             oldZoom := game.Camera.Zoom
-            game.Camera.Zoom = min(game.Camera.Zoom + 1, ZoomMax)
+            game.Camera.Zoom = min(game.Camera.Zoom + 1, camera.ZoomMax)
             game.Camera.AnimatedZoom = float64(oldZoom - game.Camera.Zoom)
 
             if oldZoom != game.Camera.Zoom {
@@ -2529,7 +2442,7 @@ func (game *Game) doInputZoom(yield coroutine.YieldFunc) bool {
             return true
         } else if wheelY < 0 {
             oldZoom := game.Camera.Zoom
-            game.Camera.Zoom = max(game.Camera.Zoom - 1, ZoomMin)
+            game.Camera.Zoom = max(game.Camera.Zoom - 1, camera.ZoomMin)
             game.Camera.AnimatedZoom = float64(oldZoom - game.Camera.Zoom)
 
             if oldZoom != game.Camera.Zoom {
@@ -3000,7 +2913,7 @@ func (game *Game) doCityScreen(yield coroutine.YieldFunc, city *citylib.City, pl
     mapUse := game.GetMap(city.Plane)
 
     overworld := Overworld{
-        Camera: MakeCameraAt(city.X - 2, city.Y - 2),
+        Camera: camera.MakeCameraAt(city.X - 2, city.Y - 2),
         Counter: 0,
         Map: mapUse,
         Cities: cities,
@@ -3026,16 +2939,6 @@ func (game *Game) doCityScreen(yield coroutine.YieldFunc, city *citylib.City, pl
 
     game.Drawer = oldDrawer
 }
-
-/*
-func (game *Game) GetZoom() float64 {
-    return float64(game.OverlandZoom) / float64(ZoomStep)
-}
-
-func (game *Game) GetAnimatedZoom() float64 {
-    return ((float64(game.OverlandZoom) + game.AnimatedZoom) / float64(ZoomStep))
-}
-*/
 
 func (game *Game) confirmMagicNodeEncounter(yield coroutine.YieldFunc, node *maplib.ExtraMagicNode) bool {
     reloadLbx, err := game.Cache.GetLbxFile("reload.lbx")
@@ -4863,7 +4766,7 @@ func (overworld *Overworld) DrawFog(screen *ebiten.Image, geom ebiten.GeoM){
 }
 
 type Overworld struct {
-    Camera Camera
+    Camera camera.Camera
     Counter uint64
     Map *maplib.Map
     Cities []*citylib.City
