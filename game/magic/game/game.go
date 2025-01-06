@@ -4970,13 +4970,16 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
             var options ebiten.DrawImageOptions
             // options.GeoM = geom
 
+            /*
             stackX := float64(overworld.Map.XDistance(overworld.Camera.GetX(), stack.X()) + overworld.Camera.GetX())
             stackY := float64(stack.Y())
+            */
+            stackX, stackY := overworld.ToCameraCoordinates(stack.X(), stack.Y())
 
             // log.Printf("World %v, %v -> camera %v, %v. Camera: %v, %v", stack.X(), stack.Y(), stackX, stackY, overworld.Camera.GetX(), overworld.Camera.GetY())
 
             // x, y := convertTileCoordinates(stackX, stackY)
-            x, y := stackX, stackY
+            x, y := float64(stackX), float64(stackY)
 
             // nx := overworld.Map.WrapX(x - overworld.Camera.GetX()) + overworld.Camera.GetX() + 6
 
