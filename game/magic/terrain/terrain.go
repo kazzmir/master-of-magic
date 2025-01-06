@@ -489,6 +489,7 @@ const AllDirections uint8 = 0b1111_1111
 // a bit pattern on a tile indicates the positions where the tile can match up with another tile
 // bit index: 0123 4567
 //            0000 1000
+//            ↖↑↗→ ↘↓↙←
 //
 // bit 0: north west
 // bit 1: north
@@ -502,19 +503,19 @@ const AllDirections uint8 = 0b1111_1111
 var (
     TileOcean = makeTile(0x0, makeCompatabilities(makeDirections(AllDirections), Ocean))
     TileLand = makeTile(0x1, makeCompatabilities(makeDirections(AllDirections), Land))
-    TileShore1_00001000 = makeShoreTile(0x2, 0b00001000)
-    TileShore1_00001100 = makeShoreTile(0x3, 0b00001100)
 
-    TileShore1_00001110 = makeShoreTile(0x4, 0b00001110)
-    TileShore1_00000110 = makeShoreTile(0x5, 0b00000110)
-    TileShore1_00000010 = makeShoreTile(0x6, 0b00000010)
-    TileShore1_00001010 = makeShoreTile(0x7, 0b00001010)
-    TileShore1_00100010 = makeShoreTile(0x8, 0b00100010)
-    TileShore1_10000010 = makeShoreTile(0x9, 0b10000010)
-    TileShore1_00011000 = makeShoreTile(0xA, 0b00011000)
-    TileShore1_00000100 = makeShoreTile(0xB, 0b00000100)
-    TileShore1_00000011 = makeShoreTile(0xC, 0b00000011)
-    TileShore1_10100000 = makeShoreTile(0xD, 0b10100000)
+    TileShore1_00001000 = makeShoreTile(0x02, 0b00001000)
+    TileShore1_00001100 = makeShoreTile(0x03, 0b00001100)
+    TileShore1_00001110 = makeShoreTile(0x04, 0b00001110)
+    TileShore1_00000110 = makeShoreTile(0x05, 0b00000110)
+    TileShore1_00000010 = makeShoreTile(0x06, 0b00000010)
+    TileShore1_00001010 = makeShoreTile(0x07, 0b00001010)
+    TileShore1_00100010 = makeShoreTile(0x08, 0b00100010)
+    TileShore1_10000010 = makeShoreTile(0x09, 0b10000010)
+    TileShore1_00011000 = makeShoreTile(0x0A, 0b00011000)
+    TileShore1_00000100 = makeShoreTile(0x0B, 0b00000100)
+    TileShore1_00000011 = makeShoreTile(0x0C, 0b00000011)
+    TileShore1_10100000 = makeShoreTile(0x0D, 0b10100000)
     TileShore1_10001000 = makeShoreTile(0x0E, 0b10001000)
     TileShore1_00101000 = makeShoreTile(0x0F, 0b00101000)
     TileShore1_00111000 = makeShoreTile(0x10, 0b00111000)
