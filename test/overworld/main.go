@@ -212,7 +212,6 @@ func createScenario3(cache *lbx.LbxCache) *gamelib.Game {
     player := game.AddPlayer(wizard, true)
 
     x, y := game.FindValidCityLocation()
-    y = 0
 
     log.Printf("City at %v, %v", x, y)
 
