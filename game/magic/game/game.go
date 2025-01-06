@@ -4882,7 +4882,7 @@ func (overworld *Overworld) ToCameraCoordinates(x int, y int) (int, int) {
 }
 
 func (overworld *Overworld) DrawMinimap(screen *ebiten.Image){
-    overworld.Map.DrawMinimap(screen, overworld.CitiesMiniMap, int(overworld.Camera.GetX() + 5), int(overworld.Camera.GetY() + 5), overworld.Camera.GetZoom(), overworld.Fog, overworld.Counter, true)
+    overworld.Map.DrawMinimap(screen, overworld.CitiesMiniMap, overworld.Camera.GetX(), overworld.Camera.GetY(), overworld.Camera.GetZoom(), overworld.Fog, overworld.Counter, true)
 }
 
 func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM){
