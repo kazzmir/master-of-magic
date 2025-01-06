@@ -124,16 +124,16 @@ func MousePosition() (int, int) {
 func Wheel() (float64, float64) {
     x, y := ebiten.Wheel()
     if x > 0 {
-        x = 1
+        x = min(x, 1)
     }
     if x < 0 {
-        x = -1
+        x = max(x, -1)
     }
     if y > 0 {
-        y = 1
+        y = min(y, 1)
     }
     if y < 0 {
-        y = -1
+        y = max(y, -1)
     }
 
     return x, y
