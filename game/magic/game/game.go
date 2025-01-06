@@ -4624,50 +4624,52 @@ func (overworld *Overworld) DrawFog(screen *ebiten.Image, geom ebiten.GeoM){
             options.GeoM.Translate(float64(x * tileWidth), float64(y * tileHeight))
             options.GeoM.Concat(geom)
 
-            if tileX >= 0 && tileY >= 0 && tileX < len(fog) && tileY < len(fog[tileX]) && fog[tileX][tileY] {
-                n := fogN(tileX, tileY)
-                e := fogE(tileX, tileY)
-                s := fogS(tileX, tileY)
-                w := fogW(tileX, tileY)
-                ne := fogNE(tileX, tileY)
-                se := fogSE(tileX, tileY)
-                nw := fogNW(tileX, tileY)
-                sw := fogSW(tileX, tileY)
+            if tileX >= 0 && tileY >= 0 && tileX < len(fog) && tileY < len(fog[tileX]) {
+                if fog[tileX][tileY] {
+                    n := fogN(tileX, tileY)
+                    e := fogE(tileX, tileY)
+                    s := fogS(tileX, tileY)
+                    w := fogW(tileX, tileY)
+                    ne := fogNE(tileX, tileY)
+                    se := fogSE(tileX, tileY)
+                    nw := fogNW(tileX, tileY)
+                    sw := fogSW(tileX, tileY)
 
-                if n && e {
-                    screen.DrawImage(FogEdge_N_E, &options)
-                } else if n {
-                    screen.DrawImage(FogEdge_N, &options)
-                } else if e {
-                    screen.DrawImage(FogEdge_E, &options)
-                } else if ne {
-                    screen.DrawImage(FogCorner_NE, &options)
-                }
+                    if n && e {
+                        screen.DrawImage(FogEdge_N_E, &options)
+                    } else if n {
+                        screen.DrawImage(FogEdge_N, &options)
+                    } else if e {
+                        screen.DrawImage(FogEdge_E, &options)
+                    } else if ne {
+                        screen.DrawImage(FogCorner_NE, &options)
+                    }
 
-                if s && e {
-                    screen.DrawImage(FogEdge_S_E, &options)
-                } else if s {
-                    screen.DrawImage(FogEdge_S, &options)
-                } else if se {
-                    screen.DrawImage(FogCorner_SE, &options)
-                }
+                    if s && e {
+                        screen.DrawImage(FogEdge_S_E, &options)
+                    } else if s {
+                        screen.DrawImage(FogEdge_S, &options)
+                    } else if se {
+                        screen.DrawImage(FogCorner_SE, &options)
+                    }
 
-                if n && w {
-                    screen.DrawImage(FogEdge_N_W, &options)
-                } else if w {
-                    screen.DrawImage(FogEdge_W, &options)
-                } else if nw {
-                    screen.DrawImage(FogCorner_NW, &options)
-                }
+                    if n && w {
+                        screen.DrawImage(FogEdge_N_W, &options)
+                    } else if w {
+                        screen.DrawImage(FogEdge_W, &options)
+                    } else if nw {
+                        screen.DrawImage(FogCorner_NW, &options)
+                    }
 
-                if s && w {
-                    screen.DrawImage(FogEdge_S_W, &options)
-                } else if sw {
-                    screen.DrawImage(FogCorner_SW, &options)
-                }
-            } else {
-                if overworld.FogBlack != nil {
-                    screen.DrawImage(overworld.FogBlack, &options)
+                    if s && w {
+                        screen.DrawImage(FogEdge_S_W, &options)
+                    } else if sw {
+                        screen.DrawImage(FogCorner_SW, &options)
+                    }
+                } else {
+                    if overworld.FogBlack != nil {
+                        screen.DrawImage(overworld.FogBlack, &options)
+                    }
                 }
             }
         }
@@ -4699,6 +4701,9 @@ func (overworld *Overworld) DrawMinimap(screen *ebiten.Image){
 }
 
 func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM){
+
+    screen.Fill(color.RGBA{R: 32, G: 32, B: 32, A: 0xff})
+
     tileWidth := overworld.Map.TileWidth()
     tileHeight := overworld.Map.TileHeight()
 
