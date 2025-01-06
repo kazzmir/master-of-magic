@@ -430,6 +430,23 @@ func (map_ *Map) ResolveTile(x int, y int, data *TerrainData, plane data.Plane) 
 
     tile := data.FindMatchingTile(matching, plane)
     if tile == -1 {
+        // try to fill edges if tiles are not found
+        if matching[North] == matching[East] {
+            matching[NorthEast] = matching[North]
+        }
+        if matching[North] == matching[West] {
+            matching[NorthWest] = matching[North]
+        }
+        if matching[South] == matching[East] {
+            matching[SouthEast] = matching[South]
+        }
+        if matching[South] == matching[West] {
+            matching[SouthWest] = matching[South]
+        }
+        tile = data.FindMatchingTile(matching, plane)
+    }
+
+    if tile == -1 {
         return -1, fmt.Errorf("no matching tile for %v", matching)
     }
 
