@@ -15,6 +15,9 @@ type Camera struct {
 
     Zoom int
     AnimatedZoom float64
+
+    SizeX int
+    SizeY int
 }
 
 func (camera *Camera) SetOffset(x float64, y float64) {
@@ -40,11 +43,11 @@ func (camera *Camera) GetAnimatedZoom() float64 {
 }
 
 func (camera *Camera) GetZoomedX() float64 {
-    return camera.GetOffsetX() - 6.0 / camera.GetAnimatedZoom()
+    return camera.GetOffsetX() - float64(camera.SizeX) / 2 / camera.GetAnimatedZoom()
 }
 
 func (camera *Camera) GetZoomedY() float64 {
-    return camera.GetOffsetY() - 5.0 / camera.GetAnimatedZoom()
+    return camera.GetOffsetY() - float64(camera.SizeY) / 2 / camera.GetAnimatedZoom()
 }
 
 func (camera *Camera) GetX() int {
@@ -74,10 +77,17 @@ func (camera *Camera) Center(x int, y int) {
 func (camera *Camera) GetTileBounds() (int, int, int, int) {
     minX := int(camera.GetZoomedX() - 1)
     minY := int(camera.GetZoomedY() - 1)
+    // FIXME: 12 should be based on SizeX/SizeY
     maxX := minX + int(12/camera.GetZoom() + 3)
     maxY := minY + int(12/camera.GetZoom() + 3)
 
     return minX, minY, maxX, maxY
+}
+
+func (camera Camera) UpdateSize(sizeX int, sizeY int) Camera {
+    camera.SizeX = sizeX
+    camera.SizeY = sizeY
+    return camera
 }
 
 func MakeCamera() Camera {
@@ -88,6 +98,9 @@ func MakeCameraAt(x int, y int) Camera {
     return Camera{
         X: x,
         Y: y,
+        // default size of screen
+        SizeX: 12,
+        SizeY: 10,
         Zoom: ZoomDefault,
         AnimatedZoom: 0,
     }

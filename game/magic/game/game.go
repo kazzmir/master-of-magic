@@ -2913,7 +2913,7 @@ func (game *Game) doCityScreen(yield coroutine.YieldFunc, city *citylib.City, pl
     mapUse := game.GetMap(city.Plane)
 
     overworld := Overworld{
-        Camera: camera.MakeCameraAt(city.X+4, city.Y+3),
+        Camera: camera.MakeCameraAt(city.X, city.Y).UpdateSize(4, 4),
         Counter: 0,
         Map: mapUse,
         Cities: cities,
