@@ -1,6 +1,8 @@
 package util
 
 import (
+    "log"
+    "reflect"
     "fmt"
     "strings"
     "image"
@@ -11,6 +13,7 @@ import (
 )
 
 type ImageTransformFunc func(*image.Paletted) image.Image
+type ImageTransformGenericFunc func(image.Image) image.Image
 
 type ImageCache struct {
     LbxCache *lbx.LbxCache
@@ -28,8 +31,18 @@ func MakeImageCache(lbxCache *lbx.LbxCache) ImageCache {
     }
 }
 
-// remove all alpha-0 pixels from the border of the image
+func ComposeImageTransform(transform1 ImageTransformFunc, transform2 ImageTransformGenericFunc) ImageTransformFunc {
+    return func (img *image.Paletted) image.Image {
+        return transform2(transform1(img))
+    }
+}
+
 func AutoCrop(img *image.Paletted) image.Image {
+    return AutoCropGeneric(img)
+}
+
+// remove all alpha-0 pixels from the border of the image
+func AutoCropGeneric(img image.Image) image.Image {
     bounds := img.Bounds()
     minX := bounds.Max.X
     minY := bounds.Max.Y
@@ -56,7 +69,16 @@ func AutoCrop(img *image.Paletted) image.Image {
         }
     }
 
-    return img.SubImage(image.Rect(minX, minY, maxX, maxY))
+    // log.Printf("Auto crop on %v", reflect.TypeOf(img))
+
+    switch img.(type) {
+        case *image.Paletted:
+            return img.(*image.Paletted).SubImage(image.Rect(minX, minY, maxX, maxY))
+        default:
+            log.Printf("Auto crop not implemented for %v", reflect.TypeOf(img))
+    }
+
+    return img
 }
 
 func (cache *ImageCache) GetShader(shader shaders.Shader) (*ebiten.Shader, error) {
