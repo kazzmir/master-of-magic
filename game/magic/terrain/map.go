@@ -392,28 +392,34 @@ func (map_ *Map) ResolveTile(x int, y int, data *TerrainData, plane data.Plane) 
 
     matching[West] = getDirection(x-1, y, East)
 
+    matching[NorthWest] = Ocean
     if y > 0 {
         matching[NorthWest] = getDirection(x-1, y-1, SouthEast)
     }
 
+    matching[SouthWest] = Ocean
     if y < map_.Rows() - 1 {
         matching[SouthWest] = getDirection(x-1, y+1, NorthEast)
     }
 
     matching[East] = getDirection(x+1, y, West)
 
+    matching[North] = Ocean
     if y > 0 {
         matching[North] = getDirection(x, y-1, South)
     }
 
+    matching[South] = Ocean
     if y < map_.Rows() - 1 {
         matching[South] = getDirection(x, y+1, North)
     }
 
+    matching[NorthEast] = Ocean
     if y > 0 {
         matching[NorthEast] = getDirection(x+1, y-1, SouthWest)
     }
 
+    matching[SouthEast] = Ocean
     if y < map_.Rows() - 1 {
         matching[SouthEast] = getDirection(x+1, y+1, NorthWest)
     }
