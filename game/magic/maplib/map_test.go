@@ -25,7 +25,7 @@ func TestMap(t *testing.T) {
     }
 
     for _, test := range tests {
-        distance := xmap.Distance(test.x1, test.x2)
+        distance := xmap.XDistance(test.x1, test.x2)
         if distance != test.distance {
             t.Errorf("Distance from %d to %d is %d, expected %d", test.x1, test.x2, distance, test.distance)
         }
