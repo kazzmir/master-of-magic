@@ -293,10 +293,12 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
         ui.Draw(ui, screen)
     }
 
+    /*
     var moveCounter uint64
     moveCamera := image.Pt(game.Camera.GetX(), game.Camera.GetY())
+    */
     for !quit {
-        moveCounter += 1
+        // moveCounter += 1
         if game.Camera.GetZoom() >= 0.9 {
             overworld.Counter += 1
         }
@@ -307,6 +309,7 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
 
         x, y := inputmanager.MousePosition()
 
+        /*
         if moveCounter % 5 == 0 && (moveCamera.X != game.Camera.GetX() || moveCamera.Y != game.Camera.GetY()) {
             if moveCamera.X < game.Camera.GetX() {
                 game.Camera.Move(-1, 0)
@@ -320,11 +323,12 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
                 game.Camera.Move(0, 1)
             }
 
-            /*
+            / *
             overworld.CameraX = float64(game.Camera.GetX())
             overworld.CameraY = float64(game.Camera.GetY())
-            */
+            * /
         }
+        */
 
         // within the viewable area
         if x < 240 && y > 18 {
@@ -339,6 +343,8 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
             // right click should move the camera
             rightClick := inputmanager.RightClick()
             if rightClick /*|| zoomed*/ {
+                game.doMoveCamera(yield, newX, newY)
+                /*
                 moveCamera = selectedPoint.Add(image.Pt(-5, -5))
                 if moveCamera.X < 0 {
                     moveCamera.X = 0
@@ -349,6 +355,7 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
                 if moveCamera.Y >= game.CurrentMap().Height() - 11 {
                     moveCamera.Y = game.CurrentMap().Height() - 11
                 }
+                */
             }
 
             if selectedPoint != newPoint {
