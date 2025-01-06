@@ -2913,7 +2913,7 @@ func (game *Game) doCityScreen(yield coroutine.YieldFunc, city *citylib.City, pl
     mapUse := game.GetMap(city.Plane)
 
     overworld := Overworld{
-        Camera: camera.MakeCameraAt(city.X - 2, city.Y - 2),
+        Camera: camera.MakeCameraAt(city.X+4, city.Y+3),
         Counter: 0,
         Map: mapUse,
         Cities: cities,
@@ -4680,39 +4680,18 @@ func (overworld *Overworld) DrawFog(screen *ebiten.Image, geom ebiten.GeoM){
         return checkFog(x - 1, y + 1)
     }
 
-    minX := int(overworld.Camera.GetZoomedX() - 1)
-    minY := int(overworld.Camera.GetZoomedY() - 1)
-    maxX := minX + int(12/overworld.Camera.GetZoom() + 3)
-    maxY := minY + int(12/overworld.Camera.GetZoom() + 3)
+    minX, minY, maxX, maxY := overworld.Camera.GetTileBounds()
 
     // log.Printf("fog min %v, %v max %v, %v", minX, minY, maxX, maxY)
 
-    // x_loop:
     for x := minX; x < maxX; x++ {
-
-        //y_loop:
         for y := minY; y < maxY; y++ {
-
-            // tileX := overworld.Map.WrapX(x + int(overworld.Camera.GetX()))
-            // tileY := y + int(overworld.Camera.GetY())
             tileX := overworld.Map.WrapX(x)
             tileY := y
 
             options.GeoM.Reset()
-            // options.GeoM = geom
             options.GeoM.Translate(float64(x * tileWidth), float64(y * tileHeight))
             options.GeoM.Concat(geom)
-
-            /*
-            posX, posY := options.GeoM.Apply(0, 0)
-            if int(posX) > screen.Bounds().Max.X {
-                break x_loop
-            }
-
-            if int(posY) > screen.Bounds().Max.Y {
-                break y_loop
-            }
-            */
 
             if tileX >= 0 && tileY >= 0 && tileX < len(fog) && tileY < len(fog[tileX]) && fog[tileX][tileY] {
                 n := fogN(tileX, tileY)

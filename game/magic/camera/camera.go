@@ -69,6 +69,17 @@ func (camera *Camera) Center(x int, y int) {
     }
 }
 
+// return the bounds of a rectangle upper left (x1, y1) and lower right (x2, y2)
+// all tiles within these bounds are visible, with some margin of error to account for edges
+func (camera *Camera) GetTileBounds() (int, int, int, int) {
+    minX := int(camera.GetZoomedX() - 1)
+    minY := int(camera.GetZoomedY() - 1)
+    maxX := minX + int(12/camera.GetZoom() + 3)
+    maxY := minY + int(12/camera.GetZoom() + 3)
+
+    return minX, minY, maxX, maxY
+}
+
 func MakeCamera() Camera {
     return MakeCameraAt(0, 0)
 }

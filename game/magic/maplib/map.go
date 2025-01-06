@@ -745,20 +745,11 @@ func (mapObject *Map) DrawLayer1(camera cameralib.Camera, animationCounter uint6
 
     var options ebiten.DrawImageOptions
 
-    minX := int(camera.GetZoomedX() - 1)
-    minY := int(camera.GetZoomedY() - 1)
-    maxX := minX + int(12/camera.GetZoom() + 3)
-    maxY := minY + int(12/camera.GetZoom() + 3)
+    minX, minY, maxX, maxY := camera.GetTileBounds()
 
     // draw all tiles first
-    // x_loop:
     for x := minX; x < maxX; x++ {
-        // y_loop:
         for y := minY; y < maxY; y++ {
-            /*
-            tileX := mapObject.WrapX(cameraX + x)
-            tileY := cameraY + y
-            */
             tileX := mapObject.WrapX(x)
             tileY := y
 
@@ -776,16 +767,6 @@ func (mapObject *Map) DrawLayer1(camera cameralib.Camera, animationCounter uint6
                 // options.GeoM.Reset()
                 options.GeoM.Translate(float64(x * tileWidth), float64(y * tileHeight))
                 options.GeoM.Concat(geom)
-
-                /*
-                screenX, screenY := options.GeoM.Apply(0, 0)
-                if screenX > float64(screen.Bounds().Max.X) {
-                    break x_loop
-                }
-                if screenY > float64(screen.Bounds().Max.Y) {
-                    break y_loop
-                }
-                */
 
                 screen.DrawImage(tileImage, &options)
 
