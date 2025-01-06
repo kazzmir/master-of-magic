@@ -50,6 +50,12 @@ func (camera *Camera) GetZoomedY() float64 {
     return camera.GetOffsetY() - float64(camera.SizeY) / 2 / camera.GetAnimatedZoom()
 }
 
+func (camera *Camera) GetZoomedMaxY() float64 {
+    // FIXME: not sure why +1 is needed here. it doesn't fully solve the problem of there being
+    // a gap at the bottom of the map sometimes
+    return camera.GetOffsetY() + float64(camera.SizeY+1) / 2 / camera.GetAnimatedZoom()
+}
+
 func (camera *Camera) GetX() int {
     return camera.X
 }

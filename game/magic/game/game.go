@@ -2425,9 +2425,24 @@ func (game *Game) doInputZoom(yield coroutine.YieldFunc) bool {
 }
 
 func (game *Game) doMoveCamera(yield coroutine.YieldFunc, x int, y int) {
+    camera := game.Camera
+
+    camera.Center(x, y)
+    for camera.GetZoomedY() < 0 {
+        y += 1
+        camera.Center(x, y)
+    }
+
+    for camera.GetZoomedMaxY() >= float64(game.CurrentMap().Height()) {
+        y -= 1
+        camera.Center(x, y)
+    }
+
+    /*
     if y < 0 {
         y = 0
     }
+    */
 
     if y > game.CurrentMap().Height() {
         y = game.CurrentMap().Height()
@@ -2441,10 +2456,10 @@ func (game *Game) doMoveCamera(yield coroutine.YieldFunc, x int, y int) {
     angle_cos := math.Cos(angle)
     angle_sin := math.Sin(angle)
 
-    speed := 10
+    steps := 10
 
-    for i := range speed {
-        value := float64(i) / float64(speed) * math.Pi / 2
+    for i := range steps {
+        value := float64(i) / float64(steps) * math.Pi / 2
         magnitude := length * math.Sin(value)
         game.Camera.SetOffset(angle_cos * magnitude, angle_sin * magnitude)
         yield()
