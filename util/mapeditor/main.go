@@ -151,6 +151,12 @@ func (editor *Editor) Update() error {
 
     for _, key := range keys {
         switch key {
+            case ebiten.KeyC:
+                for column := range(editor.Map.Columns()) {
+                    for row := range(editor.Map.Rows()) {
+                        editor.Map.Terrain[column][row] = 0
+                    }
+                }
             case ebiten.KeyG:
                 start := time.Now()
                 editor.Map = terrain.GenerateLandCellularAutomata(editor.Map.Rows(), editor.Map.Columns(), editor.Data, plane)
@@ -358,7 +364,7 @@ func main() {
     ebiten.SetWindowSize(ScreenWidth, ScreenHeight)
     ebiten.SetWindowTitle("map editor")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
-    
+
     err = ebiten.RunGame(editor)
     if err != nil {
         fmt.Printf("Error: %v\n", err)
