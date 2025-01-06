@@ -237,7 +237,7 @@ func (map_ *Map) GenerateLandCellularAutomata(plane data.Plane){
 
     stepCells := func(cells [][]bool, tmpCells [][]bool) {
         for x := 0; x < map_.Columns(); x++ {
-            for y := 2; y < map_.Rows() - 1; y++ {
+            for y := 1; y < map_.Rows() - 1; y++ {
                 neighbors := countNeighbors(cells, x, y)
 
                 if cells[x][y] {
