@@ -4832,6 +4832,10 @@ type Overworld struct {
     FogBlack *ebiten.Image
 }
 
+func (overworld *Overworld) ToCameraCoordinates(x int, y int) (int, int) {
+    return overworld.Map.XDistance(overworld.Camera.GetX(), x) + overworld.Camera.GetX(), y
+}
+
 func (overworld *Overworld) DrawMinimap(screen *ebiten.Image){
     overworld.Map.DrawMinimap(screen, overworld.CitiesMiniMap, int(overworld.Camera.GetX() + 5), int(overworld.Camera.GetY() + 5), overworld.Camera.GetZoom(), overworld.Fog, overworld.Counter, true)
 }
@@ -4856,7 +4860,7 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
     overworld.Map.DrawLayer1(int(overworld.Camera.GetZoomedX()), int(overworld.Camera.GetZoomedY()), overworld.Counter / 8, overworld.ImageCache, screen, geom)
 
     convertTileCoordinates := func(x int, y int) (int, int) {
-        outX := overworld.Map.WrapX(x) * tileWidth
+        outX := x * tileWidth
         outY := y * tileHeight
         return outX, outY
     }
@@ -4878,7 +4882,10 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
 
         if err == nil {
             var options ebiten.DrawImageOptions
-            x, y := convertTileCoordinates(city.X, city.Y)
+
+            cityX, cityY := overworld.ToCameraCoordinates(city.X, city.Y)
+
+            x, y := convertTileCoordinates(cityX, cityY)
             // options.GeoM = geom
             // draw the city in the center of the tile
             // first compute center of tile
@@ -4916,8 +4923,18 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
         if doDraw {
             var options ebiten.DrawImageOptions
             // options.GeoM = geom
-            x, y := convertTileCoordinates(stack.X(), stack.Y())
-            options.GeoM.Translate(float64(x) + stack.OffsetX() * float64(tileWidth), float64(y) + stack.OffsetY() * float64(tileHeight))
+
+            stackX := float64(overworld.Map.XDistance(overworld.Camera.GetX(), stack.X()) + overworld.Camera.GetX())
+            stackY := float64(stack.Y())
+
+            // log.Printf("World %v, %v -> camera %v, %v. Camera: %v, %v", stack.X(), stack.Y(), stackX, stackY, overworld.Camera.GetX(), overworld.Camera.GetY())
+
+            // x, y := convertTileCoordinates(stackX, stackY)
+            x, y := stackX, stackY
+
+            // nx := overworld.Map.WrapX(x - overworld.Camera.GetX()) + overworld.Camera.GetX() + 6
+
+            options.GeoM.Translate((x + float64(stack.OffsetX())) * float64(tileWidth), (y + float64(stack.OffsetY())) * float64(tileHeight))
             options.GeoM.Concat(geom)
 
             leader := stack.Leader()

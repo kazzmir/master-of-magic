@@ -483,6 +483,41 @@ func (mapObject *Map) WrapX(x int) int {
     return x % mapObject.Map.Columns()
 }
 
+// return the shortest x distance between two points, taking into account the map wrapping
+// result: WrapX(x1 + distance) = x2
+func (mapObject *Map) XDistance(x1 int, x2 int) int {
+    abs := func(x int) int {
+        if x < 0 {
+            return -x
+        }
+
+        return x
+    }
+
+    value := x2 - x1
+
+    /*
+    absValue := value
+    if absValue < 0 {
+        absValue = -absValue
+    }
+    */
+
+    // cross over map boundary from x1 towards x2
+    value2 := (mapObject.Map.Columns() - x1) + x2
+
+    // cross over map boundary from x2 towards x1
+    value3 := -x1 - (mapObject.Map.Columns() - x2)
+
+    if abs(value) < abs(value2) && abs(value) < abs(value3) {
+        return value
+    } else if abs(value2) < abs(value3) && abs(value2) < abs(value) {
+        return value2
+    } else {
+        return value3
+    }
+}
+
 func (mapObject *Map) GetTile(tileX int, tileY int) FullTile {
     tileX = mapObject.WrapX(tileX)
 
