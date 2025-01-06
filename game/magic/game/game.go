@@ -2472,7 +2472,7 @@ func (game *Game) ScreenToTile(inX float64, inY float64) (int, int) {
     tileX /= float64(tileWidth)
     tileY /= float64(tileHeight)
 
-    log.Printf("relative tile %v, %v camera %v, %v", tileX, tileY, game.Camera.GetX(), game.Camera.GetY())
+    // log.Printf("relative tile %v, %v camera %v, %v", tileX, tileY, game.Camera.GetX(), game.Camera.GetY())
 
     // return int(tileX + float64(game.Camera.GetX())), int(tileY + float64(game.Camera.GetY()))
     return int(tileX), int(tileY)
@@ -4777,18 +4777,10 @@ func (overworld *Overworld) DrawFog(screen *ebiten.Image, geom ebiten.GeoM){
         return checkFog(x - 1, y + 1)
     }
 
-    /*
-    screenToTile := func(x int, y int) (int, int) {
-        ax, ay := geom.Apply(float64(x), float64(y))
-        return int(ax/float64(tileWidth)), int(ay/float64(tileHeight))
-    }
-    */
-
-    // minX, minY := screenToTile(0, 0)
     minX := int(overworld.Camera.GetZoomedX() - 1)
     minY := int(overworld.Camera.GetZoomedY() - 1)
-    maxX := minX + int(12/overworld.Camera.GetZoom() + 2)
-    maxY := minY + int(12/overworld.Camera.GetZoom() + 2)
+    maxX := minX + int(12/overworld.Camera.GetZoom() + 3)
+    maxY := minY + int(12/overworld.Camera.GetZoom() + 3)
 
     // log.Printf("fog min %v, %v max %v, %v", minX, minY, maxX, maxY)
 
