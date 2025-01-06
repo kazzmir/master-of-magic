@@ -9,6 +9,7 @@ import (
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
     "github.com/kazzmir/master-of-magic/game/magic/cityview"
+    "github.com/kazzmir/master-of-magic/game/magic/camera"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
@@ -138,7 +139,7 @@ func (engine *Engine) Draw(screen *ebiten.Image) {
 
     engine.CityScreen.Draw(screen, func (where *ebiten.Image, geom ebiten.GeoM, counter uint64) {
         overworld := game.Overworld{
-            Camera: game.MakeCameraAt(cameraX, cameraY),
+            Camera: camera.MakeCameraAt(cameraX, cameraY),
             Map: engine.Map,
             Cities: []*citylib.City{engine.CityScreen.City},
             Stacks: []*playerlib.UnitStack{},
