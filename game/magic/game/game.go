@@ -221,11 +221,6 @@ type Game struct {
     Players []*playerlib.Player
     CurrentPlayer int
 
-    /*
-    OverlandZoom int
-    AnimatedZoom float64
-    */
-
     Camera camera.Camera
 }
 
@@ -280,34 +275,6 @@ func (game *Game) MakeFog() [][]bool {
     }
 
     return fog
-}
-
-func (game *Game) CenterCamera2(x int, y int){
-    /*
-    game.cameraX = x - int(5.0 / game.GetZoom())
-    game.cameraY = y - int(5.0 / game.GetZoom())
-    */
-
-    /*
-    game.cameraX = x
-    game.cameraY = y
-    */
-
-    /*
-    if game.cameraX < 0 {
-        game.cameraX = 0
-    }
-    */
-
-    /*
-    if game.cameraY < 0 {
-        game.cameraY = 0
-    }
-
-    if game.cameraY >= game.CurrentMap().Height() - 11 {
-        game.cameraY = game.CurrentMap().Height() - 11
-    }
-    */
 }
 
 /* initial casting skill power is computed as follows:
@@ -2363,10 +2330,7 @@ func (game *Game) ScreenToTile(inX float64, inY float64) (int, int) {
     var geom ebiten.GeoM
 
     camera := game.Camera
-    // camera.Center(-6, 5)
 
-    // geom.Translate((1-deltaX) * float64(tileWidth), (1-deltaY) * float64(tileHeight))
-    // geom.Translate(-camera.GetZoomedX() * float64(tileWidth), -camera.GetZoomedY() * float64(tileHeight))
     /*
     geom.Translate(6, 5)
     geom.Scale(float64(tileWidth), float64(tileHeight))
@@ -2377,7 +2341,7 @@ func (game *Game) ScreenToTile(inX float64, inY float64) (int, int) {
     geom.Scale(camera.GetAnimatedZoom(), camera.GetAnimatedZoom())
 
     geom.Invert()
-    // tileX, tileY := geom.Apply(float64(inX)/float64(tileWidth) * camera.GetAnimatedZoom(), float64(inY)/float64(tileHeight) * camera.GetAnimatedZoom())
+
     tileX, tileY := geom.Apply(inX, inY)
 
     tileX /= float64(tileWidth)
@@ -2387,19 +2351,6 @@ func (game *Game) ScreenToTile(inX float64, inY float64) (int, int) {
 
     // return int(tileX + float64(game.Camera.GetX())), int(tileY + float64(game.Camera.GetY()))
     return int(tileX), int(tileY)
-
-    /*
-    realX := int(inX / float64(game.CurrentMap().TileWidth()) / game.Camera.GetZoom())
-    realY := int(inY / float64(game.CurrentMap().TileHeight()) / game.Camera.GetZoom())
-
-    // tileX := game.CurrentMap().WrapX(game.cameraX + realX - int(240 / float64(game.CurrentMap().TileWidth()) / game.GetZoom() / 2))
-    tileX := game.Camera.GetX() + realX - int(240 / float64(game.CurrentMap().TileWidth()) / game.Camera.GetZoom() / 2)
-    // tileY := game.Camera.GetY() + realY - int(math.Round(float64(data.ScreenHeight) / float64(game.CurrentMap().TileHeight()) / game.Camera.GetZoom() / 2))
-    // tileY := game.Camera.GetY() + realY - int(float64(data.ScreenHeight) / float64(game.CurrentMap().TileHeight()) / game.Camera.GetZoom() / 2)
-    tileY := game.Camera.GetY() + realY - int(float64(data.ScreenHeight) / float64(game.CurrentMap().TileHeight()) / game.Camera.GetZoom() / 2)
-
-    return tileX, tileY
-    */
 }
 
 func (game *Game) doInputZoom(yield coroutine.YieldFunc) bool {
@@ -2696,12 +2647,7 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
 
             // log.Printf("height %v tile height %v", data.ScreenHeight, game.CurrentMap().TileHeight())
 
-            /*
-            tileX := game.CurrentMap().WrapX(game.cameraX + realX - int(240 / float64(game.CurrentMap().TileWidth()) / game.GetZoom() / 2))
-            tileY := game.cameraY + realY - int(math.Round(float64(data.ScreenHeight) / float64(game.CurrentMap().TileHeight()) / game.GetZoom() / 2))
-            */
-
-            log.Printf("Click at %v, %v -> %v, %v", mouseX, mouseY, tileX, tileY)
+            // log.Printf("Click at %v, %v -> %v, %v", mouseX, mouseY, tileX, tileY)
 
             game.doMoveCamera(yield, tileX, tileY)
             tileX = game.CurrentMap().WrapX(tileX)
@@ -2759,19 +2705,6 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
     }
 }
 
-/*
-func (game *Game) UpdateZoom() {
-    epsilon := 0.1
-    if game.AnimatedZoom >= epsilon {
-        game.AnimatedZoom -= epsilon
-    } else if game.AnimatedZoom <= -epsilon {
-        game.AnimatedZoom += epsilon
-    } else {
-        game.AnimatedZoom = 0
-    }
-}
-*/
-
 func (game *Game) Update(yield coroutine.YieldFunc) GameState {
     game.Counter += 1
 
@@ -2780,8 +2713,6 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
         log.Printf("TPS: %v FPS: %v", ebiten.ActualTPS(), ebiten.ActualFPS())
     }
     */
-
-    // game.UpdateZoom()
 
     game.ProcessEvents(yield)
 
