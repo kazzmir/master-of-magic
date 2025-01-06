@@ -4,6 +4,7 @@ import (
     "testing"
     "math"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/units"
 )
 
 func floatEqual(a, b float32) bool {
@@ -72,4 +73,13 @@ func TestHero(test *testing.T){
         test.Errorf("Theria should have 5 Caster ability")
     }
 
+    if len(theria.GetBaseProgression()) != 0 {
+        test.Errorf("There should be no progression yet")
+    }
+
+    theria.GainLevel(units.ExperienceMyrmidon)
+
+    if len(theria.GetBaseProgression()) != 4 {
+        test.Errorf("There should be progression yet")
+    }
 }
