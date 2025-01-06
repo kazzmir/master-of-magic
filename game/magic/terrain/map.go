@@ -456,33 +456,26 @@ func (map_ *Map) ResolveTile(x int, y int, data *TerrainData, plane data.Plane) 
     // return editor.removeMyrror(tiles)[0], nil
 }
 
-func (map_ *Map) ResolveTiles(data *TerrainData, plane data.Plane){
-    // go through every tile and try to resolve it, keep doing this in a loop until there are no more tiles to resolve
+func (map_ *Map) ResolveTiles(data *TerrainData, plane data.Plane) {
+    terrain := make([][]int, map_.Columns())
+    for i := 0; i < map_.Columns(); i++ {
+        terrain[i] = make([]int, map_.Rows())
+    }
 
-    var unresolved []image.Point
     for x := 0; x < map_.Columns(); x++ {
         for y := 0; y < map_.Rows(); y++ {
-            unresolved = append(unresolved, image.Pt(x, y))
-        }
-    }
+            current := map_.Terrain[x][y]
+            terrain[x][y] = current
+            // FIXME: Should this rather check against "not being ocean"?
+            if current == IndexBugGrass || current == MyrrorStart + IndexBugGrass {
+                continue
+            }
 
-    count := 0
-    for len(unresolved) > 0 && count < 5 {
-        count += 1
-        var more []image.Point
-
-        for _, index := range rand.Perm(len(unresolved)) {
-            point := unresolved[index]
-            choice, err := map_.ResolveTile(point.X, point.Y, data, plane)
-            if err != nil {
-                more = append(more, point)
-            } else if choice != map_.Terrain[point.X][point.Y] {
-                map_.Terrain[point.X][point.Y] = choice
+            choice, err := map_.ResolveTile(x, y, data, plane)
+            if err == nil {
+                terrain[x][y] = choice
             }
         }
-
-        unresolved = more
-
-        // fmt.Printf("resolve loop %d\n", count)
     }
+    map_.Terrain = terrain
 }
