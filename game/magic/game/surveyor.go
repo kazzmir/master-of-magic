@@ -101,8 +101,7 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
     whiteFont := makeWhiteFont(fonts)
 
     overworld := Overworld{
-        CameraX: game.cameraX,
-        CameraY: game.cameraY,
+        Camera: game.Camera,
         Counter: game.Counter,
         Map: game.CurrentMap(),
         Cities: cities,
@@ -279,6 +278,8 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
     })
 
     game.Drawer = func(screen *ebiten.Image, game *Game){
+        overworld.Camera = game.Camera
+
         overworld.DrawOverworld(screen, ebiten.GeoM{})
 
         var miniGeom ebiten.GeoM
@@ -292,50 +293,26 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
         ui.Draw(ui, screen)
     }
 
-    moveCamera := image.Pt(game.cameraX, game.cameraY)
     for !quit {
-        overworld.Counter += 1
+        if game.Camera.GetZoom() >= 0.9 {
+            overworld.Counter += 1
+        }
+        zoomed := game.doInputZoom(yield)
+        _ = zoomed
 
         ui.StandardUpdate()
 
         x, y := inputmanager.MousePosition()
 
-        if overworld.Counter % 5 == 0 && (moveCamera.X != game.cameraX || moveCamera.Y != game.cameraY) {
-            if moveCamera.X < game.cameraX {
-                game.cameraX -= 1
-            } else if moveCamera.X > game.cameraX {
-                game.cameraX += 1
-            }
-
-            if moveCamera.Y < game.cameraY {
-                game.cameraY -= 1
-            } else if moveCamera.Y > game.cameraY {
-                game.cameraY += 1
-            }
-
-            overworld.CameraX = game.cameraX
-            overworld.CameraY = game.cameraY
-        }
-
         // within the viewable area
         if x < 240 && y > 18 {
-            newX := game.cameraX + x / game.CurrentMap().TileWidth()
-            newY := game.cameraY + y / game.CurrentMap().TileHeight()
+            newX, newY := game.ScreenToTile(float64(x), float64(y))
             newPoint := image.Pt(newX, newY)
 
             // right click should move the camera
             rightClick := inputmanager.RightClick()
-            if rightClick {
-                moveCamera = selectedPoint.Add(image.Pt(-5, -5))
-                if moveCamera.X < 0 {
-                    moveCamera.X = 0
-                }
-                if moveCamera.Y < 0 {
-                    moveCamera.Y = 0
-                }
-                if moveCamera.Y >= game.CurrentMap().Height() - 11 {
-                    moveCamera.Y = game.CurrentMap().Height() - 11
-                }
+            if rightClick /*|| zoomed*/ {
+                game.doMoveCamera(yield, newX, newY)
             }
 
             if selectedPoint != newPoint {

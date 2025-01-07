@@ -185,7 +185,7 @@ func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup
 
     game.Events <- gamelib.StartingCityEvent(introCity)
 
-    game.CenterCamera(cityX, cityY)
+    game.Camera.Center(cityX, cityY)
 
     game.DoNextTurn()
 

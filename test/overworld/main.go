@@ -70,6 +70,11 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
 
     x, y := game.FindValidCityLocation()
 
+    /*
+    x = 20
+    y = 20
+    */
+
     city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, fraction.Zero(), game.BuildingInfo, game.CurrentMap())
     city.Population = 16190
     city.Plane = data.PlaneArcanus
@@ -90,7 +95,9 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
 
     // game.Map.Map.Terrain[3][6] = terrain.TileNatureForest.Index
 
-    player.LiftFog(x, y, 3, data.PlaneArcanus)
+    // log.Printf("City at %v, %v", x, y)
+
+    player.LiftFog(x, y, 30, data.PlaneArcanus)
 
     drake := player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, nil))
 
@@ -114,7 +121,7 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
     enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.Warlocks, x + 2, y + 2, data.PlaneArcanus, enemy1.Wizard.Banner, nil))
     enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenBowmen, x + 2, y + 2, data.PlaneArcanus, enemy1.Wizard.Banner, nil))
 
-    game.CenterCamera(x, y)
+    game.Camera.Center(stack.X(), stack.Y())
 
     return game
 }
@@ -240,7 +247,7 @@ func createScenario3(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 2, data.PlaneArcanus)
 
-    game.CenterCamera(x, y)
+    game.Camera.Center(x, y)
 
     return game
 }
@@ -308,7 +315,7 @@ func createScenario4(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 2, data.PlaneArcanus)
 
-    game.CenterCamera(x, y)
+    game.Camera.Center(x, y)
 
     introCity.Buildings.Insert(buildinglib.BuildingSmithy)
 
@@ -373,7 +380,7 @@ func createScenario5(cache *lbx.LbxCache) *gamelib.Game {
 
     _ = introCity
 
-    game.CenterCamera(x, y)
+    game.Camera.Center(x, y)
 
     game.Events <- &gamelib.GameEventScroll{
         Title: "CITY GROWTH",
@@ -463,7 +470,7 @@ func createScenario6(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 3, data.PlaneArcanus)
 
-    game.CenterCamera(x, y)
+    game.Camera.Center(x, y)
 
     return game
 }
@@ -1049,7 +1056,7 @@ func createScenario14(cache *lbx.LbxCache) *gamelib.Game {
     player.Mana = 50
 
     player.LiftFog(x, y, 4, data.PlaneArcanus)
-    game.CenterCamera(x, y)
+    game.Camera.Center(x, y)
 
     /*
     game.Events <- &gamelib.GameEventLearnedSpell{
@@ -1514,7 +1521,7 @@ func createScenario19(cache *lbx.LbxCache) *gamelib.Game {
     // game.Map.Map.Terrain[3][6] = terrain.TileNatureForest.Index
 
     player.LiftFog(x, y, 3, data.PlaneArcanus)
-    game.CenterCamera(x, y)
+    game.Camera.Center(x, y)
 
     enemy1 := game.AddPlayer(setup.WizardCustom{
         Name: "dingus",
@@ -2040,7 +2047,7 @@ func createScenario24(cache *lbx.LbxCache) *gamelib.Game {
     player.Mana = 26
 
     player.LiftFog(x, y, 3, data.PlaneArcanus)
-    game.CenterCamera(x, y)
+    game.Camera.Center(x, y)
 
     enemy1 := game.AddPlayer(setup.WizardCustom{
         Name: "dingus",
@@ -2089,7 +2096,7 @@ func createScenario25(cache *lbx.LbxCache) *gamelib.Game {
     game.Plane = data.PlaneArcanus
 
     x, y := game.FindValidCityLocation()
-    game.CenterCamera(x, y)
+    game.Camera.Center(x, y)
 
     player := game.AddPlayer(wizard, true)
     player.Gold = 15772
@@ -2156,7 +2163,7 @@ func createScenario26(cache *lbx.LbxCache) *gamelib.Game {
     game.Plane = data.PlaneArcanus
 
     x, y := game.FindValidCityLocation()
-    game.CenterCamera(x, y)
+    game.Camera.Center(x, y)
 
     player := game.AddPlayer(wizard, true)
     player.Gold = 15772

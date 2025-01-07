@@ -89,7 +89,7 @@ func TestPath1(test *testing.T){
     tileCost := makeTileCost(tiles)
     neighbors := makeNeighbors(tiles)
 
-    path, ok := FindPath(start, end, 10, tileCost, neighbors)
+    path, ok := FindPath(start, end, 10, tileCost, neighbors, PointEqual)
     if !ok {
         test.Errorf("unable to find path")
     }
@@ -102,7 +102,7 @@ func TestPath1(test *testing.T){
         test.Errorf("path not as expected: expected=%v actual=%v", expectedPath, path)
     }
 
-    path2, ok := FindPath(start, end, 3, tileCost, neighbors)
+    path2, ok := FindPath(start, end, 3, tileCost, neighbors, PointEqual)
     if ok {
         test.Errorf("expected no path, but found one: %v", path2)
     }
@@ -132,7 +132,7 @@ XXX3
     tileCost := makeTileCost(tiles)
     neighbors := makeNeighbors(tiles)
 
-    path, ok := FindPath(start, end, 12, tileCost, neighbors)
+    path, ok := FindPath(start, end, 12, tileCost, neighbors, PointEqual)
     if !ok {
         test.Errorf("unable to find path")
     }
@@ -162,7 +162,7 @@ XXXX
     tileCost := makeTileCost(tiles)
     neighbors := makeNeighbors(tiles)
 
-    _, ok := FindPath(start, end, Infinity, tileCost, neighbors)
+    _, ok := FindPath(start, end, Infinity, tileCost, neighbors, PointEqual)
     if ok {
         test.Errorf("able to find path through blocked map")
     }
@@ -188,7 +188,7 @@ func TestStress(test *testing.T){
     start := image.Pt(0, 0)
     end := image.Pt(99, 99)
 
-    _, ok := FindPath(start, end, 100000, makeTileCost(tiles), makeNeighbors(tiles))
+    _, ok := FindPath(start, end, 100000, makeTileCost(tiles), makeNeighbors(tiles), PointEqual)
     if !ok {
         test.Errorf("unable to find path")
     }
@@ -199,7 +199,7 @@ func TestStress(test *testing.T){
         if start.Eq(end) {
             continue
         }
-        _, ok := FindPath(start, end, 100000, makeTileCost(tiles), makeNeighbors(tiles))
+        _, ok := FindPath(start, end, 100000, makeTileCost(tiles), makeNeighbors(tiles), PointEqual)
         if !ok {
             test.Errorf("unable to find path")
         }
@@ -210,7 +210,7 @@ func BenchmarkLarge(bench *testing.B){
     tiles := makeRandomMap(100, 100, 10)
     bench.ResetTimer()
     for range bench.N {
-        FindPath(image.Pt(0, 0), image.Pt(99, 99), 100000, makeTileCost(tiles), makeNeighbors(tiles))
+        FindPath(image.Pt(0, 0), image.Pt(99, 99), 100000, makeTileCost(tiles), makeNeighbors(tiles), PointEqual)
     }
 }
 
@@ -218,6 +218,6 @@ func BenchmarkSmall(bench *testing.B){
     tiles := makeRandomMap(20, 20, 10)
     bench.ResetTimer()
     for range bench.N {
-        FindPath(image.Pt(0, 0), image.Pt(19, 19), 100000, makeTileCost(tiles), makeNeighbors(tiles))
+        FindPath(image.Pt(0, 0), image.Pt(19, 19), 100000, makeTileCost(tiles), makeNeighbors(tiles), PointEqual)
     }
 }
