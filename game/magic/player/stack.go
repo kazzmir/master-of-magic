@@ -212,6 +212,16 @@ func (stack *UnitStack) OutOfMoves() bool {
     return true
 }
 
+func (stack *UnitStack) AnyOutOfMoves() bool {
+    for _, unit := range stack.units {
+        if !unit.GetPatrol() && unit.GetMovesLeft().Equals(fraction.Zero()) {
+            return true
+        }
+    }
+
+    return false
+}
+
 // true if any unit in the stack has moves left
 func (stack *UnitStack) HasMoves() bool {
     return !stack.OutOfMoves()

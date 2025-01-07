@@ -2594,7 +2594,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
             stack.EnableMovers()
             afterActive := len(stack.ActiveUnits())
             if afterActive > 0 && afterActive != beforeActive {
-                stopMoving = true
+                // stopMoving = true
                 break
             }
         } else {
@@ -2611,7 +2611,8 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
         stack.CurrentPath = stack.CurrentPath[stepsTaken:]
     }
 
-    if mergeStack != nil {
+    // only merge stacks if both stacks are stopped, otherwise they can move through each other
+    if len(stack.CurrentPath) == 0 && mergeStack != nil {
         stack = player.MergeStacks(mergeStack, stack)
         player.SelectedStack = stack
         game.RefreshUI()
@@ -2623,9 +2624,15 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
         newCity.UpdateUnrest(stack.Units())
     }
 
-    if stepsTaken > 0 && stack.OutOfMoves() {
+    if stepsTaken > 0 {
+        stack.ExhaustMoves()
         game.DoNextUnit(player)
     }
+}
+
+// given a position on the screen in pixels, return true if the position is within the area of the ui designated for the overworld
+func (game *Game) InOverworldArea(x int, y int) bool {
+    return x < 240 && y > 18
 }
 
 func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Player) {
@@ -2636,13 +2643,17 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
     zoomed := game.doInputZoom(yield)
     _ = zoomed
 
+    mouseX, mouseY := inputmanager.MousePosition()
+    leftClick := inputmanager.LeftClick()
+    rightClick := inputmanager.RightClick()
+
     if player.SelectedStack != nil {
         stack := player.SelectedStack
         mapUse := game.GetMap(stack.Plane())
         oldX := stack.X()
         oldY := stack.Y()
 
-        if len(stack.CurrentPath) == 0 || stack.OutOfMoves() {
+        if true || len(stack.CurrentPath) == 0 || stack.OutOfMoves() {
 
             dx := 0
             dy := 0
@@ -2659,12 +2670,9 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
             newX := stack.X() + dx
             newY := stack.Y() + dy
 
-            leftClick := inputmanager.LeftClick()
             if leftClick {
-                mouseX, mouseY := inputmanager.MousePosition()
-
                 // can only click into the area not hidden by the hud
-                if mouseX < 240 && mouseY > 18 {
+                if game.InOverworldArea(mouseX, mouseY) {
                     // log.Printf("Click at %v, %v", mouseX, mouseY)
                     /*
                     realX, realY := game.RealToTile(float64(mouseX), float64(mouseY))
@@ -2717,19 +2725,18 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                         stack.CurrentPath = path
                     }
                 }
-            } else if leftClick {
+            } else if leftClick && game.InOverworldArea(mouseX, mouseY) {
                 stack.CurrentPath = nil
             }
         }
     }
 
-    rightClick := inputmanager.RightClick()
     if rightClick /*|| zoomed*/ {
         // mapUse := game.CurrentMap()
         mouseX, mouseY := inputmanager.MousePosition()
 
         // can only click into the area not hidden by the hud
-        if mouseX < 240 && mouseY > 18 {
+        if game.InOverworldArea(mouseX, mouseY) {
             // log.Printf("Click at %v, %v", mouseX, mouseY)
             // realX, realY := game.RealToTile(float64(mouseX), float64(mouseY))
             tileX, tileY := game.ScreenToTile(float64(mouseX), float64(mouseY))
