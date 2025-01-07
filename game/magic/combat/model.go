@@ -1177,7 +1177,7 @@ func (model *CombatModel) computePath(x1 int, y1 int, x2 int, y2 int, canTravers
         return out
     }
 
-    return pathfinding.FindPath(image.Pt(x1, y1), image.Pt(x2, y2), 50, tileCost, neighbors)
+    return pathfinding.FindPath(image.Pt(x1, y1), image.Pt(x2, y2), 50, tileCost, neighbors, pathfinding.PointEqual)
 }
 
 /* return a valid path that the given unit can take to reach tile position x, y
