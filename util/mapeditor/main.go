@@ -109,6 +109,15 @@ func (editor *Editor) clear() {
     }
 }
 
+func (editor *Editor) togglePlane() {
+    if editor.Plane == data.PlaneArcanus {
+        editor.Plane = data.PlaneMyrror
+    } else {
+        editor.Plane = data.PlaneArcanus
+    }
+    editor.clear()
+}
+
 func (editor *Editor) Update() error {
     editor.Counter += 1
 
@@ -159,12 +168,7 @@ func (editor *Editor) Update() error {
     for _, key := range keys {
         switch key {
             case ebiten.KeyP:
-                if editor.Plane == data.PlaneArcanus {
-                    editor.Plane = data.PlaneMyrror
-                } else {
-                    editor.Plane = data.PlaneArcanus
-                }
-                editor.clear()
+                editor.togglePlane()
             case ebiten.KeyC:
                 editor.clear()
             case ebiten.KeyG:
