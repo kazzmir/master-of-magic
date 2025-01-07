@@ -2555,17 +2555,24 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                 if len(activeUnits) > 0 {
                     if newY > 0 && newY < mapUse.Height() {
 
+                        var inactiveStack *playerlib.UnitStack
+
                         inactiveUnits := stack.InactiveUnits()
                         if len(inactiveUnits) > 0 {
                             stack.RemoveUnits(inactiveUnits)
-                            player.AddStack(playerlib.MakeUnitStackFromUnits(inactiveUnits))
+                            inactiveStack = player.AddStack(playerlib.MakeUnitStackFromUnits(inactiveUnits))
                             game.RefreshUI()
                         }
 
                         path := game.FindPath(oldX, oldY, newX, newY, stack, player.GetFog(game.Plane))
                         if path == nil {
                             game.blinkRed(yield)
+                            player.MergeStacks(stack, inactiveStack)
                         } else {
+                            // FIXME: i'm not sure this can ever occur in practice
+                            if inactiveStack != nil {
+                                inactiveStack.CurrentPath = stack.CurrentPath
+                            }
                             stack.CurrentPath = path
                         }
                     }

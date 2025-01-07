@@ -190,7 +190,7 @@ func (stack *UnitStack) Move(dx int, dy int, cost fraction.Fraction){
 // true if no unit has any moves left
 func (stack *UnitStack) OutOfMoves() bool {
     for _, unit := range stack.units {
-        if unit.GetMovesLeft().GreaterThan(fraction.Zero()) {
+        if !unit.GetPatrol() && unit.GetMovesLeft().GreaterThan(fraction.Zero()) {
             return false
         }
     }
