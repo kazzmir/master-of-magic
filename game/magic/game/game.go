@@ -2583,7 +2583,11 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                     } else {
                         stack.CurrentPath = path
                     }
+
+                    return
                 }
+            } else if leftClick {
+                stack.CurrentPath = nil
             }
         }
 
