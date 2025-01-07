@@ -28,6 +28,7 @@ type Editor struct {
     Font *text.GoTextFaceSource
 
     Map *terrain.Map
+    Plane data.Plane
 
     TileGpuCache map[int]*ebiten.Image
 
@@ -47,18 +48,6 @@ type Editor struct {
 func chooseRandomElement[T any](values []T) T {
     index := rand.Intn(len(values))
     return values[index]
-}
-
-func (editor *Editor) removeMyrror(tiles []int) []int {
-    var out []int
-
-    for _, tile := range tiles {
-        if ! editor.Data.Tiles[tile].IsMyrror() {
-            out = append(out, tile)
-        }
-    }
-
-    return out
 }
 
 func (editor *Editor) GenerateLand1() {
@@ -100,10 +89,25 @@ func (editor *Editor) GenerateLand1() {
     */
 }
 
+func (editor *Editor) clear() {
+    for column := range(editor.Map.Columns()) {
+        for row := range(editor.Map.Rows()) {
+            editor.Map.Terrain[column][row] = terrain.TileOcean.Index(editor.Plane)
+        }
+    }
+}
+
+func (editor *Editor) togglePlane() {
+    if editor.Plane == data.PlaneArcanus {
+        editor.Plane = data.PlaneMyrror
+    } else {
+        editor.Plane = data.PlaneArcanus
+    }
+    editor.clear()
+}
+
 func (editor *Editor) Update() error {
     editor.Counter += 1
-
-    plane := data.PlaneArcanus
 
     var keys []ebiten.Key
 
@@ -151,14 +155,18 @@ func (editor *Editor) Update() error {
 
     for _, key := range keys {
         switch key {
+            case ebiten.KeyP:
+                editor.togglePlane()
+            case ebiten.KeyC:
+                editor.clear()
             case ebiten.KeyG:
                 start := time.Now()
-                editor.Map = terrain.GenerateLandCellularAutomata(editor.Map.Rows(), editor.Map.Columns(), editor.Data, plane)
+                editor.Map = terrain.GenerateLandCellularAutomata(editor.Map.Rows(), editor.Map.Columns(), editor.Data, editor.Plane)
                 end := time.Now()
                 log.Printf("Generate land took %v", end.Sub(start))
             case ebiten.KeyS:
                 start := time.Now()
-                editor.Map.ResolveTiles(editor.Data, plane)
+                editor.Map.ResolveTiles(editor.Data, editor.Plane)
                 end := time.Now()
                 log.Printf("Resolve tiles took %v", end.Sub(start))
             case ebiten.KeyTab:
@@ -191,17 +199,17 @@ func (editor *Editor) Update() error {
 
     if leftClick {
         if x >= 0 && x < editor.Map.Columns() && y >= 0 && y < editor.Map.Rows() {
-            use := terrain.TileLand.Index(plane)
+            use := terrain.TileLand.Index(editor.Plane)
 
             if leftShift {
-                use = terrain.TileOcean.Index(plane)
+                use = terrain.TileOcean.Index(editor.Plane)
             }
 
             editor.Map.Terrain[x][y] = use
         }
     } else if rightClick {
         if x >= 0 && x < editor.Map.Columns() && y >= 0 && y < editor.Map.Rows() {
-            resolved, err := editor.Map.ResolveTile(x, y, editor.Data, plane)
+            resolved, err := editor.Map.ResolveTile(x, y, editor.Data, editor.Plane)
             if err == nil {
                 editor.Map.Terrain[x][y] = resolved
             } else {
@@ -358,7 +366,7 @@ func main() {
     ebiten.SetWindowSize(ScreenWidth, ScreenHeight)
     ebiten.SetWindowTitle("map editor")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
-    
+
     err = ebiten.RunGame(editor)
     if err != nil {
         fmt.Printf("Error: %v\n", err)
