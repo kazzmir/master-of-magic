@@ -118,7 +118,7 @@ func (stack *UnitStack) ToggleActive(unit units.StackUnit){
             // if there are multiple units in the stack and they are all active, then toggling this unit
             // should activate this unit and deactivate all the others
 
-            if stack.AllActive() {
+            if len(stack.units) > 1 && stack.AllActive() {
                 for _, unit := range stack.units {
                     stack.active[unit] = false
                 }
