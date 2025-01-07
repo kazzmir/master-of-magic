@@ -508,6 +508,7 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
 
     whitePalette := color.Palette{
         color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
         color.White, color.White, color.White, color.White,
     }
 
@@ -3928,6 +3929,12 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
                     if weapon != nil {
                         screen.DrawImage(weapon, &weaponOptions)
+                    }
+
+                    // draw a G on the unit if they are moving
+                    if len(stack.CurrentPath) != 0 {
+                        x, y := options.GeoM.Apply(1, 1)
+                        game.WhiteFont.Print(screen, x, y, 1, options.ColorScale, "G")
                     }
                 },
             })
