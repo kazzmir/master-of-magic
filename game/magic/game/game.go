@@ -596,7 +596,7 @@ func (game *Game) FindValidCityLocation() (int, int) {
             x := continent[index].X
             y := continent[index].Y
 
-            if mapUse.Map.Terrain[x][y] == terrain.TileLand.Index(mapUse.Plane) {
+            if y > 3 && y < mapUse.Map.Columns() - 3 && mapUse.Map.Terrain[x][y] == terrain.TileLand.Index(mapUse.Plane) {
                 return x, y
             }
         }
