@@ -1595,7 +1595,16 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
         return out
     }
 
-    path, ok := pathfinding.FindPath(image.Pt(oldX, oldY), image.Pt(newX, newY), 10000, tileCost, neighbors)
+    normalized := func (a image.Point) image.Point {
+        return image.Pt(useMap.WrapX(a.X), a.Y)
+    }
+
+    // check equality of two points taking wrapping into account
+    tileEqual := func (a image.Point, b image.Point) bool {
+        return normalized(a) == normalized(b)
+    }
+
+    path, ok := pathfinding.FindPath(image.Pt(oldX, oldY), image.Pt(newX, newY), 10000, tileCost, neighbors, tileEqual)
     if ok {
         return path[1:]
     }

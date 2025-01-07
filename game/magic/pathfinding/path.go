@@ -17,13 +17,20 @@ type Path []image.Point
 type TileCostFunc func(int, int, int, int) float64
 // neighbor points given a point x,y
 type NeighborsFunc func (int, int) []image.Point
+// compare two points for equality. notably this should handle wrapping around the map
+type PointEqFunc func (image.Point, image.Point) bool
 
 var Infinity = math.Inf(1)
+
+// default point equality function
+func PointEqual(a image.Point, b image.Point) bool {
+    return a == b
+}
 
 /* returns an array of points that is the shortest/cheapest path from start->end and true, or false if no such path exists
  * basically djikstra's shortest path algorithm
  */
-func FindPath(start image.Point, end image.Point, maxPath float64, tileCost TileCostFunc, neighbors NeighborsFunc) (Path, bool) {
+func FindPath(start image.Point, end image.Point, maxPath float64, tileCost TileCostFunc, neighbors NeighborsFunc, samePoint PointEqFunc) (Path, bool) {
 
     // set distance to start as 0
     // put start in open list
@@ -80,7 +87,7 @@ func FindPath(start image.Point, end image.Point, maxPath float64, tileCost Tile
             continue
         }
 
-        if node.point.Eq(end) && node.cost < Infinity {
+        if samePoint(node.point, end) && node.cost < Infinity {
             endNode = node
             if node.cost < lowestCost {
                 lowestCost = node.cost
@@ -107,7 +114,7 @@ func FindPath(start image.Point, end image.Point, maxPath float64, tileCost Tile
     if endNode != nil {
         var out []image.Point
         seen := make(map[image.Point]struct{})
-        for endNode != nil && !endNode.point.Eq(start) {
+        for endNode != nil && !samePoint(endNode.point, start) {
             /* make sure we never see the same node twice, otherwise we entered into a loop somehow */
             _, ok := seen[endNode.point]
             if ok {
@@ -120,7 +127,7 @@ func FindPath(start image.Point, end image.Point, maxPath float64, tileCost Tile
             endNode = endNode.previous
         }
 
-        if endNode == nil || !endNode.point.Eq(start) {
+        if endNode == nil || !samePoint(endNode.point, start) {
             return nil, false
         }
 
