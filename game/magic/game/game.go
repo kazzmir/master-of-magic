@@ -4325,7 +4325,7 @@ func (game *Game) DoNextUnit(player *playerlib.Player){
     for i := 0; i < len(player.Stacks); i++ {
         index := (i + startingIndex) % len(player.Stacks)
         stack := player.Stacks[index]
-        if stack.HasMoves() && len(stack.ActiveUnits()) > 0 {
+        if stack.HasMoves() {
             player.SelectedStack = stack
             stack.EnableMovers()
             game.Plane = stack.Plane()
