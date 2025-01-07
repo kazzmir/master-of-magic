@@ -168,6 +168,12 @@ type GameEventHeroLevelUp struct {
     Hero *herolib.Hero
 }
 
+type GameEventMoveCamera struct {
+    Plane data.Plane
+    X int
+    Y int
+}
+
 func StartingCityEvent(city *citylib.City) *GameEventCityName {
     return &GameEventCityName{
         Title: "New Starting City",
@@ -507,6 +513,7 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
     infoFontRed := font.MakeOptimizedFontWithPalette(fonts[0], redPalette)
 
     whitePalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
         color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
         color.White, color.White, color.White, color.White,
     }
@@ -1515,6 +1522,15 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
 
     useMap := game.GetMap(stack.Plane())
 
+    normalized := func (a image.Point) image.Point {
+        return image.Pt(useMap.WrapX(a.X), a.Y)
+    }
+
+    // check equality of two points taking wrapping into account
+    tileEqual := func (a image.Point, b image.Point) bool {
+        return normalized(a) == normalized(b)
+    }
+
     tileCost := func (x1 int, y1 int, x2 int, y2 int) float64 {
         x1 = useMap.WrapX(x1)
         x2 = useMap.WrapX(x2)
@@ -1525,6 +1541,19 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
 
         if x2 < 0 || x2 >= useMap.Width() || y2 < 0 || y2 >= useMap.Height() {
             return pathfinding.Infinity
+        }
+
+        // FIXME: check for enemy armies and cities
+
+        node := useMap.GetMagicNode(x2, y2)
+        if node != nil {
+            // avoid magic nodes unless the final destination is the magic node itself
+            // or if the magic node is empty
+            if !tileEqual(image.Pt(x2, y2), image.Pt(newX, newY)) {
+                if !node.Empty {
+                    return pathfinding.Infinity
+                }
+            }
         }
 
         tileFrom := useMap.GetTile(x1, y1)
@@ -1593,15 +1622,6 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
         }
 
         return out
-    }
-
-    normalized := func (a image.Point) image.Point {
-        return image.Pt(useMap.WrapX(a.X), a.Y)
-    }
-
-    // check equality of two points taking wrapping into account
-    tileEqual := func (a image.Point, b image.Point) bool {
-        return normalized(a) == normalized(b)
     }
 
     path, ok := pathfinding.FindPath(image.Pt(oldX, oldY), image.Pt(newX, newY), 10000, tileCost, neighbors, tileEqual)
@@ -2214,6 +2234,10 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                     case *GameEventHeroLevelUp:
                         levelEvent := event.(*GameEventHeroLevelUp)
                         game.showHeroLevelUpPopup(yield, levelEvent.Hero)
+                    case *GameEventMoveCamera:
+                        moveCamera := event.(*GameEventMoveCamera)
+                        game.Plane = moveCamera.Plane
+                        game.doMoveCamera(yield, moveCamera.X, moveCamera.Y)
                 }
             default:
                 return
@@ -2492,7 +2516,7 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
         oldX := stack.X()
         oldY := stack.Y()
 
-        if len(stack.CurrentPath) == 0 {
+        if len(stack.CurrentPath) == 0 || stack.OutOfMoves() {
 
             dx := 0
             dy := 0
@@ -2531,19 +2555,33 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                 if len(activeUnits) > 0 {
                     if newY > 0 && newY < mapUse.Height() {
 
+                        var inactiveStack *playerlib.UnitStack
+
                         inactiveUnits := stack.InactiveUnits()
                         if len(inactiveUnits) > 0 {
                             stack.RemoveUnits(inactiveUnits)
-                            player.AddStack(playerlib.MakeUnitStackFromUnits(inactiveUnits))
+                            inactiveStack = player.AddStack(playerlib.MakeUnitStackFromUnits(inactiveUnits))
                             game.RefreshUI()
                         }
 
                         path := game.FindPath(oldX, oldY, newX, newY, stack, player.GetFog(game.Plane))
                         if path == nil {
                             game.blinkRed(yield)
+                            player.MergeStacks(stack, inactiveStack)
                         } else {
+                            // FIXME: i'm not sure this can ever occur in practice
+                            if inactiveStack != nil {
+                                inactiveStack.CurrentPath = stack.CurrentPath
+                            }
                             stack.CurrentPath = path
                         }
+                    }
+                } else {
+                    path := game.FindPath(oldX, oldY, newX, newY, stack, player.GetFog(game.Plane))
+                    if path == nil {
+                        game.blinkRed(yield)
+                    } else {
+                        stack.CurrentPath = path
                     }
                 }
             }
@@ -3636,9 +3674,16 @@ func (game *Game) MakeHudUI() *uilib.UI {
             for _, key := range keys {
                 switch key {
                     case ebiten.KeySpace:
-                        if game.Players[0].SelectedStack == nil {
+                        stack := game.Players[0].SelectedStack
+
+                        if stack == nil {
                             select {
                                 case game.Events <- &GameEventNextTurn{}:
+                                default:
+                            }
+                        } else {
+                            select {
+                                case game.Events <- &GameEventMoveCamera{Plane: stack.Plane(), X: stack.X(), Y: stack.Y()}:
                                 default:
                             }
                         }
@@ -3915,6 +3960,12 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
                     if weapon != nil {
                         screen.DrawImage(weapon, &weaponOptions)
+                    }
+
+                    // draw a G on the unit if they are moving
+                    if len(stack.CurrentPath) != 0 {
+                        x, y := options.GeoM.Apply(1, 1)
+                        game.WhiteFont.Print(screen, x, y, 1, options.ColorScale, "G")
                     }
                 },
             })
@@ -4835,6 +4886,20 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
                     x, y := options.GeoM.Apply(0, 0)
                     util.DrawOutline(screen, overworld.ImageCache, pic, x, y, overworld.Counter/10, enchantment.Color())
                 }
+            }
+
+        }
+
+        if stack == overworld.SelectedStack {
+            boot, _ := overworld.ImageCache.GetImage("compix.lbx", 72, 0)
+            for _, point := range stack.CurrentPath {
+                var options ebiten.DrawImageOptions
+                x, y := convertTileCoordinates(overworld.ToCameraCoordinates(point.X, point.Y))
+                options.GeoM.Translate(float64(x), float64(y))
+                options.GeoM.Translate(float64(tileWidth) / 2, float64(tileHeight) / 2)
+                options.GeoM.Translate(float64(boot.Bounds().Dx()) / -2, float64(boot.Bounds().Dy()) / -2)
+                options.GeoM.Concat(geom)
+                screen.DrawImage(boot, &options)
             }
         }
     }

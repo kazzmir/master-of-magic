@@ -50,18 +50,6 @@ func chooseRandomElement[T any](values []T) T {
     return values[index]
 }
 
-func (editor *Editor) removeMyrror(tiles []int) []int {
-    var out []int
-
-    for _, tile := range tiles {
-        if ! editor.Data.Tiles[tile].IsMyrror() {
-            out = append(out, tile)
-        }
-    }
-
-    return out
-}
-
 func (editor *Editor) GenerateLand1() {
     // create a matrix of floats the same dimensions as the terrain
     // fill in matrix with random values between -1,1
@@ -107,6 +95,15 @@ func (editor *Editor) clear() {
             editor.Map.Terrain[column][row] = terrain.TileOcean.Index(editor.Plane)
         }
     }
+}
+
+func (editor *Editor) togglePlane() {
+    if editor.Plane == data.PlaneArcanus {
+        editor.Plane = data.PlaneMyrror
+    } else {
+        editor.Plane = data.PlaneArcanus
+    }
+    editor.clear()
 }
 
 func (editor *Editor) Update() error {
@@ -159,12 +156,7 @@ func (editor *Editor) Update() error {
     for _, key := range keys {
         switch key {
             case ebiten.KeyP:
-                if editor.Plane == data.PlaneArcanus {
-                    editor.Plane = data.PlaneMyrror
-                } else {
-                    editor.Plane = data.PlaneArcanus
-                }
-                editor.clear()
+                editor.togglePlane()
             case ebiten.KeyC:
                 editor.clear()
             case ebiten.KeyG:
