@@ -1515,6 +1515,15 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
 
     useMap := game.GetMap(stack.Plane())
 
+    normalized := func (a image.Point) image.Point {
+        return image.Pt(useMap.WrapX(a.X), a.Y)
+    }
+
+    // check equality of two points taking wrapping into account
+    tileEqual := func (a image.Point, b image.Point) bool {
+        return normalized(a) == normalized(b)
+    }
+
     tileCost := func (x1 int, y1 int, x2 int, y2 int) float64 {
         x1 = useMap.WrapX(x1)
         x2 = useMap.WrapX(x2)
@@ -1525,6 +1534,19 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
 
         if x2 < 0 || x2 >= useMap.Width() || y2 < 0 || y2 >= useMap.Height() {
             return pathfinding.Infinity
+        }
+
+        // FIXME: check for enemy armies and cities
+
+        node := useMap.GetMagicNode(x2, y2)
+        if node != nil {
+            // avoid magic nodes unless the final destination is the magic node itself
+            // or if the magic node is empty
+            if !tileEqual(image.Pt(x2, y2), image.Pt(newX, newY)) {
+                if !node.Empty {
+                    return pathfinding.Infinity
+                }
+            }
         }
 
         tileFrom := useMap.GetTile(x1, y1)
@@ -1593,15 +1615,6 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
         }
 
         return out
-    }
-
-    normalized := func (a image.Point) image.Point {
-        return image.Pt(useMap.WrapX(a.X), a.Y)
-    }
-
-    // check equality of two points taking wrapping into account
-    tileEqual := func (a image.Point, b image.Point) bool {
-        return normalized(a) == normalized(b)
     }
 
     path, ok := pathfinding.FindPath(image.Pt(oldX, oldY), image.Pt(newX, newY), 10000, tileCost, neighbors, tileEqual)
