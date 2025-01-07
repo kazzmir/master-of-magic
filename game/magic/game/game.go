@@ -168,6 +168,12 @@ type GameEventHeroLevelUp struct {
     Hero *herolib.Hero
 }
 
+type GameEventMoveCamera struct {
+    Plane data.Plane
+    X int
+    Y int
+}
+
 func StartingCityEvent(city *citylib.City) *GameEventCityName {
     return &GameEventCityName{
         Title: "New Starting City",
@@ -2228,6 +2234,10 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                     case *GameEventHeroLevelUp:
                         levelEvent := event.(*GameEventHeroLevelUp)
                         game.showHeroLevelUpPopup(yield, levelEvent.Hero)
+                    case *GameEventMoveCamera:
+                        moveCamera := event.(*GameEventMoveCamera)
+                        game.Plane = moveCamera.Plane
+                        game.doMoveCamera(yield, moveCamera.X, moveCamera.Y)
                 }
             default:
                 return
@@ -3657,9 +3667,16 @@ func (game *Game) MakeHudUI() *uilib.UI {
             for _, key := range keys {
                 switch key {
                     case ebiten.KeySpace:
-                        if game.Players[0].SelectedStack == nil {
+                        stack := game.Players[0].SelectedStack
+
+                        if stack == nil {
                             select {
                                 case game.Events <- &GameEventNextTurn{}:
+                                default:
+                            }
+                        } else {
+                            select {
+                                case game.Events <- &GameEventMoveCamera{Plane: stack.Plane(), X: stack.X(), Y: stack.Y()}:
                                 default:
                             }
                         }
