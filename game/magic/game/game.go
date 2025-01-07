@@ -2506,7 +2506,7 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
         oldX := stack.X()
         oldY := stack.Y()
 
-        if len(stack.CurrentPath) == 0 {
+        if len(stack.CurrentPath) == 0 || stack.OutOfMoves() {
 
             dx := 0
             dy := 0
@@ -2558,6 +2558,13 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                         } else {
                             stack.CurrentPath = path
                         }
+                    }
+                } else {
+                    path := game.FindPath(oldX, oldY, newX, newY, stack, player.GetFog(game.Plane))
+                    if path == nil {
+                        game.blinkRed(yield)
+                    } else {
+                        stack.CurrentPath = path
                     }
                 }
             }
