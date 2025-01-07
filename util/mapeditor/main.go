@@ -50,18 +50,6 @@ func chooseRandomElement[T any](values []T) T {
     return values[index]
 }
 
-func (editor *Editor) removeMyrror(tiles []int) []int {
-    var out []int
-
-    for _, tile := range tiles {
-        if ! editor.Data.Tiles[tile].IsMyrror() {
-            out = append(out, tile)
-        }
-    }
-
-    return out
-}
-
 func (editor *Editor) GenerateLand1() {
     // create a matrix of floats the same dimensions as the terrain
     // fill in matrix with random values between -1,1
