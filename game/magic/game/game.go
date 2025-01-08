@@ -1560,6 +1560,16 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
             }
         }
 
+        // same logic as magic nodes
+        lair := useMap.GetLair(x2, y2)
+        if lair != nil {
+            if !tileEqual(image.Pt(x2, y2), image.Pt(newX, newY)) {
+                if !lair.Empty {
+                    return pathfinding.Infinity
+                }
+            }
+        }
+
         tileFrom := useMap.GetTile(x1, y1)
         tileTo := useMap.GetTile(x2, y2)
 
