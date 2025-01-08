@@ -99,6 +99,9 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 30, data.PlaneArcanus)
 
+    x = 1
+    y = 20
+
     drake := player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, nil))
 
     for i := 0; i < 5; i++ {
@@ -2280,7 +2283,9 @@ func createScenario27(cache *lbx.LbxCache) *gamelib.Game {
     player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenCavalry, x + 2, y + 2, data.PlaneArcanus, player.Wizard.Banner, nil))
 
     stack2 := player.FindStack(x + 2, y + 2)
-    stack2.Move(-1, -1, fraction.Zero())
+    stack2.Move(-1, -1, fraction.Zero(), func (x int, y int) (int, int){
+        return game.CurrentMap().WrapX(x), y
+    })
 
     // player.SetSelectedStack(stack)
 

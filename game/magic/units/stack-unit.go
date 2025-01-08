@@ -35,7 +35,7 @@ type StackUnit interface {
     GetX() int
     GetY() int
     IsHero() bool
-    Move(int, int, fraction.Fraction)
+    Move(int, int, fraction.Fraction, NormalizeCoordinateFunc)
     GetLbxFile() string
     GetLbxIndex() int
     GetKnownSpells() []string

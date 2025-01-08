@@ -2402,7 +2402,7 @@ func (game *Game) ScreenToTile(inX float64, inY float64) (int, int) {
     // log.Printf("relative tile %v, %v camera %v, %v", tileX, tileY, game.Camera.GetX(), game.Camera.GetY())
 
     // return int(tileX + float64(game.Camera.GetX())), int(tileY + float64(game.Camera.GetY()))
-    return int(tileX), int(tileY)
+    return int(math.Floor(tileX)), int(math.Floor(tileY))
 }
 
 func (game *Game) doInputZoom(yield coroutine.YieldFunc) bool {
@@ -2527,6 +2527,10 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
         return
     }
 
+    normalize := func (x int, y int) (int, int) {
+        return game.CurrentMap().WrapX(x), y
+    }
+
     mapUse := game.GetMap(stack.Plane())
 
     oldX := stack.X()
@@ -2549,7 +2553,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
             if node != nil && !node.Empty {
                 if game.confirmMagicNodeEncounter(yield, node) {
 
-                    stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost)
+                    stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost, normalize)
                     game.showMovement(yield, oldX, oldY, stack)
                     player.LiftFog(stack.X(), stack.Y(), 1, stack.Plane())
 
@@ -2565,7 +2569,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
             lair := mapUse.GetLair(step.X, step.Y)
             if lair != nil && !lair.Empty {
                 if game.confirmLairEncounter(yield, lair) {
-                    stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost)
+                    stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost, normalize)
                     game.showMovement(yield, oldX, oldY, stack)
                     player.LiftFog(stack.X(), stack.Y(), 1, stack.Plane())
 
@@ -2581,7 +2585,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
             stepsTaken = i + 1
             mergeStack = player.FindStack(step.X, step.Y)
 
-            stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost)
+            stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost, normalize)
             game.showMovement(yield, oldX, oldY, stack)
             player.LiftFog(stack.X(), stack.Y(), 1, stack.Plane())
 
@@ -2691,6 +2695,7 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                     newY = game.cameraY + realY
                     */
                     newX, newY = game.ScreenToTile(float64(mouseX), float64(mouseY))
+                    log.Printf("Click at %v, %v -> %v, %v", mouseX, mouseY, newX, newY)
                     newX = game.CurrentMap().WrapX(newX)
                 }
             }
@@ -2698,7 +2703,7 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
             if newX != oldX || newY != oldY {
                 activeUnits := stack.ActiveUnits()
                 if len(activeUnits) > 0 {
-                    if newY > 0 && newY < mapUse.Height() {
+                    if newY >= 0 && newY < mapUse.Height() {
 
                         var inactiveStack *playerlib.UnitStack
 
@@ -2826,6 +2831,10 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
 
     game.ProcessEvents(yield)
 
+    normalize := func (x int, y int) (int, int) {
+        return game.CurrentMap().WrapX(x), y
+    }
+
     switch game.State {
         case GameStateRunning:
             game.HudUI.StandardUpdate()
@@ -2857,7 +2866,7 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                                     terrainCost, _ := game.ComputeTerrainCost(stack, to.X, to.Y, game.GetMap(stack.Plane()))
                                     oldX := stack.X()
                                     oldY := stack.Y()
-                                    stack.Move(to.X - stack.X(), to.Y - stack.Y(), terrainCost)
+                                    stack.Move(to.X - stack.X(), to.Y - stack.Y(), terrainCost, normalize)
                                     game.showMovement(yield, oldX, oldY, stack)
                                     player.LiftFog(stack.X(), stack.Y(), 1, stack.Plane())
 

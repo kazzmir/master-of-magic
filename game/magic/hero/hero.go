@@ -663,8 +663,8 @@ func (hero *Hero) GetY() int {
     return hero.Unit.GetY()
 }
 
-func (hero *Hero) Move(dx int, dy int, cost fraction.Fraction){
-    hero.Unit.Move(dx, dy, cost)
+func (hero *Hero) Move(dx int, dy int, cost fraction.Fraction, normalize units.NormalizeCoordinateFunc) {
+    hero.Unit.Move(dx, dy, cost, normalize)
 }
 
 func (hero *Hero) NaturalHeal(rate float64) {

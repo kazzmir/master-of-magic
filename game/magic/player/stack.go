@@ -195,9 +195,9 @@ func (stack *UnitStack) EnableMovers(){
     }
 }
 
-func (stack *UnitStack) Move(dx int, dy int, cost fraction.Fraction){
+func (stack *UnitStack) Move(dx int, dy int, cost fraction.Fraction, normalize units.NormalizeCoordinateFunc){
     for _, unit := range stack.units {
-        unit.Move(dx, dy, cost)
+        unit.Move(dx, dy, cost, normalize)
     }
 }
 
