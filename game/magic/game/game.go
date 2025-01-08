@@ -1524,6 +1524,12 @@ func (game *Game) blinkRed(yield coroutine.YieldFunc) {
     }
 }
 
+func (game *Game) GetNormalizeCoordinateFunc() units.NormalizeCoordinateFunc {
+    return func (x int, y int) (int, int) {
+        return game.CurrentMap().WrapX(x), y
+    }
+}
+
 func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *playerlib.UnitStack, fog [][]bool) pathfinding.Path {
 
     useMap := game.GetMap(stack.Plane())
@@ -2527,10 +2533,6 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
         return
     }
 
-    normalize := func (x int, y int) (int, int) {
-        return game.CurrentMap().WrapX(x), y
-    }
-
     mapUse := game.GetMap(stack.Plane())
 
     oldX := stack.X()
@@ -2553,7 +2555,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
             if node != nil && !node.Empty {
                 if game.confirmMagicNodeEncounter(yield, node) {
 
-                    stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost, normalize)
+                    stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost, game.GetNormalizeCoordinateFunc())
                     game.showMovement(yield, oldX, oldY, stack)
                     player.LiftFog(stack.X(), stack.Y(), 1, stack.Plane())
 
@@ -2569,7 +2571,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
             lair := mapUse.GetLair(step.X, step.Y)
             if lair != nil && !lair.Empty {
                 if game.confirmLairEncounter(yield, lair) {
-                    stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost, normalize)
+                    stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost, game.GetNormalizeCoordinateFunc())
                     game.showMovement(yield, oldX, oldY, stack)
                     player.LiftFog(stack.X(), stack.Y(), 1, stack.Plane())
 
@@ -2585,7 +2587,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
             stepsTaken = i + 1
             mergeStack = player.FindStack(step.X, step.Y)
 
-            stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost, normalize)
+            stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost, game.GetNormalizeCoordinateFunc())
             game.showMovement(yield, oldX, oldY, stack)
             player.LiftFog(stack.X(), stack.Y(), 1, stack.Plane())
 
@@ -2831,10 +2833,6 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
 
     game.ProcessEvents(yield)
 
-    normalize := func (x int, y int) (int, int) {
-        return game.CurrentMap().WrapX(x), y
-    }
-
     switch game.State {
         case GameStateRunning:
             game.HudUI.StandardUpdate()
@@ -2866,7 +2864,7 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                                     terrainCost, _ := game.ComputeTerrainCost(stack, to.X, to.Y, game.GetMap(stack.Plane()))
                                     oldX := stack.X()
                                     oldY := stack.Y()
-                                    stack.Move(to.X - stack.X(), to.Y - stack.Y(), terrainCost, normalize)
+                                    stack.Move(to.X - stack.X(), to.Y - stack.Y(), terrainCost, game.GetNormalizeCoordinateFunc())
                                     game.showMovement(yield, oldX, oldY, stack)
                                     player.LiftFog(stack.X(), stack.Y(), 1, stack.Plane())
 

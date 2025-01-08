@@ -2283,9 +2283,7 @@ func createScenario27(cache *lbx.LbxCache) *gamelib.Game {
     player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenCavalry, x + 2, y + 2, data.PlaneArcanus, player.Wizard.Banner, nil))
 
     stack2 := player.FindStack(x + 2, y + 2)
-    stack2.Move(-1, -1, fraction.Zero(), func (x int, y int) (int, int){
-        return game.CurrentMap().WrapX(x), y
-    })
+    stack2.Move(-1, -1, fraction.Zero(), game.GetNormalizeCoordinateFunc())
 
     // player.SetSelectedStack(stack)
 
