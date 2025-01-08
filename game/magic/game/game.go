@@ -2598,6 +2598,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
             player.LiftFog(stack.X(), stack.Y(), 1, stack.Plane())
 
             for _, otherPlayer := range game.Players[1:] {
+                // FIXME: this should get all stacks at the given location and merge them into a single stack for combat
                 otherStack := otherPlayer.FindStack(stack.X(), stack.Y())
                 if otherStack != nil {
                     zone := combat.ZoneType{
@@ -2875,6 +2876,7 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                                     player.LiftFog(stack.X(), stack.Y(), 1, stack.Plane())
 
                                     for _, enemy := range game.GetEnemies(player) {
+                                        // FIXME: this should get all stacks at the given location and merge them into a single stack for combat
                                         enemyStack := enemy.FindStack(stack.X(), stack.Y())
                                         if enemyStack != nil {
                                             zone := combat.ZoneType{
