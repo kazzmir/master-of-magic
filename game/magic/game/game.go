@@ -4982,13 +4982,17 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
     // draw current path on top of fog
     if overworld.SelectedStack != nil {
         boot, _ := overworld.ImageCache.GetImage("compix.lbx", 72, 0)
-        for _, point := range overworld.SelectedStack.CurrentPath {
+        for pointI, point := range overworld.SelectedStack.CurrentPath {
             var options ebiten.DrawImageOptions
             x, y := convertTileCoordinates(overworld.ToCameraCoordinates(point.X, point.Y))
             options.GeoM.Translate(float64(x), float64(y))
             options.GeoM.Translate(float64(tileWidth) / 2, float64(tileHeight) / 2)
             options.GeoM.Translate(float64(boot.Bounds().Dx()) / -2, float64(boot.Bounds().Dy()) / -2)
             options.GeoM.Concat(geom)
+
+            v := float32(1 + (math.Sin(float64(overworld.Counter * 4 + uint64(pointI) * 60) * math.Pi / 180) / 2 + 0.5) / 2)
+            options.ColorScale.Scale(v, v, v, 1)
+
             screen.DrawImage(boot, &options)
         }
     }
