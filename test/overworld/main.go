@@ -1102,13 +1102,13 @@ func createScenario15(cache *lbx.LbxCache) *gamelib.Game {
     x, y := game.FindValidCityLocation()
 
     city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.CurrentMap())
-    city.Population = 6190
+    city.Population = 20190
     city.Plane = data.PlaneArcanus
     city.Banner = wizard.Banner
     city.ProducingBuilding = buildinglib.BuildingGranary
     city.ProducingUnit = units.UnitNone
     city.Race = wizard.Race
-    city.Farmers = 3
+    city.Farmers = 17
     city.Workers = 3
     city.Wall = false
 
