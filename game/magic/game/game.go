@@ -1426,6 +1426,8 @@ func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, st
     game.Drawer = func (screen *ebiten.Image, game *Game){
         drawer(screen, game)
 
+        overworldScreen := screen.SubImage(image.Rect(0, 18, 240, data.ScreenHeight)).(*ebiten.Image)
+
         // draw boot images on the map that show where the unit is moving to
         for _, point := range stack.CurrentPath {
             var options ebiten.DrawImageOptions
@@ -1434,7 +1436,7 @@ func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, st
             options.GeoM.Translate(float64(tileWidth) / 2, float64(tileHeight) / 2)
             options.GeoM.Translate(float64(boot.Bounds().Dx()) / -2, float64(boot.Bounds().Dy()) / -2)
             options.GeoM.Concat(geom)
-            screen.DrawImage(boot, &options)
+            overworldScreen.DrawImage(boot, &options)
         }
 
     }
