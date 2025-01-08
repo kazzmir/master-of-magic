@@ -208,6 +208,7 @@ func (editor *Editor) Update() error {
             editor.Map.Terrain[x][y] = use
         }
     } else if rightClick {
+        // FIXME: why is single click not resolving anymore?
         if x >= 0 && x < editor.Map.Columns() && y >= 0 && y < editor.Map.Rows() {
             resolved, err := editor.Map.ResolveTile(x, y, editor.Data, editor.Plane)
             if err == nil {

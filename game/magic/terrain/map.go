@@ -390,6 +390,8 @@ func (map_ *Map) ResolveTile(x int, y int, data *TerrainData, plane data.Plane) 
         return data.Tiles[index].Tile.GetDirection(direction)
     }
 
+    matching[Center] = getDirection(x, y, Center)
+
     matching[West] = getDirection(x-1, y, East)
 
     matching[NorthWest] = Ocean
@@ -466,10 +468,6 @@ func (map_ *Map) ResolveTiles(data *TerrainData, plane data.Plane) {
         for y := 0; y < map_.Rows(); y++ {
             current := map_.Terrain[x][y]
             terrain[x][y] = current
-            // FIXME: Should this rather check against "not being ocean"?
-            if current == IndexBugGrass || current == MyrrorStart + IndexBugGrass {
-                continue
-            }
 
             choice, err := map_.ResolveTile(x, y, data, plane)
             if err == nil {
