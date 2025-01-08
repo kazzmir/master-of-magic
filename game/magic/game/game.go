@@ -2718,7 +2718,8 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                         }
                     }
                 } else {
-                    path := game.FindPath(oldX, oldY, newX, newY, stack, player.GetFog(game.Plane))
+                    // make a copy of the unit stack to activate all units, because path finding only checks active units for terrain constraints
+                    path := game.FindPath(oldX, oldY, newX, newY, playerlib.MakeUnitStackFromUnits(stack.Units()), player.GetFog(game.Plane))
                     if path == nil {
                         game.blinkRed(yield)
                     } else {
