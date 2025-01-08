@@ -1426,6 +1426,8 @@ func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, st
     game.Drawer = func (screen *ebiten.Image, game *Game){
         drawer(screen, game)
 
+        overworldScreen := screen.SubImage(image.Rect(0, 18, 240, data.ScreenHeight)).(*ebiten.Image)
+
         // draw boot images on the map that show where the unit is moving to
         for _, point := range stack.CurrentPath {
             var options ebiten.DrawImageOptions
@@ -1434,7 +1436,7 @@ func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, st
             options.GeoM.Translate(float64(tileWidth) / 2, float64(tileHeight) / 2)
             options.GeoM.Translate(float64(boot.Bounds().Dx()) / -2, float64(boot.Bounds().Dy()) / -2)
             options.GeoM.Concat(geom)
-            screen.DrawImage(boot, &options)
+            overworldScreen.DrawImage(boot, &options)
         }
 
     }
@@ -1555,6 +1557,16 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
             // or if the magic node is empty
             if !tileEqual(image.Pt(x2, y2), image.Pt(newX, newY)) {
                 if !node.Empty {
+                    return pathfinding.Infinity
+                }
+            }
+        }
+
+        // same logic as magic nodes
+        lair := useMap.GetLair(x2, y2)
+        if lair != nil {
+            if !tileEqual(image.Pt(x2, y2), image.Pt(newX, newY)) {
+                if !lair.Empty {
                     return pathfinding.Infinity
                 }
             }
@@ -2551,7 +2563,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
             }
 
             lair := mapUse.GetLair(step.X, step.Y)
-            if lair != nil {
+            if lair != nil && !lair.Empty {
                 if game.confirmLairEncounter(yield, lair) {
                     stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost)
                     game.showMovement(yield, oldX, oldY, stack)
@@ -3111,6 +3123,7 @@ func (game *Game) doLairEncounter(yield coroutine.YieldFunc, player *playerlib.P
     result := game.doCombat(yield, player, stack, &defender, playerlib.MakeUnitStackFromUnits(enemies), zone)
     if result == combat.CombatStateAttackerWin {
         // FIXME: give treasure
+        encounter.Empty = true
     } else {
         // FIXME: remove killed defenders
     }
@@ -4935,19 +4948,6 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
             }
 
         }
-
-        if stack == overworld.SelectedStack {
-            boot, _ := overworld.ImageCache.GetImage("compix.lbx", 72, 0)
-            for _, point := range stack.CurrentPath {
-                var options ebiten.DrawImageOptions
-                x, y := convertTileCoordinates(overworld.ToCameraCoordinates(point.X, point.Y))
-                options.GeoM.Translate(float64(x), float64(y))
-                options.GeoM.Translate(float64(tileWidth) / 2, float64(tileHeight) / 2)
-                options.GeoM.Translate(float64(boot.Bounds().Dx()) / -2, float64(boot.Bounds().Dy()) / -2)
-                options.GeoM.Concat(geom)
-                screen.DrawImage(boot, &options)
-            }
-        }
     }
 
     overworld.Map.DrawLayer2(int(overworld.Camera.GetZoomedX()), int(overworld.Camera.GetZoomedY()), overworld.Counter / 8, overworld.ImageCache, screen, geom)
@@ -4955,6 +4955,21 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
     if overworld.Fog != nil {
         overworld.DrawFog(screen, geom)
     }
+
+    // draw current path on top of fog
+    if overworld.SelectedStack != nil {
+        boot, _ := overworld.ImageCache.GetImage("compix.lbx", 72, 0)
+        for _, point := range overworld.SelectedStack.CurrentPath {
+            var options ebiten.DrawImageOptions
+            x, y := convertTileCoordinates(overworld.ToCameraCoordinates(point.X, point.Y))
+            options.GeoM.Translate(float64(x), float64(y))
+            options.GeoM.Translate(float64(tileWidth) / 2, float64(tileHeight) / 2)
+            options.GeoM.Translate(float64(boot.Bounds().Dx()) / -2, float64(boot.Bounds().Dy()) / -2)
+            options.GeoM.Concat(geom)
+            screen.DrawImage(boot, &options)
+        }
+    }
+
 
     /*
     for i := range int(200.0) {
@@ -5035,7 +5050,8 @@ func (game *Game) DrawGame(screen *ebiten.Image){
         FogBlack: game.GetFogImage(),
     }
 
-    overworld.DrawOverworld(screen, ebiten.GeoM{})
+    overworldScreen := screen.SubImage(image.Rect(0, 18, 240, data.ScreenHeight)).(*ebiten.Image)
+    overworld.DrawOverworld(overworldScreen, ebiten.GeoM{})
 
     var miniGeom ebiten.GeoM
     miniGeom.Translate(250, 20)
