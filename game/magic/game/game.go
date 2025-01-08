@@ -2697,7 +2697,7 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                     newY = game.cameraY + realY
                     */
                     newX, newY = game.ScreenToTile(float64(mouseX), float64(mouseY))
-                    log.Printf("Click at %v, %v -> %v, %v", mouseX, mouseY, newX, newY)
+                    // log.Printf("Click at %v, %v -> %v, %v", mouseX, mouseY, newX, newY)
                     newX = game.CurrentMap().WrapX(newX)
                 }
             }
