@@ -2605,7 +2605,6 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
     }
 
     if stopMoving {
-        log.Printf("stop moving")
         stack.CurrentPath = nil
     } else if stepsTaken > 0 {
         stack.CurrentPath = stack.CurrentPath[stepsTaken:]
