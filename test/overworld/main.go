@@ -808,7 +808,8 @@ func createScenario11(cache *lbx.LbxCache) *gamelib.Game {
     player.Gold = 83
     player.Mana = 26
 
-    player.LiftFog(x, y, 3, data.PlaneArcanus)
+    player.LiftFog(x, y, 100, data.PlaneArcanus)
+    player.LiftFog(x, y, 100, data.PlaneMyrror)
 
     node := game.CurrentMap().CreateNode(x, y+2, maplib.MagicNodeNature, game.Plane, game.Settings.Magic, game.Settings.Difficulty)
     node.Empty = true

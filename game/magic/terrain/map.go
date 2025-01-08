@@ -326,34 +326,37 @@ func (map_ *Map) PlaceRandomTerrainTiles(plane data.Plane){
 
         return chooseRandomElement(choices)
     }
+    _ = randomForest
 
     for _, continent := range continents {
 
-        for i := 0; i < int(math.Sqrt(float64(continent.Size()))) / 4; i++ {
+        for i := 0; i < int(math.Sqrt(float64(continent.Size()))) * 2; i++ {
             point := chooseRandomElement(continent)
 
-            use := TileSorceryLake.Index(plane)
-            switch rand.IntN(2) {
-                case 0: use = randomForest()
-                case 1: use = TileMountain1.Index(plane)
-            }
+            // use := TileSorceryLake.Index(plane)
+            // switch rand.IntN(3) {
+            //     case 0: use = randomForest()
+            //     case 1: use = TileMountain1.Index(plane)
+            //     case 2: use = TileAllDesert1.Index(plane)
+            // }
+            use := TileMountain1.Index(plane)
 
             map_.Terrain[point.X][point.Y] = use
         }
 
-        for i := 0; i < int(math.Sqrt(float64(continent.Size()))) / 8; i++ {
-            point := chooseRandomElement(continent)
+        // for i := 0; i < int(math.Sqrt(float64(continent.Size()))) / 8; i++ {
+        //     point := chooseRandomElement(continent)
 
-            use := TileSorceryLake.Index(plane)
-            switch rand.IntN(4) {
-                case 0: use = TileSorceryLake.Index(plane)
-                case 1: use = TileNatureForest.Index(plane)
-                case 2: use = TileChaosVolcano.Index(plane)
-                case 3: use = TileLake.Index(plane)
-            }
+        //     use := TileSorceryLake.Index(plane)
+        //     switch rand.IntN(4) {
+        //         case 0: use = TileSorceryLake.Index(plane)
+        //         case 1: use = TileNatureForest.Index(plane)
+        //         case 2: use = TileChaosVolcano.Index(plane)
+        //         case 3: use = TileLake.Index(plane)
+        //     }
 
-            map_.Terrain[point.X][point.Y] = use
-        }
+        //     map_.Terrain[point.X][point.Y] = use
+        // }
     }
 }
 
@@ -387,10 +390,12 @@ func (map_ *Map) ResolveTile(x int, y int, data *TerrainData, plane data.Plane) 
             fmt.Printf("Error: invalid index in terrain %v at %v,%v\n", index, x, y)
             return Unknown
         }
-        return data.Tiles[index].Tile.GetDirection(direction)
+        return data.Tiles[index].Tile.GetDirection(direction).Terrain
     }
 
     matching[Center] = getDirection(x, y, Center)
+
+    // fixme: might need x wrapping?
 
     matching[West] = getDirection(x-1, y, East)
 
@@ -431,22 +436,23 @@ func (map_ *Map) ResolveTile(x int, y int, data *TerrainData, plane data.Plane) 
     }
 
     tile := data.FindMatchingTile(matching, plane)
-    if tile == -1 {
-        // try to fill edges if tiles are not found
-        if matching[North] == matching[East] {
-            matching[NorthEast] = matching[North]
-        }
-        if matching[North] == matching[West] {
-            matching[NorthWest] = matching[North]
-        }
-        if matching[South] == matching[East] {
-            matching[SouthEast] = matching[South]
-        }
-        if matching[South] == matching[West] {
-            matching[SouthWest] = matching[South]
-        }
-        tile = data.FindMatchingTile(matching, plane)
-    }
+    // if tile == -1 {
+    //     // try to fill edges if tiles are not found
+    //     // FIXME: This should be solved with defining only partial compats for the diagonal shore tiles
+    //     if matching[North] == matching[East] {
+    //         matching[NorthEast] = matching[North]
+    //     }
+    //     if matching[North] == matching[West] {
+    //         matching[NorthWest] = matching[North]
+    //     }
+    //     if matching[South] == matching[East] {
+    //         matching[SouthEast] = matching[South]
+    //     }
+    //     if matching[South] == matching[West] {
+    //         matching[SouthWest] = matching[South]
+    //     }
+    //     tile = data.FindMatchingTile(matching, plane)
+    // }
 
     if tile == -1 {
         return -1, fmt.Errorf("no matching tile for %v", matching)
@@ -472,6 +478,10 @@ func (map_ *Map) ResolveTiles(data *TerrainData, plane data.Plane) {
             choice, err := map_.ResolveTile(x, y, data, plane)
             if err == nil {
                 terrain[x][y] = choice
+            } else {
+                // FIXME: find out why some are not found then remove me!
+                map_.ResolveTile(x, y, data, plane)
+                terrain[x][y] = MyrrorStart
             }
         }
     }
