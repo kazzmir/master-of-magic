@@ -4831,7 +4831,9 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
     geom.Translate(-overworld.Camera.GetZoomedX() * float64(tileWidth), -overworld.Camera.GetZoomedY() * float64(tileHeight))
     geom.Scale(overworld.Camera.GetAnimatedZoom(), overworld.Camera.GetAnimatedZoom())
 
-    overworld.Map.DrawLayer1(overworld.Camera, overworld.Counter / 8, overworld.ImageCache, screen, geom)
+    overworldScreen := screen.SubImage(image.Rect(0, 18, 240, data.ScreenHeight)).(*ebiten.Image)
+
+    overworld.Map.DrawLayer1(overworld.Camera, overworld.Counter / 8, overworld.ImageCache, overworldScreen, geom)
 
     convertTileCoordinates := func(x int, y int) (int, int) {
         outX := x * tileWidth
@@ -4868,7 +4870,7 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
             // then move the city image so that the center of the image is at the center of the tile
             options.GeoM.Translate(float64(-cityPic.Bounds().Dx()) / 2.0, float64(-cityPic.Bounds().Dy()) / 2.0)
             options.GeoM.Concat(geom)
-            screen.DrawImage(cityPic, &options)
+            overworldScreen.DrawImage(cityPic, &options)
 
             /*
             tx, ty := geom.Apply(float64(x), float64(y))
@@ -4919,42 +4921,44 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
 
             unitBack, err := units.GetUnitBackgroundImage(leader.GetBanner(), overworld.ImageCache)
             if err == nil {
-                screen.DrawImage(unitBack, &options)
+                overworldScreen.DrawImage(unitBack, &options)
             }
 
             pic, err := GetUnitImage(leader, overworld.ImageCache, leader.GetBanner())
             if err == nil {
                 options.GeoM.Translate(1, 1)
-                screen.DrawImage(pic, &options)
+                overworldScreen.DrawImage(pic, &options)
 
                 enchantment := util.First(leader.GetEnchantments(), data.UnitEnchantmentNone)
                 if enchantment != data.UnitEnchantmentNone {
                     x, y := options.GeoM.Apply(0, 0)
-                    util.DrawOutline(screen, overworld.ImageCache, pic, x, y, overworld.Counter/10, enchantment.Color())
+                    util.DrawOutline(overworldScreen, overworld.ImageCache, pic, x, y, overworld.Counter/10, enchantment.Color())
                 }
             }
 
         }
+    }
 
-        if stack == overworld.SelectedStack {
-            boot, _ := overworld.ImageCache.GetImage("compix.lbx", 72, 0)
-            for _, point := range stack.CurrentPath {
-                var options ebiten.DrawImageOptions
-                x, y := convertTileCoordinates(overworld.ToCameraCoordinates(point.X, point.Y))
-                options.GeoM.Translate(float64(x), float64(y))
-                options.GeoM.Translate(float64(tileWidth) / 2, float64(tileHeight) / 2)
-                options.GeoM.Translate(float64(boot.Bounds().Dx()) / -2, float64(boot.Bounds().Dy()) / -2)
-                options.GeoM.Concat(geom)
-                screen.DrawImage(boot, &options)
-            }
+    overworld.Map.DrawLayer2(int(overworld.Camera.GetZoomedX()), int(overworld.Camera.GetZoomedY()), overworld.Counter / 8, overworld.ImageCache, overworldScreen, geom)
+
+    if overworld.Fog != nil {
+        overworld.DrawFog(overworldScreen, geom)
+    }
+
+    // draw current path on top of fog
+    if overworld.SelectedStack != nil {
+        boot, _ := overworld.ImageCache.GetImage("compix.lbx", 72, 0)
+        for _, point := range overworld.SelectedStack.CurrentPath {
+            var options ebiten.DrawImageOptions
+            x, y := convertTileCoordinates(overworld.ToCameraCoordinates(point.X, point.Y))
+            options.GeoM.Translate(float64(x), float64(y))
+            options.GeoM.Translate(float64(tileWidth) / 2, float64(tileHeight) / 2)
+            options.GeoM.Translate(float64(boot.Bounds().Dx()) / -2, float64(boot.Bounds().Dy()) / -2)
+            options.GeoM.Concat(geom)
+            overworldScreen.DrawImage(boot, &options)
         }
     }
 
-    overworld.Map.DrawLayer2(int(overworld.Camera.GetZoomedX()), int(overworld.Camera.GetZoomedY()), overworld.Counter / 8, overworld.ImageCache, screen, geom)
-
-    if overworld.Fog != nil {
-        overworld.DrawFog(screen, geom)
-    }
 
     /*
     for i := range int(200.0) {
