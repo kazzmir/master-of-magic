@@ -111,6 +111,7 @@ func randomEncounterType() EncounterType {
 type ExtraEncounter struct {
     Type EncounterType
     Units []units.Unit
+    Empty bool
 }
 
 // choices is a map from a name to the chance of choosing that name, where all the int values should add up to 100
