@@ -172,6 +172,7 @@ type GameEventMoveCamera struct {
     Plane data.Plane
     X int
     Y int
+    Instant bool // set to true to have the camera move instantly, rather than smoothly scroll
 }
 
 type GameEventMoveUnit struct {
@@ -2259,7 +2260,12 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                     case *GameEventMoveCamera:
                         moveCamera := event.(*GameEventMoveCamera)
                         game.Plane = moveCamera.Plane
-                        game.doMoveCamera(yield, moveCamera.X, moveCamera.Y)
+
+                        if moveCamera.Instant {
+                            game.Camera.Center(moveCamera.X, moveCamera.Y)
+                        } else {
+                            game.doMoveCamera(yield, moveCamera.X, moveCamera.Y)
+                        }
                     case *GameEventMoveUnit:
                         moveUnit := event.(*GameEventMoveUnit)
                         game.doMoveSelectedUnit(yield, moveUnit.Player)
@@ -4357,8 +4363,14 @@ func (game *Game) DoNextUnit(player *playerlib.Player){
         if stack.HasMoves() {
             player.SelectedStack = stack
             stack.EnableMovers()
+            select {
+                case game.Events <- &GameEventMoveCamera{Plane: stack.Plane(), X: stack.X(), Y: stack.Y(), Instant: true}:
+                default:
+            }
+            /*
             game.Plane = stack.Plane()
             game.Camera.Center(stack.X(), stack.Y())
+            */
             break
         }
     }
