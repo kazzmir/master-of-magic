@@ -1406,7 +1406,7 @@ func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, st
         return outX, outY
     }
 
-    dx := float64(oldX - stack.X())
+    dx := float64(game.CurrentMap().XDistance(stack.X(), oldX))
     dy := float64(oldY - stack.Y())
 
     game.State = GameStateUnitMoving
