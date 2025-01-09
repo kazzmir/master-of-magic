@@ -4,7 +4,7 @@ import (
     "fmt"
     "image"
     "math/rand/v2"
-    "math"
+    // "math"
 
     "github.com/kazzmir/master-of-magic/game/magic/data"
 )
@@ -317,6 +317,17 @@ func (map_ *Map) PlaceRandomTerrainTiles(plane data.Plane){
 
     continents := map_.FindContinents(plane)
 
+    randomGrasslands := func() int {
+        choices := []int{
+            TileGrasslands1.Index(plane),
+            TileGrasslands2.Index(plane),
+            TileGrasslands3.Index(plane),
+            TileGrasslands4.Index(plane),
+        }
+
+        return chooseRandomElement(choices)
+    }
+
     randomForest := func() int {
         choices := []int{
             TileForest1.Index(plane),
@@ -326,33 +337,46 @@ func (map_ *Map) PlaceRandomTerrainTiles(plane data.Plane){
 
         return chooseRandomElement(choices)
     }
-    _ = randomForest
+
+    randomSwamp := func() int {
+        choices := []int{
+            TileSwamp1.Index(plane),
+            TileSwamp2.Index(plane),
+            TileSwamp3.Index(plane),
+        }
+
+        return chooseRandomElement(choices)
+    }
 
     for _, continent := range continents {
 
-        for i := 0; i < int(math.Sqrt(float64(continent.Size()))) * 2; i++ {
+        for i := 0; i < continent.Size(); i++ {
             point := chooseRandomElement(continent)
 
-            // use := TileSorceryLake.Index(plane)
-            // switch rand.IntN(3) {
-            //     case 0: use = randomForest()
-            //     case 1: use = TileMountain1.Index(plane)
-            //     case 2: use = TileAllDesert1.Index(plane)
-            // }
-            use := TileMountain1.Index(plane)
+            var use int
+            // FIXME: Add weights
+            switch rand.IntN(6) {
+                case 0: use = randomGrasslands()
+                case 1: use = randomForest()
+                case 2: use = randomSwamp()
+                case 4: use = TileHills1.Index(plane)
+                case 5: use = TileMountain1.Index(plane)
+                // case 2: use = TileAllDesert1.Index(plane)
+            }
+            // use = TileHills1.Index(plane)
 
             map_.Terrain[point.X][point.Y] = use
         }
 
+        // FIXME: Enable me (these tiles should be working)
         // for i := 0; i < int(math.Sqrt(float64(continent.Size()))) / 8; i++ {
         //     point := chooseRandomElement(continent)
 
-        //     use := TileSorceryLake.Index(plane)
-        //     switch rand.IntN(4) {
+        //     var use int
+        //     switch rand.IntN(3) {
         //         case 0: use = TileSorceryLake.Index(plane)
         //         case 1: use = TileNatureForest.Index(plane)
         //         case 2: use = TileChaosVolcano.Index(plane)
-        //         case 3: use = TileLake.Index(plane)
         //     }
 
         //     map_.Terrain[point.X][point.Y] = use
@@ -436,23 +460,6 @@ func (map_ *Map) ResolveTile(x int, y int, data *TerrainData, plane data.Plane) 
     }
 
     tile := data.FindMatchingTile(matching, plane)
-    // if tile == -1 {
-    //     // try to fill edges if tiles are not found
-    //     // FIXME: This should be solved with defining only partial compats for the diagonal shore tiles
-    //     if matching[North] == matching[East] {
-    //         matching[NorthEast] = matching[North]
-    //     }
-    //     if matching[North] == matching[West] {
-    //         matching[NorthWest] = matching[North]
-    //     }
-    //     if matching[South] == matching[East] {
-    //         matching[SouthEast] = matching[South]
-    //     }
-    //     if matching[South] == matching[West] {
-    //         matching[SouthWest] = matching[South]
-    //     }
-    //     tile = data.FindMatchingTile(matching, plane)
-    // }
 
     if tile == -1 {
         return -1, fmt.Errorf("no matching tile for %v", matching)
