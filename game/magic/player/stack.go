@@ -104,6 +104,10 @@ func (stack *UnitStack) AllFlyers() bool {
     return true
 }
 
+func (stack *UnitStack) AllActive() bool {
+    return len(stack.ActiveUnits()) == len(stack.units)
+}
+
 func (stack *UnitStack) ToggleActive(unit units.StackUnit){
     value, ok := stack.active[unit]
     if ok {
@@ -111,7 +115,17 @@ func (stack *UnitStack) ToggleActive(unit units.StackUnit){
         // if unit is inactive, then only set to active if the unit has moves left
 
         if value {
-            stack.active[unit] = false
+            // if there are multiple units in the stack and they are all active, then toggling this unit
+            // should activate this unit and deactivate all the others
+
+            if len(stack.units) > 1 && stack.AllActive() {
+                for _, unit := range stack.units {
+                    stack.active[unit] = false
+                }
+                stack.active[unit] = true
+            } else {
+                stack.active[unit] = false
+            }
         } else if unit.GetMovesLeft().GreaterThan(fraction.Zero()) {
             stack.active[unit] = true
             unit.SetPatrol(false)
@@ -181,9 +195,9 @@ func (stack *UnitStack) EnableMovers(){
     }
 }
 
-func (stack *UnitStack) Move(dx int, dy int, cost fraction.Fraction){
+func (stack *UnitStack) Move(dx int, dy int, cost fraction.Fraction, normalize units.NormalizeCoordinateFunc){
     for _, unit := range stack.units {
-        unit.Move(dx, dy, cost)
+        unit.Move(dx, dy, cost, normalize)
     }
 }
 
@@ -198,9 +212,28 @@ func (stack *UnitStack) OutOfMoves() bool {
     return true
 }
 
+func (stack *UnitStack) AnyOutOfMoves() bool {
+    for _, unit := range stack.units {
+        if !unit.GetPatrol() && unit.GetMovesLeft().Equals(fraction.Zero()) {
+            return true
+        }
+    }
+
+    return false
+}
+
 // true if any unit in the stack has moves left
 func (stack *UnitStack) HasMoves() bool {
     return !stack.OutOfMoves()
+}
+
+func (stack *UnitStack) GetBanner() data.BannerType {
+    if len(stack.units) > 0 {
+        return stack.units[0].GetBanner()
+    }
+
+    // bogus..
+    return data.BannerBrown
 }
 
 func (stack *UnitStack) Leader() units.StackUnit {

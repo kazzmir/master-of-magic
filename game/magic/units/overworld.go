@@ -9,6 +9,8 @@ import (
     "github.com/kazzmir/master-of-magic/lib/fraction"
 )
 
+type NormalizeCoordinateFunc func (int, int) (int, int)
+
 type OverworldUnit struct {
     ExperienceInfo ExperienceInfo
     Unit Unit
@@ -455,23 +457,12 @@ func (unit *OverworldUnit) HasMovesLeft() bool {
     return unit.MovesLeft.GreaterThan(fraction.Zero())
 }
 
-func (unit *OverworldUnit) Move(dx int, dy int, cost fraction.Fraction){
-    unit.X += dx
-    unit.Y += dy
+func (unit *OverworldUnit) Move(dx int, dy int, cost fraction.Fraction, normalize NormalizeCoordinateFunc){
+    unit.X, unit.Y = normalize(unit.X + dx, unit.Y + dy)
 
     unit.MovesLeft = unit.MovesLeft.Subtract(cost)
     if unit.MovesLeft.LessThan(fraction.Zero()) {
         unit.MovesLeft = fraction.Zero()
-    }
-
-    // FIXME: can't move off of map
-
-    if unit.X < 0 {
-        unit.X = 0
-    }
-
-    if unit.Y < 0 {
-        unit.Y = 0
     }
 }
 

@@ -534,6 +534,19 @@ func (player *Player) FindStackByUnit(unit units.StackUnit) *UnitStack {
     return nil
 }
 
+// multiple stacks can be on the same tile
+func (player *Player) FindAllStacks(x int, y int) []*UnitStack {
+    var out []*UnitStack
+
+    for _, stack := range player.Stacks {
+        if stack.X() == x && stack.Y() == y {
+            out = append(out, stack)
+        }
+    }
+
+    return out
+}
+
 func (player *Player) FindStack(x int, y int) *UnitStack {
     for _, stack := range player.Stacks {
         if stack.X() == x && stack.Y() == y {
