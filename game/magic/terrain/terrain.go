@@ -443,13 +443,26 @@ func makeIncompatabilities(directions []Direction, terrain TerrainType) []Direct
 }
 
 func makeSimpleTile(index int, terrainType TerrainType) Tile {
-    return makeTile1(index, makeCompatabilities([]Direction{Center}, terrainType))
+    return makeTile(terrainType, index, nil)
 }
 
-func makeTile2(terrainType TerrainType, index int, compatabilities []DirectedCompatability) Tile {
-    // FIXME: rename this to makeTile
+func makeTile(terrainType TerrainType, index int, compatabilities []DirectedCompatability) Tile {
     compatabilities = append(makeCompatabilities([]Direction{Center}, terrainType), compatabilities...)
-    return makeTile1(index, compatabilities)
+
+    all := make(map[Direction]Compatability)
+
+    for _, compatability := range compatabilities {
+        all[compatability.Direction] = Compatability{Terrain: compatability.Terrain, Type: compatability.Type}
+    }
+
+    tile := Tile{
+        index: index,
+        Compatabilities: all,
+    }
+
+    allTiles = append(allTiles, tile)
+
+    return tile
 }
 
 func makeTile1(index int, compatabilities []DirectedCompatability) Tile {
@@ -497,9 +510,15 @@ func getTile(index int) Tile {
     return allTiles[index]
 }
 
-// pattern is not ocean, rest is ocean
-func makeShoreTile(index int, bitPattern uint8) Tile {
-    // land in the corners are always filled, ignore the corner compatibility in these cases
+// pattern is type in 4-bit cardindal directions, 0's are not type
+func makeCardinalTile(terrainType TerrainType, index int, bitPattern uint8) Tile {
+    is := expand4(bitPattern)
+    isNot := expand4(^bitPattern)
+    return makeTile(terrainType, index, append(makeCompatabilities(makeDirections(is), terrainType), makeIncompatabilities(makeDirections(isNot), terrainType)...))
+}
+
+// pattern is type not type, 0's are not type; ignores the corners the if the adjacent are set
+func makeCornerIgnoringTile(terrainType TerrainType, index int, bitPattern uint8) Tile {
     var mask uint8
     mask = 0b11111111
     switch {
@@ -509,20 +528,24 @@ func makeShoreTile(index int, bitPattern uint8) Tile {
         case bitPattern & 0b00000101 == 0b00000101: mask &= ^(bitPattern & 0b00000010)
     }
 
-    comp := makeCompatabilities(makeDirections(^bitPattern), Ocean)
-    incomp := makeIncompatabilities(makeDirections(bitPattern & mask), Ocean)
-    return makeTile2(Ocean, index, append(comp, incomp...))
+    comp := makeCompatabilities(makeDirections(^bitPattern), terrainType)
+    incomp := makeIncompatabilities(makeDirections(bitPattern & mask), terrainType)
+    return makeTile(terrainType, index, append(comp, incomp...))
 }
 
-// FIXME: is this and the others like makeShore?
-// pattern is desert, rest is land
+// pattern is not ocean, 0's are ocean
+func makeShoreTile(index int, bitPattern uint8) Tile {
+    return makeCornerIgnoringTile(Ocean, index, bitPattern)
+}
+
+// pattern is not desert, 0's are desert
 func makeDesertTile(index int, bitPattern uint8) Tile {
-    return makeTile2(Desert, index, append(makeCompatabilities(makeDirections(bitPattern), Desert), makeCompatabilities(makeDirections(^bitPattern), Land)...))
+    return makeCornerIgnoringTile(Desert, index, bitPattern)
 }
 
-// pattern is land, rest is tundra
+// pattern is not tundra, 0's are tundra
 func makeTundraTile(index int, bitPattern uint8) Tile {
-    return makeTile2(Tundra, index, append(makeCompatabilities(makeDirections(bitPattern), Land), makeCompatabilities(makeDirections(^bitPattern), Tundra)...))
+    return makeCornerIgnoringTile(Tundra, index, bitPattern)
 }
 
 // pattern is 4-bit cardindal directions, 0's are land
@@ -533,16 +556,12 @@ func makeRiverTile(index int, bitPattern uint8) Tile {
 
 // pattern is 4-bit cardinal directions with hills, 0s are not mountain
 func makeHillTile(index int, bitPattern uint8) Tile {
-    is := expand4(bitPattern)
-    isNot := expand4(^bitPattern)
-    return makeTile2(Hill, index, append(makeCompatabilities(makeDirections(is), Hill), makeIncompatabilities(makeDirections(isNot), Hill)...))
+    return makeCardinalTile(Hill, index, bitPattern)
 }
 
 // pattern is 4-bit cardinal directions with mountain, 0s are not mountain
 func makeMountainTile(index int, bitPattern uint8) Tile {
-    is := expand4(bitPattern)
-    isNot := expand4(^bitPattern)
-    return makeTile2(Mountain, index, append(makeCompatabilities(makeDirections(is), Mountain), makeIncompatabilities(makeDirections(isNot), Mountain)...))
+    return makeCardinalTile(Mountain, index, bitPattern)
 }
 
 func makeShoreRiverTile(index int, landPattern uint8, riverPattern uint8) Tile {
@@ -573,7 +592,7 @@ const AllDirections uint8 = 0b1111_1111
 // bit 7: west
 
 var (
-    TileOcean = makeTile2(Ocean, 0x0, makeCompatabilities(makeDirections(AllDirections), Ocean))
+    TileOcean = makeTile(Ocean, 0x0, makeCompatabilities(makeDirections(AllDirections), Ocean))
     TileLand = makeSimpleTile(0x1, Land)
 
     TileShore1_00001000 = makeShoreTile(0x02, 0b00001000)
@@ -740,24 +759,24 @@ var (
     TileGrasslands1     = makeSimpleTile(0xA2, Land)
     TileForest1         = makeSimpleTile(0xA3, Forest)
     TileMountain1       = makeMountainTile(0xA4, 0b0000)
-    TileAllDesert1      = makeDesertTile(0xA5, AllDirections)
+    TileAllDesert1      = makeDesertTile(0xA5, 0b00000000)
     TileSwamp1          = makeSimpleTile(0xA6, Swamp)
-    TileAllTundra1      = makeTile1(0xA7, makeCompatabilities(makeDirections(AllDirections), Tundra))
+    TileAllTundra1      = makeTundraTile(0xA7, 0b0000)
     TileSorceryLake     = makeSimpleTile(0xA8, Land)
     TileNatureForest    = makeSimpleTile(0xA9, Land)
     TileChaosVolcano    = makeSimpleTile(0xAA, Land)
     TileHills1          = makeHillTile(0xAB,0b0000)
     TileGrasslands2     = makeSimpleTile(0xAC, Land)
     TileGrasslands3     = makeSimpleTile(0xAD, Land)
-    TileAllDesert2      = makeDesertTile(0xAE, AllDirections)
-    TileAllDesert3      = makeDesertTile(0xAF, AllDirections)
-    TileAllDesert4      = makeDesertTile(0xB0, AllDirections)
+    TileAllDesert2      = makeDesertTile(0xAE, 0b00000000)
+    TileAllDesert3      = makeDesertTile(0xAF, 0b00000000)
+    TileAllDesert4      = makeDesertTile(0xB0, 0b00000000)
     TileSwamp2          = makeSimpleTile(0xB1, Swamp)
     TileSwamp3          = makeSimpleTile(0xB2, Swamp)
-    TileVolcano         = makeTile1(0xB3, makeCompatabilities(makeDirections(AllDirections), Land))
+    TileVolcano         = makeSimpleTile(0xB3, Land)
     TileGrasslands4     = makeSimpleTile(0xB4, Land)
-    TileAllTundra2      = makeTile1(0xB5, makeCompatabilities(makeDirections(AllDirections), Tundra))
-    TileAllTundra3      = makeTile1(0xB6, makeCompatabilities(makeDirections(AllDirections), Tundra))
+    TileAllTundra2      = makeTundraTile(0xB5, 0b0000)
+    TileAllTundra3      = makeTundraTile(0xB6, 0b0000)
     TileForest2         = makeSimpleTile(0xB7, Forest)
     TileForest3         = makeSimpleTile(0xB8, Forest)
 
@@ -893,7 +912,7 @@ var (
     TileDesert_00101000  = makeDesertTile(0x131, 0b00101000)
     TileDesert_00111000  = makeDesertTile(0x132, 0b00111000)
     TileDesert_00010000  = makeDesertTile(0x133, 0b00010000)
-    TileDesert_00000000  = makeDesertTile(0x134, 0b00000000)
+    TileDesert_00000000  = makeCardinalTile(Desert, 0x134, 0b00000000)
     TileDesert_00000001  = makeDesertTile(0x135, 0b00000001)
     TileDesert_10000011  = makeDesertTile(0x136, 0b10000011)
     TileDesert_00110000  = makeDesertTile(0x137, 0b00110000)
@@ -1192,7 +1211,7 @@ var (
     TileShore2_001R0001  = makeShoreRiverTile(0x257, 0b00100001, 0b00010000)
     TileShore2_001R1001  = makeShoreRiverTile(0x258, 0b00101001, 0b00010000)
 
-    TileAnimOcean       = makeTile1(0x259, makeCompatabilities(makeDirections(AllDirections), Ocean))
+    TileAnimOcean        = makeTile(Ocean, 0x0, makeCompatabilities(makeDirections(AllDirections), Ocean))
 
     TileTundra_00001000  = makeTundraTile(0x25A, 0b00001000)
     TileTundra_00001100  = makeTundraTile(0x25B, 0b00001100)
@@ -1210,7 +1229,7 @@ var (
     TileTundra_00101000  = makeTundraTile(0x267, 0b00101000)
     TileTundra_00111000  = makeTundraTile(0x268, 0b00111000)
     TileTundra_00010000  = makeTundraTile(0x269, 0b00010000)
-    TileTundra           = makeTundraTile(0x26A, AllDirections)
+    TileTundra           = makeTundraTile(0x26A, 0b11111111)
     TileTundra_00000001  = makeTundraTile(0x26B, 0b00000001)
     TileTundra_10000011  = makeTundraTile(0x26C, 0b10000011)
     TileTundra_00110000  = makeTundraTile(0x26D, 0b00110000)

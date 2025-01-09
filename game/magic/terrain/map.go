@@ -4,7 +4,7 @@ import (
     "fmt"
     "image"
     "math/rand/v2"
-    // "math"
+    "math"
 
     "github.com/kazzmir/master-of-magic/game/magic/data"
 )
@@ -338,49 +338,38 @@ func (map_ *Map) PlaceRandomTerrainTiles(plane data.Plane){
         return chooseRandomElement(choices)
     }
 
-    randomSwamp := func() int {
-        choices := []int{
-            TileSwamp1.Index(plane),
-            TileSwamp2.Index(plane),
-            TileSwamp3.Index(plane),
-        }
-
-        return chooseRandomElement(choices)
-    }
-
     for _, continent := range continents {
 
         for i := 0; i < continent.Size(); i++ {
             point := chooseRandomElement(continent)
 
             var use int
-            // FIXME: Add weights
-            switch rand.IntN(6) {
+            switch rand.IntN(8) {
                 case 0: use = randomGrasslands()
                 case 1: use = randomForest()
-                case 2: use = randomSwamp()
+                case 2: use = TileSwamp2.Index(plane)
                 case 4: use = TileHills1.Index(plane)
                 case 5: use = TileMountain1.Index(plane)
-                // case 2: use = TileAllDesert1.Index(plane)
+                case 6: use = TileAllDesert1.Index(plane)
+                case 7: use = TileTundra.Index(plane)
             }
-            // use = TileHills1.Index(plane)
 
             map_.Terrain[point.X][point.Y] = use
         }
 
-        // FIXME: Enable me (these tiles should be working)
-        // for i := 0; i < int(math.Sqrt(float64(continent.Size()))) / 8; i++ {
-        //     point := chooseRandomElement(continent)
+        for i := 0; i < int(math.Sqrt(float64(continent.Size()))) / 8; i++ {
+            point := chooseRandomElement(continent)
 
-        //     var use int
-        //     switch rand.IntN(3) {
-        //         case 0: use = TileSorceryLake.Index(plane)
-        //         case 1: use = TileNatureForest.Index(plane)
-        //         case 2: use = TileChaosVolcano.Index(plane)
-        //     }
+            var use int
+            switch rand.IntN(4) {
+                case 0: use = TileSorceryLake.Index(plane)
+                case 1: use = TileNatureForest.Index(plane)
+                case 2: use = TileChaosVolcano.Index(plane)
+                case 3: use = TileVolcano.Index(plane)
+            }
 
-        //     map_.Terrain[point.X][point.Y] = use
-        // }
+            map_.Terrain[point.X][point.Y] = use
+        }
     }
 }
 
@@ -418,8 +407,6 @@ func (map_ *Map) ResolveTile(x int, y int, data *TerrainData, plane data.Plane) 
     }
 
     matching[Center] = getDirection(x, y, Center)
-
-    // fixme: might need x wrapping?
 
     matching[West] = getDirection(x-1, y, East)
 
@@ -485,10 +472,6 @@ func (map_ *Map) ResolveTiles(data *TerrainData, plane data.Plane) {
             choice, err := map_.ResolveTile(x, y, data, plane)
             if err == nil {
                 terrain[x][y] = choice
-            } else {
-                // FIXME: find out why some are not found then remove me!
-                map_.ResolveTile(x, y, data, plane)
-                terrain[x][y] = MyrrorStart
             }
         }
     }
