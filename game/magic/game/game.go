@@ -1505,6 +1505,35 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
         return normalized(a) == normalized(b)
     }
 
+    // cache the containsEnemy result
+    enemyMemo := make(map[image.Point]bool)
+
+    // true if the given coordinates contain an enemy unit or city
+    containsEnemy := func (x int, y int) bool {
+        if val, ok := enemyMemo[image.Pt(x, y)]; ok {
+            return val
+        }
+
+        for _, player := range game.Players {
+            if player.GetBanner() != stack.GetBanner() {
+                enemyStack := player.FindStack(x, y)
+                if enemyStack != nil {
+                    enemyMemo[image.Pt(x, y)] = true
+                    return true
+                }
+
+                enemyCity := player.FindCity(x, y)
+                if enemyCity != nil {
+                    enemyMemo[image.Pt(x, y)] = true
+                    return true
+                }
+            }
+        }
+
+        enemyMemo[image.Pt(x, y)] = false
+        return false
+    }
+
     tileCost := func (x1 int, y1 int, x2 int, y2 int) float64 {
         x1 = useMap.WrapX(x1)
         x2 = useMap.WrapX(x2)
@@ -1517,8 +1546,7 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
             return pathfinding.Infinity
         }
 
-        // FIXME: check for enemy armies and cities
-
+        // avoid magic nodes
         node := useMap.GetMagicNode(x2, y2)
         if node != nil {
             // avoid magic nodes unless the final destination is the magic node itself
@@ -1530,7 +1558,7 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
             }
         }
 
-        // same logic as magic nodes
+        // avoid lair nodes, same logic as magic nodes
         lair := useMap.GetLair(x2, y2)
         if lair != nil {
             if !tileEqual(image.Pt(x2, y2), image.Pt(newX, newY)) {
@@ -1538,6 +1566,11 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
                     return pathfinding.Infinity
                 }
             }
+        }
+
+        // avoid enemy units/cities
+        if !tileEqual(image.Pt(x2, y2), image.Pt(newX, newY)) && containsEnemy(x2, y2) {
+            return pathfinding.Infinity
         }
 
         tileFrom := useMap.GetTile(x1, y1)

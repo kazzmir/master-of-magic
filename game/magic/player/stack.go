@@ -227,6 +227,15 @@ func (stack *UnitStack) HasMoves() bool {
     return !stack.OutOfMoves()
 }
 
+func (stack *UnitStack) GetBanner() data.BannerType {
+    if len(stack.units) > 0 {
+        return stack.units[0].GetBanner()
+    }
+
+    // bogus..
+    return data.BannerBrown
+}
+
 func (stack *UnitStack) Leader() units.StackUnit {
     // return the first active unit
     for _, unit := range stack.units {
