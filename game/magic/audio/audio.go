@@ -3,6 +3,7 @@ package audio
 import (
     "fmt"
     "bytes"
+    "io"
     "encoding/binary"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -12,6 +13,8 @@ import (
 
 var Context *audiolib.Context
 const SampleRate = 44100
+
+type MakePlayerFunc func () (*audiolib.Player)
 
 func Initialize(){
     Context = audiolib.NewContext(SampleRate)
@@ -28,7 +31,15 @@ func convertToS16(u8samples []byte) []byte {
     return out.Bytes()
 }
 
-func LoadSoundFromLbx(soundLbx *lbx.LbxFile, index int) (*audiolib.Player, error){
+// precomputes the resampled sound data so all the client has to do is invoke the returned function. this is useful if
+// you want to play the same sound multiple times
+//   f, err := GetSoundMaker(soundLbx, index)
+//   player, err := f()
+//   player.Play()
+//    // play again
+//   player, err = f()
+//   player.Play()
+func GetSoundMaker(soundLbx *lbx.LbxFile, index int) (MakePlayerFunc, error) {
     data, err := soundLbx.RawData(index)
     if err != nil {
         return nil, err
@@ -46,7 +57,24 @@ func LoadSoundFromLbx(soundLbx *lbx.LbxFile, index int) (*audiolib.Player, error
 
     resampled := audiolib.Resample(bytes.NewReader(s16Samples), int64(len(s16Samples)), int(vocData.SampleRate()), SampleRate)
 
-    return Context.NewPlayer(resampled)
+    resampledData, err := io.ReadAll(resampled)
+    if err != nil {
+        return nil, err
+    }
+
+    return func() (*audiolib.Player){
+        // return Context.NewPlayer(resampled)
+        return Context.NewPlayerFromBytes(resampledData)
+    }, nil
+}
+
+func LoadSoundFromLbx(soundLbx *lbx.LbxFile, index int) (*audiolib.Player, error){
+    maker, err := GetSoundMaker(soundLbx, index)
+    if err != nil {
+        return nil, err
+    }
+
+    return maker(), nil
 }
 
 func LoadCombatSound(cache *lbx.LbxCache, index int) (*audiolib.Player, error){
@@ -75,7 +103,7 @@ func LoadNewSound(cache *lbx.LbxCache, index int) (*audiolib.Player, error){
     return LoadSoundFromLbx(soundLbx, index)
 }
 
-func LoadSound(cache *lbx.LbxCache, index int) (*audiolib.Player, error){
+func LoadSoundMaker(cache *lbx.LbxCache, index int) (MakePlayerFunc, error){
     if Context == nil {
         return nil, fmt.Errorf("audio has not been initialized")
     }
@@ -85,5 +113,14 @@ func LoadSound(cache *lbx.LbxCache, index int) (*audiolib.Player, error){
         return nil, err
     }
 
-    return LoadSoundFromLbx(soundLbx, index)
+    return GetSoundMaker(soundLbx, index)
+}
+
+func LoadSound(cache *lbx.LbxCache, index int) (*audiolib.Player, error){
+    maker, err := LoadSoundMaker(cache, index)
+    if err != nil {
+        return nil, err
+    }
+
+    return maker(), nil
 }

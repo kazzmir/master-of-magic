@@ -1703,6 +1703,7 @@ func (game *Game) doLoadMenu(yield coroutine.YieldFunc) {
         useImage, _ := imageCache.GetImage("load.lbx", index, 0)
         return &uilib.UIElement{
             Rect: util.ImageRect(x, y, useImage),
+            PlaySoundLeftClick: true,
             LeftClick: func(element *uilib.UIElement){
                 action()
                 quit = true
@@ -3717,6 +3718,7 @@ func (game *Game) DoBuildAction(player *playerlib.Player){
 
 func (game *Game) MakeHudUI() *uilib.UI {
     ui := &uilib.UI{
+        Cache: game.Cache,
         Draw: func(ui *uilib.UI, screen *ebiten.Image){
             var options ebiten.DrawImageOptions
             mainHud, _ := game.ImageCache.GetImage("main.lbx", 0, 0)
@@ -3758,6 +3760,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
         counter := uint64(0)
         return &uilib.UIElement{
             Rect: rect,
+            PlaySoundLeftClick: true,
             Inside: func(this *uilib.UIElement, x int, y int){
                 counter += 1
             },
@@ -3876,11 +3879,12 @@ func (game *Game) MakeHudUI() *uilib.UI {
                 unitRect := util.ImageRect(unitX, unitY, unitBackground)
                 elements = append(elements, &uilib.UIElement{
                     Rect: unitRect,
+                    PlaySoundLeftClick: true,
                     LeftClick: func(this *uilib.UIElement){
                         stack.ToggleActive(unit)
                         select {
-                        case game.Events<- &GameEventMoveUnit{Player: player}:
-                        default:
+                            case game.Events<- &GameEventMoveUnit{Player: player}:
+                            default:
                         }
                     },
                     RightClick: func(this *uilib.UIElement){
@@ -4067,6 +4071,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                 NotInside: func(this *uilib.UIElement){
                     doneCounter = 0
                 },
+                PlaySoundLeftClick: true,
                 LeftClick: func(this *uilib.UIElement){
                     doneIndex = 1
                 },
@@ -4106,6 +4111,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                 NotInside: func(this *uilib.UIElement){
                     patrolCounter = 0
                 },
+                PlaySoundLeftClick: true,
                 LeftClick: func(this *uilib.UIElement){
                     patrolIndex = 1
                 },
@@ -4149,6 +4155,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                 NotInside: func(this *uilib.UIElement){
                     waitCounter = 0
                 },
+                PlaySoundLeftClick: true,
                 LeftClick: func(this *uilib.UIElement){
                     waitIndex = 1
                 },
@@ -4210,6 +4217,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                 NotInside: func(this *uilib.UIElement){
                     buildCounter = 0
                 },
+                PlaySoundLeftClick: true,
                 LeftClick: func(this *uilib.UIElement){
                     var powers UnitBuildPowers
 
@@ -4254,6 +4262,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
         nextTurnClicked := false
         elements = append(elements, &uilib.UIElement{
             Rect: nextTurnRect,
+            PlaySoundLeftClick: true,
             LeftClick: func(this *uilib.UIElement){
                 nextTurnClicked = true
             },

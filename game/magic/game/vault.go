@@ -165,6 +165,7 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
     updateMouse()
 
     ui := &uilib.UI{
+        Cache: game.Cache,
         Draw: func(ui *uilib.UI, screen *ebiten.Image){
             background, _ := imageCache.GetImage("armylist.lbx", 5, 0)
             var options ebiten.DrawImageOptions
@@ -196,6 +197,7 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
 
         return &uilib.UIElement{
             Rect: rect,
+            PlaySoundLeftClick: true,
             LeftClick: func(element *uilib.UIElement){
                 selectedItem, player.VaultEquipment[index] = player.VaultEquipment[index], selectedItem
                 updateMouse()
@@ -229,6 +231,7 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
         rect := image.Rect(26, 158, 65, 190)
         return &uilib.UIElement{
             Rect: rect,
+            PlaySoundLeftClick: true,
             LeftClick: func(element *uilib.UIElement){
                 if selectedItem != nil {
 
@@ -310,6 +313,7 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
                         }
                     }
                 },
+                PlaySoundLeftClick: true,
                 LeftClick: func(element *uilib.UIElement){
                     // if the slot is incompatible with the selected item then do not allow a swap
                     if selectedItem == nil || slot.CompatibleWith(selectedItem.Type) {
@@ -345,6 +349,7 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
         rect := util.ImageRect(237, 177, okImages[index])
         return &uilib.UIElement{
             Rect: rect,
+            PlaySoundLeftClick: true,
             LeftClick: func(element *uilib.UIElement){
                 if selectedItem == nil {
                     index = 1
@@ -374,6 +379,7 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
         rect := util.ImageRect(237, 157, images[index])
         return &uilib.UIElement{
             Rect: rect,
+            PlaySoundLeftClick: true,
             LeftClick: func(element *uilib.UIElement){
                 index = 1
             },

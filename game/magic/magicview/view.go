@@ -183,6 +183,7 @@ func MakeTransmuteElements(ui *uilib.UI, smallFont *font.Font, player *playerlib
         elements = append(elements, &uilib.UIElement{
             Rect: conveyorRect,
             Layer: 1,
+            PlaySoundLeftClick: true,
             RightClick: func(element *uilib.UIElement){
                 helpEntries := help.GetEntriesByName("Alchemy Ratio")
                 if helpEntries != nil {
@@ -228,6 +229,7 @@ func MakeTransmuteElements(ui *uilib.UI, smallFont *font.Font, player *playerlib
     elements = append(elements, &uilib.UIElement{
         Rect: cancelRect,
         Layer: 1,
+        PlaySoundLeftClick: true,
         LeftClick: func(element *uilib.UIElement){
             cancelIndex = 1
         },
@@ -247,6 +249,7 @@ func MakeTransmuteElements(ui *uilib.UI, smallFont *font.Font, player *playerlib
     elements = append(elements, &uilib.UIElement{
         Rect: arrowRect,
         Layer: 1,
+        PlaySoundLeftClick: true,
         LeftClick: func(element *uilib.UIElement){
             isRight = !isRight
         },
@@ -262,6 +265,7 @@ func MakeTransmuteElements(ui *uilib.UI, smallFont *font.Font, player *playerlib
     elements = append(elements, &uilib.UIElement{
         Rect: okRect,
         Layer: 1,
+        PlaySoundLeftClick: true,
         LeftClick: func(element *uilib.UIElement){
             okIndex = 1
         },
@@ -353,6 +357,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
     }
 
     ui := &uilib.UI{
+        Cache: magic.Cache,
         Draw: func(ui *uilib.UI, screen *ebiten.Image) {
             background, err := magic.ImageCache.GetImage("magic.lbx", 0, 0)
             if err == nil {
@@ -550,6 +555,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
                     ui.AddElement(uilib.MakeHelpElement(ui, magic.Cache, &magic.ImageCache, helpEntries[0], helpEntries[1:]...))
                 }
             },
+            PlaySoundLeftClick: true,
             LeftClick: func(element *uilib.UIElement){
                 magic.ManaLocked = !magic.ManaLocked
             },
@@ -563,6 +569,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
 
         elements = append(elements, &uilib.UIElement{
             Rect: staffRect,
+            PlaySoundLeftClick: true,
             LeftClick: func(element *uilib.UIElement){
                 if !magic.ManaLocked {
                     // log.Printf("click mana staff at %v", manaStaff.Bounds().Dy() - posY)
@@ -605,6 +612,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
     transmuteRect := image.Rect(235, 185, 290, 195)
     elements = append(elements, &uilib.UIElement{
         Rect: transmuteRect,
+        PlaySoundLeftClick: true,
         LeftClick: func(element *uilib.UIElement){
             transmuteElements := MakeTransmuteElements(ui, transmuteFont, player, &help, magic.Cache, &magic.ImageCache)
             ui.AddElements(transmuteElements)
@@ -624,6 +632,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
     okRect := image.Rect(296, 185, 316, 195)
     elements = append(elements, &uilib.UIElement{
         Rect: okRect,
+        PlaySoundLeftClick: true,
         LeftClick: func(element *uilib.UIElement){
             magic.State = MagicScreenStateDone
         },
@@ -644,6 +653,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
 
         elements = append(elements, &uilib.UIElement{
             Rect: image.Rect(74, 81, 74 + researchLocked.Bounds().Dx(), 81 + researchLocked.Bounds().Dy() - 1),
+            PlaySoundLeftClick: true,
             LeftClick: func(element *uilib.UIElement){
                 magic.ResearchLocked = !magic.ResearchLocked
             },
@@ -661,6 +671,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
 
         elements = append(elements, &uilib.UIElement{
             Rect: staffRect,
+            PlaySoundLeftClick: true,
             LeftClick: func(element *uilib.UIElement){
                 if !magic.ResearchLocked {
                     // log.Printf("click mana staff at %v", manaStaff.Bounds().Dy() - posY)
@@ -704,6 +715,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
     if err == nil {
         elements = append(elements, &uilib.UIElement{
             Rect: image.Rect(121, 81, 121 + skillLocked.Bounds().Dx(), 81 + skillLocked.Bounds().Dy() - 3),
+            PlaySoundLeftClick: true,
             LeftClick: func(element *uilib.UIElement){
                 magic.SkillLocked = !magic.SkillLocked
             },
@@ -721,6 +733,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
 
         elements = append(elements, &uilib.UIElement{
             Rect: staffRect,
+            PlaySoundLeftClick: true,
             LeftClick: func(element *uilib.UIElement){
                 if !magic.SkillLocked {
                     // log.Printf("click mana staff at %v", manaStaff.Bounds().Dy() - posY)

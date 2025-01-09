@@ -5,7 +5,12 @@ import (
     "image"
     "slices"
     "strings"
+    "sync"
+
     "github.com/kazzmir/master-of-magic/game/magic/util"
+    "github.com/kazzmir/master-of-magic/game/magic/audio"
+    "github.com/kazzmir/master-of-magic/lib/lbx"
+
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
     "github.com/hajimehoshi/ebiten/v2/exp/textinput"
@@ -50,6 +55,9 @@ type UIElement struct {
 
     Draw UIDrawFunc
     Layer UILayer
+
+    // if true, the standard ui sound will play when this element is left clicked
+    PlaySoundLeftClick bool
 }
 
 const DoubleClickThreshold = 20
@@ -93,6 +101,11 @@ type UI struct {
 
     // disabled so that the zero value is enabled
     Disabled bool
+
+    // lazily initialized in the sync.Once
+    StandardSoundMaker audio.MakePlayerFunc
+    StandardSoundSetup sync.Once
+    Cache *lbx.LbxCache
 }
 
 func (ui *UI) Enable() {
@@ -250,6 +263,24 @@ func (ui *UI) FocusElement(element *UIElement, text string){
     */
 }
 
+func (ui *UI) PlayStandardSound() {
+    if ui.StandardSoundMaker == nil && ui.Cache != nil {
+        ui.StandardSoundSetup.Do(func(){
+            maker, err := audio.LoadSoundMaker(ui.Cache, 2)
+            if err != nil {
+                log.Printf("Unable to load ui sound: %v", err)
+                return
+            }
+            ui.StandardSoundMaker = maker
+        })
+    }
+
+    if ui.StandardSoundMaker != nil {
+        player := ui.StandardSoundMaker()
+        player.Play()
+    }
+}
+
 func (ui *UI) StandardUpdate() {
     ui.Counter += 1
 
@@ -358,6 +389,9 @@ func (ui *UI) StandardUpdate() {
             if !ui.Disabled && leftClick {
                 elementLeftClicked = true
                 if element.LeftClick != nil {
+                    if element.PlaySoundLeftClick {
+                        ui.PlayStandardSound()
+                    }
                     element.LeftClick(element)
                 }
 
