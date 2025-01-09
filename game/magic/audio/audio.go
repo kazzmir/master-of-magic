@@ -13,6 +13,8 @@ import (
 var Context *audiolib.Context
 const SampleRate = 44100
 
+type MakePlayerFunc func () (*audiolib.Player, error)
+
 func Initialize(){
     Context = audiolib.NewContext(SampleRate)
 }
@@ -28,7 +30,11 @@ func convertToS16(u8samples []byte) []byte {
     return out.Bytes()
 }
 
-func LoadSoundFromLbx(soundLbx *lbx.LbxFile, index int) (*audiolib.Player, error){
+// precomputes the resampled sound data so all the client has to do is invoke the returned function
+// f, err := GetSoundMaker(soundLbx, index)
+// player, err := f()
+// player.Play()
+func GetSoundMaker(soundLbx *lbx.LbxFile, index int) (MakePlayerFunc, error) {
     data, err := soundLbx.RawData(index)
     if err != nil {
         return nil, err
@@ -46,7 +52,18 @@ func LoadSoundFromLbx(soundLbx *lbx.LbxFile, index int) (*audiolib.Player, error
 
     resampled := audiolib.Resample(bytes.NewReader(s16Samples), int64(len(s16Samples)), int(vocData.SampleRate()), SampleRate)
 
-    return Context.NewPlayer(resampled)
+    return func() (*audiolib.Player, error){
+        return Context.NewPlayer(resampled)
+    }, nil
+}
+
+func LoadSoundFromLbx(soundLbx *lbx.LbxFile, index int) (*audiolib.Player, error){
+    maker, err := GetSoundMaker(soundLbx, index)
+    if err != nil {
+        return nil, err
+    }
+
+    return maker()
 }
 
 func LoadCombatSound(cache *lbx.LbxCache, index int) (*audiolib.Player, error){
