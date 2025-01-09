@@ -3717,6 +3717,7 @@ func (game *Game) DoBuildAction(player *playerlib.Player){
 
 func (game *Game) MakeHudUI() *uilib.UI {
     ui := &uilib.UI{
+        Cache: game.Cache,
         Draw: func(ui *uilib.UI, screen *ebiten.Image){
             var options ebiten.DrawImageOptions
             mainHud, _ := game.ImageCache.GetImage("main.lbx", 0, 0)
@@ -3758,6 +3759,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
         counter := uint64(0)
         return &uilib.UIElement{
             Rect: rect,
+            PlaySoundLeftClick: true,
             Inside: func(this *uilib.UIElement, x int, y int){
                 counter += 1
             },
