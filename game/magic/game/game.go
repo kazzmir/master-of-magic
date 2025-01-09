@@ -1390,22 +1390,28 @@ func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, sta
 }
 
 func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, stack *playerlib.UnitStack){
+    /*
     drawer := game.Drawer
     defer func(){
         game.Drawer = drawer
     }()
+    */
 
     // the number of frames it takes to move a unit one tile
     frames := 10
 
+    /*
     tileWidth := float64(game.CurrentMap().TileWidth())
     tileHeight := float64(game.CurrentMap().TileHeight())
+    */
 
+    /*
     convertTileCoordinates := func(x float64, y float64) (float64, float64) {
         outX := (x) * tileWidth
         outY := (y) * tileHeight
         return outX, outY
     }
+    */
 
     dx := float64(game.CurrentMap().XDistance(stack.X(), oldX))
     dy := float64(oldY - stack.Y())
@@ -1414,33 +1420,19 @@ func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, st
 
     game.MovingStack = stack
 
-    boot, _ := game.ImageCache.GetImage("compix.lbx", 72, 0)
+    // boot, _ := game.ImageCache.GetImage("compix.lbx", 72, 0)
 
-    var geom ebiten.GeoM
+    // var geom ebiten.GeoM
 
+    /*
     cameraX := game.Camera.GetZoomedX()
     cameraY := game.Camera.GetZoomedY()
+    */
 
+    /*
     geom.Translate(-cameraX * float64(tileWidth), -cameraY * float64(tileHeight))
     geom.Scale(game.Camera.GetAnimatedZoom(), game.Camera.GetAnimatedZoom())
-
-    game.Drawer = func (screen *ebiten.Image, game *Game){
-        drawer(screen, game)
-
-        overworldScreen := screen.SubImage(image.Rect(0, 18, 240, data.ScreenHeight)).(*ebiten.Image)
-
-        // draw boot images on the map that show where the unit is moving to
-        for _, point := range stack.CurrentPath {
-            var options ebiten.DrawImageOptions
-            x, y := convertTileCoordinates(float64(point.X), float64(point.Y))
-            options.GeoM.Translate(x, y)
-            options.GeoM.Translate(float64(tileWidth) / 2, float64(tileHeight) / 2)
-            options.GeoM.Translate(float64(boot.Bounds().Dx()) / -2, float64(boot.Bounds().Dy()) / -2)
-            options.GeoM.Concat(geom)
-            overworldScreen.DrawImage(boot, &options)
-        }
-
-    }
+    */
 
     for i := 0; i < frames; i++ {
         game.Counter += 1
