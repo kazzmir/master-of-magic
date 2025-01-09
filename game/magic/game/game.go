@@ -1446,7 +1446,7 @@ func (game *Game) ComputeTerrainCost(stack *playerlib.UnitStack, sourceX int, so
         return false
     }
 
-    xDiff := int(math.Abs(float64(destX - sourceX)))
+    xDiff := int(math.Abs(float64(game.CurrentMap().XDistance(destX, sourceX))))
     yDiff := int(math.Abs(float64(destY - sourceY)))
 
     baseCost := fraction.FromInt(1)
