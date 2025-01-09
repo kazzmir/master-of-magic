@@ -1419,13 +1419,13 @@ func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, st
 /* return the cost to move from the current position the stack is on to the new given coordinates.
  * also return true/false if the move is even possible
  */
-func (game *Game) ComputeTerrainCost(stack *playerlib.UnitStack, x int, y int, mapUse *maplib.Map) (fraction.Fraction, bool) {
+func (game *Game) ComputeTerrainCost(stack *playerlib.UnitStack, sourceX int, sourceY int, destX int, destY int, mapUse *maplib.Map) (fraction.Fraction, bool) {
     if stack.OutOfMoves() {
         return fraction.Zero(), false
     }
 
-    tileFrom := mapUse.GetTile(stack.X(), stack.Y())
-    tileTo := mapUse.GetTile(x, y)
+    tileFrom := mapUse.GetTile(sourceX, sourceY)
+    tileTo := mapUse.GetTile(destX, destY)
 
     // can't move from land to ocean unless all units are flyers
     if tileFrom.Tile.IsLand() && !tileTo.Tile.IsLand() {
@@ -1434,18 +1434,34 @@ func (game *Game) ComputeTerrainCost(stack *playerlib.UnitStack, x int, y int, m
         }
     }
 
-    oldX := stack.X()
-    oldY := stack.Y()
+    containsFriendlyCity := func (x int, y int) bool {
+        for _, player := range game.Players {
+            if player.GetBanner() == stack.GetBanner() {
+                if player.FindCity(x, y) != nil {
+                    return true
+                }
+            }
+        }
 
-    xDiff := int(math.Abs(float64(x - oldX)))
-    yDiff := int(math.Abs(float64(y - oldY)))
+        return false
+    }
+
+    xDiff := int(math.Abs(float64(destX - sourceX)))
+    yDiff := int(math.Abs(float64(destY - sourceY)))
+
+    baseCost := fraction.FromInt(1)
+
+    if containsFriendlyCity(destX, destY) {
+        // FIXME: what is the cost to go through a city?
+        baseCost = baseCost.Multiply(fraction.Make(1, 4))
+    }
 
     if xDiff == 1 && yDiff == 1 {
-        return fraction.Make(3, 2), true
+        return baseCost.Multiply(fraction.Make(3, 2)), true
     }
 
     if xDiff == 1 || yDiff == 1 {
-        return fraction.FromInt(1), true
+        return baseCost, true
     }
 
     return fraction.Zero(), false
@@ -1573,8 +1589,10 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
             return pathfinding.Infinity
         }
 
+        /*
         tileFrom := useMap.GetTile(x1, y1)
         tileTo := useMap.GetTile(x2, y2)
+        */
 
         // FIXME: consider terrain type, roads, and unit abilities
 
@@ -1589,7 +1607,15 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
             return baseCost
         }
 
+        cost, ok := game.ComputeTerrainCost(stack, x1, y1, x2, y2, useMap)
+        if !ok {
+            return pathfinding.Infinity
+        }
+
+        return cost.ToFloat()
+
         // can't move from land to ocean unless all units are flyers
+        /*
         if tileFrom.Tile.IsLand() && !tileTo.Tile.IsLand() {
             if !stack.AllFlyers() {
                 return pathfinding.Infinity
@@ -1597,6 +1623,7 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
         }
 
         return baseCost
+        */
     }
 
     neighbors := func (x int, y int) []image.Point {
@@ -2549,7 +2576,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
             break
         }
 
-        terrainCost, canMove := game.ComputeTerrainCost(stack, step.X, step.Y, mapUse)
+        terrainCost, canMove := game.ComputeTerrainCost(stack, stack.X(), stack.Y(), step.X, step.Y, mapUse)
 
         if canMove {
             node := mapUse.GetMagicNode(step.X, step.Y)
@@ -2863,7 +2890,7 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                                     stack := moveDecision.Stack
                                     to := moveDecision.Location
                                     log.Printf("  moving stack %v to %v, %v", stack, to.X, to.Y)
-                                    terrainCost, _ := game.ComputeTerrainCost(stack, to.X, to.Y, game.GetMap(stack.Plane()))
+                                    terrainCost, _ := game.ComputeTerrainCost(stack, stack.X(), stack.Y(), to.X, to.Y, game.GetMap(stack.Plane()))
                                     oldX := stack.X()
                                     oldY := stack.Y()
                                     stack.Move(to.X - stack.X(), to.Y - stack.Y(), terrainCost, game.GetNormalizeCoordinateFunc())
