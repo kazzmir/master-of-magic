@@ -1452,12 +1452,11 @@ func (game *Game) ComputeTerrainCost(stack *playerlib.UnitStack, sourceX int, so
     baseCost := fraction.FromInt(1)
 
     if containsFriendlyCity(destX, destY) {
-        // FIXME: what is the cost to go through a city?
-        baseCost = baseCost.Multiply(fraction.Make(1, 4))
+        baseCost = baseCost.Multiply(fraction.Make(1, 2))
     }
 
     if xDiff == 1 && yDiff == 1 {
-        return baseCost.Multiply(fraction.Make(3, 2)), true
+        return baseCost.Add(fraction.Make(1, 2)), true
     }
 
     if xDiff == 1 || yDiff == 1 {
