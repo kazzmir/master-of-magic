@@ -17,62 +17,63 @@ const MyrrorStart = 0x2FA
 type TerrainIndex int
 
 const (
-    IndexOcean1 TerrainIndex      = 0x0
-    IndexBugGrass    = 0x1
-    IndexShore1_1st  = 0x2
-    IndexLake        = 0x12
-    IndexShore1_end  = 0x0A1
-    IndexGrass1      = 0x0A2
-    IndexForest1     = 0x0A3
-    IndexMountain1   = 0x0A4
-    IndexDesert1     = 0x0A5
-    IndexSwamp1      = 0x0A6
-    IndexTundra1     = 0x0A7
-    IndexSorcNode    = 0x0A8
-    IndexNatNode     = 0x0A9
-    IndexChaosNode   = 0x0AA
-    IndexHills1      = 0x0AB
-    IndexGrass2      = 0x0AC
-    IndexGrass3      = 0x0AD
-    IndexDesert2     = 0x0AE
-    IndexDesert3     = 0x0AF
-    IndexDesert4     = 0x0B0
-    IndexSwamp2      = 0x0B1
-    IndexSwamp3      = 0x0B2
-    IndexVolcano     = 0x0B3
-    IndexGrass4      = 0x0B4
-    IndexTundra2     = 0x0B5
-    IndexTundra3     = 0x0B6
-    IndexForest2     = 0x0B7
-    IndexForest3     = 0x0B8
-    IndexRiverMStart  = 0x0B9
-    IndexRiverMEnd  = 0x0C4
-    IndexLake1       = 0x0C5
-    IndexLake2       = 0x0C6
-    IndexLake3       = 0x0C7
-    IndexLake4       = 0x0C8
-    IndexShore2FStart = 0x0C9
-    IndexShore2FEnd = 0x0E8
-    IndexRiversStart  = 0x0E9
-    IndexRiversEnd  = 0x102
-    IndexMountainsStart   = 0x103
-    IndexMountainsEnd = 0x112
-    IndexHillsStart   = 0x113
-    IndexHillsEnd   = 0x123
-    IndexDesertStart  = 0x124
-    IndexDesertEnd  = 0x1C3
-    IndexShore2Start  = 0x1C4
-    IndexShore2End  = 0x1D3
-    Index4WRiver1    = 0x1D4
-    Index4WRiver2    = 0x1D5
-    Index4WRiver3    = 0x1D6
-    Index4WRiver4    = 0x1D7
-    Index4WRiver5    = 0x1D8
-    IndexShore3Start  = 0x1D9
-    IndexShore3End  = 0x258
-    IndexOcean2      = 0x259
-    IndexTundra_1st  = 0x25A
-    IndexTundra_Last = 0x2F9
+    IndexOcean1 TerrainIndex = 0x0
+    IndexBugGrass            = 0x1
+    IndexShore1_1st          = 0x2
+    IndexLake                = 0x12
+    IndexShore1_end          = 0x0A1
+    IndexGrass1              = 0x0A2
+    IndexForest1             = 0x0A3
+    IndexMountain1           = 0x0A4
+    IndexDesert1             = 0x0A5
+    IndexSwamp1              = 0x0A6
+    IndexTundra1             = 0x0A7
+    IndexSorcNode            = 0x0A8
+    IndexNatNode             = 0x0A9
+    IndexChaosNode           = 0x0AA
+    IndexHills1              = 0x0AB
+    IndexGrass2              = 0x0AC
+    IndexGrass3              = 0x0AD
+    IndexDesert2             = 0x0AE
+    IndexDesert3             = 0x0AF
+    IndexDesert4             = 0x0B0
+    IndexSwamp2              = 0x0B1
+    IndexSwamp3              = 0x0B2
+    IndexVolcano             = 0x0B3
+    IndexGrass4              = 0x0B4
+    IndexTundra2             = 0x0B5
+    IndexTundra3             = 0x0B6
+    IndexForest2             = 0x0B7
+    IndexForest3             = 0x0B8
+    IndexRiverMStart         = 0x0B9
+    IndexRiverMEnd           = 0x0C4
+    IndexLake1               = 0x0C5
+    IndexLake2               = 0x0C6
+    IndexLake3               = 0x0C7
+    IndexLake4               = 0x0C8
+    IndexShore2FStart        = 0x0C9
+    IndexShore2FEnd          = 0x0E8
+    IndexRiversStart         = 0x0E9
+    IndexRiversEnd           = 0x102
+    IndexMountainsStart      = 0x103
+    IndexMountainsEnd        = 0x112
+    IndexHillsStart          = 0x113
+    IndexHillsEnd            = 0x123
+    IndexDesertStart         = 0x124
+    IndexDesertEnd           = 0x1C3
+    IndexShore2Start         = 0x1C4
+    IndexShore2End           = 0x1D3
+    Index4WRiver1            = 0x1D4
+    Index4WRiver2            = 0x1D5
+    Index4WRiver3            = 0x1D6
+    Index4WRiver4            = 0x1D7
+    Index4WRiver5            = 0x1D8
+    IndexShore3Start         = 0x1D9
+    IndexShore3End           = 0x258
+    IndexOcean2              = 0x259
+    IndexTundra_1st          = 0x25A
+    IndexTundra_Last         = 0x2F9
+    IndexTundra              = 0x26A
 )
 
 type TerrainType int
@@ -81,7 +82,6 @@ const (
     // 0 value is unknown
     Unknown TerrainType = iota
     Ocean
-    Land
     River
     Shore
     Mountain
@@ -101,7 +101,6 @@ const (
 func (terrain TerrainType) String() string {
     switch terrain {
         case Ocean: return "ocean"
-        case Land: return "land"
         case River: return "river"
         case Shore: return "shore"
         case Mountain: return "mountain"
@@ -224,7 +223,7 @@ func (tile Tile) TerrainType() TerrainType {
         case IndexMountain1: return Mountain
         case IndexDesert1, IndexDesert2, IndexDesert3, IndexDesert4: return Desert
         case IndexSwamp1, IndexSwamp2, IndexSwamp3: return Swamp
-        case IndexTundra1, IndexTundra2, IndexTundra3: return Tundra
+        case IndexTundra, IndexTundra1, IndexTundra2, IndexTundra3: return Tundra
         case IndexSorcNode: return SorceryNode
         case IndexNatNode: return NatureNode
         case IndexChaosNode: return ChaosNode
@@ -352,7 +351,7 @@ func (tile Tile) IsShore() bool {
 func (tile Tile) IsLand() bool {
     switch tile.TerrainType() {
         case Ocean, Shore, Lake: return false
-        case Land, River, Mountain,
+        case River, Mountain,
              Hill, Grass, Swamp, Forest,
              Desert, Tundra, Volcano,
              NatureNode, SorceryNode, ChaosNode: return true
@@ -551,7 +550,7 @@ func makeTundraTile(index int, bitPattern uint8) Tile {
 // pattern is 4-bit cardindal directions, 0's are land
 func makeRiverTile(index int, bitPattern uint8) Tile {
     full := expand4(bitPattern)
-    return makeTile1(index, append(makeCompatabilities(makeDirections(full), River), makeCompatabilities(makeDirections(^full), Land)...))
+    return makeTile1(index, append(makeCompatabilities(makeDirections(full), River), makeCompatabilities(makeDirections(^full), Grass)...))
 }
 
 // pattern is 4-bit cardinal directions with hills, 0s are not mountain
@@ -568,7 +567,7 @@ func makeShoreRiverTile(index int, landPattern uint8, riverPattern uint8) Tile {
     full := landPattern | riverPattern
     ocean := ^full
 
-    landCompatabilities := makeCompatabilities(makeDirections(landPattern), Land)
+    landCompatabilities := makeCompatabilities(makeDirections(landPattern), Grass)
     riverCompatabilities := makeCompatabilities(makeDirections(riverPattern), River)
     oceanCompatabilities := makeCompatabilities(makeDirections(ocean), Ocean)
 
@@ -593,7 +592,7 @@ const AllDirections uint8 = 0b1111_1111
 
 var (
     TileOcean = makeTile(Ocean, 0x0, makeCompatabilities(makeDirections(AllDirections), Ocean))
-    TileLand = makeSimpleTile(0x1, Land)
+    TileLand = makeSimpleTile(0x1, Grass)
 
     TileShore1_00001000 = makeShoreTile(0x02, 0b00001000)
     TileShore1_00001100 = makeShoreTile(0x03, 0b00001100)
@@ -756,25 +755,25 @@ var (
     TileShore1_10100111 = makeShoreTile(0xA0, 0b10100111)
     TileShore1_10101111 = makeShoreTile(0xA1, 0b10101111)
 
-    TileGrasslands1     = makeSimpleTile(0xA2, Land)
+    TileGrasslands1     = makeSimpleTile(0xA2, Grass)
     TileForest1         = makeSimpleTile(0xA3, Forest)
     TileMountain1       = makeMountainTile(0xA4, 0b0000)
     TileAllDesert1      = makeDesertTile(0xA5, 0b00000000)
     TileSwamp1          = makeSimpleTile(0xA6, Swamp)
     TileAllTundra1      = makeTundraTile(0xA7, 0b0000)
-    TileSorceryLake     = makeSimpleTile(0xA8, Land)
-    TileNatureForest    = makeSimpleTile(0xA9, Land)
-    TileChaosVolcano    = makeSimpleTile(0xAA, Land)
+    TileSorceryLake     = makeSimpleTile(0xA8, SorceryNode)
+    TileNatureForest    = makeSimpleTile(0xA9, NatureNode)
+    TileChaosVolcano    = makeSimpleTile(0xAA, ChaosNode)
     TileHills1          = makeHillTile(0xAB,0b0000)
-    TileGrasslands2     = makeSimpleTile(0xAC, Land)
-    TileGrasslands3     = makeSimpleTile(0xAD, Land)
+    TileGrasslands2     = makeSimpleTile(0xAC, Grass)
+    TileGrasslands3     = makeSimpleTile(0xAD, Grass)
     TileAllDesert2      = makeDesertTile(0xAE, 0b00000000)
     TileAllDesert3      = makeDesertTile(0xAF, 0b00000000)
     TileAllDesert4      = makeDesertTile(0xB0, 0b00000000)
     TileSwamp2          = makeSimpleTile(0xB1, Swamp)
     TileSwamp3          = makeSimpleTile(0xB2, Swamp)
-    TileVolcano         = makeSimpleTile(0xB3, Land)
-    TileGrasslands4     = makeSimpleTile(0xB4, Land)
+    TileVolcano         = makeSimpleTile(0xB3, Volcano)
+    TileGrasslands4     = makeSimpleTile(0xB4, Grass)
     TileAllTundra2      = makeTundraTile(0xB5, 0b0000)
     TileAllTundra3      = makeTundraTile(0xB6, 0b0000)
     TileForest2         = makeSimpleTile(0xB7, Forest)

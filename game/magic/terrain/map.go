@@ -386,12 +386,12 @@ func (map_ *Map) RemoveSmallIslands(area int, plane data.Plane){
     }
 }
 
-// given a position in the terrain matrix, find a tile that fits all the neighbors of the tile
+// given a position in the terrain matrix, find a tile that fits the tile and all its neighbors
 func (map_ *Map) ResolveTile(x int, y int, data *TerrainData, plane data.Plane) (int, error) {
 
-    matching := make(map[Direction]TerrainType)
+    region := make(map[Direction]TerrainType)
 
-    getDirection := func(x int, y int, direction Direction) TerrainType {
+    getTerrainAt := func(x int, y int) TerrainType {
         for x < 0 {
             x += map_.Columns()
         }
@@ -403,53 +403,53 @@ func (map_ *Map) ResolveTile(x int, y int, data *TerrainData, plane data.Plane) 
             fmt.Printf("Error: invalid index in terrain %v at %v,%v\n", index, x, y)
             return Unknown
         }
-        return data.Tiles[index].Tile.GetDirection(direction).Terrain
+        return data.Tiles[index].Tile.TerrainType()
     }
 
-    matching[Center] = getDirection(x, y, Center)
+    region[Center] = getTerrainAt(x, y)
 
-    matching[West] = getDirection(x-1, y, East)
+    region[West] = getTerrainAt(x-1, y)
 
-    matching[NorthWest] = Ocean
+    region[NorthWest] = Ocean
     if y > 0 {
-        matching[NorthWest] = getDirection(x-1, y-1, SouthEast)
+        region[NorthWest] = getTerrainAt(x-1, y-1)
     }
 
-    matching[SouthWest] = Ocean
+    region[SouthWest] = Ocean
     if y < map_.Rows() - 1 {
-        matching[SouthWest] = getDirection(x-1, y+1, NorthEast)
+        region[SouthWest] = getTerrainAt(x-1, y+1)
     }
 
-    matching[East] = getDirection(x+1, y, West)
+    region[East] = getTerrainAt(x+1, y)
 
-    matching[North] = Ocean
+    region[North] = Ocean
     if y > 0 {
-        matching[North] = getDirection(x, y-1, South)
+        region[North] = getTerrainAt(x, y-1)
     }
 
-    matching[South] = Ocean
+    region[South] = Ocean
     if y < map_.Rows() - 1 {
-        matching[South] = getDirection(x, y+1, North)
+        region[South] = getTerrainAt(x, y+1)
     }
 
-    matching[NorthEast] = Ocean
+    region[NorthEast] = Ocean
     if y > 0 {
-        matching[NorthEast] = getDirection(x+1, y-1, SouthWest)
+        region[NorthEast] = getTerrainAt(x+1, y-1)
     }
 
-    matching[SouthEast] = Ocean
+    region[SouthEast] = Ocean
     if y < map_.Rows() - 1 {
-        matching[SouthEast] = getDirection(x+1, y+1, NorthWest)
+        region[SouthEast] = getTerrainAt(x+1, y+1)
     }
 
-    if data.Tiles[map_.Terrain[x][y]].Tile.Matches(matching) {
+    if data.Tiles[map_.Terrain[x][y]].Tile.Matches(region) {
         return map_.Terrain[x][y], nil
     }
 
-    tile := data.FindMatchingTile(matching, plane)
+    tile := data.FindMatchingTile(region, plane)
 
     if tile == -1 {
-        return -1, fmt.Errorf("no matching tile for %v", matching)
+        return -1, fmt.Errorf("no matching tile for %v", region)
     }
 
     return tile, nil
