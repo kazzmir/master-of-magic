@@ -1390,28 +1390,8 @@ func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, sta
 }
 
 func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, stack *playerlib.UnitStack){
-    /*
-    drawer := game.Drawer
-    defer func(){
-        game.Drawer = drawer
-    }()
-    */
-
     // the number of frames it takes to move a unit one tile
     frames := 10
-
-    /*
-    tileWidth := float64(game.CurrentMap().TileWidth())
-    tileHeight := float64(game.CurrentMap().TileHeight())
-    */
-
-    /*
-    convertTileCoordinates := func(x float64, y float64) (float64, float64) {
-        outX := (x) * tileWidth
-        outY := (y) * tileHeight
-        return outX, outY
-    }
-    */
 
     dx := float64(game.CurrentMap().XDistance(stack.X(), oldX))
     dy := float64(oldY - stack.Y())
@@ -1420,23 +1400,12 @@ func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, st
 
     game.MovingStack = stack
 
-    // boot, _ := game.ImageCache.GetImage("compix.lbx", 72, 0)
-
-    // var geom ebiten.GeoM
-
-    /*
-    cameraX := game.Camera.GetZoomedX()
-    cameraY := game.Camera.GetZoomedY()
-    */
-
-    /*
-    geom.Translate(-cameraX * float64(tileWidth), -cameraY * float64(tileHeight))
-    geom.Scale(game.Camera.GetAnimatedZoom(), game.Camera.GetAnimatedZoom())
-    */
-
     for i := 0; i < frames; i++ {
         game.Counter += 1
-        stack.SetOffset(dx * float64(frames - i) / float64(frames), dy * float64(frames - i) / float64(frames))
+
+        interpolate := float64(frames - i) / float64(frames)
+
+        stack.SetOffset(dx * interpolate, dy * interpolate)
         yield()
     }
 
