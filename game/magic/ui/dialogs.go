@@ -337,6 +337,7 @@ func MakeConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.Im
         elements = append(elements, &UIElement{
             Rect: image.Rect(int(yesX), int(yesY), int(yesX) + yesButtons[0].Bounds().Dx(), int(yesY) + yesButtons[0].Bounds().Dy()),
             Layer: layer,
+            PlaySoundLeftClick: true,
             LeftClick: func(this *UIElement){
                 clicked = true
             },
@@ -372,6 +373,7 @@ func MakeConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.Im
         elements = append(elements, &UIElement{
             Rect: image.Rect(int(noX), int(noY), int(noX) + noButtons[0].Bounds().Dx(), int(noY) + noButtons[0].Bounds().Dy()),
             Layer: layer,
+            PlaySoundLeftClick: true,
             LeftClick: func(this *UIElement){
                 clicked = true
             },
@@ -493,6 +495,7 @@ func MakeLairConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *uti
         elements = append(elements, &UIElement{
             Rect: image.Rect(int(yesX), int(yesY), int(yesX) + yesButtons[0].Bounds().Dx(), int(yesY) + yesButtons[0].Bounds().Dy()),
             Layer: layer,
+            PlaySoundLeftClick: true,
             LeftClick: func(this *UIElement){
                 clicked = true
             },
@@ -528,6 +531,7 @@ func MakeLairConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *uti
         elements = append(elements, &UIElement{
             Rect: image.Rect(int(noX), int(noY), int(noX) + noButtons[0].Bounds().Dx(), int(noY) + noButtons[0].Bounds().Dy()),
             Layer: layer,
+            PlaySoundLeftClick: true,
             LeftClick: func(this *UIElement){
                 clicked = true
             },
@@ -698,6 +702,7 @@ func MakeSelectionUI(ui *UI, lbxCache *lbx.LbxCache, imageCache *util.ImageCache
             NotInside: func(this *UIElement){
                 imageIndex = 0
             },
+            PlaySoundLeftClick: true,
             LeftClick: func(this *UIElement){
                 getAlpha = ui.MakeFadeOut(fadeSpeed)
 
