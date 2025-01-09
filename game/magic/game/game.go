@@ -1452,7 +1452,7 @@ func (game *Game) ComputeTerrainCost(stack *playerlib.UnitStack, sourceX int, so
     baseCost := fraction.FromInt(1)
 
     if containsFriendlyCity(destX, destY) {
-        baseCost = baseCost.Multiply(fraction.Make(1, 2))
+        baseCost = fraction.Make(1, 2)
     }
 
     if xDiff == 1 && yDiff == 1 {
