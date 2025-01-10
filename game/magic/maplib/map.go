@@ -71,6 +71,8 @@ const (
 
 type ExtraRoad struct {
     Map *Map
+    // either cast Enchant Road, or build the road in Myrror
+    Enchanted bool
     X int
     Y int
 }
@@ -81,7 +83,7 @@ func (road *ExtraRoad) DrawLayer1(screen *ebiten.Image, imageCache *util.ImageCa
     connected := false
 
     baseIndex := 45
-    if road.Map.Plane == data.PlaneMyrror {
+    if road.Enchanted {
         baseIndex = 54
     }
 
@@ -529,8 +531,8 @@ func getExtra[T any](extras map[ExtraKind]ExtraTile, kind ExtraKind) T {
     return out
 }
 
-func (mapObject *Map) SetRoad(x int, y int) {
-    mapObject.ExtraMap[image.Pt(x, y)][ExtraKindRoad] = &ExtraRoad{Map: mapObject, X: x, Y: y}
+func (mapObject *Map) SetRoad(x int, y int, enchanted bool) {
+    mapObject.ExtraMap[image.Pt(x, y)][ExtraKindRoad] = &ExtraRoad{Map: mapObject, X: x, Y: y, Enchanted: enchanted}
 }
 
 func (mapObject *Map) ContainsRoad(x int, y int) bool {

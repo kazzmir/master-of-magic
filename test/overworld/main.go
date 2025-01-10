@@ -2358,10 +2358,10 @@ func createScenario28(cache *lbx.LbxCache) *gamelib.Game {
     node := game.CurrentMap().CreateNode(x, y+2, maplib.MagicNodeNature, game.Plane, game.Settings.Magic, game.Settings.Difficulty)
     node.Empty = true
 
-    game.CurrentMap().SetRoad(x-3, y-1)
-    game.CurrentMap().SetRoad(x-2, y-1)
-    game.CurrentMap().SetRoad(x-3, y)
-    game.CurrentMap().SetRoad(x-3, y-2)
+    game.CurrentMap().SetRoad(x-3, y-1, true)
+    game.CurrentMap().SetRoad(x-2, y-1, true)
+    game.CurrentMap().SetRoad(x-3, y, true)
+    game.CurrentMap().SetRoad(x-3, y-2, true)
 
     return game
 }

@@ -537,15 +537,11 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         return nil
     }
 
-    var game *Game
-
-    game = &Game{
+    game := &Game{
         Cache: lbxCache,
         Help: help,
         MouseData: mouseData,
         Events: make(chan GameEvent, 1000),
-        ArcanusMap: maplib.MakeMap(terrainData, settings.LandSize, data.PlaneArcanus, game),
-        MyrrorMap: maplib.MakeMap(terrainData, settings.LandSize, data.PlaneMyrror, game),
         Plane: data.PlaneArcanus,
         State: GameStateRunning,
         Settings: settings,
@@ -560,6 +556,9 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         CurrentPlayer: -1,
         Camera: camera.MakeCamera(),
     }
+
+    game.ArcanusMap = maplib.MakeMap(terrainData, settings.LandSize, data.PlaneArcanus, game)
+    game.MyrrorMap = maplib.MakeMap(terrainData, settings.LandSize, data.PlaneMyrror, game)
 
     game.HudUI = game.MakeHudUI()
     game.Drawer = func(screen *ebiten.Image, game *Game){
