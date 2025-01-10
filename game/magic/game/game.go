@@ -1463,8 +1463,19 @@ func (game *Game) ComputeTerrainCost(stack *playerlib.UnitStack, sourceX int, so
 
     baseCost := fraction.FromInt(1)
 
-    if containsFriendlyCity(destX, destY) || mapUse.ContainsRoad(destX, destY) {
+    if containsFriendlyCity(destX, destY) {
         baseCost = fraction.Make(1, 2)
+    }
+
+    road_v, ok := tileTo.Extras[maplib.ExtraKindRoad]
+    if ok {
+        road := road_v.(*maplib.ExtraRoad)
+        if road.Enchanted {
+            // FIXME: only if stack is corporeal
+            return fraction.Zero(), true
+        }
+
+        return fraction.Make(1, 2), true
     }
 
     if xDiff == 1 && yDiff == 1 {
@@ -2574,9 +2585,6 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
 
     mapUse := game.GetMap(stack.Plane())
 
-    oldX := stack.X()
-    oldY := stack.Y()
-
     stepsTaken := 0
     stopMoving := false
     var mergeStack *playerlib.UnitStack
@@ -2586,6 +2594,9 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
         if stack.OutOfMoves() {
             break
         }
+
+        oldX := stack.X()
+        oldY := stack.Y()
 
         terrainCost, canMove := game.ComputeTerrainCost(stack, stack.X(), stack.Y(), step.X, step.Y, mapUse)
 
@@ -2628,6 +2639,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
 
             stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost, game.GetNormalizeCoordinateFunc())
             game.showMovement(yield, oldX, oldY, stack)
+            // FIXME: lift more fog if the stack has Scouting and some other abilities
             player.LiftFog(stack.X(), stack.Y(), 1, stack.Plane())
 
             for _, otherPlayer := range game.Players[1:] {
@@ -2682,6 +2694,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
     }
 
     if stepsTaken > 0 {
+        // FIXME: only exhaust moves if some unit in the stack is out of moves
         stack.ExhaustMoves()
         game.DoNextUnit(player)
     }
