@@ -2279,7 +2279,7 @@ func createScenario27(cache *lbx.LbxCache) *gamelib.Game {
     player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenBowmen, x + 2, y + 2, data.PlaneArcanus, player.Wizard.Banner, nil))
     player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenCavalry, x + 2, y + 2, data.PlaneArcanus, player.Wizard.Banner, nil))
 
-    stack2 := player.FindStack(x + 2, y + 2)
+    stack2 := player.FindStack(x + 2, y + 2, data.PlaneArcanus)
     stack2.Move(-1, -1, fraction.Zero(), game.GetNormalizeCoordinateFunc())
 
     // player.SetSelectedStack(stack)
@@ -2295,6 +2295,140 @@ func createScenario27(cache *lbx.LbxCache) *gamelib.Game {
     enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenBowmen, x + 3, y + 2, data.PlaneArcanus, enemy1.Wizard.Banner, nil))
 
     game.Camera.Center(stack.X(), stack.Y())
+
+    return game
+}
+
+// show roads
+func createScenario28(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 28")
+    wizard := setup.WizardCustom{
+        Name: "bob",
+        Banner: data.BannerRed,
+        Race: data.RaceTroll,
+        Abilities: []setup.WizardAbility{
+            setup.AbilityAlchemy,
+            setup.AbilitySageMaster,
+        },
+        Books: []data.WizardBook{
+            data.WizardBook{
+                Magic: data.LifeMagic,
+                Count: 3,
+            },
+            data.WizardBook{
+                Magic: data.SorceryMagic,
+                Count: 8,
+            },
+        },
+    }
+
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+        Magic: data.MagicSettingNormal,
+        Difficulty: data.DifficultyAverage,
+    })
+
+    game.Plane = data.PlaneMyrror
+
+    player := game.AddPlayer(wizard, true)
+
+    x, y := game.FindValidCityLocation()
+
+    city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.CurrentMap())
+    city.Population = 6190
+    city.Plane = data.PlaneArcanus
+    city.Banner = wizard.Banner
+    city.ProducingBuilding = buildinglib.BuildingGranary
+    city.ProducingUnit = units.UnitNone
+    city.Race = wizard.Race
+    city.Farmers = 3
+    city.Workers = 3
+    city.Wall = false
+
+    city.ResetCitizens(nil)
+
+    player.AddCity(city)
+
+    player.Gold = 83
+    player.Mana = 26
+
+    player.LiftFog(x, y, 4, game.Plane)
+
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x + 1, y + 1, game.Plane, wizard.Banner, nil))
+
+    node := game.CurrentMap().CreateNode(x, y+2, maplib.MagicNodeNature, game.Plane, game.Settings.Magic, game.Settings.Difficulty)
+    node.Empty = true
+
+    game.CurrentMap().SetRoad(x-3, y-1, true)
+    game.CurrentMap().SetRoad(x-2, y-1, true)
+    game.CurrentMap().SetRoad(x-3, y, true)
+    game.CurrentMap().SetRoad(x-3, y-2, true)
+
+    return game
+}
+
+// build roads
+func createScenario29(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 29")
+    wizard := setup.WizardCustom{
+        Name: "bob",
+        Banner: data.BannerRed,
+        Race: data.RaceTroll,
+        Abilities: []setup.WizardAbility{
+            setup.AbilityAlchemy,
+            setup.AbilitySageMaster,
+        },
+        Books: []data.WizardBook{
+            data.WizardBook{
+                Magic: data.LifeMagic,
+                Count: 3,
+            },
+            data.WizardBook{
+                Magic: data.SorceryMagic,
+                Count: 8,
+            },
+        },
+    }
+
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+        Magic: data.MagicSettingNormal,
+        Difficulty: data.DifficultyAverage,
+    })
+
+    game.Plane = data.PlaneMyrror
+
+    player := game.AddPlayer(wizard, true)
+
+    x, y := game.FindValidCityLocation()
+
+    city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.CurrentMap())
+    city.Population = 12190
+    city.Plane = data.PlaneArcanus
+    city.Banner = wizard.Banner
+    city.ProducingBuilding = buildinglib.BuildingGranary
+    city.ProducingUnit = units.UnitNone
+    city.Race = wizard.Race
+    city.Farmers = 9
+    city.Workers = 3
+    city.Wall = false
+
+    city.ResetCitizens(nil)
+
+    player.AddCity(city)
+
+    player.Gold = 83
+    player.Mana = 26
+
+    player.LiftFog(x, y, 4, game.Plane)
+
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.OrcEngineers, x + 1, y + 1, game.Plane, wizard.Banner, nil))
+
+    node := game.CurrentMap().CreateNode(x, y+2, maplib.MagicNodeNature, game.Plane, game.Settings.Magic, game.Settings.Difficulty)
+    node.Empty = true
+
+    game.CurrentMap().SetRoad(x-3, y-1, true)
+    game.CurrentMap().SetRoad(x-2, y-1, true)
+    game.CurrentMap().SetRoad(x-3, y, true)
+    game.CurrentMap().SetRoad(x-3, y-2, true)
 
     return game
 }
@@ -2332,6 +2466,8 @@ func NewEngine(scenario int) (*Engine, error) {
         case 25: game = createScenario25(cache)
         case 26: game = createScenario26(cache)
         case 27: game = createScenario27(cache)
+        case 28: game = createScenario28(cache)
+        case 29: game = createScenario29(cache)
         default: game = createScenario1(cache)
     }
 

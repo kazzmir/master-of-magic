@@ -806,7 +806,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
 
         var garrison []units.StackUnit
 
-        cityStack := cityScreen.Player.FindStack(cityScreen.City.X, cityScreen.City.Y)
+        cityStack := cityScreen.Player.FindStack(cityScreen.City.X, cityScreen.City.Y, cityScreen.City.Plane)
         if cityStack != nil {
             garrison = cityStack.Units()
         }
@@ -1875,7 +1875,7 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
         },
     })
 
-    stack := player.FindStack(city.X, city.Y)
+    stack := player.FindStack(city.X, city.Y, city.Plane)
     if stack != nil {
         inside := 0
         for i, unit := range stack.Units() {
