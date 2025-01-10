@@ -22,6 +22,10 @@ type MiniMapCity interface {
     GetBanner() data.BannerType
 }
 
+type CityProvider interface {
+    ContainsCity(x int, y int, plane data.Plane) bool
+}
+
 type Melder interface {
     GetBanner() data.BannerType
 }
@@ -414,6 +418,8 @@ type Map struct {
 
     Plane data.Plane
 
+    CityProvider CityProvider
+
     // contains information about map squares that contain extra features on top
     // such as a road, enchantment, encounter place (plane tower, lair, etc)
     ExtraMap map[image.Point]map[ExtraKind]ExtraTile
@@ -435,7 +441,7 @@ func getLandSize(size int) (int, int) {
     return 100, 100
 }
 
-func MakeMap(data *terrain.TerrainData, landSize int, plane data.Plane) *Map {
+func MakeMap(data *terrain.TerrainData, landSize int, plane data.Plane, cityProvider CityProvider) *Map {
     landWidth, landHeight := getLandSize(landSize)
 
     extraMap := make(map[image.Point]map[ExtraKind]ExtraTile)
@@ -451,6 +457,7 @@ func MakeMap(data *terrain.TerrainData, landSize int, plane data.Plane) *Map {
         Plane: plane,
         TileCache: make(map[int]*ebiten.Image),
         ExtraMap: extraMap,
+        CityProvider: cityProvider,
     }
 }
 
@@ -482,9 +489,7 @@ func (mapObject *Map) GetRoadNeighbors(x int, y int) map[Direction]bool {
                 continue
             }
 
-            // FIXME: this should be true if the neighbor is a city
-
-            out[convert(dx, dy)] = mapObject.ContainsRoad(x + dx, y + dy)
+            out[convert(dx, dy)] = mapObject.ContainsRoad(x + dx, y + dy) || mapObject.CityProvider.ContainsCity(x + dx, y + dy, mapObject.Plane)
         }
     }
 

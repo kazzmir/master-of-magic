@@ -80,7 +80,7 @@ func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Playe
             }
 
             game.Camera.Center(tileX, tileY)
-            chosenCity := player.FindCity(tileX, tileY)
+            chosenCity := player.FindCity(tileX, tileY, game.Plane)
             if chosenCity == nil {
                 return
             }
@@ -318,7 +318,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                 switch locationType {
                     case LocationTypeAny: return tileX, tileY, false
                     case LocationTypeFriendlyCity:
-                        city := player.FindCity(tileX, tileY)
+                        city := player.FindCity(tileX, tileY, game.Plane)
                         if city != nil {
                             return tileX, tileY, false
                         }
