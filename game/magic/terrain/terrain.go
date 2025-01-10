@@ -610,7 +610,7 @@ var (
     TileShore1_00101000 = makeShoreTile(0x0F, 0b00101000)
     TileShore1_00111000 = makeShoreTile(0x10, 0b00111000)
     TileShore1_00010000 = makeShoreTile(0x11, 0b00010000)
-    TileLake            = makeShoreTile(0x12, 0b11111111)
+    TileLake            = makeSimpleTile(0x12, Lake)
     TileShore1_00000001 = makeShoreTile(0x13, 0b00000001)
     TileShore1_10000011 = makeShoreTile(0x14, 0b10000011)
     TileShore1_00110000 = makeShoreTile(0x15, 0b00110000)

@@ -344,14 +344,14 @@ func (map_ *Map) PlaceRandomTerrainTiles(plane data.Plane){
             point := chooseRandomElement(continent)
 
             var use int
-            switch rand.IntN(8) {
+            switch rand.IntN(7) {
                 case 0: use = randomGrasslands()
                 case 1: use = randomForest()
                 case 2: use = TileSwamp2.Index(plane)
-                case 4: use = TileHills1.Index(plane)
-                case 5: use = TileMountain1.Index(plane)
-                case 6: use = TileAllDesert1.Index(plane)
-                case 7: use = TileTundra.Index(plane)
+                case 3: use = TileHills1.Index(plane)
+                case 4: use = TileMountain1.Index(plane)
+                case 5: use = TileAllDesert1.Index(plane)
+                case 6: use = TileTundra.Index(plane)
             }
 
             map_.Terrain[point.X][point.Y] = use
@@ -440,6 +440,10 @@ func (map_ *Map) ResolveTile(x int, y int, data *TerrainData, plane data.Plane) 
     region[SouthEast] = Ocean
     if y < map_.Rows() - 1 {
         region[SouthEast] = getTerrainAt(x+1, y+1)
+    }
+
+    if region[Center] == Ocean && region[North] != Ocean && region[South] != Ocean && region[West] != Ocean && region[East] != Ocean {
+        region[Center] = Lake
     }
 
     if data.Tiles[map_.Terrain[x][y]].Tile.Matches(region) {
