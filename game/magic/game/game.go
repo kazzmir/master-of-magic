@@ -745,7 +745,7 @@ func (game *Game) doCityListView(yield coroutine.YieldFunc) {
         game.Camera.Center(city.X, city.Y)
     }
 
-    view := citylistview.MakeCityListScreen(game.Cache, game.Players[0], drawMinimap, selectCity)
+    view := citylistview.MakeCityListScreen(game.Cache, game.Players[0], drawMinimap, selectCity, game)
 
     game.Drawer = func (screen *ebiten.Image, game *Game){
         view.Draw(screen)
@@ -3058,7 +3058,7 @@ func (game *Game) doEnemyCityView(yield coroutine.YieldFunc, city *citylib.City,
 /* show a view of the city
  */
 func (game *Game) doCityScreen(yield coroutine.YieldFunc, city *citylib.City, player *playerlib.Player, newBuilding buildinglib.Building){
-    cityScreen := cityview.MakeCityScreen(game.Cache, city, player, newBuilding)
+    cityScreen := cityview.MakeCityScreen(game.Cache, city, player, newBuilding, game)
 
     var cities []*citylib.City
     var stacks []*playerlib.UnitStack
@@ -4430,7 +4430,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
         if len(game.Players) > 0 {
             player := game.Players[0]
 
-            goldPerTurn := player.GoldPerTurn()
+            goldPerTurn := player.GoldPerTurn(game)
             foodPerTurn := player.FoodPerTurn()
             manaPerTurn := player.ManaPerTurn(game.ComputePower(player))
 
@@ -4543,7 +4543,8 @@ func (game *Game) DoNextUnit(player *playerlib.Player){
  * (false, false, false) means all units are supported.
  */
 func (game *Game) CheckDisband(player *playerlib.Player) (bool, bool, bool) {
-    goldIssue := player.GoldPerTurn() < 0 && player.GoldPerTurn() > player.Gold
+    goldPerTurn := player.GoldPerTurn(game)
+    goldIssue := goldPerTurn < 0 && goldPerTurn > player.Gold
     foodIssue := player.FoodPerTurn() < 0
 
     manaPerTurn := player.ManaPerTurn(game.ComputePower(player))
@@ -4619,7 +4620,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
 
     power := game.ComputePower(player)
 
-    player.Gold += player.GoldPerTurn()
+    player.Gold += player.GoldPerTurn(game)
     if player.Gold < 0 {
         player.Gold = 0
     }

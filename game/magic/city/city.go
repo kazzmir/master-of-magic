@@ -70,6 +70,10 @@ type CatchmentProvider interface {
     GetCatchmentArea(x int, y int) map[image.Point]maplib.FullTile
 }
 
+type ConnectedCityProvider interface {
+    FindRoadConnectedCities(city *City) []*City
+}
+
 const MAX_CITY_CITIZENS = 25
 
 type Enchantment struct {
@@ -683,13 +687,26 @@ func (city *City) GoldMinerals() int {
 // return the percent of foreign trade bonus
 //   population of other city * 0.5% if same race
 //   population of other city * 1% if different
-func (city *City) ComputeForeignTrade() float64 {
-    return 0
+func (city *City) ComputeForeignTrade(provider ConnectedCityProvider) float64 {
+    connected := provider.FindRoadConnectedCities(city)
+    percent := float64(0)
+
+    for _, other := range connected {
+        if other.Race == city.Race {
+            percent += 0.5
+        } else {
+            percent += 1
+        }
+    }
+
+    return percent
 }
 
 // gold from cities connected via roads
 func (city *City) GoldForeignTrade(percent float64) int {
-    return int(float64(city.GoldTaxation() + city.GoldMinerals()) * percent)
+    percent = min(percent, float64(city.Citizens() * 3))
+
+    return int(float64(city.GoldTaxation() + city.GoldMinerals()) * percent / 100)
 }
 
 func (city *City) GoldMarketplace() int {
@@ -716,12 +733,12 @@ func (city *City) GoldMerchantsGuild() int {
     return 0
 }
 
-func (city *City) GoldSurplus() int {
+func (city *City) GoldSurplus(connectedProvider ConnectedCityProvider) int {
     income := city.GoldTaxation()
     income += city.GoldTradeGoods()
     income += city.GoldMinerals()
     income += city.GoldMarketplace()
-    income += city.GoldForeignTrade(city.ComputeForeignTrade())
+    income += city.GoldForeignTrade(city.ComputeForeignTrade(connectedProvider))
     income += city.GoldBank()
     income += city.GoldMerchantsGuild()
 

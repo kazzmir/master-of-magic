@@ -37,9 +37,10 @@ type CityListScreen struct {
     DrawMinimap func(*ebiten.Image, int, int, [][]bool, uint64)
     DoSelectCity func(*citylib.City)
     FirstRow int
+    ConnectedProvider citylib.ConnectedCityProvider
 }
 
-func MakeCityListScreen(cache *lbx.LbxCache, player *playerlib.Player, drawMinimap func(*ebiten.Image, int, int, [][]bool, uint64), selectCity func(*citylib.City)) *CityListScreen {
+func MakeCityListScreen(cache *lbx.LbxCache, player *playerlib.Player, drawMinimap func(*ebiten.Image, int, int, [][]bool, uint64), selectCity func(*citylib.City), connectedProvider citylib.ConnectedCityProvider) *CityListScreen {
     view := &CityListScreen{
         Cache: cache,
         Player: player,
@@ -48,6 +49,7 @@ func MakeCityListScreen(cache *lbx.LbxCache, player *playerlib.Player, drawMinim
         DrawMinimap: drawMinimap,
         DoSelectCity: selectCity,
         FirstRow: 0,
+        ConnectedProvider: connectedProvider,
     }
 
     view.UI = view.MakeUI()
@@ -149,6 +151,8 @@ func (view *CityListScreen) MakeUI() *uilib.UI {
             highlightedCity = city
         }
 
+        goldSurplus := city.GoldSurplus(view.ConnectedProvider)
+
         elementY := float64(y)
         elements = append(elements, &uilib.UIElement{
             Rect: image.Rect(28, int(elementY), 296, int(elementY + 14)),
@@ -183,7 +187,7 @@ func (view *CityListScreen) MakeUI() *uilib.UI {
                 normalFont.Print(screen, x, elementY, 1, ebiten.ColorScale{}, city.Name)
                 normalFont.Print(screen, x + 57, elementY, 1, ebiten.ColorScale{}, city.Race.String())
                 normalFont.PrintRight(screen, x + 119, elementY, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", city.Citizens()))
-                normalFont.PrintRight(screen, x + 139, elementY, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", city.GoldSurplus()))
+                normalFont.PrintRight(screen, x + 139, elementY, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", goldSurplus))
                 normalFont.PrintRight(screen, x + 159, elementY, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", int(city.WorkProductionRate())))
                 normalFont.Print(screen, x + 165, elementY, 1, ebiten.ColorScale{}, city.ProducingString())
                 normalFont.PrintRight(screen, x + 258, elementY, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", city.ProducingTurnsLeft()))

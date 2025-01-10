@@ -31,6 +31,13 @@ type Engine struct {
     Map *maplib.Map
 }
 
+type NoCityProvider struct {
+}
+
+func (provider *NoCityProvider) FindRoadConnectedCities(city *citylib.City) []*citylib.City {
+    return nil
+}
+
 func NewEngine() (*Engine, error) {
     cache := lbx.AutoCache()
 
@@ -104,7 +111,7 @@ func NewEngine() (*Engine, error) {
     city.AddBuilding(buildinglib.BuildingShrine)
     city.AddBuilding(buildinglib.BuildingTemple)
 
-    cityScreen := cityview.MakeCityScreen(cache, city, &player, buildinglib.BuildingShrine)
+    cityScreen := cityview.MakeCityScreen(cache, city, &player, buildinglib.BuildingShrine, &NoCityProvider{})
 
     return &Engine{
         LbxCache: cache,
