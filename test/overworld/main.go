@@ -2509,10 +2509,10 @@ func createScenario30(cache *lbx.LbxCache) *gamelib.Game {
         game.CurrentMap().SetRoad(i, y, false)
     }
 
-    log.Printf("Connected city->city2: %v", game.CityRoadConnected(city, city2))
-    log.Printf("Connected city2->city: %v", game.CityRoadConnected(city, city2))
-    log.Printf("Connected city->city3: %v", game.CityRoadConnected(city, city3))
-    log.Printf("Connected city3->city2: %v", game.CityRoadConnected(city3, city2))
+    log.Printf("Connected city->city2: %v", game.IsCityRoadConnected(city, city2))
+    log.Printf("Connected city2->city: %v", game.IsCityRoadConnected(city, city2))
+    log.Printf("Connected city->city3: %v", game.IsCityRoadConnected(city, city3))
+    log.Printf("Connected city3->city2: %v", game.IsCityRoadConnected(city3, city2))
 
     return game
 }

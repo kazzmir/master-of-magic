@@ -1530,8 +1530,25 @@ func (game *Game) GetNormalizeCoordinateFunc() units.NormalizeCoordinateFunc {
     }
 }
 
+// returns all cities that are connected to this one via roads
+func (game *Game) FindRoadConnectedCities(city *citylib.City) []*citylib.City {
+    var out []*citylib.City
+
+    for _, otherCity := range game.AllCities() {
+        if otherCity == city {
+            continue
+        }
+
+        if otherCity.Plane == city.Plane && game.IsCityRoadConnected(city, otherCity) {
+            out = append(out, otherCity)
+        }
+    }
+
+    return out
+}
+
 // returns true if the two cities are connected by a road
-func (game *Game) CityRoadConnected(fromCity *citylib.City, toCity *citylib.City) bool {
+func (game *Game) IsCityRoadConnected(fromCity *citylib.City, toCity *citylib.City) bool {
     if fromCity.Plane != toCity.Plane {
         return false
     }
