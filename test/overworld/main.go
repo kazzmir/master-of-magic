@@ -2433,6 +2433,90 @@ func createScenario29(cache *lbx.LbxCache) *gamelib.Game {
     return game
 }
 
+// connected cities via roads
+func createScenario30(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 30")
+    wizard := setup.WizardCustom{
+        Name: "bob",
+        Banner: data.BannerRed,
+        Race: data.RaceTroll,
+        Abilities: []setup.WizardAbility{
+            setup.AbilityAlchemy,
+            setup.AbilitySageMaster,
+        },
+        Books: []data.WizardBook{
+            data.WizardBook{
+                Magic: data.LifeMagic,
+                Count: 3,
+            },
+            data.WizardBook{
+                Magic: data.SorceryMagic,
+                Count: 8,
+            },
+        },
+    }
+
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+        Magic: data.MagicSettingNormal,
+        Difficulty: data.DifficultyAverage,
+    })
+
+    game.Plane = data.PlaneArcanus
+
+    player := game.AddPlayer(wizard, true)
+
+    x, y := game.FindValidCityLocation()
+
+    city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.CurrentMap())
+    city.Population = 12190
+    city.Plane = data.PlaneArcanus
+    city.Banner = wizard.Banner
+    city.ProducingBuilding = buildinglib.BuildingGranary
+    city.ProducingUnit = units.UnitNone
+    city.Race = wizard.Race
+    city.Farmers = 9
+    city.Workers = 3
+    city.Wall = false
+
+    city.ResetCitizens(nil)
+
+    player.AddCity(city)
+
+    x2, y2 := x + 3, y
+
+    city2 := citylib.MakeCity("City2", x2, y2, data.RaceHighElf, player.GetBanner(), player.TaxRate, game.BuildingInfo, game.CurrentMap())
+    city2.Plane = city.Plane
+    city2.Population = 6000
+    city2.ResetCitizens(nil)
+
+    player.AddCity(city2)
+
+    city3 := citylib.MakeCity("City3", x + 1, y2+2, data.RaceHighElf, player.GetBanner(), player.TaxRate, game.BuildingInfo, game.CurrentMap())
+    city3.Plane = city.Plane
+    city3.Population = 6000
+    city3.ResetCitizens(nil)
+
+    player.AddCity(city3)
+
+    player.Gold = 83
+    player.Mana = 26
+
+    player.LiftFog(x, y, 8, game.Plane)
+
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.OrcEngineers, x + 1, y + 1, game.Plane, wizard.Banner, nil))
+
+    for i := x; i <= x2; i++ {
+        game.CurrentMap().SetRoad(i, y, false)
+    }
+
+    log.Printf("Connected city->city2: %v", game.CityRoadConnected(city, city2))
+    log.Printf("Connected city2->city: %v", game.CityRoadConnected(city, city2))
+    log.Printf("Connected city->city3: %v", game.CityRoadConnected(city, city3))
+    log.Printf("Connected city3->city2: %v", game.CityRoadConnected(city3, city2))
+
+    return game
+}
+
 func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
@@ -2468,6 +2552,7 @@ func NewEngine(scenario int) (*Engine, error) {
         case 27: game = createScenario27(cache)
         case 28: game = createScenario28(cache)
         case 29: game = createScenario29(cache)
+        case 30: game = createScenario30(cache)
         default: game = createScenario1(cache)
     }
 

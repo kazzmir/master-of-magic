@@ -1635,6 +1635,8 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
             return pathfinding.Infinity
         }
 
+        // FIXME: it might be more optimal to put the infinity cases into the neighbors function instead
+
         // avoid magic nodes
         node := useMap.GetMagicNode(x2, y2)
         if node != nil {
