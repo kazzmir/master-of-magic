@@ -680,6 +680,18 @@ func (city *City) GoldMinerals() int {
     return extra
 }
 
+// return the percent of foreign trade bonus
+//   population of other city * 0.5% if same race
+//   population of other city * 1% if different
+func (city *City) ComputeForeignTrade() float64 {
+    return 0
+}
+
+// gold from cities connected via roads
+func (city *City) GoldForeignTrade(percent float64) int {
+    return int(float64(city.GoldTaxation() + city.GoldMinerals()) * percent)
+}
+
 func (city *City) GoldMarketplace() int {
     if city.Buildings.Contains(buildinglib.BuildingMarketplace) {
         return (city.GoldTaxation() + city.GoldMinerals()) / 2
@@ -709,6 +721,7 @@ func (city *City) GoldSurplus() int {
     income += city.GoldTradeGoods()
     income += city.GoldMinerals()
     income += city.GoldMarketplace()
+    income += city.GoldForeignTrade(city.ComputeForeignTrade())
     income += city.GoldBank()
     income += city.GoldMerchantsGuild()
 
