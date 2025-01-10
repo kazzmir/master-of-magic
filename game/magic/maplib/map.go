@@ -56,6 +56,19 @@ var ExtraDrawOrder = []ExtraKind{
 type ExtraRoad struct {
 }
 
+func (road *ExtraRoad) DrawLayer1(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64, tileWidth int, tileHeight int){
+    /*
+    index := 68
+    pic, err := imageCache.GetImage("mapback.lbx", index, 0)
+    if err == nil {
+        screen.DrawImage(pic, options)
+    }
+    */
+}
+
+func (road *ExtraRoad) DrawLayer2(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64, tileWidth int, tileHeight int){
+}
+
 // wild game, gold ore, mithril, etc
 type ExtraBonus struct {
     Bonus data.BonusType
@@ -424,6 +437,19 @@ func getExtra[T any](extras map[ExtraKind]ExtraTile, kind ExtraKind) T {
 
     var out T
     return out
+}
+
+func (mapObject *Map) SetRoad(x int, y int) {
+    mapObject.ExtraMap[image.Pt(x, y)][ExtraKindRoad] = &ExtraRoad{}
+}
+
+func (mapObject *Map) ContainsRoad(x int, y int) bool {
+    _, ok := mapObject.ExtraMap[image.Pt(x, y)][ExtraKindRoad]
+    return ok
+}
+
+func (mapObject *Map) RemoveRoad(x int, y int) {
+    delete(mapObject.ExtraMap[image.Pt(x, y)], ExtraKindRoad)
 }
 
 func (mapObject *Map) GetLair(x int, y int) *ExtraEncounter {
