@@ -100,6 +100,7 @@ type City struct {
     Enchantments *set.Set[Enchantment]
 
     CatchmentProvider CatchmentProvider
+    ConnectedProvider ConnectedCityProvider
 
     TaxRate fraction.Fraction
 
@@ -114,7 +115,7 @@ type City struct {
     BuildingInfo buildinglib.BuildingInfos
 }
 
-func MakeCity(name string, x int, y int, race data.Race, banner data.BannerType, taxRate fraction.Fraction, buildingInfo buildinglib.BuildingInfos, catchmentProvider CatchmentProvider) *City {
+func MakeCity(name string, x int, y int, race data.Race, banner data.BannerType, taxRate fraction.Fraction, buildingInfo buildinglib.BuildingInfos, catchmentProvider CatchmentProvider, connectedProvider ConnectedCityProvider) *City {
     city := City{
         Name: name,
         X: x,
@@ -125,6 +126,7 @@ func MakeCity(name string, x int, y int, race data.Race, banner data.BannerType,
         Enchantments: set.MakeSet[Enchantment](),
         TaxRate: taxRate,
         CatchmentProvider: catchmentProvider,
+        ConnectedProvider: connectedProvider,
         BuildingInfo: buildingInfo,
     }
 
@@ -687,8 +689,8 @@ func (city *City) GoldMinerals() int {
 // return the percent of foreign trade bonus
 //   population of other city * 0.5% if same race
 //   population of other city * 1% if different
-func (city *City) ComputeForeignTrade(provider ConnectedCityProvider) float64 {
-    connected := provider.FindRoadConnectedCities(city)
+func (city *City) ComputeForeignTrade() float64 {
+    connected := city.ConnectedProvider.FindRoadConnectedCities(city)
     percent := float64(0)
 
     for _, other := range connected {
@@ -733,12 +735,12 @@ func (city *City) GoldMerchantsGuild() int {
     return 0
 }
 
-func (city *City) GoldSurplus(connectedProvider ConnectedCityProvider) int {
+func (city *City) GoldSurplus() int {
     income := city.GoldTaxation()
     income += city.GoldTradeGoods()
     income += city.GoldMinerals()
     income += city.GoldMarketplace()
-    income += city.GoldForeignTrade(city.ComputeForeignTrade(connectedProvider))
+    income += city.GoldForeignTrade(city.ComputeForeignTrade())
     income += city.GoldBank()
     income += city.GoldMerchantsGuild()
 

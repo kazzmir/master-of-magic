@@ -67,7 +67,7 @@ func NewEngine() (*Engine, error) {
         TileCache: make(map[int]*ebiten.Image),
     }
 
-    city := citylib.MakeCity("Boston", 3, 8, data.RaceHighElf, player.Wizard.Banner, fraction.Make(2, 1), buildingInfo, &gameMap)
+    city := citylib.MakeCity("Boston", 3, 8, data.RaceHighElf, player.Wizard.Banner, fraction.Make(2, 1), buildingInfo, &gameMap, &NoCityProvider{})
     city.Population = 12000
     city.Farmers = 4
     city.Workers = 2
@@ -111,7 +111,7 @@ func NewEngine() (*Engine, error) {
     city.AddBuilding(buildinglib.BuildingShrine)
     city.AddBuilding(buildinglib.BuildingTemple)
 
-    cityScreen := cityview.MakeCityScreen(cache, city, &player, buildinglib.BuildingShrine, &NoCityProvider{})
+    cityScreen := cityview.MakeCityScreen(cache, city, &player, buildinglib.BuildingShrine)
 
     return &Engine{
         LbxCache: cache,

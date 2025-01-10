@@ -37,10 +37,9 @@ type CityListScreen struct {
     DrawMinimap func(*ebiten.Image, int, int, [][]bool, uint64)
     DoSelectCity func(*citylib.City)
     FirstRow int
-    ConnectedProvider citylib.ConnectedCityProvider
 }
 
-func MakeCityListScreen(cache *lbx.LbxCache, player *playerlib.Player, drawMinimap func(*ebiten.Image, int, int, [][]bool, uint64), selectCity func(*citylib.City), connectedProvider citylib.ConnectedCityProvider) *CityListScreen {
+func MakeCityListScreen(cache *lbx.LbxCache, player *playerlib.Player, drawMinimap func(*ebiten.Image, int, int, [][]bool, uint64), selectCity func(*citylib.City)) *CityListScreen {
     view := &CityListScreen{
         Cache: cache,
         Player: player,
@@ -49,7 +48,6 @@ func MakeCityListScreen(cache *lbx.LbxCache, player *playerlib.Player, drawMinim
         DrawMinimap: drawMinimap,
         DoSelectCity: selectCity,
         FirstRow: 0,
-        ConnectedProvider: connectedProvider,
     }
 
     view.UI = view.MakeUI()
@@ -151,7 +149,7 @@ func (view *CityListScreen) MakeUI() *uilib.UI {
             highlightedCity = city
         }
 
-        goldSurplus := city.GoldSurplus(view.ConnectedProvider)
+        goldSurplus := city.GoldSurplus()
 
         elementY := float64(y)
         elements = append(elements, &uilib.UIElement{

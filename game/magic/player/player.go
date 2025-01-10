@@ -394,11 +394,11 @@ func (player *Player) SpellResearchPerTurn(power int) float64 {
     return research
 }
 
-func (player *Player) GoldPerTurn(connectedProvider citylib.ConnectedCityProvider) int {
+func (player *Player) GoldPerTurn() int {
     gold := 0
 
     for _, city := range player.Cities {
-        gold += city.GoldSurplus(connectedProvider)
+        gold += city.GoldSurplus()
     }
 
     gold -= player.TotalUnitUpkeepGold()

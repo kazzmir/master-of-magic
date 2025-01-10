@@ -26,8 +26,15 @@ func (catchment *Catchment) GetCatchmentArea(x int, y int) map[image.Point]mapli
     return out
 }
 
+type NoCities struct {
+}
+
+func (provider *NoCities) FindRoadConnectedCities(city *City) []*City {
+    return nil
+}
+
 func TestBasicCity(test *testing.T){
-    city := MakeCity("Test City", 10, 10, data.RaceHighMen, data.BannerBlue, fraction.Make(3, 2), nil, &Catchment{})
+    city := MakeCity("Test City", 10, 10, data.RaceHighMen, data.BannerBlue, fraction.Make(3, 2), nil, &Catchment{}, &NoCities{})
     city.Population = 6000
     city.Farmers = 6
     city.Workers = 0

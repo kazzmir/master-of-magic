@@ -126,7 +126,6 @@ type CityScreen struct {
 
     Counter uint64
     State CityScreenState
-    ConnectedProvider citylib.ConnectedCityProvider
 }
 
 func makeFonts(cache *lbx.LbxCache) (*Fonts, error) {
@@ -355,7 +354,7 @@ func makeBuildingSlots(city *citylib.City) []BuildingSlot {
     return buildings
 }
 
-func MakeCityScreen(cache *lbx.LbxCache, city *citylib.City, player *playerlib.Player, newBuilding buildinglib.Building, connectedProvider citylib.ConnectedCityProvider) *CityScreen {
+func MakeCityScreen(cache *lbx.LbxCache, city *citylib.City, player *playerlib.Player, newBuilding buildinglib.Building) *CityScreen {
 
     fonts, err := makeFonts(cache)
     if err != nil {
@@ -373,7 +372,6 @@ func MakeCityScreen(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
         Buildings: buildings,
         State: CityScreenStateRunning,
         Player: player,
-        ConnectedProvider: connectedProvider,
     }
 
     cityScreen.UI = cityScreen.MakeUI(newBuilding)
@@ -1561,7 +1559,9 @@ func (cityScreen *CityScreen) CreateResourceIcons(ui *uilib.UI) []*uilib.UIEleme
         },
     })
 
-    goldGeom = cityScreen.drawIcons(cityScreen.City.GoldSurplus(cityScreen.ConnectedProvider), smallCoin, bigCoin, goldUpkeepOptions, nil)
+    goldSurplus := cityScreen.City.GoldSurplus()
+
+    goldGeom = cityScreen.drawIcons(goldSurplus, smallCoin, bigCoin, goldUpkeepOptions, nil)
     x, _ = goldGeom.Apply(0, 0)
     goldSurplusRect := image.Rect(goldMaintenanceRect.Max.X + 6, 68, goldMaintenanceRect.Max.X + 6 + int(x), 68 + bigCoin.Bounds().Dy())
     elements = append(elements, &uilib.UIElement{
@@ -1573,7 +1573,7 @@ func (cityScreen *CityScreen) CreateResourceIcons(ui *uilib.UI) []*uilib.UIEleme
         Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(goldSurplusRect.Min.X), float64(goldSurplusRect.Min.Y))
-            cityScreen.drawIcons(cityScreen.City.GoldSurplus(cityScreen.ConnectedProvider), smallCoin, bigCoin, options, screen)
+            cityScreen.drawIcons(goldSurplus, smallCoin, bigCoin, options, screen)
             // util.DrawRect(screen, goldSurplusRect, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff})
         },
     })

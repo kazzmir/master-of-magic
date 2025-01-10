@@ -372,7 +372,7 @@ func makeScenario4(cache *lbx.LbxCache) *combat.CombatScreen {
     // attackingArmy := createHeroArmy(attackingPlayer)
     attackingArmy.LayoutUnits(combat.TeamAttacker)
 
-    city := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, attackingPlayer.Wizard.Banner, fraction.Zero(), nil, nil)
+    city := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, attackingPlayer.Wizard.Banner, fraction.Zero(), nil, nil, nil)
     city.Buildings.Insert(buildinglib.BuildingFortress)
 
     city.Wall = true
@@ -413,7 +413,7 @@ func makeScenario5(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingArmy := createHeroArmy(attackingPlayer)
     attackingArmy.LayoutUnits(combat.TeamAttacker)
 
-    city := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, attackingPlayer.Wizard.Banner, fraction.Zero(), nil, nil)
+    city := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, attackingPlayer.Wizard.Banner, fraction.Zero(), nil, nil, nil)
     city.Buildings.Insert(buildinglib.BuildingFortress)
 
     return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeMountain, data.PlaneArcanus, combat.ZoneType{ChaosNode: true})
@@ -449,7 +449,7 @@ func makeScenario6(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingArmy := createArchAngelArmy(attackingPlayer)
     attackingArmy.LayoutUnits(combat.TeamAttacker)
 
-    city := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, attackingPlayer.Wizard.Banner, fraction.Zero(), nil, nil)
+    city := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, attackingPlayer.Wizard.Banner, fraction.Zero(), nil, nil, nil)
     city.Buildings.Insert(buildinglib.BuildingFortress)
 
     return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeMountain, data.PlaneArcanus, combat.ZoneType{ChaosNode: true})

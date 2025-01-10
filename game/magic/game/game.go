@@ -745,7 +745,7 @@ func (game *Game) doCityListView(yield coroutine.YieldFunc) {
         game.Camera.Center(city.X, city.Y)
     }
 
-    view := citylistview.MakeCityListScreen(game.Cache, game.Players[0], drawMinimap, selectCity, game)
+    view := citylistview.MakeCityListScreen(game.Cache, game.Players[0], drawMinimap, selectCity)
 
     game.Drawer = func (screen *ebiten.Image, game *Game){
         view.Draw(screen)
@@ -3058,7 +3058,7 @@ func (game *Game) doEnemyCityView(yield coroutine.YieldFunc, city *citylib.City,
 /* show a view of the city
  */
 func (game *Game) doCityScreen(yield coroutine.YieldFunc, city *citylib.City, player *playerlib.Player, newBuilding buildinglib.Building){
-    cityScreen := cityview.MakeCityScreen(game.Cache, city, player, newBuilding, game)
+    cityScreen := cityview.MakeCityScreen(game.Cache, city, player, newBuilding)
 
     var cities []*citylib.City
     var stacks []*playerlib.UnitStack
@@ -3778,7 +3778,7 @@ func (game *Game) CityProductionBonus(x int, y int, plane data.Plane) int {
 func (game *Game) CreateOutpost(settlers units.StackUnit, player *playerlib.Player) *citylib.City {
     cityName := game.SuggestCityName(settlers.GetRace())
 
-    newCity := citylib.MakeCity(cityName, settlers.GetX(), settlers.GetY(), settlers.GetRace(), settlers.GetBanner(), player.TaxRate, game.BuildingInfo, game.GetMap(settlers.GetPlane()))
+    newCity := citylib.MakeCity(cityName, settlers.GetX(), settlers.GetY(), settlers.GetRace(), settlers.GetBanner(), player.TaxRate, game.BuildingInfo, game.GetMap(settlers.GetPlane()), game)
     newCity.Plane = settlers.GetPlane()
     newCity.Population = 300
     newCity.Outpost = true
@@ -4430,7 +4430,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
         if len(game.Players) > 0 {
             player := game.Players[0]
 
-            goldPerTurn := player.GoldPerTurn(game)
+            goldPerTurn := player.GoldPerTurn()
             foodPerTurn := player.FoodPerTurn()
             manaPerTurn := player.ManaPerTurn(game.ComputePower(player))
 
@@ -4543,7 +4543,7 @@ func (game *Game) DoNextUnit(player *playerlib.Player){
  * (false, false, false) means all units are supported.
  */
 func (game *Game) CheckDisband(player *playerlib.Player) (bool, bool, bool) {
-    goldPerTurn := player.GoldPerTurn(game)
+    goldPerTurn := player.GoldPerTurn()
     goldIssue := goldPerTurn < 0 && goldPerTurn > player.Gold
     foodIssue := player.FoodPerTurn() < 0
 
@@ -4620,7 +4620,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
 
     power := game.ComputePower(player)
 
-    player.Gold += player.GoldPerTurn(game)
+    player.Gold += player.GoldPerTurn()
     if player.Gold < 0 {
         player.Gold = 0
     }
