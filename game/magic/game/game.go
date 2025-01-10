@@ -1536,7 +1536,49 @@ func (game *Game) CityRoadConnected(fromCity *citylib.City, toCity *citylib.City
         return false
     }
 
-    return false
+    mapUse := game.GetMap(fromCity.Plane)
+
+    normalized := func (a image.Point) image.Point {
+        return image.Pt(mapUse.WrapX(a.X), a.Y)
+    }
+
+    // check equality of two points taking wrapping into account
+    tileEqual := func (a image.Point, b image.Point) bool {
+        return normalized(a) == normalized(b)
+    }
+
+    // cost doesn't matter
+    tileCost := func (x1 int, y1 int, x2 int, y2 int) float64 {
+        return 1
+    }
+
+    neighbors := func (x int, y int) []image.Point {
+        var out []image.Point
+        for dx := -1; dx <= 1; dx++ {
+            for dy := -1; dy <= 1; dy++ {
+                if dx == 0 && dy == 0 {
+                    continue
+                }
+
+                cx := mapUse.WrapX(x + dx)
+                cy := y + dy
+
+                if cy < 0 || cy >= mapUse.Height() {
+                    continue
+                }
+
+                if mapUse.ContainsRoad(cx, cy) || game.ContainsCity(cx, cy, fromCity.Plane) {
+                    out = append(out, image.Pt(cx, cy))
+                }
+            }
+        }
+
+        return out
+    }
+
+    _, ok := pathfinding.FindPath(image.Pt(fromCity.X, fromCity.Y), image.Pt(toCity.X, toCity.Y), 10000, tileCost, neighbors, tileEqual)
+
+    return ok
 }
 
 func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *playerlib.UnitStack, fog [][]bool) pathfinding.Path {
