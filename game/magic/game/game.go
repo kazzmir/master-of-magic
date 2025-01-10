@@ -1530,6 +1530,15 @@ func (game *Game) GetNormalizeCoordinateFunc() units.NormalizeCoordinateFunc {
     }
 }
 
+// returns true if the two cities are connected by a road
+func (game *Game) CityRoadConnected(fromCity *citylib.City, toCity *citylib.City) bool {
+    if fromCity.Plane != toCity.Plane {
+        return false
+    }
+
+    return false
+}
+
 func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *playerlib.UnitStack, fog [][]bool) pathfinding.Path {
 
     useMap := game.GetMap(stack.Plane())
