@@ -32,8 +32,8 @@ func makeZone(plane data.Plane) []image.Point {
     out = append(out, image.Pt(0, 0))
 
     possible := make([]image.Point, 0, maxSize * maxSize)
-    for x := -maxSize / 2; x < maxSize / 2; x++ {
-        for y := -maxSize / 2; y < maxSize / 2; y++ {
+    for x := -maxSize / 2; x <= maxSize / 2; x++ {
+        for y := -maxSize / 2; y <= maxSize / 2; y++ {
             if x == 0 && y == 0 {
                 continue
             }
