@@ -471,7 +471,7 @@ func (mapObject *Map) GetRoadNeighbors(x int, y int) map[Direction]bool {
         switch {
             case dx == -1 && dy == -1: return DirectionNorthWest
             case dx == -1 && dy == 0: return DirectionWest
-            case dx == -1 && dy == -1: return DirectionSouthWest
+            case dx == -1 && dy == 1: return DirectionSouthWest
 
             case dx == 1 && dy == -1: return DirectionNorthEast
             case dx == 1 && dy == 0: return DirectionEast

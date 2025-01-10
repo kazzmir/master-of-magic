@@ -3763,6 +3763,12 @@ func (game *Game) DoBuildAction(player *playerlib.Player){
                     break
                 }
             }
+        } else if powers.BuildRoad {
+            x, y := player.SelectedStack.X(), player.SelectedStack.Y()
+            plane := player.SelectedStack.Plane()
+
+            game.GetMap(plane).SetRoad(x, y, plane == data.PlaneMyrror)
+            player.SelectedStack.ExhaustMoves()
         }
     }
 }
@@ -4258,6 +4264,8 @@ func (game *Game) MakeHudUI() *uilib.UI {
                         if !canMeld {
                             matrix.ChangeHSV(0, 0, 1)
                         }
+                    } else if powers.BuildRoad {
+                        use = buildImages[buildIndex]
                     }
 
                     colorm.DrawImage(screen, use, matrix, &options)
@@ -4287,6 +4295,13 @@ func (game *Game) MakeHudUI() *uilib.UI {
                         }
 
                         if canMeld {
+                            buildIndex = 1
+                        }
+                    } else if powers.BuildRoad {
+                        hasRoad := game.GetMap(player.SelectedStack.Plane()).ContainsRoad(player.SelectedStack.X(), player.SelectedStack.Y())
+                        hasCity := game.ContainsCity(player.SelectedStack.X(), player.SelectedStack.Y(), player.SelectedStack.Plane())
+                        node := game.GetMap(player.SelectedStack.Plane()).GetMagicNode(player.SelectedStack.X(), player.SelectedStack.Y())
+                        if !hasRoad && !hasCity && node == nil {
                             buildIndex = 1
                         }
                     }
