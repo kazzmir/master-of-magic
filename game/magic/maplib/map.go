@@ -53,17 +53,65 @@ var ExtraDrawOrder = []ExtraKind{
     ExtraKindEncounter,
 }
 
+type Direction int
+const (
+    DirectionNorth Direction = iota
+    DirectionNorthEast
+    DirectionEast
+    DirectionSouthEast
+    DirectionSouth
+    DirectionSouthWest
+    DirectionWest
+    DirectionNorthWest
+)
+
 type ExtraRoad struct {
+    Map *Map
+    X int
+    Y int
 }
 
 func (road *ExtraRoad) DrawLayer1(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64, tileWidth int, tileHeight int){
-    /*
-    index := 68
-    pic, err := imageCache.GetImage("mapback.lbx", index, 0)
-    if err == nil {
-        screen.DrawImage(pic, options)
+    neighbors := road.Map.GetRoadNeighbors(road.X, road.Y)
+
+    connected := false
+
+    baseIndex := 45
+    if road.Map.Plane == data.PlaneMyrror {
+        baseIndex = 54
     }
-    */
+
+    directionToIndex := map[Direction]int{
+        DirectionNorth: 1,
+        DirectionNorthEast: 2,
+        DirectionEast: 3,
+        DirectionSouthEast: 4,
+        DirectionSouth: 5,
+        DirectionSouthWest: 6,
+        DirectionWest: 7,
+        DirectionNorthWest: 8,
+    }
+
+    for direction, has := range neighbors {
+        if has {
+            index := directionToIndex[direction]
+            pics, err := imageCache.GetImages("mapback.lbx", baseIndex + index)
+            if err == nil {
+                pic := pics[counter % uint64(len(pics))]
+                screen.DrawImage(pic, options)
+            }
+
+            connected = true
+        }
+    }
+
+    if !connected {
+        pics, err := imageCache.GetImages("mapback.lbx", baseIndex)
+        if err == nil {
+            pic := pics[counter % uint64(len(pics))]
+            screen.DrawImage(pic, options)
+        }
+    }
 }
 
 func (road *ExtraRoad) DrawLayer2(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64, tileWidth int, tileHeight int){
@@ -406,6 +454,43 @@ func MakeMap(data *terrain.TerrainData, landSize int, plane data.Plane) *Map {
     }
 }
 
+// returns a map where for each direction, if the value is true then there is a road there
+func (mapObject *Map) GetRoadNeighbors(x int, y int) map[Direction]bool {
+    out := make(map[Direction]bool)
+
+    convert := func(dx int, dy int) Direction {
+        switch {
+            case dx == -1 && dy == -1: return DirectionNorthWest
+            case dx == -1 && dy == 0: return DirectionWest
+            case dx == -1 && dy == -1: return DirectionSouthWest
+
+            case dx == 1 && dy == -1: return DirectionNorthEast
+            case dx == 1 && dy == 0: return DirectionEast
+            case dx == 1 && dy == 1: return DirectionSouthEast
+
+            case dx == 0 && dy == -1: return DirectionNorth
+            case dx == 0 && dy == 1: return DirectionSouth
+        }
+
+        return DirectionNorth
+    }
+
+    for dx := -1; dx <= 1; dx++ {
+        for dy := -1; dy <= 1; dy++ {
+            // skip center
+            if dx == 0 && dy == 0 {
+                continue
+            }
+
+            // FIXME: this should be true if the neighbor is a city
+
+            out[convert(dx, dy)] = mapObject.ContainsRoad(x + dx, y + dy)
+        }
+    }
+
+    return out
+}
+
 func (mapObject *Map) GetMeldedNodes(melder Melder) []*ExtraMagicNode {
     var out []*ExtraMagicNode
 
@@ -440,7 +525,7 @@ func getExtra[T any](extras map[ExtraKind]ExtraTile, kind ExtraKind) T {
 }
 
 func (mapObject *Map) SetRoad(x int, y int) {
-    mapObject.ExtraMap[image.Pt(x, y)][ExtraKindRoad] = &ExtraRoad{}
+    mapObject.ExtraMap[image.Pt(x, y)][ExtraKindRoad] = &ExtraRoad{Map: mapObject, X: x, Y: y}
 }
 
 func (mapObject *Map) ContainsRoad(x int, y int) bool {
