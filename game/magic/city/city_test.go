@@ -125,4 +125,19 @@ func TestForeignTrade(test *testing.T){
     if !closeFloat(city1Trade, 7 * 0.5) {
         test.Errorf("City1 foreign trade expected %v but was %v", 7 * 0.5, city1Trade)
     }
+
+    // different race
+    city3 := MakeCity("Test City 3 elf", 10, 10, data.RaceHighElf, data.BannerBlue, fraction.Make(3, 2), nil, &Catchment{}, &connected)
+    city3.Population = 5000
+    city3.Farmers = 5
+    city3.Workers = 0
+    city3.ResetCitizens(nil)
+
+    connected.Cities = []*City{city1, city2, city3}
+
+    city1Trade = city1.ComputeForeignTrade()
+    expected := 7 * 0.5 + 5 * 1
+    if !closeFloat(city1Trade, expected) {
+        test.Errorf("City1 foreign trade expected %v but was %v", expected, city1Trade)
+    }
 }
