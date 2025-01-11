@@ -710,6 +710,10 @@ func (city *City) ComputeTotalBonusPercent() float64 {
         percent += 50
     }
 
+    // +10 if adjacent to a shore
+    // +20 if on a river
+    // +30 if on a river and adjacent to a shore, or on a river mouth
+
     return percent
 }
 
