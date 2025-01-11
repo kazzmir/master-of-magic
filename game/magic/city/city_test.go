@@ -3,6 +3,7 @@ package city
 import (
     "testing"
     "image"
+    "math"
 
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
@@ -81,5 +82,47 @@ func TestBasicCity(test *testing.T){
 
     if city.Farmers != 3 {
         test.Errorf("Farmers should have been 3 but was %v", city.Farmers)
+    }
+}
+
+type AllConnected struct {
+    Cities []*City
+}
+
+func (provider *AllConnected) FindRoadConnectedCities(city *City) []*City {
+    var out []*City
+
+    for _, other := range provider.Cities {
+        if other != city {
+            out = append(out, other)
+        }
+    }
+
+    return out
+}
+
+func closeFloat(a float64, b float64) bool {
+    return math.Abs(a - b) < 0.0001
+}
+
+func TestForeignTrade(test *testing.T){
+    var connected AllConnected
+    city1 := MakeCity("Test City", 10, 10, data.RaceHighMen, data.BannerBlue, fraction.Make(3, 2), nil, &Catchment{}, &connected)
+    city1.Population = 6000
+    city1.Farmers = 6
+    city1.Workers = 0
+    city1.ResetCitizens(nil)
+
+    city2 := MakeCity("Test City 2", 10, 10, data.RaceHighMen, data.BannerBlue, fraction.Make(3, 2), nil, &Catchment{}, &connected)
+    city2.Population = 7000
+    city2.Farmers = 7
+    city2.Workers = 0
+    city2.ResetCitizens(nil)
+
+    connected.Cities = []*City{city1, city2}
+
+    city1Trade := city1.ComputeForeignTrade()
+    if !closeFloat(city1Trade, 7 * 0.5) {
+        test.Errorf("City1 foreign trade expected %v but was %v", 7 * 0.5, city1Trade)
     }
 }
