@@ -164,7 +164,7 @@ func createScenario2(cache *lbx.LbxCache) *gamelib.Game {
     player.AddCity(introCity)
 
     player.Gold = 83
-    player.Mana = 26
+    player.Mana = 2600
 
     // game.Map.Map.Terrain[3][6] = terrain.TileNatureForest.Index
 
@@ -214,13 +214,15 @@ func createScenario3(cache *lbx.LbxCache) *gamelib.Game {
     x, y := game.FindValidCityLocation()
 
     introCity := citylib.MakeCity("Test City", x, y, player.Wizard.Race, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.CurrentMap(), game)
-    introCity.Population = 6000
+    introCity.Population = 9000
     introCity.Plane = data.PlaneArcanus
     introCity.ProducingBuilding = buildinglib.BuildingHousing
     introCity.ProducingUnit = units.UnitNone
+    introCity.Farmers = 9
     introCity.Wall = false
 
     introCity.AddBuilding(buildinglib.BuildingShrine)
+    introCity.AddBuilding(buildinglib.BuildingGranary)
 
     introCity.ResetCitizens(nil)
 
