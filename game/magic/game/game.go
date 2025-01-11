@@ -542,8 +542,6 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         Help: help,
         MouseData: mouseData,
         Events: make(chan GameEvent, 1000),
-        ArcanusMap: maplib.MakeMap(terrainData, settings.LandSize, data.PlaneArcanus),
-        MyrrorMap: maplib.MakeMap(terrainData, settings.LandSize, data.PlaneMyrror),
         Plane: data.PlaneArcanus,
         State: GameStateRunning,
         Settings: settings,
@@ -559,12 +557,26 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         Camera: camera.MakeCamera(),
     }
 
+    game.ArcanusMap = maplib.MakeMap(terrainData, settings.LandSize, data.PlaneArcanus, game)
+    game.MyrrorMap = maplib.MakeMap(terrainData, settings.LandSize, data.PlaneMyrror, game)
+
     game.HudUI = game.MakeHudUI()
     game.Drawer = func(screen *ebiten.Image, game *Game){
         game.DrawGame(screen)
     }
 
     return game
+}
+
+func (game *Game) ContainsCity(x int, y int, plane data.Plane) bool {
+    for _, player := range game.Players {
+        city := player.FindCity(x, y, plane)
+        if city != nil {
+            return true
+        }
+    }
+
+    return false
 }
 
 func (game *Game) NearCity(point image.Point, squares int) bool {
@@ -1419,13 +1431,13 @@ func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, st
 /* return the cost to move from the current position the stack is on to the new given coordinates.
  * also return true/false if the move is even possible
  */
-func (game *Game) ComputeTerrainCost(stack *playerlib.UnitStack, x int, y int, mapUse *maplib.Map) (fraction.Fraction, bool) {
+func (game *Game) ComputeTerrainCost(stack *playerlib.UnitStack, sourceX int, sourceY int, destX int, destY int, mapUse *maplib.Map) (fraction.Fraction, bool) {
     if stack.OutOfMoves() {
         return fraction.Zero(), false
     }
 
-    tileFrom := mapUse.GetTile(stack.X(), stack.Y())
-    tileTo := mapUse.GetTile(x, y)
+    tileFrom := mapUse.GetTile(sourceX, sourceY)
+    tileTo := mapUse.GetTile(destX, destY)
 
     // can't move from land to ocean unless all units are flyers
     if tileFrom.Tile.IsLand() && !tileTo.Tile.IsLand() {
@@ -1434,18 +1446,44 @@ func (game *Game) ComputeTerrainCost(stack *playerlib.UnitStack, x int, y int, m
         }
     }
 
-    oldX := stack.X()
-    oldY := stack.Y()
+    containsFriendlyCity := func (x int, y int) bool {
+        for _, player := range game.Players {
+            if player.GetBanner() == stack.GetBanner() {
+                if player.FindCity(x, y, stack.Plane()) != nil {
+                    return true
+                }
+            }
+        }
 
-    xDiff := int(math.Abs(float64(x - oldX)))
-    yDiff := int(math.Abs(float64(y - oldY)))
+        return false
+    }
+
+    xDiff := int(math.Abs(float64(game.CurrentMap().XDistance(destX, sourceX))))
+    yDiff := int(math.Abs(float64(destY - sourceY)))
+
+    baseCost := fraction.FromInt(1)
+
+    if containsFriendlyCity(destX, destY) {
+        baseCost = fraction.Make(1, 2)
+    }
+
+    road_v, ok := tileTo.Extras[maplib.ExtraKindRoad]
+    if ok {
+        road := road_v.(*maplib.ExtraRoad)
+        if road.Enchanted {
+            // FIXME: only if stack is corporeal
+            return fraction.Zero(), true
+        }
+
+        return fraction.Make(1, 2), true
+    }
 
     if xDiff == 1 && yDiff == 1 {
-        return fraction.Make(3, 2), true
+        return baseCost.Add(fraction.Make(1, 2)), true
     }
 
     if xDiff == 1 || yDiff == 1 {
-        return fraction.FromInt(1), true
+        return baseCost, true
     }
 
     return fraction.Zero(), false
@@ -1516,13 +1554,13 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
 
         for _, player := range game.Players {
             if player.GetBanner() != stack.GetBanner() {
-                enemyStack := player.FindStack(x, y)
+                enemyStack := player.FindStack(x, y, stack.Plane())
                 if enemyStack != nil {
                     enemyMemo[image.Pt(x, y)] = true
                     return true
                 }
 
-                enemyCity := player.FindCity(x, y)
+                enemyCity := player.FindCity(x, y, stack.Plane())
                 if enemyCity != nil {
                     enemyMemo[image.Pt(x, y)] = true
                     return true
@@ -1573,8 +1611,10 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
             return pathfinding.Infinity
         }
 
+        /*
         tileFrom := useMap.GetTile(x1, y1)
         tileTo := useMap.GetTile(x2, y2)
+        */
 
         // FIXME: consider terrain type, roads, and unit abilities
 
@@ -1589,7 +1629,15 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
             return baseCost
         }
 
+        cost, ok := game.ComputeTerrainCost(stack, x1, y1, x2, y2, useMap)
+        if !ok {
+            return pathfinding.Infinity
+        }
+
+        return cost.ToFloat()
+
         // can't move from land to ocean unless all units are flyers
+        /*
         if tileFrom.Tile.IsLand() && !tileTo.Tile.IsLand() {
             if !stack.AllFlyers() {
                 return pathfinding.Infinity
@@ -1597,6 +1645,7 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
         }
 
         return baseCost
+        */
     }
 
     neighbors := func (x int, y int) []image.Point {
@@ -1703,6 +1752,7 @@ func (game *Game) doLoadMenu(yield coroutine.YieldFunc) {
         useImage, _ := imageCache.GetImage("load.lbx", index, 0)
         return &uilib.UIElement{
             Rect: util.ImageRect(x, y, useImage),
+            PlaySoundLeftClick: true,
             LeftClick: func(element *uilib.UIElement){
                 action()
                 quit = true
@@ -2535,9 +2585,6 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
 
     mapUse := game.GetMap(stack.Plane())
 
-    oldX := stack.X()
-    oldY := stack.Y()
-
     stepsTaken := 0
     stopMoving := false
     var mergeStack *playerlib.UnitStack
@@ -2548,7 +2595,10 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
             break
         }
 
-        terrainCost, canMove := game.ComputeTerrainCost(stack, step.X, step.Y, mapUse)
+        oldX := stack.X()
+        oldY := stack.Y()
+
+        terrainCost, canMove := game.ComputeTerrainCost(stack, stack.X(), stack.Y(), step.X, step.Y, mapUse)
 
         if canMove {
             node := mapUse.GetMagicNode(step.X, step.Y)
@@ -2585,18 +2635,19 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
             }
 
             stepsTaken = i + 1
-            mergeStack = player.FindStack(step.X, step.Y)
+            mergeStack = player.FindStack(step.X, step.Y, stack.Plane())
 
             stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost, game.GetNormalizeCoordinateFunc())
             game.showMovement(yield, oldX, oldY, stack)
+            // FIXME: lift more fog if the stack has Scouting and some other abilities
             player.LiftFog(stack.X(), stack.Y(), 1, stack.Plane())
 
             for _, otherPlayer := range game.Players[1:] {
                 // FIXME: this should get all stacks at the given location and merge them into a single stack for combat
-                otherStack := otherPlayer.FindStack(stack.X(), stack.Y())
+                otherStack := otherPlayer.FindStack(stack.X(), stack.Y(), stack.Plane())
                 if otherStack != nil {
                     zone := combat.ZoneType{
-                        City: otherPlayer.FindCity(stack.X(), stack.Y()),
+                        City: otherPlayer.FindCity(stack.X(), stack.Y(), stack.Plane()),
                     }
 
                     game.doCombat(yield, player, stack, otherPlayer, otherStack, zone)
@@ -2637,12 +2688,13 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
     }
 
     // update unrest for new units in the city
-    newCity := player.FindCity(stack.X(), stack.Y())
+    newCity := player.FindCity(stack.X(), stack.Y(), stack.Plane())
     if newCity != nil {
         newCity.UpdateUnrest(stack.Units())
     }
 
     if stepsTaken > 0 {
+        // FIXME: only exhaust moves if some unit in the stack is out of moves
         stack.ExhaustMoves()
         game.DoNextUnit(player)
     }
@@ -2771,16 +2823,16 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
             tileX = game.CurrentMap().WrapX(tileX)
 
             if rightClick {
-                city := player.FindCity(tileX, tileY)
+                city := player.FindCity(tileX, tileY, game.Plane)
                 if city != nil {
                     if city.Outpost {
-                        game.showOutpost(yield, city, player.FindStack(city.X, city.Y), false)
+                        game.showOutpost(yield, city, player.FindStack(city.X, city.Y, city.Plane), false)
                     } else {
                         game.doCityScreen(yield, city, player, buildinglib.BuildingNone)
                     }
                     game.RefreshUI()
                 } else {
-                    stack := player.FindStack(tileX, tileY)
+                    stack := player.FindStack(tileX, tileY, game.Plane)
                     if stack != nil {
                         player.SelectedStack = stack
                         game.RefreshUI()
@@ -2790,12 +2842,12 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                                 continue
                             }
 
-                            city := otherPlayer.FindCity(tileX, tileY)
+                            city := otherPlayer.FindCity(tileX, tileY, stack.Plane())
                             if city != nil {
                                 game.doEnemyCityView(yield, city, otherPlayer)
                             }
 
-                            enemyStack := otherPlayer.FindStack(tileX, tileY)
+                            enemyStack := otherPlayer.FindStack(tileX, tileY, stack.Plane())
                             if enemyStack != nil {
                                 quit := false
                                 clicked := func(){
@@ -2862,7 +2914,7 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                                     stack := moveDecision.Stack
                                     to := moveDecision.Location
                                     log.Printf("  moving stack %v to %v, %v", stack, to.X, to.Y)
-                                    terrainCost, _ := game.ComputeTerrainCost(stack, to.X, to.Y, game.GetMap(stack.Plane()))
+                                    terrainCost, _ := game.ComputeTerrainCost(stack, stack.X(), stack.Y(), to.X, to.Y, game.GetMap(stack.Plane()))
                                     oldX := stack.X()
                                     oldY := stack.Y()
                                     stack.Move(to.X - stack.X(), to.Y - stack.Y(), terrainCost, game.GetNormalizeCoordinateFunc())
@@ -2871,10 +2923,10 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
 
                                     for _, enemy := range game.GetEnemies(player) {
                                         // FIXME: this should get all stacks at the given location and merge them into a single stack for combat
-                                        enemyStack := enemy.FindStack(stack.X(), stack.Y())
+                                        enemyStack := enemy.FindStack(stack.X(), stack.Y(), stack.Plane())
                                         if enemyStack != nil {
                                             zone := combat.ZoneType{
-                                                City: enemy.FindCity(stack.X(), stack.Y()),
+                                                City: enemy.FindCity(stack.X(), stack.Y(), stack.Plane()),
                                             }
                                             game.doCombat(yield, player, stack, enemy, enemyStack, zone)
                                         }
@@ -2883,7 +2935,7 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                                     create := decision.(*playerlib.AICreateUnitDecision)
                                     log.Printf("ai creating %+v", create)
 
-                                    existingStack := player.FindStack(create.X, create.Y)
+                                    existingStack := player.FindStack(create.X, create.Y, create.Plane)
                                     if existingStack == nil || len(existingStack.Units()) < 9 {
                                         overworldUnit := units.MakeOverworldUnitFromUnit(create.Unit, create.X, create.Y, create.Plane, player.Wizard.Banner, player.MakeExperienceInfo())
                                         player.AddUnit(overworldUnit)
@@ -3669,7 +3721,7 @@ func (game *Game) CreateOutpost(settlers units.StackUnit, player *playerlib.Play
     game.RefreshUI()
     player.AddCity(newCity)
 
-    stack := player.FindStack(newCity.X, newCity.Y)
+    stack := player.FindStack(newCity.X, newCity.Y, newCity.Plane)
 
     select {
         case game.Events<- &GameEventNewOutpost{City: newCity, Stack: stack}:
@@ -3711,12 +3763,20 @@ func (game *Game) DoBuildAction(player *playerlib.Player){
                     break
                 }
             }
+        } else if powers.BuildRoad {
+            // FIXME: put the unit to sleep for a few turns, when they wake up the road is built
+            x, y := player.SelectedStack.X(), player.SelectedStack.Y()
+            plane := player.SelectedStack.Plane()
+
+            game.GetMap(plane).SetRoad(x, y, plane == data.PlaneMyrror)
+            player.SelectedStack.ExhaustMoves()
         }
     }
 }
 
 func (game *Game) MakeHudUI() *uilib.UI {
     ui := &uilib.UI{
+        Cache: game.Cache,
         Draw: func(ui *uilib.UI, screen *ebiten.Image){
             var options ebiten.DrawImageOptions
             mainHud, _ := game.ImageCache.GetImage("main.lbx", 0, 0)
@@ -3758,6 +3818,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
         counter := uint64(0)
         return &uilib.UIElement{
             Rect: rect,
+            PlaySoundLeftClick: true,
             Inside: func(this *uilib.UIElement, x int, y int){
                 counter += 1
             },
@@ -3860,7 +3921,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
         unitY := unitY1
 
         row := 0
-        for _, stack := range player.FindAllStacks(player.SelectedStack.X(), player.SelectedStack.Y()) {
+        for _, stack := range player.FindAllStacks(player.SelectedStack.X(), player.SelectedStack.Y(), player.SelectedStack.Plane()) {
             for _, unit := range stack.Units() {
                 // show a unit element for each unit in the stack
                 // image index increases by 1 for each unit, indexes 24-32
@@ -3876,11 +3937,12 @@ func (game *Game) MakeHudUI() *uilib.UI {
                 unitRect := util.ImageRect(unitX, unitY, unitBackground)
                 elements = append(elements, &uilib.UIElement{
                     Rect: unitRect,
+                    PlaySoundLeftClick: true,
                     LeftClick: func(this *uilib.UIElement){
                         stack.ToggleActive(unit)
                         select {
-                        case game.Events<- &GameEventMoveUnit{Player: player}:
-                        default:
+                            case game.Events<- &GameEventMoveUnit{Player: player}:
+                            default:
                         }
                     },
                     RightClick: func(this *uilib.UIElement){
@@ -4067,6 +4129,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                 NotInside: func(this *uilib.UIElement){
                     doneCounter = 0
                 },
+                PlaySoundLeftClick: true,
                 LeftClick: func(this *uilib.UIElement){
                     doneIndex = 1
                 },
@@ -4106,6 +4169,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                 NotInside: func(this *uilib.UIElement){
                     patrolCounter = 0
                 },
+                PlaySoundLeftClick: true,
                 LeftClick: func(this *uilib.UIElement){
                     patrolIndex = 1
                 },
@@ -4149,6 +4213,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                 NotInside: func(this *uilib.UIElement){
                     waitCounter = 0
                 },
+                PlaySoundLeftClick: true,
                 LeftClick: func(this *uilib.UIElement){
                     waitIndex = 1
                 },
@@ -4200,6 +4265,8 @@ func (game *Game) MakeHudUI() *uilib.UI {
                         if !canMeld {
                             matrix.ChangeHSV(0, 0, 1)
                         }
+                    } else if powers.BuildRoad {
+                        use = buildImages[buildIndex]
                     }
 
                     colorm.DrawImage(screen, use, matrix, &options)
@@ -4210,6 +4277,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                 NotInside: func(this *uilib.UIElement){
                     buildCounter = 0
                 },
+                PlaySoundLeftClick: true,
                 LeftClick: func(this *uilib.UIElement){
                     var powers UnitBuildPowers
 
@@ -4228,6 +4296,13 @@ func (game *Game) MakeHudUI() *uilib.UI {
                         }
 
                         if canMeld {
+                            buildIndex = 1
+                        }
+                    } else if powers.BuildRoad {
+                        hasRoad := game.GetMap(player.SelectedStack.Plane()).ContainsRoad(player.SelectedStack.X(), player.SelectedStack.Y())
+                        hasCity := game.ContainsCity(player.SelectedStack.X(), player.SelectedStack.Y(), player.SelectedStack.Plane())
+                        node := game.GetMap(player.SelectedStack.Plane()).GetMagicNode(player.SelectedStack.X(), player.SelectedStack.Y())
+                        if !hasRoad && !hasCity && node == nil {
                             buildIndex = 1
                         }
                     }
@@ -4254,6 +4329,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
         nextTurnClicked := false
         elements = append(elements, &uilib.UIElement{
             Rect: nextTurnRect,
+            PlaySoundLeftClick: true,
             LeftClick: func(this *uilib.UIElement){
                 nextTurnClicked = true
             },
@@ -4550,7 +4626,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
     var removeCities []*citylib.City
 
     for _, city := range player.Cities {
-        cityEvents := city.DoNextTurn(player.GetUnits(city.X, city.Y))
+        cityEvents := city.DoNextTurn(player.GetUnits(city.X, city.Y, city.Plane))
         for _, event := range cityEvents {
             switch event.(type) {
             case *citylib.CityEventPopulationGrowth:
@@ -4624,7 +4700,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
         // base healing rate is 5%. in a town is 10%, with animists guild is 16.67%
         rate := 0.05
 
-        city := player.FindCity(stack.X(), stack.Y())
+        city := player.FindCity(stack.X(), stack.Y(), stack.Plane())
 
         if city != nil {
             rate = 0.1

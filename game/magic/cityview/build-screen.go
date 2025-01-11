@@ -373,6 +373,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
     var elements []*uilib.UIElement
 
     ui := &uilib.UI{
+        Cache: cache,
         Draw: func(ui *uilib.UI, screen *ebiten.Image) {
             mainInfo, err := imageCache.GetImage("unitview.lbx", 0, 0)
             if err == nil {
@@ -522,6 +523,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
                 DoubleLeftClick: func(this *uilib.UIElement) {
                     doOk()
                 },
+                PlaySoundLeftClick: true,
                 LeftClick: func(this *uilib.UIElement) {
                     selectedElement = this
                     buildScreen.ProducingBuilding = building
@@ -576,6 +578,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
                 DoubleLeftClick: func(this *uilib.UIElement) {
                     doOk()
                 },
+                PlaySoundLeftClick: true,
                 LeftClick: func(this *uilib.UIElement) {
                     selectedElement = this
                     buildScreen.ProducingBuilding = buildinglib.BuildingNone
