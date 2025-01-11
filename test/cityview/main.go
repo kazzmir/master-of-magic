@@ -31,6 +31,13 @@ type Engine struct {
     Map *maplib.Map
 }
 
+type NoCityProvider struct {
+}
+
+func (provider *NoCityProvider) FindRoadConnectedCities(city *citylib.City) []*citylib.City {
+    return nil
+}
+
 func NewEngine() (*Engine, error) {
     cache := lbx.AutoCache()
 
@@ -60,7 +67,7 @@ func NewEngine() (*Engine, error) {
         TileCache: make(map[int]*ebiten.Image),
     }
 
-    city := citylib.MakeCity("Boston", 3, 8, data.RaceHighElf, player.Wizard.Banner, fraction.Make(2, 1), buildingInfo, &gameMap)
+    city := citylib.MakeCity("Boston", 3, 8, data.RaceHighElf, player.Wizard.Banner, fraction.Make(2, 1), buildingInfo, &gameMap, &NoCityProvider{})
     city.Population = 12000
     city.Farmers = 4
     city.Workers = 2

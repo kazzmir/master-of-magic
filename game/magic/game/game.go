@@ -1530,6 +1530,106 @@ func (game *Game) GetNormalizeCoordinateFunc() units.NormalizeCoordinateFunc {
     }
 }
 
+// returns all cities that are connected to this one via roads
+func (game *Game) FindRoadConnectedCities(city *citylib.City) []*citylib.City {
+
+    // first check if there is at least one tile around the city that is a road
+
+    hasRoad := false
+
+    mapUse := game.GetMap(city.Plane)
+
+    road_check:
+    for dx := -1; dx <= 1; dx++ {
+        for dy := -1; dy <= 1; dy++ {
+            if dx == 0 && dy == 0 {
+                continue
+            }
+
+            cx := mapUse.WrapX(city.X + dx)
+            cy := city.Y + dy
+
+            if dy < 0 || dy >= mapUse.Height() {
+                continue
+            }
+
+            if mapUse.ContainsRoad(cx, cy) {
+                hasRoad = true
+                break road_check
+            }
+        }
+    }
+
+    if !hasRoad {
+        return nil
+    }
+
+    var out []*citylib.City
+
+    for _, otherCity := range game.AllCities() {
+        if otherCity == city {
+            continue
+        }
+
+        if otherCity.Plane == city.Plane && game.IsCityRoadConnected(city, otherCity) {
+            out = append(out, otherCity)
+        }
+    }
+
+    return out
+}
+
+// returns true if the two cities are connected by a road
+func (game *Game) IsCityRoadConnected(fromCity *citylib.City, toCity *citylib.City) bool {
+    if fromCity.Plane != toCity.Plane {
+        return false
+    }
+
+    mapUse := game.GetMap(fromCity.Plane)
+
+    normalized := func (a image.Point) image.Point {
+        return image.Pt(mapUse.WrapX(a.X), a.Y)
+    }
+
+    // check equality of two points taking wrapping into account
+    tileEqual := func (a image.Point, b image.Point) bool {
+        return normalized(a) == normalized(b)
+    }
+
+    // cost doesn't matter
+    tileCost := func (x1 int, y1 int, x2 int, y2 int) float64 {
+        return 1
+    }
+
+    neighbors := func (x int, y int) []image.Point {
+        var out []image.Point
+        for dx := -1; dx <= 1; dx++ {
+            for dy := -1; dy <= 1; dy++ {
+                if dx == 0 && dy == 0 {
+                    continue
+                }
+
+                cx := mapUse.WrapX(x + dx)
+                cy := y + dy
+
+                if cy < 0 || cy >= mapUse.Height() {
+                    continue
+                }
+
+                if mapUse.ContainsRoad(cx, cy) || game.ContainsCity(cx, cy, fromCity.Plane) {
+                    out = append(out, image.Pt(cx, cy))
+                }
+            }
+        }
+
+        return out
+    }
+
+    _, ok := pathfinding.FindPath(image.Pt(fromCity.X, fromCity.Y), image.Pt(toCity.X, toCity.Y), 10000, tileCost, neighbors, tileEqual)
+
+    return ok
+}
+
 func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *playerlib.UnitStack, fog [][]bool) pathfinding.Path {
 
     useMap := game.GetMap(stack.Plane())
@@ -1583,6 +1683,8 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
         if x2 < 0 || x2 >= useMap.Width() || y2 < 0 || y2 >= useMap.Height() {
             return pathfinding.Infinity
         }
+
+        // FIXME: it might be more optimal to put the infinity cases into the neighbors function instead
 
         // avoid magic nodes
         node := useMap.GetMagicNode(x2, y2)
@@ -2842,12 +2944,12 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                                 continue
                             }
 
-                            city := otherPlayer.FindCity(tileX, tileY, stack.Plane())
+                            city := otherPlayer.FindCity(tileX, tileY, game.Plane)
                             if city != nil {
                                 game.doEnemyCityView(yield, city, otherPlayer)
                             }
 
-                            enemyStack := otherPlayer.FindStack(tileX, tileY, stack.Plane())
+                            enemyStack := otherPlayer.FindStack(tileX, tileY, game.Plane)
                             if enemyStack != nil {
                                 quit := false
                                 clicked := func(){
@@ -3708,7 +3810,7 @@ func (game *Game) CityProductionBonus(x int, y int, plane data.Plane) int {
 func (game *Game) CreateOutpost(settlers units.StackUnit, player *playerlib.Player) *citylib.City {
     cityName := game.SuggestCityName(settlers.GetRace())
 
-    newCity := citylib.MakeCity(cityName, settlers.GetX(), settlers.GetY(), settlers.GetRace(), settlers.GetBanner(), player.TaxRate, game.BuildingInfo, game.GetMap(settlers.GetPlane()))
+    newCity := citylib.MakeCity(cityName, settlers.GetX(), settlers.GetY(), settlers.GetRace(), settlers.GetBanner(), player.TaxRate, game.BuildingInfo, game.GetMap(settlers.GetPlane()), game)
     newCity.Plane = settlers.GetPlane()
     newCity.Population = 300
     newCity.Outpost = true
@@ -4473,12 +4575,29 @@ func (game *Game) DoNextUnit(player *playerlib.Player){
  * (false, false, false) means all units are supported.
  */
 func (game *Game) CheckDisband(player *playerlib.Player) (bool, bool, bool) {
-    goldIssue := player.GoldPerTurn() < 0 && player.GoldPerTurn() > player.Gold
-    foodIssue := player.FoodPerTurn() < 0
+
+    unitsNeedGold := false
+    unitsNeedFood := false
+    unitsNeedMana := false
+
+    for _, unit := range player.Units {
+        // dont need to keep checking in this case
+        if unitsNeedGold && unitsNeedFood && unitsNeedMana {
+            break
+        }
+
+        unitsNeedGold = unitsNeedGold || unit.GetUpkeepGold() > 0
+        unitsNeedFood = unitsNeedFood || unit.GetUpkeepFood() > 0
+        unitsNeedMana = unitsNeedMana || unit.GetUpkeepMana() > 0
+    }
+
+    goldPerTurn := player.GoldPerTurn()
+    goldIssue := player.Gold + goldPerTurn < 0 && unitsNeedGold
+    foodIssue := player.FoodPerTurn() < 0 && unitsNeedFood
 
     manaPerTurn := player.ManaPerTurn(game.ComputePower(player))
 
-    manaIssue := manaPerTurn < 0 && manaPerTurn > player.Mana
+    manaIssue := player.Mana + manaPerTurn < 0 && unitsNeedMana
 
     return goldIssue, foodIssue, manaIssue
 }
