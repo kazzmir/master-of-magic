@@ -704,6 +704,7 @@ func (city *City) ComputeForeignTrade() float64 {
     return percent
 }
 
+// return the bonus gold percent, capped at citizens*3
 func (city *City) ComputeTotalBonusPercent() float64 {
     percent := city.ComputeForeignTrade()
     if city.Race == data.RaceNomad {
@@ -714,13 +715,11 @@ func (city *City) ComputeTotalBonusPercent() float64 {
     // +20 if on a river
     // +30 if on a river and adjacent to a shore, or on a river mouth
 
-    return percent
+    return min(percent, float64(city.Citizens() * 3))
 }
 
 // gold from cities connected via roads, ocean, and river
 func (city *City) GoldBonus(percent float64) int {
-    percent = min(percent, float64(city.Citizens() * 3))
-
     return int(float64(city.GoldTaxation() + city.GoldMinerals()) * percent / 100)
 }
 
