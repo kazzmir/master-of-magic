@@ -297,6 +297,7 @@ func GenerateLandCellularAutomata(rows int, columns int, data *TerrainData, plan
     map_.GenerateLandCellularAutomata(plane)
 
     map_.RemoveSmallIslands(100, plane)
+    map_.ConvertLakes(data, plane)
 
     /*
     continents := editor.Map.FindContinents()
@@ -340,7 +341,7 @@ func (map_ *Map) PlaceRandomTerrainTiles(plane data.Plane){
 
     for _, continent := range continents {
 
-        for i := 0; i < continent.Size(); i++ {
+        for i := 0; i < continent.Size() / 8; i++ {
             point := chooseRandomElement(continent)
 
             var use int
@@ -353,6 +354,7 @@ func (map_ *Map) PlaceRandomTerrainTiles(plane data.Plane){
                 case 5: use = TileAllDesert1.Index(plane)
                 case 6: use = TileTundra.Index(plane)
             }
+            // use = TileRiver0001.Index(plane)
 
             map_.Terrain[point.X][point.Y] = use
         }
@@ -386,65 +388,56 @@ func (map_ *Map) RemoveSmallIslands(area int, plane data.Plane){
     }
 }
 
+func (map_ *Map) getTerrainAt(x int, y int, data *TerrainData) TerrainType {
+    if y < 1 || y > map_.Rows() - 2 {
+        return  Ocean
+    }
+
+    for x < 0 {
+        x += map_.Columns()
+    }
+
+    x = x % map_.Columns()
+
+    index := map_.Terrain[x][y]
+    if index < 0 || index >= len(data.Tiles) {
+        fmt.Printf("Error: invalid index in terrain %v at %v,%v\n", index, x, y)
+        return Unknown
+    }
+    return data.Tiles[index].Tile.TerrainType()
+}
+
+// convert single ocean tiles within land to lakes
+func (map_ *Map) ConvertLakes(data *TerrainData, plane data.Plane){
+    for x := 0; x < map_.Columns(); x++ {
+        for y := 0; y < map_.Rows(); y++ {
+            center := map_.getTerrainAt(x, y, data) == Ocean
+            west := map_.getTerrainAt(x-1, y, data) != Ocean
+            east := map_.getTerrainAt(x+1, y, data) != Ocean
+            north := map_.getTerrainAt(x, y-1, data) != Ocean
+            south := map_.getTerrainAt(x, y+1, data) != Ocean
+            if center && west && east && north && south {
+                map_.Terrain[x][y] = TileLake.Index(plane)
+            }
+        }
+    }
+}
+
+
 // given a position in the terrain matrix, find a tile that fits the tile and all its neighbors
 func (map_ *Map) ResolveTile(x int, y int, data *TerrainData, plane data.Plane) (int, error) {
 
     region := make(map[Direction]TerrainType)
 
-    getTerrainAt := func(x int, y int) TerrainType {
-        for x < 0 {
-            x += map_.Columns()
-        }
-
-        x = x % map_.Columns()
-
-        index := map_.Terrain[x][y]
-        if index < 0 || index >= len(data.Tiles) {
-            fmt.Printf("Error: invalid index in terrain %v at %v,%v\n", index, x, y)
-            return Unknown
-        }
-        return data.Tiles[index].Tile.TerrainType()
-    }
-
-    region[Center] = getTerrainAt(x, y)
-
-    region[West] = getTerrainAt(x-1, y)
-
-    region[NorthWest] = Ocean
-    if y > 0 {
-        region[NorthWest] = getTerrainAt(x-1, y-1)
-    }
-
-    region[SouthWest] = Ocean
-    if y < map_.Rows() - 1 {
-        region[SouthWest] = getTerrainAt(x-1, y+1)
-    }
-
-    region[East] = getTerrainAt(x+1, y)
-
-    region[North] = Ocean
-    if y > 0 {
-        region[North] = getTerrainAt(x, y-1)
-    }
-
-    region[South] = Ocean
-    if y < map_.Rows() - 1 {
-        region[South] = getTerrainAt(x, y+1)
-    }
-
-    region[NorthEast] = Ocean
-    if y > 0 {
-        region[NorthEast] = getTerrainAt(x+1, y-1)
-    }
-
-    region[SouthEast] = Ocean
-    if y < map_.Rows() - 1 {
-        region[SouthEast] = getTerrainAt(x+1, y+1)
-    }
-
-    if region[Center] == Ocean && region[North] != Ocean && region[South] != Ocean && region[West] != Ocean && region[East] != Ocean {
-        region[Center] = Lake
-    }
+    region[Center] = map_.getTerrainAt(x, y, data)
+    region[West] = map_.getTerrainAt(x-1, y, data)
+    region[NorthWest] = map_.getTerrainAt(x-1, y-1, data)
+    region[SouthWest] = map_.getTerrainAt(x-1, y+1, data)
+    region[East] = map_.getTerrainAt(x+1, y, data)
+    region[North] = map_.getTerrainAt(x, y-1, data)
+    region[South] = map_.getTerrainAt(x, y+1, data)
+    region[NorthEast] = map_.getTerrainAt(x+1, y-1, data)
+    region[SouthEast] = map_.getTerrainAt(x+1, y+1, data)
 
     if data.Tiles[map_.Terrain[x][y]].Tile.Matches(region) {
         return map_.Terrain[x][y], nil
