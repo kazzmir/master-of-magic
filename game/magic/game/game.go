@@ -4575,14 +4575,29 @@ func (game *Game) DoNextUnit(player *playerlib.Player){
  * (false, false, false) means all units are supported.
  */
 func (game *Game) CheckDisband(player *playerlib.Player) (bool, bool, bool) {
-    // FIXME: these checks should also check that there are units that depend on the lacking resource
+
+    unitsNeedGold := false
+    unitsNeedFood := false
+    unitsNeedMana := false
+
+    for _, unit := range player.Units {
+        // dont need to keep checking in this case
+        if unitsNeedGold && unitsNeedFood && unitsNeedMana {
+            break
+        }
+
+        unitsNeedGold = unitsNeedGold || unit.GetUpkeepGold() > 0
+        unitsNeedFood = unitsNeedFood || unit.GetUpkeepFood() > 0
+        unitsNeedMana = unitsNeedMana || unit.GetUpkeepMana() > 0
+    }
+
     goldPerTurn := player.GoldPerTurn()
-    goldIssue := player.Gold + goldPerTurn < 0
-    foodIssue := player.FoodPerTurn() < 0
+    goldIssue := player.Gold + goldPerTurn < 0 && unitsNeedGold
+    foodIssue := player.FoodPerTurn() < 0 && unitsNeedFood
 
     manaPerTurn := player.ManaPerTurn(game.ComputePower(player))
 
-    manaIssue := player.Mana + manaPerTurn < 0
+    manaIssue := player.Mana + manaPerTurn < 0 && unitsNeedMana
 
     return goldIssue, foodIssue, manaIssue
 }
