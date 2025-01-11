@@ -100,21 +100,21 @@ const (
 
 func (terrain TerrainType) String() string {
     switch terrain {
-        case Ocean: return "ocean"
-        case River: return "river"
-        case Shore: return "shore"
-        case Mountain: return "mountain"
-        case Hill: return "hill"
-        case Grass: return "grass"
-        case Forest: return "forest"
-        case Swamp: return "swamp"
-        case Desert: return "desert"
-        case Tundra: return "tundra"
+        case Ocean: return "Ocean"
+        case River: return "River"
+        case Shore: return "Shore"
+        case Mountain: return "Mountain"
+        case Hill: return "Hill"
+        case Grass: return "Grass"
+        case Forest: return "Forest"
+        case Swamp: return "Swamp"
+        case Desert: return "Desert"
+        case Tundra: return "Tundra"
         case NatureNode: return "Nature Node"
         case SorceryNode: return "Sorcery Node"
         case ChaosNode: return "Chaos Node"
-        case Unknown: return "unknown"
-        default: return "error"
+        case Unknown: return "Unknown"
+        default: return "Error"
     }
 }
 
@@ -236,6 +236,14 @@ func (tile Tile) TerrainType() TerrainType {
         return River
     }
 
+    if tile.index >= IndexRiversStart && tile.index <= IndexRiversEnd {
+        return River
+    }
+
+    if tile.index >= Index4WRiver1 && tile.index <= Index4WRiver5 {
+        return River
+    }
+
     if tile.index >= IndexShore1_1st && tile.index <= IndexShore1_end {
         return Shore
     }
@@ -250,6 +258,22 @@ func (tile Tile) TerrainType() TerrainType {
 
     if tile.index >= IndexShore3Start && tile.index <= IndexShore3End {
         return Shore
+    }
+
+    if tile.index >= IndexMountainsStart && tile.index <= IndexMountainsEnd {
+        return Mountain
+    }
+
+    if tile.index >= IndexHillsStart && tile.index <= IndexHillsEnd {
+        return Hill
+    }
+
+    if tile.index >= IndexDesertStart && tile.index <= IndexDesertEnd {
+        return Desert
+    }
+
+    if tile.index >= IndexTundra_1st && tile.index <= IndexTundra_Last {
+        return Tundra
     }
 
     return Unknown

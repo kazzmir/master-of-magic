@@ -284,12 +284,14 @@ func (editor *Editor) Draw(screen *ebiten.Image){
         text.Draw(editor.InfoImage, fmt.Sprintf("Map Dimensions: %vx%v", editor.Map.Columns(), editor.Map.Rows()), face, op)
         op.GeoM.Translate(0, face.Size + 2)
         value := -1
+        var type_ terrain.TerrainType = terrain.Unknown
 
         if editor.TileX >= 0 && editor.TileX < editor.Map.Columns() && editor.TileY >= 0 && editor.TileY < editor.Map.Rows() {
             value = editor.Map.Terrain[editor.TileX][editor.TileY]
+            type_ = editor.Data.Tiles[value].Tile.TerrainType()
         }
 
-        text.Draw(editor.InfoImage, fmt.Sprintf("Tile: %v,%v: %v (0x%x)", editor.TileX, editor.TileY, value, value), face, op)
+        text.Draw(editor.InfoImage, fmt.Sprintf("Tile: %v,%v: 0x%x %v", editor.TileX, editor.TileY, value, type_), face, op)
 
         if editor.TileX >= 0 && editor.TileX < editor.Map.Columns() && editor.TileY >= 0 && editor.TileY < editor.Map.Rows() {
             tileImage := editor.GetTileImage(editor.TileX, editor.TileY)
