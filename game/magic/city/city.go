@@ -695,17 +695,26 @@ func (city *City) ComputeForeignTrade() float64 {
 
     for _, other := range connected {
         if other.Race == city.Race {
-            percent += 0.5
+            percent += float64(other.Citizens()) * 0.5
         } else {
-            percent += 1
+            percent += float64(other.Citizens()) * 1
         }
     }
 
     return percent
 }
 
-// gold from cities connected via roads
-func (city *City) GoldForeignTrade(percent float64) int {
+func (city *City) ComputeTotalBonusPercent() float64 {
+    percent := city.ComputeForeignTrade()
+    if city.Race == data.RaceNomad {
+        percent += 50
+    }
+
+    return percent
+}
+
+// gold from cities connected via roads, ocean, and river
+func (city *City) GoldBonus(percent float64) int {
     percent = min(percent, float64(city.Citizens() * 3))
 
     return int(float64(city.GoldTaxation() + city.GoldMinerals()) * percent / 100)
@@ -740,7 +749,7 @@ func (city *City) GoldSurplus() int {
     income += city.GoldTradeGoods()
     income += city.GoldMinerals()
     income += city.GoldMarketplace()
-    income += city.GoldForeignTrade(city.ComputeForeignTrade())
+    income += city.GoldBonus(city.ComputeTotalBonusPercent())
     income += city.GoldBank()
     income += city.GoldMerchantsGuild()
 
