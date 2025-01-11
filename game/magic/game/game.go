@@ -1532,6 +1532,38 @@ func (game *Game) GetNormalizeCoordinateFunc() units.NormalizeCoordinateFunc {
 
 // returns all cities that are connected to this one via roads
 func (game *Game) FindRoadConnectedCities(city *citylib.City) []*citylib.City {
+
+    // first check if there is at least one tile around the city that is a road
+
+    hasRoad := false
+
+    mapUse := game.GetMap(city.Plane)
+
+    road_check:
+    for dx := -1; dx <= 1; dx++ {
+        for dy := -1; dy <= 1; dy++ {
+            if dx == 0 && dy == 0 {
+                continue
+            }
+
+            cx := mapUse.WrapX(city.X + dx)
+            cy := city.Y + dy
+
+            if dy < 0 || dy >= mapUse.Height() {
+                continue
+            }
+
+            if mapUse.ContainsRoad(cx, cy) {
+                hasRoad = true
+                break road_check
+            }
+        }
+    }
+
+    if !hasRoad {
+        return nil
+    }
+
     var out []*citylib.City
 
     for _, otherCity := range game.AllCities() {
@@ -2912,12 +2944,12 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                                 continue
                             }
 
-                            city := otherPlayer.FindCity(tileX, tileY, stack.Plane())
+                            city := otherPlayer.FindCity(tileX, tileY, game.Plane)
                             if city != nil {
                                 game.doEnemyCityView(yield, city, otherPlayer)
                             }
 
-                            enemyStack := otherPlayer.FindStack(tileX, tileY, stack.Plane())
+                            enemyStack := otherPlayer.FindStack(tileX, tileY, game.Plane)
                             if enemyStack != nil {
                                 quit := false
                                 clicked := func(){
