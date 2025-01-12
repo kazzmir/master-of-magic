@@ -17,10 +17,10 @@ const MyrrorStart = 0x2FA
 type TerrainIndex int
 
 const (
-    IndexOcean1 TerrainIndex = 0x0
-    IndexBugGrass            = 0x1
-    IndexShore1_1st          = 0x2
-    IndexLake                = 0x12
+    IndexOcean1 TerrainIndex = 0x000
+    IndexBugGrass            = 0x001
+    IndexShore1_1st          = 0x002
+    IndexLake                = 0x012
     IndexShore1_end          = 0x0A1
     IndexGrass1              = 0x0A2
     IndexForest1             = 0x0A3
