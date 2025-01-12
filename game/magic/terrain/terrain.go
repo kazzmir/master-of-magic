@@ -393,6 +393,8 @@ func (tile Tile) IsWater() bool {
     }
 }
 
+// FIXME: Center is Ocean should be isAny Ocean Shore
+
 // match the given match to a terrain
 // terrain can contain compatibilites than what the match has
 func (tile *Tile) Matches(match map[Direction]TerrainType) bool {
@@ -412,7 +414,7 @@ func (tile *Tile) Matches(match map[Direction]TerrainType) bool {
         } else if compatability.Type == IsAny {
             any := false
             for _, terrain := range compatability.Terrains {
-                if match[direction] != terrain {
+                if match[direction] == terrain {
                     any = true
                     break
                 }
@@ -503,25 +505,6 @@ func makeTile(terrain TerrainType, index int, compatabilities []DirectedCompatab
     return tile
 }
 
-func makeTile1(index int, compatabilities []DirectedCompatability) Tile {
-    // FIXME: remove this function
-    all := make(map[Direction]Compatability)
-
-    for _, compatability := range compatabilities {
-        all[compatability.Direction] = Compatability{Terrains: compatability.Terrains, Type: compatability.Type}
-    }
-
-    tile := Tile{
-        index: index,
-        Compatabilities: all,
-    }
-
-    allTiles = append(allTiles, tile)
-
-    return tile
-
-}
-
 // expand from 4 cardinal directions to 8 directions
 // 0001 -> 0000 0001
 // 0010 -> 0000 0100
@@ -556,7 +539,7 @@ func makeCardinalTile(terrain TerrainType, index int, bitPattern uint8) Tile {
     return makeTile(terrain, index, append(comp, incomp...))
 }
 
-// pattern is type not type, 0's are not type; ignores the corners the if the adjacent are set
+// pattern is type not type, 0's are not type; ignores the corners if the adjacent are set
 func makeCornerIgnoringTile(terrain TerrainType, index int, bitPattern uint8) Tile {
     var mask uint8
     mask = 0b11111111
@@ -573,9 +556,8 @@ func makeCornerIgnoringTile(terrain TerrainType, index int, bitPattern uint8) Ti
     return makeTile(terrain, index, append(comp, incomp...))
 }
 
-// pattern is not ocean, 0's are ocean
+// pattern is not ocean/shore, 0's are ocean/shore; ignores the corners if the adjacent are set; also excludes rivers in cardinal directions
 func makeShoreTile(index int, bitPattern uint8) Tile {
-    // FIXME: Exclude River
     var mask uint8
     mask = 0b11111111
     switch {
@@ -584,13 +566,10 @@ func makeShoreTile(index int, bitPattern uint8) Tile {
         case bitPattern & 0b00010100 == 0b00010100: mask &= ^(bitPattern & 0b00001000); fallthrough
         case bitPattern & 0b00000101 == 0b00000101: mask &= ^(bitPattern & 0b00000010)
     }
-
-    // terrains := []TerrainType{Ocean}
     comp := makeCompatabilities(makeDirections(^bitPattern), []TerrainType{Ocean}, Is)
-    incomp := makeCompatabilities(makeDirections(bitPattern & mask), []TerrainType{Ocean, River}, IsNot)
-    return makeTile(Ocean, index, append(comp, incomp...))
-
-    // return makeCornerIgnoringTile(Ocean, index, bitPattern)
+    incomp1 := makeCompatabilities(makeDirections(bitPattern & mask & 0b10101010), []TerrainType{Ocean, Shore}, IsNone)
+    incomp2 := makeCompatabilities(makeDirections(bitPattern & mask & 0b01010101), []TerrainType{Ocean, Shore, River}, IsNot)
+    return makeTile(Ocean, index, append(comp, append(incomp1, incomp2...)...))
 }
 
 // pattern is not desert, 0's are desert
@@ -635,9 +614,18 @@ func makeMountainTile(index int, bitPattern uint8) Tile {
 }
 
 func makeShoreRiverTile(index int, landPattern uint8, riverPattern uint8) Tile {
-    landCompatabilities := makeCompatabilities(makeDirections(landPattern), []TerrainType{Ocean}, IsNot)
+    nonOceanPattern := landPattern | riverPattern
+    var mask uint8 = 0b11111111
+    switch {
+        case nonOceanPattern & 0b01010000 == 0b01010000: mask &= ^(nonOceanPattern & 0b00100000); fallthrough
+        case nonOceanPattern & 0b01000001 == 0b01000001: mask &= ^(nonOceanPattern & 0b10000000); fallthrough
+        case nonOceanPattern & 0b00010100 == 0b00010100: mask &= ^(nonOceanPattern & 0b00001000); fallthrough
+        case nonOceanPattern & 0b00000101 == 0b00000101: mask &= ^(nonOceanPattern & 0b00000010)
+    }
+    landCompatabilities := makeCompatabilities(makeDirections(landPattern & mask), []TerrainType{Ocean, Shore}, IsNone)
     riverCompatabilities := makeCompatabilities(makeDirections(riverPattern), []TerrainType{River}, Is)
-    oceanCompatabilities := makeCompatabilities(makeDirections(landPattern), []TerrainType{Ocean}, Is)
+    oceanCompatabilities := makeCompatabilities(makeDirections(^nonOceanPattern), []TerrainType{Ocean, Shore}, IsAny)
+
     return makeTile(Ocean, index, append(append(landCompatabilities, riverCompatabilities...), oceanCompatabilities...))
 }
 

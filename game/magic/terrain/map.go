@@ -354,7 +354,7 @@ func (map_ *Map) PlaceRandomTerrainTiles(plane data.Plane){
                 case 5: use = TileAllDesert1.Index(plane)
                 case 6: use = TileTundra.Index(plane)
             }
-            // use = TileRiver0001.Index(plane)
+            use = TileRiver0001.Index(plane)
 
             map_.Terrain[point.X][point.Y] = use
         }
@@ -389,7 +389,7 @@ func (map_ *Map) RemoveSmallIslands(area int, plane data.Plane){
 }
 
 func (map_ *Map) getTerrainAt(x int, y int, data *TerrainData) TerrainType {
-    if y < 1 || y > map_.Rows() - 2 {
+    if y < 0 || y > map_.Rows() - 1 {
         return  Ocean
     }
 
