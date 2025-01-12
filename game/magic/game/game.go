@@ -4023,6 +4023,8 @@ func (game *Game) MakeHudUI() *uilib.UI {
         unitX := unitX1
         unitY := unitY1
 
+        minMoves := fraction.Make(-1, 1)
+
         row := 0
         for _, stack := range player.FindAllStacks(player.SelectedStack.X(), player.SelectedStack.Y(), player.SelectedStack.Plane()) {
             for _, unit := range stack.Units() {
@@ -4206,6 +4208,18 @@ func (game *Game) MakeHudUI() *uilib.UI {
                     unitY += unitBackground.Bounds().Dy()
                 }
             }
+
+            if minMoves.Equals(fraction.Make(-1, 1)) || stack.GetRemainingMoves().LessThan(minMoves) {
+                minMoves = stack.GetRemainingMoves()
+            }
+
+            elements = append(elements, &uilib.UIElement{
+                Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                    x := 246.0
+                    y := 168.0
+                    game.WhiteFont.Print(screen, x, y, 1, ebiten.ColorScale{}, fmt.Sprintf("Moves: %v", minMoves.ToFloat()))
+                },
+            })
 
             doneImages, _ := game.ImageCache.GetImages("main.lbx", 8)
             doneIndex := 0

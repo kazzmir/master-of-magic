@@ -222,6 +222,23 @@ func (stack *UnitStack) AnyOutOfMoves() bool {
     return false
 }
 
+func (stack *UnitStack) GetRemainingMoves() fraction.Fraction {
+    hasMoves := false
+    moves := fraction.Make(10000, 1)
+    for _, unit := range stack.units {
+        if !unit.GetPatrol() && unit.GetMovesLeft().LessThan(moves) {
+            moves = unit.GetMovesLeft()
+            hasMoves = true
+        }
+    }
+
+    if !hasMoves {
+        return fraction.Zero()
+    } else {
+        return moves
+    }
+}
+
 // true if any unit in the stack has moves left
 func (stack *UnitStack) HasMoves() bool {
     return !stack.OutOfMoves()
