@@ -354,7 +354,6 @@ func (map_ *Map) PlaceRandomTerrainTiles(plane data.Plane){
                 case 5: use = TileAllDesert1.Index(plane)
                 case 6: use = TileTundra.Index(plane)
             }
-            use = TileRiver0001.Index(plane)
 
             map_.Terrain[point.X][point.Y] = use
         }
