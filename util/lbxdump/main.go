@@ -16,6 +16,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
+    "github.com/kazzmir/master-of-magic/game/magic/terrain"
 )
 
 func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int, rawDump bool) error {
@@ -32,26 +33,25 @@ func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int, rawDump bool) 
     os.Mkdir(dir, 0755)
 
     if lbxName == "terrain.lbx" && !rawDump {
-        index := 0
-        images, err := file.ReadTerrainImages(index)
+        terrainData, err := terrain.ReadTerrainData(&file)
         if err != nil {
             return err
         }
 
-        // fmt.Printf("Loaded %v images\n", len(images))
-        for i, image := range images {
-            func (){
-                name := filepath.Join(dir, fmt.Sprintf("image_%v_%v.png", index, i))
-                out, err := os.Create(name)
-                if err != nil {
-                    fmt.Printf("Error creating image file: %v\n", err)
-                    return
-                }
-                defer out.Close()
+        for i, tile := range terrainData.Tiles {
+            for j, image := range tile.Images {
+                func (){
+                    name := filepath.Join(dir, fmt.Sprintf("image_%04d_0x%03x_%v.png", i, i, j))
+                    out, err := os.Create(name)
+                    if err != nil {
+                        fmt.Printf("Error creating image file: %v\n", err)
+                        return
+                    }
+                    defer out.Close()
 
-                png.Encode(out, image)
-                // fmt.Printf("Saved image %v to %v\n", i, name)
-            }()
+                    png.Encode(out, image)
+                }()
+            }
         }
     } else if lbxName == "fonts.lbx" && !rawDump {
         fonts, err := font.ReadFonts(&file, 0)
