@@ -2796,9 +2796,10 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
     }
 
     if stepsTaken > 0 {
-        // FIXME: only exhaust moves if some unit in the stack is out of moves
-        stack.ExhaustMoves()
-        game.DoNextUnit(player)
+        if stack.AnyOutOfMoves() {
+            stack.ExhaustMoves()
+            game.DoNextUnit(player)
+        }
     }
 }
 
