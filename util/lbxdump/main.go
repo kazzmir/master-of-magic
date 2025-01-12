@@ -33,25 +33,26 @@ func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int, rawDump bool) 
     os.Mkdir(dir, 0755)
 
     if lbxName == "terrain.lbx" && !rawDump {
-        terrainData, err := terrain.ReadTerrainData(&file)
+        index := 0
+        images, err := file.ReadTerrainImages(index)
         if err != nil {
             return err
         }
 
-        for i, tile := range terrainData.Tiles {
-            for j, image := range tile.Images {
-                func (){
-                    name := filepath.Join(dir, fmt.Sprintf("image_%04d_0x%03x_%v.png", i, i, j))
-                    out, err := os.Create(name)
-                    if err != nil {
-                        fmt.Printf("Error creating image file: %v\n", err)
-                        return
-                    }
-                    defer out.Close()
+        // fmt.Printf("Loaded %v images\n", len(images))
+        for i, image := range images {
+            func (){
+                name := filepath.Join(dir, fmt.Sprintf("image_%v_%v.png", index, i))
+                out, err := os.Create(name)
+                if err != nil {
+                    fmt.Printf("Error creating image file: %v\n", err)
+                    return
+                }
+                defer out.Close()
 
-                    png.Encode(out, image)
-                }()
-            }
+                png.Encode(out, image)
+                // fmt.Printf("Saved image %v to %v\n", i, name)
+            }()
         }
     } else if lbxName == "fonts.lbx" && !rawDump {
         fonts, err := font.ReadFonts(&file, 0)
