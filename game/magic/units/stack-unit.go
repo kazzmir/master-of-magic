@@ -13,6 +13,7 @@ type StackUnit interface {
     GetPatrol() bool
     SetPatrol(bool)
     IsFlying() bool
+    IsSwimmer() bool
     GetName() string
     GetTitle() string
     GetPlane() data.Plane

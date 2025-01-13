@@ -104,6 +104,17 @@ func (stack *UnitStack) AllFlyers() bool {
     return true
 }
 
+func (stack *UnitStack) AllSwimmers() bool {
+    for _, unit := range stack.ActiveUnits() {
+        if !unit.IsSwimmer() {
+            return false
+        }
+    }
+
+    return true
+}
+
+
 func (stack *UnitStack) ActiveUnitsHasAbility(ability data.AbilityType) bool {
     for _, unit := range stack.ActiveUnits() {
         if unit.HasAbility(ability) {

@@ -1439,9 +1439,9 @@ func (game *Game) ComputeTerrainCost(stack *playerlib.UnitStack, sourceX int, so
     tileFrom := mapUse.GetTile(sourceX, sourceY)
     tileTo := mapUse.GetTile(destX, destY)
 
-    // can't move from land to ocean unless all units are flyers
+    // can't move from land to ocean unless all units are flyers or swimmers
     if tileFrom.Tile.IsLand() && !tileTo.Tile.IsLand() {
-        if !stack.AllFlyers() {
+        if !stack.AllFlyers() && !stack.AllSwimmers() {
             return fraction.Zero(), false
         }
     }
@@ -4493,6 +4493,8 @@ func (game *Game) MakeHudUI() *uilib.UI {
                             useIcon = flyingIcon
                         } else if player.SelectedStack.ActiveUnitsHasAbility(data.AbilityForester) {
                             useIcon = foresterIcon
+                        } else if player.SelectedStack.AllSwimmers() {
+                            useIcon = swimmingIcon
                         }
                     }
 
