@@ -2800,6 +2800,8 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
             stack.ExhaustMoves()
             game.DoNextUnit(player)
         }
+
+        game.RefreshUI()
     }
 }
 
