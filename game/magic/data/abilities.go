@@ -426,7 +426,27 @@ func (ability Ability) LbxIndex() int {
 
 func (ability Ability) MagicType() MagicType {
     switch ability.Ability {
-        case AbilityWraithform: return DeathMagic
+        case AbilityWraithform, AbilityVampiric,
+             AbilityDeath, AbilityPowerDrain,
+             AbilityCloakOfFear: return DeathMagic
+
+        case AbilityGuardianWind, AbilityHaste,
+             AbilityInvisibility, AbilityFlight,
+             AbilityResistMagic, AbilityMagicImmunity,
+             AbilityPhantasmal: return SorceryMagic
+
+        case AbilityWaterWalking, AbilityRegeneration,
+             AbilityPathfinding, AbilityMerging,
+             AbilityResistElements, AbilityElementalArmor,
+             AbilityGiantStrength, AbilityStoning: return NatureMagic
+
+        case AbilityHolyAvenger, AbilityTrueSight,
+             AbilityBless, AbilityRighteousness,
+             AbilityInvulnerability, AbilityEndurance,
+             AbilityPlanarTravel, AbilityLionHeart: return LifeMagic
+
+        case AbilityFlaming, AbilityLightning,
+             AbilityChaos, AbilityDestruction: return ChaosMagic
     }
 
     return MagicNone

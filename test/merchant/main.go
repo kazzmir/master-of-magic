@@ -57,10 +57,17 @@ func NewEngine(scenario int) (*Engine, error) {
                 Amount: 2,
                 Name: "+2 Spell Skill",
             },
+            /*
             {
                 Type: artifact.PowerTypeSpellSave,
                 Amount: 2,
                 Name: "-2 Spell Save",
+            },
+            */
+            {
+                Type: artifact.PowerTypeAbility1,
+                Name: "Flaming",
+                Ability: data.AbilityFlaming,
             },
         },
         Cost: 250,
