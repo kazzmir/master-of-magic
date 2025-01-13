@@ -59,6 +59,18 @@ var sorceryColor = color.RGBA{R: 0, G: 0, B: 180, A: 255}
 var deathColor = color.RGBA{R: 0x62, G: 0x11, B: 0xba, A: 255}
 var lifeColor = color.RGBA{R: 180, G: 180, B: 180, A: 255}
 
+func GetMagicColor(magic MagicType) color.Color {
+    switch magic {
+        case NatureMagic: return natureColor
+        case ChaosMagic: return chaosColor
+        case SorceryMagic: return sorceryColor
+        case DeathMagic: return deathColor
+        case LifeMagic: return lifeColor
+    }
+
+    return color.RGBA{}
+}
+
 /*
 Endurance	Life
 Heroism	Life

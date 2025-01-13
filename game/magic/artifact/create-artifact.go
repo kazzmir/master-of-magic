@@ -74,9 +74,9 @@ func ReadPowers(cache *lbx.LbxCache) ([]Power, map[Power]int, map[Power]set.Set[
         4: PowerTypeSpellSave,
         5: PowerTypeMovement,
         6: PowerTypeResistance,
-        7: PowerTypeNone, // TODO: mutually exlusive abilities 1 (Resists Elements or Elemental Armor)
-        8: PowerTypeNone, // TODO: mutually exlusive abilities 2 (Resist Magic or Magic Immunity)
-        9: PowerTypeNone, // TODO: all other abilitites
+        7: PowerTypeAbility1, // TODO: mutually exlusive abilities 1 (Resists Elements or Elemental Armor)
+        8: PowerTypeAbility2, // TODO: mutually exlusive abilities 2 (Resist Magic or Magic Immunity)
+        9: PowerTypeAbility3, // TODO: all other abilitites
     }
 
     magicTypeMap := map[byte]data.MagicType{
@@ -204,6 +204,7 @@ func ReadPowers(cache *lbx.LbxCache) ([]Power, map[Power]int, map[Power]set.Set[
         if amount == 0 {
             continue // Spell Charges
         }
+
         if powerType != PowerTypeNone {
             power := Power{
                 Type: powerType,
@@ -243,6 +244,9 @@ func groupPowers(powers []Power, costs map[Power]int, compatibilities map[Power]
         PowerTypeResistance,
         PowerTypeSpellSkill,
         PowerTypeSpellSave,
+        PowerTypeAbility1,
+        PowerTypeAbility2,
+        PowerTypeAbility3,
     }
 
     var result [][]Power
@@ -254,7 +258,6 @@ func groupPowers(powers []Power, costs map[Power]int, compatibilities map[Power]
 
     return result
 }
-
 
 func getName(artifact *Artifact, customName string) string {
     if customName != "" {
