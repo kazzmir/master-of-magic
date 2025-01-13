@@ -22,6 +22,10 @@ type MiniMapCity interface {
     GetBanner() data.BannerType
 }
 
+type CityProvider interface {
+    ContainsCity(x int, y int, plane data.Plane) bool
+}
+
 type Melder interface {
     GetBanner() data.BannerType
 }
@@ -38,7 +42,85 @@ type ExtraTile interface {
     DrawLayer2(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64, tileWidth int, tileHeight int)
 }
 
+type ExtraKind int
+const (
+    ExtraKindRoad ExtraKind = iota
+    ExtraKindBonus
+    ExtraKindMagicNode
+    ExtraKindEncounter
+)
+
+var ExtraDrawOrder = []ExtraKind{
+    ExtraKindRoad,
+    ExtraKindBonus,
+    ExtraKindMagicNode,
+    ExtraKindEncounter,
+}
+
+type Direction int
+const (
+    DirectionNorth Direction = iota
+    DirectionNorthEast
+    DirectionEast
+    DirectionSouthEast
+    DirectionSouth
+    DirectionSouthWest
+    DirectionWest
+    DirectionNorthWest
+)
+
 type ExtraRoad struct {
+    Map *Map
+    // either cast Enchant Road, or build the road in Myrror
+    Enchanted bool
+    X int
+    Y int
+}
+
+func (road *ExtraRoad) DrawLayer1(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64, tileWidth int, tileHeight int){
+    neighbors := road.Map.GetRoadNeighbors(road.X, road.Y)
+
+    connected := false
+
+    baseIndex := 45
+    if road.Enchanted {
+        baseIndex = 54
+    }
+
+    directionToIndex := map[Direction]int{
+        DirectionNorth: 1,
+        DirectionNorthEast: 2,
+        DirectionEast: 3,
+        DirectionSouthEast: 4,
+        DirectionSouth: 5,
+        DirectionSouthWest: 6,
+        DirectionWest: 7,
+        DirectionNorthWest: 8,
+    }
+
+    for direction, has := range neighbors {
+        if has {
+            index := directionToIndex[direction]
+            pics, err := imageCache.GetImages("mapback.lbx", baseIndex + index)
+            if err == nil {
+                pic := pics[counter % uint64(len(pics))]
+                screen.DrawImage(pic, options)
+            }
+
+            connected = true
+        }
+    }
+
+    if !connected {
+        pics, err := imageCache.GetImages("mapback.lbx", baseIndex)
+        if err == nil {
+            pic := pics[counter % uint64(len(pics))]
+            screen.DrawImage(pic, options)
+        }
+    }
+}
+
+func (road *ExtraRoad) DrawLayer2(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64, tileWidth int, tileHeight int){
 }
 
 // wild game, gold ore, mithril, etc
@@ -310,7 +392,7 @@ func (node *ExtraMagicNode) Meld(meldingWizard Melder, spirit units.Unit) bool {
 }
 
 type FullTile struct {
-    Extra ExtraTile
+    Extras map[ExtraKind]ExtraTile
     Tile terrain.Tile
     X int
     Y int
@@ -321,27 +403,16 @@ func (tile *FullTile) Valid() bool {
 }
 
 func (tile *FullTile) GetBonus() data.BonusType {
-    if tile.Extra == nil {
-        return data.BonusNone
-    }
-
-    if bonus, ok := tile.Extra.(*ExtraBonus); ok {
-        return bonus.Bonus
+    bonus, ok := tile.Extras[ExtraKindBonus]
+    if ok {
+        return bonus.(*ExtraBonus).Bonus
     }
 
     return data.BonusNone
 }
 
 func (tile *FullTile) HasWildGame() bool {
-    if tile.Extra == nil {
-        return false
-    }
-
-    if bonus, ok := tile.Extra.(*ExtraBonus); ok {
-        return bonus.Bonus == data.BonusWildGame
-    }
-
-    return false
+    return tile.GetBonus() == data.BonusWildGame
 }
 
 type Map struct {
@@ -349,9 +420,11 @@ type Map struct {
 
     Plane data.Plane
 
+    CityProvider CityProvider
+
     // contains information about map squares that contain extra features on top
     // such as a road, enchantment, encounter place (plane tower, lair, etc)
-    ExtraMap map[image.Point]ExtraTile
+    ExtraMap map[image.Point]map[ExtraKind]ExtraTile
 
     Data *terrain.TerrainData
 
@@ -370,25 +443,70 @@ func getLandSize(size int) (int, int) {
     return 100, 100
 }
 
-func MakeMap(data *terrain.TerrainData, landSize int, plane data.Plane) *Map {
+func MakeMap(data *terrain.TerrainData, landSize int, plane data.Plane, cityProvider CityProvider) *Map {
     landWidth, landHeight := getLandSize(landSize)
+
+    extraMap := make(map[image.Point]map[ExtraKind]ExtraTile)
+    for x := range landWidth {
+        for y := range landHeight {
+            extraMap[image.Pt(x, y)] = make(map[ExtraKind]ExtraTile)
+        }
+    }
 
     return &Map{
         Data: data,
         Map: terrain.GenerateLandCellularAutomata(landWidth, landHeight, data, plane),
         Plane: plane,
         TileCache: make(map[int]*ebiten.Image),
-        ExtraMap: make(map[image.Point]ExtraTile),
+        ExtraMap: extraMap,
+        CityProvider: cityProvider,
     }
+}
+
+// returns a map where for each direction, if the value is true then there is a road there
+func (mapObject *Map) GetRoadNeighbors(x int, y int) map[Direction]bool {
+    out := make(map[Direction]bool)
+
+    convert := func(dx int, dy int) Direction {
+        switch {
+            case dx == -1 && dy == -1: return DirectionNorthWest
+            case dx == -1 && dy == 0: return DirectionWest
+            case dx == -1 && dy == 1: return DirectionSouthWest
+
+            case dx == 1 && dy == -1: return DirectionNorthEast
+            case dx == 1 && dy == 0: return DirectionEast
+            case dx == 1 && dy == 1: return DirectionSouthEast
+
+            case dx == 0 && dy == -1: return DirectionNorth
+            case dx == 0 && dy == 1: return DirectionSouth
+        }
+
+        return DirectionNorth
+    }
+
+    for dx := -1; dx <= 1; dx++ {
+        for dy := -1; dy <= 1; dy++ {
+            // skip center
+            if dx == 0 && dy == 0 {
+                continue
+            }
+
+            out[convert(dx, dy)] = mapObject.ContainsRoad(x + dx, y + dy) || mapObject.CityProvider.ContainsCity(x + dx, y + dy, mapObject.Plane)
+        }
+    }
+
+    return out
 }
 
 func (mapObject *Map) GetMeldedNodes(melder Melder) []*ExtraMagicNode {
     var out []*ExtraMagicNode
 
-    for _, extra := range mapObject.ExtraMap {
-        if node, ok := extra.(*ExtraMagicNode); ok {
-            if node.MeldingWizard == melder {
-                out = append(out, node)
+    for _, extras := range mapObject.ExtraMap {
+        node, ok := extras[ExtraKindMagicNode]
+        if ok {
+            magic := node.(*ExtraMagicNode)
+            if magic.MeldingWizard == melder {
+                out = append(out, magic)
             }
         }
     }
@@ -397,14 +515,47 @@ func (mapObject *Map) GetMeldedNodes(melder Melder) []*ExtraMagicNode {
 }
 
 func (mapObject *Map) SetBonus(x int, y int, bonus data.BonusType) {
-    mapObject.ExtraMap[image.Pt(x, y)] = &ExtraBonus{Bonus: bonus}
+    point := image.Pt(x, y)
+    extras := mapObject.ExtraMap[point]
+    extras[ExtraKindBonus] = &ExtraBonus{Bonus: bonus}
+}
+
+func getExtra[T any](extras map[ExtraKind]ExtraTile, kind ExtraKind) T {
+    if obj, ok := extras[kind]; ok {
+        if obj != nil {
+            return obj.(T)
+        }
+    }
+
+    var out T
+    return out
+}
+
+func (mapObject *Map) SetRoad(x int, y int, enchanted bool) {
+    mapObject.ExtraMap[image.Pt(x, y)][ExtraKindRoad] = &ExtraRoad{Map: mapObject, X: x, Y: y, Enchanted: enchanted}
+}
+
+func (mapObject *Map) ContainsRoad(x int, y int) bool {
+    _, ok := mapObject.ExtraMap[image.Pt(x, y)][ExtraKindRoad]
+    return ok
+}
+
+func (mapObject *Map) RemoveRoad(x int, y int) {
+    delete(mapObject.ExtraMap[image.Pt(x, y)], ExtraKindRoad)
+}
+
+func (mapObject *Map) GetLair(x int, y int) *ExtraEncounter {
+    return getExtra[*ExtraEncounter](mapObject.ExtraMap[image.Pt(x, y)], ExtraKindEncounter)
+}
+
+func (mapObject *Map) GetMagicNode(x int, y int) *ExtraMagicNode {
+    return getExtra[*ExtraMagicNode](mapObject.ExtraMap[image.Pt(x, y)], ExtraKindMagicNode)
 }
 
 func (mapObject *Map) GetBonusTile(x int, y int) data.BonusType {
-    if extra, ok := mapObject.ExtraMap[image.Pt(x, y)]; ok {
-        if bonus, ok := extra.(*ExtraBonus); ok {
-            return bonus.Bonus
-        }
+    bonus := getExtra[*ExtraBonus](mapObject.ExtraMap[image.Pt(x, y)], ExtraKindBonus)
+    if bonus != nil {
+        return bonus.Bonus
     }
 
     return data.BonusNone
@@ -416,7 +567,7 @@ func (mapObject *Map) CreateEncounter(x int, y int, encounterType EncounterType,
         return false
     }
 
-    mapObject.ExtraMap[image.Pt(x, y)] = makeEncounter(encounterType, difficulty, weakStrength, plane)
+    mapObject.ExtraMap[image.Pt(x, y)][ExtraKindEncounter] = makeEncounter(encounterType, difficulty, weakStrength, plane)
     return true
 }
 
@@ -436,29 +587,9 @@ func (mapObject *Map) CreateNode(x int, y int, node MagicNode, plane data.Plane,
 
     out := MakeMagicNode(node, magicSetting, difficulty, plane)
 
-    mapObject.ExtraMap[image.Pt(x, y)] = out
+    mapObject.ExtraMap[image.Pt(x, y)][ExtraKindMagicNode] = out
 
     return out
-}
-
-func (mapObject *Map) GetLair(x int, y int) *ExtraEncounter {
-    if extra, ok := mapObject.ExtraMap[image.Pt(x, y)]; ok {
-        if encounter, ok := extra.(*ExtraEncounter); ok {
-            return encounter
-        }
-    }
-
-    return nil
-}
-
-func (mapObject *Map) GetMagicNode(x int, y int) *ExtraMagicNode {
-    if extra, ok := mapObject.ExtraMap[image.Pt(x, y)]; ok {
-        if node, ok := extra.(*ExtraMagicNode); ok {
-            return node
-        }
-    }
-
-    return nil
 }
 
 func (mapObject *Map) Width() int {
@@ -526,16 +657,16 @@ func (mapObject *Map) GetTile(tileX int, tileY int) FullTile {
     if tileX >= 0 && tileX < mapObject.Map.Columns() && tileY >= 0 && tileY < mapObject.Map.Rows() {
         tile := mapObject.Data.Tiles[mapObject.Map.Terrain[tileX][tileY]].Tile
 
-        extra, ok := mapObject.ExtraMap[image.Pt(tileX, tileY)]
+        extras, ok := mapObject.ExtraMap[image.Pt(tileX, tileY)]
         if !ok {
-            extra = nil
+            extras = make(map[ExtraKind]ExtraTile)
         }
 
         return FullTile{
             Tile: tile,
             X: tileX,
             Y: tileY,
-            Extra: extra,
+            Extras: extras,
         }
     }
 
@@ -570,7 +701,7 @@ func (mapObject *Map) GetCatchmentArea(x int, y int) map[image.Point]FullTile {
                 continue
             }
 
-            tileX := x + dx
+            tileX := mapObject.WrapX(x + dx)
             tileY := y + dy
 
             tile := mapObject.GetTile(tileX, tileY)
@@ -771,9 +902,11 @@ func (mapObject *Map) DrawLayer1(camera cameralib.Camera, animationCounter uint6
 
                 screen.DrawImage(tileImage, &options)
 
-                extra, ok := mapObject.ExtraMap[image.Pt(tileX, tileY)]
-                if ok {
-                    extra.DrawLayer1(screen, imageCache, &options, animationCounter, tileWidth, tileHeight)
+                for _, extraKind := range ExtraDrawOrder {
+                    extra, ok := mapObject.ExtraMap[image.Pt(tileX, tileY)][extraKind]
+                    if ok {
+                        extra.DrawLayer1(screen, imageCache, &options, animationCounter, tileWidth, tileHeight)
+                    }
                 }
             } else {
                 log.Printf("Unable to render tile at %d, %d: %v", tileX, tileY, err)
@@ -818,9 +951,11 @@ func (mapObject *Map) DrawLayer2(cameraX int, cameraY int, animationCounter uint
                 continue
             }
 
-            extra, ok := mapObject.ExtraMap[image.Pt(tileX, tileY)]
-            if ok {
-                extra.DrawLayer2(screen, imageCache, &options, animationCounter, tileWidth, tileHeight)
+            for _, extraKind := range ExtraDrawOrder {
+                extra, ok := mapObject.ExtraMap[image.Pt(tileX, tileY)][extraKind]
+                if ok {
+                    extra.DrawLayer2(screen, imageCache, &options, animationCounter, tileWidth, tileHeight)
+                }
             }
         }
     }

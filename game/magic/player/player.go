@@ -439,12 +439,12 @@ func (player *Player) ManaPerTurn(power int) int {
 func (player *Player) UpdateTaxRate(rate fraction.Fraction){
     player.TaxRate = rate
     for _, city := range player.Cities {
-        city.UpdateTaxRate(rate, player.GetUnits(city.X, city.Y))
+        city.UpdateTaxRate(rate, player.GetUnits(city.X, city.Y, city.Plane))
     }
 }
 
-func (player *Player) GetUnits(x int, y int) []units.StackUnit {
-    stack := player.FindStack(x, y)
+func (player *Player) GetUnits(x int, y int, plane data.Plane) []units.StackUnit {
+    stack := player.FindStack(x, y, plane)
     if stack != nil {
         return stack.Units()
     }
@@ -452,9 +452,9 @@ func (player *Player) GetUnits(x int, y int) []units.StackUnit {
     return nil
 }
 
-func (player *Player) FindCity(x int, y int) *citylib.City {
+func (player *Player) FindCity(x int, y int, plane data.Plane) *citylib.City {
     for _, city := range player.Cities {
-        if city.X == x && city.Y == y {
+        if city.X == x && city.Y == y && city.Plane == plane {
             return city
         }
     }
@@ -535,11 +535,11 @@ func (player *Player) FindStackByUnit(unit units.StackUnit) *UnitStack {
 }
 
 // multiple stacks can be on the same tile
-func (player *Player) FindAllStacks(x int, y int) []*UnitStack {
+func (player *Player) FindAllStacks(x int, y int, plane data.Plane) []*UnitStack {
     var out []*UnitStack
 
     for _, stack := range player.Stacks {
-        if stack.X() == x && stack.Y() == y {
+        if stack.X() == x && stack.Y() == y && stack.Plane() == plane {
             out = append(out, stack)
         }
     }
@@ -547,9 +547,9 @@ func (player *Player) FindAllStacks(x int, y int) []*UnitStack {
     return out
 }
 
-func (player *Player) FindStack(x int, y int) *UnitStack {
+func (player *Player) FindStack(x int, y int, plane data.Plane) *UnitStack {
     for _, stack := range player.Stacks {
-        if stack.X() == x && stack.Y() == y {
+        if stack.X() == x && stack.Y() == y && stack.Plane() == plane {
             return stack
         }
     }
@@ -587,7 +587,7 @@ func (player *Player) RemoveUnit(unit units.StackUnit) {
         return u == unit
     })
 
-    stack := player.FindStack(unit.GetX(), unit.GetY())
+    stack := player.FindStack(unit.GetX(), unit.GetY(), unit.GetPlane())
     if stack != nil {
         stack.RemoveUnit(unit)
 
@@ -624,7 +624,7 @@ func (player *Player) AddUnit(unit units.StackUnit) units.StackUnit {
     player.UnitId += 1
     player.Units = append(player.Units, unit)
 
-    stack := player.FindStack(unit.GetX(), unit.GetY())
+    stack := player.FindStack(unit.GetX(), unit.GetY(), unit.GetPlane())
     if stack == nil {
         stack = MakeUnitStack()
         player.Stacks = append(player.Stacks, stack)

@@ -172,6 +172,7 @@ type GameEventMoveCamera struct {
     Plane data.Plane
     X int
     Y int
+    Instant bool // set to true to have the camera move instantly, rather than smoothly scroll
 }
 
 type GameEventMoveUnit struct {
@@ -541,8 +542,6 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         Help: help,
         MouseData: mouseData,
         Events: make(chan GameEvent, 1000),
-        ArcanusMap: maplib.MakeMap(terrainData, settings.LandSize, data.PlaneArcanus),
-        MyrrorMap: maplib.MakeMap(terrainData, settings.LandSize, data.PlaneMyrror),
         Plane: data.PlaneArcanus,
         State: GameStateRunning,
         Settings: settings,
@@ -558,12 +557,26 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         Camera: camera.MakeCamera(),
     }
 
+    game.ArcanusMap = maplib.MakeMap(terrainData, settings.LandSize, data.PlaneArcanus, game)
+    game.MyrrorMap = maplib.MakeMap(terrainData, settings.LandSize, data.PlaneMyrror, game)
+
     game.HudUI = game.MakeHudUI()
     game.Drawer = func(screen *ebiten.Image, game *Game){
         game.DrawGame(screen)
     }
 
     return game
+}
+
+func (game *Game) ContainsCity(x int, y int, plane data.Plane) bool {
+    for _, player := range game.Players {
+        city := player.FindCity(x, y, plane)
+        if city != nil {
+            return true
+        }
+    }
+
+    return false
 }
 
 func (game *Game) NearCity(point image.Point, squares int) bool {
@@ -1389,61 +1402,22 @@ func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, sta
 }
 
 func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, stack *playerlib.UnitStack){
-    drawer := game.Drawer
-    defer func(){
-        game.Drawer = drawer
-    }()
-
     // the number of frames it takes to move a unit one tile
     frames := 10
 
-    tileWidth := float64(game.CurrentMap().TileWidth())
-    tileHeight := float64(game.CurrentMap().TileHeight())
-
-    convertTileCoordinates := func(x float64, y float64) (float64, float64) {
-        outX := (x) * tileWidth
-        outY := (y) * tileHeight
-        return outX, outY
-    }
-
-    dx := float64(oldX - stack.X())
+    dx := float64(game.CurrentMap().XDistance(stack.X(), oldX))
     dy := float64(oldY - stack.Y())
 
     game.State = GameStateUnitMoving
 
     game.MovingStack = stack
 
-    boot, _ := game.ImageCache.GetImage("compix.lbx", 72, 0)
-
-    var geom ebiten.GeoM
-
-    cameraX := game.Camera.GetZoomedX()
-    cameraY := game.Camera.GetZoomedY()
-
-    geom.Translate(-cameraX * float64(tileWidth), -cameraY * float64(tileHeight))
-    geom.Scale(game.Camera.GetAnimatedZoom(), game.Camera.GetAnimatedZoom())
-
-    game.Drawer = func (screen *ebiten.Image, game *Game){
-        drawer(screen, game)
-
-        overworldScreen := screen.SubImage(image.Rect(0, 18, 240, data.ScreenHeight)).(*ebiten.Image)
-
-        // draw boot images on the map that show where the unit is moving to
-        for _, point := range stack.CurrentPath {
-            var options ebiten.DrawImageOptions
-            x, y := convertTileCoordinates(float64(point.X), float64(point.Y))
-            options.GeoM.Translate(x, y)
-            options.GeoM.Translate(float64(tileWidth) / 2, float64(tileHeight) / 2)
-            options.GeoM.Translate(float64(boot.Bounds().Dx()) / -2, float64(boot.Bounds().Dy()) / -2)
-            options.GeoM.Concat(geom)
-            overworldScreen.DrawImage(boot, &options)
-        }
-
-    }
-
     for i := 0; i < frames; i++ {
         game.Counter += 1
-        stack.SetOffset(dx * float64(frames - i) / float64(frames), dy * float64(frames - i) / float64(frames))
+
+        interpolate := float64(frames - i) / float64(frames)
+
+        stack.SetOffset(dx * interpolate, dy * interpolate)
         yield()
     }
 
@@ -1457,33 +1431,61 @@ func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, st
 /* return the cost to move from the current position the stack is on to the new given coordinates.
  * also return true/false if the move is even possible
  */
-func (game *Game) ComputeTerrainCost(stack *playerlib.UnitStack, x int, y int, mapUse *maplib.Map) (fraction.Fraction, bool) {
+func (game *Game) ComputeTerrainCost(stack *playerlib.UnitStack, sourceX int, sourceY int, destX int, destY int, mapUse *maplib.Map) (fraction.Fraction, bool) {
+    /*
     if stack.OutOfMoves() {
         return fraction.Zero(), false
     }
+    */
 
-    tileFrom := mapUse.GetTile(stack.X(), stack.Y())
-    tileTo := mapUse.GetTile(x, y)
+    tileFrom := mapUse.GetTile(sourceX, sourceY)
+    tileTo := mapUse.GetTile(destX, destY)
 
-    // can't move from land to ocean unless all units are flyers
+    // can't move from land to ocean unless all units are flyers or swimmers
     if tileFrom.Tile.IsLand() && !tileTo.Tile.IsLand() {
-        if !stack.AllFlyers() {
+        if !stack.AllFlyers() && !stack.AllSwimmers() {
             return fraction.Zero(), false
         }
     }
 
-    oldX := stack.X()
-    oldY := stack.Y()
+    containsFriendlyCity := func (x int, y int) bool {
+        for _, player := range game.Players {
+            if player.GetBanner() == stack.GetBanner() {
+                if player.FindCity(x, y, stack.Plane()) != nil {
+                    return true
+                }
+            }
+        }
 
-    xDiff := int(math.Abs(float64(x - oldX)))
-    yDiff := int(math.Abs(float64(y - oldY)))
+        return false
+    }
+
+    xDiff := int(math.Abs(float64(game.CurrentMap().XDistance(destX, sourceX))))
+    yDiff := int(math.Abs(float64(destY - sourceY)))
+
+    baseCost := fraction.FromInt(1)
+
+    if containsFriendlyCity(destX, destY) {
+        baseCost = fraction.Make(1, 2)
+    }
+
+    road_v, ok := tileTo.Extras[maplib.ExtraKindRoad]
+    if ok {
+        road := road_v.(*maplib.ExtraRoad)
+        if road.Enchanted {
+            // FIXME: only if stack is corporeal
+            return fraction.Zero(), true
+        }
+
+        return fraction.Make(1, 2), true
+    }
 
     if xDiff == 1 && yDiff == 1 {
-        return fraction.Make(3, 2), true
+        return baseCost.Add(fraction.Make(1, 2)), true
     }
 
     if xDiff == 1 || yDiff == 1 {
-        return fraction.FromInt(1), true
+        return baseCost, true
     }
 
     return fraction.Zero(), false
@@ -1524,6 +1526,112 @@ func (game *Game) blinkRed(yield coroutine.YieldFunc) {
     }
 }
 
+func (game *Game) GetNormalizeCoordinateFunc() units.NormalizeCoordinateFunc {
+    return func (x int, y int) (int, int) {
+        return game.CurrentMap().WrapX(x), y
+    }
+}
+
+// returns all cities that are connected to this one via roads
+func (game *Game) FindRoadConnectedCities(city *citylib.City) []*citylib.City {
+
+    // first check if there is at least one tile around the city that is a road
+
+    hasRoad := false
+
+    mapUse := game.GetMap(city.Plane)
+
+    road_check:
+    for dx := -1; dx <= 1; dx++ {
+        for dy := -1; dy <= 1; dy++ {
+            if dx == 0 && dy == 0 {
+                continue
+            }
+
+            cx := mapUse.WrapX(city.X + dx)
+            cy := city.Y + dy
+
+            if dy < 0 || dy >= mapUse.Height() {
+                continue
+            }
+
+            if mapUse.ContainsRoad(cx, cy) {
+                hasRoad = true
+                break road_check
+            }
+        }
+    }
+
+    if !hasRoad {
+        return nil
+    }
+
+    var out []*citylib.City
+
+    for _, otherCity := range game.AllCities() {
+        if otherCity == city {
+            continue
+        }
+
+        if otherCity.Plane == city.Plane && game.IsCityRoadConnected(city, otherCity) {
+            out = append(out, otherCity)
+        }
+    }
+
+    return out
+}
+
+// returns true if the two cities are connected by a road
+func (game *Game) IsCityRoadConnected(fromCity *citylib.City, toCity *citylib.City) bool {
+    if fromCity.Plane != toCity.Plane {
+        return false
+    }
+
+    mapUse := game.GetMap(fromCity.Plane)
+
+    normalized := func (a image.Point) image.Point {
+        return image.Pt(mapUse.WrapX(a.X), a.Y)
+    }
+
+    // check equality of two points taking wrapping into account
+    tileEqual := func (a image.Point, b image.Point) bool {
+        return normalized(a) == normalized(b)
+    }
+
+    // cost doesn't matter
+    tileCost := func (x1 int, y1 int, x2 int, y2 int) float64 {
+        return 1
+    }
+
+    neighbors := func (x int, y int) []image.Point {
+        var out []image.Point
+        for dx := -1; dx <= 1; dx++ {
+            for dy := -1; dy <= 1; dy++ {
+                if dx == 0 && dy == 0 {
+                    continue
+                }
+
+                cx := mapUse.WrapX(x + dx)
+                cy := y + dy
+
+                if cy < 0 || cy >= mapUse.Height() {
+                    continue
+                }
+
+                if mapUse.ContainsRoad(cx, cy) || game.ContainsCity(cx, cy, fromCity.Plane) {
+                    out = append(out, image.Pt(cx, cy))
+                }
+            }
+        }
+
+        return out
+    }
+
+    _, ok := pathfinding.FindPath(image.Pt(fromCity.X, fromCity.Y), image.Pt(toCity.X, toCity.Y), 10000, tileCost, neighbors, tileEqual)
+
+    return ok
+}
+
 func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *playerlib.UnitStack, fog [][]bool) pathfinding.Path {
 
     useMap := game.GetMap(stack.Plane())
@@ -1535,6 +1643,35 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
     // check equality of two points taking wrapping into account
     tileEqual := func (a image.Point, b image.Point) bool {
         return normalized(a) == normalized(b)
+    }
+
+    // cache the containsEnemy result
+    enemyMemo := make(map[image.Point]bool)
+
+    // true if the given coordinates contain an enemy unit or city
+    containsEnemy := func (x int, y int) bool {
+        if val, ok := enemyMemo[image.Pt(x, y)]; ok {
+            return val
+        }
+
+        for _, player := range game.Players {
+            if player.GetBanner() != stack.GetBanner() {
+                enemyStack := player.FindStack(x, y, stack.Plane())
+                if enemyStack != nil {
+                    enemyMemo[image.Pt(x, y)] = true
+                    return true
+                }
+
+                enemyCity := player.FindCity(x, y, stack.Plane())
+                if enemyCity != nil {
+                    enemyMemo[image.Pt(x, y)] = true
+                    return true
+                }
+            }
+        }
+
+        enemyMemo[image.Pt(x, y)] = false
+        return false
     }
 
     tileCost := func (x1 int, y1 int, x2 int, y2 int) float64 {
@@ -1549,8 +1686,9 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
             return pathfinding.Infinity
         }
 
-        // FIXME: check for enemy armies and cities
+        // FIXME: it might be more optimal to put the infinity cases into the neighbors function instead
 
+        // avoid magic nodes
         node := useMap.GetMagicNode(x2, y2)
         if node != nil {
             // avoid magic nodes unless the final destination is the magic node itself
@@ -1562,7 +1700,7 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
             }
         }
 
-        // same logic as magic nodes
+        // avoid lair nodes, same logic as magic nodes
         lair := useMap.GetLair(x2, y2)
         if lair != nil {
             if !tileEqual(image.Pt(x2, y2), image.Pt(newX, newY)) {
@@ -1572,8 +1710,15 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
             }
         }
 
+        // avoid enemy units/cities
+        if !tileEqual(image.Pt(x2, y2), image.Pt(newX, newY)) && containsEnemy(x2, y2) {
+            return pathfinding.Infinity
+        }
+
+        /*
         tileFrom := useMap.GetTile(x1, y1)
         tileTo := useMap.GetTile(x2, y2)
+        */
 
         // FIXME: consider terrain type, roads, and unit abilities
 
@@ -1588,7 +1733,15 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
             return baseCost
         }
 
+        cost, ok := game.ComputeTerrainCost(stack, x1, y1, x2, y2, useMap)
+        if !ok {
+            return pathfinding.Infinity
+        }
+
+        return cost.ToFloat()
+
         // can't move from land to ocean unless all units are flyers
+        /*
         if tileFrom.Tile.IsLand() && !tileTo.Tile.IsLand() {
             if !stack.AllFlyers() {
                 return pathfinding.Infinity
@@ -1596,6 +1749,7 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
         }
 
         return baseCost
+        */
     }
 
     neighbors := func (x int, y int) []image.Point {
@@ -1702,6 +1856,7 @@ func (game *Game) doLoadMenu(yield coroutine.YieldFunc) {
         useImage, _ := imageCache.GetImage("load.lbx", index, 0)
         return &uilib.UIElement{
             Rect: util.ImageRect(x, y, useImage),
+            PlaySoundLeftClick: true,
             LeftClick: func(element *uilib.UIElement){
                 action()
                 quit = true
@@ -2253,7 +2408,12 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                     case *GameEventMoveCamera:
                         moveCamera := event.(*GameEventMoveCamera)
                         game.Plane = moveCamera.Plane
-                        game.doMoveCamera(yield, moveCamera.X, moveCamera.Y)
+
+                        if moveCamera.Instant {
+                            game.Camera.Center(moveCamera.X, moveCamera.Y)
+                        } else {
+                            game.doMoveCamera(yield, moveCamera.X, moveCamera.Y)
+                        }
                     case *GameEventMoveUnit:
                         moveUnit := event.(*GameEventMoveUnit)
                         game.doMoveSelectedUnit(yield, moveUnit.Player)
@@ -2402,7 +2562,7 @@ func (game *Game) ScreenToTile(inX float64, inY float64) (int, int) {
     // log.Printf("relative tile %v, %v camera %v, %v", tileX, tileY, game.Camera.GetX(), game.Camera.GetY())
 
     // return int(tileX + float64(game.Camera.GetX())), int(tileY + float64(game.Camera.GetY()))
-    return int(tileX), int(tileY)
+    return int(math.Floor(tileX)), int(math.Floor(tileY))
 }
 
 func (game *Game) doInputZoom(yield coroutine.YieldFunc) bool {
@@ -2529,9 +2689,6 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
 
     mapUse := game.GetMap(stack.Plane())
 
-    oldX := stack.X()
-    oldY := stack.Y()
-
     stepsTaken := 0
     stopMoving := false
     var mergeStack *playerlib.UnitStack
@@ -2542,14 +2699,17 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
             break
         }
 
-        terrainCost, canMove := game.ComputeTerrainCost(stack, step.X, step.Y, mapUse)
+        oldX := stack.X()
+        oldY := stack.Y()
+
+        terrainCost, canMove := game.ComputeTerrainCost(stack, stack.X(), stack.Y(), step.X, step.Y, mapUse)
 
         if canMove {
             node := mapUse.GetMagicNode(step.X, step.Y)
             if node != nil && !node.Empty {
                 if game.confirmMagicNodeEncounter(yield, node) {
 
-                    stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost)
+                    stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost, game.GetNormalizeCoordinateFunc())
                     game.showMovement(yield, oldX, oldY, stack)
                     player.LiftFog(stack.X(), stack.Y(), 1, stack.Plane())
 
@@ -2565,7 +2725,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
             lair := mapUse.GetLair(step.X, step.Y)
             if lair != nil && !lair.Empty {
                 if game.confirmLairEncounter(yield, lair) {
-                    stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost)
+                    stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost, game.GetNormalizeCoordinateFunc())
                     game.showMovement(yield, oldX, oldY, stack)
                     player.LiftFog(stack.X(), stack.Y(), 1, stack.Plane())
 
@@ -2579,17 +2739,19 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
             }
 
             stepsTaken = i + 1
-            mergeStack = player.FindStack(step.X, step.Y)
+            mergeStack = player.FindStack(step.X, step.Y, stack.Plane())
 
-            stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost)
+            stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost, game.GetNormalizeCoordinateFunc())
             game.showMovement(yield, oldX, oldY, stack)
+            // FIXME: lift more fog if the stack has Scouting and some other abilities
             player.LiftFog(stack.X(), stack.Y(), 1, stack.Plane())
 
             for _, otherPlayer := range game.Players[1:] {
-                otherStack := otherPlayer.FindStack(stack.X(), stack.Y())
+                // FIXME: this should get all stacks at the given location and merge them into a single stack for combat
+                otherStack := otherPlayer.FindStack(stack.X(), stack.Y(), stack.Plane())
                 if otherStack != nil {
                     zone := combat.ZoneType{
-                        City: otherPlayer.FindCity(stack.X(), stack.Y()),
+                        City: otherPlayer.FindCity(stack.X(), stack.Y(), stack.Plane()),
                     }
 
                     game.doCombat(yield, player, stack, otherPlayer, otherStack, zone)
@@ -2630,14 +2792,18 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
     }
 
     // update unrest for new units in the city
-    newCity := player.FindCity(stack.X(), stack.Y())
+    newCity := player.FindCity(stack.X(), stack.Y(), stack.Plane())
     if newCity != nil {
         newCity.UpdateUnrest(stack.Units())
     }
 
     if stepsTaken > 0 {
-        stack.ExhaustMoves()
-        game.DoNextUnit(player)
+        if stack.AnyOutOfMoves() {
+            stack.ExhaustMoves()
+            game.DoNextUnit(player)
+        }
+
+        game.RefreshUI()
     }
 }
 
@@ -2678,7 +2844,7 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                 }
             }
 
-            newX := stack.X() + dx
+            newX := game.CurrentMap().WrapX(stack.X() + dx)
             newY := stack.Y() + dy
 
             if leftClick {
@@ -2691,6 +2857,7 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                     newY = game.cameraY + realY
                     */
                     newX, newY = game.ScreenToTile(float64(mouseX), float64(mouseY))
+                    // log.Printf("Click at %v, %v -> %v, %v", mouseX, mouseY, newX, newY)
                     newX = game.CurrentMap().WrapX(newX)
                 }
             }
@@ -2698,7 +2865,7 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
             if newX != oldX || newY != oldY {
                 activeUnits := stack.ActiveUnits()
                 if len(activeUnits) > 0 {
-                    if newY > 0 && newY < mapUse.Height() {
+                    if newY >= 0 && newY < mapUse.Height() {
 
                         var inactiveStack *playerlib.UnitStack
 
@@ -2763,16 +2930,16 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
             tileX = game.CurrentMap().WrapX(tileX)
 
             if rightClick {
-                city := player.FindCity(tileX, tileY)
+                city := player.FindCity(tileX, tileY, game.Plane)
                 if city != nil {
                     if city.Outpost {
-                        game.showOutpost(yield, city, player.FindStack(city.X, city.Y), false)
+                        game.showOutpost(yield, city, player.FindStack(city.X, city.Y, city.Plane), false)
                     } else {
                         game.doCityScreen(yield, city, player, buildinglib.BuildingNone)
                     }
                     game.RefreshUI()
                 } else {
-                    stack := player.FindStack(tileX, tileY)
+                    stack := player.FindStack(tileX, tileY, game.Plane)
                     if stack != nil {
                         player.SelectedStack = stack
                         game.RefreshUI()
@@ -2782,12 +2949,12 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                                 continue
                             }
 
-                            city := otherPlayer.FindCity(tileX, tileY)
+                            city := otherPlayer.FindCity(tileX, tileY, game.Plane)
                             if city != nil {
                                 game.doEnemyCityView(yield, city, otherPlayer)
                             }
 
-                            enemyStack := otherPlayer.FindStack(tileX, tileY)
+                            enemyStack := otherPlayer.FindStack(tileX, tileY, game.Plane)
                             if enemyStack != nil {
                                 quit := false
                                 clicked := func(){
@@ -2854,18 +3021,19 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                                     stack := moveDecision.Stack
                                     to := moveDecision.Location
                                     log.Printf("  moving stack %v to %v, %v", stack, to.X, to.Y)
-                                    terrainCost, _ := game.ComputeTerrainCost(stack, to.X, to.Y, game.GetMap(stack.Plane()))
+                                    terrainCost, _ := game.ComputeTerrainCost(stack, stack.X(), stack.Y(), to.X, to.Y, game.GetMap(stack.Plane()))
                                     oldX := stack.X()
                                     oldY := stack.Y()
-                                    stack.Move(to.X - stack.X(), to.Y - stack.Y(), terrainCost)
+                                    stack.Move(to.X - stack.X(), to.Y - stack.Y(), terrainCost, game.GetNormalizeCoordinateFunc())
                                     game.showMovement(yield, oldX, oldY, stack)
                                     player.LiftFog(stack.X(), stack.Y(), 1, stack.Plane())
 
                                     for _, enemy := range game.GetEnemies(player) {
-                                        enemyStack := enemy.FindStack(stack.X(), stack.Y())
+                                        // FIXME: this should get all stacks at the given location and merge them into a single stack for combat
+                                        enemyStack := enemy.FindStack(stack.X(), stack.Y(), stack.Plane())
                                         if enemyStack != nil {
                                             zone := combat.ZoneType{
-                                                City: enemy.FindCity(stack.X(), stack.Y()),
+                                                City: enemy.FindCity(stack.X(), stack.Y(), stack.Plane()),
                                             }
                                             game.doCombat(yield, player, stack, enemy, enemyStack, zone)
                                         }
@@ -2874,7 +3042,7 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                                     create := decision.(*playerlib.AICreateUnitDecision)
                                     log.Printf("ai creating %+v", create)
 
-                                    existingStack := player.FindStack(create.X, create.Y)
+                                    existingStack := player.FindStack(create.X, create.Y, create.Plane)
                                     if existingStack == nil || len(existingStack.Units()) < 9 {
                                         overworldUnit := units.MakeOverworldUnitFromUnit(create.Unit, create.X, create.Y, create.Plane, player.Wizard.Banner, player.MakeExperienceInfo())
                                         player.AddUnit(overworldUnit)
@@ -3561,36 +3729,18 @@ func (game *Game) ShowSpellBookCastUI(yield coroutine.YieldFunc, player *playerl
     }))
 }
 
-func (game *Game) CatchmentArea(x int, y int) []image.Point {
-    var out []image.Point
-
-    for dx := -2; dx <= 2; dx++ {
-        for dy := -2; dy <= 2; dy++ {
-            // ignore corners
-            if int(math.Abs(float64(dx)) + math.Abs(float64(dy))) == 4 {
-                continue
-            }
-
-            out = append(out, image.Point{X: x + dx, Y: y + dy})
-        }
-    }
-
-    return out
-}
-
 func (game *Game) ComputeMaximumPopulation(x int, y int, plane data.Plane) int {
     // find catchment area of x, y
     // for each square, compute food production
     // maximum pop is food production
-    catchment := game.CatchmentArea(x, y)
+    mapUse := game.GetMap(plane)
+    catchment := mapUse.GetCatchmentArea(x, y)
 
     food := fraction.Zero()
 
-    for _, point := range catchment {
-        tile := game.GetMap(plane).GetTile(point.X, point.Y)
+    for _, tile := range catchment {
         food = food.Add(tile.Tile.FoodBonus())
-        // FIXME: get bonus directly from tile.Extra
-        bonus := game.GetMap(plane).GetBonusTile(point.X, point.Y)
+        bonus := tile.GetBonus()
         food = food.Add(fraction.FromInt(bonus.FoodBonus()))
     }
 
@@ -3632,12 +3782,12 @@ func (game *Game) CityGoldBonus(x int, y int, plane data.Plane) int {
 }
 
 func (game *Game) CityProductionBonus(x int, y int, plane data.Plane) int {
-    catchment := game.CatchmentArea(x, y)
+    mapUse := game.GetMap(plane)
+    catchment := mapUse.GetCatchmentArea(x, y)
 
     production := 0
 
-    for _, point := range catchment {
-        tile := game.GetMap(plane).GetTile(point.X, point.Y)
+    for _, tile := range catchment {
         production += tile.Tile.ProductionBonus()
     }
 
@@ -3647,7 +3797,7 @@ func (game *Game) CityProductionBonus(x int, y int, plane data.Plane) int {
 func (game *Game) CreateOutpost(settlers units.StackUnit, player *playerlib.Player) *citylib.City {
     cityName := game.SuggestCityName(settlers.GetRace())
 
-    newCity := citylib.MakeCity(cityName, settlers.GetX(), settlers.GetY(), settlers.GetRace(), settlers.GetBanner(), player.TaxRate, game.BuildingInfo, game.GetMap(settlers.GetPlane()))
+    newCity := citylib.MakeCity(cityName, settlers.GetX(), settlers.GetY(), settlers.GetRace(), settlers.GetBanner(), player.TaxRate, game.BuildingInfo, game.GetMap(settlers.GetPlane()), game)
     newCity.Plane = settlers.GetPlane()
     newCity.Population = 300
     newCity.Outpost = true
@@ -3660,7 +3810,7 @@ func (game *Game) CreateOutpost(settlers units.StackUnit, player *playerlib.Play
     game.RefreshUI()
     player.AddCity(newCity)
 
-    stack := player.FindStack(newCity.X, newCity.Y)
+    stack := player.FindStack(newCity.X, newCity.Y, newCity.Plane)
 
     select {
         case game.Events<- &GameEventNewOutpost{City: newCity, Stack: stack}:
@@ -3702,12 +3852,20 @@ func (game *Game) DoBuildAction(player *playerlib.Player){
                     break
                 }
             }
+        } else if powers.BuildRoad {
+            // FIXME: put the unit to sleep for a few turns, when they wake up the road is built
+            x, y := player.SelectedStack.X(), player.SelectedStack.Y()
+            plane := player.SelectedStack.Plane()
+
+            game.GetMap(plane).SetRoad(x, y, plane == data.PlaneMyrror)
+            player.SelectedStack.ExhaustMoves()
         }
     }
 }
 
 func (game *Game) MakeHudUI() *uilib.UI {
     ui := &uilib.UI{
+        Cache: game.Cache,
         Draw: func(ui *uilib.UI, screen *ebiten.Image){
             var options ebiten.DrawImageOptions
             mainHud, _ := game.ImageCache.GetImage("main.lbx", 0, 0)
@@ -3749,6 +3907,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
         counter := uint64(0)
         return &uilib.UIElement{
             Rect: rect,
+            PlaySoundLeftClick: true,
             Inside: func(this *uilib.UIElement, x int, y int){
                 counter += 1
             },
@@ -3842,7 +4001,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
     if len(game.Players) > 0 && game.Players[0].SelectedStack != nil {
         player := game.Players[0]
-        stack := player.SelectedStack
+        // stack := player.SelectedStack
 
         unitX1 := 246
         unitY1 := 79
@@ -3850,93 +4009,119 @@ func (game *Game) MakeHudUI() *uilib.UI {
         unitX := unitX1
         unitY := unitY1
 
+        minMoves := fraction.Zero()
+
         row := 0
-        for _, unit := range stack.Units() {
-            // show a unit element for each unit in the stack
-            // image index increases by 1 for each unit, indexes 24-32
-            disband := func(){
-                player.RemoveUnit(unit)
-                game.RefreshUI()
-                if player.SelectedStack == nil {
-                    game.DoNextUnit(player)
+
+        allStacks := player.FindAllStacks(player.SelectedStack.X(), player.SelectedStack.Y(), player.SelectedStack.Plane())
+
+        updateMinMoves := func() {
+            minMoves = fraction.Zero()
+            smallest := fraction.Zero()
+            first := true
+            for _, stack := range allStacks {
+                if first || stack.GetRemainingMoves().LessThan(smallest) {
+                    smallest = stack.GetRemainingMoves()
                 }
+
+                first = false
             }
 
-            unitBackground, _ := game.ImageCache.GetImage("main.lbx", 24, 0)
-            unitRect := util.ImageRect(unitX, unitY, unitBackground)
-            elements = append(elements, &uilib.UIElement{
-                Rect: unitRect,
-                LeftClick: func(this *uilib.UIElement){
-                    stack.ToggleActive(unit)
-                    select {
-                        case game.Events<- &GameEventMoveUnit{Player: player}:
-                        default:
+            minMoves = smallest
+        }
+
+        updateMinMoves()
+
+        for _, stack := range allStacks {
+            for _, unit := range stack.Units() {
+                // show a unit element for each unit in the stack
+                // image index increases by 1 for each unit, indexes 24-32
+                disband := func(){
+                    player.RemoveUnit(unit)
+                    game.RefreshUI()
+                    if player.SelectedStack == nil {
+                        game.DoNextUnit(player)
                     }
-                },
-                RightClick: func(this *uilib.UIElement){
-                    ui.AddElements(unitview.MakeUnitContextMenu(game.Cache, ui, unit, disband))
-                },
-                Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                    var options ebiten.DrawImageOptions
-                    options.GeoM.Translate(float64(unitRect.Min.X), float64(unitRect.Min.Y))
-                    screen.DrawImage(unitBackground, &options)
+                }
 
-                    options.GeoM.Translate(1, 1)
-
-                    if stack.IsActive(unit){
-                        unitBack, _ := units.GetUnitBackgroundImage(unit.GetBanner(), &game.ImageCache)
-                        screen.DrawImage(unitBack, &options)
-                    }
-
-                    options.GeoM.Translate(1, 1)
-                    unitImage, err := GetUnitImage(unit, &game.ImageCache, player.Wizard.Banner)
-                    if err == nil {
-                        screen.DrawImage(unitImage, &options)
-
-                        // draw the first enchantment on the unit
-                        for _, enchantment := range unit.GetEnchantments() {
-                            x, y := options.GeoM.Apply(0, 0)
-                            util.DrawOutline(screen, &game.ImageCache, unitImage, x, y, game.Counter/10, enchantment.Color())
-                            break
-                        }
-                    }
-
-                    if unit.GetHealth() < unit.GetMaxHealth() {
-                        highHealth := color.RGBA{R: 0, G: 0xff, B: 0, A: 0xff}
-                        mediumHealth := color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff}
-                        lowHealth := color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}
-
-                        healthWidth := float64(10)
-                        healthPercent := float64(unit.GetHealth()) / float64(unit.GetMaxHealth())
-                        healthLength := healthWidth * healthPercent
-
-                        // always show at least one point of health
-                        if healthLength < 1 {
-                            healthLength = 1
+                unitBackground, _ := game.ImageCache.GetImage("main.lbx", 24, 0)
+                unitRect := util.ImageRect(unitX, unitY, unitBackground)
+                elements = append(elements, &uilib.UIElement{
+                    Rect: unitRect,
+                    PlaySoundLeftClick: true,
+                    LeftClick: func(this *uilib.UIElement){
+                        stack.ToggleActive(unit)
+                        select {
+                            case game.Events<- &GameEventMoveUnit{Player: player}:
+                            default:
                         }
 
-                        useColor := highHealth
-                        if healthPercent < 0.33 {
-                            useColor = lowHealth
-                        } else if healthPercent < 0.66 {
-                            useColor = mediumHealth
-                        } else {
-                            useColor = highHealth
+                        updateMinMoves()
+                    },
+                    RightClick: func(this *uilib.UIElement){
+                        ui.AddElements(unitview.MakeUnitContextMenu(game.Cache, ui, unit, disband))
+                    },
+                    Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                        var options ebiten.DrawImageOptions
+                        options.GeoM.Translate(float64(unitRect.Min.X), float64(unitRect.Min.Y))
+                        screen.DrawImage(unitBackground, &options)
+
+                        options.GeoM.Translate(1, 1)
+
+                        if stack.IsActive(unit){
+                            unitBack, _ := units.GetUnitBackgroundImage(unit.GetBanner(), &game.ImageCache)
+                            screen.DrawImage(unitBack, &options)
                         }
 
-                        x, y := options.GeoM.Apply(4, 19)
-                        vector.StrokeLine(screen, float32(x), float32(y), float32(x + healthLength), float32(y), 1, useColor, false)
-                    }
+                        options.GeoM.Translate(1, 1)
+                        unitImage, err := GetUnitImage(unit, &game.ImageCache, unit.GetBanner())
+                        if err == nil {
+                            screen.DrawImage(unitImage, &options)
 
-                    silverBadge := 51
-                    goldBadge := 52
-                    redBadge := 53
-                    count := 0
-                    index := 0
+                            // draw the first enchantment on the unit
+                            for _, enchantment := range unit.GetEnchantments() {
+                                x, y := options.GeoM.Apply(0, 0)
+                                util.DrawOutline(screen, &game.ImageCache, unitImage, x, y, game.Counter/10, enchantment.Color())
+                                break
+                            }
+                        }
 
-                    // draw experience badges
-                    if unit.GetRace() == data.RaceHero {
-                        switch units.GetHeroExperienceLevel(unit.GetExperience(), player.Wizard.AbilityEnabled(setup.AbilityWarlord), player.GlobalEnchantments.Contains(data.EnchantmentCrusade)) {
+                        if unit.GetHealth() < unit.GetMaxHealth() {
+                            highHealth := color.RGBA{R: 0, G: 0xff, B: 0, A: 0xff}
+                            mediumHealth := color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff}
+                            lowHealth := color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}
+
+                            healthWidth := float64(10)
+                            healthPercent := float64(unit.GetHealth()) / float64(unit.GetMaxHealth())
+                            healthLength := healthWidth * healthPercent
+
+                            // always show at least one point of health
+                            if healthLength < 1 {
+                                healthLength = 1
+                            }
+
+                            useColor := highHealth
+                            if healthPercent < 0.33 {
+                                useColor = lowHealth
+                            } else if healthPercent < 0.66 {
+                                useColor = mediumHealth
+                            } else {
+                                useColor = highHealth
+                            }
+
+                            x, y := options.GeoM.Apply(4, 19)
+                            vector.StrokeLine(screen, float32(x), float32(y), float32(x + healthLength), float32(y), 1, useColor, false)
+                        }
+
+                        silverBadge := 51
+                        goldBadge := 52
+                        redBadge := 53
+                        count := 0
+                        index := 0
+
+                        // draw experience badges
+                        if unit.GetRace() == data.RaceHero {
+                            switch units.GetHeroExperienceLevel(unit.GetExperience(), player.Wizard.AbilityEnabled(setup.AbilityWarlord), player.GlobalEnchantments.Contains(data.EnchantmentCrusade)) {
                             case units.ExperienceHero:
                             case units.ExperienceMyrmidon:
                                 count = 1
@@ -3962,10 +4147,10 @@ func (game *Game) MakeHudUI() *uilib.UI {
                             case units.ExperienceDemiGod:
                                 count = 2
                                 index = redBadge
-                        }
-                    } else {
+                            }
+                        } else {
 
-                        switch units.GetNormalExperienceLevel(unit.GetExperience(), player.Wizard.AbilityEnabled(setup.AbilityWarlord), player.GlobalEnchantments.Contains(data.EnchantmentCrusade)) {
+                            switch units.GetNormalExperienceLevel(unit.GetExperience(), player.Wizard.AbilityEnabled(setup.AbilityWarlord), player.GlobalEnchantments.Contains(data.EnchantmentCrusade)) {
                             case units.ExperienceRecruit:
                                 // nothing
                             case units.ExperienceRegular:
@@ -3988,252 +4173,312 @@ func (game *Game) MakeHudUI() *uilib.UI {
                                 // two yellow
                                 count = 2
                                 index = goldBadge
+                            }
                         }
-                    }
 
-                    badgeOptions := options
-                    badgeOptions.GeoM.Translate(1, 21)
-                    for i := 0; i < count; i++ {
-                        pic, _ := game.ImageCache.GetImage("main.lbx", index, 0)
-                        screen.DrawImage(pic, &badgeOptions)
-                        badgeOptions.GeoM.Translate(4, 0)
-                    }
+                        badgeOptions := options
+                        badgeOptions.GeoM.Translate(1, 21)
+                        for i := 0; i < count; i++ {
+                            pic, _ := game.ImageCache.GetImage("main.lbx", index, 0)
+                            screen.DrawImage(pic, &badgeOptions)
+                            badgeOptions.GeoM.Translate(4, 0)
+                        }
 
-                    weaponOptions := options
-                    weaponOptions.GeoM.Translate(12, 18)
-                    var weapon *ebiten.Image
-                    switch unit.GetWeaponBonus() {
+                        weaponOptions := options
+                        weaponOptions.GeoM.Translate(12, 18)
+                        var weapon *ebiten.Image
+                        switch unit.GetWeaponBonus() {
                         case data.WeaponMagic:
                             weapon, _ = game.ImageCache.GetImage("main.lbx", 54, 0)
                         case data.WeaponMythril:
                             weapon, _ = game.ImageCache.GetImage("main.lbx", 55, 0)
                         case data.WeaponAdamantium:
                             weapon, _ = game.ImageCache.GetImage("main.lbx", 56, 0)
+                        }
+
+                        if weapon != nil {
+                            screen.DrawImage(weapon, &weaponOptions)
+                        }
+
+                        // draw a G on the unit if they are moving
+                        if len(stack.CurrentPath) != 0 {
+                            x, y := options.GeoM.Apply(1, 1)
+                            game.WhiteFont.Print(screen, x, y, 1, options.ColorScale, "G")
+                        }
+                    },
+                })
+
+                row += 1
+                unitX += unitBackground.Bounds().Dx()
+                if row >= 3 {
+                    row = 0
+                    unitX = unitX1
+                    unitY += unitBackground.Bounds().Dy()
+                }
+            }
+
+            doneImages, _ := game.ImageCache.GetImages("main.lbx", 8)
+            doneIndex := 0
+            doneRect := util.ImageRect(246, 176, doneImages[0])
+            doneCounter := uint64(0)
+            elements = append(elements, &uilib.UIElement{
+                Rect: doneRect,
+                Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                    colorScale := ebiten.ColorScale{}
+
+                    if doneCounter > 0 {
+                        v := float32(1 + (math.Sin(float64(doneCounter / 4)) / 2 + 0.5) / 2)
+                        colorScale.Scale(v, v, v, 1)
                     }
 
-                    if weapon != nil {
-                        screen.DrawImage(weapon, &weaponOptions)
+                    var options ebiten.DrawImageOptions
+                    options.ColorScale.ScaleWithColorScale(colorScale)
+                    options.GeoM.Translate(float64(doneRect.Min.X), float64(doneRect.Min.Y))
+                    screen.DrawImage(doneImages[doneIndex], &options)
+                },
+                Inside: func(this *uilib.UIElement, x int, y int){
+                    doneCounter += 1
+                },
+                NotInside: func(this *uilib.UIElement){
+                    doneCounter = 0
+                },
+                PlaySoundLeftClick: true,
+                LeftClick: func(this *uilib.UIElement){
+                    doneIndex = 1
+                },
+                LeftClickRelease: func(this *uilib.UIElement){
+                    doneIndex = 0
+
+                    if player.SelectedStack != nil {
+                        player.SelectedStack.ExhaustMoves()
                     }
 
-                    // draw a G on the unit if they are moving
-                    if len(stack.CurrentPath) != 0 {
-                        x, y := options.GeoM.Apply(1, 1)
-                        game.WhiteFont.Print(screen, x, y, 1, options.ColorScale, "G")
-                    }
+                    game.DoNextUnit(player)
                 },
             })
 
-            row += 1
-            unitX += unitBackground.Bounds().Dx()
-            if row >= 3 {
-                row = 0
-                unitX = unitX1
-                unitY += unitBackground.Bounds().Dy()
-            }
+            patrolImages, _ := game.ImageCache.GetImages("main.lbx", 9)
+            patrolIndex := 0
+            patrolRect := util.ImageRect(280, 176, patrolImages[0])
+            patrolCounter := uint64(0)
+            elements = append(elements, &uilib.UIElement{
+                Rect: patrolRect,
+                Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                    colorScale := ebiten.ColorScale{}
+
+                    if patrolCounter > 0 {
+                        v := float32(1 + (math.Sin(float64(patrolCounter / 4)) / 2 + 0.5) / 2)
+                        colorScale.Scale(v, v, v, 1)
+                    }
+
+                    var options ebiten.DrawImageOptions
+                    options.GeoM.Translate(float64(patrolRect.Min.X), float64(patrolRect.Min.Y))
+                    options.ColorScale.ScaleWithColorScale(colorScale)
+                    screen.DrawImage(patrolImages[patrolIndex], &options)
+                },
+                Inside: func(this *uilib.UIElement, x int, y int){
+                    patrolCounter += 1
+                },
+                NotInside: func(this *uilib.UIElement){
+                    patrolCounter = 0
+                },
+                PlaySoundLeftClick: true,
+                LeftClick: func(this *uilib.UIElement){
+                    patrolIndex = 1
+                },
+                LeftClickRelease: func(this *uilib.UIElement){
+                    patrolIndex = 0
+
+                    if player.SelectedStack != nil {
+                        for _, unit := range player.SelectedStack.ActiveUnits() {
+                            unit.SetPatrol(true)
+                        }
+                    }
+
+                    player.SelectedStack.EnableMovers()
+
+                    game.DoNextUnit(player)
+                },
+            })
+
+            waitImages, _ := game.ImageCache.GetImages("main.lbx", 10)
+            waitIndex := 0
+            waitRect := util.ImageRect(246, 186, waitImages[0])
+            waitCounter := uint64(0)
+            elements = append(elements, &uilib.UIElement{
+                Rect: waitRect,
+                Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                    colorScale := ebiten.ColorScale{}
+
+                    if waitCounter > 0 {
+                        v := float32(1 + (math.Sin(float64(waitCounter / 4)) / 2 + 0.5) / 2)
+                        colorScale.Scale(v, v, v, 1)
+                    }
+
+                    var options ebiten.DrawImageOptions
+                    options.GeoM.Translate(float64(waitRect.Min.X), float64(waitRect.Min.Y))
+                    options.ColorScale.ScaleWithColorScale(colorScale)
+                    screen.DrawImage(waitImages[waitIndex], &options)
+                },
+                Inside: func(this *uilib.UIElement, x int, y int){
+                    waitCounter += 1
+                },
+                NotInside: func(this *uilib.UIElement){
+                    waitCounter = 0
+                },
+                PlaySoundLeftClick: true,
+                LeftClick: func(this *uilib.UIElement){
+                    waitIndex = 1
+                },
+                LeftClickRelease: func(this *uilib.UIElement){
+                    waitIndex = 0
+                    game.DoNextUnit(player)
+                },
+            })
+
+            // FIXME: use index 15 to show inactive build button
+            inactiveBuild, _ := game.ImageCache.GetImages("main.lbx", 15)
+            buildImages, _ := game.ImageCache.GetImages("main.lbx", 11)
+            meldImages, _ := game.ImageCache.GetImages("main.lbx", 49)
+            buildIndex := 0
+            buildRect := util.ImageRect(280, 186, buildImages[0])
+            buildCounter := uint64(0)
+            elements = append(elements, &uilib.UIElement{
+                Rect: buildRect,
+                Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                    var options colorm.DrawImageOptions
+                    var matrix colorm.ColorM
+                    options.GeoM.Translate(float64(buildRect.Min.X), float64(buildRect.Min.Y))
+
+                    if buildCounter > 0 {
+                        v := 1 + (math.Sin(float64(buildCounter / 4)) / 2 + 0.5) / 2
+                        matrix.Scale(v, v, v, 1)
+                    }
+
+                    var use *ebiten.Image
+                    use = inactiveBuild[0]
+
+                    var powers UnitBuildPowers
+
+                    if player.SelectedStack != nil {
+                        powers = computeUnitBuildPowers(player.SelectedStack)
+                    }
+
+                    if powers.CreateOutpost {
+                        use = buildImages[buildIndex]
+                    } else if powers.Meld {
+                        use = meldImages[buildIndex]
+
+                        canMeld := false
+                        node := game.GetMap(player.SelectedStack.Plane()).GetMagicNode(player.SelectedStack.X(), player.SelectedStack.Y())
+                        if node != nil && node.Empty {
+                            canMeld = true
+                        }
+
+                        if !canMeld {
+                            matrix.ChangeHSV(0, 0, 1)
+                        }
+                    } else if powers.BuildRoad {
+                        use = buildImages[buildIndex]
+                    }
+
+                    colorm.DrawImage(screen, use, matrix, &options)
+                },
+                Inside: func(this *uilib.UIElement, x int, y int){
+                    buildCounter += 1
+                },
+                NotInside: func(this *uilib.UIElement){
+                    buildCounter = 0
+                },
+                PlaySoundLeftClick: true,
+                LeftClick: func(this *uilib.UIElement){
+                    var powers UnitBuildPowers
+
+                    if player.SelectedStack != nil {
+                        powers = computeUnitBuildPowers(player.SelectedStack)
+                    }
+
+                    if powers.CreateOutpost {
+                        // FIXME: check if we can build an outpost here
+                        buildIndex = 1
+                    } else if powers.Meld {
+                        canMeld := false
+                        node := game.GetMap(player.SelectedStack.Plane()).GetMagicNode(player.SelectedStack.X(), player.SelectedStack.Y())
+                        if node != nil && node.Empty {
+                            canMeld = true
+                        }
+
+                        if canMeld {
+                            buildIndex = 1
+                        }
+                    } else if powers.BuildRoad {
+                        hasRoad := game.GetMap(player.SelectedStack.Plane()).ContainsRoad(player.SelectedStack.X(), player.SelectedStack.Y())
+                        hasCity := game.ContainsCity(player.SelectedStack.X(), player.SelectedStack.Y(), player.SelectedStack.Plane())
+                        node := game.GetMap(player.SelectedStack.Plane()).GetMagicNode(player.SelectedStack.X(), player.SelectedStack.Y())
+                        if !hasRoad && !hasCity && node == nil {
+                            buildIndex = 1
+                        }
+                    }
+
+                },
+                LeftClickRelease: func(this *uilib.UIElement){
+                    // if couldn't left click, then release should do nothing
+                    if buildIndex == 0 {
+                        return
+                    }
+
+                    buildIndex = 0
+
+                    game.DoBuildAction(player)
+                },
+            })
         }
 
-        doneImages, _ := game.ImageCache.GetImages("main.lbx", 8)
-        doneIndex := 0
-        doneRect := util.ImageRect(246, 176, doneImages[0])
-        doneCounter := uint64(0)
         elements = append(elements, &uilib.UIElement{
-            Rect: doneRect,
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                colorScale := ebiten.ColorScale{}
+                if !minMoves.IsZero() {
+                    x := 246.0
+                    y := 167.0
+                    game.WhiteFont.Print(screen, x, y, 1, ebiten.ColorScale{}, fmt.Sprintf("Moves:%v", minMoves.ToFloat()))
 
-                if doneCounter > 0 {
-                    v := float32(1 + (math.Sin(float64(doneCounter / 4)) / 2 + 0.5) / 2)
-                    colorScale.Scale(v, v, v, 1)
+                    sailingIcon, _ := game.ImageCache.GetImage("main.lbx", 18, 0)
+                    swimmingIcon, _ := game.ImageCache.GetImage("main.lbx", 19, 0)
+                    mountaineeringIcon, _ := game.ImageCache.GetImage("main.lbx", 20, 0)
+                    foresterIcon, _ := game.ImageCache.GetImage("main.lbx", 21, 0)
+                    flyingIcon, _ := game.ImageCache.GetImage("main.lbx", 22, 0)
+                    pathfindingIcon, _ := game.ImageCache.GetImage("main.lbx", 23, 0)
+                    planeTravelIcon, _ := game.ImageCache.GetImage("main.lbx", 36, 0)
+                    windWalkingIcon, _ := game.ImageCache.GetImage("main.lbx", 37, 0)
+                    walkingIcon, _ := game.ImageCache.GetImage("main.lbx", 38, 0)
+
+                    _ = sailingIcon
+                    _ = swimmingIcon
+                    _ = mountaineeringIcon
+                    _ = foresterIcon
+                    _ = flyingIcon
+                    _ = pathfindingIcon
+                    _ = planeTravelIcon
+                    _ = windWalkingIcon
+
+                    useIcon := walkingIcon
+
+                    if player.SelectedStack != nil {
+                        if player.SelectedStack.AllFlyers() {
+                            useIcon = flyingIcon
+                        } else if player.SelectedStack.ActiveUnitsHasAbility(data.AbilityForester) {
+                            useIcon = foresterIcon
+                        } else if player.SelectedStack.AllSwimmers() {
+                            useIcon = swimmingIcon
+                        }
+                    }
+
+                    var options ebiten.DrawImageOptions
+                    options.GeoM.Translate(x + 60, y)
+                    screen.DrawImage(useIcon, &options)
                 }
-
-                var options ebiten.DrawImageOptions
-                options.ColorScale.ScaleWithColorScale(colorScale)
-                options.GeoM.Translate(float64(doneRect.Min.X), float64(doneRect.Min.Y))
-                screen.DrawImage(doneImages[doneIndex], &options)
-            },
-            Inside: func(this *uilib.UIElement, x int, y int){
-                doneCounter += 1
-            },
-            NotInside: func(this *uilib.UIElement){
-                doneCounter = 0
-            },
-            LeftClick: func(this *uilib.UIElement){
-                doneIndex = 1
-            },
-            LeftClickRelease: func(this *uilib.UIElement){
-                doneIndex = 0
-
-                if player.SelectedStack != nil {
-                    player.SelectedStack.ExhaustMoves()
-                }
-
-                game.DoNextUnit(player)
             },
         })
 
-        patrolImages, _ := game.ImageCache.GetImages("main.lbx", 9)
-        patrolIndex := 0
-        patrolRect := util.ImageRect(280, 176, patrolImages[0])
-        patrolCounter := uint64(0)
-        elements = append(elements, &uilib.UIElement{
-            Rect: patrolRect,
-            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                colorScale := ebiten.ColorScale{}
-
-                if patrolCounter > 0 {
-                    v := float32(1 + (math.Sin(float64(patrolCounter / 4)) / 2 + 0.5) / 2)
-                    colorScale.Scale(v, v, v, 1)
-                }
-
-                var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(patrolRect.Min.X), float64(patrolRect.Min.Y))
-                options.ColorScale.ScaleWithColorScale(colorScale)
-                screen.DrawImage(patrolImages[patrolIndex], &options)
-            },
-            Inside: func(this *uilib.UIElement, x int, y int){
-                patrolCounter += 1
-            },
-            NotInside: func(this *uilib.UIElement){
-                patrolCounter = 0
-            },
-            LeftClick: func(this *uilib.UIElement){
-                patrolIndex = 1
-            },
-            LeftClickRelease: func(this *uilib.UIElement){
-                patrolIndex = 0
-
-                if player.SelectedStack != nil {
-                    for _, unit := range player.SelectedStack.ActiveUnits() {
-                        unit.SetPatrol(true)
-                    }
-                }
-
-                player.SelectedStack.EnableMovers()
-
-                game.DoNextUnit(player)
-            },
-        })
-
-        waitImages, _ := game.ImageCache.GetImages("main.lbx", 10)
-        waitIndex := 0
-        waitRect := util.ImageRect(246, 186, waitImages[0])
-        waitCounter := uint64(0)
-        elements = append(elements, &uilib.UIElement{
-            Rect: waitRect,
-            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                colorScale := ebiten.ColorScale{}
-
-                if waitCounter > 0 {
-                    v := float32(1 + (math.Sin(float64(waitCounter / 4)) / 2 + 0.5) / 2)
-                    colorScale.Scale(v, v, v, 1)
-                }
-
-                var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(waitRect.Min.X), float64(waitRect.Min.Y))
-                options.ColorScale.ScaleWithColorScale(colorScale)
-                screen.DrawImage(waitImages[waitIndex], &options)
-            },
-            Inside: func(this *uilib.UIElement, x int, y int){
-                waitCounter += 1
-            },
-            NotInside: func(this *uilib.UIElement){
-                waitCounter = 0
-            },
-            LeftClick: func(this *uilib.UIElement){
-                waitIndex = 1
-            },
-            LeftClickRelease: func(this *uilib.UIElement){
-                waitIndex = 0
-                game.DoNextUnit(player)
-            },
-        })
-
-        // FIXME: use index 15 to show inactive build button
-        inactiveBuild, _ := game.ImageCache.GetImages("main.lbx", 15)
-        buildImages, _ := game.ImageCache.GetImages("main.lbx", 11)
-        meldImages, _ := game.ImageCache.GetImages("main.lbx", 49)
-        buildIndex := 0
-        buildRect := util.ImageRect(280, 186, buildImages[0])
-        buildCounter := uint64(0)
-        elements = append(elements, &uilib.UIElement{
-            Rect: buildRect,
-            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                var options colorm.DrawImageOptions
-                var matrix colorm.ColorM
-                options.GeoM.Translate(float64(buildRect.Min.X), float64(buildRect.Min.Y))
-
-                if buildCounter > 0 {
-                    v := 1 + (math.Sin(float64(buildCounter / 4)) / 2 + 0.5) / 2
-                    matrix.Scale(v, v, v, 1)
-                }
-
-                var use *ebiten.Image
-                use = inactiveBuild[0]
-
-                var powers UnitBuildPowers
-
-                if player.SelectedStack != nil {
-                    powers = computeUnitBuildPowers(player.SelectedStack)
-                }
-
-                if powers.CreateOutpost {
-                    use = buildImages[buildIndex]
-                } else if powers.Meld {
-                    use = meldImages[buildIndex]
-
-                    canMeld := false
-                    node := game.GetMap(player.SelectedStack.Plane()).GetMagicNode(player.SelectedStack.X(), player.SelectedStack.Y())
-                    if node != nil && node.Empty {
-                        canMeld = true
-                    }
-
-                    if !canMeld {
-                        matrix.ChangeHSV(0, 0, 1)
-                    }
-                }
-
-                colorm.DrawImage(screen, use, matrix, &options)
-            },
-            Inside: func(this *uilib.UIElement, x int, y int){
-                buildCounter += 1
-            },
-            NotInside: func(this *uilib.UIElement){
-                buildCounter = 0
-            },
-            LeftClick: func(this *uilib.UIElement){
-                var powers UnitBuildPowers
-
-                if player.SelectedStack != nil {
-                    powers = computeUnitBuildPowers(player.SelectedStack)
-                }
-
-                if powers.CreateOutpost {
-                    // FIXME: check if we can build an outpost here
-                    buildIndex = 1
-                } else if powers.Meld {
-                    canMeld := false
-                    node := game.GetMap(player.SelectedStack.Plane()).GetMagicNode(player.SelectedStack.X(), player.SelectedStack.Y())
-                    if node != nil && node.Empty {
-                        canMeld = true
-                    }
-
-                    if canMeld {
-                        buildIndex = 1
-                    }
-                }
-
-            },
-            LeftClickRelease: func(this *uilib.UIElement){
-                // if couldn't left click, then release should do nothing
-                if buildIndex == 0 {
-                    return
-                }
-
-                buildIndex = 0
-
-                game.DoBuildAction(player)
-            },
-        })
 
     } else {
         // next turn
@@ -4243,6 +4488,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
         nextTurnClicked := false
         elements = append(elements, &uilib.UIElement{
             Rect: nextTurnRect,
+            PlaySoundLeftClick: true,
             LeftClick: func(this *uilib.UIElement){
                 nextTurnClicked = true
             },
@@ -4348,8 +4594,14 @@ func (game *Game) DoNextUnit(player *playerlib.Player){
         if stack.HasMoves() {
             player.SelectedStack = stack
             stack.EnableMovers()
+            select {
+                case game.Events <- &GameEventMoveCamera{Plane: stack.Plane(), X: stack.X(), Y: stack.Y(), Instant: true}:
+                default:
+            }
+            /*
             game.Plane = stack.Plane()
             game.Camera.Center(stack.X(), stack.Y())
+            */
             break
         }
     }
@@ -4380,12 +4632,29 @@ func (game *Game) DoNextUnit(player *playerlib.Player){
  * (false, false, false) means all units are supported.
  */
 func (game *Game) CheckDisband(player *playerlib.Player) (bool, bool, bool) {
-    goldIssue := player.GoldPerTurn() < 0 && player.GoldPerTurn() > player.Gold
-    foodIssue := player.FoodPerTurn() < 0
+
+    unitsNeedGold := false
+    unitsNeedFood := false
+    unitsNeedMana := false
+
+    for _, unit := range player.Units {
+        // dont need to keep checking in this case
+        if unitsNeedGold && unitsNeedFood && unitsNeedMana {
+            break
+        }
+
+        unitsNeedGold = unitsNeedGold || unit.GetUpkeepGold() > 0
+        unitsNeedFood = unitsNeedFood || unit.GetUpkeepFood() > 0
+        unitsNeedMana = unitsNeedMana || unit.GetUpkeepMana() > 0
+    }
+
+    goldPerTurn := player.GoldPerTurn()
+    goldIssue := player.Gold + goldPerTurn < 0 && unitsNeedGold
+    foodIssue := player.FoodPerTurn() < 0 && unitsNeedFood
 
     manaPerTurn := player.ManaPerTurn(game.ComputePower(player))
 
-    manaIssue := manaPerTurn < 0 && manaPerTurn > player.Mana
+    manaIssue := player.Mana + manaPerTurn < 0 && unitsNeedMana
 
     return goldIssue, foodIssue, manaIssue
 }
@@ -4533,7 +4802,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
     var removeCities []*citylib.City
 
     for _, city := range player.Cities {
-        cityEvents := city.DoNextTurn(player.GetUnits(city.X, city.Y))
+        cityEvents := city.DoNextTurn(player.GetUnits(city.X, city.Y, city.Plane))
         for _, event := range cityEvents {
             switch event.(type) {
             case *citylib.CityEventPopulationGrowth:
@@ -4607,7 +4876,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
         // base healing rate is 5%. in a town is 10%, with animists guild is 16.67%
         rate := 0.05
 
-        city := player.FindCity(stack.X(), stack.Y())
+        city := player.FindCity(stack.X(), stack.Y(), stack.Plane())
 
         if city != nil {
             rate = 0.1
@@ -4959,13 +5228,17 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
     // draw current path on top of fog
     if overworld.SelectedStack != nil {
         boot, _ := overworld.ImageCache.GetImage("compix.lbx", 72, 0)
-        for _, point := range overworld.SelectedStack.CurrentPath {
+        for pointI, point := range overworld.SelectedStack.CurrentPath {
             var options ebiten.DrawImageOptions
             x, y := convertTileCoordinates(overworld.ToCameraCoordinates(point.X, point.Y))
             options.GeoM.Translate(float64(x), float64(y))
             options.GeoM.Translate(float64(tileWidth) / 2, float64(tileHeight) / 2)
             options.GeoM.Translate(float64(boot.Bounds().Dx()) / -2, float64(boot.Bounds().Dy()) / -2)
             options.GeoM.Concat(geom)
+
+            v := float32(1 + (math.Sin(float64(overworld.Counter * 4 + uint64(pointI) * 60) * math.Pi / 180) / 2 + 0.5) / 2)
+            options.ColorScale.Scale(v, v, v, 1)
+
             screen.DrawImage(boot, &options)
         }
     }

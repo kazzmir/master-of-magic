@@ -32,6 +32,13 @@ type Engine struct {
     Cache *lbx.LbxCache
 }
 
+type NoCityProvider struct {
+}
+
+func (provider *NoCityProvider) FindRoadConnectedCities(city *citylib.City) []*citylib.City {
+    return nil
+}
+
 func NewEngine() (*Engine, error) {
     cache := lbx.AutoCache()
     engine := &Engine{
@@ -69,7 +76,7 @@ func (engine *Engine) MakeUI() (*uilib.UI, context.Context, error) {
         },
     }
 
-    city := citylib.MakeCity("Boston", 3, 8, data.RaceHighElf, player.Wizard.Banner, fraction.Make(2, 1), buildingInfo, &gameMap)
+    city := citylib.MakeCity("Boston", 3, 8, data.RaceHighElf, player.Wizard.Banner, fraction.Make(2, 1), buildingInfo, &gameMap, &NoCityProvider{})
     city.Population = 12000
     city.Farmers = 4
     city.Workers = 2

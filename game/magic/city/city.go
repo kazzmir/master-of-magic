@@ -70,6 +70,10 @@ type CatchmentProvider interface {
     GetCatchmentArea(x int, y int) map[image.Point]maplib.FullTile
 }
 
+type ConnectedCityProvider interface {
+    FindRoadConnectedCities(city *City) []*City
+}
+
 const MAX_CITY_CITIZENS = 25
 
 type Enchantment struct {
@@ -96,6 +100,7 @@ type City struct {
     Enchantments *set.Set[Enchantment]
 
     CatchmentProvider CatchmentProvider
+    ConnectedProvider ConnectedCityProvider
 
     TaxRate fraction.Fraction
 
@@ -110,7 +115,7 @@ type City struct {
     BuildingInfo buildinglib.BuildingInfos
 }
 
-func MakeCity(name string, x int, y int, race data.Race, banner data.BannerType, taxRate fraction.Fraction, buildingInfo buildinglib.BuildingInfos, catchmentProvider CatchmentProvider) *City {
+func MakeCity(name string, x int, y int, race data.Race, banner data.BannerType, taxRate fraction.Fraction, buildingInfo buildinglib.BuildingInfos, catchmentProvider CatchmentProvider, connectedProvider ConnectedCityProvider) *City {
     city := City{
         Name: name,
         X: x,
@@ -121,6 +126,7 @@ func MakeCity(name string, x int, y int, race data.Race, banner data.BannerType,
         Enchantments: set.MakeSet[Enchantment](),
         TaxRate: taxRate,
         CatchmentProvider: catchmentProvider,
+        ConnectedProvider: connectedProvider,
         BuildingInfo: buildingInfo,
     }
 
@@ -680,6 +686,43 @@ func (city *City) GoldMinerals() int {
     return extra
 }
 
+// return the percent of foreign trade bonus
+//   population of other city * 0.5% if same race
+//   population of other city * 1% if different
+func (city *City) ComputeForeignTrade() float64 {
+    connected := city.ConnectedProvider.FindRoadConnectedCities(city)
+    percent := float64(0)
+
+    for _, other := range connected {
+        if other.Race == city.Race {
+            percent += float64(other.Citizens()) * 0.5
+        } else {
+            percent += float64(other.Citizens()) * 1
+        }
+    }
+
+    return percent
+}
+
+// return the bonus gold percent, capped at citizens*3
+func (city *City) ComputeTotalBonusPercent() float64 {
+    percent := city.ComputeForeignTrade()
+    if city.Race == data.RaceNomad {
+        percent += 50
+    }
+
+    // +10 if adjacent to a shore
+    // +20 if on a river
+    // +30 if on a river and adjacent to a shore, or on a river mouth
+
+    return min(percent, float64(city.Citizens() * 3))
+}
+
+// gold from cities connected via roads, ocean, and river
+func (city *City) GoldBonus(percent float64) int {
+    return int(float64(city.GoldTaxation() + city.GoldMinerals()) * percent / 100)
+}
+
 func (city *City) GoldMarketplace() int {
     if city.Buildings.Contains(buildinglib.BuildingMarketplace) {
         return (city.GoldTaxation() + city.GoldMinerals()) / 2
@@ -709,6 +752,7 @@ func (city *City) GoldSurplus() int {
     income += city.GoldTradeGoods()
     income += city.GoldMinerals()
     income += city.GoldMarketplace()
+    income += city.GoldBonus(city.ComputeTotalBonusPercent())
     income += city.GoldBank()
     income += city.GoldMerchantsGuild()
 

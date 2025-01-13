@@ -510,6 +510,7 @@ func makeCityScapeElement(cache *lbx.LbxCache, ui *uilib.UI, city *citylib.City,
 
 func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI {
     ui := &uilib.UI{
+        Cache: cityScreen.LbxCache,
         Draw: func(ui *uilib.UI, screen *ebiten.Image) {
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
                 if element.Draw != nil {
@@ -561,6 +562,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
         buyY := 188
         elements = append(elements, &uilib.UIElement{
             Rect: image.Rect(buyX, buyY, buyX + buyButton.Bounds().Dx(), buyY + buyButton.Bounds().Dy()),
+            PlaySoundLeftClick: true,
             LeftClick: func(element *uilib.UIElement) {
 
                 var elements []*uilib.UIElement
@@ -596,6 +598,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
         changeY := 188
         elements = append(elements, &uilib.UIElement{
             Rect: image.Rect(changeX, changeY, changeX + changeButton.Bounds().Dx(), changeY + changeButton.Bounds().Dy()),
+            PlaySoundLeftClick: true,
             LeftClick: func(element *uilib.UIElement) {
                 if cityScreen.BuildScreen == nil {
                     cityScreen.BuildScreen = MakeBuildScreen(cityScreen.LbxCache, cityScreen.City)
@@ -622,6 +625,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
         okY := 188
         elements = append(elements, &uilib.UIElement{
             Rect: image.Rect(okX, okY, okX + okButton.Bounds().Dx(), okY + okButton.Bounds().Dy()),
+            PlaySoundLeftClick: true,
             LeftClick: func(element *uilib.UIElement) {
                 cityScreen.State = CityScreenStateDone
             },
@@ -802,7 +806,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
 
         var garrison []units.StackUnit
 
-        cityStack := cityScreen.Player.FindStack(cityScreen.City.X, cityScreen.City.Y)
+        cityStack := cityScreen.Player.FindStack(cityScreen.City.X, cityScreen.City.Y, cityScreen.City.Plane)
         if cityStack != nil {
             garrison = cityStack.Units()
         }
@@ -1555,7 +1559,9 @@ func (cityScreen *CityScreen) CreateResourceIcons(ui *uilib.UI) []*uilib.UIEleme
         },
     })
 
-    goldGeom = cityScreen.drawIcons(cityScreen.City.GoldSurplus(), smallCoin, bigCoin, goldUpkeepOptions, nil)
+    goldSurplus := cityScreen.City.GoldSurplus()
+
+    goldGeom = cityScreen.drawIcons(goldSurplus, smallCoin, bigCoin, goldUpkeepOptions, nil)
     x, _ = goldGeom.Apply(0, 0)
     goldSurplusRect := image.Rect(goldMaintenanceRect.Max.X + 6, 68, goldMaintenanceRect.Max.X + 6 + int(x), 68 + bigCoin.Bounds().Dy())
     elements = append(elements, &uilib.UIElement{
@@ -1567,7 +1573,7 @@ func (cityScreen *CityScreen) CreateResourceIcons(ui *uilib.UI) []*uilib.UIEleme
         Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(goldSurplusRect.Min.X), float64(goldSurplusRect.Min.Y))
-            cityScreen.drawIcons(cityScreen.City.GoldSurplus(), smallCoin, bigCoin, options, screen)
+            cityScreen.drawIcons(goldSurplus, smallCoin, bigCoin, options, screen)
             // util.DrawRect(screen, goldSurplusRect, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff})
         },
     })
@@ -1871,7 +1877,7 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
         },
     })
 
-    stack := player.FindStack(city.X, city.Y)
+    stack := player.FindStack(city.X, city.Y, city.Plane)
     if stack != nil {
         inside := 0
         for i, unit := range stack.Units() {

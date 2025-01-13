@@ -104,6 +104,27 @@ func (stack *UnitStack) AllFlyers() bool {
     return true
 }
 
+func (stack *UnitStack) AllSwimmers() bool {
+    for _, unit := range stack.ActiveUnits() {
+        if !unit.IsSwimmer() {
+            return false
+        }
+    }
+
+    return true
+}
+
+
+func (stack *UnitStack) ActiveUnitsHasAbility(ability data.AbilityType) bool {
+    for _, unit := range stack.ActiveUnits() {
+        if unit.HasAbility(ability) {
+            return true
+        }
+    }
+
+    return false
+}
+
 func (stack *UnitStack) AllActive() bool {
     return len(stack.ActiveUnits()) == len(stack.units)
 }
@@ -195,9 +216,9 @@ func (stack *UnitStack) EnableMovers(){
     }
 }
 
-func (stack *UnitStack) Move(dx int, dy int, cost fraction.Fraction){
+func (stack *UnitStack) Move(dx int, dy int, cost fraction.Fraction, normalize units.NormalizeCoordinateFunc){
     for _, unit := range stack.units {
-        unit.Move(dx, dy, cost)
+        unit.Move(dx, dy, cost, normalize)
     }
 }
 
@@ -222,9 +243,35 @@ func (stack *UnitStack) AnyOutOfMoves() bool {
     return false
 }
 
+func (stack *UnitStack) GetRemainingMoves() fraction.Fraction {
+    hasMoves := false
+    moves := fraction.Make(10000, 1)
+    for _, unit := range stack.units {
+        if !unit.GetPatrol() && stack.active[unit] && unit.GetMovesLeft().LessThan(moves) {
+            moves = unit.GetMovesLeft()
+            hasMoves = true
+        }
+    }
+
+    if !hasMoves {
+        return fraction.Zero()
+    } else {
+        return moves
+    }
+}
+
 // true if any unit in the stack has moves left
 func (stack *UnitStack) HasMoves() bool {
     return !stack.OutOfMoves()
+}
+
+func (stack *UnitStack) GetBanner() data.BannerType {
+    if len(stack.units) > 0 {
+        return stack.units[0].GetBanner()
+    }
+
+    // bogus..
+    return data.BannerBrown
 }
 
 func (stack *UnitStack) Leader() units.StackUnit {
