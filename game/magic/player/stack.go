@@ -104,6 +104,16 @@ func (stack *UnitStack) AllFlyers() bool {
     return true
 }
 
+func (stack *UnitStack) ActiveUnitsHasAbility(ability data.AbilityType) bool {
+    for _, unit := range stack.ActiveUnits() {
+        if unit.HasAbility(ability) {
+            return true
+        }
+    }
+
+    return false
+}
+
 func (stack *UnitStack) AllActive() bool {
     return len(stack.ActiveUnits()) == len(stack.units)
 }

@@ -4488,8 +4488,12 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
                     useIcon := walkingIcon
 
-                    if player.SelectedStack != nil && player.SelectedStack.AllFlyers() {
-                        useIcon = flyingIcon
+                    if player.SelectedStack != nil {
+                        if player.SelectedStack.AllFlyers() {
+                            useIcon = flyingIcon
+                        } else if player.SelectedStack.ActiveUnitsHasAbility(data.AbilityForester) {
+                            useIcon = foresterIcon
+                        }
                     }
 
                     var options ebiten.DrawImageOptions

@@ -1439,11 +1439,10 @@ func createScenario18(cache *lbx.LbxCache) *gamelib.Game {
     player.LiftFog(x, y, 3, data.PlaneArcanus)
     player.LiftFog(20, 20, 100, data.PlaneMyrror)
 
-    /*
     rakir := hero.MakeHero(units.MakeOverworldUnit(units.HeroRakir), hero.HeroRakir, "bubba")
     player.AddHero(rakir)
     rakir.AddExperience(528)
-    */
+
     mysticX := hero.MakeHero(units.MakeOverworldUnit(units.HeroMysticX), hero.HeroMysticX, "bubba")
     player.AddHero(mysticX)
     mysticX.SetExtraAbilities()
