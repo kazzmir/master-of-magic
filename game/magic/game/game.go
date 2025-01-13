@@ -1432,9 +1432,11 @@ func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, st
  * also return true/false if the move is even possible
  */
 func (game *Game) ComputeTerrainCost(stack *playerlib.UnitStack, sourceX int, sourceY int, destX int, destY int, mapUse *maplib.Map) (fraction.Fraction, bool) {
+    /*
     if stack.OutOfMoves() {
         return fraction.Zero(), false
     }
+    */
 
     tileFrom := mapUse.GetTile(sourceX, sourceY)
     tileTo := mapUse.GetTile(destX, destY)
@@ -2842,7 +2844,7 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                 }
             }
 
-            newX := stack.X() + dx
+            newX := game.CurrentMap().WrapX(stack.X() + dx)
             newY := stack.Y() + dy
 
             if leftClick {
