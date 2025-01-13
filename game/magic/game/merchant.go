@@ -86,7 +86,7 @@ func MakeMerchantScreenUI(cache *lbx.LbxCache, ui *uilib.UI, artifactToBuy *arti
             var options ebiten.DrawImageOptions
             options.ColorScale.ScaleAlpha(getAlpha())
             options.GeoM.Translate(18, 80)
-            artifact.RenderArtifactBox(screen, &imageCache, *artifactToBuy, darkFont, options)
+            artifact.RenderArtifactBox(screen, &imageCache, *artifactToBuy, ui.Counter / 8, darkFont, options)
         },
     })
 

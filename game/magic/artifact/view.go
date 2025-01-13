@@ -23,7 +23,7 @@ func add1PxBorder(src *image.Paletted) image.Image {
     return out
 }
 
-func RenderArtifactBox(screen *ebiten.Image, imageCache *util.ImageCache, artifact Artifact, font *font.Font, options ebiten.DrawImageOptions) {
+func RenderArtifactBox(screen *ebiten.Image, imageCache *util.ImageCache, artifact Artifact, counter uint64, font *font.Font, options ebiten.DrawImageOptions) {
     itemBackground, _ := imageCache.GetImage("itemisc.lbx", 25, 0)
     screen.DrawImage(itemBackground, &options)
 
@@ -37,7 +37,7 @@ func RenderArtifactBox(screen *ebiten.Image, imageCache *util.ImageCache, artifa
         screen.DrawImage(itemImage, &options)
 
         x, y := options.GeoM.Apply(0, 0)
-        util.DrawOutline(screen, imageCache, itemImage, x, y, 0, data.GetMagicColor(artifact.FirstAbility().MagicType()))
+        util.DrawOutline(screen, imageCache, itemImage, x, y, counter, data.GetMagicColor(artifact.FirstAbility().MagicType()))
     } else {
         itemImage, _ = imageCache.GetImage("items.lbx", artifact.Image, 0)
         options.GeoM.Translate(10, 8)

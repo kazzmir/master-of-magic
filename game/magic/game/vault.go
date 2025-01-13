@@ -105,7 +105,7 @@ func (game *Game) showItemPopup(item *artifact.Artifact, cache *lbx.LbxCache, im
         var options ebiten.DrawImageOptions
         options.ColorScale.ScaleAlpha(getAlpha())
         options.GeoM.Translate(48, 48)
-        artifact.RenderArtifactBox(screen, imageCache, *item, vaultFonts.ItemName, options)
+        artifact.RenderArtifactBox(screen, imageCache, *item, game.Counter / 8, vaultFonts.ItemName, options)
     }
 
     logic := func (yield coroutine.YieldFunc) {
