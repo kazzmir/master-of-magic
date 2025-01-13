@@ -1432,16 +1432,18 @@ func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, st
  * also return true/false if the move is even possible
  */
 func (game *Game) ComputeTerrainCost(stack *playerlib.UnitStack, sourceX int, sourceY int, destX int, destY int, mapUse *maplib.Map) (fraction.Fraction, bool) {
+    /*
     if stack.OutOfMoves() {
         return fraction.Zero(), false
     }
+    */
 
     tileFrom := mapUse.GetTile(sourceX, sourceY)
     tileTo := mapUse.GetTile(destX, destY)
 
-    // can't move from land to ocean unless all units are flyers
+    // can't move from land to ocean unless all units are flyers or swimmers
     if tileFrom.Tile.IsLand() && !tileTo.Tile.IsLand() {
-        if !stack.AllFlyers() {
+        if !stack.AllFlyers() && !stack.AllSwimmers() {
             return fraction.Zero(), false
         }
     }
@@ -2800,6 +2802,8 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
             stack.ExhaustMoves()
             game.DoNextUnit(player)
         }
+
+        game.RefreshUI()
     }
 }
 
@@ -2840,7 +2844,7 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                 }
             }
 
-            newX := stack.X() + dx
+            newX := game.CurrentMap().WrapX(stack.X() + dx)
             newY := stack.Y() + dy
 
             if leftClick {
@@ -3725,36 +3729,18 @@ func (game *Game) ShowSpellBookCastUI(yield coroutine.YieldFunc, player *playerl
     }))
 }
 
-func (game *Game) CatchmentArea(x int, y int) []image.Point {
-    var out []image.Point
-
-    for dx := -2; dx <= 2; dx++ {
-        for dy := -2; dy <= 2; dy++ {
-            // ignore corners
-            if int(math.Abs(float64(dx)) + math.Abs(float64(dy))) == 4 {
-                continue
-            }
-
-            out = append(out, image.Point{X: x + dx, Y: y + dy})
-        }
-    }
-
-    return out
-}
-
 func (game *Game) ComputeMaximumPopulation(x int, y int, plane data.Plane) int {
     // find catchment area of x, y
     // for each square, compute food production
     // maximum pop is food production
-    catchment := game.CatchmentArea(x, y)
+    mapUse := game.GetMap(plane)
+    catchment := mapUse.GetCatchmentArea(x, y)
 
     food := fraction.Zero()
 
-    for _, point := range catchment {
-        tile := game.GetMap(plane).GetTile(point.X, point.Y)
+    for _, tile := range catchment {
         food = food.Add(tile.Tile.FoodBonus())
-        // FIXME: get bonus directly from tile.Extra
-        bonus := game.GetMap(plane).GetBonusTile(point.X, point.Y)
+        bonus := tile.GetBonus()
         food = food.Add(fraction.FromInt(bonus.FoodBonus()))
     }
 
@@ -3796,12 +3782,12 @@ func (game *Game) CityGoldBonus(x int, y int, plane data.Plane) int {
 }
 
 func (game *Game) CityProductionBonus(x int, y int, plane data.Plane) int {
-    catchment := game.CatchmentArea(x, y)
+    mapUse := game.GetMap(plane)
+    catchment := mapUse.GetCatchmentArea(x, y)
 
     production := 0
 
-    for _, point := range catchment {
-        tile := game.GetMap(plane).GetTile(point.X, point.Y)
+    for _, tile := range catchment {
         production += tile.Tile.ProductionBonus()
     }
 
@@ -4023,8 +4009,30 @@ func (game *Game) MakeHudUI() *uilib.UI {
         unitX := unitX1
         unitY := unitY1
 
+        minMoves := fraction.Zero()
+
         row := 0
-        for _, stack := range player.FindAllStacks(player.SelectedStack.X(), player.SelectedStack.Y(), player.SelectedStack.Plane()) {
+
+        allStacks := player.FindAllStacks(player.SelectedStack.X(), player.SelectedStack.Y(), player.SelectedStack.Plane())
+
+        updateMinMoves := func() {
+            minMoves = fraction.Zero()
+            smallest := fraction.Zero()
+            first := true
+            for _, stack := range allStacks {
+                if first || stack.GetRemainingMoves().LessThan(smallest) {
+                    smallest = stack.GetRemainingMoves()
+                }
+
+                first = false
+            }
+
+            minMoves = smallest
+        }
+
+        updateMinMoves()
+
+        for _, stack := range allStacks {
             for _, unit := range stack.Units() {
                 // show a unit element for each unit in the stack
                 // image index increases by 1 for each unit, indexes 24-32
@@ -4047,6 +4055,8 @@ func (game *Game) MakeHudUI() *uilib.UI {
                             case game.Events<- &GameEventMoveUnit{Player: player}:
                             default:
                         }
+
+                        updateMinMoves()
                     },
                     RightClick: func(this *uilib.UIElement){
                         ui.AddElements(unitview.MakeUnitContextMenu(game.Cache, ui, unit, disband))
@@ -4064,7 +4074,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                         }
 
                         options.GeoM.Translate(1, 1)
-                        unitImage, err := GetUnitImage(unit, &game.ImageCache, player.Wizard.Banner)
+                        unitImage, err := GetUnitImage(unit, &game.ImageCache, unit.GetBanner())
                         if err == nil {
                             screen.DrawImage(unitImage, &options)
 
@@ -4423,6 +4433,52 @@ func (game *Game) MakeHudUI() *uilib.UI {
                 },
             })
         }
+
+        elements = append(elements, &uilib.UIElement{
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                if !minMoves.IsZero() {
+                    x := 246.0
+                    y := 167.0
+                    game.WhiteFont.Print(screen, x, y, 1, ebiten.ColorScale{}, fmt.Sprintf("Moves:%v", minMoves.ToFloat()))
+
+                    sailingIcon, _ := game.ImageCache.GetImage("main.lbx", 18, 0)
+                    swimmingIcon, _ := game.ImageCache.GetImage("main.lbx", 19, 0)
+                    mountaineeringIcon, _ := game.ImageCache.GetImage("main.lbx", 20, 0)
+                    foresterIcon, _ := game.ImageCache.GetImage("main.lbx", 21, 0)
+                    flyingIcon, _ := game.ImageCache.GetImage("main.lbx", 22, 0)
+                    pathfindingIcon, _ := game.ImageCache.GetImage("main.lbx", 23, 0)
+                    planeTravelIcon, _ := game.ImageCache.GetImage("main.lbx", 36, 0)
+                    windWalkingIcon, _ := game.ImageCache.GetImage("main.lbx", 37, 0)
+                    walkingIcon, _ := game.ImageCache.GetImage("main.lbx", 38, 0)
+
+                    _ = sailingIcon
+                    _ = swimmingIcon
+                    _ = mountaineeringIcon
+                    _ = foresterIcon
+                    _ = flyingIcon
+                    _ = pathfindingIcon
+                    _ = planeTravelIcon
+                    _ = windWalkingIcon
+
+                    useIcon := walkingIcon
+
+                    if player.SelectedStack != nil {
+                        if player.SelectedStack.AllFlyers() {
+                            useIcon = flyingIcon
+                        } else if player.SelectedStack.ActiveUnitsHasAbility(data.AbilityForester) {
+                            useIcon = foresterIcon
+                        } else if player.SelectedStack.AllSwimmers() {
+                            useIcon = swimmingIcon
+                        }
+                    }
+
+                    var options ebiten.DrawImageOptions
+                    options.GeoM.Translate(x + 60, y)
+                    screen.DrawImage(useIcon, &options)
+                }
+            },
+        })
+
 
     } else {
         // next turn

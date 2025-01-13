@@ -140,6 +140,10 @@ func (unit *OverworldUnit) IsFlying() bool {
     return unit.Unit.Flying
 }
 
+func (unit *OverworldUnit) IsSwimmer() bool {
+    return unit.Unit.Swimming
+}
+
 func (unit *OverworldUnit) AddExperience(amount int) {
     unit.Experience += amount
 

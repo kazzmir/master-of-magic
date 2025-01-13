@@ -746,6 +746,10 @@ func (hero *Hero) IsFlying() bool {
     return hero.Unit.IsFlying()
 }
 
+func (hero *Hero) IsSwimmer() bool {
+    return hero.Unit.IsSwimmer()
+}
+
 func (hero *Hero) GetBanner() data.BannerType {
     return hero.Unit.GetBanner()
 }

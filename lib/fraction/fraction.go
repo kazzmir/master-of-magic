@@ -140,6 +140,10 @@ func (fraction Fraction) LessThanEqual(other Fraction) bool {
     return fraction.Equals(other) || fraction.LessThan(other)
 }
 
+func (fraction Fraction) GreaterThanEqual(other Fraction) bool {
+    return fraction.Equals(other) || fraction.GreaterThan(other)
+}
+
 func (fraction Fraction) LessThan(other Fraction) bool {
     rest := other.Subtract(fraction)
     return rest.Numerator > 0
