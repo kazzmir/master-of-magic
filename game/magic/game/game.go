@@ -3729,34 +3729,6 @@ func (game *Game) ShowSpellBookCastUI(yield coroutine.YieldFunc, player *playerl
     }))
 }
 
-/*
-func (game *Game) CatchmentArea(x int, y int, plane data.Plane) []image.Point {
-    var out []image.Point
-
-    mapUse := game.GetMap(plane)
-
-    for dx := -2; dx <= 2; dx++ {
-        for dy := -2; dy <= 2; dy++ {
-            // ignore corners
-            if int(math.Abs(float64(dx)) + math.Abs(float64(dy))) == 4 {
-                continue
-            }
-
-            cx := mapUse.WrapX(x + dx)
-            cy := y + dy
-
-            if cy < 0 || cy >= mapUse.Height() {
-                continue
-            }
-
-            out = append(out, image.Pt(cx, cy))
-        }
-    }
-
-    return out
-}
-*/
-
 func (game *Game) ComputeMaximumPopulation(x int, y int, plane data.Plane) int {
     // find catchment area of x, y
     // for each square, compute food production
