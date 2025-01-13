@@ -3725,8 +3725,11 @@ func (game *Game) ShowSpellBookCastUI(yield coroutine.YieldFunc, player *playerl
     }))
 }
 
-func (game *Game) CatchmentArea(x int, y int) []image.Point {
+/*
+func (game *Game) CatchmentArea(x int, y int, plane data.Plane) []image.Point {
     var out []image.Point
+
+    mapUse := game.GetMap(plane)
 
     for dx := -2; dx <= 2; dx++ {
         for dy := -2; dy <= 2; dy++ {
@@ -3735,26 +3738,33 @@ func (game *Game) CatchmentArea(x int, y int) []image.Point {
                 continue
             }
 
-            out = append(out, image.Point{X: x + dx, Y: y + dy})
+            cx := mapUse.WrapX(x + dx)
+            cy := y + dy
+
+            if cy < 0 || cy >= mapUse.Height() {
+                continue
+            }
+
+            out = append(out, image.Pt(cx, cy))
         }
     }
 
     return out
 }
+*/
 
 func (game *Game) ComputeMaximumPopulation(x int, y int, plane data.Plane) int {
     // find catchment area of x, y
     // for each square, compute food production
     // maximum pop is food production
-    catchment := game.CatchmentArea(x, y)
+    mapUse := game.GetMap(plane)
+    catchment := mapUse.GetCatchmentArea(x, y)
 
     food := fraction.Zero()
 
-    for _, point := range catchment {
-        tile := game.GetMap(plane).GetTile(point.X, point.Y)
+    for _, tile := range catchment {
         food = food.Add(tile.Tile.FoodBonus())
-        // FIXME: get bonus directly from tile.Extra
-        bonus := game.GetMap(plane).GetBonusTile(point.X, point.Y)
+        bonus := tile.GetBonus()
         food = food.Add(fraction.FromInt(bonus.FoodBonus()))
     }
 
@@ -3796,12 +3806,12 @@ func (game *Game) CityGoldBonus(x int, y int, plane data.Plane) int {
 }
 
 func (game *Game) CityProductionBonus(x int, y int, plane data.Plane) int {
-    catchment := game.CatchmentArea(x, y)
+    mapUse := game.GetMap(plane)
+    catchment := mapUse.GetCatchmentArea(x, y)
 
     production := 0
 
-    for _, point := range catchment {
-        tile := game.GetMap(plane).GetTile(point.X, point.Y)
+    for _, tile := range catchment {
         production += tile.Tile.ProductionBonus()
     }
 
@@ -4023,10 +4033,30 @@ func (game *Game) MakeHudUI() *uilib.UI {
         unitX := unitX1
         unitY := unitY1
 
-        minMoves := fraction.Make(-1, 1)
+        minMoves := fraction.Zero()
 
         row := 0
-        for _, stack := range player.FindAllStacks(player.SelectedStack.X(), player.SelectedStack.Y(), player.SelectedStack.Plane()) {
+
+        allStacks := player.FindAllStacks(player.SelectedStack.X(), player.SelectedStack.Y(), player.SelectedStack.Plane())
+
+        updateMinMoves := func() {
+            minMoves = fraction.Zero()
+            smallest := fraction.Zero()
+            first := true
+            for _, stack := range allStacks {
+                if first || stack.GetRemainingMoves().LessThan(smallest) {
+                    smallest = stack.GetRemainingMoves()
+                }
+
+                first = false
+            }
+
+            minMoves = smallest
+        }
+
+        updateMinMoves()
+
+        for _, stack := range allStacks {
             for _, unit := range stack.Units() {
                 // show a unit element for each unit in the stack
                 // image index increases by 1 for each unit, indexes 24-32
@@ -4049,6 +4079,8 @@ func (game *Game) MakeHudUI() *uilib.UI {
                             case game.Events<- &GameEventMoveUnit{Player: player}:
                             default:
                         }
+
+                        updateMinMoves()
                     },
                     RightClick: func(this *uilib.UIElement){
                         ui.AddElements(unitview.MakeUnitContextMenu(game.Cache, ui, unit, disband))
@@ -4066,7 +4098,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                         }
 
                         options.GeoM.Translate(1, 1)
-                        unitImage, err := GetUnitImage(unit, &game.ImageCache, player.Wizard.Banner)
+                        unitImage, err := GetUnitImage(unit, &game.ImageCache, unit.GetBanner())
                         if err == nil {
                             screen.DrawImage(unitImage, &options)
 
@@ -4208,18 +4240,6 @@ func (game *Game) MakeHudUI() *uilib.UI {
                     unitY += unitBackground.Bounds().Dy()
                 }
             }
-
-            if minMoves.Equals(fraction.Make(-1, 1)) || stack.GetRemainingMoves().LessThan(minMoves) {
-                minMoves = stack.GetRemainingMoves()
-            }
-
-            elements = append(elements, &uilib.UIElement{
-                Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                    x := 246.0
-                    y := 168.0
-                    game.WhiteFont.Print(screen, x, y, 1, ebiten.ColorScale{}, fmt.Sprintf("Moves: %v", minMoves.ToFloat()))
-                },
-            })
 
             doneImages, _ := game.ImageCache.GetImages("main.lbx", 8)
             doneIndex := 0
@@ -4437,6 +4457,17 @@ func (game *Game) MakeHudUI() *uilib.UI {
                 },
             })
         }
+
+        elements = append(elements, &uilib.UIElement{
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                if !minMoves.IsZero() {
+                    x := 246.0
+                    y := 168.0
+                    game.WhiteFont.Print(screen, x, y, 1, ebiten.ColorScale{}, fmt.Sprintf("Moves:%v", minMoves.ToFloat()))
+                }
+            },
+        })
+
 
     } else {
         // next turn

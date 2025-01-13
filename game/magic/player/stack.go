@@ -226,7 +226,7 @@ func (stack *UnitStack) GetRemainingMoves() fraction.Fraction {
     hasMoves := false
     moves := fraction.Make(10000, 1)
     for _, unit := range stack.units {
-        if !unit.GetPatrol() && unit.GetMovesLeft().LessThan(moves) {
+        if !unit.GetPatrol() && stack.active[unit] && unit.GetMovesLeft().LessThan(moves) {
             moves = unit.GetMovesLeft()
             hasMoves = true
         }
