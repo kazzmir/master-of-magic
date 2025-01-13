@@ -4464,8 +4464,37 @@ func (game *Game) MakeHudUI() *uilib.UI {
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 if !minMoves.IsZero() {
                     x := 246.0
-                    y := 168.0
+                    y := 167.0
                     game.WhiteFont.Print(screen, x, y, 1, ebiten.ColorScale{}, fmt.Sprintf("Moves:%v", minMoves.ToFloat()))
+
+                    sailingIcon, _ := game.ImageCache.GetImage("main.lbx", 18, 0)
+                    swimmingIcon, _ := game.ImageCache.GetImage("main.lbx", 19, 0)
+                    mountaineeringIcon, _ := game.ImageCache.GetImage("main.lbx", 20, 0)
+                    foresterIcon, _ := game.ImageCache.GetImage("main.lbx", 21, 0)
+                    flyingIcon, _ := game.ImageCache.GetImage("main.lbx", 22, 0)
+                    pathfindingIcon, _ := game.ImageCache.GetImage("main.lbx", 23, 0)
+                    planeTravelIcon, _ := game.ImageCache.GetImage("main.lbx", 36, 0)
+                    windWalkingIcon, _ := game.ImageCache.GetImage("main.lbx", 37, 0)
+                    walkingIcon, _ := game.ImageCache.GetImage("main.lbx", 38, 0)
+
+                    _ = sailingIcon
+                    _ = swimmingIcon
+                    _ = mountaineeringIcon
+                    _ = foresterIcon
+                    _ = flyingIcon
+                    _ = pathfindingIcon
+                    _ = planeTravelIcon
+                    _ = windWalkingIcon
+
+                    useIcon := walkingIcon
+
+                    if player.SelectedStack != nil && player.SelectedStack.AllFlyers() {
+                        useIcon = flyingIcon
+                    }
+
+                    var options ebiten.DrawImageOptions
+                    options.GeoM.Translate(x + 60, y)
+                    screen.DrawImage(useIcon, &options)
                 }
             },
         })
