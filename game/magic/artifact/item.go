@@ -136,7 +136,7 @@ type Power struct {
     Magic data.MagicType // for abilities
 
     // powers are sorted by how they are defined in itempow.lbx, so we just use that number here
-    // this field has utility other than sorting
+    // this field has no utility other than sorting
     Index int
 }
 

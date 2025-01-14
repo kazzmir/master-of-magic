@@ -638,7 +638,7 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
                         }
 
                         if mutuallyExclusive {
-                            // can only pick on in the group
+                            // can only pick one in the group
                             if groupSelect != -1 {
                                 if groupSelect == i {
                                     groupSelect = -1
