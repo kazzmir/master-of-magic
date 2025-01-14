@@ -177,39 +177,41 @@ func (viewer *Viewer) Draw(screen *ebiten.Image) {
         tile := viewer.Data.Tiles[viewer.TileIndex]
         op.GeoM.Translate(0, 20)
         text.Draw(screen, fmt.Sprintf("Tile %v (0x%x)", viewer.TileIndex, viewer.TileIndex), face, op)
+        op.GeoM.Translate(0, 20)
+        text.Draw(screen, fmt.Sprintf("Center %v", tile.Tile.GetDirection(terrain.Center)), face, op)
 
         face2 := &text.GoTextFace{Source: viewer.Font, Size: 10}
 
         op.GeoM.Reset()
-        op.GeoM.Translate(ScreenWidth/2 + 25, 1)
+        op.GeoM.Translate(ScreenWidth/2, 1)
         text.Draw(screen, fmt.Sprintf("%v", tile.Tile.GetDirection(terrain.North)), face2, op)
 
         op.GeoM.Reset()
-        op.GeoM.Translate(ScreenWidth/2 - 20, 1)
+        op.GeoM.Translate(ScreenWidth/2 - 120, 1)
         text.Draw(screen, fmt.Sprintf("%v", tile.Tile.GetDirection(terrain.NorthWest)), face2, op)
 
         op.GeoM.Reset()
-        op.GeoM.Translate(ScreenWidth/2 + 80, 1)
+        op.GeoM.Translate(ScreenWidth/2 + 180, 1)
         text.Draw(screen, fmt.Sprintf("%v", tile.Tile.GetDirection(terrain.NorthEast)), face2, op)
 
         op.GeoM.Reset()
-        op.GeoM.Translate(ScreenWidth/2 - 40, 45)
+        op.GeoM.Translate(ScreenWidth/2 - 140, 45)
         text.Draw(screen, fmt.Sprintf("%v", tile.Tile.GetDirection(terrain.West)), face2, op)
 
         op.GeoM.Reset()
-        op.GeoM.Translate(ScreenWidth/2 - 25, 90)
+        op.GeoM.Translate(ScreenWidth/2 - 125, 90)
         text.Draw(screen, fmt.Sprintf("%v", tile.Tile.GetDirection(terrain.SouthWest)), face2, op)
 
         op.GeoM.Reset()
-        op.GeoM.Translate(ScreenWidth/2 + 25, 90)
+        op.GeoM.Translate(ScreenWidth/2, 90)
         text.Draw(screen, fmt.Sprintf("%v", tile.Tile.GetDirection(terrain.South)), face2, op)
 
         op.GeoM.Reset()
-        op.GeoM.Translate(ScreenWidth/2 + 80, 90)
+        op.GeoM.Translate(ScreenWidth/2 + 180, 90)
         text.Draw(screen, fmt.Sprintf("%v", tile.Tile.GetDirection(terrain.SouthEast)), face2, op)
 
         op.GeoM.Reset()
-        op.GeoM.Translate(ScreenWidth/2 + 95, 45)
+        op.GeoM.Translate(ScreenWidth/2 + 195, 45)
         text.Draw(screen, fmt.Sprintf("%v", tile.Tile.GetDirection(terrain.East)), face2, op)
     }
 
@@ -265,13 +267,13 @@ func display(lbxData lbx.LbxFile) error {
     if err != nil {
         return err
     }
-    
+
     ebiten.SetWindowSize(ScreenWidth, ScreenHeight)
     ebiten.SetWindowTitle("terrain viewer")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 
     viewer := MakeViewer(data)
-    
+
     err = ebiten.RunGame(viewer)
 
     return err

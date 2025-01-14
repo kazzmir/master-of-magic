@@ -3343,7 +3343,7 @@ func (game *Game) GetCombatLandscape(x int, y int, plane data.Plane) combat.Comb
     tile := game.GetMap(plane).GetTile(x, y)
 
     switch tile.Tile.TerrainType() {
-        case terrain.Land, terrain.Hill, terrain.Grass,
+        case terrain.Hill, terrain.Grass,
              terrain.Forest, terrain.River, terrain.Shore,
              terrain.Swamp: return combat.CombatLandscapeGrass
 
