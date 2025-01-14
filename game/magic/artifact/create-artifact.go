@@ -625,9 +625,10 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
             artifactTypes := compatibilities[power]
             if artifactTypes.Contains(artifact.Type) {
                 totalItems += 1
+                xRect := image.Rect(x, y, x + int(powerFont.MeasureTextWidth(power.Name, 1)), y + powerFont.Height())
                 elements = append(elements, &uilib.UIElement{
-                    Rect: image.Rect(x, y, x + int(powerFont.MeasureTextWidth(power.Name, 1)), y + powerFont.Height()),
-                    PlaySoundLeftClick: true,
+                    Rect: xRect,
+                    PlaySoundLeftClick: inBounds(xRect),
                     LeftClick: func(element *uilib.UIElement){
                         if !inBounds(element.Rect) {
                             return
@@ -722,6 +723,8 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
             for _, element := range abilityElements {
                 element.Rect.Min.Y += move
                 element.Rect.Max.Y += move
+
+                element.PlaySoundLeftClick = inBounds(element.Rect)
             }
         }
 
