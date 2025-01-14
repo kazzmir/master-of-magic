@@ -4,6 +4,8 @@ import (
     "fmt"
     "image"
     "strings"
+    "slices"
+    "cmp"
     "image/color"
     "log"
     "bytes"
@@ -244,9 +246,6 @@ func groupPowers(powers []Power, costs map[Power]int, compatibilities map[Power]
         PowerTypeResistance,
         PowerTypeSpellSkill,
         PowerTypeSpellSave,
-        PowerTypeAbility1,
-        PowerTypeAbility2,
-        PowerTypeAbility3,
     }
 
     var result [][]Power
@@ -571,6 +570,85 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
     return elements
 }
 
+// returns two functions: the first adds elements to the ui, and the second removes the elements
+func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCache, artifact *Artifact, customName *string, powerFont *font.Font, powers []Power, compatibilities map[Power]set.Set[ArtifactType]) (func(), func()) {
+    var elements []*uilib.UIElement
+
+    var group1 []Power
+    var group2 []Power
+    var group3 []Power
+
+    for _, power := range powers {
+        switch power.Type {
+            case PowerTypeAbility1: group1 = append(group1, power)
+            case PowerTypeAbility2: group2 = append(group2, power)
+            case PowerTypeAbility3: group3 = append(group3, power)
+        }
+    }
+
+    minItem := 0
+    maxItem := 12
+
+    setupPowers := func() {
+        ui.RemoveElements(elements)
+        elements = nil
+
+        currentItem := 0
+        y := 39
+        x := 200
+
+        for groupNum, group := range [][]Power{group1, group2, group3} {
+            groupSelect := -1
+
+            mutuallyExclusive := groupNum == 0 || groupNum == 1
+
+            slices.SortFunc(group, func(a, b Power) int {
+                return cmp.Compare(a.Name, b.Name)
+            })
+
+            for i, power := range group {
+                artifactTypes := compatibilities[power]
+                if artifactTypes.Contains(artifact.Type) {
+                    if currentItem >= minItem && currentItem <= maxItem {
+                        rect := image.Rect(x, y, x + int(powerFont.MeasureTextWidth(power.Name, 1)), y + powerFont.Height())
+                        elements = append(elements, &uilib.UIElement{
+                            Rect: rect,
+                            LeftClick: func(element *uilib.UIElement){
+                                if mutuallyExclusive {
+                                    // can only pick on in the group
+                                } else {
+                                    // can pick multiple
+                                }
+                            },
+                            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                                scale := ebiten.ColorScale{}
+
+                                if groupSelect == i {
+                                    scale.SetR(3)
+                                    scale.SetG(3)
+                                }
+
+                                powerFont.Print(screen, float64(rect.Min.X), float64(rect.Min.Y), 1, scale, power.Name)
+                            },
+                        })
+                    }
+
+                    y += powerFont.Height() + 1
+                    currentItem += 1
+                }
+            }
+        }
+
+        ui.AddElements(elements)
+    }
+
+    tearDown := func() {
+        ui.RemoveElements(elements)
+    }
+
+    return setupPowers, tearDown
+}
+
 func makeFonts(cache *lbx.LbxCache) (*font.Font, *font.Font, *font.Font) {
     fontLbx, err := cache.GetLbxFile("fonts.lbx")
     if err != nil {
@@ -642,6 +720,8 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, cr
     type PowerArtifact struct {
         Elements []*uilib.UIElement
         Artifact *Artifact
+        Setup func()
+        TearDown func()
     }
 
     // ui elements for powers that can be selected, based on what item is selected
@@ -653,9 +733,12 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, cr
         artifact.Type = artifactType
         groups := groupPowers(powers, costs, compatibilities, artifactType, creationType)
         elements := makePowersFull(ui, cache, &imageCache, nameFont, powerFont, picLow, picHigh, groups, costs, &artifact, &customName)
+        setupPowers, tearDown := makeAbilityElements(ui, cache, &imageCache, &artifact, &customName, powerFont, powers, compatibilities)
         return PowerArtifact{
             Elements: elements,
             Artifact: &artifact,
+            Setup: setupPowers,
+            TearDown: tearDown,
         }
     }
 
@@ -678,9 +761,11 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, cr
     updatePowers := func(index ArtifactType){
         for _, each := range powers {
             ui.RemoveElements(each.Elements)
+            each.TearDown()
         }
 
         ui.AddElements(powers[index].Elements)
+        powers[index].Setup()
         currentArtifact = powers[index].Artifact
         currentArtifact.Name = getName(currentArtifact, customName)
         currentArtifact.Cost = calculateCost(currentArtifact, costs)
