@@ -128,10 +128,11 @@ func (section PowerType) String() string {
 
 type Power struct {
     Type PowerType
-    Amount int
+    Amount int // for an ability this is the number of books of the Magic needed
     Name string
     Spell spellbook.Spell
     Ability data.AbilityType
+    Magic data.MagicType // for abilities
 }
 
 type Requirement struct {

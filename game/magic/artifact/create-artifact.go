@@ -212,13 +212,13 @@ func ReadPowers(cache *lbx.LbxCache) ([]Power, map[Power]int, map[Power]set.Set[
                 Name: string(name),
                 Amount: int(amount),
                 Ability: ability,
+                Magic: magicType,
             }
             powers = append(powers, power)
             costs[power] = int(cost)
             compatibilities[power] = *artifactTypes
         }
         // TODO: add abilties (currently PowerTypeNone) with requirements (magicType / amount = books needed)
-        _ = magicType
     }
     return powers, costs, compatibilities, nil
 }
@@ -623,6 +623,8 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
         selected := make([]bool, len(group))
         for i, power := range group {
             artifactTypes := compatibilities[power]
+            // FIXME: take power.Magic and power.Amount into account by checking if
+            // the wizard has enough books of the Magic type
             if artifactTypes.Contains(artifact.Type) {
                 totalItems += 1
                 xRect := image.Rect(x, y, x + int(powerFont.MeasureTextWidth(power.Name, 1)), y + powerFont.Height())
