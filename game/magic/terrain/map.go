@@ -297,7 +297,6 @@ func GenerateLandCellularAutomata(rows int, columns int, data *TerrainData, plan
     map_.GenerateLandCellularAutomata(plane)
 
     map_.RemoveSmallIslands(100, plane)
-    map_.ConvertOcean(data, plane)
 
     /*
     continents := editor.Map.FindContinents()
@@ -406,44 +405,9 @@ func (map_ *Map) getTerrainAt(x int, y int, data *TerrainData) TerrainType {
     return data.Tiles[index].Tile.TerrainType()
 }
 
-// convert single ocean tiles within land to lakes, ocean tiles near land to shore
-func (map_ *Map) ConvertOcean(data *TerrainData, plane data.Plane){
-    isLand := func(t TerrainType) bool {
-        return t != Ocean && t != Shore
-    }
-
-    for x := 0; x < map_.Columns(); x++ {
-        for y := 0; y < map_.Rows(); y++ {
-            center := map_.getTerrainAt(x, y, data)
-            if center != Ocean {
-                continue
-            }
-            west := map_.getTerrainAt(x-1, y, data)
-            east := map_.getTerrainAt(x+1, y, data)
-            north := map_.getTerrainAt(x, y-1, data)
-            south := map_.getTerrainAt(x, y+1, data)
-            if isLand(west) && isLand(east) && isLand(north) && isLand(south) {
-                map_.Terrain[x][y] = TileLake.Index(plane)
-                continue
-            }
-            northWest := map_.getTerrainAt(x-1, y-1, data)
-            northEast := map_.getTerrainAt(x+1, y-1, data)
-            sourthWest := map_.getTerrainAt(x-1, y+1, data)
-            southEasth := map_.getTerrainAt(x+1, y+1, data)
-            if isLand(west) || isLand(east) || isLand(north) || isLand(south) || isLand(northWest) || isLand(northEast) || isLand(sourthWest) || isLand(southEasth) {
-                map_.Terrain[x][y] = TileShore1_00000001.Index(plane)
-                continue
-            }
-        }
-    }
-}
-
-
 // given a position in the terrain matrix, find a tile that fits the tile and all its neighbors
 func (map_ *Map) ResolveTile(x int, y int, data *TerrainData, plane data.Plane) (int, error) {
-
     region := make(map[Direction]TerrainType)
-
     region[Center] = map_.getTerrainAt(x, y, data)
     region[West] = map_.getTerrainAt(x-1, y, data)
     region[NorthWest] = map_.getTerrainAt(x-1, y-1, data)
@@ -454,38 +418,44 @@ func (map_ *Map) ResolveTile(x int, y int, data *TerrainData, plane data.Plane) 
     region[NorthEast] = map_.getTerrainAt(x+1, y-1, data)
     region[SouthEast] = map_.getTerrainAt(x+1, y+1, data)
 
+    // convert ocean tiles to lake or shores
+    isLand := func(t TerrainType) bool {
+        return t != Ocean && t != Shore
+    }
+
+    if region[Center] == Ocean {
+        if isLand(region[West]) && isLand(region[East]) && isLand(region[North]) && isLand(region[South]) {
+            region[Center] = Lake
+            map_.Terrain[x][y] = TileLake.Index(plane)
+        } else if isLand(region[West]) || isLand(region[East]) || isLand(region[North]) || isLand(region[South]) || isLand(region[NorthWest]) || isLand(region[NorthEast]) || isLand(region[SouthWest]) || isLand(region[SouthEast]) {
+            region[Center] = Shore
+            map_.Terrain[x][y] = TileShore1_00000001.Index(plane)
+        }
+    }
+
+    // check if tile is already resolved
     if data.Tiles[map_.Terrain[x][y]].Tile.Matches(region) {
         return map_.Terrain[x][y], nil
     }
 
+    // resolve tile
     tile := data.FindMatchingTile(region, plane)
 
     if tile == -1 {
+        fmt.Printf("no matching tile for %v", region)
         return -1, fmt.Errorf("no matching tile for %v", region)
     }
 
     return tile, nil
-
-    // return chooseRandomElement(editor.removeMyrror(tiles)), nil
-    // return editor.removeMyrror(tiles)[0], nil
 }
 
 func (map_ *Map) ResolveTiles(data *TerrainData, plane data.Plane) {
-    terrain := make([][]int, map_.Columns())
-    for i := 0; i < map_.Columns(); i++ {
-        terrain[i] = make([]int, map_.Rows())
-    }
-
     for x := 0; x < map_.Columns(); x++ {
         for y := 0; y < map_.Rows(); y++ {
-            current := map_.Terrain[x][y]
-            terrain[x][y] = current
-
             choice, err := map_.ResolveTile(x, y, data, plane)
             if err == nil {
-                terrain[x][y] = choice
+                map_.Terrain[x][y] = choice
             }
         }
     }
-    map_.Terrain = terrain
 }
