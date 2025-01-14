@@ -602,7 +602,7 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
 
     // true if the rect is within the bounds of where the abilities should be
     inBounds := func (rect image.Rectangle) bool {
-        if rect.Min.Y >= 39 && rect.Max.Y <= 160 {
+        if rect.Min.Y >= 39 && rect.Min.Y <= 160 {
             return true
         }
 
@@ -712,6 +712,8 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
         y += 5
     }
 
+    // FIXME: add spell charges element
+
     // show up/down scroll arrows if there are too many abilities to choose
     if totalItems > maxItem {
         upArrows, _ := imageCache.GetImages("spellscr.lbx", 43)
@@ -745,7 +747,7 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
         }
 
         scrollDown := func() {
-            if minItem <= totalItems - maxItem {
+            if minItem < totalItems - maxItem {
                 doScroll(-1)
                 minItem += 1
             }
