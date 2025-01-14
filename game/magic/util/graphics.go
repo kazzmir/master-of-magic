@@ -39,7 +39,7 @@ func toFloatArray(color color.Color) []float32 {
     return []float32{float32(r) / max, float32(g) / max, float32(b) / max, float32(a) / max}
 }
 
-func DrawOutline(screen *ebiten.Image, imageCache *ImageCache, pic *ebiten.Image, x float64, y float64, time uint64, baseColor color.Color) {
+func DrawOutline(screen *ebiten.Image, imageCache *ImageCache, pic *ebiten.Image, x float64, y float64, scale ebiten.ColorScale, time uint64, baseColor color.Color) {
     color1 := baseColor
     color2 := Lighten(baseColor, 30)
     color3 := Lighten(baseColor, 50)
@@ -59,6 +59,7 @@ func DrawOutline(screen *ebiten.Image, imageCache *ImageCache, pic *ebiten.Image
     options.Uniforms["Color2"] = toFloatArray(color2)
     options.Uniforms["Color3"] = toFloatArray(color3)
     options.Uniforms["Time"] = float32(math.Abs(float64(time)))
+    options.ColorScale = scale
     screen.DrawRectShader(pic.Bounds().Dx(), pic.Bounds().Dy(), shader, &options)
 }
 

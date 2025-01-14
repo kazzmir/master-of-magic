@@ -103,7 +103,7 @@ func (engine *Engine) Draw(screen *ebiten.Image){
     regularOptions.GeoM.Translate(20, 60)
     screen.DrawImage(lizardUnit, &regularOptions)
     x, y := regularOptions.GeoM.Apply(0, 0)
-    util.DrawOutline(screen, engine.ImageCache, lizardUnit, x, y, engine.Counter/10, color.RGBA{R: 180, G: 0, B: 0, A: 255})
+    util.DrawOutline(screen, engine.ImageCache, lizardUnit, x, y, ebiten.ColorScale{}, engine.Counter/10, color.RGBA{R: 180, G: 0, B: 0, A: 255})
 
     axe, _ := engine.ImageCache.GetImageTransform("items.lbx", 23, 0, "1-px", util.ImageTransformFunc(add1PxBorder))
     regularOptions.GeoM.Reset()
