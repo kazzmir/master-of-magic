@@ -11,6 +11,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/artifact"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     "github.com/kazzmir/master-of-magic/lib/font"
 
@@ -257,7 +258,7 @@ func RenderExperienceBadge(screen *ebiten.Image, imageCache *util.ImageCache, un
     return float64(pic.Bounds().Dy() + 1)
 }
 
-func renderUnitAbilities(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitView, mediumFont *font.Font, defaultOptions ebiten.DrawImageOptions, pureAbilities bool, page uint32) {
+func renderUnitAbilities(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitView, mediumFont *font.Font, defaultOptions ebiten.DrawImageOptions, pureAbilities bool, page uint32, counter uint64) {
     var renders []func() float64
 
     if !pureAbilities {
@@ -280,8 +281,7 @@ func renderUnitAbilities(screen *ebiten.Image, imageCache *util.ImageCache, unit
                     if slot.CompatibleWith(artifacts[i].Type) {
                         screen.DrawImage(background, &defaultOptions)
 
-                        artifactPic, _ := imageCache.GetImage("items.lbx", artifacts[i].Image, 0)
-                        screen.DrawImage(artifactPic, &defaultOptions)
+                        artifactPic := artifact.RenderArtifactImage(screen, imageCache, *artifacts[i], counter, defaultOptions)
 
                         x, y := defaultOptions.GeoM.Apply(0, 0)
                         mediumFont.Print(screen, x + float64(artifactPic.Bounds().Dx() + 2), float64(y) + 5, 1, defaultOptions.ColorScale, artifacts[i].Name)
@@ -346,7 +346,7 @@ func renderUnitAbilities(screen *ebiten.Image, imageCache *util.ImageCache, unit
     }
 }
 
-func MakeUnitAbilitiesElements(imageCache *util.ImageCache, unit UnitView, mediumFont *font.Font, x int, y int, layer uilib.UILayer, getAlpha *util.AlphaFadeFunc, pureAbilities bool) []*uilib.UIElement {
+func MakeUnitAbilitiesElements(imageCache *util.ImageCache, unit UnitView, mediumFont *font.Font, x int, y int, counter *uint64, layer uilib.UILayer, getAlpha *util.AlphaFadeFunc, pureAbilities bool) []*uilib.UIElement {
     var elements []*uilib.UIElement
 
     page := uint32(0)
@@ -357,7 +357,7 @@ func MakeUnitAbilitiesElements(imageCache *util.ImageCache, unit UnitView, mediu
             var options ebiten.DrawImageOptions
             options.ColorScale.ScaleAlpha((*getAlpha)())
             options.GeoM.Translate(float64(x), float64(y))
-            renderUnitAbilities(screen, imageCache, unit, mediumFont, options, pureAbilities, page)
+            renderUnitAbilities(screen, imageCache, unit, mediumFont, options, pureAbilities, page, *counter / 8)
         },
     })
 

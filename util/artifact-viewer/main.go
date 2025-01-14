@@ -180,10 +180,6 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         for _, power := range useArtifact.Powers {
             itemInfo.AddChild(widget.NewText(widget.TextOpts.Text(power.Name, face, color.NRGBA{R: 255, G: 255, B: 255, A: 255})))
         }
-
-        for _, ability := range useArtifact.Abilities {
-            itemInfo.AddChild(widget.NewText(widget.TextOpts.Text(ability.Name(), face, color.NRGBA{R: 255, G: 255, B: 255, A: 255})))
-        }
     }
 
     fakeImage := ui_image.NewNineSliceColor(color.NRGBA{R: 32, G: 32, B: 32, A: 255})

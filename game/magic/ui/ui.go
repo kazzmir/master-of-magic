@@ -9,6 +9,7 @@ import (
 
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
+    "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     "github.com/kazzmir/master-of-magic/lib/lbx"
 
     "github.com/hajimehoshi/ebiten/v2"
@@ -24,6 +25,7 @@ type UIKeyFunc func(key []ebiten.Key)
 type UIGainFocusFunc func(*UIElement)
 type UILoseFocusFunc func(*UIElement)
 type UITextEntry func(*UIElement, string) string
+type UIScrollFunc func(*UIElement, float64, float64)
 
 type UILayer int
 
@@ -52,6 +54,9 @@ type UIElement struct {
     TextEntry UITextEntry
     // fires when a key is pressed and this element is focused
     HandleKeys UIKeyFunc
+
+    // fires when the mouse wheel/pad is scrolled
+    Scroll UIScrollFunc
 
     Draw UIDrawFunc
     Layer UILayer
@@ -381,11 +386,18 @@ func (ui *UI) StandardUpdate() {
 
     elementLeftClicked := false
 
+    wheelX, wheelY := inputmanager.Wheel()
+
     for _, element := range ui.GetHighestLayer() {
         if image.Pt(mouseX, mouseY).In(element.Rect) {
             if element.Inside != nil {
                 element.Inside(element, mouseX - element.Rect.Min.X, mouseY - element.Rect.Min.Y)
             }
+
+            if element.Scroll != nil {
+                element.Scroll(element, wheelX, wheelY)
+            }
+
             if !ui.Disabled && leftClick {
                 elementLeftClicked = true
                 if element.LeftClick != nil {

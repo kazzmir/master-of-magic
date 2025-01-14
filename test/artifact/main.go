@@ -5,6 +5,8 @@ import (
 
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
+    "github.com/kazzmir/master-of-magic/game/magic/audio"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
 
@@ -22,6 +24,17 @@ type Engine struct {
     Coroutine *coroutine.Coroutine
 }
 
+type Books struct {
+}
+
+func (books *Books) MagicLevel(magic data.MagicType) int {
+    switch magic {
+        case data.ChaosMagic: return 11
+    }
+
+    return 11
+}
+
 func NewEngine() (*Engine, error) {
     cache := lbx.AutoCache()
     engine := &Engine{
@@ -31,7 +44,7 @@ func NewEngine() (*Engine, error) {
     }
 
     run := func(yield coroutine.YieldFunc) error {
-        create, cancel := artifact.ShowCreateArtifactScreen(yield, engine.Cache, artifact.CreationEnchantItem, &engine.Drawer)
+        create, cancel := artifact.ShowCreateArtifactScreen(yield, engine.Cache, artifact.CreationCreateArtifact, &Books{}, &engine.Drawer)
         if !cancel {
             log.Printf("Create artifact: %+v", create)
         } else {
@@ -78,6 +91,8 @@ func main(){
     ebiten.SetWindowSize(ScreenWidth * 5, ScreenHeight * 5)
     ebiten.SetWindowTitle("page turn")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
+
+    audio.Initialize()
 
     engine, err := NewEngine()
 

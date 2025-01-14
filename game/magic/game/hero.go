@@ -111,7 +111,7 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
         },
     })
 
-    elements = append(elements, unitview.MakeUnitAbilitiesElements(&imageCache, hero, mediumFont, 40, 124, 1, &getAlpha, true)...)
+    elements = append(elements, unitview.MakeUnitAbilitiesElements(&imageCache, hero, mediumFont, 40, 124, &ui.Counter, 1, &getAlpha, true)...)
 
     elements = append(elements, &uilib.UIElement{
         Layer: 1,

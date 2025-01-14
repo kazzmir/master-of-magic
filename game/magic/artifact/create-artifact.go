@@ -4,6 +4,8 @@ import (
     "fmt"
     "image"
     "strings"
+    "slices"
+    "cmp"
     "image/color"
     "log"
     "bytes"
@@ -28,6 +30,12 @@ const (
 )
 
 const CreationScreenCostThreshold = 200  // TODO: validate this again with abilities
+
+// a way to know how many books of magic the wizard has
+type MagicLevel interface {
+    // for a given magic type, returns the number of books of that magic
+    MagicLevel(kind data.MagicType) int
+}
 
 func ReadPowers(cache *lbx.LbxCache) ([]Power, map[Power]int, map[Power]set.Set[ArtifactType], error) {
     itemData, err := cache.GetLbxFile("itempow.lbx")
@@ -74,9 +82,9 @@ func ReadPowers(cache *lbx.LbxCache) ([]Power, map[Power]int, map[Power]set.Set[
         4: PowerTypeSpellSave,
         5: PowerTypeMovement,
         6: PowerTypeResistance,
-        7: PowerTypeNone, // TODO: mutually exlusive abilities 1 (Resists Elements or Elemental Armor)
-        8: PowerTypeNone, // TODO: mutually exlusive abilities 2 (Resist Magic or Magic Immunity)
-        9: PowerTypeNone, // TODO: all other abilitites
+        7: PowerTypeAbility1, // TODO: mutually exlusive abilities 1 (Resists Elements or Elemental Armor)
+        8: PowerTypeAbility2, // TODO: mutually exlusive abilities 2 (Resist Magic or Magic Immunity)
+        9: PowerTypeAbility3, // TODO: all other abilitites
     }
 
     magicTypeMap := map[byte]data.MagicType{
@@ -87,39 +95,39 @@ func ReadPowers(cache *lbx.LbxCache) ([]Power, map[Power]int, map[Power]set.Set[
         4: data.DeathMagic,
     }
 
-    abilityMap := map[uint32]data.Ability{
-        1 << 0:  data.MakeAbility(data.AbilityVampiric),
-        1 << 1:  data.MakeAbility(data.AbilityGuardianWind),
-        1 << 2:  data.MakeAbility(data.AbilityLightning),
-        1 << 3:  data.MakeAbility(data.AbilityCloakOfFear),
-        1 << 4:  data.MakeAbility(data.AbilityDestruction),
-        1 << 5:  data.MakeAbility(data.AbilityWraithform),
-        1 << 6:  data.MakeAbility(data.AbilityRegeneration),
-        1 << 7:  data.MakeAbility(data.AbilityPathfinding),
-        1 << 8:  data.MakeAbility(data.AbilityWaterWalking),
-        1 << 9:  data.MakeAbility(data.AbilityResistElements),
-        1 << 10: data.MakeAbility(data.AbilityElementalArmor),
-        1 << 11: data.MakeAbility(data.AbilityChaos),
-        1 << 12: data.MakeAbility(data.AbilityStoning),
-        1 << 13: data.MakeAbility(data.AbilityEndurance),
-        1 << 14: data.MakeAbility(data.AbilityHaste),
-        1 << 15: data.MakeAbility(data.AbilityInvisibility),
-        1 << 16: data.MakeAbility(data.AbilityDeath),
-        1 << 17: data.MakeAbility(data.AbilityFlight),
-        1 << 18: data.MakeAbility(data.AbilityResistMagic),
-        1 << 19: data.MakeAbility(data.AbilityMagicImmunity),
-        1 << 20: data.MakeAbility(data.AbilityFlaming),
-        1 << 21: data.MakeAbility(data.AbilityHolyAvenger),
-        1 << 22: data.MakeAbility(data.AbilityTrueSight),
-        1 << 23: data.MakeAbility(data.AbilityPhantasmal),
-        1 << 24: data.MakeAbility(data.AbilityPowerDrain),
-        1 << 25: data.MakeAbility(data.AbilityBless),
-        1 << 26: data.MakeAbility(data.AbilityLionHeart),
-        1 << 27: data.MakeAbility(data.AbilityGiantStrength),
-        1 << 28: data.MakeAbility(data.AbilityPlanarTravel),
-        1 << 29: data.MakeAbility(data.AbilityMerging),
-        1 << 30: data.MakeAbility(data.AbilityRighteousness),
-        1 << 31: data.MakeAbility(data.AbilityInvulnerability),
+    abilityMap := map[uint32]data.AbilityType{
+        1 << 0:  data.AbilityVampiric,
+        1 << 1:  data.AbilityGuardianWind,
+        1 << 2:  data.AbilityLightning,
+        1 << 3:  data.AbilityCloakOfFear,
+        1 << 4:  data.AbilityDestruction,
+        1 << 5:  data.AbilityWraithform,
+        1 << 6:  data.AbilityRegeneration,
+        1 << 7:  data.AbilityPathfinding,
+        1 << 8:  data.AbilityWaterWalking,
+        1 << 9:  data.AbilityResistElements,
+        1 << 10: data.AbilityElementalArmor,
+        1 << 11: data.AbilityChaos,
+        1 << 12: data.AbilityStoning,
+        1 << 13: data.AbilityEndurance,
+        1 << 14: data.AbilityHaste,
+        1 << 15: data.AbilityInvisibility,
+        1 << 16: data.AbilityDeath,
+        1 << 17: data.AbilityFlight,
+        1 << 18: data.AbilityResistMagic,
+        1 << 19: data.AbilityMagicImmunity,
+        1 << 20: data.AbilityFlaming,
+        1 << 21: data.AbilityHolyAvenger,
+        1 << 22: data.AbilityTrueSight,
+        1 << 23: data.AbilityPhantasmal,
+        1 << 24: data.AbilityPowerDrain,
+        1 << 25: data.AbilityBless,
+        1 << 26: data.AbilityLionHeart,
+        1 << 27: data.AbilityGiantStrength,
+        1 << 28: data.AbilityPlanarTravel,
+        1 << 29: data.AbilityMerging,
+        1 << 30: data.AbilityRighteousness,
+        1 << 31: data.AbilityInvulnerability,
     }
 
     var powers []Power
@@ -192,30 +200,32 @@ func ReadPowers(cache *lbx.LbxCache) ([]Power, map[Power]int, map[Power]set.Set[
             return nil, nil, nil, fmt.Errorf("read error: %v", err)
         }
 
-        var ability data.Ability
+        var ability data.AbilityType
         for mask, current := range abilityMap {
             if abilitiesValue&mask != 0 {
                 ability = current
             }
         }
-        _ = ability
 
         // Create power
         if amount == 0 {
             continue // Spell Charges
         }
+
         if powerType != PowerTypeNone {
             power := Power{
                 Type: powerType,
                 Name: string(name),
                 Amount: int(amount),
+                Ability: ability,
+                Magic: magicType,
+                Index: i,
             }
             powers = append(powers, power)
             costs[power] = int(cost)
             compatibilities[power] = *artifactTypes
         }
         // TODO: add abilties (currently PowerTypeNone) with requirements (magicType / amount = books needed)
-        _ = magicType
     }
     return powers, costs, compatibilities, nil
 }
@@ -255,7 +265,6 @@ func groupPowers(powers []Power, costs map[Power]int, compatibilities map[Power]
     return result
 }
 
-
 func getName(artifact *Artifact, customName string) string {
     if customName != "" {
         return customName
@@ -290,7 +299,8 @@ func getName(artifact *Artifact, customName string) string {
     postfix := ""
     switch {
         // TODO: Spell Charges: " of {Spell Name} x4"
-        // TODO: Ability: " of {Ability Name}" (probably ability with the highest cost)
+
+        case artifact.HasAbilities(): postfix = fmt.Sprintf(" of %v", artifact.LastAbility().Name())
         case artifact.HasSpellSavePower(): postfix = " of Power"
         case artifact.HasSpellSkillPower(): postfix = " of Wizardry"
         case artifact.HasResistancePower(): postfix = " of Protection"
@@ -336,7 +346,7 @@ func calculateCost(artifact *Artifact, costs map[Power]int) int {
     return base + powerCost + spellCost
 }
 
-func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCache, nameFont *font.Font, powerFont *font.Font, picLow int, picHigh int, powerGroups [][]Power, costs map[Power]int, artifact *Artifact, customName *string) []*uilib.UIElement {
+func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCache, nameFont *font.Font, powerFont *font.Font, picLow int, picHigh int, powerGroups [][]Power, costs map[Power]int, artifact *Artifact, customName *string, selectCount *int) []*uilib.UIElement {
     var elements []*uilib.UIElement
 
     // image
@@ -346,8 +356,13 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(7, 6)
+
+            /*
             image, _ := imageCache.GetImage("items.lbx", artifact.Image, 0)
             screen.DrawImage(image, &options)
+            */
+
+            RenderArtifactImage(screen, imageCache, *artifact, ui.Counter / 8, options)
         },
     })
 
@@ -356,6 +371,7 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
     leftRect := util.ImageRect(5, 24, leftImages[leftIndex])
     elements = append(elements, &uilib.UIElement{
         Rect: leftRect,
+        PlaySoundLeftClick: true,
         LeftClick: func(element *uilib.UIElement){
             leftIndex = 1
         },
@@ -380,6 +396,7 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
     rightRect := util.ImageRect(17, 24, leftImages[rightIndex])
     elements = append(elements, &uilib.UIElement{
         Rect: rightRect,
+        PlaySoundLeftClick: true,
         LeftClick: func(element *uilib.UIElement){
             rightIndex = 1
         },
@@ -482,7 +499,6 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
     // powers
     x := 7
     y := 40
-    selectCount := 0
     printRight := false
     for _, group := range powerGroups {
         groupSelect := -1
@@ -505,11 +521,12 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
 
             elements = append(elements, &uilib.UIElement{
                 Rect: rect,
+                PlaySoundLeftClick: true,
                 LeftClick: func(element *uilib.UIElement){
                     if groupSelect != -1 {
                         if groupSelect == i {
                             groupSelect = -1
-                            selectCount -= 1
+                            *selectCount -= 1
                             artifact.RemovePower(power)
                             artifact.Name = getName(artifact, *customName)
                             artifact.Cost = calculateCost(artifact, costs)
@@ -524,8 +541,8 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
                             lastPower = &power
                         }
                     } else {
-                        if selectCount < 4 {
-                            selectCount += 1
+                        if *selectCount < 4 {
+                            *selectCount += 1
                             groupSelect = i
                             artifact.AddPower(power)
                             artifact.Name = getName(artifact, *customName)
@@ -558,6 +575,252 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
         }
 
         y += 5
+    }
+
+    return elements
+}
+
+func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCache, artifact *Artifact, customName *string, powerFont *font.Font, powers []Power, compatibilities map[Power]set.Set[ArtifactType], costs map[Power]int, selectCount *int, magicLevel MagicLevel) []*uilib.UIElement {
+    var elements []*uilib.UIElement
+
+    var group1 []Power
+    var group2 []Power
+    var group3 []Power
+
+    for _, power := range powers {
+        switch power.Type {
+            case PowerTypeAbility1: group1 = append(group1, power)
+            case PowerTypeAbility2: group2 = append(group2, power)
+            case PowerTypeAbility3: group3 = append(group3, power)
+        }
+    }
+
+    /*
+    minItem := 0
+    */
+    maxItem := 11
+
+    // currentItem := 0
+    y := 39
+    x := 200
+
+    // true if the rect is within the bounds of where the abilities should be
+    inBounds := func (rect image.Rectangle) bool {
+        if rect.Min.Y >= 39 && rect.Min.Y <= 160 {
+            return true
+        }
+
+        return false
+    }
+
+    totalItems := 0
+
+    for groupNum, group := range [][]Power{group1, group2, group3} {
+        groupSelect := -1
+
+        mutuallyExclusive := groupNum == 0 || groupNum == 1
+
+        slices.SortFunc(group, func(a, b Power) int {
+            return cmp.Compare(a.Index, b.Index)
+        })
+
+        var lastPower *Power = nil
+        selected := make([]bool, len(group))
+        for i, power := range group {
+            artifactTypes := compatibilities[power]
+            if artifactTypes.Contains(artifact.Type) && magicLevel.MagicLevel(power.Magic) >= power.Amount {
+                totalItems += 1
+                xRect := image.Rect(x, y, x + int(powerFont.MeasureTextWidth(power.Name, 1)), y + powerFont.Height())
+                elements = append(elements, &uilib.UIElement{
+                    Rect: xRect,
+                    PlaySoundLeftClick: inBounds(xRect),
+                    LeftClick: func(element *uilib.UIElement){
+                        if !inBounds(element.Rect) {
+                            return
+                        }
+
+                        if mutuallyExclusive {
+                            // can only pick one in the group
+                            if groupSelect != -1 {
+                                if groupSelect == i {
+                                    groupSelect = -1
+                                    *selectCount -= 1
+                                    artifact.RemovePower(power)
+                                    artifact.Name = getName(artifact, *customName)
+                                    artifact.Cost = calculateCost(artifact, costs)
+                                    lastPower = nil
+                                } else {
+                                    // something was already selected in this group, so the count doesn't change
+                                    groupSelect = i
+                                    artifact.RemovePower(*lastPower)
+                                    artifact.AddPower(power)
+                                    artifact.Name = getName(artifact, *customName)
+                                    artifact.Cost = calculateCost(artifact, costs)
+                                    lastPower = &power
+                                }
+                            } else {
+                                if *selectCount < 4 {
+                                    *selectCount += 1
+                                    groupSelect = i
+                                    artifact.AddPower(power)
+                                    artifact.Name = getName(artifact, *customName)
+                                    artifact.Cost = calculateCost(artifact, costs)
+                                    lastPower = &power
+                                } else {
+                                    ui.AddElement(uilib.MakeErrorElement(ui, cache, imageCache, "Only four powers may be enchanted into an item", func(){}))
+                                }
+
+                            }
+                        } else {
+                            // can pick multiple
+                            if selected[i] {
+                                artifact.RemovePower(power)
+                                artifact.Name = getName(artifact, *customName)
+                                artifact.Cost = calculateCost(artifact, costs)
+                                selected[i] = false
+                                *selectCount -= 1
+                            } else if *selectCount < 4 {
+                                *selectCount += 1
+                                selected[i] = true
+
+                                artifact.AddPower(power)
+                                artifact.Name = getName(artifact, *customName)
+                                artifact.Cost = calculateCost(artifact, costs)
+                            } else {
+                                ui.AddElement(uilib.MakeErrorElement(ui, cache, imageCache, "Only four powers may be enchanted into an item", func(){}))
+                            }
+                        }
+                    },
+                    Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                        if !inBounds(element.Rect) {
+                            return
+                        }
+
+                        scale := ebiten.ColorScale{}
+
+                        if (mutuallyExclusive && groupSelect == i) || (!mutuallyExclusive && selected[i]) {
+                            scale.SetR(3)
+                            scale.SetG(3)
+                        }
+
+                        powerFont.Print(screen, float64(element.Rect.Min.X), float64(element.Rect.Min.Y), 1, scale, power.Name)
+                    },
+                })
+
+                y += powerFont.Height() + 1
+            }
+        }
+
+        y += 5
+    }
+
+    // FIXME: add spell charges element
+
+    // show up/down scroll arrows if there are too many abilities to choose
+    if totalItems > maxItem {
+        upArrows, _ := imageCache.GetImages("spellscr.lbx", 43)
+        downArrows, _ := imageCache.GetImages("spellscr.lbx", 44)
+
+        abilityElements := slices.Clone(elements)
+
+        minItem := 0
+
+        // scrolling is a slight hack in that the elements always exist but they are only displayed
+        // if their Rect field is within the bounds of the scroll window.
+        // scrolling mutates the Y values of the Rect fields of the elements, so that scrolling up means
+        // all Y values go up by some value, and scrolling down means all Y values go down by some value.
+        // The play sound has to be manually enabled/disabled based on whether the element is in view
+
+        doScroll := func (direction int) {
+            move := direction * powerFont.Height()
+            for _, element := range abilityElements {
+                element.Rect.Min.Y += move
+                element.Rect.Max.Y += move
+
+                element.PlaySoundLeftClick = inBounds(element.Rect)
+            }
+        }
+
+        scrollUp := func() {
+            if minItem > 0 {
+                doScroll(1)
+                minItem -= 1
+            }
+        }
+
+        scrollDown := func() {
+            if minItem < totalItems - maxItem {
+                doScroll(-1)
+                minItem += 1
+            }
+        }
+
+        upX := 305
+        upY := 43
+        upPressed := false
+        elements = append(elements, &uilib.UIElement{
+            Rect: util.ImageRect(upX, upY, upArrows[0]),
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(upX), float64(upY))
+
+                var image *ebiten.Image
+                if upPressed {
+                    image = upArrows[1]
+                } else {
+                    image = upArrows[0]
+                }
+
+                screen.DrawImage(image, &options)
+            },
+            PlaySoundLeftClick: true,
+            LeftClick: func(element *uilib.UIElement){
+                upPressed = true
+            },
+            LeftClickRelease: func(element *uilib.UIElement){
+                upPressed = false
+
+                scrollUp()
+            },
+        })
+
+        downX := upX
+        downY := 160
+        downPressed := false
+        elements = append(elements, &uilib.UIElement{
+            Rect: util.ImageRect(downX, downY, downArrows[0]),
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(downX), float64(downY))
+
+                var image *ebiten.Image
+                if downPressed {
+                    image = downArrows[1]
+                } else {
+                    image = downArrows[0]
+                }
+                screen.DrawImage(image, &options)
+            },
+            PlaySoundLeftClick: true,
+            LeftClick: func(element *uilib.UIElement){
+                downPressed = true
+            },
+            LeftClickRelease: func(element *uilib.UIElement){
+                downPressed = false
+                scrollDown()
+            },
+        })
+
+        elements = append(elements, &uilib.UIElement{
+            Rect: image.Rect(200, 39, 200 + 110, 170),
+            Scroll: func (element *uilib.UIElement, x float64, y float64) {
+                if y < 0 {
+                    scrollDown()
+                } else if y > 0 {
+                    scrollUp()
+                }
+            },
+        })
     }
 
     return elements
@@ -607,12 +870,13 @@ func makeFonts(cache *lbx.LbxCache) (*font.Font, *font.Font, *font.Font) {
 /* returns the artifact that was created and true,
  * otherwise false for cancelled
  */
-func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, creationType CreationScreen, draw *func(*ebiten.Image)) (*Artifact, bool) {
+func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, creationType CreationScreen, magicLevel MagicLevel, draw *func(*ebiten.Image)) (*Artifact, bool) {
     powerFont, powerFontWhite, nameFont := makeFonts(cache)
 
     imageCache := util.MakeImageCache(cache)
 
     ui := &uilib.UI{
+        Cache: cache,
         Draw: func(ui *uilib.UI, screen *ebiten.Image){
             var options ebiten.DrawImageOptions
             background, _ := imageCache.GetImage("spellscr.lbx", 13, 0)
@@ -633,6 +897,7 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, cr
 
     type PowerArtifact struct {
         Elements []*uilib.UIElement
+        AbilityElements []*uilib.UIElement
         Artifact *Artifact
     }
 
@@ -644,9 +909,12 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, cr
         var artifact Artifact
         artifact.Type = artifactType
         groups := groupPowers(powers, costs, compatibilities, artifactType, creationType)
-        elements := makePowersFull(ui, cache, &imageCache, nameFont, powerFont, picLow, picHigh, groups, costs, &artifact, &customName)
+        selectCount := 0
+        elements := makePowersFull(ui, cache, &imageCache, nameFont, powerFont, picLow, picHigh, groups, costs, &artifact, &customName, &selectCount)
+        abilityElements := makeAbilityElements(ui, cache, &imageCache, &artifact, &customName, powerFont, powers, compatibilities, costs, &selectCount, magicLevel)
         return PowerArtifact{
             Elements: elements,
+            AbilityElements: abilityElements,
             Artifact: &artifact,
         }
     }
@@ -670,9 +938,11 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, cr
     updatePowers := func(index ArtifactType){
         for _, each := range powers {
             ui.RemoveElements(each.Elements)
+            ui.RemoveElements(each.AbilityElements)
         }
 
         ui.AddElements(powers[index].Elements)
+        ui.AddElements(powers[index].AbilityElements)
         currentArtifact = powers[index].Artifact
         currentArtifact.Name = getName(currentArtifact, customName)
         currentArtifact.Cost = calculateCost(currentArtifact, costs)
@@ -686,6 +956,7 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, cr
         rect := util.ImageRect(x, y, imageRect)
         return &uilib.UIElement{
             Rect: rect,
+            PlaySoundLeftClick: true,
             LeftClick: func(element *uilib.UIElement){
                 index = 1
             },
@@ -741,6 +1012,7 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, cr
     okRect := util.ImageRect(281, 180, okButtons[0])
     ui.AddElement(&uilib.UIElement{
         Rect: okRect,
+        PlaySoundLeftClick: true,
         LeftClick: func(element *uilib.UIElement){
             okIndex = 1
         },

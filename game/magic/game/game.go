@@ -3702,7 +3702,7 @@ func (game *Game) ShowSpellBookCastUI(yield coroutine.YieldFunc, player *playerl
                     case "Enchant Item": creation = artifact.CreationEnchantItem
                 }
 
-                created, cancel := artifact.ShowCreateArtifactScreen(yield, game.Cache, creation, &drawFunc)
+                created, cancel := artifact.ShowCreateArtifactScreen(yield, game.Cache, creation, &player.Wizard, &drawFunc)
                 if cancel {
                     return
                 }
@@ -4081,7 +4081,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                             // draw the first enchantment on the unit
                             for _, enchantment := range unit.GetEnchantments() {
                                 x, y := options.GeoM.Apply(0, 0)
-                                util.DrawOutline(screen, &game.ImageCache, unitImage, x, y, game.Counter/10, enchantment.Color())
+                                util.DrawOutline(screen, &game.ImageCache, unitImage, x, y, options.ColorScale, game.Counter/10, enchantment.Color())
                                 break
                             }
                         }
@@ -5212,7 +5212,7 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
                 enchantment := util.First(leader.GetEnchantments(), data.UnitEnchantmentNone)
                 if enchantment != data.UnitEnchantmentNone {
                     x, y := options.GeoM.Apply(0, 0)
-                    util.DrawOutline(screen, overworld.ImageCache, pic, x, y, overworld.Counter/10, enchantment.Color())
+                    util.DrawOutline(screen, overworld.ImageCache, pic, x, y, options.ColorScale, overworld.Counter/10, enchantment.Color())
                 }
             }
 

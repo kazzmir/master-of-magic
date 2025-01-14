@@ -4,6 +4,7 @@ import (
     "bytes"
     "fmt"
     "slices"
+    "cmp"
     _ "log"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -101,6 +102,10 @@ const (
     PowerTypeMovement
     PowerTypeResistance
     PowerTypeSpellCharges
+
+    PowerTypeAbility1
+    PowerTypeAbility2
+    PowerTypeAbility3
 )
 
 func (section PowerType) String() string {
@@ -113,6 +118,10 @@ func (section PowerType) String() string {
         case PowerTypeMovement: return "Movement"
         case PowerTypeResistance: return "Resistance"
         case PowerTypeSpellCharges: return "Spell Charges"
+
+        case PowerTypeAbility1: return "Ability 1"
+        case PowerTypeAbility2: return "Ability 2"
+        case PowerTypeAbility3: return "Ability 3"
     }
 
     return "unknown"
@@ -120,9 +129,15 @@ func (section PowerType) String() string {
 
 type Power struct {
     Type PowerType
-    Amount int
+    Amount int // for an ability this is the number of books of the Magic needed
     Name string
     Spell spellbook.Spell
+    Ability data.AbilityType
+    Magic data.MagicType // for abilities
+
+    // powers are sorted by how they are defined in itempow.lbx, so we just use that number here
+    // this field has no utility other than sorting
+    Index int
 }
 
 type Requirement struct {
@@ -136,8 +151,33 @@ type Artifact struct {
     Name string
     Cost int
     Powers []Power
-    Abilities []data.Ability
     Requirements []Requirement
+}
+
+// if true then generally this artifact should be rendered with a glow around it
+func (artifact *Artifact) HasAbilities() bool {
+    return artifact.HasAbilityPower()
+}
+
+func (artifact *Artifact) FirstAbility() data.Ability {
+    for _, power := range artifact.Powers {
+        if power.Type == PowerTypeAbility1 || power.Type == PowerTypeAbility2 || power.Type == PowerTypeAbility3 {
+            return data.MakeAbility(power.Ability)
+        }
+    }
+
+    return data.MakeAbility(data.AbilityNone)
+}
+
+func (artifact *Artifact) LastAbility() data.Ability {
+    for i := len(artifact.Powers) - 1; i >= 0; i-- {
+        power := artifact.Powers[i]
+        if power.Type == PowerTypeAbility1 || power.Type == PowerTypeAbility2 || power.Type == PowerTypeAbility3 {
+            return data.MakeAbility(power.Ability)
+        }
+    }
+
+    return data.MakeAbility(data.AbilityNone)
 }
 
 func (artifact *Artifact) HasAbility(ability data.AbilityType) bool {
@@ -145,8 +185,9 @@ func (artifact *Artifact) HasAbility(ability data.AbilityType) bool {
         case data.AbilityLargeShield: return artifact.Type == ArtifactTypeShield
     }
 
-    for _, check := range artifact.Abilities {
-        if check.Ability == ability {
+    for _, check := range artifact.Powers {
+        isAbility := check.Type == PowerTypeAbility1 || check.Type == PowerTypeAbility2 || check.Type == PowerTypeAbility3
+        if isAbility && check.Ability == ability {
             return true
         }
     }
@@ -156,6 +197,9 @@ func (artifact *Artifact) HasAbility(ability data.AbilityType) bool {
 
 func (artifact *Artifact) AddPower(power Power) {
     artifact.Powers = append(artifact.Powers, power)
+    slices.SortFunc(artifact.Powers, func (a, b Power) int {
+        return cmp.Compare(a.Index, b.Index)
+    })
 }
 
 func (artifact *Artifact) RemovePower(remove Power) {
@@ -248,6 +292,10 @@ func (artifact *Artifact) HasToHitPower() bool {
     return hasPower(PowerTypeToHit, artifact.Powers)
 }
 
+func (artifact *Artifact) HasAbilityPower() bool {
+    return hasPower(PowerTypeAbility1, artifact.Powers) || hasPower(PowerTypeAbility2, artifact.Powers) || hasPower(PowerTypeAbility3, artifact.Powers)
+}
+
 func (artifact *Artifact) ToHitBonus() int {
     return addPowers(PowerTypeToHit, artifact.Powers)
 }
@@ -315,39 +363,39 @@ func ReadArtifacts(cache *lbx.LbxCache) ([]Artifact, error) {
         9: ArtifactTypePlate,
     }
 
-    abilityMap := map[uint32]data.Ability{
-        1 << 0:  data.MakeAbility(data.AbilityVampiric),
-        1 << 1:  data.MakeAbility(data.AbilityGuardianWind),
-        1 << 2:  data.MakeAbility(data.AbilityLightning),
-        1 << 3:  data.MakeAbility(data.AbilityCloakOfFear),
-        1 << 4:  data.MakeAbility(data.AbilityDestruction),
-        1 << 5:  data.MakeAbility(data.AbilityWraithform),
-        1 << 6:  data.MakeAbility(data.AbilityRegeneration),
-        1 << 7:  data.MakeAbility(data.AbilityPathfinding),
-        1 << 8:  data.MakeAbility(data.AbilityWaterWalking),
-        1 << 9:  data.MakeAbility(data.AbilityResistElements),
-        1 << 10: data.MakeAbility(data.AbilityElementalArmor),
-        1 << 11: data.MakeAbility(data.AbilityChaos),
-        1 << 12: data.MakeAbility(data.AbilityStoning),
-        1 << 13: data.MakeAbility(data.AbilityEndurance),
-        1 << 14: data.MakeAbility(data.AbilityHaste),
-        1 << 15: data.MakeAbility(data.AbilityInvisibility),
-        1 << 16: data.MakeAbility(data.AbilityDeath),
-        1 << 17: data.MakeAbility(data.AbilityFlight),
-        1 << 18: data.MakeAbility(data.AbilityResistMagic),
-        1 << 19: data.MakeAbility(data.AbilityMagicImmunity),
-        1 << 20: data.MakeAbility(data.AbilityFlaming),
-        1 << 21: data.MakeAbility(data.AbilityHolyAvenger),
-        1 << 22: data.MakeAbility(data.AbilityTrueSight),
-        1 << 23: data.MakeAbility(data.AbilityPhantasmal),
-        1 << 24: data.MakeAbility(data.AbilityPowerDrain),
-        1 << 25: data.MakeAbility(data.AbilityBless),
-        1 << 26: data.MakeAbility(data.AbilityLionHeart),
-        1 << 27: data.MakeAbility(data.AbilityGiantStrength),
-        1 << 28: data.MakeAbility(data.AbilityPlanarTravel),
-        1 << 29: data.MakeAbility(data.AbilityMerging),
-        1 << 30: data.MakeAbility(data.AbilityRighteousness),
-        1 << 31: data.MakeAbility(data.AbilityInvulnerability),
+    abilityMap := map[uint32]data.AbilityType {
+        1 << 0:  data.AbilityVampiric,
+        1 << 1:  data.AbilityGuardianWind,
+        1 << 2:  data.AbilityLightning,
+        1 << 3:  data.AbilityCloakOfFear,
+        1 << 4:  data.AbilityDestruction,
+        1 << 5:  data.AbilityWraithform,
+        1 << 6:  data.AbilityRegeneration,
+        1 << 7:  data.AbilityPathfinding,
+        1 << 8:  data.AbilityWaterWalking,
+        1 << 9:  data.AbilityResistElements,
+        1 << 10: data.AbilityElementalArmor,
+        1 << 11: data.AbilityChaos,
+        1 << 12: data.AbilityStoning,
+        1 << 13: data.AbilityEndurance,
+        1 << 14: data.AbilityHaste,
+        1 << 15: data.AbilityInvisibility,
+        1 << 16: data.AbilityDeath,
+        1 << 17: data.AbilityFlight,
+        1 << 18: data.AbilityResistMagic,
+        1 << 19: data.AbilityMagicImmunity,
+        1 << 20: data.AbilityFlaming,
+        1 << 21: data.AbilityHolyAvenger,
+        1 << 22: data.AbilityTrueSight,
+        1 << 23: data.AbilityPhantasmal,
+        1 << 24: data.AbilityPowerDrain,
+        1 << 25: data.AbilityBless,
+        1 << 26: data.AbilityLionHeart,
+        1 << 27: data.AbilityGiantStrength,
+        1 << 28: data.AbilityPlanarTravel,
+        1 << 29: data.AbilityMerging,
+        1 << 30: data.AbilityRighteousness,
+        1 << 31: data.AbilityInvulnerability,
     }
 
     for i := 0; i < int(numEntries); i++ {
@@ -482,10 +530,9 @@ func ReadArtifacts(cache *lbx.LbxCache) ([]Artifact, error) {
             return nil, fmt.Errorf("read error: %v", err)
         }
 
-        var abilities []data.Ability
         for mask, ability := range abilityMap {
             if abilitiesValue&mask != 0 {
-                abilities = append(abilities, ability)
+                powers = append(powers, Power{Type: PowerTypeAbility1, Amount: 0, Name: data.MakeAbility(ability).Name(), Ability: ability})
             }
         }
 
@@ -543,7 +590,6 @@ func ReadArtifacts(cache *lbx.LbxCache) ([]Artifact, error) {
             Cost: int(cost),
             Type: artifactType,
             Powers: powers,
-            Abilities: abilities,
             Requirements: requirements,
         }
         out = append(out, artifact)

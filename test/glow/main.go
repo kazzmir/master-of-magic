@@ -2,6 +2,7 @@ package main
 
 import (
     "log"
+    "image"
     "image/color"
     "math"
 
@@ -54,6 +55,19 @@ func toFloatArray(color color.Color) []float32 {
     return []float32{float32(r) / max, float32(g) / max, float32(b) / max, float32(a) / max}
 }
 
+// enlarge the image by 1 pixel on all sides
+func add1PxBorder(src *image.Paletted) image.Image {
+    out := image.NewPaletted(image.Rect(0, 0, src.Bounds().Dx()+2, src.Bounds().Dy()+2), src.Palette)
+
+    for y := 0; y < src.Bounds().Dy(); y++ {
+        for x := 0; x < src.Bounds().Dx(); x++ {
+            out.SetColorIndex(x+1, y+1, src.ColorIndexAt(x, y))
+        }
+    }
+
+    return out
+}
+
 func (engine *Engine) Draw(screen *ebiten.Image){
     screen.Fill(color.RGBA{R: 60, G: 60, B: 120, A: 255})
 
@@ -89,7 +103,19 @@ func (engine *Engine) Draw(screen *ebiten.Image){
     regularOptions.GeoM.Translate(20, 60)
     screen.DrawImage(lizardUnit, &regularOptions)
     x, y := regularOptions.GeoM.Apply(0, 0)
-    util.DrawOutline(screen, engine.ImageCache, lizardUnit, x, y, engine.Counter/10, color.RGBA{R: 180, G: 0, B: 0, A: 255})
+    util.DrawOutline(screen, engine.ImageCache, lizardUnit, x, y, ebiten.ColorScale{}, engine.Counter/10, color.RGBA{R: 180, G: 0, B: 0, A: 255})
+
+    axe, _ := engine.ImageCache.GetImageTransform("items.lbx", 23, 0, "1-px", util.ImageTransformFunc(add1PxBorder))
+    regularOptions.GeoM.Reset()
+    regularOptions.GeoM.Translate(20, 100)
+    screen.DrawImage(axe, &regularOptions)
+
+    options.GeoM.Reset()
+    options.GeoM.Translate(50, 100)
+    options.Images[0] = axe
+    regularOptions.GeoM = options.GeoM
+    screen.DrawImage(axe, &regularOptions)
+    screen.DrawRectShader(axe.Bounds().Dx(), axe.Bounds().Dy(), shader, &options)
 }
 
 func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {

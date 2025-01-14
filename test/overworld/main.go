@@ -1362,9 +1362,10 @@ func createScenario17(cache *lbx.LbxCache) *gamelib.Game {
                 Name: "+3 Movement",
             },
             {
-                Type: artifact.PowerTypeResistance,
+                Type: artifact.PowerTypeAbility1,
                 Amount: 2,
-                Name: "+2 Resistance",
+                Ability: data.AbilityFlaming,
+                Name: "Flaming",
             },
         },
         Cost: 1000,

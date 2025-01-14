@@ -11,7 +11,6 @@
 * combat: implement boulder ranged attacks
 * combat: town damage, destroy buildings/people after a battle
 * combat: implement flying fortress
-* add edge glow to enchanted items
 * hero: ability progress (https://masterofmagic.fandom.com/wiki/Experience_Level#Ability_Improvement_Tables_-_Heroes)
 
 9/22/2024 * city view: separate surplus food/gold from subsistence food/gold
@@ -65,3 +64,4 @@
 1/6/2025 * overworld: zoom in/out
 1/9/2025 * play ui sounds
 1/9/2025 * build roads
+1/14/2025 * add edge glow to enchanted items
