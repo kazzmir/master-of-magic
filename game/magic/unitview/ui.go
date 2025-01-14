@@ -166,7 +166,7 @@ func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, di
         },
     })
 
-    elements = append(elements, MakeUnitAbilitiesElements(&imageCache, unit, mediumFont, 40, 114, 1, &getAlpha, false)...)
+    elements = append(elements, MakeUnitAbilitiesElements(&imageCache, unit, mediumFont, 40, 114, &ui.Counter, 1, &getAlpha, false)...)
 
     elements = append(elements, &uilib.UIElement{
         Layer: 1,
