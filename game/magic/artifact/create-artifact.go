@@ -570,8 +570,7 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
     return elements
 }
 
-// returns two functions: the first adds elements to the ui, and the second removes the elements
-func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCache, artifact *Artifact, customName *string, powerFont *font.Font, powers []Power, compatibilities map[Power]set.Set[ArtifactType], costs map[Power]int, selectCount *int) (func(), func()) {
+func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCache, artifact *Artifact, customName *string, powerFont *font.Font, powers []Power, compatibilities map[Power]set.Set[ArtifactType], costs map[Power]int, selectCount *int) []*uilib.UIElement {
     var elements []*uilib.UIElement
 
     var group1 []Power
@@ -701,6 +700,7 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
         y += 5
     }
 
+    // show up/down scroll arrows if there are too many abilities to choose
     if totalItems > maxItem {
         upArrows, _ := imageCache.GetImages("spellscr.lbx", 43)
         downArrows, _ := imageCache.GetImages("spellscr.lbx", 44)
@@ -786,15 +786,7 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
         })
     }
 
-    setupPowers := func() {
-        ui.AddElements(elements)
-    }
-
-    tearDown := func() {
-        ui.RemoveElements(elements)
-    }
-
-    return setupPowers, tearDown
+    return elements
 }
 
 func makeFonts(cache *lbx.LbxCache) (*font.Font, *font.Font, *font.Font) {
@@ -867,9 +859,8 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, cr
 
     type PowerArtifact struct {
         Elements []*uilib.UIElement
+        AbilityElements []*uilib.UIElement
         Artifact *Artifact
-        Setup func()
-        TearDown func()
     }
 
     // ui elements for powers that can be selected, based on what item is selected
@@ -882,12 +873,11 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, cr
         groups := groupPowers(powers, costs, compatibilities, artifactType, creationType)
         selectCount := 0
         elements := makePowersFull(ui, cache, &imageCache, nameFont, powerFont, picLow, picHigh, groups, costs, &artifact, &customName, &selectCount)
-        setupPowers, tearDown := makeAbilityElements(ui, cache, &imageCache, &artifact, &customName, powerFont, powers, compatibilities, costs, &selectCount)
+        abilityElements := makeAbilityElements(ui, cache, &imageCache, &artifact, &customName, powerFont, powers, compatibilities, costs, &selectCount)
         return PowerArtifact{
             Elements: elements,
+            AbilityElements: abilityElements,
             Artifact: &artifact,
-            Setup: setupPowers,
-            TearDown: tearDown,
         }
     }
 
@@ -910,11 +900,11 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, cr
     updatePowers := func(index ArtifactType){
         for _, each := range powers {
             ui.RemoveElements(each.Elements)
-            each.TearDown()
+            ui.RemoveElements(each.AbilityElements)
         }
 
         ui.AddElements(powers[index].Elements)
-        powers[index].Setup()
+        ui.AddElements(powers[index].AbilityElements)
         currentArtifact = powers[index].Artifact
         currentArtifact.Name = getName(currentArtifact, customName)
         currentArtifact.Cost = calculateCost(currentArtifact, costs)
