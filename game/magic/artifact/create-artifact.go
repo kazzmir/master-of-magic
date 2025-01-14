@@ -292,7 +292,9 @@ func getName(artifact *Artifact, customName string) string {
     postfix := ""
     switch {
         // TODO: Spell Charges: " of {Spell Name} x4"
-        // TODO: Ability: " of {Ability Name}" (probably ability with the highest cost)
+
+        // FIXME: choose ability of highest cost?
+        case artifact.HasAbilities(): postfix = fmt.Sprintf(" of %v", artifact.FirstAbility().Name())
         case artifact.HasSpellSavePower(): postfix = " of Power"
         case artifact.HasSpellSkillPower(): postfix = " of Wizardry"
         case artifact.HasResistancePower(): postfix = " of Protection"
@@ -663,6 +665,8 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
                             // can pick multiple
                             if selected[i] {
                                 artifact.RemovePower(power)
+                                artifact.Name = getName(artifact, *customName)
+                                artifact.Cost = calculateCost(artifact, costs)
                                 selected[i] = false
                                 *selectCount -= 1
                             } else if *selectCount < 4 {
