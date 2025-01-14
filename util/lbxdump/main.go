@@ -16,7 +16,6 @@ import (
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
-    "github.com/kazzmir/master-of-magic/game/magic/terrain"
 )
 
 func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int, rawDump bool) error {
