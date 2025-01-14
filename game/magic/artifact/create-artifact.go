@@ -365,6 +365,7 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
     leftRect := util.ImageRect(5, 24, leftImages[leftIndex])
     elements = append(elements, &uilib.UIElement{
         Rect: leftRect,
+        PlaySoundLeftClick: true,
         LeftClick: func(element *uilib.UIElement){
             leftIndex = 1
         },
@@ -389,6 +390,7 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
     rightRect := util.ImageRect(17, 24, leftImages[rightIndex])
     elements = append(elements, &uilib.UIElement{
         Rect: rightRect,
+        PlaySoundLeftClick: true,
         LeftClick: func(element *uilib.UIElement){
             rightIndex = 1
         },
@@ -514,6 +516,7 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
 
             elements = append(elements, &uilib.UIElement{
                 Rect: rect,
+                PlaySoundLeftClick: true,
                 LeftClick: func(element *uilib.UIElement){
                     if groupSelect != -1 {
                         if groupSelect == i {
@@ -624,6 +627,7 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
                 totalItems += 1
                 elements = append(elements, &uilib.UIElement{
                     Rect: image.Rect(x, y, x + int(powerFont.MeasureTextWidth(power.Name, 1)), y + powerFont.Height()),
+                    PlaySoundLeftClick: true,
                     LeftClick: func(element *uilib.UIElement){
                         if !inBounds(element.Rect) {
                             return
@@ -753,6 +757,7 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
 
                 screen.DrawImage(image, &options)
             },
+            PlaySoundLeftClick: true,
             LeftClick: func(element *uilib.UIElement){
                 upPressed = true
             },
@@ -780,6 +785,7 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
                 }
                 screen.DrawImage(image, &options)
             },
+            PlaySoundLeftClick: true,
             LeftClick: func(element *uilib.UIElement){
                 downPressed = true
             },
@@ -843,6 +849,7 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, cr
     imageCache := util.MakeImageCache(cache)
 
     ui := &uilib.UI{
+        Cache: cache,
         Draw: func(ui *uilib.UI, screen *ebiten.Image){
             var options ebiten.DrawImageOptions
             background, _ := imageCache.GetImage("spellscr.lbx", 13, 0)
@@ -922,6 +929,7 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, cr
         rect := util.ImageRect(x, y, imageRect)
         return &uilib.UIElement{
             Rect: rect,
+            PlaySoundLeftClick: true,
             LeftClick: func(element *uilib.UIElement){
                 index = 1
             },
@@ -977,6 +985,7 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, cr
     okRect := util.ImageRect(281, 180, okButtons[0])
     ui.AddElement(&uilib.UIElement{
         Rect: okRect,
+        PlaySoundLeftClick: true,
         LeftClick: func(element *uilib.UIElement){
             okIndex = 1
         },
