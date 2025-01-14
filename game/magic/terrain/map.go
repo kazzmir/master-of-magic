@@ -136,6 +136,25 @@ func chooseRandomElement[T any](values []T) T {
     return values[index]
 }
 
+func choseRandomWeightedElement[T any](values []T, weights []int) T {
+    totalWeight := 0
+    for _, weight := range weights {
+        totalWeight += weight
+    }
+
+    totalWeight = rand.IntN(totalWeight)
+
+    for index, value := range values {
+        weight := weights[index]
+        if totalWeight < weight {
+            return value
+        }
+        totalWeight -= weight
+    }
+
+    return values[0]
+}
+
 /*
 func (editor *Editor) removeMyrror(tiles []int) []int {
     var out []int
@@ -230,14 +249,14 @@ func (map_ *Map) GenerateLandCellularAutomata(plane data.Plane){
     cells := makeCells(map_.Rows(), map_.Columns())
     tmpCells := makeCells(map_.Rows(), map_.Columns())
 
-    cellRounds := 5
+    cellRounds := 4
 
     const deathRate = 3
     const birthRate = 3
 
     stepCells := func(cells [][]bool, tmpCells [][]bool) {
         for x := 0; x < map_.Columns(); x++ {
-            for y := 1; y < map_.Rows() - 1; y++ {
+            for y := 5; y < map_.Rows() - 5; y++ {
                 neighbors := countNeighbors(cells, x, y)
 
                 if cells[x][y] {
@@ -317,15 +336,33 @@ func (map_ *Map) PlaceRandomTerrainTiles(plane data.Plane){
 
     continents := map_.FindContinents(plane)
 
-    randomGrasslands := func() int {
+    randomGrasslands := func(y int) int {
         choices := []int{
             TileGrasslands1.Index(plane),
             TileGrasslands2.Index(plane),
             TileGrasslands3.Index(plane),
             TileGrasslands4.Index(plane),
+            TileTundra.Index(plane),
+            TileAllDesert1.Index(plane),
         }
 
-        return chooseRandomElement(choices)
+        yRel := float64(y) / float64(map_.Rows())
+
+        tundraWeight := 0
+        switch {
+            case yRel < 0.2 || yRel > 0.8: tundraWeight = 10
+            case yRel < 0.1 || yRel > 0.9: tundraWeight = 50
+        }
+
+        desertWeight := 0
+        switch {
+            case yRel > 0.4 && yRel < 0.6: desertWeight = 10
+            case yRel > 0.45 && yRel < 0.55: desertWeight = 50
+        }
+
+        weights := []int{1, 1, 1, 1, tundraWeight, desertWeight}
+
+        return choseRandomWeightedElement(choices, weights)
     }
 
     randomForest := func() int {
@@ -340,32 +377,29 @@ func (map_ *Map) PlaceRandomTerrainTiles(plane data.Plane){
 
     for _, continent := range continents {
 
-        for i := 0; i < continent.Size() / 8; i++ {
+        for i := 0; i < continent.Size() * 2; i++ {
             point := chooseRandomElement(continent)
 
-            var use int
-            switch rand.IntN(7) {
-                case 0: use = randomGrasslands()
-                case 1: use = randomForest()
-                case 2: use = TileSwamp2.Index(plane)
-                case 3: use = TileHills1.Index(plane)
-                case 4: use = TileMountain1.Index(plane)
-                case 5: use = TileAllDesert1.Index(plane)
-                case 6: use = TileTundra.Index(plane)
+            choices := []int{
+                randomGrasslands(point.Y),
+                randomForest(),
+                TileSwamp2.Index(plane),
+                TileHills1.Index(plane),
+                TileMountain1.Index(plane),
             }
+            weights := []int{20, 10, 1, 10, 5}
 
-            map_.Terrain[point.X][point.Y] = use
+            map_.Terrain[point.X][point.Y] = choseRandomWeightedElement(choices, weights)
         }
 
         for i := 0; i < int(math.Sqrt(float64(continent.Size()))) / 8; i++ {
             point := chooseRandomElement(continent)
 
             var use int
-            switch rand.IntN(4) {
+            switch rand.IntN(3) {
                 case 0: use = TileSorceryLake.Index(plane)
                 case 1: use = TileNatureForest.Index(plane)
                 case 2: use = TileChaosVolcano.Index(plane)
-                case 3: use = TileVolcano.Index(plane)
             }
 
             map_.Terrain[point.X][point.Y] = use
