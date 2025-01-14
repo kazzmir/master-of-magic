@@ -398,14 +398,14 @@ func (tile Tile) IsWater() bool {
 func (tile *Tile) Matches(match map[Direction]TerrainType) bool {
     for direction, compatibility := range tile.Compatibilities {
         if compatibility.Type == AnyOf {
-            any := false
+            isAny := false
             for _, terrain := range compatibility.Terrains {
                 if match[direction] == terrain {
-                    any = true
+                    isAny = true
                     break
                 }
             }
-            if !any {
+            if !isAny {
                 return false
             }
         } else {
