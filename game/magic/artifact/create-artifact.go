@@ -586,12 +586,25 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
         }
     }
 
+    /*
     minItem := 0
-    maxItem := 12
+    */
+    maxItem := 11
 
-    currentItem := 0
+    // currentItem := 0
     y := 39
     x := 200
+
+    // true if the rect is within the bounds of where the abilities should be
+    inBounds := func (rect image.Rectangle) bool {
+        if rect.Min.Y >= 39 && rect.Max.Y <= 160 {
+            return true
+        }
+
+        return false
+    }
+
+    totalItems := 0
 
     for groupNum, group := range [][]Power{group1, group2, group3} {
         groupSelect := -1
@@ -607,81 +620,170 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
         for i, power := range group {
             artifactTypes := compatibilities[power]
             if artifactTypes.Contains(artifact.Type) {
-                if currentItem >= minItem && currentItem <= maxItem {
-                    rect := image.Rect(x, y, x + int(powerFont.MeasureTextWidth(power.Name, 1)), y + powerFont.Height())
-                    elements = append(elements, &uilib.UIElement{
-                        Rect: rect,
-                        LeftClick: func(element *uilib.UIElement){
-                            if mutuallyExclusive {
-                                // can only pick on in the group
-                                if groupSelect != -1 {
-                                    if groupSelect == i {
-                                        groupSelect = -1
-                                        *selectCount -= 1
-                                        artifact.RemovePower(power)
-                                        artifact.Name = getName(artifact, *customName)
-                                        artifact.Cost = calculateCost(artifact, costs)
-                                        lastPower = nil
-                                    } else {
-                                        // something was already selected in this group, so the count doesn't change
-                                        groupSelect = i
-                                        artifact.RemovePower(*lastPower)
-                                        artifact.AddPower(power)
-                                        artifact.Name = getName(artifact, *customName)
-                                        artifact.Cost = calculateCost(artifact, costs)
-                                        lastPower = &power
-                                    }
-                                } else {
-                                    if *selectCount < 4 {
-                                        *selectCount += 1
-                                        groupSelect = i
-                                        artifact.AddPower(power)
-                                        artifact.Name = getName(artifact, *customName)
-                                        artifact.Cost = calculateCost(artifact, costs)
-                                        lastPower = &power
-                                    } else {
-                                        ui.AddElement(uilib.MakeErrorElement(ui, cache, imageCache, "Only four powers may be enchanted into an item", func(){}))
-                                    }
+                totalItems += 1
+                elements = append(elements, &uilib.UIElement{
+                    Rect: image.Rect(x, y, x + int(powerFont.MeasureTextWidth(power.Name, 1)), y + powerFont.Height()),
+                    LeftClick: func(element *uilib.UIElement){
+                        if !inBounds(element.Rect) {
+                            return
+                        }
 
-                                }
-                            } else {
-                                // can pick multiple
-                                if selected[i] {
-                                    artifact.RemovePower(power)
-                                    selected[i] = false
+                        if mutuallyExclusive {
+                            // can only pick on in the group
+                            if groupSelect != -1 {
+                                if groupSelect == i {
+                                    groupSelect = -1
                                     *selectCount -= 1
-                                } else if *selectCount < 4 {
-                                    *selectCount += 1
-                                    selected[i] = true
-
+                                    artifact.RemovePower(power)
+                                    artifact.Name = getName(artifact, *customName)
+                                    artifact.Cost = calculateCost(artifact, costs)
+                                    lastPower = nil
+                                } else {
+                                    // something was already selected in this group, so the count doesn't change
+                                    groupSelect = i
+                                    artifact.RemovePower(*lastPower)
                                     artifact.AddPower(power)
                                     artifact.Name = getName(artifact, *customName)
                                     artifact.Cost = calculateCost(artifact, costs)
+                                    lastPower = &power
+                                }
+                            } else {
+                                if *selectCount < 4 {
+                                    *selectCount += 1
+                                    groupSelect = i
+                                    artifact.AddPower(power)
+                                    artifact.Name = getName(artifact, *customName)
+                                    artifact.Cost = calculateCost(artifact, costs)
+                                    lastPower = &power
                                 } else {
                                     ui.AddElement(uilib.MakeErrorElement(ui, cache, imageCache, "Only four powers may be enchanted into an item", func(){}))
                                 }
-                            }
-                        },
-                        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                            scale := ebiten.ColorScale{}
 
-                            if (mutuallyExclusive && groupSelect == i) || (!mutuallyExclusive && selected[i]) {
-                                scale.SetR(3)
-                                scale.SetG(3)
                             }
+                        } else {
+                            // can pick multiple
+                            if selected[i] {
+                                artifact.RemovePower(power)
+                                selected[i] = false
+                                *selectCount -= 1
+                            } else if *selectCount < 4 {
+                                *selectCount += 1
+                                selected[i] = true
 
-                            powerFont.Print(screen, float64(rect.Min.X), float64(rect.Min.Y), 1, scale, power.Name)
-                        },
-                    })
-                }
+                                artifact.AddPower(power)
+                                artifact.Name = getName(artifact, *customName)
+                                artifact.Cost = calculateCost(artifact, costs)
+                            } else {
+                                ui.AddElement(uilib.MakeErrorElement(ui, cache, imageCache, "Only four powers may be enchanted into an item", func(){}))
+                            }
+                        }
+                    },
+                    Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                        if !inBounds(element.Rect) {
+                            return
+                        }
+
+                        scale := ebiten.ColorScale{}
+
+                        if (mutuallyExclusive && groupSelect == i) || (!mutuallyExclusive && selected[i]) {
+                            scale.SetR(3)
+                            scale.SetG(3)
+                        }
+
+                        powerFont.Print(screen, float64(element.Rect.Min.X), float64(element.Rect.Min.Y), 1, scale, power.Name)
+                    },
+                })
 
                 y += powerFont.Height() + 1
-                currentItem += 1
             }
         }
+
+        y += 5
     }
 
-    if len(group1) + len(group2) + len(group3) > maxItem {
+    if totalItems > maxItem {
+        upArrows, _ := imageCache.GetImages("spellscr.lbx", 43)
+        downArrows, _ := imageCache.GetImages("spellscr.lbx", 44)
+
+        abilityElements := slices.Clone(elements)
+
+        minItem := 0
+
+        doScroll := func (direction int) {
+            move := direction * powerFont.Height()
+            for _, element := range abilityElements {
+                element.Rect.Min.Y += move
+                element.Rect.Max.Y += move
+            }
+        }
+
+        scrollUp := func() {
+            if minItem > 0 {
+                doScroll(1)
+                minItem -= 1
+            }
+        }
+
+        scrollDown := func() {
+            if minItem < totalItems - maxItem {
+                doScroll(-1)
+                minItem += 1
+            }
+        }
+
+        upX := 305
+        upY := 43
+        upPressed := false
+        elements = append(elements, &uilib.UIElement{
+            Rect: util.ImageRect(upX, upY, upArrows[0]),
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(upX), float64(upY))
+
+                var image *ebiten.Image
+                if upPressed {
+                    image = upArrows[1]
+                } else {
+                    image = upArrows[0]
+                }
+
+                screen.DrawImage(image, &options)
+            },
+            LeftClick: func(element *uilib.UIElement){
+                upPressed = true
+            },
+            LeftClickRelease: func(element *uilib.UIElement){
+                upPressed = false
+
+                scrollUp()
+            },
+        })
+
+        downX := upX
+        downY := 160
+        downPressed := false
+        elements = append(elements, &uilib.UIElement{
+            Rect: util.ImageRect(downX, downY, downArrows[0]),
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(downX), float64(downY))
+
+                var image *ebiten.Image
+                if downPressed {
+                    image = downArrows[1]
+                } else {
+                    image = downArrows[0]
+                }
+                screen.DrawImage(image, &options)
+            },
+            LeftClick: func(element *uilib.UIElement){
+                downPressed = true
+            },
+            LeftClickRelease: func(element *uilib.UIElement){
+                downPressed = false
+                scrollDown()
+            },
+        })
     }
 
     setupPowers := func() {
