@@ -183,7 +183,7 @@ func (viewer *Viewer) Draw(screen *ebiten.Image) {
         face2 := &text.GoTextFace{Source: viewer.Font, Size: 10}
 
         op.GeoM.Reset()
-        op.GeoM.Translate(ScreenWidth/2 + 25, 1)
+        op.GeoM.Translate(ScreenWidth/2, 1)
         text.Draw(screen, fmt.Sprintf("%v", tile.Tile.GetDirection(terrain.North)), face2, op)
 
         op.GeoM.Reset()
@@ -203,7 +203,7 @@ func (viewer *Viewer) Draw(screen *ebiten.Image) {
         text.Draw(screen, fmt.Sprintf("%v", tile.Tile.GetDirection(terrain.SouthWest)), face2, op)
 
         op.GeoM.Reset()
-        op.GeoM.Translate(ScreenWidth/2 + 25, 90)
+        op.GeoM.Translate(ScreenWidth/2, 90)
         text.Draw(screen, fmt.Sprintf("%v", tile.Tile.GetDirection(terrain.South)), face2, op)
 
         op.GeoM.Reset()

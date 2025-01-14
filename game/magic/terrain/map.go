@@ -297,7 +297,7 @@ func GenerateLandCellularAutomata(rows int, columns int, data *TerrainData, plan
     map_.GenerateLandCellularAutomata(plane)
 
     map_.RemoveSmallIslands(100, plane)
-    map_.ConvertLakes(data, plane)
+    map_.ConvertOcean(data, plane)
 
     /*
     continents := editor.Map.FindContinents()
@@ -406,17 +406,33 @@ func (map_ *Map) getTerrainAt(x int, y int, data *TerrainData) TerrainType {
     return data.Tiles[index].Tile.TerrainType()
 }
 
-// convert single ocean tiles within land to lakes
-func (map_ *Map) ConvertLakes(data *TerrainData, plane data.Plane){
+// convert single ocean tiles within land to lakes, ocean tiles near land to shore
+func (map_ *Map) ConvertOcean(data *TerrainData, plane data.Plane){
+    isLand := func(t TerrainType) bool {
+        return t != Ocean && t != Shore
+    }
+
     for x := 0; x < map_.Columns(); x++ {
         for y := 0; y < map_.Rows(); y++ {
-            center := map_.getTerrainAt(x, y, data) == Ocean
-            west := map_.getTerrainAt(x-1, y, data) != Ocean
-            east := map_.getTerrainAt(x+1, y, data) != Ocean
-            north := map_.getTerrainAt(x, y-1, data) != Ocean
-            south := map_.getTerrainAt(x, y+1, data) != Ocean
-            if center && west && east && north && south {
+            center := map_.getTerrainAt(x, y, data)
+            if center != Ocean {
+                continue
+            }
+            west := map_.getTerrainAt(x-1, y, data)
+            east := map_.getTerrainAt(x+1, y, data)
+            north := map_.getTerrainAt(x, y-1, data)
+            south := map_.getTerrainAt(x, y+1, data)
+            if isLand(west) && isLand(east) && isLand(north) && isLand(south) {
                 map_.Terrain[x][y] = TileLake.Index(plane)
+                continue
+            }
+            northWest := map_.getTerrainAt(x-1, y-1, data)
+            northEast := map_.getTerrainAt(x+1, y-1, data)
+            sourthWest := map_.getTerrainAt(x-1, y+1, data)
+            southEasth := map_.getTerrainAt(x+1, y+1, data)
+            if isLand(west) || isLand(east) || isLand(north) || isLand(south) || isLand(northWest) || isLand(northEast) || isLand(sourthWest) || isLand(southEasth) {
+                map_.Terrain[x][y] = TileShore1_00000001.Index(plane)
+                continue
             }
         }
     }
