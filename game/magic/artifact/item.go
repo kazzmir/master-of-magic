@@ -4,6 +4,7 @@ import (
     "bytes"
     "fmt"
     "slices"
+    "cmp"
     _ "log"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -133,6 +134,10 @@ type Power struct {
     Spell spellbook.Spell
     Ability data.AbilityType
     Magic data.MagicType // for abilities
+
+    // powers are sorted by how they are defined in itempow.lbx, so we just use that number here
+    // this field has utility other than sorting
+    Index int
 }
 
 type Requirement struct {
@@ -165,6 +170,17 @@ func (artifact *Artifact) FirstAbility() data.Ability {
     return data.MakeAbility(data.AbilityNone)
 }
 
+func (artifact *Artifact) LastAbility() data.Ability {
+    for i := len(artifact.Powers) - 1; i >= 0; i-- {
+        power := artifact.Powers[i]
+        if power.Type == PowerTypeAbility1 || power.Type == PowerTypeAbility2 || power.Type == PowerTypeAbility3 {
+            return data.MakeAbility(power.Ability)
+        }
+    }
+
+    return data.MakeAbility(data.AbilityNone)
+}
+
 func (artifact *Artifact) HasAbility(ability data.AbilityType) bool {
     switch ability {
         case data.AbilityLargeShield: return artifact.Type == ArtifactTypeShield
@@ -182,6 +198,9 @@ func (artifact *Artifact) HasAbility(ability data.AbilityType) bool {
 
 func (artifact *Artifact) AddPower(power Power) {
     artifact.Powers = append(artifact.Powers, power)
+    slices.SortFunc(artifact.Powers, func (a, b Power) int {
+        return cmp.Compare(a.Index, b.Index)
+    })
 }
 
 func (artifact *Artifact) RemovePower(remove Power) {

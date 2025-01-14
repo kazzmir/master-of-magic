@@ -213,6 +213,7 @@ func ReadPowers(cache *lbx.LbxCache) ([]Power, map[Power]int, map[Power]set.Set[
                 Amount: int(amount),
                 Ability: ability,
                 Magic: magicType,
+                Index: i,
             }
             powers = append(powers, power)
             costs[power] = int(cost)
@@ -294,7 +295,7 @@ func getName(artifact *Artifact, customName string) string {
         // TODO: Spell Charges: " of {Spell Name} x4"
 
         // FIXME: choose ability of highest cost?
-        case artifact.HasAbilities(): postfix = fmt.Sprintf(" of %v", artifact.FirstAbility().Name())
+        case artifact.HasAbilities(): postfix = fmt.Sprintf(" of %v", artifact.LastAbility().Name())
         case artifact.HasSpellSavePower(): postfix = " of Power"
         case artifact.HasSpellSkillPower(): postfix = " of Wizardry"
         case artifact.HasResistancePower(): postfix = " of Protection"
@@ -616,7 +617,7 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
         mutuallyExclusive := groupNum == 0 || groupNum == 1
 
         slices.SortFunc(group, func(a, b Power) int {
-            return cmp.Compare(a.Name, b.Name)
+            return cmp.Compare(a.Index, b.Index)
         })
 
         var lastPower *Power = nil
@@ -720,6 +721,12 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
 
         minItem := 0
 
+        // scrolling is a slight hack in that the elements always exist but they are only displayed
+        // if their Rect field is within the bounds of the scroll window.
+        // scrolling mutates the Y values of the Rect fields of the elements, so that scrolling up means
+        // all Y values go up by some value, and scrolling down means all Y values go down by some value.
+        // The play sound has to be manually enabled/disabled based on whether the element is in view
+
         doScroll := func (direction int) {
             move := direction * powerFont.Height()
             for _, element := range abilityElements {
@@ -738,7 +745,7 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
         }
 
         scrollDown := func() {
-            if minItem < totalItems - maxItem {
+            if minItem <= totalItems - maxItem {
                 doScroll(-1)
                 minItem += 1
             }
