@@ -31,6 +31,12 @@ const (
 
 const CreationScreenCostThreshold = 200  // TODO: validate this again with abilities
 
+// a way to know how many books of magic the wizard has
+type MagicLevel interface {
+    // for a given magic type, returns the number of books of that magic
+    MagicLevel(kind data.MagicType) int
+}
+
 func ReadPowers(cache *lbx.LbxCache) ([]Power, map[Power]int, map[Power]set.Set[ArtifactType], error) {
     itemData, err := cache.GetLbxFile("itempow.lbx")
     if err != nil {
@@ -576,7 +582,7 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
     return elements
 }
 
-func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCache, artifact *Artifact, customName *string, powerFont *font.Font, powers []Power, compatibilities map[Power]set.Set[ArtifactType], costs map[Power]int, selectCount *int) []*uilib.UIElement {
+func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCache, artifact *Artifact, customName *string, powerFont *font.Font, powers []Power, compatibilities map[Power]set.Set[ArtifactType], costs map[Power]int, selectCount *int, magicLevel MagicLevel) []*uilib.UIElement {
     var elements []*uilib.UIElement
 
     var group1 []Power
@@ -624,9 +630,7 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
         selected := make([]bool, len(group))
         for i, power := range group {
             artifactTypes := compatibilities[power]
-            // FIXME: take power.Magic and power.Amount into account by checking if
-            // the wizard has enough books of the Magic type
-            if artifactTypes.Contains(artifact.Type) {
+            if artifactTypes.Contains(artifact.Type) && magicLevel.MagicLevel(power.Magic) >= power.Amount {
                 totalItems += 1
                 xRect := image.Rect(x, y, x + int(powerFont.MeasureTextWidth(power.Name, 1)), y + powerFont.Height())
                 elements = append(elements, &uilib.UIElement{
@@ -868,7 +872,7 @@ func makeFonts(cache *lbx.LbxCache) (*font.Font, *font.Font, *font.Font) {
 /* returns the artifact that was created and true,
  * otherwise false for cancelled
  */
-func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, creationType CreationScreen, draw *func(*ebiten.Image)) (*Artifact, bool) {
+func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, creationType CreationScreen, magicLevel MagicLevel, draw *func(*ebiten.Image)) (*Artifact, bool) {
     powerFont, powerFontWhite, nameFont := makeFonts(cache)
 
     imageCache := util.MakeImageCache(cache)
@@ -909,7 +913,7 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, cr
         groups := groupPowers(powers, costs, compatibilities, artifactType, creationType)
         selectCount := 0
         elements := makePowersFull(ui, cache, &imageCache, nameFont, powerFont, picLow, picHigh, groups, costs, &artifact, &customName, &selectCount)
-        abilityElements := makeAbilityElements(ui, cache, &imageCache, &artifact, &customName, powerFont, powers, compatibilities, costs, &selectCount)
+        abilityElements := makeAbilityElements(ui, cache, &imageCache, &artifact, &customName, powerFont, powers, compatibilities, costs, &selectCount, magicLevel)
         return PowerArtifact{
             Elements: elements,
             AbilityElements: abilityElements,
