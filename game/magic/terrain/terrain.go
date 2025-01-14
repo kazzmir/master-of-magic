@@ -82,7 +82,6 @@ const (
     // 0 value is unknown
     Unknown TerrainType = iota
     Ocean
-    Land
     River
     Shore
     Mountain
@@ -102,7 +101,6 @@ const (
 func (terrain TerrainType) String() string {
     switch terrain {
         case Ocean: return "Ocean"
-        case Land: return "Land"
         case River: return "River"
         case Shore: return "Shore"
         case Mountain: return "Mountain"
@@ -112,6 +110,8 @@ func (terrain TerrainType) String() string {
         case Swamp: return "Swamp"
         case Desert: return "Desert"
         case Tundra: return "Tundra"
+        case Volcano: return "Volcano"
+        case Lake: return "Lake"
         case NatureNode: return "Nature Node"
         case SorceryNode: return "Sorcery Node"
         case ChaosNode: return "Chaos Node"
@@ -131,6 +131,7 @@ const (
     South
     SouthWest
     West
+    Center
 )
 
 func (direction Direction) String() string {
@@ -143,29 +144,56 @@ func (direction Direction) String() string {
         case South: return "South"
         case SouthWest: return "SouthWest"
         case West: return "West"
+        case Center: return "Center"
         default: return "Unknown"
     }
 }
 
-type Compatability struct {
+type CompatibilityType int
+
+const (
+    AnyOf CompatibilityType = iota
+    NoneOf
+)
+
+type DirectedCompatibility struct {
     Direction Direction
-    Terrain TerrainType
+    Terrains []TerrainType
+    Type CompatibilityType
 }
 
-func (compatability Compatability) String() string {
-    return fmt.Sprintf("(%s, %s)", compatability.Direction, compatability.Terrain)
+func (compatibility DirectedCompatibility) String() string {
+    if compatibility.Type == AnyOf {
+        return fmt.Sprintf("(%s, %s)", compatibility.Direction, compatibility.Terrains)
+    } else {
+        return fmt.Sprintf("!(%s, %s)", compatibility.Direction, compatibility.Terrains)
+    }
 }
+
+type Compatibility struct {
+    Terrains []TerrainType
+    Type CompatibilityType
+}
+
+func (compatibility Compatibility) String() string {
+    if compatibility.Type == AnyOf {
+        return fmt.Sprintf("%s", compatibility.Terrains)
+    } else {
+        return fmt.Sprintf("!%s", compatibility.Terrains)
+    }
+}
+
 
 type Tile struct {
     // index into the TerrainTile array
     index int
-    Compatabilities map[Direction]TerrainType
+    Compatibilities map[Direction]Compatibility
 }
 
 func InvalidTile() Tile {
     return Tile{
         index: -1,
-        Compatabilities: make(map[Direction]TerrainType),
+        Compatibilities: make(map[Direction]Compatibility),
     }
 }
 
@@ -197,7 +225,7 @@ func (tile Tile) TerrainType() TerrainType {
         case IndexMountain1: return Mountain
         case IndexDesert1, IndexDesert2, IndexDesert3, IndexDesert4: return Desert
         case IndexSwamp1, IndexSwamp2, IndexSwamp3: return Swamp
-        case IndexTundra1, IndexTundra2, IndexTundra3: return Tundra
+        case IndexTundra, IndexTundra1, IndexTundra2, IndexTundra3: return Tundra
         case IndexSorcNode: return SorceryNode
         case IndexNatNode: return NatureNode
         case IndexChaosNode: return ChaosNode
@@ -349,7 +377,7 @@ func (tile Tile) IsShore() bool {
 func (tile Tile) IsLand() bool {
     switch tile.TerrainType() {
         case Ocean, Shore, Lake: return false
-        case Land, River, Mountain,
+        case River, Mountain,
              Hill, Grass, Swamp, Forest,
              Desert, Tundra, Volcano,
              NatureNode, SorceryNode, ChaosNode: return true
@@ -365,30 +393,48 @@ func (tile Tile) IsWater() bool {
     }
 }
 
-// for every direction/terraintype pair, check if this tile has the same pair.
-// match can contain less pairs than what the tile has in its Compatabilities map
-// that is, a 'match' map with no entries would match any tile
+// match the given match to a terrain
+// terrain can contain compatibilites than what the match has
 func (tile *Tile) Matches(match map[Direction]TerrainType) bool {
-    for direction, terrain := range match {
-        if tile.GetDirection(direction) != terrain {
-            return false
+    for direction, compatibility := range tile.Compatibilities {
+        if compatibility.Type == AnyOf {
+            isAny := false
+            for _, terrain := range compatibility.Terrains {
+                if match[direction] == terrain {
+                    isAny = true
+                    break
+                }
+            }
+            if !isAny {
+                return false
+            }
+        } else {
+            none := true
+            for _, terrain := range compatibility.Terrains {
+                if match[direction] == terrain {
+                    none = false
+                    break
+                }
+            }
+            if !none {
+                return false
+            }
         }
     }
-
     return true
 }
 
-func (tile *Tile) GetDirection(direction Direction) TerrainType {
-    compatability, ok := tile.Compatabilities[direction]
+func (tile *Tile) GetDirection(direction Direction) Compatibility {
+    compatibility, ok := tile.Compatibilities[direction]
     if ok {
-        return compatability
+        return compatibility
     }
 
-    return Unknown
+    return Compatibility{Terrains: []TerrainType{Unknown}}
 }
 
 func (tile Tile) String() string {
-    return fmt.Sprintf("Tile{Index: %d, Compatabilities: %v}", tile.index, tile.Compatabilities)
+    return fmt.Sprintf("Tile{Index: %d, Compatibilities: %v}", tile.index, tile.Compatibilities)
 }
 
 var allTiles []Tile
@@ -407,35 +453,41 @@ func makeDirections(bitPattern uint8) []Direction {
     return directions
 }
 
-func makeCompatabilities(directions []Direction, terrain TerrainType) []Compatability {
-    var out []Compatability
+func makeCompatibilities(directions []Direction, terrains []TerrainType, type_ CompatibilityType) []DirectedCompatibility {
+    var out []DirectedCompatibility
 
     for _, direction := range directions {
-        out = append(out, Compatability{
+        out = append(out, DirectedCompatibility{
             Direction: direction,
-            Terrain: terrain,
+            Terrains: terrains,
+            Type: type_,
         })
     }
 
     return out
 }
 
-func makeTile(index int, compatabilities []Compatability) Tile {
-    all := make(map[Direction]TerrainType)
+func makeSimpleTile(index int, terrain TerrainType) Tile {
+    return makeTile(terrain, index, nil)
+}
 
-    for _, compatability := range compatabilities {
-        all[compatability.Direction] = compatability.Terrain
+func makeTile(terrain TerrainType, index int, compatibilities []DirectedCompatibility) Tile {
+    compatibilities = append(makeCompatibilities([]Direction{Center}, []TerrainType{terrain}, AnyOf), compatibilities...)
+
+    all := make(map[Direction]Compatibility)
+
+    for _, compatibility := range compatibilities {
+        all[compatibility.Direction] = Compatibility{Terrains: compatibility.Terrains, Type: compatibility.Type}
     }
 
     tile := Tile{
         index: index,
-        Compatabilities: all,
+        Compatibilities: all,
     }
 
     allTiles = append(allTiles, tile)
 
     return tile
-
 }
 
 // expand from 4 cardinal directions to 8 directions
@@ -464,49 +516,102 @@ func getTile(index int) Tile {
     return allTiles[index]
 }
 
-// the bit pattern is for shore/land tiles
-// everything else is ocean
+// pattern is type in 4-bit cardindal directions, 0's are not type
+func makeCardinalTile(terrain TerrainType, index int, bitPattern uint8) Tile {
+    terrains := []TerrainType{terrain}
+    comp := makeCompatibilities(makeDirections(expand4(bitPattern)), terrains, AnyOf)
+    incomp := makeCompatibilities(makeDirections(expand4(^bitPattern)), terrains, NoneOf)
+    return makeTile(terrain, index, append(comp, incomp...))
+}
+
+// pattern is type not type, 0's are not type; ignores the corners if the adjacent are set
+func makeCornerIgnoringTile(terrain TerrainType, index int, bitPattern uint8) Tile {
+    var mask uint8
+    mask = 0b11111111
+    switch {
+        case bitPattern & 0b01010000 == 0b01010000: mask &= ^(bitPattern & 0b00100000); fallthrough
+        case bitPattern & 0b01000001 == 0b01000001: mask &= ^(bitPattern & 0b10000000); fallthrough
+        case bitPattern & 0b00010100 == 0b00010100: mask &= ^(bitPattern & 0b00001000); fallthrough
+        case bitPattern & 0b00000101 == 0b00000101: mask &= ^(bitPattern & 0b00000010)
+    }
+
+    terrains := []TerrainType{terrain}
+    comp := makeCompatibilities(makeDirections(^bitPattern), terrains, AnyOf)
+    incomp := makeCompatibilities(makeDirections(bitPattern & mask), terrains, NoneOf)
+    return makeTile(terrain, index, append(comp, incomp...))
+}
+
+// pattern is not ocean/shore, 0's are ocean/shore; ignores the corners if the adjacent are set; also excludes rivers in cardinal directions
 func makeShoreTile(index int, bitPattern uint8) Tile {
-    return makeTile(index, append(makeCompatabilities(makeDirections(bitPattern), Land), makeCompatabilities(makeDirections(^bitPattern), Ocean)...))
+    var mask uint8
+    mask = 0b11111111
+    switch {
+        case bitPattern & 0b01010000 == 0b01010000: mask &= ^(bitPattern & 0b00100000); fallthrough
+        case bitPattern & 0b01000001 == 0b01000001: mask &= ^(bitPattern & 0b10000000); fallthrough
+        case bitPattern & 0b00010100 == 0b00010100: mask &= ^(bitPattern & 0b00001000); fallthrough
+        case bitPattern & 0b00000101 == 0b00000101: mask &= ^(bitPattern & 0b00000010)
+    }
+    comp := makeCompatibilities(makeDirections(^bitPattern), []TerrainType{Ocean, Shore}, AnyOf)
+    incomp1 := makeCompatibilities(makeDirections(bitPattern & mask & 0b10101010), []TerrainType{Ocean, Shore}, NoneOf)
+    incomp2 := makeCompatibilities(makeDirections(bitPattern & mask & 0b01010101), []TerrainType{Ocean, Shore, River}, NoneOf)
+    return makeTile(Shore, index, append(comp, append(incomp1, incomp2...)...))
 }
 
-// pattern is desert, rest is land
+// pattern is not desert, 0's are desert
 func makeDesertTile(index int, bitPattern uint8) Tile {
-    return makeTile(index, append(makeCompatabilities(makeDirections(bitPattern), Desert), makeCompatabilities(makeDirections(^bitPattern), Land)...))
+    return makeCornerIgnoringTile(Desert, index, bitPattern)
 }
 
-// pattern is land, rest is tundra
+// pattern is not tundra, 0's are tundra
 func makeTundraTile(index int, bitPattern uint8) Tile {
-    return makeTile(index, append(makeCompatabilities(makeDirections(bitPattern), Land), makeCompatabilities(makeDirections(^bitPattern), Tundra)...))
+    return makeCornerIgnoringTile(Tundra, index, bitPattern)
 }
 
-// pattern is 4-bit cardindal directions, 0's are land
+// center is lake, cardinal directions are not river
+func makeLakeTile(index int) Tile {
+    var pattern uint8 = 0b1111
+    return makeTile(Lake, index, makeCompatibilities(makeDirections(expand4(pattern)), []TerrainType{River}, NoneOf))
+}
+
+// pattern is 4-bit cardinal directions with river/lake/ocean, 0s are not river/lake/ocean
 func makeRiverTile(index int, bitPattern uint8) Tile {
-    full := expand4(bitPattern)
-    return makeTile(index, append(makeCompatabilities(makeDirections(full), River), makeCompatabilities(makeDirections(^full), Land)...))
+    terrains := []TerrainType{River, Lake, Ocean}
+    comp := makeCompatibilities(makeDirections(expand4(bitPattern)), terrains, AnyOf)
+    incomp := makeCompatibilities(makeDirections(expand4(^bitPattern)), terrains, NoneOf)
+    return makeTile(River, index, append(comp, incomp...))
 }
 
-// pattern is 4-bit cardinal directions, 0's are land
+// center is lake, pattern is 4-bit cardinal directions with river/lake/ocean, 0s are not river/lake/ocean
+func makeLakeRiverTile(index int, bitPattern uint8) Tile {
+    comp := makeCompatibilities(makeDirections(expand4(bitPattern)), []TerrainType{River}, AnyOf)
+    incomp := makeCompatibilities(makeDirections(expand4(^bitPattern)), []TerrainType{River}, NoneOf)
+    return makeTile(Lake, index, append(comp, incomp...))
+}
+
+// pattern is 4-bit cardinal directions with hills, 0s are not mountain
 func makeHillTile(index int, bitPattern uint8) Tile {
-    full := expand4(bitPattern)
-    return makeTile(index, append(makeCompatabilities(makeDirections(full), Hill), makeCompatabilities(makeDirections(^full), Land)...))
+    return makeCardinalTile(Hill, index, bitPattern)
 }
 
-// pattern is 4-bit cardinal directions, 0's are land
+// pattern is 4-bit cardinal directions with mountain, 0s are not mountain
 func makeMountainTile(index int, bitPattern uint8) Tile {
-    full := expand4(bitPattern)
-    return makeTile(index, append(makeCompatabilities(makeDirections(full), Mountain), makeCompatabilities(makeDirections(^full), Land)...))
+    return makeCardinalTile(Mountain, index, bitPattern)
 }
 
 func makeShoreRiverTile(index int, landPattern uint8, riverPattern uint8) Tile {
-    full := landPattern | riverPattern
-    ocean := ^full
+    nonOceanPattern := landPattern | riverPattern
+    var mask uint8 = 0b11111111
+    switch {
+        case nonOceanPattern & 0b01010000 == 0b01010000: mask &= ^(nonOceanPattern & 0b00100000); fallthrough
+        case nonOceanPattern & 0b01000001 == 0b01000001: mask &= ^(nonOceanPattern & 0b10000000); fallthrough
+        case nonOceanPattern & 0b00010100 == 0b00010100: mask &= ^(nonOceanPattern & 0b00001000); fallthrough
+        case nonOceanPattern & 0b00000101 == 0b00000101: mask &= ^(nonOceanPattern & 0b00000010)
+    }
+    landCompatibilities := makeCompatibilities(makeDirections(landPattern & mask), []TerrainType{Ocean, Shore}, NoneOf)
+    riverCompatibilities := makeCompatibilities(makeDirections(riverPattern), []TerrainType{River}, AnyOf)
+    oceanCompatibilities := makeCompatibilities(makeDirections(^nonOceanPattern), []TerrainType{Ocean, Shore}, AnyOf)
 
-    landCompatabilities := makeCompatabilities(makeDirections(landPattern), Land)
-    riverCompatabilities := makeCompatabilities(makeDirections(riverPattern), River)
-    oceanCompatabilities := makeCompatabilities(makeDirections(ocean), Ocean)
-
-    return makeTile(index, append(append(landCompatabilities, riverCompatabilities...), oceanCompatabilities...))
+    return makeTile(Shore, index, append(append(landCompatibilities, riverCompatibilities...), oceanCompatibilities...))
 }
 
 const AllDirections uint8 = 0b1111_1111
@@ -514,6 +619,7 @@ const AllDirections uint8 = 0b1111_1111
 // a bit pattern on a tile indicates the positions where the tile can match up with another tile
 // bit index: 0123 4567
 //            0000 1000
+//            ↖↑↗→ ↘↓↙←
 //
 // bit 0: north west
 // bit 1: north
@@ -525,28 +631,26 @@ const AllDirections uint8 = 0b1111_1111
 // bit 7: west
 
 var (
-    TileOcean = makeTile(0x0, makeCompatabilities(makeDirections(AllDirections), Ocean))
-    TileLand = makeTile(0x1, makeCompatabilities(makeDirections(AllDirections), Land))
-    TileShore1_00001000 = makeShoreTile(0x2, 0b00001000)
-    TileShore1_00001100 = makeShoreTile(0x3, 0b00001100)
+    TileOcean = makeTile(Ocean, 0x0, makeCompatibilities(makeDirections(AllDirections), []TerrainType{Ocean, Shore}, AnyOf))
+    TileLand = makeSimpleTile(0x1, Grass)
 
-    TileShore1_00001110 = makeShoreTile(0x4, 0b00001110)
-    TileShore1_00000110 = makeShoreTile(0x5, 0b00000110)
-    TileShore1_00000010 = makeShoreTile(0x6, 0b00000010)
-    TileShore1_00001010 = makeShoreTile(0x7, 0b00001010)
-    TileShore1_00100010 = makeShoreTile(0x8, 0b00100010)
-    TileShore1_10000010 = makeShoreTile(0x9, 0b10000010)
-    TileShore1_00011000 = makeShoreTile(0xA, 0b00011000)
-    TileShore1_00000100 = makeShoreTile(0xB, 0b00000100)
-    TileShore1_00000011 = makeShoreTile(0xC, 0b00000011)
-    TileShore1_10100000 = makeShoreTile(0xD, 0b10100000)
+    TileShore1_00001000 = makeShoreTile(0x02, 0b00001000)
+    TileShore1_00001100 = makeShoreTile(0x03, 0b00001100)
+    TileShore1_00001110 = makeShoreTile(0x04, 0b00001110)
+    TileShore1_00000110 = makeShoreTile(0x05, 0b00000110)
+    TileShore1_00000010 = makeShoreTile(0x06, 0b00000010)
+    TileShore1_00001010 = makeShoreTile(0x07, 0b00001010)
+    TileShore1_00100010 = makeShoreTile(0x08, 0b00100010)
+    TileShore1_10000010 = makeShoreTile(0x09, 0b10000010)
+    TileShore1_00011000 = makeShoreTile(0x0A, 0b00011000)
+    TileShore1_00000100 = makeShoreTile(0x0B, 0b00000100)
+    TileShore1_00000011 = makeShoreTile(0x0C, 0b00000011)
+    TileShore1_10100000 = makeShoreTile(0x0D, 0b10100000)
     TileShore1_10001000 = makeShoreTile(0x0E, 0b10001000)
     TileShore1_00101000 = makeShoreTile(0x0F, 0b00101000)
     TileShore1_00111000 = makeShoreTile(0x10, 0b00111000)
     TileShore1_00010000 = makeShoreTile(0x11, 0b00010000)
-
-    TileLake = makeTile(0x12, makeCompatabilities(makeDirections(AllDirections), Land))
-
+    TileLake            = makeLakeTile(0x12)
     TileShore1_00000001 = makeShoreTile(0x13, 0b00000001)
     TileShore1_10000011 = makeShoreTile(0x14, 0b10000011)
     TileShore1_00110000 = makeShoreTile(0x15, 0b00110000)
@@ -691,31 +795,29 @@ var (
     TileShore1_10100111 = makeShoreTile(0xA0, 0b10100111)
     TileShore1_10101111 = makeShoreTile(0xA1, 0b10101111)
 
-    TileGrasslands1     = makeTile(0xA2, makeCompatabilities(makeDirections(AllDirections), Land))
-    // maybe make compatability be Forest?
-    TileForest1         = makeTile(0xA3, makeCompatabilities(makeDirections(AllDirections), Land))
-    // maybe make compatability be Mountain?
-    TileMountain1      = makeTile(0xA4, makeCompatabilities(makeDirections(AllDirections), Land))
-    TileAllDesert1      = makeDesertTile(0xA5, AllDirections)
-    TileSwamp1          = makeTile(0xA6, makeCompatabilities(makeDirections(AllDirections), Swamp))
-    TileAllTundra1      = makeTile(0xA7, makeCompatabilities(makeDirections(AllDirections), Tundra))
-    TileSorceryLake     = makeTile(0xA8, makeCompatabilities(makeDirections(AllDirections), Land))
-    TileNatureForest    = makeTile(0xA9, makeCompatabilities(makeDirections(AllDirections), Land))
-    TileChaosVolcano    = makeTile(0xAA, makeCompatabilities(makeDirections(AllDirections), Land))
-    TileHills1         = makeTile(0xAB, makeCompatabilities(makeDirections(AllDirections), Hill))
-    TileGrasslands2     = makeTile(0xAC, makeCompatabilities(makeDirections(AllDirections), Land))
-    TileGrasslands3     = makeTile(0xAD, makeCompatabilities(makeDirections(AllDirections), Land))
-    TileAllDesert2      = makeDesertTile(0xAE, AllDirections)
-    TileAllDesert3      = makeDesertTile(0xAF, AllDirections)
-    TileAllDesert4      = makeDesertTile(0xB0, AllDirections)
-    TileSwamp2          = makeTile(0xB1, makeCompatabilities(makeDirections(AllDirections), Swamp))
-    TileSwamp3          = makeTile(0xB2, makeCompatabilities(makeDirections(AllDirections), Swamp))
-    TileVolcano         = makeTile(0xB3, makeCompatabilities(makeDirections(AllDirections), Land))
-    TileGrasslands4     = makeTile(0xB4, makeCompatabilities(makeDirections(AllDirections), Land))
-    TileAllTundra2      = makeTile(0xB5, makeCompatabilities(makeDirections(AllDirections), Tundra))
-    TileAllTundra3      = makeTile(0xB6, makeCompatabilities(makeDirections(AllDirections), Tundra))
-    TileForest2         = makeTile(0xB7, makeCompatabilities(makeDirections(AllDirections), Land))
-    TileForest3         = makeTile(0xB8, makeCompatabilities(makeDirections(AllDirections), Land))
+    TileGrasslands1     = makeSimpleTile(0xA2, Grass)
+    TileForest1         = makeSimpleTile(0xA3, Forest)
+    TileMountain1       = makeMountainTile(0xA4, 0b0000)
+    TileAllDesert1      = makeDesertTile(0xA5, 0b00000000)
+    TileSwamp1          = makeSimpleTile(0xA6, Swamp)
+    TileAllTundra1      = makeTundraTile(0xA7, 0b0000)
+    TileSorceryLake     = makeSimpleTile(0xA8, SorceryNode)
+    TileNatureForest    = makeSimpleTile(0xA9, NatureNode)
+    TileChaosVolcano    = makeSimpleTile(0xAA, ChaosNode)
+    TileHills1          = makeHillTile(0xAB,0b0000)
+    TileGrasslands2     = makeSimpleTile(0xAC, Grass)
+    TileGrasslands3     = makeSimpleTile(0xAD, Grass)
+    TileAllDesert2      = makeDesertTile(0xAE, 0b00000000)
+    TileAllDesert3      = makeDesertTile(0xAF, 0b00000000)
+    TileAllDesert4      = makeDesertTile(0xB0, 0b00000000)
+    TileSwamp2          = makeSimpleTile(0xB1, Swamp)
+    TileSwamp3          = makeSimpleTile(0xB2, Swamp)
+    TileVolcano         = makeSimpleTile(0xB3, Volcano)
+    TileGrasslands4     = makeSimpleTile(0xB4, Grass)
+    TileAllTundra2      = makeTundraTile(0xB5, 0b0000)
+    TileAllTundra3      = makeTundraTile(0xB6, 0b0000)
+    TileForest2         = makeSimpleTile(0xB7, Forest)
+    TileForest3         = makeSimpleTile(0xB8, Forest)
 
     TileRiver0010       = makeRiverTile(0xB9, 0b0010)
     TileRiver0001       = makeRiverTile(0xBA, 0b0001)
@@ -730,10 +832,10 @@ var (
     TileRiver0110_1     = makeRiverTile(0xC3, 0b0110)
     TileRiver1001_1     = makeRiverTile(0xC4, 0b1001)
 
-    TileLakeRiverWest   = makeRiverTile(0xC5, 0b0001)
-    TileLakeRiverNorth  = makeRiverTile(0xC6, 0b1000)
-    TileLakeRiverEast   = makeRiverTile(0xC7, 0b0100)
-    TileLakeRiverSouth  = makeRiverTile(0xC8, 0b0010)
+    TileLakeRiverWest   = makeLakeRiverTile(0xC5, 0b0001)
+    TileLakeRiverNorth  = makeLakeRiverTile(0xC6, 0b1000)
+    TileLakeRiverEast   = makeLakeRiverTile(0xC7, 0b0100)
+    TileLakeRiverSouth  = makeLakeRiverTile(0xC8, 0b0010)
 
     // land at north-west, river at west and north
     // first direction is land, second is river
@@ -770,68 +872,68 @@ var (
     TileShore_000R1000   = makeShoreRiverTile(0xE7, 0b00001000, 0b00010000)
     TileShore_000R0000   = makeShoreRiverTile(0xE8, 0b00000000, 0b00010000)
 
-    TileRiver1100_3     = makeRiverTile(0xE9, 0b1100)
-    TileRiver0011_3     = makeRiverTile(0xEA, 0b0011)
-    TileRiver0110_3     = makeRiverTile(0xEB, 0b0110)
-    TileRiver1001_3     = makeRiverTile(0xEC, 0b1001)
-    TileRiver1010_1     = makeRiverTile(0xED, 0b1010)
-    TileRiver1010_2     = makeRiverTile(0xEE, 0b1010)
-    TileRiver1010_3     = makeRiverTile(0xEF, 0b1010)
-    TileRiver0101_1     = makeRiverTile(0xF0, 0b0101)
-    TileRiver0101_2     = makeRiverTile(0xF1, 0b0101)
-    TileRiver0101_3     = makeRiverTile(0xF2, 0b0101)
-    TileRiver1101_1     = makeRiverTile(0xF3, 0b1101)
-    TileRiver1101_2     = makeRiverTile(0xF4, 0b1101)
-    TileRiver1101_3     = makeRiverTile(0xF5, 0b1101)
-    TileRiver1101_4     = makeRiverTile(0xF6, 0b1101)
-    TileRiver0111_1     = makeRiverTile(0xF7, 0b0111)
-    TileRiver0111_2     = makeRiverTile(0xF8, 0b0111)
-    TileRiver0111_3     = makeRiverTile(0xF9, 0b0111)
-    TileRiver0111_4     = makeRiverTile(0xFA, 0b0111)
-    TileRiver1110_1     = makeRiverTile(0xFB, 0b1110)
-    TileRiver1110_2     = makeRiverTile(0xFC, 0b1110)
-    TileRiver1110_3     = makeRiverTile(0xFD, 0b1110)
-    TileRiver1110_4     = makeRiverTile(0xFE, 0b1110)
-    TileRiver1011_1     = makeRiverTile(0xFF, 0b1011)
-    TileRiver1011_2     = makeRiverTile(0x100, 0b1011)
-    TileRiver1011_3     = makeRiverTile(0x101, 0b1011)
-    TileRiver1011_4     = makeRiverTile(0x102, 0b1011)
+    TileRiver1100_3      = makeRiverTile(0xE9, 0b1100)
+    TileRiver0011_3      = makeRiverTile(0xEA, 0b0011)
+    TileRiver0110_3      = makeRiverTile(0xEB, 0b0110)
+    TileRiver1001_3      = makeRiverTile(0xEC, 0b1001)
+    TileRiver1010_1      = makeRiverTile(0xED, 0b1010)
+    TileRiver1010_2      = makeRiverTile(0xEE, 0b1010)
+    TileRiver1010_3      = makeRiverTile(0xEF, 0b1010)
+    TileRiver0101_1      = makeRiverTile(0xF0, 0b0101)
+    TileRiver0101_2      = makeRiverTile(0xF1, 0b0101)
+    TileRiver0101_3      = makeRiverTile(0xF2, 0b0101)
+    TileRiver1101_1      = makeRiverTile(0xF3, 0b1101)
+    TileRiver1101_2      = makeRiverTile(0xF4, 0b1101)
+    TileRiver1101_3      = makeRiverTile(0xF5, 0b1101)
+    TileRiver1101_4      = makeRiverTile(0xF6, 0b1101)
+    TileRiver0111_1      = makeRiverTile(0xF7, 0b0111)
+    TileRiver0111_2      = makeRiverTile(0xF8, 0b0111)
+    TileRiver0111_3      = makeRiverTile(0xF9, 0b0111)
+    TileRiver0111_4      = makeRiverTile(0xFA, 0b0111)
+    TileRiver1110_1      = makeRiverTile(0xFB, 0b1110)
+    TileRiver1110_2      = makeRiverTile(0xFC, 0b1110)
+    TileRiver1110_3      = makeRiverTile(0xFD, 0b1110)
+    TileRiver1110_4      = makeRiverTile(0xFE, 0b1110)
+    TileRiver1011_1      = makeRiverTile(0xFF, 0b1011)
+    TileRiver1011_2      = makeRiverTile(0x100, 0b1011)
+    TileRiver1011_3      = makeRiverTile(0x101, 0b1011)
+    TileRiver1011_4      = makeRiverTile(0x102, 0b1011)
 
-    TileMountain_0010       = makeMountainTile(0x103, 0b0010)
-    TileMountain_0100       = makeMountainTile(0x104, 0b0100)
-    TileMountain_1111       = makeMountainTile(0x105, 0b1111)
-    TileMountain_0101       = makeMountainTile(0x106, 0b0101)
-    TileMountain_0001       = makeMountainTile(0x107, 0b0001)
-    TileMountain_1010       = makeMountainTile(0x108, 0b1010)
-    TileMountain_1000       = makeMountainTile(0x109, 0b1000)
-    TileMountain_0110       = makeMountainTile(0x10A, 0b0110)
-    TileMountain_0111       = makeMountainTile(0x10B, 0b0111)
-    TileMountain_0011       = makeMountainTile(0x10C, 0b0011)
-    TileMountain_1110       = makeMountainTile(0x10D, 0b1110)
-    TileMountain2_1111      = makeMountainTile(0x10E, 0b1111)
-    TileMountain_1011       = makeMountainTile(0x10F, 0b1011)
-    TileMountain_1100       = makeMountainTile(0x110, 0b1100)
-    TileMountain_1101       = makeMountainTile(0x111, 0b1101)
-    TileMountain_1001       = makeMountainTile(0x112, 0b1001)
+    TileMountain_0010    = makeMountainTile(0x103, 0b0010)
+    TileMountain_0100    = makeMountainTile(0x104, 0b0100)
+    TileMountain_1111    = makeMountainTile(0x105, 0b1111)
+    TileMountain_0101    = makeMountainTile(0x106, 0b0101)
+    TileMountain_0001    = makeMountainTile(0x107, 0b0001)
+    TileMountain_1010    = makeMountainTile(0x108, 0b1010)
+    TileMountain_1000    = makeMountainTile(0x109, 0b1000)
+    TileMountain_0110    = makeMountainTile(0x10A, 0b0110)
+    TileMountain_0111    = makeMountainTile(0x10B, 0b0111)
+    TileMountain_0011    = makeMountainTile(0x10C, 0b0011)
+    TileMountain_1110    = makeMountainTile(0x10D, 0b1110)
+    TileMountain2_1111   = makeMountainTile(0x10E, 0b1111)
+    TileMountain_1011    = makeMountainTile(0x10F, 0b1011)
+    TileMountain_1100    = makeMountainTile(0x110, 0b1100)
+    TileMountain_1101    = makeMountainTile(0x111, 0b1101)
+    TileMountain_1001    = makeMountainTile(0x112, 0b1001)
 
-    TileHills_0010      = makeHillTile(0x113, 0b0010)
-    TileHills_0100      = makeHillTile(0x114, 0b0100)
-    TileHills_1111      = makeHillTile(0x115, 0b1111)
-    TileHills_0101      = makeHillTile(0x116, 0b0101)
-    TileHills_0001      = makeHillTile(0x117, 0b0001)
-    TileHills_1010      = makeHillTile(0x118, 0b1010)
-    TileHills_1000      = makeHillTile(0x119, 0b1000)
-    TileHills_0110      = makeHillTile(0x11A, 0b0110)
-    TileHills_0111      = makeHillTile(0x11B, 0b0111)
-    TileHills_0011      = makeHillTile(0x11C, 0b0011)
-    TileHills_1110      = makeHillTile(0x11D, 0b1110)
-    TileHill2_1111      = makeHillTile(0x11E, 0b1111)
-    TileHills_1011      = makeHillTile(0x11F, 0b1011)
-    TileHills_1100      = makeHillTile(0x120, 0b1100)
-    TileHills_1101      = makeHillTile(0x121, 0b1101)
-    TileHills_1001      = makeHillTile(0x122, 0b1001)
+    TileHills_0010       = makeHillTile(0x113, 0b0010)
+    TileHills_0100       = makeHillTile(0x114, 0b0100)
+    TileHills_1111       = makeHillTile(0x115, 0b1111)
+    TileHills_0101       = makeHillTile(0x116, 0b0101)
+    TileHills_0001       = makeHillTile(0x117, 0b0001)
+    TileHills_1010       = makeHillTile(0x118, 0b1010)
+    TileHills_1000       = makeHillTile(0x119, 0b1000)
+    TileHills_0110       = makeHillTile(0x11A, 0b0110)
+    TileHills_0111       = makeHillTile(0x11B, 0b0111)
+    TileHills_0011       = makeHillTile(0x11C, 0b0011)
+    TileHills_1110       = makeHillTile(0x11D, 0b1110)
+    TileHill2_1111       = makeHillTile(0x11E, 0b1111)
+    TileHills_1011       = makeHillTile(0x11F, 0b1011)
+    TileHills_1100       = makeHillTile(0x120, 0b1100)
+    TileHills_1101       = makeHillTile(0x121, 0b1101)
+    TileHills_1001       = makeHillTile(0x122, 0b1001)
     // not sure on this one
-    TileHills2_1111     = makeHillTile(0x123, 0b1111)
+    TileHills2_1111      = makeHillTile(0x123, 0b1111)
 
     TileDesert_00001000  = makeDesertTile(0x124, 0b00001000)
     TileDesert_00001100  = makeDesertTile(0x125, 0b00001100)
@@ -849,7 +951,7 @@ var (
     TileDesert_00101000  = makeDesertTile(0x131, 0b00101000)
     TileDesert_00111000  = makeDesertTile(0x132, 0b00111000)
     TileDesert_00010000  = makeDesertTile(0x133, 0b00010000)
-    TileDesert_00000000  = makeDesertTile(0x134, 0b00000000)
+    TileDesert_00000000  = makeCardinalTile(Desert, 0x134, 0b00000000)
     TileDesert_00000001  = makeDesertTile(0x135, 0b00000001)
     TileDesert_10000011  = makeDesertTile(0x136, 0b10000011)
     TileDesert_00110000  = makeDesertTile(0x137, 0b00110000)
@@ -1148,7 +1250,7 @@ var (
     TileShore2_001R0001  = makeShoreRiverTile(0x257, 0b00100001, 0b00010000)
     TileShore2_001R1001  = makeShoreRiverTile(0x258, 0b00101001, 0b00010000)
 
-    TileAnimOcean       = makeTile(0x259, makeCompatabilities(makeDirections(AllDirections), Ocean))
+    TileAnimOcean        = makeTile(Ocean, 0x0, makeCompatibilities(makeDirections(AllDirections), []TerrainType{Ocean}, AnyOf))
 
     TileTundra_00001000  = makeTundraTile(0x25A, 0b00001000)
     TileTundra_00001100  = makeTundraTile(0x25B, 0b00001100)
@@ -1166,7 +1268,7 @@ var (
     TileTundra_00101000  = makeTundraTile(0x267, 0b00101000)
     TileTundra_00111000  = makeTundraTile(0x268, 0b00111000)
     TileTundra_00010000  = makeTundraTile(0x269, 0b00010000)
-    TileTundra           = makeTundraTile(0x26A, AllDirections)
+    TileTundra           = makeTundraTile(0x26A, 0b11111111)
     TileTundra_00000001  = makeTundraTile(0x26B, 0b00000001)
     TileTundra_10000011  = makeTundraTile(0x26C, 0b10000011)
     TileTundra_00110000  = makeTundraTile(0x26D, 0b00110000)

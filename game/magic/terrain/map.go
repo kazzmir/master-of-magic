@@ -237,7 +237,7 @@ func (map_ *Map) GenerateLandCellularAutomata(plane data.Plane){
 
     stepCells := func(cells [][]bool, tmpCells [][]bool) {
         for x := 0; x < map_.Columns(); x++ {
-            for y := 0; y < map_.Rows(); y++ {
+            for y := 1; y < map_.Rows() - 1; y++ {
                 neighbors := countNeighbors(cells, x, y)
 
                 if cells[x][y] {
@@ -317,6 +317,17 @@ func (map_ *Map) PlaceRandomTerrainTiles(plane data.Plane){
 
     continents := map_.FindContinents(plane)
 
+    randomGrasslands := func() int {
+        choices := []int{
+            TileGrasslands1.Index(plane),
+            TileGrasslands2.Index(plane),
+            TileGrasslands3.Index(plane),
+            TileGrasslands4.Index(plane),
+        }
+
+        return chooseRandomElement(choices)
+    }
+
     randomForest := func() int {
         choices := []int{
             TileForest1.Index(plane),
@@ -329,13 +340,18 @@ func (map_ *Map) PlaceRandomTerrainTiles(plane data.Plane){
 
     for _, continent := range continents {
 
-        for i := 0; i < int(math.Sqrt(float64(continent.Size()))) / 4; i++ {
+        for i := 0; i < continent.Size() / 8; i++ {
             point := chooseRandomElement(continent)
 
-            use := TileSorceryLake.Index(plane)
-            switch rand.IntN(2) {
-                case 0: use = randomForest()
-                case 1: use = TileMountain1.Index(plane)
+            var use int
+            switch rand.IntN(7) {
+                case 0: use = randomGrasslands()
+                case 1: use = randomForest()
+                case 2: use = TileSwamp2.Index(plane)
+                case 3: use = TileHills1.Index(plane)
+                case 4: use = TileMountain1.Index(plane)
+                case 5: use = TileAllDesert1.Index(plane)
+                case 6: use = TileTundra.Index(plane)
             }
 
             map_.Terrain[point.X][point.Y] = use
@@ -344,12 +360,12 @@ func (map_ *Map) PlaceRandomTerrainTiles(plane data.Plane){
         for i := 0; i < int(math.Sqrt(float64(continent.Size()))) / 8; i++ {
             point := chooseRandomElement(continent)
 
-            use := TileSorceryLake.Index(plane)
+            var use int
             switch rand.IntN(4) {
                 case 0: use = TileSorceryLake.Index(plane)
                 case 1: use = TileNatureForest.Index(plane)
                 case 2: use = TileChaosVolcano.Index(plane)
-                case 3: use = TileLake.Index(plane)
+                case 3: use = TileVolcano.Index(plane)
             }
 
             map_.Terrain[point.X][point.Y] = use
@@ -370,96 +386,76 @@ func (map_ *Map) RemoveSmallIslands(area int, plane data.Plane){
     }
 }
 
-// given a position in the terrain matrix, find a tile that fits all the neighbors of the tile
+func (map_ *Map) getTerrainAt(x int, y int, data *TerrainData) TerrainType {
+    if y < 0 || y > map_.Rows() - 1 {
+        return  Ocean
+    }
+
+    for x < 0 {
+        x += map_.Columns()
+    }
+
+    x = x % map_.Columns()
+
+    index := map_.Terrain[x][y]
+    if index < 0 || index >= len(data.Tiles) {
+        fmt.Printf("Error: invalid index in terrain %v at %v,%v\n", index, x, y)
+        return Unknown
+    }
+    return data.Tiles[index].Tile.TerrainType()
+}
+
+// given a position in the terrain matrix, find a tile that fits the tile and all its neighbors
 func (map_ *Map) ResolveTile(x int, y int, data *TerrainData, plane data.Plane) (int, error) {
+    region := make(map[Direction]TerrainType)
+    region[Center] = map_.getTerrainAt(x, y, data)
+    region[West] = map_.getTerrainAt(x-1, y, data)
+    region[NorthWest] = map_.getTerrainAt(x-1, y-1, data)
+    region[SouthWest] = map_.getTerrainAt(x-1, y+1, data)
+    region[East] = map_.getTerrainAt(x+1, y, data)
+    region[North] = map_.getTerrainAt(x, y-1, data)
+    region[South] = map_.getTerrainAt(x, y+1, data)
+    region[NorthEast] = map_.getTerrainAt(x+1, y-1, data)
+    region[SouthEast] = map_.getTerrainAt(x+1, y+1, data)
 
-    matching := make(map[Direction]TerrainType)
+    // convert ocean tiles to lake or shores
+    isLand := func(t TerrainType) bool {
+        return t != Ocean && t != Shore
+    }
 
-    getDirection := func(x int, y int, direction Direction) TerrainType {
-        for x < 0 {
-            x += map_.Columns()
+    if region[Center] == Ocean {
+        if isLand(region[West]) && isLand(region[East]) && isLand(region[North]) && isLand(region[South]) {
+            region[Center] = Lake
+            map_.Terrain[x][y] = TileLake.Index(plane)
+        } else if isLand(region[West]) || isLand(region[East]) || isLand(region[North]) || isLand(region[South]) || isLand(region[NorthWest]) || isLand(region[NorthEast]) || isLand(region[SouthWest]) || isLand(region[SouthEast]) {
+            region[Center] = Shore
+            map_.Terrain[x][y] = TileShore1_00000001.Index(plane)
         }
-
-        x = x % map_.Columns()
-
-        index := map_.Terrain[x][y]
-        if index < 0 || index >= len(data.Tiles) {
-            fmt.Printf("Error: invalid index in terrain %v at %v,%v\n", index, x, y)
-            return Unknown
-        }
-        return data.Tiles[index].Tile.GetDirection(direction)
     }
 
-    matching[West] = getDirection(x-1, y, East)
-
-    if y > 0 {
-        matching[NorthWest] = getDirection(x-1, y-1, SouthEast)
-    }
-
-    if y < map_.Rows() - 1 {
-        matching[SouthWest] = getDirection(x-1, y+1, NorthEast)
-    }
-
-    matching[East] = getDirection(x+1, y, West)
-
-    if y > 0 {
-        matching[North] = getDirection(x, y-1, South)
-    }
-
-    if y < map_.Rows() - 1 {
-        matching[South] = getDirection(x, y+1, North)
-    }
-
-    if y > 0 {
-        matching[NorthEast] = getDirection(x+1, y-1, SouthWest)
-    }
-
-    if y < map_.Rows() - 1 {
-        matching[SouthEast] = getDirection(x+1, y+1, NorthWest)
-    }
-
-    if data.Tiles[map_.Terrain[x][y]].Tile.Matches(matching) {
+    // check if tile is already resolved
+    if data.Tiles[map_.Terrain[x][y]].Tile.Matches(region) {
         return map_.Terrain[x][y], nil
     }
 
-    tile := data.FindMatchingTile(matching, plane)
+    // resolve tile
+    tile := data.FindMatchingTile(region, plane)
+
     if tile == -1 {
-        return -1, fmt.Errorf("no matching tile for %v", matching)
+        fmt.Printf("no matching tile for %v", region)
+        return -1, fmt.Errorf("no matching tile for %v", region)
     }
 
     return tile, nil
-
-    // return chooseRandomElement(editor.removeMyrror(tiles)), nil
-    // return editor.removeMyrror(tiles)[0], nil
 }
 
-func (map_ *Map) ResolveTiles(data *TerrainData, plane data.Plane){
-    // go through every tile and try to resolve it, keep doing this in a loop until there are no more tiles to resolve
-
-    var unresolved []image.Point
+func (map_ *Map) ResolveTiles(data *TerrainData, plane data.Plane) {
     for x := 0; x < map_.Columns(); x++ {
         for y := 0; y < map_.Rows(); y++ {
-            unresolved = append(unresolved, image.Pt(x, y))
-        }
-    }
-
-    count := 0
-    for len(unresolved) > 0 && count < 5 {
-        count += 1
-        var more []image.Point
-
-        for _, index := range rand.Perm(len(unresolved)) {
-            point := unresolved[index]
-            choice, err := map_.ResolveTile(point.X, point.Y, data, plane)
-            if err != nil {
-                more = append(more, point)
-            } else if choice != map_.Terrain[point.X][point.Y] {
-                map_.Terrain[point.X][point.Y] = choice
+            choice, err := map_.ResolveTile(x, y, data, plane)
+            if err == nil {
+                map_.Terrain[x][y] = choice
             }
         }
-
-        unresolved = more
-
-        // fmt.Printf("resolve loop %d\n", count)
     }
 }
