@@ -797,6 +797,17 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
                 scrollDown()
             },
         })
+
+        elements = append(elements, &uilib.UIElement{
+            Rect: image.Rect(200, 39, 200 + 110, 170),
+            Scroll: func (element *uilib.UIElement, x float64, y float64) {
+                if y < 0 {
+                    scrollDown()
+                } else if y > 0 {
+                    scrollUp()
+                }
+            },
+        })
     }
 
     return elements
