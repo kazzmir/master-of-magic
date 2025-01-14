@@ -214,10 +214,13 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
                 if player.VaultEquipment[index] != nil {
                     // util.DrawRect(screen, rect, color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff})
 
-                    equipmentImage, _ := imageCache.GetImage("items.lbx", player.VaultEquipment[index].Image, 0)
                     var options ebiten.DrawImageOptions
                     options.GeoM.Translate(float64(73 + index * 20), 173)
+                    /*
+                    equipmentImage, _ := imageCache.GetImage("items.lbx", player.VaultEquipment[index].Image, 0)
                     screen.DrawImage(equipmentImage, &options)
+                    */
+                    artifact.RenderArtifactImage(screen, &imageCache, *player.VaultEquipment[index], ui.Counter / 8, options)
                 }
             },
         }
@@ -323,8 +326,11 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
                 },
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                     if hero.Equipment[slotIndex] != nil {
+                        /*
                         artifactPic, _ := imageCache.GetImage("items.lbx", hero.Equipment[slotIndex].Image, 0)
                         screen.DrawImage(artifactPic, &slotOptions)
+                        */
+                        artifact.RenderArtifactImage(screen, &imageCache, *hero.Equipment[slotIndex], ui.Counter / 8, slotOptions)
                     } else {
                         screen.DrawImage(pic, &slotOptions)
                     }
