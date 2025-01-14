@@ -104,6 +104,27 @@ func (stack *UnitStack) AllFlyers() bool {
     return true
 }
 
+func (stack *UnitStack) AllSwimmers() bool {
+    for _, unit := range stack.ActiveUnits() {
+        if !unit.IsSwimmer() {
+            return false
+        }
+    }
+
+    return true
+}
+
+
+func (stack *UnitStack) ActiveUnitsHasAbility(ability data.AbilityType) bool {
+    for _, unit := range stack.ActiveUnits() {
+        if unit.HasAbility(ability) {
+            return true
+        }
+    }
+
+    return false
+}
+
 func (stack *UnitStack) AllActive() bool {
     return len(stack.ActiveUnits()) == len(stack.units)
 }
@@ -220,6 +241,23 @@ func (stack *UnitStack) AnyOutOfMoves() bool {
     }
 
     return false
+}
+
+func (stack *UnitStack) GetRemainingMoves() fraction.Fraction {
+    hasMoves := false
+    moves := fraction.Make(10000, 1)
+    for _, unit := range stack.units {
+        if !unit.GetPatrol() && stack.active[unit] && unit.GetMovesLeft().LessThan(moves) {
+            moves = unit.GetMovesLeft()
+            hasMoves = true
+        }
+    }
+
+    if !hasMoves {
+        return fraction.Zero()
+    } else {
+        return moves
+    }
 }
 
 // true if any unit in the stack has moves left

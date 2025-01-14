@@ -6,6 +6,7 @@ import (
     "fmt"
     "strconv"
     "math/rand"
+    "runtime/pprof"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
@@ -1438,11 +1439,10 @@ func createScenario18(cache *lbx.LbxCache) *gamelib.Game {
     player.LiftFog(x, y, 3, data.PlaneArcanus)
     player.LiftFog(20, 20, 100, data.PlaneMyrror)
 
-    /*
     rakir := hero.MakeHero(units.MakeOverworldUnit(units.HeroRakir), hero.HeroRakir, "bubba")
     player.AddHero(rakir)
     rakir.AddExperience(528)
-    */
+
     mysticX := hero.MakeHero(units.MakeOverworldUnit(units.HeroMysticX), hero.HeroMysticX, "bubba")
     player.AddHero(mysticX)
     mysticX.SetExtraAbilities()
@@ -2631,6 +2631,15 @@ func main(){
 
     log.SetFlags(log.Ldate | log.Lshortfile | log.Lmicroseconds)
 
+    profile, err := os.Create("profile.cpu.overworld")
+    if err != nil {
+        log.Printf("Error creating profile: %v", err)
+    } else {
+        defer profile.Close()
+        pprof.StartCPUProfile(profile)
+        defer pprof.StopCPUProfile()
+    }
+
     monitorWidth, _ := ebiten.Monitor().Size()
 
     size := monitorWidth / 390
@@ -2663,6 +2672,14 @@ func main(){
     err = ebiten.RunGame(engine)
     if err != nil {
         log.Printf("Error: %v", err)
+    }
+
+    memoryProfile, err := os.Create("profile.mem.overworld")
+    if err != nil {
+        log.Printf("Error creating memory profile: %v", err)
+    } else {
+        defer memoryProfile.Close()
+        pprof.WriteHeapProfile(memoryProfile)
     }
 
 }

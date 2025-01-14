@@ -701,7 +701,7 @@ func (mapObject *Map) GetCatchmentArea(x int, y int) map[image.Point]FullTile {
                 continue
             }
 
-            tileX := x + dx
+            tileX := mapObject.WrapX(x + dx)
             tileY := y + dy
 
             tile := mapObject.GetTile(tileX, tileY)
