@@ -300,7 +300,6 @@ func getName(artifact *Artifact, customName string) string {
     switch {
         // TODO: Spell Charges: " of {Spell Name} x4"
 
-        // FIXME: choose ability of highest cost?
         case artifact.HasAbilities(): postfix = fmt.Sprintf(" of %v", artifact.LastAbility().Name())
         case artifact.HasSpellSavePower(): postfix = " of Power"
         case artifact.HasSpellSkillPower(): postfix = " of Wizardry"
@@ -500,7 +499,6 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
     // powers
     x := 7
     y := 40
-    // selectCount := 0
     printRight := false
     for _, group := range powerGroups {
         groupSelect := -1

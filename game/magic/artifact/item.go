@@ -151,7 +151,6 @@ type Artifact struct {
     Name string
     Cost int
     Powers []Power
-    // Abilities []data.Ability
     Requirements []Requirement
 }
 
@@ -531,10 +530,8 @@ func ReadArtifacts(cache *lbx.LbxCache) ([]Artifact, error) {
             return nil, fmt.Errorf("read error: %v", err)
         }
 
-        // var abilities []data.Ability
         for mask, ability := range abilityMap {
             if abilitiesValue&mask != 0 {
-                // abilities = append(abilities, ability)
                 powers = append(powers, Power{Type: PowerTypeAbility1, Amount: 0, Name: data.MakeAbility(ability).Name(), Ability: ability})
             }
         }
