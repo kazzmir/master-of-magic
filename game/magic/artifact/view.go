@@ -24,19 +24,14 @@ func add1PxBorder(src *image.Paletted) image.Image {
 }
 
 func RenderArtifactImage(screen *ebiten.Image, imageCache *util.ImageCache, artifact Artifact, counter uint64, options ebiten.DrawImageOptions) *ebiten.Image {
-    var itemImage *ebiten.Image
+    itemImage, _ := imageCache.GetImageTransform("items.lbx", artifact.Image, 0, "1px-border", add1PxBorder)
+    options.GeoM.Translate(-1, -1)
+    screen.DrawImage(itemImage, &options)
 
     enchanted := artifact.HasAbilities()
-
     if enchanted {
-        itemImage, _ = imageCache.GetImageTransform("items.lbx", artifact.Image, 0, "1px-border", add1PxBorder)
-        screen.DrawImage(itemImage, &options)
-
         x, y := options.GeoM.Apply(0, 0)
         util.DrawOutline(screen, imageCache, itemImage, x, y, options.ColorScale, counter, data.GetMagicColor(artifact.FirstAbility().MagicType()))
-    } else {
-        itemImage, _ = imageCache.GetImage("items.lbx", artifact.Image, 0)
-        screen.DrawImage(itemImage, &options)
     }
 
     return itemImage

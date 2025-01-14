@@ -87,39 +87,39 @@ func ReadPowers(cache *lbx.LbxCache) ([]Power, map[Power]int, map[Power]set.Set[
         4: data.DeathMagic,
     }
 
-    abilityMap := map[uint32]data.Ability{
-        1 << 0:  data.MakeAbility(data.AbilityVampiric),
-        1 << 1:  data.MakeAbility(data.AbilityGuardianWind),
-        1 << 2:  data.MakeAbility(data.AbilityLightning),
-        1 << 3:  data.MakeAbility(data.AbilityCloakOfFear),
-        1 << 4:  data.MakeAbility(data.AbilityDestruction),
-        1 << 5:  data.MakeAbility(data.AbilityWraithform),
-        1 << 6:  data.MakeAbility(data.AbilityRegeneration),
-        1 << 7:  data.MakeAbility(data.AbilityPathfinding),
-        1 << 8:  data.MakeAbility(data.AbilityWaterWalking),
-        1 << 9:  data.MakeAbility(data.AbilityResistElements),
-        1 << 10: data.MakeAbility(data.AbilityElementalArmor),
-        1 << 11: data.MakeAbility(data.AbilityChaos),
-        1 << 12: data.MakeAbility(data.AbilityStoning),
-        1 << 13: data.MakeAbility(data.AbilityEndurance),
-        1 << 14: data.MakeAbility(data.AbilityHaste),
-        1 << 15: data.MakeAbility(data.AbilityInvisibility),
-        1 << 16: data.MakeAbility(data.AbilityDeath),
-        1 << 17: data.MakeAbility(data.AbilityFlight),
-        1 << 18: data.MakeAbility(data.AbilityResistMagic),
-        1 << 19: data.MakeAbility(data.AbilityMagicImmunity),
-        1 << 20: data.MakeAbility(data.AbilityFlaming),
-        1 << 21: data.MakeAbility(data.AbilityHolyAvenger),
-        1 << 22: data.MakeAbility(data.AbilityTrueSight),
-        1 << 23: data.MakeAbility(data.AbilityPhantasmal),
-        1 << 24: data.MakeAbility(data.AbilityPowerDrain),
-        1 << 25: data.MakeAbility(data.AbilityBless),
-        1 << 26: data.MakeAbility(data.AbilityLionHeart),
-        1 << 27: data.MakeAbility(data.AbilityGiantStrength),
-        1 << 28: data.MakeAbility(data.AbilityPlanarTravel),
-        1 << 29: data.MakeAbility(data.AbilityMerging),
-        1 << 30: data.MakeAbility(data.AbilityRighteousness),
-        1 << 31: data.MakeAbility(data.AbilityInvulnerability),
+    abilityMap := map[uint32]data.AbilityType{
+        1 << 0:  data.AbilityVampiric,
+        1 << 1:  data.AbilityGuardianWind,
+        1 << 2:  data.AbilityLightning,
+        1 << 3:  data.AbilityCloakOfFear,
+        1 << 4:  data.AbilityDestruction,
+        1 << 5:  data.AbilityWraithform,
+        1 << 6:  data.AbilityRegeneration,
+        1 << 7:  data.AbilityPathfinding,
+        1 << 8:  data.AbilityWaterWalking,
+        1 << 9:  data.AbilityResistElements,
+        1 << 10: data.AbilityElementalArmor,
+        1 << 11: data.AbilityChaos,
+        1 << 12: data.AbilityStoning,
+        1 << 13: data.AbilityEndurance,
+        1 << 14: data.AbilityHaste,
+        1 << 15: data.AbilityInvisibility,
+        1 << 16: data.AbilityDeath,
+        1 << 17: data.AbilityFlight,
+        1 << 18: data.AbilityResistMagic,
+        1 << 19: data.AbilityMagicImmunity,
+        1 << 20: data.AbilityFlaming,
+        1 << 21: data.AbilityHolyAvenger,
+        1 << 22: data.AbilityTrueSight,
+        1 << 23: data.AbilityPhantasmal,
+        1 << 24: data.AbilityPowerDrain,
+        1 << 25: data.AbilityBless,
+        1 << 26: data.AbilityLionHeart,
+        1 << 27: data.AbilityGiantStrength,
+        1 << 28: data.AbilityPlanarTravel,
+        1 << 29: data.AbilityMerging,
+        1 << 30: data.AbilityRighteousness,
+        1 << 31: data.AbilityInvulnerability,
     }
 
     var powers []Power
@@ -192,13 +192,12 @@ func ReadPowers(cache *lbx.LbxCache) ([]Power, map[Power]int, map[Power]set.Set[
             return nil, nil, nil, fmt.Errorf("read error: %v", err)
         }
 
-        var ability data.Ability
+        var ability data.AbilityType
         for mask, current := range abilityMap {
             if abilitiesValue&mask != 0 {
                 ability = current
             }
         }
-        _ = ability
 
         // Create power
         if amount == 0 {
@@ -210,6 +209,7 @@ func ReadPowers(cache *lbx.LbxCache) ([]Power, map[Power]int, map[Power]set.Set[
                 Type: powerType,
                 Name: string(name),
                 Amount: int(amount),
+                Ability: ability,
             }
             powers = append(powers, power)
             costs[power] = int(cost)
@@ -349,8 +349,13 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(7, 6)
+
+            /*
             image, _ := imageCache.GetImage("items.lbx", artifact.Image, 0)
             screen.DrawImage(image, &options)
+            */
+
+            RenderArtifactImage(screen, imageCache, *artifact, ui.Counter / 8, options)
         },
     })
 
