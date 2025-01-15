@@ -12,3 +12,7 @@ data/data/
 /lbxviewer
 /magic
 /mapeditor
+
+# memory and cpu profiles
+profile.cpu.*
+profile.mem.*
