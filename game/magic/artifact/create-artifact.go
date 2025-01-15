@@ -714,7 +714,41 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
         y += 5
     }
 
-    // FIXME: add spell charges element
+    // spell charges
+    if artifact.Type == ArtifactTypeWand || artifact.Type == ArtifactTypeStaff {
+        xRect := image.Rect(x, y, x + int(powerFont.MeasureTextWidth("Spell Charges", 1)), y + powerFont.Height())
+        selected := false
+        totalItems += 1
+        elements = append(elements, &uilib.UIElement{
+            Rect: xRect,
+            PlaySoundLeftClick: inBounds(xRect),
+            LeftClick: func(element *uilib.UIElement){
+                if !inBounds(element.Rect) {
+                    return
+                }
+
+                selected = !selected
+
+                if selected {
+                    // FIXME: show spell book and let user choose a spell
+                }
+            },
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                if !inBounds(element.Rect) {
+                    return
+                }
+
+                scale := ebiten.ColorScale{}
+
+                if selected {
+                    scale.SetR(3)
+                    scale.SetG(3)
+                }
+
+                powerFont.Print(screen, float64(element.Rect.Min.X), float64(element.Rect.Min.Y), 1, scale, "Spell Charges")
+            },
+        })
+    }
 
     // show up/down scroll arrows if there are too many abilities to choose
     if totalItems > maxItem {
