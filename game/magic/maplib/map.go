@@ -804,9 +804,22 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []MiniMapCity, ce
 
             var use color.RGBA
 
-            switch mapObject.Map.Terrain[tileX][tileY] {
-                case terrain.TileLand.Index(mapObject.Plane): use = color.RGBA{R: 0, G: 255, B: 0, A: 255}
-                case terrain.TileOcean.Index(mapObject.Plane): use = color.RGBA{R: 0, G: 0, B: 255, A: 255}
+            switch terrain.GetTile(mapObject.Map.Terrain[tileX][tileY]).TerrainType() {
+                case terrain.Grass: use = color.RGBA{R: 0, G: 255, B: 0, A: 255}
+                case terrain.Ocean: use = color.RGBA{R: 0, G: 0, B: 255, A: 255}
+                case terrain.River: use = color.RGBA{R: 0x3f, G: 0x88, B: 0xd3, A: 255}
+                case terrain.Shore: use = color.RGBA{R: 0, G: 255, B: 0, A: 255}
+                case terrain.Mountain: use = color.RGBA{R: 0xbc, G: 0xd0, B: 0xe4, A: 255}
+                case terrain.Hill: use = color.RGBA{R: 0, G: 255, B: 0, A: 255}
+                case terrain.Swamp: use = color.RGBA{R: 0, G: 255, B: 0, A: 255}
+                case terrain.Forest: use = color.RGBA{R: 0, G: 255, B: 0, A: 255}
+                case terrain.Desert: use = color.RGBA{R: 0xdb, G: 0xbd, B: 0x29, A: 255}
+                case terrain.Tundra: use = color.RGBA{R: 0xd6, G: 0xd4, B: 0xc9, A: 255}
+                case terrain.Volcano: use = color.RGBA{R: 0xff, G: 0x00, B: 0x00, A: 255}
+                case terrain.Lake: use = color.RGBA{R: 0x3f, G: 0x88, B: 0xd3, A: 255}
+                case terrain.NatureNode: use = color.RGBA{R: 0, G: 255, B: 0, A: 255}
+                case terrain.SorceryNode: use = color.RGBA{R: 0, G: 0, B: 255, A: 255}
+                case terrain.ChaosNode: use = color.RGBA{R: 0xff, G: 0x00, B: 0x00, A: 255}
                 default: use = color.RGBA{R: 64, G: 64, B: 64, A: 255}
             }
 
