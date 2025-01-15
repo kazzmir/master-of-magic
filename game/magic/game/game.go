@@ -3863,6 +3863,13 @@ func (game *Game) DoBuildAction(player *playerlib.Player){
     }
 }
 
+func (game *Game) SwitchPlane() {
+    switch game.Plane {
+        case data.PlaneArcanus: game.Plane = data.PlaneMyrror
+        case data.PlaneMyrror: game.Plane = data.PlaneArcanus
+    }
+}
+
 func (game *Game) MakeHudUI() *uilib.UI {
     ui := &uilib.UI{
         Cache: game.Cache,
@@ -3991,10 +3998,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
     // plane button
     elements = append(elements, makeButton(7, 270, 4, false, func(){
-        switch game.Plane {
-            case data.PlaneArcanus: game.Plane = data.PlaneMyrror
-            case data.PlaneMyrror: game.Plane = data.PlaneArcanus
-        }
+        game.SwitchPlane()
 
         game.RefreshUI()
     }))
