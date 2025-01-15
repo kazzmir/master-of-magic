@@ -2,6 +2,7 @@ package main
 
 import (
     "log"
+    "fmt"
 
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
@@ -11,6 +12,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/coroutine"
 
     "github.com/hajimehoshi/ebiten/v2"
+    "github.com/hajimehoshi/ebiten/v2/ebitenutil"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
@@ -25,6 +27,7 @@ type Engine struct {
 
     Artificer bool
     Runemaster bool
+    ShowUpdate int
 }
 
 type Books struct {
@@ -46,7 +49,13 @@ func NewEngine() (*Engine, error) {
         Drawer: func(*ebiten.Image){},
     }
 
-    run := func(yield coroutine.YieldFunc) error {
+    engine.Coroutine = coroutine.MakeCoroutine(engine.ArtifactRoutine())
+
+    return engine, nil
+}
+
+func (engine *Engine) ArtifactRoutine() func (coroutine.YieldFunc) error {
+    return func(yield coroutine.YieldFunc) error {
         create, cancel := artifact.ShowCreateArtifactScreen(yield, engine.Cache, artifact.CreationCreateArtifact, &Books{}, engine.Artificer, engine.Runemaster, &engine.Drawer)
         if !cancel {
             log.Printf("Create artifact: %+v", create)
@@ -55,10 +64,6 @@ func NewEngine() (*Engine, error) {
         }
         return nil
     }
-
-    engine.Coroutine = coroutine.MakeCoroutine(run)
-
-    return engine, nil
 }
 
 func (engine *Engine) Update() error {
@@ -68,9 +73,21 @@ func (engine *Engine) Update() error {
     keys = inpututil.AppendJustPressedKeys(keys)
 
     for _, key := range keys {
-        if key == ebiten.KeyEscape || key == ebiten.KeyCapsLock {
-            return ebiten.Termination
+        switch key {
+            case ebiten.KeyEscape, ebiten.KeyCapsLock: return ebiten.Termination
+            case ebiten.KeyF1:
+                engine.Artificer = !engine.Artificer
+                engine.ShowUpdate = 60
+                engine.Coroutine = coroutine.MakeCoroutine(engine.ArtifactRoutine())
+            case ebiten.KeyF2:
+                engine.Runemaster = !engine.Runemaster
+                engine.ShowUpdate = 60
+                engine.Coroutine = coroutine.MakeCoroutine(engine.ArtifactRoutine())
         }
+    }
+
+    if engine.ShowUpdate > 0 {
+        engine.ShowUpdate -= 1
     }
 
     if engine.Coroutine.Run() != nil {
@@ -82,6 +99,10 @@ func (engine *Engine) Update() error {
 
 func (engine *Engine) Draw(screen *ebiten.Image){
     engine.Drawer(screen)
+
+    if engine.ShowUpdate > 0 {
+        ebitenutil.DebugPrintAt(screen, fmt.Sprintf("Artificer %v Runemaster %v", engine.Artificer, engine.Runemaster), 0, 0)
+    }
 }
 
 func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
