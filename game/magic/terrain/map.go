@@ -60,7 +60,7 @@ func (map_ *Map) FloodWalk(x int, y int, f FloodFunc){
     walk(x, y)
 }
 
-func (map_ *Map) FindContinents(plane data.Plane) []Continent {
+func (map_ *Map) FindContinents() []Continent {
 
     seen := makeCells(map_.Rows(), map_.Columns())
 
@@ -334,7 +334,7 @@ func GenerateLandCellularAutomata(rows int, columns int, data *TerrainData, plan
 // put down other tiles like forests, mountains, special nodes, etc
 func (map_ *Map) PlaceRandomTerrainTiles(plane data.Plane){
 
-    continents := map_.FindContinents(plane)
+    continents := map_.FindContinents()
 
     randomGrasslands := func(y int) int {
         choices := []int{
@@ -409,7 +409,7 @@ func (map_ *Map) PlaceRandomTerrainTiles(plane data.Plane){
 
 // remove land masses that contain less squares than 'area'
 func (map_ *Map) RemoveSmallIslands(area int, plane data.Plane){
-    continents := map_.FindContinents(plane)
+    continents := map_.FindContinents()
 
     for _, continent := range continents {
         if continent.Size() < area {
