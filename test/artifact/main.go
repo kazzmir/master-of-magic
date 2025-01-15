@@ -79,10 +79,12 @@ func (engine *Engine) Update() error {
                 engine.Artificer = !engine.Artificer
                 engine.ShowUpdate = 60
                 engine.Coroutine = coroutine.MakeCoroutine(engine.ArtifactRoutine())
+                log.Printf("Artificer %v Runemaster %v", engine.Artificer, engine.Runemaster)
             case ebiten.KeyF2:
                 engine.Runemaster = !engine.Runemaster
                 engine.ShowUpdate = 60
                 engine.Coroutine = coroutine.MakeCoroutine(engine.ArtifactRoutine())
+                log.Printf("Artificer %v Runemaster %v", engine.Artificer, engine.Runemaster)
         }
     }
 
