@@ -204,6 +204,11 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
                         case data.BonusCrysxCrystal: showBonus("Crysx Crystal", fmt.Sprintf("+%v power", bonus.PowerBonus()))
                     }
 
+                    if cityMap[selectedPoint] != nil {
+                        city := cityMap[selectedPoint]
+                        yellowFont.PrintWrapCenter(screen, 280, y, float64(cancelBackground.Bounds().Dx() - 5), 1, ebiten.ColorScale{}, city.String())
+                    }
+
                     // FIXME: show lair/node/tower
 
                     y = 160 - cityInfoText.TotalHeight
@@ -363,7 +368,7 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
 
                 if !tile.Tile.IsLand() {
                     text = "Cannot build cities on water."
-                } else if game.NearCity(newPoint, 3) {
+                } else if cityMap[newPoint] == nil && game.NearCity(newPoint, 3) {
                     text = "Cities cannot be built less than 3 squares from any other city."
                 } else {
                     text = "City Resources"

@@ -133,6 +133,10 @@ func MakeCity(name string, x int, y int, race data.Race, banner data.BannerType,
     return &city
 }
 
+func (city *City) String() string {
+    return fmt.Sprintf("%v of %v", city.GetSize(), city.Name)
+}
+
 func (city *City) GetX() int {
     return city.X
 }
