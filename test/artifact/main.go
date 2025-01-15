@@ -22,6 +22,9 @@ type Engine struct {
     Drawer func(*ebiten.Image)
     Cache *lbx.LbxCache
     Coroutine *coroutine.Coroutine
+
+    Artificer bool
+    Runemaster bool
 }
 
 type Books struct {
@@ -44,7 +47,7 @@ func NewEngine() (*Engine, error) {
     }
 
     run := func(yield coroutine.YieldFunc) error {
-        create, cancel := artifact.ShowCreateArtifactScreen(yield, engine.Cache, artifact.CreationCreateArtifact, &Books{}, false, &engine.Drawer)
+        create, cancel := artifact.ShowCreateArtifactScreen(yield, engine.Cache, artifact.CreationCreateArtifact, &Books{}, engine.Artificer, engine.Runemaster, &engine.Drawer)
         if !cancel {
             log.Printf("Create artifact: %+v", create)
         } else {

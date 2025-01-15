@@ -3702,7 +3702,7 @@ func (game *Game) ShowSpellBookCastUI(yield coroutine.YieldFunc, player *playerl
                     case "Enchant Item": creation = artifact.CreationEnchantItem
                 }
 
-                created, cancel := artifact.ShowCreateArtifactScreen(yield, game.Cache, creation, &player.Wizard, player.Wizard.AbilityEnabled(setup.AbilityArtificer), &drawFunc)
+                created, cancel := artifact.ShowCreateArtifactScreen(yield, game.Cache, creation, &player.Wizard, player.Wizard.AbilityEnabled(setup.AbilityArtificer), player.Wizard.AbilityEnabled(setup.AbilityRunemaster), &drawFunc)
                 if cancel {
                     return
                 }
