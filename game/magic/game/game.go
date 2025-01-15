@@ -3702,7 +3702,7 @@ func (game *Game) ShowSpellBookCastUI(yield coroutine.YieldFunc, player *playerl
                     case "Enchant Item": creation = artifact.CreationEnchantItem
                 }
 
-                created, cancel := artifact.ShowCreateArtifactScreen(yield, game.Cache, creation, &player.Wizard, player.Wizard.AbilityEnabled(setup.AbilityArtificer), &drawFunc)
+                created, cancel := artifact.ShowCreateArtifactScreen(yield, game.Cache, creation, &player.Wizard, player.Wizard.AbilityEnabled(setup.AbilityArtificer), player.Wizard.AbilityEnabled(setup.AbilityRunemaster), &drawFunc)
                 if cancel {
                     return
                 }
@@ -3714,6 +3714,9 @@ func (game *Game) ShowSpellBookCastUI(yield coroutine.YieldFunc, player *playerl
             }
 
             castingCost := spell.Cost(true)
+
+            // FIXME: if the player has runemaster and the spell is arcane, then apply a -25% reduction. Don't apply
+            // to create artifact or enchant item because the reduction has already been applied
 
             if castingCost <= player.Mana && castingCost <= player.RemainingCastingSkill {
                 player.Mana -= castingCost
