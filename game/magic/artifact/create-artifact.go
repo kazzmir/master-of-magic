@@ -225,7 +225,6 @@ func ReadPowers(cache *lbx.LbxCache) ([]Power, map[Power]int, map[Power]set.Set[
             costs[power] = int(cost)
             compatibilities[power] = *artifactTypes
         }
-        // TODO: add abilties (currently PowerTypeNone) with requirements (magicType / amount = books needed)
     }
     return powers, costs, compatibilities, nil
 }
@@ -331,7 +330,7 @@ func calculateCost(artifact *Artifact, costs map[Power]int) int {
     spellCost := 0
     for _, power := range artifact.Powers {
         if power.Type == PowerTypeSpellCharges {
-            spellCost += power.Amount * power.Spell.Cost(false) // TODO: overland?
+            spellCost += power.Amount * power.Spell.Cost(false) * 20
         } else {
             powerCost += costs[power]
         }
@@ -342,7 +341,7 @@ func calculateCost(artifact *Artifact, costs map[Power]int) int {
         powerCost *= 2
     }
 
-    // TODO: Artificer only pay half the full
+    // TODO: Artificer pays -50%, runemaster pays -25%. If both then pay -75%
     return base + powerCost + spellCost
 }
 
@@ -580,6 +579,27 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
     return elements
 }
 
+func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache) []*uilib.UIElement {
+    var elements []*uilib.UIElement
+
+    elements = append(elements, &uilib.UIElement{
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(28, 12)
+            background, _ := imageCache.GetImage("spells.lbx", 0, 0)
+            screen.DrawImage(background, &options)
+
+            // print text "Choose a spell to embed in this item"
+        },
+    })
+
+    // add element for each known spell
+
+    // need element for clicking on X to cancel
+
+    return elements
+}
+
 func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCache, artifact *Artifact, customName *string, powerFont *font.Font, powers []Power, compatibilities map[Power]set.Set[ArtifactType], costs map[Power]int, selectCount *int, magicLevel MagicLevel) []*uilib.UIElement {
     var elements []*uilib.UIElement
 
@@ -730,7 +750,7 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
                 selected = !selected
 
                 if selected {
-                    // FIXME: show spell book and let user choose a spell
+                    ui.AddElements(makeSpellChoiceElements(ui, imageCache))
                 }
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
