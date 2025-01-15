@@ -137,6 +137,7 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
     cancelBackground, _ := game.ImageCache.GetImage("main.lbx", 47, 0)
 
     ui := &uilib.UI{
+        Cache: game.Cache,
         Draw: func(ui *uilib.UI, screen *ebiten.Image){
             var options ebiten.DrawImageOptions
             mainHud, _ := game.ImageCache.GetImage("main.lbx", 0, 0)
