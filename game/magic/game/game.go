@@ -599,7 +599,7 @@ func (game *Game) NearCity(point image.Point, squares int) bool {
 
 func (game *Game) FindValidCityLocation() (int, int) {
     mapUse := game.CurrentMap()
-    continents := mapUse.Map.FindContinents(mapUse.Plane)
+    continents := mapUse.Map.FindContinents()
 
     for i := 0; i < 10; i++ {
         continentIndex := rand.IntN(len(continents))
@@ -609,7 +609,7 @@ func (game *Game) FindValidCityLocation() (int, int) {
             x := continent[index].X
             y := continent[index].Y
 
-            if y > 3 && y < mapUse.Map.Columns() - 3 && mapUse.Map.Terrain[x][y] == terrain.TileLand.Index(mapUse.Plane) {
+            if y > 3 && y < mapUse.Map.Columns() - 3 && terrain.GetTile(mapUse.Map.Terrain[x][y]).IsLand() {
                 return x, y
             }
         }
@@ -620,7 +620,7 @@ func (game *Game) FindValidCityLocation() (int, int) {
 
 func (game *Game) FindValidCityLocationOnContinent(x int, y int) (int, int) {
     mapUse := game.CurrentMap()
-    continents := mapUse.Map.FindContinents(mapUse.Plane)
+    continents := mapUse.Map.FindContinents()
 
     for _, continent := range continents {
         if continent.Contains(image.Pt(x, y)) {
