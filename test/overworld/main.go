@@ -891,6 +891,8 @@ func createScenario12(cache *lbx.LbxCache) *gamelib.Game {
     game.CurrentMap().SetBonus(x, y-1, data.BonusQuorkCrystal)
     game.CurrentMap().SetBonus(x+1, y-1, data.BonusIronOre)
 
+    game.Camera.Center(x, y)
+
     game.Events <- &gamelib.GameEventSurveyor{}
 
     return game

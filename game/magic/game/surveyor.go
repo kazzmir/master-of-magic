@@ -62,28 +62,6 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
         game.Drawer = oldDrawer
     }()
 
-    var cities []*citylib.City
-    var stacks []*playerlib.UnitStack
-    var fog [][]bool
-
-    for i, player := range game.Players {
-        for _, city := range player.Cities {
-            if city.Plane == game.Plane {
-                cities = append(cities, city)
-            }
-        }
-
-        for _, stack := range player.Stacks {
-            if stack.Plane() == game.Plane {
-                stacks = append(stacks, stack)
-            }
-        }
-
-        if i == 0 {
-            fog = player.GetFog(game.Plane)
-        }
-    }
-
     fontLbx, err := game.Cache.GetLbxFile("fonts.lbx")
     if err != nil {
         log.Printf("Error reading fonts: %v", err)
@@ -100,18 +78,49 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
     yellowFont := makeYellowFont(fonts)
     whiteFont := makeWhiteFont(fonts)
 
-    overworld := Overworld{
-        Camera: game.Camera,
-        Counter: game.Counter,
-        Map: game.CurrentMap(),
-        Cities: cities,
-        Stacks: stacks,
-        SelectedStack: nil,
-        ImageCache: &game.ImageCache,
-        Fog: fog,
-        ShowAnimation: game.State == GameStateUnitMoving,
-        FogBlack: game.GetFogImage(),
+    var cityMap map[image.Point]*citylib.City
+
+    makeOverworld := func () Overworld {
+        cityMap = make(map[image.Point]*citylib.City)
+
+        var cities []*citylib.City
+        var stacks []*playerlib.UnitStack
+        var fog [][]bool
+
+        for i, player := range game.Players {
+            for _, city := range player.Cities {
+                if city.Plane == game.Plane {
+                    cities = append(cities, city)
+                    cityMap[image.Pt(city.X, city.Y)] = city
+                }
+            }
+
+            for _, stack := range player.Stacks {
+                if stack.Plane() == game.Plane {
+                    stacks = append(stacks, stack)
+                }
+            }
+
+            if i == 0 {
+                fog = player.GetFog(game.Plane)
+            }
+        }
+
+        return Overworld{
+            Camera: game.Camera,
+            Counter: game.Counter,
+            Map: game.CurrentMap(),
+            Cities: cities,
+            Stacks: stacks,
+            SelectedStack: nil,
+            ImageCache: &game.ImageCache,
+            Fog: fog,
+            ShowAnimation: game.State == GameStateUnitMoving,
+            FogBlack: game.GetFogImage(),
+        }
     }
+
+    overworld := makeOverworld()
 
     selectedPoint := image.Pt(-1, -1)
 
@@ -128,6 +137,7 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
     cancelBackground, _ := game.ImageCache.GetImage("main.lbx", 47, 0)
 
     ui := &uilib.UI{
+        Cache: game.Cache,
         Draw: func(ui *uilib.UI, screen *ebiten.Image){
             var options ebiten.DrawImageOptions
             mainHud, _ := game.ImageCache.GetImage("main.lbx", 0, 0)
@@ -153,7 +163,7 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
             surveyorFont.PrintCenter(screen, 280, 81, 1, ebiten.ColorScale{}, "Surveyor")
 
             if selectedPoint.X >= 0 && selectedPoint.X < game.CurrentMap().Width() && selectedPoint.Y >= 0 && selectedPoint.Y < game.CurrentMap().Height() {
-                if fog[selectedPoint.X][selectedPoint.Y] {
+                if overworld.Fog[selectedPoint.X][selectedPoint.Y] {
                     tile := game.CurrentMap().GetTile(selectedPoint.X, selectedPoint.Y)
                     y := float64(93)
                     yellowFont.PrintCenter(screen, 280, y, 1, ebiten.ColorScale{}, tile.Tile.Name())
@@ -195,6 +205,11 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
                         case data.BonusCrysxCrystal: showBonus("Crysx Crystal", fmt.Sprintf("+%v power", bonus.PowerBonus()))
                     }
 
+                    if cityMap[selectedPoint] != nil {
+                        city := cityMap[selectedPoint]
+                        yellowFont.PrintWrapCenter(screen, 280, y, float64(cancelBackground.Bounds().Dx() - 5), 1, ebiten.ColorScale{}, city.String())
+                    }
+
                     // FIXME: show lair/node/tower
 
                     y = 160 - cityInfoText.TotalHeight
@@ -225,10 +240,10 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
 
     makeButton := func(lbxIndex int, x int, y int) *uilib.UIElement {
         button, _ := game.ImageCache.GetImage("main.lbx", lbxIndex, 0)
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(float64(x), float64(y))
         return &uilib.UIElement{
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(x), float64(y))
                 screen.DrawImage(button, &options)
             },
         }
@@ -253,7 +268,36 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
     ui.AddElement(makeButton(6, 226, 4))
 
     // plane button
-    ui.AddElement(makeButton(7, 270, 4))
+    ui.AddElement((func () *uilib.UIElement {
+        buttons, _ := game.ImageCache.GetImages("main.lbx", 7)
+        x := 270
+        y := 4
+
+        clicked := false
+
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(float64(x), float64(y))
+
+        return &uilib.UIElement{
+            Rect: util.ImageRect(x, y, buttons[0]),
+            PlaySoundLeftClick: true,
+            LeftClick: func(element *uilib.UIElement){
+                clicked = true
+            },
+            LeftClickRelease: func(element *uilib.UIElement){
+                clicked = false
+                game.SwitchPlane()
+                overworld = makeOverworld()
+            },
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                if clicked {
+                    screen.DrawImage(buttons[1], &options)
+                } else {
+                    screen.DrawImage(buttons[0], &options)
+                }
+            },
+        }
+    })())
 
     quit := false
 
@@ -305,7 +349,7 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
         x, y := inputmanager.MousePosition()
 
         // within the viewable area
-        if x < 240 && y > 18 {
+        if game.InOverworldArea(x, y) {
             newX, newY := game.ScreenToTile(float64(x), float64(y))
             newPoint := image.Pt(newX, newY)
 
@@ -325,7 +369,7 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
 
                 if !tile.Tile.IsLand() {
                     text = "Cannot build cities on water."
-                } else if game.NearCity(newPoint, 3) {
+                } else if cityMap[newPoint] == nil && game.NearCity(newPoint, 3) {
                     text = "Cities cannot be built less than 3 squares from any other city."
                 } else {
                     text = "City Resources"
