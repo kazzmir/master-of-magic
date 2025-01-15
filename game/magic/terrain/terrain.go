@@ -504,7 +504,7 @@ func expand4(value uint8) uint8 {
     return v1 | v2 | v3 | v4
 }
 
-func getTile(index int) Tile {
+func GetTile(index int) Tile {
     if index >= MyrrorStart {
         index -= MyrrorStart
     }
@@ -1557,7 +1557,7 @@ func ReadTerrainData(lbxFile *lbx.LbxFile) (*TerrainData, error) {
         tiles = append(tiles, TerrainTile{
             ImageIndex: index,
             TileIndex: tileIndex,
-            Tile: getTile(tileIndex),
+            Tile: GetTile(tileIndex),
             Images: tileImages,
         })
 

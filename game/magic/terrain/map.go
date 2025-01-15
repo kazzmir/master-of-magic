@@ -93,7 +93,7 @@ func (map_ *Map) FindContinents(plane data.Plane) []Continent {
                     ny := y + dy
 
                     if nx >= 0 && nx < columns && ny >= 0 && ny < rows {
-                        if map_.Terrain[nx][ny] == TileLand.Index(plane) {
+                        if GetTile(map_.Terrain[nx][ny]).IsLand() {
                             *continent = append(*continent, image.Pt(nx, ny))
                             // searchTiles(nx, ny, continent)
                             search = append(search, image.Pt(nx, ny))
@@ -108,7 +108,7 @@ func (map_ *Map) FindContinents(plane data.Plane) []Continent {
 
     for x := 0; x < map_.Columns(); x++ {
         for y := 0; y < map_.Rows(); y++ {
-            if map_.Terrain[x][y] == TileLand.Index(plane) && seen[x][y] == false {
+            if GetTile(map_.Terrain[x][y]).IsLand() && seen[x][y] == false {
                 var continent Continent
                 continent = append(continent, image.Pt(x, y))
                 searchTiles(x, y, &continent)
