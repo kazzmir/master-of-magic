@@ -15,6 +15,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/mouse"
     herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
+    "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -238,8 +239,10 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
             LeftClick: func(element *uilib.UIElement){
                 if selectedItem != nil {
 
-                    // TODO: Artificer get the full amount
-                    gainedMana := selectedItem.Cost / 2
+                    gainedMana := selectedItem.Cost
+                    if !player.Wizard.AbilityEnabled(setup.AbilityArtificer) {
+                        gainedMana /= 2
+                    }
 
                     yes := func(){
                         player.Mana += gainedMana
