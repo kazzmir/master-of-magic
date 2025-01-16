@@ -611,6 +611,26 @@ func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts Ar
         },
     })
 
+    x := 47
+    y := 26
+
+    for i, spell := range spells.Spells {
+        if i >= 13 {
+            break
+        }
+
+        font := fonts.SpellFont
+
+        yPos := y + (font.Height() + 1) * i
+        elements = append(elements, &uilib.UIElement{
+            Layer: 1,
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                font.Print(screen, float64(x), float64(yPos), 1, ebiten.ColorScale{}, spell.Name)
+            },
+        })
+
+    }
+
     // add element for each known spell
 
     // need element for clicking on X to cancel
@@ -903,6 +923,7 @@ type ArtifactFonts struct {
     PowerFontWhite *font.Font
     NameFont *font.Font
     TitleSpellFont *font.Font
+    SpellFont *font.Font
 }
 
 func makeFonts(cache *lbx.LbxCache) ArtifactFonts {
@@ -956,11 +977,23 @@ func makeFonts(cache *lbx.LbxCache) ArtifactFonts {
 
     titleSpellFont := font.MakeOptimizedFontWithPalette(fonts[4], titlePalette)
 
+    darkRed := color.RGBA{R: 0x6d, G: 0x09, B: 0x0c, A: 0xff}
+
+    spellPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        darkRed, darkRed, darkRed,
+        darkRed, darkRed, darkRed,
+    }
+
+    spellFont := font.MakeOptimizedFontWithPalette(fonts[3], spellPalette)
+
     return ArtifactFonts{
         PowerFont: powerFont,
         PowerFontWhite: powerFontWhite,
         NameFont: nameFont,
         TitleSpellFont: titleSpellFont,
+        SpellFont: spellFont,
     }
 }
 
