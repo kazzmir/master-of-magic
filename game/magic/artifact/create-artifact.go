@@ -961,6 +961,7 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
                             Type: PowerTypeSpellCharges,
                             Spell: spell,
                             Amount: charges,
+                            Name: fmt.Sprintf("%v x%v", spell.Name, charges),
                         }
                         artifact.AddPower(addedPower)
                         artifact.Name = getName(artifact, *customName)
@@ -986,7 +987,7 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
                 }
 
                 if addedPower.Type == PowerTypeSpellCharges {
-                    fonts.PowerFont.Print(screen, float64(element.Rect.Min.X), float64(element.Rect.Min.Y), 1, scale, fmt.Sprintf("%v x%v", addedPower.Spell.Name, addedPower.Amount))
+                    fonts.PowerFont.Print(screen, float64(element.Rect.Min.X), float64(element.Rect.Min.Y), 1, scale, addedPower.Name)
                 } else {
                     fonts.PowerFont.Print(screen, float64(element.Rect.Min.X), float64(element.Rect.Min.Y), 1, scale, "Spell Charges")
                 }
