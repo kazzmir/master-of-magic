@@ -422,14 +422,22 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
             Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
                 images, err := imageCache.GetImages("cityscap.lbx", GetBuildingIndex(building))
                 if err == nil {
-                    middleX := float64(104)
-                    middleY := float64(20)
+                    middleX := float64(103)
+                    middleY := float64(22)
                     index := (ui.Counter / 7) % uint64(len(images))
 
                     var options ebiten.DrawImageOptions
                     options.GeoM.Translate(middleX, middleY)
                     options.GeoM.Translate(-float64(images[index].Bounds().Dx() / 2), -float64(images[index].Bounds().Dy() / 2))
-                    screen.DrawImage(images[index], &options)
+
+                    width := 44
+                    height := 36
+                    clipRect := image.Rect(int(middleX) - width / 2, int(middleY) - height / 2, int(middleX) + width / 2, int(middleY) + height / 2)
+                    clip := screen.SubImage(clipRect).(*ebiten.Image)
+
+                    // vector.DrawFilledRect(clip, float32(clipRect.Min.X), float32(clipRect.Min.Y), float32(clipRect.Bounds().Dx()), float32(clipRect.Bounds().Dy()), color.RGBA{R: 255, G: 255, B: 255, A: 255}, true)
+
+                    clip.DrawImage(images[index], &options)
 
                     // vector.DrawFilledCircle(screen, float32(middleX), float32(middleY), 1, color.RGBA{255, 255, 255, 255}, true)
                 }
