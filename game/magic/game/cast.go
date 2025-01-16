@@ -49,22 +49,7 @@ func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Playe
         case "Create Artifact", "Enchant Item":
             showSummon := summon.MakeSummonArtifact(game.Cache, player.Wizard.Base)
 
-            drawer := game.Drawer
-            defer func(){
-                game.Drawer = drawer
-            }()
-
-            game.Drawer = func(screen *ebiten.Image, game *Game){
-                drawer(screen, game)
-                showSummon.Draw(screen)
-            }
-
-            for showSummon.Update() != summon.SummonStateDone {
-                if inputmanager.LeftClick() {
-                    break
-                }
-                yield()
-            }
+            game.doSummon(yield, showSummon)
 
             select {
                 case game.Events <- &GameEventVault{CreatedArtifact: player.CreateArtifact}:
@@ -305,7 +290,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
         x, y := inputmanager.MousePosition()
 
         // within the viewable area
-        if x < 240 && y > 18 {
+        if game.InOverworldArea(x, y) {
             tileX, tileY := game.ScreenToTile(float64(x), float64(y))
             
             // right click should move the camera
