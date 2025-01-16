@@ -938,7 +938,7 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
     }
 
     // spell charges
-    if artifact.Type == ArtifactTypeWand || artifact.Type == ArtifactTypeStaff {
+    if len(availableSpells.Spells) > 0 && (artifact.Type == ArtifactTypeWand || artifact.Type == ArtifactTypeStaff) {
         xRect := image.Rect(x, y, x + int(fonts.PowerFont.MeasureTextWidth("Spell Charges", 1)), y + fonts.PowerFont.Height())
         selected := false
         totalItems += 1
@@ -1033,7 +1033,7 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
             }
         }
 
-        upX := 305
+        upX := 308
         upY := 43
         upPressed := false
         elements = append(elements, &uilib.UIElement{
@@ -1063,7 +1063,7 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
         })
 
         downX := upX
-        downY := 160
+        downY := 165
         downPressed := false
         elements = append(elements, &uilib.UIElement{
             Rect: util.ImageRect(downX, downY, downArrows[0]),
