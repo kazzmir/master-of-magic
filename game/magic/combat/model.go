@@ -478,6 +478,7 @@ type CombatUnit interface {
     IsUndead() bool
     GetRace() data.Race
     GetRealm() data.MagicType
+    GetSpellChargeSpells() map[spellbook.Spell]int
 }
 
 type ArmyUnit struct {
@@ -490,6 +491,7 @@ type ArmyUnit struct {
     MovesLeft fraction.Fraction
 
     Spells spellbook.Spells
+    SpellCharges map[spellbook.Spell]int
     CastingSkill float32
     Casted bool
 
@@ -762,6 +764,7 @@ func (unit *ArmyUnit) InitializeSpells(allSpells spellbook.Spells, player *playe
 
     if unit.Unit.IsHero() {
         unit.Spells.AddAllSpells(player.KnownSpells)
+        unit.SpellCharges = unit.Unit.GetSpellChargeSpells()
     }
 }
 
