@@ -3006,59 +3006,63 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                         game.doPlayerUpdate(yield, player)
                     }
                 } else {
-                    log.Printf("AI year %v: make decisions", game.TurnNumber)
-
-                    var decisions []playerlib.AIDecision
-
-                    if player.AIBehavior != nil {
-                        decisions = player.AIBehavior.Update(player, game.GetEnemies(player), game)
-                        log.Printf("AI Decisions: %v", decisions)
-
-                        for _, decision := range decisions {
-                            switch decision.(type) {
-                                case *playerlib.AIMoveStackDecision:
-                                    moveDecision := decision.(*playerlib.AIMoveStackDecision)
-                                    stack := moveDecision.Stack
-                                    to := moveDecision.Location
-                                    log.Printf("  moving stack %v to %v, %v", stack, to.X, to.Y)
-                                    terrainCost, _ := game.ComputeTerrainCost(stack, stack.X(), stack.Y(), to.X, to.Y, game.GetMap(stack.Plane()))
-                                    oldX := stack.X()
-                                    oldY := stack.Y()
-                                    stack.Move(to.X - stack.X(), to.Y - stack.Y(), terrainCost, game.GetNormalizeCoordinateFunc())
-                                    game.showMovement(yield, oldX, oldY, stack)
-                                    player.LiftFog(stack.X(), stack.Y(), 1, stack.Plane())
-
-                                    for _, enemy := range game.GetEnemies(player) {
-                                        // FIXME: this should get all stacks at the given location and merge them into a single stack for combat
-                                        enemyStack := enemy.FindStack(stack.X(), stack.Y(), stack.Plane())
-                                        if enemyStack != nil {
-                                            zone := combat.ZoneType{
-                                                City: enemy.FindCity(stack.X(), stack.Y(), stack.Plane()),
-                                            }
-                                            game.doCombat(yield, player, stack, enemy, enemyStack, zone)
-                                        }
-                                    }
-                                case *playerlib.AICreateUnitDecision:
-                                    create := decision.(*playerlib.AICreateUnitDecision)
-                                    log.Printf("ai creating %+v", create)
-
-                                    existingStack := player.FindStack(create.X, create.Y, create.Plane)
-                                    if existingStack == nil || len(existingStack.Units()) < 9 {
-                                        overworldUnit := units.MakeOverworldUnitFromUnit(create.Unit, create.X, create.Y, create.Plane, player.Wizard.Banner, player.MakeExperienceInfo())
-                                        player.AddUnit(overworldUnit)
-                                    }
-                            }
-                        }
-                    }
-
-                    if len(decisions) == 0 {
-                        game.DoNextTurn()
-                    }
+                    game.doAiUpdate(yield, player)
                 }
             }
     }
 
     return game.State
+}
+
+func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player) {
+    log.Printf("AI year %v: make decisions", game.TurnNumber)
+
+    var decisions []playerlib.AIDecision
+
+    if player.AIBehavior != nil {
+        decisions = player.AIBehavior.Update(player, game.GetEnemies(player), game)
+        log.Printf("AI Decisions: %v", decisions)
+
+        for _, decision := range decisions {
+            switch decision.(type) {
+            case *playerlib.AIMoveStackDecision:
+                moveDecision := decision.(*playerlib.AIMoveStackDecision)
+                stack := moveDecision.Stack
+                to := moveDecision.Location
+                log.Printf("  moving stack %v to %v, %v", stack, to.X, to.Y)
+                terrainCost, _ := game.ComputeTerrainCost(stack, stack.X(), stack.Y(), to.X, to.Y, game.GetMap(stack.Plane()))
+                oldX := stack.X()
+                oldY := stack.Y()
+                stack.Move(to.X - stack.X(), to.Y - stack.Y(), terrainCost, game.GetNormalizeCoordinateFunc())
+                game.showMovement(yield, oldX, oldY, stack)
+                player.LiftFog(stack.X(), stack.Y(), 1, stack.Plane())
+
+                for _, enemy := range game.GetEnemies(player) {
+                    // FIXME: this should get all stacks at the given location and merge them into a single stack for combat
+                    enemyStack := enemy.FindStack(stack.X(), stack.Y(), stack.Plane())
+                    if enemyStack != nil {
+                        zone := combat.ZoneType{
+                            City: enemy.FindCity(stack.X(), stack.Y(), stack.Plane()),
+                        }
+                        game.doCombat(yield, player, stack, enemy, enemyStack, zone)
+                    }
+                }
+            case *playerlib.AICreateUnitDecision:
+                create := decision.(*playerlib.AICreateUnitDecision)
+                log.Printf("ai creating %+v", create)
+
+                existingStack := player.FindStack(create.X, create.Y, create.Plane)
+                if existingStack == nil || len(existingStack.Units()) < 9 {
+                    overworldUnit := units.MakeOverworldUnitFromUnit(create.Unit, create.X, create.Y, create.Plane, player.Wizard.Banner, player.MakeExperienceInfo())
+                    player.AddUnit(overworldUnit)
+                }
+            }
+        }
+    }
+
+    if len(decisions) == 0 {
+        game.DoNextTurn()
+    }
 }
 
 // get all alive players that are not the current player
