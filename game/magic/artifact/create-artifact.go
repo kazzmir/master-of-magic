@@ -612,7 +612,8 @@ func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts Ar
     })
 
     xLeft := 47
-    y := 26
+    xRight := 187
+    y := 29
 
     var pages []spellbook.Spells
 
@@ -626,53 +627,67 @@ func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts Ar
     }
 
     showPage := 0
+    spellFont := fonts.SpellFont
 
-    font := fonts.SpellFont
-    // left page
-    for i, spell := range pages[showPage].Spells {
-        yPos := y + (font.Height() + 1) * i
-        elements = append(elements, &uilib.UIElement{
-            Layer: 1,
-            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                font.Print(screen, float64(xLeft), float64(yPos), 1, ebiten.ColorScale{}, spell.Name)
-            },
-        })
-    }
+    var pageElements []*uilib.UIElement
 
-    // right page
-    if showPage + 1 < len(pages) {
-        xRight := 187
-        for i, spell := range pages[showPage+1].Spells {
-            yPos := y + (font.Height() + 1) * i
-            elements = append(elements, &uilib.UIElement{
+    makePageElements := func () []*uilib.UIElement {
+        ui.RemoveElements(pageElements)
+
+        pageElements = nil
+        // left page
+        for i, spell := range pages[showPage].Spells {
+            yPos := y + (spellFont.Height() + 1) * i
+            pageElements = append(pageElements, &uilib.UIElement{
                 Layer: 1,
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                    font.Print(screen, float64(xRight), float64(yPos), 1, ebiten.ColorScale{}, spell.Name)
+                    spellFont.Print(screen, float64(xLeft), float64(yPos), 1, ebiten.ColorScale{}, spell.Name)
                 },
             })
         }
-    }
 
-    /*
-    for i, spell := range spells.Spells {
-        if i >= 13 {
-            break
+        // right page
+        if showPage + 1 < len(pages) {
+            for i, spell := range pages[showPage+1].Spells {
+                yPos := y + (spellFont.Height() + 1) * i
+                pageElements = append(pageElements, &uilib.UIElement{
+                    Layer: 1,
+                    Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                        spellFont.Print(screen, float64(xRight), float64(yPos), 1, ebiten.ColorScale{}, spell.Name)
+                    },
+                })
+            }
         }
 
-        font := fonts.SpellFont
+        return pageElements
+    }
 
-        yPos := y + (font.Height() + 1) * i
+    elements = append(elements, makePageElements()...)
+
+    if len(pages) > 2 {
+        // left dogear
         elements = append(elements, &uilib.UIElement{
             Layer: 1,
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                font.Print(screen, float64(x), float64(yPos), 1, ebiten.ColorScale{}, spell.Name)
+                ear, _ := imageCache.GetImage("spells.lbx", 1, 0)
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(41, 16)
+                screen.DrawImage(ear, &options)
             },
         })
 
-    }
-    */
+        // right dogear
 
-    // add element for each known spell
+        elements = append(elements, &uilib.UIElement{
+            Layer: 1,
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                ear, _ := imageCache.GetImage("spells.lbx", 2, 0)
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(286, 16)
+                screen.DrawImage(ear, &options)
+            },
+        })
+    }
 
     // need element for clicking on X to cancel
 
