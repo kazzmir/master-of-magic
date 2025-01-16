@@ -19,6 +19,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/font"
 
     "github.com/hajimehoshi/ebiten/v2"
+    "github.com/hajimehoshi/ebiten/v2/vector"
     // "github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
@@ -590,17 +591,21 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
     return elements
 }
 
-func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache) []*uilib.UIElement {
+func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts ArtifactFonts) []*uilib.UIElement {
     var elements []*uilib.UIElement
 
     elements = append(elements, &uilib.UIElement{
+        Layer: 1,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            vector.DrawFilledRect(screen, 0, 0, data.ScreenWidth, data.ScreenHeight, color.RGBA{R: 0, G: 0, B: 0, A: 0x80}, false)
+
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(28, 12)
             background, _ := imageCache.GetImage("spells.lbx", 0, 0)
             screen.DrawImage(background, &options)
 
             // print text "Choose a spell to embed in this item"
+            fonts.TitleSpellFont.PrintCenter(screen, data.ScreenWidth / 2, 2, 1, ebiten.ColorScale{}, "Choose a spell to embed in this item")
         },
     })
 
@@ -761,7 +766,7 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
                 selected = !selected
 
                 if selected {
-                    ui.AddElements(makeSpellChoiceElements(ui, imageCache))
+                    ui.AddElements(makeSpellChoiceElements(ui, imageCache, fonts))
                 }
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
@@ -895,6 +900,7 @@ type ArtifactFonts struct {
     PowerFont *font.Font
     PowerFontWhite *font.Font
     NameFont *font.Font
+    TitleSpellFont *font.Font
 }
 
 func makeFonts(cache *lbx.LbxCache) ArtifactFonts {
@@ -935,10 +941,24 @@ func makeFonts(cache *lbx.LbxCache) ArtifactFonts {
 
     powerFontWhite := font.MakeOptimizedFontWithPalette(fonts[3], greyPalette)
 
+    orange := util.Lighten(color.RGBA{R: 0xe5, G: 0x7b, B: 0x12, A: 0xff}, 10)
+    // red := color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}
+    titlePalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        util.Lighten(orange, 20),
+        util.Lighten(orange, 12),
+        util.Lighten(orange, 8),
+        orange,
+    }
+
+    titleSpellFont := font.MakeOptimizedFontWithPalette(fonts[4], titlePalette)
+
     return ArtifactFonts{
         PowerFont: powerFont,
         PowerFontWhite: powerFontWhite,
         NameFont: nameFont,
+        TitleSpellFont: titleSpellFont,
     }
 }
 
