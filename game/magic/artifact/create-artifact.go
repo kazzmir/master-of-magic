@@ -611,9 +611,49 @@ func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts Ar
         },
     })
 
-    x := 47
+    xLeft := 47
     y := 26
 
+    var pages []spellbook.Spells
+
+    // slice up the spells into chunks of 13
+    for i, spell := range spells.Spells {
+        if i % 13 == 0 {
+            pages = append(pages, spellbook.Spells{})
+        }
+
+        pages[len(pages) - 1].AddSpell(spell)
+    }
+
+    showPage := 0
+
+    font := fonts.SpellFont
+    // left page
+    for i, spell := range pages[showPage].Spells {
+        yPos := y + (font.Height() + 1) * i
+        elements = append(elements, &uilib.UIElement{
+            Layer: 1,
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                font.Print(screen, float64(xLeft), float64(yPos), 1, ebiten.ColorScale{}, spell.Name)
+            },
+        })
+    }
+
+    // right page
+    if showPage + 1 < len(pages) {
+        xRight := 187
+        for i, spell := range pages[showPage+1].Spells {
+            yPos := y + (font.Height() + 1) * i
+            elements = append(elements, &uilib.UIElement{
+                Layer: 1,
+                Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                    font.Print(screen, float64(xRight), float64(yPos), 1, ebiten.ColorScale{}, spell.Name)
+                },
+            })
+        }
+    }
+
+    /*
     for i, spell := range spells.Spells {
         if i >= 13 {
             break
@@ -630,6 +670,7 @@ func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts Ar
         })
 
     }
+    */
 
     // add element for each known spell
 
