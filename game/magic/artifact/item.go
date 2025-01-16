@@ -270,6 +270,21 @@ func (artifact *Artifact) DefenseBonus() int {
     return base
 }
 
+// returns the spell and how many charges it has
+func (artifact *Artifact) GetSpellCharge() (spellbook.Spell, int) {
+    for _, power := range artifact.Powers {
+        if power.Type == PowerTypeSpellCharges {
+            return power.Spell, power.Amount
+        }
+    }
+
+    return spellbook.Spell{}, 0
+}
+
+func (artifact *Artifact) HasSpellCharges() bool {
+    return hasPower(PowerTypeSpellCharges, artifact.Powers)
+}
+
 func (artifact *Artifact) HasDefensePower() bool {
     return hasPower(PowerTypeDefense, artifact.Powers)
 }

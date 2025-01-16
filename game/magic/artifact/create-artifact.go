@@ -299,9 +299,10 @@ func getName(artifact *Artifact, customName string) string {
     // other powers are added as "of X" postfix (only one)
     postfix := ""
     switch {
-        // TODO: Spell Charges: " of {Spell Name} x4"
-
         case artifact.HasAbilities(): postfix = fmt.Sprintf(" of %v", artifact.LastAbility().Name())
+        case artifact.HasSpellCharges():
+            spell, charges := artifact.GetSpellCharge()
+            postfix = fmt.Sprintf(" of %v x%v", spell.Name, charges)
         case artifact.HasSpellSavePower(): postfix = " of Power"
         case artifact.HasSpellSkillPower(): postfix = " of Wizardry"
         case artifact.HasResistancePower(): postfix = " of Protection"
@@ -593,7 +594,7 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
 }
 
 // for choosing a spell to embed in an item with the spell charges power
-func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts ArtifactFonts, spells spellbook.Spells, selected *bool) []*uilib.UIElement {
+func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts ArtifactFonts, spells spellbook.Spells, selected *bool, chosen func(spellbook.Spell, int)) []*uilib.UIElement {
     var elements []*uilib.UIElement
 
     elements = append(elements, &uilib.UIElement{
@@ -636,7 +637,7 @@ func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts Ar
         ui.RemoveElements(pageElements)
     }
 
-    makeSelectChargesElements := func (spell spellbook.Spell, x int) []*uilib.UIElement {
+    makeSelectChargesElements := func (spell spellbook.Spell, x int, picked func(int)) []*uilib.UIElement {
         var moreElements []*uilib.UIElement
 
         background, _ := imageCache.GetImage("spellscr.lbx", 37, 0)
@@ -672,6 +673,8 @@ func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts Ar
                 },
                 LeftClickRelease: func(element *uilib.UIElement){
                     pressed = false
+                    ui.RemoveElements(moreElements)
+                    picked(i+1)
                 },
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                     if pressed {
@@ -694,11 +697,17 @@ func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts Ar
         for i, spell := range pages[showPage].Spells {
             yPos := y + (spellFont.Height() + 1) * i
             rect := image.Rect(xLeft, yPos, xLeft + int(spellFont.MeasureTextWidth(spell.Name, 1)), yPos + spellFont.Height())
+
+            pickCharges := func (count int) {
+                shutdown()
+                chosen(spell, count)
+            }
+
             pageElements = append(pageElements, &uilib.UIElement{
                 Layer: 1,
                 Rect: rect,
                 LeftClick: func(element *uilib.UIElement){
-                    ui.AddElements(makeSelectChargesElements(spell, xRight))
+                    ui.AddElements(makeSelectChargesElements(spell, xRight, pickCharges))
                 },
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                     spellFont.Print(screen, float64(xLeft), float64(yPos), 1, ebiten.ColorScale{}, spell.Name)
@@ -711,11 +720,17 @@ func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts Ar
             for i, spell := range pages[showPage+1].Spells {
                 yPos := y + (spellFont.Height() + 1) * i
                 rect := image.Rect(xRight, yPos, xRight + int(spellFont.MeasureTextWidth(spell.Name, 1)), yPos + spellFont.Height())
+
+                pickCharges := func (count int) {
+                    shutdown()
+                    chosen(spell, count)
+                }
+
                 pageElements = append(pageElements, &uilib.UIElement{
                     Layer: 1,
                     Rect: rect,
                     LeftClick: func(element *uilib.UIElement){
-                        ui.AddElements(makeSelectChargesElements(spell, xLeft))
+                        ui.AddElements(makeSelectChargesElements(spell, xLeft, pickCharges))
                     },
                     Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                         spellFont.Print(screen, float64(xRight), float64(yPos), 1, ebiten.ColorScale{}, spell.Name)
@@ -927,6 +942,9 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
         xRect := image.Rect(x, y, x + int(fonts.PowerFont.MeasureTextWidth("Spell Charges", 1)), y + fonts.PowerFont.Height())
         selected := false
         totalItems += 1
+
+        addedPower := Power{Type: PowerTypeNone}
+
         elements = append(elements, &uilib.UIElement{
             Rect: xRect,
             PlaySoundLeftClick: inBounds(xRect),
@@ -938,7 +956,21 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
                 selected = !selected
 
                 if selected {
-                    ui.AddElements(makeSpellChoiceElements(ui, imageCache, fonts, availableSpells, &selected))
+                    ui.AddElements(makeSpellChoiceElements(ui, imageCache, fonts, availableSpells, &selected, func (spell spellbook.Spell, charges int){
+                        addedPower = Power{
+                            Type: PowerTypeSpellCharges,
+                            Spell: spell,
+                            Amount: charges,
+                        }
+                        artifact.AddPower(addedPower)
+                        artifact.Name = getName(artifact, *customName)
+                        artifact.Cost = calculateCost(artifact, costs, artificer, runemaster)
+                    }))
+                } else {
+                    artifact.RemovePower(addedPower)
+                    addedPower = Power{Type: PowerTypeNone}
+                    artifact.Name = getName(artifact, *customName)
+                    artifact.Cost = calculateCost(artifact, costs, artificer, runemaster)
                 }
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
@@ -953,7 +985,11 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
                     scale.SetG(3)
                 }
 
-                fonts.PowerFont.Print(screen, float64(element.Rect.Min.X), float64(element.Rect.Min.Y), 1, scale, "Spell Charges")
+                if addedPower.Type == PowerTypeSpellCharges {
+                    fonts.PowerFont.Print(screen, float64(element.Rect.Min.X), float64(element.Rect.Min.Y), 1, scale, fmt.Sprintf("%v x%v", addedPower.Spell.Name, addedPower.Amount))
+                } else {
+                    fonts.PowerFont.Print(screen, float64(element.Rect.Min.X), float64(element.Rect.Min.Y), 1, scale, "Spell Charges")
+                }
             },
         })
     }
