@@ -292,7 +292,7 @@ func (spells Spells) OverlandSpells() Spells {
     var out []Spell
 
     for _, spell := range spells.Spells {
-        if spell.Eligibility.CanCastInOverland() {
+        if spell.Name != "None" && spell.Eligibility.CanCastInOverland() {
             out = append(out, spell)
         }
     }
@@ -305,7 +305,7 @@ func (spells Spells) CombatSpells() Spells {
     var out []Spell
 
     for _, spell := range spells.Spells {
-        if spell.Eligibility.CanCastInCombat() {
+        if spell.Name != "None" && spell.Eligibility.CanCastInCombat() {
             out = append(out, spell)
         }
     }
