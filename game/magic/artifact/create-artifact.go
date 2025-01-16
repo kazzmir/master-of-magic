@@ -13,12 +13,14 @@ import (
     "github.com/kazzmir/master-of-magic/lib/set"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     "github.com/kazzmir/master-of-magic/game/magic/util"
+    "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
 
     "github.com/hajimehoshi/ebiten/v2"
+    "github.com/hajimehoshi/ebiten/v2/vector"
     // "github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
@@ -225,7 +227,6 @@ func ReadPowers(cache *lbx.LbxCache) ([]Power, map[Power]int, map[Power]set.Set[
             costs[power] = int(cost)
             compatibilities[power] = *artifactTypes
         }
-        // TODO: add abilties (currently PowerTypeNone) with requirements (magicType / amount = books needed)
     }
     return powers, costs, compatibilities, nil
 }
@@ -298,9 +299,10 @@ func getName(artifact *Artifact, customName string) string {
     // other powers are added as "of X" postfix (only one)
     postfix := ""
     switch {
-        // TODO: Spell Charges: " of {Spell Name} x4"
-
         case artifact.HasAbilities(): postfix = fmt.Sprintf(" of %v", artifact.LastAbility().Name())
+        case artifact.HasSpellCharges():
+            spell, charges := artifact.GetSpellCharge()
+            postfix = fmt.Sprintf(" of %v x%v", spell.Name, charges)
         case artifact.HasSpellSavePower(): postfix = " of Power"
         case artifact.HasSpellSkillPower(): postfix = " of Wizardry"
         case artifact.HasResistancePower(): postfix = " of Protection"
@@ -331,7 +333,7 @@ func calculateCost(artifact *Artifact, costs map[Power]int, artificer bool, rune
     spellCost := 0
     for _, power := range artifact.Powers {
         if power.Type == PowerTypeSpellCharges {
-            spellCost += power.Amount * power.Spell.Cost(false) // TODO: overland?
+            spellCost += power.Amount * power.Spell.Cost(false) * 20
         } else {
             powerCost += costs[power]
         }
@@ -357,7 +359,7 @@ func calculateCost(artifact *Artifact, costs map[Power]int, artificer bool, rune
     return int(float64(cost) - float64(cost) * reduction)
 }
 
-func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCache, nameFont *font.Font, powerFont *font.Font, picLow int, picHigh int, powerGroups [][]Power, costs map[Power]int, artifact *Artifact, customName *string, selectCount *int, artificer bool, runemaster bool) []*uilib.UIElement {
+func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCache, fonts ArtifactFonts, picLow int, picHigh int, powerGroups [][]Power, costs map[Power]int, artifact *Artifact, customName *string, selectCount *int, artificer bool, runemaster bool) []*uilib.UIElement {
     var elements []*uilib.UIElement
 
     // image
@@ -428,7 +430,7 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
     })
 
     // name field
-    nameRect := image.Rect(30, 12, 30 + 130, 12 + nameFont.Height() + 2)
+    nameRect := image.Rect(30, 12, 30 + 130, 12 + fonts.NameFont.Height() + 2)
     nameFocused := false
     artifact.Name = getName(artifact, *customName)
     nameColorSource := ebiten.NewImage(1, 1)
@@ -497,10 +499,10 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
                 scale.SetG(3)
             }
 
-            nameFont.Print(screen, float64(nameRect.Min.X + 1), float64(nameRect.Min.Y + 1), 1, scale, artifact.Name)
+            fonts.NameFont.Print(screen, float64(nameRect.Min.X + 1), float64(nameRect.Min.Y + 1), 1, scale, artifact.Name)
 
             if nameFocused {
-                util.DrawTextCursor(screen, nameColorSource, float64(nameRect.Min.X) + 1 + nameFont.MeasureTextWidth(artifact.Name, 1), float64(nameRect.Min.Y) + 1, ui.Counter)
+                util.DrawTextCursor(screen, nameColorSource, float64(nameRect.Min.X) + 1 + fonts.NameFont.MeasureTextWidth(artifact.Name, 1), float64(nameRect.Min.Y) + 1, ui.Counter)
             }
         },
     }
@@ -515,7 +517,7 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
         groupSelect := -1
 
         // goto the next column
-        if y + (powerFont.Height() + 1) * len(group) > data.ScreenHeight - 10 {
+        if y + (fonts.PowerFont.Height() + 1) * len(group) > data.ScreenHeight - 10 {
             y = 40
             x = 170
             printRight = true
@@ -525,9 +527,9 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
 
         var lastPower *Power = nil
         for i, power := range group {
-            rect := image.Rect(x, y, x + int(powerFont.MeasureTextWidth(power.Name, 1)), y + powerFont.Height())
+            rect := image.Rect(x, y, x + int(fonts.PowerFont.MeasureTextWidth(power.Name, 1)), y + fonts.PowerFont.Height())
             if groupRight {
-                rect = image.Rect(x - int(powerFont.MeasureTextWidth(power.Name, 1)), y, x, y + powerFont.Height())
+                rect = image.Rect(x - int(fonts.PowerFont.MeasureTextWidth(power.Name, 1)), y, x, y + fonts.PowerFont.Height())
             }
 
             elements = append(elements, &uilib.UIElement{
@@ -575,14 +577,14 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
                     }
 
                     if groupRight {
-                        powerFont.PrintRight(screen, float64(rect.Max.X), float64(rect.Min.Y), 1, scale, power.Name)
+                        fonts.PowerFont.PrintRight(screen, float64(rect.Max.X), float64(rect.Min.Y), 1, scale, power.Name)
                     } else {
-                        powerFont.Print(screen, float64(rect.Min.X), float64(rect.Min.Y), 1, scale, power.Name)
+                        fonts.PowerFont.Print(screen, float64(rect.Min.X), float64(rect.Min.Y), 1, scale, power.Name)
                     }
                 },
             })
 
-            y += powerFont.Height() + 1
+            y += fonts.PowerFont.Height() + 1
         }
 
         y += 5
@@ -591,7 +593,217 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
     return elements
 }
 
-func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCache, artifact *Artifact, customName *string, powerFont *font.Font, powers []Power, compatibilities map[Power]set.Set[ArtifactType], costs map[Power]int, selectCount *int, magicLevel MagicLevel, artificer bool, runemaster bool) []*uilib.UIElement {
+// for choosing a spell to embed in an item with the spell charges power
+func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts ArtifactFonts, spells spellbook.Spells, selected *bool, chosen func(spellbook.Spell, int)) []*uilib.UIElement {
+    var elements []*uilib.UIElement
+
+    elements = append(elements, &uilib.UIElement{
+        Layer: 1,
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            vector.DrawFilledRect(screen, 0, 0, data.ScreenWidth, data.ScreenHeight, color.RGBA{R: 0, G: 0, B: 0, A: 0x80}, false)
+
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(28, 12)
+            background, _ := imageCache.GetImage("spells.lbx", 0, 0)
+            screen.DrawImage(background, &options)
+
+            // print text "Choose a spell to embed in this item"
+            fonts.TitleSpellFont.PrintCenter(screen, data.ScreenWidth / 2, 2, 1, ebiten.ColorScale{}, "Choose a spell to embed in this item")
+        },
+    })
+
+    xLeft := 47
+    xRight := 187
+    y := 29
+
+    var pages []spellbook.Spells
+
+    // slice up the spells into chunks of 13
+    for i, spell := range spells.Spells {
+        if i % 13 == 0 {
+            pages = append(pages, spellbook.Spells{})
+        }
+
+        pages[len(pages) - 1].AddSpell(spell)
+    }
+
+    showPage := 0
+    spellFont := fonts.SpellFont
+
+    var pageElements []*uilib.UIElement
+
+    shutdown := func(){
+        ui.RemoveElements(elements)
+        ui.RemoveElements(pageElements)
+    }
+
+    makeSelectChargesElements := func (spell spellbook.Spell, x int, picked func(int)) []*uilib.UIElement {
+        var moreElements []*uilib.UIElement
+
+        background, _ := imageCache.GetImage("spellscr.lbx", 37, 0)
+
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(float64(x), 80)
+
+        moreElements = append(moreElements, &uilib.UIElement{
+            Layer: 2,
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                screen.DrawImage(background, &options)
+
+                ax, ay := options.GeoM.Apply(float64(background.Bounds().Dx()) / 2, 5)
+                spellFont.PrintCenter(screen, ax, ay, 1, ebiten.ColorScale{}, "Charges")
+            },
+        })
+
+        button0, _ := imageCache.GetImage("spellscr.lbx", 38, 0)
+
+        // 1x, 2x, 3x, 4x
+        for i := range 4 {
+            buttons, _ := imageCache.GetImages("spellscr.lbx", 38 + i)
+            buttonOptions := options
+            buttonOptions.GeoM.Translate(float64(button0.Bounds().Dx() * i) + 3, 14)
+            x, y := buttonOptions.GeoM.Apply(0, 0)
+            rect := util.ImageRect(int(x), int(y), buttons[0])
+            pressed := false
+            moreElements = append(moreElements, &uilib.UIElement{
+                Layer: 2,
+                Rect: rect,
+                LeftClick: func(element *uilib.UIElement){
+                    pressed = true
+                },
+                LeftClickRelease: func(element *uilib.UIElement){
+                    pressed = false
+                    ui.RemoveElements(moreElements)
+                    picked(i+1)
+                },
+                Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                    if pressed {
+                        screen.DrawImage(buttons[1], &buttonOptions)
+                    } else {
+                        screen.DrawImage(buttons[0], &buttonOptions)
+                    }
+                },
+            })
+        }
+
+        return moreElements
+    }
+
+    makePageElements := func () []*uilib.UIElement {
+        ui.RemoveElements(pageElements)
+
+        pageElements = nil
+        // left page
+        for i, spell := range pages[showPage].Spells {
+            yPos := y + (spellFont.Height() + 1) * i
+            rect := image.Rect(xLeft, yPos, xLeft + int(spellFont.MeasureTextWidth(spell.Name, 1)), yPos + spellFont.Height())
+
+            pickCharges := func (count int) {
+                shutdown()
+                chosen(spell, count)
+            }
+
+            pageElements = append(pageElements, &uilib.UIElement{
+                Layer: 1,
+                Rect: rect,
+                LeftClick: func(element *uilib.UIElement){
+                    ui.AddElements(makeSelectChargesElements(spell, xRight, pickCharges))
+                },
+                Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                    spellFont.Print(screen, float64(xLeft), float64(yPos), 1, ebiten.ColorScale{}, spell.Name)
+                },
+            })
+        }
+
+        // right page
+        if showPage + 1 < len(pages) {
+            for i, spell := range pages[showPage+1].Spells {
+                yPos := y + (spellFont.Height() + 1) * i
+                rect := image.Rect(xRight, yPos, xRight + int(spellFont.MeasureTextWidth(spell.Name, 1)), yPos + spellFont.Height())
+
+                pickCharges := func (count int) {
+                    shutdown()
+                    chosen(spell, count)
+                }
+
+                pageElements = append(pageElements, &uilib.UIElement{
+                    Layer: 1,
+                    Rect: rect,
+                    LeftClick: func(element *uilib.UIElement){
+                        ui.AddElements(makeSelectChargesElements(spell, xLeft, pickCharges))
+                    },
+                    Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                        spellFont.Print(screen, float64(xRight), float64(yPos), 1, ebiten.ColorScale{}, spell.Name)
+                    },
+                })
+            }
+        }
+
+        return pageElements
+    }
+
+    elements = append(elements, makePageElements()...)
+
+    if len(pages) > 2 {
+        // TODO: use cool page flip animation from the spellbook code
+
+        // left dogear
+        leftEar, _ := imageCache.GetImage("spells.lbx", 1, 0)
+        leftRect := util.ImageRect(41, 16, leftEar)
+        elements = append(elements, &uilib.UIElement{
+            Layer: 1,
+            Rect: leftRect,
+            LeftClick: func(element *uilib.UIElement){
+                if showPage - 2 >= 0 {
+                    showPage -= 2
+                    ui.AddElements(makePageElements())
+                }
+            },
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(41, 16)
+                screen.DrawImage(leftEar, &options)
+            },
+        })
+
+        // right dogear
+        rightEar, _ := imageCache.GetImage("spells.lbx", 2, 0)
+        rightRect := util.ImageRect(286, 16, rightEar)
+        elements = append(elements, &uilib.UIElement{
+            Layer: 1,
+            Rect: rightRect,
+            LeftClick: func(element *uilib.UIElement){
+                if showPage + 2 < len(pages) {
+                    showPage += 2
+                    ui.AddElements(makePageElements())
+                }
+            },
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(rightRect.Min.X), float64(rightRect.Min.Y))
+                screen.DrawImage(rightEar, &options)
+            },
+        })
+    }
+
+    // X button at bottom to cancel
+    cancelRect := image.Rect(0, 0, 18, 24).Add(image.Pt(188, 172))
+    elements = append(elements, &uilib.UIElement{
+        Rect: cancelRect,
+        Layer: 1,
+        LeftClick: func(this *uilib.UIElement){
+            shutdown()
+            *selected = false
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            // vector.StrokeRect(screen, float32(cancelRect.Min.X), float32(cancelRect.Min.Y), float32(cancelRect.Dx()), float32(cancelRect.Dy()), 1, color.RGBA{R: 255, G: 255, B: 255, A: 255}, false)
+        },
+    })
+
+    return elements
+}
+
+func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCache, artifact *Artifact, customName *string, fonts ArtifactFonts, powers []Power, compatibilities map[Power]set.Set[ArtifactType], costs map[Power]int, selectCount *int, magicLevel MagicLevel, availableSpells spellbook.Spells, artificer bool, runemaster bool) []*uilib.UIElement {
     var elements []*uilib.UIElement
 
     var group1 []Power
@@ -641,7 +853,7 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
             artifactTypes := compatibilities[power]
             if artifactTypes.Contains(artifact.Type) && magicLevel.MagicLevel(power.Magic) >= power.Amount {
                 totalItems += 1
-                xRect := image.Rect(x, y, x + int(powerFont.MeasureTextWidth(power.Name, 1)), y + powerFont.Height())
+                xRect := image.Rect(x, y, x + int(fonts.PowerFont.MeasureTextWidth(power.Name, 1)), y + fonts.PowerFont.Height())
                 elements = append(elements, &uilib.UIElement{
                     Rect: xRect,
                     PlaySoundLeftClick: inBounds(xRect),
@@ -714,18 +926,74 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
                             scale.SetG(3)
                         }
 
-                        powerFont.Print(screen, float64(element.Rect.Min.X), float64(element.Rect.Min.Y), 1, scale, power.Name)
+                        fonts.PowerFont.Print(screen, float64(element.Rect.Min.X), float64(element.Rect.Min.Y), 1, scale, power.Name)
                     },
                 })
 
-                y += powerFont.Height() + 1
+                y += fonts.PowerFont.Height() + 1
             }
         }
 
         y += 5
     }
 
-    // FIXME: add spell charges element
+    // spell charges
+    if len(availableSpells.Spells) > 0 && (artifact.Type == ArtifactTypeWand || artifact.Type == ArtifactTypeStaff) {
+        xRect := image.Rect(x, y, x + int(fonts.PowerFont.MeasureTextWidth("Spell Charges", 1)), y + fonts.PowerFont.Height())
+        selected := false
+        totalItems += 1
+
+        addedPower := Power{Type: PowerTypeNone}
+
+        elements = append(elements, &uilib.UIElement{
+            Rect: xRect,
+            PlaySoundLeftClick: inBounds(xRect),
+            LeftClick: func(element *uilib.UIElement){
+                if !inBounds(element.Rect) {
+                    return
+                }
+
+                selected = !selected
+
+                if selected {
+                    ui.AddElements(makeSpellChoiceElements(ui, imageCache, fonts, availableSpells, &selected, func (spell spellbook.Spell, charges int){
+                        addedPower = Power{
+                            Type: PowerTypeSpellCharges,
+                            Spell: spell,
+                            Amount: charges,
+                            Name: fmt.Sprintf("%v x%v", spell.Name, charges),
+                        }
+                        artifact.AddPower(addedPower)
+                        artifact.Name = getName(artifact, *customName)
+                        artifact.Cost = calculateCost(artifact, costs, artificer, runemaster)
+                    }))
+                } else {
+                    artifact.RemovePower(addedPower)
+                    addedPower = Power{Type: PowerTypeNone}
+                    artifact.Name = getName(artifact, *customName)
+                    artifact.Cost = calculateCost(artifact, costs, artificer, runemaster)
+                }
+            },
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                if !inBounds(element.Rect) {
+                    return
+                }
+
+                scale := ebiten.ColorScale{}
+
+                if selected {
+                    scale.SetR(3)
+                    scale.SetG(3)
+                }
+
+                if addedPower.Type == PowerTypeSpellCharges {
+                    fonts.PowerFont.Print(screen, float64(element.Rect.Min.X), float64(element.Rect.Min.Y), 1, scale, addedPower.Name)
+                } else {
+                    fonts.PowerFont.Print(screen, float64(element.Rect.Min.X), float64(element.Rect.Min.Y), 1, scale, "Spell Charges")
+                }
+            },
+        })
+    }
 
     // show up/down scroll arrows if there are too many abilities to choose
     if totalItems > maxItem {
@@ -743,7 +1011,7 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
         // The play sound has to be manually enabled/disabled based on whether the element is in view
 
         doScroll := func (direction int) {
-            move := direction * powerFont.Height()
+            move := direction * fonts.PowerFont.Height()
             for _, element := range abilityElements {
                 element.Rect.Min.Y += move
                 element.Rect.Max.Y += move
@@ -766,7 +1034,7 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
             }
         }
 
-        upX := 305
+        upX := 308
         upY := 43
         upPressed := false
         elements = append(elements, &uilib.UIElement{
@@ -796,7 +1064,7 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
         })
 
         downX := upX
-        downY := 160
+        downY := 165
         downPressed := false
         elements = append(elements, &uilib.UIElement{
             Rect: util.ImageRect(downX, downY, downArrows[0]),
@@ -837,17 +1105,25 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
     return elements
 }
 
-func makeFonts(cache *lbx.LbxCache) (*font.Font, *font.Font, *font.Font) {
+type ArtifactFonts struct {
+    PowerFont *font.Font
+    PowerFontWhite *font.Font
+    NameFont *font.Font
+    TitleSpellFont *font.Font
+    SpellFont *font.Font
+}
+
+func makeFonts(cache *lbx.LbxCache) ArtifactFonts {
     fontLbx, err := cache.GetLbxFile("fonts.lbx")
     if err != nil {
         log.Printf("Unable to read fonts.lbx: %v", err)
-        return nil, nil, nil
+        return ArtifactFonts{}
     }
 
     fonts, err := font.ReadFonts(fontLbx, 0)
     if err != nil {
         log.Printf("Unable to read fonts from fonts.lbx: %v", err)
-        return nil, nil, nil
+        return ArtifactFonts{}
     }
 
     // solid := util.Lighten(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, -40)
@@ -875,14 +1151,44 @@ func makeFonts(cache *lbx.LbxCache) (*font.Font, *font.Font, *font.Font) {
 
     powerFontWhite := font.MakeOptimizedFontWithPalette(fonts[3], greyPalette)
 
-    return powerFont, powerFontWhite, nameFont
+    orange := util.Lighten(color.RGBA{R: 0xe5, G: 0x7b, B: 0x12, A: 0xff}, 10)
+    // red := color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}
+    titlePalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        util.Lighten(orange, 20),
+        util.Lighten(orange, 12),
+        util.Lighten(orange, 8),
+        orange,
+    }
+
+    titleSpellFont := font.MakeOptimizedFontWithPalette(fonts[4], titlePalette)
+
+    darkRed := color.RGBA{R: 0x6d, G: 0x09, B: 0x0c, A: 0xff}
+
+    spellPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        darkRed, darkRed, darkRed,
+        darkRed, darkRed, darkRed,
+    }
+
+    spellFont := font.MakeOptimizedFontWithPalette(fonts[3], spellPalette)
+
+    return ArtifactFonts{
+        PowerFont: powerFont,
+        PowerFontWhite: powerFontWhite,
+        NameFont: nameFont,
+        TitleSpellFont: titleSpellFont,
+        SpellFont: spellFont,
+    }
 }
 
 /* returns the artifact that was created and true,
  * otherwise false for cancelled
  */
-func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, creationType CreationScreen, magicLevel MagicLevel, artificer bool, runemaster bool, draw *func(*ebiten.Image)) (*Artifact, bool) {
-    powerFont, powerFontWhite, nameFont := makeFonts(cache)
+func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, creationType CreationScreen, magicLevel MagicLevel, artificer bool, runemaster bool, availableSpells spellbook.Spells, draw *func(*ebiten.Image)) (*Artifact, bool) {
+    fonts := makeFonts(cache)
 
     imageCache := util.MakeImageCache(cache)
 
@@ -921,8 +1227,8 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, cr
         artifact.Type = artifactType
         groups := groupPowers(powers, costs, compatibilities, artifactType, creationType)
         selectCount := 0
-        elements := makePowersFull(ui, cache, &imageCache, nameFont, powerFont, picLow, picHigh, groups, costs, &artifact, &customName, &selectCount, artificer, runemaster)
-        abilityElements := makeAbilityElements(ui, cache, &imageCache, &artifact, &customName, powerFont, powers, compatibilities, costs, &selectCount, magicLevel, artificer, runemaster)
+        elements := makePowersFull(ui, cache, &imageCache, fonts, picLow, picHigh, groups, costs, &artifact, &customName, &selectCount, artificer, runemaster)
+        abilityElements := makeAbilityElements(ui, cache, &imageCache, &artifact, &customName, fonts, powers, compatibilities, costs, &selectCount, magicLevel, availableSpells, artificer, runemaster)
         return PowerArtifact{
             Elements: elements,
             AbilityElements: abilityElements,
@@ -1011,7 +1317,7 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, cr
 
     ui.AddElement(&uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            powerFontWhite.Print(screen, 198, 185, 1, ebiten.ColorScale{}, fmt.Sprintf("Cost: %v", currentArtifact.Cost))
+            fonts.PowerFontWhite.Print(screen, 198, 185, 1, ebiten.ColorScale{}, fmt.Sprintf("Cost: %v", currentArtifact.Cost))
         },
     })
 

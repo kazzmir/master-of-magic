@@ -244,6 +244,23 @@ func (spells *Spells) Contains(spell Spell) bool {
     return spells.FindByName(spell.Name).Name == spell.Name
 }
 
+func (spells *Spells) FindById(id int) Spell {
+    if id >= 0 && id < len(spells.Spells) {
+        candidate := spells.Spells[id]
+        if candidate.Index == id {
+            return candidate
+        }
+    }
+
+    for _, spell := range spells.Spells {
+        if spell.Index == id {
+            return spell
+        }
+    }
+
+    return Spell{}
+}
+
 func (spells *Spells) FindByName(name string) Spell {
     for _, spell := range spells.Spells {
         if strings.ToLower(spell.Name) == strings.ToLower(name) {
@@ -275,7 +292,7 @@ func (spells Spells) OverlandSpells() Spells {
     var out []Spell
 
     for _, spell := range spells.Spells {
-        if spell.Eligibility.CanCastInOverland() {
+        if spell.Name != "None" && spell.Eligibility.CanCastInOverland() {
             out = append(out, spell)
         }
     }
@@ -288,7 +305,7 @@ func (spells Spells) CombatSpells() Spells {
     var out []Spell
 
     for _, spell := range spells.Spells {
-        if spell.Eligibility.CanCastInCombat() {
+        if spell.Name != "None" && spell.Eligibility.CanCastInCombat() {
             out = append(out, spell)
         }
     }

@@ -131,9 +131,11 @@ type Power struct {
     Type PowerType
     Amount int // for an ability this is the number of books of the Magic needed
     Name string
-    Spell spellbook.Spell
     Ability data.AbilityType
     Magic data.MagicType // for abilities
+
+    Spell spellbook.Spell
+    SpellCharges int
 
     // powers are sorted by how they are defined in itempow.lbx, so we just use that number here
     // this field has no utility other than sorting
@@ -268,6 +270,21 @@ func (artifact *Artifact) DefenseBonus() int {
     return base
 }
 
+// returns the spell and how many charges it has
+func (artifact *Artifact) GetSpellCharge() (spellbook.Spell, int) {
+    for _, power := range artifact.Powers {
+        if power.Type == PowerTypeSpellCharges {
+            return power.Spell, power.Amount
+        }
+    }
+
+    return spellbook.Spell{}, 0
+}
+
+func (artifact *Artifact) HasSpellCharges() bool {
+    return hasPower(PowerTypeSpellCharges, artifact.Powers)
+}
+
 func (artifact *Artifact) HasDefensePower() bool {
     return hasPower(PowerTypeDefense, artifact.Powers)
 }
@@ -320,6 +337,11 @@ func ReadArtifacts(cache *lbx.LbxCache) ([]Artifact, error) {
     itemData, err := cache.GetLbxFile("itemdata.lbx")
     if err != nil {
         return nil, fmt.Errorf("unable to read itemdata.lbx: %v", err)
+    }
+
+    spells, err := spellbook.ReadSpellsFromCache(cache)
+    if err != nil {
+        return nil, fmt.Errorf("unable to read spells: %v", err)
     }
 
     reader, err := itemData.GetReader(0)
@@ -510,18 +532,14 @@ func ReadArtifacts(cache *lbx.LbxCache) ([]Artifact, error) {
             return nil, fmt.Errorf("read error: %v", err)
         }
         if spell != 0 && charges != 0 {
-            // TODO: map spells, e.g.
-            // 42 Dispel True
-            // 46 Confusion
-            // 50 Psionic Blast
-            // 60 Phantom beast
-            // 62 Invisibility
-            // 67 Mind Storm
-            // 73 Creature Binding
-            // 112 Disintegrate
-            // 124 Holy Weapon
-            // 151 High Prayer
-            // powers = append(powers, &PowerSpellCharges{Spell: spell, Charges: int(charges)})
+            useSpell := spells.FindById(int(spell))
+            powers = append(powers, Power{
+                Type: PowerTypeSpellCharges,
+                Amount: int(charges),
+                Spell: useSpell,
+                SpellCharges: int(charges),
+                Name: fmt.Sprintf("%v Charges of %v", charges, useSpell.Name),
+            })
         }
 
         // Abilities

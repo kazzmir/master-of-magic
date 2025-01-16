@@ -1363,11 +1363,19 @@ func createScenario17(cache *lbx.LbxCache) *gamelib.Game {
                 Amount: 3,
                 Name: "+3 Movement",
             },
+            /*
             {
                 Type: artifact.PowerTypeAbility1,
                 Amount: 2,
                 Ability: data.AbilityFlaming,
                 Name: "Flaming",
+            },
+            */
+            {
+                Type: artifact.PowerTypeSpellCharges,
+                Amount: 2,
+                Spell: allSpells.FindByName("Ice Bolt"),
+                Name: "Ice Bolt x1",
             },
         },
         Cost: 1000,

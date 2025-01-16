@@ -8,6 +8,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
 
@@ -55,8 +56,13 @@ func NewEngine() (*Engine, error) {
 }
 
 func (engine *Engine) ArtifactRoutine() func (coroutine.YieldFunc) error {
+    spells, err := spellbook.ReadSpellsFromCache(engine.Cache)
+    if err != nil {
+        log.Printf("Unable to read spells: %v", err)
+    }
+
     return func(yield coroutine.YieldFunc) error {
-        create, cancel := artifact.ShowCreateArtifactScreen(yield, engine.Cache, artifact.CreationCreateArtifact, &Books{}, engine.Artificer, engine.Runemaster, &engine.Drawer)
+        create, cancel := artifact.ShowCreateArtifactScreen(yield, engine.Cache, artifact.CreationCreateArtifact, &Books{}, engine.Artificer, engine.Runemaster, spells.CombatSpells(), &engine.Drawer)
         if !cancel {
             log.Printf("Create artifact: %+v", create)
         } else {
