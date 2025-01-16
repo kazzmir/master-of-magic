@@ -13,6 +13,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/set"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     "github.com/kazzmir/master-of-magic/game/magic/util"
+    "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -591,7 +592,8 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
     return elements
 }
 
-func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts ArtifactFonts) []*uilib.UIElement {
+// for choosing a spell to embed in an item with the spell charges power
+func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts ArtifactFonts, spells spellbook.Spells) []*uilib.UIElement {
     var elements []*uilib.UIElement
 
     elements = append(elements, &uilib.UIElement{
@@ -616,7 +618,7 @@ func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts Ar
     return elements
 }
 
-func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCache, artifact *Artifact, customName *string, fonts ArtifactFonts, powers []Power, compatibilities map[Power]set.Set[ArtifactType], costs map[Power]int, selectCount *int, magicLevel MagicLevel, artificer bool, runemaster bool) []*uilib.UIElement {
+func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCache, artifact *Artifact, customName *string, fonts ArtifactFonts, powers []Power, compatibilities map[Power]set.Set[ArtifactType], costs map[Power]int, selectCount *int, magicLevel MagicLevel, availableSpells spellbook.Spells, artificer bool, runemaster bool) []*uilib.UIElement {
     var elements []*uilib.UIElement
 
     var group1 []Power
@@ -766,7 +768,7 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
                 selected = !selected
 
                 if selected {
-                    ui.AddElements(makeSpellChoiceElements(ui, imageCache, fonts))
+                    ui.AddElements(makeSpellChoiceElements(ui, imageCache, fonts, availableSpells))
                 }
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
@@ -965,7 +967,7 @@ func makeFonts(cache *lbx.LbxCache) ArtifactFonts {
 /* returns the artifact that was created and true,
  * otherwise false for cancelled
  */
-func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, creationType CreationScreen, magicLevel MagicLevel, artificer bool, runemaster bool, draw *func(*ebiten.Image)) (*Artifact, bool) {
+func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, creationType CreationScreen, magicLevel MagicLevel, artificer bool, runemaster bool, availableSpells spellbook.Spells, draw *func(*ebiten.Image)) (*Artifact, bool) {
     fonts := makeFonts(cache)
 
     imageCache := util.MakeImageCache(cache)
@@ -1006,7 +1008,7 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, cr
         groups := groupPowers(powers, costs, compatibilities, artifactType, creationType)
         selectCount := 0
         elements := makePowersFull(ui, cache, &imageCache, fonts, picLow, picHigh, groups, costs, &artifact, &customName, &selectCount, artificer, runemaster)
-        abilityElements := makeAbilityElements(ui, cache, &imageCache, &artifact, &customName, fonts, powers, compatibilities, costs, &selectCount, magicLevel, artificer, runemaster)
+        abilityElements := makeAbilityElements(ui, cache, &imageCache, &artifact, &customName, fonts, powers, compatibilities, costs, &selectCount, magicLevel, availableSpells, artificer, runemaster)
         return PowerArtifact{
             Elements: elements,
             AbilityElements: abilityElements,
