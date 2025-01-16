@@ -8,6 +8,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
+    "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/lib/fraction"
 )
 
@@ -580,27 +581,52 @@ func (hero *Hero) IsHero() bool {
     return true
 }
 
-func (hero *Hero) GetKnownSpells() []string {
-    switch hero.HeroType {
-        case HeroAerie: return []string{"Psionic Blast", "Vertigo", "Mind Storm"}
-        case HeroAlorra: return []string{"Resist Magic", "Flight"}
-        case HeroElana: return []string{"Dispel Evil", "Healing", "Prayer", "Holy Word"}
-        case HeroGreyfairer: return []string{"Ice Bolt", "Petrify", "Web"}
-        case HeroJaer: return []string{"Guardian Wind", "Word of Recall"}
-        case HeroMalleus: return []string{"Fire Bolt", "Fireball", "Flame Strike", "Fire Elemental"}
-        case HeroMarcus: return []string{"Resist Elements", "Stone Skin"}
-        case HeroMorgana: return []string{"Darkness", "Possession", "Black Prayer", "Mana Leak"}
-        case HeroRakir: return []string{"Resist Elements"}
-        case HeroRavashack: return []string{"Weakness", "Black Sleep", "Animate Dead", "Wrack"}
-        case HeroReywind: return []string{"Flame Blade", "Shatter", "Eldritch Weapon"}
-        case HeroSerena: return []string{"Healing"}
-        case HeroTorin: return []string{"Healing", "Holy Armor", "Lionheart"}
-        case HeroValana: return []string{"Confusion", "Vertigo"}
-        case HeroYramrag: return []string{"Lightning Bolt", "Doom Bolt", "Warp Lightning"}
-        case HeroZaldron: return []string{"Counter Magic", "Dispel Magic True"}
+func (hero *Hero) GetSpellChargeSpells() []spellbook.Spell {
+    var spells []spellbook.Spell
+
+    for _, item := range hero.Equipment {
+        if item != nil {
+            spell, count := item.GetSpellCharge()
+            if count > 0 {
+                spells = append(spells, spell)
+            }
+        }
     }
 
-    return nil
+    return spells
+}
+
+func (hero *Hero) GetKnownSpells() []string {
+    defaultSpells := func() []string {
+        switch hero.HeroType {
+            case HeroAerie: return []string{"Psionic Blast", "Vertigo", "Mind Storm"}
+            case HeroAlorra: return []string{"Resist Magic", "Flight"}
+            case HeroElana: return []string{"Dispel Evil", "Healing", "Prayer", "Holy Word"}
+            case HeroGreyfairer: return []string{"Ice Bolt", "Petrify", "Web"}
+            case HeroJaer: return []string{"Guardian Wind", "Word of Recall"}
+            case HeroMalleus: return []string{"Fire Bolt", "Fireball", "Flame Strike", "Fire Elemental"}
+            case HeroMarcus: return []string{"Resist Elements", "Stone Skin"}
+            case HeroMorgana: return []string{"Darkness", "Possession", "Black Prayer", "Mana Leak"}
+            case HeroRakir: return []string{"Resist Elements"}
+            case HeroRavashack: return []string{"Weakness", "Black Sleep", "Animate Dead", "Wrack"}
+            case HeroReywind: return []string{"Flame Blade", "Shatter", "Eldritch Weapon"}
+            case HeroSerena: return []string{"Healing"}
+            case HeroTorin: return []string{"Healing", "Holy Armor", "Lionheart"}
+            case HeroValana: return []string{"Confusion", "Vertigo"}
+            case HeroYramrag: return []string{"Lightning Bolt", "Doom Bolt", "Warp Lightning"}
+            case HeroZaldron: return []string{"Counter Magic", "Dispel Magic True"}
+        }
+
+        return nil
+    }
+
+    chargeSpells := hero.GetSpellChargeSpells()
+    var names []string
+    for _, spell := range chargeSpells {
+        names = append(names, spell.Name)
+    }
+
+    return append(defaultSpells(), names...)
 }
 
 func (hero *Hero) GetToHitMelee() int {
