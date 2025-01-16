@@ -593,7 +593,7 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
 }
 
 // for choosing a spell to embed in an item with the spell charges power
-func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts ArtifactFonts, spells spellbook.Spells) []*uilib.UIElement {
+func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts ArtifactFonts, spells spellbook.Spells, selected *bool) []*uilib.UIElement {
     var elements []*uilib.UIElement
 
     elements = append(elements, &uilib.UIElement{
@@ -704,6 +704,20 @@ func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts Ar
             },
         })
     }
+
+    cancelRect := image.Rect(0, 0, 18, 24).Add(image.Pt(188, 172))
+    elements = append(elements, &uilib.UIElement{
+        Rect: cancelRect,
+        Layer: 1,
+        LeftClick: func(this *uilib.UIElement){
+            ui.RemoveElements(elements)
+            ui.RemoveElements(pageElements)
+            *selected = false
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            // vector.StrokeRect(screen, float32(cancelRect.Min.X), float32(cancelRect.Min.Y), float32(cancelRect.Dx()), float32(cancelRect.Dy()), 1, color.RGBA{R: 255, G: 255, B: 255, A: 255}, false)
+        },
+    })
 
     // need element for clicking on X to cancel
 
@@ -860,7 +874,7 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
                 selected = !selected
 
                 if selected {
-                    ui.AddElements(makeSpellChoiceElements(ui, imageCache, fonts, availableSpells))
+                    ui.AddElements(makeSpellChoiceElements(ui, imageCache, fonts, availableSpells, &selected))
                 }
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
