@@ -631,6 +631,61 @@ func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts Ar
 
     var pageElements []*uilib.UIElement
 
+    shutdown := func(){
+        ui.RemoveElements(elements)
+        ui.RemoveElements(pageElements)
+    }
+
+    makeSelectChargesElements := func (spell spellbook.Spell, x int) []*uilib.UIElement {
+        var moreElements []*uilib.UIElement
+
+        background, _ := imageCache.GetImage("spellscr.lbx", 37, 0)
+
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(float64(x), 80)
+
+        moreElements = append(moreElements, &uilib.UIElement{
+            Layer: 2,
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                screen.DrawImage(background, &options)
+
+                ax, ay := options.GeoM.Apply(float64(background.Bounds().Dx()) / 2, 5)
+                spellFont.PrintCenter(screen, ax, ay, 1, ebiten.ColorScale{}, "Charges")
+            },
+        })
+
+        button0, _ := imageCache.GetImage("spellscr.lbx", 38, 0)
+
+        // 1x, 2x, 3x, 4x
+        for i := range 4 {
+            buttons, _ := imageCache.GetImages("spellscr.lbx", 38 + i)
+            buttonOptions := options
+            buttonOptions.GeoM.Translate(float64(button0.Bounds().Dx() * i) + 3, 14)
+            x, y := buttonOptions.GeoM.Apply(0, 0)
+            rect := util.ImageRect(int(x), int(y), buttons[0])
+            pressed := false
+            moreElements = append(moreElements, &uilib.UIElement{
+                Layer: 2,
+                Rect: rect,
+                LeftClick: func(element *uilib.UIElement){
+                    pressed = true
+                },
+                LeftClickRelease: func(element *uilib.UIElement){
+                    pressed = false
+                },
+                Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                    if pressed {
+                        screen.DrawImage(buttons[1], &buttonOptions)
+                    } else {
+                        screen.DrawImage(buttons[0], &buttonOptions)
+                    }
+                },
+            })
+        }
+
+        return moreElements
+    }
+
     makePageElements := func () []*uilib.UIElement {
         ui.RemoveElements(pageElements)
 
@@ -638,8 +693,13 @@ func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts Ar
         // left page
         for i, spell := range pages[showPage].Spells {
             yPos := y + (spellFont.Height() + 1) * i
+            rect := image.Rect(xLeft, yPos, xLeft + int(spellFont.MeasureTextWidth(spell.Name, 1)), yPos + spellFont.Height())
             pageElements = append(pageElements, &uilib.UIElement{
                 Layer: 1,
+                Rect: rect,
+                LeftClick: func(element *uilib.UIElement){
+                    ui.AddElements(makeSelectChargesElements(spell, xRight))
+                },
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                     spellFont.Print(screen, float64(xLeft), float64(yPos), 1, ebiten.ColorScale{}, spell.Name)
                 },
@@ -650,8 +710,13 @@ func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts Ar
         if showPage + 1 < len(pages) {
             for i, spell := range pages[showPage+1].Spells {
                 yPos := y + (spellFont.Height() + 1) * i
+                rect := image.Rect(xRight, yPos, xRight + int(spellFont.MeasureTextWidth(spell.Name, 1)), yPos + spellFont.Height())
                 pageElements = append(pageElements, &uilib.UIElement{
                     Layer: 1,
+                    Rect: rect,
+                    LeftClick: func(element *uilib.UIElement){
+                        ui.AddElements(makeSelectChargesElements(spell, xLeft))
+                    },
                     Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                         spellFont.Print(screen, float64(xRight), float64(yPos), 1, ebiten.ColorScale{}, spell.Name)
                     },
@@ -665,6 +730,8 @@ func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts Ar
     elements = append(elements, makePageElements()...)
 
     if len(pages) > 2 {
+        // TODO: use cool page flip animation from the spellbook code
+
         // left dogear
         leftEar, _ := imageCache.GetImage("spells.lbx", 1, 0)
         leftRect := util.ImageRect(41, 16, leftEar)
@@ -685,7 +752,6 @@ func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts Ar
         })
 
         // right dogear
-
         rightEar, _ := imageCache.GetImage("spells.lbx", 2, 0)
         rightRect := util.ImageRect(286, 16, rightEar)
         elements = append(elements, &uilib.UIElement{
@@ -705,21 +771,19 @@ func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts Ar
         })
     }
 
+    // X button at bottom to cancel
     cancelRect := image.Rect(0, 0, 18, 24).Add(image.Pt(188, 172))
     elements = append(elements, &uilib.UIElement{
         Rect: cancelRect,
         Layer: 1,
         LeftClick: func(this *uilib.UIElement){
-            ui.RemoveElements(elements)
-            ui.RemoveElements(pageElements)
+            shutdown()
             *selected = false
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             // vector.StrokeRect(screen, float32(cancelRect.Min.X), float32(cancelRect.Min.Y), float32(cancelRect.Dx()), float32(cancelRect.Dy()), 1, color.RGBA{R: 255, G: 255, B: 255, A: 255}, false)
         },
     })
-
-    // need element for clicking on X to cancel
 
     return elements
 }
