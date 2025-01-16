@@ -666,25 +666,41 @@ func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts Ar
 
     if len(pages) > 2 {
         // left dogear
+        leftEar, _ := imageCache.GetImage("spells.lbx", 1, 0)
+        leftRect := util.ImageRect(41, 16, leftEar)
         elements = append(elements, &uilib.UIElement{
             Layer: 1,
+            Rect: leftRect,
+            LeftClick: func(element *uilib.UIElement){
+                if showPage - 2 >= 0 {
+                    showPage -= 2
+                    ui.AddElements(makePageElements())
+                }
+            },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                ear, _ := imageCache.GetImage("spells.lbx", 1, 0)
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(41, 16)
-                screen.DrawImage(ear, &options)
+                screen.DrawImage(leftEar, &options)
             },
         })
 
         // right dogear
 
+        rightEar, _ := imageCache.GetImage("spells.lbx", 2, 0)
+        rightRect := util.ImageRect(286, 16, rightEar)
         elements = append(elements, &uilib.UIElement{
             Layer: 1,
+            Rect: rightRect,
+            LeftClick: func(element *uilib.UIElement){
+                if showPage + 2 < len(pages) {
+                    showPage += 2
+                    ui.AddElements(makePageElements())
+                }
+            },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                ear, _ := imageCache.GetImage("spells.lbx", 2, 0)
                 var options ebiten.DrawImageOptions
-                options.GeoM.Translate(286, 16)
-                screen.DrawImage(ear, &options)
+                options.GeoM.Translate(float64(rightRect.Min.X), float64(rightRect.Min.Y))
+                screen.DrawImage(rightEar, &options)
             },
         })
     }
