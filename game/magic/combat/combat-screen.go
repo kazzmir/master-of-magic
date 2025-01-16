@@ -687,6 +687,14 @@ func (combat *CombatScreen) CreateWordOfDeathProjectile(target *ArmyUnit) {
     combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
 }
 
+func (combat *CombatScreen) CreateResistElementsProjectile(target *ArmyUnit) {
+    images, _ := combat.ImageCache.GetImages("specfx.lbx", 0)
+    var loopImages []*ebiten.Image
+    explodeImages := images
+
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, loopImages, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
+}
+
 func (combat *CombatScreen) CreateWarpWoodProjectile(target *ArmyUnit) {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 2)
     var loopImages []*ebiten.Image
@@ -1110,6 +1118,12 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
                 combat.CreateDemon(player, x, y)
                 successCallback()
             }
+        case "Resist Elements":
+            combat.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+                combat.CreateResistElementsProjectile(target)
+                target.AddAbility(data.AbilityResistElements)
+                successCallback()
+            }, targetAny)
 
             /*
 Disenchant Area - need picture
@@ -1246,7 +1260,6 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
         if combat.Model.SelectedUnit != nil {
             // FIXME: if player is out of mana then just select unit spell?
 
-            unitSpells := combat.Model.SelectedUnit.Spells
             if combat.Model.SelectedUnit.CanCast() {
                 playerOnly = false
                 selections := []uilib.Selection{
@@ -1257,10 +1270,23 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                     uilib.Selection{
                         Name: combat.Model.SelectedUnit.Unit.GetName(),
                         Action: func(){
+                            unitSpells := combat.Model.SelectedUnit.Spells.Copy()
                             caster := combat.Model.SelectedUnit
 
+                            for spell, charge := range caster.SpellCharges {
+                                if charge > 0 {
+                                    // FIXME: a hack here could be to set the casting skill to 0
+                                    unitSpells.AddSpell(spell)
+                                }
+                            }
+
                             doCast := func(spell spellbook.Spell){
-                                caster.CastingSkill -= float32(spell.CastCost)
+                                charge, hasCharge := caster.SpellCharges[spell]
+                                if hasCharge && charge > 0 {
+                                    caster.SpellCharges[spell] -= 1
+                                } else {
+                                    caster.CastingSkill -= float32(spell.CastCost)
+                                }
                                 caster.Casted = true
                                 combat.InvokeSpell(player, spell, func(){
                                     combat.Model.AddLogEvent(fmt.Sprintf("%v casts %v", caster.Unit.GetName(), spell.Name))
@@ -1280,6 +1306,7 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                             }
 
                             // what is casting skill based on for a unit?
+                            // FIXME: if the unit doesn't have enough casting skill but has a charge then use the charge
                             spellUI := spellbook.MakeSpellBookCastUI(ui, combat.Cache, unitSpells, int(caster.CastingSkill), spellbook.Spell{}, 0, false, func (spell spellbook.Spell, picked bool){
                                 if picked {
                                     doCast(spell)

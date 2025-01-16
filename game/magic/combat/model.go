@@ -509,6 +509,9 @@ type ArmyUnit struct {
 
     LastTurn int
 
+    // abilities applied to the unit during combat, usually by a spell
+    Abilities []data.AbilityType
+
     // ugly to need this, but this caches paths computed for the unit
     Paths map[image.Point]pathfinding.Path
 }
@@ -543,6 +546,10 @@ func (unit *ArmyUnit) CanFollowPath(path pathfinding.Path) bool {
     return true
 }
 
+func (unit *ArmyUnit) AddAbility(ability data.AbilityType) {
+    unit.Abilities = append(unit.Abilities, ability)
+}
+
 func (unit *ArmyUnit) GetResistances(enchantments... data.UnitEnchantment) int {
     resistance := 0
 
@@ -563,12 +570,14 @@ func (unit *ArmyUnit) GetResistances(enchantments... data.UnitEnchantment) int {
 }
 
 func (unit *ArmyUnit) CanCast() bool {
-    if len(unit.Spells.Spells) == 0 {
+    if unit.Casted {
         return false
     }
 
-    if unit.Casted {
-        return false
+    for _, charges := range unit.SpellCharges {
+        if charges > 0 {
+            return true
+        }
     }
 
     for _, spell := range unit.Spells.Spells {
