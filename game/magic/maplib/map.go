@@ -443,19 +443,32 @@ func getLandSize(size int) (int, int) {
     return 100, 100
 }
 
-func MakeMap(data *terrain.TerrainData, landSize int, plane data.Plane, cityProvider CityProvider) *Map {
+func MakeMap(data *terrain.TerrainData, landSize int, magicSetting data.MagicSetting, difficulty data.DifficultySetting, plane data.Plane, cityProvider CityProvider) *Map {
     landWidth, landHeight := getLandSize(landSize)
+
+    map_ := terrain.GenerateLandCellularAutomata(landWidth, landHeight, data, plane)
 
     extraMap := make(map[image.Point]map[ExtraKind]ExtraTile)
     for x := range landWidth {
         for y := range landHeight {
-            extraMap[image.Pt(x, y)] = make(map[ExtraKind]ExtraTile)
+            point := image.Pt(x, y)
+            extraMap[point] = make(map[ExtraKind]ExtraTile)
+
+            tile := data.Tiles[map_.Terrain[x][y]].Tile
+            switch tile.TerrainType() {
+                case terrain.SorceryNode:
+                    extraMap[point][ExtraKindMagicNode] = MakeMagicNode(MagicNodeSorcery, magicSetting, difficulty, plane)
+                case terrain.NatureNode:
+                    extraMap[point][ExtraKindMagicNode] = MakeMagicNode(MagicNodeNature, magicSetting, difficulty, plane)
+                case terrain.ChaosNode:
+                    extraMap[point][ExtraKindMagicNode] = MakeMagicNode(MagicNodeChaos, magicSetting, difficulty, plane)
+            }
         }
     }
 
     return &Map{
         Data: data,
-        Map: terrain.GenerateLandCellularAutomata(landWidth, landHeight, data, plane),
+        Map: map_,
         Plane: plane,
         TileCache: make(map[int]*ebiten.Image),
         ExtraMap: extraMap,
@@ -575,6 +588,7 @@ func (mapObject *Map) CreateEncounterRandom(x int, y int, difficulty data.Diffic
     return mapObject.CreateEncounter(x, y, randomEncounterType(), difficulty, rand.N(2) == 0, plane)
 }
 
+// for testing purposes
 func (mapObject *Map) CreateNode(x int, y int, node MagicNode, plane data.Plane, magicSetting data.MagicSetting, difficulty data.DifficultySetting) *ExtraMagicNode {
     tileType := 0
     switch node {

@@ -23,6 +23,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/console"
     "github.com/kazzmir/master-of-magic/game/magic/ai"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
+    "github.com/kazzmir/master-of-magic/game/magic/terrain"
     gamelib "github.com/kazzmir/master-of-magic/game/magic/game"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
@@ -38,6 +39,25 @@ type Engine struct {
     Game *gamelib.Game
     Coroutine *coroutine.Coroutine
     Console *console.Console
+}
+
+type NodeInfo struct {
+    X int
+    Y int
+    Node *maplib.ExtraMagicNode
+}
+
+func findNodes(mapObject *maplib.Map) map[terrain.TerrainType][]NodeInfo {
+    out := make(map[terrain.TerrainType][]NodeInfo)
+    for x := 0; x < mapObject.Height(); x++ {
+        for y := 0; y < mapObject.Width(); y++ {
+            if mapObject.GetTile(x, y).Tile.IsMagic() {
+                type_ := mapObject.GetTile(x, y).Tile.TerrainType()
+                out[type_] = append(out[type_], NodeInfo{x, y, mapObject.GetMagicNode(x, y)})
+            }
+        }
+    }
+    return out
 }
 
 func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
@@ -566,10 +586,6 @@ func createScenario8(cache *lbx.LbxCache) *gamelib.Game {
 
     x, y := game.FindValidCityLocation()
 
-    game.CurrentMap().CreateNode(x, y+1, maplib.MagicNodeNature, game.Plane, game.Settings.Magic, game.Settings.Difficulty)
-    game.CurrentMap().CreateNode(x+1, y, maplib.MagicNodeChaos, game.Plane, game.Settings.Magic, game.Settings.Difficulty)
-    game.CurrentMap().CreateNode(x+2, y+1, maplib.MagicNodeSorcery, game.Plane, game.Settings.Magic, game.Settings.Difficulty)
-
     city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.CurrentMap(), game)
     city.Population = 6190
     city.Plane = data.PlaneArcanus
@@ -594,10 +610,19 @@ func createScenario8(cache *lbx.LbxCache) *gamelib.Game {
 
     drake := player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, nil))
 
-    for i := 0; i < 1; i++ {
-        fireElemental := player.AddUnit(units.MakeOverworldUnitFromUnit(units.FireElemental, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, nil))
-        _ = fireElemental
-    }
+    nodes := findNodes(game.CurrentMap())
+
+    node := nodes[terrain.SorceryNode][0]
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.FireElemental, node.X + 1, node.Y + 1, data.PlaneArcanus, wizard.Banner, nil))
+    player.LiftFog(node.X, node.Y, 3, data.PlaneArcanus)
+
+    node = nodes[terrain.ChaosNode][0]
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.FireElemental, node.X + 1, node.Y + 1, data.PlaneArcanus, wizard.Banner, nil))
+    player.LiftFog(node.X, node.Y, 3, data.PlaneArcanus)
+
+    node = nodes[terrain.NatureNode][0]
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.FireElemental, node.X + 1, node.Y + 1, data.PlaneArcanus, wizard.Banner, nil))
+    player.LiftFog(node.X, node.Y, 3, data.PlaneArcanus)
 
     stack := player.FindStackByUnit(drake)
     player.SetSelectedStack(stack)
@@ -813,10 +838,13 @@ func createScenario11(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 3, data.PlaneArcanus)
 
-    node := game.CurrentMap().CreateNode(x, y+2, maplib.MagicNodeNature, game.Plane, game.Settings.Magic, game.Settings.Difficulty)
-    node.Empty = true
+    nodes := findNodes(game.CurrentMap())
+    node := nodes[terrain.SorceryNode][0]
+    node.Node.Empty = true
 
-    spirit := player.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, nil))
+    player.LiftFog(node.X, node.Y, 3, data.PlaneArcanus)
+
+    spirit := player.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, node.X + 1, node.Y + 1, data.PlaneArcanus, wizard.Banner, nil))
 
     stack := player.FindStackByUnit(spirit)
     player.SetSelectedStack(stack)
@@ -878,12 +906,9 @@ func createScenario12(cache *lbx.LbxCache) *gamelib.Game {
     player.Gold = 83
     player.Mana = 26
 
-    player.LiftFog(x, y, 4, data.PlaneArcanus)
+    player.LiftFog(x, y, 10, data.PlaneArcanus)
 
     player.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, nil))
-
-    node := game.CurrentMap().CreateNode(x, y+2, maplib.MagicNodeNature, game.Plane, game.Settings.Magic, game.Settings.Difficulty)
-    node.Empty = true
 
     game.CurrentMap().SetBonus(x-3, y-1, data.BonusSilverOre)
     game.CurrentMap().SetBonus(x-2, y-1, data.BonusGem)
@@ -2366,15 +2391,18 @@ func createScenario28(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 4, game.Plane)
 
-    player.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x + 1, y + 1, game.Plane, wizard.Banner, nil))
+    nodes := findNodes(game.CurrentMap())
+    node := nodes[terrain.SorceryNode][0]
+    node.Node.Empty = true
 
-    node := game.CurrentMap().CreateNode(x, y+2, maplib.MagicNodeNature, game.Plane, game.Settings.Magic, game.Settings.Difficulty)
-    node.Empty = true
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, node.X + 1, node.Y + 1, game.Plane, wizard.Banner, nil))
 
-    game.CurrentMap().SetRoad(x-3, y-1, true)
-    game.CurrentMap().SetRoad(x-2, y-1, true)
-    game.CurrentMap().SetRoad(x-3, y, true)
-    game.CurrentMap().SetRoad(x-3, y-2, true)
+    player.LiftFog(node.X, node.Y, 4, game.Plane)
+
+    game.CurrentMap().SetRoad(node.X+3, node.Y+1, true)
+    game.CurrentMap().SetRoad(node.X+2, node.Y+1, true)
+    game.CurrentMap().SetRoad(node.X+3, node.Y, true)
+    game.CurrentMap().SetRoad(node.X+3, node.Y+2, true)
 
     return game
 }
@@ -2424,24 +2452,25 @@ func createScenario29(cache *lbx.LbxCache) *gamelib.Game {
     city.Workers = 3
     city.Wall = false
 
-    city.ResetCitizens(nil)
-
     player.AddCity(city)
 
     player.Gold = 83
     player.Mana = 26
 
-    player.LiftFog(x, y, 4, game.Plane)
+    player.LiftFog(x, y, 4, city.Plane)
 
-    player.AddUnit(units.MakeOverworldUnitFromUnit(units.OrcEngineers, x + 1, y + 1, game.Plane, wizard.Banner, nil))
+    nodes := findNodes(game.CurrentMap())
+    node := nodes[terrain.SorceryNode][0]
+    node.Node.Empty = true
 
-    node := game.CurrentMap().CreateNode(x, y+2, maplib.MagicNodeNature, game.Plane, game.Settings.Magic, game.Settings.Difficulty)
-    node.Empty = true
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.OrcEngineers, node.X + 1, node.Y + 1, game.Plane, wizard.Banner, nil))
 
-    game.CurrentMap().SetRoad(x-3, y-1, true)
-    game.CurrentMap().SetRoad(x-2, y-1, true)
-    game.CurrentMap().SetRoad(x-3, y, true)
-    game.CurrentMap().SetRoad(x-3, y-2, true)
+    player.LiftFog(node.X, node.Y, 4, game.Plane)
+
+    game.CurrentMap().SetRoad(node.X+3, node.Y+1, true)
+    game.CurrentMap().SetRoad(node.X+2, node.Y+1, true)
+    game.CurrentMap().SetRoad(node.X+3, node.Y, true)
+    game.CurrentMap().SetRoad(node.X+3, node.Y+2, true)
 
     return game
 }

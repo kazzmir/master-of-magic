@@ -557,8 +557,8 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         Camera: camera.MakeCamera(),
     }
 
-    game.ArcanusMap = maplib.MakeMap(terrainData, settings.LandSize, data.PlaneArcanus, game)
-    game.MyrrorMap = maplib.MakeMap(terrainData, settings.LandSize, data.PlaneMyrror, game)
+    game.ArcanusMap = maplib.MakeMap(terrainData, settings.LandSize, settings.Magic, settings.Difficulty, data.PlaneArcanus, game)
+    game.MyrrorMap = maplib.MakeMap(terrainData, settings.LandSize, settings.Magic, settings.Difficulty, data.PlaneMyrror, game)
 
     game.HudUI = game.MakeHudUI()
     game.Drawer = func(screen *ebiten.Image, game *Game){
@@ -609,7 +609,8 @@ func (game *Game) FindValidCityLocation() (int, int) {
             x := continent[index].X
             y := continent[index].Y
 
-            if y > 3 && y < mapUse.Map.Columns() - 3 && terrain.GetTile(mapUse.Map.Terrain[x][y]).IsLand() {
+            tile := terrain.GetTile(mapUse.Map.Terrain[x][y])
+            if y > 3 && y < mapUse.Map.Columns() - 3 && tile.IsLand() && !tile.IsMagic() {
                 return x, y
             }
         }
