@@ -47,7 +47,7 @@ type NodeInfo struct {
     Node *maplib.ExtraMagicNode
 }
 
-func findNodes(mapObject *maplib.Map) *map[terrain.TerrainType][]NodeInfo {
+func findNodes(mapObject *maplib.Map) map[terrain.TerrainType][]NodeInfo {
     out := make(map[terrain.TerrainType][]NodeInfo)
     for x := 0; x < mapObject.Height(); x++ {
         for y := 0; y < mapObject.Width(); y++ {
@@ -57,7 +57,7 @@ func findNodes(mapObject *maplib.Map) *map[terrain.TerrainType][]NodeInfo {
             }
         }
     }
-    return &out
+    return out
 }
 
 func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
@@ -610,7 +610,7 @@ func createScenario8(cache *lbx.LbxCache) *gamelib.Game {
 
     drake := player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, nil))
 
-    nodes := *findNodes(game.CurrentMap())
+    nodes := findNodes(game.CurrentMap())
 
     node := nodes[terrain.SorceryNode][0]
     player.AddUnit(units.MakeOverworldUnitFromUnit(units.FireElemental, node.X + 1, node.Y + 1, data.PlaneArcanus, wizard.Banner, nil))
@@ -838,7 +838,7 @@ func createScenario11(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 3, data.PlaneArcanus)
 
-    nodes := *findNodes(game.CurrentMap())
+    nodes := findNodes(game.CurrentMap())
     node := nodes[terrain.SorceryNode][0]
     node.Node.Empty = true
 
@@ -2391,7 +2391,7 @@ func createScenario28(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 4, game.Plane)
 
-    nodes := *findNodes(game.CurrentMap())
+    nodes := findNodes(game.CurrentMap())
     node := nodes[terrain.SorceryNode][0]
     node.Node.Empty = true
 
@@ -2459,7 +2459,7 @@ func createScenario29(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 4, game.Plane)
 
-    nodes := *findNodes(game.CurrentMap())
+    nodes := findNodes(game.CurrentMap())
     node := nodes[terrain.SorceryNode][0]
     node.Node.Empty = true
 
