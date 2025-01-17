@@ -1270,17 +1270,8 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                     uilib.Selection{
                         Name: combat.Model.SelectedUnit.Unit.GetName(),
                         Action: func(){
-                            unitSpells := combat.Model.SelectedUnit.Spells.Copy()
+                            unitSpells := combat.Model.SelectedUnit.Spells
                             caster := combat.Model.SelectedUnit
-
-                            /*
-                            for spell, charge := range caster.SpellCharges {
-                                if charge > 0 {
-                                    // FIXME: a hack here could be to set the casting skill to 0
-                                    unitSpells.AddSpell(spell)
-                                }
-                            }
-                            */
 
                             doCast := func(spell spellbook.Spell){
                                 charge, hasCharge := caster.SpellCharges[spell]
@@ -1323,7 +1314,6 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                             }
 
                             // what is casting skill based on for a unit?
-                            // FIXME: if the unit doesn't have enough casting skill but has a charge then use the charge
                             spellUI := spellbook.MakeSpellBookCastUI(ui, combat.Cache, unitSpells, caster.SpellCharges, int(caster.CastingSkill), spellbook.Spell{}, 0, false, func (spell spellbook.Spell, picked bool){
                                 if picked {
                                     doCast(spell)
