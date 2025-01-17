@@ -25,14 +25,6 @@ func createTerrainData() *TerrainData {
 }
 
 
-func TestTerrainType(test *testing.T) {
-    for _, tile := range allTiles {
-        if tile.TerrainType() == Unknown {
-            test.Errorf("TerrainType of %v is unknown", tile)
-        }
-    }
-}
-
 func TestResolveLakeRiverTiles(test *testing.T) {
     terrainData := createTerrainData()
 

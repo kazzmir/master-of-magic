@@ -486,7 +486,7 @@ func (map_ *Map) ResolveTile(x int, y int, data *TerrainData, plane data.Plane) 
     }
 
     // check if tile is already resolved
-    if data.Tiles[map_.Terrain[x][y]].Tile.Matches(region) {
+    if data.Tiles[map_.Terrain[x][y]].Tile.matches(region) {
         return map_.Terrain[x][y], nil
     }
 

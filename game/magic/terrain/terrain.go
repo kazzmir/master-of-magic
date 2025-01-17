@@ -395,7 +395,7 @@ func (tile Tile) IsWater() bool {
 
 // match the given match to a terrain
 // terrain can contain compatibilites than what the match has
-func (tile *Tile) Matches(match map[Direction]TerrainType) bool {
+func (tile *Tile) matches(match map[Direction]TerrainType) bool {
     for direction, compatibility := range tile.Compatibilities {
         if compatibility.Type == AnyOf {
             isAny := false
@@ -1440,7 +1440,7 @@ func (data *TerrainData) TileHeight() int {
 func (data *TerrainData) FindMatchingAllTiles(match map[Direction]TerrainType, plane data.Plane) []int {
     var out []int
     for i, tile := range data.Tiles {
-        if tile.IsPlane(plane) && tile.Tile.Matches(match) {
+        if tile.IsPlane(plane) && tile.Tile.matches(match) {
             out = append(out, i)
         }
     }
@@ -1450,7 +1450,7 @@ func (data *TerrainData) FindMatchingAllTiles(match map[Direction]TerrainType, p
 
 func (data *TerrainData) FindMatchingTile(match map[Direction]TerrainType, plane data.Plane) int {
     for i, tile := range data.Tiles {
-        if tile.IsPlane(plane) && tile.Tile.Matches(match) {
+        if tile.IsPlane(plane) && tile.Tile.matches(match) {
             return i
         }
     }
