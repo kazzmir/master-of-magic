@@ -156,14 +156,14 @@ const (
 // the file that stores the icon for this ability
 func (ability Ability) LbxFile() string {
     switch ability.Ability {
-        case AbilityArmorPiercing: return ""
+        case AbilityArmorPiercing: return "special.lbx"
         case AbilityCauseFear: return "special2.lbx"
-        case AbilityColdImmunity: return ""
-        case AbilityConstruction: return ""
+        case AbilityColdImmunity: return "special.lbx"
+        case AbilityConstruction: return "special.lbx"
         case AbilityCreateOutpost: return "special.lbx"
-        case AbilityCreateUndead: return ""
-        case AbilityDeathGaze: return ""
-        case AbilityDeathImmunity: return ""
+        case AbilityCreateUndead: return "special.lbx"
+        case AbilityDeathGaze: return "special2.lbx"
+        case AbilityDeathImmunity: return "special.lbx"
         case AbilityDispelEvil: return "special2.lbx"
         case AbilityHolyAvenger: return "itemisc.lbx"
         case AbilityDoomBoltSpell: return "special.lbx"
@@ -171,46 +171,49 @@ func (ability Ability) LbxFile() string {
         case AbilityDeathTouch: return "special2.lbx"
         case AbilityDestruction: return "special2.lbx"
         case AbilityFireballSpell: return "special.lbx"
-        case AbilityFireBreath: return ""
-        case AbilityFireImmunity: return ""
-        case AbilityFirstStrike: return ""
+        case AbilityFireBreath: return "special2.lbx"
+        case AbilityFireImmunity: return "special.lbx"
+        case AbilityFirstStrike: return "special.lbx"
         case AbilityForester: return "special.lbx"
-        case AbilityHealer: return ""
-        case AbilityHealingSpell: return ""
-        case AbilityHolyBonus: return ""
-        case AbilityIllusion: return ""
-        case AbilityIllusionsImmunity: return ""
-        case AbilityInvisibility: return ""
-        case AbilityLargeShield: return ""
+        case AbilityHealer: return "special.lbx"
+        case AbilityHealingSpell: return "special.lbx"
+        case AbilityHolyBonus: return "special.lbx"
+        case AbilityIllusion: return "special.lbx"
+        case AbilityIllusionsImmunity: return "special.lbx"
+        case AbilityImmolation: return "special.lbx"
+        case AbilityInvisibility: return "special.lbx"
+        case AbilityLargeShield: return "special.lbx"
         case AbilityLifeSteal, AbilityVampiric: return "special.lbx"
-        case AbilityLightningBreath: return ""
-        case AbilityLongRange: return ""
-        case AbilityMagicImmunity: return ""
-        case AbilityMeld: return ""
-        case AbilityMerging: return ""
+        case AbilityLightningBreath: return "special2.lbx"
+        case AbilityLongRange: return "special2.lbx"
+        case AbilityMagicImmunity: return "special.lbx"
+        case AbilityMeld: return "special.lbx"
+        case AbilityMerging: return "itemisc.lbx"
         case AbilityMissileImmunity: return "special.lbx"
-        case AbilityMountaineer: return ""
-        case AbilityNegateFirstStrike: return ""
-        case AbilityNonCorporeal: return ""
-        case AbilityPathfinding: return ""
-        case AbilityPlaneShift: return ""
+        case AbilityMountaineer: return "special.lbx"
+        case AbilityNegateFirstStrike: return "special.lbx"
+        case AbilityNonCorporeal: return "special.lbx"
+        case AbilityPathfinding: return "special.lbx"
+        case AbilityPlaneShift: return "special.lbx"
         case AbilityPoisonImmunity: return "special.lbx"
         case AbilityPoisonTouch: return "special.lbx"
-        case AbilityPurify: return ""
-        case AbilityRegeneration: return ""
-        case AbilityResistanceToAll: return ""
+        case AbilityPurify: return "special.lbx"
+        case AbilityRegeneration: return "special.lbx"
+        case AbilityResistanceToAll: return "special.lbx"
         case AbilityScouting: return "special.lbx"
-        case AbilityStoningGaze: return ""
-        case AbilityStoningImmunity: return ""
+        case AbilityStoningGaze: return "special.lbx"
+        case AbilityStoningImmunity: return "special.lbx"
         case AbilityStoningTouch, AbilityStoning: return "special.lbx"
-        case AbilitySummonDemons: return ""
-        case AbilityTeleporting: return ""
+        case AbilitySummonDemons: return "special2.lbx"
+        case AbilityTeleporting: return "special.lbx"
         case AbilityThrown: return "special2.lbx"
         case AbilityToHit: return "special2.lbx"
-        case AbilityWallCrusher: return ""
-        case AbilityWeaponImmunity: return ""
-        case AbilityWebSpell: return ""
-        case AbilityWindWalking: return ""
+        // FIXME: this is not the right tile for transport, so we just pick a blank tile
+        case AbilityTransport: return "special.lbx"
+        case AbilityWallCrusher: return "special.lbx"
+        case AbilityWeaponImmunity: return "special.lbx"
+        case AbilityWebSpell: return "special2.lbx"
+        case AbilityWindWalking: return "special.lbx"
         case AbilityAgility, AbilitySuperAgility: return "special2.lbx"
         case AbilityArcanePower, AbilitySuperArcanePower: return "special.lbx"
         case AbilityArmsmaster, AbilitySuperArmsmaster: return "special.lbx"
@@ -237,14 +240,14 @@ func (ability Ability) String() string {
 
 func (ability Ability) Name() string {
     switch ability.Ability {
-        case AbilityArmorPiercing: return "??"
+        case AbilityArmorPiercing: return "Armor Piercing"
         case AbilityCauseFear: return "Cause Fear"
-        case AbilityColdImmunity: return "??"
-        case AbilityConstruction: return "??"
+        case AbilityColdImmunity: return "Cold Immunity"
+        case AbilityConstruction: return "Construction"
         case AbilityCreateOutpost: return "Create Outpost"
-        case AbilityCreateUndead: return "??"
-        case AbilityDeathGaze: return "??"
-        case AbilityDeathImmunity: return "??"
+        case AbilityCreateUndead: return "Create Undead"
+        case AbilityDeathGaze: return fmt.Sprintf("Death Gaze %v", int(ability.Value))
+        case AbilityDeathImmunity: return "Death Immunity"
         case AbilityDispelEvil: return "Dispel Evil"
         case AbilityHolyAvenger: return "Holy Avenger"
         case AbilityDoomBoltSpell: return "Doom Bolt Spell"
@@ -253,46 +256,48 @@ func (ability Ability) Name() string {
         case AbilityDestruction: return "Destruction"
         case AbilityFireballSpell: return fmt.Sprintf("Fireball Spell x%v", int(ability.Value))
         case AbilityFireBreath: return fmt.Sprintf("Fire Breath %v", int(ability.Value))
-        case AbilityFireImmunity: return "??"
-        case AbilityFirstStrike: return "??"
+        case AbilityFireImmunity: return "Fire Immunity"
+        case AbilityFirstStrike: return "First Strike"
         case AbilityForester: return "Forester"
-        case AbilityHealer: return "??"
-        case AbilityHealingSpell: return "??"
-        case AbilityHolyBonus: return "??"
-        case AbilityIllusion: return "??"
-        case AbilityIllusionsImmunity: return "??"
+        case AbilityHealer: return "Healer"
+        case AbilityHealingSpell: return "Healing Spell"
+        case AbilityHolyBonus: return "Holy Bonus"
+        case AbilityIllusion: return "Illusion"
+        case AbilityIllusionsImmunity: return "Illusions Immunity"
+        case AbilityImmolation: return "Immolation"
         case AbilityInvisibility: return "Invisibility"
-        case AbilityLargeShield: return "??"
+        case AbilityLargeShield: return "Large Shield"
         case AbilityLifeSteal: return fmt.Sprintf("Life Steal %v", int(ability.Value))
         case AbilityVampiric: return "Vampiric"
-        case AbilityLightningBreath: return "??"
-        case AbilityLongRange: return "??"
+        case AbilityLightningBreath: return fmt.Sprintf("Lightning Breath %v", int(ability.Value))
+        case AbilityLongRange: return "Long Range"
         case AbilityMagicImmunity: return "Magic Immunity"
         case AbilityMeld: return "Meld"
         case AbilityMerging: return "Merging"
         case AbilityMissileImmunity: return "Missile Immunity"
         case AbilityMountaineer: return "Mountaineer"
-        case AbilityNegateFirstStrike: return "??"
-        case AbilityNonCorporeal: return "??"
+        case AbilityNegateFirstStrike: return "Negate First Strike"
+        case AbilityNonCorporeal: return "NonCorporeal"
         case AbilityPathfinding: return "Pathfinding"
         case AbilityPlaneShift: return "Plane Shift"
         case AbilityPoisonImmunity: return "Poison Immunity"
         case AbilityPoisonTouch: return "Poison Touch"
         case AbilityPurify: return "Purify"
         case AbilityRegeneration: return "Regeneration"
-        case AbilityResistanceToAll: return "??"
+        case AbilityResistanceToAll: return "Resistance to all"
         case AbilityScouting: return fmt.Sprintf("Scouting %v", romanNumeral(int(ability.Value)))
-        case AbilityStoningGaze: return "??"
-        case AbilityStoningImmunity: return "??"
+        case AbilityStoningGaze: return fmt.Sprintf("Stoning Gaze %v", int(ability.Value))
+        case AbilityStoningImmunity: return "Stoning Immunity"
         case AbilityStoningTouch: return fmt.Sprintf("Stoning Touch %v", int(ability.Value))
         case AbilityStoning: return "Stoning"
-        case AbilitySummonDemons: return "??"
-        case AbilityTeleporting: return "??"
+        case AbilitySummonDemons: return "Summon Demons"
+        case AbilityTeleporting: return "Teleporting"
         case AbilityThrown: return "Thrown"
         case AbilityToHit: return fmt.Sprintf("+%v To Hit", ability.Value/10)
-        case AbilityWallCrusher: return "??"
-        case AbilityWeaponImmunity: return "??"
-        case AbilityWebSpell: return "??"
+        case AbilityTransport: return "Transport"
+        case AbilityWallCrusher: return "Wall Crusher"
+        case AbilityWeaponImmunity: return "Weapon Immunity"
+        case AbilityWebSpell: return "Web Spell"
         case AbilityWindWalking: return "Wind Walking"
         case AbilityAgility: return "Agility"
         case AbilitySuperAgility: return "Super Agility"
@@ -350,14 +355,14 @@ func (ability Ability) Name() string {
 // the index in the lbx file for this icon
 func (ability Ability) LbxIndex() int {
     switch ability.Ability {
-        case AbilityArmorPiercing: return -1
+        case AbilityArmorPiercing: return 28
         case AbilityCauseFear: return 21
-        case AbilityColdImmunity: return -1
-        case AbilityConstruction: return -1
+        case AbilityColdImmunity: return 11
+        case AbilityConstruction: return 36
         case AbilityCreateOutpost: return 17
-        case AbilityCreateUndead: return -1
-        case AbilityDeathGaze: return -1
-        case AbilityDeathImmunity: return -1
+        case AbilityCreateUndead: return 19
+        case AbilityDeathGaze: return 24
+        case AbilityDeathImmunity: return 49
         case AbilityDispelEvil: return 22
         case AbilityHolyAvenger: return 33
         case AbilityDoomBoltSpell: return 41
@@ -365,46 +370,49 @@ func (ability Ability) LbxIndex() int {
         case AbilityDeathTouch: return 30
         case AbilityDestruction: return 5
         case AbilityFireballSpell: return 39
-        case AbilityFireBreath: return -1
-        case AbilityFireImmunity: return -1
-        case AbilityFirstStrike: return -1
+        case AbilityFireBreath: return 27
+        case AbilityFireImmunity: return 6
+        case AbilityFirstStrike: return 29
         case AbilityForester: return 1
-        case AbilityHealer: return -1
-        case AbilityHealingSpell: return -1
-        case AbilityHolyBonus: return -1
-        case AbilityIllusion: return -1
-        case AbilityIllusionsImmunity: return -1
-        case AbilityInvisibility: return -1
-        case AbilityLargeShield: return -1
+        case AbilityHealer: return 16
+        case AbilityHealingSpell: return 38
+        case AbilityHolyBonus: return 34
+        case AbilityIllusion: return 35
+        case AbilityIllusionsImmunity: return 10
+        case AbilityImmolation: return 32
+        case AbilityInvisibility: return 18
+        case AbilityLargeShield: return 14
         case AbilityLifeSteal, AbilityVampiric: return 31
-        case AbilityLightningBreath: return -1
-        case AbilityLongRange: return -1
-        case AbilityMagicImmunity: return -1
-        case AbilityMeld: return -1
-        case AbilityMerging: return -1
+        case AbilityLightningBreath: return 26
+        case AbilityLongRange: return 18
+        case AbilityMagicImmunity: return 12
+        case AbilityMeld: return 40
+        case AbilityMerging: return 18
         case AbilityMissileImmunity: return 9
-        case AbilityMountaineer: return -1
-        case AbilityNegateFirstStrike: return -1
-        case AbilityNonCorporeal: return -1
-        case AbilityPathfinding: return -1
-        case AbilityPlaneShift: return -1
+        case AbilityMountaineer: return 2
+        case AbilityNegateFirstStrike: return 48
+        case AbilityNonCorporeal: return 22
+        case AbilityPathfinding: return 20
+        case AbilityPlaneShift: return 4
         case AbilityPoisonImmunity: return 5
         case AbilityPoisonTouch: return 30
-        case AbilityPurify: return -1
-        case AbilityRegeneration: return -1
-        case AbilityResistanceToAll: return -1
+        case AbilityPurify: return 25
+        case AbilityRegeneration: return 24
+        case AbilityResistanceToAll: return 33
         case AbilityScouting: return 37
-        case AbilityStoningGaze: return -1
-        case AbilityStoningImmunity: return -1
+        case AbilityStoningGaze: return 26
+        case AbilityStoningImmunity: return 7
         case AbilityStoningTouch, AbilityStoning: return 27
-        case AbilitySummonDemons: return -1
-        case AbilityTeleporting: return -1
+        case AbilitySummonDemons: return 28
+        case AbilityTeleporting: return 0
         case AbilityThrown: return 19
         case AbilityToHit: return 14
-        case AbilityWallCrusher: return -1
-        case AbilityWeaponImmunity: return -1
-        case AbilityWebSpell: return -1
-        case AbilityWindWalking: return -1
+        // transport just uses a blank tile
+        case AbilityTransport: return 3
+        case AbilityWallCrusher: return 15
+        case AbilityWeaponImmunity: return 8
+        case AbilityWebSpell: return 20
+        case AbilityWindWalking: return 23
         case AbilityAgility, AbilitySuperAgility: return 32
         case AbilityArcanePower, AbilitySuperArcanePower: return 54
         case AbilityArmsmaster, AbilitySuperArmsmaster: return 46

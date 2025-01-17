@@ -4,6 +4,7 @@ import (
     "image"
     "log"
     "fmt"
+    "slices"
     "math"
     "math/rand/v2"
     "time"
@@ -547,7 +548,7 @@ func (unit *ArmyUnit) CanFollowPath(path pathfinding.Path) bool {
 }
 
 func (unit *ArmyUnit) GetEnchantments() []data.UnitEnchantment {
-    return append(unit.Unit.GetEnchantments(), unit.Enchantments...)
+    return append(slices.Clone(unit.Unit.GetEnchantments()), unit.Enchantments...)
 }
 
 func (unit *ArmyUnit) AddEnchantment(enchantment data.UnitEnchantment) {
