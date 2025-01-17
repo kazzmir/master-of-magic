@@ -1005,6 +1005,27 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
         }
     }
 
+    canCast := func (spell Spell) bool {
+        // in combat a spell is castable if the caster (a hero) has charges available for that spell,
+        // or if the caster has the spell in their spellbook and the casting skill is high enough
+        if !overland {
+            charges, hasCharge := charges[spell]
+            if hasCharge && charges > 0 {
+                return true
+            }
+
+            // it could be the cast that the spell was granted by a charge, so the spellbook doesn't have it
+            if spells.Contains(spell) {
+                return spell.Cost(overland) <= castingSkill
+            } else {
+                return false
+            }
+
+        }
+
+        return spell.Cost(overland) <= castingSkill
+    }
+
     spellPages := computeHalfPages(useSpells, 6)
 
     renderPage := func(screen *ebiten.Image, options ebiten.DrawImageOptions, page Page, highlightedSpell Spell){
@@ -1041,7 +1062,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
             }
 
             // if spell is too expensive in combat then it is not castable
-            if !overland && spell.Cost(overland) > castingSkill {
+            if !overland && !canCast(spell) {
                 textColorScale.SetR(60)
                 textColorScale.SetG(60)
                 textColorScale.SetB(60)
@@ -1201,7 +1222,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
                     }
                 },
                 LeftClick: func(this *uilib.UIElement){
-                    if !overland && spell.Cost(overland) > castingSkill {
+                    if !overland && !canCast(spell) {
                         return
                     }
 
