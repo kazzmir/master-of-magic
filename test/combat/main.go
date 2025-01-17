@@ -196,6 +196,7 @@ func createHeroArmy(player *player.Player, cache *lbx.LbxCache) *combat.Army{
                 Type: artifact.PowerTypeSpellCharges,
                 Amount: 2,
                 Spell: allSpells.FindByName("Ice Bolt"),
+                // Spell: allSpells.FindByName("Healing"),
             },
         },
     }
