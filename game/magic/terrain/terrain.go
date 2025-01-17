@@ -575,7 +575,7 @@ func makeLakeTile(index int) Tile {
 
 // pattern is 4-bit cardinal directions with river/lake/ocean, 0s are not river/lake/ocean
 func makeRiverTile(index int, bitPattern uint8) Tile {
-    terrains := []TerrainType{River, Lake, Ocean}
+    terrains := []TerrainType{River, Lake, Ocean, Shore}
     comp := makeCompatibilities(makeDirections(expand4(bitPattern)), terrains, AnyOf)
     incomp := makeCompatibilities(makeDirections(expand4(^bitPattern)), terrains, NoneOf)
     return makeTile(River, index, append(comp, incomp...))
