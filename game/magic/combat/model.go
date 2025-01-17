@@ -478,6 +478,7 @@ type CombatUnit interface {
     IsUndead() bool
     GetRace() data.Race
     GetRealm() data.MagicType
+    GetSpellChargeSpells() map[spellbook.Spell]int
 }
 
 type ArmyUnit struct {
@@ -490,6 +491,7 @@ type ArmyUnit struct {
     MovesLeft fraction.Fraction
 
     Spells spellbook.Spells
+    SpellCharges map[spellbook.Spell]int
     CastingSkill float32
     Casted bool
 
@@ -506,6 +508,9 @@ type ArmyUnit struct {
     CurrentPath pathfinding.Path
 
     LastTurn int
+
+    // enchantments applied to the unit during combat, usually by a spell
+    Enchantments []data.UnitEnchantment
 
     // ugly to need this, but this caches paths computed for the unit
     Paths map[image.Point]pathfinding.Path
@@ -541,6 +546,14 @@ func (unit *ArmyUnit) CanFollowPath(path pathfinding.Path) bool {
     return true
 }
 
+func (unit *ArmyUnit) GetEnchantments() []data.UnitEnchantment {
+    return append(unit.Unit.GetEnchantments(), unit.Enchantments...)
+}
+
+func (unit *ArmyUnit) AddEnchantment(enchantment data.UnitEnchantment) {
+    unit.Enchantments = append(unit.Enchantments, enchantment)
+}
+
 func (unit *ArmyUnit) GetResistances(enchantments... data.UnitEnchantment) int {
     resistance := 0
 
@@ -561,12 +574,14 @@ func (unit *ArmyUnit) GetResistances(enchantments... data.UnitEnchantment) int {
 }
 
 func (unit *ArmyUnit) CanCast() bool {
-    if len(unit.Spells.Spells) == 0 {
+    if unit.Casted {
         return false
     }
 
-    if unit.Casted {
-        return false
+    for _, charges := range unit.SpellCharges {
+        if charges > 0 {
+            return true
+        }
     }
 
     for _, spell := range unit.Spells.Spells {
@@ -739,12 +754,14 @@ func (unit *ArmyUnit) ApplyDamage(damage int, damageType units.Damage, armorPier
 
 func (unit *ArmyUnit) InitializeSpells(allSpells spellbook.Spells, player *playerlib.Player) {
     unit.CastingSkill = 0
+    unit.SpellCharges = make(map[spellbook.Spell]int)
     for _, ability := range unit.Unit.GetAbilities() {
         switch ability.Ability {
             case data.AbilityDoomBoltSpell:
                 doomBolt := allSpells.FindByName("Doom Bolt")
-                unit.Spells.AddSpell(doomBolt)
-                unit.CastingSkill += float32(doomBolt.CastCost)
+                unit.SpellCharges[doomBolt] = int(ability.Value)
+                // unit.Spells.AddSpell(doomBolt)
+                // unit.CastingSkill += float32(doomBolt.CastCost)
             case data.AbilityCaster:
                 unit.CastingSkill = ability.Value
         }
@@ -762,6 +779,7 @@ func (unit *ArmyUnit) InitializeSpells(allSpells spellbook.Spells, player *playe
 
     if unit.Unit.IsHero() {
         unit.Spells.AddAllSpells(player.KnownSpells)
+        unit.SpellCharges = unit.Unit.GetSpellChargeSpells()
     }
 }
 

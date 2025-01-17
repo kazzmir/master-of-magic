@@ -937,7 +937,7 @@ func CastRightSideDistortions2(page *ebiten.Image) util.Distortion {
 // selected a spell or because they canceled the ui
 // if a spell is chosen then it will be passed in as the first argument to the callback along with true
 // if the ui is cancelled then the second argument will be false
-func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, castingSkill int, currentSpell Spell, currentProgress int, overland bool, chosenCallback func(Spell, bool)) []*uilib.UIElement {
+func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charges map[Spell]int, castingSkill int, currentSpell Spell, currentProgress int, overland bool, chosenCallback func(Spell, bool)) []*uilib.UIElement {
     var elements []*uilib.UIElement
 
     imageCache := util.MakeImageCache(cache)
@@ -998,7 +998,35 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
 
     pageCache := make(map[int]*ebiten.Image)
 
-    spellPages := computeHalfPages(spells, 6)
+    useSpells := spells.Copy()
+    for spell, charge := range charges {
+        if charge > 0 {
+            useSpells.AddSpell(spell)
+        }
+    }
+
+    canCast := func (spell Spell) bool {
+        // in combat a spell is castable if the caster (a hero) has charges available for that spell,
+        // or if the caster has the spell in their spellbook and the casting skill is high enough
+        if !overland {
+            charges, hasCharge := charges[spell]
+            if hasCharge && charges > 0 {
+                return true
+            }
+
+            // it could be the cast that the spell was granted by a charge, so the spellbook doesn't have it
+            if spells.Contains(spell) {
+                return spell.Cost(overland) <= castingSkill
+            } else {
+                return false
+            }
+
+        }
+
+        return spell.Cost(overland) <= castingSkill
+    }
+
+    spellPages := computeHalfPages(useSpells, 6)
 
     renderPage := func(screen *ebiten.Image, options ebiten.DrawImageOptions, page Page, highlightedSpell Spell){
         // section := spells.Spells[0].Section
@@ -1034,7 +1062,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
             }
 
             // if spell is too expensive in combat then it is not castable
-            if !overland && spell.Cost(overland) > castingSkill {
+            if !overland && !canCast(spell) {
                 textColorScale.SetR(60)
                 textColorScale.SetG(60)
                 textColorScale.SetB(60)
@@ -1194,7 +1222,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
                     }
                 },
                 LeftClick: func(this *uilib.UIElement){
-                    if !overland && spell.Cost(overland) > castingSkill {
+                    if !overland && !canCast(spell) {
                         return
                     }
 

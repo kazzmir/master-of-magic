@@ -6,6 +6,7 @@ import (
 
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
+    "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/lib/fraction"
 )
 
@@ -40,6 +41,10 @@ func (unit *OverworldUnit) AddEnchantment(enchantment data.UnitEnchantment) {
 
 func (unit *OverworldUnit) HasEnchantment(enchantment data.UnitEnchantment) bool {
     return slices.Contains(unit.Enchantments, enchantment)
+}
+
+func (unit *OverworldUnit) GetSpellChargeSpells() map[spellbook.Spell]int {
+    return make(map[spellbook.Spell]int)
 }
 
 func (unit *OverworldUnit) IsUndead() bool {

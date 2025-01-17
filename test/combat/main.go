@@ -14,6 +14,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/combat"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/artifact"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/player"
     "github.com/kazzmir/master-of-magic/game/magic/mouse"
@@ -177,15 +178,34 @@ func createArchAngelArmy(player *player.Player) *combat.Army {
     }
 }
 
-func createHeroArmy(player *player.Player) *combat.Army{
+func createHeroArmy(player *player.Player, cache *lbx.LbxCache) *combat.Army{
     var armyUnits []*combat.ArmyUnit
 
     armyUnits = append(armyUnits, &combat.ArmyUnit{
         Unit: herolib.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroRakir, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()), herolib.HeroRakir, "bubba"),
     })
 
+    allSpells, _ := spellbook.ReadSpellsFromCache(cache)
+
+    item := artifact.Artifact{
+        Type: artifact.ArtifactTypeStaff,
+        Name: "Staff of Power",
+        Image: 40,
+        Powers: []artifact.Power{
+            artifact.Power{
+                Type: artifact.PowerTypeSpellCharges,
+                Amount: 2,
+                Spell: allSpells.FindByName("Ice Bolt"),
+                // Spell: allSpells.FindByName("Healing"),
+            },
+        },
+    }
+
+    torin := herolib.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroTorin, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()), herolib.HeroTorin, "warby")
+    torin.Equipment[0] = &item
+
     armyUnits = append(armyUnits, &combat.ArmyUnit{
-        Unit: herolib.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroTorin, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()), herolib.HeroTorin, "warby"),
+        Unit: torin,
     })
 
     return &combat.Army{
@@ -332,7 +352,7 @@ func makeScenario3(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingPlayer.CastingSkillPower = 10
 
     // attackingArmy := createGreatDrakeArmy(&attackingPlayer)
-    attackingArmy := createHeroArmy(attackingPlayer)
+    attackingArmy := createHeroArmy(attackingPlayer, cache)
     attackingArmy.LayoutUnits(combat.TeamAttacker)
 
     return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{})
@@ -410,7 +430,7 @@ func makeScenario5(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingPlayer.CastingSkillPower = 10
 
     // attackingArmy := createGreatDrakeArmy(&attackingPlayer)
-    attackingArmy := createHeroArmy(attackingPlayer)
+    attackingArmy := createHeroArmy(attackingPlayer, cache)
     attackingArmy.LayoutUnits(combat.TeamAttacker)
 
     city := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, attackingPlayer.Wizard.Banner, fraction.Zero(), nil, nil, nil)
