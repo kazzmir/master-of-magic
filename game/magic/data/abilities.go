@@ -156,14 +156,14 @@ const (
 // the file that stores the icon for this ability
 func (ability Ability) LbxFile() string {
     switch ability.Ability {
-        case AbilityArmorPiercing: return ""
+        case AbilityArmorPiercing: return "special.lbx"
         case AbilityCauseFear: return "special2.lbx"
-        case AbilityColdImmunity: return ""
-        case AbilityConstruction: return ""
+        case AbilityColdImmunity: return "special.lbx"
+        case AbilityConstruction: return "special.lbx"
         case AbilityCreateOutpost: return "special.lbx"
-        case AbilityCreateUndead: return ""
-        case AbilityDeathGaze: return ""
-        case AbilityDeathImmunity: return ""
+        case AbilityCreateUndead: return "special.lbx"
+        case AbilityDeathGaze: return "special2.lbx"
+        case AbilityDeathImmunity: return "special.lbx"
         case AbilityDispelEvil: return "special2.lbx"
         case AbilityHolyAvenger: return "itemisc.lbx"
         case AbilityDoomBoltSpell: return "special.lbx"
@@ -171,9 +171,9 @@ func (ability Ability) LbxFile() string {
         case AbilityDeathTouch: return "special2.lbx"
         case AbilityDestruction: return "special2.lbx"
         case AbilityFireballSpell: return "special.lbx"
-        case AbilityFireBreath: return ""
-        case AbilityFireImmunity: return ""
-        case AbilityFirstStrike: return ""
+        case AbilityFireBreath: return "special2.lbx"
+        case AbilityFireImmunity: return "special.lbx"
+        case AbilityFirstStrike: return "special.lbx"
         case AbilityForester: return "special.lbx"
         case AbilityHealer: return ""
         case AbilityHealingSpell: return ""
@@ -350,14 +350,14 @@ func (ability Ability) Name() string {
 // the index in the lbx file for this icon
 func (ability Ability) LbxIndex() int {
     switch ability.Ability {
-        case AbilityArmorPiercing: return -1
+        case AbilityArmorPiercing: return 28
         case AbilityCauseFear: return 21
-        case AbilityColdImmunity: return -1
-        case AbilityConstruction: return -1
+        case AbilityColdImmunity: return 11
+        case AbilityConstruction: return 36
         case AbilityCreateOutpost: return 17
-        case AbilityCreateUndead: return -1
-        case AbilityDeathGaze: return -1
-        case AbilityDeathImmunity: return -1
+        case AbilityCreateUndead: return 19
+        case AbilityDeathGaze: return 24
+        case AbilityDeathImmunity: return 49
         case AbilityDispelEvil: return 22
         case AbilityHolyAvenger: return 33
         case AbilityDoomBoltSpell: return 41
@@ -365,9 +365,9 @@ func (ability Ability) LbxIndex() int {
         case AbilityDeathTouch: return 30
         case AbilityDestruction: return 5
         case AbilityFireballSpell: return 39
-        case AbilityFireBreath: return -1
-        case AbilityFireImmunity: return -1
-        case AbilityFirstStrike: return -1
+        case AbilityFireBreath: return 27
+        case AbilityFireImmunity: return 6
+        case AbilityFirstStrike: return 29
         case AbilityForester: return 1
         case AbilityHealer: return -1
         case AbilityHealingSpell: return -1
