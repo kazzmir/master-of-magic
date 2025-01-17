@@ -6,6 +6,7 @@ import (
     "math/rand/v2"
     "math"
 
+    "github.com/kazzmir/master-of-magic/lib/set"
     "github.com/kazzmir/master-of-magic/game/magic/data"
 )
 
@@ -36,28 +37,6 @@ func (map_ *Map) Rows() int {
 
 func (map_ *Map) Columns() int {
     return len(map_.Terrain)
-}
-
-type FloodFunc func(x int, y int) bool
-func (map_ *Map) FloodWalk(x int, y int, f FloodFunc){
-    var walk func(x int, y int)
-
-    walk = func(x int, y int){
-        for dx := -1; dx <= 1; dx++ {
-            for dy := -1; dy <= 1; dy++ {
-                nx := x + dx
-                ny := y + dy
-
-                if nx >= 0 && nx < map_.Columns() && ny >= 0 && ny < map_.Rows() {
-                    if f(nx, ny) {
-                        walk(nx, ny)
-                    }
-                }
-            }
-        }
-    }
-
-    walk(x, y)
 }
 
 func (map_ *Map) FindContinents() []Continent {
@@ -155,54 +134,6 @@ func choseRandomWeightedElement[T any](values []T, weights []int) T {
     return values[0]
 }
 
-/*
-func (editor *Editor) removeMyrror(tiles []int) []int {
-    var out []int
-
-    for _, tile := range tiles {
-        if ! editor.Data.Tiles[tile].IsMyrror() {
-            out = append(out, tile)
-        }
-    }
-
-    return out
-}
-*/
-
-func averageCell(data [][]float32, cx int, cy int) float32 {
-    var total float32 = 0
-    count := 0
-
-    for x := -1; x <= 1; x++ {
-        for y := -1; y <= 1; y++ {
-            nx := cx + x
-            ny := cy + y
-
-            if nx >= 0 && nx < len(data[0]) && ny >= 0 && ny < len(data) {
-                total += data[ny][nx]
-                count += 1
-            }
-        }
-    }
-
-    return total / float32(count)
-}
-
-func averageCells(data [][]float32) [][]float32 {
-    out := make([][]float32, len(data))
-    for y := 0; y < len(data); y++ {
-        out[y] = make([]float32, len(data[0]))
-    }
-
-    for x := 0; x < len(data[0]); x++ {
-        for y := 0; y < len(data); y++ {
-            out[y][x] = averageCell(data, x, y)
-        }
-    }
-
-    return out
-}
-
 func makeCells(rows int, columns int) [][]bool {
     out := make([][]bool, columns)
     for i := 0; i < columns; i++ {
@@ -245,7 +176,7 @@ func countNeighbors(cells [][]bool, x int, y int) int {
     return count
 }
 
-func (map_ *Map) GenerateLandCellularAutomata(plane data.Plane){
+func (map_ *Map) generateLandCellularAutomata(plane data.Plane){
     cells := makeCells(map_.Rows(), map_.Columns())
     tmpCells := makeCells(map_.Rows(), map_.Columns())
 
@@ -309,30 +240,8 @@ func (map_ *Map) GenerateLandCellularAutomata(plane data.Plane){
     }
 }
 
-func GenerateLandCellularAutomata(rows int, columns int, data *TerrainData, plane data.Plane) *Map {
-    // run a cellular automata simulation for a few rounds to generate
-    // land and ocean tiles. then call ResolveTiles() to clean up the edges
-    map_ := MakeMap(rows, columns)
-    map_.GenerateLandCellularAutomata(plane)
-
-    map_.RemoveSmallIslands(100, plane)
-
-    /*
-    continents := editor.Map.FindContinents()
-    log.Printf("Continents: %v\n", len(continents))
-    */
-
-    map_.PlaceRandomTerrainTiles(plane)
-
-    // start := time.Now()
-    map_.ResolveTiles(data, plane)
-    return map_
-    // end := time.Now()
-    // log.Printf("Resolve tiles took %v", end.Sub(start))
-}
-
 // put down other tiles like forests, mountains, special nodes, etc
-func (map_ *Map) PlaceRandomTerrainTiles(plane data.Plane){
+func (map_ *Map) placeRandomTerrainTiles(plane data.Plane){
 
     continents := map_.FindContinents()
 
@@ -407,8 +316,117 @@ func (map_ *Map) PlaceRandomTerrainTiles(plane data.Plane){
     }
 }
 
+func (map_ *Map) placeRivers(area int, data *TerrainData, plane data.Plane) {
+    continents := map_.FindContinents()
+
+    getSides := func(point image.Point) (*set.Set[image.Point], *set.Set[TerrainType]) {
+        points := set.MakeSet[image.Point]()
+        points.Insert(image.Pt(point.X-1, point.Y))
+        points.Insert(image.Pt(point.X+1, point.Y))
+        points.Insert(image.Pt(point.X, point.Y-1))
+        points.Insert(image.Pt(point.X, point.Y+1))
+
+        terrains := set.MakeSet[TerrainType]()
+        terrains.Insert(map_.getTerrainAt(point.X-1, point.Y, data))
+        terrains.Insert(map_.getTerrainAt(point.X+1, point.Y, data))
+        terrains.Insert(map_.getTerrainAt(point.X, point.Y-1, data))
+        terrains.Insert(map_.getTerrainAt(point.X, point.Y+1, data))
+        return points, terrains
+    }
+
+    isFinished := func(point image.Point) bool {
+        _, sides := getSides(point)
+        return sides.Contains(Ocean) || sides.Contains(Shore) || sides.Contains(Lake)
+    }
+
+    isValid := func(point image.Point, path []image.Point) bool {
+        // outside map
+        if point.Y < 0 || point.Y > map_.Rows() - 1 {
+            return false
+        }
+
+        // next to path (to prevent loops)
+        sidePoints, sideTerrains := getSides(point)
+        for _, current := range path[:len(path)-1] {
+            if sidePoints.Contains(current) {
+                return false
+            }
+        }
+
+        // next to existing river (to prevent loops)
+        if sideTerrains.Contains(River) {
+            return false
+        }
+
+        // FIXME: check special conditions like lake with two rivers
+        //        or unsupported shore constellation
+
+        return true
+    }
+
+    walk := func(start image.Point) (bool, []image.Point) {
+        path := []image.Point{start}
+        current := image.Pt(start.X, start.Y)
+
+        if !isValid(current, path) {
+            return false, path
+        }
+
+        finished := isFinished(current)
+        visited := make(map[image.Point]bool)
+        step, maxSteps := 0, 100
+        for !finished {
+            step += 1
+            if step >= maxSteps {
+                return false, []image.Point{}
+            }
+
+            // find valid next point
+            next := image.Pt(current.X, current.Y)
+            switch rand.IntN(4) {
+                case 0: next.Y++
+                case 1: next.Y--
+                case 2: next.X--
+                case 3: next.X++
+            }
+            for next.X < 0 {
+                next.X += map_.Columns()
+            }
+            next.X = next.X % map_.Columns()
+            if !isValid(next, path) {
+                continue
+            }
+            if visited[next] {
+                continue
+            }
+
+            // update
+            visited[next] = true
+            current = next
+            path = append(path, current)
+            finished = isFinished(current)
+        }
+
+        // TODO: maybe try ResolveTile along the path?
+        success := len(path) > 1
+        return success, path
+    }
+
+    for _, continent := range continents {
+        for i := 0; i < continent.Size() / area; i++ {
+            point := chooseRandomElement(continent)
+            successful, path := walk(point)
+            if successful {
+                for _, point := range path {
+                    map_.Terrain[point.X][point.Y] = TileRiver0001.Index(plane)
+                }
+            }
+        }
+    }
+}
+
 // remove land masses that contain less squares than 'area'
-func (map_ *Map) RemoveSmallIslands(area int, plane data.Plane){
+func (map_ *Map) removeSmallIslands(area int, plane data.Plane){
     continents := map_.FindContinents()
 
     for _, continent := range continents {
@@ -476,7 +494,7 @@ func (map_ *Map) ResolveTile(x int, y int, data *TerrainData, plane data.Plane) 
     tile := data.FindMatchingTile(region, plane)
 
     if tile == -1 {
-        fmt.Printf("no matching tile for %v", region)
+        fmt.Printf("no matching tile for %v\n", region)
         return -1, fmt.Errorf("no matching tile for %v", region)
     }
 
@@ -492,4 +510,16 @@ func (map_ *Map) ResolveTiles(data *TerrainData, plane data.Plane) {
             }
         }
     }
+}
+
+func GenerateLandCellularAutomata(rows int, columns int, data *TerrainData, plane data.Plane) *Map {
+    // run a cellular automata simulation for a few rounds to generate
+    // land and ocean tiles. then call ResolveTiles() to clean up the edges
+    map_ := MakeMap(rows, columns)
+    map_.generateLandCellularAutomata(plane)
+    map_.removeSmallIslands(100, plane)
+    map_.placeRandomTerrainTiles(plane)
+    map_.placeRivers(100, data, plane)
+    map_.ResolveTiles(data, plane)
+    return map_
 }

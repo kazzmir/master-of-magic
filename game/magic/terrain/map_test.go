@@ -121,3 +121,13 @@ func TestResolveShoreRiverTiles(test *testing.T) {
         test.Errorf("should be 0x1C4 not 0x%03x", tile)
     }
 }
+
+
+func BenchmarkGeneration(bench *testing.B){
+    terrainData := createTerrainData()
+    plane := data.PlaneArcanus
+
+    for i := 0; i < bench.N; i++ {
+        GenerateLandCellularAutomata(100, 200, terrainData, plane)
+    }
+}
