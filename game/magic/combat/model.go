@@ -750,12 +750,14 @@ func (unit *ArmyUnit) ApplyDamage(damage int, damageType units.Damage, armorPier
 
 func (unit *ArmyUnit) InitializeSpells(allSpells spellbook.Spells, player *playerlib.Player) {
     unit.CastingSkill = 0
+    unit.SpellCharges = make(map[spellbook.Spell]int)
     for _, ability := range unit.Unit.GetAbilities() {
         switch ability.Ability {
             case data.AbilityDoomBoltSpell:
                 doomBolt := allSpells.FindByName("Doom Bolt")
-                unit.Spells.AddSpell(doomBolt)
-                unit.CastingSkill += float32(doomBolt.CastCost)
+                unit.SpellCharges[doomBolt] = int(ability.Value)
+                // unit.Spells.AddSpell(doomBolt)
+                // unit.CastingSkill += float32(doomBolt.CastCost)
             case data.AbilityCaster:
                 unit.CastingSkill = ability.Value
         }
