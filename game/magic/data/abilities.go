@@ -208,6 +208,7 @@ func (ability Ability) LbxFile() string {
         case AbilityTeleporting: return ""
         case AbilityThrown: return "special2.lbx"
         case AbilityToHit: return "special2.lbx"
+        case AbilityTransport: return ""
         case AbilityWallCrusher: return ""
         case AbilityWeaponImmunity: return ""
         case AbilityWebSpell: return "special2.lbx"
@@ -292,6 +293,7 @@ func (ability Ability) Name() string {
         case AbilityTeleporting: return "Teleporting"
         case AbilityThrown: return "Thrown"
         case AbilityToHit: return fmt.Sprintf("+%v To Hit", ability.Value/10)
+        case AbilityTransport: return "Transport"
         case AbilityWallCrusher: return "Wall Crusher"
         case AbilityWeaponImmunity: return "Weapon Immunity"
         case AbilityWebSpell: return "Web Spell"
@@ -404,6 +406,7 @@ func (ability Ability) LbxIndex() int {
         case AbilityTeleporting: return -1
         case AbilityThrown: return 19
         case AbilityToHit: return 14
+        case AbilityTransport: return -1
         case AbilityWallCrusher: return -1
         case AbilityWeaponImmunity: return -1
         case AbilityWebSpell: return 20
