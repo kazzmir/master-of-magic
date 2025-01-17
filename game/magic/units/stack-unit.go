@@ -3,6 +3,7 @@ package units
 import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
+    "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/lib/fraction"
 )
 
@@ -75,5 +76,6 @@ type StackUnit interface {
     CanTouchAttack(Damage) bool
     GetArtifactSlots() []artifact.ArtifactSlot
     GetArtifacts() []*artifact.Artifact
+    GetSpellChargeSpells() map[spellbook.Spell]int
 }
 

@@ -8,6 +8,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
+    "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/lib/fraction"
 )
 
@@ -578,6 +579,26 @@ func (hero *Hero) RemoveEnchantment(enchantment data.UnitEnchantment) {
 
 func (hero *Hero) IsHero() bool {
     return true
+}
+
+func (hero *Hero) GetSpellChargeSpells() map[spellbook.Spell]int {
+    out := make(map[spellbook.Spell]int)
+
+    for _, item := range hero.Equipment {
+        if item != nil {
+            spell, count := item.GetSpellCharge()
+            if count > 0 {
+                _, ok := out[spell]
+                if !ok {
+                    out[spell] = 0
+                }
+
+                out[spell] += count
+            }
+        }
+    }
+
+    return out
 }
 
 func (hero *Hero) GetKnownSpells() []string {

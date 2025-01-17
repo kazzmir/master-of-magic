@@ -389,6 +389,7 @@ func MakeUnitAbilitiesElements(imageCache *util.ImageCache, unit UnitView, mediu
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
                 var options ebiten.DrawImageOptions
+                options.ColorScale.ScaleAlpha((*getAlpha)())
                 options.GeoM.Translate(float64(pageUpRect.Min.X), float64(pageUpRect.Min.Y))
                 screen.DrawImage(upImages[pageUpIndex], &options)
             },
@@ -408,6 +409,7 @@ func MakeUnitAbilitiesElements(imageCache *util.ImageCache, unit UnitView, mediu
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
                 var options ebiten.DrawImageOptions
+                options.ColorScale.ScaleAlpha((*getAlpha)())
                 options.GeoM.Translate(float64(pageDownRect.Min.X), float64(pageDownRect.Min.Y))
                 screen.DrawImage(downImages[pageDownIndex], &options)
             },
