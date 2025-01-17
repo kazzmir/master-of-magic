@@ -588,24 +588,6 @@ func (mapObject *Map) CreateEncounterRandom(x int, y int, difficulty data.Diffic
     return mapObject.CreateEncounter(x, y, randomEncounterType(), difficulty, rand.N(2) == 0, plane)
 }
 
-// FIXME: remove me?
-func (mapObject *Map) CreateNode(x int, y int, node MagicNode, plane data.Plane, magicSetting data.MagicSetting, difficulty data.DifficultySetting) *ExtraMagicNode {
-    tileType := 0
-    switch node {
-        case MagicNodeNature: tileType = terrain.TileNatureForest.Index(plane)
-        case MagicNodeSorcery: tileType = terrain.TileSorceryLake.Index(plane)
-        case MagicNodeChaos: tileType = terrain.TileChaosVolcano.Index(plane)
-    }
-
-    mapObject.Map.Terrain[x][y] = tileType
-
-    out := MakeMagicNode(node, magicSetting, difficulty, plane)
-
-    mapObject.ExtraMap[image.Pt(x, y)][ExtraKindMagicNode] = out
-
-    return out
-}
-
 func (mapObject *Map) Width() int {
     return mapObject.Map.Columns()
 }

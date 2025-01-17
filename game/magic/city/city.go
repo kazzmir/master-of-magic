@@ -115,6 +115,7 @@ type City struct {
     BuildingInfo buildinglib.BuildingInfos
 }
 
+// FIXME: Add plane?
 func MakeCity(name string, x int, y int, race data.Race, banner data.BannerType, taxRate fraction.Fraction, buildingInfo buildinglib.BuildingInfos, catchmentProvider CatchmentProvider, connectedProvider ConnectedCityProvider) *City {
     city := City{
         Name: name,
