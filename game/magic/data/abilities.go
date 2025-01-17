@@ -208,7 +208,8 @@ func (ability Ability) LbxFile() string {
         case AbilityTeleporting: return "special.lbx"
         case AbilityThrown: return "special2.lbx"
         case AbilityToHit: return "special2.lbx"
-        case AbilityTransport: return ""
+        // FIXME: this is not the right tile for transport, so we just pick a blank tile
+        case AbilityTransport: return "special.lbx"
         case AbilityWallCrusher: return "special.lbx"
         case AbilityWeaponImmunity: return "special.lbx"
         case AbilityWebSpell: return "special2.lbx"
@@ -406,7 +407,8 @@ func (ability Ability) LbxIndex() int {
         case AbilityTeleporting: return 0
         case AbilityThrown: return 19
         case AbilityToHit: return 14
-        case AbilityTransport: return -1
+        // transport just uses a blank tile
+        case AbilityTransport: return 3
         case AbilityWallCrusher: return 15
         case AbilityWeaponImmunity: return 8
         case AbilityWebSpell: return 20
