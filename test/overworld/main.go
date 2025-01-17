@@ -2457,7 +2457,7 @@ func createScenario29(cache *lbx.LbxCache) *gamelib.Game {
     player.Gold = 83
     player.Mana = 26
 
-    player.LiftFog(x, y, 4, game.Plane)
+    player.LiftFog(x, y, 4, city.Plane)
 
     nodes := findNodes(game.CurrentMap())
     node := nodes[terrain.SorceryNode][0]
