@@ -39,6 +39,31 @@ func (map_ *Map) Columns() int {
     return len(map_.Terrain)
 }
 
+func (map_ *Map) WrapX(x int) int {
+    for x < 0 {
+        x += map_.Columns()
+    }
+
+    return x % map_.Columns()
+}
+
+func (map_ *Map) Copy() *Map {
+    columns := map_.Columns()
+    rows := map_.Rows()
+
+    terrain := make([][]int, columns)
+    for x := 0; x < columns; x++ {
+        terrain[x] = make([]int, rows)
+        for y := 0; y < rows; y++ {
+            terrain[x][y] = map_.Terrain[x][y]
+        }
+    }
+
+    return &Map{
+        Terrain: terrain,
+    }
+}
+
 func (map_ *Map) FindContinents() []Continent {
 
     seen := makeCells(map_.Rows(), map_.Columns())
@@ -320,26 +345,36 @@ func (map_ *Map) placeRivers(area int, data *TerrainData, plane data.Plane) {
     continents := map_.FindContinents()
 
     getSides := func(point image.Point) (*set.Set[image.Point], *set.Set[TerrainType]) {
+        // get points and terrains on cardinal sides of a point
         points := set.MakeSet[image.Point]()
-        points.Insert(image.Pt(point.X-1, point.Y))
-        points.Insert(image.Pt(point.X+1, point.Y))
-        points.Insert(image.Pt(point.X, point.Y-1))
-        points.Insert(image.Pt(point.X, point.Y+1))
-
         terrains := set.MakeSet[TerrainType]()
-        terrains.Insert(map_.getTerrainAt(point.X-1, point.Y, data))
-        terrains.Insert(map_.getTerrainAt(point.X+1, point.Y, data))
-        terrains.Insert(map_.getTerrainAt(point.X, point.Y-1, data))
-        terrains.Insert(map_.getTerrainAt(point.X, point.Y+1, data))
+
+        points.Insert(image.Pt(map_.WrapX(point.X-1), point.Y))
+        terrains.Insert(map_.getTerrainAt(map_.WrapX(point.X-1), point.Y, data))
+
+        points.Insert(image.Pt(map_.WrapX(point.X+1), point.Y))
+        terrains.Insert(map_.getTerrainAt(map_.WrapX(point.X+1), point.Y, data))
+
+        if point.Y > 0 {
+            points.Insert(image.Pt(point.X, point.Y-1))
+            terrains.Insert(map_.getTerrainAt(point.X, point.Y-1, data))
+        }
+        if point.Y < map_.Rows() {
+            points.Insert(image.Pt(point.X, point.Y+1))
+            terrains.Insert(map_.getTerrainAt(point.X, point.Y+1, data))
+        }
         return points, terrains
     }
 
     isFinished := func(point image.Point) bool {
+        // check if the point is adjacent to shore, ocean or lake
         _, sides := getSides(point)
         return sides.Contains(Ocean) || sides.Contains(Shore) || sides.Contains(Lake)
     }
 
     isValid := func(point image.Point, path []image.Point) bool {
+        // check if th given point is valid
+
         // outside map
         if point.Y < 0 || point.Y > map_.Rows() - 1 {
             return false
@@ -358,24 +393,56 @@ func (map_ *Map) placeRivers(area int, data *TerrainData, plane data.Plane) {
             return false
         }
 
-        // FIXME: check special conditions like lake with two rivers
-        //        or unsupported shore constellation
+        return true
+    }
 
+    resolves := func(path []image.Point) bool {
+        // check if the rendered path would resolve
+        checked := make(map[image.Point]bool)
+
+        // work with a copy where the path is rendered to allow resolving and discarding it
+        mapCopy := map_.Copy()
+        for _, point := range path {
+            mapCopy.Terrain[point.X][point.Y] = TileRiver0001.Index(plane)
+        }
+
+        for _, point := range path {
+            if !checked[point] {
+                _, err := mapCopy.ResolveTile(point.X, point.Y, data, plane)
+                if err != nil {
+                    return false
+                }
+                checked[point] = true
+            }
+
+            sides, _ := getSides(point)
+            for _, side := range sides.Values() {
+                if !checked[side] {
+                    _, err := mapCopy.ResolveTile(side.X, side.Y, data, plane)
+                    if err != nil {
+                        return false
+                    }
+                    checked[side] = true
+                }
+            }
+        }
         return true
     }
 
     walk := func(start image.Point) (bool, []image.Point) {
+        // perform a random walk
         path := []image.Point{start}
         current := image.Pt(start.X, start.Y)
 
         if !isValid(current, path) {
-            return false, path
+            return false, []image.Point{}
         }
 
         finished := isFinished(current)
         visited := make(map[image.Point]bool)
         step, maxSteps := 0, 100
         for !finished {
+            // drop out if not successful after 100 steps
             step += 1
             if step >= maxSteps {
                 return false, []image.Point{}
@@ -386,13 +453,9 @@ func (map_ *Map) placeRivers(area int, data *TerrainData, plane data.Plane) {
             switch rand.IntN(4) {
                 case 0: next.Y++
                 case 1: next.Y--
-                case 2: next.X--
-                case 3: next.X++
+                case 2: next.X = map_.WrapX(next.X - 1)
+                case 3: next.X = map_.WrapX(next.X + 1)
             }
-            for next.X < 0 {
-                next.X += map_.Columns()
-            }
-            next.X = next.X % map_.Columns()
             if !isValid(next, path) {
                 continue
             }
@@ -407,9 +470,17 @@ func (map_ *Map) placeRivers(area int, data *TerrainData, plane data.Plane) {
             finished = isFinished(current)
         }
 
-        // TODO: maybe try ResolveTile along the path?
-        success := len(path) > 1
-        return success, path
+        // disallow 1-tile rivers
+        if len(path) <= 1 {
+            return false, []image.Point{}
+        }
+
+        // check if tiles around river would resolve
+        if !resolves(path) {
+            return false, []image.Point{}
+        }
+
+        return true, path
     }
 
     for _, continent := range continents {
@@ -443,11 +514,7 @@ func (map_ *Map) getTerrainAt(x int, y int, data *TerrainData) TerrainType {
         return  Ocean
     }
 
-    for x < 0 {
-        x += map_.Columns()
-    }
-
-    x = x % map_.Columns()
+    x = map_.WrapX(x)
 
     index := map_.Terrain[x][y]
     if index < 0 || index >= len(data.Tiles) {
@@ -494,7 +561,6 @@ func (map_ *Map) ResolveTile(x int, y int, data *TerrainData, plane data.Plane) 
     tile := data.FindMatchingTile(region, plane)
 
     if tile == -1 {
-        fmt.Printf("no matching tile for %v\n", region)
         return -1, fmt.Errorf("no matching tile for %v", region)
     }
 
