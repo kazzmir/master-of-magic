@@ -3010,7 +3010,7 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
             */
 
             // _ = index
-            enchantment := util.First(unit.Unit.GetEnchantments(), data.UnitEnchantmentNone)
+            enchantment := util.First(unit.GetEnchantments(), data.UnitEnchantmentNone)
             RenderCombatUnit(screen, combatImages[index], unitOptions, unit.Figures(), enchantment, combat.Counter, &combat.ImageCache)
         }
     }

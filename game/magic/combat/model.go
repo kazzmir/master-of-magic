@@ -546,6 +546,10 @@ func (unit *ArmyUnit) CanFollowPath(path pathfinding.Path) bool {
     return true
 }
 
+func (unit *ArmyUnit) GetEnchantments() []data.UnitEnchantment {
+    return append(unit.Unit.GetEnchantments(), unit.Enchantments...)
+}
+
 func (unit *ArmyUnit) AddEnchantment(enchantment data.UnitEnchantment) {
     unit.Enchantments = append(unit.Enchantments, enchantment)
 }
