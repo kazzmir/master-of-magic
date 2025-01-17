@@ -175,13 +175,14 @@ func (ability Ability) LbxFile() string {
         case AbilityFireImmunity: return "special.lbx"
         case AbilityFirstStrike: return "special.lbx"
         case AbilityForester: return "special.lbx"
-        case AbilityHealer: return ""
-        case AbilityHealingSpell: return ""
-        case AbilityHolyBonus: return ""
-        case AbilityIllusion: return ""
-        case AbilityIllusionsImmunity: return ""
-        case AbilityInvisibility: return ""
-        case AbilityLargeShield: return ""
+        case AbilityHealer: return "special.lbx"
+        case AbilityHealingSpell: return "special.lbx"
+        case AbilityHolyBonus: return "special.lbx"
+        case AbilityIllusion: return "special.lbx"
+        case AbilityIllusionsImmunity: return "special.lbx"
+        case AbilityImmolation: return "special.lbx"
+        case AbilityInvisibility: return "special.lbx"
+        case AbilityLargeShield: return "special.lbx"
         case AbilityLifeSteal, AbilityVampiric: return "special.lbx"
         case AbilityLightningBreath: return ""
         case AbilityLongRange: return ""
@@ -261,6 +262,7 @@ func (ability Ability) Name() string {
         case AbilityHolyBonus: return "Holy Bonus"
         case AbilityIllusion: return "Illusion"
         case AbilityIllusionsImmunity: return "Illusions Immunity"
+        case AbilityImmolation: return "Immolation"
         case AbilityInvisibility: return "Invisibility"
         case AbilityLargeShield: return "Large Shield"
         case AbilityLifeSteal: return fmt.Sprintf("Life Steal %v", int(ability.Value))
@@ -369,13 +371,14 @@ func (ability Ability) LbxIndex() int {
         case AbilityFireImmunity: return 6
         case AbilityFirstStrike: return 29
         case AbilityForester: return 1
-        case AbilityHealer: return -1
-        case AbilityHealingSpell: return -1
-        case AbilityHolyBonus: return -1
-        case AbilityIllusion: return -1
-        case AbilityIllusionsImmunity: return -1
-        case AbilityInvisibility: return -1
-        case AbilityLargeShield: return -1
+        case AbilityHealer: return 16
+        case AbilityHealingSpell: return 38
+        case AbilityHolyBonus: return 34
+        case AbilityIllusion: return 35
+        case AbilityIllusionsImmunity: return 10
+        case AbilityImmolation: return 32
+        case AbilityInvisibility: return 18
+        case AbilityLargeShield: return 14
         case AbilityLifeSteal, AbilityVampiric: return 31
         case AbilityLightningBreath: return -1
         case AbilityLongRange: return -1
