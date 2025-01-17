@@ -509,8 +509,8 @@ type ArmyUnit struct {
 
     LastTurn int
 
-    // abilities applied to the unit during combat, usually by a spell
-    Abilities []data.AbilityType
+    // enchantments applied to the unit during combat, usually by a spell
+    Enchantments []data.UnitEnchantment
 
     // ugly to need this, but this caches paths computed for the unit
     Paths map[image.Point]pathfinding.Path
@@ -546,8 +546,8 @@ func (unit *ArmyUnit) CanFollowPath(path pathfinding.Path) bool {
     return true
 }
 
-func (unit *ArmyUnit) AddAbility(ability data.AbilityType) {
-    unit.Abilities = append(unit.Abilities, ability)
+func (unit *ArmyUnit) AddEnchantment(enchantment data.UnitEnchantment) {
+    unit.Enchantments = append(unit.Enchantments, enchantment)
 }
 
 func (unit *ArmyUnit) GetResistances(enchantments... data.UnitEnchantment) int {

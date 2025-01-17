@@ -1121,7 +1121,7 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
         case "Resist Elements":
             combat.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 combat.CreateResistElementsProjectile(target)
-                target.AddAbility(data.AbilityResistElements)
+                target.AddEnchantment(data.UnitEnchantmentResistElements)
                 successCallback()
             }, targetAny)
 
