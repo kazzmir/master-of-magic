@@ -2,7 +2,7 @@ package maplib
 
 import (
     "image"
-    "log"
+    // "log"
     "math/rand/v2"
 
     "github.com/kazzmir/master-of-magic/game/magic/units"
@@ -390,13 +390,13 @@ func MakeMagicNode(kind MagicNode, magicSetting data.MagicSetting, difficulty da
     switch kind {
         case MagicNodeNature:
             guardians, secondary = computeNatureNodeEnemies(budget)
-            log.Printf("Created nature node guardians: %v secondary: %v", guardians, secondary)
+            // log.Printf("Created nature node guardians: %v secondary: %v", guardians, secondary)
         case MagicNodeSorcery:
             guardians, secondary = computeSorceryNodeEnemies(budget)
-            log.Printf("Created sorcery node guardians: %v secondary: %v", guardians, secondary)
+            // log.Printf("Created sorcery node guardians: %v secondary: %v", guardians, secondary)
         case MagicNodeChaos:
             guardians, secondary = computeChaosNodeEnemies(budget)
-            log.Printf("Created chaos node guardians: %v secondary: %v", guardians, secondary)
+            // log.Printf("Created chaos node guardians: %v secondary: %v", guardians, secondary)
     }
 
 
