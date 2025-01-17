@@ -557,8 +557,8 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         Camera: camera.MakeCamera(),
     }
 
-    game.ArcanusMap = maplib.MakeMap(terrainData, settings.LandSize, data.PlaneArcanus, game)
-    game.MyrrorMap = maplib.MakeMap(terrainData, settings.LandSize, data.PlaneMyrror, game)
+    game.ArcanusMap = maplib.MakeMap(terrainData, settings.LandSize, settings.Magic, settings.Difficulty, data.PlaneArcanus, game)
+    game.MyrrorMap = maplib.MakeMap(terrainData, settings.LandSize, settings.Magic, settings.Difficulty, data.PlaneMyrror, game)
 
     game.HudUI = game.MakeHudUI()
     game.Drawer = func(screen *ebiten.Image, game *Game){
