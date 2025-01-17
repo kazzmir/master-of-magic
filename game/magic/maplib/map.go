@@ -609,11 +609,7 @@ func (mapObject *Map) TileHeight() int {
 }
 
 func (mapObject *Map) WrapX(x int) int {
-    for x < 0 {
-        x += mapObject.Map.Columns()
-    }
-
-    return x % mapObject.Map.Columns()
+    return mapObject.Map.WrapX(x)
 }
 
 // return the shortest x distance between two points, taking into account the map wrapping

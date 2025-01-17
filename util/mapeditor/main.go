@@ -50,45 +50,6 @@ func chooseRandomElement[T any](values []T) T {
     return values[index]
 }
 
-func (editor *Editor) GenerateLand1() {
-    // create a matrix of floats the same dimensions as the terrain
-    // fill in matrix with random values between -1,1
-    // do a few rounds of averaging out the cells with their neighbors
-    // for every cell below some threshold, put an ocean tile there.
-    // every cell above the threshold, put a land tile
-    // finally, end by calling ResolveTiles() to clean up edges
-
-    /*
-    const threshold = 0.0
-    const smoothRounds = 4
-
-    data := make([][]float32, editor.Map.Columns())
-    for x := 0; x < len(data); x++ {
-        data[x] = make([]float32, editor.Map.Rows())
-
-        for y := 0; y < len(data[x]); y++ {
-            data[x][y] = rand.Float32() * 2 - 1
-        }
-    }
-
-    for i := 0; i < smoothRounds; i++ {
-        data = averageCells(data)
-    }
-
-    for x := 0; x < len(data); x++ {
-        for y := 0; y < len(data[0]); y++ {
-            if data[x][y] < threshold {
-                editor.Map.Terrain[x][y] = terrain.TileOcean.Index
-            } else {
-                editor.Map.Terrain[x][y] = terrain.TileLand.Index
-            }
-        }
-    }
-
-    editor.Map.ResolveTiles(editor.Data)
-    */
-}
-
 func (editor *Editor) clear() {
     for column := range(editor.Map.Columns()) {
         for row := range(editor.Map.Rows()) {
@@ -179,7 +140,6 @@ func (editor *Editor) Update() error {
     leftShift := inpututil.KeyPressDuration(ebiten.KeyShiftLeft) > 0
 
     leftClick := ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft)
-    // rightClick := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight)
     rightClick := ebiten.IsMouseButtonPressed(ebiten.MouseButtonRight)
 
     xSize := editor.GetTileImage(0, 0).Bounds().Dx()
