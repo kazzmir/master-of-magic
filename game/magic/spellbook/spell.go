@@ -937,7 +937,7 @@ func CastRightSideDistortions2(page *ebiten.Image) util.Distortion {
 // selected a spell or because they canceled the ui
 // if a spell is chosen then it will be passed in as the first argument to the callback along with true
 // if the ui is cancelled then the second argument will be false
-func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, castingSkill int, currentSpell Spell, currentProgress int, overland bool, chosenCallback func(Spell, bool)) []*uilib.UIElement {
+func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charges map[Spell]int, castingSkill int, currentSpell Spell, currentProgress int, overland bool, chosenCallback func(Spell, bool)) []*uilib.UIElement {
     var elements []*uilib.UIElement
 
     imageCache := util.MakeImageCache(cache)
@@ -998,7 +998,14 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, casti
 
     pageCache := make(map[int]*ebiten.Image)
 
-    spellPages := computeHalfPages(spells, 6)
+    useSpells := spells.Copy()
+    for spell, charge := range charges {
+        if charge > 0 {
+            useSpells.AddSpell(spell)
+        }
+    }
+
+    spellPages := computeHalfPages(useSpells, 6)
 
     renderPage := func(screen *ebiten.Image, options ebiten.DrawImageOptions, page Page, highlightedSpell Spell){
         // section := spells.Spells[0].Section

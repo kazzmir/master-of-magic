@@ -1245,7 +1245,7 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
     // spell
     elements = append(elements, makeButton(1, 0, 0, func(){
         doPlayerSpell := func(){
-            spellUI := spellbook.MakeSpellBookCastUI(ui, combat.Cache, player.KnownSpells, player.ComputeCastingSkill(), spellbook.Spell{}, 0, false, func (spell spellbook.Spell, picked bool){
+            spellUI := spellbook.MakeSpellBookCastUI(ui, combat.Cache, player.KnownSpells, make(map[spellbook.Spell]int), player.ComputeCastingSkill(), spellbook.Spell{}, 0, false, func (spell spellbook.Spell, picked bool){
                 if picked {
                     // player mana and skill should go down accordingly
                     combat.InvokeSpell(player, spell, func(){
@@ -1273,12 +1273,14 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                             unitSpells := combat.Model.SelectedUnit.Spells.Copy()
                             caster := combat.Model.SelectedUnit
 
+                            /*
                             for spell, charge := range caster.SpellCharges {
                                 if charge > 0 {
                                     // FIXME: a hack here could be to set the casting skill to 0
                                     unitSpells.AddSpell(spell)
                                 }
                             }
+                            */
 
                             doCast := func(spell spellbook.Spell){
                                 charge, hasCharge := caster.SpellCharges[spell]
@@ -1298,6 +1300,21 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                                 })
                             }
 
+                            if len(unitSpells.Spells) == 0 {
+                                available := 0
+                                var use spellbook.Spell
+                                for spell, charge := range caster.SpellCharges {
+                                    if charge > 0 {
+                                        available += 1
+                                        use = spell
+                                    }
+                                }
+                                if available == 1 {
+                                    doCast(use)
+                                    return
+                                }
+                            }
+
                             // just invoke the one spell
                             if len(unitSpells.Spells) == 1 {
                                 spell := unitSpells.Spells[0]
@@ -1307,7 +1324,7 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
 
                             // what is casting skill based on for a unit?
                             // FIXME: if the unit doesn't have enough casting skill but has a charge then use the charge
-                            spellUI := spellbook.MakeSpellBookCastUI(ui, combat.Cache, unitSpells, int(caster.CastingSkill), spellbook.Spell{}, 0, false, func (spell spellbook.Spell, picked bool){
+                            spellUI := spellbook.MakeSpellBookCastUI(ui, combat.Cache, unitSpells, caster.SpellCharges, int(caster.CastingSkill), spellbook.Spell{}, 0, false, func (spell spellbook.Spell, picked bool){
                                 if picked {
                                     doCast(spell)
                                 }
