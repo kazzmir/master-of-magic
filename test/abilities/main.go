@@ -37,6 +37,99 @@ func (experience *Experience) Crusade() bool {
     return false
 }
 
+func allAbilities() []data.Ability {
+    abilities := []data.AbilityType{
+        data.AbilityArmorPiercing,
+        data.AbilityCauseFear,
+        data.AbilityColdImmunity,
+        data.AbilityConstruction,
+        data.AbilityCreateOutpost,
+        data.AbilityCreateUndead,
+        data.AbilityDeathGaze,
+        data.AbilityDeathImmunity,
+        data.AbilityDispelEvil,
+        data.AbilityDoomBoltSpell,
+        data.AbilityDoomGaze,
+        data.AbilityFireballSpell,
+        data.AbilityFireBreath,
+        data.AbilityFireImmunity,
+        data.AbilityFirstStrike,
+        data.AbilityForester,
+        data.AbilityHealer,
+        data.AbilityHealingSpell,
+        data.AbilityHolyBonus,
+        data.AbilityIllusion,
+        data.AbilityIllusionsImmunity,
+        data.AbilityImmolation,
+        data.AbilityInvisibility,
+        data.AbilityLargeShield,
+        data.AbilityLifeSteal,
+        data.AbilityLightningBreath,
+        data.AbilityLongRange,
+        data.AbilityMagicImmunity,
+        data.AbilityMeld,
+        data.AbilityMerging,
+        data.AbilityMissileImmunity,
+        data.AbilityMountaineer,
+        data.AbilityNegateFirstStrike,
+        data.AbilityNonCorporeal,
+        data.AbilityPathfinding,
+        data.AbilityPlaneShift,
+        data.AbilityPoisonImmunity,
+        data.AbilityPoisonTouch,
+        data.AbilityPurify,
+        data.AbilityRegeneration,
+        data.AbilityResistanceToAll,
+        data.AbilityScouting,
+        data.AbilityStoningGaze,
+        data.AbilityStoningImmunity,
+        data.AbilityStoningTouch,
+        data.AbilitySummonDemons,
+        data.AbilityToHit,
+        data.AbilityTransport,
+        data.AbilityTeleporting,
+        data.AbilityThrown,
+        data.AbilityWallCrusher,
+        data.AbilityWeaponImmunity,
+        data.AbilityWebSpell,
+        data.AbilityWindWalking,
+
+        // hero abilities
+        data.AbilityAgility,
+        data.AbilitySuperAgility,
+        data.AbilityArcanePower,
+        data.AbilitySuperArcanePower,
+        data.AbilityArmsmaster,
+        data.AbilitySuperArmsmaster,
+        data.AbilityBlademaster,
+        data.AbilitySuperBlademaster,
+        data.AbilityCaster,
+        data.AbilityCharmed,
+        data.AbilityConstitution,
+        data.AbilitySuperConstitution,
+        data.AbilityLeadership,
+        data.AbilitySuperLeadership,
+        data.AbilityLegendary,
+        data.AbilitySuperLegendary,
+        data.AbilityLucky,
+        data.AbilityMight,
+        data.AbilitySuperMight,
+        data.AbilityNoble,
+        data.AbilityPrayermaster,
+        data.AbilitySuperPrayermaster,
+        data.AbilitySage,
+        data.AbilitySuperSage,
+    }
+
+    var out []data.Ability
+
+    for _, ability := range abilities {
+        out = append(out, data.MakeAbility(ability))
+    }
+
+    return out
+}
+
 func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
@@ -62,6 +155,8 @@ func NewEngine(scenario int) (*Engine, error) {
             ui.SetElementsFromArray(nil)
 
             baseUnit := units.HeroRakir
+
+            baseUnit.Abilities = allAbilities()
 
             hero := herolib.MakeHero(units.MakeOverworldUnitFromUnit(baseUnit, 1, 1, data.PlaneArcanus, data.BannerBrown, &Experience{}), herolib.HeroRakir, "rakir")
 
