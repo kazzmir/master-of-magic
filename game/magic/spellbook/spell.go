@@ -271,6 +271,18 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
         return
     }
 
+    helpLbx, err := cache.GetLbxFile("HELP.LBX")
+    if err != nil {
+        log.Printf("Unable to read help: %v", err)
+        return
+    }
+
+    help, err := helpLbx.ReadHelp(2)
+    if err != nil {
+        log.Printf("Unable to read help: %v", err)
+        return
+    }
+
     red := color.RGBA{R: 0x5a, G: 0, B: 0, A: 0xff}
     redPalette := color.Palette{
         color.RGBA{R: 0, G: 0, B: 0, A: 0},
@@ -653,6 +665,23 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
                 }
             }
         },
+        RightClick: func(element *uilib.UIElement){
+            var spell *Spell
+            if researchSpellIndex >= 0 && researchSpellIndex < len(researchPage1.Spells.Spells) {
+                spell = &researchPage1.Spells.Spells[researchSpellIndex]
+            } else {
+                use := researchSpellIndex - 4
+                if use >= 0 && use < len(researchPage2.Spells.Spells) {
+                    spell = &researchPage2.Spells.Spells[use]
+                }
+            }
+            if spell != nil {
+                helpEntries := help.GetEntriesByName(spell.Name)
+                if helpEntries != nil {
+                    ui.AddElement(uilib.MakeHelpElementWithLayer(ui, cache, &imageCache, 2, helpEntries[0], helpEntries[1:]...))
+                }
+            }
+        },
         NotLeftClicked: func(this *uilib.UIElement){
             if !pickResearchSpell {
                 getAlpha = ui.MakeFadeOut(fadeSpeed)
@@ -981,11 +1010,13 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
 
     helpLbx, err := cache.GetLbxFile("HELP.LBX")
     if err != nil {
+        log.Printf("Unable to read help: %v", err)
         return nil
     }
 
     help, err := helpLbx.ReadHelp(2)
     if err != nil {
+        log.Printf("Unable to read help: %v", err)
         return nil
     }
 
