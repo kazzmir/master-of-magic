@@ -190,9 +190,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
     var selectMessage string
 
     switch locationType {
-        case LocationTypeChangeTerrain: fallthrough
-        case LocationTypeTransmute: fallthrough
-        case LocationTypeAny: selectMessage = fmt.Sprintf("Select a space as the target for an %v spell.", spell.Name)
+        case LocationTypeAny, LocationTypeChangeTerrain, LocationTypeTransmute: selectMessage = fmt.Sprintf("Select a space as the target for an %v spell.", spell.Name)
         case LocationTypeFriendlyCity: selectMessage = fmt.Sprintf("Select a friendly city to cast %v on.", spell.Name)
         default:
             selectMessage = fmt.Sprintf("unhandled location type %v", locationType)
@@ -328,16 +326,16 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                             return tileX, tileY, false
                         }
                     case LocationTypeChangeTerrain:
-                        terrainType := overworld.Map.GetTile(tileX, tileY).Tile.TerrainType()
-                        switch terrainType {
-                            case terrain.Desert: fallthrough
-                            case terrain.Forest: fallthrough
-                            case terrain.Hill: fallthrough
-                            case terrain.Swamp: fallthrough
-                            case terrain.Grass: fallthrough
-                            case terrain.Volcano: fallthrough
-                            case terrain.Mountain:
-                                return tileX, tileY, false
+                        fog := player.GetFog(game.Plane)
+
+                        if fog[tileX][tileY] {
+                            terrainType := overworld.Map.GetTile(tileX, tileY).Tile.TerrainType()
+                            switch terrainType {
+                                case terrain.Desert, terrain.Forest, terrain.Hill,
+                                     terrain.Swamp, terrain.Grass, terrain.Volcano,
+                                     terrain.Mountain:
+                                    return tileX, tileY, false
+                            }
                         }
                     case LocationTypeTransmute:
                         bonusType := overworld.Map.GetBonusTile(tileX, tileY)
@@ -440,10 +438,7 @@ func (game *Game) doCastChangeTerrain(yield coroutine.YieldFunc, tileX int, tile
     changeTerrain := func (x int, y int) {
         mapObject := game.CurrentMap()
         switch mapObject.GetTile(x, y).Tile.TerrainType() {
-            case terrain.Desert: fallthrough
-            case terrain.Forest: fallthrough
-            case terrain.Hill: fallthrough
-            case terrain.Swamp:
+            case terrain.Desert, terrain.Forest, terrain.Hill, terrain.Swamp:
                 mapObject.Map.SetTerrainAt(x, y, terrain.Grass, mapObject.Data, mapObject.Plane)
             case terrain.Grass:
                 mapObject.Map.SetTerrainAt(x, y, terrain.Forest, mapObject.Data, mapObject.Plane)
