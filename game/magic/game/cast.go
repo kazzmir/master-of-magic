@@ -19,7 +19,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
-    // "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/camera"
 
     "github.com/hajimehoshi/ebiten/v2"
 )
@@ -392,6 +392,7 @@ func (game *Game) doCastEarthLore(yield coroutine.YieldFunc, player *playerlib.P
 
 
 func (game *Game) doCastChangeTerrain(yield coroutine.YieldFunc, tileX int, tileY int) {
+    game.Camera.Zoom = camera.ZoomDefault
     game.Camera.Center(tileX, tileY)
 
     oldDrawer := game.Drawer
