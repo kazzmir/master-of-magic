@@ -160,9 +160,14 @@ func makeTreasure(encounterType maplib.EncounterType, budget int, wizard setup.W
                 common := allSpells.GetSpellsByRarity(spellbook.SpellRarityCommon)
                 common.RemoveSpells(knownSpells)
 
-                if len(common.Spells) > 0 {
-                    // FIXME: filter by wizard's spell books
-                    spell := common.Spells[rand.N(len(common.Spells))]
+                var possible spellbook.Spells
+
+                for _, book := range wizard.Books {
+                    possible.AddAllSpells(common.GetSpellsByMagic(book.Magic))
+                }
+
+                if len(possible.Spells) > 0 {
+                    spell := possible.Spells[rand.N(len(possible.Spells))]
                     spellsRemaining -= 1
                     // FIXME: choose some unknown common spell given the wizard's spell books
 
