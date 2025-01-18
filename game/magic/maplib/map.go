@@ -515,7 +515,6 @@ func MakeMap(terrainData *terrain.TerrainData, landSize int, magicSetting data.M
         }
 
         switch tile.TerrainType() {
-            case terrain.River: return nil
             case terrain.Hill:
                 if plane == data.PlaneArcanus {
                     return []data.BonusType{data.BonusSilverOre, data.BonusGoldOre, data.BonusIronOre, data.BonusCoal, data.BonusMithrilOre}
@@ -523,6 +522,33 @@ func MakeMap(terrainData *terrain.TerrainData, landSize int, magicSetting data.M
                     return []data.BonusType{data.BonusSilverOre, data.BonusGoldOre, data.BonusIronOre, data.BonusCoal, data.BonusMithrilOre, data.BonusAdamantiumOre}
                 }
             case terrain.Forest: return []data.BonusType{data.BonusWildGame}
+            case terrain.Mountain:
+                if plane == data.PlaneArcanus {
+                    return []data.BonusType{data.BonusSilverOre, data.BonusGoldOre, data.BonusIronOre, data.BonusCoal, data.BonusMithrilOre}
+                } else {
+                    return []data.BonusType{data.BonusSilverOre, data.BonusGoldOre, data.BonusIronOre, data.BonusCoal, data.BonusMithrilOre, data.BonusAdamantiumOre}
+                }
+
+            case terrain.Grass:
+                if plane == data.PlaneArcanus {
+                    return []data.BonusType{data.BonusGoldOre}
+                } else {
+                    return []data.BonusType{data.BonusGoldOre, data.BonusCoal}
+                }
+            case terrain.Swamp: return []data.BonusType{data.BonusNightshade}
+            case terrain.Desert:
+                if plane == data.PlaneArcanus {
+                    return []data.BonusType{data.BonusGem, data.BonusQuorkCrystal}
+                } else {
+                    return []data.BonusType{data.BonusGem, data.BonusQuorkCrystal, data.BonusCrysxCrystal}
+                }
+
+            case terrain.Tundra: return nil
+
+            case terrain.Volcano, terrain.Lake, terrain.Ocean, terrain.River,
+                terrain.Shore, terrain.NatureNode, terrain.SorceryNode, terrain.ChaosNode:
+                return nil
+
         }
 
         return nil
@@ -535,7 +561,7 @@ func MakeMap(terrainData *terrain.TerrainData, landSize int, magicSetting data.M
 
         // try to place N encounters. if we can't place them all, then we just place as many as we can
         maxEncounters := len(continents[i]) / 10
-        for index := range rand.Perm(len(continents[i])) {
+        for _, index := range rand.Perm(len(continents[i])) {
 
             if maxEncounters == 0 {
                 break
@@ -550,8 +576,8 @@ func MakeMap(terrainData *terrain.TerrainData, landSize int, magicSetting data.M
             }
         }
 
-        maxBonus := len(continents[i]) / 8
-        for index := range rand.Perm(len(continents[i])) {
+        maxBonus := len(continents[i]) / 60
+        for _, index := range rand.Perm(len(continents[i])) {
             if maxBonus == 0 {
                 break
             }
@@ -561,8 +587,8 @@ func MakeMap(terrainData *terrain.TerrainData, landSize int, magicSetting data.M
             bonusTypes := allowedBonusTypes(x, y)
 
             if len(bonusTypes) > 0 {
-                // log.Printf("Place bonus at %v, %v", x, y)
                 bonus := bonusTypes[rand.N(len(bonusTypes))]
+                log.Printf("Place bonus %v at %v, %v", bonus, x, y)
                 extraMap[image.Pt(x, y)][ExtraKindBonus] = &ExtraBonus{Bonus: bonus}
                 maxBonus -= 1
             }
