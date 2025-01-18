@@ -379,7 +379,6 @@ func (game *Game) doCastEarthLore(yield coroutine.YieldFunc, player *playerlib.P
     for !quit {
         game.Counter += 1
 
-        // FIXME: change terrain in the middle of the animation?
         quit = false
         if game.Counter % 6 == 0 {
             quit = !animation.Next()
