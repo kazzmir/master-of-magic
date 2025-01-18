@@ -82,6 +82,27 @@ func makeTreasure(encounterType maplib.EncounterType, budget int, wizard setup.W
         TreasureTypeRetort
     )
 
+    chooseSpell := func (rarity spellbook.SpellRarity) (spellbook.Spell, bool) {
+        spells := allSpells.GetSpellsByRarity(rarity)
+        spells.RemoveSpells(knownSpells)
+
+        var possible spellbook.Spells
+
+        for _, book := range wizard.Books {
+            possible.AddAllSpells(spells.GetSpellsByMagic(book.Magic))
+        }
+
+        // arcane spells are always available I guess?
+        possible.AddAllSpells(spells.GetSpellsByMagic(data.ArcaneMagic))
+
+        if len(possible.Spells) > 0 {
+            spell := possible.Spells[rand.N(len(possible.Spells))]
+            return spell, true
+        }
+
+        return spellbook.Spell{}, false
+    }
+
     // treasure cannot contain more than these values of each type
     spellsRemaining := 1
     spellBookRemaining := 1
@@ -157,39 +178,37 @@ func makeTreasure(encounterType maplib.EncounterType, budget int, wizard setup.W
                 // FIXME: find an alive and unemployed non-champion hero
                 budget -= prisonerSpend
             case TreasureTypeCommonSpell:
-                common := allSpells.GetSpellsByRarity(spellbook.SpellRarityCommon)
-                common.RemoveSpells(knownSpells)
+                spell, ok := chooseSpell(spellbook.SpellRarityCommon)
 
-                var possible spellbook.Spells
-
-                for _, book := range wizard.Books {
-                    possible.AddAllSpells(common.GetSpellsByMagic(book.Magic))
-                }
-
-                // arcane spells are always available I guess?
-                possible.AddAllSpells(common.GetSpellsByMagic(data.ArcaneMagic))
-
-                if len(possible.Spells) > 0 {
-                    spell := possible.Spells[rand.N(len(possible.Spells))]
+                if ok {
                     spellsRemaining -= 1
-                    // FIXME: choose some unknown common spell given the wizard's spell books
-
                     items = append(items, &TreasureSpell{Spell: spell})
-
                     budget -= spellCommonSpend
                 }
             case TreasureTypeUncommonSpell:
-                spellsRemaining -= 1
-                // FIXME: choose some unknown uncommon spell given the wizard's spell books
-                budget -= spellUncommonSpend
+                spell, ok := chooseSpell(spellbook.SpellRarityUncommon)
+
+                if ok {
+                    spellsRemaining -= 1
+                    items = append(items, &TreasureSpell{Spell: spell})
+                    budget -= spellUncommonSpend
+                }
             case TreasureTypeRareSpell:
-                spellsRemaining -= 1
-                // FIXME: choose some unknown rare spell given the wizard's spell books
-                budget -= spellRareSpend
+                spell, ok := chooseSpell(spellbook.SpellRarityRare)
+
+                if ok {
+                    spellsRemaining -= 1
+                    items = append(items, &TreasureSpell{Spell: spell})
+                    budget -= spellRareSpend
+                }
             case TreasureTypeVeryRareSpell:
-                spellsRemaining -= 1
-                // FIXME: choose some unknown very rare spell given the wizard's spell books
-                budget -= spellVeryRareSpend
+                spell, ok := chooseSpell(spellbook.SpellRarityVeryRare)
+
+                if ok {
+                    spellsRemaining -= 1
+                    items = append(items, &TreasureSpell{Spell: spell})
+                    budget -= spellVeryRareSpend
+                }
             case TreasureTypeSpellbook:
                 spellBookRemaining -= 1
 
