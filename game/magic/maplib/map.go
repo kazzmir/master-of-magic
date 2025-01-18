@@ -499,59 +499,83 @@ func MakeMap(terrainData *terrain.TerrainData, landSize int, magicSetting data.M
         return true
     }
 
-    // the types of bonuses allowed on this tile. mountains allow gold, gems, etc
-    // forest allowed wildgame
+    // returns a map of bonus types and the percent chance to get that bonus
     // https://masterofmagic.fandom.com/wiki/Mineral
-    allowedBonusTypes := func (x int, y int) []data.BonusType {
+    bonusTypeMap := func (x int, y int) map[data.BonusType]float64 {
+        out := make(map[data.BonusType]float64)
         tile := terrainData.Tiles[map_.Terrain[x][y]].Tile
         if !tile.IsLand() || tile.IsMagic() {
-            return nil
+            return out
         }
 
-        // FIXME: not 100% sure on this
+        // FIXME: not 100% sure on this, can there be a bonus under a lair?
         _, hasLair := extraMap[image.Pt(x, y)][ExtraKindEncounter]
         if hasLair {
-            return nil
+            return out
         }
 
         switch tile.TerrainType() {
             case terrain.Hill:
                 if plane == data.PlaneArcanus {
-                    return []data.BonusType{data.BonusSilverOre, data.BonusGoldOre, data.BonusIronOre, data.BonusCoal, data.BonusMithrilOre}
+                    out[data.BonusIronOre] = 2
+                    out[data.BonusCoal] = 1
+                    out[data.BonusSilverOre] = 1.33
+                    out[data.BonusGoldOre] = 1.33
+                    out[data.BonusMithrilOre] = 0.33
                 } else {
-                    return []data.BonusType{data.BonusSilverOre, data.BonusGoldOre, data.BonusIronOre, data.BonusCoal, data.BonusMithrilOre, data.BonusAdamantiumOre}
+                    out[data.BonusIronOre] = 1
+                    out[data.BonusCoal] = 1
+                    out[data.BonusSilverOre] = 1
+                    out[data.BonusGoldOre] = 4
+                    out[data.BonusMithrilOre] = 2
+                    out[data.BonusAdamantiumOre] = 1
                 }
-            case terrain.Forest: return []data.BonusType{data.BonusWildGame}
+            case terrain.Forest:
+                out[data.BonusWildGame] = 2
             case terrain.Mountain:
                 if plane == data.PlaneArcanus {
-                    return []data.BonusType{data.BonusSilverOre, data.BonusGoldOre, data.BonusIronOre, data.BonusCoal, data.BonusMithrilOre}
+                    out[data.BonusSilverOre] = 1
+                    out[data.BonusGoldOre] = 1
+                    out[data.BonusIronOre] = 1.33
+                    out[data.BonusCoal] = 1.67
+                    out[data.BonusMithrilOre] = 1
                 } else {
-                    return []data.BonusType{data.BonusSilverOre, data.BonusGoldOre, data.BonusIronOre, data.BonusCoal, data.BonusMithrilOre, data.BonusAdamantiumOre}
+                    out[data.BonusSilverOre] = 1
+                    out[data.BonusGoldOre] = 2
+                    out[data.BonusIronOre] = 1
+                    out[data.BonusCoal] = 1
+                    out[data.BonusMithrilOre] = 3
+                    out[data.BonusAdamantiumOre] = 2
                 }
 
             case terrain.Grass:
                 if plane == data.PlaneArcanus {
-                    return []data.BonusType{data.BonusGoldOre}
+                    out[data.BonusGoldOre] = 1
                 } else {
-                    return []data.BonusType{data.BonusGoldOre, data.BonusCoal}
+                    out[data.BonusGoldOre] = 1
+                    out[data.BonusCoal] = 1
                 }
-            case terrain.Swamp: return []data.BonusType{data.BonusNightshade}
+            case terrain.Swamp:
+                out[data.BonusNightshade] = 4
             case terrain.Desert:
                 if plane == data.PlaneArcanus {
-                    return []data.BonusType{data.BonusGem, data.BonusQuorkCrystal}
+                    out[data.BonusGem] = 4
+                    out[data.BonusQuorkCrystal] = 2
                 } else {
-                    return []data.BonusType{data.BonusGem, data.BonusQuorkCrystal, data.BonusCrysxCrystal}
+                    out[data.BonusGem] = 2
+                    out[data.BonusQuorkCrystal] = 6
+                    out[data.BonusCrysxCrystal] = 2
                 }
 
-            case terrain.Tundra: return nil
+            case terrain.Tundra: // none
 
             case terrain.Volcano, terrain.Lake, terrain.Ocean, terrain.River,
                 terrain.Shore, terrain.NatureNode, terrain.SorceryNode, terrain.ChaosNode:
-                return nil
+                // none
 
         }
 
-        return nil
+        return out
     }
 
     continents := map_.FindContinents()
@@ -576,21 +600,18 @@ func MakeMap(terrainData *terrain.TerrainData, landSize int, magicSetting data.M
             }
         }
 
-        maxBonus := len(continents[i]) / 60
         for _, index := range rand.Perm(len(continents[i])) {
-            if maxBonus == 0 {
-                break
-            }
-
             x, y := continents[i][index].X, continents[i][index].Y
 
-            bonusTypes := allowedBonusTypes(x, y)
+            bonusTypes := bonusTypeMap(x, y)
 
-            if len(bonusTypes) > 0 {
-                bonus := bonusTypes[rand.N(len(bonusTypes))]
-                log.Printf("Place bonus %v at %v, %v", bonus, x, y)
-                extraMap[image.Pt(x, y)][ExtraKindBonus] = &ExtraBonus{Bonus: bonus}
-                maxBonus -= 1
+            value := rand.N(100 * 1000)
+            for bonus, percent := range bonusTypes {
+                if int(percent * 1000) > value {
+                    // log.Printf("Place bonus %v at %v, %v", bonus, x, y)
+                    extraMap[image.Pt(x, y)][ExtraKindBonus] = &ExtraBonus{Bonus: bonus}
+                    break
+                }
             }
         }
     }
