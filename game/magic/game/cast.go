@@ -43,7 +43,7 @@ func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Playe
                 return
             }
 
-            game.Camera.Center(tileX, tileY)
+            game.doMoveCamera(yield, tileX, tileY)
 
             game.doCastEarthLore(yield, player)
 
@@ -321,8 +321,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                         if tileY > 0 && tileY < overworld.Map.Map.Rows() {
                             tileX = overworld.Map.WrapX(tileX)
 
-                            fog := player.GetFog(game.Plane)
-                            if fog[tileX][tileY] {
+                            if player.IsTileVisible(tileX, tileY, game.Plane) {
                                 terrainType := overworld.Map.GetTile(tileX, tileY).Tile.TerrainType()
                                 switch terrainType {
                                     case terrain.Desert, terrain.Forest, terrain.Hill,
