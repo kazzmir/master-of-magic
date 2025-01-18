@@ -187,6 +187,16 @@ func (player *Player) GetBanner() data.BannerType {
     return player.Wizard.Banner
 }
 
+func (player *Player) IsTileVisible(x int, y int, plane data.Plane) bool {
+    fog := player.GetFog(plane)
+    x = player.WrapX(x)
+    if x < 0 || x >= len(fog) || y < 0 || y >= len(fog[0]) {
+        return false
+    }
+
+    return fog[x][y]
+}
+
 /* returns true if the hero was actually added to the player
  */
 func (player *Player) AddHero(hero *herolib.Hero) bool {
