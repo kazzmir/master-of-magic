@@ -979,6 +979,16 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
         return nil
     }
 
+    helpLbx, err := cache.GetLbxFile("HELP.LBX")
+    if err != nil {
+        return nil
+    }
+
+    help, err := helpLbx.ReadHelp(2)
+    if err != nil {
+        return nil
+    }
+
     fonts, _ := font.ReadFonts(fontLbx, 0)
 
     infoFont := font.MakeOptimizedFontWithPalette(fonts[1], paletteBlack)
@@ -1242,6 +1252,12 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
                     } else {
                         // log.Printf("Click on spell %v", spell)
                         shutdown(spell, true)
+                    }
+                },
+                RightClick: func(element *uilib.UIElement){
+                    helpEntries := help.GetEntriesByName(spell.Name)
+                    if helpEntries != nil {
+                        ui.AddElement(uilib.MakeHelpElementWithLayer(ui, cache, &imageCache, 2, helpEntries[0], helpEntries[1:]...))
                     }
                 },
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image){
