@@ -351,6 +351,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
     return 0, 0, true
 }
 
+// FIXME: try to merge most of the logic for doCastEarthLore and doCastChangeTerrain
 func (game *Game) doCastEarthLore(yield coroutine.YieldFunc, player *playerlib.Player) {
     oldDrawer := game.Drawer
     defer func(){
@@ -393,7 +394,7 @@ func (game *Game) doCastEarthLore(yield coroutine.YieldFunc, player *playerlib.P
 
 func (game *Game) doCastChangeTerrain(yield coroutine.YieldFunc, tileX int, tileY int) {
     game.Camera.Zoom = camera.ZoomDefault
-    game.Camera.Center(tileX, tileY)
+    game.doMoveCamera(yield, tileX, tileY)
 
     oldDrawer := game.Drawer
     defer func(){
@@ -404,6 +405,7 @@ func (game *Game) doCastChangeTerrain(yield coroutine.YieldFunc, tileX int, tile
 
     animation := util.MakeAnimation(pics, false)
 
+    // FIXME: need some function in Game that returns the pixel coordinates for a given tile
     x := 130
     y := 100
 
