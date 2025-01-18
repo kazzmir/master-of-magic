@@ -338,15 +338,15 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                             }
                         }
                     case LocationTypeTransmute:
-                        bonusType := overworld.Map.GetBonusTile(tileX, tileY)
-                        switch bonusType {
-                            case data.BonusCoal: fallthrough
-                            case data.BonusGem: fallthrough
-                            case data.BonusIronOre: fallthrough
-                            case data.BonusGoldOre: fallthrough
-                            case data.BonusSilverOre: fallthrough
-                            case data.BonusMithrilOre:
-                                return tileX, tileY, false
+                        fog := player.GetFog(game.Plane)
+
+                        if fog[tileX][tileY] {
+                            bonusType := overworld.Map.GetBonusTile(tileX, tileY)
+                            switch bonusType {
+                                case data.BonusCoal, data.BonusGem, data.BonusIronOre,
+                                     data.BonusGoldOre, data.BonusSilverOre, data.BonusMithrilOre:
+                                    return tileX, tileY, false
+                            }
                         }
 
                     case LocationTypeEnemyCity:
@@ -495,15 +495,17 @@ func (game *Game) doCastTransmute(yield coroutine.YieldFunc, tileX int, tileY in
     }
 
     transmute := func (x int, y int) {
-        // FIXME: test wrap x and invalid y
         mapObject := game.CurrentMap()
-        switch mapObject.GetBonusTile(x, y) {
-            case data.BonusCoal: mapObject.SetBonus(x, y, data.BonusGem)
-            case data.BonusGem: mapObject.SetBonus(x, y, data.BonusCoal)
-            case data.BonusIronOre: mapObject.SetBonus(x, y, data.BonusGoldOre)
-            case data.BonusGoldOre: mapObject.SetBonus(x, y, data.BonusIronOre)
-            case data.BonusSilverOre: mapObject.SetBonus(x, y, data.BonusMithrilOre)
-            case data.BonusMithrilOre: mapObject.SetBonus(x, y, data.BonusSilverOre)
+        if y >= 0 || y < mapObject.Map.Rows() {
+            x = mapObject.WrapX(x)
+            switch mapObject.GetBonusTile(x, y) {
+                case data.BonusCoal: mapObject.SetBonus(x, y, data.BonusGem)
+                case data.BonusGem: mapObject.SetBonus(x, y, data.BonusCoal)
+                case data.BonusIronOre: mapObject.SetBonus(x, y, data.BonusGoldOre)
+                case data.BonusGoldOre: mapObject.SetBonus(x, y, data.BonusIronOre)
+                case data.BonusSilverOre: mapObject.SetBonus(x, y, data.BonusMithrilOre)
+                case data.BonusMithrilOre: mapObject.SetBonus(x, y, data.BonusSilverOre)
+            }
         }
     }
 
