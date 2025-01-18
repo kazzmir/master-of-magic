@@ -67,7 +67,7 @@ func chooseValue[T comparable](choices map[T]int) T {
 }
 
 // given some budget, keep choosing a treasure type within the budget and add it to the treasure
-func makeTreasure(encounterType maplib.EncounterType, budget int, wizard setup.WizardCustom) *Treasure {
+func makeTreasure(encounterType maplib.EncounterType, budget int, wizard setup.WizardCustom, knownSpells spellbook.Spells, allSpells spellbook.Spells) *Treasure {
     type TreasureType int
     const (
         TreasureTypeGold TreasureType = iota
@@ -157,9 +157,19 @@ func makeTreasure(encounterType maplib.EncounterType, budget int, wizard setup.W
                 // FIXME: find an alive and unemployed non-champion hero
                 budget -= prisonerSpend
             case TreasureTypeCommonSpell:
-                spellsRemaining -= 1
-                // FIXME: choose some unknown common spell given the wizard's spell books
-                budget -= spellCommonSpend
+                common := allSpells.GetSpellsByRarity(spellbook.SpellRarityCommon)
+                common.RemoveSpells(knownSpells)
+
+                if len(common.Spells) > 0 {
+                    // FIXME: filter by wizard's spell books
+                    spell := common.Spells[rand.N(len(common.Spells))]
+                    spellsRemaining -= 1
+                    // FIXME: choose some unknown common spell given the wizard's spell books
+
+                    items = append(items, &TreasureSpell{Spell: spell})
+
+                    budget -= spellCommonSpend
+                }
             case TreasureTypeUncommonSpell:
                 spellsRemaining -= 1
                 // FIXME: choose some unknown uncommon spell given the wizard's spell books
