@@ -466,6 +466,62 @@ func MakeMap(data *terrain.TerrainData, landSize int, magicSetting data.MagicSet
         }
     }
 
+    canPlaceEncounter := func (x int, y int) bool {
+        // an encounter can be placed if the specified tile is plain land, and is not near some other node/encounter
+
+        tile := data.Tiles[map_.Terrain[x][y]].Tile
+        if !tile.IsLand() || tile.IsMagic() {
+            return false
+        }
+
+        switch tile.TerrainType() {
+            // FIXME: what types of terrain should we not place encounters on?
+            case terrain.River, terrain.Mountain, terrain.Hill: return false
+        }
+
+        // check that no surrounding tile is special
+        for dx := -3; dx <= 3; dx++ {
+            for dy := -3; dy <= 3; dy++ {
+                cx := map_.WrapX(dx + x)
+                cy := dy + y
+
+                if cy < 0 || cy >= landHeight {
+                    continue
+                }
+
+                extra, hasExtra := extraMap[image.Pt(cx, cy)]
+                if hasExtra && extra != nil && len(extra) > 0 {
+                    return false
+                }
+            }
+        }
+
+        return true
+    }
+
+    continents := map_.FindContinents()
+
+    // place some encounter nodes down (lair, cave, etc)
+    for i := range len(continents) {
+
+        // try to place N encounters. if we can't place them all, then we just place as many as we can
+        maxEncounters := len(continents[i]) / 10
+        for index := range rand.Perm(len(continents[i])) {
+
+            if maxEncounters == 0 {
+                break
+            }
+
+            x, y := continents[i][index].X, continents[i][index].Y
+
+            if canPlaceEncounter(x, y) {
+                // log.Printf("Place encounter at %v, %v", x, y)
+                extraMap[image.Pt(x, y)][ExtraKindEncounter] = makeEncounter(randomEncounterType(), difficulty, rand.N(2) == 0, plane)
+                maxEncounters -= 1
+            }
+        }
+    }
+
     return &Map{
         Data: data,
         Map: map_,
