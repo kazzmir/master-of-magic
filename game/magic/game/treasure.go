@@ -117,16 +117,16 @@ func makeTreasure(budget int, wizard setup.WizardCustom) *Treasure {
                 choices[TreasureTypeVeryRareSpell] = 1
             }
         }
-        if spellBookRemaining > 0 && budget > spellBookSpend {
+        if spellBookRemaining > 0 && budget >= spellBookSpend {
             choices[TreasureTypeSpellbook] = 2
         }
-        if retortRemaining > 0 && budget > retortSpend {
+        if retortRemaining > 0 && budget >= retortSpend {
             choices[TreasureTypeRetort] = 2
         }
-        if prisonerRemaining > 0 && budget > prisonerSpend {
+        if prisonerRemaining > 0 && budget >= prisonerSpend {
             choices[TreasureTypePrisonerHero] = 1
         }
-        if magicItemRemaining > 0 && budget > magicItemSpend {
+        if magicItemRemaining > 0 && budget >= magicItemSpend {
             choices[TreasureTypeMagicalItem] = 5
         }
 
@@ -134,14 +134,14 @@ func makeTreasure(budget int, wizard setup.WizardCustom) *Treasure {
 
         switch choice {
             case TreasureTypeGold:
-                coins := rand.N(200)
+                coins := rand.N(200) + 1
                 coins = min(coins, budget)
 
                 items = append(items, &TreasureGold{Amount: coins})
 
                 budget -= coins
             case TreasureTypeMana:
-                mana := rand.N(200)
+                mana := rand.N(200) + 1
                 mana = min(mana, budget)
 
                 items = append(items, &TreasureMana{Amount: mana})
