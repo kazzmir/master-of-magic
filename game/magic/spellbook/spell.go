@@ -666,6 +666,8 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
             }
         },
         RightClick: func(element *uilib.UIElement){
+            // FIXME: when not in research mode, this should still allow the user to right click on a known spell to
+            // view its help entry
             var spell *Spell
             if researchSpellIndex >= 0 && researchSpellIndex < len(researchPage1.Spells.Spells) {
                 spell = &researchPage1.Spells.Spells[researchSpellIndex]
