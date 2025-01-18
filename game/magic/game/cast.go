@@ -82,11 +82,7 @@ func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Playe
                 return
             }
 
-            game.Camera.Center(tileX, tileY)
-
-            game.doCastChangeTerrain(yield, player)
-
-            game.CurrentMap().ChangeTerrain(tileX, tileY)
+            game.doCastChangeTerrain(yield, tileX, tileY)
     }
 }
 
@@ -381,7 +377,9 @@ func (game *Game) doCastEarthLore(yield coroutine.YieldFunc, player *playerlib.P
 }
 
 
-func (game *Game) doCastChangeTerrain(yield coroutine.YieldFunc, player *playerlib.Player) {
+func (game *Game) doCastChangeTerrain(yield coroutine.YieldFunc, tileX int, tileY int) {
+    game.Camera.Center(tileX, tileY)
+
     oldDrawer := game.Drawer
     defer func(){
         game.Drawer = oldDrawer
@@ -414,6 +412,9 @@ func (game *Game) doCastChangeTerrain(yield coroutine.YieldFunc, player *playerl
         quit = false
         if game.Counter % 6 == 0 {
             quit = !animation.Next()
+            if animation.CurrentFrame == 7 {
+                game.CurrentMap().ChangeTerrain(tileX, tileY)
+            }
         }
 
         yield()
