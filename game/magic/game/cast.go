@@ -342,14 +342,17 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                             }
                         }
                     case LocationTypeTransmute:
-                        fog := player.GetFog(game.Plane)
+                        if tileY > 0 && tileY < overworld.Map.Map.Rows() {
+                            tileX = overworld.Map.WrapX(tileX)
 
-                        if fog[tileX][tileY] {
-                            bonusType := overworld.Map.GetBonusTile(tileX, tileY)
-                            switch bonusType {
-                                case data.BonusCoal, data.BonusGem, data.BonusIronOre,
-                                     data.BonusGoldOre, data.BonusSilverOre, data.BonusMithrilOre:
-                                    return tileX, tileY, false
+                            fog := player.GetFog(game.Plane)
+                            if fog[tileX][tileY] {
+                                bonusType := overworld.Map.GetBonusTile(tileX, tileY)
+                                switch bonusType {
+                                    case data.BonusCoal, data.BonusGem, data.BonusIronOre,
+                                         data.BonusGoldOre, data.BonusSilverOre, data.BonusMithrilOre:
+                                        return tileX, tileY, false
+                                }
                             }
                         }
 
@@ -472,6 +475,7 @@ func (game *Game) doCastChangeTerrain(yield coroutine.YieldFunc, tileX int, tile
 
 
 func (game *Game) doCastTransmute(yield coroutine.YieldFunc, tileX int, tileY int) {
+    game.Camera.Zoom = camera.ZoomDefault
     game.Camera.Center(tileX, tileY)
 
     oldDrawer := game.Drawer
