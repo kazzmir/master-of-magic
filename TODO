@@ -13,7 +13,6 @@
 * combat: implement flying fortress
 * combat: use item skill charges for casting spells
 * hero: ability progress (https://masterofmagic.fandom.com/wiki/Experience_Level#Ability_Improvement_Tables_-_Heroes)
-* spell: show help on right click in spell book
 
 9/22/2024 * city view: separate surplus food/gold from subsistence food/gold
 9/22/2024 * overworld path finding to point on map
