@@ -967,6 +967,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     player.KnownSpells.AddSpell(allSpells.FindByName("Magic Spirit"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Dark Rituals"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Wall of Fire"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Change Terrain"))
 
     x, y := game.FindValidCityLocation(game.Plane)
 

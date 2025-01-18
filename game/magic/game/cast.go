@@ -18,7 +18,8 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/summon"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
-    // "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/terrain"
+    "github.com/kazzmir/master-of-magic/game/magic/camera"
 
     "github.com/hajimehoshi/ebiten/v2"
 )
@@ -30,6 +31,7 @@ const (
     LocationTypeEnemyCity
     LocationTypeFriendlyUnit
     LocationTypeEnemyUnit
+    LocationTypeChangeTerrain
 )
 
 func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Player, spell spellbook.Spell) {
@@ -75,6 +77,14 @@ func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Playe
             yield()
             cityview.PlayEnchantmentSound(game.Cache)
             game.showCityEnchantment(yield, chosenCity, player, spell.Name)
+        case "Change Terrain":
+            tileX, tileY, cancel := game.selectLocationForSpell(yield, spell, player, LocationTypeChangeTerrain)
+
+            if cancel {
+                return
+            }
+
+            game.doCastChangeTerrain(yield, tileX, tileY)
     }
 }
 
@@ -172,7 +182,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
     var selectMessage string
 
     switch locationType {
-        case LocationTypeAny: selectMessage = fmt.Sprintf("Select a space as the target for an %v spell.", spell.Name)
+        case LocationTypeAny, LocationTypeChangeTerrain: selectMessage = fmt.Sprintf("Select a space as the target for an %v spell.", spell.Name)
         case LocationTypeFriendlyCity: selectMessage = fmt.Sprintf("Select a friendly city to cast %v on.", spell.Name)
         default:
             selectMessage = fmt.Sprintf("unhandled location type %v", locationType)
@@ -292,7 +302,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
         // within the viewable area
         if game.InOverworldArea(x, y) {
             tileX, tileY := game.ScreenToTile(float64(x), float64(y))
-            
+
             // right click should move the camera
             rightClick := inputmanager.RightClick()
             if rightClick /*|| zoomed */ {
@@ -306,6 +316,21 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                         city := player.FindCity(tileX, tileY, game.Plane)
                         if city != nil {
                             return tileX, tileY, false
+                        }
+                    case LocationTypeChangeTerrain:
+                        if tileY > 0 && tileY < overworld.Map.Map.Rows() {
+                            tileX = overworld.Map.WrapX(tileX)
+
+                            fog := player.GetFog(game.Plane)
+                            if fog[tileX][tileY] {
+                                terrainType := overworld.Map.GetTile(tileX, tileY).Tile.TerrainType()
+                                switch terrainType {
+                                    case terrain.Desert, terrain.Forest, terrain.Hill,
+                                         terrain.Swamp, terrain.Grass, terrain.Volcano,
+                                         terrain.Mountain:
+                                        return tileX, tileY, false
+                                }
+                            }
                         }
 
                     case LocationTypeEnemyCity:
@@ -326,6 +351,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
     return 0, 0, true
 }
 
+// FIXME: try to merge most of the logic for doCastEarthLore and doCastChangeTerrain
 func (game *Game) doCastEarthLore(yield coroutine.YieldFunc, player *playerlib.Player) {
     oldDrawer := game.Drawer
     defer func(){
@@ -359,6 +385,67 @@ func (game *Game) doCastEarthLore(yield coroutine.YieldFunc, player *playerlib.P
         quit = false
         if game.Counter % 6 == 0 {
             quit = !animation.Next()
+        }
+
+        yield()
+    }
+}
+
+
+func (game *Game) doCastChangeTerrain(yield coroutine.YieldFunc, tileX int, tileY int) {
+    game.Camera.Zoom = camera.ZoomDefault
+    game.doMoveCamera(yield, tileX, tileY)
+
+    oldDrawer := game.Drawer
+    defer func(){
+        game.Drawer = oldDrawer
+    }()
+
+    pics, _ := game.ImageCache.GetImages("specfx.lbx", 8)
+
+    animation := util.MakeAnimation(pics, false)
+
+    // FIXME: need some function in Game that returns the pixel coordinates for a given tile
+    x := 130
+    y := 100
+
+    game.Drawer = func(screen *ebiten.Image, game *Game) {
+        oldDrawer(screen, game)
+
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(float64(x - animation.Frame().Bounds().Dx() / 2), float64(y - animation.Frame().Bounds().Dy() / 2))
+        screen.DrawImage(animation.Frame(), &options)
+    }
+
+    sound, err := audio.LoadNewSound(game.Cache, 18)
+    if err == nil {
+        sound.Play()
+    }
+
+    changeTerrain := func (x int, y int) {
+        mapObject := game.CurrentMap()
+        switch mapObject.GetTile(x, y).Tile.TerrainType() {
+            case terrain.Desert, terrain.Forest, terrain.Hill, terrain.Swamp:
+                mapObject.Map.SetTerrainAt(x, y, terrain.Grass, mapObject.Data, mapObject.Plane)
+            case terrain.Grass:
+                mapObject.Map.SetTerrainAt(x, y, terrain.Forest, mapObject.Data, mapObject.Plane)
+            case terrain.Volcano:
+                mapObject.Map.SetTerrainAt(x, y, terrain.Mountain, mapObject.Data, mapObject.Plane)
+            case terrain.Mountain:
+                mapObject.Map.SetTerrainAt(x, y, terrain.Hill, mapObject.Data, mapObject.Plane)
+        }
+    }
+
+    quit := false
+    for !quit {
+        game.Counter += 1
+
+        quit = false
+        if game.Counter % 6 == 0 {
+            quit = !animation.Next()
+            if animation.CurrentFrame == 7 {
+                changeTerrain(tileX, tileY)
+            }
         }
 
         yield()
