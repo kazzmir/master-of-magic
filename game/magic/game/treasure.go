@@ -65,6 +65,7 @@ func chooseValue[T comparable](choices map[T]int) T {
     return out
 }
 
+// given some budget, keep choosing a treasure type within the budget and add it to the treasure
 func makeTreasure(budget int, wizard setup.WizardCustom) *Treasure {
     type TreasureType int
     const (
@@ -80,6 +81,7 @@ func makeTreasure(budget int, wizard setup.WizardCustom) *Treasure {
         TreasureTypeRetort
     )
 
+    // treasure cannot contain more than these values of each type
     spellsRemaining := 1
     spellBookRemaining := 1
     retortRemaining := 1
@@ -94,6 +96,8 @@ func makeTreasure(budget int, wizard setup.WizardCustom) *Treasure {
     const spellBookSpend = 1000
     const retortSpend = 1000
     const magicItemSpend = 400
+
+    var items []TreasureItem
 
     for budget > 0 {
         choices := make(map[TreasureType]int)
@@ -133,10 +137,15 @@ func makeTreasure(budget int, wizard setup.WizardCustom) *Treasure {
                 coins := rand.N(200)
                 coins = min(coins, budget)
 
+                items = append(items, &TreasureGold{Amount: coins})
+
                 budget -= coins
             case TreasureTypeMana:
                 mana := rand.N(200)
                 mana = min(mana, budget)
+
+                items = append(items, &TreasureMana{Amount: mana})
+
                 budget -= mana
             case TreasureTypeMagicalItem:
                 magicItemRemaining -= 1
@@ -164,7 +173,10 @@ func makeTreasure(budget int, wizard setup.WizardCustom) *Treasure {
                 budget -= spellVeryRareSpend
             case TreasureTypeSpellbook:
                 spellBookRemaining -= 1
-                // FIXME: give some spellbook of any type
+
+                books := []data.MagicType{data.LifeMagic, data.SorceryMagic, data.ChaosMagic, data.NatureMagic, data.DeathMagic}
+                items = append(items, &TreasureSpellbook{Magic: books[rand.N(len(books))]})
+
                 budget = 0
             case TreasureTypeRetort:
                 retortRemaining -= 1
@@ -173,5 +185,5 @@ func makeTreasure(budget int, wizard setup.WizardCustom) *Treasure {
         }
     }
 
-    return &Treasure{}
+    return &Treasure{Treasures: items}
 }
