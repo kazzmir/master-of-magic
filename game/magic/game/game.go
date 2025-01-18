@@ -610,7 +610,7 @@ func (game *Game) FindValidCityLocation() (int, int) {
             y := continent[index].Y
 
             tile := terrain.GetTile(mapUse.Map.Terrain[x][y])
-            if y > 3 && y < mapUse.Map.Columns() - 3 && tile.IsLand() && !tile.IsMagic() {
+            if y > 3 && y < mapUse.Map.Columns() - 3 && tile.IsLand() && !tile.IsMagic() && mapUse.GetLair(x, y) == nil {
                 return x, y
             }
         }
