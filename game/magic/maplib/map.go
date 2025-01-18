@@ -172,6 +172,12 @@ const (
     EncounterTypeRuins
     EncounterTypeAbandonedKeep
     EncounterTypeDungeon
+
+    // somewhat of a hack, but its useful to have a single type that can represent all the
+    // different types of nodes and encounters
+    EncounterTypeChaosNode
+    EncounterTypeNatureNode
+    EncounterTypeSorceryNode
 )
 
 func randomEncounterType() EncounterType {

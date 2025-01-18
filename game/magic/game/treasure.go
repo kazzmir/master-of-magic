@@ -7,6 +7,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/maplib"
 )
 
 type TreasureItem interface {
@@ -66,7 +67,7 @@ func chooseValue[T comparable](choices map[T]int) T {
 }
 
 // given some budget, keep choosing a treasure type within the budget and add it to the treasure
-func makeTreasure(budget int, wizard setup.WizardCustom) *Treasure {
+func makeTreasure(encounterType maplib.EncounterType, budget int, wizard setup.WizardCustom) *Treasure {
     type TreasureType int
     const (
         TreasureTypeGold TreasureType = iota
@@ -174,6 +175,7 @@ func makeTreasure(budget int, wizard setup.WizardCustom) *Treasure {
             case TreasureTypeSpellbook:
                 spellBookRemaining -= 1
 
+                // FIXME: depends on the type of encounter/node
                 books := []data.MagicType{data.LifeMagic, data.SorceryMagic, data.ChaosMagic, data.NatureMagic, data.DeathMagic}
                 items = append(items, &TreasureSpellbook{Magic: books[rand.N(len(books))]})
 
