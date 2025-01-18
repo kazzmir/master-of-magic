@@ -66,7 +66,7 @@ func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Playe
                 return
             }
 
-            game.Camera.Center(tileX, tileY)
+            game.doMoveCamera(yield, tileX, tileY)
             chosenCity := player.FindCity(tileX, tileY, game.Plane)
             if chosenCity == nil {
                 return
