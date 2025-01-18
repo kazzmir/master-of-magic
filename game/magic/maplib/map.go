@@ -474,13 +474,14 @@ func MakeMap(data *terrain.TerrainData, landSize int, magicSetting data.MagicSet
             return false
         }
 
-        if tile.TerrainType() == terrain.River {
-            return false
+        switch tile.TerrainType() {
+            // FIXME: what types of terrain should we not place encounters on?
+            case terrain.River, terrain.Mountain, terrain.Hill: return false
         }
 
         // check that no surrounding tile is special
-        for dx := -2; dx <= 2; dx++ {
-            for dy := -2; dy <= 2; dy++ {
+        for dx := -3; dx <= 3; dx++ {
+            for dy := -3; dy <= 3; dy++ {
                 cx := map_.WrapX(dx + x)
                 cy := dy + y
 
@@ -504,7 +505,7 @@ func MakeMap(data *terrain.TerrainData, landSize int, magicSetting data.MagicSet
     for i := range len(continents) {
 
         // try to place N encounters. if we can't place them all, then we just place as many as we can
-        maxEncounters := len(continents[i]) / 8
+        maxEncounters := len(continents[i]) / 10
         for index := range rand.Perm(len(continents[i])) {
 
             if maxEncounters == 0 {
@@ -514,7 +515,7 @@ func MakeMap(data *terrain.TerrainData, landSize int, magicSetting data.MagicSet
             x, y := continents[i][index].X, continents[i][index].Y
 
             if canPlaceEncounter(x, y) {
-                log.Printf("Place encounter at %v, %v", x, y)
+                // log.Printf("Place encounter at %v, %v", x, y)
                 extraMap[image.Pt(x, y)][ExtraKindEncounter] = makeEncounter(randomEncounterType(), difficulty, rand.N(2) == 0, plane)
                 maxEncounters -= 1
             }
