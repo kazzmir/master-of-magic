@@ -75,6 +75,18 @@ func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Playe
             yield()
             cityview.PlayEnchantmentSound(game.Cache)
             game.showCityEnchantment(yield, chosenCity, player, spell.Name)
+        case "Change Terrain":
+            tileX, tileY, cancel := game.selectLocationForSpell(yield, spell, player, LocationTypeAny)
+
+            if cancel {
+                return
+            }
+
+            game.Camera.Center(tileX, tileY)
+
+            game.doCastChangeTerrain(yield, player)
+
+            game.CurrentMap().ChangeTerrain(tileX, tileY)
     }
 }
 
@@ -292,7 +304,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
         // within the viewable area
         if game.InOverworldArea(x, y) {
             tileX, tileY := game.ScreenToTile(float64(x), float64(y))
-            
+
             // right click should move the camera
             rightClick := inputmanager.RightClick()
             if rightClick /*|| zoomed */ {
@@ -316,6 +328,8 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
 
                     case LocationTypeEnemyUnit:
                         // TODO
+
+                    // FIXME: type for change terrain needed? In the original there is an error message when selecting non valid tiles
                 }
             }
         }
@@ -338,6 +352,47 @@ func (game *Game) doCastEarthLore(yield coroutine.YieldFunc, player *playerlib.P
 
     x := 120
     y := 90
+
+    game.Drawer = func(screen *ebiten.Image, game *Game) {
+        oldDrawer(screen, game)
+
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(float64(x - animation.Frame().Bounds().Dx() / 2), float64(y - animation.Frame().Bounds().Dy() / 2))
+        screen.DrawImage(animation.Frame(), &options)
+    }
+
+    sound, err := audio.LoadNewSound(game.Cache, 18)
+    if err == nil {
+        sound.Play()
+    }
+
+    quit := false
+    for !quit {
+        game.Counter += 1
+
+        // FIXME: change terrain in the middle of the animation?
+        quit = false
+        if game.Counter % 6 == 0 {
+            quit = !animation.Next()
+        }
+
+        yield()
+    }
+}
+
+
+func (game *Game) doCastChangeTerrain(yield coroutine.YieldFunc, player *playerlib.Player) {
+    oldDrawer := game.Drawer
+    defer func(){
+        game.Drawer = oldDrawer
+    }()
+
+    pics, _ := game.ImageCache.GetImages("specfx.lbx", 8)
+
+    animation := util.MakeAnimation(pics, false)
+
+    x := 130
+    y := 100
 
     game.Drawer = func(screen *ebiten.Image, game *Game) {
         oldDrawer(screen, game)

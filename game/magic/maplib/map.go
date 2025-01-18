@@ -797,6 +797,33 @@ func (mapObject *Map) CreateNode(x int, y int, node MagicNode, plane data.Plane,
     return out
 }
 
+func (mapObject *Map) ChangeTerrain(x int, y int) bool {
+    // FIXME: x is sometimes out of bounds
+    valid := true
+    switch mapObject.GetTile(x, y).Tile.TerrainType() {
+        case terrain.Desert: fallthrough
+        case terrain.Forest: fallthrough
+        case terrain.Hill: fallthrough
+        case terrain.Swamp:
+            mapObject.Map.Terrain[x][y] = terrain.TileGrasslands1.Index(mapObject.Plane)
+        case terrain.Grass:
+            mapObject.Map.Terrain[x][y] = terrain.TileForest1.Index(mapObject.Plane)
+        case terrain.Volcano:
+            mapObject.Map.Terrain[x][y] = terrain.TileMountain1.Index(mapObject.Plane)
+        case terrain.Mountain:
+            mapObject.Map.Terrain[x][y] = terrain.TileHills1.Index(mapObject.Plane)
+        default:
+            valid = false
+    }
+
+    if valid {
+        mapObject.Map.ResolveTileWithNeighbors(x, y, mapObject.Data, mapObject.Plane)
+    }
+
+    return valid
+}
+
+
 func (mapObject *Map) Width() int {
     return mapObject.Map.Columns()
 }

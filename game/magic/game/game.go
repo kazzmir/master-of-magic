@@ -2563,6 +2563,8 @@ func (game *Game) ScreenToTile(inX float64, inY float64) (int, int) {
     // log.Printf("relative tile %v, %v camera %v, %v", tileX, tileY, game.Camera.GetX(), game.Camera.GetY())
 
     // return int(tileX + float64(game.Camera.GetX())), int(tileY + float64(game.Camera.GetY()))
+
+    // FIXME: should this WrapX?
     return int(math.Floor(tileX)), int(math.Floor(tileY))
 }
 

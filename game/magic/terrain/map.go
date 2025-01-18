@@ -578,6 +578,20 @@ func (map_ *Map) ResolveTiles(data *TerrainData, plane data.Plane) {
     }
 }
 
+func (map_ *Map) ResolveTileWithNeighbors(x int, y int, data *TerrainData, plane data.Plane) {
+    for dx := x - 1; dx <= x + 1; dx++ {
+        for dy := y - 1; dy <= y + 1; dy++ {
+            if dy >= 0 && dy < map_.Rows() {
+                wx := map_.WrapX(dx)
+                choice, err := map_.ResolveTile(wx, dy, data, plane)
+                if err == nil {
+                    map_.Terrain[wx][dy] = choice
+                }
+            }
+        }
+    }
+}
+
 func GenerateLandCellularAutomata(rows int, columns int, data *TerrainData, plane data.Plane) *Map {
     // run a cellular automata simulation for a few rounds to generate
     // land and ocean tiles. then call ResolveTiles() to clean up the edges
