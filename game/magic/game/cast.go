@@ -318,12 +318,16 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                             return tileX, tileY, false
                         }
                     case LocationTypeChangeTerrain:
-                        terrainType := overworld.Map.GetTile(tileX, tileY).Tile.TerrainType()
-                        switch terrainType {
-                            case terrain.Desert, terrain.Forest, terrain.Hill,
-                                 terrain.Swamp, terrain.Grass, terrain.Volcano,
-                                 terrain.Mountain:
-                                return tileX, tileY, false
+                        fog := player.GetFog(game.Plane)
+
+                        if fog[tileX][tileY] {
+                            terrainType := overworld.Map.GetTile(tileX, tileY).Tile.TerrainType()
+                            switch terrainType {
+                                case terrain.Desert, terrain.Forest, terrain.Hill,
+                                     terrain.Swamp, terrain.Grass, terrain.Volcano,
+                                     terrain.Mountain:
+                                    return tileX, tileY, false
+                            }
                         }
 
                     case LocationTypeEnemyCity:
