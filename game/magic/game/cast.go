@@ -19,6 +19,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
+    "github.com/kazzmir/master-of-magic/game/magic/camera"
 
     "github.com/hajimehoshi/ebiten/v2"
 )
@@ -326,15 +327,18 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                             return tileX, tileY, false
                         }
                     case LocationTypeChangeTerrain:
-                        fog := player.GetFog(game.Plane)
+                        if tileY > 0 && tileY < overworld.Map.Map.Rows() {
+                            tileX = overworld.Map.WrapX(tileX)
 
-                        if fog[tileX][tileY] {
-                            terrainType := overworld.Map.GetTile(tileX, tileY).Tile.TerrainType()
-                            switch terrainType {
-                                case terrain.Desert, terrain.Forest, terrain.Hill,
-                                     terrain.Swamp, terrain.Grass, terrain.Volcano,
-                                     terrain.Mountain:
-                                    return tileX, tileY, false
+                            fog := player.GetFog(game.Plane)
+                            if fog[tileX][tileY] {
+                                terrainType := overworld.Map.GetTile(tileX, tileY).Tile.TerrainType()
+                                switch terrainType {
+                                    case terrain.Desert, terrain.Forest, terrain.Hill,
+                                         terrain.Swamp, terrain.Grass, terrain.Volcano,
+                                         terrain.Mountain:
+                                        return tileX, tileY, false
+                                }
                             }
                         }
                     case LocationTypeTransmute:
@@ -408,6 +412,7 @@ func (game *Game) doCastEarthLore(yield coroutine.YieldFunc, player *playerlib.P
 
 
 func (game *Game) doCastChangeTerrain(yield coroutine.YieldFunc, tileX int, tileY int) {
+    game.Camera.Zoom = camera.ZoomDefault
     game.Camera.Center(tileX, tileY)
 
     oldDrawer := game.Drawer
