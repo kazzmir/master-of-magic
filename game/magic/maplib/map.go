@@ -193,6 +193,7 @@ func randomEncounterType() EncounterType {
 type ExtraEncounter struct {
     Type EncounterType
     Units []units.Unit
+    Budget int // used for treasure
     Empty bool
 }
 
@@ -280,6 +281,7 @@ func makeEncounter(encounterType EncounterType, difficulty data.DifficultySettin
 
     return &ExtraEncounter{
         Type: encounterType,
+        Budget: budget,
         Units: append(guardians, secondary...),
     }
 }
