@@ -166,6 +166,9 @@ func makeTreasure(encounterType maplib.EncounterType, budget int, wizard setup.W
                     possible.AddAllSpells(common.GetSpellsByMagic(book.Magic))
                 }
 
+                // arcane spells are always available I guess?
+                possible.AddAllSpells(common.GetSpellsByMagic(data.ArcaneMagic))
+
                 if len(possible.Spells) > 0 {
                     spell := possible.Spells[rand.N(len(possible.Spells))]
                     spellsRemaining -= 1
