@@ -531,7 +531,7 @@ func MakeMap(terrainData *terrain.TerrainData, landSize int, magicSetting data.M
                     out[data.BonusAdamantiumOre] = 1
                 }
             case terrain.Forest:
-                out[data.BonusWildGame] = 2
+                out[data.BonusWildGame] = 6
             case terrain.Mountain:
                 if plane == data.PlaneArcanus {
                     out[data.BonusSilverOre] = 1
@@ -556,7 +556,7 @@ func MakeMap(terrainData *terrain.TerrainData, landSize int, magicSetting data.M
                     out[data.BonusCoal] = 1
                 }
             case terrain.Swamp:
-                out[data.BonusNightshade] = 4
+                out[data.BonusNightshade] = 10
             case terrain.Desert:
                 if plane == data.PlaneArcanus {
                     out[data.BonusGem] = 4
@@ -600,16 +600,21 @@ func MakeMap(terrainData *terrain.TerrainData, landSize int, magicSetting data.M
             }
         }
 
-        for _, index := range rand.Perm(len(continents[i])) {
-            x, y := continents[i][index].X, continents[i][index].Y
+        for _, point := range continents[i] {
+            x, y := point.X, point.Y
 
             bonusTypes := bonusTypeMap(x, y)
 
             value := rand.N(100 * 1000)
+            log.Printf("%v, %v value=%v", x, y, value)
             for bonus, percent := range bonusTypes {
                 if int(percent * 1000) > value {
-                    // log.Printf("Place bonus %v at %v, %v", bonus, x, y)
-                    extraMap[image.Pt(x, y)][ExtraKindBonus] = &ExtraBonus{Bonus: bonus}
+                    /*
+                    if bonus == data.BonusWildGame {
+                        log.Printf("Place bonus %v at %v, %v %v/%v", bonus, x, y, percent * 1000, value)
+                    }
+                    */
+                    extraMap[point][ExtraKindBonus] = &ExtraBonus{Bonus: bonus}
                     break
                 }
             }
