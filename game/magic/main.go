@@ -157,7 +157,7 @@ func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup
 
     player := game.AddPlayer(wizard, true)
 
-    cityX, cityY := game.FindValidCityLocation()
+    cityX, cityY := game.FindValidCityLocation(startingPlane)
 
     cityName := game.SuggestCityName(player.Wizard.Race)
 

@@ -443,10 +443,10 @@ func getLandSize(size int) (int, int) {
     return 100, 100
 }
 
-func MakeMap(data *terrain.TerrainData, landSize int, magicSetting data.MagicSetting, difficulty data.DifficultySetting, plane data.Plane, cityProvider CityProvider) *Map {
+func MakeMap(terrainData *terrain.TerrainData, landSize int, magicSetting data.MagicSetting, difficulty data.DifficultySetting, plane data.Plane, cityProvider CityProvider) *Map {
     landWidth, landHeight := getLandSize(landSize)
 
-    map_ := terrain.GenerateLandCellularAutomata(landWidth, landHeight, data, plane)
+    map_ := terrain.GenerateLandCellularAutomata(landWidth, landHeight, terrainData, plane)
 
     extraMap := make(map[image.Point]map[ExtraKind]ExtraTile)
     for x := range landWidth {
@@ -454,7 +454,7 @@ func MakeMap(data *terrain.TerrainData, landSize int, magicSetting data.MagicSet
             point := image.Pt(x, y)
             extraMap[point] = make(map[ExtraKind]ExtraTile)
 
-            tile := data.Tiles[map_.Terrain[x][y]].Tile
+            tile := terrainData.Tiles[map_.Terrain[x][y]].Tile
             switch tile.TerrainType() {
                 case terrain.SorceryNode:
                     extraMap[point][ExtraKindMagicNode] = MakeMagicNode(MagicNodeSorcery, magicSetting, difficulty, plane)
@@ -469,14 +469,14 @@ func MakeMap(data *terrain.TerrainData, landSize int, magicSetting data.MagicSet
     canPlaceEncounter := func (x int, y int) bool {
         // an encounter can be placed if the specified tile is plain land, and is not near some other node/encounter
 
-        tile := data.Tiles[map_.Terrain[x][y]].Tile
+        tile := terrainData.Tiles[map_.Terrain[x][y]].Tile
         if !tile.IsLand() || tile.IsMagic() {
             return false
         }
 
         switch tile.TerrainType() {
             // FIXME: what types of terrain should we not place encounters on?
-            case terrain.River, terrain.Mountain, terrain.Hill: return false
+            case terrain.River: return false
         }
 
         // check that no surrounding tile is special
@@ -499,6 +499,85 @@ func MakeMap(data *terrain.TerrainData, landSize int, magicSetting data.MagicSet
         return true
     }
 
+    // returns a map of bonus types and the percent chance to get that bonus
+    // https://masterofmagic.fandom.com/wiki/Mineral
+    bonusTypeMap := func (x int, y int) map[data.BonusType]float64 {
+        out := make(map[data.BonusType]float64)
+        tile := terrainData.Tiles[map_.Terrain[x][y]].Tile
+        if !tile.IsLand() || tile.IsMagic() {
+            return out
+        }
+
+        // FIXME: not 100% sure on this, can there be a bonus under a lair?
+        _, hasLair := extraMap[image.Pt(x, y)][ExtraKindEncounter]
+        if hasLair {
+            return out
+        }
+
+        switch tile.TerrainType() {
+            case terrain.Hill:
+                if plane == data.PlaneArcanus {
+                    out[data.BonusIronOre] = 2
+                    out[data.BonusCoal] = 1
+                    out[data.BonusSilverOre] = 1.33
+                    out[data.BonusGoldOre] = 1.33
+                    out[data.BonusMithrilOre] = 0.33
+                } else {
+                    out[data.BonusIronOre] = 1
+                    out[data.BonusCoal] = 1
+                    out[data.BonusSilverOre] = 1
+                    out[data.BonusGoldOre] = 4
+                    out[data.BonusMithrilOre] = 2
+                    out[data.BonusAdamantiumOre] = 1
+                }
+            case terrain.Forest:
+                out[data.BonusWildGame] = 2
+            case terrain.Mountain:
+                if plane == data.PlaneArcanus {
+                    out[data.BonusSilverOre] = 1
+                    out[data.BonusGoldOre] = 1
+                    out[data.BonusIronOre] = 1.33
+                    out[data.BonusCoal] = 1.67
+                    out[data.BonusMithrilOre] = 1
+                } else {
+                    out[data.BonusSilverOre] = 1
+                    out[data.BonusGoldOre] = 2
+                    out[data.BonusIronOre] = 1
+                    out[data.BonusCoal] = 1
+                    out[data.BonusMithrilOre] = 3
+                    out[data.BonusAdamantiumOre] = 2
+                }
+
+            case terrain.Grass:
+                if plane == data.PlaneArcanus {
+                    out[data.BonusGoldOre] = 1
+                } else {
+                    out[data.BonusGoldOre] = 1
+                    out[data.BonusCoal] = 1
+                }
+            case terrain.Swamp:
+                out[data.BonusNightshade] = 4
+            case terrain.Desert:
+                if plane == data.PlaneArcanus {
+                    out[data.BonusGem] = 4
+                    out[data.BonusQuorkCrystal] = 2
+                } else {
+                    out[data.BonusGem] = 2
+                    out[data.BonusQuorkCrystal] = 6
+                    out[data.BonusCrysxCrystal] = 2
+                }
+
+            case terrain.Tundra: // none
+
+            case terrain.Volcano, terrain.Lake, terrain.Ocean, terrain.River,
+                terrain.Shore, terrain.NatureNode, terrain.SorceryNode, terrain.ChaosNode:
+                // none
+
+        }
+
+        return out
+    }
+
     continents := map_.FindContinents()
 
     // place some encounter nodes down (lair, cave, etc)
@@ -506,7 +585,7 @@ func MakeMap(data *terrain.TerrainData, landSize int, magicSetting data.MagicSet
 
         // try to place N encounters. if we can't place them all, then we just place as many as we can
         maxEncounters := len(continents[i]) / 10
-        for index := range rand.Perm(len(continents[i])) {
+        for _, index := range rand.Perm(len(continents[i])) {
 
             if maxEncounters == 0 {
                 break
@@ -520,10 +599,25 @@ func MakeMap(data *terrain.TerrainData, landSize int, magicSetting data.MagicSet
                 maxEncounters -= 1
             }
         }
+
+        for _, index := range rand.Perm(len(continents[i])) {
+            x, y := continents[i][index].X, continents[i][index].Y
+
+            bonusTypes := bonusTypeMap(x, y)
+
+            value := rand.N(100 * 1000)
+            for bonus, percent := range bonusTypes {
+                if int(percent * 1000) > value {
+                    // log.Printf("Place bonus %v at %v, %v", bonus, x, y)
+                    extraMap[image.Pt(x, y)][ExtraKindBonus] = &ExtraBonus{Bonus: bonus}
+                    break
+                }
+            }
+        }
     }
 
     return &Map{
-        Data: data,
+        Data: terrainData,
         Map: map_,
         Plane: plane,
         TileCache: make(map[int]*ebiten.Image),
