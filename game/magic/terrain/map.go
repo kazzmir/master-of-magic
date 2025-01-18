@@ -578,7 +578,7 @@ func (map_ *Map) ResolveTiles(data *TerrainData, plane data.Plane) {
     }
 }
 
-func (map_ *Map) ResolveTileWithNeighbors(x int, y int, data *TerrainData, plane data.Plane) {
+func (map_ *Map) resolveTileWithNeighbors(x int, y int, data *TerrainData, plane data.Plane) {
     for dx := x - 1; dx <= x + 1; dx++ {
         for dy := y - 1; dy <= y + 1; dy++ {
             if dy >= 0 && dy < map_.Rows() {
@@ -591,6 +591,36 @@ func (map_ *Map) ResolveTileWithNeighbors(x int, y int, data *TerrainData, plane
         }
     }
 }
+
+func (map_ *Map) SetTerrainAt(x int, y int, terrainType TerrainType, data *TerrainData, plane data.Plane) {
+    if y >= 0 || y < map_.Rows() {
+        x = map_.WrapX(x)
+
+        index := -1
+        switch terrainType {
+            case Ocean: index = TileOcean.Index(plane)
+            case River: index = TileRiver0001.Index(plane)
+            case Shore: index = TileShore1_00000001.Index(plane)
+            case Mountain: index = TileMountain1.Index(plane)
+            case Hill: index = TileHills1.Index(plane)
+            case Grass: index = TileGrasslands1.Index(plane)
+            case Swamp: index = TileSwamp1.Index(plane)
+            case Forest: index = TileForest1.Index(plane)
+            case Desert: index = TileAllDesert1.Index(plane)
+            case Tundra: index = TileTundra.Index(plane)
+            case Volcano: index = TileVolcano.Index(plane)
+            case Lake: index = TileLake.Index(plane)
+            case NatureNode: index = TileNatureForest.Index(plane)
+            case SorceryNode: index = TileSorceryLake.Index(plane)
+            case ChaosNode: index = TileChaosVolcano.Index(plane)
+        }
+        if index != -1 {
+            map_.Terrain[x][y] = index
+            map_.resolveTileWithNeighbors(x, y, data, plane)
+        }
+    }
+}
+
 
 func GenerateLandCellularAutomata(rows int, columns int, data *TerrainData, plane data.Plane) *Map {
     // run a cellular automata simulation for a few rounds to generate

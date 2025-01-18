@@ -18,6 +18,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/summon"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
+    "github.com/kazzmir/master-of-magic/game/magic/terrain"
     // "github.com/kazzmir/master-of-magic/game/magic/data"
 
     "github.com/hajimehoshi/ebiten/v2"
@@ -30,6 +31,7 @@ const (
     LocationTypeEnemyCity
     LocationTypeFriendlyUnit
     LocationTypeEnemyUnit
+    LocationTypeChangeTerrain
 )
 
 func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Player, spell spellbook.Spell) {
@@ -76,7 +78,7 @@ func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Playe
             cityview.PlayEnchantmentSound(game.Cache)
             game.showCityEnchantment(yield, chosenCity, player, spell.Name)
         case "Change Terrain":
-            tileX, tileY, cancel := game.selectLocationForSpell(yield, spell, player, LocationTypeAny)
+            tileX, tileY, cancel := game.selectLocationForSpell(yield, spell, player, LocationTypeChangeTerrain)
 
             if cancel {
                 return
@@ -180,6 +182,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
     var selectMessage string
 
     switch locationType {
+        case LocationTypeChangeTerrain: fallthrough
         case LocationTypeAny: selectMessage = fmt.Sprintf("Select a space as the target for an %v spell.", spell.Name)
         case LocationTypeFriendlyCity: selectMessage = fmt.Sprintf("Select a friendly city to cast %v on.", spell.Name)
         default:
@@ -315,6 +318,18 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                         if city != nil {
                             return tileX, tileY, false
                         }
+                    case LocationTypeChangeTerrain:
+                        terrainType := overworld.Map.GetTile(tileX, tileY).Tile.TerrainType()
+                        switch terrainType {
+                            case terrain.Desert: fallthrough
+                            case terrain.Forest: fallthrough
+                            case terrain.Hill: fallthrough
+                            case terrain.Swamp: fallthrough
+                            case terrain.Grass: fallthrough
+                            case terrain.Volcano: fallthrough
+                            case terrain.Mountain:
+                                return tileX, tileY, false
+                        }
 
                     case LocationTypeEnemyCity:
                         // TODO
@@ -324,8 +339,6 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
 
                     case LocationTypeEnemyUnit:
                         // TODO
-
-                    // FIXME: type for change terrain needed? In the original there is an error message when selecting non valid tiles
                 }
             }
         }
@@ -405,6 +418,23 @@ func (game *Game) doCastChangeTerrain(yield coroutine.YieldFunc, tileX int, tile
         sound.Play()
     }
 
+    changeTerrain := func (x int, y int) {
+        mapObject := game.CurrentMap()
+        switch mapObject.GetTile(x, y).Tile.TerrainType() {
+            case terrain.Desert: fallthrough
+            case terrain.Forest: fallthrough
+            case terrain.Hill: fallthrough
+            case terrain.Swamp:
+                mapObject.Map.SetTerrainAt(x, y, terrain.Grass, mapObject.Data, mapObject.Plane)
+            case terrain.Grass:
+                mapObject.Map.SetTerrainAt(x, y, terrain.Forest, mapObject.Data, mapObject.Plane)
+            case terrain.Volcano:
+                mapObject.Map.SetTerrainAt(x, y, terrain.Mountain, mapObject.Data, mapObject.Plane)
+            case terrain.Mountain:
+                mapObject.Map.SetTerrainAt(x, y, terrain.Hill, mapObject.Data, mapObject.Plane)
+        }
+    }
+
     quit := false
     for !quit {
         game.Counter += 1
@@ -413,7 +443,7 @@ func (game *Game) doCastChangeTerrain(yield coroutine.YieldFunc, tileX int, tile
         if game.Counter % 6 == 0 {
             quit = !animation.Next()
             if animation.CurrentFrame == 7 {
-                game.CurrentMap().ChangeTerrain(tileX, tileY)
+                changeTerrain(tileX, tileY)
             }
         }
 

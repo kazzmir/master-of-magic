@@ -2564,7 +2564,8 @@ func (game *Game) ScreenToTile(inX float64, inY float64) (int, int) {
 
     // return int(tileX + float64(game.Camera.GetX())), int(tileY + float64(game.Camera.GetY()))
 
-    return game.CurrentMap().WrapX(int(math.Floor(tileX))), int(math.Floor(tileY))
+    // FIXME: should this WrapX?
+    return int(math.Floor(tileX)), int(math.Floor(tileY))
 }
 
 func (game *Game) doInputZoom(yield coroutine.YieldFunc) bool {
