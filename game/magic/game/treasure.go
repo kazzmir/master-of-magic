@@ -5,6 +5,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/maplib"
 )
 
 type TreasureItem interface {
@@ -43,6 +44,6 @@ type Treasure struct {
     Treasures []TreasureItem
 }
 
-func makeTreasure() *Treasure {
+func makeTreasure(encounter maplib.EncounterType) *Treasure {
     return &Treasure{}
 }
