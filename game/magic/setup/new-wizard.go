@@ -993,7 +993,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
 
     screen.LbxFonts = fonts
 
-    screen.Font = font.MakeOptimizedFont(fonts[4])
+    screen.Font = font.MakeOptimizedFont(fonts[3])
     screen.WizardSlots = DefaultWizardSlots()
 
     // FIXME: load with a yellowish palette
