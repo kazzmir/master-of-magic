@@ -3297,13 +3297,121 @@ func (game *Game) doLairEncounter(yield coroutine.YieldFunc, player *playerlib.P
 
     result := game.doCombat(yield, player, stack, &defender, playerlib.MakeUnitStackFromUnits(enemies), zone)
     if result == combat.CombatStateAttackerWin {
-        // FIXME: give treasure
         encounter.Empty = true
+
+        allSpells, err := spellbook.ReadSpellsFromCache(game.Cache)
+        if err != nil {
+            log.Printf("Error: unable to read spells: %v", err)
+        } else {
+            heroes := slices.Clone(player.Heroes[:])
+            // only include alive non-champion heroes
+            heroes = slices.DeleteFunc(heroes, func (hero *herolib.Hero) bool {
+                return hero.Status != herolib.StatusAvailable || hero.IsChampion()
+            })
+
+            // FIXME: store all premade artifacts as a field of Game and just return that
+            makeArtifacts := func () []artifact.Artifact {
+                premade, err := artifact.ReadArtifacts(game.Cache)
+                if err == nil {
+                    return premade
+                } else {
+                    log.Printf("Error: could not read artifacts: %v", err)
+                    return nil
+                }
+            }
+
+            treasure := makeTreasure(game.Cache, encounter.Type, encounter.Budget, player.Wizard, player.KnownSpells, allSpells, heroes, makeArtifacts)
+            game.doTreasure(yield, player, treasure)
+        }
+
     } else {
         // FIXME: remove killed defenders
     }
 
     // absorb extra clicks
+    yield()
+}
+
+func (game *Game) doTreasure(yield coroutine.YieldFunc, player *playerlib.Player, treasure Treasure){
+    oldDrawer := game.Drawer
+    defer func(){
+        game.Drawer = oldDrawer
+    }()
+
+    uiDone := false
+    ui := uilib.UI{
+        Draw: func (ui *uilib.UI, screen *ebiten.Image){
+            ui.IterateElementsByLayer(func (element *uilib.UIElement){
+                if element.Draw != nil {
+                    element.Draw(element, screen)
+                }
+            })
+        },
+        LeftClick: func () {
+            uiDone = true
+        },
+    }
+
+    // FIXME: just add an uielement to game.HudUI
+
+    element := &uilib.UIElement{
+        Draw: func (element *uilib.UIElement, screen *ebiten.Image){
+            left, _ := game.ImageCache.GetImage("resource.lbx", 56, 0)
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(100, 50)
+
+            screen.DrawImage(left, &options)
+            right, _ := game.ImageCache.GetImage("resource.lbx", 58, 0)
+            options.GeoM.Translate(float64(left.Bounds().Dx()), 0)
+            screen.DrawImage(right, &options)
+
+            chest, _ := game.ImageCache.GetImage("reload.lbx", 20, 0)
+            options.GeoM.Translate(1, 1)
+            screen.DrawImage(chest, &options)
+
+            // FIXME: print text of treasure
+        },
+    }
+
+    ui.SetElementsFromArray(nil)
+    ui.AddElement(element)
+
+    game.Drawer = func (screen *ebiten.Image, game *Game){
+        oldDrawer(screen, game)
+        ui.Draw(&ui, screen)
+    }
+
+    for !uiDone {
+        game.Counter += 1
+        ui.StandardUpdate()
+        yield()
+    }
+
+    for _, item := range treasure.Treasures {
+        switch item.(type) {
+            case *TreasureGold:
+                gold := item.(*TreasureGold)
+                player.Gold += gold.Amount
+            case *TreasureMana:
+                mana := item.(*TreasureMana)
+                player.Mana += mana.Amount
+            case *TreasureMagicalItem:
+                magicalItem := item.(*TreasureMagicalItem)
+                game.doVault(yield, &magicalItem.Artifact)
+            case *TreasurePrisonerHero:
+                // FIXME: show hire hero screen?
+            case *TreasureSpell:
+                spell := item.(*TreasureSpell)
+                player.KnownSpells.AddSpell(spell.Spell)
+            case *TreasureSpellbook:
+                spellbook := item.(*TreasureSpellbook)
+                player.Wizard.AddMagicLevel(spellbook.Magic, 1)
+            case *TreasureRetort:
+                retort := item.(*TreasureRetort)
+                player.Wizard.EnableAbility(retort.Retort)
+        }
+    }
+
     yield()
 }
 

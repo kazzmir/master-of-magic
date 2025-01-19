@@ -429,6 +429,16 @@ func (wizard *WizardCustom) AbilityEnabled(ability WizardAbility) bool {
     return false
 }
 
+func (wizard *WizardCustom) EnableAbility(ability WizardAbility) {
+    for _, check := range wizard.Abilities {
+        if check == ability {
+            return
+        }
+    }
+
+    wizard.Abilities = append(wizard.Abilities, ability)
+}
+
 func (wizard *WizardCustom) ToggleAbility(ability WizardAbility, picksLeft int){
     var out []WizardAbility
 
@@ -447,6 +457,20 @@ func (wizard *WizardCustom) ToggleAbility(ability WizardAbility, picksLeft int){
     }
 
     wizard.Abilities = out
+}
+
+func (wizard *WizardCustom) AddMagicLevel(kind data.MagicType, count int){
+    for i := range wizard.Books {
+        if wizard.Books[i].Magic == kind {
+            wizard.Books[i].Count += count
+            return
+        }
+    }
+
+    wizard.Books = append(wizard.Books, data.WizardBook{
+        Magic: kind,
+        Count: count,
+    })
 }
 
 func (wizard *WizardCustom) SetMagicLevel(kind data.MagicType, count int){

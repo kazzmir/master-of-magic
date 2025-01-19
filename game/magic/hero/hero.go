@@ -414,6 +414,22 @@ func (hero *Hero) SetExtraAbilities() {
     // fmt.Printf("Hero %v took %v loops: %v\n", hero.ShortName(), totalLoops, hero.GetAbilities())
 }
 
+func (hero *Hero) IsChampion() bool {
+    switch hero.HeroType {
+        case HeroTorin, HeroWarrax, HeroMysticX, HeroDethStryke, HeroSirHarold,
+             HeroRavashack, HeroRoland, HeroMortu, HeroElana, HeroAerie,
+             HeroAlorra: return true
+
+        case HeroAureus, HeroBahgtru, HeroTumu, HeroTheria, HeroBrax,
+             HeroBShan, HeroFang, HeroGreyfairer, HeroGunther, HeroJaer,
+             HeroMalleus, HeroMarcus, HeroMorgana, HeroRakir, HeroReywind,
+             HeroSerena, HeroShalla, HeroShinBo, HeroShuri, HeroSpyder,
+             HeroTaki, HeroValana, HeroYramrag, HeroZaldron: return false
+    }
+
+    return false
+}
+
 func (hero *Hero) SetStatus(status HeroStatus) {
     hero.Status = status
 }

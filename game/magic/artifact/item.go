@@ -5,6 +5,7 @@ import (
     "fmt"
     "slices"
     "cmp"
+    "math/rand/v2"
     _ "log"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -331,6 +332,69 @@ func (artifact *Artifact) ResistanceBonus() int {
 
 func (artifact *Artifact) MovementBonus() int {
     return addPowers(PowerTypeMovement, artifact.Powers)
+}
+
+// generate an artifact with random properties
+func MakeRandomArtifact(cache *lbx.LbxCache) Artifact {
+
+    // random number between min and max inclusive
+    randRange := func(min, max int) int {
+        return rand.N(max - min + 1) + min
+    }
+
+    chooseImage := func(kind ArtifactType) int {
+        switch kind {
+            case ArtifactTypeSword: return randRange(0, 8)
+            case ArtifactTypeMace: return randRange(9, 19)
+            case ArtifactTypeAxe: return randRange(20, 28)
+            case ArtifactTypeBow: return randRange(29, 37)
+            case ArtifactTypeStaff: return randRange(38, 46)
+            case ArtifactTypeWand: return randRange(107, 115)
+            case ArtifactTypeMisc: return randRange(72, 106)
+            case ArtifactTypeShield: return randRange(62, 71)
+            case ArtifactTypeChain: return randRange(47, 54)
+            case ArtifactTypePlate: return randRange(55, 61)
+            default: return 0
+        }
+    }
+
+    types := []ArtifactType{ArtifactTypeSword, ArtifactTypeMace, ArtifactTypeAxe, ArtifactTypeBow,
+                            ArtifactTypeStaff, ArtifactTypeWand, ArtifactTypeMisc, ArtifactTypeShield,
+                            ArtifactTypeChain, ArtifactTypePlate }
+
+    artifact := Artifact{
+        Type: types[rand.N(len(types))],
+    }
+
+    _, costs, compatibilities, err := ReadPowers(cache)
+    if err != nil {
+        return Artifact{}
+    }
+
+    var powers []Power
+
+    for power, types := range compatibilities {
+        // ignore spell charges for now
+        if power.Type == PowerTypeSpellCharges {
+            continue
+        }
+        if types.Contains(artifact.Type) {
+            powers = append(powers, power)
+        }
+    }
+
+    numPowers := min(rand.N(4) + 1, len(powers))
+
+    for _, index := range rand.Perm(len(powers))[:numPowers] {
+        artifact.Powers = append(artifact.Powers, powers[index])
+    }
+
+    artifact.Image = chooseImage(artifact.Type)
+
+    artifact.Cost = calculateCost(&artifact, costs, false, false)
+    artifact.Name = getName(&artifact, "")
+
+    return artifact
 }
 
 func ReadArtifacts(cache *lbx.LbxCache) ([]Artifact, error) {
