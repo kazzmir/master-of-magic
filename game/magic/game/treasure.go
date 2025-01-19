@@ -1,6 +1,7 @@
 package game
 
 import (
+    "slices"
     "math/rand/v2"
 
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
@@ -81,6 +82,38 @@ func makeTreasure(encounterType maplib.EncounterType, budget int, wizard setup.W
         TreasureTypeSpellbook
         TreasureTypeRetort
     )
+
+    chooseRetort := func () (setup.WizardAbility, bool) {
+        choices := []setup.WizardAbility{
+            setup.AbilityAlchemy,
+            setup.AbilityWarlord,
+            setup.AbilityChanneler,
+            setup.AbilityArchmage,
+            setup.AbilityArtificer,
+            setup.AbilityConjurer,
+            setup.AbilitySageMaster,
+            setup.AbilityDivinePower,
+            setup.AbilityFamous,
+            setup.AbilityRunemaster,
+            setup.AbilityCharismatic,
+            setup.AbilityChaosMastery,
+            setup.AbilityNatureMastery,
+            setup.AbilitySorceryMastery,
+            setup.AbilityInfernalPower,
+            setup.AbilityManaFocusing,
+            setup.AbilityNodeMastery,
+        }
+
+        choices = slices.DeleteFunc(choices, func (ability setup.WizardAbility) bool {
+            return wizard.AbilityEnabled(ability)
+        })
+
+        if len(choices) > 0 {
+            return choices[rand.N(len(choices))], true
+        }
+
+        return setup.AbilityNone, false
+    }
 
     chooseSpell := func (rarity spellbook.SpellRarity) (spellbook.Spell, bool) {
         spells := allSpells.GetSpellsByRarity(rarity)
@@ -218,9 +251,12 @@ func makeTreasure(encounterType maplib.EncounterType, budget int, wizard setup.W
 
                 budget = 0
             case TreasureTypeRetort:
-                retortRemaining -= 1
-                // FIXME: give a retort of any type (maybe not myrror though?)
-                budget = 0
+                retort, ok := chooseRetort()
+                if ok {
+                    retortRemaining -= 1
+                    budget = 0
+                    items = append(items, &TreasureRetort{Retort: retort})
+                }
         }
     }
 
