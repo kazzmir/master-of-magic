@@ -579,7 +579,7 @@ func (screen *NewWizardScreen) MakeCustomNameUI() *uilib.UI {
                 name += "_"
             }
 
-            screen.NameFont.Print(window, 195, 39, 1, ebiten.ColorScale{}, name)
+            screen.NameFontBright.Print(window, 195, 39, 1, ebiten.ColorScale{}, name)
 
             return
         },
