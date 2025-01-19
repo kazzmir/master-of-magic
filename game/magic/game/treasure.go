@@ -70,7 +70,7 @@ func chooseValue[T comparable](choices map[T]int) T {
 }
 
 // given some budget, keep choosing a treasure type within the budget and add it to the treasure
-func makeTreasure(cache *lbx.LbxCache, encounterType maplib.EncounterType, budget int, wizard setup.WizardCustom, knownSpells spellbook.Spells, allSpells spellbook.Spells, heroes []*herolib.Hero, getPremadeArtifacts func() []artifact.Artifact) *Treasure {
+func makeTreasure(cache *lbx.LbxCache, encounterType maplib.EncounterType, budget int, wizard setup.WizardCustom, knownSpells spellbook.Spells, allSpells spellbook.Spells, heroes []*herolib.Hero, getPremadeArtifacts func() []artifact.Artifact) Treasure {
     type TreasureType int
     const (
         TreasureTypeGold TreasureType = iota
@@ -299,5 +299,5 @@ func makeTreasure(cache *lbx.LbxCache, encounterType maplib.EncounterType, budge
         }
     }
 
-    return &Treasure{Treasures: items}
+    return Treasure{Treasures: items}
 }
