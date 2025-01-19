@@ -9,6 +9,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
+    herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
 )
 
 type TreasureItem interface {
@@ -27,7 +28,7 @@ type TreasureMagicalItem struct {
 }
 
 type TreasurePrisonerHero struct {
-    Name string
+    Hero *herolib.Hero
 }
 
 type TreasureSpell struct {
@@ -68,7 +69,7 @@ func chooseValue[T comparable](choices map[T]int) T {
 }
 
 // given some budget, keep choosing a treasure type within the budget and add it to the treasure
-func makeTreasure(encounterType maplib.EncounterType, budget int, wizard setup.WizardCustom, knownSpells spellbook.Spells, allSpells spellbook.Spells) *Treasure {
+func makeTreasure(encounterType maplib.EncounterType, budget int, wizard setup.WizardCustom, knownSpells spellbook.Spells, allSpells spellbook.Spells, heroes []*herolib.Hero) *Treasure {
     type TreasureType int
     const (
         TreasureTypeGold TreasureType = iota
@@ -178,7 +179,7 @@ func makeTreasure(encounterType maplib.EncounterType, budget int, wizard setup.W
         if retortRemaining > 0 && budget >= retortSpend {
             choices[TreasureTypeRetort] = 2
         }
-        if prisonerRemaining > 0 && budget >= prisonerSpend {
+        if prisonerRemaining > 0 && budget >= prisonerSpend && len(heroes) > 0 {
             choices[TreasureTypePrisonerHero] = 1
         }
         if magicItemRemaining > 0 && budget >= magicItemSpend {
@@ -207,9 +208,12 @@ func makeTreasure(encounterType maplib.EncounterType, budget int, wizard setup.W
                 // FIXME: give a premade magical item, or create a new one. Take the wizard's spell books into account
                 budget -= 400
             case TreasureTypePrisonerHero:
-                prisonerRemaining -= 1
-                // FIXME: find an alive and unemployed non-champion hero
-                budget -= prisonerSpend
+                if len(heroes) > 0 {
+                    prisonerRemaining -= 1
+                    budget -= prisonerSpend
+                    hero := heroes[rand.N(len(heroes))]
+                    items = append(items, &TreasurePrisonerHero{Hero: hero})
+                }
             case TreasureTypeCommonSpell:
                 spell, ok := chooseSpell(spellbook.SpellRarityCommon)
 
