@@ -130,7 +130,7 @@ func (newGameScreen *NewGameScreen) MakeUI() *uilib.UI {
 
     var elements []*uilib.UIElement
 
-    okX := 160 + 91
+    okX := 161 + 91
     okY := 179
 
     okButtons, _ := newGameScreen.ImageCache.GetImages("newgame.lbx", 2)
@@ -152,7 +152,7 @@ func (newGameScreen *NewGameScreen) MakeUI() *uilib.UI {
         },
     })
 
-    cancelX := 160 + 10
+    cancelX := 161 + 10
     cancelY := 179
 
     cancelButtons, _ := newGameScreen.ImageCache.GetImages("newgame.lbx", 3)
