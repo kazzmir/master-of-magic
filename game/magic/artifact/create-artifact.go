@@ -1236,8 +1236,8 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, cr
         }
     }
 
-    powerEntries, costs, compatibilities, error := ReadPowers(cache)
-    if error != nil {
+    powerEntries, costs, compatibilities, err := ReadPowers(cache)
+    if err != nil {
         return nil, true
     }
 
