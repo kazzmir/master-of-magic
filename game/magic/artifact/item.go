@@ -383,10 +383,13 @@ func MakeRandomArtifact(cache *lbx.LbxCache) Artifact {
         }
     }
 
-    numPowers := min(rand.N(4) + 1, len(powers))
+    // it would be very bad if there are no powers
+    if len(powers) > 0 {
+        numPowers := min(rand.N(4) + 1, len(powers))
 
-    for _, index := range rand.Perm(len(powers))[:numPowers] {
-        artifact.Powers = append(artifact.Powers, powers[index])
+        for _, index := range rand.Perm(len(powers))[:numPowers] {
+            artifact.Powers = append(artifact.Powers, powers[index])
+        }
     }
 
     artifact.Image = chooseImage(artifact.Type)
