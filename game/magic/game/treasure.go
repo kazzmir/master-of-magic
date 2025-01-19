@@ -10,6 +10,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
     herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
+    "github.com/kazzmir/master-of-magic/lib/lbx"
 )
 
 type TreasureItem interface {
@@ -69,7 +70,7 @@ func chooseValue[T comparable](choices map[T]int) T {
 }
 
 // given some budget, keep choosing a treasure type within the budget and add it to the treasure
-func makeTreasure(encounterType maplib.EncounterType, budget int, wizard setup.WizardCustom, knownSpells spellbook.Spells, allSpells spellbook.Spells, heroes []*herolib.Hero, getPremadeArtifacts func() []artifact.Artifact) *Treasure {
+func makeTreasure(cache *lbx.LbxCache, encounterType maplib.EncounterType, budget int, wizard setup.WizardCustom, knownSpells spellbook.Spells, allSpells spellbook.Spells, heroes []*herolib.Hero, getPremadeArtifacts func() []artifact.Artifact) *Treasure {
     type TreasureType int
     const (
         TreasureTypeGold TreasureType = iota
@@ -212,6 +213,13 @@ func makeTreasure(encounterType maplib.EncounterType, budget int, wizard setup.W
                         magicItemRemaining -= 1
                         budget -= choice.Cost
                         items = append(items, &TreasureMagicalItem{Artifact: choice})
+                    }
+                } else {
+                    randomArtifact := artifact.MakeRandomArtifact(cache)
+                    if budget >= randomArtifact.Cost {
+                        magicItemRemaining -= 1
+                        budget -= randomArtifact.Cost
+                        items = append(items, &TreasureMagicalItem{Artifact: randomArtifact})
                     }
                 }
             case TreasureTypePrisonerHero:
