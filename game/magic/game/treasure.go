@@ -69,7 +69,7 @@ func chooseValue[T comparable](choices map[T]int) T {
 }
 
 // given some budget, keep choosing a treasure type within the budget and add it to the treasure
-func makeTreasure(encounterType maplib.EncounterType, budget int, wizard setup.WizardCustom, knownSpells spellbook.Spells, allSpells spellbook.Spells, heroes []*herolib.Hero) *Treasure {
+func makeTreasure(encounterType maplib.EncounterType, budget int, wizard setup.WizardCustom, knownSpells spellbook.Spells, allSpells spellbook.Spells, heroes []*herolib.Hero, getPremadeArtifacts func() []artifact.Artifact) *Treasure {
     type TreasureType int
     const (
         TreasureTypeGold TreasureType = iota
@@ -204,9 +204,16 @@ func makeTreasure(encounterType maplib.EncounterType, budget int, wizard setup.W
 
                 budget -= mana
             case TreasureTypeMagicalItem:
-                magicItemRemaining -= 1
-                // FIXME: give a premade magical item, or create a new one. Take the wizard's spell books into account
-                budget -= 400
+                artifacts := getPremadeArtifacts()
+                // FIXME: if there are no premade artifacts left, then generate a random new one
+                if len(artifacts) > 0 {
+                    choice := artifacts[rand.N(len(artifacts))]
+                    if budget >= choice.Cost {
+                        magicItemRemaining -= 1
+                        budget -= choice.Cost
+                        items = append(items, &TreasureMagicalItem{Artifact: choice})
+                    }
+                }
             case TreasureTypePrisonerHero:
                 if len(heroes) > 0 {
                     prisonerRemaining -= 1
