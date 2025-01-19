@@ -243,13 +243,33 @@ func makeTreasure(encounterType maplib.EncounterType, budget int, wizard setup.W
                     budget -= spellVeryRareSpend
                 }
             case TreasureTypeSpellbook:
-                spellBookRemaining -= 1
 
-                // FIXME: depends on the type of encounter/node
-                books := []data.MagicType{data.LifeMagic, data.SorceryMagic, data.ChaosMagic, data.NatureMagic, data.DeathMagic}
-                items = append(items, &TreasureSpellbook{Magic: books[rand.N(len(books))]})
+                var books []data.MagicType
+                switch encounterType {
+                    case maplib.EncounterTypeLair, maplib.EncounterTypeCave, maplib.EncounterTypePlaneTower:
+                        books = []data.MagicType{data.LifeMagic, data.SorceryMagic, data.ChaosMagic, data.NatureMagic, data.DeathMagic}
 
-                budget = 0
+                    case maplib.EncounterTypeAncientTemple, maplib.EncounterTypeFallenTemple:
+                        books = []data.MagicType{data.LifeMagic}
+
+                    case maplib.EncounterTypeRuins, maplib.EncounterTypeAbandonedKeep, maplib.EncounterTypeDungeon:
+                        books = []data.MagicType{data.DeathMagic}
+
+                    case maplib.EncounterTypeChaosNode:
+                        books = []data.MagicType{data.ChaosMagic}
+
+                    case maplib.EncounterTypeNatureNode:
+                        books = []data.MagicType{data.NatureMagic}
+
+                    case maplib.EncounterTypeSorceryNode:
+                        books = []data.MagicType{data.SorceryMagic}
+                }
+
+                if len(books) > 0 {
+                    spellBookRemaining -= 1
+                    items = append(items, &TreasureSpellbook{Magic: books[rand.N(len(books))]})
+                    budget = 0
+                }
             case TreasureTypeRetort:
                 retort, ok := chooseRetort()
                 if ok {
