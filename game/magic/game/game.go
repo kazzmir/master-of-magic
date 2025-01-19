@@ -87,6 +87,11 @@ type GameEventNotice struct {
     Message string
 }
 
+type GameEventTreasure struct {
+    Treasure Treasure
+    Player *playerlib.Player
+}
+
 type GameEventHireHero struct {
     Hero *herolib.Hero
     Player *playerlib.Player
@@ -2383,6 +2388,9 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         castSpell := event.(*GameEventCastSpell)
                         // in cast.go
                         game.doCastSpell(yield, castSpell.Player, castSpell.Spell)
+                    case *GameEventTreasure:
+                        treasure := event.(*GameEventTreasure)
+                        game.doTreasure(yield, treasure.Player, treasure.Treasure)
                     case *GameEventNewBuilding:
                         buildingEvent := event.(*GameEventNewBuilding)
                         game.Camera.Center(buildingEvent.City.X, buildingEvent.City.Y)
@@ -3299,37 +3307,44 @@ func (game *Game) doLairEncounter(yield coroutine.YieldFunc, player *playerlib.P
     if result == combat.CombatStateAttackerWin {
         encounter.Empty = true
 
-        allSpells, err := spellbook.ReadSpellsFromCache(game.Cache)
-        if err != nil {
-            log.Printf("Error: unable to read spells: %v", err)
-        } else {
-            heroes := slices.Clone(player.Heroes[:])
-            // only include alive non-champion heroes
-            heroes = slices.DeleteFunc(heroes, func (hero *herolib.Hero) bool {
-                return hero.Status != herolib.StatusAvailable || hero.IsChampion()
-            })
-
-            // FIXME: store all premade artifacts as a field of Game and just return that
-            makeArtifacts := func () []artifact.Artifact {
-                premade, err := artifact.ReadArtifacts(game.Cache)
-                if err == nil {
-                    return premade
-                } else {
-                    log.Printf("Error: could not read artifacts: %v", err)
-                    return nil
-                }
-            }
-
-            treasure := makeTreasure(game.Cache, encounter.Type, encounter.Budget, player.Wizard, player.KnownSpells, allSpells, heroes, makeArtifacts)
-            game.doTreasure(yield, player, treasure)
-        }
-
+        game.createTreasure(encounter.Type, encounter.Budget, player)
     } else {
         // FIXME: remove killed defenders
     }
 
     // absorb extra clicks
     yield()
+}
+
+func (game *Game) createTreasure(encounterType maplib.EncounterType, budget int, player *playerlib.Player){
+    allSpells, err := spellbook.ReadSpellsFromCache(game.Cache)
+    if err != nil {
+        log.Printf("Error: unable to read spells: %v", err)
+    } else {
+        heroes := slices.Clone(player.Heroes[:])
+        // only include alive non-champion heroes
+        heroes = slices.DeleteFunc(heroes, func (hero *herolib.Hero) bool {
+            return hero.Status != herolib.StatusAvailable || hero.IsChampion()
+        })
+
+        // FIXME: store all premade artifacts as a field of Game and just return that
+        makeArtifacts := func () []artifact.Artifact {
+            premade, err := artifact.ReadArtifacts(game.Cache)
+            if err == nil {
+                return premade
+            } else {
+                log.Printf("Error: could not read artifacts: %v", err)
+                return nil
+            }
+        }
+
+        treasure := makeTreasure(game.Cache, encounterType, budget, player.Wizard, player.KnownSpells, allSpells, heroes, makeArtifacts)
+        // FIXME: show treasure ui for human, otherwise just apply treasure for AI
+        select {
+            case game.Events <- &GameEventTreasure{Treasure: treasure, Player: player}:
+            default:
+        }
+    }
 }
 
 func (game *Game) doTreasure(yield coroutine.YieldFunc, player *playerlib.Player, treasure Treasure){
