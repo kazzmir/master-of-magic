@@ -199,7 +199,6 @@ const (
     NewWizardScreenStateSelectWizard NewWizardScreenState = iota
     NewWizardScreenStateCustomPicture
     NewWizardScreenStateCustomName
-    NewWizardScreenStateCustomAbility
     NewWizardScreenStateCustomBooks
     NewWizardScreenStateSelectSpells
     NewWizardScreenStateSelectRace
@@ -212,7 +211,6 @@ func (state NewWizardScreenState) String() string {
         case NewWizardScreenStateSelectWizard: return "select wizard"
         case NewWizardScreenStateCustomPicture: return "custom picture"
         case NewWizardScreenStateCustomName: return "custom name"
-        case NewWizardScreenStateCustomAbility: return "custom ability"
         case NewWizardScreenStateCustomBooks: return "custom books"
         case NewWizardScreenStateSelectSpells: return "select spells"
         case NewWizardScreenStateSelectRace: return "select race"
@@ -583,6 +581,15 @@ func (screen *NewWizardScreen) MakeCustomNameUI() *uilib.UI {
 
             return
         },
+        HandleKeys: func(keys []ebiten.Key){
+            for _, key := range keys {
+                switch key {
+                    case ebiten.KeyEscape:
+                        screen.State = NewWizardScreenStateCustomPicture
+                        screen.UI = screen.MakeCustomPictureUI()
+                }
+            }
+        },
     }
 
     nameRect := image.Rect(184, 20, 184 + 128, 60)
@@ -627,6 +634,9 @@ func (screen *NewWizardScreen) MakeCustomNameUI() *uilib.UI {
                             ui.UnfocusElement()
                             screen.UI = screen.MakeCustomWizardBooksUI()
                         }
+                    case ebiten.KeyEscape:
+                        screen.State = NewWizardScreenStateCustomPicture
+                        screen.UI = screen.MakeCustomPictureUI()
                         /*
                     case ebiten.KeySpace:
                         screen.CustomWizard.Name += " "
@@ -687,6 +697,15 @@ func (screen *NewWizardScreen) MakeCustomPictureUI() *uilib.UI {
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(portraitX, portraitY)
                 window.DrawImage(portrait, &options)
+            }
+        },
+        HandleKeys: func(keys []ebiten.Key){
+            for _, key := range keys {
+                switch key {
+                    case ebiten.KeyEscape:
+                        screen.State = NewWizardScreenStateSelectWizard
+                        screen.UI = screen.MakeSelectWizardUI()
+                }
             }
         },
     }
@@ -1066,6 +1085,9 @@ func JoinAbilities(abilities []WizardAbility) string {
 
 func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
 
+    screen.CustomWizard.Abilities = []WizardAbility{}
+    screen.CustomWizard.Books = []data.WizardBook{}
+
     imageCache := util.MakeImageCache(screen.LbxCache)
 
     picksLeft := func() int {
@@ -1430,6 +1452,15 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
 
             screen.AbilityFontSelected.Print(window, 12, 180, 1, ebiten.ColorScale{}, JoinAbilities(screen.CustomWizard.Abilities))
             screen.NameFontBright.PrintCenter(window, 223, 185, 1, ebiten.ColorScale{}, fmt.Sprintf("%v picks", picksLeft()))
+        },
+        HandleKeys: func(keys []ebiten.Key){
+            for _, key := range keys {
+                switch key {
+                    case ebiten.KeyEscape:
+                        screen.State = NewWizardScreenStateCustomName
+                        screen.UI = screen.MakeCustomNameUI()
+                }
+            }
         },
     }
 
@@ -1799,6 +1830,15 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
                     }
                 })
             },
+            HandleKeys: func(keys []ebiten.Key){
+                for _, key := range keys {
+                    switch key {
+                        case ebiten.KeyEscape:
+                            screen.State = NewWizardScreenStateCustomBooks
+                            screen.UI = screen.MakeCustomWizardBooksUI()
+                    }
+                }
+            },
         }
 
         ui.SetElementsFromArray(elements)
@@ -2032,6 +2072,20 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
             })
 
         },
+        HandleKeys: func(keys []ebiten.Key){
+            for _, key := range keys {
+                switch key {
+                    case ebiten.KeyEscape:
+                        if screen.CurrentWizard == -1 {
+                            screen.State = NewWizardScreenStateSelectSpells
+                            screen.UI = screen.MakeSelectSpellsUI()
+                        } else {
+                            screen.State = NewWizardScreenStateSelectWizard
+                            screen.UI = screen.MakeSelectWizardUI()
+                        }
+                }
+            }
+        },
     }
 
     ui.SetElementsFromArray(elements)
@@ -2102,6 +2156,15 @@ func (screen *NewWizardScreen) MakeSelectBannerUI() *uilib.UI {
                     element.Draw(element, window)
                 }
             })
+        },
+        HandleKeys: func(keys []ebiten.Key){
+            for _, key := range keys {
+                switch key {
+                    case ebiten.KeyEscape:
+                        screen.State = NewWizardScreenStateSelectRace
+                        screen.UI = screen.MakeSelectRaceUI()
+                }
+            }
         },
     }
 
