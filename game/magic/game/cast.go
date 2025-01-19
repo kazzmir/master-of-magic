@@ -327,7 +327,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                             return tileX, tileY, false
                         }
                     case LocationTypeChangeTerrain:
-                        if tileY > 0 && tileY < overworld.Map.Map.Rows() {
+                        if tileY >= 0 && tileY < overworld.Map.Map.Rows() {
                             tileX = overworld.Map.WrapX(tileX)
 
                             if player.IsTileVisible(tileX, tileY, game.Plane) {
@@ -341,7 +341,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                             }
                         }
                     case LocationTypeTransmute:
-                        if tileY > 0 && tileY < overworld.Map.Map.Rows() {
+                        if tileY >= 0 && tileY < overworld.Map.Map.Rows() {
                             tileX = overworld.Map.WrapX(tileX)
 
                             if player.IsTileVisible(tileX, tileY, game.Plane) {
