@@ -32,6 +32,7 @@ const (
     LocationTypeFriendlyUnit
     LocationTypeEnemyUnit
     LocationTypeChangeTerrain
+    LocationTypeTransmute
 )
 
 func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Player, spell spellbook.Spell) {
@@ -85,6 +86,14 @@ func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Playe
             }
 
             game.doCastChangeTerrain(yield, tileX, tileY)
+        case "Transmute":
+            tileX, tileY, cancel := game.selectLocationForSpell(yield, spell, player, LocationTypeTransmute)
+
+            if cancel {
+                return
+            }
+
+            game.doCastTransmute(yield, tileX, tileY)
     }
 }
 
@@ -182,7 +191,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
     var selectMessage string
 
     switch locationType {
-        case LocationTypeAny, LocationTypeChangeTerrain: selectMessage = fmt.Sprintf("Select a space as the target for an %v spell.", spell.Name)
+        case LocationTypeAny, LocationTypeChangeTerrain, LocationTypeTransmute: selectMessage = fmt.Sprintf("Select a space as the target for an %v spell.", spell.Name)
         case LocationTypeFriendlyCity: selectMessage = fmt.Sprintf("Select a friendly city to cast %v on.", spell.Name)
         default:
             selectMessage = fmt.Sprintf("unhandled location type %v", locationType)
@@ -331,6 +340,19 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                                 }
                             }
                         }
+                    case LocationTypeTransmute:
+                        if tileY > 0 && tileY < overworld.Map.Map.Rows() {
+                            tileX = overworld.Map.WrapX(tileX)
+
+                            if player.IsTileVisible(tileX, tileY, game.Plane) {
+                                bonusType := overworld.Map.GetBonusTile(tileX, tileY)
+                                switch bonusType {
+                                    case data.BonusCoal, data.BonusGem, data.BonusIronOre,
+                                         data.BonusGoldOre, data.BonusSilverOre, data.BonusMithrilOre:
+                                        return tileX, tileY, false
+                                }
+                            }
+                        }
 
                     case LocationTypeEnemyCity:
                         // TODO
@@ -444,6 +466,68 @@ func (game *Game) doCastChangeTerrain(yield coroutine.YieldFunc, tileX int, tile
             quit = !animation.Next()
             if animation.CurrentFrame == 7 {
                 changeTerrain(tileX, tileY)
+            }
+        }
+
+        yield()
+    }
+}
+
+
+func (game *Game) doCastTransmute(yield coroutine.YieldFunc, tileX int, tileY int) {
+    game.Camera.Zoom = camera.ZoomDefault
+    game.doMoveCamera(yield, tileX, tileY)
+
+    oldDrawer := game.Drawer
+    defer func(){
+        game.Drawer = oldDrawer
+    }()
+
+    pics, _ := game.ImageCache.GetImages("specfx.lbx", 0)
+
+    animation := util.MakeAnimation(pics, false)
+
+    // FIXME: need some function in Game that returns the pixel coordinates for a given tile
+    x := 130
+    y := 100
+
+    game.Drawer = func(screen *ebiten.Image, game *Game) {
+        oldDrawer(screen, game)
+
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(float64(x - animation.Frame().Bounds().Dx() / 2), float64(y - animation.Frame().Bounds().Dy() / 2))
+        screen.DrawImage(animation.Frame(), &options)
+    }
+
+    sound, err := audio.LoadNewSound(game.Cache, 18)
+    if err == nil {
+        sound.Play()
+    }
+
+    transmute := func (x int, y int) {
+        mapObject := game.CurrentMap()
+        if y >= 0 || y < mapObject.Map.Rows() {
+            x = mapObject.WrapX(x)
+            switch mapObject.GetBonusTile(x, y) {
+                case data.BonusCoal: mapObject.SetBonus(x, y, data.BonusGem)
+                case data.BonusGem: mapObject.SetBonus(x, y, data.BonusCoal)
+                case data.BonusIronOre: mapObject.SetBonus(x, y, data.BonusGoldOre)
+                case data.BonusGoldOre: mapObject.SetBonus(x, y, data.BonusIronOre)
+                case data.BonusSilverOre: mapObject.SetBonus(x, y, data.BonusMithrilOre)
+                case data.BonusMithrilOre: mapObject.SetBonus(x, y, data.BonusSilverOre)
+            }
+        }
+    }
+
+    quit := false
+    for !quit {
+        game.Counter += 1
+
+        quit = false
+        if game.Counter % 6 == 0 {
+            quit = !animation.Next()
+            if animation.CurrentFrame == 6 {
+                transmute(tileX, tileY)
             }
         }
 
