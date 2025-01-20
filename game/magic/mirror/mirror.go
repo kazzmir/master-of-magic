@@ -74,6 +74,8 @@ func MakeMirrorUI(cache *lbx.LbxCache, player *playerlib.Player, ui *uilib.UI) *
         yellow, yellow, yellow,
     }
 
+    nameFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowPalette)
+
     smallFont := font.MakeOptimizedFontWithPalette(fonts[0], yellowPalette)
 
     heroFont := font.MakeOptimizedFontWithPalette(fonts[2], yellowPalette)
@@ -118,6 +120,8 @@ func MakeMirrorUI(cache *lbx.LbxCache, player *playerlib.Player, ui *uilib.UI) *
                 screen.DrawImage(portrait, &options)
             }
 
+            nameFont.PrintCenter(screen, float64(cornerX + 110), float64(cornerY + 10), 1, options.ColorScale, player.Wizard.Name)
+
             smallFont.PrintCenter(screen, float64(cornerX + 30), float64(cornerY + 75), 1, options.ColorScale, fmt.Sprintf("%v GP", player.Gold))
             smallFont.PrintRight(screen, float64(cornerX + 170), float64(cornerY + 75), 1, options.ColorScale, fmt.Sprintf("%v MP", player.Mana))
 
@@ -136,7 +140,7 @@ func MakeMirrorUI(cache *lbx.LbxCache, player *playerlib.Player, ui *uilib.UI) *
             heroX := cornerX + 13
             heroY := cornerY + 142
             for _, hero := range player.AliveHeroes() {
-                smallFont.Print(screen, float64(heroX), float64(heroY), 1, options.ColorScale, hero.GetName())
+                smallFont.Print(screen, float64(heroX), float64(heroY), 1, options.ColorScale, hero.FullName())
                 heroY += smallFont.Height()
             }
         },
