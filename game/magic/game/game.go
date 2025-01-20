@@ -3282,6 +3282,7 @@ func (game *Game) doLairEncounter(yield coroutine.YieldFunc, player *playerlib.P
         Wizard: setup.WizardCustom{
             Name: "Node",
         },
+        StrategicCombat: true,
     }
 
     var enemies []units.StackUnit
@@ -3496,8 +3497,6 @@ func (game *Game) GetCombatLandscape(x int, y int, plane data.Plane) combat.Comb
 /* run the tactical combat screen. returns the combat state as a result (attackers win, defenders win, flee, etc)
  */
 func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player, attackerStack *playerlib.UnitStack, defender *playerlib.Player, defenderStack *playerlib.UnitStack, zone combat.ZoneType) combat.CombatState {
-    defer mouse.Mouse.SetImage(game.MouseData.Normal)
-
     attackingArmy := combat.Army{
         Player: attacker,
     }
@@ -3517,51 +3516,66 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     attackingArmy.LayoutUnits(combat.TeamAttacker)
     defendingArmy.LayoutUnits(combat.TeamDefender)
 
-    landscape := game.GetCombatLandscape(attackerStack.X(), attackerStack.Y(), attackerStack.Plane())
+    var state combat.CombatState
+    var defeatedDefenders int
+    var defeatedAttackers int
 
-    // FIXME: take plane into account for the landscape/terrain
-    combatScreen := combat.MakeCombatScreen(game.Cache, &defendingArmy, &attackingArmy, game.Players[0], landscape, attackerStack.Plane(), zone)
-    oldDrawer := game.Drawer
+    if attacker.StrategicCombat && defender.StrategicCombat {
+        state, defeatedAttackers, defeatedDefenders = combat.DoStrategicCombat(&attackingArmy, &defendingArmy)
+    } else {
 
-    // ebiten.SetCursorMode(ebiten.CursorModeHidden)
+        defer mouse.Mouse.SetImage(game.MouseData.Normal)
 
-    game.Drawer = func (screen *ebiten.Image, game *Game){
-        combatScreen.Draw(screen)
-    }
+        landscape := game.GetCombatLandscape(attackerStack.X(), attackerStack.Y(), attackerStack.Plane())
 
-    state := combat.CombatStateRunning
-    for state == combat.CombatStateRunning {
-        state = combatScreen.Update(yield)
-        yield()
-    }
+        // FIXME: take plane into account for the landscape/terrain
+        combatScreen := combat.MakeCombatScreen(game.Cache, &defendingArmy, &attackingArmy, game.Players[0], landscape, attackerStack.Plane(), zone)
+        oldDrawer := game.Drawer
 
-    endScreen := combat.MakeCombatEndScreen(game.Cache, combatScreen, state == combat.CombatStateAttackerWin)
-    game.Drawer = func (screen *ebiten.Image, game *Game){
-        endScreen.Draw(screen)
-    }
+        // ebiten.SetCursorMode(ebiten.CursorModeHidden)
 
-    state2 := combat.CombatEndScreenRunning
-    for state2 == combat.CombatEndScreenRunning {
-        state2 = endScreen.Update()
-        yield()
+        game.Drawer = func (screen *ebiten.Image, game *Game){
+            combatScreen.Draw(screen)
+        }
+
+        state = combat.CombatStateRunning
+        for state == combat.CombatStateRunning {
+            state = combatScreen.Update(yield)
+            yield()
+        }
+
+        endScreen := combat.MakeCombatEndScreen(game.Cache, combatScreen, state == combat.CombatStateAttackerWin)
+        game.Drawer = func (screen *ebiten.Image, game *Game){
+            endScreen.Draw(screen)
+        }
+
+        state2 := combat.CombatEndScreenRunning
+        for state2 == combat.CombatEndScreenRunning {
+            state2 = endScreen.Update()
+            yield()
+        }
+
+        game.Drawer = oldDrawer
+
+        defeatedDefenders = combatScreen.Model.DefeatedDefenders
+        defeatedAttackers = combatScreen.Model.DefeatedAttackers
     }
 
     if state == combat.CombatStateAttackerWin {
         for _, unit := range attackerStack.Units() {
             if unit.GetRace() != data.RaceFantastic {
-                game.AddExperience(attacker, unit, combatScreen.Model.DefeatedDefenders * 2)
+                game.AddExperience(attacker, unit, defeatedDefenders * 2)
             }
         }
     } else if state == combat.CombatStateDefenderWin {
         for _, unit := range defenderStack.Units() {
             if unit.GetRace() != data.RaceFantastic {
-                game.AddExperience(defender, unit, combatScreen.Model.DefeatedAttackers * 2)
+                game.AddExperience(defender, unit, defeatedAttackers * 2)
             }
         }
     }
 
     // ebiten.SetCursorMode(ebiten.CursorModeVisible)
-    game.Drawer = oldDrawer
 
     for _, unit := range attackerStack.Units() {
         if unit.GetHealth() <= 0 {

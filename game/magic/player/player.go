@@ -73,6 +73,9 @@ type Player struct {
     BookOrderSeed1 uint64
     BookOrderSeed2 uint64
 
+    // if true, the game will only do strategic (non-graphics/non-realtime) based combat if both sides are strategic
+    StrategicCombat bool
+
     // known spells
     KnownSpells spellbook.Spells
 
