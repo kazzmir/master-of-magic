@@ -579,7 +579,7 @@ func (screen *NewWizardScreen) MakeCustomNameUI() *uilib.UI {
                 name += "_"
             }
 
-            screen.NameFont.Print(window, 195, 39, 1, ebiten.ColorScale{}, name)
+            screen.NameFontBright.Print(window, 195, 39, 1, ebiten.ColorScale{}, name)
 
             return
         },
@@ -993,7 +993,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
 
     screen.LbxFonts = fonts
 
-    screen.Font = font.MakeOptimizedFont(fonts[4])
+    screen.Font = font.MakeOptimizedFont(fonts[3])
     screen.WizardSlots = DefaultWizardSlots()
 
     // FIXME: load with a yellowish palette
