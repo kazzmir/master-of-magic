@@ -324,7 +324,7 @@ func makeTreasure(cache *lbx.LbxCache, encounterType maplib.EncounterType, budge
                     }
                 } else {
                     randomArtifact := artifact.MakeRandomArtifact(cache)
-                    if budget >= randomArtifact.Cost {
+                    if budget >= randomArtifact.Cost && canUseArtifact(randomArtifact) {
                         magicItemRemaining -= 1
                         budget -= randomArtifact.Cost
                         items = append(items, &TreasureMagicalItem{Artifact: randomArtifact})
