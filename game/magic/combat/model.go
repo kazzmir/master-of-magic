@@ -517,6 +517,19 @@ type ArmyUnit struct {
     Paths map[image.Point]pathfinding.Path
 }
 
+// roughly represents the strength of this unit, used for strategic combat
+func (unit *ArmyUnit) GetPower() int {
+    power := 0
+
+    power += unit.Unit.GetMaxHealth()
+    power += unit.Unit.GetDefense()
+    power += unit.Unit.GetResistance()
+    power += unit.Unit.GetRangedAttackPower() * unit.Figures()
+    power += unit.Unit.GetMeleeAttackPower() * unit.Figures()
+
+    return power
+}
+
 // true if this unit can move through a tile with a wall tile
 func (unit *ArmyUnit) CanTraverseWall() bool {
     return unit.Unit.IsFlying() || unit.Unit.HasAbility(data.AbilityMerging) || unit.Unit.HasAbility(data.AbilityTeleporting)
@@ -884,6 +897,17 @@ type Army struct {
     Player *playerlib.Player
     Units []*ArmyUnit
     Auto bool
+}
+
+// a number that mostly represents the strength of this army
+func (army *Army) GetPower() int {
+    power := 0
+
+    for _, unit := range army.Units {
+        power += unit.GetPower()
+    }
+
+    return power
 }
 
 func (army *Army) IsAI() bool {
@@ -2166,4 +2190,26 @@ func (model *CombatModel) GetOtherArmy(unit *ArmyUnit) *Army {
     }
 
     return model.DefendingArmy
+}
+
+// predicts the outcome of a battle just by comparing the relative power level of each army
+func DoStrategicCombat(attackingArmy *Army, defendingArmy *Army) (CombatState, int, int) {
+    attackingPower := attackingArmy.GetPower()
+    defendingPower := defendingArmy.GetPower()
+
+    log.Printf("strategic combat: attacking power: %v, defending power: %v", attackingPower, defendingPower)
+
+    if attackingPower > defendingPower {
+        for _, unit := range defendingArmy.Units {
+            unit.TakeDamage(unit.Unit.GetMaxHealth())
+        }
+
+        return CombatStateAttackerWin, 0, len(defendingArmy.Units)
+    } else {
+        for _, unit := range attackingArmy.Units {
+            unit.TakeDamage(unit.Unit.GetMaxHealth())
+        }
+
+        return CombatStateDefenderWin, len(attackingArmy.Units), 0
+    }
 }

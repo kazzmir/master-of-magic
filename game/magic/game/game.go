@@ -87,6 +87,11 @@ type GameEventNotice struct {
     Message string
 }
 
+type GameEventTreasure struct {
+    Treasure Treasure
+    Player *playerlib.Player
+}
+
 type GameEventHireHero struct {
     Hero *herolib.Hero
     Player *playerlib.Player
@@ -2383,6 +2388,9 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         castSpell := event.(*GameEventCastSpell)
                         // in cast.go
                         game.doCastSpell(yield, castSpell.Player, castSpell.Spell)
+                    case *GameEventTreasure:
+                        treasure := event.(*GameEventTreasure)
+                        game.doTreasure(yield, treasure.Player, treasure.Treasure)
                     case *GameEventNewBuilding:
                         buildingEvent := event.(*GameEventNewBuilding)
                         game.Camera.Center(buildingEvent.City.X, buildingEvent.City.Y)
@@ -3274,6 +3282,7 @@ func (game *Game) doLairEncounter(yield coroutine.YieldFunc, player *playerlib.P
         Wizard: setup.WizardCustom{
             Name: "Node",
         },
+        StrategicCombat: true,
     }
 
     var enemies []units.StackUnit
@@ -3297,13 +3306,148 @@ func (game *Game) doLairEncounter(yield coroutine.YieldFunc, player *playerlib.P
 
     result := game.doCombat(yield, player, stack, &defender, playerlib.MakeUnitStackFromUnits(enemies), zone)
     if result == combat.CombatStateAttackerWin {
-        // FIXME: give treasure
         encounter.Empty = true
+
+        game.createTreasure(encounter.Type, encounter.Budget, player)
     } else {
         // FIXME: remove killed defenders
     }
 
     // absorb extra clicks
+    yield()
+}
+
+func (game *Game) createTreasure(encounterType maplib.EncounterType, budget int, player *playerlib.Player){
+    allSpells, err := spellbook.ReadSpellsFromCache(game.Cache)
+    if err != nil {
+        log.Printf("Error: unable to read spells: %v", err)
+    } else {
+        var heroes []*herolib.Hero
+        for _, hero := range game.Heroes {
+            // only include available heroes that are not champions
+            if hero.Status == herolib.StatusAvailable && !hero.IsChampion() {
+                heroes = append(heroes, hero)
+            }
+        }
+
+        // FIXME: store all premade artifacts as a field of Game and just return that
+        makeArtifacts := func () []artifact.Artifact {
+            premade, err := artifact.ReadArtifacts(game.Cache)
+            if err == nil {
+                return premade
+            } else {
+                log.Printf("Error: could not read artifacts: %v", err)
+                return nil
+            }
+        }
+
+        treasure := makeTreasure(game.Cache, encounterType, budget, player.Wizard, player.KnownSpells, allSpells, heroes, makeArtifacts)
+        // FIXME: show treasure ui for human, otherwise just apply treasure for AI
+        select {
+            case game.Events <- &GameEventTreasure{Treasure: treasure, Player: player}:
+            default:
+        }
+    }
+}
+
+func (game *Game) doTreasure(yield coroutine.YieldFunc, player *playerlib.Player, treasure Treasure){
+    uiDone := false
+
+    fontLbx, err := game.Cache.GetLbxFile("FONTS.LBX")
+    if err != nil {
+        log.Printf("Error: %v", err)
+        return
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        log.Printf("Error: %v", err)
+        return
+    }
+
+    orange := color.RGBA{R: 0xc7, G: 0x82, B: 0x1b, A: 0xff}
+
+    yellowPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        orange,
+        util.Lighten(orange, 15),
+        util.Lighten(orange, 30),
+        util.Lighten(orange, 50),
+        orange,
+        orange,
+    }
+
+    treasureFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowPalette)
+
+    element := &uilib.UIElement{
+        Layer: 2,
+        Rect: image.Rect(0, 0, data.ScreenWidth, data.ScreenHeight),
+        LeftClick: func (element *uilib.UIElement){
+            uiDone = true
+        },
+        Draw: func (element *uilib.UIElement, screen *ebiten.Image){
+            left, _ := game.ImageCache.GetImage("resource.lbx", 56, 0)
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(10, 50)
+
+            fontX, fontY := options.GeoM.Apply(10, 10)
+
+            screen.DrawImage(left, &options)
+            right, _ := game.ImageCache.GetImage("resource.lbx", 58, 0)
+            options.GeoM.Translate(float64(left.Bounds().Dx()), 0)
+            rightGeom := options.GeoM
+
+            chest, _ := game.ImageCache.GetImage("reload.lbx", 20, 0)
+            options.GeoM.Translate(6, 8)
+            screen.DrawImage(chest, &options)
+
+            options.GeoM = rightGeom
+            screen.DrawImage(right, &options)
+
+            treasureFont.PrintWrap(screen, fontX, fontY, float64(left.Bounds().Dx()) - 5, 1.0, ebiten.ColorScale{}, treasure.String())
+        },
+    }
+
+    game.HudUI.AddElement(element)
+
+    for !uiDone {
+        game.Counter += 1
+        game.HudUI.StandardUpdate()
+        yield()
+    }
+
+    yield()
+
+    game.HudUI.RemoveElement(element)
+
+    for _, item := range treasure.Treasures {
+        switch item.(type) {
+            case *TreasureGold:
+                gold := item.(*TreasureGold)
+                player.Gold += gold.Amount
+            case *TreasureMana:
+                mana := item.(*TreasureMana)
+                player.Mana += mana.Amount
+            case *TreasureMagicalItem:
+                magicalItem := item.(*TreasureMagicalItem)
+                game.doVault(yield, &magicalItem.Artifact)
+            case *TreasurePrisonerHero:
+                hero := item.(*TreasurePrisonerHero)
+                game.doHireHero(yield, 0, hero.Hero, player)
+            case *TreasureSpell:
+                spell := item.(*TreasureSpell)
+                player.KnownSpells.AddSpell(spell.Spell)
+            case *TreasureSpellbook:
+                spellbook := item.(*TreasureSpellbook)
+                // FIXME: somehow recompute the research spell pool for the player
+                player.Wizard.AddMagicLevel(spellbook.Magic, 1)
+            case *TreasureRetort:
+                retort := item.(*TreasureRetort)
+                player.Wizard.EnableAbility(retort.Retort)
+        }
+    }
+
     yield()
 }
 
@@ -3313,6 +3457,7 @@ func (game *Game) doMagicEncounter(yield coroutine.YieldFunc, player *playerlib.
         Wizard: setup.WizardCustom{
             Name: "Node",
         },
+        StrategicCombat: true,
     }
 
     var enemies []units.StackUnit
@@ -3339,7 +3484,14 @@ func (game *Game) doMagicEncounter(yield coroutine.YieldFunc, player *playerlib.
         // node should have no guardians
         node.Empty = true
 
-        // FIXME: give treasure
+        var encounterType maplib.EncounterType
+        switch node.Kind {
+            case maplib.MagicNodeNature: encounterType = maplib.EncounterTypeNatureNode
+            case maplib.MagicNodeSorcery: encounterType = maplib.EncounterTypeSorceryNode
+            case maplib.MagicNodeChaos: encounterType = maplib.EncounterTypeChaosNode
+        }
+
+        game.createTreasure(encounterType, node.Budget, player)
     }
 
     // absorb extra clicks
@@ -3373,8 +3525,6 @@ func (game *Game) GetCombatLandscape(x int, y int, plane data.Plane) combat.Comb
 /* run the tactical combat screen. returns the combat state as a result (attackers win, defenders win, flee, etc)
  */
 func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player, attackerStack *playerlib.UnitStack, defender *playerlib.Player, defenderStack *playerlib.UnitStack, zone combat.ZoneType) combat.CombatState {
-    defer mouse.Mouse.SetImage(game.MouseData.Normal)
-
     attackingArmy := combat.Army{
         Player: attacker,
     }
@@ -3394,51 +3544,67 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     attackingArmy.LayoutUnits(combat.TeamAttacker)
     defendingArmy.LayoutUnits(combat.TeamDefender)
 
-    landscape := game.GetCombatLandscape(attackerStack.X(), attackerStack.Y(), attackerStack.Plane())
+    var state combat.CombatState
+    var defeatedDefenders int
+    var defeatedAttackers int
 
-    // FIXME: take plane into account for the landscape/terrain
-    combatScreen := combat.MakeCombatScreen(game.Cache, &defendingArmy, &attackingArmy, game.Players[0], landscape, attackerStack.Plane(), zone)
-    oldDrawer := game.Drawer
+    if attacker.StrategicCombat && defender.StrategicCombat {
+        state, defeatedAttackers, defeatedDefenders = combat.DoStrategicCombat(&attackingArmy, &defendingArmy)
+        log.Printf("Strategic combat result state=%v", state)
+    } else {
 
-    // ebiten.SetCursorMode(ebiten.CursorModeHidden)
+        defer mouse.Mouse.SetImage(game.MouseData.Normal)
 
-    game.Drawer = func (screen *ebiten.Image, game *Game){
-        combatScreen.Draw(screen)
-    }
+        landscape := game.GetCombatLandscape(attackerStack.X(), attackerStack.Y(), attackerStack.Plane())
 
-    state := combat.CombatStateRunning
-    for state == combat.CombatStateRunning {
-        state = combatScreen.Update(yield)
-        yield()
-    }
+        // FIXME: take plane into account for the landscape/terrain
+        combatScreen := combat.MakeCombatScreen(game.Cache, &defendingArmy, &attackingArmy, game.Players[0], landscape, attackerStack.Plane(), zone)
+        oldDrawer := game.Drawer
 
-    endScreen := combat.MakeCombatEndScreen(game.Cache, combatScreen, state == combat.CombatStateAttackerWin)
-    game.Drawer = func (screen *ebiten.Image, game *Game){
-        endScreen.Draw(screen)
-    }
+        // ebiten.SetCursorMode(ebiten.CursorModeHidden)
 
-    state2 := combat.CombatEndScreenRunning
-    for state2 == combat.CombatEndScreenRunning {
-        state2 = endScreen.Update()
-        yield()
+        game.Drawer = func (screen *ebiten.Image, game *Game){
+            combatScreen.Draw(screen)
+        }
+
+        state = combat.CombatStateRunning
+        for state == combat.CombatStateRunning {
+            state = combatScreen.Update(yield)
+            yield()
+        }
+
+        endScreen := combat.MakeCombatEndScreen(game.Cache, combatScreen, state == combat.CombatStateAttackerWin)
+        game.Drawer = func (screen *ebiten.Image, game *Game){
+            endScreen.Draw(screen)
+        }
+
+        state2 := combat.CombatEndScreenRunning
+        for state2 == combat.CombatEndScreenRunning {
+            state2 = endScreen.Update()
+            yield()
+        }
+
+        game.Drawer = oldDrawer
+
+        defeatedDefenders = combatScreen.Model.DefeatedDefenders
+        defeatedAttackers = combatScreen.Model.DefeatedAttackers
     }
 
     if state == combat.CombatStateAttackerWin {
         for _, unit := range attackerStack.Units() {
             if unit.GetRace() != data.RaceFantastic {
-                game.AddExperience(attacker, unit, combatScreen.Model.DefeatedDefenders * 2)
+                game.AddExperience(attacker, unit, defeatedDefenders * 2)
             }
         }
     } else if state == combat.CombatStateDefenderWin {
         for _, unit := range defenderStack.Units() {
             if unit.GetRace() != data.RaceFantastic {
-                game.AddExperience(defender, unit, combatScreen.Model.DefeatedAttackers * 2)
+                game.AddExperience(defender, unit, defeatedAttackers * 2)
             }
         }
     }
 
     // ebiten.SetCursorMode(ebiten.CursorModeVisible)
-    game.Drawer = oldDrawer
 
     for _, unit := range attackerStack.Units() {
         if unit.GetHealth() <= 0 {

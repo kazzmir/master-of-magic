@@ -11,7 +11,6 @@
 * combat: implement boulder ranged attacks
 * combat: town damage, destroy buildings/people after a battle
 * combat: implement flying fortress
-* combat: use item skill charges for casting spells
 * hero: ability progress (https://masterofmagic.fandom.com/wiki/Experience_Level#Ability_Improvement_Tables_-_Heroes)
 
 9/22/2024 * city view: separate surplus food/gold from subsistence food/gold
@@ -66,4 +65,6 @@
 1/9/2025 * play ui sounds
 1/9/2025 * build roads
 1/14/2025 * add edge glow to enchanted items
+1/16/2025 * combat: use item skill charges for casting spells
 1/17/2025 * map contains rivers and other terrain types, as well as magic nodes and encounter nodes
+1/19/2025 * nodes and encounters give treasure

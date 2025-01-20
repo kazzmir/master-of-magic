@@ -403,6 +403,7 @@ func MakeMagicNode(kind MagicNode, magicSetting data.MagicSetting, difficulty da
     return &ExtraMagicNode{
         Kind: kind,
         Empty: false,
+        Budget: budget,
         Guardians: guardians,
         Secondary: secondary,
         Zone: zone,

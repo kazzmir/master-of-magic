@@ -172,6 +172,12 @@ const (
     EncounterTypeRuins
     EncounterTypeAbandonedKeep
     EncounterTypeDungeon
+
+    // somewhat of a hack, but its useful to have a single type that can represent all the
+    // different types of nodes and encounters
+    EncounterTypeChaosNode
+    EncounterTypeNatureNode
+    EncounterTypeSorceryNode
 )
 
 func randomEncounterType() EncounterType {
@@ -193,6 +199,7 @@ func randomEncounterType() EncounterType {
 type ExtraEncounter struct {
     Type EncounterType
     Units []units.Unit
+    Budget int // used for treasure
     Empty bool
 }
 
@@ -280,6 +287,7 @@ func makeEncounter(encounterType EncounterType, difficulty data.DifficultySettin
 
     return &ExtraEncounter{
         Type: encounterType,
+        Budget: budget,
         Units: append(guardians, secondary...),
     }
 }
@@ -315,6 +323,7 @@ func (extra *ExtraEncounter) DrawLayer2(screen *ebiten.Image, imageCache *util.I
 type ExtraMagicNode struct {
     Kind MagicNode
     Empty bool
+    Budget int
     Guardians []units.Unit
     Secondary []units.Unit
     // list of points that are affected by the node
@@ -766,8 +775,7 @@ func (mapObject *Map) GetBonusTile(x int, y int) data.BonusType {
 }
 
 func (mapObject *Map) CreateEncounter(x int, y int, encounterType EncounterType, difficulty data.DifficultySetting, weakStrength bool, plane data.Plane) bool {
-    _, ok := mapObject.ExtraMap[image.Pt(x, y)]
-    if ok {
+    if mapObject.GetLair(x, y) != nil {
         return false
     }
 

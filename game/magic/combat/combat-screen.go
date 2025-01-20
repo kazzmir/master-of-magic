@@ -41,6 +41,17 @@ const (
     CombatStateDone
 )
 
+func (state CombatState) String() string {
+    switch state {
+        case CombatStateRunning: return "Running"
+        case CombatStateAttackerWin: return "AttackerWin"
+        case CombatStateDefenderWin: return "DefenderWin"
+        case CombatStateDone: return "Done"
+    }
+
+    return ""
+}
+
 type CombatEvent interface {
 }
 

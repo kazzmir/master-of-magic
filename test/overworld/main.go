@@ -602,7 +602,7 @@ func createScenario8(cache *lbx.LbxCache) *gamelib.Game {
     player.AddCity(city)
 
     player.Gold = 83
-    player.Mana = 26
+    player.Mana = 2600
 
     // game.Map.Map.Terrain[3][6] = terrain.TileNatureForest.Index
 
@@ -2561,6 +2561,107 @@ func createScenario30(cache *lbx.LbxCache) *gamelib.Game {
     return game
 }
 
+// test getting treasure
+func createScenario31(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 31")
+
+    wizard := setup.WizardCustom{
+        Name: "bob",
+        Banner: data.BannerBlue,
+        Race: data.RaceTroll,
+        Abilities: []setup.WizardAbility{
+            setup.AbilityAlchemy,
+            setup.AbilitySageMaster,
+        },
+        Books: []data.WizardBook{
+            data.WizardBook{
+                Magic: data.LifeMagic,
+                Count: 3,
+            },
+            data.WizardBook{
+                Magic: data.SorceryMagic,
+                Count: 8,
+            },
+        },
+    }
+
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
+
+    game.Plane = data.PlaneArcanus
+
+    player := game.AddPlayer(wizard, true)
+    player.StrategicCombat = true
+
+    x, y := game.FindValidCityLocation(game.Plane)
+
+    /*
+    x = 20
+    y = 20
+    */
+
+    city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, fraction.Zero(), game.BuildingInfo, game.CurrentMap(), game)
+    city.Population = 16190
+    city.Plane = data.PlaneArcanus
+    city.Banner = wizard.Banner
+    city.ProducingBuilding = buildinglib.BuildingGranary
+    city.ProducingUnit = units.UnitNone
+    city.Race = wizard.Race
+    city.Farmers = 3
+    city.Workers = 3
+    city.Wall = false
+    city.Buildings.Insert(buildinglib.BuildingFortress)
+
+    city.ResetCitizens(nil)
+
+    player.AddCity(city)
+
+    player.Gold = 83
+    player.Mana = 2600
+
+    // game.Map.Map.Terrain[3][6] = terrain.TileNatureForest.Index
+
+    // log.Printf("City at %v, %v", x, y)
+
+    player.LiftFog(x, y, 30, data.PlaneArcanus)
+
+    drake := player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, nil))
+
+    for i := 0; i < 4; i++ {
+        player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, nil))
+    }
+
+    // player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, 30, 30, data.PlaneArcanus, wizard.Banner))
+
+    stack := player.FindStackByUnit(drake)
+    player.SetSelectedStack(stack)
+
+    player.LiftFog(stack.X(), stack.Y(), 2, data.PlaneArcanus)
+
+    if !game.CurrentMap().CreateEncounter(game.CurrentMap().WrapX(stack.X() + 1), stack.Y(), maplib.EncounterTypeLair, data.DifficultyAverage, false, data.PlaneArcanus) {
+        log.Printf("Unable to create encounter")
+    }
+
+    game.Camera.Center(stack.X(), stack.Y())
+
+    game.Events <- &gamelib.GameEventTreasure{
+        Player: player,
+        Treasure: gamelib.Treasure{
+            Treasures: []gamelib.TreasureItem{
+                /*
+                &gamelib.TreasureGold{
+                    Amount: 300,
+                },
+                */
+                &gamelib.TreasurePrisonerHero{
+                    Hero: game.Heroes[0],
+                },
+            },
+        },
+    }
+
+    return game
+}
+
 func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
@@ -2597,6 +2698,7 @@ func NewEngine(scenario int) (*Engine, error) {
         case 28: game = createScenario28(cache)
         case 29: game = createScenario29(cache)
         case 30: game = createScenario30(cache)
+        case 31: game = createScenario31(cache)
         default: game = createScenario1(cache)
     }
 
