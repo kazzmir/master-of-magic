@@ -13,6 +13,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/draw"
     "github.com/kazzmir/master-of-magic/game/magic/util"
+    "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     _ "github.com/hajimehoshi/ebiten/v2/vector"
@@ -584,10 +585,9 @@ func (screen *NewWizardScreen) MakeCustomNameUI() *uilib.UI {
         },
         HandleKeys: func(keys []ebiten.Key){
             for _, key := range keys {
-                switch key {
-                    case ebiten.KeyEscape, ebiten.KeyCapsLock:
-                        screen.State = NewWizardScreenStateCustomPicture
-                        screen.UI = screen.MakeCustomPictureUI()
+                if inputmanager.IsQuitKey(key) {
+                    screen.State = NewWizardScreenStateCustomPicture
+                    screen.UI = screen.MakeCustomPictureUI()
                 }
             }
         },
@@ -622,6 +622,11 @@ func (screen *NewWizardScreen) MakeCustomNameUI() *uilib.UI {
         },
         HandleKeys: func(keys []ebiten.Key){
             for _, key := range keys {
+                if inputmanager.IsQuitKey(key) {
+                    screen.State = NewWizardScreenStateCustomPicture
+                    screen.UI = screen.MakeCustomPictureUI()
+                }
+
                 switch key {
                     case ebiten.KeyBackspace:
                         length := len(screen.CustomWizard.Name)
@@ -635,9 +640,6 @@ func (screen *NewWizardScreen) MakeCustomNameUI() *uilib.UI {
                             ui.UnfocusElement()
                             screen.UI = screen.MakeCustomWizardBooksUI()
                         }
-                    case ebiten.KeyEscape, ebiten.KeyCapsLock:
-                        screen.State = NewWizardScreenStateCustomPicture
-                        screen.UI = screen.MakeCustomPictureUI()
                         /*
                     case ebiten.KeySpace:
                         screen.CustomWizard.Name += " "
@@ -702,10 +704,9 @@ func (screen *NewWizardScreen) MakeCustomPictureUI() *uilib.UI {
         },
         HandleKeys: func(keys []ebiten.Key){
             for _, key := range keys {
-                switch key {
-                    case ebiten.KeyEscape, ebiten.KeyCapsLock:
-                        screen.State = NewWizardScreenStateSelectWizard
-                        screen.UI = screen.MakeSelectWizardUI()
+                if inputmanager.IsQuitKey(key) {
+                    screen.State = NewWizardScreenStateSelectWizard
+                    screen.UI = screen.MakeSelectWizardUI()
                 }
             }
         },
@@ -852,9 +853,8 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *uilib.UI {
         },
         HandleKeys: func(keys []ebiten.Key){
             for _, key := range keys {
-                switch key {
-                    case ebiten.KeyEscape, ebiten.KeyCapsLock:
-                        screen.State = NewWizardScreenStateCanceled
+                if inputmanager.IsQuitKey(key) {
+                    screen.State = NewWizardScreenStateCanceled
                 }
             }
         },
@@ -1464,10 +1464,9 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
         },
         HandleKeys: func(keys []ebiten.Key){
             for _, key := range keys {
-                switch key {
-                    case ebiten.KeyEscape, ebiten.KeyCapsLock:
-                        screen.State = NewWizardScreenStateCustomName
-                        screen.UI = screen.MakeCustomNameUI()
+                if inputmanager.IsQuitKey(key) {
+                    screen.State = NewWizardScreenStateCustomName
+                    screen.UI = screen.MakeCustomNameUI()
                 }
             }
         },
@@ -1841,10 +1840,9 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
             },
             HandleKeys: func(keys []ebiten.Key){
                 for _, key := range keys {
-                    switch key {
-                        case ebiten.KeyEscape, ebiten.KeyCapsLock:
-                            screen.State = NewWizardScreenStateCustomBooks
-                            screen.UI = screen.MakeCustomWizardBooksUI()
+                    if inputmanager.IsQuitKey(key) {
+                        screen.State = NewWizardScreenStateCustomBooks
+                        screen.UI = screen.MakeCustomWizardBooksUI()
                     }
                 }
             },
@@ -2083,15 +2081,14 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
         },
         HandleKeys: func(keys []ebiten.Key){
             for _, key := range keys {
-                switch key {
-                    case ebiten.KeyEscape, ebiten.KeyCapsLock:
-                        if screen.CurrentWizard == -1 {
-                            screen.State = NewWizardScreenStateSelectSpells
-                            screen.UI = screen.MakeSelectSpellsUI()
-                        } else {
-                            screen.State = NewWizardScreenStateSelectWizard
-                            screen.UI = screen.MakeSelectWizardUI()
-                        }
+                if inputmanager.IsQuitKey(key) {
+                    if screen.CurrentWizard == -1 {
+                        screen.State = NewWizardScreenStateSelectSpells
+                        screen.UI = screen.MakeSelectSpellsUI()
+                    } else {
+                        screen.State = NewWizardScreenStateSelectWizard
+                        screen.UI = screen.MakeSelectWizardUI()
+                    }
                 }
             }
         },
@@ -2168,10 +2165,9 @@ func (screen *NewWizardScreen) MakeSelectBannerUI() *uilib.UI {
         },
         HandleKeys: func(keys []ebiten.Key){
             for _, key := range keys {
-                switch key {
-                    case ebiten.KeyEscape, ebiten.KeyCapsLock:
-                        screen.State = NewWizardScreenStateSelectRace
-                        screen.UI = screen.MakeSelectRaceUI()
+                if inputmanager.IsQuitKey(key) {
+                    screen.State = NewWizardScreenStateSelectRace
+                    screen.UI = screen.MakeSelectRaceUI()
                 }
             }
         },
