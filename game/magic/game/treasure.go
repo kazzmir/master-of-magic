@@ -259,14 +259,34 @@ func makeTreasure(cache *lbx.LbxCache, encounterType maplib.EncounterType, budge
                 coins := rand.N(200) + 1
                 coins = min(coins, budget)
 
-                items = append(items, &TreasureGold{Amount: coins})
+                added := false
+                for _, item := range items {
+                    if gold, ok := item.(*TreasureGold); ok {
+                        coins += gold.Amount
+                        added = true
+                    }
+                }
+
+                if !added {
+                    items = append(items, &TreasureGold{Amount: coins})
+                }
 
                 budget -= coins
             case TreasureTypeMana:
                 mana := rand.N(200) + 1
                 mana = min(mana, budget)
 
-                items = append(items, &TreasureMana{Amount: mana})
+                added := false
+                for _, item := range items {
+                    if manaItem, ok := item.(*TreasureMana); ok {
+                        mana += manaItem.Amount
+                        added = true
+                    }
+                }
+
+                if !added {
+                    items = append(items, &TreasureMana{Amount: mana})
+                }
 
                 budget -= mana
             case TreasureTypeMagicalItem:
