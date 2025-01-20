@@ -804,6 +804,10 @@ func (hero *Hero) GetCount() int {
 }
 
 func (hero *Hero) GetUpkeepGold() int {
+    if hero.HasAbility(data.AbilityNoble) {
+        return 0
+    }
+
     return hero.Unit.GetUpkeepGold()
 }
 
