@@ -774,8 +774,7 @@ func (mapObject *Map) GetBonusTile(x int, y int) data.BonusType {
 }
 
 func (mapObject *Map) CreateEncounter(x int, y int, encounterType EncounterType, difficulty data.DifficultySetting, weakStrength bool, plane data.Plane) bool {
-    _, ok := mapObject.ExtraMap[image.Pt(x, y)]
-    if ok {
+    if mapObject.GetLair(x, y) != nil {
         return false
     }
 

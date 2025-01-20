@@ -2197,6 +2197,8 @@ func DoStrategicCombat(attackingArmy *Army, defendingArmy *Army) (CombatState, i
     attackingPower := attackingArmy.GetPower()
     defendingPower := defendingArmy.GetPower()
 
+    log.Printf("strategic combat: attacking power: %v, defending power: %v", attackingPower, defendingPower)
+
     if attackingPower > defendingPower {
         for _, unit := range defendingArmy.Units {
             unit.TakeDamage(unit.Unit.GetMaxHealth())

@@ -3322,11 +3322,13 @@ func (game *Game) createTreasure(encounterType maplib.EncounterType, budget int,
     if err != nil {
         log.Printf("Error: unable to read spells: %v", err)
     } else {
-        heroes := slices.Clone(player.Heroes[:])
-        // only include alive non-champion heroes
-        heroes = slices.DeleteFunc(heroes, func (hero *herolib.Hero) bool {
-            return hero.Status != herolib.StatusAvailable || hero.IsChampion()
-        })
+        var heroes []*herolib.Hero
+        for _, hero := range game.Heroes {
+            // only include available heroes that are not champions
+            if hero.Status == herolib.StatusAvailable && !hero.IsChampion() {
+                heroes = append(heroes, hero)
+            }
+        }
 
         // FIXME: store all premade artifacts as a field of Game and just return that
         makeArtifacts := func () []artifact.Artifact {
@@ -3522,6 +3524,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
 
     if attacker.StrategicCombat && defender.StrategicCombat {
         state, defeatedAttackers, defeatedDefenders = combat.DoStrategicCombat(&attackingArmy, &defendingArmy)
+        log.Printf("Strategic combat result state=%v", state)
     } else {
 
         defer mouse.Mouse.SetImage(game.MouseData.Normal)
