@@ -271,6 +271,15 @@ func (newGameScreen *NewGameScreen) MakeUI() *uilib.UI {
                 element.Draw(element, screen)
             })
         },
+        HandleKeys: func(keys []ebiten.Key){
+            for _, key := range keys {
+                switch key {
+                    case ebiten.KeyEscape:
+                        newGameScreen.State = NewGameStateCancel
+                }
+            }
+        },
+
     }
 
     ui.SetElementsFromArray(elements)

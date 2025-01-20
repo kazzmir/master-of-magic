@@ -72,18 +72,20 @@ func runIntro(yield coroutine.YieldFunc, game *MagicGame) {
     }
 }
 
-func runNewGame(yield coroutine.YieldFunc, game *MagicGame) setup.NewGameSettings {
+func runNewGame(yield coroutine.YieldFunc, game *MagicGame) (bool, setup.NewGameSettings) {
     newGame := setup.MakeNewGameScreen(game.Cache)
 
     game.Drawer = func(screen *ebiten.Image) {
         newGame.Draw(screen)
     }
 
-    for newGame.Update() == setup.NewGameStateRunning {
+    state := newGame.Update()
+    for state == setup.NewGameStateRunning {
         yield()
+        state = newGame.Update()
     }
 
-    return newGame.Settings
+    return state == setup.NewGameStateCancel, newGame.Settings
 }
 
 func runNewWizard(yield coroutine.YieldFunc, game *MagicGame) (bool, setup.WizardCustom) {
@@ -99,7 +101,7 @@ func runNewWizard(yield coroutine.YieldFunc, game *MagicGame) (bool, setup.Wizar
         state = newWizard.Update()
     }
 
-    return state == setup.NewWizardScreenStateFinished, newWizard.CustomWizard
+    return state == setup.NewWizardScreenStateCanceled, newWizard.CustomWizard
 }
 
 func runMainMenu(yield coroutine.YieldFunc, game *MagicGame) mainview.MainScreenState {
@@ -263,15 +265,22 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string) error 
             case mainview.MainScreenStateNewGame:
                 var settings setup.NewGameSettings
                 var wizard setup.WizardCustom
-                finished := false
-                for !finished {
+                restart := true
+                cancel := false
+                for restart && !cancel {
                     // yield so that clicks from the menu don't bleed into the next part
                     yield()
-                    settings = runNewGame(yield, game)
+                    cancel, settings = runNewGame(yield, game)
+                    if cancel {
+                        break
+                    }
                     yield()
-                    finished, wizard = runNewWizard(yield, game)
+                    restart, wizard = runNewWizard(yield, game)
                 }
                 yield()
+                if cancel {
+                    break
+                }
                 err := runGameInstance(yield, game, settings, wizard)
 
                 if err != nil {
