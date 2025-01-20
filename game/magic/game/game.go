@@ -2720,13 +2720,14 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
             if node != nil && !node.Empty {
                 if game.confirmMagicNodeEncounter(yield, node) {
 
-                    stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost, game.GetNormalizeCoordinateFunc())
+                    stack.Move(mapUse.XDistance(stack.X(), step.X), step.Y - stack.Y(), terrainCost, game.GetNormalizeCoordinateFunc())
                     game.showMovement(yield, oldX, oldY, stack)
                     player.LiftFog(stack.X(), stack.Y(), 1, stack.Plane())
 
                     game.doMagicEncounter(yield, player, stack, node)
 
                     game.RefreshUI()
+                    stack.ExhaustMoves()
                 }
 
                 stopMoving = true
@@ -2736,13 +2737,14 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
             lair := mapUse.GetLair(step.X, step.Y)
             if lair != nil && !lair.Empty {
                 if game.confirmLairEncounter(yield, lair) {
-                    stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost, game.GetNormalizeCoordinateFunc())
+                    stack.Move(mapUse.XDistance(stack.X(), step.X), step.Y - stack.Y(), terrainCost, game.GetNormalizeCoordinateFunc())
                     game.showMovement(yield, oldX, oldY, stack)
                     player.LiftFog(stack.X(), stack.Y(), 1, stack.Plane())
 
                     game.doLairEncounter(yield, player, stack, lair)
 
                     game.RefreshUI()
+                    stack.ExhaustMoves()
                 }
 
                 stopMoving = true
@@ -2752,7 +2754,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
             stepsTaken = i + 1
             mergeStack = player.FindStack(step.X, step.Y, stack.Plane())
 
-            stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost, game.GetNormalizeCoordinateFunc())
+            stack.Move(mapUse.XDistance(stack.X(), step.X), step.Y - stack.Y(), terrainCost, game.GetNormalizeCoordinateFunc())
             game.showMovement(yield, oldX, oldY, stack)
             // FIXME: lift more fog if the stack has Scouting and some other abilities
             player.LiftFog(stack.X(), stack.Y(), 1, stack.Plane())
@@ -2768,6 +2770,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
                     game.doCombat(yield, player, stack, otherPlayer, otherStack, zone)
 
                     game.RefreshUI()
+                    stack.ExhaustMoves()
 
                     stopMoving = true
                     break quitMoving
