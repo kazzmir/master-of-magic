@@ -3378,7 +3378,7 @@ func (game *Game) doTreasure(yield coroutine.YieldFunc, player *playerlib.Player
         orange,
     }
 
-    treasureFont := font.MakeOptimizedFontWithPalette(fonts[3], yellowPalette)
+    treasureFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowPalette)
 
     element := &uilib.UIElement{
         Layer: 2,
@@ -3396,11 +3396,14 @@ func (game *Game) doTreasure(yield coroutine.YieldFunc, player *playerlib.Player
             screen.DrawImage(left, &options)
             right, _ := game.ImageCache.GetImage("resource.lbx", 58, 0)
             options.GeoM.Translate(float64(left.Bounds().Dx()), 0)
-            screen.DrawImage(right, &options)
+            rightGeom := options.GeoM
 
             chest, _ := game.ImageCache.GetImage("reload.lbx", 20, 0)
-            options.GeoM.Translate(1, 1)
+            options.GeoM.Translate(6, 8)
             screen.DrawImage(chest, &options)
+
+            options.GeoM = rightGeom
+            screen.DrawImage(right, &options)
 
             treasureFont.PrintWrap(screen, fontX, fontY, float64(left.Bounds().Dx()) - 5, 1.0, ebiten.ColorScale{}, treasure.String())
         },
