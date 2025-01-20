@@ -2724,6 +2724,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
                     game.showMovement(yield, oldX, oldY, stack)
                     player.LiftFog(stack.X(), stack.Y(), 1, stack.Plane())
 
+                    stack.ExhaustMoves()
                     game.doMagicEncounter(yield, player, stack, node)
 
                     game.RefreshUI()
@@ -2740,6 +2741,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
                     game.showMovement(yield, oldX, oldY, stack)
                     player.LiftFog(stack.X(), stack.Y(), 1, stack.Plane())
 
+                    stack.ExhaustMoves()
                     game.doLairEncounter(yield, player, stack, lair)
 
                     game.RefreshUI()
@@ -2767,6 +2769,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
 
                     game.doCombat(yield, player, stack, otherPlayer, otherStack, zone)
 
+                    stack.ExhaustMoves()
                     game.RefreshUI()
 
                     stopMoving = true
