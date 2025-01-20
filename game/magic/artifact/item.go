@@ -5,6 +5,7 @@ import (
     "fmt"
     "slices"
     "cmp"
+    "log"
     "math/rand/v2"
     _ "log"
 
@@ -408,7 +409,8 @@ func ReadArtifacts(cache *lbx.LbxCache) ([]Artifact, error) {
 
     spells, err := spellbook.ReadSpellsFromCache(cache)
     if err != nil {
-        return nil, fmt.Errorf("unable to read spells: %v", err)
+        // return nil, fmt.Errorf("unable to read spells: %v", err)
+        log.Printf("Warning: could not load spells: %v", err)
     }
 
     reader, err := itemData.GetReader(0)

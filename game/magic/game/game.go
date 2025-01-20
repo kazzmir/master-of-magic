@@ -3440,6 +3440,7 @@ func (game *Game) doTreasure(yield coroutine.YieldFunc, player *playerlib.Player
                 player.KnownSpells.AddSpell(spell.Spell)
             case *TreasureSpellbook:
                 spellbook := item.(*TreasureSpellbook)
+                // FIXME: somehow recompute the research spell pool for the player
                 player.Wizard.AddMagicLevel(spellbook.Magic, 1)
             case *TreasureRetort:
                 retort := item.(*TreasureRetort)
