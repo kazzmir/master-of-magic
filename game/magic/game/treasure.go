@@ -312,7 +312,6 @@ func makeTreasure(cache *lbx.LbxCache, encounterType maplib.EncounterType, budge
                 budget -= mana
             case TreasureTypeMagicalItem:
                 artifacts := getPremadeArtifacts()
-                // FIXME: if there are no premade artifacts left, then generate a random new one
                 if len(artifacts) > 0 {
 
                     for _, choice := range rand.Perm(len(artifacts)) {
