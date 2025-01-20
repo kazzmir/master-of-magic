@@ -3330,15 +3330,12 @@ func (game *Game) createTreasure(encounterType maplib.EncounterType, budget int,
             }
         }
 
-        // FIXME: store all premade artifacts as a field of Game and just return that
-        makeArtifacts := func () []artifact.Artifact {
-            premade, err := artifact.ReadArtifacts(game.Cache)
-            if err == nil {
-                return premade
-            } else {
-                log.Printf("Error: could not read artifacts: %v", err)
-                return nil
+        makeArtifacts := func () []*artifact.Artifact {
+            var out []*artifact.Artifact
+            for _, artifact := range game.ArtifactPool {
+                out = append(out, artifact)
             }
+            return out
         }
 
         treasure := makeTreasure(game.Cache, encounterType, budget, player.Wizard, player.KnownSpells, allSpells, heroes, makeArtifacts)
@@ -3431,7 +3428,9 @@ func (game *Game) doTreasure(yield coroutine.YieldFunc, player *playerlib.Player
                 player.Mana += mana.Amount
             case *TreasureMagicalItem:
                 magicalItem := item.(*TreasureMagicalItem)
-                game.doVault(yield, &magicalItem.Artifact)
+                game.doVault(yield, magicalItem.Artifact)
+                // if the treasure was one of the premade artifacts, then remove it from the pool
+                delete(game.ArtifactPool, magicalItem.Artifact.Name)
             case *TreasurePrisonerHero:
                 hero := item.(*TreasurePrisonerHero)
                 game.doHireHero(yield, 0, hero.Hero, player)
