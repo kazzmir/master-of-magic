@@ -3351,32 +3351,47 @@ func (game *Game) createTreasure(encounterType maplib.EncounterType, budget int,
 }
 
 func (game *Game) doTreasure(yield coroutine.YieldFunc, player *playerlib.Player, treasure Treasure){
-    oldDrawer := game.Drawer
-    defer func(){
-        game.Drawer = oldDrawer
-    }()
-
     uiDone := false
-    ui := uilib.UI{
-        Draw: func (ui *uilib.UI, screen *ebiten.Image){
-            ui.IterateElementsByLayer(func (element *uilib.UIElement){
-                if element.Draw != nil {
-                    element.Draw(element, screen)
-                }
-            })
-        },
-        LeftClick: func () {
-            uiDone = true
-        },
+
+    fontLbx, err := game.Cache.GetLbxFile("FONTS.LBX")
+    if err != nil {
+        log.Printf("Error: %v", err)
+        return
     }
 
-    // FIXME: just add an uielement to game.HudUI
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        log.Printf("Error: %v", err)
+        return
+    }
+
+    orange := color.RGBA{R: 0xc7, G: 0x82, B: 0x1b, A: 0xff}
+
+    yellowPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        orange,
+        orange,
+        orange,
+        orange,
+        orange,
+        orange,
+    }
+
+    treasureFont := font.MakeOptimizedFontWithPalette(fonts[3], yellowPalette)
 
     element := &uilib.UIElement{
+        Layer: 2,
+        Rect: image.Rect(0, 0, data.ScreenWidth, data.ScreenHeight),
+        LeftClick: func (element *uilib.UIElement){
+            uiDone = true
+        },
         Draw: func (element *uilib.UIElement, screen *ebiten.Image){
             left, _ := game.ImageCache.GetImage("resource.lbx", 56, 0)
             var options ebiten.DrawImageOptions
-            options.GeoM.Translate(100, 50)
+            options.GeoM.Translate(10, 50)
+
+            fontX, fontY := options.GeoM.Apply(10, 10)
 
             screen.DrawImage(left, &options)
             right, _ := game.ImageCache.GetImage("resource.lbx", 58, 0)
@@ -3387,23 +3402,21 @@ func (game *Game) doTreasure(yield coroutine.YieldFunc, player *playerlib.Player
             options.GeoM.Translate(1, 1)
             screen.DrawImage(chest, &options)
 
-            // FIXME: print text of treasure
+            treasureFont.PrintWrap(screen, fontX, fontY, float64(left.Bounds().Dx()) - 5, 1.0, ebiten.ColorScale{}, treasure.String())
         },
     }
 
-    ui.SetElementsFromArray(nil)
-    ui.AddElement(element)
-
-    game.Drawer = func (screen *ebiten.Image, game *Game){
-        oldDrawer(screen, game)
-        ui.Draw(&ui, screen)
-    }
+    game.HudUI.AddElement(element)
 
     for !uiDone {
         game.Counter += 1
-        ui.StandardUpdate()
+        game.HudUI.StandardUpdate()
         yield()
     }
+
+    yield()
+
+    game.HudUI.RemoveElement(element)
 
     for _, item := range treasure.Treasures {
         switch item.(type) {

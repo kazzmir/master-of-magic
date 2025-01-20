@@ -1,6 +1,7 @@
 package game
 
 import (
+    "fmt"
     "slices"
     "math/rand/v2"
 
@@ -14,26 +15,47 @@ import (
 )
 
 type TreasureItem interface {
+    fmt.Stringer
 }
 
 type TreasureGold struct {
     Amount int
 }
 
+func (gold *TreasureGold) String() string {
+    return fmt.Sprintf("%v gold coins", gold.Amount)
+}
+
 type TreasureMana struct {
     Amount int
+}
+
+func (mana *TreasureMana) String() string {
+    return fmt.Sprintf("%v mana crystals", mana.Amount)
 }
 
 type TreasureMagicalItem struct {
     Artifact artifact.Artifact
 }
 
+func (item *TreasureMagicalItem) String() string {
+    return fmt.Sprintf("a %v", item.Artifact.Name)
+}
+
 type TreasurePrisonerHero struct {
     Hero *herolib.Hero
 }
 
+func (prisoner *TreasurePrisonerHero) String() string {
+    return fmt.Sprintf("%v, a prisoner hero", prisoner.Hero.Name)
+}
+
 type TreasureSpell struct {
     Spell spellbook.Spell
+}
+
+func (spell *TreasureSpell) String() string {
+    return fmt.Sprintf("the spell %v", spell.Spell.Name)
 }
 
 // always gives one spellbook of the specified magic type
@@ -41,12 +63,55 @@ type TreasureSpellbook struct {
     Magic data.MagicType
 }
 
+func (spellbook *TreasureSpellbook) String() string {
+    return fmt.Sprintf("a spellbook of %v magic", spellbook.Magic)
+}
+
 type TreasureRetort struct {
     Retort setup.WizardAbility
 }
 
+func (retort *TreasureRetort) String() string {
+    return fmt.Sprintf("the retort %v", retort.Retort)
+}
+
 type Treasure struct {
     Treasures []TreasureItem
+}
+
+func combineAnd[T fmt.Stringer](pieces []T) string {
+    // this could be simplified by iterating backwards through the array and
+    // preprending 'and' or ', ' for each element, depending on its index
+
+    if len(pieces) == 0 {
+        return ""
+    }
+
+    // x
+    if len(pieces) == 1 {
+        return pieces[0].String()
+    }
+
+    // x and y
+    if len(pieces) == 2 {
+        return fmt.Sprintf("%v and %v", pieces[0], pieces[1])
+    }
+
+    // x, y, and z
+    out := ""
+    for i := range len(pieces) - 2 {
+        out += fmt.Sprintf("%v, ", pieces[i])
+    }
+    out += fmt.Sprintf("%v and %v", pieces[len(pieces) - 2], pieces[len(pieces) - 1])
+    return out
+}
+
+func (treasure Treasure) String() string {
+    if len(treasure.Treasures) == 0 {
+        return "Inside you find absolutely nothing."
+    }
+
+    return "Inside you find " + combineAnd(treasure.Treasures)
 }
 
 // stolen from maplib/map.go
