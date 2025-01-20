@@ -326,17 +326,40 @@ func (map_ *Map) placeRandomTerrainTiles(plane data.Plane){
             map_.Terrain[point.X][point.Y] = choseRandomWeightedElement(choices, weights)
         }
 
-        for i := 0; i < int(math.Sqrt(float64(continent.Size()))) / 8; i++ {
-            point := chooseRandomElement(continent)
+        magicTiles := []int{TileSorceryLake.Index(plane), TileNatureForest.Index(plane), TileChaosVolcano.Index(plane)}
 
-            var use int
-            switch rand.IntN(3) {
-                case 0: use = TileSorceryLake.Index(plane)
-                case 1: use = TileNatureForest.Index(plane)
-                case 2: use = TileChaosVolcano.Index(plane)
+        magicNodeOk := func(point image.Point) bool {
+            size := 3
+            for dx := -size; dx <= size; dx++ {
+                for dy := -size; dy <= size; dy++ {
+                    cx := map_.WrapX(point.X + dx)
+                    cy := point.Y + dy
+
+                    if cy < 0 || cy >= map_.Rows() {
+                        continue
+                    }
+
+                    if GetTile(map_.Terrain[cx][cy]).IsMagic() {
+                        return false
+                    }
+                }
             }
 
-            map_.Terrain[point.X][point.Y] = use
+            return true
+        }
+
+        maxNodes := int(math.Sqrt(float64(continent.Size()))) / 7
+        for _, index := range rand.Perm(len(continent)) {
+            // fmt.Printf("Index: %v, maxNodes: %v\n", index, maxNodes)
+            if maxNodes <= 0 {
+                break
+            }
+
+            point := continent[index]
+            if magicNodeOk(point) {
+                map_.Terrain[point.X][point.Y] = chooseRandomElement(magicTiles)
+                maxNodes -= 1
+            }
         }
     }
 }
