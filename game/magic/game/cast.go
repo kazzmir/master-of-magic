@@ -4,10 +4,12 @@ import (
     "fmt"
     "log"
     "image"
+    "math/rand/v2"
 
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/font"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
+    herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
@@ -94,6 +96,41 @@ func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Playe
             }
 
             game.doCastTransmute(yield, tileX, tileY)
+        case "Summon Hero":
+            var choices []*herolib.Hero
+            for _, hero := range game.Heroes {
+                if hero.Status == herolib.StatusAvailable && !hero.IsChampion() {
+                    choices = append(choices, hero)
+                }
+            }
+
+            if len(choices) > 0 {
+                hero := choices[rand.N(len(choices))]
+
+                summonEvent := GameEventSummonHero{
+                    Wizard: player.Wizard.Base,
+                    Champion: false,
+                }
+
+                select {
+                    case game.Events <- &summonEvent:
+                    default:
+                }
+
+                event := GameEventHireHero{
+                    Hero: hero,
+                    Player: player,
+                    Cost: 0,
+                }
+
+                select {
+                    case game.Events <- &event:
+                    default:
+                }
+            }
+
+        default:
+            log.Printf("Warning: casting unhandled spell %v", spell.Name)
     }
 }
 
