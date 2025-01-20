@@ -625,44 +625,19 @@ func ReadArtifacts(cache *lbx.LbxCache) ([]Artifact, error) {
 
         // Requirements
         var requirements []Requirement
-        natureRanksNeeded, err := lbx.ReadByte(reader)
-        if err != nil {
-            return nil, fmt.Errorf("read error: %v", err)
-        }
-        if natureRanksNeeded != 0 {
-            requirements = append(requirements, Requirement{MagicType: data.NatureMagic, Amount: int(natureRanksNeeded)})
-        }
-
-        sorceryRanksNeeded, err := lbx.ReadByte(reader)
-        if err != nil {
-            return nil, fmt.Errorf("read error: %v", err)
-        }
-        if sorceryRanksNeeded != 0 {
-            requirements = append(requirements, Requirement{MagicType: data.SorceryMagic, Amount: int(sorceryRanksNeeded)})
-        }
-
-        chaosRanksNeeded, err := lbx.ReadByte(reader)
-        if err != nil {
-            return nil, fmt.Errorf("read error: %v", err)
-        }
-        if chaosRanksNeeded != 0 {
-            requirements = append(requirements, Requirement{MagicType: data.ChaosMagic, Amount: int(chaosRanksNeeded)})
-        }
-
-        lifeRanksNeeded, err := lbx.ReadByte(reader)
-        if err != nil {
-            return nil, fmt.Errorf("read error: %v", err)
-        }
-        if lifeRanksNeeded != 0 {
-            requirements = append(requirements, Requirement{MagicType: data.LifeMagic, Amount: int(lifeRanksNeeded)})
-        }
-
-        deathRanksNeeded, err := lbx.ReadByte(reader)
-        if err != nil {
-            return nil, fmt.Errorf("read error: %v", err)
-        }
-        if deathRanksNeeded != 0 {
-            requirements = append(requirements, Requirement{MagicType: data.DeathMagic, Amount: int(deathRanksNeeded)})
+        // read 5 more bytes, where each the powerIndex refers to the Nth power, and the read byte is the number of magic books needed
+        // for that power's magic type
+        for powerIndex := range 5 {
+            value, err := lbx.ReadByte(reader)
+            if err != nil {
+                return nil, fmt.Errorf("read error: %v", err)
+            }
+            if value != 0 && len(powers) > powerIndex && powers[powerIndex].Ability != data.AbilityNone {
+                magic := data.MakeAbility(powers[powerIndex].Ability).MagicType()
+                if magic != data.MagicNone {
+                    requirements = append(requirements, Requirement{MagicType: magic, Amount: int(value)})
+                }
+            }
         }
 
         // The last byte seems to be some sort of flag
