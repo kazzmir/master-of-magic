@@ -35,7 +35,7 @@ func (engine *Engine) Update() error {
     keys = inpututil.AppendJustPressedKeys(keys)
 
     for _, key := range keys {
-        if key == ebiten.KeyEscape || key == ebiten.KeyCapsLock {
+        if key == ebiten.KeyCapsLock {
             return ebiten.Termination
         }
     }
