@@ -625,7 +625,7 @@ func ReadArtifacts(cache *lbx.LbxCache) ([]Artifact, error) {
 
         // Requirements
         var requirements []Requirement
-        // read 5 more bytes, where each the powerIndex refers to the Nth power, and the read byte is the number of magic books needed
+        // read 5 more bytes, where the powerIndex refers to the Nth power, and the read byte is the number of magic books needed
         // for that power's magic type
         for powerIndex := range 5 {
             value, err := lbx.ReadByte(reader)
