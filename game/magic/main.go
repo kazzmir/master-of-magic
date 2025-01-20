@@ -113,7 +113,7 @@ func runMainMenu(yield coroutine.YieldFunc, game *MagicGame) mainview.MainScreen
 
     for menu.Update() == mainview.MainScreenStateRunning {
 
-        if inpututil.IsKeyJustPressed(ebiten.KeyEscape) || inpututil.IsKeyJustPressed(ebiten.KeyCapsLock) {
+        if inputmanager.IsQuitPressed() {
             return mainview.MainScreenStateQuit
         }
 
@@ -194,7 +194,7 @@ func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup
     game.DoNextTurn()
 
     for game.Update(yield) != gamelib.GameStateQuit {
-        if inpututil.IsKeyJustPressed(ebiten.KeyEscape) || inpututil.IsKeyJustPressed(ebiten.KeyCapsLock) {
+        if inputmanager.IsQuitPressed() {
             return ebiten.Termination
         }
 
@@ -227,7 +227,7 @@ func loadData(yield coroutine.YieldFunc, game *MagicGame, dataPath string) error
             yield()
         }
 
-        if inpututil.IsKeyJustPressed(ebiten.KeyEscape) || inpututil.IsKeyJustPressed(ebiten.KeyCapsLock) {
+        if inputmanager.IsQuitPressed() {
             return ebiten.Termination
         }
     }
