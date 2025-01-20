@@ -2642,6 +2642,17 @@ func createScenario31(cache *lbx.LbxCache) *gamelib.Game {
 
     game.Camera.Center(stack.X(), stack.Y())
 
+    game.Events <- &gamelib.GameEventTreasure{
+        Player: player,
+        Treasure: gamelib.Treasure{
+            Treasures: []gamelib.TreasureItem{
+                &gamelib.TreasureGold{
+                    Amount: 300,
+                },
+            },
+        },
+    }
+
     return game
 }
 

@@ -3371,9 +3371,9 @@ func (game *Game) doTreasure(yield coroutine.YieldFunc, player *playerlib.Player
         color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
         color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
         orange,
-        orange,
-        orange,
-        orange,
+        util.Lighten(orange, 15),
+        util.Lighten(orange, 30),
+        util.Lighten(orange, 50),
         orange,
         orange,
     }
