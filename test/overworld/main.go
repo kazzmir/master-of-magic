@@ -2609,6 +2609,7 @@ func createScenario31(cache *lbx.LbxCache) *gamelib.Game {
     city.Farmers = 3
     city.Workers = 3
     city.Wall = false
+    city.Buildings.Insert(buildinglib.BuildingFortress)
 
     city.ResetCitizens(nil)
 
@@ -2646,8 +2647,13 @@ func createScenario31(cache *lbx.LbxCache) *gamelib.Game {
         Player: player,
         Treasure: gamelib.Treasure{
             Treasures: []gamelib.TreasureItem{
+                /*
                 &gamelib.TreasureGold{
                     Amount: 300,
+                },
+                */
+                &gamelib.TreasurePrisonerHero{
+                    Hero: game.Heroes[0],
                 },
             },
         },

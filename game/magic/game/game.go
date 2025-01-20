@@ -3433,7 +3433,8 @@ func (game *Game) doTreasure(yield coroutine.YieldFunc, player *playerlib.Player
                 magicalItem := item.(*TreasureMagicalItem)
                 game.doVault(yield, &magicalItem.Artifact)
             case *TreasurePrisonerHero:
-                // FIXME: show hire hero screen?
+                hero := item.(*TreasurePrisonerHero)
+                game.doHireHero(yield, 0, hero.Hero, player)
             case *TreasureSpell:
                 spell := item.(*TreasureSpell)
                 player.KnownSpells.AddSpell(spell.Spell)
