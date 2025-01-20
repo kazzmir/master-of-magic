@@ -215,6 +215,10 @@ func (spells *Spells) RemoveSpells(toRemove Spells){
     }
 }
 
+func (spells *Spells) RemoveSpellsByMagic(magic data.MagicType){
+    spells.RemoveSpells(spells.GetSpellsByMagic(magic))
+}
+
 // returns true if the spell was added, false if it was not
 func (spells *Spells) AddSpell(spell Spell) bool {
     if spell.Invalid(){

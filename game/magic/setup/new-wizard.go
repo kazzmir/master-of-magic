@@ -1620,9 +1620,13 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
     shadowDescriptionFont := font.MakeOptimizedFontWithPalette(screen.LbxFonts[3], blackPalette)
 
     var doNextMagicUI func (magic data.MagicType)
+    var doPreviousMagicUI func (magic data.MagicType)
 
     makeUIForMagic := func (magic data.MagicType) *uilib.UI {
         spellInfo := MakeChooseSpellInfo(screen.Spells, magic, screen.CustomWizard.MagicLevel(magic))
+
+        // reset starting spells
+        screen.CustomWizard.StartingSpells.RemoveSpellsByMagic(magic)
 
         // if the wizard has all 11 books then they start with knowing all common spells
         if screen.CustomWizard.MagicLevel(magic) == 11 {
@@ -1841,8 +1845,7 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
             HandleKeys: func(keys []ebiten.Key){
                 for _, key := range keys {
                     if inputmanager.IsQuitKey(key) {
-                        screen.State = NewWizardScreenStateCustomBooks
-                        screen.UI = screen.MakeCustomWizardBooksUI()
+                        doPreviousMagicUI(magic)
                     }
                 }
             },
@@ -1869,6 +1872,24 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
 
         screen.State = NewWizardScreenStateSelectRace
         screen.UI = screen.MakeSelectRaceUI()
+    }
+
+    doPreviousMagicUI = func(current data.MagicType){
+        for i := range len(magicOrder) {
+            if current == magicOrder[i] {
+                for j := i - 1; j >= 0; j-- {
+                    if screen.CustomWizard.MagicLevel(magicOrder[j]) > 1 {
+                        screen.UI = makeUIForMagic(magicOrder[j])
+                        return
+                    }
+                }
+            }
+        }
+
+        // no previous magic types, just go back to custom books
+
+        screen.State = NewWizardScreenStateCustomBooks
+        screen.UI = screen.MakeCustomWizardBooksUI()
     }
 
     for _, magic := range magicOrder {
