@@ -34,16 +34,20 @@ func (engine *Engine) Update() error {
     keys := make([]ebiten.Key, 0)
     keys = inpututil.AppendJustPressedKeys(keys)
 
+    /*
     for _, key := range keys {
-        if key == ebiten.KeyEscape || key == ebiten.KeyCapsLock {
+        if key == ebiten.KeyCapsLock {
             return ebiten.Termination
         }
     }
+    */
 
     switch engine.NewWizardScreen.Update() {
         case setup.NewWizardScreenStateFinished:
             wizard := engine.NewWizardScreen.CustomWizard
             log.Printf("New wizard: %+v", wizard)
+            return ebiten.Termination
+        case setup.NewWizardScreenStateCanceled:
             return ebiten.Termination
     }
 

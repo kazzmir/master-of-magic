@@ -13,6 +13,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/draw"
     "github.com/kazzmir/master-of-magic/game/magic/util"
+    "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     _ "github.com/hajimehoshi/ebiten/v2/vector"
@@ -199,12 +200,12 @@ const (
     NewWizardScreenStateSelectWizard NewWizardScreenState = iota
     NewWizardScreenStateCustomPicture
     NewWizardScreenStateCustomName
-    NewWizardScreenStateCustomAbility
     NewWizardScreenStateCustomBooks
     NewWizardScreenStateSelectSpells
     NewWizardScreenStateSelectRace
     NewWizardScreenStateSelectBanner
     NewWizardScreenStateFinished
+    NewWizardScreenStateCanceled
 )
 
 func (state NewWizardScreenState) String() string {
@@ -212,7 +213,6 @@ func (state NewWizardScreenState) String() string {
         case NewWizardScreenStateSelectWizard: return "select wizard"
         case NewWizardScreenStateCustomPicture: return "custom picture"
         case NewWizardScreenStateCustomName: return "custom name"
-        case NewWizardScreenStateCustomAbility: return "custom ability"
         case NewWizardScreenStateCustomBooks: return "custom books"
         case NewWizardScreenStateSelectSpells: return "select spells"
         case NewWizardScreenStateSelectRace: return "select race"
@@ -583,6 +583,14 @@ func (screen *NewWizardScreen) MakeCustomNameUI() *uilib.UI {
 
             return
         },
+        HandleKeys: func(keys []ebiten.Key){
+            for _, key := range keys {
+                if inputmanager.IsQuitKey(key) {
+                    screen.State = NewWizardScreenStateCustomPicture
+                    screen.UI = screen.MakeCustomPictureUI()
+                }
+            }
+        },
     }
 
     nameRect := image.Rect(184, 20, 184 + 128, 60)
@@ -614,6 +622,11 @@ func (screen *NewWizardScreen) MakeCustomNameUI() *uilib.UI {
         },
         HandleKeys: func(keys []ebiten.Key){
             for _, key := range keys {
+                if inputmanager.IsQuitKey(key) {
+                    screen.State = NewWizardScreenStateCustomPicture
+                    screen.UI = screen.MakeCustomPictureUI()
+                }
+
                 switch key {
                     case ebiten.KeyBackspace:
                         length := len(screen.CustomWizard.Name)
@@ -687,6 +700,14 @@ func (screen *NewWizardScreen) MakeCustomPictureUI() *uilib.UI {
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(portraitX, portraitY)
                 window.DrawImage(portrait, &options)
+            }
+        },
+        HandleKeys: func(keys []ebiten.Key){
+            for _, key := range keys {
+                if inputmanager.IsQuitKey(key) {
+                    screen.State = NewWizardScreenStateSelectWizard
+                    screen.UI = screen.MakeSelectWizardUI()
+                }
             }
         },
     }
@@ -827,6 +848,13 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *uilib.UI {
                     if screen.WizardSlots[screen.CurrentWizard].ExtraAbility != AbilityNone {
                         screen.AbilityFontSelected.Print(window, 12, 180, 1, ebiten.ColorScale{}, screen.WizardSlots[screen.CurrentWizard].ExtraAbility.String())
                     }
+                }
+            }
+        },
+        HandleKeys: func(keys []ebiten.Key){
+            for _, key := range keys {
+                if inputmanager.IsQuitKey(key) {
+                    screen.State = NewWizardScreenStateCanceled
                 }
             }
         },
@@ -1065,6 +1093,9 @@ func JoinAbilities(abilities []WizardAbility) string {
 }
 
 func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
+
+    screen.CustomWizard.Abilities = []WizardAbility{}
+    screen.CustomWizard.Books = []data.WizardBook{}
 
     imageCache := util.MakeImageCache(screen.LbxCache)
 
@@ -1431,6 +1462,14 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
             screen.AbilityFontSelected.Print(window, 12, 180, 1, ebiten.ColorScale{}, JoinAbilities(screen.CustomWizard.Abilities))
             screen.NameFontBright.PrintCenter(window, 223, 185, 1, ebiten.ColorScale{}, fmt.Sprintf("%v picks", picksLeft()))
         },
+        HandleKeys: func(keys []ebiten.Key){
+            for _, key := range keys {
+                if inputmanager.IsQuitKey(key) {
+                    screen.State = NewWizardScreenStateCustomName
+                    screen.UI = screen.MakeCustomNameUI()
+                }
+            }
+        },
     }
 
     ui.SetElementsFromArray(elements)
@@ -1581,9 +1620,13 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
     shadowDescriptionFont := font.MakeOptimizedFontWithPalette(screen.LbxFonts[3], blackPalette)
 
     var doNextMagicUI func (magic data.MagicType)
+    var doPreviousMagicUI func (magic data.MagicType)
 
     makeUIForMagic := func (magic data.MagicType) *uilib.UI {
         spellInfo := MakeChooseSpellInfo(screen.Spells, magic, screen.CustomWizard.MagicLevel(magic))
+
+        // reset starting spells
+        screen.CustomWizard.StartingSpells.RemoveSpellsByMagic(magic)
 
         // if the wizard has all 11 books then they start with knowing all common spells
         if screen.CustomWizard.MagicLevel(magic) == 11 {
@@ -1799,6 +1842,13 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
                     }
                 })
             },
+            HandleKeys: func(keys []ebiten.Key){
+                for _, key := range keys {
+                    if inputmanager.IsQuitKey(key) {
+                        doPreviousMagicUI(magic)
+                    }
+                }
+            },
         }
 
         ui.SetElementsFromArray(elements)
@@ -1822,6 +1872,24 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
 
         screen.State = NewWizardScreenStateSelectRace
         screen.UI = screen.MakeSelectRaceUI()
+    }
+
+    doPreviousMagicUI = func(current data.MagicType){
+        for i := range len(magicOrder) {
+            if current == magicOrder[i] {
+                for j := i - 1; j >= 0; j-- {
+                    if screen.CustomWizard.MagicLevel(magicOrder[j]) > 1 {
+                        screen.UI = makeUIForMagic(magicOrder[j])
+                        return
+                    }
+                }
+            }
+        }
+
+        // no previous magic types, just go back to custom books
+
+        screen.State = NewWizardScreenStateCustomBooks
+        screen.UI = screen.MakeCustomWizardBooksUI()
     }
 
     for _, magic := range magicOrder {
@@ -2032,6 +2100,19 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
             })
 
         },
+        HandleKeys: func(keys []ebiten.Key){
+            for _, key := range keys {
+                if inputmanager.IsQuitKey(key) {
+                    if screen.CurrentWizard == -1 {
+                        screen.State = NewWizardScreenStateSelectSpells
+                        screen.UI = screen.MakeSelectSpellsUI()
+                    } else {
+                        screen.State = NewWizardScreenStateSelectWizard
+                        screen.UI = screen.MakeSelectWizardUI()
+                    }
+                }
+            }
+        },
     }
 
     ui.SetElementsFromArray(elements)
@@ -2102,6 +2183,14 @@ func (screen *NewWizardScreen) MakeSelectBannerUI() *uilib.UI {
                     element.Draw(element, window)
                 }
             })
+        },
+        HandleKeys: func(keys []ebiten.Key){
+            for _, key := range keys {
+                if inputmanager.IsQuitKey(key) {
+                    screen.State = NewWizardScreenStateSelectRace
+                    screen.UI = screen.MakeSelectRaceUI()
+                }
+            }
         },
     }
 

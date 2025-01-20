@@ -72,32 +72,36 @@ func runIntro(yield coroutine.YieldFunc, game *MagicGame) {
     }
 }
 
-func runNewGame(yield coroutine.YieldFunc, game *MagicGame) setup.NewGameSettings {
+func runNewGame(yield coroutine.YieldFunc, game *MagicGame) (bool, setup.NewGameSettings) {
     newGame := setup.MakeNewGameScreen(game.Cache)
 
     game.Drawer = func(screen *ebiten.Image) {
         newGame.Draw(screen)
     }
 
-    for newGame.Update() == setup.NewGameStateRunning {
+    state := newGame.Update()
+    for state == setup.NewGameStateRunning {
         yield()
+        state = newGame.Update()
     }
 
-    return newGame.Settings
+    return state == setup.NewGameStateCancel, newGame.Settings
 }
 
-func runNewWizard(yield coroutine.YieldFunc, game *MagicGame) setup.WizardCustom {
+func runNewWizard(yield coroutine.YieldFunc, game *MagicGame) (bool, setup.WizardCustom) {
     newWizard := setup.MakeNewWizardScreen(game.Cache)
 
     game.Drawer = func(screen *ebiten.Image) {
         newWizard.Draw(screen)
     }
 
-    for newWizard.Update() != setup.NewWizardScreenStateFinished {
+    state := newWizard.Update()
+    for state != setup.NewWizardScreenStateFinished && state != setup.NewWizardScreenStateCanceled {
         yield()
+        state = newWizard.Update()
     }
 
-    return newWizard.CustomWizard
+    return state == setup.NewWizardScreenStateCanceled, newWizard.CustomWizard
 }
 
 func runMainMenu(yield coroutine.YieldFunc, game *MagicGame) mainview.MainScreenState {
@@ -109,7 +113,7 @@ func runMainMenu(yield coroutine.YieldFunc, game *MagicGame) mainview.MainScreen
 
     for menu.Update() == mainview.MainScreenStateRunning {
 
-        if inpututil.IsKeyJustPressed(ebiten.KeyEscape) || inpututil.IsKeyJustPressed(ebiten.KeyCapsLock) {
+        if inputmanager.IsQuitPressed() {
             return mainview.MainScreenStateQuit
         }
 
@@ -190,7 +194,7 @@ func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup
     game.DoNextTurn()
 
     for game.Update(yield) != gamelib.GameStateQuit {
-        if inpututil.IsKeyJustPressed(ebiten.KeyEscape) || inpututil.IsKeyJustPressed(ebiten.KeyCapsLock) {
+        if inputmanager.IsQuitPressed() {
             return ebiten.Termination
         }
 
@@ -223,7 +227,7 @@ func loadData(yield coroutine.YieldFunc, game *MagicGame, dataPath string) error
             yield()
         }
 
-        if inpututil.IsKeyJustPressed(ebiten.KeyEscape) || inpututil.IsKeyJustPressed(ebiten.KeyCapsLock) {
+        if inputmanager.IsQuitPressed() {
             return ebiten.Termination
         }
     }
@@ -259,12 +263,24 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string) error 
                 yield()
                 return ebiten.Termination
             case mainview.MainScreenStateNewGame:
-                // yield so that clicks from the menu don't bleed into the next part
+                var settings setup.NewGameSettings
+                var wizard setup.WizardCustom
+                restart := true
+                cancel := false
+                for restart && !cancel {
+                    // yield so that clicks from the menu don't bleed into the next part
+                    yield()
+                    cancel, settings = runNewGame(yield, game)
+                    if cancel {
+                        break
+                    }
+                    yield()
+                    restart, wizard = runNewWizard(yield, game)
+                }
                 yield()
-                settings := runNewGame(yield, game)
-                yield()
-                wizard := runNewWizard(yield, game)
-                yield()
+                if cancel {
+                    break
+                }
                 err := runGameInstance(yield, game, settings, wizard)
 
                 if err != nil {
@@ -337,7 +353,7 @@ func main() {
     ebiten.SetCursorMode(ebiten.CursorModeHidden)
 
     game, err := NewMagicGame(dataPath)
-    
+
     if err != nil {
         log.Printf("Error: unable to load game: %v", err)
         return

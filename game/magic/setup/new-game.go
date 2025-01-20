@@ -6,6 +6,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
+    "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/util"
 
@@ -271,6 +272,14 @@ func (newGameScreen *NewGameScreen) MakeUI() *uilib.UI {
                 element.Draw(element, screen)
             })
         },
+        HandleKeys: func(keys []ebiten.Key){
+            for _, key := range keys {
+                if inputmanager.IsQuitKey(key) {
+                    newGameScreen.State = NewGameStateCancel
+                }
+            }
+        },
+
     }
 
     ui.SetElementsFromArray(elements)
