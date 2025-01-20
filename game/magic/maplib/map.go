@@ -323,6 +323,7 @@ func (extra *ExtraEncounter) DrawLayer2(screen *ebiten.Image, imageCache *util.I
 type ExtraMagicNode struct {
     Kind MagicNode
     Empty bool
+    Budget int
     Guardians []units.Unit
     Secondary []units.Unit
     // list of points that are affected by the node

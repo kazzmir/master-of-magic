@@ -3456,6 +3456,7 @@ func (game *Game) doMagicEncounter(yield coroutine.YieldFunc, player *playerlib.
         Wizard: setup.WizardCustom{
             Name: "Node",
         },
+        StrategicCombat: true,
     }
 
     var enemies []units.StackUnit
@@ -3482,7 +3483,14 @@ func (game *Game) doMagicEncounter(yield coroutine.YieldFunc, player *playerlib.
         // node should have no guardians
         node.Empty = true
 
-        // FIXME: give treasure
+        var encounterType maplib.EncounterType
+        switch node.Kind {
+            case maplib.MagicNodeNature: encounterType = maplib.EncounterTypeNatureNode
+            case maplib.MagicNodeSorcery: encounterType = maplib.EncounterTypeSorceryNode
+            case maplib.MagicNodeChaos: encounterType = maplib.EncounterTypeChaosNode
+        }
+
+        game.createTreasure(encounterType, node.Budget, player)
     }
 
     // absorb extra clicks
