@@ -35,7 +35,7 @@ func (mana *TreasureMana) String() string {
 }
 
 type TreasureMagicalItem struct {
-    Artifact artifact.Artifact
+    Artifact *artifact.Artifact
 }
 
 func (item *TreasureMagicalItem) String() string {
@@ -135,7 +135,7 @@ func chooseValue[T comparable](choices map[T]int) T {
 }
 
 // given some budget, keep choosing a treasure type within the budget and add it to the treasure
-func makeTreasure(cache *lbx.LbxCache, encounterType maplib.EncounterType, budget int, wizard setup.WizardCustom, knownSpells spellbook.Spells, allSpells spellbook.Spells, heroes []*herolib.Hero, getPremadeArtifacts func() []artifact.Artifact) Treasure {
+func makeTreasure(cache *lbx.LbxCache, encounterType maplib.EncounterType, budget int, wizard setup.WizardCustom, knownSpells spellbook.Spells, allSpells spellbook.Spells, heroes []*herolib.Hero, getPremadeArtifacts func() []*artifact.Artifact) Treasure {
     type TreasureType int
     const (
         TreasureTypeGold TreasureType = iota
@@ -204,7 +204,7 @@ func makeTreasure(cache *lbx.LbxCache, encounterType maplib.EncounterType, budge
     }
 
     // to be able to use the artifact, the wizard must have enough magic books to satisfy the artifact's requirements
-    canUseArtifact := func (check artifact.Artifact) bool {
+    canUseArtifact := func (check *artifact.Artifact) bool {
         // all artifact requirements must be satisfied
         for _, requirement := range check.Requirements {
             if wizard.MagicLevel(requirement.MagicType) < requirement.Amount {
@@ -324,10 +324,10 @@ func makeTreasure(cache *lbx.LbxCache, encounterType maplib.EncounterType, budge
                     }
                 } else {
                     randomArtifact := artifact.MakeRandomArtifact(cache)
-                    if budget >= randomArtifact.Cost && canUseArtifact(randomArtifact) {
+                    if budget >= randomArtifact.Cost && canUseArtifact(&randomArtifact) {
                         magicItemRemaining -= 1
                         budget -= randomArtifact.Cost
-                        items = append(items, &TreasureMagicalItem{Artifact: randomArtifact})
+                        items = append(items, &TreasureMagicalItem{Artifact: &randomArtifact})
                     }
                 }
             case TreasureTypePrisonerHero:
