@@ -274,7 +274,7 @@ func (newGameScreen *NewGameScreen) MakeUI() *uilib.UI {
         HandleKeys: func(keys []ebiten.Key){
             for _, key := range keys {
                 switch key {
-                    case ebiten.KeyEscape:
+                    case ebiten.KeyEscape, ebiten.KeyCapsLock:
                         newGameScreen.State = NewGameStateCancel
                 }
             }
