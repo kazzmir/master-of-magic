@@ -86,18 +86,20 @@ func runNewGame(yield coroutine.YieldFunc, game *MagicGame) setup.NewGameSetting
     return newGame.Settings
 }
 
-func runNewWizard(yield coroutine.YieldFunc, game *MagicGame) setup.WizardCustom {
+func runNewWizard(yield coroutine.YieldFunc, game *MagicGame) (bool, setup.WizardCustom) {
     newWizard := setup.MakeNewWizardScreen(game.Cache)
 
     game.Drawer = func(screen *ebiten.Image) {
         newWizard.Draw(screen)
     }
 
-    for newWizard.Update() != setup.NewWizardScreenStateFinished {
+    state := newWizard.Update()
+    for state != setup.NewWizardScreenStateFinished && state != setup.NewWizardScreenStateCanceled {
         yield()
+        state = newWizard.Update()
     }
 
-    return newWizard.CustomWizard
+    return state == setup.NewWizardScreenStateFinished, newWizard.CustomWizard
 }
 
 func runMainMenu(yield coroutine.YieldFunc, game *MagicGame) mainview.MainScreenState {
@@ -259,11 +261,16 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string) error 
                 yield()
                 return ebiten.Termination
             case mainview.MainScreenStateNewGame:
-                // yield so that clicks from the menu don't bleed into the next part
-                yield()
-                settings := runNewGame(yield, game)
-                yield()
-                wizard := runNewWizard(yield, game)
+                var settings setup.NewGameSettings
+                var wizard setup.WizardCustom
+                finished := false
+                for !finished {
+                    // yield so that clicks from the menu don't bleed into the next part
+                    yield()
+                    settings = runNewGame(yield, game)
+                    yield()
+                    finished, wizard = runNewWizard(yield, game)
+                }
                 yield()
                 err := runGameInstance(yield, game, settings, wizard)
 
@@ -337,7 +344,7 @@ func main() {
     ebiten.SetCursorMode(ebiten.CursorModeHidden)
 
     game, err := NewMagicGame(dataPath)
-    
+
     if err != nil {
         log.Printf("Error: unable to load game: %v", err)
         return

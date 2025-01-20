@@ -204,6 +204,7 @@ const (
     NewWizardScreenStateSelectRace
     NewWizardScreenStateSelectBanner
     NewWizardScreenStateFinished
+    NewWizardScreenStateCanceled
 )
 
 func (state NewWizardScreenState) String() string {
@@ -846,6 +847,14 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *uilib.UI {
                     if screen.WizardSlots[screen.CurrentWizard].ExtraAbility != AbilityNone {
                         screen.AbilityFontSelected.Print(window, 12, 180, 1, ebiten.ColorScale{}, screen.WizardSlots[screen.CurrentWizard].ExtraAbility.String())
                     }
+                }
+            }
+        },
+        HandleKeys: func(keys []ebiten.Key){
+            for _, key := range keys {
+                switch key {
+                    case ebiten.KeyEscape:
+                        screen.State = NewWizardScreenStateCanceled
                 }
             }
         },
