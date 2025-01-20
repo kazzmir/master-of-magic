@@ -3380,6 +3380,8 @@ func (game *Game) doTreasure(yield coroutine.YieldFunc, player *playerlib.Player
 
     treasureFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowPalette)
 
+    getAlpha := util.MakeFadeIn(7, &game.Counter)
+
     element := &uilib.UIElement{
         Layer: 2,
         Rect: image.Rect(0, 0, data.ScreenWidth, data.ScreenHeight),
@@ -3389,6 +3391,7 @@ func (game *Game) doTreasure(yield coroutine.YieldFunc, player *playerlib.Player
         Draw: func (element *uilib.UIElement, screen *ebiten.Image){
             left, _ := game.ImageCache.GetImage("resource.lbx", 56, 0)
             var options ebiten.DrawImageOptions
+            options.ColorScale.ScaleAlpha(getAlpha())
             options.GeoM.Translate(10, 50)
 
             fontX, fontY := options.GeoM.Apply(10, 10)
@@ -3405,13 +3408,21 @@ func (game *Game) doTreasure(yield coroutine.YieldFunc, player *playerlib.Player
             options.GeoM = rightGeom
             screen.DrawImage(right, &options)
 
-            treasureFont.PrintWrap(screen, fontX, fontY, float64(left.Bounds().Dx()) - 5, 1.0, ebiten.ColorScale{}, treasure.String())
+            treasureFont.PrintWrap(screen, fontX, fontY, float64(left.Bounds().Dx()) - 5, 1.0, options.ColorScale, treasure.String())
         },
     }
 
     game.HudUI.AddElement(element)
 
     for !uiDone {
+        game.Counter += 1
+        game.HudUI.StandardUpdate()
+        yield()
+    }
+
+    getAlpha = util.MakeFadeOut(7, &game.Counter)
+
+    for range 7 {
         game.Counter += 1
         game.HudUI.StandardUpdate()
         yield()
