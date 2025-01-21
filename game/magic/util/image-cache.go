@@ -245,10 +245,10 @@ func scale3x(input image.Image) image.Image {
                     E1 = B
                 }
                 if D == H {
-                    E2 = D
+                    E2 = F
                 }
                 if H == F {
-                    E3 = F
+                    E3 = D
                 }
                 E4 = E
                 if (B == F && E != I) || (H == F && E != C) {
