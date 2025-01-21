@@ -286,10 +286,13 @@ func scale3x(input image.Image) image.Image {
 }
 
 func (cache *ImageCache) ApplyScale(input image.Image) image.Image {
+    if cache.ScaleAmount == 1 {
+        return input
+    }
+
     switch cache.Scaler {
         case ScaleAlgorithmLinear:
             switch cache.ScaleAmount {
-                case 1: return input
                 case 2: return scale2x(input)
                 case 3: return scale3x(input)
                 case 4: return scale2x(scale2x(input))
