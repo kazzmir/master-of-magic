@@ -8,6 +8,7 @@ import (
     "image"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/xbr"
     "github.com/kazzmir/master-of-magic/game/magic/shaders"
     "github.com/hajimehoshi/ebiten/v2"
 )
@@ -142,7 +143,7 @@ func (cache *ImageCache) GetImagesTransform(lbxPath string, index int, extra str
 
     var out []*ebiten.Image
     for i := 0; i < len(sprites); i++ {
-        out = append(out, ebiten.NewImageFromImage(transform(sprites[i])))
+        out = append(out, ebiten.NewImageFromImage(xbr.ScaleImage(transform(sprites[i]), 2)))
     }
 
     cache.Cache[key] = out
