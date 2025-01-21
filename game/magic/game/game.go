@@ -3695,7 +3695,8 @@ func GetCityWallImage(city *citylib.City, cache *util.ImageCache) (*ebiten.Image
     }
 
     // the city image is a sub-frame of animation 20
-    return cache.GetImageTransform("mapback.lbx", 20, index, city.Banner.String(), util.ComposeImageTransform(units.MakeUpdateUnitColorsFunc(city.Banner), util.AutoCropGeneric))
+    // return cache.GetImageTransform("mapback.lbx", 20, index, city.Banner.String(), util.ComposeImageTransform(units.MakeUpdateUnitColorsFunc(city.Banner), util.AutoCropGeneric))
+    return cache.GetImageTransform("mapback.lbx", 20, index, city.Banner.String(), units.MakeUpdateUnitColorsFunc(city.Banner))
 }
 
 func (game *Game) ShowGrandVizierUI(){
