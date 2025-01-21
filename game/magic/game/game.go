@@ -4381,7 +4381,16 @@ func (game *Game) MakeHudUI() *uilib.UI {
                         options.GeoM.Translate(1, 1)
                         unitImage, err := GetUnitImage(unit, &game.ImageCache, unit.GetBanner())
                         if err == nil {
-                            screen.DrawImage(unitImage, &options)
+
+                            if unit.GetBusy() != units.BusyStatusNone {
+                                var patrolOptions colorm.DrawImageOptions
+                                var matrix colorm.ColorM
+                                patrolOptions.GeoM = options.GeoM
+                                matrix.ChangeHSV(0, 0, 1)
+                                colorm.DrawImage(screen, unitImage, matrix, &patrolOptions)
+                            } else {
+                                screen.DrawImage(unitImage, &options)
+                            }
 
                             // draw the first enchantment on the unit
                             for _, enchantment := range unit.GetEnchantments() {
