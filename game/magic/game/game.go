@@ -234,6 +234,7 @@ type Game struct {
     ArcanusMap *maplib.Map
     MyrrorMap *maplib.Map
 
+    // FIXME: maybe put these in the Map object?
     RoadWorkArcanus map[image.Point]float64
     RoadWorkMyrror map[image.Point]float64
 
@@ -4110,7 +4111,7 @@ func (game *Game) DoBuildRoads(player *playerlib.Player) {
 
         if engineerCount > 0 {
             x, y := stack.X(), stack.Y()
-            log.Printf("building a road at %v, %v with %v engineers", x, y, engineerCount)
+            // log.Printf("building a road at %v, %v with %v engineers", x, y, engineerCount)
             roads := game.RoadWorkArcanus
             if plane == data.PlaneMyrror {
                 roads = game.RoadWorkMyrror
@@ -4124,7 +4125,7 @@ func (game *Game) DoBuildRoads(player *playerlib.Player) {
             tileWork := work[game.GetMap(plane).GetTile(x, y).Tile.TerrainType()]
 
             amount += math.Pow(tileWork.WorkPerEngineer, float64(engineerCount))
-            log.Printf("  amount is now %v. total work is %v", amount, tileWork.TotalWork)
+            // log.Printf("  amount is now %v. total work is %v", amount, tileWork.TotalWork)
             if amount >= tileWork.TotalWork {
                 game.GetMap(plane).SetRoad(x, y, plane == data.PlaneMyrror)
 
@@ -4145,8 +4146,9 @@ func (game *Game) DoBuildRoads(player *playerlib.Player) {
         }
     }
 
-    var toDelete []image.Point
     // remove all points that are no longer being built
+
+    var toDelete []image.Point
     for point, _ := range game.RoadWorkArcanus {
         _, ok := arcanusBuilds[point]
         if !ok {
@@ -4155,8 +4157,21 @@ func (game *Game) DoBuildRoads(player *playerlib.Player) {
     }
 
     for _, point := range toDelete {
-        log.Printf("remove point %v", point)
+        // log.Printf("remove point %v", point)
         delete(game.RoadWorkArcanus, point)
+    }
+
+    toDelete = nil
+    for point, _ := range game.RoadWorkMyrror {
+        _, ok := myrrorBuilds[point]
+        if !ok {
+            toDelete = append(toDelete, point)
+        }
+    }
+
+    for _, point := range toDelete {
+        // log.Printf("remove point %v", point)
+        delete(game.RoadWorkMyrror, point)
     }
 
 }
