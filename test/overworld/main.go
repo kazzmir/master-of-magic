@@ -2450,6 +2450,7 @@ func createScenario29(cache *lbx.LbxCache) *gamelib.Game {
     city.Banner = wizard.Banner
     city.ProducingBuilding = buildinglib.BuildingGranary
     city.ProducingUnit = units.UnitNone
+    city.Buildings.Insert(buildinglib.BuildingFarmersMarket)
     city.Race = wizard.Race
     city.Farmers = 9
     city.Workers = 3

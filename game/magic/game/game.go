@@ -4049,16 +4049,19 @@ func (game *Game) DoBuildAction(player *playerlib.Player){
             }
         } else if powers.BuildRoad {
             // FIXME: put the unit to sleep for a few turns, when they wake up the road is built
-            x, y := player.SelectedStack.X(), player.SelectedStack.Y()
-            plane := player.SelectedStack.Plane()
+            // x, y := player.SelectedStack.X(), player.SelectedStack.Y()
+            // plane := player.SelectedStack.Plane()
 
             for _, unit := range player.SelectedStack.Units() {
                 if unit.HasAbility(data.AbilityConstruction) {
                     unit.SetBusy(units.BusyStatusBuildRoad)
+                    unit.SetMovesLeft(fraction.Zero())
                 }
             }
 
+            /*
             game.GetMap(plane).SetRoad(x, y, plane == data.PlaneMyrror)
+            */
             player.SelectedStack.ExhaustMoves()
         }
     }
@@ -4110,6 +4113,7 @@ func (game *Game) DoBuildRoads(player *playerlib.Player) {
 
         if engineerCount > 0 {
             x, y := stack.X(), stack.Y()
+            log.Printf("building a road at %v, %v with %v engineers", x, y, engineerCount)
             roads := game.RoadWorkArcanus
             if plane == data.PlaneMyrror {
                 roads = game.RoadWorkMyrror
@@ -4123,10 +4127,18 @@ func (game *Game) DoBuildRoads(player *playerlib.Player) {
             tileWork := work[game.GetMap(plane).GetTile(x, y).Tile.TerrainType()]
 
             amount += math.Pow(tileWork.WorkPerEngineer, float64(engineerCount))
+            log.Printf("  amount is now %v. total work is %v", amount, tileWork.TotalWork)
             if amount >= tileWork.TotalWork {
                 game.GetMap(plane).SetRoad(x, y, plane == data.PlaneMyrror)
-            } else {
 
+                for _, unit := range stack.Units() {
+                    if unit.GetBusy() == units.BusyStatusBuildRoad {
+                        unit.SetBusy(units.BusyStatusNone)
+                    }
+                }
+
+            } else {
+                roads[image.Pt(x, y)] = amount
                 if plane == data.PlaneArcanus {
                     arcanusBuilds[image.Pt(x, y)] = struct{}{}
                 } else {
@@ -4146,6 +4158,7 @@ func (game *Game) DoBuildRoads(player *playerlib.Player) {
     }
 
     for _, point := range toDelete {
+        log.Printf("remove point %v", point)
         delete(game.RoadWorkArcanus, point)
     }
 
@@ -5155,6 +5168,8 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
             }
         }
     }
+
+    game.DoBuildRoads(player)
 
     for _, stack := range player.Stacks {
 
