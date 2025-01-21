@@ -4056,10 +4056,10 @@ func (game *Game) DoBuildAction(player *playerlib.Player){
                 }
             }
 
-            /*
-            game.GetMap(plane).SetRoad(x, y, plane == data.PlaneMyrror)
-            */
-            player.SelectedStack.ExhaustMoves()
+            player.SelectedStack.EnableMovers()
+
+            // player.SelectedStack.ExhaustMoves()
+            game.RefreshUI()
         }
     }
 }
@@ -4725,8 +4725,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                     } else if powers.BuildRoad {
                         hasRoad := game.GetMap(player.SelectedStack.Plane()).ContainsRoad(player.SelectedStack.X(), player.SelectedStack.Y())
                         hasCity := game.ContainsCity(player.SelectedStack.X(), player.SelectedStack.Y(), player.SelectedStack.Plane())
-                        node := game.GetMap(player.SelectedStack.Plane()).GetMagicNode(player.SelectedStack.X(), player.SelectedStack.Y())
-                        if !hasRoad && !hasCity && node == nil {
+                        if !hasRoad && !hasCity {
                             buildIndex = 1
                         }
                     }
