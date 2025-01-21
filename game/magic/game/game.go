@@ -5523,7 +5523,16 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
             pic, err := GetUnitImage(leader, overworld.ImageCache, leader.GetBanner())
             if err == nil {
                 options.GeoM.Translate(1, 1)
-                screen.DrawImage(pic, &options)
+
+                if leader.GetBusy() != units.BusyStatusNone {
+                    var patrolOptions colorm.DrawImageOptions
+                    var matrix colorm.ColorM
+                    patrolOptions.GeoM = options.GeoM
+                    matrix.ChangeHSV(0, 0, 1)
+                    colorm.DrawImage(screen, pic, matrix, &patrolOptions)
+                } else {
+                    screen.DrawImage(pic, &options)
+                }
 
                 enchantment := util.First(leader.GetEnchantments(), data.UnitEnchantmentNone)
                 if enchantment != data.UnitEnchantmentNone {
