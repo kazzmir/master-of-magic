@@ -426,6 +426,8 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
 func (game *Game) doCastEnchantRoad(yield coroutine.YieldFunc, tileX int, tileY int) {
     game.CurrentMap().SetRoad(tileX, tileY, true)
 
+    // FIXME: what animation and sound to play here?
+
     yield()
 }
 
