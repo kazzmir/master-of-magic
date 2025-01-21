@@ -970,6 +970,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     player.KnownSpells.AddSpell(allSpells.FindByName("Change Terrain"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Transmute"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Summon Hero"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Enchant Road"))
 
     x, y := game.FindValidCityLocation(game.Plane)
 
@@ -994,6 +995,9 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     player.LiftFog(x, y, 4, data.PlaneArcanus)
 
     player.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, nil))
+
+    game.CurrentMap().SetRoad(x, y+1, false)
+    game.CurrentMap().SetRoad(x, y+2, false)
 
     return game
 }

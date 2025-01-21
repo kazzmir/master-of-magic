@@ -35,6 +35,7 @@ const (
     LocationTypeEnemyUnit
     LocationTypeChangeTerrain
     LocationTypeTransmute
+    LocationTypeRoad
 )
 
 func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Player, spell spellbook.Spell) {
@@ -128,6 +129,14 @@ func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Playe
                     default:
                 }
             }
+        case "Enchant Road":
+            tileX, tileY, cancel := game.selectLocationForSpell(yield, spell, player, LocationTypeRoad)
+
+            if cancel {
+                return
+            }
+
+            game.doCastEnchantRoad(yield, tileX, tileY)
 
         default:
             log.Printf("Warning: casting unhandled spell %v", spell.Name)
@@ -229,6 +238,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
 
     switch locationType {
         case LocationTypeAny, LocationTypeChangeTerrain, LocationTypeTransmute: selectMessage = fmt.Sprintf("Select a space as the target for an %v spell.", spell.Name)
+        case LocationTypeRoad: selectMessage = fmt.Sprintf("Select a road to cast %v on.", spell.Name)
         case LocationTypeFriendlyCity: selectMessage = fmt.Sprintf("Select a friendly city to cast %v on.", spell.Name)
         default:
             selectMessage = fmt.Sprintf("unhandled location type %v", locationType)
@@ -358,6 +368,10 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
             if inputmanager.LeftClick() {
                 switch locationType {
                     case LocationTypeAny: return tileX, tileY, false
+                    case LocationTypeRoad:
+                        if game.CurrentMap().ContainsRoad(tileX, tileY) {
+                            return tileX, tileY, false
+                        }
                     case LocationTypeFriendlyCity:
                         city := player.FindCity(tileX, tileY, game.Plane)
                         if city != nil {
@@ -407,6 +421,12 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
     }
 
     return 0, 0, true
+}
+
+func (game *Game) doCastEnchantRoad(yield coroutine.YieldFunc, tileX int, tileY int) {
+    game.CurrentMap().SetRoad(tileX, tileY, true)
+
+    yield()
 }
 
 // FIXME: try to merge most of the logic for doCastEarthLore and doCastChangeTerrain
