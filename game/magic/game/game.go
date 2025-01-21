@@ -5547,7 +5547,7 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
 
             pic, err := GetUnitImage(leader, overworld.ImageCache, leader.GetBanner())
             if err == nil {
-                options.GeoM.Translate(1, 1)
+                options.GeoM.Translate(float64(data.ScreenScale), float64(data.ScreenScale))
 
                 if leader.GetBusy() != units.BusyStatusNone {
                     var patrolOptions colorm.DrawImageOptions

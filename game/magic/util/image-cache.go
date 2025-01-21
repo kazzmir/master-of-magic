@@ -228,10 +228,13 @@ func scale3x(input image.Image) image.Image {
     for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
         for x := bounds.Min.X; x < bounds.Max.X; x++ {
             B := getColor(x, y-1)
+            C := getColor(x+1, y-1)
             D := getColor(x-1, y)
             E := getColor(x, y)
             F := getColor(x+1, y)
+            G := getColor(x-1, y+1)
             H := getColor(x, y+1)
+            I := getColor(x+1, y+1)
 
             E0, E1, E2, E3, E4, E5, E6, E7, E8 := E, E, E, E, E, E, E, E, E
             if smooth && B != H && D != F {
@@ -239,7 +242,7 @@ func scale3x(input image.Image) image.Image {
                     E0 = D
                 }
                 if B == F {
-                    E1 = F
+                    E1 = B
                 }
                 if D == H {
                     E2 = D
@@ -247,16 +250,33 @@ func scale3x(input image.Image) image.Image {
                 if H == F {
                     E3 = F
                 }
+                E4 = E
+                if (B == F && E != I) || (H == F && E != C) {
+                    E5 = F
+                }
+
+                if D == H {
+                    E6 = D
+                }
+
+                if (D == H && E != I) || (H == F && E != G) {
+                    E7 = H
+                }
+
+                if H == F {
+                    E8 = F
+                }
             }
 
-            scaledImage.Set(x*3, y*3, E0)
-            scaledImage.Set(x*3+1, y*3, E1)
-            scaledImage.Set(x*3+2, y*3, E2)
-            scaledImage.Set(x*3, y*3+1, E3)
+            scaledImage.Set(x*3+0, y*3+0, E0)
+            scaledImage.Set(x*3+1, y*3+0, E1)
+            scaledImage.Set(x*3+2, y*3+0, E2)
+
+            scaledImage.Set(x*3+0, y*3+1, E3)
             scaledImage.Set(x*3+1, y*3+1, E4)
             scaledImage.Set(x*3+2, y*3+1, E5)
 
-            scaledImage.Set(x*3, y*3+2, E6)
+            scaledImage.Set(x*3+0, y*3+2, E6)
             scaledImage.Set(x*3+1, y*3+2, E7)
             scaledImage.Set(x*3+2, y*3+2, E8)
         }
@@ -272,6 +292,7 @@ func (cache *ImageCache) ApplyScale(input image.Image) image.Image {
                 case 1: return input
                 case 2: return scale2x(input)
                 case 3: return scale3x(input)
+                case 4: return scale2x(scale2x(input))
                 default: return input
             }
         case ScaleAlgorithmXbr: return xbr.ScaleImage(input, cache.ScaleAmount)
