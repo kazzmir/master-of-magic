@@ -18,13 +18,6 @@ import (
 type ImageTransformFunc func(*image.Paletted) image.Image
 type ImageTransformGenericFunc func(image.Image) image.Image
 
-type ScaleAlgorithm int
-
-const (
-    ScaleAlgorithmLinear ScaleAlgorithm = iota
-    ScaleAlgorithmXbr
-)
-
 type ImageCache struct {
     LbxCache *lbx.LbxCache
     // FIXME: have some limit on the number of entries, and remove old ones LRU-style
@@ -32,7 +25,7 @@ type ImageCache struct {
 
     ShaderCache map[shaders.Shader]*ebiten.Shader
 
-    Scaler ScaleAlgorithm
+    Scaler data.ScaleAlgorithm
     ScaleAmount int
 }
 
@@ -41,7 +34,7 @@ func MakeImageCache(lbxCache *lbx.LbxCache) ImageCache {
         LbxCache: lbxCache,
         Cache:    make(map[string][]*ebiten.Image),
         ShaderCache: make(map[shaders.Shader]*ebiten.Shader),
-        Scaler: ScaleAlgorithmLinear,
+        Scaler: data.ScreenScaleAlgorithm,
         ScaleAmount: data.ScreenScale,
     }
 }
@@ -291,14 +284,14 @@ func (cache *ImageCache) ApplyScale(input image.Image) image.Image {
     }
 
     switch cache.Scaler {
-        case ScaleAlgorithmLinear:
+        case data.ScaleAlgorithmLinear:
             switch cache.ScaleAmount {
                 case 2: return scale2x(input)
                 case 3: return scale3x(input)
                 case 4: return scale2x(scale2x(input))
                 default: return input
             }
-        case ScaleAlgorithmXbr: return xbr.ScaleImage(input, cache.ScaleAmount)
+        case data.ScaleAlgorithmXbr: return xbr.ScaleImage(input, cache.ScaleAmount)
     }
 
     return input

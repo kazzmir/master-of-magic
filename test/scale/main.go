@@ -159,10 +159,13 @@ func NewEngine(scenario int) (*Engine, error) {
     }, nil
 }
 
-func (engine *Engine) ChangeScale(scale int) {
+func (engine *Engine) ChangeScale(scale int, algorithm data.ScaleAlgorithm) {
     data.ScreenScale = scale
+    data.ScreenScaleAlgorithm = algorithm
     data.ScreenWidth = 320 * data.ScreenScale
     data.ScreenHeight = 200 * data.ScreenScale
+
+    log.Printf("Changing scale to %v %v", data.ScreenScale, data.ScreenScaleAlgorithm)
 
     engine.Game.UpdateImages()
     engine.Game.RefreshUI()
@@ -176,10 +179,14 @@ func (engine *Engine) Update() error {
     for _, key := range keys {
         switch key {
             case ebiten.KeyEscape, ebiten.KeyCapsLock: return ebiten.Termination
-            case ebiten.KeyF1: engine.ChangeScale(1)
-            case ebiten.KeyF2: engine.ChangeScale(2)
-            case ebiten.KeyF3: engine.ChangeScale(3)
-            case ebiten.KeyF4: engine.ChangeScale(4)
+            case ebiten.KeyF1: engine.ChangeScale(1, data.ScaleAlgorithmLinear)
+            case ebiten.KeyF2: engine.ChangeScale(2, data.ScaleAlgorithmLinear)
+            case ebiten.KeyF3: engine.ChangeScale(3, data.ScaleAlgorithmLinear)
+            case ebiten.KeyF4: engine.ChangeScale(4, data.ScaleAlgorithmLinear)
+
+            case ebiten.KeyF5: engine.ChangeScale(2, data.ScaleAlgorithmXbr)
+            case ebiten.KeyF6: engine.ChangeScale(3, data.ScaleAlgorithmXbr)
+            case ebiten.KeyF7: engine.ChangeScale(4, data.ScaleAlgorithmXbr)
         }
     }
 

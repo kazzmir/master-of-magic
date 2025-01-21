@@ -3,6 +3,23 @@ package data
 var ScreenScale = 1
 var ScreenWidth = 320*ScreenScale
 var ScreenHeight = 200*ScreenScale
+var ScreenScaleAlgorithm = ScaleAlgorithmLinear
+
+type ScaleAlgorithm int
+
+const (
+    ScaleAlgorithmLinear ScaleAlgorithm = iota
+    ScaleAlgorithmXbr
+)
+
+func (algorithm ScaleAlgorithm) String() string {
+    switch algorithm {
+        case ScaleAlgorithmLinear: return "linear"
+        case ScaleAlgorithmXbr: return "xbr"
+    }
+
+    return ""
+}
 
 type BannerType int
 const (
