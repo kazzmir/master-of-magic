@@ -548,11 +548,11 @@ type NewWizardScreen struct {
 }
 
 func (screen *NewWizardScreen) MakeCustomNameUI() *uilib.UI {
-    const portraitX = 24
-    const portraitY = 10
+    const portraitX = 24 * data.ScreenScale
+    const portraitY = 10 * data.ScreenScale
 
-    const nameX = 75
-    const nameY = 120
+    const nameX = 75 * data.ScreenScale
+    const nameY = 120 * data.ScreenScale
 
     ui := &uilib.UI{
         Elements: make(map[uilib.UILayer][]*uilib.UIElement),
@@ -720,11 +720,11 @@ func (screen *NewWizardScreen) MakeCustomPictureUI() *uilib.UI {
 func (screen *NewWizardScreen) MakeWizardUIElements(clickFunc func(wizard int), insideFunc func(wizard int)) []*uilib.UIElement {
     var elements []*uilib.UIElement
 
-    top := 28
-    space := 22
-    columnSpace := 76
+    top := 28 * data.ScreenScale
+    space := 22 * data.ScreenScale
+    columnSpace := 76 * data.ScreenScale
 
-    left := 170
+    left := 170 * data.ScreenScale
 
     counter := 0
     for column := 0; column < 2; column += 1 {
@@ -762,11 +762,11 @@ func (screen *NewWizardScreen) MakeWizardUIElements(clickFunc func(wizard int), 
 }
 
 func (screen *NewWizardScreen) MakeSelectWizardUI() *uilib.UI {
-    top := 28
-    space := 22
-    columnSpace := 76
+    top := 28 * data.ScreenScale
+    space := 22 * data.ScreenScale
+    columnSpace := 76 * data.ScreenScale
 
-    left := 170
+    left := 170 * data.ScreenScale
 
     clickFunc := func(wizard int){
         screen.CustomWizard.Name = screen.WizardSlots[wizard].Name
@@ -828,11 +828,11 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *uilib.UI {
             })
 
             if screen.CurrentWizard >= 0 && screen.CurrentWizard < len(screen.WizardSlots) {
-                const portraitX = 24
-                const portraitY = 10
+                const portraitX = 24 * data.ScreenScale
+                const portraitY = 10 * data.ScreenScale
 
-                const nameX = 75
-                const nameY = 120
+                const nameX = 75 * data.ScreenScale
+                const nameY = 120 * data.ScreenScale
 
                 portrait, _ := screen.ImageCache.GetImage("wizards.lbx", screen.WizardSlots[screen.CurrentWizard].Portrait, 0)
                 if portrait != nil {
@@ -843,10 +843,10 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *uilib.UI {
 
                     // screen.DrawBooks(window, 36, 135, screen.WizardSlots[screen.CurrentWizard].Books)
                     options.GeoM.Reset()
-                    options.GeoM.Translate(36, 135)
+                    options.GeoM.Translate(36 * data.ScreenScale, 135 * data.ScreenScale)
                     draw.DrawBooks(window, options, &screen.ImageCache, screen.WizardSlots[screen.CurrentWizard].Books, screen.BooksOrderRandom())
                     if screen.WizardSlots[screen.CurrentWizard].ExtraAbility != AbilityNone {
-                        screen.AbilityFontSelected.Print(window, 12, 180, 1, ebiten.ColorScale{}, screen.WizardSlots[screen.CurrentWizard].ExtraAbility.String())
+                        screen.AbilityFontSelected.Print(window, 12 * data.ScreenScale, 180 * data.ScreenScale, 1, ebiten.ColorScale{}, screen.WizardSlots[screen.CurrentWizard].ExtraAbility.String())
                     }
                 }
             }
