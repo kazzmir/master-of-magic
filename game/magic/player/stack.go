@@ -149,7 +149,6 @@ func (stack *UnitStack) ToggleActive(unit units.StackUnit){
             }
         } else if unit.GetMovesLeft().GreaterThan(fraction.Zero()) {
             stack.active[unit] = true
-            unit.SetPatrol(false)
             unit.SetBusy(units.BusyStatusNone)
         }
     }
@@ -209,7 +208,7 @@ func (stack *UnitStack) ExhaustMoves(){
 
 func (stack *UnitStack) EnableMovers(){
     for _, unit := range stack.units {
-        if unit.GetMovesLeft().GreaterThan(fraction.Zero()) && !unit.GetPatrol() && unit.GetBusy() == units.BusyStatusNone {
+        if unit.GetMovesLeft().GreaterThan(fraction.Zero()) && unit.GetBusy() == units.BusyStatusNone {
             stack.active[unit] = true
         } else {
             stack.active[unit] = false
@@ -226,7 +225,7 @@ func (stack *UnitStack) Move(dx int, dy int, cost fraction.Fraction, normalize u
 // true if no unit has any moves left
 func (stack *UnitStack) OutOfMoves() bool {
     for _, unit := range stack.units {
-        if !unit.GetPatrol() && unit.GetBusy() == units.BusyStatusNone && unit.GetMovesLeft().GreaterThan(fraction.Zero()) {
+        if unit.GetBusy() == units.BusyStatusNone && unit.GetMovesLeft().GreaterThan(fraction.Zero()) {
             return false
         }
     }
@@ -236,7 +235,7 @@ func (stack *UnitStack) OutOfMoves() bool {
 
 func (stack *UnitStack) AnyOutOfMoves() bool {
     for _, unit := range stack.units {
-        if !unit.GetPatrol() && unit.GetBusy() == units.BusyStatusNone && unit.GetMovesLeft().Equals(fraction.Zero()) {
+        if unit.GetBusy() == units.BusyStatusNone && unit.GetMovesLeft().Equals(fraction.Zero()) {
             return true
         }
     }
@@ -248,7 +247,7 @@ func (stack *UnitStack) GetRemainingMoves() fraction.Fraction {
     hasMoves := false
     moves := fraction.Make(10000, 1)
     for _, unit := range stack.units {
-        if !unit.GetPatrol() && unit.GetBusy() == units.BusyStatusNone && stack.active[unit] && unit.GetMovesLeft().LessThan(moves) {
+        if unit.GetBusy() == units.BusyStatusNone && stack.active[unit] && unit.GetMovesLeft().LessThan(moves) {
             moves = unit.GetMovesLeft()
             hasMoves = true
         }

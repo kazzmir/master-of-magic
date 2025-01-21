@@ -11,8 +11,6 @@ type StackUnit interface {
     SetId(id uint64)
     ResetMoves()
     NaturalHeal(rate float64)
-    GetPatrol() bool
-    SetPatrol(bool)
     IsFlying() bool
     IsSwimmer() bool
     GetName() string

@@ -4596,7 +4596,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
                     if player.SelectedStack != nil {
                         for _, unit := range player.SelectedStack.ActiveUnits() {
-                            unit.SetPatrol(true)
+                            unit.SetBusy(units.BusyStatusPatrol)
                         }
                     }
 

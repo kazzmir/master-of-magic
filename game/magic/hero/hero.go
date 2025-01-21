@@ -676,14 +676,6 @@ func (hero *Hero) GetLbxIndex() int {
     return hero.Unit.GetLbxIndex()
 }
 
-func (hero *Hero) GetPatrol() bool {
-    return hero.Unit.GetPatrol()
-}
-
-func (hero *Hero) SetPatrol(patrol bool) {
-    hero.Unit.SetPatrol(patrol)
-}
-
 func (hero *Hero) GetPlane() data.Plane {
     return hero.Unit.GetPlane()
 }

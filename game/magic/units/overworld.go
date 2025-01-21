@@ -18,6 +18,7 @@ const (
     BusyStatusNone BusyStatus = iota
     BusyStatusBuildRoad // for engineers
     BusyStatusPurify // for priests
+    BusyStatusPatrol // any unit can patrol
 )
 
 type OverworldUnit struct {
@@ -30,7 +31,6 @@ type OverworldUnit struct {
     Y int
     Id uint64
     Health int
-    Patrol bool
     // to get the level, use the conversion functions in experience.go
     Experience int
     WeaponBonus data.WeaponBonus
@@ -95,6 +95,7 @@ func (unit *OverworldUnit) GetLbxIndex() int {
     return unit.Unit.Index
 }
 
+/*
 func (unit *OverworldUnit) GetPatrol() bool {
     return unit.Patrol
 }
@@ -102,6 +103,7 @@ func (unit *OverworldUnit) GetPatrol() bool {
 func (unit *OverworldUnit) SetPatrol(patrol bool) {
     unit.Patrol = patrol
 }
+*/
 
 func (unit *OverworldUnit) GetKnownSpells() []string {
     return unit.Unit.KnownSpells
@@ -458,7 +460,6 @@ func MakeOverworldUnitFromUnit(unit Unit, x int, y int, plane data.Plane, banner
         Banner: banner,
         Plane: plane,
         MovesLeft: fraction.FromInt(unit.MovementSpeed),
-        Patrol: false,
         Health: unit.GetMaxHealth(),
         ExperienceInfo: experienceInfo,
         X: x,
