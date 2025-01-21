@@ -212,12 +212,66 @@ func scale2x(input image.Image) image.Image {
     return scaledImage
 }
 
+func scale3x(input image.Image) image.Image {
+    bounds := input.Bounds()
+    scaledImage := image.NewRGBA(image.Rect(0, 0, 3 * bounds.Dx(), 3 * bounds.Dy()))
+    smooth := true // use Scale2x by Andrea Mazzoleni
+
+    getColor := func(x, y int) color.Color {
+        if x < bounds.Min.X || x >= bounds.Max.X || y < bounds.Min.Y || y >= bounds.Max.Y {
+            return color.RGBA{}
+        }
+
+        return input.At(x, y)
+    }
+
+    for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+        for x := bounds.Min.X; x < bounds.Max.X; x++ {
+            B := getColor(x, y-1)
+            D := getColor(x-1, y)
+            E := getColor(x, y)
+            F := getColor(x+1, y)
+            H := getColor(x, y+1)
+
+            E0, E1, E2, E3, E4, E5, E6, E7, E8 := E, E, E, E, E, E, E, E, E
+            if smooth && B != H && D != F {
+                if D == B {
+                    E0 = D
+                }
+                if B == F {
+                    E1 = F
+                }
+                if D == H {
+                    E2 = D
+                }
+                if H == F {
+                    E3 = F
+                }
+            }
+
+            scaledImage.Set(x*3, y*3, E0)
+            scaledImage.Set(x*3+1, y*3, E1)
+            scaledImage.Set(x*3+2, y*3, E2)
+            scaledImage.Set(x*3, y*3+1, E3)
+            scaledImage.Set(x*3+1, y*3+1, E4)
+            scaledImage.Set(x*3+2, y*3+1, E5)
+
+            scaledImage.Set(x*3, y*3+2, E6)
+            scaledImage.Set(x*3+1, y*3+2, E7)
+            scaledImage.Set(x*3+2, y*3+2, E8)
+        }
+    }
+
+    return scaledImage
+}
+
 func (cache *ImageCache) ApplyScale(input image.Image) image.Image {
     switch cache.Scaler {
         case ScaleAlgorithmLinear:
             switch cache.ScaleAmount {
                 case 1: return input
                 case 2: return scale2x(input)
+                case 3: return scale3x(input)
                 default: return input
             }
         case ScaleAlgorithmXbr: return xbr.ScaleImage(input, cache.ScaleAmount)
