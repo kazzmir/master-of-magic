@@ -4048,11 +4048,8 @@ func (game *Game) DoBuildAction(player *playerlib.Player){
                 }
             }
         } else if powers.BuildRoad {
-            // FIXME: put the unit to sleep for a few turns, when they wake up the road is built
-            // x, y := player.SelectedStack.X(), player.SelectedStack.Y()
-            // plane := player.SelectedStack.Plane()
 
-            for _, unit := range player.SelectedStack.Units() {
+            for _, unit := range player.SelectedStack.ActiveUnits() {
                 if unit.HasAbility(data.AbilityConstruction) {
                     unit.SetBusy(units.BusyStatusBuildRoad)
                     unit.SetMovesLeft(fraction.Zero())
