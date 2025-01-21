@@ -95,16 +95,6 @@ func (unit *OverworldUnit) GetLbxIndex() int {
     return unit.Unit.Index
 }
 
-/*
-func (unit *OverworldUnit) GetPatrol() bool {
-    return unit.Patrol
-}
-
-func (unit *OverworldUnit) SetPatrol(patrol bool) {
-    unit.Patrol = patrol
-}
-*/
-
 func (unit *OverworldUnit) GetKnownSpells() []string {
     return unit.Unit.KnownSpells
 }
