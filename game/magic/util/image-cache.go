@@ -20,7 +20,7 @@ type ImageTransformGenericFunc func(image.Image) image.Image
 type ScaleAlgorithm int
 
 const (
-    ScaleAlgorithmNone ScaleAlgorithm = iota
+    ScaleAlgorithmLinear ScaleAlgorithm = iota
     ScaleAlgorithmXbr
 )
 
@@ -40,7 +40,7 @@ func MakeImageCache(lbxCache *lbx.LbxCache) ImageCache {
         LbxCache: lbxCache,
         Cache:    make(map[string][]*ebiten.Image),
         ShaderCache: make(map[shaders.Shader]*ebiten.Shader),
-        Scaler: ScaleAlgorithmXbr,
+        Scaler: ScaleAlgorithmLinear,
         ScaleAmount: data.ScreenScale,
     }
 }
@@ -164,9 +164,17 @@ func (cache *ImageCache) GetImagesTransform(lbxPath string, index int, extra str
     return out, nil
 }
 
+func scaleImageLinear(input image.Image, amount int) image.Image {
+    return input
+}
+
 func (cache *ImageCache) ApplyScale(input image.Image) image.Image {
     switch cache.Scaler {
-        case ScaleAlgorithmNone: return input
+        case ScaleAlgorithmLinear:
+            if cache.ScaleAmount == 1 {
+                return input
+            }
+            return scaleImageLinear(input, cache.ScaleAmount)
         case ScaleAlgorithmXbr: return xbr.ScaleImage(input, cache.ScaleAmount)
     }
 
