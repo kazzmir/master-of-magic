@@ -284,7 +284,7 @@ func (cache *ImageCache) ApplyScale(input image.Image) image.Image {
     }
 
     switch cache.Scaler {
-        case data.ScaleAlgorithmLinear:
+        case data.ScaleAlgorithmScale:
             switch cache.ScaleAmount {
                 case 2: return scale2x(input)
                 case 3: return scale3x(input)

@@ -3,18 +3,20 @@ package data
 var ScreenScale = 1
 var ScreenWidth = 320*ScreenScale
 var ScreenHeight = 200*ScreenScale
-var ScreenScaleAlgorithm = ScaleAlgorithmLinear
+var ScreenScaleAlgorithm = ScaleAlgorithmScale
 
 type ScaleAlgorithm int
 
 const (
-    ScaleAlgorithmLinear ScaleAlgorithm = iota
+    // the scale2x
+    // https://www.scale2x.it/
+    ScaleAlgorithmScale ScaleAlgorithm = iota
     ScaleAlgorithmXbr
 )
 
 func (algorithm ScaleAlgorithm) String() string {
     switch algorithm {
-        case ScaleAlgorithmLinear: return "linear"
+        case ScaleAlgorithmScale: return "scale"
         case ScaleAlgorithmXbr: return "xbr"
     }
 
