@@ -1,8 +1,8 @@
 package data
 
-const ScreenScale = 2
-const ScreenWidth = 320*ScreenScale
-const ScreenHeight = 200*ScreenScale
+var ScreenScale = 1
+var ScreenWidth = 320*ScreenScale
+var ScreenHeight = 200*ScreenScale
 
 type BannerType int
 const (

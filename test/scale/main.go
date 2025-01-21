@@ -1,0 +1,259 @@
+package main
+
+import (
+    "os"
+    "log"
+    "strconv"
+
+    "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/coroutine"
+    "github.com/kazzmir/master-of-magic/lib/fraction"
+    mouselib "github.com/kazzmir/master-of-magic/lib/mouse"
+    "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
+    "github.com/kazzmir/master-of-magic/game/magic/audio"
+    "github.com/kazzmir/master-of-magic/game/magic/setup"
+    "github.com/kazzmir/master-of-magic/game/magic/units"
+    "github.com/kazzmir/master-of-magic/game/magic/mouse"
+    "github.com/kazzmir/master-of-magic/game/magic/console"
+    "github.com/kazzmir/master-of-magic/game/magic/maplib"
+    "github.com/kazzmir/master-of-magic/game/magic/util"
+    gamelib "github.com/kazzmir/master-of-magic/game/magic/game"
+    citylib "github.com/kazzmir/master-of-magic/game/magic/city"
+    buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
+    // "github.com/kazzmir/master-of-magic/game/magic/terrain"
+
+    "github.com/hajimehoshi/ebiten/v2"
+    "github.com/hajimehoshi/ebiten/v2/inpututil"
+)
+
+type Engine struct {
+    LbxCache *lbx.LbxCache
+    Game *gamelib.Game
+    Coroutine *coroutine.Coroutine
+    Console *console.Console
+}
+
+type NodeInfo struct {
+    X int
+    Y int
+    Node *maplib.ExtraMagicNode
+}
+
+func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 1")
+
+    wizard := setup.WizardCustom{
+        Name: "bob",
+        Banner: data.BannerBlue,
+        Race: data.RaceTroll,
+        Abilities: []setup.WizardAbility{
+            setup.AbilityAlchemy,
+            setup.AbilitySageMaster,
+        },
+        Books: []data.WizardBook{
+            data.WizardBook{
+                Magic: data.LifeMagic,
+                Count: 3,
+            },
+            data.WizardBook{
+                Magic: data.SorceryMagic,
+                Count: 8,
+            },
+        },
+    }
+
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
+
+    game.Plane = data.PlaneArcanus
+
+    player := game.AddPlayer(wizard, true)
+
+    x, y := game.FindValidCityLocation(game.Plane)
+
+    /*
+    x = 20
+    y = 20
+    */
+
+    city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, fraction.Zero(), game.BuildingInfo, game.CurrentMap(), game)
+    city.Population = 16190
+    city.Plane = data.PlaneArcanus
+    city.Banner = wizard.Banner
+    city.ProducingBuilding = buildinglib.BuildingGranary
+    city.ProducingUnit = units.UnitNone
+    city.Race = wizard.Race
+    city.Farmers = 3
+    city.Workers = 3
+    city.Wall = false
+
+    city.ResetCitizens(nil)
+
+    player.AddCity(city)
+
+    player.Gold = 83
+    player.Mana = 2600
+
+    // game.Map.Map.Terrain[3][6] = terrain.TileNatureForest.Index
+
+    // log.Printf("City at %v, %v", x, y)
+
+    player.LiftFog(x, y, 30, data.PlaneArcanus)
+
+    drake := player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, nil))
+
+    for i := 0; i < 5; i++ {
+        fireElemental := player.AddUnit(units.MakeOverworldUnitFromUnit(units.FireElemental, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, nil))
+        _ = fireElemental
+    }
+
+    // player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, 30, 30, data.PlaneArcanus, wizard.Banner))
+
+    stack := player.FindStackByUnit(drake)
+    player.SetSelectedStack(stack)
+
+    player.LiftFog(stack.X(), stack.Y(), 2, data.PlaneArcanus)
+
+    enemy1 := game.AddPlayer(setup.WizardCustom{
+        Name: "dingus",
+        Banner: data.BannerRed,
+    }, false)
+
+    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.Warlocks, x + 2, y + 2, data.PlaneArcanus, enemy1.Wizard.Banner, nil))
+    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenBowmen, x + 2, y + 2, data.PlaneArcanus, enemy1.Wizard.Banner, nil))
+
+    game.Camera.Center(stack.X(), stack.Y())
+
+    return game
+}
+
+func NewEngine(scenario int) (*Engine, error) {
+    cache := lbx.AutoCache()
+
+    var game *gamelib.Game
+
+    switch scenario {
+        case 1: game = createScenario1(cache)
+        default: game = createScenario1(cache)
+    }
+
+    game.DoNextTurn()
+
+    run := func(yield coroutine.YieldFunc) error {
+        for game.Update(yield) != gamelib.GameStateQuit {
+            yield()
+        }
+
+        return ebiten.Termination
+    }
+
+    normalMouse, err := mouselib.GetMouseNormal(cache)
+    if err == nil {
+        mouse.Mouse.SetImage(normalMouse)
+    }
+
+    return &Engine{
+        LbxCache: cache,
+        Coroutine: coroutine.MakeCoroutine(run),
+        Game: game,
+        Console: console.MakeConsole(),
+    }, nil
+}
+
+func (engine *Engine) ChangeScale(scale int) {
+    data.ScreenScale = scale
+    data.ScreenWidth = 320 * data.ScreenScale
+    data.ScreenHeight = 200 * data.ScreenScale
+
+    engine.Game.ImageCache = util.MakeImageCache(engine.LbxCache)
+    engine.Game.RefreshUI()
+}
+
+func (engine *Engine) Update() error {
+
+    keys := make([]ebiten.Key, 0)
+    keys = inpututil.AppendJustPressedKeys(keys)
+
+    for _, key := range keys {
+        switch key {
+            case ebiten.KeyEscape, ebiten.KeyCapsLock: return ebiten.Termination
+            case ebiten.KeyF1: engine.ChangeScale(1)
+            case ebiten.KeyF2: engine.ChangeScale(2)
+            case ebiten.KeyF3: engine.ChangeScale(3)
+            case ebiten.KeyF4: engine.ChangeScale(4)
+        }
+    }
+
+    inputmanager.Update()
+
+    engine.Console.Update()
+
+    select {
+        case event := <-engine.Console.Events:
+            _, ok := event.(*console.ConsoleQuit)
+            if ok {
+                return ebiten.Termination
+            }
+        default:
+    }
+
+    /*
+    switch engine.Game.Update() {
+        case gamelib.GameStateRunning:
+    }
+    */
+    if engine.Coroutine.Run() != nil {
+        return ebiten.Termination
+    }
+
+    return nil
+}
+
+func (engine *Engine) Draw(screen *ebiten.Image) {
+    engine.Game.Draw(screen)
+    mouse.Mouse.Draw(screen)
+    engine.Console.Draw(screen)
+}
+
+func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
+    return data.ScreenWidth, data.ScreenHeight
+}
+
+func main(){
+
+    log.SetFlags(log.Ldate | log.Lshortfile | log.Lmicroseconds)
+
+    monitorWidth, _ := ebiten.Monitor().Size()
+
+    size := monitorWidth / 390
+
+    ebiten.SetWindowSize(data.ScreenWidth / data.ScreenScale * size, data.ScreenHeight / data.ScreenScale * size)
+    ebiten.SetWindowTitle("new screen")
+    ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
+
+    scenario := 1
+
+    if len(os.Args) > 1 {
+        var err error
+        scenario, err = strconv.Atoi(os.Args[1])
+        if err != nil {
+            log.Printf("Error choosing scenario: %v", err)
+            return
+        }
+    }
+
+    audio.Initialize()
+    mouse.Initialize()
+
+    engine, err := NewEngine(scenario)
+
+    if err != nil {
+        log.Printf("Error: unable to load engine: %v", err)
+        return
+    }
+
+    err = ebiten.RunGame(engine)
+    if err != nil {
+        log.Printf("Error: %v", err)
+    }
+}

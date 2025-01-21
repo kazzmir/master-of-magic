@@ -600,7 +600,7 @@ func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts Ar
     elements = append(elements, &uilib.UIElement{
         Layer: 1,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            vector.DrawFilledRect(screen, 0, 0, data.ScreenWidth, data.ScreenHeight, color.RGBA{R: 0, G: 0, B: 0, A: 0x80}, false)
+            vector.DrawFilledRect(screen, 0, 0, float32(data.ScreenWidth), float32(data.ScreenHeight), color.RGBA{R: 0, G: 0, B: 0, A: 0x80}, false)
 
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(28, 12)
@@ -608,7 +608,7 @@ func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts Ar
             screen.DrawImage(background, &options)
 
             // print text "Choose a spell to embed in this item"
-            fonts.TitleSpellFont.PrintCenter(screen, data.ScreenWidth / 2, 2, 1, ebiten.ColorScale{}, "Choose a spell to embed in this item")
+            fonts.TitleSpellFont.PrintCenter(screen, float64(data.ScreenWidth / 2), 2, 1, ebiten.ColorScale{}, "Choose a spell to embed in this item")
         },
     })
 

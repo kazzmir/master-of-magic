@@ -4768,8 +4768,8 @@ func (game *Game) MakeHudUI() *uilib.UI {
         elements = append(elements, &uilib.UIElement{
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 if !minMoves.IsZero() {
-                    x := 246.0 * data.ScreenScale
-                    y := 167.0 * data.ScreenScale
+                    x := float64(246.0 * data.ScreenScale)
+                    y := float64(167.0 * data.ScreenScale)
                     game.WhiteFont.Print(screen, x, y, 1, ebiten.ColorScale{}, fmt.Sprintf("Moves:%v", minMoves.ToFloat()))
 
                     sailingIcon, _ := game.ImageCache.GetImage("main.lbx", 18, 0)
@@ -4858,7 +4858,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                     goldFood, _ := game.ImageCache.GetImage("main.lbx", 34, 0)
                     var options ebiten.DrawImageOptions
-                    options.GeoM.Translate(240 * data.ScreenScale, 77 * data.ScreenScale)
+                    options.GeoM.Translate(float64(240 * data.ScreenScale), float64(77 * data.ScreenScale))
                     screen.DrawImage(goldFood, &options)
 
                     negativeScale := ebiten.ColorScale{}
