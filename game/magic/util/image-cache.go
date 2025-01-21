@@ -17,12 +17,22 @@ import (
 type ImageTransformFunc func(*image.Paletted) image.Image
 type ImageTransformGenericFunc func(image.Image) image.Image
 
+type ScaleAlgorithm int
+
+const (
+    ScaleAlgorithmNone ScaleAlgorithm = iota
+    ScaleAlgorithmXbr
+)
+
 type ImageCache struct {
     LbxCache *lbx.LbxCache
     // FIXME: have some limit on the number of entries, and remove old ones LRU-style
     Cache map[string][]*ebiten.Image
 
     ShaderCache map[shaders.Shader]*ebiten.Shader
+
+    Scaler ScaleAlgorithm
+    ScaleAmount int
 }
 
 func MakeImageCache(lbxCache *lbx.LbxCache) ImageCache {
@@ -30,6 +40,8 @@ func MakeImageCache(lbxCache *lbx.LbxCache) ImageCache {
         LbxCache: lbxCache,
         Cache:    make(map[string][]*ebiten.Image),
         ShaderCache: make(map[shaders.Shader]*ebiten.Shader),
+        Scaler: ScaleAlgorithmXbr,
+        ScaleAmount: data.ScreenScale,
     }
 }
 
@@ -144,12 +156,21 @@ func (cache *ImageCache) GetImagesTransform(lbxPath string, index int, extra str
 
     var out []*ebiten.Image
     for i := 0; i < len(sprites); i++ {
-        out = append(out, ebiten.NewImageFromImage(xbr.ScaleImage(transform(sprites[i]), data.ScreenScale)))
+        out = append(out, ebiten.NewImageFromImage(cache.ApplyScale(transform(sprites[i]))))
     }
 
     cache.Cache[key] = out
 
     return out, nil
+}
+
+func (cache *ImageCache) ApplyScale(input image.Image) image.Image {
+    switch cache.Scaler {
+        case ScaleAlgorithmNone: return input
+        case ScaleAlgorithmXbr: return xbr.ScaleImage(input, cache.ScaleAmount)
+    }
+
+    return input
 }
 
 func (cache *ImageCache) GetImages(lbxPath string, index int) ([]*ebiten.Image, error) {
