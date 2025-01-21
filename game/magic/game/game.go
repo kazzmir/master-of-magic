@@ -580,6 +580,13 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
     return game
 }
 
+func (game *Game) UpdateImages() {
+    game.ImageCache = util.MakeImageCache(game.Cache)
+    game.Fog = nil
+    game.ArcanusMap.ResetCache()
+    game.MyrrorMap.ResetCache()
+}
+
 func (game *Game) ContainsCity(x int, y int, plane data.Plane) bool {
     for _, player := range game.Players {
         city := player.FindCity(x, y, plane)
@@ -2830,7 +2837,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
 
 // given a position on the screen in pixels, return true if the position is within the area of the ui designated for the overworld
 func (game *Game) InOverworldArea(x int, y int) bool {
-    return x < 240 && y > 18
+    return x < 240 * data.ScreenScale && y > 18 * data.ScreenScale
 }
 
 func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Player) {
@@ -4770,7 +4777,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                 if !minMoves.IsZero() {
                     x := float64(246.0 * data.ScreenScale)
                     y := float64(167.0 * data.ScreenScale)
-                    game.WhiteFont.Print(screen, x, y, 1, ebiten.ColorScale{}, fmt.Sprintf("Moves:%v", minMoves.ToFloat()))
+                    game.WhiteFont.Print(screen, x, y, float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("Moves:%v", minMoves.ToFloat()))
 
                     sailingIcon, _ := game.ImageCache.GetImage("main.lbx", 18, 0)
                     swimmingIcon, _ := game.ImageCache.GetImage("main.lbx", 19, 0)
@@ -4804,7 +4811,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                     }
 
                     var options ebiten.DrawImageOptions
-                    options.GeoM.Translate(x + 60, y)
+                    options.GeoM.Translate(x + float64(60 * data.ScreenScale), y)
                     screen.DrawImage(useIcon, &options)
                 }
             },
@@ -4891,13 +4898,13 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
     elements = append(elements, &uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            game.WhiteFont.PrintRight(screen, 276, 68, 1, ebiten.ColorScale{}, fmt.Sprintf("%v GP", game.Players[0].Gold))
+            game.WhiteFont.PrintRight(screen, float64(276 * data.ScreenScale), float64(68 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v GP", game.Players[0].Gold))
         },
     })
 
     elements = append(elements, &uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            game.WhiteFont.PrintRight(screen, 313, 68, 1, ebiten.ColorScale{}, fmt.Sprintf("%v MP", game.Players[0].Mana))
+            game.WhiteFont.PrintRight(screen, float64(313 * data.ScreenScale), float64(68 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v MP", game.Players[0].Mana))
         },
     })
 
@@ -5665,16 +5672,18 @@ func (game *Game) DrawGame(screen *ebiten.Image){
         FogBlack: game.GetFogImage(),
     }
 
-    overworldScreen := screen.SubImage(image.Rect(0, 18, 240, data.ScreenHeight)).(*ebiten.Image)
+    overworldScreen := screen.SubImage(image.Rect(0, 18 * data.ScreenScale, 240 * data.ScreenScale, data.ScreenHeight)).(*ebiten.Image)
     overworld.DrawOverworld(overworldScreen, ebiten.GeoM{})
 
     var miniGeom ebiten.GeoM
-    miniGeom.Translate(250, 20)
+    miniGeom.Translate(float64(250 * data.ScreenScale), float64(20 * data.ScreenScale))
     mx, my := miniGeom.Apply(0, 0)
-    miniWidth := 60
-    miniHeight := 31
+    miniWidth := 60 * data.ScreenScale
+    miniHeight := 31 * data.ScreenScale
     mini := screen.SubImage(image.Rect(int(mx), int(my), int(mx) + miniWidth, int(my) + miniHeight)).(*ebiten.Image)
-    overworld.DrawMinimap(mini)
+    if mini.Bounds().Dx() > 0 {
+        overworld.DrawMinimap(mini)
+    }
 
     game.HudUI.Draw(game.HudUI, screen)
 }

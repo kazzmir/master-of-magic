@@ -814,11 +814,11 @@ func (mapObject *Map) Height() int {
 }
 
 func (mapObject *Map) TileWidth() int {
-    return mapObject.Data.TileWidth()
+    return mapObject.Data.TileWidth() * data.ScreenScale
 }
 
 func (mapObject *Map) TileHeight() int {
-    return mapObject.Data.TileHeight()
+    return mapObject.Data.TileHeight() * data.ScreenScale
 }
 
 func (mapObject *Map) WrapX(x int) int {
@@ -884,7 +884,11 @@ func (mapObject *Map) GetTile(tileX int, tileY int) FullTile {
     }
 }
 
-func (mapObject *Map) GetTileImage(tileX int, tileY int, animationCounter uint64) (*ebiten.Image, error) {
+func (mapObject *Map) ResetCache() {
+    mapObject.TileCache = make(map[int]*ebiten.Image)
+}
+
+func (mapObject *Map) GetTileImage(tileX int, tileY int, animationCounter uint64, imageCache *util.ImageCache) (*ebiten.Image, error) {
     tile := mapObject.Map.Terrain[tileX][tileY]
     tileInfo := mapObject.Data.Tiles[tile]
 
@@ -894,7 +898,7 @@ func (mapObject *Map) GetTileImage(tileX int, tileY int, animationCounter uint64
         return image, nil
     }
 
-    gpuImage := ebiten.NewImageFromImage(tileInfo.Images[animationCounter % uint64(len(tileInfo.Images))])
+    gpuImage := ebiten.NewImageFromImage(imageCache.ApplyScale(tileInfo.Images[animationCounter % uint64(len(tileInfo.Images))]))
 
     mapObject.TileCache[tile * 0x1000 + int(animationIndex)] = gpuImage
     return gpuImage, nil
@@ -946,6 +950,7 @@ func bannerColor(banner data.BannerType) color.RGBA {
 
 func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []MiniMapCity, centerX int, centerY int, zoom float64, fog [][]bool, counter uint64, crosshairs bool){
     if len(mapObject.miniMapPixels) != screen.Bounds().Dx() * screen.Bounds().Dy() * 4 {
+        log.Printf("set minimap pixels to %v", screen.Bounds().Dx() * screen.Bounds().Dy() * 4)
         mapObject.miniMapPixels = make([]byte, screen.Bounds().Dx() * screen.Bounds().Dy() * 4)
     }
 
@@ -1116,7 +1121,7 @@ func (mapObject *Map) DrawLayer1(camera cameralib.Camera, animationCounter uint6
                 continue
             }
 
-            tileImage, err := mapObject.GetTileImage(tileX, tileY, animationCounter)
+            tileImage, err := mapObject.GetTileImage(tileX, tileY, animationCounter, imageCache)
             if err == nil {
                 options.GeoM.Reset()
                 // options.GeoM = geom

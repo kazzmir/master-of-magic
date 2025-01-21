@@ -16,7 +16,6 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/mouse"
     "github.com/kazzmir/master-of-magic/game/magic/console"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
-    "github.com/kazzmir/master-of-magic/game/magic/util"
     gamelib "github.com/kazzmir/master-of-magic/game/magic/game"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
@@ -165,7 +164,7 @@ func (engine *Engine) ChangeScale(scale int) {
     data.ScreenWidth = 320 * data.ScreenScale
     data.ScreenHeight = 200 * data.ScreenScale
 
-    engine.Game.ImageCache = util.MakeImageCache(engine.LbxCache)
+    engine.Game.UpdateImages()
     engine.Game.RefreshUI()
 }
 
