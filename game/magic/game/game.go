@@ -4531,6 +4531,11 @@ func (game *Game) MakeHudUI() *uilib.UI {
                             x, y := options.GeoM.Apply(1, 1)
                             game.WhiteFont.Print(screen, x, y, 1, options.ColorScale, "G")
                         }
+
+                        if unit.GetBusy() == units.BusyStatusBuildRoad {
+                            x, y := options.GeoM.Apply(1, 1)
+                            game.WhiteFont.Print(screen, x, y, 1, options.ColorScale, "B")
+                        }
                     },
                 })
 
