@@ -2450,6 +2450,7 @@ func createScenario29(cache *lbx.LbxCache) *gamelib.Game {
     city.Banner = wizard.Banner
     city.ProducingBuilding = buildinglib.BuildingGranary
     city.ProducingUnit = units.UnitNone
+    city.Buildings.Insert(buildinglib.BuildingFarmersMarket)
     city.Race = wizard.Race
     city.Farmers = 9
     city.Workers = 3
@@ -2466,6 +2467,8 @@ func createScenario29(cache *lbx.LbxCache) *gamelib.Game {
     node := nodes[terrain.SorceryNode][0]
     node.Node.Empty = true
 
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.OrcSwordsmen, node.X + 1, node.Y + 1, game.Plane, wizard.Banner, nil))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.OrcEngineers, node.X + 1, node.Y + 1, game.Plane, wizard.Banner, nil))
     player.AddUnit(units.MakeOverworldUnitFromUnit(units.OrcEngineers, node.X + 1, node.Y + 1, game.Plane, wizard.Banner, nil))
 
     player.LiftFog(node.X, node.Y, 4, game.Plane)

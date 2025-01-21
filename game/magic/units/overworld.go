@@ -12,6 +12,15 @@ import (
 
 type NormalizeCoordinateFunc func (int, int) (int, int)
 
+// reasons a unit might be unable to move
+type BusyStatus int
+const (
+    BusyStatusNone BusyStatus = iota
+    BusyStatusBuildRoad // for engineers
+    BusyStatusPurify // for priests
+    BusyStatusPatrol // any unit can patrol
+)
+
 type OverworldUnit struct {
     ExperienceInfo ExperienceInfo
     Unit Unit
@@ -22,11 +31,12 @@ type OverworldUnit struct {
     Y int
     Id uint64
     Health int
-    Patrol bool
     // to get the level, use the conversion functions in experience.go
     Experience int
     WeaponBonus data.WeaponBonus
     Undead bool
+
+    Busy BusyStatus
 
     Enchantments []data.UnitEnchantment
 }
@@ -41,6 +51,14 @@ func (unit *OverworldUnit) AddEnchantment(enchantment data.UnitEnchantment) {
 
 func (unit *OverworldUnit) HasEnchantment(enchantment data.UnitEnchantment) bool {
     return slices.Contains(unit.Enchantments, enchantment)
+}
+
+func (unit *OverworldUnit) GetBusy() BusyStatus {
+    return unit.Busy
+}
+
+func (unit *OverworldUnit) SetBusy(busy BusyStatus) {
+    unit.Busy = busy
 }
 
 func (unit *OverworldUnit) GetSpellChargeSpells() map[spellbook.Spell]int {
@@ -75,14 +93,6 @@ func (unit *OverworldUnit) GetTitle() string {
 
 func (unit *OverworldUnit) GetLbxIndex() int {
     return unit.Unit.Index
-}
-
-func (unit *OverworldUnit) GetPatrol() bool {
-    return unit.Patrol
-}
-
-func (unit *OverworldUnit) SetPatrol(patrol bool) {
-    unit.Patrol = patrol
 }
 
 func (unit *OverworldUnit) GetKnownSpells() []string {
@@ -440,7 +450,6 @@ func MakeOverworldUnitFromUnit(unit Unit, x int, y int, plane data.Plane, banner
         Banner: banner,
         Plane: plane,
         MovesLeft: fraction.FromInt(unit.MovementSpeed),
-        Patrol: false,
         Health: unit.GetMaxHealth(),
         ExperienceInfo: experienceInfo,
         X: x,

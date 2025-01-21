@@ -234,6 +234,10 @@ type Game struct {
     ArcanusMap *maplib.Map
     MyrrorMap *maplib.Map
 
+    // FIXME: maybe put these in the Map object?
+    RoadWorkArcanus map[image.Point]float64
+    RoadWorkMyrror map[image.Point]float64
+
     Players []*playerlib.Player
     CurrentPlayer int
 
@@ -560,6 +564,9 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         TurnNumber: 1,
         CurrentPlayer: -1,
         Camera: camera.MakeCamera(),
+
+        RoadWorkArcanus: make(map[image.Point]float64),
+        RoadWorkMyrror: make(map[image.Point]float64),
     }
 
     game.ArcanusMap = maplib.MakeMap(terrainData, settings.LandSize, settings.Magic, settings.Difficulty, data.PlaneArcanus, game)
@@ -4042,14 +4049,131 @@ func (game *Game) DoBuildAction(player *playerlib.Player){
                 }
             }
         } else if powers.BuildRoad {
-            // FIXME: put the unit to sleep for a few turns, when they wake up the road is built
-            x, y := player.SelectedStack.X(), player.SelectedStack.Y()
-            plane := player.SelectedStack.Plane()
 
-            game.GetMap(plane).SetRoad(x, y, plane == data.PlaneMyrror)
-            player.SelectedStack.ExhaustMoves()
+            for _, unit := range player.SelectedStack.ActiveUnits() {
+                if unit.HasAbility(data.AbilityConstruction) {
+                    unit.SetBusy(units.BusyStatusBuildRoad)
+                    unit.SetMovesLeft(fraction.Zero())
+                }
+            }
+
+            player.SelectedStack.EnableMovers()
+
+            // player.SelectedStack.ExhaustMoves()
+            game.RefreshUI()
         }
     }
+}
+
+// find all engineers that are currently building a road
+// compute the work done by each engineer according to the terrain
+//   total work = work per engineer ^ engineers building on that tile
+// add total work to some counter, and when that total reaches the threshold for the terrain type
+// then set a road on that tile and make the engineers no longer busy
+func (game *Game) DoBuildRoads(player *playerlib.Player) {
+    type RoadWork struct {
+        WorkPerEngineer float64
+        TotalWork float64
+    }
+
+    computeWork := func (oneEngineerTurn int, twoEngineerTurn int) RoadWork {
+        workPerEngineer := float64(oneEngineerTurn) / float64(twoEngineerTurn)
+        totalWork := float64(oneEngineerTurn) * workPerEngineer
+        return RoadWork{WorkPerEngineer: workPerEngineer, TotalWork: totalWork}
+    }
+
+    work := make(map[terrain.TerrainType]RoadWork)
+    work[terrain.Grass] = computeWork(3, 1)
+    work[terrain.Desert] = computeWork(4, 2)
+    work[terrain.River] = computeWork(5, 2)
+    work[terrain.Forest] = computeWork(6, 3)
+    work[terrain.Tundra] = computeWork(6, 3)
+    work[terrain.Hill] = computeWork(6, 3)
+    work[terrain.Swamp] = computeWork(8, 4)
+    work[terrain.Mountain] = computeWork(8, 4)
+    work[terrain.Volcano] = computeWork(8, 4)
+    work[terrain.ChaosNode] = computeWork(8, 4)
+    work[terrain.NatureNode] = computeWork(5, 2)
+    work[terrain.SorceryNode] = computeWork(4, 2)
+
+    arcanusBuilds := make(map[image.Point]struct{})
+    myrrorBuilds := make(map[image.Point]struct{})
+
+    for _, stack := range player.Stacks {
+        plane := stack.Plane()
+
+        engineerCount := 0
+        for _, unit := range stack.Units() {
+            if unit.GetBusy() == units.BusyStatusBuildRoad {
+                engineerCount += 1
+            }
+        }
+
+        if engineerCount > 0 {
+            x, y := stack.X(), stack.Y()
+            // log.Printf("building a road at %v, %v with %v engineers", x, y, engineerCount)
+            roads := game.RoadWorkArcanus
+            if plane == data.PlaneMyrror {
+                roads = game.RoadWorkMyrror
+            }
+
+            amount, ok := roads[image.Pt(x, y)]
+            if !ok {
+                amount = 0
+            }
+
+            tileWork := work[game.GetMap(plane).GetTile(x, y).Tile.TerrainType()]
+
+            amount += math.Pow(tileWork.WorkPerEngineer, float64(engineerCount))
+            // log.Printf("  amount is now %v. total work is %v", amount, tileWork.TotalWork)
+            if amount >= tileWork.TotalWork {
+                game.GetMap(plane).SetRoad(x, y, plane == data.PlaneMyrror)
+
+                for _, unit := range stack.Units() {
+                    if unit.GetBusy() == units.BusyStatusBuildRoad {
+                        unit.SetBusy(units.BusyStatusNone)
+                    }
+                }
+
+            } else {
+                roads[image.Pt(x, y)] = amount
+                if plane == data.PlaneArcanus {
+                    arcanusBuilds[image.Pt(x, y)] = struct{}{}
+                } else {
+                    myrrorBuilds[image.Pt(x, y)] = struct{}{}
+                }
+            }
+        }
+    }
+
+    // remove all points that are no longer being built
+
+    var toDelete []image.Point
+    for point, _ := range game.RoadWorkArcanus {
+        _, ok := arcanusBuilds[point]
+        if !ok {
+            toDelete = append(toDelete, point)
+        }
+    }
+
+    for _, point := range toDelete {
+        // log.Printf("remove point %v", point)
+        delete(game.RoadWorkArcanus, point)
+    }
+
+    toDelete = nil
+    for point, _ := range game.RoadWorkMyrror {
+        _, ok := myrrorBuilds[point]
+        if !ok {
+            toDelete = append(toDelete, point)
+        }
+    }
+
+    for _, point := range toDelete {
+        // log.Printf("remove point %v", point)
+        delete(game.RoadWorkMyrror, point)
+    }
+
 }
 
 func (game *Game) SwitchPlane() {
@@ -4269,7 +4393,16 @@ func (game *Game) MakeHudUI() *uilib.UI {
                         options.GeoM.Translate(1, 1)
                         unitImage, err := GetUnitImage(unit, &game.ImageCache, unit.GetBanner())
                         if err == nil {
-                            screen.DrawImage(unitImage, &options)
+
+                            if unit.GetBusy() != units.BusyStatusNone {
+                                var patrolOptions colorm.DrawImageOptions
+                                var matrix colorm.ColorM
+                                patrolOptions.GeoM = options.GeoM
+                                matrix.ChangeHSV(0, 0, 1)
+                                colorm.DrawImage(screen, unitImage, matrix, &patrolOptions)
+                            } else {
+                                screen.DrawImage(unitImage, &options)
+                            }
 
                             // draw the first enchantment on the unit
                             for _, enchantment := range unit.GetEnchantments() {
@@ -4398,6 +4531,11 @@ func (game *Game) MakeHudUI() *uilib.UI {
                             x, y := options.GeoM.Apply(1, 1)
                             game.WhiteFont.Print(screen, x, y, 1, options.ColorScale, "G")
                         }
+
+                        if unit.GetBusy() == units.BusyStatusBuildRoad {
+                            x, y := options.GeoM.Apply(1, 1)
+                            game.WhiteFont.Print(screen, x, y, 1, options.ColorScale, "B")
+                        }
                     },
                 })
 
@@ -4484,7 +4622,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
                     if player.SelectedStack != nil {
                         for _, unit := range player.SelectedStack.ActiveUnits() {
-                            unit.SetPatrol(true)
+                            unit.SetBusy(units.BusyStatusPatrol)
                         }
                     }
 
@@ -4536,6 +4674,11 @@ func (game *Game) MakeHudUI() *uilib.UI {
             buildIndex := 0
             buildRect := util.ImageRect(280, 186, buildImages[0])
             buildCounter := uint64(0)
+
+            hasRoad := game.GetMap(player.SelectedStack.Plane()).ContainsRoad(player.SelectedStack.X(), player.SelectedStack.Y())
+            hasCity := game.ContainsCity(player.SelectedStack.X(), player.SelectedStack.Y(), player.SelectedStack.Plane())
+            node := game.GetMap(player.SelectedStack.Plane()).GetMagicNode(player.SelectedStack.X(), player.SelectedStack.Y())
+
             elements = append(elements, &uilib.UIElement{
                 Rect: buildRect,
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image){
@@ -4563,7 +4706,6 @@ func (game *Game) MakeHudUI() *uilib.UI {
                         use = meldImages[buildIndex]
 
                         canMeld := false
-                        node := game.GetMap(player.SelectedStack.Plane()).GetMagicNode(player.SelectedStack.X(), player.SelectedStack.Y())
                         if node != nil && node.Empty {
                             canMeld = true
                         }
@@ -4571,7 +4713,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                         if !canMeld {
                             matrix.ChangeHSV(0, 0, 1)
                         }
-                    } else if powers.BuildRoad {
+                    } else if powers.BuildRoad && !hasRoad && !hasCity {
                         use = buildImages[buildIndex]
                     }
 
@@ -4596,7 +4738,6 @@ func (game *Game) MakeHudUI() *uilib.UI {
                         buildIndex = 1
                     } else if powers.Meld {
                         canMeld := false
-                        node := game.GetMap(player.SelectedStack.Plane()).GetMagicNode(player.SelectedStack.X(), player.SelectedStack.Y())
                         if node != nil && node.Empty {
                             canMeld = true
                         }
@@ -4605,10 +4746,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                             buildIndex = 1
                         }
                     } else if powers.BuildRoad {
-                        hasRoad := game.GetMap(player.SelectedStack.Plane()).ContainsRoad(player.SelectedStack.X(), player.SelectedStack.Y())
-                        hasCity := game.ContainsCity(player.SelectedStack.X(), player.SelectedStack.Y(), player.SelectedStack.Plane())
-                        node := game.GetMap(player.SelectedStack.Plane()).GetMagicNode(player.SelectedStack.X(), player.SelectedStack.Y())
-                        if !hasRoad && !hasCity && node == nil {
+                        if !hasRoad && !hasCity {
                             buildIndex = 1
                         }
                     }
@@ -5057,6 +5195,8 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
         }
     }
 
+    game.DoBuildRoads(player)
+
     for _, stack := range player.Stacks {
 
         // every unit gains 1 experience at each turn
@@ -5400,7 +5540,16 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
             pic, err := GetUnitImage(leader, overworld.ImageCache, leader.GetBanner())
             if err == nil {
                 options.GeoM.Translate(1, 1)
-                screen.DrawImage(pic, &options)
+
+                if leader.GetBusy() != units.BusyStatusNone {
+                    var patrolOptions colorm.DrawImageOptions
+                    var matrix colorm.ColorM
+                    patrolOptions.GeoM = options.GeoM
+                    matrix.ChangeHSV(0, 0, 1)
+                    colorm.DrawImage(screen, pic, matrix, &patrolOptions)
+                } else {
+                    screen.DrawImage(pic, &options)
+                }
 
                 enchantment := util.First(leader.GetEnchantments(), data.UnitEnchantmentNone)
                 if enchantment != data.UnitEnchantmentNone {

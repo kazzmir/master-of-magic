@@ -11,8 +11,6 @@ type StackUnit interface {
     SetId(id uint64)
     ResetMoves()
     NaturalHeal(rate float64)
-    GetPatrol() bool
-    SetPatrol(bool)
     IsFlying() bool
     IsSwimmer() bool
     GetName() string
@@ -77,5 +75,7 @@ type StackUnit interface {
     GetArtifactSlots() []artifact.ArtifactSlot
     GetArtifacts() []*artifact.Artifact
     GetSpellChargeSpells() map[spellbook.Spell]int
+    GetBusy() BusyStatus
+    SetBusy(BusyStatus)
 }
 
