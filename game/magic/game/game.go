@@ -4265,7 +4265,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
     var elements []*uilib.UIElement
 
     // game button
-    elements = append(elements, makeButton(1, 7, 4, false, func(){
+    elements = append(elements, makeButton(1, 7 * data.ScreenScale, 4 * data.ScreenScale, false, func(){
         select {
             case game.Events <- &GameEventLoadMenu{}:
             default:
@@ -4273,7 +4273,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
     }))
 
     // spell button
-    elements = append(elements, makeButton(2, 47, 4, false, func(){
+    elements = append(elements, makeButton(2, 47 * data.ScreenScale, 4 * data.ScreenScale, false, func(){
         select {
             case game.Events <- &GameEventCastSpellBook{}:
             default:
@@ -4281,7 +4281,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
     }))
 
     // army button
-    elements = append(elements, makeButton(3, 89, 4, false, func(){
+    elements = append(elements, makeButton(3, 89 * data.ScreenScale, 4 * data.ScreenScale, false, func(){
         select {
             case game.Events<- &GameEventArmyView{}:
             default:
@@ -4289,7 +4289,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
     }))
 
     // cities button
-    elements = append(elements, makeButton(4, 140, 4, false, func(){
+    elements = append(elements, makeButton(4, 140 * data.ScreenScale, 4 * data.ScreenScale, false, func(){
         select {
             case game.Events<- &GameEventCityListView{}:
             default:
@@ -4297,7 +4297,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
     }))
 
     // magic button
-    elements = append(elements, makeButton(5, 184, 4, false, func(){
+    elements = append(elements, makeButton(5, 184 * data.ScreenScale, 4 * data.ScreenScale, false, func(){
         select {
             case game.Events<- &GameEventMagicView{}:
             default:
@@ -4305,12 +4305,12 @@ func (game *Game) MakeHudUI() *uilib.UI {
     }))
 
     // info button
-    elements = append(elements, makeButton(6, 226, 4, true, func(){
+    elements = append(elements, makeButton(6, 226 * data.ScreenScale, 4 * data.ScreenScale, true, func(){
         ui.AddElements(game.MakeInfoUI(60, 25))
     }))
 
     // plane button
-    elements = append(elements, makeButton(7, 270, 4, false, func(){
+    elements = append(elements, makeButton(7, 270 * data.ScreenScale, 4 * data.ScreenScale, false, func(){
         game.SwitchPlane()
 
         game.RefreshUI()
@@ -4320,8 +4320,8 @@ func (game *Game) MakeHudUI() *uilib.UI {
         player := game.Players[0]
         // stack := player.SelectedStack
 
-        unitX1 := 246
-        unitY1 := 79
+        unitX1 := 246 * data.ScreenScale
+        unitY1 := 79 * data.ScreenScale
 
         unitX := unitX1
         unitY := unitY1
@@ -4550,7 +4550,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
             doneImages, _ := game.ImageCache.GetImages("main.lbx", 8)
             doneIndex := 0
-            doneRect := util.ImageRect(246, 176, doneImages[0])
+            doneRect := util.ImageRect(246 * data.ScreenScale, 176 * data.ScreenScale, doneImages[0])
             doneCounter := uint64(0)
             elements = append(elements, &uilib.UIElement{
                 Rect: doneRect,
@@ -4590,7 +4590,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
             patrolImages, _ := game.ImageCache.GetImages("main.lbx", 9)
             patrolIndex := 0
-            patrolRect := util.ImageRect(280, 176, patrolImages[0])
+            patrolRect := util.ImageRect(280 * data.ScreenScale, 176 * data.ScreenScale, patrolImages[0])
             patrolCounter := uint64(0)
             elements = append(elements, &uilib.UIElement{
                 Rect: patrolRect,
@@ -4634,7 +4634,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
             waitImages, _ := game.ImageCache.GetImages("main.lbx", 10)
             waitIndex := 0
-            waitRect := util.ImageRect(246, 186, waitImages[0])
+            waitRect := util.ImageRect(246 * data.ScreenScale, 186 * data.ScreenScale, waitImages[0])
             waitCounter := uint64(0)
             elements = append(elements, &uilib.UIElement{
                 Rect: waitRect,
@@ -4672,7 +4672,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
             buildImages, _ := game.ImageCache.GetImages("main.lbx", 11)
             meldImages, _ := game.ImageCache.GetImages("main.lbx", 49)
             buildIndex := 0
-            buildRect := util.ImageRect(280, 186, buildImages[0])
+            buildRect := util.ImageRect(280 * data.ScreenScale, 186 * data.ScreenScale, buildImages[0])
             buildCounter := uint64(0)
 
             hasRoad := game.GetMap(player.SelectedStack.Plane()).ContainsRoad(player.SelectedStack.X(), player.SelectedStack.Y())
@@ -4768,8 +4768,8 @@ func (game *Game) MakeHudUI() *uilib.UI {
         elements = append(elements, &uilib.UIElement{
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 if !minMoves.IsZero() {
-                    x := 246.0
-                    y := 167.0
+                    x := 246.0 * data.ScreenScale
+                    y := 167.0 * data.ScreenScale
                     game.WhiteFont.Print(screen, x, y, 1, ebiten.ColorScale{}, fmt.Sprintf("Moves:%v", minMoves.ToFloat()))
 
                     sailingIcon, _ := game.ImageCache.GetImage("main.lbx", 18, 0)
@@ -4815,7 +4815,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
         // next turn
         nextTurnImage, _ := game.ImageCache.GetImage("main.lbx", 35, 0)
         nextTurnImageClicked, _ := game.ImageCache.GetImage("main.lbx", 58, 0)
-        nextTurnRect := image.Rect(240, 174, 240 + nextTurnImage.Bounds().Dx(), 174 + nextTurnImage.Bounds().Dy())
+        nextTurnRect := image.Rect(240 * data.ScreenScale, 174 * data.ScreenScale, 240 * data.ScreenScale + nextTurnImage.Bounds().Dx(), 174 * data.ScreenScale + nextTurnImage.Bounds().Dy())
         nextTurnClicked := false
         elements = append(elements, &uilib.UIElement{
             Rect: nextTurnRect,
@@ -4858,7 +4858,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                     goldFood, _ := game.ImageCache.GetImage("main.lbx", 34, 0)
                     var options ebiten.DrawImageOptions
-                    options.GeoM.Translate(240, 77)
+                    options.GeoM.Translate(240 * data.ScreenScale, 77 * data.ScreenScale)
                     screen.DrawImage(goldFood, &options)
 
                     negativeScale := ebiten.ColorScale{}
