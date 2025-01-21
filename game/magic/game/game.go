@@ -234,6 +234,9 @@ type Game struct {
     ArcanusMap *maplib.Map
     MyrrorMap *maplib.Map
 
+    RoadWorkArcanus map[image.Point]float64
+    RoadWorkMyrror map[image.Point]float64
+
     Players []*playerlib.Player
     CurrentPlayer int
 
@@ -560,6 +563,9 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         TurnNumber: 1,
         CurrentPlayer: -1,
         Camera: camera.MakeCamera(),
+
+        RoadWorkArcanus: make(map[image.Point]float64),
+        RoadWorkMyrror: make(map[image.Point]float64),
     }
 
     game.ArcanusMap = maplib.MakeMap(terrainData, settings.LandSize, settings.Magic, settings.Difficulty, data.PlaneArcanus, game)
@@ -4046,10 +4052,103 @@ func (game *Game) DoBuildAction(player *playerlib.Player){
             x, y := player.SelectedStack.X(), player.SelectedStack.Y()
             plane := player.SelectedStack.Plane()
 
+            for _, unit := range player.SelectedStack.Units() {
+                if unit.HasAbility(data.AbilityConstruction) {
+                    unit.SetBusy(units.BusyStatusBuildRoad)
+                }
+            }
+
             game.GetMap(plane).SetRoad(x, y, plane == data.PlaneMyrror)
             player.SelectedStack.ExhaustMoves()
         }
     }
+}
+
+// find all engineers that are currently building a road
+// compute the work done by each engineer according to the terrain
+//   total work = work per engineer ^ engineers building on that tile
+// add total work to some counter, and when that total reaches the threshold for the terrain type
+// then set a road on that tile and make the engineers no longer busy
+func (game *Game) DoBuildRoads(player *playerlib.Player) {
+    type RoadWork struct {
+        WorkPerEngineer float64
+        TotalWork float64
+    }
+
+    computeWork := func (oneEngineerTurn int, twoEngineerTurn int) RoadWork {
+        workPerEngineer := float64(oneEngineerTurn) / float64(twoEngineerTurn)
+        totalWork := float64(oneEngineerTurn) * workPerEngineer
+        return RoadWork{WorkPerEngineer: workPerEngineer, TotalWork: totalWork}
+    }
+
+    work := make(map[terrain.TerrainType]RoadWork)
+    work[terrain.Grass] = computeWork(3, 1)
+    work[terrain.Desert] = computeWork(4, 2)
+    work[terrain.River] = computeWork(5, 2)
+    work[terrain.Forest] = computeWork(6, 3)
+    work[terrain.Tundra] = computeWork(6, 3)
+    work[terrain.Hill] = computeWork(6, 3)
+    work[terrain.Swamp] = computeWork(8, 4)
+    work[terrain.Mountain] = computeWork(8, 4)
+    work[terrain.Volcano] = computeWork(8, 4)
+    work[terrain.ChaosNode] = computeWork(8, 4)
+    work[terrain.NatureNode] = computeWork(5, 2)
+    work[terrain.SorceryNode] = computeWork(4, 2)
+
+    arcanusBuilds := make(map[image.Point]struct{})
+    myrrorBuilds := make(map[image.Point]struct{})
+
+    for _, stack := range player.Stacks {
+        plane := stack.Plane()
+
+        engineerCount := 0
+        for _, unit := range stack.Units() {
+            if unit.GetBusy() == units.BusyStatusBuildRoad {
+                engineerCount += 1
+            }
+        }
+
+        if engineerCount > 0 {
+            x, y := stack.X(), stack.Y()
+            roads := game.RoadWorkArcanus
+            if plane == data.PlaneMyrror {
+                roads = game.RoadWorkMyrror
+            }
+
+            amount, ok := roads[image.Pt(x, y)]
+            if !ok {
+                amount = 0
+            }
+
+            tileWork := work[game.GetMap(plane).GetTile(x, y).Tile.TerrainType()]
+
+            amount += math.Pow(tileWork.WorkPerEngineer, float64(engineerCount))
+            if amount >= tileWork.TotalWork {
+                game.GetMap(plane).SetRoad(x, y, plane == data.PlaneMyrror)
+            } else {
+
+                if plane == data.PlaneArcanus {
+                    arcanusBuilds[image.Pt(x, y)] = struct{}{}
+                } else {
+                    myrrorBuilds[image.Pt(x, y)] = struct{}{}
+                }
+            }
+        }
+    }
+
+    var toDelete []image.Point
+    // remove all points that are no longer being built
+    for point, _ := range game.RoadWorkArcanus {
+        _, ok := arcanusBuilds[point]
+        if !ok {
+            toDelete = append(toDelete, point)
+        }
+    }
+
+    for _, point := range toDelete {
+        delete(game.RoadWorkArcanus, point)
+    }
+
 }
 
 func (game *Game) SwitchPlane() {
