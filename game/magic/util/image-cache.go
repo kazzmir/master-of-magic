@@ -6,6 +6,7 @@ import (
     "fmt"
     "strings"
     "image"
+    "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/xbr"
@@ -164,17 +165,61 @@ func (cache *ImageCache) GetImagesTransform(lbxPath string, index int, extra str
     return out, nil
 }
 
-func scaleImageLinear(input image.Image, amount int) image.Image {
-    return input
+func scale2x(input image.Image) image.Image {
+    bounds := input.Bounds()
+    scaledImage := image.NewRGBA(image.Rect(0, 0, 2 * bounds.Dx(), 2 * bounds.Dy()))
+    smooth := true // use Scale2x by Andrea Mazzoleni
+
+    getColor := func(x, y int) color.Color {
+        if x < bounds.Min.X || x >= bounds.Max.X || y < bounds.Min.Y || y >= bounds.Max.Y {
+            return color.RGBA{}
+        }
+
+        return input.At(x, y)
+    }
+
+    for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+        for x := bounds.Min.X; x < bounds.Max.X; x++ {
+            B := getColor(x, y-1)
+            D := getColor(x-1, y)
+            E := getColor(x, y)
+            F := getColor(x+1, y)
+            H := getColor(x, y+1)
+
+            E0, E1, E2, E3 := E, E, E, E
+            if smooth && B != H && D != F {
+                if D == B {
+                    E0 = D
+                }
+                if B == F {
+                    E1 = F
+                }
+                if D == H {
+                    E2 = D
+                }
+                if H == F {
+                    E3 = F
+                }
+            }
+
+            scaledImage.Set(x*2, y*2, E0)
+            scaledImage.Set(x*2+1, y*2, E1)
+            scaledImage.Set(x*2, y*2+1, E2)
+            scaledImage.Set(x*2+1, y*2+1, E3)
+        }
+    }
+
+    return scaledImage
 }
 
 func (cache *ImageCache) ApplyScale(input image.Image) image.Image {
     switch cache.Scaler {
         case ScaleAlgorithmLinear:
-            if cache.ScaleAmount == 1 {
-                return input
+            switch cache.ScaleAmount {
+                case 1: return input
+                case 2: return scale2x(input)
+                default: return input
             }
-            return scaleImageLinear(input, cache.ScaleAmount)
         case ScaleAlgorithmXbr: return xbr.ScaleImage(input, cache.ScaleAmount)
     }
 
