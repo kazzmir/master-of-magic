@@ -4383,14 +4383,14 @@ func (game *Game) MakeHudUI() *uilib.UI {
                         options.GeoM.Translate(float64(unitRect.Min.X), float64(unitRect.Min.Y))
                         screen.DrawImage(unitBackground, &options)
 
-                        options.GeoM.Translate(1, 1)
+                        options.GeoM.Translate(float64(data.ScreenScale), float64(data.ScreenScale))
 
                         if stack.IsActive(unit){
                             unitBack, _ := units.GetUnitBackgroundImage(unit.GetBanner(), &game.ImageCache)
                             screen.DrawImage(unitBack, &options)
                         }
 
-                        options.GeoM.Translate(1, 1)
+                        options.GeoM.Translate(float64(data.ScreenScale), float64(data.ScreenScale))
                         unitImage, err := GetUnitImage(unit, &game.ImageCache, unit.GetBanner())
                         if err == nil {
 
