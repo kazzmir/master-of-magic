@@ -12,6 +12,14 @@ import (
 
 type NormalizeCoordinateFunc func (int, int) (int, int)
 
+// reasons a unit might be unable to move
+type BusyStatus int
+const (
+    BusyStatusNone BusyStatus = iota
+    BusyStatusBuildRoad // for engineers
+    BusyStatusPurify // for priests
+)
+
 type OverworldUnit struct {
     ExperienceInfo ExperienceInfo
     Unit Unit
@@ -28,6 +36,8 @@ type OverworldUnit struct {
     WeaponBonus data.WeaponBonus
     Undead bool
 
+    Busy BusyStatus
+
     Enchantments []data.UnitEnchantment
 }
 
@@ -41,6 +51,14 @@ func (unit *OverworldUnit) AddEnchantment(enchantment data.UnitEnchantment) {
 
 func (unit *OverworldUnit) HasEnchantment(enchantment data.UnitEnchantment) bool {
     return slices.Contains(unit.Enchantments, enchantment)
+}
+
+func (unit *OverworldUnit) GetBusy() BusyStatus {
+    return unit.Busy
+}
+
+func (unit *OverworldUnit) SetBusy(busy BusyStatus) {
+    unit.Busy = busy
 }
 
 func (unit *OverworldUnit) GetSpellChargeSpells() map[spellbook.Spell]int {

@@ -77,5 +77,7 @@ type StackUnit interface {
     GetArtifactSlots() []artifact.ArtifactSlot
     GetArtifacts() []*artifact.Artifact
     GetSpellChargeSpells() map[spellbook.Spell]int
+    GetBusy() BusyStatus
+    SetBusy(BusyStatus)
 }
 

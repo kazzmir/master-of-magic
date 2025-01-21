@@ -519,6 +519,14 @@ func (hero *Hero) AdjustHealth(amount int) {
     }
 }
 
+func (hero *Hero) GetBusy() units.BusyStatus {
+    return hero.Unit.GetBusy()
+}
+
+func (hero *Hero) SetBusy(busy units.BusyStatus) {
+    hero.Unit.SetBusy(busy)
+}
+
 func (hero *Hero) HasItem(itemType artifact.ArtifactType) bool {
     for _, item := range hero.Equipment {
         if item != nil && item.Type == itemType {
