@@ -4654,6 +4654,11 @@ func (game *Game) MakeHudUI() *uilib.UI {
             buildIndex := 0
             buildRect := util.ImageRect(280, 186, buildImages[0])
             buildCounter := uint64(0)
+
+            hasRoad := game.GetMap(player.SelectedStack.Plane()).ContainsRoad(player.SelectedStack.X(), player.SelectedStack.Y())
+            hasCity := game.ContainsCity(player.SelectedStack.X(), player.SelectedStack.Y(), player.SelectedStack.Plane())
+            node := game.GetMap(player.SelectedStack.Plane()).GetMagicNode(player.SelectedStack.X(), player.SelectedStack.Y())
+
             elements = append(elements, &uilib.UIElement{
                 Rect: buildRect,
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image){
@@ -4681,7 +4686,6 @@ func (game *Game) MakeHudUI() *uilib.UI {
                         use = meldImages[buildIndex]
 
                         canMeld := false
-                        node := game.GetMap(player.SelectedStack.Plane()).GetMagicNode(player.SelectedStack.X(), player.SelectedStack.Y())
                         if node != nil && node.Empty {
                             canMeld = true
                         }
@@ -4689,7 +4693,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                         if !canMeld {
                             matrix.ChangeHSV(0, 0, 1)
                         }
-                    } else if powers.BuildRoad {
+                    } else if powers.BuildRoad && !hasRoad && !hasCity {
                         use = buildImages[buildIndex]
                     }
 
@@ -4714,7 +4718,6 @@ func (game *Game) MakeHudUI() *uilib.UI {
                         buildIndex = 1
                     } else if powers.Meld {
                         canMeld := false
-                        node := game.GetMap(player.SelectedStack.Plane()).GetMagicNode(player.SelectedStack.X(), player.SelectedStack.Y())
                         if node != nil && node.Empty {
                             canMeld = true
                         }
@@ -4723,8 +4726,6 @@ func (game *Game) MakeHudUI() *uilib.UI {
                             buildIndex = 1
                         }
                     } else if powers.BuildRoad {
-                        hasRoad := game.GetMap(player.SelectedStack.Plane()).ContainsRoad(player.SelectedStack.X(), player.SelectedStack.Y())
-                        hasCity := game.ContainsCity(player.SelectedStack.X(), player.SelectedStack.Y(), player.SelectedStack.Plane())
                         if !hasRoad && !hasCity {
                             buildIndex = 1
                         }
