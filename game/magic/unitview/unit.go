@@ -78,23 +78,23 @@ func RenderUnitInfoNormal(screen *ebiten.Image, imageCache *util.ImageCache, uni
     }
 
     if extraTitle != "" {
-        descriptionFont.Print(screen, x, y, 1, defaultOptions.ColorScale, name)
-        y += float64(descriptionFont.Height())
-        defaultOptions.GeoM.Translate(0, float64(descriptionFont.Height()))
-        descriptionFont.Print(screen, x, y, 1, defaultOptions.ColorScale, "The " + extraTitle)
+        descriptionFont.Print(screen, x, y, float64(data.ScreenScale), defaultOptions.ColorScale, name)
+        y += float64(descriptionFont.Height() * data.ScreenScale)
+        defaultOptions.GeoM.Translate(0, float64(descriptionFont.Height() * data.ScreenScale))
+        descriptionFont.Print(screen, x, y, float64(data.ScreenScale), defaultOptions.ColorScale, "The " + extraTitle)
 
-        y += float64(descriptionFont.Height())
-        defaultOptions.GeoM.Translate(0, float64(descriptionFont.Height()))
+        y += float64(descriptionFont.Height() * data.ScreenScale)
+        defaultOptions.GeoM.Translate(0, float64(descriptionFont.Height() * data.ScreenScale))
     } else {
-        descriptionFont.Print(screen, x, y+2, 1, defaultOptions.ColorScale, name)
-        y += 17
-        defaultOptions.GeoM.Translate(0, 16)
+        descriptionFont.Print(screen, x, y+float64(2 * data.ScreenScale), float64(data.ScreenScale), defaultOptions.ColorScale, name)
+        y += float64(17 * data.ScreenScale)
+        defaultOptions.GeoM.Translate(0, float64(16 * data.ScreenScale))
     }
 
-    defaultOptions.GeoM.Translate(0, -1)
+    defaultOptions.GeoM.Translate(0, float64(-1 * data.ScreenScale))
 
-    smallFont.Print(screen, x, y, 1, defaultOptions.ColorScale, "Moves")
-    y += float64(smallFont.Height()) + 1
+    smallFont.Print(screen, x, y, float64(data.ScreenScale), defaultOptions.ColorScale, "Moves")
+    y += float64((smallFont.Height() + 1) * data.ScreenScale)
 
     unitMoves := unit.GetMovementSpeed()
 
@@ -103,7 +103,7 @@ func RenderUnitInfoNormal(screen *ebiten.Image, imageCache *util.ImageCache, uni
     if err == nil {
         var options ebiten.DrawImageOptions
         options = defaultOptions
-        options.GeoM.Translate(smallFont.MeasureTextWidth("Upkeep ", 1), 0)
+        options.GeoM.Translate(smallFont.MeasureTextWidth("Upkeep ", float64(data.ScreenScale)), 0)
 
         for i := 0; i < unitMoves; i++ {
             screen.DrawImage(smallBoot, &options)
@@ -111,10 +111,10 @@ func RenderUnitInfoNormal(screen *ebiten.Image, imageCache *util.ImageCache, uni
         }
     }
 
-    smallFont.Print(screen, x, y, 1, defaultOptions.ColorScale, "Upkeep")
+    smallFont.Print(screen, x, y, float64(data.ScreenScale), defaultOptions.ColorScale, "Upkeep")
 
     options := defaultOptions
-    options.GeoM.Translate(smallFont.MeasureTextWidth("Upkeep ", 1), float64(smallFont.Height()) + 2)
+    options.GeoM.Translate(smallFont.MeasureTextWidth("Upkeep ", float64(data.ScreenScale)), float64((smallFont.Height() + 2) * data.ScreenScale))
     renderUpkeep(screen, imageCache, unit, options)
 }
 
@@ -375,7 +375,7 @@ func MakeUnitAbilitiesElements(imageCache *util.ImageCache, unit UnitView, mediu
     abilityCount += len(unit.GetEnchantments())
 
     if abilityCount > 4 {
-        pageUpRect := util.ImageRect(x + 195, y, upImages[0])
+        pageUpRect := util.ImageRect(x + 195 * data.ScreenScale, y, upImages[0])
         pageUpIndex := 0
         elements = append(elements, &uilib.UIElement{
             Rect: pageUpRect,
@@ -395,7 +395,7 @@ func MakeUnitAbilitiesElements(imageCache *util.ImageCache, unit UnitView, mediu
             },
         })
 
-        pageDownRect := util.ImageRect(x + 195, y + 60, downImages[0])
+        pageDownRect := util.ImageRect(x + 195 * data.ScreenScale, y + 60 * data.ScreenScale, downImages[0])
         pageDownIndex := 0
         elements = append(elements, &uilib.UIElement{
             Rect: pageDownRect,
