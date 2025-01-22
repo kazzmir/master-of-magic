@@ -842,28 +842,28 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
 
 func CastLeftSideDistortions1(page *ebiten.Image) util.Distortion {
     return util.Distortion{
-        Top: image.Pt(page.Bounds().Dx()/2 + 25, 12),
-        Bottom: image.Pt(page.Bounds().Dx()/2 + 25, page.Bounds().Dy() - 4),
+        Top: image.Pt(page.Bounds().Dx()/2 + 25 * data.ScreenScale, 12 * data.ScreenScale),
+        Bottom: image.Pt(page.Bounds().Dx()/2 + 25 * data.ScreenScale, page.Bounds().Dy() - 4 * data.ScreenScale),
         Segments: []util.Segment{
             util.Segment{
-                Top: image.Pt(page.Bounds().Dx()/2 + 40, -5),
-                Bottom: image.Pt(page.Bounds().Dx()/2 + 40, page.Bounds().Dy() - 25),
+                Top: image.Pt(page.Bounds().Dx()/2 + 40 * data.ScreenScale, -5 * data.ScreenScale),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 40 * data.ScreenScale, page.Bounds().Dy() - 25 * data.ScreenScale),
             },
             util.Segment{
-                Top: image.Pt(page.Bounds().Dx()/2 + 60, -10),
-                Bottom: image.Pt(page.Bounds().Dx()/2 + 60, page.Bounds().Dy() - 33),
+                Top: image.Pt(page.Bounds().Dx()/2 + 60 * data.ScreenScale, -10 * data.ScreenScale),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 60 * data.ScreenScale, page.Bounds().Dy() - 33 * data.ScreenScale),
             },
             util.Segment{
-                Top: image.Pt(page.Bounds().Dx()/2 + 80, -10),
-                Bottom: image.Pt(page.Bounds().Dx()/2 + 80, page.Bounds().Dy() - 30),
+                Top: image.Pt(page.Bounds().Dx()/2 + 80 * data.ScreenScale, -10 * data.ScreenScale),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 80 * data.ScreenScale, page.Bounds().Dy() - 30 * data.ScreenScale),
             },
             util.Segment{
-                Top: image.Pt(page.Bounds().Dx()/2 + 100, -3),
-                Bottom: image.Pt(page.Bounds().Dx()/2 + 100, page.Bounds().Dy() - 22),
+                Top: image.Pt(page.Bounds().Dx()/2 + 100 * data.ScreenScale, -3 * data.ScreenScale),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 100 * data.ScreenScale, page.Bounds().Dy() - 22 * data.ScreenScale),
             },
             util.Segment{
-                Top: image.Pt(page.Bounds().Dx()/2 + 135, 16),
-                Bottom: image.Pt(page.Bounds().Dx()/2 + 135, page.Bounds().Dy() - 3),
+                Top: image.Pt(page.Bounds().Dx()/2 + 135 * data.ScreenScale, 16 * data.ScreenScale),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 135 * data.ScreenScale, page.Bounds().Dy() - 3 * data.ScreenScale),
             },
         },
     }
@@ -871,93 +871,93 @@ func CastLeftSideDistortions1(page *ebiten.Image) util.Distortion {
 
 func CastLeftSideDistortions2(page *ebiten.Image) util.Distortion {
     return util.Distortion{
-        Top: image.Pt(page.Bounds().Dx()/2 + 25, 9),
-        Bottom: image.Pt(page.Bounds().Dx()/2 + 25, page.Bounds().Dy() - 2),
+        Top: image.Pt(page.Bounds().Dx()/2 + 25 * data.ScreenScale, 9 * data.ScreenScale),
+        Bottom: image.Pt(page.Bounds().Dx()/2 + 25 * data.ScreenScale, page.Bounds().Dy() - 2 * data.ScreenScale),
         Segments: []util.Segment{
             util.Segment{
-                Top: image.Pt(page.Bounds().Dx()/2 + 40, -12),
-                Bottom: image.Pt(page.Bounds().Dx()/2 + 40, page.Bounds().Dy() - 33),
+                Top: image.Pt(page.Bounds().Dx()/2 + 40 * data.ScreenScale, -12 * data.ScreenScale),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 40 * data.ScreenScale, page.Bounds().Dy() - 33 * data.ScreenScale),
             },
             util.Segment{
-                Top: image.Pt(page.Bounds().Dx()/2 + 58, -13),
-                Bottom: image.Pt(page.Bounds().Dx()/2 + 58, page.Bounds().Dy() - 43),
+                Top: image.Pt(page.Bounds().Dx()/2 + 58 * data.ScreenScale, -13 * data.ScreenScale),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 58 * data.ScreenScale, page.Bounds().Dy() - 43 * data.ScreenScale),
             },
             util.Segment{
-                Top: image.Pt(page.Bounds().Dx()/2 + 73, -20),
-                Bottom: image.Pt(page.Bounds().Dx()/2 + 73, page.Bounds().Dy() - 43),
+                Top: image.Pt(page.Bounds().Dx()/2 + 73 * data.ScreenScale, -20 * data.ScreenScale),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 73 * data.ScreenScale, page.Bounds().Dy() - 43 * data.ScreenScale),
             },
             util.Segment{
-                Top: image.Pt(page.Bounds().Dx()/2 + 90, -3),
-                Bottom: image.Pt(page.Bounds().Dx()/2 + 90, page.Bounds().Dy() - 34),
+                Top: image.Pt(page.Bounds().Dx()/2 + 90 * data.ScreenScale, -3 * data.ScreenScale),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 90 * data.ScreenScale, page.Bounds().Dy() - 34 * data.ScreenScale),
             },
             util.Segment{
-                Top: image.Pt(page.Bounds().Dx()/2 + 99, 1),
-                Bottom: image.Pt(page.Bounds().Dx()/2 + 99, page.Bounds().Dy() - 24),
+                Top: image.Pt(page.Bounds().Dx()/2 + 99 * data.ScreenScale, 1 * data.ScreenScale),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 99 * data.ScreenScale, page.Bounds().Dy() - 24 * data.ScreenScale),
             },
         },
     }
 }
 
 func CastRightSideDistortions1(page *ebiten.Image) util.Distortion {
-    offset := 60
+    offset := 60 * data.ScreenScale
     return util.Distortion{
-        Top: image.Pt(page.Bounds().Dx()/2 - 110 + offset - 3, 2),
-        Bottom: image.Pt(page.Bounds().Dx()/2 - 110 + offset, page.Bounds().Dy() - 28),
+        Top: image.Pt(page.Bounds().Dx()/2 - 110 * data.ScreenScale + offset - 3 * data.ScreenScale, 2 * data.ScreenScale),
+        Bottom: image.Pt(page.Bounds().Dx()/2 - 110 * data.ScreenScale + offset, page.Bounds().Dy() - 28 * data.ScreenScale),
         Segments: []util.Segment{
             util.Segment{
-                Top: image.Pt(page.Bounds().Dx()/2 - 90 + offset, -0),
-                Bottom: image.Pt(page.Bounds().Dx()/2 - 90 + offset, page.Bounds().Dy() - 43),
+                Top: image.Pt(page.Bounds().Dx()/2 - 90 * data.ScreenScale + offset, -0),
+                Bottom: image.Pt(page.Bounds().Dx()/2 - 90 * data.ScreenScale + offset, page.Bounds().Dy() - 43 * data.ScreenScale),
             },
             util.Segment{
-                Top: image.Pt(page.Bounds().Dx()/2 - 73 + offset, -10),
-                Bottom: image.Pt(page.Bounds().Dx()/2 - 73 + offset, page.Bounds().Dy() - 43),
+                Top: image.Pt(page.Bounds().Dx()/2 - 73 * data.ScreenScale + offset, -10 * data.ScreenScale),
+                Bottom: image.Pt(page.Bounds().Dx()/2 - 73 * data.ScreenScale + offset, page.Bounds().Dy() - 43 * data.ScreenScale),
             },
             util.Segment{
-                Top: image.Pt(page.Bounds().Dx()/2 - 58 + offset, -13),
-                Bottom: image.Pt(page.Bounds().Dx()/2 - 58 + offset, page.Bounds().Dy() - 35),
+                Top: image.Pt(page.Bounds().Dx()/2 - 58 * data.ScreenScale + offset, -13 * data.ScreenScale),
+                Bottom: image.Pt(page.Bounds().Dx()/2 - 58 * data.ScreenScale + offset, page.Bounds().Dy() - 35 * data.ScreenScale),
             },
             util.Segment{
-                Top: image.Pt(page.Bounds().Dx()/2 - 40 + offset, 4),
-                Bottom: image.Pt(page.Bounds().Dx()/2 - 40 + offset, page.Bounds().Dy() - 21),
+                Top: image.Pt(page.Bounds().Dx()/2 - 40 * data.ScreenScale + offset, 4 * data.ScreenScale),
+                Bottom: image.Pt(page.Bounds().Dx()/2 - 40 * data.ScreenScale + offset, page.Bounds().Dy() - 21 * data.ScreenScale),
             },
             util.Segment{
-                Top: image.Pt(page.Bounds().Dx()/2 - 38 + offset, 18),
-                Bottom: image.Pt(page.Bounds().Dx()/2 - 38 + offset, page.Bounds().Dy() - 10),
+                Top: image.Pt(page.Bounds().Dx()/2 - 38 * data.ScreenScale + offset, 18 * data.ScreenScale),
+                Bottom: image.Pt(page.Bounds().Dx()/2 - 38 * data.ScreenScale + offset, page.Bounds().Dy() - 10 * data.ScreenScale),
             },
         },
     }
 }
 
 func CastRightSideDistortions2(page *ebiten.Image) util.Distortion {
-    offset := 40
+    offset := 40 * data.ScreenScale
     return util.Distortion{
-        Top: image.Pt(page.Bounds().Dx()/2 - 130 + offset + 2, 15),
-        Bottom: image.Pt(page.Bounds().Dx()/2 - 130 + offset + 2, page.Bounds().Dy() - 3),
+        Top: image.Pt(page.Bounds().Dx()/2 - 130 * data.ScreenScale + offset + 2 * data.ScreenScale, 15 * data.ScreenScale),
+        Bottom: image.Pt(page.Bounds().Dx()/2 - 130 * data.ScreenScale + offset + 2 * data.ScreenScale, page.Bounds().Dy() - 3 * data.ScreenScale),
 
         Segments: []util.Segment{
             util.Segment{
-                Top: image.Pt(page.Bounds().Dx()/2 - 100 + offset, -0),
-                Bottom: image.Pt(page.Bounds().Dx()/2 - 100 + offset, page.Bounds().Dy() - 18),
+                Top: image.Pt(page.Bounds().Dx()/2 - 100 * data.ScreenScale + offset, -0),
+                Bottom: image.Pt(page.Bounds().Dx()/2 - 100 * data.ScreenScale + offset, page.Bounds().Dy() - 18 * data.ScreenScale),
             },
             util.Segment{
-                Top: image.Pt(page.Bounds().Dx()/2 - 80 + offset, -10),
-                Bottom: image.Pt(page.Bounds().Dx()/2 - 80 + offset, page.Bounds().Dy() - 27),
+                Top: image.Pt(page.Bounds().Dx()/2 - 80 * data.ScreenScale + offset, -10 * data.ScreenScale),
+                Bottom: image.Pt(page.Bounds().Dx()/2 - 80 * data.ScreenScale + offset, page.Bounds().Dy() - 27 * data.ScreenScale),
             },
             util.Segment{
-                Top: image.Pt(page.Bounds().Dx()/2 - 60 + offset, -10),
-                Bottom: image.Pt(page.Bounds().Dx()/2 - 60 + offset, page.Bounds().Dy() - 31),
+                Top: image.Pt(page.Bounds().Dx()/2 - 60 * data.ScreenScale + offset, -10 * data.ScreenScale),
+                Bottom: image.Pt(page.Bounds().Dx()/2 - 60 * data.ScreenScale + offset, page.Bounds().Dy() - 31 * data.ScreenScale),
             },
             util.Segment{
-                Top: image.Pt(page.Bounds().Dx()/2 - 40 + offset, -3),
-                Bottom: image.Pt(page.Bounds().Dx()/2 - 40 + offset, page.Bounds().Dy() - 28),
+                Top: image.Pt(page.Bounds().Dx()/2 - 40 * data.ScreenScale + offset, -3 * data.ScreenScale),
+                Bottom: image.Pt(page.Bounds().Dx()/2 - 40 * data.ScreenScale + offset, page.Bounds().Dy() - 28 * data.ScreenScale),
             },
             util.Segment{
-                Top: image.Pt(page.Bounds().Dx()/2 - 30 + offset, -2),
-                Bottom: image.Pt(page.Bounds().Dx()/2 - 30 + offset, page.Bounds().Dy() - 22),
+                Top: image.Pt(page.Bounds().Dx()/2 - 30 * data.ScreenScale + offset, -2 * data.ScreenScale),
+                Bottom: image.Pt(page.Bounds().Dx()/2 - 30 * data.ScreenScale + offset, page.Bounds().Dy() - 22 * data.ScreenScale),
             },
             util.Segment{
-                Top: image.Pt(page.Bounds().Dx()/2 - 20 + offset + 3, 15),
-                Bottom: image.Pt(page.Bounds().Dx()/2 - 20 + offset + 1, page.Bounds().Dy() - 5),
+                Top: image.Pt(page.Bounds().Dx()/2 - 20 * data.ScreenScale + offset + 3, 15 * data.ScreenScale),
+                Bottom: image.Pt(page.Bounds().Dx()/2 - 20 * data.ScreenScale + offset + 1, page.Bounds().Dy() - 5 * data.ScreenScale),
             },
         },
     }
@@ -1395,11 +1395,11 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
             flipOptions := options
 
             if flipping {
-                options.GeoM.Translate(15, 5)
+                options.GeoM.Translate(float64(15 * data.ScreenScale), float64(5 * data.ScreenScale))
                 renderPage(screen, options, spellPages[showPageLeft], Spell{})
 
                 if showPageRight < len(spellPages) {
-                    options.GeoM.Translate(134, 0)
+                    options.GeoM.Translate(float64(134 * data.ScreenScale), 0)
                     renderPage(screen, options, spellPages[showPageRight], Spell{})
                 }
 
@@ -1411,7 +1411,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
 
                     // index = 3
 
-                    flipOptions.GeoM.Translate(-17, -10)
+                    flipOptions.GeoM.Translate(float64(-17 * data.ScreenScale), float64(-10 * data.ScreenScale))
                     screen.DrawImage(bookFlip[index], &flipOptions)
 
                     if index == 0 {
