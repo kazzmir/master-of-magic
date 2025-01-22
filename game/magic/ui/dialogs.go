@@ -645,42 +645,42 @@ func MakeSelectionUI(ui *UI, lbxCache *lbx.LbxCache, imageCache *util.ImageCache
             bottom, _ := imageCache.GetImage("resource.lbx", 9, 0)
             options.GeoM.Reset()
             // FIXME: figure out why -3 is needed
-            options.GeoM.Translate(float64(cornerX + left.Bounds().Dx()), float64(cornerY + top.Bounds().Dy() + totalHeight - 3))
+            options.GeoM.Translate(float64(cornerX * data.ScreenScale + left.Bounds().Dx()), float64(cornerY * data.ScreenScale + top.Bounds().Dy() + totalHeight - 3))
             bottomSub := bottom.SubImage(image.Rect(0, 0, int(requiredWidth), bottom.Bounds().Dy())).(*ebiten.Image)
             screen.DrawImage(bottomSub, &options)
 
             bottomLeft, _ := imageCache.GetImage("resource.lbx", 6, 0)
             options.GeoM.Reset()
-            options.GeoM.Translate(float64(cornerX), float64(cornerY + totalHeight))
+            options.GeoM.Translate(float64(cornerX * data.ScreenScale), float64(cornerY * data.ScreenScale + totalHeight))
             screen.DrawImage(bottomLeft, &options)
 
             options.GeoM.Reset()
-            options.GeoM.Translate(float64(cornerX), float64(cornerY))
+            options.GeoM.Translate(float64(cornerX * data.ScreenScale), float64(cornerY * data.ScreenScale))
             leftSub := left.SubImage(image.Rect(0, 0, left.Bounds().Dx(), totalHeight)).(*ebiten.Image)
             screen.DrawImage(leftSub, &options)
 
             topSub := top.SubImage(image.Rect(0, 0, int(requiredWidth), top.Bounds().Dy())).(*ebiten.Image)
             options.GeoM.Reset()
-            options.GeoM.Translate(float64(cornerX + left.Bounds().Dx()), float64(cornerY))
+            options.GeoM.Translate(float64(cornerX * data.ScreenScale + left.Bounds().Dx()), float64(cornerY * data.ScreenScale))
             screen.DrawImage(topSub, &options)
 
             right, _ := imageCache.GetImage("resource.lbx", 8, 0)
             options.GeoM.Reset()
-            options.GeoM.Translate(float64(cornerX + left.Bounds().Dx()) + requiredWidth, float64(cornerY))
+            options.GeoM.Translate(float64(cornerX * data.ScreenScale + left.Bounds().Dx()) + requiredWidth, float64(cornerY * data.ScreenScale))
             rightSub := right.SubImage(image.Rect(0, 0, right.Bounds().Dx(), totalHeight)).(*ebiten.Image)
             screen.DrawImage(rightSub, &options)
 
             bottomRight, _ := imageCache.GetImage("resource.lbx", 10, 0)
             options.GeoM.Reset()
-            options.GeoM.Translate((float64(cornerX + left.Bounds().Dx()) + requiredWidth), float64(cornerY + totalHeight))
+            options.GeoM.Translate((float64(cornerX * data.ScreenScale + left.Bounds().Dx()) + requiredWidth), float64(cornerY * data.ScreenScale + totalHeight))
             screen.DrawImage(bottomRight, &options)
 
-            topFont.Print(screen, float64(cornerX + left.Bounds().Dx() + 4 * data.ScreenScale), float64(cornerY + 4 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, selectionTitle)
+            topFont.Print(screen, float64(cornerX * data.ScreenScale + left.Bounds().Dx() + 4 * data.ScreenScale), float64(cornerY * data.ScreenScale + 4 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, selectionTitle)
         },
     })
 
-    x1 := cornerX + left.Bounds().Dx()
-    y1 := cornerY + top.Bounds().Dy()
+    x1 := cornerX * data.ScreenScale + left.Bounds().Dx()
+    y1 := cornerY * data.ScreenScale + top.Bounds().Dy()
 
     // FIXME: handle more than 9 choices
     for choiceIndex, choice := range choices {

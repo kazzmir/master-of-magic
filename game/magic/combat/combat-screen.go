@@ -399,7 +399,7 @@ func (combat *CombatScreen) createVerticalSkyProjectile(target *ArmyUnit, images
     y := -40.0
 
     // FIXME: make this a parameter?
-    speed := 2.5
+    speed := 2.5 * float64(data.ScreenScale)
 
     angle := math.Pi / 2
 
@@ -1285,14 +1285,14 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                             caster := combat.Model.SelectedUnit
 
                             doCast := func(spell spellbook.Spell){
-                                charge, hasCharge := caster.SpellCharges[spell]
-                                if hasCharge && charge > 0 {
-                                    caster.SpellCharges[spell] -= 1
-                                } else {
-                                    caster.CastingSkill -= float32(spell.CastCost)
-                                }
-                                caster.Casted = true
                                 combat.InvokeSpell(player, spell, func(){
+                                    charge, hasCharge := caster.SpellCharges[spell]
+                                    if hasCharge && charge > 0 {
+                                        caster.SpellCharges[spell] -= 1
+                                    } else {
+                                        caster.CastingSkill -= float32(spell.CastCost)
+                                    }
+                                    caster.Casted = true
                                     combat.Model.AddLogEvent(fmt.Sprintf("%v casts %v", caster.Unit.GetName(), spell.Name))
                                     caster.MovesLeft = fraction.FromInt(0)
                                     select {
@@ -1340,7 +1340,7 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                     },
                 }
 
-                ui.AddElements(uilib.MakeSelectionUI(ui, combat.Cache, &combat.ImageCache, 100 * data.ScreenScale, 50 * data.ScreenScale, "Who Will Cast", selections))
+                ui.AddElements(uilib.MakeSelectionUI(ui, combat.Cache, &combat.ImageCache, 100, 50, "Who Will Cast", selections))
             }
         }
 
@@ -1801,14 +1801,14 @@ func (combat *CombatScreen) doSelectUnit(yield coroutine.YieldFunc, selecter Tea
 
     selectElement := &uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            combat.WhiteFont.PrintWrap(screen, float64(x), float64(y), 75, 1, ebiten.ColorScale{}, fmt.Sprintf("Select a target for a %v spell.", spell.Name))
+            combat.WhiteFont.PrintWrap(screen, float64(x * data.ScreenScale), float64(y * data.ScreenScale), float64(75 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("Select a target for a %v spell.", spell.Name))
         },
     }
 
     quit := false
 
     cancelImages, _ := combat.ImageCache.GetImages("compix.lbx", 22)
-    cancelRect := image.Rect(0, 0, cancelImages[0].Bounds().Dx(), cancelImages[0].Bounds().Dy()).Add(image.Point{x + 15, y + 15})
+    cancelRect := image.Rect(0, 0, cancelImages[0].Bounds().Dx(), cancelImages[0].Bounds().Dy()).Add(image.Point{(x + 15) * data.ScreenScale, (y + 15) * data.ScreenScale})
     cancelIndex := 0
     cancelElement := &uilib.UIElement{
         Rect: cancelRect,
