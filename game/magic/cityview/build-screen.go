@@ -492,15 +492,15 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
         mainElements = append(mainElements, &uilib.UIElement{
             Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
                 var options ebiten.DrawImageOptions
-                options.GeoM.Translate(104, 28)
+                options.GeoM.Translate(float64(104 * data.ScreenScale), float64(28 * data.ScreenScale))
                 unitview.RenderCombatImage(screen, imageCache, bannerUnit, options, 0)
 
                 options.GeoM.Reset()
-                options.GeoM.Translate(130, 7)
+                options.GeoM.Translate(float64(130 * data.ScreenScale), float64(7 * data.ScreenScale))
                 unitview.RenderUnitInfoBuild(screen, imageCache, bannerUnit, descriptionFont, smallFont, options)
 
                 options.GeoM.Reset()
-                options.GeoM.Translate(85, 48)
+                options.GeoM.Translate(float64(85 * data.ScreenScale), float64(48 * data.ScreenScale))
                 unitview.RenderUnitInfoStats(screen, imageCache, bannerUnit, 10, descriptionFont, smallFont, options)
 
                 /*
@@ -513,7 +513,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
         var getAlpha util.AlphaFadeFunc = func () float32 {
             return 1
         }
-        mainElements = append(mainElements, unitview.MakeUnitAbilitiesElements(imageCache, bannerUnit, mediumFont, 85, 108, &ui.Counter, 0, &getAlpha, true)...)
+        mainElements = append(mainElements, unitview.MakeUnitAbilitiesElements(imageCache, bannerUnit, mediumFont, 85 * data.ScreenScale, 108 * data.ScreenScale, &ui.Counter, 0, &getAlpha, true)...)
         ui.AddElements(mainElements)
     }
 
@@ -522,7 +522,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
         for i, building := range possibleBuildings {
 
             x1 := 0
-            y1 := 4 + i * (buildingInfo.Bounds().Dy() + 1)
+            y1 := 4 * data.ScreenScale + i * (buildingInfo.Bounds().Dy() + 1)
             x2 := x1 + buildingInfo.Bounds().Dx()
             y2 := y1 + buildingInfo.Bounds().Dy()
 
@@ -556,7 +556,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
                         use = titleFontWhite
                     }
 
-                    use.Print(screen, float64(x1 + 2), float64(y1 + 1), 1, ebiten.ColorScale{}, city.BuildingInfo.Name(building))
+                    use.Print(screen, float64(x1 + 2 * data.ScreenScale), float64(y1 + 1 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, city.BuildingInfo.Name(building))
                 },
             }
 
@@ -576,8 +576,8 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
         possibleUnits := getPossibleUnits(city)
         for i, unit := range possibleUnits {
 
-            x1 := 240
-            y1 := 4 + i * (buildingInfo.Bounds().Dy() + 1)
+            x1 := 240 * data.ScreenScale
+            y1 := 4 * data.ScreenScale + i * (buildingInfo.Bounds().Dy() + 1)
             x2 := x1 + unitInfo.Bounds().Dx()
             y2 := y1 + unitInfo.Bounds().Dy()
 
@@ -611,7 +611,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
                         use = titleFontWhite
                     }
 
-                    use.Print(screen, float64(x1 + 2), float64(y1 + 1), 1, ebiten.ColorScale{}, unit.String())
+                    use.Print(screen, float64(x1 + 2 * data.ScreenScale), float64(y1 + 1 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, unit.String())
                 },
             }
 
