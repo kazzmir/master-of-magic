@@ -12,12 +12,14 @@ const (
     // https://www.scale2x.it/
     ScaleAlgorithmScale ScaleAlgorithm = iota
     ScaleAlgorithmXbr
+    ScaleAlgorithmNormal
 )
 
 func (algorithm ScaleAlgorithm) String() string {
     switch algorithm {
         case ScaleAlgorithmScale: return "scale"
         case ScaleAlgorithmXbr: return "xbr"
+        case ScaleAlgorithmNormal: return "normal"
     }
 
     return ""

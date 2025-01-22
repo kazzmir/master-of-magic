@@ -179,14 +179,16 @@ func (engine *Engine) Update() error {
     for _, key := range keys {
         switch key {
             case ebiten.KeyEscape, ebiten.KeyCapsLock: return ebiten.Termination
-            case ebiten.KeyF1: engine.ChangeScale(1, data.ScaleAlgorithmScale)
-            case ebiten.KeyF2: engine.ChangeScale(2, data.ScaleAlgorithmScale)
-            case ebiten.KeyF3: engine.ChangeScale(3, data.ScaleAlgorithmScale)
-            case ebiten.KeyF4: engine.ChangeScale(4, data.ScaleAlgorithmScale)
-
-            case ebiten.KeyF5: engine.ChangeScale(2, data.ScaleAlgorithmXbr)
-            case ebiten.KeyF6: engine.ChangeScale(3, data.ScaleAlgorithmXbr)
-            case ebiten.KeyF7: engine.ChangeScale(4, data.ScaleAlgorithmXbr)
+            case ebiten.KeyF1: engine.ChangeScale(1, data.ScaleAlgorithmNormal)
+            case ebiten.KeyF2: engine.ChangeScale(2, data.ScaleAlgorithmNormal)
+            case ebiten.KeyF3: engine.ChangeScale(3, data.ScaleAlgorithmNormal)
+            case ebiten.KeyF4: engine.ChangeScale(4, data.ScaleAlgorithmNormal)
+            case ebiten.KeyF5: engine.ChangeScale(2, data.ScaleAlgorithmScale)
+            case ebiten.KeyF6: engine.ChangeScale(3, data.ScaleAlgorithmScale)
+            case ebiten.KeyF7: engine.ChangeScale(4, data.ScaleAlgorithmScale)
+            case ebiten.KeyF8: engine.ChangeScale(2, data.ScaleAlgorithmXbr)
+            case ebiten.KeyF9: engine.ChangeScale(3, data.ScaleAlgorithmXbr)
+            case ebiten.KeyF10: engine.ChangeScale(4, data.ScaleAlgorithmXbr)
         }
     }
 

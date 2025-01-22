@@ -158,10 +158,9 @@ func (cache *ImageCache) GetImagesTransform(lbxPath string, index int, extra str
     return out, nil
 }
 
-func scale2x(input image.Image) image.Image {
+func scale2x(input image.Image, smooth bool) image.Image {
     bounds := input.Bounds()
     scaledImage := image.NewRGBA(image.Rect(0, 0, 2 * bounds.Dx(), 2 * bounds.Dy()))
-    smooth := true // use Scale2x by Andrea Mazzoleni
 
     getColor := func(x, y int) color.Color {
         if x < bounds.Min.X || x >= bounds.Max.X || y < bounds.Min.Y || y >= bounds.Max.Y {
@@ -205,10 +204,9 @@ func scale2x(input image.Image) image.Image {
     return scaledImage
 }
 
-func scale3x(input image.Image) image.Image {
+func scale3x(input image.Image, smooth bool) image.Image {
     bounds := input.Bounds()
     scaledImage := image.NewRGBA(image.Rect(0, 0, 3 * bounds.Dx(), 3 * bounds.Dy()))
-    smooth := true // use Scale2x by Andrea Mazzoleni
 
     getColor := func(x, y int) color.Color {
         if x < bounds.Min.X || x >= bounds.Max.X || y < bounds.Min.Y || y >= bounds.Max.Y {
@@ -284,11 +282,18 @@ func (cache *ImageCache) ApplyScale(input image.Image) image.Image {
     }
 
     switch cache.Scaler {
+        case data.ScaleAlgorithmNormal:
+            switch cache.ScaleAmount {
+                case 2: return scale2x(input, false)
+                case 3: return scale3x(input, false)
+                case 4: return scale2x(scale2x(input, false), false)
+                default: return input
+            }
         case data.ScaleAlgorithmScale:
             switch cache.ScaleAmount {
-                case 2: return scale2x(input)
-                case 3: return scale3x(input)
-                case 4: return scale2x(scale2x(input))
+                case 2: return scale2x(input, true)
+                case 3: return scale3x(input, true)
+                case 4: return scale2x(scale2x(input, true), true)
                 default: return input
             }
         case data.ScaleAlgorithmXbr: return xbr.ScaleImage(input, cache.ScaleAmount)
