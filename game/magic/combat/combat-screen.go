@@ -1340,7 +1340,7 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                     },
                 }
 
-                ui.AddElements(uilib.MakeSelectionUI(ui, combat.Cache, &combat.ImageCache, 100, 50, "Who Will Cast", selections))
+                ui.AddElements(uilib.MakeSelectionUI(ui, combat.Cache, &combat.ImageCache, 100 * data.ScreenScale, 50 * data.ScreenScale, "Who Will Cast", selections))
             }
         }
 
@@ -1613,7 +1613,7 @@ func (combat *CombatScreen) createUnitToUnitProjectile(attacker *ArmyUnit, targe
     }
     */
 
-    speed := 2.8
+    speed := 2.8 * float64(data.ScreenScale)
 
     angle := math.Atan2(targetY - screenY, targetX - screenX)
 

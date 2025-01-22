@@ -616,12 +616,12 @@ func MakeSelectionUI(ui *UI, lbxCache *lbx.LbxCache, imageCache *util.ImageCache
     left, _ := imageCache.GetImage("resource.lbx", 5, 0)
     top, _ := imageCache.GetImage("resource.lbx", 7, 0)
 
-    requiredWidth := buttonFont.MeasureTextWidth(selectionTitle, 1) + 2
+    requiredWidth := buttonFont.MeasureTextWidth(selectionTitle, float64(data.ScreenScale)) + 2
 
     for _, choice := range choices {
-        width := buttonFont.MeasureTextWidth(choice.Name, 1) + 2
+        width := buttonFont.MeasureTextWidth(choice.Name, float64(data.ScreenScale)) + 2
         if choice.Hotkey != "" {
-            width += buttonFont.MeasureTextWidth(choice.Hotkey, 1) + 2
+            width += buttonFont.MeasureTextWidth(choice.Hotkey, float64(data.ScreenScale)) + 2
         }
         if width > requiredWidth {
             requiredWidth = width
@@ -672,10 +672,10 @@ func MakeSelectionUI(ui *UI, lbxCache *lbx.LbxCache, imageCache *util.ImageCache
 
             bottomRight, _ := imageCache.GetImage("resource.lbx", 10, 0)
             options.GeoM.Reset()
-            options.GeoM.Translate(float64(cornerX + left.Bounds().Dx()) + requiredWidth, float64(cornerY + totalHeight))
+            options.GeoM.Translate((float64(cornerX + left.Bounds().Dx()) + requiredWidth), float64(cornerY + totalHeight))
             screen.DrawImage(bottomRight, &options)
 
-            topFont.Print(screen, float64(cornerX + left.Bounds().Dx() + 4), float64(cornerY + 4), 1, options.ColorScale, selectionTitle)
+            topFont.Print(screen, float64(cornerX + left.Bounds().Dx() + 4 * data.ScreenScale), float64(cornerY + 4 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, selectionTitle)
         },
     })
 
@@ -722,9 +722,9 @@ func MakeSelectionUI(ui *UI, lbxCache *lbx.LbxCache, imageCache *util.ImageCache
                 options.GeoM.Translate(float64(use.Bounds().Dx()), 0)
                 screen.DrawImage(ends[imageIndex], &options)
 
-                buttonFont.Print(screen, float64(myX + 2), float64(myY + 2), 1, options.ColorScale, choice.Name)
+                buttonFont.Print(screen, float64(myX + 2), float64(myY + 2), float64(data.ScreenScale), options.ColorScale, choice.Name)
                 if choice.Hotkey != "" {
-                    buttonFont.PrintRight(screen, float64(myX) + requiredWidth - 2, float64(myY + 2), 1, options.ColorScale, choice.Hotkey)
+                    buttonFont.PrintRight(screen, float64(myX) + requiredWidth - 2, float64(myY + 2), float64(data.ScreenScale), options.ColorScale, choice.Hotkey)
                 }
             },
         })
