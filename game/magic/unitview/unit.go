@@ -121,9 +121,9 @@ func RenderUnitInfoNormal(screen *ebiten.Image, imageCache *util.ImageCache, uni
 func RenderUnitInfoBuild(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitView, descriptionFont *font.Font, smallFont *font.Font, defaultOptions ebiten.DrawImageOptions) {
     x, y := defaultOptions.GeoM.Apply(0, 0)
 
-    descriptionFont.Print(screen, x, y, 1, defaultOptions.ColorScale, unit.GetName())
+    descriptionFont.Print(screen, x, y, float64(data.ScreenScale), defaultOptions.ColorScale, unit.GetName())
 
-    smallFont.Print(screen, x, y + 11, 1, defaultOptions.ColorScale, "Moves")
+    smallFont.Print(screen, x, y + float64(11 * data.ScreenScale), float64(data.ScreenScale), defaultOptions.ColorScale, "Moves")
 
     unitMoves := unit.GetMovementSpeed()
 
@@ -132,7 +132,7 @@ func RenderUnitInfoBuild(screen *ebiten.Image, imageCache *util.ImageCache, unit
     if err == nil {
         var options ebiten.DrawImageOptions
         options = defaultOptions
-        options.GeoM.Translate(smallFont.MeasureTextWidth("Upkeep ", 1), 9)
+        options.GeoM.Translate(smallFont.MeasureTextWidth("Upkeep ", float64(data.ScreenScale)), float64(9 * data.ScreenScale))
 
         for i := 0; i < unitMoves; i++ {
             screen.DrawImage(smallBoot, &options)
@@ -140,16 +140,16 @@ func RenderUnitInfoBuild(screen *ebiten.Image, imageCache *util.ImageCache, unit
         }
     }
 
-    smallFont.Print(screen, x, y + 19, 1, defaultOptions.ColorScale, "Upkeep")
+    smallFont.Print(screen, x, y + float64(19 * data.ScreenScale), float64(data.ScreenScale), defaultOptions.ColorScale, "Upkeep")
 
     options := defaultOptions
-    options.GeoM.Translate(smallFont.MeasureTextWidth("Upkeep ", 1), 18)
+    options.GeoM.Translate(smallFont.MeasureTextWidth("Upkeep ", float64(data.ScreenScale)), float64(18 * data.ScreenScale))
     renderUpkeep(screen, imageCache, unit, options)
 
     cost := unit.GetProductionCost()
     // FIXME: compute discounted cost based on the unit being built and the tiles surrounding the city
     discountedCost := cost
-    smallFont.Print(screen, x, y + 27, 1, defaultOptions.ColorScale, fmt.Sprintf("Cost %v(%v)", discountedCost, cost))
+    smallFont.Print(screen, x, y + float64(27 * data.ScreenScale), float64(data.ScreenScale), defaultOptions.ColorScale, fmt.Sprintf("Cost %v(%v)", discountedCost, cost))
 }
 
 func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitView, maxIconsPerLine int, descriptionFont *font.Font, smallFont *font.Font, defaultOptions ebiten.DrawImageOptions) {
