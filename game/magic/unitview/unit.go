@@ -245,17 +245,17 @@ func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit
 }
 
 func RenderExperienceBadge(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitView, font *font.Font, defaultOptions ebiten.DrawImageOptions, showExperience bool) (float64) {
-    data := unit.GetExperienceData()
-    experienceIndex := 102 + data.ToInt()
+    experience := unit.GetExperienceData()
+    experienceIndex := 102 + experience.ToInt()
     pic, _ := imageCache.GetImage("special.lbx", experienceIndex, 0)
     screen.DrawImage(pic, &defaultOptions)
     x, y := defaultOptions.GeoM.Apply(0, 0)
-    text := data.Name()
+    text := experience.Name()
     if showExperience {
-        text = fmt.Sprintf("%v (%v ep)", data.Name(), unit.GetExperience())
+        text = fmt.Sprintf("%v (%v ep)", experience.Name(), unit.GetExperience())
     }
-    font.Print(screen, x + float64(pic.Bounds().Dx() + 2), float64(y) + 5, 1, defaultOptions.ColorScale, text)
-    return float64(pic.Bounds().Dy() + 1)
+    font.Print(screen, x + float64(pic.Bounds().Dx() + 2 * data.ScreenScale), y + float64(5 * data.ScreenScale), float64(data.ScreenScale), defaultOptions.ColorScale, text)
+    return float64(pic.Bounds().Dy() + 1 * data.ScreenScale)
 }
 
 func renderUnitAbilities(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitView, mediumFont *font.Font, defaultOptions ebiten.DrawImageOptions, pureAbilities bool, page uint32, counter uint64) {
@@ -284,7 +284,7 @@ func renderUnitAbilities(screen *ebiten.Image, imageCache *util.ImageCache, unit
                         artifactPic := artifact.RenderArtifactImage(screen, imageCache, *artifacts[i], counter, defaultOptions)
 
                         x, y := defaultOptions.GeoM.Apply(0, 0)
-                        mediumFont.Print(screen, x + float64(artifactPic.Bounds().Dx() + 2), float64(y) + 5, 1, defaultOptions.ColorScale, artifacts[i].Name)
+                        mediumFont.Print(screen, x + float64(artifactPic.Bounds().Dx() + 2 * data.ScreenScale), y + float64(5 * data.ScreenScale), float64(data.ScreenScale), defaultOptions.ColorScale, artifacts[i].Name)
 
                         artifacts = slices.Delete(artifacts, i, i+1)
                         return float64(artifactPic.Bounds().Dy() + 1)
@@ -294,7 +294,7 @@ func renderUnitAbilities(screen *ebiten.Image, imageCache *util.ImageCache, unit
                 pic, _ := imageCache.GetImage("itemisc.lbx", slot.ImageIndex() + 8, 0)
                 screen.DrawImage(pic, &defaultOptions)
 
-                return float64(pic.Bounds().Dy() + 1)
+                return float64(pic.Bounds().Dy() + 1 * data.ScreenScale)
             })
         }
     }
@@ -306,8 +306,8 @@ func renderUnitAbilities(screen *ebiten.Image, imageCache *util.ImageCache, unit
             if err == nil {
                 screen.DrawImage(pic, &defaultOptions)
                 x, y := defaultOptions.GeoM.Apply(0, 0)
-                mediumFont.Print(screen, x + float64(pic.Bounds().Dx() + 2), float64(y) + 5, 1, defaultOptions.ColorScale, enchantment.Name())
-                return float64(pic.Bounds().Dy() + 1)
+                mediumFont.Print(screen, x + float64(pic.Bounds().Dx() + 2 * data.ScreenScale), y + float64(5 * data.ScreenScale), float64(data.ScreenScale), defaultOptions.ColorScale, enchantment.Name())
+                return float64(pic.Bounds().Dy() + 1 * data.ScreenScale)
             } else {
                 log.Printf("Error: unable to render ability %#v %v", enchantment, enchantment.Name())
             }
@@ -323,7 +323,7 @@ func renderUnitAbilities(screen *ebiten.Image, imageCache *util.ImageCache, unit
             if err == nil {
                 screen.DrawImage(pic, &defaultOptions)
                 x, y := defaultOptions.GeoM.Apply(0, 0)
-                mediumFont.Print(screen, x + float64(pic.Bounds().Dx() + 2), float64(y) + 5, 1, defaultOptions.ColorScale, ability.Name())
+                mediumFont.Print(screen, x + float64(pic.Bounds().Dx() + 2 * data.ScreenScale), y + float64(5 * data.ScreenScale), float64(data.ScreenScale), defaultOptions.ColorScale, ability.Name())
                 return float64(pic.Bounds().Dy() + 1)
             } else {
                 log.Printf("Error: unable to render ability %#v %v", ability, ability.Name())
