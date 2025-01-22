@@ -1453,7 +1453,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
             screen.Font.PrintCenter(window, float64(nameX * data.ScreenScale), float64(nameY * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, screen.CustomWizard.Name)
 
             options.GeoM.Reset()
-            options.GeoM.Translate(float64(37 * data.ScreenScale), float64(135 * data.ScreenScale))
+            options.GeoM.Translate(float64(34 * data.ScreenScale), float64(135 * data.ScreenScale))
             draw.DrawBooks(window, options, &imageCache, screen.CustomWizard.Books, screen.BooksOrderRandom())
 
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
@@ -1716,7 +1716,7 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
                 y += screen.AbilityFontAvailable.Height() + 1
                 if i == 4 {
                     y = yTop
-                    x += width
+                    x += width / data.ScreenScale
                 }
             }
         }
@@ -1784,13 +1784,13 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
                 background, _ := screen.ImageCache.GetImage("newgame.lbx", 0, 0)
                 window.DrawImage(background, &options)
 
-                options.GeoM.Translate(portraitX, portraitY)
+                options.GeoM.Translate(float64(portraitX * data.ScreenScale), float64(portraitY * data.ScreenScale))
                 portrait, _ := screen.ImageCache.GetImage("wizards.lbx", screen.CustomWizard.Portrait, 0)
                 window.DrawImage(portrait, &options)
                 screen.Font.PrintCenter(window, float64(nameX * data.ScreenScale), float64(nameY * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, screen.CustomWizard.Name)
 
                 options.GeoM.Reset()
-                options.GeoM.Translate(float64(36 * data.ScreenScale), float64(135 * data.ScreenScale))
+                options.GeoM.Translate(float64(34 * data.ScreenScale), float64(135 * data.ScreenScale))
                 draw.DrawBooks(window, options, &imageCache, screen.CustomWizard.Books, screen.BooksOrderRandom())
 
                 options.GeoM.Reset()
@@ -1821,7 +1821,7 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
                     boxY := y + float64(descriptionFont.Height()) + 1
 
                     options.GeoM.Reset()
-                    options.GeoM.Translate(descriptionX, boxY)
+                    options.GeoM.Translate(descriptionX * float64(data.ScreenScale), boxY * float64(data.ScreenScale))
                     window.DrawImage(background, &options)
                 }
 
@@ -2214,7 +2214,7 @@ func MakeNewWizardScreen(cache *lbx.LbxCache) *NewWizardScreen {
         ImageCache: util.MakeImageCache(cache),
         CurrentWizard: 0,
         // State: NewWizardScreenStateSelectWizard,
-        State: NewWizardScreenStateCustomBooks,
+        State: NewWizardScreenStateSelectRace,
     }
 
     err := out.Load(cache)
