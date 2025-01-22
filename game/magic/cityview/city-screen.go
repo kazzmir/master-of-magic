@@ -433,16 +433,16 @@ func makeCityScapeElement(cache *lbx.LbxCache, ui *uilib.UI, city *citylib.City,
             return nil, err
         }
 
-        rawImageCache[index] = images[0]
+        rawImageCache[index] = imageCache.ApplyScale(images[0])
 
         return images[0], nil
     }
 
     roadX := 0.0
-    roadY := 18.0
+    roadY := 18.0 * data.ScreenScale
 
     buildingLook := buildinglib.BuildingNone
-    buildingView := image.Rect(x1, y1, x1 + 208, y1 + 195)
+    buildingView := image.Rect(x1, y1, x1 + 208 * data.ScreenScale, y1 + 195 * data.ScreenScale)
     element := &uilib.UIElement{
         Rect: buildingView,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
@@ -483,10 +483,12 @@ func makeCityScapeElement(cache *lbx.LbxCache, ui *uilib.UI, city *citylib.City,
 
                 pic, err := getRawImage(index)
                 if err == nil {
-                    x1 := int(roadX) + slot.Point.X
-                    y1 := int(roadY) + slot.Point.Y - pic.Bounds().Dy()
+                    x1 := int(roadX) + slot.Point.X * data.ScreenScale
+                    y1 := int(roadY) + slot.Point.Y * data.ScreenScale - pic.Bounds().Dy()
                     x2 := x1 + pic.Bounds().Dx()
                     y2 := y1 + pic.Bounds().Dy()
+
+                    // log.Printf("compare %v, %v to %v, %v, %v, %v for %v", x, y, x1, y1, x2, y2, buildingName)
 
                     // do pixel perfect detection
                     if image.Pt(x, y).In(image.Rect(x1, y1, x2, y2)) {
@@ -1016,8 +1018,8 @@ func drawCityScape(screen *ebiten.Image, buildings []BuildingSlot, buildingLook 
         screen.DrawImage(hills1, &options)
     }
 
-    roadX := 0.0
-    roadY := 18.0
+    roadX := float64(0.0 * data.ScreenScale)
+    roadY := float64(18.0 * data.ScreenScale)
 
     normalRoad, err := imageCache.GetImage("cityscap.lbx", 5, 0)
     if err == nil {
@@ -1039,7 +1041,7 @@ func drawCityScape(screen *ebiten.Image, buildings []BuildingSlot, buildingLook 
             index = 105 + building.RubbleIndex
         }
 
-        x, y := building.Point.X, building.Point.Y
+        x, y := building.Point.X * data.ScreenScale, building.Point.Y * data.ScreenScale
 
         images, err := imageCache.GetImages("cityscap.lbx", index)
         if err == nil {
@@ -1073,9 +1075,9 @@ func drawCityScape(screen *ebiten.Image, buildings []BuildingSlot, buildingLook 
                         text = fmt.Sprintf("%v's Fortress", player.Wizard.Name)
                     }
 
-                    printX, printY := baseGeoM.Apply(float64(x + 10) + roadX, float64(y + 1) + roadY)
+                    printX, printY := baseGeoM.Apply(float64(x + 10 * data.ScreenScale) + roadX, float64(y + 1 * data.ScreenScale) + roadY)
 
-                    useFont.PrintCenter(screen, printX, printY, 1, options.ColorScale, text)
+                    useFont.PrintCenter(screen, printX, printY, float64(data.ScreenScale), options.ColorScale, text)
                 }
             }
         }
@@ -1087,7 +1089,7 @@ func drawCityScape(screen *ebiten.Image, buildings []BuildingSlot, buildingLook 
         var options ebiten.DrawImageOptions
         options.ColorScale.ScaleAlpha(alphaScale)
         options.GeoM = baseGeoM
-        options.GeoM.Translate(1, -2)
+        options.GeoM.Translate(float64(1 * data.ScreenScale), float64(-2 * data.ScreenScale))
         index := animationCounter % uint64(len(river))
         screen.DrawImage(river[index], &options)
     }
@@ -1100,7 +1102,7 @@ func drawCityScape(screen *ebiten.Image, buildings []BuildingSlot, buildingLook 
                 var options ebiten.DrawImageOptions
                 options.ColorScale.ScaleAlpha(alphaScale)
                 options.GeoM = baseGeoM
-                options.GeoM.Translate(0, 85)
+                options.GeoM.Translate(0, float64(85 * data.ScreenScale))
                 images, _ := imageCache.GetImages("cityscap.lbx", 77)
                 index := animationCounter % uint64(len(images))
                 screen.DrawImage(images[index], &options)
@@ -1108,7 +1110,7 @@ func drawCityScape(screen *ebiten.Image, buildings []BuildingSlot, buildingLook 
                 var options ebiten.DrawImageOptions
                 options.ColorScale.ScaleAlpha(alphaScale)
                 options.GeoM = baseGeoM
-                options.GeoM.Translate(0, 85)
+                options.GeoM.Translate(0, float64(85 * data.ScreenScale))
                 images, _ := imageCache.GetImages("cityscap.lbx", 79)
                 index := animationCounter % uint64(len(images))
                 screen.DrawImage(images[index], &options)
