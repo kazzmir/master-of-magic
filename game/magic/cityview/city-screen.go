@@ -419,6 +419,7 @@ func (cityScreen *CityScreen) SellBuilding(building buildinglib.Building) {
 func makeCityScapeElement(cache *lbx.LbxCache, ui *uilib.UI, city *citylib.City, help *lbx.Help, imageCache *util.ImageCache, doSell func(buildinglib.Building), buildings []BuildingSlot, newBuilding buildinglib.Building, x1 int, y1 int, fonts *Fonts, player *playerlib.Player, getAlpha *util.AlphaFadeFunc) *uilib.UIElement {
     rawImageCache := make(map[int]image.Image)
 
+    // FIXME: I cant remember why this function needs to exist instead of just calling imageCache.GetImage()
     getRawImage := func(index int) (image.Image, error) {
         if pic, ok := rawImageCache[index]; ok {
             return pic, nil
@@ -1245,28 +1246,27 @@ func (cityScreen *CityScreen) MakeResourceDialog(title string, smallIcon *ebiten
     infoWidth := helpTop.Bounds().Dx()
     // infoHeight := screen.HelpTop.Bounds().Dy()
     infoLeftMargin := 18
-    infoTopMargin := 26
+    infoTopMargin := 20
     infoBodyMargin := 3
     maxInfoWidth := infoWidth - infoLeftMargin - infoBodyMargin - 14
 
     // fmt.Printf("Help text: %v\n", []byte(help.Text))
 
     helpTextY := infoTopMargin
-    titleYAdjust := 0
     helpTextY += helpTitleFont.Height() + 1
 
-    textHeight := len(resources) * (helpFont.Height() + 1)
+    textHeight := (len(resources) + 1) * (helpFont.Height() + 1)
 
     bottom := helpTextY + textHeight
 
     // only draw as much of the top scroll as there are lines of text
-    topImage := helpTop.SubImage(image.Rect(0, 0, helpTop.Bounds().Dx(), int(bottom))).(*ebiten.Image)
+    topImage := helpTop.SubImage(image.Rect(0, 0, helpTop.Bounds().Dx(), int(bottom) * data.ScreenScale)).(*ebiten.Image)
     helpBottom, err := cityScreen.ImageCache.GetImage("help.lbx", 1, 0)
     if err != nil {
         return nil
     }
 
-    infoY := (data.ScreenHeight - bottom - helpBottom.Bounds().Dy()) / 2
+    infoY := (data.ScreenHeight - bottom * data.ScreenScale - helpBottom.Bounds().Dy()) / 2
 
     widestResources := float64(0)
     for _, usage := range resources {
@@ -1283,12 +1283,12 @@ func (cityScreen *CityScreen) MakeResourceDialog(title string, smallIcon *ebiten
         Rect: image.Rect(0, 0, data.ScreenWidth, data.ScreenHeight),
         Draw: func (infoThis *uilib.UIElement, window *ebiten.Image){
             var options ebiten.DrawImageOptions
-            options.GeoM.Translate(float64(infoX), float64(infoY))
+            options.GeoM.Translate(float64(infoX * data.ScreenScale), float64(infoY))
             options.ColorScale.ScaleAlpha(getAlpha())
             window.DrawImage(topImage, &options)
 
             options.GeoM.Reset()
-            options.GeoM.Translate(float64(infoX), float64(bottom + infoY))
+            options.GeoM.Translate(float64(infoX * data.ScreenScale), float64(bottom * data.ScreenScale + infoY))
             options.ColorScale.ScaleAlpha(getAlpha())
             window.DrawImage(helpBottom, &options)
 
@@ -1298,10 +1298,10 @@ func (cityScreen *CityScreen) MakeResourceDialog(title string, smallIcon *ebiten
 
             titleX := infoX + infoLeftMargin + maxInfoWidth / 2
 
-            helpTitleFont.PrintCenter(window, float64(titleX), float64(infoY + infoTopMargin + titleYAdjust), 1, options.ColorScale, title)
+            helpTitleFont.PrintCenter(window, float64(titleX * data.ScreenScale), float64(infoY + infoTopMargin * data.ScreenScale), 1, options.ColorScale, title)
 
-            yPos := infoY + infoTopMargin + helpTitleFont.Height() + 1
-            xPos := infoX + infoLeftMargin
+            yPos := infoY + (infoTopMargin + helpTitleFont.Height() + 1) * data.ScreenScale
+            xPos := (infoX + infoLeftMargin) * data.ScreenScale
 
             options.GeoM.Reset()
             options.GeoM.Translate(float64(xPos), float64(yPos))
@@ -1309,16 +1309,16 @@ func (cityScreen *CityScreen) MakeResourceDialog(title string, smallIcon *ebiten
             for _, usage := range resources {
                 if usage.Count < 0 {
                     x, y := options.GeoM.Apply(0, 1)
-                    helpFont.PrintRight(window, x, y, 1, options.ColorScale, "-")
+                    helpFont.PrintRight(window, x, y, float64(data.ScreenScale), options.ColorScale, "-")
                 }
 
                 cityScreen.drawIcons(int(math.Abs(float64(usage.Count))), smallIcon, bigIcon, options, window)
 
                 x, y := options.GeoM.Apply(widestResources + 5, 0)
 
-                helpFont.Print(window, x, y, 1, options.ColorScale, fmt.Sprintf("%v (%v)", usage.Name, usage.Count))
-                yPos += helpFont.Height() + 1
-                options.GeoM.Translate(0, float64(helpFont.Height() + 1))
+                helpFont.Print(window, x, y, float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("%v (%v)", usage.Name, usage.Count))
+                yPos += (helpFont.Height() + 1) * data.ScreenScale
+                options.GeoM.Translate(0, float64((helpFont.Height() + 1) * data.ScreenScale))
             }
 
         },
@@ -1507,7 +1507,7 @@ func (cityScreen *CityScreen) CreateResourceIcons(ui *uilib.UI) []*uilib.UIEleme
 
     var elements []*uilib.UIElement
 
-    foodRect := image.Rect(6 * data.ScreenScale, 52 * data.ScreenScale, 6 * data.ScreenScale + 9 * data.ScreenScale * bigFood.Bounds().Dx(), 52 * data.ScreenScale + bigFood.Bounds().Dy())
+    foodRect := image.Rect(6 * data.ScreenScale, 52 * data.ScreenScale, 6 * data.ScreenScale + 9 * bigFood.Bounds().Dx(), 52 * data.ScreenScale + bigFood.Bounds().Dy())
     elements = append(elements, &uilib.UIElement{
         Rect: foodRect,
         LeftClick: func(element *uilib.UIElement) {
@@ -1524,7 +1524,7 @@ func (cityScreen *CityScreen) CreateResourceIcons(ui *uilib.UI) []*uilib.UIEleme
     })
 
     production := cityScreen.City.WorkProductionRate()
-    workRect := image.Rect(6 * data.ScreenScale, 60 * data.ScreenScale, 6 * data.ScreenScale + 9 * data.ScreenScale * bigHammer.Bounds().Dx(), 60 * data.ScreenScale + bigHammer.Bounds().Dy())
+    workRect := image.Rect(6 * data.ScreenScale, 60 * data.ScreenScale, 6 * data.ScreenScale + 9 * bigHammer.Bounds().Dx(), 60 * data.ScreenScale + bigHammer.Bounds().Dy())
     elements = append(elements, &uilib.UIElement{
         Rect: workRect,
         LeftClick: func(element *uilib.UIElement) {
@@ -1580,7 +1580,7 @@ func (cityScreen *CityScreen) CreateResourceIcons(ui *uilib.UI) []*uilib.UIEleme
         },
     })
 
-    powerRect := image.Rect(6 * data.ScreenScale, 76 * data.ScreenScale, 6 * data.ScreenScale + 9 * data.ScreenScale * bigMagic.Bounds().Dx(), 76 * data.ScreenScale + bigMagic.Bounds().Dy())
+    powerRect := image.Rect(6 * data.ScreenScale, 76 * data.ScreenScale, 6 * data.ScreenScale + 9 * bigMagic.Bounds().Dx(), 76 * data.ScreenScale + bigMagic.Bounds().Dy())
     elements = append(elements, &uilib.UIElement{
         Rect: powerRect,
         LeftClick: func(element *uilib.UIElement) {
@@ -1594,7 +1594,7 @@ func (cityScreen *CityScreen) CreateResourceIcons(ui *uilib.UI) []*uilib.UIEleme
         },
     })
 
-    researchRect := image.Rect(6 * data.ScreenScale, 84 * data.ScreenScale, 6 * data.ScreenScale + 9 * data.ScreenScale * bigResearch.Bounds().Dx(), 84 * data.ScreenScale + bigResearch.Bounds().Dy())
+    researchRect := image.Rect(6 * data.ScreenScale, 84 * data.ScreenScale, 6 * data.ScreenScale + 9 * bigResearch.Bounds().Dx(), 84 * data.ScreenScale + bigResearch.Bounds().Dy())
     elements = append(elements, &uilib.UIElement{
         Rect: researchRect,
         LeftClick: func(element *uilib.UIElement) {
