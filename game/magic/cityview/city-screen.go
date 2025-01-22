@@ -1522,7 +1522,7 @@ func (cityScreen *CityScreen) CreateResourceIcons(ui *uilib.UI) []*uilib.UIEleme
     })
 
     production := cityScreen.City.WorkProductionRate()
-    workRect := image.Rect(6, 60, 6 + 9 * bigHammer.Bounds().Dx(), 60 + bigHammer.Bounds().Dy())
+    workRect := image.Rect(6 * data.ScreenScale, 60 * data.ScreenScale, 6 * data.ScreenScale + 9 * data.ScreenScale * bigHammer.Bounds().Dx(), 60 * data.ScreenScale + bigHammer.Bounds().Dy())
     elements = append(elements, &uilib.UIElement{
         Rect: workRect,
         LeftClick: func(element *uilib.UIElement) {
@@ -1543,7 +1543,7 @@ func (cityScreen *CityScreen) CreateResourceIcons(ui *uilib.UI) []*uilib.UIEleme
 
     // FIXME: if income - upkeep < 0 then show greyed out icons for gold
 
-    goldMaintenanceRect := image.Rect(6, 68, 6 + int(x), 68 + bigCoin.Bounds().Dy())
+    goldMaintenanceRect := image.Rect(6 * data.ScreenScale, 68 * data.ScreenScale, 6 * data.ScreenScale + int(x), 68 * data.ScreenScale + bigCoin.Bounds().Dy())
     elements = append(elements, &uilib.UIElement{
         Rect: goldMaintenanceRect,
         LeftClick: func(element *uilib.UIElement) {
@@ -1563,7 +1563,7 @@ func (cityScreen *CityScreen) CreateResourceIcons(ui *uilib.UI) []*uilib.UIEleme
 
     goldGeom = cityScreen.drawIcons(goldSurplus, smallCoin, bigCoin, goldUpkeepOptions, nil)
     x, _ = goldGeom.Apply(0, 0)
-    goldSurplusRect := image.Rect(goldMaintenanceRect.Max.X + 6, 68, goldMaintenanceRect.Max.X + 6 + int(x), 68 + bigCoin.Bounds().Dy())
+    goldSurplusRect := image.Rect(goldMaintenanceRect.Max.X + 6 * data.ScreenScale, 68 * data.ScreenScale, goldMaintenanceRect.Max.X + 6 * data.ScreenScale + int(x), 68 * data.ScreenScale + bigCoin.Bounds().Dy())
     elements = append(elements, &uilib.UIElement{
         Rect: goldSurplusRect,
         LeftClick: func(element *uilib.UIElement) {
@@ -1578,7 +1578,7 @@ func (cityScreen *CityScreen) CreateResourceIcons(ui *uilib.UI) []*uilib.UIEleme
         },
     })
 
-    powerRect := image.Rect(6, 76, 6 + 9 * bigMagic.Bounds().Dx(), 76 + bigMagic.Bounds().Dy())
+    powerRect := image.Rect(6 * data.ScreenScale, 76 * data.ScreenScale, 6 * data.ScreenScale + 9 * data.ScreenScale * bigMagic.Bounds().Dx(), 76 * data.ScreenScale + bigMagic.Bounds().Dy())
     elements = append(elements, &uilib.UIElement{
         Rect: powerRect,
         LeftClick: func(element *uilib.UIElement) {
@@ -1592,7 +1592,7 @@ func (cityScreen *CityScreen) CreateResourceIcons(ui *uilib.UI) []*uilib.UIEleme
         },
     })
 
-    researchRect := image.Rect(6, 84, 6 + 9 * bigResearch.Bounds().Dx(), 84 + bigResearch.Bounds().Dy())
+    researchRect := image.Rect(6 * data.ScreenScale, 84 * data.ScreenScale, 6 * data.ScreenScale + 9 * data.ScreenScale * bigResearch.Bounds().Dx(), 84 * data.ScreenScale + bigResearch.Bounds().Dy())
     elements = append(elements, &uilib.UIElement{
         Rect: researchRect,
         LeftClick: func(element *uilib.UIElement) {
