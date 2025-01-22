@@ -1192,7 +1192,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
         minX := bookX
         maxX := bookX
 
-        for i := 0; i < 11; i++ {
+        for i := range 11 {
             // Rect image.Rectangle
             // Inside UIInsideElementFunc
             // Click UIClickElementFunc
@@ -1272,7 +1272,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
 
         // add a non-drawing UI element that is used to detect if the user is pointing at any of the books
         elements = append(elements, &uilib.UIElement{
-            Rect: image.Rect(minX, bookY, maxX, bookY + bookHeight),
+            Rect: image.Rect(minX * data.ScreenScale, bookY * data.ScreenScale, maxX * data.ScreenScale, (bookY + bookHeight) * data.ScreenScale),
             NotInside: func(this *uilib.UIElement){
                 ghostBooks = -1
             },
@@ -1445,13 +1445,13 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
             customWizardBooks, _ := screen.ImageCache.GetImage("newgame.lbx", 41, 0)
             window.DrawImage(customWizardBooks, &options)
 
-            options.GeoM.Translate(portraitX, portraitY)
+            options.GeoM.Translate(float64(portraitX * data.ScreenScale), float64(portraitY * data.ScreenScale))
             portrait, _ := screen.ImageCache.GetImage("wizards.lbx", screen.CustomWizard.Portrait, 0)
             window.DrawImage(portrait, &options)
-            screen.Font.PrintCenter(window, nameX, nameY, 1, ebiten.ColorScale{}, screen.CustomWizard.Name)
+            screen.Font.PrintCenter(window, float64(nameX * data.ScreenScale), float64(nameY * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, screen.CustomWizard.Name)
 
             options.GeoM.Reset()
-            options.GeoM.Translate(37, 135)
+            options.GeoM.Translate(float64(37 * data.ScreenScale), float64(135 * data.ScreenScale))
             draw.DrawBooks(window, options, &imageCache, screen.CustomWizard.Books, screen.BooksOrderRandom())
 
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
@@ -1460,8 +1460,8 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
                 }
             })
 
-            screen.AbilityFontSelected.Print(window, 12, 180, 1, ebiten.ColorScale{}, JoinAbilities(screen.CustomWizard.Abilities))
-            screen.NameFontBright.PrintCenter(window, 223, 185, 1, ebiten.ColorScale{}, fmt.Sprintf("%v picks", picksLeft()))
+            screen.AbilityFontSelected.Print(window, float64(12 * data.ScreenScale), float64(180 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, JoinAbilities(screen.CustomWizard.Abilities))
+            screen.NameFontBright.PrintCenter(window, float64(223 * data.ScreenScale), float64(185 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v picks", picksLeft()))
         },
         HandleKeys: func(keys []ebiten.Key){
             for _, key := range keys {
