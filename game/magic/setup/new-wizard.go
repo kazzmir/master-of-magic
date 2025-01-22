@@ -564,11 +564,11 @@ func (screen *NewWizardScreen) MakeCustomNameUI() *uilib.UI {
             options.GeoM.Translate(float64(portraitX), float64(portraitY))
             portrait, _ := screen.ImageCache.GetImage("wizards.lbx", screen.CustomWizard.Portrait, 0)
             window.DrawImage(portrait, &options)
-            screen.Font.PrintCenter(window, float64(nameX), float64(nameY), 1, ebiten.ColorScale{}, screen.CustomWizard.Name)
-            screen.SelectFont.PrintCenter(window, 245, 2, 1, ebiten.ColorScale{}, "Wizard's Name")
+            screen.Font.PrintCenter(window, float64(nameX), float64(nameY), float64(data.ScreenScale), ebiten.ColorScale{}, screen.CustomWizard.Name)
+            screen.SelectFont.PrintCenter(window, float64(245 * data.ScreenScale), float64(2 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, "Wizard's Name")
 
             options.GeoM.Reset()
-            options.GeoM.Translate(184, 20)
+            options.GeoM.Translate(float64(184 * data.ScreenScale), float64(20 * data.ScreenScale))
             nameBox, _ := screen.ImageCache.GetImage("newgame.lbx", 40, 0)
             window.DrawImage(nameBox, &options)
 
@@ -579,7 +579,7 @@ func (screen *NewWizardScreen) MakeCustomNameUI() *uilib.UI {
                 name += "_"
             }
 
-            screen.NameFontBright.Print(window, 195, 39, 1, ebiten.ColorScale{}, name)
+            screen.NameFontBright.Print(window, float64(195 * data.ScreenScale), float64(39 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, name)
 
             return
         },
@@ -681,13 +681,13 @@ func (screen *NewWizardScreen) MakeCustomPictureUI() *uilib.UI {
             background, _ := screen.ImageCache.GetImage("newgame.lbx", 0, 0)
             window.DrawImage(background, &options)
 
-            screen.SelectFont.PrintCenter(window, 245, 2, 1, ebiten.ColorScale{}, "Select Wizard")
+            screen.SelectFont.PrintCenter(window, float64(245 * data.ScreenScale), float64(2 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, "Select Wizard")
 
             const portraitX = 24
             const portraitY = 10
 
             options.GeoM.Reset()
-            options.GeoM.Translate(166, 18)
+            options.GeoM.Translate(float64(166 * data.ScreenScale), float64(18 * data.ScreenScale))
             customPictureBackground, _ := screen.ImageCache.GetImage("newgame.lbx", 39, 0)
             window.DrawImage(customPictureBackground, &options)
 
@@ -698,7 +698,7 @@ func (screen *NewWizardScreen) MakeCustomPictureUI() *uilib.UI {
             portrait, _ := screen.ImageCache.GetImage("wizards.lbx", screen.CustomWizard.Portrait, 0)
             if portrait != nil {
                 var options ebiten.DrawImageOptions
-                options.GeoM.Translate(portraitX, portraitY)
+                options.GeoM.Translate(float64(portraitX * data.ScreenScale), float64(portraitY * data.ScreenScale))
                 window.DrawImage(portrait, &options)
             }
         },
@@ -752,7 +752,7 @@ func (screen *NewWizardScreen) MakeWizardUIElements(clickFunc func(wizard int), 
                     var options ebiten.DrawImageOptions
                     options.GeoM.Translate(float64(x1), float64(y1))
                     window.DrawImage(background, &options)
-                    screen.Font.PrintCenter(window, float64(x1) + float64(background.Bounds().Dx()) / 2, float64(y1) + 3, 1, ebiten.ColorScale{}, name)
+                    screen.Font.PrintCenter(window, float64(x1) + float64(background.Bounds().Dx()) / 2, float64(y1 + 3 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, name)
                 },
             })
         }
@@ -811,7 +811,7 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *uilib.UI {
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(float64(x1), float64(y1))
                 window.DrawImage(background, &options)
-                screen.Font.PrintCenter(window, float64(x1) + float64(background.Bounds().Dx()) / 2, float64(y1) + 3, 1, ebiten.ColorScale{}, "Custom")
+                screen.Font.PrintCenter(window, float64(x1) + float64(background.Bounds().Dx()) / 2, float64(y1 + 3 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, "Custom")
             },
         }
     })())
@@ -821,7 +821,7 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *uilib.UI {
             var options ebiten.DrawImageOptions
             background, _ := screen.ImageCache.GetImage("newgame.lbx", 0, 0)
             window.DrawImage(background, &options)
-            screen.SelectFont.PrintCenter(window, 245, 2, 1, ebiten.ColorScale{}, "Select Wizard")
+            screen.SelectFont.PrintCenter(window, float64(245 * data.ScreenScale), float64(2 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, "Select Wizard")
 
             this.IterateElementsByLayer(func (element *uilib.UIElement){
                 element.Draw(element, window)
@@ -839,14 +839,14 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *uilib.UI {
                     var options ebiten.DrawImageOptions
                     options.GeoM.Translate(float64(portraitX), float64(portraitY))
                     window.DrawImage(portrait, &options)
-                    screen.Font.PrintCenter(window, float64(nameX), float64(nameY), 1, ebiten.ColorScale{}, screen.WizardSlots[screen.CurrentWizard].Name)
+                    screen.Font.PrintCenter(window, float64(nameX), float64(nameY), float64(data.ScreenScale), ebiten.ColorScale{}, screen.WizardSlots[screen.CurrentWizard].Name)
 
                     // screen.DrawBooks(window, 36, 135, screen.WizardSlots[screen.CurrentWizard].Books)
                     options.GeoM.Reset()
                     options.GeoM.Translate(float64(34 * data.ScreenScale), float64(135 * data.ScreenScale))
                     draw.DrawBooks(window, options, &screen.ImageCache, screen.WizardSlots[screen.CurrentWizard].Books, screen.BooksOrderRandom())
                     if screen.WizardSlots[screen.CurrentWizard].ExtraAbility != AbilityNone {
-                        screen.AbilityFontSelected.Print(window, float64(12 * data.ScreenScale), float64(180 * data.ScreenScale), 1, ebiten.ColorScale{}, screen.WizardSlots[screen.CurrentWizard].ExtraAbility.String())
+                        screen.AbilityFontSelected.Print(window, float64(12 * data.ScreenScale), float64(180 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, screen.WizardSlots[screen.CurrentWizard].ExtraAbility.String())
                     }
                 }
             }
@@ -1179,7 +1179,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
 
         // element to remove all books
         elements = append(elements, &uilib.UIElement{
-            Rect: image.Rect(x1, y1, x2, y2),
+            Rect: image.Rect(x1 * data.ScreenScale, y1 * data.ScreenScale, x2 * data.ScreenScale, y2 * data.ScreenScale),
             LeftClick: func(this *uilib.UIElement){
                 screen.CustomWizard.SetMagicLevel(bookMagic, 0)
             },
@@ -1214,7 +1214,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
             level := i
 
             element := &uilib.UIElement{
-                Rect: image.Rect(x1, y1, x2, y2),
+                Rect: image.Rect(x1 * data.ScreenScale, y1 * data.ScreenScale, x2 * data.ScreenScale, y2 * data.ScreenScale),
                 LeftClick: func(this *uilib.UIElement){
 
                     // user cannot hold both life and death magic
@@ -1254,14 +1254,14 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
                 Draw: func(this *uilib.UIElement, window *ebiten.Image){
                     if screen.CustomWizard.MagicLevel(bookMagic) > level {
                         var options ebiten.DrawImageOptions
-                        options.GeoM.Translate(float64(x1), float64(y1))
+                        options.GeoM.Translate(float64(x1 * data.ScreenScale), float64(y1 * data.ScreenScale))
                         window.DrawImage(bookImage, &options)
                     } else if ghostBooks >= level {
                         // draw a transparent book that shows what the user would have if they selected this
                         // TODO: use a fragment shader to draw the book in a different color
                         var options ebiten.DrawImageOptions
                         options.ColorScale.Scale(1.4 * 0.5, 1 * 0.5, 1 * 0.5, 0.5)
-                        options.GeoM.Translate(float64(x1), float64(y1))
+                        options.GeoM.Translate(float64(x1 * data.ScreenScale), float64(y1 * data.ScreenScale))
                         window.DrawImage(bookImage, &options)
                     }
                 },
@@ -1352,7 +1352,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
 
     for ability := range produceAbilityPositions() {
         elements = append(elements, &uilib.UIElement{
-            Rect: image.Rect(int(ability.X), int(ability.Y), int(ability.X) + ability.Length, int(ability.Y) + screen.AbilityFont.Height()),
+            Rect: image.Rect(int(ability.X) * data.ScreenScale, int(ability.Y) * data.ScreenScale, (int(ability.X) + ability.Length) * data.ScreenScale, (int(ability.Y) + screen.AbilityFont.Height()) * data.ScreenScale),
             LeftClick: func(this *uilib.UIElement){
                 if screen.CustomWizard.AbilityEnabled(ability.Ability) {
                     screen.CustomWizard.ToggleAbility(ability.Ability, picksLeft())
@@ -1388,14 +1388,14 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
                 if screen.CustomWizard.AbilityEnabled(ability.Ability) {
                     var options ebiten.DrawImageOptions
                     checkMark, _ := screen.ImageCache.GetImage("newgame.lbx", 52, 0)
-                    options.GeoM.Translate(ability.X - float64(checkMark.Bounds().Dx()) - 1, ability.Y + 1)
+                    options.GeoM.Translate((ability.X - 1) * float64(data.ScreenScale) - float64(checkMark.Bounds().Dx()), (ability.Y + 1) * float64(data.ScreenScale))
                     window.DrawImage(checkMark, &options)
                     font = screen.AbilityFontSelected
                 } else if isAbilityAvailable(ability.Ability) {
                     font = screen.AbilityFontAvailable
                 }
 
-                font.Print(window, ability.X, ability.Y, 1, ebiten.ColorScale{}, ability.Ability.String())
+                font.Print(window, ability.X * float64(data.ScreenScale), ability.Y * float64(data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, ability.Ability.String())
             },
         })
     }
@@ -1404,7 +1404,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
     okReady, _ := screen.ImageCache.GetImage("newgame.lbx", 42, 0)
     okNotReady, _ := screen.ImageCache.GetImage("newgame.lbx", 43, 0)
     elements = append(elements, &uilib.UIElement{
-        Rect: image.Rect(252, 182, 252 + okReady.Bounds().Dx(), 182 + okReady.Bounds().Dy()),
+        Rect: util.ImageRect(252 * data.ScreenScale, 182 * data.ScreenScale, okReady),
         LeftClick: func(this *uilib.UIElement){
             if picksLeft() == 0 {
                 screen.State = NewWizardScreenStateSelectSpells
@@ -1423,7 +1423,8 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
         },
         Draw: func(this *uilib.UIElement, window *ebiten.Image){
             var options ebiten.DrawImageOptions
-            options.GeoM.Translate(252, 182)
+            x, y := this.Rect.Min.X, this.Rect.Min.Y
+            options.GeoM.Translate(float64(x), float64(y))
             if picksLeft() == 0 {
                 window.DrawImage(okReady, &options)
             } else {
