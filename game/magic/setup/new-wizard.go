@@ -1704,11 +1704,11 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
                     Draw: func(this *uilib.UIElement, window *ebiten.Image){
                         if screen.CustomWizard.StartingSpells.HasSpell(spell) {
                             var options ebiten.DrawImageOptions
-                            options.GeoM.Translate(float64(useX), float64(useY))
+                            options.GeoM.Translate(float64(useX * data.ScreenScale), float64(useY * data.ScreenScale))
                             window.DrawImage(checkMark, &options)
-                            screen.AbilityFontSelected.Print(window, float64(useX + margin), float64(useY), 1, ebiten.ColorScale{}, spell.Name)
+                            screen.AbilityFontSelected.Print(window, float64(useX * data.ScreenScale + margin), float64(useY * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, spell.Name)
                         } else {
-                            screen.AbilityFontAvailable.Print(window, float64(useX + margin), float64(useY), 1, ebiten.ColorScale{}, spell.Name)
+                            screen.AbilityFontAvailable.Print(window, float64(useX * data.ScreenScale + margin), float64(useY * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, spell.Name)
                         }
                     },
                 })
@@ -1743,7 +1743,7 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
         okReady, _ := screen.ImageCache.GetImage("newgame.lbx", 42, 0)
         okNotReady, _ := screen.ImageCache.GetImage("newgame.lbx", 43, 0)
         elements = append(elements, &uilib.UIElement{
-            Rect: image.Rect(252, 182, 252 + okReady.Bounds().Dx(), 182 + okReady.Bounds().Dy()),
+            Rect: util.ImageRect(252 * data.ScreenScale, 182 * data.ScreenScale, okReady),
             LeftClick: func(this *uilib.UIElement){
                 if picksLeft() == 0 {
                     doNextMagicUI(magic)
@@ -1763,7 +1763,7 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
             },
             Draw: func(this *uilib.UIElement, window *ebiten.Image){
                 var options ebiten.DrawImageOptions
-                options.GeoM.Translate(252, 182)
+                options.GeoM.Translate(float64(this.Rect.Min.X), float64(this.Rect.Min.Y))
                 if picksLeft() == 0 {
                     window.DrawImage(okReady, &options)
                 } else {
@@ -1787,36 +1787,36 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
                 options.GeoM.Translate(portraitX, portraitY)
                 portrait, _ := screen.ImageCache.GetImage("wizards.lbx", screen.CustomWizard.Portrait, 0)
                 window.DrawImage(portrait, &options)
-                screen.Font.PrintCenter(window, nameX, nameY, 1, ebiten.ColorScale{}, screen.CustomWizard.Name)
+                screen.Font.PrintCenter(window, float64(nameX * data.ScreenScale), float64(nameY * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, screen.CustomWizard.Name)
 
                 options.GeoM.Reset()
-                options.GeoM.Translate(36, 135)
+                options.GeoM.Translate(float64(36 * data.ScreenScale), float64(135 * data.ScreenScale))
                 draw.DrawBooks(window, options, &imageCache, screen.CustomWizard.Books, screen.BooksOrderRandom())
 
                 options.GeoM.Reset()
-                options.GeoM.Translate(196, 180)
+                options.GeoM.Translate(float64(196 * data.ScreenScale), float64(180 * data.ScreenScale))
                 pickOkSlot, _  := screen.ImageCache.GetImage("newgame.lbx", 51, 0)
                 window.DrawImage(pickOkSlot, &options)
 
                 titleX := 240
                 titleY := 5
 
-                blackFont.PrintCenter(window, float64(titleX + 1), float64(titleY + 1), 1, ebiten.ColorScale{}, fmt.Sprintf("Select %v Spells", magic.String()))
-                titleFont.PrintCenter(window, float64(titleX), float64(titleY), 1, ebiten.ColorScale{}, fmt.Sprintf("Select %v Spells", magic.String()))
+                blackFont.PrintCenter(window, float64((titleX + 1) * data.ScreenScale), float64((titleY + 1) * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("Select %v Spells", magic.String()))
+                titleFont.PrintCenter(window, float64(titleX * data.ScreenScale), float64(titleY * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("Select %v Spells", magic.String()))
 
                 options.GeoM.Reset()
-                options.GeoM.Translate(180, 18)
+                options.GeoM.Translate(float64(180 * data.ScreenScale), float64(18 * data.ScreenScale))
                 windyBorder, _ := screen.ImageCache.GetImage("newgame.lbx", 47, 0)
                 window.DrawImage(windyBorder, &options)
 
-                screen.AbilityFontSelected.Print(window, 12, 180, 1, ebiten.ColorScale{}, JoinAbilities(screen.CustomWizard.Abilities))
-                screen.NameFontBright.PrintCenter(window, 223, 185, 1, ebiten.ColorScale{}, fmt.Sprintf("%v picks", picksLeft()))
+                screen.AbilityFontSelected.Print(window, float64(12 * data.ScreenScale), float64(180 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, JoinAbilities(screen.CustomWizard.Abilities))
+                screen.NameFontBright.PrintCenter(window, float64(223 * data.ScreenScale), float64(185 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v picks", picksLeft()))
 
                 showDescription := func(y float64, text string, background *ebiten.Image){
                     descriptionX := float64(167)
 
-                    shadowDescriptionFont.Print(window, descriptionX+1, y + 1, 1, ebiten.ColorScale{}, text)
-                    descriptionFont.Print(window, descriptionX, y, 1, ebiten.ColorScale{}, text)
+                    shadowDescriptionFont.Print(window, (descriptionX+1) * float64(data.ScreenScale), (y + 1) * float64(data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, text)
+                    descriptionFont.Print(window, descriptionX * float64(data.ScreenScale), y * float64(data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, text)
 
                     boxY := y + float64(descriptionFont.Height()) + 1
 
@@ -2213,7 +2213,8 @@ func MakeNewWizardScreen(cache *lbx.LbxCache) *NewWizardScreen {
         LbxCache: cache,
         ImageCache: util.MakeImageCache(cache),
         CurrentWizard: 0,
-        State: NewWizardScreenStateSelectWizard,
+        // State: NewWizardScreenStateSelectWizard,
+        State: NewWizardScreenStateCustomBooks,
     }
 
     err := out.Load(cache)
