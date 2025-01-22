@@ -255,6 +255,8 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string) error 
 
     runIntro(yield, game)
 
+    yield()
+
     for {
         state := runMainMenu(yield, game)
         switch state {
@@ -343,7 +345,7 @@ func main() {
     flag.StringVar(&dataPath, "data", "", "path to master of magic lbx data files. Give either a directory or a zip file. Data is searched for in the current directory if not given.")
     flag.Parse()
 
-    ebiten.SetWindowSize(data.ScreenWidth * 3, data.ScreenHeight * 3)
+    ebiten.SetWindowSize(data.ScreenWidth * 2, data.ScreenHeight * 2)
     ebiten.SetWindowTitle("magic")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 
