@@ -558,8 +558,8 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
     // buy button
     buyButton, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", 7, 0)
     if err == nil {
-        buyX := 214
-        buyY := 188
+        buyX := 214 * data.ScreenScale
+        buyY := 188 * data.ScreenScale
         elements = append(elements, &uilib.UIElement{
             Rect: image.Rect(buyX, buyY, buyX + buyButton.Bounds().Dx(), buyY + buyButton.Bounds().Dy()),
             PlaySoundLeftClick: true,
@@ -585,7 +585,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
                 var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(buyX), float64(buyY))
+                options.GeoM.Translate(float64(element.Rect.Min.X), float64(element.Rect.Min.Y))
                 screen.DrawImage(buyButton, &options)
             },
         })
@@ -594,8 +594,8 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
     // change button
     changeButton, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", 8, 0)
     if err == nil {
-        changeX := 247
-        changeY := 188
+        changeX := 247 * data.ScreenScale
+        changeY := 188 * data.ScreenScale
         elements = append(elements, &uilib.UIElement{
             Rect: image.Rect(changeX, changeY, changeX + changeButton.Bounds().Dx(), changeY + changeButton.Bounds().Dy()),
             PlaySoundLeftClick: true,
@@ -612,7 +612,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
                 var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(changeX), float64(changeY))
+                options.GeoM.Translate(float64(element.Rect.Min.X), float64(element.Rect.Min.Y))
                 screen.DrawImage(changeButton, &options)
             },
         })
@@ -621,8 +621,8 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
     // ok button
     okButton, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", 9, 0)
     if err == nil {
-        okX := 286
-        okY := 188
+        okX := 286 * data.ScreenScale
+        okY := 188 * data.ScreenScale
         elements = append(elements, &uilib.UIElement{
             Rect: image.Rect(okX, okY, okX + okButton.Bounds().Dx(), okY + okButton.Bounds().Dy()),
             PlaySoundLeftClick: true,
@@ -637,7 +637,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
                 var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(okX), float64(okY))
+                options.GeoM.Translate(float64(element.Rect.Min.X), float64(element.Rect.Min.Y))
                 screen.DrawImage(okButton, &options)
             },
         })
@@ -648,9 +648,9 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
         return cmp.Compare(a.Enchantment.Name(), b.Enchantment.Name())
     }) {
         useFont := cityScreen.Fonts.BannerFonts[enchantment.Owner]
-        x := 140
-        y := 51 + i * useFont.Height()
-        rect := image.Rect(x, y, x + int(useFont.MeasureTextWidth(enchantment.Enchantment.Name(), 1)), y + useFont.Height())
+        x := 140 * data.ScreenScale
+        y := (51 + i * useFont.Height()) * data.ScreenScale
+        rect := image.Rect(x, y, x + int(useFont.MeasureTextWidth(enchantment.Enchantment.Name(), float64(data.ScreenScale))), y + useFont.Height() * data.ScreenScale)
         elements = append(elements, &uilib.UIElement{
             Rect: rect,
             LeftClickRelease: func(element *uilib.UIElement) {
@@ -670,7 +670,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
                 }
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                useFont.Print(screen, float64(rect.Min.X), float64(rect.Min.Y), 1, ebiten.ColorScale{}, enchantment.Enchantment.Name())
+                useFont.Print(screen, float64(rect.Min.X), float64(rect.Min.Y), float64(data.ScreenScale), ebiten.ColorScale{}, enchantment.Enchantment.Name())
             },
         })
     }
@@ -687,12 +687,12 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
     farmer, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", getRaceFarmerIndex(cityScreen.City.Race), 0)
     var setupWorkers func()
     if err == nil {
-        workerY := float64(27)
+        workerY := float64(27 * data.ScreenScale)
         var workerElements []*uilib.UIElement
         setupWorkers = func(){
             ui.RemoveElements(workerElements)
             workerElements = nil
-            citizenX := 6
+            citizenX := 6 * data.ScreenScale
 
             subsistenceFarmers := cityScreen.City.ComputeSubsistenceFarmers()
 
@@ -716,7 +716,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
             }
 
             // the farmers that can be changed to workers
-            citizenX += 3
+            citizenX += 3 * data.ScreenScale
             for i := subsistenceFarmers; i < cityScreen.City.Farmers; i++ {
                 posX := citizenX
 
@@ -765,7 +765,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
 
             rebel, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", getRaceRebelIndex(cityScreen.City.Race), 0)
             if err == nil {
-                citizenX += 3
+                citizenX += 3 * data.ScreenScale
                 for i := 0; i < cityScreen.City.Rebels; i++ {
                     posX := citizenX
 
@@ -799,8 +799,8 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
     var garrisonUnits []*uilib.UIElement
     resetUnits = func(){
         ui.RemoveElements(garrisonUnits)
-        garrisonX := 216
-        garrisonY := 103
+        garrisonX := 216 * data.ScreenScale
+        garrisonY := 103 * data.ScreenScale
 
         garrisonRow := 0
 
@@ -845,7 +845,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
                         var matrix colorm.ColorM
                         options.GeoM.Translate(float64(posX), float64(posY))
                         colorm.DrawImage(screen, garrisonBackground, matrix, &options)
-                        options.GeoM.Translate(1, 1)
+                        options.GeoM.Translate(float64(data.ScreenScale), float64(data.ScreenScale))
 
                         // draw in grey scale if the unit is on patrol
                         if useUnit.GetBusy() == units.BusyStatusPatrol {
@@ -863,8 +863,8 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
                 garrisonRow += 1
                 if garrisonRow >= 5 {
                     garrisonRow = 0
-                    garrisonX = 216
-                    garrisonY += pic.Bounds().Dy() + 1
+                    garrisonX = 216 * data.ScreenScale
+                    garrisonY += pic.Bounds().Dy() + 1 * data.ScreenScale
                 }
             }()
         }
