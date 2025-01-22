@@ -1,9 +1,9 @@
 package data
 
-var ScreenScale = 2
+var ScreenScale = 3
 var ScreenWidth = 320*ScreenScale
 var ScreenHeight = 200*ScreenScale
-var ScreenScaleAlgorithm = ScaleAlgorithmScale
+var ScreenScaleAlgorithm = ScaleAlgorithmNormal
 
 type ScaleAlgorithm int
 
