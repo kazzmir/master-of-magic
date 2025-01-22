@@ -869,6 +869,7 @@ func (screen *NewWizardScreen) BooksOrderRandom() *rand.Rand {
     return rand.New(rand.NewPCG(screen.BooksOrderSeed1, screen.BooksOrderSeed2))
 }
 
+/*
 func (screen *NewWizardScreen) IsActive() bool {
     return screen.Active
 }
@@ -880,6 +881,7 @@ func (screen *NewWizardScreen) Activate() {
 func (screen *NewWizardScreen) Deactivate() {
     screen.Active = false
 }
+*/
 
 func validNameString(text string) bool {
     // FIXME: only allow a-zA-Z0-9 and maybe a few extra chars lke ' and ,
@@ -1679,7 +1681,7 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
                 useY := y
 
                 elements = append(elements, &uilib.UIElement{
-                    Rect: image.Rect(int(x), int(y), int(x) + width, int(y) + screen.AbilityFontAvailable.Height()),
+                    Rect: image.Rect(int(x) * data.ScreenScale, int(y) * data.ScreenScale, int(x) * data.ScreenScale + width, (int(y) + screen.AbilityFontAvailable.Height()) * data.ScreenScale),
                     LeftClick: func(this *uilib.UIElement){
                         if screen.CustomWizard.StartingSpells.HasSpell(spell) {
                             screen.CustomWizard.StartingSpells.RemoveSpell(spell)

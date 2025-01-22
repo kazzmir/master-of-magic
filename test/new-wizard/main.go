@@ -21,7 +21,7 @@ func NewEngine() (*Engine, error) {
 
     screen := setup.MakeNewWizardScreen(cache)
 
-    screen.Activate()
+    // screen.Activate()
 
     return &Engine{
         LbxCache: cache,
