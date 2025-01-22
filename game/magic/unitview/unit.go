@@ -153,11 +153,11 @@ func RenderUnitInfoBuild(screen *ebiten.Image, imageCache *util.ImageCache, unit
 }
 
 func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitView, maxIconsPerLine int, descriptionFont *font.Font, smallFont *font.Font, defaultOptions ebiten.DrawImageOptions) {
-    width := descriptionFont.MeasureTextWidth("Armor", 1)
+    width := descriptionFont.MeasureTextWidth("Armor", float64(data.ScreenScale))
 
     x, y := defaultOptions.GeoM.Apply(0, 0)
 
-    descriptionFont.Print(screen, x, y, 1, defaultOptions.ColorScale, "Melee")
+    descriptionFont.Print(screen, x, y, float64(data.ScreenScale), defaultOptions.ColorScale, "Melee")
 
     // show rows of icons. the second row is offset a bit to the right and down
     showNIcons := func(icon *ebiten.Image, count int, icon2 *ebiten.Image, count2 int, x, y float64) {
@@ -175,12 +175,12 @@ func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit
 
             if index > 0 && index % maxIconsPerLine == 0 {
                 options.GeoM = saveGeoM
-                options.GeoM.Translate(float64(3 * (index/maxIconsPerLine)), 2 * float64(index/maxIconsPerLine))
+                options.GeoM.Translate(float64(3 * data.ScreenScale * index/maxIconsPerLine), 2 * float64(data.ScreenScale * index/maxIconsPerLine))
             }
 
             screen.DrawImage(icon, &options)
             // FIXME: if a stat is given due to an ability/spell then render the icon in gold
-            options.GeoM.Translate(float64(icon.Bounds().Dx() + 1), 0)
+            options.GeoM.Translate(float64(icon.Bounds().Dx() + data.ScreenScale), 0)
         }
 
         index := 0
@@ -214,30 +214,30 @@ func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit
 
     showNIcons(weaponIcon, unit.GetBaseMeleeAttackPower(), weaponGold, unit.GetMeleeAttackPower() - unit.GetBaseMeleeAttackPower(), x, y)
 
-    y += float64(descriptionFont.Height())
-    descriptionFont.Print(screen, x, y, 1, defaultOptions.ColorScale, "Range")
+    y += float64(descriptionFont.Height() * data.ScreenScale)
+    descriptionFont.Print(screen, x, y, float64(data.ScreenScale), defaultOptions.ColorScale, "Range")
 
     // FIXME: use the rock icon for sling, or the magic icon fire magic damage
     rangeBow, _ := imageCache.GetImage("unitview.lbx", 18, 0)
     rangeBowGold, _ := imageCache.GetImage("unitview.lbx", 40, 0)
     showNIcons(rangeBow, unit.GetBaseRangedAttackPower(), rangeBowGold, unit.GetRangedAttackPower() - unit.GetBaseRangedAttackPower(), x, y)
 
-    y += float64(descriptionFont.Height())
-    descriptionFont.Print(screen, x, float64(y), 1, defaultOptions.ColorScale, "Armor")
+    y += float64(descriptionFont.Height() * data.ScreenScale)
+    descriptionFont.Print(screen, x, float64(y), float64(data.ScreenScale), defaultOptions.ColorScale, "Armor")
 
     armorIcon, _ := imageCache.GetImage("unitview.lbx", 22, 0)
     armorGold, _ := imageCache.GetImage("unitview.lbx", 44, 0)
     showNIcons(armorIcon, unit.GetBaseDefense(), armorGold, unit.GetDefense() - unit.GetBaseDefense(), x, y)
 
-    y += float64(descriptionFont.Height())
-    descriptionFont.Print(screen, x, float64(y), 1, defaultOptions.ColorScale, "Resist")
+    y += float64(descriptionFont.Height() * data.ScreenScale)
+    descriptionFont.Print(screen, x, float64(y), float64(data.ScreenScale), defaultOptions.ColorScale, "Resist")
 
     resistIcon, _ := imageCache.GetImage("unitview.lbx", 27, 0)
     resistGold, _ := imageCache.GetImage("unitview.lbx", 49, 0)
     showNIcons(resistIcon, unit.GetResistance(), resistGold, unit.GetResistance() - unit.GetBaseResistance(), x, y)
 
-    y += float64(descriptionFont.Height())
-    descriptionFont.Print(screen, x, float64(y), 1, defaultOptions.ColorScale, "Hits")
+    y += float64(descriptionFont.Height() * data.ScreenScale)
+    descriptionFont.Print(screen, x, float64(y), float64(data.ScreenScale), defaultOptions.ColorScale, "Hits")
 
     healthIcon, _ := imageCache.GetImage("unitview.lbx", 23, 0)
     healthIconGold, _ := imageCache.GetImage("unitview.lbx", 45, 0)
