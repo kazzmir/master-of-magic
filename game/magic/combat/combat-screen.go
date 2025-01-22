@@ -2269,7 +2269,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
     var keys []ebiten.Key
     keys = inpututil.AppendPressedKeys(keys)
     for _, key := range keys {
-        speed := 1.5
+        speed := 1.5 * float64(data.ScreenScale)
         switch key {
             case ebiten.KeyDown:
                 combat.Coordinates.Translate(0, -speed)
