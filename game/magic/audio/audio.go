@@ -31,6 +31,52 @@ func convertToS16(u8samples []byte) []byte {
     return out.Bytes()
 }
 
+func SaveWav(outputFile io.Writer, soundLbx *lbx.LbxFile, index int) error {
+    data, err := soundLbx.RawData(index)
+    if err != nil {
+        return err
+    }
+
+    reader := bytes.NewReader(data)
+    reader.Seek(16, 0)
+
+    vocData, err := voc.Load(reader)
+    if err != nil {
+        return err
+    }
+
+    s16Samples := convertToS16(vocData.AllSamples())
+
+    resampled := audiolib.Resample(bytes.NewReader(s16Samples), int64(len(s16Samples)), int(vocData.SampleRate()), SampleRate)
+
+    pcmData, err := io.ReadAll(resampled)
+    if err != nil {
+        return err
+    }
+
+    channels := 2
+    bitsPerSample := 16
+    dataLength := len(pcmData)
+    bytePerBloc := channels * bitsPerSample / 8
+    bytePerSec := SampleRate * bytePerBloc
+    binary.Write(outputFile, binary.LittleEndian, []byte("RIFF"))
+    binary.Write(outputFile, binary.LittleEndian, uint32(dataLength + 36))
+    binary.Write(outputFile, binary.LittleEndian, []byte("WAVE"))
+    binary.Write(outputFile, binary.LittleEndian, []byte("fmt "))
+    binary.Write(outputFile, binary.LittleEndian, uint32(16))  // BlocSize
+    binary.Write(outputFile, binary.LittleEndian, uint16(1))   // AudioFormat
+    binary.Write(outputFile, binary.LittleEndian, uint16(channels))
+    binary.Write(outputFile, binary.LittleEndian, uint32(SampleRate))
+    binary.Write(outputFile, binary.LittleEndian, uint32(bytePerSec))
+    binary.Write(outputFile, binary.LittleEndian, uint16(bytePerBloc))
+    binary.Write(outputFile, binary.LittleEndian, uint16(16)) // BitsPerSample
+    binary.Write(outputFile, binary.LittleEndian, []byte("data"))
+    binary.Write(outputFile, binary.LittleEndian, uint32(dataLength))
+    binary.Write(outputFile, binary.LittleEndian, pcmData)
+
+    return nil
+}
+
 // precomputes the resampled sound data so all the client has to do is invoke the returned function. this is useful if
 // you want to play the same sound multiple times
 //   f, err := GetSoundMaker(soundLbx, index)

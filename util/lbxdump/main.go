@@ -14,8 +14,10 @@ import (
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
+    "github.com/kazzmir/master-of-magic/lib/set"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
+    "github.com/kazzmir/master-of-magic/game/magic/audio"
 )
 
 func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int, rawDump bool) error {
@@ -30,6 +32,8 @@ func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int, rawDump bool) 
     dir := fmt.Sprintf("%v_output", lbxName)
 
     os.Mkdir(dir, 0755)
+
+    soundFiles := set.NewSet("soundfx.lbx", "newsound.lbx", "introsfx.lbx", "cmbtsnd.lbx")
 
     if lbxName == "terrain.lbx" && !rawDump {
         index := 0
@@ -131,6 +135,26 @@ func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int, rawDump bool) 
             fmt.Printf("Entry %v: %+v\n", i, entry)
         }
 
+    } else if soundFiles.Contains(lbxName) && !rawDump {
+        for i := range len(file.Data) {
+            func (){
+                name := filepath.Join(dir, fmt.Sprintf("sound_%v.wav", i))
+                out, err := os.Create(name)
+                if err != nil {
+                    fmt.Printf("Error creating sound file: %v\n", err)
+                    return
+                }
+                defer out.Close()
+
+                err = audio.SaveWav(out, &file, i)
+                if err != nil {
+                    fmt.Printf("Error saving sound file: %v\n", err)
+                    return
+                }
+
+                fmt.Printf("Saved sound %v to %v\n", i, name)
+            }()
+        }
     } else {
         func (){
             name := filepath.Join(dir, "strings.txt")
