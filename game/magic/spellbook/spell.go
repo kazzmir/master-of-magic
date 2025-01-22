@@ -1074,14 +1074,14 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
     renderPage := func(screen *ebiten.Image, options ebiten.DrawImageOptions, page Page, highlightedSpell Spell){
         // section := spells.Spells[0].Section
 
-        titleX, titleY := options.GeoM.Apply(60, 1)
+        titleX, titleY := options.GeoM.Apply(float64(60 * data.ScreenScale), float64(1 * data.ScreenScale))
 
-        titleFont.PrintCenter(screen, titleX, titleY, 1, options.ColorScale, page.Title)
+        titleFont.PrintCenter(screen, titleX, titleY, float64(data.ScreenScale), options.ColorScale, page.Title)
         gibberish, _ := imageCache.GetImage("spells.lbx", 10, 0)
-        gibberishHeight := 18
+        gibberishHeight := 18 * data.ScreenScale
 
         options2 := options
-        options2.GeoM.Translate(0, 15)
+        options2.GeoM.Translate(0, float64(15 * data.ScreenScale))
         for _, spell := range page.Spells.Spells {
 
             // invalid spell?
@@ -1121,19 +1121,19 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
                 }
             }
 
-            infoFont.Print(screen, spellX, spellY, 1, textColorScale, spell.Name)
-            infoFont.PrintRight(screen, spellX + 124, spellY, 1, textColorScale, fmt.Sprintf("%v MP", costRemaining))
+            infoFont.Print(screen, spellX, spellY, float64(data.ScreenScale), textColorScale, spell.Name)
+            infoFont.PrintRight(screen, spellX + float64(124 * data.ScreenScale), spellY, float64(data.ScreenScale), textColorScale, fmt.Sprintf("%v MP", costRemaining))
             icon := getMagicIcon(spell)
 
-            nameLength := infoFont.MeasureTextWidth(spell.Name, 1) + 1
-            mpLength := infoFont.MeasureTextWidth(fmt.Sprintf("%v MP", costRemaining), 1)
+            nameLength := infoFont.MeasureTextWidth(spell.Name, float64(data.ScreenScale)) + 1
+            mpLength := infoFont.MeasureTextWidth(fmt.Sprintf("%v MP", costRemaining), float64(data.ScreenScale))
 
             gibberishPart := gibberish.SubImage(image.Rect(0, 0, gibberish.Bounds().Dx(), gibberishHeight)).(*ebiten.Image)
 
             partIndex := 0
-            partHeight := 20
+            partHeight := 20 * data.ScreenScale
 
-            subLines := 6
+            subLines := 6 * data.ScreenScale
 
             part1 := gibberishPart.SubImage(image.Rect(int(nameLength), partIndex * partHeight, int(nameLength) + gibberishPart.Bounds().Dx() - int(nameLength + mpLength), partIndex * partHeight + subLines)).(*ebiten.Image)
 
@@ -1157,7 +1157,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
             }
 
             iconOptions := spellOptions
-            iconOptions.GeoM.Translate(0, float64(infoFont.Height())+1)
+            iconOptions.GeoM.Translate(0, float64(infoFont.Height() * data.ScreenScale)+1)
             part3Options := iconOptions
 
             icons1 := iconCount
@@ -1183,9 +1183,9 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
             if overland && costRemaining < castingSkill {
                 x, y := iconOptions.GeoM.Apply(0, 0)
                 x += 2
-                infoFont.Print(screen, x, y, 1, spellOptions.ColorScale, "Instant")
-                icon1Width += int(infoFont.MeasureTextWidth("Instant", 1)) + 2
-                iconOptions.GeoM.Translate(infoFont.MeasureTextWidth("Instant", 1) + 2, 0)
+                infoFont.Print(screen, x, y, float64(data.ScreenScale), spellOptions.ColorScale, "Instant")
+                icon1Width += int(infoFont.MeasureTextWidth("Instant", float64(data.ScreenScale))) + 2
+                iconOptions.GeoM.Translate(infoFont.MeasureTextWidth("Instant", float64(data.ScreenScale)) + 2, 0)
             }
 
             part2 := gibberishPart.SubImage(image.Rect(icon1Width + 3, partIndex * partHeight + subLines, gibberish.Bounds().Dx(), partIndex * partHeight + subLines * 2)).(*ebiten.Image)
@@ -1203,7 +1203,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
             part3 := gibberishPart.SubImage(image.Rect((icon.Bounds().Dx() + 1) * iconCount, partIndex * partHeight + subLines * 2, gibberish.Bounds().Dx(), partIndex * partHeight + subLines * 3)).(*ebiten.Image)
             screen.DrawImage(part3, &part3Options)
 
-            options2.GeoM.Translate(0, 22)
+            options2.GeoM.Translate(0, float64(22 * data.ScreenScale))
         }
     }
 
@@ -1214,7 +1214,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
             return cached
         }
 
-        out := ebiten.NewImage(120, 154)
+        out := ebiten.NewImage(120 * data.ScreenScale, 154 * data.ScreenScale)
         out.Fill(color.RGBA{R: 0, G: 0, B: 0, A: 0})
 
         if page < len(spellPages) {
@@ -1308,7 +1308,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
             width := 122
             height := 20
 
-            rect := image.Rect(0, 0, width, height).Add(image.Pt(x1, y1))
+            rect := image.Rect(0, 0, width * data.ScreenScale, height * data.ScreenScale).Add(image.Pt(x1 * data.ScreenScale, y1 * data.ScreenScale))
             spellButtons = append(spellButtons, makeSpell(rect, spell))
         }
 
@@ -1321,7 +1321,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
                 width := 122
                 height := 20
 
-                rect := image.Rect(0, 0, width, height).Add(image.Pt(x1, y1))
+                rect := image.Rect(0, 0, width * data.ScreenScale, height * data.ScreenScale).Add(image.Pt(x1 * data.ScreenScale, y1 * data.ScreenScale))
                 spellButtons = append(spellButtons, makeSpell(rect, spell))
             }
         }
@@ -1389,7 +1389,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
             background, _ := imageCache.GetImage("spells.lbx", 0, 0)
             var options ebiten.DrawImageOptions
             options.ColorScale.ScaleAlpha(getAlpha())
-            options.GeoM.Translate(10, 10)
+            options.GeoM.Translate(float64(10 * data.ScreenScale), float64(10 * data.ScreenScale))
             screen.DrawImage(background, &options)
 
             flipOptions := options
@@ -1438,13 +1438,13 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
                 }
 
             } else {
-                options.GeoM.Translate(15, 5)
+                options.GeoM.Translate(float64(15 * data.ScreenScale), float64(5 * data.ScreenScale))
                 if currentPage < len(spellPages) {
                     renderPage(screen, options, spellPages[currentPage], highlightedSpell)
                 }
 
                 if currentPage + 1 < len(spellPages) {
-                    options.GeoM.Translate(134, 0)
+                    options.GeoM.Translate(float64(134 * data.ScreenScale), 0)
                     // screen.DrawImage(right, &options)
                     renderPage(screen, options, spellPages[currentPage+1], highlightedSpell)
                 }
@@ -1452,7 +1452,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
         },
     })
 
-    cancelRect := image.Rect(0, 0, 18, 25).Add(image.Pt(170, 170))
+    cancelRect := image.Rect(0, 0, 18 * data.ScreenScale, 25 * data.ScreenScale).Add(image.Pt(170 * data.ScreenScale, 170 * data.ScreenScale))
     elements = append(elements, &uilib.UIElement{
         Rect: cancelRect,
         Layer: 1,
@@ -1470,7 +1470,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
     })
 
     pageTurnRight, _ := imageCache.GetImage("spells.lbx", 2, 0)
-    pageTurnRightRect := image.Rect(0, 0, pageTurnRight.Bounds().Dx(), pageTurnRight.Bounds().Dy()).Add(image.Pt(268, 14))
+    pageTurnRightRect := image.Rect(0, 0, pageTurnRight.Bounds().Dx(), pageTurnRight.Bounds().Dy()).Add(image.Pt(268 * data.ScreenScale, 14 * data.ScreenScale))
     elements = append(elements, &uilib.UIElement{
         Layer: 1,
         Rect: pageTurnRightRect,
@@ -1503,7 +1503,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
     })
 
     pageTurnLeft, _ := imageCache.GetImage("spells.lbx", 1, 0)
-    pageTurnLeftRect := image.Rect(0, 0, pageTurnLeft.Bounds().Dx(), pageTurnLeft.Bounds().Dy()).Add(image.Pt(23, 14))
+    pageTurnLeftRect := image.Rect(0, 0, pageTurnLeft.Bounds().Dx(), pageTurnLeft.Bounds().Dy()).Add(image.Pt(23 * data.ScreenScale, 14 * data.ScreenScale))
     elements = append(elements, &uilib.UIElement{
         Rect: pageTurnLeftRect,
         Layer: 1,
