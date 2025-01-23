@@ -1091,13 +1091,11 @@ func createScenario14(cache *lbx.LbxCache) *gamelib.Game {
     player.LiftFog(x, y, 4, data.PlaneArcanus)
     game.Camera.Center(x, y)
 
-    /*
     game.Events <- &gamelib.GameEventLearnedSpell{
         Player: player,
         // Spell: allSpells.FindByName("Earth Lore"),
         Spell: allSpells.FindByName("Magic Spirit"),
     }
-    */
 
     return game
 }
