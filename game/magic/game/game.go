@@ -757,15 +757,25 @@ func (game *Game) doCityListView(yield coroutine.YieldFunc) {
 
     cities := game.AllCities()
 
-    citiesMiniMap := make([]maplib.MiniMapCity, 0, len(cities))
+    var arcanusCities []maplib.MiniMapCity
+    var myrrorCities []maplib.MiniMapCity
+
     for _, city := range cities {
-        citiesMiniMap = append(citiesMiniMap, city)
+        if city.Plane == data.PlaneArcanus {
+            arcanusCities = append(arcanusCities, city)
+        } else {
+            myrrorCities = append(myrrorCities, city)
+        }
     }
 
     player := game.Players[0]
 
     drawMinimap := func (screen *ebiten.Image, x int, y int, plane data.Plane, counter uint64){
-        game.GetMap(plane).DrawMinimap(screen, citiesMiniMap, x, y, 1, player.GetFog(plane), counter, false)
+        use := arcanusCities
+        if plane == data.PlaneMyrror {
+            use = myrrorCities
+        }
+        game.GetMap(plane).DrawMinimap(screen, use, x, y, 1, player.GetFog(plane), counter, false)
     }
 
     var showCity *citylib.City
