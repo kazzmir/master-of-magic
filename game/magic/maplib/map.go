@@ -1234,7 +1234,7 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []MiniMapCity, ce
     }
 
     if crosshairs {
-        cursorColorBlue := math.Sin(float64(counter) / 10.0) * 127.0 + 127.0
+        cursorColorBlue := math.Sin(float64(counter) * 3 * math.Pi / 180) * 127.0 + 127.0
         if cursorColorBlue > 255 {
             cursorColorBlue = 255
         }
