@@ -51,8 +51,8 @@ func GetWizardPortraitIndex(base data.WizardBase, banner data.BannerType) int {
 }
 
 func MakeMirrorUI(cache *lbx.LbxCache, player *playerlib.Player, ui *uilib.UI) *uilib.UIElement {
-    cornerX := 50
-    cornerY := 1
+    cornerX := 50 * data.ScreenScale
+    cornerY := 1 * data.ScreenScale
 
     fontLbx, err := cache.GetLbxFile("fonts.lbx")
     if err != nil {
@@ -97,7 +97,7 @@ func MakeMirrorUI(cache *lbx.LbxCache, player *playerlib.Player, ui *uilib.UI) *
         })
     }
 
-    wrappedAbilities := smallFont.CreateWrappedText(160, 1, setup.JoinAbilities(player.Wizard.Abilities))
+    wrappedAbilities := smallFont.CreateWrappedText(float64(160 * data.ScreenScale), float64(data.ScreenScale), setup.JoinAbilities(player.Wizard.Abilities))
 
     element = &uilib.UIElement{
         Layer: 1,
@@ -116,32 +116,32 @@ func MakeMirrorUI(cache *lbx.LbxCache, player *playerlib.Player, ui *uilib.UI) *
             screen.DrawImage(background, &options)
 
             if portrait != nil {
-                options.GeoM.Translate(11, 11)
+                options.GeoM.Translate(float64(11 * data.ScreenScale), float64(11 * data.ScreenScale))
                 screen.DrawImage(portrait, &options)
             }
 
-            nameFont.PrintCenter(screen, float64(cornerX + 110), float64(cornerY + 10), 1, options.ColorScale, player.Wizard.Name)
+            nameFont.PrintCenter(screen, float64(cornerX + 110 * data.ScreenScale), float64(cornerY + 10 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, player.Wizard.Name)
 
-            smallFont.PrintCenter(screen, float64(cornerX + 30), float64(cornerY + 75), 1, options.ColorScale, fmt.Sprintf("%v GP", player.Gold))
-            smallFont.PrintRight(screen, float64(cornerX + 170), float64(cornerY + 75), 1, options.ColorScale, fmt.Sprintf("%v MP", player.Mana))
+            smallFont.PrintCenter(screen, float64(cornerX + 30 * data.ScreenScale), float64(cornerY + 75 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("%v GP", player.Gold))
+            smallFont.PrintRight(screen, float64(cornerX + 170 * data.ScreenScale), float64(cornerY + 75 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("%v MP", player.Mana))
 
-            options.GeoM.Translate(34, 55)
+            options.GeoM.Translate(float64(34 * data.ScreenScale), float64(55 * data.ScreenScale))
             newRand := rand.New(rand.NewPCG(player.BookOrderSeed1, player.BookOrderSeed2))
             draw.DrawBooks(screen, options, &imageCache, player.Wizard.Books, newRand)
 
             if player.Fame > 0 {
-                heroFont.PrintCenter(screen, float64(cornerX + 90), float64(cornerY + 95), 1, options.ColorScale, fmt.Sprintf("%v Fame", player.Fame))
+                heroFont.PrintCenter(screen, float64(cornerX + 90 * data.ScreenScale), float64(cornerY + 95 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("%v Fame", player.Fame))
             }
 
-            smallFont.RenderWrapped(screen, float64(cornerX + 13), float64(cornerY + 112), wrappedAbilities, options.ColorScale, false)
+            smallFont.RenderWrapped(screen, float64(cornerX + 13 * data.ScreenScale), float64(cornerY + 112 * data.ScreenScale), wrappedAbilities, options.ColorScale, false)
 
-            heroFont.PrintCenter(screen, float64(cornerX + 90), float64(cornerY + 131), 1, options.ColorScale, "Heroes")
+            heroFont.PrintCenter(screen, float64(cornerX + 90 * data.ScreenScale), float64(cornerY + 131 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, "Heroes")
 
-            heroX := cornerX + 13
-            heroY := cornerY + 142
+            heroX := cornerX + 13 * data.ScreenScale
+            heroY := cornerY + 142 * data.ScreenScale
             for _, hero := range player.AliveHeroes() {
-                smallFont.Print(screen, float64(heroX), float64(heroY), 1, options.ColorScale, hero.FullName())
-                heroY += smallFont.Height()
+                smallFont.Print(screen, float64(heroX), float64(heroY), float64(data.ScreenScale), options.ColorScale, hero.FullName())
+                heroY += smallFont.Height() * data.ScreenScale
             }
         },
     }

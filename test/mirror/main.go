@@ -30,6 +30,16 @@ func NewEngine(scenario int) (*Engine, error) {
         Wizard: setup.WizardCustom{
             Base: data.WizardLoPan,
             Name: "Lo Pan",
+            Books: []data.WizardBook{
+                data.WizardBook{
+                    Magic: data.LifeMagic,
+                    Count: 3,
+                },
+                data.WizardBook{
+                    Magic: data.NatureMagic,
+                    Count: 4,
+                },
+            },
             Abilities: []setup.WizardAbility{
                 setup.AbilityArchmage,
                 setup.AbilityFamous,
@@ -93,9 +103,11 @@ func main(){
     log.SetFlags(log.Ldate | log.Lshortfile | log.Lmicroseconds)
 
     monitorWidth, _ := ebiten.Monitor().Size()
+
     size := monitorWidth / 390
 
-    ebiten.SetWindowSize(data.ScreenWidth * size, data.ScreenHeight * size)
+    ebiten.SetWindowSize(data.ScreenWidth / data.ScreenScale * size, data.ScreenHeight / data.ScreenScale * size)
+
     ebiten.SetWindowTitle("mirror")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 
