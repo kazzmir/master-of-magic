@@ -2501,7 +2501,7 @@ func (combat *CombatScreen) ShowUnitInfo(screen *ebiten.Image, unit *ArmyUnit){
     options.GeoM.Translate(float64(x1 + 48) * float64(data.ScreenScale), float64(y1 + 10) * float64(data.ScreenScale))
     screen.DrawImage(armorImage, &options)
     ax, ay = options.GeoM.Apply(0, 2)
-    combat.InfoFont.PrintRight(screen, ax, ay, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", unit.Unit.GetDefense()))
+    combat.InfoFont.PrintRight(screen, ax, ay, float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v", unit.Unit.GetDefense()))
 
     resistanceImage, _ := combat.ImageCache.GetImage("compix.lbx", 75, 0)
     options.GeoM.Reset()
