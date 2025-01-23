@@ -444,8 +444,8 @@ func (game *Game) doCastEnchantRoad(yield coroutine.YieldFunc, tileX int, tileY 
 
     animation := util.MakeAnimation(pics, false)
 
-    x := 120
-    y := 90
+    x := 120 * data.ScreenScale
+    y := 90 * data.ScreenScale
 
     game.Drawer = func(screen *ebiten.Image, game *Game) {
         oldDrawer(screen, game)
@@ -455,13 +455,11 @@ func (game *Game) doCastEnchantRoad(yield coroutine.YieldFunc, tileX int, tileY 
         screen.DrawImage(animation.Frame(), &options)
     }
 
-    // FIXME: what sound to play?
-    /*
+    // FIXME: verify this is the right sound
     sound, err := audio.LoadNewSound(game.Cache, 18)
     if err == nil {
         sound.Play()
     }
-    */
 
     quit := false
     for !quit {
