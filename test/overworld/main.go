@@ -1136,11 +1136,16 @@ func createScenario15(cache *lbx.LbxCache) *gamelib.Game {
     city.Population = 20190
     city.Plane = data.PlaneArcanus
     city.Banner = wizard.Banner
+    city.Buildings.Insert(buildinglib.BuildingGranary)
+    city.Buildings.Insert(buildinglib.BuildingFarmersMarket)
+    city.Buildings.Insert(buildinglib.BuildingForestersGuild)
+    city.Buildings.Insert(buildinglib.BuildingShrine)
+    city.Buildings.Insert(buildinglib.BuildingTemple)
     city.ProducingBuilding = buildinglib.BuildingGranary
     city.ProducingUnit = units.UnitNone
     city.Race = wizard.Race
-    city.Farmers = 17
-    city.Workers = 3
+    city.Farmers = 20
+    city.Workers = 0
     city.Wall = false
 
     city.ResetCitizens(nil)

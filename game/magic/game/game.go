@@ -4439,7 +4439,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                             mediumHealth := color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff}
                             lowHealth := color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}
 
-                            healthWidth := float64(10)
+                            healthWidth := float64(10 * data.ScreenScale)
                             healthPercent := float64(unit.GetHealth()) / float64(unit.GetMaxHealth())
                             healthLength := healthWidth * healthPercent
 
@@ -4457,7 +4457,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                                 useColor = highHealth
                             }
 
-                            x, y := options.GeoM.Apply(4, 19)
+                            x, y := options.GeoM.Apply(float64(4 * data.ScreenScale), float64(19 * data.ScreenScale))
                             vector.StrokeLine(screen, float32(x), float32(y), float32(x + healthLength), float32(y), 1, useColor, false)
                         }
 
@@ -4525,15 +4525,15 @@ func (game *Game) MakeHudUI() *uilib.UI {
                         }
 
                         badgeOptions := options
-                        badgeOptions.GeoM.Translate(1, 21)
+                        badgeOptions.GeoM.Translate(float64(1 * data.ScreenScale), float64(21 * data.ScreenScale))
                         for i := 0; i < count; i++ {
                             pic, _ := game.ImageCache.GetImage("main.lbx", index, 0)
                             screen.DrawImage(pic, &badgeOptions)
-                            badgeOptions.GeoM.Translate(4, 0)
+                            badgeOptions.GeoM.Translate(float64(4 * data.ScreenScale), 0)
                         }
 
                         weaponOptions := options
-                        weaponOptions.GeoM.Translate(12, 18)
+                        weaponOptions.GeoM.Translate(float64(12 * data.ScreenScale), float64(18 * data.ScreenScale))
                         var weapon *ebiten.Image
                         switch unit.GetWeaponBonus() {
                         case data.WeaponMagic:
@@ -4550,13 +4550,13 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
                         // draw a G on the unit if they are moving
                         if len(stack.CurrentPath) != 0 {
-                            x, y := options.GeoM.Apply(1, 1)
-                            game.WhiteFont.Print(screen, x, y, 1, options.ColorScale, "G")
+                            x, y := options.GeoM.Apply(float64(1 * data.ScreenScale), float64(1 * data.ScreenScale))
+                            game.WhiteFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, "G")
                         }
 
                         if unit.GetBusy() == units.BusyStatusBuildRoad {
-                            x, y := options.GeoM.Apply(1, 1)
-                            game.WhiteFont.Print(screen, x, y, 1, options.ColorScale, "B")
+                            x, y := options.GeoM.Apply(float64(1 * data.ScreenScale), float64(1 * data.ScreenScale))
+                            game.WhiteFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, "B")
                         }
                     },
                 })
