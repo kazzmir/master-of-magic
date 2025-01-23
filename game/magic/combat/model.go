@@ -1466,6 +1466,12 @@ func (model *CombatModel) InsideAnyWall(x int, y int) bool {
     return model.InsideWallOfFire(x, y) || model.InsideWallOfDarkness(x, y) || model.InsideCityWall(x, y)
 }
 
+func distance(x1 float64, y1 float64, x2 float64, y2 float64) float64 {
+    xDiff := x2 - x1
+    yDiff := y2 - y1
+    return math.Sqrt(xDiff * xDiff + yDiff * yDiff)
+}
+
 func (model *CombatModel) UpdateProjectiles(counter uint64) bool {
     animationSpeed := uint64(5)
 
@@ -1474,7 +1480,7 @@ func (model *CombatModel) UpdateProjectiles(counter uint64) bool {
     var projectilesOut []*Projectile
     for _, projectile := range model.Projectiles {
         keep := false
-        if projectile.Exploding || distanceInRange(projectile.X, projectile.Y, projectile.TargetX, projectile.TargetY, 4) {
+        if projectile.Exploding {
             projectile.Exploding = true
             keep = true
             if counter % animationSpeed == 0 && !projectile.Explode.Next() {
@@ -1485,8 +1491,20 @@ func (model *CombatModel) UpdateProjectiles(counter uint64) bool {
                 }
             }
         } else {
+            previousDistance := distance(projectile.X, projectile.Y, projectile.TargetX, projectile.TargetY)
+
             projectile.X += math.Cos(projectile.Angle) * projectile.Speed
             projectile.Y += math.Sin(projectile.Angle) * projectile.Speed
+
+            newDistance := distance(projectile.X, projectile.Y, projectile.TargetX, projectile.TargetY)
+
+            // when the distance between the projectile and its target increases then we know the projectile has gone too far,
+            // so it should explode
+            if newDistance > previousDistance {
+                // possibly just set projectile.X/Y to TargetX/Y?
+                projectile.Exploding = true
+            }
+
             if counter % animationSpeed == 0 {
                 projectile.Animation.Next()
             }
