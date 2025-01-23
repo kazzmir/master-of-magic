@@ -253,11 +253,11 @@ func MakeConfirmDialog(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache,
 }
 
 func MakeConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, layer UILayer, message string, confirm func(), cancel func()) []*UIElement {
-    confirmX := 67
-    confirmY := 73
+    confirmX := 67 * data.ScreenScale
+    confirmY := 73 * data.ScreenScale
 
-    confirmMargin := 15
-    confirmTopMargin := 10
+    confirmMargin := 15 * data.ScreenScale
+    confirmTopMargin := 10 * data.ScreenScale
 
     const fadeSpeed = 7
 
@@ -299,7 +299,7 @@ func MakeConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.Im
 
     maxWidth := confirmTop.Bounds().Dx() - confirmMargin * 2
 
-    wrapped := confirmFont.CreateWrappedText(float64(maxWidth), 1, message)
+    wrapped := confirmFont.CreateWrappedText(float64(maxWidth), float64(data.ScreenScale), message)
 
     bottom := float64(confirmY + confirmTopMargin) + wrapped.TotalHeight
 
@@ -330,12 +330,12 @@ func MakeConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.Im
     // add yes/no buttons
     yesButtons, err := imageCache.GetImages("resource.lbx", 3)
     if err == nil {
-        yesX := confirmX + 101
-        yesY := bottom + 5
+        yesX := confirmX + 101 * data.ScreenScale
+        yesY := bottom + float64(5 * data.ScreenScale)
 
         clicked := false
         elements = append(elements, &UIElement{
-            Rect: image.Rect(int(yesX), int(yesY), int(yesX) + yesButtons[0].Bounds().Dx(), int(yesY) + yesButtons[0].Bounds().Dy()),
+            Rect: util.ImageRect(int(yesX), int(yesY), yesButtons[0]),
             Layer: layer,
             PlaySoundLeftClick: true,
             LeftClick: func(this *UIElement){
@@ -366,12 +366,12 @@ func MakeConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.Im
 
     noButtons, err := imageCache.GetImages("resource.lbx", 4)
     if err == nil {
-        noX := confirmX + 18
-        noY := bottom + 5
+        noX := confirmX + 18 * data.ScreenScale
+        noY := bottom + float64(5 * data.ScreenScale)
 
         clicked := false
         elements = append(elements, &UIElement{
-            Rect: image.Rect(int(noX), int(noY), int(noX) + noButtons[0].Bounds().Dx(), int(noY) + noButtons[0].Bounds().Dy()),
+            Rect: util.ImageRect(int(noX), int(noY), noButtons[0]),
             Layer: layer,
             PlaySoundLeftClick: true,
             LeftClick: func(this *UIElement){
