@@ -7,6 +7,7 @@ import (
     "math"
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/game/magic/shaders"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
 
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/colorm"
@@ -240,10 +241,10 @@ func MakePaletteRotateAnimation(lbxFile *lbx.LbxFile, scaler Scaler, index int, 
 }
 
 func DrawTextCursor(screen *ebiten.Image, source *ebiten.Image, cursorX float64, y float64, counter uint64) {
-    width := float64(4)
-    height := float64(8)
+    width := float64(4 * data.ScreenScale)
+    height := float64(8 * data.ScreenScale)
 
-    yOffset := float64((counter/3) % 16) - 8
+    yOffset := float64((counter*uint64(data.ScreenScale)/3) % (16 * uint64(data.ScreenScale))) - height
 
     vertices := [4]ebiten.Vertex{
         ebiten.Vertex{

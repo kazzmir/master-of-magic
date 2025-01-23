@@ -368,7 +368,7 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
     elements = append(elements, &uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             var options ebiten.DrawImageOptions
-            options.GeoM.Translate(7, 6)
+            options.GeoM.Translate(float64(7 * data.ScreenScale), float64(6 * data.ScreenScale))
 
             /*
             image, _ := imageCache.GetImage("items.lbx", artifact.Image, 0)
@@ -381,7 +381,7 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
 
     leftIndex := 0
     leftImages, _ := imageCache.GetImages("spellscr.lbx", 35)
-    leftRect := util.ImageRect(5, 24, leftImages[leftIndex])
+    leftRect := util.ImageRect(5 * data.ScreenScale, 24 * data.ScreenScale, leftImages[leftIndex])
     elements = append(elements, &uilib.UIElement{
         Rect: leftRect,
         PlaySoundLeftClick: true,
@@ -406,7 +406,7 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
 
     rightIndex := 0
     rightImages, _ := imageCache.GetImages("spellscr.lbx", 36)
-    rightRect := util.ImageRect(17, 24, leftImages[rightIndex])
+    rightRect := util.ImageRect(17 * data.ScreenScale, 24 * data.ScreenScale, leftImages[rightIndex])
     elements = append(elements, &uilib.UIElement{
         Rect: rightRect,
         PlaySoundLeftClick: true,
@@ -430,7 +430,7 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
     })
 
     // name field
-    nameRect := image.Rect(30, 12, 30 + 130, 12 + fonts.NameFont.Height() + 2)
+    nameRect := image.Rect(30 * data.ScreenScale, 12 * data.ScreenScale, (30 + 130) * data.ScreenScale, (12 + fonts.NameFont.Height() + 2) * data.ScreenScale)
     nameFocused := false
     artifact.Name = getName(artifact, *customName)
     nameColorSource := ebiten.NewImage(1, 1)
@@ -499,10 +499,10 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
                 scale.SetG(3)
             }
 
-            fonts.NameFont.Print(screen, float64(nameRect.Min.X + 1), float64(nameRect.Min.Y + 1), 1, scale, artifact.Name)
+            fonts.NameFont.Print(screen, float64(nameRect.Min.X + 1), float64(nameRect.Min.Y + 1), float64(data.ScreenScale), scale, artifact.Name)
 
             if nameFocused {
-                util.DrawTextCursor(screen, nameColorSource, float64(nameRect.Min.X) + 1 + fonts.NameFont.MeasureTextWidth(artifact.Name, 1), float64(nameRect.Min.Y) + 1, ui.Counter)
+                util.DrawTextCursor(screen, nameColorSource, float64(nameRect.Min.X) + 1 + fonts.NameFont.MeasureTextWidth(artifact.Name, float64(data.ScreenScale)), float64(nameRect.Min.Y) + 1, ui.Counter)
             }
         },
     }
@@ -510,16 +510,16 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
     elements = append(elements, nameEntry)
 
     // powers
-    x := 7
-    y := 40
+    x := 7 * data.ScreenScale
+    y := 40 * data.ScreenScale
     printRight := false
     for _, group := range powerGroups {
         groupSelect := -1
 
         // goto the next column
-        if y + (fonts.PowerFont.Height() + 1) * len(group) > data.ScreenHeight - 10 {
-            y = 40
-            x = 170
+        if y + (fonts.PowerFont.Height() + 1) * len(group) * data.ScreenScale > data.ScreenHeight - 10 * data.ScreenScale {
+            y = 40 * data.ScreenScale
+            x = 170 * data.ScreenScale
             printRight = true
         }
 
@@ -527,9 +527,9 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
 
         var lastPower *Power = nil
         for i, power := range group {
-            rect := image.Rect(x, y, x + int(fonts.PowerFont.MeasureTextWidth(power.Name, 1)), y + fonts.PowerFont.Height())
+            rect := image.Rect(x, y, x + int(fonts.PowerFont.MeasureTextWidth(power.Name, float64(data.ScreenScale))), y + fonts.PowerFont.Height() * data.ScreenScale)
             if groupRight {
-                rect = image.Rect(x - int(fonts.PowerFont.MeasureTextWidth(power.Name, 1)), y, x, y + fonts.PowerFont.Height())
+                rect = image.Rect(x - int(fonts.PowerFont.MeasureTextWidth(power.Name, float64(data.ScreenScale))), y, x, y + fonts.PowerFont.Height() * data.ScreenScale)
             }
 
             elements = append(elements, &uilib.UIElement{
@@ -577,17 +577,17 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
                     }
 
                     if groupRight {
-                        fonts.PowerFont.PrintRight(screen, float64(rect.Max.X), float64(rect.Min.Y), 1, scale, power.Name)
+                        fonts.PowerFont.PrintRight(screen, float64(rect.Max.X), float64(rect.Min.Y), float64(data.ScreenScale), scale, power.Name)
                     } else {
-                        fonts.PowerFont.Print(screen, float64(rect.Min.X), float64(rect.Min.Y), 1, scale, power.Name)
+                        fonts.PowerFont.Print(screen, float64(rect.Min.X), float64(rect.Min.Y), float64(data.ScreenScale), scale, power.Name)
                     }
                 },
             })
 
-            y += fonts.PowerFont.Height() + 1
+            y += (fonts.PowerFont.Height() + 1) * data.ScreenScale
         }
 
-        y += 5
+        y += 5 * data.ScreenScale
     }
 
     return elements
@@ -1303,8 +1303,8 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, cr
 
     // 10 item types
     for i := 0; i < 10; i++ {
-        x := 156 + (i % 5) * (tmpImage.Bounds().Dx() + 2)
-        y := 3 + (i / 5) * (tmpImage.Bounds().Dy() + 2)
+        x := 156 * data.ScreenScale + (i % 5) * (tmpImage.Bounds().Dx() + 2 * data.ScreenScale)
+        y := 3 * data.ScreenScale + (i / 5) * (tmpImage.Bounds().Dy() + 2 * data.ScreenScale)
 
         button := makeButton(x, y, unselectedImageStart + i, selectedImageStart + i, ArtifactType(i+1))
         if selectedButton == nil {
@@ -1317,7 +1317,7 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, cr
 
     ui.AddElement(&uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            fonts.PowerFontWhite.Print(screen, 198, 185, 1, ebiten.ColorScale{}, fmt.Sprintf("Cost: %v", currentArtifact.Cost))
+            fonts.PowerFontWhite.Print(screen, float64(198 * data.ScreenScale), float64(185 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("Cost: %v", currentArtifact.Cost))
         },
     })
 
@@ -1326,7 +1326,7 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, cr
 
     okButtons, _ := imageCache.GetImages("spellscr.lbx", 24)
     okIndex := 0
-    okRect := util.ImageRect(281, 180, okButtons[0])
+    okRect := util.ImageRect(281 * data.ScreenScale, 180 * data.ScreenScale, okButtons[0])
     ui.AddElement(&uilib.UIElement{
         Rect: okRect,
         PlaySoundLeftClick: true,
