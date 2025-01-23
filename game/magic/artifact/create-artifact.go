@@ -824,12 +824,12 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
     maxItem := 11
 
     // currentItem := 0
-    y := 39
-    x := 200
+    y := 39 * data.ScreenScale
+    x := 200 * data.ScreenScale
 
     // true if the rect is within the bounds of where the abilities should be
     inBounds := func (rect image.Rectangle) bool {
-        if rect.Min.Y >= 39 && rect.Min.Y <= 160 {
+        if rect.Min.Y >= 39 * data.ScreenScale && rect.Min.Y <= 160 * data.ScreenScale {
             return true
         }
 
@@ -853,7 +853,7 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
             artifactTypes := compatibilities[power]
             if artifactTypes.Contains(artifact.Type) && magicLevel.MagicLevel(power.Magic) >= power.Amount {
                 totalItems += 1
-                xRect := image.Rect(x, y, x + int(fonts.PowerFont.MeasureTextWidth(power.Name, 1)), y + fonts.PowerFont.Height())
+                xRect := image.Rect(x, y, x + int(fonts.PowerFont.MeasureTextWidth(power.Name, float64(data.ScreenScale))), y + fonts.PowerFont.Height() * data.ScreenScale)
                 elements = append(elements, &uilib.UIElement{
                     Rect: xRect,
                     PlaySoundLeftClick: inBounds(xRect),
@@ -926,20 +926,20 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
                             scale.SetG(3)
                         }
 
-                        fonts.PowerFont.Print(screen, float64(element.Rect.Min.X), float64(element.Rect.Min.Y), 1, scale, power.Name)
+                        fonts.PowerFont.Print(screen, float64(element.Rect.Min.X), float64(element.Rect.Min.Y), float64(data.ScreenScale), scale, power.Name)
                     },
                 })
 
-                y += fonts.PowerFont.Height() + 1
+                y += (fonts.PowerFont.Height() + 1) * data.ScreenScale
             }
         }
 
-        y += 5
+        y += 5 * data.ScreenScale
     }
 
     // spell charges
     if len(availableSpells.Spells) > 0 && (artifact.Type == ArtifactTypeWand || artifact.Type == ArtifactTypeStaff) {
-        xRect := image.Rect(x, y, x + int(fonts.PowerFont.MeasureTextWidth("Spell Charges", 1)), y + fonts.PowerFont.Height())
+        xRect := image.Rect(x, y, x + int(fonts.PowerFont.MeasureTextWidth("Spell Charges", float64(data.ScreenScale))), y + fonts.PowerFont.Height() * data.ScreenScale)
         selected := false
         totalItems += 1
 
@@ -987,9 +987,9 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
                 }
 
                 if addedPower.Type == PowerTypeSpellCharges {
-                    fonts.PowerFont.Print(screen, float64(element.Rect.Min.X), float64(element.Rect.Min.Y), 1, scale, addedPower.Name)
+                    fonts.PowerFont.Print(screen, float64(element.Rect.Min.X), float64(element.Rect.Min.Y), float64(data.ScreenScale), scale, addedPower.Name)
                 } else {
-                    fonts.PowerFont.Print(screen, float64(element.Rect.Min.X), float64(element.Rect.Min.Y), 1, scale, "Spell Charges")
+                    fonts.PowerFont.Print(screen, float64(element.Rect.Min.X), float64(element.Rect.Min.Y), float64(data.ScreenScale), scale, "Spell Charges")
                 }
             },
         })
@@ -1013,8 +1013,8 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
         doScroll := func (direction int) {
             move := direction * fonts.PowerFont.Height()
             for _, element := range abilityElements {
-                element.Rect.Min.Y += move
-                element.Rect.Max.Y += move
+                element.Rect.Min.Y += move * data.ScreenScale
+                element.Rect.Max.Y += move * data.ScreenScale
 
                 element.PlaySoundLeftClick = inBounds(element.Rect)
             }
@@ -1034,8 +1034,8 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
             }
         }
 
-        upX := 308
-        upY := 43
+        upX := 308 * data.ScreenScale
+        upY := 43 * data.ScreenScale
         upPressed := false
         elements = append(elements, &uilib.UIElement{
             Rect: util.ImageRect(upX, upY, upArrows[0]),
@@ -1064,7 +1064,7 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
         })
 
         downX := upX
-        downY := 165
+        downY := 165 * data.ScreenScale
         downPressed := false
         elements = append(elements, &uilib.UIElement{
             Rect: util.ImageRect(downX, downY, downArrows[0]),
@@ -1091,7 +1091,7 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
         })
 
         elements = append(elements, &uilib.UIElement{
-            Rect: image.Rect(200, 39, 200 + 110, 170),
+            Rect: image.Rect(200 * data.ScreenScale, 39 * data.ScreenScale, (200 + 110) * data.ScreenScale, 170 * data.ScreenScale),
             Scroll: func (element *uilib.UIElement, x float64, y float64) {
                 if y < 0 {
                     scrollDown()
