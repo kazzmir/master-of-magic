@@ -603,18 +603,18 @@ func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts Ar
             vector.DrawFilledRect(screen, 0, 0, float32(data.ScreenWidth), float32(data.ScreenHeight), color.RGBA{R: 0, G: 0, B: 0, A: 0x80}, false)
 
             var options ebiten.DrawImageOptions
-            options.GeoM.Translate(28, 12)
+            options.GeoM.Translate(float64(28 * data.ScreenScale), float64(12 * data.ScreenScale))
             background, _ := imageCache.GetImage("spells.lbx", 0, 0)
             screen.DrawImage(background, &options)
 
             // print text "Choose a spell to embed in this item"
-            fonts.TitleSpellFont.PrintCenter(screen, float64(data.ScreenWidth / 2), 2, 1, ebiten.ColorScale{}, "Choose a spell to embed in this item")
+            fonts.TitleSpellFont.PrintCenter(screen, float64(data.ScreenWidth / 2), float64(2 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, "Choose a spell to embed in this item")
         },
     })
 
-    xLeft := 47
-    xRight := 187
-    y := 29
+    xLeft := 47 * data.ScreenScale
+    xRight := 187 * data.ScreenScale
+    y := 29 * data.ScreenScale
 
     var pages []spellbook.Spells
 
@@ -643,15 +643,15 @@ func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts Ar
         background, _ := imageCache.GetImage("spellscr.lbx", 37, 0)
 
         var options ebiten.DrawImageOptions
-        options.GeoM.Translate(float64(x), 80)
+        options.GeoM.Translate(float64(x), float64(80 * data.ScreenScale))
 
         moreElements = append(moreElements, &uilib.UIElement{
             Layer: 2,
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 screen.DrawImage(background, &options)
 
-                ax, ay := options.GeoM.Apply(float64(background.Bounds().Dx()) / 2, 5)
-                spellFont.PrintCenter(screen, ax, ay, 1, ebiten.ColorScale{}, "Charges")
+                ax, ay := options.GeoM.Apply(float64(background.Bounds().Dx()) / 2, float64(5 * data.ScreenScale))
+                spellFont.PrintCenter(screen, ax, ay, float64(data.ScreenScale), ebiten.ColorScale{}, "Charges")
             },
         })
 
@@ -661,7 +661,7 @@ func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts Ar
         for i := range 4 {
             buttons, _ := imageCache.GetImages("spellscr.lbx", 38 + i)
             buttonOptions := options
-            buttonOptions.GeoM.Translate(float64(button0.Bounds().Dx() * i) + 3, 14)
+            buttonOptions.GeoM.Translate(float64(button0.Bounds().Dx() * i + 3 * data.ScreenScale), float64(14 * data.ScreenScale))
             x, y := buttonOptions.GeoM.Apply(0, 0)
             rect := util.ImageRect(int(x), int(y), buttons[0])
             pressed := false
@@ -695,8 +695,8 @@ func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts Ar
         pageElements = nil
         // left page
         for i, spell := range pages[showPage].Spells {
-            yPos := y + (spellFont.Height() + 1) * i
-            rect := image.Rect(xLeft, yPos, xLeft + int(spellFont.MeasureTextWidth(spell.Name, 1)), yPos + spellFont.Height())
+            yPos := y + (spellFont.Height() + 1) * i * data.ScreenScale
+            rect := image.Rect(xLeft, yPos, xLeft + int(spellFont.MeasureTextWidth(spell.Name, float64(data.ScreenScale))), yPos + spellFont.Height() * data.ScreenScale)
 
             pickCharges := func (count int) {
                 shutdown()
@@ -710,7 +710,7 @@ func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts Ar
                     ui.AddElements(makeSelectChargesElements(spell, xRight, pickCharges))
                 },
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                    spellFont.Print(screen, float64(xLeft), float64(yPos), 1, ebiten.ColorScale{}, spell.Name)
+                    spellFont.Print(screen, float64(xLeft), float64(yPos), float64(data.ScreenScale), ebiten.ColorScale{}, spell.Name)
                 },
             })
         }
@@ -718,8 +718,8 @@ func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts Ar
         // right page
         if showPage + 1 < len(pages) {
             for i, spell := range pages[showPage+1].Spells {
-                yPos := y + (spellFont.Height() + 1) * i
-                rect := image.Rect(xRight, yPos, xRight + int(spellFont.MeasureTextWidth(spell.Name, 1)), yPos + spellFont.Height())
+                yPos := y + (spellFont.Height() + 1) * i * data.ScreenScale
+                rect := image.Rect(xRight, yPos, xRight + int(spellFont.MeasureTextWidth(spell.Name, float64(data.ScreenScale))), yPos + spellFont.Height() * data.ScreenScale)
 
                 pickCharges := func (count int) {
                     shutdown()
@@ -733,7 +733,7 @@ func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts Ar
                         ui.AddElements(makeSelectChargesElements(spell, xLeft, pickCharges))
                     },
                     Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                        spellFont.Print(screen, float64(xRight), float64(yPos), 1, ebiten.ColorScale{}, spell.Name)
+                        spellFont.Print(screen, float64(xRight), float64(yPos), float64(data.ScreenScale), ebiten.ColorScale{}, spell.Name)
                     },
                 })
             }
@@ -749,7 +749,7 @@ func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts Ar
 
         // left dogear
         leftEar, _ := imageCache.GetImage("spells.lbx", 1, 0)
-        leftRect := util.ImageRect(41, 16, leftEar)
+        leftRect := util.ImageRect(41 * data.ScreenScale, 16 * data.ScreenScale, leftEar)
         elements = append(elements, &uilib.UIElement{
             Layer: 1,
             Rect: leftRect,
@@ -768,7 +768,7 @@ func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts Ar
 
         // right dogear
         rightEar, _ := imageCache.GetImage("spells.lbx", 2, 0)
-        rightRect := util.ImageRect(286, 16, rightEar)
+        rightRect := util.ImageRect(286 * data.ScreenScale, 16 * data.ScreenScale, rightEar)
         elements = append(elements, &uilib.UIElement{
             Layer: 1,
             Rect: rightRect,
@@ -787,7 +787,7 @@ func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts Ar
     }
 
     // X button at bottom to cancel
-    cancelRect := image.Rect(0, 0, 18, 24).Add(image.Pt(188, 172))
+    cancelRect := image.Rect(0, 0, 18 * data.ScreenScale, 24 * data.ScreenScale).Add(image.Pt(188 * data.ScreenScale, 172 * data.ScreenScale))
     elements = append(elements, &uilib.UIElement{
         Rect: cancelRect,
         Layer: 1,
