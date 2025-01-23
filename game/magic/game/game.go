@@ -1058,12 +1058,13 @@ func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City,
     // beetle: 55
     snake, _ := game.ImageCache.GetImageTransform("resource.lbx", 54, 0, "crop", util.AutoCrop)
 
-    wrappedText := bigFont.CreateWrappedText(180, 1, fmt.Sprintf("The %s of %s has completed the construction of a %s.", city.GetSize(), city.Name, game.BuildingInfo.Name(building)))
+    wrappedText := bigFont.CreateWrappedText(float64(180 * data.ScreenScale), float64(1 * data.ScreenScale), fmt.Sprintf("The %s of %s has completed the construction of a %s.", city.GetSize(), city.Name, game.BuildingInfo.Name(building)))
 
     rightSide, _ := game.ImageCache.GetImage("resource.lbx", 41, 0)
 
     getAlpha := util.MakeFadeIn(7, &game.Counter)
 
+    // FIXME: cropping the image cuts it off at some point
     buildingPics, err := game.ImageCache.GetImagesTransform("cityscap.lbx", buildinglib.GetBuildingIndex(building), "crop", util.AutoCrop)
 
     if err != nil {
@@ -1081,25 +1082,25 @@ func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City,
 
         var options ebiten.DrawImageOptions
         options.ColorScale.ScaleAlpha(getAlpha())
-        options.GeoM.Translate(8, 60)
+        options.GeoM.Translate(float64(8 * data.ScreenScale), float64(60 * data.ScreenScale))
         screen.DrawImage(background, &options)
         iconOptions := options
-        iconOptions.GeoM.Translate(6, -10)
+        iconOptions.GeoM.Translate(float64(6 * data.ScreenScale), float64(-10 * data.ScreenScale))
         screen.DrawImage(snake, &iconOptions)
 
-        x, y := options.GeoM.Apply(8 + float64(snake.Bounds().Dx()), 9)
+        x, y := options.GeoM.Apply(float64(8 * data.ScreenScale + snake.Bounds().Dx()), float64(9 * data.ScreenScale))
         bigFont.RenderWrapped(screen, x, y, wrappedText, options.ColorScale, false)
 
         options.GeoM.Translate(float64(background.Bounds().Dx()), 0)
         screen.DrawImage(rightSide, &options)
 
-        x, y = options.GeoM.Apply(4, 6)
-        buildingSpace := screen.SubImage(image.Rect(int(x), int(y), int(x + 45), int(y + 47))).(*ebiten.Image)
+        x, y = options.GeoM.Apply(float64(4 * data.ScreenScale), float64(6 * data.ScreenScale))
+        buildingSpace := screen.SubImage(image.Rect(int(x), int(y), int(x) + 45 * data.ScreenScale, int(y) + 47 * data.ScreenScale)).(*ebiten.Image)
 
         // vector.DrawFilledRect(buildingSpace, float32(x), float32(y), float32(buildingSpace.Bounds().Dx()), float32(buildingSpace.Bounds().Dy()), color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, false)
 
         landOptions := options
-        landOptions.GeoM.Translate(-10, -10)
+        landOptions.GeoM.Translate(float64(-10 * data.ScreenScale), float64(-10 * data.ScreenScale))
         buildingSpace.DrawImage(landBackground, &landOptions)
 
         buildingOptions := options
