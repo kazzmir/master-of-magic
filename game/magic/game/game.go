@@ -587,6 +587,14 @@ func (game *Game) UpdateImages() {
     game.Fog = nil
     game.ArcanusMap.ResetCache()
     game.MyrrorMap.ResetCache()
+
+    mouseData, err := mouselib.MakeMouseData(game.Cache, &game.ImageCache)
+    if err != nil {
+        log.Printf("Unable to read mouse data: %v", err)
+    } else {
+        game.MouseData = mouseData
+        mouse.Mouse.SetImage(game.MouseData.Normal)
+    }
 }
 
 func (game *Game) ContainsCity(x int, y int, plane data.Plane) bool {
