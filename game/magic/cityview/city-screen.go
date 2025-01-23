@@ -419,6 +419,7 @@ func (cityScreen *CityScreen) SellBuilding(building buildinglib.Building) {
 func makeCityScapeElement(cache *lbx.LbxCache, ui *uilib.UI, city *citylib.City, help *lbx.Help, imageCache *util.ImageCache, doSell func(buildinglib.Building), buildings []BuildingSlot, newBuilding buildinglib.Building, x1 int, y1 int, fonts *Fonts, player *playerlib.Player, getAlpha *util.AlphaFadeFunc) *uilib.UIElement {
     rawImageCache := make(map[int]image.Image)
 
+    // FIXME: I cant remember why this function needs to exist instead of just calling imageCache.GetImage()
     getRawImage := func(index int) (image.Image, error) {
         if pic, ok := rawImageCache[index]; ok {
             return pic, nil
@@ -433,16 +434,16 @@ func makeCityScapeElement(cache *lbx.LbxCache, ui *uilib.UI, city *citylib.City,
             return nil, err
         }
 
-        rawImageCache[index] = images[0]
+        rawImageCache[index] = imageCache.ApplyScale(images[0])
 
         return images[0], nil
     }
 
     roadX := 0.0
-    roadY := 18.0
+    roadY := 18.0 * data.ScreenScale
 
     buildingLook := buildinglib.BuildingNone
-    buildingView := image.Rect(x1, y1, x1 + 208, y1 + 195)
+    buildingView := image.Rect(x1, y1, x1 + 208 * data.ScreenScale, y1 + 195 * data.ScreenScale)
     element := &uilib.UIElement{
         Rect: buildingView,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
@@ -483,10 +484,12 @@ func makeCityScapeElement(cache *lbx.LbxCache, ui *uilib.UI, city *citylib.City,
 
                 pic, err := getRawImage(index)
                 if err == nil {
-                    x1 := int(roadX) + slot.Point.X
-                    y1 := int(roadY) + slot.Point.Y - pic.Bounds().Dy()
+                    x1 := int(roadX) + slot.Point.X * data.ScreenScale
+                    y1 := int(roadY) + slot.Point.Y * data.ScreenScale - pic.Bounds().Dy()
                     x2 := x1 + pic.Bounds().Dx()
                     y2 := y1 + pic.Bounds().Dy()
+
+                    // log.Printf("compare %v, %v to %v, %v, %v, %v for %v", x, y, x1, y1, x2, y2, buildingName)
 
                     // do pixel perfect detection
                     if image.Pt(x, y).In(image.Rect(x1, y1, x2, y2)) {
@@ -552,14 +555,14 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
 
     var getAlpha util.AlphaFadeFunc = func() float32 { return 1 }
 
-    elements = append(elements, makeCityScapeElement(cityScreen.LbxCache, ui, cityScreen.City, &help, &cityScreen.ImageCache, sellBuilding, cityScreen.Buildings, newBuilding, 4, 102, cityScreen.Fonts, cityScreen.Player, &getAlpha))
+    elements = append(elements, makeCityScapeElement(cityScreen.LbxCache, ui, cityScreen.City, &help, &cityScreen.ImageCache, sellBuilding, cityScreen.Buildings, newBuilding, 4 * data.ScreenScale, 102 * data.ScreenScale, cityScreen.Fonts, cityScreen.Player, &getAlpha))
 
     // FIXME: show disabled buy button if the item is not buyable (not enough money, or the item is trade goods/housing)
     // buy button
     buyButton, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", 7, 0)
     if err == nil {
-        buyX := 214
-        buyY := 188
+        buyX := 214 * data.ScreenScale
+        buyY := 188 * data.ScreenScale
         elements = append(elements, &uilib.UIElement{
             Rect: image.Rect(buyX, buyY, buyX + buyButton.Bounds().Dx(), buyY + buyButton.Bounds().Dy()),
             PlaySoundLeftClick: true,
@@ -585,7 +588,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
                 var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(buyX), float64(buyY))
+                options.GeoM.Translate(float64(element.Rect.Min.X), float64(element.Rect.Min.Y))
                 screen.DrawImage(buyButton, &options)
             },
         })
@@ -594,8 +597,8 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
     // change button
     changeButton, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", 8, 0)
     if err == nil {
-        changeX := 247
-        changeY := 188
+        changeX := 247 * data.ScreenScale
+        changeY := 188 * data.ScreenScale
         elements = append(elements, &uilib.UIElement{
             Rect: image.Rect(changeX, changeY, changeX + changeButton.Bounds().Dx(), changeY + changeButton.Bounds().Dy()),
             PlaySoundLeftClick: true,
@@ -612,7 +615,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
                 var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(changeX), float64(changeY))
+                options.GeoM.Translate(float64(element.Rect.Min.X), float64(element.Rect.Min.Y))
                 screen.DrawImage(changeButton, &options)
             },
         })
@@ -621,8 +624,8 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
     // ok button
     okButton, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", 9, 0)
     if err == nil {
-        okX := 286
-        okY := 188
+        okX := 286 * data.ScreenScale
+        okY := 188 * data.ScreenScale
         elements = append(elements, &uilib.UIElement{
             Rect: image.Rect(okX, okY, okX + okButton.Bounds().Dx(), okY + okButton.Bounds().Dy()),
             PlaySoundLeftClick: true,
@@ -637,7 +640,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
                 var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(okX), float64(okY))
+                options.GeoM.Translate(float64(element.Rect.Min.X), float64(element.Rect.Min.Y))
                 screen.DrawImage(okButton, &options)
             },
         })
@@ -648,9 +651,9 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
         return cmp.Compare(a.Enchantment.Name(), b.Enchantment.Name())
     }) {
         useFont := cityScreen.Fonts.BannerFonts[enchantment.Owner]
-        x := 140
-        y := 51 + i * useFont.Height()
-        rect := image.Rect(x, y, x + int(useFont.MeasureTextWidth(enchantment.Enchantment.Name(), 1)), y + useFont.Height())
+        x := 140 * data.ScreenScale
+        y := (51 + i * useFont.Height()) * data.ScreenScale
+        rect := image.Rect(x, y, x + int(useFont.MeasureTextWidth(enchantment.Enchantment.Name(), float64(data.ScreenScale))), y + useFont.Height() * data.ScreenScale)
         elements = append(elements, &uilib.UIElement{
             Rect: rect,
             LeftClickRelease: func(element *uilib.UIElement) {
@@ -670,7 +673,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
                 }
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                useFont.Print(screen, float64(rect.Min.X), float64(rect.Min.Y), 1, ebiten.ColorScale{}, enchantment.Enchantment.Name())
+                useFont.Print(screen, float64(rect.Min.X), float64(rect.Min.Y), float64(data.ScreenScale), ebiten.ColorScale{}, enchantment.Enchantment.Name())
             },
         })
     }
@@ -687,12 +690,12 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
     farmer, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", getRaceFarmerIndex(cityScreen.City.Race), 0)
     var setupWorkers func()
     if err == nil {
-        workerY := float64(27)
+        workerY := float64(27 * data.ScreenScale)
         var workerElements []*uilib.UIElement
         setupWorkers = func(){
             ui.RemoveElements(workerElements)
             workerElements = nil
-            citizenX := 6
+            citizenX := 6 * data.ScreenScale
 
             subsistenceFarmers := cityScreen.City.ComputeSubsistenceFarmers()
 
@@ -716,7 +719,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
             }
 
             // the farmers that can be changed to workers
-            citizenX += 3
+            citizenX += 3 * data.ScreenScale
             for i := subsistenceFarmers; i < cityScreen.City.Farmers; i++ {
                 posX := citizenX
 
@@ -765,14 +768,14 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
 
             rebel, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", getRaceRebelIndex(cityScreen.City.Race), 0)
             if err == nil {
-                citizenX += 3
+                citizenX += 3 * data.ScreenScale
                 for i := 0; i < cityScreen.City.Rebels; i++ {
                     posX := citizenX
 
                     workerElements = append(workerElements, &uilib.UIElement{
                         Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
                             var options ebiten.DrawImageOptions
-                            options.GeoM.Translate(float64(posX), workerY-2)
+                            options.GeoM.Translate(float64(posX), workerY - float64(2 * data.ScreenScale))
                             screen.DrawImage(rebel, &options)
                         },
                     })
@@ -799,8 +802,8 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
     var garrisonUnits []*uilib.UIElement
     resetUnits = func(){
         ui.RemoveElements(garrisonUnits)
-        garrisonX := 216
-        garrisonY := 103
+        garrisonX := 216 * data.ScreenScale
+        garrisonY := 103 * data.ScreenScale
 
         garrisonRow := 0
 
@@ -845,7 +848,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
                         var matrix colorm.ColorM
                         options.GeoM.Translate(float64(posX), float64(posY))
                         colorm.DrawImage(screen, garrisonBackground, matrix, &options)
-                        options.GeoM.Translate(1, 1)
+                        options.GeoM.Translate(float64(data.ScreenScale), float64(data.ScreenScale))
 
                         // draw in grey scale if the unit is on patrol
                         if useUnit.GetBusy() == units.BusyStatusPatrol {
@@ -863,8 +866,8 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
                 garrisonRow += 1
                 if garrisonRow >= 5 {
                     garrisonRow = 0
-                    garrisonX = 216
-                    garrisonY += pic.Bounds().Dy() + 1
+                    garrisonX = 216 * data.ScreenScale
+                    garrisonY += pic.Bounds().Dy() + 1 * data.ScreenScale
                 }
             }()
         }
@@ -1016,8 +1019,8 @@ func drawCityScape(screen *ebiten.Image, buildings []BuildingSlot, buildingLook 
         screen.DrawImage(hills1, &options)
     }
 
-    roadX := 0.0
-    roadY := 18.0
+    roadX := float64(0.0 * data.ScreenScale)
+    roadY := float64(18.0 * data.ScreenScale)
 
     normalRoad, err := imageCache.GetImage("cityscap.lbx", 5, 0)
     if err == nil {
@@ -1039,7 +1042,7 @@ func drawCityScape(screen *ebiten.Image, buildings []BuildingSlot, buildingLook 
             index = 105 + building.RubbleIndex
         }
 
-        x, y := building.Point.X, building.Point.Y
+        x, y := building.Point.X * data.ScreenScale, building.Point.Y * data.ScreenScale
 
         images, err := imageCache.GetImages("cityscap.lbx", index)
         if err == nil {
@@ -1073,9 +1076,9 @@ func drawCityScape(screen *ebiten.Image, buildings []BuildingSlot, buildingLook 
                         text = fmt.Sprintf("%v's Fortress", player.Wizard.Name)
                     }
 
-                    printX, printY := baseGeoM.Apply(float64(x + 10) + roadX, float64(y + 1) + roadY)
+                    printX, printY := baseGeoM.Apply(float64(x + 10 * data.ScreenScale) + roadX, float64(y + 1 * data.ScreenScale) + roadY)
 
-                    useFont.PrintCenter(screen, printX, printY, 1, options.ColorScale, text)
+                    useFont.PrintCenter(screen, printX, printY, float64(data.ScreenScale), options.ColorScale, text)
                 }
             }
         }
@@ -1087,7 +1090,7 @@ func drawCityScape(screen *ebiten.Image, buildings []BuildingSlot, buildingLook 
         var options ebiten.DrawImageOptions
         options.ColorScale.ScaleAlpha(alphaScale)
         options.GeoM = baseGeoM
-        options.GeoM.Translate(1, -2)
+        options.GeoM.Translate(float64(1 * data.ScreenScale), float64(-2 * data.ScreenScale))
         index := animationCounter % uint64(len(river))
         screen.DrawImage(river[index], &options)
     }
@@ -1100,7 +1103,7 @@ func drawCityScape(screen *ebiten.Image, buildings []BuildingSlot, buildingLook 
                 var options ebiten.DrawImageOptions
                 options.ColorScale.ScaleAlpha(alphaScale)
                 options.GeoM = baseGeoM
-                options.GeoM.Translate(0, 85)
+                options.GeoM.Translate(0, float64(85 * data.ScreenScale))
                 images, _ := imageCache.GetImages("cityscap.lbx", 77)
                 index := animationCounter % uint64(len(images))
                 screen.DrawImage(images[index], &options)
@@ -1108,7 +1111,7 @@ func drawCityScape(screen *ebiten.Image, buildings []BuildingSlot, buildingLook 
                 var options ebiten.DrawImageOptions
                 options.ColorScale.ScaleAlpha(alphaScale)
                 options.GeoM = baseGeoM
-                options.GeoM.Translate(0, 85)
+                options.GeoM.Translate(0, float64(85 * data.ScreenScale))
                 images, _ := imageCache.GetImages("cityscap.lbx", 79)
                 index := animationCounter % uint64(len(images))
                 screen.DrawImage(images[index], &options)
@@ -1243,28 +1246,27 @@ func (cityScreen *CityScreen) MakeResourceDialog(title string, smallIcon *ebiten
     infoWidth := helpTop.Bounds().Dx()
     // infoHeight := screen.HelpTop.Bounds().Dy()
     infoLeftMargin := 18
-    infoTopMargin := 26
+    infoTopMargin := 20
     infoBodyMargin := 3
     maxInfoWidth := infoWidth - infoLeftMargin - infoBodyMargin - 14
 
     // fmt.Printf("Help text: %v\n", []byte(help.Text))
 
     helpTextY := infoTopMargin
-    titleYAdjust := 0
     helpTextY += helpTitleFont.Height() + 1
 
-    textHeight := len(resources) * (helpFont.Height() + 1)
+    textHeight := (len(resources) + 1) * (helpFont.Height() + 1)
 
     bottom := helpTextY + textHeight
 
     // only draw as much of the top scroll as there are lines of text
-    topImage := helpTop.SubImage(image.Rect(0, 0, helpTop.Bounds().Dx(), int(bottom))).(*ebiten.Image)
+    topImage := helpTop.SubImage(image.Rect(0, 0, helpTop.Bounds().Dx(), int(bottom) * data.ScreenScale)).(*ebiten.Image)
     helpBottom, err := cityScreen.ImageCache.GetImage("help.lbx", 1, 0)
     if err != nil {
         return nil
     }
 
-    infoY := (data.ScreenHeight - bottom - helpBottom.Bounds().Dy()) / 2
+    infoY := (data.ScreenHeight - bottom * data.ScreenScale - helpBottom.Bounds().Dy()) / 2
 
     widestResources := float64(0)
     for _, usage := range resources {
@@ -1281,12 +1283,12 @@ func (cityScreen *CityScreen) MakeResourceDialog(title string, smallIcon *ebiten
         Rect: image.Rect(0, 0, data.ScreenWidth, data.ScreenHeight),
         Draw: func (infoThis *uilib.UIElement, window *ebiten.Image){
             var options ebiten.DrawImageOptions
-            options.GeoM.Translate(float64(infoX), float64(infoY))
+            options.GeoM.Translate(float64(infoX * data.ScreenScale), float64(infoY))
             options.ColorScale.ScaleAlpha(getAlpha())
             window.DrawImage(topImage, &options)
 
             options.GeoM.Reset()
-            options.GeoM.Translate(float64(infoX), float64(bottom + infoY))
+            options.GeoM.Translate(float64(infoX * data.ScreenScale), float64(bottom * data.ScreenScale + infoY))
             options.ColorScale.ScaleAlpha(getAlpha())
             window.DrawImage(helpBottom, &options)
 
@@ -1296,10 +1298,10 @@ func (cityScreen *CityScreen) MakeResourceDialog(title string, smallIcon *ebiten
 
             titleX := infoX + infoLeftMargin + maxInfoWidth / 2
 
-            helpTitleFont.PrintCenter(window, float64(titleX), float64(infoY + infoTopMargin + titleYAdjust), 1, options.ColorScale, title)
+            helpTitleFont.PrintCenter(window, float64(titleX * data.ScreenScale), float64(infoY + infoTopMargin * data.ScreenScale), 1, options.ColorScale, title)
 
-            yPos := infoY + infoTopMargin + helpTitleFont.Height() + 1
-            xPos := infoX + infoLeftMargin
+            yPos := infoY + (infoTopMargin + helpTitleFont.Height() + 1) * data.ScreenScale
+            xPos := (infoX + infoLeftMargin) * data.ScreenScale
 
             options.GeoM.Reset()
             options.GeoM.Translate(float64(xPos), float64(yPos))
@@ -1307,16 +1309,16 @@ func (cityScreen *CityScreen) MakeResourceDialog(title string, smallIcon *ebiten
             for _, usage := range resources {
                 if usage.Count < 0 {
                     x, y := options.GeoM.Apply(0, 1)
-                    helpFont.PrintRight(window, x, y, 1, options.ColorScale, "-")
+                    helpFont.PrintRight(window, x, y, float64(data.ScreenScale), options.ColorScale, "-")
                 }
 
                 cityScreen.drawIcons(int(math.Abs(float64(usage.Count))), smallIcon, bigIcon, options, window)
 
                 x, y := options.GeoM.Apply(widestResources + 5, 0)
 
-                helpFont.Print(window, x, y, 1, options.ColorScale, fmt.Sprintf("%v (%v)", usage.Name, usage.Count))
-                yPos += helpFont.Height() + 1
-                options.GeoM.Translate(0, float64(helpFont.Height() + 1))
+                helpFont.Print(window, x, y, float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("%v (%v)", usage.Name, usage.Count))
+                yPos += (helpFont.Height() + 1) * data.ScreenScale
+                options.GeoM.Translate(0, float64((helpFont.Height() + 1) * data.ScreenScale))
             }
 
         },
@@ -1505,7 +1507,7 @@ func (cityScreen *CityScreen) CreateResourceIcons(ui *uilib.UI) []*uilib.UIEleme
 
     var elements []*uilib.UIElement
 
-    foodRect := image.Rect(6, 52, 6 + 9 * bigFood.Bounds().Dx(), 52 + bigFood.Bounds().Dy())
+    foodRect := image.Rect(6 * data.ScreenScale, 52 * data.ScreenScale, 6 * data.ScreenScale + 9 * bigFood.Bounds().Dx(), 52 * data.ScreenScale + bigFood.Bounds().Dy())
     elements = append(elements, &uilib.UIElement{
         Rect: foodRect,
         LeftClick: func(element *uilib.UIElement) {
@@ -1516,13 +1518,13 @@ func (cityScreen *CityScreen) CreateResourceIcons(ui *uilib.UI) []*uilib.UIEleme
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(foodRect.Min.X), float64(foodRect.Min.Y))
             options.GeoM = cityScreen.drawIcons(foodRequired, smallFood, bigFood, options, screen)
-            options.GeoM.Translate(5, 0)
+            options.GeoM.Translate(float64(5 * data.ScreenScale), 0)
             cityScreen.drawIcons(foodSurplus, smallFood, bigFood, options, screen)
         },
     })
 
     production := cityScreen.City.WorkProductionRate()
-    workRect := image.Rect(6, 60, 6 + 9 * bigHammer.Bounds().Dx(), 60 + bigHammer.Bounds().Dy())
+    workRect := image.Rect(6 * data.ScreenScale, 60 * data.ScreenScale, 6 * data.ScreenScale + 9 * bigHammer.Bounds().Dx(), 60 * data.ScreenScale + bigHammer.Bounds().Dy())
     elements = append(elements, &uilib.UIElement{
         Rect: workRect,
         LeftClick: func(element *uilib.UIElement) {
@@ -1543,7 +1545,7 @@ func (cityScreen *CityScreen) CreateResourceIcons(ui *uilib.UI) []*uilib.UIEleme
 
     // FIXME: if income - upkeep < 0 then show greyed out icons for gold
 
-    goldMaintenanceRect := image.Rect(6, 68, 6 + int(x), 68 + bigCoin.Bounds().Dy())
+    goldMaintenanceRect := image.Rect(6 * data.ScreenScale, 68 * data.ScreenScale, 6 * data.ScreenScale + int(x), 68 * data.ScreenScale + bigCoin.Bounds().Dy())
     elements = append(elements, &uilib.UIElement{
         Rect: goldMaintenanceRect,
         LeftClick: func(element *uilib.UIElement) {
@@ -1563,7 +1565,7 @@ func (cityScreen *CityScreen) CreateResourceIcons(ui *uilib.UI) []*uilib.UIEleme
 
     goldGeom = cityScreen.drawIcons(goldSurplus, smallCoin, bigCoin, goldUpkeepOptions, nil)
     x, _ = goldGeom.Apply(0, 0)
-    goldSurplusRect := image.Rect(goldMaintenanceRect.Max.X + 6, 68, goldMaintenanceRect.Max.X + 6 + int(x), 68 + bigCoin.Bounds().Dy())
+    goldSurplusRect := image.Rect(goldMaintenanceRect.Max.X + 6 * data.ScreenScale, 68 * data.ScreenScale, goldMaintenanceRect.Max.X + 6 * data.ScreenScale + int(x), 68 * data.ScreenScale + bigCoin.Bounds().Dy())
     elements = append(elements, &uilib.UIElement{
         Rect: goldSurplusRect,
         LeftClick: func(element *uilib.UIElement) {
@@ -1578,7 +1580,7 @@ func (cityScreen *CityScreen) CreateResourceIcons(ui *uilib.UI) []*uilib.UIEleme
         },
     })
 
-    powerRect := image.Rect(6, 76, 6 + 9 * bigMagic.Bounds().Dx(), 76 + bigMagic.Bounds().Dy())
+    powerRect := image.Rect(6 * data.ScreenScale, 76 * data.ScreenScale, 6 * data.ScreenScale + 9 * bigMagic.Bounds().Dx(), 76 * data.ScreenScale + bigMagic.Bounds().Dy())
     elements = append(elements, &uilib.UIElement{
         Rect: powerRect,
         LeftClick: func(element *uilib.UIElement) {
@@ -1592,7 +1594,7 @@ func (cityScreen *CityScreen) CreateResourceIcons(ui *uilib.UI) []*uilib.UIEleme
         },
     })
 
-    researchRect := image.Rect(6, 84, 6 + 9 * bigResearch.Bounds().Dx(), 84 + bigResearch.Bounds().Dy())
+    researchRect := image.Rect(6 * data.ScreenScale, 84 * data.ScreenScale, 6 * data.ScreenScale + 9 * bigResearch.Bounds().Dx(), 84 * data.ScreenScale + bigResearch.Bounds().Dy())
     elements = append(elements, &uilib.UIElement{
         Rect: researchRect,
         LeftClick: func(element *uilib.UIElement) {
@@ -1618,8 +1620,8 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
         screen.DrawImage(ui, &options)
     }
 
-    cityScreen.Fonts.BigFont.Print(screen, 20, 3, 1, ebiten.ColorScale{}, fmt.Sprintf("%v of %s", cityScreen.City.GetSize(), cityScreen.City.Name))
-    cityScreen.Fonts.DescriptionFont.Print(screen, 6, 19, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", cityScreen.City.Race))
+    cityScreen.Fonts.BigFont.Print(screen, float64(20 * data.ScreenScale), float64(3 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v of %s", cityScreen.City.GetSize(), cityScreen.City.Name))
+    cityScreen.Fonts.DescriptionFont.Print(screen, float64(6 * data.ScreenScale), float64(19 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v", cityScreen.City.Race))
 
     deltaNumber := func(n int) string {
         if n > 0 {
@@ -1631,7 +1633,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
         }
     }
 
-    cityScreen.Fonts.DescriptionFont.PrintRight(screen, 210, 19, 1, ebiten.ColorScale{}, fmt.Sprintf("Population: %v (%v)", cityScreen.City.Population, deltaNumber(cityScreen.City.PopulationGrowthRate())))
+    cityScreen.Fonts.DescriptionFont.PrintRight(screen, float64(210 * data.ScreenScale), float64(19 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("Population: %v (%v)", cityScreen.City.Population, deltaNumber(cityScreen.City.PopulationGrowthRate())))
 
     showWork := false
     workRequired := 0
@@ -1642,11 +1644,11 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
             index := animationCounter % uint64(len(producingPics))
 
             var options ebiten.DrawImageOptions
-            options.GeoM.Translate(217, 144)
+            options.GeoM.Translate(float64(217 * data.ScreenScale), float64(144 * data.ScreenScale))
             screen.DrawImage(producingPics[index], &options)
         }
 
-        cityScreen.Fonts.ProducingFont.PrintCenter(screen, 237, 179, 1, ebiten.ColorScale{}, cityScreen.City.BuildingInfo.Name(cityScreen.City.ProducingBuilding))
+        cityScreen.Fonts.ProducingFont.PrintCenter(screen, float64(237 * data.ScreenScale), float64(179 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, cityScreen.City.BuildingInfo.Name(cityScreen.City.ProducingBuilding))
 
         // for all buildings besides trade goods and housing, show amount of work required to build
 
@@ -1654,7 +1656,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
             producingBackground, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", 13, 0)
             if err == nil {
                 var options ebiten.DrawImageOptions
-                options.GeoM.Translate(260, 149)
+                options.GeoM.Translate(float64(260 * data.ScreenScale), float64(149 * data.ScreenScale))
                 screen.DrawImage(producingBackground, &options)
             }
 
@@ -1664,7 +1666,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
                 case buildinglib.BuildingHousing: description = "Increases population growth rate."
             }
 
-            cityScreen.Fonts.ProducingFont.PrintWrapCenter(screen, 285, 155, 60, 1, ebiten.ColorScale{}, description)
+            cityScreen.Fonts.ProducingFont.PrintWrapCenter(screen, float64(285 * data.ScreenScale), float64(155 * data.ScreenScale), float64(60 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, description)
         } else {
             showWork = true
             workRequired = cityScreen.City.BuildingInfo.ProductionCost(cityScreen.City.ProducingBuilding)
@@ -1675,10 +1677,10 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
             var options ebiten.DrawImageOptions
             use := images[2]
 
-            options.GeoM.Translate(238, 168)
+            options.GeoM.Translate(float64(238 * data.ScreenScale), float64(168 * data.ScreenScale))
             combat.RenderCombatTile(screen, &cityScreen.ImageCache, options)
             combat.RenderCombatUnit(screen, use, options, cityScreen.City.ProducingUnit.Count, data.UnitEnchantmentNone, 0, nil)
-            cityScreen.Fonts.ProducingFont.PrintCenter(screen, 237, 179, 1, ebiten.ColorScale{}, cityScreen.City.ProducingUnit.Name)
+            cityScreen.Fonts.ProducingFont.PrintCenter(screen, float64(237 * data.ScreenScale), float64(179 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, cityScreen.City.ProducingUnit.Name)
         }
 
         showWork = true
@@ -1694,22 +1696,22 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
             turn = fmt.Sprintf("%v Turns", int(math.Ceil(turns)))
         }
 
-        cityScreen.Fonts.DescriptionFont.PrintRight(screen, 318, 140, 1, ebiten.ColorScale{}, turn)
+        cityScreen.Fonts.DescriptionFont.PrintRight(screen, float64(318 * data.ScreenScale), float64(140 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, turn)
 
         workEmpty, err1 := cityScreen.ImageCache.GetImage("backgrnd.lbx", 11, 0)
         workFull, err2 := cityScreen.ImageCache.GetImage("backgrnd.lbx", 12, 0)
         if err1 == nil && err2 == nil {
-            startX := 262
+            startX := 262 * data.ScreenScale
 
             x := startX
-            y := 151
+            y := 151 * data.ScreenScale
 
             coinsPerRow := 10
-            xSpacing := 5
+            xSpacing := 5 * data.ScreenScale
 
             if workRequired / 10 > 50 {
                 coinsPerRow = 20
-                xSpacing = 2
+                xSpacing = 2 * data.ScreenScale
             }
 
             coinsProduced := float64(cityScreen.City.Production) / 10.0
@@ -1746,10 +1748,10 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
     }
 
     // draw a few squares of the map
-    mapX := 215
-    mapY := 4
-    mapWidth := 100
-    mapHeight := 88
+    mapX := 215 * data.ScreenScale
+    mapY := 4 * data.ScreenScale
+    mapWidth := 100 * data.ScreenScale
+    mapHeight := 88 * data.ScreenScale
     mapPart := screen.SubImage(image.Rect(mapX, mapY, mapX + mapWidth, mapY + mapHeight)).(*ebiten.Image)
     var mapGeom ebiten.GeoM
     mapGeom.Translate(float64(mapX), float64(mapY))
@@ -1834,7 +1836,7 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
 
     ui.SetElementsFromArray(nil)
 
-    x1, y1 := options.GeoM.Apply(5, 102)
+    x1, y1 := options.GeoM.Apply(float64(5 * data.ScreenScale), float64(102 * data.ScreenScale))
 
     cityScapeElement := makeCityScapeElement(cache, ui, city, &help, &imageCache, func(buildinglib.Building){}, buildings, buildinglib.BuildingNone, int(x1), int(y1), fonts, player, &getAlpha)
 

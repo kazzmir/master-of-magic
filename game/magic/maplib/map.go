@@ -441,6 +441,7 @@ type Map struct {
     TileCache map[int]*ebiten.Image
 
     miniMapPixels []byte
+    // miniMapImage *image.Paletted
 }
 
 func getLandSize(size int) (int, int) {
@@ -814,11 +815,11 @@ func (mapObject *Map) Height() int {
 }
 
 func (mapObject *Map) TileWidth() int {
-    return mapObject.Data.TileWidth()
+    return mapObject.Data.TileWidth() * data.ScreenScale
 }
 
 func (mapObject *Map) TileHeight() int {
-    return mapObject.Data.TileHeight()
+    return mapObject.Data.TileHeight() * data.ScreenScale
 }
 
 func (mapObject *Map) WrapX(x int) int {
@@ -884,7 +885,11 @@ func (mapObject *Map) GetTile(tileX int, tileY int) FullTile {
     }
 }
 
-func (mapObject *Map) GetTileImage(tileX int, tileY int, animationCounter uint64) (*ebiten.Image, error) {
+func (mapObject *Map) ResetCache() {
+    mapObject.TileCache = make(map[int]*ebiten.Image)
+}
+
+func (mapObject *Map) GetTileImage(tileX int, tileY int, animationCounter uint64, scaler util.Scaler) (*ebiten.Image, error) {
     tile := mapObject.Map.Terrain[tileX][tileY]
     tileInfo := mapObject.Data.Tiles[tile]
 
@@ -894,7 +899,7 @@ func (mapObject *Map) GetTileImage(tileX int, tileY int, animationCounter uint64
         return image, nil
     }
 
-    gpuImage := ebiten.NewImageFromImage(tileInfo.Images[animationCounter % uint64(len(tileInfo.Images))])
+    gpuImage := ebiten.NewImageFromImage(scaler.ApplyScale(tileInfo.Images[animationCounter % uint64(len(tileInfo.Images))]))
 
     mapObject.TileCache[tile * 0x1000 + int(animationIndex)] = gpuImage
     return gpuImage, nil
@@ -944,15 +949,201 @@ func bannerColor(banner data.BannerType) color.RGBA {
     return color.RGBA{R: 0, G: 0, B: 0, A: 255}
 }
 
+/* an experiment to draw the entire minimap as a paletted image
+func (mapObject *Map) DrawMinimap2(screen *ebiten.Image, cities []MiniMapCity, centerX int, centerY int, zoom float64, fog [][]bool, counter uint64, crosshairs bool){
+    // draw entire minimap as a paletted image
+    // find a subimage that corresponds to the centerX/centerY position
+    // use writePixels to copy pixels from sub image to the screen
+
+    cursorColorBlue := math.Sin(float64(counter) / 10.0) * 127.0 + 127.0
+    if cursorColorBlue > 255 {
+        cursorColorBlue = 255
+    }
+    cursorColor := util.PremultiplyAlpha(color.RGBA{R: 255, G: 255, B: byte(cursorColorBlue), A: 180})
+
+    landColor := color.RGBA{R: 0, G: 0xad, B: 0x00, A: 255}
+    oceanColor := color.RGBA{R: 0, G: 0, B: 255, A: 255}
+    riverColor := color.RGBA{R: 0x3f, G: 0x88, B: 0xd3, A: 255}
+    mountainColor := color.RGBA{R: 0xbc, G: 0xd0, B: 0xe4, A: 255}
+    desertColor := color.RGBA{R: 0xdb, G: 0xbd, B: 0x29, A: 255}
+    tundraColor := color.RGBA{R: 0xd6, G: 0xd4, B: 0xc9, A: 255}
+    volcanoColor := color.RGBA{R: 0xff, G: 0x00, B: 0x00, A: 255}
+    lakeColor := color.RGBA{R: 0x3f, G: 0x88, B: 0xd3, A: 255}
+    natureNodeColor := color.RGBA{R: 0, G: 255, B: 0, A: 255}
+    sorceryNodeColor := color.RGBA{R: 0, G: 0, B: 255, A: 255}
+    chaosNodeColor := color.RGBA{R: 0xff, G: 0x00, B: 0x00, A: 255}
+    defaultColor := color.RGBA{R: 64, G: 64, B: 64, A: 255}
+    blackColor := color.RGBA{R: 0, G: 0, B: 0, A: 255}
+
+    bannerGreen := bannerColor(data.BannerGreen)
+    bannerBlue := bannerColor(data.BannerBlue)
+    bannerPurple := bannerColor(data.BannerPurple)
+    bannerRed := bannerColor(data.BannerRed)
+    bannerYellow := bannerColor(data.BannerYellow)
+    bannerBrown := bannerColor(data.BannerBrown)
+
+    mapPalette := color.Palette{
+        cursorColor,
+        landColor,
+        oceanColor,
+        riverColor,
+        mountainColor,
+        desertColor,
+        tundraColor,
+        volcanoColor,
+        lakeColor,
+        natureNodeColor,
+        sorceryNodeColor,
+        chaosNodeColor,
+        defaultColor,
+        blackColor,
+
+        bannerGreen,
+        bannerBlue,
+        bannerPurple,
+        bannerRed,
+        bannerYellow,
+        bannerBrown,
+    }
+
+    const cursorIndex = 0
+    const grassIndex = 1
+    const shoreIndex = 1
+    const hillIndex = 1
+    const SwampIndex = 1
+    const ForestIndex = 1
+    const oceanIndex = 2
+    const riverIndex = 3
+    const mountainIndex = 4
+    const desertIndex = 5
+    const tundraIndex = 6
+    const volcanoIndex = 7
+    const lakeIndex = 8
+    const natureNodeIndex = 9
+    const sorceryNodeIndex = 10
+    const chaosNodeIndex = 11
+    const defaultIndex = 12
+    const blackIndex = 13
+    const bannerGreenIndex = 14
+    const bannerBlueIndex = 15
+    const bannerPurpleIndex = 16
+    const bannerRedIndex = 17
+    const bannerYellowIndex = 18
+    const bannerBrownIndex = 19
+
+    if len(mapObject.miniMapPixels) != screen.Bounds().Dx() * screen.Bounds().Dy() * 4 {
+        log.Printf("set minimap pixels to %v", screen.Bounds().Dx() * screen.Bounds().Dy() * 4)
+        mapObject.miniMapPixels = make([]byte, screen.Bounds().Dx() * screen.Bounds().Dy() * 4)
+        mapObject.miniMapImage = image.NewPaletted(image.Rect(0, 0, mapObject.Map.Columns(), mapObject.Map.Rows()), mapPalette)
+    }
+
+    mapObject.miniMapImage.Palette = mapPalette
+
+    for x := 0; x < mapObject.Map.Columns(); x++ {
+        for y := 0; y < mapObject.Map.Rows(); y++ {
+            if !fog[x][y] {
+                mapObject.miniMapImage.SetColorIndex(x, y, uint8(blackIndex))
+            } else {
+                var index = 0
+                switch terrain.GetTile(mapObject.Map.Terrain[x][y]).TerrainType() {
+                    case terrain.Grass: index = grassIndex
+                    case terrain.Ocean: index = oceanIndex
+                    case terrain.River: index = riverIndex
+                    case terrain.Shore: index = shoreIndex
+                    case terrain.Mountain: index = mountainIndex
+                    case terrain.Hill: index = hillIndex
+                    case terrain.Swamp: index = SwampIndex
+                    case terrain.Forest: index = ForestIndex
+                    case terrain.Desert: index = desertIndex
+                    case terrain.Tundra: index = tundraIndex
+                    case terrain.Volcano: index = volcanoIndex
+                    case terrain.Lake: index = lakeIndex
+                    case terrain.NatureNode: index = natureNodeIndex
+                    case terrain.SorceryNode: index = sorceryNodeIndex
+                    case terrain.ChaosNode: index = chaosNodeIndex
+                    default: index = defaultIndex
+                }
+
+                mapObject.miniMapImage.SetColorIndex(x, y, uint8(index))
+            }
+        }
+    }
+
+    for _, city := range cities {
+        x, y := city.GetX(), city.GetY()
+        if fog[x][y] {
+            index := bannerGreenIndex
+            switch city.GetBanner() {
+                case data.BannerBlue: index = bannerBlueIndex
+                case data.BannerGreen: index = bannerGreenIndex
+                case data.BannerPurple: index = bannerPurpleIndex
+                case data.BannerRed: index = bannerRedIndex
+                case data.BannerYellow: index = bannerYellowIndex
+                case data.BannerBrown: index = bannerBrownIndex
+            }
+            mapObject.miniMapImage.SetColorIndex(x, y, uint8(index))
+        }
+    }
+
+    pixels := mapObject.miniMapPixels
+    rowSize := screen.Bounds().Dx()
+
+    set := func(x int, y int, c color.Color){
+        baseIndex := (y * rowSize + x) * 4
+
+        / *
+        if baseIndex > len(mapObject.miniMapPixels) {
+            return
+        }
+        * /
+
+        r, g, b, a := c.RGBA()
+
+        pixels[baseIndex + 0] = byte(r >> 8)
+        pixels[baseIndex + 1] = byte(g >> 8)
+        pixels[baseIndex + 2] = byte(b >> 8)
+        pixels[baseIndex + 3] = byte(a >> 8)
+    }
+
+
+    for x := range mapObject.Map.Columns() {
+        for y := range mapObject.Map.Rows() {
+            c := mapObject.miniMapImage.At(x, y)
+            // set all the pixels in a block
+
+            if data.ScreenScale == 1 {
+                set(x, y, c)
+            } else {
+                for dx := range data.ScreenScale {
+                    for dy := range data.ScreenScale {
+                        cx := (mapObject.WrapX(x + centerX)) * data.ScreenScale + dx
+                        cy := y + dy + centerY
+                        // log.Printf("set at %v, %v %v, %v", x, y, cx, cy)
+                        if cx < 0 || cx >= screen.Bounds().Dx() || cy < 0 || cy >= screen.Bounds().Dy() {
+                            continue
+                        }
+                        set(cx, cy, c)
+                    }
+                }
+            }
+        }
+    }
+
+    screen.Fill(color.RGBA{R: 0, G: 0, B: 0, A: 255})
+    screen.WritePixels(mapObject.miniMapPixels)
+}
+*/
+
 func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []MiniMapCity, centerX int, centerY int, zoom float64, fog [][]bool, counter uint64, crosshairs bool){
     if len(mapObject.miniMapPixels) != screen.Bounds().Dx() * screen.Bounds().Dy() * 4 {
+        // log.Printf("set minimap pixels to %v", screen.Bounds().Dx() * screen.Bounds().Dy() * 4)
         mapObject.miniMapPixels = make([]byte, screen.Bounds().Dx() * screen.Bounds().Dy() * 4)
     }
 
     rowSize := screen.Bounds().Dx()
 
-    cameraX := centerX - screen.Bounds().Dx() / 2
-    cameraY := centerY - screen.Bounds().Dy() / 2
+    cameraX := centerX * data.ScreenScale - screen.Bounds().Dx() / 2
+    cameraY := centerY * data.ScreenScale - screen.Bounds().Dy() / 2
 
     /*
     if cameraX < 0 {
@@ -970,8 +1161,8 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []MiniMapCity, ce
     }
     */
 
-    if cameraY > mapObject.Map.Rows() - screen.Bounds().Dy() {
-        cameraY = mapObject.Map.Rows() - screen.Bounds().Dy()
+    if cameraY > mapObject.Map.Rows() * data.ScreenScale - screen.Bounds().Dy() {
+        cameraY = mapObject.Map.Rows() * data.ScreenScale - screen.Bounds().Dy()
     }
 
     set := func(x int, y int, c color.RGBA){
@@ -1003,8 +1194,8 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []MiniMapCity, ce
 
     for x := 0; x < screen.Bounds().Dx(); x++ {
         for y := 0; y < screen.Bounds().Dy(); y++ {
-            tileX := mapObject.WrapX(x + cameraX)
-            tileY := y + cameraY
+            tileX := mapObject.WrapX((x + cameraX) / data.ScreenScale)
+            tileY := (y + cameraY) / data.ScreenScale
 
             if tileX < 0 || tileX >= mapObject.Map.Columns() || tileY < 0 || tileY >= mapObject.Map.Rows() || !fog[tileX][tileY] {
                 set(x, y, black)
@@ -1043,50 +1234,73 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []MiniMapCity, ce
     }
 
     if crosshairs {
-        cursorColorBlue := math.Sin(float64(counter) / 10.0) * 127.0 + 127.0
+        cursorColorBlue := math.Sin(float64(counter) * 3 * math.Pi / 180) * 127.0 + 127.0
         if cursorColorBlue > 255 {
             cursorColorBlue = 255
         }
         cursorColor := util.PremultiplyAlpha(color.RGBA{R: 255, G: 255, B: byte(cursorColorBlue), A: 180})
 
-        cursorRadius := int(5.0 / zoom)
-        x1 := centerX - cursorRadius - cameraX
-        y1 := centerY - cursorRadius - cameraY
-        x2 := centerX + cursorRadius - cameraX
+        cursorRadius := int(float64(5.0 * data.ScreenScale) / zoom)
+        x1 := centerX * data.ScreenScale - cursorRadius - cameraX
+        y1 := centerY * data.ScreenScale - cursorRadius - cameraY
+        x2 := centerX * data.ScreenScale + cursorRadius - cameraX
         y2 := y1
         x3 := x1
-        y3 := centerY + cursorRadius - cameraY
+        y3 := centerY * data.ScreenScale + cursorRadius - cameraY
         x4 := x2
         y4 := y3
         points := []image.Point{
             image.Pt(x1, y1),
-            image.Pt(x1+1, y1),
-            image.Pt(x1, y1+1),
+            image.Pt(x1+1*data.ScreenScale, y1),
+            image.Pt(x1, y1+1*data.ScreenScale),
 
             image.Pt(x2, y2),
-            image.Pt(x2-1, y2),
-            image.Pt(x2, y2+1),
+            image.Pt(x2-1*data.ScreenScale, y2),
+            image.Pt(x2, y2+1*data.ScreenScale),
 
             image.Pt(x3, y3),
-            image.Pt(x3+1, y3),
-            image.Pt(x3, y3-1),
+            image.Pt(x3+1*data.ScreenScale, y3),
+            image.Pt(x3, y3-1*data.ScreenScale),
 
             image.Pt(x4, y4),
-            image.Pt(x4-1, y4),
-            image.Pt(x4, y4-1),
+            image.Pt(x4-1*data.ScreenScale, y4),
+            image.Pt(x4, y4-1*data.ScreenScale),
+        }
+
+        drawSquare := func(x int, y int, c color.RGBA){
+            if data.ScreenScale == 1 {
+                set(x, y, cursorColor)
+            } else {
+                for dx := range data.ScreenScale {
+                    for dy := range data.ScreenScale {
+                        cx := x + dx
+                        cy := y + dy
+
+                        if cx >= 0 && cy >= 0 && cx < screen.Bounds().Dx() && cy < screen.Bounds().Dy() {
+                            set(cx, cy, cursorColor)
+                        }
+                    }
+                }
+            }
         }
 
         for _, point := range points {
-            x := mapObject.WrapX(point.X)
+            x := mapObject.WrapX(point.X / data.ScreenScale) * data.ScreenScale
             y := point.Y
 
             if x >= 0 && y >= 0 && x < screen.Bounds().Dx() && y < screen.Bounds().Dy(){
-                set(x, y, cursorColor)
+                drawSquare(x, y, cursorColor)
             }
         }
     }
 
     screen.WritePixels(mapObject.miniMapPixels)
+    /*
+    red := ebiten.NewImage(screen.Bounds().Dx(), screen.Bounds().Dy())
+    red.Fill(color.RGBA{R: 255, G: 0, B: 0, A: 255})
+    var options ebiten.DrawImageOptions
+    screen.DrawImage(red, &options)
+    */
 }
 
 // draw base map tiles, in general stuff that should go under cities/units
@@ -1116,7 +1330,7 @@ func (mapObject *Map) DrawLayer1(camera cameralib.Camera, animationCounter uint6
                 continue
             }
 
-            tileImage, err := mapObject.GetTileImage(tileX, tileY, animationCounter)
+            tileImage, err := mapObject.GetTileImage(tileX, tileY, animationCounter, imageCache)
             if err == nil {
                 options.GeoM.Reset()
                 // options.GeoM = geom

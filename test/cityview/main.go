@@ -174,7 +174,7 @@ func main(){
     monitorWidth, _ := ebiten.Monitor().Size()
     size := monitorWidth / 390
 
-    ebiten.SetWindowSize(data.ScreenWidth * size, data.ScreenHeight * size)
+    ebiten.SetWindowSize(data.ScreenWidth / data.ScreenScale * size, data.ScreenHeight / data.ScreenScale * size)
     ebiten.SetWindowTitle("city view")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 

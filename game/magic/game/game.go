@@ -540,7 +540,9 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         return nil
     }
 
-    mouseData, err := mouselib.MakeMouseData(lbxCache)
+    imageCache := util.MakeImageCache(lbxCache)
+
+    mouseData, err := mouselib.MakeMouseData(lbxCache, &imageCache)
     if err != nil {
         log.Printf("Unable to read mouse data: %v", err)
         return nil
@@ -554,7 +556,7 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         Plane: data.PlaneArcanus,
         State: GameStateRunning,
         Settings: settings,
-        ImageCache: util.MakeImageCache(lbxCache),
+        ImageCache: imageCache,
         InfoFontYellow: infoFontYellow,
         InfoFontRed: infoFontRed,
         Heroes: createHeroes(),
@@ -578,6 +580,21 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
     }
 
     return game
+}
+
+func (game *Game) UpdateImages() {
+    game.ImageCache = util.MakeImageCache(game.Cache)
+    game.Fog = nil
+    game.ArcanusMap.ResetCache()
+    game.MyrrorMap.ResetCache()
+
+    mouseData, err := mouselib.MakeMouseData(game.Cache, &game.ImageCache)
+    if err != nil {
+        log.Printf("Unable to read mouse data: %v", err)
+    } else {
+        game.MouseData = mouseData
+        mouse.Mouse.SetImage(game.MouseData.Normal)
+    }
 }
 
 func (game *Game) ContainsCity(x int, y int, plane data.Plane) bool {
@@ -740,13 +757,25 @@ func (game *Game) doCityListView(yield coroutine.YieldFunc) {
 
     cities := game.AllCities()
 
-    citiesMiniMap := make([]maplib.MiniMapCity, 0, len(cities))
+    var arcanusCities []maplib.MiniMapCity
+    var myrrorCities []maplib.MiniMapCity
+
     for _, city := range cities {
-        citiesMiniMap = append(citiesMiniMap, city)
+        if city.Plane == data.PlaneArcanus {
+            arcanusCities = append(arcanusCities, city)
+        } else {
+            myrrorCities = append(myrrorCities, city)
+        }
     }
 
-    drawMinimap := func (screen *ebiten.Image, x int, y int, fog [][]bool, counter uint64){
-        game.CurrentMap().DrawMinimap(screen, citiesMiniMap, x, y, 1, fog, counter, false)
+    player := game.Players[0]
+
+    drawMinimap := func (screen *ebiten.Image, x int, y int, plane data.Plane, counter uint64){
+        use := arcanusCities
+        if plane == data.PlaneMyrror {
+            use = myrrorCities
+        }
+        game.GetMap(plane).DrawMinimap(screen, use, x, y, 1, player.GetFog(plane), counter, false)
     }
 
     var showCity *citylib.City
@@ -755,6 +784,7 @@ func (game *Game) doCityListView(yield coroutine.YieldFunc) {
         if city.Citizens() >= 1 {
             showCity = city
         }
+        game.Plane = city.Plane
         game.Camera.Center(city.X, city.Y)
     }
 
@@ -929,7 +959,7 @@ func (game *Game) doInput(yield coroutine.YieldFunc, title string, name string, 
         util.Lighten(orange, 0),
     }
 
-    maxLength := float64(84)
+    maxLength := float64(84 * data.ScreenScale)
 
     nameFont := font.MakeOptimizedFontWithPalette(fonts[4], namePalette)
 
@@ -961,7 +991,7 @@ func (game *Game) doInput(yield coroutine.YieldFunc, title string, name string, 
         TextEntry: func(element *uilib.UIElement, text string) string {
             name = text
 
-            for len(name) > 0 && nameFont.MeasureTextWidth(name, 1) > maxLength {
+            for len(name) > 0 && nameFont.MeasureTextWidth(name, float64(data.ScreenScale)) > maxLength {
                 name = name[:len(name)-1]
             }
 
@@ -984,18 +1014,18 @@ func (game *Game) doInput(yield coroutine.YieldFunc, title string, name string, 
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             background, _ := game.ImageCache.GetImage("backgrnd.lbx", 33, 0)
             var options ebiten.DrawImageOptions
-            options.GeoM.Translate(float64(topX), float64(topY))
+            options.GeoM.Translate(float64(topX * data.ScreenScale), float64(topY * data.ScreenScale))
             screen.DrawImage(background, &options)
 
-            x, y := options.GeoM.Apply(13, 20)
+            x, y := options.GeoM.Apply(float64(13 * data.ScreenScale), float64(20 * data.ScreenScale))
 
-            nameFont.Print(screen, x, y, 1, options.ColorScale, name)
+            nameFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, name)
 
-            tx, ty := options.GeoM.Apply(9, 6)
-            titleFont.Print(screen, tx, ty, 1, options.ColorScale, title)
+            tx, ty := options.GeoM.Apply(float64(9 * data.ScreenScale), float64(6 * data.ScreenScale))
+            titleFont.Print(screen, tx, ty, float64(data.ScreenScale), options.ColorScale, title)
 
             // draw cursor
-            cursorX := x + nameFont.MeasureTextWidth(name, 1)
+            cursorX := x + nameFont.MeasureTextWidth(name, float64(data.ScreenScale))
 
             util.DrawTextCursor(screen, source, cursorX, y, game.Counter)
         },
@@ -1051,12 +1081,13 @@ func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City,
     // beetle: 55
     snake, _ := game.ImageCache.GetImageTransform("resource.lbx", 54, 0, "crop", util.AutoCrop)
 
-    wrappedText := bigFont.CreateWrappedText(180, 1, fmt.Sprintf("The %s of %s has completed the construction of a %s.", city.GetSize(), city.Name, game.BuildingInfo.Name(building)))
+    wrappedText := bigFont.CreateWrappedText(float64(180 * data.ScreenScale), float64(1 * data.ScreenScale), fmt.Sprintf("The %s of %s has completed the construction of a %s.", city.GetSize(), city.Name, game.BuildingInfo.Name(building)))
 
     rightSide, _ := game.ImageCache.GetImage("resource.lbx", 41, 0)
 
     getAlpha := util.MakeFadeIn(7, &game.Counter)
 
+    // FIXME: cropping the image cuts it off at some point
     buildingPics, err := game.ImageCache.GetImagesTransform("cityscap.lbx", buildinglib.GetBuildingIndex(building), "crop", util.AutoCrop)
 
     if err != nil {
@@ -1074,25 +1105,25 @@ func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City,
 
         var options ebiten.DrawImageOptions
         options.ColorScale.ScaleAlpha(getAlpha())
-        options.GeoM.Translate(8, 60)
+        options.GeoM.Translate(float64(8 * data.ScreenScale), float64(60 * data.ScreenScale))
         screen.DrawImage(background, &options)
         iconOptions := options
-        iconOptions.GeoM.Translate(6, -10)
+        iconOptions.GeoM.Translate(float64(6 * data.ScreenScale), float64(-10 * data.ScreenScale))
         screen.DrawImage(snake, &iconOptions)
 
-        x, y := options.GeoM.Apply(8 + float64(snake.Bounds().Dx()), 9)
+        x, y := options.GeoM.Apply(float64(8 * data.ScreenScale + snake.Bounds().Dx()), float64(9 * data.ScreenScale))
         bigFont.RenderWrapped(screen, x, y, wrappedText, options.ColorScale, false)
 
         options.GeoM.Translate(float64(background.Bounds().Dx()), 0)
         screen.DrawImage(rightSide, &options)
 
-        x, y = options.GeoM.Apply(4, 6)
-        buildingSpace := screen.SubImage(image.Rect(int(x), int(y), int(x + 45), int(y + 47))).(*ebiten.Image)
+        x, y = options.GeoM.Apply(float64(4 * data.ScreenScale), float64(6 * data.ScreenScale))
+        buildingSpace := screen.SubImage(image.Rect(int(x), int(y), int(x) + 45 * data.ScreenScale, int(y) + 47 * data.ScreenScale)).(*ebiten.Image)
 
         // vector.DrawFilledRect(buildingSpace, float32(x), float32(y), float32(buildingSpace.Bounds().Dx()), float32(buildingSpace.Bounds().Dy()), color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, false)
 
         landOptions := options
-        landOptions.GeoM.Translate(-10, -10)
+        landOptions.GeoM.Translate(float64(-10 * data.ScreenScale), float64(-10 * data.ScreenScale))
         buildingSpace.DrawImage(landBackground, &landOptions)
 
         buildingOptions := options
@@ -1159,11 +1190,11 @@ func (game *Game) showScroll(yield coroutine.YieldFunc, title string, text strin
     bigFont := font.MakeOptimizedFontWithPalette(fonts[4], redPalette)
 
     smallFont := font.MakeOptimizedFontWithPalette(fonts[1], redPalette2)
-    wrappedText := smallFont.CreateWrappedText(180, 1, text)
+    wrappedText := smallFont.CreateWrappedText(float64(180 * data.ScreenScale), float64(data.ScreenScale), text)
 
     scrollImages, _ := game.ImageCache.GetImages("scroll.lbx", 2)
 
-    totalImages := int((wrappedText.TotalHeight + float64(bigFont.Height())) / 5) + 1
+    totalImages := int((wrappedText.TotalHeight + float64(bigFont.Height() * data.ScreenScale)) / float64(5 * data.ScreenScale)) + 1
 
     if totalImages < 3 {
         totalImages = 3
@@ -1182,7 +1213,7 @@ func (game *Game) showScroll(yield coroutine.YieldFunc, title string, text strin
         game.Drawer = drawer
     }()
 
-    scrollLength := 30
+    scrollLength := 30 * data.ScreenScale
 
     getAlpha := util.MakeFadeIn(7, &game.Counter)
 
@@ -1192,7 +1223,7 @@ func (game *Game) showScroll(yield coroutine.YieldFunc, title string, text strin
         var options ebiten.DrawImageOptions
         options.ColorScale.ScaleAlpha(getAlpha())
 
-        options.GeoM.Translate(65, 25)
+        options.GeoM.Translate(float64(65 * data.ScreenScale), float64(25 * data.ScreenScale))
 
         middleY := pageBackground.Bounds().Dy() / 2
         length := scrollLength / 2
@@ -1202,16 +1233,16 @@ func (game *Game) showScroll(yield coroutine.YieldFunc, title string, text strin
         pagePart := pageBackground.SubImage(image.Rect(0, middleY - length, pageBackground.Bounds().Dx(), middleY + length)).(*ebiten.Image)
 
         pageOptions := options
-        pageOptions.GeoM.Translate(0, float64(middleY - length) + 5)
+        pageOptions.GeoM.Translate(0, float64(middleY - length) + float64(5 * data.ScreenScale))
         screen.DrawImage(pagePart, &pageOptions)
 
-        x, y := options.GeoM.Apply(float64(pageBackground.Bounds().Dx()) / 2, float64(middleY) - wrappedText.TotalHeight / 2 - float64(bigFont.Height()) / 2 + 5)
-        bigFont.PrintCenter(screen, x, y, 1, options.ColorScale, title)
-        y += float64(bigFont.Height()) + 1
+        x, y := options.GeoM.Apply(float64(pageBackground.Bounds().Dx()) / 2, float64(middleY) - wrappedText.TotalHeight / 2 - float64(bigFont.Height() * data.ScreenScale) / 2 + 5)
+        bigFont.PrintCenter(screen, x, y, float64(data.ScreenScale), options.ColorScale, title)
+        y += float64(bigFont.Height() * data.ScreenScale) + 1
         smallFont.RenderWrapped(screen, x, y, wrappedText, options.ColorScale, true)
 
         scrollOptions := options
-        scrollOptions.GeoM.Translate(-63, -20)
+        scrollOptions.GeoM.Translate(float64(-63 * data.ScreenScale), float64(-20 * data.ScreenScale))
         screen.DrawImage(scrollAnimation.Frame(), &scrollOptions)
     }
 
@@ -1232,7 +1263,7 @@ func (game *Game) showScroll(yield coroutine.YieldFunc, title string, text strin
 
         if game.Counter % animationSpeed == 0 {
             if scrollAnimation.Next() {
-                scrollLength += 10
+                scrollLength += 10 * data.ScreenScale
             }
         }
 
@@ -1247,7 +1278,7 @@ func (game *Game) showScroll(yield coroutine.YieldFunc, title string, text strin
 
         if game.Counter % animationSpeed == 0 {
             if scrollAnimation.Next() {
-                scrollLength -= 10
+                scrollLength -= 10 * data.ScreenScale
             } else {
                 quit = true
             }
@@ -1868,7 +1899,7 @@ func (game *Game) doLoadMenu(yield coroutine.YieldFunc) {
     makeButton := func (index int, x int, y int, action func()) *uilib.UIElement {
         useImage, _ := imageCache.GetImage("load.lbx", index, 0)
         return &uilib.UIElement{
-            Rect: util.ImageRect(x, y, useImage),
+            Rect: util.ImageRect(x * data.ScreenScale, y * data.ScreenScale, useImage),
             PlaySoundLeftClick: true,
             LeftClick: func(element *uilib.UIElement){
                 action()
@@ -1876,7 +1907,7 @@ func (game *Game) doLoadMenu(yield coroutine.YieldFunc) {
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(x), float64(y))
+                options.GeoM.Translate(float64(element.Rect.Min.X), float64(element.Rect.Min.Y))
                 screen.DrawImage(useImage, &options)
             },
         }
@@ -1889,14 +1920,17 @@ func (game *Game) doLoadMenu(yield coroutine.YieldFunc) {
 
     // load
     elements = append(elements, makeButton(1, 83, 171, func(){
+        // FIXME
     }))
 
     // save
     elements = append(elements, makeButton(3, 122, 171, func(){
+        // FIXME
     }))
 
     // settings
     elements = append(elements, makeButton(12, 172, 171, func(){
+        // FIXME
     }))
 
     // ok
@@ -2830,7 +2864,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
 
 // given a position on the screen in pixels, return true if the position is within the area of the ui designated for the overworld
 func (game *Game) InOverworldArea(x int, y int) bool {
-    return x < 240 && y > 18
+    return x < 240 * data.ScreenScale && y > 18 * data.ScreenScale
 }
 
 func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Player) {
@@ -3203,7 +3237,7 @@ func (game *Game) confirmMagicNodeEncounter(yield coroutine.YieldFunc, node *map
     rotateIndexLow := 247
     rotateIndexHigh := 254
 
-    animation := util.MakePaletteRotateAnimation(reloadLbx, lairIndex, rotateIndexLow, rotateIndexHigh)
+    animation := util.MakePaletteRotateAnimation(reloadLbx, &game.ImageCache, lairIndex, rotateIndexLow, rotateIndexHigh)
 
     return game.confirmEncounter(yield, fmt.Sprintf("You have found a %v node. Scouts have spotted %v within the %v node. Do you wish to enter?", nodeName, guardianName, nodeName), animation)
 }
@@ -3688,7 +3722,8 @@ func GetCityWallImage(city *citylib.City, cache *util.ImageCache) (*ebiten.Image
     }
 
     // the city image is a sub-frame of animation 20
-    return cache.GetImageTransform("mapback.lbx", 20, index, city.Banner.String(), util.ComposeImageTransform(units.MakeUpdateUnitColorsFunc(city.Banner), util.AutoCropGeneric))
+    // return cache.GetImageTransform("mapback.lbx", 20, index, city.Banner.String(), util.ComposeImageTransform(units.MakeUpdateUnitColorsFunc(city.Banner), util.AutoCropGeneric))
+    return cache.GetImageTransform("mapback.lbx", 20, index, city.Banner.String(), units.MakeUpdateUnitColorsFunc(city.Banner))
 }
 
 func (game *Game) ShowGrandVizierUI(){
@@ -4265,7 +4300,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
     var elements []*uilib.UIElement
 
     // game button
-    elements = append(elements, makeButton(1, 7, 4, false, func(){
+    elements = append(elements, makeButton(1, 7 * data.ScreenScale, 4 * data.ScreenScale, false, func(){
         select {
             case game.Events <- &GameEventLoadMenu{}:
             default:
@@ -4273,7 +4308,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
     }))
 
     // spell button
-    elements = append(elements, makeButton(2, 47, 4, false, func(){
+    elements = append(elements, makeButton(2, 47 * data.ScreenScale, 4 * data.ScreenScale, false, func(){
         select {
             case game.Events <- &GameEventCastSpellBook{}:
             default:
@@ -4281,7 +4316,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
     }))
 
     // army button
-    elements = append(elements, makeButton(3, 89, 4, false, func(){
+    elements = append(elements, makeButton(3, 89 * data.ScreenScale, 4 * data.ScreenScale, false, func(){
         select {
             case game.Events<- &GameEventArmyView{}:
             default:
@@ -4289,7 +4324,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
     }))
 
     // cities button
-    elements = append(elements, makeButton(4, 140, 4, false, func(){
+    elements = append(elements, makeButton(4, 140 * data.ScreenScale, 4 * data.ScreenScale, false, func(){
         select {
             case game.Events<- &GameEventCityListView{}:
             default:
@@ -4297,7 +4332,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
     }))
 
     // magic button
-    elements = append(elements, makeButton(5, 184, 4, false, func(){
+    elements = append(elements, makeButton(5, 184 * data.ScreenScale, 4 * data.ScreenScale, false, func(){
         select {
             case game.Events<- &GameEventMagicView{}:
             default:
@@ -4305,12 +4340,12 @@ func (game *Game) MakeHudUI() *uilib.UI {
     }))
 
     // info button
-    elements = append(elements, makeButton(6, 226, 4, true, func(){
+    elements = append(elements, makeButton(6, 226 * data.ScreenScale, 4 * data.ScreenScale, true, func(){
         ui.AddElements(game.MakeInfoUI(60, 25))
     }))
 
     // plane button
-    elements = append(elements, makeButton(7, 270, 4, false, func(){
+    elements = append(elements, makeButton(7, 270 * data.ScreenScale, 4 * data.ScreenScale, false, func(){
         game.SwitchPlane()
 
         game.RefreshUI()
@@ -4320,8 +4355,8 @@ func (game *Game) MakeHudUI() *uilib.UI {
         player := game.Players[0]
         // stack := player.SelectedStack
 
-        unitX1 := 246
-        unitY1 := 79
+        unitX1 := 246 * data.ScreenScale
+        unitY1 := 79 * data.ScreenScale
 
         unitX := unitX1
         unitY := unitY1
@@ -4383,14 +4418,14 @@ func (game *Game) MakeHudUI() *uilib.UI {
                         options.GeoM.Translate(float64(unitRect.Min.X), float64(unitRect.Min.Y))
                         screen.DrawImage(unitBackground, &options)
 
-                        options.GeoM.Translate(1, 1)
+                        options.GeoM.Translate(float64(data.ScreenScale), float64(data.ScreenScale))
 
                         if stack.IsActive(unit){
                             unitBack, _ := units.GetUnitBackgroundImage(unit.GetBanner(), &game.ImageCache)
                             screen.DrawImage(unitBack, &options)
                         }
 
-                        options.GeoM.Translate(1, 1)
+                        options.GeoM.Translate(float64(data.ScreenScale), float64(data.ScreenScale))
                         unitImage, err := GetUnitImage(unit, &game.ImageCache, unit.GetBanner())
                         if err == nil {
 
@@ -4417,7 +4452,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                             mediumHealth := color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff}
                             lowHealth := color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}
 
-                            healthWidth := float64(10)
+                            healthWidth := float64(10 * data.ScreenScale)
                             healthPercent := float64(unit.GetHealth()) / float64(unit.GetMaxHealth())
                             healthLength := healthWidth * healthPercent
 
@@ -4435,7 +4470,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                                 useColor = highHealth
                             }
 
-                            x, y := options.GeoM.Apply(4, 19)
+                            x, y := options.GeoM.Apply(float64(4 * data.ScreenScale), float64(19 * data.ScreenScale))
                             vector.StrokeLine(screen, float32(x), float32(y), float32(x + healthLength), float32(y), 1, useColor, false)
                         }
 
@@ -4503,15 +4538,15 @@ func (game *Game) MakeHudUI() *uilib.UI {
                         }
 
                         badgeOptions := options
-                        badgeOptions.GeoM.Translate(1, 21)
+                        badgeOptions.GeoM.Translate(float64(1 * data.ScreenScale), float64(21 * data.ScreenScale))
                         for i := 0; i < count; i++ {
                             pic, _ := game.ImageCache.GetImage("main.lbx", index, 0)
                             screen.DrawImage(pic, &badgeOptions)
-                            badgeOptions.GeoM.Translate(4, 0)
+                            badgeOptions.GeoM.Translate(float64(4 * data.ScreenScale), 0)
                         }
 
                         weaponOptions := options
-                        weaponOptions.GeoM.Translate(12, 18)
+                        weaponOptions.GeoM.Translate(float64(12 * data.ScreenScale), float64(18 * data.ScreenScale))
                         var weapon *ebiten.Image
                         switch unit.GetWeaponBonus() {
                         case data.WeaponMagic:
@@ -4528,13 +4563,13 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
                         // draw a G on the unit if they are moving
                         if len(stack.CurrentPath) != 0 {
-                            x, y := options.GeoM.Apply(1, 1)
-                            game.WhiteFont.Print(screen, x, y, 1, options.ColorScale, "G")
+                            x, y := options.GeoM.Apply(float64(1 * data.ScreenScale), float64(1 * data.ScreenScale))
+                            game.WhiteFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, "G")
                         }
 
                         if unit.GetBusy() == units.BusyStatusBuildRoad {
-                            x, y := options.GeoM.Apply(1, 1)
-                            game.WhiteFont.Print(screen, x, y, 1, options.ColorScale, "B")
+                            x, y := options.GeoM.Apply(float64(1 * data.ScreenScale), float64(1 * data.ScreenScale))
+                            game.WhiteFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, "B")
                         }
                     },
                 })
@@ -4550,7 +4585,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
             doneImages, _ := game.ImageCache.GetImages("main.lbx", 8)
             doneIndex := 0
-            doneRect := util.ImageRect(246, 176, doneImages[0])
+            doneRect := util.ImageRect(246 * data.ScreenScale, 176 * data.ScreenScale, doneImages[0])
             doneCounter := uint64(0)
             elements = append(elements, &uilib.UIElement{
                 Rect: doneRect,
@@ -4590,7 +4625,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
             patrolImages, _ := game.ImageCache.GetImages("main.lbx", 9)
             patrolIndex := 0
-            patrolRect := util.ImageRect(280, 176, patrolImages[0])
+            patrolRect := util.ImageRect(280 * data.ScreenScale, 176 * data.ScreenScale, patrolImages[0])
             patrolCounter := uint64(0)
             elements = append(elements, &uilib.UIElement{
                 Rect: patrolRect,
@@ -4634,7 +4669,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
             waitImages, _ := game.ImageCache.GetImages("main.lbx", 10)
             waitIndex := 0
-            waitRect := util.ImageRect(246, 186, waitImages[0])
+            waitRect := util.ImageRect(246 * data.ScreenScale, 186 * data.ScreenScale, waitImages[0])
             waitCounter := uint64(0)
             elements = append(elements, &uilib.UIElement{
                 Rect: waitRect,
@@ -4672,7 +4707,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
             buildImages, _ := game.ImageCache.GetImages("main.lbx", 11)
             meldImages, _ := game.ImageCache.GetImages("main.lbx", 49)
             buildIndex := 0
-            buildRect := util.ImageRect(280, 186, buildImages[0])
+            buildRect := util.ImageRect(280 * data.ScreenScale, 186 * data.ScreenScale, buildImages[0])
             buildCounter := uint64(0)
 
             hasRoad := game.GetMap(player.SelectedStack.Plane()).ContainsRoad(player.SelectedStack.X(), player.SelectedStack.Y())
@@ -4768,9 +4803,9 @@ func (game *Game) MakeHudUI() *uilib.UI {
         elements = append(elements, &uilib.UIElement{
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 if !minMoves.IsZero() {
-                    x := 246.0
-                    y := 167.0
-                    game.WhiteFont.Print(screen, x, y, 1, ebiten.ColorScale{}, fmt.Sprintf("Moves:%v", minMoves.ToFloat()))
+                    x := float64(246.0 * data.ScreenScale)
+                    y := float64(167.0 * data.ScreenScale)
+                    game.WhiteFont.Print(screen, x, y, float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("Moves:%v", minMoves.ToFloat()))
 
                     sailingIcon, _ := game.ImageCache.GetImage("main.lbx", 18, 0)
                     swimmingIcon, _ := game.ImageCache.GetImage("main.lbx", 19, 0)
@@ -4804,7 +4839,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                     }
 
                     var options ebiten.DrawImageOptions
-                    options.GeoM.Translate(x + 60, y)
+                    options.GeoM.Translate(x + float64(60 * data.ScreenScale), y)
                     screen.DrawImage(useIcon, &options)
                 }
             },
@@ -4815,7 +4850,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
         // next turn
         nextTurnImage, _ := game.ImageCache.GetImage("main.lbx", 35, 0)
         nextTurnImageClicked, _ := game.ImageCache.GetImage("main.lbx", 58, 0)
-        nextTurnRect := image.Rect(240, 174, 240 + nextTurnImage.Bounds().Dx(), 174 + nextTurnImage.Bounds().Dy())
+        nextTurnRect := image.Rect(240 * data.ScreenScale, 174 * data.ScreenScale, 240 * data.ScreenScale + nextTurnImage.Bounds().Dx(), 174 * data.ScreenScale + nextTurnImage.Bounds().Dy())
         nextTurnClicked := false
         elements = append(elements, &uilib.UIElement{
             Rect: nextTurnRect,
@@ -4838,10 +4873,10 @@ func (game *Game) MakeHudUI() *uilib.UI {
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 var options ebiten.DrawImageOptions
-                options.GeoM.Translate(240, 174)
+                options.GeoM.Translate(float64(240 * data.ScreenScale), float64(174 * data.ScreenScale))
                 screen.DrawImage(nextTurnImage, &options)
                 if nextTurnClicked {
-                    options.GeoM.Translate(6, 5)
+                    options.GeoM.Translate(float64(6 * data.ScreenScale), float64(5 * data.ScreenScale))
                     screen.DrawImage(nextTurnImageClicked, &options)
                 }
             },
@@ -4858,7 +4893,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                     goldFood, _ := game.ImageCache.GetImage("main.lbx", 34, 0)
                     var options ebiten.DrawImageOptions
-                    options.GeoM.Translate(240, 77)
+                    options.GeoM.Translate(float64(240 * data.ScreenScale), float64(77 * data.ScreenScale))
                     screen.DrawImage(goldFood, &options)
 
                     negativeScale := ebiten.ColorScale{}
@@ -4868,21 +4903,21 @@ func (game *Game) MakeHudUI() *uilib.UI {
                     negativeScale.SetR(float32(v))
 
                     if goldPerTurn < 0 {
-                        game.InfoFontRed.PrintCenter(screen, 278, 103, 1, negativeScale, fmt.Sprintf("%v Gold", goldPerTurn))
+                        game.InfoFontRed.PrintCenter(screen, float64(278 * data.ScreenScale), float64(103 * data.ScreenScale), float64(data.ScreenScale), negativeScale, fmt.Sprintf("%v Gold", goldPerTurn))
                     } else {
-                        game.InfoFontYellow.PrintCenter(screen, 278, 103, 1, ebiten.ColorScale{}, fmt.Sprintf("%v Gold", goldPerTurn))
+                        game.InfoFontYellow.PrintCenter(screen, float64(278 * data.ScreenScale), float64(103 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v Gold", goldPerTurn))
                     }
 
                     if foodPerTurn < 0 {
-                        game.InfoFontRed.PrintCenter(screen, 278, 135, 1, negativeScale, fmt.Sprintf("%v Food", foodPerTurn))
+                        game.InfoFontRed.PrintCenter(screen, float64(278 * data.ScreenScale), float64(135 * data.ScreenScale), float64(data.ScreenScale), negativeScale, fmt.Sprintf("%v Food", foodPerTurn))
                     } else {
-                        game.InfoFontYellow.PrintCenter(screen, 278, 135, 1, ebiten.ColorScale{}, fmt.Sprintf("%v Food", foodPerTurn))
+                        game.InfoFontYellow.PrintCenter(screen, float64(278 * data.ScreenScale), float64(135 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v Food", foodPerTurn))
                     }
 
                     if manaPerTurn < 0 {
-                        game.InfoFontRed.PrintCenter(screen, 278, 167, 1, negativeScale, fmt.Sprintf("%v Mana", manaPerTurn))
+                        game.InfoFontRed.PrintCenter(screen, float64(278 * data.ScreenScale), float64(167 * data.ScreenScale), float64(data.ScreenScale), negativeScale, fmt.Sprintf("%v Mana", manaPerTurn))
                     } else {
-                        game.InfoFontYellow.PrintCenter(screen, 278, 167, 1, ebiten.ColorScale{}, fmt.Sprintf("%v Mana", manaPerTurn))
+                        game.InfoFontYellow.PrintCenter(screen, float64(278 * data.ScreenScale), float64(167 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v Mana", manaPerTurn))
                     }
                 },
             })
@@ -4891,13 +4926,13 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
     elements = append(elements, &uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            game.WhiteFont.PrintRight(screen, 276, 68, 1, ebiten.ColorScale{}, fmt.Sprintf("%v GP", game.Players[0].Gold))
+            game.WhiteFont.PrintRight(screen, float64(276 * data.ScreenScale), float64(68 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v GP", game.Players[0].Gold))
         },
     })
 
     elements = append(elements, &uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            game.WhiteFont.PrintRight(screen, 313, 68, 1, ebiten.ColorScale{}, fmt.Sprintf("%v MP", game.Players[0].Mana))
+            game.WhiteFont.PrintRight(screen, float64(313 * data.ScreenScale), float64(68 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v MP", game.Players[0].Mana))
         },
     })
 
@@ -5539,7 +5574,7 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
 
             pic, err := GetUnitImage(leader, overworld.ImageCache, leader.GetBanner())
             if err == nil {
-                options.GeoM.Translate(1, 1)
+                options.GeoM.Translate(float64(data.ScreenScale), float64(data.ScreenScale))
 
                 if leader.GetBusy() != units.BusyStatusNone {
                     var patrolOptions colorm.DrawImageOptions
@@ -5646,7 +5681,7 @@ func (game *Game) DrawGame(screen *ebiten.Image){
     }
 
     useCounter := game.Counter
-    if game.Camera.GetZoom() < 0.9 {
+    if data.ScreenScale == 1 && game.Camera.GetZoom() < 0.9 {
         useCounter = 1
     }
 
@@ -5665,16 +5700,18 @@ func (game *Game) DrawGame(screen *ebiten.Image){
         FogBlack: game.GetFogImage(),
     }
 
-    overworldScreen := screen.SubImage(image.Rect(0, 18, 240, data.ScreenHeight)).(*ebiten.Image)
+    overworldScreen := screen.SubImage(image.Rect(0, 18 * data.ScreenScale, 240 * data.ScreenScale, data.ScreenHeight)).(*ebiten.Image)
     overworld.DrawOverworld(overworldScreen, ebiten.GeoM{})
 
     var miniGeom ebiten.GeoM
-    miniGeom.Translate(250, 20)
+    miniGeom.Translate(float64(250 * data.ScreenScale), float64(20 * data.ScreenScale))
     mx, my := miniGeom.Apply(0, 0)
-    miniWidth := 60
-    miniHeight := 31
+    miniWidth := 60 * data.ScreenScale
+    miniHeight := 31 * data.ScreenScale
     mini := screen.SubImage(image.Rect(int(mx), int(my), int(mx) + miniWidth, int(my) + miniHeight)).(*ebiten.Image)
-    overworld.DrawMinimap(mini)
+    if mini.Bounds().Dx() > 0 {
+        overworld.DrawMinimap(mini)
+    }
 
     game.HudUI.Draw(game.HudUI, screen)
 }

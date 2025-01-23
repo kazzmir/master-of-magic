@@ -7,6 +7,7 @@ import (
     "math"
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/game/magic/shaders"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
 
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/colorm"
@@ -206,7 +207,7 @@ func MakeFadeOut(time uint64, counter *uint64) AlphaFadeFunc {
 /* create an animation by rotating the colors in a palette for a given lbx/index pair.
  * all the colors between indexLow and indexHigh will be rotated once in the animation
  */
-func MakePaletteRotateAnimation(lbxFile *lbx.LbxFile, index int, rotateIndexLow int, rotateIndexHigh int) *Animation {
+func MakePaletteRotateAnimation(lbxFile *lbx.LbxFile, scaler Scaler, index int, rotateIndexLow int, rotateIndexHigh int) *Animation {
     basePalette, err := lbxFile.GetPalette(index)
     if err != nil {
         return nil
@@ -233,17 +234,17 @@ func MakePaletteRotateAnimation(lbxFile *lbx.LbxFile, index int, rotateIndexLow 
             return nil
         }
 
-        images = append(images, ebiten.NewImageFromImage(newImages[0]))
+        images = append(images, ebiten.NewImageFromImage(scaler.ApplyScale(newImages[0])))
     }
 
     return MakeAnimation(images, true)
 }
 
 func DrawTextCursor(screen *ebiten.Image, source *ebiten.Image, cursorX float64, y float64, counter uint64) {
-    width := float64(4)
-    height := float64(8)
+    width := float64(4 * data.ScreenScale)
+    height := float64(8 * data.ScreenScale)
 
-    yOffset := float64((counter/3) % 16) - 8
+    yOffset := float64((counter*uint64(data.ScreenScale)/3) % (16 * uint64(data.ScreenScale))) - height
 
     vertices := [4]ebiten.Vertex{
         ebiten.Vertex{

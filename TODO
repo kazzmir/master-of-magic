@@ -5,7 +5,6 @@
 * font editor - choose colors for font palette
 * implement overworld spells
 * corrupted tiles and purify
-* upscale screen by 2x
 * better map generation
 * overworld: ai controlled wizards/empires
 * combat: implement boulder ranged attacks
@@ -68,3 +67,4 @@
 1/16/2025 * combat: use item skill charges for casting spells
 1/17/2025 * map contains rivers and other terrain types, as well as magic nodes and encounter nodes
 1/19/2025 * nodes and encounters give treasure
+1/23/2025 * upscale screen by 2x

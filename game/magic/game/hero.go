@@ -12,6 +12,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     "github.com/kazzmir/master-of-magic/game/magic/unitview"
     "github.com/kazzmir/master-of-magic/game/magic/util"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
     herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
 
@@ -34,7 +35,7 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
 
     imageCache := util.MakeImageCache(cache)
 
-    yTop := float64(10)
+    yTop := float64(10 * data.ScreenScale)
 
     descriptionPalette := color.Palette{
         color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
@@ -78,11 +79,11 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
             background, _ := imageCache.GetImage("unitview.lbx", 1, 0)
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(0, yTop)
-            options.GeoM.Translate(31, 6)
+            options.GeoM.Translate(float64(31 * data.ScreenScale), float64(6 * data.ScreenScale))
             options.ColorScale.ScaleAlpha(getAlpha())
             screen.DrawImage(background, &options)
 
-            options.GeoM.Translate(9, 7)
+            options.GeoM.Translate(float64(9 * data.ScreenScale), float64(7 * data.ScreenScale))
             portraitLbx, portraitIndex := hero.GetPortraitLbxInfo()
             portrait, err := imageCache.GetImage(portraitLbx, portraitIndex, 0)
             if err == nil {
@@ -93,15 +94,15 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
 
             options.GeoM.Reset()
             options.GeoM.Translate(0, yTop)
-            options.GeoM.Translate(31, 6)
-            options.GeoM.Translate(51, 7)
+            options.GeoM.Translate(float64(31 * data.ScreenScale), float64(6 * data.ScreenScale))
+            options.GeoM.Translate(float64(51 * data.ScreenScale), float64(7 * data.ScreenScale))
 
             unitview.RenderUnitInfoNormal(screen, &imageCache, hero, hero.GetTitle(), "", descriptionFont, smallFont, options)
 
             options.GeoM.Reset()
             options.GeoM.Translate(0, yTop)
-            options.GeoM.Translate(31, 6)
-            options.GeoM.Translate(10, 50)
+            options.GeoM.Translate(float64(31 * data.ScreenScale), float64(6 * data.ScreenScale))
+            options.GeoM.Translate(float64(10 * data.ScreenScale), float64(50 * data.ScreenScale))
             unitview.RenderUnitInfoStats(screen, &imageCache, hero, 15, descriptionFont, smallFont, options)
 
             /*
@@ -111,7 +112,7 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
         },
     })
 
-    elements = append(elements, unitview.MakeUnitAbilitiesElements(&imageCache, hero, mediumFont, 40, 124, &ui.Counter, 1, &getAlpha, true)...)
+    elements = append(elements, unitview.MakeUnitAbilitiesElements(&imageCache, hero, mediumFont, 40 * data.ScreenScale, 124 * data.ScreenScale, &ui.Counter, 1, &getAlpha, true)...)
 
     elements = append(elements, &uilib.UIElement{
         Layer: 1,
@@ -119,7 +120,7 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
             box, _ := imageCache.GetImage("unitview.lbx", 2, 0)
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(0, yTop)
-            options.GeoM.Translate(248, 139)
+            options.GeoM.Translate(float64(248 * data.ScreenScale), float64(139 * data.ScreenScale))
             options.ColorScale.ScaleAlpha(getAlpha())
             screen.DrawImage(box, &options)
         },
@@ -127,7 +128,7 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
 
     buttonBackgrounds, _ := imageCache.GetImages("backgrnd.lbx", 24)
     // hire button
-    hireRect := util.ImageRect(257, 149 + int(yTop), buttonBackgrounds[0])
+    hireRect := util.ImageRect(257 * data.ScreenScale, 149 * data.ScreenScale + int(yTop), buttonBackgrounds[0])
     hireIndex := 0
     elements = append(elements, &uilib.UIElement{
         Layer: 1,
@@ -167,11 +168,11 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
 
             x := float64(hireRect.Min.X + hireRect.Max.X) / 2
             y := float64(hireRect.Min.Y + hireRect.Max.Y) / 2
-            okDismissFont.PrintCenter(screen, x, y - 5, 1, options.ColorScale, "Hire")
+            okDismissFont.PrintCenter(screen, x, y - float64(5 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, "Hire")
         },
     })
 
-    rejectRect := util.ImageRect(257, 169 + int(yTop), buttonBackgrounds[0])
+    rejectRect := util.ImageRect(257 * data.ScreenScale, 169 * data.ScreenScale + int(yTop), buttonBackgrounds[0])
     rejectIndex := 0
     elements = append(elements, &uilib.UIElement{
         Layer: 1,
@@ -195,7 +196,7 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
 
             x := float64(rejectRect.Min.X + rejectRect.Max.X) / 2
             y := float64(rejectRect.Min.Y + rejectRect.Max.Y) / 2
-            okDismissFont.PrintCenter(screen, x, y - 5, 1, options.ColorScale, "Reject")
+            okDismissFont.PrintCenter(screen, x, y - float64(5 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, "Reject")
         },
     })
 
@@ -208,7 +209,7 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
             options.ColorScale.ScaleAlpha(getAlpha())
             screen.DrawImage(banner, &options)
 
-            okDismissFont.PrintCenter(screen, 135, 6, 1, options.ColorScale, fmt.Sprintf("Hero for Hire: %v gold", goldToHire))
+            okDismissFont.PrintCenter(screen, float64(135 * data.ScreenScale), float64(6 * data.ScreenScale), float64(1 * data.ScreenScale), options.ColorScale, fmt.Sprintf("Hero for Hire: %v gold", goldToHire))
         },
     })
 
@@ -239,9 +240,9 @@ func (game *Game) showHeroLevelUpPopup(yield coroutine.YieldFunc, hero *herolib.
         color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
     }
 
-    top := float64(40)
-    left := float64(30)
-    height := 70 // TODO: include height from ability improvements
+    top := float64(40 * data.ScreenScale)
+    left := float64(30 * data.ScreenScale)
+    height := 70 * data.ScreenScale // TODO: include height from ability improvements
 
     titleFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowGradient)
     smallFont := font.MakeOptimizedFontWithPalette(fonts[2], yellowGradient)
@@ -279,11 +280,11 @@ func (game *Game) showHeroLevelUpPopup(yield coroutine.YieldFunc, hero *herolib.
 
         // portrait
         options.GeoM.Reset()
-        options.GeoM.Translate(left + 10, top + 10)
+        options.GeoM.Translate(left + float64(10 * data.ScreenScale), top + float64(10 * data.ScreenScale))
         screen.DrawImage(portrait, &options)
 
         // text
-        titleFont.Print(screen, left + 48, top + 10, 1, options.ColorScale, fmt.Sprintf("%v has made a level.", hero.Name))
+        titleFont.Print(screen, left + float64(48 * data.ScreenScale), top + float64(10 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("%v has made a level.", hero.Name))
 
         // stats progression
         for index, progression := range hero.GetBaseProgression() {
@@ -291,15 +292,15 @@ func (game *Game) showHeroLevelUpPopup(yield coroutine.YieldFunc, hero *herolib.
             yOffset := 10 * float64(index % 2)
 
             options.GeoM.Reset()
-            options.GeoM.Translate(left + 48 + xOffset, top + 25 + yOffset)
+            options.GeoM.Translate(left + (48 + xOffset) * float64(data.ScreenScale), top + (25 + yOffset) * float64(data.ScreenScale))
             screen.DrawImage(dot, &options)
 
-            smallFont.Print(screen, left + 55 + xOffset, top + 24 + yOffset, 1, options.ColorScale, progression)
+            smallFont.Print(screen, left + (55 + xOffset) * float64(data.ScreenScale), top + (24 + yOffset) * float64(data.ScreenScale), float64(data.ScreenScale), options.ColorScale, progression)
         }
 
         // level
         options.GeoM.Reset()
-        options.GeoM.Translate(left + 10, top + 50)
+        options.GeoM.Translate(left + float64(10 * data.ScreenScale), top + float64(50 * data.ScreenScale))
         unitview.RenderExperienceBadge(screen, &game.ImageCache, hero, smallFont, options, false)
 
         // TODO: render ability improvements

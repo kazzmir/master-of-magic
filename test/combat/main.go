@@ -569,7 +569,10 @@ func main(){
         scenario, _ = strconv.Atoi(os.Args[1])
     }
 
-    ebiten.SetWindowSize(data.ScreenWidth * 3, data.ScreenHeight * 3)
+    monitorWidth, _ := ebiten.Monitor().Size()
+    size := monitorWidth / 390
+    ebiten.SetWindowSize(data.ScreenWidth / data.ScreenScale * size, data.ScreenHeight / data.ScreenScale * size)
+
     ebiten.SetWindowTitle("combat screen")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
     ebiten.SetCursorMode(ebiten.CursorModeHidden)

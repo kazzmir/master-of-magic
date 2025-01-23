@@ -247,7 +247,7 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
     whitePixel := ebiten.NewImage(1, 1)
     whitePixel.Fill(color.RGBA{R: 255, G: 255, B: 255, A: 255})
 
-    mouseData, err := mouse.MakeMouseData(cache)
+    mouseData, err := mouse.MakeMouseData(cache, &imageCache)
     if err != nil {
         log.Printf("Error loading mouse data: %v", err)
         return nil
@@ -263,7 +263,7 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
     // coordinates.Scale(float64(tile0.Bounds().Dx())/2, float64(tile0.Bounds().Dy())/2)
     // FIXME: this math is hacky, but it works for now
     coordinates.Scale(float64(tile0.Bounds().Dx()) * 3 / 4 - 2, float64(tile0.Bounds().Dy()) * 3 / 4 - 1)
-    coordinates.Translate(-220, 80)
+    coordinates.Translate(float64(-220 * data.ScreenScale), float64(80 * data.ScreenScale))
 
     combat := &CombatScreen{
         Events: make(chan CombatEvent, 1000),
@@ -399,7 +399,7 @@ func (combat *CombatScreen) createVerticalSkyProjectile(target *ArmyUnit, images
     y := -40.0
 
     // FIXME: make this a parameter?
-    speed := 2.5
+    speed := 2.5 * float64(data.ScreenScale)
 
     angle := math.Pi / 2
 
@@ -1165,44 +1165,44 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
 
             if combat.Model.AttackingArmy.Player == player && (combat.DoSelectUnit || combat.DoSelectTile) {
             } else {
-                combat.AttackingWizardFont.Print(screen, 265, 170, 1, ebiten.ColorScale{}, combat.Model.AttackingArmy.Player.Wizard.Name)
+                combat.AttackingWizardFont.Print(screen, float64(265 * data.ScreenScale), float64(170 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, combat.Model.AttackingArmy.Player.Wizard.Name)
             }
 
             if combat.Model.DefendingArmy.Player == player && (combat.DoSelectUnit || combat.DoSelectTile) {
             } else {
-                combat.DefendingWizardFont.Print(screen, 30, 170, 1, ebiten.ColorScale{}, combat.Model.DefendingArmy.Player.Wizard.Name)
+                combat.DefendingWizardFont.Print(screen, float64(30 * data.ScreenScale), float64(170 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, combat.Model.DefendingArmy.Player.Wizard.Name)
             }
 
             if combat.Model.SelectedUnit != nil {
 
                 rightImage, _ := combat.ImageCache.GetImageTransform(combat.Model.SelectedUnit.Unit.GetCombatLbxFile(), combat.Model.SelectedUnit.Unit.GetCombatIndex(units.FacingRight), 0, player.Wizard.Banner.String(), units.MakeUpdateUnitColorsFunc(player.Wizard.Banner))
                 options.GeoM.Reset()
-                options.GeoM.Translate(89, 170)
+                options.GeoM.Translate(float64(89 * data.ScreenScale), float64(170 * data.ScreenScale))
                 screen.DrawImage(rightImage, &options)
 
-                combat.HudFont.Print(screen, 92, 167, 1, ebiten.ColorScale{}, combat.Model.SelectedUnit.Unit.GetName())
+                combat.HudFont.Print(screen, float64(92 * data.ScreenScale), float64(167 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, combat.Model.SelectedUnit.Unit.GetName())
 
                 plainAttack, _ := combat.ImageCache.GetImage("compix.lbx", 29, 0)
                 options.GeoM.Reset()
-                options.GeoM.Translate(126, 173)
+                options.GeoM.Translate(float64(126 * data.ScreenScale), float64(173 * data.ScreenScale))
                 screen.DrawImage(plainAttack, &options)
-                combat.HudFont.PrintRight(screen, 126, 174, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", combat.Model.SelectedUnit.Unit.GetMeleeAttackPower()))
+                combat.HudFont.PrintRight(screen, float64(126 * data.ScreenScale), float64(174 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v", combat.Model.SelectedUnit.Unit.GetMeleeAttackPower()))
 
                 if combat.Model.SelectedUnit.RangedAttacks > 0 {
-                    y := float64(180)
+                    y := float64(180 * data.ScreenScale)
                     switch combat.Model.SelectedUnit.Unit.GetRangedAttackDamageType() {
                         case units.DamageRangedPhysical:
                             arrow, _ := combat.ImageCache.GetImage("compix.lbx", 34, 0)
                             options.GeoM.Reset()
-                            options.GeoM.Translate(126, y)
+                            options.GeoM.Translate(float64(126 * data.ScreenScale), y)
                             screen.DrawImage(arrow, &options)
-                            combat.HudFont.PrintRight(screen, 126, y+2, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", combat.Model.SelectedUnit.Unit.GetRangedAttackPower()))
+                            combat.HudFont.PrintRight(screen, float64(126 * data.ScreenScale), y+float64(2 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v", combat.Model.SelectedUnit.Unit.GetRangedAttackPower()))
                         case units.DamageRangedMagical:
                             magic, _ := combat.ImageCache.GetImage("compix.lbx", 30, 0)
                             options.GeoM.Reset()
-                            options.GeoM.Translate(126, y)
+                            options.GeoM.Translate(float64(126 * data.ScreenScale), y)
                             screen.DrawImage(magic, &options)
-                            combat.HudFont.PrintRight(screen, 126, y+2, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", combat.Model.SelectedUnit.Unit.GetRangedAttackPower()))
+                            combat.HudFont.PrintRight(screen, float64(126 * data.ScreenScale), y+float64(2 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v", combat.Model.SelectedUnit.Unit.GetRangedAttackPower()))
                     }
                 }
 
@@ -1214,11 +1214,11 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                 }
 
                 options.GeoM.Reset()
-                options.GeoM.Translate(126, 188)
+                options.GeoM.Translate(float64(126 * data.ScreenScale), float64(188 * data.ScreenScale))
                 screen.DrawImage(movementImage, &options)
-                combat.HudFont.PrintRight(screen, 126, 190, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", combat.Model.SelectedUnit.MovesLeft.ToFloat()))
+                combat.HudFont.PrintRight(screen, float64(126 * data.ScreenScale), float64(190 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v", combat.Model.SelectedUnit.MovesLeft.ToFloat()))
 
-                combat.DrawHealthBar(screen, 120, 198, combat.Model.SelectedUnit)
+                combat.DrawHealthBar(screen, 120 * data.ScreenScale, 198 * data.ScreenScale, combat.Model.SelectedUnit)
             }
 
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
@@ -1229,8 +1229,8 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
         },
     }
 
-    buttonX := float64(139)
-    buttonY := float64(167)
+    buttonX := float64(139 * data.ScreenScale)
+    buttonY := float64(167 * data.ScreenScale)
 
     makeButton := func(lbxIndex int, x int, y int, action func()) *uilib.UIElement {
         buttons, _ := combat.ImageCache.GetImages("compix.lbx", lbxIndex)
@@ -1285,14 +1285,14 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                             caster := combat.Model.SelectedUnit
 
                             doCast := func(spell spellbook.Spell){
-                                charge, hasCharge := caster.SpellCharges[spell]
-                                if hasCharge && charge > 0 {
-                                    caster.SpellCharges[spell] -= 1
-                                } else {
-                                    caster.CastingSkill -= float32(spell.CastCost)
-                                }
-                                caster.Casted = true
                                 combat.InvokeSpell(player, spell, func(){
+                                    charge, hasCharge := caster.SpellCharges[spell]
+                                    if hasCharge && charge > 0 {
+                                        caster.SpellCharges[spell] -= 1
+                                    } else {
+                                        caster.CastingSkill -= float32(spell.CastCost)
+                                    }
+                                    caster.Casted = true
                                     combat.Model.AddLogEvent(fmt.Sprintf("%v casts %v", caster.Unit.GetName(), spell.Name))
                                     caster.MovesLeft = fraction.FromInt(0)
                                     select {
@@ -1613,7 +1613,7 @@ func (combat *CombatScreen) createUnitToUnitProjectile(attacker *ArmyUnit, targe
     }
     */
 
-    speed := 2.8
+    speed := 2.8 * float64(data.ScreenScale)
 
     angle := math.Atan2(targetY - screenY, targetX - screenX)
 
@@ -1801,14 +1801,14 @@ func (combat *CombatScreen) doSelectUnit(yield coroutine.YieldFunc, selecter Tea
 
     selectElement := &uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            combat.WhiteFont.PrintWrap(screen, float64(x), float64(y), 75, 1, ebiten.ColorScale{}, fmt.Sprintf("Select a target for a %v spell.", spell.Name))
+            combat.WhiteFont.PrintWrap(screen, float64(x * data.ScreenScale), float64(y * data.ScreenScale), float64(75 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("Select a target for a %v spell.", spell.Name))
         },
     }
 
     quit := false
 
     cancelImages, _ := combat.ImageCache.GetImages("compix.lbx", 22)
-    cancelRect := image.Rect(0, 0, cancelImages[0].Bounds().Dx(), cancelImages[0].Bounds().Dy()).Add(image.Point{x + 15, y + 15})
+    cancelRect := image.Rect(0, 0, cancelImages[0].Bounds().Dx(), cancelImages[0].Bounds().Dy()).Add(image.Point{(x + 15) * data.ScreenScale, (y + 15) * data.ScreenScale})
     cancelIndex := 0
     cancelElement := &uilib.UIElement{
         Rect: cancelRect,
@@ -2269,7 +2269,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
     var keys []ebiten.Key
     keys = inpututil.AppendPressedKeys(keys)
     for _, key := range keys {
-        speed := 1.5
+        speed := 1.5 * float64(data.ScreenScale)
         switch key {
             case ebiten.KeyDown:
                 combat.Coordinates.Translate(0, -speed)
@@ -2457,29 +2457,32 @@ func (combat *CombatScreen) ShowUnitInfo(screen *ebiten.Image, unit *ArmyUnit){
     y1 := 5
     width := 65
     height := 45
-    vector.DrawFilledRect(screen, float32(x1), float32(y1), float32(width), float32(height), color.RGBA{R: 0, G: 0, B: 0, A: 100}, false)
-    vector.StrokeRect(screen, float32(x1), float32(y1), float32(width), float32(height), 1, util.PremultiplyAlpha(color.RGBA{R: 0x27, G: 0x4e, B: 0xdc, A: 100}), false)
-    combat.InfoFont.PrintCenter(screen, float64(x1 + 35), float64(y1 + 2), 1, ebiten.ColorScale{}, fmt.Sprintf("%v", unit.Unit.GetName()))
+    vector.DrawFilledRect(screen, float32(x1 * data.ScreenScale), float32(y1 * data.ScreenScale), float32(width * data.ScreenScale), float32(height * data.ScreenScale), color.RGBA{R: 0, G: 0, B: 0, A: 100}, false)
+    vector.StrokeRect(screen, float32(x1 * data.ScreenScale), float32(y1 * data.ScreenScale), float32(width * data.ScreenScale), float32(height * data.ScreenScale), float32(data.ScreenScale), util.PremultiplyAlpha(color.RGBA{R: 0x27, G: 0x4e, B: 0xdc, A: 100}), false)
+    combat.InfoFont.PrintCenter(screen, float64(x1 + 35) * float64(data.ScreenScale), float64(y1 + 2) * float64(data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v", unit.Unit.GetName()))
 
     meleeImage, _ := combat.ImageCache.GetImage("compix.lbx", 61, 0)
     var options ebiten.DrawImageOptions
-    options.GeoM.Translate(float64(x1 + 14), float64(y1 + 10))
+    options.GeoM.Translate(float64(x1 + 14) * float64(data.ScreenScale), float64(y1 + 10) * float64(data.ScreenScale))
     screen.DrawImage(meleeImage, &options)
-    combat.InfoFont.PrintRight(screen, float64(x1 + 14), float64(y1 + 10 + 2), 1, ebiten.ColorScale{}, fmt.Sprintf("%v", unit.Unit.GetMeleeAttackPower()))
+    ax, ay := options.GeoM.Apply(0, 2)
+    combat.InfoFont.PrintRight(screen, ax, ay, float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v", unit.Unit.GetMeleeAttackPower()))
 
     switch unit.Unit.GetRangedAttackDamageType() {
         case units.DamageRangedMagical:
             fire, _ := combat.ImageCache.GetImage("compix.lbx", 62, 0)
             var options ebiten.DrawImageOptions
-            options.GeoM.Translate(float64(x1 + 14), float64(y1 + 18))
+            options.GeoM.Translate(float64(x1 + 14) * float64(data.ScreenScale), float64(y1 + 18) * float64(data.ScreenScale))
             screen.DrawImage(fire, &options)
-            combat.InfoFont.PrintRight(screen, float64(x1 + 14), float64(y1 + 18 + 2), 1, ebiten.ColorScale{}, fmt.Sprintf("%v", unit.Unit.GetRangedAttackPower()))
+            ax, ay := options.GeoM.Apply(0, 2)
+            combat.InfoFont.PrintRight(screen, ax, ay, float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v", unit.Unit.GetRangedAttackPower()))
         case units.DamageRangedPhysical:
             arrow, _ := combat.ImageCache.GetImage("compix.lbx", 66, 0)
             var options ebiten.DrawImageOptions
-            options.GeoM.Translate(float64(x1 + 14), float64(y1 + 18))
+            options.GeoM.Translate(float64(x1 + 14) * float64(data.ScreenScale), float64(y1 + 18) * float64(data.ScreenScale))
             screen.DrawImage(arrow, &options)
-            combat.InfoFont.PrintRight(screen, float64(x1 + 14), float64(y1 + 18 + 2), 1, ebiten.ColorScale{}, fmt.Sprintf("%v", unit.Unit.GetRangedAttackPower()))
+            ax, ay := options.GeoM.Apply(0, 2)
+            combat.InfoFont.PrintRight(screen, ax, ay, float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v", unit.Unit.GetRangedAttackPower()))
     }
 
     movementImage, _ := combat.ImageCache.GetImage("compix.lbx", 72, 0)
@@ -2488,23 +2491,26 @@ func (combat *CombatScreen) ShowUnitInfo(screen *ebiten.Image, unit *ArmyUnit){
     }
 
     options.GeoM.Reset()
-    options.GeoM.Translate(float64(x1 + 14), float64(y1 + 26))
+    options.GeoM.Translate(float64(x1 + 14) * float64(data.ScreenScale), float64(y1 + 26) * float64(data.ScreenScale))
     screen.DrawImage(movementImage, &options)
-    combat.InfoFont.PrintRight(screen, float64(x1 + 14), float64(y1 + 26 + 2), 1, ebiten.ColorScale{}, fmt.Sprintf("%v", unit.MovesLeft.ToFloat()))
+    ax, ay = options.GeoM.Apply(0, 2)
+    combat.InfoFont.PrintRight(screen, ax, ay, float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v", unit.MovesLeft.ToFloat()))
 
     armorImage, _ := combat.ImageCache.GetImage("compix.lbx", 70, 0)
     options.GeoM.Reset()
-    options.GeoM.Translate(float64(x1 + 48), float64(y1 + 10))
+    options.GeoM.Translate(float64(x1 + 48) * float64(data.ScreenScale), float64(y1 + 10) * float64(data.ScreenScale))
     screen.DrawImage(armorImage, &options)
-    combat.InfoFont.PrintRight(screen, float64(x1 + 48), float64(y1 + 10 + 2), 1, ebiten.ColorScale{}, fmt.Sprintf("%v", unit.Unit.GetDefense()))
+    ax, ay = options.GeoM.Apply(0, 2)
+    combat.InfoFont.PrintRight(screen, ax, ay, float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v", unit.Unit.GetDefense()))
 
     resistanceImage, _ := combat.ImageCache.GetImage("compix.lbx", 75, 0)
     options.GeoM.Reset()
-    options.GeoM.Translate(float64(x1 + 48), float64(y1 + 18))
+    options.GeoM.Translate(float64(x1 + 48) * float64(data.ScreenScale), float64(y1 + 18) * float64(data.ScreenScale))
     screen.DrawImage(resistanceImage, &options)
-    combat.InfoFont.PrintRight(screen, float64(x1 + 48), float64(y1 + 18 + 2), 1, ebiten.ColorScale{}, fmt.Sprintf("%v", unit.Unit.GetResistance()))
+    ax, ay = options.GeoM.Apply(0, 2)
+    combat.InfoFont.PrintRight(screen, ax, ay, float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v", unit.Unit.GetResistance()))
 
-    combat.InfoFont.PrintCenter(screen, float64(x1 + 14), float64(y1 + 37), 1, ebiten.ColorScale{}, "Hits")
+    combat.InfoFont.PrintCenter(screen, float64(x1 + 14) * float64(data.ScreenScale), float64(y1 + 37) * float64(data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, "Hits")
 
     combat.DrawHealthBar(screen, x1 + 25, y1 + 40, unit)
 
@@ -2520,7 +2526,7 @@ func (combat *CombatScreen) DrawHealthBar(screen *ebiten.Image, x int, y int, un
     lowHealth := color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}
     healthWidth := 15
 
-    vector.StrokeLine(screen, float32(x), float32(y), float32(x + healthWidth), float32(y), 1, color.RGBA{R: 0, G: 0, B: 0, A: 0xff}, false)
+    vector.StrokeLine(screen, float32(x * data.ScreenScale), float32(y * data.ScreenScale), float32(x + healthWidth) * float32(data.ScreenScale), float32(y * data.ScreenScale), float32(data.ScreenScale), color.RGBA{R: 0, G: 0, B: 0, A: 0xff}, false)
 
     healthPercent := float64(unit.Unit.GetHealth()) / float64(unit.Unit.GetMaxHealth())
     healthLength := float64(healthWidth) * healthPercent
@@ -2539,7 +2545,7 @@ func (combat *CombatScreen) DrawHealthBar(screen *ebiten.Image, x int, y int, un
         useColor = highHealth
     }
 
-    vector.StrokeLine(screen, float32(x), float32(y), float32(x) + float32(healthLength), float32(y), 1, useColor, false)
+    vector.StrokeLine(screen, float32(x * data.ScreenScale), float32(y * data.ScreenScale), (float32(x) + float32(healthLength)) * float32(data.ScreenScale), float32(y * data.ScreenScale), float32(data.ScreenScale), useColor, false)
 }
 
 func (combat *CombatScreen) DrawWall(screen *ebiten.Image, x int, y int, tilePosition func(float64, float64) (float64, float64), animationIndex uint64){

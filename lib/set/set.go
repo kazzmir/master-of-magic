@@ -10,6 +10,14 @@ func MakeSet[T comparable]() *Set[T] {
     }
 }
 
+func NewSet[T comparable](values ...T) *Set[T] {
+    set := MakeSet[T]()
+    for _, value := range values {
+        set.Insert(value)
+    }
+    return set
+}
+
 func (set *Set[T]) Insert(v T){
     set.data[v] = true
 }

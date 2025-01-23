@@ -17,9 +17,6 @@ import (
     "github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
-const ScreenWidth = 320
-const ScreenHeight = 200
-
 type Engine struct {
     Counter uint64
     Drawer func(*ebiten.Image)
@@ -114,13 +111,18 @@ func (engine *Engine) Draw(screen *ebiten.Image){
 }
 
 func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
-    return ScreenWidth, ScreenHeight
+    return data.ScreenWidth, data.ScreenHeight
 }
 
 func main(){
     log.SetFlags(log.Ldate | log.Lshortfile | log.Lmicroseconds)
 
-    ebiten.SetWindowSize(ScreenWidth * 5, ScreenHeight * 5)
+    monitorWidth, _ := ebiten.Monitor().Size()
+
+    size := monitorWidth / 390
+
+    ebiten.SetWindowSize(data.ScreenWidth / data.ScreenScale * size, data.ScreenHeight / data.ScreenScale * size)
+
     ebiten.SetWindowTitle("page turn")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 

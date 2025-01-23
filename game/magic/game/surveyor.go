@@ -144,11 +144,11 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
             screen.DrawImage(mainHud, &options)
 
             landImage, _ := game.ImageCache.GetImage("main.lbx", 57, 0)
-            options.GeoM.Translate(240, 77)
+            options.GeoM.Translate(float64(240 * data.ScreenScale), float64(77 * data.ScreenScale))
             screen.DrawImage(landImage, &options)
 
             options.GeoM.Reset()
-            options.GeoM.Translate(240, 174)
+            options.GeoM.Translate(float64(240 * data.ScreenScale), float64(174 * data.ScreenScale))
             screen.DrawImage(cancelBackground, &options)
 
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
@@ -157,36 +157,36 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
                 }
             })
 
-            game.WhiteFont.PrintRight(screen, 276, 68, 1, ebiten.ColorScale{}, fmt.Sprintf("%v GP", game.Players[0].Gold))
-            game.WhiteFont.PrintRight(screen, 313, 68, 1, ebiten.ColorScale{}, fmt.Sprintf("%v MP", game.Players[0].Mana))
+            game.WhiteFont.PrintRight(screen, float64(276 * data.ScreenScale), float64(68 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v GP", game.Players[0].Gold))
+            game.WhiteFont.PrintRight(screen, float64(313 * data.ScreenScale), float64(68 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v MP", game.Players[0].Mana))
 
-            surveyorFont.PrintCenter(screen, 280, 81, 1, ebiten.ColorScale{}, "Surveyor")
+            surveyorFont.PrintCenter(screen, float64(280 * data.ScreenScale), float64(81 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, "Surveyor")
 
             if selectedPoint.X >= 0 && selectedPoint.X < game.CurrentMap().Width() && selectedPoint.Y >= 0 && selectedPoint.Y < game.CurrentMap().Height() {
                 if overworld.Fog[selectedPoint.X][selectedPoint.Y] {
                     tile := game.CurrentMap().GetTile(selectedPoint.X, selectedPoint.Y)
-                    y := float64(93)
-                    yellowFont.PrintCenter(screen, 280, y, 1, ebiten.ColorScale{}, tile.Tile.Name())
-                    y += float64(yellowFont.Height())
+                    y := float64(93 * data.ScreenScale)
+                    yellowFont.PrintCenter(screen, float64(280 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, tile.Tile.Name())
+                    y += float64(yellowFont.Height() * data.ScreenScale)
 
                     foodBonus := tile.Tile.FoodBonus()
                     if !foodBonus.IsZero() {
-                        whiteFont.PrintCenter(screen, 280, y, 1, ebiten.ColorScale{}, fmt.Sprintf("%v food", foodBonus.NormalString()))
-                        y += float64(whiteFont.Height())
+                        whiteFont.PrintCenter(screen, float64(280 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v food", foodBonus.NormalString()))
+                        y += float64(whiteFont.Height() * data.ScreenScale)
                     }
 
                     productionBonus := tile.Tile.ProductionBonus()
                     if productionBonus != 0 {
-                        whiteFont.PrintCenter(screen, 280, y, 1, ebiten.ColorScale{}, fmt.Sprintf("+%v%% production", productionBonus))
-                        y += float64(whiteFont.Height())
+                        whiteFont.PrintCenter(screen, float64(280 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("+%v%% production", productionBonus))
+                        y += float64(whiteFont.Height() * data.ScreenScale)
                     }
 
-                    y += float64(whiteFont.Height())
+                    y += float64(whiteFont.Height() * data.ScreenScale)
 
                     showBonus := func (name string, bonus string) {
-                        yellowFont.PrintCenter(screen, 280, y, 1, ebiten.ColorScale{}, name)
-                        y += float64(yellowFont.Height())
-                        whiteFont.PrintWrapCenter(screen, 280, y, float64(cancelBackground.Bounds().Dx() - 5), 1, ebiten.ColorScale{}, bonus)
+                        yellowFont.PrintCenter(screen, float64(280 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, name)
+                        y += float64(yellowFont.Height() * data.ScreenScale)
+                        whiteFont.PrintWrapCenter(screen, float64(280 * data.ScreenScale), y, float64(cancelBackground.Bounds().Dx() - 5 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, bonus)
                     }
 
                     bonus := tile.GetBonus()
@@ -207,29 +207,29 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
 
                     if cityMap[selectedPoint] != nil {
                         city := cityMap[selectedPoint]
-                        yellowFont.PrintWrapCenter(screen, 280, y, float64(cancelBackground.Bounds().Dx() - 5), 1, ebiten.ColorScale{}, city.String())
+                        yellowFont.PrintWrapCenter(screen, float64(280 * data.ScreenScale), y, float64(cancelBackground.Bounds().Dx() - 5 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, city.String())
                     }
 
                     // FIXME: show lair/node/tower
 
-                    y = 160 - cityInfoText.TotalHeight
+                    y = float64(160 * data.ScreenScale) - cityInfoText.TotalHeight
 
                     if resources.Enabled {
-                        y = 170 - float64(whiteFont.Height()) * 3 - cityInfoText.TotalHeight
+                        y = float64(170 * data.ScreenScale) - float64(whiteFont.Height() * data.ScreenScale) * 3 - cityInfoText.TotalHeight
                     }
 
-                    yellowFont.RenderWrapped(screen, 245, y, cityInfoText, ebiten.ColorScale{}, false)
+                    yellowFont.RenderWrapped(screen, float64(245 * data.ScreenScale), y, cityInfoText, ebiten.ColorScale{}, false)
                     y += cityInfoText.TotalHeight
 
                     if resources.Enabled {
-                        whiteFont.Print(screen, 245, y, 1, ebiten.ColorScale{}, "Maximum Pop")
-                        whiteFont.PrintRight(screen, 308, y, 1, ebiten.ColorScale{}, fmt.Sprintf("%v", resources.MaximumPopulation))
-                        y += float64(whiteFont.Height())
-                        whiteFont.Print(screen, 245, y, 1, ebiten.ColorScale{}, "Prod Bonus")
-                        whiteFont.PrintRight(screen, 314, y, 1, ebiten.ColorScale{}, fmt.Sprintf("+%v%%", resources.ProductionBonus))
-                        y += float64(whiteFont.Height())
-                        whiteFont.Print(screen, 245, y, 1, ebiten.ColorScale{}, "Gold Bonus")
-                        whiteFont.PrintRight(screen, 314, y, 1, ebiten.ColorScale{}, fmt.Sprintf("+%v%%", resources.GoldBonus))
+                        whiteFont.Print(screen, float64(245 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, "Maximum Pop")
+                        whiteFont.PrintRight(screen, float64(308 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v", resources.MaximumPopulation))
+                        y += float64(whiteFont.Height() * data.ScreenScale)
+                        whiteFont.Print(screen, float64(245 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, "Prod Bonus")
+                        whiteFont.PrintRight(screen, float64(314 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("+%v%%", resources.ProductionBonus))
+                        y += float64(whiteFont.Height() * data.ScreenScale)
+                        whiteFont.Print(screen, float64(245 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, "Gold Bonus")
+                        whiteFont.PrintRight(screen, float64(314 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("+%v%%", resources.GoldBonus))
                     }
                 }
             }
@@ -241,7 +241,7 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
     makeButton := func(lbxIndex int, x int, y int) *uilib.UIElement {
         button, _ := game.ImageCache.GetImage("main.lbx", lbxIndex, 0)
         var options ebiten.DrawImageOptions
-        options.GeoM.Translate(float64(x), float64(y))
+        options.GeoM.Translate(float64(x * data.ScreenScale), float64(y * data.ScreenScale))
         return &uilib.UIElement{
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 screen.DrawImage(button, &options)
@@ -270,8 +270,8 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
     // plane button
     ui.AddElement((func () *uilib.UIElement {
         buttons, _ := game.ImageCache.GetImages("main.lbx", 7)
-        x := 270
-        y := 4
+        x := 270 * data.ScreenScale
+        y := 4 * data.ScreenScale
 
         clicked := false
 
@@ -304,7 +304,7 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
     // cancel button at bottom
     cancel, _ := game.ImageCache.GetImages("main.lbx", 41)
     cancelIndex := 0
-    cancelRect := util.ImageRect(263, 182, cancel[0])
+    cancelRect := util.ImageRect(263 * data.ScreenScale, 182 * data.ScreenScale, cancel[0])
     ui.AddElement(&uilib.UIElement{
         Rect: cancelRect,
         LeftClick: func(element *uilib.UIElement){
@@ -327,10 +327,10 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
         overworld.DrawOverworld(screen, ebiten.GeoM{})
 
         var miniGeom ebiten.GeoM
-        miniGeom.Translate(250, 20)
+        miniGeom.Translate(float64(250 * data.ScreenScale), float64(20 * data.ScreenScale))
         mx, my := miniGeom.Apply(0, 0)
-        miniWidth := 60
-        miniHeight := 31
+        miniWidth := 60 * data.ScreenScale
+        miniHeight := 31 * data.ScreenScale
         mini := screen.SubImage(image.Rect(int(mx), int(my), int(mx) + miniWidth, int(my) + miniHeight)).(*ebiten.Image)
         overworld.DrawMinimap(mini)
 
@@ -380,7 +380,7 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
                     resources.GoldBonus = game.CityGoldBonus(newX, newY, game.Plane)
                 }
 
-                cityInfoText = yellowFont.CreateWrappedText(float64(cancelBackground.Bounds().Dx()) - 9, 1, text)
+                cityInfoText = yellowFont.CreateWrappedText(float64(cancelBackground.Bounds().Dx() - 9 * data.ScreenScale), float64(data.ScreenScale), text)
             }
         } else {
             cityInfoText.Clear()
