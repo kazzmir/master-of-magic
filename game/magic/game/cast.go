@@ -241,11 +241,11 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
             screen.DrawImage(mainHud, &options)
 
             landImage, _ := game.ImageCache.GetImage("main.lbx", 57, 0)
-            options.GeoM.Translate(240, 77)
+            options.GeoM.Translate(float64(240 * data.ScreenScale), float64(77 * data.ScreenScale))
             screen.DrawImage(landImage, &options)
 
             options.GeoM.Reset()
-            options.GeoM.Translate(240, 174)
+            options.GeoM.Translate(float64(240 * data.ScreenScale), float64(174 * data.ScreenScale))
             screen.DrawImage(cancelBackground, &options)
 
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
@@ -254,12 +254,12 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                 }
             })
 
-            game.WhiteFont.PrintRight(screen, 276, 68, 1, ebiten.ColorScale{}, fmt.Sprintf("%v GP", game.Players[0].Gold))
-            game.WhiteFont.PrintRight(screen, 313, 68, 1, ebiten.ColorScale{}, fmt.Sprintf("%v MP", game.Players[0].Mana))
+            game.WhiteFont.PrintRight(screen, float64(276 * data.ScreenScale), float64(68 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v GP", game.Players[0].Gold))
+            game.WhiteFont.PrintRight(screen, float64(313 * data.ScreenScale), float64(68 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v MP", game.Players[0].Mana))
 
-            castingFont.PrintCenter(screen, 280, 81, 1, ebiten.ColorScale{}, "Casting")
+            castingFont.PrintCenter(screen, float64(280 * data.ScreenScale), float64(81 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, "Casting")
 
-            whiteFont.PrintWrapCenter(screen, 280, 120, float64(cancelBackground.Bounds().Dx() - 5), 1, ebiten.ColorScale{}, selectMessage)
+            whiteFont.PrintWrapCenter(screen, float64(280 * data.ScreenScale), float64(120 * data.ScreenScale), float64(cancelBackground.Bounds().Dx() - 5 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, selectMessage)
         },
     }
 
@@ -267,10 +267,10 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
 
     makeButton := func(lbxIndex int, x int, y int) *uilib.UIElement {
         button, _ := game.ImageCache.GetImage("main.lbx", lbxIndex, 0)
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(float64(x * data.ScreenScale), float64(y * data.ScreenScale))
         return &uilib.UIElement{
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(x), float64(y))
                 screen.DrawImage(button, &options)
             },
         }
@@ -302,7 +302,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
     // cancel button at bottom
     cancel, _ := game.ImageCache.GetImages("main.lbx", 41)
     cancelIndex := 0
-    cancelRect := util.ImageRect(263, 182, cancel[0])
+    cancelRect := util.ImageRect(263 * data.ScreenScale, 182 * data.ScreenScale, cancel[0])
     ui.AddElement(&uilib.UIElement{
         Rect: cancelRect,
         LeftClick: func(element *uilib.UIElement){
@@ -324,10 +324,10 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
         overworld.DrawOverworld(screen, ebiten.GeoM{})
 
         var miniGeom ebiten.GeoM
-        miniGeom.Translate(250, 20)
+        miniGeom.Translate(float64(250 * data.ScreenScale), float64(20 * data.ScreenScale))
         mx, my := miniGeom.Apply(0, 0)
-        miniWidth := 60
-        miniHeight := 31
+        miniWidth := 60 * data.ScreenScale
+        miniHeight := 31 * data.ScreenScale
         mini := screen.SubImage(image.Rect(int(mx), int(my), int(mx) + miniWidth, int(my) + miniHeight)).(*ebiten.Image)
         overworld.DrawMinimap(mini)
 
@@ -420,8 +420,8 @@ func (game *Game) doCastEarthLore(yield coroutine.YieldFunc, player *playerlib.P
 
     animation := util.MakeAnimation(pics, false)
 
-    x := 120
-    y := 90
+    x := 120 * data.ScreenScale
+    y := 90 * data.ScreenScale
 
     game.Drawer = func(screen *ebiten.Image, game *Game) {
         oldDrawer(screen, game)
@@ -464,8 +464,8 @@ func (game *Game) doCastChangeTerrain(yield coroutine.YieldFunc, tileX int, tile
     animation := util.MakeAnimation(pics, false)
 
     // FIXME: need some function in Game that returns the pixel coordinates for a given tile
-    x := 130
-    y := 100
+    x := 130 * data.ScreenScale
+    y := 100 * data.ScreenScale
 
     game.Drawer = func(screen *ebiten.Image, game *Game) {
         oldDrawer(screen, game)
@@ -525,8 +525,8 @@ func (game *Game) doCastTransmute(yield coroutine.YieldFunc, tileX int, tileY in
     animation := util.MakeAnimation(pics, false)
 
     // FIXME: need some function in Game that returns the pixel coordinates for a given tile
-    x := 130
-    y := 100
+    x := 130 * data.ScreenScale
+    y := 100 * data.ScreenScale
 
     game.Drawer = func(screen *ebiten.Image, game *Game) {
         oldDrawer(screen, game)
