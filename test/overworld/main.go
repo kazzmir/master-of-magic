@@ -544,6 +544,24 @@ func createScenario7(cache *lbx.LbxCache) *gamelib.Game {
         player.AddCity(introCity)
     }
 
+    for i := 0; i < 4; i++ {
+        x, y := game.FindValidCityLocation(data.PlaneMyrror)
+        player.LiftFog(x, y, 3, data.PlaneMyrror)
+
+        introCity := citylib.MakeCity(fmt.Sprintf("city%v myr", i), x, y, data.RaceHighElf, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.GetMap(data.PlaneMyrror), game)
+        introCity.Population = rand.Intn(5000) + 5000
+        introCity.Plane = data.PlaneMyrror
+        introCity.ProducingBuilding = buildinglib.BuildingHousing
+        introCity.ProducingUnit = units.UnitNone
+        introCity.Wall = false
+
+        introCity.AddBuilding(buildinglib.BuildingShrine)
+
+        introCity.ResetCitizens(nil)
+
+        player.AddCity(introCity)
+    }
+
     player.Gold = 83
     player.Mana = 26
 

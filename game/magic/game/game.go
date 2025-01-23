@@ -784,6 +784,7 @@ func (game *Game) doCityListView(yield coroutine.YieldFunc) {
         if city.Citizens() >= 1 {
             showCity = city
         }
+        game.Plane = city.Plane
         game.Camera.Center(city.X, city.Y)
     }
 
