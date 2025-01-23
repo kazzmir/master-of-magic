@@ -47,11 +47,7 @@ func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Playe
                 return
             }
 
-            game.doMoveCamera(yield, tileX, tileY)
-
-            game.doCastEarthLore(yield, player)
-
-            player.LiftFogSquare(tileX, tileY, 5, game.Plane)
+            game.doCastEarthLore(yield, tileX, tileY, player)
         case "Create Artifact", "Enchant Item":
             showSummon := summon.MakeSummonArtifact(game.Cache, player.Wizard.Base)
 
@@ -432,48 +428,9 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
     return 0, 0, true
 }
 
-// FIXME: try to merge most of the logic for doCastEarthLore and doCastChangeTerrain
-func (game *Game) doCastEarthLore(yield coroutine.YieldFunc, player *playerlib.Player) {
-    oldDrawer := game.Drawer
-    defer func(){
-        game.Drawer = oldDrawer
-    }()
+type TerrainFunction func (int, int, int)
 
-    pics, _ := game.ImageCache.GetImages("specfx.lbx", 45)
-
-    animation := util.MakeAnimation(pics, false)
-
-    x := 120
-    y := 90
-
-    game.Drawer = func(screen *ebiten.Image, game *Game) {
-        oldDrawer(screen, game)
-
-        var options ebiten.DrawImageOptions
-        options.GeoM.Translate(float64(x - animation.Frame().Bounds().Dx() / 2), float64(y - animation.Frame().Bounds().Dy() / 2))
-        screen.DrawImage(animation.Frame(), &options)
-    }
-
-    sound, err := audio.LoadNewSound(game.Cache, 18)
-    if err == nil {
-        sound.Play()
-    }
-
-    quit := false
-    for !quit {
-        game.Counter += 1
-
-        quit = false
-        if game.Counter % 6 == 0 {
-            quit = !animation.Next()
-        }
-
-        yield()
-    }
-}
-
-
-func (game *Game) doCastChangeTerrain(yield coroutine.YieldFunc, tileX int, tileY int) {
+func (game *Game) doCastOnTerrain(yield coroutine.YieldFunc, tileX int, tileY int, animationIndex int, newSound bool, soundIndex int, terrainFunction TerrainFunction) {
     game.Camera.Zoom = camera.ZoomDefault
     game.doMoveCamera(yield, tileX, tileY)
 
@@ -482,13 +439,13 @@ func (game *Game) doCastChangeTerrain(yield coroutine.YieldFunc, tileX int, tile
         game.Drawer = oldDrawer
     }()
 
-    pics, _ := game.ImageCache.GetImages("specfx.lbx", 8)
+    pics, _ := game.ImageCache.GetImages("specfx.lbx", animationIndex)
 
     animation := util.MakeAnimation(pics, false)
 
     // FIXME: need some function in Game that returns the pixel coordinates for a given tile
     x := 130
-    y := 100
+    y := 99
 
     game.Drawer = func(screen *ebiten.Image, game *Game) {
         oldDrawer(screen, game)
@@ -498,22 +455,16 @@ func (game *Game) doCastChangeTerrain(yield coroutine.YieldFunc, tileX int, tile
         screen.DrawImage(animation.Frame(), &options)
     }
 
-    sound, err := audio.LoadNewSound(game.Cache, 18)
-    if err == nil {
-        sound.Play()
-    }
-
-    changeTerrain := func (x int, y int) {
-        mapObject := game.CurrentMap()
-        switch mapObject.GetTile(x, y).Tile.TerrainType() {
-            case terrain.Desert, terrain.Forest, terrain.Hill, terrain.Swamp:
-                mapObject.Map.SetTerrainAt(x, y, terrain.Grass, mapObject.Data, mapObject.Plane)
-            case terrain.Grass:
-                mapObject.Map.SetTerrainAt(x, y, terrain.Forest, mapObject.Data, mapObject.Plane)
-            case terrain.Volcano:
-                mapObject.Map.SetTerrainAt(x, y, terrain.Mountain, mapObject.Data, mapObject.Plane)
-            case terrain.Mountain:
-                mapObject.Map.SetTerrainAt(x, y, terrain.Hill, mapObject.Data, mapObject.Plane)
+    if newSound {
+        // FIXME: Are sounds for earth lore/change terrain/transmute not also in sound?
+        sound, err := audio.LoadNewSound(game.Cache, soundIndex)
+        if err == nil {
+            sound.Play()
+        }
+    } else {
+        sound, err := audio.LoadSound(game.Cache, soundIndex)
+        if err == nil {
+            sound.Play()
         }
     }
 
@@ -523,51 +474,48 @@ func (game *Game) doCastChangeTerrain(yield coroutine.YieldFunc, tileX int, tile
 
         quit = false
         if game.Counter % 6 == 0 {
+            terrainFunction(tileX, tileY, animation.CurrentFrame)
             quit = !animation.Next()
-            if animation.CurrentFrame == 7 {
-                changeTerrain(tileX, tileY)
-            }
         }
 
         yield()
     }
+}
+
+func (game *Game) doCastEarthLore(yield coroutine.YieldFunc, tileX int, tileY int, player *playerlib.Player) {
+    terrainFunction := func (x int, y int, frame int) {}
+
+    game.doCastOnTerrain(yield, tileX, tileY, 45, true, 18, terrainFunction)
+
+    player.LiftFogSquare(tileX, tileY, 5, game.Plane)
+}
+
+func (game *Game) doCastChangeTerrain(yield coroutine.YieldFunc, tileX int, tileY int) {
+    terrainFunction := func (x int, y int, frame int) {
+        if frame == 7 {
+            mapObject := game.CurrentMap()
+            switch mapObject.GetTile(x, y).Tile.TerrainType() {
+                case terrain.Desert, terrain.Forest, terrain.Hill, terrain.Swamp:
+                    mapObject.Map.SetTerrainAt(x, y, terrain.Grass, mapObject.Data, mapObject.Plane)
+                case terrain.Grass:
+                    mapObject.Map.SetTerrainAt(x, y, terrain.Forest, mapObject.Data, mapObject.Plane)
+                case terrain.Volcano:
+                    mapObject.Map.SetTerrainAt(x, y, terrain.Mountain, mapObject.Data, mapObject.Plane)
+                case terrain.Mountain:
+                    mapObject.Map.SetTerrainAt(x, y, terrain.Hill, mapObject.Data, mapObject.Plane)
+            }
+        }
+    }
+
+    game.doCastOnTerrain(yield, tileX, tileY, 8, true, 18, terrainFunction)
 }
 
 
 func (game *Game) doCastTransmute(yield coroutine.YieldFunc, tileX int, tileY int) {
-    game.Camera.Zoom = camera.ZoomDefault
-    game.doMoveCamera(yield, tileX, tileY)
 
-    oldDrawer := game.Drawer
-    defer func(){
-        game.Drawer = oldDrawer
-    }()
-
-    pics, _ := game.ImageCache.GetImages("specfx.lbx", 0)
-
-    animation := util.MakeAnimation(pics, false)
-
-    // FIXME: need some function in Game that returns the pixel coordinates for a given tile
-    x := 130
-    y := 100
-
-    game.Drawer = func(screen *ebiten.Image, game *Game) {
-        oldDrawer(screen, game)
-
-        var options ebiten.DrawImageOptions
-        options.GeoM.Translate(float64(x - animation.Frame().Bounds().Dx() / 2), float64(y - animation.Frame().Bounds().Dy() / 2))
-        screen.DrawImage(animation.Frame(), &options)
-    }
-
-    sound, err := audio.LoadNewSound(game.Cache, 18)
-    if err == nil {
-        sound.Play()
-    }
-
-    transmute := func (x int, y int) {
-        mapObject := game.CurrentMap()
-        if y >= 0 || y < mapObject.Map.Rows() {
-            x = mapObject.WrapX(x)
+    terrainFunction := func (x int, y int, frame int) {
+        if frame == 6 {
+            mapObject := game.CurrentMap()
             switch mapObject.GetBonusTile(x, y) {
                 case data.BonusCoal: mapObject.SetBonus(x, y, data.BonusGem)
                 case data.BonusGem: mapObject.SetBonus(x, y, data.BonusCoal)
@@ -579,69 +527,25 @@ func (game *Game) doCastTransmute(yield coroutine.YieldFunc, tileX int, tileY in
         }
     }
 
-    quit := false
-    for !quit {
-        game.Counter += 1
-
-        quit = false
-        if game.Counter % 6 == 0 {
-            quit = !animation.Next()
-            if animation.CurrentFrame == 6 {
-                transmute(tileX, tileY)
-            }
-        }
-
-        yield()
-    }
+    game.doCastOnTerrain(yield, tileX, tileY, 0, true, 18, terrainFunction)
 }
 
 
 func (game *Game) doCastRaiseVolcano(yield coroutine.YieldFunc, tileX int, tileY int) {
-    game.Camera.Zoom = camera.ZoomDefault
-    game.doMoveCamera(yield, tileX, tileY)
 
-    oldDrawer := game.Drawer
-    defer func(){
-        game.Drawer = oldDrawer
-    }()
-
-    pics, _ := game.ImageCache.GetImages("specfx.lbx", 11)
-
-    animation := util.MakeAnimation(pics, false)
-
-    // FIXME: need some function in Game that returns the pixel coordinates for a given tile
-    x := 130
-    y := 100
-
-    game.Drawer = func(screen *ebiten.Image, game *Game) {
-        oldDrawer(screen, game)
-
-        var options ebiten.DrawImageOptions
-        options.GeoM.Translate(float64(x - animation.Frame().Bounds().Dx() / 2), float64(y - animation.Frame().Bounds().Dy() / 2))
-        screen.DrawImage(animation.Frame(), &options)
-    }
-
-    sound, err := audio.LoadSound(game.Cache, 98)
-    if err == nil {
-        sound.Play()
-    }
-
-    quit := false
-    for !quit {
-        game.Counter += 1
-
-        quit = false
-        if game.Counter % 6 == 0 {
-            quit = !animation.Next()
+    terrainFunction := func (x int, y int, frame int) {
+        if frame == 8 {
+            mapObject := game.CurrentMap()
+            mapObject.Map.SetTerrainAt(x, y, terrain.Grass, mapObject.Data, mapObject.Plane)
+            mapObject.SetBonus(tileX, tileY, data.BonusNone)
         }
-
-        yield()
     }
+
+    game.doCastOnTerrain(yield, tileX, tileY, 11, false, 98, terrainFunction)
 
     mapObject := game.CurrentMap()
     mapObject.Map.SetTerrainAt(tileX, tileY, terrain.Volcano, mapObject.Data, mapObject.Plane)
 
-    // FIXME: Remove bonuses
     // FIXME: Destruct buildings in towns
     // FIXME: Raise wizard's power
     // FIXME: Chance of reverting with chance of generating minerals
