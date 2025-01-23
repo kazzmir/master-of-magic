@@ -408,11 +408,11 @@ func MakeLairConfirmDialog(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCa
 }
 
 func MakeLairConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, lairPicture *util.Animation, layer UILayer, message string, confirm func(), cancel func()) []*UIElement {
-    confirmX := 67
-    confirmY := 40
+    confirmX := 67 * data.ScreenScale
+    confirmY := 40 * data.ScreenScale
 
-    confirmMargin := 55
-    confirmTopMargin := 10
+    confirmMargin := 55 * data.ScreenScale
+    confirmTopMargin := 10 * data.ScreenScale
 
     const fadeSpeed = 7
 
@@ -454,7 +454,7 @@ func MakeLairConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *uti
 
     maxWidth := confirmTop.Bounds().Dx() - confirmMargin - 5
 
-    wrapped := confirmFont.CreateWrappedText(float64(maxWidth), 1, message)
+    wrapped := confirmFont.CreateWrappedText(float64(maxWidth), float64(data.ScreenScale), message)
 
     bottom := float64(confirmY + confirmTopMargin) + wrapped.TotalHeight
 
@@ -474,13 +474,13 @@ func MakeLairConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *uti
             options.ColorScale.ScaleAlpha(getAlpha())
             window.DrawImage(topDraw, &options)
 
-            options.GeoM.Translate(7, 7)
+            options.GeoM.Translate(float64(7 * data.ScreenScale), float64(7 * data.ScreenScale))
             window.DrawImage(lairPicture.Frame(), &options)
 
             confirmFont.RenderWrapped(window, float64(confirmX + confirmMargin + maxWidth / 2), float64(confirmY + confirmTopMargin), wrapped, options.ColorScale, true)
 
             options.GeoM.Reset()
-            options.GeoM.Translate(float64(confirmX - 1), float64(bottom))
+            options.GeoM.Translate(float64(confirmX - 1 * data.ScreenScale), float64(bottom))
             window.DrawImage(confirmBottom, &options)
         },
     })
@@ -488,12 +488,12 @@ func MakeLairConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *uti
     // add yes/no buttons
     yesButtons, err := imageCache.GetImages("resource.lbx", 3)
     if err == nil {
-        yesX := confirmX + 101
-        yesY := bottom + 5
+        yesX := confirmX + 101 * data.ScreenScale
+        yesY := bottom + float64(5 * data.ScreenScale)
 
         clicked := false
         elements = append(elements, &UIElement{
-            Rect: image.Rect(int(yesX), int(yesY), int(yesX) + yesButtons[0].Bounds().Dx(), int(yesY) + yesButtons[0].Bounds().Dy()),
+            Rect: util.ImageRect(int(yesX), int(yesY), yesButtons[0]),
             Layer: layer,
             PlaySoundLeftClick: true,
             LeftClick: func(this *UIElement){
@@ -524,12 +524,12 @@ func MakeLairConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *uti
 
     noButtons, err := imageCache.GetImages("resource.lbx", 4)
     if err == nil {
-        noX := confirmX + 18
-        noY := bottom + 5
+        noX := confirmX + 18 * data.ScreenScale
+        noY := bottom + float64(5 * data.ScreenScale)
 
         clicked := false
         elements = append(elements, &UIElement{
-            Rect: image.Rect(int(noX), int(noY), int(noX) + noButtons[0].Bounds().Dx(), int(noY) + noButtons[0].Bounds().Dy()),
+            Rect: util.ImageRect(int(noX), int(noY), noButtons[0]),
             Layer: layer,
             PlaySoundLeftClick: true,
             LeftClick: func(this *UIElement){

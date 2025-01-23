@@ -3210,7 +3210,7 @@ func (game *Game) confirmMagicNodeEncounter(yield coroutine.YieldFunc, node *map
     rotateIndexLow := 247
     rotateIndexHigh := 254
 
-    animation := util.MakePaletteRotateAnimation(reloadLbx, lairIndex, rotateIndexLow, rotateIndexHigh)
+    animation := util.MakePaletteRotateAnimation(reloadLbx, &game.ImageCache, lairIndex, rotateIndexLow, rotateIndexHigh)
 
     return game.confirmEncounter(yield, fmt.Sprintf("You have found a %v node. Scouts have spotted %v within the %v node. Do you wish to enter?", nodeName, guardianName, nodeName), animation)
 }

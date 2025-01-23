@@ -18,6 +18,10 @@ import (
 type ImageTransformFunc func(*image.Paletted) image.Image
 type ImageTransformGenericFunc func(image.Image) image.Image
 
+type Scaler interface {
+    ApplyScale(image.Image) image.Image
+}
+
 type ImageCache struct {
     LbxCache *lbx.LbxCache
     // FIXME: have some limit on the number of entries, and remove old ones LRU-style
