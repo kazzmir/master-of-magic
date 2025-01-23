@@ -61,28 +61,28 @@ func computeHalfPages(spells Spells, max int) []Page {
 // flipping the page to the left
 func LeftSideDistortions1(page *ebiten.Image) util.Distortion {
     return util.Distortion{
-        Top: image.Pt(page.Bounds().Dx()/2 + 20, 5),
-        Bottom: image.Pt(page.Bounds().Dx()/2 + 20, page.Bounds().Dy() - 12),
+        Top: image.Pt(page.Bounds().Dx()/2 + 20 * data.ScreenScale, 5 * data.ScreenScale),
+        Bottom: image.Pt(page.Bounds().Dx()/2 + 20 * data.ScreenScale, page.Bounds().Dy() - 12 * data.ScreenScale),
         Segments: []util.Segment{
             util.Segment{
-                Top: image.Pt(page.Bounds().Dx()/2 + 40, 0),
-                Bottom: image.Pt(page.Bounds().Dx()/2 + 40, page.Bounds().Dy() - 25),
+                Top: image.Pt(page.Bounds().Dx()/2 + 40 * data.ScreenScale, 0),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 40 * data.ScreenScale, page.Bounds().Dy() - 25 * data.ScreenScale),
             },
             util.Segment{
-                Top: image.Pt(page.Bounds().Dx()/2 + 60, -10),
-                Bottom: image.Pt(page.Bounds().Dx()/2 + 60, page.Bounds().Dy() - 33),
+                Top: image.Pt(page.Bounds().Dx()/2 + 60 * data.ScreenScale, -10 * data.ScreenScale),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 60 * data.ScreenScale, page.Bounds().Dy() - 33 * data.ScreenScale),
             },
             util.Segment{
-                Top: image.Pt(page.Bounds().Dx()/2 + 80, -10),
-                Bottom: image.Pt(page.Bounds().Dx()/2 + 80, page.Bounds().Dy() - 30),
+                Top: image.Pt(page.Bounds().Dx()/2 + 80 * data.ScreenScale, -10 * data.ScreenScale),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 80 * data.ScreenScale, page.Bounds().Dy() - 30 * data.ScreenScale),
             },
             util.Segment{
-                Top: image.Pt(page.Bounds().Dx()/2 + 100, -0),
-                Bottom: image.Pt(page.Bounds().Dx()/2 + 100, page.Bounds().Dy() - 22),
+                Top: image.Pt(page.Bounds().Dx()/2 + 100 * data.ScreenScale, -0),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 100 * data.ScreenScale, page.Bounds().Dy() - 22 * data.ScreenScale),
             },
             util.Segment{
-                Top: image.Pt(page.Bounds().Dx()/2 + 130, -10),
-                Bottom: image.Pt(page.Bounds().Dx()/2 + 130, page.Bounds().Dy() - 12),
+                Top: image.Pt(page.Bounds().Dx()/2 + 130 * data.ScreenScale, -10 * data.ScreenScale),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 130 * data.ScreenScale, page.Bounds().Dy() - 12 * data.ScreenScale),
             },
         },
     }
@@ -90,28 +90,28 @@ func LeftSideDistortions1(page *ebiten.Image) util.Distortion {
 
 func LeftSideDistortions2(page *ebiten.Image) util.Distortion {
     return util.Distortion{
-        Top: image.Pt(page.Bounds().Dx()/2 + 20, 5),
-        Bottom: image.Pt(page.Bounds().Dx()/2 + 20, page.Bounds().Dy() - 15),
+        Top: image.Pt(page.Bounds().Dx()/2 + 20 * data.ScreenScale, 5 * data.ScreenScale),
+        Bottom: image.Pt(page.Bounds().Dx()/2 + 20 * data.ScreenScale, page.Bounds().Dy() - 15 * data.ScreenScale),
         Segments: []util.Segment{
             util.Segment{
-                Top: image.Pt(page.Bounds().Dx()/2 + 40, 0),
-                Bottom: image.Pt(page.Bounds().Dx()/2 + 40, page.Bounds().Dy() - 28),
+                Top: image.Pt(page.Bounds().Dx()/2 + 40 * data.ScreenScale, 0),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 40 * data.ScreenScale, page.Bounds().Dy() - 28 * data.ScreenScale),
             },
             util.Segment{
-                Top: image.Pt(page.Bounds().Dx()/2 + 58, -13),
-                Bottom: image.Pt(page.Bounds().Dx()/2 + 58, page.Bounds().Dy() - 35),
+                Top: image.Pt(page.Bounds().Dx()/2 + 58 * data.ScreenScale, -13 * data.ScreenScale),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 58 * data.ScreenScale, page.Bounds().Dy() - 35 * data.ScreenScale),
             },
             util.Segment{
-                Top: image.Pt(page.Bounds().Dx()/2 + 73, -20),
-                Bottom: image.Pt(page.Bounds().Dx()/2 + 73, page.Bounds().Dy() - 35),
+                Top: image.Pt(page.Bounds().Dx()/2 + 73 * data.ScreenScale, -20 * data.ScreenScale),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 73 * data.ScreenScale, page.Bounds().Dy() - 35 * data.ScreenScale),
             },
             util.Segment{
-                Top: image.Pt(page.Bounds().Dx()/2 + 90, -0),
-                Bottom: image.Pt(page.Bounds().Dx()/2 + 90, page.Bounds().Dy() - 22),
+                Top: image.Pt(page.Bounds().Dx()/2 + 90 * data.ScreenScale, -0),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 90 * data.ScreenScale, page.Bounds().Dy() - 22 * data.ScreenScale),
             },
             util.Segment{
-                Top: image.Pt(page.Bounds().Dx()/2 + 120, -10),
-                Bottom: image.Pt(page.Bounds().Dx()/2 + 120, page.Bounds().Dy() - 12),
+                Top: image.Pt(page.Bounds().Dx()/2 + 120 * data.ScreenScale, -10 * data.ScreenScale),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + 120 * data.ScreenScale, page.Bounds().Dy() - 12 * data.ScreenScale),
             },
         },
     }
@@ -120,29 +120,29 @@ func LeftSideDistortions2(page *ebiten.Image) util.Distortion {
 func RightSideDistortions2(page *ebiten.Image) util.Distortion {
     offset := 30
     return util.Distortion{
-        Top: image.Pt(page.Bounds().Dx()/2 - 130 + offset, 5),
-        Bottom: image.Pt(page.Bounds().Dx()/2 - 130 + offset, page.Bounds().Dy() - 0),
+        Top: image.Pt(page.Bounds().Dx()/2 + (offset - 130) * data.ScreenScale, 5 * data.ScreenScale),
+        Bottom: image.Pt(page.Bounds().Dx()/2 + (offset - 130) * data.ScreenScale, page.Bounds().Dy() - 0),
 
         Segments: []util.Segment{
             util.Segment{
-                Top: image.Pt(page.Bounds().Dx()/2 - 100 + offset, -0),
-                Bottom: image.Pt(page.Bounds().Dx()/2 - 100 + offset, page.Bounds().Dy() - 22),
+                Top: image.Pt(page.Bounds().Dx()/2 + (offset - 100) * data.ScreenScale, -0),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + (offset - 100) * data.ScreenScale, page.Bounds().Dy() - 22 * data.ScreenScale),
             },
             util.Segment{
-                Top: image.Pt(page.Bounds().Dx()/2 - 80 + offset, -10),
-                Bottom: image.Pt(page.Bounds().Dx()/2 - 80 + offset, page.Bounds().Dy() - 30),
+                Top: image.Pt(page.Bounds().Dx()/2 + (offset - 80) * data.ScreenScale, -10 * data.ScreenScale),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + (offset - 80) * data.ScreenScale, page.Bounds().Dy() - 30 * data.ScreenScale),
             },
             util.Segment{
-                Top: image.Pt(page.Bounds().Dx()/2 - 60 + offset, -10),
-                Bottom: image.Pt(page.Bounds().Dx()/2 - 60 + offset, page.Bounds().Dy() - 33),
+                Top: image.Pt(page.Bounds().Dx()/2 + (offset - 60) * data.ScreenScale, -10 * data.ScreenScale),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + (offset - 60) * data.ScreenScale, page.Bounds().Dy() - 33 * data.ScreenScale),
             },
             util.Segment{
-                Top: image.Pt(page.Bounds().Dx()/2 - 40 + offset, 0),
-                Bottom: image.Pt(page.Bounds().Dx()/2 - 40 + offset, page.Bounds().Dy() - 25),
+                Top: image.Pt(page.Bounds().Dx()/2 + (offset - 40) * data.ScreenScale, 0),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + (offset - 40) * data.ScreenScale, page.Bounds().Dy() - 25 * data.ScreenScale),
             },
             util.Segment{
-                Top: image.Pt(page.Bounds().Dx()/2 - 20 + offset, 5),
-                Bottom: image.Pt(page.Bounds().Dx()/2 - 20 + offset, page.Bounds().Dy() - 12),
+                Top: image.Pt(page.Bounds().Dx()/2 + (offset - 20) * data.ScreenScale, 5 * data.ScreenScale),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + (offset - 20) * data.ScreenScale, page.Bounds().Dy() - 12 * data.ScreenScale),
             },
         },
     }
@@ -151,34 +151,35 @@ func RightSideDistortions2(page *ebiten.Image) util.Distortion {
 func RightSideDistortions1(page *ebiten.Image) util.Distortion {
     offset := 50
     return util.Distortion{
-        Top: image.Pt(page.Bounds().Dx()/2 - 110 + offset, -10),
-        Bottom: image.Pt(page.Bounds().Dx()/2 - 110 + offset, page.Bounds().Dy() - 12),
+        Top: image.Pt(page.Bounds().Dx()/2 + (offset - 110) * data.ScreenScale, -10 * data.ScreenScale),
+        Bottom: image.Pt(page.Bounds().Dx()/2 + (offset - 110) * data.ScreenScale, page.Bounds().Dy() - 12 * data.ScreenScale),
         Segments: []util.Segment{
             util.Segment{
-                Top: image.Pt(page.Bounds().Dx()/2 - 90 + offset, -0),
-                Bottom: image.Pt(page.Bounds().Dx()/2 - 90 + offset, page.Bounds().Dy() - 22),
+                Top: image.Pt(page.Bounds().Dx()/2 + (offset - 90) * data.ScreenScale, -0),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + (offset - 90) * data.ScreenScale, page.Bounds().Dy() - 22 * data.ScreenScale),
             },
             util.Segment{
-                Top: image.Pt(page.Bounds().Dx()/2 - 73 + offset, -20),
-                Bottom: image.Pt(page.Bounds().Dx()/2 - 73 + offset, page.Bounds().Dy() - 35),
+                Top: image.Pt(page.Bounds().Dx()/2 + (offset - 73) * data.ScreenScale, -20 * data.ScreenScale),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + (offset - 73) * data.ScreenScale, page.Bounds().Dy() - 35 * data.ScreenScale),
             },
             util.Segment{
-                Top: image.Pt(page.Bounds().Dx()/2 - 58 + offset, -13),
-                Bottom: image.Pt(page.Bounds().Dx()/2 - 58 + offset, page.Bounds().Dy() - 35),
+                Top: image.Pt(page.Bounds().Dx()/2 + (offset - 58) * data.ScreenScale, -13 * data.ScreenScale),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + (offset - 58) * data.ScreenScale, page.Bounds().Dy() - 35 * data.ScreenScale),
             },
             util.Segment{
-                Top: image.Pt(page.Bounds().Dx()/2 - 40 + offset, 0),
-                Bottom: image.Pt(page.Bounds().Dx()/2 - 40 + offset, page.Bounds().Dy() - 28),
+                Top: image.Pt(page.Bounds().Dx()/2 + (offset - 40) * data.ScreenScale, 0),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + (offset - 40) * data.ScreenScale, page.Bounds().Dy() - 28 * data.ScreenScale),
             },
             util.Segment{
-                Top: image.Pt(page.Bounds().Dx()/2 - 20 + offset, 5),
-                Bottom: image.Pt(page.Bounds().Dx()/2 - 20 + offset, page.Bounds().Dy() - 15),
+                Top: image.Pt(page.Bounds().Dx()/2 + (offset - 20) * data.ScreenScale, 5 * data.ScreenScale),
+                Bottom: image.Pt(page.Bounds().Dx()/2 + (offset - 20) * data.ScreenScale, page.Bounds().Dy() - 15 * data.ScreenScale),
             },
         },
     }
 }
 
 // flipping the page to the right
+/*
 func RightSideFlipRightDistortions1(page *ebiten.Image) util.Distortion {
     return util.Distortion{
         Top: image.Pt(page.Bounds().Dx()/2 + 20, 5),
@@ -207,6 +208,7 @@ func RightSideFlipRightDistortions1(page *ebiten.Image) util.Distortion {
         },
     }
 }
+*/
 
 /* three modes:
  * 1. when a new spell is learned, flip to the page where the spell would go and show the sparkle animation over the new spell
