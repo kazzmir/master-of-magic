@@ -5,14 +5,12 @@ import (
 
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/lib/lbx"
 
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
 )
-
-const ScreenWidth = 320
-const ScreenHeight = 200
 
 type Engine struct {
     Counter uint64
@@ -93,13 +91,13 @@ func (engine *Engine) Draw(screen *ebiten.Image){
 }
 
 func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
-    return ScreenWidth, ScreenHeight
+    return data.ScreenWidth, data.ScreenHeight
 }
 
 func main(){
     log.SetFlags(log.Ldate | log.Lshortfile | log.Lmicroseconds)
 
-    ebiten.SetWindowSize(ScreenWidth * 5, ScreenHeight * 5)
+    ebiten.SetWindowSize(data.ScreenWidth * 2, data.ScreenHeight * 2)
     ebiten.SetWindowTitle("page turn")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 

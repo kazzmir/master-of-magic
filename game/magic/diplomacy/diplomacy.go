@@ -33,11 +33,11 @@ type Talk struct {
 }
 
 func (talk *Talk) SetTitle(title string) {
-    wrap := talk.TitleFont.CreateWrappedText(220, 1, title)
+    wrap := talk.TitleFont.CreateWrappedText(float64(220 * data.ScreenScale), float64(data.ScreenScale), title)
 
     newElement := &uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            talk.TitleFont.RenderWrapped(screen, 50, 140, wrap, ebiten.ColorScale{}, false)
+            talk.TitleFont.RenderWrapped(screen, float64(50 * data.ScreenScale), float64(140 * data.ScreenScale), wrap, ebiten.ColorScale{}, false)
         },
     }
 
@@ -57,14 +57,14 @@ func (talk *Talk) AddItem(item string, available bool, action func()){
         Action: action,
     })
 
-    posY := 150
+    posY := 150 * data.ScreenScale
     for range len(talk.Elements) {
-        posY += talk.Font.Height() + 1
+        posY += (talk.Font.Height() + 1) * data.ScreenScale
     }
 
-    textWidth := talk.Font.MeasureTextWidth(item, 1)
+    textWidth := talk.Font.MeasureTextWidth(item, float64(data.ScreenScale))
 
-    rect := image.Rect(70, posY, 70 + int(textWidth), posY + talk.Font.Height())
+    rect := image.Rect(70 * data.ScreenScale, posY, 70 * data.ScreenScale + int(textWidth), posY + talk.Font.Height() * data.ScreenScale)
 
     highlight := false
 
@@ -101,11 +101,11 @@ func (talk *Talk) AddItem(item string, available bool, action func()){
                 scale.SetG(2)
                 scale.SetB(2)
 
-                vector.DrawFilledRect(screen, float32(rect.Min.X), float32(rect.Min.Y), 220, float32(talk.Font.Height()), color.RGBA{R: 0x00, G: 0x00, B: 0x00, A: 50}, false)
+                vector.DrawFilledRect(screen, float32(rect.Min.X), float32(rect.Min.Y), float32(220 * data.ScreenScale), float32(talk.Font.Height() * data.ScreenScale), color.RGBA{R: 0x00, G: 0x00, B: 0x00, A: 50}, false)
 
             }
 
-            talk.Font.Print(screen, 70, float64(posY), 1, scale, item)
+            talk.Font.Print(screen, float64(70 * data.ScreenScale), float64(posY), float64(data.ScreenScale), scale, item)
         },
     }
 
@@ -320,14 +320,14 @@ func ShowDiplomacyScreen(cache *lbx.LbxCache, player *playerlib.Player, enemy *p
         // red right eye
         rightEye, _ := imageCache.GetImage("diplomac.lbx", 13, 0)
 
-        options.GeoM.Translate(63, 58)
+        options.GeoM.Translate(float64(63 * data.ScreenScale), float64(58 * data.ScreenScale))
         screen.DrawImage(leftEye, &options)
 
-        options.GeoM.Translate(170, 0)
+        options.GeoM.Translate(float64(170 * data.ScreenScale), 0)
         screen.DrawImage(rightEye, &options)
 
         options.GeoM.Reset()
-        options.GeoM.Translate(106, 11)
+        options.GeoM.Translate(float64(106 * data.ScreenScale), 11)
         screen.DrawImage(wizardAnimation.Frame(), &options)
 
         ui.Draw(ui, screen)

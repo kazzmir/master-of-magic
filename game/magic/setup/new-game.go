@@ -138,7 +138,7 @@ func (newGameScreen *NewGameScreen) MakeUI() *uilib.UI {
 
     okIndex := 0
     elements = append(elements, &uilib.UIElement{
-        Rect: util.ImageRect(okX, okY, okButtons[0]),
+        Rect: util.ImageRect(okX * data.ScreenScale, okY * data.ScreenScale, okButtons[0]),
         LeftClick: func(element *uilib.UIElement) {
             okIndex = 1
         },
@@ -146,9 +146,9 @@ func (newGameScreen *NewGameScreen) MakeUI() *uilib.UI {
             okIndex = 0
             newGameScreen.State = NewGameStateOk
         },
-        Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+        Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
             var options ebiten.DrawImageOptions
-            options.GeoM.Translate(float64(okX), float64(okY))
+            options.GeoM.Translate(float64(this.Rect.Min.X), float64(this.Rect.Min.Y))
             screen.DrawImage(okButtons[okIndex], &options)
         },
     })
@@ -159,7 +159,7 @@ func (newGameScreen *NewGameScreen) MakeUI() *uilib.UI {
     cancelButtons, _ := newGameScreen.ImageCache.GetImages("newgame.lbx", 3)
     cancelIndex := 0
     elements = append(elements, &uilib.UIElement{
-        Rect: util.ImageRect(cancelX, cancelY, cancelButtons[0]),
+        Rect: util.ImageRect(cancelX * data.ScreenScale, cancelY * data.ScreenScale, cancelButtons[0]),
         LeftClick: func(element *uilib.UIElement) {
             cancelIndex = 1
         },
@@ -167,9 +167,9 @@ func (newGameScreen *NewGameScreen) MakeUI() *uilib.UI {
             cancelIndex = 0
             newGameScreen.State = NewGameStateCancel
         },
-        Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+        Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
             var options ebiten.DrawImageOptions
-            options.GeoM.Translate(float64(cancelX), float64(cancelY))
+            options.GeoM.Translate(float64(this.Rect.Min.X), float64(this.Rect.Min.Y))
             screen.DrawImage(cancelButtons[cancelIndex], &options)
         },
     })
@@ -180,18 +180,18 @@ func (newGameScreen *NewGameScreen) MakeUI() *uilib.UI {
     difficultyBlock, _ := newGameScreen.ImageCache.GetImage("newgame.lbx", 4, 0)
 
     elements = append(elements, &uilib.UIElement{
-        Rect: util.ImageRect(difficultyX, difficultyY, difficultyBlock),
+        Rect: util.ImageRect(difficultyX * data.ScreenScale, difficultyY * data.ScreenScale, difficultyBlock),
         LeftClick: func(element *uilib.UIElement) {
             newGameScreen.Settings.DifficultyNext()
         },
-        Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+        Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
             var options ebiten.DrawImageOptions
-            options.GeoM.Translate(float64(difficultyX), float64(difficultyY))
+            options.GeoM.Translate(float64(this.Rect.Min.X), float64(this.Rect.Min.Y))
             screen.DrawImage(difficultyBlock, &options)
 
-            x := difficultyX + difficultyBlock.Bounds().Dx() / 2
-            y := difficultyY + 3
-            buttonFont.PrintCenter(screen, float64(x), float64(y), 1, ebiten.ColorScale{}, newGameScreen.Settings.DifficultyString())
+            x := difficultyX * data.ScreenScale + difficultyBlock.Bounds().Dx() / 2
+            y := (difficultyY + 3) * data.ScreenScale
+            buttonFont.PrintCenter(screen, float64(x), float64(y), float64(data.ScreenScale), ebiten.ColorScale{}, newGameScreen.Settings.DifficultyString())
         },
     })
 
@@ -201,17 +201,17 @@ func (newGameScreen *NewGameScreen) MakeUI() *uilib.UI {
     opponentsBlock, _ := newGameScreen.ImageCache.GetImage("newgame.lbx", 5, 0)
 
     elements = append(elements, &uilib.UIElement{
-        Rect: util.ImageRect(opponentsX, opponentsY, opponentsBlock),
+        Rect: util.ImageRect(opponentsX * data.ScreenScale, opponentsY * data.ScreenScale, opponentsBlock),
         LeftClick: func(element *uilib.UIElement) {
             newGameScreen.Settings.OpponentsNext()
         },
-        Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+        Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
             var options ebiten.DrawImageOptions
-            options.GeoM.Translate(float64(opponentsX), float64(opponentsY))
+            options.GeoM.Translate(float64(this.Rect.Min.X), float64(this.Rect.Min.Y))
             screen.DrawImage(opponentsBlock, &options)
-            x := opponentsX + opponentsBlock.Bounds().Dx() / 2
-            y := opponentsY + 4
-            buttonFont.PrintCenter(screen, float64(x), float64(y), 1, ebiten.ColorScale{}, newGameScreen.Settings.OpponentsString())
+            x := opponentsX * data.ScreenScale + opponentsBlock.Bounds().Dx() / 2
+            y := (opponentsY + 4) * data.ScreenScale
+            buttonFont.PrintCenter(screen, float64(x), float64(y), float64(data.ScreenScale), ebiten.ColorScale{}, newGameScreen.Settings.OpponentsString())
         },
     })
 
@@ -220,19 +220,19 @@ func (newGameScreen *NewGameScreen) MakeUI() *uilib.UI {
     landSizeBlock, _ := newGameScreen.ImageCache.GetImage("newgame.lbx", 6, 0)
 
     elements = append(elements, &uilib.UIElement{
-        Rect: util.ImageRect(landsizeX, landsizeY, landSizeBlock),
+        Rect: util.ImageRect(landsizeX * data.ScreenScale, landsizeY * data.ScreenScale, landSizeBlock),
         LeftClick: func(element *uilib.UIElement) {
             newGameScreen.Settings.LandSizeNext()
         },
-        Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+        Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
             var options ebiten.DrawImageOptions
-            options.GeoM.Translate(float64(landsizeX), float64(landsizeY))
+            options.GeoM.Translate(float64(this.Rect.Min.X), float64(this.Rect.Min.Y))
             screen.DrawImage(landSizeBlock, &options)
 
-            x := landsizeX + landSizeBlock.Bounds().Dx() / 2
-            y := landsizeY + 4
+            x := landsizeX * data.ScreenScale + landSizeBlock.Bounds().Dx() / 2
+            y := (landsizeY + 4)* data.ScreenScale
 
-            buttonFont.PrintCenter(screen, float64(x), float64(y), 1, ebiten.ColorScale{}, newGameScreen.Settings.LandSizeString())
+            buttonFont.PrintCenter(screen, float64(x), float64(y), float64(data.ScreenScale), ebiten.ColorScale{}, newGameScreen.Settings.LandSizeString())
         },
     })
 
@@ -241,17 +241,17 @@ func (newGameScreen *NewGameScreen) MakeUI() *uilib.UI {
     magicBlock, _ := newGameScreen.ImageCache.GetImage("newgame.lbx", 7, 0)
 
     elements = append(elements, &uilib.UIElement{
-        Rect: util.ImageRect(magicX, magicY, magicBlock),
+        Rect: util.ImageRect(magicX * data.ScreenScale, magicY * data.ScreenScale, magicBlock),
         LeftClick: func(element *uilib.UIElement) {
             newGameScreen.Settings.MagicNext()
         },
-        Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+        Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
             var options ebiten.DrawImageOptions
-            options.GeoM.Translate(float64(magicX), float64(magicY))
+            options.GeoM.Translate(float64(this.Rect.Min.X), float64(this.Rect.Min.Y))
             screen.DrawImage(magicBlock, &options)
-            x := magicX + magicBlock.Bounds().Dx() / 2
-            y := magicY + 4
-            buttonFont.PrintCenter(screen, float64(x), float64(y), 1, ebiten.ColorScale{}, newGameScreen.Settings.MagicString())
+            x := magicX * data.ScreenScale + magicBlock.Bounds().Dx() / 2
+            y := (magicY + 4) * data.ScreenScale
+            buttonFont.PrintCenter(screen, float64(x), float64(y), float64(data.ScreenScale), ebiten.ColorScale{}, newGameScreen.Settings.MagicString())
         },
     })
 
@@ -263,7 +263,7 @@ func (newGameScreen *NewGameScreen) MakeUI() *uilib.UI {
             screen.DrawImage(background, &options)
 
             options.GeoM.Reset()
-            options.GeoM.Translate(160 + 5, 0)
+            options.GeoM.Translate(float64((160 + 5) * data.ScreenScale), 0)
 
             optionsImage, _ := newGameScreen.ImageCache.GetImage("newgame.lbx", 1, 0)
             screen.DrawImage(optionsImage, &options)

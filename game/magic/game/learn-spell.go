@@ -62,20 +62,20 @@ func (game *Game) wizlabAnimation(yield coroutine.YieldFunc, wizard setup.Wizard
         screen.DrawImage(background, &options)
 
         wizardPic, _ := game.ImageCache.GetImage("wizlab.lbx", wizardIndex, 0)
-        options.GeoM.Translate(70, 74)
+        options.GeoM.Translate(float64(70 * data.ScreenScale), float64(74 * data.ScreenScale))
         screen.DrawImage(wizardPic, &options)
 
         options.GeoM.Reset()
-        options.GeoM.Translate(132, -5)
+        options.GeoM.Translate(float64(132 * data.ScreenScale), float64(-5 * data.ScreenScale))
         screen.DrawImage(sparkles.Frame(), &options)
 
         pulpit, _ := game.ImageCache.GetImage("wizlab.lbx", 20, 0)
         options.GeoM.Reset()
-        options.GeoM.Translate(150, 130)
+        options.GeoM.Translate(float64(150 * data.ScreenScale), float64(130 * data.ScreenScale))
         screen.DrawImage(pulpit, &options)
 
         options.GeoM.Reset()
-        options.GeoM.Translate(190, 157)
+        options.GeoM.Translate(float64(190 * data.ScreenScale), float64(157 * data.ScreenScale))
         animalPic, _ := game.ImageCache.GetImage("wizlab.lbx", animalIndex, 0)
         screen.DrawImage(animalPic, &options)
     }

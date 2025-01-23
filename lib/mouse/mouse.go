@@ -4,6 +4,7 @@ import (
     // "log"
     "fmt"
     "bytes"
+    "image"
 
     "image/color"
 
@@ -11,6 +12,10 @@ import (
 
     "github.com/hajimehoshi/ebiten/v2"
 )
+
+type Scaler interface {
+    ApplyScale(image.Image) image.Image
+}
 
 // a collection of all mouse images
 type MouseData struct {
@@ -24,36 +29,36 @@ type MouseData struct {
     Cast []*ebiten.Image
 }
 
-func MakeMouseData(cache *lbx.LbxCache) (*MouseData, error) {
-    normal, err := GetMouseNormal(cache)
+func MakeMouseData(cache *lbx.LbxCache, scaler Scaler) (*MouseData, error) {
+    normal, err := GetMouseNormal(cache, scaler)
     if err != nil {
         return nil, err
     }
-    magic, err := GetMouseMagic(cache)
+    magic, err := GetMouseMagic(cache, scaler)
     if err != nil {
         return nil, err
     }
-    errorImage, err := GetMouseError(cache)
+    errorImage, err := GetMouseError(cache, scaler)
     if err != nil {
         return nil, err
     }
-    arrow, err := GetMouseArrow(cache)
+    arrow, err := GetMouseArrow(cache, scaler)
     if err != nil {
         return nil, err
     }
-    attack, err := GetMouseAttack(cache)
+    attack, err := GetMouseAttack(cache, scaler)
     if err != nil {
         return nil, err
     }
-    wait, err := GetMouseWait(cache)
+    wait, err := GetMouseWait(cache, scaler)
     if err != nil {
         return nil, err
     }
-    move, err := GetMouseMove(cache)
+    move, err := GetMouseMove(cache, scaler)
     if err != nil {
         return nil, err
     }
-    cast, err := GetMouseCast(cache)
+    cast, err := GetMouseCast(cache, scaler)
     if err != nil {
         return nil, err
     }
@@ -71,7 +76,7 @@ func MakeMouseData(cache *lbx.LbxCache) (*MouseData, error) {
 }
 
 // pass in an entry from fonts.lbx within range 2-8
-func readMousePics(data []byte) ([]*ebiten.Image, error) {
+func readMousePics(data []byte, scaler Scaler) ([]*ebiten.Image, error) {
     if len(data) < 5376 {
         return nil, fmt.Errorf("data is too short")
     }
@@ -108,8 +113,8 @@ func readMousePics(data []byte) ([]*ebiten.Image, error) {
     usePalette := lbx.GetDefaultPalette()
     for i := 0; i < 16; i++ {
         mouse := mouseData[i*length:i*length + length]
-        pic := ebiten.NewImage(16, 16)
 
+        rawPic := image.NewPaletted(image.Rect(0, 0, 16, 16), usePalette)
         reader := bytes.NewReader(mouse)
 
         for x := 0; x < 16; x++ {
@@ -119,10 +124,12 @@ func readMousePics(data []byte) ([]*ebiten.Image, error) {
                     return nil, err
                 }
 
-                color := usePalette[colorIndex]
-                pic.Set(x, y, color)
+                // color := usePalette[colorIndex]
+                rawPic.SetColorIndex(x, y, colorIndex)
             }
         }
+
+        pic := ebiten.NewImageFromImage(scaler.ApplyScale(rawPic))
 
         mousePics = append(mousePics, pic)
     }
@@ -130,26 +137,26 @@ func readMousePics(data []byte) ([]*ebiten.Image, error) {
     return mousePics, nil
 }
 
-func ReadMouseImages(fontsLbx *lbx.LbxFile, entry int) ([]*ebiten.Image, error) {
+func ReadMouseImages(fontsLbx *lbx.LbxFile, scaler Scaler, entry int) ([]*ebiten.Image, error) {
     data, err := fontsLbx.RawData(entry)
     if err != nil {
         return nil, err
     }
 
-    return readMousePics(data)
+    return readMousePics(data, scaler)
 }
 
-func GetMouseImages(cache *lbx.LbxCache, entry int) ([]*ebiten.Image, error){
+func GetMouseImages(cache *lbx.LbxCache, scaler Scaler, entry int) ([]*ebiten.Image, error){
     fontsLbx, err := cache.GetLbxFile("fonts.lbx")
     if err != nil {
         return nil, err
     }
 
-    return ReadMouseImages(fontsLbx, entry)
+    return ReadMouseImages(fontsLbx, scaler, entry)
 }
 
-func GetSingleImage(cache *lbx.LbxCache, entry int, index int) (*ebiten.Image, error) {
-    images, err := GetMouseImages(cache, entry)
+func GetSingleImage(cache *lbx.LbxCache, scaler Scaler, entry int, index int) (*ebiten.Image, error) {
+    images, err := GetMouseImages(cache, scaler, entry)
     if err != nil {
         return nil, err
     }
@@ -160,36 +167,36 @@ func GetSingleImage(cache *lbx.LbxCache, entry int, index int) (*ebiten.Image, e
     return nil, fmt.Errorf("no image found at index %v", index)
 }
 
-func GetMouseNormal(cache *lbx.LbxCache) (*ebiten.Image, error) {
-    return GetSingleImage(cache, 2, 0)
+func GetMouseNormal(cache *lbx.LbxCache, scaler Scaler) (*ebiten.Image, error) {
+    return GetSingleImage(cache, scaler, 2, 0)
 }
 
-func GetMouseMagic(cache *lbx.LbxCache) (*ebiten.Image, error) {
-    return GetSingleImage(cache, 2, 1)
+func GetMouseMagic(cache *lbx.LbxCache, scaler Scaler) (*ebiten.Image, error) {
+    return GetSingleImage(cache, scaler, 2, 1)
 }
 
-func GetMouseError(cache *lbx.LbxCache) (*ebiten.Image, error) {
-    return GetSingleImage(cache, 2, 2)
+func GetMouseError(cache *lbx.LbxCache, scaler Scaler) (*ebiten.Image, error) {
+    return GetSingleImage(cache, scaler, 2, 2)
 }
 
-func GetMouseArrow(cache *lbx.LbxCache) (*ebiten.Image, error) {
-    return GetSingleImage(cache, 2, 3)
+func GetMouseArrow(cache *lbx.LbxCache, scaler Scaler) (*ebiten.Image, error) {
+    return GetSingleImage(cache, scaler, 2, 3)
 }
 
-func GetMouseAttack(cache *lbx.LbxCache) (*ebiten.Image, error) {
-    return GetSingleImage(cache, 2, 4)
+func GetMouseAttack(cache *lbx.LbxCache, scaler Scaler) (*ebiten.Image, error) {
+    return GetSingleImage(cache, scaler, 2, 4)
 }
 
-func GetMouseWait(cache *lbx.LbxCache) (*ebiten.Image, error) {
-    return GetSingleImage(cache, 2, 5)
+func GetMouseWait(cache *lbx.LbxCache, scaler Scaler) (*ebiten.Image, error) {
+    return GetSingleImage(cache, scaler, 2, 5)
 }
 
-func GetMouseMove(cache *lbx.LbxCache) (*ebiten.Image, error) {
-    return GetSingleImage(cache, 2, 6)
+func GetMouseMove(cache *lbx.LbxCache, scaler Scaler) (*ebiten.Image, error) {
+    return GetSingleImage(cache, scaler, 2, 6)
 }
 
-func GetMouseCast(cache *lbx.LbxCache) ([]*ebiten.Image, error) {
-    images, err := GetMouseImages(cache, 2)
+func GetMouseCast(cache *lbx.LbxCache, scaler Scaler) ([]*ebiten.Image, error) {
+    images, err := GetMouseImages(cache, scaler, 2)
     if err != nil {
         return nil, err
     }

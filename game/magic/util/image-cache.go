@@ -6,14 +6,21 @@ import (
     "fmt"
     "strings"
     "image"
+    "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/xbr"
     "github.com/kazzmir/master-of-magic/game/magic/shaders"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/hajimehoshi/ebiten/v2"
 )
 
 type ImageTransformFunc func(*image.Paletted) image.Image
 type ImageTransformGenericFunc func(image.Image) image.Image
+
+type Scaler interface {
+    ApplyScale(image.Image) image.Image
+}
 
 type ImageCache struct {
     LbxCache *lbx.LbxCache
@@ -21,6 +28,9 @@ type ImageCache struct {
     Cache map[string][]*ebiten.Image
 
     ShaderCache map[shaders.Shader]*ebiten.Shader
+
+    Scaler data.ScaleAlgorithm
+    ScaleAmount int
 }
 
 func MakeImageCache(lbxCache *lbx.LbxCache) ImageCache {
@@ -28,6 +38,8 @@ func MakeImageCache(lbxCache *lbx.LbxCache) ImageCache {
         LbxCache: lbxCache,
         Cache:    make(map[string][]*ebiten.Image),
         ShaderCache: make(map[shaders.Shader]*ebiten.Shader),
+        Scaler: data.ScreenScaleAlgorithm,
+        ScaleAmount: data.ScreenScale,
     }
 }
 
@@ -142,12 +154,156 @@ func (cache *ImageCache) GetImagesTransform(lbxPath string, index int, extra str
 
     var out []*ebiten.Image
     for i := 0; i < len(sprites); i++ {
-        out = append(out, ebiten.NewImageFromImage(transform(sprites[i])))
+        out = append(out, ebiten.NewImageFromImage(cache.ApplyScale(transform(sprites[i]))))
     }
 
     cache.Cache[key] = out
 
     return out, nil
+}
+
+func Scale2x(input image.Image, smooth bool) image.Image {
+    bounds := input.Bounds()
+    scaledImage := image.NewRGBA(image.Rect(0, 0, 2 * bounds.Dx(), 2 * bounds.Dy()))
+
+    getColor := func(x, y int) color.Color {
+        if x < bounds.Min.X || x >= bounds.Max.X || y < bounds.Min.Y || y >= bounds.Max.Y {
+            return color.RGBA{}
+        }
+
+        return input.At(x, y)
+    }
+
+    for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+        for x := bounds.Min.X; x < bounds.Max.X; x++ {
+            B := getColor(x, y-1)
+            D := getColor(x-1, y)
+            E := getColor(x, y)
+            F := getColor(x+1, y)
+            H := getColor(x, y+1)
+
+            E0, E1, E2, E3 := E, E, E, E
+            if smooth && B != H && D != F {
+                if D == B {
+                    E0 = D
+                }
+                if B == F {
+                    E1 = F
+                }
+                if D == H {
+                    E2 = D
+                }
+                if H == F {
+                    E3 = F
+                }
+            }
+
+            scaledImage.Set(x*2, y*2, E0)
+            scaledImage.Set(x*2+1, y*2, E1)
+            scaledImage.Set(x*2, y*2+1, E2)
+            scaledImage.Set(x*2+1, y*2+1, E3)
+        }
+    }
+
+    return scaledImage
+}
+
+func Scale3x(input image.Image, smooth bool) image.Image {
+    bounds := input.Bounds()
+    scaledImage := image.NewRGBA(image.Rect(0, 0, 3 * bounds.Dx(), 3 * bounds.Dy()))
+
+    getColor := func(x, y int) color.Color {
+        if x < bounds.Min.X || x >= bounds.Max.X || y < bounds.Min.Y || y >= bounds.Max.Y {
+            return color.RGBA{}
+        }
+
+        return input.At(x, y)
+    }
+
+    for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+        for x := bounds.Min.X; x < bounds.Max.X; x++ {
+            B := getColor(x, y-1)
+            C := getColor(x+1, y-1)
+            D := getColor(x-1, y)
+            E := getColor(x, y)
+            F := getColor(x+1, y)
+            G := getColor(x-1, y+1)
+            H := getColor(x, y+1)
+            I := getColor(x+1, y+1)
+
+            E0, E1, E2, E3, E4, E5, E6, E7, E8 := E, E, E, E, E, E, E, E, E
+            if smooth && B != H && D != F {
+                if D == B {
+                    E0 = D
+                }
+                if B == F {
+                    E1 = B
+                }
+                if D == H {
+                    E2 = F
+                }
+                if H == F {
+                    E3 = D
+                }
+                E4 = E
+                if (B == F && E != I) || (H == F && E != C) {
+                    E5 = F
+                }
+
+                if D == H {
+                    E6 = D
+                }
+
+                if (D == H && E != I) || (H == F && E != G) {
+                    E7 = H
+                }
+
+                if H == F {
+                    E8 = F
+                }
+            }
+
+            scaledImage.Set(x*3+0, y*3+0, E0)
+            scaledImage.Set(x*3+1, y*3+0, E1)
+            scaledImage.Set(x*3+2, y*3+0, E2)
+
+            scaledImage.Set(x*3+0, y*3+1, E3)
+            scaledImage.Set(x*3+1, y*3+1, E4)
+            scaledImage.Set(x*3+2, y*3+1, E5)
+
+            scaledImage.Set(x*3+0, y*3+2, E6)
+            scaledImage.Set(x*3+1, y*3+2, E7)
+            scaledImage.Set(x*3+2, y*3+2, E8)
+        }
+    }
+
+    return scaledImage
+}
+
+func (cache *ImageCache) ApplyScale(input image.Image) image.Image {
+    if cache.ScaleAmount == 1 {
+        return input
+    }
+
+    switch cache.Scaler {
+        case data.ScaleAlgorithmNormal:
+            switch cache.ScaleAmount {
+                case 2: return Scale2x(input, false)
+                case 3: return Scale3x(input, false)
+                case 4: return Scale2x(Scale2x(input, false), false)
+                default: return input
+            }
+        case data.ScaleAlgorithmScale:
+            switch cache.ScaleAmount {
+                case 2: return Scale2x(input, true)
+                case 3: return Scale3x(input, true)
+                case 4: return Scale2x(Scale2x(input, true), true)
+                default: return input
+            }
+        case data.ScaleAlgorithmXbr: return xbr.ScaleImage(input, cache.ScaleAmount)
+    }
+
+    return input
 }
 
 func (cache *ImageCache) GetImages(lbxPath string, index int) ([]*ebiten.Image, error) {

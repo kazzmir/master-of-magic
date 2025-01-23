@@ -544,6 +544,24 @@ func createScenario7(cache *lbx.LbxCache) *gamelib.Game {
         player.AddCity(introCity)
     }
 
+    for i := 0; i < 4; i++ {
+        x, y := game.FindValidCityLocation(data.PlaneMyrror)
+        player.LiftFog(x, y, 3, data.PlaneMyrror)
+
+        introCity := citylib.MakeCity(fmt.Sprintf("city%v myr", i), x, y, data.RaceHighElf, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.GetMap(data.PlaneMyrror), game)
+        introCity.Population = rand.Intn(5000) + 5000
+        introCity.Plane = data.PlaneMyrror
+        introCity.ProducingBuilding = buildinglib.BuildingHousing
+        introCity.ProducingUnit = units.UnitNone
+        introCity.Wall = false
+
+        introCity.AddBuilding(buildinglib.BuildingShrine)
+
+        introCity.ResetCitizens(nil)
+
+        player.AddCity(introCity)
+    }
+
     player.Gold = 83
     player.Mana = 26
 
@@ -1091,13 +1109,11 @@ func createScenario14(cache *lbx.LbxCache) *gamelib.Game {
     player.LiftFog(x, y, 4, data.PlaneArcanus)
     game.Camera.Center(x, y)
 
-    /*
     game.Events <- &gamelib.GameEventLearnedSpell{
         Player: player,
         // Spell: allSpells.FindByName("Earth Lore"),
         Spell: allSpells.FindByName("Magic Spirit"),
     }
-    */
 
     return game
 }
@@ -1138,11 +1154,16 @@ func createScenario15(cache *lbx.LbxCache) *gamelib.Game {
     city.Population = 20190
     city.Plane = data.PlaneArcanus
     city.Banner = wizard.Banner
+    city.Buildings.Insert(buildinglib.BuildingGranary)
+    city.Buildings.Insert(buildinglib.BuildingFarmersMarket)
+    city.Buildings.Insert(buildinglib.BuildingForestersGuild)
+    city.Buildings.Insert(buildinglib.BuildingShrine)
+    city.Buildings.Insert(buildinglib.BuildingTemple)
     city.ProducingBuilding = buildinglib.BuildingGranary
     city.ProducingUnit = units.UnitNone
     city.Race = wizard.Race
-    city.Farmers = 17
-    city.Workers = 3
+    city.Farmers = 20
+    city.Workers = 0
     city.Wall = false
 
     city.ResetCitizens(nil)
@@ -1391,20 +1412,20 @@ func createScenario17(cache *lbx.LbxCache) *gamelib.Game {
                 Amount: 3,
                 Name: "+3 Movement",
             },
-            /*
             {
                 Type: artifact.PowerTypeAbility1,
                 Amount: 2,
                 Ability: data.AbilityFlaming,
                 Name: "Flaming",
             },
-            */
+            /*
             {
                 Type: artifact.PowerTypeSpellCharges,
                 Amount: 2,
                 Spell: allSpells.FindByName("Ice Bolt"),
                 Name: "Ice Bolt x1",
             },
+            */
         },
         Cost: 1000,
     }
@@ -1865,7 +1886,7 @@ func createScenario22(cache *lbx.LbxCache) *gamelib.Game {
     player.AddCity(city)
 
     player.Gold = 83
-    player.Mana = 26
+    player.Mana = 2600
 
     // game.Map.Map.Terrain[3][6] = terrain.TileNatureForest.Index
 
@@ -2716,7 +2737,7 @@ func NewEngine(scenario int) (*Engine, error) {
         return ebiten.Termination
     }
 
-    normalMouse, err := mouselib.GetMouseNormal(cache)
+    normalMouse, err := mouselib.GetMouseNormal(cache, &game.ImageCache)
     if err == nil {
         mouse.Mouse.SetImage(normalMouse)
     }
@@ -2792,7 +2813,7 @@ func main(){
 
     size := monitorWidth / 390
 
-    ebiten.SetWindowSize(data.ScreenWidth * size, data.ScreenHeight * size)
+    ebiten.SetWindowSize(data.ScreenWidth / data.ScreenScale * size, data.ScreenHeight / data.ScreenScale * size)
     ebiten.SetWindowTitle("new screen")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 

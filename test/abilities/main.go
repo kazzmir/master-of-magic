@@ -12,6 +12,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/util"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     mouselib "github.com/kazzmir/master-of-magic/lib/mouse"
     "github.com/kazzmir/master-of-magic/game/magic/mouse"
@@ -133,7 +134,8 @@ func allAbilities() []data.Ability {
 func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
-    normalMouse, err := mouselib.GetMouseNormal(cache)
+    imageCache := util.MakeImageCache(cache)
+    normalMouse, err := mouselib.GetMouseNormal(cache, &imageCache)
     if err == nil {
         mouse.Mouse.SetImage(normalMouse)
     }

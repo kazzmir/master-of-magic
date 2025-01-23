@@ -7,6 +7,7 @@ import (
     "image/color"
 
     "github.com/kazzmir/master-of-magic/game/magic/util"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
 
     "github.com/hajimehoshi/ebiten/v2/text/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -132,15 +133,15 @@ func (console *Console) Update() {
     const speed = 8
 
     if console.State == ConsoleOpen {
-        if console.PosY < ConsoleHeight {
-            console.PosY += speed
-            if console.PosY > ConsoleHeight {
-                console.PosY = ConsoleHeight
+        if console.PosY < ConsoleHeight * data.ScreenScale {
+            console.PosY += speed * data.ScreenScale
+            if console.PosY > ConsoleHeight * data.ScreenScale {
+                console.PosY = ConsoleHeight * data.ScreenScale
             }
         }
     } else {
         if console.PosY > 0 {
-            console.PosY -= speed
+            console.PosY -= speed * data.ScreenScale
         }
     }
 
@@ -168,7 +169,7 @@ func (console *Console) Draw(screen *ebiten.Image) {
 
         face := &text.GoTextFace{
             Source: console.Font,
-            Size: 8,
+            Size: float64(8 * data.ScreenScale),
         }
 
         textOptions := text.DrawOptions{}
@@ -176,7 +177,7 @@ func (console *Console) Draw(screen *ebiten.Image) {
         textOptions.Blend.BlendFactorSourceAlpha = ebiten.BlendFactorOne
         textOptions.Blend.BlendFactorDestinationAlpha = ebiten.BlendFactorZero
         */
-        textOptions.GeoM.Translate(2, float64(console.PosY) - face.Size - 1)
+        textOptions.GeoM.Translate(2, float64(console.PosY) - face.Size - float64(1 * data.ScreenScale))
         text.Draw(screen, "> " + console.CurrentLine + "|", face, &textOptions)
 
         for i, count := len(console.Lines) - 1, 0; i >= 0; i, count = i-1, count+1 {

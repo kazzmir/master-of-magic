@@ -3,11 +3,13 @@ package main
 import (
     "log"
     "fmt"
+    "image"
 
     "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/mouse"
+    "github.com/kazzmir/master-of-magic/game/magic/util"
 
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -55,12 +57,21 @@ type View struct {
     Images map[MouseImage]*ebiten.Image
 }
 
+type ScaleNone struct {
+}
+
+func (scaler *ScaleNone) ApplyScale(input image.Image) image.Image {
+    return util.Scale2x(input, false)
+}
+
 func MakeView(cache *lbx.LbxCache) (*View, error) {
 
     fontLbx, err := cache.GetLbxFile("fonts.lbx")
     if err != nil {
         return nil, err
     }
+
+    scaler := &ScaleNone{}
 
     var all []*ebiten.Image
     for i := 2; i < 9; i++ {
@@ -72,44 +83,44 @@ func MakeView(cache *lbx.LbxCache) (*View, error) {
 
         mousePics, err := readMousePics(data)
         */
-        mousePics, err := mouse.ReadMouseImages(fontLbx, i)
+        mousePics, err := mouse.ReadMouseImages(fontLbx, scaler, i)
         if err != nil {
             return nil, err
         }
         all = append(all, mousePics...)
     }
 
-    castImages, err := mouse.GetMouseCast(cache)
+    castImages, err := mouse.GetMouseCast(cache, scaler)
     if err != nil {
         return nil, err
     }
 
     images := make(map[MouseImage]*ebiten.Image)
-    x, err := mouse.GetMouseNormal(cache)
+    x, err := mouse.GetMouseNormal(cache, scaler)
     if err == nil {
         images[MouseNormal] = x
     }
-    x, err = mouse.GetMouseMagic(cache)
+    x, err = mouse.GetMouseMagic(cache, scaler)
     if err == nil {
         images[MouseMagic] = x
     }
-    x, err = mouse.GetMouseError(cache)
+    x, err = mouse.GetMouseError(cache, scaler)
     if err == nil {
         images[MouseError] = x
     }
-    x, err = mouse.GetMouseArrow(cache)
+    x, err = mouse.GetMouseArrow(cache, scaler)
     if err == nil {
         images[MouseArrow] = x
     }
-    x, err = mouse.GetMouseAttack(cache)
+    x, err = mouse.GetMouseAttack(cache, scaler)
     if err == nil {
         images[MouseAttack] = x
     }
-    x, err = mouse.GetMouseWait(cache)
+    x, err = mouse.GetMouseWait(cache, scaler)
     if err == nil {
         images[MouseWait] = x
     }
-    x, err = mouse.GetMouseMove(cache)
+    x, err = mouse.GetMouseMove(cache, scaler)
     if err == nil {
         images[MouseMove] = x
     }

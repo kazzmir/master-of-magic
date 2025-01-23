@@ -21,7 +21,7 @@ func NewEngine() (*Engine, error) {
 
     screen := setup.MakeNewWizardScreen(cache)
 
-    screen.Activate()
+    // screen.Activate()
 
     return &Engine{
         LbxCache: cache,
@@ -66,7 +66,7 @@ func main(){
 
     log.SetFlags(log.Ldate | log.Lshortfile | log.Lmicroseconds)
 
-    ebiten.SetWindowSize(data.ScreenWidth * 5, data.ScreenHeight * 5)
+    ebiten.SetWindowSize(data.ScreenWidth * 2, data.ScreenHeight * 2)
     ebiten.SetWindowTitle("new wizard")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 
