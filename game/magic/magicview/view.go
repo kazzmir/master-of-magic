@@ -125,61 +125,61 @@ func MakeTransmuteElements(ui *uilib.UI, smallFont *font.Font, player *playerlib
             }
 
             // the conveyor belt should only be drawn until the position of the cursor
-            conveyorArea := screen.SubImage(image.Rect(131, 85, 131 + cursorPosition, 85 + 7)).(*ebiten.Image)
+            conveyorArea := screen.SubImage(image.Rect(131 * data.ScreenScale, 85 * data.ScreenScale, 131 * data.ScreenScale + cursorPosition, (85 + 7) * data.ScreenScale)).(*ebiten.Image)
 
             // draw an animated conveyor belt by drawing the same image twice with a slight offset
             movement := int((ui.Counter / 6) % 8)
             if flip {
                 options.GeoM.Reset()
                 options.GeoM.Scale(-1, 1)
-                options.GeoM.Translate(131, 85)
+                options.GeoM.Translate(float64(131 * data.ScreenScale), float64(85 * data.ScreenScale))
                 options.GeoM.Translate(float64(cursorPosition + conveyor.Bounds().Dx()), 0)
-                options.GeoM.Translate(float64(-movement), 0)
+                options.GeoM.Translate(float64(-movement * data.ScreenScale), 0)
                 conveyorArea.DrawImage(conveyor, &options)
 
                 options.GeoM.Reset()
                 options.GeoM.Scale(-1, 1)
-                options.GeoM.Translate(131, 85)
+                options.GeoM.Translate(float64(131 * data.ScreenScale), float64(85 * data.ScreenScale))
                 options.GeoM.Translate(float64(cursorPosition), 0)
-                options.GeoM.Translate(float64(-movement), 0)
+                options.GeoM.Translate(float64(-movement * data.ScreenScale), 0)
                 conveyorArea.DrawImage(conveyor, &options)
             } else {
                 options.GeoM.Reset()
-                options.GeoM.Translate(131, 85)
+                options.GeoM.Translate(float64(131 * data.ScreenScale), float64(85 * data.ScreenScale))
                 options.GeoM.Translate(float64(-conveyor.Bounds().Dx()), 0)
-                options.GeoM.Translate(float64(movement), 0)
+                options.GeoM.Translate(float64(movement * data.ScreenScale), 0)
                 conveyorArea.DrawImage(conveyor, &options)
 
                 options.GeoM.Reset()
-                options.GeoM.Translate(131, 85)
-                options.GeoM.Translate(float64(movement), 0)
+                options.GeoM.Translate(float64(131 * data.ScreenScale), float64(85 * data.ScreenScale))
+                options.GeoM.Translate(float64(movement * data.ScreenScale), 0)
                 conveyorArea.DrawImage(conveyor, &options)
             }
 
             // draw the cursor itself
             options.GeoM.Reset()
-            options.GeoM.Translate(131 + float64(cursorPosition) - 3, 85)
+            options.GeoM.Translate(float64((131 - 3) * data.ScreenScale) + float64(cursorPosition), float64(85 * data.ScreenScale))
             screen.DrawImage(cursor, &options)
 
             options.GeoM.Reset()
             options.GeoM.Translate(float64(cancelRect.Min.X), float64(cancelRect.Min.Y))
             screen.DrawImage(cancel[cancelIndex], &options)
 
-            leftSide := float64(122)
-            rightSide := float64(224)
+            leftSide := float64(122 * data.ScreenScale)
+            rightSide := float64(224 * data.ScreenScale)
             if isRight {
-                smallFont.PrintRight(screen, leftSide, 86, 1, ebiten.ColorScale{}, fmt.Sprintf("%v GP", int(float64(totalMana) * changePercent * alchemyConversion)))
-                smallFont.PrintRight(screen, rightSide, 86, 1, ebiten.ColorScale{}, fmt.Sprintf("%v PP", int(float64(totalMana) * changePercent)))
+                smallFont.PrintRight(screen, leftSide, float64(86 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v GP", int(float64(totalMana) * changePercent * alchemyConversion)))
+                smallFont.PrintRight(screen, rightSide, float64(86 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v PP", int(float64(totalMana) * changePercent)))
             } else {
-                smallFont.PrintRight(screen, leftSide, 86, 1, ebiten.ColorScale{}, fmt.Sprintf("%v GP", int(float64(totalGold) * changePercent)))
-                smallFont.PrintRight(screen, rightSide, 86, 1, ebiten.ColorScale{}, fmt.Sprintf("%v PP", int(float64(totalGold) * changePercent * alchemyConversion)))
+                smallFont.PrintRight(screen, leftSide, float64(86 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v GP", int(float64(totalGold) * changePercent)))
+                smallFont.PrintRight(screen, rightSide, float64(86 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v PP", int(float64(totalGold) * changePercent * alchemyConversion)))
             }
         },
     })
 
     {
         posX := 0
-        conveyorRect := image.Rect(131, 85, 131 + 56, 85 + 7)
+        conveyorRect := image.Rect(131 * data.ScreenScale, 85 * data.ScreenScale, (131 + 56) * data.ScreenScale, (85 + 7) * data.ScreenScale)
         elements = append(elements, &uilib.UIElement{
             Rect: conveyorRect,
             Layer: 1,
@@ -204,7 +204,7 @@ func MakeTransmuteElements(ui *uilib.UI, smallFont *font.Font, player *playerlib
     }
 
     elements = append(elements, &uilib.UIElement{
-        Rect: image.Rect(94, 85, 123, 92),
+        Rect: image.Rect(94 * data.ScreenScale, 85 * data.ScreenScale, 123 * data.ScreenScale, 92 * data.ScreenScale),
         Layer: 1,
         RightClick: func(element *uilib.UIElement){
             helpEntries := help.GetEntriesByName("Alchemy Gold")
@@ -215,7 +215,7 @@ func MakeTransmuteElements(ui *uilib.UI, smallFont *font.Font, player *playerlib
     })
 
     elements = append(elements, &uilib.UIElement{
-        Rect: image.Rect(195, 85, 225, 92),
+        Rect: image.Rect(195 * data.ScreenScale, 85 * data.ScreenScale, 225 * data.ScreenScale, 92 * data.ScreenScale),
         Layer: 1,
         RightClick: func(element *uilib.UIElement){
             helpEntries := help.GetEntriesByName("Alchemy Power")
