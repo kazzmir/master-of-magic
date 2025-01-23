@@ -1876,7 +1876,7 @@ func (game *Game) doLoadMenu(yield coroutine.YieldFunc) {
     makeButton := func (index int, x int, y int, action func()) *uilib.UIElement {
         useImage, _ := imageCache.GetImage("load.lbx", index, 0)
         return &uilib.UIElement{
-            Rect: util.ImageRect(x, y, useImage),
+            Rect: util.ImageRect(x * data.ScreenScale, y * data.ScreenScale, useImage),
             PlaySoundLeftClick: true,
             LeftClick: func(element *uilib.UIElement){
                 action()
@@ -1884,7 +1884,7 @@ func (game *Game) doLoadMenu(yield coroutine.YieldFunc) {
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(x), float64(y))
+                options.GeoM.Translate(float64(element.Rect.Min.X), float64(element.Rect.Min.Y))
                 screen.DrawImage(useImage, &options)
             },
         }
@@ -1897,14 +1897,17 @@ func (game *Game) doLoadMenu(yield coroutine.YieldFunc) {
 
     // load
     elements = append(elements, makeButton(1, 83, 171, func(){
+        // FIXME
     }))
 
     // save
     elements = append(elements, makeButton(3, 122, 171, func(){
+        // FIXME
     }))
 
     // settings
     elements = append(elements, makeButton(12, 172, 171, func(){
+        // FIXME
     }))
 
     // ok
