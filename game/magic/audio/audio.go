@@ -31,6 +31,26 @@ func convertToS16(u8samples []byte) []byte {
     return out.Bytes()
 }
 
+func SaveVoc(outputFile io.Writer, soundLbx *lbx.LbxFile, entryIndex int) error {
+    data, err := soundLbx.RawData(entryIndex)
+    if err != nil {
+        return err
+    }
+
+    reader := bytes.NewReader(data)
+    reader.Seek(16, io.SeekStart)
+
+    vocFile, err := voc.Load(reader)
+    if err != nil {
+        return err
+    }
+
+    voc.Save(outputFile, vocFile.SampleRate(), vocFile.AllSamples())
+
+    return nil
+}
+
+
 func SaveWav(outputFile io.Writer, soundLbx *lbx.LbxFile, index int) error {
     data, err := soundLbx.RawData(index)
     if err != nil {

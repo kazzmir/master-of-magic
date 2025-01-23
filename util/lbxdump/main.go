@@ -20,7 +20,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/audio"
 )
 
-func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int, rawDump bool) error {
+func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int, rawDump bool, voc bool) error {
     file, err := lbx.ReadLbx(reader)
     if err != nil {
         return err
@@ -138,7 +138,12 @@ func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int, rawDump bool) 
     } else if soundFiles.Contains(lbxName) && !rawDump {
         for i := range len(file.Data) {
             func (){
-                name := filepath.Join(dir, fmt.Sprintf("sound_%v.wav", i))
+                var name string
+                if voc {
+                    name = filepath.Join(dir, fmt.Sprintf("sound_%v.voc", i))
+                } else {
+                    name = filepath.Join(dir, fmt.Sprintf("sound_%v.wav", i))
+                }
                 out, err := os.Create(name)
                 if err != nil {
                     fmt.Printf("Error creating sound file: %v\n", err)
@@ -146,7 +151,11 @@ func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int, rawDump bool) 
                 }
                 defer out.Close()
 
-                err = audio.SaveWav(out, &file, i)
+                if voc {
+                    err = audio.SaveVoc(out, &file, i)
+                } else {
+                    err = audio.SaveWav(out, &file, i)
+                }
                 if err != nil {
                     fmt.Printf("Error saving sound file: %v\n", err)
                     return
@@ -225,10 +234,12 @@ func main(){
     var zipName string
     var onlyIndex int
     var rawDump bool
+    var voc bool
 
     flag.StringVar(&zipName, "zip", "", "Path to the zip file (optional)")
     flag.IntVar(&onlyIndex, "index", -1, "Only the file with the given index (optional)")
     flag.BoolVar(&rawDump, "raw", false, "Dump the files as binary (optional)")
+    flag.BoolVar(&voc, "voc", false, "Dump audio files as voc rather than wav (optional)")
     flag.Usage = func() {
         fmt.Fprintf(os.Stderr, "Usage: %v [options] filename\n\n", os.Args[0])
         fmt.Fprintln(os.Stderr, "Options:")
@@ -257,7 +268,7 @@ func main(){
             return
         }
 
-        err = dumpLbx(file, strings.ToLower(filepath.Base(path)), onlyIndex, rawDump)
+        err = dumpLbx(file, strings.ToLower(filepath.Base(path)), onlyIndex, rawDump, voc)
         if err != nil {
             log.Printf("Error dumping lbx file: %v\n", err)
         }
@@ -312,7 +323,7 @@ func main(){
                     var memory bytes.Buffer
                     io.Copy(&memory, opened)
 
-                    err := dumpLbx(bytes.NewReader(memory.Bytes()), strings.ToLower(file.Name), onlyIndex, rawDump)
+                    err := dumpLbx(bytes.NewReader(memory.Bytes()), strings.ToLower(file.Name), onlyIndex, rawDump, voc)
                     if err != nil {
                         fmt.Printf("Error dumping lbx file: %v\n", err)
                     }
