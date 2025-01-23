@@ -343,7 +343,7 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
     // page 0 would be left: summoning spells 1-4, right: summoning spell 5
     // page 1 would be left: unit spells 1-2, right: empty
 
-    wrapWidth := float64(130)
+    wrapWidth := float64(130 * data.ScreenScale)
 
     spellDescriptionNormalCache := make(map[int]font.WrappedText)
 
@@ -353,7 +353,7 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
             return text
         }
 
-        wrapped := spellTextNormalFont.CreateWrappedText(wrapWidth, 1, spellDescriptions[index])
+        wrapped := spellTextNormalFont.CreateWrappedText(wrapWidth, float64(data.ScreenScale), spellDescriptions[index])
         spellDescriptionNormalCache[index] = wrapped
         return wrapped
     }
@@ -366,7 +366,7 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
             return text
         }
 
-        wrapped := spellTextAlienFont.CreateWrappedText(wrapWidth, 1, spellDescriptions[index])
+        wrapped := spellTextAlienFont.CreateWrappedText(wrapWidth, float64(data.ScreenScale), spellDescriptions[index])
         spellDescriptionAlienCache[index] = wrapped
         return wrapped
     }
@@ -439,18 +439,18 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
             // options.GeoM.Translate(0, 0)
 
             // section := pageSpells.Spells[0].Section
-            titleX, titleY := options.GeoM.Apply(90, 11)
+            titleX, titleY := options.GeoM.Apply(float64(90 * data.ScreenScale), float64(11 * data.ScreenScale))
 
-            titleFont.PrintCenter(pageImage, titleX, titleY, 1, options.ColorScale, page.Title)
+            titleFont.PrintCenter(pageImage, titleX, titleY, float64(data.ScreenScale), options.ColorScale, page.Title)
 
-            x, topY := options.GeoM.Apply(25, 35)
+            x, topY := options.GeoM.Apply(float64(25 * data.ScreenScale), float64(35 * data.ScreenScale))
 
             for i, spell := range page.Spells.Spells {
                 if i >= 4 {
                     break
                 }
 
-                y := topY + float64(i * 35)
+                y := topY + float64(i * 35 * data.ScreenScale)
 
                 spellY := y
 
@@ -490,8 +490,8 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
 
                     }
 
-                    spellTitleNormalFont.Print(pageImage, x, y, 1, scale, spell.Name)
-                    y += float64(spellTitleNormalFont.Height())
+                    spellTitleNormalFont.Print(pageImage, x, y, float64(data.ScreenScale), scale, spell.Name)
+                    y += float64(spellTitleNormalFont.Height() * data.ScreenScale)
 
                     if page.IsResearch {
                         turns := spell.ResearchCost / researchPoints
@@ -505,8 +505,8 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
                         if turns > 1 {
                             turnString = "turns"
                         }
-                        spellTextNormalFont.Print(pageImage, x, y, 1, scale, fmt.Sprintf("Research Cost:%v (%v %v)", spell.ResearchCost, turns, turnString))
-                        y += float64(spellTextNormalFont.Height())
+                        spellTextNormalFont.Print(pageImage, x, y, float64(data.ScreenScale), scale, fmt.Sprintf("Research Cost:%v (%v %v)", spell.ResearchCost, turns, turnString))
+                        y += float64(spellTextNormalFont.Height() * data.ScreenScale)
                     } else {
                         turns := spell.Cost(true) / castingSkill
                         if turns < 1 {
@@ -516,8 +516,8 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
                         if turns > 1 {
                             turnString = "turns"
                         }
-                        spellTextNormalFont.Print(pageImage, x, y, 1, scale, fmt.Sprintf("Casting cost:%v (%v %v)", spell.Cost(true), turns, turnString))
-                        y += float64(spellTextNormalFont.Height())
+                        spellTextNormalFont.Print(pageImage, x, y, float64(data.ScreenScale), scale, fmt.Sprintf("Casting cost:%v (%v %v)", spell.Cost(true), turns, turnString))
+                        y += float64(spellTextNormalFont.Height() * data.ScreenScale)
                     }
 
                     wrapped := getSpellDescriptionNormalText(spell.Index)
@@ -531,9 +531,9 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
                     }
 
                 } else {
-                    spellTitleAlienFont.Print(pageImage, x, y, 1, options.ColorScale, spell.Name)
+                    spellTitleAlienFont.Print(pageImage, x, y, float64(data.ScreenScale), options.ColorScale, spell.Name)
                     wrapped := getSpellDescriptionAlienText(spell.Index)
-                    spellTextAlienFont.RenderWrapped(pageImage, x, y + 10, wrapped, options.ColorScale, false)
+                    spellTextAlienFont.RenderWrapped(pageImage, x, y + float64(10 * data.ScreenScale), wrapped, options.ColorScale, false)
                 }
             }
         }
@@ -546,7 +546,7 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
             return image
         }
 
-        pageImage := ebiten.NewImage(155, 170)
+        pageImage := ebiten.NewImage(155 * data.ScreenScale, 170 * data.ScreenScale)
         pageImage.Fill(color.RGBA{R: 0, G: 0, B: 0, A: 0})
 
         if halfPage < len(halfPages) {
@@ -613,10 +613,10 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
 
             newIndex := -1
 
-            if posY >= 35 && posY < 35 + 35 * 4 {
-                newIndex = (posY - 35) / 35
+            if posY >= 35 * data.ScreenScale && posY < (35 + 35 * 4) * data.ScreenScale {
+                newIndex = (posY - 35 * data.ScreenScale) / (35 * data.ScreenScale)
 
-                if posX >= 160 {
+                if posX >= 160 * data.ScreenScale {
                     newIndex += 4
                 }
             } else {
@@ -706,8 +706,8 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
 
             if showRightPage < len(halfPages) {
                 rightOptions := options
-                rightOptions.GeoM.Translate(148, 0)
-                rightPage := screen.SubImage(image.Rect(148, 0, screen.Bounds().Dx(), screen.Bounds().Dy())).(*ebiten.Image)
+                rightOptions.GeoM.Translate(float64(148 * data.ScreenScale), 0)
+                rightPage := screen.SubImage(image.Rect(148 * data.ScreenScale, 0, screen.Bounds().Dx(), screen.Bounds().Dy())).(*ebiten.Image)
                 renderPage(halfPages[showRightPage], false, rightPage, rightOptions)
             }
 
@@ -744,7 +744,7 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
             }
 
             if pickResearchSpell {
-                chooseFont.PrintCenter(screen, 160, 180, 1, options.ColorScale, "Choose a new spell to research")
+                chooseFont.PrintCenter(screen, float64(160 * data.ScreenScale), float64(180 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, "Choose a new spell to research")
             }
 
         },
@@ -787,7 +787,7 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
 
     // left page turn
     leftTurn, _ := imageCache.GetImage("scroll.lbx", 7, 0)
-    leftRect := image.Rect(15, 9, 15 + leftTurn.Bounds().Dx(), 9 + leftTurn.Bounds().Dy())
+    leftRect := util.ImageRect(15 * data.ScreenScale, 9 * data.ScreenScale, leftTurn)
     elements = append(elements, &uilib.UIElement{
         Rect: leftRect,
         LeftClick: func(this *uilib.UIElement){
@@ -805,7 +805,7 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
 
     // right page turn
     rightTurn, _ := imageCache.GetImage("scroll.lbx", 8, 0)
-    rightRect := image.Rect(289, 9, 295 + rightTurn.Bounds().Dx(), 5 + rightTurn.Bounds().Dy())
+    rightRect := util.ImageRect(289 * data.ScreenScale, 9 * data.ScreenScale, rightTurn)
     elements = append(elements, &uilib.UIElement{
         Rect: rightRect,
         LeftClick: func(this *uilib.UIElement){
