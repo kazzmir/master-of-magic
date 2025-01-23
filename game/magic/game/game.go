@@ -762,8 +762,10 @@ func (game *Game) doCityListView(yield coroutine.YieldFunc) {
         citiesMiniMap = append(citiesMiniMap, city)
     }
 
-    drawMinimap := func (screen *ebiten.Image, x int, y int, fog [][]bool, counter uint64){
-        game.CurrentMap().DrawMinimap(screen, citiesMiniMap, x, y, 1, fog, counter, false)
+    player := game.Players[0]
+
+    drawMinimap := func (screen *ebiten.Image, x int, y int, plane data.Plane, counter uint64){
+        game.GetMap(plane).DrawMinimap(screen, citiesMiniMap, x, y, 1, player.GetFog(plane), counter, false)
     }
 
     var showCity *citylib.City

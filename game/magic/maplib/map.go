@@ -1092,6 +1092,12 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []MiniMapCity, ce
     }
 
     screen.WritePixels(mapObject.miniMapPixels)
+    /*
+    red := ebiten.NewImage(screen.Bounds().Dx(), screen.Bounds().Dy())
+    red.Fill(color.RGBA{R: 255, G: 0, B: 0, A: 255})
+    var options ebiten.DrawImageOptions
+    screen.DrawImage(red, &options)
+    */
 }
 
 // draw base map tiles, in general stuff that should go under cities/units

@@ -35,12 +35,12 @@ type CityListScreen struct {
     State CityListScreenState
     CurrentBuildScreen *cityview.BuildScreen
     BuildScreenUpdate func()
-    DrawMinimap func(*ebiten.Image, int, int, [][]bool, uint64)
+    DrawMinimap func(*ebiten.Image, int, int, data.Plane, uint64)
     DoSelectCity func(*citylib.City)
     FirstRow int
 }
 
-func MakeCityListScreen(cache *lbx.LbxCache, player *playerlib.Player, drawMinimap func(*ebiten.Image, int, int, [][]bool, uint64), selectCity func(*citylib.City)) *CityListScreen {
+func MakeCityListScreen(cache *lbx.LbxCache, player *playerlib.Player, drawMinimap func(*ebiten.Image, int, int, data.Plane, uint64), selectCity func(*citylib.City)) *CityListScreen {
     view := &CityListScreen{
         Cache: cache,
         Player: player,
@@ -122,7 +122,7 @@ func (view *CityListScreen) MakeUI() *uilib.UI {
                 normalFont.Print(screen, float64(99 * data.ScreenScale), float64(158 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, highlightedCity.Name)
                 minimapRect := image.Rect(42 * data.ScreenScale, 162 * data.ScreenScale, 91 * data.ScreenScale, 195 * data.ScreenScale)
                 minimapArea := screen.SubImage(minimapRect).(*ebiten.Image)
-                view.DrawMinimap(minimapArea, highlightedCity.X, highlightedCity.Y, view.Player.GetFog(highlightedCity.Plane), ui.Counter)
+                view.DrawMinimap(minimapArea, highlightedCity.X, highlightedCity.Y, highlightedCity.Plane, ui.Counter)
             // vector.DrawFilledRect(minimapArea, float32(minimapRect.Min.X), float32(minimapRect.Min.Y), float32(minimapRect.Bounds().Dx()), float32(minimapRect.Bounds().Dy()), util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0, B: 0, A: 128}), false)
             }
         },
