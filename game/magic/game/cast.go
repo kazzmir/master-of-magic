@@ -35,6 +35,7 @@ const (
     LocationTypeEnemyUnit
     LocationTypeChangeTerrain
     LocationTypeTransmute
+    LocationTypeRaiseVolcano
 )
 
 func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Player, spell spellbook.Spell) {
@@ -96,6 +97,14 @@ func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Playe
             }
 
             game.doCastTransmute(yield, tileX, tileY)
+        case "Raise Volcano":
+            tileX, tileY, cancel := game.selectLocationForSpell(yield, spell, player, LocationTypeRaiseVolcano)
+
+            if cancel {
+                return
+            }
+
+            game.doCastRaiseVolcano(yield, tileX, tileY)
         case "Summon Hero":
             var choices []*herolib.Hero
             for _, hero := range game.Heroes {
@@ -228,8 +237,10 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
     var selectMessage string
 
     switch locationType {
-        case LocationTypeAny, LocationTypeChangeTerrain, LocationTypeTransmute: selectMessage = fmt.Sprintf("Select a space as the target for an %v spell.", spell.Name)
-        case LocationTypeFriendlyCity: selectMessage = fmt.Sprintf("Select a friendly city to cast %v on.", spell.Name)
+        case LocationTypeAny, LocationTypeChangeTerrain, LocationTypeTransmute, LocationTypeRaiseVolcano:
+            selectMessage = fmt.Sprintf("Select a space as the target for an %v spell.", spell.Name)
+        case LocationTypeFriendlyCity:
+            selectMessage = fmt.Sprintf("Select a friendly city to cast %v on.", spell.Name)
         default:
             selectMessage = fmt.Sprintf("unhandled location type %v", locationType)
     }
@@ -386,6 +397,18 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                                 switch bonusType {
                                     case data.BonusCoal, data.BonusGem, data.BonusIronOre,
                                          data.BonusGoldOre, data.BonusSilverOre, data.BonusMithrilOre:
+                                        return tileX, tileY, false
+                                }
+                            }
+                        }
+                    case LocationTypeRaiseVolcano:
+                        if tileY >= 0 && tileY < overworld.Map.Map.Rows() {
+                            tileX = overworld.Map.WrapX(tileX)
+
+                            if player.IsTileVisible(tileX, tileY, game.Plane) {
+                                terrainType := overworld.Map.GetTile(tileX, tileY).Tile.TerrainType()
+                                switch terrainType {
+                                    case terrain.Desert, terrain.Forest, terrain.Swamp, terrain.Grass, terrain.Tundra:
                                         return tileX, tileY, false
                                 }
                             }
@@ -570,4 +593,56 @@ func (game *Game) doCastTransmute(yield coroutine.YieldFunc, tileX int, tileY in
 
         yield()
     }
+}
+
+
+func (game *Game) doCastRaiseVolcano(yield coroutine.YieldFunc, tileX int, tileY int) {
+    game.Camera.Zoom = camera.ZoomDefault
+    game.doMoveCamera(yield, tileX, tileY)
+
+    oldDrawer := game.Drawer
+    defer func(){
+        game.Drawer = oldDrawer
+    }()
+
+    pics, _ := game.ImageCache.GetImages("specfx.lbx", 11)
+
+    animation := util.MakeAnimation(pics, false)
+
+    // FIXME: need some function in Game that returns the pixel coordinates for a given tile
+    x := 130
+    y := 100
+
+    game.Drawer = func(screen *ebiten.Image, game *Game) {
+        oldDrawer(screen, game)
+
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(float64(x - animation.Frame().Bounds().Dx() / 2), float64(y - animation.Frame().Bounds().Dy() / 2))
+        screen.DrawImage(animation.Frame(), &options)
+    }
+
+    sound, err := audio.LoadSound(game.Cache, 98)
+    if err == nil {
+        sound.Play()
+    }
+
+    quit := false
+    for !quit {
+        game.Counter += 1
+
+        quit = false
+        if game.Counter % 6 == 0 {
+            quit = !animation.Next()
+        }
+
+        yield()
+    }
+
+    mapObject := game.CurrentMap()
+    mapObject.Map.SetTerrainAt(tileX, tileY, terrain.Volcano, mapObject.Data, mapObject.Plane)
+
+    // FIXME: Remove bonuses
+    // FIXME: Destruct buildings in towns
+    // FIXME: Raise wizard's power
+    // FIXME: Chance of reverting with chance of generating minerals
 }
