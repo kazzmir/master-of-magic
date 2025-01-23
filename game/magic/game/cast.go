@@ -35,7 +35,6 @@ const (
     LocationTypeEnemyUnit
     LocationTypeChangeTerrain
     LocationTypeTransmute
-    LocationTypeRoad
 )
 
 func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Player, spell spellbook.Spell) {
@@ -130,13 +129,30 @@ func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Playe
                 }
             }
         case "Enchant Road":
-            tileX, tileY, cancel := game.selectLocationForSpell(yield, spell, player, LocationTypeRoad)
+            tileX, tileY, cancel := game.selectLocationForSpell(yield, spell, player, LocationTypeAny)
 
             if cancel {
                 return
             }
 
             game.doCastEnchantRoad(yield, tileX, tileY)
+
+            useMap := game.CurrentMap()
+
+            // all roads in a 5x5 square around the target tile should become enchanted
+            for dx := -2; dx <= 2; dx++ {
+                for dy := -2; dy <= 2; dy++ {
+                    cx := useMap.WrapX(tileX + dx)
+                    cy := tileY + dy
+                    if cy < 0 || cy >= useMap.Height() {
+                        continue
+                    }
+
+                    if useMap.ContainsRoad(cx, cy) {
+                        useMap.SetRoad(cx, cy, true)
+                    }
+                }
+            }
 
         default:
             log.Printf("Warning: casting unhandled spell %v", spell.Name)
@@ -238,7 +254,6 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
 
     switch locationType {
         case LocationTypeAny, LocationTypeChangeTerrain, LocationTypeTransmute: selectMessage = fmt.Sprintf("Select a space as the target for an %v spell.", spell.Name)
-        case LocationTypeRoad: selectMessage = fmt.Sprintf("Select a road to cast %v on.", spell.Name)
         case LocationTypeFriendlyCity: selectMessage = fmt.Sprintf("Select a friendly city to cast %v on.", spell.Name)
         default:
             selectMessage = fmt.Sprintf("unhandled location type %v", locationType)
@@ -368,10 +383,6 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
             if inputmanager.LeftClick() {
                 switch locationType {
                     case LocationTypeAny: return tileX, tileY, false
-                    case LocationTypeRoad:
-                        if game.CurrentMap().ContainsRoad(tileX, tileY) {
-                            return tileX, tileY, false
-                        }
                     case LocationTypeFriendlyCity:
                         city := player.FindCity(tileX, tileY, game.Plane)
                         if city != nil {
@@ -424,11 +435,46 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
 }
 
 func (game *Game) doCastEnchantRoad(yield coroutine.YieldFunc, tileX int, tileY int) {
-    game.CurrentMap().SetRoad(tileX, tileY, true)
+    oldDrawer := game.Drawer
+    defer func(){
+        game.Drawer = oldDrawer
+    }()
 
-    // FIXME: what animation and sound to play here?
+    pics, _ := game.ImageCache.GetImages("specfx.lbx", 46)
 
-    yield()
+    animation := util.MakeAnimation(pics, false)
+
+    x := 120
+    y := 90
+
+    game.Drawer = func(screen *ebiten.Image, game *Game) {
+        oldDrawer(screen, game)
+
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(float64(x - animation.Frame().Bounds().Dx() / 2), float64(y - animation.Frame().Bounds().Dy() / 2))
+        screen.DrawImage(animation.Frame(), &options)
+    }
+
+    // FIXME: what sound to play?
+    /*
+    sound, err := audio.LoadNewSound(game.Cache, 18)
+    if err == nil {
+        sound.Play()
+    }
+    */
+
+    quit := false
+    for !quit {
+        game.Counter += 1
+
+        quit = false
+        if game.Counter % 6 == 0 {
+            quit = !animation.Next()
+        }
+
+        yield()
+    }
+
 }
 
 // FIXME: try to merge most of the logic for doCastEarthLore and doCastChangeTerrain
