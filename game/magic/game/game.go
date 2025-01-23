@@ -1166,11 +1166,11 @@ func (game *Game) showScroll(yield coroutine.YieldFunc, title string, text strin
     bigFont := font.MakeOptimizedFontWithPalette(fonts[4], redPalette)
 
     smallFont := font.MakeOptimizedFontWithPalette(fonts[1], redPalette2)
-    wrappedText := smallFont.CreateWrappedText(180, 1, text)
+    wrappedText := smallFont.CreateWrappedText(float64(180 * data.ScreenScale), float64(data.ScreenScale), text)
 
     scrollImages, _ := game.ImageCache.GetImages("scroll.lbx", 2)
 
-    totalImages := int((wrappedText.TotalHeight + float64(bigFont.Height())) / 5) + 1
+    totalImages := int((wrappedText.TotalHeight + float64(bigFont.Height() * data.ScreenScale)) / float64(5 * data.ScreenScale)) + 1
 
     if totalImages < 3 {
         totalImages = 3
@@ -1189,7 +1189,7 @@ func (game *Game) showScroll(yield coroutine.YieldFunc, title string, text strin
         game.Drawer = drawer
     }()
 
-    scrollLength := 30
+    scrollLength := 30 * data.ScreenScale
 
     getAlpha := util.MakeFadeIn(7, &game.Counter)
 
@@ -1199,7 +1199,7 @@ func (game *Game) showScroll(yield coroutine.YieldFunc, title string, text strin
         var options ebiten.DrawImageOptions
         options.ColorScale.ScaleAlpha(getAlpha())
 
-        options.GeoM.Translate(65, 25)
+        options.GeoM.Translate(float64(65 * data.ScreenScale), float64(25 * data.ScreenScale))
 
         middleY := pageBackground.Bounds().Dy() / 2
         length := scrollLength / 2
@@ -1209,16 +1209,16 @@ func (game *Game) showScroll(yield coroutine.YieldFunc, title string, text strin
         pagePart := pageBackground.SubImage(image.Rect(0, middleY - length, pageBackground.Bounds().Dx(), middleY + length)).(*ebiten.Image)
 
         pageOptions := options
-        pageOptions.GeoM.Translate(0, float64(middleY - length) + 5)
+        pageOptions.GeoM.Translate(0, float64(middleY - length) + float64(5 * data.ScreenScale))
         screen.DrawImage(pagePart, &pageOptions)
 
-        x, y := options.GeoM.Apply(float64(pageBackground.Bounds().Dx()) / 2, float64(middleY) - wrappedText.TotalHeight / 2 - float64(bigFont.Height()) / 2 + 5)
-        bigFont.PrintCenter(screen, x, y, 1, options.ColorScale, title)
-        y += float64(bigFont.Height()) + 1
+        x, y := options.GeoM.Apply(float64(pageBackground.Bounds().Dx()) / 2, float64(middleY) - wrappedText.TotalHeight / 2 - float64(bigFont.Height() * data.ScreenScale) / 2 + 5)
+        bigFont.PrintCenter(screen, x, y, float64(data.ScreenScale), options.ColorScale, title)
+        y += float64(bigFont.Height() * data.ScreenScale) + 1
         smallFont.RenderWrapped(screen, x, y, wrappedText, options.ColorScale, true)
 
         scrollOptions := options
-        scrollOptions.GeoM.Translate(-63, -20)
+        scrollOptions.GeoM.Translate(float64(-63 * data.ScreenScale), float64(-20 * data.ScreenScale))
         screen.DrawImage(scrollAnimation.Frame(), &scrollOptions)
     }
 
@@ -1239,7 +1239,7 @@ func (game *Game) showScroll(yield coroutine.YieldFunc, title string, text strin
 
         if game.Counter % animationSpeed == 0 {
             if scrollAnimation.Next() {
-                scrollLength += 10
+                scrollLength += 10 * data.ScreenScale
             }
         }
 
@@ -1254,7 +1254,7 @@ func (game *Game) showScroll(yield coroutine.YieldFunc, title string, text strin
 
         if game.Counter % animationSpeed == 0 {
             if scrollAnimation.Next() {
-                scrollLength -= 10
+                scrollLength -= 10 * data.ScreenScale
             } else {
                 quit = true
             }
