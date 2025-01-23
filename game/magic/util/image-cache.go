@@ -162,7 +162,7 @@ func (cache *ImageCache) GetImagesTransform(lbxPath string, index int, extra str
     return out, nil
 }
 
-func scale2x(input image.Image, smooth bool) image.Image {
+func Scale2x(input image.Image, smooth bool) image.Image {
     bounds := input.Bounds()
     scaledImage := image.NewRGBA(image.Rect(0, 0, 2 * bounds.Dx(), 2 * bounds.Dy()))
 
@@ -208,7 +208,7 @@ func scale2x(input image.Image, smooth bool) image.Image {
     return scaledImage
 }
 
-func scale3x(input image.Image, smooth bool) image.Image {
+func Scale3x(input image.Image, smooth bool) image.Image {
     bounds := input.Bounds()
     scaledImage := image.NewRGBA(image.Rect(0, 0, 3 * bounds.Dx(), 3 * bounds.Dy()))
 
@@ -288,16 +288,16 @@ func (cache *ImageCache) ApplyScale(input image.Image) image.Image {
     switch cache.Scaler {
         case data.ScaleAlgorithmNormal:
             switch cache.ScaleAmount {
-                case 2: return scale2x(input, false)
-                case 3: return scale3x(input, false)
-                case 4: return scale2x(scale2x(input, false), false)
+                case 2: return Scale2x(input, false)
+                case 3: return Scale3x(input, false)
+                case 4: return Scale2x(Scale2x(input, false), false)
                 default: return input
             }
         case data.ScaleAlgorithmScale:
             switch cache.ScaleAmount {
-                case 2: return scale2x(input, true)
-                case 3: return scale3x(input, true)
-                case 4: return scale2x(scale2x(input, true), true)
+                case 2: return Scale2x(input, true)
+                case 3: return Scale3x(input, true)
+                case 4: return Scale2x(Scale2x(input, true), true)
                 default: return input
             }
         case data.ScaleAlgorithmXbr: return xbr.ScaleImage(input, cache.ScaleAmount)

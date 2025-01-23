@@ -247,7 +247,7 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
     whitePixel := ebiten.NewImage(1, 1)
     whitePixel.Fill(color.RGBA{R: 255, G: 255, B: 255, A: 255})
 
-    mouseData, err := mouse.MakeMouseData(cache)
+    mouseData, err := mouse.MakeMouseData(cache, &imageCache)
     if err != nil {
         log.Printf("Error loading mouse data: %v", err)
         return nil

@@ -2714,7 +2714,7 @@ func NewEngine(scenario int) (*Engine, error) {
         return ebiten.Termination
     }
 
-    normalMouse, err := mouselib.GetMouseNormal(cache)
+    normalMouse, err := mouselib.GetMouseNormal(cache, &game.ImageCache)
     if err == nil {
         mouse.Mouse.SetImage(normalMouse)
     }

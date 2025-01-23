@@ -540,7 +540,9 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         return nil
     }
 
-    mouseData, err := mouselib.MakeMouseData(lbxCache)
+    imageCache := util.MakeImageCache(lbxCache)
+
+    mouseData, err := mouselib.MakeMouseData(lbxCache, &imageCache)
     if err != nil {
         log.Printf("Unable to read mouse data: %v", err)
         return nil
@@ -554,7 +556,7 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         Plane: data.PlaneArcanus,
         State: GameStateRunning,
         Settings: settings,
-        ImageCache: util.MakeImageCache(lbxCache),
+        ImageCache: imageCache,
         InfoFontYellow: infoFontYellow,
         InfoFontRed: infoFontRed,
         Heroes: createHeroes(),
