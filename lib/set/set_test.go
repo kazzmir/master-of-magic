@@ -31,4 +31,10 @@ func TestSet(test *testing.T){
     if s.Size() != 1 {
         test.Errorf("Set should have size 1")
     }
+
+    s = NewSet(1, 2, 3)
+
+    if s.Size() != 3 {
+        test.Errorf("Set should have size 3")
+    }
 }
