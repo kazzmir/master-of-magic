@@ -240,9 +240,9 @@ func (game *Game) showHeroLevelUpPopup(yield coroutine.YieldFunc, hero *herolib.
         color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
     }
 
-    top := float64(40)
-    left := float64(30)
-    height := 70 // TODO: include height from ability improvements
+    top := float64(40 * data.ScreenScale)
+    left := float64(30 * data.ScreenScale)
+    height := 70 * data.ScreenScale // TODO: include height from ability improvements
 
     titleFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowGradient)
     smallFont := font.MakeOptimizedFontWithPalette(fonts[2], yellowGradient)
@@ -280,11 +280,11 @@ func (game *Game) showHeroLevelUpPopup(yield coroutine.YieldFunc, hero *herolib.
 
         // portrait
         options.GeoM.Reset()
-        options.GeoM.Translate(left + 10, top + 10)
+        options.GeoM.Translate(left + float64(10 * data.ScreenScale), top + float64(10 * data.ScreenScale))
         screen.DrawImage(portrait, &options)
 
         // text
-        titleFont.Print(screen, left + 48, top + 10, 1, options.ColorScale, fmt.Sprintf("%v has made a level.", hero.Name))
+        titleFont.Print(screen, left + float64(48 * data.ScreenScale), top + float64(10 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("%v has made a level.", hero.Name))
 
         // stats progression
         for index, progression := range hero.GetBaseProgression() {
@@ -292,15 +292,15 @@ func (game *Game) showHeroLevelUpPopup(yield coroutine.YieldFunc, hero *herolib.
             yOffset := 10 * float64(index % 2)
 
             options.GeoM.Reset()
-            options.GeoM.Translate(left + 48 + xOffset, top + 25 + yOffset)
+            options.GeoM.Translate(left + (48 + xOffset) * float64(data.ScreenScale), top + (25 + yOffset) * float64(data.ScreenScale))
             screen.DrawImage(dot, &options)
 
-            smallFont.Print(screen, left + 55 + xOffset, top + 24 + yOffset, 1, options.ColorScale, progression)
+            smallFont.Print(screen, left + (55 + xOffset) * float64(data.ScreenScale), top + (24 + yOffset) * float64(data.ScreenScale), float64(data.ScreenScale), options.ColorScale, progression)
         }
 
         // level
         options.GeoM.Reset()
-        options.GeoM.Translate(left + 10, top + 50)
+        options.GeoM.Translate(left + float64(10 * data.ScreenScale), top + float64(50 * data.ScreenScale))
         unitview.RenderExperienceBadge(screen, &game.ImageCache, hero, smallFont, options, false)
 
         // TODO: render ability improvements
