@@ -946,7 +946,7 @@ func (game *Game) doInput(yield coroutine.YieldFunc, title string, name string, 
         util.Lighten(orange, 0),
     }
 
-    maxLength := float64(84)
+    maxLength := float64(84 * data.ScreenScale)
 
     nameFont := font.MakeOptimizedFontWithPalette(fonts[4], namePalette)
 
@@ -978,7 +978,7 @@ func (game *Game) doInput(yield coroutine.YieldFunc, title string, name string, 
         TextEntry: func(element *uilib.UIElement, text string) string {
             name = text
 
-            for len(name) > 0 && nameFont.MeasureTextWidth(name, 1) > maxLength {
+            for len(name) > 0 && nameFont.MeasureTextWidth(name, float64(data.ScreenScale)) > maxLength {
                 name = name[:len(name)-1]
             }
 
@@ -1001,18 +1001,18 @@ func (game *Game) doInput(yield coroutine.YieldFunc, title string, name string, 
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             background, _ := game.ImageCache.GetImage("backgrnd.lbx", 33, 0)
             var options ebiten.DrawImageOptions
-            options.GeoM.Translate(float64(topX), float64(topY))
+            options.GeoM.Translate(float64(topX * data.ScreenScale), float64(topY * data.ScreenScale))
             screen.DrawImage(background, &options)
 
-            x, y := options.GeoM.Apply(13, 20)
+            x, y := options.GeoM.Apply(float64(13 * data.ScreenScale), float64(20 * data.ScreenScale))
 
-            nameFont.Print(screen, x, y, 1, options.ColorScale, name)
+            nameFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, name)
 
-            tx, ty := options.GeoM.Apply(9, 6)
-            titleFont.Print(screen, tx, ty, 1, options.ColorScale, title)
+            tx, ty := options.GeoM.Apply(float64(9 * data.ScreenScale), float64(6 * data.ScreenScale))
+            titleFont.Print(screen, tx, ty, float64(data.ScreenScale), options.ColorScale, title)
 
             // draw cursor
-            cursorX := x + nameFont.MeasureTextWidth(name, 1)
+            cursorX := x + nameFont.MeasureTextWidth(name, float64(data.ScreenScale))
 
             util.DrawTextCursor(screen, source, cursorX, y, game.Counter)
         },
