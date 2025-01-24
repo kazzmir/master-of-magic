@@ -2584,6 +2584,22 @@ func (game *Game) RefreshUI() {
     }
 }
 
+// returns screen coordinates in pixels of the middle of the given tile
+func (game *Game) TileToScreen(tileX int, tileY int) (int, int) {
+    tileWidth := game.CurrentMap().TileWidth()
+    tileHeight := game.CurrentMap().TileHeight()
+
+    var geom ebiten.GeoM
+
+    x, y := (game.CurrentMap().XDistance(game.Camera.GetX(), tileX) + game.Camera.GetX()) * tileWidth, tileY * tileHeight
+    geom.Translate(float64(x + tileWidth / 2.0), float64(y + tileHeight / 2.0))
+    geom.Translate(-game.Camera.GetZoomedX() * float64(tileWidth), -game.Camera.GetZoomedY() * float64(tileHeight))
+    geom.Scale(game.Camera.GetAnimatedZoom(), game.Camera.GetAnimatedZoom())
+
+    outX, outY := geom.Apply(0, 0)
+    return int(outX), int(outY)
+}
+
 // convert real screen coordinates to tile coordinates
 func (game *Game) ScreenToTile(inX float64, inY float64) (int, int) {
     tileWidth := game.CurrentMap().TileWidth()
@@ -5718,6 +5734,13 @@ func (game *Game) DrawGame(screen *ebiten.Image){
     if mini.Bounds().Dx() > 0 {
         overworld.DrawMinimap(mini)
     }
+
+    // test of TileToScreen
+    /*
+    mouseX, mouseY := inputmanager.MousePosition()
+    px, py := game.TileToScreen(game.ScreenToTile(float64(mouseX), float64(mouseY)))
+    vector.DrawFilledCircle(screen, float32(px), float32(py), 2, color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, true)
+    */
 
     game.HudUI.Draw(game.HudUI, screen)
 }

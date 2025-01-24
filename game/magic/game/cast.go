@@ -46,9 +46,10 @@ func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Playe
                 return
             }
 
+            game.Camera.Zoom = camera.ZoomDefault
             game.doMoveCamera(yield, tileX, tileY)
 
-            game.doCastEarthLore(yield, player)
+            game.doCastEarthLore(yield, player, tileX, tileY)
 
             player.LiftFogSquare(tileX, tileY, 5, game.Plane)
         case "Create Artifact", "Enchant Item":
@@ -135,6 +136,8 @@ func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Playe
                 return
             }
 
+            game.Camera.Zoom = camera.ZoomDefault
+            game.doMoveCamera(yield, tileX, tileY)
             game.doCastEnchantRoad(yield, tileX, tileY)
 
             useMap := game.CurrentMap()
@@ -444,8 +447,7 @@ func (game *Game) doCastEnchantRoad(yield coroutine.YieldFunc, tileX int, tileY 
 
     animation := util.MakeAnimation(pics, false)
 
-    x := 120 * data.ScreenScale
-    y := 90 * data.ScreenScale
+    x, y := game.TileToScreen(tileX, tileY)
 
     game.Drawer = func(screen *ebiten.Image, game *Game) {
         oldDrawer(screen, game)
@@ -476,7 +478,7 @@ func (game *Game) doCastEnchantRoad(yield coroutine.YieldFunc, tileX int, tileY 
 }
 
 // FIXME: try to merge most of the logic for doCastEarthLore and doCastChangeTerrain
-func (game *Game) doCastEarthLore(yield coroutine.YieldFunc, player *playerlib.Player) {
+func (game *Game) doCastEarthLore(yield coroutine.YieldFunc, player *playerlib.Player, tileX int, tileY int) {
     oldDrawer := game.Drawer
     defer func(){
         game.Drawer = oldDrawer
@@ -486,8 +488,7 @@ func (game *Game) doCastEarthLore(yield coroutine.YieldFunc, player *playerlib.P
 
     animation := util.MakeAnimation(pics, false)
 
-    x := 120 * data.ScreenScale
-    y := 90 * data.ScreenScale
+    x, y := game.TileToScreen(tileX, tileY)
 
     game.Drawer = func(screen *ebiten.Image, game *Game) {
         oldDrawer(screen, game)
@@ -529,9 +530,7 @@ func (game *Game) doCastChangeTerrain(yield coroutine.YieldFunc, tileX int, tile
 
     animation := util.MakeAnimation(pics, false)
 
-    // FIXME: need some function in Game that returns the pixel coordinates for a given tile
-    x := 130 * data.ScreenScale
-    y := 100 * data.ScreenScale
+    x, y := game.TileToScreen(tileX, tileY)
 
     game.Drawer = func(screen *ebiten.Image, game *Game) {
         oldDrawer(screen, game)
@@ -590,9 +589,7 @@ func (game *Game) doCastTransmute(yield coroutine.YieldFunc, tileX int, tileY in
 
     animation := util.MakeAnimation(pics, false)
 
-    // FIXME: need some function in Game that returns the pixel coordinates for a given tile
-    x := 130 * data.ScreenScale
-    y := 100 * data.ScreenScale
+    x, y := game.TileToScreen(tileX, tileY)
 
     game.Drawer = func(screen *ebiten.Image, game *Game) {
         oldDrawer(screen, game)
