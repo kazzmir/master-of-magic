@@ -994,7 +994,7 @@ func (hero *Hero) getBaseResistanceProgression(level units.HeroExperienceLevel) 
 }
 
 // any added resistance from abilities (agility)
-func (hero *Hero) GetAbilityResistance() int {
+func (hero *Hero) GetAbilityDefense() int {
     level := hero.GetExperienceLevel()
     extra := 0
     if hero.HasAbility(data.AbilityAgility) {
@@ -1038,7 +1038,7 @@ func (hero *Hero) GetAbilityToHit() int {
     return 0
 }
 
-func (hero *Hero) GetMagicRangedAttack() int {
+func (hero *Hero) GetAbilityMagicRangedAttack() int {
     level := hero.GetExperienceLevel()
     extra := 0
 
@@ -1052,7 +1052,7 @@ func (hero *Hero) GetMagicRangedAttack() int {
 }
 
 // extra experience points to apply to all normal units in the same stack as the hero
-func (hero *Hero) GetArmsmasterExperienceBonus() int {
+func (hero *Hero) GetAbilityExperienceBonus() int {
     level := hero.GetExperienceLevel()
     extra := 0
 
@@ -1060,6 +1060,91 @@ func (hero *Hero) GetArmsmasterExperienceBonus() int {
         extra = (level.ToInt() + 1) * 2
     } else if hero.HasAbility(data.AbilitySuperArmsmaster) {
         extra = int(float64((level.ToInt() + 1) * 2) * 1.5)
+    }
+
+    return extra
+}
+
+func (hero *Hero) GetAbilityHealth() int {
+    level := hero.GetExperienceLevel()
+    extra := 0
+
+    if hero.HasAbility(data.AbilityConstitution) {
+        extra = level.ToInt() + 1
+    } else if hero.HasAbility(data.AbilitySuperConstitution) {
+        extra = int(float64(level.ToInt() + 1) * 1.5)
+    }
+
+    return extra
+}
+
+func (hero *Hero) GetAbilityLeadership() int {
+    level := hero.GetExperienceLevel()
+
+    if hero.HasAbility(data.AbilityLeadership) {
+        switch level {
+            case units.ExperienceHero: return 0
+            case units.ExperienceMyrmidon: return 0
+            case units.ExperienceCaptain: return 1
+            case units.ExperienceCommander: return 1
+            case units.ExperienceChampionHero: return 1
+            case units.ExperienceLord: return 2
+            case units.ExperienceGrandLord: return 2
+            case units.ExperienceSuperHero: return 2
+            case units.ExperienceDemiGod: return 3
+        }
+    } else if hero.HasAbility(data.AbilitySuperLeadership) {
+        switch level {
+            case units.ExperienceHero: return 0
+            case units.ExperienceMyrmidon: return 1
+            case units.ExperienceCaptain: return 1
+            case units.ExperienceCommander: return 2
+            case units.ExperienceChampionHero: return 2
+            case units.ExperienceLord: return 3
+            case units.ExperienceGrandLord: return 3
+            case units.ExperienceSuperHero: return 4
+            case units.ExperienceDemiGod: return 4
+        }
+    }
+
+    return 0
+}
+
+// added fame to the wizard
+func (hero *Hero) GetAbilityFame() int {
+    level := hero.GetExperienceLevel()
+    extra := 0
+
+    if hero.HasAbility(data.AbilityLegendary) {
+        extra = (level.ToInt() + 1) * 3
+    } else if hero.HasAbility(data.AbilitySuperLegendary) {
+        extra = int(float64((level.ToInt() + 1) * 3) * 1.5)
+    }
+
+    return extra
+}
+
+func (hero *Hero) GetAbilityMelee() int {
+    level := hero.GetExperienceLevel()
+    extra := 0
+
+    if hero.HasAbility(data.AbilityMight) {
+        extra = level.ToInt() + 1
+    } else if hero.HasAbility(data.AbilitySuperMight) {
+        extra = int(float64(level.ToInt() + 1) * 1.5)
+    }
+
+    return extra
+}
+
+func (hero *Hero) GetAbilityResistance() int {
+    level := hero.GetExperienceLevel()
+    extra := 0
+
+    if hero.HasAbility(data.AbilityPrayermaster) {
+        extra = level.ToInt() + 1
+    } else if hero.HasAbility(data.AbilitySuperPrayermaster) {
+        extra = int(float64(level.ToInt() + 1) * 1.5)
     }
 
     return extra

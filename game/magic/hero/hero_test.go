@@ -91,7 +91,7 @@ func TestHeroProgression(test *testing.T) {
     }
 
     zaldron.AddExperience(units.ExperienceChampionHero.ExperienceRequired(false, false))
-    if zaldron.GetAbilityResistance() != 5 {
-        test.Errorf("Expected resistance for champion with agility to be 5 but was %v", zaldron.GetAbilityResistance())
+    if zaldron.GetAbilityDefense() != 5 {
+        test.Errorf("Expected defense for champion with agility to be 5 but was %v", zaldron.GetAbilityDefense())
     }
 }
