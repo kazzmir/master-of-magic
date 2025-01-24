@@ -35,6 +35,7 @@ const (
     LocationTypeEnemyUnit
     LocationTypeChangeTerrain
     LocationTypeTransmute
+    LocationTypeRaiseVolcano
 )
 
 func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Player, spell spellbook.Spell) {
@@ -46,12 +47,7 @@ func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Playe
                 return
             }
 
-            game.Camera.Zoom = camera.ZoomDefault
-            game.doMoveCamera(yield, tileX, tileY)
-
-            game.doCastEarthLore(yield, player, tileX, tileY)
-
-            player.LiftFogSquare(tileX, tileY, 5, game.Plane)
+            game.doCastEarthLore(yield, tileX, tileY, player)
         case "Create Artifact", "Enchant Item":
             showSummon := summon.MakeSummonArtifact(game.Cache, player.Wizard.Base)
 
@@ -97,6 +93,14 @@ func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Playe
             }
 
             game.doCastTransmute(yield, tileX, tileY)
+        case "Raise Volcano":
+            tileX, tileY, cancel := game.selectLocationForSpell(yield, spell, player, LocationTypeRaiseVolcano)
+
+            if cancel {
+                return
+            }
+
+            game.doCastRaiseVolcano(yield, tileX, tileY, player)
         case "Summon Hero":
             var choices []*herolib.Hero
             for _, hero := range game.Heroes {
@@ -136,27 +140,7 @@ func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Playe
                 return
             }
 
-            game.Camera.Zoom = camera.ZoomDefault
-            game.doMoveCamera(yield, tileX, tileY)
             game.doCastEnchantRoad(yield, tileX, tileY)
-
-            useMap := game.CurrentMap()
-
-            // all roads in a 5x5 square around the target tile should become enchanted
-            for dx := -2; dx <= 2; dx++ {
-                for dy := -2; dy <= 2; dy++ {
-                    cx := useMap.WrapX(tileX + dx)
-                    cy := tileY + dy
-                    if cy < 0 || cy >= useMap.Height() {
-                        continue
-                    }
-
-                    if useMap.ContainsRoad(cx, cy) {
-                        useMap.SetRoad(cx, cy, true)
-                    }
-                }
-            }
-
         default:
             log.Printf("Warning: casting unhandled spell %v", spell.Name)
     }
@@ -256,8 +240,10 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
     var selectMessage string
 
     switch locationType {
-        case LocationTypeAny, LocationTypeChangeTerrain, LocationTypeTransmute: selectMessage = fmt.Sprintf("Select a space as the target for an %v spell.", spell.Name)
-        case LocationTypeFriendlyCity: selectMessage = fmt.Sprintf("Select a friendly city to cast %v on.", spell.Name)
+        case LocationTypeAny, LocationTypeChangeTerrain, LocationTypeTransmute, LocationTypeRaiseVolcano:
+            selectMessage = fmt.Sprintf("Select a space as the target for an %v spell.", spell.Name)
+        case LocationTypeFriendlyCity:
+            selectMessage = fmt.Sprintf("Select a friendly city to cast %v on.", spell.Name)
         default:
             selectMessage = fmt.Sprintf("unhandled location type %v", locationType)
     }
@@ -418,6 +404,18 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                                 }
                             }
                         }
+                    case LocationTypeRaiseVolcano:
+                        if tileY >= 0 && tileY < overworld.Map.Map.Rows() {
+                            tileX = overworld.Map.WrapX(tileX)
+
+                            if player.IsTileVisible(tileX, tileY, game.Plane) {
+                                terrainType := overworld.Map.GetTile(tileX, tileY).Tile.TerrainType()
+                                switch terrainType {
+                                    case terrain.Desert, terrain.Forest, terrain.Swamp, terrain.Grass, terrain.Tundra:
+                                        return tileX, tileY, false
+                                }
+                            }
+                        }
 
                     case LocationTypeEnemyCity:
                         // TODO
@@ -437,87 +435,9 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
     return 0, 0, true
 }
 
-func (game *Game) doCastEnchantRoad(yield coroutine.YieldFunc, tileX int, tileY int) {
-    oldDrawer := game.Drawer
-    defer func(){
-        game.Drawer = oldDrawer
-    }()
+type UpdateMapFunction func (tileX int, tileY int, animationFrame int)
 
-    pics, _ := game.ImageCache.GetImages("specfx.lbx", 46)
-
-    animation := util.MakeAnimation(pics, false)
-
-    x, y := game.TileToScreen(tileX, tileY)
-
-    game.Drawer = func(screen *ebiten.Image, game *Game) {
-        oldDrawer(screen, game)
-
-        var options ebiten.DrawImageOptions
-        options.GeoM.Translate(float64(x - animation.Frame().Bounds().Dx() / 2), float64(y - animation.Frame().Bounds().Dy() / 2))
-        screen.DrawImage(animation.Frame(), &options)
-    }
-
-    // FIXME: verify this is the right sound
-    sound, err := audio.LoadNewSound(game.Cache, 18)
-    if err == nil {
-        sound.Play()
-    }
-
-    quit := false
-    for !quit {
-        game.Counter += 1
-
-        quit = false
-        if game.Counter % 6 == 0 {
-            quit = !animation.Next()
-        }
-
-        yield()
-    }
-
-}
-
-// FIXME: try to merge most of the logic for doCastEarthLore and doCastChangeTerrain
-func (game *Game) doCastEarthLore(yield coroutine.YieldFunc, player *playerlib.Player, tileX int, tileY int) {
-    oldDrawer := game.Drawer
-    defer func(){
-        game.Drawer = oldDrawer
-    }()
-
-    pics, _ := game.ImageCache.GetImages("specfx.lbx", 45)
-
-    animation := util.MakeAnimation(pics, false)
-
-    x, y := game.TileToScreen(tileX, tileY)
-
-    game.Drawer = func(screen *ebiten.Image, game *Game) {
-        oldDrawer(screen, game)
-
-        var options ebiten.DrawImageOptions
-        options.GeoM.Translate(float64(x - animation.Frame().Bounds().Dx() / 2), float64(y - animation.Frame().Bounds().Dy() / 2))
-        screen.DrawImage(animation.Frame(), &options)
-    }
-
-    sound, err := audio.LoadNewSound(game.Cache, 18)
-    if err == nil {
-        sound.Play()
-    }
-
-    quit := false
-    for !quit {
-        game.Counter += 1
-
-        quit = false
-        if game.Counter % 6 == 0 {
-            quit = !animation.Next()
-        }
-
-        yield()
-    }
-}
-
-
-func (game *Game) doCastChangeTerrain(yield coroutine.YieldFunc, tileX int, tileY int) {
+func (game *Game) doCastOnMap(yield coroutine.YieldFunc, tileX int, tileY int, animationIndex int, newSound bool, soundIndex int, update UpdateMapFunction) {
     game.Camera.Zoom = camera.ZoomDefault
     game.doMoveCamera(yield, tileX, tileY)
 
@@ -526,7 +446,7 @@ func (game *Game) doCastChangeTerrain(yield coroutine.YieldFunc, tileX int, tile
         game.Drawer = oldDrawer
     }()
 
-    pics, _ := game.ImageCache.GetImages("specfx.lbx", 8)
+    pics, _ := game.ImageCache.GetImages("specfx.lbx", animationIndex)
 
     animation := util.MakeAnimation(pics, false)
 
@@ -540,22 +460,15 @@ func (game *Game) doCastChangeTerrain(yield coroutine.YieldFunc, tileX int, tile
         screen.DrawImage(animation.Frame(), &options)
     }
 
-    sound, err := audio.LoadNewSound(game.Cache, 18)
-    if err == nil {
-        sound.Play()
-    }
-
-    changeTerrain := func (x int, y int) {
-        mapObject := game.CurrentMap()
-        switch mapObject.GetTile(x, y).Tile.TerrainType() {
-            case terrain.Desert, terrain.Forest, terrain.Hill, terrain.Swamp:
-                mapObject.Map.SetTerrainAt(x, y, terrain.Grass, mapObject.Data, mapObject.Plane)
-            case terrain.Grass:
-                mapObject.Map.SetTerrainAt(x, y, terrain.Forest, mapObject.Data, mapObject.Plane)
-            case terrain.Volcano:
-                mapObject.Map.SetTerrainAt(x, y, terrain.Mountain, mapObject.Data, mapObject.Plane)
-            case terrain.Mountain:
-                mapObject.Map.SetTerrainAt(x, y, terrain.Hill, mapObject.Data, mapObject.Plane)
+    if newSound {
+        sound, err := audio.LoadNewSound(game.Cache, soundIndex)
+        if err == nil {
+            sound.Play()
+        }
+    } else {
+        sound, err := audio.LoadSound(game.Cache, soundIndex)
+        if err == nil {
+            sound.Play()
         }
     }
 
@@ -565,49 +478,70 @@ func (game *Game) doCastChangeTerrain(yield coroutine.YieldFunc, tileX int, tile
 
         quit = false
         if game.Counter % 6 == 0 {
+            update(tileX, tileY, animation.CurrentFrame)
             quit = !animation.Next()
-            if animation.CurrentFrame == 7 {
-                changeTerrain(tileX, tileY)
-            }
         }
 
         yield()
     }
+}
+
+func (game *Game) doCastEnchantRoad(yield coroutine.YieldFunc, tileX int, tileY int) {
+    update := func (x int, y int, frame int) {}
+
+    game.doCastOnMap(yield, tileX, tileY, 46, false, 86, update)
+
+    useMap := game.CurrentMap()
+
+    // all roads in a 5x5 square around the target tile should become enchanted
+    for dx := -2; dx <= 2; dx++ {
+        for dy := -2; dy <= 2; dy++ {
+            cx := useMap.WrapX(tileX + dx)
+            cy := tileY + dy
+            if cy < 0 || cy >= useMap.Height() {
+                continue
+            }
+
+            if useMap.ContainsRoad(cx, cy) {
+                useMap.SetRoad(cx, cy, true)
+            }
+        }
+    }
+}
+
+func (game *Game) doCastEarthLore(yield coroutine.YieldFunc, tileX int, tileY int, player *playerlib.Player) {
+    update := func (x int, y int, frame int) {}
+
+    game.doCastOnMap(yield, tileX, tileY, 45, true, 18, update)
+
+    player.LiftFogSquare(tileX, tileY, 5, game.Plane)
+}
+
+func (game *Game) doCastChangeTerrain(yield coroutine.YieldFunc, tileX int, tileY int) {
+    update := func (x int, y int, frame int) {
+        if frame == 7 {
+            mapObject := game.CurrentMap()
+            switch mapObject.GetTile(x, y).Tile.TerrainType() {
+                case terrain.Desert, terrain.Forest, terrain.Hill, terrain.Swamp:
+                    mapObject.Map.SetTerrainAt(x, y, terrain.Grass, mapObject.Data, mapObject.Plane)
+                case terrain.Grass:
+                    mapObject.Map.SetTerrainAt(x, y, terrain.Forest, mapObject.Data, mapObject.Plane)
+                case terrain.Volcano:
+                    mapObject.RemoveVolcano(x, y)
+                case terrain.Mountain:
+                    mapObject.Map.SetTerrainAt(x, y, terrain.Hill, mapObject.Data, mapObject.Plane)
+            }
+        }
+    }
+
+    game.doCastOnMap(yield, tileX, tileY, 8, false, 28, update)
 }
 
 
 func (game *Game) doCastTransmute(yield coroutine.YieldFunc, tileX int, tileY int) {
-    game.Camera.Zoom = camera.ZoomDefault
-    game.doMoveCamera(yield, tileX, tileY)
-
-    oldDrawer := game.Drawer
-    defer func(){
-        game.Drawer = oldDrawer
-    }()
-
-    pics, _ := game.ImageCache.GetImages("specfx.lbx", 0)
-
-    animation := util.MakeAnimation(pics, false)
-
-    x, y := game.TileToScreen(tileX, tileY)
-
-    game.Drawer = func(screen *ebiten.Image, game *Game) {
-        oldDrawer(screen, game)
-
-        var options ebiten.DrawImageOptions
-        options.GeoM.Translate(float64(x - animation.Frame().Bounds().Dx() / 2), float64(y - animation.Frame().Bounds().Dy() / 2))
-        screen.DrawImage(animation.Frame(), &options)
-    }
-
-    sound, err := audio.LoadNewSound(game.Cache, 18)
-    if err == nil {
-        sound.Play()
-    }
-
-    transmute := func (x int, y int) {
-        mapObject := game.CurrentMap()
-        if y >= 0 || y < mapObject.Map.Rows() {
-            x = mapObject.WrapX(x)
+    update := func (x int, y int, frame int) {
+        if frame == 6 {
+            mapObject := game.CurrentMap()
             switch mapObject.GetBonusTile(x, y) {
                 case data.BonusCoal: mapObject.SetBonus(x, y, data.BonusGem)
                 case data.BonusGem: mapObject.SetBonus(x, y, data.BonusCoal)
@@ -619,18 +553,33 @@ func (game *Game) doCastTransmute(yield coroutine.YieldFunc, tileX int, tileY in
         }
     }
 
-    quit := false
-    for !quit {
-        game.Counter += 1
+    game.doCastOnMap(yield, tileX, tileY, 0, false, 28, update)
+}
 
-        quit = false
-        if game.Counter % 6 == 0 {
-            quit = !animation.Next()
-            if animation.CurrentFrame == 6 {
-                transmute(tileX, tileY)
+
+func (game *Game) doCastRaiseVolcano(yield coroutine.YieldFunc, tileX int, tileY int, player *playerlib.Player) {
+    update := func (x int, y int, frame int) {
+        if frame == 8 {
+            mapObject := game.CurrentMap()
+            mapObject.Map.SetTerrainAt(x, y, terrain.Grass, mapObject.Data, mapObject.Plane)
+            mapObject.SetBonus(tileX, tileY, data.BonusNone)
+        }
+    }
+
+    game.doCastOnMap(yield, tileX, tileY, 11, false, 98, update)
+
+    mapObject := game.CurrentMap()
+    mapObject.SetVolcano(tileX, tileY, player)
+
+    // volcanoes may destroy buildings if cast in a city
+    for _, player := range game.Players {
+        city := player.FindCity(tileX, tileY, mapObject.Plane)
+        if city != nil {
+            for _, building := range city.Buildings.Values() {
+                if rand.N(100) < 15 {
+                    city.Buildings.Remove(building)
+                }
             }
         }
-
-        yield()
     }
 }
