@@ -48,9 +48,11 @@ const (
     ExtraKindBonus
     ExtraKindMagicNode
     ExtraKindEncounter
+    ExtraKindCorruption
 )
 
 var ExtraDrawOrder = []ExtraKind{
+    ExtraKindCorruption,
     ExtraKindRoad,
     ExtraKindBonus,
     ExtraKindMagicNode,
@@ -399,6 +401,19 @@ func (node *ExtraMagicNode) Meld(meldingWizard Melder, spirit units.Unit) bool {
 
         return false
     }
+}
+
+type ExtraCorruption struct {
+}
+
+func (node *ExtraCorruption) DrawLayer1(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64, tileWidth int, tileHeight int){
+    pic, err := imageCache.GetImage("mapback.lbx", 77, 0)
+    if err == nil {
+        screen.DrawImage(pic, options)
+    }
+}
+
+func (node *ExtraCorruption) DrawLayer2(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64, tileWidth int, tileHeight int){
 }
 
 type FullTile struct {
@@ -804,6 +819,17 @@ func (mapObject *Map) CreateNode(x int, y int, node MagicNode, plane data.Plane,
     mapObject.ExtraMap[image.Pt(x, y)][ExtraKindMagicNode] = out
 
     return out
+}
+
+func (mapObject *Map) SetCorruption(x int, y int) {
+    mapObject.ExtraMap[image.Pt(x, y)][ExtraKindCorruption] = &ExtraCorruption{}
+}
+
+func (mapObject *Map) RemoveCorruption(x int, y int) {
+    _, exists := mapObject.ExtraMap[image.Pt(x, y)][ExtraKindCorruption]
+    if exists {
+        delete(mapObject.ExtraMap[image.Pt(x, y)], ExtraKindCorruption)
+    }
 }
 
 func (mapObject *Map) Width() int {

@@ -989,6 +989,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     player.KnownSpells.AddSpell(allSpells.FindByName("Transmute"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Summon Hero"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Enchant Road"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Corruption"))
 
     x, y := game.FindValidCityLocation(game.Plane)
 

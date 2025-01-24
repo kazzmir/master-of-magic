@@ -29,6 +29,7 @@ import (
 type LocationType int
 const (
     LocationTypeAny LocationType = iota
+    LocationTypeLand
     LocationTypeFriendlyCity
     LocationTypeEnemyCity
     LocationTypeFriendlyUnit
@@ -156,7 +157,14 @@ func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Playe
                     }
                 }
             }
+        case "Corruption":
+            tileX, tileY, cancel := game.selectLocationForSpell(yield, spell, player, LocationTypeLand)
 
+            if cancel {
+                return
+            }
+
+            game.doCastCorruption(yield, tileX, tileY)
         default:
             log.Printf("Warning: casting unhandled spell %v", spell.Name)
     }
@@ -256,7 +264,8 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
     var selectMessage string
 
     switch locationType {
-        case LocationTypeAny, LocationTypeChangeTerrain, LocationTypeTransmute: selectMessage = fmt.Sprintf("Select a space as the target for an %v spell.", spell.Name)
+        case LocationTypeAny, LocationTypeLand, LocationTypeChangeTerrain, LocationTypeTransmute:
+            selectMessage = fmt.Sprintf("Select a space as the target for an %v spell.", spell.Name)
         case LocationTypeFriendlyCity: selectMessage = fmt.Sprintf("Select a friendly city to cast %v on.", spell.Name)
         default:
             selectMessage = fmt.Sprintf("unhandled location type %v", locationType)
@@ -386,6 +395,15 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
             if inputmanager.LeftClick() {
                 switch locationType {
                     case LocationTypeAny: return tileX, tileY, false
+                    case LocationTypeLand:
+                        if tileY >= 0 && tileY < overworld.Map.Map.Rows() {
+                            tileX = overworld.Map.WrapX(tileX)
+                            if player.IsTileVisible(tileX, tileY, game.Plane) {
+                                if overworld.Map.GetTile(tileX, tileY).Tile.IsLand() {
+                                    return tileX, tileY, false
+                                }
+                            }
+                        }
                     case LocationTypeFriendlyCity:
                         city := player.FindCity(tileX, tileY, game.Plane)
                         if city != nil {
@@ -628,6 +646,60 @@ func (game *Game) doCastTransmute(yield coroutine.YieldFunc, tileX int, tileY in
             quit = !animation.Next()
             if animation.CurrentFrame == 6 {
                 transmute(tileX, tileY)
+            }
+        }
+
+        yield()
+    }
+}
+
+
+func (game *Game) doCastCorruption(yield coroutine.YieldFunc, tileX int, tileY int) {
+    game.Camera.Zoom = camera.ZoomDefault
+    game.doMoveCamera(yield, tileX, tileY)
+
+    oldDrawer := game.Drawer
+    defer func(){
+        game.Drawer = oldDrawer
+    }()
+
+    // FIXME: sound and animation are not in sync (same in the original game)
+    pics, _ := game.ImageCache.GetImages("specfx.lbx", 7)
+
+    animation := util.MakeAnimation(pics, false)
+
+    x, y := game.TileToScreen(tileX, tileY)
+
+    game.Drawer = func(screen *ebiten.Image, game *Game) {
+        oldDrawer(screen, game)
+
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(float64(x - animation.Frame().Bounds().Dx() / 2), float64(y - animation.Frame().Bounds().Dy() / 2))
+        screen.DrawImage(animation.Frame(), &options)
+    }
+
+    sound, err := audio.LoadSound(game.Cache, 103)
+    if err == nil {
+        sound.Play()
+    }
+
+    corrupt := func (x int, y int) {
+        mapObject := game.CurrentMap()
+        if y >= 0 || y < mapObject.Map.Rows() {
+            x = mapObject.WrapX(x)
+            mapObject.SetCorruption(x, y)
+        }
+    }
+
+    quit := false
+    for !quit {
+        game.Counter += 1
+
+        quit = false
+        if game.Counter % 10 == 0 {
+            quit = !animation.Next()
+            if animation.CurrentFrame == 6 {
+                corrupt(tileX, tileY)
             }
         }
 
