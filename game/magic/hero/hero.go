@@ -995,13 +995,71 @@ func (hero *Hero) getBaseResistanceProgression(level units.HeroExperienceLevel) 
 
 // any added resistance from abilities (agility)
 func (hero *Hero) GetAbilityResistance() int {
-
     level := hero.GetExperienceLevel()
     extra := 0
     if hero.HasAbility(data.AbilityAgility) {
         extra = level.ToInt() + 1
     } else if hero.HasAbility(data.AbilitySuperAgility) {
         extra = int(float64(level.ToInt() + 1) * 1.5)
+    }
+
+    return extra
+}
+
+func (hero *Hero) GetAbilityToHit() int {
+    level := hero.GetExperienceLevel()
+
+    if hero.HasAbility(data.AbilityBlademaster) {
+        switch level {
+            case units.ExperienceHero: return 0
+            case units.ExperienceMyrmidon: return 10
+            case units.ExperienceCaptain: return 10
+            case units.ExperienceCommander: return 20
+            case units.ExperienceChampionHero: return 20
+            case units.ExperienceLord: return 30
+            case units.ExperienceGrandLord: return 30
+            case units.ExperienceSuperHero: return 40
+            case units.ExperienceDemiGod: return 40
+        }
+    } else if hero.HasAbility(data.AbilitySuperBlademaster) {
+        switch level {
+            case units.ExperienceHero: return 0
+            case units.ExperienceMyrmidon: return 10
+            case units.ExperienceCaptain: return 20
+            case units.ExperienceCommander: return 30
+            case units.ExperienceChampionHero: return 30
+            case units.ExperienceLord: return 40
+            case units.ExperienceGrandLord: return 50
+            case units.ExperienceSuperHero: return 60
+            case units.ExperienceDemiGod: return 80
+        }
+    }
+
+    return 0
+}
+
+func (hero *Hero) GetMagicRangedAttack() int {
+    level := hero.GetExperienceLevel()
+    extra := 0
+
+    if hero.HasAbility(data.AbilityArcanePower) {
+        extra = level.ToInt() + 1
+    } else if hero.HasAbility(data.AbilitySuperArcanePower) {
+        extra = int(float64(level.ToInt() + 1) * 1.5)
+    }
+
+    return extra
+}
+
+// extra experience points to apply to all normal units in the same stack as the hero
+func (hero *Hero) GetArmsmasterExperienceBonus() int {
+    level := hero.GetExperienceLevel()
+    extra := 0
+
+    if hero.HasAbility(data.AbilityArmsmaster) {
+        extra = (level.ToInt() + 1) * 2
+    } else if hero.HasAbility(data.AbilitySuperArmsmaster) {
+        extra = int(float64((level.ToInt() + 1) * 2) * 1.5)
     }
 
     return extra
