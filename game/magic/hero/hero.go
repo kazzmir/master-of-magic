@@ -993,6 +993,20 @@ func (hero *Hero) getBaseResistanceProgression(level units.HeroExperienceLevel) 
     return 0
 }
 
+// any added resistance from abilities (agility)
+func (hero *Hero) GetAbilityResistance() int {
+
+    level := hero.GetExperienceLevel()
+    extra := 0
+    if hero.HasAbility(data.AbilityAgility) {
+        extra = level.ToInt() + 1
+    } else if hero.HasAbility(data.AbilitySuperAgility) {
+        extra = int(float64(level.ToInt() + 1) * 1.5)
+    }
+
+    return extra
+}
+
 func (hero *Hero) GetResistance() int {
     base := hero.Unit.GetBaseResistance()
 
@@ -1002,7 +1016,7 @@ func (hero *Hero) GetResistance() int {
         }
     }
 
-    return base
+    return base + hero.GetAbilityResistance()
 }
 
 func (hero *Hero) GetHitPoints() int {
@@ -1032,7 +1046,7 @@ func (hero *Hero) getBaseHitPointsProgression(level units.HeroExperienceLevel) i
 }
 
 func (hero *Hero) GetBaseProgression() []string {
-    var improvements []string;
+    var improvements []string
 
     level := hero.GetExperienceLevel()
     if level <= units.ExperienceHero {
