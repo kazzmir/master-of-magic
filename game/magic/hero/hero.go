@@ -665,7 +665,7 @@ func (hero *Hero) GetToHitMelee() int {
         case units.ExperienceDemiGod: base += 30
     }
 
-    return base
+    return base + hero.GetAbilityToHit()
 }
 
 func (hero *Hero) GetLbxFile() string {
@@ -902,7 +902,7 @@ func (hero *Hero) GetMeleeAttackPower() int {
         }
     }
 
-    return base
+    return base + hero.GetAbilityMelee()
 }
 
 func (hero *Hero) GetBaseRangedAttackPower() int {
@@ -1137,6 +1137,10 @@ func (hero *Hero) GetAbilityMelee() int {
     return extra
 }
 
+func (hero *Hero) GetAbilityRangedAttack() int {
+    return hero.GetAbilityMelee() / 2
+}
+
 func (hero *Hero) GetAbilityResistance() int {
     level := hero.GetExperienceLevel()
     extra := 0
@@ -1145,6 +1149,20 @@ func (hero *Hero) GetAbilityResistance() int {
         extra = level.ToInt() + 1
     } else if hero.HasAbility(data.AbilitySuperPrayermaster) {
         extra = int(float64(level.ToInt() + 1) * 1.5)
+    }
+
+    return extra
+}
+
+// extra research points to apply at each turn
+func (hero *Hero) GetAbilityResearch() int {
+    level := hero.GetExperienceLevel()
+    extra := 0
+
+    if hero.HasAbility(data.AbilitySage) {
+        extra = (level.ToInt() + 1) * 3
+    } else if hero.HasAbility(data.AbilitySuperSage) {
+        extra = int(float64((level.ToInt() + 1) * 3) * 1.5)
     }
 
     return extra
