@@ -1873,24 +1873,112 @@ func (game *Game) doSummon(yield coroutine.YieldFunc, summonObject *summon.Summo
     yield()
 }
 
-func (game *Game) MakeSettingsUI(imageCache *util.ImageCache, ui *uilib.UI, onOk func()) []*uilib.UIElement {
-    ok, _ := imageCache.GetImage("load.lbx", 4, 0)
+// mutates the ui by adding/removing elements
+// FIXME: its a hack to pass in the background image as a double pointer so we can mutate it
+func (game *Game) MakeSettingsUI(imageCache *util.ImageCache, ui *uilib.UI, background **ebiten.Image, onOk func()) {
+    fontLbx, err := game.Cache.GetLbxFile("FONTS.LBX")
+    if err != nil {
+        log.Printf("Error: %v", err)
+        return
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        log.Printf("Error: %v", err)
+        return
+    }
+
+    bluish := util.Lighten(color.RGBA{R: 0x00, G: 0x00, B: 0xff, A: 0xff}, 90)
+
+    optionPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        bluish, bluish, bluish, bluish,
+        bluish, bluish, bluish, bluish,
+    }
+
+    optionFont := font.MakeOptimizedFontWithPalette(fonts[2], optionPalette)
 
     var elements []*uilib.UIElement
 
-    elements = append(elements, &uilib.UIElement{
-        Rect: util.ImageRect(266 * data.ScreenScale, 176 * data.ScreenScale, ok),
-        LeftClick: func(element *uilib.UIElement){
-            onOk()
-        },
-        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            var options ebiten.DrawImageOptions
-            options.GeoM.Translate(float64(element.Rect.Min.X), float64(element.Rect.Min.Y))
-            screen.DrawImage(ok, &options)
-        },
-    })
+    var makeElements func()
 
-    return elements
+    makeElements = func() {
+        *background, _ = imageCache.GetImage("load.lbx", 11, 0)
+        ok, _ := imageCache.GetImage("load.lbx", 4, 0)
+        ui.RemoveElements(elements)
+        elements = nil
+
+        elements = append(elements, &uilib.UIElement{
+            Rect: util.ImageRect(266 * data.ScreenScale, 176 * data.ScreenScale, ok),
+            LeftClick: func(element *uilib.UIElement){
+                onOk()
+            },
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(element.Rect.Min.X), float64(element.Rect.Min.Y))
+                screen.DrawImage(ok, &options)
+            },
+        })
+
+        resolutionBackground, _ := imageCache.GetImage("load.lbx", 5, 0)
+
+        elements = append(elements, &uilib.UIElement{
+            Rect: util.ImageRect(20 * data.ScreenScale, 40 * data.ScreenScale, resolutionBackground),
+            LeftClick: func(element *uilib.UIElement){
+                selected := func(name string, scale int, algorithm data.ScaleAlgorithm) string {
+                    if data.ScreenScale == scale && data.ScreenScaleAlgorithm == algorithm {
+                        return name + "*"
+                    }
+                    return name
+                }
+
+                update := func(scale int, algorithm data.ScaleAlgorithm){
+                    data.ScreenScale = scale
+                    data.ScreenScaleAlgorithm = algorithm
+                    data.ScreenWidth = data.ScreenWidthOriginal * scale
+                    data.ScreenHeight = data.ScreenHeightOriginal * scale
+                    game.UpdateImages()
+                    *imageCache = util.MakeImageCache(game.Cache)
+                    makeElements()
+
+                }
+
+                makeChoices := func (name string, scales []int, algorithm data.ScaleAlgorithm) []uilib.Selection {
+                    var out []uilib.Selection
+                    for _, value := range scales {
+                        out = append(out, uilib.Selection{
+                            Name: selected(fmt.Sprintf("%v %vx", name, value), value, algorithm),
+                            Action: func(){
+                                update(value, algorithm)
+                            },
+                        })
+                    }
+                    return out
+                }
+
+                normalChoices := makeChoices("Normal", []int{1, 2, 3, 4}, data.ScaleAlgorithmNormal)
+                scaleChoices := makeChoices("Scale", []int{2, 3, 4}, data.ScaleAlgorithmScale)
+                xbrChoices := makeChoices("XBR", []int{2, 3, 4}, data.ScaleAlgorithmXbr)
+
+                choices := append(append(normalChoices, scaleChoices...), xbrChoices...)
+
+                ui.AddElements(uilib.MakeSelectionUI(ui, game.Cache, imageCache, 40, 10, "Resolution", choices))
+            },
+            Draw: func (element *uilib.UIElement, screen *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(element.Rect.Min.X), float64(element.Rect.Min.Y))
+                screen.DrawImage(resolutionBackground, &options)
+
+                x, y := options.GeoM.Apply(float64(3 * data.ScreenScale), float64(3 * data.ScreenScale))
+                optionFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, "Screen")
+            },
+        })
+
+        ui.AddElements(elements)
+    }
+
+    makeElements()
 }
 
 func (game *Game) doGameMenu(yield coroutine.YieldFunc) {
@@ -1954,13 +2042,13 @@ func (game *Game) doGameMenu(yield coroutine.YieldFunc) {
 
     // settings
     elements = append(elements, makeButton(12, 172, 171, func(){
-        background, _ = imageCache.GetImage("load.lbx", 11, 0)
         ui.RemoveElements(elements)
 
-        ui.AddElements(game.MakeSettingsUI(&imageCache, ui, func(){
+        game.MakeSettingsUI(&imageCache, ui, &background, func(){
             quit = true
+            // re-enter the game menu
             game.Events <- &GameEventGameMenu{}
-        }))
+        })
     }))
 
     // ok
@@ -1981,6 +2069,8 @@ func (game *Game) doGameMenu(yield coroutine.YieldFunc) {
         yield()
     }
     yield()
+
+    game.RefreshUI()
 }
 
 func (game *Game) doVault(yield coroutine.YieldFunc, newArtifact *artifact.Artifact) {
