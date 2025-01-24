@@ -938,7 +938,15 @@ func (hero *Hero) GetRangedAttackPower() int {
         }
     }
 
-    return base
+    bonus := 0
+
+    if hero.Unit.GetRangedAttackDamageType() == units.DamageRangedMagical {
+        bonus += hero.GetAbilityMagicRangedAttack()
+    } else {
+        bonus += hero.GetAbilityRangedAttack()
+    }
+
+    return base + bonus
 }
 
 func (hero *Hero) GetBaseDefense() int {
