@@ -874,6 +874,9 @@ func (game *Game) ComputePower(player *playerlib.Player) int {
         power += float64(len(node.Zone)) * magicBonus
     }
 
+    power += float64(len(game.ArcanusMap.GetCastedVolcanoes(player)))
+    power += float64(len(game.MyrrorMap.GetCastedVolcanoes(player)))
+
     if power < 0 {
         power = 0
     }

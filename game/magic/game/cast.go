@@ -100,7 +100,7 @@ func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Playe
                 return
             }
 
-            game.doCastRaiseVolcano(yield, tileX, tileY)
+            game.doCastRaiseVolcano(yield, tileX, tileY, player)
         case "Summon Hero":
             var choices []*herolib.Hero
             for _, hero := range game.Heroes {
@@ -530,6 +530,7 @@ func (game *Game) doCastChangeTerrain(yield coroutine.YieldFunc, tileX int, tile
                     mapObject.Map.SetTerrainAt(x, y, terrain.Forest, mapObject.Data, mapObject.Plane)
                 case terrain.Volcano:
                     mapObject.Map.SetTerrainAt(x, y, terrain.Mountain, mapObject.Data, mapObject.Plane)
+                    mapObject.RemoveVolcano(x, y)
                 case terrain.Mountain:
                     mapObject.Map.SetTerrainAt(x, y, terrain.Hill, mapObject.Data, mapObject.Plane)
             }
@@ -559,7 +560,7 @@ func (game *Game) doCastTransmute(yield coroutine.YieldFunc, tileX int, tileY in
 }
 
 
-func (game *Game) doCastRaiseVolcano(yield coroutine.YieldFunc, tileX int, tileY int) {
+func (game *Game) doCastRaiseVolcano(yield coroutine.YieldFunc, tileX int, tileY int, player *playerlib.Player) {
     update := func (x int, y int, frame int) {
         if frame == 8 {
             mapObject := game.CurrentMap()
@@ -572,8 +573,8 @@ func (game *Game) doCastRaiseVolcano(yield coroutine.YieldFunc, tileX int, tileY
 
     mapObject := game.CurrentMap()
     mapObject.Map.SetTerrainAt(tileX, tileY, terrain.Volcano, mapObject.Data, mapObject.Plane)
+    mapObject.SetVolcano(tileX, tileY, player)
 
     // FIXME: Destruct buildings in towns
-    // FIXME: Raise wizard's power
     // FIXME: Chance of reverting with chance of generating minerals
 }
