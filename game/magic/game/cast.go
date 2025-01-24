@@ -435,7 +435,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
     return 0, 0, true
 }
 
-type UpdateMapFunction func (int, int, int)
+type UpdateMapFunction func (tileX int, tileY int, animationFrame int)
 
 func (game *Game) doCastOnMap(yield coroutine.YieldFunc, tileX int, tileY int, animationIndex int, newSound bool, soundIndex int, update UpdateMapFunction) {
     game.Camera.Zoom = camera.ZoomDefault
