@@ -531,6 +531,7 @@ func (game *Game) doCastChangeTerrain(yield coroutine.YieldFunc, tileX int, tile
                 case terrain.Volcano:
                     mapObject.Map.SetTerrainAt(x, y, terrain.Mountain, mapObject.Data, mapObject.Plane)
                     mapObject.RemoveVolcano(x, y)
+                    // FIXME: chance of generating mineral
                 case terrain.Mountain:
                     mapObject.Map.SetTerrainAt(x, y, terrain.Hill, mapObject.Data, mapObject.Plane)
             }
@@ -576,5 +577,4 @@ func (game *Game) doCastRaiseVolcano(yield coroutine.YieldFunc, tileX int, tileY
     mapObject.SetVolcano(tileX, tileY, player)
 
     // FIXME: Destruct buildings in towns
-    // FIXME: Chance of reverting with chance of generating minerals
 }

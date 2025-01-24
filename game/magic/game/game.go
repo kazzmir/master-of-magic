@@ -5285,6 +5285,8 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
 func (game *Game) EndOfTurn() {
     // put stuff here that should happen when all players have taken their turn
 
+    // FIXME: Chance of reverting volcanos with chance of generating minerals
+
     game.TurnNumber += 1
 }
 
