@@ -128,6 +128,31 @@ func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Playe
                     default:
                 }
             }
+        case "Enchant Road":
+            tileX, tileY, cancel := game.selectLocationForSpell(yield, spell, player, LocationTypeAny)
+
+            if cancel {
+                return
+            }
+
+            game.doCastEnchantRoad(yield, tileX, tileY)
+
+            useMap := game.CurrentMap()
+
+            // all roads in a 5x5 square around the target tile should become enchanted
+            for dx := -2; dx <= 2; dx++ {
+                for dy := -2; dy <= 2; dy++ {
+                    cx := useMap.WrapX(tileX + dx)
+                    cy := tileY + dy
+                    if cy < 0 || cy >= useMap.Height() {
+                        continue
+                    }
+
+                    if useMap.ContainsRoad(cx, cy) {
+                        useMap.SetRoad(cx, cy, true)
+                    }
+                }
+            }
 
         default:
             log.Printf("Warning: casting unhandled spell %v", spell.Name)
@@ -407,6 +432,47 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
     }
 
     return 0, 0, true
+}
+
+func (game *Game) doCastEnchantRoad(yield coroutine.YieldFunc, tileX int, tileY int) {
+    oldDrawer := game.Drawer
+    defer func(){
+        game.Drawer = oldDrawer
+    }()
+
+    pics, _ := game.ImageCache.GetImages("specfx.lbx", 46)
+
+    animation := util.MakeAnimation(pics, false)
+
+    x := 120 * data.ScreenScale
+    y := 90 * data.ScreenScale
+
+    game.Drawer = func(screen *ebiten.Image, game *Game) {
+        oldDrawer(screen, game)
+
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(float64(x - animation.Frame().Bounds().Dx() / 2), float64(y - animation.Frame().Bounds().Dy() / 2))
+        screen.DrawImage(animation.Frame(), &options)
+    }
+
+    // FIXME: verify this is the right sound
+    sound, err := audio.LoadNewSound(game.Cache, 18)
+    if err == nil {
+        sound.Play()
+    }
+
+    quit := false
+    for !quit {
+        game.Counter += 1
+
+        quit = false
+        if game.Counter % 6 == 0 {
+            quit = !animation.Next()
+        }
+
+        yield()
+    }
+
 }
 
 // FIXME: try to merge most of the logic for doCastEarthLore and doCastChangeTerrain
