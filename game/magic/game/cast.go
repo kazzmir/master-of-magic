@@ -435,9 +435,9 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
     return 0, 0, true
 }
 
-type UpdateTerrainFunction func (int, int, int)
+type UpdateMapFunction func (int, int, int)
 
-func (game *Game) doCastOnTerrain(yield coroutine.YieldFunc, tileX int, tileY int, animationIndex int, newSound bool, soundIndex int, terrainFunction UpdateTerrainFunction) {
+func (game *Game) doCastOnMap(yield coroutine.YieldFunc, tileX int, tileY int, animationIndex int, newSound bool, soundIndex int, update UpdateMapFunction) {
     game.Camera.Zoom = camera.ZoomDefault
     game.doMoveCamera(yield, tileX, tileY)
 
@@ -478,7 +478,7 @@ func (game *Game) doCastOnTerrain(yield coroutine.YieldFunc, tileX int, tileY in
 
         quit = false
         if game.Counter % 6 == 0 {
-            terrainFunction(tileX, tileY, animation.CurrentFrame)
+            update(tileX, tileY, animation.CurrentFrame)
             quit = !animation.Next()
         }
 
@@ -489,7 +489,7 @@ func (game *Game) doCastOnTerrain(yield coroutine.YieldFunc, tileX int, tileY in
 func (game *Game) doCastEnchantRoad(yield coroutine.YieldFunc, tileX int, tileY int) {
     update := func (x int, y int, frame int) {}
 
-    game.doCastOnTerrain(yield, tileX, tileY, 46, false, 86, update)
+    game.doCastOnMap(yield, tileX, tileY, 46, false, 86, update)
 
     useMap := game.CurrentMap()
 
@@ -512,7 +512,7 @@ func (game *Game) doCastEnchantRoad(yield coroutine.YieldFunc, tileX int, tileY 
 func (game *Game) doCastEarthLore(yield coroutine.YieldFunc, tileX int, tileY int, player *playerlib.Player) {
     update := func (x int, y int, frame int) {}
 
-    game.doCastOnTerrain(yield, tileX, tileY, 45, true, 18, update)
+    game.doCastOnMap(yield, tileX, tileY, 45, true, 18, update)
 
     player.LiftFogSquare(tileX, tileY, 5, game.Plane)
 }
@@ -536,7 +536,7 @@ func (game *Game) doCastChangeTerrain(yield coroutine.YieldFunc, tileX int, tile
         }
     }
 
-    game.doCastOnTerrain(yield, tileX, tileY, 8, false, 28, update)
+    game.doCastOnMap(yield, tileX, tileY, 8, false, 28, update)
 }
 
 
@@ -555,7 +555,7 @@ func (game *Game) doCastTransmute(yield coroutine.YieldFunc, tileX int, tileY in
         }
     }
 
-    game.doCastOnTerrain(yield, tileX, tileY, 0, false, 28, update)
+    game.doCastOnMap(yield, tileX, tileY, 0, false, 28, update)
 }
 
 
@@ -568,7 +568,7 @@ func (game *Game) doCastRaiseVolcano(yield coroutine.YieldFunc, tileX int, tileY
         }
     }
 
-    game.doCastOnTerrain(yield, tileX, tileY, 11, false, 98, update)
+    game.doCastOnMap(yield, tileX, tileY, 11, false, 98, update)
 
     mapObject := game.CurrentMap()
     mapObject.Map.SetTerrainAt(tileX, tileY, terrain.Volcano, mapObject.Data, mapObject.Plane)
