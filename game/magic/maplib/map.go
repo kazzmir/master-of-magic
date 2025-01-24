@@ -743,9 +743,9 @@ func (mapObject *Map) GetCastedVolcanoes(caster Caster) []*ExtraVolcano {
     var out []*ExtraVolcano
 
     for _, extras := range mapObject.ExtraMap {
-        node, ok := extras[ExtraKindVolcano]
+        extra, ok := extras[ExtraKindVolcano]
         if ok {
-            volcano := node.(*ExtraVolcano)
+            volcano := extra.(*ExtraVolcano)
             if volcano.CastingWizard == caster {
                 out = append(out, volcano)
             }
@@ -798,7 +798,21 @@ func (mapObject *Map) SetVolcano(x int, y int, caster Caster) {
 }
 
 func (mapObject *Map) RemoveVolcano(x int, y int) {
-    delete(mapObject.ExtraMap[image.Pt(x, y)], ExtraKindVolcano)
+    _, exists := mapObject.ExtraMap[image.Pt(x, y)][ExtraKindVolcano]
+    if exists {
+        delete(mapObject.ExtraMap[image.Pt(x, y)], ExtraKindVolcano)
+
+        mapObject.Map.SetTerrainAt(x, y, terrain.Mountain, mapObject.Data, mapObject.Plane)
+
+        // chance of 5% to generate a mineral
+        if rand.N(100) < 5 {
+            choices := []data.BonusType{data.BonusSilverOre, data.BonusGoldOre, data.BonusIronOre, data.BonusCoal, data.BonusMithrilOre}
+            if mapObject.Plane == data.PlaneMyrror {
+                choices = append(choices, data.BonusAdamantiumOre)
+            }
+            mapObject.SetBonus(x, y, choices[rand.IntN(len(choices))])
+        }
+    }
 }
 
 func (mapObject *Map) GetBonusTile(x int, y int) data.BonusType {

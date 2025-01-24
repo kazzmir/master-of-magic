@@ -5298,10 +5298,24 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
     game.RefreshUI()
 }
 
+func (game *Game) revertVolcanos() {
+    mapObjects := []*maplib.Map{game.ArcanusMap, game.MyrrorMap}
+    for _, mapObject := range mapObjects {
+        for location, extras := range mapObject.ExtraMap {
+            _, ok := extras[maplib.ExtraKindVolcano]
+            if ok {
+                if rand.N(100) < 2 {
+                    mapObject.RemoveVolcano(location.X, location.Y)
+                }
+            }
+        }
+    }
+}
+
 func (game *Game) EndOfTurn() {
     // put stuff here that should happen when all players have taken their turn
 
-    // FIXME: Chance of reverting volcanos with chance of generating minerals
+    game.revertVolcanos()
 
     game.TurnNumber += 1
 }

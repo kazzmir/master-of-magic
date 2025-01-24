@@ -527,9 +527,7 @@ func (game *Game) doCastChangeTerrain(yield coroutine.YieldFunc, tileX int, tile
                 case terrain.Grass:
                     mapObject.Map.SetTerrainAt(x, y, terrain.Forest, mapObject.Data, mapObject.Plane)
                 case terrain.Volcano:
-                    mapObject.Map.SetTerrainAt(x, y, terrain.Mountain, mapObject.Data, mapObject.Plane)
                     mapObject.RemoveVolcano(x, y)
-                    // FIXME: chance of generating mineral
                 case terrain.Mountain:
                     mapObject.Map.SetTerrainAt(x, y, terrain.Hill, mapObject.Data, mapObject.Plane)
             }
