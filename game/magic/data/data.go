@@ -1,8 +1,11 @@
 package data
 
+const ScreenWidthOriginal = 320
+const ScreenHeightOriginal = 200
+
 var ScreenScale = 3
-var ScreenWidth = 320*ScreenScale
-var ScreenHeight = 200*ScreenScale
+var ScreenWidth = ScreenWidthOriginal * ScreenScale
+var ScreenHeight = ScreenHeightOriginal * ScreenScale
 var ScreenScaleAlgorithm = ScaleAlgorithmNormal
 
 type ScaleAlgorithm int

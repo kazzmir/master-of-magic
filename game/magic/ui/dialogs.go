@@ -722,9 +722,11 @@ func MakeSelectionUI(ui *UI, lbxCache *lbx.LbxCache, imageCache *util.ImageCache
                 options.GeoM.Translate(float64(use.Bounds().Dx()), 0)
                 screen.DrawImage(ends[imageIndex], &options)
 
-                buttonFont.Print(screen, float64(myX + 2), float64(myY + 2), float64(data.ScreenScale), options.ColorScale, choice.Name)
+                y := float64(myY + 2 * data.ScreenScale)
+
+                buttonFont.Print(screen, float64(myX + 2), y, float64(data.ScreenScale), options.ColorScale, choice.Name)
                 if choice.Hotkey != "" {
-                    buttonFont.PrintRight(screen, float64(myX) + requiredWidth - 2, float64(myY + 2), float64(data.ScreenScale), options.ColorScale, choice.Hotkey)
+                    buttonFont.PrintRight(screen, float64(myX) + requiredWidth - 2, y, float64(data.ScreenScale), options.ColorScale, choice.Hotkey)
                 }
             },
         })
