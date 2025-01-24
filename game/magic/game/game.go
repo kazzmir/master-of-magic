@@ -5279,9 +5279,17 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
     game.RefreshUI()
 }
 
+func (game *Game) EndOfTurn() {
+    // put stuff here that should happen when all players have taken their turn
+
+    game.TurnNumber += 1
+}
+
 func (game *Game) DoNextTurn(){
     game.CurrentPlayer += 1
     if game.CurrentPlayer >= len(game.Players) {
+        // all players did their turn, so the next global turn starts
+        game.EndOfTurn()
         game.CurrentPlayer = 0
     }
 
@@ -5302,8 +5310,6 @@ func (game *Game) DoNextTurn(){
             game.Players[game.CurrentPlayer].AIBehavior.NewTurn()
         }
     }
-
-    game.TurnNumber += 1
 }
 
 func (overworld *Overworld) DrawFog(screen *ebiten.Image, geom ebiten.GeoM){
