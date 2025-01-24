@@ -450,9 +450,7 @@ func (game *Game) doCastOnTerrain(yield coroutine.YieldFunc, tileX int, tileY in
 
     animation := util.MakeAnimation(pics, false)
 
-    // FIXME: need some function in Game that returns the pixel coordinates for a given tile
-    x := 130 * data.ScreenScale
-    y := 99 * data.ScreenScale
+    x, y := game.TileToScreen(tileX, tileY)
 
     game.Drawer = func(screen *ebiten.Image, game *Game) {
         oldDrawer(screen, game)
