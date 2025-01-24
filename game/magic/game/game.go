@@ -128,7 +128,7 @@ type GameEventResearchSpell struct {
     Player *playerlib.Player
 }
 
-type GameEventLoadMenu struct {
+type GameEventGameMenu struct {
 }
 
 type GameEventCastSpell struct {
@@ -1870,7 +1870,7 @@ func (game *Game) doSummon(yield coroutine.YieldFunc, summonObject *summon.Summo
     yield()
 }
 
-func (game *Game) doLoadMenu(yield coroutine.YieldFunc) {
+func (game *Game) doGameMenu(yield coroutine.YieldFunc) {
     oldDrawer := game.Drawer
     defer func(){
         game.Drawer = oldDrawer
@@ -1930,7 +1930,8 @@ func (game *Game) doLoadMenu(yield coroutine.YieldFunc) {
 
     // settings
     elements = append(elements, makeButton(12, 172, 171, func(){
-        // FIXME
+        quit = true
+        game.Events <- &GameEventGameMenu{}
     }))
 
     // ok
@@ -2450,8 +2451,8 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                     case *GameEventSummonHero:
                         summonHero := event.(*GameEventSummonHero)
                         game.doSummon(yield, summon.MakeSummonHero(game.Cache, summonHero.Wizard, summonHero.Champion))
-                    case *GameEventLoadMenu:
-                        game.doLoadMenu(yield)
+                    case *GameEventGameMenu:
+                        game.doGameMenu(yield)
                     case *GameEventHeroLevelUp:
                         levelEvent := event.(*GameEventHeroLevelUp)
                         game.showHeroLevelUpPopup(yield, levelEvent.Hero)
@@ -4318,7 +4319,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
     // game button
     elements = append(elements, makeButton(1, 7 * data.ScreenScale, 4 * data.ScreenScale, false, func(){
         select {
-            case game.Events <- &GameEventLoadMenu{}:
+            case game.Events <- &GameEventGameMenu{}:
             default:
         }
     }))
