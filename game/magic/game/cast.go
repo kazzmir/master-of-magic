@@ -569,8 +569,17 @@ func (game *Game) doCastRaiseVolcano(yield coroutine.YieldFunc, tileX int, tileY
     game.doCastOnMap(yield, tileX, tileY, 11, false, 98, update)
 
     mapObject := game.CurrentMap()
-    mapObject.Map.SetTerrainAt(tileX, tileY, terrain.Volcano, mapObject.Data, mapObject.Plane)
     mapObject.SetVolcano(tileX, tileY, player)
 
-    // FIXME: Destruct buildings in towns
+    // volcanoes may destroy buildings if cast in a city
+    for _, player := range game.Players {
+        city := player.FindCity(tileX, tileY, mapObject.Plane)
+        if city != nil {
+            for _, building := range city.Buildings.Values() {
+                if rand.N(100) < 15 {
+                    city.Buildings.Remove(building)
+                }
+            }
+        }
+    }
 }

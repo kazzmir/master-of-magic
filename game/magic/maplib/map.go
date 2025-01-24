@@ -795,6 +795,7 @@ func (mapObject *Map) GetMagicNode(x int, y int) *ExtraMagicNode {
 
 func (mapObject *Map) SetVolcano(x int, y int, caster Caster) {
     mapObject.ExtraMap[image.Pt(x, y)][ExtraKindVolcano] = &ExtraVolcano{CastingWizard: caster}
+    mapObject.Map.SetTerrainAt(x, y, terrain.Volcano, mapObject.Data, mapObject.Plane)
 }
 
 func (mapObject *Map) RemoveVolcano(x int, y int) {

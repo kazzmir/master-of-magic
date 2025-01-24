@@ -1004,6 +1004,9 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     city.Workers = 3
     city.Wall = false
 
+    city.AddBuilding(buildinglib.BuildingShrine)
+    city.AddBuilding(buildinglib.BuildingGranary)
+
     city.ResetCitizens(nil)
 
     player.AddCity(city)
