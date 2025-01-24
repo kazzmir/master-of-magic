@@ -87,7 +87,12 @@ func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, scre
 func main(){
     log.SetFlags(log.Ldate | log.Lshortfile | log.Lmicroseconds)
 
-    ebiten.SetWindowSize(data.ScreenWidth * 5, data.ScreenHeight * 5)
+    monitorWidth, _ := ebiten.Monitor().Size()
+
+    size := monitorWidth / 390
+
+    ebiten.SetWindowSize(data.ScreenWidth / data.ScreenScale * size, data.ScreenHeight / data.ScreenScale * size)
+
     ebiten.SetWindowTitle("magic view")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 

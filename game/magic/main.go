@@ -16,6 +16,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/mouse"
+    "github.com/kazzmir/master-of-magic/game/magic/util"
     mouselib "github.com/kazzmir/master-of-magic/lib/mouse"
     "github.com/kazzmir/master-of-magic/game/magic/mainview"
     gamelib "github.com/kazzmir/master-of-magic/game/magic/game"
@@ -234,7 +235,8 @@ func loadData(yield coroutine.YieldFunc, game *MagicGame, dataPath string) error
 
     game.Cache = cache
 
-    normalMouse, err := mouselib.GetMouseNormal(cache)
+    imageCache := util.MakeImageCache(cache)
+    normalMouse, err := mouselib.GetMouseNormal(cache, &imageCache)
     if err == nil {
         mouse.Mouse.SetImage(normalMouse)
     }
@@ -254,6 +256,8 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string) error 
     }
 
     runIntro(yield, game)
+
+    yield()
 
     for {
         state := runMainMenu(yield, game)
@@ -343,7 +347,7 @@ func main() {
     flag.StringVar(&dataPath, "data", "", "path to master of magic lbx data files. Give either a directory or a zip file. Data is searched for in the current directory if not given.")
     flag.Parse()
 
-    ebiten.SetWindowSize(data.ScreenWidth * 5, data.ScreenHeight * 5)
+    ebiten.SetWindowSize(data.ScreenWidth * 2, data.ScreenHeight * 2)
     ebiten.SetWindowTitle("magic")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 

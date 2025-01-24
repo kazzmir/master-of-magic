@@ -130,17 +130,17 @@ func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, di
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             background, _ := imageCache.GetImage("unitview.lbx", 1, 0)
             var options ebiten.DrawImageOptions
-            options.GeoM.Translate(31, 6)
+            options.GeoM.Translate(float64(31 * data.ScreenScale), float64(6 * data.ScreenScale))
             options.ColorScale.ScaleAlpha(getAlpha())
             screen.DrawImage(background, &options)
 
-            options.GeoM.Translate(25, 30)
+            options.GeoM.Translate(float64(25 * data.ScreenScale), float64(30 * data.ScreenScale))
             portaitUnit, ok := unit.(PortraitUnit)
             if ok {
                 lbxFile, index := portaitUnit.GetPortraitLbxInfo()
                 portait, err := imageCache.GetImage(lbxFile, index, 0)
                 if err == nil {
-                    options.GeoM.Translate(0, -7)
+                    options.GeoM.Translate(0, float64(-7 * data.ScreenScale))
                     options.GeoM.Translate(float64(-portait.Bounds().Dx()/2), float64(-portait.Bounds().Dy()/2))
                     screen.DrawImage(portait, &options)
                 }
@@ -149,14 +149,14 @@ func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, di
             }
 
             options.GeoM.Reset()
-            options.GeoM.Translate(31, 6)
-            options.GeoM.Translate(51, 6)
+            options.GeoM.Translate(float64(31 * data.ScreenScale), float64(6 * data.ScreenScale))
+            options.GeoM.Translate(float64(51 * data.ScreenScale), float64(6 * data.ScreenScale))
 
             RenderUnitInfoNormal(screen, &imageCache, unit, unit.GetTitle(), "", descriptionFont, smallFont, options)
 
             options.GeoM.Reset()
-            options.GeoM.Translate(31, 6)
-            options.GeoM.Translate(10, 50)
+            options.GeoM.Translate(float64(31 * data.ScreenScale), float64(6 * data.ScreenScale))
+            options.GeoM.Translate(float64(10 * data.ScreenScale), float64(50 * data.ScreenScale))
             RenderUnitInfoStats(screen, &imageCache, unit, 15, descriptionFont, smallFont, options)
 
             /*
@@ -166,14 +166,14 @@ func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, di
         },
     })
 
-    elements = append(elements, MakeUnitAbilitiesElements(&imageCache, unit, mediumFont, 40, 114, &ui.Counter, 1, &getAlpha, false)...)
+    elements = append(elements, MakeUnitAbilitiesElements(&imageCache, unit, mediumFont, 40 * data.ScreenScale, 114 * data.ScreenScale, &ui.Counter, 1, &getAlpha, false)...)
 
     elements = append(elements, &uilib.UIElement{
         Layer: 1,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             box, _ := imageCache.GetImage("unitview.lbx", 2, 0)
             var options ebiten.DrawImageOptions
-            options.GeoM.Translate(248, 139)
+            options.GeoM.Translate(float64(248 * data.ScreenScale), float64(139 * data.ScreenScale))
             options.ColorScale.ScaleAlpha(getAlpha())
             screen.DrawImage(box, &options)
         },
@@ -181,7 +181,7 @@ func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, di
 
     buttonBackgrounds, _ := imageCache.GetImages("backgrnd.lbx", 24)
     // dismiss button
-    cancelRect := util.ImageRect(257, 149, buttonBackgrounds[0])
+    cancelRect := util.ImageRect(257 * data.ScreenScale, 149 * data.ScreenScale, buttonBackgrounds[0])
     cancelIndex := 0
     elements = append(elements, &uilib.UIElement{
         Layer: 1,
@@ -214,11 +214,11 @@ func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, di
 
             x := float64(cancelRect.Min.X + cancelRect.Max.X) / 2
             y := float64(cancelRect.Min.Y + cancelRect.Max.Y) / 2
-            okDismissFont.PrintCenter(screen, x, y - 5, 1, options.ColorScale, "Dismiss")
+            okDismissFont.PrintCenter(screen, x, y - float64(5 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, "Dismiss")
         },
     })
 
-    okRect := util.ImageRect(257, 169, buttonBackgrounds[0])
+    okRect := util.ImageRect(257 * data.ScreenScale, 169 * data.ScreenScale, buttonBackgrounds[0])
     okIndex := 0
     elements = append(elements, &uilib.UIElement{
         Layer: 1,
@@ -241,7 +241,7 @@ func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, di
 
             x := float64(okRect.Min.X + okRect.Max.X) / 2
             y := float64(okRect.Min.Y + okRect.Max.Y) / 2
-            okDismissFont.PrintCenter(screen, x, y - 5, 1, options.ColorScale, "Ok")
+            okDismissFont.PrintCenter(screen, x, y - float64(5 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, "Ok")
         },
     })
 

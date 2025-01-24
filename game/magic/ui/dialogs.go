@@ -73,13 +73,13 @@ func MakeHelpElementWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.Imag
     infoLeftMargin := 18
     infoTopMargin := 26
     infoBodyMargin := 3
-    maxInfoWidth := infoWidth - infoLeftMargin - infoBodyMargin - 14
+    maxInfoWidth := infoWidth / data.ScreenScale - infoLeftMargin - infoBodyMargin - 14
 
     // fmt.Printf("Help text: %v\n", []byte(help.Text))
 
-    wrapped := helpFont.CreateWrappedText(float64(maxInfoWidth), 1, help.Text)
+    wrapped := helpFont.CreateWrappedText(float64(maxInfoWidth * data.ScreenScale), float64(data.ScreenScale), help.Text)
 
-    helpTextY := infoTopMargin
+    helpTextY := infoTopMargin * data.ScreenScale
     titleYAdjust := 0
 
     var extraImage *ebiten.Image
@@ -92,15 +92,15 @@ func MakeHelpElementWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.Imag
     }
 
     if extraImage != nil {
-        titleYAdjust = extraImage.Bounds().Dy() / 2 - helpTitleFont.Height() / 2
+        titleYAdjust = extraImage.Bounds().Dy() / 2 - helpTitleFont.Height() * data.ScreenScale / 2
 
-        if extraImage.Bounds().Dy() > helpTitleFont.Height() {
+        if extraImage.Bounds().Dy() > helpTitleFont.Height() * data.ScreenScale {
             helpTextY += extraImage.Bounds().Dy() + 1
         } else {
-            helpTextY += helpTitleFont.Height() + 1
+            helpTextY += (helpTitleFont.Height() + 1) * data.ScreenScale
         }
     } else {
-        helpTextY += helpTitleFont.Height() + 1
+        helpTextY += (helpTitleFont.Height() + 1) * data.ScreenScale
     }
 
     bottom := float64(helpTextY) + wrapped.TotalHeight
@@ -110,8 +110,8 @@ func MakeHelpElementWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.Imag
     // add in more help entries
     for _, entry := range helpEntries {
         bottom += 2
-        bottom += float64(helpTitleFont.Height()) + 1
-        moreWrapped := helpFont.CreateWrappedText(float64(maxInfoWidth), 1, entry.Text)
+        bottom += float64(helpTitleFont.Height() * data.ScreenScale) + 1
+        moreWrapped := helpFont.CreateWrappedText(float64(maxInfoWidth * data.ScreenScale), float64(data.ScreenScale), entry.Text)
         moreHelp = append(moreHelp, moreWrapped)
         bottom += moreWrapped.TotalHeight
     }
@@ -130,12 +130,12 @@ func MakeHelpElementWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.Imag
         Rect: image.Rect(0, 0, data.ScreenWidth, data.ScreenHeight),
         Draw: func (infoThis *UIElement, window *ebiten.Image){
             var options ebiten.DrawImageOptions
-            options.GeoM.Translate(float64(infoX), float64(infoY))
+            options.GeoM.Translate(float64(infoX * data.ScreenScale), float64(infoY))
             options.ColorScale.ScaleAlpha(getAlpha())
             window.DrawImage(topImage, &options)
 
             options.GeoM.Reset()
-            options.GeoM.Translate(float64(infoX), float64(bottom) + infoY)
+            options.GeoM.Translate(float64(infoX * data.ScreenScale), float64(bottom) + infoY)
             options.ColorScale.ScaleAlpha(getAlpha())
             window.DrawImage(helpBottom, &options)
 
@@ -143,24 +143,24 @@ func MakeHelpElementWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.Imag
             // vector.StrokeRect(window, float32(infoX), float32(infoY), float32(infoWidth), float32(infoHeight), 1, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, true)
             // vector.StrokeRect(window, float32(infoX + infoLeftMargin), float32(infoY + infoTopMargin), float32(maxInfoWidth), float32(screen.HelpTitleFont.Height() + 20 + 1), 1, color.RGBA{R: 0, G: 0xff, B: 0, A: 0xff}, false)
 
-            titleX := infoX + infoLeftMargin
+            titleX := (infoX + infoLeftMargin) * data.ScreenScale
 
             if extraImage != nil {
                 var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(titleX), infoY + float64(infoTopMargin))
+                options.GeoM.Translate(float64(titleX), infoY + float64(infoTopMargin * data.ScreenScale))
                 options.ColorScale.ScaleAlpha(getAlpha())
                 window.DrawImage(extraImage, &options)
-                titleX += extraImage.Bounds().Dx() + 5
+                titleX += extraImage.Bounds().Dx() + 5 * data.ScreenScale
             }
 
-            helpTitleFont.Print(window, float64(titleX), infoY + float64(infoTopMargin + titleYAdjust), 1, options.ColorScale, help.Headline)
-            helpFont.RenderWrapped(window, float64(infoX + infoLeftMargin + infoBodyMargin), float64(helpTextY) + infoY, wrapped, options.ColorScale, false)
+            helpTitleFont.Print(window, float64(titleX), infoY + float64(infoTopMargin * data.ScreenScale + titleYAdjust), float64(data.ScreenScale), options.ColorScale, help.Headline)
+            helpFont.RenderWrapped(window, float64(infoX + infoLeftMargin + infoBodyMargin) * float64(data.ScreenScale), float64(helpTextY) + infoY, wrapped, options.ColorScale, false)
 
             yPos := float64(helpTextY) + infoY + wrapped.TotalHeight + 2
             for i, moreWrapped := range moreHelp {
-                helpTitleFont.Print(window, float64(titleX), float64(yPos), 1, options.ColorScale, helpEntries[i].Headline)
-                helpFont.RenderWrapped(window, float64(infoX + infoLeftMargin + infoBodyMargin), yPos + float64(helpTitleFont.Height()) + 1, moreWrapped, options.ColorScale, false)
-                yPos += float64(helpTitleFont.Height()) + 1 + float64(moreWrapped.TotalHeight) + 2
+                helpTitleFont.Print(window, float64(titleX), float64(yPos), float64(data.ScreenScale), options.ColorScale, helpEntries[i].Headline)
+                helpFont.RenderWrapped(window, float64(infoX + infoLeftMargin + infoBodyMargin) * float64(data.ScreenScale), yPos + float64(helpTitleFont.Height() * data.ScreenScale) + 1, moreWrapped, options.ColorScale, false)
+                yPos += float64(helpTitleFont.Height() * data.ScreenScale) + 1 + float64(moreWrapped.TotalHeight) + 2
             }
 
         },
@@ -217,13 +217,13 @@ func MakeErrorElement(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, 
 
     errorFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowFade)
 
-    maxWidth := errorTop.Bounds().Dx() - errorMargin * 2
+    maxWidth := errorTop.Bounds().Dx() - errorMargin * 2 * data.ScreenScale
 
-    wrapped := errorFont.CreateWrappedText(float64(maxWidth), 1, message)
+    wrapped := errorFont.CreateWrappedText(float64(maxWidth), float64(data.ScreenScale), message)
 
-    bottom := float64(errorY + errorTopMargin) + wrapped.TotalHeight
+    bottom := float64(errorY + errorTopMargin) * float64(data.ScreenScale) + wrapped.TotalHeight
 
-    topDraw := errorTop.SubImage(image.Rect(0, 0, errorTop.Bounds().Dx(), int(bottom) - errorY)).(*ebiten.Image)
+    topDraw := errorTop.SubImage(image.Rect(0, 0, errorTop.Bounds().Dx(), int(bottom) - errorY * data.ScreenScale)).(*ebiten.Image)
 
     element := &UIElement{
         Rect: image.Rect(0, 0, data.ScreenWidth, data.ScreenHeight),
@@ -234,13 +234,13 @@ func MakeErrorElement(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, 
         },
         Draw: func(this *UIElement, window *ebiten.Image){
             var options ebiten.DrawImageOptions
-            options.GeoM.Translate(float64(errorX), float64(errorY))
+            options.GeoM.Translate(float64(errorX * data.ScreenScale), float64(errorY * data.ScreenScale))
             window.DrawImage(topDraw, &options)
 
-            errorFont.RenderWrapped(window, float64(errorX + errorMargin + maxWidth / 2), float64(errorY + errorTopMargin), wrapped, ebiten.ColorScale{}, true)
+            errorFont.RenderWrapped(window, float64((errorX + errorMargin) * data.ScreenScale + maxWidth / 2), float64(errorY + errorTopMargin) * float64(data.ScreenScale), wrapped, ebiten.ColorScale{}, true)
 
             options.GeoM.Reset()
-            options.GeoM.Translate(float64(errorX), float64(bottom))
+            options.GeoM.Translate(float64(errorX * data.ScreenScale), float64(bottom))
             window.DrawImage(errorBottom, &options)
         },
     }
@@ -253,11 +253,11 @@ func MakeConfirmDialog(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache,
 }
 
 func MakeConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, layer UILayer, message string, confirm func(), cancel func()) []*UIElement {
-    confirmX := 67
-    confirmY := 73
+    confirmX := 67 * data.ScreenScale
+    confirmY := 73 * data.ScreenScale
 
-    confirmMargin := 15
-    confirmTopMargin := 10
+    confirmMargin := 15 * data.ScreenScale
+    confirmTopMargin := 10 * data.ScreenScale
 
     const fadeSpeed = 7
 
@@ -299,7 +299,7 @@ func MakeConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.Im
 
     maxWidth := confirmTop.Bounds().Dx() - confirmMargin * 2
 
-    wrapped := confirmFont.CreateWrappedText(float64(maxWidth), 1, message)
+    wrapped := confirmFont.CreateWrappedText(float64(maxWidth), float64(data.ScreenScale), message)
 
     bottom := float64(confirmY + confirmTopMargin) + wrapped.TotalHeight
 
@@ -330,12 +330,12 @@ func MakeConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.Im
     // add yes/no buttons
     yesButtons, err := imageCache.GetImages("resource.lbx", 3)
     if err == nil {
-        yesX := confirmX + 101
-        yesY := bottom + 5
+        yesX := confirmX + 101 * data.ScreenScale
+        yesY := bottom + float64(5 * data.ScreenScale)
 
         clicked := false
         elements = append(elements, &UIElement{
-            Rect: image.Rect(int(yesX), int(yesY), int(yesX) + yesButtons[0].Bounds().Dx(), int(yesY) + yesButtons[0].Bounds().Dy()),
+            Rect: util.ImageRect(int(yesX), int(yesY), yesButtons[0]),
             Layer: layer,
             PlaySoundLeftClick: true,
             LeftClick: func(this *UIElement){
@@ -366,12 +366,12 @@ func MakeConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.Im
 
     noButtons, err := imageCache.GetImages("resource.lbx", 4)
     if err == nil {
-        noX := confirmX + 18
-        noY := bottom + 5
+        noX := confirmX + 18 * data.ScreenScale
+        noY := bottom + float64(5 * data.ScreenScale)
 
         clicked := false
         elements = append(elements, &UIElement{
-            Rect: image.Rect(int(noX), int(noY), int(noX) + noButtons[0].Bounds().Dx(), int(noY) + noButtons[0].Bounds().Dy()),
+            Rect: util.ImageRect(int(noX), int(noY), noButtons[0]),
             Layer: layer,
             PlaySoundLeftClick: true,
             LeftClick: func(this *UIElement){
@@ -408,11 +408,11 @@ func MakeLairConfirmDialog(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCa
 }
 
 func MakeLairConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, lairPicture *util.Animation, layer UILayer, message string, confirm func(), cancel func()) []*UIElement {
-    confirmX := 67
-    confirmY := 40
+    confirmX := 67 * data.ScreenScale
+    confirmY := 40 * data.ScreenScale
 
-    confirmMargin := 55
-    confirmTopMargin := 10
+    confirmMargin := 55 * data.ScreenScale
+    confirmTopMargin := 10 * data.ScreenScale
 
     const fadeSpeed = 7
 
@@ -454,7 +454,7 @@ func MakeLairConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *uti
 
     maxWidth := confirmTop.Bounds().Dx() - confirmMargin - 5
 
-    wrapped := confirmFont.CreateWrappedText(float64(maxWidth), 1, message)
+    wrapped := confirmFont.CreateWrappedText(float64(maxWidth), float64(data.ScreenScale), message)
 
     bottom := float64(confirmY + confirmTopMargin) + wrapped.TotalHeight
 
@@ -474,13 +474,13 @@ func MakeLairConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *uti
             options.ColorScale.ScaleAlpha(getAlpha())
             window.DrawImage(topDraw, &options)
 
-            options.GeoM.Translate(7, 7)
+            options.GeoM.Translate(float64(7 * data.ScreenScale), float64(7 * data.ScreenScale))
             window.DrawImage(lairPicture.Frame(), &options)
 
             confirmFont.RenderWrapped(window, float64(confirmX + confirmMargin + maxWidth / 2), float64(confirmY + confirmTopMargin), wrapped, options.ColorScale, true)
 
             options.GeoM.Reset()
-            options.GeoM.Translate(float64(confirmX - 1), float64(bottom))
+            options.GeoM.Translate(float64(confirmX - 1 * data.ScreenScale), float64(bottom))
             window.DrawImage(confirmBottom, &options)
         },
     })
@@ -488,12 +488,12 @@ func MakeLairConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *uti
     // add yes/no buttons
     yesButtons, err := imageCache.GetImages("resource.lbx", 3)
     if err == nil {
-        yesX := confirmX + 101
-        yesY := bottom + 5
+        yesX := confirmX + 101 * data.ScreenScale
+        yesY := bottom + float64(5 * data.ScreenScale)
 
         clicked := false
         elements = append(elements, &UIElement{
-            Rect: image.Rect(int(yesX), int(yesY), int(yesX) + yesButtons[0].Bounds().Dx(), int(yesY) + yesButtons[0].Bounds().Dy()),
+            Rect: util.ImageRect(int(yesX), int(yesY), yesButtons[0]),
             Layer: layer,
             PlaySoundLeftClick: true,
             LeftClick: func(this *UIElement){
@@ -524,12 +524,12 @@ func MakeLairConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *uti
 
     noButtons, err := imageCache.GetImages("resource.lbx", 4)
     if err == nil {
-        noX := confirmX + 18
-        noY := bottom + 5
+        noX := confirmX + 18 * data.ScreenScale
+        noY := bottom + float64(5 * data.ScreenScale)
 
         clicked := false
         elements = append(elements, &UIElement{
-            Rect: image.Rect(int(noX), int(noY), int(noX) + noButtons[0].Bounds().Dx(), int(noY) + noButtons[0].Bounds().Dy()),
+            Rect: util.ImageRect(int(noX), int(noY), noButtons[0]),
             Layer: layer,
             PlaySoundLeftClick: true,
             LeftClick: func(this *UIElement){
@@ -616,12 +616,12 @@ func MakeSelectionUI(ui *UI, lbxCache *lbx.LbxCache, imageCache *util.ImageCache
     left, _ := imageCache.GetImage("resource.lbx", 5, 0)
     top, _ := imageCache.GetImage("resource.lbx", 7, 0)
 
-    requiredWidth := buttonFont.MeasureTextWidth(selectionTitle, 1) + 2
+    requiredWidth := buttonFont.MeasureTextWidth(selectionTitle, float64(data.ScreenScale)) + 2
 
     for _, choice := range choices {
-        width := buttonFont.MeasureTextWidth(choice.Name, 1) + 2
+        width := buttonFont.MeasureTextWidth(choice.Name, float64(data.ScreenScale)) + 2
         if choice.Hotkey != "" {
-            width += buttonFont.MeasureTextWidth(choice.Hotkey, 1) + 2
+            width += buttonFont.MeasureTextWidth(choice.Hotkey, float64(data.ScreenScale)) + 2
         }
         if width > requiredWidth {
             requiredWidth = width
@@ -645,42 +645,42 @@ func MakeSelectionUI(ui *UI, lbxCache *lbx.LbxCache, imageCache *util.ImageCache
             bottom, _ := imageCache.GetImage("resource.lbx", 9, 0)
             options.GeoM.Reset()
             // FIXME: figure out why -3 is needed
-            options.GeoM.Translate(float64(cornerX + left.Bounds().Dx()), float64(cornerY + top.Bounds().Dy() + totalHeight - 3))
+            options.GeoM.Translate(float64(cornerX * data.ScreenScale + left.Bounds().Dx()), float64(cornerY * data.ScreenScale + top.Bounds().Dy() + totalHeight - 3))
             bottomSub := bottom.SubImage(image.Rect(0, 0, int(requiredWidth), bottom.Bounds().Dy())).(*ebiten.Image)
             screen.DrawImage(bottomSub, &options)
 
             bottomLeft, _ := imageCache.GetImage("resource.lbx", 6, 0)
             options.GeoM.Reset()
-            options.GeoM.Translate(float64(cornerX), float64(cornerY + totalHeight))
+            options.GeoM.Translate(float64(cornerX * data.ScreenScale), float64(cornerY * data.ScreenScale + totalHeight))
             screen.DrawImage(bottomLeft, &options)
 
             options.GeoM.Reset()
-            options.GeoM.Translate(float64(cornerX), float64(cornerY))
+            options.GeoM.Translate(float64(cornerX * data.ScreenScale), float64(cornerY * data.ScreenScale))
             leftSub := left.SubImage(image.Rect(0, 0, left.Bounds().Dx(), totalHeight)).(*ebiten.Image)
             screen.DrawImage(leftSub, &options)
 
             topSub := top.SubImage(image.Rect(0, 0, int(requiredWidth), top.Bounds().Dy())).(*ebiten.Image)
             options.GeoM.Reset()
-            options.GeoM.Translate(float64(cornerX + left.Bounds().Dx()), float64(cornerY))
+            options.GeoM.Translate(float64(cornerX * data.ScreenScale + left.Bounds().Dx()), float64(cornerY * data.ScreenScale))
             screen.DrawImage(topSub, &options)
 
             right, _ := imageCache.GetImage("resource.lbx", 8, 0)
             options.GeoM.Reset()
-            options.GeoM.Translate(float64(cornerX + left.Bounds().Dx()) + requiredWidth, float64(cornerY))
+            options.GeoM.Translate(float64(cornerX * data.ScreenScale + left.Bounds().Dx()) + requiredWidth, float64(cornerY * data.ScreenScale))
             rightSub := right.SubImage(image.Rect(0, 0, right.Bounds().Dx(), totalHeight)).(*ebiten.Image)
             screen.DrawImage(rightSub, &options)
 
             bottomRight, _ := imageCache.GetImage("resource.lbx", 10, 0)
             options.GeoM.Reset()
-            options.GeoM.Translate(float64(cornerX + left.Bounds().Dx()) + requiredWidth, float64(cornerY + totalHeight))
+            options.GeoM.Translate((float64(cornerX * data.ScreenScale + left.Bounds().Dx()) + requiredWidth), float64(cornerY * data.ScreenScale + totalHeight))
             screen.DrawImage(bottomRight, &options)
 
-            topFont.Print(screen, float64(cornerX + left.Bounds().Dx() + 4), float64(cornerY + 4), 1, options.ColorScale, selectionTitle)
+            topFont.Print(screen, float64(cornerX * data.ScreenScale + left.Bounds().Dx() + 4 * data.ScreenScale), float64(cornerY * data.ScreenScale + 4 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, selectionTitle)
         },
     })
 
-    x1 := cornerX + left.Bounds().Dx()
-    y1 := cornerY + top.Bounds().Dy()
+    x1 := cornerX * data.ScreenScale + left.Bounds().Dx()
+    y1 := cornerY * data.ScreenScale + top.Bounds().Dy()
 
     // FIXME: handle more than 9 choices
     for choiceIndex, choice := range choices {
@@ -722,9 +722,9 @@ func MakeSelectionUI(ui *UI, lbxCache *lbx.LbxCache, imageCache *util.ImageCache
                 options.GeoM.Translate(float64(use.Bounds().Dx()), 0)
                 screen.DrawImage(ends[imageIndex], &options)
 
-                buttonFont.Print(screen, float64(myX + 2), float64(myY + 2), 1, options.ColorScale, choice.Name)
+                buttonFont.Print(screen, float64(myX + 2), float64(myY + 2), float64(data.ScreenScale), options.ColorScale, choice.Name)
                 if choice.Hotkey != "" {
-                    buttonFont.PrintRight(screen, float64(myX) + requiredWidth - 2, float64(myY + 2), 1, options.ColorScale, choice.Hotkey)
+                    buttonFont.PrintRight(screen, float64(myX) + requiredWidth - 2, float64(myY + 2), float64(data.ScreenScale), options.ColorScale, choice.Hotkey)
                 }
             },
         })

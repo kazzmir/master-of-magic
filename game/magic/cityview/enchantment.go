@@ -7,6 +7,7 @@ import (
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/game/magic/util"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
@@ -36,7 +37,7 @@ func MakeEnchantmentView(cache *lbx.LbxCache, city *citylib.City, player *player
     }
 
     geom := ebiten.GeoM{}
-    geom.Translate(30, 30)
+    geom.Translate(float64(30 * data.ScreenScale), float64(30 * data.ScreenScale))
 
     var getAlpha util.AlphaFadeFunc
     fadeSpeed := uint64(7)
@@ -60,15 +61,15 @@ func MakeEnchantmentView(cache *lbx.LbxCache, city *citylib.City, player *player
 
             screen.DrawImage(background, &options)
 
-            titleX, titleY := options.GeoM.Apply(float64(background.Bounds().Dx()) / 2, 7)
+            titleX, titleY := options.GeoM.Apply(float64(background.Bounds().Dx()) / 2, float64(7 * data.ScreenScale))
 
-            fonts.BigFont.PrintCenter(screen, titleX, titleY, 1, options.ColorScale, fmt.Sprintf("%v of %s", city.GetSize(), city.Name))
+            fonts.BigFont.PrintCenter(screen, titleX, titleY, float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("%v of %s", city.GetSize(), city.Name))
 
-            descriptionX, descriptionY := options.GeoM.Apply(float64(background.Bounds().Dx()) / 2, float64(background.Bounds().Dy() - fonts.CastFont.Height() - 2))
-            fonts.CastFont.PrintCenter(screen, descriptionX, descriptionY, 1, options.ColorScale, fmt.Sprintf("You cast %v", spellName))
+            descriptionX, descriptionY := options.GeoM.Apply(float64(background.Bounds().Dx()) / 2, float64(background.Bounds().Dy() - fonts.CastFont.Height() * data.ScreenScale - 2 * data.ScreenScale))
+            fonts.CastFont.PrintCenter(screen, descriptionX, descriptionY, float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("You cast %v", spellName))
 
             geom2 := geom
-            geom2.Translate(5, 28)
+            geom2.Translate(float64(5 * data.ScreenScale), float64(28 * data.ScreenScale))
             drawCityScape(screen, buildingSlots, buildinglib.BuildingNone, buildinglib.BuildingNone, ui.Counter / 8, &imageCache, fonts, city.BuildingInfo, player, city.Enchantments.Values(), geom2, getAlpha())
         },
     }

@@ -2,10 +2,10 @@ package mainview
 
 import (
     "log"
-    "image"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/game/magic/util"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
 
     "github.com/hajimehoshi/ebiten/v2"
@@ -74,7 +74,7 @@ func (main *MainScreen) MakeUI() *uilib.UI {
 
     makeButton := func(index int, x, y int, action func()) *uilib.UIElement {
         images, _ := main.ImageCache.GetImages("mainscrn.lbx", index)
-        rect := image.Rect(x, y, x + images[0].Bounds().Dx(), y + images[0].Bounds().Dy())
+        rect := util.ImageRect(x * data.ScreenScale, y * data.ScreenScale, images[0])
         imageIndex := 1
         return &uilib.UIElement{
             Rect: rect,

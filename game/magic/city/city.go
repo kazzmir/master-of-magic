@@ -618,9 +618,11 @@ func (city *City) FarmerFoodProduction(farmers int) int {
 func (city *City) foodProductionRate(farmers int) int {
     baseRate := float32(city.FarmerFoodProduction(farmers))
 
+    /*
     if city.Buildings.Contains(buildinglib.BuildingForestersGuild) {
         baseRate += 2
     }
+    */
 
     // TODO: if famine is active then base rate is halved
 
@@ -638,8 +640,6 @@ func (city *City) foodProductionRate(farmers int) int {
     if city.Buildings.Contains(buildinglib.BuildingFarmersMarket) {
         bonus += 3
     }
-
-    // TODO: add 2 for each wild game tile in the catchment area
 
     return int(baseRate) + bonus
 }
