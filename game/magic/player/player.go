@@ -404,6 +404,13 @@ func (player *Player) SpellResearchPerTurn(power int) float64 {
 
     research += float64(power) * player.PowerDistribution.Research
 
+    // add in sage heroes
+    for _, hero := range player.Heroes {
+        if hero != nil && hero.Status == herolib.StatusEmployed {
+            research += float64(hero.GetAbilityResearch())
+        }
+    }
+
     return research
 }
 
