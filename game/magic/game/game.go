@@ -1870,6 +1870,26 @@ func (game *Game) doSummon(yield coroutine.YieldFunc, summonObject *summon.Summo
     yield()
 }
 
+func (game *Game) MakeSettingsUI(imageCache *util.ImageCache, ui *uilib.UI, onOk func()) []*uilib.UIElement {
+    ok, _ := imageCache.GetImage("load.lbx", 4, 0)
+
+    var elements []*uilib.UIElement
+
+    elements = append(elements, &uilib.UIElement{
+        Rect: util.ImageRect(266 * data.ScreenScale, 176 * data.ScreenScale, ok),
+        LeftClick: func(element *uilib.UIElement){
+            onOk()
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(element.Rect.Min.X), float64(element.Rect.Min.Y))
+            screen.DrawImage(ok, &options)
+        },
+    })
+
+    return elements
+}
+
 func (game *Game) doGameMenu(yield coroutine.YieldFunc) {
     oldDrawer := game.Drawer
     defer func(){
@@ -1880,9 +1900,10 @@ func (game *Game) doGameMenu(yield coroutine.YieldFunc) {
 
     imageCache := util.MakeImageCache(game.Cache)
 
+    background, _ := imageCache.GetImage("load.lbx", 0, 0)
+
     ui := &uilib.UI{
         Draw: func(ui *uilib.UI, screen *ebiten.Image){
-            background, _ := imageCache.GetImage("load.lbx", 0, 0)
             var options ebiten.DrawImageOptions
             screen.DrawImage(background, &options)
 
@@ -1903,7 +1924,6 @@ func (game *Game) doGameMenu(yield coroutine.YieldFunc) {
             PlaySoundLeftClick: true,
             LeftClick: func(element *uilib.UIElement){
                 action()
-                quit = true
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 var options ebiten.DrawImageOptions
@@ -1916,6 +1936,7 @@ func (game *Game) doGameMenu(yield coroutine.YieldFunc) {
     // quit
     elements = append(elements, makeButton(2, 43, 171, func(){
         game.State = GameStateQuit
+        quit = true
     }))
 
     // load
@@ -1930,8 +1951,13 @@ func (game *Game) doGameMenu(yield coroutine.YieldFunc) {
 
     // settings
     elements = append(elements, makeButton(12, 172, 171, func(){
-        quit = true
-        game.Events <- &GameEventGameMenu{}
+        background, _ = imageCache.GetImage("load.lbx", 11, 0)
+        ui.RemoveElements(elements)
+
+        ui.AddElements(game.MakeSettingsUI(&imageCache, ui, func(){
+            quit = true
+            game.Events <- &GameEventGameMenu{}
+        }))
     }))
 
     // ok
