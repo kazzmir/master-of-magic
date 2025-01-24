@@ -26,7 +26,7 @@ type CityProvider interface {
     ContainsCity(x int, y int, plane data.Plane) bool
 }
 
-type Caster interface {
+type Wizard interface {
     GetBanner() data.BannerType
 }
 
@@ -331,7 +331,7 @@ type ExtraMagicNode struct {
     Zone []image.Point
 
     // if this node is melded, then this player receives the power
-    MeldingWizard Caster
+    MeldingWizard Wizard
     // true if melded by a guardian spirit, otherwise false if melded by a magic spirit
     GuardianSpiritMeld bool
 
@@ -365,7 +365,7 @@ func (node *ExtraMagicNode) DrawLayer2(screen *ebiten.Image, imageCache *util.Im
     }
 }
 
-func (node *ExtraMagicNode) Meld(meldingWizard Caster, spirit units.Unit) bool {
+func (node *ExtraMagicNode) Meld(meldingWizard Wizard, spirit units.Unit) bool {
     if node.MeldingWizard == nil {
         node.MeldingWizard = meldingWizard
         if spirit.Equals(units.GuardianSpirit) {
@@ -403,7 +403,7 @@ func (node *ExtraMagicNode) Meld(meldingWizard Caster, spirit units.Unit) bool {
 }
 
 type ExtraVolcano struct {
-    CastingWizard Caster
+    CastingWizard Wizard
 }
 
 func (node *ExtraVolcano) DrawLayer1(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64, tileWidth int, tileHeight int){
@@ -723,7 +723,7 @@ func (mapObject *Map) GetRoadNeighbors(x int, y int) map[Direction]bool {
     return out
 }
 
-func (mapObject *Map) GetMeldedNodes(melder Caster) []*ExtraMagicNode {
+func (mapObject *Map) GetMeldedNodes(melder Wizard) []*ExtraMagicNode {
     var out []*ExtraMagicNode
 
     for _, extras := range mapObject.ExtraMap {
@@ -739,7 +739,7 @@ func (mapObject *Map) GetMeldedNodes(melder Caster) []*ExtraMagicNode {
     return out
 }
 
-func (mapObject *Map) GetCastedVolcanoes(caster Caster) []*ExtraVolcano {
+func (mapObject *Map) GetCastedVolcanoes(caster Wizard) []*ExtraVolcano {
     var out []*ExtraVolcano
 
     for _, extras := range mapObject.ExtraMap {
@@ -793,7 +793,7 @@ func (mapObject *Map) GetMagicNode(x int, y int) *ExtraMagicNode {
     return getExtra[*ExtraMagicNode](mapObject.ExtraMap[image.Pt(x, y)], ExtraKindMagicNode)
 }
 
-func (mapObject *Map) SetVolcano(x int, y int, caster Caster) {
+func (mapObject *Map) SetVolcano(x int, y int, caster Wizard) {
     mapObject.ExtraMap[image.Pt(x, y)][ExtraKindVolcano] = &ExtraVolcano{CastingWizard: caster}
     mapObject.Map.SetTerrainAt(x, y, terrain.Volcano, mapObject.Data, mapObject.Plane)
 }
