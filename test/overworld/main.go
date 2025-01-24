@@ -989,6 +989,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     player.KnownSpells.AddSpell(allSpells.FindByName("Transmute"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Summon Hero"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Enchant Road"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Raise Volcano"))
 
     x, y := game.FindValidCityLocation(game.Plane)
 
@@ -1002,6 +1003,9 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     city.Farmers = 3
     city.Workers = 3
     city.Wall = false
+
+    city.AddBuilding(buildinglib.BuildingShrine)
+    city.AddBuilding(buildinglib.BuildingGranary)
 
     city.ResetCitizens(nil)
 

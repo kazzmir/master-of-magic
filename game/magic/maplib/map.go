@@ -26,7 +26,7 @@ type CityProvider interface {
     ContainsCity(x int, y int, plane data.Plane) bool
 }
 
-type Melder interface {
+type Wizard interface {
     GetBanner() data.BannerType
 }
 
@@ -48,6 +48,7 @@ const (
     ExtraKindBonus
     ExtraKindMagicNode
     ExtraKindEncounter
+    ExtraKindVolcano
 )
 
 var ExtraDrawOrder = []ExtraKind{
@@ -330,7 +331,7 @@ type ExtraMagicNode struct {
     Zone []image.Point
 
     // if this node is melded, then this player receives the power
-    MeldingWizard Melder
+    MeldingWizard Wizard
     // true if melded by a guardian spirit, otherwise false if melded by a magic spirit
     GuardianSpiritMeld bool
 
@@ -364,7 +365,7 @@ func (node *ExtraMagicNode) DrawLayer2(screen *ebiten.Image, imageCache *util.Im
     }
 }
 
-func (node *ExtraMagicNode) Meld(meldingWizard Melder, spirit units.Unit) bool {
+func (node *ExtraMagicNode) Meld(meldingWizard Wizard, spirit units.Unit) bool {
     if node.MeldingWizard == nil {
         node.MeldingWizard = meldingWizard
         if spirit.Equals(units.GuardianSpirit) {
@@ -399,6 +400,16 @@ func (node *ExtraMagicNode) Meld(meldingWizard Melder, spirit units.Unit) bool {
 
         return false
     }
+}
+
+type ExtraVolcano struct {
+    CastingWizard Wizard
+}
+
+func (node *ExtraVolcano) DrawLayer1(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64, tileWidth int, tileHeight int){
+}
+
+func (node *ExtraVolcano) DrawLayer2(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64, tileWidth int, tileHeight int){
 }
 
 type FullTile struct {
@@ -712,7 +723,7 @@ func (mapObject *Map) GetRoadNeighbors(x int, y int) map[Direction]bool {
     return out
 }
 
-func (mapObject *Map) GetMeldedNodes(melder Melder) []*ExtraMagicNode {
+func (mapObject *Map) GetMeldedNodes(melder Wizard) []*ExtraMagicNode {
     var out []*ExtraMagicNode
 
     for _, extras := range mapObject.ExtraMap {
@@ -721,6 +732,22 @@ func (mapObject *Map) GetMeldedNodes(melder Melder) []*ExtraMagicNode {
             magic := node.(*ExtraMagicNode)
             if magic.MeldingWizard == melder {
                 out = append(out, magic)
+            }
+        }
+    }
+
+    return out
+}
+
+func (mapObject *Map) GetCastedVolcanoes(caster Wizard) []*ExtraVolcano {
+    var out []*ExtraVolcano
+
+    for _, extras := range mapObject.ExtraMap {
+        extra, ok := extras[ExtraKindVolcano]
+        if ok {
+            volcano := extra.(*ExtraVolcano)
+            if volcano.CastingWizard == caster {
+                out = append(out, volcano)
             }
         }
     }
@@ -764,6 +791,29 @@ func (mapObject *Map) GetLair(x int, y int) *ExtraEncounter {
 
 func (mapObject *Map) GetMagicNode(x int, y int) *ExtraMagicNode {
     return getExtra[*ExtraMagicNode](mapObject.ExtraMap[image.Pt(x, y)], ExtraKindMagicNode)
+}
+
+func (mapObject *Map) SetVolcano(x int, y int, caster Wizard) {
+    mapObject.ExtraMap[image.Pt(x, y)][ExtraKindVolcano] = &ExtraVolcano{CastingWizard: caster}
+    mapObject.Map.SetTerrainAt(x, y, terrain.Volcano, mapObject.Data, mapObject.Plane)
+}
+
+func (mapObject *Map) RemoveVolcano(x int, y int) {
+    _, exists := mapObject.ExtraMap[image.Pt(x, y)][ExtraKindVolcano]
+    if exists {
+        delete(mapObject.ExtraMap[image.Pt(x, y)], ExtraKindVolcano)
+
+        mapObject.Map.SetTerrainAt(x, y, terrain.Mountain, mapObject.Data, mapObject.Plane)
+
+        // chance of 5% to generate a mineral
+        if rand.N(100) < 5 {
+            choices := []data.BonusType{data.BonusSilverOre, data.BonusGoldOre, data.BonusIronOre, data.BonusCoal, data.BonusMithrilOre}
+            if mapObject.Plane == data.PlaneMyrror {
+                choices = append(choices, data.BonusAdamantiumOre)
+            }
+            mapObject.SetBonus(x, y, choices[rand.IntN(len(choices))])
+        }
+    }
 }
 
 func (mapObject *Map) GetBonusTile(x int, y int) data.BonusType {
