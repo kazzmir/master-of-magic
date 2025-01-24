@@ -463,7 +463,6 @@ func (game *Game) doCastOnTerrain(yield coroutine.YieldFunc, tileX int, tileY in
     }
 
     if newSound {
-        // FIXME: Are sounds for earth lore/change terrain/transmute not also in sound?
         sound, err := audio.LoadNewSound(game.Cache, soundIndex)
         if err == nil {
             sound.Play()
@@ -492,8 +491,7 @@ func (game *Game) doCastOnTerrain(yield coroutine.YieldFunc, tileX int, tileY in
 func (game *Game) doCastEnchantRoad(yield coroutine.YieldFunc, tileX int, tileY int) {
     update := func (x int, y int, frame int) {}
 
-    // FIXME: verify this is the right sound
-    game.doCastOnTerrain(yield, tileX, tileY, 46, true, 18, update)
+    game.doCastOnTerrain(yield, tileX, tileY, 46, false, 86, update)
 
     useMap := game.CurrentMap()
 
@@ -538,7 +536,7 @@ func (game *Game) doCastChangeTerrain(yield coroutine.YieldFunc, tileX int, tile
         }
     }
 
-    game.doCastOnTerrain(yield, tileX, tileY, 8, true, 18, update)
+    game.doCastOnTerrain(yield, tileX, tileY, 8, false, 28, update)
 }
 
 
@@ -557,7 +555,7 @@ func (game *Game) doCastTransmute(yield coroutine.YieldFunc, tileX int, tileY in
         }
     }
 
-    game.doCastOnTerrain(yield, tileX, tileY, 0, true, 18, update)
+    game.doCastOnTerrain(yield, tileX, tileY, 0, false, 28, update)
 }
 
 
