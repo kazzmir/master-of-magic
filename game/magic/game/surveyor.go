@@ -164,20 +164,27 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
 
             if selectedPoint.X >= 0 && selectedPoint.X < game.CurrentMap().Width() && selectedPoint.Y >= 0 && selectedPoint.Y < game.CurrentMap().Height() {
                 if overworld.Fog[selectedPoint.X][selectedPoint.Y] {
-                    tile := game.CurrentMap().GetTile(selectedPoint.X, selectedPoint.Y)
+                    mapObject := game.CurrentMap()
+                    tile := mapObject.GetTile(selectedPoint.X, selectedPoint.Y)
                     y := float64(93 * data.ScreenScale)
-                    yellowFont.PrintCenter(screen, float64(280 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, tile.Tile.Name())
+                    yellowFont.PrintCenter(screen, float64(280 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, tile.Name(mapObject))
                     y += float64(yellowFont.Height() * data.ScreenScale)
 
-                    foodBonus := tile.Tile.FoodBonus()
+                    foodBonus := tile.FoodBonus()
                     if !foodBonus.IsZero() {
                         whiteFont.PrintCenter(screen, float64(280 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v food", foodBonus.NormalString()))
                         y += float64(whiteFont.Height() * data.ScreenScale)
                     }
 
-                    productionBonus := tile.Tile.ProductionBonus()
+                    productionBonus := tile.ProductionBonus()
                     if productionBonus != 0 {
                         whiteFont.PrintCenter(screen, float64(280 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("+%v%% production", productionBonus))
+                        y += float64(whiteFont.Height() * data.ScreenScale)
+                    }
+
+                    goldBonus := tile.GoldBonus(mapObject)
+                    if goldBonus != 0 {
+                        whiteFont.PrintCenter(screen, float64(280 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("+%v%% gold", goldBonus))
                         y += float64(whiteFont.Height() * data.ScreenScale)
                     }
 
