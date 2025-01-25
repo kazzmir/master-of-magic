@@ -29,6 +29,7 @@ import (
 type LocationType int
 const (
     LocationTypeAny LocationType = iota
+    LocationTypeLand
     LocationTypeFriendlyCity
     LocationTypeEnemyCity
     LocationTypeFriendlyUnit
@@ -141,6 +142,14 @@ func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Playe
             }
 
             game.doCastEnchantRoad(yield, tileX, tileY)
+        case "Corruption":
+            tileX, tileY, cancel := game.selectLocationForSpell(yield, spell, player, LocationTypeLand)
+
+            if cancel {
+                return
+            }
+
+            game.doCastCorruption(yield, tileX, tileY)
         default:
             log.Printf("Warning: casting unhandled spell %v", spell.Name)
     }
@@ -240,7 +249,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
     var selectMessage string
 
     switch locationType {
-        case LocationTypeAny, LocationTypeChangeTerrain, LocationTypeTransmute, LocationTypeRaiseVolcano:
+        case LocationTypeAny, LocationTypeLand, LocationTypeChangeTerrain, LocationTypeTransmute, LocationTypeRaiseVolcano:
             selectMessage = fmt.Sprintf("Select a space as the target for an %v spell.", spell.Name)
         case LocationTypeFriendlyCity:
             selectMessage = fmt.Sprintf("Select a friendly city to cast %v on.", spell.Name)
@@ -372,6 +381,15 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
             if inputmanager.LeftClick() {
                 switch locationType {
                     case LocationTypeAny: return tileX, tileY, false
+                    case LocationTypeLand:
+                        if tileY >= 0 && tileY < overworld.Map.Map.Rows() {
+                            tileX = overworld.Map.WrapX(tileX)
+                            if player.IsTileVisible(tileX, tileY, game.Plane) {
+                                if overworld.Map.GetTile(tileX, tileY).Tile.IsLand() {
+                                    return tileX, tileY, false
+                                }
+                            }
+                        }
                     case LocationTypeFriendlyCity:
                         city := player.FindCity(tileX, tileY, game.Plane)
                         if city != nil {
@@ -582,4 +600,18 @@ func (game *Game) doCastRaiseVolcano(yield coroutine.YieldFunc, tileX int, tileY
             }
         }
     }
+}
+
+func (game *Game) doCastCorruption(yield coroutine.YieldFunc, tileX int, tileY int) {
+    update := func (x int, y int, frame int) {
+        if frame == 6 {
+            mapObject := game.CurrentMap()
+            if y >= 0 || y < mapObject.Map.Rows() {
+                x = mapObject.WrapX(x)
+                mapObject.SetCorruption(x, y)
+            }
+        }
+    }
+
+    game.doCastOnMap(yield, tileX, tileY, 7, false, 103, update)
 }
