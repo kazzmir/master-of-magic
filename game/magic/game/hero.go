@@ -243,7 +243,27 @@ func (game *Game) showHeroLevelUpPopup(yield coroutine.YieldFunc, hero *herolib.
 
     top := float64(40 * data.ScreenScale)
     left := float64(30 * data.ScreenScale)
-    height := 70 * data.ScreenScale // TODO: include height from ability improvements
+
+    // the set of abilities that can possibly show an improvement
+    progressAbilities := set.MakeSet[data.AbilityType]()
+    for _, ability := range []data.AbilityType{
+        data.AbilityConstitution, data.AbilitySuperConstitution,
+        data.AbilityAgility, data.AbilitySuperAgility,
+        data.AbilityLeadership, data.AbilitySuperLeadership,
+        data.AbilitySage, data.AbilitySuperSage,
+        data.AbilityPrayermaster, data.AbilitySuperPrayermaster,
+        data.AbilityArcanePower, data.AbilitySuperArcanePower,
+        data.AbilityMight, data.AbilitySuperMight,
+        data.AbilityArmsmaster, data.AbilitySuperArmsmaster,
+        data.AbilityBlademaster, data.AbilitySuperBlademaster,
+        data.AbilityLegendary, data.AbilitySuperLegendary,
+    } {
+        progressAbilities.Insert(ability)
+    }
+
+    abilityRows := 1
+
+    height := (70 + abilityRows * 20) * data.ScreenScale
 
     titleFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowGradient)
     smallFont := font.MakeOptimizedFontWithPalette(fonts[2], yellowGradient)
@@ -264,12 +284,6 @@ func (game *Game) showHeroLevelUpPopup(yield coroutine.YieldFunc, hero *herolib.
     }()
 
     getAlpha := util.MakeFadeIn(7, &game.Counter)
-
-    // the set of abilities that can possibly show an improvement
-    progressAbilities := set.MakeSet[data.AbilityType]()
-    for _, ability := range []data.AbilityType{data.AbilityConstitution} {
-        progressAbilities.Insert(ability)
-    }
 
     game.Drawer = func (screen *ebiten.Image, game *Game){
         drawer(screen, game)
