@@ -319,13 +319,7 @@ func (city *City) PowerMinerals() int {
 
     extra := 0
     for _, tile := range catchment {
-        bonus := tile.GetBonus()
-        switch bonus {
-            case data.BonusMithrilOre: extra += 1
-            case data.BonusAdamantiumOre: extra += 2
-            case data.BonusQuorkCrystal: extra += 3
-            case data.BonusCrysxCrystal: extra += 5
-        }
+        extra += tile.GetBonus().PowerBonus()
     }
 
     if city.Race == data.RaceDwarf {
@@ -586,9 +580,7 @@ func (city *City) BaseFoodLevel() int {
                 }
         }
 
-        if tile.HasWildGame() {
-            food = food.Add(fraction.FromInt(2))
-        }
+        food.Add(fraction.FromInt(tile.GetBonus().FoodBonus()))
     }
 
     return int(food.ToFloat())
@@ -672,12 +664,7 @@ func (city *City) GoldMinerals() int {
     extra := 0
 
     for _, tile := range catchment {
-        bonus := tile.GetBonus()
-        switch bonus {
-            case data.BonusSilverOre: extra += 2
-            case data.BonusGoldOre: extra += 3
-            case data.BonusGem: extra += 5
-        }
+        extra += tile.GetBonus().GoldBonus()
     }
 
     if city.Race == data.RaceDwarf {
@@ -834,10 +821,8 @@ func (city *City) ProductionTerrain() float32 {
             case terrain.Desert, terrain.Forest, terrain.Hill, terrain.NatureNode: production += 0.03
         }
 
-        switch tile.GetBonus() {
-            case data.BonusIronOre: mineralProduction += 0.05
-            case data.BonusCoal: mineralProduction += 0.1
-        }
+        // FIXME: This should be only when producing units
+        mineralProduction += float32(tile.GetBonus().UnitReductionBonus()) / 100
     }
 
     if city.Race == data.RaceDwarf {

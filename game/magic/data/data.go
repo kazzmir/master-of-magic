@@ -215,6 +215,24 @@ const (
     BonusCrysxCrystal
 )
 
+func (bonus BonusType) String() string {
+    switch bonus {
+        case BonusGoldOre: return "Gold Ore"
+        case BonusSilverOre: return "Silver Ore"
+        case BonusWildGame: return "Wild Game"
+        case BonusNightshade: return "Nightshade"
+        case BonusIronOre: return "Iron Ore"
+        case BonusCoal: return "Coal"
+        case BonusMithrilOre: return "Mithril Ore"
+        case BonusAdamantiumOre: return "Adamantium Ore"
+        case BonusGem: return "Gem"
+        case BonusQuorkCrystal: return "Quork Crystal"
+        case BonusCrysxCrystal: return "Crysx Crystal"
+    }
+
+    return ""
+}
+
 func (bonus BonusType) FoodBonus() int {
     if bonus == BonusWildGame {
         return 2
