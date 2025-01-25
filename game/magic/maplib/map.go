@@ -449,6 +449,11 @@ func (tile *FullTile) Valid() bool {
 }
 
 func (tile *FullTile) FoodBonus() fraction.Fraction {
+    _, ok := tile.Extras[ExtraKindCorruption]
+    if ok {
+        return fraction.Zero()
+    }
+
     if tile.Tile.IsLakeWithFlow() {
         return fraction.FromInt(2)
     }
@@ -478,6 +483,11 @@ func (tile *FullTile) FoodBonus() fraction.Fraction {
 
 // percent bonus increase, 3 = 3%
 func (tile *FullTile) GoldBonus(mapObject *Map) int {
+    _, ok := tile.Extras[ExtraKindCorruption]
+    if ok {
+        return 0
+    }
+
     switch {
         case tile.IsRiverMouth(mapObject): return 30
         case tile.IsTouchingShore(mapObject): return 10
@@ -489,6 +499,11 @@ func (tile *FullTile) GoldBonus(mapObject *Map) int {
 
 // percent bonus increase, 3 = 3%
 func (tile *FullTile) ProductionBonus() int {
+    _, ok := tile.Extras[ExtraKindCorruption]
+    if ok {
+        return 0
+    }
+
     switch tile.Tile.TerrainType() {
         case terrain.Ocean: return 0
         case terrain.Grass: return 0
