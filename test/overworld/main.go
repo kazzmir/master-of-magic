@@ -990,6 +990,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     player.KnownSpells.AddSpell(allSpells.FindByName("Summon Hero"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Enchant Road"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Raise Volcano"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Warp Node"))
 
     x, y := game.FindValidCityLocation(game.Plane)
 
@@ -2695,6 +2696,76 @@ func createScenario31(cache *lbx.LbxCache) *gamelib.Game {
     return game
 }
 
+// warp node
+func createScenario32(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 32")
+
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+        Magic: data.MagicSettingNormal,
+        Difficulty: data.DifficultyAverage,
+    })
+
+    game.Plane = data.PlaneArcanus
+
+    wizard1 := setup.WizardCustom{
+        Name: "Rjak",
+        Base: data.WizardRjak,
+        Banner: data.BannerPurple,
+    }
+
+    player1 := game.AddPlayer(wizard1, true)
+
+    x, y := game.FindValidCityLocation(game.Plane)
+
+    city := citylib.MakeCity("", x, y, data.RaceBarbarian, player1.Wizard.Banner, player1.TaxRate, game.BuildingInfo, game.CurrentMap(), game)
+    city.Population = 6190
+    city.Plane = data.PlaneArcanus
+    city.Banner = wizard1.Banner
+    city.ProducingBuilding = buildinglib.BuildingGranary
+    city.ProducingUnit = units.UnitNone
+    city.Race = wizard1.Race
+    city.Farmers = 3
+    city.Workers = 3
+    city.Wall = false
+
+    city.ResetCitizens(nil)
+
+    player1.AddCity(city)
+
+    player1.Gold = 830
+    player1.Mana = 26557
+    player1.CastingSkillPower = 10000
+
+    player1.LiftFog(x, y, 3, data.PlaneArcanus)
+
+    allSpells, _ := spellbook.ReadSpellsFromCache(cache)
+
+    player1.KnownSpells.AddSpell(allSpells.FindByName("Warp Node"))
+
+    wizard2 := setup.WizardCustom{
+        Name: "Merlin",
+        Base: data.WizardMerlin,
+        Banner: data.BannerYellow,
+    }
+    player2 := game.AddPlayer(wizard2, true)
+
+    nodes := findNodes(game.CurrentMap())
+    node := nodes[terrain.SorceryNode][0]
+    node.Node.Empty = true
+    node.Node.MeldingWizard = player2
+
+    player1.LiftFog(node.X, node.Y, 3, data.PlaneArcanus)
+
+    spirit := player1.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, node.X + 1, node.Y + 1, data.PlaneArcanus, wizard1.Banner, nil))
+
+    stack := player1.FindStackByUnit(spirit)
+    player1.SetSelectedStack(stack)
+
+    player1.LiftFog(stack.X(), stack.Y(), 2, data.PlaneArcanus)
+
+    return game
+}
+
 func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
@@ -2732,6 +2803,7 @@ func NewEngine(scenario int) (*Engine, error) {
         case 29: game = createScenario29(cache)
         case 30: game = createScenario30(cache)
         case 31: game = createScenario31(cache)
+        case 32: game = createScenario32(cache)
         default: game = createScenario1(cache)
     }
 

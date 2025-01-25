@@ -336,6 +336,7 @@ type ExtraMagicNode struct {
     GuardianSpiritMeld bool
 
     // also contains treasure
+    Warped bool
 }
 
 func (node *ExtraMagicNode) DrawLayer1(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64, tileWidth int, tileHeight int){
@@ -363,10 +364,16 @@ func (node *ExtraMagicNode) DrawLayer2(screen *ebiten.Image, imageCache *util.Im
             screen.DrawImage(use, &options2)
         }
     }
+
+    if node.Warped && node.MeldingWizard != nil {
+        // FIXME: Add distortion effect (might be related to mapback 93)
+    }
 }
 
 func (node *ExtraMagicNode) Meld(meldingWizard Wizard, spirit units.Unit) bool {
-    if node.MeldingWizard == nil {
+    if node.Warped {
+        return false
+    } else if node.MeldingWizard == nil {
         node.MeldingWizard = meldingWizard
         if spirit.Equals(units.GuardianSpirit) {
             node.GuardianSpiritMeld = true
@@ -401,6 +408,15 @@ func (node *ExtraMagicNode) Meld(meldingWizard Wizard, spirit units.Unit) bool {
         return false
     }
 }
+
+func (node *ExtraMagicNode) GetPower(magicBonus float64) float64 {
+    if node.Warped {
+        return -5
+    }
+
+    return float64(len(node.Zone)) * magicBonus
+}
+
 
 type ExtraVolcano struct {
     CastingWizard Wizard

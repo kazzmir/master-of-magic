@@ -36,6 +36,7 @@ const (
     LocationTypeChangeTerrain
     LocationTypeTransmute
     LocationTypeRaiseVolcano
+    LocationTypeEnemyMeldedNode
 )
 
 func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Player, spell spellbook.Spell) {
@@ -141,6 +142,14 @@ func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Playe
             }
 
             game.doCastEnchantRoad(yield, tileX, tileY)
+        case "Warp Node":
+            tileX, tileY, cancel := game.selectLocationForSpell(yield, spell, player, LocationTypeEnemyMeldedNode)
+
+            if cancel {
+                return
+            }
+
+            game.doCastWarpNode(yield, tileX, tileY)
         default:
             log.Printf("Warning: casting unhandled spell %v", spell.Name)
     }
@@ -244,6 +253,8 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
             selectMessage = fmt.Sprintf("Select a space as the target for an %v spell.", spell.Name)
         case LocationTypeFriendlyCity:
             selectMessage = fmt.Sprintf("Select a friendly city to cast %v on.", spell.Name)
+        case LocationTypeEnemyMeldedNode:
+            selectMessage = fmt.Sprintf("Select a magic node as the target for a %v spell.", spell.Name)
         default:
             selectMessage = fmt.Sprintf("unhandled location type %v", locationType)
     }
@@ -416,6 +427,17 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                                 }
                             }
                         }
+                    case LocationTypeEnemyMeldedNode:
+                        if tileY >= 0 && tileY < overworld.Map.Map.Rows() {
+                            tileX = overworld.Map.WrapX(tileX)
+
+                            if player.IsTileVisible(tileX, tileY, game.Plane) {
+                                node := overworld.Map.GetMagicNode(tileX, tileY)
+                                if node != nil && node.MeldingWizard != player {
+                                    return tileX, tileY, false
+                                }
+                            }
+                        }
 
                     case LocationTypeEnemyCity:
                         // TODO
@@ -581,5 +603,16 @@ func (game *Game) doCastRaiseVolcano(yield coroutine.YieldFunc, tileX int, tileY
                 }
             }
         }
+    }
+}
+
+func (game *Game) doCastWarpNode(yield coroutine.YieldFunc, tileX int, tileY int) {
+    update := func (x int, y int, frame int) {}
+
+    game.doCastOnMap(yield, tileX, tileY, 13, true, 5, update)
+
+    node := game.CurrentMap().GetMagicNode(tileX, tileY)
+    if node != nil {
+        node.Warped = true
     }
 }
