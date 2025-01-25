@@ -448,9 +448,17 @@ func (tile *FullTile) Valid() bool {
     return tile.Tile.Valid()
 }
 
-func (tile *FullTile) FoodBonus() fraction.Fraction {
+func (tile *FullTile) Corrupted() bool {
     _, ok := tile.Extras[ExtraKindCorruption]
     if ok {
+        return true
+    }
+
+    return false
+}
+
+func (tile *FullTile) FoodBonus() fraction.Fraction {
+    if tile.Corrupted() {
         return fraction.Zero()
     }
 
@@ -483,8 +491,7 @@ func (tile *FullTile) FoodBonus() fraction.Fraction {
 
 // percent bonus increase, 3 = 3%
 func (tile *FullTile) GoldBonus(mapObject *Map) int {
-    _, ok := tile.Extras[ExtraKindCorruption]
-    if ok {
+    if tile.Corrupted() {
         return 0
     }
 
@@ -499,8 +506,7 @@ func (tile *FullTile) GoldBonus(mapObject *Map) int {
 
 // percent bonus increase, 3 = 3%
 func (tile *FullTile) ProductionBonus() int {
-    _, ok := tile.Extras[ExtraKindCorruption]
-    if ok {
+    if tile.Corrupted() {
         return 0
     }
 
@@ -548,8 +554,7 @@ func (tile *FullTile) IsTouchingShore(mapObject *Map) bool {
 }
 
 func (tile *FullTile) GetBonus() data.BonusType {
-    _, ok := tile.Extras[ExtraKindCorruption]
-    if ok {
+    if tile.Corrupted() {
         return data.BonusNone
     }
 
