@@ -7,6 +7,7 @@ import (
     "image"
     "image/color"
 
+    "github.com/kazzmir/master-of-magic/lib/fraction"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
@@ -435,8 +436,100 @@ type FullTile struct {
     Y int
 }
 
+func (tile *FullTile) Name(mapObject *Map) string {
+    if tile.IsRiverMouth(mapObject) {
+        return "River Mouth"
+    }
+
+    return tile.Tile.Name()
+}
+
 func (tile *FullTile) Valid() bool {
     return tile.Tile.Valid()
+}
+
+func (tile *FullTile) FoodBonus() fraction.Fraction {
+    if tile.Tile.IsLakeWithFlow() {
+        return fraction.FromInt(2)
+    }
+    // FIXME: Shore with two river deltas = 2
+    // FIXME: Shore with single river delta surrounded by ocean = 2
+
+    switch tile.Tile.TerrainType() {
+        case terrain.Ocean: return fraction.Zero()
+        case terrain.Grass: return fraction.Make(3, 2)
+        case terrain.Forest: return fraction.Make(1, 2)
+        case terrain.Mountain: return fraction.Zero()
+        case terrain.Desert: return fraction.Zero()
+        case terrain.Swamp: return fraction.Zero()
+        case terrain.Tundra: return fraction.Zero()
+        case terrain.SorceryNode: return fraction.FromInt(2)
+        case terrain.NatureNode: return fraction.Make(5, 2)
+        case terrain.ChaosNode: return fraction.Zero()
+        case terrain.Hill: return fraction.Make(1, 2)
+        case terrain.Volcano: return fraction.Zero()
+        case terrain.Lake: return fraction.Zero()
+        case terrain.River: return fraction.FromInt(2)
+        case terrain.Shore: return fraction.Make(1, 2)
+    }
+
+    return fraction.Zero()
+}
+
+// percent bonus increase, 3 = 3%
+func (tile *FullTile) GoldBonus(mapObject *Map) int {
+    switch {
+        case tile.IsRiverMouth(mapObject): return 30
+        case tile.IsTouchingShore(mapObject): return 10
+        case tile.Tile.TerrainType() == terrain.River: return 20
+    }
+
+    return 0
+}
+
+// percent bonus increase, 3 = 3%
+func (tile *FullTile) ProductionBonus() int {
+    switch tile.Tile.TerrainType() {
+        case terrain.Ocean: return 0
+        case terrain.Grass: return 0
+        case terrain.Forest: return 3
+        case terrain.Mountain: return 5
+        case terrain.Desert: return 3
+        case terrain.Swamp: return 0
+        case terrain.Tundra: return 0
+        case terrain.SorceryNode: return 0
+        case terrain.NatureNode: return 3
+        case terrain.ChaosNode: return 5
+        case terrain.Hill: return 3
+        case terrain.Volcano: return 0
+        case terrain.Lake: return 0
+        case terrain.River: return 0
+        case terrain.Shore: return 0
+    }
+
+    return 0
+}
+
+func (tile *FullTile) IsRiverMouth(mapObject *Map) bool {
+    return tile.Tile.TerrainType() == terrain.River && tile.IsTouchingShore(mapObject)
+}
+
+func (tile *FullTile) IsTouchingShore(mapObject *Map) bool {
+    touchingShore := false
+    for dx := -1; dx <= 1; dx++ {
+        for dy := -1; dy <= 1; dy++ {
+            if dx == 0 && dy == 0 {
+                continue
+            }
+
+            tile := mapObject.GetTile(tile.X + dx, tile.Y + dy)
+            if tile.Tile.IsShore() {
+                touchingShore = true
+            }
+        }
+    }
+
+    return touchingShore
 }
 
 func (tile *FullTile) GetBonus() data.BonusType {

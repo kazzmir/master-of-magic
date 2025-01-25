@@ -13,7 +13,6 @@ import (
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/units"
-    "github.com/kazzmir/master-of-magic/game/magic/terrain"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
 )
@@ -566,21 +565,8 @@ func (city *City) BaseFoodLevel() int {
     food := fraction.Zero()
 
     for _, tile := range catchment {
-        switch tile.Tile.TerrainType() {
-            case terrain.Ocean, terrain.Mountain, terrain.Desert, terrain.Tundra, terrain.Volcano: // nothing
-            case terrain.Grass: food = food.Add(fraction.Make(3, 2))
-            case terrain.Forest, terrain.Hill, terrain.Shore, terrain.Swamp: food = food.Add(fraction.Make(1, 2))
-            case terrain.SorceryNode, terrain.River: food = food.Add(fraction.FromInt(2))
-            case terrain.NatureNode: food = food.Add(fraction.Make(5, 2))
-            case terrain.ChaosNode: // nothing
-            case terrain.Lake:
-                switch tile.Tile.Index(city.Plane) {
-                    case terrain.IndexLake1, terrain.IndexLake2, terrain.IndexLake3, terrain.IndexLake4:
-                        food = food.Add(fraction.Make(3, 2))
-                }
-        }
-
-        food.Add(fraction.FromInt(tile.GetBonus().FoodBonus()))
+        food = food.Add(tile.FoodBonus())
+        food = food.Add(fraction.FromInt(tile.GetBonus().FoodBonus()))
     }
 
     return int(food.ToFloat())
@@ -816,10 +802,7 @@ func (city *City) ProductionTerrain() float32 {
     mineralProduction := float32(0)
 
     for _, tile := range catchment {
-        switch tile.Tile.TerrainType() {
-            case terrain.Mountain, terrain.ChaosNode: production += 0.05
-            case terrain.Desert, terrain.Forest, terrain.Hill, terrain.NatureNode: production += 0.03
-        }
+        production += float32(tile.ProductionBonus()) / 100
 
         // FIXME: This should be only when producing units
         mineralProduction += float32(tile.GetBonus().UnitReductionBonus()) / 100
