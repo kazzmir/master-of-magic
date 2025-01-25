@@ -2701,6 +2701,111 @@ func createScenario31(cache *lbx.LbxCache) *gamelib.Game {
     return game
 }
 
+// test a hero dying in combat
+func createScenario32(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 32")
+
+    wizard := setup.WizardCustom{
+        Name: "bob",
+        Banner: data.BannerBlue,
+        Race: data.RaceTroll,
+        Abilities: []setup.WizardAbility{
+            setup.AbilityAlchemy,
+            setup.AbilitySageMaster,
+        },
+        Books: []data.WizardBook{
+            data.WizardBook{
+                Magic: data.LifeMagic,
+                Count: 3,
+            },
+            data.WizardBook{
+                Magic: data.SorceryMagic,
+                Count: 8,
+            },
+        },
+    }
+
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
+
+    game.Plane = data.PlaneArcanus
+
+    player := game.AddPlayer(wizard, true)
+
+    x, y := game.FindValidCityLocation(game.Plane)
+
+    /*
+    x = 20
+    y = 20
+    */
+
+    city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, fraction.Zero(), game.BuildingInfo, game.CurrentMap(), game)
+    city.Population = 16190
+    city.Plane = data.PlaneArcanus
+    city.Banner = wizard.Banner
+    city.ProducingBuilding = buildinglib.BuildingGranary
+    city.ProducingUnit = units.UnitNone
+    city.Race = wizard.Race
+    city.Farmers = 3
+    city.Workers = 3
+    city.Wall = false
+    city.Buildings.Insert(buildinglib.BuildingFortress)
+
+    city.ResetCitizens(nil)
+
+    player.AddCity(city)
+
+    player.Gold = 83
+    player.Mana = 2600
+
+    // game.Map.Map.Terrain[3][6] = terrain.TileNatureForest.Index
+
+    // log.Printf("City at %v, %v", x, y)
+
+    player.LiftFog(x, y, 30, data.PlaneArcanus)
+
+    gunther := hero.MakeHero(units.MakeOverworldUnit(units.HeroGunther), hero.HeroGunther, "Gunther")
+    gunther.Equipment[0] = &artifact.Artifact{
+        Name: "Baloney",
+        Image: 7,
+        Type: artifact.ArtifactTypeSword,
+        Powers: []artifact.Power{
+            {
+                Type: artifact.PowerTypeAttack,
+                Amount: 1,
+                Name: "+1 Attack",
+            },
+            {
+                Type: artifact.PowerTypeDefense,
+                Amount: 2,
+                Name: "+2 Defense",
+            },
+        },
+        Cost: 250,
+    }
+    player.AddHero(gunther)
+
+    // player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, 30, 30, data.PlaneArcanus, wizard.Banner))
+
+    stack := player.FindStackByUnit(gunther)
+    player.SetSelectedStack(stack)
+
+    player.LiftFog(stack.X(), stack.Y(), 2, data.PlaneArcanus)
+
+    x = game.CurrentMap().WrapX(stack.X() + 1)
+    y = stack.Y()
+
+    if !game.CurrentMap().CreateEncounter(x, y, maplib.EncounterTypeLair, data.DifficultyAverage, false, data.PlaneArcanus) {
+        log.Printf("Unable to create encounter")
+    }
+
+    encounter := game.CurrentMap().GetLair(x, y)
+    encounter.Units = []units.Unit{units.SkyDrake, units.SkyDrake}
+
+    game.Camera.Center(stack.X(), stack.Y())
+
+    return game
+}
+
 func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
@@ -2738,6 +2843,7 @@ func NewEngine(scenario int) (*Engine, error) {
         case 29: game = createScenario29(cache)
         case 30: game = createScenario30(cache)
         case 31: game = createScenario31(cache)
+        case 32: game = createScenario32(cache)
         default: game = createScenario1(cache)
     }
 
