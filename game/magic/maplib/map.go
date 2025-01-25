@@ -872,13 +872,21 @@ func (mapObject *Map) CreateNode(x int, y int, node MagicNode, plane data.Plane,
     return out
 }
 
+func (mapObject *Map) HasCorruption(x int, y int) bool {
+    _, exists := mapObject.ExtraMap[image.Pt(x, y)]
+    if exists {
+        _, exists = mapObject.ExtraMap[image.Pt(x, y)][ExtraKindCorruption]
+        return exists
+    }
+    return false
+}
+
 func (mapObject *Map) SetCorruption(x int, y int) {
     mapObject.ExtraMap[image.Pt(x, y)][ExtraKindCorruption] = &ExtraCorruption{}
 }
 
 func (mapObject *Map) RemoveCorruption(x int, y int) {
-    _, exists := mapObject.ExtraMap[image.Pt(x, y)][ExtraKindCorruption]
-    if exists {
+    if mapObject.HasCorruption(x, y) {
         delete(mapObject.ExtraMap[image.Pt(x, y)], ExtraKindCorruption)
     }
 }
