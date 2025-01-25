@@ -889,7 +889,7 @@ func (game *Game) GetEnemyWizards() []*playerlib.Player {
     var out []*playerlib.Player
 
     for _, player := range game.Players {
-        if !player.Human && player.Wizard.Banner != data.BannerBrown {
+        if !player.IsHuman() && player.Wizard.Banner != data.BannerBrown {
             out = append(out, player)
         }
     }
@@ -2469,7 +2469,7 @@ func (game *Game) doNextTurn(yield coroutine.YieldFunc) {
 }
 
 func (game *Game) AddExperience(player *playerlib.Player, unit units.StackUnit, amount int) {
-    if player.Human && unit.IsHero() {
+    if player.IsHuman() && unit.IsHero() {
         warlord := player.Wizard.AbilityEnabled(setup.AbilityWarlord)
         crusade := player.GlobalEnchantments.Contains(data.EnchantmentCrusade)
 
@@ -2502,17 +2502,17 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         game.HudUI = game.MakeHudUI()
                     case *GameEventHireHero:
                         hire := event.(*GameEventHireHero)
-                        if hire.Player.Human {
+                        if hire.Player.IsHuman() {
                             game.doHireHero(yield, hire.Cost, hire.Hero, hire.Player)
                         }
                     case *GameEventHireMercenaries:
                         hire := event.(*GameEventHireMercenaries)
-                        if hire.Player.Human {
+                        if hire.Player.IsHuman() {
                             game.doHireMercenaries(yield, hire.Cost, hire.Units, hire.Player)
                         }
                     case *GameEventMerchant:
                         merchant := event.(*GameEventMerchant)
-                        if merchant.Player.Human {
+                        if merchant.Player.IsHuman() {
                             game.doMerchant(yield, merchant.Cost, merchant.Artifact)
                         }
                     case *GameEventNextTurn:
@@ -3192,7 +3192,7 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
             if len(game.Players) > 0 && game.CurrentPlayer >= 0 {
                 player := game.Players[game.CurrentPlayer]
 
-                if player.Human {
+                if player.IsHuman() {
                     if game.HudUI.GetHighestLayerValue() == 0 {
                         game.doPlayerUpdate(yield, player)
                     }
@@ -5107,7 +5107,7 @@ func (game *Game) DoNextUnit(player *playerlib.Player){
         }
     }
 
-    if player.Human {
+    if player.IsHuman() {
         /*
         if player.SelectedStack == nil {
             fortressCity := player.FindFortressCity()
@@ -5237,7 +5237,7 @@ func (game *Game) GetExperienceBonus(stack *playerlib.UnitStack) int {
 func (game *Game) StartPlayerTurn(player *playerlib.Player) {
     disbandedMessages := game.DisbandUnits(player)
 
-    if player.Human && len(disbandedMessages) > 0 {
+    if player.IsHuman() && len(disbandedMessages) > 0 {
         select {
             case game.Events<- &GameEventScroll{Title: "", Text: strings.Join(disbandedMessages, "\n")}:
             default:
@@ -5273,7 +5273,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
 
         if player.CastingSpell.Cost(true) <= player.CastingSpellProgress {
 
-            if player.Human {
+            if player.IsHuman() {
                 select {
                     case game.Events<- &GameEventCastSpell{Player: player, Spell: player.CastingSpell}:
                     default:
@@ -5289,7 +5289,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
         player.ResearchProgress += int(player.SpellResearchPerTurn(power))
         if player.ResearchProgress >= player.ResearchingSpell.ResearchCost {
 
-            if player.Human {
+            if player.IsHuman() {
                 select {
                     case game.Events<- &GameEventLearnedSpell{Player: player, Spell: player.ResearchingSpell}:
                     default:
@@ -5298,7 +5298,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
 
             player.LearnSpell(player.ResearchingSpell)
 
-            if player.Human {
+            if player.IsHuman() {
                 select {
                     case game.Events<- &GameEventResearchSpell{Player: player}:
                     default:
@@ -5307,7 +5307,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
         }
     } else if game.TurnNumber > 1 {
 
-        if player.Human {
+        if player.IsHuman() {
             select {
                 case game.Events<- &GameEventResearchSpell{Player: player}:
                 default:
@@ -5335,7 +5335,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
                     Text: fmt.Sprintf("%v has grown to a population of %v.", city.Name, city.Citizens()),
                 }
 
-                if player.Human {
+                if player.IsHuman() {
                     select {
                         case game.Events<- &scrollEvent:
                         default:
@@ -5352,7 +5352,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
             case *citylib.CityEventNewBuilding:
                 newBuilding := event.(*citylib.CityEventNewBuilding)
 
-                if player.Human {
+                if player.IsHuman() {
                     select {
                         case game.Events<- &GameEventNewBuilding{City: city, Building: newBuilding.Building, Player: player}:
                         default:
@@ -5360,14 +5360,14 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
                 }
             case *citylib.CityEventOutpostDestroyed:
                 removeCities = append(removeCities, city)
-                if player.Human {
+                if player.IsHuman() {
                     select {
                         case game.Events<- &GameEventNotice{Message: fmt.Sprintf("The outpost of %v has been deserted.", city.Name)}:
                         default:
                     }
                 }
             case *citylib.CityEventOutpostHamlet:
-                if player.Human {
+                if player.IsHuman() {
                     select {
                         case game.Events<- &GameEventNotice{Message: fmt.Sprintf("The outpost of %v has grown into a hamlet.", city.Name)}:
                         default:
