@@ -7,7 +7,6 @@ import (
 
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/lib/lbx"
-    "github.com/kazzmir/master-of-magic/lib/fraction"
 )
 
 // terrain tiles are indicies 0-0x259 for arcanus, and 0x2fA - 0x5f4 for myrror
@@ -302,74 +301,6 @@ func (tile Tile) Name() string {
     }
 }
 
-func (tile Tile) FoodBonus() fraction.Fraction {
-    switch tile.TerrainType() {
-        case Ocean: return fraction.Zero()
-        case Grass: return fraction.Make(3, 2)
-        case Forest: return fraction.Make(1, 2)
-        case Mountain: return fraction.Zero()
-        case Desert: return fraction.Zero()
-        case Swamp: return fraction.Zero()
-        case Tundra: return fraction.Zero()
-        case SorceryNode: return fraction.FromInt(2)
-        case NatureNode: return fraction.Make(5, 2)
-        case ChaosNode: return fraction.Zero()
-        case Hill: return fraction.Make(1, 2)
-        case Volcano: return fraction.Zero()
-        case Lake: return fraction.Zero()
-        case River: return fraction.FromInt(2)
-        case Shore: return fraction.Make(1, 2)
-    }
-
-    return fraction.Zero()
-}
-
-// percent bonus increase, 3 = 3%
-func (tile Tile) GoldBonus() int {
-    // FIXME
-    switch tile.TerrainType() {
-        case Ocean: return 0
-        case Grass: return 0
-        case Forest: return 0
-        case Mountain: return 0
-        case Desert: return 0
-        case Swamp: return 0
-        case Tundra: return 0
-        case SorceryNode: return 0
-        case NatureNode: return 0
-        case ChaosNode: return 0
-        case Hill: return 0
-        case Volcano: return 0
-        case Lake: return 0
-        case River: return 0
-        case Shore: return 0
-    }
-    return 0
-}
-
-// percent bonus increase, 3 = 3%
-func (tile Tile) ProductionBonus() int {
-    switch tile.TerrainType() {
-        case Ocean: return 0
-        case Grass: return 0
-        case Forest: return 3
-        case Mountain: return 5
-        case Desert: return 3
-        case Swamp: return 0
-        case Tundra: return 0
-        case SorceryNode: return 0
-        case NatureNode: return 0
-        case ChaosNode: return 0
-        case Hill: return 3
-        case Volcano: return 0
-        case Lake: return 0
-        case River: return 0
-        case Shore: return 0
-    }
-
-    return 0
-}
-
 func (tile Tile) IsShore() bool {
     return tile.TerrainType() == Shore
 }
@@ -391,6 +322,14 @@ func (tile Tile) IsWater() bool {
         case Ocean, Shore, Lake: return true
         default: return false
     }
+}
+
+func (tile Tile) IsLakeWithFlow() bool {
+    switch tile.index {
+        case IndexLake1, IndexLake2, IndexLake3, IndexLake4: return true
+    }
+
+    return false
 }
 
 // match the given match to a terrain
