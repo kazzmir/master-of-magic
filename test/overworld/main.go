@@ -1515,6 +1515,7 @@ func createScenario18(cache *lbx.LbxCache) *gamelib.Game {
     mysticX := hero.MakeHero(units.MakeOverworldUnit(units.HeroMysticX), hero.HeroMysticX, "bubba")
     player.AddHero(mysticX)
     mysticX.SetExtraAbilities()
+    mysticX.AddAbility(data.AbilityArmsmaster)
     mysticX.AddExperience(528)
 
     warlock := player.AddUnit(units.MakeOverworldUnitFromUnit(units.Warlocks, x, y, data.PlaneArcanus, player.GetBanner(), nil))

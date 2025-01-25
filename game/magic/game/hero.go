@@ -337,7 +337,7 @@ func (game *Game) showHeroLevelUpPopup(yield coroutine.YieldFunc, hero *herolib.
 
         row := 0
         column := 0
-        abilityWidth := 120
+        abilityWidth := 115
 
         // level
         options.GeoM.Reset()

@@ -5192,6 +5192,26 @@ func (game *Game) DisbandUnits(player *playerlib.Player) []string {
     return disbandedMessages
 }
 
+// the amount of experience a unit in a stack should get at the end of each turn
+// if there is a hero in the stack then the hero's armsmaster ability applies
+func (game *Game) GetExperienceBonus(stack *playerlib.UnitStack) int {
+    base := 1
+    bonus := 0
+
+    // only the highest armsmaster bonus applies
+    for _, unit := range stack.Units() {
+        if unit.GetRace() == data.RaceHero {
+            hero := unit.(*herolib.Hero)
+            more := hero.GetAbilityExperienceBonus()
+            if more > bonus {
+                bonus = more
+            }
+        }
+    }
+
+    return base + bonus
+}
+
 func (game *Game) StartPlayerTurn(player *playerlib.Player) {
     disbandedMessages := game.DisbandUnits(player)
 
@@ -5348,9 +5368,13 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
     for _, stack := range player.Stacks {
 
         // every unit gains 1 experience at each turn
+        unitExperience := game.GetExperienceBonus(stack)
         for _, unit := range stack.Units() {
-            if unit.GetRace() != data.RaceFantastic {
-                game.AddExperience(player, unit, 1)
+            switch unit.GetRace() {
+                case data.RaceHero: game.AddExperience(player, unit, 1)
+                case data.RaceFantastic: // nothing
+                default:
+                    game.AddExperience(player, unit, unitExperience)
             }
         }
 
