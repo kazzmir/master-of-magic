@@ -927,6 +927,26 @@ func (hero *Hero) GetMeleeAttackPower() int {
     return base + hero.GetAbilityMelee()
 }
 
+// returns a number that corresponds to the bonus this ability would apply.
+// Might on a champion would return 5
+// Super Agility on a captain would return 4
+func (hero *Hero) GetAbilityBonus(ability data.AbilityType) int {
+    switch ability {
+        case data.AbilityAgility, data.AbilitySuperAgility: return hero.GetAbilityDefense()
+        case data.AbilityConstitution, data.AbilitySuperConstitution: return hero.GetAbilityHealth()
+        case data.AbilityLeadership, data.AbilitySuperLeadership: return hero.GetAbilityLeadership()
+        case data.AbilitySage, data.AbilitySuperSage: return hero.GetAbilityResearch()
+        case data.AbilityPrayermaster, data.AbilitySuperPrayermaster: return hero.GetAbilityResistance()
+        case data.AbilityArcanePower, data.AbilitySuperArcanePower: return hero.GetAbilityMagicRangedAttack()
+        case data.AbilityMight, data.AbilitySuperMight: return hero.GetAbilityMelee() - hero.GetAbilityLeadership() // hack because GetAbilityMelee() includes leadership
+        case data.AbilityArmsmaster, data.AbilitySuperArmsmaster: return hero.GetAbilityExperienceBonus()
+        case data.AbilityBlademaster, data.AbilitySuperBlademaster: return hero.GetAbilityToHit()
+        case data.AbilityLegendary, data.AbilitySuperLegendary: return hero.GetAbilityFame()
+    }
+
+    return 0
+}
+
 func (hero *Hero) GetBaseRangedAttackPower() int {
     level := hero.GetExperienceLevel()
     return hero.Unit.GetBaseRangedAttackPower() + hero.getBaseRangedAttackPowerProgression(level)
