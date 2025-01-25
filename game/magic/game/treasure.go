@@ -61,6 +61,7 @@ func (spell *TreasureSpell) String() string {
 // always gives one spellbook of the specified magic type
 type TreasureSpellbook struct {
     Magic data.MagicType
+    Count int
 }
 
 func (spellbook *TreasureSpellbook) String() string {
@@ -226,8 +227,8 @@ func makeTreasure(cache *lbx.LbxCache, encounterType maplib.EncounterType, budge
 
     // treasure cannot contain more than these values of each type
     spellsRemaining := 1
-    spellBookRemaining := 1
-    retortRemaining := 1
+    // specials are spellbooks and retorts, so a treasure can only have one or the other but not both
+    specialsRemaining := 1
     prisonerRemaining := 1
     magicItemRemaining := 3
 
@@ -260,10 +261,10 @@ func makeTreasure(cache *lbx.LbxCache, encounterType maplib.EncounterType, budge
                 choices[TreasureTypeVeryRareSpell] = 1
             }
         }
-        if spellBookRemaining > 0 && budget >= spellBookSpend {
+        if specialsRemaining > 0 && budget >= spellBookSpend {
             choices[TreasureTypeSpellbook] = 2
         }
-        if retortRemaining > 0 && budget >= retortSpend {
+        if specialsRemaining > 0 && budget >= retortSpend {
             choices[TreasureTypeRetort] = 2
         }
         if prisonerRemaining > 0 && budget >= prisonerSpend && len(heroes) > 0 {
@@ -393,16 +394,35 @@ func makeTreasure(cache *lbx.LbxCache, encounterType maplib.EncounterType, budge
                 }
 
                 if len(books) > 0 {
-                    spellBookRemaining -= 1
-                    items = append(items, &TreasureSpellbook{Magic: books[rand.N(len(books))]})
+                    specialsRemaining -= 1
+
+                    budget -= spellBookSpend
+                    count := 1
+
+                    // possibly give a second spellbook of the same type
+                    if budget >= spellBookSpend && rand.N(15) == 0 {
+                        count = 2
+                    }
+
+                    items = append(items, &TreasureSpellbook{Magic: books[rand.N(len(books))], Count: count})
                     budget = 0
                 }
             case TreasureTypeRetort:
                 retort, ok := chooseRetort()
                 if ok {
-                    retortRemaining -= 1
-                    budget = 0
+                    specialsRemaining -= 1
                     items = append(items, &TreasureRetort{Retort: retort})
+                    budget -= retortSpend
+
+                    // possibly give a second retort
+                    if budget >= retortSpend && rand.N(15) == 0 {
+                        retort2, ok := chooseRetort()
+                        if ok {
+                            items = append(items, &TreasureRetort{Retort: retort2})
+                        }
+                    }
+
+                    budget = 0
                 }
         }
     }

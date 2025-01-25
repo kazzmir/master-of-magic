@@ -3569,9 +3569,9 @@ func (game *Game) doTreasure(yield coroutine.YieldFunc, player *playerlib.Player
             left, _ := game.ImageCache.GetImage("resource.lbx", 56, 0)
             var options ebiten.DrawImageOptions
             options.ColorScale.ScaleAlpha(getAlpha())
-            options.GeoM.Translate(10, 50)
+            options.GeoM.Translate(float64(10 * data.ScreenScale), float64(50 * data.ScreenScale))
 
-            fontX, fontY := options.GeoM.Apply(10, 10)
+            fontX, fontY := options.GeoM.Apply(float64(10 * data.ScreenScale), float64(10 * data.ScreenScale))
 
             screen.DrawImage(left, &options)
             right, _ := game.ImageCache.GetImage("resource.lbx", 58, 0)
@@ -3579,13 +3579,13 @@ func (game *Game) doTreasure(yield coroutine.YieldFunc, player *playerlib.Player
             rightGeom := options.GeoM
 
             chest, _ := game.ImageCache.GetImage("reload.lbx", 20, 0)
-            options.GeoM.Translate(6, 8)
+            options.GeoM.Translate(float64(6 * data.ScreenScale), float64(8 * data.ScreenScale))
             screen.DrawImage(chest, &options)
 
             options.GeoM = rightGeom
             screen.DrawImage(right, &options)
 
-            treasureFont.PrintWrap(screen, fontX, fontY, float64(left.Bounds().Dx()) - 5, 1.0, options.ColorScale, treasure.String())
+            treasureFont.PrintWrap(screen, fontX, fontY, float64(left.Bounds().Dx() - 5 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, treasure.String())
         },
     }
 
@@ -3631,7 +3631,7 @@ func (game *Game) doTreasure(yield coroutine.YieldFunc, player *playerlib.Player
             case *TreasureSpellbook:
                 spellbook := item.(*TreasureSpellbook)
                 // FIXME: somehow recompute the research spell pool for the player
-                player.Wizard.AddMagicLevel(spellbook.Magic, 1)
+                player.Wizard.AddMagicLevel(spellbook.Magic, spellbook.Count)
             case *TreasureRetort:
                 retort := item.(*TreasureRetort)
                 player.Wizard.EnableAbility(retort.Retort)
