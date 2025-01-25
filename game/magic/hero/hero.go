@@ -552,10 +552,12 @@ func (hero *Hero) IsUndead() bool {
     return false
 }
 
+// heroes are never part of a magic realm (life, death, etc)
 func (hero *Hero) GetRealm() data.MagicType {
     return data.MagicNone
 }
 
+// for mythril/adamantium, heroes dont use those
 func (hero *Hero) SetWeaponBonus(bonus data.WeaponBonus) {
 }
 
@@ -572,7 +574,7 @@ func (hero *Hero) GetHealth() int {
 }
 
 func (hero *Hero) GetMaxHealth() int {
-    return hero.GetHitPoints()
+    return hero.GetHitPoints() + hero.GetAbilityHealth()
 }
 
 func (hero *Hero) AddExperience(amount int) {
