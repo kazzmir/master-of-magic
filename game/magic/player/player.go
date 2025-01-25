@@ -273,6 +273,18 @@ func (player *Player) MakeExperienceInfo() units.ExperienceInfo {
     }
 }
 
+func (player *Player) GetFame() int {
+    fame := player.Fame
+
+    for _, hero := range player.Heroes {
+        if hero != nil && hero.Status == herolib.StatusEmployed {
+            fame += hero.GetAbilityFame()
+        }
+    }
+
+    return fame
+}
+
 func (player *Player) TotalUnitUpkeepGold() int {
     total := 0
 
@@ -280,7 +292,7 @@ func (player *Player) TotalUnitUpkeepGold() int {
         total += unit.GetUpkeepGold()
     }
 
-    total -= player.Fame
+    total -= player.GetFame()
     if total < 0 {
         total = 0
     }

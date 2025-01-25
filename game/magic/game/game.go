@@ -2111,7 +2111,7 @@ func (game *Game) maybeHireHero(player *playerlib.Player) {
 
     // every 25 fame increases chance by 1
     // every hero reduces chance by a fraction (1 hero = halve chance. 2 heroes = 1/3 chance)
-    chance := (3 + player.Fame / 25) / ((len(player.AliveHeroes()) + 3) / 2)
+    chance := (3 + player.GetFame() / 25) / ((len(player.AliveHeroes()) + 3) / 2)
     if player.Wizard.AbilityEnabled(setup.AbilityFamous) {
         chance *= 2
     }
@@ -2129,7 +2129,7 @@ func (game *Game) maybeHireHero(player *playerlib.Player) {
             }
 
             if hero.Status == herolib.StatusAvailable {
-                if hero.GetRequiredFame() <= player.Fame {
+                if hero.GetRequiredFame() <= player.GetFame() {
                     heroCandidates = append(heroCandidates, hero)
                 }
             }
@@ -2192,7 +2192,7 @@ func (game *Game) maybeHireMercenaries(player *playerlib.Player) {
     }
 
     // chance to create an event
-    chance := 1 + player.Fame / 20
+    chance := 1 + player.GetFame() / 20
     if player.Wizard.AbilityEnabled(setup.AbilityFamous) {
         chance *= 2
     }
@@ -2260,7 +2260,7 @@ func (game *Game) maybeHireMercenaries(player *playerlib.Player) {
 
     // number of units
     count := 1
-    countRoll := rand.N(100) + player.Fame
+    countRoll := rand.N(100) + player.GetFame()
     switch {
         case countRoll > 90: count = 3
         case countRoll > 60: count = 2
@@ -2269,7 +2269,7 @@ func (game *Game) maybeHireMercenaries(player *playerlib.Player) {
     // experience
     level := 1
     experience := 20
-    experienceRoll := rand.N(100) + player.Fame
+    experienceRoll := rand.N(100) + player.GetFame()
     switch {
         case experienceRoll > 90:
             level = 3
@@ -2335,7 +2335,7 @@ func (game *Game) doHireMercenaries(yield coroutine.YieldFunc, cost int, units [
  */
 func (game *Game) maybeBuyFromMerchant(player *playerlib.Player) {
     // chance to create an event
-    chance := 2 + player.Fame / 25
+    chance := 2 + player.GetFame() / 25
     if player.Wizard.AbilityEnabled(setup.AbilityFamous) {
         chance *= 2
     }
