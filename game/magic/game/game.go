@@ -4106,7 +4106,7 @@ func (game *Game) ComputeMaximumPopulation(x int, y int, plane data.Plane) int {
     food := fraction.Zero()
 
     for _, tile := range catchment {
-        food = food.Add(tile.Tile.FoodBonus())
+        food = food.Add(tile.FoodBonus())
         bonus := tile.GetBonus()
         food = food.Add(fraction.FromInt(bonus.FoodBonus()))
     }
@@ -4120,32 +4120,9 @@ func (game *Game) ComputeMaximumPopulation(x int, y int, plane data.Plane) int {
 }
 
 func (game *Game) CityGoldBonus(x int, y int, plane data.Plane) int {
-    gold := 0
-    tile := game.GetMap(plane).GetTile(x, y)
-    if tile.Tile.TerrainType() == terrain.River {
-        gold += 20
-    }
-
-    // check tiles immediately touching the city
-    touchingShore := false
-    for dx := -1; dx <= 1; dx++ {
-        for dy := -1; dy <= 1; dy++ {
-            if dx == 0 && dy == 0 {
-                continue
-            }
-
-            tile := game.GetMap(plane).GetTile(x + dx, y + dy)
-            if tile.Tile.TerrainType() == terrain.Shore {
-                touchingShore = true
-            }
-        }
-    }
-
-    if touchingShore {
-        gold += 10
-    }
-
-    return gold
+    mapObject := game.GetMap(plane)
+    tile := mapObject.GetTile(x, y)
+    return tile.GoldBonus(mapObject)
 }
 
 func (game *Game) CityProductionBonus(x int, y int, plane data.Plane) int {
@@ -4155,7 +4132,7 @@ func (game *Game) CityProductionBonus(x int, y int, plane data.Plane) int {
     production := 0
 
     for _, tile := range catchment {
-        production += tile.Tile.ProductionBonus()
+        production += tile.ProductionBonus()
     }
 
     return production
