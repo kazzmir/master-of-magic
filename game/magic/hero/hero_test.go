@@ -83,3 +83,15 @@ func TestHero(test *testing.T){
         test.Errorf("There should be progression yet")
     }
 }
+
+func TestHeroProgression(test *testing.T) {
+    zaldron := MakeHeroSimple(HeroZaldron)
+    if !zaldron.AddAbility(data.AbilityAgility) {
+        test.Errorf("unable to add agility")
+    }
+
+    zaldron.AddExperience(units.ExperienceChampionHero.ExperienceRequired(false, false))
+    if zaldron.GetAbilityDefense() != 5 {
+        test.Errorf("Expected defense for champion with agility to be 5 but was %v", zaldron.GetAbilityDefense())
+    }
+}

@@ -1515,6 +1515,7 @@ func createScenario18(cache *lbx.LbxCache) *gamelib.Game {
     mysticX := hero.MakeHero(units.MakeOverworldUnit(units.HeroMysticX), hero.HeroMysticX, "bubba")
     player.AddHero(mysticX)
     mysticX.SetExtraAbilities()
+    mysticX.AddAbility(data.AbilityArmsmaster)
     mysticX.AddExperience(528)
 
     warlock := player.AddUnit(units.MakeOverworldUnitFromUnit(units.Warlocks, x, y, data.PlaneArcanus, player.GetBanner(), nil))
@@ -2258,10 +2259,14 @@ func createScenario26(cache *lbx.LbxCache) *gamelib.Game {
 
     gunther := hero.MakeHero(units.MakeOverworldUnit(units.HeroGunther), hero.HeroGunther, "Gunther")
     reywind := hero.MakeHero(units.MakeOverworldUnit(units.HeroReywind), hero.HeroReywind, "Reywind")
-    player.AddHero(gunther)
-    player.AddHero(reywind)
+    mysticX := hero.MakeHero(units.MakeOverworldUnit(units.HeroMysticX), hero.HeroMysticX, "Mystic X")
+    mysticX.SetExtraAbilities()
+    player.AddHero(mysticX)
+    // player.AddHero(gunther)
+    // player.AddHero(reywind)
     gunther.AddExperience(19)
     reywind.AddExperience(58)
+    mysticX.AddExperience(19)
 
     enemy := game.AddPlayer(setup.WizardCustom{
         Name: "dingus",

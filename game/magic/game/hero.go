@@ -5,9 +5,13 @@ import (
     "fmt"
     "image"
     "image/color"
+    "math"
+    "slices"
+    "cmp"
 
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/set"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     "github.com/kazzmir/master-of-magic/game/magic/unitview"
@@ -242,7 +246,40 @@ func (game *Game) showHeroLevelUpPopup(yield coroutine.YieldFunc, hero *herolib.
 
     top := float64(40 * data.ScreenScale)
     left := float64(30 * data.ScreenScale)
-    height := 70 * data.ScreenScale // TODO: include height from ability improvements
+
+    // the set of abilities that can possibly show an improvement
+    progressAbilities := set.MakeSet[data.AbilityType]()
+    for _, ability := range []data.AbilityType{
+        data.AbilityConstitution, data.AbilitySuperConstitution,
+        data.AbilityAgility, data.AbilitySuperAgility,
+        data.AbilityLeadership, data.AbilitySuperLeadership,
+        data.AbilitySage, data.AbilitySuperSage,
+        data.AbilityPrayermaster, data.AbilitySuperPrayermaster,
+        data.AbilityArcanePower, data.AbilitySuperArcanePower,
+        data.AbilityMight, data.AbilitySuperMight,
+        data.AbilityArmsmaster, data.AbilitySuperArmsmaster,
+        data.AbilityBlademaster, data.AbilitySuperBlademaster,
+        data.AbilityLegendary, data.AbilitySuperLegendary,
+    } {
+        progressAbilities.Insert(ability)
+    }
+
+    var haveAbilities []data.Ability
+    for _, ability := range hero.GetAbilities() {
+        if progressAbilities.Contains(ability.Ability) {
+            haveAbilities = append(haveAbilities, ability)
+        }
+    }
+
+    slices.SortFunc(haveAbilities, func(a, b data.Ability) int {
+        return cmp.Compare(a.Name(), b.Name())
+    })
+
+    maxAbilitiesPerRow := 2
+
+    abilityRows := int(math.Ceil(float64(1 + len(haveAbilities)) / float64(maxAbilitiesPerRow)))
+
+    height := (50 + abilityRows * 20) * data.ScreenScale
 
     titleFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowGradient)
     smallFont := font.MakeOptimizedFontWithPalette(fonts[2], yellowGradient)
@@ -298,12 +335,42 @@ func (game *Game) showHeroLevelUpPopup(yield coroutine.YieldFunc, hero *herolib.
             smallFont.Print(screen, left + (55 + xOffset) * float64(data.ScreenScale), top + (24 + yOffset) * float64(data.ScreenScale), float64(data.ScreenScale), options.ColorScale, progression)
         }
 
+        row := 0
+        column := 0
+        abilityWidth := 115
+
         // level
         options.GeoM.Reset()
-        options.GeoM.Translate(left + float64(10 * data.ScreenScale), top + float64(50 * data.ScreenScale))
+        options.GeoM.Translate(left + float64((10 + abilityWidth * column) * data.ScreenScale), top + float64((50 + row * 20) * data.ScreenScale))
         unitview.RenderExperienceBadge(screen, &game.ImageCache, hero, smallFont, options, false)
 
-        // TODO: render ability improvements
+        // start in second column because the badge is in the first
+        column = 1
+
+        for _, ability := range haveAbilities {
+
+            pic, err := game.ImageCache.GetImage(ability.LbxFile(), ability.LbxIndex(), 0)
+            if err == nil {
+                options.GeoM.Reset()
+                options.GeoM.Translate(left + float64((10 + abilityWidth * column) * data.ScreenScale), top + float64((50 + row * 20) * data.ScreenScale))
+                screen.DrawImage(pic, &options)
+
+                x, y := options.GeoM.Apply(float64(pic.Bounds().Dx() + 2 * data.ScreenScale), float64(5 * data.ScreenScale))
+
+                abilityBonus := hero.GetAbilityBonus(ability.Ability)
+                if abilityBonus > 0 {
+                    smallFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("%v +%v", ability.Name(), abilityBonus))
+                } else {
+                    smallFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, ability.Name())
+                }
+            }
+
+            column += 1
+            if column >= maxAbilitiesPerRow {
+                row += 1
+                column = 0
+            }
+        }
     }
 
     quit := false
