@@ -751,6 +751,26 @@ func (hero *Hero) GetRangedAttacks() int {
 func (hero *Hero) GetAbilityValue(ability data.AbilityType) float32 {
     ref := hero.GetAbilityReference(ability)
     if ref != nil {
+
+        // melee bonus applies to thrown and breath attacks
+        if ability == data.AbilityThrown {
+            abilityBonus := hero.GetAbilityMelee()
+            if abilityBonus > 0 {
+                return ref.Value * float32(abilityBonus) / 2
+            }
+
+            return ref.Value
+        }
+
+        if ability == data.AbilityFireBreath {
+            abilityBonus := hero.GetAbilityMelee()
+            if abilityBonus > 0 {
+                return ref.Value * float32(abilityBonus) / 2
+            }
+
+            return ref.Value
+        }
+
         return ref.Value
     }
 
@@ -1142,7 +1162,7 @@ func (hero *Hero) GetAbilityMelee() int {
         extra = int(float64(level.ToInt() + 1) * 1.5)
     }
 
-    return extra
+    return extra + hero.GetAbilityLeadership()
 }
 
 func (hero *Hero) GetAbilityRangedAttack() int {
