@@ -3794,17 +3794,39 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
         }
     }
 
+    distributeEquipment := func (player *playerlib.Player, hero *herolib.Hero){
+        for _, item := range hero.Equipment {
+            if item != nil {
+                select {
+                    case game.Events <- &GameEventVault{CreatedArtifact: item}:
+                    default:
+                }
+            }
+        }
+    }
+
     // ebiten.SetCursorMode(ebiten.CursorModeVisible)
 
     for _, unit := range attackerStack.Units() {
         if unit.GetHealth() <= 0 {
             attacker.RemoveUnit(unit)
+
+            if unit.IsHero() && attacker.IsHuman() {
+                hero := unit.(*herolib.Hero)
+                distributeEquipment(attacker, hero)
+            }
         }
     }
 
     for _, unit := range defenderStack.Units() {
         if unit.GetHealth() <= 0 {
             defender.RemoveUnit(unit)
+
+            if unit.IsHero() && defender.IsHuman() {
+                hero := unit.(*herolib.Hero)
+                distributeEquipment(defender, hero)
+            }
+
         }
     }
 
