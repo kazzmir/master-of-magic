@@ -50,9 +50,12 @@ const (
     ExtraKindMagicNode
     ExtraKindEncounter
     ExtraKindVolcano
+    ExtraKindCorruption
 )
 
 var ExtraDrawOrder = []ExtraKind{
+    ExtraKindVolcano,
+    ExtraKindCorruption,
     ExtraKindRoad,
     ExtraKindBonus,
     ExtraKindMagicNode,
@@ -413,6 +416,19 @@ func (node *ExtraVolcano) DrawLayer1(screen *ebiten.Image, imageCache *util.Imag
 func (node *ExtraVolcano) DrawLayer2(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64, tileWidth int, tileHeight int){
 }
 
+type ExtraCorruption struct {
+}
+
+func (node *ExtraCorruption) DrawLayer1(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64, tileWidth int, tileHeight int){
+    pic, err := imageCache.GetImage("mapback.lbx", 77, 0)
+    if err == nil {
+        screen.DrawImage(pic, options)
+    }
+}
+
+func (node *ExtraCorruption) DrawLayer2(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64, tileWidth int, tileHeight int){
+}
+
 type FullTile struct {
     Extras map[ExtraKind]ExtraTile
     Tile terrain.Tile
@@ -432,7 +448,20 @@ func (tile *FullTile) Valid() bool {
     return tile.Tile.Valid()
 }
 
+func (tile *FullTile) Corrupted() bool {
+    _, ok := tile.Extras[ExtraKindCorruption]
+    if ok {
+        return true
+    }
+
+    return false
+}
+
 func (tile *FullTile) FoodBonus() fraction.Fraction {
+    if tile.Corrupted() {
+        return fraction.Zero()
+    }
+
     if tile.Tile.IsLakeWithFlow() {
         return fraction.FromInt(2)
     }
@@ -462,6 +491,10 @@ func (tile *FullTile) FoodBonus() fraction.Fraction {
 
 // percent bonus increase, 3 = 3%
 func (tile *FullTile) GoldBonus(mapObject *Map) int {
+    if tile.Corrupted() {
+        return 0
+    }
+
     switch {
         case tile.IsRiverMouth(mapObject): return 30
         case tile.IsTouchingShore(mapObject): return 10
@@ -473,6 +506,10 @@ func (tile *FullTile) GoldBonus(mapObject *Map) int {
 
 // percent bonus increase, 3 = 3%
 func (tile *FullTile) ProductionBonus() int {
+    if tile.Corrupted() {
+        return 0
+    }
+
     switch tile.Tile.TerrainType() {
         case terrain.Ocean: return 0
         case terrain.Grass: return 0
@@ -516,6 +553,10 @@ func (tile *FullTile) IsTouchingShore(mapObject *Map) bool {
 }
 
 func (tile *FullTile) GetBonus() data.BonusType {
+    if tile.Corrupted() {
+        return data.BonusNone
+    }
+
     bonus, ok := tile.Extras[ExtraKindBonus]
     if ok {
         return bonus.(*ExtraBonus).Bonus
@@ -942,6 +983,25 @@ func (mapObject *Map) CreateNode(x int, y int, node MagicNode, plane data.Plane,
     mapObject.ExtraMap[image.Pt(x, y)][ExtraKindMagicNode] = out
 
     return out
+}
+
+func (mapObject *Map) HasCorruption(x int, y int) bool {
+    _, exists := mapObject.ExtraMap[image.Pt(x, y)]
+    if exists {
+        _, exists = mapObject.ExtraMap[image.Pt(x, y)][ExtraKindCorruption]
+        return exists
+    }
+    return false
+}
+
+func (mapObject *Map) SetCorruption(x int, y int) {
+    mapObject.ExtraMap[image.Pt(x, y)][ExtraKindCorruption] = &ExtraCorruption{}
+}
+
+func (mapObject *Map) RemoveCorruption(x int, y int) {
+    if mapObject.HasCorruption(x, y) {
+        delete(mapObject.ExtraMap[image.Pt(x, y)], ExtraKindCorruption)
+    }
 }
 
 func (mapObject *Map) Width() int {

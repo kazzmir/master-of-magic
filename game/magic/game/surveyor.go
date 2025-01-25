@@ -170,6 +170,11 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
                     yellowFont.PrintCenter(screen, float64(280 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, tile.Name(mapObject))
                     y += float64(yellowFont.Height() * data.ScreenScale)
 
+                    if tile.Corrupted() {
+                        whiteFont.PrintCenter(screen, float64(280 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, "Corruption")
+                        y += float64(whiteFont.Height() * data.ScreenScale)
+                    }
+
                     foodBonus := tile.FoodBonus()
                     if !foodBonus.IsZero() {
                         whiteFont.PrintCenter(screen, float64(280 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v food", foodBonus.NormalString()))
