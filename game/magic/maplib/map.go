@@ -440,6 +440,11 @@ func (tile *FullTile) Valid() bool {
 }
 
 func (tile *FullTile) GetBonus() data.BonusType {
+    _, ok := tile.Extras[ExtraKindCorruption]
+    if ok {
+        return data.BonusNone
+    }
+
     bonus, ok := tile.Extras[ExtraKindBonus]
     if ok {
         return bonus.(*ExtraBonus).Bonus
