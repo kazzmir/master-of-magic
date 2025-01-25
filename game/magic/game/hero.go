@@ -8,6 +8,7 @@ import (
 
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/set"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     "github.com/kazzmir/master-of-magic/game/magic/unitview"
@@ -264,6 +265,12 @@ func (game *Game) showHeroLevelUpPopup(yield coroutine.YieldFunc, hero *herolib.
 
     getAlpha := util.MakeFadeIn(7, &game.Counter)
 
+    // the set of abilities that can possibly show an improvement
+    progressAbilities := set.MakeSet[data.AbilityType]()
+    for _, ability := range []data.AbilityType{data.AbilityConstitution} {
+        progressAbilities.Insert(ability)
+    }
+
     game.Drawer = func (screen *ebiten.Image, game *Game){
         drawer(screen, game)
 
@@ -304,6 +311,8 @@ func (game *Game) showHeroLevelUpPopup(yield coroutine.YieldFunc, hero *herolib.
         unitview.RenderExperienceBadge(screen, &game.ImageCache, hero, smallFont, options, false)
 
         // TODO: render ability improvements
+        // for each ability the hero has that is in the progressAbilities set, show the actual value that the ability provides
+        // super agility at champion level gives +7
     }
 
     quit := false
