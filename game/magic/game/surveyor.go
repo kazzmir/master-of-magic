@@ -183,26 +183,34 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
 
                     y += float64(whiteFont.Height() * data.ScreenScale)
 
-                    showBonus := func (name string, bonus string) {
-                        yellowFont.PrintCenter(screen, float64(280 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, name)
-                        y += float64(yellowFont.Height() * data.ScreenScale)
-                        whiteFont.PrintWrapCenter(screen, float64(280 * data.ScreenScale), y, float64(cancelBackground.Bounds().Dx() - 5 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, bonus)
-                    }
-
                     bonus := tile.GetBonus()
-                    switch bonus {
-                        case data.BonusNone: // nothing
-                        case data.BonusGoldOre: showBonus("Gold Ore", fmt.Sprintf("+%v gold", bonus.GoldBonus()))
-                        case data.BonusSilverOre: showBonus("Silver Ore", fmt.Sprintf("+%v gold", bonus.GoldBonus()))
-                        case data.BonusWildGame: showBonus("Wild Game", fmt.Sprintf("+%v food", bonus.FoodBonus()))
-                        case data.BonusNightshade: showBonus("Nightshade", "")
-                        case data.BonusIronOre: showBonus("Iron Ore", fmt.Sprintf("Reduces normal unit cost by %v%%", bonus.UnitReductionBonus()))
-                        case data.BonusCoal: showBonus("Coal", fmt.Sprintf("Reduces normal unit cost by %v%%", bonus.UnitReductionBonus()))
-                        case data.BonusMithrilOre: showBonus("Mithril Ore", fmt.Sprintf("+%v power", bonus.PowerBonus()))
-                        case data.BonusAdamantiumOre: showBonus("Adamantium Ore", fmt.Sprintf("+%v power", bonus.PowerBonus()))
-                        case data.BonusGem: showBonus("Gem", fmt.Sprintf("+%v gold", bonus.GoldBonus()))
-                        case data.BonusQuorkCrystal: showBonus("Quork Crystal", fmt.Sprintf("+%v power", bonus.PowerBonus()))
-                        case data.BonusCrysxCrystal: showBonus("Crysx Crystal", fmt.Sprintf("+%v power", bonus.PowerBonus()))
+                    if bonus != data.BonusNone {
+                        yellowFont.PrintCenter(screen, float64(280 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, bonus.String())
+                        y += float64(yellowFont.Height() * data.ScreenScale)
+
+                        food := bonus.FoodBonus()
+                        if food != 0 {
+                            whiteFont.PrintWrapCenter(screen, float64(280 * data.ScreenScale), y, float64(cancelBackground.Bounds().Dx() - 5 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("+%v food", food))
+                            y += float64(whiteFont.Height() * data.ScreenScale)
+                        }
+
+                        gold := bonus.GoldBonus()
+                        if gold != 0 {
+                            whiteFont.PrintWrapCenter(screen, float64(280 * data.ScreenScale), y, float64(cancelBackground.Bounds().Dx() - 5 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("+%v gold", gold))
+                            y += float64(whiteFont.Height() * data.ScreenScale)
+                        }
+
+                        power := bonus.PowerBonus()
+                        if power != 0 {
+                            whiteFont.PrintWrapCenter(screen, float64(280 * data.ScreenScale), y, float64(cancelBackground.Bounds().Dx() - 5 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("+%v power", power))
+                            y += float64(whiteFont.Height() * data.ScreenScale)
+                        }
+
+                        reduction := bonus.UnitReductionBonus()
+                        if reduction != 0 {
+                            whiteFont.PrintWrapCenter(screen, float64(280 * data.ScreenScale), y, float64(cancelBackground.Bounds().Dx() - 5 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("Reduces normal unit cost by %v%%", reduction))
+                            y += float64(whiteFont.Height() * data.ScreenScale)
+                        }
                     }
 
                     if cityMap[selectedPoint] != nil {

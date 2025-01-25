@@ -432,10 +432,6 @@ func (tile *FullTile) GetBonus() data.BonusType {
     return data.BonusNone
 }
 
-func (tile *FullTile) HasWildGame() bool {
-    return tile.GetBonus() == data.BonusWildGame
-}
-
 type Map struct {
     Map *terrain.Map
 
