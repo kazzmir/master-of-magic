@@ -379,9 +379,11 @@ func (node *ExtraMagicNode) DrawLayer2(screen *ebiten.Image, imageCache *util.Im
     if node.Warped && node.MeldingWizard != nil {
         shader, err := imageCache.GetShader(shaders.ShaderWarp)
         if err != nil {
+            log.Printf("error getting shader %v", err)
             return
         }
 
+        // FIXME get the mask to work, but scale it based on what the options.GeoM has
         /*
         mask, err := imageCache.GetImage("mapback.lbx", 93, 0)
         if err != nil {
@@ -409,8 +411,11 @@ func (node *ExtraMagicNode) DrawLayer2(screen *ebiten.Image, imageCache *util.Im
             return
         }
 
+        // the mask needs to be the same size as the subimage. This is a hack for now
+        /*
         mask := ebiten.NewImage(image.Bounds().Dx(), image.Bounds().Dy())
         mask.Fill(color.RGBA{0, 0, 0, 255})
+        */
 
         sourceImage := ebiten.NewImageFromImage(image)
 
@@ -420,7 +425,7 @@ func (node *ExtraMagicNode) DrawLayer2(screen *ebiten.Image, imageCache *util.Im
         options2.GeoM.Translate(x1, y1)
 
         options2.Images[0] = sourceImage
-        options2.Images[1] = mask
+        // options2.Images[1] = mask
         options2.Uniforms = make(map[string]interface{})
         options2.Uniforms["Time"] = float32(math.Abs(float64(counter/5)))
         screen.DrawRectShader(image.Bounds().Dx(), image.Bounds().Dy(), shader, &options2)

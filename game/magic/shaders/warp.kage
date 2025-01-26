@@ -19,11 +19,12 @@ func Fragment(destPosition vec4, srcPosition vec2, color vec4) vec4 {
     shake_power := 3.0
     shake_block_size := 30.5
 
+    /* if you want the mask to work use this again
     current := imageSrc0At(srcPosition)
-
     if imageSrc1At(srcPosition).a == 0 {
         return current
     }
+    */
 
     fixed_uv := srcPosition
     fixed_uv.x += (random((floor(srcPosition.x * shake_block_size ) / shake_block_size) + Time) - 0.5) * shake_power;
