@@ -1533,9 +1533,6 @@ func (game *Game) ComputeTerrainCost(stack *playerlib.UnitStack, sourceX int, so
         return false
     }
 
-    xDiff := int(math.Abs(float64(game.CurrentMap().XDistance(destX, sourceX))))
-    yDiff := int(math.Abs(float64(destY - sourceY)))
-
     baseCost := fraction.FromInt(1)
 
     if containsFriendlyCity(destX, destY) {
@@ -1558,15 +1555,7 @@ func (game *Game) ComputeTerrainCost(stack *playerlib.UnitStack, sourceX int, so
         return fraction.Make(1, 2), true
     }
 
-    if xDiff == 1 && yDiff == 1 {
-        return baseCost.Add(fraction.Make(1, 2)), true
-    }
-
-    if xDiff == 1 || yDiff == 1 {
-        return baseCost, true
-    }
-
-    return fraction.Zero(), false
+    return baseCost, true
 }
 
 /* blink the game screen red to indicate the user attempted to do something invalid
