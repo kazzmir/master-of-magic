@@ -2436,6 +2436,7 @@ func createScenario28(cache *lbx.LbxCache) *gamelib.Game {
     node.Node.Empty = true
 
     player.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, node.X + 1, node.Y + 1, game.Plane, wizard.Banner, nil))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.NomadRangers, node.X + 1, node.Y + 1, game.Plane, wizard.Banner, nil))
 
     player.LiftFog(node.X, node.Y, 4, game.Plane)
 

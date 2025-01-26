@@ -1553,6 +1553,11 @@ func (game *Game) ComputeTerrainCost(stack *playerlib.UnitStack, sourceX int, so
         return fraction.Make(1, 2), true
     }
 
+    hasPathFinding := stack.ActiveUnitsHasAbility(data.AbilityPathfinding)
+    if hasPathFinding {
+        return fraction.Make(1, 2), true
+    }
+
     if xDiff == 1 && yDiff == 1 {
         return baseCost.Add(fraction.Make(1, 2)), true
     }
@@ -1746,6 +1751,7 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
         enemyMemo[image.Pt(x, y)] = false
         return false
     }
+
 
     tileCost := func (x1 int, y1 int, x2 int, y2 int) float64 {
         x1 = useMap.WrapX(x1)
