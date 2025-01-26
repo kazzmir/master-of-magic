@@ -2412,14 +2412,13 @@ func createScenario28(cache *lbx.LbxCache) *gamelib.Game {
     x, y := game.FindValidCityLocation(game.Plane)
 
     city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.CurrentMap(), game)
-    city.Population = 6190
+    city.Population = 10190
     city.Plane = data.PlaneArcanus
     city.Banner = wizard.Banner
     city.ProducingBuilding = buildinglib.BuildingGranary
     city.ProducingUnit = units.UnitNone
     city.Race = wizard.Race
-    city.Farmers = 3
-    city.Workers = 3
+    city.Farmers = 10
     city.Wall = false
 
     city.ResetCitizens(nil)
@@ -2436,6 +2435,7 @@ func createScenario28(cache *lbx.LbxCache) *gamelib.Game {
     node.Node.Empty = true
 
     player.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, node.X + 1, node.Y + 1, game.Plane, wizard.Banner, nil))
+    // has pathfinding
     player.AddUnit(units.MakeOverworldUnitFromUnit(units.NomadRangers, node.X + 1, node.Y + 1, game.Plane, wizard.Banner, nil))
 
     player.LiftFog(node.X, node.Y, 4, game.Plane)
