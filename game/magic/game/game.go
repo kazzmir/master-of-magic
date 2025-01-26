@@ -1372,14 +1372,14 @@ func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, sta
         background, _ := game.ImageCache.GetImage("backgrnd.lbx", 32, 0)
 
         var options ebiten.DrawImageOptions
-        options.GeoM.Translate(30, 50)
+        options.GeoM.Translate(float64(30 * data.ScreenScale), float64(50 * data.ScreenScale))
         screen.DrawImage(background, &options)
 
         numHouses := city.GetOutpostHouses()
         maxHouses := 10
 
         houseOptions := options
-        houseOptions.GeoM.Translate(7, 31)
+        houseOptions.GeoM.Translate(float64(7 * data.ScreenScale), float64(31 * data.ScreenScale))
 
         fullHouseIndex := 34
         emptyHouseIndex := 37
@@ -1403,34 +1403,34 @@ func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, sta
         emptyHouse, _ := game.ImageCache.GetImage("backgrnd.lbx", emptyHouseIndex, 0)
         for i := numHouses; i < maxHouses; i++ {
             screen.DrawImage(emptyHouse, &houseOptions)
-            houseOptions.GeoM.Translate(float64(emptyHouse.Bounds().Dx()) + 1, 0)
+            houseOptions.GeoM.Translate(float64(emptyHouse.Bounds().Dx() + 1 * data.ScreenScale), 0)
         }
 
         if stack != nil {
             stackOptions := options
-            stackOptions.GeoM.Translate(7, 55)
+            stackOptions.GeoM.Translate(float64(7 * data.ScreenScale), float64(55 * data.ScreenScale))
 
             for _, unit := range stack.Units() {
                 pic, _ := GetUnitImage(unit, &game.ImageCache, city.Banner)
                 screen.DrawImage(pic, &stackOptions)
-                stackOptions.GeoM.Translate(float64(pic.Bounds().Dx()) + 1, 0)
+                stackOptions.GeoM.Translate(float64(pic.Bounds().Dx() + 1 * data.ScreenScale), 0)
             }
         }
 
-        x, y := options.GeoM.Apply(6, 22)
-        game.InfoFontYellow.Print(screen, x, y, 1, options.ColorScale, city.Race.String())
+        x, y := options.GeoM.Apply(float64(6 * data.ScreenScale), float64(22 * data.ScreenScale))
+        game.InfoFontYellow.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, city.Race.String())
 
-        x, y = options.GeoM.Apply(20, 5)
+        x, y = options.GeoM.Apply(float64(20 * data.ScreenScale), float64(5 * data.ScreenScale))
         if rename {
-            bigFont.Print(screen, x, y, 1, options.ColorScale, "New Outpost Founded")
+            bigFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, "New Outpost Founded")
         } else {
-            bigFont.Print(screen, x, y, 1, options.ColorScale, fmt.Sprintf("Outpost Of %v", city.Name))
+            bigFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("Outpost Of %v", city.Name))
         }
 
         cityScapeOptions := options
-        cityScapeOptions.GeoM.Translate(185, 30)
+        cityScapeOptions.GeoM.Translate(float64(185 * data.ScreenScale), float64(30 * data.ScreenScale))
         x, y = cityScapeOptions.GeoM.Apply(0, 0)
-        cityScape := screen.SubImage(image.Rect(int(x), int(y), int(x + 72), int(y + 66))).(*ebiten.Image)
+        cityScape := screen.SubImage(image.Rect(int(x), int(y), int(x) + 72 * data.ScreenScale, int(y) + 66 * data.ScreenScale)).(*ebiten.Image)
 
         cityScapeBackground, _ := game.ImageCache.GetImage("cityscap.lbx", 0, 0)
         cityScape.DrawImage(cityScapeBackground, &cityScapeOptions)
@@ -1445,7 +1445,7 @@ func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, sta
 
         cityHouse, _ := game.ImageCache.GetImage("cityscap.lbx", houseIndex, 0)
         options2 := cityScapeOptions
-        options2.GeoM.Translate(30, 20)
+        options2.GeoM.Translate(float64(30 * data.ScreenScale), float64(20 * data.ScreenScale))
         cityScape.DrawImage(cityHouse, &options2)
 
         /*
@@ -1503,6 +1503,8 @@ func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, st
 
 /* return the cost to move from the current position the stack is on to the new given coordinates.
  * also return true/false if the move is even possible
+ * FIXME: some values used by this logic could be precomputed and passed in as an argument. Things like 'containsFriendlyCity' could be a map of all cities
+ * on the same plane as the unit, thus avoiding the expensive player.FindCity() call
  */
 func (game *Game) ComputeTerrainCost(stack *playerlib.UnitStack, sourceX int, sourceY int, destX int, destY int, mapUse *maplib.Map) (fraction.Fraction, bool) {
     /*
@@ -1533,35 +1535,62 @@ func (game *Game) ComputeTerrainCost(stack *playerlib.UnitStack, sourceX int, so
         return false
     }
 
-    xDiff := int(math.Abs(float64(game.CurrentMap().XDistance(destX, sourceX))))
-    yDiff := int(math.Abs(float64(destY - sourceY)))
-
-    baseCost := fraction.FromInt(1)
-
-    if containsFriendlyCity(destX, destY) {
-        baseCost = fraction.Make(1, 2)
-    }
-
     road_v, ok := tileTo.Extras[maplib.ExtraKindRoad]
     if ok {
         road := road_v.(*maplib.ExtraRoad)
         if road.Enchanted {
-            // FIXME: only if stack is corporeal
-            return fraction.Zero(), true
+            if stack.ActiveUnitsDoesntHaveAbility(data.AbilityNonCorporeal) {
+                return fraction.Zero(), true
+            }
         }
 
         return fraction.Make(1, 2), true
     }
 
-    if xDiff == 1 && yDiff == 1 {
-        return baseCost.Add(fraction.Make(1, 2)), true
+    if containsFriendlyCity(destX, destY) {
+        return fraction.Make(1, 2), true
     }
 
-    if xDiff == 1 || yDiff == 1 {
-        return baseCost, true
+    if stack.AllFlyers() {
+        return fraction.FromInt(1), true
     }
 
-    return fraction.Zero(), false
+    if stack.HasPathfinding() {
+        return fraction.Make(1, 2), true
+    }
+
+    // FIXME: handle swimming, sailing properties
+    switch tileTo.Tile.TerrainType() {
+        case terrain.Desert: return fraction.FromInt(1), true
+        case terrain.SorceryNode: return fraction.FromInt(1), true
+        case terrain.Grass: return fraction.FromInt(1), true
+        case terrain.Forest:
+            if stack.ActiveUnitsHasAbility(data.AbilityForester) {
+                return fraction.FromInt(1), true
+            }
+            return fraction.FromInt(2), true
+        case terrain.River: return fraction.FromInt(2), true
+        case terrain.Tundra: return fraction.FromInt(2), true
+        case terrain.Hill:
+            if stack.ActiveUnitsHasAbility(data.AbilityMountaineer) {
+                return fraction.FromInt(1), true
+            }
+            return fraction.FromInt(3), true
+        case terrain.Swamp: return fraction.FromInt(3), true
+        case terrain.Mountain:
+            if stack.ActiveUnitsHasAbility(data.AbilityMountaineer) {
+                return fraction.FromInt(1), true
+            }
+            return fraction.FromInt(4), true
+        case terrain.Volcano:
+            if stack.ActiveUnitsHasAbility(data.AbilityMountaineer) {
+                return fraction.FromInt(1), true
+            }
+
+            return fraction.FromInt(4), true
+    }
+
+    return fraction.FromInt(1), true
 }
 
 /* blink the game screen red to indicate the user attempted to do something invalid
@@ -1747,6 +1776,7 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
         return false
     }
 
+
     tileCost := func (x1 int, y1 int, x2 int, y2 int) float64 {
         x1 = useMap.WrapX(x1)
         x2 = useMap.WrapX(x2)
@@ -1803,7 +1833,8 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
 
         // don't know what the cost is, assume we can move there
         if x2 >= 0 && x2 < len(fog) && y2 >= 0 && y2 < len(fog[x2]) && !fog[x2][y2] {
-            return baseCost
+            // increase cost of unknown tile very slightly so we prefer to move to known tiles
+            return baseCost + 0.1
         }
 
         cost, ok := game.ComputeTerrainCost(stack, x1, y1, x2, y2, useMap)
@@ -5106,10 +5137,6 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
                     _ = sailingIcon
                     _ = swimmingIcon
-                    _ = mountaineeringIcon
-                    _ = foresterIcon
-                    _ = flyingIcon
-                    _ = pathfindingIcon
                     _ = planeTravelIcon
                     _ = windWalkingIcon
 
@@ -5118,6 +5145,10 @@ func (game *Game) MakeHudUI() *uilib.UI {
                     if player.SelectedStack != nil {
                         if player.SelectedStack.AllFlyers() {
                             useIcon = flyingIcon
+                        } else if player.SelectedStack.HasPathfinding() {
+                            useIcon = pathfindingIcon
+                        } else if player.SelectedStack.ActiveUnitsHasAbility(data.AbilityMountaineer) {
+                            useIcon = mountaineeringIcon
                         } else if player.SelectedStack.ActiveUnitsHasAbility(data.AbilityForester) {
                             useIcon = foresterIcon
                         } else if player.SelectedStack.AllSwimmers() {

@@ -115,6 +115,7 @@ func (stack *UnitStack) AllSwimmers() bool {
 }
 
 
+// returns true if any of the active units in the stack have the given ability
 func (stack *UnitStack) ActiveUnitsHasAbility(ability data.AbilityType) bool {
     for _, unit := range stack.ActiveUnits() {
         if unit.HasAbility(ability) {
@@ -123,6 +124,34 @@ func (stack *UnitStack) ActiveUnitsHasAbility(ability data.AbilityType) bool {
     }
 
     return false
+}
+
+func (stack *UnitStack) ActiveUnitsHasEnchantment(ability data.UnitEnchantment) bool {
+    for _, unit := range stack.ActiveUnits() {
+        if unit.HasEnchantment(ability) {
+            return true
+        }
+    }
+
+    return false
+}
+
+// returns true if none of the active units in the stack have the given ability
+// if a single unit has the ability then return false
+func (stack *UnitStack) ActiveUnitsDoesntHaveAbility(ability data.AbilityType) bool {
+    for _, unit := range stack.ActiveUnits() {
+        if unit.HasAbility(ability) {
+            return false
+        }
+    }
+
+    return true
+}
+
+func (stack *UnitStack) HasPathfinding() bool {
+    return stack.ActiveUnitsHasAbility(data.AbilityPathfinding) ||
+           stack.ActiveUnitsHasEnchantment(data.UnitEnchantmentPathFinding) ||
+           (stack.ActiveUnitsHasAbility(data.AbilityMountaineer) && stack.ActiveUnitsHasAbility(data.AbilityForester))
 }
 
 func (stack *UnitStack) AllActive() bool {
