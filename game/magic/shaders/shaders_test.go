@@ -11,7 +11,7 @@ func TestLoadShaders(test *testing.T) {
         test.Errorf("Error loading edge glow shader: %v", err)
     }
 
-    _, err = LoadGlitchShader()
+    _, err = LoadWarpShader()
 
     if err != nil {
         test.Errorf("Error loading distortion shader: %v", err)

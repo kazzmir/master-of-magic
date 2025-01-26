@@ -8,19 +8,19 @@ import (
 type Shader int
 const (
     ShaderEdgeGlow Shader = iota
-    ShaderGlitch
+    ShaderWarp
 )
 
 //go:embed edge-glow.kage
 var edgeGlowShader []byte
 
-//go:embed glitch.kage
-var distortionShader []byte
+//go:embed warp.kage
+var warpShader []byte
 
 func LoadEdgeGlowShader() (*ebiten.Shader, error) {
     return ebiten.NewShader(edgeGlowShader)
 }
 
-func LoadGlitchShader() (*ebiten.Shader, error) {
-    return ebiten.NewShader(distortionShader)
+func LoadWarpShader() (*ebiten.Shader, error) {
+    return ebiten.NewShader(warpShader)
 }

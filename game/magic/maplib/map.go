@@ -12,7 +12,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/units"
-    // "github.com/kazzmir/master-of-magic/game/magic/shaders"
+    "github.com/kazzmir/master-of-magic/game/magic/shaders"
     cameralib "github.com/kazzmir/master-of-magic/game/magic/camera"
 
     "github.com/hajimehoshi/ebiten/v2"
@@ -365,43 +365,36 @@ func (node *ExtraMagicNode) DrawLayer2(screen *ebiten.Image, imageCache *util.Im
 
         // FIXME: Zone does not get rendered if node is not visible
         for _, point := range node.Zone {
-            options2 := *options
-            if node.Warped {
-                var scale ebiten.ColorScale
-                // scale.Scale(0, 0, 0, 1)  black
-                scale.Scale(0.4, 0.4, 0.4, 0.4) // lighten
-                options2.ColorScale = scale
-            }
-
             // FIXME: Scale translation according to current zoom level
+            options2 := *options
             options2.GeoM.Translate(float64(point.X * tileWidth), float64(point.Y * tileHeight))
             screen.DrawImage(use, &options2)
         }
     }
 
-    // if node.Warped && node.MeldingWizard != nil {
-    //     shader, _ := imageCache.GetShader(shaders.ShaderGlitch)
+    if node.Warped && node.MeldingWizard != nil {
+        shader, _ := imageCache.GetShader(shaders.ShaderWarp)
 
-    //     point:= node.Zone[0]
+        point:= node.Zone[0]
 
-    //     mask, _ := imageCache.GetImage("mapback.lbx", 93, 0)
+        mask, _ := imageCache.GetImage("mapback.lbx", 93, 0)
 
-    //     // FIXME: is there a better way to render the shader on the screen?
-    //     tx, ty := options.GeoM.Element(0, 2), options.GeoM.Element(1, 2)
-    //     rect := image.Rect(int(tx), int(ty), int(tx) + tileWidth, int(ty) + tileHeight)
-    //     image := screen.SubImage(rect)
+        // FIXME: is there a better way to render the shader on the screen?
+        tx, ty := options.GeoM.Element(0, 2), options.GeoM.Element(1, 2)
+        rect := image.Rect(int(tx), int(ty), int(tx) + tileWidth, int(ty) + tileHeight)
+        image := screen.SubImage(rect)
 
-    //     if image.Bounds().Dx() == tileWidth && image.Bounds().Dy() == tileHeight {
-    //         var options2 ebiten.DrawRectShaderOptions
-    //         options2.GeoM = options.GeoM
-    //         options2.GeoM.Translate(float64(point.X * tileWidth), float64(point.Y * tileHeight))
-    //         options2.Images[0] = ebiten.NewImageFromImage(image)
-    //         options2.Images[1] = mask
-    //         options2.Uniforms = make(map[string]interface{})
-    //         options2.Uniforms["Time"] = float32(math.Abs(float64(counter/5)))
-    //         screen.DrawRectShader(tileWidth, tileHeight, shader, &options2)
-    //     }
-    // }
+        if image.Bounds().Dx() == tileWidth && image.Bounds().Dy() == tileHeight {
+            var options2 ebiten.DrawRectShaderOptions
+            options2.GeoM = options.GeoM
+            options2.GeoM.Translate(float64(point.X * tileWidth), float64(point.Y * tileHeight))
+            options2.Images[0] = ebiten.NewImageFromImage(image)
+            options2.Images[1] = mask
+            options2.Uniforms = make(map[string]interface{})
+            options2.Uniforms["Time"] = float32(math.Abs(float64(counter/5)))
+            screen.DrawRectShader(tileWidth, tileHeight, shader, &options2)
+        }
+    }
 }
 
 func (node *ExtraMagicNode) Meld(meldingWizard Wizard, spirit units.Unit) bool {

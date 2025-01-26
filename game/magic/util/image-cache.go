@@ -106,8 +106,8 @@ func (cache *ImageCache) GetShader(shader shaders.Shader) (*ebiten.Shader, error
             if err != nil {
                 return nil, err
             }
-        case shaders.ShaderGlitch:
-            out, err = shaders.LoadGlitchShader()
+        case shaders.ShaderWarp:
+            out, err = shaders.LoadWarpShader()
             if err != nil {
                 return nil, err
             }

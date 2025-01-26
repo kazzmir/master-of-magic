@@ -160,7 +160,7 @@ func DrawScenario2(engine *Engine, screen *ebiten.Image){
     // FIXME: Test with other node type
     natureNode := ebiten.NewImageFromImage(engine.ImageCache.ApplyScale(data.Tiles[terrain.IndexNatNode].Images[0]))
 
-    shader, err := engine.ImageCache.GetShader(shaders.ShaderGlitch)
+    shader, err := engine.ImageCache.GetShader(shaders.ShaderWarp)
     if err != nil {
         log.Printf("Unable to get shader: %v", err)
         return
