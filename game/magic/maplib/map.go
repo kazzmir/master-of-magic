@@ -391,18 +391,12 @@ func (node *ExtraMagicNode) DrawLayer2(screen *ebiten.Image, imageCache *util.Im
         }
         */
 
-        point := node.Zone[0]
-
-        var options2 ebiten.DrawRectShaderOptions
-        options2.GeoM.Translate(float64(point.X * tileWidth), float64(point.Y * tileHeight))
-        options2.GeoM.Concat(options.GeoM)
-
-        x1, y1 := options2.GeoM.Apply(0, 0)
-        x2, y2 := options2.GeoM.Apply(float64(tileWidth), float64(tileHeight))
+        x1, y1 := options.GeoM.Apply(0, 0)
+        x2, y2 := options.GeoM.Apply(float64(tileWidth), float64(tileHeight))
 
         // log.Printf("x1 %v y1 %v x2 %v y2 %v", x1, y1, x2, y2)
 
-        if x1 <= 0 || y1 <= 0 || x2 <= x1 || y2 <= y1 {
+        if x1 < 0 || y1 < 0 || x2 <= x1 || y2 <= y1 {
             return
         }
         rect := image.Rect(int(x1), int(y1), int(x2), int(y2))
@@ -421,7 +415,7 @@ func (node *ExtraMagicNode) DrawLayer2(screen *ebiten.Image, imageCache *util.Im
 
         // log.Printf("warp at %v, %v bounds image=%v source=%v", point.X, point.Y, image.Bounds(), sourceImage.Bounds())
 
-        options2.GeoM.Reset()
+        var options2 ebiten.DrawRectShaderOptions
         options2.GeoM.Translate(x1, y1)
 
         options2.Images[0] = sourceImage
