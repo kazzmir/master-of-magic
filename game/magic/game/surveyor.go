@@ -225,12 +225,27 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
                         }
                     }
 
+                    node := mapObject.GetMagicNode(selectedPoint.X, selectedPoint.Y)
+                    if node != nil {
+                        if node.Warped {
+                            whiteFont.PrintCenter(screen, float64(280 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, "Warped")
+                            y += float64(whiteFont.Height() * data.ScreenScale)
+                        } else if node.MeldingWizard != nil && node.GuardianSpiritMeld {
+                            whiteFont.PrintCenter(screen, float64(280 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, "Guardian Spirit")
+                            y += float64(whiteFont.Height() * data.ScreenScale)
+                        } else if node.MeldingWizard != nil {
+                            whiteFont.PrintCenter(screen, float64(280 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, "Magic Spirit")
+                            y += float64(whiteFont.Height() * data.ScreenScale)
+                        }
+                    }
+
+                    // FIXME: show lair/node/tower
+                    // FIXME: show "Unexplored" or toughest opponent for lairs/nodes
+
                     if cityMap[selectedPoint] != nil {
                         city := cityMap[selectedPoint]
                         yellowFont.PrintWrapCenter(screen, float64(280 * data.ScreenScale), y, float64(cancelBackground.Bounds().Dx() - 5 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, city.String())
                     }
-
-                    // FIXME: show lair/node/tower
 
                     y = float64(160 * data.ScreenScale) - cityInfoText.TotalHeight
 
