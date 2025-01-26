@@ -5916,7 +5916,7 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
         }
     }
 
-    overworld.Map.DrawLayer2(int(overworld.Camera.GetZoomedX()), int(overworld.Camera.GetZoomedY()), overworld.Counter / 8, overworld.ImageCache, screen, geom)
+    overworld.Map.DrawLayer2(overworld.Camera, overworld.Counter / 8, overworld.ImageCache, screen, geom)
 
     if overworld.Fog != nil {
         overworld.DrawFog(screen, geom)
