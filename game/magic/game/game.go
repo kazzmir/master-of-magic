@@ -1555,23 +1555,40 @@ func (game *Game) ComputeTerrainCost(stack *playerlib.UnitStack, sourceX int, so
         return fraction.FromInt(1), true
     }
 
-    hasPathFinding := stack.ActiveUnitsHasAbility(data.AbilityPathfinding) || stack.ActiveUnitsHasEnchantment(data.UnitEnchantmentPathFinding)
+    hasPathFinding := stack.ActiveUnitsHasAbility(data.AbilityPathfinding) || stack.ActiveUnitsHasEnchantment(data.UnitEnchantmentPathFinding) || (stack.ActiveUnitsHasAbility(data.AbilityMountaineer) && stack.ActiveUnitsHasAbility(data.AbilityForester))
     if hasPathFinding {
         return fraction.Make(1, 2), true
     }
 
-    // FIXME: handle forester, mountaineer, swimming, sailing properties
+    // FIXME: handle swimming, sailing properties
     switch tileTo.Tile.TerrainType() {
         case terrain.Desert: return fraction.FromInt(1), true
         case terrain.SorceryNode: return fraction.FromInt(1), true
         case terrain.Grass: return fraction.FromInt(1), true
-        case terrain.Forest: return fraction.FromInt(2), true
+        case terrain.Forest:
+            if stack.ActiveUnitsHasAbility(data.AbilityForester) {
+                return fraction.FromInt(1), true
+            }
+            return fraction.FromInt(2), true
         case terrain.River: return fraction.FromInt(2), true
         case terrain.Tundra: return fraction.FromInt(2), true
-        case terrain.Hill: return fraction.FromInt(3), true
+        case terrain.Hill:
+            if stack.ActiveUnitsHasAbility(data.AbilityMountaineer) {
+                return fraction.FromInt(1), true
+            }
+            return fraction.FromInt(3), true
         case terrain.Swamp: return fraction.FromInt(3), true
-        case terrain.Mountain: return fraction.FromInt(4), true
-        case terrain.Volcano: return fraction.FromInt(4), true
+        case terrain.Mountain:
+            if stack.ActiveUnitsHasAbility(data.AbilityMountaineer) {
+                return fraction.FromInt(1), true
+            }
+            return fraction.FromInt(4), true
+        case terrain.Volcano:
+            if stack.ActiveUnitsHasAbility(data.AbilityMountaineer) {
+                return fraction.FromInt(1), true
+            }
+
+            return fraction.FromInt(4), true
     }
 
     return fraction.FromInt(1), true
