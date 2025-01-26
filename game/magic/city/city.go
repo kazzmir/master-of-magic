@@ -533,6 +533,8 @@ func (city *City) PopulationGrowthRate() int {
         base += 30
     }
 
+    // FIXME: if not enough food then rate is -50 * missing food
+
     return base
 }
 
