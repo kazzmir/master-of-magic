@@ -4,7 +4,6 @@
 * play midi music
 * font editor - choose colors for font palette
 * implement overworld spells
-* purify
 * better map generation
 * overworld: ai controlled wizards/empires
 * combat: implement boulder ranged attacks
@@ -69,3 +68,4 @@
 1/23/2025 * upscale screen by 2x
 1/25/2025 * corrupted tiles
 1/25/2025 * hero: ability progress (https://masterofmagic.fandom.com/wiki/Experience_Level#Ability_Improvement_Tables_-_Heroes)
+??? * unit purify
