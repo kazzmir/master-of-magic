@@ -1537,8 +1537,9 @@ func (game *Game) ComputeTerrainCost(stack *playerlib.UnitStack, sourceX int, so
     if ok {
         road := road_v.(*maplib.ExtraRoad)
         if road.Enchanted {
-            // FIXME: only if stack is corporeal
-            return fraction.Zero(), true
+            if stack.ActiveUnitsDoesntHaveAbility(data.AbilityNonCorporeal) {
+                return fraction.Zero(), true
+            }
         }
 
         return fraction.Make(1, 2), true
