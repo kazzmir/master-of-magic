@@ -1105,7 +1105,7 @@ func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City,
     }
     animal, _ := game.ImageCache.GetImageTransform("resource.lbx", animalIndex, 0, "crop", util.AutoCrop)
 
-    wrappedText := bigFont.CreateWrappedText(float64(180 * data.ScreenScale), float64(1 * data.ScreenScale), fmt.Sprintf("The %s of %s has completed the construction of a %s.", city.GetSize(), city.Name, game.BuildingInfo.Name(building)))
+    wrappedText := bigFont.CreateWrappedText(float64(175 * data.ScreenScale), float64(1 * data.ScreenScale), fmt.Sprintf("The %s of %s has completed the construction of a %s.", city.GetSize(), city.Name, game.BuildingInfo.Name(building)))
 
     rightSide, _ := game.ImageCache.GetImage("resource.lbx", 41, 0)
 
@@ -1144,6 +1144,7 @@ func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City,
         x, y = options.GeoM.Apply(float64(4 * data.ScreenScale), float64(6 * data.ScreenScale))
         buildingSpace := screen.SubImage(image.Rect(int(x), int(y), int(x) + 45 * data.ScreenScale, int(y) + 47 * data.ScreenScale)).(*ebiten.Image)
 
+        // buildingSpace.Fill(color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff})
         // vector.DrawFilledRect(buildingSpace, float32(x), float32(y), float32(buildingSpace.Bounds().Dx()), float32(buildingSpace.Bounds().Dy()), color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, false)
 
         landOptions := options
@@ -1151,7 +1152,11 @@ func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City,
         buildingSpace.DrawImage(landBackground, &landOptions)
 
         buildingOptions := options
-        buildingOptions.GeoM.Translate(float64(buildingSpace.Bounds().Dx()) / 2, float64(buildingSpace.Bounds().Dy()) / 2)
+        // translate to the center of the building space, and then draw the image centered by translating
+        // by -width/2, -height/2
+        buildingOptions.GeoM.Reset()
+        buildingOptions.GeoM.Translate(x, y)
+        buildingOptions.GeoM.Translate(float64(buildingSpace.Bounds().Dx()/2), float64(buildingSpace.Bounds().Dy()) / 2)
         buildingOptions.GeoM.Translate(float64(buildingPicsAnimation.Frame().Bounds().Dx()) / -2, float64(buildingPicsAnimation.Frame().Bounds().Dy()) / -2)
         buildingSpace.DrawImage(buildingPicsAnimation.Frame(), &buildingOptions)
     }
