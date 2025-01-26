@@ -287,6 +287,10 @@ func computeUnitBuildPowers(stack *playerlib.UnitStack) UnitBuildPowers {
         if check.HasAbility(data.AbilityConstruction) {
             powers.BuildRoad = true
         }
+
+        if check.HasAbility(data.AbilityPurify) {
+            powers.Purify = true
+        }
     }
 
     return powers
@@ -4728,20 +4732,16 @@ func (game *Game) MakeHudUI() *uilib.UI {
                             screen.DrawImage(weapon, &weaponOptions)
                         }
 
-                        // draw a G on the unit if they are moving
-                        if len(stack.CurrentPath) != 0 {
-                            x, y := options.GeoM.Apply(float64(1 * data.ScreenScale), float64(1 * data.ScreenScale))
-                            game.WhiteFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, "G")
-                        }
-
+                        // draw a G on the unit if they are moving, P if purify, and B if building road
                         if unit.GetBusy() == units.BusyStatusBuildRoad {
                             x, y := options.GeoM.Apply(float64(1 * data.ScreenScale), float64(1 * data.ScreenScale))
                             game.WhiteFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, "B")
-                        }
-
-                        if unit.GetBusy() == units.BusyStatusPurify {
+                        } else if unit.GetBusy() == units.BusyStatusPurify {
                             x, y := options.GeoM.Apply(float64(1 * data.ScreenScale), float64(1 * data.ScreenScale))
                             game.WhiteFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, "P")
+                        } else if len(stack.CurrentPath) != 0 {
+                            x, y := options.GeoM.Apply(float64(1 * data.ScreenScale), float64(1 * data.ScreenScale))
+                            game.WhiteFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, "G")
                         }
                     },
                 })
@@ -4887,7 +4887,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
             hasRoad := game.GetMap(player.SelectedStack.Plane()).ContainsRoad(player.SelectedStack.X(), player.SelectedStack.Y())
             hasCity := game.ContainsCity(player.SelectedStack.X(), player.SelectedStack.Y(), player.SelectedStack.Plane())
             node := game.GetMap(player.SelectedStack.Plane()).GetMagicNode(player.SelectedStack.X(), player.SelectedStack.Y())
-            isCorrupted := game.GetMap(player.SelectedStack.Plane()).IsCorrupted(player.SelectedStack.X(), player.SelectedStack.Y())
+            isCorrupted := game.GetMap(player.SelectedStack.Plane()).HasCorruption(player.SelectedStack.X(), player.SelectedStack.Y())
 
             elements = append(elements, &uilib.UIElement{
                 Rect: buildRect,
@@ -4959,6 +4959,10 @@ func (game *Game) MakeHudUI() *uilib.UI {
                         }
 
                         if canMeld {
+                            buildIndex = 1
+                        }
+                    } else if powers.Purify {
+                        if isCorrupted {
                             buildIndex = 1
                         }
                     } else if powers.BuildRoad {
