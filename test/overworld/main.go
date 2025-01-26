@@ -2806,6 +2806,84 @@ func createScenario32(cache *lbx.LbxCache) *gamelib.Game {
     return game
 }
 
+// priest purifies a tile
+func createScenario33(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 33")
+
+    wizard := setup.WizardCustom{
+        Name: "bob",
+        Banner: data.BannerBlue,
+        Race: data.RaceTroll,
+        Abilities: []setup.WizardAbility{
+            setup.AbilityAlchemy,
+            setup.AbilitySageMaster,
+        },
+        Books: []data.WizardBook{
+            data.WizardBook{
+                Magic: data.LifeMagic,
+                Count: 3,
+            },
+            data.WizardBook{
+                Magic: data.SorceryMagic,
+                Count: 8,
+            },
+        },
+    }
+
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
+
+    game.Plane = data.PlaneArcanus
+
+    player := game.AddPlayer(wizard, true)
+
+    x, y := game.FindValidCityLocation(game.Plane)
+
+    city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, fraction.Zero(), game.BuildingInfo, game.CurrentMap(), game)
+    city.Population = 16190
+    city.Plane = data.PlaneArcanus
+    city.Banner = wizard.Banner
+    city.ProducingBuilding = buildinglib.BuildingTradeGoods
+    city.ProducingUnit = units.UnitNone
+    city.Buildings.Insert(buildinglib.BuildingGranary)
+    city.Buildings.Insert(buildinglib.BuildingFarmersMarket)
+    city.Buildings.Insert(buildinglib.BuildingForestersGuild)
+    city.Race = wizard.Race
+    city.Farmers = 13
+    city.Workers = 3
+    city.Wall = false
+
+    city.ResetCitizens(nil)
+
+    player.AddCity(city)
+
+    player.Gold = 83
+    player.Mana = 2600
+
+    // game.Map.Map.Terrain[3][6] = terrain.TileNatureForest.Index
+
+    // log.Printf("City at %v, %v", x, y)
+
+    player.LiftFog(x, y, 30, data.PlaneArcanus)
+
+    priest1 := player.AddUnit(units.MakeOverworldUnitFromUnit(units.BeastmenPriest, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, nil))
+    priest2 := player.AddUnit(units.MakeOverworldUnitFromUnit(units.BeastmenPriest, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, nil))
+
+    _ = priest2
+
+    game.CurrentMap().SetCorruption(game.CurrentMap().WrapX(x + 1), y)
+
+    // player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, 30, 30, data.PlaneArcanus, wizard.Banner))
+
+    stack := player.FindStackByUnit(priest1)
+    player.SetSelectedStack(stack)
+
+    player.LiftFog(stack.X(), stack.Y(), 2, data.PlaneArcanus)
+
+    game.Camera.Center(stack.X(), stack.Y())
+
+    return game
+}
+
 func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
@@ -2844,6 +2922,7 @@ func NewEngine(scenario int) (*Engine, error) {
         case 30: game = createScenario30(cache)
         case 31: game = createScenario31(cache)
         case 32: game = createScenario32(cache)
+        case 33: game = createScenario33(cache)
         default: game = createScenario1(cache)
     }
 
