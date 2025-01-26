@@ -238,6 +238,10 @@ type Game struct {
     RoadWorkArcanus map[image.Point]float64
     RoadWorkMyrror map[image.Point]float64
 
+    // work done on purifying tiles
+    PurifyWorkArcanus map[image.Point]float64
+    PurifyWorkMyrror map[image.Point]float64
+
     Players []*playerlib.Player
     CurrentPlayer int
 
@@ -265,6 +269,7 @@ type UnitBuildPowers struct {
     CreateOutpost bool
     Meld bool
     BuildRoad bool
+    Purify bool
 }
 
 func computeUnitBuildPowers(stack *playerlib.UnitStack) UnitBuildPowers {
@@ -569,6 +574,9 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
 
         RoadWorkArcanus: make(map[image.Point]float64),
         RoadWorkMyrror: make(map[image.Point]float64),
+
+        PurifyWorkArcanus: make(map[image.Point]float64),
+        PurifyWorkMyrror: make(map[image.Point]float64),
     }
 
     game.ArcanusMap = maplib.MakeMap(terrainData, settings.LandSize, settings.Magic, settings.Difficulty, data.PlaneArcanus, game)
@@ -4225,6 +4233,20 @@ func (game *Game) DoBuildAction(player *playerlib.Player){
                     break
                 }
             }
+        } else if powers.Purify {
+
+            for _, unit := range player.SelectedStack.ActiveUnits() {
+                if unit.HasAbility(data.AbilityPurify) {
+                    unit.SetBusy(units.BusyStatusPurify)
+                    unit.SetMovesLeft(fraction.Zero())
+                }
+            }
+
+            player.SelectedStack.EnableMovers()
+
+            // player.SelectedStack.ExhaustMoves()
+            game.RefreshUI()
+
         } else if powers.BuildRoad {
 
             for _, unit := range player.SelectedStack.ActiveUnits() {
@@ -4351,6 +4373,9 @@ func (game *Game) DoBuildRoads(player *playerlib.Player) {
         delete(game.RoadWorkMyrror, point)
     }
 
+}
+
+func (game *Game) DoPurify(player *playerlib.Player) {
 }
 
 func (game *Game) SwitchPlane() {
@@ -4713,6 +4738,11 @@ func (game *Game) MakeHudUI() *uilib.UI {
                             x, y := options.GeoM.Apply(float64(1 * data.ScreenScale), float64(1 * data.ScreenScale))
                             game.WhiteFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, "B")
                         }
+
+                        if unit.GetBusy() == units.BusyStatusPurify {
+                            x, y := options.GeoM.Apply(float64(1 * data.ScreenScale), float64(1 * data.ScreenScale))
+                            game.WhiteFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, "P")
+                        }
                     },
                 })
 
@@ -4848,6 +4878,8 @@ func (game *Game) MakeHudUI() *uilib.UI {
             inactiveBuild, _ := game.ImageCache.GetImages("main.lbx", 15)
             buildImages, _ := game.ImageCache.GetImages("main.lbx", 11)
             meldImages, _ := game.ImageCache.GetImages("main.lbx", 49)
+            purifyImages, _ := game.ImageCache.GetImages("main.lbx", 42)
+            inactivePurify, _ := game.ImageCache.GetImage("main.lbx", 43, 0)
             buildIndex := 0
             buildRect := util.ImageRect(280 * data.ScreenScale, 186 * data.ScreenScale, buildImages[0])
             buildCounter := uint64(0)
@@ -4855,6 +4887,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
             hasRoad := game.GetMap(player.SelectedStack.Plane()).ContainsRoad(player.SelectedStack.X(), player.SelectedStack.Y())
             hasCity := game.ContainsCity(player.SelectedStack.X(), player.SelectedStack.Y(), player.SelectedStack.Plane())
             node := game.GetMap(player.SelectedStack.Plane()).GetMagicNode(player.SelectedStack.X(), player.SelectedStack.Y())
+            isCorrupted := game.GetMap(player.SelectedStack.Plane()).IsCorrupted(player.SelectedStack.X(), player.SelectedStack.Y())
 
             elements = append(elements, &uilib.UIElement{
                 Rect: buildRect,
@@ -4889,6 +4922,12 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
                         if !canMeld {
                             matrix.ChangeHSV(0, 0, 1)
+                        }
+                    } else if powers.Purify {
+                        if isCorrupted {
+                            use = purifyImages[buildIndex]
+                        } else {
+                            use = inactivePurify
                         }
                     } else if powers.BuildRoad && !hasRoad && !hasCity {
                         use = buildImages[buildIndex]
@@ -5393,6 +5432,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
     }
 
     game.DoBuildRoads(player)
+    game.DoPurify(player)
 
     for _, stack := range player.Stacks {
 

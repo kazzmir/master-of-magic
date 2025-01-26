@@ -1126,6 +1126,11 @@ func (mapObject *Map) GetCatchmentArea(x int, y int) map[image.Point]FullTile {
     return area
 }
 
+func (mapObject *Map) IsCorrupted(x int, y int) bool {
+    tile := mapObject.GetTile(x, y)
+    return tile.Corrupted()
+}
+
 func (mapObject *Map) TilesPerRow(screenWidth int) int {
     return int(math.Ceil(float64(screenWidth) / float64(mapObject.TileWidth())))
 }
