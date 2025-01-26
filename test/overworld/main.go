@@ -307,11 +307,12 @@ func createScenario4(cache *lbx.LbxCache) *gamelib.Game {
     x, y := game.FindValidCityLocation(game.Plane)
 
     introCity := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.CurrentMap(), game)
-    introCity.Population = 6000
+    introCity.Population = 10000
     introCity.Plane = data.PlaneArcanus
     introCity.ProducingBuilding = buildinglib.BuildingHousing
     introCity.ProducingUnit = units.UnitNone
     introCity.Wall = false
+    introCity.Farmers = 10
 
     introCity.AddBuilding(buildinglib.BuildingShrine)
 
@@ -445,11 +446,12 @@ func createScenario6(cache *lbx.LbxCache) *gamelib.Game {
     x, y := game.FindValidCityLocation(game.Plane)
 
     introCity := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.CurrentMap(), game)
-    introCity.Population = 6000
+    introCity.Population = 14000
     introCity.Plane = data.PlaneArcanus
     introCity.ProducingBuilding = buildinglib.BuildingHousing
     introCity.ProducingUnit = units.UnitNone
     introCity.Wall = false
+    introCity.Farmers = 14
 
     introCity.AddBuilding(buildinglib.BuildingShrine)
 

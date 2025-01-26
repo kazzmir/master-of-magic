@@ -1803,7 +1803,8 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
 
         // don't know what the cost is, assume we can move there
         if x2 >= 0 && x2 < len(fog) && y2 >= 0 && y2 < len(fog[x2]) && !fog[x2][y2] {
-            return baseCost
+            // increase cost of unknown tile very slightly so we prefer to move to known tiles
+            return baseCost + 0.1
         }
 
         cost, ok := game.ComputeTerrainCost(stack, x1, y1, x2, y2, useMap)
