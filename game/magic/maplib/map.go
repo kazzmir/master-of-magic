@@ -370,7 +370,9 @@ func (node *ExtraMagicNode) DrawLayer2(screen *ebiten.Image, imageCache *util.Im
         for _, point := range node.Zone {
             // FIXME: Scale translation according to current zoom level
             options2 := *options
+            options2.GeoM.Reset()
             options2.GeoM.Translate(float64(point.X * tileWidth), float64(point.Y * tileHeight))
+            options2.GeoM.Concat(options.GeoM)
             screen.DrawImage(use, &options2)
         }
     }
