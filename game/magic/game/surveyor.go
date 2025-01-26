@@ -227,6 +227,10 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
 
                     node := mapObject.GetMagicNode(selectedPoint.X, selectedPoint.Y)
                     if node != nil {
+                        if node.MeldingWizard != nil {
+                            whiteFont.PrintCenter(screen, float64(280 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, node.MeldingWizard.GetWizardName())
+                            y += float64(whiteFont.Height() * data.ScreenScale)
+                        }
                         if node.Warped {
                             whiteFont.PrintCenter(screen, float64(280 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, "Warped")
                             y += float64(whiteFont.Height() * data.ScreenScale)

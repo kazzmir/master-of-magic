@@ -190,6 +190,10 @@ func (player *Player) GetBanner() data.BannerType {
     return player.Wizard.Banner
 }
 
+func (player *Player) GetWizardName() string {
+    return player.Wizard.Name
+}
+
 func (player *Player) IsTileVisible(x int, y int, plane data.Plane) bool {
     fog := player.GetFog(plane)
     x = player.WrapX(x)

@@ -29,6 +29,7 @@ type CityProvider interface {
 
 type Wizard interface {
     GetBanner() data.BannerType
+    GetWizardName() string
 }
 
 type MagicNode int
@@ -372,7 +373,7 @@ func (node *ExtraMagicNode) DrawLayer2(screen *ebiten.Image, imageCache *util.Im
             options2 := *options
             if node.Warped {
                 var scale ebiten.ColorScale
-                scale.Scale(0.4, 0.4, 0.4, 0.4) // or black scale.Scale(0, 0, 0, 1)  black
+                scale.Scale(0, 0, 0, 1)
                 options2.ColorScale = scale
             }
             options2.GeoM.Translate(float64(point.X * tileWidth), float64(point.Y * tileHeight))
