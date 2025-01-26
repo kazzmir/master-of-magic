@@ -14,6 +14,6 @@ func TestLoadShaders(test *testing.T) {
     _, err = LoadWarpShader()
 
     if err != nil {
-        test.Errorf("Error loading distortion shader: %v", err)
+        test.Errorf("Error loading warp shader: %v", err)
     }
 }

@@ -360,7 +360,11 @@ func (node *ExtraMagicNode) DrawLayer2(screen *ebiten.Image, imageCache *util.Im
             case data.BannerYellow: index = 67
         }
 
-        sparkle, _ := imageCache.GetImages("mapback.lbx", index)
+        sparkle, err := imageCache.GetImages("mapback.lbx", index)
+        if err != nil {
+            return
+        }
+
         use := sparkle[counter % uint64(len(sparkle))]
 
         // FIXME: Zone does not get rendered if node is not visible
@@ -373,11 +377,17 @@ func (node *ExtraMagicNode) DrawLayer2(screen *ebiten.Image, imageCache *util.Im
     }
 
     if node.Warped && node.MeldingWizard != nil {
-        shader, _ := imageCache.GetShader(shaders.ShaderWarp)
+        shader, err := imageCache.GetShader(shaders.ShaderWarp)
+        if err != nil {
+            return
+        }
 
-        point:= node.Zone[0]
+        mask, err := imageCache.GetImage("mapback.lbx", 93, 0)
+        if err != nil {
+            return
+        }
 
-        mask, _ := imageCache.GetImage("mapback.lbx", 93, 0)
+        point := node.Zone[0]
 
         // FIXME: is there a better way to render the shader on the screen?
         tx, ty := options.GeoM.Element(0, 2), options.GeoM.Element(1, 2)
