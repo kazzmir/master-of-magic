@@ -250,7 +250,8 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
             Banner: data.BannerGreen,
         }, true, nil, nil)
 
-    attackingPlayer.CastingSkillPower = 10
+    attackingPlayer.CastingSkillPower = 1000
+    attackingPlayer.Mana = 1000
 
     // attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Fireball"))
 

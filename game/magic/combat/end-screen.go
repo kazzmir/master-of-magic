@@ -120,26 +120,26 @@ func (end *CombatEndScreen) MakeUI() *uilib.UI {
 
             picLength += extraFont.Height()
 
-            subPic := pic.SubImage(image.Rect(0, 0, pic.Bounds().Dx(), picLength)).(*ebiten.Image)
+            subPic := pic.SubImage(image.Rect(0, 0, pic.Bounds().Dx(), picLength * data.ScreenScale)).(*ebiten.Image)
 
             var options ebiten.DrawImageOptions
-            options.GeoM.Translate(50, 30)
+            options.GeoM.Translate(float64(50 * data.ScreenScale), float64(30 * data.ScreenScale))
             options.ColorScale.ScaleAlpha(getAlpha())
             screen.DrawImage(subPic, &options)
 
-            titleX, titleY := options.GeoM.Apply(110, 25)
+            titleX, titleY := options.GeoM.Apply(float64(110 * data.ScreenScale), float64(25 * data.ScreenScale))
             if end.Win {
-                titleFont.PrintCenter(screen, titleX, titleY, 1, options.ColorScale, "You are triumphant")
+                titleFont.PrintCenter(screen, titleX, titleY, float64(data.ScreenScale), options.ColorScale, "You are triumphant")
             } else {
-                titleFont.PrintCenter(screen, titleX, titleY, 1, options.ColorScale, "You have been defeated")
+                titleFont.PrintCenter(screen, titleX, titleY, float64(data.ScreenScale), options.ColorScale, "You have been defeated")
             }
 
-            extraX, extraY := options.GeoM.Apply(110, float64(fontY))
+            extraX, extraY := options.GeoM.Apply(float64(110 * data.ScreenScale), float64(fontY * data.ScreenScale))
 
-            options.GeoM.Translate(0, float64(picLength))
+            options.GeoM.Translate(0, float64(picLength * data.ScreenScale))
             screen.DrawImage(bottom, &options)
 
-            extraFont.PrintCenter(screen, extraX, extraY, 1, options.ColorScale, extraText)
+            extraFont.PrintCenter(screen, extraX, extraY, float64(data.ScreenScale), options.ColorScale, extraText)
         },
     }
 

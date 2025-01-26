@@ -4,13 +4,11 @@
 * play midi music
 * font editor - choose colors for font palette
 * implement overworld spells
-* corrupted tiles and purify
 * better map generation
 * overworld: ai controlled wizards/empires
 * combat: implement boulder ranged attacks
 * combat: town damage, destroy buildings/people after a battle
 * combat: implement flying fortress
-* hero: ability progress (https://masterofmagic.fandom.com/wiki/Experience_Level#Ability_Improvement_Tables_-_Heroes)
 
 9/22/2024 * city view: separate surplus food/gold from subsistence food/gold
 9/22/2024 * overworld path finding to point on map
@@ -68,3 +66,5 @@
 1/17/2025 * map contains rivers and other terrain types, as well as magic nodes and encounter nodes
 1/19/2025 * nodes and encounters give treasure
 1/23/2025 * upscale screen by 2x
+1/25/2025 * corrupted tiles and purify
+1/25/2025 * hero: ability progress (https://masterofmagic.fandom.com/wiki/Experience_Level#Ability_Improvement_Tables_-_Heroes)

@@ -238,6 +238,10 @@ type Game struct {
     RoadWorkArcanus map[image.Point]float64
     RoadWorkMyrror map[image.Point]float64
 
+    // work done on purifying tiles
+    PurifyWorkArcanus map[image.Point]float64
+    PurifyWorkMyrror map[image.Point]float64
+
     Players []*playerlib.Player
     CurrentPlayer int
 
@@ -265,6 +269,7 @@ type UnitBuildPowers struct {
     CreateOutpost bool
     Meld bool
     BuildRoad bool
+    Purify bool
 }
 
 func computeUnitBuildPowers(stack *playerlib.UnitStack) UnitBuildPowers {
@@ -281,6 +286,10 @@ func computeUnitBuildPowers(stack *playerlib.UnitStack) UnitBuildPowers {
 
         if check.HasAbility(data.AbilityConstruction) {
             powers.BuildRoad = true
+        }
+
+        if check.HasAbility(data.AbilityPurify) {
+            powers.Purify = true
         }
     }
 
@@ -569,6 +578,9 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
 
         RoadWorkArcanus: make(map[image.Point]float64),
         RoadWorkMyrror: make(map[image.Point]float64),
+
+        PurifyWorkArcanus: make(map[image.Point]float64),
+        PurifyWorkMyrror: make(map[image.Point]float64),
     }
 
     game.ArcanusMap = maplib.MakeMap(terrainData, settings.LandSize, settings.Magic, settings.Difficulty, data.PlaneArcanus, game)
@@ -889,7 +901,7 @@ func (game *Game) GetEnemyWizards() []*playerlib.Player {
     var out []*playerlib.Player
 
     for _, player := range game.Players {
-        if !player.Human && player.Wizard.Banner != data.BannerBrown {
+        if !player.IsHuman() && player.Wizard.Banner != data.BannerBrown {
             out = append(out, player)
         }
     }
@@ -2111,7 +2123,7 @@ func (game *Game) maybeHireHero(player *playerlib.Player) {
 
     // every 25 fame increases chance by 1
     // every hero reduces chance by a fraction (1 hero = halve chance. 2 heroes = 1/3 chance)
-    chance := (3 + player.Fame / 25) / ((len(player.AliveHeroes()) + 3) / 2)
+    chance := (3 + player.GetFame() / 25) / ((len(player.AliveHeroes()) + 3) / 2)
     if player.Wizard.AbilityEnabled(setup.AbilityFamous) {
         chance *= 2
     }
@@ -2129,7 +2141,7 @@ func (game *Game) maybeHireHero(player *playerlib.Player) {
             }
 
             if hero.Status == herolib.StatusAvailable {
-                if hero.GetRequiredFame() <= player.Fame {
+                if hero.GetRequiredFame() <= player.GetFame() {
                     heroCandidates = append(heroCandidates, hero)
                 }
             }
@@ -2192,7 +2204,7 @@ func (game *Game) maybeHireMercenaries(player *playerlib.Player) {
     }
 
     // chance to create an event
-    chance := 1 + player.Fame / 20
+    chance := 1 + player.GetFame() / 20
     if player.Wizard.AbilityEnabled(setup.AbilityFamous) {
         chance *= 2
     }
@@ -2260,7 +2272,7 @@ func (game *Game) maybeHireMercenaries(player *playerlib.Player) {
 
     // number of units
     count := 1
-    countRoll := rand.N(100) + player.Fame
+    countRoll := rand.N(100) + player.GetFame()
     switch {
         case countRoll > 90: count = 3
         case countRoll > 60: count = 2
@@ -2269,7 +2281,7 @@ func (game *Game) maybeHireMercenaries(player *playerlib.Player) {
     // experience
     level := 1
     experience := 20
-    experienceRoll := rand.N(100) + player.Fame
+    experienceRoll := rand.N(100) + player.GetFame()
     switch {
         case experienceRoll > 90:
             level = 3
@@ -2335,7 +2347,7 @@ func (game *Game) doHireMercenaries(yield coroutine.YieldFunc, cost int, units [
  */
 func (game *Game) maybeBuyFromMerchant(player *playerlib.Player) {
     // chance to create an event
-    chance := 2 + player.Fame / 25
+    chance := 2 + player.GetFame() / 25
     if player.Wizard.AbilityEnabled(setup.AbilityFamous) {
         chance *= 2
     }
@@ -2469,7 +2481,7 @@ func (game *Game) doNextTurn(yield coroutine.YieldFunc) {
 }
 
 func (game *Game) AddExperience(player *playerlib.Player, unit units.StackUnit, amount int) {
-    if player.Human && unit.IsHero() {
+    if player.IsHuman() && unit.IsHero() {
         warlord := player.Wizard.AbilityEnabled(setup.AbilityWarlord)
         crusade := player.GlobalEnchantments.Contains(data.EnchantmentCrusade)
 
@@ -2502,17 +2514,17 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         game.HudUI = game.MakeHudUI()
                     case *GameEventHireHero:
                         hire := event.(*GameEventHireHero)
-                        if hire.Player.Human {
+                        if hire.Player.IsHuman() {
                             game.doHireHero(yield, hire.Cost, hire.Hero, hire.Player)
                         }
                     case *GameEventHireMercenaries:
                         hire := event.(*GameEventHireMercenaries)
-                        if hire.Player.Human {
+                        if hire.Player.IsHuman() {
                             game.doHireMercenaries(yield, hire.Cost, hire.Units, hire.Player)
                         }
                     case *GameEventMerchant:
                         merchant := event.(*GameEventMerchant)
-                        if merchant.Player.Human {
+                        if merchant.Player.IsHuman() {
                             game.doMerchant(yield, merchant.Cost, merchant.Artifact)
                         }
                     case *GameEventNextTurn:
@@ -3192,7 +3204,7 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
             if len(game.Players) > 0 && game.CurrentPlayer >= 0 {
                 player := game.Players[game.CurrentPlayer]
 
-                if player.Human {
+                if player.IsHuman() {
                     if game.HudUI.GetHighestLayerValue() == 0 {
                         game.doPlayerUpdate(yield, player)
                     }
@@ -3569,9 +3581,9 @@ func (game *Game) doTreasure(yield coroutine.YieldFunc, player *playerlib.Player
             left, _ := game.ImageCache.GetImage("resource.lbx", 56, 0)
             var options ebiten.DrawImageOptions
             options.ColorScale.ScaleAlpha(getAlpha())
-            options.GeoM.Translate(10, 50)
+            options.GeoM.Translate(float64(10 * data.ScreenScale), float64(50 * data.ScreenScale))
 
-            fontX, fontY := options.GeoM.Apply(10, 10)
+            fontX, fontY := options.GeoM.Apply(float64(10 * data.ScreenScale), float64(10 * data.ScreenScale))
 
             screen.DrawImage(left, &options)
             right, _ := game.ImageCache.GetImage("resource.lbx", 58, 0)
@@ -3579,13 +3591,13 @@ func (game *Game) doTreasure(yield coroutine.YieldFunc, player *playerlib.Player
             rightGeom := options.GeoM
 
             chest, _ := game.ImageCache.GetImage("reload.lbx", 20, 0)
-            options.GeoM.Translate(6, 8)
+            options.GeoM.Translate(float64(6 * data.ScreenScale), float64(8 * data.ScreenScale))
             screen.DrawImage(chest, &options)
 
             options.GeoM = rightGeom
             screen.DrawImage(right, &options)
 
-            treasureFont.PrintWrap(screen, fontX, fontY, float64(left.Bounds().Dx()) - 5, 1.0, options.ColorScale, treasure.String())
+            treasureFont.PrintWrap(screen, fontX, fontY, float64(left.Bounds().Dx() - 5 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, treasure.String())
         },
     }
 
@@ -3631,7 +3643,7 @@ func (game *Game) doTreasure(yield coroutine.YieldFunc, player *playerlib.Player
             case *TreasureSpellbook:
                 spellbook := item.(*TreasureSpellbook)
                 // FIXME: somehow recompute the research spell pool for the player
-                player.Wizard.AddMagicLevel(spellbook.Magic, 1)
+                player.Wizard.AddMagicLevel(spellbook.Magic, spellbook.Count)
             case *TreasureRetort:
                 retort := item.(*TreasureRetort)
                 player.Wizard.EnableAbility(retort.Retort)
@@ -3794,18 +3806,47 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
         }
     }
 
+    showHeroNotice := false
+
+    distributeEquipment := func (player *playerlib.Player, hero *herolib.Hero){
+        for _, item := range hero.Equipment {
+            if item != nil {
+                showHeroNotice = true
+                select {
+                    case game.Events <- &GameEventVault{CreatedArtifact: item}:
+                    default:
+                }
+            }
+        }
+    }
+
     // ebiten.SetCursorMode(ebiten.CursorModeVisible)
 
     for _, unit := range attackerStack.Units() {
         if unit.GetHealth() <= 0 {
             attacker.RemoveUnit(unit)
+
+            if unit.IsHero() && attacker.IsHuman() {
+                hero := unit.(*herolib.Hero)
+                distributeEquipment(attacker, hero)
+            }
         }
     }
 
     for _, unit := range defenderStack.Units() {
         if unit.GetHealth() <= 0 {
             defender.RemoveUnit(unit)
+
+            if unit.IsHero() && defender.IsHuman() {
+                hero := unit.(*herolib.Hero)
+                distributeEquipment(defender, hero)
+            }
+
         }
+    }
+
+    if showHeroNotice {
+        game.doNotice(yield, "One or more heroes died in combat. You must redistribute their equipment.")
     }
 
     return state
@@ -4196,6 +4237,20 @@ func (game *Game) DoBuildAction(player *playerlib.Player){
                     break
                 }
             }
+        } else if powers.Purify {
+
+            for _, unit := range player.SelectedStack.ActiveUnits() {
+                if unit.HasAbility(data.AbilityPurify) {
+                    unit.SetBusy(units.BusyStatusPurify)
+                    unit.SetMovesLeft(fraction.Zero())
+                }
+            }
+
+            player.SelectedStack.EnableMovers()
+
+            // player.SelectedStack.ExhaustMoves()
+            game.RefreshUI()
+
         } else if powers.BuildRoad {
 
             for _, unit := range player.SelectedStack.ActiveUnits() {
@@ -4322,6 +4377,97 @@ func (game *Game) DoBuildRoads(player *playerlib.Player) {
         delete(game.RoadWorkMyrror, point)
     }
 
+}
+
+func (game *Game) DoPurify(player *playerlib.Player) {
+    type PurifyWork struct {
+        WorkPerUnit float64
+        TotalWork float64
+    }
+
+    computeWork := func (oneUnitTurn int, twoUnitTurns int) PurifyWork {
+        workPerUnit := float64(oneUnitTurn) / float64(twoUnitTurns)
+        totalWork := float64(oneUnitTurn) * workPerUnit
+        return PurifyWork{WorkPerUnit: workPerUnit, TotalWork: totalWork}
+    }
+
+    work := computeWork(5, 3)
+
+    arcanusBuilds := make(map[image.Point]struct{})
+    myrrorBuilds := make(map[image.Point]struct{})
+
+    for _, stack := range player.Stacks {
+        plane := stack.Plane()
+
+        unitCount := 0
+        for _, unit := range stack.Units() {
+            if unit.GetBusy() == units.BusyStatusPurify {
+                unitCount += 1
+            }
+        }
+
+        if unitCount > 0 {
+            x, y := stack.X(), stack.Y()
+            // log.Printf("building a road at %v, %v with %v engineers", x, y, engineerCount)
+            purify := game.PurifyWorkArcanus
+            if plane == data.PlaneMyrror {
+                purify = game.PurifyWorkMyrror
+            }
+
+            amount, ok := purify[image.Pt(x, y)]
+            if !ok {
+                amount = 0
+            }
+
+            amount += math.Pow(work.WorkPerUnit, float64(unitCount))
+            // log.Printf("  amount is now %v. total work is %v", amount, tileWork.TotalWork)
+            if amount >= work.TotalWork {
+                game.GetMap(plane).RemoveCorruption(x, y)
+
+                for _, unit := range stack.Units() {
+                    if unit.GetBusy() == units.BusyStatusPurify {
+                        unit.SetBusy(units.BusyStatusNone)
+                    }
+                }
+
+            } else {
+                purify[image.Pt(x, y)] = amount
+                if plane == data.PlaneArcanus {
+                    arcanusBuilds[image.Pt(x, y)] = struct{}{}
+                } else {
+                    myrrorBuilds[image.Pt(x, y)] = struct{}{}
+                }
+            }
+        }
+    }
+
+    // remove all points that are no longer being built
+
+    var toDelete []image.Point
+    for point, _ := range game.PurifyWorkArcanus {
+        _, ok := arcanusBuilds[point]
+        if !ok {
+            toDelete = append(toDelete, point)
+        }
+    }
+
+    for _, point := range toDelete {
+        // log.Printf("remove point %v", point)
+        delete(game.PurifyWorkArcanus, point)
+    }
+
+    toDelete = nil
+    for point, _ := range game.PurifyWorkMyrror {
+        _, ok := myrrorBuilds[point]
+        if !ok {
+            toDelete = append(toDelete, point)
+        }
+    }
+
+    for _, point := range toDelete {
+        // log.Printf("remove point %v", point)
+        delete(game.PurifyWorkMyrror, point)
+    }
 }
 
 func (game *Game) SwitchPlane() {
@@ -4674,15 +4820,16 @@ func (game *Game) MakeHudUI() *uilib.UI {
                             screen.DrawImage(weapon, &weaponOptions)
                         }
 
-                        // draw a G on the unit if they are moving
-                        if len(stack.CurrentPath) != 0 {
-                            x, y := options.GeoM.Apply(float64(1 * data.ScreenScale), float64(1 * data.ScreenScale))
-                            game.WhiteFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, "G")
-                        }
-
+                        // draw a G on the unit if they are moving, P if purify, and B if building road
                         if unit.GetBusy() == units.BusyStatusBuildRoad {
                             x, y := options.GeoM.Apply(float64(1 * data.ScreenScale), float64(1 * data.ScreenScale))
                             game.WhiteFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, "B")
+                        } else if unit.GetBusy() == units.BusyStatusPurify {
+                            x, y := options.GeoM.Apply(float64(1 * data.ScreenScale), float64(1 * data.ScreenScale))
+                            game.WhiteFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, "P")
+                        } else if len(stack.CurrentPath) != 0 {
+                            x, y := options.GeoM.Apply(float64(1 * data.ScreenScale), float64(1 * data.ScreenScale))
+                            game.WhiteFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, "G")
                         }
                     },
                 })
@@ -4819,6 +4966,8 @@ func (game *Game) MakeHudUI() *uilib.UI {
             inactiveBuild, _ := game.ImageCache.GetImages("main.lbx", 15)
             buildImages, _ := game.ImageCache.GetImages("main.lbx", 11)
             meldImages, _ := game.ImageCache.GetImages("main.lbx", 49)
+            purifyImages, _ := game.ImageCache.GetImages("main.lbx", 42)
+            inactivePurify, _ := game.ImageCache.GetImage("main.lbx", 43, 0)
             buildIndex := 0
             buildRect := util.ImageRect(280 * data.ScreenScale, 186 * data.ScreenScale, buildImages[0])
             buildCounter := uint64(0)
@@ -4826,6 +4975,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
             hasRoad := game.GetMap(player.SelectedStack.Plane()).ContainsRoad(player.SelectedStack.X(), player.SelectedStack.Y())
             hasCity := game.ContainsCity(player.SelectedStack.X(), player.SelectedStack.Y(), player.SelectedStack.Plane())
             node := game.GetMap(player.SelectedStack.Plane()).GetMagicNode(player.SelectedStack.X(), player.SelectedStack.Y())
+            isCorrupted := game.GetMap(player.SelectedStack.Plane()).HasCorruption(player.SelectedStack.X(), player.SelectedStack.Y())
 
             elements = append(elements, &uilib.UIElement{
                 Rect: buildRect,
@@ -4861,6 +5011,12 @@ func (game *Game) MakeHudUI() *uilib.UI {
                         if !canMeld {
                             matrix.ChangeHSV(0, 0, 1)
                         }
+                    } else if powers.Purify {
+                        if isCorrupted {
+                            use = purifyImages[buildIndex]
+                        } else {
+                            use = inactivePurify
+                        }
                     } else if powers.BuildRoad && !hasRoad && !hasCity {
                         use = buildImages[buildIndex]
                     }
@@ -4891,6 +5047,10 @@ func (game *Game) MakeHudUI() *uilib.UI {
                         }
 
                         if canMeld {
+                            buildIndex = 1
+                        }
+                    } else if powers.Purify {
+                        if isCorrupted {
                             buildIndex = 1
                         }
                     } else if powers.BuildRoad {
@@ -5085,7 +5245,7 @@ func (game *Game) DoNextUnit(player *playerlib.Player){
         }
     }
 
-    if player.Human {
+    if player.IsHuman() {
         /*
         if player.SelectedStack == nil {
             fortressCity := player.FindFortressCity()
@@ -5192,10 +5352,30 @@ func (game *Game) DisbandUnits(player *playerlib.Player) []string {
     return disbandedMessages
 }
 
+// the amount of experience a unit in a stack should get at the end of each turn
+// if there is a hero in the stack then the hero's armsmaster ability applies
+func (game *Game) GetExperienceBonus(stack *playerlib.UnitStack) int {
+    base := 1
+    bonus := 0
+
+    // only the highest armsmaster bonus applies
+    for _, unit := range stack.Units() {
+        if unit.GetRace() == data.RaceHero {
+            hero := unit.(*herolib.Hero)
+            more := hero.GetAbilityExperienceBonus()
+            if more > bonus {
+                bonus = more
+            }
+        }
+    }
+
+    return base + bonus
+}
+
 func (game *Game) StartPlayerTurn(player *playerlib.Player) {
     disbandedMessages := game.DisbandUnits(player)
 
-    if player.Human && len(disbandedMessages) > 0 {
+    if player.IsHuman() && len(disbandedMessages) > 0 {
         select {
             case game.Events<- &GameEventScroll{Title: "", Text: strings.Join(disbandedMessages, "\n")}:
             default:
@@ -5231,7 +5411,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
 
         if player.CastingSpell.Cost(true) <= player.CastingSpellProgress {
 
-            if player.Human {
+            if player.IsHuman() {
                 select {
                     case game.Events<- &GameEventCastSpell{Player: player, Spell: player.CastingSpell}:
                     default:
@@ -5247,7 +5427,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
         player.ResearchProgress += int(player.SpellResearchPerTurn(power))
         if player.ResearchProgress >= player.ResearchingSpell.ResearchCost {
 
-            if player.Human {
+            if player.IsHuman() {
                 select {
                     case game.Events<- &GameEventLearnedSpell{Player: player, Spell: player.ResearchingSpell}:
                     default:
@@ -5256,7 +5436,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
 
             player.LearnSpell(player.ResearchingSpell)
 
-            if player.Human {
+            if player.IsHuman() {
                 select {
                     case game.Events<- &GameEventResearchSpell{Player: player}:
                     default:
@@ -5265,7 +5445,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
         }
     } else if game.TurnNumber > 1 {
 
-        if player.Human {
+        if player.IsHuman() {
             select {
                 case game.Events<- &GameEventResearchSpell{Player: player}:
                 default:
@@ -5293,7 +5473,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
                     Text: fmt.Sprintf("%v has grown to a population of %v.", city.Name, city.Citizens()),
                 }
 
-                if player.Human {
+                if player.IsHuman() {
                     select {
                         case game.Events<- &scrollEvent:
                         default:
@@ -5310,7 +5490,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
             case *citylib.CityEventNewBuilding:
                 newBuilding := event.(*citylib.CityEventNewBuilding)
 
-                if player.Human {
+                if player.IsHuman() {
                     select {
                         case game.Events<- &GameEventNewBuilding{City: city, Building: newBuilding.Building, Player: player}:
                         default:
@@ -5318,14 +5498,14 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
                 }
             case *citylib.CityEventOutpostDestroyed:
                 removeCities = append(removeCities, city)
-                if player.Human {
+                if player.IsHuman() {
                     select {
                         case game.Events<- &GameEventNotice{Message: fmt.Sprintf("The outpost of %v has been deserted.", city.Name)}:
                         default:
                     }
                 }
             case *citylib.CityEventOutpostHamlet:
-                if player.Human {
+                if player.IsHuman() {
                     select {
                         case game.Events<- &GameEventNotice{Message: fmt.Sprintf("The outpost of %v has grown into a hamlet.", city.Name)}:
                         default:
@@ -5344,13 +5524,18 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
     }
 
     game.DoBuildRoads(player)
+    game.DoPurify(player)
 
     for _, stack := range player.Stacks {
 
         // every unit gains 1 experience at each turn
+        unitExperience := game.GetExperienceBonus(stack)
         for _, unit := range stack.Units() {
-            if unit.GetRace() != data.RaceFantastic {
-                game.AddExperience(player, unit, 1)
+            switch unit.GetRace() {
+                case data.RaceHero: game.AddExperience(player, unit, 1)
+                case data.RaceFantastic: // nothing
+                default:
+                    game.AddExperience(player, unit, unitExperience)
             }
         }
 

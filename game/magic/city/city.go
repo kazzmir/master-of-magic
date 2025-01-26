@@ -503,8 +503,6 @@ func (city *City) MaximumCitySize() int {
         bonus += 3
     }
 
-    // TODO: add 2 for each wild game in the city's catchment area
-
     return int(math.Min(MAX_CITY_CITIZENS, float64(foodAvailability + bonus)))
 }
 
@@ -534,6 +532,8 @@ func (city *City) PopulationGrowthRate() int {
     if city.Buildings.Contains(buildinglib.BuildingFarmersMarket) {
         base += 30
     }
+
+    // FIXME: if not enough food then rate is -50 * missing food
 
     return base
 }
@@ -602,11 +602,16 @@ func (city *City) foodProductionRate(farmers int) int {
     }
     */
 
+    // FIXME: check if animists guild applies to the base rate or to the bonus
+    if city.Buildings.Contains(buildinglib.BuildingAnimistsGuild) {
+        baseRate += float32(farmers)
+    }
+
     // TODO: if famine is active then base rate is halved
 
     baseLevel := float32(city.BaseFoodLevel())
     if baseRate > baseLevel {
-        baseRate = baseLevel + (baseLevel - baseRate) / 2
+        baseRate = baseLevel + (baseRate - baseLevel) / 2
     }
 
     bonus := 0
@@ -619,7 +624,23 @@ func (city *City) foodProductionRate(farmers int) int {
         bonus += 3
     }
 
+    bonus += city.ComputeWildGame()
+
     return int(baseRate) + bonus
+}
+
+func (city *City) ComputeWildGame() int {
+    bonus := 0
+
+    catchment := city.CatchmentProvider.GetCatchmentArea(city.X, city.Y)
+
+    for _, tile := range catchment {
+        if !tile.Corrupted() {
+            bonus += tile.GetBonus().FoodBonus()
+        }
+    }
+
+    return bonus
 }
 
 func (city *City) ComputeUpkeep() int {

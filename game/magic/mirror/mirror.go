@@ -129,8 +129,8 @@ func MakeMirrorUI(cache *lbx.LbxCache, player *playerlib.Player, ui *uilib.UI) *
             newRand := rand.New(rand.NewPCG(player.BookOrderSeed1, player.BookOrderSeed2))
             draw.DrawBooks(screen, options, &imageCache, player.Wizard.Books, newRand)
 
-            if player.Fame > 0 {
-                heroFont.PrintCenter(screen, float64(cornerX + 90 * data.ScreenScale), float64(cornerY + 95 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("%v Fame", player.Fame))
+            if player.GetFame() > 0 {
+                heroFont.PrintCenter(screen, float64(cornerX + 90 * data.ScreenScale), float64(cornerY + 95 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("%v Fame", player.GetFame()))
             }
 
             smallFont.RenderWrapped(screen, float64(cornerX + 13 * data.ScreenScale), float64(cornerY + 112 * data.ScreenScale), wrappedAbilities, options.ColorScale, false)
