@@ -368,7 +368,6 @@ func (node *ExtraMagicNode) DrawLayer2(screen *ebiten.Image, imageCache *util.Im
         use := sparkle[counter % uint64(len(sparkle))]
 
         for _, point := range node.Zone {
-            // FIXME: Scale translation according to current zoom level
             options2 := *options
             options2.GeoM.Reset()
             options2.GeoM.Translate(float64(point.X * tileWidth), float64(point.Y * tileHeight))
@@ -1601,40 +1600,30 @@ func (mapObject *Map) DrawLayer1(camera cameralib.Camera, animationCounter uint6
 }
 
 // give the extra nodes a chance to draw on top of cities/units, but still under the fog
-func (mapObject *Map) DrawLayer2(cameraX int, cameraY int, animationCounter uint64, imageCache *util.ImageCache, screen *ebiten.Image, geom ebiten.GeoM){
+func (mapObject *Map) DrawLayer2(camera cameralib.Camera, animationCounter uint64, imageCache *util.ImageCache, screen *ebiten.Image, geom ebiten.GeoM){
     tileWidth := mapObject.TileWidth()
     tileHeight := mapObject.TileHeight()
 
-    /*
-    tilesPerRow := mapObject.TilesPerRow(screen.Bounds().Dx())
-    tilesPerColumn := mapObject.TilesPerColumn(screen.Bounds().Dy())
-    */
-
     var options ebiten.DrawImageOptions
 
-    // then draw all extra nodes on top
-    x_loop:
-    for x := 0; x < mapObject.Map.Columns(); x++ {
-        y_loop:
-        for y := 0; y < mapObject.Map.Rows(); y++ {
-            options.GeoM.Reset()
-            options.GeoM.Translate(float64(x * tileWidth), float64(y * tileHeight))
-            options.GeoM.Concat(geom)
+    minX, minY, maxX, maxY := camera.GetTileBounds()
 
-            posX, posY := options.GeoM.Apply(0, 0)
-            if int(posX) > screen.Bounds().Max.X {
-                break x_loop
-            }
-            if int(posY) > screen.Bounds().Max.Y {
-                break y_loop
-            }
-
+    // draw all tiles first
+    for x := minX; x < maxX; x++ {
+        for y := minY; y < maxY; y++ {
             tileX := mapObject.WrapX(x)
             tileY := y
+
+            // for debugging
+            // util.DrawRect(screen, image.Rect(x * tileWidth, y * tileHeight, (x + 1) * tileWidth, (y + 1) * tileHeight), color.RGBA{R: 255, G: 0, B: 0, A: 255})
 
             if tileX < 0 || tileX >= mapObject.Map.Columns() || tileY < 0 || tileY >= mapObject.Map.Rows() {
                 continue
             }
+
+            options.GeoM.Reset()
+            options.GeoM.Translate(float64(x * tileWidth), float64(y * tileHeight))
+            options.GeoM.Concat(geom)
 
             for _, extraKind := range ExtraDrawOrder {
                 extra, ok := mapObject.ExtraMap[image.Pt(tileX, tileY)][extraKind]
@@ -1642,6 +1631,7 @@ func (mapObject *Map) DrawLayer2(cameraX int, cameraY int, animationCounter uint
                     extra.DrawLayer2(screen, imageCache, &options, animationCounter, tileWidth, tileHeight)
                 }
             }
+
         }
     }
 }
