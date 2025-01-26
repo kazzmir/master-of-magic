@@ -376,7 +376,9 @@ func (node *ExtraMagicNode) DrawLayer2(screen *ebiten.Image, imageCache *util.Im
                 scale.Scale(0, 0, 0, 1)
                 options2.ColorScale = scale
             }
+            options2.GeoM.Reset()
             options2.GeoM.Translate(float64(point.X * tileWidth), float64(point.Y * tileHeight))
+            options2.GeoM.Concat(options.GeoM)
             screen.DrawImage(use, &options2)
         }
     }
