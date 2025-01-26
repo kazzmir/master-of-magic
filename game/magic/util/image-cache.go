@@ -53,6 +53,20 @@ func AutoCrop(img *image.Paletted) image.Image {
     return AutoCropGeneric(img)
 }
 
+// create a new image from a portion of the original image
+// the new image has the same width/height as the rect. the source pixels come from img at the bounds of the rect
+func copyImagePortion(img *image.Paletted, rect image.Rectangle) *image.Paletted {
+    out := image.NewPaletted(image.Rect(0, 0, rect.Bounds().Dx(), rect.Bounds().Dy()), img.Palette)
+
+    for y := rect.Min.Y; y < rect.Max.Y; y++ {
+        for x := rect.Min.X; x < rect.Max.X; x++ {
+            out.SetColorIndex(x - rect.Min.X, y - rect.Min.Y, img.ColorIndexAt(x, y))
+        }
+    }
+
+    return out
+}
+
 // remove all alpha-0 pixels from the border of the image
 func AutoCropGeneric(img image.Image) image.Image {
     bounds := img.Bounds()
@@ -82,10 +96,18 @@ func AutoCropGeneric(img image.Image) image.Image {
     }
 
     // log.Printf("Auto crop on %v", reflect.TypeOf(img))
+    // log.Printf("auto crop: %d %d %d %d", minX, minY, maxX, maxY)
 
     switch img.(type) {
         case *image.Paletted:
-            return img.(*image.Paletted).SubImage(image.Rect(minX, minY, maxX, maxY))
+            // we can't just use a subimage here because sub.At(0, 0) doesn't correspond to the upper-left of the subimage. Instead
+            // it is 0,0 in the original parent image.
+            // we could use subimage if the scale2x and xbr code properly used img.Bounds() to account for the possible offset within the subimage.
+            // for now just make a copy of the image
+
+            // return img.(*image.Paletted).SubImage(image.Rect(minX, minY, maxX, maxY))
+
+            return copyImagePortion(img.(*image.Paletted), image.Rect(minX, minY, maxX+1, maxY+1))
         default:
             log.Printf("Auto crop not implemented for %v", reflect.TypeOf(img))
     }

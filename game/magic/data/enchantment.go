@@ -51,6 +51,7 @@ const (
     UnitEnchantmentRighteousness
     UnitEnchantmentCloakOfFear
     UnitEnchantmentTrueSight
+    UnitEnchantmentPathFinding
 )
 
 var natureColor = color.RGBA{R: 0, G: 180, B: 0, A: 255}
@@ -79,7 +80,6 @@ Holy Weapon	Life
 Invulnerability	Life
 Planar Travel	Life
 Iron Skin	Nature
-Path Finding	Nature
 Regeneration	Nature
 Stone Skin	Nature
 Water Walking	Nature

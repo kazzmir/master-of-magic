@@ -292,7 +292,7 @@ func createScenario4(cache *lbx.LbxCache) *gamelib.Game {
                 Count: 3,
             },
             data.WizardBook{
-                Magic: data.SorceryMagic,
+                Magic: data.ChaosMagic,
                 Count: 8,
             },
         },
@@ -307,11 +307,12 @@ func createScenario4(cache *lbx.LbxCache) *gamelib.Game {
     x, y := game.FindValidCityLocation(game.Plane)
 
     introCity := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.CurrentMap(), game)
-    introCity.Population = 6000
+    introCity.Population = 10000
     introCity.Plane = data.PlaneArcanus
     introCity.ProducingBuilding = buildinglib.BuildingHousing
     introCity.ProducingUnit = units.UnitNone
     introCity.Wall = false
+    introCity.Farmers = 10
 
     introCity.AddBuilding(buildinglib.BuildingShrine)
 
@@ -445,11 +446,12 @@ func createScenario6(cache *lbx.LbxCache) *gamelib.Game {
     x, y := game.FindValidCityLocation(game.Plane)
 
     introCity := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.CurrentMap(), game)
-    introCity.Population = 6000
+    introCity.Population = 14000
     introCity.Plane = data.PlaneArcanus
     introCity.ProducingBuilding = buildinglib.BuildingHousing
     introCity.ProducingUnit = units.UnitNone
     introCity.Wall = false
+    introCity.Farmers = 14
 
     introCity.AddBuilding(buildinglib.BuildingShrine)
 
@@ -2411,14 +2413,13 @@ func createScenario28(cache *lbx.LbxCache) *gamelib.Game {
     x, y := game.FindValidCityLocation(game.Plane)
 
     city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.CurrentMap(), game)
-    city.Population = 6190
+    city.Population = 10190
     city.Plane = data.PlaneArcanus
     city.Banner = wizard.Banner
     city.ProducingBuilding = buildinglib.BuildingGranary
     city.ProducingUnit = units.UnitNone
     city.Race = wizard.Race
-    city.Farmers = 3
-    city.Workers = 3
+    city.Farmers = 10
     city.Wall = false
 
     city.ResetCitizens(nil)
@@ -2435,6 +2436,8 @@ func createScenario28(cache *lbx.LbxCache) *gamelib.Game {
     node.Node.Empty = true
 
     player.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, node.X + 1, node.Y + 1, game.Plane, wizard.Banner, nil))
+    // has pathfinding
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.NomadRangers, node.X + 1, node.Y + 1, game.Plane, wizard.Banner, nil))
 
     player.LiftFog(node.X, node.Y, 4, game.Plane)
 
