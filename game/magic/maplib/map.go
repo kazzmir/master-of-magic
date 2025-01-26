@@ -1621,6 +1621,10 @@ func (mapObject *Map) DrawLayer2(camera cameralib.Camera, animationCounter uint6
                 continue
             }
 
+            if len(mapObject.ExtraMap[image.Pt(tileX, tileY)]) == 0 {
+                continue
+            }
+
             options.GeoM.Reset()
             options.GeoM.Translate(float64(x * tileWidth), float64(y * tileHeight))
             options.GeoM.Concat(geom)
