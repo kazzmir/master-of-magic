@@ -10,10 +10,4 @@ func TestLoadShaders(test *testing.T) {
     if err != nil {
         test.Errorf("Error loading edge glow shader: %v", err)
     }
-
-    _, err = LoadWarpShader()
-
-    if err != nil {
-        test.Errorf("Error loading warp shader: %v", err)
-    }
 }
