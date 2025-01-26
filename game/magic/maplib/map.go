@@ -362,8 +362,10 @@ func (node *ExtraMagicNode) DrawLayer2(screen *ebiten.Image, imageCache *util.Im
         sparkle, _ := imageCache.GetImages("mapback.lbx", index)
         use := sparkle[counter % uint64(len(sparkle))]
 
+        // FIXME: Zone does not get rendered if node is not visible
         for _, point := range node.Zone {
             options2 := *options
+            // FIXME: Scale translation according to current zoom level
             options2.GeoM.Translate(float64(point.X * tileWidth), float64(point.Y * tileHeight))
             screen.DrawImage(use, &options2)
         }
