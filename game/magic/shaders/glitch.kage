@@ -2,6 +2,7 @@
 
 /*
     Glitch Effect Shader by Yui Kinomoto @arlez80
+    https://godotshaders.com/shader/glitch-effect-shader/
 
     MIT License
 */
@@ -14,9 +15,9 @@ func random(seed float) float {
 
 var Time float
 
-// FIXME: Add mask to image1
-
 func Fragment(destPosition vec4, srcPosition vec2, color vec4) vec4 {
+    // shake_power and shake_color_rate have been multiplied by 100
+    // to compensate somewhat for srcPosition not being normalized
     shake_power := 3.0
     shake_rate := 0.2
     shake_speed := 5.0
@@ -24,6 +25,10 @@ func Fragment(destPosition vec4, srcPosition vec2, color vec4) vec4 {
     shake_color_rate := 1.0
 
     current := imageSrc0At(srcPosition)
+
+    if imageSrc1At(srcPosition).a == 0 {
+        return current
+    }
 
     if random(Time * shake_speed) < shake_rate {
         return current

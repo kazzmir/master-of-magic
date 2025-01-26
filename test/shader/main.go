@@ -152,13 +152,14 @@ func DrawScenario2(engine *Engine, screen *ebiten.Image){
         return
     }
 
+    mask, _ := engine.ImageCache.GetImage("mapback.lbx", 93, 0)
+
     // FIXME: Test with animation
     // FIXME: Test with sparkles
     // FIXME: Test with unit
     // FIXME: Test with other node type
-    natureNode := ebiten.NewImageFromImage(data.Tiles[terrain.IndexNatNode].Images[0])
+    natureNode := ebiten.NewImageFromImage(engine.ImageCache.ApplyScale(data.Tiles[terrain.IndexNatNode].Images[0]))
 
-    // shader, err := engine.ImageCache.GetShader(shaders.ShaderEdgeGlow)
     shader, err := engine.ImageCache.GetShader(shaders.ShaderGlitch)
     if err != nil {
         log.Printf("Unable to get shader: %v", err)
@@ -169,6 +170,7 @@ func DrawScenario2(engine *Engine, screen *ebiten.Image){
     var regularOptions ebiten.DrawImageOptions
     options.GeoM.Translate(20, 20)
     options.Images[0] = natureNode
+    options.Images[1] = mask
     options.Uniforms = make(map[string]interface{})
     options.Uniforms["Time"] = float32(math.Abs(float64(engine.Counter/10)))
     regularOptions.GeoM = options.GeoM
@@ -184,7 +186,7 @@ func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, scre
 func main(){
     log.SetFlags(log.Ldate | log.Lshortfile | log.Lmicroseconds)
 
-    data.ScreenScale = 2
+    data.ScreenScale = 1
     ebiten.SetWindowSize(ScreenWidth * 2, ScreenHeight * 2)
     ebiten.SetWindowTitle("shader test")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
