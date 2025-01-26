@@ -12,6 +12,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/units"
+    "github.com/kazzmir/master-of-magic/game/magic/shaders"
     cameralib "github.com/kazzmir/master-of-magic/game/magic/camera"
 
     "github.com/hajimehoshi/ebiten/v2"
@@ -372,7 +373,22 @@ func (node *ExtraMagicNode) DrawLayer2(screen *ebiten.Image, imageCache *util.Im
     }
 
     if node.Warped && node.MeldingWizard != nil {
-        // FIXME: Add distortion effect (might be related to mapback 93)
+        shader, _ := imageCache.GetShader(shaders.ShaderGlitch)
+
+        point:= node.Zone[0]
+
+        // FIXME: is there a better way to render the shader on the screen?
+        tx, ty := options.GeoM.Element(0, 2), options.GeoM.Element(1, 2)
+        rect := image.Rect(int(tx), int(ty), int(tx) + tileWidth, int(ty) + tileHeight)
+        image := ebiten.NewImageFromImage(screen.SubImage(rect))
+
+        var options2 ebiten.DrawRectShaderOptions
+        options2.GeoM = options.GeoM
+        options2.GeoM.Translate(float64(point.X * tileWidth), float64(point.Y * tileHeight))
+        options2.Images[0] = image
+        options2.Uniforms = make(map[string]interface{})
+        options2.Uniforms["Time"] = float32(math.Abs(float64(counter/10)))
+        screen.DrawRectShader(tileWidth, tileHeight, shader, &options2)
     }
 }
 

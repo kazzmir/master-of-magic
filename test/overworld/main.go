@@ -2939,7 +2939,7 @@ func createScenario34(cache *lbx.LbxCache) *gamelib.Game {
     player2 := game.AddPlayer(wizard2, true)
 
     nodes := findNodes(game.CurrentMap())
-    node := nodes[terrain.SorceryNode][0]
+    node := nodes[terrain.NatureNode][0]
     node.Node.Empty = true
     node.Node.MeldingWizard = player2
 
