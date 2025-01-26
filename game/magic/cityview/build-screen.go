@@ -650,7 +650,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
                 options.GeoM.Translate(float64(cancelX), float64(cancelY))
                 screen.DrawImage(buttonBackground, &options)
 
-                okCancelFont.PrintCenter(screen, float64(cancelX + buttonBackground.Bounds().Dx() / 2), float64(cancelY + 1), float64(data.ScreenScale), ebiten.ColorScale{}, "Cancel")
+                okCancelFont.PrintCenter(screen, float64(cancelX + buttonBackground.Bounds().Dx() / 2), float64(cancelY + 1 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, "Cancel")
             },
         })
 
@@ -673,7 +673,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
                 options.GeoM.Translate(float64(okX), float64(okY))
                 screen.DrawImage(buttonBackground, &options)
 
-                okCancelFont.PrintCenter(screen, float64(okX + buttonBackground.Bounds().Dx() / 2), float64(okY + 1), float64(data.ScreenScale), ebiten.ColorScale{}, "Ok")
+                okCancelFont.PrintCenter(screen, float64(okX + buttonBackground.Bounds().Dx() / 2), float64(okY + 1 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, "Ok")
             },
         })
     }
