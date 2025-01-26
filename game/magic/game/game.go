@@ -1503,6 +1503,8 @@ func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, st
 
 /* return the cost to move from the current position the stack is on to the new given coordinates.
  * also return true/false if the move is even possible
+ * FIXME: some values used by this logic could be precomputed and passed in as an argument. Things like 'containsFriendlyCity' could be a map of all cities
+ * on the same plane as the unit, thus avoiding the expensive player.FindCity() call
  */
 func (game *Game) ComputeTerrainCost(stack *playerlib.UnitStack, sourceX int, sourceY int, destX int, destY int, mapUse *maplib.Map) (fraction.Fraction, bool) {
     /*
@@ -1553,7 +1555,7 @@ func (game *Game) ComputeTerrainCost(stack *playerlib.UnitStack, sourceX int, so
         return fraction.FromInt(1), true
     }
 
-    hasPathFinding := stack.ActiveUnitsHasAbility(data.AbilityPathfinding)
+    hasPathFinding := stack.ActiveUnitsHasAbility(data.AbilityPathfinding) || stack.ActiveUnitsHasEnchantment(data.UnitEnchantmentPathFinding)
     if hasPathFinding {
         return fraction.Make(1, 2), true
     }

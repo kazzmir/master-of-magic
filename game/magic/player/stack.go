@@ -126,6 +126,16 @@ func (stack *UnitStack) ActiveUnitsHasAbility(ability data.AbilityType) bool {
     return false
 }
 
+func (stack *UnitStack) ActiveUnitsHasEnchantment(ability data.UnitEnchantment) bool {
+    for _, unit := range stack.ActiveUnits() {
+        if unit.HasEnchantment(ability) {
+            return true
+        }
+    }
+
+    return false
+}
+
 // returns true if none of the active units in the stack have the given ability
 // if a single unit has the ability then return false
 func (stack *UnitStack) ActiveUnitsDoesntHaveAbility(ability data.AbilityType) bool {
