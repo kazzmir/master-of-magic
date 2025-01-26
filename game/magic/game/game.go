@@ -879,11 +879,11 @@ func (game *Game) ComputePower(player *playerlib.Player) int {
     }
 
     for _, node := range game.ArcanusMap.GetMeldedNodes(player) {
-        power += float64(len(node.Zone)) * magicBonus
+        power += node.GetPower(magicBonus)
     }
 
     for _, node := range game.MyrrorMap.GetMeldedNodes(player) {
-        power += float64(len(node.Zone)) * magicBonus
+        power += node.GetPower(magicBonus)
     }
 
     power += float64(len(game.ArcanusMap.GetCastedVolcanoes(player)))
@@ -4276,7 +4276,7 @@ func (game *Game) DoBuildAction(player *playerlib.Player){
         } else if powers.Meld {
             node := game.GetMap(player.SelectedStack.Plane()).GetMagicNode(player.SelectedStack.X(), player.SelectedStack.Y())
             for _, melder := range player.SelectedStack.ActiveUnits() {
-                if melder.HasAbility(data.AbilityMeld) {
+                if melder.HasAbility(data.AbilityMeld) && !node.Warped {
                     game.DoMeld(melder, player, node)
                     game.RefreshUI()
                     break
@@ -5049,7 +5049,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                         use = meldImages[buildIndex]
 
                         canMeld := false
-                        if node != nil && node.Empty {
+                        if node != nil && node.Empty && !node.Warped {
                             canMeld = true
                         }
 
@@ -5961,7 +5961,7 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
         }
     }
 
-    overworld.Map.DrawLayer2(int(overworld.Camera.GetZoomedX()), int(overworld.Camera.GetZoomedY()), overworld.Counter / 8, overworld.ImageCache, screen, geom)
+    overworld.Map.DrawLayer2(overworld.Camera, overworld.Counter / 8, overworld.ImageCache, screen, geom)
 
     if overworld.Fog != nil {
         overworld.DrawFog(screen, geom)

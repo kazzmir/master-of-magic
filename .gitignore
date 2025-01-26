@@ -13,6 +13,9 @@ data/data/
 /magic
 /mapeditor
 
-# memory and cpu profiles
+# Memory and CPU profiles
 profile.cpu.*
 profile.mem.*
+
+# Output from lbxdump
+**/*.lbx_output/

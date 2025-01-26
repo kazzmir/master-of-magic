@@ -12,6 +12,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/units"
+    "github.com/kazzmir/master-of-magic/game/magic/shaders"
     cameralib "github.com/kazzmir/master-of-magic/game/magic/camera"
 
     "github.com/hajimehoshi/ebiten/v2"
@@ -340,6 +341,7 @@ type ExtraMagicNode struct {
     GuardianSpiritMeld bool
 
     // also contains treasure
+    Warped bool
 }
 
 func (node *ExtraMagicNode) DrawLayer1(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64, tileWidth int, tileHeight int){
@@ -358,19 +360,76 @@ func (node *ExtraMagicNode) DrawLayer2(screen *ebiten.Image, imageCache *util.Im
             case data.BannerYellow: index = 67
         }
 
-        sparkle, _ := imageCache.GetImages("mapback.lbx", index)
+        sparkle, err := imageCache.GetImages("mapback.lbx", index)
+        if err != nil {
+            return
+        }
+
         use := sparkle[counter % uint64(len(sparkle))]
 
         for _, point := range node.Zone {
             options2 := *options
+            options2.GeoM.Reset()
             options2.GeoM.Translate(float64(point.X * tileWidth), float64(point.Y * tileHeight))
+            options2.GeoM.Concat(options.GeoM)
             screen.DrawImage(use, &options2)
         }
+    }
+
+    if node.Warped && node.MeldingWizard != nil {
+        shader, err := imageCache.GetShader(shaders.ShaderWarp)
+        if err != nil {
+            log.Printf("error getting shader %v", err)
+            return
+        }
+
+        // FIXME get the mask to work, but scale it based on what the options.GeoM has
+        /*
+        mask, err := imageCache.GetImage("mapback.lbx", 93, 0)
+        if err != nil {
+            return
+        }
+        */
+
+        x1, y1 := options.GeoM.Apply(0, 0)
+        x2, y2 := options.GeoM.Apply(float64(tileWidth), float64(tileHeight))
+
+        // log.Printf("x1 %v y1 %v x2 %v y2 %v", x1, y1, x2, y2)
+
+        if x1 < 0 || y1 < 0 || x2 <= x1 || y2 <= y1 {
+            return
+        }
+        rect := image.Rect(int(x1), int(y1), int(x2), int(y2))
+        image := screen.SubImage(rect)
+        if image.Bounds().Dx() == 0 || image.Bounds().Dy() == 0 {
+            return
+        }
+
+        // the mask needs to be the same size as the subimage. This is a hack for now
+        /*
+        mask := ebiten.NewImage(image.Bounds().Dx(), image.Bounds().Dy())
+        mask.Fill(color.RGBA{0, 0, 0, 255})
+        */
+
+        sourceImage := ebiten.NewImageFromImage(image)
+
+        // log.Printf("warp at %v, %v bounds image=%v source=%v", point.X, point.Y, image.Bounds(), sourceImage.Bounds())
+
+        var options2 ebiten.DrawRectShaderOptions
+        options2.GeoM.Translate(x1, y1)
+
+        options2.Images[0] = sourceImage
+        // options2.Images[1] = mask
+        options2.Uniforms = make(map[string]interface{})
+        options2.Uniforms["Time"] = float32(math.Abs(float64(counter/5)))
+        screen.DrawRectShader(image.Bounds().Dx(), image.Bounds().Dy(), shader, &options2)
     }
 }
 
 func (node *ExtraMagicNode) Meld(meldingWizard Wizard, spirit units.Unit) bool {
-    if node.MeldingWizard == nil {
+    if node.Warped {
+        return false
+    } else if node.MeldingWizard == nil {
         node.MeldingWizard = meldingWizard
         if spirit.Equals(units.GuardianSpirit) {
             node.GuardianSpiritMeld = true
@@ -405,6 +464,15 @@ func (node *ExtraMagicNode) Meld(meldingWizard Wizard, spirit units.Unit) bool {
         return false
     }
 }
+
+func (node *ExtraMagicNode) GetPower(magicBonus float64) float64 {
+    if node.Warped {
+        return -5
+    }
+
+    return float64(len(node.Zone)) * magicBonus
+}
+
 
 type ExtraVolcano struct {
     CastingWizard Wizard
@@ -1552,40 +1620,34 @@ func (mapObject *Map) DrawLayer1(camera cameralib.Camera, animationCounter uint6
 }
 
 // give the extra nodes a chance to draw on top of cities/units, but still under the fog
-func (mapObject *Map) DrawLayer2(cameraX int, cameraY int, animationCounter uint64, imageCache *util.ImageCache, screen *ebiten.Image, geom ebiten.GeoM){
+func (mapObject *Map) DrawLayer2(camera cameralib.Camera, animationCounter uint64, imageCache *util.ImageCache, screen *ebiten.Image, geom ebiten.GeoM){
     tileWidth := mapObject.TileWidth()
     tileHeight := mapObject.TileHeight()
 
-    /*
-    tilesPerRow := mapObject.TilesPerRow(screen.Bounds().Dx())
-    tilesPerColumn := mapObject.TilesPerColumn(screen.Bounds().Dy())
-    */
-
     var options ebiten.DrawImageOptions
 
-    // then draw all extra nodes on top
-    x_loop:
-    for x := 0; x < mapObject.Map.Columns(); x++ {
-        y_loop:
-        for y := 0; y < mapObject.Map.Rows(); y++ {
-            options.GeoM.Reset()
-            options.GeoM.Translate(float64(x * tileWidth), float64(y * tileHeight))
-            options.GeoM.Concat(geom)
+    minX, minY, maxX, maxY := camera.GetTileBounds()
 
-            posX, posY := options.GeoM.Apply(0, 0)
-            if int(posX) > screen.Bounds().Max.X {
-                break x_loop
-            }
-            if int(posY) > screen.Bounds().Max.Y {
-                break y_loop
-            }
-
+    // draw all tiles first
+    for x := minX; x < maxX; x++ {
+        for y := minY; y < maxY; y++ {
             tileX := mapObject.WrapX(x)
             tileY := y
+
+            // for debugging
+            // util.DrawRect(screen, image.Rect(x * tileWidth, y * tileHeight, (x + 1) * tileWidth, (y + 1) * tileHeight), color.RGBA{R: 255, G: 0, B: 0, A: 255})
 
             if tileX < 0 || tileX >= mapObject.Map.Columns() || tileY < 0 || tileY >= mapObject.Map.Rows() {
                 continue
             }
+
+            if len(mapObject.ExtraMap[image.Pt(tileX, tileY)]) == 0 {
+                continue
+            }
+
+            options.GeoM.Reset()
+            options.GeoM.Translate(float64(x * tileWidth), float64(y * tileHeight))
+            options.GeoM.Concat(geom)
 
             for _, extraKind := range ExtraDrawOrder {
                 extra, ok := mapObject.ExtraMap[image.Pt(tileX, tileY)][extraKind]
@@ -1593,6 +1655,7 @@ func (mapObject *Map) DrawLayer2(cameraX int, cameraY int, animationCounter uint
                     extra.DrawLayer2(screen, imageCache, &options, animationCounter, tileWidth, tileHeight)
                 }
             }
+
         }
     }
 }

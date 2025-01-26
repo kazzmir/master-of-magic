@@ -1,13 +1,18 @@
 package main
 
 import (
-    "log"
+    "fmt"
     "image"
     "image/color"
+    "log"
     "math"
+    "os"
+    "strconv"
 
-    "github.com/kazzmir/master-of-magic/game/magic/util"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/shaders"
+    "github.com/kazzmir/master-of-magic/game/magic/terrain"
+    "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/lib/lbx"
 
     "github.com/hajimehoshi/ebiten/v2"
@@ -17,19 +22,29 @@ import (
 const ScreenWidth = 320
 const ScreenHeight = 200
 
+type DrawFunction func (engine *Engine, screen *ebiten.Image)
+
 type Engine struct {
     Counter uint64
     Cache *lbx.LbxCache
     ImageCache *util.ImageCache
+    Drawer DrawFunction
 }
 
-func NewEngine() (*Engine, error) {
+func NewEngine(scenario int) (*Engine, error) {
+    var drawer DrawFunction
+    switch scenario {
+        case 2: drawer = DrawScenario2
+        default: drawer = DrawScenario1
+    }
+
     cache := lbx.AutoCache()
     imageCache := util.MakeImageCache(cache)
     engine := &Engine{
         Counter: 0,
         Cache: cache,
         ImageCache: &imageCache,
+        Drawer: drawer,
     }
 
     return engine, nil
@@ -47,6 +62,10 @@ func (engine *Engine) Update() error {
     }
 
     return nil
+}
+
+func (engine *Engine) Draw(screen *ebiten.Image) {
+    engine.Drawer(engine, screen)
 }
 
 func toFloatArray(color color.Color) []float32 {
@@ -68,7 +87,7 @@ func add1PxBorder(src *image.Paletted) image.Image {
     return out
 }
 
-func (engine *Engine) Draw(screen *ebiten.Image){
+func DrawScenario1(engine *Engine, screen *ebiten.Image){
     screen.Fill(color.RGBA{R: 60, G: 60, B: 120, A: 255})
 
     lizardUnit, _ := engine.ImageCache.GetImage("units2.lbx", 0, 0)
@@ -118,6 +137,48 @@ func (engine *Engine) Draw(screen *ebiten.Image){
     screen.DrawRectShader(axe.Bounds().Dx(), axe.Bounds().Dy(), shader, &options)
 }
 
+func DrawScenario2(engine *Engine, screen *ebiten.Image){
+    screen.Fill(color.RGBA{R: 60, G: 60, B: 120, A: 255})
+
+    lbxFile, err := engine.ImageCache.LbxCache.GetLbxFile("terrain.lbx")
+    if err != nil {
+        fmt.Printf("could not read terrain.lbx")
+        return
+    }
+
+    data, err := terrain.ReadTerrainData(lbxFile)
+    if err != nil {
+        fmt.Printf("could not read terrain data")
+        return
+    }
+
+    mask, _ := engine.ImageCache.GetImage("mapback.lbx", 93, 0)
+
+    // FIXME: Test with animation
+    // FIXME: Test with sparkles
+    // FIXME: Test with unit
+    // FIXME: Test with other node type
+    natureNode := ebiten.NewImageFromImage(engine.ImageCache.ApplyScale(data.Tiles[terrain.IndexNatNode].Images[0]))
+
+    shader, err := engine.ImageCache.GetShader(shaders.ShaderWarp)
+    if err != nil {
+        log.Printf("Unable to get shader: %v", err)
+        return
+    }
+
+    var options ebiten.DrawRectShaderOptions
+    var regularOptions ebiten.DrawImageOptions
+    options.GeoM.Translate(20, 20)
+    options.Images[0] = natureNode
+    options.Images[1] = mask
+    options.Uniforms = make(map[string]interface{})
+    options.Uniforms["Time"] = float32(math.Abs(float64(engine.Counter/10)))
+    regularOptions.GeoM = options.GeoM
+    screen.DrawImage(natureNode, &regularOptions)
+    screen.DrawRectShader(natureNode.Bounds().Dx(), natureNode.Bounds().Dy(), shader, &options)
+}
+
+
 func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
     return ScreenWidth, ScreenHeight
 }
@@ -125,11 +186,28 @@ func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, scre
 func main(){
     log.SetFlags(log.Ldate | log.Lshortfile | log.Lmicroseconds)
 
-    ebiten.SetWindowSize(ScreenWidth * 4, ScreenHeight * 4)
-    ebiten.SetWindowTitle("glow test")
+    data.ScreenScale = 1
+    ebiten.SetWindowSize(ScreenWidth * 2, ScreenHeight * 2)
+    ebiten.SetWindowTitle("shader test")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 
-    engine, err := NewEngine()
+    scenario := 1
+
+    if len(os.Args) >= 2 {
+        x, err := strconv.Atoi(os.Args[1])
+        if err != nil {
+            log.Fatalf("Error with scenario: %v", err)
+        }
+
+        scenario = x
+    }
+
+    engine, err := NewEngine(scenario)
+
+    if err != nil {
+        log.Printf("Error: unable to load engine: %v", err)
+        return
+    }
 
     err = ebiten.RunGame(engine)
     if err != nil {
