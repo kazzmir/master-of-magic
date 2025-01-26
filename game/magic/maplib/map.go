@@ -367,9 +367,7 @@ func (node *ExtraMagicNode) DrawLayer2(screen *ebiten.Image, imageCache *util.Im
 
         use := sparkle[counter % uint64(len(sparkle))]
 
-        // FIXME: Zone does not get rendered if node is not visible
         for _, point := range node.Zone {
-            // FIXME: Scale translation according to current zoom level
             options2 := *options
             if node.Warped {
                 var scale ebiten.ColorScale
