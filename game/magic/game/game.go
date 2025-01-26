@@ -1555,8 +1555,7 @@ func (game *Game) ComputeTerrainCost(stack *playerlib.UnitStack, sourceX int, so
         return fraction.FromInt(1), true
     }
 
-    hasPathFinding := stack.ActiveUnitsHasAbility(data.AbilityPathfinding) || stack.ActiveUnitsHasEnchantment(data.UnitEnchantmentPathFinding) || (stack.ActiveUnitsHasAbility(data.AbilityMountaineer) && stack.ActiveUnitsHasAbility(data.AbilityForester))
-    if hasPathFinding {
+    if stack.HasPathfinding() {
         return fraction.Make(1, 2), true
     }
 
@@ -5138,10 +5137,6 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
                     _ = sailingIcon
                     _ = swimmingIcon
-                    _ = mountaineeringIcon
-                    _ = foresterIcon
-                    _ = flyingIcon
-                    _ = pathfindingIcon
                     _ = planeTravelIcon
                     _ = windWalkingIcon
 
@@ -5150,6 +5145,10 @@ func (game *Game) MakeHudUI() *uilib.UI {
                     if player.SelectedStack != nil {
                         if player.SelectedStack.AllFlyers() {
                             useIcon = flyingIcon
+                        } else if player.SelectedStack.HasPathfinding() {
+                            useIcon = pathfindingIcon
+                        } else if player.SelectedStack.ActiveUnitsHasAbility(data.AbilityMountaineer) {
+                            useIcon = mountaineeringIcon
                         } else if player.SelectedStack.ActiveUnitsHasAbility(data.AbilityForester) {
                             useIcon = foresterIcon
                         } else if player.SelectedStack.AllSwimmers() {

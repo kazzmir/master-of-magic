@@ -148,6 +148,12 @@ func (stack *UnitStack) ActiveUnitsDoesntHaveAbility(ability data.AbilityType) b
     return true
 }
 
+func (stack *UnitStack) HasPathfinding() bool {
+    return stack.ActiveUnitsHasAbility(data.AbilityPathfinding) ||
+           stack.ActiveUnitsHasEnchantment(data.UnitEnchantmentPathFinding) ||
+           (stack.ActiveUnitsHasAbility(data.AbilityMountaineer) && stack.ActiveUnitsHasAbility(data.AbilityForester))
+}
+
 func (stack *UnitStack) AllActive() bool {
     return len(stack.ActiveUnits()) == len(stack.units)
 }
