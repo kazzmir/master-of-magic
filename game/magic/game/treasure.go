@@ -227,8 +227,8 @@ func makeTreasure(cache *lbx.LbxCache, encounterType maplib.EncounterType, budge
 
     // treasure cannot contain more than these values of each type
     spellsRemaining := 1
-    // specials are spellbooks and retorts, so a treasure can only have one or the other but not both
-    specialsRemaining := 1
+    // specials are spellbooks and retorts
+    specialsRemaining := 2
     prisonerRemaining := 1
     magicItemRemaining := 3
 
@@ -399,13 +399,7 @@ func makeTreasure(cache *lbx.LbxCache, encounterType maplib.EncounterType, budge
                     budget -= spellBookSpend
                     count := 1
 
-                    // possibly give a second spellbook of the same type
-                    if budget >= spellBookSpend && rand.N(15) == 0 {
-                        count = 2
-                    }
-
                     items = append(items, &TreasureSpellbook{Magic: books[rand.N(len(books))], Count: count})
-                    budget = 0
                 }
             case TreasureTypeRetort:
                 retort, ok := chooseRetort()
@@ -413,16 +407,6 @@ func makeTreasure(cache *lbx.LbxCache, encounterType maplib.EncounterType, budge
                     specialsRemaining -= 1
                     items = append(items, &TreasureRetort{Retort: retort})
                     budget -= retortSpend
-
-                    // possibly give a second retort
-                    if budget >= retortSpend && rand.N(15) == 0 {
-                        retort2, ok := chooseRetort()
-                        if ok {
-                            items = append(items, &TreasureRetort{Retort: retort2})
-                        }
-                    }
-
-                    budget = 0
                 }
         }
     }

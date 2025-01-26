@@ -3684,7 +3684,8 @@ func (game *Game) doTreasure(yield coroutine.YieldFunc, player *playerlib.Player
                 game.doHireHero(yield, 0, hero.Hero, player)
             case *TreasureSpell:
                 spell := item.(*TreasureSpell)
-                player.KnownSpells.AddSpell(spell.Spell)
+                game.doLearnSpell(yield, player, spell.Spell)
+                player.LearnSpell(spell.Spell)
             case *TreasureSpellbook:
                 spellbook := item.(*TreasureSpellbook)
                 // FIXME: somehow recompute the research spell pool for the player
