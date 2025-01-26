@@ -367,7 +367,6 @@ func (node *ExtraMagicNode) DrawLayer2(screen *ebiten.Image, imageCache *util.Im
 
         use := sparkle[counter % uint64(len(sparkle))]
 
-        // FIXME: Zone does not get rendered if node is not visible
         for _, point := range node.Zone {
             // FIXME: Scale translation according to current zoom level
             options2 := *options
@@ -389,7 +388,6 @@ func (node *ExtraMagicNode) DrawLayer2(screen *ebiten.Image, imageCache *util.Im
 
         point := node.Zone[0]
 
-        // FIXME: is there a better way to render the shader on the screen?
         tx, ty := options.GeoM.Element(0, 2), options.GeoM.Element(1, 2)
         rect := image.Rect(int(tx), int(ty), int(tx) + tileWidth, int(ty) + tileHeight)
         image := screen.SubImage(rect)
