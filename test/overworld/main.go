@@ -2942,15 +2942,24 @@ func createScenario34(cache *lbx.LbxCache) *gamelib.Game {
     node := nodes[terrain.NatureNode][0]
     node.Node.Empty = true
     node.Node.MeldingWizard = player2
-
     player1.LiftFog(node.X, node.Y, 3, data.PlaneArcanus)
 
     spirit := player1.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, node.X + 1, node.Y + 1, data.PlaneArcanus, wizard1.Banner, nil))
-
     stack := player1.FindStackByUnit(spirit)
     player1.SetSelectedStack(stack)
-
     player1.LiftFog(stack.X(), stack.Y(), 2, data.PlaneArcanus)
+
+    node = nodes[terrain.SorceryNode][0]
+    node.Node.Empty = true
+    node.Node.MeldingWizard = player2
+    node.Node.Warped = true
+    player1.LiftFog(node.X, node.Y, 3, data.PlaneArcanus)
+
+    node = nodes[terrain.ChaosNode][0]
+    node.Node.Empty = true
+    node.Node.MeldingWizard = player2
+    node.Node.Warped = true
+    player1.LiftFog(node.X, node.Y, 3, data.PlaneArcanus)
 
     return game
 }

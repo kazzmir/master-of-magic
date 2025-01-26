@@ -382,16 +382,18 @@ func (node *ExtraMagicNode) DrawLayer2(screen *ebiten.Image, imageCache *util.Im
         // FIXME: is there a better way to render the shader on the screen?
         tx, ty := options.GeoM.Element(0, 2), options.GeoM.Element(1, 2)
         rect := image.Rect(int(tx), int(ty), int(tx) + tileWidth, int(ty) + tileHeight)
-        image := ebiten.NewImageFromImage(screen.SubImage(rect))
+        image := screen.SubImage(rect)
 
-        var options2 ebiten.DrawRectShaderOptions
-        options2.GeoM = options.GeoM
-        options2.GeoM.Translate(float64(point.X * tileWidth), float64(point.Y * tileHeight))
-        options2.Images[0] = image
-        options2.Images[1] = mask
-        options2.Uniforms = make(map[string]interface{})
-        options2.Uniforms["Time"] = float32(math.Abs(float64(counter/10)))
-        screen.DrawRectShader(tileWidth, tileHeight, shader, &options2)
+        if image.Bounds().Dx() == tileWidth && image.Bounds().Dy() == tileHeight {
+            var options2 ebiten.DrawRectShaderOptions
+            options2.GeoM = options.GeoM
+            options2.GeoM.Translate(float64(point.X * tileWidth), float64(point.Y * tileHeight))
+            options2.Images[0] = ebiten.NewImageFromImage(image)
+            options2.Images[1] = mask
+            options2.Uniforms = make(map[string]interface{})
+            options2.Uniforms["Time"] = float32(math.Abs(float64(counter/5)))
+            screen.DrawRectShader(tileWidth, tileHeight, shader, &options2)
+        }
     }
 }
 

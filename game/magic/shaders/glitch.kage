@@ -19,10 +19,10 @@ func Fragment(destPosition vec4, srcPosition vec2, color vec4) vec4 {
     // shake_power and shake_color_rate have been multiplied by 100
     // to compensate somewhat for srcPosition not being normalized
     shake_power := 3.0
-    shake_rate := 0.2
-    shake_speed := 5.0
+    shake_rate := 0.4
+    shake_speed := 8.0
     shake_block_size := 30.5
-    shake_color_rate := 1.0
+    shake_color_rate := 5.0
 
     current := imageSrc0At(srcPosition)
 
