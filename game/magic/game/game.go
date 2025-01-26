@@ -1058,7 +1058,7 @@ func (game *Game) doInput(yield coroutine.YieldFunc, title string, name string, 
     return name
 }
 
-func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City, building buildinglib.Building){
+func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City, building buildinglib.Building, player *playerlib.Player){
     drawer := game.Drawer
     defer func(){
         game.Drawer = drawer
@@ -1089,12 +1089,21 @@ func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City,
     bigFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowPalette)
 
     background, _ := game.ImageCache.GetImage("resource.lbx", 40, 0)
+
     // devil: 51
     // cat: 52
     // bird: 53
     // snake: 54
     // beetle: 55
-    snake, _ := game.ImageCache.GetImageTransform("resource.lbx", 54, 0, "crop", util.AutoCrop)
+    animalIndex := 51
+    switch player.Wizard.MostBooks() {
+        case data.NatureMagic: animalIndex = 54
+        case data.SorceryMagic: animalIndex = 55
+        case data.ChaosMagic: animalIndex = 51
+        case data.LifeMagic: animalIndex = 53
+        case data.DeathMagic: animalIndex = 52
+    }
+    animal, _ := game.ImageCache.GetImageTransform("resource.lbx", animalIndex, 0, "crop", util.AutoCrop)
 
     wrappedText := bigFont.CreateWrappedText(float64(180 * data.ScreenScale), float64(1 * data.ScreenScale), fmt.Sprintf("The %s of %s has completed the construction of a %s.", city.GetSize(), city.Name, game.BuildingInfo.Name(building)))
 
@@ -1124,9 +1133,9 @@ func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City,
         screen.DrawImage(background, &options)
         iconOptions := options
         iconOptions.GeoM.Translate(float64(6 * data.ScreenScale), float64(-10 * data.ScreenScale))
-        screen.DrawImage(snake, &iconOptions)
+        screen.DrawImage(animal, &iconOptions)
 
-        x, y := options.GeoM.Apply(float64(8 * data.ScreenScale + snake.Bounds().Dx()), float64(9 * data.ScreenScale))
+        x, y := options.GeoM.Apply(float64(8 * data.ScreenScale + animal.Bounds().Dx()), float64(9 * data.ScreenScale))
         bigFont.RenderWrapped(screen, x, y, wrappedText, options.ColorScale, false)
 
         options.GeoM.Translate(float64(background.Bounds().Dx()), 0)
@@ -2567,7 +2576,7 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                     case *GameEventNewBuilding:
                         buildingEvent := event.(*GameEventNewBuilding)
                         game.Camera.Center(buildingEvent.City.X, buildingEvent.City.Y)
-                        game.showNewBuilding(yield, buildingEvent.City, buildingEvent.Building)
+                        game.showNewBuilding(yield, buildingEvent.City, buildingEvent.Building, buildingEvent.Player)
                         game.doCityScreen(yield, buildingEvent.City, buildingEvent.Player, buildingEvent.Building)
                     case *GameEventCityName:
                         cityEvent := event.(*GameEventCityName)
