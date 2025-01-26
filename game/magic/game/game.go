@@ -1372,14 +1372,14 @@ func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, sta
         background, _ := game.ImageCache.GetImage("backgrnd.lbx", 32, 0)
 
         var options ebiten.DrawImageOptions
-        options.GeoM.Translate(30, 50)
+        options.GeoM.Translate(float64(30 * data.ScreenScale), float64(50 * data.ScreenScale))
         screen.DrawImage(background, &options)
 
         numHouses := city.GetOutpostHouses()
         maxHouses := 10
 
         houseOptions := options
-        houseOptions.GeoM.Translate(7, 31)
+        houseOptions.GeoM.Translate(float64(7 * data.ScreenScale), float64(31 * data.ScreenScale))
 
         fullHouseIndex := 34
         emptyHouseIndex := 37
@@ -1403,34 +1403,34 @@ func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, sta
         emptyHouse, _ := game.ImageCache.GetImage("backgrnd.lbx", emptyHouseIndex, 0)
         for i := numHouses; i < maxHouses; i++ {
             screen.DrawImage(emptyHouse, &houseOptions)
-            houseOptions.GeoM.Translate(float64(emptyHouse.Bounds().Dx()) + 1, 0)
+            houseOptions.GeoM.Translate(float64(emptyHouse.Bounds().Dx() + 1 * data.ScreenScale), 0)
         }
 
         if stack != nil {
             stackOptions := options
-            stackOptions.GeoM.Translate(7, 55)
+            stackOptions.GeoM.Translate(float64(7 * data.ScreenScale), float64(55 * data.ScreenScale))
 
             for _, unit := range stack.Units() {
                 pic, _ := GetUnitImage(unit, &game.ImageCache, city.Banner)
                 screen.DrawImage(pic, &stackOptions)
-                stackOptions.GeoM.Translate(float64(pic.Bounds().Dx()) + 1, 0)
+                stackOptions.GeoM.Translate(float64(pic.Bounds().Dx() + 1 * data.ScreenScale), 0)
             }
         }
 
-        x, y := options.GeoM.Apply(6, 22)
-        game.InfoFontYellow.Print(screen, x, y, 1, options.ColorScale, city.Race.String())
+        x, y := options.GeoM.Apply(float64(6 * data.ScreenScale), float64(22 * data.ScreenScale))
+        game.InfoFontYellow.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, city.Race.String())
 
-        x, y = options.GeoM.Apply(20, 5)
+        x, y = options.GeoM.Apply(float64(20 * data.ScreenScale), float64(5 * data.ScreenScale))
         if rename {
-            bigFont.Print(screen, x, y, 1, options.ColorScale, "New Outpost Founded")
+            bigFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, "New Outpost Founded")
         } else {
-            bigFont.Print(screen, x, y, 1, options.ColorScale, fmt.Sprintf("Outpost Of %v", city.Name))
+            bigFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("Outpost Of %v", city.Name))
         }
 
         cityScapeOptions := options
-        cityScapeOptions.GeoM.Translate(185, 30)
+        cityScapeOptions.GeoM.Translate(float64(185 * data.ScreenScale), float64(30 * data.ScreenScale))
         x, y = cityScapeOptions.GeoM.Apply(0, 0)
-        cityScape := screen.SubImage(image.Rect(int(x), int(y), int(x + 72), int(y + 66))).(*ebiten.Image)
+        cityScape := screen.SubImage(image.Rect(int(x), int(y), int(x) + 72 * data.ScreenScale, int(y) + 66 * data.ScreenScale)).(*ebiten.Image)
 
         cityScapeBackground, _ := game.ImageCache.GetImage("cityscap.lbx", 0, 0)
         cityScape.DrawImage(cityScapeBackground, &cityScapeOptions)
@@ -1445,7 +1445,7 @@ func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, sta
 
         cityHouse, _ := game.ImageCache.GetImage("cityscap.lbx", houseIndex, 0)
         options2 := cityScapeOptions
-        options2.GeoM.Translate(30, 20)
+        options2.GeoM.Translate(float64(30 * data.ScreenScale), float64(20 * data.ScreenScale))
         cityScape.DrawImage(cityHouse, &options2)
 
         /*
