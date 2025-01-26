@@ -382,27 +382,48 @@ func (node *ExtraMagicNode) DrawLayer2(screen *ebiten.Image, imageCache *util.Im
             return
         }
 
+        /*
         mask, err := imageCache.GetImage("mapback.lbx", 93, 0)
         if err != nil {
             return
         }
+        */
 
         point := node.Zone[0]
 
-        tx, ty := options.GeoM.Element(0, 2), options.GeoM.Element(1, 2)
-        rect := image.Rect(int(tx), int(ty), int(tx) + tileWidth, int(ty) + tileHeight)
-        image := screen.SubImage(rect)
+        var options2 ebiten.DrawRectShaderOptions
+        options2.GeoM.Translate(float64(point.X * tileWidth), float64(point.Y * tileHeight))
+        options2.GeoM.Concat(options.GeoM)
 
-        if image.Bounds().Dx() == tileWidth && image.Bounds().Dy() == tileHeight {
-            var options2 ebiten.DrawRectShaderOptions
-            options2.GeoM = options.GeoM
-            options2.GeoM.Translate(float64(point.X * tileWidth), float64(point.Y * tileHeight))
-            options2.Images[0] = ebiten.NewImageFromImage(image)
-            options2.Images[1] = mask
-            options2.Uniforms = make(map[string]interface{})
-            options2.Uniforms["Time"] = float32(math.Abs(float64(counter/5)))
-            screen.DrawRectShader(tileWidth, tileHeight, shader, &options2)
+        x1, y1 := options2.GeoM.Apply(0, 0)
+        x2, y2 := options2.GeoM.Apply(float64(tileWidth), float64(tileHeight))
+
+        // log.Printf("x1 %v y1 %v x2 %v y2 %v", x1, y1, x2, y2)
+
+        if x1 <= 0 || y1 <= 0 || x2 <= x1 || y2 <= y1 {
+            return
         }
+        rect := image.Rect(int(x1), int(y1), int(x2), int(y2))
+        image := screen.SubImage(rect)
+        if image.Bounds().Dx() == 0 || image.Bounds().Dy() == 0 {
+            return
+        }
+
+        mask := ebiten.NewImage(image.Bounds().Dx(), image.Bounds().Dy())
+        mask.Fill(color.RGBA{0, 0, 0, 255})
+
+        sourceImage := ebiten.NewImageFromImage(image)
+
+        // log.Printf("warp at %v, %v bounds image=%v source=%v", point.X, point.Y, image.Bounds(), sourceImage.Bounds())
+
+        options2.GeoM.Reset()
+        options2.GeoM.Translate(x1, y1)
+
+        options2.Images[0] = sourceImage
+        options2.Images[1] = mask
+        options2.Uniforms = make(map[string]interface{})
+        options2.Uniforms["Time"] = float32(math.Abs(float64(counter/5)))
+        screen.DrawRectShader(image.Bounds().Dx(), image.Bounds().Dy(), shader, &options2)
     }
 }
 
