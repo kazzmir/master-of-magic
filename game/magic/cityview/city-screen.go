@@ -1151,6 +1151,14 @@ func (cityScreen *CityScreen) FoodProducers() []ResourceUsage {
         }
     }
 
+    wildGame := cityScreen.City.ComputeWildGame()
+    if wildGame > 0 {
+        usages = append(usages, ResourceUsage{
+            Count: wildGame,
+            Name: "Wild Game",
+        })
+    }
+
     return usages
 }
 
