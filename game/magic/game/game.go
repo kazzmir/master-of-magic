@@ -1533,12 +1533,6 @@ func (game *Game) ComputeTerrainCost(stack *playerlib.UnitStack, sourceX int, so
         return false
     }
 
-    baseCost := fraction.FromInt(1)
-
-    if containsFriendlyCity(destX, destY) {
-        baseCost = fraction.Make(1, 2)
-    }
-
     road_v, ok := tileTo.Extras[maplib.ExtraKindRoad]
     if ok {
         road := road_v.(*maplib.ExtraRoad)
@@ -1550,12 +1544,34 @@ func (game *Game) ComputeTerrainCost(stack *playerlib.UnitStack, sourceX int, so
         return fraction.Make(1, 2), true
     }
 
+    if containsFriendlyCity(destX, destY) {
+        return fraction.Make(1, 2), true
+    }
+
+    if stack.AllFlyers() {
+        return fraction.FromInt(1), true
+    }
+
     hasPathFinding := stack.ActiveUnitsHasAbility(data.AbilityPathfinding)
     if hasPathFinding {
         return fraction.Make(1, 2), true
     }
 
-    return baseCost, true
+    // FIXME: handle forester, mountaineer, swimming, sailing properties
+    switch tileTo.Tile.TerrainType() {
+        case terrain.Desert: return fraction.FromInt(1), true
+        case terrain.SorceryNode: return fraction.FromInt(1), true
+        case terrain.Grass: return fraction.FromInt(1), true
+        case terrain.Forest: return fraction.FromInt(2), true
+        case terrain.River: return fraction.FromInt(2), true
+        case terrain.Tundra: return fraction.FromInt(2), true
+        case terrain.Hill: return fraction.FromInt(3), true
+        case terrain.Swamp: return fraction.FromInt(3), true
+        case terrain.Mountain: return fraction.FromInt(4), true
+        case terrain.Volcano: return fraction.FromInt(4), true
+    }
+
+    return fraction.FromInt(1), true
 }
 
 /* blink the game screen red to indicate the user attempted to do something invalid
