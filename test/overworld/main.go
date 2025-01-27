@@ -2994,13 +2994,15 @@ func createScenario35(cache *lbx.LbxCache) *gamelib.Game {
 
     enemy1 := game.AddPlayer(wizard1, false)
 
+    enemy1.AIBehavior = ai.MakeEnemyAI()
+
     x, y := game.FindValidCityLocation(game.Plane)
 
     city := citylib.MakeCity("ai1", x, y, data.RaceBarbarian, enemy1.Wizard.Banner, enemy1.TaxRate, game.BuildingInfo, game.CurrentMap(), game)
     city.Population = 6190
     city.Plane = data.PlaneArcanus
     city.Banner = wizard1.Banner
-    city.ProducingBuilding = buildinglib.BuildingGranary
+    city.ProducingBuilding = buildinglib.BuildingTradeGoods
     city.ProducingUnit = units.UnitNone
     city.Farmers = 3
     city.Workers = 3

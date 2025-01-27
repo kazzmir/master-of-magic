@@ -3304,6 +3304,14 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
                     overworldUnit := units.MakeOverworldUnitFromUnit(create.Unit, create.X, create.Y, create.Plane, player.Wizard.Banner, player.MakeExperienceInfo())
                     player.AddUnit(overworldUnit)
                 }
+            case *playerlib.AIProduceDecision:
+                produce := decision.(*playerlib.AIProduceDecision)
+                log.Printf("ai producing %v %v", produce.Building, produce.Unit)
+                if produce.Building != buildinglib.BuildingNone {
+                    produce.City.ProducingBuilding = produce.Building
+                } else {
+                    produce.City.ProducingUnit = produce.Unit
+                }
             }
         }
     }
@@ -5543,6 +5551,8 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
                         case game.Events<- &GameEventNewBuilding{City: city, Building: newBuilding.Building, Player: player}:
                         default:
                     }
+                } else {
+                    log.Printf("ai created %v", game.BuildingInfo.Name(newBuilding.Building))
                 }
             case *citylib.CityEventOutpostDestroyed:
                 removeCities = append(removeCities, city)

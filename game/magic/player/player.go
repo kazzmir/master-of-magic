@@ -14,6 +14,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
+    buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
     "github.com/kazzmir/master-of-magic/lib/fraction"
     "github.com/kazzmir/master-of-magic/lib/set"
 )
@@ -26,6 +27,12 @@ type PowerDistribution struct {
 }
 
 type AIDecision interface {
+}
+
+type AIProduceDecision struct {
+    City *citylib.City
+    Building buildinglib.Building
+    Unit units.Unit
 }
 
 type AIMoveStackDecision struct {
@@ -45,7 +52,10 @@ type PathFinder interface {
 }
 
 type AIBehavior interface {
+    // return a list of decisions to make for the current turn
     Update(*Player, []*Player, PathFinder) []AIDecision
+
+    // reset any state that needs to be reset at the start of a new turn
     NewTurn()
 }
 
