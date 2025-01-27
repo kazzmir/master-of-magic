@@ -3263,13 +3263,13 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
 }
 
 func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player) {
-    log.Printf("AI year %v: make decisions", game.TurnNumber)
+    log.Printf("AI %v year %v: make decisions", player.Wizard.Name, game.TurnNumber)
 
     var decisions []playerlib.AIDecision
 
     if player.AIBehavior != nil {
         decisions = player.AIBehavior.Update(player, game.GetEnemies(player), game)
-        log.Printf("AI Decisions: %v", decisions)
+        log.Printf("AI %v Decisions: %v", player.Wizard.Name, decisions)
 
         for _, decision := range decisions {
             switch decision.(type) {
@@ -3297,7 +3297,7 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
                 }
             case *playerlib.AICreateUnitDecision:
                 create := decision.(*playerlib.AICreateUnitDecision)
-                log.Printf("ai creating %+v", create)
+                log.Printf("ai %v creating %+v", player.Wizard.Name, create)
 
                 existingStack := player.FindStack(create.X, create.Y, create.Plane)
                 if existingStack == nil || len(existingStack.Units()) < 9 {
@@ -3306,7 +3306,7 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
                 }
             case *playerlib.AIProduceDecision:
                 produce := decision.(*playerlib.AIProduceDecision)
-                log.Printf("ai producing %v %v", game.BuildingInfo.Name(produce.Building), produce.Unit)
+                log.Printf("ai %v producing %v %v", player.Wizard.Name, game.BuildingInfo.Name(produce.Building), produce.Unit)
                 if produce.Building != buildinglib.BuildingNone {
                     produce.City.ProducingBuilding = produce.Building
                 } else {
