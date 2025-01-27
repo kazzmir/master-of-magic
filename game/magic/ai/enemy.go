@@ -5,7 +5,9 @@ package ai
 
 import (
     _ "log"
+    "slices"
     "math/rand/v2"
+
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
@@ -37,18 +39,49 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, p
     for _, city := range self.Cities {
         // city can make something
         if !isMakingSomething(city) {
+            possibleUnits := city.ComputePossibleUnits()
+            slices.DeleteFunc(possibleUnits, func(unit units.Unit) bool {
+                if unit.IsSettlers() {
+                    return true
+                }
+                return false
+            })
+
             possibleBuildings := city.ComputePossibleBuildings()
 
             possibleBuildings.RemoveMany(buildinglib.BuildingTradeGoods, buildinglib.BuildingHousing)
 
-            // choose some random building
+            type Choice int
+            const ChooseUnit Choice = 0
+            const ChooseBuilding Choice = 1
+
+            var choices []Choice
+            if len(possibleUnits) > 0 {
+                choices = append(choices, ChooseUnit)
+            }
+
             if possibleBuildings.Size() > 0 {
-                values := possibleBuildings.Values()
-                decisions = append(decisions, &playerlib.AIProduceDecision{
-                    City: city,
-                    Building: values[rand.N(len(values))],
-                    Unit: units.UnitNone,
-                })
+                choices = append(choices, ChooseBuilding)
+            }
+
+            if len(choices) > 0 {
+                switch choices[rand.N(len(choices))] {
+                    case ChooseUnit:
+                        unit := possibleUnits[rand.N(len(possibleUnits))]
+                        decisions = append(decisions, &playerlib.AIProduceDecision{
+                            City: city,
+                            Building: buildinglib.BuildingNone,
+                            Unit: unit,
+                        })
+                    case ChooseBuilding:
+                    // choose some random building
+                    values := possibleBuildings.Values()
+                    decisions = append(decisions, &playerlib.AIProduceDecision{
+                        City: city,
+                        Building: values[rand.N(len(values))],
+                        Unit: units.UnitNone,
+                    })
+                }
             }
         }
     }

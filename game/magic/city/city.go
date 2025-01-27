@@ -345,6 +345,27 @@ func (city *City) ComputePossibleBuildings() *set.Set[buildinglib.Building] {
     return possibleBuildings
 }
 
+func (city *City) ComputePossibleUnits() []units.Unit {
+    var out []units.Unit
+    for _, unit := range units.AllUnits {
+        if unit.Race == data.RaceAll || unit.Race == city.Race {
+
+            canBuild := true
+            for _, building := range unit.RequiredBuildings {
+                if !city.Buildings.Contains(building) {
+                    canBuild = false
+                }
+            }
+
+            if canBuild {
+                out = append(out, unit)
+            }
+        }
+    }
+
+    return out
+}
+
 // true if the city is adjacent to a water tile
 func (city *City) OnShore() bool {
     return city.CatchmentProvider.OnShore(city.X, city.Y)

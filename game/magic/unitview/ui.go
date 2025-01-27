@@ -320,10 +320,10 @@ func MakeSmallListView(cache *lbx.LbxCache, ui *uilib.UI, stack []UnitView, titl
 
     fullBackground, _ := imageCache.GetImage("unitview.lbx", 28, 0)
 
-    background := fullBackground.SubImage(image.Rect(0, 0, fullBackground.Bounds().Dx(), height)).(*ebiten.Image)
+    background := fullBackground.SubImage(image.Rect(0, 0, fullBackground.Bounds().Dx(), height * data.ScreenScale)).(*ebiten.Image)
     bottom, _ := imageCache.GetImage("unitview.lbx", 29, 0)
 
-    posX := 30
+    posX := 30 * data.ScreenScale
     posY := data.ScreenHeight / 2 - background.Bounds().Dy() / 2
 
     var elements []*uilib.UIElement
@@ -360,8 +360,8 @@ func MakeSmallListView(cache *lbx.LbxCache, ui *uilib.UI, stack []UnitView, titl
             options.ColorScale.ScaleAlpha(getAlpha())
             screen.DrawImage(background, &options)
 
-            titleX, titleY := options.GeoM.Apply(float64(background.Bounds().Dx() / 2), 8)
-            titleFont.PrintCenter(screen, titleX, titleY, 1, options.ColorScale, title)
+            titleX, titleY := options.GeoM.Apply(float64(background.Bounds().Dx() / 2), float64(8 * data.ScreenScale))
+            titleFont.PrintCenter(screen, titleX, titleY, float64(data.ScreenScale), options.ColorScale, title)
 
             /*
             util.DrawRect(screen, image.Rect(posX, posY, posX+1, posY + titleHeight), color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff})
@@ -372,7 +372,7 @@ func MakeSmallListView(cache *lbx.LbxCache, ui *uilib.UI, stack []UnitView, titl
             screen.DrawImage(bottom, &options)
 
             options.GeoM.Reset()
-            options.GeoM.Translate(float64(posX), float64(posY + titleHeight))
+            options.GeoM.Translate(float64(posX), float64(posY + titleHeight * data.ScreenScale))
 
             var unitOptions ebiten.DrawImageOptions
             for _, unit := range stack {
@@ -390,23 +390,23 @@ func MakeSmallListView(cache *lbx.LbxCache, ui *uilib.UI, stack []UnitView, titl
                 var x, y float64
 
                 unitOptions = options
-                unitOptions.GeoM.Translate(8, 2)
+                unitOptions.GeoM.Translate(float64(8 * data.ScreenScale), float64(2 * data.ScreenScale))
                 screen.DrawImage(unitBack, &unitOptions)
-                unitOptions.GeoM.Translate(1, 1)
+                unitOptions.GeoM.Translate(float64(1 * data.ScreenScale), float64(1 * data.ScreenScale))
                 screen.DrawImage(unitImage, &unitOptions)
 
-                x, y = unitOptions.GeoM.Apply(float64(unitBack.Bounds().Dx() + 2), 5)
-                mediumFont.Print(screen, x, y, 1, options.ColorScale, unit.GetName())
+                x, y = unitOptions.GeoM.Apply(float64(unitBack.Bounds().Dx() + 2 * data.ScreenScale), float64(5 * data.ScreenScale))
+                mediumFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, unit.GetName())
 
-                unitOptions.GeoM.Translate(133, 5)
-                x, y = unitOptions.GeoM.Apply(0, 1)
-                smallFont.PrintRight(screen, x, y, 1, options.ColorScale, fmt.Sprintf("%v", unit.GetMeleeAttackPower()))
+                unitOptions.GeoM.Translate(float64(133 * data.ScreenScale), float64(5 * data.ScreenScale))
+                x, y = unitOptions.GeoM.Apply(0, float64(1))
+                smallFont.PrintRight(screen, x, y, float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("%v", unit.GetMeleeAttackPower()))
                 // FIXME: show mythril/adamantium weapons?
                 screen.DrawImage(meleeImage, &unitOptions)
 
-                unitOptions.GeoM.Translate(20, 0)
-                x, y = unitOptions.GeoM.Apply(0, 1)
-                smallFont.PrintRight(screen, x, y, 1, options.ColorScale, fmt.Sprintf("%v", unit.GetRangedAttackPower()))
+                unitOptions.GeoM.Translate(float64(20 * data.ScreenScale), 0)
+                x, y = unitOptions.GeoM.Apply(0, float64(1))
+                smallFont.PrintRight(screen, x, y, float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("%v", unit.GetRangedAttackPower()))
                 switch unit.GetRangedAttackDamageType() {
                     case units.DamageNone: // nothing
                     case units.DamageRangedMagical:
@@ -417,24 +417,24 @@ func MakeSmallListView(cache *lbx.LbxCache, ui *uilib.UI, stack []UnitView, titl
                         screen.DrawImage(rangeBoulderImage, &unitOptions)
                 }
 
-                unitOptions.GeoM.Translate(20, 0)
-                x, y = unitOptions.GeoM.Apply(0, 1)
-                smallFont.PrintRight(screen, x, y, 1, options.ColorScale, fmt.Sprintf("%v", unit.GetDefense()))
+                unitOptions.GeoM.Translate(float64(20 * data.ScreenScale), 0)
+                x, y = unitOptions.GeoM.Apply(0, float64(1))
+                smallFont.PrintRight(screen, x, y, float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("%v", unit.GetDefense()))
                 screen.DrawImage(defenseImage, &unitOptions)
 
-                unitOptions.GeoM.Translate(20, 0)
-                x, y = unitOptions.GeoM.Apply(0, 1)
-                smallFont.PrintRight(screen, x, y, 1, options.ColorScale, fmt.Sprintf("%v", unit.GetHitPoints()))
+                unitOptions.GeoM.Translate(float64(20 * data.ScreenScale), 0)
+                x, y = unitOptions.GeoM.Apply(0, float64(1))
+                smallFont.PrintRight(screen, x, y, float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("%v", unit.GetHitPoints()))
 
                 screen.DrawImage(healthImage, &unitOptions)
 
-                unitOptions.GeoM.Translate(20, 0)
-                x, y = unitOptions.GeoM.Apply(0, 1)
-                smallFont.PrintRight(screen, x, y, 1, options.ColorScale, fmt.Sprintf("%v", unit.GetMovementSpeed()))
+                unitOptions.GeoM.Translate(float64(20 * data.ScreenScale), 0)
+                x, y = unitOptions.GeoM.Apply(0, float64(1))
+                smallFont.PrintRight(screen, x, y, float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("%v", unit.GetMovementSpeed()))
 
                 screen.DrawImage(moveImage, &unitOptions)
 
-                options.GeoM.Translate(0, float64(unitHeight))
+                options.GeoM.Translate(0, float64(unitHeight * data.ScreenScale))
             }
         },
     }

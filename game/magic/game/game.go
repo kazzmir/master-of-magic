@@ -3306,7 +3306,7 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
                 }
             case *playerlib.AIProduceDecision:
                 produce := decision.(*playerlib.AIProduceDecision)
-                log.Printf("ai %v producing %v %v", player.Wizard.Name, game.BuildingInfo.Name(produce.Building), produce.Unit)
+                log.Printf("ai %v producing %v %v", player.Wizard.Name, game.BuildingInfo.Name(produce.Building), produce.Unit.Name)
                 if produce.Building != buildinglib.BuildingNone {
                     produce.City.ProducingBuilding = produce.Building
                 } else {
