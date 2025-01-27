@@ -35,6 +35,7 @@ func isMakingSomething(city *citylib.City) bool {
 
 // stop producing that unit
 func (ai *EnemyAI) ProducedUnit(city *citylib.City, player *playerlib.Player) {
+    city.ProducingBuilding = buildinglib.BuildingTradeGoods
     city.ProducingUnit = units.UnitNone
 }
 
@@ -62,7 +63,10 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, p
 
             var choices []Choice
             if len(possibleUnits) > 0 {
-                choices = append(choices, ChooseUnit)
+                stack := self.FindStack(city.X, city.Y, city.Plane)
+                if stack == nil || len(stack.Units()) < 9 {
+                    choices = append(choices, ChooseUnit)
+                }
             }
 
             if possibleBuildings.Size() > 0 {
@@ -97,7 +101,12 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, p
 func (ai *EnemyAI) NewTurn(player *playerlib.Player) {
     // make sure cities have enough farmers
     for _, city := range player.Cities {
-        city.ResetCitizens(nil)
+        stack := player.FindStack(city.X, city.Y, city.Plane)
+        var units []units.StackUnit
+        if stack != nil {
+            units = stack.Units()
+        }
+        city.ResetCitizens(units)
     }
 
     // keep going as long as there is more food available
