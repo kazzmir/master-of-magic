@@ -218,7 +218,22 @@ func (city *City) GetBuildableBuildings() *set.Set[buildinglib.Building] {
             }
 
         case data.RaceOrc:
+            if !city.OnShore() {
+                out.RemoveMany(buildinglib.BuildingShipYard, buildinglib.BuildingShipwrightsGuild, buildinglib.BuildingMaritimeGuild, buildinglib.BuildingMaritimeGuild)
+            }
+
         case data.RaceTroll:
+            out.RemoveMany(
+                buildinglib.BuildingAlchemistsGuild, buildinglib.BuildingUniversity, buildinglib.BuildingFantasticStable, buildinglib.BuildingMechaniciansGuild,
+                buildinglib.BuildingWizardsGuild, buildinglib.BuildingMaritimeGuild, buildinglib.BuildingOracle, buildinglib.BuildingWarCollege,
+                buildinglib.BuildingBank, buildinglib.BuildingMerchantsGuild, buildinglib.BuildingShipYard, buildinglib.BuildingSagesGuild,
+                buildinglib.BuildingMinersGuild,
+            )
+
+            if !city.OnShore() {
+                out.RemoveMany(buildinglib.BuildingShipYard)
+            }
+
         case data.RaceBarbarian:
         case data.RaceBeastmen:
         case data.RaceDarkElf:
