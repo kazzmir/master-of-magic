@@ -1894,11 +1894,11 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
         for i, unit := range stack.Units() {
             x, y := options.GeoM.Apply(float64(8 * data.ScreenScale), float64(52 * data.ScreenScale))
 
-            x += float64(i % 6) * 20
-            y += float64(i / 6) * 20
+            x += float64((i % 6) * 20 * data.ScreenScale)
+            y += float64((i / 6) * 20 * data.ScreenScale)
 
             pic, _ := imageCache.GetImageTransform(unit.GetLbxFile(), unit.GetLbxIndex(), 0, unit.GetBanner().String(), units.MakeUpdateUnitColorsFunc(unit.GetBanner()))
-            rect := image.Rect(int(x) * data.ScreenScale, int(y) * data.ScreenScale, int(x) * data.ScreenScale + pic.Bounds().Dx(), int(y) * data.ScreenScale + pic.Bounds().Dy())
+            rect := image.Rect(int(x), int(y), int(x) + pic.Bounds().Dx(), int(y) + pic.Bounds().Dy())
             ui.AddElement(&uilib.UIElement{
                 Rect: rect,
                 Inside: func(element *uilib.UIElement, x int, y int){
