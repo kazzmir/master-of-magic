@@ -28,8 +28,6 @@ func isMakingSomething(city *citylib.City) bool {
         case buildinglib.BuildingHousing, buildinglib.BuildingTradeGoods: return false
         default: return true
     }
-
-    return false
 }
 
 func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, pathfinder playerlib.PathFinder) []playerlib.AIDecision {
