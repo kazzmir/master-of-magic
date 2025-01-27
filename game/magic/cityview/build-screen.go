@@ -231,12 +231,14 @@ func allowedByRace(building buildinglib.Building, race data.Race) bool {
 func computePossibleBuildings(city *citylib.City) []buildinglib.Building {
     var possibleBuildings []buildinglib.Building
 
+    allowedBuildings := city.GetBuildableBuildings()
+
     for _, building := range buildinglib.Buildings() {
         if city.Buildings.Contains(building) {
             continue
         }
 
-        if !allowedByRace(building, city.Race) {
+        if !allowedBuildings.Contains(building) {
             continue
         }
 
@@ -244,10 +246,9 @@ func computePossibleBuildings(city *citylib.City) []buildinglib.Building {
         for _, dependency := range city.BuildingInfo.Dependencies(building) {
             if !city.Buildings.Contains(dependency) {
                 canBuild = false
+                break
             }
         }
-
-        // FIXME: take terrain dependency into account
 
         if canBuild {
             possibleBuildings = append(possibleBuildings, building)

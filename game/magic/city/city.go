@@ -14,6 +14,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
+    "github.com/kazzmir/master-of-magic/game/magic/terrain"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
 )
 
@@ -200,6 +201,30 @@ func (city *City) GetBuildableBuildings() *set.Set[buildinglib.Building] {
         buildinglib.BuildingMechaniciansGuild, buildinglib.BuildingMinersGuild, buildinglib.BuildingCityWalls,
     )
 
+    // remove all buildings that depend on being near a shore
+    if !city.OnShore() {
+        out.RemoveMany(buildinglib.BuildingShipYard, buildinglib.BuildingShipwrightsGuild, buildinglib.BuildingMaritimeGuild, buildinglib.BuildingMaritimeGuild)
+    }
+
+    hasForest := false
+    minersGuildOk := false
+
+    for _, tile := range city.CatchmentProvider.GetCatchmentArea(city.X, city.Y) {
+        switch tile.Tile.TerrainType() {
+            case terrain.Forest, terrain.NatureNode: hasForest = true
+            case terrain.Mountain, terrain.Volcano, terrain.Hill, terrain.ChaosNode:
+                minersGuildOk = true
+        }
+    }
+
+    if !minersGuildOk {
+        out.RemoveMany(buildinglib.BuildingMinersGuild)
+    }
+
+    if !hasForest {
+        out.RemoveMany(buildinglib.BuildingSawmill)
+    }
+
     switch city.Race {
         case data.RaceLizard:
             out.RemoveMany(
@@ -213,14 +238,7 @@ func (city *City) GetBuildableBuildings() *set.Set[buildinglib.Building] {
         case data.RaceNomad:
             out.RemoveMany(buildinglib.BuildingWizardsGuild, buildinglib.BuildingMaritimeGuild)
 
-            if !city.OnShore() {
-                out.RemoveMany(buildinglib.BuildingShipYard, buildinglib.BuildingShipwrightsGuild, buildinglib.BuildingMerchantsGuild)
-            }
-
         case data.RaceOrc:
-            if !city.OnShore() {
-                out.RemoveMany(buildinglib.BuildingShipYard, buildinglib.BuildingShipwrightsGuild, buildinglib.BuildingMaritimeGuild, buildinglib.BuildingMaritimeGuild)
-            }
 
         case data.RaceTroll:
             out.RemoveMany(
@@ -230,10 +248,6 @@ func (city *City) GetBuildableBuildings() *set.Set[buildinglib.Building] {
                 buildinglib.BuildingMinersGuild,
             )
 
-            if !city.OnShore() {
-                out.RemoveMany(buildinglib.BuildingShipwrightsGuild)
-            }
-
         case data.RaceBarbarian:
             out.RemoveMany(
                 buildinglib.BuildingAnimistsGuild, buildinglib.BuildingUniversity, buildinglib.BuildingFantasticStable, buildinglib.BuildingMechaniciansGuild,
@@ -241,30 +255,14 @@ func (city *City) GetBuildableBuildings() *set.Set[buildinglib.Building] {
                 buildinglib.BuildingBank, buildinglib.BuildingMerchantsGuild,
             )
 
-            if !city.OnShore() {
-                out.RemoveMany(buildinglib.BuildingShipYard, buildinglib.BuildingShipwrightsGuild, buildinglib.BuildingMaritimeGuild)
-            }
-
         case data.RaceBeastmen:
             out.RemoveMany(buildinglib.BuildingFantasticStable, buildinglib.BuildingMerchantsGuild, buildinglib.BuildingShipYard, buildinglib.BuildingMaritimeGuild)
-
-            if !city.OnShore() {
-                out.RemoveMany(buildinglib.BuildingShipwrightsGuild)
-            }
 
         case data.RaceDarkElf:
             out.RemoveMany(buildinglib.BuildingCathedral, buildinglib.BuildingMaritimeGuild)
 
-            if !city.OnShore() {
-                out.RemoveMany(buildinglib.BuildingShipYard, buildinglib.BuildingShipwrightsGuild, buildinglib.BuildingMerchantsGuild)
-            }
-
         case data.RaceDraconian:
             out.RemoveMany(buildinglib.BuildingMechaniciansGuild, buildinglib.BuildingMaritimeGuild, buildinglib.BuildingFantasticStable)
-
-            if !city.OnShore() {
-                out.RemoveMany(buildinglib.BuildingShipYard, buildinglib.BuildingShipwrightsGuild, buildinglib.BuildingMerchantsGuild)
-            }
 
         case data.RaceDwarf:
             out.RemoveMany(
@@ -274,10 +272,6 @@ func (city *City) GetBuildableBuildings() *set.Set[buildinglib.Building] {
                 buildinglib.BuildingParthenon, buildinglib.BuildingCathedral,
             )
 
-            if !city.OnShore() {
-                out.RemoveMany(buildinglib.BuildingShipwrightsGuild)
-            }
-
         case data.RaceGnoll:
             out.RemoveMany(
                 buildinglib.BuildingMaritimeGuild, buildinglib.BuildingArmorersGuild, buildinglib.BuildingSagesGuild, buildinglib.BuildingAnimistsGuild,
@@ -285,10 +279,6 @@ func (city *City) GetBuildableBuildings() *set.Set[buildinglib.Building] {
                 buildinglib.BuildingCathedral, buildinglib.BuildingOracle, buildinglib.BuildingWarCollege, buildinglib.BuildingBank,
                 buildinglib.BuildingMerchantsGuild, buildinglib.BuildingMechaniciansGuild, buildinglib.BuildingWizardsGuild,
             )
-
-            if !city.OnShore() {
-                out.RemoveMany(buildinglib.BuildingShipYard, buildinglib.BuildingShipwrightsGuild)
-            }
 
         case data.RaceHalfling:
             out.RemoveMany(
@@ -298,25 +288,13 @@ func (city *City) GetBuildableBuildings() *set.Set[buildinglib.Building] {
                 buildinglib.BuildingStables,
             )
 
-            if !city.OnShore() {
-                out.RemoveMany(buildinglib.BuildingShipwrightsGuild)
-            }
-
         case data.RaceHighElf:
             out.RemoveMany(
                 buildinglib.BuildingParthenon, buildinglib.BuildingMaritimeGuild, buildinglib.BuildingOracle, buildinglib.BuildingCathedral,
             )
 
-            if !city.OnShore() {
-                out.RemoveMany(buildinglib.BuildingShipYard, buildinglib.BuildingShipwrightsGuild, buildinglib.BuildingMerchantsGuild)
-            }
-
         case data.RaceHighMen:
             out.RemoveMany(buildinglib.BuildingFantasticStable)
-
-            if !city.OnShore() {
-                out.RemoveMany(buildinglib.BuildingShipYard, buildinglib.BuildingShipwrightsGuild, buildinglib.BuildingMaritimeGuild, buildinglib.BuildingMerchantsGuild)
-            }
 
         case data.RaceKlackon:
             out.RemoveMany(
@@ -325,167 +303,10 @@ func (city *City) GetBuildableBuildings() *set.Set[buildinglib.Building] {
                 buildinglib.BuildingBank, buildinglib.BuildingMerchantsGuild, buildinglib.BuildingShipYard, buildinglib.BuildingAlchemistsGuild,
                 buildinglib.BuildingTemple, buildinglib.BuildingCathedral, buildinglib.BuildingParthenon, buildinglib.BuildingSagesGuild,
             )
-
-            if !city.OnShore() {
-                out.RemoveMany(buildinglib.BuildingShipwrightsGuild)
-            }
     }
 
     return out
 }
-
-/*
-func allowedByRace(building buildinglib.Building, race data.Race) bool {
-    switch building {
-        case buildinglib.BuildingBarracks,
-             buildinglib.BuildingArmory,
-             buildinglib.BuildingSmithy,
-             buildinglib.BuildingLibrary,
-             buildinglib.BuildingShrine,
-             buildinglib.BuildingMarketplace,
-             buildinglib.BuildingGranary,
-             buildinglib.BuildingFarmersMarket,
-             buildinglib.BuildingBuildersHall,
-             buildinglib.BuildingCityWalls,
-             buildinglib.BuildingTradeGoods,
-             buildinglib.BuildingHousing,
-             buildinglib.BuildingFightersGuild:
-                return true
-        case buildinglib.BuildingArmorersGuild:
-            if race == data.RaceGnoll || race == data.RaceHalfling {
-                return false
-            }
-            return true
-        case buildinglib.BuildingStables:
-            // not halfling or dwarf
-            if race == data.RaceHalfling || race == data.RaceDwarf {
-                return false
-            }
-
-            return true
-        case buildinglib.BuildingWarCollege:
-            return race == data.RaceHighElf ||
-                   race == data.RaceHighMen ||
-                   race == data.RaceNomad ||
-                   race == data.RaceOrc ||
-                   race == data.RaceBeastmen ||
-                   race == data.RaceDarkElf ||
-                   race == data.RaceDraconian
-        case buildinglib.BuildingAnimistsGuild:
-            return race == data.RaceHighElf ||
-                   race == data.RaceHighMen ||
-                   race == data.RaceNomad ||
-                   race == data.RaceOrc ||
-                   race == data.RaceBeastmen ||
-                   race == data.RaceDarkElf ||
-                   race == data.RaceDraconian ||
-                   race == data.RaceTroll
-        case buildinglib.BuildingFantasticStable:
-            return race == data.RaceHighElf ||
-                   race == data.RaceNomad ||
-                   race == data.RaceOrc ||
-                   race == data.RaceDarkElf
-        case buildinglib.BuildingShipYard:
-            return race == data.RaceBarbarian ||
-                   race == data.RaceGnoll ||
-                   race == data.RaceHighElf ||
-                   race == data.RaceHighMen ||
-                   race == data.RaceNomad ||
-                   race == data.RaceOrc ||
-                   race == data.RaceDarkElf ||
-                   race == data.RaceDraconian
-        case buildinglib.BuildingMaritimeGuild:
-            return race == data.RaceBarbarian ||
-                   race == data.RaceHighMen ||
-                   race == data.RaceOrc
-        case buildinglib.BuildingSawmill,
-             buildinglib.BuildingShipwrightsGuild,
-             buildinglib.BuildingForestersGuild:
-            return race != data.RaceLizard
-        case buildinglib.BuildingSagesGuild,
-             buildinglib.BuildingAlchemistsGuild:
-            if race == data.RaceGnoll ||
-               race == data.RaceKlackon ||
-               race == data.RaceLizard ||
-               race == data.RaceTroll {
-                   return false
-            }
-
-            return true
-        case buildinglib.BuildingOracle:
-            return race == data.RaceHighMen ||
-                   race == data.RaceNomad ||
-                   race == data.RaceOrc ||
-                   race == data.RaceBeastmen ||
-                   race == data.RaceDarkElf
-        case buildinglib.BuildingUniversity:
-            return race == data.RaceHighElf ||
-                   race == data.RaceHighMen ||
-                   race == data.RaceNomad ||
-                   race == data.RaceOrc ||
-                   race == data.RaceBeastmen ||
-                   race == data.RaceDarkElf ||
-                   race == data.RaceDraconian
-        case buildinglib.BuildingWizardsGuild:
-            return race == data.RaceHighElf ||
-                   race == data.RaceHighMen ||
-                   race == data.RaceOrc ||
-                   race == data.RaceBeastmen ||
-                   race == data.RaceDarkElf ||
-                   race == data.RaceDraconian
-        case buildinglib.BuildingTemple:
-            return race != data.RaceKlackon
-        case buildinglib.BuildingParthenon:
-            return race == data.RaceBarbarian ||
-                   race == data.RaceHalfling ||
-                   race == data.RaceHighMen ||
-                   race == data.RaceNomad ||
-                   race == data.RaceOrc ||
-                   race == data.RaceBeastmen ||
-                   race == data.RaceDarkElf ||
-                   race == data.RaceDraconian ||
-                   race == data.RaceTroll
-        case buildinglib.BuildingCathedral:
-            return race == data.RaceHalfling ||
-                   race == data.RaceHighMen ||
-                   race == data.RaceNomad ||
-                   race == data.RaceOrc ||
-                   race == data.RaceBeastmen ||
-                   race == data.RaceDraconian ||
-                   race == data.RaceTroll
-        case buildinglib.BuildingBank:
-            return race == data.RaceHighElf ||
-                   race == data.RaceHighMen ||
-                   race == data.RaceNomad ||
-                   race == data.RaceOrc ||
-                   race == data.RaceBeastmen ||
-                   race == data.RaceDarkElf ||
-                   race == data.RaceDraconian
-        case buildinglib.BuildingMerchantsGuild:
-            return race == data.RaceHighElf ||
-                   race == data.RaceHighMen ||
-                   race == data.RaceNomad ||
-                   race == data.RaceOrc ||
-                   race == data.RaceDarkElf ||
-                   race == data.RaceDraconian
-        case buildinglib.BuildingMechaniciansGuild:
-            return race == data.RaceHighElf ||
-                   race == data.RaceHighMen ||
-                   race == data.RaceNomad ||
-                   race == data.RaceOrc ||
-                   race == data.RaceBeastmen ||
-                   race == data.RaceDarkElf
-        case buildinglib.BuildingMinersGuild:
-            if race == data.RaceLizard || race == data.RaceTroll {
-                return false
-            }
-
-            return true
-    }
-
-    return false
-}
-*/
 
 // true if the city is adjacent to a water tile
 func (city *City) OnShore() bool {
