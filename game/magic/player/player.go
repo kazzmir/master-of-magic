@@ -56,7 +56,10 @@ type AIBehavior interface {
     Update(*Player, []*Player, PathFinder) []AIDecision
 
     // reset any state that needs to be reset at the start of a new turn
-    NewTurn()
+    NewTurn(*Player)
+
+    // called when a new unit is produced in the city
+    ProducedUnit(*citylib.City, *Player)
 }
 
 type Relationship struct {

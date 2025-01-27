@@ -4,7 +4,7 @@ package ai
  */
 
 import (
-    _ "log"
+    "log"
     "slices"
     "math/rand/v2"
 
@@ -33,6 +33,11 @@ func isMakingSomething(city *citylib.City) bool {
     }
 }
 
+// stop producing that unit
+func (ai *EnemyAI) ProducedUnit(city *citylib.City, player *playerlib.Player) {
+    city.ProducingUnit = units.UnitNone
+}
+
 func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, pathfinder playerlib.PathFinder) []playerlib.AIDecision {
     var decisions []playerlib.AIDecision
 
@@ -40,7 +45,7 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, p
         // city can make something
         if !isMakingSomething(city) {
             possibleUnits := city.ComputePossibleUnits()
-            slices.DeleteFunc(possibleUnits, func(unit units.Unit) bool {
+            possibleUnits = slices.DeleteFunc(possibleUnits, func(unit units.Unit) bool {
                 if unit.IsSettlers() {
                     return true
                 }
@@ -74,13 +79,13 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, p
                             Unit: unit,
                         })
                     case ChooseBuilding:
-                    // choose some random building
-                    values := possibleBuildings.Values()
-                    decisions = append(decisions, &playerlib.AIProduceDecision{
-                        City: city,
-                        Building: values[rand.N(len(values))],
-                        Unit: units.UnitNone,
-                    })
+                        // choose some random building
+                        values := possibleBuildings.Values()
+                        decisions = append(decisions, &playerlib.AIProduceDecision{
+                            City: city,
+                            Building: values[rand.N(len(values))],
+                            Unit: units.UnitNone,
+                        })
                 }
             }
         }
@@ -89,5 +94,32 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, p
     return decisions
 }
 
-func (ai *EnemyAI) NewTurn() {
+func (ai *EnemyAI) NewTurn(player *playerlib.Player) {
+    // make sure cities have enough farmers
+    for _, city := range player.Cities {
+        city.ResetCitizens(nil)
+    }
+
+    // keep going as long as there is more food available
+    moreFood := true
+    for moreFood && player.FoodPerTurn() < 0 {
+        // try to update farmers in cities
+
+        moreFood = false
+        for _, city := range player.Cities {
+            if player.FoodPerTurn() >= 0 {
+                break
+            }
+
+            if city.Workers > 0 {
+                moreFood = true
+                city.Farmers += 1
+                city.Workers -= 1
+            }
+        }
+    }
+
+    for _, city := range player.Cities {
+        log.Printf("ai %v city %v farmer=%v worker=%v rebel=%v", player.Wizard.Name, city.Name, city.Farmers, city.Workers, city.Rebels)
+    }
 }

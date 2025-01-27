@@ -5577,6 +5577,10 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
                     overworldUnit.SetWeaponBonus(newUnit.WeaponBonus)
                 }
                 player.AddUnit(overworldUnit)
+
+                if player.AIBehavior != nil {
+                    player.AIBehavior.ProducedUnit(city, player)
+                }
             }
         }
     }
@@ -5678,8 +5682,9 @@ func (game *Game) DoNextTurn(){
             }
         }
 
-        if game.Players[game.CurrentPlayer].AIBehavior != nil {
-            game.Players[game.CurrentPlayer].AIBehavior.NewTurn()
+        aiPlayer := game.Players[game.CurrentPlayer]
+        if aiPlayer.AIBehavior != nil {
+            aiPlayer.AIBehavior.NewTurn(aiPlayer)
         }
     }
 }
