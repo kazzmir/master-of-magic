@@ -36,8 +36,41 @@ func (help *Help) updateMap(){
     }
 }
 
+func (help *Help) autocorrectName(name string) string {
+    switch name {
+        // spells
+        case "Basilisk": return "Basilisks"
+        case "Nature Awareness": return "Nature's Awareness"
+        case "Floating Island": return "Floating Islands"
+        case "Invisiblity": return "Invisibility"
+        case "Chimeras": return "Chimera"
+        case "Armageddon": return "Armagedon"
+        case "Lionheart": return "Lion Heart"
+        case "Arch Angel": return "Archangel"
+        // buildings
+        case "Fighters Guild": return "Fighter's Guild"
+        case "Armorers Guild": return "Armorer's Guild"
+        case "Animists Guild": return "Animist's Guild"
+        case "Ship Yard": return "Shipyard"
+        case "Sages Guild": return "Sage's Guild"
+        case "Wizards Guild": return "Wizard's Guild"
+        case "Merchants Guild": return "Merchant's Guild"
+        case "Farmers Market": return "Farmer's Market"
+        case "Foresters Guild": return "Forester's Guild"
+        case "Builders Hall": return "Builder's Hall"
+        case "Mechanicians Guild": return "Mechanician's Guild"
+        case "Miners Guild": return "Miner's Guild"
+    }
+    return name
+}
+
 func (help *Help) GetEntriesByName(name string) []HelpEntry {
     entry, ok := help.headlineMap[strings.ToLower(name)]
+    if ok {
+        return help.GetEntries(entry)
+    }
+
+    entry, ok = help.headlineMap[strings.ToLower(help.autocorrectName(name))]
     if ok {
         return help.GetEntries(entry)
     }
