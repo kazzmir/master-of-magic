@@ -399,7 +399,20 @@ func makeTreasure(cache *lbx.LbxCache, encounterType maplib.EncounterType, budge
                     budget -= spellBookSpend
                     count := 1
 
-                    items = append(items, &TreasureSpellbook{Magic: books[rand.N(len(books))], Count: count})
+                    // update the existing spellbook so that there is only one spellbook item, not two
+                    added := false
+                    for _, item := range items {
+                        if spellbook, ok := item.(*TreasureSpellbook); ok {
+                            if spellbook.Magic == books[0] {
+                                spellbook.Count += 1
+                                added = true
+                            }
+                        }
+                    }
+
+                    if !added {
+                        items = append(items, &TreasureSpellbook{Magic: books[rand.N(len(books))], Count: count})
+                    }
                 }
             case TreasureTypeRetort:
                 retort, ok := chooseRetort()
