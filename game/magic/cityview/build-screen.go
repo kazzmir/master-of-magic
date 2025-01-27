@@ -11,7 +11,6 @@ import (
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
-    "github.com/kazzmir/master-of-magic/lib/set"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/units"
@@ -76,41 +75,6 @@ func (buildScreen *BuildScreen) Cancel() {
 
 func (buildScreen *BuildScreen) Ok() {
     buildScreen.State = BuildScreenOk
-}
-
-/* return the buildings that can be built, based on what the city already has
- */
-func computePossibleBuildings(city *citylib.City) *set.Set[buildinglib.Building] {
-    possibleBuildings := set.NewSet[buildinglib.Building]()
-
-    allowedBuildings := city.GetBuildableBuildings()
-
-    for _, building := range buildinglib.Buildings() {
-        if city.Buildings.Contains(building) {
-            continue
-        }
-
-        if !allowedBuildings.Contains(building) {
-            continue
-        }
-
-        canBuild := true
-        for _, dependency := range city.BuildingInfo.Dependencies(building) {
-            if !city.Buildings.Contains(dependency) {
-                canBuild = false
-                break
-            }
-        }
-
-        if canBuild {
-            possibleBuildings.Insert(building)
-        }
-    }
-
-    possibleBuildings.Insert(buildinglib.BuildingTradeGoods)
-    possibleBuildings.Insert(buildinglib.BuildingHousing)
-
-    return possibleBuildings
 }
 
 func combineStrings(all []string) string {
@@ -374,7 +338,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
     }
 
     if err == nil {
-        possibleBuildings := computePossibleBuildings(city)
+        possibleBuildings := city.ComputePossibleBuildings()
         for i, building := range slices.SortedFunc(slices.Values(possibleBuildings.Values()), func (a, b buildinglib.Building) int {
             return cmp.Compare(city.BuildingInfo.GetBuildingIndex(a), city.BuildingInfo.GetBuildingIndex(b))
         }) {

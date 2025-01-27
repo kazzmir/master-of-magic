@@ -310,6 +310,41 @@ func (city *City) GetBuildableBuildings() *set.Set[buildinglib.Building] {
     return out
 }
 
+/* return the buildings that can be built, based on what the city already has and what dependencies are met
+ */
+func (city *City) ComputePossibleBuildings() *set.Set[buildinglib.Building] {
+    possibleBuildings := set.NewSet[buildinglib.Building]()
+
+    allowedBuildings := city.GetBuildableBuildings()
+
+    for _, building := range buildinglib.Buildings() {
+        if city.Buildings.Contains(building) {
+            continue
+        }
+
+        if !allowedBuildings.Contains(building) {
+            continue
+        }
+
+        canBuild := true
+        for _, dependency := range city.BuildingInfo.Dependencies(building) {
+            if !city.Buildings.Contains(dependency) {
+                canBuild = false
+                break
+            }
+        }
+
+        if canBuild {
+            possibleBuildings.Insert(building)
+        }
+    }
+
+    possibleBuildings.Insert(buildinglib.BuildingTradeGoods)
+    possibleBuildings.Insert(buildinglib.BuildingHousing)
+
+    return possibleBuildings
+}
+
 // true if the city is adjacent to a water tile
 func (city *City) OnShore() bool {
     return city.CatchmentProvider.OnShore(city.X, city.Y)
