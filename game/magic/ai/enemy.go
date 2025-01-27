@@ -5,6 +5,7 @@ package ai
 
 import (
     _ "log"
+    "math/rand/v2"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
@@ -36,11 +37,19 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, p
     for _, city := range self.Cities {
         // city can make something
         if !isMakingSomething(city) {
-            decisions = append(decisions, &playerlib.AIProduceDecision{
-                City: city,
-                Building: buildinglib.BuildingSmithy,
-                Unit: units.UnitNone,
-            })
+            possibleBuildings := city.ComputePossibleBuildings()
+
+            possibleBuildings.RemoveMany(buildinglib.BuildingTradeGoods, buildinglib.BuildingHousing)
+
+            // choose some random building
+            if possibleBuildings.Size() > 0 {
+                values := possibleBuildings.Values()
+                decisions = append(decisions, &playerlib.AIProduceDecision{
+                    City: city,
+                    Building: values[rand.N(len(values))],
+                    Unit: units.UnitNone,
+                })
+            }
         }
     }
 
