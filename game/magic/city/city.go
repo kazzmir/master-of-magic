@@ -67,6 +67,7 @@ func (citySize CitySize) String() string {
 
 type CatchmentProvider interface {
     GetCatchmentArea(x int, y int) map[image.Point]maplib.FullTile
+    OnShore(x int, y int) bool
 }
 
 type ConnectedCityProvider interface {
@@ -210,6 +211,12 @@ func (city *City) GetBuildableBuildings() *set.Set[buildinglib.Building] {
                 buildinglib.BuildingSawmill, buildinglib.BuildingForestersGuild, buildinglib.BuildingMinersGuild,
             )
         case data.RaceNomad:
+            out.RemoveMany(buildinglib.BuildingWizardsGuild, buildinglib.BuildingMaritimeGuild)
+
+            if !city.OnShore() {
+                out.RemoveMany(buildinglib.BuildingShipYard, buildinglib.BuildingShipwrightsGuild, buildinglib.BuildingMerchantsGuild)
+            }
+
         case data.RaceOrc:
         case data.RaceTroll:
         case data.RaceBarbarian:
@@ -379,6 +386,11 @@ func allowedByRace(building buildinglib.Building, race data.Race) bool {
     return false
 }
 */
+
+// true if the city is adjacent to a water tile
+func (city *City) OnShore() bool {
+    return city.CatchmentProvider.OnShore(city.X, city.Y)
+}
 
 func (city *City) AddEnchantment(enchantment data.CityEnchantment, owner data.BannerType) {
     city.Enchantments.Insert(Enchantment{
