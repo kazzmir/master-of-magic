@@ -183,6 +183,203 @@ func (city *City) ProducingString() string {
     return ""
 }
 
+func (city *City) GetBuildableBuildings() *set.Set[buildinglib.Building] {
+    // add all buildings at first
+    out := set.NewSet[buildinglib.Building](
+        buildinglib.BuildingBarracks, buildinglib.BuildingArmory, buildinglib.BuildingFightersGuild,
+        buildinglib.BuildingArmorersGuild, buildinglib.BuildingWarCollege, buildinglib.BuildingSmithy,
+        buildinglib.BuildingStables, buildinglib.BuildingAnimistsGuild, buildinglib.BuildingFantasticStable,
+        buildinglib.BuildingShipwrightsGuild, buildinglib.BuildingShipYard, buildinglib.BuildingMaritimeGuild,
+        buildinglib.BuildingSawmill, buildinglib.BuildingLibrary, buildinglib.BuildingSagesGuild,
+        buildinglib.BuildingOracle, buildinglib.BuildingAlchemistsGuild, buildinglib.BuildingUniversity,
+        buildinglib.BuildingWizardsGuild, buildinglib.BuildingShrine, buildinglib.BuildingTemple,
+        buildinglib.BuildingParthenon, buildinglib.BuildingCathedral, buildinglib.BuildingMarketplace,
+        buildinglib.BuildingBank, buildinglib.BuildingMerchantsGuild, buildinglib.BuildingGranary,
+        buildinglib.BuildingFarmersMarket, buildinglib.BuildingForestersGuild, buildinglib.BuildingBuildersHall,
+        buildinglib.BuildingMechaniciansGuild, buildinglib.BuildingMinersGuild, buildinglib.BuildingCityWalls,
+    )
+
+    switch city.Race {
+        case data.RaceLizard:
+            out.RemoveMany(
+                buildinglib.BuildingAnimistsGuild, buildinglib.BuildingUniversity, buildinglib.BuildingFantasticStable,
+                buildinglib.BuildingMechaniciansGuild, buildinglib.BuildingWizardsGuild, buildinglib.BuildingMaritimeGuild,
+                buildinglib.BuildingOracle, buildinglib.BuildingWarCollege, buildinglib.BuildingBank, buildinglib.BuildingMerchantsGuild,
+                buildinglib.BuildingShipYard, buildinglib.BuildingAlchemistsGuild, buildinglib.BuildingShipwrightsGuild,
+                buildinglib.BuildingCathedral, buildinglib.BuildingParthenon, buildinglib.BuildingSagesGuild,
+                buildinglib.BuildingSawmill, buildinglib.BuildingForestersGuild, buildinglib.BuildingMinersGuild,
+            )
+        case data.RaceNomad:
+        case data.RaceOrc:
+        case data.RaceTroll:
+        case data.RaceBarbarian:
+        case data.RaceBeastmen:
+        case data.RaceDarkElf:
+        case data.RaceDraconian:
+        case data.RaceDwarf:
+        case data.RaceGnoll:
+        case data.RaceHalfling:
+        case data.RaceHighElf:
+        case data.RaceHighMen:
+        case data.RaceKlackon:
+    }
+
+    return out
+}
+
+/*
+func allowedByRace(building buildinglib.Building, race data.Race) bool {
+    switch building {
+        case buildinglib.BuildingBarracks,
+             buildinglib.BuildingArmory,
+             buildinglib.BuildingSmithy,
+             buildinglib.BuildingLibrary,
+             buildinglib.BuildingShrine,
+             buildinglib.BuildingMarketplace,
+             buildinglib.BuildingGranary,
+             buildinglib.BuildingFarmersMarket,
+             buildinglib.BuildingBuildersHall,
+             buildinglib.BuildingCityWalls,
+             buildinglib.BuildingTradeGoods,
+             buildinglib.BuildingHousing,
+             buildinglib.BuildingFightersGuild:
+                return true
+        case buildinglib.BuildingArmorersGuild:
+            if race == data.RaceGnoll || race == data.RaceHalfling {
+                return false
+            }
+            return true
+        case buildinglib.BuildingStables:
+            // not halfling or dwarf
+            if race == data.RaceHalfling || race == data.RaceDwarf {
+                return false
+            }
+
+            return true
+        case buildinglib.BuildingWarCollege:
+            return race == data.RaceHighElf ||
+                   race == data.RaceHighMen ||
+                   race == data.RaceNomad ||
+                   race == data.RaceOrc ||
+                   race == data.RaceBeastmen ||
+                   race == data.RaceDarkElf ||
+                   race == data.RaceDraconian
+        case buildinglib.BuildingAnimistsGuild:
+            return race == data.RaceHighElf ||
+                   race == data.RaceHighMen ||
+                   race == data.RaceNomad ||
+                   race == data.RaceOrc ||
+                   race == data.RaceBeastmen ||
+                   race == data.RaceDarkElf ||
+                   race == data.RaceDraconian ||
+                   race == data.RaceTroll
+        case buildinglib.BuildingFantasticStable:
+            return race == data.RaceHighElf ||
+                   race == data.RaceNomad ||
+                   race == data.RaceOrc ||
+                   race == data.RaceDarkElf
+        case buildinglib.BuildingShipYard:
+            return race == data.RaceBarbarian ||
+                   race == data.RaceGnoll ||
+                   race == data.RaceHighElf ||
+                   race == data.RaceHighMen ||
+                   race == data.RaceNomad ||
+                   race == data.RaceOrc ||
+                   race == data.RaceDarkElf ||
+                   race == data.RaceDraconian
+        case buildinglib.BuildingMaritimeGuild:
+            return race == data.RaceBarbarian ||
+                   race == data.RaceHighMen ||
+                   race == data.RaceOrc
+        case buildinglib.BuildingSawmill,
+             buildinglib.BuildingShipwrightsGuild,
+             buildinglib.BuildingForestersGuild:
+            return race != data.RaceLizard
+        case buildinglib.BuildingSagesGuild,
+             buildinglib.BuildingAlchemistsGuild:
+            if race == data.RaceGnoll ||
+               race == data.RaceKlackon ||
+               race == data.RaceLizard ||
+               race == data.RaceTroll {
+                   return false
+            }
+
+            return true
+        case buildinglib.BuildingOracle:
+            return race == data.RaceHighMen ||
+                   race == data.RaceNomad ||
+                   race == data.RaceOrc ||
+                   race == data.RaceBeastmen ||
+                   race == data.RaceDarkElf
+        case buildinglib.BuildingUniversity:
+            return race == data.RaceHighElf ||
+                   race == data.RaceHighMen ||
+                   race == data.RaceNomad ||
+                   race == data.RaceOrc ||
+                   race == data.RaceBeastmen ||
+                   race == data.RaceDarkElf ||
+                   race == data.RaceDraconian
+        case buildinglib.BuildingWizardsGuild:
+            return race == data.RaceHighElf ||
+                   race == data.RaceHighMen ||
+                   race == data.RaceOrc ||
+                   race == data.RaceBeastmen ||
+                   race == data.RaceDarkElf ||
+                   race == data.RaceDraconian
+        case buildinglib.BuildingTemple:
+            return race != data.RaceKlackon
+        case buildinglib.BuildingParthenon:
+            return race == data.RaceBarbarian ||
+                   race == data.RaceHalfling ||
+                   race == data.RaceHighMen ||
+                   race == data.RaceNomad ||
+                   race == data.RaceOrc ||
+                   race == data.RaceBeastmen ||
+                   race == data.RaceDarkElf ||
+                   race == data.RaceDraconian ||
+                   race == data.RaceTroll
+        case buildinglib.BuildingCathedral:
+            return race == data.RaceHalfling ||
+                   race == data.RaceHighMen ||
+                   race == data.RaceNomad ||
+                   race == data.RaceOrc ||
+                   race == data.RaceBeastmen ||
+                   race == data.RaceDraconian ||
+                   race == data.RaceTroll
+        case buildinglib.BuildingBank:
+            return race == data.RaceHighElf ||
+                   race == data.RaceHighMen ||
+                   race == data.RaceNomad ||
+                   race == data.RaceOrc ||
+                   race == data.RaceBeastmen ||
+                   race == data.RaceDarkElf ||
+                   race == data.RaceDraconian
+        case buildinglib.BuildingMerchantsGuild:
+            return race == data.RaceHighElf ||
+                   race == data.RaceHighMen ||
+                   race == data.RaceNomad ||
+                   race == data.RaceOrc ||
+                   race == data.RaceDarkElf ||
+                   race == data.RaceDraconian
+        case buildinglib.BuildingMechaniciansGuild:
+            return race == data.RaceHighElf ||
+                   race == data.RaceHighMen ||
+                   race == data.RaceNomad ||
+                   race == data.RaceOrc ||
+                   race == data.RaceBeastmen ||
+                   race == data.RaceDarkElf
+        case buildinglib.BuildingMinersGuild:
+            if race == data.RaceLizard || race == data.RaceTroll {
+                return false
+            }
+
+            return true
+    }
+
+    return false
+}
+*/
+
 func (city *City) AddEnchantment(enchantment data.CityEnchantment, owner data.BannerType) {
     city.Enchantments.Insert(Enchantment{
         Enchantment: enchantment,
