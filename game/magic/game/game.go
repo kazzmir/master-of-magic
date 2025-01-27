@@ -3398,6 +3398,8 @@ func (game *Game) doCityScreen(yield coroutine.YieldFunc, city *citylib.City, pl
         yield()
     }
 
+    yield()
+
     game.Drawer = oldDrawer
 }
 
