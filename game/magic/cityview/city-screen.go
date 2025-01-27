@@ -1824,13 +1824,13 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
 
             screen.DrawImage(background, &useOptions)
 
-            titleX, titleY := options.GeoM.Apply(20, 3)
-            fonts.BigFont.Print(screen, titleX, titleY, 1, useOptions.ColorScale, fmt.Sprintf("%v of %s", city.GetSize(), city.Name))
-            raceX, raceY := options.GeoM.Apply(6, 19)
-            fonts.DescriptionFont.Print(screen, raceX, raceY, 1, useOptions.ColorScale, fmt.Sprintf("%v", city.Race))
+            titleX, titleY := options.GeoM.Apply(float64(20 * data.ScreenScale), float64(3 * data.ScreenScale))
+            fonts.BigFont.Print(screen, titleX, titleY, float64(data.ScreenScale), useOptions.ColorScale, fmt.Sprintf("%v of %s", city.GetSize(), city.Name))
+            raceX, raceY := options.GeoM.Apply(float64(6 * data.ScreenScale), float64(19 * data.ScreenScale))
+            fonts.DescriptionFont.Print(screen, raceX, raceY, float64(data.ScreenScale), useOptions.ColorScale, fmt.Sprintf("%v", city.Race))
 
-            unitsX, unitsY := options.GeoM.Apply(6, 43)
-            fonts.DescriptionFont.Print(screen, unitsX, unitsY, 1, useOptions.ColorScale, fmt.Sprintf("Units   %v", currentUnitName))
+            unitsX, unitsY := options.GeoM.Apply(float64(6 * data.ScreenScale), float64(43 * data.ScreenScale))
+            fonts.DescriptionFont.Print(screen, unitsX, unitsY, float64(data.ScreenScale), useOptions.ColorScale, fmt.Sprintf("Units   %v", currentUnitName))
 
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
                 if element.Draw != nil {
@@ -1855,7 +1855,7 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             localOptions := options
             localOptions.ColorScale.ScaleAlpha(getAlpha())
-            localOptions.GeoM.Translate(6, 27)
+            localOptions.GeoM.Translate(float64(6 * data.ScreenScale), float64(27 * data.ScreenScale))
             farmer, _ := imageCache.GetImage("backgrnd.lbx", getRaceFarmerIndex(city.Race), 0)
             worker, _ := imageCache.GetImage("backgrnd.lbx", getRaceWorkerIndex(city.Race), 0)
             rebel, _ := imageCache.GetImage("backgrnd.lbx", getRaceRebelIndex(city.Race), 0)
@@ -1866,7 +1866,7 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
                 localOptions.GeoM.Translate(float64(farmer.Bounds().Dx()), 0)
             }
 
-            localOptions.GeoM.Translate(3, 0)
+            localOptions.GeoM.Translate(float64(3 * data.ScreenScale), 0)
 
             for range city.Farmers - subsistenceFarmers {
                 screen.DrawImage(farmer, &localOptions)
@@ -1878,7 +1878,7 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
                 localOptions.GeoM.Translate(float64(worker.Bounds().Dx()), 0)
             }
 
-            localOptions.GeoM.Translate(3, -2)
+            localOptions.GeoM.Translate(float64(3 * data.ScreenScale), float64(-2 * data.ScreenScale))
 
             for range city.Rebels {
                 screen.DrawImage(rebel, &localOptions)
@@ -1891,13 +1891,13 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
     if stack != nil {
         inside := 0
         for i, unit := range stack.Units() {
-            x, y := options.GeoM.Apply(8, 52)
+            x, y := options.GeoM.Apply(float64(8 * data.ScreenScale), float64(52 * data.ScreenScale))
 
             x += float64(i % 6) * 20
             y += float64(i / 6) * 20
 
             pic, _ := imageCache.GetImageTransform(unit.GetLbxFile(), unit.GetLbxIndex(), 0, unit.GetBanner().String(), units.MakeUpdateUnitColorsFunc(unit.GetBanner()))
-            rect := image.Rect(int(x), int(y), int(x) + pic.Bounds().Dx(), int(y) + pic.Bounds().Dy())
+            rect := image.Rect(int(x) * data.ScreenScale, int(y) * data.ScreenScale, int(x) * data.ScreenScale + pic.Bounds().Dx(), int(y) * data.ScreenScale + pic.Bounds().Dy())
             ui.AddElement(&uilib.UIElement{
                 Rect: rect,
                 Inside: func(element *uilib.UIElement, x int, y int){
@@ -1927,12 +1927,12 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
         if useFont == nil {
             continue
         }
-        x, y := options.GeoM.Apply(142, float64(51 + i * useFont.Height()))
+        x, y := options.GeoM.Apply(float64(142 * data.ScreenScale), float64((51 + i * useFont.Height()) * data.ScreenScale))
         ui.AddElement(&uilib.UIElement{
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 var scale ebiten.ColorScale
                 scale.ScaleAlpha(getAlpha())
-                useFont.Print(screen, x, y, 1, scale, enchantment.Enchantment.Name())
+                useFont.Print(screen, x, y, float64(data.ScreenScale), scale, enchantment.Enchantment.Name())
             },
         })
     }

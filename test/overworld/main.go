@@ -2967,6 +2967,62 @@ func createScenario34(cache *lbx.LbxCache) *gamelib.Game {
     return game
 }
 
+// enemy wizard controlled town
+func createScenario35(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 35")
+
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+        Magic: data.MagicSettingNormal,
+        Difficulty: data.DifficultyAverage,
+    })
+
+    game.Plane = data.PlaneArcanus
+
+    wizard2 := setup.WizardCustom{
+        Name: "Merlin",
+        Base: data.WizardMerlin,
+        Banner: data.BannerYellow,
+    }
+    human := game.AddPlayer(wizard2, true)
+
+    wizard1 := setup.WizardCustom{
+        Name: "Rjak",
+        Base: data.WizardRjak,
+        Banner: data.BannerPurple,
+        Race: data.RaceBarbarian,
+    }
+
+    enemy1 := game.AddPlayer(wizard1, false)
+
+    x, y := game.FindValidCityLocation(game.Plane)
+
+    city := citylib.MakeCity("ai1", x, y, data.RaceBarbarian, enemy1.Wizard.Banner, enemy1.TaxRate, game.BuildingInfo, game.CurrentMap(), game)
+    city.Population = 6190
+    city.Plane = data.PlaneArcanus
+    city.Banner = wizard1.Banner
+    city.ProducingBuilding = buildinglib.BuildingGranary
+    city.ProducingUnit = units.UnitNone
+    city.Farmers = 3
+    city.Workers = 3
+    city.Wall = false
+
+    city.ResetCitizens(nil)
+
+    enemy1.AddCity(city)
+
+    enemy1.Gold = 830
+    enemy1.Mana = 26557
+    enemy1.CastingSkillPower = 10000
+
+    enemy1.LiftFog(x, y, 3, data.PlaneArcanus)
+
+    // allSpells, _ := spellbook.ReadSpellsFromCache(cache)
+
+    human.LiftFog(20, 20, 100, data.PlaneArcanus)
+
+    return game
+}
+
 func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
@@ -3007,6 +3063,7 @@ func NewEngine(scenario int) (*Engine, error) {
         case 32: game = createScenario32(cache)
         case 33: game = createScenario33(cache)
         case 34: game = createScenario34(cache)
+        case 35: game = createScenario35(cache)
         default: game = createScenario1(cache)
     }
 
