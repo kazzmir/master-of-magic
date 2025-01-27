@@ -185,6 +185,8 @@ func (city *City) ProducingString() string {
     return ""
 }
 
+/* returns the set of buildings that could possibly be built by this city, taking terrain dependencies into account
+ */
 func (city *City) GetBuildableBuildings() *set.Set[buildinglib.Building] {
     // add all buildings at first
     out := set.NewSet[buildinglib.Building](
