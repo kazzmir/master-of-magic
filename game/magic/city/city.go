@@ -235,10 +235,50 @@ func (city *City) GetBuildableBuildings() *set.Set[buildinglib.Building] {
             }
 
         case data.RaceBarbarian:
+            out.RemoveMany(
+                buildinglib.BuildingAnimistsGuild, buildinglib.BuildingUniversity, buildinglib.BuildingFantasticStable, buildinglib.BuildingMechaniciansGuild,
+                buildinglib.BuildingWizardsGuild, buildinglib.BuildingCathedral, buildinglib.BuildingOracle, buildinglib.BuildingWarCollege,
+                buildinglib.BuildingBank, buildinglib.BuildingMerchantsGuild,
+            )
+
+            if !city.OnShore() {
+                out.RemoveMany(buildinglib.BuildingShipYard, buildinglib.BuildingShipwrightsGuild, buildinglib.BuildingMaritimeGuild)
+            }
+
         case data.RaceBeastmen:
+            out.RemoveMany(buildinglib.BuildingFantasticStable, buildinglib.BuildingMerchantsGuild, buildinglib.BuildingShipwrightsGuild, buildinglib.BuildingMaritimeGuild)
+
+            if !city.OnShore() {
+                out.RemoveMany(buildinglib.BuildingShipYard)
+            }
+
         case data.RaceDarkElf:
+            out.RemoveMany(buildinglib.BuildingCathedral, buildinglib.BuildingMaritimeGuild)
+
+            if !city.OnShore() {
+                out.RemoveMany(buildinglib.BuildingShipYard, buildinglib.BuildingShipwrightsGuild, buildinglib.BuildingMerchantsGuild)
+            }
+
         case data.RaceDraconian:
+            out.RemoveMany(buildinglib.BuildingMechaniciansGuild, buildinglib.BuildingMaritimeGuild, buildinglib.BuildingFantasticStable)
+
+            if !city.OnShore() {
+                out.RemoveMany(buildinglib.BuildingShipYard, buildinglib.BuildingShipwrightsGuild, buildinglib.BuildingMerchantsGuild)
+            }
+
         case data.RaceDwarf:
+            out.RemoveMany(
+                buildinglib.BuildingAnimistsGuild, buildinglib.BuildingUniversity, buildinglib.BuildingFantasticStable, buildinglib.BuildingMechaniciansGuild,
+                buildinglib.BuildingWizardsGuild, buildinglib.BuildingMaritimeGuild, buildinglib.BuildingOracle, buildinglib.BuildingWarCollege,
+                buildinglib.BuildingBank, buildinglib.BuildingMerchantsGuild, buildinglib.BuildingShipYard, buildinglib.BuildingStables,
+                buildinglib.BuildingParthenon, buildinglib.BuildingCathedral,
+            )
+
+
+            if !city.OnShore() {
+                out.RemoveMany(buildinglib.BuildingShipYard)
+            }
+
         case data.RaceGnoll:
         case data.RaceHalfling:
         case data.RaceHighElf:
