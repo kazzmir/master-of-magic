@@ -6,6 +6,7 @@ import (
     "strings"
     "fmt"
     "bytes"
+    "sort"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/game/magic/data"
@@ -100,9 +101,9 @@ type Section int
 const (
     SectionSpecial Section = 0
     SectionSummoning Section = 1
-    SectionUnitSpell Section = 2
+    SectionEnchantment Section = 2
     SectionCitySpell Section = 3
-    SectionEnchantment Section = 4
+    SectionUnitSpell Section = 4
     SectionCombatSpell Section = 5
 )
 
@@ -287,6 +288,13 @@ func (spells Spells) GetSpellsBySection(section Section) Spells {
             out = append(out, spell)
         }
     }
+
+    sort.Slice(out, func(i, j int) bool {
+        if out[i].Magic.String() == out[j].Magic.String() {
+            return out[i].CastCost < out[j].CastCost
+        }
+        return out[i].Magic.String() < out[j].Magic.String()
+    })
 
     return SpellsFromArray(out)
 }
