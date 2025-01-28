@@ -39,6 +39,15 @@ const (
     MagicNodeChaos
 )
 
+func (magicNode MagicNode) Name() string {
+    switch magicNode {
+        case MagicNodeNature: return "Nature Node"
+        case MagicNodeSorcery: return "Sorcery Node"
+        case MagicNodeChaos: return "Chaos Node"
+    }
+    return ""
+}
+
 type ExtraTile interface {
     DrawLayer1(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64, tileWidth int, tileHeight int)
     DrawLayer2(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64, tileWidth int, tileHeight int)

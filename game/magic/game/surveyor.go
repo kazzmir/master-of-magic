@@ -15,6 +15,7 @@ import (
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
+    "github.com/kazzmir/master-of-magic/game/magic/maplib"
 
     "github.com/hajimehoshi/ebiten/v2"
 )
@@ -166,10 +167,23 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
                 if overworld.Fog[selectedPoint.X][selectedPoint.Y] {
                     mapObject := game.CurrentMap()
                     tile := mapObject.GetTile(selectedPoint.X, selectedPoint.Y)
+                    node := mapObject.GetMagicNode(selectedPoint.X, selectedPoint.Y)
+
                     y := float64(93 * data.ScreenScale)
-                    yellowFont.PrintCenter(screen, float64(280 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, tile.Name(mapObject))
+
+                    // Terrain
+                    name := tile.Name(mapObject)
+                    if node != nil {
+                        switch node.Kind {
+                            case maplib.MagicNodeNature: name = "Forest"
+                            case maplib.MagicNodeSorcery: name = "Grasslands"
+                            case maplib.MagicNodeChaos: name = "Mountain"
+                        }
+                    }
+                    yellowFont.PrintCenter(screen, float64(280 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, name)
                     y += float64(yellowFont.Height() * data.ScreenScale)
 
+                    // Terrain bonuses
                     if tile.Corrupted() {
                         whiteFont.PrintCenter(screen, float64(280 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, "Corruption")
                         y += float64(whiteFont.Height() * data.ScreenScale)
@@ -195,6 +209,7 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
 
                     y += float64(whiteFont.Height() * data.ScreenScale)
 
+                    // Bonuses
                     bonus := tile.GetBonus()
                     if bonus != data.BonusNone {
                         yellowFont.PrintCenter(screen, float64(280 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, bonus.String())
@@ -225,8 +240,11 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
                         }
                     }
 
-                    node := mapObject.GetMagicNode(selectedPoint.X, selectedPoint.Y)
+                    // Nodes
                     if node != nil {
+                        yellowFont.PrintWrapCenter(screen, float64(280 * data.ScreenScale), y, float64(cancelBackground.Bounds().Dx() - 5 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, node.Kind.Name())
+                        y += float64(yellowFont.Height() * data.ScreenScale)
+
                         if node.Warped {
                             whiteFont.PrintCenter(screen, float64(280 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, "Warped")
                             y += float64(whiteFont.Height() * data.ScreenScale)
