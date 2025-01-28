@@ -3201,25 +3201,25 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                             city := otherPlayer.FindCity(tileX, tileY, game.Plane)
                             if city != nil {
                                 game.doEnemyCityView(yield, city, otherPlayer)
-                            }
+                            } else {
+                                enemyStack := otherPlayer.FindStack(tileX, tileY, game.Plane)
+                                if enemyStack != nil {
+                                    quit := false
+                                    clicked := func(){
+                                        quit = true
+                                    }
 
-                            enemyStack := otherPlayer.FindStack(tileX, tileY, game.Plane)
-                            if enemyStack != nil {
-                                quit := false
-                                clicked := func(){
-                                    quit = true
-                                }
+                                    var unitViewElements []unitview.UnitView
+                                    for _, unit := range enemyStack.Units() {
+                                        unitViewElements = append(unitViewElements, unit)
+                                    }
 
-                                var unitViewElements []unitview.UnitView
-                                for _, unit := range enemyStack.Units() {
-                                    unitViewElements = append(unitViewElements, unit)
-                                }
-
-                                game.HudUI.AddElements(unitview.MakeSmallListView(game.Cache, game.HudUI, unitViewElements, otherPlayer.Wizard.Name, clicked))
-                                for !quit {
-                                    game.Counter += 1
-                                    game.HudUI.StandardUpdate()
-                                    yield()
+                                    game.HudUI.AddElements(unitview.MakeSmallListView(game.Cache, game.HudUI, unitViewElements, otherPlayer.Wizard.Name, clicked))
+                                    for !quit {
+                                        game.Counter += 1
+                                        game.HudUI.StandardUpdate()
+                                        yield()
+                                    }
                                 }
                             }
                         }
