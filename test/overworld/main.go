@@ -2967,6 +2967,61 @@ func createScenario34(cache *lbx.LbxCache) *gamelib.Game {
     return game
 }
 
+// all spells in spellbook
+func createScenario35(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 35")
+
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+        Magic: data.MagicSettingNormal,
+        Difficulty: data.DifficultyAverage,
+    })
+
+    game.Plane = data.PlaneArcanus
+
+    wizard1 := setup.WizardCustom{
+        Name: "Rjak",
+        Base: data.WizardRjak,
+        Banner: data.BannerPurple,
+    }
+
+    player1 := game.AddPlayer(wizard1, true)
+
+    x, y := game.FindValidCityLocation(game.Plane)
+
+    city := citylib.MakeCity("", x, y, data.RaceBarbarian, player1.Wizard.Banner, player1.TaxRate, game.BuildingInfo, game.CurrentMap(), game)
+    city.Population = 6190
+    city.Plane = data.PlaneArcanus
+    city.Banner = wizard1.Banner
+    city.ProducingBuilding = buildinglib.BuildingGranary
+    city.ProducingUnit = units.UnitNone
+    city.Race = wizard1.Race
+    city.Farmers = 3
+    city.Workers = 3
+    city.Wall = false
+
+    city.ResetCitizens(nil)
+
+    player1.AddCity(city)
+
+    player1.Gold = 830
+    player1.Mana = 26557
+    player1.CastingSkillPower = 10000
+
+    player1.LiftFog(x, y, 3, data.PlaneArcanus)
+
+    allSpells, _ := spellbook.ReadSpellsFromCache(cache)
+    for _, spell := range allSpells.Spells {
+        player1.KnownSpells.AddSpell(spell)
+    }
+
+    spirit := player1.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x + 1, y + 1, data.PlaneArcanus, wizard1.Banner, nil))
+    stack := player1.FindStackByUnit(spirit)
+    player1.SetSelectedStack(stack)
+    player1.LiftFog(stack.X(), stack.Y(), 2, data.PlaneArcanus)
+
+    return game
+}
+
 func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
@@ -3007,6 +3062,7 @@ func NewEngine(scenario int) (*Engine, error) {
         case 32: game = createScenario32(cache)
         case 33: game = createScenario33(cache)
         case 34: game = createScenario34(cache)
+        case 35: game = createScenario35(cache)
         default: game = createScenario1(cache)
     }
 
