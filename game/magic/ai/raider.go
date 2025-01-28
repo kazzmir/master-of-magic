@@ -6,6 +6,7 @@ import (
     "math/rand/v2"
 
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
+    citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/units"
@@ -21,7 +22,7 @@ func MakeRaiderAI() *RaiderAI {
     }
 }
 
-func (raider *RaiderAI) NewTurn() {
+func (raider *RaiderAI) NewTurn(player *playerlib.Player) {
     raider.MovedStacks = make(map[*playerlib.UnitStack]bool)
 }
 
@@ -107,4 +108,7 @@ func (raider *RaiderAI) Update(player *playerlib.Player, enemies []*playerlib.Pl
     decisions = append(decisions, raider.CreateUnits(player)...)
 
     return decisions
+}
+
+func (raider *RaiderAI) ProducedUnit(city *citylib.City, player *playerlib.Player) {
 }

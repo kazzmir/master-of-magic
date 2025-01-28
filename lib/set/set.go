@@ -39,6 +39,12 @@ func (set *Set[T]) Remove(v T) {
     delete(set.data, v)
 }
 
+func (set *Set[T]) RemoveMany(values ...T) {
+    for _, value := range values {
+        delete(set.data, value)
+    }
+}
+
 // FIXME: turn this into an iterator
 func (set *Set[T]) Values() []T {
     if set == nil {

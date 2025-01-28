@@ -100,14 +100,12 @@ func AutoCropGeneric(img image.Image) image.Image {
 
     switch img.(type) {
         case *image.Paletted:
-            // we can't just use a subimage here because sub.At(0, 0) doesn't correspond to the upper-left of the subimage. Instead
-            // it is 0,0 in the original parent image.
-            // we could use subimage if the scale2x and xbr code properly used img.Bounds() to account for the possible offset within the subimage.
-            // for now just make a copy of the image
+            // note that the resulting image might not have its upper left hand pixel at 0,0. Instead it will be at
+            // bounds.Min.X, bounds.Min.Y
 
-            // return img.(*image.Paletted).SubImage(image.Rect(minX, minY, maxX, maxY))
+            return img.(*image.Paletted).SubImage(image.Rect(minX, minY, maxX+1, maxY+1))
 
-            return copyImagePortion(img.(*image.Paletted), image.Rect(minX, minY, maxX+1, maxY+1))
+            // return copyImagePortion(img.(*image.Paletted), image.Rect(minX, minY, maxX+1, maxY+1))
         default:
             log.Printf("Auto crop not implemented for %v", reflect.TypeOf(img))
     }
@@ -225,10 +223,13 @@ func Scale2x(input image.Image, smooth bool) image.Image {
                 }
             }
 
-            scaledImage.Set(x*2, y*2, E0)
-            scaledImage.Set(x*2+1, y*2, E1)
-            scaledImage.Set(x*2, y*2+1, E2)
-            scaledImage.Set(x*2+1, y*2+1, E3)
+            x1 := x - bounds.Min.X
+            y1 := y - bounds.Min.Y
+
+            scaledImage.Set(x1*2+0, y1*2+0, E0)
+            scaledImage.Set(x1*2+1, y1*2+0, E1)
+            scaledImage.Set(x1*2+0, y1*2+1, E2)
+            scaledImage.Set(x1*2+1, y1*2+1, E3)
         }
     }
 
@@ -290,17 +291,20 @@ func Scale3x(input image.Image, smooth bool) image.Image {
                 }
             }
 
-            scaledImage.Set(x*3+0, y*3+0, E0)
-            scaledImage.Set(x*3+1, y*3+0, E1)
-            scaledImage.Set(x*3+2, y*3+0, E2)
+            x1 := x - bounds.Min.X
+            y1 := y - bounds.Min.Y
 
-            scaledImage.Set(x*3+0, y*3+1, E3)
-            scaledImage.Set(x*3+1, y*3+1, E4)
-            scaledImage.Set(x*3+2, y*3+1, E5)
+            scaledImage.Set(x1*3+0, y1*3+0, E0)
+            scaledImage.Set(x1*3+1, y1*3+0, E1)
+            scaledImage.Set(x1*3+2, y1*3+0, E2)
 
-            scaledImage.Set(x*3+0, y*3+2, E6)
-            scaledImage.Set(x*3+1, y*3+2, E7)
-            scaledImage.Set(x*3+2, y*3+2, E8)
+            scaledImage.Set(x1*3+0, y1*3+1, E3)
+            scaledImage.Set(x1*3+1, y1*3+1, E4)
+            scaledImage.Set(x1*3+2, y1*3+1, E5)
+
+            scaledImage.Set(x1*3+0, y1*3+2, E6)
+            scaledImage.Set(x1*3+1, y1*3+2, E7)
+            scaledImage.Set(x1*3+2, y1*3+2, E8)
         }
     }
 

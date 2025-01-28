@@ -1,0 +1,43 @@
+AI design:
+  The AI should have a goal that it tries to achieve, where a goal can have a heirarchy of sub-goals. Leaf sub-goals (at the bottom of the tree) should be directly actionable, such as 'build building Z' or 'move unit to location X,Y'.
+
+  If a goal has a set of children subgoals, the subgoals can have a value associated with them such that the AI will try to perform the actions for the highest valued subgoal first, then do the actions for the second subgoal as long as the second don't conflict with the first, and so on. The values of the children subgoals can change over time, depending on the game situation. For example, before the AI wizard knows about any other AI's it will be focused on expanding its empire, but when it meets another enemy AI then a new goal of 'defeat the other wizards' can be added as a high value subgoal.
+
+  The root goal of the AI should be 'win the game', where winning can be achieved by defeating all other wizards or casting the spell of mastery. Not dying is another important goal, just as important as the other two, though.
+
+* win game
+  - defeat all other enemies
+  - cast spell of mastery
+  - don't die (defend yourself)
+
+All three of these top level goals will depend on some of the same subgoals, such as 'build a strong army' or 'research a bunch of spells'. This is ok as one subgoal might result in an action that another subgoal would also produce, so the end result is the same.
+
+First attempt at goal heirarchy:
+
+* win game
+  - defeat all other enemies
+    - create a strong army
+      - create towns with buildings that can produce strong units
+        - create settlers and have them find tiles that have a lot of minerals/max population
+          - explore the continent to know about which tiles are suitable for building towns on
+        - build all the dependencies of buildings that produce units
+      - produce enough food/gold/mana to support the units
+      - cast summoning spells of strong magic units
+      - hire heroes and put them in stacks to increase the strength of a stack
+      - cast global enchantments that improve the wizard's units or towns
+    - weaken other enemies
+      - use spells like volcano/warp node/town enchantments to reduce the effectivness of other wizards
+      - use guardian spirit/magic spirit to take magic nodes away from other wizards
+        - cast magic spirit/guardian spirit and move them towards an empty magic node
+  - cast spell of mastery
+    - gain a lot of power and put a lot of resources into the research staff
+      - use magic spirits/guardians to meld magic nodes
+        - build a strong unit stack to defeat the guardians of a magic node
+  - dont die
+    - keep a garrison of units in each town
+    - if the fortress city is defeated then cast 'spell of return'
+
+The value of goals should depend on the game situation, meaning if an enemy wizard has a stack approaching this wizard's towns, then this wizard should prioritize the 'dont die' goal.
+
+Key questions:
+  * how will difficulty of AI work? what will an 'easy' AI do vs a 'hard' AI?

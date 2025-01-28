@@ -14,6 +14,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
+    "github.com/kazzmir/master-of-magic/game/magic/terrain"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
 )
 
@@ -67,6 +68,7 @@ func (citySize CitySize) String() string {
 
 type CatchmentProvider interface {
     GetCatchmentArea(x int, y int) map[image.Point]maplib.FullTile
+    OnShore(x int, y int) bool
 }
 
 type ConnectedCityProvider interface {
@@ -181,6 +183,192 @@ func (city *City) ProducingString() string {
     }
 
     return ""
+}
+
+/* returns the set of buildings that could possibly be built by this city, taking terrain dependencies into account
+ */
+func (city *City) GetBuildableBuildings() *set.Set[buildinglib.Building] {
+    // add all buildings at first
+    out := set.NewSet[buildinglib.Building](
+        buildinglib.BuildingBarracks, buildinglib.BuildingArmory, buildinglib.BuildingFightersGuild,
+        buildinglib.BuildingArmorersGuild, buildinglib.BuildingWarCollege, buildinglib.BuildingSmithy,
+        buildinglib.BuildingStables, buildinglib.BuildingAnimistsGuild, buildinglib.BuildingFantasticStable,
+        buildinglib.BuildingShipwrightsGuild, buildinglib.BuildingShipYard, buildinglib.BuildingMaritimeGuild,
+        buildinglib.BuildingSawmill, buildinglib.BuildingLibrary, buildinglib.BuildingSagesGuild,
+        buildinglib.BuildingOracle, buildinglib.BuildingAlchemistsGuild, buildinglib.BuildingUniversity,
+        buildinglib.BuildingWizardsGuild, buildinglib.BuildingShrine, buildinglib.BuildingTemple,
+        buildinglib.BuildingParthenon, buildinglib.BuildingCathedral, buildinglib.BuildingMarketplace,
+        buildinglib.BuildingBank, buildinglib.BuildingMerchantsGuild, buildinglib.BuildingGranary,
+        buildinglib.BuildingFarmersMarket, buildinglib.BuildingForestersGuild, buildinglib.BuildingBuildersHall,
+        buildinglib.BuildingMechaniciansGuild, buildinglib.BuildingMinersGuild, buildinglib.BuildingCityWalls,
+    )
+
+    // remove all buildings that depend on being near a shore
+    if !city.OnShore() {
+        out.RemoveMany(buildinglib.BuildingShipYard, buildinglib.BuildingShipwrightsGuild, buildinglib.BuildingMaritimeGuild, buildinglib.BuildingMaritimeGuild)
+    }
+
+    hasForest := false
+    minersGuildOk := false
+
+    for _, tile := range city.CatchmentProvider.GetCatchmentArea(city.X, city.Y) {
+        switch tile.Tile.TerrainType() {
+            case terrain.Forest, terrain.NatureNode: hasForest = true
+            case terrain.Mountain, terrain.Volcano, terrain.Hill, terrain.ChaosNode:
+                minersGuildOk = true
+        }
+    }
+
+    if !minersGuildOk {
+        out.RemoveMany(buildinglib.BuildingMinersGuild)
+    }
+
+    if !hasForest {
+        out.RemoveMany(buildinglib.BuildingSawmill)
+    }
+
+    switch city.Race {
+        case data.RaceLizard:
+            out.RemoveMany(
+                buildinglib.BuildingAnimistsGuild, buildinglib.BuildingUniversity, buildinglib.BuildingFantasticStable,
+                buildinglib.BuildingMechaniciansGuild, buildinglib.BuildingWizardsGuild, buildinglib.BuildingMaritimeGuild,
+                buildinglib.BuildingOracle, buildinglib.BuildingWarCollege, buildinglib.BuildingBank, buildinglib.BuildingMerchantsGuild,
+                buildinglib.BuildingShipYard, buildinglib.BuildingAlchemistsGuild, buildinglib.BuildingShipwrightsGuild,
+                buildinglib.BuildingCathedral, buildinglib.BuildingParthenon, buildinglib.BuildingSagesGuild,
+                buildinglib.BuildingSawmill, buildinglib.BuildingForestersGuild, buildinglib.BuildingMinersGuild,
+            )
+        case data.RaceNomad:
+            out.RemoveMany(buildinglib.BuildingWizardsGuild, buildinglib.BuildingMaritimeGuild)
+
+        case data.RaceOrc:
+
+        case data.RaceTroll:
+            out.RemoveMany(
+                buildinglib.BuildingAlchemistsGuild, buildinglib.BuildingUniversity, buildinglib.BuildingFantasticStable, buildinglib.BuildingMechaniciansGuild,
+                buildinglib.BuildingWizardsGuild, buildinglib.BuildingMaritimeGuild, buildinglib.BuildingOracle, buildinglib.BuildingWarCollege,
+                buildinglib.BuildingBank, buildinglib.BuildingMerchantsGuild, buildinglib.BuildingShipYard, buildinglib.BuildingSagesGuild,
+                buildinglib.BuildingMinersGuild,
+            )
+
+        case data.RaceBarbarian:
+            out.RemoveMany(
+                buildinglib.BuildingAnimistsGuild, buildinglib.BuildingUniversity, buildinglib.BuildingFantasticStable, buildinglib.BuildingMechaniciansGuild,
+                buildinglib.BuildingWizardsGuild, buildinglib.BuildingCathedral, buildinglib.BuildingOracle, buildinglib.BuildingWarCollege,
+                buildinglib.BuildingBank, buildinglib.BuildingMerchantsGuild,
+            )
+
+        case data.RaceBeastmen:
+            out.RemoveMany(buildinglib.BuildingFantasticStable, buildinglib.BuildingMerchantsGuild, buildinglib.BuildingShipYard, buildinglib.BuildingMaritimeGuild)
+
+        case data.RaceDarkElf:
+            out.RemoveMany(buildinglib.BuildingCathedral, buildinglib.BuildingMaritimeGuild)
+
+        case data.RaceDraconian:
+            out.RemoveMany(buildinglib.BuildingMechaniciansGuild, buildinglib.BuildingMaritimeGuild, buildinglib.BuildingFantasticStable)
+
+        case data.RaceDwarf:
+            out.RemoveMany(
+                buildinglib.BuildingAnimistsGuild, buildinglib.BuildingUniversity, buildinglib.BuildingFantasticStable, buildinglib.BuildingMechaniciansGuild,
+                buildinglib.BuildingWizardsGuild, buildinglib.BuildingMaritimeGuild, buildinglib.BuildingOracle, buildinglib.BuildingWarCollege,
+                buildinglib.BuildingBank, buildinglib.BuildingMerchantsGuild, buildinglib.BuildingShipYard, buildinglib.BuildingStables,
+                buildinglib.BuildingParthenon, buildinglib.BuildingCathedral,
+            )
+
+        case data.RaceGnoll:
+            out.RemoveMany(
+                buildinglib.BuildingMaritimeGuild, buildinglib.BuildingArmorersGuild, buildinglib.BuildingSagesGuild, buildinglib.BuildingAnimistsGuild,
+                buildinglib.BuildingUniversity, buildinglib.BuildingFantasticStable, buildinglib.BuildingParthenon, buildinglib.BuildingAlchemistsGuild,
+                buildinglib.BuildingCathedral, buildinglib.BuildingOracle, buildinglib.BuildingWarCollege, buildinglib.BuildingBank,
+                buildinglib.BuildingMerchantsGuild, buildinglib.BuildingMechaniciansGuild, buildinglib.BuildingWizardsGuild,
+            )
+
+        case data.RaceHalfling:
+            out.RemoveMany(
+                buildinglib.BuildingAnimistsGuild, buildinglib.BuildingUniversity, buildinglib.BuildingFantasticStable, buildinglib.BuildingMechaniciansGuild,
+                buildinglib.BuildingWizardsGuild, buildinglib.BuildingMaritimeGuild, buildinglib.BuildingOracle, buildinglib.BuildingWarCollege,
+                buildinglib.BuildingBank, buildinglib.BuildingMerchantsGuild, buildinglib.BuildingShipYard, buildinglib.BuildingArmorersGuild,
+                buildinglib.BuildingStables,
+            )
+
+        case data.RaceHighElf:
+            out.RemoveMany(
+                buildinglib.BuildingParthenon, buildinglib.BuildingMaritimeGuild, buildinglib.BuildingOracle, buildinglib.BuildingCathedral,
+            )
+
+        case data.RaceHighMen:
+            out.RemoveMany(buildinglib.BuildingFantasticStable)
+
+        case data.RaceKlackon:
+            out.RemoveMany(
+                buildinglib.BuildingAnimistsGuild, buildinglib.BuildingUniversity, buildinglib.BuildingFantasticStable, buildinglib.BuildingMechaniciansGuild,
+                buildinglib.BuildingWizardsGuild, buildinglib.BuildingMaritimeGuild, buildinglib.BuildingOracle, buildinglib.BuildingWarCollege,
+                buildinglib.BuildingBank, buildinglib.BuildingMerchantsGuild, buildinglib.BuildingShipYard, buildinglib.BuildingAlchemistsGuild,
+                buildinglib.BuildingTemple, buildinglib.BuildingCathedral, buildinglib.BuildingParthenon, buildinglib.BuildingSagesGuild,
+            )
+    }
+
+    return out
+}
+
+/* return the buildings that can be built, based on what the city already has and what dependencies are met
+ */
+func (city *City) ComputePossibleBuildings() *set.Set[buildinglib.Building] {
+    possibleBuildings := set.NewSet[buildinglib.Building]()
+
+    allowedBuildings := city.GetBuildableBuildings()
+
+    for _, building := range buildinglib.Buildings() {
+        if city.Buildings.Contains(building) {
+            continue
+        }
+
+        if !allowedBuildings.Contains(building) {
+            continue
+        }
+
+        canBuild := true
+        for _, dependency := range city.BuildingInfo.Dependencies(building) {
+            if !city.Buildings.Contains(dependency) {
+                canBuild = false
+                break
+            }
+        }
+
+        if canBuild {
+            possibleBuildings.Insert(building)
+        }
+    }
+
+    possibleBuildings.Insert(buildinglib.BuildingTradeGoods)
+    possibleBuildings.Insert(buildinglib.BuildingHousing)
+
+    return possibleBuildings
+}
+
+func (city *City) ComputePossibleUnits() []units.Unit {
+    var out []units.Unit
+    for _, unit := range units.AllUnits {
+        if unit.Race == data.RaceAll || unit.Race == city.Race {
+
+            canBuild := true
+            for _, building := range unit.RequiredBuildings {
+                if !city.Buildings.Contains(building) {
+                    canBuild = false
+                }
+            }
+
+            if canBuild {
+                out = append(out, unit)
+            }
+        }
+    }
+
+    return out
+}
+
+// true if the city is adjacent to a water tile
+func (city *City) OnShore() bool {
+    return city.CatchmentProvider.OnShore(city.X, city.Y)
 }
 
 func (city *City) AddEnchantment(enchantment data.CityEnchantment, owner data.BannerType) {
