@@ -139,7 +139,7 @@ type GameEventCastSpell struct {
 }
 
 type GameEventSummonUnit struct {
-    Wizard data.WizardBase
+    Player *playerlib.Player
     Unit units.Unit
 }
 
@@ -2639,7 +2639,17 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         city.Name = game.doInput(yield, cityEvent.Title, city.Name, cityEvent.X, cityEvent.Y)
                     case *GameEventSummonUnit:
                         summonUnit := event.(*GameEventSummonUnit)
-                        game.doSummon(yield, summon.MakeSummonUnit(game.Cache, summonUnit.Unit, summonUnit.Wizard))
+                        player := summonUnit.Player
+
+                        if player.IsHuman() {
+                            game.doSummon(yield, summon.MakeSummonUnit(game.Cache, summonUnit.Unit, player.Wizard.Base))
+                        }
+
+                        fortressCity := player.FindFortressCity()
+                        if fortressCity != nil {
+                            overworldUnit := units.MakeOverworldUnitFromUnit(summonUnit.Unit, fortressCity.X, fortressCity.Y, fortressCity.Plane, player.Wizard.Banner, player.MakeExperienceInfo())
+                            player.AddUnit(overworldUnit)
+                        }
                     case *GameEventSummonArtifact:
                         summonArtifact := event.(*GameEventSummonArtifact)
                         game.doSummon(yield, summon.MakeSummonArtifact(game.Cache, summonArtifact.Wizard))
@@ -5308,9 +5318,12 @@ func (game *Game) DoNextUnit(player *playerlib.Player){
         if stack.HasMoves() {
             player.SelectedStack = stack
             stack.EnableMovers()
-            select {
-                case game.Events <- &GameEventMoveCamera{Plane: stack.Plane(), X: stack.X(), Y: stack.Y(), Instant: true}:
-                default:
+
+            if player.IsHuman() {
+                select {
+                    case game.Events <- &GameEventMoveCamera{Plane: stack.Plane(), X: stack.X(), Y: stack.Y(), Instant: true}:
+                    default:
+                }
             }
             /*
             game.Plane = stack.Plane()

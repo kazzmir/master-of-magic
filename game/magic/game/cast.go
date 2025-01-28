@@ -10,6 +10,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/font"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
+    "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
@@ -61,6 +62,12 @@ func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Playe
             }
 
             player.CreateArtifact = nil
+        case "Magic Spirit":
+            select {
+                case game.Events <- &GameEventSummonUnit{Player: player, Unit: units.MagicSpirit}:
+                default:
+            }
+
         case "Wall of Fire":
             tileX, tileY, cancel := game.selectLocationForSpell(yield, spell, player, LocationTypeFriendlyCity)
 

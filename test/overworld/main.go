@@ -100,6 +100,7 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
     city.Population = 16190
     city.Plane = data.PlaneArcanus
     city.Banner = wizard.Banner
+    city.Buildings.Insert(buildinglib.BuildingFortress)
     city.ProducingBuilding = buildinglib.BuildingGranary
     city.ProducingUnit = units.UnitNone
     city.Race = wizard.Race
@@ -719,8 +720,8 @@ func createScenario9(cache *lbx.LbxCache) *gamelib.Game {
     player.SetSelectedStack(stack)
 
     game.Events <- &gamelib.GameEventSummonUnit{
-        Wizard: wizard.Base,
         Unit: units.FireGiant,
+        Player: player,
     }
 
     player.LiftFog(stack.X(), stack.Y(), 2, data.PlaneArcanus)
