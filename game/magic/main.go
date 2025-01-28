@@ -146,21 +146,13 @@ func startingUnits(race data.Race) []units.Unit {
     }
 }
 
-func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup.NewGameSettings, wizard setup.WizardCustom) error {
-
+func initializePlayer(game *gamelib.Game, wizard setup.WizardCustom, isHuman bool) {
     startingPlane := data.PlaneArcanus
     if wizard.AbilityEnabled(setup.AbilityMyrran) {
         startingPlane = data.PlaneMyrror
     }
 
-    game := gamelib.MakeGame(magic.Cache, settings)
-    game.Plane = startingPlane
-
-    magic.Drawer = func(screen *ebiten.Image) {
-        game.Draw(screen)
-    }
-
-    player := game.AddPlayer(wizard, true)
+    player := game.AddPlayer(wizard, isHuman)
 
     cityX, cityY := game.FindValidCityLocation(startingPlane)
 
@@ -170,9 +162,13 @@ func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup
     introCity.Population = 4000
     introCity.Wall = false
     introCity.Plane = startingPlane
-    introCity.Buildings.Insert(buildinglib.BuildingSmithy)
-    introCity.Buildings.Insert(buildinglib.BuildingBarracks)
-    introCity.Buildings.Insert(buildinglib.BuildingBuildersHall)
+
+    for _, building := range []buildinglib.Building{buildinglib.BuildingSmithy, buildinglib.BuildingBarracks, buildinglib.BuildingBuildersHall} {
+        if introCity.GetBuildableBuildings().Contains(building) {
+            introCity.Buildings.Insert(building)
+        }
+    }
+
     introCity.Buildings.Insert(buildinglib.BuildingFortress)
     introCity.ProducingBuilding = buildinglib.BuildingHousing
     introCity.ProducingUnit = units.UnitNone
@@ -188,9 +184,21 @@ func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup
 
     player.LiftFog(cityX, cityY, 2, introCity.Plane)
 
-    game.Events <- gamelib.StartingCityEvent(introCity)
+    if isHuman {
+        game.Events <- gamelib.StartingCityEvent(introCity)
+        game.Camera.Center(cityX, cityY)
+        game.Plane = startingPlane
+    }
+}
 
-    game.Camera.Center(cityX, cityY)
+func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup.NewGameSettings, humanWizard setup.WizardCustom) error {
+    game := gamelib.MakeGame(magic.Cache, settings)
+
+    magic.Drawer = func(screen *ebiten.Image) {
+        game.Draw(screen)
+    }
+
+    initializePlayer(game, humanWizard, true)
 
     game.DoNextTurn()
 
