@@ -10,6 +10,7 @@ import (
     "strings"
     "slices"
 
+    "github.com/kazzmir/master-of-magic/game/magic/ai"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
@@ -419,6 +420,10 @@ func (game *Game) InitializeResearchableSpells(spells *spellbook.Spells, player 
 
 func (game *Game) AddPlayer(wizard setup.WizardCustom, human bool) *playerlib.Player{
     newPlayer := playerlib.MakePlayer(wizard, human, game.MakeFog(), game.MakeFog())
+
+    if !human {
+        newPlayer.AIBehavior = ai.MakeEnemyAI()
+    }
 
     allSpells := game.AllSpells()
 
@@ -2213,6 +2218,11 @@ func (game *Game) maybeHireHero(player *playerlib.Player) {
 /* show the hire hero popup, and if the user clicks 'hire' then add the hero to the player's list of heroes
  */
 func (game *Game) doHireHero(yield coroutine.YieldFunc, cost int, hero *herolib.Hero, player *playerlib.Player) {
+    // ensure the player can actually afford to hire the hero
+    if cost > player.Gold {
+        return
+    }
+
     quit := false
 
     result := func(hired bool) {
@@ -2367,6 +2377,10 @@ func (game *Game) doHireMercenaries(yield coroutine.YieldFunc, cost int, units [
         return
     }
 
+    if cost > player.Gold {
+        return
+    }
+
     quit := false
 
     result := func(hired bool) {
@@ -2442,7 +2456,11 @@ func (game *Game) maybeBuyFromMerchant(player *playerlib.Player) {
 
 /* show the merchant popup, and if the user clicks 'buy' then add the artifact to the player's vault and remove it from the pool
  */
- func (game *Game) doMerchant(yield coroutine.YieldFunc, cost int, artifact *artifact.Artifact) {
+ func (game *Game) doMerchant(yield coroutine.YieldFunc, cost int, artifact *artifact.Artifact, player *playerlib.Player) {
+     if cost > player.Gold {
+         return
+     }
+
     quit := false
 
     result := func(bought bool) {
@@ -2571,7 +2589,7 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                     case *GameEventMerchant:
                         merchant := event.(*GameEventMerchant)
                         if merchant.Player.IsHuman() {
-                            game.doMerchant(yield, merchant.Cost, merchant.Artifact)
+                            game.doMerchant(yield, merchant.Cost, merchant.Artifact, merchant.Player)
                         }
                     case *GameEventNextTurn:
                         game.doNextTurn(yield)

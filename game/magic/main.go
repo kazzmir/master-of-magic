@@ -200,6 +200,15 @@ func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup
 
     initializePlayer(game, humanWizard, true)
 
+    for range settings.Opponents {
+        wizard, ok := game.ChooseWizard()
+        if ok {
+            initializePlayer(game, wizard, false)
+        } else {
+            log.Printf("Warning: unable to add another wizard to the game")
+        }
+    }
+
     game.DoNextTurn()
 
     for game.Update(yield) != gamelib.GameStateQuit {
