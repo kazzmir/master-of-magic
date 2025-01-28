@@ -27,6 +27,10 @@ func (catchment *Catchment) GetCatchmentArea(x int, y int) map[image.Point]mapli
     return out
 }
 
+func (catchment *Catchment) OnShore(x int, y int) bool {
+    return false
+}
+
 type NoCities struct {
 }
 

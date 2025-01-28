@@ -3201,25 +3201,25 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                             city := otherPlayer.FindCity(tileX, tileY, game.Plane)
                             if city != nil {
                                 game.doEnemyCityView(yield, city, otherPlayer)
-                            }
+                            } else {
+                                enemyStack := otherPlayer.FindStack(tileX, tileY, game.Plane)
+                                if enemyStack != nil {
+                                    quit := false
+                                    clicked := func(){
+                                        quit = true
+                                    }
 
-                            enemyStack := otherPlayer.FindStack(tileX, tileY, game.Plane)
-                            if enemyStack != nil {
-                                quit := false
-                                clicked := func(){
-                                    quit = true
-                                }
+                                    var unitViewElements []unitview.UnitView
+                                    for _, unit := range enemyStack.Units() {
+                                        unitViewElements = append(unitViewElements, unit)
+                                    }
 
-                                var unitViewElements []unitview.UnitView
-                                for _, unit := range enemyStack.Units() {
-                                    unitViewElements = append(unitViewElements, unit)
-                                }
-
-                                game.HudUI.AddElements(unitview.MakeSmallListView(game.Cache, game.HudUI, unitViewElements, otherPlayer.Wizard.Name, clicked))
-                                for !quit {
-                                    game.Counter += 1
-                                    game.HudUI.StandardUpdate()
-                                    yield()
+                                    game.HudUI.AddElements(unitview.MakeSmallListView(game.Cache, game.HudUI, unitViewElements, otherPlayer.Wizard.Name, clicked))
+                                    for !quit {
+                                        game.Counter += 1
+                                        game.HudUI.StandardUpdate()
+                                        yield()
+                                    }
                                 }
                             }
                         }
@@ -3264,13 +3264,13 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
 }
 
 func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player) {
-    log.Printf("AI year %v: make decisions", game.TurnNumber)
+    log.Printf("AI %v year %v: make decisions", player.Wizard.Name, game.TurnNumber)
 
     var decisions []playerlib.AIDecision
 
     if player.AIBehavior != nil {
         decisions = player.AIBehavior.Update(player, game.GetEnemies(player), game)
-        log.Printf("AI Decisions: %v", decisions)
+        log.Printf("AI %v Decisions: %v", player.Wizard.Name, decisions)
 
         for _, decision := range decisions {
             switch decision.(type) {
@@ -3298,12 +3298,20 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
                 }
             case *playerlib.AICreateUnitDecision:
                 create := decision.(*playerlib.AICreateUnitDecision)
-                log.Printf("ai creating %+v", create)
+                log.Printf("ai %v creating %+v", player.Wizard.Name, create)
 
                 existingStack := player.FindStack(create.X, create.Y, create.Plane)
                 if existingStack == nil || len(existingStack.Units()) < 9 {
                     overworldUnit := units.MakeOverworldUnitFromUnit(create.Unit, create.X, create.Y, create.Plane, player.Wizard.Banner, player.MakeExperienceInfo())
                     player.AddUnit(overworldUnit)
+                }
+            case *playerlib.AIProduceDecision:
+                produce := decision.(*playerlib.AIProduceDecision)
+                log.Printf("ai %v producing %v %v", player.Wizard.Name, game.BuildingInfo.Name(produce.Building), produce.Unit.Name)
+                if produce.Building != buildinglib.BuildingNone {
+                    produce.City.ProducingBuilding = produce.Building
+                } else {
+                    produce.City.ProducingUnit = produce.Unit
                 }
             }
         }
@@ -3398,6 +3406,8 @@ func (game *Game) doCityScreen(yield coroutine.YieldFunc, city *citylib.City, pl
         overworld.Counter += 1
         yield()
     }
+
+    yield()
 
     game.Drawer = oldDrawer
 }
@@ -5542,6 +5552,8 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
                         case game.Events<- &GameEventNewBuilding{City: city, Building: newBuilding.Building, Player: player}:
                         default:
                     }
+                } else {
+                    log.Printf("ai created %v", game.BuildingInfo.Name(newBuilding.Building))
                 }
             case *citylib.CityEventOutpostDestroyed:
                 removeCities = append(removeCities, city)
@@ -5566,6 +5578,10 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
                     overworldUnit.SetWeaponBonus(newUnit.WeaponBonus)
                 }
                 player.AddUnit(overworldUnit)
+
+                if player.AIBehavior != nil {
+                    player.AIBehavior.ProducedUnit(city, player)
+                }
             }
         }
     }
@@ -5667,8 +5683,9 @@ func (game *Game) DoNextTurn(){
             }
         }
 
-        if game.Players[game.CurrentPlayer].AIBehavior != nil {
-            game.Players[game.CurrentPlayer].AIBehavior.NewTurn()
+        aiPlayer := game.Players[game.CurrentPlayer]
+        if aiPlayer.AIBehavior != nil {
+            aiPlayer.AIBehavior.NewTurn(aiPlayer)
         }
     }
 }

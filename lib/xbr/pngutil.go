@@ -113,10 +113,14 @@ func (scl *PngUtil) extractPixels(img image.Image) []uint32 {
 	width, height := bounds.Dx(), bounds.Dy()
 	pixels := make([]uint32, width*height)
 
-	for y := 0; y < height; y++ {
-		for x := 0; x < width; x++ {
+	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+		for x := bounds.Min.X; x < bounds.Max.X; x++ {
 			r, g, b, a := img.At(x, y).RGBA()
-			pixels[y*width+x] = uint32(a>>8)<<24 | uint32(r>>8)<<16 | uint32(g>>8)<<8 | uint32(b>>8)
+
+			px := x - bounds.Min.X
+			py := y - bounds.Min.Y
+
+			pixels[py*width+px] = uint32(a>>8)<<24 | uint32(r>>8)<<16 | uint32(g>>8)<<8 | uint32(b>>8)
 		}
 	}
 
