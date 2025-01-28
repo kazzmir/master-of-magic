@@ -42,6 +42,8 @@ func (ai *EnemyAI) ProducedUnit(city *citylib.City, player *playerlib.Player) {
 func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, pathfinder playerlib.PathFinder) []playerlib.AIDecision {
     var decisions []playerlib.AIDecision
 
+    // FIXME: research spells, cast spells
+
     for _, city := range self.Cities {
         // city can make something
         if !isMakingSomething(city) {
@@ -97,6 +99,7 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, p
 
     for _, stack := range self.Stacks {
         if stack.HasMoves() {
+            // FIXME: enter cities, lairs, nodes for combat
             if len(stack.CurrentPath) == 0 {
                 if rand.N(4) == 0 {
                     newX, newY := stack.X() + rand.N(5) - 2, stack.Y() + rand.N(5) - 2
