@@ -19,6 +19,7 @@ import (
     // "github.com/kazzmir/master-of-magic/game/magic/combat"
     "github.com/kazzmir/master-of-magic/game/magic/unitview"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
+    helplib "github.com/kazzmir/master-of-magic/game/magic/help"
     "github.com/hajimehoshi/ebiten/v2"
     // "github.com/hajimehoshi/ebiten/v2/vector"
 )
@@ -119,13 +120,13 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
         return nil
     }
 
-    help, err := helpLbx.ReadHelp(2)
+    help, err := helplib.ReadHelp(helpLbx, 2)
     if err != nil {
         return nil
     }
 
     buildDescriptions := buildinglib.MakeBuildDescriptions(cache)
-    
+
     titleFont := font.MakeOptimizedFont(fonts[2])
 
     alphaWhite := util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 180})

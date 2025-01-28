@@ -36,6 +36,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     mouselib "github.com/kazzmir/master-of-magic/lib/mouse"
+    helplib "github.com/kazzmir/master-of-magic/game/magic/help"
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/font"
@@ -229,7 +230,7 @@ type Game struct {
     MovingStack *playerlib.UnitStack
 
     HudUI *uilib.UI
-    Help lbx.Help
+    Help helplib.Help
 
     ArcanusMap *maplib.Map
     MyrrorMap *maplib.Map
@@ -495,7 +496,7 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         return nil
     }
 
-    help, err := helpLbx.ReadHelp(2)
+    help, err := helplib.ReadHelp(helpLbx, 2)
     if err != nil {
         return nil
     }

@@ -16,6 +16,7 @@ import (
     herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
+    helplib "github.com/kazzmir/master-of-magic/game/magic/help"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -142,7 +143,7 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
         return func(yield coroutine.YieldFunc){}, func (*ebiten.Image){}
     }
 
-    help, err := helpLbx.ReadHelp(2)
+    help, err := helplib.ReadHelp(helpLbx, 2)
     if err != nil {
         log.Printf("Error: could not load help.lbx: %v", err)
         return func(yield coroutine.YieldFunc){}, func (*ebiten.Image){}

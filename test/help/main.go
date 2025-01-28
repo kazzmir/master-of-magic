@@ -8,6 +8,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
+    helplib "github.com/kazzmir/master-of-magic/game/magic/help"
     "github.com/kazzmir/master-of-magic/lib/lbx"
 )
 
@@ -22,7 +23,7 @@ func main() {
         return
     }
 
-    help, err := lbxFile.ReadHelp(2)
+    help, err := helplib.ReadHelp(lbxFile, 2)
     if err != nil {
         log.Printf("Unable to read help: %v", err)
         return

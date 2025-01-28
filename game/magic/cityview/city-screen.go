@@ -22,6 +22,7 @@ import (
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
+    helplib "github.com/kazzmir/master-of-magic/game/magic/help"
 
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/hajimehoshi/ebiten/v2"
@@ -416,7 +417,7 @@ func (cityScreen *CityScreen) SellBuilding(building buildinglib.Building) {
     }
 }
 
-func makeCityScapeElement(cache *lbx.LbxCache, ui *uilib.UI, city *citylib.City, help *lbx.Help, imageCache *util.ImageCache, doSell func(buildinglib.Building), buildings []BuildingSlot, newBuilding buildinglib.Building, x1 int, y1 int, fonts *Fonts, player *playerlib.Player, getAlpha *util.AlphaFadeFunc) *uilib.UIElement {
+func makeCityScapeElement(cache *lbx.LbxCache, ui *uilib.UI, city *citylib.City, help *helplib.Help, imageCache *util.ImageCache, doSell func(buildinglib.Building), buildings []BuildingSlot, newBuilding buildinglib.Building, x1 int, y1 int, fonts *Fonts, player *playerlib.Player, getAlpha *util.AlphaFadeFunc) *uilib.UIElement {
     rawImageCache := make(map[int]image.Image)
 
     // FIXME: I cant remember why this function needs to exist instead of just calling imageCache.GetImage()
@@ -528,7 +529,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
         return nil
     }
 
-    help, err := helpLbx.ReadHelp(2)
+    help, err := helplib.ReadHelp(helpLbx, 2)
     if err != nil {
         return nil
     }
@@ -1801,7 +1802,7 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
         return func(yield coroutine.YieldFunc, update func()){}, func(*ebiten.Image){}
     }
 
-    help, err := helpLbx.ReadHelp(2)
+    help, err := helplib.ReadHelp(helpLbx, 2)
     if err != nil {
         log.Printf("Error with help: %v", err)
         return func(yield coroutine.YieldFunc, update func()){}, func(*ebiten.Image){}
