@@ -18,6 +18,7 @@ import (
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
+    helplib "github.com/kazzmir/master-of-magic/game/magic/help"
     "github.com/hajimehoshi/ebiten/v2"
     // "github.com/hajimehoshi/ebiten/v2/vector"
 )
@@ -61,7 +62,7 @@ func MakeMagicScreen(cache *lbx.LbxCache, player *playerlib.Player, enemies []*p
     return magic
 }
 
-func MakeTransmuteElements(ui *uilib.UI, smallFont *font.Font, player *playerlib.Player, help *lbx.Help, cache *lbx.LbxCache, imageCache *util.ImageCache) []*uilib.UIElement {
+func MakeTransmuteElements(ui *uilib.UI, smallFont *font.Font, player *playerlib.Player, help *helplib.Help, cache *lbx.LbxCache, imageCache *util.ImageCache) []*uilib.UIElement {
     var elements []*uilib.UIElement
 
     ok, _ := imageCache.GetImages("magic.lbx", 54)
@@ -351,7 +352,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
         return nil
     }
 
-    help, err := helpLbx.ReadHelp(2)
+    help, err := helplib.ReadHelp(helpLbx, 2)
     if err != nil {
         return nil
     }

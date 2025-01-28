@@ -18,6 +18,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
+    helplib "github.com/kazzmir/master-of-magic/game/magic/help"
 )
 
 func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int, rawDump bool, voc bool) error {
@@ -108,7 +109,7 @@ func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int, rawDump bool, 
     } else if lbxName == "help.lbx" && !rawDump {
         // uint16 number of entries
         // uint16 size of each entry
-        help, err := file.ReadHelp(2)
+        help, err := helplib.ReadHelp(&file, 2)
 
         if err != nil {
             return err

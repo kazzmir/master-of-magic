@@ -9,14 +9,15 @@ import (
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/help"
     "github.com/hajimehoshi/ebiten/v2"
 )
 
-func MakeHelpElement(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, help lbx.HelpEntry, helpEntries ...lbx.HelpEntry) *UIElement {
+func MakeHelpElement(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, help help.HelpEntry, helpEntries ...help.HelpEntry) *UIElement {
     return MakeHelpElementWithLayer(ui, cache, imageCache, UILayer(1), help, helpEntries...)
 }
 
-func MakeHelpElementWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, layer UILayer, help lbx.HelpEntry, helpEntries ...lbx.HelpEntry) *UIElement {
+func MakeHelpElementWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, layer UILayer, help help.HelpEntry, helpEntries ...help.HelpEntry) *UIElement {
 
     helpTop, err := imageCache.GetImage("help.lbx", 0, 0)
     if err != nil {
