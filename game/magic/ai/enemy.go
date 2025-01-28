@@ -28,7 +28,7 @@ func isMakingSomething(city *citylib.City) bool {
     }
 
     switch city.ProducingBuilding {
-        case buildinglib.BuildingHousing, buildinglib.BuildingTradeGoods: return false
+        case buildinglib.BuildingHousing, buildinglib.BuildingTradeGoods, buildinglib.BuildingNone: return false
         default: return true
     }
 }
@@ -91,6 +91,32 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, p
                             Unit: units.UnitNone,
                         })
                 }
+            }
+        }
+    }
+
+    for _, stack := range self.Stacks {
+        if stack.HasMoves() {
+            if len(stack.CurrentPath) == 0 {
+                if rand.N(4) == 0 {
+                    newX, newY := stack.X() + rand.N(5) - 2, stack.Y() + rand.N(5) - 2
+                    path := pathfinder.FindPath(stack.X(), stack.Y(), newX, newY, stack, self.GetFog(stack.Plane()))
+                    if len(path) != 0 {
+                        stack.CurrentPath = path
+                    }
+                }
+            }
+
+            if len(stack.CurrentPath) > 0 {
+                nextMove := stack.CurrentPath[0]
+                stack.CurrentPath = stack.CurrentPath[1:]
+                decisions = append(decisions, &playerlib.AIMoveStackDecision{
+                    Stack: stack,
+                    Location: nextMove,
+                    Invalid: func(){
+                        stack.CurrentPath = nil
+                    },
+                })
             }
         }
     }

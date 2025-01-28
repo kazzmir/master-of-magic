@@ -38,6 +38,7 @@ type AIProduceDecision struct {
 type AIMoveStackDecision struct {
     Stack *UnitStack
     Location image.Point
+    Invalid func()
 }
 
 type AICreateUnitDecision struct {

@@ -1522,6 +1522,10 @@ func (game *Game) ComputeTerrainCost(stack *playerlib.UnitStack, sourceX int, so
     tileFrom := mapUse.GetTile(sourceX, sourceY)
     tileTo := mapUse.GetTile(destX, destY)
 
+    if !tileTo.Valid() {
+        return fraction.Zero(), false
+    }
+
     // can't move from land to ocean unless all units are flyers or swimmers
     if tileFrom.Tile.IsLand() && !tileTo.Tile.IsLand() {
         if !stack.AllFlyers() && !stack.AllSwimmers() {
@@ -1743,6 +1747,10 @@ func (game *Game) IsCityRoadConnected(fromCity *citylib.City, toCity *citylib.Ci
 func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *playerlib.UnitStack, fog [][]bool) pathfinding.Path {
 
     useMap := game.GetMap(stack.Plane())
+
+    if newY < 0 || newY >= useMap.Height() {
+        return nil
+    }
 
     normalized := func (a image.Point) image.Point {
         return image.Pt(useMap.WrapX(a.X), a.Y)
@@ -3301,22 +3309,26 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
                 stack := moveDecision.Stack
                 to := moveDecision.Location
                 log.Printf("  moving stack %v to %v, %v", stack, to.X, to.Y)
-                terrainCost, _ := game.ComputeTerrainCost(stack, stack.X(), stack.Y(), to.X, to.Y, game.GetMap(stack.Plane()))
-                oldX := stack.X()
-                oldY := stack.Y()
-                stack.Move(to.X - stack.X(), to.Y - stack.Y(), terrainCost, game.GetNormalizeCoordinateFunc())
-                game.showMovement(yield, oldX, oldY, stack)
-                player.LiftFog(stack.X(), stack.Y(), 1, stack.Plane())
+                terrainCost, ok := game.ComputeTerrainCost(stack, stack.X(), stack.Y(), to.X, to.Y, game.GetMap(stack.Plane()))
+                if ok {
+                    oldX := stack.X()
+                    oldY := stack.Y()
+                    stack.Move(to.X - stack.X(), to.Y - stack.Y(), terrainCost, game.GetNormalizeCoordinateFunc())
+                    game.showMovement(yield, oldX, oldY, stack)
+                    player.LiftFog(stack.X(), stack.Y(), 1, stack.Plane())
 
-                for _, enemy := range game.GetEnemies(player) {
-                    // FIXME: this should get all stacks at the given location and merge them into a single stack for combat
-                    enemyStack := enemy.FindStack(stack.X(), stack.Y(), stack.Plane())
-                    if enemyStack != nil {
-                        zone := combat.ZoneType{
-                            City: enemy.FindCity(stack.X(), stack.Y(), stack.Plane()),
+                    for _, enemy := range game.GetEnemies(player) {
+                        // FIXME: this should get all stacks at the given location and merge them into a single stack for combat
+                        enemyStack := enemy.FindStack(stack.X(), stack.Y(), stack.Plane())
+                        if enemyStack != nil {
+                            zone := combat.ZoneType{
+                                City: enemy.FindCity(stack.X(), stack.Y(), stack.Plane()),
+                            }
+                            game.doCombat(yield, player, stack, enemy, enemyStack, zone)
                         }
-                        game.doCombat(yield, player, stack, enemy, enemyStack, zone)
                     }
+                } else if moveDecision.Invalid != nil {
+                    moveDecision.Invalid()
                 }
             case *playerlib.AICreateUnitDecision:
                 create := decision.(*playerlib.AICreateUnitDecision)
