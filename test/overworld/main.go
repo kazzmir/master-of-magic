@@ -2966,8 +2966,8 @@ func createScenario34(cache *lbx.LbxCache) *gamelib.Game {
 }
 
 // enemy wizard controlled town
-func createScenario35(cache *lbx.LbxCache) *gamelib.Game {
-    log.Printf("Running scenario 35")
+func createScenario36(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 36")
 
     game := gamelib.MakeGame(cache, setup.NewGameSettings{
         Magic: data.MagicSettingNormal,
@@ -3063,7 +3063,7 @@ func NewEngine(scenario int) (*Engine, error) {
         case 32: game = createScenario32(cache)
         case 33: game = createScenario33(cache)
         case 34: game = createScenario34(cache)
-        case 35: game = createScenario35(cache)
+        case 36: game = createScenario36(cache)
         default: game = createScenario1(cache)
     }
 
