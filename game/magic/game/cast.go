@@ -64,6 +64,90 @@ func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Playe
             player.CreateArtifact = nil
         case "Magic Spirit":
             game.doSummonUnit(yield, player, units.MagicSpirit)
+        case "Angel":
+            game.doSummonUnit(yield, player, units.Angel)
+        case "Arch Angel":
+            game.doSummonUnit(yield, player, units.ArchAngel)
+        case "Guardian Spirit":
+            game.doSummonUnit(yield, player, units.GuardianSpirit)
+        case "Unicorns":
+            game.doSummonUnit(yield, player, units.Unicorn)
+        case "Basilisk":
+            game.doSummonUnit(yield, player, units.Basilisk)
+        case "Behemoth":
+            game.doSummonUnit(yield, player, units.Behemoth)
+        case "Cockatrices":
+            game.doSummonUnit(yield, player, units.Cockatrice)
+        case "Colossus":
+            game.doSummonUnit(yield, player, units.Colossus)
+        case "Earth Elemental":
+            game.doSummonUnit(yield, player, units.EarthElemental)
+        case "Giant Spiders":
+            game.doSummonUnit(yield, player, units.GiantSpider)
+        case "Gorgons":
+            game.doSummonUnit(yield, player, units.Gorgon)
+        case "Great Wyrm":
+            game.doSummonUnit(yield, player, units.GreatWyrm)
+        case "Sprites":
+            game.doSummonUnit(yield, player, units.Sprite)
+        case "Stone Giant":
+            game.doSummonUnit(yield, player, units.StoneGiant)
+        case "War Bears":
+            game.doSummonUnit(yield, player, units.WarBear)
+        case "Air Elemental":
+            game.doSummonUnit(yield, player, units.AirElemental)
+        case "Djinn":
+            game.doSummonUnit(yield, player, units.Djinn)
+        case "Floating Island":
+            game.doSummonUnit(yield, player, units.FloatingIsland)
+        case "Nagas":
+            game.doSummonUnit(yield, player, units.Nagas)
+        case "Phantom Beast":
+            game.doSummonUnit(yield, player, units.PhantomBeast)
+        case "Phantom Warriors":
+            game.doSummonUnit(yield, player, units.PhantomWarrior)
+        case "Sky Drake":
+            game.doSummonUnit(yield, player, units.SkyDrake)
+        case "Storm Giant":
+            game.doSummonUnit(yield, player, units.StormGiant)
+        case "Chaos Spawn":
+            game.doSummonUnit(yield, player, units.ChaosSpawn)
+        case "Chimeras":
+            game.doSummonUnit(yield, player, units.Chimeras)
+        case "Doom Bat":
+            game.doSummonUnit(yield, player, units.DoomBat)
+        case "Efreet":
+            game.doSummonUnit(yield, player, units.Efreet)
+        case "Fire Elemental":
+            game.doSummonUnit(yield, player, units.FireElemental)
+        case "Fire Giant":
+            game.doSummonUnit(yield, player, units.FireGiant)
+        case "Gargoyles":
+            game.doSummonUnit(yield, player, units.Gargoyle)
+        case "Great Drake":
+            game.doSummonUnit(yield, player, units.GreatDrake)
+        case "Hell Hounds":
+            game.doSummonUnit(yield, player, units.HellHounds)
+        case "Hydra":
+            game.doSummonUnit(yield, player, units.Hydra)
+        case "Death Knights":
+            game.doSummonUnit(yield, player, units.DeathKnight)
+        case "Demon Lord":
+            game.doSummonUnit(yield, player, units.DemonLord)
+        case "Ghouls":
+            game.doSummonUnit(yield, player, units.Ghoul)
+        case "Night Stalker":
+            game.doSummonUnit(yield, player, units.NightStalker)
+        case "Shadow Demons":
+            game.doSummonUnit(yield, player, units.ShadowDemon)
+        case "Skeletons":
+            game.doSummonUnit(yield, player, units.Skeleton)
+        case "Wraiths":
+            game.doSummonUnit(yield, player, units.Wraith)
+
+        // FIXME: lycanthropy selects a friendly unit
+        // Lycanthropy	Icon DeathDeath	Uncommon	180	--	5	400	6 Regenerating Icon Melee Normal Melee creatures replace a target friendly Normal Unit.
+
         case "Wall of Fire":
             tileX, tileY, cancel := game.selectLocationForSpell(yield, spell, player, LocationTypeFriendlyCity)
 
@@ -107,37 +191,12 @@ func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Playe
 
             game.doCastRaiseVolcano(yield, tileX, tileY, player)
         case "Summon Hero":
-            var choices []*herolib.Hero
-            for _, hero := range game.Heroes {
-                if hero.Status == herolib.StatusAvailable && !hero.IsChampion() {
-                    choices = append(choices, hero)
-                }
-            }
+            game.doSummonHero(yield, player, false)
+        case "Summon Champion":
+            game.doSummonHero(yield, player, true)
 
-            if len(choices) > 0 {
-                hero := choices[rand.N(len(choices))]
+        // Incarnation	Icon LifeLife	Rare	500	--	12	960	Summons Torin the Chosen – one of the most powerful Champions in the game.
 
-                summonEvent := GameEventSummonHero{
-                    Wizard: player.Wizard.Base,
-                    Champion: false,
-                }
-
-                select {
-                    case game.Events <- &summonEvent:
-                    default:
-                }
-
-                event := GameEventHireHero{
-                    Hero: hero,
-                    Player: player,
-                    Cost: 0,
-                }
-
-                select {
-                    case game.Events <- &event:
-                    default:
-                }
-            }
         case "Enchant Road":
             tileX, tileY, cancel := game.selectLocationForSpell(yield, spell, player, LocationTypeAny)
 
@@ -164,6 +223,41 @@ func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Playe
             game.doCastWarpNode(yield, tileX, tileY)
         default:
             log.Printf("Warning: casting unhandled spell %v", spell.Name)
+    }
+}
+
+func (game *Game) doSummonHero(yield coroutine.YieldFunc, player *playerlib.Player, champion bool) {
+    var choices []*herolib.Hero
+    for _, hero := range game.Heroes {
+        // torin is not summonable through this method
+        if hero.Status == herolib.StatusAvailable && hero.IsChampion() == champion && hero.HeroType != herolib.HeroTorin {
+            choices = append(choices, hero)
+        }
+    }
+
+    if len(choices) > 0 {
+        hero := choices[rand.N(len(choices))]
+
+        summonEvent := GameEventSummonHero{
+            Wizard: player.Wizard.Base,
+            Champion: false,
+        }
+
+        select {
+            case game.Events <- &summonEvent:
+            default:
+        }
+
+        event := GameEventHireHero{
+            Hero: hero,
+            Player: player,
+            Cost: 0,
+        }
+
+        select {
+            case game.Events <- &event:
+            default:
+        }
     }
 }
 
