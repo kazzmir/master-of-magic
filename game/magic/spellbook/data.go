@@ -290,10 +290,10 @@ func (spells Spells) GetSpellsBySection(section Section) Spells {
     }
 
     sort.Slice(out, func(i, j int) bool {
-        if out[i].Magic.String() == out[j].Magic.String() {
+        if out[i].Magic == out[j].Magic {
             return out[i].CastCost < out[j].CastCost
         }
-        return out[i].Magic.String() < out[j].Magic.String()
+        return out[i].Magic < out[j].Magic
     })
 
     return SpellsFromArray(out)
