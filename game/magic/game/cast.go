@@ -63,11 +63,7 @@ func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Playe
 
             player.CreateArtifact = nil
         case "Magic Spirit":
-            select {
-                case game.Events <- &GameEventSummonUnit{Player: player, Unit: units.MagicSpirit}:
-                default:
-            }
-
+            game.doSummonUnit(yield, player, units.MagicSpirit)
         case "Wall of Fire":
             tileX, tileY, cancel := game.selectLocationForSpell(yield, spell, player, LocationTypeFriendlyCity)
 
@@ -168,6 +164,19 @@ func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Playe
             game.doCastWarpNode(yield, tileX, tileY)
         default:
             log.Printf("Warning: casting unhandled spell %v", spell.Name)
+    }
+}
+
+func (game *Game) doSummonUnit(yield coroutine.YieldFunc, player *playerlib.Player, unit units.Unit) {
+    select {
+        case game.Events <- &GameEventSummonUnit{Player: player, Unit: unit}:
+        default:
+    }
+
+    summonCity := player.FindSummoningCity()
+    if summonCity != nil {
+        overworldUnit := units.MakeOverworldUnitFromUnit(unit, summonCity.X, summonCity.Y, summonCity.Plane, player.Wizard.Banner, player.MakeExperienceInfo())
+        player.AddUnit(overworldUnit)
     }
 }
 

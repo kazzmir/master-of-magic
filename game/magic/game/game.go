@@ -2644,12 +2644,6 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         if player.IsHuman() {
                             game.doSummon(yield, summon.MakeSummonUnit(game.Cache, summonUnit.Unit, player.Wizard.Base))
                         }
-
-                        fortressCity := player.FindFortressCity()
-                        if fortressCity != nil {
-                            overworldUnit := units.MakeOverworldUnitFromUnit(summonUnit.Unit, fortressCity.X, fortressCity.Y, fortressCity.Plane, player.Wizard.Banner, player.MakeExperienceInfo())
-                            player.AddUnit(overworldUnit)
-                        }
                     case *GameEventSummonArtifact:
                         summonArtifact := event.(*GameEventSummonArtifact)
                         game.doSummon(yield, summon.MakeSummonArtifact(game.Cache, summonArtifact.Wizard))

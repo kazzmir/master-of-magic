@@ -170,6 +170,7 @@ func initializePlayer(game *gamelib.Game, wizard setup.WizardCustom, isHuman boo
     }
 
     introCity.Buildings.Insert(buildinglib.BuildingFortress)
+    introCity.Buildings.Insert(buildinglib.BuildingSummoningCircle)
     introCity.ProducingBuilding = buildinglib.BuildingHousing
     introCity.ProducingUnit = units.UnitNone
     introCity.Farmers = 4
