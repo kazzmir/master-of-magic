@@ -16,6 +16,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
+    helplib "github.com/kazzmir/master-of-magic/game/magic/help"
     _ "github.com/hajimehoshi/ebiten/v2/vector"
 
     "github.com/hajimehoshi/ebiten/v2"
@@ -530,7 +531,7 @@ type NewWizardScreen struct {
 
     Spells spellbook.Spells
 
-    Help lbx.Help
+    Help helplib.Help
 
     UI *uilib.UI
 
@@ -906,7 +907,7 @@ func (screen *NewWizardScreen) LoadHelp(cache *lbx.LbxCache) error {
         return err
     }
 
-    screen.Help, err = helpLbx.ReadHelp(2)
+    screen.Help, err = helplib.ReadHelp(helpLbx, 2)
     if err != nil {
         return err
     }
@@ -1379,7 +1380,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
 
                 // Hack! There are two FAMOUS entries in help.lbx, one for the ability and one for the spell
                 if ability.Ability == AbilityFamous {
-                    helpEntries = []lbx.HelpEntry{screen.Help.GetRawEntry(702)}
+                    helpEntries = []helplib.HelpEntry{screen.Help.GetRawEntry(702)}
                 }
 
                 screen.UI.AddElement(uilib.MakeHelpElement(screen.UI, screen.LbxCache, &imageCache, helpEntries[0]))
