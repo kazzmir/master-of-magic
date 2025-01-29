@@ -5,6 +5,9 @@ import (
     "fmt"
     "flag"
     "errors"
+    "math"
+    "slices"
+    "cmp"
     // "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -146,23 +149,74 @@ func startingUnits(race data.Race) []units.Unit {
     }
 }
 
-func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup.NewGameSettings, wizard setup.WizardCustom) error {
+func euclideanDistance(x1, y1, x2, y2 int) float64 {
+    dx := float64(x1 - x2)
+    dy := float64(y1 - y2)
 
+    return math.Sqrt(dx*dx + dy*dy)
+}
+
+func initializePlayer(game *gamelib.Game, wizard setup.WizardCustom, isHuman bool) {
     startingPlane := data.PlaneArcanus
     if wizard.AbilityEnabled(setup.AbilityMyrran) {
         startingPlane = data.PlaneMyrror
     }
 
-    game := gamelib.MakeGame(magic.Cache, settings)
-    game.Plane = startingPlane
+    player := game.AddPlayer(wizard, isHuman)
 
-    magic.Drawer = func(screen *ebiten.Image) {
-        game.Draw(screen)
+    allCities := game.AllCities()
+
+    closestDistance := func(x, y int) int {
+        distance := -1
+
+        for _, city := range allCities {
+            d := int(euclideanDistance(x, y, city.X, city.Y))
+            if distance == -1 || d < distance {
+                distance = d
+            }
+        }
+
+        if distance == -1 {
+            return 0
+        } else {
+            return distance
+        }
     }
 
-    player := game.AddPlayer(wizard, true)
+    type CityLocation struct {
+        X, Y int
+        // distance to closest city
+        Distance int
+    }
 
-    cityX, cityY := game.FindValidCityLocation(startingPlane)
+    var cityX int
+    var cityY int
+    var locations []CityLocation
+    for range 10 {
+        x, y, ok := game.FindValidCityLocation(startingPlane)
+        if ok {
+            locations = append(locations, CityLocation{X: x, Y: y, Distance: closestDistance(x, y)})
+        }
+    }
+
+    slices.SortFunc(locations, func(pointA, pointB CityLocation) int {
+        return cmp.Compare(pointA.Distance, pointB.Distance)
+    })
+
+    if len(locations) > 0 {
+        // choose furthest point
+        cityX = locations[len(locations) - 1].X
+        cityY = locations[len(locations) - 1].Y
+    } else {
+        // couldn't find a good spot, just pick anything
+        for range 100 {
+            var ok bool
+            cityX, cityY, ok = game.FindValidCityLocation(startingPlane)
+            if ok {
+                break
+            }
+        }
+    }
 
     cityName := game.SuggestCityName(player.Wizard.Race)
 
@@ -170,10 +224,15 @@ func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup
     introCity.Population = 4000
     introCity.Wall = false
     introCity.Plane = startingPlane
-    introCity.Buildings.Insert(buildinglib.BuildingSmithy)
-    introCity.Buildings.Insert(buildinglib.BuildingBarracks)
-    introCity.Buildings.Insert(buildinglib.BuildingBuildersHall)
+
+    for _, building := range []buildinglib.Building{buildinglib.BuildingSmithy, buildinglib.BuildingBarracks, buildinglib.BuildingBuildersHall} {
+        if introCity.GetBuildableBuildings().Contains(building) {
+            introCity.Buildings.Insert(building)
+        }
+    }
+
     introCity.Buildings.Insert(buildinglib.BuildingFortress)
+    introCity.Buildings.Insert(buildinglib.BuildingSummoningCircle)
     introCity.ProducingBuilding = buildinglib.BuildingHousing
     introCity.ProducingUnit = units.UnitNone
     introCity.Farmers = 4
@@ -188,9 +247,30 @@ func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup
 
     player.LiftFog(cityX, cityY, 2, introCity.Plane)
 
-    game.Events <- gamelib.StartingCityEvent(introCity)
+    if isHuman {
+        game.Events <- gamelib.StartingCityEvent(introCity)
+        game.Camera.Center(cityX, cityY)
+        game.Plane = startingPlane
+    }
+}
 
-    game.Camera.Center(cityX, cityY)
+func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup.NewGameSettings, humanWizard setup.WizardCustom) error {
+    game := gamelib.MakeGame(magic.Cache, settings)
+
+    magic.Drawer = func(screen *ebiten.Image) {
+        game.Draw(screen)
+    }
+
+    initializePlayer(game, humanWizard, true)
+
+    for range settings.Opponents {
+        wizard, ok := game.ChooseWizard()
+        if ok {
+            initializePlayer(game, wizard, false)
+        } else {
+            log.Printf("Warning: unable to add another wizard to the game")
+        }
+    }
 
     game.DoNextTurn()
 

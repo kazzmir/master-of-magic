@@ -10,6 +10,7 @@ import (
     "strings"
     "slices"
 
+    "github.com/kazzmir/master-of-magic/game/magic/ai"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
@@ -138,7 +139,7 @@ type GameEventCastSpell struct {
 }
 
 type GameEventSummonUnit struct {
-    Wizard data.WizardBase
+    Player *playerlib.Player
     Unit units.Unit
 }
 
@@ -420,6 +421,11 @@ func (game *Game) InitializeResearchableSpells(spells *spellbook.Spells, player 
 func (game *Game) AddPlayer(wizard setup.WizardCustom, human bool) *playerlib.Player{
     newPlayer := playerlib.MakePlayer(wizard, human, game.MakeFog(), game.MakeFog())
 
+    if !human {
+        newPlayer.AIBehavior = ai.MakeEnemyAI()
+        newPlayer.StrategicCombat = true
+    }
+
     allSpells := game.AllSpells()
 
     startingSpells := []string{"Magic Spirit", "Spell of Return"}
@@ -639,7 +645,7 @@ func (game *Game) NearCity(point image.Point, squares int) bool {
     return false
 }
 
-func (game *Game) FindValidCityLocation(plane data.Plane) (int, int) {
+func (game *Game) FindValidCityLocation(plane data.Plane) (int, int, bool) {
     mapUse := game.GetMap(plane)
     continents := mapUse.Map.FindContinents()
 
@@ -652,13 +658,13 @@ func (game *Game) FindValidCityLocation(plane data.Plane) (int, int) {
             y := continent[index].Y
 
             tile := terrain.GetTile(mapUse.Map.Terrain[x][y])
-            if y > 3 && y < mapUse.Map.Columns() - 3 && tile.IsLand() && !tile.IsMagic() && mapUse.GetEncounter(x, y) == nil {
-                return x, y
+            if y > 3 && y < mapUse.Map.Columns() - 3 && tile.IsLand() && !tile.IsMagic() && mapUse.GetEncounter(x, y) == nil && !game.ContainsCity(x, y, plane) {
+                return x, y, true
             }
         }
     }
 
-    return 0, 0
+    return 0, 0, false
 }
 
 func (game *Game) FindValidCityLocationOnContinent(plane data.Plane, x int, y int) (int, int) {
@@ -1112,7 +1118,6 @@ func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City,
 
     getAlpha := util.MakeFadeIn(7, &game.Counter)
 
-    // FIXME: cropping the image cuts it off at some point
     buildingPics, err := game.ImageCache.GetImagesTransform("cityscap.lbx", buildinglib.GetBuildingIndex(building), "crop", util.AutoCrop)
 
     if err != nil {
@@ -1475,7 +1480,7 @@ func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, sta
     }
 }
 
-func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, stack *playerlib.UnitStack){
+func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, stack *playerlib.UnitStack, center bool){
     // the number of frames it takes to move a unit one tile
     frames := 10
 
@@ -1499,7 +1504,9 @@ func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, st
     game.MovingStack = nil
 
     stack.SetOffset(0, 0)
-    game.Camera.Center(stack.X(), stack.Y())
+    if center {
+        game.Camera.Center(stack.X(), stack.Y())
+    }
 }
 
 /* return the cost to move from the current position the stack is on to the new given coordinates.
@@ -1516,6 +1523,10 @@ func (game *Game) ComputeTerrainCost(stack *playerlib.UnitStack, sourceX int, so
 
     tileFrom := mapUse.GetTile(sourceX, sourceY)
     tileTo := mapUse.GetTile(destX, destY)
+
+    if !tileTo.Valid() {
+        return fraction.Zero(), false
+    }
 
     // can't move from land to ocean unless all units are flyers or swimmers
     if tileFrom.Tile.IsLand() && !tileTo.Tile.IsLand() {
@@ -1738,6 +1749,10 @@ func (game *Game) IsCityRoadConnected(fromCity *citylib.City, toCity *citylib.Ci
 func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *playerlib.UnitStack, fog [][]bool) pathfinding.Path {
 
     useMap := game.GetMap(stack.Plane())
+
+    if newY < 0 || newY >= useMap.Height() {
+        return nil
+    }
 
     normalized := func (a image.Point) image.Point {
         return image.Pt(useMap.WrapX(a.X), a.Y)
@@ -2199,6 +2214,11 @@ func (game *Game) maybeHireHero(player *playerlib.Player) {
 /* show the hire hero popup, and if the user clicks 'hire' then add the hero to the player's list of heroes
  */
 func (game *Game) doHireHero(yield coroutine.YieldFunc, cost int, hero *herolib.Hero, player *playerlib.Player) {
+    // ensure the player can actually afford to hire the hero
+    if cost > player.Gold {
+        return
+    }
+
     quit := false
 
     result := func(hired bool) {
@@ -2353,6 +2373,10 @@ func (game *Game) doHireMercenaries(yield coroutine.YieldFunc, cost int, units [
         return
     }
 
+    if cost > player.Gold {
+        return
+    }
+
     quit := false
 
     result := func(hired bool) {
@@ -2428,7 +2452,11 @@ func (game *Game) maybeBuyFromMerchant(player *playerlib.Player) {
 
 /* show the merchant popup, and if the user clicks 'buy' then add the artifact to the player's vault and remove it from the pool
  */
- func (game *Game) doMerchant(yield coroutine.YieldFunc, cost int, artifact *artifact.Artifact) {
+ func (game *Game) doMerchant(yield coroutine.YieldFunc, cost int, artifact *artifact.Artifact, player *playerlib.Player) {
+     if cost > player.Gold {
+         return
+     }
+
     quit := false
 
     result := func(bought bool) {
@@ -2557,7 +2585,7 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                     case *GameEventMerchant:
                         merchant := event.(*GameEventMerchant)
                         if merchant.Player.IsHuman() {
-                            game.doMerchant(yield, merchant.Cost, merchant.Artifact)
+                            game.doMerchant(yield, merchant.Cost, merchant.Artifact, merchant.Player)
                         }
                     case *GameEventNextTurn:
                         game.doNextTurn(yield)
@@ -2595,7 +2623,13 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         game.doCastSpell(yield, castSpell.Player, castSpell.Spell)
                     case *GameEventTreasure:
                         treasure := event.(*GameEventTreasure)
-                        game.doTreasure(yield, treasure.Player, treasure.Treasure)
+                        if treasure.Player.IsHuman() {
+                            game.doTreasurePopup(yield, treasure.Player, treasure.Treasure)
+                        }
+
+                        game.ApplyTreasure(yield, treasure.Player, treasure.Treasure)
+                        yield()
+
                     case *GameEventNewBuilding:
                         buildingEvent := event.(*GameEventNewBuilding)
                         game.Camera.Center(buildingEvent.City.X, buildingEvent.City.Y)
@@ -2607,7 +2641,11 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         city.Name = game.doInput(yield, cityEvent.Title, city.Name, cityEvent.X, cityEvent.Y)
                     case *GameEventSummonUnit:
                         summonUnit := event.(*GameEventSummonUnit)
-                        game.doSummon(yield, summon.MakeSummonUnit(game.Cache, summonUnit.Unit, summonUnit.Wizard))
+                        player := summonUnit.Player
+
+                        if player.IsHuman() {
+                            game.doSummon(yield, summon.MakeSummonUnit(game.Cache, summonUnit.Unit, player.Wizard.Base))
+                        }
                     case *GameEventSummonArtifact:
                         summonArtifact := event.(*GameEventSummonArtifact)
                         game.doSummon(yield, summon.MakeSummonArtifact(game.Cache, summonArtifact.Wizard))
@@ -2942,7 +2980,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
             if encounter != nil {
                 if game.confirmLairEncounter(yield, encounter) {
                     stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost, game.GetNormalizeCoordinateFunc())
-                    game.showMovement(yield, oldX, oldY, stack)
+                    game.showMovement(yield, oldX, oldY, stack, true)
                     player.LiftFog(stack.X(), stack.Y(), 1, stack.Plane())
 
                     stack.ExhaustMoves()
@@ -2961,7 +2999,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
             mergeStack = player.FindStack(mapUse.WrapX(step.X), step.Y, stack.Plane())
 
             stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost, game.GetNormalizeCoordinateFunc())
-            game.showMovement(yield, oldX, oldY, stack)
+            game.showMovement(yield, oldX, oldY, stack, true)
             // FIXME: lift more fog if the stack has Scouting and some other abilities
             player.LiftFog(stack.X(), stack.Y(), 1, stack.Plane())
 
@@ -2975,6 +3013,9 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
 
                     game.doCombat(yield, player, stack, otherPlayer, otherStack, zone)
 
+                    // FIXME: if there was a city here and the attacker won then the attacker
+                    // should be able to raze or occupy the city
+
                     stack.ExhaustMoves()
                     game.RefreshUI()
 
@@ -2982,6 +3023,8 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
                     break quitMoving
                 }
             }
+
+            // FIXME: if there is an unguarded city at the destination then defeat it immediately
 
             // some units in the stack might not have any moves left
             beforeActive := len(stack.ActiveUnits())
@@ -3171,7 +3214,11 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
 
                             city := otherPlayer.FindCity(tileX, tileY, game.Plane)
                             if city != nil {
-                                game.doEnemyCityView(yield, city, otherPlayer)
+                                if player.Admin {
+                                    game.doCityScreen(yield, city, otherPlayer, buildinglib.BuildingNone)
+                                } else {
+                                    game.doEnemyCityView(yield, city, otherPlayer)
+                                }
                             } else {
                                 enemyStack := otherPlayer.FindStack(tileX, tileY, game.Plane)
                                 if enemyStack != nil {
@@ -3234,6 +3281,49 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
     return game.State
 }
 
+func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Player, move *playerlib.AIMoveStackDecision) {
+    stack := move.Stack
+    to := move.Location
+    log.Printf("  moving stack %v to %v, %v", stack, to.X, to.Y)
+    terrainCost, ok := game.ComputeTerrainCost(stack, stack.X(), stack.Y(), to.X, to.Y, game.GetMap(stack.Plane()))
+    if ok {
+        oldX := stack.X()
+        oldY := stack.Y()
+
+        mapUse := game.GetMap(stack.Plane())
+
+        encounter := mapUse.GetEncounter(mapUse.WrapX(to.X), to.Y)
+        if encounter != nil && move.ConfirmEncounter != nil {
+            if !move.ConfirmEncounter(encounter) {
+                move.Invalid()
+                return
+            }
+        }
+
+        stack.Move(to.X - stack.X(), to.Y - stack.Y(), terrainCost, game.GetNormalizeCoordinateFunc())
+        game.showMovement(yield, oldX, oldY, stack, false)
+        player.LiftFog(stack.X(), stack.Y(), 1, stack.Plane())
+
+        if encounter != nil {
+            game.doEncounter(yield, player, stack, encounter, mapUse, stack.X(), stack.Y())
+            return
+        }
+
+        for _, enemy := range game.GetEnemies(player) {
+            // FIXME: this should get all stacks at the given location and merge them into a single stack for combat
+            enemyStack := enemy.FindStack(stack.X(), stack.Y(), stack.Plane())
+            if enemyStack != nil {
+                zone := combat.ZoneType{
+                    City: enemy.FindCity(stack.X(), stack.Y(), stack.Plane()),
+                }
+                game.doCombat(yield, player, stack, enemy, enemyStack, zone)
+            }
+        }
+    } else if move.Invalid != nil {
+        move.Invalid()
+    }
+}
+
 func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player) {
     log.Printf("AI %v year %v: make decisions", player.Wizard.Name, game.TurnNumber)
 
@@ -3246,27 +3336,8 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
         for _, decision := range decisions {
             switch decision.(type) {
             case *playerlib.AIMoveStackDecision:
-                moveDecision := decision.(*playerlib.AIMoveStackDecision)
-                stack := moveDecision.Stack
-                to := moveDecision.Location
-                log.Printf("  moving stack %v to %v, %v", stack, to.X, to.Y)
-                terrainCost, _ := game.ComputeTerrainCost(stack, stack.X(), stack.Y(), to.X, to.Y, game.GetMap(stack.Plane()))
-                oldX := stack.X()
-                oldY := stack.Y()
-                stack.Move(to.X - stack.X(), to.Y - stack.Y(), terrainCost, game.GetNormalizeCoordinateFunc())
-                game.showMovement(yield, oldX, oldY, stack)
-                player.LiftFog(stack.X(), stack.Y(), 1, stack.Plane())
+                game.doAiMoveUnit(yield, player, decision.(*playerlib.AIMoveStackDecision))
 
-                for _, enemy := range game.GetEnemies(player) {
-                    // FIXME: this should get all stacks at the given location and merge them into a single stack for combat
-                    enemyStack := enemy.FindStack(stack.X(), stack.Y(), stack.Plane())
-                    if enemyStack != nil {
-                        zone := combat.ZoneType{
-                            City: enemy.FindCity(stack.X(), stack.Y(), stack.Plane()),
-                        }
-                        game.doCombat(yield, player, stack, enemy, enemyStack, zone)
-                    }
-                }
             case *playerlib.AICreateUnitDecision:
                 create := decision.(*playerlib.AICreateUnitDecision)
                 log.Printf("ai %v creating %+v", player.Wizard.Name, create)
@@ -3286,6 +3357,8 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
                 }
             }
         }
+
+        player.AIBehavior.PostUpdate(player, game.GetEnemies(player))
     }
 
     if len(decisions) == 0 {
@@ -3579,7 +3652,7 @@ func (game *Game) createTreasure(encounterType maplib.EncounterType, budget int,
     }
 }
 
-func (game *Game) doTreasure(yield coroutine.YieldFunc, player *playerlib.Player, treasure Treasure){
+func (game *Game) doTreasurePopup(yield coroutine.YieldFunc, player *playerlib.Player, treasure Treasure){
     uiDone := false
 
     fontLbx, err := game.Cache.GetLbxFile("FONTS.LBX")
@@ -3660,7 +3733,9 @@ func (game *Game) doTreasure(yield coroutine.YieldFunc, player *playerlib.Player
     yield()
 
     game.HudUI.RemoveElement(element)
+}
 
+func (game *Game) ApplyTreasure(yield coroutine.YieldFunc, player *playerlib.Player, treasure Treasure) {
     for _, item := range treasure.Treasures {
         switch item.(type) {
             case *TreasureGold:
@@ -3671,15 +3746,25 @@ func (game *Game) doTreasure(yield coroutine.YieldFunc, player *playerlib.Player
                 player.Mana += mana.Amount
             case *TreasureMagicalItem:
                 magicalItem := item.(*TreasureMagicalItem)
-                game.doVault(yield, magicalItem.Artifact)
+                if player.IsHuman() {
+                    game.doVault(yield, magicalItem.Artifact)
+                } else {
+                    // FIXME: ai should get the vault item
+                }
                 // if the treasure was one of the premade artifacts, then remove it from the pool
                 delete(game.ArtifactPool, magicalItem.Artifact.Name)
             case *TreasurePrisonerHero:
                 hero := item.(*TreasurePrisonerHero)
-                game.doHireHero(yield, 0, hero.Hero, player)
+                if player.IsHuman() {
+                    game.doHireHero(yield, 0, hero.Hero, player)
+                } else {
+                    // FIXME: ai should get a chance to hire the hero
+                }
             case *TreasureSpell:
                 spell := item.(*TreasureSpell)
-                game.doLearnSpell(yield, player, spell.Spell)
+                if player.IsHuman() {
+                    game.doLearnSpell(yield, player, spell.Spell)
+                }
                 player.LearnSpell(spell.Spell)
             case *TreasureSpellbook:
                 spellbook := item.(*TreasureSpellbook)
@@ -3690,10 +3775,7 @@ func (game *Game) doTreasure(yield coroutine.YieldFunc, player *playerlib.Player
                 player.Wizard.EnableAbility(retort.Retort)
         }
     }
-
-    yield()
 }
-
 
 func (game *Game) GetCombatLandscape(x int, y int, plane data.Plane) combat.CombatLandscape {
     tile := game.GetMap(plane).GetTile(x, y)
@@ -5228,9 +5310,12 @@ func (game *Game) DoNextUnit(player *playerlib.Player){
         if stack.HasMoves() {
             player.SelectedStack = stack
             stack.EnableMovers()
-            select {
-                case game.Events <- &GameEventMoveCamera{Plane: stack.Plane(), X: stack.X(), Y: stack.Y(), Instant: true}:
-                default:
+
+            if player.IsHuman() {
+                select {
+                    case game.Events <- &GameEventMoveCamera{Plane: stack.Plane(), X: stack.X(), Y: stack.Y(), Instant: true}:
+                    default:
+                }
             }
             /*
             game.Plane = stack.Plane()
