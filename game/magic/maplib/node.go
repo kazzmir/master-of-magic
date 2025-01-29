@@ -380,32 +380,40 @@ func computeChaosNodeEnemies(budget int) ([]units.Unit, []units.Unit) {
     return chooseGuardianAndSecondary(enemyCosts, makeUnit, budget)
 }
 
-func MakeMagicNode(kind MagicNode, magicSetting data.MagicSetting, difficulty data.DifficultySetting, plane data.Plane) *ExtraMagicNode {
+func MakeMagicNode(kind MagicNode, magicSetting data.MagicSetting, difficulty data.DifficultySetting, plane data.Plane) (*ExtraMagicNode, *ExtraEncounter) {
     zone := makeZone(plane)
     var guardians []units.Unit
     var secondary []units.Unit
 
     budget := computeEncounterBudget(magicSetting, difficulty, len(zone))
 
+    var encouterType EncounterType
+
     switch kind {
         case MagicNodeNature:
             guardians, secondary = computeNatureNodeEnemies(budget)
+            encouterType = EncounterTypeNatureNode
             // log.Printf("Created nature node guardians: %v secondary: %v", guardians, secondary)
         case MagicNodeSorcery:
             guardians, secondary = computeSorceryNodeEnemies(budget)
+            encouterType = EncounterTypeSorceryNode
             // log.Printf("Created sorcery node guardians: %v secondary: %v", guardians, secondary)
         case MagicNodeChaos:
             guardians, secondary = computeChaosNodeEnemies(budget)
+            encouterType = EncounterTypeChaosNode
             // log.Printf("Created chaos node guardians: %v secondary: %v", guardians, secondary)
     }
 
-
-    return &ExtraMagicNode{
+    magicNode := ExtraMagicNode{
         Kind: kind,
-        Empty: false,
-        Budget: budget,
-        Guardians: guardians,
-        Secondary: secondary,
         Zone: zone,
     }
+
+    encounter := ExtraEncounter{
+        Type: encouterType,
+        Units: append(guardians, secondary...),
+        Budget: budget,
+    }
+
+    return &magicNode, &encounter
 }

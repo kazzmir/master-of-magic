@@ -860,7 +860,7 @@ func createScenario11(cache *lbx.LbxCache) *gamelib.Game {
 
     nodes := findNodes(game.CurrentMap())
     node := nodes[terrain.SorceryNode][0]
-    node.Node.Empty = true
+    game.CurrentMap().RemoveEncounter(node.X, node.Y)
 
     player.LiftFog(node.X, node.Y, 3, data.PlaneArcanus)
 
@@ -2431,7 +2431,7 @@ func createScenario28(cache *lbx.LbxCache) *gamelib.Game {
 
     nodes := findNodes(game.CurrentMap())
     node := nodes[terrain.SorceryNode][0]
-    node.Node.Empty = true
+    game.CurrentMap().RemoveEncounter(node.X, node.Y)
 
     player.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, node.X + 1, node.Y + 1, game.Plane, wizard.Banner, nil))
     // has pathfinding
@@ -2502,7 +2502,7 @@ func createScenario29(cache *lbx.LbxCache) *gamelib.Game {
 
     nodes := findNodes(game.CurrentMap())
     node := nodes[terrain.SorceryNode][0]
-    node.Node.Empty = true
+    game.CurrentMap().RemoveEncounter(node.X, node.Y)
 
     player.AddUnit(units.MakeOverworldUnitFromUnit(units.OrcSwordsmen, node.X + 1, node.Y + 1, game.Plane, wizard.Banner, nil))
     player.AddUnit(units.MakeOverworldUnitFromUnit(units.OrcEngineers, node.X + 1, node.Y + 1, game.Plane, wizard.Banner, nil))
@@ -2800,7 +2800,7 @@ func createScenario32(cache *lbx.LbxCache) *gamelib.Game {
         log.Printf("Unable to create encounter")
     }
 
-    encounter := game.CurrentMap().GetLair(x, y)
+    encounter := game.CurrentMap().GetEncounter(x, y)
     encounter.Units = []units.Unit{units.SkyDrake, units.SkyDrake}
 
     game.Camera.Center(stack.X(), stack.Y())
@@ -2941,7 +2941,7 @@ func createScenario34(cache *lbx.LbxCache) *gamelib.Game {
 
     nodes := findNodes(game.CurrentMap())
     node := nodes[terrain.NatureNode][0]
-    node.Node.Empty = true
+    game.CurrentMap().RemoveEncounter(node.X, node.Y)
     node.Node.MeldingWizard = player2
     player1.LiftFog(node.X, node.Y, 3, data.PlaneArcanus)
 
@@ -2951,13 +2951,13 @@ func createScenario34(cache *lbx.LbxCache) *gamelib.Game {
     player1.LiftFog(stack.X(), stack.Y(), 2, data.PlaneArcanus)
 
     node = nodes[terrain.SorceryNode][0]
-    node.Node.Empty = true
+    game.CurrentMap().RemoveEncounter(node.X, node.Y)
     node.Node.MeldingWizard = player2
     node.Node.Warped = true
     player1.LiftFog(node.X, node.Y, 3, data.PlaneArcanus)
 
     node = nodes[terrain.ChaosNode][0]
-    node.Node.Empty = true
+    game.CurrentMap().RemoveEncounter(node.X, node.Y)
     node.Node.MeldingWizard = player2
     node.Node.Warped = true
     player1.LiftFog(node.X, node.Y, 3, data.PlaneArcanus)
