@@ -185,7 +185,7 @@ const (
 
 func (encounterType EncounterType) Name() string {
     switch encounterType {
-        case EncounterTypeLair: return "Monstar Lair"
+        case EncounterTypeLair: return "Monster Lair"
         case EncounterTypeCave: return "Mysterious Cave"
         case EncounterTypePlaneTower: return "Tower"
         case EncounterTypePlaneTowerOpen: return "Tower"
