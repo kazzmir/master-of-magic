@@ -43,6 +43,7 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, p
     var decisions []playerlib.AIDecision
 
     // FIXME: research spells, cast spells
+    // create settlers, build cities
 
     for _, city := range self.Cities {
         // city can make something
@@ -98,6 +99,7 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, p
     }
 
     for _, stack := range self.Stacks {
+        // don't move if this would leave a city undefended, otherwise try to split the stack and move part of it
         if stack.HasMoves() {
             // FIXME: enter cities, lairs, nodes for combat
             if len(stack.CurrentPath) == 0 {
