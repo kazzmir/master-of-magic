@@ -3381,6 +3381,28 @@ func (game *Game) doCityScreen(yield coroutine.YieldFunc, city *citylib.City, pl
     game.Drawer = oldDrawer
 }
 
+// similar to confirmEncounter() but without the buttons
+func (game *Game) showEncounter(yield coroutine.YieldFunc, message string, animation *util.Animation) {
+    quit := false
+
+    dismiss := func(){
+        quit = true
+    }
+
+    game.HudUI.AddElements(uilib.MakeLairShowDialogWithLayer(game.HudUI, game.Cache, &game.ImageCache, animation, 1, message, dismiss))
+
+    for !quit {
+        game.Counter += 1
+        if game.Counter % 6 == 0 {
+            animation.Next()
+        }
+        game.HudUI.StandardUpdate()
+        yield()
+    }
+
+    yield()
+}
+
 func (game *Game) confirmEncounter(yield coroutine.YieldFunc, message string, animation *util.Animation) bool {
     quit := false
 
@@ -3464,10 +3486,23 @@ func (game *Game) confirmLairEncounter(yield coroutine.YieldFunc, encounter *map
         animation = util.MakePaletteRotateAnimation(reloadLbx, &game.ImageCache, lairIndex, rotateIndexLow, rotateIndexHigh)
     }
 
+    if len(encounter.Units) == 0 {
+        game.showEncounter(yield, fmt.Sprintf("You have found %v %v.", article, encounter.Type.Name()), animation)
+        return true
+    }
+
     return game.confirmEncounter(yield, fmt.Sprintf("You have found %v %v. Scouts have spotted %v within the %v. Do you wish to enter?", article, encounter.Type.Name(), guardianName, encounter.Type.Name()), animation)
 }
 
 func (game *Game) doEncounter(yield coroutine.YieldFunc, player *playerlib.Player, stack *playerlib.UnitStack, encounter *maplib.ExtraEncounter, mapUse *maplib.Map, x int, y int){
+    // there was nothing in the encounter, just give treasure
+    if len(encounter.Units) == 0 {
+        mapUse.RemoveEncounter(x, y)
+        game.createTreasure(encounter.Type, encounter.Budget, player)
+        yield()
+        return
+    }
+
     defender := playerlib.Player{
         Wizard: setup.WizardCustom{
             Name: encounter.Type.ShortName(),
