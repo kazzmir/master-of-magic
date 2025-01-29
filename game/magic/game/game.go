@@ -2938,7 +2938,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
 
         if canMove {
 
-            encounter := mapUse.GetEncounter(step.X, step.Y)
+            encounter := mapUse.GetEncounter(mapUse.WrapX(step.X), step.Y)
             if encounter != nil {
                 if game.confirmLairEncounter(yield, encounter) {
                     stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost, game.GetNormalizeCoordinateFunc())
@@ -2956,7 +2956,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
             }
 
             stepsTaken = i + 1
-            mergeStack = player.FindStack(step.X, step.Y, stack.Plane())
+            mergeStack = player.FindStack(mapUse.WrapX(step.X), step.Y, stack.Plane())
 
             stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost, game.GetNormalizeCoordinateFunc())
             game.showMovement(yield, oldX, oldY, stack)
