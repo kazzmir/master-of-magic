@@ -3042,6 +3042,7 @@ func createScenario36(cache *lbx.LbxCache) *gamelib.Game {
         Banner: data.BannerYellow,
     }
     human := game.AddPlayer(wizard2, true)
+    human.Admin = true
 
     wizard1 := setup.WizardCustom{
         Name: "Rjak",

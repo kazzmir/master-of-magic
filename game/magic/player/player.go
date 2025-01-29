@@ -89,6 +89,8 @@ type Player struct {
 
     // if true, the game will only do strategic (non-graphics/non-realtime) based combat if both sides are strategic
     StrategicCombat bool
+    // godmode that lets the player interact with enemy cities/units
+    Admin bool
 
     // known spells
     KnownSpells spellbook.Spells

@@ -423,6 +423,7 @@ func (game *Game) AddPlayer(wizard setup.WizardCustom, human bool) *playerlib.Pl
 
     if !human {
         newPlayer.AIBehavior = ai.MakeEnemyAI()
+        newPlayer.StrategicCombat = true
     }
 
     allSpells := game.AllSpells()
@@ -1479,7 +1480,7 @@ func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, sta
     }
 }
 
-func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, stack *playerlib.UnitStack){
+func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, stack *playerlib.UnitStack, center bool){
     // the number of frames it takes to move a unit one tile
     frames := 10
 
@@ -1503,7 +1504,9 @@ func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, st
     game.MovingStack = nil
 
     stack.SetOffset(0, 0)
-    game.Camera.Center(stack.X(), stack.Y())
+    if center {
+        game.Camera.Center(stack.X(), stack.Y())
+    }
 }
 
 /* return the cost to move from the current position the stack is on to the new given coordinates.
@@ -2971,7 +2974,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
             if encounter != nil {
                 if game.confirmLairEncounter(yield, encounter) {
                     stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost, game.GetNormalizeCoordinateFunc())
-                    game.showMovement(yield, oldX, oldY, stack)
+                    game.showMovement(yield, oldX, oldY, stack, true)
                     player.LiftFog(stack.X(), stack.Y(), 1, stack.Plane())
 
                     stack.ExhaustMoves()
@@ -2990,7 +2993,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
             mergeStack = player.FindStack(mapUse.WrapX(step.X), step.Y, stack.Plane())
 
             stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost, game.GetNormalizeCoordinateFunc())
-            game.showMovement(yield, oldX, oldY, stack)
+            game.showMovement(yield, oldX, oldY, stack, true)
             // FIXME: lift more fog if the stack has Scouting and some other abilities
             player.LiftFog(stack.X(), stack.Y(), 1, stack.Plane())
 
@@ -3200,7 +3203,11 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
 
                             city := otherPlayer.FindCity(tileX, tileY, game.Plane)
                             if city != nil {
-                                game.doEnemyCityView(yield, city, otherPlayer)
+                                if player.Admin {
+                                    game.doCityScreen(yield, city, otherPlayer, buildinglib.BuildingNone)
+                                } else {
+                                    game.doEnemyCityView(yield, city, otherPlayer)
+                                }
                             } else {
                                 enemyStack := otherPlayer.FindStack(tileX, tileY, game.Plane)
                                 if enemyStack != nil {
@@ -3284,7 +3291,7 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
                     oldX := stack.X()
                     oldY := stack.Y()
                     stack.Move(to.X - stack.X(), to.Y - stack.Y(), terrainCost, game.GetNormalizeCoordinateFunc())
-                    game.showMovement(yield, oldX, oldY, stack)
+                    game.showMovement(yield, oldX, oldY, stack, false)
                     player.LiftFog(stack.X(), stack.Y(), 1, stack.Plane())
 
                     for _, enemy := range game.GetEnemies(player) {
