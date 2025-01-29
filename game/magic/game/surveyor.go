@@ -158,8 +158,10 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
                 }
             })
 
-            game.WhiteFont.PrintRight(screen, float64(276 * data.ScreenScale), float64(68 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v GP", game.Players[0].Gold))
-            game.WhiteFont.PrintRight(screen, float64(313 * data.ScreenScale), float64(68 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v MP", game.Players[0].Mana))
+            player := game.Players[0]
+
+            game.WhiteFont.PrintRight(screen, float64(276 * data.ScreenScale), float64(68 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v GP", player.Gold))
+            game.WhiteFont.PrintRight(screen, float64(313 * data.ScreenScale), float64(68 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v MP", player.Mana))
 
             surveyorFont.PrintCenter(screen, float64(280 * data.ScreenScale), float64(81 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, "Surveyor")
 
@@ -257,8 +259,22 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
                         }
                     }
 
-                    // FIXME: show lair/node/tower
-                    // FIXME: show "Unexplored" or toughest opponent for lairs/nodes
+                    // Lairs
+                    encounter := mapObject.GetEncounter(selectedPoint.X, selectedPoint.Y)
+                    if encounter != nil && encounter.Type != maplib.EncounterTypeChaosNode && encounter.Type != maplib.EncounterTypeNatureNode && encounter.Type != maplib.EncounterTypeSorceryNode {
+                        yellowFont.PrintCenter(screen, float64(280 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, encounter.Type.Name())
+                        y += float64(yellowFont.Height() * data.ScreenScale)
+                    }
+
+                    // Enemies
+                    if encounter != nil {
+                        text := "Unexplored"
+                        if encounter.ExploredBy.Contains(player) {
+                            text = encounter.Units[0].Name
+                        }
+                        whiteFont.PrintCenter(screen, float64(280 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, text)
+                        y += float64(whiteFont.Height() * data.ScreenScale)
+                    }
 
                     if cityMap[selectedPoint] != nil {
                         city := cityMap[selectedPoint]

@@ -8,6 +8,7 @@ import (
     "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/fraction"
+    "github.com/kazzmir/master-of-magic/lib/set"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
@@ -250,6 +251,7 @@ type ExtraEncounter struct {
     Type EncounterType
     Units []units.Unit
     Budget int // used for treasure
+    ExploredBy *set.Set[Wizard]
 }
 
 // choices is a map from a name to the chance of choosing that name, where all the int values should add up to 100
@@ -338,6 +340,7 @@ func makeEncounter(encounterType EncounterType, difficulty data.DifficultySettin
         Type: encounterType,
         Budget: budget,
         Units: append(guardians, secondary...),
+        ExploredBy: set.MakeSet[Wizard](),
     }
 }
 
