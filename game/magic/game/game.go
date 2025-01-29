@@ -3270,6 +3270,49 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
     return game.State
 }
 
+func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Player, move *playerlib.AIMoveStackDecision) {
+    stack := move.Stack
+    to := move.Location
+    log.Printf("  moving stack %v to %v, %v", stack, to.X, to.Y)
+    terrainCost, ok := game.ComputeTerrainCost(stack, stack.X(), stack.Y(), to.X, to.Y, game.GetMap(stack.Plane()))
+    if ok {
+        oldX := stack.X()
+        oldY := stack.Y()
+
+        mapUse := game.GetMap(stack.Plane())
+
+        encounter := mapUse.GetEncounter(mapUse.WrapX(to.X), to.Y)
+        if encounter != nil && move.ConfirmEncounter != nil {
+            if !move.ConfirmEncounter(encounter) {
+                move.Invalid()
+                return
+            }
+        }
+
+        stack.Move(to.X - stack.X(), to.Y - stack.Y(), terrainCost, game.GetNormalizeCoordinateFunc())
+        game.showMovement(yield, oldX, oldY, stack, false)
+        player.LiftFog(stack.X(), stack.Y(), 1, stack.Plane())
+
+        if encounter != nil {
+            game.doEncounter(yield, player, stack, encounter, mapUse, stack.X(), stack.Y())
+            return
+        }
+
+        for _, enemy := range game.GetEnemies(player) {
+            // FIXME: this should get all stacks at the given location and merge them into a single stack for combat
+            enemyStack := enemy.FindStack(stack.X(), stack.Y(), stack.Plane())
+            if enemyStack != nil {
+                zone := combat.ZoneType{
+                    City: enemy.FindCity(stack.X(), stack.Y(), stack.Plane()),
+                }
+                game.doCombat(yield, player, stack, enemy, enemyStack, zone)
+            }
+        }
+    } else if move.Invalid != nil {
+        move.Invalid()
+    }
+}
+
 func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player) {
     log.Printf("AI %v year %v: make decisions", player.Wizard.Name, game.TurnNumber)
 
@@ -3282,31 +3325,8 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
         for _, decision := range decisions {
             switch decision.(type) {
             case *playerlib.AIMoveStackDecision:
-                moveDecision := decision.(*playerlib.AIMoveStackDecision)
-                stack := moveDecision.Stack
-                to := moveDecision.Location
-                log.Printf("  moving stack %v to %v, %v", stack, to.X, to.Y)
-                terrainCost, ok := game.ComputeTerrainCost(stack, stack.X(), stack.Y(), to.X, to.Y, game.GetMap(stack.Plane()))
-                if ok {
-                    oldX := stack.X()
-                    oldY := stack.Y()
-                    stack.Move(to.X - stack.X(), to.Y - stack.Y(), terrainCost, game.GetNormalizeCoordinateFunc())
-                    game.showMovement(yield, oldX, oldY, stack, false)
-                    player.LiftFog(stack.X(), stack.Y(), 1, stack.Plane())
+                game.doAiMoveUnit(yield, player, decision.(*playerlib.AIMoveStackDecision))
 
-                    for _, enemy := range game.GetEnemies(player) {
-                        // FIXME: this should get all stacks at the given location and merge them into a single stack for combat
-                        enemyStack := enemy.FindStack(stack.X(), stack.Y(), stack.Plane())
-                        if enemyStack != nil {
-                            zone := combat.ZoneType{
-                                City: enemy.FindCity(stack.X(), stack.Y(), stack.Plane()),
-                            }
-                            game.doCombat(yield, player, stack, enemy, enemyStack, zone)
-                        }
-                    }
-                } else if moveDecision.Invalid != nil {
-                    moveDecision.Invalid()
-                }
             case *playerlib.AICreateUnitDecision:
                 create := decision.(*playerlib.AICreateUnitDecision)
                 log.Printf("ai %v creating %+v", player.Wizard.Name, create)

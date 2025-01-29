@@ -15,6 +15,7 @@ import (
     herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
+    "github.com/kazzmir/master-of-magic/game/magic/maplib"
     "github.com/kazzmir/master-of-magic/lib/fraction"
     "github.com/kazzmir/master-of-magic/lib/set"
 )
@@ -39,6 +40,7 @@ type AIMoveStackDecision struct {
     Stack *UnitStack
     Location image.Point
     Invalid func()
+    ConfirmEncounter func(*maplib.ExtraEncounter) bool
 }
 
 type AICreateUnitDecision struct {

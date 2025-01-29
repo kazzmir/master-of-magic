@@ -11,6 +11,7 @@ import (
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
+    "github.com/kazzmir/master-of-magic/game/magic/maplib"
     "github.com/kazzmir/master-of-magic/game/magic/units"
 )
 
@@ -120,6 +121,9 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, p
                     Location: nextMove,
                     Invalid: func(){
                         stack.CurrentPath = nil
+                    },
+                    ConfirmEncounter: func (encounter *maplib.ExtraEncounter) bool {
+                        return true
                     },
                 })
             }
