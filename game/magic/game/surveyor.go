@@ -281,7 +281,7 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
                         yellowFont.PrintWrapCenter(screen, float64(280 * data.ScreenScale), y, float64(cancelBackground.Bounds().Dx() - 5 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, city.String())
                     }
 
-                    y = float64(160 * data.ScreenScale) - cityInfoText.TotalHeight
+                    y = float64(170 * data.ScreenScale) - cityInfoText.TotalHeight
 
                     if resources.Enabled {
                         y = float64(170 * data.ScreenScale) - float64(whiteFont.Height() * data.ScreenScale) * 3 - cityInfoText.TotalHeight
