@@ -645,7 +645,7 @@ func (game *Game) NearCity(point image.Point, squares int) bool {
     return false
 }
 
-func (game *Game) FindValidCityLocation(plane data.Plane) (int, int) {
+func (game *Game) FindValidCityLocation(plane data.Plane) (int, int, bool) {
     mapUse := game.GetMap(plane)
     continents := mapUse.Map.FindContinents()
 
@@ -658,13 +658,13 @@ func (game *Game) FindValidCityLocation(plane data.Plane) (int, int) {
             y := continent[index].Y
 
             tile := terrain.GetTile(mapUse.Map.Terrain[x][y])
-            if y > 3 && y < mapUse.Map.Columns() - 3 && tile.IsLand() && !tile.IsMagic() && mapUse.GetEncounter(x, y) == nil {
-                return x, y
+            if y > 3 && y < mapUse.Map.Columns() - 3 && tile.IsLand() && !tile.IsMagic() && mapUse.GetEncounter(x, y) == nil && !game.ContainsCity(x, y, plane) {
+                return x, y, true
             }
         }
     }
 
-    return 0, 0
+    return 0, 0, false
 }
 
 func (game *Game) FindValidCityLocationOnContinent(plane data.Plane, x int, y int) (int, int) {

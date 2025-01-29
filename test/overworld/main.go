@@ -89,7 +89,7 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
 
     player := game.AddPlayer(wizard, true)
 
-    x, y := game.FindValidCityLocation(game.Plane)
+    x, y, _ := game.FindValidCityLocation(game.Plane)
 
     /*
     x = 20
@@ -234,7 +234,7 @@ func createScenario3(cache *lbx.LbxCache) *gamelib.Game {
 
     player := game.AddPlayer(wizard, true)
 
-    x, y := game.FindValidCityLocation(game.Plane)
+    x, y, _ := game.FindValidCityLocation(game.Plane)
 
     introCity := citylib.MakeCity("Test City", x, y, player.Wizard.Race, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.CurrentMap(), game)
     introCity.Population = 9000
@@ -306,7 +306,7 @@ func createScenario4(cache *lbx.LbxCache) *gamelib.Game {
 
     player := game.AddPlayer(wizard, true)
 
-    x, y := game.FindValidCityLocation(game.Plane)
+    x, y, _ := game.FindValidCityLocation(game.Plane)
 
     introCity := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.CurrentMap(), game)
     introCity.Population = 10000
@@ -382,7 +382,7 @@ func createScenario5(cache *lbx.LbxCache) *gamelib.Game {
 
     player := game.AddPlayer(wizard, true)
 
-    x, y := game.FindValidCityLocation(game.Plane)
+    x, y, _ := game.FindValidCityLocation(game.Plane)
 
     introCity := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.CurrentMap(), game)
     introCity.Population = 6000
@@ -445,7 +445,7 @@ func createScenario6(cache *lbx.LbxCache) *gamelib.Game {
 
     player := game.AddPlayer(wizard, true)
 
-    x, y := game.FindValidCityLocation(game.Plane)
+    x, y, _ := game.FindValidCityLocation(game.Plane)
 
     introCity := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.CurrentMap(), game)
     introCity.Population = 14000
@@ -482,7 +482,7 @@ func createScenario6(cache *lbx.LbxCache) *gamelib.Game {
         player.AddUnit(units.MakeOverworldUnitFromUnit(units.FireElemental, x + 6 + i, y + 1, data.PlaneArcanus, wizard.Banner, nil))
     }
 
-    x, y = game.FindValidCityLocation(game.Plane)
+    x, y, _ = game.FindValidCityLocation(game.Plane)
 
     city2 := citylib.MakeCity("utah", x, y, data.RaceDarkElf, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.CurrentMap(), game)
     city2.Population = 7000
@@ -531,7 +531,7 @@ func createScenario7(cache *lbx.LbxCache) *gamelib.Game {
     player := game.AddPlayer(wizard, true)
 
     for i := 0; i < 15; i++ {
-        x, y := game.FindValidCityLocation(game.Plane)
+        x, y, _ := game.FindValidCityLocation(game.Plane)
         player.LiftFog(x, y, 3, data.PlaneArcanus)
 
         introCity := citylib.MakeCity(fmt.Sprintf("city%v", i), x, y, data.RaceHighElf, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.CurrentMap(), game)
@@ -549,7 +549,7 @@ func createScenario7(cache *lbx.LbxCache) *gamelib.Game {
     }
 
     for i := 0; i < 4; i++ {
-        x, y := game.FindValidCityLocation(data.PlaneMyrror)
+        x, y, _ := game.FindValidCityLocation(data.PlaneMyrror)
         player.LiftFog(x, y, 3, data.PlaneMyrror)
 
         introCity := citylib.MakeCity(fmt.Sprintf("city%v myr", i), x, y, data.RaceHighElf, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.GetMap(data.PlaneMyrror), game)
@@ -606,7 +606,7 @@ func createScenario8(cache *lbx.LbxCache) *gamelib.Game {
 
     player := game.AddPlayer(wizard, true)
 
-    x, y := game.FindValidCityLocation(game.Plane)
+    x, y, _ := game.FindValidCityLocation(game.Plane)
 
     city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.CurrentMap(), game)
     city.Population = 6190
@@ -686,7 +686,7 @@ func createScenario9(cache *lbx.LbxCache) *gamelib.Game {
 
     player := game.AddPlayer(wizard, true)
 
-    x, y := game.FindValidCityLocation(game.Plane)
+    x, y, _ := game.FindValidCityLocation(game.Plane)
 
     city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.CurrentMap(), game)
     city.Population = 6190
@@ -762,7 +762,7 @@ func createScenario10(cache *lbx.LbxCache) *gamelib.Game {
 
     player := game.AddPlayer(wizard, true)
 
-    x, y := game.FindValidCityLocation(game.Plane)
+    x, y, _ := game.FindValidCityLocation(game.Plane)
 
     city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.CurrentMap(), game)
     city.Population = 6190
@@ -838,7 +838,7 @@ func createScenario11(cache *lbx.LbxCache) *gamelib.Game {
 
     player := game.AddPlayer(wizard, true)
 
-    x, y := game.FindValidCityLocation(game.Plane)
+    x, y, _ := game.FindValidCityLocation(game.Plane)
 
     city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.CurrentMap(), game)
     city.Population = 6190
@@ -908,7 +908,7 @@ func createScenario12(cache *lbx.LbxCache) *gamelib.Game {
 
     player := game.AddPlayer(wizard, true)
 
-    x, y := game.FindValidCityLocation(game.Plane)
+    x, y, _ := game.FindValidCityLocation(game.Plane)
 
     city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.CurrentMap(), game)
     city.Population = 6190
@@ -999,7 +999,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     player.KnownSpells.AddSpell(allSpells.FindByName("Corruption"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Warp Node"))
 
-    x, y := game.FindValidCityLocation(game.Plane)
+    x, y, _ := game.FindValidCityLocation(game.Plane)
 
     city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.CurrentMap(), game)
     city.Population = 6190
@@ -1103,7 +1103,7 @@ func createScenario14(cache *lbx.LbxCache) *gamelib.Game {
     // player.ResearchingSpell = allSpells.FindByName("Earth Lore")
     // player.ResearchProgress = 10
 
-    x, y := game.FindValidCityLocation(game.Plane)
+    x, y, _ := game.FindValidCityLocation(game.Plane)
 
     city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.CurrentMap(), game)
     city.Population = 6190
@@ -1165,7 +1165,7 @@ func createScenario15(cache *lbx.LbxCache) *gamelib.Game {
 
     player := game.AddPlayer(wizard, true)
 
-    x, y := game.FindValidCityLocation(game.Plane)
+    x, y, _ := game.FindValidCityLocation(game.Plane)
 
     city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.CurrentMap(), game)
     city.Population = 20190
@@ -1250,7 +1250,7 @@ func createScenario16(cache *lbx.LbxCache) *gamelib.Game {
 
     player.Fame = 40
 
-    x, y := game.FindValidCityLocation(game.Plane)
+    x, y, _ := game.FindValidCityLocation(game.Plane)
 
     city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, fraction.Zero(), game.BuildingInfo, game.CurrentMap(), game)
     city.Population = 10190
@@ -1338,7 +1338,7 @@ func createScenario17(cache *lbx.LbxCache) *gamelib.Game {
     player.KnownSpells.AddSpell(allSpells.FindByName("Magic Spirit"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Dark Rituals"))
 
-    x, y := game.FindValidCityLocation(game.Plane)
+    x, y, _ := game.FindValidCityLocation(game.Plane)
 
     city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.CurrentMap(), game)
     city.Population = 6190
@@ -1490,7 +1490,7 @@ func createScenario18(cache *lbx.LbxCache) *gamelib.Game {
 
     player.Fame = 12
 
-    x, y := game.FindValidCityLocation(game.Plane)
+    x, y, _ := game.FindValidCityLocation(game.Plane)
 
     city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.CurrentMap(), game)
     city.Population = 8190
@@ -1577,7 +1577,7 @@ func createScenario19(cache *lbx.LbxCache) *gamelib.Game {
 
     player := game.AddPlayer(wizard, true)
 
-    x, y := game.FindValidCityLocation(game.Plane)
+    x, y, _ := game.FindValidCityLocation(game.Plane)
 
     city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.CurrentMap(), game)
     city.Population = 6190
@@ -1652,7 +1652,7 @@ func createScenario20(cache *lbx.LbxCache) *gamelib.Game {
 
     player.Fame = 5
 
-    x, y := game.FindValidCityLocation(game.Plane)
+    x, y, _ := game.FindValidCityLocation(game.Plane)
 
     city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, fraction.Zero(), game.BuildingInfo, game.CurrentMap(), game)
     city.Population = 10190
@@ -1767,7 +1767,7 @@ func createScenario21(cache *lbx.LbxCache) *gamelib.Game {
 
     player.Fame = 5
 
-    x, y := game.FindValidCityLocation(game.Plane)
+    x, y, _ := game.FindValidCityLocation(game.Plane)
 
     city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, fraction.Zero(), game.BuildingInfo, game.CurrentMap(), game)
     city.Population = 10190
@@ -1881,7 +1881,7 @@ func createScenario22(cache *lbx.LbxCache) *gamelib.Game {
 
     player := game.AddPlayer(wizard, true)
 
-    x, y := game.FindValidCityLocation(game.Plane)
+    x, y, _ := game.FindValidCityLocation(game.Plane)
 
     // game.Map.CreateEncounter(x, y+1, maplib.EncounterTypeLair, game.Settings.Difficulty, false, game.Plane)
     game.CurrentMap().CreateEncounterRandom(x, y+1, game.Settings.Difficulty, game.Plane)
@@ -1957,7 +1957,7 @@ func createScenario23(cache *lbx.LbxCache) *gamelib.Game {
 
     player.Fame = 5
 
-    x, y := game.FindValidCityLocation(game.Plane)
+    x, y, _ := game.FindValidCityLocation(game.Plane)
 
     city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, fraction.Zero(), game.BuildingInfo, game.CurrentMap(), game)
     city.Population = 10190
@@ -2104,7 +2104,7 @@ func createScenario24(cache *lbx.LbxCache) *gamelib.Game {
 
     player := game.AddPlayer(wizard, true)
 
-    x, y := game.FindValidCityLocation(game.Plane)
+    x, y, _ := game.FindValidCityLocation(game.Plane)
 
     city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.CurrentMap(), game)
     city.Population = 6190
@@ -2174,7 +2174,7 @@ func createScenario25(cache *lbx.LbxCache) *gamelib.Game {
     game := gamelib.MakeGame(cache, setup.NewGameSettings{})
     game.Plane = data.PlaneArcanus
 
-    x, y := game.FindValidCityLocation(game.Plane)
+    x, y, _ := game.FindValidCityLocation(game.Plane)
     game.Camera.Center(x, y)
 
     player := game.AddPlayer(wizard, true)
@@ -2241,7 +2241,7 @@ func createScenario26(cache *lbx.LbxCache) *gamelib.Game {
     game := gamelib.MakeGame(cache, setup.NewGameSettings{})
     game.Plane = data.PlaneArcanus
 
-    x, y := game.FindValidCityLocation(game.Plane)
+    x, y, _ := game.FindValidCityLocation(game.Plane)
     game.Camera.Center(x, y)
 
     player := game.AddPlayer(wizard, true)
@@ -2313,7 +2313,7 @@ func createScenario27(cache *lbx.LbxCache) *gamelib.Game {
 
     player := game.AddPlayer(wizard, true)
 
-    x, y := game.FindValidCityLocation(game.Plane)
+    x, y, _ := game.FindValidCityLocation(game.Plane)
 
     /*
     x = 20
@@ -2413,7 +2413,7 @@ func createScenario28(cache *lbx.LbxCache) *gamelib.Game {
 
     player := game.AddPlayer(wizard, true)
 
-    x, y := game.FindValidCityLocation(game.Plane)
+    x, y, _ := game.FindValidCityLocation(game.Plane)
 
     city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.CurrentMap(), game)
     city.Population = 10190
@@ -2484,7 +2484,7 @@ func createScenario29(cache *lbx.LbxCache) *gamelib.Game {
 
     player := game.AddPlayer(wizard, true)
 
-    x, y := game.FindValidCityLocation(game.Plane)
+    x, y, _ := game.FindValidCityLocation(game.Plane)
 
     city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.CurrentMap(), game)
     city.Population = 12190
@@ -2555,7 +2555,7 @@ func createScenario30(cache *lbx.LbxCache) *gamelib.Game {
 
     player := game.AddPlayer(wizard, true)
 
-    x, y := game.FindValidCityLocation(game.Plane)
+    x, y, _ := game.FindValidCityLocation(game.Plane)
 
     city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.CurrentMap(), game)
     city.Population = 12190
@@ -2638,7 +2638,7 @@ func createScenario31(cache *lbx.LbxCache) *gamelib.Game {
     player := game.AddPlayer(wizard, true)
     player.StrategicCombat = true
 
-    x, y := game.FindValidCityLocation(game.Plane)
+    x, y, _ := game.FindValidCityLocation(game.Plane)
 
     /*
     x = 20
@@ -2738,7 +2738,7 @@ func createScenario32(cache *lbx.LbxCache) *gamelib.Game {
 
     player := game.AddPlayer(wizard, true)
 
-    x, y := game.FindValidCityLocation(game.Plane)
+    x, y, _ := game.FindValidCityLocation(game.Plane)
 
     /*
     x = 20
@@ -2843,7 +2843,7 @@ func createScenario33(cache *lbx.LbxCache) *gamelib.Game {
 
     player := game.AddPlayer(wizard, true)
 
-    x, y := game.FindValidCityLocation(game.Plane)
+    x, y, _ := game.FindValidCityLocation(game.Plane)
 
     city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, fraction.Zero(), game.BuildingInfo, game.CurrentMap(), game)
     city.Population = 16190
@@ -2910,7 +2910,7 @@ func createScenario34(cache *lbx.LbxCache) *gamelib.Game {
 
     player1 := game.AddPlayer(wizard1, true)
 
-    x, y := game.FindValidCityLocation(game.Plane)
+    x, y, _ := game.FindValidCityLocation(game.Plane)
 
     city := citylib.MakeCity("", x, y, data.RaceBarbarian, player1.Wizard.Banner, player1.TaxRate, game.BuildingInfo, game.CurrentMap(), game)
     city.Population = 6190
@@ -2989,7 +2989,7 @@ func createScenario35(cache *lbx.LbxCache) *gamelib.Game {
 
     player1 := game.AddPlayer(wizard1, true)
 
-    x, y := game.FindValidCityLocation(game.Plane)
+    x, y, _ := game.FindValidCityLocation(game.Plane)
 
     city := citylib.MakeCity("", x, y, data.RaceBarbarian, player1.Wizard.Banner, player1.TaxRate, game.BuildingInfo, game.CurrentMap(), game)
     city.Population = 6190
@@ -3055,7 +3055,7 @@ func createScenario36(cache *lbx.LbxCache) *gamelib.Game {
 
     enemy1.AIBehavior = ai.MakeEnemyAI()
 
-    x, y := game.FindValidCityLocation(game.Plane)
+    x, y, _ := game.FindValidCityLocation(game.Plane)
 
     city := citylib.MakeCity("ai1", x, y, data.RaceBarbarian, enemy1.Wizard.Banner, enemy1.TaxRate, game.BuildingInfo, game.CurrentMap(), game)
     city.Population = 6190

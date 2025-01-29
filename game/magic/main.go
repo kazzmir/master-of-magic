@@ -5,6 +5,9 @@ import (
     "fmt"
     "flag"
     "errors"
+    "math"
+    "slices"
+    "cmp"
     // "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -146,6 +149,13 @@ func startingUnits(race data.Race) []units.Unit {
     }
 }
 
+func euclideanDistance(x1, y1, x2, y2 int) float64 {
+    dx := float64(x1 - x2)
+    dy := float64(y1 - y2)
+
+    return math.Sqrt(dx*dx + dy*dy)
+}
+
 func initializePlayer(game *gamelib.Game, wizard setup.WizardCustom, isHuman bool) {
     startingPlane := data.PlaneArcanus
     if wizard.AbilityEnabled(setup.AbilityMyrran) {
@@ -154,7 +164,59 @@ func initializePlayer(game *gamelib.Game, wizard setup.WizardCustom, isHuman boo
 
     player := game.AddPlayer(wizard, isHuman)
 
-    cityX, cityY := game.FindValidCityLocation(startingPlane)
+    allCities := game.AllCities()
+
+    closestDistance := func(x, y int) int {
+        distance := -1
+
+        for _, city := range allCities {
+            d := int(euclideanDistance(x, y, city.X, city.Y))
+            if distance == -1 || d < distance {
+                distance = d
+            }
+        }
+
+        if distance == -1 {
+            return 0
+        } else {
+            return distance
+        }
+    }
+
+    type CityLocation struct {
+        X, Y int
+        // distance to closest city
+        Distance int
+    }
+
+    var cityX int
+    var cityY int
+    var locations []CityLocation
+    for range 10 {
+        x, y, ok := game.FindValidCityLocation(startingPlane)
+        if ok {
+            locations = append(locations, CityLocation{X: x, Y: y, Distance: closestDistance(x, y)})
+        }
+    }
+
+    slices.SortFunc(locations, func(pointA, pointB CityLocation) int {
+        return cmp.Compare(pointA.Distance, pointB.Distance)
+    })
+
+    if len(locations) > 0 {
+        // choose furthest point
+        cityX = locations[len(locations) - 1].X
+        cityY = locations[len(locations) - 1].Y
+    } else {
+        // couldn't find a good spot, just pick anything
+        for range 100 {
+            var ok bool
+            cityX, cityY, ok = game.FindValidCityLocation(startingPlane)
+            if ok {
+                break
+            }
+        }
+    }
 
     cityName := game.SuggestCityName(player.Wizard.Race)
 

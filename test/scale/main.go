@@ -68,7 +68,7 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
 
     player := game.AddPlayer(wizard, true)
 
-    x, y := game.FindValidCityLocation(game.Plane)
+    x, y, _ := game.FindValidCityLocation(game.Plane)
 
     /*
     x = 20
