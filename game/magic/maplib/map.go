@@ -178,13 +178,48 @@ const (
     EncounterTypeRuins
     EncounterTypeAbandonedKeep
     EncounterTypeDungeon
-
-    // somewhat of a hack, but its useful to have a single type that can represent all the
-    // different types of nodes and encounters
     EncounterTypeChaosNode
     EncounterTypeNatureNode
     EncounterTypeSorceryNode
 )
+
+func (encounterType EncounterType) Name() string {
+    switch encounterType {
+        case EncounterTypeLair: return "Monster Lair"
+        case EncounterTypeCave: return "Mysterious Cave"
+        case EncounterTypePlaneTower: return "Tower"
+        case EncounterTypePlaneTowerOpen: return "Tower"
+        case EncounterTypeAncientTemple: return "Ancient Temple"
+        case EncounterTypeFallenTemple: return "Fallen Temple"
+        case EncounterTypeRuins: return "Ruins"
+        case EncounterTypeAbandonedKeep: return "Abandoned Keep"
+        case EncounterTypeDungeon: return "Dungeon"
+        case EncounterTypeChaosNode: return "Chaos Node"
+        case EncounterTypeNatureNode: return "Nature Node"
+        case EncounterTypeSorceryNode: return "Sorcery Node"
+    }
+
+    return ""
+}
+
+func (encounterType EncounterType) ShortName() string {
+    switch encounterType {
+        case EncounterTypeLair: return "Lair"
+        case EncounterTypeCave: return "Cave"
+        case EncounterTypePlaneTower: return "Tower"
+        case EncounterTypePlaneTowerOpen: return "Tower"
+        case EncounterTypeAncientTemple: return "Temple"
+        case EncounterTypeFallenTemple: return "Temple"
+        case EncounterTypeRuins: return "Ruins"
+        case EncounterTypeAbandonedKeep: return "Keep"
+        case EncounterTypeDungeon: return "Dungeon"
+        case EncounterTypeChaosNode: return "Node"
+        case EncounterTypeNatureNode: return "Node"
+        case EncounterTypeSorceryNode: return "Node"
+    }
+
+    return ""
+}
 
 func randomEncounterType() EncounterType {
     all := []EncounterType{
@@ -201,12 +236,11 @@ func randomEncounterType() EncounterType {
     return all[rand.N(len(all))]
 }
 
-// lair, plane tower, etc
+// lair, plane tower, etc and also the initial enemies on nodes
 type ExtraEncounter struct {
     Type EncounterType
     Units []units.Unit
     Budget int // used for treasure
-    Empty bool
 }
 
 // choices is a map from a name to the chance of choosing that name, where all the int values should add up to 100
@@ -328,10 +362,7 @@ func (extra *ExtraEncounter) DrawLayer2(screen *ebiten.Image, imageCache *util.I
 
 type ExtraMagicNode struct {
     Kind MagicNode
-    Empty bool
-    Budget int
-    Guardians []units.Unit
-    Secondary []units.Unit
+
     // list of points that are affected by the node
     Zone []image.Point
 
@@ -340,7 +371,6 @@ type ExtraMagicNode struct {
     // true if melded by a guardian spirit, otherwise false if melded by a magic spirit
     GuardianSpiritMeld bool
 
-    // also contains treasure
     Warped bool
 }
 
@@ -350,7 +380,7 @@ func (node *ExtraMagicNode) DrawLayer1(screen *ebiten.Image, imageCache *util.Im
 func (node *ExtraMagicNode) DrawLayer2(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64, tileWidth int, tileHeight int){
     // if the node is melded then show the zone of influence with the sparkly images
 
-    if node.Empty && node.MeldingWizard != nil {
+    if node.MeldingWizard != nil {
         index := 63
         switch node.MeldingWizard.GetBanner() {
             case data.BannerBlue: index = 63
@@ -676,11 +706,11 @@ func MakeMap(terrainData *terrain.TerrainData, landSize int, magicSetting data.M
             tile := terrainData.Tiles[map_.Terrain[x][y]].Tile
             switch tile.TerrainType() {
                 case terrain.SorceryNode:
-                    extraMap[point][ExtraKindMagicNode] = MakeMagicNode(MagicNodeSorcery, magicSetting, difficulty, plane)
+                    extraMap[point][ExtraKindMagicNode], extraMap[point][ExtraKindEncounter] = MakeMagicNode(MagicNodeSorcery, magicSetting, difficulty, plane)
                 case terrain.NatureNode:
-                    extraMap[point][ExtraKindMagicNode] = MakeMagicNode(MagicNodeNature, magicSetting, difficulty, plane)
+                    extraMap[point][ExtraKindMagicNode], extraMap[point][ExtraKindEncounter] = MakeMagicNode(MagicNodeNature, magicSetting, difficulty, plane)
                 case terrain.ChaosNode:
-                    extraMap[point][ExtraKindMagicNode] = MakeMagicNode(MagicNodeChaos, magicSetting, difficulty, plane)
+                    extraMap[point][ExtraKindMagicNode], extraMap[point][ExtraKindEncounter] = MakeMagicNode(MagicNodeChaos, magicSetting, difficulty, plane)
             }
         }
     }
@@ -982,8 +1012,20 @@ func (mapObject *Map) RemoveRoad(x int, y int) {
     delete(mapObject.ExtraMap[image.Pt(x, y)], ExtraKindRoad)
 }
 
-func (mapObject *Map) GetLair(x int, y int) *ExtraEncounter {
+func (mapObject *Map) GetEncounter(x int, y int) *ExtraEncounter {
     return getExtra[*ExtraEncounter](mapObject.ExtraMap[image.Pt(x, y)], ExtraKindEncounter)
+}
+
+func (mapObject *Map) RemoveEncounter(x int, y int) {
+    _, exists := mapObject.ExtraMap[image.Pt(x, y)]
+    if !exists {
+        return
+    }
+
+    _, exists = mapObject.ExtraMap[image.Pt(x, y)][ExtraKindEncounter]
+    if exists {
+        delete(mapObject.ExtraMap[image.Pt(x, y)], ExtraKindEncounter)
+    }
 }
 
 func (mapObject *Map) GetMagicNode(x int, y int) *ExtraMagicNode {
@@ -1023,7 +1065,7 @@ func (mapObject *Map) GetBonusTile(x int, y int) data.BonusType {
 }
 
 func (mapObject *Map) CreateEncounter(x int, y int, encounterType EncounterType, difficulty data.DifficultySetting, weakStrength bool, plane data.Plane) bool {
-    if mapObject.GetLair(x, y) != nil {
+    if mapObject.GetEncounter(x, y) != nil {
         return false
     }
 
@@ -1046,7 +1088,7 @@ func (mapObject *Map) CreateNode(x int, y int, node MagicNode, plane data.Plane,
 
     mapObject.Map.Terrain[x][y] = tileType
 
-    out := MakeMagicNode(node, magicSetting, difficulty, plane)
+    out, _ := MakeMagicNode(node, magicSetting, difficulty, plane)
 
     mapObject.ExtraMap[image.Pt(x, y)][ExtraKindMagicNode] = out
 

@@ -453,7 +453,7 @@ func MakeLairConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *uti
 
     confirmFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowFade)
 
-    maxWidth := confirmTop.Bounds().Dx() - confirmMargin - 5
+    maxWidth := confirmTop.Bounds().Dx() - confirmMargin - 5 * data.ScreenScale
 
     wrapped := confirmFont.CreateWrappedText(float64(maxWidth), float64(data.ScreenScale), message)
 
@@ -558,6 +558,90 @@ func MakeLairConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *uti
             },
         })
     }
+
+    return elements
+}
+
+func MakeLairShowDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, lairPicture *util.Animation, layer UILayer, message string, dismiss func()) []*UIElement {
+    confirmX := 67 * data.ScreenScale
+    confirmY := 40 * data.ScreenScale
+
+    confirmMargin := 55 * data.ScreenScale
+    confirmTopMargin := 10 * data.ScreenScale
+
+    const fadeSpeed = 7
+
+    getAlpha := ui.MakeFadeIn(fadeSpeed)
+
+    confirmTop, err := imageCache.GetImage("backgrnd.lbx", 25, 0)
+    if err != nil {
+        return nil
+    }
+
+    confirmBottom, err := imageCache.GetImage("backgrnd.lbx", 27, 0)
+    if err != nil {
+        return nil
+    }
+
+    // FIXME: this should be a fade from bright yellow to dark yellow/orange
+    yellowFade := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0xb2, G: 0x8c, B: 0x05, A: 0xff},
+        color.RGBA{R: 0xc9, G: 0xa1, B: 0x26, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xd3, B: 0x5b, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xe8, B: 0x6f, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+    }
+
+    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        return nil
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        return nil
+    }
+
+    confirmFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowFade)
+
+    maxWidth := confirmTop.Bounds().Dx() - confirmMargin - 5 * data.ScreenScale
+
+    wrapped := confirmFont.CreateWrappedText(float64(maxWidth), float64(data.ScreenScale), message)
+
+    bottom := float64(confirmY + confirmTopMargin) + max(wrapped.TotalHeight, float64(lairPicture.Frame().Bounds().Dy()))
+
+    topDraw := confirmTop.SubImage(image.Rect(0, 0, confirmTop.Bounds().Dx(), int(bottom) - confirmY)).(*ebiten.Image)
+
+    var elements []*UIElement
+
+    elements = append(elements, &UIElement{
+        Rect: image.Rect(0, 0, data.ScreenWidth, data.ScreenHeight),
+        Layer: layer,
+        LeftClick: func(this *UIElement){
+            getAlpha = ui.MakeFadeOut(fadeSpeed)
+            ui.AddDelay(fadeSpeed, func(){
+                dismiss()
+            })
+        },
+        Draw: func(this *UIElement, window *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(confirmX), float64(confirmY))
+            options.ColorScale.ScaleAlpha(getAlpha())
+            window.DrawImage(topDraw, &options)
+
+            options.GeoM.Translate(float64(7 * data.ScreenScale), float64(7 * data.ScreenScale))
+            window.DrawImage(lairPicture.Frame(), &options)
+
+            confirmFont.RenderWrapped(window, float64(confirmX + confirmMargin + maxWidth / 2), float64(confirmY + confirmTopMargin), wrapped, options.ColorScale, true)
+
+            options.GeoM.Reset()
+            options.GeoM.Translate(float64(confirmX), float64(bottom))
+            window.DrawImage(confirmBottom, &options)
+        },
+    })
 
     return elements
 }
