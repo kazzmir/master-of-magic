@@ -7,6 +7,7 @@ import (
 
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/lib/set"
 )
 
 /* choose X points surrounding the node. 0,0 is the node itself. for arcanus, choose 5-10 points from a 4x4 square.
@@ -420,6 +421,7 @@ func MakeMagicNode(kind MagicNode, magicSetting data.MagicSetting, difficulty da
         Type: encouterType,
         Units: append(guardians, secondary...),
         Budget: budget,
+        ExploredBy: set.MakeSet[Wizard](),
     }
 
     return &magicNode, &encounter
