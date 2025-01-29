@@ -389,19 +389,26 @@ func MakeMagicNode(kind MagicNode, magicSetting data.MagicSetting, difficulty da
 
     var encouterType EncounterType
 
-    switch kind {
-        case MagicNodeNature:
-            guardians, secondary = computeNatureNodeEnemies(budget)
-            encouterType = EncounterTypeNatureNode
-            // log.Printf("Created nature node guardians: %v secondary: %v", guardians, secondary)
-        case MagicNodeSorcery:
-            guardians, secondary = computeSorceryNodeEnemies(budget)
-            encouterType = EncounterTypeSorceryNode
-            // log.Printf("Created sorcery node guardians: %v secondary: %v", guardians, secondary)
-        case MagicNodeChaos:
-            guardians, secondary = computeChaosNodeEnemies(budget)
-            encouterType = EncounterTypeChaosNode
-            // log.Printf("Created chaos node guardians: %v secondary: %v", guardians, secondary)
+    for len(guardians) == 0 {
+        switch kind {
+            case MagicNodeNature:
+                guardians, secondary = computeNatureNodeEnemies(budget)
+                encouterType = EncounterTypeNatureNode
+                // log.Printf("Created nature node guardians: %v secondary: %v", guardians, secondary)
+            case MagicNodeSorcery:
+                guardians, secondary = computeSorceryNodeEnemies(budget)
+                encouterType = EncounterTypeSorceryNode
+                // log.Printf("Created sorcery node guardians: %v secondary: %v", guardians, secondary)
+            case MagicNodeChaos:
+                guardians, secondary = computeChaosNodeEnemies(budget)
+                encouterType = EncounterTypeChaosNode
+                // log.Printf("Created chaos node guardians: %v secondary: %v", guardians, secondary)
+        }
+
+        // failed, so increase the budget
+        if len(guardians) == 0 {
+            budget += 50
+        }
     }
 
     magicNode := ExtraMagicNode{
