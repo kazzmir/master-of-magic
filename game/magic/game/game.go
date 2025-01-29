@@ -2623,7 +2623,13 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         game.doCastSpell(yield, castSpell.Player, castSpell.Spell)
                     case *GameEventTreasure:
                         treasure := event.(*GameEventTreasure)
-                        game.doTreasure(yield, treasure.Player, treasure.Treasure)
+                        if treasure.Player.IsHuman() {
+                            game.doTreasurePopup(yield, treasure.Player, treasure.Treasure)
+                        }
+
+                        game.ApplyTreasure(yield, treasure.Player, treasure.Treasure)
+                        yield()
+
                     case *GameEventNewBuilding:
                         buildingEvent := event.(*GameEventNewBuilding)
                         game.Camera.Center(buildingEvent.City.X, buildingEvent.City.Y)
@@ -3641,7 +3647,7 @@ func (game *Game) createTreasure(encounterType maplib.EncounterType, budget int,
     }
 }
 
-func (game *Game) doTreasure(yield coroutine.YieldFunc, player *playerlib.Player, treasure Treasure){
+func (game *Game) doTreasurePopup(yield coroutine.YieldFunc, player *playerlib.Player, treasure Treasure){
     uiDone := false
 
     fontLbx, err := game.Cache.GetLbxFile("FONTS.LBX")
@@ -3722,7 +3728,9 @@ func (game *Game) doTreasure(yield coroutine.YieldFunc, player *playerlib.Player
     yield()
 
     game.HudUI.RemoveElement(element)
+}
 
+func (game *Game) ApplyTreasure(yield coroutine.YieldFunc, player *playerlib.Player, treasure Treasure) {
     for _, item := range treasure.Treasures {
         switch item.(type) {
             case *TreasureGold:
@@ -3733,15 +3741,25 @@ func (game *Game) doTreasure(yield coroutine.YieldFunc, player *playerlib.Player
                 player.Mana += mana.Amount
             case *TreasureMagicalItem:
                 magicalItem := item.(*TreasureMagicalItem)
-                game.doVault(yield, magicalItem.Artifact)
+                if player.IsHuman() {
+                    game.doVault(yield, magicalItem.Artifact)
+                } else {
+                    // FIXME: ai should get the vault item
+                }
                 // if the treasure was one of the premade artifacts, then remove it from the pool
                 delete(game.ArtifactPool, magicalItem.Artifact.Name)
             case *TreasurePrisonerHero:
                 hero := item.(*TreasurePrisonerHero)
-                game.doHireHero(yield, 0, hero.Hero, player)
+                if player.IsHuman() {
+                    game.doHireHero(yield, 0, hero.Hero, player)
+                } else {
+                    // FIXME: ai should get a chance to hire the hero
+                }
             case *TreasureSpell:
                 spell := item.(*TreasureSpell)
-                game.doLearnSpell(yield, player, spell.Spell)
+                if player.IsHuman() {
+                    game.doLearnSpell(yield, player, spell.Spell)
+                }
                 player.LearnSpell(spell.Spell)
             case *TreasureSpellbook:
                 spellbook := item.(*TreasureSpellbook)
@@ -3752,10 +3770,7 @@ func (game *Game) doTreasure(yield coroutine.YieldFunc, player *playerlib.Player
                 player.Wizard.EnableAbility(retort.Retort)
         }
     }
-
-    yield()
 }
-
 
 func (game *Game) GetCombatLandscape(x int, y int, plane data.Plane) combat.CombatLandscape {
     tile := game.GetMap(plane).GetTile(x, y)

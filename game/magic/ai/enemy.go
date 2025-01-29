@@ -104,6 +104,8 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, p
         // don't move if this would leave a city undefended, otherwise try to split the stack and move part of it
         if stack.HasMoves() {
             // FIXME: enter cities, lairs, nodes for combat
+            // also, sometimes choose a preferred location to move to, such as a square for building a new city
+            // or attacking a player's units
             if len(stack.CurrentPath) == 0 {
                 if rand.N(4) == 0 {
                     // try upto 3 times to find a path
