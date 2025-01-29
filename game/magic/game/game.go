@@ -3451,6 +3451,7 @@ func (game *Game) confirmLairEncounter(yield coroutine.YieldFunc, encounter *map
             lairIndex = 9
         case maplib.EncounterTypeAncientTemple:
             lairIndex = 15
+            article = "an"
         case maplib.EncounterTypeFallenTemple:
             lairIndex = 19
         case maplib.EncounterTypeRuins:

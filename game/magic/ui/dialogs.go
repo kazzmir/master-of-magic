@@ -453,7 +453,7 @@ func MakeLairConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *uti
 
     confirmFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowFade)
 
-    maxWidth := confirmTop.Bounds().Dx() - confirmMargin - 5
+    maxWidth := confirmTop.Bounds().Dx() - confirmMargin - 5 * data.ScreenScale
 
     wrapped := confirmFont.CreateWrappedText(float64(maxWidth), float64(data.ScreenScale), message)
 
@@ -607,7 +607,7 @@ func MakeLairShowDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.I
 
     confirmFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowFade)
 
-    maxWidth := confirmTop.Bounds().Dx() - confirmMargin - 5
+    maxWidth := confirmTop.Bounds().Dx() - confirmMargin - 5 * data.ScreenScale
 
     wrapped := confirmFont.CreateWrappedText(float64(maxWidth), float64(data.ScreenScale), message)
 
