@@ -3013,6 +3013,9 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
 
                     game.doCombat(yield, player, stack, otherPlayer, otherStack, zone)
 
+                    // FIXME: if there was a city here and the attacker won then the attacker
+                    // should be able to raze or occupy the city
+
                     stack.ExhaustMoves()
                     game.RefreshUI()
 
@@ -3020,6 +3023,8 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
                     break quitMoving
                 }
             }
+
+            // FIXME: if there is an unguarded city at the destination then defeat it immediately
 
             // some units in the stack might not have any moves left
             beforeActive := len(stack.ActiveUnits())
