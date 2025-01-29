@@ -2949,6 +2949,8 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
                     game.doEncounter(yield, player, stack, encounter, mapUse, stack.X(), stack.Y())
 
                     game.RefreshUI()
+                } else {
+                    encounter.ExploredBy.Insert(player)
                 }
 
                 stopMoving = true
@@ -3539,6 +3541,7 @@ func (game *Game) doEncounter(yield coroutine.YieldFunc, player *playerlib.Playe
 
         game.createTreasure(encounter.Type, encounter.Budget, player)
     } else {
+        encounter.ExploredBy.Insert(player)
         // FIXME: remove killed defenders
     }
 

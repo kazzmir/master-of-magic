@@ -15,6 +15,7 @@ import (
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
+    "github.com/kazzmir/master-of-magic/game/magic/maplib"
 
     "github.com/hajimehoshi/ebiten/v2"
 )
@@ -157,8 +158,10 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
                 }
             })
 
-            game.WhiteFont.PrintRight(screen, float64(276 * data.ScreenScale), float64(68 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v GP", game.Players[0].Gold))
-            game.WhiteFont.PrintRight(screen, float64(313 * data.ScreenScale), float64(68 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v MP", game.Players[0].Mana))
+            player := game.Players[0]
+
+            game.WhiteFont.PrintRight(screen, float64(276 * data.ScreenScale), float64(68 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v GP", player.Gold))
+            game.WhiteFont.PrintRight(screen, float64(313 * data.ScreenScale), float64(68 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v MP", player.Mana))
 
             surveyorFont.PrintCenter(screen, float64(280 * data.ScreenScale), float64(81 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, "Surveyor")
 
@@ -166,10 +169,23 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
                 if overworld.Fog[selectedPoint.X][selectedPoint.Y] {
                     mapObject := game.CurrentMap()
                     tile := mapObject.GetTile(selectedPoint.X, selectedPoint.Y)
+                    node := mapObject.GetMagicNode(selectedPoint.X, selectedPoint.Y)
+
                     y := float64(93 * data.ScreenScale)
-                    yellowFont.PrintCenter(screen, float64(280 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, tile.Name(mapObject))
+
+                    // Terrain
+                    name := tile.Name(mapObject)
+                    if node != nil {
+                        switch node.Kind {
+                            case maplib.MagicNodeNature: name = "Forest"
+                            case maplib.MagicNodeSorcery: name = "Grasslands"
+                            case maplib.MagicNodeChaos: name = "Mountain"
+                        }
+                    }
+                    yellowFont.PrintCenter(screen, float64(280 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, name)
                     y += float64(yellowFont.Height() * data.ScreenScale)
 
+                    // Terrain bonuses
                     if tile.Corrupted() {
                         whiteFont.PrintCenter(screen, float64(280 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, "Corruption")
                         y += float64(whiteFont.Height() * data.ScreenScale)
@@ -195,6 +211,7 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
 
                     y += float64(whiteFont.Height() * data.ScreenScale)
 
+                    // Bonuses
                     bonus := tile.GetBonus()
                     if bonus != data.BonusNone {
                         yellowFont.PrintCenter(screen, float64(280 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, bonus.String())
@@ -225,8 +242,11 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
                         }
                     }
 
-                    node := mapObject.GetMagicNode(selectedPoint.X, selectedPoint.Y)
+                    // Nodes
                     if node != nil {
+                        yellowFont.PrintWrapCenter(screen, float64(280 * data.ScreenScale), y, float64(cancelBackground.Bounds().Dx() - 5 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, node.Kind.Name())
+                        y += float64(yellowFont.Height() * data.ScreenScale)
+
                         if node.Warped {
                             whiteFont.PrintCenter(screen, float64(280 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, "Warped")
                             y += float64(whiteFont.Height() * data.ScreenScale)
@@ -239,15 +259,29 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
                         }
                     }
 
-                    // FIXME: show lair/node/tower
-                    // FIXME: show "Unexplored" or toughest opponent for lairs/nodes
+                    // Lairs
+                    encounter := mapObject.GetEncounter(selectedPoint.X, selectedPoint.Y)
+                    if encounter != nil && encounter.Type != maplib.EncounterTypeChaosNode && encounter.Type != maplib.EncounterTypeNatureNode && encounter.Type != maplib.EncounterTypeSorceryNode {
+                        yellowFont.PrintCenter(screen, float64(280 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, encounter.Type.Name())
+                        y += float64(yellowFont.Height() * data.ScreenScale)
+                    }
+
+                    // Enemies
+                    if encounter != nil {
+                        text := "Unexplored"
+                        if encounter.ExploredBy.Contains(player) {
+                            text = encounter.Units[0].Name
+                        }
+                        whiteFont.PrintCenter(screen, float64(280 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, text)
+                        y += float64(whiteFont.Height() * data.ScreenScale)
+                    }
 
                     if cityMap[selectedPoint] != nil {
                         city := cityMap[selectedPoint]
                         yellowFont.PrintWrapCenter(screen, float64(280 * data.ScreenScale), y, float64(cancelBackground.Bounds().Dx() - 5 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, city.String())
                     }
 
-                    y = float64(160 * data.ScreenScale) - cityInfoText.TotalHeight
+                    y = float64(170 * data.ScreenScale) - cityInfoText.TotalHeight
 
                     if resources.Enabled {
                         y = float64(170 * data.ScreenScale) - float64(whiteFont.Height() * data.ScreenScale) * 3 - cityInfoText.TotalHeight
