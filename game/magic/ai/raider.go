@@ -110,5 +110,8 @@ func (raider *RaiderAI) Update(player *playerlib.Player, enemies []*playerlib.Pl
     return decisions
 }
 
+func (raider *RaiderAI) PostUpdate(self *playerlib.Player, enemies []*playerlib.Player) {
+}
+
 func (raider *RaiderAI) ProducedUnit(city *citylib.City, player *playerlib.Player) {
 }

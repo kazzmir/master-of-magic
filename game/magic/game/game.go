@@ -3346,6 +3346,8 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
                 }
             }
         }
+
+        player.AIBehavior.PostUpdate(player, game.GetEnemies(player))
     }
 
     if len(decisions) == 0 {

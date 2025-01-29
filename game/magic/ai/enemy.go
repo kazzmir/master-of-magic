@@ -11,6 +11,7 @@ import (
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
     "github.com/kazzmir/master-of-magic/game/magic/units"
 )
@@ -105,10 +106,14 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, p
             // FIXME: enter cities, lairs, nodes for combat
             if len(stack.CurrentPath) == 0 {
                 if rand.N(4) == 0 {
-                    newX, newY := stack.X() + rand.N(5) - 2, stack.Y() + rand.N(5) - 2
-                    path := pathfinder.FindPath(stack.X(), stack.Y(), newX, newY, stack, self.GetFog(stack.Plane()))
-                    if len(path) != 0 {
-                        stack.CurrentPath = path
+                    // try upto 3 times to find a path
+                    for range 3 {
+                        newX, newY := stack.X() + rand.N(5) - 2, stack.Y() + rand.N(5) - 2
+                        path := pathfinder.FindPath(stack.X(), stack.Y(), newX, newY, stack, self.GetFog(stack.Plane()))
+                        if len(path) != 0 {
+                            stack.CurrentPath = path
+                            break
+                        }
                     }
                 }
             }
@@ -131,6 +136,29 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, p
     }
 
     return decisions
+}
+
+func (ai *EnemyAI) PostUpdate(self *playerlib.Player, enemies []*playerlib.Player) {
+
+    // merge stacks that are on top of each other
+    type Location struct {
+        X, Y int
+        Plane data.Plane
+    }
+
+    var stackLocations []Location
+
+    for _, stack := range self.Stacks {
+        stackLocations = append(stackLocations, Location{X: stack.X(), Y: stack.Y(), Plane: stack.Plane()})
+    }
+
+    for _, location := range stackLocations {
+        stacks := self.FindAllStacks(location.X, location.Y, location.Plane)
+        for len(stacks) > 1 {
+            self.MergeStacks(stacks[0], stacks[1])
+            stacks = self.FindAllStacks(location.X, location.Y, location.Plane)
+        }
+    }
 }
 
 func (ai *EnemyAI) NewTurn(player *playerlib.Player) {

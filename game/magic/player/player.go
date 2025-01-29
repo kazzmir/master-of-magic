@@ -58,6 +58,9 @@ type AIBehavior interface {
     // return a list of decisions to make for the current turn
     Update(*Player, []*Player, PathFinder) []AIDecision
 
+    // called after all decisions have been processed for an AI player
+    PostUpdate(*Player, []*Player)
+
     // reset any state that needs to be reset at the start of a new turn
     NewTurn(*Player)
 
