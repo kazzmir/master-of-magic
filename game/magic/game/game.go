@@ -1117,7 +1117,6 @@ func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City,
 
     getAlpha := util.MakeFadeIn(7, &game.Counter)
 
-    // FIXME: cropping the image cuts it off at some point
     buildingPics, err := game.ImageCache.GetImagesTransform("cityscap.lbx", buildinglib.GetBuildingIndex(building), "crop", util.AutoCrop)
 
     if err != nil {
