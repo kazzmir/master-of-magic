@@ -421,12 +421,20 @@ func (map_ *Map) placeRivers(area int, data *TerrainData, plane data.Plane) {
         return true
     }
 
+    mapCopy := map_.Copy()
+
     resolves := func(path []image.Point) bool {
         // check if the rendered path would resolve
         checked := make(map[image.Point]bool)
 
         // work with a copy where the path is rendered to allow resolving and discarding it
-        mapCopy := map_.Copy()
+        // mapCopy := map_.Copy()
+        for x := range mapCopy.Columns() {
+            for y := range mapCopy.Rows() {
+                mapCopy.Terrain[x][y] = map_.Terrain[x][y]
+            }
+        }
+
         for _, point := range path {
             mapCopy.Terrain[point.X][point.Y] = TileRiver0001.Index(plane)
         }
@@ -656,7 +664,9 @@ func GenerateLandCellularAutomata(columns int, rows int, data *TerrainData, plan
     map_.removeSmallIslands(100, plane)
     map_.placeRandomTerrainTiles(plane)
     map_.placeRivers(100, data, plane)
+    /*
     map_.ResolveTiles(data, plane)
+    */
     end := time.Now()
     log.Printf("Generated %vx%v %v map in %v", columns, rows, plane, end.Sub(start))
     return map_
