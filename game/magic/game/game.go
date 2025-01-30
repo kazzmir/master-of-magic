@@ -3355,6 +3355,11 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
                 } else {
                     produce.City.ProducingUnit = produce.Unit
                 }
+            case *playerlib.AIResearchSpellDecision:
+                research := decision.(*playerlib.AIResearchSpellDecision)
+                if player.ResearchingSpell.Invalid() {
+                    player.ResearchingSpell = research.Spell
+                }
             }
         }
 
@@ -5504,6 +5509,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
     }
 
     if player.ResearchingSpell.Valid() {
+        // log.Printf("wizard %v power=%v researching=%v progress=%v/%v perturn=%v", player.Wizard.Name, power, player.ResearchingSpell.Name, player.ResearchProgress, player.ResearchingSpell.ResearchCost, player.SpellResearchPerTurn(power))
         player.ResearchProgress += int(player.SpellResearchPerTurn(power))
         if player.ResearchProgress >= player.ResearchingSpell.ResearchCost {
 
@@ -5513,6 +5519,8 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
                     default:
                 }
             }
+
+            // log.Printf("wizard %v learned %v", player.Wizard.Name, player.ResearchingSpell.Name)
 
             player.LearnSpell(player.ResearchingSpell)
 
@@ -5660,7 +5668,9 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
 
     // game.CenterCamera(player.Cities[0].X, player.Cities[0].Y)
     game.DoNextUnit(player)
-    game.RefreshUI()
+    if player.IsHuman() {
+        game.RefreshUI()
+    }
 }
 
 func (game *Game) revertVolcanos() {

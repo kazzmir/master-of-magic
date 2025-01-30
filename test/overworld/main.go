@@ -3049,6 +3049,12 @@ func createScenario36(cache *lbx.LbxCache) *gamelib.Game {
         Base: data.WizardRjak,
         Banner: data.BannerPurple,
         Race: data.RaceBarbarian,
+        Books: []data.WizardBook{
+            data.WizardBook{
+                Magic: data.LifeMagic,
+                Count: 3,
+            },
+        },
     }
 
     enemy1 := game.AddPlayer(wizard1, false)

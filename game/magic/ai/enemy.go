@@ -47,6 +47,21 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, p
     // FIXME: research spells, cast spells
     // create settlers, build cities
 
+    if self.ResearchingSpell.Invalid() {
+        if len(self.ResearchCandidateSpells.Spells) > 0 {
+            // choose cheapest research cost spell
+            choice := self.ResearchCandidateSpells.Spells[0]
+            for _, spell := range self.ResearchCandidateSpells.Spells {
+                if spell.ResearchCost < choice.ResearchCost {
+                    choice = spell
+                }
+            }
+            decisions = append(decisions, &playerlib.AIResearchSpellDecision{
+                Spell: choice,
+            })
+        }
+    }
+
     for _, city := range self.Cities {
         // city can make something
         if !isMakingSomething(city) {

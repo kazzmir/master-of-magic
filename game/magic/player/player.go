@@ -50,6 +50,11 @@ type AICreateUnitDecision struct {
     Plane data.Plane
 }
 
+// choose a new spell to research
+type AIResearchSpellDecision struct {
+    Spell spellbook.Spell
+}
+
 type PathFinder interface {
     FindPath(oldX int, oldY int, newX int, newY int, stack *UnitStack, fog [][]bool) pathfinding.Path
 }
