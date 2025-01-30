@@ -20,21 +20,28 @@ const (
     CombatEndScreenDone
 )
 
+type CombatEndScreenResult int
+const (
+    CombatEndScreenResultWin CombatEndScreenResult = iota
+    CombatEndScreenResultLoose
+    CombatEndScreenResultRetreat
+)
+
 type CombatEndScreen struct {
     CombatScreen *CombatScreen
-    Win bool
+    Result CombatEndScreenResult
     Cache *lbx.LbxCache
     ImageCache util.ImageCache
     UI *uilib.UI
     State CombatEndScreenState
 }
 
-func MakeCombatEndScreen(cache *lbx.LbxCache, combat *CombatScreen, win bool) *CombatEndScreen {
+func MakeCombatEndScreen(cache *lbx.LbxCache, combat *CombatScreen, result CombatEndScreenResult) *CombatEndScreen {
     end := &CombatEndScreen{
         CombatScreen: combat,
         Cache: cache,
         ImageCache: util.MakeImageCache(cache),
-        Win: win,
+        Result: result,
         State: CombatEndScreenRunning,
     }
 
@@ -106,10 +113,11 @@ func (end *CombatEndScreen) MakeUI() *uilib.UI {
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             var pic *ebiten.Image
-            if end.Win {
-                pic, _ = end.ImageCache.GetImage("scroll.lbx", 10, 0)
-            } else {
-                pic, _ = end.ImageCache.GetImage("scroll.lbx", 11, 0)
+            switch end.Result {
+                case CombatEndScreenResultWin:
+                    pic, _ = end.ImageCache.GetImage("scroll.lbx", 10, 0)
+                case CombatEndScreenResultLoose, CombatEndScreenResultRetreat:
+                    pic, _ = end.ImageCache.GetImage("scroll.lbx", 11, 0)
             }
 
             bottom, _ := end.ImageCache.GetImage("help.lbx", 1, 0)
@@ -128,10 +136,13 @@ func (end *CombatEndScreen) MakeUI() *uilib.UI {
             screen.DrawImage(subPic, &options)
 
             titleX, titleY := options.GeoM.Apply(float64(110 * data.ScreenScale), float64(25 * data.ScreenScale))
-            if end.Win {
-                titleFont.PrintCenter(screen, titleX, titleY, float64(data.ScreenScale), options.ColorScale, "You are triumphant")
-            } else {
-                titleFont.PrintCenter(screen, titleX, titleY, float64(data.ScreenScale), options.ColorScale, "You have been defeated")
+            switch end.Result {
+                case CombatEndScreenResultWin:
+                    titleFont.PrintCenter(screen, titleX, titleY, float64(data.ScreenScale), options.ColorScale, "You are triumphant")
+                case CombatEndScreenResultLoose:
+                    titleFont.PrintCenter(screen, titleX, titleY, float64(data.ScreenScale), options.ColorScale, "You have been defeated")
+                case CombatEndScreenResultRetreat:
+                    titleFont.PrintCenter(screen, titleX, titleY, float64(data.ScreenScale), options.ColorScale, "Your forces have retreated")
             }
 
             extraX, extraY := options.GeoM.Apply(float64(110 * data.ScreenScale), float64(fontY * data.ScreenScale))
