@@ -664,9 +664,7 @@ func GenerateLandCellularAutomata(columns int, rows int, data *TerrainData, plan
     map_.removeSmallIslands(100, plane)
     map_.placeRandomTerrainTiles(plane)
     map_.placeRivers(100, data, plane)
-    /*
     map_.ResolveTiles(data, plane)
-    */
     end := time.Now()
     log.Printf("Generated %vx%v %v map in %v", columns, rows, plane, end.Sub(start))
     return map_
