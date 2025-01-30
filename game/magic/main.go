@@ -6,6 +6,7 @@ import (
     "flag"
     "errors"
     "math"
+    "math/rand/v2"
     "slices"
     "cmp"
     // "image/color"
@@ -17,6 +18,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/mouse"
     "github.com/kazzmir/master-of-magic/game/magic/util"
@@ -324,7 +326,7 @@ func loadData(yield coroutine.YieldFunc, game *MagicGame, dataPath string) error
     return nil
 }
 
-func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string) error {
+func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startGame bool) error {
 
     err := loadData(yield, game, dataPath)
     if err != nil {
@@ -333,6 +335,30 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string) error 
 
     shutdown := func (screen *ebiten.Image){
         ebitenutil.DebugPrintAt(screen, "Shutting down", 10, 10)
+    }
+
+    // start a game immediately
+    if startGame {
+        settings := setup.NewGameSettings{
+            Opponents: rand.N(4) + 1,
+            Difficulty: data.DifficultyAverage,
+            Magic: data.MagicSettingNormal,
+            LandSize: rand.N(3),
+        }
+
+        spells, err := spellbook.ReadSpellsFromCache(game.Cache)
+        if err != nil {
+            return err
+        }
+
+        wizard, ok := gamelib.ChooseUniqueWizard(nil, spells)
+        if !ok {
+            return fmt.Errorf("Could not choose a wizard")
+        }
+
+        log.Printf("Starting game with settings=%+v wizard=%v race=%v", settings, wizard.Name, wizard.Race)
+
+        return runGameInstance(yield, game, settings, wizard)
     }
 
     runIntro(yield, game)
@@ -376,11 +402,11 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string) error 
     }
 }
 
-func NewMagicGame(dataPath string) (*MagicGame, error) {
+func NewMagicGame(dataPath string, startGame bool) (*MagicGame, error) {
     var game *MagicGame
 
     run := func(yield coroutine.YieldFunc) error {
-        return runGame(yield, game, dataPath)
+        return runGame(yield, game, dataPath, startGame)
     }
 
     game = &MagicGame{
@@ -424,7 +450,9 @@ func main() {
     log.SetFlags(log.Ldate | log.Lshortfile | log.Lmicroseconds)
 
     var dataPath string
+    var startGame bool
     flag.StringVar(&dataPath, "data", "", "path to master of magic lbx data files. Give either a directory or a zip file. Data is searched for in the current directory if not given.")
+    flag.BoolVar(&startGame, "start", false, "start the game immediately with a random wizard")
     flag.Parse()
 
     ebiten.SetWindowSize(data.ScreenWidth * 2, data.ScreenHeight * 2)
@@ -436,7 +464,7 @@ func main() {
 
     ebiten.SetCursorMode(ebiten.CursorModeHidden)
 
-    game, err := NewMagicGame(dataPath)
+    game, err := NewMagicGame(dataPath, startGame)
 
     if err != nil {
         log.Printf("Error: unable to load game: %v", err)
@@ -447,5 +475,4 @@ func main() {
     if err != nil {
         log.Printf("Error: %v", err)
     }
-
 }

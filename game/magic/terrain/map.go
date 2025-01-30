@@ -2,6 +2,8 @@ package terrain
 
 import (
     "fmt"
+    "log"
+    "time"
     "image"
     "math/rand/v2"
     "math"
@@ -645,14 +647,17 @@ func (map_ *Map) SetTerrainAt(x int, y int, terrainType TerrainType, data *Terra
 }
 
 
-func GenerateLandCellularAutomata(rows int, columns int, data *TerrainData, plane data.Plane) *Map {
+func GenerateLandCellularAutomata(columns int, rows int, data *TerrainData, plane data.Plane) *Map {
     // run a cellular automata simulation for a few rounds to generate
     // land and ocean tiles. then call ResolveTiles() to clean up the edges
+    start := time.Now()
     map_ := MakeMap(rows, columns)
     map_.generateLandCellularAutomata(plane)
     map_.removeSmallIslands(100, plane)
     map_.placeRandomTerrainTiles(plane)
     map_.placeRivers(100, data, plane)
     map_.ResolveTiles(data, plane)
+    end := time.Now()
+    log.Printf("Generated %vx%v %v map in %v", columns, rows, plane, end.Sub(start))
     return map_
 }

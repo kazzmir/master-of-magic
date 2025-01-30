@@ -2676,16 +2676,14 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
     }
 }
 
-/* returns a wizard definition and true if successful, otherwise false if no more wizards can be created
- */
-func (game *Game) ChooseWizard() (setup.WizardCustom, bool) {
+func ChooseUniqueWizard(players []*playerlib.Player, allSpells spellbook.Spells) (setup.WizardCustom, bool) {
     // pick a new wizard with an unused wizard base and banner color, and race
     // if on myrror then select a myrran race
 
     chooseBase := func() (setup.WizardSlot, bool) {
         choices := slices.Clone(setup.DefaultWizardSlots())
         choices = slices.DeleteFunc(choices, func (wizard setup.WizardSlot) bool {
-            for _, player := range game.Players {
+            for _, player := range players {
                 if player.Wizard.Base == wizard.Base {
                     return true
                 }
@@ -2710,7 +2708,7 @@ func (game *Game) ChooseWizard() (setup.WizardCustom, bool) {
         }
 
         choices = slices.DeleteFunc(choices, func (race data.Race) bool {
-            for _, player := range game.Players {
+            for _, player := range players {
                 if player.Wizard.Race == race {
                     return true
                 }
@@ -2729,7 +2727,7 @@ func (game *Game) ChooseWizard() (setup.WizardCustom, bool) {
     chooseBanner := func() (data.BannerType, bool) {
         choices := []data.BannerType{data.BannerGreen, data.BannerBlue, data.BannerRed, data.BannerPurple, data.BannerYellow}
         choices = slices.DeleteFunc(choices, func (banner data.BannerType) bool {
-            for _, player := range game.Players {
+            for _, player := range players {
                 if player.Wizard.Banner == banner {
                     return true
                 }
@@ -2775,8 +2773,15 @@ func (game *Game) ChooseWizard() (setup.WizardCustom, bool) {
         Abilities: abilities,
     }
 
-    customWizard.StartingSpells.AddAllSpells(setup.GetStartingSpells(&customWizard, game.AllSpells()))
+    customWizard.StartingSpells.AddAllSpells(setup.GetStartingSpells(&customWizard, allSpells))
     return customWizard, true
+
+}
+
+/* returns a wizard definition and true if successful, otherwise false if no more wizards can be created
+ */
+func (game *Game) ChooseWizard() (setup.WizardCustom, bool) {
+    return ChooseUniqueWizard(game.Players, game.AllSpells())
 }
 
 func (game *Game) RefreshUI() {
