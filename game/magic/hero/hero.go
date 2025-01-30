@@ -702,6 +702,14 @@ func (hero *Hero) GetY() int {
     return hero.Unit.GetY()
 }
 
+func (hero *Hero) SetX(x int) {
+    hero.Unit.SetX(x)
+}
+
+func (hero *Hero) SetY(y int) {
+    hero.Unit.SetY(y)
+}
+
 func (hero *Hero) Move(dx int, dy int, cost fraction.Fraction, normalize units.NormalizeCoordinateFunc) {
     hero.Unit.Move(dx, dy, cost, normalize)
 }

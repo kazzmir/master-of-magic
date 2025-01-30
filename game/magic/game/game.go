@@ -2946,7 +2946,11 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
                     player.LiftFog(stack.X(), stack.Y(), 1, stack.Plane())
 
                     stack.ExhaustMoves()
-                    game.doEncounter(yield, player, stack, encounter, mapUse, stack.X(), stack.Y())
+                    state := game.doEncounter(yield, player, stack, encounter, mapUse, stack.X(), stack.Y())
+                    if state == combat.CombatStateAttackerFlee {
+                        stack.SetX(oldX)
+                        stack.SetY(oldY)
+                    }
 
                     game.RefreshUI()
                 }
@@ -2971,6 +2975,11 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
                         City: otherPlayer.FindCity(stack.X(), stack.Y(), stack.Plane()),
                     }
 
+                    state := game.doCombat(yield, player, stack, otherPlayer, otherStack, zone)
+                    if state == combat.CombatStateAttackerFlee {
+                        stack.SetX(oldX)
+                        stack.SetY(oldY)
+                    }
                     game.doCombat(yield, player, stack, otherPlayer, otherStack, zone)
 
                     stack.ExhaustMoves()
@@ -3262,6 +3271,11 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
                         zone := combat.ZoneType{
                             City: enemy.FindCity(stack.X(), stack.Y(), stack.Plane()),
                         }
+                        state := game.doCombat(yield, player, stack, enemy, enemyStack, zone)
+                        if state == combat.CombatStateAttackerFlee {
+                            stack.SetX(oldX)
+                            stack.SetY(oldY)
+                        }
                         game.doCombat(yield, player, stack, enemy, enemyStack, zone)
                     }
                 }
@@ -3495,13 +3509,13 @@ func (game *Game) confirmLairEncounter(yield coroutine.YieldFunc, encounter *map
     return game.confirmEncounter(yield, fmt.Sprintf("You have found %v %v. Scouts have spotted %v within the %v. Do you wish to enter?", article, encounter.Type.Name(), guardianName, encounter.Type.Name()), animation)
 }
 
-func (game *Game) doEncounter(yield coroutine.YieldFunc, player *playerlib.Player, stack *playerlib.UnitStack, encounter *maplib.ExtraEncounter, mapUse *maplib.Map, x int, y int){
+func (game *Game) doEncounter(yield coroutine.YieldFunc, player *playerlib.Player, stack *playerlib.UnitStack, encounter *maplib.ExtraEncounter, mapUse *maplib.Map, x int, y int) combat.CombatState {
     // there was nothing in the encounter, just give treasure
     if len(encounter.Units) == 0 {
         mapUse.RemoveEncounter(x, y)
         game.createTreasure(encounter.Type, encounter.Budget, player)
         yield()
-        return
+        return combat.CombatStateNoCombat
     }
 
     defender := playerlib.Player{
@@ -3544,6 +3558,8 @@ func (game *Game) doEncounter(yield coroutine.YieldFunc, player *playerlib.Playe
 
     // absorb extra clicks
     yield()
+
+    return result
 }
 
 func (game *Game) createTreasure(encounterType maplib.EncounterType, budget int, player *playerlib.Player){

@@ -38,7 +38,9 @@ const (
     CombatStateRunning CombatState = iota
     CombatStateAttackerWin
     CombatStateDefenderWin
-    CombatStateDone
+    CombatStateAttackerFlee
+    CombatStateDefenderFlee
+    CombatStateNoCombat
 )
 
 func (state CombatState) String() string {
@@ -46,7 +48,9 @@ func (state CombatState) String() string {
         case CombatStateRunning: return "Running"
         case CombatStateAttackerWin: return "AttackerWin"
         case CombatStateDefenderWin: return "DefenderWin"
-        case CombatStateDone: return "Done"
+        case CombatStateAttackerFlee: return "AttackerFlee"
+        case CombatStateDefenderFlee: return "DefenderFlee"
+        case CombatStateNoCombat: return "NoCombat"
     }
 
     return ""
@@ -2216,10 +2220,17 @@ func (combat *CombatScreen) UpdateMouseState() {
 }
 
 func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
-    // defender wins in a tie
+    if combat.Model.AttackingArmy.Units == nil {
+        return CombatStateAttackerFlee
+    }
+
     if len(combat.Model.AttackingArmy.Units) == 0 {
         combat.Model.AddLogEvent("Defender wins!")
         return CombatStateDefenderWin
+    }
+
+    if combat.Model.DefendingArmy.Units == nil {
+        return CombatStateAttackerFlee
     }
 
     if len(combat.Model.DefendingArmy.Units) == 0 {
