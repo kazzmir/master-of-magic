@@ -11,6 +11,8 @@ import (
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/maplib"
     "github.com/kazzmir/master-of-magic/game/magic/units"
 )
 
@@ -28,7 +30,7 @@ func isMakingSomething(city *citylib.City) bool {
     }
 
     switch city.ProducingBuilding {
-        case buildinglib.BuildingHousing, buildinglib.BuildingTradeGoods: return false
+        case buildinglib.BuildingHousing, buildinglib.BuildingTradeGoods, buildinglib.BuildingNone: return false
         default: return true
     }
 }
@@ -41,6 +43,9 @@ func (ai *EnemyAI) ProducedUnit(city *citylib.City, player *playerlib.Player) {
 
 func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, pathfinder playerlib.PathFinder) []playerlib.AIDecision {
     var decisions []playerlib.AIDecision
+
+    // FIXME: research spells, cast spells
+    // create settlers, build cities
 
     for _, city := range self.Cities {
         // city can make something
@@ -95,7 +100,67 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, p
         }
     }
 
+    for _, stack := range self.Stacks {
+        // don't move if this would leave a city undefended, otherwise try to split the stack and move part of it
+        if stack.HasMoves() {
+            // FIXME: enter cities, lairs, nodes for combat
+            // also, sometimes choose a preferred location to move to, such as a square for building a new city
+            // or attacking a player's units
+            if len(stack.CurrentPath) == 0 {
+                if rand.N(4) == 0 {
+                    // try upto 3 times to find a path
+                    for range 3 {
+                        newX, newY := stack.X() + rand.N(5) - 2, stack.Y() + rand.N(5) - 2
+                        path := pathfinder.FindPath(stack.X(), stack.Y(), newX, newY, stack, self.GetFog(stack.Plane()))
+                        if len(path) != 0 {
+                            stack.CurrentPath = path
+                            break
+                        }
+                    }
+                }
+            }
+
+            if len(stack.CurrentPath) > 0 {
+                nextMove := stack.CurrentPath[0]
+                stack.CurrentPath = stack.CurrentPath[1:]
+                decisions = append(decisions, &playerlib.AIMoveStackDecision{
+                    Stack: stack,
+                    Location: nextMove,
+                    Invalid: func(){
+                        stack.CurrentPath = nil
+                    },
+                    ConfirmEncounter: func (encounter *maplib.ExtraEncounter) bool {
+                        return true
+                    },
+                })
+            }
+        }
+    }
+
     return decisions
+}
+
+func (ai *EnemyAI) PostUpdate(self *playerlib.Player, enemies []*playerlib.Player) {
+
+    // merge stacks that are on top of each other
+    type Location struct {
+        X, Y int
+        Plane data.Plane
+    }
+
+    var stackLocations []Location
+
+    for _, stack := range self.Stacks {
+        stackLocations = append(stackLocations, Location{X: stack.X(), Y: stack.Y(), Plane: stack.Plane()})
+    }
+
+    for _, location := range stackLocations {
+        stacks := self.FindAllStacks(location.X, location.Y, location.Plane)
+        for len(stacks) > 1 {
+            self.MergeStacks(stacks[0], stacks[1])
+            stacks = self.FindAllStacks(location.X, location.Y, location.Plane)
+        }
+    }
 }
 
 func (ai *EnemyAI) NewTurn(player *playerlib.Player) {

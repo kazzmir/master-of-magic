@@ -15,6 +15,7 @@ import (
     herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
+    "github.com/kazzmir/master-of-magic/game/magic/maplib"
     "github.com/kazzmir/master-of-magic/lib/fraction"
     "github.com/kazzmir/master-of-magic/lib/set"
 )
@@ -38,6 +39,8 @@ type AIProduceDecision struct {
 type AIMoveStackDecision struct {
     Stack *UnitStack
     Location image.Point
+    Invalid func()
+    ConfirmEncounter func(*maplib.ExtraEncounter) bool
 }
 
 type AICreateUnitDecision struct {
@@ -54,6 +57,9 @@ type PathFinder interface {
 type AIBehavior interface {
     // return a list of decisions to make for the current turn
     Update(*Player, []*Player, PathFinder) []AIDecision
+
+    // called after all decisions have been processed for an AI player
+    PostUpdate(*Player, []*Player)
 
     // reset any state that needs to be reset at the start of a new turn
     NewTurn(*Player)
@@ -88,6 +94,8 @@ type Player struct {
 
     // if true, the game will only do strategic (non-graphics/non-realtime) based combat if both sides are strategic
     StrategicCombat bool
+    // godmode that lets the player interact with enemy cities/units
+    Admin bool
 
     // known spells
     KnownSpells spellbook.Spells

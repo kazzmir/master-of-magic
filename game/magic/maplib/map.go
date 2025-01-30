@@ -8,6 +8,7 @@ import (
     "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/fraction"
+    "github.com/kazzmir/master-of-magic/lib/set"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
@@ -38,6 +39,15 @@ const (
     MagicNodeSorcery
     MagicNodeChaos
 )
+
+func (magicNode MagicNode) Name() string {
+    switch magicNode {
+        case MagicNodeNature: return "Nature Node"
+        case MagicNodeSorcery: return "Sorcery Node"
+        case MagicNodeChaos: return "Chaos Node"
+    }
+    return ""
+}
 
 type ExtraTile interface {
     DrawLayer1(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64, tileWidth int, tileHeight int)
@@ -241,6 +251,7 @@ type ExtraEncounter struct {
     Type EncounterType
     Units []units.Unit
     Budget int // used for treasure
+    ExploredBy *set.Set[Wizard]
 }
 
 // choices is a map from a name to the chance of choosing that name, where all the int values should add up to 100
@@ -329,6 +340,7 @@ func makeEncounter(encounterType EncounterType, difficulty data.DifficultySettin
         Type: encounterType,
         Budget: budget,
         Units: append(guardians, secondary...),
+        ExploredBy: set.MakeSet[Wizard](),
     }
 }
 
@@ -1213,24 +1225,9 @@ func (mapObject *Map) GetTileImage(tileX int, tileY int, animationCounter uint64
     return gpuImage, nil
 }
 
-// check all 8 tiles surrounding the city and return true if any of them have TerrainType() == Shore
 func (mapObject *Map) OnShore(x int, y int) bool {
-    for dx := -1; dx <= 1; dx++ {
-        for dy := -1; dy <= 1; dy++ {
-            if dx == 0 && dy == 0 {
-                continue
-            }
-
-            cx := mapObject.WrapX(x + dx)
-            cy := y + dy
-
-            if mapObject.GetTile(cx, cy).Tile.TerrainType() == terrain.Shore {
-                return true
-            }
-        }
-    }
-
-    return false
+    tile := mapObject.GetTile(x, y)
+    return tile.IsTouchingShore(mapObject)
 }
 
 func (mapObject *Map) GetCatchmentArea(x int, y int) map[image.Point]FullTile {
