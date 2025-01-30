@@ -132,6 +132,15 @@ const (
     PlaneMyrror
 )
 
+func (plane Plane) String() string {
+    switch plane {
+        case PlaneArcanus: return "Arcanus"
+        case PlaneMyrror: return "Myrror"
+    }
+
+    return ""
+}
+
 type WizardBase int
 
 const (
