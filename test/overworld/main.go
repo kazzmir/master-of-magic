@@ -3100,7 +3100,7 @@ func createScenario37(cache *lbx.LbxCache) *gamelib.Game {
         Banner: data.BannerPurple,
     }
 
-    x, y := game.FindValidCityLocation(game.Plane)
+    x, y, _ := game.FindValidCityLocation(game.Plane)
 
     player1 := game.AddPlayer(wizard1, true)
     player1.Gold = 830

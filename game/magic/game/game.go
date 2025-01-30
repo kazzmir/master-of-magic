@@ -2956,6 +2956,86 @@ func (game *Game) doMoveCamera(yield coroutine.YieldFunc, x int, y int) {
     game.Camera.Center(game.CurrentMap().WrapX(x), y)
 }
 
+func (game *Game) doMoveFleeingDefender(player *playerlib.Player, stack *playerlib.UnitStack) {
+    // try to relocate a fleeing stack, kills units that are unable
+    x := stack.X()
+    y := stack.Y()
+    plane := stack.Plane()
+    mapUse := game.GetMap(plane)
+    canMoveToWater := stack.AllFlyers() || stack.AllSwimmers()
+
+    var positions []image.Point
+    var waterPositions []image.Point
+    for dx := -1; dx <= 1; dx++ {
+        for dy := -1; dy <= 1; dy++ {
+            if dx == 0 && dy == 0 {
+                continue
+            }
+
+            cx := mapUse.WrapX(x + dx)
+            cy := y + dy
+
+            if dy < 0 || dy >= mapUse.Height() {
+                continue
+            }
+
+            // can not contain an enemy stack or city
+            occupied := false
+            for _, enemy := range game.GetEnemies(player) {
+
+                if enemy.FindStack(cx, cy, plane) != nil {
+                    occupied = true
+                    break
+                }
+
+                if enemy.FindCity(cx, cy, plane) != nil {
+                    occupied = true
+                    break
+                }
+            }
+
+            if occupied {
+                continue
+            }
+
+            // can not countain encounter
+            if mapUse.GetEncounter(cx, cy) != nil {
+                continue
+            }
+
+            if mapUse.GetTile(cx, cy).Tile.IsWater() && !canMoveToWater {
+                waterPositions = append(waterPositions, image.Pt(cx, cy))
+            } else {
+                positions = append(positions, image.Pt(cx, cy))
+            }
+        }
+    }
+
+    // kill whole stack if no position found
+    if len(positions) == 0 && len(waterPositions) == 0 {
+        for _, unit := range stack.Units() {
+            player.RemoveUnit(unit)
+        }
+        return
+    }
+
+    // kill units that can not move to water
+    if len(positions) == 0 {
+        for _, unit := range stack.Units() {
+            if !unit.IsFlying() && !unit.IsSwimmer() {
+                player.RemoveUnit(unit)
+            }
+        }
+
+        positions = waterPositions
+    }
+
+    // set to a random position
+    position := positions[rand.IntN(len(positions))]
+    stack.SetX(position.X)
+    stack.SetY(position.Y)
+}
+
 func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerlib.Player) {
     stack := player.SelectedStack
     if stack == nil || len(stack.ActiveUnits()) == 0 {
@@ -3024,8 +3104,9 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
                     if state == combat.CombatStateAttackerFlee {
                         stack.SetX(oldX)
                         stack.SetY(oldY)
+                    } else if state == combat.CombatStateDefenderFlee {
+                        game.doMoveFleeingDefender(otherPlayer, otherStack)
                     }
-                    game.doCombat(yield, player, stack, otherPlayer, otherStack, zone)
 
                     // FIXME: if there was a city here and the attacker won then the attacker
                     // should be able to raze or occupy the city
@@ -3335,6 +3416,8 @@ func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Play
                 if state == combat.CombatStateAttackerFlee {
                     stack.SetX(oldX)
                     stack.SetY(oldY)
+                } else if state == combat.CombatStateDefenderFlee {
+                    game.doMoveFleeingDefender(enemy, enemyStack)
                 }
             }
         }
