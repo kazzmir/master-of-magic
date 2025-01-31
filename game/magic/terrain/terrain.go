@@ -4,6 +4,7 @@ import (
     "bytes"
     "image"
     "fmt"
+    "slices"
 
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -165,9 +166,9 @@ type DirectedCompatibility struct {
 
 func (compatibility DirectedCompatibility) String() string {
     if compatibility.Type == AnyOf {
-        return fmt.Sprintf("(%s, %s)", compatibility.Direction, compatibility.Terrains.Values())
+        return fmt.Sprintf("(%s, %s)", compatibility.Direction, slices.Sorted(slices.Values(compatibility.Terrains.Values())))
     } else {
-        return fmt.Sprintf("!(%s, %s)", compatibility.Direction, compatibility.Terrains.Values())
+        return fmt.Sprintf("!(%s, %s)", compatibility.Direction, slices.Sorted(slices.Values(compatibility.Terrains.Values())))
     }
 }
 
@@ -178,9 +179,9 @@ type Compatibility struct {
 
 func (compatibility Compatibility) String() string {
     if compatibility.Type == AnyOf {
-        return fmt.Sprintf("%s", compatibility.Terrains.Values())
+        return fmt.Sprintf("%s", slices.Sorted(slices.Values(compatibility.Terrains.Values())))
     } else {
-        return fmt.Sprintf("!%s", compatibility.Terrains.Values())
+        return fmt.Sprintf("!%s", slices.Sorted(slices.Values(compatibility.Terrains.Values())))
     }
 }
 
