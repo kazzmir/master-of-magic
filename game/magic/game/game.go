@@ -3879,6 +3879,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
         defeatedAttackers = combatScreen.Model.DefeatedAttackers
     }
 
+    // experience
     if state == combat.CombatStateAttackerWin {
         for _, unit := range attackerStack.Units() {
             if unit.GetRace() != data.RaceFantastic {
@@ -3893,6 +3894,34 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
         }
     }
 
+    // fame
+    distributeFame := func(winner *playerlib.Player, loser *playerlib.Player, loserStack *playerlib.UnitStack, defeatedUnits int) {
+        if defeatedUnits >= 4 {
+            winner.Fame += 1
+            loser.Fame -= 1
+        }
+        for _, unit := range loserStack.Units() {
+            if unit.GetRawUnit().CastingCost >= 600 {
+                winner.Fame += 1
+                loser.Fame -= 1
+                break
+            }
+            if unit.IsHero() {
+                hero := unit.(*herolib.Hero)
+                loser.Fame -= (int(hero.GetExperienceLevel()) + 1) / 2
+            }
+        }
+        if loser.Fame < 0 {
+            loser.Fame = 0
+        }
+    }
+    if state == combat.CombatStateAttackerWin {
+        distributeFame(attacker, defender, defenderStack, defeatedDefenders)
+    } else if state == combat.CombatStateDefenderWin {
+        distributeFame(defender, attacker, attackerStack, defeatedAttackers)
+    }
+
+    // Redistribute equipment of died heros
     showHeroNotice := false
 
     distributeEquipment := func (player *playerlib.Player, hero *herolib.Hero){
@@ -3909,6 +3938,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
 
     // ebiten.SetCursorMode(ebiten.CursorModeVisible)
 
+    // remove dead units
     for _, unit := range attackerStack.Units() {
         if unit.GetHealth() <= 0 {
             attacker.RemoveUnit(unit)

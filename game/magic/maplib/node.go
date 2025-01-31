@@ -192,17 +192,17 @@ func computeNatureNodeEnemies(budget int) ([]units.Unit, []units.Unit) {
 
     enemyCosts := map[Enemy]int{
         None: 0,
-        WarBear: 70,
-        Sprite: 100,
-        EarthElemental: 160,
-        Spiders: 200,
-        Cockatrice: 275,
-        Basilisk: 325,
-        StoneGiant: 450,
-        Gorgons: 600,
-        Behemoth: 700,
-        Colossus: 800,
-        GreatWyrm: 1000,
+        WarBear: units.WarBear.CastingCost,
+        Sprite: units.Sprite.CastingCost,
+        EarthElemental: units.EarthElemental.CastingCost,
+        Spiders: units.GiantSpider.CastingCost,
+        Cockatrice: units.Cockatrice.CastingCost,
+        Basilisk: units.Basilisk.CastingCost,
+        StoneGiant: units.StoneGiant.CastingCost,
+        Gorgons: units.Gorgon.CastingCost,
+        Behemoth: units.Behemoth.CastingCost,
+        Colossus: units.Colossus.CastingCost,
+        GreatWyrm: units.GreatWyrm.CastingCost,
     }
 
     return chooseGuardianAndSecondary(enemyCosts, makeUnit, budget)
@@ -237,13 +237,13 @@ func computeSorceryNodeEnemies(budget int) ([]units.Unit, []units.Unit) {
 
     enemyCosts := map[Enemy]int{
         None: 0,
-        PhantomWarriors: 20,
-        Naga: 120,
-        AirElemental: 170,
-        PhantomBeast: 225,
-        StormGiant: 500,
-        Djinn: 650,
-        SkyDrake: 1000,
+        PhantomWarriors: units.PhantomWarrior.CastingCost,
+        Naga: units.Nagas.CastingCost,
+        AirElemental: units.AirElemental.CastingCost,
+        PhantomBeast: units.PhantomBeast.CastingCost,
+        StormGiant: units.StormGiant.CastingCost,
+        Djinn: units.Djinn.CastingCost,
+        SkyDrake: units.SkyDrake.CastingCost,
     }
 
     return chooseGuardianAndSecondary(enemyCosts, makeUnit, budget)
@@ -284,16 +284,16 @@ func computeDeathNodeEnemies(budget int) ([]units.Unit, []units.Unit) {
 
     enemyCosts := map[Enemy]int{
         None: 0,
-        Skeletons: 25,
-        Zombies: 30,
-        Ghouls: 80,
-        Demons: 125,
-        NightStalker: 200,
-        Werewolves: 250,
-        ShadowDemons: 325,
-        Wraiths: 500,
-        DeathKnight: 600,
-        DemonLord: 900,
+        Skeletons: units.Skeleton.CastingCost,
+        Zombies: units.Zombie.CastingCost,
+        Ghouls: units.Ghoul.CastingCost,
+        Demons: units.Demon.CastingCost,
+        NightStalker: units.NightStalker.CastingCost,
+        Werewolves: units.WereWolf.CastingCost,
+        ShadowDemons: units.ShadowDemon.CastingCost,
+        Wraiths: units.Wraith.CastingCost,
+        DeathKnight: units.DeathKnight.CastingCost,
+        DemonLord: units.DemonLord.CastingCost,
     }
 
     return chooseGuardianAndSecondary(enemyCosts, makeUnit, budget)
