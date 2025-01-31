@@ -452,6 +452,11 @@ func (game *Game) AddPlayer(wizard setup.WizardCustom, human bool) *playerlib.Pl
 
     // log.Printf("Research spells: %v", newPlayer.ResearchPoolSpells)
 
+    // famous wizards get a head start of 10 fame
+    if wizard.AbilityEnabled(setup.AbilityFamous) {
+        newPlayer.Fame += 10
+    }
+
     game.Players = append(game.Players, newPlayer)
     return newPlayer
 }
@@ -3116,6 +3121,8 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
                     // FIXME: if there was a city here and the attacker won then the attacker
                     // should be able to raze or occupy the city
 
+                    // FIXME: loose fame if razing
+
                     stack.ExhaustMoves()
                     game.RefreshUI()
 
@@ -3424,6 +3431,8 @@ func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Play
                 } else if state == combat.CombatStateDefenderFlee {
                     game.doMoveFleeingDefender(enemy, enemyStack)
                 }
+
+                // FIXME: loose fame if razing
             }
         }
     } else if move.Invalid != nil {
@@ -3936,6 +3945,9 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     var defeatedDefenders int
     var defeatedAttackers int
 
+    oldDrawer := game.Drawer
+    var combatScreen *combat.CombatScreen
+
     if attacker.StrategicCombat && defender.StrategicCombat {
         state, defeatedAttackers, defeatedDefenders = combat.DoStrategicCombat(&attackingArmy, &defendingArmy)
         log.Printf("Strategic combat result state=%v", state)
@@ -3946,8 +3958,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
         landscape := game.GetCombatLandscape(attackerStack.X(), attackerStack.Y(), attackerStack.Plane())
 
         // FIXME: take plane into account for the landscape/terrain
-        combatScreen := combat.MakeCombatScreen(game.Cache, &defendingArmy, &attackingArmy, game.Players[0], landscape, attackerStack.Plane(), zone)
-        oldDrawer := game.Drawer
+        combatScreen = combat.MakeCombatScreen(game.Cache, &defendingArmy, &attackingArmy, game.Players[0], landscape, attackerStack.Plane(), zone)
 
         // ebiten.SetCursorMode(ebiten.CursorModeHidden)
 
@@ -3961,18 +3972,74 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
             yield()
         }
 
+        defeatedDefenders = combatScreen.Model.DefeatedDefenders
+        defeatedAttackers = combatScreen.Model.DefeatedAttackers
+    }
+
+    // experience
+    if state == combat.CombatStateAttackerWin || state == combat.CombatStateDefenderFlee {
+        for _, unit := range attackerStack.Units() {
+            if unit.GetRace() != data.RaceFantastic {
+                game.AddExperience(attacker, unit, defeatedDefenders * 2)
+            }
+        }
+    } else if state == combat.CombatStateDefenderWin || state == combat.CombatStateAttackerFlee {
+        for _, unit := range defenderStack.Units() {
+            if unit.GetRace() != data.RaceFantastic {
+                game.AddExperience(defender, unit, defeatedAttackers * 2)
+            }
+        }
+    }
+
+    // fame
+    var winnerFame, loserFame int
+    distributeFame := func(winner *playerlib.Player, loser *playerlib.Player, loserStack *playerlib.UnitStack, defeatedUnits int) {
+        if defeatedUnits >= 4 {
+            winnerFame += 1
+            loserFame += 1
+        }
+
+        for _, unit := range loserStack.Units() {
+            if unit.GetRawUnit().CastingCost >= 600 {
+                winnerFame += 1
+                loserFame += 1
+                break
+            }
+            if unit.IsHero() {
+                hero := unit.(*herolib.Hero)
+                loserFame += (int(hero.GetExperienceLevel()) + 1) / 2
+            }
+        }
+
+        winner.Fame += winnerFame
+        loser.Fame -= loserFame
+        if loser.Fame < 0 {
+            loser.Fame = 0
+        }
+    }
+
+    if state == combat.CombatStateAttackerWin || state == combat.CombatStateDefenderFlee {
+        distributeFame(attacker, defender, defenderStack, defeatedDefenders)
+    } else if state == combat.CombatStateDefenderWin || state == combat.CombatStateAttackerFlee {
+        distributeFame(defender, attacker, attackerStack, defeatedAttackers)
+    }
+
+    // Show end screen
+    if !attacker.StrategicCombat || !defender.StrategicCombat {
         result := combat.CombatEndScreenResultLoose
         humanAttacker := attacker.IsHuman()
+        fame := loserFame
         switch {
             case state == combat.CombatStateAttackerWin && humanAttacker,
                  state == combat.CombatStateDefenderWin && !humanAttacker:
                 result = combat.CombatEndScreenResultWin
+                fame = winnerFame
             case state == combat.CombatStateAttackerFlee && humanAttacker,
                  state == combat.CombatStateDefenderFlee && !humanAttacker:
                 result = combat.CombatEndScreenResultRetreat
         }
 
-        endScreen := combat.MakeCombatEndScreen(game.Cache, combatScreen, result, combatScreen.Model.DiedWhileFleeing)
+        endScreen := combat.MakeCombatEndScreen(game.Cache, combatScreen, result, combatScreen.Model.DiedWhileFleeing, fame)
         game.Drawer = func (screen *ebiten.Image, game *Game){
             endScreen.Draw(screen)
         }
@@ -3984,25 +4051,9 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
         }
 
         game.Drawer = oldDrawer
-
-        defeatedDefenders = combatScreen.Model.DefeatedDefenders
-        defeatedAttackers = combatScreen.Model.DefeatedAttackers
     }
 
-    if state == combat.CombatStateAttackerWin || state == combat.CombatStateDefenderFlee{
-        for _, unit := range attackerStack.Units() {
-            if unit.GetRace() != data.RaceFantastic {
-                game.AddExperience(attacker, unit, defeatedDefenders * 2)
-            }
-        }
-    } else if state == combat.CombatStateDefenderWin || state == combat.CombatStateAttackerFlee{
-        for _, unit := range defenderStack.Units() {
-            if unit.GetRace() != data.RaceFantastic {
-                game.AddExperience(defender, unit, defeatedAttackers * 2)
-            }
-        }
-    }
-
+    // Redistribute equipment of died heros
     showHeroNotice := false
 
     distributeEquipment := func (player *playerlib.Player, hero *herolib.Hero){
@@ -4019,6 +4070,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
 
     // ebiten.SetCursorMode(ebiten.CursorModeVisible)
 
+    // remove dead units
     for _, unit := range attackerStack.Units() {
         if unit.GetHealth() <= 0 {
             attacker.RemoveUnit(unit)

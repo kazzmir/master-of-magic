@@ -169,6 +169,9 @@ type Unit struct {
 
     // For heroes, the spells the unit can cast
     Spells []string
+
+    // For fantastic units
+    CastingCost int
 }
 
 func (unit *Unit) Equals(other Unit) bool {
@@ -1113,6 +1116,7 @@ var MagicSpirit Unit = Unit{
     HitPoints: 10,
     Abilities: []data.Ability{data.MakeAbility(data.AbilityMeld), data.MakeAbility(data.AbilityNonCorporeal)},
     Race: data.RaceFantastic,
+    CastingCost: 30,
 }
 
 var HellHounds Unit = Unit{
@@ -1133,6 +1137,7 @@ var HellHounds Unit = Unit{
     HitPoints: 4,
     Abilities: []data.Ability{data.MakeAbilityValue(data.AbilityFireBreath, 3), data.MakeAbilityValue(data.AbilityToHit, 10)},
     Race: data.RaceFantastic,
+    CastingCost: 40,
 }
 
 var Gargoyle Unit = Unit{
@@ -1154,6 +1159,7 @@ var Gargoyle Unit = Unit{
     HitPoints: 4,
     Abilities: []data.Ability{data.MakeAbilityValue(data.AbilityToHit, 10), data.MakeAbility(data.AbilityPoisonImmunity), data.MakeAbility(data.AbilityStoningImmunity)},
     Race: data.RaceFantastic,
+    CastingCost: 200,
 }
 
 var FireGiant Unit = Unit{
@@ -1179,6 +1185,7 @@ var FireGiant Unit = Unit{
     Resistance: 7,
     Abilities: []data.Ability{data.MakeAbilityValue(data.AbilityToHit, 10), data.MakeAbility(data.AbilityMountaineer), data.MakeAbility(data.AbilityWallCrusher), data.MakeAbility(data.AbilityFireImmunity)},
     Race: data.RaceFantastic,
+    CastingCost: 150,
 }
 
 var FireElemental Unit = Unit{
@@ -1198,6 +1205,7 @@ var FireElemental Unit = Unit{
     Resistance: 6,
     HitPoints: 10,
     Abilities: []data.Ability{data.MakeAbility(data.AbilityFireImmunity), data.MakeAbility(data.AbilityPoisonImmunity), data.MakeAbility(data.AbilityStoningImmunity)},
+    CastingCost: 20,
 }
 
 var ChaosSpawn Unit = Unit{
@@ -1225,6 +1233,7 @@ var ChaosSpawn Unit = Unit{
         data.MakeAbilityValue(data.AbilityStoningGaze, 4),
     },
     Race: data.RaceFantastic,
+    CastingCost: 500,
 }
 
 var Chimeras Unit = Unit{
@@ -1246,6 +1255,7 @@ var Chimeras Unit = Unit{
     HitPoints: 8,
     Abilities: []data.Ability{data.MakeAbilityValue(data.AbilityFireBreath, 4), data.MakeAbilityValue(data.AbilityToHit, 10)},
     Race: data.RaceFantastic,
+    CastingCost: 350,
 }
 
 var DoomBat Unit = Unit{
@@ -1267,6 +1277,7 @@ var DoomBat Unit = Unit{
     HitPoints: 20,
     Abilities: []data.Ability{data.MakeAbilityValue(data.AbilityToHit, 10), data.MakeAbility(data.AbilityImmolation)},
     Race: data.RaceFantastic,
+    CastingCost: 300,
 }
 
 var Efreet Unit = Unit{
@@ -1304,6 +1315,7 @@ var Efreet Unit = Unit{
     HitPoints: 12,
     Abilities: []data.Ability{data.MakeAbility(data.AbilityFireImmunity), data.MakeAbilityValue(data.AbilityToHit, 20), data.MakeAbilityValue(data.AbilityCaster, 20)},
     Race: data.RaceFantastic,
+    CastingCost: 550,
 }
 
 // FIXME: hydra has 9 virtual figures, one for each head
@@ -1325,6 +1337,7 @@ var Hydra Unit = Unit{
     HitPoints: 10,
     Abilities: []data.Ability{data.MakeAbility(data.AbilityRegeneration), data.MakeAbilityValue(data.AbilityToHit, 10), data.MakeAbilityValue(data.AbilityFireBreath, 5)},
     Race: data.RaceFantastic,
+    CastingCost: 650,
 }
 
 var GreatDrake Unit = Unit{
@@ -1349,6 +1362,7 @@ var GreatDrake Unit = Unit{
     UpkeepMana: 30,
     Defense: 10,
     Resistance: 12,
+    CastingCost: 900,
 }
 
 var Skeleton Unit = Unit{
@@ -1376,6 +1390,7 @@ var Skeleton Unit = Unit{
     },
     Race: data.RaceFantastic,
     Realm: data.DeathMagic,
+    CastingCost: 25,
 }
 
 var Ghoul Unit = Unit{
@@ -1404,6 +1419,7 @@ var Ghoul Unit = Unit{
     },
     Realm: data.DeathMagic,
     Race: data.RaceFantastic,
+    CastingCost: 80,
 }
 
 var NightStalker Unit = Unit{
@@ -1432,6 +1448,7 @@ var NightStalker Unit = Unit{
     },
     Realm: data.DeathMagic,
     Race: data.RaceFantastic,
+    CastingCost: 250,
 }
 
 var WereWolf Unit = Unit{
@@ -1460,6 +1477,7 @@ var WereWolf Unit = Unit{
     },
     Realm: data.DeathMagic,
     Race: data.RaceFantastic,
+    CastingCost: 180,
 }
 
 var Demon Unit = Unit{
@@ -1488,6 +1506,7 @@ var Demon Unit = Unit{
         data.MakeAbility(data.AbilityWeaponImmunity),
         data.MakeAbility(data.AbilityMissileImmunity),
     },
+    // no CastingCost
 }
 
 var Wraith Unit = Unit{
@@ -1518,6 +1537,7 @@ var Wraith Unit = Unit{
     },
     Realm: data.DeathMagic,
     Race: data.RaceFantastic,
+    CastingCost: 500,
 }
 
 var ShadowDemon Unit = Unit{
@@ -1554,6 +1574,7 @@ var ShadowDemon Unit = Unit{
     },
     Realm: data.DeathMagic,
     Race: data.RaceFantastic,
+    CastingCost: 325,
 }
 
 var DeathKnight Unit = Unit{
@@ -1585,6 +1606,7 @@ var DeathKnight Unit = Unit{
     },
     Realm: data.DeathMagic,
     Race: data.RaceFantastic,
+    CastingCost: 600,
 }
 
 var DemonLord Unit = Unit{
@@ -1621,6 +1643,7 @@ var DemonLord Unit = Unit{
     },
     Realm: data.DeathMagic,
     Race: data.RaceFantastic,
+    CastingCost: 1000,
 }
 
 var Zombie Unit = Unit{
@@ -1646,6 +1669,7 @@ var Zombie Unit = Unit{
     },
     Realm: data.DeathMagic,
     Race: data.RaceFantastic,
+    // no CastingCost
 }
 
 var Unicorn Unit = Unit{
@@ -1671,6 +1695,7 @@ var Unicorn Unit = Unit{
     },
     Race: data.RaceFantastic,
     Realm: data.LifeMagic,
+    CastingCost: 250,
 }
 
 var GuardianSpirit Unit = Unit{
@@ -1696,6 +1721,7 @@ var GuardianSpirit Unit = Unit{
         data.MakeAbility(data.AbilityNonCorporeal),
     },
     Realm: data.LifeMagic,
+    CastingCost: 80,
 }
 
 var Angel Unit = Unit{
@@ -1722,6 +1748,7 @@ var Angel Unit = Unit{
     },
     Race: data.RaceFantastic,
     Realm: data.LifeMagic,
+    CastingCost: 550,
 }
 
 var ArchAngel Unit = Unit{
@@ -1764,6 +1791,7 @@ var ArchAngel Unit = Unit{
     },
     Race: data.RaceFantastic,
     Realm: data.LifeMagic,
+    CastingCost: 950,
 }
 
 var WarBear Unit = Unit{
@@ -1784,6 +1812,7 @@ var WarBear Unit = Unit{
     MovementSpeed: 2,
     Abilities: []data.Ability{data.MakeAbility(data.AbilityForester)},
     Race: data.RaceFantastic,
+    CastingCost: 70,
 }
 
 var Sprite Unit = Unit{
@@ -1810,6 +1839,7 @@ var Sprite Unit = Unit{
     Flying: true,
     Abilities: []data.Ability{data.MakeAbilityValue(data.AbilityToHit, 10), data.MakeAbility(data.AbilityForester)},
     Race: data.RaceFantastic,
+    CastingCost: 100,
 }
 
 var Cockatrice Unit = Unit{
@@ -1831,6 +1861,7 @@ var Cockatrice Unit = Unit{
     HitPoints: 3,
     Abilities: []data.Ability{data.MakeAbilityValue(data.AbilityToHit, 10), data.MakeAbilityValue(data.AbilityStoningTouch, -3)},
     Race: data.RaceFantastic,
+    CastingCost: 275,
 }
 
 var Basilisk Unit = Unit{
@@ -1851,6 +1882,7 @@ var Basilisk Unit = Unit{
     HitPoints: 30,
     Abilities: []data.Ability{data.MakeAbilityValue(data.AbilityToHit, 10), data.MakeAbilityValue(data.AbilityStoningGaze, -1)},
     Race: data.RaceFantastic,
+    CastingCost: 325,
 }
 
 var GiantSpider Unit = Unit{
@@ -1871,6 +1903,7 @@ var GiantSpider Unit = Unit{
     HitPoints: 10,
     Abilities: []data.Ability{data.MakeAbilityValue(data.AbilityToHit, 10), data.MakeAbilityValue(data.AbilityWebSpell, 1), data.MakeAbilityValue(data.AbilityPoisonTouch, 4)},
     Race: data.RaceFantastic,
+    CastingCost: 200,
 }
 
 var StoneGiant Unit = Unit{
@@ -1902,6 +1935,7 @@ var StoneGiant Unit = Unit{
         data.MakeAbility(data.AbilityWallCrusher),
     },
     Race: data.RaceFantastic,
+    CastingCost: 450,
 }
 
 var Colossus Unit = Unit{
@@ -1933,6 +1967,7 @@ var Colossus Unit = Unit{
         data.MakeAbility(data.AbilityFirstStrike),
     },
     Race: data.RaceFantastic,
+    CastingCost: 800,
 }
 
 var Gorgon Unit = Unit{
@@ -1957,6 +1992,7 @@ var Gorgon Unit = Unit{
         data.MakeAbilityValue(data.AbilityStoningGaze, -2),
     },
     Race: data.RaceFantastic,
+    CastingCost: 600,
 }
 
 var EarthElemental Unit = Unit{
@@ -1981,6 +2017,7 @@ var EarthElemental Unit = Unit{
         data.MakeAbility(data.AbilityStoningImmunity),
         data.MakeAbility(data.AbilityWallCrusher),
     },
+    CastingCost: 60,
 }
 
 var Behemoth Unit = Unit{
@@ -2001,6 +2038,7 @@ var Behemoth Unit = Unit{
     HitPoints: 45,
     Race: data.RaceFantastic,
     Abilities: []data.Ability{data.MakeAbilityValue(data.AbilityToHit, 20)},
+    CastingCost: 700,
 }
 
 var GreatWyrm Unit = Unit{
@@ -2025,6 +2063,7 @@ var GreatWyrm Unit = Unit{
         data.MakeAbility(data.AbilityMerging),
     },
     Race: data.RaceFantastic,
+    CastingCost: 1000,
 }
 
 var FloatingIsland Unit = Unit{
@@ -2049,6 +2088,7 @@ var FloatingIsland Unit = Unit{
     },
     Race: data.RaceFantastic,
     Realm: data.SorceryMagic,
+    CastingCost: 50,
 }
 
 var PhantomBeast Unit = Unit{
@@ -2075,6 +2115,7 @@ var PhantomBeast Unit = Unit{
         data.MakeAbility(data.AbilityNonCorporeal),
         data.MakeAbility(data.AbilityIllusion),
     },
+    CastingCost: 35,
 }
 
 var PhantomWarrior Unit = Unit{
@@ -2100,6 +2141,7 @@ var PhantomWarrior Unit = Unit{
         data.MakeAbility(data.AbilityIllusion),
     },
     Race: data.RaceFantastic,
+    CastingCost: 10,
 }
 
 var StormGiant Unit = Unit{
@@ -2130,6 +2172,7 @@ var StormGiant Unit = Unit{
         data.MakeAbility(data.AbilityArmorPiercing),
     },
     Race: data.RaceFantastic,
+    CastingCost: 500,
 }
 
 var AirElemental Unit = Unit{
@@ -2156,6 +2199,7 @@ var AirElemental Unit = Unit{
         data.MakeAbility(data.AbilityWeaponImmunity),
         data.MakeAbility(data.AbilityInvisibility),
     },
+    CastingCost: 50,
 }
 
 var Djinn Unit = Unit{
@@ -2198,6 +2242,7 @@ var Djinn Unit = Unit{
         data.MakeAbility(data.AbilityWindWalking),
     },
     Race: data.RaceFantastic,
+    CastingCost: 650,
 }
 
 var SkyDrake Unit = Unit{
@@ -2224,6 +2269,7 @@ var SkyDrake Unit = Unit{
         data.MakeAbility(data.AbilityMagicImmunity),
         data.MakeAbility(data.AbilityIllusionsImmunity),
     },
+    CastingCost: 1000,
 }
 
 var Nagas Unit = Unit{
@@ -2248,6 +2294,7 @@ var Nagas Unit = Unit{
         data.MakeAbilityValue(data.AbilityPoisonTouch, 4),
         data.MakeAbility(data.AbilityFirstStrike),
     },
+    CastingCost: 100,
 }
 
 var HeroBrax Unit = Unit{

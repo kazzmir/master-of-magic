@@ -32,19 +32,21 @@ type CombatEndScreen struct {
     CombatScreen *CombatScreen
     Result CombatEndScreenResult
     UnitsLost int
+    Fame int
     Cache *lbx.LbxCache
     ImageCache util.ImageCache
     UI *uilib.UI
     State CombatEndScreenState
 }
 
-func MakeCombatEndScreen(cache *lbx.LbxCache, combat *CombatScreen, result CombatEndScreenResult, unitsLost int) *CombatEndScreen {
+func MakeCombatEndScreen(cache *lbx.LbxCache, combat *CombatScreen, result CombatEndScreenResult, unitsLost int, fame int) *CombatEndScreen {
     end := &CombatEndScreen{
         CombatScreen: combat,
         Cache: cache,
         ImageCache: util.MakeImageCache(cache),
         Result: result,
         UnitsLost: unitsLost,
+        Fame: fame,
         State: CombatEndScreenRunning,
     }
 
@@ -94,17 +96,20 @@ func (end *CombatEndScreen) MakeUI() *uilib.UI {
 
     titleFont := font.MakeOptimizedFontWithPalette(fonts[4], titlePalette)
 
-    // FIXME: implement fame gain
     extraText := ""
     switch {
-        case end.Result == CombatEndScreenResultWin:
-            extraText = "You have gained 1 fame"
-        case end.Result == CombatEndScreenResultLoose:
-            extraText = "You have lost 1 fame"
-        case end.Result == CombatEndScreenResultRetreat && end.UnitsLost == 1 :
-            extraText = "You have lost 1 unit while fleeing"
-        case end.Result == CombatEndScreenResultRetreat && end.UnitsLost > 1 :
-            extraText = fmt.Sprintf("You have lost %v units while fleeing", end.UnitsLost)
+        case end.Result == CombatEndScreenResultWin && end.Fame > 0:
+            extraText = fmt.Sprintf("You gained %v fame", end.Fame)
+        case end.Result == CombatEndScreenResultLoose && end.Fame > 0:
+            extraText = fmt.Sprintf("You lost %v fame", end.Fame)
+        case end.Result == CombatEndScreenResultRetreat && end.UnitsLost == 1 && end.Fame == 0:
+            extraText = "You lost 1 unit while fleeing"
+        case end.Result == CombatEndScreenResultRetreat && end.UnitsLost > 1 && end.Fame == 0:
+            extraText = fmt.Sprintf("You lost %v units while fleeing.", end.UnitsLost)
+        case end.Result == CombatEndScreenResultRetreat && end.UnitsLost == 1 && end.Fame > 0:
+            extraText = fmt.Sprintf("You lost %v fame and 1 unit while fleeing.", end.Fame)
+        case end.Result == CombatEndScreenResultRetreat && end.UnitsLost > 1 && end.Fame > 0:
+            extraText = fmt.Sprintf("You lost %v fame and %v units while fleeing", end.Fame, end.UnitsLost)
     }
 
     black := color.RGBA{R: 0, G: 0, B: 0, A: 0xff}
