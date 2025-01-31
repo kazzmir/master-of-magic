@@ -1387,12 +1387,29 @@ func (data *TerrainData) FindMatchingAllTiles(match map[Direction]TerrainType, p
     return out
 }
 
-func (data *TerrainData) FindMatchingTile(match map[Direction]TerrainType, plane data.Plane) int {
+func (terrain *TerrainData) FindMatchingTile(match map[Direction]TerrainType, plane data.Plane) int {
+    switch plane {
+        case data.PlaneMyrror:
+            for i, tile := range terrain.Tiles[MyrrorStart:] {
+                if tile.Tile.matches(match) {
+                    return i
+                }
+            }
+        case data.PlaneArcanus:
+            for i, tile := range terrain.Tiles[:MyrrorStart] {
+                if tile.Tile.matches(match) {
+                    return i
+                }
+            }
+    }
+
+    /*
     for i, tile := range data.Tiles {
         if tile.IsPlane(plane) && tile.Tile.matches(match) {
             return i
         }
     }
+    */
 
     return -1
 }
