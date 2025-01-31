@@ -86,7 +86,7 @@ type Player struct {
     Human bool
     Defeated bool
 
-    // Global Fame (without Just Cause and/or heroes)
+    // Fame (without just cause and/or heroes)
     Fame int
 
     // used to seed the random number generator for generating the order of how magic books are drawn
@@ -304,7 +304,7 @@ func (player *Player) GetFame() int {
         }
     }
 
-    // FIXME: add fame from Jause Cause spell
+    // FIXME: add fame from just cause spell
 
     return fame
 }

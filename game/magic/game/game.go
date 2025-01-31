@@ -3945,6 +3945,9 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     var defeatedDefenders int
     var defeatedAttackers int
 
+    oldDrawer := game.Drawer
+    var combatScreen *combat.CombatScreen
+
     if attacker.StrategicCombat && defender.StrategicCombat {
         state, defeatedAttackers, defeatedDefenders = combat.DoStrategicCombat(&attackingArmy, &defendingArmy)
         log.Printf("Strategic combat result state=%v", state)
@@ -3955,8 +3958,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
         landscape := game.GetCombatLandscape(attackerStack.X(), attackerStack.Y(), attackerStack.Plane())
 
         // FIXME: take plane into account for the landscape/terrain
-        combatScreen := combat.MakeCombatScreen(game.Cache, &defendingArmy, &attackingArmy, game.Players[0], landscape, attackerStack.Plane(), zone)
-        oldDrawer := game.Drawer
+        combatScreen = combat.MakeCombatScreen(game.Cache, &defendingArmy, &attackingArmy, game.Players[0], landscape, attackerStack.Plane(), zone)
 
         // ebiten.SetCursorMode(ebiten.CursorModeHidden)
 
@@ -3969,30 +3971,6 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
             state = combatScreen.Update(yield)
             yield()
         }
-
-        result := combat.CombatEndScreenResultLoose
-        humanAttacker := attacker.IsHuman()
-        switch {
-            case state == combat.CombatStateAttackerWin && humanAttacker,
-                 state == combat.CombatStateDefenderWin && !humanAttacker:
-                result = combat.CombatEndScreenResultWin
-            case state == combat.CombatStateAttackerFlee && humanAttacker,
-                 state == combat.CombatStateDefenderFlee && !humanAttacker:
-                result = combat.CombatEndScreenResultRetreat
-        }
-
-        endScreen := combat.MakeCombatEndScreen(game.Cache, combatScreen, result, combatScreen.Model.DiedWhileFleeing)
-        game.Drawer = func (screen *ebiten.Image, game *Game){
-            endScreen.Draw(screen)
-        }
-
-        state2 := combat.CombatEndScreenRunning
-        for state2 == combat.CombatEndScreenRunning {
-            state2 = endScreen.Update()
-            yield()
-        }
-
-        game.Drawer = oldDrawer
 
         defeatedDefenders = combatScreen.Model.DefeatedDefenders
         defeatedAttackers = combatScreen.Model.DefeatedAttackers
@@ -4014,30 +3992,65 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     }
 
     // fame
+    var winnerFame, loserFame int
     distributeFame := func(winner *playerlib.Player, loser *playerlib.Player, loserStack *playerlib.UnitStack, defeatedUnits int) {
         if defeatedUnits >= 4 {
-            winner.Fame += 1
-            loser.Fame -= 1
+            winnerFame += 1
+            loserFame += 1
         }
+
         for _, unit := range loserStack.Units() {
             if unit.GetRawUnit().CastingCost >= 600 {
-                winner.Fame += 1
-                loser.Fame -= 1
+                winnerFame += 1
+                loserFame += 1
                 break
             }
             if unit.IsHero() {
                 hero := unit.(*herolib.Hero)
-                loser.Fame -= (int(hero.GetExperienceLevel()) + 1) / 2
+                loserFame += (int(hero.GetExperienceLevel()) + 1) / 2
             }
         }
+
+        winner.Fame += winnerFame
+        loser.Fame -= loserFame
         if loser.Fame < 0 {
             loser.Fame = 0
         }
     }
+
     if state == combat.CombatStateAttackerWin || state == combat.CombatStateDefenderFlee {
         distributeFame(attacker, defender, defenderStack, defeatedDefenders)
     } else if state == combat.CombatStateDefenderWin || state == combat.CombatStateAttackerFlee {
         distributeFame(defender, attacker, attackerStack, defeatedAttackers)
+    }
+
+    // Show end screen
+    if !attacker.StrategicCombat || !defender.StrategicCombat {
+        result := combat.CombatEndScreenResultLoose
+        humanAttacker := attacker.IsHuman()
+        fame := loserFame
+        switch {
+            case state == combat.CombatStateAttackerWin && humanAttacker,
+                 state == combat.CombatStateDefenderWin && !humanAttacker:
+                result = combat.CombatEndScreenResultWin
+                fame = winnerFame
+            case state == combat.CombatStateAttackerFlee && humanAttacker,
+                 state == combat.CombatStateDefenderFlee && !humanAttacker:
+                result = combat.CombatEndScreenResultRetreat
+        }
+
+        endScreen := combat.MakeCombatEndScreen(game.Cache, combatScreen, result, combatScreen.Model.DiedWhileFleeing, fame)
+        game.Drawer = func (screen *ebiten.Image, game *Game){
+            endScreen.Draw(screen)
+        }
+
+        state2 := combat.CombatEndScreenRunning
+        for state2 == combat.CombatEndScreenRunning {
+            state2 = endScreen.Update()
+            yield()
+        }
+
+        game.Drawer = oldDrawer
     }
 
     // Redistribute equipment of died heros
