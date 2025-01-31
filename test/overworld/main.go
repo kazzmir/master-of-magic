@@ -3181,6 +3181,90 @@ func createScenario38(cache *lbx.LbxCache) *gamelib.Game {
     return game
 }
 
+// town doesn't produce enough food
+func createScenario39(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 39")
+
+    wizard := setup.WizardCustom{
+        Name: "bob",
+        Banner: data.BannerBlue,
+        Race: data.RaceTroll,
+        Abilities: []setup.WizardAbility{
+            setup.AbilityAlchemy,
+            setup.AbilitySageMaster,
+        },
+        Books: []data.WizardBook{
+            data.WizardBook{
+                Magic: data.LifeMagic,
+                Count: 3,
+            },
+            data.WizardBook{
+                Magic: data.SorceryMagic,
+                Count: 8,
+            },
+        },
+    }
+
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
+
+    game.Plane = data.PlaneArcanus
+
+    player := game.AddPlayer(wizard, true)
+
+    x, y, _ := game.FindValidCityLocation(game.Plane)
+
+    /*
+    x = 20
+    y = 20
+    */
+
+    city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, fraction.Make(3, 1), game.BuildingInfo, game.CurrentMap(), game)
+    city.Population = 6300
+    city.Plane = data.PlaneArcanus
+    city.Banner = wizard.Banner
+    city.Buildings.Insert(buildinglib.BuildingFortress)
+    city.Buildings.Insert(buildinglib.BuildingSummoningCircle)
+    city.ProducingBuilding = buildinglib.BuildingGranary
+    city.ProducingUnit = units.UnitNone
+    city.AddEnchantment(data.CityEnchantmentFamine, player.GetBanner())
+    city.Race = wizard.Race
+    city.Farmers = 3
+    city.Workers = 3
+    city.Wall = false
+
+    city.ResetCitizens(nil)
+
+    player.AddCity(city)
+
+    player.Gold = 83
+    player.Mana = 2600
+
+    // remove all bonuses surrounding the city
+    // and force food availability to be very low
+    mapUse := game.CurrentMap()
+    for dx := -2; dx <= 2; dx++ {
+        for dy := -2; dy <= 2; dy++ {
+            cx := mapUse.WrapX(x + dx)
+            cy := y + dy
+            mapUse.SetBonus(cx, cy, data.BonusNone)
+            if (cx+cy) % 2 == 0 {
+                mapUse.Map.Terrain[cx][cy] = int(terrain.IndexForest1)
+            } else {
+                mapUse.Map.Terrain[cx][cy] = int(terrain.IndexDesert1)
+            }
+        }
+    }
+
+    // game.Map.Map.Terrain[3][6] = terrain.TileNatureForest.Index
+
+    // log.Printf("City at %v, %v", x, y)
+
+    player.LiftFog(x, y, 30, data.PlaneArcanus)
+    game.Camera.Center(x, y)
+
+    return game
+}
+
 func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
@@ -3225,6 +3309,7 @@ func NewEngine(scenario int) (*Engine, error) {
         case 36: game = createScenario36(cache)
         case 37: game = createScenario37(cache)
         case 38: game = createScenario38(cache)
+        case 39: game = createScenario39(cache)
         default: game = createScenario1(cache)
     }
 
