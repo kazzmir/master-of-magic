@@ -4,9 +4,11 @@ import (
     "bytes"
     "image"
     "fmt"
+    "slices"
 
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/set"
 )
 
 // terrain tiles are indicies 0-0x259 for arcanus, and 0x2fA - 0x5f4 for myrror
@@ -157,28 +159,29 @@ const (
 
 type DirectedCompatibility struct {
     Direction Direction
-    Terrains []TerrainType
+    // for O(1) lookups
+    Terrains *set.Set[TerrainType]
     Type CompatibilityType
 }
 
 func (compatibility DirectedCompatibility) String() string {
     if compatibility.Type == AnyOf {
-        return fmt.Sprintf("(%s, %s)", compatibility.Direction, compatibility.Terrains)
+        return fmt.Sprintf("(%s, %s)", compatibility.Direction, slices.Sorted(slices.Values(compatibility.Terrains.Values())))
     } else {
-        return fmt.Sprintf("!(%s, %s)", compatibility.Direction, compatibility.Terrains)
+        return fmt.Sprintf("!(%s, %s)", compatibility.Direction, slices.Sorted(slices.Values(compatibility.Terrains.Values())))
     }
 }
 
 type Compatibility struct {
-    Terrains []TerrainType
+    Terrains *set.Set[TerrainType]
     Type CompatibilityType
 }
 
 func (compatibility Compatibility) String() string {
     if compatibility.Type == AnyOf {
-        return fmt.Sprintf("%s", compatibility.Terrains)
+        return fmt.Sprintf("%s", slices.Sorted(slices.Values(compatibility.Terrains.Values())))
     } else {
-        return fmt.Sprintf("!%s", compatibility.Terrains)
+        return fmt.Sprintf("!%s", slices.Sorted(slices.Values(compatibility.Terrains.Values())))
     }
 }
 
@@ -337,6 +340,11 @@ func (tile Tile) IsLakeWithFlow() bool {
 func (tile *Tile) matches(match map[Direction]TerrainType) bool {
     for direction, compatibility := range tile.Compatibilities {
         if compatibility.Type == AnyOf {
+            if !compatibility.Terrains.Contains(match[direction]) {
+                return false
+            }
+
+            /*
             isAny := false
             for _, terrain := range compatibility.Terrains {
                 if match[direction] == terrain {
@@ -347,7 +355,13 @@ func (tile *Tile) matches(match map[Direction]TerrainType) bool {
             if !isAny {
                 return false
             }
+            */
         } else {
+            if compatibility.Terrains.Contains(match[direction]) {
+                return false
+            }
+
+            /*
             none := true
             for _, terrain := range compatibility.Terrains {
                 if match[direction] == terrain {
@@ -358,6 +372,7 @@ func (tile *Tile) matches(match map[Direction]TerrainType) bool {
             if !none {
                 return false
             }
+            */
         }
     }
     return true
@@ -369,7 +384,7 @@ func (tile *Tile) GetDirection(direction Direction) Compatibility {
         return compatibility
     }
 
-    return Compatibility{Terrains: []TerrainType{Unknown}}
+    return Compatibility{Terrains: set.NewSet([]TerrainType{Unknown}...)}
 }
 
 func (tile Tile) String() string {
@@ -398,7 +413,7 @@ func makeCompatibilities(directions []Direction, terrains []TerrainType, type_ C
     for _, direction := range directions {
         out = append(out, DirectedCompatibility{
             Direction: direction,
-            Terrains: terrains,
+            Terrains: set.NewSet(terrains...),
             Type: type_,
         })
     }
@@ -1357,6 +1372,28 @@ type TerrainData struct {
     // the full array of all tile images
     Images []image.Image
     Tiles []TerrainTile
+    // store a map from the terrain type to the tiles that match that type
+    OnlyTiles map[TerrainType][]TerrainTile
+}
+
+func MakeTerrainData(images []image.Image, tiles []TerrainTile) *TerrainData {
+    out := &TerrainData{
+        Images: images,
+        Tiles: tiles,
+    }
+
+    out.optimize()
+
+    return out
+}
+
+func (data *TerrainData) optimize() {
+    data.OnlyTiles = make(map[TerrainType][]TerrainTile)
+
+    for _, tile := range data.Tiles {
+        tiles := data.OnlyTiles[tile.Tile.TerrainType()]
+        data.OnlyTiles[tile.Tile.TerrainType()] = append(tiles, tile)
+    }
 }
 
 func (data *TerrainData) TileWidth() int {
@@ -1387,10 +1424,28 @@ func (data *TerrainData) FindMatchingAllTiles(match map[Direction]TerrainType, p
     return out
 }
 
-func (data *TerrainData) FindMatchingTile(match map[Direction]TerrainType, plane data.Plane) int {
-    for i, tile := range data.Tiles {
-        if tile.IsPlane(plane) && tile.Tile.matches(match) {
-            return i
+func (terrain *TerrainData) FindMatchingTile(match map[Direction]TerrainType, plane data.Plane) int {
+    var tiles []TerrainTile
+
+    center, ok := match[Center]
+    if ok {
+        for _, tile := range terrain.OnlyTiles[center] {
+            if tile.Tile.matches(match) {
+                return tile.TileIndex
+            }
+        }
+    }
+
+    switch plane {
+        case data.PlaneMyrror:
+            tiles = terrain.Tiles[MyrrorStart:]
+        case data.PlaneArcanus:
+            tiles = terrain.Tiles[:MyrrorStart]
+    }
+
+    for _, tile := range tiles {
+        if tile.Tile.matches(match) {
+            return tile.TileIndex
         }
     }
 
@@ -1503,8 +1558,5 @@ func ReadTerrainData(lbxFile *lbx.LbxFile) (*TerrainData, error) {
         tileIndex += 1
     }
 
-    return &TerrainData{
-        Images: images,
-        Tiles: tiles,
-    }, nil
+    return MakeTerrainData(images, tiles), nil
 }
