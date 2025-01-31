@@ -3026,6 +3026,8 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
                     // FIXME: if there was a city here and the attacker won then the attacker
                     // should be able to raze or occupy the city
 
+                    // FIXME: loose fame if razing
+
                     stack.ExhaustMoves()
                     game.RefreshUI()
 
@@ -3327,6 +3329,7 @@ func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Play
                     City: enemy.FindCity(stack.X(), stack.Y(), stack.Plane()),
                 }
                 game.doCombat(yield, player, stack, enemy, enemyStack, zone)
+                // FIXME: loose fame if razing
             }
         }
     } else if move.Invalid != nil {
