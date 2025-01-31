@@ -3168,6 +3168,7 @@ func createScenario38(cache *lbx.LbxCache) *gamelib.Game {
     }
 
     player2 := game.AddPlayer(wizard2, false)
+    player2.AIBehavior = ai.MakeRaiderAI()
     player2.Mana = 26557
 
     player2.AddUnit(units.MakeOverworldUnitFromUnit(units.Basilisk, x+1, y-2, data.PlaneArcanus, wizard2.Banner, nil))

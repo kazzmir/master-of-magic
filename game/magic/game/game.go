@@ -3034,6 +3034,11 @@ func (game *Game) doMoveFleeingDefender(player *playerlib.Player, stack *playerl
     position := positions[rand.IntN(len(positions))]
     stack.SetX(position.X)
     stack.SetY(position.Y)
+
+    allStacks := player.FindAllStacks(position.X, position.Y, stack.Plane())
+    for i := 1; i < len(allStacks); i++ {
+        player.MergeStacks(allStacks[0], allStacks[i])
+    }
 }
 
 func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerlib.Player) {
