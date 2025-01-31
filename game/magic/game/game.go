@@ -452,6 +452,11 @@ func (game *Game) AddPlayer(wizard setup.WizardCustom, human bool) *playerlib.Pl
 
     // log.Printf("Research spells: %v", newPlayer.ResearchPoolSpells)
 
+    // famous wizards get a head start of 10 fame
+    if wizard.AbilityEnabled(setup.AbilityFamous) {
+        newPlayer.Fame += 10
+    }
+
     game.Players = append(game.Players, newPlayer)
     return newPlayer
 }

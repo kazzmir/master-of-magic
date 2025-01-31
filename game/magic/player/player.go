@@ -86,6 +86,7 @@ type Player struct {
     Human bool
     Defeated bool
 
+    // Global Fame (without Just Cause and/or heroes)
     Fame int
 
     // used to seed the random number generator for generating the order of how magic books are drawn
@@ -302,6 +303,8 @@ func (player *Player) GetFame() int {
             fame += hero.GetAbilityFame()
         }
     }
+
+    // FIXME: add fame from Jause Cause spell
 
     return fame
 }
