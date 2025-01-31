@@ -3011,16 +3011,8 @@ func (game *Game) doMoveFleeingDefender(player *playerlib.Player, stack *playerl
         }
     }
 
-    // kill whole stack if no position found
-    if len(positions) == 0 && len(waterPositions) == 0 {
-        for _, unit := range stack.Units() {
-            player.RemoveUnit(unit)
-        }
-        return
-    }
-
-    // kill units that can not move to water
-    if len(positions) == 0 {
+    // kill units that can not move to water if only water is available
+    if len(positions) == 0 && len(waterPositions) != 0 {
         for _, unit := range stack.Units() {
             if !unit.IsFlying() && !unit.IsSwimmer() {
                 player.RemoveUnit(unit)
@@ -3028,6 +3020,14 @@ func (game *Game) doMoveFleeingDefender(player *playerlib.Player, stack *playerl
         }
 
         positions = waterPositions
+    }
+
+    // kill whole stack if no position found
+    if len(positions) == 0 {
+        for _, unit := range stack.Units() {
+            player.RemoveUnit(unit)
+        }
+        return
     }
 
     // set to a random position
