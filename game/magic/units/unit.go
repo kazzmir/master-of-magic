@@ -1369,7 +1369,7 @@ var Skeleton Unit = Unit{
     Abilities: []data.Ability{
         data.MakeAbilityValue(data.AbilityToHit, 10),
         data.MakeAbility(data.AbilityPoisonImmunity),
-        data.MakeAbility(data.AbilityMissileImmunity), 
+        data.MakeAbility(data.AbilityMissileImmunity),
         data.MakeAbility(data.AbilityIllusionsImmunity),
         data.MakeAbility(data.AbilityColdImmunity),
         data.MakeAbility(data.AbilityDeathImmunity),
@@ -2203,7 +2203,7 @@ var Djinn Unit = Unit{
 var SkyDrake Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 76,
-    Name: "SkyDrake",
+    Name: "Sky Drake",
     Realm: data.SorceryMagic,
     CombatLbxFile: "figure14.lbx",
     CombatIndex: 8,

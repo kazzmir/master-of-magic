@@ -3084,6 +3084,103 @@ func createScenario36(cache *lbx.LbxCache) *gamelib.Game {
     return game
 }
 
+// fleeing from an encounter
+func createScenario37(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 37")
+
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+        Magic: data.MagicSettingNormal,
+        Difficulty: data.DifficultyAverage,
+    })
+    game.Plane = data.PlaneArcanus
+
+    wizard := setup.WizardCustom{
+        Name: "Rjak",
+        Base: data.WizardRjak,
+        Banner: data.BannerPurple,
+    }
+
+    nodes := findNodes(game.CurrentMap())
+    node := nodes[terrain.NatureNode][0]
+
+    player := game.AddPlayer(wizard, true)
+    player.Gold = 830
+    player.Mana = 26557
+    player.CastingSkillPower = 10000
+    player.LiftFog(node.X, node.Y, 3, data.PlaneArcanus)
+
+    unit := player.AddUnit(units.MakeOverworldUnitFromUnit(units.SkyDrake, node.X + 1, node.Y + 1, data.PlaneArcanus, wizard.Banner, nil))
+    stack := player.FindStackByUnit(unit)
+    player.SetSelectedStack(stack)
+
+    return game
+}
+
+// fleeing from an enemy
+func createScenario38(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 38")
+
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+        Magic: data.MagicSettingNormal,
+        Difficulty: data.DifficultyAverage,
+    })
+    game.Plane = data.PlaneArcanus
+
+    wizard1 := setup.WizardCustom{
+        Name: "Rjak",
+        Base: data.WizardRjak,
+        Banner: data.BannerPurple,
+    }
+
+
+    player1 := game.AddPlayer(wizard1, true)
+    player1.Gold = 830
+    player1.Mana = 26557
+    player1.CastingSkillPower = 10000
+
+    x, y, _ := game.FindValidCityLocation(game.Plane)
+
+    city1 := citylib.MakeCity("", x, y, data.RaceBarbarian, player1.Wizard.Banner, player1.TaxRate, game.BuildingInfo, game.CurrentMap(), game)
+    city1.Population = 6190
+    city1.Plane = data.PlaneArcanus
+    city1.Banner = wizard1.Banner
+    city1.ProducingBuilding = buildinglib.BuildingGranary
+    city1.ProducingUnit = units.UnitNone
+    city1.Race = wizard1.Race
+    city1.Farmers = 3
+    city1.Workers = 3
+    city1.Wall = false
+    city1.ResetCitizens(nil)
+    player1.AddCity(city1)
+    player1.LiftFog(x, y, 3, data.PlaneArcanus)
+
+    x, y, _ = game.FindValidCityLocation(game.Plane)
+    player1.LiftFog(x, y, 3, data.PlaneArcanus)
+
+    unit1 := player1.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x, y, data.PlaneArcanus, wizard1.Banner, nil))
+    stack1 := player1.FindStackByUnit(unit1)
+    player1.SetSelectedStack(stack1)
+
+    wizard2 := setup.WizardCustom{
+        Name: "Merlin",
+        Base: data.WizardMerlin,
+        Banner: data.BannerYellow,
+    }
+
+    player2 := game.AddPlayer(wizard2, false)
+    player2.AIBehavior = ai.MakeRaiderAI()
+    player2.Mana = 26557
+
+    player2.AddUnit(units.MakeOverworldUnitFromUnit(units.Basilisk, x+1, y-2, data.PlaneArcanus, wizard2.Banner, nil))
+    player2.AddUnit(units.MakeOverworldUnitFromUnit(units.Basilisk, x+1, y-1, data.PlaneArcanus, wizard2.Banner, nil))
+    player2.AddUnit(units.MakeOverworldUnitFromUnit(units.Basilisk, x+1, y, data.PlaneArcanus, wizard2.Banner, nil))
+    player2.AddUnit(units.MakeOverworldUnitFromUnit(units.Basilisk, x-1, y-2, data.PlaneArcanus, wizard2.Banner, nil))
+    player2.AddUnit(units.MakeOverworldUnitFromUnit(units.Basilisk, x-1, y-1, data.PlaneArcanus, wizard2.Banner, nil))
+    player2.AddUnit(units.MakeOverworldUnitFromUnit(units.Basilisk, x-1, y, data.PlaneArcanus, wizard2.Banner, nil))
+
+    return game
+}
+
 func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
@@ -3126,6 +3223,8 @@ func NewEngine(scenario int) (*Engine, error) {
         case 34: game = createScenario34(cache)
         case 35: game = createScenario35(cache)
         case 36: game = createScenario36(cache)
+        case 37: game = createScenario37(cache)
+        case 38: game = createScenario38(cache)
         default: game = createScenario1(cache)
     }
 

@@ -34,6 +34,8 @@ type StackUnit interface {
     GetWeaponBonus() data.WeaponBonus
     GetX() int
     GetY() int
+    SetX(int)
+    SetY(int)
     IsHero() bool
     Move(int, int, fraction.Fraction, NormalizeCoordinateFunc)
     GetLbxFile() string

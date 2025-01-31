@@ -897,6 +897,7 @@ type Army struct {
     Player *playerlib.Player
     Units []*ArmyUnit
     Auto bool
+    Fled bool
 }
 
 // a number that mostly represents the strength of this army
@@ -1014,6 +1015,10 @@ type CombatModel struct {
     // can be given out after combat ends
     DefeatedDefenders int
     DefeatedAttackers int
+
+    // track how many units were killed when fleeing, so the number
+    // can be reported after combands ends
+    DiedWhileFleeing int
 
     Turn Team
     CurrentTurn int
@@ -2217,6 +2222,8 @@ func DoStrategicCombat(attackingArmy *Army, defendingArmy *Army) (CombatState, i
 
     log.Printf("strategic combat: attacking power: %v, defending power: %v", attackingPower, defendingPower)
 
+    // FIXME: Allow fleeing?
+
     if attackingPower > defendingPower {
         for _, unit := range defendingArmy.Units {
             unit.TakeDamage(unit.Unit.GetMaxHealth())
@@ -2229,5 +2236,23 @@ func DoStrategicCombat(attackingArmy *Army, defendingArmy *Army) (CombatState, i
         }
 
         return CombatStateDefenderWin, len(attackingArmy.Units), 0
+    }
+}
+
+func (model *CombatModel) flee(army *Army) {
+    for _, unit := range army.Units {
+        // FIXME: units unable to move always die
+
+        // heroes have a 25% chance to die, normal units 50%
+        chance := 50
+        if unit.Unit.IsHero() {
+            chance = 25
+        }
+
+        if rand.IntN(100) < chance {
+            unit.TakeDamage(unit.Unit.GetHealth())
+            model.RemoveUnit(unit)
+            model.DiedWhileFleeing += 1
+        }
     }
 }

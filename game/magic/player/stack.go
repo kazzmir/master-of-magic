@@ -334,3 +334,15 @@ func (stack *UnitStack) Y() int {
 
     return 0
 }
+
+func (stack *UnitStack) SetX(x int) {
+    for _, unit := range stack.units {
+        unit.SetX(x)
+    }
+}
+
+func (stack *UnitStack) SetY(y int) {
+    for _, unit := range stack.units {
+        unit.SetY(y)
+    }
+}

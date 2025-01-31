@@ -139,6 +139,14 @@ func (unit *OverworldUnit) GetY() int {
     return unit.Y
 }
 
+func (unit *OverworldUnit) SetX(x int) {
+    unit.X = x
+}
+
+func (unit *OverworldUnit) SetY(y int) {
+    unit.Y = y
+}
+
 func (unit *OverworldUnit) SetId(id uint64) {
     unit.Id = id
 }

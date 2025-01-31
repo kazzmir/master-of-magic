@@ -38,7 +38,9 @@ const (
     CombatStateRunning CombatState = iota
     CombatStateAttackerWin
     CombatStateDefenderWin
-    CombatStateDone
+    CombatStateAttackerFlee
+    CombatStateDefenderFlee
+    CombatStateNoCombat
 )
 
 func (state CombatState) String() string {
@@ -46,7 +48,9 @@ func (state CombatState) String() string {
         case CombatStateRunning: return "Running"
         case CombatStateAttackerWin: return "AttackerWin"
         case CombatStateDefenderWin: return "DefenderWin"
-        case CombatStateDone: return "Done"
+        case CombatStateAttackerFlee: return "AttackerFlee"
+        case CombatStateDefenderFlee: return "DefenderFlee"
+        case CombatStateNoCombat: return "NoCombat"
     }
 
     return ""
@@ -1347,8 +1351,11 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
 
     // flee
     elements = append(elements, makeButton(21, 0, 2, func(){
-        // FIXME: choose the right side
-        combat.Model.AttackingArmy.Units = nil
+        if combat.Model.AttackingArmy.Player == player {
+            combat.Model.AttackingArmy.Fled = true
+        } else {
+            combat.Model.DefendingArmy.Fled = true
+        }
     }))
 
     // done
@@ -2216,7 +2223,16 @@ func (combat *CombatScreen) UpdateMouseState() {
 }
 
 func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
-    // defender wins in a tie
+    if combat.Model.AttackingArmy.Fled {
+        combat.Model.flee(combat.Model.AttackingArmy)
+        return CombatStateAttackerFlee
+    }
+
+    if combat.Model.DefendingArmy.Fled {
+        combat.Model.flee(combat.Model.DefendingArmy)
+        return CombatStateDefenderFlee
+    }
+
     if len(combat.Model.AttackingArmy.Units) == 0 {
         combat.Model.AddLogEvent("Defender wins!")
         return CombatStateDefenderWin
