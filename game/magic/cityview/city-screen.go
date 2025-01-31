@@ -300,9 +300,15 @@ func makeBuildingSlots(city *citylib.City) []BuildingSlot {
     var buildings []BuildingSlot
 
     for _, building := range sortBuildings(city.Buildings.Values()) {
+        // city walls is handled specially
+        if building == buildinglib.BuildingCityWalls {
+            buildings = append(buildings, BuildingSlot{Building: building, Point: image.Pt(0, 75)})
+            continue
+        }
+
         if len(openSlots) == 0 {
-            log.Printf("Ran out of open slots in city view for %+v", city)
-            break
+            log.Printf("Ran out of open slots in city view for %+v for building %v", city, city.BuildingInfo.Name(building))
+            continue
         }
 
         point := openSlots[0]
@@ -1077,7 +1083,7 @@ func drawCityScape(screen *ebiten.Image, buildings []BuildingSlot, buildingLook 
                         text = fmt.Sprintf("%v's Fortress", player.Wizard.Name)
                     }
 
-                    printX, printY := baseGeoM.Apply(float64(x + 10 * data.ScreenScale) + roadX, float64(y + 1 * data.ScreenScale) + roadY)
+                    printX, printY := baseGeoM.Apply(float64(x + use.Bounds().Dx() / 2) + roadX, float64(y + 1 * data.ScreenScale) + roadY)
 
                     useFont.PrintCenter(screen, printX, printY, float64(data.ScreenScale), options.ColorScale, text)
                 }

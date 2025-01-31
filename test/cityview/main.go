@@ -82,13 +82,16 @@ func NewEngine() (*Engine, error) {
     city.Buildings.Insert(buildinglib.BuildingSawmill)
     city.Buildings.Insert(buildinglib.BuildingMechaniciansGuild)
     city.Buildings.Insert(buildinglib.BuildingBuildersHall)
+    city.Buildings.Insert(buildinglib.BuildingCityWalls)
     city.ProducingBuilding = buildinglib.BuildingHousing
     // city.ProducingUnit = units.HighElfSpearmen
     city.ResetCitizens(nil)
         // ProducingUnit: units.UnitNone,
 
+    /*
     city.AddEnchantment(data.CityEnchantmentWallOfFire, data.BannerRed)
     city.AddEnchantment(data.CityEnchantmentWallOfDarkness, data.BannerGreen)
+    */
 
     var garrison []units.StackUnit
     for i := 0; i < 2; i++ {
