@@ -7,6 +7,7 @@ import (
 
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/set"
 )
 
 // terrain tiles are indicies 0-0x259 for arcanus, and 0x2fA - 0x5f4 for myrror
@@ -157,28 +158,29 @@ const (
 
 type DirectedCompatibility struct {
     Direction Direction
-    Terrains []TerrainType
+    // for O(1) lookups
+    Terrains *set.Set[TerrainType]
     Type CompatibilityType
 }
 
 func (compatibility DirectedCompatibility) String() string {
     if compatibility.Type == AnyOf {
-        return fmt.Sprintf("(%s, %s)", compatibility.Direction, compatibility.Terrains)
+        return fmt.Sprintf("(%s, %s)", compatibility.Direction, compatibility.Terrains.Values())
     } else {
-        return fmt.Sprintf("!(%s, %s)", compatibility.Direction, compatibility.Terrains)
+        return fmt.Sprintf("!(%s, %s)", compatibility.Direction, compatibility.Terrains.Values())
     }
 }
 
 type Compatibility struct {
-    Terrains []TerrainType
+    Terrains *set.Set[TerrainType]
     Type CompatibilityType
 }
 
 func (compatibility Compatibility) String() string {
     if compatibility.Type == AnyOf {
-        return fmt.Sprintf("%s", compatibility.Terrains)
+        return fmt.Sprintf("%s", compatibility.Terrains.Values())
     } else {
-        return fmt.Sprintf("!%s", compatibility.Terrains)
+        return fmt.Sprintf("!%s", compatibility.Terrains.Values())
     }
 }
 
@@ -337,6 +339,11 @@ func (tile Tile) IsLakeWithFlow() bool {
 func (tile *Tile) matches(match map[Direction]TerrainType) bool {
     for direction, compatibility := range tile.Compatibilities {
         if compatibility.Type == AnyOf {
+            if !compatibility.Terrains.Contains(match[direction]) {
+                return false
+            }
+
+            /*
             isAny := false
             for _, terrain := range compatibility.Terrains {
                 if match[direction] == terrain {
@@ -347,7 +354,13 @@ func (tile *Tile) matches(match map[Direction]TerrainType) bool {
             if !isAny {
                 return false
             }
+            */
         } else {
+            if compatibility.Terrains.Contains(match[direction]) {
+                return false
+            }
+
+            /*
             none := true
             for _, terrain := range compatibility.Terrains {
                 if match[direction] == terrain {
@@ -358,6 +371,7 @@ func (tile *Tile) matches(match map[Direction]TerrainType) bool {
             if !none {
                 return false
             }
+            */
         }
     }
     return true
@@ -369,7 +383,7 @@ func (tile *Tile) GetDirection(direction Direction) Compatibility {
         return compatibility
     }
 
-    return Compatibility{Terrains: []TerrainType{Unknown}}
+    return Compatibility{Terrains: set.NewSet([]TerrainType{Unknown}...)}
 }
 
 func (tile Tile) String() string {
@@ -398,7 +412,7 @@ func makeCompatibilities(directions []Direction, terrains []TerrainType, type_ C
     for _, direction := range directions {
         out = append(out, DirectedCompatibility{
             Direction: direction,
-            Terrains: terrains,
+            Terrains: set.NewSet(terrains...),
             Type: type_,
         })
     }

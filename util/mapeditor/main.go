@@ -122,7 +122,7 @@ func (editor *Editor) Update() error {
                 editor.clear()
             case ebiten.KeyG:
                 start := time.Now()
-                editor.Map = terrain.GenerateLandCellularAutomata(editor.Map.Rows(), editor.Map.Columns(), editor.Data, editor.Plane)
+                editor.Map = terrain.GenerateLandCellularAutomata(editor.Map.Columns(), editor.Map.Rows(), editor.Data, editor.Plane)
                 end := time.Now()
                 log.Printf("Generate land took %v", end.Sub(start))
             case ebiten.KeyS:
