@@ -101,10 +101,10 @@ func (end *CombatEndScreen) MakeUI() *uilib.UI {
             extraText = "You have gained 1 fame"
         case end.Result == CombatEndScreenResultLoose:
             extraText = "You have lost 1 fame"
-        case end.Result == CombatEndScreenResultRetreat && end.UnitsLost == 0 :
-            extraText = "You lost 1 unit while fleeing"
+        case end.Result == CombatEndScreenResultRetreat && end.UnitsLost == 1 :
+            extraText = "You have lost 1 unit while fleeing"
         case end.Result == CombatEndScreenResultRetreat && end.UnitsLost > 1 :
-            extraText = fmt.Sprintf("You lost %v units while fleeing", end.UnitsLost)
+            extraText = fmt.Sprintf("You have lost %v units while fleeing", end.UnitsLost)
     }
 
     black := color.RGBA{R: 0, G: 0, B: 0, A: 0xff}
