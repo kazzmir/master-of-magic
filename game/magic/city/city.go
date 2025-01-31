@@ -721,7 +721,9 @@ func (city *City) PopulationGrowthRate() int {
         base += 30
     }
 
-    // FIXME: if not enough food then rate is -50 * missing food
+    if city.SurplusFood() < 0 {
+        base = -50 * city.SurplusFood()
+    }
 
     return base
 }
@@ -766,6 +768,10 @@ func (city *City) FoodProductionRate() int {
     // foresters guild doesn't contribute to the food needed to support the town, instead the food is added to the global surplus
     if city.Buildings.Contains(buildinglib.BuildingForestersGuild) {
         base += 2
+    }
+
+    if city.HasEnchantment(data.CityEnchantmentFamine) {
+        base /= 2
     }
 
     return base

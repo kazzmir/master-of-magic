@@ -1173,6 +1173,17 @@ func (cityScreen *CityScreen) FoodProducers() []ResourceUsage {
 func (cityScreen *CityScreen) drawIcons(total int, small *ebiten.Image, large *ebiten.Image, options ebiten.DrawImageOptions, screen *ebiten.Image) ebiten.GeoM {
     largeGap := large.Bounds().Dx()
 
+    var optionsM colorm.DrawImageOptions
+    optionsM.GeoM = options.GeoM
+    var matrix colorm.ColorM
+    matrix.Scale(float64(options.ColorScale.R()), float64(options.ColorScale.G()), float64(options.ColorScale.B()), float64(options.ColorScale.A()))
+
+    // draw icons in grey scale
+    if total < 0 {
+        matrix.ChangeHSV(0, 0, 1)
+        total = -total
+    }
+
     if total / 10 > 3 {
         largeGap -= 1
     }
@@ -1183,9 +1194,10 @@ func (cityScreen *CityScreen) drawIcons(total int, small *ebiten.Image, large *e
 
     for range total / 10 {
         if screen != nil {
-            screen.DrawImage(large, &options)
+            // screen.DrawImage(large, &options)
+            colorm.DrawImage(screen, large, matrix, &optionsM)
         }
-        options.GeoM.Translate(float64(largeGap), 0)
+        optionsM.GeoM.Translate(float64(largeGap), 0)
     }
 
     smallGap := small.Bounds().Dx() + 1
@@ -1198,12 +1210,13 @@ func (cityScreen *CityScreen) drawIcons(total int, small *ebiten.Image, large *e
 
     for range total % 10 {
         if screen != nil {
-            screen.DrawImage(small, &options)
+            // screen.DrawImage(small, &options)
+            colorm.DrawImage(screen, small, matrix, &optionsM)
         }
-        options.GeoM.Translate(float64(smallGap), 0)
+        optionsM.GeoM.Translate(float64(smallGap), 0)
     }
 
-    return options.GeoM
+    return optionsM.GeoM
 }
 
 // copied heavily from ui/dialogs.go:MakeHelpElementWithLayer
@@ -1504,6 +1517,8 @@ func (cityScreen *CityScreen) ResearchProducers() []ResourceUsage {
 func (cityScreen *CityScreen) CreateResourceIcons(ui *uilib.UI) []*uilib.UIElement {
     foodRequired := cityScreen.City.RequiredFood()
     foodSurplus := cityScreen.City.SurplusFood()
+
+    foodRequired = int(max(0, min(foodRequired, foodRequired + foodSurplus)))
 
     smallFood, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 40, 0)
     bigFood, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 88, 0)
