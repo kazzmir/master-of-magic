@@ -3113,6 +3113,7 @@ func createScenario37(cache *lbx.LbxCache) *gamelib.Game {
     player.Gold = 830
     player.Mana = 26557
     player.CastingSkillPower = 10000
+    player.Fame = 10
     player.LiftFog(node.X, node.Y, 3, data.PlaneArcanus)
 
     unit := player.AddUnit(units.MakeOverworldUnitFromUnit(units.SkyDrake, node.X + 1, node.Y + 1, data.PlaneArcanus, wizard.Banner, nil))
@@ -3137,7 +3138,6 @@ func createScenario38(cache *lbx.LbxCache) *gamelib.Game {
         Base: data.WizardRjak,
         Banner: data.BannerPurple,
     }
-
 
     player1 := game.AddPlayer(wizard1, true)
     player1.Gold = 830
