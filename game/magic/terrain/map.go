@@ -430,9 +430,10 @@ func (map_ *Map) placeRivers(area int, data *TerrainData, plane data.Plane) {
         // work with a copy where the path is rendered to allow resolving and discarding it
         // mapCopy := map_.Copy()
         for x := range mapCopy.Columns() {
-            for y := range mapCopy.Rows() {
-                mapCopy.Terrain[x][y] = map_.Terrain[x][y]
-            }
+            // for _ := range mapCopy.Rows() {
+                copy(mapCopy.Terrain[x], map_.Terrain[x])
+                // mapCopy.Terrain[x][y] = map_.Terrain[x][y]
+            // }
         }
 
         for _, point := range path {
