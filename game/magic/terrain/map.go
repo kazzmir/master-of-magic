@@ -545,7 +545,7 @@ func (map_ *Map) removeSmallIslands(area int, plane data.Plane){
 
 func (map_ *Map) getTerrainAt(x int, y int, data *TerrainData) TerrainType {
     if y < 0 || y > map_.Rows() - 1 {
-        return  Ocean
+        return Ocean
     }
 
     x = map_.WrapX(x)
