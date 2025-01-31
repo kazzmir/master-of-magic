@@ -3109,7 +3109,7 @@ func createScenario37(cache *lbx.LbxCache) *gamelib.Game {
     player.CastingSkillPower = 10000
     player.LiftFog(node.X, node.Y, 3, data.PlaneArcanus)
 
-    unit := player.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, node.X + 1, node.Y + 1, data.PlaneArcanus, wizard.Banner, nil))
+    unit := player.AddUnit(units.MakeOverworldUnitFromUnit(units.SkyDrake, node.X + 1, node.Y + 1, data.PlaneArcanus, wizard.Banner, nil))
     stack := player.FindStackByUnit(unit)
     player.SetSelectedStack(stack)
 
