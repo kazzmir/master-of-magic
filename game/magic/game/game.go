@@ -3956,12 +3956,17 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
             yield()
         }
 
-        var result combat.CombatEndScreenResult
-        switch state {
-            case combat.CombatStateAttackerWin: result = combat.CombatEndScreenResultWin
-            case combat.CombatStateDefenderWin: result = combat.CombatEndScreenResultLoose
-            case combat.CombatStateAttackerFlee: result = combat.CombatEndScreenResultRetreat
+        result := combat.CombatEndScreenResultLoose
+        humanAttacker := attacker.IsHuman()
+        switch {
+            case state == combat.CombatStateAttackerWin && humanAttacker,
+                 state == combat.CombatStateDefenderWin && !humanAttacker:
+                result = combat.CombatEndScreenResultWin
+            case state == combat.CombatStateAttackerFlee && humanAttacker,
+                 state == combat.CombatStateDefenderFlee && !humanAttacker:
+                result = combat.CombatEndScreenResultRetreat
         }
+
         endScreen := combat.MakeCombatEndScreen(game.Cache, combatScreen, result)
         game.Drawer = func (screen *ebiten.Image, game *Game){
             endScreen.Draw(screen)
