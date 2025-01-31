@@ -2956,6 +2956,91 @@ func (game *Game) doMoveCamera(yield coroutine.YieldFunc, x int, y int) {
     game.Camera.Center(game.CurrentMap().WrapX(x), y)
 }
 
+func (game *Game) doMoveFleeingDefender(player *playerlib.Player, stack *playerlib.UnitStack) {
+    // try to relocate a fleeing stack, kills units that are unable
+    x := stack.X()
+    y := stack.Y()
+    plane := stack.Plane()
+    mapUse := game.GetMap(plane)
+    canMoveToWater := stack.AllFlyers() || stack.AllSwimmers()
+
+    var positions []image.Point
+    var waterPositions []image.Point
+    for dx := -1; dx <= 1; dx++ {
+        for dy := -1; dy <= 1; dy++ {
+            if dx == 0 && dy == 0 {
+                continue
+            }
+
+            cx := mapUse.WrapX(x + dx)
+            cy := y + dy
+
+            if dy < 0 || dy >= mapUse.Height() {
+                continue
+            }
+
+            // can not contain an enemy stack or city
+            occupied := false
+            for _, enemy := range game.GetEnemies(player) {
+
+                if enemy.FindStack(cx, cy, plane) != nil {
+                    occupied = true
+                    break
+                }
+
+                if enemy.FindCity(cx, cy, plane) != nil {
+                    occupied = true
+                    break
+                }
+            }
+
+            if occupied {
+                continue
+            }
+
+            // can not countain encounter
+            if mapUse.GetEncounter(cx, cy) != nil {
+                continue
+            }
+
+            if mapUse.GetTile(cx, cy).Tile.IsWater() && !canMoveToWater {
+                waterPositions = append(waterPositions, image.Pt(cx, cy))
+            } else {
+                positions = append(positions, image.Pt(cx, cy))
+            }
+        }
+    }
+
+    // kill units that can not move to water if only water is available
+    if len(positions) == 0 && len(waterPositions) != 0 {
+        for _, unit := range stack.Units() {
+            if !unit.IsFlying() && !unit.IsSwimmer() {
+                player.RemoveUnit(unit)
+            }
+        }
+
+        positions = waterPositions
+    }
+
+    // kill whole stack if no position found
+    if len(positions) == 0 {
+        for _, unit := range stack.Units() {
+            player.RemoveUnit(unit)
+        }
+        return
+    }
+
+    // set to a random position
+    position := positions[rand.IntN(len(positions))]
+    stack.SetX(position.X)
+    stack.SetY(position.Y)
+
+    allStacks := player.FindAllStacks(position.X, position.Y, stack.Plane())
+    for i := 1; i < len(allStacks); i++ {
+        player.MergeStacks(allStacks[0], allStacks[i])
+    }
+}
+
 func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerlib.Player) {
     stack := player.SelectedStack
     if stack == nil || len(stack.ActiveUnits()) == 0 {
@@ -2989,7 +3074,11 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
                     player.LiftFog(stack.X(), stack.Y(), 1, stack.Plane())
 
                     stack.ExhaustMoves()
-                    game.doEncounter(yield, player, stack, encounter, mapUse, stack.X(), stack.Y())
+                    state := game.doEncounter(yield, player, stack, encounter, mapUse, stack.X(), stack.Y())
+                    if state == combat.CombatStateAttackerFlee {
+                        stack.SetX(oldX)
+                        stack.SetY(oldY)
+                    }
 
                     game.RefreshUI()
                 } else {
@@ -3016,7 +3105,13 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
                         City: otherPlayer.FindCity(stack.X(), stack.Y(), stack.Plane()),
                     }
 
-                    game.doCombat(yield, player, stack, otherPlayer, otherStack, zone)
+                    state := game.doCombat(yield, player, stack, otherPlayer, otherStack, zone)
+                    if state == combat.CombatStateAttackerFlee {
+                        stack.SetX(oldX)
+                        stack.SetY(oldY)
+                    } else if state == combat.CombatStateDefenderFlee {
+                        game.doMoveFleeingDefender(otherPlayer, otherStack)
+                    }
 
                     // FIXME: if there was a city here and the attacker won then the attacker
                     // should be able to raze or occupy the city
@@ -3321,7 +3416,14 @@ func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Play
                 zone := combat.ZoneType{
                     City: enemy.FindCity(stack.X(), stack.Y(), stack.Plane()),
                 }
-                game.doCombat(yield, player, stack, enemy, enemyStack, zone)
+                state := game.doCombat(yield, player, stack, enemy, enemyStack, zone)
+
+                if state == combat.CombatStateAttackerFlee {
+                    stack.SetX(oldX)
+                    stack.SetY(oldY)
+                } else if state == combat.CombatStateDefenderFlee {
+                    game.doMoveFleeingDefender(enemy, enemyStack)
+                }
             }
         }
     } else if move.Invalid != nil {
@@ -3580,13 +3682,13 @@ func (game *Game) confirmLairEncounter(yield coroutine.YieldFunc, encounter *map
     return game.confirmEncounter(yield, fmt.Sprintf("You have found %v %v. Scouts have spotted %v within the %v. Do you wish to enter?", article, encounter.Type.Name(), guardianName, encounter.Type.Name()), animation)
 }
 
-func (game *Game) doEncounter(yield coroutine.YieldFunc, player *playerlib.Player, stack *playerlib.UnitStack, encounter *maplib.ExtraEncounter, mapUse *maplib.Map, x int, y int){
+func (game *Game) doEncounter(yield coroutine.YieldFunc, player *playerlib.Player, stack *playerlib.UnitStack, encounter *maplib.ExtraEncounter, mapUse *maplib.Map, x int, y int) combat.CombatState {
     // there was nothing in the encounter, just give treasure
     if len(encounter.Units) == 0 {
         mapUse.RemoveEncounter(x, y)
         game.createTreasure(encounter.Type, encounter.Budget, player)
         yield()
-        return
+        return combat.CombatStateNoCombat
     }
 
     defender := playerlib.Player{
@@ -3630,6 +3732,8 @@ func (game *Game) doEncounter(yield coroutine.YieldFunc, player *playerlib.Playe
 
     // absorb extra clicks
     yield()
+
+    return result
 }
 
 func (game *Game) createTreasure(encounterType maplib.EncounterType, budget int, player *playerlib.Player){
@@ -3862,7 +3966,18 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
             yield()
         }
 
-        endScreen := combat.MakeCombatEndScreen(game.Cache, combatScreen, state == combat.CombatStateAttackerWin)
+        result := combat.CombatEndScreenResultLoose
+        humanAttacker := attacker.IsHuman()
+        switch {
+            case state == combat.CombatStateAttackerWin && humanAttacker,
+                 state == combat.CombatStateDefenderWin && !humanAttacker:
+                result = combat.CombatEndScreenResultWin
+            case state == combat.CombatStateAttackerFlee && humanAttacker,
+                 state == combat.CombatStateDefenderFlee && !humanAttacker:
+                result = combat.CombatEndScreenResultRetreat
+        }
+
+        endScreen := combat.MakeCombatEndScreen(game.Cache, combatScreen, result, combatScreen.Model.DiedWhileFleeing)
         game.Drawer = func (screen *ebiten.Image, game *Game){
             endScreen.Draw(screen)
         }
@@ -3879,13 +3994,13 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
         defeatedAttackers = combatScreen.Model.DefeatedAttackers
     }
 
-    if state == combat.CombatStateAttackerWin {
+    if state == combat.CombatStateAttackerWin || state == combat.CombatStateDefenderFlee{
         for _, unit := range attackerStack.Units() {
             if unit.GetRace() != data.RaceFantastic {
                 game.AddExperience(attacker, unit, defeatedDefenders * 2)
             }
         }
-    } else if state == combat.CombatStateDefenderWin {
+    } else if state == combat.CombatStateDefenderWin || state == combat.CombatStateAttackerFlee{
         for _, unit := range defenderStack.Units() {
             if unit.GetRace() != data.RaceFantastic {
                 game.AddExperience(defender, unit, defeatedAttackers * 2)

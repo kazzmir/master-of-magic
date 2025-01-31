@@ -4,6 +4,7 @@ import (
     "image"
     "image/color"
     "log"
+    "fmt"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
@@ -20,21 +21,30 @@ const (
     CombatEndScreenDone
 )
 
+type CombatEndScreenResult int
+const (
+    CombatEndScreenResultWin CombatEndScreenResult = iota
+    CombatEndScreenResultLoose
+    CombatEndScreenResultRetreat
+)
+
 type CombatEndScreen struct {
     CombatScreen *CombatScreen
-    Win bool
+    Result CombatEndScreenResult
+    UnitsLost int
     Cache *lbx.LbxCache
     ImageCache util.ImageCache
     UI *uilib.UI
     State CombatEndScreenState
 }
 
-func MakeCombatEndScreen(cache *lbx.LbxCache, combat *CombatScreen, win bool) *CombatEndScreen {
+func MakeCombatEndScreen(cache *lbx.LbxCache, combat *CombatScreen, result CombatEndScreenResult, unitsLost int) *CombatEndScreen {
     end := &CombatEndScreen{
         CombatScreen: combat,
         Cache: cache,
         ImageCache: util.MakeImageCache(cache),
-        Win: win,
+        Result: result,
+        UnitsLost: unitsLost,
         State: CombatEndScreenRunning,
     }
 
@@ -84,7 +94,18 @@ func (end *CombatEndScreen) MakeUI() *uilib.UI {
 
     titleFont := font.MakeOptimizedFontWithPalette(fonts[4], titlePalette)
 
-    extraText := "You have gained 1 fame"
+    // FIXME: implement fame gain
+    extraText := ""
+    switch {
+        case end.Result == CombatEndScreenResultWin:
+            extraText = "You have gained 1 fame"
+        case end.Result == CombatEndScreenResultLoose:
+            extraText = "You have lost 1 fame"
+        case end.Result == CombatEndScreenResultRetreat && end.UnitsLost == 1 :
+            extraText = "You have lost 1 unit while fleeing"
+        case end.Result == CombatEndScreenResultRetreat && end.UnitsLost > 1 :
+            extraText = fmt.Sprintf("You have lost %v units while fleeing", end.UnitsLost)
+    }
 
     black := color.RGBA{R: 0, G: 0, B: 0, A: 0xff}
     extraPalette := color.Palette{
@@ -106,10 +127,11 @@ func (end *CombatEndScreen) MakeUI() *uilib.UI {
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             var pic *ebiten.Image
-            if end.Win {
-                pic, _ = end.ImageCache.GetImage("scroll.lbx", 10, 0)
-            } else {
-                pic, _ = end.ImageCache.GetImage("scroll.lbx", 11, 0)
+            switch end.Result {
+                case CombatEndScreenResultWin:
+                    pic, _ = end.ImageCache.GetImage("scroll.lbx", 10, 0)
+                case CombatEndScreenResultLoose, CombatEndScreenResultRetreat:
+                    pic, _ = end.ImageCache.GetImage("scroll.lbx", 11, 0)
             }
 
             bottom, _ := end.ImageCache.GetImage("help.lbx", 1, 0)
@@ -128,10 +150,13 @@ func (end *CombatEndScreen) MakeUI() *uilib.UI {
             screen.DrawImage(subPic, &options)
 
             titleX, titleY := options.GeoM.Apply(float64(110 * data.ScreenScale), float64(25 * data.ScreenScale))
-            if end.Win {
-                titleFont.PrintCenter(screen, titleX, titleY, float64(data.ScreenScale), options.ColorScale, "You are triumphant")
-            } else {
-                titleFont.PrintCenter(screen, titleX, titleY, float64(data.ScreenScale), options.ColorScale, "You have been defeated")
+            switch end.Result {
+                case CombatEndScreenResultWin:
+                    titleFont.PrintCenter(screen, titleX, titleY, float64(data.ScreenScale), options.ColorScale, "You are triumphant")
+                case CombatEndScreenResultLoose:
+                    titleFont.PrintCenter(screen, titleX, titleY, float64(data.ScreenScale), options.ColorScale, "You have been defeated")
+                case CombatEndScreenResultRetreat:
+                    titleFont.PrintCenter(screen, titleX, titleY, float64(data.ScreenScale), options.ColorScale, "Your forces have retreated")
             }
 
             extraX, extraY := options.GeoM.Apply(float64(110 * data.ScreenScale), float64(fontY * data.ScreenScale))
