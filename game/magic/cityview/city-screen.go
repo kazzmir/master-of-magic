@@ -300,9 +300,15 @@ func makeBuildingSlots(city *citylib.City) []BuildingSlot {
     var buildings []BuildingSlot
 
     for _, building := range sortBuildings(city.Buildings.Values()) {
+        // city walls is handled specially
+        if building == buildinglib.BuildingCityWalls {
+            buildings = append(buildings, BuildingSlot{Building: building, Point: image.Pt(0, 75)})
+            continue
+        }
+
         if len(openSlots) == 0 {
-            log.Printf("Ran out of open slots in city view for %+v", city)
-            break
+            log.Printf("Ran out of open slots in city view for %+v for building %v", city, city.BuildingInfo.Name(building))
+            continue
         }
 
         point := openSlots[0]
