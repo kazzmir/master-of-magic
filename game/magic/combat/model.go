@@ -1016,6 +1016,10 @@ type CombatModel struct {
     DefeatedDefenders int
     DefeatedAttackers int
 
+    // track how many units were killed when fleeing, so the number
+    // can be reported after combands ends
+    DiedWhileFleeing int
+
     Turn Team
     CurrentTurn int
 
@@ -2246,9 +2250,9 @@ func (model *CombatModel) flee(army *Army) {
         }
 
         if rand.IntN(100) < chance {
-            // FIXME: keep track of units died while fleeing
             unit.TakeDamage(unit.Unit.GetHealth())
             model.RemoveUnit(unit)
+            model.DiedWhileFleeing += 1
         }
     }
 }

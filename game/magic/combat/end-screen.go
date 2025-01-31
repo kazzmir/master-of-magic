@@ -4,6 +4,7 @@ import (
     "image"
     "image/color"
     "log"
+    "fmt"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
@@ -30,18 +31,20 @@ const (
 type CombatEndScreen struct {
     CombatScreen *CombatScreen
     Result CombatEndScreenResult
+    UnitsLost int
     Cache *lbx.LbxCache
     ImageCache util.ImageCache
     UI *uilib.UI
     State CombatEndScreenState
 }
 
-func MakeCombatEndScreen(cache *lbx.LbxCache, combat *CombatScreen, result CombatEndScreenResult) *CombatEndScreen {
+func MakeCombatEndScreen(cache *lbx.LbxCache, combat *CombatScreen, result CombatEndScreenResult, unitsLost int) *CombatEndScreen {
     end := &CombatEndScreen{
         CombatScreen: combat,
         Cache: cache,
         ImageCache: util.MakeImageCache(cache),
         Result: result,
+        UnitsLost: unitsLost,
         State: CombatEndScreenRunning,
     }
 
@@ -91,7 +94,18 @@ func (end *CombatEndScreen) MakeUI() *uilib.UI {
 
     titleFont := font.MakeOptimizedFontWithPalette(fonts[4], titlePalette)
 
-    extraText := "You have gained 1 fame"
+    // FIXME: implement fame gain
+    extraText := ""
+    switch {
+        case end.Result == CombatEndScreenResultWin:
+            extraText = "You have gained 1 fame"
+        case end.Result == CombatEndScreenResultLoose:
+            extraText = "You have lost 1 fame"
+        case end.Result == CombatEndScreenResultRetreat && end.UnitsLost == 0 :
+            extraText = "You lost 1 unit while fleeing"
+        case end.Result == CombatEndScreenResultRetreat && end.UnitsLost > 1 :
+            extraText = fmt.Sprintf("You lost %v units while fleeing", end.UnitsLost)
+    }
 
     black := color.RGBA{R: 0, G: 0, B: 0, A: 0xff}
     extraPalette := color.Palette{
