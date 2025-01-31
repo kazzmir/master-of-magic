@@ -1083,7 +1083,7 @@ func drawCityScape(screen *ebiten.Image, buildings []BuildingSlot, buildingLook 
                         text = fmt.Sprintf("%v's Fortress", player.Wizard.Name)
                     }
 
-                    printX, printY := baseGeoM.Apply(float64(x + 10 * data.ScreenScale) + roadX, float64(y + 1 * data.ScreenScale) + roadY)
+                    printX, printY := baseGeoM.Apply(float64(x + use.Bounds().Dx() / 2) + roadX, float64(y + 1 * data.ScreenScale) + roadY)
 
                     useFont.PrintCenter(screen, printX, printY, float64(data.ScreenScale), options.ColorScale, text)
                 }
