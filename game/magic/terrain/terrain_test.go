@@ -2,6 +2,7 @@ package terrain
 
 import (
     "testing"
+    "github.com/kazzmir/master-of-magic/lib/set"
 )
 
 
@@ -28,7 +29,7 @@ func TestTerrainMatches(test *testing.T) {
 
     // AnyOf
     tile.Compatibilities[North] = Compatibility{
-        Terrains: []TerrainType{Ocean, Shore},
+        Terrains: set.NewSet([]TerrainType{Ocean, Shore}...),
         Type: AnyOf,
     }
     match[North] = Ocean
@@ -37,7 +38,7 @@ func TestTerrainMatches(test *testing.T) {
     }
 
     tile.Compatibilities[North] = Compatibility{
-        Terrains: []TerrainType{Ocean, Shore},
+        Terrains: set.NewSet([]TerrainType{Ocean, Shore}...),
         Type: AnyOf,
     }
     match[North] = Shore
@@ -46,7 +47,7 @@ func TestTerrainMatches(test *testing.T) {
     }
 
     tile.Compatibilities[North] = Compatibility{
-        Terrains: []TerrainType{Ocean, Shore},
+        Terrains: set.NewSet([]TerrainType{Ocean, Shore}...),
         Type: AnyOf,
     }
     match[North] = Grass
@@ -56,7 +57,7 @@ func TestTerrainMatches(test *testing.T) {
 
     // NoneOf
     tile.Compatibilities[North] = Compatibility{
-        Terrains: []TerrainType{Ocean, Shore},
+        Terrains: set.NewSet([]TerrainType{Ocean, Shore}...),
         Type: NoneOf,
     }
     match[North] = Ocean
@@ -65,7 +66,7 @@ func TestTerrainMatches(test *testing.T) {
     }
 
     tile.Compatibilities[North] = Compatibility{
-        Terrains: []TerrainType{Ocean, Shore},
+        Terrains: set.NewSet([]TerrainType{Ocean, Shore}...),
         Type: NoneOf,
     }
     match[North] = Shore
@@ -74,7 +75,7 @@ func TestTerrainMatches(test *testing.T) {
     }
 
     tile.Compatibilities[North] = Compatibility{
-        Terrains: []TerrainType{Ocean, Shore},
+        Terrains: set.NewSet([]TerrainType{Ocean, Shore}...),
         Type: NoneOf,
     }
     match[North] = Grass
@@ -84,11 +85,11 @@ func TestTerrainMatches(test *testing.T) {
 
     // two directions
     tile.Compatibilities[North] = Compatibility{
-        Terrains: []TerrainType{Ocean, Shore},
+        Terrains: set.NewSet([]TerrainType{Ocean, Shore}...),
         Type: AnyOf,
     }
     tile.Compatibilities[South] = Compatibility{
-        Terrains: []TerrainType{Ocean, Shore},
+        Terrains: set.NewSet([]TerrainType{Ocean, Shore}...),
         Type: NoneOf,
     }
 

@@ -421,12 +421,19 @@ func (map_ *Map) placeRivers(area int, data *TerrainData, plane data.Plane) {
         return true
     }
 
+    // keep one in-memory copy of the original map
+    mapCopy := map_.Copy()
+
     resolves := func(path []image.Point) bool {
         // check if the rendered path would resolve
         checked := make(map[image.Point]bool)
 
         // work with a copy where the path is rendered to allow resolving and discarding it
-        mapCopy := map_.Copy()
+        // reset the copy here back to the original map
+        for x := range mapCopy.Columns() {
+            copy(mapCopy.Terrain[x], map_.Terrain[x])
+        }
+
         for _, point := range path {
             mapCopy.Terrain[point.X][point.Y] = TileRiver0001.Index(plane)
         }
@@ -536,7 +543,7 @@ func (map_ *Map) removeSmallIslands(area int, plane data.Plane){
 
 func (map_ *Map) getTerrainAt(x int, y int, data *TerrainData) TerrainType {
     if y < 0 || y > map_.Rows() - 1 {
-        return  Ocean
+        return Ocean
     }
 
     x = map_.WrapX(x)

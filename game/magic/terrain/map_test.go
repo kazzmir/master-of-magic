@@ -9,19 +9,16 @@ import (
 func createTerrainData() *TerrainData {
 
     var tiles []TerrainTile
-    for _, tile := range allTiles {
+    for i, tile := range allTiles {
         tiles = append(tiles, TerrainTile{
             ImageIndex: 0,
-            TileIndex: 0,
+            TileIndex: i,
             Tile: tile,
             Images: []image.Image{},
         })
     }
 
-    return &TerrainData{
-        Images: []image.Image{},
-        Tiles: tiles,
-    }
+    return MakeTerrainData(nil, tiles)
 }
 
 
