@@ -897,6 +897,7 @@ type Army struct {
     Player *playerlib.Player
     Units []*ArmyUnit
     Auto bool
+    Fled bool
 }
 
 // a number that mostly represents the strength of this army
@@ -2216,6 +2217,8 @@ func DoStrategicCombat(attackingArmy *Army, defendingArmy *Army) (CombatState, i
     defendingPower := defendingArmy.GetPower()
 
     log.Printf("strategic combat: attacking power: %v, defending power: %v", attackingPower, defendingPower)
+
+    // FIXME: Allow fleeing?
 
     if attackingPower > defendingPower {
         for _, unit := range defendingArmy.Units {

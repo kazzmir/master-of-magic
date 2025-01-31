@@ -1352,7 +1352,7 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
     // flee
     elements = append(elements, makeButton(21, 0, 2, func(){
         // FIXME: choose the right side
-        combat.Model.AttackingArmy.Units = nil
+        combat.Model.AttackingArmy.Fled = true
     }))
 
     // done
@@ -2220,17 +2220,17 @@ func (combat *CombatScreen) UpdateMouseState() {
 }
 
 func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
-    if combat.Model.AttackingArmy.Units == nil {
+    if combat.Model.AttackingArmy.Fled {
         return CombatStateAttackerFlee
+    }
+
+    if combat.Model.DefendingArmy.Fled {
+        return CombatStateDefenderFlee
     }
 
     if len(combat.Model.AttackingArmy.Units) == 0 {
         combat.Model.AddLogEvent("Defender wins!")
         return CombatStateDefenderWin
-    }
-
-    if combat.Model.DefendingArmy.Units == nil {
-        return CombatStateAttackerFlee
     }
 
     if len(combat.Model.DefendingArmy.Units) == 0 {

@@ -91,7 +91,6 @@ func (end *CombatEndScreen) MakeUI() *uilib.UI {
 
     titleFont := font.MakeOptimizedFontWithPalette(fonts[4], titlePalette)
 
-    // FIXME: calculate lost/gained fame
     extraText := "You have gained 1 fame"
 
     black := color.RGBA{R: 0, G: 0, B: 0, A: 0xff}
