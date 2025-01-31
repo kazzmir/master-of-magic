@@ -722,7 +722,7 @@ func (city *City) PopulationGrowthRate() int {
     }
 
     if city.SurplusFood() < 0 {
-        base = -50 * city.SurplusFood()
+        base = 50 * city.SurplusFood()
     }
 
     return base
