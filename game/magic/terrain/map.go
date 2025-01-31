@@ -421,6 +421,7 @@ func (map_ *Map) placeRivers(area int, data *TerrainData, plane data.Plane) {
         return true
     }
 
+    // keep one in-memory copy of the original map
     mapCopy := map_.Copy()
 
     resolves := func(path []image.Point) bool {
@@ -428,12 +429,9 @@ func (map_ *Map) placeRivers(area int, data *TerrainData, plane data.Plane) {
         checked := make(map[image.Point]bool)
 
         // work with a copy where the path is rendered to allow resolving and discarding it
-        // mapCopy := map_.Copy()
+        // reset the copy here back to the original map
         for x := range mapCopy.Columns() {
-            // for _ := range mapCopy.Rows() {
-                copy(mapCopy.Terrain[x], map_.Terrain[x])
-                // mapCopy.Terrain[x][y] = map_.Terrain[x][y]
-            // }
+            copy(mapCopy.Terrain[x], map_.Terrain[x])
         }
 
         for _, point := range path {
