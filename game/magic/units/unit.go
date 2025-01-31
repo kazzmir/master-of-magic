@@ -2248,7 +2248,7 @@ var Djinn Unit = Unit{
 var SkyDrake Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 76,
-    Name: "SkyDrake",
+    Name: "Sky Drake",
     Realm: data.SorceryMagic,
     CombatLbxFile: "figure14.lbx",
     CombatIndex: 8,

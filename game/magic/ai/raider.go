@@ -85,7 +85,7 @@ func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerli
 func (raider *RaiderAI) CreateUnits(player *playerlib.Player) []playerlib.AIDecision {
     var decisions []playerlib.AIDecision
 
-    if rand.N(10) == 0 {
+    if rand.N(10) == 0 && len(player.Cities) > 0 {
         city := player.Cities[rand.N(len(player.Cities))]
 
         for range rand.N(3) + 1 {
