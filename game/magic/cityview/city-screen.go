@@ -1136,6 +1136,7 @@ func drawCityScape(screen *ebiten.Image, buildings []BuildingSlot, buildingLook 
 func (cityScreen *CityScreen) FoodProducers() []ResourceUsage {
     var usages []ResourceUsage
 
+    // FIXME: should this take enchantments like famine into account and only show half the food production?
     usages = append(usages, ResourceUsage{
         Count: cityScreen.City.FarmerFoodProduction(cityScreen.City.Farmers),
         Name: "Farmers",

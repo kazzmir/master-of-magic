@@ -23,6 +23,7 @@ type CityEvent interface {
 
 type CityEventPopulationGrowth struct {
     Size int
+    Grow bool
 }
 
 type CityEventNewUnit struct {
@@ -1153,7 +1154,7 @@ func (city *City) DoNextTurn(garrison []units.StackUnit) []CityEvent {
         }
 
         if math.Abs(float64(city.Population/1000 - oldPopulation/1000)) > 0 {
-            cityEvents = append(cityEvents, &CityEventPopulationGrowth{Size: (city.Population - oldPopulation)/1000})
+            cityEvents = append(cityEvents, &CityEventPopulationGrowth{Size: (city.Population - oldPopulation)/1000, Grow: city.Population > oldPopulation})
         }
 
         buildingCost := city.BuildingInfo.ProductionCost(city.ProducingBuilding)
