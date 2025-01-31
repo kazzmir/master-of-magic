@@ -1371,6 +1371,17 @@ type TerrainData struct {
     // the full array of all tile images
     Images []image.Image
     Tiles []TerrainTile
+    // store a map from the terrain type to the tiles that match that type
+    OnlyTiles map[TerrainType][]TerrainTile
+}
+
+func (data *TerrainData) optimize() {
+    data.OnlyTiles = make(map[TerrainType][]TerrainTile)
+
+    for _, tile := range data.Tiles {
+        tiles := data.OnlyTiles[tile.Tile.TerrainType()]
+        data.OnlyTiles[tile.Tile.TerrainType()] = append(tiles, tile)
+    }
 }
 
 func (data *TerrainData) TileWidth() int {
@@ -1402,19 +1413,28 @@ func (data *TerrainData) FindMatchingAllTiles(match map[Direction]TerrainType, p
 }
 
 func (terrain *TerrainData) FindMatchingTile(match map[Direction]TerrainType, plane data.Plane) int {
+    var tiles []TerrainTile
+
+    center, ok := match[Center]
+    if ok {
+        for _, tile := range terrain.OnlyTiles[center] {
+            if tile.Tile.matches(match) {
+                return tile.TileIndex
+            }
+        }
+    }
+
     switch plane {
         case data.PlaneMyrror:
-            for i, tile := range terrain.Tiles[MyrrorStart:] {
-                if tile.Tile.matches(match) {
-                    return i
-                }
-            }
+            tiles = terrain.Tiles[MyrrorStart:]
         case data.PlaneArcanus:
-            for i, tile := range terrain.Tiles[:MyrrorStart] {
-                if tile.Tile.matches(match) {
-                    return i
-                }
-            }
+            tiles = terrain.Tiles[:MyrrorStart]
+    }
+
+    for _, tile := range tiles {
+        if tile.Tile.matches(match) {
+            return tile.TileIndex
+        }
     }
 
     /*
@@ -1534,8 +1554,12 @@ func ReadTerrainData(lbxFile *lbx.LbxFile) (*TerrainData, error) {
         tileIndex += 1
     }
 
-    return &TerrainData{
+    out := &TerrainData{
         Images: images,
         Tiles: tiles,
-    }, nil
+    }
+
+    out.optimize()
+
+    return out, nil
 }
