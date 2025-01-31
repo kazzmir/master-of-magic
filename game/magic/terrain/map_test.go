@@ -18,12 +18,7 @@ func createTerrainData() *TerrainData {
         })
     }
 
-    out := &TerrainData{
-        Images: []image.Image{},
-        Tiles: tiles,
-    }
-    out.optimize()
-    return out
+    return MakeTerrainData(nil, tiles)
 }
 
 

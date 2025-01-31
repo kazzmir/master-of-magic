@@ -1375,6 +1375,17 @@ type TerrainData struct {
     OnlyTiles map[TerrainType][]TerrainTile
 }
 
+func MakeTerrainData(images []image.Image, tiles []TerrainTile) *TerrainData {
+    out := &TerrainData{
+        Images: images,
+        Tiles: tiles,
+    }
+
+    out.optimize()
+
+    return out
+}
+
 func (data *TerrainData) optimize() {
     data.OnlyTiles = make(map[TerrainType][]TerrainTile)
 
@@ -1436,14 +1447,6 @@ func (terrain *TerrainData) FindMatchingTile(match map[Direction]TerrainType, pl
             return tile.TileIndex
         }
     }
-
-    /*
-    for i, tile := range data.Tiles {
-        if tile.IsPlane(plane) && tile.Tile.matches(match) {
-            return i
-        }
-    }
-    */
 
     return -1
 }
@@ -1554,12 +1557,5 @@ func ReadTerrainData(lbxFile *lbx.LbxFile) (*TerrainData, error) {
         tileIndex += 1
     }
 
-    out := &TerrainData{
-        Images: images,
-        Tiles: tiles,
-    }
-
-    out.optimize()
-
-    return out, nil
+    return MakeTerrainData(images, tiles), nil
 }
