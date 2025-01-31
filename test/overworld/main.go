@@ -3139,7 +3139,7 @@ func createScenario37(cache *lbx.LbxCache) *gamelib.Game {
     player2 := game.AddPlayer(wizard2, false)
     player2.Mana = 26557
 
-    player2.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x + 1, y, data.PlaneArcanus, wizard2.Banner, nil))
+    player2.AddUnit(units.MakeOverworldUnitFromUnit(units.Basilisk, x + 1, y, data.PlaneArcanus, wizard2.Banner, nil))
 
     return game
 }

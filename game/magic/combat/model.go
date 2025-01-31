@@ -2234,3 +2234,21 @@ func DoStrategicCombat(attackingArmy *Army, defendingArmy *Army) (CombatState, i
         return CombatStateDefenderWin, len(attackingArmy.Units), 0
     }
 }
+
+func (model *CombatModel) flee(army *Army) {
+    for _, unit := range army.Units {
+        // FIXME: units unable to move always die
+
+        // heroes have a 25% chance to die, normal units 50%
+        chance := 50
+        if unit.Unit.IsHero() {
+            chance = 25
+        }
+
+        if rand.IntN(100) < chance {
+            // FIXME: keep track of units died while fleeing
+            unit.TakeDamage(unit.Unit.GetHealth())
+            model.RemoveUnit(unit)
+        }
+    }
+}

@@ -3984,13 +3984,13 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
         defeatedAttackers = combatScreen.Model.DefeatedAttackers
     }
 
-    if state == combat.CombatStateAttackerWin {
+    if state == combat.CombatStateAttackerWin || state == combat.CombatStateDefenderFlee{
         for _, unit := range attackerStack.Units() {
             if unit.GetRace() != data.RaceFantastic {
                 game.AddExperience(attacker, unit, defeatedDefenders * 2)
             }
         }
-    } else if state == combat.CombatStateDefenderWin {
+    } else if state == combat.CombatStateDefenderWin || state == combat.CombatStateAttackerFlee{
         for _, unit := range defenderStack.Units() {
             if unit.GetRace() != data.RaceFantastic {
                 game.AddExperience(defender, unit, defeatedAttackers * 2)

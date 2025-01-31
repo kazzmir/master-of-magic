@@ -1351,8 +1351,11 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
 
     // flee
     elements = append(elements, makeButton(21, 0, 2, func(){
-        // FIXME: choose the right side
-        combat.Model.AttackingArmy.Fled = true
+        if combat.Model.AttackingArmy.Player == player {
+            combat.Model.AttackingArmy.Fled = true
+        } else {
+            combat.Model.DefendingArmy.Fled = true
+        }
     }))
 
     // done
@@ -2221,10 +2224,12 @@ func (combat *CombatScreen) UpdateMouseState() {
 
 func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
     if combat.Model.AttackingArmy.Fled {
+        combat.Model.flee(combat.Model.AttackingArmy)
         return CombatStateAttackerFlee
     }
 
     if combat.Model.DefendingArmy.Fled {
+        combat.Model.flee(combat.Model.DefendingArmy)
         return CombatStateDefenderFlee
     }
 
