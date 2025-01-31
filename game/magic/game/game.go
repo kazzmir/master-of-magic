@@ -4106,16 +4106,6 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     return state
 }
 
-func (game *Game) GetMainImage(index int) (*ebiten.Image, error) {
-    image, err := game.ImageCache.GetImage("main.lbx", index, 0)
-
-    if err != nil {
-        log.Printf("Error: image in main.lbx is missing: %v", err)
-    }
-
-    return image, err
-}
-
 func GetUnitImage(unit units.StackUnit, imageCache *util.ImageCache, banner data.BannerType) (*ebiten.Image, error) {
     image, err := imageCache.GetImageTransform(unit.GetLbxFile(), unit.GetLbxIndex(), 0, banner.String(), units.MakeUpdateUnitColorsFunc(banner))
 
