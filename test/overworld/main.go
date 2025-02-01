@@ -3089,6 +3089,8 @@ func createScenario36(cache *lbx.LbxCache) *gamelib.Game {
 
     human.LiftFog(20, 20, 100, data.PlaneArcanus)
 
+    game.Camera.Center(x, y)
+
     return game
 }
 
