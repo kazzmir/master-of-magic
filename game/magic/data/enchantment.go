@@ -35,6 +35,37 @@ const (
     EnchantmentZombieMastery
 )
 
+func (enchantment Enchantment) String() string {
+    switch enchantment {
+        case EnchantmentAwareness: return "Awareness"
+        case EnchantmentDetectMagic: return "Detect Magic"
+        case EnchantmentCharmOfLife: return "Charm of Life"
+        case EnchantmentCrusade: return "Crusade"
+        case EnchantmentHolyArms: return "Holy Arms"
+        case EnchantmentJustCause: return "Just Cause"
+        case EnchantmentLifeForce: return "Life Force"
+        case EnchantmentPlanarSeal: return "Planar Seal"
+        case EnchantmentTranquility: return "Tranquility"
+        case EnchantmentHerbMastery: return "Herb Mastery"
+        case EnchantmentNatureAwareness: return "Nature Awareness"
+        case EnchantmentNaturesWrath: return "Nature's Wrath"
+        case EnchantmentAuraOfMajesty: return "Aura of Majesty"
+        case EnchantmentSuppressMagic: return "Suppress Magic"
+        case EnchantmentTimeStop: return "Time Stop"
+        case EnchantmentWindMastery: return "Wind Mastery"
+        case EnchantmentArmageddon: return "Armageddon"
+        case EnchantmentChaosSurge: return "Chaos Surge"
+        case EnchantmentDoomMastery: return "Doom Mastery"
+        case EnchantmentGreatWasting: return "Great Wasting"
+        case EnchantmentMeteorStorm: return "Meteor Storm"
+        case EnchantmentEternalNight: return "Eternal Night"
+        case EnchantmentEvilOmens: return "Evil Omens"
+        case EnchantmentZombieMastery: return "Zombie Mastery"
+    }
+
+    return ""
+}
+
 // unit enchantments
 type UnitEnchantment int
 

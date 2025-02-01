@@ -24,28 +24,26 @@ type Engine struct {
 func NewEngine() (*Engine, error) {
     cache := lbx.AutoCache()
 
-    player := &playerlib.Player{
-        CastingSkillPower: 28,
-        PowerDistribution: playerlib.PowerDistribution{
-            Mana: 1.0/3,
-            Research: 1.0/3,
-            Skill: 1.0/3,
-        },
-    }
+    player := playerlib.MakePlayer(setup.WizardCustom{
+        Base: data.WizardHorus,
+        Name: "Horus",
+        Banner: data.BannerRed,
+    }, true, 0, 0)
 
+    player.CastingSkillPower = 280
     player.Gold = 234
     player.Mana = 981
 
     player.Wizard.ToggleAbility(setup.AbilityAlchemy, 2)
+    player.GlobalEnchantments.Insert(data.EnchantmentNatureAwareness)
 
-    enemy1 := &playerlib.Player{
-        Human: false,
-        Wizard: setup.WizardCustom{
-            Base: data.WizardMerlin,
-            Name: "Merlin",
-            Banner: data.BannerPurple,
-        },
-    }
+    enemy1 := playerlib.MakePlayer(setup.WizardCustom{
+        Base: data.WizardMerlin,
+        Name: "Merlin",
+        Banner: data.BannerPurple,
+    }, false, 0, 0)
+
+    enemy1.GlobalEnchantments.Insert(data.EnchantmentCrusade)
 
     magicScreen := magicview.MakeMagicScreen(cache, player, []*playerlib.Player{enemy1}, 100)
 

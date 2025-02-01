@@ -3045,6 +3045,8 @@ func createScenario36(cache *lbx.LbxCache) *gamelib.Game {
     human := game.AddPlayer(wizard2, true)
     human.Admin = true
 
+    human.GlobalEnchantments.Insert(data.EnchantmentNatureAwareness)
+
     wizard1 := setup.WizardCustom{
         Name: "Rjak",
         Base: data.WizardRjak,

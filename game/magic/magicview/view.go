@@ -5,6 +5,7 @@ import (
     "log"
     "image"
     "image/color"
+    "cmp"
     "math"
     "math/rand/v2"
     "slices"
@@ -832,6 +833,73 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
             // util.DrawRect(screen, enchantmentsRect, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff})
         },
     })
+
+    // dynamically compute a font and cache the result
+    bannerFonts := make(map[data.BannerType]*font.Font)
+    bannerFont := func (banner data.BannerType) *font.Font {
+        if font, ok := bannerFonts[banner]; ok {
+            return font
+        }
+
+        var use color.RGBA
+        switch banner {
+            case data.BannerBlue: use = color.RGBA{R: 0x00, G: 0x00, B: 0xff, A: 0xff}
+            case data.BannerGreen: use = color.RGBA{R: 0x00, G: 0xf0, B: 0x00, A: 0xff}
+            case data.BannerPurple: use = color.RGBA{R: 0x8f, G: 0x30, B: 0xff, A: 0xff}
+            case data.BannerRed: use = color.RGBA{R: 0xff, G: 0x00, B: 0x00, A: 0xff}
+            case data.BannerYellow: use = color.RGBA{R: 0xff, G: 0xff, B: 0x00, A: 0xff}
+        }
+
+        palette := color.Palette{
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            use, use, use,
+            use, use, use,
+        }
+
+        out := font.MakeOptimizedFontWithPalette(fonts[2], palette)
+        bannerFonts[banner] = out
+        return out
+    }
+
+    type EnchantmentElement struct {
+        Enchantment data.Enchantment
+        Banner data.BannerType
+    }
+
+    allEnchantments := func() []EnchantmentElement {
+        var out []EnchantmentElement
+        for _, enchantment := range player.GlobalEnchantments.Values() {
+            out = append(out, EnchantmentElement{
+                Enchantment: enchantment,
+                Banner: player.GetBanner(),
+            })
+        }
+
+        for _, enemy := range enemies {
+            for _, enchantment := range enemy.GlobalEnchantments.Values() {
+                out = append(out, EnchantmentElement{
+                    Enchantment: enchantment,
+                    Banner: enemy.GetBanner(),
+                })
+            }
+        }
+        return slices.SortedFunc(slices.Values(out), func (a, b EnchantmentElement) int {
+            return cmp.Compare(a.Enchantment.String(), b.Enchantment.String())
+        })
+    }
+
+    for i, enchantment := range allEnchantments() {
+        name := enchantment.Enchantment.String()
+        useFont := bannerFont(enchantment.Banner)
+        yStart := 80
+        rect := image.Rect(170 * data.ScreenScale, (yStart + i * useFont.Height()) * data.ScreenScale, 310 * data.ScreenScale, (yStart + (i + 1) * useFont.Height()) * data.ScreenScale)
+        elements = append(elements, &uilib.UIElement{
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                useFont.Print(screen, float64(rect.Min.X), float64(rect.Min.Y), float64(data.ScreenScale), ebiten.ColorScale{}, name)
+            },
+        })
+    }
 
     ui.SetElementsFromArray(elements)
 
