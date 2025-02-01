@@ -6035,6 +6035,15 @@ func (overworld *Overworld) DrawFog(screen *ebiten.Image, geom ebiten.GeoM){
 
     // log.Printf("fog min %v, %v max %v, %v", minX, minY, maxX, maxY)
 
+    black := ebiten.ColorScale{}
+    black.Scale(1, 1, 1, 1)
+
+    lightTransparent := ebiten.ColorScale{}
+    lightTransparent.Scale(1, 1, 1, 0.3)
+
+    darkTransparent := ebiten.ColorScale{}
+    darkTransparent.Scale(1, 1, 1, 0.5)
+
     for x := minX; x < maxX; x++ {
         for y := minY; y < maxY; y++ {
             tileX := overworld.Map.WrapX(x)
@@ -6043,15 +6052,6 @@ func (overworld *Overworld) DrawFog(screen *ebiten.Image, geom ebiten.GeoM){
             options.GeoM.Reset()
             options.GeoM.Translate(float64(x * tileWidth), float64(y * tileHeight))
             options.GeoM.Concat(geom)
-
-            black := ebiten.ColorScale{}
-            black.Scale(1, 1, 1, 1)
-
-            lightTransparent := ebiten.ColorScale{}
-            lightTransparent.Scale(1, 1, 1, 0.3)
-
-            darkTransparent := ebiten.ColorScale{}
-            darkTransparent.Scale(1, 1, 1, 0.5)
 
             if tileX >= 0 && tileY >= 0 && tileX < len(fog) && tileY < len(fog[tileX]) {
                 switch fog[tileX][tileY] {
