@@ -18,7 +18,6 @@ import (
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
-    "github.com/kazzmir/master-of-magic/game/magic/summon"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
@@ -41,192 +40,80 @@ const (
     LocationTypeEnemyMeldedNode
 )
 
-func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Player, spell spellbook.Spell) {
+func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
+    // FIXME: if the player is AI then invoke some callback that the AI will use to select targets instead of using the GameEventSelectLocationForSpell
+
     switch spell.Name {
         case "Earth Lore":
-            tileX, tileY, cancel := game.selectLocationForSpell(yield, spell, player, LocationTypeAny)
-
-            if cancel {
-                return
+            selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+                game.doCastEarthLore(yield, tileX, tileY, player)
             }
 
-            game.doCastEarthLore(yield, tileX, tileY, player)
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeAny, SelectedFunc: selected}
         case "Create Artifact", "Enchant Item":
-            showSummon := summon.MakeSummonArtifact(game.Cache, player.Wizard.Base)
-
-            game.doSummon(yield, showSummon)
-
-            select {
-                case game.Events <- &GameEventVault{CreatedArtifact: player.CreateArtifact}:
-                default:
-            }
-
+            game.Events <- &GameEventSummonArtifact{Wizard: player.Wizard.Base}
+            game.Events <- &GameEventVault{CreatedArtifact: player.CreateArtifact}
             player.CreateArtifact = nil
-        case "Magic Spirit":
-            game.doSummonUnit(yield, player, units.MagicSpirit)
-        case "Angel":
-            game.doSummonUnit(yield, player, units.Angel)
-        case "Arch Angel":
-            game.doSummonUnit(yield, player, units.ArchAngel)
-        case "Guardian Spirit":
-            game.doSummonUnit(yield, player, units.GuardianSpirit)
-        case "Unicorns":
-            game.doSummonUnit(yield, player, units.Unicorn)
-        case "Basilisk":
-            game.doSummonUnit(yield, player, units.Basilisk)
-        case "Behemoth":
-            game.doSummonUnit(yield, player, units.Behemoth)
-        case "Cockatrices":
-            game.doSummonUnit(yield, player, units.Cockatrice)
-        case "Colossus":
-            game.doSummonUnit(yield, player, units.Colossus)
-        case "Earth Elemental":
-            game.doSummonUnit(yield, player, units.EarthElemental)
-        case "Giant Spiders":
-            game.doSummonUnit(yield, player, units.GiantSpider)
-        case "Gorgons":
-            game.doSummonUnit(yield, player, units.Gorgon)
-        case "Great Wyrm":
-            game.doSummonUnit(yield, player, units.GreatWyrm)
-        case "Sprites":
-            game.doSummonUnit(yield, player, units.Sprite)
-        case "Stone Giant":
-            game.doSummonUnit(yield, player, units.StoneGiant)
-        case "War Bears":
-            game.doSummonUnit(yield, player, units.WarBear)
-        case "Air Elemental":
-            game.doSummonUnit(yield, player, units.AirElemental)
-        case "Djinn":
-            game.doSummonUnit(yield, player, units.Djinn)
-        case "Floating Island":
-            game.doSummonUnit(yield, player, units.FloatingIsland)
-        case "Nagas":
-            game.doSummonUnit(yield, player, units.Nagas)
-        case "Phantom Beast":
-            game.doSummonUnit(yield, player, units.PhantomBeast)
-        case "Phantom Warriors":
-            game.doSummonUnit(yield, player, units.PhantomWarrior)
-        case "Sky Drake":
-            game.doSummonUnit(yield, player, units.SkyDrake)
-        case "Storm Giant":
-            game.doSummonUnit(yield, player, units.StormGiant)
-        case "Chaos Spawn":
-            game.doSummonUnit(yield, player, units.ChaosSpawn)
-        case "Chimeras":
-            game.doSummonUnit(yield, player, units.Chimeras)
-        case "Doom Bat":
-            game.doSummonUnit(yield, player, units.DoomBat)
-        case "Efreet":
-            game.doSummonUnit(yield, player, units.Efreet)
-        case "Fire Elemental":
-            game.doSummonUnit(yield, player, units.FireElemental)
-        case "Fire Giant":
-            game.doSummonUnit(yield, player, units.FireGiant)
-        case "Gargoyles":
-            game.doSummonUnit(yield, player, units.Gargoyle)
-        case "Great Drake":
-            game.doSummonUnit(yield, player, units.GreatDrake)
-        case "Hell Hounds":
-            game.doSummonUnit(yield, player, units.HellHounds)
-        case "Hydra":
-            game.doSummonUnit(yield, player, units.Hydra)
-        case "Death Knights":
-            game.doSummonUnit(yield, player, units.DeathKnight)
-        case "Demon Lord":
-            game.doSummonUnit(yield, player, units.DemonLord)
-        case "Ghouls":
-            game.doSummonUnit(yield, player, units.Ghoul)
-        case "Night Stalker":
-            game.doSummonUnit(yield, player, units.NightStalker)
-        case "Shadow Demons":
-            game.doSummonUnit(yield, player, units.ShadowDemon)
-        case "Skeletons":
-            game.doSummonUnit(yield, player, units.Skeleton)
-        case "Wraiths":
-            game.doSummonUnit(yield, player, units.Wraith)
+        case "Magic Spirit", "Angel", "Arch Angel", "Guardian Spirit",
+             "Unicorns", "Basilisk", "Behemoth", "Cockatrices", "Colossus",
+             "Earth Elemental", "Giant Spiders", "Gorgons", "Great Wyrm",
+             "Sprites", "Stone Giant", "War Bears", "Air Elemental",
+             "Djinn", "Floating Island", "Nagas", "Phantom Beast", "Phantom Warriors",
+             "Sky Drake", "Storm Giant", "Chaos Spawn", "Chimeras", "Doom Bat",
+             "Efreet", "Fire Elemental", "Fire Giant", "Gargoyles",
+             "Great Drake", "Hell Hounds", "Hydra", "Death Knights",
+             "Demon Lord", "Ghouls", "Night Stalker", "Shadow Demons",
+             "Skeletons", "Wraiths":
+            game.doSummonUnit(player, units.GetUnitByName(spell.Name))
 
         // FIXME: lycanthropy selects a friendly unit
         // Lycanthropy	Icon DeathDeath	Uncommon	180	--	5	400	6 Regenerating Icon Melee Normal Melee creatures replace a target friendly Normal Unit.
 
         case "Wall of Fire":
-            tileX, tileY, cancel := game.selectLocationForSpell(yield, spell, player, LocationTypeFriendlyCity)
+            selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+                game.doMoveCamera(yield, tileX, tileY)
+                chosenCity := player.FindCity(tileX, tileY, game.Plane)
+                if chosenCity == nil {
+                    return
+                }
 
-            if cancel {
-                return
+                chosenCity.AddEnchantment(data.CityEnchantmentWallOfFire, player.GetBanner())
+
+                yield()
+                cityview.PlayEnchantmentSound(game.Cache)
+                game.showCityEnchantment(yield, chosenCity, player, spell.Name)
             }
 
-            game.doMoveCamera(yield, tileX, tileY)
-            chosenCity := player.FindCity(tileX, tileY, game.Plane)
-            if chosenCity == nil {
-                return
-            }
-
-            chosenCity.AddEnchantment(data.CityEnchantmentWallOfFire, player.GetBanner())
-
-            yield()
-            cityview.PlayEnchantmentSound(game.Cache)
-            game.showCityEnchantment(yield, chosenCity, player, spell.Name)
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyCity, SelectedFunc: selected}
         case "Change Terrain":
-            tileX, tileY, cancel := game.selectLocationForSpell(yield, spell, player, LocationTypeChangeTerrain)
-
-            if cancel {
-                return
-            }
-
-            game.doCastChangeTerrain(yield, tileX, tileY)
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeChangeTerrain, SelectedFunc: game.doCastChangeTerrain}
         case "Transmute":
-            tileX, tileY, cancel := game.selectLocationForSpell(yield, spell, player, LocationTypeTransmute)
-
-            if cancel {
-                return
-            }
-
-            game.doCastTransmute(yield, tileX, tileY)
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeTransmute, SelectedFunc: game.doCastTransmute}
         case "Raise Volcano":
-            tileX, tileY, cancel := game.selectLocationForSpell(yield, spell, player, LocationTypeRaiseVolcano)
-
-            if cancel {
-                return
+            selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+                game.doCastRaiseVolcano(yield, tileX, tileY, player)
             }
 
-            game.doCastRaiseVolcano(yield, tileX, tileY, player)
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeRaiseVolcano, SelectedFunc: selected}
         case "Summon Hero":
-            game.doSummonHero(yield, player, false)
+            game.doSummonHero(player, false)
         case "Summon Champion":
-            game.doSummonHero(yield, player, true)
+            game.doSummonHero(player, true)
 
         // Incarnation	Icon LifeLife	Rare	500	--	12	960	Summons Torin the Chosen – one of the most powerful Champions in the game.
 
         case "Enchant Road":
-            tileX, tileY, cancel := game.selectLocationForSpell(yield, spell, player, LocationTypeAny)
-
-            if cancel {
-                return
-            }
-
-            game.doCastEnchantRoad(yield, tileX, tileY)
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeAny, SelectedFunc: game.doCastEnchantRoad}
         case "Corruption":
-            tileX, tileY, cancel := game.selectLocationForSpell(yield, spell, player, LocationTypeLand)
-
-            if cancel {
-                return
-            }
-
-            game.doCastCorruption(yield, tileX, tileY)
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeLand, SelectedFunc: game.doCastCorruption}
         case "Warp Node":
-            tileX, tileY, cancel := game.selectLocationForSpell(yield, spell, player, LocationTypeEnemyMeldedNode)
-
-            if cancel {
-                return
-            }
-
-            game.doCastWarpNode(yield, tileX, tileY)
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeEnemyMeldedNode, SelectedFunc: game.doCastWarpNode}
         default:
             log.Printf("Warning: casting unhandled spell %v", spell.Name)
     }
 }
 
-func (game *Game) doSummonHero(yield coroutine.YieldFunc, player *playerlib.Player, champion bool) {
+func (game *Game) doSummonHero(player *playerlib.Player, champion bool) {
     var choices []*herolib.Hero
     for _, hero := range game.Heroes {
         // torin is not summonable through this method
@@ -261,7 +148,7 @@ func (game *Game) doSummonHero(yield coroutine.YieldFunc, player *playerlib.Play
     }
 }
 
-func (game *Game) doSummonUnit(yield coroutine.YieldFunc, player *playerlib.Player, unit units.Unit) {
+func (game *Game) doSummonUnit(player *playerlib.Player, unit units.Unit) {
     select {
         case game.Events <- &GameEventSummonUnit{Player: player, Unit: unit}:
         default:

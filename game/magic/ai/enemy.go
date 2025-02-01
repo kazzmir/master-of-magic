@@ -14,6 +14,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
     "github.com/kazzmir/master-of-magic/game/magic/units"
+    "github.com/kazzmir/master-of-magic/game/magic/spellbook"
 )
 
 type EnemyAI struct {
@@ -41,11 +42,46 @@ func (ai *EnemyAI) ProducedUnit(city *citylib.City, player *playerlib.Player) {
     city.ProducingUnit = units.UnitNone
 }
 
-func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, pathfinder playerlib.PathFinder) []playerlib.AIDecision {
+func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, pathfinder playerlib.PathFinder, manaPerTurn int) []playerlib.AIDecision {
     var decisions []playerlib.AIDecision
 
-    // FIXME: research spells, cast spells
-    // create settlers, build cities
+    // FIXME: create settlers, build cities
+
+    if self.ResearchingSpell.Invalid() {
+        if len(self.ResearchCandidateSpells.Spells) > 0 {
+            // choose cheapest research cost spell
+            choice := self.ResearchCandidateSpells.Spells[0]
+            for _, spell := range self.ResearchCandidateSpells.Spells {
+                if spell.ResearchCost < choice.ResearchCost {
+                    choice = spell
+                }
+            }
+            decisions = append(decisions, &playerlib.AIResearchSpellDecision{
+                Spell: choice,
+            })
+        }
+    }
+
+    // not casting a spell
+    if self.CastingSpell.Invalid() && rand.N(10) == 0 {
+        // just search for summoning spells for now
+
+        summoningSpells := self.KnownSpells.GetSpellsBySection(spellbook.SectionSummoning)
+        if len(summoningSpells.Spells) > 0 {
+            for _, i := range rand.Perm(len(summoningSpells.Spells)) {
+                chosen := summoningSpells.Spells[i]
+                summonUnit := units.GetUnitByName(chosen.Name)
+                // check unit.UpkeepMana to see if it is affordable
+                if !summonUnit.IsNone() && manaPerTurn >= summonUnit.UpkeepMana {
+                    decisions = append(decisions, &playerlib.AICastSpellDecision{
+                        Spell: chosen,
+                    })
+                    break
+                }
+            }
+        }
+
+    }
 
     for _, city := range self.Cities {
         // city can make something

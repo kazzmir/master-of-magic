@@ -3049,6 +3049,12 @@ func createScenario36(cache *lbx.LbxCache) *gamelib.Game {
         Base: data.WizardRjak,
         Banner: data.BannerPurple,
         Race: data.RaceBarbarian,
+        Books: []data.WizardBook{
+            data.WizardBook{
+                Magic: data.LifeMagic,
+                Count: 3,
+            },
+        },
     }
 
     enemy1 := game.AddPlayer(wizard1, false)
@@ -3061,6 +3067,8 @@ func createScenario36(cache *lbx.LbxCache) *gamelib.Game {
     city.Population = 6190
     city.Plane = data.PlaneArcanus
     city.Banner = wizard1.Banner
+    city.Buildings.Insert(buildinglib.BuildingFortress)
+    city.Buildings.Insert(buildinglib.BuildingSummoningCircle)
     city.ProducingBuilding = buildinglib.BuildingTradeGoods
     city.ProducingUnit = units.UnitNone
     city.Farmers = 3
@@ -3080,6 +3088,8 @@ func createScenario36(cache *lbx.LbxCache) *gamelib.Game {
     // allSpells, _ := spellbook.ReadSpellsFromCache(cache)
 
     human.LiftFog(20, 20, 100, data.PlaneArcanus)
+
+    game.Camera.Center(x, y)
 
     return game
 }

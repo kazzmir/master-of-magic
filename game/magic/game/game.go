@@ -121,6 +121,13 @@ type GameEventNewOutpost struct {
     Stack *playerlib.UnitStack
 }
 
+type GameEventSelectLocationForSpell struct {
+    Spell spellbook.Spell
+    Player *playerlib.Player
+    LocationType LocationType
+    SelectedFunc func (yield coroutine.YieldFunc, tileX int, tileY int)
+}
+
 type GameEventLearnedSpell struct {
     Player *playerlib.Player
     Spell spellbook.Spell
@@ -2622,10 +2629,17 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                     case *GameEventResearchSpell:
                         researchSpell := event.(*GameEventResearchSpell)
                         game.ResearchNewSpell(yield, researchSpell.Player)
+
+                    case *GameEventSelectLocationForSpell:
+                        selectLocation := event.(*GameEventSelectLocationForSpell)
+                        tileX, tileY, cancel := game.selectLocationForSpell(yield, selectLocation.Spell, selectLocation.Player, selectLocation.LocationType)
+                        if !cancel {
+                            selectLocation.SelectedFunc(yield, tileX, tileY)
+                        }
                     case *GameEventCastSpell:
                         castSpell := event.(*GameEventCastSpell)
                         // in cast.go
-                        game.doCastSpell(yield, castSpell.Player, castSpell.Spell)
+                        game.doCastSpell(castSpell.Player, castSpell.Spell)
                     case *GameEventTreasure:
                         treasure := event.(*GameEventTreasure)
                         if treasure.Player.IsHuman() {
@@ -3446,31 +3460,43 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
     var decisions []playerlib.AIDecision
 
     if player.AIBehavior != nil {
-        decisions = player.AIBehavior.Update(player, game.GetEnemies(player), game)
+        decisions = player.AIBehavior.Update(player, game.GetEnemies(player), game, player.ManaPerTurn(game.ComputePower(player)))
         log.Printf("AI %v Decisions: %v", player.Wizard.Name, decisions)
 
         for _, decision := range decisions {
             switch decision.(type) {
-            case *playerlib.AIMoveStackDecision:
-                game.doAiMoveUnit(yield, player, decision.(*playerlib.AIMoveStackDecision))
+                case *playerlib.AIMoveStackDecision:
+                    game.doAiMoveUnit(yield, player, decision.(*playerlib.AIMoveStackDecision))
 
-            case *playerlib.AICreateUnitDecision:
-                create := decision.(*playerlib.AICreateUnitDecision)
-                log.Printf("ai %v creating %+v", player.Wizard.Name, create)
+                case *playerlib.AICreateUnitDecision:
+                    create := decision.(*playerlib.AICreateUnitDecision)
+                    log.Printf("ai %v creating %+v", player.Wizard.Name, create)
 
-                existingStack := player.FindStack(create.X, create.Y, create.Plane)
-                if existingStack == nil || len(existingStack.Units()) < 9 {
-                    overworldUnit := units.MakeOverworldUnitFromUnit(create.Unit, create.X, create.Y, create.Plane, player.Wizard.Banner, player.MakeExperienceInfo())
-                    player.AddUnit(overworldUnit)
-                }
-            case *playerlib.AIProduceDecision:
-                produce := decision.(*playerlib.AIProduceDecision)
-                log.Printf("ai %v producing %v %v", player.Wizard.Name, game.BuildingInfo.Name(produce.Building), produce.Unit.Name)
-                if produce.Building != buildinglib.BuildingNone {
-                    produce.City.ProducingBuilding = produce.Building
-                } else {
-                    produce.City.ProducingUnit = produce.Unit
-                }
+                    existingStack := player.FindStack(create.X, create.Y, create.Plane)
+                    if existingStack == nil || len(existingStack.Units()) < 9 {
+                        overworldUnit := units.MakeOverworldUnitFromUnit(create.Unit, create.X, create.Y, create.Plane, player.Wizard.Banner, player.MakeExperienceInfo())
+                        player.AddUnit(overworldUnit)
+                    }
+                case *playerlib.AIProduceDecision:
+                    produce := decision.(*playerlib.AIProduceDecision)
+                    log.Printf("ai %v producing %v %v", player.Wizard.Name, game.BuildingInfo.Name(produce.Building), produce.Unit.Name)
+                    if produce.Building != buildinglib.BuildingNone {
+                        produce.City.ProducingBuilding = produce.Building
+                    } else {
+                        produce.City.ProducingUnit = produce.Unit
+                    }
+                case *playerlib.AIResearchSpellDecision:
+                    research := decision.(*playerlib.AIResearchSpellDecision)
+                    if player.ResearchingSpell.Invalid() {
+                        player.ResearchingSpell = research.Spell
+                    }
+
+                case *playerlib.AICastSpellDecision:
+                    cast := decision.(*playerlib.AICastSpellDecision)
+
+                    if player.CastingSpell.Invalid() {
+                        player.CastingSpell = cast.Spell
+                    }
             }
         }
 
@@ -4106,16 +4132,6 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     return state
 }
 
-func (game *Game) GetMainImage(index int) (*ebiten.Image, error) {
-    image, err := game.ImageCache.GetImage("main.lbx", index, 0)
-
-    if err != nil {
-        log.Printf("Error: image in main.lbx is missing: %v", err)
-    }
-
-    return image, err
-}
-
 func GetUnitImage(unit units.StackUnit, imageCache *util.ImageCache, banner data.BannerType) (*ebiten.Image, error) {
     image, err := imageCache.GetImageTransform(unit.GetLbxFile(), unit.GetLbxIndex(), 0, banner.String(), units.MakeUpdateUnitColorsFunc(banner))
 
@@ -4380,6 +4396,7 @@ func (game *Game) ShowSpellBookCastUI(yield coroutine.YieldFunc, player *playerl
             if castingCost <= player.Mana && castingCost <= player.RemainingCastingSkill {
                 player.Mana -= castingCost
                 player.RemainingCastingSkill -= castingCost
+
                 select {
                     case game.Events<- &GameEventCastSpell{Player: player, Spell: spell}:
                     default:
@@ -5674,6 +5691,8 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
                     default:
                         log.Printf("Error: unable to invoke cast spell because event queue is full")
                 }
+            } else {
+                game.doCastSpell(player, player.CastingSpell)
             }
             player.CastingSpell = spellbook.Spell{}
             player.CastingSpellProgress = 0
@@ -5681,6 +5700,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
     }
 
     if player.ResearchingSpell.Valid() {
+        // log.Printf("wizard %v power=%v researching=%v progress=%v/%v perturn=%v", player.Wizard.Name, power, player.ResearchingSpell.Name, player.ResearchProgress, player.ResearchingSpell.ResearchCost, player.SpellResearchPerTurn(power))
         player.ResearchProgress += int(player.SpellResearchPerTurn(power))
         if player.ResearchProgress >= player.ResearchingSpell.ResearchCost {
 
@@ -5690,6 +5710,8 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
                     default:
                 }
             }
+
+            // log.Printf("wizard %v learned %v", player.Wizard.Name, player.ResearchingSpell.Name)
 
             player.LearnSpell(player.ResearchingSpell)
 
@@ -5837,7 +5859,9 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
 
     // game.CenterCamera(player.Cities[0].X, player.Cities[0].Y)
     game.DoNextUnit(player)
-    game.RefreshUI()
+    if player.IsHuman() {
+        game.RefreshUI()
+    }
 }
 
 func (game *Game) revertVolcanos() {
