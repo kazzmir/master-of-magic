@@ -494,10 +494,23 @@ func (player *Player) FoodPerTurn() int {
     return food
 }
 
+func (player *Player) TotalEnchantmentUpkeep() int {
+    upkeep := 0
+
+    for _, enchantment := range player.GlobalEnchantments.Values() {
+        upkeep += enchantment.UpkeepMana()
+    }
+
+    // FIXME: add city enchantments and unit enchantments
+
+    return upkeep
+}
+
 func (player *Player) ManaPerTurn(power int) int {
     mana := 0
 
     mana -= player.TotalUnitUpkeepMana()
+    mana -= player.TotalEnchantmentUpkeep()
 
     manaFocusingBonus := float64(1)
 

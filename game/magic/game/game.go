@@ -934,6 +934,8 @@ func (game *Game) doMagicView(yield coroutine.YieldFunc) {
     yield()
 
     game.Drawer = oldDrawer
+
+    game.RefreshUI()
 }
 
 func validNameString(s string) bool {
