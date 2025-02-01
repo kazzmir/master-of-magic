@@ -121,6 +121,13 @@ type GameEventNewOutpost struct {
     Stack *playerlib.UnitStack
 }
 
+type GameEventSelectLocationForSpell struct {
+    Spell spellbook.Spell
+    Player *playerlib.Player
+    LocationType LocationType
+    SelectedFunc func (yield coroutine.YieldFunc, tileX int, tileY int)
+}
+
 type GameEventLearnedSpell struct {
     Player *playerlib.Player
     Spell spellbook.Spell
@@ -2622,10 +2629,17 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                     case *GameEventResearchSpell:
                         researchSpell := event.(*GameEventResearchSpell)
                         game.ResearchNewSpell(yield, researchSpell.Player)
+
+                    case *GameEventSelectLocationForSpell:
+                        selectLocation := event.(*GameEventSelectLocationForSpell)
+                        tileX, tileY, cancel := game.selectLocationForSpell(yield, selectLocation.Spell, selectLocation.Player, selectLocation.LocationType)
+                        if !cancel {
+                            selectLocation.SelectedFunc(yield, tileX, tileY)
+                        }
                     case *GameEventCastSpell:
                         castSpell := event.(*GameEventCastSpell)
                         // in cast.go
-                        game.doCastSpell(yield, castSpell.Player, castSpell.Spell)
+                        game.doCastSpell(castSpell.Player, castSpell.Spell)
                     case *GameEventTreasure:
                         treasure := event.(*GameEventTreasure)
                         if treasure.Player.IsHuman() {
@@ -5678,7 +5692,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
                         log.Printf("Error: unable to invoke cast spell because event queue is full")
                 }
             } else {
-                game.doAiCastSpell(player, player.CastingSpell)
+                game.doCastSpell(player, player.CastingSpell)
             }
             player.CastingSpell = spellbook.Spell{}
             player.CastingSpellProgress = 0

@@ -18,7 +18,6 @@ import (
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
-    "github.com/kazzmir/master-of-magic/game/magic/summon"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
@@ -42,43 +41,19 @@ const (
     LocationTypeEnemyMeldedNode
 )
 
-func (game *Game) doAiCastSpell(player *playerlib.Player, spell spellbook.Spell) {
-    // FIXME: we shouldn't have to need a separate function for ai spells
-    switch spell.Name {
-        case "Magic Spirit", "Angel", "Arch Angel", "Guardian Spirit",
-             "Unicorns", "Basilisk", "Behemoth", "Cockatrices", "Colossus",
-             "Earth Elemental", "Giant Spiders", "Gorgons", "Great Wyrm",
-             "Sprites", "Stone Giant", "War Bears", "Air Elemental",
-             "Djinn", "Floating Island", "Nagas", "Phantom Beast", "Phantom Warriors",
-             "Sky Drake", "Storm Giant", "Chaos Spawn", "Chimeras", "Doom Bat",
-             "Efreet", "Fire Elemental", "Fire Giant", "Gargoyles",
-             "Great Drake", "Hell Hounds", "Hydra", "Death Knights",
-             "Demon Lord", "Ghouls", "Night Stalker", "Shadow Demons",
-             "Skeletons", "Wraiths":
-            game.doSummonUnit(player, castlib.SummonUnitForSpell(spell.Name))
-    }
-}
+func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
+    // FIXME: if the player is AI then invoke some callback that the AI will use to select targets instead of using the GameEventSelectLocationForSpell
 
-func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Player, spell spellbook.Spell) {
     switch spell.Name {
         case "Earth Lore":
-            tileX, tileY, cancel := game.selectLocationForSpell(yield, spell, player, LocationTypeAny)
-
-            if cancel {
-                return
+            selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+                game.doCastEarthLore(yield, tileX, tileY, player)
             }
 
-            game.doCastEarthLore(yield, tileX, tileY, player)
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeAny, SelectedFunc: selected}
         case "Create Artifact", "Enchant Item":
-            showSummon := summon.MakeSummonArtifact(game.Cache, player.Wizard.Base)
-
-            game.doSummon(yield, showSummon)
-
-            select {
-                case game.Events <- &GameEventVault{CreatedArtifact: player.CreateArtifact}:
-                default:
-            }
-
+            game.Events <- &GameEventSummonArtifact{Wizard: player.Wizard.Base}
+            game.Events <- &GameEventVault{CreatedArtifact: player.CreateArtifact}
             player.CreateArtifact = nil
         case "Magic Spirit", "Angel", "Arch Angel", "Guardian Spirit",
              "Unicorns", "Basilisk", "Behemoth", "Cockatrices", "Colossus",
@@ -96,47 +71,31 @@ func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Playe
         // Lycanthropy	Icon DeathDeath	Uncommon	180	--	5	400	6 Regenerating Icon Melee Normal Melee creatures replace a target friendly Normal Unit.
 
         case "Wall of Fire":
-            tileX, tileY, cancel := game.selectLocationForSpell(yield, spell, player, LocationTypeFriendlyCity)
+            selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+                game.doMoveCamera(yield, tileX, tileY)
+                chosenCity := player.FindCity(tileX, tileY, game.Plane)
+                if chosenCity == nil {
+                    return
+                }
 
-            if cancel {
-                return
+                chosenCity.AddEnchantment(data.CityEnchantmentWallOfFire, player.GetBanner())
+
+                yield()
+                cityview.PlayEnchantmentSound(game.Cache)
+                game.showCityEnchantment(yield, chosenCity, player, spell.Name)
             }
 
-            game.doMoveCamera(yield, tileX, tileY)
-            chosenCity := player.FindCity(tileX, tileY, game.Plane)
-            if chosenCity == nil {
-                return
-            }
-
-            chosenCity.AddEnchantment(data.CityEnchantmentWallOfFire, player.GetBanner())
-
-            yield()
-            cityview.PlayEnchantmentSound(game.Cache)
-            game.showCityEnchantment(yield, chosenCity, player, spell.Name)
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyCity, SelectedFunc: selected}
         case "Change Terrain":
-            tileX, tileY, cancel := game.selectLocationForSpell(yield, spell, player, LocationTypeChangeTerrain)
-
-            if cancel {
-                return
-            }
-
-            game.doCastChangeTerrain(yield, tileX, tileY)
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeChangeTerrain, SelectedFunc: game.doCastChangeTerrain}
         case "Transmute":
-            tileX, tileY, cancel := game.selectLocationForSpell(yield, spell, player, LocationTypeTransmute)
-
-            if cancel {
-                return
-            }
-
-            game.doCastTransmute(yield, tileX, tileY)
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeTransmute, SelectedFunc: game.doCastTransmute}
         case "Raise Volcano":
-            tileX, tileY, cancel := game.selectLocationForSpell(yield, spell, player, LocationTypeRaiseVolcano)
-
-            if cancel {
-                return
+            selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+                game.doCastRaiseVolcano(yield, tileX, tileY, player)
             }
 
-            game.doCastRaiseVolcano(yield, tileX, tileY, player)
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeRaiseVolcano, SelectedFunc: selected}
         case "Summon Hero":
             game.doSummonHero(player, false)
         case "Summon Champion":
@@ -145,29 +104,11 @@ func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Playe
         // Incarnation	Icon LifeLife	Rare	500	--	12	960	Summons Torin the Chosen – one of the most powerful Champions in the game.
 
         case "Enchant Road":
-            tileX, tileY, cancel := game.selectLocationForSpell(yield, spell, player, LocationTypeAny)
-
-            if cancel {
-                return
-            }
-
-            game.doCastEnchantRoad(yield, tileX, tileY)
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeAny, SelectedFunc: game.doCastEnchantRoad}
         case "Corruption":
-            tileX, tileY, cancel := game.selectLocationForSpell(yield, spell, player, LocationTypeLand)
-
-            if cancel {
-                return
-            }
-
-            game.doCastCorruption(yield, tileX, tileY)
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeLand, SelectedFunc: game.doCastCorruption}
         case "Warp Node":
-            tileX, tileY, cancel := game.selectLocationForSpell(yield, spell, player, LocationTypeEnemyMeldedNode)
-
-            if cancel {
-                return
-            }
-
-            game.doCastWarpNode(yield, tileX, tileY)
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeEnemyMeldedNode, SelectedFunc: game.doCastWarpNode}
         default:
             log.Printf("Warning: casting unhandled spell %v", spell.Name)
     }
