@@ -559,6 +559,16 @@ func (player *Player) WrapX(x int) int {
     return x % maximum
 }
 
+func (player *Player) LiftFogAll(plane data.Plane){
+    fog := player.GetFog(plane)
+
+    for x := 0; x < len(fog); x++ {
+        for y := 0; y < len(fog[0]); y++ {
+            fog[x][y] = data.FogTypeVisible
+        }
+    }
+}
+
 func (player *Player) LiftFogSquare(x int, y int, squares int, plane data.Plane){
     fog := player.GetFog(plane)
 
@@ -599,7 +609,10 @@ func (player *Player) LiftFog(x int, y int, radius int, plane data.Plane){
 }
 
 func (player *Player) UpdateFogVisibility() {
-    // FIXME: nature awareness spell makes every tile visible
+    // fog should have already been lifted when this enchantment was cast
+    if player.GlobalEnchantments.Contains(data.EnchantmentNatureAwareness) {
+        return
+    }
 
     fogs := []data.FogMap{player.ArcanusFog, player.MyrrorFog}
 

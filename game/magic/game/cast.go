@@ -95,6 +95,13 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             }
 
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeRaiseVolcano, SelectedFunc: selected}
+        case "Nature Awareness":
+            // FIXME: does an animation play?
+
+            player.GlobalEnchantments.Insert(data.EnchantmentNatureAwareness)
+            player.LiftFogAll(data.PlaneArcanus)
+            player.LiftFogAll(data.PlaneMyrror)
+
         case "Summon Hero":
             game.doSummonHero(player, false)
         case "Summon Champion":
