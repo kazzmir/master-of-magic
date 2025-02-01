@@ -5727,10 +5727,18 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
             case *citylib.CityEventPopulationGrowth:
                 // growth := event.(*citylib.CityEventPopulationGrowth)
 
+                growthEvent := event.(*citylib.CityEventPopulationGrowth)
+
+                verb := "grown"
+                if !growthEvent.Grow {
+                    verb = "shrunk"
+                }
+
+                // FIXME: can citizens shrink to 0, in which case the city should be removed?
+
                 scrollEvent := GameEventScroll{
                     Title: "CITY GROWTH",
-                    // FIXME: 'has shrunk' if growth is negative?
-                    Text: fmt.Sprintf("%v has grown to a population of %v.", city.Name, city.Citizens()),
+                    Text: fmt.Sprintf("%v has %v to a population of %v.", city.Name, verb, city.Citizens()),
                 }
 
                 if player.IsHuman() {
@@ -5739,14 +5747,6 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
                         default:
                     }
                 }
-
-                /*
-                if growth.Size > 0 {
-                    log.Printf("City grew by %v to %v", growth.Size, city.Citizens())
-                } else {
-                    log.Printf("City shrunk by %v to %v", -growth.Size, city.Citizens())
-                }
-                */
             case *citylib.CityEventNewBuilding:
                 newBuilding := event.(*citylib.CityEventNewBuilding)
 

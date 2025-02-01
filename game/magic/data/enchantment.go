@@ -174,12 +174,14 @@ const (
     CityEnchantmentNone CityEnchantment = iota
     CityEnchantmentWallOfFire
     CityEnchantmentWallOfDarkness
+    CityEnchantmentFamine
 )
 
 func (enchantment CityEnchantment) Name() string {
     switch enchantment {
         case CityEnchantmentWallOfFire: return "Wall of Fire"
         case CityEnchantmentWallOfDarkness: return "Wall of Darkness"
+        case CityEnchantmentFamine: return "Famine"
     }
 
     return ""
