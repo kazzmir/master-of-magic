@@ -3742,8 +3742,13 @@ func (game *Game) doEncounter(yield coroutine.YieldFunc, player *playerlib.Playe
 
         game.createTreasure(encounter.Type, encounter.Budget, player)
     } else {
-        encounter.ExploredBy.Insert(player)
-        // FIXME: remove killed defenders
+        var remaining []units.Unit
+        for index := range enemies {
+            if enemies[index].GetHealth() > 0 {
+                remaining = append(remaining, encounter.Units[index])
+            }
+        }
+        encounter.Units = remaining
     }
 
     // absorb extra clicks
