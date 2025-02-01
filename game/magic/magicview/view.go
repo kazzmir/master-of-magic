@@ -889,19 +889,43 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
         })
     }
 
-    for i, enchantment := range allEnchantments() {
-        name := enchantment.Enchantment.String()
-        useFont := bannerFont(enchantment.Banner)
-        yStart := 80
-        rect := image.Rect(170 * data.ScreenScale, (yStart + i * useFont.Height()) * data.ScreenScale, 310 * data.ScreenScale, (yStart + (i + 1) * useFont.Height()) * data.ScreenScale)
-        elements = append(elements, &uilib.UIElement{
-            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                useFont.Print(screen, float64(rect.Min.X), float64(rect.Min.Y), float64(data.ScreenScale), ebiten.ColorScale{}, name)
-            },
-        })
+    ui.SetElementsFromArray(elements)
+
+    var globalEnchantments []*uilib.UIElement
+    var setupEnchantments func()
+    setupEnchantments = func() {
+        ui.RemoveElements(globalEnchantments)
+        globalEnchantments = nil
+
+        for i, enchantment := range allEnchantments() {
+            name := enchantment.Enchantment.String()
+            useFont := bannerFont(enchantment.Banner)
+            yStart := 80
+            rect := image.Rect(170 * data.ScreenScale, (yStart + i * useFont.Height()) * data.ScreenScale, 310 * data.ScreenScale, (yStart + (i + 1) * useFont.Height()) * data.ScreenScale)
+            globalEnchantments = append(globalEnchantments, &uilib.UIElement{
+                Rect: rect,
+                Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                    useFont.Print(screen, float64(rect.Min.X), float64(rect.Min.Y), float64(data.ScreenScale), ebiten.ColorScale{}, name)
+                },
+                LeftClick: func(element *uilib.UIElement){
+                    // can only cancel the player's enchantments
+                    if enchantment.Banner == player.GetBanner() {
+                        no := func(){}
+                        yes := func(){
+                            player.GlobalEnchantments.Remove(enchantment.Enchantment)
+                            setupEnchantments()
+                        }
+
+                        ui.AddElements(uilib.MakeConfirmDialog(ui, magic.Cache, &magic.ImageCache, fmt.Sprintf("Do you wish to cancel your %v spell?", name), yes, no))
+                    }
+                },
+            })
+        }
+
+        ui.AddElements(globalEnchantments)
     }
 
-    ui.SetElementsFromArray(elements)
+    setupEnchantments()
 
     return ui
 }
