@@ -98,6 +98,38 @@ func (enchantment Enchantment) UpkeepMana() int {
     return 0
 }
 
+// the index in specfx.lbx for when this enchantment is casted
+func (enchantment Enchantment) LbxIndex() int {
+    switch enchantment {
+        case EnchantmentAwareness: return 56
+        case EnchantmentDetectMagic: return 37
+        case EnchantmentCharmOfLife: return 36
+        case EnchantmentCrusade: return 32
+        case EnchantmentHolyArms: return 34
+        case EnchantmentJustCause: return 33
+        case EnchantmentLifeForce: return 31
+        case EnchantmentPlanarSeal: return 35
+        case EnchantmentTranquility: return 30
+        case EnchantmentHerbMastery: return 24
+        case EnchantmentNatureAwareness: return 22
+        case EnchantmentNaturesWrath: return 23
+        case EnchantmentAuraOfMajesty: return 18
+        case EnchantmentSuppressMagic: return 20
+        case EnchantmentTimeStop: return 21
+        case EnchantmentWindMastery: return 19
+        case EnchantmentArmageddon: return 29
+        case EnchantmentChaosSurge: return 25
+        case EnchantmentDoomMastery: return 26
+        case EnchantmentGreatWasting: return 27
+        case EnchantmentMeteorStorm: return 28
+        case EnchantmentEternalNight: return 15
+        case EnchantmentEvilOmens: return 16
+        case EnchantmentZombieMastery: return 17
+    }
+
+    return 0
+}
+
 // unit enchantments
 type UnitEnchantment int
 

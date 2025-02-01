@@ -735,6 +735,10 @@ func (game *Game) doCastGlobalEnchantment(yield coroutine.YieldFunc, player *pla
         case data.WizardKali: animationIndex = 13
     }
 
+    spellImage, _ := game.ImageCache.GetImage("specfx.lbx", enchantment.LbxIndex(), 0)
+
+    doDraw := 0
+
     game.Drawer = func(screen *ebiten.Image, game *Game){
         oldDrawer(screen, game)
         var options ebiten.DrawImageOptions
@@ -742,22 +746,48 @@ func (game *Game) doCastGlobalEnchantment(yield coroutine.YieldFunc, player *pla
         options.GeoM.Translate(float64(-frame.Bounds().Dx() / 2), float64(-frame.Bounds().Dy() / 2))
         screen.DrawImage(frame, &options)
 
-        mood, _ := game.ImageCache.GetImageTransform("moodwiz.lbx", animationIndex, 2, "cutout", makeCutoutMask)
-        options.GeoM.Translate(float64(13 * data.ScreenScale), float64(13 * data.ScreenScale))
-        screen.DrawImage(mood, &options)
+        // first draw the wizard
+        if doDraw == 0 {
+            mood, _ := game.ImageCache.GetImageTransform("moodwiz.lbx", animationIndex, 2, "cutout", makeCutoutMask)
+            options.GeoM.Translate(float64(13 * data.ScreenScale), float64(13 * data.ScreenScale))
+            screen.DrawImage(mood, &options)
 
-        infoFont.PrintCenter(screen, float64(data.ScreenWidth / 2), float64(data.ScreenHeight / 2 + frame.Bounds().Dy() / 2), float64(data.ScreenScale), ebiten.ColorScale{}, "You have finished casting")
+            infoFont.PrintCenter(screen, float64(data.ScreenWidth / 2), float64(data.ScreenHeight / 2 + frame.Bounds().Dy() / 2), float64(data.ScreenScale), ebiten.ColorScale{}, "You have finished casting")
+        } else {
+            // then draw the spell image
+            options.GeoM.Translate(float64(9 * data.ScreenScale), float64(8 * data.ScreenScale))
+            screen.DrawImage(spellImage, &options)
+
+            infoFont.PrintCenter(screen, float64(data.ScreenWidth / 2), float64(data.ScreenHeight / 2 + frame.Bounds().Dy() / 2), float64(data.ScreenScale), ebiten.ColorScale{}, enchantment.String())
+        }
+
     }
 
     quit := false
     for !quit {
         game.Counter += 1
-        leftClick := inputmanager.RightClick()
+        leftClick := inputmanager.LeftClick()
         if leftClick {
             quit = true
         }
 
         yield()
     }
+
+    yield()
+
+    doDraw = 1
+
+    quit = false
+    for !quit {
+        game.Counter += 1
+        leftClick := inputmanager.LeftClick()
+        if leftClick {
+            quit = true
+        }
+        yield()
+    }
+
+    yield()
 
 }
