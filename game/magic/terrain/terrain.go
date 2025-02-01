@@ -1430,7 +1430,7 @@ func (terrain *TerrainData) FindMatchingTile(match map[Direction]TerrainType, pl
     center, ok := match[Center]
     if ok {
         for _, tile := range terrain.OnlyTiles[center] {
-            if tile.Tile.matches(match) {
+            if tile.IsPlane(plane) && tile.Tile.matches(match) {
                 return tile.TileIndex
             }
         }
