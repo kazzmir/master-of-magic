@@ -4,6 +4,7 @@ import (
     "fmt"
     "log"
     "image"
+    "image/color"
     "math/rand/v2"
 
     "github.com/kazzmir/master-of-magic/lib/coroutine"
@@ -96,10 +97,9 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
 
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeRaiseVolcano, SelectedFunc: selected}
         case "Nature Awareness":
-            // FIXME: show frame image from backgrnd.lbx 18, and wizard picture from moodwiz with the text 'you have finished casting'
-            // then show specfx image (35 for planar seal) and the name of the enchantment
-
             if !player.GlobalEnchantments.Contains(data.EnchantmentNatureAwareness) {
+                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: data.EnchantmentNatureAwareness}
+
                 player.GlobalEnchantments.Insert(data.EnchantmentNatureAwareness)
                 player.LiftFogAll(data.PlaneArcanus)
                 player.LiftFogAll(data.PlaneMyrror)
@@ -655,4 +655,109 @@ func (game *Game) doCastWarpNode(yield coroutine.YieldFunc, tileX int, tileY int
     if node != nil {
         node.Warped = true
     }
+}
+
+func (game *Game) doCastGlobalEnchantment(yield coroutine.YieldFunc, player *playerlib.Player, enchantment data.Enchantment) {
+    // FIXME: show frame image from backgrnd.lbx 18, and wizard picture from moodwiz with the text 'you have finished casting'
+    // then show specfx image (35 for planar seal) and the name of the enchantment
+
+    fontLbx, err := game.Cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        log.Printf("Error reading fonts: %v", err)
+        return
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        log.Printf("Error reading fonts: %v", err)
+        return
+    }
+
+    white := color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}
+    palette := color.Palette{
+        color.RGBA{R: 0x00, G: 0x00, B: 0x00, A: 0x0},
+        color.RGBA{R: 0x00, G: 0x00, B: 0x00, A: 0x0},
+        white, white, white,
+        white, white, white,
+        white, white, white,
+        white, white, white,
+    }
+
+    infoFont := font.MakeOptimizedFontWithPalette(fonts[5], palette)
+
+    diplomacLbx, _ := game.Cache.GetLbxFile("diplomac.lbx")
+    // the tauron fade in, but any mask will work
+    maskSprites, _ := diplomacLbx.ReadImages(46)
+    mask := maskSprites[0]
+
+    // stolen from diplomacy.go
+    var makeCutoutMask util.ImageTransformFunc = func (img *image.Paletted) image.Image {
+        properImage := img.SubImage(mask.Bounds()).(*image.Paletted)
+        imageOut := image.NewPaletted(properImage.Bounds(), properImage.Palette)
+
+        for x := properImage.Bounds().Min.X; x < properImage.Bounds().Max.X; x++ {
+            for y := properImage.Bounds().Min.Y; y < properImage.Bounds().Max.Y; y++ {
+                maskColor := mask.At(x, y)
+                _, _, _, a := maskColor.RGBA()
+                if a > 0 {
+                    imageOut.Set(x, y, properImage.At(x, y))
+                } else {
+                    imageOut.SetColorIndex(x, y, 0)
+                }
+            }
+        }
+
+        return imageOut
+    }
+
+    frame, _ := game.ImageCache.GetImage("backgrnd.lbx", 18, 0)
+
+    oldDrawer := game.Drawer
+    defer func(){
+        game.Drawer = oldDrawer
+    }()
+
+    animationIndex := 0
+    switch player.Wizard.Base {
+        case data.WizardMerlin: animationIndex = 0
+        case data.WizardRaven: animationIndex = 1
+        case data.WizardSharee: animationIndex = 2
+        case data.WizardLoPan: animationIndex = 3
+        case data.WizardJafar: animationIndex = 4
+        case data.WizardOberic: animationIndex = 5
+        case data.WizardRjak: animationIndex = 6
+        case data.WizardSssra: animationIndex = 7
+        case data.WizardTauron: animationIndex = 8
+        case data.WizardFreya: animationIndex = 9
+        case data.WizardHorus: animationIndex = 10
+        case data.WizardAriel: animationIndex = 11
+        case data.WizardTlaloc: animationIndex = 12
+        case data.WizardKali: animationIndex = 13
+    }
+
+    game.Drawer = func(screen *ebiten.Image, game *Game){
+        oldDrawer(screen, game)
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(float64(data.ScreenWidth / 2), float64(data.ScreenHeight / 2))
+        options.GeoM.Translate(float64(-frame.Bounds().Dx() / 2), float64(-frame.Bounds().Dy() / 2))
+        screen.DrawImage(frame, &options)
+
+        mood, _ := game.ImageCache.GetImageTransform("moodwiz.lbx", animationIndex, 2, "cutout", makeCutoutMask)
+        options.GeoM.Translate(float64(13 * data.ScreenScale), float64(13 * data.ScreenScale))
+        screen.DrawImage(mood, &options)
+
+        infoFont.PrintCenter(screen, float64(data.ScreenWidth / 2), float64(data.ScreenHeight / 2 + frame.Bounds().Dy() / 2), float64(data.ScreenScale), ebiten.ColorScale{}, "You have finished casting")
+    }
+
+    quit := false
+    for !quit {
+        game.Counter += 1
+        leftClick := inputmanager.RightClick()
+        if leftClick {
+            quit = true
+        }
+
+        yield()
+    }
+
 }

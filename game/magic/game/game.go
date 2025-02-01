@@ -137,6 +137,11 @@ type GameEventResearchSpell struct {
     Player *playerlib.Player
 }
 
+type GameEventCastGlobalEnchantment struct {
+    Player *playerlib.Player
+    Enchantment data.Enchantment
+}
+
 type GameEventGameMenu struct {
 }
 
@@ -2622,7 +2627,9 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                     case *GameEventResearchSpell:
                         researchSpell := event.(*GameEventResearchSpell)
                         game.ResearchNewSpell(yield, researchSpell.Player)
-
+                    case *GameEventCastGlobalEnchantment:
+                        castGlobal := event.(*GameEventCastGlobalEnchantment)
+                        game.doCastGlobalEnchantment(yield, castGlobal.Player, castGlobal.Enchantment)
                     case *GameEventSelectLocationForSpell:
                         selectLocation := event.(*GameEventSelectLocationForSpell)
                         tileX, tileY, cancel := game.selectLocationForSpell(yield, selectLocation.Spell, selectLocation.Player, selectLocation.LocationType)

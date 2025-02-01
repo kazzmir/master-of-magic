@@ -977,7 +977,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
 
     player := game.AddPlayer(wizard, true)
 
-    player.CastingSkillPower += 50000
+    player.CastingSkillPower += 500000
 
     allSpells, _ := spellbook.ReadSpellsFromCache(cache)
 
@@ -1022,7 +1022,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     player.AddCity(city)
 
     player.Gold = 83
-    player.Mana = 900
+    player.Mana = 1000
 
     player.LiftFog(x, y, 4, data.PlaneArcanus)
 
@@ -3279,6 +3279,81 @@ func createScenario39(cache *lbx.LbxCache) *gamelib.Game {
     return game
 }
 
+// cast global enchantment
+func createScenario40(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 40")
+    wizard := setup.WizardCustom{
+        Name: "bob",
+        Banner: data.BannerRed,
+        Race: data.RaceTroll,
+        Abilities: []setup.WizardAbility{
+            setup.AbilityAlchemy,
+            setup.AbilitySageMaster,
+        },
+        Books: []data.WizardBook{
+            data.WizardBook{
+                Magic: data.LifeMagic,
+                Count: 3,
+            },
+            data.WizardBook{
+                Magic: data.SorceryMagic,
+                Count: 8,
+            },
+        },
+    }
+
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+        Magic: data.MagicSettingNormal,
+        Difficulty: data.DifficultyAverage,
+    })
+
+    game.Plane = data.PlaneArcanus
+
+    player := game.AddPlayer(wizard, true)
+
+    player.CastingSkillPower += 500000
+
+    x, y, _ := game.FindValidCityLocation(game.Plane)
+
+    city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.CurrentMap(), game)
+    city.Population = 6190
+    city.Plane = data.PlaneArcanus
+    city.Banner = wizard.Banner
+    city.Buildings.Insert(buildinglib.BuildingSummoningCircle)
+    city.ProducingBuilding = buildinglib.BuildingGranary
+    city.ProducingUnit = units.UnitNone
+    city.Race = wizard.Race
+    city.Farmers = 3
+    city.Workers = 3
+    city.Wall = false
+
+    city.AddBuilding(buildinglib.BuildingShrine)
+    city.AddBuilding(buildinglib.BuildingGranary)
+
+    city.ResetCitizens(nil)
+
+    player.AddCity(city)
+
+    player.Gold = 83
+    player.Mana = 1000
+
+    player.LiftFog(x, y, 4, data.PlaneArcanus)
+
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, nil))
+
+    game.CurrentMap().SetRoad(x, y+1, false)
+    game.CurrentMap().SetRoad(x, y+2, false)
+
+    game.Camera.Center(x, y)
+
+    game.Events <- &gamelib.GameEventCastGlobalEnchantment{
+        Player: player,
+        Enchantment: data.EnchantmentNatureAwareness,
+    }
+
+    return game
+}
+
 func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
@@ -3324,6 +3399,7 @@ func NewEngine(scenario int) (*Engine, error) {
         case 37: game = createScenario37(cache)
         case 38: game = createScenario38(cache)
         case 39: game = createScenario39(cache)
+        case 40: game = createScenario40(cache)
         default: game = createScenario1(cache)
     }
 
