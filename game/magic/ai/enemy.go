@@ -64,7 +64,7 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, p
     }
 
     // not casting a spell
-    if self.CastingSpell.Invalid() {
+    if self.CastingSpell.Invalid() && rand.N(10) == 0 {
         // just search for summoning spells for now
 
         summoningSpells := self.KnownSpells.GetSpellsBySection(spellbook.SectionSummoning)

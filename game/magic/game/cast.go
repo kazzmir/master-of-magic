@@ -42,6 +42,23 @@ const (
     LocationTypeEnemyMeldedNode
 )
 
+func (game *Game) doAiCastSpell(player *playerlib.Player, spell spellbook.Spell) {
+    // FIXME: we shouldn't have to need a separate function for ai spells
+    switch spell.Name {
+        case "Magic Spirit", "Angel", "Arch Angel", "Guardian Spirit",
+             "Unicorns", "Basilisk", "Behemoth", "Cockatrices", "Colossus",
+             "Earth Elemental", "Giant Spiders", "Gorgons", "Great Wyrm",
+             "Sprites", "Stone Giant", "War Bears", "Air Elemental",
+             "Djinn", "Floating Island", "Nagas", "Phantom Beast", "Phantom Warriors",
+             "Sky Drake", "Storm Giant", "Chaos Spawn", "Chimeras", "Doom Bat",
+             "Efreet", "Fire Elemental", "Fire Giant", "Gargoyles",
+             "Great Drake", "Hell Hounds", "Hydra", "Death Knights",
+             "Demon Lord", "Ghouls", "Night Stalker", "Shadow Demons",
+             "Skeletons", "Wraiths":
+            game.doSummonUnit(player, castlib.SummonUnitForSpell(spell.Name))
+    }
+}
+
 func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Player, spell spellbook.Spell) {
     switch spell.Name {
         case "Earth Lore":
@@ -73,7 +90,7 @@ func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Playe
              "Great Drake", "Hell Hounds", "Hydra", "Death Knights",
              "Demon Lord", "Ghouls", "Night Stalker", "Shadow Demons",
              "Skeletons", "Wraiths":
-            game.doSummonUnit(yield, player, castlib.SummonUnitForSpell(spell.Name))
+            game.doSummonUnit(player, castlib.SummonUnitForSpell(spell.Name))
 
         // FIXME: lycanthropy selects a friendly unit
         // Lycanthropy	Icon DeathDeath	Uncommon	180	--	5	400	6 Regenerating Icon Melee Normal Melee creatures replace a target friendly Normal Unit.
@@ -191,7 +208,7 @@ func (game *Game) doSummonHero(yield coroutine.YieldFunc, player *playerlib.Play
     }
 }
 
-func (game *Game) doSummonUnit(yield coroutine.YieldFunc, player *playerlib.Player, unit units.Unit) {
+func (game *Game) doSummonUnit(player *playerlib.Player, unit units.Unit) {
     select {
         case game.Events <- &GameEventSummonUnit{Player: player, Unit: unit}:
         default:

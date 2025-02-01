@@ -4377,6 +4377,7 @@ func (game *Game) ShowSpellBookCastUI(yield coroutine.YieldFunc, player *playerl
             if castingCost <= player.Mana && castingCost <= player.RemainingCastingSkill {
                 player.Mana -= castingCost
                 player.RemainingCastingSkill -= castingCost
+
                 select {
                     case game.Events<- &GameEventCastSpell{Player: player, Spell: spell}:
                     default:
@@ -5671,6 +5672,8 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
                     default:
                         log.Printf("Error: unable to invoke cast spell because event queue is full")
                 }
+            } else {
+                game.doAiCastSpell(player, player.CastingSpell)
             }
             player.CastingSpell = spellbook.Spell{}
             player.CastingSpellProgress = 0
