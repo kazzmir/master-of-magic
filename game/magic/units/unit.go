@@ -3618,7 +3618,7 @@ var Manticore Unit = Unit{
     Defense: 3,
     Resistance: 6,
     HitPoints: 7,
-    Abilities: []data.Ability{data.MakeAbility(data.AbilityScouting), data.MakeAbilityValue(data.AbilityPoisonTouch, 6)},
+    Abilities: []data.Ability{data.MakeAbilityValue(data.AbilityScouting, 2), data.MakeAbilityValue(data.AbilityPoisonTouch, 6)},
     RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingAnimistsGuild},
     Race: data.RaceBeastmen,
 }
@@ -3873,7 +3873,7 @@ var Nightmares Unit = Unit{
     Defense: 4,
     Resistance: 8,
     HitPoints: 10,
-    Abilities: []data.Ability{data.MakeAbility(data.AbilityScouting)},
+    Abilities: []data.Ability{data.MakeAbilityValue(data.AbilityScouting, 2)},
     RequiredBuildings: []building.Building{building.BuildingFantasticStable},
     Race: data.RaceDarkElf,
 }
@@ -4080,7 +4080,7 @@ var DoomDrake Unit = Unit{
     Defense: 3,
     Resistance: 9,
     HitPoints: 10,
-    Abilities: []data.Ability{data.MakeAbility(data.AbilityScouting), data.MakeAbilityValue(data.AbilityFireBreath, 6)},
+    Abilities: []data.Ability{data.MakeAbilityValue(data.AbilityScouting, 2), data.MakeAbilityValue(data.AbilityFireBreath, 6)},
     RequiredBuildings: []building.Building{building.BuildingBarracks, building.BuildingStables},
     Race: data.RaceDraconian,
 }
@@ -4108,7 +4108,7 @@ var AirShip Unit = Unit{
     Defense: 5,
     Resistance: 8,
     HitPoints: 20,
-    Abilities: []data.Ability{data.MakeAbility(data.AbilityScouting), data.MakeAbility(data.AbilityWallCrusher)},
+    Abilities: []data.Ability{data.MakeAbilityValue(data.AbilityScouting, 2), data.MakeAbility(data.AbilityWallCrusher)},
     RequiredBuildings: []building.Building{building.BuildingShipYard},
     Race: data.RaceDraconian,
 }
@@ -4756,6 +4756,7 @@ var Pegasai Unit = Unit{
     HitPoints: 5,
     RequiredBuildings: []building.Building{building.BuildingFantasticStable},
     Race: data.RaceHighElf,
+    Abilities: []data.Ability{data.MakeAbilityValue(data.AbilityScouting, 2), data.MakeAbilityValue(data.AbilityToHit, 10)},
 }
 
 var HighMenSpearmen Unit = Unit{

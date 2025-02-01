@@ -499,3 +499,16 @@ func (unit *OverworldUnit) GetArtifactSlots() []artifact.ArtifactSlot {
 func (unit *OverworldUnit) GetArtifacts() []*artifact.Artifact {
     return nil
 }
+
+func (unit *OverworldUnit) GetSightRange() int {
+    scouting := unit.GetAbilityValue(data.AbilityScouting)
+    if scouting >= 2 {
+        return int(scouting)
+    }
+
+    if unit.IsFlying() {
+        return 2
+    }
+
+    return 1
+}

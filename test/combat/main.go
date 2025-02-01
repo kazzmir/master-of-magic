@@ -233,7 +233,7 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
     defendingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Lair",
             Banner: data.BannerBrown,
-        }, false, nil, nil)
+        }, false, 0, 0)
 
     // defendingArmy := createWarlockArmy(&defendingPlayer)
     defendingArmy := createHighMenBowmanArmyN(defendingPlayer, 3)
@@ -248,7 +248,7 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Merlin",
             Banner: data.BannerGreen,
-        }, true, nil, nil)
+        }, true, 0, 0)
 
     attackingPlayer.CastingSkillPower = 1000
     attackingPlayer.Mana = 1000
@@ -299,7 +299,7 @@ func makeScenario2(cache *lbx.LbxCache) *combat.CombatScreen {
     defendingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Lair",
             Banner: data.BannerBlue,
-        }, false, nil, nil)
+        }, false, 0, 0)
 
     // defendingArmy := createWarlockArmy(&defendingPlayer)
     defendingArmy := createSettlerArmy(defendingPlayer, 3)
@@ -316,7 +316,7 @@ func makeScenario2(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Merlin",
             Banner: data.BannerRed,
-        }, true, nil, nil)
+        }, true, 0, 0)
 
     attackingPlayer.CastingSkillPower = 10
 
@@ -331,7 +331,7 @@ func makeScenario3(cache *lbx.LbxCache) *combat.CombatScreen {
     defendingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Lair",
             Banner: data.BannerBlue,
-        }, false, nil, nil)
+        }, false, 0, 0)
 
     // defendingArmy := createWarlockArmy(&defendingPlayer)
     defendingArmy := createSettlerArmy(defendingPlayer, 3)
@@ -348,7 +348,7 @@ func makeScenario3(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Merlin",
             Banner: data.BannerRed,
-        }, true, nil, nil)
+        }, true, 0, 0)
 
     attackingPlayer.CastingSkillPower = 10
 
@@ -364,7 +364,7 @@ func makeScenario4(cache *lbx.LbxCache) *combat.CombatScreen {
     defendingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Enemy",
             Banner: data.BannerBlue,
-        }, false, nil, nil)
+        }, false, 0, 0)
 
     // defendingArmy := createWarlockArmy(defendingPlayer)
     // defendingArmy := createSettlerArmy(defendingPlayer, 3)
@@ -381,7 +381,7 @@ func makeScenario4(cache *lbx.LbxCache) *combat.CombatScreen {
             Name: "Merlin",
             Banner: data.BannerRed,
             Race: data.RaceHighMen,
-        }, true, nil, nil)
+        }, true, 0, 0)
 
     attackingPlayer.CastingSkillPower = 10
 
@@ -408,7 +408,7 @@ func makeScenario5(cache *lbx.LbxCache) *combat.CombatScreen {
     defendingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Enemy",
             Banner: data.BannerBlue,
-        }, false, nil, nil)
+        }, false, 0, 0)
 
     // defendingArmy := createWarlockArmy(&defendingPlayer)
     defendingArmy := createSettlerArmy(defendingPlayer, 3)
@@ -426,7 +426,7 @@ func makeScenario5(cache *lbx.LbxCache) *combat.CombatScreen {
             Name: "Merlin",
             Banner: data.BannerRed,
             Race: data.RaceHighMen,
-        }, true, nil, nil)
+        }, true, 0, 0)
 
     attackingPlayer.CastingSkillPower = 10
 
@@ -444,7 +444,7 @@ func makeScenario6(cache *lbx.LbxCache) *combat.CombatScreen {
     defendingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Enemy",
             Banner: data.BannerBlue,
-        }, false, nil, nil)
+        }, false, 0, 0)
 
     // defendingArmy := createWarlockArmy(&defendingPlayer)
     defendingArmy := createSettlerArmy(defendingPlayer, 3)
@@ -462,7 +462,7 @@ func makeScenario6(cache *lbx.LbxCache) *combat.CombatScreen {
             Name: "Merlin",
             Banner: data.BannerRed,
             Race: data.RaceHighMen,
-        }, true, nil, nil)
+        }, true, 0, 0)
 
     attackingPlayer.CastingSkillPower = 10
 

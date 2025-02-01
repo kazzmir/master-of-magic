@@ -298,16 +298,6 @@ func computeUnitBuildPowers(stack *playerlib.UnitStack) UnitBuildPowers {
     return powers
 }
 
-// a true value in fog means the tile is visible, false means not visible
-func (game *Game) MakeFog() [][]bool {
-    fog := make([][]bool, game.CurrentMap().Width())
-    for x := 0; x < game.CurrentMap().Width(); x++ {
-        fog[x] = make([]bool, game.CurrentMap().Height())
-    }
-
-    return fog
-}
-
 /* initial casting skill power is computed as follows:
  * skill = total number of magic books * 2
  * power = (skill-1)^2 + skill
@@ -419,7 +409,7 @@ func (game *Game) InitializeResearchableSpells(spells *spellbook.Spells, player 
 }
 
 func (game *Game) AddPlayer(wizard setup.WizardCustom, human bool) *playerlib.Player{
-    newPlayer := playerlib.MakePlayer(wizard, human, game.MakeFog(), game.MakeFog())
+    newPlayer := playerlib.MakePlayer(wizard, human, game.CurrentMap().Width(), game.CurrentMap().Height())
 
     if !human {
         newPlayer.AIBehavior = ai.MakeEnemyAI()
@@ -846,7 +836,7 @@ func (game *Game) doArmyView(yield coroutine.YieldFunc) {
         citiesMiniMap = append(citiesMiniMap, city)
     }
 
-    drawMinimap := func (screen *ebiten.Image, x int, y int, fog [][]bool, counter uint64){
+    drawMinimap := func (screen *ebiten.Image, x int, y int, fog data.FogMap, counter uint64){
         game.CurrentMap().DrawMinimap(screen, citiesMiniMap, x, y, 1, fog, counter, false)
     }
 
@@ -1751,7 +1741,7 @@ func (game *Game) IsCityRoadConnected(fromCity *citylib.City, toCity *citylib.Ci
     return ok
 }
 
-func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *playerlib.UnitStack, fog [][]bool) pathfinding.Path {
+func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *playerlib.UnitStack, fog data.FogMap) pathfinding.Path {
 
     useMap := game.GetMap(stack.Plane())
 
@@ -1839,7 +1829,8 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
         }
 
         // don't know what the cost is, assume we can move there
-        if x2 >= 0 && x2 < len(fog) && y2 >= 0 && y2 < len(fog[x2]) && !fog[x2][y2] {
+        // FIXME: how should this behave for different FogTypes?
+        if x2 >= 0 && x2 < len(fog) && y2 >= 0 && y2 < len(fog[x2]) && fog[x2][y2] != data.FogTypeUnexplored {
             // increase cost of unknown tile very slightly so we prefer to move to known tiles
             return baseCost + 0.1
         }
@@ -3076,7 +3067,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
                 if game.confirmLairEncounter(yield, encounter) {
                     stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost, game.GetNormalizeCoordinateFunc())
                     game.showMovement(yield, oldX, oldY, stack, true)
-                    player.LiftFog(stack.X(), stack.Y(), 1, stack.Plane())
+                    player.LiftFogSquare(stack.X(), stack.Y(), stack.GetSightRange(), stack.Plane())
 
                     stack.ExhaustMoves()
                     state := game.doEncounter(yield, player, stack, encounter, mapUse, stack.X(), stack.Y())
@@ -3099,8 +3090,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
 
             stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost, game.GetNormalizeCoordinateFunc())
             game.showMovement(yield, oldX, oldY, stack, true)
-            // FIXME: lift more fog if the stack has Scouting and some other abilities
-            player.LiftFog(stack.X(), stack.Y(), 1, stack.Plane())
+            player.LiftFogSquare(stack.X(), stack.Y(), stack.GetSightRange(), stack.Plane())
 
             for _, otherPlayer := range game.Players[1:] {
                 // FIXME: this should get all stacks at the given location and merge them into a single stack for combat
@@ -3409,7 +3399,7 @@ func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Play
 
         stack.Move(to.X - stack.X(), to.Y - stack.Y(), terrainCost, game.GetNormalizeCoordinateFunc())
         game.showMovement(yield, oldX, oldY, stack, false)
-        player.LiftFog(stack.X(), stack.Y(), 1, stack.Plane())
+        player.LiftFogSquare(stack.X(), stack.Y(), stack.GetSightRange(), stack.Plane())
 
         if encounter != nil {
             game.doEncounter(yield, player, stack, encounter, mapUse, stack.X(), stack.Y())
@@ -3520,7 +3510,7 @@ func (game *Game) doCityScreen(yield coroutine.YieldFunc, city *citylib.City, pl
 
     var cities []*citylib.City
     var stacks []*playerlib.UnitStack
-    var fog [][]bool
+    var fog data.FogMap
 
     for i, player := range game.Players {
         for _, city := range player.Cities {
@@ -5835,6 +5825,8 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
     game.maybeHireMercenaries(player)
     game.maybeBuyFromMerchant(player)
 
+    player.UpdateFogVisibility()
+
     // game.CenterCamera(player.Cities[0].X, player.Cities[0].Y)
     game.DoNextUnit(player)
     game.RefreshUI()
@@ -5931,7 +5923,7 @@ func (overworld *Overworld) DrawFog(screen *ebiten.Image, geom ebiten.GeoM){
             return false
         }
 
-        return !fog[x][y]
+        return fog[x][y] == data.FogTypeUnexplored
     }
 
     fogN := func(x int, y int) bool {
@@ -5980,7 +5972,7 @@ func (overworld *Overworld) DrawFog(screen *ebiten.Image, geom ebiten.GeoM){
             options.GeoM.Concat(geom)
 
             if tileX >= 0 && tileY >= 0 && tileX < len(fog) && tileY < len(fog[tileX]) {
-                if fog[tileX][tileY] {
+                if fog[tileX][tileY] != data.FogTypeUnexplored {
                     n := fogN(tileX, tileY)
                     e := fogE(tileX, tileY)
                     s := fogS(tileX, tileY)
@@ -6026,6 +6018,12 @@ func (overworld *Overworld) DrawFog(screen *ebiten.Image, geom ebiten.GeoM){
                         screen.DrawImage(overworld.FogBlack, &options)
                     }
                 }
+                // FIXME: better fog of war
+                if fog[tileX][tileY] == data.FogTypeExplored {
+                    overlay := ebiten.NewImage(tileWidth, tileHeight)
+                    overlay.Fill(color.RGBA{0, 0, 0, 128})
+                    screen.DrawImage(overlay, &options)
+                }
             }
         }
     }
@@ -6042,7 +6040,7 @@ type Overworld struct {
     SelectedStack *playerlib.UnitStack
     MovingStack *playerlib.UnitStack
     ImageCache *util.ImageCache
-    Fog [][]bool
+    Fog data.FogMap
     ShowAnimation bool
     FogBlack *ebiten.Image
 }
@@ -6234,7 +6232,7 @@ func (game *Game) DrawGame(screen *ebiten.Image){
     var citiesMiniMap []maplib.MiniMapCity
     var stacks []*playerlib.UnitStack
     var selectedStack *playerlib.UnitStack
-    var fog [][]bool
+    var fog data.FogMap
 
     for i, player := range game.Players {
         for _, city := range player.Cities {

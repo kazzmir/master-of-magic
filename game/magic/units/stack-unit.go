@@ -79,5 +79,6 @@ type StackUnit interface {
     GetSpellChargeSpells() map[spellbook.Spell]int
     GetBusy() BusyStatus
     SetBusy(BusyStatus)
+    GetSightRange() int
 }
 

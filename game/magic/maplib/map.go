@@ -1459,7 +1459,7 @@ func (mapObject *Map) DrawMinimap2(screen *ebiten.Image, cities []MiniMapCity, c
 }
 */
 
-func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []MiniMapCity, centerX int, centerY int, zoom float64, fog [][]bool, counter uint64, crosshairs bool){
+func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []MiniMapCity, centerX int, centerY int, zoom float64, fog data.FogMap, counter uint64, crosshairs bool){
     if len(mapObject.miniMapPixels) != screen.Bounds().Dx() * screen.Bounds().Dy() * 4 {
         // log.Printf("set minimap pixels to %v", screen.Bounds().Dx() * screen.Bounds().Dy() * 4)
         mapObject.miniMapPixels = make([]byte, screen.Bounds().Dx() * screen.Bounds().Dy() * 4)
@@ -1512,7 +1512,8 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []MiniMapCity, ce
     cityLocations := make(map[image.Point]color.RGBA)
 
     for _, city := range cities {
-        if fog[city.GetX()][city.GetY()] {
+        // FIXME: how should this behave for different fog types?
+        if fog[city.GetX()][city.GetY()] != data.FogTypeUnexplored {
             cityLocations[image.Pt(city.GetX(), city.GetY())] = bannerColor(city.GetBanner())
         }
     }
@@ -1522,7 +1523,7 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []MiniMapCity, ce
             tileX := mapObject.WrapX((x + cameraX) / data.ScreenScale)
             tileY := (y + cameraY) / data.ScreenScale
 
-            if tileX < 0 || tileX >= mapObject.Map.Columns() || tileY < 0 || tileY >= mapObject.Map.Rows() || !fog[tileX][tileY] {
+            if tileX < 0 || tileX >= mapObject.Map.Columns() || tileY < 0 || tileY >= mapObject.Map.Rows() || fog[tileX][tileY] == data.FogTypeUnexplored {
                 set(x, y, black)
                 continue
             }
@@ -1552,6 +1553,11 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []MiniMapCity, ce
 
             if cityColor, ok := cityLocations[image.Pt(tileX, tileY)]; ok {
                 use = cityColor
+            }
+
+            // FIXME: make this configurable?
+            if fog[tileX][tileY] == data.FogTypeExplored {
+                use =  util.ToRGBA(util.Lighten(use, -50))
             }
 
             set(x, y, use)

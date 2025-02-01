@@ -247,7 +247,7 @@ func initializePlayer(game *gamelib.Game, wizard setup.WizardCustom, isHuman boo
         player.AddUnit(units.MakeOverworldUnitFromUnit(unit, cityX, cityY, startingPlane, wizard.Banner, player.MakeExperienceInfo()))
     }
 
-    player.LiftFog(cityX, cityY, 2, introCity.Plane)
+    player.LiftFog(cityX, cityY, 3, introCity.Plane)
 
     if isHuman {
         game.Events <- gamelib.StartingCityEvent(introCity)

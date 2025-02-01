@@ -51,7 +51,7 @@ type AICreateUnitDecision struct {
 }
 
 type PathFinder interface {
-    FindPath(oldX int, oldY int, newX int, newY int, stack *UnitStack, fog [][]bool) pathfinding.Path
+    FindPath(oldX int, oldY int, newX int, newY int, stack *UnitStack, fog data.FogMap) pathfinding.Path
 }
 
 type AIBehavior interface {
@@ -73,10 +73,10 @@ type Relationship struct {
 }
 
 type Player struct {
-    // matrix the same size as the map, where true means the player can see the tile
-    // and false means the tile has not yet been discovered
-    ArcanusFog [][]bool
-    MyrrorFog [][]bool
+    // matrix the same size as the map containg information if the tile is explored,
+    // unexplored or in the range of sight
+    ArcanusFog data.FogMap
+    MyrrorFog data.FogMap
 
     TaxRate fraction.Fraction
 
@@ -147,11 +147,20 @@ type Player struct {
     SelectedStack *UnitStack
 }
 
-func MakePlayer(wizard setup.WizardCustom, human bool, arcanusFog [][]bool, myrrorFog [][]bool) *Player {
+func MakePlayer(wizard setup.WizardCustom, human bool, mapWidth int, mapHeight int) *Player {
+
+    makeFog := func() data.FogMap {
+        fog := make(data.FogMap, mapWidth)
+        for x := 0; x < mapWidth; x++ {
+            fog[x] = make([]data.FogType, mapHeight)
+        }
+        return fog
+    }
+
     return &Player{
         TaxRate: fraction.FromInt(1),
-        ArcanusFog: arcanusFog,
-        MyrrorFog: myrrorFog,
+        ArcanusFog: makeFog(),
+        MyrrorFog: makeFog(),
         Wizard: wizard,
         Human: human,
         PlayerRelations: make(map[*Player]*Relationship),
@@ -212,14 +221,14 @@ func (player *Player) GetBanner() data.BannerType {
     return player.Wizard.Banner
 }
 
-func (player *Player) IsTileVisible(x int, y int, plane data.Plane) bool {
+func (player *Player) IsTileExplored(x int, y int, plane data.Plane) bool {
     fog := player.GetFog(plane)
     x = player.WrapX(x)
     if x < 0 || x >= len(fog) || y < 0 || y >= len(fog[0]) {
         return false
     }
 
-    return fog[x][y]
+    return fog[x][y] != data.FogTypeUnexplored
 }
 
 /* returns true if the hero was actually added to the player
@@ -518,7 +527,7 @@ func (player *Player) FindCity(x int, y int, plane data.Plane) *citylib.City {
     return nil
 }
 
-func (player *Player) GetFog(plane data.Plane) [][]bool {
+func (player *Player) GetFog(plane data.Plane) data.FogMap {
     if plane == data.PlaneArcanus {
         return player.ArcanusFog
     } else {
@@ -553,7 +562,7 @@ func (player *Player) LiftFogSquare(x int, y int, squares int, plane data.Plane)
                 continue
             }
 
-            fog[mx][my] = true
+            fog[mx][my] = data.FogTypeVisible
         }
     }
 }
@@ -573,11 +582,37 @@ func (player *Player) LiftFog(x int, y int, radius int, plane data.Plane){
 
             // dx^2 + dy^2 <= (radius + 0.5)^2
             if 4 * (dx * dx + dy * dy) <= 4 * radius * radius + 4 * radius + 1 {
-                fog[mx][my] = true
+                fog[mx][my] = data.FogTypeVisible
             }
         }
     }
 
+}
+
+func (player *Player) UpdateFogVisibility() {
+    // FIXME: nature awareness spell makes every tile visible
+
+    fogs := []data.FogMap{player.ArcanusFog, player.MyrrorFog}
+
+    // reset all visible to explored
+    for _, fog := range fogs {
+        for x, row := range fog {
+            for y := range row {
+                if fog[x][y] == data.FogTypeVisible {
+                    fog[x][y] = data.FogTypeExplored
+                }
+            }
+        }
+    }
+
+    // make tiles visible
+    for _, unit := range player.Units {
+        player.LiftFogSquare(unit.GetX(), unit.GetY(), unit.GetSightRange(), unit.GetPlane())
+    }
+
+    for _, city := range player.Cities {
+        player.LiftFogSquare(city.X, city.Y, city.GetSightRange(), city.Plane)
+    }
 }
 
 func (player *Player) FindStackByUnit(unit units.StackUnit) *UnitStack {

@@ -42,7 +42,8 @@ func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerli
                     }
 
                     // don't know about the city
-                    if !fog[city.X][city.Y] {
+                    // FIXME: how should this behave for different fog types?
+                    if fog[city.X][city.Y] == data.FogTypeUnexplored {
                         continue
                     }
 

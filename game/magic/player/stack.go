@@ -346,3 +346,11 @@ func (stack *UnitStack) SetY(y int) {
         unit.SetY(y)
     }
 }
+
+func (stack *UnitStack) GetSightRange() int {
+    sightRange := 0
+    for _, unit := range stack.units {
+        sightRange = max(sightRange, unit.GetSightRange())
+    }
+    return sightRange
+}
