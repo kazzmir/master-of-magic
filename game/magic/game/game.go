@@ -5917,48 +5917,97 @@ func (overworld *Overworld) DrawFog(screen *ebiten.Image, geom ebiten.GeoM){
 
     fog := overworld.Fog
 
-    checkFog := func(x int, y int) bool {
+    checkFog := func(x int, y int, fogType data.FogType) bool {
         x = overworld.Map.WrapX(x)
         if x < 0 || x >= len(fog) || y >= len(fog[x]) || y < 0{
             return false
         }
 
-        return fog[x][y] == data.FogTypeUnexplored
+        return fog[x][y] == fogType
     }
 
-    fogN := func(x int, y int) bool {
-        return checkFog(x, y - 1)
+    fogN := func(x int, y int, fogType data.FogType) bool {
+        return checkFog(x, y - 1, fogType)
     }
 
-    fogE := func(x int, y int) bool {
-        return checkFog(x + 1, y)
+    fogE := func(x int, y int, fogType data.FogType) bool {
+        return checkFog(x + 1, y, fogType)
     }
 
-    fogS := func(x int, y int) bool {
-        return checkFog(x, y + 1)
+    fogS := func(x int, y int, fogType data.FogType) bool {
+        return checkFog(x, y + 1, fogType)
     }
 
-    fogW := func(x int, y int) bool {
-        return checkFog(x - 1, y)
+    fogW := func(x int, y int, fogType data.FogType) bool {
+        return checkFog(x - 1, y, fogType)
     }
 
-    fogNE := func(x int, y int) bool {
-        return checkFog(x + 1, y - 1)
+    fogNE := func(x int, y int, fogType data.FogType) bool {
+        return checkFog(x + 1, y - 1, fogType)
     }
 
-    fogSE := func(x int, y int) bool {
-        return checkFog(x + 1, y + 1)
+    fogSE := func(x int, y int, fogType data.FogType) bool {
+        return checkFog(x + 1, y + 1, fogType)
     }
 
-    fogNW := func(x int, y int) bool {
-        return checkFog(x - 1, y - 1)
+    fogNW := func(x int, y int, fogType data.FogType) bool {
+        return checkFog(x - 1, y - 1, fogType)
     }
 
-    fogSW := func(x int, y int) bool {
-        return checkFog(x - 1, y + 1)
+    fogSW := func(x int, y int, fogType data.FogType) bool {
+        return checkFog(x - 1, y + 1, fogType)
     }
 
     minX, minY, maxX, maxY := overworld.Camera.GetTileBounds()
+
+    drawFogTile := func(tileX int, tileY int) {
+        if overworld.FogBlack != nil {
+            screen.DrawImage(overworld.FogBlack, &options)
+        }
+    }
+
+    drawFogBorder := func(tileX int, tileY int, fogType data.FogType) {
+        n := fogN(tileX, tileY, fogType)
+        e := fogE(tileX, tileY, fogType)
+        s := fogS(tileX, tileY, fogType)
+        w := fogW(tileX, tileY, fogType)
+        ne := fogNE(tileX, tileY, fogType)
+        se := fogSE(tileX, tileY, fogType)
+        nw := fogNW(tileX, tileY, fogType)
+        sw := fogSW(tileX, tileY, fogType)
+
+        if n && e {
+            screen.DrawImage(FogEdge_N_E, &options)
+        } else if n {
+            screen.DrawImage(FogEdge_N, &options)
+        } else if e {
+            screen.DrawImage(FogEdge_E, &options)
+        } else if ne {
+            screen.DrawImage(FogCorner_NE, &options)
+        }
+
+        if s && e {
+            screen.DrawImage(FogEdge_S_E, &options)
+        } else if s {
+            screen.DrawImage(FogEdge_S, &options)
+        } else if se {
+            screen.DrawImage(FogCorner_SE, &options)
+        }
+
+        if n && w {
+            screen.DrawImage(FogEdge_N_W, &options)
+        } else if w {
+            screen.DrawImage(FogEdge_W, &options)
+        } else if nw {
+            screen.DrawImage(FogCorner_NW, &options)
+        }
+
+        if s && w {
+            screen.DrawImage(FogEdge_S_W, &options)
+        } else if sw {
+            screen.DrawImage(FogCorner_SW, &options)
+        }
+    }
 
     // log.Printf("fog min %v, %v max %v, %v", minX, minY, maxX, maxY)
 
@@ -5971,58 +6020,40 @@ func (overworld *Overworld) DrawFog(screen *ebiten.Image, geom ebiten.GeoM){
             options.GeoM.Translate(float64(x * tileWidth), float64(y * tileHeight))
             options.GeoM.Concat(geom)
 
+            black := ebiten.ColorScale{}
+            black.Scale(1, 1, 1, 1)
+
+            lightTransparent := ebiten.ColorScale{}
+            lightTransparent.Scale(1, 1, 1, 0.3)
+
+            darkTransparent := ebiten.ColorScale{}
+            darkTransparent.Scale(1, 1, 1, 0.5)
+
             if tileX >= 0 && tileY >= 0 && tileX < len(fog) && tileY < len(fog[tileX]) {
-                if fog[tileX][tileY] != data.FogTypeUnexplored {
-                    n := fogN(tileX, tileY)
-                    e := fogE(tileX, tileY)
-                    s := fogS(tileX, tileY)
-                    w := fogW(tileX, tileY)
-                    ne := fogNE(tileX, tileY)
-                    se := fogSE(tileX, tileY)
-                    nw := fogNW(tileX, tileY)
-                    sw := fogSW(tileX, tileY)
+                switch fog[tileX][tileY] {
+                    case data.FogTypeUnexplored:
+                        options.ColorScale = black
+                        drawFogTile(tileX, tileY)
 
-                    if n && e {
-                        screen.DrawImage(FogEdge_N_E, &options)
-                    } else if n {
-                        screen.DrawImage(FogEdge_N, &options)
-                    } else if e {
-                        screen.DrawImage(FogEdge_E, &options)
-                    } else if ne {
-                        screen.DrawImage(FogCorner_NE, &options)
-                    }
+                    // FIXME: make drawing fog of war configurable?
+                    // This would be with no fog of war like the original
+                    // case data.FogTypeExplored, data.FogTypeVisible:
+                    //     options.ColorScale = black
+                    //     drawFogBorder(tileX, tileY, data.FogTypeUnexplored)
 
-                    if s && e {
-                        screen.DrawImage(FogEdge_S_E, &options)
-                    } else if s {
-                        screen.DrawImage(FogEdge_S, &options)
-                    } else if se {
-                        screen.DrawImage(FogCorner_SE, &options)
-                    }
+                    case data.FogTypeExplored:
+                        options.ColorScale = darkTransparent
+                        drawFogTile(tileX, tileY)
 
-                    if n && w {
-                        screen.DrawImage(FogEdge_N_W, &options)
-                    } else if w {
-                        screen.DrawImage(FogEdge_W, &options)
-                    } else if nw {
-                        screen.DrawImage(FogCorner_NW, &options)
-                    }
+                        options.ColorScale = black
+                        drawFogBorder(tileX, tileY, data.FogTypeUnexplored)
 
-                    if s && w {
-                        screen.DrawImage(FogEdge_S_W, &options)
-                    } else if sw {
-                        screen.DrawImage(FogCorner_SW, &options)
-                    }
-                } else {
-                    if overworld.FogBlack != nil {
-                        screen.DrawImage(overworld.FogBlack, &options)
-                    }
-                }
-                // FIXME: better fog of war
-                if fog[tileX][tileY] == data.FogTypeExplored {
-                    overlay := ebiten.NewImage(tileWidth, tileHeight)
-                    overlay.Fill(color.RGBA{0, 0, 0, 128})
-                    screen.DrawImage(overlay, &options)
+                    case data.FogTypeVisible:
+                        options.ColorScale = lightTransparent
+                        drawFogBorder(tileX, tileY, data.FogTypeExplored)
+
+                        options.ColorScale = black
+                        drawFogBorder(tileX, tileY, data.FogTypeUnexplored)
                 }
             }
         }

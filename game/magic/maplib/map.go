@@ -1555,7 +1555,7 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []MiniMapCity, ce
                 use = cityColor
             }
 
-            // FIXME: make this configurable?
+            // FIXME: make this drawing fog of war configurable?
             if fog[tileX][tileY] == data.FogTypeExplored {
                 use =  util.ToRGBA(util.Lighten(use, -50))
             }
