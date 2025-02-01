@@ -1459,7 +1459,21 @@ func (mapObject *Map) DrawMinimap2(screen *ebiten.Image, cities []MiniMapCity, c
 }
 */
 
-func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []MiniMapCity, centerX int, centerY int, zoom float64, fog [][]bool, counter uint64, crosshairs bool){
+// higher order function that takes a function 'f' and returns a new function that caches the results of 'f'
+func memoize[Key comparable, Value any](f func(Key) Value) func(Key) Value {
+    cache := make(map[Key]Value)
+    return func(key Key) Value {
+        if value, ok := cache[key]; ok {
+            return value
+        }
+
+        result := f(key)
+        cache[key] = result
+        return result
+    }
+}
+
+func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []MiniMapCity, centerX int, centerY int, zoom float64, fog data.FogMap, counter uint64, crosshairs bool){
     if len(mapObject.miniMapPixels) != screen.Bounds().Dx() * screen.Bounds().Dy() * 4 {
         // log.Printf("set minimap pixels to %v", screen.Bounds().Dx() * screen.Bounds().Dy() * 4)
         mapObject.miniMapPixels = make([]byte, screen.Bounds().Dx() * screen.Bounds().Dy() * 4)
@@ -1512,46 +1526,75 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []MiniMapCity, ce
     cityLocations := make(map[image.Point]color.RGBA)
 
     for _, city := range cities {
-        if fog[city.GetX()][city.GetY()] {
+        // FIXME: how should this behave for different fog types?
+        if fog[city.GetX()][city.GetY()] != data.FogTypeUnexplored {
             cityLocations[image.Pt(city.GetX(), city.GetY())] = bannerColor(city.GetBanner())
         }
     }
+
+    type ColorKey struct {
+        terrain terrain.TerrainType
+        explored data.FogType
+    }
+
+    getMapColor := memoize(func (key ColorKey) color.RGBA {
+        var use color.RGBA
+
+        landColor := color.RGBA{R: 0, G: 0xad, B: 0x00, A: 255}
+
+        switch key.terrain {
+            case terrain.Grass: use = landColor
+            case terrain.Ocean: use = color.RGBA{R: 0, G: 0, B: 255, A: 255}
+            case terrain.River: use = color.RGBA{R: 0x3f, G: 0x88, B: 0xd3, A: 255}
+            case terrain.Shore: use = landColor
+            case terrain.Mountain: use = color.RGBA{R: 0xbc, G: 0xd0, B: 0xe4, A: 255}
+            case terrain.Hill: use = landColor
+            case terrain.Swamp: use = landColor
+            case terrain.Forest: use = landColor
+            case terrain.Desert: use = color.RGBA{R: 0xdb, G: 0xbd, B: 0x29, A: 255}
+            case terrain.Tundra: use = color.RGBA{R: 0xd6, G: 0xd4, B: 0xc9, A: 255}
+            case terrain.Volcano: use = color.RGBA{R: 0xff, G: 0x00, B: 0x00, A: 255}
+            case terrain.Lake: use = color.RGBA{R: 0x3f, G: 0x88, B: 0xd3, A: 255}
+            case terrain.NatureNode: use = color.RGBA{R: 0, G: 255, B: 0, A: 255}
+            case terrain.SorceryNode: use = color.RGBA{R: 0, G: 0, B: 255, A: 255}
+            case terrain.ChaosNode: use = color.RGBA{R: 0xff, G: 0x00, B: 0x00, A: 255}
+            default: use = color.RGBA{R: 64, G: 64, B: 64, A: 255}
+        }
+
+        if key.explored == data.FogTypeExplored {
+            use = util.ToRGBA(util.Lighten(use, -50))
+        }
+
+        return use
+    })
+
+    type CityColorKey struct {
+        cityColor color.RGBA
+        explored data.FogType
+    }
+
+    getCityColor := memoize(func (key CityColorKey) color.RGBA {
+        use := key.cityColor
+        if key.explored == data.FogTypeExplored {
+            use = util.ToRGBA(util.Lighten(use, -50))
+        }
+        return use
+    })
 
     for x := 0; x < screen.Bounds().Dx(); x++ {
         for y := 0; y < screen.Bounds().Dy(); y++ {
             tileX := mapObject.WrapX((x + cameraX) / data.ScreenScale)
             tileY := (y + cameraY) / data.ScreenScale
 
-            if tileX < 0 || tileX >= mapObject.Map.Columns() || tileY < 0 || tileY >= mapObject.Map.Rows() || !fog[tileX][tileY] {
+            if tileX < 0 || tileX >= mapObject.Map.Columns() || tileY < 0 || tileY >= mapObject.Map.Rows() || fog[tileX][tileY] == data.FogTypeUnexplored {
                 set(x, y, black)
                 continue
             }
 
-            var use color.RGBA
-
-            landColor := color.RGBA{R: 0, G: 0xad, B: 0x00, A: 255}
-
-            switch terrain.GetTile(mapObject.Map.Terrain[tileX][tileY]).TerrainType() {
-                case terrain.Grass: use = landColor
-                case terrain.Ocean: use = color.RGBA{R: 0, G: 0, B: 255, A: 255}
-                case terrain.River: use = color.RGBA{R: 0x3f, G: 0x88, B: 0xd3, A: 255}
-                case terrain.Shore: use = landColor
-                case terrain.Mountain: use = color.RGBA{R: 0xbc, G: 0xd0, B: 0xe4, A: 255}
-                case terrain.Hill: use = landColor
-                case terrain.Swamp: use = landColor
-                case terrain.Forest: use = landColor
-                case terrain.Desert: use = color.RGBA{R: 0xdb, G: 0xbd, B: 0x29, A: 255}
-                case terrain.Tundra: use = color.RGBA{R: 0xd6, G: 0xd4, B: 0xc9, A: 255}
-                case terrain.Volcano: use = color.RGBA{R: 0xff, G: 0x00, B: 0x00, A: 255}
-                case terrain.Lake: use = color.RGBA{R: 0x3f, G: 0x88, B: 0xd3, A: 255}
-                case terrain.NatureNode: use = color.RGBA{R: 0, G: 255, B: 0, A: 255}
-                case terrain.SorceryNode: use = color.RGBA{R: 0, G: 0, B: 255, A: 255}
-                case terrain.ChaosNode: use = color.RGBA{R: 0xff, G: 0x00, B: 0x00, A: 255}
-                default: use = color.RGBA{R: 64, G: 64, B: 64, A: 255}
-            }
+            use := getMapColor(ColorKey{terrain: terrain.GetTile(mapObject.Map.Terrain[tileX][tileY]).TerrainType(), explored: fog[tileX][tileY]})
 
             if cityColor, ok := cityLocations[image.Pt(tileX, tileY)]; ok {
-                use = cityColor
+                use = getCityColor(CityColorKey{cityColor: cityColor, explored: fog[tileX][tileY]})
             }
 
             set(x, y, use)

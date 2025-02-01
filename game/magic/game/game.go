@@ -305,16 +305,6 @@ func computeUnitBuildPowers(stack *playerlib.UnitStack) UnitBuildPowers {
     return powers
 }
 
-// a true value in fog means the tile is visible, false means not visible
-func (game *Game) MakeFog() [][]bool {
-    fog := make([][]bool, game.CurrentMap().Width())
-    for x := 0; x < game.CurrentMap().Width(); x++ {
-        fog[x] = make([]bool, game.CurrentMap().Height())
-    }
-
-    return fog
-}
-
 /* initial casting skill power is computed as follows:
  * skill = total number of magic books * 2
  * power = (skill-1)^2 + skill
@@ -426,7 +416,7 @@ func (game *Game) InitializeResearchableSpells(spells *spellbook.Spells, player 
 }
 
 func (game *Game) AddPlayer(wizard setup.WizardCustom, human bool) *playerlib.Player{
-    newPlayer := playerlib.MakePlayer(wizard, human, game.MakeFog(), game.MakeFog())
+    newPlayer := playerlib.MakePlayer(wizard, human, game.CurrentMap().Width(), game.CurrentMap().Height())
 
     if !human {
         newPlayer.AIBehavior = ai.MakeEnemyAI()
@@ -853,7 +843,7 @@ func (game *Game) doArmyView(yield coroutine.YieldFunc) {
         citiesMiniMap = append(citiesMiniMap, city)
     }
 
-    drawMinimap := func (screen *ebiten.Image, x int, y int, fog [][]bool, counter uint64){
+    drawMinimap := func (screen *ebiten.Image, x int, y int, fog data.FogMap, counter uint64){
         game.CurrentMap().DrawMinimap(screen, citiesMiniMap, x, y, 1, fog, counter, false)
     }
 
@@ -1758,7 +1748,7 @@ func (game *Game) IsCityRoadConnected(fromCity *citylib.City, toCity *citylib.Ci
     return ok
 }
 
-func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *playerlib.UnitStack, fog [][]bool) pathfinding.Path {
+func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *playerlib.UnitStack, fog data.FogMap) pathfinding.Path {
 
     useMap := game.GetMap(stack.Plane())
 
@@ -1846,7 +1836,8 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
         }
 
         // don't know what the cost is, assume we can move there
-        if x2 >= 0 && x2 < len(fog) && y2 >= 0 && y2 < len(fog[x2]) && !fog[x2][y2] {
+        // FIXME: how should this behave for different FogTypes?
+        if x2 >= 0 && x2 < len(fog) && y2 >= 0 && y2 < len(fog[x2]) && fog[x2][y2] == data.FogTypeUnexplored {
             // increase cost of unknown tile very slightly so we prefer to move to known tiles
             return baseCost + 0.1
         }
@@ -3090,7 +3081,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
                 if game.confirmLairEncounter(yield, encounter) {
                     stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost, game.GetNormalizeCoordinateFunc())
                     game.showMovement(yield, oldX, oldY, stack, true)
-                    player.LiftFog(stack.X(), stack.Y(), 1, stack.Plane())
+                    player.LiftFogSquare(stack.X(), stack.Y(), stack.GetSightRange(), stack.Plane())
 
                     stack.ExhaustMoves()
                     state := game.doEncounter(yield, player, stack, encounter, mapUse, stack.X(), stack.Y())
@@ -3113,8 +3104,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
 
             stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost, game.GetNormalizeCoordinateFunc())
             game.showMovement(yield, oldX, oldY, stack, true)
-            // FIXME: lift more fog if the stack has Scouting and some other abilities
-            player.LiftFog(stack.X(), stack.Y(), 1, stack.Plane())
+            player.LiftFogSquare(stack.X(), stack.Y(), stack.GetSightRange(), stack.Plane())
 
             for _, otherPlayer := range game.Players[1:] {
                 // FIXME: this should get all stacks at the given location and merge them into a single stack for combat
@@ -3423,7 +3413,7 @@ func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Play
 
         stack.Move(to.X - stack.X(), to.Y - stack.Y(), terrainCost, game.GetNormalizeCoordinateFunc())
         game.showMovement(yield, oldX, oldY, stack, false)
-        player.LiftFog(stack.X(), stack.Y(), 1, stack.Plane())
+        player.LiftFogSquare(stack.X(), stack.Y(), stack.GetSightRange(), stack.Plane())
 
         if encounter != nil {
             game.doEncounter(yield, player, stack, encounter, mapUse, stack.X(), stack.Y())
@@ -3546,7 +3536,7 @@ func (game *Game) doCityScreen(yield coroutine.YieldFunc, city *citylib.City, pl
 
     var cities []*citylib.City
     var stacks []*playerlib.UnitStack
-    var fog [][]bool
+    var fog data.FogMap
 
     for i, player := range game.Players {
         for _, city := range player.Cities {
@@ -5857,6 +5847,8 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
     game.maybeHireMercenaries(player)
     game.maybeBuyFromMerchant(player)
 
+    player.UpdateFogVisibility()
+
     // game.CenterCamera(player.Cities[0].X, player.Cities[0].Y)
     game.DoNextUnit(player)
     if player.IsHuman() {
@@ -5949,50 +5941,108 @@ func (overworld *Overworld) DrawFog(screen *ebiten.Image, geom ebiten.GeoM){
 
     fog := overworld.Fog
 
-    checkFog := func(x int, y int) bool {
+    checkFog := func(x int, y int, fogType data.FogType) bool {
         x = overworld.Map.WrapX(x)
         if x < 0 || x >= len(fog) || y >= len(fog[x]) || y < 0{
             return false
         }
 
-        return !fog[x][y]
+        return fog[x][y] == fogType
     }
 
-    fogN := func(x int, y int) bool {
-        return checkFog(x, y - 1)
+    fogN := func(x int, y int, fogType data.FogType) bool {
+        return checkFog(x, y - 1, fogType)
     }
 
-    fogE := func(x int, y int) bool {
-        return checkFog(x + 1, y)
+    fogE := func(x int, y int, fogType data.FogType) bool {
+        return checkFog(x + 1, y, fogType)
     }
 
-    fogS := func(x int, y int) bool {
-        return checkFog(x, y + 1)
+    fogS := func(x int, y int, fogType data.FogType) bool {
+        return checkFog(x, y + 1, fogType)
     }
 
-    fogW := func(x int, y int) bool {
-        return checkFog(x - 1, y)
+    fogW := func(x int, y int, fogType data.FogType) bool {
+        return checkFog(x - 1, y, fogType)
     }
 
-    fogNE := func(x int, y int) bool {
-        return checkFog(x + 1, y - 1)
+    fogNE := func(x int, y int, fogType data.FogType) bool {
+        return checkFog(x + 1, y - 1, fogType)
     }
 
-    fogSE := func(x int, y int) bool {
-        return checkFog(x + 1, y + 1)
+    fogSE := func(x int, y int, fogType data.FogType) bool {
+        return checkFog(x + 1, y + 1, fogType)
     }
 
-    fogNW := func(x int, y int) bool {
-        return checkFog(x - 1, y - 1)
+    fogNW := func(x int, y int, fogType data.FogType) bool {
+        return checkFog(x - 1, y - 1, fogType)
     }
 
-    fogSW := func(x int, y int) bool {
-        return checkFog(x - 1, y + 1)
+    fogSW := func(x int, y int, fogType data.FogType) bool {
+        return checkFog(x - 1, y + 1, fogType)
     }
 
     minX, minY, maxX, maxY := overworld.Camera.GetTileBounds()
 
+    drawFogTile := func(tileX int, tileY int) {
+        if overworld.FogBlack != nil {
+            screen.DrawImage(overworld.FogBlack, &options)
+        }
+    }
+
+    drawFogBorder := func(tileX int, tileY int, fogType data.FogType) {
+        n := fogN(tileX, tileY, fogType)
+        e := fogE(tileX, tileY, fogType)
+        s := fogS(tileX, tileY, fogType)
+        w := fogW(tileX, tileY, fogType)
+        ne := fogNE(tileX, tileY, fogType)
+        se := fogSE(tileX, tileY, fogType)
+        nw := fogNW(tileX, tileY, fogType)
+        sw := fogSW(tileX, tileY, fogType)
+
+        if n && e {
+            screen.DrawImage(FogEdge_N_E, &options)
+        } else if n {
+            screen.DrawImage(FogEdge_N, &options)
+        } else if e {
+            screen.DrawImage(FogEdge_E, &options)
+        } else if ne {
+            screen.DrawImage(FogCorner_NE, &options)
+        }
+
+        if s && e {
+            screen.DrawImage(FogEdge_S_E, &options)
+        } else if s {
+            screen.DrawImage(FogEdge_S, &options)
+        } else if se {
+            screen.DrawImage(FogCorner_SE, &options)
+        }
+
+        if n && w {
+            screen.DrawImage(FogEdge_N_W, &options)
+        } else if w {
+            screen.DrawImage(FogEdge_W, &options)
+        } else if nw {
+            screen.DrawImage(FogCorner_NW, &options)
+        }
+
+        if s && w {
+            screen.DrawImage(FogEdge_S_W, &options)
+        } else if sw {
+            screen.DrawImage(FogCorner_SW, &options)
+        }
+    }
+
     // log.Printf("fog min %v, %v max %v, %v", minX, minY, maxX, maxY)
+
+    black := ebiten.ColorScale{}
+    black.Scale(1, 1, 1, 1)
+
+    lightTransparent := ebiten.ColorScale{}
+    lightTransparent.Scale(1, 1, 1, 0.3)
+
+    darkTransparent := ebiten.ColorScale{}
+    darkTransparent.Scale(1, 1, 1, 0.5)
 
     for x := minX; x < maxX; x++ {
         for y := minY; y < maxY; y++ {
@@ -6004,51 +6054,30 @@ func (overworld *Overworld) DrawFog(screen *ebiten.Image, geom ebiten.GeoM){
             options.GeoM.Concat(geom)
 
             if tileX >= 0 && tileY >= 0 && tileX < len(fog) && tileY < len(fog[tileX]) {
-                if fog[tileX][tileY] {
-                    n := fogN(tileX, tileY)
-                    e := fogE(tileX, tileY)
-                    s := fogS(tileX, tileY)
-                    w := fogW(tileX, tileY)
-                    ne := fogNE(tileX, tileY)
-                    se := fogSE(tileX, tileY)
-                    nw := fogNW(tileX, tileY)
-                    sw := fogSW(tileX, tileY)
+                switch fog[tileX][tileY] {
+                    case data.FogTypeUnexplored:
+                        options.ColorScale = black
+                        drawFogTile(tileX, tileY)
 
-                    if n && e {
-                        screen.DrawImage(FogEdge_N_E, &options)
-                    } else if n {
-                        screen.DrawImage(FogEdge_N, &options)
-                    } else if e {
-                        screen.DrawImage(FogEdge_E, &options)
-                    } else if ne {
-                        screen.DrawImage(FogCorner_NE, &options)
-                    }
+                    // FIXME: make drawing fog of war configurable?
+                    // This would be with no fog of war like the original
+                    // case data.FogTypeExplored, data.FogTypeVisible:
+                    //     options.ColorScale = black
+                    //     drawFogBorder(tileX, tileY, data.FogTypeUnexplored)
 
-                    if s && e {
-                        screen.DrawImage(FogEdge_S_E, &options)
-                    } else if s {
-                        screen.DrawImage(FogEdge_S, &options)
-                    } else if se {
-                        screen.DrawImage(FogCorner_SE, &options)
-                    }
+                    case data.FogTypeExplored:
+                        options.ColorScale = darkTransparent
+                        drawFogTile(tileX, tileY)
 
-                    if n && w {
-                        screen.DrawImage(FogEdge_N_W, &options)
-                    } else if w {
-                        screen.DrawImage(FogEdge_W, &options)
-                    } else if nw {
-                        screen.DrawImage(FogCorner_NW, &options)
-                    }
+                        options.ColorScale = black
+                        drawFogBorder(tileX, tileY, data.FogTypeUnexplored)
 
-                    if s && w {
-                        screen.DrawImage(FogEdge_S_W, &options)
-                    } else if sw {
-                        screen.DrawImage(FogCorner_SW, &options)
-                    }
-                } else {
-                    if overworld.FogBlack != nil {
-                        screen.DrawImage(overworld.FogBlack, &options)
-                    }
+                    case data.FogTypeVisible:
+                        options.ColorScale = lightTransparent
+                        drawFogBorder(tileX, tileY, data.FogTypeExplored)
+
+                        options.ColorScale = black
+                        drawFogBorder(tileX, tileY, data.FogTypeUnexplored)
                 }
             }
         }
@@ -6066,7 +6095,7 @@ type Overworld struct {
     SelectedStack *playerlib.UnitStack
     MovingStack *playerlib.UnitStack
     ImageCache *util.ImageCache
-    Fog [][]bool
+    Fog data.FogMap
     ShowAnimation bool
     FogBlack *ebiten.Image
 }
@@ -6139,6 +6168,10 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
     for _, stack := range overworld.Stacks {
         doDraw := false
         if stack.Leader() == nil {
+            continue
+        }
+
+        if overworld.Fog[stack.X()][stack.Y()] != data.FogTypeVisible {
             continue
         }
 
@@ -6258,7 +6291,7 @@ func (game *Game) DrawGame(screen *ebiten.Image){
     var citiesMiniMap []maplib.MiniMapCity
     var stacks []*playerlib.UnitStack
     var selectedStack *playerlib.UnitStack
-    var fog [][]bool
+    var fog data.FogMap
 
     for i, player := range game.Players {
         for _, city := range player.Cities {

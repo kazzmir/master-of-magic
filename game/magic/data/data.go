@@ -304,3 +304,13 @@ func (treaty TreatyType) String() string {
 
     return ""
 }
+
+type FogType int
+
+const (
+    FogTypeUnexplored FogType = iota
+    FogTypeExplored
+    FogTypeVisible
+)
+
+type FogMap [][]FogType

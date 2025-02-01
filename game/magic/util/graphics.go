@@ -163,6 +163,16 @@ func RotateHue(c color.Color, radian float64) color.Color {
     return rotate.Apply(c)
 }
 
+func ToRGBA(c color.Color) color.RGBA {
+    r, g, b, a := c.RGBA()
+    return color.RGBA{
+        R: uint8(r >> 8),
+        G: uint8(g >> 8),
+        B: uint8(b >> 8),
+        A: uint8(a >> 8),
+    }
+}
+
 /*
 func Lighten2(c color.RGBA, amount float64) color.Color {
     h, s, v := colorconv.ColorToHSV(c)

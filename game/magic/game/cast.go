@@ -199,7 +199,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
     var cities []*citylib.City
     var citiesMiniMap []maplib.MiniMapCity
     var stacks []*playerlib.UnitStack
-    var fog [][]bool
+    var fog data.FogMap
 
     for i, player := range game.Players {
         for _, city := range player.Cities {
@@ -392,7 +392,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                     case LocationTypeLand:
                         if tileY >= 0 && tileY < overworld.Map.Map.Rows() {
                             tileX = overworld.Map.WrapX(tileX)
-                            if player.IsTileVisible(tileX, tileY, game.Plane) {
+                            if player.IsTileExplored(tileX, tileY, game.Plane) {
                                 if overworld.Map.GetTile(tileX, tileY).Tile.IsLand() {
                                     return tileX, tileY, false
                                 }
@@ -407,7 +407,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                         if tileY >= 0 && tileY < overworld.Map.Map.Rows() {
                             tileX = overworld.Map.WrapX(tileX)
 
-                            if player.IsTileVisible(tileX, tileY, game.Plane) {
+                            if player.IsTileExplored(tileX, tileY, game.Plane) {
                                 terrainType := overworld.Map.GetTile(tileX, tileY).Tile.TerrainType()
                                 switch terrainType {
                                     case terrain.Desert, terrain.Forest, terrain.Hill,
@@ -421,7 +421,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                         if tileY >= 0 && tileY < overworld.Map.Map.Rows() {
                             tileX = overworld.Map.WrapX(tileX)
 
-                            if player.IsTileVisible(tileX, tileY, game.Plane) {
+                            if player.IsTileExplored(tileX, tileY, game.Plane) {
                                 bonusType := overworld.Map.GetBonusTile(tileX, tileY)
                                 switch bonusType {
                                     case data.BonusCoal, data.BonusGem, data.BonusIronOre,
@@ -434,7 +434,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                         if tileY >= 0 && tileY < overworld.Map.Map.Rows() {
                             tileX = overworld.Map.WrapX(tileX)
 
-                            if player.IsTileVisible(tileX, tileY, game.Plane) {
+                            if player.IsTileExplored(tileX, tileY, game.Plane) {
                                 terrainType := overworld.Map.GetTile(tileX, tileY).Tile.TerrainType()
                                 switch terrainType {
                                     case terrain.Desert, terrain.Forest, terrain.Swamp, terrain.Grass, terrain.Tundra:
@@ -446,7 +446,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                         if tileY >= 0 && tileY < overworld.Map.Map.Rows() {
                             tileX = overworld.Map.WrapX(tileX)
 
-                            if player.IsTileVisible(tileX, tileY, game.Plane) {
+                            if player.IsTileExplored(tileX, tileY, game.Plane) {
                                 node := overworld.Map.GetMagicNode(tileX, tileY)
                                 if node != nil && node.MeldingWizard != player {
                                     return tileX, tileY, false
@@ -462,6 +462,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
 
                     case LocationTypeEnemyUnit:
                         // TODO
+                        // FIXME: This should consider only tiles with FogTypeVisible
                 }
             }
         }

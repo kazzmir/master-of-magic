@@ -1489,3 +1489,7 @@ func (hero *Hero) GetArtifactSlots() []artifact.ArtifactSlot {
 
     return []artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotArmor}
 }
+
+func (hero *Hero) GetSightRange() int {
+    return hero.Unit.GetSightRange()
+}

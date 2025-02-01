@@ -583,6 +583,7 @@ func parthenonPacification(race data.Race) int {
     }
 }
 
+// FIXME: Fix spelling
 func cathedralPaclification(race data.Race) int {
     switch race {
         case data.RaceBarbarian, data.RaceGnoll, data.RaceHighElf,
@@ -1218,6 +1219,16 @@ func (city *City) AllowedUnits(what buildinglib.Building) []units.Unit {
     }
 
     return out
+}
+
+func (city *City) GetSightRange() int {
+    // FIXME: nature's eye: 5
+
+    if city.Buildings.Contains(buildinglib.BuildingOracle) {
+        return 4
+    }
+
+    return 2
 }
 
 func ReadCityNames(cache *lbx.LbxCache) ([]string, error) {

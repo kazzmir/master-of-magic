@@ -86,7 +86,7 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
 
         var cities []*citylib.City
         var stacks []*playerlib.UnitStack
-        var fog [][]bool
+        var fog data.FogMap
 
         for i, player := range game.Players {
             for _, city := range player.Cities {
@@ -166,7 +166,7 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
             surveyorFont.PrintCenter(screen, float64(280 * data.ScreenScale), float64(81 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, "Surveyor")
 
             if selectedPoint.X >= 0 && selectedPoint.X < game.CurrentMap().Width() && selectedPoint.Y >= 0 && selectedPoint.Y < game.CurrentMap().Height() {
-                if overworld.Fog[selectedPoint.X][selectedPoint.Y] {
+                if overworld.Fog[selectedPoint.X][selectedPoint.Y] != data.FogTypeUnexplored {
                     mapObject := game.CurrentMap()
                     tile := mapObject.GetTile(selectedPoint.X, selectedPoint.Y)
                     node := mapObject.GetMagicNode(selectedPoint.X, selectedPoint.Y)
@@ -279,6 +279,7 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
                         y += float64(whiteFont.Height() * data.ScreenScale)
                     }
 
+                    // FIXME: how should this behave for different fog types?
                     if cityMap[selectedPoint] != nil {
                         city := cityMap[selectedPoint]
                         yellowFont.PrintWrapCenter(screen, float64(280 * data.ScreenScale), y, float64(cancelBackground.Bounds().Dx() - 5 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, city.String())

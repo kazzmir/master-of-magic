@@ -35,10 +35,10 @@ type ArmyScreen struct {
     ShowVault func()
     FirstRow int
     UI *uilib.UI
-    DrawMinimap func(*ebiten.Image, int, int, [][]bool, uint64)
+    DrawMinimap func(*ebiten.Image, int, int, data.FogMap, uint64)
 }
 
-func MakeArmyScreen(cache *lbx.LbxCache, player *playerlib.Player, drawMinimap func(*ebiten.Image, int, int, [][]bool, uint64), showVault func()) *ArmyScreen {
+func MakeArmyScreen(cache *lbx.LbxCache, player *playerlib.Player, drawMinimap func(*ebiten.Image, int, int, data.FogMap, uint64), showVault func()) *ArmyScreen {
     view := &ArmyScreen{
         Cache: cache,
         ImageCache: util.MakeImageCache(cache),
