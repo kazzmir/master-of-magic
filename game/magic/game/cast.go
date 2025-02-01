@@ -462,6 +462,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
 
                     case LocationTypeEnemyUnit:
                         // TODO
+                        // FIXME: This should consider only tiles with FogTypeVisible
                 }
             }
         }
