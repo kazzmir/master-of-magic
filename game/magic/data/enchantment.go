@@ -66,6 +66,38 @@ func (enchantment Enchantment) String() string {
     return ""
 }
 
+// how much mana per turn this enchantment costs
+func (enchantment Enchantment) UpkeepMana() int {
+    switch enchantment {
+        case EnchantmentAwareness: return 3
+        case EnchantmentDetectMagic: return 3
+        case EnchantmentCharmOfLife: return 10
+        case EnchantmentCrusade: return 10
+        case EnchantmentHolyArms: return 10
+        case EnchantmentJustCause: return 3
+        case EnchantmentLifeForce: return 10
+        case EnchantmentPlanarSeal: return 5
+        case EnchantmentTranquility: return 10
+        case EnchantmentHerbMastery: return 10
+        case EnchantmentNatureAwareness: return 7
+        case EnchantmentNaturesWrath: return 10
+        case EnchantmentAuraOfMajesty: return 5
+        case EnchantmentSuppressMagic: return 50
+        case EnchantmentTimeStop: return 200
+        case EnchantmentWindMastery: return 5
+        case EnchantmentArmageddon: return 40
+        case EnchantmentChaosSurge: return 40
+        case EnchantmentDoomMastery: return 15
+        case EnchantmentGreatWasting: return 20
+        case EnchantmentMeteorStorm: return 10
+        case EnchantmentEternalNight: return 15
+        case EnchantmentEvilOmens: return 10
+        case EnchantmentZombieMastery: return 40
+    }
+
+    return 0
+}
+
 // unit enchantments
 type UnitEnchantment int
 
