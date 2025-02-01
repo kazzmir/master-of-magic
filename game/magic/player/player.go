@@ -43,11 +43,20 @@ type AIMoveStackDecision struct {
     ConfirmEncounter func(*maplib.ExtraEncounter) bool
 }
 
+type AICastSpellDecision struct {
+    Spell spellbook.Spell
+}
+
 type AICreateUnitDecision struct {
     Unit units.Unit
     X int
     Y int
     Plane data.Plane
+}
+
+// choose a new spell to research
+type AIResearchSpellDecision struct {
+    Spell spellbook.Spell
 }
 
 type PathFinder interface {
@@ -56,7 +65,7 @@ type PathFinder interface {
 
 type AIBehavior interface {
     // return a list of decisions to make for the current turn
-    Update(*Player, []*Player, PathFinder) []AIDecision
+    Update(*Player, []*Player, PathFinder, int) []AIDecision
 
     // called after all decisions have been processed for an AI player
     PostUpdate(*Player, []*Player)
