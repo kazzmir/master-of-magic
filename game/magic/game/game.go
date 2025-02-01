@@ -3446,36 +3446,43 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
     var decisions []playerlib.AIDecision
 
     if player.AIBehavior != nil {
-        decisions = player.AIBehavior.Update(player, game.GetEnemies(player), game)
+        decisions = player.AIBehavior.Update(player, game.GetEnemies(player), game, player.ManaPerTurn(game.ComputePower(player)))
         log.Printf("AI %v Decisions: %v", player.Wizard.Name, decisions)
 
         for _, decision := range decisions {
             switch decision.(type) {
-            case *playerlib.AIMoveStackDecision:
-                game.doAiMoveUnit(yield, player, decision.(*playerlib.AIMoveStackDecision))
+                case *playerlib.AIMoveStackDecision:
+                    game.doAiMoveUnit(yield, player, decision.(*playerlib.AIMoveStackDecision))
 
-            case *playerlib.AICreateUnitDecision:
-                create := decision.(*playerlib.AICreateUnitDecision)
-                log.Printf("ai %v creating %+v", player.Wizard.Name, create)
+                case *playerlib.AICreateUnitDecision:
+                    create := decision.(*playerlib.AICreateUnitDecision)
+                    log.Printf("ai %v creating %+v", player.Wizard.Name, create)
 
-                existingStack := player.FindStack(create.X, create.Y, create.Plane)
-                if existingStack == nil || len(existingStack.Units()) < 9 {
-                    overworldUnit := units.MakeOverworldUnitFromUnit(create.Unit, create.X, create.Y, create.Plane, player.Wizard.Banner, player.MakeExperienceInfo())
-                    player.AddUnit(overworldUnit)
-                }
-            case *playerlib.AIProduceDecision:
-                produce := decision.(*playerlib.AIProduceDecision)
-                log.Printf("ai %v producing %v %v", player.Wizard.Name, game.BuildingInfo.Name(produce.Building), produce.Unit.Name)
-                if produce.Building != buildinglib.BuildingNone {
-                    produce.City.ProducingBuilding = produce.Building
-                } else {
-                    produce.City.ProducingUnit = produce.Unit
-                }
-            case *playerlib.AIResearchSpellDecision:
-                research := decision.(*playerlib.AIResearchSpellDecision)
-                if player.ResearchingSpell.Invalid() {
-                    player.ResearchingSpell = research.Spell
-                }
+                    existingStack := player.FindStack(create.X, create.Y, create.Plane)
+                    if existingStack == nil || len(existingStack.Units()) < 9 {
+                        overworldUnit := units.MakeOverworldUnitFromUnit(create.Unit, create.X, create.Y, create.Plane, player.Wizard.Banner, player.MakeExperienceInfo())
+                        player.AddUnit(overworldUnit)
+                    }
+                case *playerlib.AIProduceDecision:
+                    produce := decision.(*playerlib.AIProduceDecision)
+                    log.Printf("ai %v producing %v %v", player.Wizard.Name, game.BuildingInfo.Name(produce.Building), produce.Unit.Name)
+                    if produce.Building != buildinglib.BuildingNone {
+                        produce.City.ProducingBuilding = produce.Building
+                    } else {
+                        produce.City.ProducingUnit = produce.Unit
+                    }
+                case *playerlib.AIResearchSpellDecision:
+                    research := decision.(*playerlib.AIResearchSpellDecision)
+                    if player.ResearchingSpell.Invalid() {
+                        player.ResearchingSpell = research.Spell
+                    }
+
+                case *playerlib.AICastSpellDecision:
+                    cast := decision.(*playerlib.AICastSpellDecision)
+
+                    if player.CastingSpell.Invalid() {
+                        player.CastingSpell = cast.Spell
+                    }
             }
         }
 

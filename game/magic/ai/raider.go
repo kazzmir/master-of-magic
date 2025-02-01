@@ -101,7 +101,7 @@ func (raider *RaiderAI) CreateUnits(player *playerlib.Player) []playerlib.AIDeci
     return decisions
 }
 
-func (raider *RaiderAI) Update(player *playerlib.Player, enemies []*playerlib.Player, pathfinder playerlib.PathFinder) []playerlib.AIDecision {
+func (raider *RaiderAI) Update(player *playerlib.Player, enemies []*playerlib.Player, pathfinder playerlib.PathFinder, manaPerTurn int) []playerlib.AIDecision {
     var decisions []playerlib.AIDecision
 
     decisions = append(decisions, raider.MoveStacks(player, enemies, pathfinder)...)
