@@ -1518,6 +1518,71 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []MiniMapCity, ce
         }
     }
 
+    type ColorKey struct {
+        terrain terrain.TerrainType
+        explored data.FogType
+    }
+
+    colorCache := make(map[ColorKey]color.RGBA)
+
+    getMapColor := func (kind terrain.TerrainType, explored data.FogType) color.RGBA {
+        key := ColorKey{terrain: kind, explored: explored}
+        if cached, ok := colorCache[key]; ok {
+            return cached
+        }
+
+        var use color.RGBA
+
+        landColor := color.RGBA{R: 0, G: 0xad, B: 0x00, A: 255}
+
+        switch kind {
+            case terrain.Grass: use = landColor
+            case terrain.Ocean: use = color.RGBA{R: 0, G: 0, B: 255, A: 255}
+            case terrain.River: use = color.RGBA{R: 0x3f, G: 0x88, B: 0xd3, A: 255}
+            case terrain.Shore: use = landColor
+            case terrain.Mountain: use = color.RGBA{R: 0xbc, G: 0xd0, B: 0xe4, A: 255}
+            case terrain.Hill: use = landColor
+            case terrain.Swamp: use = landColor
+            case terrain.Forest: use = landColor
+            case terrain.Desert: use = color.RGBA{R: 0xdb, G: 0xbd, B: 0x29, A: 255}
+            case terrain.Tundra: use = color.RGBA{R: 0xd6, G: 0xd4, B: 0xc9, A: 255}
+            case terrain.Volcano: use = color.RGBA{R: 0xff, G: 0x00, B: 0x00, A: 255}
+            case terrain.Lake: use = color.RGBA{R: 0x3f, G: 0x88, B: 0xd3, A: 255}
+            case terrain.NatureNode: use = color.RGBA{R: 0, G: 255, B: 0, A: 255}
+            case terrain.SorceryNode: use = color.RGBA{R: 0, G: 0, B: 255, A: 255}
+            case terrain.ChaosNode: use = color.RGBA{R: 0xff, G: 0x00, B: 0x00, A: 255}
+            default: use = color.RGBA{R: 64, G: 64, B: 64, A: 255}
+        }
+
+        if explored == data.FogTypeExplored {
+            use = util.ToRGBA(util.Lighten(use, -50))
+        }
+
+        colorCache[key] = use
+        return use
+    }
+
+    type CityColorKey struct {
+        cityColor color.RGBA
+        explored data.FogType
+    }
+
+    cityColorCache := make(map[CityColorKey]color.RGBA)
+
+    getCityColor := func (cityColor color.RGBA, explored data.FogType) color.RGBA {
+        key := CityColorKey{cityColor: cityColor, explored: explored}
+        if cached, ok := cityColorCache[key]; ok {
+            return cached
+        }
+
+        use := cityColor
+        if explored == data.FogTypeExplored {
+            use = util.ToRGBA(util.Lighten(use, -50))
+        }
+        cityColorCache[key] = use
+        return use
+    }
+
     for x := 0; x < screen.Bounds().Dx(); x++ {
         for y := 0; y < screen.Bounds().Dy(); y++ {
             tileX := mapObject.WrapX((x + cameraX) / data.ScreenScale)
@@ -1528,36 +1593,10 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []MiniMapCity, ce
                 continue
             }
 
-            var use color.RGBA
-
-            landColor := color.RGBA{R: 0, G: 0xad, B: 0x00, A: 255}
-
-            switch terrain.GetTile(mapObject.Map.Terrain[tileX][tileY]).TerrainType() {
-                case terrain.Grass: use = landColor
-                case terrain.Ocean: use = color.RGBA{R: 0, G: 0, B: 255, A: 255}
-                case terrain.River: use = color.RGBA{R: 0x3f, G: 0x88, B: 0xd3, A: 255}
-                case terrain.Shore: use = landColor
-                case terrain.Mountain: use = color.RGBA{R: 0xbc, G: 0xd0, B: 0xe4, A: 255}
-                case terrain.Hill: use = landColor
-                case terrain.Swamp: use = landColor
-                case terrain.Forest: use = landColor
-                case terrain.Desert: use = color.RGBA{R: 0xdb, G: 0xbd, B: 0x29, A: 255}
-                case terrain.Tundra: use = color.RGBA{R: 0xd6, G: 0xd4, B: 0xc9, A: 255}
-                case terrain.Volcano: use = color.RGBA{R: 0xff, G: 0x00, B: 0x00, A: 255}
-                case terrain.Lake: use = color.RGBA{R: 0x3f, G: 0x88, B: 0xd3, A: 255}
-                case terrain.NatureNode: use = color.RGBA{R: 0, G: 255, B: 0, A: 255}
-                case terrain.SorceryNode: use = color.RGBA{R: 0, G: 0, B: 255, A: 255}
-                case terrain.ChaosNode: use = color.RGBA{R: 0xff, G: 0x00, B: 0x00, A: 255}
-                default: use = color.RGBA{R: 64, G: 64, B: 64, A: 255}
-            }
+            use := getMapColor(terrain.GetTile(mapObject.Map.Terrain[tileX][tileY]).TerrainType(), fog[tileX][tileY])
 
             if cityColor, ok := cityLocations[image.Pt(tileX, tileY)]; ok {
-                use = cityColor
-            }
-
-            // FIXME: make this drawing fog of war configurable?
-            if fog[tileX][tileY] == data.FogTypeExplored {
-                use =  util.ToRGBA(util.Lighten(use, -50))
+                use = getCityColor(cityColor, fog[tileX][tileY])
             }
 
             set(x, y, use)
