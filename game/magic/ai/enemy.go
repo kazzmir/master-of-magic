@@ -15,7 +15,6 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
-    "github.com/kazzmir/master-of-magic/game/magic/cast"
 )
 
 type EnemyAI struct {
@@ -71,9 +70,9 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, p
         if len(summoningSpells.Spells) > 0 {
             for _, i := range rand.Perm(len(summoningSpells.Spells)) {
                 chosen := summoningSpells.Spells[i]
-                summonUnit := cast.SummonUnitForSpell(chosen.Name)
+                summonUnit := units.GetUnitByName(chosen.Name)
                 // check unit.UpkeepMana to see if it is affordable
-                if manaPerTurn >= summonUnit.UpkeepMana {
+                if !summonUnit.IsNone() && manaPerTurn >= summonUnit.UpkeepMana {
                     decisions = append(decisions, &playerlib.AICastSpellDecision{
                         Spell: chosen,
                     })

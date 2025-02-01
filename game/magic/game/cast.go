@@ -22,7 +22,6 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
     "github.com/kazzmir/master-of-magic/game/magic/camera"
-    castlib "github.com/kazzmir/master-of-magic/game/magic/cast"
 
     "github.com/hajimehoshi/ebiten/v2"
 )
@@ -65,7 +64,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
              "Great Drake", "Hell Hounds", "Hydra", "Death Knights",
              "Demon Lord", "Ghouls", "Night Stalker", "Shadow Demons",
              "Skeletons", "Wraiths":
-            game.doSummonUnit(player, castlib.SummonUnitForSpell(spell.Name))
+            game.doSummonUnit(player, units.GetUnitByName(spell.Name))
 
         // FIXME: lycanthropy selects a friendly unit
         // Lycanthropy	Icon DeathDeath	Uncommon	180	--	5	400	6 Regenerating Icon Melee Normal Melee creatures replace a target friendly Normal Unit.

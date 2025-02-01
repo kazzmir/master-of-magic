@@ -4,7 +4,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/units"
 )
 
-func SummonUnitForSpell(spellName string) units.Unit {
+func SummonUnitForSpell1(spellName string) units.Unit {
     switch spellName {
         case "Magic Spirit":
             return units.MagicSpirit

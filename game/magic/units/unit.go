@@ -5341,3 +5341,13 @@ func ChooseRandomUnit(race data.Race) Unit {
 
     return units[rand.N(len(units))]
 }
+
+func GetUnitByName(name string) Unit {
+    for _, unit := range AllUnits {
+        if unit.Name == name {
+            return unit
+        }
+    }
+
+    return UnitNone
+}
