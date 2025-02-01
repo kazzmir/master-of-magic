@@ -138,9 +138,9 @@ func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Playe
 
             game.doCastRaiseVolcano(yield, tileX, tileY, player)
         case "Summon Hero":
-            game.doSummonHero(yield, player, false)
+            game.doSummonHero(player, false)
         case "Summon Champion":
-            game.doSummonHero(yield, player, true)
+            game.doSummonHero(player, true)
 
         // Incarnation	Icon LifeLife	Rare	500	--	12	960	Summons Torin the Chosen – one of the most powerful Champions in the game.
 
@@ -173,7 +173,7 @@ func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Playe
     }
 }
 
-func (game *Game) doSummonHero(yield coroutine.YieldFunc, player *playerlib.Player, champion bool) {
+func (game *Game) doSummonHero(player *playerlib.Player, champion bool) {
     var choices []*herolib.Hero
     for _, hero := range game.Heroes {
         // torin is not summonable through this method
