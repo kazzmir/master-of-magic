@@ -270,7 +270,10 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
                     if encounter != nil {
                         text := "Unexplored"
                         if encounter.ExploredBy.Contains(player) {
-                            text = encounter.Units[0].Name
+                            text = "Empty"
+                            if len(encounter.Units) > 0 {
+                                text = encounter.Units[0].Name
+                            }
                         }
                         whiteFont.PrintCenter(screen, float64(280 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, text)
                         y += float64(whiteFont.Height() * data.ScreenScale)

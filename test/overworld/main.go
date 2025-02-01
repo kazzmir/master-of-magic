@@ -3110,6 +3110,7 @@ func createScenario37(cache *lbx.LbxCache) *gamelib.Game {
     player.Fame = 10
     player.LiftFog(node.X, node.Y, 3, data.PlaneArcanus)
 
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.Cockatrice, node.X, node.Y + 1, data.PlaneArcanus, wizard.Banner, nil))
     unit := player.AddUnit(units.MakeOverworldUnitFromUnit(units.SkyDrake, node.X + 1, node.Y + 1, data.PlaneArcanus, wizard.Banner, nil))
     stack := player.FindStackByUnit(unit)
     player.SetSelectedStack(stack)
