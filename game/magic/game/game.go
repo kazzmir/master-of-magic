@@ -3732,7 +3732,7 @@ func (game *Game) doEncounter(yield coroutine.YieldFunc, player *playerlib.Playe
     } else {
         var remaining []units.Unit
         for index := range enemies {
-            if enemies[index].GetHealth() != 0 {
+            if enemies[index].GetHealth() > 0 {
                 remaining = append(remaining, encounter.Units[index])
             }
         }
