@@ -96,7 +96,8 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
 
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeRaiseVolcano, SelectedFunc: selected}
         case "Nature Awareness":
-            // FIXME: does an animation play?
+            // FIXME: show frame image from backgrnd.lbx 18, and wizard picture from moodwiz with the text 'you have finished casting'
+            // then show specfx image (35 for planar seal) and the name of the enchantment
 
             player.GlobalEnchantments.Insert(data.EnchantmentNatureAwareness)
             player.LiftFogAll(data.PlaneArcanus)
