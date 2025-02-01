@@ -23,6 +23,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
     "github.com/kazzmir/master-of-magic/game/magic/camera"
+    castlib "github.com/kazzmir/master-of-magic/game/magic/cast"
 
     "github.com/hajimehoshi/ebiten/v2"
 )
@@ -62,88 +63,17 @@ func (game *Game) doCastSpell(yield coroutine.YieldFunc, player *playerlib.Playe
             }
 
             player.CreateArtifact = nil
-        case "Magic Spirit":
-            game.doSummonUnit(yield, player, units.MagicSpirit)
-        case "Angel":
-            game.doSummonUnit(yield, player, units.Angel)
-        case "Arch Angel":
-            game.doSummonUnit(yield, player, units.ArchAngel)
-        case "Guardian Spirit":
-            game.doSummonUnit(yield, player, units.GuardianSpirit)
-        case "Unicorns":
-            game.doSummonUnit(yield, player, units.Unicorn)
-        case "Basilisk":
-            game.doSummonUnit(yield, player, units.Basilisk)
-        case "Behemoth":
-            game.doSummonUnit(yield, player, units.Behemoth)
-        case "Cockatrices":
-            game.doSummonUnit(yield, player, units.Cockatrice)
-        case "Colossus":
-            game.doSummonUnit(yield, player, units.Colossus)
-        case "Earth Elemental":
-            game.doSummonUnit(yield, player, units.EarthElemental)
-        case "Giant Spiders":
-            game.doSummonUnit(yield, player, units.GiantSpider)
-        case "Gorgons":
-            game.doSummonUnit(yield, player, units.Gorgon)
-        case "Great Wyrm":
-            game.doSummonUnit(yield, player, units.GreatWyrm)
-        case "Sprites":
-            game.doSummonUnit(yield, player, units.Sprite)
-        case "Stone Giant":
-            game.doSummonUnit(yield, player, units.StoneGiant)
-        case "War Bears":
-            game.doSummonUnit(yield, player, units.WarBear)
-        case "Air Elemental":
-            game.doSummonUnit(yield, player, units.AirElemental)
-        case "Djinn":
-            game.doSummonUnit(yield, player, units.Djinn)
-        case "Floating Island":
-            game.doSummonUnit(yield, player, units.FloatingIsland)
-        case "Nagas":
-            game.doSummonUnit(yield, player, units.Nagas)
-        case "Phantom Beast":
-            game.doSummonUnit(yield, player, units.PhantomBeast)
-        case "Phantom Warriors":
-            game.doSummonUnit(yield, player, units.PhantomWarrior)
-        case "Sky Drake":
-            game.doSummonUnit(yield, player, units.SkyDrake)
-        case "Storm Giant":
-            game.doSummonUnit(yield, player, units.StormGiant)
-        case "Chaos Spawn":
-            game.doSummonUnit(yield, player, units.ChaosSpawn)
-        case "Chimeras":
-            game.doSummonUnit(yield, player, units.Chimeras)
-        case "Doom Bat":
-            game.doSummonUnit(yield, player, units.DoomBat)
-        case "Efreet":
-            game.doSummonUnit(yield, player, units.Efreet)
-        case "Fire Elemental":
-            game.doSummonUnit(yield, player, units.FireElemental)
-        case "Fire Giant":
-            game.doSummonUnit(yield, player, units.FireGiant)
-        case "Gargoyles":
-            game.doSummonUnit(yield, player, units.Gargoyle)
-        case "Great Drake":
-            game.doSummonUnit(yield, player, units.GreatDrake)
-        case "Hell Hounds":
-            game.doSummonUnit(yield, player, units.HellHounds)
-        case "Hydra":
-            game.doSummonUnit(yield, player, units.Hydra)
-        case "Death Knights":
-            game.doSummonUnit(yield, player, units.DeathKnight)
-        case "Demon Lord":
-            game.doSummonUnit(yield, player, units.DemonLord)
-        case "Ghouls":
-            game.doSummonUnit(yield, player, units.Ghoul)
-        case "Night Stalker":
-            game.doSummonUnit(yield, player, units.NightStalker)
-        case "Shadow Demons":
-            game.doSummonUnit(yield, player, units.ShadowDemon)
-        case "Skeletons":
-            game.doSummonUnit(yield, player, units.Skeleton)
-        case "Wraiths":
-            game.doSummonUnit(yield, player, units.Wraith)
+        case "Magic Spirit", "Angel", "Arch Angel", "Guardian Spirit",
+             "Unicorns", "Basilisk", "Behemoth", "Cockatrices", "Colossus",
+             "Earth Elemental", "Giant Spiders", "Gorgons", "Great Wyrm",
+             "Sprites", "Stone Giant", "War Bears", "Air Elemental",
+             "Djinn", "Floating Island", "Nagas", "Phantom Beast", "Phantom Warriors",
+             "Sky Drake", "Storm Giant", "Chaos Spawn", "Chimeras", "Doom Bat",
+             "Efreet", "Fire Elemental", "Fire Giant", "Gargoyles",
+             "Great Drake", "Hell Hounds", "Hydra", "Death Knights",
+             "Demon Lord", "Ghouls", "Night Stalker", "Shadow Demons",
+             "Skeletons", "Wraiths":
+            game.doSummonUnit(yield, player, castlib.SummonUnitForSpell(spell.Name))
 
         // FIXME: lycanthropy selects a friendly unit
         // Lycanthropy	Icon DeathDeath	Uncommon	180	--	5	400	6 Regenerating Icon Melee Normal Melee creatures replace a target friendly Normal Unit.
