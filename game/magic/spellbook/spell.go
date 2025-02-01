@@ -1284,7 +1284,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
                             }
                         }
                         message := fmt.Sprintf("Do you wish to abort your %v spell?", currentSpell.Name)
-                        ui.AddElements(uilib.MakeConfirmDialogWithLayer(ui, cache, &imageCache, 2, message, confirm, func(){}))
+                        ui.AddElements(uilib.MakeConfirmDialogWithLayer(ui, cache, &imageCache, 2, message, true, confirm, func(){}))
                     } else {
                         // log.Printf("Click on spell %v", spell)
                         shutdown(spell, true)

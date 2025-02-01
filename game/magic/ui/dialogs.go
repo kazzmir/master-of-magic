@@ -249,11 +249,11 @@ func MakeErrorElement(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, 
     return element
 }
 
-func MakeConfirmDialog(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, message string, confirm func(), cancel func()) []*UIElement {
-    return MakeConfirmDialogWithLayer(ui, cache, imageCache, 1, message, confirm, cancel)
+func MakeConfirmDialog(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, message string, center bool, confirm func(), cancel func()) []*UIElement {
+    return MakeConfirmDialogWithLayer(ui, cache, imageCache, 1, message, center, confirm, cancel)
 }
 
-func MakeConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, layer UILayer, message string, confirm func(), cancel func()) []*UIElement {
+func MakeConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, layer UILayer, message string, center bool, confirm func(), cancel func()) []*UIElement {
     confirmX := 67 * data.ScreenScale
     confirmY := 73 * data.ScreenScale
 
@@ -320,7 +320,11 @@ func MakeConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.Im
             options.ColorScale.ScaleAlpha(getAlpha())
             window.DrawImage(topDraw, &options)
 
-            confirmFont.RenderWrapped(window, float64(confirmX + confirmMargin + maxWidth / 2), float64(confirmY + confirmTopMargin), wrapped, options.ColorScale, true)
+            if center {
+                confirmFont.RenderWrapped(window, float64(confirmX + confirmMargin + maxWidth / 2), float64(confirmY + confirmTopMargin), wrapped, options.ColorScale, true)
+            } else {
+                confirmFont.RenderWrapped(window, float64(confirmX + confirmMargin), float64(confirmY + confirmTopMargin), wrapped, options.ColorScale, false)
+            }
 
             options.GeoM.Reset()
             options.GeoM.Translate(float64(confirmX), float64(bottom))

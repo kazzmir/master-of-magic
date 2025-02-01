@@ -916,7 +916,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
                             setupEnchantments()
                         }
 
-                        ui.AddElements(uilib.MakeConfirmDialog(ui, magic.Cache, &magic.ImageCache, fmt.Sprintf("Do you wish to cancel your %v spell?", name), yes, no))
+                        ui.AddElements(uilib.MakeConfirmDialog(ui, magic.Cache, &magic.ImageCache, fmt.Sprintf("Do you wish to cancel your %v spell?", name), false, yes, no))
                     }
                 },
             })

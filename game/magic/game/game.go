@@ -2525,7 +2525,7 @@ func (game *Game) doNextTurn(yield coroutine.YieldFunc) {
             quit = true
         }
 
-        game.HudUI.AddElements(uilib.MakeConfirmDialog(game.HudUI, game.Cache, &game.ImageCache, message, yes, no))
+        game.HudUI.AddElements(uilib.MakeConfirmDialog(game.HudUI, game.Cache, &game.ImageCache, message, true, yes, no))
 
         for !quit {
             game.Counter += 1
@@ -4172,7 +4172,7 @@ func (game *Game) ShowGrandVizierUI(){
         // FIXME: disable grand vizier
     }
 
-    game.HudUI.AddElements(uilib.MakeConfirmDialogWithLayer(game.HudUI, game.Cache, &game.ImageCache, 1, "Do you wish to allow the Grand Vizier to select what buildings your cities create?", yes, no))
+    game.HudUI.AddElements(uilib.MakeConfirmDialogWithLayer(game.HudUI, game.Cache, &game.ImageCache, 1, "Do you wish to allow the Grand Vizier to select what buildings your cities create?", true, yes, no))
 }
 
 func (game *Game) ShowTaxCollectorUI(cornerX int, cornerY int){
