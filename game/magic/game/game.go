@@ -6116,6 +6116,10 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
             continue
         }
 
+        if overworld.Fog[stack.X()][stack.Y()] != data.FogTypeVisible {
+            continue
+        }
+
         location := image.Point{stack.X(), stack.Y()}
         _, hasCity := cityPositions[location]
 
