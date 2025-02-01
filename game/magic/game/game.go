@@ -5557,6 +5557,7 @@ func (game *Game) CheckDisband(player *playerlib.Player) (bool, bool, bool) {
     goldIssue := player.Gold + goldPerTurn < 0 && unitsNeedGold
     foodIssue := player.FoodPerTurn() < 0 && unitsNeedFood
 
+    // FIXME: can the power be passed in so it doesn't have to be computed multiple times?
     manaPerTurn := player.ManaPerTurn(game.ComputePower(player))
 
     manaIssue := player.Mana + manaPerTurn < 0 && unitsNeedMana
@@ -5638,6 +5639,23 @@ func (game *Game) GetExperienceBonus(stack *playerlib.UnitStack) int {
     return base + bonus
 }
 
+// turn off enchantments that can not be afforded
+func (game *Game) DissipateEnchantments(player *playerlib.Player, power int) {
+    isManaIssue := func() bool {
+        manaPerTurn := player.ManaPerTurn(power)
+        return player.Mana + manaPerTurn < 0
+    }
+
+    // keep removing enchantments until there is no more mana issue
+    for isManaIssue() && player.GlobalEnchantments.Size() > 0 {
+        enchantments := player.GlobalEnchantments.Values()
+        enchantment := enchantments[rand.N(len(enchantments))]
+        player.GlobalEnchantments.Remove(enchantment)
+    }
+
+    // FIXME: dissipate unit enchantments and city enchantments
+}
+
 func (game *Game) StartPlayerTurn(player *playerlib.Player) {
     disbandedMessages := game.DisbandUnits(player)
 
@@ -5649,6 +5667,8 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
     }
 
     power := game.ComputePower(player)
+
+    game.DissipateEnchantments(player, power)
 
     player.Gold += player.GoldPerTurn()
     if player.Gold < 0 {
