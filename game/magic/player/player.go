@@ -501,7 +501,13 @@ func (player *Player) TotalEnchantmentUpkeep() int {
         upkeep += enchantment.UpkeepMana()
     }
 
-    // FIXME: add city enchantments and unit enchantments
+    for _, city := range player.Cities {
+        for _, enchantment := range city.Enchantments.Values() {
+            upkeep += enchantment.Enchantment.UpkeepMana()
+        }
+    }
+
+    // FIXME: add unit enchantments
 
     return upkeep
 }
