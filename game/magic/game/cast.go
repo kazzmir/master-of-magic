@@ -658,8 +658,7 @@ func (game *Game) doCastWarpNode(yield coroutine.YieldFunc, tileX int, tileY int
 }
 
 func (game *Game) doCastGlobalEnchantment(yield coroutine.YieldFunc, player *playerlib.Player, enchantment data.Enchantment) {
-    // FIXME: show frame image from backgrnd.lbx 18, and wizard picture from moodwiz with the text 'you have finished casting'
-    // then show specfx image (35 for planar seal) and the name of the enchantment
+    // FIXME: play some midi song, not a sound effect
 
     fontLbx, err := game.Cache.GetLbxFile("fonts.lbx")
     if err != nil {
