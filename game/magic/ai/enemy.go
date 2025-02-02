@@ -87,6 +87,15 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, p
         // city can make something
         if !isMakingSomething(city) {
             possibleUnits := city.ComputePossibleUnits()
+            settlers := units.UnitNone
+
+            for _, unit := range possibleUnits {
+                if unit.IsSettlers() {
+                    settlers = unit
+                    break
+                }
+            }
+
             possibleUnits = slices.DeleteFunc(possibleUnits, func(unit units.Unit) bool {
                 if unit.IsSettlers() {
                     return true
@@ -101,6 +110,7 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, p
             type Choice int
             const ChooseUnit Choice = 0
             const ChooseBuilding Choice = 1
+            const ChooseSettlers Choice = 3
 
             var choices []Choice
             if len(possibleUnits) > 0 {
@@ -110,12 +120,22 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, p
                 }
             }
 
+            if !settlers.IsNone() && city.Citizens() > 5 {
+                choices = append(choices, ChooseSettlers)
+            }
+
             if possibleBuildings.Size() > 0 {
                 choices = append(choices, ChooseBuilding)
             }
 
             if len(choices) > 0 {
                 switch choices[rand.N(len(choices))] {
+                    case ChooseSettlers:
+                        decisions = append(decisions, &playerlib.AIProduceDecision{
+                            City: city,
+                            Building: buildinglib.BuildingNone,
+                            Unit: settlers,
+                        })
                     case ChooseUnit:
                         unit := possibleUnits[rand.N(len(possibleUnits))]
                         decisions = append(decisions, &playerlib.AIProduceDecision{
@@ -143,6 +163,18 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, p
             // also, sometimes choose a preferred location to move to, such as a square for building a new city
             // or attacking a player's units
             if len(stack.CurrentPath) == 0 {
+                // handling for settlers
+                if stack.ActiveUnitsHasAbility(data.AbilityCreateOutpost) {
+                    // find a location on the same continent as the stack that we can build a new outpost
+                    // if we can't find a location, just move randomly
+                    // if we are at a settlable location, build the outpost
+                    // otherwise, find a path to the chosen location
+
+                    if len(stack.CurrentPath) == 0 {
+                        // find a location
+                    }
+                }
+
                 if rand.N(4) == 0 {
                     // try upto 3 times to find a path
                     for range 3 {
