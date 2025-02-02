@@ -674,13 +674,22 @@ func (game *Game) doCastGlobalEnchantment(yield coroutine.YieldFunc, player *pla
     }
 
     white := color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}
+    // red := color.RGBA{R: 0xff, G: 0x00, B: 0x00, A: 0xff}
     palette := color.Palette{
         color.RGBA{R: 0x00, G: 0x00, B: 0x00, A: 0x0},
         color.RGBA{R: 0x00, G: 0x00, B: 0x00, A: 0x0},
-        white, white, white,
-        white, white, white,
-        white, white, white,
-        white, white, white,
+        white,
+        white,
+        white,
+        white,
+        white,
+        white,
+        util.Lighten(white, -20),
+        util.Lighten(white, -30),
+        util.Lighten(white, -60),
+        util.Lighten(white, -40),
+        util.Lighten(white, -60),
+        util.Lighten(white, -50),
     }
 
     infoFont := font.MakeOptimizedFontWithPalette(fonts[5], palette)
@@ -769,7 +778,9 @@ func (game *Game) doCastGlobalEnchantment(yield coroutine.YieldFunc, player *pla
 
     }
 
-    deadline := game.Counter + 120
+    delay := uint64(3 * 60)
+
+    deadline := game.Counter + delay
 
     quit := false
     for !quit && game.Counter < deadline {
@@ -795,7 +806,7 @@ func (game *Game) doCastGlobalEnchantment(yield coroutine.YieldFunc, player *pla
 
     fader = util.MakeFadeIn(uint64(fadeSpeed), &game.Counter)
 
-    deadline = game.Counter + 120
+    deadline = game.Counter + delay
 
     quit = false
     for !quit && game.Counter < deadline {
