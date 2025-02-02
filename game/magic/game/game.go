@@ -5660,7 +5660,37 @@ func (game *Game) DissipateEnchantments(player *playerlib.Player, power int) {
         player.GlobalEnchantments.Remove(enchantment)
     }
 
-    // FIXME: dissipate unit enchantments and city enchantments
+    // keep removing city enchantments until there is no more mana issue
+    type CityEnchantment struct {
+        City citylib.City
+        Enchantment citylib.Enchantment
+    }
+
+    getCityEnchantments := func() []CityEnchantment {
+        var result []CityEnchantment
+        for _, somebody := range game.Players {
+            for _, city := range somebody.Cities {
+                for _, enchantment := range city.Enchantments.Values() {
+                    if enchantment.Owner == player.GetBanner() {
+                        result = append(result, CityEnchantment{City: *city, Enchantment: enchantment})
+                    }
+                }
+            }
+        }
+        return result
+    }
+
+    for {
+        enchantments := getCityEnchantments()
+        if len(enchantments) == 0 || !isManaIssue() {
+            break
+        }
+
+        enchantment := enchantments[rand.N(len(enchantments))]
+        enchantment.City.RemoveEnchantment(enchantment.Enchantment.Enchantment, enchantment.Enchantment.Owner)
+    }
+
+    // FIXME: dissipate unit enchantments
 }
 
 func (game *Game) StartPlayerTurn(player *playerlib.Player) {
