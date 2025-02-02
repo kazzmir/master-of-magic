@@ -5654,7 +5654,7 @@ func (game *Game) DissipateEnchantments(player *playerlib.Player, power int) {
     }
 
     // keep removing enchantments until there is no more mana issue
-    for isManaIssue() && player.GlobalEnchantments.Size() > 0 {
+    for player.GlobalEnchantments.Size() > 0 && isManaIssue() {
         enchantments := player.GlobalEnchantments.Values()
         enchantment := enchantments[rand.N(len(enchantments))]
         player.GlobalEnchantments.Remove(enchantment)
