@@ -3459,7 +3459,7 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
     var decisions []playerlib.AIDecision
 
     if player.AIBehavior != nil {
-        decisions = player.AIBehavior.Update(player, game.GetEnemies(player), game, player.ManaPerTurn(game.ComputePower(player), game.Players))
+        decisions = player.AIBehavior.Update(player, game.GetEnemies(player), game, player.ManaPerTurn(game.ComputePower(player), game))
         log.Printf("AI %v Decisions: %v", player.Wizard.Name, decisions)
 
         for _, decision := range decisions {
@@ -5430,7 +5430,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
             goldPerTurn := player.GoldPerTurn()
             foodPerTurn := player.FoodPerTurn()
-            manaPerTurn := player.ManaPerTurn(game.ComputePower(player), game.Players)
+            manaPerTurn := player.ManaPerTurn(game.ComputePower(player), game)
 
             elements = append(elements, &uilib.UIElement{
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image){
@@ -5565,7 +5565,7 @@ func (game *Game) CheckDisband(player *playerlib.Player) (bool, bool, bool) {
     foodIssue := player.FoodPerTurn() < 0 && unitsNeedFood
 
     // FIXME: can the power be passed in so it doesn't have to be computed multiple times?
-    manaPerTurn := player.ManaPerTurn(game.ComputePower(player), game.Players)
+    manaPerTurn := player.ManaPerTurn(game.ComputePower(player), game)
 
     manaIssue := player.Mana + manaPerTurn < 0 && unitsNeedMana
 
@@ -5646,10 +5646,25 @@ func (game *Game) GetExperienceBonus(stack *playerlib.UnitStack) int {
     return base + bonus
 }
 
+
+func (game *Game) GetCityEnchantmentsByBanner(banner data.BannerType) []playerlib.CityEnchantment {
+    var result []playerlib.CityEnchantment
+
+    for _, player := range game.Players {
+        for _, city := range player.Cities {
+            for _, enchantment := range city.GetEnchantmentsCastBy(banner) {
+                result = append(result, playerlib.CityEnchantment{City: city, Enchantment: enchantment})
+            }
+        }
+    }
+
+    return result
+}
+
 // turn off enchantments that can not be afforded
 func (game *Game) DissipateEnchantments(player *playerlib.Player, power int) {
     isManaIssue := func() bool {
-        manaPerTurn := player.ManaPerTurn(power, game.Players)
+        manaPerTurn := player.ManaPerTurn(power, game)
         return player.Mana + manaPerTurn < 0
     }
 
@@ -5666,20 +5681,8 @@ func (game *Game) DissipateEnchantments(player *playerlib.Player, power int) {
         Enchantment citylib.Enchantment
     }
 
-    getCityEnchantments := func() []CityEnchantment {
-        var result []CityEnchantment
-        for _, somebody := range game.Players {
-            for _, city := range somebody.Cities {
-                for _, enchantment := range city.GetEnchantmentsCastBy(player.GetBanner()) {
-                    result = append(result, CityEnchantment{City: city, Enchantment: enchantment})
-                }
-            }
-        }
-        return result
-    }
-
     for {
-        enchantments := getCityEnchantments()
+        enchantments := game.GetCityEnchantmentsByBanner(player.GetBanner())
         if len(enchantments) == 0 || !isManaIssue() {
             break
         }
@@ -5710,7 +5713,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
         player.Gold = 0
     }
 
-    player.Mana += player.ManaPerTurn(power, game.Players)
+    player.Mana += player.ManaPerTurn(power, game)
     if player.Mana < 0 {
         player.Mana = 0
     }

@@ -81,6 +81,15 @@ type Relationship struct {
     Treaty data.TreatyType
 }
 
+type CityEnchantment struct {
+    City *citylib.City
+    Enchantment citylib.Enchantment
+}
+
+type CityEnchantmentsProvider interface {
+    GetCityEnchantmentsByBanner(banner data.BannerType) []CityEnchantment
+}
+
 type Player struct {
     // matrix the same size as the map containg information if the tile is explored,
     // unexplored or in the range of sight
@@ -494,19 +503,15 @@ func (player *Player) FoodPerTurn() int {
     return food
 }
 
-func (player *Player) TotalEnchantmentUpkeep(players []*Player) int {
+func (player *Player) TotalEnchantmentUpkeep(cityEnchantmentsProvider CityEnchantmentsProvider) int {
     upkeep := 0
 
     for _, enchantment := range player.GlobalEnchantments.Values() {
         upkeep += enchantment.UpkeepMana()
     }
 
-    for _, player := range players {
-        for _, city := range player.Cities {
-            for _, enchantment := range city.GetEnchantmentsCastBy(player.GetBanner()) {
-                upkeep += enchantment.Enchantment.UpkeepMana()
-            }
-        }
+    for _, cityEnchanment := range cityEnchantmentsProvider.GetCityEnchantmentsByBanner(player.GetBanner()) {
+        upkeep += cityEnchanment.Enchantment.Enchantment.UpkeepMana()
     }
 
     // FIXME: add unit enchantments
@@ -514,11 +519,11 @@ func (player *Player) TotalEnchantmentUpkeep(players []*Player) int {
     return upkeep
 }
 
-func (player *Player) ManaPerTurn(power int, players []*Player) int {
+func (player *Player) ManaPerTurn(power int, cityEnchantmentsProvider CityEnchantmentsProvider) int {
     mana := 0
 
     mana -= player.TotalUnitUpkeepMana()
-    mana -= player.TotalEnchantmentUpkeep(players)
+    mana -= player.TotalEnchantmentUpkeep(cityEnchantmentsProvider)
 
     manaFocusingBonus := float64(1)
 
