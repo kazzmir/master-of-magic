@@ -95,8 +95,6 @@ func (engine *Engine) MakeUI() (*uilib.UI, context.Context, error) {
 
     city.AddEnchantment(data.CityEnchantmentWallOfFire, data.BannerRed)
 
-    cityview.PlayEnchantmentSound(engine.Cache)
-
     return cityview.MakeEnchantmentView(engine.Cache, city, player, "Wall of Fire")
 
     /*
