@@ -59,13 +59,13 @@ type AIResearchSpellDecision struct {
     Spell spellbook.Spell
 }
 
-type PathFinder interface {
+type AIServices interface {
     FindPath(oldX int, oldY int, newX int, newY int, stack *UnitStack, fog data.FogMap) pathfinding.Path
 }
 
 type AIBehavior interface {
     // return a list of decisions to make for the current turn
-    Update(*Player, []*Player, PathFinder, int) []AIDecision
+    Update(*Player, []*Player, AIServices, int) []AIDecision
 
     // called after all decisions have been processed for an AI player
     PostUpdate(*Player, []*Player)

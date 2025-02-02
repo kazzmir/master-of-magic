@@ -42,7 +42,7 @@ func (ai *EnemyAI) ProducedUnit(city *citylib.City, player *playerlib.Player) {
     city.ProducingUnit = units.UnitNone
 }
 
-func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, pathfinder playerlib.PathFinder, manaPerTurn int) []playerlib.AIDecision {
+func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, pathfinder playerlib.AIServices, manaPerTurn int) []playerlib.AIDecision {
     var decisions []playerlib.AIDecision
 
     // FIXME: create settlers, build cities

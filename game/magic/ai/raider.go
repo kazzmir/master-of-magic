@@ -26,7 +26,7 @@ func (raider *RaiderAI) NewTurn(player *playerlib.Player) {
     raider.MovedStacks = make(map[*playerlib.UnitStack]bool)
 }
 
-func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerlib.Player, pathfinder playerlib.PathFinder) []playerlib.AIDecision {
+func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerlib.Player, pathfinder playerlib.AIServices) []playerlib.AIDecision {
     var decisions []playerlib.AIDecision
     for _, stack := range player.Stacks {
         _, moved := raider.MovedStacks[stack]
@@ -102,7 +102,7 @@ func (raider *RaiderAI) CreateUnits(player *playerlib.Player) []playerlib.AIDeci
     return decisions
 }
 
-func (raider *RaiderAI) Update(player *playerlib.Player, enemies []*playerlib.Player, pathfinder playerlib.PathFinder, manaPerTurn int) []playerlib.AIDecision {
+func (raider *RaiderAI) Update(player *playerlib.Player, enemies []*playerlib.Player, pathfinder playerlib.AIServices, manaPerTurn int) []playerlib.AIDecision {
     var decisions []playerlib.AIDecision
 
     decisions = append(decisions, raider.MoveStacks(player, enemies, pathfinder)...)
