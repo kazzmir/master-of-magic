@@ -739,6 +739,10 @@ func (game *Game) doCastGlobalEnchantment(yield coroutine.YieldFunc, player *pla
 
     doDraw := 0
 
+    fadeSpeed := 7
+
+    fader := util.MakeFadeIn(uint64(fadeSpeed), &game.Counter)
+
     game.Drawer = func(screen *ebiten.Image, game *Game){
         oldDrawer(screen, game)
         var options ebiten.DrawImageOptions
@@ -746,25 +750,29 @@ func (game *Game) doCastGlobalEnchantment(yield coroutine.YieldFunc, player *pla
         options.GeoM.Translate(float64(-frame.Bounds().Dx() / 2), float64(-frame.Bounds().Dy() / 2))
         screen.DrawImage(frame, &options)
 
+        options.ColorScale.ScaleAlpha(fader())
+
         // first draw the wizard
         if doDraw == 0 {
             mood, _ := game.ImageCache.GetImageTransform("moodwiz.lbx", animationIndex, 2, "cutout", makeCutoutMask)
             options.GeoM.Translate(float64(13 * data.ScreenScale), float64(13 * data.ScreenScale))
             screen.DrawImage(mood, &options)
 
-            infoFont.PrintCenter(screen, float64(data.ScreenWidth / 2), float64(data.ScreenHeight / 2 + frame.Bounds().Dy() / 2), float64(data.ScreenScale), ebiten.ColorScale{}, "You have finished casting")
+            infoFont.PrintCenter(screen, float64(data.ScreenWidth / 2), float64(data.ScreenHeight / 2 + frame.Bounds().Dy() / 2), float64(data.ScreenScale), options.ColorScale, "You have finished casting")
         } else {
             // then draw the spell image
             options.GeoM.Translate(float64(9 * data.ScreenScale), float64(8 * data.ScreenScale))
             screen.DrawImage(spellImage, &options)
 
-            infoFont.PrintCenter(screen, float64(data.ScreenWidth / 2), float64(data.ScreenHeight / 2 + frame.Bounds().Dy() / 2), float64(data.ScreenScale), ebiten.ColorScale{}, enchantment.String())
+            infoFont.PrintCenter(screen, float64(data.ScreenWidth / 2), float64(data.ScreenHeight / 2 + frame.Bounds().Dy() / 2), float64(data.ScreenScale), options.ColorScale, enchantment.String())
         }
 
     }
 
+    deadline := game.Counter + 120
+
     quit := false
-    for !quit {
+    for !quit && game.Counter < deadline {
         game.Counter += 1
         leftClick := inputmanager.LeftClick()
         if leftClick {
@@ -774,17 +782,34 @@ func (game *Game) doCastGlobalEnchantment(yield coroutine.YieldFunc, player *pla
         yield()
     }
 
+    fader = util.MakeFadeOut(uint64(fadeSpeed), &game.Counter)
+
+    for range fadeSpeed {
+        game.Counter += 1
+        yield()
+    }
+
     yield()
 
     doDraw = 1
 
+    fader = util.MakeFadeIn(uint64(fadeSpeed), &game.Counter)
+
+    deadline = game.Counter + 120
+
     quit = false
-    for !quit {
+    for !quit && game.Counter < deadline {
         game.Counter += 1
         leftClick := inputmanager.LeftClick()
         if leftClick {
             quit = true
         }
+        yield()
+    }
+
+    fader = util.MakeFadeOut(uint64(fadeSpeed), &game.Counter)
+    for range fadeSpeed {
+        game.Counter += 1
         yield()
     }
 
