@@ -5662,7 +5662,7 @@ func (game *Game) DissipateEnchantments(player *playerlib.Player, power int) {
 
     // keep removing city enchantments until there is no more mana issue
     type CityEnchantment struct {
-        City citylib.City
+        City *citylib.City
         Enchantment citylib.Enchantment
     }
 
@@ -5671,7 +5671,7 @@ func (game *Game) DissipateEnchantments(player *playerlib.Player, power int) {
         for _, somebody := range game.Players {
             for _, city := range somebody.Cities {
                 for _, enchantment := range city.GetEnchantmentsCastBy(player.GetBanner()) {
-                    result = append(result, CityEnchantment{City: *city, Enchantment: enchantment})
+                    result = append(result, CityEnchantment{City: city, Enchantment: enchantment})
                 }
             }
         }
