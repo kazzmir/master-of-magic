@@ -1519,17 +1519,12 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []MiniMapCity, ce
         }
     }
 
-    type ColorKey struct {
-        terrain terrain.TerrainType
-        explored data.FogType
-    }
-
-    getMapColor := functional.Memoize(func (key ColorKey) color.RGBA {
+    getMapColor := functional.Memoize2(func (terrainType terrain.TerrainType, explored data.FogType) color.RGBA {
         var use color.RGBA
 
         landColor := color.RGBA{R: 0, G: 0xad, B: 0x00, A: 255}
 
-        switch key.terrain {
+        switch terrainType {
             case terrain.Grass: use = landColor
             case terrain.Ocean: use = color.RGBA{R: 0, G: 0, B: 255, A: 255}
             case terrain.River: use = color.RGBA{R: 0x3f, G: 0x88, B: 0xd3, A: 255}
@@ -1548,21 +1543,16 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []MiniMapCity, ce
             default: use = color.RGBA{R: 64, G: 64, B: 64, A: 255}
         }
 
-        if key.explored == data.FogTypeExplored {
+        if explored == data.FogTypeExplored {
             use = util.ToRGBA(util.Lighten(use, -50))
         }
 
         return use
     })
 
-    type CityColorKey struct {
-        cityColor color.RGBA
-        explored data.FogType
-    }
-
-    getCityColor := functional.Memoize(func (key CityColorKey) color.RGBA {
-        use := key.cityColor
-        if key.explored == data.FogTypeExplored {
+    getCityColor := functional.Memoize2(func (cityColor color.RGBA, explored data.FogType) color.RGBA {
+        use := cityColor
+        if explored == data.FogTypeExplored {
             use = util.ToRGBA(util.Lighten(use, -50))
         }
         return use
@@ -1578,10 +1568,10 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []MiniMapCity, ce
                 continue
             }
 
-            use := getMapColor(ColorKey{terrain: terrain.GetTile(mapObject.Map.Terrain[tileX][tileY]).TerrainType(), explored: fog[tileX][tileY]})
+            use := getMapColor(terrain.GetTile(mapObject.Map.Terrain[tileX][tileY]).TerrainType(), fog[tileX][tileY])
 
             if cityColor, ok := cityLocations[image.Pt(tileX, tileY)]; ok {
-                use = getCityColor(CityColorKey{cityColor: cityColor, explored: fog[tileX][tileY]})
+                use = getCityColor(cityColor, fog[tileX][tileY])
             }
 
             set(x, y, use)
