@@ -1234,7 +1234,9 @@ func (city *City) AllowedUnits(what buildinglib.Building) []units.Unit {
 }
 
 func (city *City) GetSightRange() int {
-    // FIXME: nature's eye: 5
+    if city.HasEnchantment(data.CityEnchantmentNaturesEye) {
+        return 5
+    }
 
     if city.Buildings.Contains(buildinglib.BuildingOracle) {
         return 4

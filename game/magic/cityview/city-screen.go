@@ -1121,6 +1121,14 @@ func drawCityScape(screen *ebiten.Image, buildings []BuildingSlot, buildingLook 
                 images, _ := imageCache.GetImages("cityscap.lbx", enchantment.Enchantment.LbxIndex(data.PlaneArcanus))
                 index := animationCounter % uint64(len(images))
                 screen.DrawImage(images[index], &options)
+            case data.CityEnchantmentNaturesEye:
+                var options ebiten.DrawImageOptions
+                options.ColorScale.ScaleAlpha(alphaScale)
+                options.GeoM = baseGeoM
+                options.GeoM.Translate(float64(114 * data.ScreenScale), float64(82 * data.ScreenScale))
+                // FIXME: Consider plane
+                image, _ := imageCache.GetImage("cityscap.lbx", enchantment.Enchantment.LbxIndex(data.PlaneArcanus), 0)
+                screen.DrawImage(image, &options)
         }
     }
 

@@ -424,7 +424,7 @@ func (enchantment CityEnchantment) SoundIndex() int {
         // case CityEnchantmentGaiasBlessing: return 0
         // case CityEnchantmentHeavenlyLight: return 0
         // case CityEnchantmentInspirations: return 0
-        // case CityEnchantmentNaturesEye: return 0
+        case CityEnchantmentNaturesEye: return 28
         // case CityEnchantmentPestilence: return 0
         // case CityEnchantmentProsperity: return 0
         // case CityEnchantmentLifeWard: return 0
