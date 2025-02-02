@@ -3044,6 +3044,7 @@ func createScenario36(cache *lbx.LbxCache) *gamelib.Game {
     }
     human := game.AddPlayer(wizard2, true)
     human.Admin = true
+    human.Mana = 10000
 
     human.GlobalEnchantments.Insert(data.EnchantmentNatureAwareness)
 
