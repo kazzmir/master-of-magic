@@ -2,7 +2,6 @@ package cityview
 
 import (
     "fmt"
-    "log"
     "context"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -12,19 +11,9 @@ import (
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
-    "github.com/kazzmir/master-of-magic/game/magic/audio"
 
     "github.com/hajimehoshi/ebiten/v2"
 )
-
-func PlayEnchantmentSound(cache *lbx.LbxCache) {
-    sound, err := audio.LoadSound(cache, 30)
-    if err != nil {
-        log.Printf("Error loading city enchantment sound: %v", err)
-    } else {
-        sound.Play()
-    }
-}
 
 func MakeEnchantmentView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.Player, spellName string) (*uilib.UI, context.Context, error) {
     imageCache := util.MakeImageCache(cache)

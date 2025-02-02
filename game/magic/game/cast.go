@@ -72,17 +72,13 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
 
         case "Wall of Fire":
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
-                game.doMoveCamera(yield, tileX, tileY)
-                chosenCity := player.FindCity(tileX, tileY, game.Plane)
-                if chosenCity == nil {
-                    return
-                }
+                game.doCastCityEnchantment(yield, tileX, tileY, player, data.CityEnchantmentWallOfFire)
+            }
 
-                chosenCity.AddEnchantment(data.CityEnchantmentWallOfFire, player.GetBanner())
-
-                yield()
-                cityview.PlayEnchantmentSound(game.Cache)
-                game.showCityEnchantment(yield, chosenCity, player, spell.Name)
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyCity, SelectedFunc: selected}
+        case "Wall of Darkness":
+            selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+                game.doCastCityEnchantment(yield, tileX, tileY, player, data.CityEnchantmentWallOfDarkness)
             }
 
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyCity, SelectedFunc: selected}
@@ -481,6 +477,25 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
     }
 
     return 0, 0, true
+}
+
+func (game *Game) doCastCityEnchantment(yield coroutine.YieldFunc, tileX int, tileY int, player *playerlib.Player, enchantment data.CityEnchantment) {
+    game.doMoveCamera(yield, tileX, tileY)
+    chosenCity := player.FindCity(tileX, tileY, game.Plane)
+    if chosenCity == nil {
+        return
+    }
+
+    chosenCity.AddEnchantment(enchantment, player.GetBanner())
+
+    yield()
+
+    sound, err := audio.LoadSound(game.Cache, enchantment.SoundIndex())
+    if err == nil {
+        sound.Play()
+    }
+
+    game.showCityEnchantment(yield, chosenCity, player, enchantment.Name())
 }
 
 type UpdateMapFunction func (tileX int, tileY int, animationFrame int)

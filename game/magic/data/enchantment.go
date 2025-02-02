@@ -407,6 +407,35 @@ func (enchantment CityEnchantment) LbxIndex(plane Plane) int {
     return 0
 }
 
-func (enchantment CityEnchantment) LbxFile() string {
-    return "cityscap.lbx"
+
+func (enchantment CityEnchantment) SoundIndex() int {
+    // FIXME: Add sound indexes
+    switch enchantment {
+        // case CityEnchantmentAltarOfBattle: return 5
+        // case CityEnchantmentAstralGate: return 5
+        // case CityEnchantmentChaosRift: return 10
+        // case CityEnchantmentCloudOfShadow: return 3
+        // case CityEnchantmentConsecration: return 8
+        // case CityEnchantmentCursedLands: return 2
+        // case CityEnchantmentDarkRituals: return 0
+        // case CityEnchantmentEarthGate: return 5
+        // case CityEnchantmentEvilPresence: return 4
+        // case CityEnchantmentFamine: return 5
+        // case CityEnchantmentFlyingFortress: return 25
+        // case CityEnchantmentGaiasBlessing: return 3
+        // case CityEnchantmentHeavenlyLight: return 2
+        // case CityEnchantmentInspirations: return 2
+        // case CityEnchantmentNaturesEye: return 1
+        // case CityEnchantmentPestilence: return 5
+        // case CityEnchantmentProsperity: return 2
+        // case CityEnchantmentLifeWard: return 5
+        // case CityEnchantmentSorceryWard: return 5
+        // case CityEnchantmentNatureWard: return 5
+        // case CityEnchantmentDeathWard: return 5
+        // case CityEnchantmentChaosWard: return 5
+        // case CityEnchantmentStreamOfLife: return 8
+        case CityEnchantmentWallOfDarkness: return 32
+        case CityEnchantmentWallOfFire: return 30
+    }
+    return 0
 }
