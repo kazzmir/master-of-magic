@@ -181,7 +181,7 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, a
                                 // just go back to a town?
                                 var candidateCities []*citylib.City
                                 for _, city := range self.Cities {
-                                    if city.Plane == stack.Plane() && aiServices.IsReachable(stack, city.X, city.Y, stack.Plane()) {
+                                    if city.Plane == stack.Plane() && len(aiServices.FindPath(stack.X(), stack.Y(), city.X, city.Y, stack, self.GetFog(stack.Plane()))) > 0 {
                                         candidateCities = append(candidateCities, city)
                                     }
                                 }

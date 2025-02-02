@@ -62,7 +62,6 @@ type AIResearchSpellDecision struct {
 type AIServices interface {
     FindPath(oldX int, oldY int, newX int, newY int, stack *UnitStack, fog data.FogMap) pathfinding.Path
     FindSettlableLocations(x int, y int, plane data.Plane) []image.Point
-    IsReachable(stack *UnitStack, x int, y int, plane data.Plane) bool
 }
 
 type AIBehavior interface {

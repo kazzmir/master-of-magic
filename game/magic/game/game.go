@@ -1923,11 +1923,6 @@ func (game *Game) FindSettlableLocations(x int, y int, plane data.Plane) []image
     return nil
 }
 
-func (game *Game) IsReachable(stack *playerlib.UnitStack, x int, y int, plane data.Plane) bool {
-    // TODO
-    return false
-}
-
 func (game *Game) doSummon(yield coroutine.YieldFunc, summonObject *summon.Summon) {
     drawer := game.Drawer
     defer func(){
