@@ -5676,11 +5676,6 @@ func (game *Game) DissipateEnchantments(player *playerlib.Player, power int) {
     }
 
     // keep removing city enchantments until there is no more mana issue
-    type CityEnchantment struct {
-        City *citylib.City
-        Enchantment citylib.Enchantment
-    }
-
     for {
         enchantments := game.GetCityEnchantmentsByBanner(player.GetBanner())
         if len(enchantments) == 0 || !isManaIssue() {
