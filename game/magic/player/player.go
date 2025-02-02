@@ -494,16 +494,18 @@ func (player *Player) FoodPerTurn() int {
     return food
 }
 
-func (player *Player) TotalEnchantmentUpkeep() int {
+func (player *Player) TotalEnchantmentUpkeep(players []*Player) int {
     upkeep := 0
 
     for _, enchantment := range player.GlobalEnchantments.Values() {
         upkeep += enchantment.UpkeepMana()
     }
 
-    for _, city := range player.Cities {
-        for _, enchantment := range city.Enchantments.Values() {
-            upkeep += enchantment.Enchantment.UpkeepMana()
+    for _, player := range players {
+        for _, city := range player.Cities {
+            for _, enchantment := range city.GetEnchantmentsCastBy(player.GetBanner()) {
+                upkeep += enchantment.Enchantment.UpkeepMana()
+            }
         }
     }
 
@@ -512,11 +514,11 @@ func (player *Player) TotalEnchantmentUpkeep() int {
     return upkeep
 }
 
-func (player *Player) ManaPerTurn(power int) int {
+func (player *Player) ManaPerTurn(power int, players []*Player) int {
     mana := 0
 
     mana -= player.TotalUnitUpkeepMana()
-    mana -= player.TotalEnchantmentUpkeep()
+    mana -= player.TotalEnchantmentUpkeep(players)
 
     manaFocusingBonus := float64(1)
 

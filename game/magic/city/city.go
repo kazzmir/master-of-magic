@@ -396,6 +396,18 @@ func (city *City) HasEnchantment(check data.CityEnchantment) bool {
     return false
 }
 
+func (city *City) GetEnchantmentsCastBy(banner data.BannerType) []Enchantment {
+    var enchantments []Enchantment
+
+    for _, enchantment := range city.Enchantments.Values() {
+        if enchantment.Owner == banner {
+            enchantments = append(enchantments, enchantment)
+        }
+    }
+
+    return enchantments
+}
+
 func (city *City) HasWallOfFire() bool {
     return city.HasEnchantment(data.CityEnchantmentWallOfFire)
 }
