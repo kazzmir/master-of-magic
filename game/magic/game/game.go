@@ -137,6 +137,11 @@ type GameEventResearchSpell struct {
     Player *playerlib.Player
 }
 
+type GameEventCastGlobalEnchantment struct {
+    Player *playerlib.Player
+    Enchantment data.Enchantment
+}
+
 type GameEventGameMenu struct {
 }
 
@@ -934,6 +939,8 @@ func (game *Game) doMagicView(yield coroutine.YieldFunc) {
     yield()
 
     game.Drawer = oldDrawer
+
+    game.RefreshUI()
 }
 
 func validNameString(s string) bool {
@@ -2525,7 +2532,7 @@ func (game *Game) doNextTurn(yield coroutine.YieldFunc) {
             quit = true
         }
 
-        game.HudUI.AddElements(uilib.MakeConfirmDialog(game.HudUI, game.Cache, &game.ImageCache, message, yes, no))
+        game.HudUI.AddElements(uilib.MakeConfirmDialog(game.HudUI, game.Cache, &game.ImageCache, message, true, yes, no))
 
         for !quit {
             game.Counter += 1
@@ -2620,7 +2627,9 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                     case *GameEventResearchSpell:
                         researchSpell := event.(*GameEventResearchSpell)
                         game.ResearchNewSpell(yield, researchSpell.Player)
-
+                    case *GameEventCastGlobalEnchantment:
+                        castGlobal := event.(*GameEventCastGlobalEnchantment)
+                        game.doCastGlobalEnchantment(yield, castGlobal.Player, castGlobal.Enchantment)
                     case *GameEventSelectLocationForSpell:
                         selectLocation := event.(*GameEventSelectLocationForSpell)
                         tileX, tileY, cancel := game.selectLocationForSpell(yield, selectLocation.Spell, selectLocation.Player, selectLocation.LocationType)
@@ -4172,7 +4181,7 @@ func (game *Game) ShowGrandVizierUI(){
         // FIXME: disable grand vizier
     }
 
-    game.HudUI.AddElements(uilib.MakeConfirmDialogWithLayer(game.HudUI, game.Cache, &game.ImageCache, 1, "Do you wish to allow the Grand Vizier to select what buildings your cities create?", yes, no))
+    game.HudUI.AddElements(uilib.MakeConfirmDialogWithLayer(game.HudUI, game.Cache, &game.ImageCache, 1, "Do you wish to allow the Grand Vizier to select what buildings your cities create?", true, yes, no))
 }
 
 func (game *Game) ShowTaxCollectorUI(cornerX int, cornerY int){
@@ -5555,6 +5564,7 @@ func (game *Game) CheckDisband(player *playerlib.Player) (bool, bool, bool) {
     goldIssue := player.Gold + goldPerTurn < 0 && unitsNeedGold
     foodIssue := player.FoodPerTurn() < 0 && unitsNeedFood
 
+    // FIXME: can the power be passed in so it doesn't have to be computed multiple times?
     manaPerTurn := player.ManaPerTurn(game.ComputePower(player))
 
     manaIssue := player.Mana + manaPerTurn < 0 && unitsNeedMana
@@ -5636,6 +5646,23 @@ func (game *Game) GetExperienceBonus(stack *playerlib.UnitStack) int {
     return base + bonus
 }
 
+// turn off enchantments that can not be afforded
+func (game *Game) DissipateEnchantments(player *playerlib.Player, power int) {
+    isManaIssue := func() bool {
+        manaPerTurn := player.ManaPerTurn(power)
+        return player.Mana + manaPerTurn < 0
+    }
+
+    // keep removing enchantments until there is no more mana issue
+    for player.GlobalEnchantments.Size() > 0 && isManaIssue() {
+        enchantments := player.GlobalEnchantments.Values()
+        enchantment := enchantments[rand.N(len(enchantments))]
+        player.GlobalEnchantments.Remove(enchantment)
+    }
+
+    // FIXME: dissipate unit enchantments and city enchantments
+}
+
 func (game *Game) StartPlayerTurn(player *playerlib.Player) {
     disbandedMessages := game.DisbandUnits(player)
 
@@ -5647,6 +5674,8 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
     }
 
     power := game.ComputePower(player)
+
+    game.DissipateEnchantments(player, power)
 
     player.Gold += player.GoldPerTurn()
     if player.Gold < 0 {

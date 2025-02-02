@@ -255,7 +255,7 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
                     no := func(){
                     }
 
-                    ui.AddElements(uilib.MakeConfirmDialog(ui, game.Cache, &imageCache, fmt.Sprintf("Do you want to destroy your %v and gain %v mana crystals?", selectedItem.Name, gainedMana), yes, no))
+                    ui.AddElements(uilib.MakeConfirmDialog(ui, game.Cache, &imageCache, fmt.Sprintf("Do you want to destroy your %v and gain %v mana crystals?", selectedItem.Name, gainedMana), true, yes, no))
                 }
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){

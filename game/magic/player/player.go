@@ -494,10 +494,23 @@ func (player *Player) FoodPerTurn() int {
     return food
 }
 
+func (player *Player) TotalEnchantmentUpkeep() int {
+    upkeep := 0
+
+    for _, enchantment := range player.GlobalEnchantments.Values() {
+        upkeep += enchantment.UpkeepMana()
+    }
+
+    // FIXME: add city enchantments and unit enchantments
+
+    return upkeep
+}
+
 func (player *Player) ManaPerTurn(power int) int {
     mana := 0
 
     mana -= player.TotalUnitUpkeepMana()
+    mana -= player.TotalEnchantmentUpkeep()
 
     manaFocusingBonus := float64(1)
 
@@ -559,6 +572,16 @@ func (player *Player) WrapX(x int) int {
     return x % maximum
 }
 
+func (player *Player) LiftFogAll(plane data.Plane){
+    fog := player.GetFog(plane)
+
+    for x := 0; x < len(fog); x++ {
+        for y := 0; y < len(fog[0]); y++ {
+            fog[x][y] = data.FogTypeVisible
+        }
+    }
+}
+
 func (player *Player) LiftFogSquare(x int, y int, squares int, plane data.Plane){
     fog := player.GetFog(plane)
 
@@ -599,7 +622,10 @@ func (player *Player) LiftFog(x int, y int, radius int, plane data.Plane){
 }
 
 func (player *Player) UpdateFogVisibility() {
-    // FIXME: nature awareness spell makes every tile visible
+    // fog should have already been lifted when this enchantment was cast
+    if player.GlobalEnchantments.Contains(data.EnchantmentNatureAwareness) {
+        return
+    }
 
     fogs := []data.FogMap{player.ArcanusFog, player.MyrrorFog}
 
