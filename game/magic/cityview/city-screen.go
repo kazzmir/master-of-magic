@@ -679,6 +679,12 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
                     ui.AddElement(uilib.MakeErrorElement(ui, cityScreen.LbxCache, &cityScreen.ImageCache, "You cannot cancel another wizard's enchantment.", func(){}))
                 }
             },
+            RightClick: func(element *uilib.UIElement){
+                helpEntries := help.GetEntriesByName(enchantment.Enchantment.Name())
+                if helpEntries != nil {
+                    ui.AddElement(uilib.MakeHelpElementWithLayer(ui, cityScreen.LbxCache, &cityScreen.ImageCache, 2, helpEntries[0], helpEntries[1:]...))
+                }
+            },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 useFont.Print(screen, float64(rect.Min.X), float64(rect.Min.Y), float64(data.ScreenScale), ebiten.ColorScale{}, enchantment.Enchantment.Name())
             },
