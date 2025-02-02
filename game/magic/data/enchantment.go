@@ -284,7 +284,6 @@ const (
     CityEnchantmentNaturesEye
     CityEnchantmentPestilence
     CityEnchantmentProsperity
-    // CityEnchantmentSpellWard
     CityEnchantmentLifeWard
     CityEnchantmentSorceryWard
     CityEnchantmentNatureWard
@@ -382,7 +381,7 @@ func (enchantment CityEnchantment) LbxIndex(plane Plane) int {
                 return 8
             }
             return 0
-        // case CityEnchantmentFlyingFortress: FIXME: Cloudy city background
+        // case CityEnchantmentFlyingFortress: FIXME: Clouds city background
         // case CityEnchantmentGaiasBlessing: FIXME: Green city background
         case CityEnchantmentHeavenlyLight:
             // FIXME: is this right?
@@ -409,33 +408,34 @@ func (enchantment CityEnchantment) LbxIndex(plane Plane) int {
 
 
 func (enchantment CityEnchantment) SoundIndex() int {
-    // FIXME: Add sound indexes
+    // FIXME: Add other sound indexes
     switch enchantment {
-        // case CityEnchantmentAltarOfBattle: return 5
-        // case CityEnchantmentAstralGate: return 5
-        // case CityEnchantmentChaosRift: return 10
-        // case CityEnchantmentCloudOfShadow: return 3
-        // case CityEnchantmentConsecration: return 8
-        // case CityEnchantmentCursedLands: return 2
+        // case CityEnchantmentAltarOfBattle: return 0
+        // case CityEnchantmentAstralGate: return 0
+        // case CityEnchantmentChaosRift: return 0
+        // case CityEnchantmentCloudOfShadow: return 0
+        // case CityEnchantmentConsecration: return 0
+        // case CityEnchantmentCursedLands: return 0
         // case CityEnchantmentDarkRituals: return 0
-        // case CityEnchantmentEarthGate: return 5
-        // case CityEnchantmentEvilPresence: return 4
-        // case CityEnchantmentFamine: return 5
-        // case CityEnchantmentFlyingFortress: return 25
-        // case CityEnchantmentGaiasBlessing: return 3
-        // case CityEnchantmentHeavenlyLight: return 2
-        // case CityEnchantmentInspirations: return 2
-        // case CityEnchantmentNaturesEye: return 1
-        // case CityEnchantmentPestilence: return 5
-        // case CityEnchantmentProsperity: return 2
-        // case CityEnchantmentLifeWard: return 5
-        // case CityEnchantmentSorceryWard: return 5
-        // case CityEnchantmentNatureWard: return 5
-        // case CityEnchantmentDeathWard: return 5
-        // case CityEnchantmentChaosWard: return 5
-        // case CityEnchantmentStreamOfLife: return 8
+        // case CityEnchantmentEarthGate: return 0
+        // case CityEnchantmentEvilPresence: return 0
+        // case CityEnchantmentFamine: return 0
+        // case CityEnchantmentFlyingFortress: return 0
+        // case CityEnchantmentGaiasBlessing: return 0
+        // case CityEnchantmentHeavenlyLight: return 0
+        // case CityEnchantmentInspirations: return 0
+        // case CityEnchantmentNaturesEye: return 0
+        // case CityEnchantmentPestilence: return 0
+        // case CityEnchantmentProsperity: return 0
+        // case CityEnchantmentLifeWard: return 0
+        // case CityEnchantmentSorceryWard: return 0
+        // case CityEnchantmentNatureWard: return 0
+        // case CityEnchantmentDeathWard: return 0
+        // case CityEnchantmentChaosWard: return 0
+        // case CityEnchantmentStreamOfLife: return 0
         case CityEnchantmentWallOfDarkness: return 32
         case CityEnchantmentWallOfFire: return 30
     }
+
     return 0
 }
