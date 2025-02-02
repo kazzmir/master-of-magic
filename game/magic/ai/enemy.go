@@ -42,7 +42,7 @@ func (ai *EnemyAI) ProducedUnit(city *citylib.City, player *playerlib.Player) {
     city.ProducingUnit = units.UnitNone
 }
 
-func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, pathfinder playerlib.AIServices, manaPerTurn int) []playerlib.AIDecision {
+func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, aiServices playerlib.AIServices, manaPerTurn int) []playerlib.AIDecision {
     var decisions []playerlib.AIDecision
 
     // FIXME: create settlers, build cities
@@ -179,7 +179,7 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, p
                     // try upto 3 times to find a path
                     for range 3 {
                         newX, newY := stack.X() + rand.N(5) - 2, stack.Y() + rand.N(5) - 2
-                        path := pathfinder.FindPath(stack.X(), stack.Y(), newX, newY, stack, self.GetFog(stack.Plane()))
+                        path := aiServices.FindPath(stack.X(), stack.Y(), newX, newY, stack, self.GetFog(stack.Plane()))
                         if len(path) != 0 {
                             stack.CurrentPath = path
                             break
