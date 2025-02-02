@@ -820,20 +820,6 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
         },
     })
 
-    enchantmentsRect := image.Rect(168 * data.ScreenScale, 67 * data.ScreenScale, 310 * data.ScreenScale, 172 * data.ScreenScale)
-    elements = append(elements, &uilib.UIElement{
-        Rect: enchantmentsRect,
-        RightClick: func(element *uilib.UIElement){
-            helpEntries := help.GetEntriesByName("Enchantments")
-            if helpEntries != nil {
-                ui.AddElement(uilib.MakeHelpElement(ui, magic.Cache, &magic.ImageCache, helpEntries[0], helpEntries[1:]...))
-            }
-        },
-        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            // util.DrawRect(screen, enchantmentsRect, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff})
-        },
-    })
-
     // dynamically compute a font and cache the result
     bannerFonts := make(map[data.BannerType]*font.Font)
     bannerFont := func (banner data.BannerType) *font.Font {
@@ -919,6 +905,12 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
                         ui.AddElements(uilib.MakeConfirmDialog(ui, magic.Cache, &magic.ImageCache, fmt.Sprintf("Do you wish to cancel your %v spell?", name), false, yes, no))
                     }
                 },
+                RightClick: func(element *uilib.UIElement) {
+                    helpEntries := help.GetEntriesByName(name)
+                    if helpEntries != nil {
+                        ui.AddElement(uilib.MakeHelpElementWithLayer(ui, magic.Cache, &magic.ImageCache, 2, helpEntries[0], helpEntries[1:]...))
+                    }
+                },
             })
         }
 
@@ -926,6 +918,23 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
     }
 
     setupEnchantments()
+
+    if len(globalEnchantments) == 0 {
+        enchantmentsRect := image.Rect(168 * data.ScreenScale, 67 * data.ScreenScale, 310 * data.ScreenScale, 172 * data.ScreenScale)
+        element := &uilib.UIElement{
+            Rect: enchantmentsRect,
+            RightClick: func(element *uilib.UIElement){
+                helpEntries := help.GetEntriesByName("Enchantments")
+                if helpEntries != nil {
+                    ui.AddElement(uilib.MakeHelpElement(ui, magic.Cache, &magic.ImageCache, helpEntries[0], helpEntries[1:]...))
+                }
+            },
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                // util.DrawRect(screen, enchantmentsRect, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff})
+            },
+        }
+        ui.AddElement(element)
+    }
 
     return ui
 }
