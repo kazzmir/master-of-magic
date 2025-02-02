@@ -9,6 +9,7 @@ import (
 
     "github.com/kazzmir/master-of-magic/lib/fraction"
     "github.com/kazzmir/master-of-magic/lib/set"
+    "github.com/kazzmir/master-of-magic/lib/functional"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
@@ -1459,20 +1460,6 @@ func (mapObject *Map) DrawMinimap2(screen *ebiten.Image, cities []MiniMapCity, c
 }
 */
 
-// higher order function that takes a function 'f' and returns a new function that caches the results of 'f'
-func memoize[Key comparable, Value any](f func(Key) Value) func(Key) Value {
-    cache := make(map[Key]Value)
-    return func(key Key) Value {
-        if value, ok := cache[key]; ok {
-            return value
-        }
-
-        result := f(key)
-        cache[key] = result
-        return result
-    }
-}
-
 func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []MiniMapCity, centerX int, centerY int, zoom float64, fog data.FogMap, counter uint64, crosshairs bool){
     if len(mapObject.miniMapPixels) != screen.Bounds().Dx() * screen.Bounds().Dy() * 4 {
         // log.Printf("set minimap pixels to %v", screen.Bounds().Dx() * screen.Bounds().Dy() * 4)
@@ -1537,7 +1524,7 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []MiniMapCity, ce
         explored data.FogType
     }
 
-    getMapColor := memoize(func (key ColorKey) color.RGBA {
+    getMapColor := functional.Memoize(func (key ColorKey) color.RGBA {
         var use color.RGBA
 
         landColor := color.RGBA{R: 0, G: 0xad, B: 0x00, A: 255}
@@ -1573,7 +1560,7 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []MiniMapCity, ce
         explored data.FogType
     }
 
-    getCityColor := memoize(func (key CityColorKey) color.RGBA {
+    getCityColor := functional.Memoize(func (key CityColorKey) color.RGBA {
         use := key.cityColor
         if key.explored == data.FogTypeExplored {
             use = util.ToRGBA(util.Lighten(use, -50))

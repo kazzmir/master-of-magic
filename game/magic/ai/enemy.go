@@ -6,8 +6,10 @@ package ai
 import (
     "log"
     "slices"
+    "cmp"
     "math/rand/v2"
 
+    "github.com/kazzmir/master-of-magic/lib/functional"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
@@ -171,7 +173,46 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, a
                     // otherwise, find a path to the chosen location
 
                     if len(stack.CurrentPath) == 0 {
-                        // find a location
+                        candidateLocations := aiServices.FindSettlableLocations(stack.X(), stack.Y(), stack.Plane())
+                        if len(candidateLocations) == 0 {
+
+                            // check if the settler is already in a city
+                            if self.FindCity(stack.X(), stack.Y(), stack.Plane()) == nil {
+                                // just go back to a town?
+                                var candidateCities []*citylib.City
+                                for _, city := range self.Cities {
+                                    if city.Plane == stack.Plane() && aiServices.IsReachable(stack, city.X, city.Y, stack.Plane()) {
+                                        candidateCities = append(candidateCities, city)
+                                    }
+                                }
+
+                                if len(candidateCities) > 0 {
+                                    // sort cities by distance
+                                    infinity := 999999
+
+                                    getDistance := functional.Memoize(func (city *citylib.City) int {
+                                        path := aiServices.FindPath(stack.X(), stack.Y(), city.X, city.Y, stack, self.GetFog(stack.Plane()))
+                                        if len(path) == 0 {
+                                            return infinity
+                                        }
+                                        return len(path)
+                                    })
+
+                                    slices.SortFunc(candidateCities, func(a, b *citylib.City) int {
+                                        return cmp.Compare(getDistance(a), getDistance(b))
+                                    })
+                                } else {
+                                    // do nothing
+                                }
+                            }
+                        } else {
+                            // choose a random location
+                            location := candidateLocations[rand.N(len(candidateLocations))]
+                            path := aiServices.FindPath(stack.X(), stack.Y(), location.X, location.Y, stack, self.GetFog(stack.Plane()))
+                            if len(path) > 0 {
+                                stack.CurrentPath = path
+                            }
+                        }
                     }
                 }
 

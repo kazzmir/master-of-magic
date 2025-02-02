@@ -1918,6 +1918,16 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
     return nil
 }
 
+func (game *Game) FindSettlableLocations(x int, y int, plane data.Plane) []image.Point {
+    // TODO
+    return nil
+}
+
+func (game *Game) IsReachable(stack *playerlib.UnitStack, x int, y int, plane data.Plane) bool {
+    // TODO
+    return false
+}
+
 func (game *Game) doSummon(yield coroutine.YieldFunc, summonObject *summon.Summon) {
     drawer := game.Drawer
     defer func(){
