@@ -267,34 +267,146 @@ func (enchantment UnitEnchantment) LbxIndex() int {
 type CityEnchantment int
 const (
     CityEnchantmentNone CityEnchantment = iota
-    CityEnchantmentWallOfFire
-    CityEnchantmentWallOfDarkness
+    CityEnchantmentAltarOfBattle
+    CityEnchantmentAstralGate
+    CityEnchantmentChaosRift
+    CityEnchantmentCloudOfShadow
+    CityEnchantmentConsecration
+    CityEnchantmentCursedLands
+    CityEnchantmentDarkRituals
+    CityEnchantmentEarthGate
+    CityEnchantmentEvilPresence
     CityEnchantmentFamine
+    CityEnchantmentFlyingFortress
+    CityEnchantmentGaiasBlessing
+    CityEnchantmentHeavenlyLight
+    CityEnchantmentInspirations
+    CityEnchantmentNaturesEye
+    CityEnchantmentPestilence
+    CityEnchantmentProsperity
+    // CityEnchantmentSpellWard
+    CityEnchantmentLifeWard
+    CityEnchantmentSorceryWard
+    CityEnchantmentNatureWard
+    CityEnchantmentDeathWard
+    CityEnchantmentChaosWard
+    CityEnchantmentStreamOfLife
+    CityEnchantmentWallOfDarkness
+    CityEnchantmentWallOfFire
 )
 
 func (enchantment CityEnchantment) Name() string {
     switch enchantment {
-        case CityEnchantmentWallOfFire: return "Wall of Fire"
-        case CityEnchantmentWallOfDarkness: return "Wall of Darkness"
+        case CityEnchantmentAltarOfBattle: return "Altar of Battle"
+        case CityEnchantmentAstralGate: return "Astral Gate"
+        case CityEnchantmentChaosRift: return "Chaos Rift"
+        case CityEnchantmentCloudOfShadow: return "Cloud of Shadow"
+        case CityEnchantmentConsecration: return "Consecration"
+        case CityEnchantmentCursedLands: return "Cursed Lands"
+        case CityEnchantmentDarkRituals: return "Dark Rituals"
+        case CityEnchantmentEarthGate: return "Earth Gate"
+        case CityEnchantmentEvilPresence: return "Evil Presence"
         case CityEnchantmentFamine: return "Famine"
+        case CityEnchantmentFlyingFortress: return "Flying Fortress"
+        case CityEnchantmentGaiasBlessing: return "Gaia's Blessing"
+        case CityEnchantmentHeavenlyLight: return "Heavenly Light"
+        case CityEnchantmentInspirations: return "Inspirations"
+        case CityEnchantmentNaturesEye: return "Nature's Eye"
+        case CityEnchantmentPestilence: return "Pestilence"
+        case CityEnchantmentProsperity: return "Prosperity"
+        case CityEnchantmentLifeWard: return "Life Ward"
+        case CityEnchantmentSorceryWard: return "Sorcery Ward"
+        case CityEnchantmentNatureWard: return "Nature Ward"
+        case CityEnchantmentDeathWard: return "Death Ward"
+        case CityEnchantmentChaosWard: return "Chaos Ward"
+        case CityEnchantmentStreamOfLife: return "Stream of Life"
+        case CityEnchantmentWallOfDarkness: return "Wall of Darkness"
+        case CityEnchantmentWallOfFire: return "Wall of Fire"
     }
 
     return ""
 }
 
-/*
-Altar of Battle	￼Life
-Astral Gate	￼Life
-Consecration	￼Life
-Heavenly Light	￼Life
-Inspirations	￼Life
-Prosperity	￼Life
-Stream of Life	￼Life
-Earth Gate	￼Nature
-Gaia's Blessing	￼Nature
-Nature's Eye	￼Nature
-Flying Fortress	￼Sorcery
-Spell Ward	￼Sorcery
-Cloud of Shadow	￼Death
-Dark Rituals	￼Death
- */
+func (enchantment CityEnchantment) UpkeepMana() int {
+    switch enchantment {
+        case CityEnchantmentAltarOfBattle: return 5
+        case CityEnchantmentAstralGate: return 5
+        case CityEnchantmentChaosRift: return 10
+        case CityEnchantmentCloudOfShadow: return 3
+        case CityEnchantmentConsecration: return 8
+        case CityEnchantmentCursedLands: return 2
+        case CityEnchantmentDarkRituals: return 0
+        case CityEnchantmentEarthGate: return 5
+        case CityEnchantmentEvilPresence: return 4
+        case CityEnchantmentFamine: return 5
+        case CityEnchantmentFlyingFortress: return 25
+        case CityEnchantmentGaiasBlessing: return 3
+        case CityEnchantmentHeavenlyLight: return 2
+        case CityEnchantmentInspirations: return 2
+        case CityEnchantmentNaturesEye: return 1
+        case CityEnchantmentPestilence: return 5
+        case CityEnchantmentProsperity: return 2
+        case CityEnchantmentLifeWard: return 5
+        case CityEnchantmentSorceryWard: return 5
+        case CityEnchantmentNatureWard: return 5
+        case CityEnchantmentDeathWard: return 5
+        case CityEnchantmentChaosWard: return 5
+        case CityEnchantmentStreamOfLife: return 8
+        case CityEnchantmentWallOfDarkness: return 5
+        case CityEnchantmentWallOfFire: return 2
+    }
+    return 0
+}
+
+func (enchantment CityEnchantment) LbxIndex(plane Plane) int {
+    switch enchantment {
+        case CityEnchantmentAltarOfBattle: return 12
+        case CityEnchantmentAstralGate: return 85
+        case CityEnchantmentChaosRift:
+            if plane == PlaneMyrror {
+                return 112
+            }
+            return 92
+        // case CityEnchantmentCloudOfShadow: return // FIXME: Some sort of dark icon
+        case CityEnchantmentConsecration: return 102
+        case CityEnchantmentCursedLands:
+            if plane == PlaneMyrror {
+                return 8
+            }
+            return 0
+        case CityEnchantmentDarkRituals: return 81
+        case CityEnchantmentEarthGate: return 83
+        case CityEnchantmentEvilPresence: return 82
+        case CityEnchantmentFamine:
+            if plane == PlaneMyrror {
+                return 8
+            }
+            return 0
+        // case CityEnchantmentFlyingFortress: FIXME: Cloudy city background
+        // case CityEnchantmentGaiasBlessing: FIXME: Green city background
+        case CityEnchantmentHeavenlyLight:
+            // FIXME: is this right?
+            if plane == PlaneMyrror {
+                return 112
+            }
+            return 93
+        case CityEnchantmentInspirations: return 100
+        case CityEnchantmentNaturesEye: return 99
+        // case CityEnchantmentPestilence: FIXME: How is this displayed?
+        case CityEnchantmentProsperity: return 101
+        case CityEnchantmentLifeWard: return 96
+        case CityEnchantmentSorceryWard: return 97
+        case CityEnchantmentNatureWard: return 98
+        case CityEnchantmentDeathWard: return 94
+        case CityEnchantmentChaosWard: return 95
+        case CityEnchantmentStreamOfLife: return 84
+        case CityEnchantmentWallOfDarkness: return 79
+        case CityEnchantmentWallOfFire: return 77
+    }
+
+    return 0
+}
+
+func (enchantment CityEnchantment) LbxFile() string {
+    return "cityscap.lbx"
+}

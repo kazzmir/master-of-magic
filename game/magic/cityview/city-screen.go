@@ -1112,20 +1112,13 @@ func drawCityScape(screen *ebiten.Image, buildings []BuildingSlot, buildingLook 
         return cmp.Compare(a.Enchantment.Name(), b.Enchantment.Name())
     }) {
         switch enchantment.Enchantment {
-            case data.CityEnchantmentWallOfFire:
+            case data.CityEnchantmentWallOfFire, data.CityEnchantmentWallOfDarkness:
                 var options ebiten.DrawImageOptions
                 options.ColorScale.ScaleAlpha(alphaScale)
                 options.GeoM = baseGeoM
                 options.GeoM.Translate(0, float64(85 * data.ScreenScale))
-                images, _ := imageCache.GetImages("cityscap.lbx", 77)
-                index := animationCounter % uint64(len(images))
-                screen.DrawImage(images[index], &options)
-            case data.CityEnchantmentWallOfDarkness:
-                var options ebiten.DrawImageOptions
-                options.ColorScale.ScaleAlpha(alphaScale)
-                options.GeoM = baseGeoM
-                options.GeoM.Translate(0, float64(85 * data.ScreenScale))
-                images, _ := imageCache.GetImages("cityscap.lbx", 79)
+                // FIXME: Consider plane
+                images, _ := imageCache.GetImages(enchantment.Enchantment.LbxFile(), enchantment.Enchantment.LbxIndex(data.PlaneArcanus))
                 index := animationCounter % uint64(len(images))
                 screen.DrawImage(images[index], &options)
         }
