@@ -752,10 +752,13 @@ func (game *Game) doCastGlobalEnchantment(yield coroutine.YieldFunc, player *pla
 
     fader := util.MakeFadeIn(uint64(fadeSpeed), &game.Counter)
 
+    offset := -35 * data.ScreenScale
+
     game.Drawer = func(screen *ebiten.Image, game *Game){
         oldDrawer(screen, game)
         var options ebiten.DrawImageOptions
         options.GeoM.Translate(float64(data.ScreenWidth / 2), float64(data.ScreenHeight / 2))
+        options.GeoM.Translate(float64(offset), 0)
         options.GeoM.Translate(float64(-frame.Bounds().Dx() / 2), float64(-frame.Bounds().Dy() / 2))
         screen.DrawImage(frame, &options)
 
@@ -767,13 +770,14 @@ func (game *Game) doCastGlobalEnchantment(yield coroutine.YieldFunc, player *pla
             options.GeoM.Translate(float64(13 * data.ScreenScale), float64(13 * data.ScreenScale))
             screen.DrawImage(mood, &options)
 
-            infoFont.PrintCenter(screen, float64(data.ScreenWidth / 2), float64(data.ScreenHeight / 2 + frame.Bounds().Dy() / 2), float64(data.ScreenScale), options.ColorScale, "You have finished casting")
+            // FIXME: if another wizard is casting the spell should their name be shown instead of 'You' ?
+            infoFont.PrintCenter(screen, float64(data.ScreenWidth / 2 + offset), float64(data.ScreenHeight / 2 + frame.Bounds().Dy() / 2), float64(data.ScreenScale), options.ColorScale, "You have finished casting")
         } else {
             // then draw the spell image
             options.GeoM.Translate(float64(9 * data.ScreenScale), float64(8 * data.ScreenScale))
             screen.DrawImage(spellImage, &options)
 
-            infoFont.PrintCenter(screen, float64(data.ScreenWidth / 2), float64(data.ScreenHeight / 2 + frame.Bounds().Dy() / 2), float64(data.ScreenScale), options.ColorScale, enchantment.String())
+            infoFont.PrintCenter(screen, float64(data.ScreenWidth / 2 + offset), float64(data.ScreenHeight / 2 + frame.Bounds().Dy() / 2), float64(data.ScreenScale), options.ColorScale, enchantment.String())
         }
 
     }
