@@ -120,6 +120,7 @@ type GameEventVault struct {
 type GameEventNewOutpost struct {
     City *citylib.City
     Stack *playerlib.UnitStack
+    Player *playerlib.Player
 }
 
 type GameEventSelectLocationForSpell struct {
@@ -2652,7 +2653,9 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         game.doCityListView(yield)
                     case *GameEventNewOutpost:
                         outpost := event.(*GameEventNewOutpost)
-                        game.showOutpost(yield, outpost.City, outpost.Stack, true)
+                        if outpost.Player.IsHuman() {
+                            game.showOutpost(yield, outpost.City, outpost.Stack, true)
+                        }
                     case *GameEventVault:
                         vaultEvent := event.(*GameEventVault)
                         game.doVault(yield, vaultEvent.CreatedArtifact)
@@ -4520,7 +4523,7 @@ func (game *Game) CreateOutpost(settlers units.StackUnit, player *playerlib.Play
     stack := player.FindStack(newCity.X, newCity.Y, newCity.Plane)
 
     select {
-        case game.Events<- &GameEventNewOutpost{City: newCity, Stack: stack}:
+        case game.Events<- &GameEventNewOutpost{City: newCity, Stack: stack, Player: player}:
         default:
     }
 
