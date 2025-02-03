@@ -132,6 +132,57 @@ func TestResolveShoreRiverTiles(test *testing.T) {
     }
 }
 
+func TestContinents(test *testing.T) {
+    use := MakeMap(30, 30)
+
+    if len(use.FindContinents()) != 0 {
+        test.Errorf("should be 0 continents")
+    }
+
+
+    for x := 5; x <= 6; x++ {
+        for y := 5; y <= 6; y++ {
+            use.Terrain[x][y] = TileLand.Index(data.PlaneArcanus)
+        }
+    }
+
+    continents := use.FindContinents()
+    if len(continents) != 1 {
+        test.Errorf("should be 1 continent")
+    }
+
+    continent := continents[0]
+
+    if len(continent) != 4 {
+        test.Errorf("should be 4 tiles in continent but was %v: %v", len(continent), continent)
+    }
+
+    if len(use.FindContinent(0, 0)) != 0 {
+        test.Errorf("should be 0 tiles in continent")
+    }
+
+    if len(use.FindContinent(5, 5)) != 4 {
+        test.Errorf("should be 4 tiles in continent")
+    }
+
+    for x := 10; x <= 12; x++ {
+        for y := 10; y <= 12; y++ {
+            use.Terrain[x][y] = TileLand.Index(data.PlaneArcanus)
+        }
+    }
+
+    continents = use.FindContinents()
+    if len(continents) != 2 {
+        test.Errorf("should be 2 continents")
+    }
+
+    for _, continent := range continents {
+        if len(continent) != 4 && len(continent) != 9 {
+            test.Errorf("should be either 4 or 9 tiles in continent but was %v: %v", len(continent), continent)
+        }
+    }
+
+}
 
 func BenchmarkGeneration(bench *testing.B){
     terrainData := createTerrainData()

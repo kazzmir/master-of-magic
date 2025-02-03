@@ -66,17 +66,14 @@ func (map_ *Map) Copy() *Map {
     }
 }
 
-// given a point on a continent, return all the points for that continent
-func (map_ *Map) FindContinent(x int, y int) Continent {
-
-    seen := make(map[image.Point]bool)
-
+func (map_ *Map) findContinent(seen map[image.Point]bool, x int, y int) Continent {
     rows := map_.Rows()
     columns := map_.Columns()
 
-    // count all tiles connected to this one if those tiles are land
-    searchTiles := func(startX int, startY int, continent *Continent){
+    var continent Continent
 
+    // count all tiles connected to this one if those tiles are land
+    searchTiles := func(startX int, startY int){
         search := []image.Point{image.Pt(startX, startY)}
 
         for len(search) > 0 {
@@ -93,7 +90,7 @@ func (map_ *Map) FindContinent(x int, y int) Continent {
             seen[image.Pt(x, y)] = true
 
             if GetTile(map_.Terrain[x][y]).IsLand() {
-                *continent = append(*continent, image.Pt(x, y))
+                continent = append(continent, image.Pt(x, y))
 
                 for dx := -1; dx <= 1; dx++ {
                     for dy := -1; dy <= 1; dy++ {
@@ -113,68 +110,24 @@ func (map_ *Map) FindContinent(x int, y int) Continent {
         }
     }
 
-    var continent Continent
-    if GetTile(map_.Terrain[x][y]).IsLand() {
-        continent = append(continent, image.Pt(x, y))
-        searchTiles(x, y, &continent)
-    }
+    searchTiles(x, y)
     return continent
 }
 
+// given a point on a continent, return all the points for that continent
+func (map_ *Map) FindContinent(x int, y int) Continent {
+    return map_.findContinent(make(map[image.Point]bool), x, y)
+}
+
 func (map_ *Map) FindContinents() []Continent {
-
-    seen := makeCells(map_.Rows(), map_.Columns())
-
-    rows := map_.Rows()
-    columns := map_.Columns()
-
-    // count all tiles connected to this one of the same kind
-    searchTiles := func(startX int, startY int, continent *Continent){
-
-        search := []image.Point{image.Pt(startX, startY)}
-
-        for len(search) > 0 {
-
-            point := search[0]
-            search = search[1:]
-            x := point.X
-            y := point.Y
-
-            if seen[x][y] == true {
-                continue
-            }
-
-            seen[x][y] = true
-
-            if GetTile(map_.Terrain[x][y]).IsLand() {
-                *continent = append(*continent, image.Pt(x, y))
-
-                for dx := -1; dx <= 1; dx++ {
-                    for dy := -1; dy <= 1; dy++ {
-                        if dx == 0 && dy == 0 {
-                            continue
-                        }
-
-                        nx := map_.WrapX(x + dx)
-                        ny := y + dy
-
-                        if nx >= 0 && nx < columns && ny >= 0 && ny < rows {
-                            search = append(search, image.Pt(nx, ny))
-                        }
-                    }
-                }
-            }
-        }
-    }
+    seen := make(map[image.Point]bool)
 
     var continents []Continent
 
     for x := 0; x < map_.Columns(); x++ {
         for y := 0; y < map_.Rows(); y++ {
-            if seen[x][y] == false && GetTile(map_.Terrain[x][y]).IsLand() {
-                var continent Continent
-                continent = append(continent, image.Pt(x, y))
-                searchTiles(x, y, &continent)
+            continent := map_.findContinent(seen, x, y)
+            if len(continent) > 0 {
                 continents = append(continents, continent)
             }
         }
