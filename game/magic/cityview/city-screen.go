@@ -550,6 +550,8 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
 
             yes := func(){
                 cityScreen.SellBuilding(toSell)
+                // update the ui
+                cityScreen.UI = cityScreen.MakeUI(buildinglib.BuildingNone)
             }
 
             no := func(){
