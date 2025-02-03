@@ -3201,7 +3201,11 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
                         player.AddCity(otherCity)
                         otherCity.Banner = player.Wizard.Banner
                         otherCity.UpdateTaxRate(player.TaxRate, stack.Units())
+
+                        // FIXME: remove fortress and summoning circle
                     }
+
+                    // FIXME: if the otherCity contained a fortress then banish the otherPlayer
 
                     stack.ExhaustMoves()
                     game.RefreshUI()
