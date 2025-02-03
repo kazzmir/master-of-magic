@@ -157,6 +157,23 @@ func TestContinents(test *testing.T) {
         test.Errorf("should be 4 tiles in continent but was %v: %v", len(continent), continent)
     }
 
+    for x := 10; x <= 12; x++ {
+        for y := 10; y <= 12; y++ {
+            use.Terrain[x][y] = TileLand.Index(data.PlaneArcanus)
+        }
+    }
+
+    continents = use.FindContinents()
+    if len(continents) != 2 {
+        test.Errorf("should be 2 continents")
+    }
+
+    for _, continent := range continents {
+        if len(continent) != 4 && len(continent) != 9 {
+            test.Errorf("should be either 4 or 9 tiles in continent but was %v: %v", len(continent), continent)
+        }
+    }
+
 }
 
 func BenchmarkGeneration(bench *testing.B){
