@@ -172,51 +172,50 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, a
                     // if we are at a settlable location, build the outpost
                     // otherwise, find a path to the chosen location
 
-                    if len(stack.CurrentPath) == 0 {
-                        candidateLocations := aiServices.FindSettlableLocations(stack.X(), stack.Y(), stack.Plane())
-                        if len(candidateLocations) == 0 {
+                    candidateLocations := aiServices.FindSettlableLocations(stack.X(), stack.Y(), stack.Plane())
+                    if len(candidateLocations) == 0 {
 
-                            // check if the settler is already in a city
-                            if self.FindCity(stack.X(), stack.Y(), stack.Plane()) == nil {
-                                // just go back to a town?
-                                var candidateCities []*citylib.City
-                                for _, city := range self.Cities {
-                                    if city.Plane == stack.Plane() && len(aiServices.FindPath(stack.X(), stack.Y(), city.X, city.Y, stack, self.GetFog(stack.Plane()))) > 0 {
-                                        candidateCities = append(candidateCities, city)
-                                    }
-                                }
-
-                                if len(candidateCities) > 0 {
-                                    // sort cities by distance
-                                    infinity := 999999
-
-                                    getDistance := functional.Memoize(func (city *citylib.City) int {
-                                        path := aiServices.FindPath(stack.X(), stack.Y(), city.X, city.Y, stack, self.GetFog(stack.Plane()))
-                                        if len(path) == 0 {
-                                            return infinity
-                                        }
-                                        return len(path)
-                                    })
-
-                                    slices.SortFunc(candidateCities, func(a, b *citylib.City) int {
-                                        return cmp.Compare(getDistance(a), getDistance(b))
-                                    })
-                                } else {
-                                    // do nothing
+                        // check if the settler is already in a city
+                        if self.FindCity(stack.X(), stack.Y(), stack.Plane()) == nil {
+                            // just go back to a town?
+                            var candidateCities []*citylib.City
+                            for _, city := range self.Cities {
+                                if city.Plane == stack.Plane() && len(aiServices.FindPath(stack.X(), stack.Y(), city.X, city.Y, stack, self.GetFog(stack.Plane()))) > 0 {
+                                    candidateCities = append(candidateCities, city)
                                 }
                             }
-                        } else {
-                            // choose a random location
-                            location := candidateLocations[rand.N(len(candidateLocations))]
-                            path := aiServices.FindPath(stack.X(), stack.Y(), location.X, location.Y, stack, self.GetFog(stack.Plane()))
-                            if len(path) > 0 {
+
+                            if len(candidateCities) > 0 {
+                                // sort cities by distance
+                                infinity := 999999
+
+                                getDistance := functional.Memoize(func (city *citylib.City) int {
+                                    path := aiServices.FindPath(stack.X(), stack.Y(), city.X, city.Y, stack, self.GetFog(stack.Plane()))
+                                    if len(path) == 0 {
+                                        return infinity
+                                    }
+                                    return len(path)
+                                })
+
+                                slices.SortFunc(candidateCities, func(a, b *citylib.City) int {
+                                    return cmp.Compare(getDistance(a), getDistance(b))
+                                })
+
+                                path := aiServices.FindPath(stack.X(), stack.Y(), candidateCities[0].X, candidateCities[0].Y, stack, self.GetFog(stack.Plane()))
                                 stack.CurrentPath = path
+                            } else {
+                                // do nothing
                             }
                         }
+                    } else {
+                        // choose a random location
+                        location := candidateLocations[rand.N(len(candidateLocations))]
+                        path := aiServices.FindPath(stack.X(), stack.Y(), location.X, location.Y, stack, self.GetFog(stack.Plane()))
+                        if len(path) > 0 {
+                            stack.CurrentPath = path
+                        }
                     }
-                }
-
-                if rand.N(4) == 0 {
+                } else if rand.N(4) == 0 {
                     // try upto 3 times to find a path
                     for range 3 {
                         newX, newY := stack.X() + rand.N(5) - 2, stack.Y() + rand.N(5) - 2
