@@ -550,6 +550,8 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
 
             yes := func(){
                 cityScreen.SellBuilding(toSell)
+                // update the ui
+                cityScreen.UI = cityScreen.MakeUI(buildinglib.BuildingNone)
             }
 
             no := func(){
@@ -710,7 +712,8 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
             workerElements = nil
             citizenX := 6 * data.ScreenScale
 
-            subsistenceFarmers := cityScreen.City.ComputeSubsistenceFarmers()
+            // the city might not have enough the required subsistence farmers, so only show what is available
+            subsistenceFarmers := min(cityScreen.City.ComputeSubsistenceFarmers(), cityScreen.City.Farmers)
 
             for i := 0; i < subsistenceFarmers; i++ {
                 posX := citizenX
