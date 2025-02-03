@@ -639,11 +639,18 @@ func (game *Game) ContainsCity(x int, y int, plane data.Plane) bool {
 func (game *Game) NearCity(point image.Point, squares int, plane data.Plane) bool {
     for _, city := range game.AllCities() {
         if city.Plane == plane {
-            diff := image.Pt(city.X, city.Y).Sub(point)
+            xDiff := game.CurrentMap().XDistance(city.X, point.X)
+            yDiff := city.Y - point.Y
 
-            total := int(math.Abs(float64(diff.X)) + math.Abs(float64(diff.Y)))
+            if xDiff < 0 {
+                xDiff = -xDiff
+            }
 
-            if total <= squares {
+            if yDiff < 0 {
+                yDiff = -yDiff
+            }
+
+            if xDiff <= squares && yDiff <= squares {
                 return true
             }
         }
@@ -1921,7 +1928,7 @@ func (game *Game) IsSettlableLocation(x int, y int, plane data.Plane) bool {
     return false
 }
 
-func (game *Game) FindSettlableLocations(x int, y int, plane data.Plane) []image.Point {
+func (game *Game) FindSettlableLocations(x int, y int, plane data.Plane, fog data.FogMap) []image.Point {
     tiles := game.GetMap(plane).GetContinentTiles(x, y)
 
     // compute all pointes that we can't build a city on because they are too close to another city
@@ -1944,6 +1951,10 @@ func (game *Game) FindSettlableLocations(x int, y int, plane data.Plane) []image
     for _, tile := range tiles {
         _, ok := unavailable[image.Pt(tile.X, tile.Y)]
         if ok {
+            continue
+        }
+
+        if fog[tile.X][tile.Y] == data.FogTypeUnexplored {
             continue
         }
 
