@@ -712,7 +712,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
             workerElements = nil
             citizenX := 6 * data.ScreenScale
 
-            subsistenceFarmers := cityScreen.City.ComputeSubsistenceFarmers()
+            subsistenceFarmers := min(cityScreen.City.ComputeSubsistenceFarmers(), cityScreen.City.Farmers)
 
             for i := 0; i < subsistenceFarmers; i++ {
                 posX := citizenX
