@@ -1057,6 +1057,10 @@ func (city *City) ProductionTerrain() float32 {
     return (production + mineralProduction) * (city.ProductionWorkers() + city.ProductionFarmers())
 }
 
+func (city *City) ProductionInspirations() float32 {
+    return city.ProductionWorkers() + city.ProductionFarmers()
+}
+
 func (city *City) WorkProductionRate() float32 {
     return city.ProductionWorkers() +
            city.ProductionFarmers() +
@@ -1064,7 +1068,8 @@ func (city *City) WorkProductionRate() float32 {
            city.ProductionMechaniciansGuild() +
            city.ProductionTerrain() +
            city.ProductionSawmill() +
-           city.ProductionForestersGuild()
+           city.ProductionForestersGuild() +
+           city.ProductionInspirations()
 }
 
 func (city *City) GrowOutpost() CityEvent {

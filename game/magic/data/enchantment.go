@@ -444,7 +444,7 @@ func (enchantment CityEnchantment) IconOffset() int {
     switch enchantment {
         // case CityEnchantmentCloudOfShadow: return 0
         // case CityEnchantmentConsecration: return 0
-        // case CityEnchantmentInspirations: return 0
+        case CityEnchantmentInspirations: return 134
         case CityEnchantmentNaturesEye: return 114
         // case CityEnchantmentPestilence: return 0
         case CityEnchantmentProsperity: return 153
