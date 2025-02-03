@@ -440,7 +440,7 @@ func (enchantment CityEnchantment) SoundIndex() int {
 }
 
 func (enchantment CityEnchantment) IconOffset() int {
-    // FIXME: Add other sound indexes
+    // FIXME: Add other offsets
     switch enchantment {
         // case CityEnchantmentCloudOfShadow: return 0
         // case CityEnchantmentConsecration: return 0
