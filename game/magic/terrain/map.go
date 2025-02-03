@@ -92,14 +92,19 @@ func (map_ *Map) FindContinent(x int, y int) Continent {
 
             seen[image.Pt(x, y)] = true
 
-            for dx := -1; dx <= 1; dx++ {
-                for dy := -1; dy <= 1; dy++ {
-                    nx := map_.WrapX(x + dx)
-                    ny := y + dy
+            if GetTile(map_.Terrain[x][y]).IsLand() {
+                *continent = append(*continent, image.Pt(x, y))
 
-                    if nx >= 0 && nx < columns && ny >= 0 && ny < rows {
-                        if GetTile(map_.Terrain[nx][ny]).IsLand() {
-                            *continent = append(*continent, image.Pt(nx, ny))
+                for dx := -1; dx <= 1; dx++ {
+                    for dy := -1; dy <= 1; dy++ {
+                        if dx == 0 && dy == 0 {
+                            continue
+                        }
+
+                        nx := map_.WrapX(x + dx)
+                        ny := y + dy
+
+                        if nx >= 0 && nx < columns && ny >= 0 && ny < rows {
                             search = append(search, image.Pt(nx, ny))
                         }
                     }
@@ -110,6 +115,7 @@ func (map_ *Map) FindContinent(x int, y int) Continent {
 
     var continent Continent
     if GetTile(map_.Terrain[x][y]).IsLand() {
+        continent = append(continent, image.Pt(x, y))
         searchTiles(x, y, &continent)
     }
     return continent
@@ -140,14 +146,19 @@ func (map_ *Map) FindContinents() []Continent {
 
             seen[x][y] = true
 
-            for dx := -1; dx <= 1; dx++ {
-                for dy := -1; dy <= 1; dy++ {
-                    nx := map_.WrapX(x + dx)
-                    ny := y + dy
+            if GetTile(map_.Terrain[x][y]).IsLand() {
+                *continent = append(*continent, image.Pt(x, y))
 
-                    if nx >= 0 && nx < columns && ny >= 0 && ny < rows {
-                        if GetTile(map_.Terrain[nx][ny]).IsLand() {
-                            *continent = append(*continent, image.Pt(nx, ny))
+                for dx := -1; dx <= 1; dx++ {
+                    for dy := -1; dy <= 1; dy++ {
+                        if dx == 0 && dy == 0 {
+                            continue
+                        }
+
+                        nx := map_.WrapX(x + dx)
+                        ny := y + dy
+
+                        if nx >= 0 && nx < columns && ny >= 0 && ny < rows {
                             search = append(search, image.Pt(nx, ny))
                         }
                     }
