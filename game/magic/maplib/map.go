@@ -888,9 +888,9 @@ func MakeMap(terrainData *terrain.TerrainData, landSize int, magicSetting data.M
             }
         }
 
-        fraction := 0.03
+        fraction := 0.06
         if plane == data.PlaneMyrror {
-            fraction = 0.07
+            fraction = 0.10
         }
 
         maxBonuses := int(float64(len(candidates)) * fraction)
