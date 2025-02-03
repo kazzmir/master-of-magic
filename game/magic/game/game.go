@@ -3175,8 +3175,9 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
                 // FIXME: this should get all stacks at the given location and merge them into a single stack for combat
                 otherStack := otherPlayer.FindStack(stack.X(), stack.Y(), stack.Plane())
                 if otherStack != nil {
+                    otherCity := otherPlayer.FindCity(stack.X(), stack.Y(), stack.Plane())
                     zone := combat.ZoneType{
-                        City: otherPlayer.FindCity(stack.X(), stack.Y(), stack.Plane()),
+                        City: otherCity,
                     }
 
                     state := game.doCombat(yield, player, stack, otherPlayer, otherStack, zone)
@@ -3190,7 +3191,17 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
                     // FIXME: if there was a city here and the attacker won then the attacker
                     // should be able to raze or occupy the city
 
-                    // FIXME: loose fame if razing
+                    raze := game.confirmRazeTown(yield, otherCity)
+
+                    if raze {
+                        otherPlayer.RemoveCity(otherCity)
+                        // FIXME: loose fame if razing
+                    } else {
+                        otherPlayer.RemoveCity(otherCity)
+                        player.AddCity(otherCity)
+                        otherCity.Banner = player.Wizard.Banner
+                        otherCity.UpdateTaxRate(player.TaxRate, stack.Units())
+                    }
 
                     stack.ExhaustMoves()
                     game.RefreshUI()
@@ -3719,6 +3730,34 @@ func (game *Game) confirmEncounter(yield coroutine.YieldFunc, message string, an
     }
 
     return result
+}
+
+// returns true to raze the town, false to occupy it
+func (game *Game) confirmRazeTown(yield coroutine.YieldFunc, city *citylib.City) bool {
+    raze := false
+    quit := false
+    yes := func(){
+        raze = true
+        quit = true
+    }
+
+    no := func(){
+        raze = false
+        quit = true
+    }
+
+    game.HudUI.AddElements(uilib.MakeConfirmDialogWithLayer(game.HudUI, game.Cache, &game.ImageCache, 1, "Do you with to raze this town?", true, yes, no))
+
+    yield()
+    for !quit {
+        game.Counter += 1
+        game.HudUI.StandardUpdate()
+        yield()
+    }
+
+    yield()
+
+    return raze
 }
 
 func (game *Game) confirmLairEncounter(yield coroutine.YieldFunc, encounter *maplib.ExtraEncounter) bool {
