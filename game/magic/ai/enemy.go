@@ -170,6 +170,16 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, a
             // also, sometimes choose a preferred location to move to, such as a square for building a new city
             // or attacking a player's units
             if len(stack.CurrentPath) == 0 {
+
+                // a stack of only settlers shouldn't move
+                nonSettlers := false
+                for _, unit := range stack.ActiveUnits() {
+                    if !unit.HasAbility(data.AbilityCreateOutpost) {
+                        nonSettlers = true
+                        break
+                    }
+                }
+
                 // handling for settlers
                 if stack.ActiveUnitsHasAbility(data.AbilityCreateOutpost) {
                     // find a location on the same continent as the stack that we can build a new outpost
@@ -177,22 +187,18 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, a
                     // if we are at a settlable location, build the outpost
                     // otherwise, find a path to the chosen location
 
-                    log.Printf("check if %v, %v is settlable", stack.X(), stack.Y())
                     if aiServices.IsSettlableLocation(stack.X(), stack.Y(), stack.Plane()) {
-                        log.Printf("  ..yes")
                         decisions = append(decisions, &playerlib.AIBuildOutpostDecision{
                             Stack: stack,
                         })
                         continue
                     }
 
-                    log.Printf("not settlable")
-
                     candidateLocations := aiServices.FindSettlableLocations(stack.X(), stack.Y(), stack.Plane(), self.GetFog(stack.Plane()))
                     if len(candidateLocations) == 0 {
 
                         // check if the settler is already in a city
-                        if self.FindCity(stack.X(), stack.Y(), stack.Plane()) == nil {
+                        if self.FindCity(stack.X(), stack.Y(), stack.Plane()) == nil && !nonSettlers {
                             // just go back to a town?
                             var candidateCities []*citylib.City
                             for _, city := range self.Cities {
@@ -235,16 +241,7 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, a
                     }
                 }
 
-                // a stack of only settlers shouldn't move
-                nonSettlers := false
-                for _, unit := range stack.ActiveUnits() {
-                    if !unit.HasAbility(data.AbilityCreateOutpost) {
-                        nonSettlers = true
-                        break
-                    }
-                }
-
-                if nonSettlers && rand.N(4) == 0 && len(stack.CurrentPath) == 0 {
+                if nonSettlers && rand.N(2) == 0 && len(stack.CurrentPath) == 0 {
                     // try upto 3 times to find a path
                     for range 3 {
                         newX, newY := stack.X() + rand.N(5) - 2, stack.Y() + rand.N(5) - 2
