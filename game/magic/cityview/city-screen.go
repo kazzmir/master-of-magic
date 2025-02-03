@@ -1430,6 +1430,7 @@ func (cityScreen *CityScreen) GoldProducers() []ResourceUsage {
     add(int(cityScreen.City.GoldMarketplace()), "Marketplace")
     add(int(cityScreen.City.GoldBank()), "Bank")
     add(int(cityScreen.City.GoldMerchantsGuild()), "Merchant's Guild")
+    add(int(cityScreen.City.GoldProsperity()), "Prosperity")
 
     return usage
 }
