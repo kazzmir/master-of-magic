@@ -954,6 +954,14 @@ func (city *City) GoldMerchantsGuild() int {
     return 0
 }
 
+func (city *City) GoldProsperity() int {
+    if city.HasEnchantment(data.CityEnchantmentProsperity) {
+        return city.GoldTaxation() + city.GoldMinerals()
+    }
+
+    return 0
+}
+
 func (city *City) GoldSurplus() int {
     income := city.GoldTaxation()
     income += city.GoldTradeGoods()
@@ -962,6 +970,7 @@ func (city *City) GoldSurplus() int {
     income += city.GoldBonus(city.ComputeTotalBonusPercent())
     income += city.GoldBank()
     income += city.GoldMerchantsGuild()
+    income += city.GoldProsperity()
 
     upkeepCosts := city.ComputeUpkeep()
 
