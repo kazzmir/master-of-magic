@@ -157,6 +157,14 @@ func TestContinents(test *testing.T) {
         test.Errorf("should be 4 tiles in continent but was %v: %v", len(continent), continent)
     }
 
+    if len(use.FindContinent(0, 0)) != 0 {
+        test.Errorf("should be 0 tiles in continent")
+    }
+
+    if len(use.FindContinent(5, 5)) != 4 {
+        test.Errorf("should be 4 tiles in continent")
+    }
+
     for x := 10; x <= 12; x++ {
         for y := 10; y <= 12; y++ {
             use.Terrain[x][y] = TileLand.Index(data.PlaneArcanus)
