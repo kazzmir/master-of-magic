@@ -54,18 +54,24 @@ type AICreateUnitDecision struct {
     Plane data.Plane
 }
 
+type AIBuildOutpostDecision struct {
+    Stack *UnitStack
+}
+
 // choose a new spell to research
 type AIResearchSpellDecision struct {
     Spell spellbook.Spell
 }
 
-type PathFinder interface {
+type AIServices interface {
     FindPath(oldX int, oldY int, newX int, newY int, stack *UnitStack, fog data.FogMap) pathfinding.Path
+    FindSettlableLocations(x int, y int, plane data.Plane, fog data.FogMap) []image.Point
+    IsSettlableLocation(x int, y int, plane data.Plane) bool
 }
 
 type AIBehavior interface {
     // return a list of decisions to make for the current turn
-    Update(*Player, []*Player, PathFinder, int) []AIDecision
+    Update(*Player, []*Player, AIServices, int) []AIDecision
 
     // called after all decisions have been processed for an AI player
     PostUpdate(*Player, []*Player)
@@ -593,6 +599,16 @@ func (player *Player) LiftFogAll(plane data.Plane){
             fog[x][y] = data.FogTypeVisible
         }
     }
+}
+
+func (player *Player) IsVisible(x int, y int, plane data.Plane) bool {
+    fog := player.GetFog(plane)
+    x = player.WrapX(x)
+    if x < 0 || x >= len(fog) || y < 0 || y >= len(fog[0]) {
+        return false
+    }
+
+    return fog[x][y] == data.FogTypeVisible
 }
 
 func (player *Player) LiftFogSquare(x int, y int, squares int, plane data.Plane){

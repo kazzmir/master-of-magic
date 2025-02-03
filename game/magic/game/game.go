@@ -42,6 +42,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/lib/fraction"
+    "github.com/kazzmir/master-of-magic/lib/functional"
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/colorm"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -119,6 +120,7 @@ type GameEventVault struct {
 type GameEventNewOutpost struct {
     City *citylib.City
     Stack *playerlib.UnitStack
+    Player *playerlib.Player
 }
 
 type GameEventSelectLocationForSpell struct {
@@ -634,17 +636,22 @@ func (game *Game) ContainsCity(x int, y int, plane data.Plane) bool {
     return false
 }
 
-func (game *Game) NearCity(point image.Point, squares int) bool {
-    for _, player := range game.Players {
-        for _, city := range player.Cities {
-            if city.Plane == game.Plane {
-                diff := image.Pt(city.X, city.Y).Sub(point)
+func (game *Game) NearCity(point image.Point, squares int, plane data.Plane) bool {
+    for _, city := range game.AllCities() {
+        if city.Plane == plane {
+            xDiff := game.CurrentMap().XDistance(city.X, point.X)
+            yDiff := city.Y - point.Y
 
-                total := int(math.Abs(float64(diff.X)) + math.Abs(float64(diff.Y)))
+            if xDiff < 0 {
+                xDiff = -xDiff
+            }
 
-                if total <= squares {
-                    return true
-                }
+            if yDiff < 0 {
+                yDiff = -yDiff
+            }
+
+            if xDiff <= squares && yDiff <= squares {
+                return true
             }
         }
     }
@@ -1773,34 +1780,24 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
     }
 
     // cache the containsEnemy result
-    enemyMemo := make(map[image.Point]bool)
-
     // true if the given coordinates contain an enemy unit or city
-    containsEnemy := func (x int, y int) bool {
-        if val, ok := enemyMemo[image.Pt(x, y)]; ok {
-            return val
-        }
-
+    containsEnemy := functional.Memoize2(func (x int, y int) bool {
         for _, player := range game.Players {
             if player.GetBanner() != stack.GetBanner() {
                 enemyStack := player.FindStack(x, y, stack.Plane())
                 if enemyStack != nil {
-                    enemyMemo[image.Pt(x, y)] = true
                     return true
                 }
 
                 enemyCity := player.FindCity(x, y, stack.Plane())
                 if enemyCity != nil {
-                    enemyMemo[image.Pt(x, y)] = true
                     return true
                 }
             }
         }
 
-        enemyMemo[image.Pt(x, y)] = false
         return false
-    }
-
+    })
 
     tileCost := func (x1 int, y1 int, x2 int, y2 int) float64 {
         x1 = useMap.WrapX(x1)
@@ -1916,6 +1913,62 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
     }
 
     return nil
+}
+
+/* true if a settler can build a city here
+ * a tile must be land, not corrupted, not have an encounter, not have a magic node, and not be too close to another city
+ */
+func (game *Game) IsSettlableLocation(x int, y int, plane data.Plane) bool {
+    if !game.NearCity(image.Pt(x, y), 3, plane) {
+        mapUse := game.GetMap(plane)
+        if mapUse.HasCorruption(x, y) || mapUse.GetEncounter(x, y) != nil || mapUse.GetMagicNode(x, y) != nil {
+            return false
+        }
+
+        return mapUse.GetTile(x, y).Tile.IsLand()
+    }
+
+    return false
+}
+
+func (game *Game) FindSettlableLocations(x int, y int, plane data.Plane, fog data.FogMap) []image.Point {
+    tiles := game.GetMap(plane).GetContinentTiles(x, y)
+
+    // compute all pointes that we can't build a city on because they are too close to another city
+    unavailable := make(map[image.Point]bool)
+    for _, city := range game.AllCities() {
+        if city.Plane == plane {
+            for dx := -3; dx <= 3; dx++ {
+                for dy := -3; dy <= 3; dy++ {
+                    cx := game.CurrentMap().WrapX(city.X + dx)
+                    cy := city.Y + dy
+
+                    unavailable[image.Pt(cx, cy)] = true
+                }
+            }
+        }
+    }
+
+    var out []image.Point
+
+    for _, tile := range tiles {
+        _, ok := unavailable[image.Pt(tile.X, tile.Y)]
+        if ok {
+            continue
+        }
+
+        if fog[tile.X][tile.Y] == data.FogTypeUnexplored {
+            continue
+        }
+
+        if tile.Corrupted() || tile.HasEncounter() || tile.Tile.IsMagic() {
+            continue
+        }
+
+        out = append(out, image.Pt(tile.X, tile.Y))
+    }
+
+    return out
 }
 
 func (game *Game) doSummon(yield coroutine.YieldFunc, summonObject *summon.Summon) {
@@ -2614,7 +2667,9 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         game.doCityListView(yield)
                     case *GameEventNewOutpost:
                         outpost := event.(*GameEventNewOutpost)
-                        game.showOutpost(yield, outpost.City, outpost.Stack, true)
+                        if outpost.Player.IsHuman() {
+                            game.showOutpost(yield, outpost.City, outpost.Stack, true)
+                        }
                     case *GameEventVault:
                         vaultEvent := event.(*GameEventVault)
                         game.doVault(yield, vaultEvent.CreatedArtifact)
@@ -3421,7 +3476,10 @@ func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Play
         }
 
         stack.Move(to.X - stack.X(), to.Y - stack.Y(), terrainCost, game.GetNormalizeCoordinateFunc())
-        game.showMovement(yield, oldX, oldY, stack, false)
+
+        if game.Players[0].IsVisible(oldX, oldY, stack.Plane()) {
+            game.showMovement(yield, oldX, oldY, stack, false)
+        }
         player.LiftFogSquare(stack.X(), stack.Y(), stack.GetSightRange(), stack.Plane())
 
         if encounter != nil {
@@ -3475,6 +3533,20 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
                     if existingStack == nil || len(existingStack.Units()) < 9 {
                         overworldUnit := units.MakeOverworldUnitFromUnit(create.Unit, create.X, create.Y, create.Plane, player.Wizard.Banner, player.MakeExperienceInfo())
                         player.AddUnit(overworldUnit)
+                    }
+                case *playerlib.AIBuildOutpostDecision:
+                    build := decision.(*playerlib.AIBuildOutpostDecision)
+
+                    var stack units.StackUnit
+                    for _, unit := range build.Stack.Units() {
+                        if unit.HasAbility(data.AbilityCreateOutpost) {
+                            stack = unit
+                            break
+                        }
+                    }
+
+                    if stack != nil {
+                        game.CreateOutpost(stack, player)
                     }
                 case *playerlib.AIProduceDecision:
                     produce := decision.(*playerlib.AIProduceDecision)
@@ -4468,7 +4540,7 @@ func (game *Game) CreateOutpost(settlers units.StackUnit, player *playerlib.Play
     stack := player.FindStack(newCity.X, newCity.Y, newCity.Plane)
 
     select {
-        case game.Events<- &GameEventNewOutpost{City: newCity, Stack: stack}:
+        case game.Events<- &GameEventNewOutpost{City: newCity, Stack: stack, Player: player}:
         default:
     }
 
@@ -4491,8 +4563,7 @@ func (game *Game) DoBuildAction(player *playerlib.Player){
         if powers.CreateOutpost {
             // search for the settlers (the only unit with the create outpost ability
             for _, settlers := range player.SelectedStack.ActiveUnits() {
-                // FIXME: check if this tile is valid to build an outpost on
-                if settlers.HasAbility(data.AbilityCreateOutpost) {
+                if game.IsSettlableLocation(settlers.GetX(), settlers.GetY(), settlers.GetPlane()) && settlers.HasAbility(data.AbilityCreateOutpost) {
                     game.CreateOutpost(settlers, player)
                     game.RefreshUI()
                     break
@@ -5246,6 +5317,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
             hasCity := game.ContainsCity(player.SelectedStack.X(), player.SelectedStack.Y(), player.SelectedStack.Plane())
             node := game.GetMap(player.SelectedStack.Plane()).GetMagicNode(player.SelectedStack.X(), player.SelectedStack.Y())
             isCorrupted := game.GetMap(player.SelectedStack.Plane()).HasCorruption(player.SelectedStack.X(), player.SelectedStack.Y())
+            canSettle := player.SelectedStack.ActiveUnitsHasAbility(data.AbilityCreateOutpost) && game.IsSettlableLocation(player.SelectedStack.X(), player.SelectedStack.Y(), player.SelectedStack.Plane())
 
             elements = append(elements, &uilib.UIElement{
                 Rect: buildRect,
@@ -5270,6 +5342,9 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
                     if powers.CreateOutpost {
                         use = buildImages[buildIndex]
+                        if !canSettle {
+                            use = inactiveBuild[0]
+                        }
                     } else if powers.Meld {
                         use = meldImages[buildIndex]
 

@@ -6,8 +6,10 @@ package ai
 import (
     "log"
     "slices"
+    "cmp"
     "math/rand/v2"
 
+    "github.com/kazzmir/master-of-magic/lib/functional"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
@@ -42,7 +44,7 @@ func (ai *EnemyAI) ProducedUnit(city *citylib.City, player *playerlib.Player) {
     city.ProducingUnit = units.UnitNone
 }
 
-func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, pathfinder playerlib.PathFinder, manaPerTurn int) []playerlib.AIDecision {
+func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, aiServices playerlib.AIServices, manaPerTurn int) []playerlib.AIDecision {
     var decisions []playerlib.AIDecision
 
     // FIXME: create settlers, build cities
@@ -84,9 +86,23 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, p
     }
 
     for _, city := range self.Cities {
+        // outpost can't do anything
+        if city.Outpost {
+            continue
+        }
+
         // city can make something
         if !isMakingSomething(city) {
             possibleUnits := city.ComputePossibleUnits()
+            settlers := units.UnitNone
+
+            for _, unit := range possibleUnits {
+                if unit.IsSettlers() {
+                    settlers = unit
+                    break
+                }
+            }
+
             possibleUnits = slices.DeleteFunc(possibleUnits, func(unit units.Unit) bool {
                 if unit.IsSettlers() {
                     return true
@@ -101,6 +117,7 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, p
             type Choice int
             const ChooseUnit Choice = 0
             const ChooseBuilding Choice = 1
+            const ChooseSettlers Choice = 3
 
             var choices []Choice
             if len(possibleUnits) > 0 {
@@ -110,12 +127,22 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, p
                 }
             }
 
+            if !settlers.IsNone() && city.Citizens() > 5 {
+                choices = append(choices, ChooseSettlers)
+            }
+
             if possibleBuildings.Size() > 0 {
                 choices = append(choices, ChooseBuilding)
             }
 
             if len(choices) > 0 {
                 switch choices[rand.N(len(choices))] {
+                    case ChooseSettlers:
+                        decisions = append(decisions, &playerlib.AIProduceDecision{
+                            City: city,
+                            Building: buildinglib.BuildingNone,
+                            Unit: settlers,
+                        })
                     case ChooseUnit:
                         unit := possibleUnits[rand.N(len(possibleUnits))]
                         decisions = append(decisions, &playerlib.AIProduceDecision{
@@ -143,11 +170,82 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, p
             // also, sometimes choose a preferred location to move to, such as a square for building a new city
             // or attacking a player's units
             if len(stack.CurrentPath) == 0 {
-                if rand.N(4) == 0 {
+
+                // a stack of only settlers shouldn't move
+                nonSettlers := false
+                for _, unit := range stack.ActiveUnits() {
+                    if !unit.HasAbility(data.AbilityCreateOutpost) {
+                        nonSettlers = true
+                        break
+                    }
+                }
+
+                // handling for settlers
+                if stack.ActiveUnitsHasAbility(data.AbilityCreateOutpost) {
+                    // find a location on the same continent as the stack that we can build a new outpost
+                    // if we can't find a location, just move randomly
+                    // if we are at a settlable location, build the outpost
+                    // otherwise, find a path to the chosen location
+
+                    if aiServices.IsSettlableLocation(stack.X(), stack.Y(), stack.Plane()) {
+                        decisions = append(decisions, &playerlib.AIBuildOutpostDecision{
+                            Stack: stack,
+                        })
+                        continue
+                    }
+
+                    candidateLocations := aiServices.FindSettlableLocations(stack.X(), stack.Y(), stack.Plane(), self.GetFog(stack.Plane()))
+                    if len(candidateLocations) == 0 {
+
+                        // check if the settler is already in a city
+                        if self.FindCity(stack.X(), stack.Y(), stack.Plane()) == nil && !nonSettlers {
+                            // just go back to a town?
+                            var candidateCities []*citylib.City
+                            for _, city := range self.Cities {
+                                if city.Plane == stack.Plane() && len(aiServices.FindPath(stack.X(), stack.Y(), city.X, city.Y, stack, self.GetFog(stack.Plane()))) > 0 {
+                                    candidateCities = append(candidateCities, city)
+                                }
+                            }
+
+                            if len(candidateCities) > 0 {
+                                // sort cities by distance
+                                infinity := 999999
+
+                                getDistance := functional.Memoize(func (city *citylib.City) int {
+                                    path := aiServices.FindPath(stack.X(), stack.Y(), city.X, city.Y, stack, self.GetFog(stack.Plane()))
+                                    if len(path) == 0 {
+                                        return infinity
+                                    }
+                                    return len(path)
+                                })
+
+                                slices.SortFunc(candidateCities, func(a, b *citylib.City) int {
+                                    return cmp.Compare(getDistance(a), getDistance(b))
+                                })
+
+                                path := aiServices.FindPath(stack.X(), stack.Y(), candidateCities[0].X, candidateCities[0].Y, stack, self.GetFog(stack.Plane()))
+                                stack.CurrentPath = path
+                            } else {
+                                // do nothing
+                            }
+                        }
+                    } else {
+                        // FIXME: choose a location with a high population maximum and near bonuses. Possibly also near a shore so we can build water units
+                        // choose a random location
+                        location := candidateLocations[rand.N(len(candidateLocations))]
+                        path := aiServices.FindPath(stack.X(), stack.Y(), location.X, location.Y, stack, self.GetFog(stack.Plane()))
+                        if len(path) > 0 {
+                            log.Printf("Settler going to %v, %v via %v", location.X, location.Y, path)
+                            stack.CurrentPath = path
+                        }
+                    }
+                }
+
+                if nonSettlers && rand.N(2) == 0 && len(stack.CurrentPath) == 0 {
                     // try upto 3 times to find a path
                     for range 3 {
                         newX, newY := stack.X() + rand.N(5) - 2, stack.Y() + rand.N(5) - 2
-                        path := pathfinder.FindPath(stack.X(), stack.Y(), newX, newY, stack, self.GetFog(stack.Plane()))
+                        path := aiServices.FindPath(stack.X(), stack.Y(), newX, newY, stack, self.GetFog(stack.Plane()))
                         if len(path) != 0 {
                             stack.CurrentPath = path
                             break

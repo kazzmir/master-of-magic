@@ -3064,19 +3064,21 @@ func createScenario36(cache *lbx.LbxCache) *gamelib.Game {
 
     enemy1 := game.AddPlayer(wizard1, false)
 
+    enemy1.TaxRate = fraction.Zero()
+
     enemy1.AIBehavior = ai.MakeEnemyAI()
 
     x, y, _ := game.FindValidCityLocation(game.Plane)
 
     city := citylib.MakeCity("ai1", x, y, data.RaceBarbarian, enemy1.Wizard.Banner, enemy1.TaxRate, game.BuildingInfo, game.CurrentMap(), game)
-    city.Population = 6190
+    city.Population = 10190
     city.Plane = data.PlaneArcanus
     city.Banner = wizard1.Banner
     city.Buildings.Insert(buildinglib.BuildingFortress)
     city.Buildings.Insert(buildinglib.BuildingSummoningCircle)
     city.ProducingBuilding = buildinglib.BuildingTradeGoods
     city.ProducingUnit = units.UnitNone
-    city.Farmers = 3
+    city.Farmers = 8
     city.Workers = 3
     city.Wall = false
 
@@ -3089,6 +3091,8 @@ func createScenario36(cache *lbx.LbxCache) *gamelib.Game {
     enemy1.CastingSkillPower = 10000
 
     enemy1.LiftFog(x, y, 3, data.PlaneArcanus)
+
+    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.BarbarianSettlers, x, y, data.PlaneArcanus, wizard1.Banner, nil))
 
     // allSpells, _ := spellbook.ReadSpellsFromCache(cache)
 
