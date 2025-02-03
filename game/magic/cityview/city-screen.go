@@ -424,9 +424,9 @@ func (cityScreen *CityScreen) SellBuilding(building buildinglib.Building) {
 }
 
 func makeCityScapeElement(cache *lbx.LbxCache, ui *uilib.UI, city *citylib.City, help *helplib.Help, imageCache *util.ImageCache, doSell func(buildinglib.Building), buildings []BuildingSlot, newBuilding buildinglib.Building, x1 int, y1 int, fonts *Fonts, player *playerlib.Player, getAlpha *util.AlphaFadeFunc) *uilib.UIElement {
+    // this stores the in-memory image because we don't need the gpu ebiten.Image to do pixel perfect detection
     rawImageCache := make(map[int]image.Image)
 
-    // FIXME: I cant remember why this function needs to exist instead of just calling imageCache.GetImage()
     getRawImage := func(index int) (image.Image, error) {
         if pic, ok := rawImageCache[index]; ok {
             return pic, nil
