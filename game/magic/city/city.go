@@ -1192,17 +1192,10 @@ func (city *City) DoNextTurn(garrison []units.StackUnit) []CityEvent {
                 }
             }
         }
-
-        /*
-        if city.Farmers < city.ComputeSubsistenceFarmers() {
-            city.Farmers = city.ComputeSubsistenceFarmers()
-            city.Workers = city.Citizens() - city.Rebels
-        }
-        */
-
-        city.ResetCitizens(garrison)
-
     }
+
+    // update minimum farmers
+    city.ResetCitizens(garrison)
 
     return cityEvents
 }
