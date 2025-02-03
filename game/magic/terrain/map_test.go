@@ -132,6 +132,32 @@ func TestResolveShoreRiverTiles(test *testing.T) {
     }
 }
 
+func TestContinents(test *testing.T) {
+    use := MakeMap(30, 30)
+
+    if len(use.FindContinents()) != 0 {
+        test.Errorf("should be 0 continents")
+    }
+
+
+    for x := 5; x <= 6; x++ {
+        for y := 5; y <= 6; y++ {
+            use.Terrain[x][y] = TileLand.Index(data.PlaneArcanus)
+        }
+    }
+
+    continents := use.FindContinents()
+    if len(continents) != 1 {
+        test.Errorf("should be 1 continent")
+    }
+
+    continent := continents[0]
+
+    if len(continent) != 4 {
+        test.Errorf("should be 4 tiles in continent but was %v: %v", len(continent), continent)
+    }
+
+}
 
 func BenchmarkGeneration(bench *testing.B){
     terrainData := createTerrainData()

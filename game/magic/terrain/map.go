@@ -173,7 +173,6 @@ func (map_ *Map) FindContinents() []Continent {
         for y := 0; y < map_.Rows(); y++ {
             if seen[x][y] == false && GetTile(map_.Terrain[x][y]).IsLand() {
                 var continent Continent
-                continent = append(continent, image.Pt(x, y))
                 searchTiles(x, y, &continent)
                 continents = append(continents, continent)
             }
