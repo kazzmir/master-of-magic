@@ -212,6 +212,7 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, a
                         location := candidateLocations[rand.N(len(candidateLocations))]
                         path := aiServices.FindPath(stack.X(), stack.Y(), location.X, location.Y, stack, self.GetFog(stack.Plane()))
                         if len(path) > 0 {
+                            log.Printf("Settler going to %v, %v via %v", location.X, location.Y, path)
                             stack.CurrentPath = path
                         }
                     }

@@ -561,11 +561,12 @@ func (tile *FullTile) Valid() bool {
 
 func (tile *FullTile) Corrupted() bool {
     _, ok := tile.Extras[ExtraKindCorruption]
-    if ok {
-        return true
-    }
+    return ok
+}
 
-    return false
+func (tile *FullTile) HasEncounter() bool {
+    _, ok := tile.Extras[ExtraKindEncounter]
+    return ok
 }
 
 func (tile *FullTile) FoodBonus() fraction.Fraction {

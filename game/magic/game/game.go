@@ -1931,11 +1931,11 @@ func (game *Game) FindSettlableLocations(x int, y int, plane data.Plane) []image
 
     for _, tile := range tiles {
         _, ok := unavailable[image.Pt(tile.X, tile.Y)]
-        if !ok {
+        if ok {
             continue
         }
 
-        if tile.Corrupted() {
+        if tile.Corrupted() || tile.HasEncounter() || tile.Tile.IsMagic() {
             continue
         }
 
