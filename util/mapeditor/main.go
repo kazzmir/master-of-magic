@@ -274,7 +274,15 @@ func (editor *Editor) Layout(outsideWidth int, outsideHeight int) (int, int) {
     return ScreenWidth, ScreenHeight
 }
 
-func MakeEditor(lbxFile *lbx.LbxFile) *Editor {
+func MakeEditor() *Editor {
+    cache := lbx.AutoCache()
+
+    lbxFile, err := cache.GetLbxFile("terrain.lbx")
+    if err != nil {
+        fmt.Printf("Could not load terrain.lbx: %v\n", err)
+        os.Exit(0)
+    }
+
     font, err := common.LoadFont()
     if err != nil {
         fmt.Printf("Could not load font: %v\n", err)
@@ -305,31 +313,13 @@ func MakeEditor(lbxFile *lbx.LbxFile) *Editor {
 func main() {
     log.SetFlags(log.Ldate | log.Lshortfile | log.Lmicroseconds)
 
-    if len(os.Args) < 2 {
-        fmt.Printf("Give the terrain.lbx file as an argument\n")
-        return
-    }
-
-    path := os.Args[1]
-    file, err := os.Open(path)
-    if err != nil {
-        fmt.Printf("Could not open lbx file %v: %v\n", path, err)
-        return
-    }
-    lbxData, err := lbx.ReadLbx(file)
-    if err != nil {
-        fmt.Printf("Could read lbx file %v: %v\n", path, err)
-        return
-    }
-    file.Close()
-
-    editor := MakeEditor(&lbxData)
+    editor := MakeEditor()
 
     ebiten.SetWindowSize(ScreenWidth, ScreenHeight)
     ebiten.SetWindowTitle("map editor")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 
-    err = ebiten.RunGame(editor)
+    err := ebiten.RunGame(editor)
     if err != nil {
         fmt.Printf("Error: %v\n", err)
     }
