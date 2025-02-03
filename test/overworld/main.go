@@ -992,6 +992,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     player.KnownSpells.AddSpell(allSpells.FindByName("Wall of Darkness"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Nature's Eye"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Prosperity"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Inspirations"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Nature Awareness"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Change Terrain"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Transmute"))

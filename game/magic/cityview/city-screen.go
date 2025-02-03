@@ -1121,7 +1121,7 @@ func drawCityScape(screen *ebiten.Image, buildings []BuildingSlot, buildingLook 
                 images, _ := imageCache.GetImages("cityscap.lbx", enchantment.Enchantment.LbxIndex(data.PlaneArcanus))
                 index := animationCounter % uint64(len(images))
                 screen.DrawImage(images[index], &options)
-            case data.CityEnchantmentNaturesEye, data.CityEnchantmentProsperity:
+            case data.CityEnchantmentNaturesEye, data.CityEnchantmentProsperity, data.CityEnchantmentInspirations:
                 var options ebiten.DrawImageOptions
                 options.ColorScale.ScaleAlpha(alphaScale)
                 options.GeoM = baseGeoM
@@ -1389,6 +1389,7 @@ func (cityScreen *CityScreen) WorkProducers() []ResourceUsage {
     add(int(cityScreen.City.ProductionForestersGuild()), "Forester's Guild")
     add(int(cityScreen.City.ProductionMinersGuild()), "Miner's Guild")
     add(int(cityScreen.City.ProductionMechaniciansGuild()), "Mechanician's Guild")
+    add(int(cityScreen.City.ProductionInspirations()), "Inspirations")
 
     return usage
 }
