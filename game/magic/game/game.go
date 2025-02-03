@@ -1915,6 +1915,9 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
     return nil
 }
 
+/* true if a settler can build a city here
+ * a tile must be land, not corrupted, not have an encounter, not have a magic node, and not be too close to another city
+ */
 func (game *Game) IsSettlableLocation(x int, y int, plane data.Plane) bool {
     if !game.NearCity(image.Pt(x, y), 3, plane) {
         mapUse := game.GetMap(plane)
@@ -4560,8 +4563,7 @@ func (game *Game) DoBuildAction(player *playerlib.Player){
         if powers.CreateOutpost {
             // search for the settlers (the only unit with the create outpost ability
             for _, settlers := range player.SelectedStack.ActiveUnits() {
-                // FIXME: check if this tile is valid to build an outpost on
-                if settlers.HasAbility(data.AbilityCreateOutpost) {
+                if game.IsSettlableLocation(settlers.GetX(), settlers.GetY(), settlers.GetPlane()) && settlers.HasAbility(data.AbilityCreateOutpost) {
                     game.CreateOutpost(settlers, player)
                     game.RefreshUI()
                     break
@@ -5315,6 +5317,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
             hasCity := game.ContainsCity(player.SelectedStack.X(), player.SelectedStack.Y(), player.SelectedStack.Plane())
             node := game.GetMap(player.SelectedStack.Plane()).GetMagicNode(player.SelectedStack.X(), player.SelectedStack.Y())
             isCorrupted := game.GetMap(player.SelectedStack.Plane()).HasCorruption(player.SelectedStack.X(), player.SelectedStack.Y())
+            canSettle := player.SelectedStack.ActiveUnitsHasAbility(data.AbilityCreateOutpost) && game.IsSettlableLocation(player.SelectedStack.X(), player.SelectedStack.Y(), player.SelectedStack.Plane())
 
             elements = append(elements, &uilib.UIElement{
                 Rect: buildRect,
@@ -5339,6 +5342,9 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
                     if powers.CreateOutpost {
                         use = buildImages[buildIndex]
+                        if !canSettle {
+                            use = inactiveBuild[0]
+                        }
                     } else if powers.Meld {
                         use = meldImages[buildIndex]
 
