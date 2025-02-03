@@ -82,6 +82,13 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             }
 
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyCity, SelectedFunc: selected}
+        case "Nature's Eye":
+            selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+                game.doCastCityEnchantment(yield, tileX, tileY, player, data.CityEnchantmentNaturesEye)
+                player.UpdateFogVisibility()
+            }
+
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyCity, SelectedFunc: selected}
         case "Change Terrain":
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeChangeTerrain, SelectedFunc: game.doCastChangeTerrain}
         case "Transmute":
