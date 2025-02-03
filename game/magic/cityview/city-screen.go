@@ -1121,11 +1121,11 @@ func drawCityScape(screen *ebiten.Image, buildings []BuildingSlot, buildingLook 
                 images, _ := imageCache.GetImages("cityscap.lbx", enchantment.Enchantment.LbxIndex(data.PlaneArcanus))
                 index := animationCounter % uint64(len(images))
                 screen.DrawImage(images[index], &options)
-            case data.CityEnchantmentNaturesEye:
+            case data.CityEnchantmentNaturesEye, data.CityEnchantmentProsperity:
                 var options ebiten.DrawImageOptions
                 options.ColorScale.ScaleAlpha(alphaScale)
                 options.GeoM = baseGeoM
-                options.GeoM.Translate(float64(114 * data.ScreenScale), float64(82 * data.ScreenScale))
+                options.GeoM.Translate(float64(enchantment.Enchantment.IconOffset() * data.ScreenScale), float64(82 * data.ScreenScale))
                 // FIXME: Consider plane
                 image, _ := imageCache.GetImage("cityscap.lbx", enchantment.Enchantment.LbxIndex(data.PlaneArcanus), 0)
                 screen.DrawImage(image, &options)
@@ -1430,6 +1430,7 @@ func (cityScreen *CityScreen) GoldProducers() []ResourceUsage {
     add(int(cityScreen.City.GoldMarketplace()), "Marketplace")
     add(int(cityScreen.City.GoldBank()), "Bank")
     add(int(cityScreen.City.GoldMerchantsGuild()), "Merchant's Guild")
+    add(int(cityScreen.City.GoldProsperity()), "Prosperity")
 
     return usage
 }

@@ -91,6 +91,7 @@ func NewEngine() (*Engine, error) {
     city.AddEnchantment(data.CityEnchantmentWallOfFire, data.BannerRed)
     // city.AddEnchantment(data.CityEnchantmentWallOfDarkness, data.BannerGreen)
     city.AddEnchantment(data.CityEnchantmentNaturesEye, data.BannerRed)
+    city.AddEnchantment(data.CityEnchantmentProsperity, data.BannerRed)
 
     var garrison []units.StackUnit
     for i := 0; i < 2; i++ {
