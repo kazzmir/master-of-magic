@@ -635,17 +635,15 @@ func (game *Game) ContainsCity(x int, y int, plane data.Plane) bool {
     return false
 }
 
-func (game *Game) NearCity(point image.Point, squares int) bool {
-    for _, player := range game.Players {
-        for _, city := range player.Cities {
-            if city.Plane == game.Plane {
-                diff := image.Pt(city.X, city.Y).Sub(point)
+func (game *Game) NearCity(point image.Point, squares int, plane data.Plane) bool {
+    for _, city := range game.AllCities() {
+        if city.Plane == plane {
+            diff := image.Pt(city.X, city.Y).Sub(point)
 
-                total := int(math.Abs(float64(diff.X)) + math.Abs(float64(diff.Y)))
+            total := int(math.Abs(float64(diff.X)) + math.Abs(float64(diff.Y)))
 
-                if total <= squares {
-                    return true
-                }
+            if total <= squares {
+                return true
             }
         }
     }
@@ -1907,6 +1905,19 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
     }
 
     return nil
+}
+
+func (game *Game) IsSettlableLocation(x int, y int, plane data.Plane) bool {
+    if !game.NearCity(image.Pt(x, y), 3, plane) {
+        mapUse := game.GetMap(plane)
+        if mapUse.HasCorruption(x, y) || mapUse.GetEncounter(x, y) != nil || mapUse.GetMagicNode(x, y) != nil {
+            return false
+        }
+
+        return mapUse.GetTile(x, y).Tile.IsLand()
+    }
+
+    return false
 }
 
 func (game *Game) FindSettlableLocations(x int, y int, plane data.Plane) []image.Point {
@@ -3502,6 +3513,20 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
                     if existingStack == nil || len(existingStack.Units()) < 9 {
                         overworldUnit := units.MakeOverworldUnitFromUnit(create.Unit, create.X, create.Y, create.Plane, player.Wizard.Banner, player.MakeExperienceInfo())
                         player.AddUnit(overworldUnit)
+                    }
+                case *playerlib.AIBuildOutpostDecision:
+                    build := decision.(*playerlib.AIBuildOutpostDecision)
+
+                    var stack units.StackUnit
+                    for _, unit := range build.Stack.Units() {
+                        if unit.HasAbility(data.AbilityCreateOutpost) {
+                            stack = unit
+                            break
+                        }
+                    }
+
+                    if stack != nil {
+                        game.CreateOutpost(stack, player)
                     }
                 case *playerlib.AIProduceDecision:
                     produce := decision.(*playerlib.AIProduceDecision)

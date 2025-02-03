@@ -54,6 +54,10 @@ type AICreateUnitDecision struct {
     Plane data.Plane
 }
 
+type AIBuildOutpostDecision struct {
+    Stack *UnitStack
+}
+
 // choose a new spell to research
 type AIResearchSpellDecision struct {
     Spell spellbook.Spell
@@ -62,6 +66,7 @@ type AIResearchSpellDecision struct {
 type AIServices interface {
     FindPath(oldX int, oldY int, newX int, newY int, stack *UnitStack, fog data.FogMap) pathfinding.Path
     FindSettlableLocations(x int, y int, plane data.Plane) []image.Point
+    IsSettlableLocation(x int, y int, plane data.Plane) bool
 }
 
 type AIBehavior interface {

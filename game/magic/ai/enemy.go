@@ -172,6 +172,13 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, a
                     // if we are at a settlable location, build the outpost
                     // otherwise, find a path to the chosen location
 
+                    if aiServices.IsSettlableLocation(stack.X(), stack.Y(), stack.Plane()) {
+                        decisions = append(decisions, &playerlib.AIBuildOutpostDecision{
+                            Stack: stack,
+                        })
+                        continue
+                    }
+
                     candidateLocations := aiServices.FindSettlableLocations(stack.X(), stack.Y(), stack.Plane())
                     if len(candidateLocations) == 0 {
 
@@ -208,6 +215,7 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, a
                             }
                         }
                     } else {
+                        // FIXME: choose a location with a high population maximum and near bonuses. Possibly also near a shore so we can build water units
                         // choose a random location
                         location := candidateLocations[rand.N(len(candidateLocations))]
                         path := aiServices.FindPath(stack.X(), stack.Y(), location.X, location.Y, stack, self.GetFog(stack.Plane()))
