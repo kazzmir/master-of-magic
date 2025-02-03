@@ -712,6 +712,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
             workerElements = nil
             citizenX := 6 * data.ScreenScale
 
+            // the city might not have enough the required subsistence farmers, so only show what is available
             subsistenceFarmers := min(cityScreen.City.ComputeSubsistenceFarmers(), cityScreen.City.Farmers)
 
             for i := 0; i < subsistenceFarmers; i++ {
