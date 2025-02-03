@@ -3473,7 +3473,10 @@ func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Play
         }
 
         stack.Move(to.X - stack.X(), to.Y - stack.Y(), terrainCost, game.GetNormalizeCoordinateFunc())
-        game.showMovement(yield, oldX, oldY, stack, false)
+
+        if game.Players[0].IsVisible(oldX, oldY, stack.Plane()) {
+            game.showMovement(yield, oldX, oldY, stack, false)
+        }
         player.LiftFogSquare(stack.X(), stack.Y(), stack.GetSightRange(), stack.Plane())
 
         if encounter != nil {

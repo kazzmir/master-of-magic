@@ -601,6 +601,16 @@ func (player *Player) LiftFogAll(plane data.Plane){
     }
 }
 
+func (player *Player) IsVisible(x int, y int, plane data.Plane) bool {
+    fog := player.GetFog(plane)
+    x = player.WrapX(x)
+    if x < 0 || x >= len(fog) || y < 0 || y >= len(fog[0]) {
+        return false
+    }
+
+    return fog[x][y] == data.FogTypeVisible
+}
+
 func (player *Player) LiftFogSquare(x int, y int, squares int, plane data.Plane){
     fog := player.GetFog(plane)
 
