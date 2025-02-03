@@ -1938,8 +1938,9 @@ func (game *Game) FindSettlableLocations(x int, y int, plane data.Plane, fog dat
     unavailable := make(map[image.Point]bool)
     for _, city := range game.AllCities() {
         if city.Plane == plane {
-            for dx := -3; dx <= 3; dx++ {
-                for dy := -3; dy <= 3; dy++ {
+            // keep a distance of 5 tiles from any other city
+            for dx := -5; dx <= 5; dx++ {
+                for dy := -5; dy <= 5; dy++ {
                     cx := game.CurrentMap().WrapX(city.X + dx)
                     cy := city.Y + dy
 
