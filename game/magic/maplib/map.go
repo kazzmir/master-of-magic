@@ -928,6 +928,17 @@ func MakeMap(terrainData *terrain.TerrainData, landSize int, magicSetting data.M
     }
 }
 
+// get all the tiles that are part of the continent that contains the given x, y
+func (mapObject *Map) GetContinentTiles(x int, y int) []FullTile {
+    continent := mapObject.Map.FindContinent(x, y)
+    var out []FullTile
+    for _, point := range continent {
+        tile := mapObject.GetTile(point.X, point.Y)
+        out = append(out, tile)
+    }
+    return out
+}
+
 // returns a map where for each direction, if the value is true then there is a road there
 func (mapObject *Map) GetRoadNeighbors(x int, y int) map[Direction]bool {
     out := make(map[Direction]bool)

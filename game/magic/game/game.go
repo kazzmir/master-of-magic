@@ -1910,8 +1910,39 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
 }
 
 func (game *Game) FindSettlableLocations(x int, y int, plane data.Plane) []image.Point {
-    // TODO
-    return nil
+    tiles := game.GetMap(plane).GetContinentTiles(x, y)
+
+    // compute all pointes that we can't build a city on because they are too close to another city
+    unavailable := make(map[image.Point]bool)
+    for _, city := range game.AllCities() {
+        if city.Plane == plane {
+            for dx := -3; dx <= 3; dx++ {
+                for dy := -3; dy <= 3; dy++ {
+                    cx := game.CurrentMap().WrapX(city.X + dx)
+                    cy := city.Y + dy
+
+                    unavailable[image.Pt(cx, cy)] = true
+                }
+            }
+        }
+    }
+
+    var out []image.Point
+
+    for _, tile := range tiles {
+        _, ok := unavailable[image.Pt(tile.X, tile.Y)]
+        if !ok {
+            continue
+        }
+
+        if tile.Corrupted() {
+            continue
+        }
+
+        out = append(out, image.Pt(tile.X, tile.Y))
+    }
+
+    return out
 }
 
 func (game *Game) doSummon(yield coroutine.YieldFunc, summonObject *summon.Summon) {
