@@ -1,23 +1,17 @@
-package main
+package xmi
 
 // https://moddingwiki.shikadi.net/wiki/XMI_Format
 // https://www.vgmpf.com/Wiki/index.php?title=XMI
 
 import (
-    "os"
     "io"
     "fmt"
-    "time"
-    "strings"
     "bytes"
     "bufio"
     "encoding/binary"
     "sort"
 
     "gitlab.com/gomidi/midi/v2/smf"
-    midiDrivers "gitlab.com/gomidi/midi/v2/drivers"
-    // sudo apt install libportmidi-dev
-    _ "gitlab.com/gomidi/midi/v2/drivers/portmididrv"
     "gitlab.com/gomidi/midi/v2"
 )
 
@@ -679,67 +673,7 @@ func NewIFFReader(reader io.Reader) *IFFReader {
     }
 }
 
-/* first run in a terminal
- * $ fluidsynth --audio-driver=pulseaudio /usr/share/sounds/sf2/FluidR3_GM.sf2
- */
-func playMidi(smfObject *smf.SMF){
-    driver := midiDrivers.Get()
-    fmt.Printf("Got driver: %v\n", driver)
-    outs, err := driver.Outs()
-    if err != nil {
-        fmt.Printf("Could not get midi output ports: %v\n", err)
-    } else {
-        fmt.Printf("Got midi output ports: %v\n", outs)
-        if len(outs) > 0 {
-            for _, out := range outs {
-
-                if strings.Contains(out.String(), "Through"){
-                    continue
-                }
-
-                send, err := midi.SendTo(out)
-                if err != nil {
-                    fmt.Printf("Could not send to midi output port: %v\n", err)
-                    return
-                }
-
-                defer out.Close()
-
-                for _, event := range smfObject.Tracks[0] {
-                    fmt.Printf("Sending event: %v\n", event)
-                    err := send(event.Message.Bytes())
-                    if err != nil {
-                        fmt.Printf("Error: %v\n", err)
-                    }
-
-                    // FIXME: use proper delay
-                    time.Sleep(time.Millisecond * time.Duration(event.Delta) * 10)
-                }
-
-                return
-            }
-
-            fmt.Printf("No playabale output ports available!\n")
-
-        } else {
-            fmt.Printf("No midi output ports available!\n")
-        }
-    }
-}
-
-func main(){
-    if len(os.Args) < 2 {
-        return
-    }
-    file := os.Args[1]
-
-    data, err := os.Open(file)
-    if err != nil {
-        fmt.Printf("Error: %s\n", err)
-        return
-    }
-    defer data.Close()
-
+func ConvertToMidi(data io.Reader) (*smf.SMF, error) {
     reader := bufio.NewReader(data)
     // if reading from an lbx file
     // reader.Discard(16)
@@ -749,8 +683,7 @@ func main(){
     for iffReader.HasMore() {
         chunk, err := iffReader.ReadChunk()
         if err != nil {
-            fmt.Printf("Error: %s\n", err)
-            return
+            return nil, err
         }
         fmt.Printf("Chunk name=%v size=%v\n", chunk.Name(), chunk.Size())
         if chunk.IsForm() && chunk.GetFormType() == "XDIR" {
@@ -798,6 +731,8 @@ func main(){
                     }
 
                     smfObject := event.ConvertToSMF()
+                    return smfObject, nil
+                    /*
                     out, err := os.Create("output.mid")
                     if err != nil {
                         fmt.Printf("Error creating output file: %v\n", err)
@@ -812,6 +747,7 @@ func main(){
                         playMidi(smfObject)
 
                     }
+                    */
                 } else {
                     fmt.Printf("  unknown subchunk\n")
                 }
@@ -823,4 +759,6 @@ func main(){
             */
         }
     }
+
+    return nil, fmt.Errorf("no midi data found")
 }
