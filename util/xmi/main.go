@@ -57,11 +57,17 @@ func playMidi(smfObject *smf.SMF){
                 return
             }
 
-            fmt.Printf("No playabale output ports available!\n")
+            fmt.Printf("No playable output ports available!\n")
 
         } else {
             fmt.Printf("No midi output ports available!\n")
         }
+    }
+}
+
+func dumpMidi(smfObject *smf.SMF){
+    for _, event := range smfObject.Tracks[0] {
+        fmt.Printf("Sending event: %v\n", event)
     }
 }
 
@@ -100,6 +106,8 @@ func main(){
     out.Close()
 
     log.Printf("Wrote to %v", outputName)
+
+    dumpMidi(midi)
 
     // playMidi(smfObject)
 }
