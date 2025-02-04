@@ -126,14 +126,37 @@ func NewEngine() (*Engine, error) {
     }, nil
 }
 
+func (engine *Engine) togglePlane() {
+    if engine.CityScreen.City.Plane == data.PlaneArcanus {
+        engine.CityScreen.City.Plane = data.PlaneMyrror
+    } else {
+        engine.CityScreen.City.Plane = data.PlaneArcanus
+    }
+}
+
+func (engine *Engine) toggleEnchantment(enchantment data.CityEnchantment) {
+    if engine.CityScreen.City.HasEnchantment(enchantment) {
+        engine.CityScreen.City.RemoveEnchantment(enchantment, data.BannerBlue)
+    } else {
+        engine.CityScreen.City.AddEnchantment(enchantment, data.BannerBlue)
+    }
+}
+
 func (engine *Engine) Update() error {
 
     keys := make([]ebiten.Key, 0)
     keys = inpututil.AppendJustPressedKeys(keys)
 
     for _, key := range keys {
-        if key == ebiten.KeyEscape || key == ebiten.KeyCapsLock {
-            return ebiten.Termination
+        switch key {
+            case ebiten.KeyEscape, ebiten.KeyCapsLock: return ebiten.Termination
+            case ebiten.KeyP: engine.togglePlane()
+            case ebiten.Key1: engine.toggleEnchantment(data.CityEnchantmentFlyingFortress)
+            case ebiten.Key2: engine.toggleEnchantment(data.CityEnchantmentFamine)
+            case ebiten.Key3: engine.toggleEnchantment(data.CityEnchantmentCursedLands)
+            case ebiten.Key4: engine.toggleEnchantment(data.CityEnchantmentGaiasBlessing)
+            case ebiten.Key5: engine.toggleEnchantment(data.CityEnchantmentChaosRift)
+            case ebiten.Key6: engine.toggleEnchantment(data.CityEnchantmentHeavenlyLight)
         }
     }
 

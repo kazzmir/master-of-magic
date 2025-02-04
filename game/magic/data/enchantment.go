@@ -357,38 +357,15 @@ func (enchantment CityEnchantment) UpkeepMana() int {
     return 0
 }
 
-func (enchantment CityEnchantment) LbxIndex(plane Plane) int {
+func (enchantment CityEnchantment) LbxIndex() int {
     switch enchantment {
         case CityEnchantmentAltarOfBattle: return 12
         case CityEnchantmentAstralGate: return 85
-        case CityEnchantmentChaosRift:
-            if plane == PlaneMyrror {
-                return 112
-            }
-            return 92
         // case CityEnchantmentCloudOfShadow: return // FIXME: Some sort of dark icon
         case CityEnchantmentConsecration: return 102
-        case CityEnchantmentCursedLands:
-            if plane == PlaneMyrror {
-                return 8
-            }
-            return 0
         case CityEnchantmentDarkRituals: return 81
         case CityEnchantmentEarthGate: return 83
         case CityEnchantmentEvilPresence: return 82
-        case CityEnchantmentFamine:
-            if plane == PlaneMyrror {
-                return 8
-            }
-            return 0
-        // case CityEnchantmentFlyingFortress: FIXME: Clouds city background
-        // case CityEnchantmentGaiasBlessing: FIXME: Green city background
-        case CityEnchantmentHeavenlyLight:
-            // FIXME: is this right?
-            if plane == PlaneMyrror {
-                return 112
-            }
-            return 93
         case CityEnchantmentInspirations: return 100
         case CityEnchantmentNaturesEye: return 99
         // case CityEnchantmentPestilence: FIXME: How is this displayed?
