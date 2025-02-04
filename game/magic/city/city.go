@@ -92,7 +92,10 @@ type City struct {
     Name string
     Wall bool
     Plane data.Plane
+    // the race of the towns people
     Race data.Race
+    // the race of the controlling wizard
+    RulingRace data.Race
     X int
     Y int
     Outpost bool
@@ -125,6 +128,7 @@ func MakeCity(name string, x int, y int, race data.Race, banner data.BannerType,
         Y: y,
         Banner: banner,
         Race: race,
+        RulingRace: race,
         Buildings: set.MakeSet[buildinglib.Building](),
         Enchantments: set.MakeSet[Enchantment](),
         TaxRate: taxRate,
@@ -637,8 +641,7 @@ func parthenonPacification(race data.Race) int {
     }
 }
 
-// FIXME: Fix spelling
-func cathedralPaclification(race data.Race) int {
+func cathedralPacification(race data.Race) int {
     switch race {
         case data.RaceBarbarian, data.RaceGnoll, data.RaceHighElf,
              data.RaceKlackon, data.RaceLizard, data.RaceDarkElf,
@@ -664,6 +667,144 @@ func oraclePacification(race data.Race) int {
     }
 }
 
+// https://masterofmagic.fandom.com/wiki/Town#Unrest_Reduction
+func (city *City) InteracialUnrest() float64 {
+    unrest := make(map[data.Race]map[data.Race]float64)
+
+    set := func (race1 data.Race, race2 data.Race, value float64) {
+        if _, ok := unrest[race1]; !ok {
+            unrest[race1] = make(map[data.Race]float64)
+        }
+        unrest[race1][race2] = value
+
+        if _, ok := unrest[race2]; !ok {
+            unrest[race2] = make(map[data.Race]float64)
+        }
+        unrest[race2][race1] = value
+    }
+
+    set(data.RaceBarbarian, data.RaceBarbarian, 0)
+    set(data.RaceBarbarian, data.RaceBeastmen, 0.1)
+    set(data.RaceBarbarian, data.RaceDarkElf, 0.1)
+    set(data.RaceBarbarian, data.RaceDraconian, 0.1)
+    set(data.RaceBarbarian, data.RaceDwarf, 0.1)
+    set(data.RaceBarbarian, data.RaceGnoll, 0.1)
+    set(data.RaceBarbarian, data.RaceHalfling, 0.1)
+    set(data.RaceBarbarian, data.RaceHighElf, 0.1)
+    set(data.RaceBarbarian, data.RaceHighMen, 0.1)
+    set(data.RaceBarbarian, data.RaceKlackon, 0.2)
+    set(data.RaceBarbarian, data.RaceLizard, 0.1)
+    set(data.RaceBarbarian, data.RaceNomad, 0)
+    set(data.RaceBarbarian, data.RaceOrc, 0)
+    set(data.RaceBarbarian, data.RaceTroll, 0.1)
+
+    set(data.RaceBeastmen, data.RaceBeastmen, 0)
+    set(data.RaceBeastmen, data.RaceDarkElf, 0.2)
+    set(data.RaceBeastmen, data.RaceDraconian, 0.2)
+    set(data.RaceBeastmen, data.RaceDwarf, 0.2)
+    set(data.RaceBeastmen, data.RaceGnoll, 0)
+    set(data.RaceBeastmen, data.RaceHalfling, 0.1)
+    set(data.RaceBeastmen, data.RaceHighElf, 0.2)
+    set(data.RaceBeastmen, data.RaceHighMen, 0.1)
+    set(data.RaceBeastmen, data.RaceKlackon, 0.2)
+    set(data.RaceBeastmen, data.RaceLizard, 0.1)
+    set(data.RaceBeastmen, data.RaceNomad, 0.1)
+    set(data.RaceBeastmen, data.RaceOrc, 0.1)
+    set(data.RaceBeastmen, data.RaceTroll, 0.2)
+
+    set(data.RaceDarkElf, data.RaceDarkElf, 0)
+    set(data.RaceDarkElf, data.RaceDraconian, 0.2)
+    set(data.RaceDarkElf, data.RaceDwarf, 0.3)
+    set(data.RaceDarkElf, data.RaceGnoll, 0.2)
+    set(data.RaceDarkElf, data.RaceHalfling, 0.2)
+    set(data.RaceDarkElf, data.RaceHighElf, 0.4)
+    set(data.RaceDarkElf, data.RaceHighMen, 0.2)
+    set(data.RaceDarkElf, data.RaceKlackon, 0.2)
+    set(data.RaceDarkElf, data.RaceLizard, 0.2)
+    set(data.RaceDarkElf, data.RaceNomad, 0.2)
+    set(data.RaceDarkElf, data.RaceOrc, 0.2)
+    set(data.RaceDarkElf, data.RaceTroll, 0.3)
+
+    set(data.RaceDraconian, data.RaceDraconian, 0)
+    set(data.RaceDraconian, data.RaceDwarf, 0.2)
+    set(data.RaceDraconian, data.RaceGnoll, 0.2)
+    set(data.RaceDraconian, data.RaceHalfling, 0.1)
+    set(data.RaceDraconian, data.RaceHighElf, 0.1)
+    set(data.RaceDraconian, data.RaceHighMen, 0.1)
+    set(data.RaceDraconian, data.RaceKlackon, 0.2)
+    set(data.RaceDraconian, data.RaceLizard, 0.1)
+    set(data.RaceDraconian, data.RaceNomad, 0.1)
+    set(data.RaceDraconian, data.RaceOrc, 0.1)
+    set(data.RaceDraconian, data.RaceTroll, 0.2)
+
+    set(data.RaceDwarf, data.RaceDwarf, 0)
+    set(data.RaceDwarf, data.RaceGnoll, 0.1)
+    set(data.RaceDwarf, data.RaceHalfling, 0)
+    set(data.RaceDwarf, data.RaceHighElf, 0.3)
+    set(data.RaceDwarf, data.RaceHighMen, 0)
+    set(data.RaceDwarf, data.RaceKlackon, 0.2)
+    set(data.RaceDwarf, data.RaceLizard, 0.1)
+    set(data.RaceDwarf, data.RaceNomad, 0)
+    set(data.RaceDwarf, data.RaceOrc, 0.3)
+    set(data.RaceDwarf, data.RaceTroll, 0.4)
+
+    set(data.RaceGnoll, data.RaceGnoll, 0)
+    set(data.RaceGnoll, data.RaceHalfling, 0)
+    set(data.RaceGnoll, data.RaceHighElf, 0.3)
+    set(data.RaceGnoll, data.RaceHighMen, 0)
+    set(data.RaceGnoll, data.RaceKlackon, 0.2)
+    set(data.RaceGnoll, data.RaceLizard, 0.1)
+    set(data.RaceGnoll, data.RaceNomad, 0.1)
+    set(data.RaceGnoll, data.RaceOrc, 0)
+    set(data.RaceGnoll, data.RaceTroll, 0)
+
+    set(data.RaceHalfling, data.RaceHalfling, 0)
+    set(data.RaceHalfling, data.RaceHighElf, 0)
+    set(data.RaceHalfling, data.RaceHighMen, 0)
+    set(data.RaceHalfling, data.RaceKlackon, 0.2)
+    set(data.RaceHalfling, data.RaceLizard, 0)
+    set(data.RaceHalfling, data.RaceNomad, 0)
+    set(data.RaceHalfling, data.RaceOrc, 0)
+    set(data.RaceHalfling, data.RaceTroll, 0)
+
+    set(data.RaceHighElf, data.RaceHighElf, 0)
+    set(data.RaceHighElf, data.RaceHighMen, 0)
+    set(data.RaceHighElf, data.RaceKlackon, 0.2)
+    set(data.RaceHighElf, data.RaceLizard, 0.1)
+    set(data.RaceHighElf, data.RaceNomad, 0)
+    set(data.RaceHighElf, data.RaceOrc, 0.2)
+    set(data.RaceHighElf, data.RaceTroll, 0.3)
+
+    set(data.RaceHighMen, data.RaceHighMen, 0)
+    set(data.RaceHighMen, data.RaceKlackon, 0.2)
+    set(data.RaceHighMen, data.RaceLizard, 0.1)
+    set(data.RaceHighMen, data.RaceNomad, 0)
+    set(data.RaceHighMen, data.RaceOrc, 0)
+    set(data.RaceHighMen, data.RaceTroll, 0.1)
+
+    set(data.RaceKlackon, data.RaceKlackon, -0.2)
+    set(data.RaceKlackon, data.RaceLizard, 0.2)
+    set(data.RaceKlackon, data.RaceNomad, 0.2)
+    set(data.RaceKlackon, data.RaceOrc, 0.2)
+    set(data.RaceKlackon, data.RaceTroll, 0.2)
+
+    set(data.RaceLizard, data.RaceLizard, 0)
+    set(data.RaceLizard, data.RaceNomad, 0.1)
+    set(data.RaceLizard, data.RaceOrc, 0.1)
+    set(data.RaceLizard, data.RaceTroll, 0.1)
+
+    set(data.RaceNomad, data.RaceNomad, 0)
+    set(data.RaceNomad, data.RaceOrc, 0)
+    set(data.RaceNomad, data.RaceTroll, 0.1)
+
+    set(data.RaceOrc, data.RaceOrc, 0)
+    set(data.RaceOrc, data.RaceTroll, 0)
+
+    set(data.RaceTroll, data.RaceTroll, 0)
+
+    return unrest[city.Race][city.RulingRace]
+}
+
 func (city *City) ComputeUnrest(garrison []units.StackUnit) int {
     unrestPercent := float64(0)
 
@@ -683,6 +824,8 @@ func (city *City) ComputeUnrest(garrison []units.StackUnit) int {
     } else if city.TaxRate.Equals(fraction.Make(3, 1)) {
         unrestPercent = 0.75
     }
+
+    unrestPercent += city.InteracialUnrest()
 
     // capital race vs town race modifier
     // unrest from spells
@@ -714,7 +857,7 @@ func (city *City) ComputeUnrest(garrison []units.StackUnit) int {
     }
 
     if city.Buildings.Contains(buildinglib.BuildingCathedral) {
-        pacification += float64(cathedralPaclification(city.Race)) * pacificationRetort
+        pacification += float64(cathedralPacification(city.Race)) * pacificationRetort
     }
 
     if city.Buildings.Contains(buildinglib.BuildingAnimistsGuild) {

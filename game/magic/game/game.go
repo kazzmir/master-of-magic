@@ -3143,6 +3143,7 @@ func (game *Game) defeatCity(yield coroutine.YieldFunc, attacker *playerlib.Play
         defender.RemoveCity(city)
         attacker.AddCity(city)
         city.Banner = attacker.Wizard.Banner
+        city.RulingRace = attacker.Wizard.Race
         city.UpdateTaxRate(attacker.TaxRate, attackerStack.Units())
 
         city.Buildings.Remove(buildinglib.BuildingFortress)
@@ -4670,6 +4671,7 @@ func (game *Game) CreateOutpost(settlers units.StackUnit, player *playerlib.Play
 
     newCity := citylib.MakeCity(cityName, settlers.GetX(), settlers.GetY(), settlers.GetRace(), settlers.GetBanner(), player.TaxRate, game.BuildingInfo, game.GetMap(settlers.GetPlane()), game)
     newCity.Plane = settlers.GetPlane()
+    newCity.RulingRace = player.Wizard.Race
     newCity.Population = 300
     newCity.Outpost = true
     newCity.Banner = player.Wizard.Banner

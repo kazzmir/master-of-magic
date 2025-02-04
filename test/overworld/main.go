@@ -1724,11 +1724,11 @@ func createScenario20(cache *lbx.LbxCache) *gamelib.Game {
     // cant use brown banner because neutral cities will never cast a city enchantment
     city2.AddEnchantment(data.CityEnchantmentWallOfFire, data.BannerRed)
 
-    city2.ResetCitizens(nil)
-
     city2.Farmers = 5
     city2.Workers = 2
     city2.Rebels = 1
+
+    city2.ResetCitizens(nil)
 
     /*
     for range 1 {
