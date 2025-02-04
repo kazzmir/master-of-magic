@@ -4241,7 +4241,6 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
         }
     }
 
-
     // returns the fame that should be added to the winner and loser. the loser fame is negative
     distributeFame := func(winner *playerlib.Player, loser *playerlib.Player, loserStack *playerlib.UnitStack, defeatedUnits int) (int, int) {
         winnerFame := 0
