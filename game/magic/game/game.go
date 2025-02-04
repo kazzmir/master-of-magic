@@ -4250,60 +4250,71 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
         }
     }
 
-    // fame
-    var winnerFame, loserFame int
-    distributeFame := func(winner *playerlib.Player, loser *playerlib.Player, loserStack *playerlib.UnitStack, defeatedUnits int) {
+    // returns the fame that should be added to the winner and loser. the loser fame is negative
+    distributeFame := func(winner *playerlib.Player, loser *playerlib.Player, loserStack *playerlib.UnitStack, defeatedUnits int) (int, int) {
+        winnerFame := 0
+        loserFame := 0
+
         if defeatedUnits >= 4 {
             winnerFame += 1
-            loserFame += 1
+            loserFame -= 1
         }
 
         for _, unit := range loserStack.Units() {
             if unit.GetRawUnit().CastingCost >= 600 {
                 winnerFame += 1
-                loserFame += 1
+                loserFame -= 1
                 break
             }
             if unit.IsHero() {
                 hero := unit.(*herolib.Hero)
-                loserFame += (int(hero.GetExperienceLevel()) + 1) / 2
+                loserFame -= (int(hero.GetExperienceLevel()) + 1) / 2
             }
         }
 
-        winner.Fame += winnerFame
-        loser.Fame -= loserFame
-        if loser.Fame < 0 {
-            loser.Fame = 0
-        }
+        return winnerFame, loserFame
     }
 
-    if state == combat.CombatStateAttackerWin || state == combat.CombatStateDefenderFlee {
-        distributeFame(attacker, defender, defenderStack, defeatedDefenders)
+    // fame
+    var attackerFame, defenderFame int
 
+    if state == combat.CombatStateAttackerWin || state == combat.CombatStateDefenderFlee {
         if zone.City != nil {
             razeCity, gold := game.defeatCity(yield, attacker, attackerStack, defender, zone.City)
             // if razeCity is true then we pass in false to get the fame for capturing the city
-            winnerFame += zone.City.FameForCaptureOrRaze(!razeCity)
-            loserFame += zone.City.FameForCaptureOrRaze(false)
+            attackerFame += zone.City.FameForCaptureOrRaze(!razeCity)
+            defenderFame += zone.City.FameForCaptureOrRaze(false)
 
             attacker.Gold += gold
             defender.Gold -= gold
         }
 
+        winner, loser := distributeFame(attacker, defender, defenderStack, defeatedDefenders)
+        attackerFame += winner
+        defenderFame += loser
     } else if state == combat.CombatStateDefenderWin || state == combat.CombatStateAttackerFlee {
-        distributeFame(defender, attacker, attackerStack, defeatedAttackers)
+        winner, loser := distributeFame(defender, attacker, attackerStack, defeatedAttackers)
+        defenderFame += winner
+        attackerFame += loser
     }
+
+    attacker.Fame = max(0, attacker.Fame + attackerFame)
+    defender.Fame = max(0, defender.Fame + defenderFame)
 
     // Show end screen
     if !attacker.StrategicCombat || !defender.StrategicCombat {
         result := combat.CombatEndScreenResultLoose
         humanAttacker := attacker.IsHuman()
-        fame := loserFame
+        fame := defenderFame
+
+        if state == combat.CombatStateAttackerWin || state == combat.CombatStateDefenderFlee {
+            fame = attackerFame
+        }
+
         switch {
             case state == combat.CombatStateAttackerWin && humanAttacker,
                  state == combat.CombatStateDefenderWin && !humanAttacker:
                 result = combat.CombatEndScreenResultWin
-                fame = winnerFame
             case state == combat.CombatStateAttackerFlee && humanAttacker,
                  state == combat.CombatStateDefenderFlee && !humanAttacker:
                 result = combat.CombatEndScreenResultRetreat
