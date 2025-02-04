@@ -140,6 +140,7 @@ func (engine *Engine) toggleEnchantment(enchantment data.CityEnchantment) {
     } else {
         engine.CityScreen.City.AddEnchantment(enchantment, data.BannerBlue)
     }
+    engine.CityScreen.UI = engine.CityScreen.MakeUI(buildinglib.BuildingNone)
 }
 
 func (engine *Engine) Update() error {
