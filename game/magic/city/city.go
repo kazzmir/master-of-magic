@@ -827,6 +827,10 @@ func (city *City) ComputeUnrest(garrison []units.StackUnit) int {
 
     unrestPercent += city.InteracialUnrest()
 
+    if city.HasEnchantment(data.CityEnchantmentFamine) {
+        unrestPercent += 0.25
+    }
+
     // capital race vs town race modifier
     // unrest from spells
     // supression from units
