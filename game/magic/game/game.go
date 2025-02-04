@@ -4292,8 +4292,6 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     attacker.Fame = max(0, attacker.Fame + attackerFame)
     defender.Fame = max(0, defender.Fame + defenderFame)
 
-    log.Printf("attacker fame: %v, defender fame: %v", attackerFame, defenderFame)
-
     // Show end screen
     if !attacker.StrategicCombat || !defender.StrategicCombat {
         result := combat.CombatEndScreenResultLoose
