@@ -258,7 +258,7 @@ func (player *Player) ComputePlunderedGold(city *citylib.City) int {
         totalPopulation += city.Citizens()
     }
 
-    return int(float64(player.Gold) * float64(city.Citizens()) / float64(totalPopulation))
+    return int(float64(player.Gold) * float64(city.Citizens()) / float64(min(1, totalPopulation)))
 }
 
 func (player *Player) IsTileExplored(x int, y int, plane data.Plane) bool {
