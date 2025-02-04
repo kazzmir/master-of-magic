@@ -4269,8 +4269,6 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     }
 
     if state == combat.CombatStateAttackerWin || state == combat.CombatStateDefenderFlee {
-        distributeFame(attacker, defender, defenderStack, defeatedDefenders)
-
         if zone.City != nil {
             razeCity, gold := game.defeatCity(yield, attacker, attackerStack, defender, zone.City)
             // if razeCity is true then we pass in false to get the fame for capturing the city
@@ -4281,6 +4279,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
             defender.Gold -= gold
         }
 
+        distributeFame(attacker, defender, defenderStack, defeatedDefenders)
     } else if state == combat.CombatStateDefenderWin || state == combat.CombatStateAttackerFlee {
         distributeFame(defender, attacker, attackerStack, defeatedAttackers)
     }
