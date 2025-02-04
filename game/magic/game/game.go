@@ -167,6 +167,11 @@ type GameEventSummonHero struct {
     Champion bool
 }
 
+type GameEventShowBanish struct {
+    Attacker *playerlib.Player
+    Defender *playerlib.Player
+}
+
 type GameEventNewBuilding struct {
     City *citylib.City
     Building buildinglib.Building
@@ -2660,6 +2665,9 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         game.ShowApprenticeUI(yield, game.Players[0])
                     case *GameEventArmyView:
                         game.doArmyView(yield)
+                    case *GameEventShowBanish:
+                        banishEvent := event.(*GameEventShowBanish)
+                        game.doBanish(yield, banishEvent.Attacker, banishEvent.Defender)
                     case *GameEventNotice:
                         notice := event.(*GameEventNotice)
                         game.doNotice(yield, notice.Message)
@@ -3148,20 +3156,26 @@ func (game *Game) defeatCity(yield coroutine.YieldFunc, attacker *playerlib.Play
         defender.Banished = true
 
         if attacker.IsHuman() || defender.IsHuman() {
-            banishLogic, banishDraw := banish.ShowBanishAnimation(game.Cache, attacker, defender)
-
-            oldDrawer := game.Drawer
-            defer func() {
-                game.Drawer = oldDrawer
-            }()
-
-            game.Drawer = func(screen *ebiten.Image, game *Game){
-                banishDraw(screen)
-            }
-
-            banishLogic(yield)
+            game.Events <- &GameEventShowBanish{Attacker: attacker, Defender: defender}
         }
     }
+}
+
+func (game *Game) doBanish(yield coroutine.YieldFunc, attacker *playerlib.Player, defender *playerlib.Player) {
+    banishLogic, banishDraw := banish.ShowBanishAnimation(game.Cache, attacker, defender)
+
+    oldDrawer := game.Drawer
+    defer func() {
+        game.Drawer = oldDrawer
+    }()
+
+    game.Drawer = func(screen *ebiten.Image, game *Game){
+        banishDraw(screen)
+    }
+
+    banishLogic(yield)
+
+    yield()
 }
 
 func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerlib.Player) {
