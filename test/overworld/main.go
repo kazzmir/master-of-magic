@@ -1730,12 +1730,11 @@ func createScenario20(cache *lbx.LbxCache) *gamelib.Game {
     city2.Workers = 2
     city2.Rebels = 1
 
-    /*
     for range 1 {
-        randomUnit := units.ChooseRandomUnit(enemy.Wizard.Race)
+        // randomUnit := units.ChooseRandomUnit(enemy.Wizard.Race)
+        randomUnit := units.DraconianSettlers
         enemy.AddUnit(units.MakeOverworldUnitFromUnit(randomUnit, city2.X, city2.Y, data.PlaneArcanus, enemyWizard.Banner, enemy.MakeExperienceInfo()))
     }
-    */
 
     enemy.AddCity(city2)
 
