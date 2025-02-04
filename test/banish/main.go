@@ -10,6 +10,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/banish"
+    "github.com/kazzmir/master-of-magic/game/magic/audio"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
 
@@ -96,6 +97,8 @@ func main(){
     ebiten.SetWindowSize(data.ScreenWidth * size, data.ScreenHeight * size)
     ebiten.SetWindowTitle("banish")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
+
+    audio.Initialize()
 
     scenario := 1
 
