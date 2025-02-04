@@ -4297,6 +4297,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
                 result = combat.CombatEndScreenResultRetreat
         }
 
+        // FIXME: show how much gold was plundered (or lost)
         endScreen := combat.MakeCombatEndScreen(game.Cache, combatScreen, result, combatScreen.Model.DiedWhileFleeing, fame)
         game.Drawer = func (screen *ebiten.Image, game *Game){
             endScreen.Draw(screen)
