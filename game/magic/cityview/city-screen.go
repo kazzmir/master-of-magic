@@ -1025,7 +1025,6 @@ func drawCityScape(screen *ebiten.Image, city *citylib.City, buildings []Buildin
     }
 
     animationIndex := 4
-    // FIXME: validate how flying fortress is rendered
     hasFlyingFortress := city.HasEnchantment(data.CityEnchantmentFlyingFortress)
     switch {
         case hasFlyingFortress: animationIndex = 1
@@ -1046,17 +1045,20 @@ func drawCityScape(screen *ebiten.Image, city *citylib.City, buildings []Buildin
     spriteIndex = 7
     hasChaosRift := city.HasEnchantment(data.CityEnchantmentChaosRift)
     hasHeavenlyLight := city.HasEnchantment(data.CityEnchantmentHeavenlyLight)
+    hasCloudOfShadow := city.HasEnchantment(data.CityEnchantmentCloudOfShadow)
     switch {
         case hasFlyingFortress: spriteIndex = -1
         case hasChaosRift && onMyrror: spriteIndex = 112
         case hasChaosRift: spriteIndex = 92
         case hasHeavenlyLight && onMyrror: spriteIndex = 113
         case hasHeavenlyLight: spriteIndex = 93
-        // FIXME: sprite 91 / 111?
-        // FIXME: hills && onMyrror: 9
-        // FIXME: hills: 1
-        // FIXME: mountains && onMyrror: 10
-        // FIXME: mountains: 2
+        case hasCloudOfShadow && onMyrror: spriteIndex = 111
+        case hasCloudOfShadow: spriteIndex = 91
+        // FIXME: hills and mountains seem to depend on the tiles north of the town
+        //      hills && onMyrror: 9
+        //      hills: 1
+        //      mountains && onMyrror: 10
+        //      mountains: 2
         case onMyrror: spriteIndex = 11
     }
 
@@ -1139,9 +1141,15 @@ func drawCityScape(screen *ebiten.Image, city *citylib.City, buildings []Buildin
         }
     }
 
-    // river
+    // river / shore
     // FIXME: make this configurable
-    river, err := imageCache.GetImages("cityscap.lbx", 3)
+    // FIXME: 4/116 is shore
+    spriteIndex = 4
+    if onMyrror {
+        spriteIndex = 115
+    }
+
+    river, err := imageCache.GetImages("cityscap.lbx", spriteIndex)
     if err == nil {
         var options ebiten.DrawImageOptions
         options.ColorScale.ScaleAlpha(alphaScale)
