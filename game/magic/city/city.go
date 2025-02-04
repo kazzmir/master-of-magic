@@ -367,6 +367,48 @@ func (city *City) ComputePossibleUnits() []units.Unit {
     return out
 }
 
+// pass in true to compute fame for capturing, and false to compute fame for razing/losing
+func (city *City) FameForCaptureOrRaze(captured bool) int {
+    if city.Outpost {
+        return 0
+    }
+
+    switch city.GetSize() {
+        case CitySizeHamlet:
+            if captured {
+                return 0
+            } else {
+                return -1
+            }
+        case CitySizeVillage:
+            if captured {
+                return 0
+            } else {
+                return -2
+            }
+        case CitySizeTown:
+            if captured {
+                return 1
+            } else {
+                return -2
+            }
+        case CitySizeCity:
+            if captured {
+                return 2
+            } else {
+                return -4
+            }
+        case CitySizeCapital:
+            if captured {
+                return 3
+            } else {
+                return -5
+            }
+    }
+
+    return 0
+}
+
 // true if the city is adjacent to a water tile
 func (city *City) OnShore() bool {
     return city.CatchmentProvider.OnShore(city.X, city.Y)

@@ -3125,10 +3125,8 @@ func (game *Game) doMoveFleeingDefender(player *playerlib.Player, stack *playerl
     }
 }
 
-func (game *Game) defeatCity(yield coroutine.YieldFunc, attacker *playerlib.Player, attackerStack *playerlib.UnitStack, defender *playerlib.Player, city *citylib.City) {
-    // FIXME: if there was a city here and the attacker won then the attacker
-    // should be able to raze or occupy the city
-
+// returns true if the city was razed
+func (game *Game) defeatCity(yield coroutine.YieldFunc, attacker *playerlib.Player, attackerStack *playerlib.UnitStack, defender *playerlib.Player, city *citylib.City) bool {
     raze := false
 
     if attacker.IsHuman() {
@@ -3141,7 +3139,6 @@ func (game *Game) defeatCity(yield coroutine.YieldFunc, attacker *playerlib.Play
 
     if raze {
         defender.RemoveCity(city)
-        // FIXME: lose fame if razing
     } else {
         defender.RemoveCity(city)
         attacker.AddCity(city)
@@ -3159,6 +3156,8 @@ func (game *Game) defeatCity(yield coroutine.YieldFunc, attacker *playerlib.Play
             game.Events <- &GameEventShowBanish{Attacker: attacker, Defender: defender}
         }
     }
+
+    return raze
 }
 
 func (game *Game) doBanish(yield coroutine.YieldFunc, attacker *playerlib.Player, defender *playerlib.Player) {
@@ -3250,10 +3249,6 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
                         game.doMoveFleeingDefender(otherPlayer, otherStack)
                     }
 
-                    if otherCity != nil && (state == combat.CombatStateDefenderFlee || state == combat.CombatStateAttackerWin) {
-                        game.defeatCity(yield, player, stack, otherPlayer, otherCity)
-                    }
-
                     stack.ExhaustMoves()
                     game.RefreshUI()
 
@@ -3264,7 +3259,11 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
                 // defeat any unguarded cities immediately
                 otherCity := otherPlayer.FindCity(stack.X(), stack.Y(), stack.Plane())
                 if otherCity != nil {
-                    game.defeatCity(yield, player, stack, otherPlayer, otherCity)
+                    raze := game.defeatCity(yield, player, stack, otherPlayer, otherCity)
+
+                    // FIXME: show a notice about any fame won
+                    player.Fame += otherCity.FameForCaptureOrRaze(!raze)
+                    otherPlayer.Fame += otherCity.FameForCaptureOrRaze(false)
 
                     stack.ExhaustMoves()
                     game.RefreshUI()
@@ -3579,15 +3578,16 @@ func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Play
                     game.doMoveFleeingDefender(enemy, enemyStack)
                 }
 
-                if city != nil && (state == combat.CombatStateDefenderFlee || state == combat.CombatStateAttackerWin) {
-                    game.defeatCity(yield, player, stack, enemy, city)
-                    return
-                }
+                return
             }
 
             city := enemy.FindCity(stack.X(), stack.Y(), stack.Plane())
             if city != nil {
-                game.defeatCity(yield, player, stack, enemy, city)
+                raze := game.defeatCity(yield, player, stack, enemy, city)
+
+                player.Fame += city.FameForCaptureOrRaze(!raze)
+                enemy.Fame += city.FameForCaptureOrRaze(false)
+
                 return
             }
         }
@@ -3822,12 +3822,31 @@ func (game *Game) confirmRazeTown(yield coroutine.YieldFunc, city *citylib.City)
     yesImages, _ := game.ImageCache.GetImages("compix.lbx", 82)
     noImages, _ := game.ImageCache.GetImages("compix.lbx", 81)
 
-    game.HudUI.AddElements(uilib.MakeConfirmDialogWithLayerFull(game.HudUI, game.Cache, &game.ImageCache, 1, "Do you wish to completely destroy this city?", true, no, yes, noImages, yesImages))
+    ui := &uilib.UI{
+        Cache: game.Cache,
+        Draw: func(ui *uilib.UI, screen *ebiten.Image){
+            ui.IterateElementsByLayer(func (element *uilib.UIElement){
+                if element.Draw != nil {
+                    element.Draw(element, screen)
+                }
+            })
+        },
+    }
+
+    ui.SetElementsFromArray(nil)
+
+    ui.AddElements(uilib.MakeConfirmDialogWithLayerFull(ui, game.Cache, &game.ImageCache, 1, "Do you wish to completely destroy this city?", true, no, yes, noImages, yesImages))
+
+    oldDrawer := game.Drawer
+    game.Drawer = func(screen *ebiten.Image, game *Game){
+        oldDrawer(screen, game)
+        ui.Draw(ui, screen)
+    }
 
     yield()
     for !quit {
         game.Counter += 1
-        game.HudUI.StandardUpdate()
+        ui.StandardUpdate()
         yield()
     }
 
@@ -4138,6 +4157,7 @@ func (game *Game) GetCombatLandscape(x int, y int, plane data.Plane) combat.Comb
 }
 
 /* run the tactical combat screen. returns the combat state as a result (attackers win, defenders win, flee, etc)
+ * this also shows the raze city ui so that fame can be incorporated based on whether the city is razed or not
  */
 func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player, attackerStack *playerlib.UnitStack, defender *playerlib.Player, defenderStack *playerlib.UnitStack, zone combat.ZoneType) combat.CombatState {
     attackingArmy := combat.Army{
@@ -4238,6 +4258,14 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
 
     if state == combat.CombatStateAttackerWin || state == combat.CombatStateDefenderFlee {
         distributeFame(attacker, defender, defenderStack, defeatedDefenders)
+
+        if zone.City != nil {
+            razeCity := game.defeatCity(yield, attacker, attackerStack, defender, zone.City)
+            // if razeCity is true then we pass in false to get the fame for capturing the city
+            winnerFame += zone.City.FameForCaptureOrRaze(!razeCity)
+            loserFame += zone.City.FameForCaptureOrRaze(false)
+        }
+
     } else if state == combat.CombatStateDefenderWin || state == combat.CombatStateAttackerFlee {
         distributeFame(defender, attacker, attackerStack, defeatedAttackers)
     }

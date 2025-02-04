@@ -98,8 +98,12 @@ func (end *CombatEndScreen) MakeUI() *uilib.UI {
 
     extraText := ""
     switch {
-        case end.Result == CombatEndScreenResultWin && end.Fame > 0:
-            extraText = fmt.Sprintf("You gained %v fame", end.Fame)
+        case end.Result == CombatEndScreenResultWin:
+            if end.Fame > 0 {
+                extraText = fmt.Sprintf("You gained %v fame", end.Fame)
+            } else if end.Fame < 0 {
+                extraText = fmt.Sprintf("You lost %v fame", -end.Fame)
+            }
         case end.Result == CombatEndScreenResultLoose && end.Fame > 0:
             extraText = fmt.Sprintf("You lost %v fame", end.Fame)
         case end.Result == CombatEndScreenResultRetreat && end.UnitsLost == 1 && end.Fame == 0:
