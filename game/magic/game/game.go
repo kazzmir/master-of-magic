@@ -3125,9 +3125,10 @@ func (game *Game) doMoveFleeingDefender(player *playerlib.Player, stack *playerl
     }
 }
 
-// returns true if the city was razed
-func (game *Game) defeatCity(yield coroutine.YieldFunc, attacker *playerlib.Player, attackerStack *playerlib.UnitStack, defender *playerlib.Player, city *citylib.City) bool {
+// returns true if the city was razed, and the amount of gold plundered from the city
+func (game *Game) defeatCity(yield coroutine.YieldFunc, attacker *playerlib.Player, attackerStack *playerlib.UnitStack, defender *playerlib.Player, city *citylib.City) (bool, int) {
     raze := false
+    gold := defender.ComputePlunderedGold(city)
 
     if attacker.IsHuman() {
         raze = game.confirmRazeTown(yield, city)
@@ -3158,7 +3159,7 @@ func (game *Game) defeatCity(yield coroutine.YieldFunc, attacker *playerlib.Play
         }
     }
 
-    return raze
+    return raze, gold
 }
 
 func (game *Game) doBanish(yield coroutine.YieldFunc, attacker *playerlib.Player, defender *playerlib.Player) {
@@ -3260,11 +3261,13 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
                 // defeat any unguarded cities immediately
                 otherCity := otherPlayer.FindCity(stack.X(), stack.Y(), stack.Plane())
                 if otherCity != nil {
-                    raze := game.defeatCity(yield, player, stack, otherPlayer, otherCity)
+                    raze, gold := game.defeatCity(yield, player, stack, otherPlayer, otherCity)
 
                     // FIXME: show a notice about any fame won
                     player.Fame += otherCity.FameForCaptureOrRaze(!raze)
                     otherPlayer.Fame += otherCity.FameForCaptureOrRaze(false)
+                    player.Gold += gold
+                    otherPlayer.Gold -= gold
 
                     stack.ExhaustMoves()
                     game.RefreshUI()
@@ -3584,10 +3587,15 @@ func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Play
 
             city := enemy.FindCity(stack.X(), stack.Y(), stack.Plane())
             if city != nil {
-                raze := game.defeatCity(yield, player, stack, enemy, city)
+                raze, gold := game.defeatCity(yield, player, stack, enemy, city)
 
                 player.Fame += city.FameForCaptureOrRaze(!raze)
                 enemy.Fame += city.FameForCaptureOrRaze(false)
+                player.Gold += gold
+                enemy.Gold -= gold
+
+                // FIXME: if the wizard is neutral and decides to raze the town, then the town could become
+                // an encounter zone
 
                 return
             }
@@ -4261,10 +4269,13 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
         distributeFame(attacker, defender, defenderStack, defeatedDefenders)
 
         if zone.City != nil {
-            razeCity := game.defeatCity(yield, attacker, attackerStack, defender, zone.City)
+            razeCity, gold := game.defeatCity(yield, attacker, attackerStack, defender, zone.City)
             // if razeCity is true then we pass in false to get the fame for capturing the city
             winnerFame += zone.City.FameForCaptureOrRaze(!razeCity)
             loserFame += zone.City.FameForCaptureOrRaze(false)
+
+            attacker.Gold += gold
+            defender.Gold -= gold
         }
 
     } else if state == combat.CombatStateDefenderWin || state == combat.CombatStateAttackerFlee {

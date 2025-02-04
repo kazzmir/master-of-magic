@@ -1709,6 +1709,8 @@ func createScenario20(cache *lbx.LbxCache) *gamelib.Game {
 
     enemy := game.AddPlayer(enemyWizard, false)
 
+    enemy.Gold = 5000
+
     city2 := citylib.MakeCity("Test City", x, y-1, enemy.Wizard.Race, enemy.Wizard.Banner, fraction.Make(1, 1), game.BuildingInfo, game.CurrentMap(), game)
     city2.Population = 14000
     city2.Plane = data.PlaneArcanus

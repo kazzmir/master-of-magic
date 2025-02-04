@@ -251,6 +251,16 @@ func (player *Player) GetBanner() data.BannerType {
     return player.Wizard.Banner
 }
 
+// how much gold is stored in this city relative to the player's overall wealth
+func (player *Player) ComputePlunderedGold(city *citylib.City) int {
+    totalPopulation := 0
+    for _, city := range player.Cities {
+        totalPopulation += city.Citizens()
+    }
+
+    return int(float64(player.Gold) * float64(city.Citizens()) / float64(totalPopulation))
+}
+
 func (player *Player) IsTileExplored(x int, y int, plane data.Plane) bool {
     fog := player.GetFog(plane)
     x = player.WrapX(x)
