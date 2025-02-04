@@ -3851,6 +3851,9 @@ func (game *Game) confirmRazeTown(yield coroutine.YieldFunc, city *citylib.City)
         oldDrawer(screen, game)
         ui.Draw(ui, screen)
     }
+    defer func(){
+        game.Drawer = oldDrawer
+    }()
 
     yield()
     for !quit {
