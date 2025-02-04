@@ -18,6 +18,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
     "github.com/kazzmir/master-of-magic/game/magic/mirror"
     "github.com/kazzmir/master-of-magic/game/magic/camera"
+    "github.com/kazzmir/master-of-magic/game/magic/banish"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     "github.com/kazzmir/master-of-magic/game/magic/combat"
     "github.com/kazzmir/master-of-magic/game/magic/unitview"
@@ -3116,6 +3117,43 @@ func (game *Game) doMoveFleeingDefender(player *playerlib.Player, stack *playerl
     }
 }
 
+func (game *Game) defeatCity(yield coroutine.YieldFunc, attacker *playerlib.Player, attackerStack *playerlib.UnitStack, defender *playerlib.Player, city *citylib.City) {
+    // FIXME: if there was a city here and the attacker won then the attacker
+    // should be able to raze or occupy the city
+
+    raze := game.confirmRazeTown(yield, city)
+
+    containedFortress := city.Buildings.Contains(buildinglib.BuildingFortress)
+
+    if raze {
+        defender.RemoveCity(city)
+        // FIXME: loose fame if razing
+    } else {
+        defender.RemoveCity(city)
+        attacker.AddCity(city)
+        city.Banner = attacker.Wizard.Banner
+        city.UpdateTaxRate(attacker.TaxRate, attackerStack.Units())
+
+        city.Buildings.Remove(buildinglib.BuildingFortress)
+        city.Buildings.Remove(buildinglib.BuildingSummoningCircle)
+    }
+
+    if containedFortress {
+        banishLogic, banishDraw := banish.ShowBanishAnimation(game.Cache, attacker, defender)
+
+        oldDrawer := game.Drawer
+        defer func() {
+            game.Drawer = oldDrawer
+        }()
+
+        game.Drawer = func(screen *ebiten.Image, game *Game){
+            banishDraw(screen)
+        }
+
+        banishLogic(yield)
+    }
+}
+
 func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerlib.Player) {
     stack := player.SelectedStack
     if stack == nil || len(stack.ActiveUnits()) == 0 {
@@ -3188,24 +3226,9 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
                         game.doMoveFleeingDefender(otherPlayer, otherStack)
                     }
 
-                    // FIXME: if there was a city here and the attacker won then the attacker
-                    // should be able to raze or occupy the city
-
-                    raze := game.confirmRazeTown(yield, otherCity)
-
-                    if raze {
-                        otherPlayer.RemoveCity(otherCity)
-                        // FIXME: loose fame if razing
-                    } else {
-                        otherPlayer.RemoveCity(otherCity)
-                        player.AddCity(otherCity)
-                        otherCity.Banner = player.Wizard.Banner
-                        otherCity.UpdateTaxRate(player.TaxRate, stack.Units())
-
-                        // FIXME: remove fortress and summoning circle
+                    if state == combat.CombatStateDefenderFlee || state == combat.CombatStateAttackerWin {
+                        game.defeatCity(yield, player, stack, otherPlayer, otherCity)
                     }
-
-                    // FIXME: if the otherCity contained a fortress then banish the otherPlayer
 
                     stack.ExhaustMoves()
                     game.RefreshUI()
@@ -3213,9 +3236,20 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
                     stopMoving = true
                     break quitMoving
                 }
-            }
 
-            // FIXME: if there is an unguarded city at the destination then defeat it immediately
+                // defeat any unguarded cities immediately
+                otherCity := otherPlayer.FindCity(stack.X(), stack.Y(), stack.Plane())
+                if otherCity != nil {
+                    game.defeatCity(yield, player, stack, otherPlayer, otherCity)
+
+                    stack.ExhaustMoves()
+                    game.RefreshUI()
+
+                    stopMoving = true
+                    break quitMoving
+
+                }
+            }
 
             // some units in the stack might not have any moves left
             beforeActive := len(stack.ActiveUnits())
