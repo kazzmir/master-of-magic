@@ -1557,6 +1557,15 @@ func (game *Game) ComputeTerrainCost(stack *playerlib.UnitStack, sourceX int, so
         }
     }
 
+    // sailing units cannot move onto land
+    if tileTo.Tile.IsLand() {
+        for _, unit := range stack.ActiveUnits() {
+            if unit.GetRawUnit().Sailing {
+                return fraction.Zero(), false
+            }
+        }
+    }
+
     containsFriendlyCity := func (x int, y int) bool {
         for _, player := range game.Players {
             if player.GetBanner() == stack.GetBanner() {
