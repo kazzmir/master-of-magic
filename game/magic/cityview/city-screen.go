@@ -1077,8 +1077,12 @@ func drawCityScape(screen *ebiten.Image, city *citylib.City, buildings []Buildin
     roadX := float64(0.0 * data.ScreenScale)
     roadY := float64(18.0 * data.ScreenScale)
 
-    // FIXME: this is probably animated in case of enchanted road?
-    normalRoad, err := imageCache.GetImage("cityscap.lbx", 5, 0)
+    animationIndex = 0
+    if onMyrror {
+        animationIndex = 4
+    }
+
+    normalRoad, err := imageCache.GetImage("cityscap.lbx", 5, animationIndex)
     if err == nil {
         var options ebiten.DrawImageOptions
         options.ColorScale.ScaleAlpha(alphaScale)
