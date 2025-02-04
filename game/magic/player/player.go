@@ -81,6 +81,9 @@ type AIBehavior interface {
 
     // called when a new unit is produced in the city
     ProducedUnit(*citylib.City, *Player)
+
+    // true to raze, false to occupy
+    ConfirmRazeTown(*citylib.City) bool
 }
 
 type Relationship struct {
@@ -121,6 +124,9 @@ type Player struct {
     StrategicCombat bool
     // godmode that lets the player interact with enemy cities/units
     Admin bool
+
+    // true if the wizard is currently banished
+    Banished bool
 
     // known spells
     KnownSpells spellbook.Spells
@@ -243,6 +249,16 @@ func (player *Player) IsHuman() bool {
 
 func (player *Player) GetBanner() data.BannerType {
     return player.Wizard.Banner
+}
+
+// how much gold is stored in this city relative to the player's overall wealth
+func (player *Player) ComputePlunderedGold(city *citylib.City) int {
+    totalPopulation := 0
+    for _, city := range player.Cities {
+        totalPopulation += city.Citizens()
+    }
+
+    return int(float64(player.Gold) * float64(city.Citizens()) / float64(max(1, totalPopulation)))
 }
 
 func (player *Player) IsTileExplored(x int, y int, plane data.Plane) bool {

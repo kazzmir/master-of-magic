@@ -254,6 +254,15 @@ func MakeConfirmDialog(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache,
 }
 
 func MakeConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, layer UILayer, message string, center bool, confirm func(), cancel func()) []*UIElement {
+    // a button that says 'Yes'
+    yesButtons, _ := imageCache.GetImages("resource.lbx", 3)
+
+    // a button that says 'No'
+    noButtons, _ := imageCache.GetImages("resource.lbx", 4)
+    return MakeConfirmDialogWithLayerFull(ui, cache, imageCache, layer, message, center, confirm, cancel, yesButtons, noButtons)
+}
+
+func MakeConfirmDialogWithLayerFull(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, layer UILayer, message string, center bool, confirm func(), cancel func(), yesButtons []*ebiten.Image, noButtons []*ebiten.Image) []*UIElement {
     confirmX := 67 * data.ScreenScale
     confirmY := 73 * data.ScreenScale
 
@@ -333,7 +342,6 @@ func MakeConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.Im
     })
 
     // add yes/no buttons
-    yesButtons, err := imageCache.GetImages("resource.lbx", 3)
     if err == nil {
         yesX := confirmX + 101 * data.ScreenScale
         yesY := bottom + float64(5 * data.ScreenScale)
@@ -369,7 +377,6 @@ func MakeConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.Im
         })
     }
 
-    noButtons, err := imageCache.GetImages("resource.lbx", 4)
     if err == nil {
         noX := confirmX + 18 * data.ScreenScale
         noY := bottom + float64(5 * data.ScreenScale)

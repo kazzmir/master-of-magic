@@ -1375,7 +1375,7 @@ var Skeleton Unit = Unit{
     Count: 6,
     MovementSound: MovementSoundShuffle,
     AttackSound: AttackSoundNormal,
-    MovementSpeed: 3,
+    MovementSpeed: 1,
     MeleeAttackPower: 3,
     Defense: 4,
     Resistance: 5,

@@ -215,7 +215,7 @@ func (ui *UI) GetHighestLayer() []*UIElement {
         }
     }
 
-    log.Printf("Warning: no elements in UI")
+    // log.Printf("Warning: no elements in UI")
 
     return nil
 }

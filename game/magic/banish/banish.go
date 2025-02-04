@@ -8,6 +8,7 @@ import (
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
@@ -227,6 +228,11 @@ func ShowBanishAnimation(cache *lbx.LbxCache, attackingWizard *playerlib.Player,
         mainFont.PrintCenter(screen, float64(160 * data.ScreenScale), float64(10 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v banishes %v", attackingWizard.Wizard.Name, defeatedWizard.Wizard.Name))
     }
 
+    yellSound, err := audio.LoadSound(cache, 35)
+    if err != nil {
+        yellSound = nil
+    }
+
     logic := func (yield coroutine.YieldFunc) error {
         animationSpeed := 6
 
@@ -256,6 +262,10 @@ func ShowBanishAnimation(cache *lbx.LbxCache, attackingWizard *playerlib.Player,
         spellAnimation = util.MakeAnimation(spell2Images, true)
         spellX = 0
         spellY = 0
+
+        if yellSound != nil {
+            yellSound.Play()
+        }
 
         for i := 0; i < 45; i++ {
             if i % animationSpeed == 0 {
